@@ -256,18 +256,17 @@ class RequirementSet {
   }
 }
 
-const permissionIdPattern = Match.OneOf({ canAccess: null }, { appDefined: Match.Integer });
-// As we compute a flow of permissions, we need to be able to explicitly refer to not only
-// the permissions enumerated in a grain's `ViewInfo`, but also the usually-implicit "can
-// access the grain at all" permission. A permission ID, defined here, allows us to refer
-// to either of these types of permissions.
+// A permission ID is a stringified integer greater than or equal to -1. The permission "-1"
+// corresponded to the implicit "can access the grain at all" permission. The other permissions
+// are those defined by the app in its manifest.
 
-function forEachPermission(permissions, f) {
+function forEachPermission(permissions, func) {
+  // Calls `func` on "-1" and each permission ID that corresponds to a `true` value in `permissions`.
   check(permissions, [Boolean]);
-  f({ canAccess: null });
+  func("-1");
   for (let ii = 0; ii < permissions.length; ++ii) {
     if (permissions[ii]) {
-      f({ appDefined: ii });
+      func(ii.toString());
     }
   }
 }
@@ -297,7 +296,7 @@ class Variable {
   // this forward-chaining eventually forces us to set our end goal variables to `true`, then the
   // HORNSAT problem is unsatisfiable and we have proved what we wanted. Otherwise, the HORNSAT
   // problem is satisfiable, i.e. there is a consistent way to set values to variables in which
-  // our goal nodes do *not* receive the permissions we wanted them to.
+  // our goal nodes do *not* receive the permissions we wanted them to receive.
 
   constructor() {
     this.value = false;
@@ -315,65 +314,60 @@ class Variable {
 class ActiveToken {
   // An "active token" is one that we allow to propagate permissions because we've decided
   // that it might be relevant to our current computation. This class tracks which permissions
-  // the token carries, which of those permissions we've actually proved to arrive at the source
+  // the token can carry, which of those permissions we've actually proved to arrive at the source
   // end of the token, and how many of the token's requirements are still unmet.
 
   constructor(numUnmetRequirements, permissions) {
     check(numUnmetRequirements, Match.Integer);
-    check(permissions, [Boolean]);
+    check(permissions, [Boolean]); // The permissions that this token is capable of carrying.
 
     this.numUnmetRequirements = numUnmetRequirements;
+    // How many of this token's requirements we have not yet proven to be met.
 
-    // The following fields have a "permission status" value, one of:
-    // {unmet: null}, {met: null}, or { doesNotCarry: null }.
-    this.canAccess = { unmet: null };
-    this.appDefined = [];
+    this.receivedPermissions = { "-1": false };
+    // A map from permission ID to boolean. If a permission ID is present in this map,
+    // then this token's roleAssignment includes that permission. If the corresponding
+    // value is `true`, then we've proven that this token receives this permission and
+    // therefore propagates it.
 
     for (let ii = 0; ii < permissions.length; ++ii) {
       if (permissions[ii]) {
-        this.appDefined.push({ unmet: null });
-      } else {
-        this.appDefined.push({ doesNotCarry: null });
+        this.receivedPermissions[ii] = false;
       }
     }
   }
 
   requirementsAreMet() {
+    // Have we yet proved that all of this token's requirements are met?
     return this.numUnmetRequirements == 0;
   }
 
   decrementRequirements() {
+    // Decrements the number of unmet requirements of this token.
+
     this.numUnmetRequirements -= 1;
     if (this.numUnmetRequirements < 0) {
       throw new Meteor.Error(500, "numUnmetRequirements is negative");
     }
   }
 
-  directIsMet(permissionId) {
-    check(permissionId, permissionIdPattern);
-    if ("canAccess" in permissionId) {
-      return "met" in this.canAccess;
-    } else if ("appDefined" in permissionId) {
-      return "met" in this.appDefined[permissionId.appDefined];
+  setReceivesPermission(permissionId) {
+    // Records that this token receives a permission.
+
+    check(permissionId, String);
+    if (permissionId in this.receivedPermissions) {
+      this.receivedPermissions[permissionId] = true;
     }
   }
 
-  decrementDirect(permissionId) {
-    check(permissionId, permissionIdPattern);
-    if ("canAccess" in permissionId) {
-      this.canAccess = { met: null };
-    } else if ("appDefined" in permissionId) {
-      this.appDefined[permissionId.appDefined] = { met: null };
-    }
-  }
+  forEachReceivedPermission(func) {
+    // Calls `func` on each permission ID that we've proven this token receives and carries.
 
-  forEachPermission(func) {
-    // `func` takes a permission ID and a permission status.
-
-    func({ canAccess: null }, this.canAccess);
-    for (let ii = 0; ii < this.appDefined.length; ++ii) {
-      func({ appDefined: ii }, this.appDefined[ii]);
-    }
+    Object.keys(this.receivedPermissions).forEach((permissionId) => {
+      if (this.receivedPermissions[permissionId]) {
+        func(permissionId);
+      }
+    });
   }
 }
 
@@ -387,7 +381,7 @@ class Context {
     this.tokensByRecipient = {}; // Map from grain ID and identity ID to token array.
 
     this.variables = {};
-    // GrainId -> VertexId -> { canAccess: Variable, appDefined: [Variable] }
+    // GrainId -> VertexId -> PermissionId -> Variable
 
     this.activeTokens = {};      // TokenId -> ActiveToken
 
@@ -416,7 +410,7 @@ class Context {
   }
 
   addToken(token) {
-    // Retrives a token from the database. Does not activate it.
+    // Retrieves a token from the database. Does not activate it.
 
     check(token, Match.ObjectIncluding({ grainId: String }));
 
@@ -513,23 +507,21 @@ class Context {
     const activeToken = new ActiveToken(numUnmetRequirements, tokenPermissions.array);
     let needToExploreUnmet = false;
 
-    activeToken.forEachPermission((permissionId, status) => {
-      if (!("doesNotCarry" in status)) {
-        const recipientVariable = this.getVariable(grainId, recipientId, permissionId);
-        if (!recipientVariable.value) {
-          const sharerVariable = this.getVariable(grainId, sharerId, permissionId);
-          if (!sharerVariable.value) {
-            sharerVariable.directTailList.push(tokenId);
+    forEachPermission(tokenPermissions.array, (permissionId) => {
+      const recipientVariable = this.getVariable(grainId, recipientId, permissionId);
+      if (!recipientVariable.value) {
+        const sharerVariable = this.getVariable(grainId, sharerId, permissionId);
+        if (!sharerVariable.value) {
+          sharerVariable.directTailList.push(tokenId);
+        } else {
+          activeToken.setReceivesPermission(permissionId);
+          if (numUnmetRequirements == 0) {
+            this.setToTrueStack.push({ grainId: grainId,
+                                       vertexId: vertexIdOfTokenOwner(token),
+                                       permissionId: permissionId,
+                                       responsibleTokenId: tokenId, });
           } else {
-            activeToken.decrementDirect(permissionId);
-            if (numUnmetRequirements == 0) {
-              this.setToTrueStack.push({ grainId: grainId,
-                                         vertexId: vertexIdOfTokenOwner(token),
-                                         permissionId: permissionId,
-                                         responsibleTokenId: tokenId, });
-            } else {
-              needToExploreUnmet = true;
-            }
+            needToExploreUnmet = true;
           }
         }
       }
@@ -550,34 +542,21 @@ class Context {
     }
 
     if (!this.variables[grainId][vertexId]) {
-      this.variables[grainId][vertexId] = { canAccess: new Variable(),
-                                            appDefined: [], };
+      this.variables[grainId][vertexId] = {};
     }
 
-    const variables = this.variables[grainId][vertexId];
-
-    if ("appDefined" in permissionId) {
-      while (permissionId.appDefined >= variables.appDefined.length) {
-        variables.appDefined.push(new Variable());
-      }
+    if (!this.variables[grainId][vertexId][permissionId]) {
+      this.variables[grainId][vertexId][permissionId] = new Variable();
     }
   }
 
   getVariable(grainId, vertexId, permissionId) {
     check(grainId, String);
     check(vertexId, String);
-    check(permissionId, permissionIdPattern);
+    check(permissionId, String);
 
     this._ensureVariableExists(grainId, vertexId, permissionId);
-
-    const nodeVariables = this.variables[grainId][vertexId];
-    if ("canAccess" in permissionId) {
-      return nodeVariables.canAccess;
-    } else if ("appDefined" in permissionId) {
-      return nodeVariables.appDefined[permissionId.appDefined];
-    } else {
-      throw new Meteor.Error(500, "unknown permissionId: " + JSON.stringify(permissionId));
-    }
+    return this.variables[grainId][vertexId][permissionId];
   }
 
   getPermissions(grainId, vertexId) {
@@ -586,27 +565,39 @@ class Context {
     check(grainId, String);
     check(vertexId, String);
 
-    this._ensureVariableExists(grainId, vertexId, { canAccess: null });
-
-    const nodeVariables = this.variables[grainId][vertexId];
-    if (!nodeVariables.canAccess.value) {
+    this._ensureVariableExists(grainId, vertexId, -1);
+    if (!this.variables[grainId][vertexId][-1].value) {
       return null;
     } else {
-      return new PermissionSet(nodeVariables.appDefined.map((variable) => variable.value));
+      let length = 1 + Math.max.apply(null, Object.keys(this.variables[grainId][vertexId]));
+      let permissions = new Array(length);
+      for (let idx = 0; idx < length; ++idx) {
+        if (this.variables[grainId][vertexId][idx]) {
+          permissions[idx] = !!this.variables[grainId][vertexId][idx].value;
+        } else {
+          permissions[idx] = false;
+        }
+      }
+
+      return new PermissionSet(permissions);
     }
   }
 
   runForwardChaining(grainId, vertexId, permissionSet) {
+    // Runs forward-chaining, consuming elements from `this.setToTrueStack` and propagating
+    // their permissions, until we've proven that `(grainId, vertexId)` has the permissions in
+    // `permissionSet`, or until we've exhausted `this.setToTrueStack`.
+    //
     // TODO(perf): Exit early if we've already proven that permissionSet is fulfilled.
 
     check(grainId, String);
     check(vertexId, String);
     check(permissionSet, PermissionSet);
 
-    if (permissionSet.array.length > 0) {
+    for (let ii = -1; ii < permissionSet.array.length; ++ii) {
       // Make sure that the result of this call, retrieved through `this.getPermissions()`,
-      // will have a full array of permissions, even if they aren't all set to `true`.
-      this._ensureVariableExists(grainId, vertexId, { appDefined: permissionSet.array.length - 1 });
+      // will have a full array of permissions, even if they won't all be set to `true`.
+      this._ensureVariableExists(grainId, vertexId, ii);
     }
 
     while (this.setToTrueStack.length > 0) {
@@ -620,7 +611,7 @@ class Context {
       variable.responsibleTokenId = current.responsibleTokenId;
       variable.directTailList.forEach((tokenId) => {
         const activeToken = this.activeTokens[tokenId];
-        activeToken.decrementDirect(current.permissionId);
+        activeToken.setReceivesPermission(current.permissionId);
         // We know this permission must be met now.
 
         const token = this.tokensById[tokenId];
@@ -640,14 +631,12 @@ class Context {
         const activeToken = this.activeTokens[tokenId];
         activeToken.decrementRequirements(current.permissionId);
         if (activeToken.requirementsAreMet()) {
-          activeToken.forEachPermission((permissionId, status) => {
-            if ("met" in status) {
-              // We've triggered a new edge! Push it onto the queue.
-              this.setToTrueStack.push({ grainId: token.grainId,
-                                        vertexId: vertexIdOfTokenOwner(token),
-                                        permissionId: permissionId,
-                                        responsibleTokenId: tokenId, });
-            }
+          activeToken.forEachReceivedPermission((permissionId) => {
+            // We've triggered a new edge! Push it onto the queue.
+            this.setToTrueStack.push({ grainId: token.grainId,
+                                       vertexId: vertexIdOfTokenOwner(token),
+                                       permissionId: permissionId,
+                                       responsibleTokenId: tokenId, });
           });
         }
       });
@@ -739,7 +728,7 @@ class Context {
     check(vertexId, String);
 
     const stack = []; // [{ grainId: String, vertexId: String, permissionId: PermissionId }]
-    const visited = {}; // grainId -> vertexId -> { canAccess: bool, appDefined: [bool] }
+    const visited = {}; // grainId -> vertexId -> permissionId -> bool;
 
     function pushVertex(grainId, vertexId, permissionId) {
       if (!visited[grainId]) {
@@ -747,26 +736,13 @@ class Context {
       }
 
       if (!visited[grainId][vertexId]) {
-        visited[grainId][vertexId] = { canAccess: false, appDefined: [], };
+        visited[grainId][vertexId] = {};
       }
 
       const vertex = visited[grainId][vertexId];
-      if ("canAccess" in permissionId) {
-        if (!vertex.canAccess) {
-          vertex.canAccess = true;
-          stack.push({ grainId: grainId, vertexId: vertexId, permissionId: permissionId });
-        }
-      } else if ("appDefined" in permissionId) {
-        while (permissionId.appDefined >= vertex.appDefined.length) {
-          vertex.appDefined.push(false);
-        }
-
-        if (!vertex.appDefined[permissionId.appDefined]) {
-          vertex.appDefined[permissionId.appDefined] = true;
-          stack.push({ grainId: grainId, vertexId: vertexId, permissionId: permissionId });
-        }
-      } else {
-        throw new Error("Unsupported permission ID: " + JSON.stringify(permissionId));
+      if (!vertex[permissionId]) {
+        vertex[permissionId] = true;
+        stack.push({ grainId: grainId, vertexId: vertexId, permissionId: permissionId });
       }
     }
 

@@ -463,8 +463,15 @@ Template.grainSharePopup.helpers({
     return !Accounts.getCurrentIdentityId();
   },
 
+  hasAccess: function () {
+    return !!Sessions.findOne(globalGrains.getActive().sessionId());
+  },
+
   currentTokenUrl: function () {
-    return getOrigin() + "/shared/" + globalGrains.getActive().token();
+    let token = globalGrains.getActive().token();
+    if (token) {
+      return getOrigin() + "/shared/" + token;
+    }
   },
 
   currentGrain: function () {
@@ -634,6 +641,10 @@ Template.grainTitle.helpers({
 Template.grainApiTokenPopup.helpers({
   displayToken: function () {
     return !this.revoked && !this.expiresIfUnused && !this.parentToken;
+  },
+
+  hasAccess: function () {
+    return !!Sessions.findOne(globalGrains.getActive().sessionId());
   },
 
   existingTokens: function () {

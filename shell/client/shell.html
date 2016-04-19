@@ -375,6 +375,7 @@ limitations under the License.
 </template>
 
 <template name="grainApiTokenPopup">
+{{#if hasAccess}}
   <h4>Webkeys</h4>
   {{#if generatedApiToken}}
     {{#if generatedApiTokenPending}}
@@ -421,6 +422,9 @@ limitations under the License.
       </ul>
     {{/if}}
   {{/if}}
+{{else}}
+  <p> You do not have permission to access this grain. </p>
+{{/if}}
 </template>
 
 <template name="grainShareButton">
@@ -623,16 +627,17 @@ limitations under the License.
 </template>
 
 <template name="grainSharePopup">
+{{#if hasAccess}}
   {{#if incognito}}
     <p>
       You are viewing this grain anonymously.
     </p>
-    <p>
-      To share access, copy this link:
-      {{#with currentTokenUrl}}
+    {{#with currentTokenUrl}}
+      <p>
+        To share access, copy this link:
         <a id="share-token-text" class="copy-me" href="{{.}}">{{.}}</a>
-      {{/with}}
-    </p>
+      </p>
+    {{/with}}
     <p>
       {{#if currentUser}}
         For more sharing options, you must
@@ -646,6 +651,11 @@ limitations under the License.
   {{else}}
     {{> shareWithOthers grain=currentGrain}}
   {{/if}}
+{{else}}
+  <p>
+    You do not have permission to access this grain.
+  </p>
+{{/if}}
 </template>
 
 <template name="grainPowerboxRequest">

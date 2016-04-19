@@ -135,9 +135,34 @@ module.exports["Test revoked share link"] = function (browser) {
           .url(browser.launch_url + "/shared/" + result.value.result.token)
           .waitForElementVisible(".grain-interstitial", medium_wait)
           .assert.containsText(".grain-interstitial", "Sorry, this link has been revoked")
-          .end()
       });
     });
+}
+
+module.exports["Test share popup no permission"] = function (browser) {
+ browser
+    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
+                hackerCmsAppId)
+    .waitForElementVisible("#grainTitle", medium_wait)
+    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .url(function (grainUrl) {
+      browser
+        .execute("window.Meteor.logout()")
+        .url(browser.launch_url)
+        .url(grainUrl.value)
+        .waitForElementVisible(".topbar .share > .show-popup", medium_wait)
+        .click(".topbar .share > .show-popup")
+        .waitForElementVisible(".popup.share .frame p", short_wait)
+        .assert.containsText(".popup.share .frame p",
+                             "You do not have permission to access this grain")
+        .loginDevAccount()
+        .url(grainUrl.value)
+        .waitForElementVisible(".topbar .share > .show-popup", medium_wait)
+        .click(".topbar .share > .show-popup")
+        .waitForElementVisible(".popup.share .frame p", short_wait)
+        .assert.containsText(".popup.share .frame p",
+                             "You do not have permission to access this grain")
+    }).end();
 }
 
 // TODO(cleanup): Move other sharing tests into this file.

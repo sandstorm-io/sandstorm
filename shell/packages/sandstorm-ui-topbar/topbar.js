@@ -47,6 +47,7 @@ Template.sandstormTopbarBlockReload.onDestroyed(function () {
 });
 
 Template.sandstormTopbar.onRendered(function () {
+  if (this.drag !== undefined) this.drag.destroy();
   this.drag = dragula([document.getElementById("navbar-grains")]);
 });
 

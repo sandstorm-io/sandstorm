@@ -431,7 +431,7 @@ Meteor.startup(() => {
   // port. For requests to the shell & grains, we redirect to the main
   // port. For static publishing, we serve it.
   //
-  // They are bound to FD #4 and higher.
+  // They are bound to FD #5 and higher.
 
   function getNumberOfAlternatePorts() {
     const numPorts = process.env.PORT.split(',').length;
@@ -461,7 +461,7 @@ Meteor.startup(() => {
   for (let i = 0; i < getNumberOfAlternatePorts(); i++) {
     // Call createServerForSandstorm() to skip our monkey patching.
     const alternatePortServer = Http.createServerForSandstorm(redirectToMeteorOrServeStaticPublishing);
-    alternatePortServer.listen({ fd: i + 4 });
+    alternatePortServer.listen({ fd: i + 5 });
   }
 
   const dispatchToMeteorOrStaticPublishing = (req, res, next, redirectRatherThanServeShell) => {

@@ -29,19 +29,19 @@ function monkeypatchHttpAndHttps() {
   //
   // 1. Monkey-patch HTTP in the smallest way -- if someone calls
   // listen() but doesn't provide an FD, assume they are Meteor and
-  // they want to bind to FD #3.
+  // they want to bind to FD #4.
   var oldListen = http.Server.prototype.listen;
   http.Server.prototype.listen = function (port, host, cb) {
-    // Overridable by passing e.g. {fd: 4} as port.
+    // Overridable by passing e.g. {fd: 5} as port.
     if (typeof port == 'object') {
       return oldListen.call(this, port, host, cb);
     }
-    return oldListen.call(this, {fd: 3}, cb);
+    return oldListen.call(this, {fd: 4}, cb);
   }
 
   // 2. If we are in HTTPS mode, monkey-patch HTTP in a large way:
   // return a HTTPS server, not a HTTP server, so that Meteor gets a
-  // HTTPS server on FD #3 without Meteor being aware of the
+  // HTTPS server on FD #4 without Meteor being aware of the
   // complexity.
 
   // Stash the original function in createServerForSandstorm(), since
@@ -307,7 +307,7 @@ function monkeypatchHttpAndHttps() {
     };
 
     if (process.env.HTTPS_PORT) {
-      // Great! FD #3 will speak HTTPS.
+      // Great! FD #4 will speak HTTPS.
       //
       // NOTE: This assumes that the user will only set HTTPS_PORT if
       // there are valid certificates for us to use. This could be a
@@ -415,7 +415,7 @@ function monkeypatchHttpAndHttps() {
       // the HTTP message got parsed.
       httpsServer.setTimeout = function() {};
 
-      // When Meteor calls .listen() we bind to FD #3 and speak HTTPS.
+      // When Meteor calls .listen() we bind to FD #4 and speak HTTPS.
       var oldListen = https.Server.prototype.listen;
       httpsServer.listen = function (port, host, cb) {
         var server = this;
@@ -424,7 +424,7 @@ function monkeypatchHttpAndHttps() {
         var listenIfKey = function() {
           var shouldListen = !! sandcatsState.key;
           if (shouldListen) {
-            oldListen.call(server, {fd: 3}, cb);
+            oldListen.call(server, {fd: 4}, cb);
           }
           return shouldListen;
         };

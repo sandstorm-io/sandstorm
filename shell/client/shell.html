@@ -356,7 +356,7 @@ limitations under the License.
   <span class="editable" title="Rename" id="grainTitle" tabindex="0">{{title}}</span>
 </template>
 <template name="grainDeleteButton">
-  <button class="grain-button" title="Delete" id="deleteGrain">Delete</button>
+  <button class="grain-button" title="{{#if isOwner}}Delete{{else}}Forget{{/if}}" id="deleteGrain">Delete</button>
 </template>
 <template name="grainDebugLogButton">
   <button class="grain-button" title="Show Debug Log" id="openDebugLog">Log</button>
@@ -375,7 +375,6 @@ limitations under the License.
 </template>
 
 <template name="grainApiTokenPopup">
-{{#if hasAccess}}
   <h4>Webkeys</h4>
   {{#if generatedApiToken}}
     {{#if generatedApiTokenPending}}
@@ -422,9 +421,6 @@ limitations under the License.
       </ul>
     {{/if}}
   {{/if}}
-{{else}}
-  <p> You do not have permission to access this grain. </p>
-{{/if}}
 </template>
 
 <template name="grainShareButton">
@@ -596,16 +592,6 @@ limitations under the License.
 
 <template name="shareWithOthers">
   <h4 class="share-with-others">Share with others</h4>
-  {{#if grain.isOldSharingModel}}
-    <p>This grain uses the old sharing model. You can share it by copy/pasting the URL from the
-       location bar.</p>
-    {{#if grain.isOwner}}
-      <p>You can upgrade this grain to the new model, but anyone with whom you shared this grain
-         previously will lose access; you will have to share it with them again.</p>
-      <p>Upgrading cannot be undone.</p>
-      <p><button id="privatize-grain">upgrade</button></p>
-    {{/if}}
-  {{else}}
   <div class="share-tabs" role="presentation">
     <ul role="tablist">
       <li id="send-invite-tab-header" tabindex="0" role="tab" aria-controls="send-invite-tab" aria-selected="true"> Send an invite </li>
@@ -623,39 +609,43 @@ limitations under the License.
     <span class="icon icon-people"></span>
     <button class="who-has-access">See who has access</button>
   </div>
-  {{/if}}
 </template>
 
 <template name="grainSharePopup">
-{{#if hasAccess}}
-  {{#if incognito}}
-    <p>
-      You are viewing this grain anonymously.
-    </p>
-    {{#with currentTokenUrl}}
-      <p>
-        To share access, copy this link:
-        <a id="share-token-text" class="copy-me" href="{{.}}">{{.}}</a>
-      </p>
-    {{/with}}
-    <p>
-      {{#if currentUser}}
-        For more sharing options, you must
-        <a class="open-non-anonymously" href="{{currentTokenUrl}}">
-          open this grain non-anonymously
-        </a>.
-      {{else}}
-        For more sharing options, please sign in.
-      {{/if}}
-    </p>
+  {{#if currentGrain.isOldSharingModel}}
+    <p>This grain uses the old sharing model. You can share it by copy/pasting the URL from the
+       location bar.</p>
+    {{#if currentGrain.isOwner}}
+      <p>You can upgrade this grain to the new model, but anyone with whom you shared this grain
+         previously will lose access; you will have to share it with them again.</p>
+      <p>Upgrading cannot be undone.</p>
+      <p><button id="privatize-grain">upgrade</button></p>
+    {{/if}}
   {{else}}
-    {{> shareWithOthers grain=currentGrain}}
+    {{#if incognito}}
+      <p>
+        You are viewing this grain anonymously.
+      </p>
+      {{#with currentTokenUrl}}
+        <p>
+          To share access, copy this link:
+          <a id="share-token-text" class="copy-me" href="{{.}}">{{.}}</a>
+        </p>
+      {{/with}}
+      <p>
+        {{#if currentUser}}
+          For more sharing options, you must
+          <a class="open-non-anonymously" href="{{currentTokenUrl}}">
+            open this grain non-anonymously
+          </a>.
+        {{else}}
+          For more sharing options, please sign in.
+        {{/if}}
+      </p>
+    {{else}}
+      {{> shareWithOthers grain=currentGrain}}
+    {{/if}}
   {{/if}}
-{{else}}
-  <p>
-    You do not have permission to access this grain.
-  </p>
-{{/if}}
 </template>
 
 <template name="grainPowerboxRequest">
@@ -690,28 +680,33 @@ limitations under the License.
 
   {{setGrainWindowTitle}}
 
-  {{>sandstormTopbarItem name="share" topbar=globalTopbar template="grainShareButton"
-      popupTemplate="grainSharePopup"}}
-  {{#if currentUser}}
-    {{>sandstormTopbarItem name="delete" topbar=globalTopbar template="grainDeleteButton"}}
+  {{#if hasAccess}}
+    {{>sandstormTopbarItem name="share" priority=4 topbar=globalTopbar template="grainShareButton"
+        popupTemplate="grainSharePopup"}}
   {{/if}}
+
+  {{>sandstormTopbarItem name="delete" topbar=globalTopbar template="grainDeleteButton"}}
+
   {{#if isOwner}}
     {{>sandstormTopbarItem name="debug-log" topbar=globalTopbar template="grainDebugLogButton" data=globalTopbar}}
     {{>sandstormTopbarItem name="backup" topbar=globalTopbar template="grainBackupButton" data=globalTopbar}}
     {{>sandstormTopbarItem name="restart" topbar=globalTopbar template="grainRestartButton" data=globalTopbar}}
   {{/if}}
-  {{#if displayWebkeyButton}}
-    {{>sandstormTopbarItem name="webkey" topbar=globalTopbar
-        template="grainApiTokenButton" popupTemplate="grainApiTokenPopup"}}
-  {{/if}}
-  {{#if showPowerboxRequest}}
-  {{>sandstormTopbarItem name="request" topbar=globalTopbar template="grainPowerboxRequest"
-        startOpen=true popupTemplate="grainPowerboxRequestPopup" data=powerboxRequestData
-        onDismiss=cancelPowerboxRequest}}
-  {{/if}}
-  {{#if showPowerboxOffer}}
-    {{>sandstormTopbarItem name="offer" topbar=globalTopbar template="grainPowerboxOffer"
-        startOpen=true popupTemplate="grainPowerboxOfferPopup" data=powerboxOfferData}}
+
+  {{#if hasAccess}}
+    {{#if displayWebkeyButton}}
+        {{>sandstormTopbarItem name="webkey" topbar=globalTopbar
+            template="grainApiTokenButton" popupTemplate="grainApiTokenPopup"}}
+    {{/if}}
+    {{#if showPowerboxRequest}}
+    {{>sandstormTopbarItem name="request" topbar=globalTopbar template="grainPowerboxRequest"
+          startOpen=true popupTemplate="grainPowerboxRequestPopup" data=powerboxRequestData
+          onDismiss=cancelPowerboxRequest}}
+    {{/if}}
+    {{#if showPowerboxOffer}}
+      {{>sandstormTopbarItem name="offer" topbar=globalTopbar template="grainPowerboxOffer"
+          startOpen=true popupTemplate="grainPowerboxOfferPopup" data=powerboxOfferData}}
+    {{/if}}
   {{/if}}
 </template>
 

@@ -463,10 +463,6 @@ Template.grainSharePopup.helpers({
     return !Accounts.getCurrentIdentityId();
   },
 
-  hasAccess: function () {
-    return !!Sessions.findOne(globalGrains.getActive().sessionId());
-  },
-
   currentTokenUrl: function () {
     let token = globalGrains.getActive().token();
     if (token) {
@@ -575,6 +571,11 @@ Template.grain.helpers({
     return globalGrains.getActive();
   },
 
+  hasAccess: function () {
+    const grain = globalGrains.getActive();
+    return grain && !!Sessions.findOne(grain.sessionId());
+  },
+
   isOwner: function () {
     const current = globalGrains.getActive();
     return current && current.isOwner();
@@ -598,8 +599,8 @@ Template.grain.helpers({
   },
 
   displayWebkeyButton: function () {
-    // TODO: figure out what this should do
-    return Meteor.userId() || !this.oldSharingModel;
+    const grain = globalGrains.getActive();
+    return Meteor.userId() || (grain && !grain.isOldSharingModel());
   },
 
   showPowerboxOffer: function () {
@@ -634,17 +635,13 @@ Template.grain.helpers({
 Template.grainTitle.helpers({
   title: function () {
     const grain = globalGrains.getActive();
-    return (grain && grain.title()) || "Untitled grain";
+    return (grain && grain.title()) || "(unknown grain)";
   },
 });
 
 Template.grainApiTokenPopup.helpers({
   displayToken: function () {
     return !this.revoked && !this.expiresIfUnused && !this.parentToken;
-  },
-
-  hasAccess: function () {
-    return !!Sessions.findOne(globalGrains.getActive().sessionId());
   },
 
   existingTokens: function () {

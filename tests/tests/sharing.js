@@ -140,28 +140,24 @@ module.exports["Test revoked share link"] = function (browser) {
 }
 
 module.exports["Test share popup no permission"] = function (browser) {
- browser
+  var sharePopupSelector = ".topbar .share > .show-popup";
+  browser
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
                 hackerCmsAppId)
     .waitForElementVisible("#grainTitle", medium_wait)
     .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .waitForElementVisible(sharePopupSelector, medium_wait)
     .url(function (grainUrl) {
       browser
         .execute("window.Meteor.logout()")
         .url(browser.launch_url)
         .url(grainUrl.value)
-        .waitForElementVisible(".topbar .share > .show-popup", medium_wait)
-        .click(".topbar .share > .show-popup")
-        .waitForElementVisible(".popup.share .frame p", short_wait)
-        .assert.containsText(".popup.share .frame p",
-                             "You do not have permission to access this grain")
+        .waitForElementVisible(".grain-interstitial.request-access", medium_wait)
+        .assert.elementNotPresent(sharePopupSelector)
         .loginDevAccount()
         .url(grainUrl.value)
-        .waitForElementVisible(".topbar .share > .show-popup", medium_wait)
-        .click(".topbar .share > .show-popup")
-        .waitForElementVisible(".popup.share .frame p", short_wait)
-        .assert.containsText(".popup.share .frame p",
-                             "You do not have permission to access this grain")
+        .waitForElementVisible(".grain-interstitial.request-access", medium_wait)
+        .assert.elementNotPresent(sharePopupSelector)
     }).end();
 }
 

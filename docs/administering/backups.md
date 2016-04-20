@@ -25,7 +25,7 @@ If you run your own Sandstorm server, you can back up the entire Sandstorm insta
 stopping the service:
 
     sudo sandstorm stop
-    sudo service stop sandstorm
+    sudo service sandstorm stop
 
 and taking a filesystem snapshot of `/opt/sandstorm`. If your filesystem doesn't support online
 snapshots you can make a quick backup by running:
@@ -38,7 +38,7 @@ Alternatively, one can make a backup using tar.
 
 Then restart Sandstorm to end the interruption:
 
-    sudo service start sandstorm
+    sudo service sandstorm start
 
 This guide uses `$(date -I)`, which is a way to embed the current date into a filename, in a format
 such as `2005-10-30`.

@@ -126,7 +126,7 @@
     font-size: 20px;
   }
 
-  input[type=text], input[type=password], input[type=number], textarea {
+  input[type=text], input[type=password], input[type=number], input[type=email], textarea {
     display: block;
     width: 100%;
     color: #222;
@@ -147,7 +147,20 @@
     width: 100%;
     display: flex;
     flex-direction: row-reverse;
-    align-items: flex-start;
+    align-items: stretch;
     justify-content: flex-start;
+    >*:not(:first-child) {
+      margin-right: 10px;
+    }
+  }
+
+  button[type="submit"] {
+    @extend %button-base;
+    @extend %button-primary;
+  }
+
+  button[type=button] {
+    @extend %button-base;
+    @extend %button-secondary;
   }
 }

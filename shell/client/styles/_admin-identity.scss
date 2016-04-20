@@ -4,7 +4,8 @@
   padding-right: 8px;
   padding-top: 3px;
   padding-bottom: 3px;
-  height: 28px;
+  min-height: 28px;
+  margin: 2px;
 }
 
 %idp-table-row {
@@ -50,7 +51,7 @@
     button {
       @extend %button-base;
       @extend %button-secondary;
-      height: 26px;
+      min-height: 26px;
     }
   }
   .idp {

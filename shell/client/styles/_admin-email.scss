@@ -1,91 +1,31 @@
 .email-form {
-  .input-group {
-    margin-bottom: 16px;
-  }
+  @extend %standard-form;
 
+  // Some custom styling needed to pack the two inputs on a row neatly with their labels.
   .host-port {
     display: flex;
     flex-direction: row;
     align-items: flex-start;
-    justify-content: flex-start;
-    >* {
+    justify-content: space-between;
+    .host-box {
+      flex: 1 1 auto;
       margin-right: 16px;
     }
+    .port-box {
+      flex: 0 1 auto;
+      .port {
+        max-width: 5em;
+      }
+    }
+    max-width: 300px;
   }
 
-  .port {
-    max-width: 5em;
-  }
-
-  label {
-    display: block;
-    font-weight: normal;
-    font-size: 20px;
-  }
-
-  input[type="text"], input[type="email"], input[type="number"], input[type="password"] {
-    display: block;
-    color: #222;
-    background-color: white;
-    padding: 4px;
-    font-size: 16px;
-    border-radius: 2px;
-    border: 1px solid #d3d3d3;
-  }
-
-  .form-subtext {
-    font-size: 14px;
-    color: #666;
-  }
-
-  button {
-    margin-left: 8px;
-  }
-
-  button.form-cancel {
-    @extend %button-base;
-    @extend %button-secondary;
-  }
-
-  button.form-submit {
-    @extend %button-base;
-    @extend %button-primary;
-  }
-
-  .form-buttons {
-    width: 100%;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-end;
-    margin-top: 16px;
+  // Unlike some forms, we'd rather this one keep fields narrow.
+  input[type="text"], input[type="password"], input[type="email"] {
+    max-width: 300px;
   }
 }
 
 .email-test-form {
-
-  .form-group {
-    margin-bottom: 10px;
-  }
-
-  label {
-    display: block;
-    font-weight: normal;
-    font-size: 20px;
-  }
-
-  input {
-    display: block;
-    color: #222;
-    background-color: white;
-    padding: 4px;
-    font-size: 16px;
-    border-radius: 2px;
-    border: 1px solid #d3d3d3;
-  }
-
-  button {
-    @extend %button-base;
-    @extend %button-primary;
-  }
+  @extend %standard-form;
 }

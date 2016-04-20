@@ -685,7 +685,9 @@ limitations under the License.
         popupTemplate="grainSharePopup"}}
   {{/if}}
 
-  {{>sandstormTopbarItem name="delete" topbar=globalTopbar template="grainDeleteButton"}}
+  {{#if currentUser}}
+    {{>sandstormTopbarItem name="delete" topbar=globalTopbar template="grainDeleteButton"}}
+  {{/if}}
 
   {{#if isOwner}}
     {{>sandstormTopbarItem name="debug-log" topbar=globalTopbar template="grainDebugLogButton" data=globalTopbar}}

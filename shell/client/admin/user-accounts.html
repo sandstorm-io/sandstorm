@@ -1,0 +1,115 @@
+<template name="newAdminUserTableRow">
+{{!-- Expects:
+   user: Object representing user with identities
+--}}
+  <div class="account-row" role="row">
+    <div class="account-role" role="gridcell">
+      {{#if user.account.isAdmin}}
+        <span class="user-class-admin" title="Admin">A</span>
+      {{else}}
+        {{#if isSignedUpOrDemo user.account}}
+          <span class="user-class-user" title="User">U</span>
+        {{else}}
+          <span class="user-class-visitor" title="Visitor">V</span>
+        {{/if}}
+      {{/if}}
+    </div>
+    <div class="identities" role="gridcell">
+      <ul class="identity-list">
+        {{#each identity in user.identities}}
+          <li class="identity">
+            <div class="identity-provider-icon">
+              <span class="provider-icon {{identity.profile.service}}">{{identity.profile.service}}</span>
+            </div>
+            <div class="identity-name">{{ identity.profile.name }}</div>
+            <div class="identity-intrinsic-name">{{ identity.profile.intrinsicName }}</div>
+          </li>
+        {{/each}}
+      </ul>
+    </div>
+    <div class="created" role="gridcell">
+      {{ dateString user.account.createdAt }}
+    </div>
+    <div class="last-active" role="gridcell">
+      {{ dateString user.account.lastActive }}
+    </div>
+    {{#with userId=user.account._id }}
+    <div class="actions" role="gridcell">{{#linkTo route="newAdminUserDetails" data=(wrapUserId userId) class="manage-user-button"}}Manage{{/linkTo}}</div>
+    {{/with}}
+  </div>
+</template>
+
+<template name="newAdminUserTable">
+{{!-- Expects:
+  showInvite: Boolean.  If true, shows the "invite" row.
+       ready: Boolean.  If true, display all the users.  If false, display a loading message.
+       users: Array of Objects representing users, see shape below.
+--}}
+  <div class="admin-user-table" role="grid">
+    <div role="rowgroup">
+      <div class="header-row" role="row">
+        <div class="account-role" role="columnheader"></div>
+        <div class="account" role="columnheader">Account</div>
+        <div class="created" role="columnheader">Created</div>
+        <div class="last-active" role="columnheader">Last Active</div>
+        <div class="actions" role="columnheader">Actions</div>
+      </div>
+    </div>
+
+    <div role="rowgroup">
+    {{#if showInvite}}
+      <div class="invite-row" role="row">
+        <div class="account-role" role="gridcell"><span class="plus-icon"></span></div>
+        <div class="invite-link" role="gridcell" colspan="4">{{#linkTo route="newAdminUserInvite"}}Invite new user{{/linkTo}}</div>
+      </div>
+    {{/if}}
+
+    {{!-- for each account, look up the identities --}}
+    {{#if ready}}
+      {{#each user in users }}
+        {{> newAdminUserTableRow user=user}}
+      {{else}}
+        <div class="no-match-row" role="row">
+          <div class="no-matches" role="gridcell" colspan=5>
+            No users matched your filter.
+          </div>
+        </div>
+      {{/each}}
+    {{else}}
+      <div class="loading-row" role="row">
+        <div role="gridcell" colspan="5">Loading users...</div>
+      </div>
+    {{/if}}
+    </div>
+  </div>
+</template>
+
+
+<template name="newAdminUsers">
+  <h1>Users</h1>
+
+  {{#with users=allUsers ready=userSubReady}}
+  <div class="admin-user-filters">
+    <span class="search-icon"></span>
+    <input class="search-bar" name="search-bar" placeholder="search" />
+    <div class="filter-user-classes">
+      Show:
+      <label>
+        <input type="checkbox" name="show-admins" checked="{{showAdmins}}">
+        <span class="user-class-admin">Admin</span> {{#if ready}}({{adminCount users}}){{/if}}
+      </label>
+      <label>
+        <input type="checkbox" name="show-users" checked="{{showUsers}}">
+        <span class="user-class-user">User</span> {{#if ready}}({{userCount users}}){{/if}}
+      </label>
+      <label>
+        <input type="checkbox" name="show-visitors" checked="{{showVisitors}}">
+        <span class="user-class-visitor">Visitor</span> {{#if ready}}({{visitorCount users}}){{/if}}
+      </label>
+    </div>
+  </div>
+
+  {{> newAdminUserTable showInvite=isNotSearching users=(filterUsers users) ready=ready }}
+
+  {{/with}}
+</template>

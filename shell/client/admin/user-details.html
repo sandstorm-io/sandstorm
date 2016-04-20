@@ -1,0 +1,218 @@
+<template name="newAdminUserDetailsIdentityTableRow">
+{{!-- Expects: 
+         identity: Object
+  isLoginIdentity: Boolean
+     primaryEmail: String.  Account's primary contact address.
+--}}
+  <div class="admin-user-identity-body-row" role="row">
+    <div class="admin-user-identity-body-cell identity" role="gridcell">
+      <ul class="identity-information">
+        <li class="identity-picture-name">
+          <div class="identity-profile-picture" style="background-image: url('{{ identity.profile.pictureUrl }}');">
+            Profile picture
+          </div>
+          <span class="identity-name">
+            {{ identity.profile.name }}
+          </span>
+        </li>
+        <li class="identity-provider">
+          <div class="identity-provider-icon" title="{{identity.profile.service}}">
+            <span class="provider-icon {{identity.profile.service}}">
+              {{identity.profile.service}}
+            </span>
+          </div>
+          <span class="intrinsic-name">
+            {{ identity.profile.intrinsicName }}
+          </span>
+        </li>
+        <li class="identity-handle">
+          <div class="identity-handle-decorator" role="presentation" title="Handle">
+            @
+          </div>
+          <code>{{ identity.profile.handle }}</code>
+        </li>
+        <li class="identity-pronouns">
+          <div class="identity-pronouns-decorator" role="presentation" title="Pronouns">
+            <span class="identity-pronouns-icon">
+              Pronouns
+            </span>
+          </div>
+          <span class="identity-pronouns-preference">
+            {{ identity.profile.pronoun }}
+          </span>
+        </li>
+        <li class="identity-emails">
+          <div class="identity-emails-decorator" role="presentation" title="Emails">
+            <span class="identity-emails-icon">
+              Emails
+            </span>
+          </div>
+          <ul class="identity-emails-list">
+          {{#each email in (emailsForIdentity identity primaryEmail) }}
+            <li>
+              <code><a href="mailto:{{email.email}}">{{ email.email }}</a></code>
+              {{#if email.primary}}
+                <span class="email-primary">Primary</span>
+              {{/if}}
+
+              {{#if email.verified}}
+                <span class="email-verified">Verified</span>
+              {{else}}
+                <span class="email-unverified">Unverified</span>
+              {{/if}}
+            </li>
+          {{else}}
+            <li>
+              No known emails.
+            </li>
+          {{/each}}
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="admin-user-identity-body-cell created" role="gridcell">{{ dateString identity.createdAt }}</div>
+    <div class="admin-user-identity-body-cell last-active" role="gridcell">{{ dateString identity.lastActive }}</div>
+    <div class="admin-user-identity-body-cell properties" role="gridcell">
+      {{#if isLoginIdentity }}
+        <span class="login-identity">Can log in</span>
+      {{/if}}
+      {{#if (isOrganizationMember identity) }}
+        <span class="org-member">Org. member</span>
+      {{/if}}
+    </div>
+  </div>
+</template>
+
+<template name="newAdminUserDetailsIdentityTable">
+{{!-- Expects: 
+  account: Object
+--}}
+  <div class="admin-user-identity-list" role="grid">
+    <div class="admin-user-identity-header" role="rowgroup">
+      <div class="admin-user-identity-header-row" role="row">
+        <div class="admin-user-identity-header-cell identity" role="columnheader">Identity</div>
+        <div class="admin-user-identity-header-cell created" role="columnheader">Created</div>
+        <div class="admin-user-identity-header-cell last-active" role="columnheader">Last Active</div>
+        <div class="admin-user-identity-header-cell properties" role="columnheader">Properties</div>
+      </div>
+    </div>
+
+    <div class="admin-user-identity-body" role="rowgroup">
+      {{#each identity in (loginIdentities account) }}
+        {{> newAdminUserDetailsIdentityTableRow
+              identity=identity
+              isLoginIdentity=true
+              primaryEmail=account.primaryEmail
+              }}
+      {{/each}}
+      {{#each identity in (nonLoginIdentities account) }}
+        {{> newAdminUserDetailsIdentityTableRow
+              identity=identity
+              isLoginIdentity=false
+              primaryEmail=account.primaryEmail
+              }}
+      {{/each}}
+    </div>
+  </div>
+</template>
+
+<template name="newAdminUserDetails">
+  <h1>{{#linkTo route="newAdminUsers"}}Users{{/linkTo}} / {{ guessUserName }}</h1>
+
+  {{#if ready}}
+    {{#with account=targetAccount}}
+
+    {{#if hasSuccessMessage}}
+      {{#focusingSuccessBox}}
+        {{message}}
+      {{/focusingSuccessBox}}
+    {{/if}}
+
+    {{#if hasErrorMessage}}
+      {{#focusingErrorBox}}
+        {{message}}
+      {{/focusingErrorBox}}
+    {{/if}}
+
+
+    <h2 class="user-details-account-role">
+      <span class="account-info">
+        <span class="account-name">
+          {{ guessUserName }}
+        </span>
+        {{#if account.isAdmin}}
+        <span class="user-class-admin">Admin</span>
+        {{else}}
+          {{#if isSignedUpOrDemo account}}
+          <span class="user-class-user">User</span>
+          {{else}}
+          <span class="user-class-visitor">Visitor</span>
+          {{/if}}
+        {{/if}}
+      </span>
+      <form class="admin-user-roles-form">
+        {{#unless (isAdmin account) }}
+        <button class="make-admin" type="button" disabled="{{ isSubmitting }}">Make Admin</button>
+        {{/unless}}
+
+        {{#if (canBeMadeUser account) }}
+        <button class="make-user" type="button" disabled="{{ isSubmitting }}">Make User</button>
+        {{/if}}
+
+        {{#if (canBeMadeVisitor account) }}
+        <button class="make-visitor" type="button" disabled="{{ isSubmitting }}">Make Visitor</button>
+        {{/if}}
+      </form>
+    </h2>
+
+    <ul class="role-explanations">
+      <li>
+        <span class="role">Admin: </span>
+        <span class="explanation">
+          Manages all accounts.  Can install apps, create grains, and administer the server.
+        </span>
+      </li>
+      <li>
+        <span class="role">User: </span>
+        <span class="explanation">
+          Can install apps and create grains.
+        </span>
+      </li>
+      <li>
+        <span class="role">Visitor: </span>
+        <span class="explanation">
+          Can visit and re-share shared grains, but cannot create grains of their own nor install apps.
+        </span>
+      </li>
+    </ul>
+
+    <h2>Identities</h2>
+    {{> newAdminUserDetailsIdentityTable account=account }}
+
+    {{!--
+    {{#each identity in identities}}
+    <ul>
+      <li>service: {{identity.profile.service}}</li>
+      <li>name: {{identity.profile.name}}</li>
+      <li>intrinsicName: {{identity.profile.name}}</li>
+      <li>pronoun: {{identity.profile.pronoun}}</li>
+      <li>handle: {{identity.profile.handle}}</li>
+      <li>emails:
+        <ul>
+        {{#each email in (emailsForIdentity identity)}}
+        <li>email: {{email.email}} {{#if email.primary}}primary{{/if}} {{#unless email.verified}}unverified{{/unless}}</li>
+        {{else}}
+          <li>no email address on file for identity</li>
+        {{/each}}
+        </ul>
+      </li>
+    </ul>
+    {{/each}}
+    --}}
+
+    {{/with}}
+  {{else}}
+    Loading user data...
+  {{/if}}
+
+</template>

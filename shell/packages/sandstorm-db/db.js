@@ -981,9 +981,12 @@ _.extend(SandstormDb.prototype, {
   },
 
   isSignedUp: function () {
-    // Returns true if the user has presented an invite key.
-
     const user = Meteor.user();
+    return this.isAccountSignedUp(user);
+  },
+
+  isAccountSignedUp: function (user) {
+    // Returns true if the user has presented an invite key.
 
     if (!user) return false;  // not signed in
 
@@ -1002,7 +1005,10 @@ _.extend(SandstormDb.prototype, {
 
   isSignedUpOrDemo: function () {
     const user = Meteor.user();
+    return this.isAccountSignedUpOrDemo(user);
+  },
 
+  isAccountSignedUpOrDemo: function (user) {
     if (!user) return false;  // not signed in
 
     if (!user.loginIdentities) return false;  // not an account

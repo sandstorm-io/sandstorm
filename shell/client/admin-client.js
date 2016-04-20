@@ -1337,6 +1337,14 @@ Router.map(function () {
     path: "/admin-new/users",
     controller: newAdminRoute,
   });
+  this.route("newAdminUserInvite", {
+    path: "/admin-new/users/invite",
+    controller: newAdminRoute,
+  });
+  this.route("newAdminUserDetails", {
+    path: "/admin-new/users/:userId",
+    controller: newAdminRoute,
+  });
   this.route("newAdminAppSources", {
     path: "/admin-new/app-sources",
     controller: newAdminRoute,

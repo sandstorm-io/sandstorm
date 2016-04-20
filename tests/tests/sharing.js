@@ -135,9 +135,30 @@ module.exports["Test revoked share link"] = function (browser) {
           .url(browser.launch_url + "/shared/" + result.value.result.token)
           .waitForElementVisible(".grain-interstitial", medium_wait)
           .assert.containsText(".grain-interstitial", "Sorry, this link has been revoked")
-          .end()
       });
     });
+}
+
+module.exports["Test share popup no permission"] = function (browser) {
+  var sharePopupSelector = ".topbar .share > .show-popup";
+  browser
+    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
+                hackerCmsAppId)
+    .waitForElementVisible("#grainTitle", medium_wait)
+    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .waitForElementVisible(sharePopupSelector, medium_wait)
+    .url(function (grainUrl) {
+      browser
+        .execute("window.Meteor.logout()")
+        .url(browser.launch_url)
+        .url(grainUrl.value)
+        .waitForElementVisible(".grain-interstitial.request-access", medium_wait)
+        .assert.elementNotPresent(sharePopupSelector)
+        .loginDevAccount()
+        .url(grainUrl.value)
+        .waitForElementVisible(".grain-interstitial.request-access", medium_wait)
+        .assert.elementNotPresent(sharePopupSelector)
+    }).end();
 }
 
 // TODO(cleanup): Move other sharing tests into this file.

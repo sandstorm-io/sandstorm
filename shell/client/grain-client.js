@@ -464,7 +464,10 @@ Template.grainSharePopup.helpers({
   },
 
   currentTokenUrl: function () {
-    return getOrigin() + "/shared/" + globalGrains.getActive().token();
+    let token = globalGrains.getActive().token();
+    if (token) {
+      return getOrigin() + "/shared/" + token;
+    }
   },
 
   currentGrain: function () {
@@ -568,6 +571,11 @@ Template.grain.helpers({
     return globalGrains.getActive();
   },
 
+  hasAccess: function () {
+    const grain = globalGrains.getActive();
+    return grain && !!Sessions.findOne(grain.sessionId());
+  },
+
   isOwner: function () {
     const current = globalGrains.getActive();
     return current && current.isOwner();
@@ -591,8 +599,8 @@ Template.grain.helpers({
   },
 
   displayWebkeyButton: function () {
-    // TODO: figure out what this should do
-    return Meteor.userId() || !this.oldSharingModel;
+    const grain = globalGrains.getActive();
+    return Meteor.userId() || (grain && !grain.isOldSharingModel());
   },
 
   showPowerboxOffer: function () {
@@ -627,7 +635,7 @@ Template.grain.helpers({
 Template.grainTitle.helpers({
   title: function () {
     const grain = globalGrains.getActive();
-    return (grain && grain.title()) || "Untitled grain";
+    return (grain && grain.title()) || "(unknown grain)";
   },
 });
 

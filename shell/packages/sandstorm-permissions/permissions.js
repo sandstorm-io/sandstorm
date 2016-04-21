@@ -451,6 +451,8 @@ class Context {
 
     check(db, SandstormDb);
     check(grainIds, [String]);
+    if (grainIds.length == 0) return; // Nothing to do.
+
     db.collections.grains.find({ _id: { $in: grainIds } }).forEach((grain) => {
       this.grains[grain._id] = grain;
       if (!this.userIdentityIds[grain.userId]) {
@@ -748,7 +750,7 @@ class Context {
       this.addGrains(db, [grainId]);
     }
 
-    this.activateRelevantTokens(grainId, vertexId, permissionSet);
+    this.activateRelevantTokens(grainId, vertexId);
     while (true) {
       const result = this.runForwardChaining(grainId, vertexId, permissionSet);
       if (result && permissionSet.isSubsetOf(result)) {
@@ -807,7 +809,7 @@ class Context {
       if (tokenId) {
         const token = this.tokensById[tokenId];
 
-        let sharerId = (token.parentToken && "t:" + token.parentToken) || ("i:" + token.identityId);
+        let sharerId = token.parentToken ? "t:" + token.parentToken : "i:" + token.identityId;
         pushVertex(token.grainId, sharerId, current.permissionId);
 
         if (!neededTokens[tokenId]) {

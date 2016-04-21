@@ -278,9 +278,11 @@ function forEachPermission(permissions, func) {
 // *account* of the grain owner, from which all permissions flow.
 
 function vertexIdOfTokenOwner(token) {
-  let result = "t:" + token._id;
+  // Returns which vertex recieves permissions from this token.
+
+  let result = "t:" + token._id;  // the bearer of the token
   if (token.owner && token.owner.user) {
-    result = "i:" + token.owner.user.identityId;
+    result = "i:" + token.owner.user.identityId;  // the identity that owns the token
   }
 
   return result;
@@ -306,10 +308,14 @@ class Variable {
     this.directTailList = [];
     // List of token IDs for outgoing edges that need to be looked at once this variable gets set
     // to `true`.
+    //
+    // TODO(cleanup): Consider renaming to "directDependents".
 
     this.requirementsTailList = [];
     // List of token IDs for tokens that have requirements that get fulfilled once this variable
     // gets set to `true`.
+    //
+    // TODO(cleanup): Consider renaming to "requirementDependents".
   }
 }
 
@@ -403,8 +409,10 @@ class Context {
     // we add those requirements to this set. Then, if we find that our current knowledge base
     // is not large enough to prove our goal, we can expand our search by following these
     // requirements backwards and activating tokens that might help prove that they are met.
-    // `unmetRequirements` is allowed to be an overestimate, as might happen if we add
-    // some requirements to it and then prove that they hold before we get around to draining it.
+    // `unmetRequirements` is allowed to be an overestimate -- in fact, when adding requirements
+    // to `unmetRequirements` we generally do not check if they had already been proven. The next
+    // run of processUnmetRequirements(), however, will find that all of the tokens activated by
+    // the requirements were already active.
   }
 
   reset() {
@@ -493,6 +501,7 @@ class Context {
     const sharerId = token.parentToken ? "t:" + token.parentToken : "i:" + token.identityId;
     const recipientId = vertexIdOfTokenOwner(token);
 
+    // Add all requirements.
     let numUnmetRequirements = 0;
     if (token.requirements) {
       token.requirements.forEach((requirement) => {
@@ -504,6 +513,10 @@ class Context {
           forEachPermission(reqPermissions, (permissionId) => {
             const variable = this.getVariable(reqGrainId, reqVertexId, permissionId);
             if (!variable.value) {
+              // This requirement hasn't been proven yet. We add it to the variable's list of
+              // dependents so that we get notified when that variable is proven, and we increment
+              // numUnmetRequirements to indicate how many notifications we need to get before we
+              // know all requirements are satisfied.
               numUnmetRequirements += 1;
               variable.requirementsTailList.push(tokenId);
             }
@@ -515,20 +528,27 @@ class Context {
     const activeToken = new ActiveToken(numUnmetRequirements, tokenPermissions.array);
     let needToExploreUnmet = false;
 
+    // Add all edges represented by this token (one for each permission).
     forEachPermission(tokenPermissions.array, (permissionId) => {
       const recipientVariable = this.getVariable(grainId, recipientId, permissionId);
       if (!recipientVariable.value) {
         const sharerVariable = this.getVariable(grainId, sharerId, permissionId);
         if (!sharerVariable.value) {
+          // Not proven yet that the source has this permission, so add to its direct dependents so
+          // that we get notified if that changes.
           sharerVariable.directTailList.push(tokenId);
         } else {
+          // The source has already been proven.
           activeToken.setReceivesPermission(permissionId);
           if (numUnmetRequirements == 0) {
+            // There are no other requirements, so this variable is already proven.
             this.setToTrueStack.push({ grainId: grainId,
                                        vertexId: vertexIdOfTokenOwner(token),
                                        permissionId: permissionId,
                                        responsibleTokenId: tokenId, });
           } else {
+            // The source is proven but there are other unmet requirements. Therefore we know that
+            // those requirements are relevant and we need to trigger exploring them.
             needToExploreUnmet = true;
           }
         }
@@ -615,12 +635,18 @@ class Context {
         continue;
       }
 
+      // For the first time, this vertex is now known to be satisfied.
       variable.value = true;
+
+      // For each edge (token) whose source is this vertex, mark that the input permission is
+      // fulfilled.
       variable.responsibleTokenId = current.responsibleTokenId;
       variable.directTailList.forEach((tokenId) => {
         const activeToken = this.activeTokens[tokenId];
         activeToken.setReceivesPermission(current.permissionId);
-        // We know this permission must be met now.
+        // We know this permission must be met now. We also know that the permission was not met
+        // for this token previously becaues a token has exactly one source vertex for each
+        // permission, and we're processing that vertex now.
 
         const token = this.tokensById[tokenId];
         if (activeToken.requirementsAreMet()) {
@@ -630,15 +656,24 @@ class Context {
                                      permissionId: current.permissionId,
                                      responsibleTokenId: tokenId, });
         } else {
+          // Since we know permissions flow to this token, and the token is active (meaning it
+          // may be relevant to the overall computation), we now know that it's worth checking
+          // the token's requirements. Add them to `unmetRequirements`. Note that this requirement
+          // could actually be one that we've checked already, but we'll figure that out once
+          // processUnmetRequirements() runs and discovers it isn't activating any new tokens.
           this.unmetRequirements.addRequirements(token.requirements);
         }
       });
 
+      // For each token that has a requirement on this vertex, mark that one of its requirements
+      // has ben fulfilled.
       variable.requirementsTailList.forEach((tokenId) => {
         const token = this.tokensById[tokenId];
         const activeToken = this.activeTokens[tokenId];
         activeToken.decrementRequirements(current.permissionId);
         if (activeToken.requirementsAreMet()) {
+          // This was the last missing requirement for this token, therefore we've triggered the
+          // outgoing edges from the token corresponding to each known incoming permission.
           activeToken.forEachReceivedPermission((permissionId) => {
             // We've triggered a new edge! Push it onto the queue.
             this.setToTrueStack.push({ grainId: token.grainId,
@@ -672,7 +707,11 @@ class Context {
   }
 
   processUnmetRequirements(db) {
-    // Returns true if more computation might yield more progress.
+    // Activate all tokens relevant to the requirements in `unmetRequirements`. May do a database
+    // query to look up new tokens.
+    //
+    // Returns true if more computation might yield more progress, i.e., at least one token was
+    // newly-activated.
 
     const grainIds = this.unmetRequirements.getGrainIds()
           .filter((grainId) => !(grainId in this.grains));
@@ -685,6 +724,11 @@ class Context {
 
     while (!this.unmetRequirements.isEmpty()) {
       const next = this.unmetRequirements.pop();
+      // Activate all tokens relevant to this requirement.
+      // TODO(perf): We're actually overestimating, because we're activating tokens relevant to
+      //   *all* permissions rather than just the premissions specified by the requirement. E.g.
+      //   if the requirement is that Bob has write access, then tokens which only transmit read
+      //   access are not relevant, but we'll end up activating them anyway.
       if (this.activateRelevantTokens(next.grainId, "i:" + next.identityId)) {
         result = true;
       }

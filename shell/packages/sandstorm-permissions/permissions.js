@@ -564,7 +564,11 @@ class Context {
     return true;
   }
 
-  _ensureVariableExists(grainId, vertexId, permissionId) {
+  getVariable(grainId, vertexId, permissionId) {
+    check(grainId, String);
+    check(vertexId, String);
+    check(permissionId, PermissionId);
+
     if (!this.variables[grainId]) {
       this.variables[grainId] = {};
     }
@@ -576,14 +580,7 @@ class Context {
     if (!this.variables[grainId][vertexId][permissionId]) {
       this.variables[grainId][vertexId][permissionId] = new Variable();
     }
-  }
 
-  getVariable(grainId, vertexId, permissionId) {
-    check(grainId, String);
-    check(vertexId, String);
-    check(permissionId, PermissionId);
-
-    this._ensureVariableExists(grainId, vertexId, permissionId);
     return this.variables[grainId][vertexId][permissionId];
   }
 
@@ -593,8 +590,7 @@ class Context {
     check(grainId, String);
     check(vertexId, String);
 
-    this._ensureVariableExists(grainId, vertexId, "canAccess");
-    if (!this.variables[grainId][vertexId].canAccess.value) {
+    if (!this.getVariable(grainId, vertexId, "canAccess").value) {
       return null;
     } else {
       let length = this.variables[grainId][vertexId].length;
@@ -625,7 +621,7 @@ class Context {
     if (permissionSet.array.length > 0) {
       // Make sure that the result of this call, retrieved through `this.getPermissions()`,
       // will have a full array of permissions, even if they won't all be set to `true`.
-      this._ensureVariableExists(grainId, vertexId, permissionSet.array.length - 1);
+      this.getVariable(grainId, vertexId, permissionSet.array.length - 1);
     }
 
     while (this.setToTrueStack.length > 0) {

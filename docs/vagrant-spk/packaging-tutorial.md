@@ -3,7 +3,9 @@
 Style: Hands-on introductory tutorial.
 
 This tutorial will show you how to package an app for
-[Sandstorm](https://sandstorm.io) in five minutes. Going through
+[Sandstorm](https://sandstorm.io) in five minutes. (Sometimes the
+downloads can take up to 30 minutes, but the interactive time is about
+five minutes. Any slow steps are labeled accordingly.) Going through
 this tutorial, you'll learn:
 
 * How to take an existing web application and turn it into a Sandstorm

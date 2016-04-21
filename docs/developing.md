@@ -1,46 +1,76 @@
-# Developing on Sandstorm
+Here in the **Sandstorm developer portal**, you will find to resources that help people build new
+apps on top of Sandstorm, package existing apps, and understand how apps and Sandstorm fit together.
 
-Sandstorm can run any web app that can run on Linux so long as the
-code and all the dependencies have been bundled into an SPK file.
-Anyone can make a Sandstorm package (SPK), such as the author of a
-program or someone wants to run the app on their own Sandstorm
-server.
+<div class="developer-next-steps">
+<div class="next-step tutorial"><a href="../vagrant-spk/packaging-tutorial/">New? Try tutorial</a></div>
+<div class="next-step why"><a href="https://sandstorm.io/developer">Why Sandstorm</a></div>
+<div class="next-step discussion"><a href="https://groups.google.com/d/forum/sandstorm-dev">Community Q&amp;A</a></div>
+<div class="next-step app-market"><a href="https://apps.sandstorm.io/">See app market</a></div>
+<div class="next-step live-chat"><a href="https://kiwiirc.com/client/irc.freenode.net/?channel=#sandstorm">Live chat via IRC</a></div>
+<div class="next-step demo-app"><a href="https://apps.sandstorm.io/app/0dp7n6ehj8r5ttfc0fj0au6gxkuy1nhw2kx70wussfa1mqj8tf80">Try a demo app</a></div>
+</div>
+<!-- <div class="next-step">Sample apps in PHP, Python, Meteor</div> -->
 
-If you haven't yet, now is a good time to try the Sandstorm demo!
-Work through the [guided tour](guided-tour.md).
-
+Sandstorm apps can be in **any language** so long as it runs on Linux (PHP, Python, Node.js, Ruby,
+etc.). The app bundles its dependencies so it runs in a consistent environment. Sandstorm handles
+user management and mitigates [95% of security issues](using/security-non-events.md). App authors
+don't have to run servers since users run your app on their own servers. Sandstorm's "grain" model
+allows developers to rely on Sandstorm for supporting multiple instances/documents rather than
+writing that code in the app. Read more on the [developer features
+page](https://sandstorm.io/developer).
 
 ## Creating an app package
 
-* **Tutorial**: [Five minute packaging tutorial](vagrant-spk/packaging-tutorial.md)
-* **Conceptual overview**: [App Developer Handbook](developing/handbook.md)
-* **Language support**: [Platform stacks for Meteor, Python, PHP](vagrant-spk/platform-stacks.md) | [Other](vagrant-spk/platform-stacks.md#diy-platform-stack)
-* **Code & service dependencies**: [Code dependencies](vagrant-spk/code-dependencies.md) | [MySQL](vagrant-spk/services.md#mysql) | [Other databases & services](vagrant-spk/services.md#other-services)
-* **Troubleshooting**: [Package troubleshooting](developing/troubleshooting.md)
-* **vagrant-spk in depth**: [Installation](vagrant-spk/installation.md) | [Original design](vagrant-spk/design.md) | [Customizing & understanding vagrant-spk](vagrant-spk/customizing.md)
+- **Tutorial**: [Five minute packaging tutorial](vagrant-spk/packaging-tutorial.md)
+- **What makes a great Sandstorm app**: [App Developer Handbook](developing/handbook.md)
+- **Language support**: [Platform stacks for Meteor, Python, PHP, Node.js](vagrant-spk/platform-stacks.md) | [Other](vagrant-spk/platform-stacks.md#diy-platform-stack)
+- **Code & service dependencies**: [Code dependencies](vagrant-spk/code-dependencies.md) | [MySQL](vagrant-spk/services.md#mysql) | [Other databases & services](vagrant-spk/services.md#other-services)
+- **Troubleshooting**: [Package troubleshooting](developing/troubleshooting.md)
+- **vagrant-spk in depth**: [Installation](vagrant-spk/installation.md) | [Customizing & understanding vagrant-spk](vagrant-spk/customizing.md) | [Initial design document](vagrant-spk/design.md)
 
 <!--
 
 Not written yet:
 
-* **File storage & URLs**:  [Filesystem layout & permissions](developing/filesystem-layout.md) | [Static resources like CSS/JS]() | [Syncing URLs between grain-frame & address bar]()
+- **File storage & URLs**:  [Filesystem layout & permissions](developing/filesystem-layout.md) | [Static resources like CSS/JS]()
 
-* **SPK files**: [Publishing to the app list](packaging/app-list.md) | [SPK file size](packaging/file-size.md)
-
-* **Troubleshooting**: [Troubleshooting](vagrant-spk/troubleshooting.md)
+- **SPK files**: [Publishing to the app list](packaging/app-list.md) | [SPK file size](packaging/file-size.md)
 
 -->
 
 ---
 
-## Sandstorm for systems engineers
+## How to leverage the community
 
-You might enjoy learning how Sandstorm is put together.
+The Sandstorm ecosystem is full of people who want to promote your app, give you feedback, and use
+it.
 
-* **Technical summary**: [How Sandstorm works](using/how-it-works.md)
-* **Minimalist packaging**: [Raw SPK packaging guide](developing/raw-packaging-guide.md)
-* **Raw packaging & integration guides**: [Python](developing/raw-python.md) | [Ruby on Rails](developing/raw-ruby-on-rails.md) | [Pure client apps](developing/raw-pure-client-apps.md)
-* **Security**: [Security Practices Overview](using/security-practices.md)
+- **Free services from Sandstorm core team**: [Free Oasis service for app authors](https://sandstorm.io/news/2016-02-05-app-author-publicity-oasis)
+- **Getting help**: [Community feedback and Q&A](https://groups.google.com/d/forum/sandstorm-dev) | [Real-time IRC chat on freenode](https://kiwiirc.com/client/irc.freenode.net/?channel=#sandstorm) | [Watch presentations on the Sandstorm YouTube channel](https://www.youtube.com/channel/UC8xKZRW86Fa9W00uAppBXXg) | [Email the core team](mailto:community@sandstorm.io)
+- **Publicity**: [Free icon design for your app](https://sandstorm.io/news/2015-11-10-icons-spks-for-everyone) | [Give a meetup/conference talk about your app](https://sandstorm.io/news/2015-12-17-community-talks) | [Public demo service for all Sandstorm apps](https://sandstorm.io/news/2015-02-06-app-demo) | [General publicity help](https://sandstorm.io/news/2016-02-05-app-author-publicity-oasis)
+- **Read more**: [All community resources](https://sandstorm.io/community)
+
+---
+
+## All about grains
+
+When a user runs an app within Sandstorm, they create one or more _grains_ of the app.
+Read about how grains work and how they affect your app.
+
+- **Grain URLs and the grain-frame**: [URLs, domain names, page titles](developing/path.md)
+- **Sandstorm system architecture**: [How Sandstorm works](using/how-it-works.md) | [Grain isolation and other security practices in Sandstorm](using/security-practices.md)
+- **How to choose the granularity for your app**: []
+
+---
+
+## App sharing, publishing, & permission levels
+
+Each app instance (aka "grain") is private by default to the user who
+created it. Read these documents to learn how access control works.
+
+- **Login & permissions**: [User authentication & permissions](developing/auth.md)
+- **Making content accessible outside Sandstorm**: [Publishing static content, including to the user's domain](developing/web-publishing.md) | [Exporting HTTP APIs for mobile, desktop, Javascript clients](developing/http-apis.md)
+- **Further reading**: [Delegation is the Cornerstone of Civilization](https://blog.sandstorm.io/news/2015-05-05-delegation-is-the-cornerstone-of-civilization.html)
 
 ---
 
@@ -50,35 +80,38 @@ By default, Sandstorm runs each app instance with no network
 access. Read these documents to configure an app to get access to
 services on the Internet or to each other.
 
-* **Supported protocol**: [SMTP (email)](developing/email-from-apps.md)
-* **Other protocols**: Work in progress.
-* **Inter-app communication**: Work in progress.
+- **Supported protocol**: [SMTP (email)](developing/email-from-apps.md)
+- **Other protocols**: Work in progress.
+- **Inter-app communication**: Work in progress.
 
 ---
 
-## App sharing, publishing, & permission levels
+## Raw Sandstorm packaging
 
-Each app instance (aka "grain") is private by default to the user who
-created it. Read these documents to learn how access control works.
+Most Sandstorm packages use [sandstorm-http-bridge](using/how-it-works.md) and
+[vagrant-spk](vagrant-spk/customizing.md). However, these tools are independent
+and optional.
 
-* **Overview**: [Delegation is the Cornerstone of Civilization](https://blog.sandstorm.io/news/2015-05-05-delegation-is-the-cornerstone-of-civilization.html)
-* **Login & permissions**: [User authentication & permissions](developing/auth.md)
-* **Making it world-accessible**: [Publishing to the user's domain](developing/web-publishing.md) | [Exporting HTTP APIs](developing/http-apis.md)
-
----
-
-## Integrating various languages & libraries into raw Sandstorm
-
-If you are curious how to integrate various languages & libraries with
-Sandstorm's raw APIs and raw SPK packaging, read these documents.
-
-**Note** that most app developers will have an easier time using `vagrant-spk`. This is intended
+- **Minimalist packaging**: [Raw SPK packaging guide](developing/raw-packaging-guide.md)
+- **Raw packaging & integration guides**: [Python](developing/raw-python.md) | [Ruby on Rails](developing/raw-ruby-on-rails.md) | [Pure client apps](developing/raw-pure-client-apps.md)
 
 ---
 
-## Further reference documentation
+## Raw Sandstorm APIs: Cap'n Proto
 
-We call Sandstorm a _platform_ because it provides concepts,
-capabilities, and APIs that apps can use. The documentation about
-further concepts may be found on our [GitHub
-wiki](http://github.com/sandstorm-io/sandstorm/wiki).
+To make components easier to isolate while retaining high performance, most communication in
+Sandstorm occurs using Cap'n Proto. Cap'n Proto files in the Sandstorm source repository contain
+useful design or implementation details. Note that Sandstorm typically depends on the **unreleased
+git master** of capnproto. Configuration files such as `sandstorm-pkgdef.capnp` use Cap'n Proto as
+their file format.
+
+- **Overview**: [Cap'n Proto website](https://capnproto.org/) | [How Cap'n Proto makes Sandstorm more secure](https://sandstorm.io/news/2014-12-15-capnproto-0.5)
+- **Example**: [Explanation of how drivers will work, found within ip.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/ip.capnp)
+- **Cap'n Proto implementations**: [C++, Erlang, Go, Javascript, Python, Rust, and others](https://capnproto.org/otherlang.html)
+- **Further reading**: [A list of all Cap'n Proto files in the source repository](https://github.com/sandstorm-io/sandstorm/search?l=cap%27n-proto&p=2&q=type%3Acapnp+&utf8=%E2%9C%93)
+
+---
+
+## Documentation on how to contribute to Sandstorm
+
+To find out how to contribute to Sandstorm, read the [wiki on GitHub](https://github.com/sandstorm-io/sandstorm/wiki).

@@ -39,3 +39,44 @@
     float: none;
     vertical-align: middle;
 }
+
+.developer-next-steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  /* Like the default paragraph styling */
+  margin-bottom: 24px;
+}
+
+.next-step {
+  max-width: 25%;
+  text-align: center;
+  min-width: 140px;
+}
+.next-step::before {
+  background-size: 100px 100px;
+  background-repeat: no-repeat;
+  background-position: center top;
+  height: 100px;
+  content: " ";
+  display: block;
+}
+.next-step.tutorial::before {
+  background-image: url("https://sandstorm.io/images/help-package.svg");
+}
+.next-step.why::before {
+  background-image: url("https://sandstorm.io/images/help-share.svg");
+}
+.next-step.discussion::before {
+  background-image: url("https://sandstorm.io/images/help-write.svg");
+}
+.next-step.app-market::before {
+  background-image: url("https://sandstorm.io/images/core-apps-growing.svg");
+}
+.next-step.live-chat::before {
+  background-image: url("https://sandstorm.io/images/help-discuss.svg");
+}
+.next-step.demo-app::before {
+  background-image: url("https://sandstorm.io/images/core-single-sign-on.svg");
+}

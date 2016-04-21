@@ -256,17 +256,19 @@ class RequirementSet {
   }
 }
 
-// A permission ID is a stringified integer greater than or equal to -1. The permission "-1"
-// corresponded to the implicit "can access the grain at all" permission. The other permissions
-// are those defined by the app in its manifest.
+// A permission ID is either the string "canAccess", corresponding to the implicit "can access
+// the grain at all" permission, or a non-negative integer, corresponding to a permission
+// defined by the app in its manifest.
+const PermissionId = Match.OneOf("canAccess", Match.Integer);
 
 function forEachPermission(permissions, func) {
-  // Calls `func` on "-1" and each permission ID that corresponds to a `true` value in `permissions`.
+  // Calls `func` on "canAccess" and each permission ID that corresponds to a `true`
+  // value in `permissions`.
   check(permissions, [Boolean]);
-  func("-1");
+  func("canAccess");
   for (let ii = 0; ii < permissions.length; ++ii) {
     if (permissions[ii]) {
-      func(ii.toString());
+      func(ii);
     }
   }
 }
@@ -324,12 +326,13 @@ class ActiveToken {
     this.numUnmetRequirements = numUnmetRequirements;
     // How many of this token's requirements we have not yet proven to be met.
 
-    this.receivedPermissions = { "-1": false };
+    this.receivedPermissions = new Array();
     // A map from permission ID to boolean. If a permission ID is present in this map,
     // then this token's roleAssignment includes that permission. If the corresponding
     // value is `true`, then we've proven that this token receives this permission and
-    // therefore propagates it.
+    // therefore propagates it if the requirements are met.
 
+    this.receivedPermissions.canAccess = false;
     for (let ii = 0; ii < permissions.length; ++ii) {
       if (permissions[ii]) {
         this.receivedPermissions[ii] = false;
@@ -354,17 +357,22 @@ class ActiveToken {
   setReceivesPermission(permissionId) {
     // Records that this token receives a permission.
 
-    check(permissionId, String);
+    check(permissionId, PermissionId);
     if (permissionId in this.receivedPermissions) {
       this.receivedPermissions[permissionId] = true;
     }
   }
 
   forEachReceivedPermission(func) {
-    // Calls `func` on each permission ID that we've proven this token receives and carries.
+    // Calls `func` on each permission ID that we've proven this token receives.
 
-    Object.keys(this.receivedPermissions).forEach((permissionId) => {
-      if (this.receivedPermissions[permissionId]) {
+    if (this.receivedPermissions.canAccess) {
+      func("canAccess");
+    }
+
+    // Note: Array.forEach() does hit the "canAccess" permission ID.
+    this.receivedPermissions.forEach((received, permissionId) => {
+      if (received) {
         func(permissionId);
       }
     });
@@ -542,7 +550,7 @@ class Context {
     }
 
     if (!this.variables[grainId][vertexId]) {
-      this.variables[grainId][vertexId] = {};
+      this.variables[grainId][vertexId] = new Array();
     }
 
     if (!this.variables[grainId][vertexId][permissionId]) {
@@ -553,7 +561,7 @@ class Context {
   getVariable(grainId, vertexId, permissionId) {
     check(grainId, String);
     check(vertexId, String);
-    check(permissionId, String);
+    check(permissionId, PermissionId);
 
     this._ensureVariableExists(grainId, vertexId, permissionId);
     return this.variables[grainId][vertexId][permissionId];
@@ -565,11 +573,11 @@ class Context {
     check(grainId, String);
     check(vertexId, String);
 
-    this._ensureVariableExists(grainId, vertexId, -1);
-    if (!this.variables[grainId][vertexId][-1].value) {
+    this._ensureVariableExists(grainId, vertexId, "canAccess");
+    if (!this.variables[grainId][vertexId].canAccess.value) {
       return null;
     } else {
-      let length = 1 + Math.max.apply(null, Object.keys(this.variables[grainId][vertexId]));
+      let length = this.variables[grainId][vertexId].length;
       let permissions = new Array(length);
       for (let idx = 0; idx < length; ++idx) {
         if (this.variables[grainId][vertexId][idx]) {
@@ -594,10 +602,10 @@ class Context {
     check(vertexId, String);
     check(permissionSet, PermissionSet);
 
-    for (let ii = -1; ii < permissionSet.array.length; ++ii) {
+    if (permissionSet.array.length > 0) {
       // Make sure that the result of this call, retrieved through `this.getPermissions()`,
       // will have a full array of permissions, even if they won't all be set to `true`.
-      this._ensureVariableExists(grainId, vertexId, ii);
+      this._ensureVariableExists(grainId, vertexId, permissionSet.array.length - 1);
     }
 
     while (this.setToTrueStack.length > 0) {
@@ -728,7 +736,7 @@ class Context {
     check(vertexId, String);
 
     const stack = []; // [{ grainId: String, vertexId: String, permissionId: PermissionId }]
-    const visited = {}; // grainId -> vertexId -> permissionId -> bool;
+    const visited = new Array(); // grainId -> vertexId -> permissionId -> bool;
 
     function pushVertex(grainId, vertexId, permissionId) {
       if (!visited[grainId]) {

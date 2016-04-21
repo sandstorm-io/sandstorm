@@ -358,7 +358,7 @@ Meteor.methods({
             "owner.user.identityId": apiToken.identityId,
           }, {
             sort: {
-              "owner.user.lastUsed": -1,
+              lastUsed: -1,
             },
           });
       if (sharerToken) {

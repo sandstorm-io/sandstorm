@@ -430,7 +430,7 @@ GrainView = class GrainView {
         grainId: this._grainId,
         "owner.user.identityId": { $in: myIdentityIds },
       }, {
-        sort:{ "owner.user.lastUsed": -1 },
+        sort: { lastUsed: -1 },
       });
 
       if (token) {

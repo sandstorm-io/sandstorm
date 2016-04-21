@@ -272,7 +272,7 @@ struct ApiTokenOwner {
       saveLabel @2 :Util.LocalizedText;
       # As passed to `save()` in Sandstorm's Persistent interface.
 
-      introducerIdentity @10 :Text;
+      introducerIdentity @9 :Text;
       # The identity ID through which a user's powerbox action caused the grain to receive this
       # token. This is the identity against which the `requiredPermissions` parameter
       # to `restore()` will be checked. This field is only intended to be filled in by the
@@ -298,7 +298,7 @@ struct ApiTokenOwner {
       # Owned by a user's identity. If the token represents a UiView, then it will show up in this
       # user's grain list.
 
-      identityId @11 :Text;
+      identityId @10 :Text;
       # The identity that is allowed to restore this token.
 
       title @7 :Text;
@@ -307,11 +307,7 @@ struct ApiTokenOwner {
       # Fields below this line are not actually allowed to be passed to save(), but are added
       # internally.
 
-      lastUsed @8 :Int64;
-      # The last time the user used this API token with the associated grain, in milliseconds
-      # since the epoch (equivalent to javascript's new Date().getTime())
-
-      denormalizedGrainMetadata @9 :DenormalizedGrainMetadata;
+      denormalizedGrainMetadata @8 :DenormalizedGrainMetadata;
       # Information needed to show the user an app title and icon in the grain list.
 
       userId @6 :Text;

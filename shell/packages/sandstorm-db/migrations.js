@@ -543,6 +543,19 @@ function unsetSmtpDefaultHostnameIfNoUsersExist() {
   }
 }
 
+function extractLastUsedFromApiTokenOwner() {
+  // We used to store lastUsed as a field on owner.user.  It makes more sense to store lastUsed on
+  // the apiToken as a whole.  This migration hoists such values from owner.user onto the apiToken
+  // itself.
+  ApiTokens.find({ "owner.user": { $exists: true } }).forEach(function (token) {
+    const lastUsed = token.owner.user.lastUsed;
+    ApiTokens.update({ _id: token._id }, {
+      $set: { lastUsed: lastUsed },
+      $unset: { "owner.user.lastUsed": true },
+    });
+  });
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -571,6 +584,7 @@ const MIGRATIONS = [
   smtpPortShouldBeNumber,
   consolidateOrgSettings,
   unsetSmtpDefaultHostnameIfNoUsersExist,
+  extractLastUsedFromApiTokenOwner,
 ];
 
 function migrateToLatest() {

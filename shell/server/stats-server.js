@@ -93,7 +93,8 @@ computeStats = function (since) {
 
     const counts = ApiTokens.aggregate([
       { $match: {
-          "owner.user.lastUsed": timeConstraint,
+          "owner.user": { $exists: true },
+          lastUsed: timeConstraint,
           grainId: { $in: grainIds },
         },
       },

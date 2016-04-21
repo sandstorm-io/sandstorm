@@ -16,8 +16,7 @@ pages:
     - "Security practices": "using/security-practices.md"
     - "Security non-events": "using/security-non-events.md"
 - Developing apps:
-    - "Overview": "developing.md"
-    - "Overview of vagrant-spk": "vagrant-spk/index.md"
+    - "Developer portal": "developing.md"
     - "Installing vagrant-spk for package dev": "vagrant-spk/installation.md"
     - "Packaging tutorial": "vagrant-spk/packaging-tutorial.md"
     - "Packaging tutorial (Meteor)": "vagrant-spk/packaging-tutorial-meteor.md"
@@ -25,7 +24,7 @@ pages:
     - "App developer handbook": "developing/handbook.md"
     - "User authentication & permissions": "developing/auth.md"
     - "URLs, domain names, page titles": "developing/path.md"
-    - "Understanding & customizing": "vagrant-spk/customizing.md"
+    - "Understanding & customizing vagrant-spk": "vagrant-spk/customizing.md"
     - "Platform stacks": "vagrant-spk/platform-stacks.md"
     - "Code dependencies": "vagrant-spk/code-dependencies.md"
     - "Service dependencies": "vagrant-spk/services.md"

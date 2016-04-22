@@ -47,10 +47,29 @@ Template.sandstormTopbarBlockReload.onDestroyed(function () {
 });
 
 Template.sandstormTopbar.onRendered(function () {
-  if (this.drag !== undefined) this.drag.destroy();
-  this.drag = dragula({
+  if (this.drake !== undefined) this.drake.destroy();
+
+  this.drake = dragula({
     containers: [document.getElementById("navbar-grains")],
     mirrorContainer: document.getElementById("navbar-grains")
+  });
+
+  const topbar = this.data;
+
+  this.drake.on("drop", function (drag, _, _, sibling) {
+    const grains = topbar._grains.getAll();
+
+    const dragId = drag.dataset.grainid;
+    const dragIdx = grains.findIndex(function(g) { return g.grainId() == dragId; });
+
+    if (sibling == null || sibling.dataset.grainid == dragId) { // moved to end of list
+      grains.push(grains.splice(dragIdx, 1)[0]);
+    } else {
+      const siblingId = sibling.dataset.grainid;
+      const siblingIdx = grains.findIndex(function(g) { return g.grainId() == siblingId; });
+
+      grains.splice(siblingIdx - (dragIdx < siblingIdx ? 1 : 0), 0, grains.splice(dragIdx, 1)[0]);
+    }
   });
 });
 
@@ -69,7 +88,7 @@ Template.sandstormTopbar.onCreated(function () {
 
 Template.sandstormTopbar.onDestroyed(function () {
   document.getElementsByTagName("body")[0].removeEventListener("keydown", this.escapeHandler);
-  this.drag.destroy();
+  this.drake.destroy();
 });
 
 Template.sandstormTopbar.helpers({

@@ -1,5 +1,12 @@
 # Customizing and understanding vagrant-spk
 
+## Overview of vagrant-spk
+
+The goal of `vagrant-spk` is to be an easy-to-install tool that runs on
+Windows, Mac, and Linux that lets people create Sandstorm packages
+without mucking with their main operating system. It works properly
+on Mac, GNU/Linux, and Windows systems.
+
 ## What the files are for
 `vagrant-spk` will create a `.sandstorm/` folder in your repo and set up some
 files with some defaults for your app stack.  You will likely need to modify

@@ -1,4 +1,4 @@
-# Developing on Sandstorm
+# Developer portal
 
 Sandstorm can run any web app that can run on Linux so long as the
 code and all the dependencies have been bundled into an SPK file.

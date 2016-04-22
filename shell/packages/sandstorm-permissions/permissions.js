@@ -185,13 +185,23 @@ class RequirementSet {
   // If any of these permissions are revoked, then the capability needs to be revoked as well.
 
   constructor() {
-    this.identityPermissions = {};
+    this.permissionsHeldRequirements = {};
     // Two-level map. Maps a pair of a grain ID and an identity ID to a PermissionSet.
+
+    this.userIsAdminRequirements = {};
+    // Map from account ID to boolean. Represents a set of `userIsAdmin` requirements.
+
+    this.tokenValidRequirements = {};
+    // Map from token ID to boolean. Represents a set of `tokenValid` requirements.
   }
 
   isEmpty() {
-    for (const grainId in this.identityPermissions) {
-      if (Object.keys(this.identityPermissions[grainId]).length > 0) {
+    for (const tokenId in this.tokenValidRequirements) {
+      return false;
+    }
+
+    for (const grainId in this.permissionsHeldRequirements) {
+      if (Object.keys(this.permissionsHeldRequirements[grainId]).length > 0) {
         return false;
       }
     }
@@ -210,7 +220,11 @@ class RequirementSet {
         const identityId = requirement.permissionsHeld.identityId;
         const permissions = new PermissionSet(requirement.permissionsHeld.permissions);
         this._ensureEntryExists(grainId, identityId);
-        this.identityPermissions[grainId][identityId].add(permissions);
+        this.permissionsHeldRequirements[grainId][identityId].add(permissions);
+      } else if (requirement.userIsAdmin) {
+        this.userIsAdminRequirements[requirement.userIsAdmin] = true;
+      } else if (requirement.tokenValid) {
+        this.tokenValidRequirements[requirement.tokenValid] = true;
       } else {
         throw new Error("unsupported requirement: " + JSON.toString(requirement));
       }
@@ -221,38 +235,43 @@ class RequirementSet {
     check(grainId, String);
     check(identityId, String);
 
-    if (!this.identityPermissions[grainId]) {
-      this.identityPermissions[grainId] = {};
+    if (!this.permissionsHeldRequirements[grainId]) {
+      this.permissionsHeldRequirements[grainId] = {};
     }
 
-    if (!this.identityPermissions[grainId][identityId]) {
-      this.identityPermissions[grainId][identityId] = new PermissionSet([]);
+    if (!this.permissionsHeldRequirements[grainId][identityId]) {
+      this.permissionsHeldRequirements[grainId][identityId] = new PermissionSet([]);
     }
   }
 
   getGrainIds() {
-    return Object.keys(this.identityPermissions);
+    return Object.keys(this.permissionsHeldRequirements);
   }
 
-  pop() {
-    // Chooses one (grainId, identityId) pair in this RequirementSet, removes it, and returns the
-    // corresponding PermissionSet.
+  getTokenIds() {
+    return Object.keys(this.tokenValidRequirements);
+  }
 
-    if (this.isEmpty()) {
-      throw new Error("pop() called on empty RequirementSet");
+  forEach(func) {
+    for (const tokenId in this.tokenValidRequirements) {
+      func({ tokenValid: tokenId });
     }
 
-    const grainId = Object.keys(this.identityPermissions)[0];
-    const identityId = Object.keys(this.identityPermissions[grainId])[0];
-
-    const permissions = this.identityPermissions[grainId][identityId];
-
-    delete this.identityPermissions[grainId][identityId];
-    if (Object.keys(this.identityPermissions[grainId]).length == 0) {
-      delete this.identityPermissions[grainId];
+    for (const accountId in this.userIsAdminRequirements) {
+      func({ userIsAdmin: accountId });
     }
 
-    return { grainId: grainId, identityId: identityId, permissionSet: permissions, };
+    for (const grainId in this.permissionsHeldRequirements) {
+      for (const identityId in this.permissionsHeldRequirements[grainId]) {
+        const permissions = this.permissionsHeldRequirements[grainId][identityId];
+        func({ permissionsHeld:
+               { grainId: grainId,
+                 identityId: identityId,
+                 permissionSet: permissions,
+               },
+             });
+      }
+    }
   }
 }
 
@@ -291,7 +310,8 @@ function vertexIdOfTokenOwner(token) {
 class Variable {
   // Our permissions computation can be framed as a propositional HORNSAT problem; this `Variable`
   // class represents a variable in that sense. There is a variable for every (grain ID, vertex ID,
-  // permission ID) triple. In any given computation, we only explicitly construct those
+  // permission ID) triple. There is also a variable for every non-UiView ApiToken, to account for
+  // `tokenValid` requirements. In any given computation, we only explicitly construct those
   // variables that we know might actually be relevant to the result.
   //
   // The value of a variable represents an answer to the question "does this vertex in the sharing
@@ -305,17 +325,13 @@ class Variable {
   constructor() {
     this.value = false;
 
-    this.directTailList = [];
+    this.directDependents = [];
     // List of token IDs for outgoing edges that need to be looked at once this variable gets set
     // to `true`.
-    //
-    // TODO(cleanup): Consider renaming to "directDependents".
 
-    this.requirementsTailList = [];
+    this.requirementDependents = [];
     // List of token IDs for tokens that have requirements that get fulfilled once this variable
     // gets set to `true`.
-    //
-    // TODO(cleanup): Consider renaming to "requirementDependents".
   }
 }
 
@@ -325,9 +341,20 @@ class ActiveToken {
   // the token can carry, which of those permissions we've actually proved to arrive at the source
   // end of the token, and how many of the token's requirements are still unmet.
 
-  constructor(numUnmetRequirements, permissions) {
+  constructor(tokenId, requirements, numUnmetRequirements, permissions, grainId, recipientId) {
+    check(tokenId, String);
     check(numUnmetRequirements, Match.Integer);
-    check(permissions, [Boolean]); // The permissions that this token is capable of carrying.
+    check(grainId, String);
+    check(recipientId, String);
+
+    check(permissions, [Boolean]);
+    // The permissions that this token is capable of carrying, in addition to the implicit
+    // "canAccess" permission.
+
+    this.tokenId = tokenId;
+    this.requirements = requirements;
+    this.grainId = grainId;
+    this.recipientId = recipientId;
 
     this.numUnmetRequirements = numUnmetRequirements;
     // How many of this token's requirements we have not yet proven to be met.
@@ -351,21 +378,51 @@ class ActiveToken {
     return this.numUnmetRequirements == 0;
   }
 
-  decrementRequirements() {
+  decrementRequirements(context) {
     // Decrements the number of unmet requirements of this token.
-
+    check(context, Context);
     this.numUnmetRequirements -= 1;
     if (this.numUnmetRequirements < 0) {
       throw new Meteor.Error(500, "numUnmetRequirements is negative");
     }
+
+    if (this.requirementsAreMet()) {
+      // This was the last missing requirement for this token, therefore we've triggered the
+      // outgoing edges from the token corresponding to each known incoming permission.
+      this.forEachReceivedPermission((permissionId) => {
+        // We've triggered a new edge! Push it onto the queue.
+        context.setToTrueStack.push({ grainId: this.grainId,
+                                      vertexId: this.recipientId,
+                                      permissionId: permissionId,
+                                      responsibleTokenId: this.tokenId, });
+      });
+    }
   }
 
-  setReceivesPermission(permissionId) {
+  setReceivesPermission(permissionId, context) {
     // Records that this token receives a permission.
-
     check(permissionId, PermissionId);
+    check(context, Context);
     if (permissionId in this.receivedPermissions) {
       this.receivedPermissions[permissionId] = true;
+    }
+
+    if (this.numUnmetRequirements == 0) {
+      context.setToTrueStack.push({ grainId: this.grainId,
+                                    vertexId: this.recipientId,
+                                    permissionId: permissionId,
+                                    responsibleTokenId: this.tokenId, });
+    } else {
+      // Since we know permissions flow to this token, and the token is active (meaning it
+      // may be relevant to the overall computation), we now know that it's worth checking
+      // the token's requirements. Add them to `unmetRequirements`. Note that these requirement
+      // could actually be ones that we've checked already, but we'll figure that out once
+      // processUnmetRequirements() runs and discovers it isn't activating any new tokens.
+      //
+      // TODO(perf): This is an overestimate. It might be worthwhile to keep track of which
+      //   requirements are already met, so that we don't need to add them here.
+
+      context.unmetRequirements.addRequirements(this.requirements);
     }
   }
 
@@ -391,11 +448,18 @@ class Context {
   constructor() {
     this.grains = {};            // Map from grain ID to entry in Grains table.
     this.userIdentityIds = {};   // Map from account ID to list of linked identity IDs.
+    this.adminUsers = {};        // Set of account IDs for admins.
     this.tokensById = {};        // Map from token ID to token.
     this.tokensByRecipient = {}; // Map from grain ID and identity ID to token array.
 
     this.variables = {};
     // GrainId -> VertexId -> PermissionId -> Variable
+    //
+    // We have a special fake grain ID "tokenValid", where we store the variables that track
+    // `tokenValid` requirements. Only the "canAccess" permission makes sense for that fake grain.
+
+    this.userIsAdminVariables = {};
+    // Account ID -> Variable
 
     this.activeTokens = {};      // TokenId -> ActiveToken
 
@@ -416,7 +480,7 @@ class Context {
   }
 
   reset() {
-    // Resets all state except this.grains and this.userIdentityIds.
+    // Resets all state except this.grains, this.userIdentityIds, and this.adminUsers.
     this.tokensById = {};
     this.tokensByRecipient = {};
     this.unmetRequirements = new RequirementSet();
@@ -426,14 +490,15 @@ class Context {
   }
 
   addToken(token) {
-    // Retrieves a token from the database. Does not activate it.
+    // Adds a token to `this.tokensById`. If the token is a UiView, also adds it to
+    // `this.tokensByRecipient`. Does not activate the token.
 
-    check(token, Match.ObjectIncluding({ grainId: String }));
+    const isUiView = token.grainId && !token.objectId;
 
     if (this.tokensById[token._id]) return;
 
     this.tokensById[token._id] = token;
-    if (token.owner && token.owner.user) {
+    if (isUiView && token.owner && token.owner.user) {
       if (!this.tokensByRecipient[token.grainId]) {
         this.tokensByRecipient[token.grainId] = {};
       }
@@ -484,6 +549,50 @@ class Context {
     });
   }
 
+  registerInterestInRequirements(tokenId, requirements) {
+    // Add all requirements.
+    let numUnmetRequirements = 0;
+    if (requirements) {
+      requirements.forEach((requirement) => {
+        if (requirement.permissionsHeld) {
+          const reqGrainId = requirement.permissionsHeld.grainId;
+          const reqVertexId = "i:" + requirement.permissionsHeld.identityId;
+          const reqPermissions = requirement.permissionsHeld.permissions || [];
+
+          forEachPermission(reqPermissions, (permissionId) => {
+            const variable = this.getVariable(reqGrainId, reqVertexId, permissionId);
+            if (!variable.value) {
+              // This requirement hasn't been proven yet. We add it to the variable's list of
+              // dependents so that we get notified when that variable is proven, and we increment
+              // numUnmetRequirements to indicate how many notifications we need to get before we
+              // know all requirements are satisfied.
+              numUnmetRequirements += 1;
+              variable.requirementDependents.push(tokenId);
+            }
+          });
+        } else if (requirement.userIsAdmin) {
+          const accountId = requirement.userIsAdmin;
+          const variable = this.getUserIsAdminVariable(accountId);
+          if (!variable.value) {
+            numUnmetRequirements += 1;
+            variable.requirementDependents.push(tokenId);
+          }
+        } else if (requirement.tokenValid) {
+          const reqTokenId = requirement.tokenValid;
+          const variable = this.getVariable("tokenValid", "t:" + reqTokenId, "canAccess");
+          if (!variable.value) {
+            numUnmetRequirements += 1;
+            variable.requirementDependents.push(tokenId);
+          }
+        } else {
+          throw new Error("unknown kind of requirement: " + JSON.stringify(requirement));
+        }
+      });
+    }
+
+    return numUnmetRequirements;
+  }
+
   activateToken(tokenId) {
     // Includes a new token (which must already be in `this.tokensById`) in our computation. The
     // tricky part here is dealing with our already-accumulated knowledge; we need to compute how
@@ -503,32 +612,9 @@ class Context {
     const sharerId = token.parentToken ? "t:" + token.parentToken : "i:" + token.identityId;
     const recipientId = vertexIdOfTokenOwner(token);
 
-    // Add all requirements.
-    let numUnmetRequirements = 0;
-    if (token.requirements) {
-      token.requirements.forEach((requirement) => {
-        if (requirement.permissionsHeld) {
-          const reqGrainId = requirement.permissionsHeld.grainId;
-          const reqVertexId = "i:" + requirement.permissionsHeld.identityId;
-          const reqPermissions = requirement.permissionsHeld.permissions || [];
-
-          forEachPermission(reqPermissions, (permissionId) => {
-            const variable = this.getVariable(reqGrainId, reqVertexId, permissionId);
-            if (!variable.value) {
-              // This requirement hasn't been proven yet. We add it to the variable's list of
-              // dependents so that we get notified when that variable is proven, and we increment
-              // numUnmetRequirements to indicate how many notifications we need to get before we
-              // know all requirements are satisfied.
-              numUnmetRequirements += 1;
-              variable.requirementsTailList.push(tokenId);
-            }
-          });
-        }
-      });
-    }
-
-    const activeToken = new ActiveToken(numUnmetRequirements, tokenPermissions.array);
-    let needToExploreUnmet = false;
+    const numUnmetRequirements = this.registerInterestInRequirements(tokenId, token.requirements);
+    const activeToken = new ActiveToken(tokenId, token.requirements, numUnmetRequirements,
+                                        tokenPermissions.array, grainId, recipientId);
 
     // Add all edges represented by this token (one for each permission).
     forEachPermission(tokenPermissions.array, (permissionId) => {
@@ -538,27 +624,51 @@ class Context {
         if (!sharerVariable.value) {
           // Not proven yet that the source has this permission, so add to its direct dependents so
           // that we get notified if that changes.
-          sharerVariable.directTailList.push(tokenId);
+          sharerVariable.directDependents.push(tokenId);
         } else {
           // The source has already been proven.
-          activeToken.setReceivesPermission(permissionId);
-          if (numUnmetRequirements == 0) {
-            // There are no other requirements, so this variable is already proven.
-            this.setToTrueStack.push({ grainId: grainId,
-                                       vertexId: vertexIdOfTokenOwner(token),
-                                       permissionId: permissionId,
-                                       responsibleTokenId: tokenId, });
-          } else {
-            // The source is proven but there are other unmet requirements. Therefore we know that
-            // those requirements are relevant and we need to trigger exploring them.
-            needToExploreUnmet = true;
-          }
+          activeToken.setReceivesPermission(permissionId, this);
         }
       }
     });
 
-    if (needToExploreUnmet) {
-      this.unmetRequirements.addRequirements(token.requirements);
+    this.activeTokens[tokenId] = activeToken;
+
+    return true;
+  }
+
+  activateTokenValidToken(tokenId) {
+    // Like `activateToken()`, but for a token that appears in a `tokenValid` requirement.
+    // Such tokens require some special handling to fit into our computation.
+
+    check(tokenId, String);
+    if (tokenId in this.activeTokens) {
+      return false;
+    }
+
+    const token = this.tokensById[tokenId];
+    if (!token) {
+      return false;
+    }
+
+    const numUnmetRequirements = this.registerInterestInRequirements(tokenId, token.requirements);
+    const activeToken = new ActiveToken(tokenId, token.requirements, numUnmetRequirements, [],
+                                        "tokenValid", "t:" + tokenId);
+
+    const recipientId = "t:" + tokenId;
+    const sharerVariable = token.parentToken &&
+          this.getVariable("tokenValid", "t:" + token.parentToken, "canAccess");
+
+    const recipientVariable = this.getVariable("tokenValid", recipientId, "canAccess");
+    if (!recipientVariable.value) {
+      if (!token.parentToken || (sharerVariable && sharerVariable.value)) {
+        // The source has already been proven.
+        activeToken.setReceivesPermission("canAccess", this);
+      } else {
+        // Not proven yet that the source has this permission, so add to its direct dependents so
+        // that we get notified if that changes.
+        sharerVariable.directDependents.push(tokenId);
+      }
     }
 
     this.activeTokens[tokenId] = activeToken;
@@ -584,6 +694,16 @@ class Context {
     }
 
     return this.variables[grainId][vertexId][permissionId];
+  }
+
+  getUserIsAdminVariable(accountId) {
+    check(accountId, String);
+
+    if (!this.userIsAdminVariables[accountId]) {
+      this.userIsAdminVariables[accountId] = new Variable();
+    }
+
+    return this.userIsAdminVariables[accountId];
   }
 
   getPermissions(grainId, vertexId) {
@@ -639,47 +759,18 @@ class Context {
       // For each edge (token) whose source is this vertex, mark that the input permission is
       // fulfilled.
       variable.responsibleTokenId = current.responsibleTokenId;
-      variable.directTailList.forEach((tokenId) => {
-        const activeToken = this.activeTokens[tokenId];
-        activeToken.setReceivesPermission(current.permissionId);
+      variable.directDependents.forEach((tokenId) => {
         // We know this permission must be met now. We also know that the permission was not met
         // for this token previously becaues a token has exactly one source vertex for each
         // permission, and we're processing that vertex now.
 
-        const token = this.tokensById[tokenId];
-        if (activeToken.requirementsAreMet()) {
-          // We've triggered a new edge! Push it onto the queue.
-          this.setToTrueStack.push({ grainId: token.grainId,
-                                     vertexId: vertexIdOfTokenOwner(token),
-                                     permissionId: current.permissionId,
-                                     responsibleTokenId: tokenId, });
-        } else {
-          // Since we know permissions flow to this token, and the token is active (meaning it
-          // may be relevant to the overall computation), we now know that it's worth checking
-          // the token's requirements. Add them to `unmetRequirements`. Note that this requirement
-          // could actually be one that we've checked already, but we'll figure that out once
-          // processUnmetRequirements() runs and discovers it isn't activating any new tokens.
-          this.unmetRequirements.addRequirements(token.requirements);
-        }
+        this.activeTokens[tokenId].setReceivesPermission(current.permissionId, this);
       });
 
       // For each token that has a requirement on this vertex, mark that one of its requirements
       // has ben fulfilled.
-      variable.requirementsTailList.forEach((tokenId) => {
-        const token = this.tokensById[tokenId];
-        const activeToken = this.activeTokens[tokenId];
-        activeToken.decrementRequirements(current.permissionId);
-        if (activeToken.requirementsAreMet()) {
-          // This was the last missing requirement for this token, therefore we've triggered the
-          // outgoing edges from the token corresponding to each known incoming permission.
-          activeToken.forEachReceivedPermission((permissionId) => {
-            // We've triggered a new edge! Push it onto the queue.
-            this.setToTrueStack.push({ grainId: token.grainId,
-                                       vertexId: vertexIdOfTokenOwner(token),
-                                       permissionId: permissionId,
-                                       responsibleTokenId: tokenId, });
-          });
-        }
+      variable.requirementDependents.forEach((tokenId) => {
+        this.activeTokens[tokenId].decrementRequirements(this);
       });
     }
 
@@ -720,17 +811,69 @@ class Context {
 
     let result = false;
 
-    while (!this.unmetRequirements.isEmpty()) {
-      const next = this.unmetRequirements.pop();
-      // Activate all tokens relevant to this requirement.
-      // TODO(perf): We're actually overestimating, because we're activating tokens relevant to
-      //   *all* permissions rather than just the premissions specified by the requirement. E.g.
-      //   if the requirement is that Bob has write access, then tokens which only transmit read
-      //   access are not relevant, but we'll end up activating them anyway.
-      if (this.activateRelevantTokens(next.grainId, "i:" + next.identityId)) {
-        result = true;
+    // As we process our requirements, we might find new unmet requirments.
+    // We defer processing those until the next time around.
+    const oldUnmetRequirements = this.unmetRequirements;
+    this.unmetRequirements = new RequirementSet();
+
+    oldUnmetRequirements.forEach((req) => {
+      if (req.permissionsHeld) {
+        let next = req.permissionsHeld;
+        // Activate all tokens relevant to this requirement.
+        // TODO(perf): We're actually overestimating, because we're activating tokens relevant to
+        //   *all* permissions rather than just the permissions specified by the requirement. E.g.
+        //   if the requirement is that Bob has write access, then tokens which only transmit read
+        //   access are not relevant, but we'll end up activating them anyway.
+        if (this.activateRelevantTokens(next.grainId, "i:" + next.identityId)) {
+          result = true;
+        }
+      } else if (req.tokenValid) {
+        // Active the token and all of its transitive parents.
+        let currentTokenId = req.tokenValid;
+        while (true) {
+          let currentToken = this.tokensById[currentTokenId];
+          if (!currentToken && db) {
+            currentToken = db.collections.apiTokens.findOne({ _id: currentTokenId,
+                                                             revoked: { $ne: true }, });
+            this.tokensById[currentTokenId] = currentToken;
+          }
+
+          if (!currentToken) {
+            break;
+          }
+
+          if (this.activateTokenValidToken(currentTokenId)) {
+            result = true;
+          }
+
+          if (currentToken.parentToken) {
+            currentTokenId = currentToken.parentToken;
+          } else {
+            break;
+          }
+        }
+      } else if (req.userIsAdmin) {
+        let accountId = req.userIsAdmin;
+        if (!(accountId in this.adminUsers) && db) {
+          Meteor.users.find({ isAdmin: true }).forEach((user) => {
+            this.adminUsers[user._id] = true;
+          });
+        }
+
+        if (this.adminUsers[accountId]) {
+          const variable = this.getUserIsAdminVariable(accountId);
+          variable.value = true;
+
+          // Might have some requirement dependents. Cannot have any direct depependents.
+          variable.requirementDependents.forEach((tokenId) => {
+            result = true;
+            this.activeTokens[tokenId].decrementRequirements(this);
+          });
+        }
+      } else {
+        throw new Error("unknown kind of requirement: " + JSON.stringify(req));
       }
-    }
+    });
 
     return result;
   }
@@ -809,8 +952,12 @@ class Context {
       if (tokenId) {
         const token = this.tokensById[tokenId];
 
-        let sharerId = token.parentToken ? "t:" + token.parentToken : "i:" + token.identityId;
-        pushVertex(token.grainId, sharerId, current.permissionId);
+        if (token.grainId && !token.objectId) {
+          let sharerId = token.parentToken ? "t:" + token.parentToken : "i:" + token.identityId;
+          pushVertex(token.grainId, sharerId, current.permissionId);
+        } else if (token.parentToken) {
+          pushVertex("tokenValid", "t:" + token.parentToken, "canAccess");
+        }
 
         if (!neededTokens[tokenId]) {
           neededTokens[tokenId] = true;
@@ -821,6 +968,8 @@ class Context {
                 forEachPermission(requirement.permissionsHeld.permissions, (permissionId) => {
                   pushVertex(requirement.permissionsHeld.grainId, reqVertexId, permissionId);
                 });
+              } else if (requirement.tokenValid) {
+                pushVertex("tokenValid", "t:" + requirement.tokenValid, "canAccess");
               }
             });
           }
@@ -1047,42 +1196,49 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
 
     // Phase 2: Now let's verify those permissions.
 
-    let invalidated = false;
-    function guardedOnInvalidated() {
-      invalidated = true;
-      if (onInvalidatedActive) {
-        onInvalidated();
+    context.reset();
+
+    if (neededTokens.length > 0) {
+      let invalidated = false;
+      function guardedOnInvalidated() {
+        invalidated = true;
+        if (onInvalidatedActive) {
+          onInvalidated();
+        }
       }
-    }
 
-    const cursor = db.collections.apiTokens.find({
-      _id: { $in: neededTokens },
-      revoked: { $ne: true },
-      objectId: { $exists: false },
-    });
+      const cursor = db.collections.apiTokens.find({
+        _id: { $in: neededTokens },
+        revoked: { $ne: true },
+        objectId: { $exists: false },
+      });
 
-    if (onInvalidated) {
-      observeHandle = cursor.observe({
-        changed(newApiToken, oldApiToken) {
-          if (!_.isEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment) ||
-              !_.isEqual(newApiToken.revoked, oldApiToken.revoked)) {
+      if (onInvalidated) {
+        observeHandle = cursor.observe({
+          changed(newApiToken, oldApiToken) {
+            if (!_.isEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment) ||
+                !_.isEqual(newApiToken.revoked, oldApiToken.revoked)) {
+              observeHandle.stop();
+              guardedOnInvalidated();
+            }
+          },
+
+          removed(oldApiToken) {
             observeHandle.stop();
             guardedOnInvalidated();
-          }
-        },
+          },
+        });
+      }
 
-        removed(oldApiToken) {
-          observeHandle.stop();
-          guardedOnInvalidated();
-        },
-      });
+      context.addTokensFromCursor(cursor);
+
+      // TODO(someday): Also account for linking/unlinking of identities, accounts losing admin
+      //   privileges, and legacy public grains becoming private. Currently we do not call
+      //   `onInvalided()` on such events. We would need to set up more cursor observers.
+    } else {
+      // Don't need to observe anything.
+      observeHandle = { stop() {} };
     }
-
-    context.reset();
-    context.addTokensFromCursor(cursor);
-
-    // TODO(someday): Also account for possible concurrent linking/unlinking of identities,
-    //   and legacy publis grains becoming private.
 
     resultPermissions = context.tryToProve(grainId, vertexId, firstPhasePermissions);
 

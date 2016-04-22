@@ -276,8 +276,13 @@ checkRequirements = (requirements) => {
   for (let i in requirements) {
     const requirement = requirements[i];
     if (requirement.tokenValid) {
-      const token = ApiTokens.findOne({ _id: requirement.tokenValid }, { fields: { requirements: 1 } });
-      if (!checkRequirements(token.requirements)) {
+      const token = ApiTokens.findOne({ _id: requirement.tokenValid, revoked: { $ne: true }, },
+                                      { fields: { requirements: 1 } });
+      if (!token || !checkRequirements(token.requirements)) {
+        return false;
+      }
+
+      if (token.parentToken && !checkRequirements([{ tokenValid: token.parentToken }])) {
         return false;
       }
     } else if (requirement.permissionsHeld) {

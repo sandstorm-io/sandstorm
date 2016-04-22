@@ -556,6 +556,45 @@ function extractLastUsedFromApiTokenOwner() {
   });
 }
 
+function setUpstreamTitles() {
+  // Initializes the `upstreamTitle` and `renamed` fields of `ApiToken.owner.user`.
+
+  const apiTokensRaw = ApiTokens.rawCollection();
+  const aggregateApiTokens = Meteor.wrapAsync(apiTokensRaw.aggregate, apiTokensRaw);
+
+  // First, construct a list of all *shared* grains. We will need to do a separate update()
+  // for each of these, so we'd like to skip those which have nothing to update.
+  const grainIds = aggregateApiTokens([
+    { $match: { "owner.user": { $exists: true }, grainId: { $exists: true } } },
+    { $group: { _id: "$grainId" } },
+  ]).map(grain => grain._id);
+
+  let count = 0;
+  Grains.find({ _id: { $in: grainIds } }, { fields: { title: 1 } }).forEach((grain) => {
+    if (count % 100 == 0) {
+      console.log(count + " / " + grainIds.length);
+    }
+
+    ++count;
+
+    // For ApiTokens whose petname titles do not match the upstream title, we need to set
+    // `upstreamTitle` and `renamed`. We have no way of knowing which of the two names was the
+    // original name, so we don't know whether it was the owner or the receiver who renamed their
+    // copy post-sharaing. We assume it was the owner, because:
+    // 1. It's probably unusual for people to try to rename a grain they don't own.
+    // 2. This results in UI that is reasonably non-confusing even if we guessed wrong. Namely,
+    //    the user sees "Owner's title (was: User's title)", which is reasonably OK even if it
+    //    was the user who had renamed their copy. They can rename it again if they like. On the
+    //    other hand, if we guessed wrongly in the other direction, the user would see
+    //    "User's title (renamed from: Owners title)", which would be wrong if it was in fact the
+    //    owner who renamed post-sharing.
+    ApiTokens.update({
+      grainId: grain._id,
+      "owner.user.title": { $exists: true, $ne: grain.title },
+    }, { $set: { "owner.user.upstreamTitle": grain.title } }, { multi: true });
+  });
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -585,6 +624,7 @@ const MIGRATIONS = [
   consolidateOrgSettings,
   unsetSmtpDefaultHostnameIfNoUsersExist,
   extractLastUsedFromApiTokenOwner,
+  setUpstreamTitles,
 ];
 
 function migrateToLatest() {

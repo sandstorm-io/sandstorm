@@ -335,6 +335,9 @@ Meteor.methods({
       if (grain) {
         if (grain.userId === this.userId) {
           Grains.update({ _id: grainId, userId: this.userId }, { $set: { title: newTitle } });
+
+          // Denormalize new title out to all sharing tokens.
+          ApiTokens.update({ grainId: grainId }, { $set: { "owner.user.upstreamTitle": newTitle } });
         } else {
           if (!globalDb.userHasIdentity(this.userId, identityId)) {
             throw new Meteor.Error(403, "Current user does not have identity " + identityId);
@@ -347,8 +350,27 @@ Meteor.methods({
           }, {
             sort: { created: 1 },
           });
-          if (token) {
-            ApiTokens.update(token._id, { $set: { "owner.user.title": newTitle } });
+          if (token && token.owner.user.title !== newTitle) {
+            if (token.owner.user.upstreamTitle === newTitle) {
+              // User renamed grain to match upstream title. Act like they never renamed it at
+              // all.
+              ApiTokens.update(token._id, {
+                $set: { "owner.user.title": newTitle },
+                $unset: { "owner.user.upstreamTitle": 1, "owner.user.renamed": 1 },
+              });
+            } else {
+              const modification = {
+                "owner.user.title": newTitle,
+                "owner.user.renamed": true,
+              };
+
+              if (!token.owner.user.upstreamTitle) {
+                // If `upstreamTitle` isn't present then it is equal to the old title.
+                modification["owner.user.upstreamTitle"] = token.owner.user.title;
+              }
+
+              ApiTokens.update(token._id, { $set: modification });
+            }
           }
         }
       }

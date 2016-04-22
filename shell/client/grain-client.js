@@ -633,9 +633,13 @@ Template.grain.helpers({
 });
 
 Template.grainTitle.helpers({
-  title: function () {
+  fullTitle: function () {
     const grain = globalGrains.getActive();
-    return (grain && grain.title()) || "(unknown grain)";
+    return (grain && grain.fullTitle()) || { title: "(unknown grain)" };
+  },
+
+  hasSubtitle: function () {
+    return !!(this.was || this.renamedFrom);
   },
 });
 

@@ -269,7 +269,7 @@ body>.topbar {
         font-size: 120%;
       }
 
-      >span.editable {
+      >div.editable {
         white-space: nowrap;
         text-overflow: ellipsis;  // Doesn't seem to work since size is dynamic. Left here in vain.
         overflow: hidden;
@@ -288,6 +288,29 @@ body>.topbar {
           cursor: pointer;
           color: $topbar-foreground-color-hover;
           background-color: $topbar-background-color-hover;
+        }
+
+        .main-title {
+          height: $topbar-height-desktop - 8px;
+          line-height: $topbar-height-desktop - 8px;
+          @media #{$mobile} {
+            height: $topbar-height-mobile - 12px;
+            line-height: $topbar-height-mobile - 12px;
+          }
+        }
+
+        .subtitle {
+          height: 10px;
+          line-height: 10px;
+          font-size: 10px;
+          margin-top: -2px;
+
+          @media #{$mobile} {
+            height: 12px;
+            line-height: 12px;
+            font-size: 12px;
+            margin-top: -4px;
+          }
         }
       }
     }

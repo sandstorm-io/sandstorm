@@ -46,7 +46,7 @@ SandstormGrainListPage.mapApiTokensToTemplateObject = function (apiTokens, stati
     const iconSrc = (grainInfo && grainInfo.icon && grainInfo.icon.assetId) ?
         (window.location.protocol + "//" + staticAssetHost + "/" + grainInfo.icon.assetId) :
         Identicon.identiconForApp((grainInfo && grainInfo.appId) || "00000000000000000000000000000000");
-    return {
+    const result = {
       _id: grainId,
       title: ownerData.title,
       appTitle: appTitle,
@@ -54,11 +54,24 @@ SandstormGrainListPage.mapApiTokensToTemplateObject = function (apiTokens, stati
       iconSrc: iconSrc,
       isOwnedByMe: false,
     };
+
+    if (ownerData.upstreamTitle) {
+      if (ownerData.renamed) {
+        result.renamedFrom = ownerData.upstreamTitle;
+      } else {
+        result.was = ownerData.title;
+        result.title = ownerData.upstreamTitle;
+      }
+    }
+
+    return result;
   });
 };
 
 const matchesAppOrGrainTitle = function (needle, grain) {
   if (grain.title && grain.title.toLowerCase().indexOf(needle) !== -1) return true;
+  if (grain.was && grain.was.toLowerCase().indexOf(needle) !== -1) return true;
+  if (grain.renamedFrom && grain.renamedFrom.toLowerCase().indexOf(needle) !== -1) return true;
   if (grain.appTitle && grain.appTitle.toLowerCase().indexOf(needle) !== -1) return true;
   return false;
 };

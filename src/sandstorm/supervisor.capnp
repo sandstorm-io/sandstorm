@@ -302,7 +302,7 @@ struct ApiTokenOwner {
       # The identity that is allowed to restore this token.
 
       title @7 :Text;
-      # Title as chosen by the user.
+      # Title as chosen by the user, or as copied from the sharer.
 
       # Fields below this line are not actually allowed to be passed to save(), but are added
       # internally.
@@ -312,6 +312,15 @@ struct ApiTokenOwner {
 
       userId @6 :Text;
       # Deprecated. See `identityId`.
+
+      upstreamTitle @11 :Text;
+      # Title as chosen by the grain owner. This field is directly updated whenever the grain owner
+      # changes the title. As an optimization, this field is omitted if the value would be
+      # identical to `title`.
+
+      renamed @12 :Bool;
+      # True if the user has explicitly renamed the grain to differ from the owner's title.
+      # Otherwise, `title` is a copy of either the current or previous value of `upstreamTitle`.
     }
   }
 }

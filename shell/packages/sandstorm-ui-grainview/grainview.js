@@ -270,6 +270,10 @@ GrainView = class GrainView {
   }
 
   title() {
+    return this.fullTitle().title;
+  }
+
+  fullTitle() {
     // Returns the user's name for this grain, not the browser tab title.
     // Three cases:
     // 1) We own the grain or it is public. Use the value from the Grains collection.
@@ -279,7 +283,7 @@ GrainView = class GrainView {
     if (this.isOwner() || this.isOldSharingModel()) {
       // Case 1.
       const grain = this._db.getGrain(this._grainId);
-      return grain && grain.title;
+      return { title: grain && grain.title };
     } else if (!this._isUsingAnonymously()) {
       // Case 2.
       const apiToken = this._db.collections.apiTokens.findOne({
@@ -289,10 +293,23 @@ GrainView = class GrainView {
         sort: { created: 1 },
       });
 
-      return apiToken && apiToken.owner && apiToken.owner.user && apiToken.owner.user.title;
+      if (!apiToken) {
+        return { title: undefined };
+      }
+
+      const info = apiToken.owner.user;
+      if (!info.upstreamTitle) {
+        return { title: info.title };
+      } else if (info.renamed) {
+        return { title: info.title, renamedFrom: info.upstreamTitle };
+      } else {
+        return { title: info.upstreamTitle, was: info.title };
+      }
     } else {
       // Case 3.
-      return this._title;
+      // TODO(someday): We don't show info about renames in this case, but we probably should.
+      //   Requires threading through info from the server.
+      return { title: this._title };
     }
   }
 

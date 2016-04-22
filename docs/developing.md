@@ -1,11 +1,11 @@
-Here in the **Sandstorm developer portal**, you will find to resources that help people build new
+Here in the **Sandstorm developer portal**, you will find to resources to help you build new
 apps on top of Sandstorm, package existing apps, and understand how apps and Sandstorm fit together.
 
 <div class="developer-next-steps">
 <div class="next-step tutorial"><a href="../vagrant-spk/packaging-tutorial/">New? Try tutorial</a></div>
 <div class="next-step why"><a href="https://sandstorm.io/developer">Why Sandstorm</a></div>
 <div class="next-step discussion"><a href="https://groups.google.com/d/forum/sandstorm-dev">Community Q&amp;A</a></div>
-<div class="next-step app-market"><a href="https://apps.sandstorm.io/">See app market</a></div>
+<div class="next-step app-market"><a href="https://apps.sandstorm.io/">See App Market</a></div>
 <div class="next-step live-chat"><a href="https://kiwiirc.com/client/irc.freenode.net/?channel=#sandstorm">Live chat via IRC</a></div>
 <div class="next-step demo-app"><a href="https://apps.sandstorm.io/app/0dp7n6ehj8r5ttfc0fj0au6gxkuy1nhw2kx70wussfa1mqj8tf80">Try a demo app</a></div>
 </div>

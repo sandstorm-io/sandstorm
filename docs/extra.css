@@ -1,3 +1,7 @@
+.wy-side-nav-search {
+  background-color: #4d52ac;
+}
+
 .wy-side-nav-search>.home-and-project {
     display: flex;
     text-align: left;
@@ -50,10 +54,16 @@
 }
 
 .next-step {
-  max-width: 25%;
+  width: 33%;
   text-align: center;
-  min-width: 140px;
 }
+
+@media (max-width: 320px) {
+  .next-step {
+    width: 50%;
+  }
+}
+
 .next-step::before {
   background-size: 100px 100px;
   background-repeat: no-repeat;
@@ -63,20 +73,20 @@
   display: block;
 }
 .next-step.tutorial::before {
-  background-image: url("https://sandstorm.io/images/help-package.svg");
+  background-image: url("https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/try-tutorial.svg");
 }
 .next-step.why::before {
-  background-image: url("https://sandstorm.io/images/help-share.svg");
+  background-image: url("https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/sandstorm.svg");
 }
 .next-step.discussion::before {
-  background-image: url("https://sandstorm.io/images/help-write.svg");
+  background-image: url("https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/write.svg");
 }
 .next-step.app-market::before {
-  background-image: url("https://sandstorm.io/images/core-apps-growing.svg");
+  background-image: url("https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/app-market.svg");
 }
 .next-step.live-chat::before {
-  background-image: url("https://sandstorm.io/images/help-discuss.svg");
+  background-image: url("https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/live-chat.svg");
 }
 .next-step.demo-app::before {
-  background-image: url("https://sandstorm.io/images/core-single-sign-on.svg");
+  background-image: url("https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/try-demo-app.svg");
 }

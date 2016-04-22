@@ -337,7 +337,8 @@ Meteor.methods({
           Grains.update({ _id: grainId, userId: this.userId }, { $set: { title: newTitle } });
 
           // Denormalize new title out to all sharing tokens.
-          ApiTokens.update({ grainId: grainId }, { $set: { "owner.user.upstreamTitle": newTitle } });
+          ApiTokens.update({ grainId: grainId, "owner.user": { $exists: true } },
+                           { $set: { "owner.user.upstreamTitle": newTitle } });
         } else {
           if (!globalDb.userHasIdentity(this.userId, identityId)) {
             throw new Meteor.Error(403, "Current user does not have identity " + identityId);

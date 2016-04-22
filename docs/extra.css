@@ -54,13 +54,15 @@
 }
 
 .next-step {
-  width: 33%;
+  width: 25%;
   text-align: center;
+  margin: 10px 20px;
 }
 
 @media (max-width: 320px) {
   .next-step {
-    width: 50%;
+    width: 40%;
+    margin: 10px;
   }
 }
 

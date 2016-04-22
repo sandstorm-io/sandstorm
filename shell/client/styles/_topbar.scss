@@ -300,10 +300,11 @@ body>.topbar {
         }
 
         .subtitle {
+          color: #9b9b9b;
           height: 10px;
           line-height: 10px;
           font-size: 10px;
-          margin-top: -2px;
+          margin-top: -4px;
 
           @media #{$mobile} {
             height: 12px;

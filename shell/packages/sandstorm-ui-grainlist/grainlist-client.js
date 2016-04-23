@@ -34,10 +34,8 @@ SandstormGrainListPage.mapApiTokensToTemplateObject = function (apiTokens, stati
   const tokensForGrain = _.groupBy(apiTokens, "grainId");
   const grainIdsForApiTokens = Object.keys(tokensForGrain);
   return grainIdsForApiTokens.map(function (grainId) {
-    // Pick the most recently used one.
-    const token = _.sortBy(tokensForGrain[grainId], (t) => {
-      return t.lastUsed ? -t.lastUsed : 0;
-    })[0];
+    // Pick the oldest one.
+    const token = _.sortBy(tokensForGrain[grainId], "created")[0];
 
     const ownerData = token.owner.user;
     const grainInfo = ownerData.denormalizedGrainMetadata;

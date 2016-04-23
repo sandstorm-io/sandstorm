@@ -349,7 +349,7 @@ Meteor.methods({
             objectId: { $exists: false },
             "owner.user.identityId": identityId,
           }, {
-            sort: { created: 1 },
+            sort: { created: 1 }, // The oldest token is our source of truth for the name.
           });
           if (token && token.owner.user.title !== newTitle) {
             if (token.owner.user.upstreamTitle === newTitle) {
@@ -370,7 +370,9 @@ Meteor.methods({
                 modification["owner.user.upstreamTitle"] = token.owner.user.title;
               }
 
-              ApiTokens.update(token._id, { $set: modification });
+              ApiTokens.update({ grainId: grainId, "owner.user.identityId": identityId },
+                               { $set: modification },
+                               { multi: true });
             }
           }
         }

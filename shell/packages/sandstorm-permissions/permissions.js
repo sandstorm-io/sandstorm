@@ -520,6 +520,10 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
         denormalizedGrainMetadata: grainInfo,
       }
     };
+
+    if (grain.title !== owner.user.title) {
+      apiToken.owner.user.upstreamTitle = grain.title;
+    }
   } else {
     // Note: Also covers the case of `webkey: null`.
     apiToken.owner = owner;

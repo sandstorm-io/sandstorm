@@ -353,7 +353,23 @@ limitations under the License.
 </template>
 
 <template name="grainTitle">
-  <span class="editable" title="Rename" id="grainTitle" tabindex="0">{{title}}</span>
+  {{#with fullTitle}}
+    <div class="editable" title="Rename" id="grainTitle" tabindex="0">
+      {{#if hasSubtitle}}
+        <div class="main-title">{{title}}</div>
+        <div class="subtitle">
+          {{#with was}}
+            was: {{.}}
+          {{/with}}
+          {{#with renamedFrom}}
+            renamed from: {{.}}
+          {{/with}}
+        </div>
+      {{else}}
+        {{title}}
+      {{/if}}
+    </div>
+  {{/with}}
 </template>
 <template name="grainDeleteButton">
   <button class="grain-button" title="{{#if isOwner}}Delete{{else}}Forget{{/if}}" id="deleteGrain">Delete</button>

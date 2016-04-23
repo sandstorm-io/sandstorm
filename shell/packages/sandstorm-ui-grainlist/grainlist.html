@@ -83,7 +83,15 @@
         {{#each grains}}
         <tr class="grain" data-grainid="{{ _id }}">
           <td class="td-app-icon"><div class="app-icon" title="{{appTitle}}" style="background-image: url('{{ iconSrc }}');"></div></td>
-          <td class="grain-name"><a href="{{ pathFor route='grain' grainId=_id }}">{{title}}</a></td>
+          <td class="grain-name">
+            <a href="{{ pathFor route='grain' grainId=_id }}">{{title}}</a>
+            {{#with was}}
+              (was: {{.}})
+            {{/with}}
+            {{#with renamedFrom}}
+              (renamed from: {{.}})
+            {{/with}}
+          </td>
           <td class="last-used">{{dateString lastUsed}}</td>
           <td class="shared-or-owned">{{#if isOwnedByMe }}My grain{{else}}Shared with me{{/if}}</td>
           {{!-- Collaborators, size TODO

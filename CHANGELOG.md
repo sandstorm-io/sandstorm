@@ -1,3 +1,11 @@
+### v0.160 (2016-04-23) [bugfixes]
+- When the owner renames a grain, the change will now be visible by people with whom the grain has already been shared.
+- Sandstorm for Work: Enforce various rarely-used SAML constraints. (The important ones were already enforced.)
+- Increased timeout for wildcard host self-check to try to prevent error from displaying spurriously.
+- Hid "share access" button in cases where it doesn't work -- e.g. when the user doesn't have access or the grain doesn't exist.
+- Fixed regression causing powerbox offers of UiViews to fail (not yet used by any real app).
+- Oasis: Fixed first-grain tutorial overlay.
+
 ### v0.159 (2016-04-16)
 - Sandstorm for Work: The sharing dialog auto-complete will now automatically be populated with all known members of your organization. (This can be turned off in the admin settings if the membership of your organization should be kept secret from its own members.)
 - Error messages informing the user that they need to log in as a different identity now allow the identity cards to be clicked to immediately initiate login as that identity, rather than requiring the user to use the sign-in menu manually.

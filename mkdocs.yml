@@ -16,7 +16,7 @@ pages:
     - "Security practices": "using/security-practices.md"
     - "Security non-events": "using/security-non-events.md"
 - Developing apps:
-    - "Developer portal": "developing.md"
+    - "Developer hub": "developing.md"
     - "Installing vagrant-spk for package dev": "vagrant-spk/installation.md"
     - "Packaging tutorial": "vagrant-spk/packaging-tutorial.md"
     - "Packaging tutorial (Meteor)": "vagrant-spk/packaging-tutorial-meteor.md"

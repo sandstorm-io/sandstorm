@@ -36,7 +36,7 @@ See [how it works](https://sandstorm.io/how-it-works) and [security practices](h
 
 ## How to Package Apps
 
-See [the developer portal in the Sandstorm documentation](https://docs.sandstorm.io/en/latest/developing/).
+See [the developer hub in the Sandstorm documentation](https://docs.sandstorm.io/en/latest/developing/).
 
 ## Contribute
 

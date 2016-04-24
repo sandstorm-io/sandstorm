@@ -1918,7 +1918,6 @@ private:
         KJ_SYSCALL(setenv("HTTPS_PORT", kj::str(*httpsPort).cStr(), true));
       }
 
-      KJ_SYSCALL(setenv("SANDSTORM_SMTP_PORT", kj::str(config.smtpListenPort).cStr(), true));
       KJ_SYSCALL(setenv("MONGO_URL",
           kj::str("mongodb://", authPrefix, "127.0.0.1:", config.mongoPort,
                   "/meteor", authSuffix).cStr(),

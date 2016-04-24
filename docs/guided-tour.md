@@ -15,7 +15,7 @@ You can proceed through this tutorial using the [Sandstorm demo server](https://
 
 If you wish, you could take the time now to install Sandstorm on a Linux server of your own. Amazon offers a free-of-cost one year trial where you can use their hosting services for free. To do that, keep reading.
 
-If you don't want to install Sandstorm right now, skip to the **Hands on tour** section.
+If you don't want to install Sandstorm right now, skip to the [**Hands on tour**](guided-tour.md#hands-on-tour) section.
 
 ### Create a virtual machine in Amazon EC2
 
@@ -56,29 +56,36 @@ During this tutorial, you're going to try out some cool features of Sandstorm. Y
 
 One of the common reasons to use Sandstorm is to have online collaboration software that runs on your own server.
 
-Etherpad is a real-time text editor that demonstrates how to use Sandstorm that way. Make sure you're logged into Sandstorm (if using the demo, click **Start the demo**). Then click:
+Etherpad is a real-time text editor that demonstrates how to use Sandstorm that way. Make sure you're logged into Sandstorm (if using the demo, click **Try a quick demo**). Then:
 
-* **Install apps** - this takes you to the Sandstorm app list. (Soon to be the Sandstorm App Marketplace!)
-* Click the **Install** button next to _Etherpad_. (Sandstorm may ask you for confirmation.)
-* Click **New Etherpad Document** button on your Sandstorm.
+* Click **Install...** - this takes you to the Sandstorm App Market.
+* Find _Etherpad_ and click the **Install** button. Sandstorm will ask you for confirmation.
+* Click **Install Etherpad**.
+* Once Etherpad is installed, click **Create new pad**.
 
 You're now in an Etherpad document. Installing Etherpad allows you to create as many Etherpad documents as you want.
 
-If you want to create spreadsheets on your server, consider installing _Ethercalc_.
+If you want to create spreadsheets on your server, consider installing [Ethercalc](https://apps.sandstorm.io/app/a0n6hwm32zjsrzes8gnjg734dh6jwt7x83xdgytspe761pe2asw0).
 
-If you want to edit scientific documents, consider installing _ShareLaTeX_.
+If you want to edit scientific documents, consider installing [ShareLaTeX](https://apps.sandstorm.io/app/5vuv7v0w7gu20z72m78n83rx9qqtqpmtk32f39823wh967z226qh).
 
-If you want to create presentations, consider installing _Hacker Slides_.
+If you want to create presentations, consider installing [Hacker Slides](https://apps.sandstorm.io/app/7qvcjh7gk0rzdx1s3c8gufd288sesf6vvdt297756xcv4q8xxvhh).
+
+If you want to organize tasks with a kanban board, consider installing [Wekan](https://apps.sandstorm.io/app/m86q05rdvj14yvn78ghaxynqz7u2svw6rnttptxx49g1785cdv1h).
 
 Each document is an _instance_of that app, with Sandstorm isolating each one from each other.
 
 ### Sharing
 
-In Sandstorm, each app instance is private by default. In order to collaborate, you create a _sharing link_.
+In Sandstorm, each app instance is private by default. In order to collaborate, you can send an email invitation to someone else so they can access your Etherpad document:
 
-In your Etherpad document, look for the blue **Share** link at the top (or the side) of the document. Click it, choose a permission level, and click **create**.
+* Click the **Share Access* link in the black top bar
+* Choose a sharing role in the dropdown
+* Enter in an email address
+* Write a personal message (optional)
+* Click **Send**
 
-When you give this link to someone, they will be able to participate in the document with you.
+If you prefer, you can get a Sharing link instead by clicking on the Sharing link element in the UI.
 
 To read more about sharing in Sandstorm, read [Delegation is the cornerstone of civilization](https://blog.sandstorm.io/news/2015-05-05-delegation-is-the-cornerstone-of-civilization.html).
 
@@ -88,10 +95,11 @@ Sandstorm supports a number of publishing apps, including WordPress and Ghost. (
 
 Try them out!
 
-* Click the **Sandstorm** logo in the top-left, and
-* Click **Install apps** and
-* Find _WordPress_ or _Ghost_ on the page, and click **Install*.
-* Click **New WordPress site** (or similar for Ghost).
+* Click **Apps** in the left sidebar
+* Click **Install...** to go to the App Market
+* Find _WordPress_ or _Ghost_, and click **Install*.
+* Confirm your **Install**
+* Click **Create new site** (or similar for Ghost).
 
 This takes you to WordPress running on your server. You are automatically logged-in and can start writing. You can click **Rebuild public site** and this snapshots your blog as static HTML and exports it at a random hostname.
 
@@ -99,4 +107,4 @@ You can also configure a custom domain to map to the same static content. Only p
 
 ### Ask questions
 
-This brings us to the end of our tour. Ask questions! Also give me feedback on how to improve this tour.
+This brings us to the end of our tour. [Ask questions](https://groups.google.com/forum/#!forum/sandstorm-dev)! Also give me feedback on how to improve this tour.

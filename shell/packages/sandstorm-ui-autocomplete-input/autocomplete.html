@@ -9,7 +9,8 @@
     <input type="text" class="emails" placeholder="Enter email addresses or names"
            tabindex="0" role="combobox" aria-expanded="true" aria-autocomplete="list"
            aria-owns="{{templateId}}autocomplete-suggestions"
-           aria-activedescendant="{{templateId}}contact-selected" autocomplete="off">
+           aria-activedescendant="{{templateId}}contact-selected" autocomplete="off"
+           disabled={{disabled}}>
     {{#if inputActive}}
       {{#if autoCompleteContacts}}
         <ul class="autocomplete-suggestions" id="{{templateId}}autocomplete-suggestions">

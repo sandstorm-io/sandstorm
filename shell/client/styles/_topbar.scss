@@ -1145,6 +1145,20 @@ body>.popup {
     .personal-message {
       height: 100px;
     }
+    .demo-mode-alert {
+      color: #a94442;
+      background-color: #f2dede;
+      border-color: #ebccd1;
+      padding: 5px;
+      margin: 0;
+      font-size: 10pt;
+    }
+    textarea.personal-message, input.emails, select.share-token-role {
+      &[disabled=true] {
+        background-color: #eaeaea;
+      }
+    }
+
     .invitation-explanation {
       max-width: 80%;
       overflow: hidden;

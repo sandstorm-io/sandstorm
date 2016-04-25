@@ -101,7 +101,7 @@ if (Meteor.isServer) {
 //   dailySentMailCount: Number of emails sent by this user today; used to limit spam.
 //   accessRequests: Object containing the following fields; used to limit spam.
 //       count: Number of "request access" emails during sent during the current interval.
-//       resetAt: Date when the count should be reset.
+//       resetOn: Date when the count should be reset.
 //   referredByComplete: ID of the Account that referred this Account. If this is set, we
 //                        stop writing new referredBy values onto Identities for this account.
 //   referredCompleteDate: The Date at which the completed referral occurred.
@@ -1336,6 +1336,28 @@ _.extend(SandstormDb.prototype, {
       return senderPrimaryEmail.email;
     } else {
       return null;
+    }
+  },
+
+  incrementDailySentMailCount: function (accountId) {
+    check(accountId, String);
+
+    const DAILY_LIMIT = 50;
+    const user = Meteor.users.findAndModify({
+      query: { _id: accountId },
+      update: {
+        $inc: {
+          dailySentMailCount: 1,
+        },
+      },
+      fields: { dailySentMailCount: 1 },
+    });
+
+    if (user.dailySentMailCount >= DAILY_LIMIT) {
+      throw new Error(
+          "Sorry, you've reached your e-mail sending limit for today. Currently, Sandstorm " +
+          "limits each user to " + DAILY_LIMIT + " e-mails per day for spam control reasons. " +
+          "Please feel free to contact us if this is a problem.");
     }
   },
 

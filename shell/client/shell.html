@@ -525,7 +525,7 @@ limitations under the License.
 <template name="selectRole">
   {{#with viewInfo}}
   {{#if roles}}
-  <select class="share-token-role" title="select a role">
+  <select class="share-token-role" title="select a role" disabled={{../disabled}}>
     {{#each roles}}
     <option title={{title.defaultText}}
             data-obsolete={{obsolete}}
@@ -542,18 +542,21 @@ limitations under the License.
 
 <template name="emailInviteTab">
   <form class="email-invite">
+    {{#if isDemoUser}}
+      <p class="demo-mode-alert">
+        Sharing emails cannot be sent while in demo mode.
+        Create an account to send sharing emails, or get a shareable link instead.
+      </p>
+    {{/if}}
     <p>
     <span class="icon icon-people"></span>
-    {{> contactInputBox contacts=contacts preselectedIdentityId=preselectedIdentityId}}
-    {{> selectRole viewInfo=viewInfo}}
+    {{> contactInputBox contacts=contacts preselectedIdentityId=preselectedIdentityId
+         disabled=isDemoUser}}
+    {{> selectRole viewInfo=viewInfo disabled=isDemoUser}}
     </p>
     <div>
-      {{#if isDemoUser}}
-      <textarea class="personal-message" disabled="true">Demo users cannot send sharing e-mails for spam reasons. If you create an account, you'll be able to use this UI. Otherwise, try creating a link.</textarea>
-      {{else}}
-      <textarea class="personal-message"
+      <textarea class="personal-message" disabled={{isDemoUser}}
                 placeholder="Type a personal message (optional)..."></textarea>
-      {{/if}}
     </div>
     {{#if completionState.clear}}
     <div class="button-container" role="presentation">

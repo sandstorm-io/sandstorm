@@ -1145,10 +1145,14 @@ body>.popup {
     .personal-message {
       height: 100px;
     }
-    .personal-message[disabled=true] {
-       background-color: #e0e0e0;
-       color: black;
-     }
+    .demo-mode-alert {
+      color: #a94442;
+      background-color: #f2dede;
+      border-color: #ebccd1;
+      padding: 5px;
+      margin: 0;
+      font-size: 10pt;
+    }
 
     .invitation-explanation {
       max-width: 80%;

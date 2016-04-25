@@ -548,8 +548,12 @@ limitations under the License.
     {{> selectRole viewInfo=viewInfo}}
     </p>
     <div>
+      {{#if isDemoUser}}
+      <textarea class="personal-message" disabled="true">Demo users cannot send sharing e-mails for spam reasons. If you create an account, you'll be able to use this UI. Otherwise, try creating a link.</textarea>
+      {{else}}
       <textarea class="personal-message"
                 placeholder="Type a personal message (optional)..."></textarea>
+      {{/if}}
     </div>
     {{#if completionState.clear}}
     <div class="button-container" role="presentation">
@@ -558,7 +562,7 @@ limitations under the License.
               part of the message to be hidden in the main view. --}}
         <p class="invitation-explanation" title="{{.}}">{{.}}</p>
       {{/with}}
-      <button>Send</button>
+      <button disabled={{isDemoUser}}>Send</button>
     </div>
     {{/if}}
   </form>

@@ -1019,6 +1019,10 @@ Template.shareableLinkTab.helpers({
   },
 });
 Template.emailInviteTab.helpers({
+  isDemoUser: function () {
+    return globalDb.isDemoUser();
+  },
+
   completionState: function () {
     const instance = Template.instance();
     return instance.completionState.get();

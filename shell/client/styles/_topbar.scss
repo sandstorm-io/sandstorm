@@ -1145,6 +1145,11 @@ body>.popup {
     .personal-message {
       height: 100px;
     }
+    .personal-message[disabled=true] {
+       background-color: #e0e0e0;
+       color: black;
+     }
+
     .invitation-explanation {
       max-width: 80%;
       overflow: hidden;

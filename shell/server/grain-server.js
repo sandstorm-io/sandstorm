@@ -421,6 +421,10 @@ Meteor.methods({
         throw new Meteor.Error(400, "No contacts were provided.");
       }
 
+      if (globalDb.isDemoUser()) {
+        throw new Meteor.Error(403, "Demo users are not allowed to share by email.");
+      }
+
       const accountId = this.userId;
       const outerResult = { successes: [], failures: [] };
       const fromEmail = globalDb.getReturnAddressWithDisplayName(identityId);

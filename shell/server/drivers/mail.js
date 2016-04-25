@@ -32,7 +32,6 @@ const Url = Npm.require("url");
 const ROOT_URL = Url.parse(process.env.ROOT_URL);
 const HOSTNAME = ROOT_URL.hostname;
 
-const DAILY_LIMIT = 50;
 const RECIPIENT_LIMIT = 20;
 
 const CLIENT_TIMEOUT = 15000; // 15s
@@ -279,22 +278,7 @@ hackSendEmail = (session, email) => {
 
     const grain = Grains.findOne(session.grainId);
     if (!grain) throw new Error("Grain does not exist.");
-
-    const user = Meteor.users.findAndModify({
-      query: { _id: grain.userId },
-      update: {
-        $inc: {
-          dailySentMailCount: 1,
-        },
-      },
-      fields: { dailySentMailCount: 1 },
-    });
-    if (user.dailySentMailCount >= DAILY_LIMIT) {
-      throw new Error(
-          "Sorry, you've reached your e-mail sending limit for today. Currently, Sandstorm " +
-          "limits each user to " + DAILY_LIMIT + " e-mails per day for spam control reasons. " +
-          "Please feel free to contact us if this is a problem.");
-    }
+    globalDb.incrementDailySentMailCount(grain.userId);
 
     SandstormEmail.rawSend(mc);
   }).bind(this)).catch((err) => {

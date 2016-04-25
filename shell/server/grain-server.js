@@ -443,6 +443,7 @@ Meteor.methods({
               "Note: If you forward this email to other people, they will be able to access " +
               "the share as well. To prevent this, remove the button before forwarding.</div>";
           try {
+            globalDb.incrementDailySentMailCount(accountId);
             SandstormEmail.send({
               to: emailAddress,
               from: fromEmail,
@@ -488,6 +489,7 @@ Meteor.methods({
                   "<div style='font-size:8pt;font-style:italic;color:gray'>" +
                   "Note: You will need to log in with your " + loginNote +
                   " to access this grain.";
+              globalDb.incrementDailySentMailCount(accountId);
               SandstormEmail.send({
                 to: email.email,
                 from: fromEmail,

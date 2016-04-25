@@ -1,4 +1,4 @@
-Here in the **Sandstorm developer portal**, you will find to resources to help you build new
+Here in the **Sandstorm developer hub**, you will find to resources to help you build new
 apps on top of Sandstorm, package existing apps, and understand how apps and Sandstorm fit together.
 
 <div class="developer-next-steps">

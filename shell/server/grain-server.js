@@ -356,7 +356,7 @@ Meteor.methods({
             if (token.owner.user.upstreamTitle === newTitle) {
               // User renamed grain to match upstream title. Act like they never renamed it at
               // all.
-              ApiTokens.update(token._id,
+              ApiTokens.update({ grainId: grainId, "owner.user.identityId": identityId },
                                { $set: { "owner.user.title": newTitle },
                                  $unset: { "owner.user.upstreamTitle": 1, "owner.user.renamed": 1 },
                                },

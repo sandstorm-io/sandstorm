@@ -1153,6 +1153,11 @@ body>.popup {
       margin: 0;
       font-size: 10pt;
     }
+    textarea.personal-message, input.emails, select.share-token-role {
+      &[disabled=true] {
+        background-color: #eaeaea;
+      }
+    }
 
     .invitation-explanation {
       max-width: 80%;

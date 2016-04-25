@@ -18,4 +18,4 @@ however, many people are already using it for real work every day.
 * [Learn how to use Sandstorm &raquo;](using.md)
 * [Develop apps for Sandstorm or understand the platform &raquo;](developing.md)
 * [Run & maintain your own server &raquo;](administering.md)
-* [Get involved &raquo;](https://github.com/sandstorm-io/sandstorm/wiki/Get-Involved)
+* [Get involved &raquo;](https://sandstorm.io/community)

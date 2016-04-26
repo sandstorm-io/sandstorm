@@ -314,10 +314,18 @@ Template.grainSharePopup.events({
 });
 
 Template.shareWithOthers.onRendered(function () {
-  this.find("[role=tab]").focus();
+  if (globalDb.isDemoUser()) {
+    activateElementTab(this.find("#shareable-link-tab-header"), this);
+  }
+
+  this.find("[role=tab][aria-selected=true]").focus();
 });
 
 const activateTargetTab = function (event, instance) {
+  activateElementTab(event.currentTarget, instance);
+};
+
+const activateElementTab = function (elementToActivate, instance) {
   // Deactivate all tabs and all tab panels.
   instance.findAll("ul[role=tablist]>li[role=tab]").forEach(function (element) {
     element.setAttribute("aria-selected", false);
@@ -328,9 +336,9 @@ const activateTargetTab = function (event, instance) {
   });
 
   // Activate the tab header the user selected.
-  event.currentTarget.setAttribute("aria-selected", true);
+  elementToActivate.setAttribute("aria-selected", true);
   // Show the corresponding tab panel.
-  const idToShow = event.currentTarget.getAttribute("aria-controls");
+  const idToShow = elementToActivate.getAttribute("aria-controls");
   const tabPanelToShow = instance.find("#" + idToShow);
   tabPanelToShow.setAttribute("aria-hidden", false);
 };

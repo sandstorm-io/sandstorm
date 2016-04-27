@@ -155,6 +155,22 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       "x-oc-mtime",            # Owncloud client
       "oc-fileid",             # Owncloud client
       "oc-chunked",            # Owncloud client
+      "x-hgarg-1",             # Mercurial client
+      "x-hgarg-2",             # Mercurial client
+      "x-hgarg-3",             # Mercurial client
+      "x-hgarg-4",             # Mercurial client
+      "x-hgarg-5",             # Mercurial client
+      "x-hgarg-6",             # Mercurial client
+      "x-hgarg-7",             # Mercurial client
+      "x-hgarg-8",             # Mercurial client
+      "x-hgarg-9",             # Mercurial client
+      "x-hgarg-10",            # Mercurial client
+      "x-hgarg-11",            # Mercurial client
+      "x-hgarg-12",            # Mercurial client
+      "x-hgarg-13",            # Mercurial client
+      "x-hgarg-14",            # Mercurial client
+      "x-hgarg-15",            # Mercurial client
+      "x-hgarg-16",            # Mercurial client
     ];
   }
 

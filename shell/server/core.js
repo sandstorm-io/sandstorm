@@ -276,15 +276,21 @@ checkRequirements = (requirements) => {
   for (let i in requirements) {
     const requirement = requirements[i];
     if (requirement.tokenValid) {
-      const token = ApiTokens.findOne({ _id: requirement.tokenValid }, { fields: { requirements: 1 } });
-      if (!checkRequirements(token.requirements)) {
+      const token = ApiTokens.findOne({ _id: requirement.tokenValid, revoked: { $ne: true }, },
+                                      { fields: { requirements: 1 } });
+      if (!token || !checkRequirements(token.requirements)) {
+        return false;
+      }
+
+      if (token.parentToken && !checkRequirements([{ tokenValid: token.parentToken }])) {
         return false;
       }
     } else if (requirement.permissionsHeld) {
       const p = requirement.permissionsHeld;
       const viewInfo = Grains.findOne(p.grainId, { fields: { cachedViewInfo: 1 } }).cachedViewInfo;
       const currentPermissions = SandstormPermissions.grainPermissions(
-        globalDb, { grain: { _id: p.grainId, identityId: p.identityId } }, viewInfo || {});
+        globalDb,
+        { grain: { _id: p.grainId, identityId: p.identityId } }, viewInfo || {}).permissions;
       if (!currentPermissions) {
         return false;
       }

@@ -453,6 +453,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 // }
 
 ApiTokens.ensureIndexOnServer("grainId", { sparse: 1 });
+ApiTokens.ensureIndexOnServer("owner.user.identityId", { sparse: 1 });
 
 ApiHosts = new Mongo.Collection("apiHosts");
 // Allows defining some limited static behavior for an API host when accessed unauthenticated. This

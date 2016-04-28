@@ -714,49 +714,6 @@ class ApiSessionProxies {
 const apiSessionProxies = new ApiSessionProxies(3 * 60 * 1000);
 
 Meteor.startup(() => {
-  const clearSessionsAndProxies = (token) => {
-    // Clears all sessions and API proxies associated with `token` or any token that is downstream
-    // in the sharing graph.
-    // TODO(soon): Only clear sessions and proxies for which the permissions have changed.
-    const downstream = SandstormPermissions.downstreamTokens(globalDb, { token: token });
-    downstream.push(token);
-    const identityIds = [];
-    const tokenIds = [];
-
-    downstream.forEach((token) => {
-      apiSessionProxies.removeProxiesOfToken(token._id);
-
-      tokenIds.push(token._id);
-      if (token.owner && token.owner.user) {
-        identityIds.push(token.owner.user.identityId);
-      }
-    });
-
-    Sessions.find({
-      grainId: token.grainId,
-      $or: [{ identityId: { $in: identityIds } },
-        { hashedToken: { $in: tokenIds } },
-      ],
-    }, {
-      fields: { hostId: 1 },
-    }).forEach((session) => {
-      const proxy = proxiesByHostId[session.hostId];
-      if (proxy) {
-        proxy.close();
-      }
-
-      delete proxiesByHostId[session.hostId];
-    });
-
-    Sessions.remove({
-      grainId: token.grainId,
-      $or: [
-        { identityId: { $in: identityIds } },
-        { hashedToken: { $in: tokenIds } },
-      ],
-    });
-  };
-
   Grains.find().observe({
     changed(newGrain, oldGrain) {
       if (oldGrain.private != newGrain.private) {
@@ -765,31 +722,6 @@ Meteor.startup(() => {
           apiSessionProxies.removeProxiesOfToken(apiToken._id);
         });
       }
-    },
-  });
-
-  ApiTokens.find({ grainId: { $exists: true }, objectId: { $exists: false } }).observe({
-    added(newApiToken) {
-      // TODO(soon): Unfortunately, added() gets called for all existing role assignments when the
-      //   front-end restarts, meaning clearing sessions here will cause people's views to refresh
-      //   on server upgrade, which is not a nice user experience. It's also sad to force-refresh
-      //   people when they gained new permissions since they might be in the middle of something,
-      //   and it's not strictly necessary for security. OTOH, it's sad to be non-reactive. Maybe
-      //   we should notify people that they have new permissions and let them click a thing to
-      //   refresh?
-      //clearSessions(roleAssignment.grainId, roleAssignment.recipient);
-      //clearApiProxies(roleAssignment.grainId);
-    },
-
-    changed(newApiToken, oldApiToken) {
-      if (!_.isEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment) ||
-          !_.isEqual(newApiToken.revoked, oldApiToken.revoked)) {
-        clearSessionsAndProxies(newApiToken);
-      }
-    },
-
-    removed(oldApiToken) {
-      clearSessionsAndProxies(oldApiToken);
     },
   });
 });
@@ -1307,6 +1239,11 @@ class Proxy {
       this.supervisor.close();
       delete this.supervisor;
     }
+
+    if (this.permissionsObserver) {
+      this.permissionsObserver.stop();
+      delete this.permissionsObserver;
+    }
   }
 
   getConnection() {
@@ -1366,21 +1303,34 @@ class Proxy {
         vertex = { grain: { _id: _this.grainId, identityId: _this.identityId } };
       }
 
-      const permissions = SandstormPermissions.grainPermissions(globalDb, vertex, viewInfo);
-      if (!permissions) {
+      let onInvalidated = function () {
+        Sessions.remove({ _id: _this.sessionId });
+      };
+
+      if (!_this.sessionId) {
+        onInvalidated = function () {
+          apiSessionProxies.removeProxiesOfToken(_this.apiToken._id);
+        };
+      }
+
+      const permissions = SandstormPermissions.grainPermissions(globalDb, vertex, viewInfo,
+                                                                onInvalidated);
+      if (!permissions.permissions) {
         throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
       }
+
+      _this.permissionsObserver = permissions.observeHandle;
 
       Sessions.update({
         _id: _this.sessionId,
       }, {
         $set: {
           viewInfo: viewInfo,
-          permissions: permissions,
+          permissions: permissions.permissions,
         },
       });
 
-      return permissions;
+      return permissions.permissions;
     });
 
     return promise.then((permissions) => {

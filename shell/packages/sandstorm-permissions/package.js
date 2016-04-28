@@ -20,12 +20,14 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
+  api.use("ecmascript");
   api.use(["check", "random", "underscore", "sandstorm-db"], ["server"]);
   api.addFiles(["permissions.js"], "server");
   api.export("SandstormPermissions");
 });
 
 Package.onTest(function (api) {
+  api.use("ecmascript");
   api.use(["check", "random", "accounts-base", "underscore", "sandstorm-db", "tinytest", "sandstorm-permissions"], ["server"]);
   api.addFiles("permissions-tests.js", "server");
 });

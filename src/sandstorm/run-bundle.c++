@@ -1885,6 +1885,12 @@ private:
     Subprocess process([&]() -> int {
       // Create a listening socket for the meteor app on fd=3 and up
       uint socketFdStart = 3;
+
+      // First, bind the SMTP port to FD #3.
+      bindSocketToFd(config, config.smtpListenPort, socketFdStart);
+
+      // Then, bind the HTTP(S) port(s) to FD #4 and higher.
+      socketFdStart++;
       for (size_t i = 0; i < config.ports.size(); i++) {
         bindSocketToFd(config, config.ports[i], i + socketFdStart);
       }
@@ -1912,7 +1918,6 @@ private:
         KJ_SYSCALL(setenv("HTTPS_PORT", kj::str(*httpsPort).cStr(), true));
       }
 
-      KJ_SYSCALL(setenv("SANDSTORM_SMTP_PORT", kj::str(config.smtpListenPort).cStr(), true));
       KJ_SYSCALL(setenv("MONGO_URL",
           kj::str("mongodb://", authPrefix, "127.0.0.1:", config.mongoPort,
                   "/meteor", authSuffix).cStr(),

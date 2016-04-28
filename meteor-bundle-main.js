@@ -18,6 +18,7 @@ var url = require('url');
 var forge = require('./programs/server/npm/node_modules/meteor/meteor-node-forge/node_modules/node-forge');
 
 function sandstormMain() {
+  global.SANDSTORM_SMTP_LISTEN_HANDLE = { fd: 3 };
   monkeypatchHttpAndHttps();
 
   // Delegate to Meteor.

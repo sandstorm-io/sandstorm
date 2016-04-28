@@ -49,10 +49,7 @@ if (!Meteor.settings.replicaNumber) {  // only first replica
 }
 
 Meteor.startup(function () {
-  const SANDSTORM_SMTP_FD_NUM = 3;
-  const BIND_IP = process.env.BIND_IP || "127.0.0.1";
-
-  simplesmtp.createSimpleServer({ SMTPBanner:"Sandstorm Mail Server" }, (req) => {
+  const server = simplesmtp.createSimpleServer({ SMTPBanner:"Sandstorm Mail Server" }, (req) => {
     const mailparser = new MailParser();
     req.pipe(mailparser);
 
@@ -178,7 +175,16 @@ Meteor.startup(function () {
         req.reject(err.message);
       });
     });
-  }).listen({ fd: SANDSTORM_SMTP_FD_NUM });
+  });
+
+  if (global.SANDSTORM_SMTP_LISTEN_HANDLE) {
+    server.listen(global.SANDSTORM_SMTP_LISTEN_HANDLE);
+  } else {
+    // We must be running `run-dev.sh`.
+    const BIND_IP = process.env.BIND_IP || "127.0.0.1";
+    const SMTP_LISTEN_PORT = Meteor.settings.public.smtpListenPort || 30025;
+    server.listen(SMTP_LISTEN_PORT, BIND_IP);
+  }
 });
 
 function formatAddress(field) {

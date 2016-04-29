@@ -13,6 +13,7 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "intro.js": "git+https://github.com/sandstorm-io/intro.js.git#sandstorm"
+    "intro.js": "git+https://github.com/sandstorm-io/intro.js.git#sandstorm",
+    "lodash.escaperegexp": "^4.1.1"
   }
 }

@@ -217,6 +217,7 @@ hackSendEmail = (session, email) => {
     }
 
     const grainAddress = session._getAddress();
+    const allowedOutgoingAddressesRegex = session._getAllowedOutgoingAddressesRegex();
     const userAddress = session._getUserAddress();
 
     // Overwrite the 'from' address with the grain's address.
@@ -228,7 +229,7 @@ hackSendEmail = (session, email) => {
 
     if (email.from.address !== grainAddress && email.from.address !== userAddress.address) {
       throw new Error(
-        "FROM header in outgoing emails need to equal either " + grainAddress + " or " +
+        "FROM header in outgoing emails need to equal either " + grainAddress + " (with optional suffix) or " +
         userAddress.address + ". Yours was: " + email.from.address);
     }
 
@@ -246,7 +247,12 @@ hackSendEmail = (session, email) => {
     });
 
     const envelope = mc.getEnvelope();
-    envelope.from = grainAddress;
+    // We allow envelope address to have a suffix as well. In this way apps can use unique envelope
+    // addresses when sending out e-mails which allow better handling of e-mail bounces - app can
+    // match bounce with the sent e-mail.
+    if (!allowedOutgoingAddressesRegex.test(envelope.from)) {
+      envelope.from = grainAddress;
+    }
 
     mc.setMessageOption({
       envelope: envelope,

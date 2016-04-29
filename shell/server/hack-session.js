@@ -33,6 +33,8 @@ const Grain = Capnp.importSystem("sandstorm/grain.capnp");
 
 const Url = Npm.require("url");
 
+const escapeRegExp = require('lodash.escaperegexp');
+
 ROOT_URL = Url.parse(process.env.ROOT_URL);
 HOSTNAME = ROOT_URL.hostname;
 
@@ -229,6 +231,11 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
     // Must be called in a Meteor context.
 
     return this._getPublicId() + "@" + HOSTNAME;
+  }
+
+  _getAllowedOutgoingAddressesRegex() {
+    // We allow also <publicId>+<suffix>@hostname outgoing e-mail addresses.
+    return new RegExp('^' + escapeRegExp(this._getPublicId()) + '(?:\\+[a-zA-Z0-9_-]+)?' + escapeRegExp('@' + HOSTNAME) + '$');
   }
 
   _getUserAddress() {

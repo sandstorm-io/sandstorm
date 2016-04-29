@@ -216,13 +216,15 @@ hackSendEmail = (session, email) => {
           "Please feel free to contact us if this is a problem for you.");
     }
 
-    // Overwrite the 'from' address with the grain's address.
-    if (!email.from) {
-      email.from = {};
-    }
-
     const grainAddress = session._getAddress();
     const userAddress = session._getUserAddress();
+
+    // Overwrite the 'from' address with the grain's address.
+    if (!email.from) {
+      email.from = {
+        address: grainAddress
+      };
+    }
 
     // First check if we're changing the from address, and if so, move it to reply-to
     if (email.from.address !== grainAddress && email.from.address !== userAddress.address) {
@@ -260,7 +262,7 @@ hackSendEmail = (session, email) => {
       mc.addHeader("references", email.references);
     }
 
-    if (email.messageId) {
+    if (email.inReplyTo) {
       mc.addHeader("in-reply-to", email.inReplyTo);
     }
 

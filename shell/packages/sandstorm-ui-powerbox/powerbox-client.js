@@ -241,12 +241,12 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
       cardData.apiTokenId = apiToken._id;
 
       cardData.callback = () => () => {
-        Meteor.call("getViewInfoForApiToken", grainCard.tokenId, (err, result) => {
+        Meteor.call("getViewInfoForApiToken", cardData.apiTokenId, (err, result) => {
           if (err) {
             console.log(err);
             this._error.set(err.toString());
           } else {
-            this.selectGrain(grainCard, result || {});
+            this.selectGrain(cardData, result || {});
           }
         });
       };

@@ -935,7 +935,7 @@ tryProxyUpgrade = (hostId, req, socket, head) => {
   if (globalDb.isApiHostId(hostId)) {
     const token = apiTokenForRequest(req, hostId);
     if (token) {
-      return getProxyForApiToken(token).then((proxy) => {
+      return getProxyForApiToken(token, req).then((proxy) => {
         // Meteor sets the timeout to five seconds. Change that back to two
         // minutes, which is the default value.
         socket.setTimeout(120000);

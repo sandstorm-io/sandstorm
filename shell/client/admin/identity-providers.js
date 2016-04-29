@@ -616,6 +616,10 @@ Template.adminIdentityProviderConfigureSaml.helpers({
     const instance = Template.instance();
     return instance.errorMessage.get();
   },
+
+  entityId: function () {
+    return window.location.hostname;
+  },
 });
 
 Template.adminIdentityProviderConfigureSaml.events({

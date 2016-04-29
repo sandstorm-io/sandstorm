@@ -98,6 +98,8 @@
   border: 1px solid $default-table-border-color;
 
   div[role=columnheader] {
+    // Column header text should "stick" to the bottom of the row, to be
+    // closest to the contents of the column.
     display: flex;
     flex-direction: row;
     align-items: flex-end;
@@ -113,7 +115,7 @@
   .header-row {
     display: flex;
     flex-direction: row;
-    align-items: stretch;
+    align-items: stretch; // so the border-left covers the whole height of the row
     justify-content: flex-start;
     background-color: $default-table-header-background-color;
     color: $default-table-header-foreground-color;
@@ -123,10 +125,18 @@
     }
   }
 
-  .invite-row {
+  .loading-row {
     display: flex;
     flex-direction: row;
     align-items: center;
+    justify-content: center;
+  }
+
+  .invite-row {
+    height: 36px;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
     justify-content: flex-start;
     background-color: $default-table-row-action-background-color;
 
@@ -147,6 +157,7 @@
 
     .invite-link {
       padding-left: 8px;
+      padding-top: 8px;
       >a {
         color: #000000;
       }
@@ -156,7 +167,7 @@
   .account-row {
     display: flex;
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
     justify-content: flex-start;
     background-color: $default-table-row-background-color;
     &:not(:last-child) {
@@ -167,7 +178,7 @@
     }
   }
 
-  .account-role {
+  div.account-role {
     flex: none;
     width: 32px;
     text-align: center;
@@ -175,66 +186,93 @@
     flex-direction: row;
     align-items: center;
     justify-content: center;
+    &[role=gridcell] {
+      padding-top: 6px;
+    }
   }
 
-  .account {
+  div.identities {
     display: inline-block;
     flex: 4 1 0;
-  }
+    &[role=gridcell] {
+      overflow: hidden;
+      text-overflow: ellipsis;
 
-  .identities {
-    display: inline-block;
-    flex: 4 1 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+      .identity-list {
+        margin: 0;
+        padding-left: 0;
+        padding-right: 0;
+        padding-top: 4px;
+        padding-bottom: 0;
+        list-style-type: none;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch; // so the childrens borders will span the whole row
+        justify-content: flex-start;
 
-    .identity-list {
-      margin: 0;
-      padding: 0;
-      list-style-type: none;
-      >*:not(:first-child) {
-        border-top: 1px solid #dddddd;
+        .identity {
+          display: flex;
+          flex-direction: row;
+          align-items: flex-start;
+          justify-content: flex-start;
+
+          &:not(:first-child) {
+            padding-top: 4px;
+            border-top: 1px solid #dddddd;
+          }
+
+          &:not(:last-child) {
+            padding-bottom: 4px;
+          }
+
+          .identity-provider-icon {
+            align-self: flex-start;
+            @extend %identity-provider-icon;
+            width: 32px;
+            height: 24px;
+          }
+
+          .identity-name {
+            flex: 1 1 40%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .identity-intrinsic-name {
+            flex: 0 1 40%;
+            padding-left: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+        }
       }
     }
   }
 
-  .identity {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-
-    .identity-provider-icon {
-      @extend %identity-provider-icon;
-      width: 32px;
-      height: 32px;
-    }
-    .identity-name {
-      flex: 1 1 40%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .identity-intrinsic-name {
-      flex: 0 1 40%;
-      padding-left: 4px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-  }
-
-  .created, .last-active, .actions {
+  div.created, div.last-active {
     display: inline-block;
     max-width: 20%;
     flex: 1 1 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+
+    &[role=gridcell] {
+      padding-top: 8px;
+    }
   }
 
-  .loading-row {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
+  div.actions {
+    flex: none;
+    width: 70px;
+
+    &[role=gridcell] {
+      text-align: right;
+
+      .manage-user-button {
+        display: inline-block;
+        font-weight: normal;
+        @extend %button-base;
+        @extend %button-secondary;
+      }
+    }
   }
 }
 
@@ -280,7 +318,6 @@
   }
 }
 
-
 .admin-user-identity-list {
   border: 1px solid $default-table-border-color;
 
@@ -316,11 +353,9 @@
         &.identity {
           flex: 4 1 0;
         }
+
         &.created, &.last-active, &.properties {
           flex: 1 1 0;
-        }
-        &.properties {
-          text-align: right;
         }
       }
     }
@@ -345,11 +380,9 @@
         &.identity {
           flex: 4 1 0;
         }
+
         &.created, &.last-active, &.properties {
           flex: 1 1 0;
-        }
-        &.properties {
-          text-align: right;
         }
       }
     }

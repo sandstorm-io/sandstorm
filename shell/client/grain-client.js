@@ -47,7 +47,7 @@ const showWhoHasAccess = function () {
     startOpen: true,
     onDismiss: function () {
       return "remove";
-    }
+    },
   });
 };
 

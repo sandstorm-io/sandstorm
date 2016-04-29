@@ -152,15 +152,21 @@
       </span>
       <form class="admin-user-roles-form">
         {{#unless (isAdmin account) }}
-        <button class="make-admin" type="button" disabled="{{ isSubmitting }}">Make Admin</button>
+        <button class="make-admin" type="button" disabled="{{ isSubmitting }}">Promote to admin</button>
         {{/unless}}
 
         {{#if (canBeMadeUser account) }}
-        <button class="make-user" type="button" disabled="{{ isSubmitting }}">Make User</button>
+        <button class="make-user" type="button" disabled="{{ isSubmitting }}">
+          {{#if (isAdmin account)}}
+            Demote to user
+          {{else}}
+            Promote to user
+          {{/if}}
+        </button>
         {{/if}}
 
         {{#if (canBeMadeVisitor account) }}
-        <button class="make-visitor" type="button" disabled="{{ isSubmitting }}">Make Visitor</button>
+        <button class="make-visitor" type="button" disabled="{{ isSubmitting }}">Demote to visitor</button>
         {{/if}}
       </form>
     </h2>

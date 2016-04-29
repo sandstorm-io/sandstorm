@@ -476,7 +476,8 @@ Meteor.publish("allUsers", function (token) {
 Meteor.publish("adminUserDetails", function (userId) {
   if (!authorizedAsAdmin(undefined, this.userId)) return [];
 
-  // Reactive publish of any identities owned by
+  // Reactive publish of any identities owned by the account with id userId,
+  // as well as that user object itself.
   const identitySubs = {};
   const accountId = userId;
 
@@ -554,6 +555,8 @@ Meteor.publish("adminUserDetails", function (userId) {
     });
   });
 
+  // Meteor's cursor.observe() will synchronously call all of the added() callbacks from the initial
+  // query, so by the time we get here we can report readiness.
   this.ready();
 });
 

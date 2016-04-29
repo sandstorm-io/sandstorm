@@ -1382,8 +1382,10 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
   // explicitly pass in undefined.
   check(provider, Match.OneOf({ identityId: String, accountId: String },
                               { rawParentToken: Match.OneOf(String, Buffer) }));
-  check(owner, Match.OneOf({ webkey: { forSharing: Boolean,
-                                     expiresIfUnusedDuration: Match.Optional(Number), }, },
+  check(owner, Match.OneOf({ webkey: Match.OneOf(null,
+                                                 { forSharing: Boolean,
+                                                   expiresIfUnusedDuration: Match.Optional(Number),
+                                                 }), },
                            { user: { identityId: String,
                                      title: String,
                                      renamed: Match.Optional(Boolean),

@@ -236,7 +236,7 @@ hackSendEmail = (session, email) => {
       };
     }
 
-    if (email.from.address !== grainAddress && email.from.address !== userAddress.address) {
+    if (!allowedOutgoingAddressesRegex.test(email.from.address) && email.from.address !== userAddress.address) {
       throw new Error(
         "FROM header in outgoing emails need to equal either " + grainAddress + " (with optional suffix) or " +
         userAddress.address + ". Yours was: " + email.from.address);

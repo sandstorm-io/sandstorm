@@ -226,7 +226,6 @@ hackSendEmail = (session, email) => {
       };
     }
 
-    // First check if we're changing the from address, and if so, move it to reply-to
     if (email.from.address !== grainAddress && email.from.address !== userAddress.address) {
       throw new Error(
         "FROM header in outgoing emails need to equal either " + grainAddress + " or " +

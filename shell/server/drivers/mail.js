@@ -36,6 +36,9 @@ const RECIPIENT_LIMIT = 20;
 
 const CLIENT_TIMEOUT = 15000; // 15s
 
+// A similar regex is also in hack-session.js. Keep in sync.
+const PUBLIC_ID_REGEX = new RegExp('^(.+?)(?:\\+[a-zA-Z0-9_-]+)?@');
+
 // Every day, reset all per-user sent counts to zero.
 // TODO(cleanup): Consider a more granular approach. For example, each user could have a timer
 //   after which their count will reset. We'd only check the timer when that user is trying to
@@ -116,7 +119,13 @@ Meteor.startup(function () {
           // there will be an nginx frontend verifying hostnames anyway. Grain public IDs are
           // globally unique anyway, so an e-mail meant for another server presumably won't match
           // any ID at this one anyway.
-          return deliverTo.slice(0, deliverTo.indexOf("@"));
+          const match = PUBLIC_ID_REGEX.exec(deliverTo);
+          if (match) {
+            return match[1];
+          }
+          else {
+            throw new Error("Invalid recipient e-mail address: " + deliverTo);
+          }
         }));
 
         // Deliver to each grain in parallel.

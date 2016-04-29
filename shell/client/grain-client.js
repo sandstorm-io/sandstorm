@@ -39,6 +39,18 @@ const promptNewTitle = function () {
   }
 };
 
+const showWhoHasAccess = function () {
+  const closer = globalTopbar.addItem({
+    name: "who-has-access",
+    template: Template.whoHasAccess,
+    popupTemplate: Template.whoHasAccessPopup,
+    startOpen: true,
+    onDismiss: function () {
+      return "remove";
+    }
+  });
+};
+
 const mapGrainStateToTemplateData = function (grainState) {
   const error = grainState.error();
   const templateData = {
@@ -289,16 +301,7 @@ Template.grainSharePopup.events({
 
   "click button.who-has-access": function (event, instance) {
     event.preventDefault();
-    const closer = globalTopbar.addItem({
-      name: "who-has-access",
-      template: Template.whoHasAccess,
-      popupTemplate: Template.whoHasAccessPopup,
-      data: new ReactiveVar(instance.data),
-      startOpen: true,
-      onDismiss: function () {
-        return "remove";
-      },
-    });
+    showWhoHasAccess();
   },
 
   "click #privatize-grain": function (event) {
@@ -1220,6 +1223,14 @@ Meteor.startup(function () {
       const currentGrain = globalGrains.getActive();
       if (senderGrain === currentGrain && !globalTopbar.isPopupOpen()) {
         globalTopbar.openPopup("share");
+      }
+    } else if (event.data.showWhoHasAccess) {
+      // Allow the current grain to request that the "Who has access" dialog be shown.
+      // Only show this popup if no other popup is currently active.
+      // TODO(security): defend against malicious apps spamming this call, blocking all other UI.
+      const currentGrain = globalGrains.getActive();
+      if (senderGrain === currentGrain && !globalTopbar.isPopupOpen()) {
+        showWhoHasAccess();
       }
     } else if (event.data.setTitle || event.data.setTitle === "") {
       senderGrain.setFrameTitle(event.data.setTitle);

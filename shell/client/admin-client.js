@@ -464,6 +464,10 @@ Template.adminSettings.helpers({
   rootUrl: function () {
     return window.location.protocol + "//" + window.location.host;
   },
+
+  entityId: function () {
+    return window.location.hostname;
+  },
 });
 
 Template.adminUsers.onCreated(function () {

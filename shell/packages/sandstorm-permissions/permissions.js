@@ -1381,11 +1381,15 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
   // Meteor bug #3877: we get null here instead of undefined when we
   // explicitly pass in undefined.
   check(provider, Match.OneOf({ identityId: String, accountId: String },
-                              { rawParentToken: String }));
-  check(owner, Match.OneOf({ webkey: { forSharing: Boolean,
-                                     expiresIfUnusedDuration: Match.Optional(Number), }, },
+                              { rawParentToken: Match.OneOf(String, Buffer) }));
+  check(owner, Match.OneOf({ webkey: Match.OneOf(null,
+                                                 { forSharing: Boolean,
+                                                   expiresIfUnusedDuration: Match.Optional(Number),
+                                                 }), },
                            { user: { identityId: String,
-                                   title: String, }, },
+                                     title: String,
+                                     renamed: Match.Optional(Boolean),
+                                     upstreamTitle: Match.Optional(String), }, },
                            { grain: { grainId: String,
                                       saveLabel: LocalizedString,
                                       introducerIdentity: String, }, },

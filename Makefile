@@ -253,7 +253,7 @@ tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html shell/client
 	@cd shell/ && meteor npm install
 
 icons/node_modules: icons/package.json
-	cd icons && $(METEOR_DEV_BUNDLE)/bin/npm install
+	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install
 
 shell/client/styles/_icons.scss: icons/node_modules icons/*svg icons/Gruntfile.js
 	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH ./node_modules/.bin/grunt

@@ -482,6 +482,13 @@ Meteor.publish("adminUserDetails", function (userId) {
   const accountId = userId;
 
   const unrefIdentity = (identityId) => {
+    if (!identitySubs[identityId]) {
+      // should never happen, but if somehow you attempt to unref an identity that we don't have a
+      // subscription to, then don't crash
+      console.error("attempted to unref untracked identity id:", identityId);
+      return;
+    }
+
     const observeHandle = identitySubs[identityId];
     identitySubs[identityId] = undefined;
     observeHandle.stop();
@@ -489,17 +496,24 @@ Meteor.publish("adminUserDetails", function (userId) {
   };
 
   const refIdentity = (identityId) => {
+    if (identitySubs[identityId]) {
+      // should never happen, but if somehow an account wound up with a duplicate identity ID,
+      // avoid leaking a subscription
+      console.error("duplicate identity id:", identityId);
+      return;
+    }
+
     const cursor = Meteor.users.find({ _id: identityId });
     const observeHandle = cursor.observe({
       added: (doc) => {
         this.added("users", doc._id, doc);
       },
 
-      changed: (doc) => {
+      changed: (newDoc, oldDoc) => {
         this.changed("users", newDoc._id, newDoc);
       },
 
-      removed: (doc) => {
+      removed: (oldDoc) => {
         this.removed("users", oldDoc._id);
       },
     });

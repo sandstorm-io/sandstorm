@@ -33,7 +33,7 @@ const Grain = Capnp.importSystem("sandstorm/grain.capnp");
 
 const Url = Npm.require("url");
 
-const escapeRegExp = require('lodash.escaperegexp');
+const escapeRegExp = require("lodash.escaperegexp");
 
 ROOT_URL = Url.parse(process.env.ROOT_URL);
 HOSTNAME = ROOT_URL.hostname;
@@ -236,7 +236,7 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
   _getAllowedOutgoingAddressesRegex() {
     // We allow also <publicId>+<suffix>@hostname outgoing e-mail addresses.
     // A similar regex is also in mail.js. Keep in sync.
-    return new RegExp('^' + escapeRegExp(this._getPublicId()) + '(?:\\+[a-zA-Z0-9_-]+)?' + escapeRegExp('@' + HOSTNAME) + '$');
+    return new RegExp("^" + escapeRegExp(this._getPublicId()) + "(?:\\+[a-zA-Z0-9_-]+)?" + escapeRegExp("@" + HOSTNAME) + "$");
   }
 
   _getUserAddress() {

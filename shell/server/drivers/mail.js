@@ -37,7 +37,7 @@ const RECIPIENT_LIMIT = 20;
 const CLIENT_TIMEOUT = 15000; // 15s
 
 // A similar regex is also in hack-session.js. Keep in sync.
-const PUBLIC_ID_REGEX = new RegExp('^(.+?)(?:\\+[a-zA-Z0-9_-]+)?@');
+const PUBLIC_ID_REGEX = new RegExp("^(.+?)(?:\\+[a-zA-Z0-9_-]+)?@");
 
 // Every day, reset all per-user sent counts to zero.
 // TODO(cleanup): Consider a more granular approach. For example, each user could have a timer
@@ -122,8 +122,7 @@ Meteor.startup(function () {
           const match = PUBLIC_ID_REGEX.exec(deliverTo);
           if (match) {
             return match[1];
-          }
-          else {
+          } else {
             throw new Error("Invalid recipient e-mail address: " + deliverTo);
           }
         }));

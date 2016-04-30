@@ -157,7 +157,7 @@ Template.identityManagementButtons.helpers({
       }
     } else {
       if (LoginIdentitiesOfLinkedAccounts.findOne({ sourceIdentityId: this._id,
-                                                   loginAccountId: { $ne: Meteor.userId() }, })) {
+                                                    loginAccountId: { $ne: Meteor.userId() }, })) {
         return { why: "A shared identity is not allowed to be promoted to a login identity." };
       }
 
@@ -184,7 +184,7 @@ Template.loginIdentitiesOfLinkedAccounts.helpers({
   getOtherAccounts: function () {
     const id = Template.instance().data._id;
     return LoginIdentitiesOfLinkedAccounts.find({ sourceIdentityId: id,
-                                                 loginAccountId: { $ne: Meteor.userId() }, })
+                                                  loginAccountId: { $ne: Meteor.userId() }, })
         .fetch().map(function (identity) {
       SandstormDb.fillInPictureUrl(identity);
       return identity;
@@ -253,9 +253,11 @@ Template.identityCardSignInButton.events({
     const result = Accounts.identityServices[name].initiateLogin(data.identity.loginId);
     if ("form" in result) {
       const loginTemplate = Accounts.identityServices[name].loginTemplate;
-      instance._form.set({ loginId: data.identity.loginId,
-                           data: loginTemplate.data,
-                           name: loginTemplate.name, });
+      instance._form.set({
+        loginId: data.identity.loginId,
+        data: loginTemplate.data,
+        name: loginTemplate.name,
+      });
     }
   },
 });

@@ -905,7 +905,7 @@ Template.whoHasAccessPopup.helpers({
         identityId: Template.instance().identityId,
         forSharing: true,
         $or: [
-          { owner: { webkey:null } },
+          { owner: { webkey: null } },
           { owner: { $exists: false } },
         ],
       }).fetch();
@@ -1634,7 +1634,7 @@ Router.map(function () {
           // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
           html: AnsiUp.ansi_to_html(GrainLog.find({}, { $sort: { _id: 1 } })
               .map(function (entry) { return entry.text; })
-              .join(""), { use_classes:true }),
+              .join(""), { use_classes: true }),
           // jscs:enable requireCamelCaseOrUpperCaseIdentifiers
         };
       }

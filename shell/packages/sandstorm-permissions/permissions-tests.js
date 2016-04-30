@@ -112,8 +112,15 @@ class Identity {
     this.db = db;
     this.id = Accounts.insertUserDoc(
       { profile: { name: name }, },
-      { services: { dev: { name: name,
-                           isAdmin: false, hasCompletedSignup: true, }, }, });
+      {
+        services: {
+          dev: {
+            name: name,
+            isAdmin: false,
+            hasCompletedSignup: true,
+          },
+        },
+      });
   }
 
   mayOpenGrain(grain) {
@@ -216,8 +223,13 @@ Tinytest.add("permissions: legacy public grain", function (test) {
 
   // anonymous
   test.isTrue(
-    SandstormPermissions.mayOpenGrain(globalDb, { grain: { _id: grain.id,
-                                                           identityId: null, }, }));
+    SandstormPermissions.mayOpenGrain(globalDb, {
+      grain: {
+        _id: grain.id,
+        identityId: null,
+      },
+    })
+  );
 
   test.equal(alice.grainPermissions(grain), [true, true, true]);
   test.equal(bob.grainPermissions(grain), [true, false, false]);

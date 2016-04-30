@@ -55,32 +55,32 @@ const matchApps = function (searchString) {
   const db = Template.instance().data._db;
   const allActions = db.currentUserActions().fetch();
   const appsFromUserActionsByAppId = _.chain(allActions)
-                             .groupBy("packageId")
-                             .pairs()
-                             .map(function (pair) {
-                               const pkg = db.collections.packages.findOne(pair[0]);
-                               return {
-                                  packageId: pair[0],
-                                  actions: pair[1],
-                                  appId: pkg.appId,
-                                  pkg: pkg,
-                                  dev: false,
-                                };
-                             })
-                             .indexBy("appId")
-                             .value();
+      .groupBy("packageId")
+      .pairs()
+      .map(function (pair) {
+        const pkg = db.collections.packages.findOne(pair[0]);
+        return {
+          packageId: pair[0],
+          actions: pair[1],
+          appId: pkg.appId,
+          pkg: pkg,
+          dev: false,
+        };
+      })
+      .indexBy("appId")
+      .value();
   const devPackagesByAppId = _.chain(db.collections.devPackages.find().fetch())
-                        .map(function (devPackage) {
-                          return {
-                            packageId: devPackage._id,
-                            actions: devPackage.manifest.actions,
-                            appId: devPackage.appId,
-                            pkg: devPackage,
-                            dev: true,
-                          };
-                        })
-                        .indexBy("appId")
-                        .value();
+      .map(function (devPackage) {
+        return {
+          packageId: devPackage._id,
+          actions: devPackage.manifest.actions,
+          appId: devPackage.appId,
+          pkg: devPackage,
+          dev: true,
+        };
+      })
+      .indexBy("appId")
+      .value();
   // Merge, making sure that dev apps overwrite user actions if they share appId
   const allApps = _.chain({})
                  .extend(appsFromUserActionsByAppId, devPackagesByAppId)

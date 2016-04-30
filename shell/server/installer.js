@@ -42,7 +42,7 @@ const verifyIsMainReplica = () => {
 Meteor.methods({
   deleteUnusedPackages(appId) {
     check(appId, String);
-    Packages.find({ appId:appId }).forEach((pkg) => {deletePackage(pkg._id);});
+    Packages.find({ appId: appId }).forEach((pkg) => {deletePackage(pkg._id);});
   },
 });
 
@@ -63,12 +63,17 @@ const deletePackageInternal = (pkg) => {
   installers[packageId] = "uninstalling";
 
   try {
-    const action = UserActions.findOne({ packageId:packageId });
-    const grain = Grains.findOne({ packageId:packageId });
+    const action = UserActions.findOne({ packageId: packageId });
+    const grain = Grains.findOne({ packageId: packageId });
     const notificationQuery = {};
     notificationQuery["appUpdates." + pkg.appId] = { $exists: true };
     if (!grain && !action && !(pkg.isAutoUpdated && Notifications.findOne(notificationQuery))) {
-      Packages.update({ _id:packageId }, { $set: { status:"delete" }, $unset: { shouldCleanup: "" } });
+      Packages.update({
+        _id: packageId,
+      }, {
+        $set: { status: "delete" },
+        $unset: { shouldCleanup: "" },
+      });
       waitPromise(globalBackend.cap().deletePackage(packageId));
       Packages.remove(packageId);
 
@@ -77,7 +82,7 @@ const deletePackageInternal = (pkg) => {
         globalDb.unrefStaticAsset(assetId);
       });
     } else {
-      Packages.update({ _id:packageId }, { $unset: { shouldCleanup: "" } });
+      Packages.update({ _id: packageId }, { $unset: { shouldCleanup: "" } });
     }
 
     delete installers[packageId];

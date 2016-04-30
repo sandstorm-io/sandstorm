@@ -49,7 +49,7 @@ if (!Meteor.settings.replicaNumber) {  // only first replica
 }
 
 Meteor.startup(function () {
-  const server = simplesmtp.createSimpleServer({ SMTPBanner:"Sandstorm Mail Server" }, (req) => {
+  const server = simplesmtp.createSimpleServer({ SMTPBanner: "Sandstorm Mail Server" }, (req) => {
     const mailparser = new MailParser();
     req.pipe(mailparser);
 

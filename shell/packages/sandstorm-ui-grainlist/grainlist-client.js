@@ -1,4 +1,4 @@
-import {introJs} from "intro.js";
+import { introJs } from "intro.js";
 
 SandstormGrainListPage = function (db, quotaEnforcer) {
   this._filter = new ReactiveVar("");

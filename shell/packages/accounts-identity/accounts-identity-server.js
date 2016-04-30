@@ -67,9 +67,11 @@ function linkIdentityToAccountInternal(db, backend, identityId, accountId) {
                                   "already linked to another account.");
     }
 
-    modifier = { $push: pushModifier,
-                 $unset: { expires: 1 },
-                 $set: { upgradedFromDemo: Date.now() }, };
+    modifier = {
+      $push: pushModifier,
+      $unset: { expires: 1 },
+      $set: { upgradedFromDemo: Date.now() },
+    };
     if (Meteor.settings.public.quotaEnabled) {
       // Demo users never got the referral notification. Send it now:
       db.sendReferralProgramNotification(accountUser._id);
@@ -89,15 +91,15 @@ function linkIdentityToAccountInternal(db, backend, identityId, accountId) {
     const demoIdentityId = SandstormDb.getUserIdentityIds(accountUser)[0];
     Meteor.users.update({ _id: demoIdentityId },
                         { $unset: { expires: 1 },
-                         $set: { upgradedFromDemo: Date.now() }, });
+                          $set: { upgradedFromDemo: Date.now() }, });
 
     // Mark the demo identity as nonlogin. It'd be nicer if the identity started out as nonlogin,
     // but to get that to work we would need to adjust the account creation and first login logic.
     Meteor.users.update({ _id: accountUser._id,
-                         "loginIdentities.id": demoIdentityId,
-                         "nonloginIdentities.id": { $not: { $eq: demoIdentityId } }, },
+                          "loginIdentities.id": demoIdentityId,
+                          "nonloginIdentities.id": { $not: { $eq: demoIdentityId } }, },
                         { $pull: { loginIdentities: { id: demoIdentityId } },
-                         $push: { nonloginIdentities: { id: demoIdentityId } }, });
+                          $push: { nonloginIdentities: { id: demoIdentityId } }, });
 
   }
 }
@@ -212,9 +214,14 @@ Meteor.methods({
     }
 
     const identityUser = Meteor.users.findOne({ _id: identityId });
-    Meteor.users.update({ _id: accountUserId },
-                        { $pull: { nonloginIdentities: { id: identityId },
-                                 loginIdentities: { id: identityId }, }, });
+    Meteor.users.update({
+      _id: accountUserId,
+    }, {
+      $pull: {
+        nonloginIdentities: { id: identityId },
+        loginIdentities: { id: identityId },
+      },
+    });
   },
 
   setIdentityAllowsLogin: function (identityId, allowLogin) {
@@ -232,16 +239,16 @@ Meteor.methods({
 
     if (allowLogin) {
       Meteor.users.update({ _id: this.userId,
-                           "nonloginIdentities.id": identityId,
-                           "loginIdentities.id": { $not: { $eq: identityId } }, },
+                            "nonloginIdentities.id": identityId,
+                            "loginIdentities.id": { $not: { $eq: identityId } }, },
                           { $pull: { nonloginIdentities: { id: identityId } },
-                           $push: { loginIdentities: { id: identityId } }, });
+                            $push: { loginIdentities: { id: identityId } }, });
     } else {
       Meteor.users.update({ _id: this.userId,
-                           "loginIdentities.id": identityId,
-                           "nonloginIdentities.id": { $not: { $eq: identityId } }, },
+                            "loginIdentities.id": identityId,
+                            "nonloginIdentities.id": { $not: { $eq: identityId } }, },
                           { $pull: { loginIdentities: { id: identityId } },
-                           $push: { nonloginIdentities: { id: identityId } }, });
+                            $push: { nonloginIdentities: { id: identityId } }, });
     }
   },
 

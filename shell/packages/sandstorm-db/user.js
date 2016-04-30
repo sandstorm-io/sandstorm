@@ -77,16 +77,16 @@ Accounts.onCreateUser(function (options, user) {
   if (user.loginIdentities) {
     // it's an account
     check(user, { _id: String,
-                 createdAt: Date,
-                 isAdmin: Match.Optional(Boolean),
-                 hasCompletedSignup: Match.Optional(Boolean),
-                 signupKey: Match.Optional(String),
-                 signupNote: Match.Optional(String),
-                 signupEmail: Match.Optional(String),
-                 expires: Match.Optional(Date),
-                 appDemoId: Match.Optional(String),
-                 loginIdentities: [{ id: String }],
-                 nonloginIdentities: [{ id: String }], });
+                  createdAt: Date,
+                  isAdmin: Match.Optional(Boolean),
+                  hasCompletedSignup: Match.Optional(Boolean),
+                  signupKey: Match.Optional(String),
+                  signupNote: Match.Optional(String),
+                  signupEmail: Match.Optional(String),
+                  expires: Match.Optional(Date),
+                  appDemoId: Match.Optional(String),
+                  loginIdentities: [{ id: String }],
+                  nonloginIdentities: [{ id: String }], });
 
     if (Meteor.settings.public.quotaEnabled) {
       user.experiments = user.experiments || {};
@@ -144,7 +144,7 @@ Accounts.onCreateUser(function (options, user) {
   } else if (user.services && user.services.email) {
     check(user.services.email,
           { email: String,
-           tokens: [{ digest: String, algorithm: String, createdAt: Date }], });
+            tokens: [{ digest: String, algorithm: String, createdAt: Date }], });
     serviceUserId = user.services.email.email;
     user.profile.service = "email";
   } else if (user.services && "google" in user.services) {

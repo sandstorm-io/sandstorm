@@ -87,8 +87,12 @@ function mergeRoleAssignmentsIntoApiTokens() {
       roleAssignment: roleAssignment.roleAssignment,
       petname: roleAssignment.petname,
       created: roleAssignment.created,
-      owner: { user: { userId: roleAssignment.recipient,
-                     title: roleAssignment.title, }, },
+      owner: {
+        user: {
+          userId: roleAssignment.recipient,
+          title: roleAssignment.title,
+        },
+      },
     });
   });
 }
@@ -233,7 +237,7 @@ function splitUserIdsIntoAccountIdsAndIdentityIds() {
 
     while (ApiTokens.update({ "requirements.permissionsHeld.userId": user._id },
                             { $set: { "requirements.$.permissionsHeld.identityId": identity.id },
-                             $unset: { "requirements.$.permissionsHeld.userId": 1 }, },
+                              $unset: { "requirements.$.permissionsHeld.userId": 1 }, },
                             { multi: true }) > 0);
     // The `$` operatorer modifies the first element in the array that matches the query. Since
     // there may be many matches, we need to repeat until no documents are modified.

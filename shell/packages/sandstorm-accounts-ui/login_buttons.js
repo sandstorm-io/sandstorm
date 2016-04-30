@@ -147,8 +147,11 @@ Template._loginButtonsLoggedInDropdown.helpers({
       Accounts.setCurrentIdentityId(identityId);
     }
 
-    return { identities: identities, onPicked: onPicked,
-             currentIdentityId: Accounts.getCurrentIdentityId(), };
+    return {
+      identities,
+      onPicked,
+      currentIdentityId: Accounts.getCurrentIdentityId(),
+    };
   },
 
 });

@@ -123,7 +123,7 @@ Meteor.startup(function () {
           if (match) {
             return match[1];
           } else {
-            throw new Error("Invalid recipient e-mail address: " + deliverTo);
+            return null;
           }
         }));
 
@@ -133,15 +133,17 @@ Meteor.startup(function () {
           const tryDeliver = (retryCount) => {
             let grainId;
             return inMeteor(() => {
-              const grain = Grains.findOne({ publicId: publicId }, { fields: {} });
-              if (grain) {
-                grainId = grain._id;
-                return globalBackend.continueGrain(grainId, retryCount > 0);
-              } else {
-                // TODO(someday): We really ought to rig things up so that the 'RCPT TO' SMTP command
-                //   fails in this case, but simplesmtp doesn't appear to support that.
-                throw new Error("No such grain: " + publicId);
+              if (publicId) {
+                const grain = Grains.findOne({ publicId: publicId }, { fields: {} });
+                if (grain) {
+                  grainId = grain._id;
+                  return globalBackend.continueGrain(grainId, retryCount > 0);
+                }
               }
+
+              // TODO(someday): We really ought to rig things up so that the 'RCPT TO' SMTP command
+              //   fails in this case, but simplesmtp doesn't appear to support that.
+              throw new Error("No such grain: " + publicId);
             }).then((grainInfo) => {
               const supervisor = grainInfo.supervisor;
               const uiView = supervisor.getMainView().view;

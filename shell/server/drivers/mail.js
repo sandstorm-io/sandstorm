@@ -222,7 +222,7 @@ hackSendEmail = (session, email) => {
     // Overwrite the 'from' address with the grain's address.
     if (!email.from) {
       email.from = {
-        address: grainAddress
+        address: grainAddress,
       };
     }
 

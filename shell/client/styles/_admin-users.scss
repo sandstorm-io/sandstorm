@@ -1,0 +1,547 @@
+// Styles used for the Admin Users page and Users details page
+
+%user-class-label {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 2px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+  color: #ffffff;
+}
+
+%identity-property-label {
+  display: inline-block;
+  padding: 2px 4px;
+  border-radius: 2px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+
+.admin-user-filters {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+
+  >.search-icon {
+    @extend %pseudo-img-tag;
+    background-image: url("/search.svg");
+    background-size: 24px 24px;
+    background-position: center;
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    flex: 0 1 auto;
+  }
+
+  >input.search-bar {
+    flex: 1 1 auto;
+    padding: 4px;
+  }
+
+  .filter-user-classes {
+    flex: 0 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+}
+
+.user-class-admin {
+  @extend %user-class-label;
+  background-color: #C66822;
+}
+.user-class-user {
+  @extend %user-class-label;
+  background-color: #7EB54D;
+}
+.user-class-visitor {
+  @extend %user-class-label;
+  background-color: #939393;
+}
+
+%identity-provider-icon {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  .provider-icon {
+    @extend %pseudo-img-tag;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    font-size: 0px;
+    overflow: hidden;
+    &.dev {
+      background-image: url('/debug.svg');
+    }
+    &.email {
+      background-image: url('/email.svg');
+    }
+    &.google {
+      background-image: url('/google.svg');
+    }
+    &.github {
+      background-image: url('/github.svg');
+    }
+    &.ldap {
+      background-image: url('/ldap.svg');
+    }
+    &.saml {
+      background-image: url('/saml.svg');
+    }
+  }
+}
+
+.admin-user-table {
+  border: 1px solid $default-table-border-color;
+
+  div[role=columnheader] {
+    // Column header text should "stick" to the bottom of the row, to be
+    // closest to the contents of the column.
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: flex-start;
+  }
+
+  div[role=columnheader], div[role=gridcell] {
+    padding: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .header-row {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch; // so the border-left covers the whole height of the row
+    justify-content: flex-start;
+    background-color: $default-table-header-background-color;
+    color: $default-table-header-foreground-color;
+    border-bottom: 1px solid $default-table-header-border-color;
+    >div[role=columnheader]:not(:first-child) {
+      border-left: 1px solid $default-table-header-border-color;
+    }
+  }
+
+  .loading-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .invite-row {
+    height: 36px;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+    background-color: $default-table-row-action-background-color;
+
+    .plus-icon {
+      @extend %pseudo-img-tag;
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      background-image: url("/plus-9E40B5.svg");
+    }
+
+    &:hover {
+      background-color: $default-table-row-action-background-color-hover;
+      .plus-icon {
+        background-image: url("/plus-6A237C.svg");
+      }
+    }
+
+    .invite-link {
+      padding-left: 8px;
+      padding-top: 8px;
+      >a {
+        color: #000000;
+      }
+    }
+  }
+
+  .account-row {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+    background-color: $default-table-row-background-color;
+    &:not(:last-child) {
+      border-bottom: 1px solid #dddddd;
+    }
+    &:hover {
+      background-color: $default-table-row-background-color-hover;
+    }
+  }
+
+  div.account-role {
+    flex: none;
+    width: 32px;
+    text-align: center;
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    &[role=gridcell] {
+      padding-top: 6px;
+    }
+  }
+
+  div.identities {
+    display: inline-block;
+    flex: 4 1 0;
+    &[role=gridcell] {
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      .identity-list {
+        margin: 0;
+        padding-left: 0;
+        padding-right: 0;
+        padding-top: 4px;
+        padding-bottom: 0;
+        list-style-type: none;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch; // so the childrens borders will span the whole row
+        justify-content: flex-start;
+
+        .identity {
+          display: flex;
+          flex-direction: row;
+          align-items: flex-start;
+          justify-content: flex-start;
+
+          &:not(:first-child) {
+            padding-top: 4px;
+            border-top: 1px solid #dddddd;
+          }
+
+          &:not(:last-child) {
+            padding-bottom: 4px;
+          }
+
+          .identity-provider-icon {
+            align-self: flex-start;
+            @extend %identity-provider-icon;
+            width: 32px;
+            height: 24px;
+          }
+
+          .identity-name {
+            flex: 1 1 40%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .identity-intrinsic-name {
+            flex: 0 1 40%;
+            padding-left: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+        }
+      }
+    }
+  }
+
+  div.created, div.last-active {
+    display: inline-block;
+    max-width: 20%;
+    flex: 1 1 0;
+
+    &[role=gridcell] {
+      padding-top: 8px;
+    }
+  }
+
+  div.actions {
+    flex: none;
+    width: 70px;
+
+    &[role=gridcell] {
+      text-align: right;
+
+      .manage-user-button {
+        display: inline-block;
+        font-weight: normal;
+        @extend %button-base;
+        @extend %button-secondary;
+      }
+    }
+  }
+}
+
+.role-explanations {
+  list-item-style: none;
+  padding: 0;
+  >li {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+    margin-bottom: 8px;
+    .role {
+      flex: 0 1 auto;
+      width: 4em;
+      text-align: right;
+    }
+    .explanation {
+      padding-left: 8px;
+      flex: 1 1 auto;
+    }
+  }
+}
+
+.user-details-account-role {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #dddddd;
+  .account-name {
+    margin-right: 8px;
+  }
+}
+
+.admin-user-roles-form {
+  display: inline-block;
+
+  .make-admin, .make-user, .make-visitor {
+    @extend %button-base;
+    @extend %button-secondary;
+  }
+}
+
+.admin-user-identity-list {
+  border: 1px solid $default-table-border-color;
+
+  div[role=columnheader] {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: flex-start;
+  }
+
+  div[role=columnheader], div[role=gridcell] {
+    padding: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .admin-user-identity-header {
+    .admin-user-identity-header-row {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      justify-content: flex-start;
+      background-color: $default-table-header-background-color;
+      color: $default-table-header-foreground-color;
+      border-bottom: 1px solid $default-table-header-border-color;
+
+      >div[role=columnheader]:not(:first-child) {
+        border-left: 1px solid $default-table-header-border-color;
+      }
+
+      .admin-user-identity-header-cell {
+        display: inline-block;
+        &.identity {
+          flex: 4 1 0;
+        }
+
+        &.created, &.last-active, &.properties {
+          flex: 1 1 0;
+        }
+      }
+    }
+  }
+
+  .admin-user-identity-body {
+    .admin-user-identity-body-row {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: flex-start;
+      background-color: $default-table-row-background-color;
+      &:not(:last-child) {
+        border-bottom: 1px solid #dddddd;
+      }
+      &:hover {
+        background-color: $default-table-row-background-color-hover;
+      }
+
+      .admin-user-identity-body-cell {
+        display: inline-block;
+        &.identity {
+          flex: 4 1 0;
+        }
+
+        &.created, &.last-active, &.properties {
+          flex: 1 1 0;
+        }
+      }
+    }
+  }
+
+  .identity-information {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    >li {
+      min-height: 36px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+    }
+  }
+
+  .identity-picture-name {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+
+    .identity-profile-picture {
+      @extend %pseudo-img-tag;
+      flex: none;
+      display: inline-block;
+      width: 36px;
+      height: 36px;
+      font-size: 0px;
+    }
+
+    .identity-name {
+      flex: 1 1 auto;
+      margin-left: 8px;
+    }
+  }
+
+  .identity-provider {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+
+    .identity-provider-icon {
+      @extend %identity-provider-icon;
+      flex: none;
+      width: 36px;
+      height: 36px;
+    }
+    .intrinsic-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-left: 8px;
+    }
+  }
+
+  .identity-handle {
+    .identity-handle-decorator {
+      flex: none;
+      display: inline-flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      font-weight: bold;
+    }
+    code {
+      flex: 1 1 auto;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-left: 8px;
+    }
+  }
+
+  .identity-pronouns {
+    .identity-pronouns-decorator {
+      flex: none;
+      display: inline-flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      .identity-pronouns-icon {
+        @extend %pseudo-img-tag;
+        width: 24px;
+        height: 24px;
+        background-image: url('/pronoun-m.svg');
+        display: inline-block;
+        font-size: 0px;
+      }
+    }
+
+    .identity-pronouns-preference {
+      margin-left: 8px;
+    }
+  }
+
+  .identity-emails {
+    overflow: wrap;
+    .identity-emails-decorator {
+      // The email list may be multiple lines long, so this decorator is better off sticking to the
+      // top of its box.
+      align-self: flex-start;
+      flex: none;
+      display: inline-flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      .identity-emails-icon {
+        @extend %pseudo-img-tag;
+        width: 24px;
+        height: 24px;
+        background-image: url('/email.svg');
+        display: inline-block;
+        font-size: 0px;
+      }
+    }
+
+    .identity-emails-list {
+      flex: 1 1 auto;
+      list-style-type: none;
+      padding-left: 8px;
+      margin: 0;
+      overflow: hidden;
+      >li {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+
+  .login-identity {
+    @extend %identity-property-label;
+    background-color: #dcefdd;
+  }
+
+  .org-member {
+    @extend %identity-property-label;
+    background-color: #dbdbdb;
+  }
+
+  .email-primary {
+    @extend %identity-property-label;
+    background-color: #e5e1ef;
+  }
+
+  .email-verified {
+    @extend %identity-property-label;
+    background-color: #dcefdd;
+  }
+
+  .email-unverified {
+    @extend %identity-property-label;
+    background-color: #efdcdd;
+  }
+}

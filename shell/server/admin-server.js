@@ -473,6 +473,107 @@ Meteor.publish("allUsers", function (token) {
   return Meteor.users.find();
 });
 
+Meteor.publish("adminUserDetails", function (userId) {
+  if (!authorizedAsAdmin(undefined, this.userId)) return [];
+
+  // Reactive publish of any identities owned by the account with id userId,
+  // as well as that user object itself.
+  const identitySubs = {};
+  const accountId = userId;
+
+  const unrefIdentity = (identityId) => {
+    if (!identitySubs[identityId]) {
+      // should never happen, but if somehow you attempt to unref an identity that we don't have a
+      // subscription to, then don't crash
+      console.error("attempted to unref untracked identity id:", identityId);
+      return;
+    }
+
+    const observeHandle = identitySubs[identityId];
+    identitySubs[identityId] = undefined;
+    observeHandle.stop();
+    this.removed("users", identityId);
+  };
+
+  const refIdentity = (identityId) => {
+    if (identitySubs[identityId]) {
+      // should never happen, but if somehow an account wound up with a duplicate identity ID,
+      // avoid leaking a subscription
+      console.error("duplicate identity id:", identityId);
+      return;
+    }
+
+    const cursor = Meteor.users.find({ _id: identityId });
+    const observeHandle = cursor.observe({
+      added: (doc) => {
+        this.added("users", doc._id, doc);
+      },
+
+      changed: (newDoc, oldDoc) => {
+        this.changed("users", newDoc._id, newDoc);
+      },
+
+      removed: (oldDoc) => {
+        this.removed("users", oldDoc._id);
+      },
+    });
+
+    identitySubs[identityId] = observeHandle;
+  };
+
+  const accountCursor = Meteor.users.find({ _id: accountId });
+  const accountSubHandle = accountCursor.observe({
+    added: (newDoc) => {
+      const newIdentities = SandstormDb.getUserIdentityIds(newDoc);
+      newIdentities.forEach((identityId) => {
+        refIdentity(identityId);
+      });
+
+      this.added("users", newDoc._id, newDoc);
+    },
+
+    changed: (newDoc, oldDoc) => {
+      const newIdentities = SandstormDb.getUserIdentityIds(newDoc);
+      const oldIdentities = SandstormDb.getUserIdentityIds(oldDoc);
+
+      // Those in newDoc - oldDoc, ref.
+      const identitiesAdded = _.difference(newIdentities, oldIdentities);
+      identitiesAdded.forEach((identityId) => {
+        refIdentity(identityId);
+      });
+
+      // Those in oldDoc - newDoc, unref.
+      const identitiesRemoved = _.difference(oldIdentities, newIdentities);
+      identitiesRemoved.forEach((identityId) => {
+        unrefIdentity(identityId);
+      });
+
+      this.changed("users", newDoc._id, newDoc);
+    },
+
+    removed: (oldDoc) => {
+      this.removed("users", oldDoc._id);
+      const oldIdentities = SandstormDb.getUserIdentityIds(oldDoc);
+      oldIdentities.forEach((identityId) => {
+        unrefIdentity(identityId);
+      });
+    },
+  });
+
+  this.onStop(() => {
+    accountSubHandle.stop();
+    // Also stop all the identity subscriptions.
+    const subs = _.values(identitySubs);
+    subs.forEach((sub) => {
+      sub.stop();
+    });
+  });
+
+  // Meteor's cursor.observe() will synchronously call all of the added() callbacks from the initial
+  // query, so by the time we get here we can report readiness.
+  this.ready();
+});
+
 Meteor.publish("activityStats", function (token) {
   if (!authorizedAsAdmin(token, this.userId)) return [];
   return ActivityStats.find();

@@ -33,10 +33,17 @@ const Grain = Capnp.importSystem("sandstorm/grain.capnp");
 
 const Url = Npm.require("url");
 
-const escapeRegExp = require("lodash.escaperegexp");
-
 ROOT_URL = Url.parse(process.env.ROOT_URL);
 HOSTNAME = ROOT_URL.hostname;
+
+const escapeRegExp = function (string) {
+  let escaped = "";
+  for (let i = 0; i < string.length; i++) {
+    escaped += "\\u" + ("0000" + string.charCodeAt(i).toString(16)).slice(-4);
+  }
+
+  return escaped;
+};
 
 SessionContextImpl = class SessionContextImpl {
   constructor(grainId, sessionId, identityId, tabId) {

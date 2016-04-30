@@ -1,3 +1,13 @@
+### v0.161 (2016-04-29) [bugfixes]
+- API requests can now include Mercurial headers, potentially allowing a Mercurial server app.
+- You can now configure Sandstorm to accept SMTP connections on low-numbered ports, such as 25.
+- Apps that send email can now omit the "from" address and have it filled in automatically to the grain's auto-generated address. (Previously, the app had to explicitly call another method to find out this address.)
+- Rewrote permissions algorithm to support upcoming features. Should have no visible changes currently.
+- Fixed some bugs around grain renaming when a grain was received through multiple sharing links.
+- Sharing emails are now included in the per-user email send limit of 50 per day.
+- Oasis: Demo users can no longer send sharing invite emails, due to abuse.
+- Sandstorm for Work: The SAML configuration now clearly displays the entity ID used by Sandstorm.
+
 ### v0.160 (2016-04-23) [bugfixes]
 - When the owner renames a grain, the change will now be visible by people with whom the grain has already been shared.
 - Sandstorm for Work: Enforce various rarely-used SAML constraints. (The important ones were already enforced.)

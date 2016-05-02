@@ -83,7 +83,7 @@ GrainViewList = class GrainViewList {
         this._grainsUserId.set(currentUserId);
       }
     });
-  };
+  }
 
   clear() {
     const grains = this._grains.get();

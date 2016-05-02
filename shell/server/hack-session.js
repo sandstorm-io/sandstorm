@@ -347,7 +347,7 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
     return inMeteor((function () {
       return this._getUserAddress();
     }).bind(this));
-  };
+  }
 
   obsoleteGenerateApiToken(petname, userInfo, expires) {
     throw new Error("generateApiToken() has been removed. Use offer templates instead.");

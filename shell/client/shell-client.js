@@ -730,15 +730,16 @@ Meteor.startup(function () {
     console.log(
         "%cApp authors: To understand the grain-frame in Sandstorm and how to find " +
         "logs and perform troubleshooting, see: " +
-        "\n- https://docs.sandstorm.io/en/latest/developing/path/ " +
-        "\n- https://docs.sandstorm.io/en/latest/using/top-bar/ " +
-        "\n- https://docs.sandstorm.io/en/latest/developing/troubleshooting/ " +
+        "\n- Info on grains and URLs: https://docs.sandstorm.io/en/latest/developing/path/ " +
+        "\n- Info on logs: https://docs.sandstorm.io/en/latest/using/top-bar/ " +
+        "\n- Troubleshooting: https://docs.sandstorm.io/en/latest/developing/troubleshooting/ " +
         "\n" +
         "\nWhen debugging, make sure you execute Javascript " +
         "in the context of the 'grain-frame' IFRAME. References: " +
         "\n- https://stackoverflow.com/questions/3275816/debugging-iframes-with-chrome-developer-tools " +
         "\n- https://developer.mozilla.org/en-US/docs/Tools/Working_with_iframes " +
         "\n" +
+        "\nDisable this message by running: localStorage.setItem("muteDevNote", true)" +
         "\nWe can also provide personal assistance! Get in touch: https://sandstorm.io/community",
       "font-size: large; background-color: yellow;");
   }

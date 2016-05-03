@@ -29,6 +29,7 @@ pages:
     - "Platform stacks": "vagrant-spk/platform-stacks.md"
     - "Code dependencies": "vagrant-spk/code-dependencies.md"
     - "Service dependencies": "vagrant-spk/services.md"
+    - "Debugging a running grain": "vagrant-spk/debugging.md"
     - "Web publishing": "developing/web-publishing.md"
     - "Exporting HTTP APIs": "developing/http-apis.md"
     - "Email from apps": "developing/email-from-apps.md"

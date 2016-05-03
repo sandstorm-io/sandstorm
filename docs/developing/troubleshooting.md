@@ -13,6 +13,22 @@ language-specific guide pages, namely:
 * [Ruby on Rails](raw-ruby-on-rails.md)
 * [Pure client apps](raw-pure-client-apps.md)
 
+## Getting a shell in the context of the grain
+
+For debugging an app that is in dev mode, you can run a shell (e.g. `bash`) in the context of a
+grain. Using this shell can illuminate why an app is behaving in a particular way.
+
+Before using this process, you should know about the following limitations.
+
+- The commands you run in the shell are able to use syscalls that the grain is not, due to a
+  limitation in the underlying `nsenter` utility.
+
+- In some cases the shell itself may be missing! Read on to find out how to work around that issue.
+
+- If the grain shuts down, your debug shell will stop having meaning. Therefore, you must keep a
+  browser tab open to the grain while debugging it.
+
+
 ## Clicking a link in the app does not open the link
 
 Sandstorm apps cannot navigate the user away from the app. Therefore, app

@@ -2070,6 +2070,7 @@ private:
         context.warning("App mounted. Ctrl+C to disconnect.");
       } else {
         context.warning("App is now available from Sandstorm server. Ctrl+C to disconnect.");
+        context.warning("App is now available from Sandstorm server. Ctrl+C to disconnect.");
       }
 
       bindFuse(eventPort, fuseFd, kj::mv(rootNode), options)

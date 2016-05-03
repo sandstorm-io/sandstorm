@@ -428,6 +428,14 @@ public:
                   .build();
             },
             "Undo previous stop-fe.")
+        .addSubCommand("exec-in-grain",
+            [this]() {
+              return kj::MainBuilder(context, VERSION,
+				     "Runs /bin/bash (hardcoded for now) in the context of the grain.")
+                  .callAfterParsing(KJ_BIND_METHOD(*this, execInGrain))
+                  .build();
+            },
+            "Undo previous stop-fe.")
         .addSubCommand("stop-fe",
             [this]() {
               return kj::MainBuilder(context, VERSION,
@@ -711,6 +719,10 @@ public:
 
   kj::MainBuilder::Validity startFe() {
     return startStopFe(1);
+  }
+
+  kj::MainBuilder::Validity execInGrain() {
+    context.exitInfo("Wow, I made a command.");
   }
 
   kj::MainBuilder::Validity stopFe() {

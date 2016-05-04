@@ -268,11 +268,7 @@
 {{#if hasFeatureKey}}
   {{> setupWizardProgressBar currentStep="organization"}}
 
-  <p>
-    Sandstorm for Work allows you to define an organization.
-    You can automatically apply some settings to all members of your organization.
-    Users within the organization will automatically be able to log in, install apps, and create grains.
-  </p>
+  {{> organizationSettingsBlurb }}
 
   {{#if errorMessage}}
     {{#focusingErrorBox}}

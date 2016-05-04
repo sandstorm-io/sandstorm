@@ -2070,7 +2070,6 @@ private:
         context.warning("App mounted. Ctrl+C to disconnect.");
       } else {
         context.warning("App is now available from Sandstorm server. Ctrl+C to disconnect.");
-        context.warning("App is now available from Sandstorm server. Ctrl+C to disconnect.");
       }
 
       bindFuse(eventPort, fuseFd, kj::mv(rootNode), options)
@@ -2088,6 +2087,7 @@ private:
     }
 
     // OK, we're done running. Output the file list.
+    bool foundPlaceholderIndicatingDoNoUpdate = false;
     if (packageDef.hasFileList()) {
       context.warning("Updating file list.");
 
@@ -2097,6 +2097,9 @@ private:
         auto fileList = raiiOpen(packageDef.getFileList(), O_RDONLY);
         auto sourceMap = packageDef.getSourceMap();
         for (auto& line: splitLines(readAll(fileList))) {
+	  if (line == "/.placeholder-do-not-update-sandstorm-files-list") {
+	    foundPlaceholderIndicatingDoNoUpdate = true;
+	  }
           auto mapping = mapFile(sourceDir, sourceMap, line);
           if (mapping.sourcePaths.size() == 0 && mapping.virtualChildren.size() == 0 &&
               line != "sandstorm-manifest" &&
@@ -2109,6 +2112,11 @@ private:
             usedFiles.insert(kj::mv(line));
           }
         }
+      }
+
+      if (foundPlaceholderIndicatingDoNoUpdate) {
+	context.warning("...actually, NOT updating file list due to user request.");
+	return true;
       }
 
       // Now write back out.

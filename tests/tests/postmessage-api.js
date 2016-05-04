@@ -31,7 +31,7 @@ module.exports['Install and launch test app'] = function (browser) {
   browser
     .init()
     // test-3 introduces the JSON-formatted renderTemplate output
-    .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-3.spk", "072f8f84638d03e4de150e8fc4d3bd15", "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh")
+    .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-7.spk", "281d3ffbc93933001d6b28e44ffac615", "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh")
 
     .assert.containsText('#grainTitle', 'Untitled Test App test page')
     .frame('grain-frame')
@@ -108,10 +108,10 @@ module.exports['Test startSharing'] = function (browser) {
     .waitForElementNotPresent('.popup.share', short_wait)
 };
 
-module.exports['Test showWhoHasAccess'] = function (browser) {
+module.exports['Test showConnectionGraph'] = function (browser) {
   browser
     .frame('grain-frame')
-      .click('#showWhoHasAccess')
+      .click('#showConnectionGraph')
     .frameParent()
     .waitForElementVisible('.popup.who-has-access', short_wait)
     .click('button.close-popup')

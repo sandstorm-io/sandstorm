@@ -35,8 +35,10 @@ const focusAndScrollIntoView = function () {
   // When an error or success message appears on the page or is updated, we generally want to focus
   // it (for screenreader users) and scroll it into the view (for visual users), lest they miss the
   // message entirely.
-  this.firstNode.focus && this.firstNode.focus();
-  this.firstNode.scrollIntoView && this.firstNode.scrollIntoView();
+  // Apparently firstNode is a #text node, and lastNode is the actual <div>, which is the only
+  // actual node in the template source, because I have newlines and whitespace and comments.
+  this.lastNode.focus && this.lastNode.focus();
+  this.lastNode.scrollIntoView && this.lastNode.scrollIntoView();
 };
 
 Template.focusingErrorBox.onRendered(focusAndScrollIntoView);

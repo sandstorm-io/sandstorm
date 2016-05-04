@@ -557,3 +557,13 @@
     background-color: #efdcdd;
   }
 }
+
+.admin-invite-email-form, .admin-invite-button-form {
+  @extend %standard-form;
+}
+
+.admin-invite-email-form {
+  textarea {
+    min-height: 200px;
+  }
+}

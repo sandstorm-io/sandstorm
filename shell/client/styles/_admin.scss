@@ -248,6 +248,7 @@ button#offer-ipnetwork, button#offer-ipinterface {
 .feature-key-data {
   background-color: #ffffff;
   padding: 42px;
+  margin-bottom: 20px;
 }
 
 .feature-key-properties {
@@ -325,25 +326,10 @@ button#offer-ipnetwork, button#offer-ipinterface {
   margin-bottom: 32px;
 }
 
-form.feature-key-form {
-  margin-top: 20px;
-
-  label {
-    display: block;
-  }
-
+form.feature-key-form, form.feature-key-modify-form {
+  @extend %standard-form;
   textarea {
-    display: block;
-    width: 100%;
     min-height: 60px;
-  }
-
-  button {
-    @extend %button-base;
-    @extend %button-primary;
-    display: block;
-    margin-top: 8px;
-    margin-bottom: 8px;
   }
 }
 

@@ -1050,21 +1050,9 @@ Template.featureKeyUploadForm.helpers({
   },
 });
 
-Template.adminFeatureKey.onCreated(function () {
-  this.showForm = new ReactiveVar(false);
-});
-
-Template.adminFeatureKey.events({
-  "click button.feature-key-upload-button": function (evt) {
-    Template.instance().showForm.set(true);
-  },
-
-  "click button.feature-key-delete-button": function (evt) {
-    const state = Iron.controller().state;
-    const token = state.get("token");
-    if (window.confirm("Delete feature key? This will disable Sandstorm for Work features!")) {
-      Meteor.call("submitFeatureKey", token, null);
-    }
+Template.adminFeatureKey.helpers({
+  currentFeatureKey: function () {
+    return globalDb.collections.featureKey.findOne();
   },
 });
 
@@ -1084,22 +1072,7 @@ Template.adminFeatureKeyPage.helpers({
   },
 });
 
-Template.adminFeatureKey.helpers({
-  currentFeatureKey: function () {
-    return globalDb.collections.featureKey.findOne();
-  },
-
-  showForm: function () {
-    return Template.instance().showForm.get();
-  },
-
-  hideFormCb: function () {
-    const instance = Template.instance();
-    return () => {
-      instance.showForm.set(false);
-    };
-  },
-
+Template.adminFeatureKeyDetails.helpers({
   computeValidity: function (featureKey) {
     const nowSec = Date.now() / 1000;
     const expires = parseInt(featureKey.expires);
@@ -1136,6 +1109,39 @@ Template.adminFeatureKey.helpers({
     d.setTime(parseInt(stringSecondsSinceEpoch) * 1000);
 
     return MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
+  },
+});
+
+Template.adminFeatureKeyModifyForm.onCreated(function () {
+  this.showForm = new ReactiveVar(false);
+});
+
+Template.adminFeatureKeyModifyForm.helpers({
+  showForm: function () {
+    return Template.instance().showForm.get();
+  },
+
+  hideFormCb: function () {
+    const instance = Template.instance();
+    return () => {
+      instance.showForm.set(false);
+    };
+  },
+});
+
+Template.adminFeatureKeyModifyForm.events({
+  "submit .feature-key-modify-form"(evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    Template.instance().showForm.set(true);
+  },
+
+  "click button.feature-key-delete-button"(evt) {
+    const state = Iron.controller().state;
+    const token = state.get("token");
+    if (window.confirm("Delete feature key? This will disable Sandstorm for Work features!")) {
+      Meteor.call("submitFeatureKey", token, null);
+    }
   },
 });
 

@@ -92,6 +92,13 @@ window.parent.postMessage({'startSharing': {}}, '*');
 This shares at the app's default permission level. In the future, we may extend
 this API to permit the app to choose a permission level.
 
+If you want to display to the user a Sandstorm dialog with list of all users who
+have access to the grain, you can open it with:
+
+```js
+window.parent.postMessage({'showWhoHasAccess': {}}, '*');
+```
+
 ## Embedding references to in-app resources, despite the ephemeral domain name
 
 Your app might need to use its current domain name (also known as base URL) for:

@@ -108,6 +108,16 @@ module.exports['Test startSharing'] = function (browser) {
     .waitForElementNotPresent('.popup.share', short_wait)
 };
 
+module.exports['Test showWhoHasAccess'] = function (browser) {
+  browser
+    .frame('grain-frame')
+      .click('#showWhoHasAccess')
+    .frameParent()
+    .waitForElementVisible('.popup.who-has-access', short_wait)
+    .click('button.close-popup')
+    .waitForElementNotPresent('.popup.who-has-access', short_wait)
+};
+
 module.exports['Test renderTemplate'] = function (browser) {
   browser
     .frame('grain-frame')

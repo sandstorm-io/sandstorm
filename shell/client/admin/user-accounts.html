@@ -93,19 +93,23 @@
     <span class="search-icon"></span>
     <input class="search-bar" name="search-bar" placeholder="search" />
     <div class="filter-user-classes">
-      Show:
-      <label>
-        <input type="checkbox" name="show-admins" checked="{{showAdmins}}">
-        <span class="user-class-admin">Admin</span> {{#if ready}}({{adminCount users}}){{/if}}
-      </label>
-      <label>
-        <input type="checkbox" name="show-users" checked="{{showUsers}}">
-        <span class="user-class-user">User</span> {{#if ready}}({{userCount users}}){{/if}}
-      </label>
-      <label>
-        <input type="checkbox" name="show-visitors" checked="{{showVisitors}}">
-        <span class="user-class-visitor">Visitor</span> {{#if ready}}({{visitorCount users}}){{/if}}
-      </label>
+      <div class="show-label">
+        Show:
+      </div>
+      <div class="filter-boxes">
+        <label>
+          <input type="checkbox" name="show-admins" checked="{{showAdmins}}">
+          <span class="user-class-admin">Admin</span> {{#if ready}}({{adminCount users}}){{/if}}
+        </label>
+        <label>
+          <input type="checkbox" name="show-users" checked="{{showUsers}}">
+          <span class="user-class-user">User</span> {{#if ready}}({{userCount users}}){{/if}}
+        </label>
+        <label>
+          <input type="checkbox" name="show-visitors" checked="{{showVisitors}}">
+          <span class="user-class-visitor">Visitor</span> {{#if ready}}({{visitorCount users}}){{/if}}
+        </label>
+      </div>
     </div>
   </div>
 

@@ -802,6 +802,7 @@ const startUpload = function (file, endpoint, onComplete) {
   //   progress callbacks (and officially document that binary input is accepted).
 
   Session.set("uploadStatus", "Uploading");
+  Session.set("uploadError", undefined);
 
   const xhr = new XMLHttpRequest();
 

@@ -23,6 +23,7 @@ $import "/capnp/c++.capnp".namespace("sandstorm");
 using Util = import "util.capnp";
 using Grain = import "grain.capnp";
 using Persistent = import "/capnp/persistent.capnp".Persistent;
+using Activity = import "activity.capnp";
 
 interface Supervisor {
   # Default capability exported by the supervisor process.
@@ -150,7 +151,7 @@ interface SandstormCore {
   # pointing to the same capability, where if the original token is revoked, the new token is
   # also transitively revoked.
 
-  getOwnerNotificationTarget @2 () -> (owner :Grain.NotificationTarget);
+  getOwnerNotificationTarget @2 () -> (owner :Activity.NotificationTarget);
   # Get the notification target to use for notifications relating to the grain itself, e.g.
   # presence of wake locks.
 
@@ -227,7 +228,7 @@ interface SystemPersistent extends(Persistent(Data, ApiTokenOwner)) {
 
 interface PersistentHandle extends(SystemPersistent, Util.Handle) {}
 
-interface PersistentOngoingNotification extends(SystemPersistent, Grain.OngoingNotification) {}
+interface PersistentOngoingNotification extends(SystemPersistent, Activity.OngoingNotification) {}
 
 struct DenormalizedGrainMetadata {
   # The metadata that we need to present contextual information for shared grains (in particular,

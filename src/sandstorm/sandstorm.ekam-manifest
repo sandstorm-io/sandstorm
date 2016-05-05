@@ -16,3 +16,4 @@ persistentuiview.capnp node_modules/sandstorm/persistentuiview.capnp
 update-tool.capnp node_modules/sandstorm/update-tool.capnp
 feature-key.capnp node_modules/sandstorm/feature-key.capnp
 powerbox.capnp node_modules/sandstorm/powerbox.capnp
+activity.capnp node_modules/sandstorm/activity.capnp

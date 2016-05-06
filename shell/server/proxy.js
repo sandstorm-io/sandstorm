@@ -975,14 +975,14 @@ const apiTokenForRequest = (req, hostId, isWebsocket) => {
   } else if (auth && auth.slice(0, 6).toLowerCase() === "basic " &&
              apiUseBasicAuth(req, hostId)) {
     token = (new Buffer(auth.slice(6).trim(), "base64")).toString().split(":")[1];
-  } else if (isWebsocket && req.url.startsWith("/.sandstorm-well-known/token/")) {
+  } else if (isWebsocket && req.url.startsWith("/.sandstorm-api-token/")) {
     let parts = req.url.slice(1).split("/"); // remove leading / and split
-    if (parts.length < 3) {
+    if (parts.length < 2) {
       token = undefined;
     } else {
-      token = parts[2];
-      req.url = "/" + parts.slice(3).join("/");
-      // remove .sandstorm-well-known/token/$TOKEN from path
+      token = parts[1];
+      req.url = "/" + parts.slice(2).join("/");
+      // remove .sandstorm-api-token/$TOKEN from path
     }
   } else {
     token = undefined;

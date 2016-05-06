@@ -242,3 +242,16 @@ that are allowed to use Basic auth. If your Sandstorm app has a client
 that cannot use an Authoriztion header, consider [filing a
 bug](https://github.com/sandstorm-io/sandstorm/issues) requesting the
 white-listing of its user-agent value.
+
+## WebSockets
+
+Unfortunately, WebSockets have no way to set headers in most languages (specifically Javascript). To work around this, you must pass the token as part of the URL path. It must be at the beginning of the path and of the form:
+```
+/.sandstorm-api-token/<token>
+```
+
+For example:
+```
+wss://api-qxJ58hKANkbmJLQdSDk4.oasis.sandstorm.io/.sandstorm-api-token/RfNqni4FEHXkWC5B8v6t/some/path
+```
+The "/.sandstorm-api-token/&lt;token&gt;" part of the path will be stripped, and the remaining segment of the path will be passed onto your app.

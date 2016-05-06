@@ -92,6 +92,16 @@ window.parent.postMessage({'startSharing': {}}, '*');
 This shares at the app's default permission level. In the future, we may extend
 this API to permit the app to choose a permission level.
 
+If your app wants Sandstorm to display a list of users who have access to the grain, you can
+ask Sandstorm to show who has access with this Javascript code:
+
+```js
+window.parent.postMessage({'showConnectionGraph': {}}, '*');
+```
+
+In the future, as the Powerbox matures, this dialog will likely also show connections between
+grains.
+
 ## Embedding references to in-app resources, despite the ephemeral domain name
 
 Your app might need to use its current domain name (also known as base URL) for:

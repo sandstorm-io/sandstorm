@@ -1424,56 +1424,68 @@ limitations under the License.
   {{/if}}
 </template>
 
+<template name="adminFeatureKeyDetails">
+{{!-- Expects one argument:
+ featureKey: Object representing the current feature key, as represented in the FeatureKey
+                    collection.
+--}}
+  <div class="feature-key-data">
+    <div class="feature-key-properties">
+      <div class="feature-key-property-row">
+        <span class="feature-key-property-key">Plan</span>
+        <span class="feature-key-property-value">{{featureKey.userLimit}} users
+          {{#if featureKey.isTrial}}<span class="feature-key-label feature-key-trial">Trial</span>{{/if}}
+          {{#with validity=(computeValidity featureKey)}}
+            <span class="feature-key-label feature-key-{{validity.className}}">{{validity.labelText}}</span>
+          {{/with}}
+        </span>
+      </div>
+      <div class="feature-key-property-row">
+        <span class="feature-key-property-key">Issued</span>
+        <span class="feature-key-property-value">{{renderDateString featureKey.issued}}</span>
+      </div>
+      <div class="feature-key-property-row">
+        <span class="feature-key-property-key">Expires</span>
+        <span class="feature-key-property-value">{{renderDateString featureKey.expires}}</span>
+      </div>
+    </div>
+    <div class="feature-key-org-info">
+      {{#with customer=featureKey.customer}}
+      <div class="feature-key-property-row">
+        <span class="feature-key-property-key">Organization Name</span>
+        <span class="feature-key-property-value">{{customer.organizationName}}</span>
+      </div>
+      <div class="feature-key-property-row">
+        <span class="feature-key-property-key">Organization ID</span>
+        <span class="feature-key-property-value">{{customer.id}}</span>
+      </div>
+      <div class="feature-key-property-row">
+        <span class="feature-key-property-key">Organization Contact</span>
+        <span class="feature-key-property-value">{{customer.contactName}} &lt;{{customer.contactEmail}}&gt;</span>
+      </div>
+      {{/with}}
+    </div>
+  </div>
+</template>
+
+<template name="adminFeatureKeyModifyForm">
+  {{#if showForm}}
+    {{> featureKeyUploadForm successCb=hideFormCb }}
+  {{else}}
+    <form class="feature-key-modify-form">
+      <div class="button-row">
+        <button type="submit" class="feature-key-upload-button">Upload new feature key...</button>
+        <button type="button" class="feature-key-delete-button">Delete feature key</button>
+      </div>
+    </form>
+  {{/if}}
+</template>
+
 <template name="adminFeatureKey">
   {{#if currentFeatureKey}}
     <h4>Current feature key</h4>
-    {{#with featureKey=currentFeatureKey}}
-    <div class="feature-key-data">
-      <div class="feature-key-properties">
-        <div class="feature-key-property-row">
-          <span class="feature-key-property-key">Plan</span>
-          <span class="feature-key-property-value">{{featureKey.userLimit}} users
-            {{#if featureKey.isTrial}}<span class="feature-key-label feature-key-trial">Trial</span>{{/if}}
-            {{#with validity=(computeValidity featureKey)}}
-              <span class="feature-key-label feature-key-{{validity.className}}">{{validity.labelText}}</span>
-            {{/with}}
-          </span>
-        </div>
-        <div class="feature-key-property-row">
-          <span class="feature-key-property-key">Issued</span>
-          <span class="feature-key-property-value">{{renderDateString featureKey.issued}}</span>
-        </div>
-        <div class="feature-key-property-row">
-          <span class="feature-key-property-key">Expires</span>
-          <span class="feature-key-property-value">{{renderDateString featureKey.expires}}</span>
-        </div>
-      </div>
-      <div class="feature-key-org-info">
-        {{#with customer=featureKey.customer}}
-        <div class="feature-key-property-row">
-          <span class="feature-key-property-key">Organization Name</span>
-          <span class="feature-key-property-value">{{customer.organizationName}}</span>
-        </div>
-        <div class="feature-key-property-row">
-          <span class="feature-key-property-key">Organization ID</span>
-          <span class="feature-key-property-value">{{customer.id}}</span>
-        </div>
-        <div class="feature-key-property-row">
-          <span class="feature-key-property-key">Organization Contact</span>
-          <span class="feature-key-property-value">{{customer.contactName}} &lt;{{customer.contactEmail}}&gt;</span>
-        </div>
-        {{/with}}
-      </div>
-    </div>
-    {{/with}}
-    {{#if showForm}}
-      {{> featureKeyUploadForm successCb=hideFormCb }}
-    {{else}}
-      <div class="feature-key-button-row">
-        <button class="button-primary feature-key-upload-button">Upload new feature key...</button>
-        <button class="button-secondary feature-key-delete-button">Delete feature key</button>
-      </div>
-    {{/if}}
+    {{> adminFeatureKeyDetails featureKey=currentFeatureKey }}
+    {{> adminFeatureKeyModifyForm }}
   {{else}}
     <h4>Upload feature key</h4>
     <p>To make use of Sandstorm for Work features like LDAP and SAML login and organization
@@ -1494,14 +1506,16 @@ limitations under the License.
   <form class="feature-key-form">
     {{#with error=currentError}}
       {{#if error}}
-        <div class="flash-message error-message">Error: {{error}}</div>
+        {{#focusingErrorBox}}
+          Error: {{error}}
+        {{/focusingErrorBox}}
       {{/if}}
     {{/with}}
-    <label>Feature key:
+    <label>Enter feature key:
       <textarea class="feature-key" placeholder="Paste feature key here..." value="{{text}}"></textarea>
     </label>
     <div class="feature-key-button-row">
-      <button class="check-key" disabled={{disabled}}>Verify</button>
+      <button type="submit" class="check-key" disabled={{disabled}}>Verify</button>
     </div>
     <label>Or select a file to upload: <input name="feature-key" type="file" /></label>
   </form>

@@ -1,0 +1,42 @@
+<template name="newAdminFeatureKey">
+  <h1>Sandstorm for Work</h1>
+
+  {{#if currentFeatureKey}}
+    <h2>Current feature key</h2>
+    {{> adminFeatureKeyDetails featureKey=currentFeatureKey }}
+    {{> adminFeatureKeyModifyForm }}
+  {{else}}
+    <div class="feature-key-explanation-row">
+      <div class="lanyard-image" role="presentation"></div>
+      <div class="feature-key-explanation">
+        <p>
+          Sandstorm for Work supercharges your Sandstorm instance with:
+        </p>
+
+        <ul>
+          <li>LDAP and SAML login integration</li>
+          <li>Organization management</li>
+          <li>Priority support</li>
+          <li>LDAP/AD group management (coming soon)</li>
+          <li>Access control policies (coming soon)</li>
+          <li>Global audit logging (coming soon)</li>
+        </ul>
+
+        <p>
+          Sandstorm for Work is priced at $15/user/month.
+          Start a 90-day free trial, no credit card required:
+        </p>
+
+        <form class="get-feature-key-form">
+          <a class="button-primary" href="https://sandstorm.io/get-feature-key">
+            Get your Sandstorm for Work trial key
+          </a>
+        </form>
+      </div>
+    </div>
+
+    {{> featureKeyUploadForm }}
+  {{/if}}
+
+</template>
+

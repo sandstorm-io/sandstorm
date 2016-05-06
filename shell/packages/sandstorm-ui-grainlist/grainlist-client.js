@@ -26,6 +26,7 @@ SandstormGrainListPage.mapGrainsToTemplateObject = function (grains, db) {
       lastUsed: grain.lastUsed,
       iconSrc: iconSrc,
       isOwnedByMe: true,
+      trashed: grain.trashed,
     };
   });
 };
@@ -51,6 +52,7 @@ SandstormGrainListPage.mapApiTokensToTemplateObject = function (apiTokens, stati
       lastUsed: token.lastUsed,
       iconSrc: iconSrc,
       isOwnedByMe: false,
+      trashed: token.trashed,
     };
 
     if (ownerData.upstreamTitle) {
@@ -89,12 +91,15 @@ const compileMatchFilter = function (searchString) {
   };
 };
 
-const filteredSortedGrains = function () {
+const filteredSortedGrains = function (showTrash) {
   const ref = Template.instance().data;
   const db = ref._db;
-  const grains = db.currentUserGrains().fetch();
+  const grains = db.currentUserGrains().fetch()
+        .filter((grain) => !!grain.trashed == showTrash);
   const itemsFromGrains = SandstormGrainListPage.mapGrainsToTemplateObject(grains, db);
-  const apiTokens = db.currentUserApiTokens().fetch();
+
+  const apiTokens = db.currentUserApiTokens().fetch()
+        .filter((token) => !!token.trashed == showTrash);
   const itemsFromSharedGrains = SandstormGrainListPage.mapApiTokensToTemplateObject(apiTokens, ref._staticHost);
   const filter = compileMatchFilter(Template.instance().data._filter.get());
   return _.chain([itemsFromGrains, itemsFromSharedGrains])
@@ -105,12 +110,90 @@ const filteredSortedGrains = function () {
       .value();
 };
 
+SandstormGrainListPage.bulkActionButtons = function (showTrash) {
+  if (showTrash) {
+    return [
+      {
+        buttonClass: "remove-permanently",
+
+        text: function (numMineSelected, numSharedSelected) {
+          if (numSharedSelected == 0) {
+            return "Delete permanently";
+          } else if (numMineSelected == 0) {
+            return "Forget permanently";
+          } else {
+            return "Delete/forget permanently";
+          }
+        },
+
+        disabled: function (numMineSelected, numSharedSelected) {
+          return numMineSelected == 0 && numSharedSelected == 0;
+        },
+
+        onClicked: function (ownedGrainIds, sharedGrainIds) {
+          ownedGrainIds.forEach((grainId) => {
+            Meteor.call("deleteGrain", grainId);
+          });
+
+          const identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
+          sharedGrainIds.forEach((grainId) => {
+            identityIds.forEach((identityId) => {
+              Meteor.call("forgetGrain", grainId, identityId);
+            });
+          });
+        },
+      },
+      {
+        buttonClass: "restore-to-main-list",
+
+        text: function () {
+          return "Restore to Main list";
+        },
+
+        disabled: function (numMineSelected, numSharedSelected) {
+          return numMineSelected == 0 && numSharedSelected == 0;
+        },
+
+        onClicked: function (ownedGrainIds, sharedGrainIds) {
+          Meteor.call("moveGrainsOutOfTrash", ownedGrainIds.concat(sharedGrainIds));
+        },
+      },
+    ];
+
+  } else {
+    return [
+      {
+        buttonClass: "move-to-trash",
+
+        text: function () {
+          return "Move to trash";
+        },
+
+        disabled: function (numMineSelected, numSharedSelected) {
+          return numMineSelected == 0 && numSharedSelected == 0;
+        },
+
+        onClicked: function (ownedGrainIds, sharedGrainIds) {
+          Meteor.call("moveGrainsToTrash", ownedGrainIds.concat(sharedGrainIds));
+        },
+      },
+    ];
+  }
+};
+
 Template.sandstormGrainListPage.helpers({
   setDocumentTitle: function () {
     document.title = "Grains · " + Template.instance().data._db.getServerTitle();
   },
 
-  filteredSortedGrains: filteredSortedGrains,
+  filteredSortedGrains: function () {
+    return filteredSortedGrains(Template.instance()._showTrash.get());
+  },
+
+  filteredSortedTrashedGrains: function () {
+    return filteredSortedGrains(true);
+  },
+
   searchText: function () {
     return Template.instance().data._filter.get();
   },
@@ -136,7 +219,20 @@ Template.sandstormGrainListPage.helpers({
       Router.go("grain", { grainId: grainId });
     };
   },
+
+  showTrash: function () {
+    return Template.instance()._showTrash.get();
+  },
+
+  bulkActionButtons: function () {
+    return SandstormGrainListPage.bulkActionButtons(Template.instance()._showTrash.get());
+  },
 });
+
+Template.sandstormGrainListPage.onCreated(function () {
+  this._showTrash = new ReactiveVar(false);
+});
+
 Template.sandstormGrainListPage.onRendered(function () {
   // Auto-focus search bar on desktop, but not mobile (on mobile it will open the software
   // keyboard which is undesirable). window.orientation is generally defined on mobile browsers
@@ -153,10 +249,10 @@ Template.sandstormGrainListPage.events({
     Template.instance().data._filter.set(event.target.value);
   },
 
-  "keypress .search-bar": function (event) {
+  "keypress .search-bar": function (event, instance) {
     if (event.keyCode === 13) {
       // Enter pressed.  If a single grain is shown, open it.
-      const grains = filteredSortedGrains();
+      const grains = filteredSortedGrains(instance._showTrash.get());
       if (grains.length === 1) {
         // Unique grain found with current filter.  Activate it!
         const grainId = grains[0]._id;
@@ -164,6 +260,14 @@ Template.sandstormGrainListPage.events({
         Router.go("grain", { grainId: grainId });
       }
     }
+  },
+
+  "click button.show-trash": function (event, instance) {
+    instance._showTrash.set(true);
+  },
+
+  "click button.show-main-list": function (event, instance) {
+    instance._showTrash.set(false);
   },
 });
 
@@ -183,14 +287,92 @@ Template.sandstormGrainListPage.events({
   },
 });
 
+Template.sandstormGrainTable.onCreated(function () {
+  this._numSelectedGrains = new ReactiveVar(0);
+  this._numSelectedShares = new ReactiveVar(0);
+  this._selectedMyGrainIds = new ReactiveDict();
+  this._selectedSharedWithMeIds = new ReactiveDict();
+});
+
+Template.sandstormGrainTable.helpers({
+  mineSelected: function () {
+    const data = Template.currentData();
+    const instance = Template.instance();
+    let result = 0;
+    data.grains.forEach((grain) => {
+      if (instance._selectedMyGrainIds.get(grain._id)) {
+        result += 1;
+      }
+    });
+
+    return result;
+  },
+
+  sharedSelected: function () {
+    const data = Template.currentData();
+    const instance = Template.instance();
+    let result = 0;
+    data.grains.forEach((grain) => {
+      if (instance._selectedSharedWithMeIds.get(grain._id)) {
+        result += 1;
+      }
+    });
+
+    return result;
+  },
+
+  isChecked: function () {
+    if (this.isOwnedByMe) {
+      return Template.instance()._selectedMyGrainIds.get(this._id);
+    } else {
+      return Template.instance()._selectedSharedWithMeIds.get(this._id);
+    }
+  },
+});
+
 Template.sandstormGrainTable.events({
   "click tbody tr.action": function (event) {
     this && this.onClick();
   },
 
-  "click tbody tr.grain": function (event) {
+  "click tbody tr.grain .click-to-go": function (event) {
     const context = Template.instance().data;
     context.onGrainClicked && context.onGrainClicked(this._id);
+  },
+
+  "change .select-grain.mine>input": function (event, instance) {
+    event.preventDefault();
+    if (event.target.checked) {
+      instance._selectedMyGrainIds.set(this._id, true);
+    } else {
+      instance._selectedMyGrainIds.set(this._id, false);
+    }
+  },
+
+  "change .select-grain.shared>input": function (event, instance) {
+    if (event.target.checked) {
+      instance._selectedSharedWithMeIds.set(this._id, true);
+    } else {
+      instance._selectedSharedWithMeIds.set(this._id, false);
+    }
+  },
+
+  "click .bulk-action-buttons>button": function (event, instance) {
+    const ownedGrainIds = [];
+    instance.findAll(".select-grain.mine>input:checked").forEach((x) => {
+      const id = x.getAttribute("data-grainid");
+      instance._selectedMyGrainIds.set(id, false);
+      ownedGrainIds.push(id);
+    });
+
+    const sharedGrainIds = [];
+    instance.findAll(".select-grain.shared>input:checked").forEach((x) => {
+      const id = x.getAttribute("data-grainid");
+      instance._selectedSharedWithMeIds.set(id, false);
+      sharedGrainIds.push(id);
+    });
+
+    this.onClicked && this.onClicked(ownedGrainIds, sharedGrainIds);
   },
 });
 

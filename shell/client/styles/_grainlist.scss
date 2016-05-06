@@ -6,7 +6,7 @@
   }
   background-color: $grainlist-background-color;
   color: $grainlist-foreground-color;
-  >.non-usage-info {
+  >.top-row>.non-usage-info {
     float: left;
     @media #{$mobile} {
       float: none;
@@ -22,7 +22,6 @@
     >.search-row {
       display: inline-block;
       vertical-align: top;
-      margin-bottom: 36px;
       @media #{$mobile} {
         margin-bottom: 0;
         display: inline-block;
@@ -55,8 +54,20 @@
       }
     }
   }
+  button.show-trash, >button.show-main-list {
+    @extend %button-base;
+    @extend %button-secondary;
+  }
+  >.trash-explanation {
+    display: inline-block;
+    margin-bottom: 4px;
+    margin-top: 20px;
+    width: 100%;
+    font-size: 10pt;
+  }
   >.buttons {
     float: right;
+    clear: right;
     >button {
       @extend %button-base;
       @extend %button-secondary;
@@ -65,10 +76,12 @@
       font-size: 14pt;
       line-height: 16pt;
       height: 32px;
-      margin-top: 80px;
+      margin-top: 10px;
+      margin-bottom: 10px;
+      margin-left: 10px;
     }
   }
-  >.usage-info {
+  >.top-row>.usage-info {
     float: right;
     vertical-align: top;
     margin: 4px;
@@ -83,6 +96,10 @@
     }
   }
 
+  >.bulk-action-buttons {
+    @extend %bulk-action-buttons;
+  }
+
   >table {
     @extend %grain-table;
   }
@@ -95,6 +112,23 @@
       margin-left: auto;
       margin-right: auto;
     }
+  }
+}
+
+%bulk-action-buttons {
+  float: left;
+  clear: left;
+  >button {
+    @extend %button-base;
+    @extend %button-secondary;
+    display: inline-block;
+    float: left;
+    font-size: 14pt;
+    line-height: 16pt;
+    height: 32px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    margin-right: 10px;
   }
 }
 
@@ -128,6 +162,9 @@
         width: 64px;
         padding-left: 16px;
       }
+      &.select-grain {
+        width: 20px;
+      }
     }
   }
   >tbody>tr {
@@ -139,7 +176,7 @@
     border-left: 1px solid #fff;
     border-right: 1px solid #fff;
     >td {
-      cursor: pointer;
+      position: relative;
       &.td-app-icon {
         >.app-icon {
           @extend %pseudo-img-tag;
@@ -148,6 +185,18 @@
         }
         width: 64px;
         padding-left: 16px;
+        &.in-trash {
+          padding-left: 30px;
+
+          @extend .icon-trash;
+          &::before {
+            position: absolute;
+            left: 4px;
+            top: 4px;
+            font-size: 20px;
+            @extend .icon;
+          }
+        }
       }
       &.last-used {
         width: 100px;
@@ -189,7 +238,9 @@
       }
     }
     &.grain {
-      cursor: pointer;
+      .click-to-go {
+        cursor: pointer;
+      }
       &:hover {
         background-color: $grainlist-table-row-background-color-hover;
       }

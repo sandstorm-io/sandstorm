@@ -60,6 +60,8 @@ const mapGrainStateToTemplateData = function (grainState) {
     error: error && error.message,
     unauthorized: error && (error.error == 403),
     notFound: error && (error.error == 404),
+    inMyTrash: grainState.isInMyTrash(),
+    inOwnersTrash: error && (error.error === "grain-is-in-trash"),
     appOrigin: grainState.origin(),
     hasNotLoaded: !(grainState.hasLoaded()),
     sessionId: grainState.sessionId(),
@@ -129,20 +131,10 @@ Template.grainDeleteButton.events({
   "click button": function (event) {
     const activeGrain = globalGrains.getActive();
     const grainId = activeGrain.grainId();
-    if (activeGrain.isOwner()) {
-      if (window.confirm("Really delete this grain?")) {
-        Meteor.call("deleteGrain", grainId);
-        globalGrains.remove(grainId, true);
-      }
-    } else {
-      if (window.confirm("Really forget this grain?")) {
-        const identityId = activeGrain.identityId();
-        if (identityId) {
-          Meteor.call("forgetGrain", grainId, identityId);
-        }
-
-        globalGrains.remove(grainId, true);
-      }
+    let confirmationMessage = "Really move this grain to your trash?";
+    if (window.confirm(confirmationMessage)) {
+      Meteor.call("moveGrainsToTrash", [grainId]);
+      globalGrains.remove(grainId, true);
     }
   },
 });
@@ -486,6 +478,21 @@ Template.grainSharePopup.helpers({
   },
 });
 
+Template.grainInMyTrash.events({
+  "click button.restore-from-trash": function (event, instance) {
+    const grain = globalGrains.getActive();
+    console.log("clicked restore button. ", this.grainId);
+    Meteor.call("moveGrainsOutOfTrash", [this.grainId], function (err, result) {
+      if (err) {
+        console.error(error.stack);
+      } else {
+        grain.reset(grain.identityId());
+        grain.openSession();
+      }
+    });
+  },
+});
+
 Template.wrongIdentity.helpers({
   unclickedMessage: function () {
     if (Meteor.userId()) {
@@ -612,6 +619,11 @@ Template.grain.helpers({
   displayWebkeyButton: function () {
     const grain = globalGrains.getActive();
     return Meteor.userId() || (grain && !grain.isOldSharingModel());
+  },
+
+  displayTrashButton: function () {
+    const grain = globalGrains.getActive();
+    return Meteor.userId() && grain && !grain.isInMyTrash();
   },
 
   showPowerboxOffer: function () {

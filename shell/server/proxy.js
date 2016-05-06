@@ -294,8 +294,11 @@ Meteor.methods({
       throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
     }
 
-    if (!Grains.findOne({ _id: grainId })) {
+    const grain = Grains.findOne({ _id: grainId });
+    if (!grain) {
       throw new Meteor.Error(404, "Grain not found", "Grain ID: " + grainId);
+    } else if (grain.trashed) {
+      throw new Meteor.Error("grain-is-in-trash", "Grain is in trash", "Grain ID: " + grainId);
     }
 
     const db = this.connection.sandstormDb;

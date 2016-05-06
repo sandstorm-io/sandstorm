@@ -212,6 +212,8 @@ Grains = new Mongo.Collection("grains");
 //   private: If true, then knowledge of `_id` does not suffice to open this grain.
 //   cachedViewInfo: The JSON-encoded result of `UiView.getViewInfo()`, cached from the most recent
 //                   time a session to this grain was opened.
+//   trashed: If present, the Date when this grain was moved to the trash bin. Thirty days after
+//            this date, the grain will be automatically deleted.
 //
 // The following fields *might* also exist. These are temporary hacks used to implement e-mail and
 // web publishing functionality without powerbox support; they will be replaced once the powerbox
@@ -389,6 +391,8 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   created:   Date when this token was created.
 //   revoked:   If true, then this sturdyref has been revoked and can no longer be restored. It may
 //              become un-revoked in the future.
+//   trashed:   If present, the Date when this token was moved to the trash bin. Thirty days after
+//              this date, the token will be automatically deleted.
 //   expires:   Optional expiration Date. If undefined, the token does not expire.
 //   lastUsed:  Optional Date when this token was last used.
 //   owner:     A `ApiTokenOwner` (defined in `supervisor.capnp`, stored as a JSON object)

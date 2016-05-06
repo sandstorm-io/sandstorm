@@ -9,6 +9,7 @@
 
   <div class="app-details{{#if isAppInDevMode}} dev-background{{/if}}">
     {{>sandstormAppDetails
+       showTrash=showTrash
        showPublisherDetails=showPublisherDetails
        showUninstall=isAppNotInDevMode
        showRestoreGrainBackup=true
@@ -37,7 +38,30 @@
       </label>
     </div>
 
-    {{>sandstormGrainTable grains=filteredSortedGrains actions=actions onGrainClicked=onGrainClicked _db=_db showHintIfEmpty=1}}
+    {{#if showTrash}}
+      <p class="trash-explanation">
+        Grains will be permanently removed after 30 days in the Trash. To keep a grain,
+        restore it to the Main list.
+      </p>
+    {{/if}}
+
+    {{#let grains=filteredSortedGrains}}
+      {{>sandstormGrainTable grains=grains actions=actions
+                             onGrainClicked=onGrainClicked _db=_db showHintIfEmpty=1
+                             bulkActionButtons=bulkActionButtons}}
+      {{#unless grains}}
+        {{#if isFiltering}}
+          <div class="no-grains">
+            <p><strong>No matching grains found.</strong></p>
+            {{#if filteredSortedTrashedGrains}}
+              <p>Some grains in your trash match your search.
+               <button class="toggle-show-trash">View Trash</button>
+              </p>
+            {{/if}}
+          </div>
+        {{/if}}
+      {{/unless}}
+    {{/let}}
   </div>
   {{/if}}
 </template>
@@ -63,6 +87,10 @@
         {{#if bugReportLink}}<li role="presentation"><a class="bug-report-link" target="_blank" href="{{bugReportLink}}">Report Issue</a></li>{{/if}}
       </ul>
       <div class="info-row">
+        <button class="toggle-show-trash">
+          {{#if showTrash}}View Main list{{else}}View Trash{{/if}}
+        </button>
+
         {{#if showUninstall}}
         <button class="uninstall-button">Uninstall</button>
         {{/if}}

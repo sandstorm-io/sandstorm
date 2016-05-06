@@ -52,6 +52,35 @@
       }
     }
   }
+
+  >.trash-explanation {
+    display: inline-block;
+    margin-bottom: 4px;
+    margin-top: 20px;
+    width: 100%;
+    font-size: 10pt;
+  }
+
+  >.bulk-action-buttons {
+    @extend %bulk-action-buttons;
+  }
+
+  button.toggle-show-trash {
+    @extend %button-base;
+    @extend %button-secondary;
+  }
+
+  >.no-grains {
+    width: 100%;
+    background-color: white;
+    overflow: hidden;  // don't let margins escape box
+    >p {
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
+
   >table.grain-list-table {
     @extend %grain-table;
   }
@@ -161,7 +190,7 @@
         display: block;
         float: left;
       }
-      >button.uninstall-button, >button.restore-button {
+      >button.uninstall-button, >button.restore-button, >button.toggle-show-trash {
         @extend %button-base;
         @extend %button-secondary;
         display: block;

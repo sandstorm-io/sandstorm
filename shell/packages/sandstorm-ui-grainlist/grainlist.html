@@ -2,6 +2,7 @@
   {{setDocumentTitle}}
   {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar }}Grains{{/sandstormTopbarItem}}
   <div class="grain-list">
+    <div class="top-row">
     <div class="non-usage-info">
     <h1>Grains</h1>
     <div class="search-row">
@@ -17,26 +18,47 @@
         <p class="grains-size"><strong>My grains' total size:</strong> {{ myGrainsSize }}</p>
       {{/if}}
     </div>
+    </div>
+    {{#if showTrash}}
+      <p class="trash-explanation">
+        Grains will be permanently removed after 30 days in the Trash. To keep a grain,
+        restore it to the Main list.
+      </p>
+    {{/if}}
     <div class="buttons">
-      <button class='restore-button'>Restore backup...
+      {{#if showTrash }}
+        <button class="show-main-list">View Main list</button>
+      {{else}}
+        <button class="show-trash">View Trash</button>
+      {{/if}}
+
+      <button class="restore-button">Restore backup...
         <input type="file" style="display:none" accept=".zip">
       </button>
     </div>
 
-    {{>sandstormGrainTable grains=filteredSortedGrains onGrainClicked=onGrainClicked}}
+    {{#let grains=filteredSortedGrains}}
+      {{>sandstormGrainTable grains=grains onGrainClicked=onGrainClicked
+                             bulkActionButtons=bulkActionButtons}}
 
-    {{#unless hasAnyGrainsCreatedOrSharedWithMe}}
-      {{#if Template.subscriptionsReady}}
+      {{#unless grains}}
         <div class="no-grains">
-          <p><strong>You have no grains.</strong></p>
-
-          <p>A grain is an instance of a Sandstorm app. A grain might be a document, a chat room,
-            a mail box, a notebook, a blog, or more.</p>
-
-          <p><a href="{{ pathFor route='apps' }}">Install apps now to start creating.</a></p>
+          {{#if searchText}}
+            <p><strong>No matching grains found.</strong></p>
+            {{#if filteredSortedTrashedGrains}}
+              <p>Some grains in your trash match your search.
+               <button class="show-trash">View Trash</button>
+              </p>
+            {{/if}}
+          {{else}}
+            <p><strong>You have no grains.</strong></p>
+            <p>A grain is an instance of a Sandstorm app. A grain might be a document, a chat room,
+              a mail box, a notebook, a blog, or more.</p>
+            <p><a href="{{ pathFor route='apps' }}">Install apps now to start creating.</a></p>
+          {{/if}}
         </div>
-      {{/if}}
-    {{/unless}}
+      {{/unless}}
+    {{/let}}
   </div>
 </template>
 
@@ -48,7 +70,8 @@
     iconSrc: String,
     title: String,
     lastUsed: Date,
-    isOwnedByMe: Boolean
+    isOwnedByMe: Boolean,
+    trashed: Optional(Date),
   }
   and (optionally):
   * a list "actions" containing objects with shape:
@@ -57,12 +80,33 @@
       onClick: parameterless callback function
     }, and/or
   * an onGrainClicked callback function, which takes a single argument grainId as a String
-
+  * a list "bulkActionButtons" containing object with shape
+    {
+      buttonClass: a string to be used in the button's class attribute
+      text(numMyGrainsSelected, numSharedWithMeGrainsSelected): function that returns a string
+         that will be displayed as the button's text.
+      disabled(numMyGrainsSelected, numSharedWithMeGrainsSelected): function that returns a
+         boolean, indicating whether the button should be diabled
+      onClicked(myGrainIds, sharedWithMeGrainIds): function that performs the action on the
+         selected grains.
+    }
   Future work: callbacks for requesting different sort orders?
   --}}
+  {{#let buttons=bulkActionButtons mine=mineSelected shared=sharedSelected}}
+  <div class="bulk-action-buttons">
+    {{#each buttons}}
+    <button class={{buttonClass}} disabled={{disabled mine shared}}
+            title="{{#if disabled mine shared}}To perform bulk actions, you must first select some grains in the list.{{else}}{{text mine shared}}{{/if}}">
+      {{text mine shared}}
+    </button>
+    {{/each}}
+  </div>
+  {{/let}}
+
     <table class="grain-list-table">
       <thead>
         <tr>
+            <td class="select-grain"></td>
             <td class="td-app-icon"></td>
             <td class="grain-name">Name</td>
             <td class="last-used">Last Activity</td>
@@ -76,14 +120,22 @@
       <tbody>
         {{#each actions}}
         <tr class="action">
+          <td class="select-grain"></td>
           <td class="td-app-icon"><div class="new-grain-icon"></div></td>
           <td class="action-button" colspan="3"><button class="action">{{buttonText}}</button></td>
         </tr>
         {{/each}}
         {{#each grains}}
         <tr class="grain" data-grainid="{{ _id }}">
-          <td class="td-app-icon"><div class="app-icon" title="{{appTitle}}" style="background-image: url('{{ iconSrc }}');"></div></td>
-          <td class="grain-name">
+          <td class="select-grain {{#if isOwnedByMe}}mine{{else}}shared{{/if}}">
+            <input type="checkbox" data-grainid="{{ _id }}" checked={{isChecked}}>
+          </td>
+          <td class="td-app-icon click-to-go {{#if trashed}}in-trash{{/if}}">
+            <div class="app-icon" title="{{appTitle}}"
+                 style="background-image: url('{{ iconSrc }}');">
+            </div>
+          </td>
+          <td class="grain-name click-to-go">
             <a href="{{ pathFor route='grain' grainId=_id }}">{{title}}</a>
             {{#with was}}
               (was: {{.}})
@@ -92,8 +144,8 @@
               (renamed from: {{.}})
             {{/with}}
           </td>
-          <td class="last-used">{{dateString lastUsed}}</td>
-          <td class="shared-or-owned">{{#if isOwnedByMe }}My grain{{else}}Shared with me{{/if}}</td>
+          <td class="last-used click-to-go">{{dateString lastUsed}}</td>
+          <td class="shared-or-owned click-to-go">{{#if isOwnedByMe }}My grain{{else}}Shared with me{{/if}}</td>
           {{!-- Collaborators, size TODO
           <td>TODO: collaborators</td>
           <td>{{ size }}</td>

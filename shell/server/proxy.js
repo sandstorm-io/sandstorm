@@ -1289,7 +1289,7 @@ class Proxy {
         }, (err) => {
           return this._callNewWebSession(request, userInfo);
         });
-  };
+  }
 
   _callNewSession(request, viewInfo) {
     const userInfo = _.clone(this.userInfo);
@@ -1358,7 +1358,7 @@ class Proxy {
         return _this._callNewWebSession(request, userInfo);
       }
     });
-  };
+  }
 
   getSession(request) {
     if (!this.session) {
@@ -1989,7 +1989,7 @@ class Proxy {
       });
     }
   }
-};
+}
 
 const PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;
 

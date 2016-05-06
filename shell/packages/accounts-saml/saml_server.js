@@ -73,7 +73,7 @@ middleware = function (req, res, next) {
       throw new Error("Missing SAML action");
 
     const service = {
-      "provider":"default",
+      "provider": "default",
       "entryPoint": SandstormDb.prototype.getSamlEntryPoint(),
       // TODO(someday): find a better way to inject the DB
       "issuer": HOSTNAME,
@@ -138,9 +138,9 @@ const samlUrlToObject = function (url) {
     return null;
 
   return {
-    actionName:splitPath[2],
-    serviceName:splitPath[3],
-    credentialToken:splitPath[4],
+    actionName: splitPath[2],
+    serviceName: splitPath[3],
+    credentialToken: splitPath[4],
   };
 };
 

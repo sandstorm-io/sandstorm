@@ -264,12 +264,13 @@ class RequirementSet {
     for (const grainId in this.permissionsHeldRequirements) {
       for (const identityId in this.permissionsHeldRequirements[grainId]) {
         const permissions = this.permissionsHeldRequirements[grainId][identityId];
-        func({ permissionsHeld:
-               { grainId: grainId,
-                 identityId: identityId,
-                 permissionSet: permissions,
-               },
-             });
+        func({
+          permissionsHeld: {
+            grainId: grainId,
+            identityId: identityId,
+            permissionSet: permissions,
+          },
+        });
       }
     }
   }
@@ -543,8 +544,11 @@ class Context {
       const permissions = PermissionSet.fromRoleAssignment(edge.role, viewInfo);
       const vertexId = "i:" + edge.identityId;
       forEachPermission(permissions.array, (permissionId) => {
-        this.setToTrueStack.push({ grainId: grainId, vertexId: vertexId,
-                                   permissionId: permissionId, });
+        this.setToTrueStack.push({
+          grainId: grainId,
+          vertexId: vertexId,
+          permissionId: permissionId,
+        });
       });
     });
   }
@@ -833,8 +837,10 @@ class Context {
         while (true) {
           let currentToken = this.tokensById[currentTokenId];
           if (!currentToken && db) {
-            currentToken = db.collections.apiTokens.findOne({ _id: currentTokenId,
-                                                             revoked: { $ne: true }, });
+            currentToken = db.collections.apiTokens.findOne({
+              _id: currentTokenId,
+              revoked: { $ne: true },
+            });
             this.tokensById[currentTokenId] = currentToken;
           }
 
@@ -1121,10 +1127,15 @@ function computeRelevantTokens(context, grainId, vertexId) {
   };
 }
 
-const vertexPattern = Match.OneOf({ token: Match.ObjectIncluding({ _id: String, grainId: String }) },
-                                  { grain: Match.ObjectIncluding(
-                                    { _id: String,
-                                     identityId: Match.OneOf(String, null, undefined), }), });
+const vertexPattern = Match.OneOf(
+  { token: Match.ObjectIncluding({ _id: String, grainId: String }) },
+  {
+    grain: Match.ObjectIncluding({
+      _id: String,
+      identityId: Match.OneOf(String, null, undefined),
+    }),
+  },
+);
 // A vertex in the sharing graph is a principal, e.g. a user (identity) or a token. Complicating
 // matters, we may have to traverse sharing graphs for multiple grains in the same computation. A
 // token is specific to one grain, but a user of course can have access to multiple grains, so in
@@ -1302,7 +1313,7 @@ SandstormPermissions.downstreamTokens = function (db, root) {
   if (!grain || !grain.private) { return result; }
 
   db.collections.apiTokens.find({ grainId: grainId,
-                                 revoked: { $ne: true }, }).forEach(function (token) {
+                                  revoked: { $ne: true }, }).forEach(function (token) {
     tokensById[token._id] = token;
     if (token.parentToken) {
       if (!tokensByParent[token.parentToken]) {
@@ -1382,18 +1393,28 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
   // explicitly pass in undefined.
   check(provider, Match.OneOf({ identityId: String, accountId: String },
                               { rawParentToken: Match.OneOf(String, Buffer) }));
-  check(owner, Match.OneOf({ webkey: Match.OneOf(null,
-                                                 { forSharing: Boolean,
-                                                   expiresIfUnusedDuration: Match.Optional(Number),
-                                                 }), },
-                           { user: { identityId: String,
-                                     title: String,
-                                     renamed: Match.Optional(Boolean),
-                                     upstreamTitle: Match.Optional(String), }, },
-                           { grain: { grainId: String,
-                                      saveLabel: LocalizedString,
-                                      introducerIdentity: String, }, },
-                           { frontend: null }));
+  check(owner, Match.OneOf({
+    webkey: Match.OneOf(null, {
+      forSharing: Boolean,
+      expiresIfUnusedDuration: Match.Optional(Number),
+    }),
+  }, {
+    user: {
+      identityId: String,
+      title: String,
+      renamed: Match.Optional(Boolean),
+      upstreamTitle: Match.Optional(String),
+    },
+  }, {
+    grain: {
+      grainId: String,
+      saveLabel: LocalizedString,
+      introducerIdentity: String,
+    },
+  }, {
+    frontend: null,
+  }));
+
   check(unauthenticated, Match.OneOf(undefined, null, {
     options: Match.Optional({ dav: [Match.Optional(DavClass)] }),
     resources: Match.Optional(ResourceMap),

@@ -58,36 +58,37 @@ if (Meteor.isServer) {
 
     return Meteor.users.find({ _id: identityId },
       { fields: {
-        profile:1,
-        unverifiedEmail:1,
+        profile: 1,
+        unverifiedEmail: 1,
         expires: 1,
         createdAt: 1,
 
-        "services.dev.name":1,
+        "services.dev.name": 1,
 
-        "services.google.id":1,
-        "services.google.email":1,
-        "services.google.verified_email":1,
-        "services.google.name":1,
-        "services.google.picture":1,
-        "services.google.gender":1,
-        "services.google.hd":1,
+        "services.google.id": 1,
+        "services.google.email": 1,
+        "services.google.verified_email": 1,
+        "services.google.name": 1,
+        "services.google.picture": 1,
+        "services.google.gender": 1,
+        "services.google.hd": 1,
 
-        "services.github.id":1,
-        "services.github.email":1,
-        "services.github.emails":1,
-        "services.github.username":1,
+        "services.github.id": 1,
+        "services.github.email": 1,
+        "services.github.emails": 1,
+        "services.github.username": 1,
 
-        "services.email.email":1,
+        "services.email.email": 1,
 
-        "services.ldap.id":1,
-        "services.ldap.username":1,
-        "services.ldap.rawAttrs":1,
+        "services.ldap.id": 1,
+        "services.ldap.username": 1,
+        "services.ldap.rawAttrs": 1,
 
-        "services.saml.id":1,
-        "services.saml.email":1,
-        "services.saml.displayName":1,
-      }, });
+        "services.saml.id": 1,
+        "services.saml.email": 1,
+        "services.saml.displayName": 1,
+      },
+    });
   }),
 
   Meteor.publish("accountIdentities", function () {
@@ -347,8 +348,8 @@ SandstormDb.getUserEmails = function (user) {
   const result = [];
   _.keys(verifiedEmails).map(function (email) {
     result.push({ email: email,
-                 verified: true,
-                 primary: email === user.primaryEmail, });
+                  verified: true,
+                  primary: email === user.primaryEmail, });
   });
 
   _.keys(unverifiedEmails).map(function (email) {

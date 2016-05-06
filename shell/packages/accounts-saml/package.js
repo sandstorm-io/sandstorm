@@ -1,5 +1,5 @@
 Package.describe({
-  name:"accounts-saml",
+  name: "accounts-saml",
   summary: "saml login provider for meteor",
   version: "0.2.0",
   git: "https://github.com/nate-strauser/meteor-accounts-saml.git", // package was forked from here

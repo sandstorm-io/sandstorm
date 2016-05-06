@@ -151,15 +151,15 @@ ExternalWebSession = class ExternalWebSession {
     return this._requestHelper("DELETE", path, context);
   }
 
-// TODO(someday): implement streaming and websockets for ExternalWebSession
-// postStreaming(path, mimeType, context) {
-// }
+  // TODO(someday): implement streaming and websockets for ExternalWebSession
+  //postStreaming(path, mimeType, context) {
+  //}
 
-// putStreaming(path, mimeType, context) {
-// }
+  //putStreaming(path, mimeType, context) {
+  //}
 
-// openWebSocket(path, context, protocol, clientStream) {
-// }
+  //openWebSocket(path, context, protocol, clientStream) {
+  //}
 
   _requestHelper(method, path, context, content, contentType) {
     const _this = this;

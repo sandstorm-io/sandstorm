@@ -11,7 +11,8 @@ Meteor.loginWithEmailToken = function (email, token, callback) {
 
   Accounts.callLoginMethod({
     methodArguments: [
-      { email: {
+      {
+        email: {
           email: email,
           token: token,
         },

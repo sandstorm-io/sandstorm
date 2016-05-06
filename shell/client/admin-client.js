@@ -747,7 +747,7 @@ Template.adminLog.helpers({
     // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
     return AnsiUp.ansi_to_html(AdminLog.find({}, { $sort: { _id: 1 } })
             .map(function (entry) { return entry.text; })
-            .join(""), { use_classes:true });
+            .join(""), { use_classes: true });
     // jscs:enable requireCamelCaseOrUpperCaseIdentifiers
   },
 });

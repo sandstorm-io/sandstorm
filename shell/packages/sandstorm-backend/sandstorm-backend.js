@@ -261,16 +261,17 @@ SandstormBackend.prototype.openSessionInternal = function (grainId, userId, iden
       console.error(e);
       throw e;
     } else {
-      return { supervisor: supervisor,
-               methodResult: {
-                 sessionId: session._id,
-                 title: title,
-                 grainId: grainId,
-                 hostId: session.hostId,
-                 tabId: session.tabId,
-                 salt: cachedSalt,
-               },
-             };
+      return {
+        supervisor: supervisor,
+        methodResult: {
+          sessionId: session._id,
+          title: title,
+          grainId: grainId,
+          hostId: session.hostId,
+          tabId: session.tabId,
+          salt: cachedSalt,
+        },
+      };
     }
   }
 
@@ -297,14 +298,15 @@ SandstormBackend.prototype.openSessionInternal = function (grainId, userId, iden
 
   Sessions.insert(session);
 
-  return { supervisor: supervisor,
-           methodResult: {
-             sessionId: session._id,
-             title: title,
-             grainId: grainId,
-             hostId: session.hostId,
-             tabId: session.tabId,
-             salt: cachedSalt,
-           },
-         };
+  return {
+    supervisor: supervisor,
+    methodResult: {
+      sessionId: session._id,
+      title: title,
+      grainId: grainId,
+      hostId: session.hostId,
+      tabId: session.tabId,
+      salt: cachedSalt,
+    },
+  };
 };

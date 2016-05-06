@@ -122,11 +122,11 @@ Meteor.publish("tokenInfo", function (token) {
         let metadata = apiToken.owner.user.denormalizedGrainMetadata;
         if (identity && metadata) {
           SandstormDb.fillInLoginId(identity);
-          this.added("tokenInfo", token,
-                     { identityOwner: _.pick(identity, "_id", "profile", "loginId"),
-                       grainId: grainId,
-                       grainMetadata: metadata,
-                     });
+          this.added("tokenInfo", token, {
+            identityOwner: _.pick(identity, "_id", "profile", "loginId"),
+            grainId: grainId,
+            grainMetadata: metadata,
+          });
         } else {
           this.added("tokenInfo", token, { invalidToken: true });
         }
@@ -134,8 +134,10 @@ Meteor.publish("tokenInfo", function (token) {
         if (this.userId) {
           const user = Meteor.users.findOne({ _id: this.userId });
           const identityIds = SandstormDb.getUserIdentityIds(user);
-          const childToken = ApiTokens.findOne({ "owner.user.identityId": { $in: identityIds },
-                                                 parentToken: apiToken._id, });
+          const childToken = ApiTokens.findOne({
+            "owner.user.identityId": { $in: identityIds },
+            parentToken: apiToken._id,
+          });
           if (childToken || this.userId === grain.userId ||
               identityIds.indexOf(apiToken.identityId) >= 0) {
             this.added("tokenInfo", token, { alreadyRedeemed: true, grainId: apiToken.grainId, });
@@ -157,10 +159,11 @@ Meteor.publish("tokenInfo", function (token) {
           icon: appIcon,
           appId: appIcon ? undefined : grain.appId,
         };
-        this.added("tokenInfo", token,
-                   { webkey: true,
-                     grainId: grainId,
-                     grainMetadata: denormalizedGrainMetadata, });
+        this.added("tokenInfo", token, {
+          webkey: true,
+          grainId: grainId,
+          grainMetadata: denormalizedGrainMetadata,
+        });
       } else {
         this.added("tokenInfo", token, { invalidToken: true });
       }
@@ -193,10 +196,13 @@ Meteor.publish("requestingAccess", function (grainId) {
       Meteor.users.findOne({ _id: grain.userId }));
 
   const _this = this;
-  const query = ApiTokens.find({ grainId: grainId, identityId: { $in: ownerIdentityIds },
-                                 parentToken: { $exists: false },
-                                 "owner.user.identityId": { $in: identityIds },
-                                 revoked: { $ne: true }, });
+  const query = ApiTokens.find({
+    grainId: grainId,
+    identityId: { $in: ownerIdentityIds },
+    parentToken: { $exists: false },
+    "owner.user.identityId": { $in: identityIds },
+    revoked: { $ne: true },
+  });
   const handle = query.observe({
     added(apiToken) {
       _this.added("grantedAccessRequests",
@@ -356,11 +362,15 @@ Meteor.methods({
             if (token.owner.user.upstreamTitle === newTitle) {
               // User renamed grain to match upstream title. Act like they never renamed it at
               // all.
-              ApiTokens.update({ grainId: grainId, "owner.user.identityId": identityId },
-                               { $set: { "owner.user.title": newTitle },
-                                 $unset: { "owner.user.upstreamTitle": 1, "owner.user.renamed": 1 },
-                               },
-                               { multi: true });
+              ApiTokens.update({
+                grainId: grainId,
+                "owner.user.identityId": identityId,
+              }, {
+                $set: { "owner.user.title": newTitle },
+                $unset: { "owner.user.upstreamTitle": 1, "owner.user.renamed": 1 },
+              }, {
+                multi: true,
+              });
             } else {
               const modification = {
                 "owner.user.title": newTitle,

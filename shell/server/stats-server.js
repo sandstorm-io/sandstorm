@@ -33,9 +33,11 @@ computeStats = function (since) {
 
   // This calculates the number of user accounts that have been used
   // during the requested time period.
-  const currentlyActiveUsersCount = Meteor.users.find(
-    { expires: { $exists: false }, loginIdentities: { $exists: true },
-     lastActive: timeConstraint, }).count();
+  const currentlyActiveUsersCount = Meteor.users.find({
+    expires: { $exists: false },
+    loginIdentities: { $exists: true },
+    lastActive: timeConstraint,
+  }).count();
 
   // This calculates the number of grains that have been used during
   // the requested time period.
@@ -57,13 +59,15 @@ computeStats = function (since) {
 
   let apps = Grains.aggregate([
     { $match: { lastUsed: timeConstraint } },
-    { $group: {
+    {
+      $group: {
         _id: "$appId",
         grains: { $sum: 1 },
         userIds: { $addToSet: "$userId" },
       },
     },
-    { $project: {
+    {
+      $project: {
         grains: 1,
         owners: { $size: "$userIds" },
       },
@@ -92,14 +96,16 @@ computeStats = function (since) {
     const grainIds = _.pluck(grains, "_id");
 
     const counts = ApiTokens.aggregate([
-      { $match: {
+      {
+        $match: {
           "owner.user": { $exists: true },
           lastUsed: timeConstraint,
           grainId: { $in: grainIds },
         },
       },
       { $group: { _id: "$owner.user.identityId" } },
-      { $group: {
+      {
+        $group: {
           _id: "count",
           count: { $sum: 1 },
         },
@@ -117,12 +123,14 @@ computeStats = function (since) {
 
   // Count per-app appdemo users and deleted grains.
   DeleteStats.aggregate([
-    { $match: {
+    {
+      $match: {
         lastActive: timeConstraint,
         appId: { $exists: true },
       },
     },
-    { $group: {
+    {
+      $group: {
         _id: {
           appId: "$appId",
           type: "$type",

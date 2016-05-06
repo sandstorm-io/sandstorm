@@ -120,6 +120,21 @@
     margin-bottom: 10px;
   }
 
+  .checkbox-group {
+    // We want to make it so that labels for checkboxes and other associated content align neatly.
+    // To accomplish this, we remove the checkbox from the flow, place all other content inside a
+    // box with some left padding, and then pull the checkbox back out to the side with negative margin.
+    // We might want to do something similar for radio buttons some day.
+    position: relative;
+    padding-left: 24px;
+    margin-bottom: 10px;
+    input[type=checkbox] {
+      position: absolute;
+      margin-left: -24px;
+      font-size: 16px;
+    }
+  }
+
   label {
     display: block;
     font-weight: normal;
@@ -136,6 +151,10 @@
     font-family: inherit;
     border-radius: 2px;
     border: 1px solid #d3d3d3;
+    &:disabled {
+      color: #666;
+      background-color: #efefef;
+    }
   }
 
   .form-subtext {
@@ -162,5 +181,11 @@
   button[type=button] {
     @extend %button-base;
     @extend %button-secondary;
+  }
+
+  &.disabled {
+    // Used for marking that the entire form is disabled.  Note that this does not disable the
+    // <input>s; you should still add the disabled attribute to each control.
+    color: #666 !important; // Grey out all text uniformly.
   }
 }

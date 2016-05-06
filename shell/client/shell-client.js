@@ -17,6 +17,8 @@
 // This file implements the common shell components such as the top bar.
 // It also covers the root page.
 
+import getBuildInfo from "/imports/client/build-info.js";
+
 // Subscribe to basic grain information first and foremost, since
 // without it we might e.g. redirect to the wrong place on login.
 globalSubs = [
@@ -771,21 +773,6 @@ if (Meteor.isClient) {
   Router.onBeforeAction("loading");
 }
 
-function getBuildInfo() {
-  let build = Meteor.settings && Meteor.settings.public && Meteor.settings.public.build;
-  const isNumber = typeof build === "number";
-  if (!build) {
-    build = "(unknown)";
-  } else if (isNumber) {
-    build = String(Math.floor(build / 1000)) + "." + String(build % 1000);
-  }
-
-  return {
-    build: build,
-    isUnofficial: !isNumber,
-  };
-}
-
 const promptForFile = function (input, callback) {
   // TODO(cleanup): Share code with "upload picture" and other upload buttons.
   function listener(e) {
@@ -1005,4 +992,3 @@ Router.map(function () {
     path: "/account/usage",
   });
 });
-

@@ -1,12 +1,41 @@
+<template name="newAdminLogContents">
+  <pre>...{{{logHtml}}}</pre>
+</template>
+
+<template name="newAdminLog">
+  <div class="admin-log-box" aria-live="polite">
+    {{> newAdminLogContents logHtml=logHtml onRenderedHook=maybeScrollToBottom }}
+  </div>
+</template>
+
 <template name="newAdminStatus">
   <h1>System Status</h1>
 
-  <h2>Current Usage</h2>
-  <p>{{grainsActive}} open grains</p>
-  <p>{{usersActive}} users with grains open</p>
-
-  <h2>System Log</h2>
-  <div class="admin-log-box" aria-live="polite">
-    <pre>...{{{logHtml}}}</pre>
+  <div class="admin-status-row">
+    <div class="current-usage">
+      <h2>Current Usage</h2>
+      <ul>
+        <li>Grains open: {{grainsActive}}</li>
+        <li>User accounts with grains open: {{usersActive}}</li>
+        {{#if allowDemo}}
+          <li>Demo accounts active: {{demosActive}}</li>
+        {{/if}}
+      </ul>
+    </div>
+    <div class="version">
+      <h2>Sandstorm Version</h2>
+      <p>{{#linkTo route="about" }}{{ sandstormVersion }}{{/linkTo}}</p>
+    </div>
   </div>
+
+  <h2 class="system-log-header">
+    <span>System Log</span>
+    <form>
+      <button type="button" name="download-full-log">
+        Download full log
+      </button>
+    </form>
+  </h2>
+
+  {{> newAdminLog }}
 </template>

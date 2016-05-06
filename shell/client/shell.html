@@ -338,16 +338,9 @@ limitations under the License.
   {{>title "Home"}}
 
   <div id="intro" class="{{#if splashUrl}}has-splash{{/if}}">
-    {{#if needsAdminTokenLogin }}
-      <p>
-        This Sandstorm instance has no users. You should generate a token from the command line
-        with `sandstorm admin-token` in order to access the admin settings page.
-      </p>
-    {{else}}
-      {{> loginButtonsDialog globalAccountsUi}}
-      {{#if splashUrl}}
-        <iframe src="{{splashUrl}}"></iframe>
-      {{/if}}
+    {{> loginButtonsDialog globalAccountsUi}}
+    {{#if splashUrl}}
+      <iframe src="{{splashUrl}}"></iframe>
     {{/if}}
   </div>
 </template>

@@ -899,8 +899,12 @@ Router.map(function () {
         }
       }
 
+      if (this.ready() && !HasUsers.findOne("hasUsers") && !globalDb.allowDevAccounts()) {
+        // This server has no users and hasn't been setup yet.
+        this.redirect("setupWizardIntro");
+      }
+
       return {
-        needsAdminTokenLogin: this.ready() && !HasUsers.findOne("hasUsers") && !globalDb.allowDevAccounts(),
         build: getBuildInfo().build,
         splashUrl: (Settings.findOne("splashUrl") || {}).value,
       };
@@ -1005,4 +1009,3 @@ Router.map(function () {
     path: "/account/usage",
   });
 });
-

@@ -64,6 +64,12 @@
     margin-top: 20px;
     width: 100%;
     font-size: 10pt;
+
+    button.empty-trash {
+      @extend %unstyled-button;
+      color: $sandstorm-purple-color;
+      font-weight: bold;
+    }
   }
   >.buttons {
     float: right;

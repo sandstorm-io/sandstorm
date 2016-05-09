@@ -266,6 +266,50 @@ Template.sandstormGrainListPage.events({
     }
   },
 
+  "click button.empty-trash": function (event, instance) {
+    const myGrainsCursor = instance.data._db.collections.grains.find({
+      userId: Meteor.userId(),
+      trashed: { $exists: true },
+    }, { _id: 1 });
+
+    const myGrains = _.pluck(myGrainsCursor.fetch(), "_id");
+
+    const myIdentityIds = SandstormDb.getUserIdentityIds(Meteor.user());
+    const myTokens = instance.data._db.collections.apiTokens.find({
+      "owner.user.identityId": { $in: myIdentityIds },
+      trashed: { $exists: true },
+    }).fetch();
+
+    const grainsSharedWithMe = Object.keys(_.groupBy(myTokens, "grainId"));
+
+    let deletePhrase = "" + myGrains.length + " grain" + (myGrains.length > 1 ? "s" : "");
+    let forgetPhrase = "" + grainsSharedWithMe.length + " grain" +
+        (grainsSharedWithMe.length > 1 ? "s" : "");
+
+    let message;
+    if (myGrains.length == 0 && grainsSharedWithMe.length == 0) {
+      return;
+    } else if (grainsSharedWithMe.length == 0) {
+      message = "Delete " + deletePhrase + "? This cannot be undone";
+    } else if (myGrains.length == 0) {
+      message = "Forget " + forgetPhrase + "? This cannot be undone";
+    } else {
+      message = "Delete " + deletePhrase + " and forget " + forgetPhrase + "? This cannot be undone.";
+    }
+
+    if (window.confirm(message)) {
+      myGrains.forEach((grainId) => {
+        Meteor.call("deleteGrain", grainId);
+      });
+
+      grainsSharedWithMe.forEach((grainId) => {
+        myIdentityIds.forEach((identityId) => {
+          Meteor.call("forgetGrain", grainId, identityId);
+        });
+      });
+    }
+  },
+
   "click button.show-trash": function (event, instance) {
     instance._showTrash.set(true);
   },
@@ -273,9 +317,7 @@ Template.sandstormGrainListPage.events({
   "click button.show-main-list": function (event, instance) {
     instance._showTrash.set(false);
   },
-});
 
-Template.sandstormGrainListPage.events({
   "click .restore-button": function (event, instance) {
     const input = instance.find(".restore-button input");
     if (input == event.target) {

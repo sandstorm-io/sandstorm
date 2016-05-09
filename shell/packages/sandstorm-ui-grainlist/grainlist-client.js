@@ -357,6 +357,14 @@ Template.sandstormGrainTable.events({
     }
   },
 
+  "click td.select-grain": function (event, instance) {
+    if (event.target.tagName === "TD") {
+      // Assume the user meant to click on the actual checkbox.
+      const el = instance.find("td.select-grain>input[data-grainid='" + this._id + "']");
+      el.click();
+    }
+  },
+
   "click .bulk-action-buttons>button": function (event, instance) {
     const ownedGrainIds = [];
     instance.findAll(".select-grain.mine>input:checked").forEach((x) => {

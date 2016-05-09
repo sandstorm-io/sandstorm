@@ -128,7 +128,8 @@
         {{#each grains}}
         <tr class="grain" data-grainid="{{ _id }}">
           <td class="select-grain {{#if isOwnedByMe}}mine{{else}}shared{{/if}}">
-            <input type="checkbox" data-grainid="{{ _id }}" checked={{isChecked}}>
+            <input title="select this grain"
+                   type="checkbox" data-grainid="{{ _id }}" checked={{isChecked}}>
           </td>
           <td class="td-app-icon click-to-go {{#if trashed}}in-trash{{/if}}">
             <div class="app-icon" title="{{appTitle}}"

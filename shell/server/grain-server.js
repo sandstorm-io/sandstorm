@@ -276,6 +276,7 @@ Meteor.publish("grainSize", function (grainId) {
 const GRAIN_DELETION_MS = 1000 * 60 * 60 * 24 * 30; // thirty days
 SandstormDb.periodicCleanup(86400000, () => {
   const trashExpiration = new Date(Date.now() - GRAIN_DELETION_MS);
+  globalDb.removeApiTokens({ trashed: { $lt: trashExpiration } });
   Grains.find({ trashed: { $lt: trashExpiration } }).forEach((grain) => {
     Grains.remove({ _id: grain._id });
     globalDb.removeApiTokens({
@@ -286,9 +287,16 @@ SandstormDb.periodicCleanup(86400000, () => {
       ],
     });
 
-    ApiTokens.remove({ trashed: { $lt: trashExpiration } });
+    if (grain.lastUsed) {
+      DeleteStats.insert({
+        type: "grain",  // Demo grains can never never get here!
+        lastActive: grain.lastUsed,
+        appId: grain.appId,
+      });
+    }
 
-    // Don't need to update demo stats: demo grains never get here!
+    waitPromise(globalBackend.deleteGrain(grain._id, grain.userId));
+    Meteor.call("deleteUnusedPackages", grain.appId);
   });
 });
 

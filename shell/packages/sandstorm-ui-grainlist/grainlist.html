@@ -51,10 +51,14 @@
               </p>
             {{/if}}
           {{else}}
-            <p><strong>You have no grains.</strong></p>
-            <p>A grain is an instance of a Sandstorm app. A grain might be a document, a chat room,
-              a mail box, a notebook, a blog, or more.</p>
-            <p><a href="{{ pathFor route='apps' }}">Install apps now to start creating.</a></p>
+            {{#if showTrash}}
+              <p><strong>Trash is empty.</strong></p>
+            {{else}}
+              <p><strong>You have no grains.</strong></p>
+              <p>A grain is an instance of a Sandstorm app. A grain might be a document, a chat room,
+                a mail box, a notebook, a blog, or more.</p>
+              <p><a href="{{ pathFor route='apps' }}">Install apps now to start creating.</a></p>
+            {{/if}}
           {{/if}}
         </div>
       {{/unless}}

@@ -481,7 +481,6 @@ Template.grainSharePopup.helpers({
 Template.grainInMyTrash.events({
   "click button.restore-from-trash": function (event, instance) {
     const grain = globalGrains.getActive();
-    console.log("clicked restore button. ", this.grainId);
     Meteor.call("moveGrainsOutOfTrash", [this.grainId], function (err, result) {
       if (err) {
         console.error(error.stack);

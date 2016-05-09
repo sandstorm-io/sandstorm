@@ -202,6 +202,10 @@ Template.sandstormGrainListPage.helpers({
     return Template.instance().data._db.currentUserGrains().count();
   },
 
+  trashCount: function () {
+    return filteredSortedGrains(true).length;
+  },
+
   hasAnyGrainsCreatedOrSharedWithMe: function () {
     const _db = Template.instance().data._db;
     return !!(_db.currentUserGrains().count() ||

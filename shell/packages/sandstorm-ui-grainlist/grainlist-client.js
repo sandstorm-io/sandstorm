@@ -288,37 +288,60 @@ Template.sandstormGrainListPage.events({
 });
 
 Template.sandstormGrainTable.onCreated(function () {
-  this._numSelectedGrains = new ReactiveVar(0);
-  this._numSelectedShares = new ReactiveVar(0);
+  // Grain IDs for the grains that are currently selected, whether or not they are currently
+  // displayed.
   this._selectedMyGrainIds = new ReactiveDict();
   this._selectedSharedWithMeIds = new ReactiveDict();
+
+  // These count the number of grains that are selected *and* currently displayed.
+  this._numMineSelectedShown = new ReactiveVar(0);
+  this._numSharedWithMeSelectedShown = new ReactiveVar(0);
+
+  this.autorun(() => {
+    const data = Template.currentData();
+    let mineResult = 0;
+    let sharedResult = 0;
+    data.grains.forEach((grain) => {
+      if (this._selectedMyGrainIds.get(grain._id)) {
+        mineResult += 1;
+      }
+
+      if (this._selectedSharedWithMeIds.get(grain._id)) {
+        sharedResult += 1;
+      }
+
+      this._numMineSelectedShown.set(mineResult);
+      this._numSharedWithMeSelectedShown.set(sharedResult);
+
+      if (this.view.isRendered) {
+        let el = this.find(".select-all-grains>input");
+        if (mineResult == 0 && sharedResult == 0) {
+          el.checked = false;
+        } else {
+          el.checked = true;
+        }
+      }
+    });
+  });
 });
 
 Template.sandstormGrainTable.helpers({
   mineSelected: function () {
-    const data = Template.currentData();
-    const instance = Template.instance();
-    let result = 0;
-    data.grains.forEach((grain) => {
-      if (instance._selectedMyGrainIds.get(grain._id)) {
-        result += 1;
-      }
-    });
-
-    return result;
+    return Template.instance()._numMineSelectedShown.get();
   },
 
   sharedSelected: function () {
-    const data = Template.currentData();
-    const instance = Template.instance();
-    let result = 0;
-    data.grains.forEach((grain) => {
-      if (instance._selectedSharedWithMeIds.get(grain._id)) {
-        result += 1;
-      }
-    });
+    return Template.instance()._numSharedWithMeSelectedShown.get();
+  },
 
-    return result;
+  selectAllTitle: function () {
+    const instance = Template.instance();
+    if (instance._numMineSelectedShown.get() == 0 &&
+        instance._numSharedWithMeSelectedShown.get() == 0) {
+      return "select all";
+    } else {
+      return "unselect all";
+    }
   },
 
   isChecked: function () {
@@ -338,6 +361,26 @@ Template.sandstormGrainTable.events({
   "click tbody tr.grain .click-to-go": function (event) {
     const context = Template.instance().data;
     context.onGrainClicked && context.onGrainClicked(this._id);
+  },
+
+  "click .select-all-grains>input": function (event, instance) {
+    if (instance._numMineSelectedShown.get() == 0 &&
+        instance._numSharedWithMeSelectedShown.get() == 0) {
+      // select all
+      instance.findAll(".select-grain>input").forEach((el) => {
+        if (el !== event.currentTarget) {
+          el.click();
+        }
+      });
+    } else {
+      // deselect all
+      instance.findAll(".select-grain>input:checked").forEach((el) => {
+        if (el !== event.currentTarget) {
+          el.click();
+        }
+      });
+
+    }
   },
 
   "change .select-grain.mine>input": function (event, instance) {
@@ -366,6 +409,8 @@ Template.sandstormGrainTable.events({
   },
 
   "click .bulk-action-buttons>button": function (event, instance) {
+    // Only perform the action for grains that are both selected and displayed.
+
     const ownedGrainIds = [];
     instance.findAll(".select-grain.mine>input:checked").forEach((x) => {
       const id = x.getAttribute("data-grainid");

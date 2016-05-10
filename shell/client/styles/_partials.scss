@@ -65,6 +65,13 @@
   }
 }
 
+%button-link {
+  background: none;
+  border: none;
+  color: black;
+  text-decoration: underline;
+}
+
 %button-primary {
   // A button coloring for the primary action of a form.
   background-color: #65468e;

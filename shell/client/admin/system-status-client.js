@@ -64,9 +64,7 @@ Template.newAdminLog.onCreated(function () {
   // possible for the viewport to no longer be "scrolled to the bottom".  This event listener
   // makes sure that we do the right thing as the window resizes.
   window.addEventListener("resize", this.resizeHandler);
-  globalInstance = this;
 });
-
 
 Template.newAdminLog.onRendered(function () {
   // On initial render, force scroll to the bottom.
@@ -104,7 +102,7 @@ Template.newAdminLog.helpers({
     return () => {
       instance.maybeScrollToBottom();
     };
-  }
+  },
 });
 
 Template.newAdminStatus.onCreated(function () {

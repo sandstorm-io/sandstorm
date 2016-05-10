@@ -278,6 +278,7 @@ SandstormDb.periodicCleanup(86400000, () => {
   const trashExpiration = new Date(Date.now() - GRAIN_DELETION_MS);
   globalDb.removeApiTokens({ trashed: { $lt: trashExpiration } });
   Grains.find({ trashed: { $lt: trashExpiration } }).forEach((grain) => {
+    waitPromise(globalBackend.deleteGrain(grain._id, grain.userId));
     Grains.remove({ _id: grain._id });
     globalDb.removeApiTokens({
       grainId: grain._id,
@@ -295,7 +296,6 @@ SandstormDb.periodicCleanup(86400000, () => {
       });
     }
 
-    waitPromise(globalBackend.deleteGrain(grain._id, grain.userId));
     Meteor.call("deleteUnusedPackages", grain.appId);
   });
 });
@@ -345,6 +345,10 @@ Meteor.methods({
     check(grainId, String);
 
     if (this.userId) {
+      if (!this.isSimulation) {
+        waitPromise(globalBackend.deleteGrain(grainId, this.userId));
+      }
+
       const grain = Grains.findOne({
         _id: grainId,
         userId: this.userId,
@@ -365,7 +369,6 @@ Meteor.methods({
         }
 
         if (!this.isSimulation) {
-          waitPromise(globalBackend.deleteGrain(grainId, this.userId));
           Meteor.call("deleteUnusedPackages", grain.appId);
         }
       }

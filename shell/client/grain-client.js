@@ -1464,7 +1464,12 @@ Router.map(function () {
         Router.go("root", {}, { replaceState: true });
       }
 
-      return new SandstormGrainListPage(globalDb, globalQuotaEnforcer);
+      return {
+        _db: globalDb,
+        _quotaEnforcer: globalQuotaEnforcer,
+        _staticHost: globalDb.makeWildcardHost("static"),
+        viewTrash: this.getParams().hash === "trash",
+      };
     },
   });
   this.route("grain", {

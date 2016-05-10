@@ -1,11 +1,6 @@
 import { introJs } from "intro.js";
 
-SandstormGrainListPage = function (db, quotaEnforcer) {
-  this._filter = new ReactiveVar("");
-  this._staticHost = db.makeWildcardHost("static");
-  this._db = db;
-  this._quotaEnforcer = quotaEnforcer;
-};
+SandstormGrainListPage = {};
 
 SandstormGrainListPage.mapGrainsToTemplateObject = function (grains, db) {
   // Do package lookup all at once, rather than doing N queries for N grains
@@ -101,7 +96,7 @@ const filteredSortedGrains = function (showTrash) {
   const apiTokens = db.currentUserApiTokens().fetch()
         .filter((token) => !!token.trashed == showTrash);
   const itemsFromSharedGrains = SandstormGrainListPage.mapApiTokensToTemplateObject(apiTokens, ref._staticHost);
-  const filter = compileMatchFilter(Template.instance().data._filter.get());
+  const filter = compileMatchFilter(Template.instance()._filter.get());
   return _.chain([itemsFromGrains, itemsFromSharedGrains])
       .flatten()
       .filter(filter)
@@ -187,7 +182,7 @@ Template.sandstormGrainListPage.helpers({
   },
 
   filteredSortedGrains: function () {
-    return filteredSortedGrains(Template.instance()._showTrash.get());
+    return filteredSortedGrains(Template.instance().data.viewTrash);
   },
 
   filteredSortedTrashedGrains: function () {
@@ -195,7 +190,7 @@ Template.sandstormGrainListPage.helpers({
   },
 
   searchText: function () {
-    return Template.instance().data._filter.get();
+    return Template.instance()._filter.get();
   },
 
   myGrainsCount: function () {
@@ -225,16 +220,16 @@ Template.sandstormGrainListPage.helpers({
   },
 
   showTrash: function () {
-    return Template.instance()._showTrash.get();
+    return Template.instance().data.viewTrash;
   },
 
   bulkActionButtons: function () {
-    return SandstormGrainListPage.bulkActionButtons(Template.instance()._showTrash.get());
+    return SandstormGrainListPage.bulkActionButtons(Template.instance().data.viewTrash);
   },
 });
 
 Template.sandstormGrainListPage.onCreated(function () {
-  this._showTrash = new ReactiveVar(false);
+  this._filter = new ReactiveVar("");
 });
 
 Template.sandstormGrainListPage.onRendered(function () {
@@ -250,13 +245,13 @@ Template.sandstormGrainListPage.onRendered(function () {
 
 Template.sandstormGrainListPage.events({
   "input .search-bar": function (event) {
-    Template.instance().data._filter.set(event.target.value);
+    Template.instance()._filter.set(event.target.value);
   },
 
   "keypress .search-bar": function (event, instance) {
     if (event.keyCode === 13) {
       // Enter pressed.  If a single grain is shown, open it.
-      const grains = filteredSortedGrains(instance._showTrash.get());
+      const grains = filteredSortedGrains(instance.data.viewTrash);
       if (grains.length === 1) {
         // Unique grain found with current filter.  Activate it!
         const grainId = grains[0]._id;
@@ -311,11 +306,11 @@ Template.sandstormGrainListPage.events({
   },
 
   "click button.show-trash": function (event, instance) {
-    instance._showTrash.set(true);
+    Router.go("grains", {}, { hash: "trash" });
   },
 
   "click button.show-main-list": function (event, instance) {
-    instance._showTrash.set(false);
+    Router.go("grains", {}, { hash: "" });
   },
 
   "click .restore-button": function (event, instance) {

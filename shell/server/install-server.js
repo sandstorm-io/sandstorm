@@ -70,7 +70,7 @@ Meteor.methods({
       throw new Meteor.Error(403, "Unauthorized", "Only paid users can upload apps.");
     }
 
-    const token = Random.id();
+    const token = Random.id(22);
     uploadTokens[token] = setTimeout(function () {
       delete uploadTokens[token];
     }, 20 * 60 * 1000);

@@ -1,0 +1,87 @@
+<template name="newAdminPersonalization">
+  <h1>Personalization</h1>
+
+  {{#if hasSuccess }}
+    {{#focusingSuccessBox}}
+      {{message}}
+    {{/focusingSuccessBox}}
+  {{/if}}
+
+  {{#if hasError }}
+    {{#focusingErrorBox}}
+      {{message}}
+    {{/focusingErrorBox}}
+  {{/if}}
+
+  <form class="admin-personalization-form">
+    <div class="form-group">
+      <label>
+        Server title:
+        <input type="text" name="server-title" value="{{serverTitle}}" disabled="{{formDisabled}}"/>
+      </label>
+      <span class="form-subtext">
+        The name of this server, as used when communicating with users.
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>
+        Splash URL (experimental):
+        <input type="text" name="splash-url" value="{{splashUrl}}"
+               placeholder="{{exampleSplashUrl}}" disabled="{{formDisabled}}"/>
+      </label>
+      <span class="form-subtext">
+        This web page will be displayed in the background behind the login dialog (the home page
+        when logged out). For security reasons, the page must be hosted within this Sandstorm
+        server's wildcard host (otherwise it will be blocked by <code>Content-Security-Policy</code>). We
+        suggest using a static web publishing app like
+        <a href="https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh?host=http://local.sandstorm.io:6080">
+          Hacker CMS
+        </a>
+        to host the content.
+        <strong>
+          WARNING: This feature is experimental; in particular the style and positioning of
+          the login box is subject to change without notice.
+        </strong>
+        Please let us know if you'd like to see it stabilize.
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>
+        Signup dialog:
+        <input type="text" name="signup-dialog" value="{{signupDialog}}"
+               disabled="{{formDisabled}}"/>
+      </label>
+      <span class="form-subtext">
+        This text will be displayed to users who click on signup links.
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>
+        Terms of service URL:
+        <input type="text" name="terms-of-service" value="{{termsOfServiceUrl}}"
+               placeholder="https://example.com/tos" disabled="{{formDisabled}}"/>
+      </label>
+      <span class="form-subtext">
+        If provided, new users will be required to agree to the linked Terms of Service.
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>
+        Privacy policy URL:
+        <input type="text" name="privacy-policy" value="{{privacyPolicyUrl}}"
+               placeholder="https://example.com/privacy" disabled="{{formDisabled}}"/>
+      </label>
+      <span class="form-subtext">
+        If provided, new users will be required to agree to the linked Privacy Policy.
+      </span>
+    </div>
+
+    <div class="button-row">
+      <button type="submit" disabled="{{formDisabled}}">Save</button>
+    </div>
+  </form>
+</template>

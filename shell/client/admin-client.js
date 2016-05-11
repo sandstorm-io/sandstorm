@@ -1363,6 +1363,10 @@ Router.map(function () {
     path: "/admin-new/status",
     controller: newAdminRoute,
   });
+  this.route("newAdminPersonalization", {
+    path: "/admin-new/personalization",
+    controller: newAdminRoute,
+  });
   this.route("newAdminNetworkCapabilities", {
     path: "/admin-new/network-capabilities",
     controller: newAdminRoute,

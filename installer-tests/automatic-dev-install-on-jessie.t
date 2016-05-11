@@ -12,7 +12,7 @@ Finding latest build for dev channel...
 $[veryslow]Downloading: https://dl.sandstorm.io/
 $[veryslow]GPG signature is valid.
 $[veryslow]Sandstorm started.
-Visit this link to configure it:
+Visit this link to start using it:
   http://local.sandstorm.io:6080/
 To learn how to control the server, run:
   sandstorm help

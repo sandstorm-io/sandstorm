@@ -38,7 +38,7 @@ $[veryslow]Downloading: https://dl.sandstorm.io
 $[veryslow]GPG signature is valid.
 $[veryslow]Sandstorm started. PID =
 Your server is coming online
-$[veryslow]Visit this link to configure it:
+$[veryslow]Visit this link to start using it:
   https://
 To learn how to control the server, run:
   sandstorm help

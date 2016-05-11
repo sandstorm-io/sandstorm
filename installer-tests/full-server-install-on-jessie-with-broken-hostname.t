@@ -35,7 +35,7 @@ Wildcard host: [*.nonexistentbroken:6080]$[type]
 $[veryslow]Downloading: https://dl.sandstorm.io
 $[veryslow]GPG signature is valid.
 $[veryslow]Sandstorm started. PID =
-Visit this link to configure it:
+Visit this link to start using it:
   http://
 To learn how to control the server, run:
   sandstorm help

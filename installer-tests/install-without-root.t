@@ -1,4 +1,4 @@
-Title: Ensure a non-root install with -u can succeed, prompting for all questions
+Title: Ensure a non-root dev install with -u can succeed, prompting for all questions
 Vagrant-Box: jessie
 Vagrant-Destroy-If-bash: -d $HOME/sandstorm
 Cleanup: uninstall_sandstorm
@@ -36,12 +36,11 @@ Config written to
 Finding latest build for dev channel...
 $[veryslow]Downloading: https://dl.sandstorm.io/sandstorm-
 $[veryslow]GPG signature is valid.
-$[slow]Setup complete. To start your server now, run:
+$[slow]Installation complete. To start your server now, run:
 sandstorm start
-Once that's done, visit this link to configure it:
+Once that's done, visit this link to start using it:
   http://local.sandstorm.io:6080/
-NOTE: This URL expires in 15 minutes.
-
+NOTE: Use the passwordless admin account
 To learn how to control the server, run:
 help
 $[exitcode]0

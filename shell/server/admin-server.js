@@ -14,7 +14,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;
+import { Meteor } from "meteor/meteor";
+import Fs from "fs";
+import Crypto from "crypto";
+import { clearAdminToken, checkAuth, tokenIsValid, tokenIsSetupSession } from "/imports/server/auth.js";
+
 const publicAdminSettings = [
   "google", "github", "ldap", "saml", "emailToken", "splashUrl", "signupDialog",
   "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
@@ -30,63 +34,6 @@ const FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS = [
 const PUBLIC_FEATURE_KEY_FIELDS = [
   "expires", "features",
 ];
-
-const Fs = Npm.require("fs");
-const Crypto = Npm.require("crypto");
-const SANDSTORM_ADMIN_TOKEN = SANDSTORM_VARDIR + "/adminToken";
-
-const tokenIsValid = function (token) {
-  if (token && Fs.existsSync(SANDSTORM_ADMIN_TOKEN)) {
-    const stats = Fs.statSync(SANDSTORM_ADMIN_TOKEN);
-    const expireTime = new Date(Date.now() - ADMIN_TOKEN_EXPIRATION_TIME);
-    if (stats.mtime < expireTime) {
-      return false;
-    } else {
-      return Fs.readFileSync(SANDSTORM_ADMIN_TOKEN, { encoding: "utf8" }) === token;
-    }
-  } else {
-    return false;
-  }
-};
-
-const tokenIsSetupSession = function (token) {
-  if (token) {
-    const setupSession = globalDb.collections.setupSession.findOne({ _id: "current-session" });
-    if (setupSession) {
-      const hash = Crypto.createHash("sha256").update(token).digest("base64");
-      const now = new Date();
-      const sessionLifetime = 24 * 60 * 60 * 1000; // length of setup session validity, in milliseconds: 1 day
-      if (setupSession.hashedSessionId === hash && ((now - setupSession.creationDate) < sessionLifetime)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-};
-
-// Export for use in other admin/ routes
-checkAuth = function (token) {
-  check(token, Match.OneOf(undefined, null, String));
-  if (!isAdmin() && !tokenIsValid(token) && !tokenIsSetupSession(token)) {
-    throw new Meteor.Error(403, "User must be admin or provide a valid token");
-  }
-};
-
-const clearAdminToken = function (token) {
-  if (tokenIsSetupSession(token)) {
-    const hash = Crypto.createHash("sha256").update(token).digest("base64");
-    globalDb.collections.setupSession.remove({
-      _id: "current-session",
-      hashedSessionId: hash,
-    });
-  }
-
-  if (tokenIsValid(token)) {
-    Fs.unlinkSync(SANDSTORM_ADMIN_TOKEN);
-    console.log("Admin token deleted.");
-  }
-};
 
 const smtpConfigShape = {
   hostname: String,
@@ -435,7 +382,7 @@ Meteor.methods({
         hashedSessionId,
       });
       // Then, invalidate the token, so one one else can use it.
-      Fs.unlinkSync(SANDSTORM_ADMIN_TOKEN);
+      clearAdminToken(token);
       return sessId;
     } else {
       throw new Meteor.Error(401, "Invalid setup token");

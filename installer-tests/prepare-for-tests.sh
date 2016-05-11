@@ -25,6 +25,13 @@ for dep in vagrant pip ; do
     which $dep > /dev/null || fail "Please install $dep(1)."
 done
 
+# If on a Debian/Ubuntu system, and the dependencies for installing the Vagrant plugins we
+# need aren't present, bail out and print an error message.
+if [ -f /etc/debian_version ] &&
+   ! [ -e /usr/share/doc/zlib1g-dev ] ; then
+  echo 'Seems you should run: sudo apt-get install -y zlib1g-dev'
+  exit 1
+fi
 # Check if Vagrant has plugins we need; if not, we install them.
 #
 # vagrant-libvirt plugin: used to run VMs via qemu.

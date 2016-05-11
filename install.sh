@@ -1532,15 +1532,15 @@ generate_admin_token() {
 print_success() {
   echo ""
   if [ "yes" = "$SANDSTORM_NEEDS_TO_BE_STARTED" ] ; then
-    echo "Setup complete. To start your server now, run:"
+    echo "Installation complete. To start your server now, run:"
     echo "  $DIR/sandstorm start"
-    echo "Once that's done, visit this link to configure it:"
+    echo "Once that's done, visit this link to start using it:"
   else
     echo -n "Your server is now online! "
     if [ "${SANDCATS_HTTPS_SUCCESSFUL}" = "yes" ] ; then
       echo "It should work immediately if you use Chrome."
     fi
-    echo "Visit this link to configure it:"
+    echo "Visit this link to start using it:"
   fi
 
   echo ""
@@ -1549,8 +1549,15 @@ print_success() {
   # when dev accounts are enabled, it is advantageous to not print an admin token URL.
   if [ ! -z "${ADMIN_TOKEN:-}" ] ; then
     echo "  ${BASE_URL:-(unknown; bad config)}/setup/token/$ADMIN_TOKEN"
+    echo ""
+    echo "NOTE: This URL expires in 15 minutes. You can generate a new setup URL by running"
+    echo "'sudo sandstorm admin-token' from the command line."
   else
     echo "  ${BASE_URL:-(unknown; bad config)}/"
+  fi
+  if [ "yes" = "${ALLOW_DEV_ACCOUNTS}" ] ; then
+   echo ""
+   echo "NOTE: Use the passwordless admin account called Alice for convenient dev login (since you have 'dev accounts' enabled)."
   fi
   echo ""
 
@@ -1559,9 +1566,6 @@ print_success() {
     echo "(If your browser shows you an OCSP error, wait 10 minutes for it to auto-resolve"
     echo "and try Chrome until then.)"
   fi
-  echo ""
-  echo "NOTE: This URL expires in 15 minutes. You can generate a new setup URL by running"
-  echo "'sudo sandstorm admin-token' from the command line."
   echo
   echo "To learn how to control the server, run:"
   if [ "yes" = "$CURRENTLY_UID_ZERO" ] ; then

@@ -38,7 +38,7 @@ $[veryslow]Downloading: https://dl.sandstorm.io
 $[veryslow]GPG signature is valid.
 $[slow]*** WARNING: /usr/local/bin was not writeable.
 $[veryslow]Sandstorm started. PID =
-$[veryslow]Visit this link to configure it:
+$[veryslow]Visit this link to start using it:
   http://
 To learn how to control the server, run:
   sandstorm help

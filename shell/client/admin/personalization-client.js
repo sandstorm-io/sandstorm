@@ -1,7 +1,6 @@
 const DEFAULT_SIGNUP_DIALOG = "You've been invited to join this Sandstorm server!";
 
 Template.newAdminPersonalization.onCreated(function () {
-  // TODO(now): pull these from config
   this.serverTitle = new ReactiveVar(globalDb.getSettingWithFallback("serverTitle", ""));
   this.splashUrl = new ReactiveVar(globalDb.getSettingWithFallback("splashUrl", ""));
   this.signupDialog = new ReactiveVar(globalDb.getSettingWithFallback("signupDialog", DEFAULT_SIGNUP_DIALOG));

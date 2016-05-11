@@ -2072,6 +2072,10 @@ private:
         context.warning("App is now available from Sandstorm server. Ctrl+C to disconnect.");
       }
 
+      // Either way, print something so that app authors know how to debug an app. This is here
+      // because otherwise app authors expect the log output to show up here.
+      context.warning("For app logs etc., read: http://docs.sandstorm.io/en/latest/developing/troubleshooting/");
+
       bindFuse(eventPort, fuseFd, kj::mv(rootNode), options)
           .then([&]() {
             context.warning("Unmounted cleanly.");

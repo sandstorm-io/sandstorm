@@ -13,6 +13,23 @@ language-specific guide pages, namely:
 * [Ruby on Rails](raw-ruby-on-rails.md)
 * [Pure client apps](raw-pure-client-apps.md)
 
+## Finding grain logs
+
+To view the log for any given grain:
+
+- Open the grain in a web browser.
+
+- Look for a terminal icon labeled **Show Debug Log**, in the Sandstorm top bar.
+
+- Click it.
+
+Since each grain executes independently, each grain has its own log. This log collects stderr and
+stdout from the executable that launches within the grain. The vagrant-spk platform stacks should be
+sending log information to stderr, resulting in log messages successfully finding their way to the
+debug log.
+
+If you are launching custom processes within a Sandstorm app, make sure they log to stderr.
+
 ## Clicking a link in the app does not open the link
 
 Sandstorm apps cannot navigate the user away from the app. Therefore, app

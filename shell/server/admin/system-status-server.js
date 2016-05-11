@@ -20,7 +20,7 @@ Meteor.methods({
       throw new Meteor.Error(403, "User must be admin to download system log.");
     }
 
-    const token = Random.id();
+    const token = Random.id(22);
     SYSTEM_LOG_DOWNLOAD_TOKENS[token] = Date.now();
     setTimeout(() => {
       if (SYSTEM_LOG_DOWNLOAD_TOKENS[token]) {

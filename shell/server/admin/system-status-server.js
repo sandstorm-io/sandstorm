@@ -11,6 +11,7 @@ const hashSessionId = function (sessionId) {
 // An in-memory map of random id -> timestamp, used to authorize requests to download the system
 // log.
 const SYSTEM_LOG_DOWNLOAD_TOKENS = {};
+const SYSTEM_LOG_DOWNLOAD_TOKEN_VALIDITY_DURATION = 60000; // 60 seconds
 
 Meteor.methods({
   adminGetServerLogDownloadToken() {
@@ -21,6 +22,11 @@ Meteor.methods({
 
     const token = Random.id();
     SYSTEM_LOG_DOWNLOAD_TOKENS[token] = Date.now();
+    setTimeout(() => {
+      if (SYSTEM_LOG_DOWNLOAD_TOKENS[token]) {
+        delete SYSTEM_LOG_DOWNLOAD_TOKENS[token];
+      }
+    }, SYSTEM_LOG_DOWNLOAD_TOKEN_VALIDITY_DURATION * 2);
     return token;
   },
 });
@@ -34,7 +40,8 @@ Router.map(function () {
       const response = this.response;
       const issueDate = SYSTEM_LOG_DOWNLOAD_TOKENS[token];
       delete SYSTEM_LOG_DOWNLOAD_TOKENS[token]; // Clear the token from the in-memory map.
-      if (issueDate === undefined || issueDate + 60000 < Date.now()) {
+      if (issueDate === undefined ||
+          issueDate + SYSTEM_LOG_DOWNLOAD_TOKEN_VALIDITY_DURATION < Date.now()) {
         // Require download to start within 60 seconds of the adminGetServerLogDownloadToken
         // method being called.
         response.writeHead(404, { "Content-Type": "text/plain" });

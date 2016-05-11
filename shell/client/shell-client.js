@@ -507,7 +507,7 @@ Template.layout.helpers({
   },
 
   accountButtonsData: function () {
-    return { isAdmin: globalDb.isAdmin() };
+    return { isAdmin: globalDb.isAdmin(), grains: globalGrains };
   },
 
   firstLogin: function () {

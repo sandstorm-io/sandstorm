@@ -42,16 +42,21 @@ Router.map(function () {
       }
 
       const logFilePath = SANDSTORM_LOGDIR + "/sandstorm.log";
-      // Lazily assume that this logfile won't be "too large" and we can just load it into memory
-      const logFileContents = Fs.readFileSync(logFilePath);
+      const fd = fs.openSync(logFilePath, "r");
+      const stats = fs.fstatSync(fd);
+      const initialSize = stats.size;
+      const readStream = fs.createReadStream(undefined, {
+        fd: fd,
+        start: 0,
+        end: initialSize,
+      });
 
       response.writeHead(200, {
-        "Content-Length": logFileContents.length,
+        "Content-Length": initialSize,
         "Content-Type": "text/plain",
         "content-Disposition": "attachment;filename=\"sandstorm.log\"",
       });
-
-      return response.end(logFileContents);
+      readStream.pipe(response);
     },
   });
 });

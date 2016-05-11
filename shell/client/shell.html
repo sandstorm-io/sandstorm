@@ -141,19 +141,27 @@ limitations under the License.
   {{#with unpackedGrainState}}
     <div class="grain-container {{#if active}}active-grain{{else}}inactive-grain{{/if}}">
     {{#if error}}
-      {{#if unauthorized}}
-        {{#if token}}
-          {{> revokedShareLink}}
-        {{else}}
-          {{> requestAccess}}
-        {{/if}}
+      {{#if inMyTrash}}
+        {{> grainInMyTrash}}
       {{else}}
-        {{#if notFound}}
-           <p class="grain-not-found grain-interstitial">
-             No grain found with ID "{{grainId}}".
-           </p>
+        {{#if inOwnersTrash}}
+          {{> grainInOwnersTrash}}
         {{else}}
-          <pre>{{error}}</pre>
+          {{#if unauthorized}}
+            {{#if token}}
+              {{> revokedShareLink}}
+            {{else}}
+              {{> requestAccess}}
+            {{/if}}
+          {{else}}
+            {{#if notFound}}
+              <p class="grain-not-found grain-interstitial">
+                No grain found with ID "{{grainId}}".
+              </p>
+            {{else}}
+               <pre>{{error}}</pre>
+            {{/if}}
+          {{/if}}
         {{/if}}
       {{/if}}
     {{else}}
@@ -181,6 +189,24 @@ limitations under the License.
     </div>
   {{/with}}
 </template>
+
+<template name="grainInMyTrash">
+  <div class="grain-interstitial">
+    <p>
+      This grain is in your trash. You cannot access it unless you restore it to your main list.
+    </p>
+    <button class="restore-from-trash">Restore to main list</button>
+  </div>
+</template>
+
+<template name="grainInOwnersTrash">
+  <div class="grain-interstitial">
+    <p>
+      You can no longer access this grain because its owner has moved it to the trash.
+    </p>
+  </div>
+</template>
+
 
 <template name="wrongIdentity">
   <div class="grain-interstitial">
@@ -372,7 +398,7 @@ limitations under the License.
   {{/with}}
 </template>
 <template name="grainDeleteButton">
-  <button class="grain-button" title="{{#if isOwner}}Delete{{else}}Forget{{/if}}" id="deleteGrain">Delete</button>
+  <button class="grain-button" title="Move to trash" id="deleteGrain">Move to trash</button>
 </template>
 <template name="grainDebugLogButton">
   <button class="grain-button" title="Show Debug Log" id="openDebugLog">Log</button>
@@ -708,7 +734,7 @@ limitations under the License.
         popupTemplate="grainSharePopup"}}
   {{/if}}
 
-  {{#if currentUser}}
+  {{#if displayTrashButton}}
     {{>sandstormTopbarItem name="delete" topbar=globalTopbar template="grainDeleteButton"}}
   {{/if}}
 

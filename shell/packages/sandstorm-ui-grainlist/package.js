@@ -21,7 +21,7 @@ Package.describe({
 
 Package.onUse(function (api) {
   api.use("ecmascript");
-  api.use(["check", "reactive-var", "reload", "templating", "tracker", "sandstorm-db", "sandstorm-identicons", "sandstorm-ui-topbar", "underscore"], "client");
+  api.use(["check", "reactive-dict", "reactive-var", "reload", "templating", "tracker", "sandstorm-db", "sandstorm-identicons", "sandstorm-ui-topbar", "underscore"], "client");
   api.addFiles(["grainlist.html", "grainlist-client.js"], "client");
   api.export("SandstormGrainListPage");
 });

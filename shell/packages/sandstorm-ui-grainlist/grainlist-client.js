@@ -1,11 +1,6 @@
 import { introJs } from "intro.js";
 
-SandstormGrainListPage = function (db, quotaEnforcer) {
-  this._filter = new ReactiveVar("");
-  this._staticHost = db.makeWildcardHost("static");
-  this._db = db;
-  this._quotaEnforcer = quotaEnforcer;
-};
+SandstormGrainListPage = {};
 
 SandstormGrainListPage.mapGrainsToTemplateObject = function (grains, db) {
   // Do package lookup all at once, rather than doing N queries for N grains
@@ -26,6 +21,7 @@ SandstormGrainListPage.mapGrainsToTemplateObject = function (grains, db) {
       lastUsed: grain.lastUsed,
       iconSrc: iconSrc,
       isOwnedByMe: true,
+      trashed: grain.trashed,
     };
   });
 };
@@ -51,6 +47,7 @@ SandstormGrainListPage.mapApiTokensToTemplateObject = function (apiTokens, stati
       lastUsed: token.lastUsed,
       iconSrc: iconSrc,
       isOwnedByMe: false,
+      trashed: token.trashed,
     };
 
     if (ownerData.upstreamTitle) {
@@ -89,14 +86,17 @@ const compileMatchFilter = function (searchString) {
   };
 };
 
-const filteredSortedGrains = function () {
+const filteredSortedGrains = function (showTrash) {
   const ref = Template.instance().data;
   const db = ref._db;
-  const grains = db.currentUserGrains().fetch();
+  const grains = db.currentUserGrains().fetch()
+        .filter((grain) => !!grain.trashed == showTrash);
   const itemsFromGrains = SandstormGrainListPage.mapGrainsToTemplateObject(grains, db);
-  const apiTokens = db.currentUserApiTokens().fetch();
+
+  const apiTokens = db.currentUserApiTokens().fetch()
+        .filter((token) => !!token.trashed == showTrash);
   const itemsFromSharedGrains = SandstormGrainListPage.mapApiTokensToTemplateObject(apiTokens, ref._staticHost);
-  const filter = compileMatchFilter(Template.instance().data._filter.get());
+  const filter = compileMatchFilter(Template.instance()._filter.get());
   return _.chain([itemsFromGrains, itemsFromSharedGrains])
       .flatten()
       .filter(filter)
@@ -105,18 +105,100 @@ const filteredSortedGrains = function () {
       .value();
 };
 
+SandstormGrainListPage.bulkActionButtons = function (showTrash) {
+  if (showTrash) {
+    return [
+      {
+        buttonClass: "remove-permanently",
+
+        text: function (numMineSelected, numSharedSelected) {
+          if (numSharedSelected == 0) {
+            return "Delete permanently";
+          } else if (numMineSelected == 0) {
+            return "Forget permanently";
+          } else {
+            return "Delete/forget permanently";
+          }
+        },
+
+        disabled: function (numMineSelected, numSharedSelected) {
+          return numMineSelected == 0 && numSharedSelected == 0;
+        },
+
+        onClicked: function (ownedGrainIds, sharedGrainIds) {
+          ownedGrainIds.forEach((grainId) => {
+            Meteor.call("deleteGrain", grainId);
+          });
+
+          const identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
+          sharedGrainIds.forEach((grainId) => {
+            identityIds.forEach((identityId) => {
+              Meteor.call("forgetGrain", grainId, identityId);
+            });
+          });
+        },
+      },
+      {
+        buttonClass: "restore-to-main-list",
+
+        text: function () {
+          return "Restore to Main list";
+        },
+
+        disabled: function (numMineSelected, numSharedSelected) {
+          return numMineSelected == 0 && numSharedSelected == 0;
+        },
+
+        onClicked: function (ownedGrainIds, sharedGrainIds) {
+          Meteor.call("moveGrainsOutOfTrash", ownedGrainIds.concat(sharedGrainIds));
+        },
+      },
+    ];
+
+  } else {
+    return [
+      {
+        buttonClass: "move-to-trash",
+
+        text: function () {
+          return "Move to trash";
+        },
+
+        disabled: function (numMineSelected, numSharedSelected) {
+          return numMineSelected == 0 && numSharedSelected == 0;
+        },
+
+        onClicked: function (ownedGrainIds, sharedGrainIds) {
+          Meteor.call("moveGrainsToTrash", ownedGrainIds.concat(sharedGrainIds));
+        },
+      },
+    ];
+  }
+};
+
 Template.sandstormGrainListPage.helpers({
   setDocumentTitle: function () {
     document.title = "Grains · " + Template.instance().data._db.getServerTitle();
   },
 
-  filteredSortedGrains: filteredSortedGrains,
+  filteredSortedGrains: function () {
+    return filteredSortedGrains(Template.instance().data.viewTrash);
+  },
+
+  filteredSortedTrashedGrains: function () {
+    return filteredSortedGrains(true);
+  },
+
   searchText: function () {
-    return Template.instance().data._filter.get();
+    return Template.instance()._filter.get();
   },
 
   myGrainsCount: function () {
     return Template.instance().data._db.currentUserGrains().count();
+  },
+
+  trashCount: function () {
+    return filteredSortedGrains(true).length;
   },
 
   hasAnyGrainsCreatedOrSharedWithMe: function () {
@@ -136,7 +218,20 @@ Template.sandstormGrainListPage.helpers({
       Router.go("grain", { grainId: grainId });
     };
   },
+
+  showTrash: function () {
+    return Template.instance().data.viewTrash;
+  },
+
+  bulkActionButtons: function () {
+    return SandstormGrainListPage.bulkActionButtons(Template.instance().data.viewTrash);
+  },
 });
+
+Template.sandstormGrainListPage.onCreated(function () {
+  this._filter = new ReactiveVar("");
+});
+
 Template.sandstormGrainListPage.onRendered(function () {
   // Auto-focus search bar on desktop, but not mobile (on mobile it will open the software
   // keyboard which is undesirable). window.orientation is generally defined on mobile browsers
@@ -150,13 +245,13 @@ Template.sandstormGrainListPage.onRendered(function () {
 
 Template.sandstormGrainListPage.events({
   "input .search-bar": function (event) {
-    Template.instance().data._filter.set(event.target.value);
+    Template.instance()._filter.set(event.target.value);
   },
 
-  "keypress .search-bar": function (event) {
+  "keypress .search-bar": function (event, instance) {
     if (event.keyCode === 13) {
       // Enter pressed.  If a single grain is shown, open it.
-      const grains = filteredSortedGrains();
+      const grains = filteredSortedGrains(instance.data.viewTrash);
       if (grains.length === 1) {
         // Unique grain found with current filter.  Activate it!
         const grainId = grains[0]._id;
@@ -165,9 +260,59 @@ Template.sandstormGrainListPage.events({
       }
     }
   },
-});
 
-Template.sandstormGrainListPage.events({
+  "click button.empty-trash": function (event, instance) {
+    const myGrainsCursor = instance.data._db.collections.grains.find({
+      userId: Meteor.userId(),
+      trashed: { $exists: true },
+    }, { _id: 1 });
+
+    const myGrains = _.pluck(myGrainsCursor.fetch(), "_id");
+
+    const myIdentityIds = SandstormDb.getUserIdentityIds(Meteor.user());
+    const myTokens = instance.data._db.collections.apiTokens.find({
+      "owner.user.identityId": { $in: myIdentityIds },
+      trashed: { $exists: true },
+    }).fetch();
+
+    const grainsSharedWithMe = Object.keys(_.groupBy(myTokens, "grainId"));
+
+    let deletePhrase = "" + myGrains.length + " grain" + (myGrains.length > 1 ? "s" : "");
+    let forgetPhrase = "" + grainsSharedWithMe.length + " grain" +
+        (grainsSharedWithMe.length > 1 ? "s" : "");
+
+    let message;
+    if (myGrains.length == 0 && grainsSharedWithMe.length == 0) {
+      return;
+    } else if (grainsSharedWithMe.length == 0) {
+      message = "Delete " + deletePhrase + "? This cannot be undone";
+    } else if (myGrains.length == 0) {
+      message = "Forget " + forgetPhrase + "? This cannot be undone";
+    } else {
+      message = "Delete " + deletePhrase + " and forget " + forgetPhrase + "? This cannot be undone.";
+    }
+
+    if (window.confirm(message)) {
+      myGrains.forEach((grainId) => {
+        Meteor.call("deleteGrain", grainId);
+      });
+
+      grainsSharedWithMe.forEach((grainId) => {
+        myIdentityIds.forEach((identityId) => {
+          Meteor.call("forgetGrain", grainId, identityId);
+        });
+      });
+    }
+  },
+
+  "click button.show-trash": function (event, instance) {
+    Router.go("grains", {}, { hash: "trash" });
+  },
+
+  "click button.show-main-list": function (event, instance) {
+    Router.go("grains", {}, { hash: "" });
+  },
+
   "click .restore-button": function (event, instance) {
     const input = instance.find(".restore-button input");
     if (input == event.target) {
@@ -183,14 +328,145 @@ Template.sandstormGrainListPage.events({
   },
 });
 
+Template.sandstormGrainTable.onCreated(function () {
+  // Grain IDs for the grains that are currently selected, whether or not they are currently
+  // displayed.
+  this._selectedMyGrainIds = new ReactiveDict();
+  this._selectedSharedWithMeIds = new ReactiveDict();
+
+  // These count the number of grains that are selected *and* currently displayed.
+  this._numMineSelectedShown = new ReactiveVar(0);
+  this._numSharedWithMeSelectedShown = new ReactiveVar(0);
+
+  this.autorun(() => {
+    const data = Template.currentData();
+    let mineResult = 0;
+    let sharedResult = 0;
+    data.grains.forEach((grain) => {
+      if (this._selectedMyGrainIds.get(grain._id)) {
+        mineResult += 1;
+      }
+
+      if (this._selectedSharedWithMeIds.get(grain._id)) {
+        sharedResult += 1;
+      }
+
+      this._numMineSelectedShown.set(mineResult);
+      this._numSharedWithMeSelectedShown.set(sharedResult);
+
+      if (this.view.isRendered) {
+        let el = this.find(".select-all-grains>input");
+        if (mineResult == 0 && sharedResult == 0) {
+          el.checked = false;
+        } else {
+          el.checked = true;
+        }
+      }
+    });
+  });
+});
+
+Template.sandstormGrainTable.helpers({
+  mineSelected: function () {
+    return Template.instance()._numMineSelectedShown.get();
+  },
+
+  sharedSelected: function () {
+    return Template.instance()._numSharedWithMeSelectedShown.get();
+  },
+
+  selectAllTitle: function () {
+    const instance = Template.instance();
+    if (instance._numMineSelectedShown.get() == 0 &&
+        instance._numSharedWithMeSelectedShown.get() == 0) {
+      return "select all";
+    } else {
+      return "unselect all";
+    }
+  },
+
+  isChecked: function () {
+    if (this.isOwnedByMe) {
+      return Template.instance()._selectedMyGrainIds.get(this._id);
+    } else {
+      return Template.instance()._selectedSharedWithMeIds.get(this._id);
+    }
+  },
+});
+
 Template.sandstormGrainTable.events({
   "click tbody tr.action": function (event) {
     this && this.onClick();
   },
 
-  "click tbody tr.grain": function (event) {
+  "click tbody tr.grain .click-to-go": function (event) {
     const context = Template.instance().data;
     context.onGrainClicked && context.onGrainClicked(this._id);
+  },
+
+  "click .select-all-grains>input": function (event, instance) {
+    if (instance._numMineSelectedShown.get() == 0 &&
+        instance._numSharedWithMeSelectedShown.get() == 0) {
+      // select all
+      instance.findAll(".select-grain>input").forEach((el) => {
+        if (el !== event.currentTarget) {
+          el.click();
+        }
+      });
+    } else {
+      // deselect all
+      instance.findAll(".select-grain>input:checked").forEach((el) => {
+        if (el !== event.currentTarget) {
+          el.click();
+        }
+      });
+
+    }
+  },
+
+  "change .select-grain.mine>input": function (event, instance) {
+    event.preventDefault();
+    if (event.target.checked) {
+      instance._selectedMyGrainIds.set(this._id, true);
+    } else {
+      instance._selectedMyGrainIds.set(this._id, false);
+    }
+  },
+
+  "change .select-grain.shared>input": function (event, instance) {
+    if (event.target.checked) {
+      instance._selectedSharedWithMeIds.set(this._id, true);
+    } else {
+      instance._selectedSharedWithMeIds.set(this._id, false);
+    }
+  },
+
+  "click td.select-grain": function (event, instance) {
+    if (event.target.tagName === "TD") {
+      // Assume the user meant to click on the actual checkbox.
+      const el = instance.find("td.select-grain>input[data-grainid='" + this._id + "']");
+      el.click();
+    }
+  },
+
+  "click .bulk-action-buttons>button": function (event, instance) {
+    // Only perform the action for grains that are both selected and displayed.
+
+    const ownedGrainIds = [];
+    instance.findAll(".select-grain.mine>input:checked").forEach((x) => {
+      const id = x.getAttribute("data-grainid");
+      instance._selectedMyGrainIds.set(id, false);
+      ownedGrainIds.push(id);
+    });
+
+    const sharedGrainIds = [];
+    instance.findAll(".select-grain.shared>input:checked").forEach((x) => {
+      const id = x.getAttribute("data-grainid");
+      instance._selectedSharedWithMeIds.set(id, false);
+      sharedGrainIds.push(id);
+    });
+
+    this.onClicked && this.onClicked(ownedGrainIds, sharedGrainIds);
   },
 });
 

@@ -273,12 +273,87 @@ Meteor.publish("grainSize", function (grainId) {
   });
 });
 
+const GRAIN_DELETION_MS = 1000 * 60 * 60 * 24 * 30; // thirty days
+SandstormDb.periodicCleanup(86400000, () => {
+  const trashExpiration = new Date(Date.now() - GRAIN_DELETION_MS);
+  globalDb.removeApiTokens({ trashed: { $lt: trashExpiration } });
+  Grains.find({ trashed: { $lt: trashExpiration } }).forEach((grain) => {
+    waitPromise(globalBackend.deleteGrain(grain._id, grain.userId));
+    Grains.remove({ _id: grain._id });
+    globalDb.removeApiTokens({
+      grainId: grain._id,
+      $or: [
+        { owner: { $exists: false } },
+        { owner: { webkey: null } },
+      ],
+    });
+
+    if (grain.lastUsed) {
+      DeleteStats.insert({
+        type: "grain",  // Demo grains can never never get here!
+        lastActive: grain.lastUsed,
+        appId: grain.appId,
+      });
+    }
+
+    Meteor.call("deleteUnusedPackages", grain.appId);
+  });
+});
+
 Meteor.methods({
+  moveGrainsToTrash: function (grainIds) {
+    check(grainIds, [String]);
+
+    if (this.userId) {
+      Grains.update({ userId: { $eq: this.userId },
+                      _id: { $in: grainIds },
+                      trashed: { $exists: false }, },
+                    { $set: { trashed: new Date() } },
+                    { multi: true });
+
+      const identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
+
+      ApiTokens.update({ grainId: { $in: grainIds },
+                        "owner.user.identityId": { $in: identityIds },
+                        trashed: { $exists: false }, },
+                       { $set: { "trashed": new Date() } },
+                       { multi: true });
+    }
+  },
+
+  moveGrainsOutOfTrash: function (grainIds) {
+    check(grainIds, [String]);
+
+    if (this.userId) {
+      Grains.update({ userId: { $eq: this.userId },
+                      _id: { $in: grainIds },
+                      trashed: { $exists: true }, },
+                    { $unset: { trashed: 1 } },
+                    { multi: true });
+
+      const identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
+
+      ApiTokens.update({ grainId: { $in: grainIds },
+                        "owner.user.identityId": { $in: identityIds },
+                        "trashed": { $exists: true }, },
+                       { $unset: { "trashed": 1 } },
+                       { multi: true });
+    }
+  },
+
   deleteGrain: function (grainId) {
     check(grainId, String);
 
     if (this.userId) {
-      const grain = Grains.findOne({ _id: grainId, userId: this.userId });
+      if (!this.isSimulation) {
+        waitPromise(globalBackend.deleteGrain(grainId, this.userId));
+      }
+
+      const grain = Grains.findOne({
+        _id: grainId,
+        userId: this.userId,
+        trashed: { $exists: true },
+      });
       if (grain) {
         Grains.remove(grainId);
         globalDb.removeApiTokens({
@@ -294,7 +369,6 @@ Meteor.methods({
         }
 
         if (!this.isSimulation) {
-          waitPromise(globalBackend.deleteGrain(grainId, this.userId));
           Meteor.call("deleteUnusedPackages", grain.appId);
         }
       }
@@ -302,9 +376,6 @@ Meteor.methods({
   },
 
   forgetGrain: function (grainId, identityId) {
-    // TODO(cleanup): For now we are ignoring `identityId`, but maybe we should expose finer-grained
-    //  forgetting.
-
     check(grainId, String);
     check(identityId, String);
 
@@ -312,9 +383,14 @@ Meteor.methods({
       throw new Meteor.Error(403, "Must be logged in to forget a grain.");
     }
 
-    SandstormDb.getUserIdentityIds(Meteor.user()).forEach(function (identityId) {
-      globalDb.removeApiTokens({ grainId: grainId, "owner.user.identityId": identityId });
-    });
+    if (!globalDb.userHasIdentity(this.userId, identityId)) {
+      throw new Meteor.Error(403, "Current user does not have the identity " + identityId);
+    }
+
+    globalDb.removeApiTokens({ grainId: grainId,
+                              "owner.user.identityId": identityId,
+                              "trashed": { $exists: true },
+                            });
   },
 
   updateGrainPreferredIdentity: function (grainId, identityId) {

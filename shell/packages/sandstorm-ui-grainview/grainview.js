@@ -809,6 +809,26 @@ GrainView = class GrainView {
       },
     };
   }
+
+  isInMyTrash() {
+    this._dep.depend();
+    const grain = this._db.collections.grains.findOne({ _id: this._grainId });
+
+    if (this._token) {
+      return false;
+    } else if (grain && Meteor.userId() === grain.userId) {
+      return !!grain.trashed;
+    } else {
+      const token = this._db.collections.apiTokens.findOne({
+        _id: this._grainId, });
+      const myIdentityIds = SandstormDb.getUserIdentityIds(Meteor.user());
+      return !!this._db.collections.apiTokens.findOne({
+        grainId: this._grainId,
+        "owner.user.identityId": { $in: myIdentityIds },
+        trashed: { $exists: true },
+      });
+    }
+  }
 };
 
 onceConditionIsTrue = (condition, continuation) => {

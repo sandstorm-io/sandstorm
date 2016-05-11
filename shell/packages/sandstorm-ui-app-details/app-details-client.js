@@ -11,6 +11,7 @@ SandstormAppDetails = function (db, quotaEnforcer, appId) {
 
   this._newGrainIsLaunching = new ReactiveVar(false);
   this._showPublisherDetails = new ReactiveVar(false);
+  this._viewingTrash = new ReactiveVar(false);
 };
 
 const latestPackageForAppId = function (db, appId) {
@@ -59,14 +60,17 @@ const appGrains = function (db, appId) {
                   function (grain) {return grain.appId === appId; });
 };
 
-const filteredSortedGrains = function (db, staticAssetHost, appId, appTitle, filterText) {
+const filteredSortedGrains = function (db, staticAssetHost, appId, appTitle, filterText, viewingTrash) {
   const pkg = latestPackageForAppId(db, appId);
 
-  const grainsMatchingAppId = appGrains(db, appId);
+  const grainsMatchingAppId = appGrains(db, appId)
+        .filter((grain) => !!grain.trashed == viewingTrash);
   const tokensForGrain = _.groupBy(db.currentUserApiTokens().fetch(), "grainId");
   const grainIdsForApiTokens = Object.keys(tokensForGrain);
   // grainTokens is a list of all apiTokens, but guarantees at most one token per grain
-  const grainTokens = grainIdsForApiTokens.map(function (grainId) { return tokensForGrain[grainId][0]; });
+  const grainTokens = grainIdsForApiTokens
+        .map(function (grainId) { return tokensForGrain[grainId][0]; })
+      .filter((token) => !!token.trashed == viewingTrash);
 
   const grainTokensMatchingAppTitle = grainTokens.filter(function (token) {
     const tokenMetadata = token.owner.user.denormalizedGrainMetadata;
@@ -290,7 +294,8 @@ Template.sandstormAppDetailsPage.helpers({
 
   actions: function () {
     const ref = Template.instance().data;
-    if (ref._filter.get()) return []; // Hide actions when searching.
+    if (ref._filter.get()) return [];    // Hide actions when searching.
+    if (ref._viewingTrash.get()) return []; // Hide actions when viewing trash.
     const pkg = latestPackageForAppId(ref._db, ref._appId);
     if (!pkg) return []; // No package means no actions.
     const appTitle = getAppTitle(ref);
@@ -347,7 +352,19 @@ Template.sandstormAppDetailsPage.helpers({
 
   filteredSortedGrains: function () {
     const ref = Template.instance().data;
-    return filteredSortedGrains(ref._db, ref._staticHost, ref._appId, getAppTitle(ref), ref._filter.get());
+    return filteredSortedGrains(ref._db, ref._staticHost, ref._appId, getAppTitle(ref),
+                                ref._filter.get(), ref._viewingTrash.get());
+  },
+
+  filteredSortedTrashedGrains: function () {
+    const ref = Template.instance().data;
+    return filteredSortedGrains(ref._db, ref._staticHost, ref._appId, getAppTitle(ref),
+                                ref._filter.get(), true);
+  },
+
+  isFiltering: function () {
+    const ref = Template.instance().data;
+    return !!ref._filter.get();
   },
 
   lastUpdated: function () {
@@ -363,6 +380,11 @@ Template.sandstormAppDetailsPage.helpers({
   showPublisherDetails: function () {
     const ref = Template.instance().data;
     return ref._showPublisherDetails.get();
+  },
+
+  viewingTrash: function () {
+    const ref = Template.instance().data;
+    return ref._viewingTrash.get();
   },
 
   keybaseProfile: function () {
@@ -405,6 +427,11 @@ Template.sandstormAppDetailsPage.helpers({
            grain.packageId !== pkg._id);
     });
   },
+
+  bulkActionButtons: function () {
+    const ref = Template.instance().data;
+    return SandstormGrainListPage.bulkActionButtons(ref._viewingTrash.get());
+  },
 });
 Template.sandstormAppDetailsPage.events({
   "click .restore-button": function (event, instance) {
@@ -430,7 +457,7 @@ Template.sandstormAppDetailsPage.events({
     if (event.keyCode === 13) {
       // Enter pressed.  If a single grain is shown, open it.
       const grains = filteredSortedGrains(ref._db, ref._staticHost, ref._appId,
-                                        getAppTitle(ref), ref._filter.get());
+                                          getAppTitle(ref), ref._filter.get(), ref._viewingTrash.get());
       if (grains.length === 1) {
         // Unique grain found with current filter.  Activate it!
         const grainId = grains[0]._id;
@@ -462,5 +489,10 @@ Template.sandstormAppDetailsPage.events({
     const ref = Template.instance().data;
     const pkg = latestPackageForAppId(ref._db, ref._appId);
     Meteor.call("upgradeGrains", ref._appId, pkg.manifest.appVersion, pkg._id);
+  },
+
+  "click button.toggle-show-trash": function (event, instance) {
+    const ref = Template.instance().data;
+    ref._viewingTrash.set(!ref._viewingTrash.get());
   },
 });

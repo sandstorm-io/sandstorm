@@ -54,6 +54,7 @@
 }
 
 %button-disabled {
+  cursor: auto;
   color: #777777;
   background-color: #efefef;
   border: 1px solid lighten(#afafaf, 10%);

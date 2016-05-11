@@ -204,7 +204,7 @@ button.revoke-token, button.revoke-access {
   align-items: center;
   flex-direction: column;
   background-color: $default-content-background-color;
-  button.request-access, button.incognito-button {
+  button.request-access, button.incognito-button, button.restore-from-trash {
     @extend %button-base;
     @extend %button-primary;
     font-weight: 600;

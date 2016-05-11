@@ -33,7 +33,7 @@ Router.map(function () {
       const token = this.params.tokenId;
       const response = this.response;
       const issueDate = SYSTEM_LOG_DOWNLOAD_TOKENS[token];
-      SYSTEM_LOG_DOWNLOAD_TOKENS[token] = undefined; // Clear the token from the in-memory map.
+      delete SYSTEM_LOG_DOWNLOAD_TOKENS[token]; // Clear the token from the in-memory map.
       if (issueDate === undefined || issueDate + 60000 < Date.now()) {
         // Require download to start within 60 seconds of the adminGetServerLogDownloadToken
         // method being called.
@@ -118,7 +118,7 @@ Meteor.publish("systemStatus", function () {
             _.without(userIdToSessionHashes[session.userId], hashedSessionId);
 
         if (userIdToSessionHashes[session.userId].length === 0) {
-          userIdToSessionHashes[session.userId] = undefined;
+          delete userIdToSessionHashes[session.userId];
           userIdCount = userIdCount - 1;
           changed.activeUsers = userIdCount;
         }
@@ -128,7 +128,7 @@ Meteor.publish("systemStatus", function () {
           _.without(grainIdToSessionHashes[session.grainId], hashedSessionId);
 
       if (grainIdToSessionHashes[session.grainId].length === 0) {
-        grainIdToSessionHashes[session.grainId] = undefined;
+        delete grainIdToSessionHashes[session.grainId];
         grainIdCount = grainIdCount - 1;
         changed.activeGrains = grainIdCount;
       }

@@ -539,6 +539,14 @@ enable_userns_sysctl_if_needed() {
 
   local PRINT_USERNS_PROMPT="yes"
   local ACCEPTED_SYSCTL_SWITCH="no"
+  local USE_SYSCTL_D="no"
+  local ENABLE_SYSCTL_STRING="(including in /etc/sysctl.conf)"
+  if [ -d /etc/sysctl.d ] ; then
+    # It's more polite to add drop-in files in /etc/sysctl.d than to modify /etc/sysctl.conf
+    # directly, so do that when possible.
+    USE_SYSCTL_D="yes"
+    ENABLE_SYSCTL_STRING="(including creating /etc/sysctl.d/50-sandstorm.conf)"
+  fi
 
   if [ "yes" = "${ACCEPTED_FULL_SERVER_INSTALL:-}" ] ; then
     PRINT_USERNS_PROMPT="no"
@@ -548,7 +556,7 @@ enable_userns_sysctl_if_needed() {
   if [ "${PRINT_USERNS_PROMPT}" = "yes" ] ; then
     echo "Sandstorm requires sysctl kernel.unprivileged_userns_clone to be enabled."
     echo "Currently, it is not enabled on your system."
-    if prompt-yesno "Shall I enable it for you (including in sysctl.conf)?" yes; then
+    if prompt-yesno "Shall I enable it for you ${ENABLE_SYSCTL_STRING}?" yes; then
       ACCEPTED_SYSCTL_SWITCH="yes"
     fi
   fi
@@ -560,13 +568,17 @@ enable_userns_sysctl_if_needed() {
               "kernel.unprivileged_userns_clone=1' failed. If you are inside docker, please run the" \
               "command manually inside your host and update /etc/sysctl.conf."
 
-    # If that worked, then make the change stick.
-    cat >> /etc/sysctl.conf << __EOF__
+    # If that worked, then make the change stick. Use sysctl.d if present.
+    local SYSCTL_FILENAME="/etc/sysctl.conf"
+    if [ "${USE_SYSCTL_D}" = "yes" ] ; then
+      SYSCTL_FILENAME="/etc/sysctl.d/50-sandstorm.conf"
+    fi
+
+    cat >> "$SYSCTL_FILENAME"  << __EOF__
 
 # Enable non-root users to create sandboxes (needed by Sandstorm).
 kernel.unprivileged_userns_clone = 1
 __EOF__
-
   else
     fail "E_USER_REFUSED_SYSCTL_WRITING" "OK, please enable this option yourself and try again."
   fi

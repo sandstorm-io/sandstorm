@@ -240,10 +240,12 @@ sudo rm -f /usr/local/bin/spk
 sudo rm -f /usr/local/bin/sandstorm
 ```
 
-- Edit `/etc/sysctl.conf` to remove any changes. `install.sh` can optionally customize that file. It
-  will leave behind a comment indicating that it did so, if it did so.
+- Edit `/etc/sysctl.conf` to remove any changes, and remove any `/etc/sysctl.d/50-sandstorm.conf`
+  file if present . `install.sh` can optionally customize that file. It will leave behind a comment
+  indicating that it did so, if it did so.
 
 ```bash
+sudo rm -f /etc/sysctl.d/50-sandstorm.conf
 sudo nano /etc/sysctl.conf
 ```
 

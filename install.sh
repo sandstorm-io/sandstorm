@@ -568,19 +568,17 @@ enable_userns_sysctl_if_needed() {
               "kernel.unprivileged_userns_clone=1' failed. If you are inside docker, please run the" \
               "command manually inside your host and update /etc/sysctl.conf."
 
-    # If that worked, then make the change stick.
+    # If that worked, then make the change stick. Use sysctl.d if present.
+    local SYSCTL_FILENAME="/etc/sysctl.conf"
     if [ "${USE_SYSCTL_D}" = "yes" ] ; then
-      cat > /etc/sysctl.d/50-sandstorm.conf << __EOF__
-# Enable non-root users to create sandboxes (needed by Sandstorm).
-kernel.unprivileged_userns_clone = 1
-__EOF__
-    else
-      cat >> /etc/sysctl.conf << __EOF__
+      SYSCTL_FILENAME="/etc/sysctl.d/50-sandstorm.conf"
+    fi
+
+    cat >> "$SYSCTL_FILENAME"  << __EOF__
 
 # Enable non-root users to create sandboxes (needed by Sandstorm).
 kernel.unprivileged_userns_clone = 1
 __EOF__
-    fi
   else
     fail "E_USER_REFUSED_SYSCTL_WRITING" "OK, please enable this option yourself and try again."
   fi

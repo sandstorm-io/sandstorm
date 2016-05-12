@@ -1664,7 +1664,14 @@ Router.map(function () {
     },
 
     data: function () {
-      return new SandstormAppDetails(globalDb, globalQuotaEnforcer, this.params.appId);
+      const params = this.getParams();
+      return {
+        _db: globalDb,
+        _quotaEnforcer: globalQuotaEnforcer,
+        _appId: params.appId,
+        viewingTrash: params.hash === "trash",
+        _staticHost: globalDb.makeWildcardHost("static"),
+      };
     },
   });
 

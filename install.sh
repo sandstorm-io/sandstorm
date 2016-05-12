@@ -1107,8 +1107,15 @@ create_server_user_if_needed() {
     return
   fi
 
-  # OK!
-  useradd --system "$SERVER_USER"
+  # OK! Let's proceed.
+  #
+  # useradd comes from the passwd package, whereas adduser is a Debian-specific utility
+  # <https://packages.debian.org/adduser>, so we prefer useradd here. Per the man page for useradd,
+  # USERGROUPS_ENAB in /etc/login.defs controls if useradd will automatically create a group for
+  # this user (the new group would have the same name as the new user). On systems such as OpenSuSE
+  # where that flag is set to false by default, or on systems where the administrator has personally
+  # tuned that flag, we need to provide --user-group to useradd so that it creates the group.
+  useradd --system --user-group "$SERVER_USER"
 
   echo "Note: Sandstorm's storage will only be accessible to the group '$SERVER_USER'."
 

@@ -67,4 +67,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   end
 
+  # OpenSuSE provides a libvirt box, so we do not special-case this box in prepare-for-tests.sh.
+  config.vm.define "opensuse42.1" do |default|
+    default.vm.box = "opensuse/openSUSE-42.1-x86_64"
+  end
+
 end

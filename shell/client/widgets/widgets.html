@@ -33,3 +33,10 @@
   {{> Template.contentBlock}}
 </p>
 </template>
+
+<template name="autoSelectingInput">
+{{!-- expects a single argument:
+      value: String
+--}}
+  <input readonly="true" type="text" value="{{value}}" />
+</template>

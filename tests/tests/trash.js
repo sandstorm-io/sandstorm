@@ -17,6 +17,7 @@
 "use strict";
 
 var utils = require("../utils"),
+    very_short_wait = utils.very_short_wait,
     short_wait = utils.short_wait,
     medium_wait = utils.medium_wait,
     long_wait = utils.long_wait,
@@ -94,6 +95,7 @@ module.exports["Test grain trash"] = function (browser) {
             .waitForElementVisible(grainCheckboxSelector, medium_wait)
             .click(grainCheckboxSelector)
             .click(".bulk-action-buttons button.move-to-trash")
+            .pause(very_short_wait)
             .click("button.show-trash")
             .waitForElementVisible(grainCheckboxSelector, short_wait)
             .click("button.show-main-list")

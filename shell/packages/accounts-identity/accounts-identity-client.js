@@ -53,15 +53,23 @@ Template.identityLoginInterstitial.onCreated(function () {
     });
   } else {
     this.autorun(() => {
-      const sub = this.subscribe("accountsOfIdentity", Meteor.userId());
+      const identityId = Meteor.userId();
+      const sub = this.subscribe("accountsOfIdentity", identityId);
       if (sub.ready()) {
         const loginAccount = LoginIdentitiesOfLinkedAccounts.findOne({
-          _id: Meteor.userId(),
-          sourceIdentityId: Meteor.userId(),
+          _id: identityId,
+          sourceIdentityId: identityId,
         });
         if (loginAccount) {
-          Meteor.loginWithIdentity(loginAccount.loginAccountId);
-        } else if (!LoginIdentitiesOfLinkedAccounts.findOne({ sourceIdentityId: Meteor.userId() })) {
+          Meteor.loginWithIdentity(loginAccount.loginAccountId, () => {
+            // If the user is already visiting a grain, assume the identity with which they've
+            // logged in is the identity they would like to use on that grain.
+            const activeGrain = this.data.grains.getActive();
+            if (activeGrain) {
+              activeGrain.switchIdentity(identityId);
+            }
+          });
+        } else if (!LoginIdentitiesOfLinkedAccounts.findOne({ sourceIdentityId: identityId })) {
           Meteor.call("createAccountForIdentity", function (err, result) {
             if (err) {
               console.log("error", err);

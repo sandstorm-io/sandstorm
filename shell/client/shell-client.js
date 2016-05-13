@@ -497,6 +497,10 @@ Template.layout.helpers({
     return globalAccountsUi;
   },
 
+  globalGrains: function () {
+    return globalGrains;
+  },
+
   identityUser: function () {
     const user = Meteor.user();
     return user && user.profile;

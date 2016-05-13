@@ -975,7 +975,7 @@ const apiTokenForRequest = (req, hostId, isWebsocket) => {
   } else if (auth && auth.slice(0, 6).toLowerCase() === "basic " &&
              apiUseBasicAuth(req, hostId)) {
     token = (new Buffer(auth.slice(6).trim(), "base64")).toString().split(":")[1];
-  } else if (isWebsocket && req.url.startsWith("/.sandstorm-api-token/")) {
+  } else if (isWebsocket && req.url.startsWith("/.sandstorm-token/")) {
     let parts = req.url.slice(1).split("/"); // remove leading / and split
     if (parts.length < 2) {
       token = undefined;

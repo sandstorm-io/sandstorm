@@ -497,6 +497,10 @@ Template.layout.helpers({
     return globalAccountsUi;
   },
 
+  globalGrains: function () {
+    return globalGrains;
+  },
+
   identityUser: function () {
     const user = Meteor.user();
     return user && user.profile;
@@ -507,7 +511,7 @@ Template.layout.helpers({
   },
 
   accountButtonsData: function () {
-    return { isAdmin: globalDb.isAdmin() };
+    return { isAdmin: globalDb.isAdmin(), grains: globalGrains };
   },
 
   firstLogin: function () {

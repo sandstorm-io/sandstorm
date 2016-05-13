@@ -438,7 +438,7 @@ GrainView = class GrainView {
     }
 
     const myIdentityIds = SandstormDb.getUserIdentityIds(Meteor.user());
-    let resultIdentityId = myIdentityIds[0];
+    let resultIdentityId = Accounts.getCurrentIdentityId();
     const grain = this._db.getGrain(this._grainId);
     if (identityId && myIdentityIds.indexOf(identityId) != -1) {
       resultIdentityId = identityId;

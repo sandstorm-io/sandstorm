@@ -37,17 +37,20 @@ Template.accountButtonsPopup.events({
   },
 });
 
-const displayName = function () {
-  const currentIdentityId = Accounts.getCurrentIdentityId();
-  const user = Meteor.users.findOne({ _id: currentIdentityId });
-  if (!user) return "(incognito)";
-
-  SandstormDb.fillInProfileDefaults(user);
-  return user.profile.name;
-};
+function getActiveIdentityId(grains) {
+  const activeGrain = grains.getActive();
+  return activeGrain ? activeGrain.identityId() : Accounts.getCurrentIdentityId();
+}
 
 Template.accountButtons.helpers({
-  displayName: displayName,
+  displayName: function () {
+    const currentIdentityId = getActiveIdentityId(this.grains);
+    const user = Meteor.users.findOne({ _id: currentIdentityId });
+    if (!user) return "(incognito)";
+
+    SandstormDb.fillInProfileDefaults(user);
+    return user.profile.name;
+  },
 });
 
 function getServices() {
@@ -123,7 +126,6 @@ Template._loginButtonsLoggedInDropdown.onCreated(function () {
 });
 
 Template._loginButtonsLoggedInDropdown.helpers({
-  displayName: displayName,
   showIdentitySwitcher: function () {
     return SandstormDb.getUserIdentityIds(Meteor.user()).length > 1;
   },
@@ -133,6 +135,7 @@ Template._loginButtonsLoggedInDropdown.helpers({
   },
 
   identitySwitcherData: function () {
+    const grains = this.grains;
     const identities = SandstormDb.getUserIdentityIds(Meteor.user()).map(function (id) {
       const identity = Meteor.users.findOne({ _id: id });
       if (identity) {
@@ -144,13 +147,18 @@ Template._loginButtonsLoggedInDropdown.helpers({
     });
 
     function onPicked(identityId) {
-      Accounts.setCurrentIdentityId(identityId);
+      const activeGrain = grains.getActive();
+      if (activeGrain) {
+        activeGrain.switchIdentity(identityId);
+      } else {
+        Accounts.setCurrentIdentityId(identityId);
+      }
     }
 
     return {
       identities,
       onPicked,
-      currentIdentityId: Accounts.getCurrentIdentityId(),
+      currentIdentityId: getActiveIdentityId(grains),
     };
   },
 

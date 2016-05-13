@@ -53,15 +53,23 @@ Template.identityLoginInterstitial.onCreated(function () {
     });
   } else {
     this.autorun(() => {
-      const sub = this.subscribe("accountsOfIdentity", Meteor.userId());
+      const identityId = Meteor.userId();
+      const sub = this.subscribe("accountsOfIdentity", identityId);
       if (sub.ready()) {
         const loginAccount = LoginIdentitiesOfLinkedAccounts.findOne({
-          _id: Meteor.userId(),
-          sourceIdentityId: Meteor.userId(),
+          _id: identityId,
+          sourceIdentityId: identityId,
         });
         if (loginAccount) {
-          Meteor.loginWithIdentity(loginAccount.loginAccountId);
-        } else if (!LoginIdentitiesOfLinkedAccounts.findOne({ sourceIdentityId: Meteor.userId() })) {
+          Meteor.loginWithIdentity(loginAccount.loginAccountId, () => {
+            // If the user is already visiting a grain, assume the identity with which they've
+            // logged in is the identity they would like to use on that grain.
+            const activeGrain = this.data.grains.getActive();
+            if (activeGrain) {
+              activeGrain.switchIdentity(identityId);
+            }
+          });
+        } else if (!LoginIdentitiesOfLinkedAccounts.findOne({ sourceIdentityId: identityId })) {
           Meteor.call("createAccountForIdentity", function (err, result) {
             if (err) {
               console.log("error", err);
@@ -298,13 +306,6 @@ Meteor.loginWithIdentity = function (accountId, callback) {
 const CURRENT_IDENTITY_KEY = "Accounts.CurrentIdentityId";
 
 Accounts.getCurrentIdentityId = function () {
-  // TODO(cleanup): `globalGrains` is only in scope here because of a Meteor bug. We should figure
-  //   out a better way to track a reference to it.
-  const activeGrain = globalGrains.getActive();
-  if (activeGrain) {
-    return activeGrain.identityId();
-  }
-
   const identityId = Session.get(CURRENT_IDENTITY_KEY);
   const identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
   if (identityId && (identityIds.indexOf(identityId) != -1)) {
@@ -316,13 +317,5 @@ Accounts.getCurrentIdentityId = function () {
 
 Accounts.setCurrentIdentityId = function (identityId) {
   check(identityId, String);
-
-  // TODO(cleanup): `globalGrains` is only in scope here because of a Meteor bug. We should figure
-  //   out a better way to track a reference to it.
-  const activeGrain = globalGrains.getActive();
-  if (activeGrain) {
-    return activeGrain.switchIdentity(identityId);
-  }
-
   Session.set(CURRENT_IDENTITY_KEY, identityId);
 };

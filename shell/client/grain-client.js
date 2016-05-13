@@ -450,7 +450,7 @@ Template.grainPowerboxOfferPopup.events({
 
 Template.grainSharePopup.helpers({
   incognito: function () {
-    return !Accounts.getCurrentIdentityId();
+    return !globalGrains.getActive().identityId();
   },
 
   currentTokenUrl: function () {
@@ -766,7 +766,7 @@ Template.whoHasAccessPopup.events({
     const transitiveShares = instance.transitiveShares.get();
     const tokensById = instance.downstreamTokensById.get();
     const recipientShares = _.findWhere(transitiveShares, { recipient: recipient });
-    const currentIdentityId = Accounts.getCurrentIdentityId();
+    const currentIdentityId = globalGrains.getActive().identityId();
     const recipientTokens = _.where(recipientShares.allShares, { identityId: currentIdentityId });
 
     // Two cases:
@@ -914,7 +914,7 @@ Template.whoHasAccessPopup.helpers({
   },
 
   isCurrentIdentity: function () {
-    if (this.identityId === Accounts.getCurrentIdentityId()) {
+    if (this.identityId === globalGrains.getActive().identityId()) {
       return true;
     }
   },
@@ -1046,7 +1046,8 @@ Template.emailInviteTab.helpers({
   },
 
   invitationExplanation: function () {
-    const primaryEmail = globalDb.getPrimaryEmail(Meteor.userId(), Accounts.getCurrentIdentityId());
+    const primaryEmail = globalDb.getPrimaryEmail(Meteor.userId(),
+                                                  globalGrains.getActive().identityId());
     if (primaryEmail) {
       return "Invitation will be from " + primaryEmail;
     } else {

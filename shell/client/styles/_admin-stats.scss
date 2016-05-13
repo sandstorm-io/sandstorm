@@ -1,0 +1,84 @@
+form.stats-request {
+  // We eschew %standard-form here to avoid getting .button-link overridden by more specific
+  // selectors for button[type=button].
+  .button-row {
+    width: 100%;
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: baseline;
+    justify-content: flex-start;
+    >*:not(:first-child) {
+      margin-right: 10px;
+    }
+  }
+
+  button.button-link {
+    @extend %button-link;
+  }
+
+  button[name=enable-stats] {
+    @extend %button-base;
+    @extend %button-primary;
+  }
+}
+
+form.stats-json {
+  @extend %standard-form;
+  max-width: 500px;
+}
+
+form.stats-toggle {
+  @extend %standard-form;
+  display: inline-block;
+}
+
+%stats-status {
+  display: inline-block;
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  min-height: 28px;
+  margin: 2px;
+}
+
+.stats-enabled {
+  @extend %stats-status;
+  color: #366456;
+  background-color: #d9ebcd;
+}
+
+.stats-disabled {
+  @extend %stats-status;
+  color: #333333;
+  background-color: #dcdcdc;
+}
+
+table.stats-users-grains, table.stats-apps {
+  border-collapse: collapse;
+  width: 100%;
+
+  thead {
+    tr:nth-child(2) {
+      font-size: 11px;
+    }
+  }
+
+  tbody tr:hover {
+    background-color: #f0f0f0;
+  }
+
+  th, td {
+    text-align: center;
+    vertical-align: middle;
+    padding: 8px;
+    border: 1px solid #aaa;
+  }
+
+  thead tr {
+    background-color: #ccc;
+  }
+  tbody tr {
+    background-color: #fff;
+  }
+}

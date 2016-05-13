@@ -43,3 +43,17 @@ const focusAndScrollIntoView = function () {
 
 Template.focusingErrorBox.onRendered(focusAndScrollIntoView);
 Template.focusingSuccessBox.onRendered(focusAndScrollIntoView);
+
+Template.autoSelectingInput.onRendered(function () {
+  this.lastNode.focus();
+});
+
+Template.autoSelectingInput.events({
+  "focus input"(evt) {
+    const instance = Template.instance();
+    // We use lastNode rather than firstNode because in its infinite wisdom, Blaze decides that our
+    // leading comment is in fact a text node and whitespace must be preserved, in case it happens
+    // to be part of a <pre> tag or something, I guess.
+    instance.lastNode.select();
+  },
+});

@@ -26,6 +26,9 @@ Before using this procedure, you should know the following.
   commands you run in the shell will result in new files being accessed, and users don't need these
   debugging commands.
 
+- **You need version v0.162 or higher of vagrant-spk,** in which the
+  command was introduced. It was released during May 2016.
+
 `vagrant-spk shell` is a feature of `vagrant-spk`. If you are using [raw Sandstorm
 packaging](../developing/raw-packaging-guide.md) without `vagrant-spk` then you can read the
 `vagrant-spk` source code to see how to achieve the same thing.

@@ -965,7 +965,7 @@ const apiUseBasicAuth = (req, hostId) => {
   return agent.match(BASIC_AUTH_USER_AGENTS_REGEX);
 };
 
-const apiTokenForRequest = (req, hostId, isWebsocket) => {
+const apiTokenForRequest = (req, hostId) => {
   // Extract the API token from the request.
 
   const auth = req.headers.authorization;
@@ -975,7 +975,7 @@ const apiTokenForRequest = (req, hostId, isWebsocket) => {
   } else if (auth && auth.slice(0, 6).toLowerCase() === "basic " &&
              apiUseBasicAuth(req, hostId)) {
     token = (new Buffer(auth.slice(6).trim(), "base64")).toString().split(":")[1];
-  } else if (isWebsocket && req.url.startsWith("/.sandstorm-token/")) {
+  } else if (req.url.startsWith("/.sandstorm-token/")) {
     let parts = req.url.slice(1).split("/"); // remove leading / and split
     if (parts.length < 2) {
       token = undefined;
@@ -1010,7 +1010,7 @@ tryProxyUpgrade = (hostId, req, socket, head) => {
   // request is definitely invalid.
 
   if (globalDb.isApiHostId(hostId)) {
-    const token = apiTokenForRequest(req, hostId, true);
+    const token = apiTokenForRequest(req, hostId);
     if (token) {
       return getProxyForApiToken(token, req).then((proxy) => {
         // Meteor sets the timeout to five seconds. Change that back to two
@@ -1110,7 +1110,7 @@ tryProxyRequest = (hostId, req, res) => {
       res.end(err.stack);
     };
 
-    const token = apiTokenForRequest(req, hostId, false);
+    const token = apiTokenForRequest(req, hostId);
     if (token && req.headers["x-sandstorm-token-keepalive"]) {
       inMeteor(() => {
         const keepaliveDuration = parseInt(req.headers["x-sandstorm-token-keepalive"]);

@@ -49,7 +49,11 @@ limitations under the License.
     {{/if}}
   {{/if}}
   {{#unless isLinkingNewIdentity}}
-    <p><button class="account-button logout-other-sessions">Log out all other sessions</button></p>
+    <p>
+      <button class="account-button logout-other-sessions" disabled={{logoutOtherSessionsInFlight}}>
+        Log out all other sessions
+      </button>
+    </p>
   {{/unless}}
   </div><section class="profile">
     {{#each identities}}

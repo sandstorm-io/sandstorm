@@ -24,6 +24,7 @@ Template.sandstormAccountSettings.onCreated(function () {
   this._isLinkingNewIdentity = new ReactiveVar(false);
   this._selectedIdentityId = new ReactiveVar();
   this._actionCompleted = new ReactiveVar();
+  this._logoutOtherSessionsInFlight = new ReactiveVar(false);
   const _this = this;
 
   // TODO(cleanup): Figure out a better way to pass in this data. Perhaps it should be part of
@@ -170,6 +171,10 @@ Template.sandstormAccountSettings.helpers({
       sendButtonText: "Confirm",
     };
   },
+
+  logoutOtherSessionsInFlight: function () {
+    return Template.instance()._logoutOtherSessionsInFlight.get();
+  },
 });
 
 Template._accountProfileEditor.helpers({
@@ -226,11 +231,14 @@ Template.sandstormAccountSettings.events({
   },
 
   "click button.logout-other-sessions": function (event, instance) {
+    instance._logoutOtherSessionsInFlight.set(true);
     Meteor.logoutOtherClients(function (err) {
       if (err) {
+        instance._logoutOtherSessionsInFlight.set(false);
         instance._actionCompleted.set({ error: err });
       } else {
         Meteor.call("logoutIdentitiesOfCurrentAccount", function (err) {
+          instance._logoutOtherSessionsInFlight.set(false);
           if (err) {
             instance._actionCompleted.set({ error: err });
           } else {

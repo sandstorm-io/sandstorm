@@ -56,7 +56,9 @@ if ! $SANDSTORM_HOME/sandstorm status >/dev/null 2>&1; then
   exit 1
 fi
 
-if curl http://localhost:$PORT >/dev/null 2>&1; then
+BIND_IP=${BIND_IP:-127.0.0.1}
+
+if curl http://$BIND_IP:$PORT >/dev/null 2>&1; then
   echo "Please shut down your Sandstorm front-end:" >&2
   echo "  sudo $SANDSTORM_HOME/sandstorm stop-fe" >&2
   exit 1
@@ -96,4 +98,4 @@ __EOF__
 # over its own bundled version, and the system gyp doesn't work.
 export PYTHONPATH=$("$SCRIPT_DIR/../find-meteor-dev-bundle.sh")/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib
 
-exec meteor run --port=${BIND_IP:-127.0.0.1}:$PORT --settings $SETTINGS
+exec meteor run --port=$BIND_IP:$PORT --settings $SETTINGS

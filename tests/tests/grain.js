@@ -447,7 +447,7 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         .assert.containsText('#publish', 'Publish')
         .frame(null)
 
-        // Navigate to the url with an anonymous user
+        // Navigate to the url as a different user
         .loginDevAccount()
         .pause(short_wait)
         // Try incognito
@@ -457,7 +457,7 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
         .execute(function() {
-          return Accounts.getCurrentIdentityId();
+          return globalGrains.getActive().identityId();
         }, [], function (response) {
           browser.assert.equal(response.value, null);
         })
@@ -484,7 +484,7 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
         .execute(function() {
-          return Accounts.getCurrentIdentityId();
+          return globalGrains.getActive().identityId();
         }, [], function (response) {
           browser.assert.equal(!!response.value, true);
         })

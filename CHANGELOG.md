@@ -1,3 +1,12 @@
+### v0.162 (2016-05-14)
+- Implemented "trash". Deleted grains go to the trash where they can be recovered for up to 30 days.
+- Grains can now be deleted from the grain list, without opening them first. Multiple grains can be selected for deletion at once.
+- An app can now request that the "who has access" dialog be displayed.
+- Fixed bug where after an upload failed, future uploads would show the same error despite not having failed.
+- Tweaked the "logout other sessions" button to give better feedback that the request is in-progress.
+- When visiting a Sandstorm server that hasn't been set up yet, you'll now be redirected to the setup wizard.
+- The API endpoint now allows the authorization token to be specified as part of the path, for cases where setting the `Authorization` header is not possible (especially cross-origin WebSocket).
+
 ### v0.161 (2016-04-29) [bugfixes]
 - API requests can now include Mercurial headers, potentially allowing a Mercurial server app.
 - You can now configure Sandstorm to accept SMTP connections on low-numbered ports, such as 25.

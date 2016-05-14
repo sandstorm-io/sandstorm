@@ -15,9 +15,9 @@ language-specific guide pages, namely:
 
 ## Getting a shell in the context of the grain
 
-`vagrant-spk shell` allows you to run a shell (e.g. `bash`) in the context of a grain. This can
+`vagrant-spk enter-grain` allows you to run a shell (e.g. `bash`) in the context of a grain. This can
 illuminate why an app is behaving in a particular way. For details and limitations, read [the
-docs about the `vagrant-spk shell` command](../vagrant-spk/debugging.md).
+docs about the `vagrant-spk enter-grain` command](../vagrant-spk/debugging.md).
 
 ## Clicking a link in the app does not open the link
 

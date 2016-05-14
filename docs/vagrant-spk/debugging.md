@@ -1,5 +1,5 @@
 To debug an app that is in dev mode, you can run a shell (e.g. `bash`) in the context of a grain
-through the `vagrant-spk shell` command. Using this shell can illuminate why an app is behaving in a
+through the `vagrant-spk enter-grain` command. Using this shell can illuminate why an app is behaving in a
 particular way.
 
 ## Overview and limitations
@@ -29,7 +29,7 @@ Before using this procedure, you should know the following.
 - **You need version v0.162 or higher of vagrant-spk,** in which the
   command was introduced. It was released during May 2016.
 
-`vagrant-spk shell` is a feature of `vagrant-spk`. If you are using [raw Sandstorm
+`vagrant-spk enter-grain` is a feature of `vagrant-spk`. If you are using [raw Sandstorm
 packaging](../developing/raw-packaging-guide.md) without `vagrant-spk` then you can read the
 `vagrant-spk` source code to see how to achieve the same thing.
 
@@ -46,12 +46,12 @@ Before starting, you must:
 It is **essential** to keep that grain open in your browser. This process attaches a debug shell in
 the context of a running grain.
 
-### Run vagrant-spk shell
+### Run vagrant-spk enter-grain
 
 From a terminal, run:
 
 ```bash
-vagrant-spk shell
+vagrant-spk enter-grain
 ```
 
 This will print a list of active grains in development mode, similar to the following.
@@ -112,7 +112,7 @@ You can find information on this in the `.sandstorm/sandstorm-pkgdef.capnp` file
 consider the following.
 
 - `/` (read-only) contains all the files that could hypothetically go into your package. The bash process
-  launched by `vagrant-spk shell`shell starts in `/`.
+  launched by `vagrant-spk enter-grain`shell starts in `/`.
 
 - `/var` (read-write) contains the writable state for your app. This maps to
   `/opt/sandstorm/var/sandstorm/grains/{{grainId}}/sandbox` outside the grain.
@@ -144,10 +144,10 @@ To work around this, you have three options.
 
 **Option 1. Use debugging tools that are available.** For the Meteor stack in particular, you can
 choose to run `node` instead, which provides a more Meteor-like experience while debugging. Here is
-how you can launch node from `vagrant-spk shell`.
+how you can launch node from `vagrant-spk enter-grain`.
 
 ```bash
-$ vagrant-spk shell
+$ vagrant-spk enter-grain
 $ /bin/node
 >   # you can now run whatever Javascript you wish
 ```
@@ -164,7 +164,7 @@ Now, when you enter the grain, you can use busybox's bundled versions of ls, cp,
 tools.
 
 ```bash
-$ vagrant-spk shell
+$ vagrant-spk enter-grain
 $ ls
 bash: ls: command not found
 bash-4.3$ /var/busybox sh
@@ -225,11 +225,11 @@ mysql -u root --socket /opt/sandstorm/var/sandstorm/grains/{{grainId}}/sandbox/r
 
 You can use similar commands to connect to any service that listens on a UNIX socket within the
 grain. If the service uses a TCP socket, you will need to join the grain's network namespace,
-which `vagrant-spk shell` does.
+which `vagrant-spk enter-grain` does.
 
 ### Using curl to send HTTP requests to the grain
 
-You can use `vagrant-spk shell` to make requests to your app from the command line. Here is an
+You can use `vagrant-spk enter-grain` to make requests to your app from the command line. Here is an
 example using curl. We use port 8000 because, by default, `.sandstorm/sandstorm-pkgdef.capnp`
 connects to port 8000 within the grain.
 

@@ -605,6 +605,7 @@ Meteor.publish("adminApiTokens", function (token) {
       created: 1,
       requirements: 1,
       revoked: 1,
+      owner: 1,
     },
   });
 });

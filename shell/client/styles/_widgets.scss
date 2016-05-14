@@ -40,3 +40,7 @@
 .info-message {
   background-color: $info-background-color;
 }
+
+.standard-form {
+  @extend %standard-form;
+}

@@ -15,13 +15,13 @@ const tokenIntroducer = function (token) {
   return identityId && lookupIdentityById(identityId);
 };
 
-const capDetails = function(cap) {
+const capDetails = function (cap) {
   const grainId = cap.owner.grain.grainId;
   const grain = Grains.findOne(grainId);
   const grainTitle = grain && grain.title;
   const packageId = grain && grain.packageId;
   const pkg = packageId && globalDb.collections.packages.findOne(packageId);
-  const appIcon = pkg && globalDb.iconSrcForPackage(pkg, "grain", globalDb.makeWildcardHost("static"))
+  const appIcon = pkg && globalDb.iconSrcForPackage(pkg, "grain", globalDb.makeWildcardHost("static"));
   const introducerIdentityId = cap && cap.owner && cap.owner.grain && cap.owner.grain.introducerIdentity;
   const introducer = lookupIdentityById(introducerIdentityId);
   const grainOwnerIdentity = (introducerIdentityId === grain.identityId) ? undefined : lookupIdentityById(grain.identityId);
@@ -53,6 +53,7 @@ Template.newAdminNetworkCapabilities.onCreated(function () {
     if (this.adminGrainInfoSub) {
       this.adminGrainInfoSub.stop();
     }
+
     this.adminGrainInfoSub = this.subscribe("adminGrainInfo", grainIds);
 
     const packageIds = Grains.find({
@@ -63,12 +64,14 @@ Template.newAdminNetworkCapabilities.onCreated(function () {
     if (this.adminPackagesSub) {
       this.adminPackagesSub.stop();
     }
+
     this.adminPackagesSub = this.subscribe("adminPackages", packageIds);
 
     const identityIds = apiTokens.map(token => token.owner.grain.introducerIdentity);
     if (this.adminIdentitiesSub) {
       this.adminIdentitiesSub.stop();
     }
+
     this.adminIdentitiesSub = this.subscribe("adminIdentities", identityIds);
   });
 });
@@ -104,7 +107,7 @@ const packageMatchesNeedle = function (needle, pkg) {
   return title.toLowerCase().indexOf(needle) !== -1;
 };
 
-const matchesCap = function(needle, cap) {
+const matchesCap = function (needle, cap) {
   if (cap.grainTitle.toLowerCase().indexOf(needle) !== -1) return true;
   if (identityMatchesNeedle(needle, cap.introducer)) return true;
   if (identityMatchesNeedle(needle, cap.grainOwnerIdentity)) return true;

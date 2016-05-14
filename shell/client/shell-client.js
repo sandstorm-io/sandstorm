@@ -871,17 +871,17 @@ promptUploadApp = function (input) {
 Router.map(function () {
   this.route("root", {
     path: "/",
-    waitOn: function () {
-      return [
-        Meteor.subscribe("hasUsers"),
-        Meteor.subscribe("grainsMenu"),
-      ];
+    subscriptions: function () {
+      this.subscribe("hasUsers").wait();
+      if (!Meteor.loggingIn() && Meteor.user() && Meteor.user().loginIdentities) {
+        this.subscribe("grainsMenu").wait();
+      }
     },
 
     data: function () {
       // If the user is logged-in, and can create new grains, and
       // has no grains yet, then send them to "new".
-      if (this.ready() && Meteor.userId() && !Meteor.loggingIn()) {
+      if (this.ready() && Meteor.userId() && !Meteor.loggingIn() && Meteor.user().loginIdentities) {
         if (globalDb.currentUserGrains({}, {}).count() === 0 &&
             globalDb.currentUserApiTokens().count() === 0) {
           Router.go("apps", {}, { replaceState: true });

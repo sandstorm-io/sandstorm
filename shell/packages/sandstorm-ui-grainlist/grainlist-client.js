@@ -342,7 +342,7 @@ Template.sandstormGrainTable.onCreated(function () {
     const data = Template.currentData();
     let mineResult = 0;
     let sharedResult = 0;
-    data.grains.forEach((grain) => {
+    data.grains && data.grains.forEach((grain) => {
       if (this._selectedMyGrainIds.get(grain._id)) {
         mineResult += 1;
       }

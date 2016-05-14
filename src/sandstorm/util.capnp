@@ -66,6 +66,10 @@ interface Handle {
   # such an interface for all apps it hosts.
 }
 
+interface Runnable {
+  run @0 ();
+}
+
 interface ByteStream {
   # Represents a destination for a stream of bytes. The bytes are ordered, but boundaries between
   # messages are not semantically important.

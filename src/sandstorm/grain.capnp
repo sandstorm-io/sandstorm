@@ -126,6 +126,63 @@ interface SandstormApi(AppObjectId) {
   # This method is here on `SandstormApi` rather than on `Identity` in order to ease a possible
   # future transition to a model where identity IDs are not globally stable and each grain has a
   # separate (possibly incompatible) map from identity ID to account ID.
+
+  scheduleAt @11 (when :Util.DateInNs, callback :Util.Runnable, slack :Util.DurationInNs = 0)
+              -> (handle :Util.Handle);
+  # Schedule a callback to be called at a specific time.
+  #
+  # To cancel the scheduled task, drop the returned handle. (Most apps will want to *save* the
+  # handle using SandstormApi.save() in order to prevent it from being dropped automatically. For
+  # one-time events, it is OK if the app does not store the token returned by save(), if the app
+  # has no need to cancel the event -- the handle object will be implicitly deleted when the
+  # event executes.)
+  #
+  # In order to improve resource utilization, Sandstorm prefers imprecise scheduling -- this allows
+  # it to choose a time of low activity to invoke the callback. The parameter `slack` tells
+  # Sandstorm how much freedom it has -- it may schedule the task any time between `when` and
+  # `when + slack`. A value of zero for `slack` is special: it is equivalent to 1/8th of the
+  # difference between now and `when` -- this sets the window adaptively, such that the further
+  # in the future the event is scheduled, the more slack it has. You must explicitly set a non-zero
+  # value if you need better precision. Additionally, the value must be greater than
+  # `minimumSchedulingSlack`, or an exception will be thrown. If you need better precision than
+  # this, you should schedule a callback for slightly before the target time, then countdown the
+  # remaining time in-process.
+  #
+  # When the callback is called, Sandstorm will avoid killing the grain until the callback returns.
+  # If the callback throws a "disconnected" exception, or if Sandstorm is forced to kill the
+  # grain for some reason, the callback will be retried. After a limited number of failed retries,
+  # Sandstorm may alert the owner to a problem and stop retrying.
+
+  const minimumSchedulingSlack :Util.DurationInNs = 60000000000;
+  # 60 seconds: The minimum value allowable for the `slack` parameter passed to `scheduleAt()`.
+
+  schedulePeriodic @12 (period :SchedulingPeriod, callback :Util.Runnable)
+                    -> (handle :Util.Handle);
+  # Schedule a callback to be called on a regular interval.
+  #
+  # To cancel future runs of the task, drop the returned handle. (Most apps will want to *save* the
+  # handle using SandstormApi.save() in order to prevent it from being dropped automatically. If
+  # the grain wishes for the task to continue forever as long as the grain exists, it can safely
+  # discard the token returned by save().)
+  #
+  # In order to improve resource utilization, Sandstorm prefers imprecise scheduling -- this allows
+  # it to choose a time of low activity to invoke the callback. Therefore, Sandstorm guarantees
+  # that the callback will be called once per scheduling period, but does not make any guarantees
+  # about exactly when in that period the call will occur. If you need more precise scheduling,
+  # you will need to use `scheduleAt()`.
+  #
+  # When the callback is called, Sandstorm will avoid killing the grain until the callback returns.
+  # If the callback throws a "disconnected" exception, or if Sandstorm is forced to kill the
+  # grain for some reason, the callback will be retried. After a limited number of failed retries,
+  # Sandstorm may alert the owner to a problem and stop retrying (but will call the callback again
+  # on the next scheduling period).
+}
+
+enum SchedulingPeriod {
+  annually @3;
+  monthly @2;
+  daily @1;
+  hourly @0;
 }
 
 interface UiView @0xdbb4d798ea67e2e7 {

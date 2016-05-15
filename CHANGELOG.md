@@ -1,3 +1,6 @@
+### v0.163 (2016-05-15) [bugfixes]
+- Fixed subtle bug introduced in 0.162 which caused shared grains to refresh every minute.
+
 ### v0.162 (2016-05-14)
 - Implemented "trash". Deleted grains go to the trash where they can be recovered for up to 30 days.
 - Grains can now be deleted from the grain list, without opening them first. Multiple grains can be selected for deletion at once.

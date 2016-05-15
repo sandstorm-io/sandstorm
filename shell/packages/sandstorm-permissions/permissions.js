@@ -1250,7 +1250,7 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
       observeHandle.push(tokenCursor.observe({
         changed(newApiToken, oldApiToken) {
           if (newApiToken.trashed ||
-              !_.isEqual(newApiToken.roleAssignment, oldApiToken.roaleAssignment) ||
+              !_.isEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment) ||
               !_.isEqual(newApiToken.revoked, oldApiToken.revoked)) {
             observeHandle.stop();
             guardedOnInvalidated();

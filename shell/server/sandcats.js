@@ -131,6 +131,10 @@ const generateKeyAndCsr = (commonName) => {
     {
       name: "commonName",
       value: commonName,
+      valueTagClass: this.forge.asn1.Type.UTF8,
+      // We specify UTF8 to encode a UTF8String (rather than the default of PRINTABLESTRING) in the
+      // commonName so that GlobalSign does not report a warning, and also because that happens to
+      // be what openssl(1) does when asked to create a CSR.
     },
   ]);
   csr.sign(keys.privateKey);

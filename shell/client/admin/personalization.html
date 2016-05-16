@@ -1,5 +1,10 @@
 <template name="newAdminPersonalization">
-  <h1>Personalization</h1>
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>Personalization</li>
+    </ul>
+  </h1>
 
   {{#if hasSuccess }}
     {{#focusingSuccessBox}}
@@ -65,7 +70,7 @@
                placeholder="https://example.com/tos" disabled="{{formDisabled}}"/>
       </label>
       <span class="form-subtext">
-        If provided, new users will be required to agree to the linked Terms of Service.
+        If provided, new users will be required to agree to the linked terms of service.
       </span>
     </div>
 
@@ -76,7 +81,7 @@
                placeholder="https://example.com/privacy" disabled="{{formDisabled}}"/>
       </label>
       <span class="form-subtext">
-        If provided, new users will be required to agree to the linked Privacy Policy.
+        If provided, new users will be required to agree to the linked privacy policy.
       </span>
     </div>
 

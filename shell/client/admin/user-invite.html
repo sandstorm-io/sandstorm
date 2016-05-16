@@ -81,7 +81,14 @@ bob@example.com"></textarea>
 </template>
 
 <template name="newAdminUserInvite">
-  <h1>{{#linkTo route="newAdminUsers"}}Users{{/linkTo}} / Invite</h1>
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>{{#linkTo route="newAdminUsers"}}Users{{/linkTo}}</li>
+      <li>Invite</li>
+    </ul>
+  </h1>
+
   {{> newAdminUserInviteLink }}
   <hr>
   {{> newAdminUserInviteEmail }}

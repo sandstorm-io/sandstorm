@@ -2,6 +2,7 @@
 
 // The purple that we use for
 $sandstorm-purple-color: #762F87;
+$darker-purple-color: #65468e;
 
 // The color that we use to outline focused elements, for accessibility
 $focus-outline-color: $sandstorm-purple-color;
@@ -62,7 +63,7 @@ $default-table-row-action-background-color-hover: lighten($sandstorm-purple-colo
 // Default text input field colors
 $default-textinput-background-color: #ffffff;
 $default-textinput-outline-color: #9e9e9e;
-$default-textinput-outline-color-focus: #65468e;
+$default-textinput-outline-color-focus: $darker-purple-color;
 
 //////// Grain list ("Open...") styles
 $grainlist-background-color: $default-content-background-color;

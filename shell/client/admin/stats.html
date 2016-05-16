@@ -110,7 +110,12 @@
 </template>
 
 <template name="newAdminStats">
-  <h1>Stats</h1>
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>Statistics</li>
+    </ul>
+  </h1>
 
   <h2>Publish anonymously to Sandstorm dev team</h2>
 

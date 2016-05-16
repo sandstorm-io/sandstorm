@@ -1,18 +1,3 @@
-.admin-status-row {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  justify-content: flex-start;
-
-  .current-usage {
-    flex: 1 1 50%;
-  }
-
-  .version {
-    flex: 1 1 50%;
-  }
-}
-
 .system-log-header {
   display: flex;
   flex-direction: row;
@@ -25,7 +10,7 @@
 }
 
 .admin-log-box {
-  max-height: 60vh;
+  max-height: calc(100vh - 230px);
   overflow: scroll;
   background-color: white;
   border: 1px solid #ccc;

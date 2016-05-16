@@ -437,10 +437,6 @@ Template.adminSettings.helpers({
     return globalDb.getSamlPublicCert();
   },
 
-  smtpUrl: function () {
-    return Iron.controller().state.get("smtpUrl");
-  },
-
   smtpConfig() {
     const config = Settings.findOne({ _id: "smtpConfig" });
     return config && config.value;
@@ -1264,19 +1260,17 @@ const newAdminRoute = RouteController.extend({
       Meteor.subscribe("adminServiceConfiguration", this.params._token),
       Meteor.subscribe("featureKey", true, this.params._token),
     ];
-    if (this.params._token) {
-      subs.push(Meteor.subscribe("adminToken", this.params._token));
-    }
 
     return subs;
   },
 
   data: function () {
-    const adminToken = AdminToken.findOne();
+    const wildcardHostSeemsBroken = (
+      Session.get("alreadyTestedWildcardHost") && !Session.get("wildcardHostWorks")
+    );
     return {
-      settings: Settings.find(),
-      token: this.params._token,
-      isUserPermitted: isAdmin() || (adminToken && adminToken.tokenIsValid),
+      isUserPermitted: isAdmin(),
+      wildcardHostSeemsBroken,
     };
   },
 
@@ -1306,31 +1300,15 @@ const newAdminRoute = RouteController.extend({
                 });
     });
 
-    const state = this.state;
-    Meteor.call("getSmtpUrl", this.params._token, function (error, result) {
-      state.set("smtpUrl", result);
-    });
-
-    const user = Meteor.user();
-    if (user && user.loginIdentities) {
-      if (this.params._token) {
-        if (!user.signupKey || !user.isAdmin) {
-          Meteor.call("signUpAsAdmin", this.params._token);
-        } else if (user.isAdmin) {
-          // We don't need the token. Redirect to the current route, minus the token parameter.
-          Router.go(this.route.getName(), {}, _.pick(this.params, "query", "hash"));
-        }
-      }
-    }
-
-    resetResult(state);
-    state.set("configurationServiceName", null);
-    state.set("token", this.params._token);
     this.render();
   },
 });
 
 Router.map(function () {
+  this.route("newAdminRoot", {
+    path: "/admin-new",
+    controller: newAdminRoute,
+  });
   this.route("newAdminIdentity", {
     path: "/admin-new/identity",
     controller: newAdminRoute,

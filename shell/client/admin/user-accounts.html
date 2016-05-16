@@ -96,7 +96,12 @@
 
 
 <template name="newAdminUsers">
-  <h1>Users</h1>
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>Users</li>
+    </ul>
+  </h1>
 
   {{#with users=allUsers ready=userSubReady}}
   <div class="admin-user-filters">

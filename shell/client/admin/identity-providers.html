@@ -1,19 +1,25 @@
 <template name="newAdminIdentity">
-  <h1>Identity Providers</h1>
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>Identity providers</li>
+    </ul>
+  </h1>
+
   <p>Choose which services users may use to identify themselves.  Anyone can log in, but only users you invite will be able to install apps or create grains.</p>
   {{>adminIdentityProviderTable idpData=idpData featureKeyRoute="newAdminFeatureKey"}}
 
   {{#if hasFeatureKey}}
     <p>
     To configure organization membership and settings, see
-    {{#linkTo route="newAdminOrganization"}}Organization Settings{{/linkTo}}.
+    {{#linkTo route="newAdminOrganization"}}organization settings{{/linkTo}}.
     </p>
   {{/if}}
 </template>
 
 <template name="adminIdentityProviderConfigureEmail">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
-  <h2>Email Login Configuration</h2>
+  <h2>Email login configuration</h2>
 
   {{#if errorMessage}}
     {{#focusingErrorBox}}
@@ -62,7 +68,7 @@
 
 <template name="adminIdentityProviderConfigureGoogle">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
-  <h2>Google Login Configuration</h2>
+  <h2>Google login configuration</h2>
 
   {{#if errorMessage}}
     {{#focusingErrorBox}}
@@ -73,7 +79,7 @@
   <form class="setup-idp-form">
     {{> googleLoginSetupInstructions }}
 
-    <p>Then, copy over your Client ID and Client Secret below:</p>
+    <p>Then, copy over your Client ID and Client secret below:</p>
 
     <div class="form-group">
       <label>
@@ -83,7 +89,7 @@
     </div>
     <div class="form-group">
       <label>
-        Client Secret:
+        Client secret:
         <input type="text" name="clientSecret" value="{{clientSecret}}"/>
       </label>
     </div>
@@ -111,7 +117,7 @@
 
 <template name="githubLoginSetupInstructions">
   <p>
-    First, you'll need to get a Github Client ID and Client Secret. Follow these steps:
+    First, you'll need to get a Github Client ID and Client secret. Follow these steps:
   </p>
   <ol>
     <li>Visit <a href="https://github.com/settings/applications/new" target="blank">https://github.com/settings/applications/new</a></li>
@@ -122,12 +128,12 @@
 
 <template name="adminIdentityProviderConfigureGitHub">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
-  <h2>GitHub Configuration</h2>
+  <h2>GitHub login configuration</h2>
 
   <form class="setup-idp-form">
     {{> githubLoginSetupInstructions }}
 
-    <p>Then, copy over your Client ID and Client Secret below:</p>
+    <p>Then, copy over your Client ID and Client secret below:</p>
     <div class="form-group">
       <label>
         Client ID:
@@ -136,7 +142,7 @@
     </div>
     <div class="form-group">
       <label>
-        Client Secret:
+        Client secret:
         <input type="text" name="clientSecret" value="{{clientSecret}}"/>
       </label>
     </div>
@@ -164,7 +170,7 @@
 
 <template name="adminIdentityProviderConfigureLdap">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
-  <h2>LDAP Configuration</h2>
+  <h2>LDAP login configuration</h2>
 
   {{#if errorMessage}}
     {{#focusingErrorBox}}
@@ -274,7 +280,7 @@
 
 <template name="adminIdentityProviderConfigureSaml">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
-  <h2>SAML Login Configuration</h2>
+  <h2>SAML login configuration</h2>
 
   <p>
     Your SAML IDP should be configured to return a persistent nameID. In addition you <strong>must</strong>
@@ -333,7 +339,7 @@
 <div class="identity-provider-table" role="grid">
   <div class="idp-table-header" role="rowgroup">
     <div class="idp-header-row" role="row">
-      <span class="idp" role="rowheader">Identity Provider</span>
+      <span class="idp" role="rowheader">Identity provider</span>
       <span class="idp-status" role="rowheader">Status</span>
     </div>
   </div>
@@ -359,7 +365,7 @@
     {{#if idp.enabled}}
       <span class="idp-enabled">Enabled</span>
     {{else}}
-      <span class="idp-disabled">Not Enabled</span>
+      <span class="idp-disabled">Not enabled</span>
     {{/if}}
 
     {{#if needsFeatureKey}}

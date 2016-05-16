@@ -147,7 +147,7 @@ button.revoke-token, button.revoke-access {
   a {
     font-weight: bold;
     text-decoration: none;
-    color: #65468e;
+    color: $darker-purple-color;
   }
 }
 
@@ -397,7 +397,7 @@ div.popup h2 {
     text-align: left;
     >a {
       font-weight: 600;
-      color: #65468e;
+      color: $darker-purple-color;
     }
   }
 

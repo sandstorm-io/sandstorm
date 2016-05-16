@@ -1,5 +1,11 @@
 <template name="newAdminAppSources">
-  <h1>App Sources</h1>
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>App sources</li>
+    </ul>
+  </h1>
+
   {{#if hasSuccess}}
     {{#focusingSuccessBox}}
       {{message}}
@@ -13,7 +19,7 @@
   <form class="admin-app-sources">
     <div class="form-group">
       <label>
-        App Market URL
+        App market URL
         <input type="text" name="appMarketUrl" value="{{appMarketUrl}}" />
       </label>
       <span class="form-subtext">
@@ -35,7 +41,7 @@
     {{#if enableAppUpdates}}
     <div class="form-group">
       <label>
-        App Index URL
+        App index URL
         <input type="text" name="appIndexUrl" value="{{appIndexUrl}}" />
       </label>
       <span class="form-subtext">

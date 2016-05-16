@@ -1577,7 +1577,7 @@ Router.map(function () {
         } else if (tokenInfo.grainId) {
           const grainId = tokenInfo.grainId;
           const identityChosenByLogin = this.state.get("identity-chosen-by-login");
-          this.state.set("identity.chosen-by-login", undefined);
+          this.state.set("identity-chosen-by-login", undefined);
 
           const openView = function openView() {
             // If the grain is already open in a tab, switch to that tab. We have to re-check this

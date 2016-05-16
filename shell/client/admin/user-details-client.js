@@ -29,9 +29,14 @@ Template.newAdminUserDetailsIdentityTableRow.helpers({
 
 const lookupIdentityId = (identityId) => {
   const identity = Meteor.users.findOne({ _id: identityId });
-  SandstormDb.fillInProfileDefaults(identity);
-  SandstormDb.fillInIntrinsicName(identity);
-  SandstormDb.fillInPictureUrl(identity);
+  if (identity) {
+    // Sometimes, DBs lack the corresponding user identity document.
+    // Defensively avoid dereferencing a possibly-undefined identity.
+    SandstormDb.fillInProfileDefaults(identity);
+    SandstormDb.fillInIntrinsicName(identity);
+    SandstormDb.fillInPictureUrl(identity);
+  }
+
   return identity;
 };
 

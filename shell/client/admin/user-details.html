@@ -83,6 +83,66 @@
   </div>
 </template>
 
+<template name="newAdminUserDetailsIdentityMIATableRow">
+{{!-- Filler row to deal with the fact that sometimes identities are missing in
+      the database. --}}
+  <div class="admin-user-identity-body-row" role="row">
+    <div class="admin-user-identity-body-cell identity" role="gridcell">
+      <ul class="identity-information">
+        <li class="identity-picture-name">
+          <div class="identity-profile-picture">
+            Profile picture
+          </div>
+          <span class="identity-name">
+            (unknown name)
+          </span>
+        </li>
+        <li class="identity-provider">
+          <div class="identity-provider-icon" title="unknown service">
+            <span class="provider-icon">
+              (unknown service)
+            </span>
+          </div>
+          <span class="intrinsic-name">
+            (unknown name)
+          </span>
+        </li>
+        <li class="identity-handle">
+          <div class="identity-handle-decorator" role="presentation" title="Handle">
+            @
+          </div>
+          <code>(unknown handle)</code>
+        </li>
+        <li class="identity-pronouns">
+          <div class="identity-pronouns-decorator" role="presentation" title="Pronouns">
+            <span class="identity-pronouns-icon">
+              Pronouns
+            </span>
+          </div>
+          <span class="identity-pronouns-preference">
+            (unknown pronouns)
+          </span>
+        </li>
+        <li class="identity-emails">
+          <div class="identity-emails-decorator" role="presentation" title="Emails">
+            <span class="identity-emails-icon">
+              Emails
+            </span>
+          </div>
+          <ul class="identity-emails-list">
+            <li>
+              No known emails.
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="admin-user-identity-body-cell created" role="gridcell">unknown creation date</div>
+    <div class="admin-user-identity-body-cell last-active" role="gridcell">unknown activity date</div>
+    <div class="admin-user-identity-body-cell properties" role="gridcell"></div>
+  </div>
+</template>
+
 <template name="newAdminUserDetailsIdentityTable">
 {{!-- Expects: 
   account: Object
@@ -99,18 +159,26 @@
 
     <div class="admin-user-identity-body" role="rowgroup">
       {{#each identity in (loginIdentities account) }}
-        {{> newAdminUserDetailsIdentityTableRow
-              identity=identity
-              isLoginIdentity=true
-              primaryEmail=account.primaryEmail
-              }}
+        {{#if identity}}
+          {{> newAdminUserDetailsIdentityTableRow
+                identity=identity
+                isLoginIdentity=true
+                primaryEmail=account.primaryEmail
+                }}
+        {{else}}
+          {{> newAdminUserDetailsIdentityMIATableRow }}
+        {{/if}}
       {{/each}}
       {{#each identity in (nonLoginIdentities account) }}
-        {{> newAdminUserDetailsIdentityTableRow
-              identity=identity
-              isLoginIdentity=false
-              primaryEmail=account.primaryEmail
-              }}
+        {{#if identity}}
+          {{> newAdminUserDetailsIdentityTableRow
+                identity=identity
+                isLoginIdentity=false
+                primaryEmail=account.primaryEmail
+                }}
+        {{else}}
+          {{> newAdminUserDetailsIdentityMIATableRow }}
+        {{/if}}
       {{/each}}
     </div>
   </div>
@@ -194,27 +262,6 @@
 
     <h2>Identities</h2>
     {{> newAdminUserDetailsIdentityTable account=account }}
-
-    {{!--
-    {{#each identity in identities}}
-    <ul>
-      <li>service: {{identity.profile.service}}</li>
-      <li>name: {{identity.profile.name}}</li>
-      <li>intrinsicName: {{identity.profile.name}}</li>
-      <li>pronoun: {{identity.profile.pronoun}}</li>
-      <li>handle: {{identity.profile.handle}}</li>
-      <li>emails:
-        <ul>
-        {{#each email in (emailsForIdentity identity)}}
-        <li>email: {{email.email}} {{#if email.primary}}primary{{/if}} {{#unless email.verified}}unverified{{/unless}}</li>
-        {{else}}
-          <li>no email address on file for identity</li>
-        {{/each}}
-        </ul>
-      </li>
-    </ul>
-    {{/each}}
-    --}}
 
     {{/with}}
   {{else}}

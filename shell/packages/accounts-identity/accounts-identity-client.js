@@ -64,9 +64,9 @@ Template.identityLoginInterstitial.onCreated(function () {
           Meteor.loginWithIdentity(loginAccount.loginAccountId, () => {
             // If the user is already visiting a grain, assume the identity with which they've
             // logged in is the identity they would like to use on that grain.
-            const activeGrain = this.data.grains.getActive();
-            if (activeGrain) {
-              activeGrain.switchIdentity(identityId);
+            const current = Router.current();
+            if (current.route.getName() === "shared") {
+              current.state.set("identity-chosen-by-login", identityId);
             }
           });
         } else if (!LoginIdentitiesOfLinkedAccounts.findOne({ sourceIdentityId: identityId })) {

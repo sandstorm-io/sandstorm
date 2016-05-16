@@ -125,6 +125,10 @@ GrainViewList = class GrainViewList {
     return null;
   }
 
+  contains(grainView) {
+    return this._grains.get().indexOf(grainView) != -1;
+  }
+
   addNewGrainView(grainId, path, tokenInfo, parentElement) {
     const grains = this._grains.get();
     const grainview = new GrainView(this, this._db, grainId, path, tokenInfo, parentElement);

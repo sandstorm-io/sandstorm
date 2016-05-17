@@ -10,10 +10,10 @@ Template.newAdminStats.onCreated(function () {
     }
   });
 
-  this.subscribe("activityStats", undefined);
-  this.subscribe("realTimeStats", undefined);
-  this.subscribe("statsTokens", undefined);
-  this.subscribe("allPackages", undefined);
+  this.activityStatsSub = this.subscribe("activityStats", undefined);
+  this.realTimeStatsSub = this.subscribe("realTimeStats", undefined);
+  this.statsTokensSub = this.subscribe("statsTokens", undefined);
+  this.allPackagesSub = this.subscribe("allPackages", undefined);
 
   this.setReportStats = (newValue) => {
     this.formState.set("submitting");
@@ -34,9 +34,19 @@ Template.newAdminStats.onCreated(function () {
       }
     });
   };
+
+  this.ready = () => {
+    return this.activityStatsSub.ready() && this.realTimeStatsSub.ready() &&
+        this.statsTokensSub.ready() && this.allPackagesSub.ready();
+  };
 });
 
 Template.newAdminStats.helpers({
+  ready() {
+    const instance = Template.instance();
+    return instance.ready();
+  },
+
   undecided() {
     const setting = Settings.findOne({ _id: "reportStats" });
     return setting && setting.value === "unset";
@@ -62,6 +72,8 @@ Template.newAdminStats.helpers({
   },
 
   points() {
+    const instance = Template.instance();
+    if (!instance.ready()) return [];
     return ActivityStats.find({}, { sort: { timestamp: -1 } }).map((point) => {
       return _.extend({
         // Report date of midpoint of sample period.
@@ -84,6 +96,8 @@ Template.newAdminStats.helpers({
 
   apps() {
     const instance = Template.instance();
+    if (!instance.ready()) return;
+
     const stats = ActivityStats.findOne({ _id: instance.currentPackageDate.get() });
     if (!stats) {
       return;

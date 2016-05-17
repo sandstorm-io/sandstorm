@@ -1268,36 +1268,72 @@ const newAdminRoute = RouteController.extend({
     const wildcardHostSeemsBroken = (
       Session.get("alreadyTestedWildcardHost") && !Session.get("wildcardHostWorks")
     );
+    const websocketSeemsBroken = (
+      Session.get("websocketSeemsBroken")
+    );
     return {
       isUserPermitted: isAdmin(),
       wildcardHostSeemsBroken,
+      websocketSeemsBroken,
     };
   },
 
   action: function () {
-    // Test the WILDCARD_HOST for sanity.
-    Tracker.nonreactive(() => {
+    const testWebsocket = function() {
+      if (Meteor &&
+          Meteor.connection &&
+          Meteor.connection._stream &&
+          Meteor.connection._stream.socket &&
+          Meteor.connection._stream.socket.protocol &&
+          Meteor.connection._stream.socket.protocol !== "websocket") {
+        Session.set("websocketSeemsBroken", true);
+      } else {
+        Session.set("websocketSeemsBroken", false);
+      }
+    };
+
+    const testWildcardHost = function() {
       if (Session.get("alreadyTestedWildcardHost")) {
         return;
       }
+      if (Session.get("alreadyBeganTestingWildcardHost")) {
+        return;
+      }
+      Session.set("alreadyBeganTestingWildcardHost", true);
 
-      HTTP.call("GET", "//" + makeWildcardHost("selftest-" + Random.hexString(20)),
-                { timeout: 4000 }, (error, response) => {
-                  Session.set("alreadyTestedWildcardHost", true);
-                  let looksGood;
-                  if (error) {
-                    looksGood = false;
-                  } else {
-                    if (response.statusCode === 200) {
-                      looksGood = true;
-                    } else {
-                      console.log("Surpring status code from self test domain", response.statusCode);
-                      looksGood = false;
-                    }
-                  }
+      HTTP.call(
+        "GET", "//" + makeWildcardHost("selftest-" + Random.hexString(20)),
+        { timeout: 30 * 1000 }, (error, response) => {
+          Session.set("alreadyTestedWildcardHost", true);
+          let looksGood;
+          if (error) {
+            looksGood = false;
+            console.error("Sandstorm WILDCARD_HOST self-test failed. Details:", error);
+            console.log(
+              "Look here in the JS console, above or below this text, for further " +
+                "details provided by your browser.  starting with selftest-*.");
+            console.log(
+              "See also docs: https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine");
+            console.log(
+              "Slow DNS or intermittent Internet connectivity can cause this message " +
+                "to appear unnecessarily; in that case, reloading the page should make " +
+                "it go away.");
+          } else {
+            if (response.statusCode === 200) {
+              looksGood = true;
+            } else {
+              console.log("Surpring status code from self test domain", response.statusCode);
+              looksGood = false;
+            }
+          }
+          Session.set("wildcardHostWorks", looksGood);
+        });
+    };
 
-                  Session.set("wildcardHostWorks", looksGood);
-                });
+    // Run self-tests once.
+    Tracker.nonreactive(() => {
+      testWildcardHost();
+      testWebsocket();
     });
 
     this.render();

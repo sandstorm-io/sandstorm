@@ -1198,7 +1198,7 @@ const adminRoute = RouteController.extend({
                       looksGood = true;
                     } else {
                       console.log(
-                        "Sandstorm WILDCARD_HOST self-test failed. Received status code:")
+                        "Sandstorm WILDCARD_HOST self-test failed. Received status code:");
                       console.log(response.statusCode);
                       looksGood = false;
                     }

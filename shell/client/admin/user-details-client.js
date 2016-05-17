@@ -7,15 +7,18 @@ Template.newAdminUserDetailsIdentityTableRow.helpers({
     if (!identity) return [];
 
     const verifiedEmails = SandstormDb.getVerifiedEmails(identity);
-    const emails = verifiedEmails.map((email) => {
-      return {
+    const verifiedEmailSet = {};
+    const emails = [];
+    verifiedEmails.forEach((email) => {
+      verifiedEmailSet[email.email] = true;
+      emails.push({
         email: email.email,
         verified: true,
         primary: email === primaryEmail,
-      };
+      });
     });
 
-    if (identity.unverifiedEmail) {
+    if (identity.unverifiedEmail && !verifiedEmailSet[identity.unverifiedEmail]) {
       emails.push({
         email: identity.unverifiedEmail,
         verified: false,

@@ -13,6 +13,8 @@ const matchesUser = function (searchKey, user) {
 
   for (let i = 0; i < user.identities.length; i++) {
     const identity = user.identities[i];
+    if (!identity) continue; // Sometimes we have identity IDs but no identity object. :(
+
     if (identity._id.indexOf(searchKey) !== -1) return true;
 
     if (identity.profile.intrinsicName.toLowerCase().indexOf(searchKey) !== -1) return true;
@@ -105,8 +107,13 @@ Template.newAdminUsers.onCreated(function () {
       // Identity IDs are given in creation order.
       const identities = identityIds.map((identityId) => {
         const identity = Meteor.users.findOne({ _id: identityId });
-        SandstormDb.fillInProfileDefaults(identity);
-        SandstormDb.fillInIntrinsicName(identity);
+        if (identity) {
+          // For some reason, various servers (including alpha) appear to have accounts that
+          // reference identities which do not exist in the database.
+          SandstormDb.fillInProfileDefaults(identity);
+          SandstormDb.fillInIntrinsicName(identity);
+        }
+
         return identity;
       });
       return {

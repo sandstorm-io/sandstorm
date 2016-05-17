@@ -17,6 +17,7 @@
     <div class="identities" role="gridcell">
       <ul class="identity-list">
         {{#each identity in user.identities}}
+          {{#if identity}}
           <li class="identity">
             <div class="identity-provider-icon">
               <span class="provider-icon {{identity.profile.service}}">{{identity.profile.service}}</span>
@@ -24,6 +25,15 @@
             <div class="identity-name">{{ identity.profile.name }}</div>
             <div class="identity-intrinsic-name">{{ identity.profile.intrinsicName }}</div>
           </li>
+          {{else}}
+          <li class="identity">
+            <div class="identity-provider-icon">
+              <span class="provider-icon">Unknown identity</span>
+            </div>
+            <div class="identity-name">unknown name</div>
+            <div class="identity-intrinsic-name">unknown identifier</div>
+          </li>
+          {{/if}}
         {{/each}}
       </ul>
     </div>

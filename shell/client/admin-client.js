@@ -1185,8 +1185,8 @@ const adminRoute = RouteController.extend({
                     console.log("Sandstorm WILDCARD_HOST self-test failed. Details:");
                     console.log(error);
                     console.log(
-                      "Further details may be available in the JS console provided by your web " +
-                        "browser. Look for errors involving a domain starting with selftest-*.");
+                      "Error messages above or below this one may relate to this error; look for " +
+                        "messages involving a domain starting with selftest-*.");
                     console.log(
                       "See also docs: https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine");
                     console.log(

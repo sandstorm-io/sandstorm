@@ -64,8 +64,9 @@ The app's code will be stored at
 `~/projects/php-app-to-package-for-sandstorm`.  We will spend the rest
 of the tutorial in that directory and its sub-directories.
 
-**Note**: Feel free to spend a moment looking around this folder you
-just downloaded. You'll find an `index.php` and some CSS and
+**Note**: Feel free to spend a moment looking around this [folder you
+just downloaded](https://github.com/sandstorm-io/php-app-to-package-for-sandstorm).
+You'll find an `index.php` and some CSS and
 Javascript.
 
 ## Create .sandstorm, to store packaging information for the app
@@ -78,7 +79,8 @@ create the package.
 We'll use the `vagrant-spk` tool to create this directory.
 
 The purpose of `vagrant-spk` is to create a Linux system where Sandstorm and
-your app run successfully. It acts differently based on which _language platform_
+your app run successfully. It acts differently based on which [language platform]
+(https://docs.sandstorm.io/en/latest/vagrant-spk/platform-stacks/)
 you want to use. In our case, we'll use the _lemp_ platform: Linux, nginx, MySQL,
 and PHP.
 

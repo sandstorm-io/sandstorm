@@ -154,9 +154,11 @@ issue](https://github.com/sandstorm-io/sandstorm/issues/220).
 
 ## Why do I see an error when I try to launch an app, even when the Sandstorm interface works fine?
 
-Sometimes Sandstorm seems to be working fine but can launch no apps.
+Sometimes Sandstorm seems to be working fine but can launch no apps. This typically relates to
+Sandstorm's need for **wildcard DNS**. If you use HTTPS, you will also need **wildcard HTTPS**.
+You can read [technical details](wildcard.md) if you wish.
 
-If you see an error screen like this:
+You might see an error screen like this:
 
 ![Unable to resolve the server's DNS address, screenshot in Chromium](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/unable-to-resolve.png)
 
@@ -164,23 +166,49 @@ even when the app management interface seems to work fine:
 
 ![Skinny Sandstorm admin interface, showing your app instance](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/works-fine.png)
 
-This typically relates to Sandstorm's need for **wildcard DNS**. If you use HTTPS, you
-will also need **wildcard HTTPS**. Keep reading for more information.
+You can trigger Sandstorm's `WILDCARD_HOST` self-test by visiting the admin settings page at
+`/admin/settings` and reloading your web browser. A big red error will appear if your configuration
+fails the self-test. If so, **read the Javascript console.** Sandstorm will log details in your
+browser's Javascript console, [although those details might be
+minimal](http://stackoverflow.com/questions/31058764/determine-if-ajax-call-failed-due-to-insecure-response-or-connection-refused);
+thankfully, your web browser will typically provide further details about the failed connection in
+the Javascript console. Here are some hints, based on errors you might see.
 
-**Wildcard DNS.** Sandstorm runs each app _session_ on a unique,
-temporary subdomain. Here's what to check:
+- `Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource`: This
+  usually means your WILDCARD_HOST and BASE_URL disagree about port number, or the WILDCARD_HOST and
+  BASE_URL disagree about your domain name.
 
-- **Make sure the `WILDCARD_HOST` has valid syntax.** In the Sandstorm config file (typically `/opt/sandstorm/sandstorm.conf`, look for the `WILDCARD_HOST` config item. Note that this should not have a protocol as part of it. A valid line might be:
+- `Connection refused` or `net::ERR_CONNECTION_REFUSED`: This can occur if your WILDCARD_HOST
+  specifies the wrong domain name or if the WILDCARD_HOST and BASE_URL disagree about port number.
+
+- `HTTPS security error` or `net::ERR_INSECURE_RESPONSE`: This can occur if you are using a
+  self-signed certificate for Sandstorm but have not set up a self-signed CA. Read our docs on
+  [self-signed SSL for Sandstorm.](self-signed.md)
+
+Keep in mind the following configuration guidelines.
+
+- **Make sure the `WILDCARD_HOST` has valid syntax.** In the Sandstorm config file (typically
+    `/opt/sandstorm/sandstorm.conf`, look for the `WILDCARD_HOST` config item. Note that this should
+    **not** have a protocol as part of it but **does** need a port number if `BASE_URL` specifies a
+    port number. A valid line might be:
 
 ```
 WILDCARD_HOST=*.yourname.sandcats.io:6080
 ```
 
-- **Make sure wildcard DNS works for your chosen domain**. See also [this issue in our repository](https://github.com/sandstorm-io/sandstorm/issues/114). If setting up wildcard DNS is a hassle for you, consider using our free [Sandcats dynamic DNS](sandcats.md) service for your `WILDCARD_HOST`.
+- **Make sure wildcard DNS works for your chosen domain**. See also [this issue in our
+  repository](https://github.com/sandstorm-io/sandstorm/issues/114). If setting up wildcard DNS is
+  a hassle for you, consider using our free [Sandcats dynamic DNS](sandcats.md) service for your
+  `WILDCARD_HOST`.
 
-- You can read [more about Sandstorm and wildcard DNS](wildcard.md).
-
-**Wildcard HTTPS.** If wildcard DNS is configured properly, and you can access the Sandstorm shell, but you get an error accessing grains, keep in mind that your browser must trust `*.sandstorm.example.com` not just `sandstorm.example.com`. You can test this by visiting a random HTTPS URL within your Sandstorm domain, such as [https://just-testing.sandstorm.example.com](https://just-testing.sandstorm.example.com). If you see a browser certificate warning, then that is the root of your problem. You can read more about configuring HTTPS in our [HTTPS topic guide](ssl.md).
+- If you are using HTTPS, **make sure wildcard HTTPS works on your server.** If wildcard DNS is
+  configured properly, and you can access the Sandstorm shell, but you get an error accessing
+  grains, keep in mind that your browser must trust `*.sandstorm.example.com` not just
+  `sandstorm.example.com`. You can test this by visiting a random HTTPS URL within your Sandstorm
+  domain, such as
+  [https://just-testing.sandstorm.example.com](https://just-testing.sandstorm.example.com). If you
+  see a browser certificate warning, then that is the root of your problem. You can read more about
+  configuring HTTPS in our [HTTPS topic guide](ssl.md).
 
 ## Can I customize the root page of my Sandstorm install?
 

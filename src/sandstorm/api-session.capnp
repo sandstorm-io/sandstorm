@@ -71,7 +71,7 @@ interface ApiSession @0xc879e379c625cdc7 extends(WebSession.WebSession) {
     # you would not normally request "https://api.github.com/users" because "GitHub users" is not
     # considered a separate API but rather one part of the overall GitHub API. Note that
     # `canonicalUrl` should never end with a '/', because request paths to `ApiSession` are
-    # requried to start with a '/', so this would result in two consecutive '/'s which is usually
+    # required to start with a '/', so this would result in two consecutive '/'s which is usually
     # wrong.
     #
     # The HTTP driver will present `canonicalUrl` as a strong suggestion to the user. However, the

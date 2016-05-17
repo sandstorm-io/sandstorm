@@ -437,7 +437,7 @@ Meteor.publish("adminUserDetails", function (userId) {
     }
 
     const observeHandle = identitySubs[identityId];
-    identitySubs[identityId] = undefined;
+    delete identitySubs[identityId];
     observeHandle.stop();
     this.removed("users", identityId);
   };

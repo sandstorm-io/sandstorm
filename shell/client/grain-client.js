@@ -1469,6 +1469,9 @@ Router.map(function () {
     },
 
     onBeforeAction: function () {
+      // Don't do anything for non-account users.
+      if (Meteor.userId() && !Meteor.user().loginIdentities) return;
+
       // Only run the hook once.
       if (this.state.get("beforeActionHookRan")) return this.next();
 
@@ -1542,6 +1545,9 @@ Router.map(function () {
     },
 
     onBeforeAction: function () {
+      // Don't do anything for non-account users.
+      if (Meteor.userId() && !Meteor.user().loginIdentities) return;
+
       // Only run the hook once.
       if (this.state.get("beforeActionHookRan")) return this.next();
       this.state.set("beforeActionHookRan", true);
@@ -1570,6 +1576,8 @@ Router.map(function () {
           Router.go("/grain/" + tokenInfo.grainId + path, {}, { replaceState: true });
         } else if (tokenInfo.grainId) {
           const grainId = tokenInfo.grainId;
+          const identityChosenByLogin = this.state.get("identity-chosen-by-login");
+          this.state.set("identity-chosen-by-login", undefined);
 
           const openView = function openView() {
             // If the grain is already open in a tab, switch to that tab. We have to re-check this
@@ -1587,6 +1595,10 @@ Router.map(function () {
                                                                mainContentElement);
               grainToOpen.openSession();
               globalGrains.setActive(grainId);
+
+              if (identityChosenByLogin) {
+                grainToOpen.revealIdentity(identityChosenByLogin);
+              }
 
               if (!Meteor.userId()) {
                 // Suggest to the user that they log in by opening the login menu.

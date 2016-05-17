@@ -245,5 +245,10 @@ Template.emailTestPopup.events({
       }
     });
   },
+
+  "click button.close-dialog"(evt) {
+    const instance = Template.instance();
+    instance.data.onDismiss && instance.data.onDismiss();
+  },
 });
 

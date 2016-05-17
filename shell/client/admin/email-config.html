@@ -69,13 +69,17 @@
 
   {{#if showTestSendEmailPopup}}
     {{#modalDialogWithBackdrop onDismiss=closePopupCallback}}
-      {{> emailTestPopup smtpConfig=getSmtpConfig }}
+      {{> emailTestPopup smtpConfig=getSmtpConfig onDismiss=closePopupCallback }}
     {{/modalDialogWithBackdrop}}
   {{/if}}
 </template>
 
 <template name="emailTestPopup">
-{{!-- Expects a single String argument "token" to be passed in via the data context. --}}
+{{!-- Takes three arguments via data context:
+       token: String (optional) Setup token to use to authorize a testSend request.
+  smtpConfig: Object containing the SMTP config object to provide to testSend.
+   onDismiss: Function to call when the Close button is clicked.
+--}}
 <h2>Send a test email</h2>
 {{#if hasError}}
   {{#focusingErrorBox}}
@@ -94,12 +98,17 @@
       <input class="test-address" type="email" name="test-address" value="{{testAddress}}" required />
     </label>
   </div>
-  <button type="submit" class="send-test-email" {{htmlDisabled}}>
-    {{#if isSubmitting}}
-    Sending...
-    {{else}}
-    Send test email
-    {{/if}}
-  </button>
+  <div class="button-row">
+    <button type="submit" class="send-test-email" {{htmlDisabled}}>
+      {{#if isSubmitting}}
+      Sending...
+      {{else}}
+      Send test email
+      {{/if}}
+    </button>
+    <button type="button" class="close-dialog">
+      Close
+    </button>
+  </div>
 </form>
 </template>

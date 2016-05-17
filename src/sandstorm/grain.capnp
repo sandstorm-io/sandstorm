@@ -693,12 +693,8 @@ interface SessionContext {
   #     powerboxRequest: {
   #       rpcId: myRpcId,
   #       query: [
-  #         {
-  #           tags: [
-  #             // encoded/packed/base64url of (tags = [(id = 15831515641881813735)])
-  #             "EAZQAQEAABEBF1EEAQH_5-Jn6pjXtNsAAAA",
-  #           ],
-  #         },
+  #         // encoded/packed/base64url of (tags = [(id = 15831515641881813735)])
+  #         "EAZQAQEAABEBF1EEAQH_5-Jn6pjXtNsAAAA",
   #       ],
   #       saveLabel: { defaultText: "Linked grain" },
   #     },

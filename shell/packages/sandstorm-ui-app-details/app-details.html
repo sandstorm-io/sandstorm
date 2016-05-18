@@ -41,7 +41,7 @@
 
     {{#if viewingTrash}}
       <p class="trash-explanation">
-        Grains will be permanently removed after 30 days in the Trash. To keep a grain,
+        Grains will be permanently removed after 30 days in the trash. To keep a grain,
         restore it to the Main list.
       </p>
     {{/if}}
@@ -56,7 +56,7 @@
             <p><strong>No matching grains found.</strong></p>
             {{#if filteredSortedTrashedGrains}}
               <p>Some grains in your trash match your search.
-               <button class="toggle-show-trash">View Trash</button>
+               <button class="toggle-show-trash">View trash</button>
               </p>
             {{/if}}
           </div>
@@ -84,14 +84,14 @@
       <h1 class="app-title">{{appTitle}}</h1>
       <ul class="app-links">
         {{#if website}}<li role="presentation"><a class="website-link" target="_blank" href="{{website}}">Website</a></li>{{/if}}
-        <li role="presentation"><a class="app-market-link" target="_blank" href="https://apps.sandstorm.io/app/{{appId}}">App Market</a></li>
+        <li role="presentation"><a class="app-market-link" target="_blank" href="https://apps.sandstorm.io/app/{{appId}}">App market</a></li>
         {{#if codeUrl}}<li role="presentation"><a class="source-code-link" target="_blank" href="{{codeUrl}}">Source</a></li>{{/if}}
-        {{#if bugReportLink}}<li role="presentation"><a class="bug-report-link" target="_blank" href="{{bugReportLink}}">Report Issue</a></li>{{/if}}
+        {{#if bugReportLink}}<li role="presentation"><a class="bug-report-link" target="_blank" href="{{bugReportLink}}">Report issue</a></li>{{/if}}
       </ul>
       <div class="info-row">
         {{#if showToggleTrash}}
           <button class="toggle-show-trash">
-            {{#if viewingTrash}}View Main list{{else}}View Trash{{/if}}
+            {{#if viewingTrash}}View main list{{else}}View trash{{/if}}
           </button>
         {{/if}}
 

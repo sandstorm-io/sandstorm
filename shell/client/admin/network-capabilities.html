@@ -12,18 +12,38 @@
 --}}
 <div class="capability-row" role="row">
   <div class="grant-by" role="gridcell">
-    {{> identityCard capInfo.introducer }}
+    {{#if capInfo.introducer.identity}}
+      {{> identityCard capInfo.introducer.identity }}
+    {{else}}
+      {{#if capInfo.introducer.account}}
+        {{#linkTo route="newAdminUserDetails" data=capInfo.introducer.account}}
+          {{!-- to access things in previous context from within linkTo, we must reach up two data
+                contexts --}}
+          Admin account {{ ../../capInfo.introducer.account.userId }}
+        {{/linkTo}}
+      {{else}}
+        Unknown granter
+      {{/if}}
+    {{/if}}
   </div>
   <div class="grant-to" role="gridcell">
-    <div class="grain-context">
-      <div class="grain-details">
-        <div class="app-icon" style="background-image: url('{{capInfo.appIcon}}')"></div>
-        {{capInfo.grainTitle}}
+    {{#if capInfo.ownerInfo.grain}}
+      <div class="grain-context">
+        <div class="grain-details">
+          <div class="app-icon" style="background-image: url('{{capInfo.ownerInfo.grain.appIcon}}')"></div>
+          {{capInfo.ownerInfo.grain.title}}
+        </div>
+        {{#if capInfo.ownerInfo.grain.grainOwnerIdentity}}
+          {{> identityCard capInfo.ownerInfo.grain.grainOwnerIdentity }}
+        {{/if}}
       </div>
-      {{#if capInfo.grainOwnerIdentity}}
-        {{> identityCard capInfo.grainOwnerIdentity }}
+    {{else}}
+      {{#if capInfo.ownerInfo.webkey}}
+        Anyone with the token
+      {{else}}
+        Unknown recipient
       {{/if}}
-    </div>
+    {{/if}}
   </div>
   <div class="grant-time" role="gridcell">{{dateString capInfo.created}}</div>
   <div class="actions" role="gridcell">

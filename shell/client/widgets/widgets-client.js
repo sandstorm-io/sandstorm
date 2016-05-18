@@ -38,7 +38,8 @@ const focusAndScrollIntoView = function () {
   // Apparently firstNode is a #text node, and lastNode is the actual <div>, which is the only
   // actual node in the template source, because I have newlines and whitespace and comments.
   this.lastNode.focus && this.lastNode.focus();
-  this.lastNode.scrollIntoView && this.lastNode.scrollIntoView();
+  // Focusing a node appears to scroll it into view in the most useful way, so we don't need to
+  // explicitly manage scrolling here after all.
 };
 
 Template.focusingErrorBox.onRendered(focusAndScrollIntoView);

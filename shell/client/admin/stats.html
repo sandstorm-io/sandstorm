@@ -1,6 +1,7 @@
 <template name="statsUserGrainsTable">
 {{!-- Takes an argument:
    points: Array of Objects containing the fields in ActivityStats, plus `day`
+    ready: Boolean, indicates readiness, to avoid rerendering as data streams in
    --}}
 <table class="stats-users-grains">
   <thead>
@@ -21,23 +22,29 @@
     </tr>
   </thead>
   <tbody>
-  {{#each points}}
-    <tr>
-      <td>{{day}}</td>
-      <td>{{daily.activeUsers}}</td>
-      <td>{{weekly.activeUsers}}</td>
-      <td>{{monthly.activeUsers}}</td>
-      <td>{{forever.activeUsers}}</td>
-      <td>{{daily.activeGrains}}</td>
-      <td>{{weekly.activeGrains}}</td>
-      <td>{{monthly.activeGrains}}</td>
-      <td>{{forever.activeGrains}}</td>
-    </tr>
+  {{#if ready}}
+    {{#each points}}
+      <tr>
+        <td>{{day}}</td>
+        <td>{{daily.activeUsers}}</td>
+        <td>{{weekly.activeUsers}}</td>
+        <td>{{monthly.activeUsers}}</td>
+        <td>{{forever.activeUsers}}</td>
+        <td>{{daily.activeGrains}}</td>
+        <td>{{weekly.activeGrains}}</td>
+        <td>{{monthly.activeGrains}}</td>
+        <td>{{forever.activeGrains}}</td>
+      </tr>
+    {{else}}
+      <tr>
+        <td colspan="9">There are no stats recorded yet.</td>
+      </tr>
+    {{/each}}
   {{else}}
     <tr>
-      <td colspan="7">There are no stats recorded yet.</td>
+      <td colspan="9">Loading...</td>
     </tr>
-  {{/each}}
+  {{/if}}
   </tbody>
 </table>
 </template>
@@ -45,6 +52,7 @@
 <template name="statsAppsTable">
 {{!-- expects a single argument: 
   apps: Array of Object like ActivityStats, plus `appTitle`
+ ready: Boolean, indicates readiness, to avoid rerendering as data streams in
 --}}
 <table class="stats-apps">
   <thead>
@@ -70,27 +78,33 @@
     </tr>
   </thead>
   <tbody>
-  {{#each apps}}
-    <tr>
-      <td title="{{appId}}">{{appTitle}}</td>
-      <td>{{daily.owners}}</td>
-      <td>{{weekly.owners}}</td>
-      <td>{{monthly.owners}}</td>
-      <td>{{forever.owners}}</td>
-      <td>{{daily.sharedUsers}}</td>
-      <td>{{weekly.sharedUsers}}</td>
-      <td>{{monthly.sharedUsers}}</td>
-      <td>{{forever.sharedUsers}}</td>
-      <td>{{daily.grains}}</td>
-      <td>{{weekly.grains}}</td>
-      <td>{{monthly.grains}}</td>
-      <td>{{forever.grains}}</td>
-    </tr>
+  {{#if ready}}
+    {{#each apps}}
+      <tr>
+        <td title="{{appId}}">{{appTitle}}</td>
+        <td>{{daily.owners}}</td>
+        <td>{{weekly.owners}}</td>
+        <td>{{monthly.owners}}</td>
+        <td>{{forever.owners}}</td>
+        <td>{{daily.sharedUsers}}</td>
+        <td>{{weekly.sharedUsers}}</td>
+        <td>{{monthly.sharedUsers}}</td>
+        <td>{{forever.sharedUsers}}</td>
+        <td>{{daily.grains}}</td>
+        <td>{{weekly.grains}}</td>
+        <td>{{monthly.grains}}</td>
+        <td>{{forever.grains}}</td>
+      </tr>
+    {{else}}
+      <tr>
+        <td colspan="13">There are no stats recorded yet.</td>
+      </tr>
+    {{/each}}
   {{else}}
     <tr>
-      <td colspan="7">There are no stats recorded yet.</td>
+      <td colspan="13">Loading...</td>
     </tr>
-  {{/each}}
+  {{/if}}
   </tbody>
 </table>
 </template>
@@ -188,7 +202,7 @@
   <p>Today: {{today.activeUsers}} users, {{today.activeGrains}} grains</p>
   {{/with}}
 
-  {{> statsUserGrainsTable points=points }}
+  {{> statsUserGrainsTable points=points ready=ready}}
 
   <h3>Apps</h3>
   <form class="stats-apps-date">
@@ -202,6 +216,6 @@
     </label>
   </form>
 
-  {{> statsAppsTable apps=apps }}
+  {{> statsAppsTable apps=apps ready=ready}}
 </template>
 

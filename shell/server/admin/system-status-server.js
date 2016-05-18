@@ -49,10 +49,10 @@ Router.map(function () {
       }
 
       const logFilePath = SANDSTORM_LOGDIR + "/sandstorm.log";
-      const fd = fs.openSync(logFilePath, "r");
-      const stats = fs.fstatSync(fd);
+      const fd = Fs.openSync(logFilePath, "r");
+      const stats = Fs.fstatSync(fd);
       const initialSize = stats.size;
-      const readStream = fs.createReadStream(undefined, {
+      const readStream = Fs.createReadStream(undefined, {
         fd: fd,
         start: 0,
         end: initialSize,

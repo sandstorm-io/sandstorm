@@ -10,32 +10,56 @@ const lookupIdentityById = function (identityId) {
   return undefined;
 };
 
-const tokenIntroducer = function (token) {
-  const identityId = token && token.owner && token.owner.grain && token.owner.grain.introducerIdentity;
-  return identityId && lookupIdentityById(identityId);
-};
-
 const capDetails = function (cap) {
-  const grainId = cap.owner.grain.grainId;
-  const grain = Grains.findOne(grainId);
-  const grainTitle = grain && grain.title;
-  const packageId = grain && grain.packageId;
-  const pkg = packageId && globalDb.collections.packages.findOne(packageId);
-  const appIcon = pkg && globalDb.iconSrcForPackage(pkg, "grain", globalDb.makeWildcardHost("static"));
-  const introducerIdentityId = cap && cap.owner && cap.owner.grain && cap.owner.grain.introducerIdentity;
-  const introducer = lookupIdentityById(introducerIdentityId);
-  const grainOwnerIdentity = (introducerIdentityId === grain.identityId) ? undefined : lookupIdentityById(grain.identityId);
+
+  let introducer = {};
+  let ownerInfo = {};
+  console.log(cap);
+  if (cap.owner.grain !== undefined) {
+    const grainId = cap.owner.grain.grainId;
+    const grain = Grains.findOne(grainId);
+    const grainTitle = grain && grain.title;
+    const packageId = grain && grain.packageId;
+    const pkg = packageId && globalDb.collections.packages.findOne(packageId);
+    const appIcon = pkg && globalDb.iconSrcForPackage(pkg, "grain", globalDb.makeWildcardHost("static"));
+    const introducerIdentityId = cap && cap.owner && cap.owner.grain && cap.owner.grain.introducerIdentity;
+    const introducerIdentity = lookupIdentityById(introducerIdentityId);
+    const grainOwnerIdentity = (introducerIdentityId === grain.identityId) ? undefined : lookupIdentityById(grain.identityId);
+
+    introducer = {
+      identity: introducerIdentity,
+    };
+
+    ownerInfo.grain = {
+      _id: grainId,
+      ownerIdentity: grainOwnerIdentity,
+      title: grainTitle,
+      pkg,
+      appIcon,
+    };
+  } else if (cap.owner.webkey !== undefined) {
+    ownerInfo.webkey = {
+    };
+
+    // Attempt (poorly) to divine the granter of this token.  Since we only have an account ID,
+    // we can't properly specify an identity, but we can at least link to that user's account page.
+    const requirements = cap.requirements;
+    if (requirements.length === 1) {
+      const req = requirements[0];
+      if (req.userIsAdmin) {
+        introducer.account = {
+          userId: req.userIsAdmin, // the newAdminUserDetails route requires params like this
+        };
+      }
+    }
+  }
+
   return {
     _id: cap._id,
     revoked: cap.revoked,
     created: cap.created,
     introducer,
-    grainOwnerIdentity,
-    grainId,
-    grainTitle,
-    packageId,
-    pkg,
-    appIcon,
+    ownerInfo,
   };
 };
 
@@ -44,9 +68,16 @@ Template.newAdminNetworkCapabilities.onCreated(function () {
 
   this.autorun(() => {
     const apiTokens = ApiTokens.find({
-      $or: [
-        { "frontendRef.ipNetwork": { $exists: true } },
-        { "frontendRef.ipInterface": { $exists: true } },
+      $and: [
+        {
+          $or: [
+            { "frontendRef.ipNetwork": { $exists: true } },
+            { "frontendRef.ipInterface": { $exists: true } },
+          ],
+        },
+        {
+          "owner.grain": { $exists: true },
+        },
       ],
     });
     const grainIds = apiTokens.map(token => token.owner.grain.grainId);
@@ -108,14 +139,28 @@ const packageMatchesNeedle = function (needle, pkg) {
 };
 
 const matchesCap = function (needle, cap) {
-  if (cap.grainTitle.toLowerCase().indexOf(needle) !== -1) return true;
-  if (identityMatchesNeedle(needle, cap.introducer)) return true;
-  if (identityMatchesNeedle(needle, cap.grainOwnerIdentity)) return true;
-  if (packageMatchesNeedle(needle, cap.pkg)) return true;
-  // Check for cap ID, grain ID, or app ID, but only as a prefix.
+  // Check for matching name in the grain owner or the token creator's identity.
+  // Check for matches in cap token ID, grain ID, or app ID, but only as a prefix.
+
+  if (cap.introducer.identity) {
+    if (identityMatchesNeedle(needle, cap.introducer.identity)) return true;
+  }
+
   if (cap._id.toLowerCase().lastIndexOf(needle, 0) !== -1) return true;
-  if (cap.grainId.toLowerCase().lastIndexOf(needle, 0) !== -1) return true;
-  if (cap.pkg.appId.toLowerCase().lastIndexOf(needle, 0) !== -1) return true;
+
+  if (cap.ownerInfo.grain) {
+    const grain = cap.ownerInfo.grain;
+    if (grain.title.toLowerCase().indexOf(needle) !== -1) return true;
+    if (identityMatchesNeedle(needle, grain.ownerIdentity)) return true;
+    if (packageMatchesNeedle(needle, grain.pkg)) return true;
+    if (grain._id.toLowerCase().lastIndexOf(needle, 0) !== -1) return true;
+    if (grain.pkg.appId.toLowerCase().lastIndexOf(needle, 0) !== -1) return true;
+  }
+
+  if (cap.introducer.account) {
+    if (cap.introducer.account.userId.toLowerCase().indexOf(needle) !== -1) return true;
+  }
+
   return false;
 };
 

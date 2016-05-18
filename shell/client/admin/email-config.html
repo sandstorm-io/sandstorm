@@ -3,17 +3,26 @@
 
   <h2>Outbound email</h2>
 
-  <p>
-    Sandstorm needs a way to send email. You can leave email unconfigured, but email-related
-    features like email login, notifications, sharing by identity, requesting access and will be
-    unavailable until you configure email in the future.
-  </p>
+  {{#if emailUnconfigured}}
+  <div class="flash-message warning-message">
+    <p>
+      <strong>Email is unconfigured.</strong>
+      Email-related features like email login, notifications, sharing by identity, and requesting
+      access will be unavailable until you configure email.
+    </p>
+  </div>
+  {{/if}}
 
+  <h3>
+    How Sandstorm uses email
+  </h3>
   <p>
-    How Sandstorm uses email: Sandstorm sends email notifications, and Sandstorm apps can send email
-    notifications, too. Every app receives a unique email address, so Sandstorm needs to send email
-    from a variety of "From:" addresses. Therefore, Gmail SMTP won't work, but there are other free
-    services. See more info in the docs.
+    Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too. Every
+    app receives a unique email address, so Sandstorm needs to send email from a variety of "From:"
+    addresses. Therefore, Gmail SMTP won't work, but there are other free services. See
+    <a href="https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp">
+      more info in the docs
+    </a>.
   </p>
 
   {{#if hasSuccess}}<p class="flash-message success-message">Saved changes.</p>{{/if}}
@@ -69,13 +78,17 @@
 
   {{#if showTestSendEmailPopup}}
     {{#modalDialogWithBackdrop onDismiss=closePopupCallback}}
-      {{> emailTestPopup smtpConfig=getSmtpConfig }}
+      {{> emailTestPopup smtpConfig=getSmtpConfig onDismiss=closePopupCallback }}
     {{/modalDialogWithBackdrop}}
   {{/if}}
 </template>
 
 <template name="emailTestPopup">
-{{!-- Expects a single String argument "token" to be passed in via the data context. --}}
+{{!-- Takes three arguments via data context:
+       token: String (optional) Setup token to use to authorize a testSend request.
+  smtpConfig: Object containing the SMTP config object to provide to testSend.
+   onDismiss: Function to call when the Close button is clicked.
+--}}
 <h2>Send a test email</h2>
 {{#if hasError}}
   {{#focusingErrorBox}}
@@ -94,12 +107,17 @@
       <input class="test-address" type="email" name="test-address" value="{{testAddress}}" required />
     </label>
   </div>
-  <button type="submit" class="send-test-email" {{htmlDisabled}}>
-    {{#if isSubmitting}}
-    Sending...
-    {{else}}
-    Send test email
-    {{/if}}
-  </button>
+  <div class="button-row">
+    <button type="submit" class="send-test-email" {{htmlDisabled}}>
+      {{#if isSubmitting}}
+      Sending...
+      {{else}}
+      Send test email
+      {{/if}}
+    </button>
+    <button type="button" class="close-dialog">
+      Close
+    </button>
+  </div>
 </form>
 </template>

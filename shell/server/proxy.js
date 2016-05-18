@@ -910,7 +910,9 @@ const apiTokenForRequest = (req, hostId) => {
   } else if (auth && auth.slice(0, 6).toLowerCase() === "basic " &&
              apiUseBasicAuth(req, hostId)) {
     token = (new Buffer(auth.slice(6).trim(), "base64")).toString().split(":")[1];
-  } else if (req.url.startsWith("/.sandstorm-token/")) {
+  } else if (hostId !== "api" && req.url.startsWith("/.sandstorm-token/")) {
+    // Disallow clients that use the old "api" hostId from using tokens in the path.
+    // Allowing them would be a security problem in browsers that ignore CSP.
     let parts = req.url.slice(1).split("/"); // remove leading / and split
     if (parts.length < 2) {
       token = undefined;

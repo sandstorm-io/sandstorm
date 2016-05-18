@@ -39,6 +39,12 @@ Template.newAdminEmailConfig.onCreated(function () {
 });
 
 Template.newAdminEmailConfig.helpers({
+  emailUnconfigured() {
+    // Derive this from the config directly, rather than the locally-modified state.
+    const c = globalDb.getSmtpConfig();
+    return (!c.hostname || !c.port || !c.returnAddress);
+  },
+
   hostname() {
     const instance = Template.instance();
     return instance.hostname.get();

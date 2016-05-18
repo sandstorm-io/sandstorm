@@ -336,6 +336,29 @@ interface SandstormApi(AppObjectId) {
   #   failure.
 }
 
+struct DenormalizedGrainMetadata {
+  # The metadata that we need to present contextual information for shared grains (in particular,
+  # information about the app providing that grain, like icon and title).
+
+  appTitle @0 :Util.LocalizedText;
+  # A copy of the app name for the corresponding UIView for presentation in the grain list.
+
+  union {
+    icon :group {
+      format @1 :Text;
+      # Icon asset format, if present.  One of "png" or "svg"
+
+      assetId @2 :Text;
+      # The asset ID associated with the grain-size icon for this token
+
+      assetId2xDpi @3 :Text;
+      # If present, the asset ID for the equivalent asset as assetId at twice-resolution
+    }
+    appId @4 :Text;
+    # App ID, needed to generate a favicon if no icon is provided.
+  }
+}
+
 interface UiView @0xdbb4d798ea67e2e7 {
   # Implements a user interface with which a user can interact with the grain.  We call this a
   # "view" because a single grain may actually have multiple "views" that provide different
@@ -449,6 +472,16 @@ interface UiView @0xdbb4d798ea67e2e7 {
     # Indicates what kinds of powerbox offers this grain is interested in accepting. If the grain
     # is chosen by the user during a powerbox offer, then `newOfferSession()` will be called
     # to start a session around this.
+  }
+
+  struct PowerboxTag {
+    # Tag to be used in a `PowerboxDescriptor` when requesting a `UiView`.
+
+    metadata @0 :DenormalizedGrainMetadata;
+    # Information needed to display an app title and icon for this `UiView`.
+
+    title @1 :Text;
+    # The title of the `UiView` as chosen by the introducer identity.
   }
 
   newSession @1 (userInfo :UserInfo, context :SessionContext,

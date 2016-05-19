@@ -475,11 +475,13 @@
 {{else}}
   {{#if currentUser}}
     {{#if currentUserFirstLogin}}
-      <h1>Confirm your profile</h1>
-      <div class="single-identity-editor">
-        {{#with accountProfileEditorData}}
-          {{> _accountProfileEditor}}
-        {{/with}}
+      <div class="center">
+        <h2>Confirm your profile</h2>
+        <div class="single-identity-editor">
+          {{#with accountProfileEditorData}}
+            {{> _accountProfileEditor}}
+          {{/with}}
+        </div>
       </div>
 
       {{#unless serverHasAdmin}}

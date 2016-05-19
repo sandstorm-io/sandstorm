@@ -49,7 +49,7 @@
     {{/if}}
     {{/if}}
     {{#if isAdmin}}
-      {{#linkTo route="adminOld" role="menuitem"}}Admin panel{{/linkTo}}
+      {{#linkTo route="newAdminRoot" role="menuitem"}}Admin panel{{/linkTo}}
     {{/if}}
     <a href="mailto:support@sandstorm.io" target="_blank" role="menuitem">Send feedback</a>
     {{#if quotaEnabled }}
@@ -108,7 +108,7 @@
       {{> Template.dynamic template=../loginTemplate.name }}
     {{/with}}
   {{else}}
-    {{#linkTo route="adminSettings" class="troubleshooting"}}
+    {{#linkTo route="newAdminIdentity" class="troubleshooting"}}
       configure login
     {{/linkTo}}
   {{/each}}

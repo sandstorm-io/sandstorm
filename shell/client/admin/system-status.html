@@ -9,27 +9,15 @@
 </template>
 
 <template name="newAdminStatus">
-  <h1>System Status</h1>
-
-  <div class="admin-status-row">
-    <div class="current-usage">
-      <h2>Current Usage</h2>
-      <ul>
-        <li>Grains open: {{grainsActive}}</li>
-        <li>User accounts with grains open: {{usersActive}}</li>
-        {{#if allowDemo}}
-          <li>Demo accounts active: {{demosActive}}</li>
-        {{/if}}
-      </ul>
-    </div>
-    <div class="version">
-      <h2>Sandstorm Version</h2>
-      <p>{{#linkTo route="about" }}{{ sandstormVersion }}{{/linkTo}}</p>
-    </div>
-  </div>
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>System log</li>
+    </ul>
+  </h1>
 
   <h2 class="system-log-header">
-    <span>System Log</span>
+    <span>System log</span>
     <form>
       <button type="button" name="download-full-log">
         Download full log

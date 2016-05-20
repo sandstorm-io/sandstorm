@@ -132,12 +132,17 @@
 
 
 <template name="newAdminNetworkCapabilities">
-<h1>Network Capabilities</h1>
+<h1>
+  <ul class="admin-breadcrumbs">
+    <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+    <li>Network capabilities</li>
+  </ul>
+</h1>
 
-<h2>Outbound Network Access</h2>
+<h2>Outbound network access</h2>
 {{>newAdminNetworkCapabilitiesSection caps=ipNetworkCaps}}
 
-<h2>Inbound Network Access</h2>
+<h2>Inbound network access</h2>
 {{>newAdminNetworkCapabilitiesSection caps=ipInterfaceCaps}}
 
 </template>

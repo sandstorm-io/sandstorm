@@ -21,16 +21,16 @@
     </div>
     {{#if showTrash}}
       <p class="trash-explanation">
-        <button class="empty-trash">Empty all Trash</button>
-        (Grains will be permanently removed after 30 days in the Trash. To keep a grain,
+        <button class="empty-trash">Empty all trash</button>
+        (Grains will be permanently removed after 30 days in the trash. To keep a grain,
         restore it to the Main list.)
       </p>
     {{/if}}
     <div class="buttons">
       {{#if showTrash }}
-        <button class="show-main-list">View Main list</button>
+        <button class="show-main-list">View main list</button>
       {{else}}
-        <button class="show-trash">View Trash ({{trashCount}})</button>
+        <button class="show-trash">View trash ({{trashCount}})</button>
       {{/if}}
 
       <button class="restore-button">Restore backup...
@@ -48,7 +48,7 @@
             <p><strong>No matching grains found.</strong></p>
             {{#if filteredSortedTrashedGrains}}
               <p>Some grains in your trash match your search.
-               <button class="show-trash">View Trash</button>
+               <button class="show-trash">View trash</button>
               </p>
             {{/if}}
           {{else}}
@@ -116,7 +116,7 @@
             </td>
             <td class="td-app-icon"></td>
             <td class="grain-name">Name</td>
-            <td class="last-used">Last Activity</td>
+            <td class="last-used">Last activity</td>
             <td class="shared-or-owned">Mine/Shared</td>
             {{!-- Collaborators, size TODO
             <td>Collaborators</td>

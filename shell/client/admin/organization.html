@@ -7,11 +7,16 @@
 </template>
 
 <template name="newAdminOrganization">
-  <h1>Organization Settings</h1>
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>Organization settings</li>
+    </ul>
+  </h1>
 
   {{#unless hasFeatureKey }}
     <div class="flash-message warning-message">
-        To enable Organization Settings, enter your
+        To enable organization settings, enter your
         {{#linkTo route="newAdminFeatureKey"}}
           Sandstorm for Work feature key
         {{/linkTo}}.

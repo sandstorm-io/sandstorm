@@ -28,6 +28,7 @@
     <div class="popular-container">
       <h2 class="">Most used</h2>
       {{#each popularApps }}
+
       <a class="app-button {{#if dev}}dev-background {{/if}}" href="/apps/{{appId}}">
         <div class="app-icon" style="background-image: url('{{ iconSrc }}');"></div>
         <span class="app-title">{{appTitle}}</span>
@@ -42,7 +43,7 @@
     <a class="app-button install-button {{#if searching}}hide{{/if}}" href="{{appMarketUrl}}">
       <div class="app-icon pseudoapp install-icon"></div>
       <span class="action-title">Install...</span>
-      <span class="action-text">from App Market</span>
+      <span class="action-text">from app market</span>
     </a>
 
     {{!-- data-app-id is only used for testing purposes --}}
@@ -77,7 +78,7 @@
       <div class="not-signed-up">
         <h1>Unauthorized! :(</h1>
         <p>This is a private Sandstorm server. In order to install apps, you need to be invited
-          by the admin. The admin can create invites in the admin settings panel.</p>
+          by the admin. The admin can invite you from the admin panel.</p>
       </div>
     {{/if}}
   {{/if}}

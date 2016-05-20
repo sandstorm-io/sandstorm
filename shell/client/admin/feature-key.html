@@ -1,5 +1,10 @@
 <template name="newAdminFeatureKey">
-  <h1>Sandstorm for Work</h1>
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>Sandstorm for Work</li>
+    </ul>
+  </h1>
 
   {{#if currentFeatureKey}}
     <h2>Current feature key</h2>

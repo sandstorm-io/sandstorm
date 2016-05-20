@@ -74,9 +74,9 @@
 
 %button-primary {
   // A button coloring for the primary action of a form.
-  background-color: #65468e;
+  background-color: $darker-purple-color;
   color: white;
-  border: 1px solid darken($sandstorm-purple-color, 10%);
+  border: 1px solid darken($darker-purple-color, 10%);
   &:hover {
     background-color: #714daa;
   }

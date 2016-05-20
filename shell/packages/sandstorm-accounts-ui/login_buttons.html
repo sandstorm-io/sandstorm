@@ -35,7 +35,9 @@
   <h4>Account</h4>
 
   <div class="account-buttons-list" role="menu">
-    <a href="/account" role="menuitem">Account settings</a>
+    {{#linkTo route="account" role="menuitem"}}
+      Account settings
+    {{/linkTo}}
     {{#if showIdentitySwitcher}}
     <button class="switch-identity">
       Switch identity {{#if identitySwitcherExpanded}}▴{{else}}▾{{/if}}
@@ -47,13 +49,13 @@
     {{/if}}
     {{/if}}
     {{#if isAdmin}}
-    <a href="/admin" role="menuitem">Admin settings</a>
+      {{#linkTo route="adminOld" role="menuitem"}}Admin panel{{/linkTo}}
     {{/if}}
-    <a href="mailto:support@sandstorm.io" target="_blank" role="menuitem">Send Feedback</a>
+    <a href="mailto:support@sandstorm.io" target="_blank" role="menuitem">Send feedback</a>
     {{#if quotaEnabled }}
-    <a href="{{pathFor route='referrals'}}">Referral program</a>
+      {{#linkTo route="referrals" role="menuitem"}}Referral program{{/linkTo}}
     {{/if}}
-    <a href="/about" role="menuitem">About Sandstorm</a>
+    {{#linkTo route="about" role="menuitem"}}About Sandstorm{{/linkTo}}
 
     <button class="logout" role="menuitem">
       Sign out
@@ -106,7 +108,9 @@
       {{> Template.dynamic template=../loginTemplate.name }}
     {{/with}}
   {{else}}
-    <a class="troubleshooting" href="/admin">configure login</a>
+    {{#linkTo route="adminSettings" class="troubleshooting"}}
+      configure login
+    {{/linkTo}}
   {{/each}}
 
   {{> _loginButtonsMessages}}
@@ -116,7 +120,7 @@
     <a class="troubleshooting" href="https://docs.sandstorm.io/en/latest/administering/faq/" target="_blank">troubleshooting</a>
   {{/if}}
 
-  <a href="/about">about Sandstorm</a>
+  {{#linkTo route="about"}}about Sandstorm{{/linkTo}}
   </div>
 </template>
 

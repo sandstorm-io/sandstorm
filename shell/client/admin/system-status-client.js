@@ -50,7 +50,7 @@ Template.newAdminLog.onCreated(function () {
     // Save whether the current scrollTop is equal to the ~maximum scrollTop.
     // If so, then we should make the log "stick" to the bottom, by manually scrolling to the bottom
     // when needed.
-    messagePane = this.lastNode;
+    const messagePane = this.lastNode;
 
     // Include a 5px fudge factor to account for bad scrolling and fractional pixels.
     this.shouldScroll = (messagePane.clientHeight + messagePane.scrollTop + 5 >= messagePane.scrollHeight);

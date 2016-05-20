@@ -31,55 +31,44 @@ module.exports = {};
 
 module.exports["Test Ip Networking"] = function (browser) {
   browser
-    .loginDevAccount(null, true)
-    .url(browser.launch_url + "/admin/capabilities")
-    .waitForElementVisible("#offer-ipnetwork", short_wait)
-    .click("#offer-ipnetwork")
-    .waitForElementVisible("#powerbox-offer-url", short_wait)
-    .getText("#powerbox-offer-url", function(result) {
-      browser
-        .installApp("http://sandstorm.io/apps/jparyani/ip-networking-0.spk", "4829503496b793dffb29040208e35921", "u30m2tdzecypfv9wf11u28dgmu4wjmz3tny80dqgq5aq4ge9z460")
-        .assert.containsText("#grainTitle", "Untitled IpNetworkTest")
-        .waitForElementVisible('.grain-frame', short_wait)
-        .frame("grain-frame")
-        .waitForElementVisible("#request", short_wait)
-        .click("#request")
-        .frame()
-        .waitForElementVisible("#powerbox-request-input", short_wait)
-        .setValue("#powerbox-request-input", result.value)
-        .click("#powerbox-request-form button.submit")
-        .frame("grain-frame")
-        .waitForElementVisible("#request-result", short_wait)
-        .assert.containsText("#request-result", "301 Moved Permanently")
-        .end();
-    });
+    // sandstorm-test-python, v0.0.8
+    .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-8.spk", "164ac8a38076c88d05296f1bf1114d10", "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh", false, true)
+    .assert.containsText("#grainTitle", "Untitled Test App test page")
+    .waitForElementVisible('.grain-frame', short_wait)
+    .frame("grain-frame")
+      .waitForElementVisible("#powerbox-request-ipnetwork", short_wait)
+      .click("#powerbox-request-ipnetwork")
+    .frameParent()
+    .waitForElementVisible(".popup.request .candidate-cards .powerbox-card button[data-card-id=frontendref-ipnetwork]", short_wait)
+    .click(".popup.request .candidate-cards .powerbox-card button[data-card-id=frontendref-ipnetwork]")
+    .frame("grain-frame")
+      .waitForElementVisible("span.token", short_wait)
+      .waitForElementVisible("form.test-ip-network input[type=text]", short_wait)
+      .setValue("form.test-ip-network input[type=text]", "http://build.sandstorm.io")
+      .click("form.test-ip-network button")
+      .waitForElementVisible("form.test-ip-network div.result", short_wait)
+      .assert.containsText("form.test-ip-network div.result", "301 Moved Permanently")
+    .frameParent()
 };
 
 module.exports["Test Ip Interface"] = function (browser) {
   browser
-    .loginDevAccount(null, true)
-    .url(browser.launch_url + "/admin/capabilities")
-    .waitForElementVisible("#offer-ipinterface", short_wait)
-    .click("#offer-ipinterface")
-    .waitForElementVisible("#powerbox-offer-url", short_wait)
-    .getText("#powerbox-offer-url", function(result) {
-      browser
-        .installApp("http://sandstorm.io/apps/jparyani/ip-interface-1.spk", "0b2d293e7701341a4db74f365aef6832", "xnk8j642gzvxuxq5axts9qzg578rc4gmg1kr8qqqad81wgvan6z0")
-        .assert.containsText("#grainTitle", "Untitled IpInterfaceTest")
-        .waitForElementVisible('.grain-frame', short_wait)
-        .frame("grain-frame")
-        .waitForElementVisible("#request-port", short_wait)
-        .setValue("#request-port", IP_INTERFACE_TEST_PORT)
-        .click("#request")
-        .frame()
-        .waitForElementVisible("#powerbox-request-input", short_wait)
-        .setValue("#powerbox-request-input", result.value)
-        .click("#powerbox-request-form button.submit")
-        .frame("grain-frame")
-        .waitForElementVisible("#request-result", short_wait)
-        .assert.containsText("#request-result", "request:")
-        .assertTcpConnection(IP_INTERFACE_TEST_PORT, "tcptest")
-        .end();
-    });
+    // sandstorm-test-python, v0.0.8
+    .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-8.spk", "164ac8a38076c88d05296f1bf1114d10", "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh", false, true)
+    .assert.containsText("#grainTitle", "Untitled Test App test page")
+    .waitForElementVisible('.grain-frame', short_wait)
+    .frame("grain-frame")
+      .waitForElementVisible("#powerbox-request-ipinterface", short_wait)
+      .click("#powerbox-request-ipinterface")
+    .frameParent()
+    .waitForElementVisible(".popup.request .candidate-cards .powerbox-card button[data-card-id=frontendref-ipinterface]", short_wait)
+    .click(".popup.request .candidate-cards .powerbox-card button[data-card-id=frontendref-ipinterface]")
+    .frame("grain-frame")
+      .waitForElementVisible("span.token", short_wait)
+      .waitForElementVisible("form.test-ip-interface input[type=number]", short_wait)
+      .setValue("form.test-ip-interface input[type=number]", IP_INTERFACE_TEST_PORT)
+      .click("form.test-ip-interface button")
+    .frameParent()
+    .assertTcpConnection(IP_INTERFACE_TEST_PORT, "tcptest")
 };
 

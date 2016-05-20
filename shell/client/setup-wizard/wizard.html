@@ -136,7 +136,7 @@
     {{#if currentUser}}
       {{#if currentUserIsAdmin}}
         <p class="center">
-          {{#linkTo route="adminSettings" class="admin-settings-button"}}Proceed to Admin Panel{{/linkTo}}
+          {{#linkTo route="newAdminRoot" class="admin-settings-button"}}Proceed to admin panel{{/linkTo}}
         </p>
       {{else}}
         {{#if identityUser}}
@@ -538,11 +538,11 @@
 
   <div class="setup-next-steps">
     {{#unless someOrgMembershipEnabled}}
-      {{#linkTo route="adminInvites" class="setup-button-secondary"}}
+      {{#linkTo route="newAdminUserInvite" class="setup-button-secondary"}}
         Add users
       {{/linkTo}}
     {{/unless}}
-    {{#linkTo route="adminSettings" class="setup-button-secondary"}}
+    {{#linkTo route="newAdminRoot" class="setup-button-secondary"}}
       Edit other settings
     {{/linkTo}}
     {{#linkTo route="apps" class="setup-button-primary"}}
@@ -580,7 +580,7 @@
   {{#if hasUsers}}
   <p>
   This server is already set up, so we recommend administering it via the main
-  {{#linkTo route="adminSettings"}}administration panel{{/linkTo}}.
+  {{#linkTo route="newAdminRoot"}}administration panel{{/linkTo}}.
   </p>
   {{/if}}
 

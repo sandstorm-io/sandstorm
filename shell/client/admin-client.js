@@ -1213,39 +1213,39 @@ const adminRoute = RouteController.extend({
 
 Router.map(function () {
   this.route("adminSettings", {
-    path: "/admin/settings/:_token?",
+    path: "/admin-old/settings/:_token?",
     controller: adminRoute,
   });
   this.route("adminUsers", {
-    path: "/admin/users/:_token?",
+    path: "/admin-old/users/:_token?",
     controller: adminRoute,
   });
   this.route("adminStats", {
-    path: "/admin/stats/:_token?",
+    path: "/admin-old/stats/:_token?",
     controller: adminRoute,
   });
   this.route("adminLog", {
-    path: "/admin/log/:_token?",
+    path: "/admin-old/log/:_token?",
     controller: adminRoute,
   });
   this.route("adminInvites", {
-    path: "/admin/invites/:_token?",
+    path: "/admin-old/invites/:_token?",
     controller: adminRoute,
   });
   this.route("adminCaps", {
-    path: "/admin/capabilities/:_token?",
+    path: "/admin-old/capabilities/:_token?",
     controller: adminRoute,
   });
   this.route("adminAdvanced", {
-    path: "/admin/advanced/:_token?",
+    path: "/admin-old/advanced/:_token?",
     controller: adminRoute,
   });
   this.route("adminFeatureKeyPage", {
-    path: "/admin/features/:_token?",
+    path: "/admin-old/features/:_token?",
     controller: adminRoute,
   });
   this.route("adminOld", {
-    path: "/admin/:_token?",
+    path: "/admin-old/:_token?",
     action: function () {
       this.redirect("adminSettings", this.params);
     },
@@ -1306,59 +1306,59 @@ const newAdminRoute = RouteController.extend({
 
 Router.map(function () {
   this.route("newAdminRoot", {
-    path: "/admin-new",
+    path: "/admin",
     controller: newAdminRoute,
   });
   this.route("newAdminIdentity", {
-    path: "/admin-new/identity",
+    path: "/admin/identity",
     controller: newAdminRoute,
   });
   this.route("newAdminEmailConfig", {
-    path: "/admin-new/email",
+    path: "/admin/email",
     controller: newAdminRoute,
   });
   this.route("newAdminUsers", {
-    path: "/admin-new/users",
+    path: "/admin/users",
     controller: newAdminRoute,
   });
   this.route("newAdminUserInvite", {
-    path: "/admin-new/users/invite",
+    path: "/admin/users/invite",
     controller: newAdminRoute,
   });
   this.route("newAdminUserDetails", {
-    path: "/admin-new/users/:userId",
+    path: "/admin/users/:userId",
     controller: newAdminRoute,
   });
   this.route("newAdminAppSources", {
-    path: "/admin-new/app-sources",
+    path: "/admin/app-sources",
     controller: newAdminRoute,
   });
   this.route("newAdminMaintenance", {
-    path: "/admin-new/maintenance",
+    path: "/admin/maintenance",
     controller: newAdminRoute,
   });
   this.route("newAdminStatus", {
-    path: "/admin-new/status",
+    path: "/admin/status",
     controller: newAdminRoute,
   });
   this.route("newAdminPersonalization", {
-    path: "/admin-new/personalization",
+    path: "/admin/personalization",
     controller: newAdminRoute,
   });
   this.route("newAdminNetworkCapabilities", {
-    path: "/admin-new/network-capabilities",
+    path: "/admin/network-capabilities",
     controller: newAdminRoute,
   });
   this.route("newAdminStats", {
-    path: "/admin-new/stats",
+    path: "/admin/stats",
     controller: newAdminRoute,
   });
   this.route("newAdminFeatureKey", {
-    path: "/admin-new/feature-key",
+    path: "/admin/feature-key",
     controller: newAdminRoute,
   });
   this.route("newAdminOrganization", {
-    path: "/admin-new/organization",
+    path: "/admin/organization",
     controller: newAdminRoute,
   });
 });

@@ -26,6 +26,7 @@ METEOR_DEV_BUNDLE=$("$THIS_DIR/../find-meteor-dev-bundle.sh")
 NODEJS="$METEOR_DEV_BUNDLE/bin/node"
 NPM="$METEOR_DEV_BUNDLE/bin/npm"
 SELENIUM_JAR="selenium-server-standalone-2.53.0.jar"
+SELENIUM_JAR_SHA256="67b88cbfd3b130de6ff3770948f56cc485fd1abb5b7a769397d9050a59b1e036"
 SELENIUM_DOWNLOAD_URL="http://selenium-release.storage.googleapis.com/2.53/$SELENIUM_JAR"
 
 cleanExit () {
@@ -47,6 +48,20 @@ cleanExit () {
     wait $XVFB_PID
   fi
   exit $rc
+}
+
+cacheSeleniumJar() {
+  if [[ ! -e ./$SELENIUM_JAR ]] ; then
+    DOWNLOAD=$(mktemp selenium-download.XXXXXX)
+    curl -o $DOWNLOAD $SELENIUM_DOWNLOAD_URL
+    DOWNLOAD_SHASUM=$(sha256sum $DOWNLOAD | cut -f 1 -d ' ')
+    if [[ "$DOWNLOAD_SHASUM" = "$SELENIUM_JAR_SHA256" ]] ; then
+      mv $DOWNLOAD ./$SELENIUM_JAR
+    else
+      echo "Selenium jar download didn't match expected checksum.  Discarding."
+      exit 1
+    fi
+  fi
 }
 
 checkInstalled() {
@@ -95,7 +110,7 @@ if [ "$RUN_SELENIUM" != "false" ] ; then
   checkInstalled java default-jre-headless
   checkInstalled xvfb-run Xvfb
   checkInstalled pgrep procps
-  test -e ./$SELENIUM_JAR || curl -o $SELENIUM_JAR $SELENIUM_DOWNLOAD_URL
+  cacheSeleniumJar
   xvfb-run --server-args="-screen 0, 1280x1024x24" java -jar ./$SELENIUM_JAR &
   XVFB_PID=$!
 fi

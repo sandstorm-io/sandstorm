@@ -27,7 +27,7 @@ NODEJS="$METEOR_DEV_BUNDLE/bin/node"
 NPM="$METEOR_DEV_BUNDLE/bin/npm"
 SELENIUM_JAR="selenium-server-standalone-2.53.0.jar"
 SELENIUM_JAR_SHA256="67b88cbfd3b130de6ff3770948f56cc485fd1abb5b7a769397d9050a59b1e036"
-SELENIUM_DOWNLOAD_URL="http://selenium-release.storage.googleapis.com/2.53/$SELENIUM_JAR"
+SELENIUM_DOWNLOAD_URL="https://selenium-release.storage.googleapis.com/2.53/$SELENIUM_JAR"
 
 cleanExit () {
   rc=$1

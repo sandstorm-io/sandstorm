@@ -145,8 +145,12 @@ Template.newAdminUserDetails.helpers({
     return account && account.isAdmin;
   },
 
-  isSignedUpOrDemo(account) {
+  isPreciselyUser(account) {
     return (!account.isAdmin) && globalDb.isAccountSignedUpOrDemo(account);
+  },
+
+  isPreciselyVisitor(account) {
+    return (!account.isAdmin) && !globalDb.isAccountSignedUpOrDemo(account);
   },
 
   canBeMadeVisitor(account) {

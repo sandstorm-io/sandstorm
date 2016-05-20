@@ -50,7 +50,7 @@
           <ul class="identity-emails-list">
           {{#each email in (emailsForIdentity identity primaryEmail) }}
             <li>
-              <code><a href="mailto:{{email.email}}">{{ email.email }}</a></code>
+              <a href="mailto:{{email.email}}">{{ email.email }}</a>
               {{#if email.primary}}
                 <span class="email-primary">Primary</span>
               {{/if}}
@@ -203,59 +203,75 @@
     {{/if}}
 
 
-    <h2 class="user-details-account-role">
-      <span class="account-info">
-        <span class="account-name">
-          {{ guessUserName }}
-        </span>
-        {{#if account.isAdmin}}
-        <span class="user-class-admin">Admin</span>
-        {{else}}
-          {{#if isSignedUpOrDemo account}}
-          <span class="user-class-user">User</span>
-          {{else}}
-          <span class="user-class-visitor">Visitor</span>
-          {{/if}}
-        {{/if}}
-      </span>
-      <form class="admin-user-roles-form">
-        {{#unless (isAdmin account) }}
-        <button class="make-admin" type="button" disabled="{{ isSubmitting }}">Promote to admin</button>
-        {{/unless}}
-
-        {{#if (canBeMadeUser account) }}
-        <button class="make-user" type="button" disabled="{{ isSubmitting }}">
-          {{#if (isAdmin account)}}
-            Demote to user
-          {{else}}
-            Promote to user
-          {{/if}}
-        </button>
-        {{/if}}
-
-        {{#if (canBeMadeVisitor account) }}
-        <button class="make-visitor" type="button" disabled="{{ isSubmitting }}">Demote to visitor</button>
-        {{/if}}
-      </form>
+    <h2>
+      Role
     </h2>
 
     <ul class="role-explanations">
-      <li>
-        <span class="role">Admin: </span>
+      <li class="role-explanation {{#if account.isAdmin}}current-role{{/if}}">
+        <span class="role">
+          <span class="user-class-label admin">
+            Admin
+          </span>
+        </span>
         <span class="explanation">
           Manages all accounts.  Can install apps, create grains, and administer the server.
         </span>
+        <span class="status-or-actions">
+          {{#if (isAdmin account)}}
+            <span class="current-role-label">Current role</span>
+          {{/if}}
+          {{#unless (isAdmin account) }}
+            <form class="admin-user-roles-form">
+              <button class="make-admin" type="button" disabled="{{ isSubmitting }}">Promote to admin</button>
+            </form>
+          {{/unless}}
+        </span>
       </li>
-      <li>
-        <span class="role">User: </span>
+      <li class="role-explanation {{#if (isPreciselyUser account)}}current-role{{/if}}">
+        <span class="role">
+          <span class="user-class-label user">
+            User
+          </span>
+        </span>
         <span class="explanation">
           Can install apps and create grains.
         </span>
+        <span class="status-or-actions">
+          {{#if (isPreciselyUser account)}}
+            <span class="current-role-label">Current role</span>
+          {{/if}}
+          {{#if (canBeMadeUser account) }}
+            <form class="admin-user-roles-form">
+              <button class="make-user" type="button" disabled="{{ isSubmitting }}">
+                {{#if (isAdmin account)}}
+                  Demote to user
+                {{else}}
+                  Promote to user
+                {{/if}}
+              </button>
+            </form>
+          {{/if}}
+        </span>
       </li>
-      <li>
-        <span class="role">Visitor: </span>
+      <li class="role-explanation {{#if (isPreciselyVisitor account)}}current-role{{/if}}">
+        <span class="role">
+          <span class="user-class-label visitor">
+            Visitor
+          </span>
+        </span>
         <span class="explanation">
           Can visit and re-share shared grains, but cannot create grains of their own nor install apps.
+        </span>
+        <span class="status-or-actions">
+          {{#if (isPreciselyVisitor account)}}
+            <span class="current-role-label">Current role</span>
+          {{/if}}
+          <form class="admin-user-roles-form">
+            {{#if (canBeMadeVisitor account) }}
+              <button class="make-visitor" type="button" disabled="{{ isSubmitting }}">Demote to visitor</button>
+            {{/if}}
+          </form>
         </span>
       </li>
     </ul>

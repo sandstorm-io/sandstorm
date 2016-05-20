@@ -46,7 +46,7 @@ module.exports["Test Ip Networking"] = function (browser) {
       .waitForElementVisible("form.test-ip-network input[type=text]", short_wait)
       .setValue("form.test-ip-network input[type=text]", "http://build.sandstorm.io")
       .click("form.test-ip-network button")
-      .waitForElementVisible("form.test-ip-network div.result", short_wait)
+      .waitForElementVisible("form.test-ip-network div.result", medium_wait)
       .assert.containsText("form.test-ip-network div.result", "301 Moved Permanently")
     .frameParent()
 };

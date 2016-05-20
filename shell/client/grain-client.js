@@ -1396,28 +1396,67 @@ Meteor.startup(function () {
   window.addEventListener("message", messageListener, false);
 });
 
-const scrollLogToBottom = function (elem) {
-  elem.scrollTop = elem.scrollHeight;
-};
+Template.grainLogContents.onRendered(function () {
+  this.autorun(() => {
+    // Rerun onRenderedHook whenever the data changes
+    Template.currentData();
+    this.data.onRenderedHook && this.data.onRenderedHook();
+  });
+});
 
-const maybeScrollLog = function () {
-  const elem = document.getElementById("grainLog");
-  if (elem) {
-    // The log already exists. It's about to be updated. Check if it's scrolled to the bottom
-    // before the update.
-    if (elem.scrollHeight - elem.scrollTop === elem.clientHeight) {
-      // Indeed, so we want to scroll it back to the bottom after the update.
-      Tracker.afterFlush(function () { scrollLogToBottom(elem); });
+Template.grainLog.onCreated(function () {
+  this.shouldScroll = true;
+  this.renderedYet = false;
+
+  this.forceScrollBottom = () => {
+    this.lastNode.scrollTop = this.lastNode.scrollHeight;
+    this.shouldScroll = true;
+  };
+
+  this.maybeScrollToBottom = () => {
+    if (this.shouldScroll && this.renderedYet) {
+      this.forceScrollBottom();
     }
-  } else {
-    // No element exists yet, but it's probably about to be created, in which case we definitely
-    // want to scroll it.
-    Tracker.afterFlush(function () {
-      const elem2 = document.getElementById("grainLog");
-      if (elem2) scrollLogToBottom(elem2);
-    });
+  };
+
+  this.saveShouldScroll = () => {
+    const messagePane = this.lastNode
+    this.shouldScroll = (messagePane.clientHeight + messagePane.scrollTop + 5 >= messagePane.scrollHeight);
+  };
+
+  this.resizeHandler = (evt) => {
+    this.maybeScrollToBottom();
+  };
+
+  window.addEventListener("resize", this.resizeHandler);
+});
+
+Template.grainLog.onRendered(function () {
+  if (!this.renderedYet) {
+    this.renderedYet = true;
+    this.maybeScrollToBottom();
   }
-};
+});
+
+Template.grainLog.onDestroyed(function () {
+  window.removeEventListener("resize", this.resizeHandler);
+});
+
+Template.grainLog.events({
+  "scroll .grainlog-contents"(evt) {
+    const instance = Template.instance();
+    instance.saveShouldScroll();
+  },
+});
+
+Template.grainLog.helpers({
+  maybeScrollToBottom() {
+    const instance = Template.instance();
+    return () => {
+      instance.maybeScrollToBottom();
+    };
+  },
+});
 
 Router.map(function () {
   this.route("apps", {
@@ -1654,7 +1693,6 @@ Router.map(function () {
 
     data: function () {
       if (this.ready()) {
-        maybeScrollLog();
         const grain = Grains.findOne(this.params.grainId);
         return {
           title: grain ? grain.title : "(deleted grain)",

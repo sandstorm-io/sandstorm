@@ -789,10 +789,14 @@ limitations under the License.
   </div>
 </template>
 
+<template name="grainLogContents">
+  <pre>...{{{logHtml}}}</pre>
+</template>
+
 <template name="grainLog">
   <div class="grainlog-title">Debug log: {{title}}</div>
   <div class="grainlog-contents" aria-live="polite">
-    <pre>...{{{html}}}</pre>
+    {{> grainLogContents logHtml=html onRenderedHook=maybeScrollToBottom }}
   </div>
 </template>
 

@@ -1178,11 +1178,24 @@ const adminRoute = RouteController.extend({
                   let looksGood;
                   if (error) {
                     looksGood = false;
+                    console.log("Sandstorm WILDCARD_HOST self-test failed. Details:");
+                    console.log(error);
+                    console.log(
+                      "Error messages above or below this one may relate to this error; look for " +
+                        "messages involving a domain starting with selftest-*.");
+                    console.log(
+                      "See also docs: https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine");
+                    console.log(
+                      "Slow DNS or intermittent Internet connectivity can cause this message " +
+                        "to appear unnecessarily; in that case, reloading the page should make " +
+                        "it go away.");
                   } else {
                     if (response.statusCode === 200) {
                       looksGood = true;
                     } else {
-                      console.log("Surpring status code from self test domain", response.statusCode);
+                      console.log(
+                        "Sandstorm WILDCARD_HOST self-test failed. Received status code:");
+                      console.log(response.statusCode);
                       looksGood = false;
                     }
                   }

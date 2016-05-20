@@ -974,12 +974,13 @@ limitations under the License.
   {{#if wildcardHostSeemsBroken}}
   <div class="wildcard-host-warning">
     WARNING: This server seems to have its WILDCARD_HOST misconfigured.  Until you fix it, you will
-    not be able to use any apps.
-    <a target="_blank"
-       href="https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine">
-      Learn more.</a>  You'll need to adjust DNS, SSL/TLS certificates, or edit the sandstorm.conf
-    file. Once you have addressed the issue, reload this page. If you're still having problems,
-    <a href="https://github.com/sandstorm-io/sandstorm/issues">please file an issue.</a>
+    not be able to use any apps. You can read <a target="_blank"
+    href="https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine">
+    more info in the Sandstorm docs</a> and in your browser's Javascript console. You'll need to
+    adjust DNS, SSL/TLS certificates, or edit the sandstorm.conf file. If you see no information in
+    the JS console, or wish to test if you have fixed the problem, reload this page to re-run the
+    test. If you're still having
+    problems, <a href="https://github.com/sandstorm-io/sandstorm/issues">please file an issue.</a>
   </div>
   {{/if}}
 

@@ -1420,7 +1420,7 @@ Template.grainLog.onCreated(function () {
   };
 
   this.saveShouldScroll = () => {
-    const messagePane = this.lastNode
+    const messagePane = this.lastNode;
     this.shouldScroll = (messagePane.clientHeight + messagePane.scrollTop + 5 >= messagePane.scrollHeight);
   };
 

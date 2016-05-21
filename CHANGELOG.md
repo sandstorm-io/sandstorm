@@ -1,3 +1,9 @@
+### v0.164 (2016-05-20)
+- Self-hosting: The admin settings UI has been completely revamped.
+- Fixed grain debug log auto-scrolling.
+- Sandcats: Fixed obscure ASN.1 type issue in CSRs that was causing Globalsign API to complain.
+- Fixed bug where logging in via Google or Github while viewing a sharing link which you had already redeemed previously would lead to an error.
+
 ### v0.163 (2016-05-15) [bugfixes]
 - Fixed subtle bug introduced in 0.162 which caused shared grains to refresh every minute.
 

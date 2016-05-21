@@ -9,6 +9,7 @@
   overflow: auto;
   >pre {
     margin: 8px;
+    white-space: pre-wrap;
   }
   .ansi-black-fg   { color:rgb(0, 0, 0);        }
   .ansi-red-fg     { color:rgb(160, 0, 0);      }

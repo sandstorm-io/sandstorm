@@ -302,8 +302,8 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
   // packed format and base64-encoded. The publish populates a pseudo-collection called
   // `powerboxOptions`. Each item has the following fields:
   //
-  //   _id: Object with two fields: `requestId` (as passed when subscribing) and `optionId` (a
-  //       unique identifier for the option).
+  //   _id: Unique identifier string.
+  //   requestId: The value of `requestId` that was passed in when subscribing.
   //   matchQuality: "preferred" or "acceptable" ("unacceptable" options aren't returned).
   //   frontendRef: If present, selecting this option means creating a simple frontendRef. The
   //       field value should be passed back to the method `newFrontendRef` verbatim. The format

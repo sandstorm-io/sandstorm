@@ -29,6 +29,9 @@ Before using this procedure, you should know the following.
 - **You need version v0.162 or higher of vagrant-spk,** in which the
   command was introduced. It was released during May 2016.
 
+- **Command-line interface subject to change:** Changes may be necessary in the future to take
+  advantage of changes in Sandstorm, or to make the tool easier to integrate into automation.
+
 `vagrant-spk enter-grain` is a feature of `vagrant-spk`. If you are using [raw Sandstorm
 packaging](../developing/raw-packaging-guide.md) without `vagrant-spk` then you can read the
 `vagrant-spk` source code to see how to achieve the same thing.

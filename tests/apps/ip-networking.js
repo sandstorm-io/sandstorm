@@ -31,8 +31,8 @@ module.exports = {};
 
 module.exports["Test Ip Networking"] = function (browser) {
   browser
-    // sandstorm-test-python, v0.0.8
-    .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-8.spk", "164ac8a38076c88d05296f1bf1114d10", "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh", false, true)
+    // sandstorm-test-python, v0.0.9
+    .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-9.spk", "38372232883942128f66d0a4d3818bbf", "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh", false, true)
     .assert.containsText("#grainTitle", "Untitled Test App test page")
     .waitForElementVisible('.grain-frame', short_wait)
     .frame("grain-frame")
@@ -46,15 +46,15 @@ module.exports["Test Ip Networking"] = function (browser) {
       .waitForElementVisible("form.test-ip-network input[type=text]", short_wait)
       .setValue("form.test-ip-network input[type=text]", "http://build.sandstorm.io")
       .click("form.test-ip-network button")
-      .waitForElementVisible("form.test-ip-network div.result", medium_wait)
+      .waitForElementVisible("form.test-ip-network div.result", short_wait)
       .assert.containsText("form.test-ip-network div.result", "301 Moved Permanently")
     .frameParent()
 };
 
 module.exports["Test Ip Interface"] = function (browser) {
   browser
-    // sandstorm-test-python, v0.0.8
-    .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-8.spk", "164ac8a38076c88d05296f1bf1114d10", "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh", false, true)
+    // sandstorm-test-python, v0.0.9
+    .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-9.spk", "38372232883942128f66d0a4d3818bbf", "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh", false, true)
     .assert.containsText("#grainTitle", "Untitled Test App test page")
     .waitForElementVisible('.grain-frame', short_wait)
     .frame("grain-frame")

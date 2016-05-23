@@ -174,17 +174,18 @@ bash-4.3$ /var/busybox sh
 $ ls  # will work now, since it comes from busybox
 ```
 
-**Option 3. Enable filesystem tracing for this app.** In `.sandstorm/sandstorm-pkgdef.capnp`, look for this
-line, which disables tracing.
+**Option 3. Enable filesystem tracing for this app.** In `.sandstorm/sandstorm-pkgdef.capnp`, look for the
+`alwaysInclude` line, which will look something like this.
 
 ```bash
-alwaysInclude = [ "." ] ,
+  alwaysInclude = ...
 ```
 
-Replace it with this line, which enables tracing.
+Above it, you should insert a `fileList` line like this. Note that if there already _is_ a `fileList
+= ...` line, then tracing is already enabled.
 
 ```bash
-alwaysInclude = [ ],
+  fileList = "sandstorm-files.list",
 ```
 
 Additionally, look for the line starting with `sourceMap = `. Within that section, make sure that this

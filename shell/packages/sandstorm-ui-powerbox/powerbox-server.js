@@ -153,7 +153,7 @@ Meteor.methods({
 
     const descriptor = encodePowerboxDescriptor({
       tags: [
-        { id: "15831515641881813735",
+        { id: Grain.UiView.typeId,
           value: Capnp.serialize(Grain.UiView.PowerboxTag, { metadata, title }),
         },
       ],

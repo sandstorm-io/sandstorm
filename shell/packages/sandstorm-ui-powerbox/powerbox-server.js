@@ -112,6 +112,69 @@ Meteor.methods({
     const sturdyRef = waitPromise(saveFrontendRef(frontendRefVariety, apiTokenOwner, requirements)).sturdyRef.toString();
     return { sturdyRef, descriptor };
   },
+
+  fulfillUiViewRequest(identityId, grainId, petname, roleAssignment, saveLabel, ownerGrainId) {
+    check(identityId, String);
+    check(ownerGrainId, String);
+
+    const db = this.connection.sandstormDb;
+    if (!this.userId || !db.userHasIdentity(this.userId, identityId)) {
+      throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
+    }
+
+    const provider = {
+      identityId,
+      accountId: this.userId,
+    };
+
+    const grain = db.getGrain(grainId);
+    if (!grain) {
+      throw new Meteor.Error(404, "Grain not found: ", grainId);
+    }
+
+    let title = grain.title;
+    if (grain.userId !== this.userId) {
+      const sharerToken = db.collections.apiTokens.findOne({
+        grainId: grainId,
+        "owner.user.identityId": identityId,
+      }, {
+        sort: {
+          lastUsed: -1,
+        },
+      });
+      if (sharerToken) {
+        title = sharerToken.owner.user.title;
+      } else {
+        title = "shared grain";
+      }
+    }
+
+    const metadata = db.getDenormalizedGrainInfo(grainId);
+
+    const descriptor = encodePowerboxDescriptor({
+      tags: [
+        { id: "15831515641881813735",
+          value: Capnp.serialize(Grain.UiView.PowerboxTag, { metadata, title }),
+        },
+      ],
+    });
+
+    const owner = {
+      grain: {
+        grainId: ownerGrainId,
+        saveLabel: saveLabel,
+        introducerIdentity: identityId,
+      },
+    };
+
+    const result = SandstormPermissions.createNewApiToken(
+        db, provider, grainId, petname, roleAssignment, owner);
+
+    return {
+      sturdyRef: result.token,
+      descriptor,
+    };
+  },
 });
 
 class PowerboxOption {
@@ -200,8 +263,12 @@ specialCaseTypes[Grain.UiView.typeId] = function (db, userId, value) {
 
   // TODO(someday): Allow `value` to specify app IDs to filter for.
 
-  const sharedGrainIds = db.userApiTokens(userId).map(token => token.grainId);
-  const ownedGrainIds = Grains.find({ userId: userId }, { fields: { _id: 1 } }).map(grain => grain._id);
+  const sharedGrainIds = db.userApiTokens(userId).fetch()
+      .filter(token => !token.trashed)
+      .map(token => token.grainId);
+  const ownedGrainIds = db.userGrains(userId).fetch()
+      .filter(grain => !grain.trashed)
+      .map(grain => grain._id);
 
   return _.uniq(sharedGrainIds.concat(ownedGrainIds)).map(grainId => {
     return new PowerboxOption({

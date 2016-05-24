@@ -1580,6 +1580,11 @@ Meteor.methods({
 
   newApiToken: function (provider, grainId, petname, roleAssignment, owner, unauthenticated) {
     check(provider, Match.OneOf({ identityId: String }, { rawParentToken: String }));
+    if (!owner.user && !owner.webkey) {
+      throw new Meteor.Error(403,
+                             "'webkey' and 'user' are the only allowed owners in newApiToken()");
+    }
+
     // other check()s happen in SandstormPermissions.createNewApiToken().
     const db = this.connection.sandstormDb;
     if (provider.identityId) {

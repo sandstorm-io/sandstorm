@@ -62,38 +62,27 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
   completeUiView(roleAssignment) {
     const fulfillingProvider = this._selectedProvider.get();
     if (fulfillingProvider.type === "frontendref-uiview") {
-      const fulfillingGrainId = fulfillingProvider.grainId;
       const fulfillingGrainTitle = fulfillingProvider.title;
-
       const saveLabel = this._requestInfo.saveLabel || { defaultText: fulfillingGrainTitle };
-      const owner = {
-        grain: {
-          grainId: this._requestInfo.grainId,
-          saveLabel: saveLabel,
-          introducerIdentity: this._requestInfo.identityId,
-        },
-      };
-      const provider = {
-        identityId: this._requestInfo.identityId,
-      };
-      Meteor.call("newApiToken",
-        provider,
-        fulfillingGrainId,
+      Meteor.call(
+        "fulfillUiViewRequest",
+        this._requestInfo.identityId,
+        fulfillingProvider.grainId,
         fulfillingGrainTitle, // petname: for UiViews, just use the grain title.
         roleAssignment,
-        owner,
+        saveLabel,
+        this._requestInfo.grainId,
         (err, result) => {
           if (err) {
             console.log("error:", err);
             this._error.set(err.toString());
           } else {
-            const apiToken = result.token;
+            const apiToken = result.sturdyRef;
             this._completed = true;
             this._requestInfo.source.postMessage({
               rpcId: this._requestInfo.rpcId,
               token: apiToken,
-              // encoded/packed/base64url of (tags = [(id = 15831515641881813735)])
-              descriptor: "EAZQAQEAABEBF1EEAQH_5-Jn6pjXtNsAAAA",
+              descriptor: result.descriptor,
             }, this._requestInfo.origin);
             // Completion event closes popup.
             this._requestInfo.onCompleted();

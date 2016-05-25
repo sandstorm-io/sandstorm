@@ -174,32 +174,43 @@ bash-4.3$ /var/busybox sh
 $ ls  # will work now, since it comes from busybox
 ```
 
-**Option 3. Enable filesystem tracing for this app.** In `.sandstorm/sandstorm-pkgdef.capnp`, look for the
-`alwaysInclude` line, which will look something like this.
+**Option 3. Make the full Linux VM filesystem available to the app.** Pro: You get the greatest
+flexibility by having access to all commands installed within the vagrant-spk VM filesystem. Con:
+These steps typically prevent `vagrant-spk pack` from working properly, so you will either need to
+undo these changes once you are done debugging, or take further steps to make sure filesystem
+tracing is properly enabled for your app.
+
+In `.sandstorm/sandstorm-pkgdef.capnp`, look for the `sourceMap` section, whose first line will look
+something like this.
 
 ```bash
-  alwaysInclude = ...
+  sourceMap = ...
 ```
 
-Above it, you should insert a `fileList` line like this. Note that if there already _is_ a `fileList
-= ...` line, then tracing is already enabled.
-
-```bash
-  fileList = "sandstorm-files.list",
-```
-
-Additionally, look for the line starting with `sourceMap = `. Within that section, make sure that this
-line is present. If not, you should add it.
+Within that section, make sure that the root filesystem is available. You can add it by including
+this snippet, typically as the first item in the list.
 
 ```bash
       ( sourcePath = "/" ),
 ```
 
-Finally, look for the terminal window where you are running `vagrant-spk dev`. Use Ctrl-C to terminate
-it, then run it again.
+Start `vagrant-spk dev` freshly, stopping it if required. You can do that by finding the terminal
+window where you are running `vagrant-spk dev` and pressing Ctrl-C to terminate it. Then run it
+again.
 
-This will dramatically bloat your sandstorm-files.list, so I recommend you **undo this change before
-running spk pack**.
+Now `vagrant-spk enter-grain` will work as normal for your app.
+
+You should typically **undo this change to sourceMap before running spk pack**. If you retain these
+changes, your package will probably fail to pack with a "permission denied" error, fail to include
+all its files, be absurdly large, or include sensitive files. If the app does not include all its
+files in the package, then when end-users run the SPK, the app will be broken. If the app is too
+large, users will wait a long time to download the package. If you include sensitive files, you
+might share your Sandstorm package's private keys, or other encryption keys like SSH or GPG keys,
+resulting in anyone being able to take control of resources that belong to you. Therefore, we ask
+you to please definitely **remove the new sourcePath when you are done debugging**.
+
+It is possible to safely enable tracing for an app; if you want to do that, email the [sandstorm-dev
+group](https://groups.google.com/forum/#!forum/sandstorm-dev) for help.
 
 ### Installing and using command-line debugging tools like MySQL client
 

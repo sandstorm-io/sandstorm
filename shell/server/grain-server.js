@@ -524,7 +524,7 @@ Meteor.methods({
             roleAssignment, { webkey: { forSharing: true } });
           const url = origin + "/shared/" + result.token;
           const html = message.html + "<br><br>" +
-              emailLinkWithInlineStyle(url, "Open Shared Grain") +
+              emailLinkWithInlineStyle(url, "Open") +
               "<div style='font-size:8pt;font-style:italic;color:gray'>" +
               "Note: If you forward this email to other people, they will be able to access " +
               "the share as well. To prevent this, remove the button before forwarding.</div>";
@@ -571,7 +571,7 @@ Meteor.methods({
               }
 
               const html = message.html + "<br><br>" +
-                  emailLinkWithInlineStyle(url, "Open Shared Grain") +
+                  emailLinkWithInlineStyle(url, "Open") +
                   "<div style='font-size:8pt;font-style:italic;color:gray'>" +
                   "Note: You will need to log in with your " + loginNote +
                   " to access this grain.";

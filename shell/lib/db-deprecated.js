@@ -64,6 +64,8 @@ if (Meteor.isServer) {
     connection.sandstormDb = globalDb;
   });
   SandstormDb.periodicCleanup(5 * 60 * 1000, SandstormPermissions.cleanupSelfDestructing(globalDb));
+  SandstormDb.periodicCleanup(10 * 60 * 1000,
+                              SandstormPermissions.cleanupClientPowerboxRequests(globalDb));
   SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
     SandstormAutoupdateApps.updateAppIndex(globalDb);
   });

@@ -1567,6 +1567,16 @@ SandstormPermissions.cleanupSelfDestructing = function (db) {
   };
 };
 
+SandstormPermissions.cleanupClientPowerboxRequests = function (db) {
+  return function () {
+    const tenMinutesAgo = new Date(Date.now() - 1000 * 60 * 10);
+    db.removeApiTokens({
+      "owner.clientPowerboxRequest": { $exists: true },
+      created: { $lt: tenMinutesAgo },
+    });
+  };
+};
+
 Meteor.methods({
   transitiveShares: function (identityId, grainId) {
     check(identityId, String);

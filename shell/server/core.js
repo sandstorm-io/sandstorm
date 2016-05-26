@@ -28,10 +28,11 @@ class SandstormCoreImpl {
     this.grainId = grainId;
   }
 
-  restore(sturdyRef, requiredPermissions) {
-    const _this = this;
+  claimRequest(sturdyRef, requiredPermissions) {
     return inMeteor(() => {
       const hashedSturdyRef = hashSturdyRef(sturdyRef);
+
+      // TODO once apps have switch over to the new powerbox flow, use "owner.clientPowerboxRequest"
       const token = ApiTokens.findOne({
         _id: hashedSturdyRef,
         "owner.grain.grainId": this.grainId,
@@ -48,21 +49,38 @@ class SandstormCoreImpl {
           permissionsHeld: {
             permissions: requiredPermissions,
             identityId: token.owner.grain.introducerIdentity,
-            grainId: _this.grainId,
+            grainId: this.grainId,
           },
         });
       }
 
       return restoreInternal(sturdyRef,
-                             { grain: Match.ObjectIncluding({ grainId: _this.grainId }) },
-                             requirements, hashedSturdyRef);
+                             { grain: Match.ObjectIncluding({ grainId: this.grainId }) },
+                             requirements, hashedSturdyRef, true);
+    });
+  }
+
+  restore(sturdyRef) {
+    return inMeteor(() => {
+      const hashedSturdyRef = hashSturdyRef(sturdyRef);
+      const token = ApiTokens.findOne({
+        _id: hashedSturdyRef,
+        "owner.grain.grainId": this.grainId,
+      });
+
+      if (!token) {
+        throw new Error("no such token");
+      }
+
+      return restoreInternal(sturdyRef,
+                             { grain: Match.ObjectIncluding({ grainId: this.grainId }) },
+                             [], hashedSturdyRef);
     });
   }
 
   drop(sturdyRef) {
-    const _this = this;
     return inMeteor(() => {
-      return dropInternal(sturdyRef, { grain: Match.ObjectIncluding({ grainId: _this.grainId }) });
+      return dropInternal(sturdyRef, { grain: Match.ObjectIncluding({ grainId: this.grainId }) });
     });
   }
 
@@ -312,7 +330,7 @@ checkRequirements = (requirements) => {
   return true;
 };
 
-restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
+restoreInternal = (originalToken, ownerPattern, requirements, tokenId, saveByCopy) => {
   // Restores the token `originalToken`, which is a Buffer.
   //
   // `ownerPattern` is a match pattern (i.e. used with check()) that the token's owner must match.
@@ -323,6 +341,11 @@ restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
   //
   // `tokenId` is optional. If specified, it should be hashSturdyRef(originalToken); only specify
   // it if you happen to have computed this already.
+  //
+  // By default, saving the returned capability will create a child of `originalToken`. However,
+  // if the optional `saveByCopy` parameter is set to `true`, then saving will yield a sibling
+  // of `originalToken`, with all fields other than `_id`, `owner`, and `created` copied, and with
+  // the new `requirements` appended.
   //
   // (When the token turns out to have a parent, this function will call itself recursively. When
   // it does, `originalToken` stays the same, but `tokenId` is replaced with the parent. This is
@@ -367,7 +390,7 @@ restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
   if (token.parentToken) {
     // A token which chains to some parent token.  Restore the parent token (possibly recursively),
     // checking requirements on the way up.
-    return restoreInternal(originalToken, Match.Any, requirements, token.parentToken);
+    return restoreInternal(originalToken, Match.Any, requirements, token.parentToken, saveByCopy);
   }
 
   // Check the passed-in `requirements`.
@@ -383,8 +406,10 @@ restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
   const persistentMethods = {
     save(params) {
       return inMeteor(() => {
-        const sturdyRef = new Buffer(makeChildTokenInternal(
-            originalToken, params.sealFor, requirements, token));
+        const sturdyRefString = saveByCopy
+            ? saveByCopyInternal(originalToken, params.sealFor, requirements, token)
+            : makeChildTokenInternal(originalToken, params.sealFor, requirements, token);
+        const sturdyRef = new Buffer(sturdyRefString);
         return { sturdyRef };
       });
     },
@@ -469,6 +494,27 @@ function dropInternal(sturdyRef, ownerPattern) {
   } else {
     throw new Error("Unknown token type.");
   }
+}
+
+function saveByCopyInternal(rawOriginalToken, owner, requirements, tokenInfo) {
+  const hashedOriginal = hashSturdyRef(rawOriginalToken);
+  tokenInfo = tokenInfo || ApiTokens.findOne(hashedOriginal);
+  if (!tokenInfo) {
+    throw new Error("parent token doesn't exist");
+  }
+
+  const sturdyRef = generateSturdyRef();
+  const hashedSturdyRef = hashSturdyRef(sturdyRef);
+
+  const newTokenInfo = _.clone(tokenInfo);
+  newTokenInfo._id = hashedSturdyRef;
+  newTokenInfo.owner = owner;
+  newTokenInfo.created = new Date();
+  newTokenInfo.requirements = (tokenInfo.requirements || []).concat(requirements);
+
+  ApiTokens.insert(newTokenInfo);
+
+  return sturdyRef;
 }
 
 function makeChildTokenInternal(rawParentToken, owner, requirements, tokenInfo) {

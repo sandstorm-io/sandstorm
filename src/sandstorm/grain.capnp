@@ -706,7 +706,8 @@ interface SessionContext {
   #
   # The capability is implicitly tied to the user as if via `tieToUser()`.
 
-  request @3 (query :List(PowerboxDescriptor)) -> (cap :Capability, descriptor :PowerboxDescriptor);
+  request @3 (query :List(PowerboxDescriptor), requiredPermissions :PermissionSet)
+          -> (cap :Capability, descriptor :PowerboxDescriptor);
   # Although this method exists, it is unimplemented and currently you are meant to use the
   # postMessage api to get a token, and then restore that token with SandstormApi.restore().
   #

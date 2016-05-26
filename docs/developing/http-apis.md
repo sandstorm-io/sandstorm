@@ -176,10 +176,7 @@ information about the API and possibly offer the ability to explore the API and 
 for debugging purposes. As of this writing, these features are not yet implemented.
 
 The part of the webkey before the `#` is the API endpoint for the server (in this case, for
-alpha.sandstorm.io). After the `#` is the API token. So, to make a request to the webkey specified
-above, you might use the following `curl` command:
-
-    curl -H "Authorization: Bearer 49Np9sqkYV4g_FpOQk1p0j1yJlvoHrZm9SVhQt7H2-9" https://alpha-api.sandstorm.io
+alpha.sandstorm.io). After the `#` is the API token.
 
 ## How to provide the API token with a request
 

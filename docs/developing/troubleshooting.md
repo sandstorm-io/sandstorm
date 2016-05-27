@@ -13,6 +13,12 @@ language-specific guide pages, namely:
 * [Ruby on Rails](raw-ruby-on-rails.md)
 * [Pure client apps](raw-pure-client-apps.md)
 
+## Getting a shell in the context of the grain
+
+`vagrant-spk enter-grain` allows you to run a shell (e.g. `bash`) in the context of a grain. This can
+illuminate why an app is behaving in a particular way. For details and limitations, read [the
+docs about the `vagrant-spk enter-grain` command](../vagrant-spk/debugging.md).
+
 ## Clicking a link in the app does not open the link
 
 Sandstorm apps cannot navigate the user away from the app. Therefore, app

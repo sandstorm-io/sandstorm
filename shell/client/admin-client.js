@@ -1279,7 +1279,7 @@ const newAdminRoute = RouteController.extend({
   },
 
   action: function () {
-    const testWebsocket = function() {
+    const testWebsocket = function () {
       if (Meteor &&
           Meteor.connection &&
           Meteor.connection._stream &&
@@ -1292,13 +1292,15 @@ const newAdminRoute = RouteController.extend({
       }
     };
 
-    const testWildcardHost = function() {
+    const testWildcardHost = function () {
       if (Session.get("alreadyTestedWildcardHost")) {
         return;
       }
+
       if (Session.get("alreadyBeganTestingWildcardHost")) {
         return;
       }
+
       Session.set("alreadyBeganTestingWildcardHost", true);
 
       HTTP.call(
@@ -1326,6 +1328,7 @@ const newAdminRoute = RouteController.extend({
               looksGood = false;
             }
           }
+
           Session.set("wildcardHostWorks", looksGood);
         });
     };

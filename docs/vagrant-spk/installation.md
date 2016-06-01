@@ -76,11 +76,17 @@ Then you need to install Vagrant by doing the following.
 
 ## Ensure VirtualBox is installed
 
-In this tutorial, we use VirtualBox to emulate a computer on which we run
-Linux, controlled via Vagrant.
+In this tutorial, we use VirtualBox to emulate a computer on which we run Linux, controlled via
+Vagrant.
 
-To check if it is installed, in the terminal, type the following and press
-enter:
+**Windows users:** To check if VirtualBox is properly installed on Windows systems, press the
+Windows key on your keyboard. This should open a program launcher. Type "virtualbox" into the
+program launcher. If you see a program you can launch whose name resembles "Oracle VirtualBox", then
+you can can skip to the next section. If not, then you will need to keep reading this section and
+install VirtualBox.
+
+**Mac OS or Linux users:** To check if VirtualBox is installed properly on Mac OS or Linux systems,
+in the terminal, type the following and press enter:
 
 ```bash
 VirtualBox --help
@@ -102,11 +108,11 @@ If you saw instead:
 VirtualBox: Command not found.
 ```
 
-Then you need to install VirtualBox by doing following:
+**All operating systems:** To install VirtualBox, you can do the following:
 
 * Visit the [VirtualBox downloads page](https://www.virtualbox.org/wiki/Downloads)
 * In the **top**, underneath **VirtualBox platform packages**, find the package for your operating system. Click the link, download, and install it.
-* Once you are done with that, go to the top of this section and make sure you can see the VirtualBox help output.
+* Once you are done with that, go to the top of this section and make sure VirtualBox is installed.
 
 ## No need to install Sandstorm directly
 

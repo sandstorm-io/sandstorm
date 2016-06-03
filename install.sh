@@ -361,9 +361,9 @@ rerun_script_as_root() {
     # Probably ran like "bash install.sh" or "./install.sh".
     echo "Re-running script as root..."
     if [ ${#ORIGINAL_ARGS[@]} = 0 ]; then
-      exec sudo "$@" $ENVVARS bash "$SCRIPT_NAME"
+      exec sudo $ENVVARS bash "$SCRIPT_NAME"
     else
-      exec sudo "$@" $ENVVARS bash "$SCRIPT_NAME" "${ORIGINAL_ARGS[@]}"
+      exec sudo $ENVVARS bash "$SCRIPT_NAME" "${ORIGINAL_ARGS[@]}"
     fi
   fi
 

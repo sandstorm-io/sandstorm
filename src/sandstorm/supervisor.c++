@@ -1820,7 +1820,7 @@ public:
 
   kj::Promise<void> claimRequest(ClaimRequestContext context) override {
     auto req = sandstormCore.claimRequestRequest();
-    req.setToken(context.getParams().getRequestToken());
+    req.setRequestToken(context.getParams().getRequestToken());
     req.setRequiredPermissions(context.getParams().getRequiredPermissions());
     return req.send().then([context](auto args) mutable -> void {
       context.getResults().setCap(args.getCap());

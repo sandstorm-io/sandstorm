@@ -19,208 +19,7 @@
 $import "/capnp/c++.capnp".namespace("sandstorm");
 
 using Util = import "util.capnp";
-
-# ========================================================================================
-# Powerbox
-#
-# TODO(cleanup):  Put in separate file?
-#
-# The powerbox is part of the Sandstorm UI which allows users to connect applications to each
-# other. There are two main modes in which a powerbox interaction can be driven: "request" and
-# "offer".
-#
-# In "request" mode, an app initiates the powerbox by requesting to receive a capability matching
-# some particular criteria using `SessionContext.request()` (or through the client-side
-# postMessage() API, described in the documentation for `SessionContext.request()`). The user is
-# presented with a list of other grains of theirs which might be able to fulfill this request and
-# asked to choose one. Other grains initially register their ability to answer certain requests
-# by filling in the powerbox fields of `UiView.ViewInfo`. When the user chooses a grain,
-# `UiView.newRequestSession()` is called on the providing grain and the resulting UI session is
-# displayed embedded in the powerbox. The providing grain can render a UI which prompts the user
-# for additional details if needed, or implements some sort of additional picker. Once the grain
-# knows which capability to provide, it calls `SessionContext.provide()` to fulfill the original
-# request.
-#
-# In "offer" mode, an app initiates the powerbox by calling `SessionContext.offer()` in a normal,
-# non-powerbox session, to indicate that it wishes to offer some capability to the current user
-# for use in other apps. The user is presented with a list of apps and grains that are able to
-# accept this offer. Grains can register interest in receiving offers by filling in the powerbox
-# metadata in `UiView.ViewInfo`. Apps can also indicate in their manifest that it makes sense for a
-# user to create a whole new grain to accept a powerbox offer. In either case, a session is created
-# using `UiView.newOfferSession()`.
-
-struct PowerboxDescriptor {
-  # Describes properties of capabilities exported by the powerbox, or capabilities requested
-  # through the powerbox.
-  #
-  # A PowerboxDescriptor specified individually describes the properties of a single object or
-  # capability. It is a conjunction of "tags" describing different aspects of the object, such as
-  # which interfaces it implements.
-  #
-  # Often, descriptors come in a list, i.e. List(PowerboxDescriptor). Such a list is usually a
-  # disjunction describing one of two things:
-  # - A powerbox "query" is a list of descriptors used in a request to indicate what kinds of
-  #   objects the requesting app is looking for. (In a powerbox "offer" interaction, the "query"
-  #   is the list of descriptors that the accepting app indicated it accepts in its `ViewInfo`.)
-  # - A powerbox "provision" is a list of descriptors used to describe what kinds of objects an
-  #   app provides, which can be requested by other apps. (In a powerbox "offer" interaction, the
-  #   "provision" consists of the single descriptor that the offering app passed to `offer()`.)
-  #
-  # For a query to match a provision, at least one descriptor in the query must match at least one
-  # descriptor in the provision (with an acceptable `matchQuality`; see below).
-  #
-  # Note that, in some use cases, where the "object" being granted is in fact just static data,
-  # that data may be entirely encoded in tags, and the object itself may be a null capability.
-  # For example, a powerbox request for a "contact" may result in a null capability with a tag
-  # containing the contact details. Apps are free to define such conventions as they see fit; it
-  # makes no difference to the system.
-
-  tags @0 :List(Tag);
-  # List of tags. For a query descriptor to match a provision descriptor, every tag in the query
-  # must be matched by at least one tag in the provision. If the query tags list is empty, then
-  # the query is asking for any capability at all; this occasionally makes sense in "meta" apps
-  # that organize or communicate general capabilities.
-
-  struct Tag {
-    id @0 :UInt64;
-    # A unique ID naming the tag. All such IDs should be created using `capnp id`.
-    #
-    # It is up to the developer who creates a new ID to decide what type the tag's `value` should
-    # have (if any). This should be documented where the ID is defined, e.g.:
-    #
-    #     const preferredFrobberTag :UInt64 = 0xa170f46ec4b17829;
-    #     # The value should be of type `Text` naming the object's preferred frobber.
-    #
-    # By convention, however, a tag ID is *usually* a Cap'n Proto type ID, with the following
-    # meanings:
-    #
-    # * If `id` is the Cap'n Proto type ID of an interface, it indicates that the described
-    #   powerbox capability will implement this interface. The interface's documentation may define
-    #   what `value` should be in this case; otherwise, it should be null. (For example, a "file"
-    #   interface might define that the `value` should be some sort of type descriptor, such as a
-    #   MIME type. Most interfaces, however, will not define any `value`; the mere fact that the
-    #   object implements the interface is the important part.)
-    #
-    # * If `id` is the type ID of a struct type, then `value` is an instance of that struct type.
-    #   The struct type's documentation describes how the tag is to be interpreted.
-    #
-    # Note that these are merely conventions; nothing in the system actually expects tag IDs to
-    # match Cap'n Proto type IDs, except possibly debugging tools.
-
-    value @1 :AnyPointer;
-    # An arbitrary value expressing additional metadata related to the tag.
-    #
-    # This is optional. "Boolean" tags (where all that matters is that they are present or
-    # absent) -- including tags that merely indicate that an interface is implemented -- may leave
-    # this field null.
-    #
-    # When "matching" two descriptors (one of which is a "query", and the other of which describes
-    # a "provision"), the following algorithm is used to decide if they match:
-    #
-    # * A null pointer matches any value (essentially, null = wildcard).
-    # * Pointers pointing to different object types (e.g. struct vs. list) do not match.
-    # * Two struct pointers match if the primitive fields in both structs have identical values
-    #   (bit for bit) and the corresponding pointer fields match by applying this algorithm
-    #   recursively.
-    # * Two lists of non-struct elements match if their contents match exactly.
-    # * Lists of structs are treated as *sets*. They match if every element in the query list
-    #   matches at least one element in the provider list. Order of elements is irrelevant.
-    #
-    # The above algorithm may appear quirky, but is designed to cover common use cases while being
-    # relatively simple to implement. Consider, for example, a powerbox query seeking to match
-    # "video files". All "files" are just byte blobs; file managers probably don't implement
-    # different interfaces for different file types. So, you will want to use tags here. For
-    # example, a MIME type tag might be defined as:
-    #
-    #     struct MimeType {
-    #       category @0 :Text;
-    #       subtype @1 :Text;
-    #       tree @2 :Text;    // e.g. "vnd"
-    #       suffix @3 :Text;  // e.g. "xml"
-    #       params @4 :List(Param);
-    #       struct Param {
-    #         name @0 :Text;
-    #         value @1 :Text;
-    #       }
-    #     }
-    #
-    # You might then express your query with a tag with `id` = MimeType's type ID and value =
-    # `(category = "video")`, which effectively translates to a query for "video/*". (Your query
-    # descriptor would have a second tag to indicate what Cap'n Proto interface the resulting
-    # capability should implement.)
-  }
-
-  quality @1 :MatchQuality = acceptable;
-  # Use to indicate a preference or anti-preference for this descriptor compared to others in the
-  # same list.
-  #
-  # When a descriptor in the query matches multiple descriptors in the provision, or vice versa,
-  # exactly one of the matches is chosen to decide the overall `matchQuality`, as follows:
-  # - If one matching descriptor is strictly less-specific than some other in the match set, it is
-  #   discarded. (A descriptor A is strictly less-specific than a descriptor B if every possible
-  #   match for B would also match A.)
-  # - Once all less-specific descriptors are eliminated, of those that remains, the descriptor with
-  #   the best `matchQuality` is chosen.
-
-  enum MatchQuality {
-    # The values below are listed in order from "best" to "worst". Note that this ordering does NOT
-    # correspond to the numeric order. Also note that new values could be introduced in the future.
-
-    preferred @1;
-    # Indicates that this match should be preferred over other options. The powerbox UI may
-    # encourage the user to choose preferred options. For example, a document editor that uses
-    # the powerbox to import document files might indicate that it accepts docx format but prefers
-    # odf, perhaps because its importer for the latter is higher-quality. Similarly, it might
-    # publish powerbox capabilities to export as either format, but again mark odf as preferred.
-    #
-    # Note `preferred` is only meaningful if the descriptor list contains other descriptors that
-    # are marked `acceptable`. An app cannot promote itself over other apps by marking its
-    # provisions as `preferred`. (A requesting app could indicate a preference for a particular
-    # providing app, though, if the providing app provides a unique tag that the requestor can
-    # mark as preferred.)
-
-    acceptable @0;
-    # Indicates that this is a fine match which should be offered to the user as a regular option.
-    # This is the default.
-
-    # TODO(someday): mightWork @3;
-    # Indicates that the match might have useful results but there is a non-negligible priority
-    # that it won't work, and this option should be offered to the user only as an advanced option.
-
-    unacceptable @2;
-    # "Unacceptable" matches are expected *not* to work and therefore will not be offered to the
-    # user.
-    #
-    # Note that `unacceptable` can be used to filter out a subset of matches of a broader
-    # descriptor by taking advantage of the fact that the powerbox prefers more-specific matches
-    # over less-specific ones. For instance, you could query for "files except video files" by
-    # specifying a query with two descriptors: a descriptor for "implements File" with quality
-    # "acceptable" and a second descriptor for "implements File with type = video" with quality
-    # "unacceptable".
-  }
-}
-
-struct PowerboxDisplayInfo {
-  # Information about a powerbox link (i.e., the result of a powerbox interaction) which could be
-  # displayed to the user when auditing powerbox-granted capabilities.
-
-  title @0 :Util.LocalizedText;
-  # A short, human-readable noun phrase describing the object this capability represents. If null,
-  # the grain's title will be used -- this is appropriate if the capability effectively represents
-  # the whole grain.
-  #
-  # The title is used, for example, when the user is selecting multiple capabilities, building a
-  # list.
-
-  verbPhrase @1 :Util.LocalizedText;
-  # Verb phrase describing what the holder of this capability can do to the grain, e.g.
-  # "can edit".  This may be displayed in the sharing UI to describe a connection between two
-  # grains.
-
-  description @2 :Util.LocalizedText;
-  # Long-form description of what the capability represents.  Should be roughly a paragraph that
-  # could be displayed e.g. in a tooltip.
-}
+using Powerbox = import "powerbox.capnp";
 
 # ========================================================================================
 # Runtime interface
@@ -242,7 +41,7 @@ interface SandstormApi(AppObjectId) {
   # These powerbox-related methods were never implemented. Eventually it was decided that they
   # specified the wrong model.
 
-  shareCap @2 (cap :Capability, displayInfo :PowerboxDisplayInfo)
+  shareCap @2 (cap :Capability, displayInfo :Powerbox.PowerboxDisplayInfo)
            -> (sharedCap :Capability, link :SharingLink);
   # Share a capability, so that it may safely be sent to another user.  `sharedCap` is a wrapper
   # (membrane) around `cap` which can have a petname assigned and can be revoked via `link`.  The
@@ -287,7 +86,7 @@ interface SandstormApi(AppObjectId) {
   # capability should implement the same interfaces as the one you saved originally, so you can
   # downcast it as appropriate.
 
-  claimRequest @4 (requestToken :Data, requiredPermissions :PermissionSet) -> (cap :Capability);
+  claimRequest @4 (requestToken :Text, requiredPermissions :PermissionSet) -> (cap :Capability);
   # When a powerbox request is initiated client-side via the postMessage API and the user completes
   # the request flow, the Sandstorm shell responds to the requesting app with a token. This token
   # itself is not a SturdyRef, but can be exchanged server-side for a capability which in turn
@@ -362,29 +161,6 @@ interface SandstormApi(AppObjectId) {
   # TODO(someday): We could make `handle` be persistent. If the app persists it -- and if
   #   `notification` is persistent -- we would automatically restart the app after an unexpected
   #   failure.
-}
-
-struct DenormalizedGrainMetadata {
-  # The metadata that we need to present contextual information for shared grains (in particular,
-  # information about the app providing that grain, like icon and title).
-
-  appTitle @0 :Util.LocalizedText;
-  # A copy of the app name for the corresponding UIView for presentation in the grain list.
-
-  union {
-    icon :group {
-      format @1 :Text;
-      # Icon asset format, if present.  One of "png" or "svg"
-
-      assetId @2 :Text;
-      # The asset ID associated with the grain-size icon for this token
-
-      assetId2xDpi @3 :Text;
-      # If present, the asset ID for the equivalent asset as assetId at twice-resolution
-    }
-    appId @4 :Text;
-    # App ID, needed to generate a favicon if no icon is provided.
-  }
 }
 
 interface UiView @0xdbb4d798ea67e2e7 {
@@ -491,24 +267,49 @@ interface UiView @0xdbb4d798ea67e2e7 {
     # UI should not offer Alice the ability to share write access, because she doesn't have it in
     # the first place.  The sharing UI figures out what Alice has by examining `deniedPermissions`.
 
-    matchRequests @3 :List(PowerboxDescriptor);
+    matchRequests @3 :List(Powerbox.PowerboxDescriptor);
     # Indicates what kinds of powerbox requests this grain may be able to fulfill. If the grain
     # is chosen by the user during a powerbox request, then `newRequestSession()` will be called
     # to set up the embedded UI session.
 
-    matchOffers @4 :List(PowerboxDescriptor);
+    matchOffers @4 :List(Powerbox.PowerboxDescriptor);
     # Indicates what kinds of powerbox offers this grain is interested in accepting. If the grain
     # is chosen by the user during a powerbox offer, then `newOfferSession()` will be called
     # to start a session around this.
+
+    appTitle @5 :Util.LocalizedText;
+    # The title of the app of which this grain is an instance.
+
+    grainIconUrls @6 :IconUrls;
+    # Static asset URLs corresponding to Package.Metadata.icons.grain.
+    #
+    # TODO(someday): Currently this field is automatically filled in by the Sandstorm frontend.
+    #  For grains to be able to use it, we'll need to provide a way for them to create static
+    #  assets, e.g.:
+    #
+    #     interface StaticAsset {
+    #         getUrl @0 () -> (url :Text);
+    #         getContent @1 () -> (mimeType :Text, data :Data);
+    #     }
+    #
+    #     SandstormApi {
+    #        createStaticAsset (mimeType :Text, content :Data) -> (asset :StaticAsset);
+    #     }
+
+
+    struct IconUrls {
+       url @0 :Text;
+       # URL of the main icon.
+
+       url2xDpi @1 :Text;
+       # If present, the URL of a double-resolution icon, for high-dpi displays.
+    }
   }
 
   struct PowerboxTag {
-    # Tag to be used in a `PowerboxDescriptor` when requesting a `UiView`.
+    # Tag to be used in a `PowerboxDescriptor` to describe a `UiView`.
 
-    metadata @0 :DenormalizedGrainMetadata;
-    # Information needed to display an app title and icon for this `UiView`.
-
-    title @1 :Text;
+    title @0 :Text;
     # The title of the `UiView` as chosen by the introducer identity.
   }
 
@@ -548,7 +349,7 @@ interface UiView @0xdbb4d798ea67e2e7 {
 
   newRequestSession @2 (userInfo :UserInfo, context :SessionContext,
                         sessionType :UInt64, sessionParams :AnyPointer,
-                        requestInfo :List(PowerboxDescriptor), tabId :Data)
+                        requestInfo :List(Powerbox.PowerboxDescriptor), tabId :Data)
                     -> (session :UiSession);
   # Creates a new session based on a powerbox request. `requestInfo` is the subset of the original
   # request description which matched descriptors that this grain indicated it provides via
@@ -564,7 +365,7 @@ interface UiView @0xdbb4d798ea67e2e7 {
 
   newOfferSession @3 (userInfo :UserInfo, context :SessionContext,
                       sessionType :UInt64, sessionParams :AnyPointer,
-                      offer :Capability, descriptor :PowerboxDescriptor,
+                      offer :Capability, descriptor :Powerbox.PowerboxDescriptor,
                       tabId :Data)
                   -> (session :UiSession);
   # Creates a new session based on a powerbox offer. `offer` is the capability being offered and
@@ -680,7 +481,7 @@ interface SessionContext {
   # for an easier way to make a particular capability auto-revoke if the user's permissions change.
 
   tieToUser @1 (cap :Capability, requiredPermissions :PermissionSet,
-                displayInfo :PowerboxDisplayInfo)
+                displayInfo :Powerbox.PowerboxDisplayInfo)
             -> (tiedCap :Capability);
   # Create a version of `cap` which will automatically stop working if the user no longer holds the
   # permissions indicated by `requiredPermissions` (and starts working again if the user regains
@@ -694,7 +495,7 @@ interface SessionContext {
   # when the user's permissions change and implement it yourself.
 
   offer @2 (cap :Capability, requiredPermissions :PermissionSet,
-            descriptor :PowerboxDescriptor, displayInfo :PowerboxDisplayInfo);
+            descriptor :Powerbox.PowerboxDescriptor, displayInfo :Powerbox.PowerboxDisplayInfo);
   # Offer a capability to the user.  A dialog box will ask the user what they want to do with it.
   # Depending on the type of capability (as indicated by `descriptor`), different options may be
   # provided.  All capabilities will offer the user the option to save the capability to their
@@ -706,8 +507,8 @@ interface SessionContext {
   #
   # The capability is implicitly tied to the user as if via `tieToUser()`.
 
-  request @3 (query :List(PowerboxDescriptor), requiredPermissions :PermissionSet)
-          -> (cap :Capability, descriptor :PowerboxDescriptor);
+  request @3 (query :List(Powerbox.PowerboxDescriptor), requiredPermissions :PermissionSet)
+          -> (cap :Capability, descriptor :Powerbox.PowerboxDescriptor);
   # Although this method exists, it is unimplemented and currently you are meant to use the
   # postMessage api to get a token, and then restore that token with SandstormApi.restore().
   #
@@ -745,7 +546,7 @@ interface SessionContext {
   # }, false)
 
   fulfillRequest @4 (cap :Capability, requiredPermissions :PermissionSet,
-              descriptor :PowerboxDescriptor, displayInfo :PowerboxDisplayInfo);
+              descriptor :Powerbox.PowerboxDescriptor, displayInfo :Powerbox.PowerboxDisplayInfo);
   # For sessions started with `newRequestSession()`, fulfills the original request. If only one
   # capability was requested, the powerbox will close upon `fulfillRequest()` being called. If
   # multiple capabilities were requested, then the powerbox remains open and `fulfillRequest()` may

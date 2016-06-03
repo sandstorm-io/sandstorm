@@ -114,7 +114,12 @@ interface SandstormCore {
   # after restart. In the meantime, the supervisor should queue any RPCs to this interface and
   # retry them after the front-end has reconnected.
 
-  claimRequest @0 (token :Data, requiredPermissions :Grain.PermissionSet) -> (cap :Capability);
+  restore @0 (token :Data) -> (cap :Capability);
+  # Restores an API token to a live capability. Fails if this grain is not the token's owner
+  # (including if the ref has no owner).
+
+  claimRequest @6 (requestToken :Text, requiredPermissions :Grain.PermissionSet)
+               -> (cap :Capability);
   # Restores a client powerbox request token to a live capability, which can then be saved to get
   # a proper sturdyref.
   #
@@ -122,10 +127,6 @@ interface SandstormCore {
   # callee will not only check these requirements, but will automatically ensure that the returned
   # capability has an appropriate `MembraneRequirement` applied; the caller need not concern
   # itself with this.
-
-  restore @6 (token :Data) -> (cap :Capability);
-  # Restores an API token to a live capability. Fails if this grain is not the token's owner
-  # (including if the ref has no owner).
 
   drop @3 (token :Data);
   # Deletes the corresponding API token. See `MainView.drop()` for discussion of dropping.
@@ -228,6 +229,29 @@ interface PersistentHandle extends(SystemPersistent, Util.Handle) {}
 
 interface PersistentOngoingNotification extends(SystemPersistent, Grain.OngoingNotification) {}
 
+struct DenormalizedGrainMetadata {
+  # The metadata that we need to present contextual information for shared grains (in particular,
+  # information about the app providing that grain, like icon and title).
+
+  appTitle @0 :Util.LocalizedText;
+  # A copy of the app name for the corresponding UIView for presentation in the grain list.
+
+  union {
+    icon :group {
+      format @1 :Text;
+      # Icon asset format, if present.  One of "png" or "svg"
+
+      assetId @2 :Text;
+      # The asset ID associated with the grain-size icon for this token
+
+      assetId2xDpi @3 :Text;
+      # If present, the asset ID for the equivalent asset as assetId at twice-resolution
+    }
+    appId @4 :Text;
+    # App ID, needed to generate a favicon if no icon is provided.
+  }
+}
+
 struct ApiTokenOwner {
   # Defines who is permitted to use a particular API token.
 
@@ -300,7 +324,7 @@ struct ApiTokenOwner {
       # Fields below this line are not actually allowed to be passed to save(), but are added
       # internally.
 
-      denormalizedGrainMetadata @8 :Grain.DenormalizedGrainMetadata;
+      denormalizedGrainMetadata @8 :DenormalizedGrainMetadata;
       # Information needed to show the user an app title and icon in the grain list.
 
       userId @6 :Text;

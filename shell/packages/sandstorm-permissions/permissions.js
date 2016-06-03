@@ -1453,6 +1453,11 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
       introducerIdentity: String,
     },
   }, {
+    clientPowerboxRequest: {
+      grainId: String,
+      introducerIdentity: String,
+    },
+  }, {
     frontend: null,
   }));
 

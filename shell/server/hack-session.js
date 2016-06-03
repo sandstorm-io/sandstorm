@@ -57,12 +57,14 @@ SessionContextImpl = class SessionContextImpl {
           descriptor.tags[0] && descriptor.tags[0].id &&
           descriptor.tags[0].id === Grain.UiView.typeId;
       if (isUiView) {
+        // TODO(cleanup): Mabye `SessionContextImpl` should have an `accountId` field.
+        const accountId = (Sessions.findOne({ _id: this.sessionId }) || {}).userId;
         apiTokenOwner = {
           user: {
             identityId: this.identityId,
+            title: globalDb.userGrainTitle(this.grainId, accountId, this.identityId),
             // The following fields will be overwritten by PersistentUiView.save(), so no need to
             // pass them in:
-            //title: "", // This will be replaced by the token's title
             //denormalizedGrainMetadata: {}, // This will look up the package for the grain referenced.
           },
         };

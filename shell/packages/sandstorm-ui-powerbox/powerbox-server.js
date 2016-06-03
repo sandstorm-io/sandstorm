@@ -15,19 +15,20 @@
 // limitations under the License.
 
 const Capnp = Npm.require("capnp");
+const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");
 const Ip = Capnp.importSystem("sandstorm/ip.capnp");
 const Email = Capnp.importSystem("sandstorm/email.capnp");
 
 function encodePowerboxDescriptor(desc) {
-  return Capnp.serializePacked(Grain.PowerboxDescriptor, desc)
+  return Capnp.serializePacked(Powerbox.PowerboxDescriptor, desc)
               .toString("base64")
               .replace(/\+/g, "-")
               .replace(/\//g, "_");
 }
 
 Meteor.methods({
-  newFrontendRef(sessionId, frontendRefVariety, saveLabel) {
+  newFrontendRef(sessionId, frontendRefVariety) {
     // Checks if the requester is an admin, and if so, provides a new frontendref of the desired
     // variety, provided by the requesting user, owned by the grain for this session.
     check(sessionId, String);
@@ -37,10 +38,6 @@ Meteor.methods({
       { emailVerifier: { services: Match.Optional([String]) } },
       { verifiedEmail: { verifierId: Match.Optional(String), address: String } },
     ));
-    check(saveLabel, {
-      defaultText: String,
-      localizations: Match.Optional([{ locale: String, text: String }]),
-    });
 
     const db = this.connection.sandstormDb;
 
@@ -101,9 +98,8 @@ Meteor.methods({
 
     const grainId = session.grainId;
     const apiTokenOwner = {
-      grain: {
+      clientPowerboxRequest: {
         grainId: grainId,
-        saveLabel: saveLabel,
         introducerIdentity: session.identityId,
       },
     };
@@ -113,11 +109,14 @@ Meteor.methods({
     return { sturdyRef, descriptor };
   },
 
-  fulfillUiViewRequest(identityId, grainId, petname, roleAssignment, saveLabel, ownerGrainId) {
+  fulfillUiViewRequest(identityId, grainId, petname, roleAssignment, ownerGrainId) {
+    const db = this.connection.sandstormDb;
     check(identityId, String);
+    check(grainId, String);
+    check(roleAssignment, db.roleAssignmentPattern);
+    check(petname, String);
     check(ownerGrainId, String);
 
-    const db = this.connection.sandstormDb;
     if (!this.userId || !db.userHasIdentity(this.userId, identityId)) {
       throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
     }
@@ -127,42 +126,19 @@ Meteor.methods({
       accountId: this.userId,
     };
 
-    const grain = db.getGrain(grainId);
-    if (!grain) {
-      throw new Meteor.Error(404, "Grain not found: ", grainId);
-    }
-
-    let title = grain.title;
-    if (grain.userId !== this.userId) {
-      const sharerToken = db.collections.apiTokens.findOne({
-        grainId: grainId,
-        "owner.user.identityId": identityId,
-      }, {
-        sort: {
-          lastUsed: -1,
-        },
-      });
-      if (sharerToken) {
-        title = sharerToken.owner.user.title;
-      } else {
-        title = "shared grain";
-      }
-    }
-
-    const metadata = db.getDenormalizedGrainInfo(grainId);
+    const title = db.userGrainTitle(grainId, this.userId, identityId);
 
     const descriptor = encodePowerboxDescriptor({
       tags: [
         { id: Grain.UiView.typeId,
-          value: Capnp.serialize(Grain.UiView.PowerboxTag, { metadata, title }),
+          value: Capnp.serialize(Grain.UiView.PowerboxTag, { title }),
         },
       ],
     });
 
     const owner = {
-      grain: {
+      clientPowerboxRequest: {
         grainId: ownerGrainId,
-        saveLabel: saveLabel,
         introducerIdentity: identityId,
       },
     };
@@ -398,7 +374,7 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
 
       // Note: Node's base64 decoder also accepts URL-safe base64, so no need to translate.
       const descriptor = Capnp.parse(
-          Grain.PowerboxDescriptor,
+          Powerbox.PowerboxDescriptor,
           new Buffer(packedDescriptor, "base64"),
           { packed: true });
 

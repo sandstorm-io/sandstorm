@@ -1215,7 +1215,7 @@ _.extend(SandstormDb.prototype, {
     user = user || Meteor.user();
     if (user && (Meteor.isServer || user.pseudoUsage)) {
       if (Meteor.isClient) {
-        // Filled by pseudo-subscription to "getMyUsage". WARNING: The subscription is currenly
+        // Filled by pseudo-subscription to "getMyUsage". WARNING: The subscription is currently
         // not reactive.
         return user.pseudoUsage;
       } else {
@@ -1603,6 +1603,7 @@ if (Meteor.isServer) {
   const Crypto = Npm.require("crypto");
   const ContentType = Npm.require("content-type");
   const Zlib = Npm.require("zlib");
+  const Url = Npm.require("url");
 
   const replicaNumber = Meteor.settings.replicaNumber || 0;
 
@@ -1802,6 +1803,55 @@ if (Meteor.isServer) {
 
   // Cleanup tokens every hour.
   SandstormDb.periodicCleanup(3600000, cleanupExpiredAssetUploads);
+
+  SandstormDb.prototype.getIconUrls = function (icon) {
+    check(icon, Match.OneOf(undefined, null,
+                            { format: String, assetId: String,
+                              assetId2xDpi: Match.Optional(String), }));
+    const root =
+        Url.parse(process.env.ROOT_URL).protocol + "//" + this.makeWildcardHost("static") + "/";
+
+    result = {};
+    if (icon.assetId) {
+      result.url =  root + icon.assetId;
+    }
+
+    if (icon.assetId2xDpi) {
+      result.assetId2xDpi = root + icon.assetId2xDpi;
+    }
+
+    return result;
+  };
+
+  SandstormDb.prototype.userGrainTitle = function (grainId, accountId, identityId) {
+    check(grainId, String);
+    check(accountId, Match.OneOf(String, undefined, null));
+    check(identityId, String);
+
+    const grain = this.getGrain(grainId);
+    if (!grain) {
+      throw new Error("called userGrainTitle() for a grain that doesn't exist");
+    }
+
+    let title = grain.title;
+    if (grain.userId !== accountId) {
+      const sharerToken = this.collections.apiTokens.findOne({
+        grainId: grainId,
+        "owner.user.identityId": identityId,
+      }, {
+        sort: {
+          lastUsed: -1,
+        },
+      });
+      if (sharerToken) {
+        title = sharerToken.owner.user.title;
+      } else {
+        title = "shared grain";
+      }
+    }
+
+    return title;
+  };
 
   const packageCache = {};
   // Package info is immutable. Let's cache to save on mongo queries.

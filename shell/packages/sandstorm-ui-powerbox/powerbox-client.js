@@ -63,14 +63,12 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     const fulfillingProvider = this._selectedProvider.get();
     if (fulfillingProvider.type === "frontendref-uiview") {
       const fulfillingGrainTitle = fulfillingProvider.title;
-      const saveLabel = this._requestInfo.saveLabel || { defaultText: fulfillingGrainTitle };
       Meteor.call(
         "fulfillUiViewRequest",
         this._requestInfo.identityId,
         fulfillingProvider.grainId,
         fulfillingGrainTitle, // petname: for UiViews, just use the grain title.
         roleAssignment,
-        saveLabel,
         this._requestInfo.grainId,
         (err, result) => {
           if (err) {
@@ -250,12 +248,10 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
   }
 
   completeNewFrontendRef(frontendRef, defaultLabel) {
-    const saveLabel = this._requestInfo.saveLabel || { defaultText: defaultLabel };
 
     Meteor.call("newFrontendRef",
       this._requestInfo.sessionId,
       frontendRef,
-      saveLabel,
       (err, result) => {
         if (err) {
           console.log(err);

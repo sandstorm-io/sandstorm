@@ -32,10 +32,9 @@ class SandstormCoreImpl {
     return inMeteor(() => {
       const hashedSturdyRef = hashSturdyRef(sturdyRef);
 
-      // TODO once apps have switch over to the new powerbox flow, use "owner.clientPowerboxRequest"
       const token = ApiTokens.findOne({
         _id: hashedSturdyRef,
-        "owner.grain.grainId": this.grainId,
+        "owner.clientPowerboxRequest.grainId": this.grainId,
       });
 
       if (!token) {
@@ -44,19 +43,20 @@ class SandstormCoreImpl {
 
       // Honor `requiredPermissions`.
       const requirements = [];
-      if (requiredPermissions && token.owner.grain.introducerIdentity) {
+      if (requiredPermissions && token.owner.clientPowerboxRequest.introducerIdentity) {
         requirements.push({
           permissionsHeld: {
             permissions: requiredPermissions,
-            identityId: token.owner.grain.introducerIdentity,
+            identityId: token.owner.clientPowerboxRequest.introducerIdentity,
             grainId: this.grainId,
           },
         });
       }
 
-      return restoreInternal(sturdyRef,
-                             { grain: Match.ObjectIncluding({ grainId: this.grainId }) },
-                             requirements, hashedSturdyRef, true);
+      return restoreInternal(
+          sturdyRef,
+          { clientPowerboxRequest: Match.ObjectIncluding({ grainId: this.grainId }) },
+          requirements, hashedSturdyRef, true);
     });
   }
 
@@ -176,8 +176,29 @@ class NotificationHandle {
 }
 
 class PersistentUiViewImpl {
-  constructor(persistentMethods) {
+  constructor(persistentMethods, grain) {
+    this._grain = grain;
     _.extend(this, persistentMethods);
+  }
+
+  getViewInfo() {
+    const viewInfo = this._grain.cachedViewInfo;
+    return inMeteor(() => {
+      const pkg = Packages.findOne({ _id: this._grain.packageId });
+      const manifest = pkg.manifest || {};
+      if (!viewInfo.appTitle) {
+        viewInfo.appTitle = manifest.appTitle || {};
+      }
+
+      if (!viewInfo.grainIconUrl) {
+        // TODO(security, now): Do we need to do some kind of filtering here to prevent
+        //   cross-site scripting attacks?
+        const grainIcon = ((manifest.metadata || {}).icons || {}).grain;
+        viewInfo.grainIconUrls = globalDb.getIconUrls(grainIcon);
+      }
+
+      return viewInfo;
+    });
   }
 
   // All other UiView methods are currently unimplemented, which, while not strictly correct,
@@ -185,8 +206,10 @@ class PersistentUiViewImpl {
   // and grains can't call methods on UiViews because they lack the "is human" pseudopermission.
 }
 
-const makePersistentUiView = function (persistentMethods) {
-  return new Capnp.Capability(new PersistentUiViewImpl(persistentMethods), PersistentUiView);
+const makePersistentUiView = function (persistentMethods, grainId) {
+  check(grainId, String);
+  const grain = Grains.findOne({ _id: grainId });
+  return new Capnp.Capability(new PersistentUiViewImpl(persistentMethods, grain), PersistentUiView);
 };
 
 function makeNotificationHandle(notificationId, saved, persistentMethods) {
@@ -456,7 +479,7 @@ restoreInternal = (originalToken, ownerPattern, requirements, tokenId, saveByCop
     // the method calls.  In the future, we may allow grains to restore UiViews that pass along the
     // "is human" pseudopermission (say, to allow an app to proxy all requests to some grain and
     // do some transformation), which will return a different capability.
-    return { cap: makePersistentUiView(persistentMethods) };
+    return { cap: makePersistentUiView(persistentMethods, token.grainId) };
   } else {
     throw new Meteor.Error(500, "Unknown token type. ID: " + token._id);
   }

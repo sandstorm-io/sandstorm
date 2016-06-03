@@ -5,7 +5,7 @@ Cleanup: uninstall_sandstorm
 
 $[run]sudo cat /proc/sys/kernel/unprivileged_userns_clone
 $[slow]0
-$[run]CURL_USER_AGENT=testing bash /vagrant/install.sh
+$[run]CURL_USER_AGENT=testing REPORT=no bash /vagrant/install.sh
 $[slow]How are you going to use this Sandstorm install? [1]$[type]2
 OK to continue? [yes]$[type]
 $[slow]We're going to:

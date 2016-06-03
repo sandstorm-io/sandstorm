@@ -70,10 +70,9 @@ fail() {
   fi
   error "$@"
   echo "" >&2
-  # Temporarily: export REPORT=yes to get the error reporting behavior. Once it seems stable, adjust
-  # the default from disabledfornow to yes.
-  if [ "${REPORT:-disabledfornow}" = "yes" ] ; then
-    if prompt-yesno "Sorry that installation failed. Would it be OK to send an anonymous error report to the sandstorm.io team?
+  # Users can export REPORT=no to avoid the error-reporting behavior, if they need to.
+  if [ "${REPORT:-yes}" = "yes" ] ; then
+    if USE_DEFAULTS=no prompt-yesno "Hmm, installation failed. Would it be OK to send an anonymous error report to the sandstorm.io team so we know something is wrong?
 It would only contain this error code: $error_code" "yes" ; then
       echo "Sending problem report..." >&2
       local BEARER_TOKEN="ZiV1jbwHBPfpIjF3LNFv9-glp53F7KcsvVvljgKxQAL"
@@ -82,14 +81,14 @@ It would only contain this error code: $error_code" "yes" ; then
         dotdotdot_curl \
           --silent \
           --max-time 20 \
-          --data-raw "{\"error_code\":\"$error_code\",\"user-agent\":\"$CURL_USER_AGENT\"}" \
+          --data-binary "{\"error_code\":\"$error_code\",\"user-agent\":\"$CURL_USER_AGENT\"}" \
           -H "Authorization: Bearer $BEARER_TOKEN" \
           -X POST \
           --output "/dev/null" \
           -w '%{http_code}' \
           "$API_ENDPOINT")
       if [ "200" == "$HTTP_STATUS" ] ; then
-        echo "... success." >&2
+        echo "... problem reported successfully. Your installation did not succeed." >&2
       elif [ "000" == "$HTTP_STATUS" ] ; then
         error "Submitting error report failed. Maybe there is a connectivity problem."
       else
@@ -362,9 +361,9 @@ rerun_script_as_root() {
     # Probably ran like "bash install.sh" or "./install.sh".
     echo "Re-running script as root..."
     if [ ${#ORIGINAL_ARGS[@]} = 0 ]; then
-      exec sudo "$@" bash "$SCRIPT_NAME"
+      exec sudo "$@" $ENVVARS bash "$SCRIPT_NAME"
     else
-      exec sudo "$@" bash "$SCRIPT_NAME" "${ORIGINAL_ARGS[@]}"
+      exec sudo "$@" $ENVVARS bash "$SCRIPT_NAME" "${ORIGINAL_ARGS[@]}"
     fi
   fi
 

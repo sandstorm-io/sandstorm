@@ -7,7 +7,7 @@ $[run]sudo cat /proc/sys/kernel/unprivileged_userns_clone
 $[slow]0
 $[run]sudo chattr +i /usr/local/bin && echo now-unwritable
 now-unwritable
-$[run]CURL_USER_AGENT=testing OVERRIDE_SANDCATS_BASE_DOMAIN=sandcats-dev.sandstorm.io OVERRIDE_SANDCATS_API_BASE=https://sandcats-dev-machine.sandstorm.io OVERRIDE_SANDCATS_CURL_PARAMS=-k bash /vagrant/install.sh -i
+$[run]CURL_USER_AGENT=testing REPORT=no OVERRIDE_SANDCATS_BASE_DOMAIN=sandcats-dev.sandstorm.io OVERRIDE_SANDCATS_API_BASE=https://sandcats-dev-machine.sandstorm.io OVERRIDE_SANDCATS_CURL_PARAMS=-k bash /vagrant/install.sh -i
 $[slow]Sandstorm makes it easy to run web apps on your own server. You can have:
 
 1. A typical install, to use Sandstorm (press enter to accept this default)

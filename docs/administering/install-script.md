@@ -89,6 +89,10 @@ free HTTPS certificate service.
 - `OVERRIDE_SANDCATS_BASE_DOMAIN`: If you run a different instance of the sandcats.io software,
   adjust this variable.
 
+- `REPORT`: This controls if install.sh should ask you to report an installation error to us. Set
+  it to a non-`yes` value (e.g. `no`) if you want to disable that question. Most headless installations
+  would want to set `REPORT=no`.
+
 ### Examples
 
 To pass an environment variable to the Sandstorm installer, you can do as follows.

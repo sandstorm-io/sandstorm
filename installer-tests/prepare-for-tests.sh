@@ -27,10 +27,13 @@ done
 
 # If on a Debian/Ubuntu system, and the dependencies for installing the Vagrant plugins we
 # need aren't present, bail out and print an error message.
-if [ -f /etc/debian_version ] &&
-   ! [ -e /usr/share/doc/zlib1g-dev ] ; then
-  echo 'Seems you should run: sudo apt-get install -y zlib1g-dev'
-  exit 1
+if [ -f /etc/debian_version ] ; then
+  for package in zlib1g-dev ruby-dev libvirt-dev libxml2-dev; do
+    if ! [ -e /usr/share/doc/${package} ] ; then
+      echo "Seems you should run: sudo apt-get install -y ${package}"
+      exit 1
+    fi
+  done
 fi
 # Check if Vagrant has plugins we need; if not, we install them.
 #

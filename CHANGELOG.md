@@ -1,3 +1,6 @@
+### v0.165 (2016-06-04) [bugfixes]
+- Re-enabled websocket self-check under new admin UI.
+
 ### v0.164 (2016-05-20)
 - Self-hosting: The admin settings UI has been completely revamped.
 - Fixed grain debug log auto-scrolling.

@@ -67,7 +67,7 @@ Over the time we have spent maintaining the install script, we hae found it easi
 user-provided configuration options from environment variables, rather than command line flags. Here
 are some environment variables that `install.sh` can look for, and their meanings.
 
-- `OVERRIDE_SANDSTORM_DEFAULT_INSTALL_DIR`: If you specify this, Sandstorm will install into this
+- `OVERRIDE_SANDSTORM_DEFAULT_DIR`: If you specify this, Sandstorm will install into this
   directory rather than `/opt/sandstorm` by default.
 
 - `OVERRIDE_SANDSTORM_DEFAULT_SERVER_USER`: If you specify this, Sandstorm will use this username
@@ -80,7 +80,7 @@ free HTTPS certificate service.
 
 - `DESIRED_SANDCATS_NAME`: The name of the the sandcats.io subdomain you would like to use for this install.
 
-- `DOMAIN_RESERVATION_TOKEN`: A token that indicates you have pre-reserved a sandcats.io subdomain.
+- `SANDCATS_DOMAIN_RESERVATION_TOKEN`: A token that indicates you have pre-reserved a sandcats.io subdomain.
 
 - `OVERRIDE_SANDCATS_GETCERTIFICATE`: If you specify this as `no`, then Sandstorm will not bother
   requesting a HTTPS certificate from sandcats.io. The install script will prompt you about sandcats
@@ -99,7 +99,7 @@ To pass an environment variable to the Sandstorm installer, you can do as follow
 
 ```bash
 curl https://install.sandstorm.io/ > install.sh
-sudo OVERRIDE_SANDSTORM_DEFAULT_INSTALL_DIR=/opt/sandstorm-is-awesome bash install.sh -d
+sudo OVERRIDE_SANDSTORM_DEFAULT_DIR=/opt/sandstorm-is-awesome bash install.sh -d
 ```
 
 This will install Sandstorm to `/opt/sandstorm-is-awesome` instead of the default directory.

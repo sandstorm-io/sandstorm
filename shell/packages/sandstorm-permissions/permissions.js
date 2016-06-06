@@ -553,6 +553,8 @@ class Context {
         });
       });
     });
+
+    return edges.length > 0;
   }
 
   registerInterestInRequirements(tokenId, requirements) {
@@ -791,7 +793,10 @@ class Context {
 
     let result = false;
     const relevant = computeRelevantTokens(this, grainId, vertexId);
-    this.activateOwnerEdges(grainId, relevant.ownerEdges);
+    if (this.activateOwnerEdges(grainId, relevant.ownerEdges)) {
+      result = true;
+    }
+
     relevant.tokenIds.forEach((tokenId) => {
       if (this.activateToken(tokenId)) {
         result = true;

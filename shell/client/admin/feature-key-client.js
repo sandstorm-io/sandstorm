@@ -4,7 +4,7 @@ Template.newAdminFeatureKey.onCreated(function () {
 
 Template.newAdminFeatureKey.helpers({
   currentFeatureKey() {
-    return globalDb.collections.featureKey.findOne();
+    return globalDb.currentFeatureKey();
   },
 
   showForm() {

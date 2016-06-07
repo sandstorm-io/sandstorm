@@ -144,9 +144,11 @@ Meteor.methods({
     const cap = restoreInternal(new Buffer(token),
                                 Match.Optional({ webkey: Match.Optional(Match.Any) }), []).cap;
     const castedCap = cap.castAs(SystemPersistent);
-    const grainOwner = {
-      grainId: grainId,
-      introducerIdentity: identityId,
+    const owner = {
+      clientPowerboxRequest: {
+        grainId: grainId,
+        introducerIdentity: identityId,
+      },
     };
     if (saveLabel) {
       grainOwner.saveLabel = {
@@ -154,9 +156,8 @@ Meteor.methods({
       };
     }
 
-    const save = castedCap.save({ grain: grainOwner });
+    const save = castedCap.save(owner);
     const sturdyRef = waitPromise(save).sturdyRef;
-
     return sturdyRef.toString();
   },
 

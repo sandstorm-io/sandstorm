@@ -54,7 +54,7 @@ class SandstormCoreImpl {
       }
 
       return restoreInternal(
-          sturdyRef,
+          new Buffer(sturdyRef),
           { clientPowerboxRequest: Match.ObjectIncluding({ grainId: this.grainId }) },
           requirements, hashedSturdyRef, true);
     });

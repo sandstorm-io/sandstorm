@@ -21,26 +21,28 @@ Meteor.startup(cleanupExpiredTokens);
 SandstormDb.periodicCleanup(TOKEN_EXPIRATION_MS, cleanupExpiredTokens);
 
 const checkToken = function (tokens, token) {
-  let found = false;
+  // Looks for an object in `tokens` with `algorithm` and `digest` fields matching those in `token`.
+  // Returns the matching object, if one is found, or undefined if none match.
+  let foundToken = undefined;
   tokens.forEach(function (userToken) {
     if ((userToken.algorithm === token.algorithm) &&
        (userToken.digest === token.digest)) {
-      found = true;
+      foundToken = userToken;
     }
   });
 
-  return found;
+  return foundToken;
 };
 
 function consumeToken(user, token) {
   const hashedToken = Accounts.emailToken._hashToken(token);
-  const found = checkToken(user.services.email.tokens, hashedToken);
+  const foundToken = checkToken(user.services.email.tokens, hashedToken);
 
-  if (found) {
+  if (foundToken !== undefined) {
     Meteor.users.update({ _id: user._id }, { $pull: { "services.email.tokens": hashedToken } });
   }
 
-  return found;
+  return foundToken;
 }
 
 // Handler to login with a token.
@@ -81,7 +83,8 @@ Accounts.registerLoginHandler("email", function (options) {
     };
   }
 
-  if (!consumeToken(user, options.token.trim())) {
+  const maybeToken = consumeToken(user, options.token.trim());
+  if (!maybeToken) {
     console.error("Token not found:", options.email);
     return {
       error: new Meteor.Error(403, "Invalid authentication code"),
@@ -90,6 +93,9 @@ Accounts.registerLoginHandler("email", function (options) {
 
   return {
     userId: user._id,
+    options: {
+      resumePath: maybeToken.resumePath,
+    },
   };
 });
 
@@ -141,9 +147,11 @@ const sendTokenEmail = function (db, email, token, linkingIdentity) {
 /// CREATING USERS
 ///
 // returns the user id
-const createAndEmailTokenForUser = function (db, email, linkingIdentity) {
+const createAndEmailTokenForUser = function (db, email, linkingIdentity, resumePath) {
   check(email, String);
   check(linkingIdentity, Boolean);
+  check(resumePath, String);
+
   const atIndex = email.indexOf("@");
   if (atIndex === -1) {
     throw new Meteor.Error(400, "No @ symbol was found in your email");
@@ -157,6 +165,7 @@ const createAndEmailTokenForUser = function (db, email, linkingIdentity) {
   const token = Random.id(12);
   const tokenObj = Accounts.emailToken._hashToken(token);
   tokenObj.createdAt = new Date();
+  tokenObj.resumePath = resumePath;
 
   if (user) {
     if (user.services.email.tokens && user.services.email.tokens.length > 2) {
@@ -188,19 +197,20 @@ const createAndEmailTokenForUser = function (db, email, linkingIdentity) {
 };
 
 Meteor.methods({
-  createAndEmailTokenForUser: function (email, linkingIdentity) {
+  createAndEmailTokenForUser: function (email, linkingIdentity, resumePath) {
     // method for create user. Requests come from the client.
     // This method will create a user if it doesn't exist, otherwise it will generate a token.
     // It will always send an email to the user
 
     check(email, String);
     check(linkingIdentity, Boolean);
+    check(resumePath, String);
 
     if (!Accounts.identityServices.email.isEnabled()) {
       throw new Meteor.Error(403, "Email identity service is disabled.");
     }
     // Create user. result contains id and token.
-    const user = createAndEmailTokenForUser(this.connection.sandstormDb, email, linkingIdentity);
+    const user = createAndEmailTokenForUser(this.connection.sandstormDb, email, linkingIdentity, resumePath);
   },
 
   linkEmailIdentityToAccount: function (email, token) {
@@ -218,7 +228,8 @@ Meteor.methods({
       throw new Meteor.Error(403, "Invalid authentication code.");
     }
 
-    if (!consumeToken(identity, token)) {
+    const maybeToken = consumeToken(user, options.token.trim());
+    if (!maybeToken) {
       throw new Meteor.Error(403, "Invalid authentication code.");
     }
 

@@ -569,7 +569,9 @@ function makeChildTokenInternal(rawParentToken, owner, requirements, tokenInfo) 
       // sharing graph. It turns out that the "root token" is actually the token representing that
       // user, not the grain owner, because user-to-user sharing relationships are not parent-child
       // token relationships.
-      const rootTitle = (((tokenInfo.owner || {}).grain || {}).saveLabel || {}).defaultText;
+      const rootTitle = globalDb.userGrainTitle(tokenInfo.grainId, tokenInfo.accountId,
+                                                tokenInfo.identityId);
+
       if (!owner.user.title && rootTitle) {
         owner.user.title = rootTitle;
       }

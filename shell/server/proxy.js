@@ -2224,15 +2224,78 @@ const errorCodes = {
 
 ResponseStream = class ResponseStream {
   constructor(response, streamHandle, resolve, reject) {
+    // This is stupidly complicated, because:
+    // - New versions of sandstorm-http-bridge (and other well-behaved apps) wait on write()
+    //   completion for flow control, so we want write() to complete only when there is space
+    //   available for more writes.
+    // - Old versions of sandstorm-http-bridge would make a zillion simultaneous calls to write()
+    //   with all of the data they wanted to send without waiting for previous calls to complete.
+    //   While in-flight, these writes can consume a lot of RAM at multiple points in the system.
+    // - Old versions of sandstorm-http-bridge would print any thrown error to stderr and then
+    //   keep going. So if canceling a download early on causes all future write()s to fail, this
+    //   can lead to very excessive log spam.
+    // - If a write() fails to complete (it returns a promise that never resolves), then later
+    //   upon garbage collection the RPC will actually throw an exception about a PromiseFulfiller
+    //   never having been fulfilled. Hence, if we simply stop responding to write()s after some
+    //   point, we again get log spam.
+    // - If the connection closes during a write, Node never calls the completion callback at all.
+    //   We have to listen for the "close" event.
+
     this.response = response;
     this.streamHandle = streamHandle;
     this.resolve = resolve;
     this.reject = reject;
+
     this.ended = false;
+    this.writeResolvers = {};
+    this.counter = 0;
+    this.countInFlight = 0;
+
+    response.on("close", () => {
+      this.aborted = true;
+
+      // Resolve all outstanding writes. This is OK even if they didn't actually go through because
+      // an incomplete download is the client's problem, not the server's. The important thing is
+      // to cancel the stream if it is still being generated; to that end, the next new write()
+      // call after this point will throw.
+      for (const i in this.writeResolvers) {
+        console.log(i);
+        this.writeResolvers[i]();
+      }
+
+      this.writeResolvers = {};
+    });
   }
 
   write(data) {
-    this.response.write(data);
+    if (this.aborted) {
+      // Connection has been aborted.
+      if (this.alreadyThrew) {
+        // We already threw an error from a previous write(). Do not throw more errors, because
+        // older versions of sandstorm-http-bridge do not stop on the first error and will print
+        // every error to the log, wasting space. Newer versions stop on the first failure.
+        return;
+      } else {
+        this.alreadyThrew = true;
+        throw new Error("client disconnected");
+      }
+    } else if (++this.countInFlight > 16) {
+      // It looks like the client is not doing flow control. Close out the RPC immediately in an
+      // (probably futile) attempt to avoid exploding Cap'n Proto call tables.
+      this.response.write(data);
+    } else {
+      // Try to do proper flow control.
+      return new Promise((resolve, reject) => {
+        const index = this.counter++;
+        this.writeResolvers[index] = resolve;
+
+        this.response.write(data, () => {
+          --this.countInFlight;
+          delete this.writeResolvers[index];
+          resolve();
+        });
+      });
+    }
   }
 
   done() {

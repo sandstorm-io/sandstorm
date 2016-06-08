@@ -153,7 +153,7 @@ Key concepts:
 
 There are three levels of users.
 
-- **Visitors** can see and re-share grains that have been shared with them. By default, anyone can click
+- **Visitors** can use and re-share grains that have been shared with them. By default, anyone can click
   **Sign in** and become a Visitor. They cannot create grains of their own nor install apps.
 
 - **Users** can install apps for their own use, create grains, and share them with others. By default, these users must be invited by an Admin.

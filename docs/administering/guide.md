@@ -151,14 +151,15 @@ Key concepts:
 
 - Sandstorm supports multiple **login providers** which be enabled/disabled from **Admin Settings**.
 
-There are three levels of users.
+There are three standard levels of users.
 
-- **Visitors** can use and re-share grains that have been shared with them. By default, anyone can click
-  **Sign in** and become a Visitor. They cannot create grains of their own nor install apps.
+- **Visitors** can use and re-share grains that have been shared with them. They cannot create grains of their own nor install apps. By default, anyone can click **Sign in** and become a Visitor. (This can be disabled on Sandstorm for Work servers.)
 
 - **Users** can install apps for their own use, create grains, and share them with others. By default, these users must be invited by an Admin.
 
 - **Admins** can also see the **Admin Settings** control panel, allowing them to invite users, modify user levels, and configure server settings like login providers and email settings.
+
+Additionally, Sandstorm has **Demo Accounts** which are not enabled by default. See the [Demo mode](demo.md) documentation for details.
 
 If you see a message saying your Sandstorm install has no users, read the [How do I log in, if
 there's a problem with logging in via the

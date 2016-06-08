@@ -153,13 +153,12 @@ Key concepts:
 
 There are three levels of users.
 
-- **Guest** users can see grains that have been shared with them. By default, anyone can click
-  **Sign in** and become a guest user.
+- **Visitors** can see and re-share grains that have been shared with them. By default, anyone can click
+  **Sign in** and become a Visitor. They cannot create grains of their own nor install apps.
 
-- **Invited users** can install apps for their own use, create grains, and share them.
+- **Users** can install apps for their own use, create grains, and share them with others. By default, these users must be invited by an Admin.
 
-- **Admin users** can also see the **Admin Settings** control panel, allowing them to change a user
-  between these user levels. They can also invite users via the **Admin Settings** control panel.
+- **Admins** can also see the **Admin Settings** control panel, allowing them to invite users, modify user levels, and configure server settings like login providers and email settings.
 
 If you see a message saying your Sandstorm install has no users, read the [How do I log in, if
 there's a problem with logging in via the

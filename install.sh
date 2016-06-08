@@ -199,6 +199,20 @@ prompt() {
   echo "$VALUE"
 }
 
+prompt-numeric() {
+  local NUMERIC_REGEX="^[0-9]+$"
+  while true; do
+    local VALUE=$(prompt "$@")
+
+    if ! [[ "$VALUE" =~ $NUMERIC_REGEX ]] ; then
+      echo "You entered '$VALUE'. Please enter a number." >&3
+    else
+      echo "$VALUE"
+      return
+    fi
+  done
+}
+
 prompt-yesno() {
   while true; do
     local VALUE=$(prompt "$@")
@@ -662,7 +676,7 @@ choose_install_mode() {
     echo "1. A typical install, to use Sandstorm (press enter to accept this default)"
     echo "2. A development server, for working on Sandstorm itself or localhost-based app development"
     echo ""
-    CHOSEN_INSTALL_MODE=$(prompt "How are you going to use this Sandstorm install?" "1")
+    CHOSEN_INSTALL_MODE=$(prompt-numeric "How are you going to use this Sandstorm install?" "1")
   fi
 
   if [ "1" = "$CHOSEN_INSTALL_MODE" ] ; then
@@ -1153,14 +1167,14 @@ choose_port() {
     return
   fi
 
-  PORT=$(prompt "Server main HTTP port:" $DEFAULT_PORT)
+  PORT=$(prompt-numeric "Server main HTTP port:" $DEFAULT_PORT)
 
   while [ "$PORT" -lt 1024 ]; do
     echo "Ports below 1024 require root privileges. Sandstorm does not run as root."
     echo "To use port $PORT, you'll need to set up a reverse proxy like nginx that "
     echo "forwards to the internal higher-numbered port. The Sandstorm git repo "
     echo "contains an example nginx config for this."
-    PORT=$(prompt "Server main HTTP port:" $DEFAULT_PORT)
+    PORT=$(prompt-numeric "Server main HTTP port:" $DEFAULT_PORT)
   done
 }
 
@@ -1170,7 +1184,7 @@ choose_mongo_port() {
     return
   fi
 
-  MONGO_PORT=$(prompt "Database port (choose any unused port):" "$((PORT + 1))")
+  MONGO_PORT=$(prompt-numeric "Database port (choose any unused port):" "$((PORT + 1))")
 }
 
 choose_external_or_internal() {

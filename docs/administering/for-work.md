@@ -70,7 +70,7 @@ To enable this feature:
 - Enable and configure your organization on a per-login-provider basis.
 
 This feature is important because, by default, when a user signs into a Sandstorm server for the
-first time, Sandstorm creates a _Visitor_ account for them. Visitors can see grains that have been
+first time, Sandstorm creates a _Visitor_ account for them. Visitors can use grains that have been
 shared with them but cannot create grains of their own. The setting **Disallow collaboration with users outside the organization** can disable the ability for users not a part of your organization to log in.
 
 At the moment, this feature does not actively synchronize status; it checks for organization

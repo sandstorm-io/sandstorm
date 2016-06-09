@@ -244,6 +244,42 @@ Template.sandstormGrainListPage.onRendered(function () {
 });
 
 Template.sandstormGrainListPage.events({
+  "click #clickme": function (event) {
+    var templateData = Template.instance().data;
+    if (templateData.intro) {
+      // In this case, the intro is currently active, and the user clicked on the
+      // question mark. The sensible thing to do is to dismiss the intro.
+      templateData.intro.exit();
+      console.log('ok');
+      templateData.intro = null;
+      return;
+    }
+    const intro = Template.instance().data.intro = introJs();
+    intro.setOptions({
+      steps: [
+        {
+          element: document.querySelector("#clickme"),
+          intro: "A grain is every document, chat room, mail box, notebook, blog, and everything else you create. Grains are private until they are shared.",
+          position: "right",
+        },
+      ],
+      highlightClass: "grain-list-hide-element",
+      tooltipPosition: "auto",
+      positionPrecedence: ["bottom", "top", "left", "right"],
+      showStepNumbers: false,
+      exitOnOverlayClick: true,
+      overlayOpacity: 0,
+      showBullets: false,
+      doneLabel: "Got it",
+    });
+
+    intro.oncomplete(function () {
+      templateData.intro = null;
+    });
+
+    intro.start();
+  },
+
   "input .search-bar": function (event) {
     Template.instance()._filter.set(event.target.value);
   },

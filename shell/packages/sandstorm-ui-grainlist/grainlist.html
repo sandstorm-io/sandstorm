@@ -4,7 +4,7 @@
   <div class="grain-list">
     <div class="top-row">
     <div class="non-usage-info">
-    <h1>Grains</h1>
+    <h1>Grains <a href="#" class="question-mark"></a></h1>
     <div class="search-row">
       <label>
         <span title="Search" class="search-icon"></span>
@@ -55,10 +55,8 @@
             {{#if showTrash}}
               <p><strong>Trash is empty.</strong></p>
             {{else}}
-              <p><strong>You have no grains.</strong></p>
-              <p>A grain is an instance of a Sandstorm app. A grain might be a document, a chat room,
-                a mail box, a notebook, a blog, or more.</p>
-              <p><a href="{{ pathFor route='apps' }}">Install apps now to start creating.</a></p>
+          <p>You don't have any grains yet.
+            <a href="{{ pathFor route='apps' }}">Install an app to create your first grain.</a></p>
             {{/if}}
           {{/if}}
         </div>
@@ -110,6 +108,7 @@
 
     <table class="grain-list-table">
       <thead>
+        {{#if grains}}
         <tr>
             <td class="select-all-grains">
               <input title={{selectAllTitle}} type="checkbox">
@@ -123,6 +122,7 @@
             <td>Size</td>
             --}}
         </tr>
+        {{/if}}
       </thead>
       <tbody>
         {{#each actions}}

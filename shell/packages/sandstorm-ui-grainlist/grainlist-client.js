@@ -244,6 +244,62 @@ Template.sandstormGrainListPage.onRendered(function () {
 });
 
 Template.sandstormGrainListPage.events({
+  "click .grain-list .question-mark": function (event) {
+    const templateData = Template.instance().data;
+
+    const exitAndremoveOverlayNow = () => {
+      // If there is no active intro, bail now.
+      if (!templateData.intro) {
+        return;
+      }
+
+      // Ask introjs to exit.
+      templateData.intro.exit();
+      // Remove our note-to-self which is how we detect the intro being around.
+      templateData.intro = null;
+      // Remove the overlay right now so that we can react to speedy clicking. introjs will do this
+      // itself, but queues the task to be done 0.5 seconds later. This is not very Meteoric, I
+      // realize.
+      const overlay = document.querySelector(".introjs-overlay");
+      if (overlay) {
+        overlay.remove();
+      }
+    };
+
+    if (templateData.intro) {
+      // In this case, the intro is currently active, and the user clicked on the question mark. The
+      // sensible thing to do is to dismiss the intro and stop processing the click.
+      return exitAndremoveOverlayNow();
+    }
+
+    const intro = Template.instance().data.intro = introJs();
+    intro.setOptions({
+      steps: [
+        {
+          element: document.querySelector(".grain-list .question-mark"),
+          intro: "A grain is every document, chat room, mail box, notebook, blog, and everything else you create. Grains are private until they are shared.",
+          position: "right",
+        },
+      ],
+      highlightClass: "grain-list-hide-element",
+      tooltipPosition: "auto",
+      positionPrecedence: ["bottom", "top", "left", "right"],
+      showStepNumbers: false,
+      exitOnOverlayClick: true,
+      overlayOpacity: 0,
+      showBullets: false,
+      doneLabel: "Got it",
+    });
+
+    // onexit gets triggered when user clicks on the overlay.
+    intro.onexit(exitAndremoveOverlayNow);
+
+    // oncomplete gets triggered when user clicks "Got it".
+    intro.oncomplete(exitAndremoveOverlayNow);
+
+    intro.start();
+  },
+
   "input .search-bar": function (event) {
     Template.instance()._filter.set(event.target.value);
   },

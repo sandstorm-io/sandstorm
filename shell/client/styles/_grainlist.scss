@@ -1,3 +1,7 @@
+.grain-list-hide-element {
+  display: none;
+}
+
 .grain-list {
   overflow: auto;
   padding: 0px 32px;
@@ -6,6 +10,20 @@
   }
   background-color: $grainlist-background-color;
   color: $grainlist-foreground-color;
+
+  .question-mark {
+    background-image: url("/question-a9a9a9.svg");
+    background-size: 24px 24px;
+    background-position: center;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    vertical-align: top;
+  }
+  .question-mark:hover {
+    background-image: url("/question-727272.svg");
+  }
+
   >.top-row>.non-usage-info {
     float: left;
     @media #{$mobile} {

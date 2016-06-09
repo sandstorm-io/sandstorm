@@ -61,6 +61,8 @@ IMAGES= \
     shell/public/notification.svg \
     shell/public/open-grain.svg \
     shell/public/people.svg \
+    shell/public/question-727272.svg \
+    shell/public/question-a9a9a9.svg \
     shell/public/restart.svg \
     shell/public/restore.svg \
     shell/public/settings.svg \
@@ -315,6 +317,14 @@ shell/public/github-color.svg: icons/github.svg
 shell/public/email-494949.svg: icons/email.svg
 	@$(call color,custom color $<)
 	@sed -e 's/#111111/#494949/g' < $< > $@
+
+shell/public/question-a9a9a9.svg: icons/question.svg
+	@$(call color,custom color $<)
+	@sed -e 's/#111111/#A9A9A9/g' < $< > $@
+
+shell/public/question-727272.svg: icons/question.svg
+	@$(call color,custom color $<)
+	@sed -e 's/#111111/#727272/g' < $< > $@
 
 shell/public/%-m.svg: icons/%.svg
 	@$(call color,color for light background $<)

@@ -47,7 +47,14 @@
     >.app-details-widget {
       @extend %app-details-widget;
     }
-    .confirm-form { display: block; }
+    .confirm-form {
+      display: block;
+
+      #confirmInstall {
+        /* Adding up the margin-left + padding-left of .app-details-box within _app-details.scss, for alignment. */
+        margin-left: 140px;
+      }
+    }
   }
   #step-run {
     display: block;

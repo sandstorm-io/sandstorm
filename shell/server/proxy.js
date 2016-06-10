@@ -1590,8 +1590,12 @@ class Proxy {
             response.resolveResponseStream(new Capnp.Capability(
                 new ResponseStream(response, code.id, code.title, resolve, reject),
                 ByteStream));
-          }).then(() => { streamHandle.close(); },
-                  (err) => { streamHandle.close(); throw err; });
+          }).then(() => {
+            streamHandle.close();
+          }, (err) => {
+            streamHandle.close();
+            throw err;
+          });
           promise.streamHandle = streamHandle;
           return promise;
         }

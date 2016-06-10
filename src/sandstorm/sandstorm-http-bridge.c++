@@ -198,6 +198,13 @@ public:
         return kj::arrayPtr(buffer, 0);
       } else if (headersComplete && status_code / 100 == 2) {
         isStreaming = true;
+
+        KJ_IF_MAYBE(length, findHeader("content-length")) {
+          auto req = responseStream.expectSizeRequest();
+          req.setSize(length->parseAs<uint64_t>());
+          taskSet.add(req.send().ignoreResult());
+        }
+
         allocateNextWrite(body.asPtr().asBytes());
         body = kj::Vector<char>();
         taskSet.add(pumpWrites().catch_([this](kj::Exception&&) {

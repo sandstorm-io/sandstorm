@@ -716,7 +716,6 @@ Tinytest.add("permissions: tokenValid requirements", function (test) {
   const aliceAccount = new Account(globalDb, [alice], false);
   const bob = new Identity(globalDb);
   const bobAccount = new Account(globalDb, [bob], false);
-  const carol = new Identity(globalDb);
   const aliceGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
   const bobGrain = new Grain(globalDb, bobAccount, bob, commonViewInfo);
 
@@ -763,4 +762,47 @@ Tinytest.add("permissions: tokenValid requirements", function (test) {
 
   test.isFalse(webkey2.mayOpenGrain());
   test.isFalse(!!webkey2.grainPermissions());
+});
+
+Tinytest.add("permissions: collections app basic requirements", function (test) {
+  const alice = new Identity(globalDb);
+  const aliceAccount = new Account(globalDb, [alice], false);
+  const bob = new Identity(globalDb);
+  const collectionGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+  const otherGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+
+  alice.shareToIdentity(collectionGrain, bob, { allAccess: null });
+
+  test.isTrue(bob.mayOpenGrain(collectionGrain));
+  test.isFalse(bob.mayOpenGrain(otherGrain));
+
+  const webkey = alice.shareToWebkey(otherGrain, { allAccess: null },
+                                     [
+                                       {
+                                        permissionsHeld: {
+                                          permissions: [],
+                                          identityId: alice.id,
+                                          grainId: collectionGrain.id,
+                                        },
+                                      },
+                                     ]
+                                    );
+
+  test.isTrue(bob.mayOpenGrain(collectionGrain));
+  test.isFalse(bob.mayOpenGrain(otherGrain));
+
+  webkey.shareToIdentity(bob, { allAccess: null },
+                         [
+                           {
+                            permissionsHeld: {
+                              permissions: [],
+                              identityId: bob.id,
+                              grainId: collectionGrain.id,
+                            },
+                          },
+                         ]
+                        );
+
+  test.isTrue(bob.mayOpenGrain(collectionGrain));
+  test.isTrue(bob.mayOpenGrain(otherGrain));
 });

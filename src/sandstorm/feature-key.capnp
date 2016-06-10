@@ -81,6 +81,9 @@ struct FeatureKey {
     orgManagement @9 :Bool = true;
   }
 
+  isFreeKey @11 :Bool;
+  # Is this key a "free key"?  We also treat trial keys which have expired as free keys.
+
   const signingKey :PublicSigningKey =
       (key0 = 0x86ada8b5d9f65036, key1 = 0x183909ba08aac323,
        key2 = 0x6d778da453c9560d, key3 = 0xdf94f532f33a7ea8);

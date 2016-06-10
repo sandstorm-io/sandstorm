@@ -1586,11 +1586,12 @@ class Proxy {
           response.rejectResponseStream(new Error('HEAD request; content doesn\'t matter.'));
         } else {
           const streamHandle = content.body.stream;
-          response.writeHead(code.id, code.title);
           const promise = new Promise((resolve, reject) => {
             response.resolveResponseStream(new Capnp.Capability(
-                new ResponseStream(response, streamHandle, resolve, reject), ByteStream));
-          });
+                new ResponseStream(response, code.id, code.title, resolve, reject),
+                ByteStream));
+          }).then(() => { streamHandle.close(); },
+                  (err) => { streamHandle.close(); throw err; });
           promise.streamHandle = streamHandle;
           return promise;
         }
@@ -2223,7 +2224,9 @@ const errorCodes = {
 };
 
 ResponseStream = class ResponseStream {
-  constructor(response, streamHandle, resolve, reject) {
+  // Note: This class is used in pre-meteor.js as well as in this file.
+
+  constructor(response, httpCode, httpStatus, resolve, reject) {
     // This is stupidly complicated, because:
     // - New versions of sandstorm-http-bridge (and other well-behaved apps) wait on write()
     //   completion for flow control, so we want write() to complete only when there is space
@@ -2242,10 +2245,12 @@ ResponseStream = class ResponseStream {
     //   We have to listen for the "close" event.
 
     this.response = response;
-    this.streamHandle = streamHandle;
+    this.httpCode = httpCode;
+    this.httpStatus = httpStatus;
     this.resolve = resolve;
     this.reject = reject;
 
+    this.started = false;
     this.ended = false;
     this.waiting = [];
 
@@ -2266,7 +2271,19 @@ ResponseStream = class ResponseStream {
     });
   }
 
+  expectSize(size) {
+    if (!this.started) {
+      this.started = true;
+      this.response.writeHead(this.httpCode, this.httpStatus, { "Content-Length": size });
+    }
+  }
+
   write(data) {
+    if (!this.started) {
+      this.started = true;
+      this.response.writeHead(this.httpCode, this.httpStatus);
+    }
+
     if (this.aborted) {
       // Connection has been aborted.
       if (this.alreadyThrew) {
@@ -2300,17 +2317,20 @@ ResponseStream = class ResponseStream {
   }
 
   done() {
+    if (!this.started) {
+      this.started = true;
+      this.response.writeHead(this.httpCode, this.httpStatus, { "Content-Length": 0 });
+    }
+
     this.response.end();
-    this.streamHandle.close();
     this.ended = true;
   }
 
   close() {
     if (this.ended) {
-      this.resolve();
+      if (this.resolve) this.resolve();
     } else {
-      this.streamHandle.close();
-      this.reject(new Error('done() was never called on outbound stream.'));
+      if (this.reject) this.reject(new Error('done() was never called on outbound stream.'));
     }
   }
 };

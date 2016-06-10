@@ -2081,6 +2081,17 @@ if (Meteor.isServer) {
   };
 } else {
   SandstormDb.prototype.currentFeatureKey = function () {
-    return this.collections.featureKey.findOne({ _id: "currentFeatureKey" });
+    const featureKey = this.collections.featureKey.findOne({ _id: "currentFeatureKey" });
+    if (featureKey &&
+        !featureKey.isFreeKey &&
+        featureKey.isTrial &&
+        parseInt(featureKey.expires) * 1000 < Date.now()) {
+      // If feature key was a trial (but not explicitly a free key), and the trial is past its
+      // expiration date, mark as a free key instead, with a 15-user limit.
+      featureKey.isFreeKey = true;
+      featureKey.userLimit = 15;
+    }
+
+    return featureKey;
   };
 }

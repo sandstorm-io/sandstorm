@@ -4,7 +4,7 @@ Template.newAdminOrganization.onCreated(function () {
   const ldapChecked = globalDb.getOrganizationLdapEnabled() || false;
   const samlChecked = globalDb.getOrganizationSamlEnabled() || false;
 
-  const featureKey = globalDb.collections.featureKey.findOne();
+  const featureKey = globalDb.currentFeatureKey();
   const featureKeyContactAddress = featureKey && featureKey.customer && featureKey.customer.contactEmail;
   const inferredDomain = featureKeyContactAddress && featureKeyContactAddress.split("@")[1] || "";
 

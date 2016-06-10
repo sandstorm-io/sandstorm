@@ -1048,7 +1048,7 @@ Template.featureKeyUploadForm.helpers({
 
 Template.adminFeatureKey.helpers({
   currentFeatureKey: function () {
-    return globalDb.collections.featureKey.findOne();
+    return globalDb.currentFeatureKey();
   },
 });
 
@@ -1064,7 +1064,7 @@ Template.adminFeatureKeyPage.helpers({
   },
 
   hasFeatureKey: function () {
-    return !!globalDb.collections.featureKey.findOne();
+    return !!globalDb.currentFeatureKey();
   },
 });
 

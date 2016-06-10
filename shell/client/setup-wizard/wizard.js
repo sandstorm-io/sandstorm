@@ -264,7 +264,7 @@ Template.setupWizardOrganization.onCreated(function () {
   const gappsChecked = globalDb.getOrganizationGoogleEnabled() || false;
   const emailChecked = globalDb.getOrganizationEmailEnabled() || false;
 
-  const featureKey = globalDb.collections.featureKey.findOne();
+  const featureKey = globalDb.currentFeatureKey();
   const featureKeyContactAddress = featureKey && featureKey.customer && featureKey.customer.contactEmail;
   const inferredDomain = featureKeyContactAddress && featureKeyContactAddress.split("@")[1] || "";
 

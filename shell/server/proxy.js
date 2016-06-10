@@ -2247,9 +2247,12 @@ ResponseStream = class ResponseStream {
     this.reject = reject;
 
     this.ended = false;
-    this.writeResolvers = {};
-    this.counter = 0;
-    this.countInFlight = 0;
+    this.waiting = [];
+
+    response.on("drain", () => {
+      this.waiting.forEach(f => f());
+      this.waiting = [];
+    });
 
     response.on("close", () => {
       this.aborted = true;
@@ -2258,12 +2261,8 @@ ResponseStream = class ResponseStream {
       // an incomplete download is the client's problem, not the server's. The important thing is
       // to cancel the stream if it is still being generated; to that end, the next new write()
       // call after this point will throw.
-      for (const i in this.writeResolvers) {
-        console.log(i);
-        this.writeResolvers[i]();
-      }
-
-      this.writeResolvers = {};
+      this.waiting.forEach(f => f());
+      this.waiting = [];
     });
   }
 
@@ -2279,22 +2278,24 @@ ResponseStream = class ResponseStream {
         this.alreadyThrew = true;
         throw new Error("client disconnected");
       }
-    } else if (++this.countInFlight > 16) {
-      // It looks like the client is not doing flow control. Close out the RPC immediately in an
-      // (probably futile) attempt to avoid exploding Cap'n Proto call tables.
-      this.response.write(data);
     } else {
-      // Try to do proper flow control.
-      return new Promise((resolve, reject) => {
-        const index = this.counter++;
-        this.writeResolvers[index] = resolve;
+      if (this.response.write(data)) {
+        // All written.
+        return;
+      } else {
+        // Write buffer is full. Don't complete until it has more space.
+        if (this.waiting.length >= 16) {
+          // Yikes, there are 16 writes in-flight already. Probably, the caller does not implement
+          // flow control, and is going to do *all* of its writes in parallel. Since the caller
+          // is ignoring returns anyway, we might as well shed load from the Cap'n Proto tables
+          // by closing out the earlier calls.
+          this.waiting.shift()();
+        }
 
-        this.response.write(data, () => {
-          --this.countInFlight;
-          delete this.writeResolvers[index];
-          resolve();
+        return new Promise((resolve, reject) => {
+          this.waiting.push(resolve);
         });
-      });
+      }
     }
   }
 

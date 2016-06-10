@@ -2020,6 +2020,8 @@ public:
   }
 
   kj::Promise<void> getWwwFileHack(GetWwwFileHackContext context) override {
+    context.allowCancellation();
+
     auto params = context.getParams();
     auto path = params.getPath();
 

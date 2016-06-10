@@ -288,7 +288,7 @@
   </p>
 
   <p>
-    The Entity ID of this server is <code>{{entityId}}</code>. Please supply that to your IDP.
+    The Service URL of this server is: <code>{{ serviceUrl }}</code>
   </p>
 
   {{#if errorMessage}}
@@ -307,6 +307,12 @@
     <div class="form-group">
       <label>SAML cert for above provider:
         <textarea type="text" name="publicCert" value="{{samlPublicCert}}" placeholder="base64 encoded cert (e.g. MIID...8F==)"></textarea>
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label>Entity ID:
+        <input type="text" name="entityId" value="{{samlEntityId}}" placeholder="{{exampleEntityId}}" />
       </label>
     </div>
   </form>

@@ -72,11 +72,12 @@ middleware = function (req, res, next) {
     if (!samlObject.actionName)
       throw new Error("Missing SAML action");
 
+    const entityId = SandstormDb.prototype.getSamlEntityId();
     const service = {
       "provider": "default",
       "entryPoint": SandstormDb.prototype.getSamlEntryPoint(),
       // TODO(someday): find a better way to inject the DB
-      "issuer": HOSTNAME,
+      "issuer": entityId || HOSTNAME,
       "cert": SandstormDb.prototype.getSamlPublicCert(),
     };
 

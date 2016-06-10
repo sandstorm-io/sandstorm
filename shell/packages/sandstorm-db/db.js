@@ -1500,6 +1500,11 @@ _.extend(SandstormDb.prototype, {
     const setting = Settings.findOne({ _id: "samlPublicCert" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
+
+  getSamlEntityId: function () {
+    const setting = Settings.findOne({ _id: "samlEntityId" });
+    return setting ? setting.value : ""; // empty if subscription is not ready.
+  },
 });
 
 SandstormDb.escapeMongoKey = (key) => {

@@ -578,9 +578,11 @@ Template.adminIdentityProviderConfigureLdap.events({
 Template.adminIdentityProviderConfigureSaml.onCreated(function () {
   const samlEntryPoint = globalDb.getSamlEntryPoint();
   const samlPublicCert = globalDb.getSamlPublicCert();
+  const samlEntityId = globalDb.getSamlEntityId() || window.location.hostname;
 
   this.samlEntryPoint = new ReactiveVar(samlEntryPoint);
   this.samlPublicCert = new ReactiveVar(samlPublicCert);
+  this.samlEntityId = new ReactiveVar(samlEntityId);
   this.errorMessage = new ReactiveVar(undefined);
   this.formChanged = new ReactiveVar(false);
   this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
@@ -606,10 +608,15 @@ Template.adminIdentityProviderConfigureSaml.helpers({
     return instance.samlPublicCert.get();
   },
 
+  samlEntityId() {
+    const instance = Template.instance();
+    return instance.samlEntityId.get();
+  },
+
   saveDisabled() {
     const instance = Template.instance();
     const samlEnabled = globalDb.getSettingWithFallback("saml", false);
-    return (samlEnabled && !instance.formChanged.get()) || !instance.samlEntryPoint.get() || !instance.samlPublicCert.get();
+    return (samlEnabled && !instance.formChanged.get()) || !instance.samlEntryPoint.get() || !instance.samlPublicCert.get() || !instance.samlEntityId.get();
   },
 
   errorMessage() {
@@ -617,8 +624,12 @@ Template.adminIdentityProviderConfigureSaml.helpers({
     return instance.errorMessage.get();
   },
 
-  entityId: function () {
+  exampleEntityId() {
     return window.location.hostname;
+  },
+
+  serviceUrl() {
+    return Meteor.absoluteUrl("_saml/validate/default");
   },
 });
 
@@ -635,6 +646,12 @@ Template.adminIdentityProviderConfigureSaml.events({
     instance.formChanged.set(true);
   },
 
+  "input input[name=entityId]"(evt) {
+    const instance = Template.instance();
+    instance.samlEntityId.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
   "click .idp-modal-disable"(evt) {
     const instance = Template.instance();
     const token = Iron.controller().state.get("token");
@@ -645,6 +662,7 @@ Template.adminIdentityProviderConfigureSaml.events({
     const instance = Template.instance();
     const samlEntryPoint = instance.samlEntryPoint.get();
     const samlPublicCert = instance.samlPublicCert.get();
+    const samlEntityId = instance.samlEntityId.get();
     const token = Iron.controller().state.get("token");
     // TODO: rework this into a single Meteor method call.
     Meteor.call("setSetting", token, "samlEntryPoint", samlEntryPoint, (err) => {
@@ -655,7 +673,13 @@ Template.adminIdentityProviderConfigureSaml.events({
           if (err) {
             instance.errorMessage.set(err.message);
           } else {
-            Meteor.call("setAccountSetting", token, "saml", true, instance.setAccountSettingCallback);
+            Meteor.call("setSetting", token, "samlEntityId", samlEntityId, (err) => {
+              if (err) {
+                instance.errorMessage.set(err.message);
+              } else {
+                Meteor.call("setAccountSetting", token, "saml", true, instance.setAccountSettingCallback);
+              }
+            });
           }
         });
       }

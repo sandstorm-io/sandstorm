@@ -72,16 +72,11 @@ function wwwHandlerForGrain(grainId) {
       type = type + "; charset=utf-8";
     }
 
-    let started = false;
-    let sawEnd = false;
-
     // TODO(perf): Automatically gzip text content? Use Express's 'compress' middleware for this?
     //   Note that nginx will also auto-compress things...
 
-    const headers = {
-      "Content-Type": type,
-      "Cache-Control": "public, max-age=" + CACHE_TTL_SECONDS,
-    };
+    response.setHeader("Content-Type", type);
+    response.setHeader("Cache-Control", "public, max-age=" + CACHE_TTL_SECONDS);
 
     if (path === "apps/index.json" ||
         path.match(/apps\/[a-z0-9]{52}[.]json/) ||
@@ -93,57 +88,31 @@ function wwwHandlerForGrain(grainId) {
       //   problematic, though: sites behind a firewall. Those sites could potentially be read
       //   by outside sites if CORS is enabled on them. Some day we should make it so apps can
       //   explicitly opt-in to allowing cross-origin queries but that day is not today.
-      headers["Access-Control-Allow-Origin"] = "*";
+      response.setHeader("Access-Control-Allow-Origin", "*");
     }
 
-    const stream = {
-      expectSize(size) {
-        if (!started) {
-          started = true;
-          response.writeHead(200, _.extend(headers, { "Content-Length": size }));
-        }
-      },
-
-      write(data) {
-        if (!started) {
-          started = true;
-          response.writeHead(200, headers);
-        }
-
-        response.write(data);
-      },
-
-      done(data) {
-        if (!started) {
-          started = true;
-          response.writeHead(200, _.extend(headers, { "Content-Length": 0, }));
-        }
-
-        sawEnd = true;
-        response.end();
-      },
-    };
+    const stream = new ResponseStream(response, 200, "OK");
 
     globalBackend.useGrain(grainId, (supervisor) => {
       return supervisor.getWwwFileHack(path, stream).then((result) => {
         // jscs:disable disallowQuotedKeysInObjects
         const status = result.status;
         if (status === "file") {
-          if (!sawEnd) {
+          if (!stream.ended) {
             console.error("getWwwFileHack didn't write file to stream");
-            if (!started) {
+            if (!stream.started) {
               response.writeHead(500, {
                 "Content-Type": "text/plain",
               });
               response.end("Internal server error");
+            } else {
+              response.end();
             }
-
-            response.end();
           }
         } else if (status === "directory") {
-          if (started) {
+          if (stream.started) {
             console.error("getWwwFileHack wrote to stream for directory");
-            if (!sawEnd) {
+            if (!stream.ended) {
               response.end();
             }
           } else {
@@ -155,9 +124,9 @@ function wwwHandlerForGrain(grainId) {
             response.end("redirect: /" + path + "/");
           }
         } else if (status === "notFound") {
-          if (started) {
+          if (stream.started) {
             console.error("getWwwFileHack wrote to stream for notFound");
-            if (!sawEnd) {
+            if (!stream.ended) {
               response.end();
             }
           } else {
@@ -168,7 +137,7 @@ function wwwHandlerForGrain(grainId) {
           }
         } else {
           console.error("didn't understand result of getWwwFileHack:", status);
-          if (!started) {
+          if (!stream.started) {
             response.writeHead(500, {
               "Content-Type": "text/plain",
             });

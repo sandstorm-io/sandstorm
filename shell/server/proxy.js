@@ -1586,10 +1586,15 @@ class Proxy {
           response.rejectResponseStream(new Error('HEAD request; content doesn\'t matter.'));
         } else {
           const streamHandle = content.body.stream;
-          response.writeHead(code.id, code.title);
           const promise = new Promise((resolve, reject) => {
             response.resolveResponseStream(new Capnp.Capability(
-                new ResponseStream(response, streamHandle, resolve, reject), ByteStream));
+                new ResponseStream(response, code.id, code.title, resolve, reject),
+                ByteStream));
+          }).then(() => {
+            streamHandle.close();
+          }, (err) => {
+            streamHandle.close();
+            throw err;
           });
           promise.streamHandle = streamHandle;
           return promise;
@@ -2223,30 +2228,113 @@ const errorCodes = {
 };
 
 ResponseStream = class ResponseStream {
-  constructor(response, streamHandle, resolve, reject) {
+  // Note: This class is used in pre-meteor.js as well as in this file.
+
+  constructor(response, httpCode, httpStatus, resolve, reject) {
+    // This is stupidly complicated, because:
+    // - New versions of sandstorm-http-bridge (and other well-behaved apps) wait on write()
+    //   completion for flow control, so we want write() to complete only when there is space
+    //   available for more writes.
+    // - Old versions of sandstorm-http-bridge would make a zillion simultaneous calls to write()
+    //   with all of the data they wanted to send without waiting for previous calls to complete.
+    //   While in-flight, these writes can consume a lot of RAM at multiple points in the system.
+    // - Old versions of sandstorm-http-bridge would print any thrown error to stderr and then
+    //   keep going. So if canceling a download early on causes all future write()s to fail, this
+    //   can lead to very excessive log spam.
+    // - If a write() fails to complete (it returns a promise that never resolves), then later
+    //   upon garbage collection the RPC will actually throw an exception about a PromiseFulfiller
+    //   never having been fulfilled. Hence, if we simply stop responding to write()s after some
+    //   point, we again get log spam.
+    // - If the connection closes during a write, Node never calls the completion callback at all.
+    //   We have to listen for the "close" event.
+
     this.response = response;
-    this.streamHandle = streamHandle;
+    this.httpCode = httpCode;
+    this.httpStatus = httpStatus;
     this.resolve = resolve;
     this.reject = reject;
+
+    this.started = false;
     this.ended = false;
+    this.waiting = [];
+
+    response.on("drain", () => {
+      this.waiting.forEach(f => f());
+      this.waiting = [];
+    });
+
+    response.on("close", () => {
+      this.aborted = true;
+
+      // Resolve all outstanding writes. This is OK even if they didn't actually go through because
+      // an incomplete download is the client's problem, not the server's. The important thing is
+      // to cancel the stream if it is still being generated; to that end, the next new write()
+      // call after this point will throw.
+      this.waiting.forEach(f => f());
+      this.waiting = [];
+    });
+  }
+
+  expectSize(size) {
+    if (!this.started) {
+      this.started = true;
+      this.response.writeHead(this.httpCode, this.httpStatus, { "Content-Length": size });
+    }
   }
 
   write(data) {
-    this.response.write(data);
+    if (!this.started) {
+      this.started = true;
+      this.response.writeHead(this.httpCode, this.httpStatus);
+    }
+
+    if (this.aborted) {
+      // Connection has been aborted.
+      if (this.alreadyThrew) {
+        // We already threw an error from a previous write(). Do not throw more errors, because
+        // older versions of sandstorm-http-bridge do not stop on the first error and will print
+        // every error to the log, wasting space. Newer versions stop on the first failure.
+        return;
+      } else {
+        this.alreadyThrew = true;
+        throw new Error("client disconnected");
+      }
+    } else {
+      if (this.response.write(data)) {
+        // All written.
+        return;
+      } else {
+        // Write buffer is full. Don't complete until it has more space.
+        if (this.waiting.length >= 16) {
+          // Yikes, there are 16 writes in-flight already. Probably, the caller does not implement
+          // flow control, and is going to do *all* of its writes in parallel. Since the caller
+          // is ignoring returns anyway, we might as well shed load from the Cap'n Proto tables
+          // by closing out the earlier calls.
+          this.waiting.shift()();
+        }
+
+        return new Promise((resolve, reject) => {
+          this.waiting.push(resolve);
+        });
+      }
+    }
   }
 
   done() {
+    if (!this.started) {
+      this.started = true;
+      this.response.writeHead(this.httpCode, this.httpStatus, { "Content-Length": 0 });
+    }
+
     this.response.end();
-    this.streamHandle.close();
     this.ended = true;
   }
 
   close() {
     if (this.ended) {
-      this.resolve();
+      if (this.resolve) this.resolve();
     } else {
-      this.streamHandle.close();
-      this.reject(new Error('done() was never called on outbound stream.'));
+      if (this.reject) this.reject(new Error('done() was never called on outbound stream.'));
     }
   }
 };

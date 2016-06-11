@@ -198,6 +198,19 @@ public:
         return kj::arrayPtr(buffer, 0);
       } else if (headersComplete && status_code / 100 == 2) {
         isStreaming = true;
+
+        KJ_IF_MAYBE(length, findHeader("content-length")) {
+          auto req = responseStream.expectSizeRequest();
+          req.setSize(length->parseAs<uint64_t>());
+          taskSet.add(req.send().ignoreResult());
+        }
+
+        allocateNextWrite(body.asPtr().asBytes());
+        body = kj::Vector<char>();
+        taskSet.add(pumpWrites().catch_([this](kj::Exception&&) {
+          responseInput->abortRead();
+          aborted = true;
+        }));
         return kj::arrayPtr(buffer,0);
       } else {
         return readResponse(stream);
@@ -207,15 +220,8 @@ public:
 
   void pumpStream(kj::Own<kj::AsyncIoStream>&& stream) {
     if (isStreaming) {
-      if (body.size() > 0) {
-        auto request = responseStream.writeRequest();
-        auto dst = request.initData(body.size());
-        memcpy(dst.begin(), body.begin(), body.size());
-        taskSet.add(request.send().ignoreResult());
-        body.resize(0);
-      }
-
-      taskSet.add(pumpStreamInternal(kj::mv(stream)));
+      responseInput = kj::mv(stream);
+      taskSet.add(pumpStreamInternal());
     }
   }
 
@@ -445,9 +451,6 @@ private:
 
   sandstorm::ByteStream::Client responseStream;
   kj::TaskSet taskSet;
-  bool headersComplete = false;
-  bool messageComplete = false;
-  byte buffer[4096];
   http_parser_settings settings;
   kj::Vector<RawHeader> rawHeaders;
   kj::Vector<char> rawStatusString;
@@ -456,22 +459,114 @@ private:
   kj::Vector<char> body;
   kj::Vector<Cookie> cookies;
   kj::String statusString;
+  bool headersComplete = false;
+  bool messageComplete = false;
   bool isStreaming = false;
+  bool streamDone = false;
+  bool readStalled = false;
+  bool aborted = false;
 
-  kj::Promise<void> pumpStreamInternal(kj::Own<kj::AsyncIoStream>&& stream) {
-    return stream->tryRead(buffer, 1, sizeof(buffer)).then(
-        [this, KJ_MVCAP(stream)](size_t actual) mutable -> kj::Promise<void> {
+  kj::Maybe<kj::Own<kj::PromiseFulfiller<void>>> writeReady;
+  capnp::Request<ByteStream::WriteParams, ByteStream::WriteResults> nextWrite = nullptr;
+  capnp::Orphan<capnp::Data> nextWriteData;
+  size_t nextWriteSize = 0;  // how many bytes are already in `nextWriteData`
+
+  kj::Own<kj::AsyncIoStream> responseInput;
+  byte buffer[8192];
+
+  kj::Promise<void> pumpWrites() {
+    if (nextWriteSize > 0) {
+      // Send the current write and allocate a new one.
+      nextWriteData.truncate(nextWriteSize);
+      nextWrite.adoptData(kj::mv(nextWriteData));
+
+      auto result = nextWrite.send().then([this](auto&&) {
+        return pumpWrites();
+      });
+
+      allocateNextWrite();
+
+      return result;
+    } else if (streamDone) {
+      // No more bytes coming.
+      nextWrite = nullptr;
+      return responseStream.doneRequest().send().ignoreResult();
+    } else {
+      // No bytes received yet. Wait.
+      auto paf = kj::newPromiseAndFulfiller<void>();
+      writeReady = kj::mv(paf.fulfiller);
+      return paf.promise.then([this]() { return pumpWrites(); });
+    }
+  }
+
+  void allocateNextWrite(kj::ArrayPtr<const byte> initData = nullptr) {
+    // For each write we start out allocating twice as much space as we actually managed to fill
+    // on the previous write, though we cap this at 128k.
+    size_t size = nextWriteSize * 2;
+    if (size < sizeof(buffer)) {
+      size = sizeof(buffer);
+    } else if (size > (128u << 10)) {
+      size = (128u << 10);
+    }
+
+    size = kj::max(size, initData.size());
+
+    nextWrite = responseStream.writeRequest();
+    nextWriteData = capnp::Orphanage::getForMessageContaining(
+        ByteStream::WriteParams::Builder(nextWrite))
+        .newOrphan<capnp::Data>(size);
+
+    nextWriteSize = initData.size();
+    if (initData.size() > 0) {
+      memcpy(nextWriteData.get().begin(), initData.begin(), initData.size());
+    }
+
+    if (readStalled) {
+      // Start reading again.
+      readStalled = false;
+      taskSet.add(pumpStreamInternal());
+    }
+  }
+
+  kj::Promise<void> pumpStreamInternal() {
+    // Read HTTP response data coming out of the app.
+
+    if (aborted) {
+      // Output failed; give up.
+      return kj::READY_NOW;
+    }
+
+    // Make sure not to read more bytes than would fit in our output buffer.
+    size_t n = kj::min(sizeof(buffer), nextWriteData.getReader().size() - nextWriteSize);
+
+    if (n == 0) {
+      // We're out of space. Wait.
+      readStalled = true;
+      return kj::READY_NOW;
+    }
+
+    return responseInput->tryRead(buffer, 1, n)
+        .then([this](size_t actual) -> kj::Promise<void> {
+      if (aborted) {
+        // Output failed; give up.
+        return kj::READY_NOW;
+      }
+
       size_t nread = http_parser_execute(this, &settings, reinterpret_cast<char*>(buffer), actual);
       if (nread != actual) {
+        // The parser failed.
         const char* error = http_errno_description(HTTP_PARSER_ERRNO(this));
         KJ_FAIL_ASSERT("Failed to parse HTTP response from sandboxed app.", error);
       } else if (messageComplete || actual == 0) {
         // The parser is done or the stream has closed.
-        taskSet.add(responseStream.doneRequest().send().ignoreResult());
+        streamDone = true;
+        KJ_IF_MAYBE(w, writeReady) {
+          w->get()->fulfill();
+          writeReady = nullptr;
+        }
         return kj::READY_NOW;
       } else {
-        taskSet.add(pumpStreamInternal(kj::mv(stream)));
-        return kj::READY_NOW;
+        return pumpStreamInternal();
       }
     });
   }
@@ -592,16 +687,19 @@ private:
 
   void onBody(kj::ArrayPtr<const char> data) {
     if (isStreaming) {
-      // TODO(soon): Pause the input whenever too many write requests are in-flight at once.
-      //   Otherwise, a large file download may end up entirely buffered in RAM.
-      // TODO(security): Cap'n Proto itself should stop processing inbound messages when too many
-      //   requests are in-flight, measured by the size of the requests. Otherwise the queuing
-      //   described above will actually happen at the front-end and not even be charged to the
-      //   user. Watch out for deadlock, though.
-      auto request = responseStream.writeRequest();
-      auto dst = request.initData(data.size());
-      memcpy(dst.begin(), data.begin(), data.size());
-      taskSet.add(request.send().ignoreResult());
+      // Copy into the buffer we're working on.
+      kj::ArrayPtr<byte> buffer = nextWriteData.get();
+      buffer = buffer.slice(nextWriteSize, buffer.size());
+      KJ_ASSERT(data.size() <= buffer.size(), data.size(), buffer.size(), nextWriteSize);
+      memcpy(buffer.begin(), data.begin(), data.size());
+      nextWriteSize += data.size();
+
+      // Indicate data is ready. (Most of these fulfill() calls will be no-ops if no one is
+      // waiting.)
+      KJ_IF_MAYBE(w, writeReady) {
+        w->get()->fulfill();
+        writeReady = nullptr;
+      }
     } else {
       body.addAll(data);
     }

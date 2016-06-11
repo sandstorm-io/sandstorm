@@ -1,3 +1,8 @@
+### v0.165 (2016-06-11) [bugfixes]
+- Implemented flow control for large file downloads from apps so that they don't buffer in the front-end consuming excessive RAM. Apps that handle large files will need to re-pack using the latest sandstorm-http-bridge and push an update.
+- Sandstorm for Work: Made SAML entity ID configurable; added more setup instructions.
+- Updated Google login setup instructions to match latest gratuitous UI changes.
+
 ### v0.165 (2016-06-04) [bugfixes]
 - Re-enabled websocket self-check under new admin UI.
 

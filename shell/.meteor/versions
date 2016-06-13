@@ -71,7 +71,6 @@ modules@0.5.2
 modules-runtime@0.6.2
 mongo@1.1.6
 mongo-id@1.0.3
-npm-ed25519@0.0.4
 npm-mongo@1.4.42
 npm-request@2.67.0
 oauth@1.1.9

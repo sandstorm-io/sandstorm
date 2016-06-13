@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Bignum from "bignum";
 import ed25519 from "ed25519";
 const Capnp = Npm.require("capnp");
 const FeatureKey = Capnp.importSystem("sandstorm/feature-key.capnp").FeatureKey;

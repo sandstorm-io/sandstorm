@@ -13,6 +13,7 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
+    "bignum": "0.9.0",
     "ed25519": "0.0.4",
     "intro.js": "git+https://github.com/sandstorm-io/intro.js.git#sandstorm",
     "request": "2.67.0"

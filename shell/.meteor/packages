@@ -30,7 +30,6 @@ accounts-saml
 email
 accounts-identity
 simplesmtp
-bignum
 connect
 http
 browser-policy

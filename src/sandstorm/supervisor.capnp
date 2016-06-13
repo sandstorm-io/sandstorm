@@ -279,10 +279,9 @@ struct ApiTokenOwner {
 
       introducerIdentity @9 :Text;
       # The identity ID through which a user's powerbox action caused the grain to receive this
-      # token. This is the identity against which the `requiredPermissions` parameter
-      # to `restore()` will be checked. This field is only intended to be filled in by the
-      # front-end during a powerbox request; a regular `save()` call produces a capability that
-      # has no "introducer".
+      # token. The token will become invalid if this identity loses access to the grain. This field
+      # only exists for legacy tokens that were created before the full `clientPowerboxRequest`
+      # flow existed.
 
       introducerUser @5 :Text;
       # Deprecated. See `introducerIdentity`.
@@ -297,7 +296,9 @@ struct ApiTokenOwner {
       # Grain ID owning the ref.
 
       introducerIdentity @14 :Text;
-      # The ID of the identity who caused this request code to be generated.
+      # The identity ID through which a user's powerbox action caused the grain to receive this
+      # token. This is the identity against which the `requiredPermissions` parameter
+      # to `claimRequest()` will be checked.
     }
 
     internet @3 :AnyPointer;

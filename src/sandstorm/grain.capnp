@@ -110,14 +110,11 @@ interface SandstormApi(AppObjectId) {
   # inject the SturdyRef into a subsequent spoofed powerbox response, since a SturdyRef is not
   # usable as a `requestToken`.
   #
-  # Note that `requestToken` is actually text. It is declared as `Data` here for historical
-  # reasons, but the data should simply be the UTF-8-encoded text string returned in the
-  # client-side powerbox request. TODO(apibump): Change `requestToken` to Text.
-  #
   # `requiredPermissions` specifies permissions which must be held on *this* grain by the user
-  # who completed the powerbox interaction. This way, if a user of a grain connects the grain to
-  # other resources, but later has their access to the grain revoked, these connections are revoked
-  # as well.
+  # who completed the powerbox interaction. (The implicit "can access the grain at all" permission
+  # is always treated as a required permission, even if `requiredPermissions` is null or empty.)
+  # This way, if a user of a grain connects the grain to other resources, but later has their access
+  # to the grain revoked, these connections are revoked as well.
   #
   # Consider this example: Alice owns a grain which implements a discussion forum. At some point,
   # Alice invites Dave to participate in the forum, and she gives him moderator permissions. As

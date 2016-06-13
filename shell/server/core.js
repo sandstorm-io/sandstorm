@@ -43,10 +43,10 @@ class SandstormCoreImpl {
 
       // Honor `requiredPermissions`.
       const requirements = [];
-      if (requiredPermissions && token.owner.clientPowerboxRequest.introducerIdentity) {
+      if (token.owner.clientPowerboxRequest.introducerIdentity) {
         requirements.push({
           permissionsHeld: {
-            permissions: requiredPermissions,
+            permissions: requiredPermissions || [],
             identityId: token.owner.clientPowerboxRequest.introducerIdentity,
             grainId: this.grainId,
           },
@@ -72,9 +72,20 @@ class SandstormCoreImpl {
         throw new Error("no such token");
       }
 
+      const requirements = [];
+      if (token.owner.grain.introducerIdentity) {
+        requirements.push({
+          permissionsHeld: {
+            permissions: [],
+            identityId: token.owner.grain.introducerIdentity,
+            grainId: this.grainId,
+          },
+        });
+      }
+
       return restoreInternal(sturdyRef,
                              { grain: Match.ObjectIncluding({ grainId: this.grainId }) },
-                             [], hashedSturdyRef);
+                             requirements, hashedSturdyRef);
     });
   }
 

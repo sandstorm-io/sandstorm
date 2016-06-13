@@ -1124,13 +1124,15 @@ _.extend(SandstormDb.prototype, {
     return SandstormDb.getUserIdentityIds(user).indexOf(identityId) != -1;
   },
 
-  userGrains: function userGrains(userId) {
+  userGrains: function userGrains(userId, trashed) {
     check(userId, Match.OneOf(String, undefined, null));
-    return this.collections.grains.find({ userId: userId });
+    check(trashed, Match.OneOf(Boolean, undefined, null));
+
+    return this.collections.grains.find({ userId: userId, trashed: { $exists: !!trashed, }, });
   },
 
-  currentUserGrains: function currentUserGrains() {
-    return this.userGrains(Meteor.userId());
+  currentUserGrains: function currentUserGrains(trashed) {
+    return this.userGrains(Meteor.userId(), trashed);
   },
 
   getGrain: function getGrain(grainId) {
@@ -1138,14 +1140,18 @@ _.extend(SandstormDb.prototype, {
     return this.collections.grains.findOne(grainId);
   },
 
-  userApiTokens: function userApiTokens(userId) {
+  userApiTokens: function userApiTokens(userId, trashed) {
     check(userId, Match.OneOf(String, undefined, null));
+    check(trashed, Match.OneOf(Boolean, undefined, null));
     const identityIds = SandstormDb.getUserIdentityIds(this.getUser(userId));
-    return this.collections.apiTokens.find({ "owner.user.identityId": { $in: identityIds } });
+    return this.collections.apiTokens.find({
+      "owner.user.identityId": { $in: identityIds },
+      trashed: { $exists: !!trashed },
+    });
   },
 
-  currentUserApiTokens: function currentUserApiTokens() {
-    return this.userApiTokens(Meteor.userId());
+  currentUserApiTokens: function currentUserApiTokens(trashed) {
+    return this.userApiTokens(Meteor.userId(), trashed);
   },
 
   userActions: function userActions(user) {

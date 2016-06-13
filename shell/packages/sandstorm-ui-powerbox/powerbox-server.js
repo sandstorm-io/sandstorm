@@ -239,12 +239,8 @@ specialCaseTypes[Grain.UiView.typeId] = function (db, userId, value) {
 
   // TODO(someday): Allow `value` to specify app IDs to filter for.
 
-  const sharedGrainIds = db.userApiTokens(userId).fetch()
-      .filter(token => !token.trashed)
-      .map(token => token.grainId);
-  const ownedGrainIds = db.userGrains(userId).fetch()
-      .filter(grain => !grain.trashed)
-      .map(grain => grain._id);
+  const sharedGrainIds = db.userApiTokens(userId).map(token => token.grainId);
+  const ownedGrainIds = db.userGrains(userId).map(grain => grain._id);
 
   return _.uniq(sharedGrainIds.concat(ownedGrainIds)).map(grainId => {
     return new PowerboxOption({

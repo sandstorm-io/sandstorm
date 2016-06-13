@@ -89,12 +89,9 @@ const compileMatchFilter = function (searchString) {
 const filteredSortedGrains = function (showTrash) {
   const ref = Template.instance().data;
   const db = ref._db;
-  const grains = db.currentUserGrains().fetch()
-        .filter((grain) => !!grain.trashed == showTrash);
+  const grains = db.currentUserGrains(showTrash).fetch();
   const itemsFromGrains = SandstormGrainListPage.mapGrainsToTemplateObject(grains, db);
-
-  const apiTokens = db.currentUserApiTokens().fetch()
-        .filter((token) => !!token.trashed == showTrash);
+  const apiTokens = db.currentUserApiTokens(showTrash).fetch();
   const itemsFromSharedGrains = SandstormGrainListPage.mapApiTokensToTemplateObject(apiTokens, ref._staticHost);
   const filter = compileMatchFilter(Template.instance()._filter.get());
   return _.chain([itemsFromGrains, itemsFromSharedGrains])
@@ -194,17 +191,12 @@ Template.sandstormGrainListPage.helpers({
   },
 
   myGrainsCount: function () {
-    return Template.instance().data._db.currentUserGrains().count();
+    return Template.instance().data._db.currentUserGrains(false).count() +
+           Template.instance().data._db.currentUserGrains(true).count();
   },
 
   trashCount: function () {
     return filteredSortedGrains(true).length;
-  },
-
-  hasAnyGrainsCreatedOrSharedWithMe: function () {
-    const _db = Template.instance().data._db;
-    return !!(_db.currentUserGrains().count() ||
-               _db.currentUserApiTokens().count());
   },
 
   myGrainsSize: function () {

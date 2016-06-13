@@ -14,6 +14,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "ed25519": "0.0.4",
-    "intro.js": "git+https://github.com/sandstorm-io/intro.js.git#sandstorm"
+    "intro.js": "git+https://github.com/sandstorm-io/intro.js.git#sandstorm",
+    "request": "2.67.0"
   }
 }

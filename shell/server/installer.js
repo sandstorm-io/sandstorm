@@ -14,14 +14,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const Fs = Npm.require("fs");
-const Path = Npm.require("path");
-const Crypto = Npm.require("crypto");
-const ChildProcess = Npm.require("child_process");
-const Http = Npm.require("http");
-const Https = Npm.require("https");
-const Url = Npm.require("url");
+import Fs from "fs";
+import Path from "path";
+import Crypto from "crypto";
+import ChildProcess from "child_process";
+import Http from "http";
+import Https from "https";
+import Url from "url";
 const Promise = Npm.require("es6-promise").Promise;
+import Request from "request";
 const Capnp = Npm.require("capnp");
 
 const Manifest = Capnp.importSystem("sandstorm/package.capnp").Manifest;

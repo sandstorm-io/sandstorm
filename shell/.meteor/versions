@@ -72,7 +72,6 @@ modules-runtime@0.6.2
 mongo@1.1.6
 mongo-id@1.0.3
 npm-mongo@1.4.42
-npm-request@2.67.0
 oauth@1.1.9
 oauth2@1.1.8
 observe-sequence@1.0.10

@@ -52,7 +52,6 @@ sandstorm-ui-autocomplete-input
 sandstorm-ui-powerbox
 meteor-node-forge
 fourseven:scss
-npm-request
 sha
 standard-minifier-css
 standard-minifier-js

@@ -507,7 +507,7 @@ interface SessionContext {
   request @3 (query :List(Powerbox.PowerboxDescriptor), requiredPermissions :PermissionSet)
           -> (cap :Capability, descriptor :Powerbox.PowerboxDescriptor);
   # Although this method exists, it is unimplemented and currently you are meant to use the
-  # postMessage api to get a token, and then restore that token with SandstormApi.restore().
+  # postMessage api to get a temporary token and then restore it with SandstormApi.claimRequest().
   #
   # The postMessage api is an rpc interface so you will have to listen for a `message` callback
   # after sending a postMessage. The postMessage object should have the following form:

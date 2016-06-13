@@ -16,6 +16,7 @@
     "bignum": "0.9.0",
     "ed25519": "0.0.4",
     "intro.js": "git+https://github.com/sandstorm-io/intro.js.git#sandstorm",
+    "node-forge": "0.6.34",
     "request": "2.67.0"
   }
 }

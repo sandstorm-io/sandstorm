@@ -49,7 +49,6 @@ sandstorm-ui-grainlist
 sandstorm-ui-grainview
 sandstorm-ui-autocomplete-input
 sandstorm-ui-powerbox
-meteor-node-forge
 fourseven:scss
 sha
 standard-minifier-css

@@ -1,9 +1,0 @@
-{
-  "dependencies": {
-    "node-forge": {
-      "version": "0.6.34",
-      "resolved": "https://registry.npmjs.org/node-forge/-/node-forge-0.6.34.tgz",
-      "from": "https://registry.npmjs.org/node-forge/-/node-forge-0.6.34.tgz"
-    }
-  }
-}

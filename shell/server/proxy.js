@@ -1880,12 +1880,24 @@ class Proxy {
       }
 
       // Pipe the input stream to the app.
+      let writesInFlight = 0;
+      let readingPaused = false;
       request.on('data', (buf) => {
-        // TODO(soon): Only allow a small number of write()s to be in-flight at once,
-        //   pausing the input stream if we hit that limit, so that we block the TCP socket all the
-        //   way back to the source. May want to also coalesce small writes for this purpose.
-        // TODO(security): The above problem may allow a DoS attack on the front-end.
-        if (!uploadStreamError) requestStream.write(buf).catch(reportUploadStreamError);
+        // TODO(someday): Coalesce small writes.
+        if (!uploadStreamError) {
+          requestStream.write(buf).then(() => {
+            writesInFlight--;
+            if (readingPaused) {
+              request.resume();
+              readingPaused = false;
+            }
+          }).catch(reportUploadStreamError);
+
+          if (writesInFlight++ > 16) {
+            request.pause();
+            readingPaused = true;
+          }
+        }
       });
 
       request.on('end', () => {
@@ -2374,15 +2386,28 @@ WebSocketReceiver = class WebSocketReceiver {
   }
 };
 
-pumpWebSocket = (socket, rpcStream, destructor) => {
+function pumpWebSocket(socket, rpcStream, destructor) {
+  let writesInFlight = 0;
+  let readingPaused = false;
   socket.on('data', (chunk) => {
-    rpcStream.sendBytes(chunk).catch((err) => {
+    rpcStream.sendBytes(chunk).then(() => {
+      writesInFlight--;
+      if (readingPaused) {
+        socket.resume();
+        readingPaused = false;
+      }
+    }).catch((err) => {
       if (err.kjType !== 'disconnected') {
         console.error('WebSocket sendBytes failed: ' + err.stack);
       }
 
       socket.destroy();
     });
+
+    if (writesInFlight++ > 16) {
+      socket.pause();
+      readingPaused = true;
+    }
   });
 
   socket.on('end', (chunk) => {

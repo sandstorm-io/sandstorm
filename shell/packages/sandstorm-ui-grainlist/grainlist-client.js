@@ -247,7 +247,7 @@ Template.sandstormGrainListPage.events({
   "click .grain-list .question-mark": function (event) {
     const templateData = Template.instance().data;
 
-    const exitAndremoveOverlayNow = () => {
+    const exitAndRemoveOverlayNow = () => {
       // If there is no active intro, bail now.
       if (!templateData.intro) {
         return;
@@ -269,7 +269,7 @@ Template.sandstormGrainListPage.events({
     if (templateData.intro) {
       // In this case, the intro is currently active, and the user clicked on the question mark. The
       // sensible thing to do is to dismiss the intro and stop processing the click.
-      return exitAndremoveOverlayNow();
+      return exitAndRemoveOverlayNow();
     }
 
     const intro = Template.instance().data.intro = introJs();
@@ -292,10 +292,10 @@ Template.sandstormGrainListPage.events({
     });
 
     // onexit gets triggered when user clicks on the overlay.
-    intro.onexit(exitAndremoveOverlayNow);
+    intro.onexit(exitAndRemoveOverlayNow);
 
     // oncomplete gets triggered when user clicks "Got it".
-    intro.oncomplete(exitAndremoveOverlayNow);
+    intro.oncomplete(exitAndRemoveOverlayNow);
 
     intro.start();
   },

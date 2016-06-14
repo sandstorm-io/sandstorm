@@ -342,6 +342,11 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
   // `powerboxOptions`. Each item has the following fields:
   //
   //   _id: Unique identifier string.
+  //      TODO(soon): This ID string is often a human-readable name like "frontendref-ipinterface"
+  //        and is only guaranteed to be unique because we currently don't allow a client to have
+  //        multiple powerbox requests active at the same time. We should strengthen this uniqueness
+  //        guarentee, possibly by incorporating `requestId`. Note, however, that Meteor requires `_id`
+  //        to be either a string or an `ObjectID`.
   //   requestId: The value of `requestId` that was passed in when subscribing.
   //   matchQuality: "preferred" or "acceptable" ("unacceptable" options aren't returned).
   //   frontendRef: If present, selecting this option means creating a simple frontendRef. The

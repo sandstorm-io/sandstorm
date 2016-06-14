@@ -1274,6 +1274,7 @@ class Proxy {
   _callNewWebSession(request, userInfo) {
     const params = Capnp.serialize(WebSession.Params, {
       basePath: PROTOCOL + "//" + request.headers.host,
+      staticAssetPath: PROTOCOL + "//" + globalDb.makeWildcardHost("static") + "/",
       userAgent: "user-agent" in request.headers
           ? request.headers["user-agent"]
           : "UnknownAgent/0.0",
@@ -1380,7 +1381,7 @@ class Proxy {
       this.getConnection();  // make sure we're connected
       const promise = this.uiView.getViewInfo().then((viewInfo) => {
         return inMeteor(() => {
-          Grains.update(this.grainId, { $set: { cachedViewInfo: viewInfo } });
+          globalDb.updateCachedViewInfo(this.grainId, viewInfo);
         }).then(() => {
           return this._callNewSession(request, viewInfo);
         });

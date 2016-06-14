@@ -197,15 +197,21 @@ class PersistentUiViewImpl {
     return inMeteor(() => {
       const pkg = Packages.findOne({ _id: this._grain.packageId });
       const manifest = pkg.manifest || {};
-      if (!viewInfo.appTitle) {
-        viewInfo.appTitle = manifest.appTitle || {};
+      if (!viewInfo.metadata) {
+        viewInfo.metadata = {};
       }
 
-      if (!viewInfo.grainIconUrl) {
-        // TODO(security, now): Do we need to do some kind of filtering here to prevent
-        //   cross-site scripting attacks?
+      if (!viewInfo.metadata.appTitle) {
+        viewInfo.metadata.appTitle = manifest.appTitle || {};
+      }
+
+      if (!viewInfo.metadata.icon && !viewInfo.metadata.appId) {
         const grainIcon = ((manifest.metadata || {}).icons || {}).grain;
-        viewInfo.grainIconUrls = globalDb.getIconUrls(grainIcon);
+        if (grainIcon) {
+          viewInfo.metadata.icon = grainIcon;
+        } else {
+          viewInfo.metadata.appId = pkg.appId;
+        }
       }
 
       return viewInfo;

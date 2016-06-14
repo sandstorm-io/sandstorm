@@ -32,8 +32,8 @@ module.exports = {};
 module.exports["Test Ip Networking"] = function (browser) {
   browser
     // sandstorm-test-python: David's branch that updates for the new claimRequest() flow.
-    .installApp("https://alpha-39yykmgwdi9y87253vdx.sandstorm.io/sandstorm-test-python.spk",
-                "0f77d7f8658e0badb97540dd34b15d69",
+    .installApp("http://sandstorm.io/apps/david/sandstorm-test-python3.spk",
+                "ebf2504eeb495cd781ef76adf4756dd5",
                 "umeqc9yhncg63fjj6sahtw30nf99kfm6tgkuz8rmhn5dqtusnwah", false, true)
     .assert.containsText("#grainTitle", "Untitled Test App test page")
     .waitForElementVisible('.grain-frame', short_wait)
@@ -56,8 +56,8 @@ module.exports["Test Ip Networking"] = function (browser) {
 module.exports["Test Ip Interface"] = function (browser) {
   browser
     // sandstorm-test-python: David's branch that updates for the new claimRequest() flow.
-    .installApp("https://alpha-39yykmgwdi9y87253vdx.sandstorm.io/sandstorm-test-python.spk",
-                "0f77d7f8658e0badb97540dd34b15d69",
+    .installApp("http://sandstorm.io/apps/david/sandstorm-test-python3.spk",
+                "ebf2504eeb495cd781ef76adf4756dd5",
                 "umeqc9yhncg63fjj6sahtw30nf99kfm6tgkuz8rmhn5dqtusnwah", false, true)
     .assert.containsText("#grainTitle", "Untitled Test App test page")
     .waitForElementVisible('.grain-frame', short_wait)
@@ -74,6 +74,6 @@ module.exports["Test Ip Interface"] = function (browser) {
       .click("form.test-ip-interface button")
     .frameParent()
     .assertTcpConnection(IP_INTERFACE_TEST_PORT, "tcptest")
-    .end()
+    .end();
 };
 

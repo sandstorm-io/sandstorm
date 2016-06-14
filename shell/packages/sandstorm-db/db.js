@@ -1721,7 +1721,8 @@ if (Meteor.isServer) {
   SandstormDb.prototype.addStaticAsset = addStaticAsset;
 
   SandstormDb.prototype.refStaticAsset = function (id) {
-    // Increment the refcount on an existing static asset.
+    // Increment the refcount on an existing static asset. Returns the asset on success.
+    // If the asset does not exist, returns a falsey value.
     //
     // You must call this BEFORE adding the new reference to the DB, in case of failure between
     // the two calls. (This way, the failure case is a storage leak, which is probably not a big
@@ -1732,11 +1733,10 @@ if (Meteor.isServer) {
     const existing = StaticAssets.findAndModify({
       query: { hash: hash },
       update: { $inc: { refcount: 1 } },
-      fields: { _id: 1, refcount: 1 },
+      fields: { _id: 1, content: 1, mimeType: 1 },
     });
-    if (!existing) {
-      throw new Error("refStaticAsset() called on asset that doesn't exist");
-    }
+
+    return existing;
   };
 
   SandstormDb.prototype.unrefStaticAsset = function (id) {
@@ -1810,23 +1810,81 @@ if (Meteor.isServer) {
   // Cleanup tokens every hour.
   SandstormDb.periodicCleanup(3600000, cleanupExpiredAssetUploads);
 
-  SandstormDb.prototype.getIconUrls = function (icon) {
-    check(icon, Match.OneOf(undefined, null,
-                            { format: String, assetId: String,
-                              assetId2xDpi: Match.Optional(String), }));
-    const root =
-        Url.parse(process.env.ROOT_URL).protocol + "//" + this.makeWildcardHost("static") + "/";
+  SandstormDb.prototype.updateCachedViewInfo = function (grainId, viewInfo) {
+    check(grainId, String);
+    // TODO(soon): Typecheck viewInfo. We should be able to factor out some of the checking code
+    //   that's currently in sandstorm-permissions/permissions-test.js.
 
-    result = {};
-    if (icon.assetId) {
-      result.url =  root + icon.assetId;
+    function validateAsset(icon, field) {
+      if (icon[field]) {
+        const asset = this.refStaticAsset(icon[field]);
+        if (asset) {
+          if (asset.content.length() > 64 * 1024 || !asset.mimeType.startsWith("image/")) {
+            this.unrefStaticAsset(icon[field]);
+            delete icon[field];
+          }
+        } else {
+          delete icon[field];
+        }
+      }
     }
 
-    if (icon.assetId2xDpi) {
-      result.assetId2xDpi = root + icon.assetId2xDpi;
+    const icon = (viewInfo.metadata || {}).icon || {};
+    validateAsset(icon, "assetId");
+    validateAsset(icon, "assetId2xDpi");
+
+    const oldGrain = Grains.findAndModify({
+      query: { _id: grainId },
+      update: { $set: { cachedViewInfo: viewInfo } },
+    });
+
+    const oldIcon = ((oldGrain.cachedViewInfo || {}).metadata || {}).icon || {};
+    if (oldIcon.assetId) {
+      this.unrefStaticAsset(oldIcon.assetId);
     }
 
-    return result;
+    if (oldIcon.assetId2xDpi) {
+      this.unrefStaticAsset(oldIcon.assetId2xDpi);
+    }
+  };
+
+  SandstormDb.prototype.deleteGrains = function (query, backend, type) {
+    check(type, Match.OneOf("grain", "demoGrain"));
+
+    Grains.find(query).forEach((grain) => {
+      waitPromise(backend.deleteGrain(grain._id, grain.userId));
+      Grains.remove({ _id: grain._id });
+      this.removeApiTokens({
+        grainId: grain._id,
+        $or: [
+          { owner: { $exists: false } },
+          { owner: { webkey: null } },
+        ],
+      });
+
+      this.removeApiTokens({ "owner.grain.grainId": grain._id });
+
+      if (grain.lastUsed) {
+        DeleteStats.insert({
+          type: "grain",  // Demo grains can never get here!
+          lastActive: grain.lastUsed,
+          appId: grain.appId,
+        });
+      }
+
+      if (grain.cachedViewInfo) {
+        const icon = (grain.cachedViewInfo.metadata || {}).icon || {};
+        if (icon.assetId) {
+          this.unrefStaticAsset(icon.assetId);
+        }
+
+        if (icon.assetId2xDpi) {
+          this.unrefStaticAsset(icon.assetId2xDpi);
+        }
+      }
+
+      Meteor.call("deleteUnusedPackages", grain.appId);
+    });
   };
 
   SandstormDb.prototype.userGrainTitle = function (grainId, accountId, identityId) {

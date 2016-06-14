@@ -32,9 +32,9 @@ module.exports = {};
 module.exports["Test Powerbox"] = function (browser) {
   browser
     .init()
-    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app.spk",
-                "d0c0736300b0bb5e359f6eca53b69348",
-                "j1wk2t2h5shy85mt2usv26dxsak38xuxh3yyg1dkvx34jydrcvmh")
+    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app2.spk",
+                "7a2996cc34d329da6d24e37fdbaa919d",
+                "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
     .assert.containsText("#grainTitle", "Untitled PowerboxTest")
     .waitForElementVisible('.grain-frame', short_wait)
     .frame("grain-frame")
@@ -64,9 +64,9 @@ module.exports["Test PowerboxSave"] = function (browser) {
   browser
     browser
     .init()
-    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app.spk",
-                "d0c0736300b0bb5e359f6eca53b69348",
-                "j1wk2t2h5shy85mt2usv26dxsak38xuxh3yyg1dkvx34jydrcvmh")
+    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app2.spk",
+                "7a2996cc34d329da6d24e37fdbaa919d",
+                "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
     .assert.containsText("#grainTitle", "Untitled PowerboxTest")
     .waitForElementVisible('.grain-frame', short_wait)
     .frame("grain-frame")
@@ -96,9 +96,9 @@ module.exports["Test PowerboxSave"] = function (browser) {
 module.exports["Test Powerbox with failing requirements"] = function (browser) {
   browser
     .init()
-    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app.spk",
-                "d0c0736300b0bb5e359f6eca53b69348",
-                "j1wk2t2h5shy85mt2usv26dxsak38xuxh3yyg1dkvx34jydrcvmh")
+    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app2.spk",
+                "7a2996cc34d329da6d24e37fdbaa919d",
+                "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
     .assert.containsText("#grainTitle", "Untitled PowerboxTest")
 
     // We'll use the debugLog at the bottom of the test, but it's nice to open it early and give it time to load.

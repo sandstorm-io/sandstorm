@@ -12,6 +12,10 @@
   color: $grainlist-foreground-color;
 
   .question-mark {
+    @extend %button-base;
+    @extend %button-secondary;
+    border: none;
+    background-color: inherit;
     background-image: url("/question-a9a9a9.svg");
     background-size: 24px 24px;
     background-position: center;
@@ -22,6 +26,7 @@
   }
   .question-mark:hover {
     background-image: url("/question-727272.svg");
+    background-color: inherit;
   }
 
   >.top-row>.non-usage-info {

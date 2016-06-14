@@ -1,0 +1,5 @@
+/* This file contains Sandstorm-wide customizations to intro.js styles.  This permits us to
+   update introjs.css to the latest upstream version straightforwardly. */
+.introjs-fixedTooltip .introjs-tooltip .introjs-tooltiptext {
+  min-width: 300px;
+}

@@ -269,7 +269,8 @@ Template.sandstormGrainListPage.events({
     if (templateData.intro) {
       // In this case, the intro is currently active, and the user clicked on the question mark. The
       // sensible thing to do is to dismiss the intro and stop processing the click.
-      return exitAndRemoveOverlayNow();
+      exitAndRemoveOverlayNow();
+      return;
     }
 
     const intro = Template.instance().data.intro = introJs();

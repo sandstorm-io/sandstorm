@@ -3,3 +3,7 @@
 .introjs-fixedTooltip .introjs-tooltip .introjs-tooltiptext {
   min-width: 300px;
 }
+.introjs-fixedTooltip .introjs-tooltip {
+  /* This needs to be increased due to the wider-than-usual tooltiptext. */
+  max-width: 350px;
+}

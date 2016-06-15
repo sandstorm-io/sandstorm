@@ -16,7 +16,8 @@ tutorial on Mac OS and GNU/Linux, and partly-tested on Windows.
 **Windows users**: You can safely skip this git step. Continue to the next section to ensure Vagrant
 is installed.
 
-In this tutorial, we use git to download some code, so you need it on your computer.
+**Mac or Linux users:** This installation process uses git to download vagrant-spk, so you need git
+on your computer. We'll first check if git is currently installed.
 
 In the terminal, type the following and press enter.
 

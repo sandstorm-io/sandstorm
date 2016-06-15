@@ -42,7 +42,13 @@ ReceiveEmail.prototype.command = function(selector, expectedMessage, timeout, cb
     req.accept();
     mailparser.on("end", function (mail) {
       clearTimeout(timeoutHandle);
-      server.server.end(function () {});
+      server.server.end(function () {
+        if (cb) {
+          cb.call(self.client.api);
+        }
+
+        self.emit("complete");
+      });
 
       var expected = expectedMessage;
 
@@ -53,12 +59,6 @@ ReceiveEmail.prototype.command = function(selector, expectedMessage, timeout, cb
       Object.keys(expected).forEach(function (key) {
         self.client.api.assert.equal(expected[key], mail[key]);
       });
-
-      if (cb) {
-        cb.call(self.client.api);
-      }
-
-      self.emit("complete");
     });
   });
 

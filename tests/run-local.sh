@@ -71,13 +71,6 @@ checkInstalled() {
   fi
 }
 
-getNewPort() {
-  "$NODEJS" -e 'var net = require("net");
-  var sock = net.connect({port: 0});
-  console.log(sock.address().port);
-  sock.destroy()';
-}
-
 # Parse arguments.
 while [ $# -gt 0 ] ; do
   case $1 in
@@ -117,11 +110,13 @@ fi
 
 export SANDSTORM_DIR=$THIS_DIR/tmp-sandstorm
 export OVERRIDE_SANDSTORM_DEFAULT_DIR=$SANDSTORM_DIR
-export PORT=$(getNewPort)
-export MONGO_PORT=$(getNewPort)
-export SMTP_LISTEN_PORT=$(getNewPort)
-export SMTP_OUTGOING_PORT=$(getNewPort)
-export IP_INTERFACE_TEST_PORT=$(getNewPort)
+# Picking some fixed ports because email tests are being flaky with system-assigned ports and we
+# don't do parallel tests yet anyway.
+export PORT=9000
+export MONGO_PORT=9001
+export SMTP_LISTEN_PORT=9002
+export SMTP_OUTGOING_PORT=9003
+export IP_INTERFACE_TEST_PORT=9004
 export LAUNCH_URL="http://local.sandstorm.io:$PORT"
 
 rm -rf "$SANDSTORM_DIR"

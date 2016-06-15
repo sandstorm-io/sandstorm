@@ -406,7 +406,8 @@ Meteor.methods({
 
       const result = opened.methodResult;
       const proxy = new Proxy(apiToken.grainId, grain.userId, result.sessionId,
-                              result.hostId, result.tabId, identityId, false);
+                              result.hostId, result.tabId, identityId, false,
+                              opened.supervisor);
       proxy.apiToken = apiToken;
       proxiesByHostId[result.hostId] = proxy;
       return result;

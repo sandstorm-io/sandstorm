@@ -136,8 +136,9 @@ Linux virtual machine.
 
 - Visit the [vagrant-spk releases list](https://github.com/sandstorm-io/vagrant-spk/releases).
 
-- Download and run a program `vagrant-spk-setup-v0.nnn.exe`. It may need administrator privileges to
-  successfully install.  This will result in a `vagrant-spk` executable on your system path.
+- Download and run the latest EXE file, whose name is typically `vagrant-spk-setup-v0.nnn.exe`. You
+  may need administrator privileges to successfully run the installer.  This will result in a
+  `vagrant-spk` executable on your system path.
 
 You can test it by launching a new Command Prompt and typing `vagrant-spk`, which should result a
 message starting with `usage: ...`. If so, you have successfully installed vagrant-spk. To upgrade

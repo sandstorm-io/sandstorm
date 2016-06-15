@@ -45,8 +45,8 @@ Then you need to install git via the following instructions.
   follow their instructions.
 * **Linux:** Run: `sudo apt-get install git` if you use Debian or Ubuntu. On other Linux systems, use
   your package manager to install git.
-* **Windows:** We recommend you skip setting up git and use the vagrant-spk setup program; see info
-  about that below. If you really want git, you can install it via the [msysgit
+* **Windows:** We recommend you skip setting up git and proceed to the next section to ensure
+  Vagrant is installed. If you really want git, you can install it via the [msysgit
   installer](https://msysgit.github.io/).
 
 ## Ensure Vagrant is installed
@@ -133,7 +133,7 @@ Finally, you can install `vagrant-spk` itself. This tool uses Vagrant
 and VirtualBox so that you can run your app within Sandstorm on a
 Linux virtual machine.
 
-**Windows users: Run the vagrant-spk installer EXE. To get it, visit the [vagrant-spk releases
+**Windows users:** Run the vagrant-spk installer EXE. To get it, visit the [vagrant-spk releases
 list](https://github.com/sandstorm-io/vagrant-spk/releases) and look for a program named
 `vagrant-spk-setup-v0.nnn.exe`. It may need administrator privileges to successfully install.
 

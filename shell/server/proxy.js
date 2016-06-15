@@ -1329,11 +1329,13 @@ class Proxy {
 
       const permissions = SandstormPermissions.grainPermissions(globalDb, vertex, viewInfo,
                                                                 onInvalidated);
+
+      if (_this.permissionsObserver) _this.permissionsObserver.stop();
+      _this.permissionsObserver = permissions.observeHandle;
+
       if (!permissions.permissions) {
         throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
       }
-
-      _this.permissionsObserver = permissions.observeHandle;
 
       Sessions.update({
         _id: _this.sessionId,
@@ -1420,6 +1422,11 @@ class Proxy {
     if (this.supervisor) {
       this.supervisor.close();
       delete this.supervisor;
+    }
+
+    if (this.permissionsObserver) {
+      this.permissionsObserver.stop();
+      delete this.permissionsObserver;
     }
   }
 

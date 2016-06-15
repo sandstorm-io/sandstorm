@@ -1225,7 +1225,7 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
     const allPermissions = PermissionSet.fromRoleAssignment({ allAccess: null }, viewInfo);
     const firstPhasePermissions = context.tryToProve(grainId, vertexId, allPermissions, db);
 
-    if (!firstPhasePermissions) return { permissions: null };
+    if (!firstPhasePermissions) break; // No permissions; give up now.
 
     const needed = context.getResponsibleTokens(grainId, vertexId);
     const neededTokens = needed.tokenIds;
@@ -1302,8 +1302,8 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
 
   onInvalidatedActive = true;
   const result = {};
-  if (resultPermissions) result.permissions = resultPermissions.array;
-  if (observeHandle) result.observeHandle = observeHandle;
+  result.permissions = (resultPermissions && resultPermissions.array) || null;
+  result.observeHandle = observeHandle || new CompoundObserveHandle();
   measureElapsedTime();
   return result;
 };

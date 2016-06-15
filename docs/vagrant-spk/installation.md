@@ -121,11 +121,10 @@ VirtualBox: Command not found.
 
 ## No need to install Sandstorm directly
 
-You do _not_ need Sandstorm installed on your computer before you
-start packaging an app. Sandstorm's `vagrant-spk` helper tool handles
-installing it for you.
-
-It creates a Sandstorm install unique to each app you are developing.
+You do _not_ need Sandstorm installed on your computer before you start packaging an
+app. Sandstorm's `vagrant-spk` helper tool handles installing it for you. As an implementation
+detail, `vagrant-spk` creates an isolated virtual machine for each app you are developing, and each
+virtual machine will have Sandstorm installed.
 
 ## Install `vagrant-spk`
 

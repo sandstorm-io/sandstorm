@@ -134,7 +134,9 @@ Linux virtual machine.
 
 **Windows users:** Run the vagrant-spk installer EXE. To get it, visit the [vagrant-spk releases
 list](https://github.com/sandstorm-io/vagrant-spk/releases) and look for a program named
-`vagrant-spk-setup-v0.nnn.exe`. It may need administrator privileges to successfully install.
+`vagrant-spk-setup-v0.nnn.exe`. It may need administrator privileges to successfully install.  This
+will result in a `vagrant-spk` executable on your system `%PATH%`, which you should be able to
+verify after you quit and re-open Command Prompt.
 
 **Mac or Linux users:** Download vagrant-spk via git.
 

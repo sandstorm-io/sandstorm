@@ -532,15 +532,23 @@ GrainView = class GrainView {
         }
 
         Meteor.defer(() => {
-          _this.reset(_this.identityId());
           _this.openSession();
         });
       },
 
-      changed(session) {
+      changed(session, oldSession) {
         _this._viewInfo = session.viewInfo || _this._viewInfo;
         _this._permissions = session.permissions || _this._permissions;
         _this._dep.changed();
+
+        if (session.invalidated && !oldSession.invalidated) {
+          _this._sessionSub.stop();
+          _this._sessionSub = undefined;
+          Meteor.defer(() => {
+            _this.reset(_this.identityId());
+            _this.openSession();
+          });
+        }
       },
 
       added(session) {

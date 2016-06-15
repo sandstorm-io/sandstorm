@@ -292,6 +292,10 @@
     The Service URL of this server is: <code>{{ serviceUrl }}</code>
   </p>
 
+  <p>
+    If your SAML IDP supports reading the service provider metadata from a URL, then you can point it at: <code><a href="{{configUrl}}">{{ configUrl }}</a></code>
+  </p>
+
   {{#if errorMessage}}
     {{#focusingErrorBox}}
       Failed to save changes: {{errorMessage}}

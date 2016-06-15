@@ -98,6 +98,11 @@
         }
       }
     },
+    "xmlbuilder": {
+      "version": "8.2.2",
+      "resolved": "https://registry.npmjs.org/xmlbuilder/-/xmlbuilder-8.2.2.tgz",
+      "from": "xmlbuilder@8.2.2"
+    },
     "xmldom": {
       "version": "0.1.6",
       "resolved": "https://registry.npmjs.org/xmldom/-/xmldom-0.1.6.tgz",

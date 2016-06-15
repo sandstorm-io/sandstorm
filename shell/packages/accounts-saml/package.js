@@ -19,4 +19,5 @@ Npm.depends({
   "xml-crypto": "0.0.20",
   "xmldom": "0.1.6",
   "connect": "2.7.10",
+  "xmlbuilder": "8.2.2",
 });

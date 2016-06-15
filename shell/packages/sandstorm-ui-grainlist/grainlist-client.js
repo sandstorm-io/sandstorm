@@ -274,12 +274,11 @@ Template.sandstormGrainListPage.events({
     }
 
     const intro = Template.instance().data.intro = introJs();
-    intro.setOptions({
+    let introOptions = {
       steps: [
         {
           element: document.querySelector(".grain-list .question-mark"),
           intro: "Each document, chat room, mail box, notebook, blog, or anything else you create is a grain. All your grains are private until you share them.",
-          position: "right",
         },
       ],
       highlightClass: "hidden-introjs-highlight",
@@ -290,7 +289,14 @@ Template.sandstormGrainListPage.events({
       overlayOpacity: 0,
       showBullets: false,
       doneLabel: "Got it",
-    });
+    };
+
+    // Detect if the window is skinner than 500px; if so, force the hint to appear vertically.
+    if (window.innerWidth < 500) {
+      introOptions.tooltipPosition = "bottom";
+    }
+
+    intro.setOptions(introOptions);
 
     // onexit gets triggered when user clicks on the overlay.
     intro.onexit(exitAndRemoveOverlayNow);

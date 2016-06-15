@@ -132,11 +132,16 @@ Finally, you can install `vagrant-spk` itself. This tool uses Vagrant
 and VirtualBox so that you can run your app within Sandstorm on a
 Linux virtual machine.
 
-**Windows users:** Run the vagrant-spk installer EXE. To get it, visit the [vagrant-spk releases
-list](https://github.com/sandstorm-io/vagrant-spk/releases) and look for a program named
-`vagrant-spk-setup-v0.nnn.exe`. It may need administrator privileges to successfully install.  This
-will result in a `vagrant-spk` executable on your system `%PATH%`, which you should be able to
-verify after you quit and re-open Command Prompt.
+**Windows users:** Run the vagrant-spk installer EXE. To get it:
+
+- Visit the [vagrant-spk releases list](https://github.com/sandstorm-io/vagrant-spk/releases).
+
+- Download and run a program `vagrant-spk-setup-v0.nnn.exe`. It may need administrator privileges to
+  successfully install.  This will result in a `vagrant-spk` executable on your system path.
+
+You can test it by launching a new Command Prompt and typing `vagrant-spk`, which should result a
+message starting with `usage: ...`. If so, you have successfully installed vagrant-spk. To upgrade
+in the future, download and run any newer version of the vagrant-spk setup EXE.
 
 **Mac or Linux users:** Download vagrant-spk via git.
 
@@ -151,3 +156,5 @@ sudo ln -s $PWD/vagrant-spk /usr/local/bin
 ```
 
 If you prefer different paths, that is OK; adjust these steps to your liking.
+
+To upgrade in the future, `cd` into this directory and run `git pull`.

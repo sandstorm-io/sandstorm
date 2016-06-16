@@ -278,7 +278,7 @@ Template.sandstormGrainListPage.events({
       steps: [
         {
           element: document.querySelector(".grain-list .question-mark"),
-          intro: "Each document, chat room, mail box, notebook, blog, or anything else you create is a grain. Grains are private until they are shared.",
+          intro: "Each document, chat room, mail box, notebook, blog, or anything else you create is a grain. All your grains are private until you share them.",
           position: "right",
         },
       ],

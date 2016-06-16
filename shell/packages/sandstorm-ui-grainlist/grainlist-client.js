@@ -282,7 +282,7 @@ Template.sandstormGrainListPage.events({
           position: "right",
         },
       ],
-      highlightClass: "grain-list-hide-element",
+      highlightClass: "hidden-introjs-highlight",
       tooltipPosition: "auto",
       positionPrecedence: ["bottom", "top", "left", "right"],
       showStepNumbers: false,

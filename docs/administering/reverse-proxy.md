@@ -110,7 +110,7 @@ Make sure to test your Sandstorm install by visiting it on the web.
 
 **Make sure login works.** If you changed your `BASE_URL`, Sandstorm will temporarily disable any
 OAuth providers like Google or GitHub so that you can ensure they are configured correctly. Make
-sure to visit **Admin Settings** within your Sandstorm install and re-enable them. If OAuth
+sure to visit **Identity providers** in the **Admin panel** within your Sandstorm install and re-enable them. If OAuth
 providers were your only way to log in, you might need to get a [login token via the command
 line.](faq.md#how-do-i-log-in-if-theres-a-problem-with-logging-in-via-the-web)
 

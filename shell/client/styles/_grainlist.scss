@@ -8,21 +8,26 @@
   color: $grainlist-foreground-color;
 
   .question-mark {
-    @extend %button-base;
-    @extend %button-secondary;
+    /* Disable default button coloring. */
+    background-color: inherit;
+    border-radius: 0;
     border: none;
-    background-color: inherit;
-    background-image: url("/question-a9a9a9.svg");
-    background-size: 24px 24px;
-    background-position: center;
-    display: inline-block;
-    width: 24px;
-    height: 24px;
     vertical-align: top;
-  }
-  .question-mark:hover {
-    background-image: url("/question-727272.svg");
-    background-color: inherit;
+    padding: 0;
+
+    /* Borrow the ::before styles from this class. */
+    @extend .icon-question;
+
+    /* And color them accordingly. */
+    &:hover::before {
+      color: #727272;
+    }
+
+    &::before {
+      @extend .icon;
+      font-size: 24px;
+      color: #A9A9A9;
+    }
   }
 
   >.top-row>.non-usage-info {

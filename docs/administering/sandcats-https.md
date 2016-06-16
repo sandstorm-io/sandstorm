@@ -95,10 +95,6 @@ re-enable GitHub, Google, and any other OAuth-based login
 providers. This process will typically require visiting the Google and
 GitHub websites.
 
-Once you click **Save** at the bottom of the login configuration page,
-you should sign in however you normally sign in, perhaps with a Google
-or GitHub account, by clicking **Sign in**.
-
 **Congratulations!** You're now using HTTPS, also known as SSL and TLS.
 
 ### Technical details

@@ -19,14 +19,22 @@ are available in
 
 ## Outgoing SMTP
 
-All you need to do is provide an appropriate SMTP relay in the `Email configuration` page of the
-Admin panel.  Your configuration should point Sandstorm to a working SMTP server that will accept
-e-mails with the SMTP envelope's bounce address set to your grain's local address, or to the
-"Sandstorm server's own email address" address.
+Apps can send email out to the world, subject to rate limiting. To enable this feature, you must
+configure an SMTP relay in the `Email configuration` page of the Admin panel.  The SMTP server needs
+to accept e-mails with the SMTP envelope's bounce address set to either your grain's local address
+or the "Sandstorm server's own email address" address.
 
-If running at home, you can usually use your ISP's SMTP server.
-Otherwise, [Sendgrid](https://sendgrid.com/), [Mailgun](http://www.mailgun.com/), and
-[Mandrill](http://mandrill.com/) also provide such services, some with free tiers.
+If running at home or at work, you can usually use your ISP's or corporation's SMTP
+server. Otherwise, [Sendgrid](https://sendgrid.com/), [Mailgun](http://www.mailgun.com/), and others
+provide SMTP services, some with free tiers. Note in our testing, Google Gmail is incompatible with
+the Sandstorm outbound SMTP requirements: it will modify the From header and SMTP envelope to be
+your personal address, rather than what the app specified. Therefore it may seem to work for the
+first user, but when you add other users to your server, any emails sent by their apps will appear
+to come from you!
+
+Some cloud providers block outbound port 25, which you may experience as Sandstorm reporting
+"Connection timed out." In that case, check if your outbound SMTP provider supports alternative
+ports such as 587 or 2525.
 
 ## Receiving email into Sandstorm app instances
 

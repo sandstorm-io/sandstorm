@@ -2248,6 +2248,10 @@ kj::Promise<void> SupervisorMain::DefaultSystemConnector::run(
   auto server = capnp::makeRpcServer(appNetwork, kj::heap<SandstormApiImpl>(wakelockSet, grainId,
       coreCap), kj::mv(gateway));
 
+  // Limit outstanding calls from the app to 1MiW (8MiB) in order to prevent an errant or malicious
+  // app from consuming excessive RAM elsewhere in the system.
+  server.setFlowLimit(1u << 20);
+
   // Get the app's UiView by restoring a null SturdyRef from it.
   capnp::MallocMessageBuilder message;
   auto hostId = message.initRoot<capnp::rpc::twoparty::VatId>();

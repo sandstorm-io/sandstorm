@@ -2305,14 +2305,6 @@ ResponseStream = class ResponseStream {
         return;
       } else {
         // Write buffer is full. Don't complete until it has more space.
-        if (this.waiting.length >= 16) {
-          // Yikes, there are 16 writes in-flight already. Probably, the caller does not implement
-          // flow control, and is going to do *all* of its writes in parallel. Since the caller
-          // is ignoring returns anyway, we might as well shed load from the Cap'n Proto tables
-          // by closing out the earlier calls.
-          this.waiting.shift()();
-        }
-
         return new Promise((resolve, reject) => {
           this.waiting.push(resolve);
         });

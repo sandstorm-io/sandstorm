@@ -1,3 +1,10 @@
+import crypto from "crypto";
+
+const V1_ROUNDS = 4096; // Selected to take ~5msec at creation time (2016) on a developer's laptop.
+const V1_KEYSIZE = 32; // 256 bits / 8 bits/byte = 32 bytes
+const V1_HASHFUNC = "sha256"; // hash function used with pbkdf2
+const V1_CIPHER = "AES-256-CTR"; // cipher used
+
 const TOKEN_EXPIRATION_MS = 15 * 60 * 1000;
 
 const cleanupExpiredTokens = function () {
@@ -83,7 +90,8 @@ Accounts.registerLoginHandler("email", function (options) {
     };
   }
 
-  const maybeToken = consumeToken(user, options.token.trim());
+  const tokenString = options.token.trim();
+  const maybeToken = consumeToken(user, tokenString);
   if (!maybeToken) {
     console.error("Token not found:", options.email);
     return {
@@ -91,10 +99,24 @@ Accounts.registerLoginHandler("email", function (options) {
     };
   }
 
+  // Attempt to decrypt the resumePath, if provided.
+  let resumePath = undefined;
+  if (maybeToken.secureBox) {
+    const box = maybeToken.secureBox;
+    if (box.version === 1) {
+      const key = crypto.pbkdf2Sync(tokenString, box.salt, V1_ROUNDS, V1_KEYSIZE, V1_HASHFUNC);
+      const iv = new Buffer(box.iv, "base64");
+      const cipher = crypto.createDecipheriv(V1_CIPHER, key, iv);
+      const cipherText = new Buffer(box.boxedValue, "base64");
+      const plaintext = cipher.update(cipherText);
+      resumePath = plaintext.toString("binary");
+    }
+  }
+
   return {
     userId: user._id,
     options: {
-      resumePath: maybeToken.resumePath,
+      resumePath,
     },
   };
 });
@@ -162,10 +184,28 @@ const createAndEmailTokenForUser = function (db, email, linkingIdentity, resumeP
   let userId;
 
   // TODO(someday): make this shorter, and handle requests that try to brute force it.
+  // Alternately, require using the link over copy/pasting the code, and crank up the entropy.
   const token = Random.id(12);
   const tokenObj = Accounts.emailToken._hashToken(token);
   tokenObj.createdAt = new Date();
-  tokenObj.resumePath = resumePath;
+
+  // Produce a symmetric key.  Note that the token itself does not have sufficient entropy to
+  // be used as a key directly, so we need to use a KDF with a strong random salt.
+  // In the fullness of time, it might be nice to move away from using a KDF (which blocks the whole
+  // node process) in favor of the token itself having enough entropy to serve as the key itself.
+  // This would require lengthening the token, which would make the manual-code-entry workflow
+  // worse, so I'm punting on that for now.
+  const salt = Random.secret(16);
+  const key = crypto.pbkdf2Sync(token, salt, V1_ROUNDS, V1_KEYSIZE, V1_HASHFUNC);
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv(V1_CIPHER, key, iv);
+  let ciphertext = cipher.update(new Buffer(resumePath, "binary"));
+  tokenObj.secureBox = {
+    version: 1,
+    salt: salt,
+    iv: iv.toString("base64"),
+    boxedValue: ciphertext.toString("base64"),
+  };
 
   if (user) {
     if (user.services.email.tokens && user.services.email.tokens.length > 2) {

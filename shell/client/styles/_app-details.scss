@@ -243,6 +243,7 @@
             background-image: url("/key-m.svg");
             >span {
               padding-right: 4px;
+              overflow-wrap: break-word;
             }
           }
           >a.keybase {

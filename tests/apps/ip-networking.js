@@ -70,5 +70,6 @@ module.exports["Test Ip Interface"] = function (browser) {
       .click("form.test-ip-interface button")
     .frameParent()
     .assertTcpConnection(IP_INTERFACE_TEST_PORT, "tcptest")
+    .end()
 };
 

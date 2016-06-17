@@ -47,6 +47,7 @@ module.exports["Test Powerbox"] = function (browser) {
     .waitForElementVisible("#powerbox-offer-url", short_wait)
     .getText("#powerbox-offer-url", function (result) {
         browser
+          .click(".popup.offer .frame button.dismiss")
           .frame("grain-frame")
             .click("#request")
           .frameParent()
@@ -79,6 +80,7 @@ module.exports["Test PowerboxSave"] = function (browser) {
     .waitForElementVisible("#powerbox-offer-url", short_wait)
     .getText("#powerbox-offer-url", function (result) {
         browser
+          .click(".popup.offer .frame button.dismiss")
           .frame("grain-frame")
             .click("#request")
           .frameParent()
@@ -115,6 +117,7 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
     .waitForElementVisible("#powerbox-offer-url", short_wait)
     .getText("#powerbox-offer-url", function (result) {
         browser
+          .click(".popup.offer .frame button.dismiss")
           .frame("grain-frame")
             .click("#request")
           .frame()

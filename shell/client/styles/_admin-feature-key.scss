@@ -2,6 +2,15 @@
   @extend %standard-form;
 }
 
+.feature-key-delete-form {
+  @extend %standard-form;
+
+  button.danger {
+    @extend %button-base;
+    @extend %button-danger;
+  }
+}
+
 .feature-key-explanation-row {
   display: flex;
   flex-direction: row;

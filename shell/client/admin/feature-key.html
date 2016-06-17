@@ -96,16 +96,22 @@
 </template>
 
 <template name="adminFeatureKeyModifyForm">
-  {{#if showForm}}
-    {{> featureKeyUploadForm successCb=hideFormCb }}
-  {{else}}
-    <form class="feature-key-modify-form">
-      <div class="button-row">
-        <button type="submit" class="feature-key-upload-button">Upload new feature key...</button>
-        <button type="button" class="feature-key-delete-button">Delete feature key</button>
-      </div>
-    </form>
+  {{#if showUpdateForm}}
+    {{#modalDialogWithBackdrop onDismiss=hideFormCb }}
+      {{> featureKeyUploadForm successCb=hideFormCb }}
+    {{/modalDialogWithBackdrop}}
   {{/if}}
+  {{#if showDeleteForm}}
+    {{#modalDialogWithBackdrop onDismiss=hideFormCb }}
+      {{> featureKeyDeleteForm cancelCb=hideFormCb successCb=hideFormCb token=token }}
+    {{/modalDialogWithBackdrop}}
+  {{/if}}
+  <form class="feature-key-modify-form">
+    <div class="button-row">
+      <button type="submit" class="feature-key-upload-button">Upload new feature key...</button>
+      <button type="button" class="feature-key-delete-button">Delete feature key</button>
+    </div>
+  </form>
 </template>
 
 <template name="adminFeatureKey">
@@ -145,5 +151,18 @@
       <button type="submit" class="check-key" disabled={{disabled}}>Verify</button>
     </div>
     <label>Or select a file to upload: <input name="feature-key" type="file" /></label>
+  </form>
+</template>
+
+<template name="featureKeyDeleteForm">
+  <p>
+    Really delete feature key?  This will disable Sandstorm for Work features, like LDAP and SAML
+    login, organizational user management, and organizational controls.
+  </p>
+  <form class="feature-key-delete-form">
+    <div class="button-row">
+      <button type="submit" class="danger">Delete key</button>
+      <button type="button" class="cancel">Cancel</button>
+    </div>
   </form>
 </template>

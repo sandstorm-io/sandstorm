@@ -10,7 +10,7 @@ module.exports = function(grunt) {
         destCss: "../shell/client/styles",
         options: {
           font: "icons",
-          engine: "node",
+          engine: "fontforge",
           autoHint: false,
           htmlDemo: false,
           relativeFontPath: "/icons/",

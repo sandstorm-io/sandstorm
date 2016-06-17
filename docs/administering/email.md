@@ -27,8 +27,8 @@ own email address" address.
 If running at home or at work, you can usually use your ISP's or corporation's SMTP
 server. Otherwise, [Sendgrid](https://sendgrid.com/), [Mailgun](http://www.mailgun.com/), and others
 provide SMTP services, some with free tiers. Note in our testing, Google Gmail is incompatible with
-the Sandstorm outbound SMTP rqeuirements: it will change all emails' "From:" address to your
-personal address, which as well as in the SMTP envelope.
+the Sandstorm outbound SMTP requirements: it will modify the From header and SMTP envelope to be
+your personal address, rather than what the app specified.
 
 Some cloud providers block outbound port 25, which you may experience as Sandstorm reporting
 "Connection timed out." In that case, check if your outbound SMTP provider supports alternative

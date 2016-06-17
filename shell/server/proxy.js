@@ -1352,6 +1352,9 @@ class Proxy {
           viewInfo: viewInfo,
           permissions: permissions.permissions,
         },
+        $unset: {
+          invalidated: true,
+        },
       });
 
       return permissions.permissions;

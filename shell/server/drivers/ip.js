@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Bignum from "bignum";
 const Future = Npm.require("fibers/future");
 const Net = Npm.require("net");
 const Dgram = Npm.require("dgram");

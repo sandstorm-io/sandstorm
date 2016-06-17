@@ -245,7 +245,7 @@ shell-env: tmp/.shell-env
 
 # Note that we need Ekam to build node_modules before we can run Meteor, hence
 # the dependency on tmp/.ekam-run.
-tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html shell/client/styles/_icons.scss
+tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html shell/client/styles/_icons.scss shell/package.json shell/npm-shrinkwrap.json
 	@mkdir -p tmp
 	@touch tmp/.shell-env
 	@mkdir -p node_modules/capnp

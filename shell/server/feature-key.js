@@ -61,7 +61,7 @@ loadSignedFeatureKey = function (buf) {
   // undefined if the signature did not pass verification.
   const verifiedFeatureKeyBlob = verifyFeatureKeySignature(buf);
   if (verifiedFeatureKeyBlob) {
-    const featureKey = Capnp.parsePacked(FeatureKey, verifiedFeatureKeyBlob);
+    const featureKey = Capnp.parse(FeatureKey, verifiedFeatureKeyBlob, { packed: true });
     if (featureKey.isForTesting && !isTesting) {
       // This key is for testing only, but the server is not running in testing mode. Note that
       // enabling testing mode forfeits up all security.

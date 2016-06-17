@@ -330,8 +330,10 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
       // TODO(now): Also single-segment? Canonical?
 
       // Note: Node's base64 decoder also accepts URL-safe base64, so no need to translate.
-      const descriptor = Capnp.parsePacked(
-          Grain.PowerboxDescriptor, new Buffer(packedDescriptor, "base64"));
+      const descriptor = Capnp.parse(
+          Grain.PowerboxDescriptor,
+          new Buffer(packedDescriptor, "base64"),
+          { packed: true });
 
       if (!descriptor.tags || descriptor.tags.length === 0) return {};
 

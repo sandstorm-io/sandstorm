@@ -34,7 +34,7 @@ to come from you!
 
 Some cloud providers block outbound port 25, which you may experience as Sandstorm reporting
 "Connection timed out." In that case, check if your outbound SMTP provider supports alternative
-ports such as 2525.
+ports such as 587 or 2525.
 
 ## Receiving email into Sandstorm app instances
 

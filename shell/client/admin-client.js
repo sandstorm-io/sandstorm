@@ -1109,18 +1109,27 @@ Template.adminFeatureKeyDetails.helpers({
 });
 
 Template.adminFeatureKeyModifyForm.onCreated(function () {
-  this.showForm = new ReactiveVar(false);
+  this.showForm = new ReactiveVar(undefined);
 });
 
 Template.adminFeatureKeyModifyForm.helpers({
-  showForm: function () {
-    return Template.instance().showForm.get();
+  showUpdateForm() {
+    return Template.instance().showForm.get() === "update";
+  },
+
+  showDeleteForm() {
+    return Template.instance().showForm.get() === "delete";
+  },
+
+  token() {
+    const state = Iron.controller().state;
+    return state.get("token");
   },
 
   hideFormCb: function () {
     const instance = Template.instance();
     return () => {
-      instance.showForm.set(false);
+      instance.showForm.set(undefined);
     };
   },
 });
@@ -1129,15 +1138,31 @@ Template.adminFeatureKeyModifyForm.events({
   "submit .feature-key-modify-form"(evt) {
     evt.preventDefault();
     evt.stopPropagation();
-    Template.instance().showForm.set(true);
+    Template.instance().showForm.set("update");
   },
 
   "click button.feature-key-delete-button"(evt) {
-    const state = Iron.controller().state;
-    const token = state.get("token");
-    if (window.confirm("Delete feature key? This will disable Sandstorm for Work features!")) {
-      Meteor.call("submitFeatureKey", token, null);
-    }
+    Template.instance().showForm.set("delete");
+  },
+});
+
+Template.featureKeyDeleteForm.events({
+  "submit .feature-key-delete-form"(evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    const instance = Template.instance();
+    Meteor.call("submitFeatureKey", instance.data.token, null, (err) => {
+      if (err) {
+        console.error("Couldn't delete feature key");
+      } else {
+        instance.data.successCb && instance.data.successCb();
+      }
+    });
+  },
+
+  "click button.cancel"(evt) {
+    const instance = Template.instance();
+    instance.data.cancelCb && instance.data.cancelCb();
   },
 });
 

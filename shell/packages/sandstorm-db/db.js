@@ -2047,7 +2047,7 @@ if (Meteor.isServer) {
         refPackage(newAction.packageId);
       },
 
-      changed: function (oldAction, newAction) {
+      changed: function (newAction, oldAction) {
         refPackage(newAction.packageId);
       },
     });
@@ -2059,7 +2059,7 @@ if (Meteor.isServer) {
         refPackage(newGrain.packageId);
       },
 
-      changed: function (oldGrain, newGrain) {
+      changed: function (newGrain, oldGrain) {
         refPackage(newGrain.packageId);
       },
     });

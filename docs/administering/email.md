@@ -24,11 +24,15 @@ email out to the world, subject to rate limiting. The SMTP server needs to accep
 SMTP envelope's bounce address set to either your grain's local address or the "Sandstorm server's
 own email address" address.
 
-If running at home, you can usually use your ISP's SMTP server.  Otherwise,
-[Sendgrid](https://sendgrid.com/), [Mailgun](http://www.mailgun.com/), and others provide SMTP
-services, some with free tiers. Note in our testing, Google Gmail is incompatible with the Sandstorm
-outbound SMTP rqeuirements: it will change all emails' "From:" address to your personal address,
-which as well as in the SMTP envelope.
+If running at home or at work, you can usually use your ISP's or corporation's SMTP
+server. Otherwise, [Sendgrid](https://sendgrid.com/), [Mailgun](http://www.mailgun.com/), and others
+provide SMTP services, some with free tiers. Note in our testing, Google Gmail is incompatible with
+the Sandstorm outbound SMTP rqeuirements: it will change all emails' "From:" address to your
+personal address, which as well as in the SMTP envelope.
+
+Some cloud providers block outbound port 25, which you may experience as Sandstorm reporting
+"Connection timed out." In that case, check if your outbound SMTP provider supports alternative
+ports such as 2525.
 
 ## Receiving email into Sandstorm app instances
 

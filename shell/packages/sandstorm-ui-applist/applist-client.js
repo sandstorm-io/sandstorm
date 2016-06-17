@@ -1,3 +1,5 @@
+import { introJs } from "intro.js";
+
 SandstormAppList = function (db, quotaEnforcer) {
   this._filter = new ReactiveVar("");
   this._sortOrder = new ReactiveVar([["appTitle", 1]]);
@@ -225,14 +227,61 @@ Template.sandstormAppListPage.events({
     }
   },
 });
-Template.sandstormAppListPage.onRendered(function () {
+
+Template.sandstormAppListPage.onDestroyed(() => {
+  if (Template.instance().intro) {
+    Template.instance().intro.exit();
+    Template.instance().intro = undefined;
+  }
+});
+
+Template.sandstormAppListPage.onRendered(() => {
+  const db = Template.instance().data._db;
+  // Set up automatically-opening hint explaining what installing is, if zero apps installed.
+  if (!db.collections.userActions.find().count() && !Session.get("dismissedInstallHint")) {
+    const intro = Template.instance().intro = introJs();
+    let introOptions = {
+      steps: [
+        {
+          element: document.querySelector(".install-icon"),
+          intro: "<strong>Welcome!</strong><br>Create documents, chat rooms, blogs, and more.<br><br>Get started by installing an app.",
+        },
+      ],
+      tooltipPosition: "auto",
+      positionPrecedence: ["right", "top", "left", "bottom"],
+      highlightClass: "hidden-introjs-highlight",
+      showStepNumbers: false,
+      exitOnOverlayClick: true,
+      overlayOpacity: 0,
+      showBullets: false,
+      doneLabel: "Got it",
+    };
+
+    if (window.innerWidth < 500) {
+      // Detect if the window is skinner than 500px; if so, force the hint to appear vertically.
+      introOptions.tooltipPosition = "bottom";
+      introOptions.positionPrecedence = ["bottom"];
+      // Avoid placing the hint over the text when laid-out vertically.
+      introOptions.steps[0].element = document.querySelector(".install-button");
+    }
+
+    intro.setOptions(introOptions);
+    const dismissHint = () => {
+      Session.set("dismissedInstallHint", true);
+    };
+
+    intro.oncomplete(dismissHint);
+    intro.onexit(dismissHint);
+
+    intro.start();
+  }
+
   // Auto-focus search bar on desktop, but not mobile (on mobile it will open the software
   // keyboard which is undesirable). window.orientation is generally defined on mobile browsers
   // but not desktop browsers, but some mobile browsers don't support it, so we also check
   // clientWidth. Note that it's better to err on the side of not auto-focusing.
   if (window.orientation === undefined && window.innerWidth > 600) {
     // If there are no apps available, don't bother focusing it.
-    const db = Template.instance().data._db;
     if (db.collections.userActions.find().count() === 0) {
       return;
     }

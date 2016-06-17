@@ -220,8 +220,8 @@ This is by contrast with the default, which you can see on our older
 ![Uncustomized front page](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/uncustomized-home.png)
 
 This is achieved by configuring a web page to be displayed in the background behind the login dialog
-(the home page when logged out). To configure this setting, visit your server's **Admin Settings**
-screen and click **Advanced**. You can enter a URL as the **Splash URL** at the top of that screen.
+(the home page when logged out). To configure this setting, visit your server's **Admin panel**
+screen and click **Personalization**. You can enter a URL as the **Splash URL (experimental)**.
 
 For security reasons, the page must be hosted within your Sandstorm server's wildcard host
 (otherwise it will be blocked by `Content-Security-Policy`). We suggest using a static web

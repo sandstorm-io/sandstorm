@@ -40,7 +40,7 @@ Within `/opt/sandstorm` there are a few essential files and directories.
 
 - `/opt/sandstorm/var/log/sandstorm.log` - this is the log file for Sandstorm. If you are logged in
   to a Sandstorm install as an administrator, you can view this on the web by visiting **Admin
-  Settings** then clicking **Log**.
+  panel** then clicking **System log**.
 
 - `/opt/sandstorm/var/mongo` - this is the data directory for MongoDB, the database engine that
   stores all Sandstorm data like grain names, user names, and permissions. You can query it by
@@ -103,7 +103,7 @@ available, called the **app index.** Every day, Sandstorm downloads this file. F
 app index, if a user on your Sandstorm server has an older version installed, Sandstorm creates a
 notification suggesting that the user click a button to update to the latest version.
 
-This behavior can be customized within **Admin Settings** under **Advanced**. We strongly recommend
+This behavior can be customized within the **Admin panel** under **App sources**. We strongly recommend
 keeping this enabled. You can also point your Sandstorm install at a different app market URL and
 app index URL.
 
@@ -149,7 +149,7 @@ Key concepts:
 
 - Every Sandstorm user starts by seeing no apps installed, and must install apps on their own.
 
-- Sandstorm supports multiple **login providers** which be enabled/disabled from **Admin Settings**.
+- Sandstorm supports multiple **login providers** which can be enabled/disabled from the **Admin panel**.
 
 There are three standard levels of users.
 
@@ -157,9 +157,9 @@ There are three standard levels of users.
 
 - **Users** can install apps for their own use, create grains, and share them with others. By default, these users must be invited by an Admin.
 
-- **Admins** can also see the **Admin Settings** control panel, allowing them to invite users, modify user levels, and configure server settings like login providers and email settings.
+- **Admins** can also see the **Admin panel**, allowing them to invite users, modify user levels, and configure server settings like login providers and email settings.
 
-Additionally, Sandstorm has **Demo Accounts** which are not enabled by default. See the [Demo mode](demo.md) documentation for details.
+Additionally, Sandstorm has **demo accounts** which are disabled by default. See the [Demo mode](demo.md) documentation for details.
 
 If you see a message saying your Sandstorm install has no users, read the [How do I log in, if
 there's a problem with logging in via the

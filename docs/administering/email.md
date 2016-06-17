@@ -8,21 +8,21 @@ form `publicId`@`hostname`. `publicId` is randomly generated for every
 grain that handles e-mail, and `hostname` is extracted from the
 `BASE_URL` parameter in sandstorm.conf (which is initially created by
 the installer script). Outgoing e-mail is sent through an external
-SMTP server, controllable by the `SMTP Url` configuration under Admin
-Settings (the `MAIL_URL` parameter in `sandstorm.conf` has been
-deprecated). When sending e-mails, the only valid "From" addresses are
+SMTP server, controllable from the Admin settings -> Email configuration page.
+(Note that the `MAIL_URL` parameter in `sandstorm.conf` has been
+deprecated.) When sending e-mails, the only valid "From" addresses are
 the grain's generated `publicId`@`hostname` address, or the verified
 email from the user's account (e.g. the e-mail address obtained via
-Google or Github login). The interfaces for sending/receiving e-mails
+e.g. Google or Github or email login). The interfaces for sending/receiving e-mails
 are available in
 [hack-session.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/hack-session.capnp).
 
 ## Outgoing SMTP
 
-All you need to do is provide an appropriate SMTP relay in the `SMTP Configuration` fields under
-Admin Settings.  Your configuration should point Sandstorm to a working SMTP server that will accept
-e-mails with the SMTP envelope's bounce address set to your grain's local address, or to the "Return
-Address" address.
+All you need to do is provide an appropriate SMTP relay in the `Email configuration` page of the
+Admin panel.  Your configuration should point Sandstorm to a working SMTP server that will accept
+e-mails with the SMTP envelope's bounce address set to your grain's local address, or to the
+"Sandstorm server's own email address" address.
 
 If running at home, you can usually use your ISP's SMTP server.
 Otherwise, [Sendgrid](https://sendgrid.com/), [Mailgun](http://www.mailgun.com/), and

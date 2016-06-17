@@ -19,14 +19,16 @@ are available in
 
 ## Outgoing SMTP
 
-All you need to do is provide an appropriate SMTP relay in the `Email configuration` page of the
-Admin panel.  Your configuration should point Sandstorm to a working SMTP server that will accept
-e-mails with the SMTP envelope's bounce address set to your grain's local address, or to the
-"Sandstorm server's own email address" address.
+Once you configure an SMTP relay in the `Email configuration` page of the Admin panel, apps can send
+email out to the world, subject to rate limiting. The SMTP server needs to accept e-mails withthe
+SMTP envelope's bounce address set to either your grain's local address or the "Sandstorm server's
+own email address" address.
 
-If running at home, you can usually use your ISP's SMTP server.
-Otherwise, [Sendgrid](https://sendgrid.com/), [Mailgun](http://www.mailgun.com/), and
-[Mandrill](http://mandrill.com/) also provide such services, some with free tiers.
+If running at home, you can usually use your ISP's SMTP server.  Otherwise,
+[Sendgrid](https://sendgrid.com/), [Mailgun](http://www.mailgun.com/), and others provide SMTP
+services, some with free tiers. Note in our testing, Google Gmail is incompatible with the Sandstorm
+outbound SMTP rqeuirements: it will change all emails' "From:" address to your personal address,
+which as well as in the SMTP envelope.
 
 ## Receiving email into Sandstorm app instances
 

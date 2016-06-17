@@ -271,6 +271,7 @@ Sessions = new Mongo.Collection("sessions");
 //       until newSession is called on the UiView.
 //   hasLoaded: Marked as true by the proxy when the underlying UiSession has responded to its first
 //       request
+//   invalidated: True if this session has become invalid due to a change in the sharing graph.
 
 SignupKeys = new Mongo.Collection("signupKeys");
 // Invite keys which may be used by users to get access to Sandstorm.

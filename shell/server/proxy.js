@@ -526,7 +526,7 @@ Meteor.startup(() => {
   DevPackages.find().observe({
     removed(devPackage) { shutdownApp(devPackage.appId); },
 
-    changed(oldDevPackage, newDevPackage) {
+    changed(newDevPackage, oldDevPackage) {
       shutdownApp(oldDevPackage.appId);
       if (oldDevPackage.appId !== newDevPackage.appId) {
         shutdownApp(newDevPackage.appId);
@@ -536,13 +536,23 @@ Meteor.startup(() => {
     added(devPackage) { shutdownApp(devPackage.appId); },
   });
 
+  function closeSessionProxy(session) {
+    const proxy = proxiesByHostId[session.hostId];
+    delete proxiesByHostId[session.hostId];
+    if (proxy) {
+      proxy.close();
+    }
+  }
+
   Sessions.find().observe({
-    removed(session) {
-      const proxy = proxiesByHostId[session.hostId];
-      delete proxiesByHostId[session.hostId];
-      if (proxy) {
-        proxy.close();
+    changed(newSession, oldSession) {
+      if (newSession.invalidated && !oldSession.invalidated) {
+        closeSessionProxy(newSession);
       }
+    },
+
+    removed(session) {
+      closeSessionProxy(session);
     },
   });
 });
@@ -1320,7 +1330,7 @@ class Proxy {
       }
 
       let onInvalidated = function () {
-        Sessions.remove({ _id: _this.sessionId });
+        Sessions.update({ _id: _this.sessionId }, { $set: { invalidated: true }, });
       };
 
       if (!_this.sessionId) {
@@ -1345,6 +1355,9 @@ class Proxy {
         $set: {
           viewInfo: viewInfo,
           permissions: permissions.permissions,
+        },
+        $unset: {
+          invalidated: true,
         },
       });
 

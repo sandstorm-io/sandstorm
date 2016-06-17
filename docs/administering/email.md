@@ -19,10 +19,10 @@ are available in
 
 ## Outgoing SMTP
 
-Once you configure an SMTP relay in the `Email configuration` page of the Admin panel, apps can send
-email out to the world, subject to rate limiting. The SMTP server needs to accept e-mails with the
-SMTP envelope's bounce address set to either your grain's local address or the "Sandstorm server's
-own email address" address.
+Apps can send email out to the world, subject to rate limiting. To enable this feature, you must
+configure an SMTP relay in the `Email configuration` page of the Admin panel.  The SMTP server needs
+to accept e-mails with the SMTP envelope's bounce address set to either your grain's local address
+or the "Sandstorm server's own email address" address.
 
 If running at home or at work, you can usually use your ISP's or corporation's SMTP
 server. Otherwise, [Sendgrid](https://sendgrid.com/), [Mailgun](http://www.mailgun.com/), and others

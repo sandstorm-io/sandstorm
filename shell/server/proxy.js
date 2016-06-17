@@ -526,7 +526,7 @@ Meteor.startup(() => {
   DevPackages.find().observe({
     removed(devPackage) { shutdownApp(devPackage.appId); },
 
-    changed(oldDevPackage, newDevPackage) {
+    changed(newDevPackage, oldDevPackage) {
       shutdownApp(oldDevPackage.appId);
       if (oldDevPackage.appId !== newDevPackage.appId) {
         shutdownApp(newDevPackage.appId);

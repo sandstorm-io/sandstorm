@@ -20,7 +20,7 @@ are available in
 ## Outgoing SMTP
 
 Once you configure an SMTP relay in the `Email configuration` page of the Admin panel, apps can send
-email out to the world, subject to rate limiting. The SMTP server needs to accept e-mails withthe
+email out to the world, subject to rate limiting. The SMTP server needs to accept e-mails with the
 SMTP envelope's bounce address set to either your grain's local address or the "Sandstorm server's
 own email address" address.
 

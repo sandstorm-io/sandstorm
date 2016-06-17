@@ -227,16 +227,18 @@ Template.sandstormAppListPage.events({
     }
   },
 });
-Template.sandstormAppListPage.onDestroyed(function() {
+
+Template.sandstormAppListPage.onDestroyed(() => {
   if (Template.instance().intro) {
     Template.instance().intro.exit();
     Template.instance().intro = undefined;
   }
 });
-Template.sandstormAppListPage.onRendered(function () {
+
+Template.sandstormAppListPage.onRendered(() => {
   const db = Template.instance().data._db;
   // Set up automatically-opening hint explaining what installing is, if zero apps installed.
-  if(!db.collections.userActions.find().count() && !Session.get("dismissedInstallHint")) {
+  if (!db.collections.userActions.find().count() && !Session.get("dismissedInstallHint")) {
     const intro = Template.instance().intro = introJs();
     let introOptions = {
       steps: [

@@ -6,6 +6,30 @@
   }
   background-color: $grainlist-background-color;
   color: $grainlist-foreground-color;
+
+  .question-mark {
+    /* Disable default button coloring. */
+    background-color: inherit;
+    border-radius: 0;
+    border: none;
+    vertical-align: top;
+    padding: 0;
+
+    /* Borrow the ::before styles from this class. */
+    @extend .icon-question;
+
+    /* And color them accordingly. */
+    &:hover::before {
+      color: #727272;
+    }
+
+    &::before {
+      @extend .icon;
+      font-size: 24px;
+      color: #A9A9A9;
+    }
+  }
+
   >.top-row>.non-usage-info {
     float: left;
     @media #{$mobile} {

@@ -1,3 +1,13 @@
+### v0.167 (2016-06-18) [bugfixes]
+- Updated to Meteor 1.3.3.1.
+- Implemented hard flow control at the Cap'n Proto layer so that an errant (or malicious) app cannot cause excessive memory use elsewhere in the system by making excessive simultaneous calls. This should improve the stability of Oasis.
+- Implemented flow control for uploads to an app (though it rarely comes into play unless running Sandstorm locally).
+- Fixed that after losing internet connectivity for a while (or suspending your laptop) and then coming back, grains would refresh.
+- Fixed some memory leaks in shell server.
+- Added more "guided tour" points to help new users learn Sandstorm.
+- Sandstorm for Work: SAML connector now exports XML auto-configuration blob.
+- Sandstorm for Work: Improved UI around feature keys.
+
 ### v0.166 (2016-06-11) [bugfixes]
 - Implemented flow control for large file downloads from apps so that they don't buffer in the front-end consuming excessive RAM. Apps that handle large files will need to re-pack using the latest sandstorm-http-bridge and push an update.
 - Sandstorm for Work: Made SAML entity ID configurable; added more setup instructions.

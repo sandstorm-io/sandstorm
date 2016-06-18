@@ -450,9 +450,9 @@ Template.sandstormGrainTable.helpers({
     }
   },
 
-  showTableHeaders: function() {
-    return !! (Template.instance().data.alwaysShowTableHeaders ||
-               Template.instance().data.grains.length);
+  showTableHeaders: function () {
+    return !!(Template.instance().data.alwaysShowTableHeaders ||
+              Template.instance().data.grains.length);
   },
 });
 

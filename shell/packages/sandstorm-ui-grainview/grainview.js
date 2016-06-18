@@ -133,6 +133,7 @@ GrainView = class GrainView {
     this._hostId = undefined;
     this._sessionId = null;
     this._sessionSalt = null;
+    this._permissions = undefined;
 
     this._grainSizeSub = undefined;
     this._sessionObserver = undefined;
@@ -532,25 +533,42 @@ GrainView = class GrainView {
         }
 
         Meteor.defer(() => {
-          _this.reset(_this.identityId());
           _this.openSession();
         });
       },
 
       changed(session) {
         _this._viewInfo = session.viewInfo || _this._viewInfo;
-        _this._permissions = session.permissions || _this._permissions;
+        _this._updatePermissions(session.permissions);
         _this._dep.changed();
       },
 
       added(session) {
         _this._viewInfo = session.viewInfo || _this._viewInfo;
-        _this._permissions = session.permissions || _this._permissions;
+        _this._updatePermissions(session.permissions);
         _this._status = "opened";
         _this._dep.changed();
       },
     });
 
+  }
+
+  _updatePermissions(permissions) {
+    if (permissions) {
+      if (!this._permissions) {
+        this._permissions = permissions;
+      } else if (!_.isEqual(this._permissions, permissions)) {
+        // Our permissions have changed! We reset the grain view so that we get a fresh host ID.
+        //
+        // TODO(someday): Maybe we should allow apps to opt-in or opt-out of this behavior?
+        //     Note that apps should not depend on this behavior for security, because a
+        //     malicious client can always choose to reuse the session salt anyway.
+        Meteor.defer(() => {
+          this.reset(this.identityId());
+          this.openSession();
+        });
+      }
+    }
   }
 
   _openGrainSession() {

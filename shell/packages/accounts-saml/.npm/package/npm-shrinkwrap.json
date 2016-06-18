@@ -101,7 +101,7 @@
     "xmlbuilder": {
       "version": "8.2.2",
       "resolved": "https://registry.npmjs.org/xmlbuilder/-/xmlbuilder-8.2.2.tgz",
-      "from": "xmlbuilder@8.2.2"
+      "from": "https://registry.npmjs.org/xmlbuilder/-/xmlbuilder-8.2.2.tgz"
     },
     "xmldom": {
       "version": "0.1.6",

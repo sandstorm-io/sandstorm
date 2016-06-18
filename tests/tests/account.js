@@ -42,6 +42,7 @@ module.exports["Test link identities"] = function (browser) {
     .disableGuidedTour()
     .waitForElementVisible(".demo-box button.start", medium_wait)
     .click(".demo-box button.start")
+    .disableGuidedTour()
     .waitForElementPresent(".main-content>.app-list", medium_wait)
     .click(".login>button.show-popup")
     .waitForElementVisible(".login-buttons-list", short_wait)

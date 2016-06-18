@@ -84,6 +84,10 @@
       onClick: parameterless callback function
     }, and/or
   * an onGrainClicked callback function, which takes a single argument grainId as a String
+  * a showHintIfEmpty value, which if truthy, tells the JS to show a guided tour if the grains
+    list is empty.
+  * an alwaysShowTableHeaders value, which if truthy, always shows table headers. By contrast,
+    if empty or falsey, when the grains list is missing, we only show the action button(s).
   * a list "bulkActionButtons" containing object with shape
     {
       buttonClass: a string to be used in the button's class attribute
@@ -109,7 +113,7 @@
 
     <table class="grain-list-table">
       <thead>
-        {{#if grains}}
+        {{#if showTableHeaders}}
         <tr>
             <td class="select-all-grains">
               <input title={{selectAllTitle}} type="checkbox">

@@ -455,6 +455,11 @@ Template.sandstormGrainTable.helpers({
       return Template.instance()._selectedSharedWithMeIds.get(this._id);
     }
   },
+
+  showTableHeaders: function () {
+    return !!(Template.instance().data.alwaysShowTableHeaders ||
+              Template.instance().data.grains.length);
+  },
 });
 
 Template.sandstormGrainTable.events({

@@ -95,7 +95,7 @@ middleware = function (req, res, next) {
         res.writeHead(302, { "Location": url });
         res.end();
       });
-    }else if (samlObject.actionName === "validate") {
+    } else if (samlObject.actionName === "validate") {
       _saml = new SAML(service);
       _saml.validateResponse(req.body.SAMLResponse, function (err, profile, loggedOut) {
         if (err) {
@@ -118,7 +118,11 @@ middleware = function (req, res, next) {
 
         closePopup(res);
       });
-    }else {
+    } else if (samlObject.actionName === "config") {
+      _saml = new SAML(service);
+      res.writeHead(200, { "Content-Type": "text/xml" });
+      res.end(_saml.generateServiceProviderMetadata());
+    } else {
       throw new Error("Unexpected SAML action " + samlObject.actionName);
     }
   } catch (err) {

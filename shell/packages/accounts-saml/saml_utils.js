@@ -4,6 +4,10 @@ const xmlCrypto = Npm.require("xml-crypto");
 const crypto = Npm.require("crypto");
 const xmldom = Npm.require("xmldom");
 const querystring = Npm.require("querystring");
+const xmlbuilder = Npm.require("xmlbuilder");
+const Url = Npm.require("url");
+
+const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 
 SAML = function (options) {
   this.options = this.initialize(options);
@@ -352,4 +356,59 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
     }
 
   });
+};
+
+SAML.prototype.generateServiceProviderMetadata = function () {
+  const entityId = this.options.issuer;
+  let metadata = {
+    "EntityDescriptor": {
+      "@xmlns": "urn:oasis:names:tc:SAML:2.0:metadata",
+      "@xmlns:ds": "http://www.w3.org/2000/09/xmldsig#",
+      "@entityID": entityId,
+      "@ID": entityId.replace(/\W/g, "_"),
+      "SPSSODescriptor": {
+        "@protocolSupportEnumeration": "urn:oasis:names:tc:SAML:2.0:protocol",
+      },
+    },
+  };
+
+  let decryptionCert = this.options.localCertPublic; // TODO(someday); support local certs
+  if (decryptionCert) {
+    decryptionCert = decryptionCert.replace(/-+BEGIN CERTIFICATE-+\r?\n?/, "");
+    decryptionCert = decryptionCert.replace(/-+END CERTIFICATE-+\r?\n?/, "");
+    decryptionCert = decryptionCert.replace(/\r\n/g, "\n");
+
+    metadata.EntityDescriptor.SPSSODescriptor.KeyDescriptor = {
+      "ds:KeyInfo": {
+        "ds:X509Data": {
+          "ds:X509Certificate": {
+            "#text": decryptionCert,
+          },
+        },
+      },
+      "EncryptionMethod": [
+        // this should be the set that the xmlenc library supports
+        { "@Algorithm": "http://www.w3.org/2001/04/xmlenc#aes256-cbc" },
+        { "@Algorithm": "http://www.w3.org/2001/04/xmlenc#aes128-cbc" },
+        { "@Algorithm": "http://www.w3.org/2001/04/xmlenc#tripledes-cbc" },
+      ],
+    };
+  }
+
+  if (this.options.logoutCallbackUrl) {
+    metadata.EntityDescriptor.SPSSODescriptor.SingleLogoutService = {
+      "@Binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST",
+      "@Location": this.options.logoutCallbackUrl,
+    };
+  }
+
+  metadata.EntityDescriptor.SPSSODescriptor.NameIDFormat = this.options.identifierFormat;
+  metadata.EntityDescriptor.SPSSODescriptor.AssertionConsumerService = {
+    "@index": "1",
+    "@isDefault": "true",
+    "@Binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST",
+    "@Location":  Meteor.absoluteUrl("_saml/validate/default"),
+  };
+
+  return xmlbuilder.create(metadata).end({ pretty: true, indent: "  ", newline: "\n" });
 };

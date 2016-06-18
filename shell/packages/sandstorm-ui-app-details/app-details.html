@@ -49,7 +49,7 @@
     {{#let grains=filteredSortedGrains}}
       {{>sandstormGrainTable grains=grains actions=actions
                              onGrainClicked=onGrainClicked _db=_db showHintIfEmpty=1
-                             bulkActionButtons=bulkActionButtons}}
+                             alwaysShowTableHeaders=1 bulkActionButtons=bulkActionButtons}}
       {{#unless grains}}
         {{#if isFiltering}}
           <div class="no-grains">

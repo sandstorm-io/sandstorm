@@ -120,13 +120,12 @@ Please install the following:
 * `curl`
 * discount (markdown parser)
 * [Clang compiler](http://clang.llvm.org/) version 3.4 or better
-* FontForge, used by `grunt` to convert SVGs to WebFonts
 * [Meteor](http://meteor.com)
 
 On Debian or Ubuntu, you should be able to get all these with:
 
     sudo apt-get install build-essential libcap-dev xz-utils zip \
-        unzip strace curl clang-3.4 discount git fontforge
+        unzip strace curl clang-3.4 discount git
     curl https://install.meteor.com/ | sh
 
 ### Get the source code

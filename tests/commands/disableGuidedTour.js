@@ -21,6 +21,7 @@ exports.command = function (callback) {
   var ret = this
     .execute(function () {
       Session.set('dismissedGrainTableGuidedTour', true);
+      Session.set('dismissedInstallHint', true);
     })
   if (typeof callback === "function") {
     return ret.status(callback);

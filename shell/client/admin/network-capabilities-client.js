@@ -21,6 +21,7 @@ const capDetails = function (cap) {
       // Grain was deleted.  Don't show anything.
       return undefined;
     }
+
     const grainTitle = grain && grain.title;
     const packageId = grain && grain.packageId;
     const pkg = packageId && globalDb.collections.packages.findOne(packageId);

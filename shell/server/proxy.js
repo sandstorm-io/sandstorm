@@ -1467,10 +1467,14 @@ class Proxy {
     response.end();
   }
 
-  makeContext(request, response) {
+  makeContext(request, response, callback) {
     // Parses the cookies from the request, checks that the session ID is present and valid, then
-    // returns the request context which contains the other cookies.  Throws an exception if the
-    // session ID is missing or invalid.
+    // synchronously calls callback() passing it the request context object which contains the
+    // other cookies. Throws an exception if the session ID is missing or invalid. The callback
+    // must immediately use the context in an RPC. Once the callback returns, the context object
+    // will be torn down.
+    //
+    // `makeContext()` returns the result of `callback()`.
 
     const context = {};
 
@@ -1514,14 +1518,23 @@ class Proxy {
       };
     });
 
-    const promise = new Promise((resolve, reject) => {
-      response.resolveResponseStream = resolve;
-      response.rejectResponseStream = reject;
-    });
+    if (response) {
+      const promise = new Promise((resolve, reject) => {
+        response.resolveResponseStream = resolve;
+        response.rejectResponseStream = reject;
+      });
 
-    context.responseStream = new Capnp.Capability(promise, ByteStream);
+      context.responseStream = new Capnp.Capability(promise, ByteStream);
 
-    return context;
+      try {
+        return callback(context);
+      } finally {
+        context.responseStream.close();
+      }
+    } else {
+      // WebSocket -- no response object.
+      return callback(context);
+    }
   }
 
   translateResponse(rpcResponse, response, request) {
@@ -1692,121 +1705,121 @@ class Proxy {
 
   handleRequest(request, data, response, retryCount) {
     return Promise.resolve(undefined).then(() => {
-      return this.makeContext(request, response);
-    }).then((context) => {
-      // jscs:disable requireDotNotation
-      // Send the RPC.
-      const path = request.url.slice(1);  // remove leading '/'
-      const session = this.getSession(request);
+      return this.makeContext(request, response, (context) => {
+        // jscs:disable requireDotNotation
+        // Send the RPC.
+        const path = request.url.slice(1);  // remove leading '/'
+        const session = this.getSession(request);
 
-      const requestContent = () => {
-        return {
-          content: data,
-          encoding: request.headers['content-encoding'],
-          mimeType: request.headers['content-type'],
+        const requestContent = () => {
+          return {
+            content: data,
+            encoding: request.headers['content-encoding'],
+            mimeType: request.headers['content-type'],
+          };
         };
-      };
 
-      const xmlContent = () => {
-        const type = request.headers['content-type'] || 'application/xml;charset=utf-8';
-        const match = type.match(/[^/]*\/xml(; *charset *= *([^ ;]*))?/);
-        if (!match) {
-          response.writeHead(415, 'Unsupported media type.', {
-            'Content-Type': 'text/plain',
-          });
-          response.end('expected XML request body');
-          throw new Error('expected XML request body');
-        }
-
-        const charset = match[2] || 'ISO-8859-1';
-
-        const encoding = request.headers['content-encoding'];
-        if (encoding && encoding !== 'identity') {
-          if (encoding !== 'gzip') throw new Error('unknown Content-Encoding: ' + encoding);
-          data = gunzipSync(data);
-        }
-
-        return data.toString(charset.toLowerCase() === 'utf-8' ? 'utf8' : 'binary');
-      };
-
-      const propfindDepth = () => {
-        const depth = request.headers['depth'];
-        return depth === '0' ? 'zero'
-             : depth === '1' ? 'one'
-                             : 'infinity';
-      };
-
-      const shallow = () => {
-        return request.headers['depth'] === '0';
-      };
-
-      const noOverwrite = () => {
-        return (request.headers['overwrite'] || '').toLowerCase() === 'f';
-      };
-
-      const destination = () => {
-        const result = request.headers['destination'];
-        if (!result) throw new Error('missing destination');
-        return Url.parse(result).path.slice(1);  // remove leading '/'
-      };
-
-      if (request.method === 'GET' || request.method === 'HEAD') {
-        return session.get(path, context, request.method === 'HEAD');
-      } else if (request.method === 'POST') {
-        return session.post(path, requestContent(), context);
-      } else if (request.method === 'PUT') {
-        return session.put(path, requestContent(), context);
-      } else if (request.method === 'PATCH') {
-        return session.patch(path, requestContent(), context);
-      } else if (request.method === 'DELETE') {
-        return session.delete(path, context);
-      } else if (request.method === 'PROPFIND') {
-        return session.propfind(path, xmlContent(), propfindDepth(), context);
-      } else if (request.method === 'PROPPATCH') {
-        return session.proppatch(path, xmlContent(), context);
-      } else if (request.method === 'MKCOL') {
-        return session.mkcol(path, requestContent(), context);
-      } else if (request.method === 'COPY') {
-        return session.copy(path, destination(), noOverwrite(), shallow(), context);
-      } else if (request.method === 'MOVE') {
-        return session.move(path, destination(), noOverwrite(), context);
-      } else if (request.method === 'LOCK') {
-        return session.lock(path, xmlContent(), shallow(), context);
-      } else if (request.method === 'UNLOCK') {
-        return session.unlock(path, request.headers['lock-token'], context);
-      } else if (request.method === 'ACL') {
-        return session.acl(path, xmlContent(), context);
-      } else if (request.method === 'REPORT') {
-        return session.report(path, requestContent(), context);
-      } else if (request.method === 'OPTIONS') {
-        return session.options(path, context).then((options) => {
-          const dav = [];
-          if (options.davClass1) dav.push('1');
-          if (options.davClass2) dav.push('2');
-          if (options.davClass3) dav.push('3');
-          if (options.davExtensions) {
-            options.davExtensions.forEach((token) => {
-              if (token.match(/^([a-zA-Z0-9!#$%&'*+.^_`|~-]+|<[\x21-\x7E]*>)$/)) {
-                dav.push(token);
-              }
+        const xmlContent = () => {
+          const type = request.headers['content-type'] || 'application/xml;charset=utf-8';
+          const match = type.match(/[^/]*\/xml(; *charset *= *([^ ;]*))?/);
+          if (!match) {
+            response.writeHead(415, 'Unsupported media type.', {
+              'Content-Type': 'text/plain',
             });
+            response.end('expected XML request body');
+            throw new Error('expected XML request body');
           }
 
-          if (dav.length > 0) {
-            response.setHeader("DAV", dav.join(", "));
-            response.setHeader("Access-Control-Expose-Headers", "DAV");
+          const charset = match[2] || 'ISO-8859-1';
+
+          const encoding = request.headers['content-encoding'];
+          if (encoding && encoding !== 'identity') {
+            if (encoding !== 'gzip') throw new Error('unknown Content-Encoding: ' + encoding);
+            data = gunzipSync(data);
           }
 
-          response.end();
-          // Return no response; we already handled everything.
-        }, (err) => {
-          if (err.kjType !== 'unimplemented') throw err;
-          response.end();
-          // Return no response; we already handled everything.
-        });
-      } else {
-        throw new Error('Sandstorm only supports the following methods: GET, POST, PUT, PATCH, DELETE, HEAD, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, LOCK, UNLOCK, ACL, REPORT, and OPTIONS.');
-      }
+          return data.toString(charset.toLowerCase() === 'utf-8' ? 'utf8' : 'binary');
+        };
+
+        const propfindDepth = () => {
+          const depth = request.headers['depth'];
+          return depth === '0' ? 'zero'
+               : depth === '1' ? 'one'
+                               : 'infinity';
+        };
+
+        const shallow = () => {
+          return request.headers['depth'] === '0';
+        };
+
+        const noOverwrite = () => {
+          return (request.headers['overwrite'] || '').toLowerCase() === 'f';
+        };
+
+        const destination = () => {
+          const result = request.headers['destination'];
+          if (!result) throw new Error('missing destination');
+          return Url.parse(result).path.slice(1);  // remove leading '/'
+        };
+
+        if (request.method === 'GET' || request.method === 'HEAD') {
+          return session.get(path, context, request.method === 'HEAD');
+        } else if (request.method === 'POST') {
+          return session.post(path, requestContent(), context);
+        } else if (request.method === 'PUT') {
+          return session.put(path, requestContent(), context);
+        } else if (request.method === 'PATCH') {
+          return session.patch(path, requestContent(), context);
+        } else if (request.method === 'DELETE') {
+          return session.delete(path, context);
+        } else if (request.method === 'PROPFIND') {
+          return session.propfind(path, xmlContent(), propfindDepth(), context);
+        } else if (request.method === 'PROPPATCH') {
+          return session.proppatch(path, xmlContent(), context);
+        } else if (request.method === 'MKCOL') {
+          return session.mkcol(path, requestContent(), context);
+        } else if (request.method === 'COPY') {
+          return session.copy(path, destination(), noOverwrite(), shallow(), context);
+        } else if (request.method === 'MOVE') {
+          return session.move(path, destination(), noOverwrite(), context);
+        } else if (request.method === 'LOCK') {
+          return session.lock(path, xmlContent(), shallow(), context);
+        } else if (request.method === 'UNLOCK') {
+          return session.unlock(path, request.headers['lock-token'], context);
+        } else if (request.method === 'ACL') {
+          return session.acl(path, xmlContent(), context);
+        } else if (request.method === 'REPORT') {
+          return session.report(path, requestContent(), context);
+        } else if (request.method === 'OPTIONS') {
+          return session.options(path, context).then((options) => {
+            const dav = [];
+            if (options.davClass1) dav.push('1');
+            if (options.davClass2) dav.push('2');
+            if (options.davClass3) dav.push('3');
+            if (options.davExtensions) {
+              options.davExtensions.forEach((token) => {
+                if (token.match(/^([a-zA-Z0-9!#$%&'*+.^_`|~-]+|<[\x21-\x7E]*>)$/)) {
+                  dav.push(token);
+                }
+              });
+            }
+
+            if (dav.length > 0) {
+              response.setHeader("DAV", dav.join(", "));
+              response.setHeader("Access-Control-Expose-Headers", "DAV");
+            }
+
+            response.end();
+            // Return no response; we already handled everything.
+          }, (err) => {
+            if (err.kjType !== 'unimplemented') throw err;
+            response.end();
+            // Return no response; we already handled everything.
+          });
+        } else {
+          throw new Error('Sandstorm only supports the following methods: GET, POST, PUT, PATCH, DELETE, HEAD, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, LOCK, UNLOCK, ACL, REPORT, and OPTIONS.');
+        }
+      });
     }).then((rpcResponse) => {
       if (rpcResponse !== undefined) {  // Will be undefined for OPTIONS request.
         return this.translateResponse(rpcResponse, response, request);
@@ -1819,190 +1832,192 @@ class Proxy {
   }
 
   handleRequestStreaming(request, response, contentLength, retryCount) {
-    const context = this.makeContext(request, response);
-    const path = request.url.slice(1);  // remove leading '/'
-    const session = this.getSession(request);
+    return this.makeContext(request, response, (context) => {
+      const path = request.url.slice(1);  // remove leading '/'
+      const session = this.getSession(request);
 
-    const mimeType = request.headers['content-type'] || 'application/octet-stream';
-    const encoding = request.headers['content-encoding'];
+      const mimeType = request.headers['content-type'] || 'application/octet-stream';
+      const encoding = request.headers['content-encoding'];
 
-    let requestStreamPromise;
-    if (request.method === 'POST') {
-      requestStreamPromise = session.postStreaming(path, mimeType, context, encoding);
-    } else if (request.method === 'PUT') {
-      requestStreamPromise = session.putStreaming(path, mimeType, context, encoding);
-    } else {
-      throw new Error('Sandstorm only supports streaming POST and PUT requests.');
-    }
-
-    // TODO(perf): We ought to be pipelining the body, but we can't currently, because we have to
-    //   handle the case where the app doesn't actually support streaming. We could pipeline while
-    //   also buffering the data on the side in case we need it again later, but that's kind of
-    //   complicated. We should fix the whole protocol to make streaming the standard.
-    return requestStreamPromise.then((requestStreamResult) => {
-      const requestStream = requestStreamResult.stream;
-
-      // Initialized when getResponse() returns, if the response is streaming.
-      let downloadStreamHandle;
-
-      // Initialized if an upload-stream method throws.
-      let uploadStreamError;
-
-      // We call `getResponse()` immediately so that the app can start streaming data down even while
-      // data is still being streamed up. This theoretically allows apps to perform bidirectional
-      // streaming, though probably very few actually do that.
-      //
-      // Note that we need to be able to cancel `responsePromise` below, so it's important that it is
-      // the raw Cap'n Proto promise. Hence `translateResponsePromise` is a separate variable.
-      const responsePromise = requestStream.getResponse();
-
-      const reportUploadStreamError = (err) => {
-        // Called when an upload-stream method throws.
-
-        if (!uploadStreamError) {
-          uploadStreamError = err;
-
-          // If we're still waiting on any response stuff, cancel it.
-          responsePromise.cancel();
-          requestStream.close();
-          if (downloadStreamHandle) {
-            downloadStreamHandle.close();
-          }
-        }
-      };
-
-      // If we have a Content-Length, pass it along to the app by calling `expectSize()`.
-      if (contentLength !== undefined) {
-        requestStream.expectSize(contentLength).catch((err) => {
-          // expectSize() is allowed to be unimplemented.
-          if (err.kjType !== 'unimplemented') {
-            reportUploadStreamError(err);
-          }
-        });
-      }
-
-      // Pipe the input stream to the app.
-      let writesInFlight = 0;
-      let readingPaused = false;
-      request.on('data', (buf) => {
-        // TODO(someday): Coalesce small writes.
-        if (!uploadStreamError) {
-          requestStream.write(buf).then(() => {
-            writesInFlight--;
-            if (readingPaused) {
-              request.resume();
-              readingPaused = false;
-            }
-          }).catch(reportUploadStreamError);
-
-          if (writesInFlight++ > 16) {
-            request.pause();
-            readingPaused = true;
-          }
-        }
-      });
-
-      request.on('end', () => {
-        if (!uploadStreamError) requestStream.done().catch(reportUploadStreamError);
-
-        // We're all done making calls to requestStream.
-        requestStream.close();
-      });
-
-      request.on('close', () => {
-        reportUploadStreamError(new Error('HTTP connection unexpectedly closed during request.'));
-      });
-
-      request.on('error', (err) => {
-        reportUploadStreamError(err);
-      });
-
-      return responsePromise.then((rpcResponse) => {
-        // Stop here if the upload stream has already failed.
-        if (uploadStreamError) throw uploadStreamError;
-        const promise = this.translateResponse(rpcResponse, response, request);
-        downloadStreamHandle = promise.streamHandle;
-        return promise;
-      });
-    }, (err) => {
-      if (err.kjType === 'failed' && err.message.indexOf('not implemented') !== -1) {
-        // Hack to work around old apps using an old version of Cap'n Proto, before the
-        // 'unimplemented' exception type was introduced. :(
-        // TODO(cleanup): When we transition to API version 2, we can move this into the
-        //   compatibility layer.
-        err.kjType = 'unimplemented';
-      }
-
-      if (SandstormBackend.shouldRestartGrain(err, 0)) {
-        // This is the kind of error that indicates we should retry. Note that we passed 0 for the
-        // retry count above because we were just checking if this is a retriable error (vs. possibly
-        // a method-not-implemented error); maybeRetryAfterError() will check again with the proper
-        // retry count.
-        return this.maybeRetryAfterError(err, retryCount).then(() => {
-          return this.handleRequestStreaming(request, response, contentLength, retryCount + 1);
-        });
-      } else if (err.kjType === 'unimplemented') {
-        // Streaming is not implemented. Fall back to non-streaming version.
-        return readAll(request).then((data) => {
-          return this.handleRequest(request, data, response, 0);
-        });
+      let requestStreamPromise;
+      if (request.method === 'POST') {
+        requestStreamPromise = session.postStreaming(path, mimeType, context, encoding);
+      } else if (request.method === 'PUT') {
+        requestStreamPromise = session.putStreaming(path, mimeType, context, encoding);
       } else {
-        throw err;
+        throw new Error('Sandstorm only supports streaming POST and PUT requests.');
       }
+
+      // TODO(perf): We ought to be pipelining the body, but we can't currently, because we have to
+      //   handle the case where the app doesn't actually support streaming. We could pipeline while
+      //   also buffering the data on the side in case we need it again later, but that's kind of
+      //   complicated. We should fix the whole protocol to make streaming the standard.
+      return requestStreamPromise.then((requestStreamResult) => {
+        const requestStream = requestStreamResult.stream;
+
+        // Initialized when getResponse() returns, if the response is streaming.
+        let downloadStreamHandle;
+
+        // Initialized if an upload-stream method throws.
+        let uploadStreamError;
+
+        // We call `getResponse()` immediately so that the app can start streaming data down even
+        // while data is still being streamed up. This theoretically allows apps to perform
+        // bidirectional streaming, though probably very few actually do that.
+        //
+        // Note that we need to be able to cancel `responsePromise` below, so it's important that
+        // it is the raw Cap'n Proto promise. Hence `translateResponsePromise` is a separate
+        // variable.
+        const responsePromise = requestStream.getResponse();
+
+        const reportUploadStreamError = (err) => {
+          // Called when an upload-stream method throws.
+
+          if (!uploadStreamError) {
+            uploadStreamError = err;
+
+            // If we're still waiting on any response stuff, cancel it.
+            responsePromise.cancel();
+            requestStream.close();
+            if (downloadStreamHandle) {
+              downloadStreamHandle.close();
+            }
+          }
+        };
+
+        // If we have a Content-Length, pass it along to the app by calling `expectSize()`.
+        if (contentLength !== undefined) {
+          requestStream.expectSize(contentLength).catch((err) => {
+            // expectSize() is allowed to be unimplemented.
+            if (err.kjType !== 'unimplemented') {
+              reportUploadStreamError(err);
+            }
+          });
+        }
+
+        // Pipe the input stream to the app.
+        let writesInFlight = 0;
+        let readingPaused = false;
+        request.on('data', (buf) => {
+          // TODO(someday): Coalesce small writes.
+          if (!uploadStreamError) {
+            requestStream.write(buf).then(() => {
+              writesInFlight--;
+              if (readingPaused) {
+                request.resume();
+                readingPaused = false;
+              }
+            }).catch(reportUploadStreamError);
+
+            if (writesInFlight++ > 16) {
+              request.pause();
+              readingPaused = true;
+            }
+          }
+        });
+
+        request.on('end', () => {
+          if (!uploadStreamError) requestStream.done().catch(reportUploadStreamError);
+
+          // We're all done making calls to requestStream.
+          requestStream.close();
+        });
+
+        request.on('close', () => {
+          reportUploadStreamError(new Error('HTTP connection unexpectedly closed during request.'));
+        });
+
+        request.on('error', (err) => {
+          reportUploadStreamError(err);
+        });
+
+        return responsePromise.then((rpcResponse) => {
+          // Stop here if the upload stream has already failed.
+          if (uploadStreamError) throw uploadStreamError;
+          const promise = this.translateResponse(rpcResponse, response, request);
+          downloadStreamHandle = promise.streamHandle;
+          return promise;
+        });
+      }, (err) => {
+        if (err.kjType === 'failed' && err.message.indexOf('not implemented') !== -1) {
+          // Hack to work around old apps using an old version of Cap'n Proto, before the
+          // 'unimplemented' exception type was introduced. :(
+          // TODO(cleanup): When we transition to API version 2, we can move this into the
+          //   compatibility layer.
+          err.kjType = 'unimplemented';
+        }
+
+        if (SandstormBackend.shouldRestartGrain(err, 0)) {
+          // This is the kind of error that indicates we should retry. Note that we passed 0 for
+          // the retry count above because we were just checking if this is a retriable error (vs.
+          // possibly a method-not-implemented error); maybeRetryAfterError() will check again with
+          // the proper retry count.
+          return this.maybeRetryAfterError(err, retryCount).then(() => {
+            return this.handleRequestStreaming(request, response, contentLength, retryCount + 1);
+          });
+        } else if (err.kjType === 'unimplemented') {
+          // Streaming is not implemented. Fall back to non-streaming version.
+          return readAll(request).then((data) => {
+            return this.handleRequest(request, data, response, 0);
+          });
+        } else {
+          throw err;
+        }
+      });
     });
   }
 
   handleWebSocket(request, socket, head, retryCount) {
     return Promise.resolve(undefined).then(() => {
-      return this.makeContext(request);
-    }).then((context) => {
-      const path = request.url.slice(1);  // remove leading '/'
-      const session = this.getSession(request);
+      return this.makeContext(request, undefined, (context) => {
+        const path = request.url.slice(1);  // remove leading '/'
+        const session = this.getSession(request);
 
-      if (!('sec-websocket-key' in request.headers)) {
-        throw new Error('Missing Sec-WebSocket-Accept header.');
-      }
-
-      const magic = request.headers['sec-websocket-key'] + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
-      const acceptKey = Crypto.createHash('sha1').update(magic).digest('base64');
-
-      let protocols = [];
-      if ('sec-websocket-protocol' in request.headers) {
-        protocols = request.headers['sec-websocket-protocol']
-            .split(',').map((s) => { return s.trim(); });
-      }
-
-      const receiver = new WebSocketReceiver(socket);
-
-      const promise = session.openWebSocket(path, context, protocols, receiver);
-
-      if (head.length > 0) {
-        promise.serverStream.sendBytes(head);
-      }
-
-      const socketIdx = this.websocketCounter.toString();
-      this.websockets[socketIdx] = socket;
-      this.websocketCounter += 1;
-      pumpWebSocket(socket, promise.serverStream, () => { delete this.websockets[socketIdx]; });
-
-      return promise.then((response) => {
-        const headers = [
-            'HTTP/1.1 101 Switching Protocols',
-            'Upgrade: websocket',
-            'Connection: Upgrade',
-            'Sec-WebSocket-Accept: ' + acceptKey,
-        ];
-        if (response.protocol && response.protocol.length > 0) {
-          headers.push('Sec-WebSocket-Protocol: ' + response.protocol.join(', '));
+        if (!('sec-websocket-key' in request.headers)) {
+          throw new Error('Missing Sec-WebSocket-Accept header.');
         }
 
-        headers.push('');
-        headers.push('');
+        const magic = request.headers['sec-websocket-key'] + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+        const acceptKey = Crypto.createHash('sha1').update(magic).digest('base64');
 
-        socket.write(headers.join('\r\n'));
-        receiver.go();
+        let protocols = [];
+        if ('sec-websocket-protocol' in request.headers) {
+          protocols = request.headers['sec-websocket-protocol']
+              .split(',').map((s) => { return s.trim(); });
+        }
 
-        // Note:  At this point errors are out of our hands.
+        const receiver = new WebSocketReceiver(socket);
+
+        const promise = session.openWebSocket(path, context, protocols, receiver);
+
+        if (head.length > 0) {
+          promise.serverStream.sendBytes(head);
+        }
+
+        const socketIdx = this.websocketCounter.toString();
+        this.websockets[socketIdx] = socket;
+        this.websocketCounter += 1;
+        pumpWebSocket(socket, promise.serverStream, () => { delete this.websockets[socketIdx]; });
+
+        return promise.then((response) => {
+          const headers = [
+              'HTTP/1.1 101 Switching Protocols',
+              'Upgrade: websocket',
+              'Connection: Upgrade',
+              'Sec-WebSocket-Accept: ' + acceptKey,
+          ];
+          if (response.protocol && response.protocol.length > 0) {
+            headers.push('Sec-WebSocket-Protocol: ' + response.protocol.join(', '));
+          }
+
+          headers.push('');
+          headers.push('');
+
+          socket.write(headers.join('\r\n'));
+          receiver.go();
+
+          // Note:  At this point errors are out of our hands.
+        });
       });
     }).catch((error) => {
       return this.maybeRetryAfterError(error, retryCount).then(() => {

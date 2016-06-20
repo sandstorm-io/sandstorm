@@ -1,3 +1,6 @@
+// Pseudo-collection defined via publish.
+const RealTimeStats = new Mongo.Collection("realTimeStats");
+
 Template.newAdminStats.onCreated(function () {
   this.formState = new ReactiveVar("default");
   this.message = new ReactiveVar("");

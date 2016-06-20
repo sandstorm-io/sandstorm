@@ -1,6 +1,8 @@
 // Pseudocollection telling the client if there's an admin user yet.
 HasAdmin = new Mongo.Collection("hasAdmin");
 
+const AdminToken = new Mongo.Collection("adminToken"); // see Meteor.publish("adminToken")
+
 const setupSteps = ["intro", "identity", "email", "user", "success"];
 const setupStepsForWork = ["intro", "identity", "organization", "email", "user", "success"];
 
@@ -220,7 +222,7 @@ Template.setupWizardIntro.events({
 });
 
 Template.setupWizardFeatureKey.helpers({
-  featureKey() {
+  currentFeatureKey() {
     return globalDb.currentFeatureKey();
   },
 

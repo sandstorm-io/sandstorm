@@ -7,6 +7,9 @@ import getBuildInfo from "/imports/client/build-info.js";
 // Pseudocollection holding number of grains with open sessions and accounts with open sessions.
 const systemStatus = new Mongo.Collection("systemStatus");
 
+// Pseudocollection with the lines of the server log
+const AdminLog = new Meteor.Collection("adminLog");
+
 // This is some logic to make the log scroll to the bottom by default and also stick there.  It is
 // two template and more complicated than it needs to be because Blaze lacks the appropriate set
 // of lifecycle hooks to make it more straightforward.

@@ -239,6 +239,16 @@ Template.sandstormAppListPage.onRendered(() => {
   const db = Template.instance().data._db;
   // Set up automatically-opening hint explaining what installing is, if zero apps installed.
   if (!db.collections.userActions.find().count() && !Session.get("dismissedInstallHint")) {
+    // If the user had 0 grains (including in the trash) at the time they see this message, then
+    // when they open a grain for the first time, we want to show them our guided-tour message
+    // about how "Share access" works.
+    //
+    // Persist between reloads via localStorage.
+    const grainsCount = db.currentUserGrains().count();
+    if (grainsCount === 0) {
+      Meteor._localStorage.setItem("userNeedsShareAccessHint", true);
+    }
+
     const intro = Template.instance().intro = introJs();
     let introOptions = {
       steps: [

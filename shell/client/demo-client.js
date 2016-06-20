@@ -111,6 +111,12 @@ Template.appdemo.events({
           globalDb.addUserActions(packageId);
         }
 
+        // Also mark the user as needing the "How to share access" guided-tour hint.
+        const grainsCount = globalDb.currentUserGrains().count();
+        if (grainsCount === 0) {
+          Meteor._localStorage.setItem("userNeedsShareAccessHint", true);
+        }
+
         // 4. Create new grain and 5. browse to it.
         launchAndEnterGrainByPackageId(packageId);
       }
@@ -188,4 +194,3 @@ Router.map(function () {
     },
   });
 });
-

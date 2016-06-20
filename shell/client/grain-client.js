@@ -16,6 +16,8 @@
 
 // This file implements /grain, i.e. the main view into an app.
 
+import { introJs } from "intro.js";
+
 import downloadFile from "/imports/client/download-file.js";
 
 // Pseudo-collections.
@@ -436,6 +438,58 @@ Template.shareableLinkTab.events({
     instance.find("form").reset();
     instance.find("form option[data-default-selected=true]").selected = true;
   },
+});
+
+Template.grainShareButton.onRendered(() => {
+  if (! Meteor._localStorage.getItem("userNeedsShareAccessHint")) {
+    return;
+  }
+
+  // Don't show hint on $mobile because the top bar isn't really a top bar in that case.
+  if (window.innerWidth <= 900) {
+    return;
+  }
+
+  let templateData = Template.instance();
+  const activeGrain = globalGrains.getActive();
+  var unsafeCurrentAppTitle = (activeGrain && activeGrain.appTitle()) || "";
+
+  /* Use DOM to escape HTML, so it is safe to pass to intro.js */
+  var div = document.createElement("div");
+  div.appendChild(document.createTextNode(unsafeCurrentAppTitle));
+  var escapedCurrentAppTitle = div.innerHTML;
+
+  const intro = templateData.intro = introJs();
+  let introOptions = {
+    steps: [
+      {
+        element: document.querySelector(".share"),
+        intro: "You've created your first " + escapedCurrentAppTitle + " grain. When you're ready, you can share it with others.",
+      },
+    ],
+    highlightClass: 'introjs-black-helperLayer',
+    tooltipPosition: "bottom",
+    positionPrecedence: ["bottom", "top", "left", "right"],
+    showStepNumbers: false,
+    exitOnOverlayClick: true,
+    overlayOpacity: 0.7,
+    showBullets: false,
+    disableInteraction: false,
+    doneLabel: "Thanks",
+  };
+
+  intro.setOptions(introOptions);
+  const dismissHint = () => {
+    Meteor._localStorage.removeItem("userNeedsShareAccessHint");
+  };
+
+  intro.oncomplete(dismissHint);
+  intro.onexit(dismissHint);
+
+  intro.start();
+
+  // HACK: Resize after 2 seconds, in case the grain size arrived late and caused the UI to reflow.
+  Meteor.setTimeout(() => window.dispatchEvent(new Event("resize")), 2000);
 });
 
 Template.grainPowerboxOfferPopup.events({

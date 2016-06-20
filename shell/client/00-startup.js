@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import "/imports/db-deprecated.js";
+import AccountsUi from "/imports/client/accounts/accounts-ui.js";
 
 Session.setDefault("shrink-navbar", false);
 globalGrains = new GrainViewList(globalDb);

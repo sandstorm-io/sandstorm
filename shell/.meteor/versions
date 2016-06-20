@@ -55,7 +55,6 @@ iron:middleware-stack@1.1.0
 iron:router@1.0.13
 iron:url@1.0.11
 jquery@1.11.9
-less@2.6.2
 livedata@1.0.18
 localstorage@1.0.11
 logging@1.0.13
@@ -82,7 +81,6 @@ reload@1.1.9
 retry@1.0.8
 routepolicy@1.0.11
 sandstorm-accounts-packages@0.1.0
-sandstorm-accounts-ui@0.1.0
 sandstorm-autoupdate-apps@0.1.0
 sandstorm-backend@0.1.0
 sandstorm-contacts@0.1.0

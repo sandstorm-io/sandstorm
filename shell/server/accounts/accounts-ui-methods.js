@@ -65,46 +65,34 @@ Meteor.methods({
 
     Meteor.users.update(this.userId, { $unset: { hasCompletedSignup: "" } });
   },
+
+  uploadProfilePicture: function (identityId) {
+    check(identityId, String);
+    if (!this.userId || !this.connection.sandstormDb.userHasIdentity(this.userId, identityId)) {
+      throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
+    }
+
+    return this.connection.sandstormDb.newAssetUpload({
+      profilePicture: { userId: this.userId, identityId: identityId },
+    });
+  },
+
+  cancelUploadProfilePicture: function (id) {
+    check(id, String);
+    this.connection.sandstormDb.fulfillAssetUpload(id);
+  },
+
+  setPrimaryEmail: function (email) {
+    check(email, String);
+    if (!this.userId) {
+      throw new Meteor.Error(403, "Not logged in.");
+    }
+
+    const emails = SandstormDb.getUserEmails(Meteor.user());
+    if (!_.findWhere(emails, { email: email, verified: true })) {
+      throw new Meteor.Error(403, "Not a verified email of the current user: " + email);
+    }
+
+    Meteor.users.update({ _id: this.userId }, { $set: { primaryEmail: email } });
+  },
 });
-
-if (Meteor.isClient) {
-  window.testFirstSignup = function () {
-    Meteor.call("testFirstSignup");
-  };
-}
-
-if (Meteor.isServer) {
-  // Methods that can't be simulated.
-
-  Meteor.methods({
-    uploadProfilePicture: function (identityId) {
-      check(identityId, String);
-      if (!this.userId || !this.connection.sandstormDb.userHasIdentity(this.userId, identityId)) {
-        throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
-      }
-
-      return this.connection.sandstormDb.newAssetUpload({
-        profilePicture: { userId: this.userId, identityId: identityId },
-      });
-    },
-
-    cancelUploadProfilePicture: function (id) {
-      check(id, String);
-      this.connection.sandstormDb.fulfillAssetUpload(id);
-    },
-
-    setPrimaryEmail: function (email) {
-      check(email, String);
-      if (!this.userId) {
-        throw new Meteor.Error(403, "Not logged in.");
-      }
-
-      const emails = SandstormDb.getUserEmails(Meteor.user());
-      if (!_.findWhere(emails, { email: email, verified: true })) {
-        throw new Meteor.Error(403, "Not a verified email of the current user: " + email);
-      }
-
-      Meteor.users.update({ _id: this.userId }, { $set: { primaryEmail: email } });
-    },
-  });
-}

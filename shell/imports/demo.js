@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Used in both client/demo.js and server/demo.js, as well as install.js
 allowDemo = Meteor.settings && Meteor.settings.public &&
                 Meteor.settings.public.allowDemoAccounts;
+
+export { allowDemo };

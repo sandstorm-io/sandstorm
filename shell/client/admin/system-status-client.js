@@ -3,6 +3,7 @@ import { Mongo } from "meteor/mongo";
 import { Template } from "meteor/templating";
 import downloadFile from "/imports/client/download-file.js";
 import getBuildInfo from "/imports/client/build-info.js";
+import { allowDemo } from "/imports/demo.js";
 
 // Pseudocollection holding number of grains with open sessions and accounts with open sessions.
 const systemStatus = new Mongo.Collection("systemStatus");

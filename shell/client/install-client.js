@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { allowDemo } from "/imports/demo.js";
+
 Router.map(function () {
   this.route("install", {
     path: "/install/:packageId",

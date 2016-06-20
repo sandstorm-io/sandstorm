@@ -1174,14 +1174,12 @@ class Proxy {
       };
     }
 
-    const _this = this;
-
     this.requestHandler = (request, response) => {
       if (this.sessionId) {
         // Implement /_sandstorm-init for setting the session cookie.
         const url = Url.parse(request.url, true);
-        if (url.pathname === "/_sandstorm-init" && url.query.sessionid === _this.sessionId) {
-          _this.doSessionInit(request, response, url.query.path);
+        if (url.pathname === "/_sandstorm-init" && url.query.sessionid === this.sessionId) {
+          this.doSessionInit(request, response, url.query.path);
           return;
         }
       }
@@ -1191,14 +1189,14 @@ class Proxy {
         if ((request.method === "POST" || request.method === "PUT") &&
             (contentLength === undefined || contentLength > 1024 * 1024)) {
           // The input is either very long, or we don't know how long it is, so use streaming mode.
-          return _this.handleRequestStreaming(request, response, contentLength, 0);
+          return this.handleRequestStreaming(request, response, contentLength, 0);
         } else {
           return readAll(request).then((data) => {
-            return _this.handleRequest(request, data, response, 0);
+            return this.handleRequest(request, data, response, 0);
           });
         }
       }).catch((err) => {
-        _this.setHasLoaded();
+        this.setHasLoaded();
 
         let body = err.stack;
         if (err.cppFile) {
@@ -1226,7 +1224,7 @@ class Proxy {
     };
 
     this.upgradeHandler = (request, socket, head) => {
-      _this.handleWebSocket(request, socket, head, 0).catch((err) => {
+      this.handleWebSocket(request, socket, head, 0).catch((err) => {
         console.error("WebSocket setup failed:", err.stack);
         // TODO(cleanup):  Manually send back a 500 response?
         socket.destroy();
@@ -1309,38 +1307,37 @@ class Proxy {
 
   _callNewSession(request, viewInfo) {
     const userInfo = _.clone(this.userInfo);
-    const _this = this;
     const promise = inMeteor(() => {
       let vertex;
-      if (_this.apiToken) {
-        vertex = { token: _this.apiToken };
+      if (this.apiToken) {
+        vertex = { token: this.apiToken };
       } else {
-        // (_this.identityId might be null; this is fine)
-        vertex = { grain: { _id: _this.grainId, identityId: _this.identityId } };
+        // (this.identityId might be null; this is fine)
+        vertex = { grain: { _id: this.grainId, identityId: this.identityId } };
       }
 
-      let onInvalidated = function () {
-        Sessions.remove({ _id: _this.sessionId });
+      let onInvalidated = () => {
+        Sessions.remove({ _id: this.sessionId });
       };
 
-      if (!_this.sessionId) {
-        onInvalidated = function () {
-          apiSessionProxies.removeProxiesOfToken(_this.apiToken._id);
+      if (!this.sessionId) {
+        onInvalidated = () => {
+          apiSessionProxies.removeProxiesOfToken(this.apiToken._id);
         };
       }
 
       const permissions = SandstormPermissions.grainPermissions(globalDb, vertex, viewInfo,
                                                                 onInvalidated);
 
-      if (_this.permissionsObserver) _this.permissionsObserver.stop();
-      _this.permissionsObserver = permissions.observeHandle;
+      if (this.permissionsObserver) this.permissionsObserver.stop();
+      this.permissionsObserver = permissions.observeHandle;
 
       if (!permissions.permissions) {
         throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
       }
 
       Sessions.update({
-        _id: _this.sessionId,
+        _id: this.sessionId,
       }, {
         $set: {
           viewInfo: viewInfo,
@@ -1370,10 +1367,10 @@ class Proxy {
 
       userInfo.deprecatedPermissionsBlob = buf;
 
-      if (_this.isApi) {
-        return _this._callNewApiSession(request, userInfo);
+      if (this.isApi) {
+        return this._callNewApiSession(request, userInfo);
       } else {
-        return _this._callNewWebSession(request, userInfo);
+        return this._callNewWebSession(request, userInfo);
       }
     });
   }
@@ -1381,12 +1378,11 @@ class Proxy {
   getSession(request) {
     if (!this.session) {
       this.getConnection();  // make sure we're connected
-      const _this = this;
       const promise = this.uiView.getViewInfo().then((viewInfo) => {
         return inMeteor(() => {
-          Grains.update(_this.grainId, { $set: { cachedViewInfo: viewInfo } });
+          Grains.update(this.grainId, { $set: { cachedViewInfo: viewInfo } });
         }).then(() => {
-          return _this._callNewSession(request, viewInfo);
+          return this._callNewSession(request, viewInfo);
         });
       }, (error) => {
         if (error.kjType === "failed" || error.kjType === "unimplemented") {
@@ -1394,7 +1390,7 @@ class Proxy {
           // TODO(apibump): Don't treat 'failed' as 'unimplemented'. Unfortunately, old apps built
           //   with old versions of Cap'n Proto don't throw 'unimplemented' exceptions, so we have
           //   to accept 'failed' here at least until the next API bump.
-          return _this._callNewSession(request, {});
+          return this._callNewSession(request, {});
         } else {
           return Promise.reject(error);
         }
@@ -1437,11 +1433,10 @@ class Proxy {
     // returning a promise that resolves once restarted. Otherwise, just rethrow the error.
     // `retryCount` should be incremented for every successful retry as part of the same request;
     // we only want to retry once.
-    const _this = this;
     if (SandstormBackend.shouldRestartGrain(error, retryCount)) {
       this.resetConnection();
       return inMeteor(() => {
-        _this.supervisor = globalBackend.continueGrain(_this.grainId).supervisor;
+        this.supervisor = globalBackend.continueGrain(this.grainId).supervisor;
       });
     } else {
       throw error;
@@ -1696,14 +1691,13 @@ class Proxy {
   }
 
   handleRequest(request, data, response, retryCount) {
-    const _this = this;
     return Promise.resolve(undefined).then(() => {
-      return _this.makeContext(request, response);
+      return this.makeContext(request, response);
     }).then((context) => {
       // jscs:disable requireDotNotation
       // Send the RPC.
       const path = request.url.slice(1);  // remove leading '/'
-      const session = _this.getSession(request);
+      const session = this.getSession(request);
 
       const requestContent = () => {
         return {
@@ -1815,17 +1809,16 @@ class Proxy {
       }
     }).then((rpcResponse) => {
       if (rpcResponse !== undefined) {  // Will be undefined for OPTIONS request.
-        return _this.translateResponse(rpcResponse, response, request);
+        return this.translateResponse(rpcResponse, response, request);
       }
     }).catch((error) => {
-      return _this.maybeRetryAfterError(error, retryCount).then(() => {
-        return _this.handleRequest(request, data, response, retryCount + 1);
+      return this.maybeRetryAfterError(error, retryCount).then(() => {
+        return this.handleRequest(request, data, response, retryCount + 1);
       });
     });
   }
 
   handleRequestStreaming(request, response, contentLength, retryCount) {
-    const _this = this;
     const context = this.makeContext(request, response);
     const path = request.url.slice(1);  // remove leading '/'
     const session = this.getSession(request);
@@ -1927,7 +1920,7 @@ class Proxy {
       return responsePromise.then((rpcResponse) => {
         // Stop here if the upload stream has already failed.
         if (uploadStreamError) throw uploadStreamError;
-        const promise = _this.translateResponse(rpcResponse, response, request);
+        const promise = this.translateResponse(rpcResponse, response, request);
         downloadStreamHandle = promise.streamHandle;
         return promise;
       });
@@ -1945,13 +1938,13 @@ class Proxy {
         // retry count above because we were just checking if this is a retriable error (vs. possibly
         // a method-not-implemented error); maybeRetryAfterError() will check again with the proper
         // retry count.
-        return _this.maybeRetryAfterError(err, retryCount).then(() => {
-          return _this.handleRequestStreaming(request, response, contentLength, retryCount + 1);
+        return this.maybeRetryAfterError(err, retryCount).then(() => {
+          return this.handleRequestStreaming(request, response, contentLength, retryCount + 1);
         });
       } else if (err.kjType === 'unimplemented') {
         // Streaming is not implemented. Fall back to non-streaming version.
         return readAll(request).then((data) => {
-          return _this.handleRequest(request, data, response, 0);
+          return this.handleRequest(request, data, response, 0);
         });
       } else {
         throw err;
@@ -1960,13 +1953,11 @@ class Proxy {
   }
 
   handleWebSocket(request, socket, head, retryCount) {
-    const _this = this;
-
     return Promise.resolve(undefined).then(() => {
-      return _this.makeContext(request);
+      return this.makeContext(request);
     }).then((context) => {
       const path = request.url.slice(1);  // remove leading '/'
-      const session = _this.getSession(request);
+      const session = this.getSession(request);
 
       if (!('sec-websocket-key' in request.headers)) {
         throw new Error('Missing Sec-WebSocket-Accept header.');
@@ -1989,10 +1980,10 @@ class Proxy {
         promise.serverStream.sendBytes(head);
       }
 
-      const socketIdx = _this.websocketCounter.toString();
-      _this.websockets[socketIdx] = socket;
-      _this.websocketCounter += 1;
-      pumpWebSocket(socket, promise.serverStream, () => { delete _this.websockets[socketIdx]; });
+      const socketIdx = this.websocketCounter.toString();
+      this.websockets[socketIdx] = socket;
+      this.websocketCounter += 1;
+      pumpWebSocket(socket, promise.serverStream, () => { delete this.websockets[socketIdx]; });
 
       return promise.then((response) => {
         const headers = [
@@ -2014,8 +2005,8 @@ class Proxy {
         // Note:  At this point errors are out of our hands.
       });
     }).catch((error) => {
-      return _this.maybeRetryAfterError(error, retryCount).then(() => {
-        return _this.handleWebSocket(request, socket, head, retryCount + 1);
+      return this.maybeRetryAfterError(error, retryCount).then(() => {
+        return this.handleWebSocket(request, socket, head, retryCount + 1);
       });
     });
   }

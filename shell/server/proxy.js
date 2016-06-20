@@ -2345,14 +2345,15 @@ ResponseStream = class ResponseStream {
       this.response.writeHead(this.httpCode, this.httpStatus, { "Content-Length": 0 });
     }
 
-    this.response.end();
-    this.ended = true;
+    if (!this.ended) {
+      this.ended = true;
+      this.response.end();
+      if (this.resolve) this.resolve();
+    }
   }
 
   close() {
-    if (this.ended) {
-      if (this.resolve) this.resolve();
-    } else {
+    if (!this.ended) {
       if (this.reject) this.reject(new Error('done() was never called on outbound stream.'));
     }
   }

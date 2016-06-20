@@ -236,7 +236,8 @@ Template.sandstormAppListPage.onDestroyed(() => {
 });
 
 Template.sandstormAppListPage.onRendered(() => {
-  const db = Template.instance().data._db;
+  const instance = Template.instance();
+  const db = instance.data._db;
   // Set up automatically-opening hint explaining what installing is, if zero apps installed.
   if (!db.collections.userActions.find().count() && !Session.get("dismissedInstallHint")) {
     const intro = Template.instance().intro = introJs();
@@ -286,7 +287,7 @@ Template.sandstormAppListPage.onRendered(() => {
       return;
     }
 
-    const searchbar = this.findAll(".search-bar")[0];
+    const searchbar = instance.findAll(".search-bar")[0];
     if (searchbar) searchbar.focus();
   }
 });

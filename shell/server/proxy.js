@@ -1603,18 +1603,11 @@ class Proxy {
           response.rejectResponseStream(new Error('HEAD request; content doesn\'t matter.'));
         } else {
           const streamHandle = content.body.stream;
-          const promise = new Promise((resolve, reject) => {
-            response.resolveResponseStream(new Capnp.Capability(
-                new ResponseStream(response, code.id, code.title, resolve, reject),
-                ByteStream));
-          }).then(() => {
-            streamHandle.close();
-          }, (err) => {
-            streamHandle.close();
-            throw err;
-          });
-          promise.streamHandle = streamHandle;
-          return promise;
+          const responseStream = new Capnp.Capability(
+            new ResponseStream(response, code.id, code.title, streamHandle),
+            ByteStream);
+          response.resolveResponseStream(responseStream);
+          return { streamHandle: responseStream };
         }
       } else {
         response.rejectResponseStream(
@@ -1700,7 +1693,7 @@ class Proxy {
       throw new Error('Unknown HTTP response type:\n' + JSON.stringify(rpcResponse));
     }
 
-    return Promise.resolve(undefined);
+    return {};
   }
 
   handleRequest(request, data, response, retryCount) {
@@ -1934,9 +1927,7 @@ class Proxy {
         return responsePromise.then((rpcResponse) => {
           // Stop here if the upload stream has already failed.
           if (uploadStreamError) throw uploadStreamError;
-          const promise = this.translateResponse(rpcResponse, response, request);
-          downloadStreamHandle = promise.streamHandle;
-          return promise;
+          downloadStreamHandle = this.translateResponse(rpcResponse, response, request).streamHandle;
         });
       }, (err) => {
         if (err.kjType === 'failed' && err.message.indexOf('not implemented') !== -1) {
@@ -2257,7 +2248,7 @@ const errorCodes = {
 ResponseStream = class ResponseStream {
   // Note: This class is used in pre-meteor.js as well as in this file.
 
-  constructor(response, httpCode, httpStatus, resolve, reject) {
+  constructor(response, httpCode, httpStatus, upstreamHandle) {
     // This is stupidly complicated, because:
     // - New versions of sandstorm-http-bridge (and other well-behaved apps) wait on write()
     //   completion for flow control, so we want write() to complete only when there is space
@@ -2278,8 +2269,7 @@ ResponseStream = class ResponseStream {
     this.response = response;
     this.httpCode = httpCode;
     this.httpStatus = httpStatus;
-    this.resolve = resolve;
-    this.reject = reject;
+    this.upstreamHandle = upstreamHandle;
 
     this.started = false;
     this.ended = false;
@@ -2299,6 +2289,8 @@ ResponseStream = class ResponseStream {
       // call after this point will throw.
       this.waiting.forEach(f => f());
       this.waiting = [];
+
+      this.close();
     });
   }
 
@@ -2348,13 +2340,29 @@ ResponseStream = class ResponseStream {
     if (!this.ended) {
       this.ended = true;
       this.response.end();
-      if (this.resolve) this.resolve();
     }
+
+    this.close();
   }
 
   close() {
+    if (this.upstreamHandle) {
+      this.upstreamHandle.close();
+    }
+
+    // If `this.done()` has not been called, we should report an error to the client. Unfortunately,
+    // the only case in which we can actually report the error is when we haven't done any writes
+    // yet. So we handle that case and ignore the error otherwise. Note that `!this.started`
+    // implies `!this.ended`.
+    if (!this.started) {
+      this.started = true;
+      this.response.writeHead(500, "done() never called on response stream",
+                              { "Content-Type": "text/plain" });
+    }
+
     if (!this.ended) {
-      if (this.reject) this.reject(new Error('done() was never called on outbound stream.'));
+      this.ended = true;
+      this.response.end();
     }
   }
 };

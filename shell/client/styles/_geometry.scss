@@ -6,6 +6,10 @@
 // TODO(cleanup): We don't include "screen" in the query because we assume this whole stylesheet
 //   is intended for screens. For non-screens, an entirely different stylesheet would be desired,
 //   or possibly no stylesheet at all: the HTML is designed to be understandable with no style.
+//
+//
+// NOTE: If you change the definition of $mobile or $desktop, run: `git grep -F '$mobile'`
+// in order to find places in the Javascript code that hard-code this 900px breakpoint.
 $mobile: "(max-width: 900px)";
 $desktop: "(min-width: 901px)";
 

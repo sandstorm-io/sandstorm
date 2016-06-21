@@ -454,17 +454,32 @@ Template.grainShareButton.onRendered(() => {
   const activeGrain = globalGrains.getActive();
   let unsafeCurrentAppTitle = (activeGrain && activeGrain.appTitle()) || "";
 
+  const currentPkgId = Grains.findOne({ _id: activeGrain.grainId() }).packageId;
+  const possibleUserActions = UserActions.find({ packageId: currentPkgId }).fetch();
+  let unsafeCurrentNounPhrase = "grain";
+  // Frequently there is only 1 UserAction per package. If there is more than 1, then we go with
+  // the default of "grain".
+  if (possibleUserActions.length === 1) {
+    const currentUserAction = possibleUserActions[0];
+    unsafeCurrentNounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(currentUserAction, unsafeCurrentAppTitle);
+  }
+
   // Use DOM to escape HTML, so it is safe to pass to intro.js.
   let div = document.createElement("div");
   div.appendChild(document.createTextNode(unsafeCurrentAppTitle));
   let escapedCurrentAppTitle = div.innerHTML;
+
+  div = document.createElement("div");
+  div.appendChild(document.createTextNode(unsafeCurrentNounPhrase));
+  let escapedCurrentNounPhrase = div.innerHTML;
 
   const intro = templateData.intro = introJs();
   let introOptions = {
     steps: [
       {
         element: document.querySelector(".share"),
-        intro: "You've created your first " + escapedCurrentAppTitle + " grain. When you're ready, you can share it with others.",
+        intro: "You've created your first " + escapedCurrentAppTitle + " " +
+          escapedCurrentNounPhrase + ". When you're ready, you can share it with others. Enjoy!",
       },
     ],
     highlightClass: "introjs-black-helperLayer",
@@ -475,7 +490,7 @@ Template.grainShareButton.onRendered(() => {
     overlayOpacity: 0.7,
     showBullets: false,
     disableInteraction: false,
-    doneLabel: "Thanks",
+    doneLabel: "Got it",
   };
 
   intro.setOptions(introOptions);

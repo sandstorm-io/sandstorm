@@ -454,7 +454,7 @@ Template.grainShareButton.onRendered(() => {
   const activeGrain = globalGrains.getActive();
   let unsafeCurrentAppTitle = (activeGrain && activeGrain.appTitle()) || "";
 
-  /* Use DOM to escape HTML, so it is safe to pass to intro.js */
+  // Use DOM to escape HTML, so it is safe to pass to intro.js.
   let div = document.createElement("div");
   div.appendChild(document.createTextNode(unsafeCurrentAppTitle));
   let escapedCurrentAppTitle = div.innerHTML;

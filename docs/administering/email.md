@@ -42,22 +42,70 @@ support special DNS records that improve email deliverability, we recommend you 
 Then, be sure to use an SMTP provider to configure that domain and your DNS provider to configure
 SPF/DKIM records.
 
-## Receiving email into Sandstorm app instances
+## Receiving email into Sandstorm grains
 
-### Prerequisites
+To allow Sandstorm grains to receive email, you need to do the following.
 
-* A personal domain at which you are running your Sandstorm server.
-* Basic knowledge of how to configure DNS records for your domain.
-* nginx
-* A working outgoing SMTP server.
+- **Set up DNS for a domain:** Configure DNS so that other computers know how to deliver email to your server.
 
-### Setup DNS
+- **Configure port 25 on your server:** When email messages arrive on inbound port 25, they must
+  reach Sandstorm. Sandstorm will then route them to any specific grain.
 
-This is relatively straightfoward if you know how to configure your domain's DNS records. All you need to do is add an MX record pointing to your sandstorm server.
+### Aside: How to test your configuration
 
-### Proxy SMTP
+One great way to test inbound email is to use the Roundcube app. To do that:
 
-Sandstorm's SMTP server runs on port 30025, and is intended to sit behind a reverse proxy. The easiest way to do accomplish this is with nginx. Add the following to your `nginx.conf`:
+- Install [Roundcube](https://apps.sandstorm.io/app/0qhha1v9ne1p42s5jw7r6qq6rt5tcx80zpg1f5ptsg7ryr4hws1h)
+  from the Sandstorm app market into an account on your Sandstorm server.
+
+- Click **Create a mailbox** from Roundcube's app details page on your server.
+
+- Click **Connect to Your Address** within a Roundcube grain. You should now see an inbound email
+  address for this Roundcube grain of the form.
+
+Once you know Roundcube's inbound email address, use a separate email system such as Gmail to send
+it an email! If this test email appears within Roundcube, you can skip the rest of these steps!
+Inbound emails should appear within 5 seconds of when you send them; if they do not, click
+Roundcube's **Refresh** button to make sure.
+
+### Set up DNS
+
+Grains can receive inbound email, and their email adddresses are always of the form
+`{{publicId}}@{{BASE_DOMAIN}}`. `{{BASE_DOMAIN}}` is the domain name value component of `BASE_URL`
+in your `sandstorm.conf`. `{{publicId}}` is a random unique ID that is assigned to this grain by
+Sandstorm. Therefore, the domain in your `BASE_URL` needs to have a DNS configuration that enables
+inbound email.
+
+**sandcats.io users:** No action is required. Servers on the Internet that send you email will
+connect to the IP address of the DNS `A` record maintained by the sandcats.io service.
+
+**Sandstorm users on your own domain:** No action is usually required, since presumably your
+server's BASE_URL resolves properly to your Sandstorm server. For extra standards compliance, you
+can add an `MX` record for the domain name that you use in your `BASE_URL`. You can use any number
+as the MX priority, for example, `10`.
+
+### Configure port 25, the easy way: Sandstorm can listen on port 25
+
+By default, Sandstorm's SMTP server runs on port 30025. You can adjust it to listen on port 25.
+This is the easiest way to configure inbound email; however, note that Sandstorm's SMTP server does
+not support inbound STARTTLS at this time.
+
+Make sure nothing else is running on port 25 on this system. Then edit
+`/opt/sandstorm/sandstorm.conf` to add this new line:
+
+```bash
+SMTP_LISTEN_PORT=25
+```
+
+Now stop & start Sandstorm.
+
+At this point, you should be able to test inbound email to your Roundcube grain.
+
+### Configure port 25, the advanced way: Proxy SMTP
+
+If you need to share Sandstorm's SMTP service with port 25 used by other services, or you want
+inbound STARTTLS, you can configure Sandstorm's SMTP service to sit behind a reverse proxy. One way
+to do accomplish this is with nginx. Add the following to your `nginx.conf`:
 
     mail {
         ssl_certificate /etc/keys/my-ssl.crt;
@@ -92,7 +140,11 @@ Sandstorm's SMTP server runs on port 30025, and is intended to sit behind a reve
         }
     }
 
-nginx requires that you provide an authentication handler for all SMTP proxies. We don't actually need authentication because our server is only meant to receive e-mail destined for this host (it will not relay). So, we have to set up a fake authentication handler. In the part of your nginx config where you defined your HTTP servers (e.g. `/etc/nginx/sites-available/default`), add this fake server for SMTP auth purposes:
+nginx requires that you provide an authentication handler for all SMTP proxies. We don't actually
+need authentication because our server is only meant to receive e-mail destined for this host (it
+will not relay). So, we have to set up a fake authentication handler. In the part of your nginx
+config where you defined your HTTP servers (e.g. `/etc/nginx/sites-available/default`), add this
+fake server for SMTP auth purposes:
 
     # Fake SMTP authorizor which always accepts. Put this in your http block.
     server {

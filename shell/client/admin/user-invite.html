@@ -1,4 +1,10 @@
 <template name="newAdminUserInviteLink">
+
+  <p>You can invite others to create accounts on your server by giving them an account creation
+    link. People you invite will be granted User permission and be able to install apps and create
+    grains of their own. Alternatively, if you want to share a specific grain with someone, you can
+    do that within the grain's "Share Access" menu.</p>
+
   <h2>Create a link</h2>
 
   {{#if hasSuccess}}
@@ -13,7 +19,7 @@
     {{/focusingErrorBox}}
   {{/if}}
 
-  <p>This will create a magic link which you can send to someone.</p>
+  <p>This will create an account creation link which you can send to someone.</p>
   <form class="admin-invite-button-form">
     <button type="submit">Create link</button>
     {{#if generatedLink}}

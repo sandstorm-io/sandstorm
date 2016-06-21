@@ -441,7 +441,7 @@ Template.shareableLinkTab.events({
 });
 
 Template.grainShareButton.onRendered(() => {
-  if (! Meteor._localStorage.getItem("userNeedsShareAccessHint")) {
+  if (!Meteor._localStorage.getItem("userNeedsShareAccessHint")) {
     return;
   }
 
@@ -452,12 +452,12 @@ Template.grainShareButton.onRendered(() => {
 
   let templateData = Template.instance();
   const activeGrain = globalGrains.getActive();
-  var unsafeCurrentAppTitle = (activeGrain && activeGrain.appTitle()) || "";
+  let unsafeCurrentAppTitle = (activeGrain && activeGrain.appTitle()) || "";
 
   /* Use DOM to escape HTML, so it is safe to pass to intro.js */
-  var div = document.createElement("div");
+  let div = document.createElement("div");
   div.appendChild(document.createTextNode(unsafeCurrentAppTitle));
-  var escapedCurrentAppTitle = div.innerHTML;
+  let escapedCurrentAppTitle = div.innerHTML;
 
   const intro = templateData.intro = introJs();
   let introOptions = {
@@ -467,7 +467,7 @@ Template.grainShareButton.onRendered(() => {
         intro: "You've created your first " + escapedCurrentAppTitle + " grain. When you're ready, you can share it with others.",
       },
     ],
-    highlightClass: 'introjs-black-helperLayer',
+    highlightClass: "introjs-black-helperLayer",
     tooltipPosition: "bottom",
     positionPrecedence: ["bottom", "top", "left", "right"],
     showStepNumbers: false,

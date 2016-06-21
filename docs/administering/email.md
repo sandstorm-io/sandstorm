@@ -36,6 +36,12 @@ Some cloud providers block outbound port 25, which you may experience as Sandsto
 "Connection timed out." In that case, check if your outbound SMTP provider supports alternative
 ports such as 587 or 2525.
 
+**sandcats.io users:** Since [the sandcats dynamic DNS & HTTPS service](sandcats.md) does not
+support special DNS records that improve email deliverability, we recommend you configure a
+**Server's own email address** on a domain you personally control, not your sandcats subdomain.
+Then, be sure to use an SMTP provider to configure that domain and your DNS provider to configure
+SPF/DKIM records.
+
 ## Receiving email into Sandstorm app instances
 
 ### Prerequisites

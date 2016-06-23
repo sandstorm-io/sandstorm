@@ -147,7 +147,11 @@
     font-size: 20px;
   }
 
-  input[type=text], input[type=password], input[type=number], input[type=email], textarea {
+  input[type=text], input[type=password], input[type=number], input[type=email], select {
+    min-height: 30px;
+  }
+
+  input[type=text], input[type=password], input[type=number], input[type=email], select, textarea {
     display: block;
     width: 100%;
     color: #222;
@@ -160,6 +164,9 @@
     &:disabled {
       color: #666;
       background-color: #efefef;
+    }
+    &:invalid {
+      border: 1px solid #c00;
     }
   }
 

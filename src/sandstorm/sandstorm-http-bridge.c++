@@ -208,7 +208,15 @@ public:
         allocateNextWrite(body.asPtr().asBytes());
         body = kj::Vector<char>();
         taskSet.add(pumpWrites().catch_([this](kj::Exception&&) {
+          // Error while writing.
+
+          // Shut down input, so that the app knows it can stop generating it.
           responseInput->abortRead();
+
+          // Drop the response stream, so that Sandstorm knows no more data is coming.
+          responseStream = nullptr;
+
+          // Mark aborted.
           aborted = true;
         }));
         return kj::arrayPtr(buffer,0);
@@ -221,7 +229,7 @@ public:
   void pumpStream(kj::Own<kj::AsyncIoStream>&& stream) {
     if (isStreaming) {
       responseInput = kj::mv(stream);
-      taskSet.add(pumpStreamInternal());
+      startPumpStream();
     }
   }
 
@@ -489,8 +497,11 @@ private:
       return result;
     } else if (streamDone) {
       // No more bytes coming.
+      nextWriteData = capnp::Orphan<capnp::Data>();
       nextWrite = nullptr;
-      return responseStream.doneRequest().send().ignoreResult();
+      auto promise = responseStream.doneRequest().send().ignoreResult();
+      responseStream = nullptr;
+      return kj::mv(promise);
     } else {
       // No bytes received yet. Wait.
       auto paf = kj::newPromiseAndFulfiller<void>();
@@ -524,8 +535,17 @@ private:
     if (readStalled) {
       // Start reading again.
       readStalled = false;
-      taskSet.add(pumpStreamInternal());
+      startPumpStream();
     }
+  }
+
+  void startPumpStream() {
+    taskSet.add(pumpStreamInternal().catch_([this](kj::Exception&& e) {
+      // Error while reading.
+
+      // Drop the response stream, so that Sandstorm knows no more data is coming.
+      responseStream = nullptr;
+    }));
   }
 
   kj::Promise<void> pumpStreamInternal() {

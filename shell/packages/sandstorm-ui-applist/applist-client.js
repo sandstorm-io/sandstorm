@@ -155,11 +155,11 @@ Template.sandstormAppListPage.helpers({
   },
 
   showMostPopular: function () {
-    // Only show if not searching, not uninstalling, and you have apps installed
+    // Only show if not searching, not uninstalling, and you have >= 6 apps installed
     const ref = Template.instance().data;
     return (ref._filter.get().length === 0) &&
            (!ref._uninstalling.get()) &&
-           (ref._db.currentUserActions().count() > 0);
+           (ref._db.currentUserActions().count() >= 6);
   },
 
   uninstalling: function () {

@@ -212,13 +212,32 @@ Meteor.methods({
     check(to, String);
     const { returnAddress, ...restConfig } = smtpConfig;
 
-    SandstormEmail.send({
-      to: to,
-      from: globalDb.getServerTitle() + " <" + returnAddress + ">",
-      subject: "Testing your Sandstorm's SMTP setting",
-      text: "Success! Your outgoing SMTP is working.",
-      smtpConfig: restConfig,
-    });
+    try {
+      SandstormEmail.send({
+        to: to,
+        from: globalDb.getServerTitle() + " <" + returnAddress + ">",
+        subject: "Testing your Sandstorm's SMTP setting",
+        text: "Success! Your outgoing SMTP is working.",
+        smtpConfig: restConfig,
+      });
+    } catch (e) {
+      // Attempt to give more accurate error messages for a variety of known failure modes,
+      // and the actual exception data in the event a user hits a new failure mode.
+      if (e.syscall === "getaddrinfo") {
+        if (e.code === "EIO" || e.code === "ENOTFOUND") {
+          throw new Meteor.Error("getaddrinfo " + e.code, "Couldn't resolve \"" + smtpConfig.hostname + "\" - check for typos or broken DNS.");
+        }
+      } else if (e.syscall === "connect") {
+        if (e.code === "ECONNREFUSED") {
+          throw new Meteor.Error("connect ECONNREFUSED", "Server at " + smtpConfig.hostname + ":" + smtpConfig.port + " refused connection.  Check your settings, firewall rules, and that your mail server is up.");
+        }
+      } else if (e.name === "AuthError") {
+        throw new Meteor.Error("auth error", "Authentication failed.  Check your credentials.  Message from " +
+                smtpConfig.hostname + ": " + e.data);
+      }
+
+      throw new Meteor.Error("other-email-sending-error", "Error while trying to send test email: " + JSON.stringify(e));
+    }
   },
 
   createSignupKey: function (token, note, quota) {

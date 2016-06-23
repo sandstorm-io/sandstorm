@@ -1,4 +1,4 @@
-const DEFAULT_SIGNUP_DIALOG = "You've been invited to join this Sandstorm server!";
+import { DEFAULT_SIGNUP_DIALOG } from "/imports/client/personalization.js";
 
 Template.newAdminPersonalization.onCreated(function () {
   this.serverTitle = new ReactiveVar(globalDb.getSettingWithFallback("serverTitle", ""));

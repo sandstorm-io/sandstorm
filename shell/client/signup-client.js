@@ -16,6 +16,8 @@
 
 // This file covers the client side of the invite key workflow.
 
+import { DEFAULT_SIGNUP_DIALOG } from "/imports/client/personalization.js";
+
 Template.signup.helpers({
   signupDialog: function () {
     const setting = Settings.findOne("signupDialog");

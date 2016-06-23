@@ -114,27 +114,6 @@
   </form>
 </template>
 
-<template name="adminFeatureKey">
-  {{#if currentFeatureKey}}
-    <h4>Current feature key</h4>
-    {{> adminFeatureKeyDetails featureKey=currentFeatureKey }}
-    {{> adminFeatureKeyModifyForm }}
-  {{else}}
-    <h4>Upload feature key</h4>
-    <p>To make use of Sandstorm for Work features like LDAP and SAML login and organization
-      management, enter your feature key.</p>
-    {{> featureKeyUploadForm }}
-
-    <h4>Don't have one?</h4>
-    <p>Sandstorm for Work adds LDAP support, with more features arriving soon.</p>
-    <a class="button-secondary request-feature-key"
-       target="_blank"
-       href="https://sandstorm.io/get-feature-key">
-       Request a feature key
-    </a>
-  {{/if}}
-</template>
-
 <template name="featureKeyUploadForm">
   <form class="feature-key-form">
     {{#with error=currentError}}

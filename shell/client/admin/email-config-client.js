@@ -153,7 +153,7 @@ Template.newAdminEmailConfig.events({
     const formData = instance.getSmtpConfig();
     Meteor.call("setSmtpConfig", undefined, formData, (err) => {
       if (err) {
-        instance.errorMessage.set(err.toString());
+        instance.errorMessage.set(err.message);
         instance.state.set("error");
       } else {
         instance.state.set("success");

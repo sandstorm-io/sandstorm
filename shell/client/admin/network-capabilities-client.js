@@ -11,13 +11,17 @@ const lookupIdentityById = function (identityId) {
 };
 
 const capDetails = function (cap) {
-
   let introducer = {};
   let ownerInfo = {};
   console.log(cap);
   if (cap.owner.grain !== undefined) {
     const grainId = cap.owner.grain.grainId;
     const grain = Grains.findOne(grainId);
+    if (!grain) {
+      // Grain was deleted.  Don't show anything.
+      return undefined;
+    }
+
     const grainTitle = grain && grain.title;
     const packageId = grain && grain.packageId;
     const pkg = packageId && globalDb.collections.packages.findOne(packageId);
@@ -111,13 +115,15 @@ Template.newAdminNetworkCapabilities.helpers({
   ipNetworkCaps() {
     return ApiTokens.find({
       "frontendRef.ipNetwork": { $exists: true },
-    }).map(capDetails);
+    }).map(capDetails)
+      .filter((item) => !!item);
   },
 
   ipInterfaceCaps() {
     return ApiTokens.find({
       "frontendRef.ipInterface": { $exists: true },
-    }).map(capDetails);
+    }).map(capDetails)
+      .filter((item) => !!item);
   },
 });
 

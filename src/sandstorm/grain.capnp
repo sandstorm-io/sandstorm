@@ -282,13 +282,41 @@ interface SandstormApi(AppObjectId) {
   # it). You must use `SandstormApi.save()` so that saved capabilities can be inspected by the
   # user.)
 
-  restore @4 (token :Data, requiredPermissions :PermissionSet) -> (cap :Capability);
+  restore @9 (token :Data) -> (cap :Capability);
   # Given a token previously returned by `save()`, get the capability it pointed to. The returned
   # capability should implement the same interfaces as the one you saved originally, so you can
   # downcast it as appropriate.
+
+  claimRequest @4 (requestToken :Data, requiredPermissions :PermissionSet) -> (cap :Capability);
+  # When a powerbox request is initiated client-side via the postMessage API and the user completes
+  # the request flow, the Sandstorm shell responds to the requesting app with a token. This token
+  # itself is not a SturdyRef, but can be exchanged server-side for a capability which in turn
+  # can be save()d to produce a SturdyRef. `claimRequest()` is the method to call to exchange the
+  # token for a capability. It must be called within a short period after the powerbox request
+  # completes; we recommend that the app immediately send the token up to its server to claim
+  # the capability.
+  #
+  # If you are familiar with OAuth, the `requestToken` can be compared to an OAuth "authorization
+  # code", whereas a SturdyRef is like an "access token". The authorization code must be exchanged
+  # for an access token in a server-to-server interaction.
+  #
+  # You might consider an alternative approach in which the client-side response includes a
+  # newly-minted SturdyRef directly, avoiding the need for a server-side exchange. The problem with
+  # that approach is that it makes SturdyRef leaks more dangerous. If an application leaks one of
+  # its SturdyRefs to an attacker, the attacker may then initiate a powerbox request on the client
+  # side in which the attacker spoofs the response from the Sandstorm shell to inject the leaked
+  # SturdyRef. The app likely will not realize that this SturdyRef was not newly-minted and may
+  # then use it in a context where it was not intended. Adding the claimRequest() requirement makes
+  # a leaked SturdyRef less likely to be useful to an attacker since the attacker cannot usefully
+  # inject the SturdyRef into a subsequent spoofed powerbox response, since a SturdyRef is not
+  # usable as a `requestToken`.
+  #
+  # Note that `requestToken` is actually text. It is declared as `Data` here for historical
+  # reasons, but the data should simply be the UTF-8-encoded text string returned in the
+  # client-side powerbox request. TODO(apibump): Change `requestToken` to Text.
   #
   # `requiredPermissions` specifies permissions which must be held on *this* grain by the user
-  # who originally introduced this token. This way, if a user of a grain connects the grain to
+  # who completed the powerbox interaction. This way, if a user of a grain connects the grain to
   # other resources, but later has their access to the grain revoked, these connections are revoked
   # as well.
   #
@@ -303,10 +331,10 @@ interface SandstormApi(AppObjectId) {
   # to revoke it manually; we want it to happen automatically, or at least we want to be able to
   # call Alice's attention to it.
   #
-  # To this end, when the Powerbox request is made through Dave and he chooses a capability, the
-  # returned capability token is tagged as having come from Dave. When the app restore()s the token,
-  # it indicates that whoever introduced the token must have the "moderator" permission. If Dave
-  # has lost this permission, then the restore() will fail.
+  # To this end, after the Powerbox request is made through Dave and he chooses a capability, the
+  # app will call `claimRequest()` and indicate in `requiredPermissions` that Dave must have
+  # "moderator" permission. The app then `save()`s the capability. In the future, if Dave has lost
+  # this permission, then attempts to `restore()` the SturdyRef will fail.
 
   drop @5 (token :Data);
   # Deletes the token and frees any resources being held with it. Once drop()ed, you can no longer

@@ -1792,15 +1792,17 @@ private:
   //   that an app will mix them up.
 };
 
-class LegacyBridgeMain {
-  // Main class for the Sandstorm legacy bridge.  This program is meant to run inside an
+class SandstormHttpBridgeMain {
+  // Main class for the Sandstorm HTTP bridge. This program is meant to run inside an
   // application sandbox where it translates incoming requests back from HTTP-over-RPC to regular
   // HTTP.  This is a shim meant to make it easy to port existing web frameworks into Sandstorm,
   // but long-term apps should seek to drop this binary and instead speak Cap'n Proto directly.
   // It is up to the app to include this binary in their package if they want it.
 
 public:
-  LegacyBridgeMain(kj::ProcessContext& context): context(context), ioContext(kj::setupAsyncIo()) {
+  SandstormHttpBridgeMain(kj::ProcessContext& context)
+      : context(context),
+        ioContext(kj::setupAsyncIo()) {
     kj::UnixEventPort::captureSignal(SIGCHLD);
   }
 
@@ -1982,4 +1984,4 @@ private:
 
 }  // namespace sandstorm
 
-KJ_MAIN(sandstorm::LegacyBridgeMain)
+KJ_MAIN(sandstorm::SandstormHttpBridgeMain)

@@ -2461,6 +2461,15 @@ if (Meteor.isServer) {
   });
 }
 
+const processRawFeatureKey = function (featureKey) {
+  // Maps the raw data of a signed feature key to the desired "effective" feature key we should use
+  // to govern high-level behavior.
+  const processedFeatureKey = _.clone(featureKey);
+
+  // Hook for future extensibility.
+  return processedFeatureKey;
+};
+
 if (Meteor.isServer) {
   SandstormDb.prototype.currentFeatureKey = function () {
     // Returns an object with all of the current signed feature key properties,
@@ -2470,22 +2479,13 @@ if (Meteor.isServer) {
     const buf = new Buffer(doc.value);
     // We use loadSignedFeatureKey from server/feature-key.js.  This should probably get refactored
     // once we can use ES6 modules.
-    return loadSignedFeatureKey(buf);
+    const rawFeatureKey = loadSignedFeatureKey(buf);
+    return processRawFeatureKey(rawFeatureKey);
   };
 } else {
   SandstormDb.prototype.currentFeatureKey = function () {
     const featureKey = this.collections.featureKey.findOne({ _id: "currentFeatureKey" });
-    if (featureKey &&
-        !featureKey.isFreeKey &&
-        featureKey.isTrial &&
-        parseInt(featureKey.expires) * 1000 < Date.now()) {
-      // If feature key was a trial (but not explicitly a free key), and the trial is past its
-      // expiration date, mark as a free key instead, with a 15-user limit.
-      featureKey.isFreeKey = true;
-      featureKey.userLimit = 15;
-    }
-
-    return featureKey;
+    return processRawFeatureKey(featureKey);
   };
 }
 

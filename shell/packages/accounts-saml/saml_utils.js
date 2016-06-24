@@ -292,9 +292,9 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
               if (notOnOrAfter && nowMs >= Date.parse(notOnOrAfter)) {
                 return callback(new Error("SAML condition notOnOrAfter is in the past."));
               }
-            } else if (key.endsWith(":AudienceRestriction") ||
-                       key.endsWith(":OneTimeUse") ||
-                       key.endsWith(":ProxyRestriction")) {
+            } else if (key.endsWith("AudienceRestriction") ||
+                       key.endsWith("OneTimeUse") ||
+                       key.endsWith("ProxyRestriction")) {
               continue;
               // Do nothing.
               // We already check both Destination and SubjectConfirmation.Recipient, so
@@ -336,6 +336,16 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
 
         if (!profile.email && profile.mail) {
           profile.email = profile.mail;
+        }
+
+        const microsoftEmail = profile["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"];
+        if (!profile.email && microsoftEmail) {
+          profile.email = microsoftEmail;
+        }
+
+        const microsoftDisplayName = profile["http://schemas.microsoft.com/identity/claims/displayname"];
+        if (!profile.displayName && microsoftDisplayName) {
+          profile.displayName = microsoftDisplayName;
         }
       }
 

@@ -2,7 +2,13 @@ import crypto from "crypto";
 
 const V1_ROUNDS = 4096; // Selected to take ~5msec at creation time (2016) on a developer's laptop.
 const V1_KEYSIZE = 32; // 256 bits / 8 bits/byte = 32 bytes
-const V1_HASHFUNC = "sha256"; // hash function used with pbkdf2
+const V1_HASHFUNC = "sha512"; // hash function used with pbkdf2.  Chosen to be different from the function
+                              // which maps the token to the value stored in the database.
+                              // Note that the first thing that pbkdf2 does is HMAC(HASHFUNC, key, salt),
+                              // and the first thing that HMAC does is either pad or hash the
+                              // key to make it the appropriate width.  The result is that knowing
+                              // sha256(key) and the salt is possibly sufficient to reconstruct the
+                              // output of pbkdf2().
 const V1_CIPHER = "AES-256-CTR"; // cipher used
 
 const TOKEN_EXPIRATION_MS = 15 * 60 * 1000;

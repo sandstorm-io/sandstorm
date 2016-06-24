@@ -1437,7 +1437,16 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
     ul {
       list-style-type: none;
       padding: 0;
-      li{
+      li.non-login-account {
+        padding-top: 10px;
+        margin-bottom: 10px;
+
+        &:first-child {
+          border-top: 1px solid #ddd;
+        }
+        border-bottom: 1px solid #ddd;
+      }
+      li {
         position: relative;
         padding-bottom: 10px;
         button.unlink {
@@ -1445,9 +1454,13 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
           @extend %button-secondary;
           position: absolute;
           right: 25px;
-          top: 20px;
+          top: 10px;
         }
       }
+    }
+    button.danger {
+      @extend %button-base;
+      @extend %button-danger;
     }
     button.logout {
       @extend %button-base;

@@ -468,11 +468,10 @@ body>.main-content>.account {
   }
 
   h3.title-bar {
-    background-color: white;
     width: 660px;
     margin-bottom: 5px;
     border: none;
-    font-size: 12pt;
+    font-size: 14pt;
     padding: 5px;
   }
 
@@ -946,127 +945,64 @@ div.billing {
 div.identity-editor {
   width: 435px;
   background-color: white;
-  padding: 15px 22px;
+  padding: 22px;
 
-  .details {
-    display: block;
-    clear: right;
-    font-size: 80%;
-    color: #777777;
-  }
+  form.account-profile-editor {
+    @extend %standard-form;
+    width: 390px;
 
-  .editor .picture {
-    width: 128px;
-    position: absolute;
-    label {
-      display: block;
-      font-weight: bold;
-    }
-    button {
-      display:block;
-      border: none;
-      padding: 0;
-      width: 115px;
-      height: 115px;
-      position: relative;
-      background-color: transparent;
-
-      &:hover {
-        cursor: pointer;
-        &::before {
-          position: absolute;
-          content: " ";
-          display: block;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-color: rgba(0, 0, 0, 0.3);
-          background-image: url("/upload.svg");
-          opacity: 0.75;
-          z-index: 1;
-        }
-      }
-
-      >img {
-        display: block;
-        max-width: 100%;
-        max-height: 100%;
-        margin: auto;
-      }
-
-      @media (max-width: 352px) {
-        width: 192px;
-        height: 192px;
-      }
-    }
-  }
-
-  .editor {
     .inline-icon {
       width: 20px;
     }
-    >ul {
-      position: relative;
-      left: 140px;
-      padding: 8px;
-      width: 250px;
 
+    ul {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    ul.verified-email-list {
       >li {
-        list-style-type: none;
-        overflow: hidden;
-        margin-bottom: 8px;
-
-        label {
-          display: block;
-          font-weight: bold;
-        }
-
-        &.terms, &.mailingListOptin {
-          padding-left: 24px;
-          label { font-weight: inherit; text-indent: -24px; }
-        }
-
-        input[type="text"], select {
-          display: block;
-          width: 230px;
-          font-size: inherit;
-          line-height: inherit;
-          background-color: white;
-          border: 1px solid #ccc;
-          padding: 2px;
-        }
-
-        input:invalid {
-          border: 1px solid #c00;
-        }
-
-        &.handle .input-container {
-          position: relative;
-          input[type="text"] {
-            font-size: 12pt;
-            font-family: monospace;
-          }
-        }
-
-        &.save {
-          text-align: right;
-          >button {
-            @extend %button-base;
-            @extend %button-primary;
-          }
-          >button.logout{
-            @extend %button-secondary;
-          }
+        // Vertically center each email address within a 30px space.
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 30px;
+        border-top: 1px solid #dddddd;
+        &:last-child {
+          border-bottom: 1px solid #dddddd;
         }
       }
     }
 
-    ul.verified-email-list {
-      padding: 0;
-      li {
-        list-style-type: none;
+    .picture-row {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: flex-start;
+      .picture-box {
+        flex: none;
+        width: 128px;
+        height: 128px;
+        margin-right: 16px;
+        img {
+          max-width: 128px;
+          max-height: 128px;
+        }
       }
+    }
+
+    .terms, .mailingListOptin {
+      padding-left: 24px;
+      label {
+        font-weight: inherit;
+        text-indent: -24px;
+      }
+    }
+
+    .handle input[type="text"] {
+      font-family: monospace;
     }
   }
 }

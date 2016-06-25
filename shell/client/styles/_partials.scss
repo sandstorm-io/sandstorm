@@ -122,6 +122,8 @@
 
 %standard-form {
   // Styles that we tend to reuse in forms, particularly in the admin panel.
+  margin-bottom: 10px;
+
   .form-group {
     margin-bottom: 10px;
   }
@@ -147,11 +149,7 @@
     font-size: 20px;
   }
 
-  input[type=text], input[type=password], input[type=number], input[type=email], select {
-    min-height: 30px;
-  }
-
-  input[type=text], input[type=password], input[type=number], input[type=email], select, textarea {
+  input[type=text], input[type=password], input[type=number], input[type=email], textarea {
     display: block;
     width: 100%;
     color: #222;
@@ -164,9 +162,6 @@
     &:disabled {
       color: #666;
       background-color: #efefef;
-    }
-    &:invalid {
-      border: 1px solid #c00;
     }
   }
 

@@ -217,20 +217,20 @@ Template._accountProfileEditor.helpers({
 });
 
 Template.sandstormAccountSettings.events({
-  "click [role='tab']": function (ev, instance) {
+  "click [role='tab']": function (event, instance) {
     instance._actionCompleted.set();
-    instance._selectedIdentityId.set(ev.currentTarget.getAttribute("data-identity-id"));
+    instance._selectedIdentityId.set(event.currentTarget.getAttribute("data-identity-id"));
   },
 
-  "click button.link-new-identity": function (ev, instance) {
+  "click button.link-new-identity": function (event, instance) {
     instance._isLinkingNewIdentity.set(true);
   },
 
-  "click button.cancel-link-new-identity": function (ev, instance) {
+  "click button.cancel-link-new-identity": function (event, instance) {
     instance._isLinkingNewIdentity.set(false);
   },
 
-  "click button.logout-other-sessions": function (ev, instance) {
+  "click button.logout-other-sessions": function (event, instance) {
     instance._logoutOtherSessionsInFlight.set(true);
     Meteor.logoutOtherClients(function (err) {
       if (err) {
@@ -249,8 +249,8 @@ Template.sandstormAccountSettings.events({
     });
   },
 
-  "click button.make-primary": function (ev, instance) {
-    Meteor.call("setPrimaryEmail", ev.target.getAttribute("data-email"));
+  "click button.make-primary": function (event, instance) {
+    Meteor.call("setPrimaryEmail", event.target.getAttribute("data-email"));
   },
 });
 
@@ -331,8 +331,8 @@ Template._accountProfileEditor.onCreated(function () {
 });
 
 Template._accountProfileEditor.events({
-  "submit form.account-profile-editor": function (ev, instance) {
-    ev.preventDefault();
+  "submit form.account-profile-editor": function (event, instance) {
+    event.preventDefault();
     const form = Template.instance().find("form");
     submitProfileForm(form, function () {
       instance._profileSaved.set(true);
@@ -340,12 +340,12 @@ Template._accountProfileEditor.events({
     });
   },
 
-  change: function (ev, instance) {
+  change: function (event, instance) {
     // Pictures get saved right away.
     //
     // TODO(someday): Upload pictures to a staging area, perhaps allowing the user to resize
     //   and crop them before saving.
-    if (ev.target == instance.find("input[name='picture']")) { return; }
+    if (event.target == instance.find("input[name='picture']")) { return; }
 
     instance._profileSaved.set(false);
   },
@@ -354,13 +354,13 @@ Template._accountProfileEditor.events({
 
   keypress: function () { Template.instance()._profileSaved.set(false); },
 
-  "click .logout": function (ev, instance) {
-    ev.preventDefault();
+  "click .logout": function (event, instance) {
+    event.preventDefault();
     Meteor.logout();
   },
 
-  "click .picture button": function (ev, instance) {
-    ev.preventDefault();
+  "click .picture button": function (event, instance) {
+    event.preventDefault();
 
     const staticHost = Template.currentData().staticHost;
     if (!staticHost) throw new Error("missing _staticHost");
@@ -392,9 +392,9 @@ Template._accountProfileEditor.events({
       }
     });
 
-    function listener(ev) {
+    function listener(event) {
       input.removeEventListener("change", listener);
-      file = ev.currentTarget.files[0];
+      file = event.currentTarget.files[0];
       if (file && token) doUpload();
     }
 

@@ -1,3 +1,15 @@
+import crypto from "crypto";
+
+const V1_ROUNDS = 4096; // Selected to take ~5msec at creation time (2016) on a developer's laptop.
+const V1_KEYSIZE = 32; // 256 bits / 8 bits/byte = 32 bytes
+const V1_HASHFUNC = "sha512";
+// ^ hash function used with pbkdf2.  Chosen to be different from the function which maps the token
+// to the value stored in the database.  Note that the first thing that pbkdf2 does is
+// HMAC(HASHFUNC, key, salt), and the first thing that HMAC does is either pad or hash the key to
+// make it the appropriate width.  The result is that knowing sha256(key) and the salt is possibly
+// sufficient to reconstruct the output of pbkdf2().
+const V1_CIPHER = "AES-256-CTR"; // cipher used
+
 const TOKEN_EXPIRATION_MS = 15 * 60 * 1000;
 
 const cleanupExpiredTokens = function () {
@@ -21,26 +33,28 @@ Meteor.startup(cleanupExpiredTokens);
 SandstormDb.periodicCleanup(TOKEN_EXPIRATION_MS, cleanupExpiredTokens);
 
 const checkToken = function (tokens, token) {
-  let found = false;
+  // Looks for an object in `tokens` with `algorithm` and `digest` fields matching those in `token`.
+  // Returns the matching object, if one is found, or undefined if none match.
+  let foundToken = undefined;
   tokens.forEach(function (userToken) {
     if ((userToken.algorithm === token.algorithm) &&
        (userToken.digest === token.digest)) {
-      found = true;
+      foundToken = userToken;
     }
   });
 
-  return found;
+  return foundToken;
 };
 
 function consumeToken(user, token) {
   const hashedToken = Accounts.emailToken._hashToken(token);
-  const found = checkToken(user.services.email.tokens, hashedToken);
+  const foundToken = checkToken(user.services.email.tokens, hashedToken);
 
-  if (found) {
+  if (foundToken !== undefined) {
     Meteor.users.update({ _id: user._id }, { $pull: { "services.email.tokens": hashedToken } });
   }
 
-  return found;
+  return foundToken;
 }
 
 // Handler to login with a token.
@@ -81,15 +95,34 @@ Accounts.registerLoginHandler("email", function (options) {
     };
   }
 
-  if (!consumeToken(user, options.token.trim())) {
+  const tokenString = options.token.trim();
+  const maybeToken = consumeToken(user, tokenString);
+  if (!maybeToken) {
     console.error("Token not found:", options.email);
     return {
       error: new Meteor.Error(403, "Invalid authentication code"),
     };
   }
 
+  // Attempt to decrypt the resumePath, if provided.
+  let resumePath = undefined;
+  if (maybeToken.secureBox) {
+    const box = maybeToken.secureBox;
+    if (box.version === 1) {
+      const key = crypto.pbkdf2Sync(tokenString, box.salt, V1_ROUNDS, V1_KEYSIZE, V1_HASHFUNC);
+      const iv = new Buffer(box.iv, "base64");
+      const cipher = crypto.createDecipheriv(V1_CIPHER, key, iv);
+      const cipherText = new Buffer(box.boxedValue, "base64");
+      const plaintext = cipher.update(cipherText);
+      resumePath = plaintext.toString("binary");
+    }
+  }
+
   return {
     userId: user._id,
+    options: {
+      resumePath,
+    },
   };
 });
 
@@ -141,9 +174,11 @@ const sendTokenEmail = function (db, email, token, linkingIdentity) {
 /// CREATING USERS
 ///
 // returns the user id
-const createAndEmailTokenForUser = function (db, email, linkingIdentity) {
+const createAndEmailTokenForUser = function (db, email, linkingIdentity, resumePath) {
   check(email, String);
   check(linkingIdentity, Boolean);
+  check(resumePath, String);
+
   const atIndex = email.indexOf("@");
   if (atIndex === -1) {
     throw new Meteor.Error(400, "No @ symbol was found in your email");
@@ -154,9 +189,28 @@ const createAndEmailTokenForUser = function (db, email, linkingIdentity) {
   let userId;
 
   // TODO(someday): make this shorter, and handle requests that try to brute force it.
+  // Alternately, require using the link over copy/pasting the code, and crank up the entropy.
   const token = Random.id(12);
   const tokenObj = Accounts.emailToken._hashToken(token);
   tokenObj.createdAt = new Date();
+
+  // Produce a symmetric key.  Note that the token itself does not have sufficient entropy to
+  // be used as a key directly, so we need to use a KDF with a strong random salt.
+  // In the fullness of time, it might be nice to move away from using a KDF (which blocks the whole
+  // node process) in favor of the token itself having enough entropy to serve as the key itself.
+  // This would require lengthening the token, which would make the manual-code-entry workflow
+  // worse, so I'm punting on that for now.
+  const salt = Random.secret(16);
+  const key = crypto.pbkdf2Sync(token, salt, V1_ROUNDS, V1_KEYSIZE, V1_HASHFUNC);
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv(V1_CIPHER, key, iv);
+  let ciphertext = cipher.update(new Buffer(resumePath, "binary"));
+  tokenObj.secureBox = {
+    version: 1,
+    salt: salt,
+    iv: iv.toString("base64"),
+    boxedValue: ciphertext.toString("base64"),
+  };
 
   if (user) {
     if (user.services.email.tokens && user.services.email.tokens.length > 2) {
@@ -188,19 +242,20 @@ const createAndEmailTokenForUser = function (db, email, linkingIdentity) {
 };
 
 Meteor.methods({
-  createAndEmailTokenForUser: function (email, linkingIdentity) {
+  createAndEmailTokenForUser: function (email, linkingIdentity, resumePath) {
     // method for create user. Requests come from the client.
     // This method will create a user if it doesn't exist, otherwise it will generate a token.
     // It will always send an email to the user
 
     check(email, String);
     check(linkingIdentity, Boolean);
+    check(resumePath, String);
 
     if (!Accounts.identityServices.email.isEnabled()) {
       throw new Meteor.Error(403, "Email identity service is disabled.");
     }
     // Create user. result contains id and token.
-    const user = createAndEmailTokenForUser(this.connection.sandstormDb, email, linkingIdentity);
+    const user = createAndEmailTokenForUser(this.connection.sandstormDb, email, linkingIdentity, resumePath);
   },
 
   linkEmailIdentityToAccount: function (email, token) {
@@ -218,7 +273,8 @@ Meteor.methods({
       throw new Meteor.Error(403, "Invalid authentication code.");
     }
 
-    if (!consumeToken(identity, token)) {
+    const maybeToken = consumeToken(user, options.token.trim());
+    if (!maybeToken) {
       throw new Meteor.Error(403, "Invalid authentication code.");
     }
 

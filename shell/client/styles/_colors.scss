@@ -5,9 +5,7 @@ $sandstorm-purple-color: #762F87;
 $darker-purple-color: #65468e;
 
 // The color that we use to outline focused elements, for accessibility
-// Keep $half-focus-outline-color's values in sync with the values from the outline color.
 $focus-outline-color: $sandstorm-purple-color;
-$half-focus-outline-color: rgba(118, 47, 135, 0.5);
 
 // Colors for success/error message box backgrounds.
 $error-background-color: #ffdddd;

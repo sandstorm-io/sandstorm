@@ -1,3 +1,17 @@
+### v0.168 (2016-06-24) [bugfixes]
+- Sandstorm for Work: SAML connector should now work with Active Directory.
+- Fixed various subtle resource leaks in Sandstorm front-end and sandstorm-http-bridge.
+- Fixed random crash/hang bug introduced in sandstorm-http-bridge v0.166. Apps build since that time will need to be rebuilt.
+- When logging in by email by clicking the link, you will now be redirected back to the URL where you initiated login.
+- Improved layout of the account settings page.
+- The old admin interface has been completely removed (the new admin interface has been the default since v0.164).
+- The email configuration test dialog now shows more informative error messages.
+- The "most-used" apps row is now only shown if you have more than 6 apps, without which it isn't helping.
+- Added "guided tour" hint highlighting the "share access" button.
+- Added explanatory text to admin user invite page.
+- Fixed search bar autofocus on app list page.
+- The question mark info button on Grains page was supposed to have a circle around it.
+
 ### v0.167 (2016-06-18) [bugfixes]
 - Updated to Meteor 1.3.3.1.
 - Implemented hard flow control at the Cap'n Proto layer so that an errant (or malicious) app cannot cause excessive memory use elsewhere in the system by making excessive simultaneous calls. This should improve the stability of Oasis.

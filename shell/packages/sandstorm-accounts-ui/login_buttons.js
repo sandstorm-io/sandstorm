@@ -172,9 +172,7 @@ Template._loginButtonsLoggedInDropdown.events({
 
 const sendEmail = function (email, linkingNewIdentity) {
   loginButtonsSession.infoMessage("Sending email...");
-  const loc = window.location;
-  const pathToResume = loc.pathname + loc.search + loc.hash;
-  Accounts.createAndEmailTokenForUser(email, linkingNewIdentity, pathToResume, function (err) {
+  Accounts.createAndEmailTokenForUser(email, linkingNewIdentity, function (err) {
     if (err) {
       loginButtonsSession.errorMessage(err.reason || "Unknown error");
       if (err.error === 409) {
@@ -192,12 +190,10 @@ const sendEmail = function (email, linkingNewIdentity) {
 
 const loginWithToken = function (email, token) {
   loginButtonsSession.infoMessage("Logging in...");
-  Meteor.loginWithEmailToken(email, token, function (err, resumePath) {
+  Meteor.loginWithEmailToken(email, token, function (err) {
     if (err) {
       loginButtonsSession.errorMessage(err.reason || "Unknown error");
     } else {
-      // We ignore resumePath here on the grounds that it is probably surprising to navigate back to
-      // the login-initiating path if it's not the current path already anyway.
       loginButtonsSession.set("inSignupFlow", false);
       loginButtonsSession.closeDropdown();
     }

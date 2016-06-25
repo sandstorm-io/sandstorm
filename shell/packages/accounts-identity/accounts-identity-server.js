@@ -324,7 +324,7 @@ Meteor.publish("accountsOfIdentity", function (identityId) {
     removed: function (account) {
       account.loginIdentities.forEach(function (identity) {
         if (identity.id in loginIdentities) {
-          self.removed("loginIdentitiesOfLinkedAccounts", identity.id);
+          _this.removed("loginIdentitiesOfLinkedAccounts", identity.id);
           loginIdentities[identity.id].stop();
           delete loginIdentities[identity.id];
         }

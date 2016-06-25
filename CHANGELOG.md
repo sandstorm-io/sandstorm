@@ -2,7 +2,6 @@
 - Sandstorm for Work: SAML connector should now work with Active Directory.
 - Fixed various subtle resource leaks in Sandstorm front-end and sandstorm-http-bridge.
 - Fixed random crash/hang bug introduced in sandstorm-http-bridge v0.166. Apps build since that time will need to be rebuilt.
-- When logging in by email by clicking the link, you will now be redirected back to the URL where you initiated login.
 - Improved layout of the account settings page.
 - The old admin interface has been completely removed (the new admin interface has been the default since v0.164).
 - The email configuration test dialog now shows more informative error messages.

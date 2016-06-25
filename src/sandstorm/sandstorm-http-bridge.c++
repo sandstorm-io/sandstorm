@@ -522,6 +522,7 @@ private:
 
     size = kj::max(size, initData.size());
 
+    nextWriteData = capnp::Orphan<capnp::Data>();
     nextWrite = responseStream.writeRequest();
     nextWriteData = capnp::Orphanage::getForMessageContaining(
         ByteStream::WriteParams::Builder(nextWrite))

@@ -25,7 +25,22 @@ limitations under the License.
 
   <h2>My account</h2>
   <div class="identities-editor">
+
   <h3 class="title-bar">Linked identities</h3>
+
+  {{#with actionCompleted}}
+    {{#if success}}
+      {{#focusingSuccessBox}}
+        Success: {{success}}
+      {{/focusingSuccessBox}}
+    {{/if}}
+    {{#if error}}
+      {{#focusingErrorBox}}
+        {{error}}
+      {{/focusingErrorBox}}
+    {{/if}}
+  {{/with}}
+
   <div class="identities-tabs">
   {{#unless isLinkingNewIdentity}}
   <ul role="tablist" >
@@ -65,19 +80,6 @@ limitations under the License.
     {{/each}}
   </section>
   </div>
-
-  {{#with actionCompleted}}
-  {{#with success}}
-  <div class="action-completed success">
-    Success: {{.}}
-  </div>
-  {{/with}}
-  {{#with error}}
-  <div class="action-completed error">
-    {{.}}
-  </div>
-  {{/with}}
-  {{/with}}
 
   <h3 class="title-bar">Primary e-mail address for service-related notifications</h3>
   <div class="verified-emails-editor">
@@ -120,8 +122,20 @@ limitations under the License.
 <template name="sandstormAccountsFirstSignIn">
   <h1>Confirm your profile</h1>
   <div class="single-identity-editor">
+    {{#if success}}
+      {{#focusingSuccessBox}}
+        Success: {{success}}
+      {{/focusingSuccessBox}}
+    {{/if}}
+
+    {{#if error}}
+      {{#focusingErrorBox}}
+        {{error}}
+      {{/focusingErrorBox}}
+    {{/if}}
+
     {{>_accountProfileEditor identity=identityToConfirm termsAndPrivacy=termsAndPrivacy
-                             staticHost=_staticHost db=_db}}
+                             staticHost=_staticHost db=_db setActionCompleted=onActionCompleted}}
   </div>
 </template>
 
@@ -145,7 +159,7 @@ setActionCompleted: (optional) Function.  Callback triggered on profile saved or
             </div>
             <input type="file" name="picture" style="display:none">
             <div class="form-subtext">
-              <button type="button">Upload new picture</button>
+              <button type="button" name="upload-picture">Upload new picture</button>
               <p>This picture will be shown to other users to help identify you.</p>
               <p>512x512px, 64KiB max.</p>
             </div>

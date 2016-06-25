@@ -254,7 +254,23 @@ Template.sandstormAccountSettings.events({
   },
 });
 
+Template.sandstormAccountsFirstSignIn.onCreated(function () {
+  this.result = new ReactiveVar(undefined);
+});
+
 Template.sandstormAccountsFirstSignIn.helpers({
+  success() {
+    const instance = Template.instance();
+    const result = instance.result.get();
+    return result && result.success;
+  },
+
+  error() {
+    const instance = Template.instance();
+    const result = instance.result.get();
+    return result && result.error;
+  },
+
   identityToConfirm: function () {
     const identityId = SandstormDb.getUserIdentityIds(Meteor.user())[0];
     const identity = Meteor.users.findOne({ _id: identityId });
@@ -276,6 +292,13 @@ Template.sandstormAccountsFirstSignIn.helpers({
     } else {
       return undefined;
     }
+  },
+
+  onActionCompleted() {
+    const instance = Template.instance();
+    return (result) => {
+      instance.result.set(result);
+    };
   },
 });
 
@@ -328,11 +351,39 @@ Template._accountProfileEditor.onCreated(function () {
   this.submitProfileForm = submitProfileForm; // Stored on the object so setup wizard can call it directly.
   this._profileSaved = new ReactiveVar(true);
   this._setActionCompleted = this.data.setActionCompleted || function () {};
+  this._uploadToken = undefined;
+  this.doUploadIfReady = () => {
+    const input = this.find("input[name='picture']");
+    const file = input && input.files && input.files[0];
+    const token = this._uploadToken;
+    if (token && file) {
+      // Clear the file input and the upload token, so we won't accidentally trigger again
+      // if the user clicks the button or changes the input.
+      input.value = "";
+      this._uploadToken = undefined;
+      // Perform the upload.
+      this.doUpload(token, file);
+    }
+  };
+  this.doUpload = (token, file) => {
+    const staticHost = this.data.staticHost;
+    if (!staticHost) throw new Error("missing staticHost");
+    const path = staticHost + "/" + token;
+    HTTP.post(path, { content: file, }, (err, result) => {
+      if (err) {
+        this._setActionCompleted({ error: "Upload failed: " + err.message });
+      } else if (result.statusCode >= 400) {
+        this._setActionCompleted({ error: "Upload failed: " + result.statusCode + " " + result.content });
+      } else {
+        this._setActionCompleted({ success: "picture updated" });
+      }
+    });
+  };
 });
 
 Template._accountProfileEditor.events({
-  "submit form.account-profile-editor": function (ev, instance) {
-    ev.preventDefault();
+  "submit form.account-profile-editor": function (evt, instance) {
+    evt.preventDefault();
     const form = Template.instance().find("form");
     submitProfileForm(form, function () {
       instance._profileSaved.set(true);
@@ -340,65 +391,45 @@ Template._accountProfileEditor.events({
     });
   },
 
-  change: function (ev, instance) {
+  "change"(evt, instance) {
     // Pictures get saved right away.
     //
     // TODO(someday): Upload pictures to a staging area, perhaps allowing the user to resize
     //   and crop them before saving.
-    if (ev.target == instance.find("input[name='picture']")) { return; }
+    if (evt.target === instance.find("input[name='picture']")) { return; }
 
     instance._profileSaved.set(false);
   },
 
-  "input input": function () { Template.instance()._profileSaved.set(false); },
+  "change input[name='picture']"(evt, instance) {
+    instance.doUploadIfReady();
+  },
 
-  keypress: function () { Template.instance()._profileSaved.set(false); },
+  "input input"() { Template.instance()._profileSaved.set(false); },
 
-  "click .logout": function (ev, instance) {
-    ev.preventDefault();
+  "keypress input"() { Template.instance()._profileSaved.set(false); },
+
+  "click .logout": function (evt, instance) {
+    evt.preventDefault();
     Meteor.logout();
   },
 
-  "click .picture button": function (ev, instance) {
-    ev.preventDefault();
-
-    const staticHost = Template.currentData().staticHost;
-    if (!staticHost) throw new Error("missing _staticHost");
-
-    // TODO(cleanup): Share code with "restore backup" and other upload buttons.
+  "click button[name=upload-picture]": function (evt, instance) {
     const input = instance.find("input[name='picture']");
+    // Clear any file that was already selected.
+    input.value = "";
 
-    let file = undefined;
-    let token = undefined;
-
-    const doUpload = function () {
-      HTTP.post(staticHost + "/" + token, { content: file, }, function (err, result) {
-        if (err) {
-          alert("Upload failed: " + err.message);
-        } else if (result.statusCode >= 400) {
-          alert("Upload failed: " + result.statusCode + " " + result.content);
-        } else {
-          instance._setActionCompleted({ success: "picture updated" });
-        }
-      });
-    };
-
-    Meteor.call("uploadProfilePicture", instance.data.identity._id, function (err, result) {
+    // Request an upload token from the server.
+    Meteor.call("uploadProfilePicture", instance.data.identity._id, (err, result) => {
       if (err) {
-        alert("Upload rejected: " + err.message);
+        instance._setActionCompleted({ error: "Upload rejected: " + err.message });
       } else {
-        token = result;
-        if (file && token) doUpload();
+        instance._uploadToken = result;
+        instance.doUploadIfReady();
       }
     });
 
-    function listener(ev) {
-      input.removeEventListener("change", listener);
-      file = ev.currentTarget.files[0];
-      if (file && token) doUpload();
-    }
-
-    input.addEventListener("change", listener);
+    // Open the file picker.
     input.click();
   },
 });

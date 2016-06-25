@@ -453,6 +453,7 @@ body>.main-content>.account {
   .identities-editor {
     position: relative;
     white-space: nowrap;
+    max-width: 660px;
   }
 
   h2, h3 {
@@ -940,6 +941,11 @@ div.billing {
     position: static;
     margin: auto;
   }
+}
+
+div.single-identity-editor {
+  max-width: 435px;
+  margin: auto;
 }
 
 div.identity-editor {

@@ -142,9 +142,20 @@ Accounts.onCreateUser(function (options, user) {
     serviceUserId = user._id;
     user.profile.service = "demo";
   } else if (user.services && user.services.email) {
-    check(user.services.email,
-          { email: String,
-            tokens: [{ digest: String, algorithm: String, createdAt: Date }], });
+    check(user.services.email, {
+      email: String,
+      tokens: [{
+        digest: String,
+        algorithm: String,
+        createdAt: Date,
+        secureBox: Match.Optional({
+          version: Number,
+          salt: String,
+          iv: String,
+          boxedValue: String,
+        }),
+      }],
+    });
     serviceUserId = user.services.email.email;
     user.profile.service = "email";
   } else if (user.services && "google" in user.services) {

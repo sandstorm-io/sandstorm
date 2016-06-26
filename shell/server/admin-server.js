@@ -18,6 +18,7 @@ import { Meteor } from "meteor/meteor";
 import Fs from "fs";
 import Crypto from "crypto";
 import { clearAdminToken, checkAuth, tokenIsValid, tokenIsSetupSession } from "/imports/server/auth.js";
+import Heapdump from "heapdump";
 
 const publicAdminSettings = [
   "google", "github", "ldap", "saml", "emailToken", "splashUrl", "signupDialog",
@@ -407,6 +408,22 @@ Meteor.methods({
       throw new Meteor.Error(401, "Invalid setup token");
     }
   },
+
+  heapdump() {
+    // Requests a heap dump. Intended for use by Sandstorm developers. Requires admin.
+    //
+    // Call this from the JS console like:
+    //   Meteor.call("heapdump");
+
+    checkAuth();
+
+    // We use /var/log because it's a location in the container to which the front-end is allowed
+    // to write.
+    const name = "/var/log/" + Date.now() + ".heapsnapshot";
+    Heapdump.writeSnapshot(name);
+    console.log("Wrote heapdump: /opt/sandstorm" + name);
+    return name;
+  }
 });
 
 const authorizedAsAdmin = function (token, userId) {

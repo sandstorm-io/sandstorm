@@ -350,8 +350,9 @@ const submitProfileForm = function (form, cb) {
 Template._accountProfileEditor.onCreated(function () {
   this.submitProfileForm = submitProfileForm; // Stored on the object so setup wizard can call it directly.
   this._profileSaved = new ReactiveVar(true);
-  this._setActionCompleted = this.data.setActionCompleted || function () {};
   this._uploadToken = undefined;
+  this._setActionCompleted = this.data.setActionCompleted || function () {};
+
   this.doUploadIfReady = () => {
     const input = this.find("input[name='picture']");
     const file = input && input.files && input.files[0];
@@ -365,6 +366,7 @@ Template._accountProfileEditor.onCreated(function () {
       this.doUpload(token, file);
     }
   };
+
   this.doUpload = (token, file) => {
     const staticHost = this.data.staticHost;
     if (!staticHost) throw new Error("missing staticHost");

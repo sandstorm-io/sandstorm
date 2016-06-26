@@ -1,3 +1,7 @@
+### v0.169 (2016-06-26) [bugfixes]
+- Fixed regression in static web publishing that caused requests that should have returned 404s or redirect-to-add-trailing-slash to instead return a 500 status with a blank page.
+- Added ability for admin to request a heapdump (to debug memory leaks).
+
 ### v0.168 (2016-06-24) [bugfixes]
 - Sandstorm for Work: SAML connector should now work with Active Directory.
 - Fixed various subtle resource leaks in Sandstorm front-end and sandstorm-http-bridge.

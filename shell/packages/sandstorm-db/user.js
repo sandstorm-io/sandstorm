@@ -144,17 +144,19 @@ Accounts.onCreateUser(function (options, user) {
   } else if (user.services && user.services.email) {
     check(user.services.email, {
       email: String,
-      tokens: [{
-        digest: String,
-        algorithm: String,
-        createdAt: Date,
-        secureBox: Match.Optional({
-          version: Number,
-          salt: String,
-          iv: String,
-          boxedValue: String,
-        }),
-      }],
+      tokens: [
+        {
+          digest: String,
+          algorithm: String,
+          createdAt: Date,
+          secureBox: Match.Optional({
+            version: Number,
+            salt: String,
+            iv: String,
+            boxedValue: String,
+          }),
+        },
+      ],
     });
     serviceUserId = user.services.email.email;
     user.profile.service = "email";

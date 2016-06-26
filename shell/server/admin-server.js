@@ -423,7 +423,7 @@ Meteor.methods({
     Heapdump.writeSnapshot(name);
     console.log("Wrote heapdump: /opt/sandstorm" + name);
     return name;
-  }
+  },
 });
 
 const authorizedAsAdmin = function (token, userId) {

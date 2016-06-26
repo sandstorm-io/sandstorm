@@ -129,6 +129,7 @@ function wwwHandlerForGrain(grainId) {
           });
           response.end("Internal server error");
         }
+
         streamCap.close();
       });
     }).catch((err) => {

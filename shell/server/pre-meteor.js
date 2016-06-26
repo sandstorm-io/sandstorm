@@ -23,6 +23,8 @@ const Dns = Npm.require("dns");
 const Promise = Npm.require("es6-promise").Promise;
 const Future = Npm.require("fibers/future");
 const Http = Npm.require("http");
+const Capnp = Npm.require("capnp");
+const ByteStream = Capnp.importSystem("sandstorm/util.capnp").ByteStream;
 
 const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 const DDP_HOSTNAME = process.env.DDP_DEFAULT_CONNECTION_URL &&
@@ -93,60 +95,45 @@ function wwwHandlerForGrain(grainId) {
 
     const stream = new ResponseStream(response, 200, "OK");
 
+    // We hold our own capability to the stream becaues we don't want ResponseStream's close()
+    // logic to happen if the response has no data.
+    //
+    // TODO(cleanup): This is pretty ugly.
+    const streamCap = new Capnp.Capability(stream, ByteStream);
+
     globalBackend.useGrain(grainId, (supervisor) => {
-      return supervisor.getWwwFileHack(path, stream).then((result) => {
+      return supervisor.getWwwFileHack(path, streamCap).then((result) => {
         // jscs:disable disallowQuotedKeysInObjects
         const status = result.status;
         if (status === "file") {
-          if (!stream.ended) {
-            console.error("getWwwFileHack didn't write file to stream");
-            if (!stream.started) {
-              response.writeHead(500, {
-                "Content-Type": "text/plain",
-              });
-              response.end("Internal server error");
-            } else {
-              response.end();
-            }
-          }
+          // Nothing to do.
         } else if (status === "directory") {
-          if (stream.started) {
-            console.error("getWwwFileHack wrote to stream for directory");
-            if (!stream.ended) {
-              response.end();
-            }
-          } else {
-            response.writeHead(303, {
-              "Content-Type": "text/plain",
-              "Location": "/" + path + "/",
-              "Cache-Control": "public, max-age=" + CACHE_TTL_SECONDS,
-            });
-            response.end("redirect: /" + path + "/");
-          }
+          stream.sendingDirectResponse();
+          response.writeHead(303, {
+            "Content-Type": "text/plain",
+            "Location": "/" + path + "/",
+            "Cache-Control": "public, max-age=" + CACHE_TTL_SECONDS,
+          });
+          response.end("redirect: /" + path + "/");
         } else if (status === "notFound") {
-          if (stream.started) {
-            console.error("getWwwFileHack wrote to stream for notFound");
-            if (!stream.ended) {
-              response.end();
-            }
-          } else {
-            response.writeHead(404, {
-              "Content-Type": "text/plain",
-            });
-            response.end("404 not found: /" + path);
-          }
+          stream.sendingDirectResponse();
+          response.writeHead(404, {
+            "Content-Type": "text/plain",
+          });
+          response.end("404 not found: /" + path);
         } else {
           console.error("didn't understand result of getWwwFileHack:", status);
-          if (!stream.started) {
-            response.writeHead(500, {
-              "Content-Type": "text/plain",
-            });
-            response.end("Internal server error");
-          }
+          stream.sendingDirectResponse();
+          response.writeHead(500, {
+            "Content-Type": "text/plain",
+          });
+          response.end("Internal server error");
         }
+        streamCap.close();
       });
     }).catch((err) => {
       console.error(err.stack);
+      streamCap.close();
     });
   };
 }

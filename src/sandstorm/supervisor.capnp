@@ -255,13 +255,10 @@ struct ApiTokenOwner {
       # As passed to `save()` in Sandstorm's Persistent interface.
 
       introducerIdentity @9 :Text;
-      # The identity ID through which a user's powerbox action caused the grain to receive this
-      # token. The token will become invalid if this identity loses access to the grain. This field
-      # only exists for legacy tokens that were created before the full `clientPowerboxRequest`
-      # flow existed.
+      # Obsolete. See `clientPowerboxRequest.introducerIdentity`.
 
       introducerUser @5 :Text;
-      # Deprecated. See `introducerIdentity`.
+      # Obsolete. See `clientPowerboxRequest.introducerIdentity`.
     }
 
     clientPowerboxRequest :group {

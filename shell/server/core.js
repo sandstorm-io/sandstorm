@@ -72,20 +72,14 @@ class SandstormCoreImpl {
         throw new Error("no such token");
       }
 
-      const requirements = [];
       if (token.owner.grain.introducerIdentity) {
-        requirements.push({
-          permissionsHeld: {
-            permissions: [],
-            identityId: token.owner.grain.introducerIdentity,
-            grainId: this.grainId,
-          },
-        });
+        throw new Error("Cannot restore grain-owned sturdyref that contains the obsolete " +
+                        "introducerIdentity field. Please request a new capability.");
       }
 
       return restoreInternal(sturdyRef,
                              { grain: Match.ObjectIncluding({ grainId: this.grainId }) },
-                             requirements, hashedSturdyRef);
+                             [], hashedSturdyRef);
     });
   }
 

@@ -181,16 +181,23 @@ class NotificationHandle {
 }
 
 class PersistentUiViewImpl {
-  constructor(persistentMethods, grain) {
-    this._grain = grain;
+  constructor(persistentMethods, grainId) {
+    check(grainId, String);
+    this._grainId = grainId;
     _.extend(this, persistentMethods);
   }
 
   getViewInfo() {
-    const viewInfo = this._grain.cachedViewInfo;
     return inMeteor(() => {
-      const pkg = Packages.findOne({ _id: this._grain.packageId });
+      const grain = Grains.findOne({ _id: this._grainId, trashed: { $exists: false }, });
+      if (!grain) {
+        throw new Error("grain no longer exists");
+      }
+
+      const pkg = Packages.findOne({ _id: grain.packageId });
       const manifest = pkg.manifest || {};
+
+      const viewInfo = grain.cachedViewInfo;
       if (!viewInfo.metadata) {
         viewInfo.metadata = {};
       }
@@ -219,8 +226,12 @@ class PersistentUiViewImpl {
 
 const makePersistentUiView = function (persistentMethods, grainId) {
   check(grainId, String);
-  const grain = Grains.findOne({ _id: grainId });
-  return new Capnp.Capability(new PersistentUiViewImpl(persistentMethods, grain), PersistentUiView);
+  if (!Grains.findOne({ _id: grainId, trashed: { $exists: false }, })) {
+    throw new Meteor.Error(404, "grain not found");
+  }
+
+  return new Capnp.Capability(new PersistentUiViewImpl(persistentMethods, grainId),
+                              PersistentUiView);
 };
 
 function makeNotificationHandle(notificationId, saved, persistentMethods) {

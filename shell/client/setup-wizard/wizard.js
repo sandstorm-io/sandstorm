@@ -641,6 +641,7 @@ Template.setupWizardLoginUser.helpers({
   },
 
   accountProfileEditorData() {
+    const instance = Template.instance();
     // copied from packages/sandstorm-accounts-ui/account-settings.js
     const identityId = SandstormDb.getUserIdentityIds(Meteor.user())[0];
     const identity = Meteor.users.findOne({ _id: identityId });
@@ -655,6 +656,13 @@ Template.setupWizardLoginUser.helpers({
       staticHost: window.location.protocol + "//" + makeWildcardHost("static"),
       db: globalDb,
       hideButtons: true,
+      setActionCompleted: function (result) {
+        if (result.success) {
+          instance.successMessage.set(result.success);
+        } else if (result.error) {
+          instance.errorMessage.set(result.error);
+        }
+      },
     };
   },
 

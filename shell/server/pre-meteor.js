@@ -357,12 +357,6 @@ const canonicalizeShellOrWildcardUrl = (hostname, url) => {
 };
 
 const dispatchToMeteorOrStaticPublishing = (req, res, next, redirectRatherThanServeShell) => {
-  if (!req.headers.host) {
-    res.writeHead(400, { 'Content-Type': 'text/plain' });
-    res.end('Missing Host header');
-    return;
-  }
-
   const hostname = req.headers.host.split(':')[0];
   if (isSandstormShell(hostname)) {
     // Go on to Meteor, or serve a redirect.
@@ -450,6 +444,12 @@ const dispatchToMeteorOrStaticPublishing = (req, res, next, redirectRatherThanSe
 };
 
 const redirectToMeteorOrServeStaticPublishing = (req, res, next) => {
+  if (!req.headers.host) {
+    res.writeHead(400, { 'Content-Type': 'text/plain' });
+    res.end('Missing Host header');
+    return;
+  }
+
   return dispatchToMeteorOrStaticPublishing(req, res, next, true);
 };
 
@@ -493,7 +493,9 @@ Meteor.startup(() => {
   WebApp.httpServer.removeAllListeners("request");
   WebApp.httpServer.on("request", (req, res) => {
     if (!req.headers.host) {
-      throw new Meteor.Error(400, 'Missing Host header');
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      res.end('Missing Host header');
+      return;
     }
 
     const hostname = req.headers.host.split(":")[0];
@@ -540,7 +542,7 @@ Meteor.startup(() => {
     });
   });
 
-  listenOnAlternatePorts()
+  listenOnAlternatePorts();
 });
 
 const errorTxtMapping = {};

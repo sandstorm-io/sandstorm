@@ -196,7 +196,7 @@ function serveSelfTest(req, res) {
   }
 }
 
-function serveStaticAsset(req, res) {
+function serveStaticAsset(req, res, hostId) {
   inMeteor(() => {
     if (req.method === "GET") {
       // jscs:disable validateQuoteMarks
@@ -216,8 +216,16 @@ function serveStaticAsset(req, res) {
         return;
       }
 
-      const url = Url.parse(req.url);
-      const asset = globalDb.getStaticAsset(url.pathname.slice(1));
+      const url = Url.parse(req.url, true);
+      let asset;
+      if (hostId === "static") {
+        asset = globalDb.getStaticAsset(url.pathname.slice(1));
+      } else if (hostId === "identicon") {
+        const size = parseInt((url.query || {}).s);
+        if (size <= 512) {
+          asset = new Identicon(url.pathname.slice(1), size).asAsset();
+        }
+      }
 
       if (asset) {
         const headers = {
@@ -374,7 +382,7 @@ const handleNonMeteorRequest = (req, res, next, redirectIfInWildcard) => {
       return;
     }
 
-    if (id === 'static') {
+    if (id === 'static' || id === "identicon") {
       // Static assets domain.
       serveStaticAsset(req, res);
       return;

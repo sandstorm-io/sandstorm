@@ -1810,44 +1810,6 @@ if (Meteor.isServer) {
   // Cleanup tokens every hour.
   SandstormDb.periodicCleanup(3600000, cleanupExpiredAssetUploads);
 
-  SandstormDb.prototype.updateCachedViewInfo = function (grainId, viewInfo) {
-    check(grainId, String);
-    // TODO(soon): Typecheck viewInfo. We should be able to factor out some of the checking code
-    //   that's currently in sandstorm-permissions/permissions-test.js.
-
-    function validateAsset(icon, field) {
-      if (icon[field]) {
-        const asset = this.refStaticAsset(icon[field]);
-        if (asset) {
-          if (asset.content.length() > 64 * 1024 || !asset.mimeType.startsWith("image/")) {
-            this.unrefStaticAsset(icon[field]);
-            delete icon[field];
-          }
-        } else {
-          delete icon[field];
-        }
-      }
-    }
-
-    const icon = (viewInfo.metadata || {}).icon || {};
-    validateAsset(icon, "assetId");
-    validateAsset(icon, "assetId2xDpi");
-
-    const oldGrain = Grains.findAndModify({
-      query: { _id: grainId },
-      update: { $set: { cachedViewInfo: viewInfo } },
-    });
-
-    const oldIcon = ((oldGrain.cachedViewInfo || {}).metadata || {}).icon || {};
-    if (oldIcon.assetId) {
-      this.unrefStaticAsset(oldIcon.assetId);
-    }
-
-    if (oldIcon.assetId2xDpi) {
-      this.unrefStaticAsset(oldIcon.assetId2xDpi);
-    }
-  };
-
   SandstormDb.prototype.deleteGrains = function (query, backend, type) {
     check(type, Match.OneOf("grain", "demoGrain"));
 

@@ -160,27 +160,11 @@ interface SandstormApi(AppObjectId) {
   #   failure.
 }
 
-struct DenormalizedGrainMetadata @0xbdd9bea5585df6c5 {
-  # The metadata that we need to present contextual information for shared grains (in particular,
-  # information about the app providing that grain, like icon and title).
+interface StaticAsset @0xfabb5e621fa9a23f {
+  # A file served by the Sandstorm frontend, suitable for embedding e.g. in <img> elements
+  # inside of a grain iframe.
 
-  appTitle @0 :Util.LocalizedText;
-  # A copy of the app name for the corresponding UIView for presentation in the grain list.
-
-  union {
-    icon :group {
-      format @1 :Text;
-      # Icon asset format, if present.  One of "png" or "svg"
-
-      assetId @2 :Text;
-      # The asset ID associated with the grain-size icon for this token
-
-      assetId2xDpi @3 :Text;
-      # If present, the asset ID for the equivalent asset as assetId at twice-resolution
-    }
-    appId @4 :Text;
-    # App ID, needed to generate a favicon if no icon is provided.
-  }
+  getUrl @0 () -> (url :Text);
 }
 
 interface UiView @0xdbb4d798ea67e2e7 {
@@ -297,21 +281,11 @@ interface UiView @0xdbb4d798ea67e2e7 {
     # is chosen by the user during a powerbox offer, then `newOfferSession()` will be called
     # to start a session around this.
 
-    metadata @5: DenormalizedGrainMetadata;
-    # Title and icons for the app of which this grain is an instance.
-    #
-    # TODO(someday): Currently this field is automatically filled in by the Sandstorm frontend.
-    #   For grains to be able to fill in the asset IDs, we'll need to provide a way for them to
-    #   create static  assets, e.g.:
-    #
-    #     interface StaticAsset {
-    #         getId @0 () -> (assetId :Text);
-    #         getContent @1 () -> (mimeType :Text, data :Data);
-    #     }
-    #
-    #     SandstormApi {
-    #        createStaticAsset (mimeType :Text, content :Data) -> (asset :StaticAsset);
-    #     }
+    appTitle @5 :Util.LocalizedText;
+    # Title for the app of which this grain is an instance.
+
+    grainIcon @6 :StaticAsset;
+    # Icon for the app of which this grain is an instance, suitable for display in a grain list.
   }
 
   struct PowerboxTag {

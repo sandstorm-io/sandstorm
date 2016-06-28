@@ -25,7 +25,8 @@ Package.onUse(function (api) {
   api.use("ecmascript");
   api.use(["mongo", "random", "check", "underscore"], ["client", "server"]);
   api.use(["accounts-base", "fongandrew:find-and-modify", "http"], ["server"]);
-  api.use(["sha", "sandstorm-identicons"], ["client"]);
+  api.use(["sha"], ["client"]);
+  api.use("sandstorm-identicons", ["client", "server"]);
 
   api.addFiles(["db.js", "profile.js"]);
   api.addFiles(["user.js", "migrations.js"], "server");

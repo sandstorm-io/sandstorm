@@ -18,7 +18,7 @@ const iconFromManifest = function (manifest, usage) {
   return undefined;
 };
 
-const hashAppIdForIdenticon = function (id) {
+Identicon.hashAppIdForIdenticon = function (id) {
   // "Hash" an app ID to a 32-digit hex string for the purpose of
   // producing an identicon. Since app IDs are already high-
   // entropy base32 strings, we simply turn each of the first
@@ -48,7 +48,7 @@ const cachedIdenticon = function (hashedAppId, size) {
 
 const identiconForApp = function (appId, usage) {
   const size = (usage === "appGrid" ? 128 : 24);
-  return cachedIdenticon(hashAppIdForIdenticon(appId), size);
+  return cachedIdenticon(Identicon.hashAppIdForIdenticon(appId), size);
 };
 
 const bytesToBase64 = function (bytes) {

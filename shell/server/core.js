@@ -16,12 +16,14 @@
 
 const Crypto = Npm.require("crypto");
 const Capnp = Npm.require("capnp");
+const Url = Npm.require("url");
 
 const PersistentHandle = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentHandle;
 const SandstormCore = Capnp.importSystem("sandstorm/supervisor.capnp").SandstormCore;
 const SandstormCoreFactory = Capnp.importSystem("sandstorm/backend.capnp").SandstormCoreFactory;
 const PersistentOngoingNotification = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentOngoingNotification;
 const PersistentUiView = Capnp.importSystem("sandstorm/persistentuiview.capnp").PersistentUiView;
+const StaticAsset = Capnp.importSystem("sandstorm/grain.capnp").StaticAsset;
 
 class SandstormCoreImpl {
   constructor(grainId) {
@@ -180,6 +182,31 @@ class NotificationHandle {
   }
 }
 
+const PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;
+
+class StaticAssetImpl {
+  constructor(assetId) {
+    check(assetId, String);
+    this._url = PROTOCOL + "//" + makeWildcardHost("static") + "/" + assetId;
+  }
+
+  getUrl() {
+    return this._url;
+  }
+}
+
+class IdenticonStaticAssetImpl {
+  constructor(hash, size) {
+    check(hash, String);
+    check(size, Match.Integer);
+    this._url = PROTOCOL + "//" + makeWildcardHost("identicon") + "/" + hash + "?s=" + size;
+  }
+
+  getUrl() {
+    return this._url;
+  }
+}
+
 class PersistentUiViewImpl {
   constructor(persistentMethods, grainId) {
     check(grainId, String);
@@ -198,20 +225,20 @@ class PersistentUiViewImpl {
       const manifest = pkg.manifest || {};
 
       const viewInfo = grain.cachedViewInfo;
-      if (!viewInfo.metadata) {
-        viewInfo.metadata = {};
+
+      if (!viewInfo.appTitle) {
+        viewInfo.appTitle = manifest.appTitle || {};
       }
 
-      if (!viewInfo.metadata.appTitle) {
-        viewInfo.metadata.appTitle = manifest.appTitle || {};
-      }
-
-      if (!viewInfo.metadata.icon && !viewInfo.metadata.appId) {
+      if (!viewInfo.grainIcon) {
         const grainIcon = ((manifest.metadata || {}).icons || {}).grain;
         if (grainIcon) {
-          viewInfo.metadata.icon = grainIcon;
+          viewInfo.grainIcon = new Capnp.Capability(new StaticAssetImpl(grainIcon.assetId),
+                                                    StaticAsset);
         } else {
-          viewInfo.metadata.appId = pkg.appId;
+          const hash = Identicon.hashAppIdForIdenticon(pkg.appId);
+          viewInfo.grainIcon = new Capnp.Capability(new IdenticonStaticAssetImpl(hash, 24),
+                                                    StaticAsset);
         }
       }
 

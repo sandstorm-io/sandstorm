@@ -2356,30 +2356,14 @@ ResponseStream = class ResponseStream {
     // implies `!this.ended`.
     if (!this.started) {
       this.started = true;
-      this.response.writeHead(500, "done() never called on response stream",
+      this.response.writeHead(500, "Internal Server Error",
                               { "Content-Type": "text/plain" });
+      this.response.write("Error: done() never called on response stream.");
     }
 
     if (!this.ended) {
       this.ended = true;
       this.response.end();
-    }
-  }
-
-  sendingDirectResponse() {
-    // For internal front-end use: Indicates that the caller is going to fill in the response
-    // instead. If a response has already been started, this throws an exception.
-    //
-    // This is used in particular in pre-meteor.js, when dealing with static web publishing.
-
-    if (this.started) {
-      throw new Error("can't sendDirectResponse() because response already started");
-      this.response.end();
-    } else if (this.ended) {
-      throw new Error("can't sendDirectResponse() because response already sent");
-    } else {
-      this.started = true;
-      this.ended = true;
     }
   }
 };

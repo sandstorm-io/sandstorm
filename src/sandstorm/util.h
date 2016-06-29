@@ -458,6 +458,16 @@ private:
   void taskFailed(kj::Exception&& exception) override;
 };
 
+class TaskHandle: public Handle::Server {
+  // Holds onto a promise to ensure that it runs to completion.
+
+public:
+  template <typename F> explicit TaskHandle(kj::Promise<void>&& task, F&& errorFunc)
+    : task(task.eagerlyEvaluate(kj::mv(errorFunc))) {}
+private:
+  kj::Promise<void> task;
+};
+
 }  // namespace sandstorm
 
 #endif // SANDSTORM_UTIL_H_

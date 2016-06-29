@@ -93,22 +93,23 @@ function wwwHandlerForGrain(grainId) {
       response.setHeader("Access-Control-Allow-Origin", "*");
     }
 
-    const stream = new ResponseStream(response, 200, "OK");
+    const fulfiller = {};
+    const streamPromise = new Promise((resolve, reject) => {
+      fulfiller.resolve = resolve;
+      fulfiller.reject = reject;
+    });
 
-    // We hold our own capability to the stream becaues we don't want ResponseStream's close()
-    // logic to happen if the response has no data.
-    //
-    // TODO(cleanup): This is pretty ugly.
-    const streamCap = new Capnp.Capability(stream, ByteStream);
+    const streamCap = new Capnp.Capability(streamPromise, ByteStream);
 
     globalBackend.useGrain(grainId, (supervisor) => {
       return supervisor.getWwwFileHack(path, streamCap).then((result) => {
         // jscs:disable disallowQuotedKeysInObjects
         const status = result.status;
         if (status === "file") {
-          // Nothing to do.
+          fulfiller.resolve(new Capnp.Capability(
+            new ResponseStream(response, 200, "OK", result.handle), ByteStream));
         } else if (status === "directory") {
-          stream.sendingDirectResponse();
+          fulfiller.reject();
           response.writeHead(303, {
             "Content-Type": "text/plain",
             "Location": "/" + path + "/",
@@ -116,25 +117,23 @@ function wwwHandlerForGrain(grainId) {
           });
           response.end("redirect: /" + path + "/");
         } else if (status === "notFound") {
-          stream.sendingDirectResponse();
+          fulfiller.reject();
           response.writeHead(404, {
             "Content-Type": "text/plain",
           });
           response.end("404 not found: /" + path);
         } else {
           console.error("didn't understand result of getWwwFileHack:", status);
-          stream.sendingDirectResponse();
+          fulfiller.reject();
           response.writeHead(500, {
             "Content-Type": "text/plain",
           });
           response.end("Internal server error");
         }
-
-        streamCap.close();
       });
+
     }).catch((err) => {
       console.error(err.stack);
-      streamCap.close();
     });
   };
 }

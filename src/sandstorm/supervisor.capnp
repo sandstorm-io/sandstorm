@@ -87,11 +87,13 @@ interface Supervisor {
     notFound @2;
   }
 
-  getWwwFileHack @9 (path :Text, stream :Util.ByteStream) -> (status :WwwFileStatus);
+  getWwwFileHack @9 (path :Text, stream :Util.ByteStream)
+                 -> (status :WwwFileStatus, handle :Util.Handle);
   # Reads a file from under the grain's "/var/www" directory. If the path refers to a regular
-  # file, the contents are written to `stream`, and `status` is returned as `file`. If the path
+  # file, the contents are asynchronously written to `stream`, `status` is returned as `file`, and
+  # the returned `handle` refers to the task performing the writes to `stream`. If the path
   # refers to a directory or is not found, then `stream` is NOT called at all and the method
-  # returns the corresponding status.
+  # returns the corresponding status and a null `handle`.
   #
   # Note that if a Supervisor capability is obtained and used only for `getWwwFileHack()` -- i.e.
   # `getMainView()` and `restore()` are not called -- then the supervisor will not actually start

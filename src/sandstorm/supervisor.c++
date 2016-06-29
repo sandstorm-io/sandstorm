@@ -2052,7 +2052,15 @@ public:
         req.setSize(stats.st_size);
         auto expectSizeTask = req.send();
         auto inStream = kj::heap<kj::FdInputStream>(kj::mv(*fd));
-        return pump(*inStream, kj::mv(stream)).attach(kj::mv(inStream), kj::mv(expectSizeTask));
+        auto results = context.getResults(capnp::MessageSize {8, 0});
+        results.setStatus(Supervisor::WwwFileStatus::FILE);
+
+        results.setHandle(
+            kj::heap<TaskHandle>(
+              pump(*inStream, kj::mv(stream)).attach(kj::mv(inStream), kj::mv(expectSizeTask)),
+              [](auto&& e) { KJ_LOG(ERROR, e); }));
+
+        return kj::READY_NOW;
       } else if (S_ISDIR(stats.st_mode)) {
         context.getResults(capnp::MessageSize {4, 0})
             .setStatus(Supervisor::WwwFileStatus::DIRECTORY);

@@ -2032,7 +2032,7 @@ const PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;
 
 const isRfc1918OrLocal = (address) => {
   if (Net.isIPv4(address)) {
-    quad = address.split('.').map((x) => { return parseInt(x, 10); });
+    const quad = address.split('.').map((x) => { return parseInt(x, 10); });
     return (quad[0] === 127 || quad[0] === 10 ||
             (quad[0] === 192 && quad[1] === 168) ||
             (quad[0] === 172 && quad[1] >= 16 && quad[1] < 32));

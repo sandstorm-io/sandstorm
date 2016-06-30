@@ -433,7 +433,7 @@ const handleNonMeteorRequest = (req, res, next, redirectIfInWildcard) => {
 // This function serves responses on Sandstorm's main HTTP/HTTPS
 // port.
 const handleNonMeteorRequestDirectly = (req, res, next) => {
-  return handleNonMeteorRequest(req, res, next, false);
+  handleNonMeteorRequest(req, res, next, false);
 };
 
 // "Alternate ports" are ports other than the main HTTP or HTTPS
@@ -448,21 +448,29 @@ const getNumberOfAlternatePorts = function () {
 };
 
 const handleNonMainPortRequest = (req, res, next) => {
-  if (!req.headers.host) {
-    res.writeHead(400, { 'Content-Type': 'text/plain' });
-    res.end('Missing Host header');
-    return;
-  }
+  try {
+    if (!req.headers.host) {
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      res.end('Missing Host header');
+      return;
+    }
 
-  // If this request is intended for the shell, redirect to the canonical shell URL.
-  const hostname = req.headers.host.split(':')[0];
-  if (isSandstormShell(hostname)) {
-    res.writeHead(302, { 'Location': canonicalizeShellOrWildcardUrl(hostname, req.url) });
-    res.end();
-    return;
-  }
+    // If this request is intended for the shell, redirect to the canonical shell URL.
+    const hostname = req.headers.host.split(':')[0];
+    if (isSandstormShell(hostname)) {
+      res.writeHead(302, { 'Location': canonicalizeShellOrWildcardUrl(hostname, req.url) });
+      res.end();
+      return;
+    }
 
-  return handleNonMeteorRequest(req, res, next, true);
+    handleNonMeteorRequest(req, res, next, true);
+  } catch (e) {
+    // This should never be reached, because all the request handlers should be catching
+    // exceptions, but you can never be too careful in a top-level request handler.
+    console.err("Unhandled exception in request handler:", e.stack);
+    res.writeHead(500, { "Content-Type": "text/plain" });
+    res.end("Unhandled exception: " + e.stack);
+  }
 };
 
 const listenOnAlternatePorts = function () {
@@ -487,23 +495,31 @@ Meteor.startup(() => {
 
   WebApp.httpServer.removeAllListeners("request");
   WebApp.httpServer.on("request", (req, res) => {
-    if (!req.headers.host) {
-      res.writeHead(400, { 'Content-Type': 'text/plain' });
-      res.end('Missing Host header');
-      return;
-    }
-
-    const hostname = req.headers.host.split(":")[0];
-    if (isSandstormShell(hostname)) {
-      // If destined for the DDP host or the main host, pass on to Meteor
-      for (let i = 0; i < meteorRequestListeners.length; i++) {
-        meteorRequestListeners[i](req, res);
+    try {
+      if (!req.headers.host) {
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end('Missing Host header');
+        return;
       }
-    } else {
-      // Otherwise, dispatch to our own middleware proxy chain.
-      nonMeteorRequestHandler(req, res);
-      // Adjust timeouts on proxied requests to allow apps to long-poll if needed.
-      WebApp._timeoutAdjustmentRequestCallback(req, res);
+
+      const hostname = req.headers.host.split(":")[0];
+      if (isSandstormShell(hostname)) {
+        // If destined for the DDP host or the main host, pass on to Meteor
+        for (let i = 0; i < meteorRequestListeners.length; i++) {
+          meteorRequestListeners[i](req, res);
+        }
+      } else {
+        // Otherwise, dispatch to our own middleware proxy chain.
+        nonMeteorRequestHandler(req, res);
+        // Adjust timeouts on proxied requests to allow apps to long-poll if needed.
+        WebApp._timeoutAdjustmentRequestCallback(req, res);
+      }
+    } catch (e) {
+      // This should never be reached, because all the request handlers should be catching
+      // exceptions, but you can never be too careful in a top-level request handler.
+      console.err("Unhandled exception in request handler:", e.stack);
+      res.writeHead(500, { "Content-Type": "text/plain" });
+      res.end("Unhandled exception: " + e.stack);
     }
   });
 

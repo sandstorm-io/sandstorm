@@ -171,6 +171,7 @@ module.exports["Test grain not found"] = function (browser) {
     .waitForElementVisible(".grain-not-found", medium_wait)
     .assert.containsText(".grain-not-found", "No grain found")
     .loginDevAccount()
+    .disableGuidedTour()
     .url(browser.launch_url + "/grain/BogusGrainId")
     .waitForElementVisible(".grain-not-found", medium_wait)
     .assert.containsText(".grain-not-found", "No grain found")
@@ -339,6 +340,7 @@ module.exports["Test roleless sharing"] = function (browser) {
     .getText('#share-token-text', function(response) {
       browser
         .loginDevAccount()
+        .disableGuidedTour()
         .getDevName(function(result) {
           secondUserName = result.value;
         })
@@ -361,6 +363,7 @@ module.exports["Test roleless sharing"] = function (browser) {
         .getText('#share-token-text', function(response) {
           browser
             .loginDevAccount()
+            .disableGuidedTour()
             .url(response.value)
             .waitForElementVisible("button.pick-identity", short_wait)
             .click("button.pick-identity")
@@ -378,6 +381,7 @@ module.exports["Test roleless sharing"] = function (browser) {
             .waitForElementVisible('#share-token-text', medium_wait)
 
             .loginDevAccount(firstUserName)
+            .disableGuidedTour()
             .url(response.value)
             .waitForElementVisible('.grain-frame', medium_wait)
             .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
@@ -412,6 +416,7 @@ module.exports["Test role sharing"] = function (browser) {
     .getText('#share-token-text', function(response) {
       browser
         .loginDevAccount()
+        .disableGuidedTour()
         .url(response.value)
         .waitForElementVisible("button.pick-identity", short_wait)
         .click("button.pick-identity")
@@ -431,6 +436,7 @@ module.exports["Test role sharing"] = function (browser) {
         .getText('#share-token-text', function(response) {
           browser
             .loginDevAccount()
+            .disableGuidedTour()
             .url(response.value)
             .waitForElementVisible("button.pick-identity", short_wait)
             .click("button.pick-identity")
@@ -477,6 +483,7 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
 
         // Navigate to the url as a different user
         .loginDevAccount()
+        .disableGuidedTour()
         .pause(short_wait)
         // Try incognito
         .url(shareLink.value)

@@ -67,8 +67,8 @@ module.exports["Test link identities"] = function (browser) {
     .waitForElementVisible("input[name=name]", short_wait)
     .setValue("input[name=name]", devName1)
     .submitForm(".login-buttons-list form.dev")
-    .waitForElementPresent(".action-completed.error", medium_wait)
-    .assert.containsText(".action-completed.error", "Error linking identity")
+    .waitForElementPresent(".flash-message.error-message", medium_wait)
+    .assert.containsText(".flash-message.error-message", "Error linking identity")
 
     // Linking a third identity to the second account should succeed.
     .click("button.link-new-identity")

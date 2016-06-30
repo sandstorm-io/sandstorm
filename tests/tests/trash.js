@@ -57,6 +57,7 @@ module.exports["Test grain trash"] = function (browser) {
       browser
         .loginDevAccount(null, false, function (secondUserName) {
           browser
+            .disableGuidedTour()
             .url(tokenResponse.value)
             .waitForElementVisible("button.pick-identity", short_wait)
             .click("button.pick-identity")
@@ -89,6 +90,7 @@ module.exports["Test grain trash"] = function (browser) {
             .frame(null)
 
             .loginDevAccount(firstUserName)
+            .disableGuidedTour()
             .url(grainUrl)
             .waitForElementVisible(".navitem-open-grain>a", short_wait)
             .click(".navitem-open-grain>a")
@@ -106,6 +108,7 @@ module.exports["Test grain trash"] = function (browser) {
             .assert.containsText(".grain-interstitial>p", "This grain is in your trash.")
 
             .loginDevAccount(secondUserName)
+            .disableGuidedTour()
             .url(grainUrl)
             .waitForElementVisible(".grain-interstitial", short_wait)
             .assert.containsText(".grain-interstitial>p",
@@ -127,6 +130,7 @@ module.exports["Test grain trash"] = function (browser) {
             .assert.elementNotPresent(grainCheckboxSelector)
 
             .loginDevAccount(firstUserName)
+            .disableGuidedTour()
             .waitForElementVisible(".navitem-open-grain>a", short_wait)
             .click(".navitem-open-grain>a")
             .waitForElementVisible("button.show-trash", medium_wait)

@@ -22,7 +22,8 @@ exports.command = function (callback) {
     .execute(function () {
       Session.set('dismissedGrainTableGuidedTour', true);
       Session.set('dismissedInstallHint', true);
-    })
+      Meteor._localStorage.removeItem("userNeedsShareAccessHint");
+    });
   if (typeof callback === "function") {
     return ret.status(callback);
   } else {

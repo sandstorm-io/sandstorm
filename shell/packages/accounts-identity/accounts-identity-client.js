@@ -78,7 +78,6 @@ Template.identityLoginInterstitial.onCreated(function () {
     });
   };
 
-  //this._state = new ReactiveVar({ justLoggingIn: true });
   const token = sessionStorage.getItem("linkingIdentityLoginToken");
   if (token) {
     this._state.set({ linkingIdentity: true });
@@ -100,10 +99,12 @@ Template.identityLoginInterstitial.onCreated(function () {
 
       this._state.set({ loggingInWithToken: true });
       Meteor.loginWithToken(token, (err) => {
-        linkingNewIdentity.set(false)
+        linkingNewIdentity.set(false);
         if (err) {
           this._state.set({ loginWithTokenFailed: err });
         } else {
+          // We logged back in with the token successfully.  This template will be removed from the
+          // layout momentarily.
         }
       });
     });
@@ -226,7 +227,7 @@ Template.identityLoginInterstitial.events({
     Meteor.call("unlinkIdentity", context.userId, context.identityId, function (err, result) {
       if (err) {
         console.log("error: ", err);
-        const errorContext = { error: err, ...context };
+        const errorContext = _.extend({ error: err}, context);
         instance.unlinkIdentityState.set({ error: errorContext });
       } else {
         instance.unlinkIdentityState.set({ success: context });
@@ -271,17 +272,22 @@ Template.identityManagementButtons.events({
 
 Template.identityManagementButtons.helpers({
   disableToggleLogin() {
-    if (this.isLogin) {
+    const instance = Template.instance();
+    if (instance.data.isLogin) {
       if (Meteor.user().loginIdentities.length <= 1) {
         return { why: "You must have at least one login identity." };
       }
     } else {
-      if (LoginIdentitiesOfLinkedAccounts.findOne({ sourceIdentityId: this._id,
-                                                    loginAccountId: { $ne: Meteor.userId() }, })) {
+      if (LoginIdentitiesOfLinkedAccounts.findOne({
+          sourceIdentityId: instance.data._id,
+          loginAccountId: {
+            $ne: Meteor.userId(),
+          },
+        })) {
         return { why: "A shared identity is not allowed to be promoted to a login identity." };
       }
 
-      if (this.isDemo) {
+      if (instance.data.isDemo) {
         return { why: "Demo identities cannot be used to log in." };
       }
     }
@@ -303,9 +309,12 @@ Template.loginIdentitiesOfLinkedAccounts.helpers({
 
   getOtherAccounts() {
     const id = Template.instance().data._id;
-    return LoginIdentitiesOfLinkedAccounts.find({ sourceIdentityId: id,
-                                                  loginAccountId: { $ne: Meteor.userId() }, })
-        .fetch().map((identity) => {
+    return LoginIdentitiesOfLinkedAccounts.find({
+      sourceIdentityId: id,
+      loginAccountId: {
+        $ne: Meteor.userId(),
+      },
+    }).fetch().map((identity) => {
       SandstormDb.fillInPictureUrl(identity);
       return identity;
     });
@@ -345,16 +354,18 @@ Template.identityPicker.events({
 
 Template.identityPicker.helpers({
   isCurrentIdentity() {
-    return this._id === Template.instance().data.currentIdentityId;
+    const instance = Template.instance();
+    return instance.data._id === Template.instance().data.currentIdentityId;
   },
 });
 
 Template.identityCard.helpers({
   intrinsicName() {
-    if (this.privateIntrinsicName) {
-      return this.privateIntrinsicName;
+    const instance = Template.instance();
+    if (instance.data.privateIntrinsicName) {
+      return instance.data.privateIntrinsicName;
     } else {
-      return this.profile && this.profile.intrinsicName;
+      return instance.data.profile && instance.data.profile.intrinsicName;
     }
   },
 });

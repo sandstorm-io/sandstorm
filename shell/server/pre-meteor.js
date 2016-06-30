@@ -32,7 +32,7 @@ const DDP_HOSTNAME = process.env.DDP_DEFAULT_CONNECTION_URL &&
 const CACHE_TTL_SECONDS = 30;  // 30 seconds.  Cache-Control expects units of seconds, not millis.
 const DNS_CACHE_TTL = CACHE_TTL_SECONDS * 1000; // DNS cache is in millis.
 
-const staticHandlers = {};
+const webPublishingHandlers = {};
 // Maps grain public IDs to Connect handlers.
 // TODO(perf): Garbage-collect this map?
 
@@ -51,7 +51,7 @@ function isSandstormShell(hostname) {
 const mime = Connect.static.mime;
 
 function wwwHandlerForGrain(grainId) {
-  return (request, response, cb) => {
+  return (request, response) => {
     let path = request.url;
 
     // If a directory, open 'index.html'.
@@ -356,26 +356,19 @@ const canonicalizeShellOrWildcardUrl = (hostname, url) => {
   return targetUrl;
 };
 
-const dispatchToMeteorOrStaticPublishing = (req, res, next, redirectRatherThanServeShell) => {
+const handleNonMeteorRequest = (req, res, next, redirectIfInWildcard) => {
+  // if redirectIfInWildcard is true, and if the host is part of the wildcard host, then we will
+  // prefer to redirect to the canonical url for that request.  If false, we will respond to the
+  // request directly.
+
   const hostname = req.headers.host.split(':')[0];
-  if (isSandstormShell(hostname)) {
-    // Go on to Meteor, or serve a redirect.
-    if (redirectRatherThanServeShell) {
-      res.writeHead(302, { 'Location': canonicalizeShellOrWildcardUrl(hostname, req.url) });
-      res.end();
-      return;
-    } else {
-      return next();
-    }
-  }
 
-  // This is not our main host. See if it's a member of the wildcard.
   let publicIdPromise;
-
+  // See if the request was for a host in the wildcard.
   const id = matchWildcardHost(req.headers.host);
   if (id) {
     // Match!
-    if (redirectRatherThanServeShell) {
+    if (redirectIfInWildcard) {
       res.writeHead(302, { 'Location': canonicalizeShellOrWildcardUrl(hostname, req.url) });
       res.end();
       return;
@@ -410,7 +403,7 @@ const dispatchToMeteorOrStaticPublishing = (req, res, next, redirectRatherThanSe
   publicIdPromise.then((publicId) => {
     if (publicId) {
       return Promise.resolve(undefined).then(() => {
-        const handler = staticHandlers[publicId];
+        const handler = webPublishingHandlers[publicId];
         if (handler) {
           return handler;
         } else {
@@ -422,20 +415,14 @@ const dispatchToMeteorOrStaticPublishing = (req, res, next, redirectRatherThanSe
             }
 
             const grainId = grain._id;
-            return staticHandlers[publicId] = wwwHandlerForGrain(grainId);
+            return webPublishingHandlers[publicId] = wwwHandlerForGrain(grainId);
           });
         }
       }).then((handler) => {
-        handler(req, res, (err) => {
-          if (err) {
-            next(err);
-          } else {
-            res.writeHead(404, { 'Content-Type': 'text/plain' });
-            res.end('404 not found: ' + req.url);
-          }
-        });
+        handler(req, res);
       });
     } else {
+      // Already handled by tryProxyRequest above, no further action needed.
       return Promise.resolve(undefined);
     }
   }).catch((err) => {
@@ -443,24 +430,14 @@ const dispatchToMeteorOrStaticPublishing = (req, res, next, redirectRatherThanSe
   });
 };
 
-const redirectToMeteorOrServeStaticPublishing = (req, res, next) => {
-  if (!req.headers.host) {
-    res.writeHead(400, { 'Content-Type': 'text/plain' });
-    res.end('Missing Host header');
-    return;
-  }
-
-  return dispatchToMeteorOrStaticPublishing(req, res, next, true);
-};
-
 // This function serves responses on Sandstorm's main HTTP/HTTPS
 // port.
-const serveMeteorOrStaticPublishing = (req, res, next) => {
-  return dispatchToMeteorOrStaticPublishing(req, res, next, false);
+const handleNonMeteorRequestDirectly = (req, res, next) => {
+  return handleNonMeteorRequest(req, res, next, false);
 };
 
 // "Alternate ports" are ports other than the main HTTP or HTTPS
-// port. For requests to the shell & grains, we redirect to the main
+// port. For requests to the shell, grains, we redirect to the main
 // port. For static publishing, we serve it.
 //
 // They are bound to FD #5 and higher.
@@ -470,10 +447,28 @@ const getNumberOfAlternatePorts = function () {
   return numAlternatePorts;
 };
 
+const handleNonMainPortRequest = (req, res, next) => {
+  if (!req.headers.host) {
+    res.writeHead(400, { 'Content-Type': 'text/plain' });
+    res.end('Missing Host header');
+    return;
+  }
+
+  // If this request is intended for the shell, redirect to the canonical shell URL.
+  const hostname = req.headers.host.split(':')[0];
+  if (isSandstormShell(hostname)) {
+    res.writeHead(302, { 'Location': canonicalizeShellOrWildcardUrl(hostname, req.url) });
+    res.end();
+    return;
+  }
+
+  return handleNonMeteorRequest(req, res, next, true);
+};
+
 const listenOnAlternatePorts = function () {
   for (let i = 0; i < getNumberOfAlternatePorts(); i++) {
     // Call createServerForSandstorm() to skip our monkey patching.
-    const alternatePortServer = Http.createServerForSandstorm(redirectToMeteorOrServeStaticPublishing);
+    const alternatePortServer = Http.createServerForSandstorm(handleNonMainPortRequest);
     alternatePortServer.listen({ fd: i + 5 });
   }
 };
@@ -488,7 +483,7 @@ Meteor.startup(() => {
     nonMeteorRequestHandler.use(BlackrockPayments.makeConnectHandler(globalDb));
   }
 
-  nonMeteorRequestHandler.use(serveMeteorOrStaticPublishing);
+  nonMeteorRequestHandler.use(handleNonMeteorRequestDirectly);
 
   WebApp.httpServer.removeAllListeners("request");
   WebApp.httpServer.on("request", (req, res) => {

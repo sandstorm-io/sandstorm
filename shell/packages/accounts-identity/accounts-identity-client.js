@@ -227,7 +227,7 @@ Template.identityLoginInterstitial.events({
     Meteor.call("unlinkIdentity", context.userId, context.identityId, function (err, result) {
       if (err) {
         console.log("error: ", err);
-        const errorContext = _.extend({ error: err}, context);
+        const errorContext = _.extend({ error: err }, context);
         instance.unlinkIdentityState.set({ error: errorContext });
       } else {
         instance.unlinkIdentityState.set({ success: context });

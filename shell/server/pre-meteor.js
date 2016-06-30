@@ -436,11 +436,14 @@ const handleNonMeteorRequestDirectly = (req, res, next) => {
   handleNonMeteorRequest(req, res, next, false);
 };
 
-// "Alternate ports" are ports other than the main HTTP or HTTPS
-// port. For requests to the shell, grains, we redirect to the main
-// port. For static publishing, we serve it.
+// "Alternate ports" are ports other than the main HTTP or HTTPS port.
+// They are handled as follows:
 //
-// They are bound to FD #5 and higher.
+// * Requests to the shell & grains, we redirect to the main port.
+// * For requests to static publishing on hosts within the wildcard, we redirect to the main port.
+// * For static publishing glued in via DNS TXT record, we serve the request as-is.
+//
+// Alternate ports are bound to FD #5 and higher.
 const getNumberOfAlternatePorts = function () {
   const numPorts = process.env.PORT.split(',').length;
   const numAlternatePorts = numPorts - 1;

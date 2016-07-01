@@ -32,7 +32,7 @@ const DDP_HOSTNAME = process.env.DDP_DEFAULT_CONNECTION_URL &&
 const CACHE_TTL_SECONDS = 30;  // 30 seconds.  Cache-Control expects units of seconds, not millis.
 const DNS_CACHE_TTL = CACHE_TTL_SECONDS * 1000; // DNS cache is in millis.
 
-const staticHandlers = {};
+const webPublishingHandlers = {};
 // Maps grain public IDs to Connect handlers.
 // TODO(perf): Garbage-collect this map?
 
@@ -51,7 +51,7 @@ function isSandstormShell(hostname) {
 const mime = Connect.static.mime;
 
 function wwwHandlerForGrain(grainId) {
-  return (request, response, cb) => {
+  return (request, response) => {
     let path = request.url;
 
     // If a directory, open 'index.html'.
@@ -341,12 +341,195 @@ function serveStaticAsset(req, res) {
   });
 }
 
+const canonicalizeShellOrWildcardUrl = (hostname, url) => {
+  // Start with ROOT_URL, apply host & path from inbound URL, then
+  // redirect.
+  let targetUrl = Url.parse(process.env.ROOT_URL);
+
+  // Retain the protocol & port from ROOT_URL but use the inbound
+  // hostname.
+  targetUrl.host = hostname + ':' + targetUrl.port;
+
+  // The following allows to avoid decoding + re-encoding query
+  // string parameters, if provided.
+  targetUrl = Url.resolve(Url.format(targetUrl), url);
+  return targetUrl;
+};
+
+const handleNonMeteorRequest = (req, res, next, redirectIfInWildcard) => {
+  // if redirectIfInWildcard is true, and if the host is part of the wildcard host, then we will
+  // prefer to redirect to the canonical url for that request.  If false, we will respond to the
+  // request directly.
+
+  const hostname = req.headers.host.split(':')[0];
+
+  let publicIdPromise;
+  // See if the request was for a host in the wildcard.
+  const id = matchWildcardHost(req.headers.host);
+  if (id) {
+    // Match!
+    if (redirectIfInWildcard) {
+      res.writeHead(302, { 'Location': canonicalizeShellOrWildcardUrl(hostname, req.url) });
+      res.end();
+      return;
+    }
+
+    if (id === 'static') {
+      // Static assets domain.
+      serveStaticAsset(req, res);
+      return;
+    }
+
+    if (id.match(/^selftest-/)) {
+      // Self test domain pattern. Starts w/ hyphen to avoid ambiguity with grain session/static
+      // publishing wildcard hosts.
+      serveSelfTest(req, res);
+      return;
+    }
+
+    // Try to route the request to a session.
+    publicIdPromise = tryProxyRequest(id, req, res).then((handled) => {
+      if (handled) {
+        return null;
+      } else {
+        return id;
+      }
+    });
+  } else {
+    // Not a wildcard host. Perhaps it is a custom host.
+    publicIdPromise = lookupPublicIdFromDns(hostname);
+  }
+
+  publicIdPromise.then((publicId) => {
+    if (publicId) {
+      return Promise.resolve(undefined).then(() => {
+        const handler = webPublishingHandlers[publicId];
+        if (handler) {
+          return handler;
+        } else {
+          // We don't have a handler for this publicId, so look it up in the grain DB.
+          return inMeteor(() => {
+            const grain = Grains.findOne({ publicId: publicId }, { fields: { _id: 1 } });
+            if (!grain) {
+              throw new Meteor.Error(404, 'No such grain for public ID: ' + publicId);
+            }
+
+            const grainId = grain._id;
+            return webPublishingHandlers[publicId] = wwwHandlerForGrain(grainId);
+          });
+        }
+      }).then((handler) => {
+        handler(req, res);
+      });
+    } else {
+      // Already handled by tryProxyRequest above, no further action needed.
+      return Promise.resolve(undefined);
+    }
+  }).catch((err) => {
+    writeErrorResponse(res, err);
+  });
+};
+
+// This function serves responses on Sandstorm's main HTTP/HTTPS
+// port.
+const handleNonMeteorRequestDirectly = (req, res, next) => {
+  handleNonMeteorRequest(req, res, next, false);
+};
+
+// "Alternate ports" are ports other than the main HTTP or HTTPS port.
+// They are handled as follows:
+//
+// * Requests to the shell & grains, we redirect to the main port.
+// * For requests to static publishing on hosts within the wildcard, we redirect to the main port.
+// * For static publishing glued in via DNS TXT record, we serve the request as-is.
+//
+// Alternate ports are bound to FD #5 and higher.
+const getNumberOfAlternatePorts = function () {
+  const numPorts = process.env.PORT.split(',').length;
+  const numAlternatePorts = numPorts - 1;
+  return numAlternatePorts;
+};
+
+const handleNonMainPortRequest = (req, res, next) => {
+  try {
+    if (!req.headers.host) {
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      res.end('Missing Host header');
+      return;
+    }
+
+    // If this request is intended for the shell, redirect to the canonical shell URL.
+    const hostname = req.headers.host.split(':')[0];
+    if (isSandstormShell(hostname)) {
+      res.writeHead(302, { 'Location': canonicalizeShellOrWildcardUrl(hostname, req.url) });
+      res.end();
+      return;
+    }
+
+    handleNonMeteorRequest(req, res, next, true);
+  } catch (e) {
+    // This should never be reached, because all the request handlers should be catching
+    // exceptions, but you can never be too careful in a top-level request handler.
+    console.err("Unhandled exception in request handler:", e.stack);
+    res.writeHead(500, { "Content-Type": "text/plain" });
+    res.end("Unhandled exception: " + e.stack);
+  }
+};
+
+const listenOnAlternatePorts = function () {
+  for (let i = 0; i < getNumberOfAlternatePorts(); i++) {
+    // Call createServerForSandstorm() to skip our monkey patching.
+    const alternatePortServer = Http.createServerForSandstorm(handleNonMainPortRequest);
+    alternatePortServer.listen({ fd: i + 5 });
+  }
+};
+
 Meteor.startup(() => {
+  const meteorRequestListeners = WebApp.httpServer.listeners("request");
+
+  // Construct the middleware chain for requests to non-DDP, non-shell hosts.
+  const nonMeteorRequestHandler = Connect();
+  // BlackrockPayments is only defined in the Blackrock build of Sandstorm.
+  if (global.BlackrockPayments) { // Have to check with global, because it could be undefined.
+    nonMeteorRequestHandler.use(BlackrockPayments.makeConnectHandler(globalDb));
+  }
+
+  nonMeteorRequestHandler.use(handleNonMeteorRequestDirectly);
+
+  WebApp.httpServer.removeAllListeners("request");
+  WebApp.httpServer.on("request", (req, res) => {
+    try {
+      if (!req.headers.host) {
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end('Missing Host header');
+        return;
+      }
+
+      const hostname = req.headers.host.split(":")[0];
+      if (isSandstormShell(hostname)) {
+        // If destined for the DDP host or the main host, pass on to Meteor
+        for (let i = 0; i < meteorRequestListeners.length; i++) {
+          meteorRequestListeners[i](req, res);
+        }
+      } else {
+        // Otherwise, dispatch to our own middleware proxy chain.
+        nonMeteorRequestHandler(req, res);
+        // Adjust timeouts on proxied requests to allow apps to long-poll if needed.
+        WebApp._timeoutAdjustmentRequestCallback(req, res);
+      }
+    } catch (e) {
+      // This should never be reached, because all the request handlers should be catching
+      // exceptions, but you can never be too careful in a top-level request handler.
+      console.err("Unhandled exception in request handler:", e.stack);
+      res.writeHead(500, { "Content-Type": "text/plain" });
+      res.end("Unhandled exception: " + e.stack);
+    }
+  });
 
   const meteorUpgradeListeners = WebApp.httpServer.listeners('upgrade');
-  WebApp.httpServer.removeAllListeners('upgrade');
+  WebApp.httpServer.removeAllListeners("upgrade");
 
-  WebApp.httpServer.on('upgrade', (req, socket, head) => {
+  WebApp.httpServer.on("upgrade", (req, socket, head) => {
     Promise.resolve(undefined).then(() => {
       if (!req.headers.host) {
         throw new Meteor.Error(400, 'Missing Host header');
@@ -373,148 +556,7 @@ Meteor.startup(() => {
     });
   });
 
-  // BlackrockPayments is only defined in the Blackrock build of Sandstorm.
-  if (global.BlackrockPayments) { // Have to check with global, because it could be undefined.
-    WebApp.rawConnectHandlers.use(BlackrockPayments.makeConnectHandler(globalDb));
-  }
-
-  // This function serves responses on Sandstorm's main HTTP/HTTPS
-  // port.
-  const serveMeteorOrStaticPublishing = (req, res, next) => {
-    return dispatchToMeteorOrStaticPublishing(req, res, next, false);
-  };
-
-  // "Alternate ports" are ports other than the main HTTP or HTTPS
-  // port. For requests to the shell & grains, we redirect to the main
-  // port. For static publishing, we serve it.
-  //
-  // They are bound to FD #5 and higher.
-
-  function getNumberOfAlternatePorts() {
-    const numPorts = process.env.PORT.split(',').length;
-    const numAlternatePorts = numPorts - 1;
-    return numAlternatePorts;
-  };
-
-  const canonicalizeShellOrWildcardUrl = (hostname, url) => {
-    // Start with ROOT_URL, apply host & path from inbound URL, then
-    // redirect.
-    let targetUrl = Url.parse(process.env.ROOT_URL);
-
-    // Retain the protocol & port from ROOT_URL but use the inbound
-    // hostname.
-    targetUrl.host = hostname + ':' + targetUrl.port;
-
-    // The following allows to avoid decoding + re-encoding query
-    // string parameters, if provided.
-    targetUrl = Url.resolve(Url.format(targetUrl), url);
-    return targetUrl;
-  };
-
-  const redirectToMeteorOrServeStaticPublishing = (req, res, next) => {
-    return dispatchToMeteorOrStaticPublishing(req, res, next, true);
-  };
-
-  for (let i = 0; i < getNumberOfAlternatePorts(); i++) {
-    // Call createServerForSandstorm() to skip our monkey patching.
-    const alternatePortServer = Http.createServerForSandstorm(redirectToMeteorOrServeStaticPublishing);
-    alternatePortServer.listen({ fd: i + 5 });
-  }
-
-  const dispatchToMeteorOrStaticPublishing = (req, res, next, redirectRatherThanServeShell) => {
-    if (!req.headers.host) {
-      res.writeHead(400, { 'Content-Type': 'text/plain' });
-      res.end('Missing Host header');
-      return;
-    }
-
-    const hostname = req.headers.host.split(':')[0];
-    if (isSandstormShell(hostname)) {
-      // Go on to Meteor, or serve a redirect.
-      if (redirectRatherThanServeShell) {
-        res.writeHead(302, { 'Location': canonicalizeShellOrWildcardUrl(hostname, req.url) });
-        res.end();
-        return;
-      } else {
-        return next();
-      }
-    }
-
-    // This is not our main host. See if it's a member of the wildcard.
-    let publicIdPromise;
-
-    const id = matchWildcardHost(req.headers.host);
-    if (id) {
-      // Match!
-      if (redirectRatherThanServeShell) {
-        res.writeHead(302, { 'Location': canonicalizeShellOrWildcardUrl(hostname, req.url) });
-        res.end();
-        return;
-      }
-
-      if (id === 'static') {
-        // Static assets domain.
-        serveStaticAsset(req, res);
-        return;
-      }
-
-      if (id.match(/^selftest-/)) {
-        // Self test domain pattern. Starts w/ hyphen to avoid ambiguity with grain session/static
-        // publishing wildcard hosts.
-        serveSelfTest(req, res);
-        return;
-      }
-
-      // Try to route the request to a session.
-      publicIdPromise = tryProxyRequest(id, req, res).then((handled) => {
-        if (handled) {
-          return null;
-        } else {
-          return id;
-        }
-      });
-    } else {
-      // Not a wildcard host. Perhaps it is a custom host.
-      publicIdPromise = lookupPublicIdFromDns(hostname);
-    }
-
-    publicIdPromise.then((publicId) => {
-      if (publicId) {
-        return Promise.resolve(undefined).then(() => {
-          const handler = staticHandlers[publicId];
-          if (handler) {
-            return handler;
-          } else {
-            // We don't have a handler for this publicId, so look it up in the grain DB.
-            return inMeteor(() => {
-              const grain = Grains.findOne({ publicId: publicId }, { fields: { _id: 1 } });
-              if (!grain) {
-                throw new Meteor.Error(404, 'No such grain for public ID: ' + publicId);
-              }
-
-              const grainId = grain._id;
-              return staticHandlers[publicId] = wwwHandlerForGrain(grainId);
-            });
-          }
-        }).then((handler) => {
-          handler(req, res, (err) => {
-            if (err) {
-              next(err);
-            } else {
-              res.writeHead(404, { 'Content-Type': 'text/plain' });
-              res.end('404 not found: ' + req.url);
-            }
-          });
-        });
-      } else {
-        return Promise.resolve(undefined);
-      }
-    }).catch((err) => {
-      writeErrorResponse(res, err);
-    });
-  };
-
-  WebApp.rawConnectHandlers.use(serveMeteorOrStaticPublishing);
+  listenOnAlternatePorts();
 });
 
 const errorTxtMapping = {};

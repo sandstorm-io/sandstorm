@@ -203,7 +203,7 @@ SAML.prototype.getElement = function (parentElement, elementName) {
 
 SAML.prototype.validateResponse = function (samlResponse, callback) {
   const _this = this;
-  const xml = new Buffer(samlResponse, "base64").toString("ascii");
+  const xml = new Buffer(samlResponse, "base64").toString("utf8");
   const parser = new xml2js.Parser({ explicitRoot: true });
   parser.parseString(xml, function (err, doc) {
     // Verify signature

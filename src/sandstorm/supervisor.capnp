@@ -114,12 +114,17 @@ interface SandstormCore {
   # after restart. In the meantime, the supervisor should queue any RPCs to this interface and
   # retry them after the front-end has reconnected.
 
-  restore @0 (token :Data, requiredPermissions :Grain.PermissionSet) -> (cap :Capability);
+  restore @0 (token :Data) -> (cap :Capability);
   # Restores an API token to a live capability. Fails if this grain is not the token's owner
   # (including if the ref has no owner).
+
+  claimRequest @6 (requestToken :Text, requiredPermissions :Grain.PermissionSet)
+               -> (cap :Capability);
+  # Restores a client powerbox request token to a live capability, which can then be saved to get
+  # a proper sturdyref.
   #
-  # `requiredPermissions` has the same meaning as in SandstormApi.restore(). Note that the callee
-  # will not only check these requirements, but will automatically ensure that the returned
+  # `requiredPermissions` has the same meaning as in SandstormApi.claimRequest(). Note that the
+  # callee will not only check these requirements, but will automatically ensure that the returned
   # capability has an appropriate `MembraneRequirement` applied; the caller need not concern
   # itself with this.
 
@@ -273,14 +278,24 @@ struct ApiTokenOwner {
       # As passed to `save()` in Sandstorm's Persistent interface.
 
       introducerIdentity @9 :Text;
-      # The identity ID through which a user's powerbox action caused the grain to receive this
-      # token. This is the identity against which the `requiredPermissions` parameter
-      # to `restore()` will be checked. This field is only intended to be filled in by the
-      # front-end during a powerbox request; a regular `save()` call produces a capability that
-      # has no "introducer".
+      # Obsolete. See `clientPowerboxRequest.introducerIdentity`.
 
       introducerUser @5 :Text;
-      # Deprecated. See `introducerIdentity`.
+      # Obsolete. See `clientPowerboxRequest.introducerIdentity`.
+    }
+
+    clientPowerboxRequest :group {
+      # Owned by a local grain, but only halfway through a client-side powerbox request flow.
+      # The token will be automatically deleted after a short amount of time. Before then, the
+      # grain must call `SandstormApi.claimRequest()` to get a proper sturdyref.
+
+      grainId @13 :Text;
+      # Grain ID owning the ref.
+
+      introducerIdentity @14 :Text;
+      # The identity ID through which a user's powerbox action caused the grain to receive this
+      # token. This is the identity against which the `requiredPermissions` parameter
+      # to `claimRequest()` will be checked.
     }
 
     internet @3 :AnyPointer;

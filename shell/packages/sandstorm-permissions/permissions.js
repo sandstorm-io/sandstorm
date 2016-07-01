@@ -1453,6 +1453,11 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
       introducerIdentity: String,
     },
   }, {
+    clientPowerboxRequest: {
+      grainId: String,
+      introducerIdentity: String,
+    },
+  }, {
     frontend: null,
   }));
 
@@ -1567,6 +1572,16 @@ SandstormPermissions.cleanupSelfDestructing = function (db) {
   };
 };
 
+SandstormPermissions.cleanupClientPowerboxRequests = function (db) {
+  return function () {
+    const tenMinutesAgo = new Date(Date.now() - 1000 * 60 * 10);
+    db.removeApiTokens({
+      "owner.clientPowerboxRequest": { $exists: true },
+      created: { $lt: tenMinutesAgo },
+    });
+  };
+};
+
 Meteor.methods({
   transitiveShares: function (identityId, grainId) {
     check(identityId, String);
@@ -1580,6 +1595,11 @@ Meteor.methods({
 
   newApiToken: function (provider, grainId, petname, roleAssignment, owner, unauthenticated) {
     check(provider, Match.OneOf({ identityId: String }, { rawParentToken: String }));
+    if (!owner.user && !owner.webkey) {
+      throw new Meteor.Error(403,
+                             "'webkey' and 'user' are the only allowed owners in newApiToken()");
+    }
+
     // other check()s happen in SandstormPermissions.createNewApiToken().
     const db = this.connection.sandstormDb;
     if (provider.identityId) {

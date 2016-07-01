@@ -1813,6 +1813,14 @@ public:
   kj::Promise<void> restore(RestoreContext context) override {
     auto req = sandstormCore.restoreRequest();
     req.setToken(context.getParams().getToken());
+    return req.send().then([context](auto args) mutable -> void {
+      context.getResults().setCap(args.getCap());
+    });
+  }
+
+  kj::Promise<void> claimRequest(ClaimRequestContext context) override {
+    auto req = sandstormCore.claimRequestRequest();
+    req.setRequestToken(context.getParams().getRequestToken());
     req.setRequiredPermissions(context.getParams().getRequiredPermissions());
     return req.send().then([context](auto args) mutable -> void {
       context.getResults().setCap(args.getCap());

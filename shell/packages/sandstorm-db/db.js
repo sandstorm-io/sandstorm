@@ -1124,13 +1124,15 @@ _.extend(SandstormDb.prototype, {
     return SandstormDb.getUserIdentityIds(user).indexOf(identityId) != -1;
   },
 
-  userGrains: function userGrains(userId) {
+  userGrains: function userGrains(userId, trashed) {
     check(userId, Match.OneOf(String, undefined, null));
-    return this.collections.grains.find({ userId: userId });
+    check(trashed, Match.OneOf(Boolean, undefined, null));
+
+    return this.collections.grains.find({ userId: userId, trashed: { $exists: !!trashed, }, });
   },
 
-  currentUserGrains: function currentUserGrains() {
-    return this.userGrains(Meteor.userId());
+  currentUserGrains: function currentUserGrains(trashed) {
+    return this.userGrains(Meteor.userId(), trashed);
   },
 
   getGrain: function getGrain(grainId) {
@@ -1138,14 +1140,18 @@ _.extend(SandstormDb.prototype, {
     return this.collections.grains.findOne(grainId);
   },
 
-  userApiTokens: function userApiTokens(userId) {
+  userApiTokens: function userApiTokens(userId, trashed) {
     check(userId, Match.OneOf(String, undefined, null));
+    check(trashed, Match.OneOf(Boolean, undefined, null));
     const identityIds = SandstormDb.getUserIdentityIds(this.getUser(userId));
-    return this.collections.apiTokens.find({ "owner.user.identityId": { $in: identityIds } });
+    return this.collections.apiTokens.find({
+      "owner.user.identityId": { $in: identityIds },
+      trashed: { $exists: !!trashed },
+    });
   },
 
-  currentUserApiTokens: function currentUserApiTokens() {
-    return this.userApiTokens(Meteor.userId());
+  currentUserApiTokens: function currentUserApiTokens(trashed) {
+    return this.userApiTokens(Meteor.userId(), trashed);
   },
 
   userActions: function userActions(user) {
@@ -1215,7 +1221,7 @@ _.extend(SandstormDb.prototype, {
     user = user || Meteor.user();
     if (user && (Meteor.isServer || user.pseudoUsage)) {
       if (Meteor.isClient) {
-        // Filled by pseudo-subscription to "getMyUsage". WARNING: The subscription is currenly
+        // Filled by pseudo-subscription to "getMyUsage". WARNING: The subscription is currently
         // not reactive.
         return user.pseudoUsage;
       } else {
@@ -1603,6 +1609,7 @@ if (Meteor.isServer) {
   const Crypto = Npm.require("crypto");
   const ContentType = Npm.require("content-type");
   const Zlib = Npm.require("zlib");
+  const Url = Npm.require("url");
 
   const replicaNumber = Meteor.settings.replicaNumber || 0;
 
@@ -1714,7 +1721,8 @@ if (Meteor.isServer) {
   SandstormDb.prototype.addStaticAsset = addStaticAsset;
 
   SandstormDb.prototype.refStaticAsset = function (id) {
-    // Increment the refcount on an existing static asset.
+    // Increment the refcount on an existing static asset. Returns the asset on success.
+    // If the asset does not exist, returns a falsey value.
     //
     // You must call this BEFORE adding the new reference to the DB, in case of failure between
     // the two calls. (This way, the failure case is a storage leak, which is probably not a big
@@ -1725,11 +1733,10 @@ if (Meteor.isServer) {
     const existing = StaticAssets.findAndModify({
       query: { hash: hash },
       update: { $inc: { refcount: 1 } },
-      fields: { _id: 1, refcount: 1 },
+      fields: { _id: 1, content: 1, mimeType: 1 },
     });
-    if (!existing) {
-      throw new Error("refStaticAsset() called on asset that doesn't exist");
-    }
+
+    return existing;
   };
 
   SandstormDb.prototype.unrefStaticAsset = function (id) {
@@ -1802,6 +1809,75 @@ if (Meteor.isServer) {
 
   // Cleanup tokens every hour.
   SandstormDb.periodicCleanup(3600000, cleanupExpiredAssetUploads);
+
+  SandstormDb.prototype.deleteGrains = function (query, backend, type) {
+    check(type, Match.OneOf("grain", "demoGrain"));
+
+    Grains.find(query).forEach((grain) => {
+      waitPromise(backend.deleteGrain(grain._id, grain.userId));
+      Grains.remove({ _id: grain._id });
+      this.removeApiTokens({
+        grainId: grain._id,
+        $or: [
+          { owner: { $exists: false } },
+          { owner: { webkey: null } },
+        ],
+      });
+
+      this.removeApiTokens({ "owner.grain.grainId": grain._id });
+
+      if (grain.lastUsed) {
+        DeleteStats.insert({
+          type: "grain",  // Demo grains can never get here!
+          lastActive: grain.lastUsed,
+          appId: grain.appId,
+        });
+      }
+
+      if (grain.cachedViewInfo) {
+        const icon = (grain.cachedViewInfo.metadata || {}).icon || {};
+        if (icon.assetId) {
+          this.unrefStaticAsset(icon.assetId);
+        }
+
+        if (icon.assetId2xDpi) {
+          this.unrefStaticAsset(icon.assetId2xDpi);
+        }
+      }
+
+      Meteor.call("deleteUnusedPackages", grain.appId);
+    });
+  };
+
+  SandstormDb.prototype.userGrainTitle = function (grainId, accountId, identityId) {
+    check(grainId, String);
+    check(accountId, Match.OneOf(String, undefined, null));
+    check(identityId, String);
+
+    const grain = this.getGrain(grainId);
+    if (!grain) {
+      throw new Error("called userGrainTitle() for a grain that doesn't exist");
+    }
+
+    let title = grain.title;
+    if (grain.userId !== accountId) {
+      const sharerToken = this.collections.apiTokens.findOne({
+        grainId: grainId,
+        "owner.user.identityId": identityId,
+      }, {
+        sort: {
+          lastUsed: -1,
+        },
+      });
+      if (sharerToken) {
+        title = sharerToken.owner.user.title;
+      } else {
+        title = "shared grain";
+      }
+    }
+
+    return title;
+  };
 
   const packageCache = {};
   // Package info is immutable. Let's cache to save on mongo queries.

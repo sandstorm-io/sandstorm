@@ -16,20 +16,53 @@
 
 const Crypto = Npm.require("crypto");
 const Capnp = Npm.require("capnp");
+const Url = Npm.require("url");
 
 const PersistentHandle = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentHandle;
 const SandstormCore = Capnp.importSystem("sandstorm/supervisor.capnp").SandstormCore;
 const SandstormCoreFactory = Capnp.importSystem("sandstorm/backend.capnp").SandstormCoreFactory;
 const PersistentOngoingNotification = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentOngoingNotification;
 const PersistentUiView = Capnp.importSystem("sandstorm/persistentuiview.capnp").PersistentUiView;
+const StaticAsset = Capnp.importSystem("sandstorm/grain.capnp").StaticAsset;
 
 class SandstormCoreImpl {
   constructor(grainId) {
     this.grainId = grainId;
   }
 
-  restore(sturdyRef, requiredPermissions) {
-    const _this = this;
+  claimRequest(sturdyRef, requiredPermissions) {
+    return inMeteor(() => {
+      const hashedSturdyRef = hashSturdyRef(sturdyRef);
+
+      const token = ApiTokens.findOne({
+        _id: hashedSturdyRef,
+        "owner.clientPowerboxRequest.grainId": this.grainId,
+      });
+
+      if (!token) {
+        throw new Error("no such token");
+      }
+
+      // Honor `requiredPermissions`.
+      const requirements = [];
+      if (token.owner.clientPowerboxRequest.introducerIdentity) {
+        requirements.push({
+          permissionsHeld: {
+            permissions: requiredPermissions || [],
+            identityId: token.owner.clientPowerboxRequest.introducerIdentity,
+            grainId: this.grainId,
+          },
+        });
+      }
+
+      return restoreInternal(
+          new Buffer(sturdyRef),
+          { clientPowerboxRequest: Match.ObjectIncluding({ grainId: this.grainId }) },
+          requirements, hashedSturdyRef, true);
+    });
+  }
+
+  restore(sturdyRef) {
     return inMeteor(() => {
       const hashedSturdyRef = hashSturdyRef(sturdyRef);
       const token = ApiTokens.findOne({
@@ -41,28 +74,20 @@ class SandstormCoreImpl {
         throw new Error("no such token");
       }
 
-      // Honor `requiredPermissions`.
-      const requirements = [];
-      if (requiredPermissions && token.owner.grain.introducerIdentity) {
-        requirements.push({
-          permissionsHeld: {
-            permissions: requiredPermissions,
-            identityId: token.owner.grain.introducerIdentity,
-            grainId: _this.grainId,
-          },
-        });
+      if (token.owner.grain.introducerIdentity) {
+        throw new Error("Cannot restore grain-owned sturdyref that contains the obsolete " +
+                        "introducerIdentity field. Please request a new capability.");
       }
 
       return restoreInternal(sturdyRef,
-                             { grain: Match.ObjectIncluding({ grainId: _this.grainId }) },
-                             requirements, hashedSturdyRef);
+                             { grain: Match.ObjectIncluding({ grainId: this.grainId }) },
+                             [], hashedSturdyRef);
     });
   }
 
   drop(sturdyRef) {
-    const _this = this;
     return inMeteor(() => {
-      return dropInternal(sturdyRef, { grain: Match.ObjectIncluding({ grainId: _this.grainId }) });
+      return dropInternal(sturdyRef, { grain: Match.ObjectIncluding({ grainId: this.grainId }) });
     });
   }
 
@@ -157,9 +182,70 @@ class NotificationHandle {
   }
 }
 
+const PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;
+
+class StaticAssetImpl {
+  constructor(assetId) {
+    check(assetId, String);
+    this._protocol = PROTOCOL.slice(0, -1);
+    this._hostPath = makeWildcardHost("static") + "/" + assetId;
+  }
+
+  getUrl() {
+    return { protocol: this._protocol, hostPath: this._hostPath, };
+  }
+}
+
+class IdenticonStaticAssetImpl {
+  constructor(hash, size) {
+    check(hash, String);
+    check(size, Match.Integer);
+    this._protocol = PROTOCOL.slice(0, -1);
+    this._hostPath =  makeWildcardHost("static") + "/identicon/" + hash + "?s=" + size;
+  }
+
+  getUrl() {
+    return { protocol: this._protocol, hostPath: this._hostPath, };
+  }
+}
+
 class PersistentUiViewImpl {
-  constructor(persistentMethods) {
+  constructor(persistentMethods, grainId) {
+    check(grainId, String);
+    this._grainId = grainId;
     _.extend(this, persistentMethods);
+  }
+
+  getViewInfo() {
+    return inMeteor(() => {
+      const grain = Grains.findOne({ _id: this._grainId, trashed: { $exists: false }, });
+      if (!grain) {
+        throw new Error("grain no longer exists");
+      }
+
+      const pkg = Packages.findOne({ _id: grain.packageId });
+      const manifest = pkg.manifest || {};
+
+      const viewInfo = grain.cachedViewInfo;
+
+      if (!viewInfo.appTitle) {
+        viewInfo.appTitle = manifest.appTitle || {};
+      }
+
+      if (!viewInfo.grainIcon) {
+        const grainIcon = ((manifest.metadata || {}).icons || {}).grain;
+        if (grainIcon) {
+          viewInfo.grainIcon = new Capnp.Capability(new StaticAssetImpl(grainIcon.assetId),
+                                                    StaticAsset);
+        } else {
+          const hash = Identicon.hashAppIdForIdenticon(pkg.appId);
+          viewInfo.grainIcon = new Capnp.Capability(new IdenticonStaticAssetImpl(hash, 24),
+                                                    StaticAsset);
+        }
+      }
+
+      return viewInfo;
+    });
   }
 
   // All other UiView methods are currently unimplemented, which, while not strictly correct,
@@ -167,8 +253,14 @@ class PersistentUiViewImpl {
   // and grains can't call methods on UiViews because they lack the "is human" pseudopermission.
 }
 
-const makePersistentUiView = function (persistentMethods) {
-  return new Capnp.Capability(new PersistentUiViewImpl(persistentMethods), PersistentUiView);
+const makePersistentUiView = function (persistentMethods, grainId) {
+  check(grainId, String);
+  if (!Grains.findOne({ _id: grainId, trashed: { $exists: false }, })) {
+    throw new Meteor.Error(404, "grain not found");
+  }
+
+  return new Capnp.Capability(new PersistentUiViewImpl(persistentMethods, grainId),
+                              PersistentUiView);
 };
 
 function makeNotificationHandle(notificationId, saved, persistentMethods) {
@@ -312,7 +404,7 @@ checkRequirements = (requirements) => {
   return true;
 };
 
-restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
+restoreInternal = (originalToken, ownerPattern, requirements, tokenId, saveByCopy) => {
   // Restores the token `originalToken`, which is a Buffer.
   //
   // `ownerPattern` is a match pattern (i.e. used with check()) that the token's owner must match.
@@ -323,6 +415,11 @@ restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
   //
   // `tokenId` is optional. If specified, it should be hashSturdyRef(originalToken); only specify
   // it if you happen to have computed this already.
+  //
+  // By default, saving the returned capability will create a child of `originalToken`. However,
+  // if the optional `saveByCopy` parameter is set to `true`, then saving will yield a sibling
+  // of `originalToken`, with all fields other than `_id`, `owner`, and `created` copied, and with
+  // the new `requirements` appended.
   //
   // (When the token turns out to have a parent, this function will call itself recursively. When
   // it does, `originalToken` stays the same, but `tokenId` is replaced with the parent. This is
@@ -367,7 +464,7 @@ restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
   if (token.parentToken) {
     // A token which chains to some parent token.  Restore the parent token (possibly recursively),
     // checking requirements on the way up.
-    return restoreInternal(originalToken, Match.Any, requirements, token.parentToken);
+    return restoreInternal(originalToken, Match.Any, requirements, token.parentToken, saveByCopy);
   }
 
   // Check the passed-in `requirements`.
@@ -383,8 +480,10 @@ restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
   const persistentMethods = {
     save(params) {
       return inMeteor(() => {
-        const sturdyRef = new Buffer(makeChildTokenInternal(
-            originalToken, params.sealFor, requirements, token));
+        const sturdyRefString = saveByCopy
+            ? saveByCopyInternal(originalToken, params.sealFor, requirements, token)
+            : makeChildTokenInternal(originalToken, params.sealFor, requirements, token);
+        const sturdyRef = new Buffer(sturdyRefString);
         return { sturdyRef };
       });
     },
@@ -431,7 +530,7 @@ restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
     // the method calls.  In the future, we may allow grains to restore UiViews that pass along the
     // "is human" pseudopermission (say, to allow an app to proxy all requests to some grain and
     // do some transformation), which will return a different capability.
-    return { cap: makePersistentUiView(persistentMethods) };
+    return { cap: makePersistentUiView(persistentMethods, token.grainId) };
   } else {
     throw new Meteor.Error(500, "Unknown token type. ID: " + token._id);
   }
@@ -471,6 +570,27 @@ function dropInternal(sturdyRef, ownerPattern) {
   }
 }
 
+function saveByCopyInternal(rawOriginalToken, owner, requirements, tokenInfo) {
+  const hashedOriginal = hashSturdyRef(rawOriginalToken);
+  tokenInfo = tokenInfo || ApiTokens.findOne(hashedOriginal);
+  if (!tokenInfo) {
+    throw new Error("parent token doesn't exist");
+  }
+
+  const sturdyRef = generateSturdyRef();
+  const hashedSturdyRef = hashSturdyRef(sturdyRef);
+
+  const newTokenInfo = _.clone(tokenInfo);
+  newTokenInfo._id = hashedSturdyRef;
+  newTokenInfo.owner = owner;
+  newTokenInfo.created = new Date();
+  newTokenInfo.requirements = (tokenInfo.requirements || []).concat(requirements);
+
+  ApiTokens.insert(newTokenInfo);
+
+  return sturdyRef;
+}
+
 function makeChildTokenInternal(rawParentToken, owner, requirements, tokenInfo) {
   const hashedParent = hashSturdyRef(rawParentToken);
 
@@ -500,7 +620,9 @@ function makeChildTokenInternal(rawParentToken, owner, requirements, tokenInfo) 
       // sharing graph. It turns out that the "root token" is actually the token representing that
       // user, not the grain owner, because user-to-user sharing relationships are not parent-child
       // token relationships.
-      const rootTitle = (((tokenInfo.owner || {}).grain || {}).saveLabel || {}).defaultText;
+      const rootTitle = globalDb.userGrainTitle(tokenInfo.grainId, tokenInfo.accountId,
+                                                tokenInfo.identityId);
+
       if (!owner.user.title && rootTitle) {
         owner.user.title = rootTitle;
       }

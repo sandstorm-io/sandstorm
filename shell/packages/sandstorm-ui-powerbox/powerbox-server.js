@@ -15,19 +15,20 @@
 // limitations under the License.
 
 const Capnp = Npm.require("capnp");
+const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");
 const Ip = Capnp.importSystem("sandstorm/ip.capnp");
 const Email = Capnp.importSystem("sandstorm/email.capnp");
 
 function encodePowerboxDescriptor(desc) {
-  return Capnp.serializePacked(Grain.PowerboxDescriptor, desc)
+  return Capnp.serializePacked(Powerbox.PowerboxDescriptor, desc)
               .toString("base64")
               .replace(/\+/g, "-")
               .replace(/\//g, "_");
 }
 
 Meteor.methods({
-  newFrontendRef(sessionId, frontendRefVariety, saveLabel) {
+  newFrontendRef(sessionId, frontendRefVariety) {
     // Checks if the requester is an admin, and if so, provides a new frontendref of the desired
     // variety, provided by the requesting user, owned by the grain for this session.
     check(sessionId, String);
@@ -37,10 +38,6 @@ Meteor.methods({
       { emailVerifier: { services: Match.Optional([String]) } },
       { verifiedEmail: { verifierId: Match.Optional(String), address: String } },
     ));
-    check(saveLabel, {
-      defaultText: String,
-      localizations: Match.Optional([{ locale: String, text: String }]),
-    });
 
     const db = this.connection.sandstormDb;
 
@@ -101,9 +98,8 @@ Meteor.methods({
 
     const grainId = session.grainId;
     const apiTokenOwner = {
-      grain: {
+      clientPowerboxRequest: {
         grainId: grainId,
-        saveLabel: saveLabel,
         introducerIdentity: session.identityId,
       },
     };
@@ -111,6 +107,49 @@ Meteor.methods({
     // TODO(cleanup): refactor: reaches out into core.js
     const sturdyRef = waitPromise(saveFrontendRef(frontendRefVariety, apiTokenOwner, requirements)).sturdyRef.toString();
     return { sturdyRef, descriptor };
+  },
+
+  fulfillUiViewRequest(identityId, grainId, petname, roleAssignment, ownerGrainId) {
+    const db = this.connection.sandstormDb;
+    check(identityId, String);
+    check(grainId, String);
+    check(roleAssignment, db.roleAssignmentPattern);
+    check(petname, String);
+    check(ownerGrainId, String);
+
+    if (!this.userId || !db.userHasIdentity(this.userId, identityId)) {
+      throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
+    }
+
+    const provider = {
+      identityId,
+      accountId: this.userId,
+    };
+
+    const title = db.userGrainTitle(grainId, this.userId, identityId);
+
+    const descriptor = encodePowerboxDescriptor({
+      tags: [
+        { id: Grain.UiView.typeId,
+          value: Capnp.serialize(Grain.UiView.PowerboxTag, { title }),
+        },
+      ],
+    });
+
+    const owner = {
+      clientPowerboxRequest: {
+        grainId: ownerGrainId,
+        introducerIdentity: identityId,
+      },
+    };
+
+    const result = SandstormPermissions.createNewApiToken(
+        db, provider, grainId, petname, roleAssignment, owner);
+
+    return {
+      sturdyRef: result.token,
+      descriptor,
+    };
   },
 });
 
@@ -201,7 +240,7 @@ specialCaseTypes[Grain.UiView.typeId] = function (db, userId, value) {
   // TODO(someday): Allow `value` to specify app IDs to filter for.
 
   const sharedGrainIds = db.userApiTokens(userId).map(token => token.grainId);
-  const ownedGrainIds = Grains.find({ userId: userId }, { fields: { _id: 1 } }).map(grain => grain._id);
+  const ownedGrainIds = db.userGrains(userId).map(grain => grain._id);
 
   return _.uniq(sharedGrainIds.concat(ownedGrainIds)).map(grainId => {
     return new PowerboxOption({
@@ -302,8 +341,13 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
   // packed format and base64-encoded. The publish populates a pseudo-collection called
   // `powerboxOptions`. Each item has the following fields:
   //
-  //   _id: Object with two fields: `requestId` (as passed when subscribing) and `optionId` (a
-  //       unique identifier for the option).
+  //   _id: Unique identifier string.
+  //      TODO(soon): This ID string is often a human-readable name like "frontendref-ipinterface"
+  //        and is only guaranteed to be unique because we currently don't allow a client to have
+  //        multiple powerbox requests active at the same time. We should strengthen this uniqueness
+  //        guarentee, possibly by incorporating `requestId`. Note, however, that Meteor requires `_id`
+  //        to be either a string or an `ObjectID`.
+  //   requestId: The value of `requestId` that was passed in when subscribing.
   //   matchQuality: "preferred" or "acceptable" ("unacceptable" options aren't returned).
   //   frontendRef: If present, selecting this option means creating a simple frontendRef. The
   //       field value should be passed back to the method `newFrontendRef` verbatim. The format
@@ -331,7 +375,7 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
 
       // Note: Node's base64 decoder also accepts URL-safe base64, so no need to translate.
       const descriptor = Capnp.parse(
-          Grain.PowerboxDescriptor,
+          Powerbox.PowerboxDescriptor,
           new Buffer(packedDescriptor, "base64"),
           { packed: true });
 

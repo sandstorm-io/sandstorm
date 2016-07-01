@@ -28,28 +28,27 @@ var utils = require("../utils"),
 
 module.exports = {};
 
-module.exports["Install Powerbox"] = function (browser) {
-  browser
-    .init()
-    .installApp("http://sandstorm.io/apps/jparyani/powerbox-4.spk", "baaceb4cda0d9451968670a3d4ffe5e7", "jm40yaw7zvnxyggqt2dddp5ztt0f5wku7a8wfz8uzn9cjus46ygh")
-    .assert.containsText("#grainTitle", "Untitled PowerboxTest");
-};
-
+// Source at https://github.com/jparyani/sandstorm-test-app/tree/powerbox
 module.exports["Test Powerbox"] = function (browser) {
   browser
+    .init()
+    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app2.spk",
+                "7a2996cc34d329da6d24e37fdbaa919d",
+                "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
+    .assert.containsText("#grainTitle", "Untitled PowerboxTest")
     .waitForElementVisible('.grain-frame', short_wait)
     .frame("grain-frame")
-      .waitForElementVisible("#offer", short_wait)
-      .click("#offer")
-      .waitForElementVisible("#offer-result", short_wait)
-      .assert.containsText("#offer-result", "offer: success")
+    .waitForElementVisible("#offer", short_wait)
+    .click("#offer")
+    .waitForElementVisible("#offer-result", short_wait)
+    .assert.containsText("#offer-result", "offer: success")
     .frameParent()
     .waitForElementVisible("#powerbox-offer-url", short_wait)
     .getText("#powerbox-offer-url", function (result) {
         browser
           .click(".popup.offer .frame button.dismiss")
           .frame("grain-frame")
-            .click("#request")
+          .click("#request")
           .frameParent()
           .waitForElementVisible("#powerbox-request-input", short_wait)
           .setValue("#powerbox-request-input", result.value)
@@ -60,29 +59,28 @@ module.exports["Test Powerbox"] = function (browser) {
     });
 };
 
-// Source at https://github.com/jparyani/sandstorm-test-app/tree/powerbox-save
-module.exports["Install PowerboxSave"] = function (browser) {
-  browser
-    .init()
-    .installApp("http://sandstorm.io/apps/jparyani/powerbox-save-0.spk", "5af2a3ca2a4e99ff082c458321c85105", "f6pf7a9my5vrcxk22f00msk97zss1ukz5fvesuh2mxfhs8uzvwu0")
-    .assert.containsText("#grainTitle", "Untitled PowerboxSaveTest");
-};
 
 module.exports["Test PowerboxSave"] = function (browser) {
   browser
+    browser
+    .init()
+    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app2.spk",
+                "7a2996cc34d329da6d24e37fdbaa919d",
+                "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
+    .assert.containsText("#grainTitle", "Untitled PowerboxTest")
     .waitForElementVisible('.grain-frame', short_wait)
     .frame("grain-frame")
-      .waitForElementVisible("#offer", short_wait)
-      .click("#offer")
-      .waitForElementVisible("#offer-result", short_wait)
-      .assert.containsText("#offer-result", "offer: success")
+    .waitForElementVisible("#offer", short_wait)
+    .click("#offer")
+    .waitForElementVisible("#offer-result", short_wait)
+    .assert.containsText("#offer-result", "offer: success")
     .frameParent()
     .waitForElementVisible("#powerbox-offer-url", short_wait)
     .getText("#powerbox-offer-url", function (result) {
         browser
           .click(".popup.offer .frame button.dismiss")
           .frame("grain-frame")
-            .click("#request")
+          .click("#request-save-restore")
           .frameParent()
           .waitForElementVisible("#powerbox-request-input", short_wait)
           .setValue("#powerbox-request-input", result.value)
@@ -93,46 +91,44 @@ module.exports["Test PowerboxSave"] = function (browser) {
     });
 };
 
-// This powerbox app adds `requiredPermissions` to the `restore` call that aren't satisfied.
+// This test adds `requiredPermissions` to the `restore` call that aren't satisfied.
 // We test to make sure an error is thrown.
-// Source at https://github.com/jparyani/sandstorm-test-app/tree/powerbox-permissions
-module.exports["Install Powerbox with failing requirements"] = function (browser) {
-  browser
-    .init()
-    .installApp("http://sandstorm.io/apps/jparyani/powerbox-2.spk", "9d6493e63bc9919de3959fe0c5a131ad", "jm40yaw7zvnxyggqt2dddp5ztt0f5wku7a8wfz8uzn9cjus46ygh")
-    .assert.containsText("#grainTitle", "Untitled PowerboxTest sandstormtest");
-};
-
 module.exports["Test Powerbox with failing requirements"] = function (browser) {
   browser
+    .init()
+    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app2.spk",
+                "7a2996cc34d329da6d24e37fdbaa919d",
+                "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
+    .assert.containsText("#grainTitle", "Untitled PowerboxTest")
+
     // We'll use the debugLog at the bottom of the test, but it's nice to open it early and give it time to load.
     .click("#openDebugLog")
     .waitForElementVisible('.grain-frame', short_wait)
     .frame("grain-frame")
-      .waitForElementVisible("#offer", short_wait)
-      .click("#offer")
-      .waitForElementVisible("#offer-result", short_wait)
-      .assert.containsText("#offer-result", "offer: success")
+    .waitForElementVisible("#offer", short_wait)
+    .click("#offer")
+    .waitForElementVisible("#offer-result", short_wait)
+    .assert.containsText("#offer-result", "offer: success")
     .frameParent()
     .waitForElementVisible("#powerbox-offer-url", short_wait)
     .getText("#powerbox-offer-url", function (result) {
-        browser
-          .click(".popup.offer .frame button.dismiss")
-          .frame("grain-frame")
-            .click("#request")
-          .frame()
-          .waitForElementVisible("#powerbox-request-input", short_wait)
-          .setValue("#powerbox-request-input", result.value)
-          .click("#powerbox-request-form button")
-          .frame("grain-frame")
-            .waitForElementVisible("#request-result", short_wait)
-            .assert.containsText("#request-result", "request:")
-            .windowHandles(function (windows) {
-              browser
-                .switchWindow(windows.value[1])
-                .waitForElementVisible(".grainlog-contents > pre", short_wait)
-                .assert.containsText(".grainlog-contents > pre", "Error: Requirements not satisfied")
-            });
+       browser
+        .click(".popup.offer .frame button.dismiss")
+        .frame("grain-frame")
+        .click("#request-failing-requirements")
+        .frame()
+        .waitForElementVisible("#powerbox-request-input", short_wait)
+        .setValue("#powerbox-request-input", result.value)
+        .click("#powerbox-request-form button")
+        .frame("grain-frame")
+        .waitForElementVisible("#request-result", short_wait)
+        .assert.containsText("#request-result", "request:")
+        .windowHandles(function (windows) {
+          browser
+            .switchWindow(windows.value[1])
+            .waitForElementVisible(".grainlog-contents > pre", short_wait)
+            .assert.containsText(".grainlog-contents > pre", "Error: Requirements not satisfied")
+        });
     })
     .end();
 };

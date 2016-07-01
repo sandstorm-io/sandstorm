@@ -39,17 +39,16 @@ const compileMatchFilter = function (searchString) {
   };
 };
 
-const appGrains = function (db, appId) {
-  return _.filter(db.currentUserGrains().fetch(),
+const appGrains = function (db, appId, trashed) {
+  return _.filter(db.currentUserGrains(trashed).fetch(),
                   function (grain) {return grain.appId === appId; });
 };
 
 const filteredSortedGrains = function (db, staticAssetHost, appId, appTitle, filterText, viewingTrash) {
   const pkg = latestPackageForAppId(db, appId);
 
-  const grainsMatchingAppId = appGrains(db, appId)
-        .filter((grain) => !!grain.trashed == viewingTrash);
-  const tokensForGrain = _.groupBy(db.currentUserApiTokens().fetch(), "grainId");
+  const grainsMatchingAppId = appGrains(db, appId, viewingTrash);
+  const tokensForGrain = _.groupBy(db.currentUserApiTokens(viewingTrash).fetch(), "grainId");
   const grainIdsForApiTokens = Object.keys(tokensForGrain);
   // grainTokens is a list of all apiTokens, but guarantees at most one token per grain
   const grainTokens = grainIdsForApiTokens

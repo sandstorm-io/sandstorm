@@ -277,27 +277,7 @@ const GRAIN_DELETION_MS = 1000 * 60 * 60 * 24 * 30; // thirty days
 SandstormDb.periodicCleanup(86400000, () => {
   const trashExpiration = new Date(Date.now() - GRAIN_DELETION_MS);
   globalDb.removeApiTokens({ trashed: { $lt: trashExpiration } });
-  Grains.find({ trashed: { $lt: trashExpiration } }).forEach((grain) => {
-    waitPromise(globalBackend.deleteGrain(grain._id, grain.userId));
-    Grains.remove({ _id: grain._id });
-    globalDb.removeApiTokens({
-      grainId: grain._id,
-      $or: [
-        { owner: { $exists: false } },
-        { owner: { webkey: null } },
-      ],
-    });
-
-    if (grain.lastUsed) {
-      DeleteStats.insert({
-        type: "grain",  // Demo grains can never never get here!
-        lastActive: grain.lastUsed,
-        appId: grain.appId,
-      });
-    }
-
-    Meteor.call("deleteUnusedPackages", grain.appId);
-  });
+  globalDb.deleteGrains({ trashed: { $lt: trashExpiration } }, globalBackend, "grain");
 });
 
 Meteor.methods({
@@ -346,31 +326,12 @@ Meteor.methods({
 
     if (this.userId) {
       if (!this.isSimulation) {
-        waitPromise(globalBackend.deleteGrain(grainId, this.userId));
-      }
-
-      const grain = Grains.findOne({
-        _id: grainId,
-        userId: this.userId,
-        trashed: { $exists: true },
-      });
-      if (grain) {
-        Grains.remove(grainId);
-        globalDb.removeApiTokens({
-          grainId: grainId,
-          $or: [
-            { owner: { $exists: false } },
-            { owner: { webkey: null } },
-          ],
-        });
-        if (grain.lastUsed) {
-          DeleteStats.insert({ type: isDemoUser() ? "demoGrain" : "grain",
-                              lastActive: grain.lastUsed, appId: grain.appId, });
-        }
-
-        if (!this.isSimulation) {
-          Meteor.call("deleteUnusedPackages", grain.appId);
-        }
+        const query = {
+          _id: grainId,
+          userId: this.userId,
+          trashed: { $exists: true },
+        };
+        globalDb.deleteGrains(query, globalBackend, isDemoUser() ? "demoGrain" : "grain");
       }
     }
   },

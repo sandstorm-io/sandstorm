@@ -50,17 +50,8 @@ function cleanupExpiredUsers() {
   Meteor.users.find({ expires: { $lt: now } },
                     { fields: { _id: 1, loginIdentities: 1, lastActive: 1, appDemoId: 1 } })
               .forEach(function (user) {
-    Grains.find({ userId: user._id }, { fields: { _id: 1, lastUsed: 1, appId: 1 } })
-          .forEach(function (grain) {
-      console.log("delete grain: " + grain._id);
-      globalDb.removeApiTokens({ grainId: grain._id });
-      Grains.remove(grain._id);
-      if (grain.lastUsed) {
-        DeleteStats.insert({ type: "demoGrain", lastActive: grain.lastUsed, appId: grain.appId });
-      }
 
-      globalBackend.deleteGrain(grain._id, user._id);
-    });
+    globalDb.deleteGrains({ userId: user._id }, globalBackend, "demoGrain");
 
     console.log("delete user: " + user._id);
     // We intentionally do not do `ApiTokens.remove({accountId: user._id})`, because some such

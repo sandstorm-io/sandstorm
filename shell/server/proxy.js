@@ -1380,7 +1380,9 @@ class Proxy {
       this.getConnection();  // make sure we're connected
       const promise = this.uiView.getViewInfo().then((viewInfo) => {
         return inMeteor(() => {
-          Grains.update(this.grainId, { $set: { cachedViewInfo: viewInfo } });
+          // For now, we don't allow grains to set `appTitle` or `grainIcon`.
+          const cachedViewInfo = _.omit(viewInfo, "appTitle", "grainIcon");
+          Grains.update(this.grainId, { $set: { cachedViewInfo: cachedViewInfo } });
         }).then(() => {
           return this._callNewSession(request, viewInfo);
         });

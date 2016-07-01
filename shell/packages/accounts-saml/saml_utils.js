@@ -201,9 +201,33 @@ SAML.prototype.getElement = function (parentElement, elementName) {
   return parentElement[elementName];
 };
 
+function detectEncoding(xmlBuffer) {
+  let encoding = "utf8";
+  const xml = xmlBuffer.toString("ascii");
+
+  const endHeader = xml.indexOf("?>"); // The header block is of the form <? ... ?>
+  if (endHeader === -1) return encoding;
+  const xmlHeader = xml.slice(0, endHeader);
+
+  const match = xmlHeader.match("encoding=([^? ]+)");
+  // Attributes end with either a space or the end of the tag, in this case ?>
+  if (!match) return encoding;
+  const rawEncoding = match[1];
+  if (!rawEncoding) return encoding;
+  encoding = rawEncoding;
+  if (encoding[0] === "'" && encoding[encoding.length - 1] === "'" ||
+      encoding[0] === "\"" && encoding[encoding.length - 1] === "\"") {
+    encoding = encoding.slice(1, encoding.length - 1);
+  }
+
+  return encoding;
+}
+
 SAML.prototype.validateResponse = function (samlResponse, callback) {
   const _this = this;
-  const xml = new Buffer(samlResponse, "base64").toString("ascii");
+  const xmlBuffer = new Buffer(samlResponse, "base64");
+  const encoding = detectEncoding(xmlBuffer);
+  const xml = xmlBuffer.toString(encoding);
   const parser = new xml2js.Parser({ explicitRoot: true });
   parser.parseString(xml, function (err, doc) {
     // Verify signature

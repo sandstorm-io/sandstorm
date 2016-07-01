@@ -217,14 +217,15 @@ function serveStaticAsset(req, res, hostId) {
       }
 
       const url = Url.parse(req.url, true);
+      const pathname = url.pathname.slice(1);
       let asset;
-      if (hostId === "static") {
-        asset = globalDb.getStaticAsset(url.pathname.slice(1));
-      } else if (hostId === "identicon") {
+      if (pathname.startsWith("identicon/")) {
         const size = parseInt((url.query || {}).s);
         if (size <= 512) {
-          asset = new Identicon(url.pathname.slice(1), size).asAsset();
+          asset = new Identicon(pathname.slice("identicon/".length), size).asAsset();
         }
+      } else if (pathname.indexOf("/") == -1) {
+        asset = globalDb.getStaticAsset(pathname);
       }
 
       if (asset) {
@@ -382,7 +383,7 @@ const handleNonMeteorRequest = (req, res, next, redirectIfInWildcard) => {
       return;
     }
 
-    if (id === 'static' || id === "identicon") {
+    if (id === "static") {
       // Static assets domain.
       serveStaticAsset(req, res);
       return;

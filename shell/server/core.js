@@ -187,11 +187,12 @@ const PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;
 class StaticAssetImpl {
   constructor(assetId) {
     check(assetId, String);
-    this._url = PROTOCOL + "//" + makeWildcardHost("static") + "/" + assetId;
+    this._protocol = PROTOCOL.slice(0, -1);
+    this._hostPath = makeWildcardHost("static") + "/" + assetId;
   }
 
   getUrl() {
-    return this._url;
+    return { protocol: this._protocol, hostPath: this._hostPath, };
   }
 }
 
@@ -199,11 +200,12 @@ class IdenticonStaticAssetImpl {
   constructor(hash, size) {
     check(hash, String);
     check(size, Match.Integer);
-    this._url = PROTOCOL + "//" + makeWildcardHost("identicon") + "/" + hash + "?s=" + size;
+    this._protocol = PROTOCOL.slice(0, -1);
+    this._hostPath =  makeWildcardHost("static") + "/identicon/" + hash + "?s=" + size;
   }
 
   getUrl() {
-    return this._url;
+    return { protocol: this._protocol, hostPath: this._hostPath, };
   }
 }
 

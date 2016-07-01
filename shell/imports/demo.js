@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-allowDemo = Meteor.settings && Meteor.settings.public &&
-                Meteor.settings.public.allowDemoAccounts;
+const allowDemo = Meteor.settings && Meteor.settings.public &&
+                  Meteor.settings.public.allowDemoAccounts;
 
 export { allowDemo };

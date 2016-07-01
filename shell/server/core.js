@@ -30,38 +30,6 @@ class SandstormCoreImpl {
     this.grainId = grainId;
   }
 
-  claimRequest(sturdyRef, requiredPermissions) {
-    return inMeteor(() => {
-      const hashedSturdyRef = hashSturdyRef(sturdyRef);
-
-      const token = ApiTokens.findOne({
-        _id: hashedSturdyRef,
-        "owner.clientPowerboxRequest.grainId": this.grainId,
-      });
-
-      if (!token) {
-        throw new Error("no such token");
-      }
-
-      // Honor `requiredPermissions`.
-      const requirements = [];
-      if (token.owner.clientPowerboxRequest.introducerIdentity) {
-        requirements.push({
-          permissionsHeld: {
-            permissions: requiredPermissions || [],
-            identityId: token.owner.clientPowerboxRequest.introducerIdentity,
-            grainId: this.grainId,
-          },
-        });
-      }
-
-      return restoreInternal(
-          new Buffer(sturdyRef),
-          { clientPowerboxRequest: Match.ObjectIncluding({ grainId: this.grainId }) },
-          requirements, hashedSturdyRef, true);
-    });
-  }
-
   restore(sturdyRef) {
     return inMeteor(() => {
       const hashedSturdyRef = hashSturdyRef(sturdyRef);

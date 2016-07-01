@@ -32,8 +32,8 @@ module.exports = {};
 module.exports["Test Ip Networking"] = function (browser) {
   browser
     // sandstorm-test-python: David's branch that updates for the new claimRequest() flow.
-    .installApp("http://sandstorm.io/apps/david/sandstorm-test-python3.spk",
-                "ebf2504eeb495cd781ef76adf4756dd5",
+    .installApp("http://sandstorm.io/apps/david/sandstorm-test-python4.spk",
+                "874e67d3cd02486198d046909149723c",
                 "umeqc9yhncg63fjj6sahtw30nf99kfm6tgkuz8rmhn5dqtusnwah", false, true)
     .assert.containsText("#grainTitle", "Untitled Test App test page")
     .waitForElementVisible('.grain-frame', short_wait)
@@ -56,8 +56,8 @@ module.exports["Test Ip Networking"] = function (browser) {
 module.exports["Test Ip Interface"] = function (browser) {
   browser
     // sandstorm-test-python: David's branch that updates for the new claimRequest() flow.
-    .installApp("http://sandstorm.io/apps/david/sandstorm-test-python3.spk",
-                "ebf2504eeb495cd781ef76adf4756dd5",
+    .installApp("http://sandstorm.io/apps/david/sandstorm-test-python4.spk",
+                "874e67d3cd02486198d046909149723c",
                 "umeqc9yhncg63fjj6sahtw30nf99kfm6tgkuz8rmhn5dqtusnwah", false, true)
     .assert.containsText("#grainTitle", "Untitled Test App test page")
     .waitForElementVisible('.grain-frame', short_wait)

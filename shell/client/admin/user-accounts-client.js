@@ -192,6 +192,7 @@ Template.newAdminUsers.onCreated(function () {
         return identity;
       });
       return {
+        _id: account._id,
         account,
         identities,
       };

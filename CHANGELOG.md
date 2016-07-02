@@ -1,3 +1,11 @@
+### v0.170 (2016-07-02) [bugfixes]
+- Meteor-based apps will no longer go into redirect loops when WebSockets are not working.
+- Sandstorm for Work: Fixed SAML login failing when a user's name contained non-ASCII characters.
+- The Powerbox API has changed slightly to involve a server-side exchange after the client-side selection operation. This improve security. Existing powerbox-using apps will need to be updated -- but no major apps are using it yet.
+- When using email login and clicking the link (rather than copy/pasting the token), you will now be redirected back to the URL from which you initiated login.
+- Improved design of profile editor UI.
+- Fixed "guided tour" hint bubble for installing apps showing for users who aren't allowed to install apps.
+
 ### v0.169 (2016-06-26) [bugfixes]
 - Fixed regression in static web publishing that caused requests that should have returned 404s or redirect-to-add-trailing-slash to instead return a 500 status with a blank page.
 - Added ability for admin to request a heapdump (to debug memory leaks).

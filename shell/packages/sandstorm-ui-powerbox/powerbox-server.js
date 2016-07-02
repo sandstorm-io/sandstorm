@@ -101,6 +101,7 @@ Meteor.methods({
       clientPowerboxRequest: {
         grainId: grainId,
         introducerIdentity: session.identityId,
+        sessionId: session._id,
       },
     };
 
@@ -109,8 +110,9 @@ Meteor.methods({
     return { sturdyRef, descriptor };
   },
 
-  fulfillUiViewRequest(identityId, grainId, petname, roleAssignment, ownerGrainId) {
+  fulfillUiViewRequest(sessionId, identityId, grainId, petname, roleAssignment, ownerGrainId) {
     const db = this.connection.sandstormDb;
+    check(sessionId, String);
     check(identityId, String);
     check(grainId, String);
     check(roleAssignment, db.roleAssignmentPattern);
@@ -140,6 +142,7 @@ Meteor.methods({
       clientPowerboxRequest: {
         grainId: ownerGrainId,
         introducerIdentity: identityId,
+        sessionId: sessionId,
       },
     };
 

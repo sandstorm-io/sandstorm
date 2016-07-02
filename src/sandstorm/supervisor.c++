@@ -1818,15 +1818,6 @@ public:
     });
   }
 
-  kj::Promise<void> claimRequest(ClaimRequestContext context) override {
-    auto req = sandstormCore.claimRequestRequest();
-    req.setRequestToken(context.getParams().getRequestToken());
-    req.setRequiredPermissions(context.getParams().getRequiredPermissions());
-    return req.send().then([context](auto args) mutable -> void {
-      context.getResults().setCap(args.getCap());
-    });
-  }
-
   kj::Promise<void> drop(DropContext context) override {
     auto req = sandstormCore.dropRequest();
     req.setToken(context.getParams().getToken());

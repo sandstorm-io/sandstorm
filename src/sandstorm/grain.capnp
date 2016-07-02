@@ -86,52 +86,6 @@ interface SandstormApi(AppObjectId) {
   # capability should implement the same interfaces as the one you saved originally, so you can
   # downcast it as appropriate.
 
-  claimRequest @9 (requestToken :Text, requiredPermissions :PermissionSet) -> (cap :Capability);
-  # When a powerbox request is initiated client-side via the postMessage API and the user completes
-  # the request flow, the Sandstorm shell responds to the requesting app with a token. This token
-  # itself is not a SturdyRef, but can be exchanged server-side for a capability which in turn
-  # can be save()d to produce a SturdyRef. `claimRequest()` is the method to call to exchange the
-  # token for a capability. It must be called within a short period after the powerbox request
-  # completes; we recommend that the app immediately send the token up to its server to claim
-  # the capability.
-  #
-  # If you are familiar with OAuth, the `requestToken` can be compared to an OAuth "authorization
-  # code", whereas a SturdyRef is like an "access token". The authorization code must be exchanged
-  # for an access token in a server-to-server interaction.
-  #
-  # You might consider an alternative approach in which the client-side response includes a
-  # newly-minted SturdyRef directly, avoiding the need for a server-side exchange. The problem with
-  # that approach is that it makes SturdyRef leaks more dangerous. If an application leaks one of
-  # its SturdyRefs to an attacker, the attacker may then initiate a powerbox request on the client
-  # side in which the attacker spoofs the response from the Sandstorm shell to inject the leaked
-  # SturdyRef. The app likely will not realize that this SturdyRef was not newly-minted and may
-  # then use it in a context where it was not intended. Adding the claimRequest() requirement makes
-  # a leaked SturdyRef less likely to be useful to an attacker since the attacker cannot usefully
-  # inject the SturdyRef into a subsequent spoofed powerbox response, since a SturdyRef is not
-  # usable as a `requestToken`.
-  #
-  # `requiredPermissions` specifies permissions which must be held on *this* grain by the user
-  # who completed the powerbox interaction. (The implicit "can access the grain at all" permission
-  # is always treated as a required permission, even if `requiredPermissions` is null or empty.)
-  # This way, if a user of a grain connects the grain to other resources, but later has their access
-  # to the grain revoked, these connections are revoked as well.
-  #
-  # Consider this example: Alice owns a grain which implements a discussion forum. At some point,
-  # Alice invites Dave to participate in the forum, and she gives him moderator permissions. As
-  # part of being a moderator, Dave arranges to have a notification emailed to him whenever a post
-  # is flagged for moderation. To set this up, the forum app makes a powerbox request for an email
-  # send capability directed to his email address. Later on, Alice decides to demote Dave from
-  # "moderator" status to "participant". At this point, Dave should stop receiving email
-  # notifications; the capability he introduced in the powerbox request should be revoked. Alice
-  # actually has no idea that Dave set up to receive these notifications, so she does not know
-  # to revoke it manually; we want it to happen automatically, or at least we want to be able to
-  # call Alice's attention to it.
-  #
-  # To this end, after the Powerbox request is made through Dave and he chooses a capability, the
-  # app will call `claimRequest()` and indicate in `requiredPermissions` that Dave must have
-  # "moderator" permission. The app then `save()`s the capability. In the future, if Dave has lost
-  # this permission, then attempts to `restore()` the SturdyRef will fail.
-
   drop @5 (token :Data);
   # Deletes the token and frees any resources being held with it. Once drop()ed, you can no longer
   # restore() the token. This call is idempotent: it is not an error to `drop()` a token that has
@@ -502,7 +456,7 @@ interface SessionContext {
   request @3 (query :List(Powerbox.PowerboxDescriptor), requiredPermissions :PermissionSet)
           -> (cap :Capability, descriptor :Powerbox.PowerboxDescriptor);
   # Although this method exists, it is unimplemented and currently you are meant to use the
-  # postMessage api to get a temporary token and then restore it with SandstormApi.claimRequest().
+  # postMessage api to get a temporary token and then restore it with claimRequest().
   #
   # The postMessage api is an rpc interface so you will have to listen for a `message` callback
   # after sending a postMessage. The postMessage object should have the following form:
@@ -536,6 +490,52 @@ interface SessionContext {
   #     // pass event.data.token to your app's server and call SandstormApi.restore() with it
   #   }
   # }, false)
+
+  claimRequest @7 (requestToken :Text, requiredPermissions :PermissionSet) -> (cap :Capability);
+  # When a powerbox request is initiated client-side via the postMessage API and the user completes
+  # the request flow, the Sandstorm shell responds to the requesting app with a token. This token
+  # itself is not a SturdyRef, but can be exchanged server-side for a capability which in turn
+  # can be save()d to produce a SturdyRef. `claimRequest()` is the method to call to exchange the
+  # token for a capability. It must be called within a short period after the powerbox request
+  # completes; we recommend that the app immediately send the token up to its server to claim
+  # the capability.
+  #
+  # If you are familiar with OAuth, the `requestToken` can be compared to an OAuth "authorization
+  # code", whereas a SturdyRef is like an "access token". The authorization code must be exchanged
+  # for an access token in a server-to-server interaction.
+  #
+  # You might consider an alternative approach in which the client-side response includes a
+  # newly-minted SturdyRef directly, avoiding the need for a server-side exchange. The problem with
+  # that approach is that it makes SturdyRef leaks more dangerous. If an application leaks one of
+  # its SturdyRefs to an attacker, the attacker may then initiate a powerbox request on the client
+  # side in which the attacker spoofs the response from the Sandstorm shell to inject the leaked
+  # SturdyRef. The app likely will not realize that this SturdyRef was not newly-minted and may
+  # then use it in a context where it was not intended. Adding the claimRequest() requirement makes
+  # a leaked SturdyRef less likely to be useful to an attacker since the attacker cannot usefully
+  # inject the SturdyRef into a subsequent spoofed powerbox response, since a SturdyRef is not
+  # usable as a `requestToken`.
+  #
+  # `requiredPermissions` specifies permissions which must be held on *this* grain by the user
+  # who completed the powerbox interaction. (The implicit "can access the grain at all" permission
+  # is always treated as a required permission, even if `requiredPermissions` is null or empty.)
+  # This way, if a user of a grain connects the grain to other resources, but later has their access
+  # to the grain revoked, these connections are revoked as well.
+  #
+  # Consider this example: Alice owns a grain which implements a discussion forum. At some point,
+  # Alice invites Dave to participate in the forum, and she gives him moderator permissions. As
+  # part of being a moderator, Dave arranges to have a notification emailed to him whenever a post
+  # is flagged for moderation. To set this up, the forum app makes a powerbox request for an email
+  # send capability directed to his email address. Later on, Alice decides to demote Dave from
+  # "moderator" status to "participant". At this point, Dave should stop receiving email
+  # notifications; the capability he introduced in the powerbox request should be revoked. Alice
+  # actually has no idea that Dave set up to receive these notifications, so she does not know
+  # to revoke it manually; we want it to happen automatically, or at least we want to be able to
+  # call Alice's attention to it.
+  #
+  # To this end, after the Powerbox request is made through Dave and he chooses a capability, the
+  # app will call `claimRequest()` and indicate in `requiredPermissions` that Dave must have
+  # "moderator" permission. The app then `save()`s the capability. In the future, if Dave has lost
+  # this permission, then attempts to `restore()` the SturdyRef will fail.
 
   fulfillRequest @4 (cap :Capability, requiredPermissions :PermissionSet,
               descriptor :Powerbox.PowerboxDescriptor, displayInfo :Powerbox.PowerboxDisplayInfo);

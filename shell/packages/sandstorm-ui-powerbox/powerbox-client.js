@@ -65,6 +65,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
       const fulfillingGrainTitle = fulfillingProvider.title;
       Meteor.call(
         "fulfillUiViewRequest",
+        this._requestInfo.sessionId,
         this._requestInfo.identityId,
         fulfillingProvider.grainId,
         fulfillingGrainTitle, // petname: for UiViews, just use the grain title.
@@ -378,7 +379,8 @@ Template.powerboxRequest.events({
     const saveLabel = ref._requestInfo.saveLabel;
     const identityId = ref._requestInfo.identityId;
     const grainId = ref._requestInfo.grainId;
-    Meteor.call("finishPowerboxRequest", event.target.token.value, saveLabel,
+    const sessionId = ref._requestInfo.sessionId;
+    Meteor.call("finishPowerboxRequest", sessionId, event.target.token.value, saveLabel,
                 identityId, grainId, function (err, token) {
         if (err) {
           ref._error.set(err.toString());

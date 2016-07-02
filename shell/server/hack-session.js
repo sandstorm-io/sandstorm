@@ -44,6 +44,39 @@ SessionContextImpl = class SessionContextImpl {
     this.tabId = tabId;
   }
 
+  claimRequest(sturdyRef, requiredPermissions) {
+    return inMeteor(() => {
+      const hashedSturdyRef = hashSturdyRef(sturdyRef);
+
+      const token = ApiTokens.findOne({
+        _id: hashedSturdyRef,
+        "owner.clientPowerboxRequest.grainId": this.grainId,
+        "owner.clientPowerboxRequest.sessionId": this.sessionId,
+      });
+
+      if (!token) {
+        throw new Error("no such token");
+      }
+
+      // Honor `requiredPermissions`.
+      const requirements = [];
+      if (token.owner.clientPowerboxRequest.introducerIdentity) {
+        requirements.push({
+          permissionsHeld: {
+            permissions: requiredPermissions || [],
+            identityId: token.owner.clientPowerboxRequest.introducerIdentity,
+            grainId: this.grainId,
+          },
+        });
+      }
+
+      return restoreInternal(
+          new Buffer(sturdyRef),
+          { clientPowerboxRequest: Match.ObjectIncluding({ grainId: this.grainId }) },
+          requirements, hashedSturdyRef, true);
+    });
+  }
+
   offer(cap, requiredPermissions, descriptor, displayInfo) {
     return inMeteor(() => {
       if (!this.identityId) {
@@ -109,7 +142,8 @@ SessionContextImpl = class SessionContextImpl {
 };
 
 Meteor.methods({
-  finishPowerboxRequest(webkeyUrl, saveLabel, identityId, grainId) {
+  finishPowerboxRequest(sessionId, webkeyUrl, saveLabel, identityId, grainId) {
+    check(sessionId, String);
     check(webkeyUrl, String);
     check(saveLabel, Match.OneOf(undefined, null, String));
     check(identityId, String);
@@ -148,6 +182,7 @@ Meteor.methods({
       clientPowerboxRequest: {
         grainId: grainId,
         introducerIdentity: identityId,
+        sessionId: sessionId,
       },
     };
     if (saveLabel) {

@@ -58,11 +58,31 @@
   <div class="admin-user-table" role="grid">
     <div role="rowgroup">
       <div class="header-row" role="row">
+        {{#with sortOrder=sortOrder}}
         <div class="account-role" role="columnheader"></div>
         <div class="identities" role="columnheader">Account</div>
-        <div class="created" role="columnheader">Created</div>
-        <div class="last-active" role="columnheader">Last Active</div>
+        <div class="created" role="columnheader">
+          Created
+          {{#if equal sortOrder.key "createdAt"}}
+            {{#if equal sortOrder.order "ascending"}}
+              ▾
+            {{else}}
+              ▴
+            {{/if}}
+          {{/if}}
+        </div>
+        <div class="last-active" role="columnheader">
+          Last Active
+          {{#if equal sortOrder.key "lastActive"}}
+            {{#if equal sortOrder.order "ascending"}}
+              ▾
+            {{else}}
+              ▴
+            {{/if}}
+          {{/if}}
+        </div>
         <div class="actions" role="columnheader">Actions</div>
+        {{/with}}
       </div>
     </div>
 
@@ -76,7 +96,7 @@
 
     {{!-- for each account, look up the identities --}}
     {{#if ready}}
-      {{#each user in users }}
+      {{#each user in sortUsers users }}
         {{> newAdminUserTableRow user=user}}
       {{else}}
         <div class="no-match-row" role="row">

@@ -135,6 +135,9 @@
     >div[role=columnheader]:not(:first-child) {
       border-left: 1px solid $default-table-header-border-color;
     }
+    .created, .last-active {
+      cursor: pointer;
+    }
   }
 
   .loading-row {

@@ -292,6 +292,9 @@ struct ApiTokenOwner {
       grainId @13 :Text;
       # Grain ID owning the ref.
 
+      sessionId @15 :Text;
+      # The ID of the session that created this token.
+
       introducerIdentity @14 :Text;
       # The identity ID through which a user's powerbox action caused the grain to receive this
       # token. This is the identity against which the `requiredPermissions` parameter

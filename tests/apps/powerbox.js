@@ -32,8 +32,8 @@ module.exports = {};
 module.exports["Test Powerbox"] = function (browser) {
   browser
     .init()
-    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app2.spk",
-                "7a2996cc34d329da6d24e37fdbaa919d",
+    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
+                "f855d3c96e18e785a3a734a49919ef18",
                 "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
     .assert.containsText("#grainTitle", "Untitled PowerboxTest")
     .waitForElementVisible('.grain-frame', short_wait)
@@ -64,8 +64,8 @@ module.exports["Test PowerboxSave"] = function (browser) {
   browser
     browser
     .init()
-    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app2.spk",
-                "7a2996cc34d329da6d24e37fdbaa919d",
+    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
+                "f855d3c96e18e785a3a734a49919ef18",
                 "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
     .assert.containsText("#grainTitle", "Untitled PowerboxTest")
     .waitForElementVisible('.grain-frame', short_wait)
@@ -96,8 +96,8 @@ module.exports["Test PowerboxSave"] = function (browser) {
 module.exports["Test Powerbox with failing requirements"] = function (browser) {
   browser
     .init()
-    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app2.spk",
-                "7a2996cc34d329da6d24e37fdbaa919d",
+    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
+                "f855d3c96e18e785a3a734a49919ef18",
                 "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
     .assert.containsText("#grainTitle", "Untitled PowerboxTest")
 

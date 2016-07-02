@@ -273,7 +273,7 @@ Meteor.methods({
       throw new Meteor.Error(403, "Invalid authentication code.");
     }
 
-    const maybeToken = consumeToken(user, options.token.trim());
+    const maybeToken = consumeToken(identity, token.trim());
     if (!maybeToken) {
       throw new Meteor.Error(403, "Invalid authentication code.");
     }

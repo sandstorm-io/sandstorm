@@ -24,6 +24,11 @@ $topbar-foreground-color: #9e9e9e;
 $topbar-background-color-hover: #383838;
 $topbar-foreground-color-hover: #ffffff;
 
+// Colors for topbar and navbar entries when "unread"
+$topbar-background-color-unread: #634488;
+$topbar-foreground-color-unread: #ffffff;
+$topbar-background-color-unread-hover: #7b55aa;
+
 // Colors for topbar and navbar entries when "active" (i.e. current tab)
 $topbar-background-color-active: #efefef;
 $topbar-foreground-color-active: #191919;
@@ -83,6 +88,7 @@ $grainlist-table-header-background-color-hover: $default-table-header-background
 $grainlist-table-row-background-color: $default-table-row-background-color;
 $grainlist-table-row-foreground-color: #5d5d5d;
 $grainlist-table-row-background-color-hover: $default-table-row-background-color-hover;
+$grainlist-table-row-background-color-unread: #eee9f4;
 $grainlist-table-row-action-background-color: $default-table-row-action-background-color;
 $grainlist-table-row-action-background-color-hover: $default-table-row-action-background-color-hover;
 $grainlist-table-row-outline-color: #d3d3d3;

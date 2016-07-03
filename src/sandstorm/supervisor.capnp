@@ -177,6 +177,9 @@ interface SandstormCore {
     # the exact requirement list, but only enough information to detect when they _might_ have
     # been broken.
   }
+
+  backgroundActivity @7 (event :Activity.ActivityEvent);
+  # Implements SandstormApi.backgroundActivity().
 }
 
 struct MembraneRequirement {
@@ -340,6 +343,9 @@ struct ApiTokenOwner {
       renamed @12 :Bool;
       # True if the user has explicitly renamed the grain to differ from the owner's title.
       # Otherwise, `title` is a copy of either the current or previous value of `upstreamTitle`.
+
+      seenAllActivity @16 :Bool;
+      # True if the user has viewed the grain since the last activity event occurred.
     }
   }
 }

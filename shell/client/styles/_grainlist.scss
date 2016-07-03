@@ -200,6 +200,11 @@
     border-bottom: 1px solid $grainlist-table-row-outline-color;
     border-left: 1px solid #fff;
     border-right: 1px solid #fff;
+
+    &.unread {
+      background-color: $grainlist-table-row-background-color-unread;
+    }
+
     >td {
       position: relative;
       &.td-app-icon {

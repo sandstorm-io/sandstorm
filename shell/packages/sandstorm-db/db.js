@@ -214,6 +214,8 @@ Grains = new Mongo.Collection("grains");
 //                   time a session to this grain was opened.
 //   trashed: If present, the Date when this grain was moved to the trash bin. Thirty days after
 //            this date, the grain will be automatically deleted.
+//   ownerUnread: If true, this grain has had one or mone activity events since the owner last
+//                viewed it.
 //
 // The following fields *might* also exist. These are temporary hacks used to implement e-mail and
 // web publishing functionality without powerbox support; they will be replaced once the powerbox
@@ -409,6 +411,8 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //              `MembraneRequirement` structure defined in `supervisor.capnp`.
 //   hasApiHost: If true, there is an entry in ApiHosts for this token, which will need to be
 //              cleaned up when the token is.
+//   ownerSeenAllActivity: True if the owner has viewed the grain since the last activity event
+//              occurred.
 //
 // It is important to note that a token's owner and provider are independent from each other. To
 // illustrate, here is an approximate definition of ApiToken in pseudo Cap'n Proto schema language:

@@ -44,7 +44,7 @@ limitations under the License.
       {{!-- TODO(cleanup): ul's can only contain li's, so this ul is not really valid --}}
       <ul class="navbar-grains">
         {{#each grains}}
-        <li data-grainid="{{grainId}}" class="navitem-grain {{#if active}}current{{/if}}" title={{title}}>
+        <li data-grainid="{{grainId}}" class="navitem-grain {{#if active}}current{{/if}} {{#if unread}}unread{{/if}}" title={{title}}>
           <div class="app-icon" style="background-image: url('{{iconSrc}}');" alt="{{appTitle}}"></div>
           <a href="{{grainLink}}">{{title}}</a>
           <button class="close-button" title="Close {{title}}"></button>

@@ -663,6 +663,13 @@ body>.topbar {
           background-color: $topbar-background-color-hover;
           color: $topbar-foreground-color-hover;
         }
+        &.unread {
+          background-color: $topbar-background-color-unread;
+          color: $topbar-foreground-color-unread;
+        }
+        &.unread:hover {
+          background-color: $topbar-background-color-unread-hover;
+        }
         &.current, &.current:hover {
           background-color: $topbar-background-color-active;
           color: $topbar-foreground-color-active;

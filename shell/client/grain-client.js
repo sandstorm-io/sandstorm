@@ -99,6 +99,33 @@ Tracker.autorun(function () {
   });
 });
 
+// Use HTML5 document visibility API to track whether Sandstorm is currently the foreground tab.
+// For old browsers that don't support the API, document.hidden will be undefined which is falsy --
+// but we don't support such old browsers anyway.
+//
+// (Note that tracking window focus does not work because the Sandstorm window is considered
+// blured when focus is inside an iframe.)
+const browserTabHidden = new ReactiveVar(document.hidden);
+
+if ("visibilityState" in document) {
+  document.addEventListener("visibilitychange", () => {
+    browserTabHidden.set(document.hidden);
+  })
+}
+
+Tracker.autorun(function () {
+  // While the tab is visible, keep the active grain marked read.
+
+  if (!browserTabHidden.get()) {
+    const activeGrain = globalGrains.getActive();
+    if (activeGrain && activeGrain.isUnread()) {
+      Tracker.nonreactive(() => {
+        activeGrain.markRead();
+      });
+    }
+  }
+});
+
 Template.layout.events({
   "click .incognito-button": function (event) {
     console.log(event);

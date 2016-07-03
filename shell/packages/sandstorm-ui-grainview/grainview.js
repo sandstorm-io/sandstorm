@@ -839,14 +839,35 @@ GrainView = class GrainView {
     } else if (grain && Meteor.userId() === grain.userId) {
       return !!grain.trashed;
     } else {
-      const token = this._db.collections.apiTokens.findOne({
-        _id: this._grainId, });
       const myIdentityIds = SandstormDb.getUserIdentityIds(Meteor.user());
       return !!this._db.collections.apiTokens.findOne({
         grainId: this._grainId,
         "owner.user.identityId": { $in: myIdentityIds },
         trashed: { $exists: true },
       });
+    }
+  }
+
+  isUnread() {
+    if (this.isOwner()) {
+      return this._db.collections.grains.find({
+        _id: this._grainId,
+        ownerSeenAllActivity: { $ne: true }
+      }).count() > 0;
+    } else {
+      return this._db.collections.apiTokens.find({
+        grainId: this._grainId,
+        "owner.user.identityId": this.identityId(),
+        "owner.user.seenAllActivity": { $ne: true },
+      }).count() > 0;
+    }
+  }
+
+  markRead() {
+    if (this.isOwner()) {
+      Meteor.call("markActivityReadByOwner", this._grainId);
+    } else {
+      Meteor.call("markActivityRead", this._grainId, this.identityId());
     }
   }
 };

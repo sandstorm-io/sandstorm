@@ -599,6 +599,16 @@ function setUpstreamTitles() {
   });
 }
 
+function markAllRead() {
+  // Mark as "read" all grains and tokens that predate the creation of read/unread status.
+  // Otherwise it's pretty annoying to see all your old grains look like they have activity.
+
+  Grains.update({}, { $set: { ownerSeenAllActivity: true } }, { multi: true });
+  ApiTokens.update({ "owner.user": { $exists: true } },
+                   { $set: { "owner.user.seenAllActivity": true } },
+                   { multi: true });
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -629,6 +639,7 @@ const MIGRATIONS = [
   unsetSmtpDefaultHostnameIfNoUsersExist,
   extractLastUsedFromApiTokenOwner,
   setUpstreamTitles,
+  markAllRead,
 ];
 
 function migrateToLatest() {

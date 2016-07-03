@@ -47,6 +47,9 @@ limitations under the License.
         <li data-grainid="{{grainId}}" class="navitem-grain {{#if active}}current{{/if}} {{#if unread}}unread{{/if}}" title={{title}}>
           <div class="app-icon" style="background-image: url('{{iconSrc}}');" alt="{{appTitle}}"></div>
           <a href="{{grainLink}}">{{title}}</a>
+          {{#with notificationCount}}
+            <span class="notification-count" title="notifications">{{.}}</span>
+          {{/with}}
           <button class="close-button" title="Close {{title}}"></button>
         </li>
         {{/each}}

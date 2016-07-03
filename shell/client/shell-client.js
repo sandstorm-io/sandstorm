@@ -616,13 +616,99 @@ Template.root.helpers({
   },
 });
 
+testNotifications = () => {
+  // Run on console to create some dummy notifications for the purpose of seeing what they look
+  // like.
+
+  Meteor.call("testNotifications");
+}
+
+const getNotificationPath = (notification) => {
+  if (notification.admin) {
+    return notification.admin.action;
+  } else if (notification.referral) {
+    return "/referrals";
+  } else if (notification.grainId) {
+    return "/grain/" + notification.grainId + (notification.path ? "/" + notification.path : "");
+  } else {
+    return null;
+  }
+}
+
+const removeTrailingSlash = (path) => {
+  while (path.slice(-1) === "/") {
+    path = path.slice(0, -1);
+  }
+  return path;
+}
+
+Tracker.autorun(function () {
+  // While the tab is visible, automatically dismiss any notifications that link to the current
+  // URL.
+
+  if (!browserTabHidden.get()) {
+    const path = removeTrailingSlash(currentPath.get());
+    Notifications.find().forEach((notification) => {
+      if (!notification.ongoing) {
+        const npath = getNotificationPath(notification);
+        if (npath) {
+          if (removeTrailingSlash(getNotificationPath(notification)) === path) {
+            Meteor.call("dismissNotification", notification._id);
+          }
+        }
+      }
+    });
+  }
+});
+
 Template.notificationsPopup.helpers({
   notifications: function () {
     Meteor.call("readAllNotifications");
-    return Notifications.find({ userId: Meteor.userId() }, { sort: { timestamp: -1 } }).map(function (row) {
-      const grain = Grains.findOne({ _id: row.grainId });
-      if (grain) {
-        row.grainTitle = grain.title;
+    return Notifications.find({ userId: Meteor.userId() }, { sort: { timestamp: -1 } })
+        .map(function (row) {
+      if (row.initiatingIdentity) {
+        const sender = Meteor.users.findOne({ _id: row.initiatingIdentity });
+        if (sender && sender.profile) {
+          row.senderName = sender.profile.name;
+          if (sender.profile.picture) {
+            row.senderIcon = window.location.protocol + "//" +
+                globalDb.makeWildcardHost("static") + "/" + sender.profile.picture;
+          }
+        }
+      }
+
+      if (row.grainId) {
+        const grain = Grains.findOne({ _id: row.grainId });
+        if (grain) {
+          row.grainTitle = grain.title;
+
+          // Hack: If we have a sender avatar, that will be the main image, and we'll show the
+          //   app icon in the corner. But if we don't have a sender avatar then the app icon
+          //   is going to be bigger. While the "grain" icon seems like the "correct" one to use,
+          //   it is normally expected to be small, therefore may not look good if expanded. So,
+          //   prefer the app icon, which is designed to be bigger.
+          const usage = row.senderIcon ? "grain" : "appGrid";
+
+          if (grain.packageId) {
+            const package = Packages.findOne(grain.packageId);
+            if (package) {
+              row.grainIcon = Identicon.iconSrcForPackage(
+                  package, usage, globalDb.makeWildcardHost("static"));
+            } else {
+              const devPackage = DevPackages.findOne(grain.packageId);
+              if (devPackage) {
+                row.grainIcon = Identicon.iconSrcForDevPackage(
+                    devPackage, usage, globalDb.makeWildcardHost("static"));
+              }
+            }
+          } else {
+            const token = ApiTokens.findOne({grainId: row.grainId,
+                "owner.user.denormalizedGrainMetadata": {$exists: true}});
+            row.grainIcon = Identicon.iconSrcForDenormalizedGrainMetadata(
+                token.owner.user.denormalizedGrainMetadata, usage,
+                globalDb.makeWildcardHost("static"));
+          }
+        }
       }
 
       return row;
@@ -647,16 +733,24 @@ Template.notificationItem.helpers({
     return !!this.appUpdates;
   },
 
+  hasIcon: function () {
+    return !!this.senderIcon || !!this.grainIcon;
+  },
+
+  notificationUrl: function () {
+    return getNotificationPath(this);
+  },
+
   notificationTitle: function () {
     if (this.admin) {
       return "Notification from System";
     } else if (this.appUpdates) {
       return "App updates are available";
-    } else if (this.referral || this.mailingListBonus) {
+    } else if (this.ongoing) {
+      return this.grainTitle + " is backgrounded";
+    } else {
       return false;
     }
-
-    return this.grainTitle + " is backgrounded";
   },
 
   titleHelperText: function () {
@@ -664,19 +758,21 @@ Template.notificationItem.helpers({
       return "Dismiss this system notification";
     } else if (this.referral) {
       return "Dismiss this referral notification";
-    } else {
+    } else if (this.ongoing) {
       return "Stop the background app";
+    } else {
+      return "Dismiss this notification";
     }
   },
 
   dismissText: function () {
     if (this.admin && this.admin.type === "reportStats") {
       return false;
-    } else if (this.referral) {
+    } else if (this.ongoing) {
+      return "Cancel";
+    } else {
       return "Dismiss";
     }
-
-    return "Cancel";
   },
 
   adminLink: function () {

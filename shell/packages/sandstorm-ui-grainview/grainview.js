@@ -870,6 +870,11 @@ GrainView = class GrainView {
       Meteor.call("markActivityRead", this._grainId, this.identityId());
     }
   }
+
+  notificationCount() {
+    return this._db.collections.notifications.find(
+        { grainId: this._grainId, ongoing: { $exists: false } }).count();
+  }
 };
 
 onceConditionIsTrue = (condition, continuation) => {

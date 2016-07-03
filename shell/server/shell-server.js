@@ -88,9 +88,7 @@ Meteor.publish("devPackages", function () {
 });
 
 Meteor.publish("notifications", function () {
-  return Notifications.find({ userId: this.userId },
-    { fields: { timestamp: 1, text: 1, grainId: 1, userId: 1, isUnread: 1, appUpdates: 1,
-              admin: 1, referral: 1, mailingListBonus: 1, }, });
+  return Notifications.find({ userId: this.userId });
 });
 
 Meteor.publish("notificationGrains", function (notificationIds) {
@@ -101,14 +99,21 @@ Meteor.publish("notificationGrains", function (notificationIds) {
     _id: { $in: notificationIds },
     userId: this.userId,
   }, {
-    fields: { grainId: 1 },
+    fields: { grainId: 1, initiatingIdentity: 1 },
   });
 
   const grainIds = notifications.map(function (row) {
     return row.grainId;
-  });
+  }).filter(x => x);
 
-  return Grains.find({ _id: { $in: grainIds } }, { fields: { title: 1 } });
+  const identities = notifications.map(function (row) {
+    return row.initiatingIdentity;
+  }).filter(x => x);
+
+  return [
+    Grains.find({ _id: { $in: grainIds } }, { fields: { title: 1 } }),
+    Meteor.users.find({ _id: { $in: identities } }, { fields: { profile: 1 } }),
+  ];
 });
 
 Meteor.publish("hasUsers", function () {

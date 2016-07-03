@@ -91,6 +91,7 @@ Template.sandstormTopbar.helpers({
         grainLink: grain.route(),
         iconSrc: grain.iconSrc(),
         appTitle: grain.appTitle(),
+        notificationCount: grain.notificationCount(),
       };
     });
 

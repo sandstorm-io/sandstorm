@@ -130,12 +130,7 @@ class SandstormCoreImpl {
 
   backgroundActivity(event) {
     return inMeteor(() => {
-      // Clear the "seenAllActivity" bit for all users.
-      // TODO(perf): Consider throttling? Or should that be the app's responsibility?
-      Grains.update({ _id: this.grainId }, { $unset: { ownerSeenAllActivity: true } });
-      ApiTokens.update({ "grainId": this.grainId,
-                         "owner.user.seenAllActivity": true,
-                       }, { $unset: { "owner.user.seenAllActivity": true } }, { multi: true });
+      logActivity(this.grainId, null, event);
     });
   }
 }

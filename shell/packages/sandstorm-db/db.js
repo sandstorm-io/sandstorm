@@ -498,6 +498,9 @@ Notifications = new Mongo.Collection("notifications");
 //   text:         The JSON-ified LocalizedText to display in the notification.
 //   isUnread:     Boolean indicating if this notification is unread.
 //   timestamp:    Date when this notification was last updated
+//   initiatingIdentity: Identity ID of the user who initiated this notification.
+//   path:         Path inside the grain to which the user should be directed if they click on
+//                 the notification.
 //   ongoing:      If present, this is an ongoing notification, and this field contains an
 //                 ApiToken referencing the `OngoingNotification` capability.
 //   admin:        If present, this is a notification intended for an admin.

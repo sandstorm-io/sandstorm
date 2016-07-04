@@ -750,6 +750,61 @@ kj::String hexEncode(kj::ArrayPtr<const byte> input) {
   return kj::strArray(KJ_MAP(b, input) { return kj::heapArray<char>({DIGITS[b/16], DIGITS[b%16]}); }, "");
 }
 
+static uint fromDigit(char c) {
+  if ('0' <= c && c <= '9') {
+    return c - '0';
+  } else if ('a' <= c && c <= 'z') {
+    return c - ('a' - 10);
+  } else if ('A' <= c && c <= 'Z') {
+    return c - ('A' - 10);
+  } else {
+    return 0;
+  }
+}
+
+kj::String percentEncode(kj::ArrayPtr<const byte> bytes) {
+  const char HEX_DIGITS[] = "0123456789abcdef";
+  kj::Vector<char> result(bytes.size() + 1);
+  for (byte b: bytes) {
+    if (('A' <= b && b <= 'Z') || ('a' <= b && b <= 'z') || ('0' <= b && b <= '9') ||
+        b == '-' || b == '_' || b == '.' || b == '~') {
+      result.add(b);
+    } else {
+      result.add('%');
+      result.add(HEX_DIGITS[b/16]);
+      result.add(HEX_DIGITS[b%16]);
+    }
+  }
+  result.add('\0');
+  return kj::String(result.releaseAsArray());
+}
+
+kj::String percentEncode(kj::StringPtr text) {
+  return percentEncode(text.asBytes());
+}
+
+kj::Array<byte> percentDecode(kj::StringPtr text) {
+  kj::Vector<byte> result(text.size());
+
+  const char* ptr = text.cStr();
+  while (*ptr != 0) {
+    if (*ptr == '%') {
+      ++ptr;
+      if (*ptr == 0) break;
+      byte b = fromDigit(*ptr++) << 4;
+      if (*ptr == 0) break;
+      b |= fromDigit(*ptr++);
+      result.add(b);
+    } else {
+      result.add(*ptr++);
+    }
+  }
+
+  return result.releaseAsArray();
+}
+
+// =======================================================================================
+
 Subprocess::Subprocess(Options&& options)
     : name(kj::heapString(options.argv.size() > 0 ? options.argv[0] : options.executable)) {
   KJ_SYSCALL(pid = fork());

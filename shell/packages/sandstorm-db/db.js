@@ -380,6 +380,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //                      list; they should be ignored.
 //       verifiedEmail: An VerifiedEmail capability that is implemented by the frontend.
 //                      An object containing `verifierId`, `tabId`, and `address`.
+//       identity: An Identity capability. The field is the identity ID.
 //   parentToken: If present, then this token represents exactly the capability represented by
 //              the ApiToken with _id = parentToken, except possibly (if it is a UiView) attenuated
 //              by `roleAssignment` (if present). To facilitate permissions computations, if the
@@ -443,6 +444,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //         tabId :Text;
 //         address :Text;
 //       }
+//       identity :Text;
 //     }
 //     child :group {
 //       parentToken :Text;

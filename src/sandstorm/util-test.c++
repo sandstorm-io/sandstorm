@@ -73,6 +73,16 @@ KJ_TEST("base64 encoding/decoding") {
   }
 }
 
+KJ_TEST("percent encoding/decoding") {
+  KJ_EXPECT(percentEncode("foo") == "foo");
+  KJ_EXPECT(percentEncode("foo bar") == "foo%20bar");
+  KJ_EXPECT(percentEncode("\xab\xba") == "%ab%ba");
+  KJ_EXPECT(percentEncode(kj::StringPtr("foo\0bar", 7)) == "foo%00bar");
+
+  KJ_EXPECT(kj::str(percentDecode("foo%20bar").asChars()) == "foo bar");
+  KJ_EXPECT(kj::str(percentDecode("%ab%BA").asChars()) == "\xab\xba");
+}
+
 struct Pipe {
   kj::AutoCloseFd readEnd;
   kj::AutoCloseFd writeEnd;

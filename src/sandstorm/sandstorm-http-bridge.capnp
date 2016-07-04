@@ -20,6 +20,7 @@
 
 $import "/capnp/c++.capnp".namespace("sandstorm");
 using Grain = import "grain.capnp";
+using Identity = import "identity.capnp";
 
 interface SandstormHttpBridge {
   # Bootstrap interface provided to the app on a Unix domain socket at /tmp/sandstorm-api.
@@ -30,4 +31,9 @@ interface SandstormHttpBridge {
   getSessionContext @1 (id :Text) -> (context :Grain.SessionContext);
   # Get the SessionContext corresponding to a UiSession. The appropriate `id` value can be read
   # from the X-Sandstorm-Session-Id header inserted by sandstorm-http-bridge.
+
+  getSavedIdentity @2 (identityId :Text) -> (identity :Identity.Identity);
+  # If BridgeConfig.saveIdentityCaps is true for this app, then you can call this method to fetch
+  # the saved identity capability for a particular identityId as passed in the
+  # `X-Sandstorm-User-Id` header.
 }

@@ -14,6 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+const Capnp = Npm.require("capnp");
+const SupervisorCapnp = Capnp.importSystem("sandstorm/supervisor.capnp");
+const SystemPersistent = SupervisorCapnp.SystemPersistent;
+
 logActivity = function (grainId, identityId, event) {
   // Clear the "seenAllActivity" bit for all users except the acting user.
   // TODO(perf): Consider throttling? Or should that be the app's responsibility?
@@ -43,16 +47,21 @@ logActivity = function (grainId, identityId, event) {
       notification.text = event.notification.caption;
     }
 
+    const promises = [];
+
     event.users.forEach(user => {
-      if (user.identityId && user.mentioned) {
-        const targetId = user.identityId.toString("hex");
-        Meteor.users.find({$or: [{ "loginIdentities.id": targetId },
-                                 { "nonLoginIdentities.id": targetId }]})
-            .forEach((account) => {
-          Notifications.insert(_.extend({ userId: account._id }, notification));
-        });
+      if (user.identity && user.mentioned) {
+        promises.push(unwrapFrontendCap(user.identity, "identity", (targetId) => {
+          Meteor.users.find({$or: [{ "loginIdentities.id": targetId },
+                                   { "nonLoginIdentities.id": targetId }]})
+              .forEach((account) => {
+            Notifications.insert(_.extend({ userId: account._id }, notification));
+          });
+        }));
       }
     });
+
+    waitPromise(Promise.all(promises).then(junk => undefined));
   }
 };
 

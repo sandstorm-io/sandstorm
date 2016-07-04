@@ -23,13 +23,28 @@ using Util = import "util.capnp";
 using PermissionSet = List(Bool);
 # Set of permission IDs, represented as a bitfield.
 
+interface Identity {
+  # Represents a user identity.
+  #
+  # Things you can do:
+  # - Mention the identity on activity events to send notifications. See ActivityEvent in
+  #   activity.capnp.
+  # - Powerbox-request an Identity to have the user choose from among their contacts. Note that the
+  #   user will be prompted to share the grain with the target identity.
+  # - offer() the identity to the user in order to let them see the identity's profile card and
+  #   choose to add the indentity to their contacts. You could do this e.g. when the user clicks
+  #   on the identity's name in your app's UI. (TODO(someday): Not implemented yet.)
+  #
+  # This capability is always persistable.
+
+  # TODO(someday): Public key info? Ability to seal messages / check signatures?
+}
+
 struct UserInfo @0x94b9d1efb35d11d3 {
   # Information about the user opening a new session.
   #
   # TODO(soon):  More details:
-  # - Profile:  Profile link?
   # - Sharing/authority chain:  "Carol (via Bob, via Alice)"
-  # - Identity:  Public key, certificates, verification of proxy chain.
 
   displayName @0 :Util.LocalizedText;
   # Name by which to identify this user within the user interface.  For example, if two users are
@@ -47,6 +62,9 @@ struct UserInfo @0x94b9d1efb35d11d3 {
 
   pictureUrl @6 :Text;
   # URL of the user's profile picture, appropriate for displaying in a 64x64 context.
+  #
+  # TODO(security) TODO(apibump): If we allow UserInfo to come from untrusted sources then this
+  #   field is XSS-prone. Currently UserInfo only comes from the front-end.
 
   pronouns @5 :Pronouns;
   # Indicates which pronouns the user prefers you use to refer to them.
@@ -91,4 +109,7 @@ struct UserInfo @0x94b9d1efb35d11d3 {
   # needs.
   #
   # If the user is not logged in, `userId` is null.
+
+  identity @7 :Identity;
+  # The identity capability for this user. null if the user is not logged in.
 }

@@ -228,6 +228,11 @@ kj::Array<byte> base64Decode(kj::StringPtr input);
 kj::String hexEncode(kj::ArrayPtr<const byte> input);
 // Return the hex string corresponding to this array of bytes.
 
+kj::String percentEncode(kj::StringPtr text);
+kj::String percentEncode(kj::ArrayPtr<const byte> bytes);
+kj::Array<byte> percentDecode(kj::StringPtr text);
+// URL-safe encode using % escapes.
+
 class SubprocessSet;
 
 class Subprocess {

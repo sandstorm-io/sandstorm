@@ -19,6 +19,7 @@
 $import "/capnp/c++.capnp".namespace("sandstorm");
 
 using Util = import "util.capnp";
+using Identity = import "identity.capnp";
 
 struct ActivityEvent {
   # Describes an event in a grain's activity feed / log.
@@ -65,7 +66,7 @@ struct ActivityEvent {
     # Information about a specific user's relationship with this event. At least one of the fields
     # other than `identityId` should be non-default, otherwise listing the user has no purpose.
 
-    identityId @0 :Data;
+    identity @0 :Identity.Identity;
 
     mentioned @1 :Bool;
     # This user is "mentioned" by this event. This is a hint that they should be more actively

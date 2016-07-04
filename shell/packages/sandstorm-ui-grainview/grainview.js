@@ -852,7 +852,7 @@ GrainView = class GrainView {
     if (this.isOwner()) {
       return this._db.collections.grains.find({
         _id: this._grainId,
-        ownerSeenAllActivity: { $ne: true }
+        ownerSeenAllActivity: { $ne: true },
       }).count() > 0;
     } else {
       return this._db.collections.apiTokens.find({

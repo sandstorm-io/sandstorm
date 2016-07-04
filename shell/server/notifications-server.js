@@ -52,11 +52,11 @@ logActivity = function (grainId, identityId, event) {
     event.users.forEach(user => {
       if (user.identity && user.mentioned) {
         promises.push(unwrapFrontendCap(user.identity, "identity", (targetId) => {
-          Meteor.users.find({$or: [{ "loginIdentities.id": targetId },
-                                   { "nonLoginIdentities.id": targetId }]})
+          Meteor.users.find({ $or: [{ "loginIdentities.id": targetId },
+                                    { "nonLoginIdentities.id": targetId }], })
               .forEach((account) => {
-            Notifications.insert(_.extend({ userId: account._id }, notification));
-          });
+                Notifications.insert(_.extend({ userId: account._id }, notification));
+              });
         }));
       }
     });
@@ -77,7 +77,7 @@ Meteor.methods({
       },
       userId: this.userId,
       text: { defaultText: "You can help Sandstorm by sending us some anonymous " +
-                           "usage stats. Click here for more info." },
+                           "usage stats. Click here for more info.", },
       timestamp: new Date(),
       isUnread: true,
     });
@@ -95,7 +95,7 @@ Meteor.methods({
       timestamp: new Date(),
       isUnread: true,
     });
-  }
+  },
 });
 
 Meteor.publish("notifications", function () {

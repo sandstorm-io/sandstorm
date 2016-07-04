@@ -32,7 +32,7 @@ browserTabHidden = new ReactiveVar(document.hidden);
 if ("visibilityState" in document) {
   document.addEventListener("visibilitychange", () => {
     browserTabHidden.set(document.hidden);
-  })
+  });
 }
 
 // Maintain a reactive variable storing the current path. This seems harder than it should be.
@@ -58,4 +58,4 @@ currentPathChanged = () => {
   // changes.
 
   currentPath.set(currentPathFromWindow());
-}
+};

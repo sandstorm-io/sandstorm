@@ -1166,7 +1166,7 @@ class Proxy {
 
       // The identity cap becomes invalid if the user no longer has access to the grain.
       const idCapRequirement = {
-        permissionsHeld: { identityId: identity._id, grainId: this.grainId }
+        permissionsHeld: { identityId: identity._id, grainId: this.grainId },
       };
 
       this.userInfo = {

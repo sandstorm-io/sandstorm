@@ -113,4 +113,4 @@ Identicon.iconSrcForPackage = function (pkg, usage, staticHost) {
 
 Identicon.iconSrcForDenormalizedGrainMetadata = function (metadata, usage, staticHost) {
   return iconSrcFor(metadata.appId, metadata.icon, staticHost, usage);
-}
+};

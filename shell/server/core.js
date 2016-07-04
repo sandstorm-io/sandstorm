@@ -681,4 +681,4 @@ unwrapFrontendCap = (cap, type, callback) => {
       return callback(tokenInfo.frontendRef[type]);
     });
   });
-}
+};

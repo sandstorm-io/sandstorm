@@ -29,7 +29,7 @@ makeIdentity = (identityId, persistentMethods, requriements) => {
     persistentMethods = {
       save(params) {
         return saveFrontendRef({ identity: identityId }, params.sealFor, requriements || []);
-      }
+      },
     };
   }
 

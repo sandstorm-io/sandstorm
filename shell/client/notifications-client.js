@@ -19,7 +19,7 @@ testNotifications = () => {
   // like.
 
   Meteor.call("testNotifications");
-}
+};
 
 const getNotificationPath = (notification) => {
   if (notification.admin) {
@@ -31,14 +31,15 @@ const getNotificationPath = (notification) => {
   } else {
     return null;
   }
-}
+};
 
 const removeTrailingSlash = (path) => {
   while (path.slice(-1) === "/") {
     path = path.slice(0, -1);
   }
+
   return path;
-}
+};
 
 Tracker.autorun(function () {
   // While the tab is visible, automatically dismiss any notifications that link to the current
@@ -100,8 +101,8 @@ Template.notificationsPopup.helpers({
               }
             }
           } else {
-            const token = ApiTokens.findOne({grainId: row.grainId,
-                "owner.user.denormalizedGrainMetadata": {$exists: true}});
+            const token = ApiTokens.findOne({ grainId: row.grainId,
+                "owner.user.denormalizedGrainMetadata": { $exists: true }, });
             row.grainIcon = Identicon.iconSrcForDenormalizedGrainMetadata(
                 token.owner.user.denormalizedGrainMetadata, usage,
                 globalDb.makeWildcardHost("static"));

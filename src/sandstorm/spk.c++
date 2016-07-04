@@ -2318,7 +2318,7 @@ private:
                 case appindex::SubmissionState::PUBLISH:
                   context.exitInfo(
                       "Thanks for your submission! A human will look at your submission to make "
-                      "sure that everything is order before it goes live. If we spot any mistakes "
+                      "sure that everything is in order before it goes live. If we spot any mistakes "
                       "we'll let you know, otherwise your app will go live as soon as it has been "
                       "checked. Either way, we'll send you an email at the contact address you "
                       "provided in the metadata. (If you'd like to prevent this submission "

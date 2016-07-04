@@ -21,6 +21,7 @@ $import "/capnp/c++.capnp".namespace("sandstorm");
 using Util = import "util.capnp";
 using Powerbox = import "powerbox.capnp";
 using Activity = import "activity.capnp";
+using Identity = import "identity.capnp";
 
 # ========================================================================================
 # Runtime interface
@@ -229,7 +230,7 @@ interface UiView @0xdbb4d798ea67e2e7 {
     # It is important that new versions of the app only add new roles, never remove existing ones,
     # since role IDs are indexes into the list and persist through upgrades.
 
-    deniedPermissions @2 :PermissionSet;
+    deniedPermissions @2 :Identity.PermissionSet;
     # Set of permissions which will be removed from the permission set when creating a new session
     # though this object.  This set should be empty for the grain's main UiView, but when that view
     # is shared with less than full access, recipients will get a proxy UiView which has a non-empty
@@ -270,7 +271,7 @@ interface UiView @0xdbb4d798ea67e2e7 {
     # The title of the `UiView` as chosen by the introducer identity.
   }
 
-  newSession @1 (userInfo :UserInfo, context :SessionContext,
+  newSession @1 (userInfo :Identity.UserInfo, context :SessionContext,
                  sessionType :UInt64, sessionParams :AnyPointer,
                  tabId :Data)
              -> (session :UiSession);
@@ -304,7 +305,7 @@ interface UiView @0xdbb4d798ea67e2e7 {
   # For API requests, `tabId` uniquely identifies the token, as so can be used to correlate
   # multiple requests from the same client.
 
-  newRequestSession @2 (userInfo :UserInfo, context :SessionContext,
+  newRequestSession @2 (userInfo :Identity.UserInfo, context :SessionContext,
                         sessionType :UInt64, sessionParams :AnyPointer,
                         requestInfo :List(Powerbox.PowerboxDescriptor), tabId :Data)
                     -> (session :UiSession);
@@ -320,7 +321,7 @@ interface UiView @0xdbb4d798ea67e2e7 {
   #
   # The `tabId` passed here identifies the requesting tab; see docs under `newSession()`.
 
-  newOfferSession @3 (userInfo :UserInfo, context :SessionContext,
+  newOfferSession @3 (userInfo :Identity.UserInfo, context :SessionContext,
                       sessionType :UInt64, sessionParams :AnyPointer,
                       offer :Capability, descriptor :Powerbox.PowerboxDescriptor,
                       tabId :Data)
@@ -356,88 +357,18 @@ interface UiSession {
   # Base interface for UI sessions.  The most common subclass is `WebSession`.
 }
 
-struct UserInfo {
-  # Information about the user opening a new session.
-  #
-  # TODO(soon):  More details:
-  # - Profile:  Profile link?
-  # - Sharing/authority chain:  "Carol (via Bob, via Alice)"
-  # - Identity:  Public key, certificates, verification of proxy chain.
-
-  displayName @0 :Util.LocalizedText;
-  # Name by which to identify this user within the user interface.  For example, if two users are
-  # editing a document simultaneously, the application may display each user's cursor position to
-  # the other, labeled with the respective display names.  As the users edit the document, the
-  # document's history may be annotated with the display name of the user who made each change.
-  # Display names are NOT unique nor stable:  two users could potentially have the same display
-  # name and a user's display name could change.
-
-  preferredHandle @4 :Text;
-  # The user's preferred "handle", as set in their account settings. This is guaranteed to be
-  # composed only of lowercase English letters, digits, and underscores, and will not start with
-  # a digit. It is NOT guaranteed to be unique; if your app dislikes duplicate handles, it must
-  # check for them and do something about them.
-
-  pictureUrl @6 :Text;
-  # URL of the user's profile picture, appropriate for displaying in a 64x64 context.
-
-  pronouns @5 :Pronouns;
-  # Indicates which pronouns the user prefers you use to refer to them.
-
-  enum Pronouns {
-    neutral @0;  # "they"
-    male @1;     # "he" / "him"
-    female @2;   # "she" / "her"
-    robot @3;    # "it"
-  }
-
-  deprecatedPermissionsBlob @1 :Data;
-  permissions @3 :PermissionSet;
-  # Set of permissions which this user has.  The exact set might not correspond directly to any
-  # particular role for a number of reasons:
-  # - The sharer may have toggled individual permissions through the advanced settings.
-  # - If two different users share different roles to a third user, and neither of the roles is a
-  #   strict superset of the other, the user gets the union of the two permissions.
-  # - If Alice shares role A to Bob, and Bob further delegates role B to Carol, then Carol's
-  #   permissions are the intersection of those granted by roles A and B.
-  #
-  # That said, some combinations of permissions may not make sense.  For example, a document editor
-  # probably has no reasonable way to implement write permission without read permission.  It is up
-  # to the application to decide what to do in this case, but simply ignoring the nonsensical
-  # permissions is often a fine strategy.
-  #
-  # If the user's permissions are reduced while the session is opened, the session will be closed
-  # by the platform and the user forced to start a new one.  If the user's permissions are increased
-  # while the session is opened, the system will prompt them to start a new session to use the new
-  # permissions.  Either way, the application need not worry about permissions changing during a
-  # session.
-
-  identityId @2 :Data;
-  # A unique, stable identifier for the calling user. This is computed such that a user's ID will
-  # be the same across all Sandstorm servers, and will not collide with any other identity ID in the
-  # world. Therefore, grains transferred between servers can still count on the user IDs being the
-  # same and secure (unless the new host is itself malicious, of course, in which case all bets are
-  # off).
-  #
-  # The ID is actually a SHA-256 hash, therefore it is always exactly 32 bytes and the app can
-  # safely truncate it down to some shorter prefix according to its own security/storage trade-off
-  # needs.
-  #
-  # If the user is not logged in, `userId` is null.
-}
-
 interface SessionContext {
   # Interface that the application can use to call back to the platform in the context of a
   # particular session.  This can be used e.g. to ask the platform to present certain system
   # dialogs to the user.
 
-  getSharedPermissions @0 () -> (var :Util.Assignable(PermissionSet).Getter);
+  getSharedPermissions @0 () -> (var :Util.Assignable(Identity.PermissionSet).Getter);
   # Returns an observer on the permissions held by the user of this session.
   # This observer can be persisted beyond the end of the session.  This is useful for detecting if
   # the user later loses their access and auto-revoking things in that case.  See also `tieToUser()`
   # for an easier way to make a particular capability auto-revoke if the user's permissions change.
 
-  tieToUser @1 (cap :Capability, requiredPermissions :PermissionSet,
+  tieToUser @1 (cap :Capability, requiredPermissions :Identity.PermissionSet,
                 displayInfo :Powerbox.PowerboxDisplayInfo)
             -> (tiedCap :Capability);
   # Create a version of `cap` which will automatically stop working if the user no longer holds the
@@ -451,7 +382,7 @@ interface SessionContext {
   # _without_ actually passing that capability to the user, use `getSharedPermissions()` to detect
   # when the user's permissions change and implement it yourself.
 
-  offer @2 (cap :Capability, requiredPermissions :PermissionSet,
+  offer @2 (cap :Capability, requiredPermissions :Identity.PermissionSet,
             descriptor :Powerbox.PowerboxDescriptor, displayInfo :Powerbox.PowerboxDisplayInfo);
   # Offer a capability to the user.  A dialog box will ask the user what they want to do with it.
   # Depending on the type of capability (as indicated by `descriptor`), different options may be
@@ -464,7 +395,7 @@ interface SessionContext {
   #
   # The capability is implicitly tied to the user as if via `tieToUser()`.
 
-  request @3 (query :List(Powerbox.PowerboxDescriptor), requiredPermissions :PermissionSet)
+  request @3 (query :List(Powerbox.PowerboxDescriptor), requiredPermissions :Identity.PermissionSet)
           -> (cap :Capability, descriptor :Powerbox.PowerboxDescriptor);
   # Although this method exists, it is unimplemented and currently you are meant to use the
   # postMessage api to get a temporary token and then restore it with claimRequest().
@@ -502,7 +433,8 @@ interface SessionContext {
   #   }
   # }, false)
 
-  claimRequest @7 (requestToken :Text, requiredPermissions :PermissionSet) -> (cap :Capability);
+  claimRequest @7 (requestToken :Text, requiredPermissions :Identity.PermissionSet)
+               -> (cap :Capability);
   # When a powerbox request is initiated client-side via the postMessage API and the user completes
   # the request flow, the Sandstorm shell responds to the requesting app with a token. This token
   # itself is not a SturdyRef, but can be exchanged server-side for a capability which in turn
@@ -548,7 +480,7 @@ interface SessionContext {
   # "moderator" permission. The app then `save()`s the capability. In the future, if Dave has lost
   # this permission, then attempts to `restore()` the SturdyRef will fail.
 
-  fulfillRequest @4 (cap :Capability, requiredPermissions :PermissionSet,
+  fulfillRequest @4 (cap :Capability, requiredPermissions :Identity.PermissionSet,
               descriptor :Powerbox.PowerboxDescriptor, displayInfo :Powerbox.PowerboxDisplayInfo);
   # For sessions started with `newRequestSession()`, fulfills the original request. If only one
   # capability was requested, the powerbox will close upon `fulfillRequest()` being called. If
@@ -612,9 +544,6 @@ struct PermissionDef {
   # longer be offered to the user in future sharing actions.
 }
 
-using PermissionSet = List(Bool);
-# Set of permission IDs, represented as a bitfield.
-
 struct RoleDef {
   # Metadata describing a shareable role.
 
@@ -629,7 +558,7 @@ struct RoleDef {
   description @2 :Util.LocalizedText;
   # Prose describing what this role means, suitable for a tool tip or similar help text.
 
-  permissions @3 :PermissionSet;
+  permissions @3 :Identity.PermissionSet;
   # Permissions which make up this role.  For example, the "editor" role on a document would
   # typically include "read" and "write" permissions.
 
@@ -672,10 +601,10 @@ interface ViewSharingLink extends(SharingLink) {
       roleId @2 :UInt16;   # Grant permissions for the given role.
     }
 
-    addPermissions @3 :PermissionSet;
+    addPermissions @3 :Identity.PermissionSet;
     # Permissions to add on top of those granted above.
 
-    removePermissions @4 :PermissionSet;
+    removePermissions @4 :Identity.PermissionSet;
     # Permissions to remove from those granted above.
   }
 }

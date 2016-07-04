@@ -24,6 +24,7 @@ using Util = import "util.capnp";
 using Grain = import "grain.capnp";
 using Persistent = import "/capnp/persistent.capnp".Persistent;
 using Activity = import "activity.capnp";
+using Identity = import "identity.capnp";
 
 interface Supervisor {
   # Default capability exported by the supervisor process.
@@ -119,7 +120,7 @@ interface SandstormCore {
   # Restores an API token to a live capability. Fails if this grain is not the token's owner
   # (including if the ref has no owner).
 
-  claimRequest @6 (requestToken :Text, requiredPermissions :Grain.PermissionSet)
+  claimRequest @6 (requestToken :Text, requiredPermissions :Identity.PermissionSet)
                -> (cap :Capability);
   # Restores a client powerbox request token to a live capability, which can then be saved to get
   # a proper sturdyref.
@@ -200,7 +201,7 @@ struct MembraneRequirement {
       grainId @2 :Text;
       # The grain on which the permissions must be held.
 
-      permissions @3 :Grain.PermissionSet;
+      permissions @3 :Identity.PermissionSet;
       # The permissions the user must hold on the grain.
 
       userId @1 :Text;

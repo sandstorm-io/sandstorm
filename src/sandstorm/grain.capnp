@@ -20,6 +20,7 @@ $import "/capnp/c++.capnp".namespace("sandstorm");
 
 using Util = import "util.capnp";
 using Powerbox = import "powerbox.capnp";
+using Activity = import "activity.capnp";
 
 # ========================================================================================
 # Runtime interface
@@ -96,7 +97,8 @@ interface SandstormApi(AppObjectId) {
   # therefore all references to it may as well be dropped. This affects *incoming* references,
   # whereas `drop()` affects *outgoing*.
 
-  stayAwake @7 (displayInfo :NotificationDisplayInfo, notification :OngoingNotification)
+  stayAwake @7 (displayInfo :Activity.NotificationDisplayInfo,
+                notification :Activity.OngoingNotification)
             -> (handle :Util.Handle);
   # Requests that the app be allowed to continue running in the background, even if no user has it
   # open in their browser. An ongoing notification is delivered to the user who owns the grain to
@@ -112,6 +114,10 @@ interface SandstormApi(AppObjectId) {
   # TODO(someday): We could make `handle` be persistent. If the app persists it -- and if
   #   `notification` is persistent -- we would automatically restart the app after an unexpected
   #   failure.
+
+  backgroundActivity @9 (event :Activity.ActivityEvent);
+  # Post an activity event to the grain's activity log that was *not* initiated by any particular
+  # user. For activity that should be attributed to a user, use SessionContext.activity().
 }
 
 interface StaticAsset @0xfabb5e621fa9a23f {
@@ -570,6 +576,9 @@ interface SessionContext {
   #
   # If the current session is a powerbox session, `openView()` affects the top-level tab, thereby
   # closing the powerbox and the app that initiated the powerbox (unless `newTab` is true).
+
+  activity @8 (event :Activity.ActivityEvent);
+  # Call each time the user performs some activity that should be logged.
 }
 
 # ========================================================================================
@@ -664,45 +673,6 @@ interface ViewSharingLink extends(SharingLink) {
     removePermissions @4 :PermissionSet;
     # Permissions to remove from those granted above.
   }
-}
-
-# ========================================================================================
-# Notifications
-#
-# TODO(someday): Flesh out the notifications API. Currently this is only used for
-#   `SandstormApi.stayAwake()`.
-
-struct NotificationDisplayInfo {
-  caption @0 :Util.LocalizedText;
-  # Text to display inside the notification box.
-
-  # TODO(someday): Support interactive notifications.
-}
-
-interface NotificationTarget {
-  # Represents a destination for notifications; usually, a user.
-  #
-  # TODO(someday): Expand on this and move it into `grain.capnp` when notifications are
-  #   fully-implemented.
-
-  addOngoing @0 (displayInfo :NotificationDisplayInfo, notification :OngoingNotification)
-             -> (handle :Util.Handle);
-  # Sends an ongoing notification to the notification target. `notification` must be persistent.
-  # The notification is removed when the returned `handle` is dropped. The handle is persistent.
-}
-
-interface OngoingNotification {
-  # Callback interface passed to the platform when registering a persistent notification.
-
-  cancel @0 ();
-  # Informs the notification creator that the user has requested cancellation of the task
-  # underlying this notification.
-  #
-  # In the case of a `SandstormApi.stayAwake()` notification, after `cancel()` is called, the app
-  # will no longer be held awake, so should prepare for shutdown.
-  #
-  # TODO(someday): We could allow the app to return some text to display to the user asking if
-  #   they really want to shut down.
 }
 
 # ========================================================================================

@@ -1907,20 +1907,28 @@ if (Meteor.isServer) {
     actions.forEach(function (action) {
       const userId = action.userId;
       const updater = {
-        userId: userId,
         timestamp: new Date(),
         isUnread: true,
       };
+      const inserter = _.extend({ userId, appUpdates: {} }, updater);
 
       // Set only the appId that we care about. Use mongo's dot notation to specify only a single
       // field inside of an object to update
-      updater["appUpdates." + appId] = {
+      inserter.appUpdates[appId] = updater["appUpdates." + appId] = {
         marketingVersion: marketingVersion,
         packageId: packageId,
         name: name,
         version: versionNumber,
       };
-      _this.collections.notifications.upsert({ userId: userId }, { $set: updater });
+
+      // We unfortunately cannot upsert because upserts can only have field equality conditions in
+      // the query. If we try to upsert, Mongo complaints that "$exists" isn't valid to store.
+      if (_this.collections.notifications.update(
+          { userId: userId, appUpdates: { $exists: true } },
+          { $set: updater }) == 0) {
+        // Update failed; try an insert instead.
+        _this.collections.notifications.insert(inserter);
+      }
     });
 
     _this.collections.appIndex.update({ _id: appId }, { $set: { hasSentNotifications: true } });

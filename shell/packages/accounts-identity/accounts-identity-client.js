@@ -34,22 +34,31 @@ Template.identityLoginInterstitial.onCreated(function () {
   // Each state may include an object with additional context-specific information.
   //
   //   * loading                 Waiting on subscriptions to finish loading
-  //   * creatingAccount         We have sent a createAccountForIdentity call and are awaiting the reply
+  //   * creatingAccount         We have sent a createAccountForIdentity call and are awaiting the
+  //                             reply
   //   * accountCreationFailed   The createAccountForIdentity call failed.  Value is the Error.
   //   * loggingInWithIdentity   We have sent a loginWithIdentity call and are awaiting the reply
   //   * loginWithIdentityFailed The loginWithIdentity call failed.  Value is the Error.
   //   * loggingInWithToken      We have started logging in with a token and are awaiting the reply
   //   * loginWithTokenFailed    The loginWithToken call failed.  Value is the Error.
-  //   * linkingIdentity         We have sent a linkIdentityToAccount call and are awaiting the reply
-  //   * noLoginIdentities       Subscriptions loaded, but we can neither login, create, nor link an account.  We require input.
+  //   * linkingIdentity         We have sent a linkIdentityToAccount call and are awaiting the
+  //                             reply
+  //   * noLoginIdentities       Subscriptions loaded, but we can neither login, create, nor link an
+  //                             account.  We require input.
   //
-  // The noLoginIdentities state also tracks substates directly:
+  // When in the noLoginIdentities state, we also keep track of some additional substates in a
+  // separate variable, unlinkIdentityState:
+  //
   //   * unlinkIdentityState     Object containing one of the following:
-  //       * { idle: true }             Awaiting input
-  //       * { confirming: Object }     Confirming that you want to unlink that identity
-  //       * { unlinking: Object }      We have sent a unlinkIdentity call and are awaiting the reply
-  //       * { success: Object }        We have successfully unlinked an identity, details of which are in the Object
-  //       * { error: Object }          Our unlinkIdentity call failed, and this is the state
+  //       * { idle: true }           Awaiting input
+  //       * { confirming: Object }   Confirming that you want to unlink that identity
+  //       * { unlinking: Object }    We have sent a unlinkIdentity call and are awaiting the reply
+  //       * { success: Object }      We have successfully unlinked an identity, details of which
+  //                                  are in the Object
+  //       * { error: Object }        Our unlinkIdentity call failed.  The object contains both the
+  //                                  call's error reply at key "error" as well as any other keys
+  //                                  from the context that were in the `unlinking:` object, to
+  //                                  preserve the context-specific UI hints in the popup.
   //
   // Note that linkingIdentityError is propagated up to the field in Session, since its lifecycle
   // starts and ends outside the scope of this particular interstitial, and regardless of whether

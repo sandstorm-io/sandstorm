@@ -32,7 +32,7 @@ UserActions.allow({
       appTitle: Match.Optional(localizedTextPattern),
       appMarketingVersion: Match.Optional(Object),
       appVersion: Match.Integer,
-      title: localizedTextPattern,
+      title: Match.Optional(localizedTextPattern),
       nounPhrase: Match.Optional(localizedTextPattern),
       command: {
         executablePath: Match.Optional(String),

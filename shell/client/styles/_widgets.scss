@@ -44,3 +44,71 @@
 .standard-form {
   @extend %standard-form;
 }
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  background-color: #000;
+  opacity: .5;
+}
+
+.modal {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  opacity: 1;
+  z-index: 1010;
+  display: block;
+  overflow-y: auto;
+}
+
+.modal-dialog {
+  position: relative;
+  width: 600px;
+  margin-top: 36px;
+  margin-bottom: auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.modal-close-button {
+  display: block;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  color: transparent;
+  overflow: hidden;
+  background-image: url("/close-m.svg");
+  background-size: 20px 20px;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: none;
+  border-radius: 16px;
+  background-color: transparent;
+  margin: 0;
+  &:hover {
+    background-color: #eee;
+    cursor: pointer;
+  }
+}
+
+.modal-content {
+  min-height: 32px;
+  background-color: #fff;
+  opacity: 1;
+  padding: 24px;
+  >h2 {
+    font-weight: normal;
+    margin: 0;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #ddd;
+  }
+}

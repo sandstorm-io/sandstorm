@@ -33,21 +33,24 @@ Template.identityLoginInterstitial.onCreated(function () {
   // An exhaustive list of the top-level states this interstitial may be in.
   // Each state may include an object with additional context-specific information.
   //
-  //   * loading                 Waiting on subscriptions to finish loading
-  //   * creatingAccount         We have sent a createAccountForIdentity call and are awaiting the
-  //                             reply
-  //   * accountCreationFailed   The createAccountForIdentity call failed.  Value is the Error.
-  //   * loggingInWithIdentity   We have sent a loginWithIdentity call and are awaiting the reply
-  //   * loginWithIdentityFailed The loginWithIdentity call failed.  Value is the Error.
-  //   * loggingInWithToken      We have started logging in with a token and are awaiting the reply
-  //   * loginWithTokenFailed    The loginWithToken call failed.  Value is the Error.
-  //   * linkingIdentity         We have sent a linkIdentityToAccount call and are awaiting the
-  //                             reply
-  //   * noLoginIdentities       Subscriptions loaded, but we can neither login, create, nor link an
-  //                             account.  We require input.
+  //   * loading                    Waiting on subscriptions to finish loading
+  //   * creatingAccount            We have sent a createAccountForIdentity call and are awaiting
+  //                                the reply
+  //   * accountCreationFailed      The createAccountForIdentity call failed.  Value is the Error.
+  //   * loggingInWithIdentity      We have sent a loginWithIdentity call and are awaiting the reply
+  //   * loginWithIdentityFailed    The loginWithIdentity call failed.  Value is the Error.
+  //   * loggingInWithToken         We have started logging in with a token and are awaiting the
+  //                                reply
+  //   * loginWithTokenFailed       The loginWithToken call failed.  Value is the Error.
+  //   * linkingIdentity            We have sent a linkIdentityToAccount call and are awaiting the
+  //                                reply
+  //   * identityIsNotLoginIdentity Subscriptions loaded, but we can neither login to an account
+  //                                (because we are not a login identity), create an account
+  //                                (because associated accounts exist already), nor link an account
+  //                                (because we have no linking token).  We require user input.
   //
-  // When in the noLoginIdentities state, we also keep track of some additional substates in a
-  // separate variable, unlinkIdentityState:
+  // When in the identityIsNotLoginIdentity state, we also keep track of some additional substates
+  // in a separate variable, unlinkIdentityState:
   //
   //   * unlinkIdentityState     Object containing one of the following:
   //       * { idle: true }           Awaiting input
@@ -124,7 +127,7 @@ Template.identityLoginInterstitial.onCreated(function () {
       const accountsOfIdentitySub = this.subscribe("accountsOfIdentity", identityId);
       if (accountsOfIdentitySub.ready()) {
         const currentState = this._state.get();
-        if (currentState.loading || currentState.noLoginIdentities) {
+        if (currentState.loading || currentState.identityIsNotLoginIdentity) {
           // If we're in one of the two states that should react to DB changes,
           // see if we should start an RPC.
           const loginAccount = LoginIdentitiesOfLinkedAccounts.findOne({
@@ -147,7 +150,7 @@ Template.identityLoginInterstitial.onCreated(function () {
             });
           } else {
             if (currentState.loading) {
-              this._state.set({ noLoginIdentities: true });
+              this._state.set({ identityIsNotLoginIdentity: true });
             }
           }
         }

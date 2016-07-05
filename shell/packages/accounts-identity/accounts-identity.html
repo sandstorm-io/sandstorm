@@ -77,7 +77,7 @@ limitations under the License.
         <button class="logout">Cancel</button>
       {{/if}}
 
-      {{#if state.noLoginIdentities}}
+      {{#if state.identityIsNotLoginIdentity}}
         {{#with unlinkIdentityState=unlinkIdentityState}}
           {{#if unlinkIdentityState.success}}
             {{#focusingSuccessBox}}

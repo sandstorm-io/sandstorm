@@ -24,10 +24,11 @@ logActivity = function (grainId, identityId, event) {
   Grains.update({ _id: grainId,
                   identityId: { $ne: identityId },
                 }, { $unset: { ownerSeenAllActivity: true } });
-  ApiTokens.update({ "grainId": grainId,
-                     "owner.user.seenAllActivity": true,
-                     "owner.user.identityId": { $ne: identityId },
-                   }, { $unset: { "owner.user.seenAllActivity": true } }, { multi: true });
+  ApiTokens.update({
+    "grainId": grainId,
+    "owner.user.seenAllActivity": true,
+    "owner.user.identityId": { $ne: identityId },
+  }, { $unset: { "owner.user.seenAllActivity": true } }, { multi: true });
 
   if (event.users && event.users.length > 0) {
     // Some users may have been mentioned. Prepare a notification to send them.
@@ -52,11 +53,12 @@ logActivity = function (grainId, identityId, event) {
     event.users.forEach(user => {
       if (user.identity && user.mentioned) {
         promises.push(unwrapFrontendCap(user.identity, "identity", (targetId) => {
-          Meteor.users.find({ $or: [{ "loginIdentities.id": targetId },
-                                    { "nonLoginIdentities.id": targetId }], })
-              .forEach((account) => {
-                Notifications.insert(_.extend({ userId: account._id }, notification));
-              });
+          Meteor.users.find({ $or: [
+            { "loginIdentities.id": targetId },
+            { "nonLoginIdentities.id": targetId },
+          ], }).forEach((account) => {
+            Notifications.insert(_.extend({ userId: account._id }, notification));
+          });
         }));
       }
     });

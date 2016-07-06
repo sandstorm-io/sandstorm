@@ -197,12 +197,9 @@ Template.sandstormAppListPage.events({
   "click .uninstall-action": function (event) {
     const db = Template.instance().data._db;
     const appId = this.appId;
-    // Untrusted client code may only remove entries by ID.
     db.collections.userActions.find({ appId: this.appId }).forEach(function (action) {
-      db.collections.userActions.remove(action._id);
+      Meteor.call("removeUserAction", action._id);
     });
-
-    Meteor.call("deleteUnusedPackages", appId);
   },
 
   "click button.toggle-uninstall": function (event) {

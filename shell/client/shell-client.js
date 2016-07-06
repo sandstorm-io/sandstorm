@@ -616,21 +616,6 @@ Template.root.helpers({
   },
 });
 
-Template.root.events({
-  "click .uninstall-app-button": function (event) {
-    // TODO(cleanup): This event handler is no longer used, but the new UI does not yet implement
-    //   uninstall. Leave this code here for reference until it does.
-    const appId = event.currentTarget.getAttribute("data-appid");
-    if (window.confirm("Really uninstall this app?")) {
-      UserActions.find({ appId: appId, userId: Meteor.userId() }).forEach(function (action) {
-        UserActions.remove(action._id);
-      });
-
-      Meteor.call("deleteUnusedPackages", appId);
-    }
-  },
-});
-
 Template.notificationsPopup.helpers({
   notifications: function () {
     Meteor.call("readAllNotifications");

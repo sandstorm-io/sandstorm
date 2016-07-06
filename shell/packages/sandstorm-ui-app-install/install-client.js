@@ -259,6 +259,6 @@ Template.sandstormAppInstallPage.events({
 
   "click #confirmInstall": function (event) {
     const ref = Template.instance().data;
-    ref._db.addUserActions(ref.packageId());
+    Meteor.call("addUserActions", ref.packageId());
   },
 });

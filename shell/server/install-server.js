@@ -21,35 +21,6 @@ const localizedTextPattern = {
 
 const uploadTokens = {};
 
-UserActions.allow({
-  insert: function (userId, action) {
-    // TODO(cleanup): This check keeps breaking. Use a method instead that takes the package
-    //   ID as an argument.
-    check(action, {
-      userId: String,
-      packageId: String,
-      appId: String,
-      appTitle: Match.Optional(localizedTextPattern),
-      appMarketingVersion: Match.Optional(Object),
-      appVersion: Match.Integer,
-      title: Match.Optional(localizedTextPattern),
-      nounPhrase: Match.Optional(localizedTextPattern),
-      command: {
-        executablePath: Match.Optional(String),
-        deprecatedExecutablePath: Match.Optional(String),
-        args: Match.Optional([String]),
-        argv: Match.Optional([String]),
-        environ: Match.Optional([{ key: String, value: String }]),
-      },
-    });
-    return userId && isSignedUpOrDemo() && action.userId === userId;
-  },
-
-  remove: function (userId, action) {
-    return userId && action.userId === userId;
-  },
-});
-
 // Not all users are allowed to upload apps. We need to manually implement authorization
 // because Meteor.userId() is not available in server-side routes.
 

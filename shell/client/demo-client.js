@@ -108,7 +108,7 @@ Template.appdemo.events({
 
         // 3. Install this app for the user, if needed.
         if (UserActions.find({ appId: appId, userId: Meteor.userId() }).count() == 0) {
-          globalDb.addUserActions(packageId);
+          Meteor.call("addUserActions", packageId);
         }
 
         // Also mark the user as needing the "How to share access" guided-tour hint.

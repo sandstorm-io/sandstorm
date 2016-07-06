@@ -639,6 +639,30 @@ SetupSession = new Mongo.Collection("setupSession");
 //   creationDate: Date object indicating when this session was created.
 //   hashedSessionId: the sha256 of the secret session id that was returned to the client
 
+const DesktopNotifications = new Mongo.Collection("desktopNotifications");
+// Responsible for very short-lived queueing of desktop notification information.
+// Entries are removed when they are ~30 seconds old.  This collection is a bit
+// odd in that it is intended primarily for edge-triggered communications, but
+// Meteor's collections aren't really designed to support that organization.
+// Fields for each :
+//
+//   _id: String.  Used as the tag to coordinate notification merging between browser tabs.
+//   creationDate: Date object. indicating when this notification was posted.
+//   identityId: String. Identity id to which this notification was published.
+//   title: String. Primary label of the notification.
+//   body: String (optional).  Additional context information to place in the notification.  May be
+//                             elided by the browser or by Sandstorm.
+//   action: Object. What to do when this desktop notification is activated.  Currently, only one
+//                   shape is supported:
+//           { grain: { grainId, path } }
+//   iconUrl: Optional String.  Primary icon to display with the notifications.
+//                              See https://notifications.spec.whatwg.org/#icon-url
+//   badgeUrl: Optional String. Secondary icon to display with the notification, used to represent
+//                              the notification if there is insufficient space to display the whole
+//                              notification.  Can also be displayed (though with less visual
+//                              priority than the primary icon) in the notification.
+//                              See https://notifications.spec.whatwg.org/#badge-url
+
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
     // Data needed for isSignedUp() and isAdmin() to work.
@@ -946,6 +970,7 @@ SandstormDb = function () {
     featureKey: FeatureKey,
     setupSession: SetupSession,
     users: Meteor.users,
+    desktopNotifications: DesktopNotifications,
 
     // Intentionally omitted:
     // - Migrations, since it's used only within this package.

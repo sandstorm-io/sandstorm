@@ -33,19 +33,26 @@ struct ActivityEvent {
   #
   # This should NOT include a leading '/'. (So, an empty string -- the default -- goes to the grain
   # root).
+
+  thread @4 :ThreadInfo;
+  # If this event is a member of a "thread", information about that thread. For example, in an
+  # issue tracker app, all comments on an issue would be part of the same "thread". Threads are
+  # important for deciding who gets notified and for grouping those notifications: a user might
+  # subscribe to a particular thread, and e.g. email notifications related to a thread may be
+  # designed to appear as a single email thread.
   #
-  # Users are able to subscribe to events at specific paths to get notified on activity.
-  # Subscribing to the root (empty path) implies subscribing to all events, and subscribing to a
-  # specific path also implies subscribing to any path that has the subscription path as a prefix
-  # followed by an appropriate separator ('/', '?', '&', '#' depending on context). For example:
-  # * Users subscribed to "" will be notified on everything.
-  # * Users subscribed to "foo" will be notified on changes to "foo", "foo/bar", "foo?bar=baz",
-  #   but not "foobar".
-  # * Users subscribed to "foo?bar=baz" will be notified on changes to "foo?bar=baz&qux=corge" but
-  #   not "foo?bar=baz/qux" ('/' is not a separator inside a query).
-  # * Users subscribed to "foo#bar" will be notified on changes to "foo#bar" and "foo#bar/baz" but
-  #   not "foo#qux". (That is to say, the "fragment" -- aka "hash" -- part of a URL is treated as
-  #   another '/'-separated path.)
+  # TODO(now): Should this be a capability to a `Thread` object which must be created separately?
+
+  struct ThreadInfo {
+    path @0 :Text;
+    # Like ActivityEvent.path, but identifies the path to the thread in general. For subscription
+    # purposes, a thread must be uniquely identified by its path.
+
+    title @1 :Util.LocalizedText;
+    # The title of the thread, e.g. for use in an email subject line. Note that if a thread's title
+    # changes, it may cause email notifications related to the therad to form a new thread, since
+    # email clients commonly create email threads based on subject line.
+  }
 
   notification @1 :NotificationDisplayInfo;
   # Optional metadata used to render a notification about this event. This metadata is not stored
@@ -122,19 +129,29 @@ struct ActivityTypeDef {
     # Only users explicitly listedg
   }
 
-  defaultNotifyCondition @6 :NotifyCondition = notifyMentions;
-  # Who should be notified of an event of this type.
-
-  enum NotifyCondition {
-    notifyNone @0;
-    notifyMentions @1;
-    notifyAll @2;
-  }
-
-  obsolete @7 :Bool = false;
+  obsolete @6 :Bool = false;
   # If true, this activity type was relevant in a previous version of the application but is no
   # longer used. The activity type will be hidden from the notification settings (and any events
   # of this type will not generate notifications).
+
+  # The options below are hints controlling how users are notified of events. Note that these are
+  # only hints; a user can potentially override whether or not a particular event causes a
+  # notification through a variety of mechanisms. However, these hints are designed to be good
+  # defaults.
+
+  notifySubscribers @7 :Bool = true;
+  # Should subscribers to this event (including subscribers to the event's thread, if any, and
+  # subscribers to the event's grain) receive a notification?
+
+  notifyMetions @8 :Bool = true;
+  # Should people mentioned on this event receive a notification, even if they are not subscribed?
+
+  autoSubscribeToThread @9 :Bool = true;
+  # Should the author of this event automatically become subscribed to the thread of which it is
+  # a part? (If the event has no threadPath, this option has no effect.)
+
+  autoSubscribeToGrain @10 :Bool = false;
+  # Should the author of this event automatically become subscribed to the grain?
 
   # TODO(someday): "silent :Bool" to indicate that the activity does not cause the grain to be
   #   rendered as "unread"?

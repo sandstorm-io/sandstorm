@@ -120,17 +120,8 @@ cp src/sandstorm/*.capnp bundle/usr/include/sandstorm
 mkdir -p bundle/node_modules
 cp -r node_modules/!(sandstorm) bundle/node_modules
 
-# Shove tcmalloc into the bundle if it's available, so that we can use it for heap profiling on
-# Oasis.
-# TODO(soon): Remove this once we've solved the memory leak.
-TCMALLOC=
-if [ -e /usr/lib/libtcmalloc.so.4 ]; then
-  copyDep /usr/lib/libtcmalloc.so.4
-  TCMALLOC=/usr/lib/libtcmalloc.so.4
-fi
-
 # Copy over all necessary shared libraries.
-(ldd bundle/bin/* $TCMALLOC $(find bundle -name '*.node') || true) | grep -o '[[:space:]]/[^ ]*' | copyDeps
+(ldd bundle/bin/* $(find bundle -name '*.node') || true) | grep -o '[[:space:]]/[^ ]*' | copyDeps
 
 # Determine dependencies needed to run getaddrinfo() and copy them over.  glibc loads the
 # DNS library dynamically, so `ldd` alone won't tell us this.  Also we want to find out

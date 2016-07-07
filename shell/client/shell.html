@@ -206,6 +206,7 @@ limitations under the License.
             {{> mailingListBonusNotification}}
           {{else}}
             {{text.defaultText}}
+            {{#if multiple}}x{{count}}{{/if}}
           {{/if}}
         {{/if}}
       {{/if}}

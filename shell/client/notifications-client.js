@@ -186,6 +186,10 @@ Template.notificationItem.helpers({
     const plan = Meteor.user().plan;
     return plan && plan !== "free";
   },
+
+  multiple: function () {
+    return (this.count || 1) > 1;
+  },
 });
 
 Template.notificationItem.events({

@@ -19,51 +19,132 @@ const SupervisorCapnp = Capnp.importSystem("sandstorm/supervisor.capnp");
 const SystemPersistent = SupervisorCapnp.SystemPersistent;
 
 logActivity = function (grainId, identityId, event) {
+  check(grainId, String);
+  check(identityId, String);
+  // `event` is always an ActivityEvent parsed from Cap'n Proto buf that's too complicated to check
+  // here.
+
+  // TODO(perf): A cached copy of the grain from when the session opened would be fine to use
+  //   here, rather than looking it up every time.
+  grain = Grains.findOne(grainId);
+  if (!grain) {
+    // Shouldn't be possible since activity events come from the grain.
+    throw new Error("no such grain");
+  }
+
+  // Look up the event typedef.
+  const eventType = ((grain.cachedViewInfo || {}).eventTypes || [])[event.type];
+  if (!eventType) {
+    throw new Error("No such event type in app's ViewInfo: " + event.type);
+  }
+
   // Clear the "seenAllActivity" bit for all users except the acting user.
   // TODO(perf): Consider throttling? Or should that be the app's responsibility?
-  Grains.update({ _id: grainId,
-                  identityId: { $ne: identityId },
-                }, { $unset: { ownerSeenAllActivity: true } });
+  if (identityId != grain.identityId) {
+    Grains.update(grainId, { $unset: { ownerSeenAllActivity: true } });
+  }
+
+  // Also clear on ApiTokens.
   ApiTokens.update({
     "grainId": grainId,
     "owner.user.seenAllActivity": true,
     "owner.user.identityId": { $ne: identityId },
   }, { $unset: { "owner.user.seenAllActivity": true } }, { multi: true });
 
-  if (event.users && event.users.length > 0) {
-    // Some users may have been mentioned. Prepare a notification to send them.
+  // Apply auto-subscriptions.
+  if (eventType.autoSubscribeToGrain) {
+    globalDb.subscribeToActivity(identityId, grainId);
+  }
 
+  if (event.thread && eventType.autoSubscribeToThread) {
+    globalDb.subscribeToActivity(identityId, grainId, event.thread.path || "");
+  }
+
+  // Figure out whom we need to notify.
+  const notifyMap = {};
+  const addRecipient = recipient => {
+    // Mutes take priority over subscriptions.
+    if (recipient.mute) {
+      notifyMap[identityId] = false;
+    } else {
+      if (!(recipient.identityId in notifyMap)) {
+        notifyMap[recipient.identityId] = true;
+      }
+    }
+  };
+
+  // Don't notify self.
+  addRecipient({ identityId: identityId, mute: true });
+
+  // The grain owner is implicitly subscribed.
+  if (eventType.notifySubscribers) {
+    addRecipient({ identityId: grain.identityId });
+
+    // Add everyone subscribed to the grain.
+    globalDb.getActivitySubscriptions(grainId).forEach(addRecipient);
+
+    if (event.thread) {
+      // Add everyone subscribed to the thread.
+      globalDb.getActivitySubscriptions(grainId, event.thread.path || "").forEach(addRecipient);
+    }
+  }
+
+  // Add everyone who is mentioned.
+  if (event.users && event.users.length > 0) {
+    const promises = [];
+    event.users.forEach(user => {
+      if (user.identity && user.mentioned) {
+        promises.push(unwrapFrontendCap(user.identity, "identity", targetId => {
+          addRecipient({ identityId: targetId });
+        }));
+      }
+    });
+    waitPromise(Promise.all(promises).then(junk => undefined));
+  }
+
+  // Make a list of everyone to notify.
+  const notify = [];
+  for (const identityId in notifyMap) {
+    if (notifyMap[identityId]) {
+      notify.push(identityId);
+    }
+  }
+
+  if (notify.length > 0) {
     const notification = {
       grainId: grainId,
-      isUnread: true,
-      timestamp: new Date(),
       path: event.path || "",
     };
+
+    // Fields we'll update even if the notification already exists.
+    const update = {
+      isUnread: true,
+      timestamp: new Date(),
+    };
+
+    if (event.thread) {
+      notification.threadPath = event.thread.path || "";
+    }
 
     if (identityId) {
       notification.initiatingIdentity = identityId;
     }
 
-    if (event.notification && event.notification.caption) {
-      notification.text = event.notification.caption;
-    }
+    notification.eventType = event.type;
+    update.text = eventType.verbPhrase;
 
-    const promises = [];
-
-    event.users.forEach(user => {
-      if (user.identity && user.mentioned) {
-        promises.push(unwrapFrontendCap(user.identity, "identity", (targetId) => {
-          Meteor.users.find({ $or: [
-            { "loginIdentities.id": targetId },
-            { "nonLoginIdentities.id": targetId },
-          ], }).forEach((account) => {
-            Notifications.insert(_.extend({ userId: account._id }, notification));
-          });
-        }));
-      }
+    notify.forEach(targetId => {
+      // Notify all accounts connected with this identity.
+      Meteor.users.find({ $or: [
+        { "loginIdentities.id": targetId },
+        { "nonLoginIdentities.id": targetId },
+      ], }).forEach((account) => {
+        Notifications.upsert(_.extend({ userId: account._id }, notification), {
+          $set: update,
+          $inc: { count: 1 },
+        });
+      });
     });
-
-    waitPromise(Promise.all(promises).then(junk => undefined));
   }
 };
 

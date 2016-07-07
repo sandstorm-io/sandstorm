@@ -143,7 +143,7 @@ struct ActivityTypeDef {
   # Should subscribers to this event (including subscribers to the event's thread, if any, and
   # subscribers to the event's grain) receive a notification?
 
-  notifyMetions @8 :Bool = true;
+  notifyMentions @8 :Bool = true;
   # Should people mentioned on this event receive a notification, even if they are not subscribed?
 
   autoSubscribeToThread @9 :Bool = true;

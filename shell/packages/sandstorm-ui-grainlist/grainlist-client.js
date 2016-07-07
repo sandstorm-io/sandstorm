@@ -90,8 +90,13 @@ const filteredSortedGrains = function (showTrash) {
   const ref = Template.instance().data;
   const db = ref._db;
   const grains = db.currentUserGrains(showTrash).fetch();
+  const grainIdSet = {};
+  grains.map((g) => grainIdSet[g._id] = true);
+
   const itemsFromGrains = SandstormGrainListPage.mapGrainsToTemplateObject(grains, db);
-  const apiTokens = db.currentUserApiTokens(showTrash).fetch();
+  const apiTokens = db.currentUserApiTokens(showTrash).fetch()
+        .filter((t) => !(t.grainId in grainIdSet));
+
   const itemsFromSharedGrains = SandstormGrainListPage.mapApiTokensToTemplateObject(apiTokens, ref._staticHost);
   const filter = compileMatchFilter(Template.instance()._filter.get());
   return _.chain([itemsFromGrains, itemsFromSharedGrains])
@@ -123,12 +128,14 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
         },
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
-          ownedGrainIds.forEach((grainId) => {
+          const grainIds = ownedGrainIds.concat(sharedGrainIds);
+
+          grainIds.forEach((grainId) => {
             Meteor.call("deleteGrain", grainId);
           });
 
           const identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
-          sharedGrainIds.forEach((grainId) => {
+          grainIds.forEach((grainId) => {
             identityIds.forEach((identityId) => {
               Meteor.call("forgetGrain", grainId, identityId);
             });

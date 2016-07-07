@@ -139,22 +139,24 @@ struct ActivityTypeDef {
   # notification through a variety of mechanisms. However, these hints are designed to be good
   # defaults.
 
-  notifySubscribers @7 :Bool = true;
+  notifySubscribers @7 :Bool;
   # Should subscribers to this event (including subscribers to the event's thread, if any, and
   # subscribers to the event's grain) receive a notification?
 
-  notifyMentions @8 :Bool = true;
+  notifyMentions @8 :Bool;
   # Should people mentioned on this event receive a notification, even if they are not subscribed?
 
-  autoSubscribeToThread @9 :Bool = true;
+  autoSubscribeToThread @9 :Bool;
   # Should the author of this event automatically become subscribed to the thread of which it is
   # a part? (If the event has no threadPath, this option has no effect.)
 
-  autoSubscribeToGrain @10 :Bool = false;
+  autoSubscribeToGrain @10 :Bool;
   # Should the author of this event automatically become subscribed to the grain?
 
-  # TODO(someday): "silent :Bool" to indicate that the activity does not cause the grain to be
-  #   rendered as "unread"?
+  silent @11 :Bool;
+  # If true, this kind of activity does not cause the grain to be marked "unread". This is useful
+  # in particular for activities that should produce notifications to specific people but should
+  # be invisible to the masses.
 }
 
 struct NotificationDisplayInfo {

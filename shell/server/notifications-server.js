@@ -38,18 +38,20 @@ logActivity = function (grainId, identityId, event) {
     throw new Error("No such event type in app's ViewInfo: " + event.type);
   }
 
-  // Clear the "seenAllActivity" bit for all users except the acting user.
-  // TODO(perf): Consider throttling? Or should that be the app's responsibility?
-  if (identityId != grain.identityId) {
-    Grains.update(grainId, { $unset: { ownerSeenAllActivity: true } });
-  }
+  if (!eventType.silent) {
+    // Clear the "seenAllActivity" bit for all users except the acting user.
+    // TODO(perf): Consider throttling? Or should that be the app's responsibility?
+    if (identityId != grain.identityId) {
+      Grains.update(grainId, { $unset: { ownerSeenAllActivity: true } });
+    }
 
-  // Also clear on ApiTokens.
-  ApiTokens.update({
-    "grainId": grainId,
-    "owner.user.seenAllActivity": true,
-    "owner.user.identityId": { $ne: identityId },
-  }, { $unset: { "owner.user.seenAllActivity": true } }, { multi: true });
+    // Also clear on ApiTokens.
+    ApiTokens.update({
+      "grainId": grainId,
+      "owner.user.seenAllActivity": true,
+      "owner.user.identityId": { $ne: identityId },
+    }, { $unset: { "owner.user.seenAllActivity": true } }, { multi: true });
+  }
 
   // Apply auto-subscriptions.
   if (eventType.autoSubscribeToGrain) {
@@ -76,8 +78,9 @@ logActivity = function (grainId, identityId, event) {
   // Don't notify self.
   addRecipient({ identityId: identityId, mute: true });
 
-  // The grain owner is implicitly subscribed.
+  // Notify subscribers, if desired.
   if (eventType.notifySubscribers) {
+    // The grain owner is implicitly subscribed.
     addRecipient({ identityId: grain.identityId });
 
     // Add everyone subscribed to the grain.

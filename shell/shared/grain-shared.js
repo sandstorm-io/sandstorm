@@ -22,6 +22,7 @@ Meteor.methods({
 
   markActivityReadByOwner: function (grainId) {
     check(grainId, String);
+    check(this.userId, String);
 
     Grains.update({ _id: grainId, userId: this.userId },
                   { $set: { "ownerSeenAllActivity": true } });

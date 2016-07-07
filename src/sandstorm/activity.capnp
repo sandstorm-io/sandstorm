@@ -126,7 +126,7 @@ struct ActivityTypeDef {
     # Users who have the given permission are allowed to observe this event.
 
     explicitList @5 :Void;
-    # Only users explicitly listedg
+    # Only users explicitly listed.
   }
 
   obsolete @6 :Bool = false;

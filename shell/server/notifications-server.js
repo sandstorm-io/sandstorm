@@ -91,12 +91,14 @@ Meteor.methods({
       isUnread: true,
     });
 
-    Notifications.insert({
-      userId: this.userId,
-      mailingListBonus: true,
-      timestamp: new Date(),
-      isUnread: true,
-    });
+    if (global.BlackrockPayments) {
+      Notifications.insert({
+        userId: this.userId,
+        mailingListBonus: true,
+        timestamp: new Date(),
+        isUnread: true,
+      });
+    }
   },
 });
 

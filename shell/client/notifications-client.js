@@ -69,10 +69,8 @@ Template.notificationsPopup.helpers({
         const sender = Meteor.users.findOne({ _id: row.initiatingIdentity });
         if (sender && sender.profile) {
           row.senderName = sender.profile.name;
-          if (sender.profile.picture) {
-            row.senderIcon = window.location.protocol + "//" +
-                globalDb.makeWildcardHost("static") + "/" + sender.profile.picture;
-          }
+          SandstormDb.fillInPictureUrl(sender);
+          row.senderIcon = sender.profile.pictureUrl;
         }
       }
 
@@ -94,9 +92,9 @@ Template.notificationsPopup.helpers({
               row.grainIcon = Identicon.iconSrcForPackage(
                   package, usage, globalDb.makeWildcardHost("static"));
             } else {
-              const devPackage = DevPackages.findOne(grain.packageId);
+              const devPackage = DevPackages.findOne({ appId: grain.appId });
               if (devPackage) {
-                row.grainIcon = Identicon.iconSrcForDevPackage(
+                row.grainIcon = Identicon.iconSrcForPackage(
                     devPackage, usage, globalDb.makeWildcardHost("static"));
               }
             }

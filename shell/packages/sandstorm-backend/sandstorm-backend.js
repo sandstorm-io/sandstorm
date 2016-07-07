@@ -153,8 +153,10 @@ SandstormBackend.prototype.continueGrain = function (grainId) {
                            "Package ID: " + packageId);
   }
 
-  return this.startGrainInternal(
+  const result = this.startGrainInternal(
       packageId, grainId, grain.userId, manifest.continueCommand, false, isDev);
+  result.packageId = packageId;
+  return result;
 };
 
 SandstormBackend.prototype.startGrainInternal = function (packageId, grainId, ownerId, command, isNew, isDev) {
@@ -231,8 +233,8 @@ SandstormBackend.prototype.updateLastActive = function (grainId, userId, identit
   }
 };
 
-function generateSessionId(grainId, userId, salt) {
-  const sessionParts = [grainId, salt];
+function generateSessionId(grainId, userId, packageId, salt) {
+  const sessionParts = [grainId, packageId, salt];
   if (userId) {
     sessionParts.push(userId);
   }
@@ -246,12 +248,12 @@ SandstormBackend.prototype.openSessionInternal = function (grainId, userId, iden
   // Start the grain if it is not running. This is an optimization: if we didn't start it here,
   // it would start on the first request to the session host, but we'd like to get started before
   // the round trip.
-  const supervisor = this.continueGrain(grainId).supervisor;
+  const { supervisor, packageId } = this.continueGrain(grainId);
 
   this.updateLastActive(grainId, userId, identityId);
 
   cachedSalt = cachedSalt || Random.id(22);
-  const sessionId = generateSessionId(grainId, userId, cachedSalt);
+  const sessionId = generateSessionId(grainId, userId, packageId, cachedSalt);
   let session = Sessions.findOne({ _id: sessionId });
   if (session) {
     // TODO(someday): also do some more checks for anonymous sessions (sessions without a userId).

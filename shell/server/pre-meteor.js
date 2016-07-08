@@ -48,7 +48,11 @@ function isSandstormShell(hostname) {
   return (hostname === HOSTNAME || (DDP_HOSTNAME && hostname === DDP_HOSTNAME));
 }
 
-const mime = Connect.static.mime;
+// We need to use connect. Let's make sure we're using the same version as Meteor's WebApp module
+// uses. Fortunately, they let us extract it.
+const connect = WebAppInternals.NpmModules.connect.module;
+
+const mime = connect.static.mime;
 
 function wwwHandlerForGrain(grainId) {
   return (request, response) => {
@@ -497,7 +501,7 @@ Meteor.startup(() => {
   const meteorRequestListeners = WebApp.httpServer.listeners("request");
 
   // Construct the middleware chain for requests to non-DDP, non-shell hosts.
-  const nonMeteorRequestHandler = Connect();
+  const nonMeteorRequestHandler = connect();
   // BlackrockPayments is only defined in the Blackrock build of Sandstorm.
   if (global.BlackrockPayments) { // Have to check with global, because it could be undefined.
     nonMeteorRequestHandler.use(BlackrockPayments.makeConnectHandler(globalDb));

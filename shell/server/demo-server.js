@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { allowDemo } from "/imports/demo.js";
+
 const DEMO_EXPIRATION_MS = 60 * 60 * 1000;
 const DEMO_GRACE_MS = 10 * 60 * 1000;  // time between expiration and deletion
 

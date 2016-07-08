@@ -48,8 +48,13 @@ const filteredSortedGrains = function (db, staticAssetHost, appId, appTitle, fil
   const pkg = latestPackageForAppId(db, appId);
 
   const grainsMatchingAppId = appGrains(db, appId, viewingTrash);
+  const grainIdSet = {};
+  grainsMatchingAppId.map((g) => grainIdSet[g._id] = true);
+
   const tokensForGrain = _.groupBy(db.currentUserApiTokens(viewingTrash).fetch(), "grainId");
-  const grainIdsForApiTokens = Object.keys(tokensForGrain);
+  const grainIdsForApiTokens = Object.keys(tokensForGrain)
+        .filter((t) => !(t.grainId in grainIdSet));
+
   // grainTokens is a list of all apiTokens, but guarantees at most one token per grain
   const grainTokens = grainIdsForApiTokens
         .map(function (grainId) { return tokensForGrain[grainId][0]; })

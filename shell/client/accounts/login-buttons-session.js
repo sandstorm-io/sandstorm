@@ -4,11 +4,6 @@ const VALID_KEYS = [
 
   "errorMessage",
   "infoMessage",
-
-  "configureLoginServiceDialogVisible",
-  "configureLoginServiceDialogServiceName",
-  "configureLoginServiceDialogSaveDisabled",
-  "configureOnDesktopVisible",
 ];
 
 const validateKey = function (key) {
@@ -61,11 +56,5 @@ Accounts._loginButtonsSession = {
   resetMessages: function () {
     this._set("errorMessage", null);
     this._set("infoMessage", null);
-  },
-
-  configureService: function (name) {
-    this.set("configureLoginServiceDialogVisible", true);
-    this.set("configureLoginServiceDialogServiceName", name);
-    this.set("configureLoginServiceDialogSaveDisabled", true);
   },
 };

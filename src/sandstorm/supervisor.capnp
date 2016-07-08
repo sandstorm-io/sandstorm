@@ -23,6 +23,8 @@ $import "/capnp/c++.capnp".namespace("sandstorm");
 using Util = import "util.capnp";
 using Grain = import "grain.capnp";
 using Persistent = import "/capnp/persistent.capnp".Persistent;
+using Activity = import "activity.capnp";
+using Identity = import "identity.capnp";
 
 interface Supervisor {
   # Default capability exported by the supervisor process.
@@ -118,7 +120,7 @@ interface SandstormCore {
   # Restores an API token to a live capability. Fails if this grain is not the token's owner
   # (including if the ref has no owner).
 
-  claimRequest @6 (requestToken :Text, requiredPermissions :Grain.PermissionSet)
+  claimRequest @6 (requestToken :Text, requiredPermissions :Identity.PermissionSet)
                -> (cap :Capability);
   # Restores a client powerbox request token to a live capability, which can then be saved to get
   # a proper sturdyref.
@@ -150,7 +152,7 @@ interface SandstormCore {
   # pointing to the same capability, where if the original token is revoked, the new token is
   # also transitively revoked.
 
-  getOwnerNotificationTarget @2 () -> (owner :Grain.NotificationTarget);
+  getOwnerNotificationTarget @2 () -> (owner :Activity.NotificationTarget);
   # Get the notification target to use for notifications relating to the grain itself, e.g.
   # presence of wake locks.
 
@@ -176,6 +178,9 @@ interface SandstormCore {
     # the exact requirement list, but only enough information to detect when they _might_ have
     # been broken.
   }
+
+  backgroundActivity @7 (event :Activity.ActivityEvent);
+  # Implements SandstormApi.backgroundActivity().
 }
 
 struct MembraneRequirement {
@@ -196,7 +201,7 @@ struct MembraneRequirement {
       grainId @2 :Text;
       # The grain on which the permissions must be held.
 
-      permissions @3 :Grain.PermissionSet;
+      permissions @3 :Identity.PermissionSet;
       # The permissions the user must hold on the grain.
 
       userId @1 :Text;
@@ -227,7 +232,7 @@ interface SystemPersistent extends(Persistent(Data, ApiTokenOwner)) {
 
 interface PersistentHandle extends(SystemPersistent, Util.Handle) {}
 
-interface PersistentOngoingNotification extends(SystemPersistent, Grain.OngoingNotification) {}
+interface PersistentOngoingNotification extends(SystemPersistent, Activity.OngoingNotification) {}
 
 struct DenormalizedGrainMetadata {
   # The metadata that we need to present contextual information for shared grains (in particular,
@@ -339,6 +344,9 @@ struct ApiTokenOwner {
       renamed @12 :Bool;
       # True if the user has explicitly renamed the grain to differ from the owner's title.
       # Otherwise, `title` is a copy of either the current or previous value of `upstreamTitle`.
+
+      seenAllActivity @16 :Bool;
+      # True if the user has viewed the grain since the last activity event occurred.
     }
   }
 }

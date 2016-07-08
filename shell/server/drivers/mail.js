@@ -22,9 +22,7 @@ const Capnp = Npm.require("capnp");
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 const EmailImpl = Capnp.importSystem("sandstorm/email-impl.capnp");
 const HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;
-const SupervisorCapnp = Capnp.importSystem("sandstorm/supervisor.capnp");
-const Supervisor = SupervisorCapnp.Supervisor;
-const SystemPersistent = SupervisorCapnp.SystemPersistent;
+const Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
 const EmailSendPort = EmailRpc.EmailSendPort;
 
 const Url = Npm.require("url");
@@ -306,45 +304,21 @@ class EmailVerifierImpl {
   }
 
   verifyEmail(tabId, verification) {
-    // For now, we save() the verification and then dig through ApiTokens to find where it leads.
-    // TODO(cleanup): In theory we should be using something like CapabilityServerSet, but it is
-    //   not available in Javascript yet and even if it were, it wouldn't work in the case where
-    //   there are multiple front-end replicas, since the verification could be on a different
-    //   replica.
-    return verification.castAs(SystemPersistent).save({ frontend: null }).then(saveResult => {
-      return inMeteor(() => {
-        const tokenId = hashSturdyRef(saveResult.sturdyRef);
-        let tokenInfo = ApiTokens.findOne(tokenId);
+    return unwrapFrontendCap(verification, "verifiedEmail", (verification) => {
+      if (verification.tabId !== tabId.toString("hex")) {
+        throw new Error("VerifiedEmail is from a different tab");
+      }
 
-        // Delete the token now since it's not needed.
-        ApiTokens.remove(tokenId);
-
-        for (;;) {
-          if (!tokenInfo) throw new Error("missing token?");
-          if (!tokenInfo.parentToken) break;
-          tokenInfo = ApiTokens.findOne(tokenInfo.parentToken);
+      if (this._services) {
+        // Since this verifier is restricted to specific services, only indicate a match if the
+        // VerifiedEmail was for the correct verifier ID. (If our _services is null, then we
+        // match all services, and therefore all VerifiedEmails.)
+        if (verification.verifierId !== this._id) {
+          throw new Error("VerifierEmail is for a different EmailVerifier.");
         }
+      }
 
-        if (!tokenInfo.frontendRef || !tokenInfo.frontendRef.verifiedEmail) {
-          throw new Error("not a VerifiedEmail capability");
-        }
-
-        let verification = tokenInfo.frontendRef.verifiedEmail;
-        if (verification.tabId !== tabId.toString("hex")) {
-          throw new Error("VerifiedEmail is from a different tab");
-        }
-
-        if (this._services) {
-          // Since this verifier is restricted to specific services, only indicate a match if the
-          // VerifiedEmail was for the correct verifier ID. (If our _services is null, then we
-          // match all services, and therefore all VerifiedEmails.)
-          if (verification.verifierId !== this._id) {
-            throw new Error("VerifierEmail is for a different EmailVerifier.");
-          }
-        }
-
-        return verification.address;
-      });
+      return verification.address;
     });
   }
 };

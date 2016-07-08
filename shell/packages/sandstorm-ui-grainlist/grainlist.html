@@ -138,7 +138,7 @@
         </tr>
         {{/each}}
         {{#each grains}}
-        <tr class="grain" data-grainid="{{ _id }}">
+        <tr class="grain {{#if unread}}unread{{/if}}" data-grainid="{{ _id }}">
           <td class="select-grain {{#if isOwnedByMe}}mine{{else}}shared{{/if}}">
             <input title="select this grain"
                    type="checkbox" data-grainid="{{ _id }}" checked={{isChecked}}>

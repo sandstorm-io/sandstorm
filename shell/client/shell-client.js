@@ -616,105 +616,6 @@ Template.root.helpers({
   },
 });
 
-Template.notificationsPopup.helpers({
-  notifications: function () {
-    Meteor.call("readAllNotifications");
-    return Notifications.find({ userId: Meteor.userId() }, { sort: { timestamp: -1 } }).map(function (row) {
-      const grain = Grains.findOne({ _id: row.grainId });
-      if (grain) {
-        row.grainTitle = grain.title;
-      }
-
-      return row;
-    });
-  },
-});
-
-Template.notifications.helpers({
-  notificationCount: function () {
-    return Notifications.find({ userId: Meteor.userId(), isUnread: true }).count();
-  },
-});
-
-Template.notificationsPopup.events({
-  "click #notification-dropdown": function (event) {
-    return false;
-  },
-});
-
-Template.notificationItem.helpers({
-  isAppUpdates: function () {
-    return !!this.appUpdates;
-  },
-
-  notificationTitle: function () {
-    if (this.admin) {
-      return "Notification from System";
-    } else if (this.appUpdates) {
-      return "App updates are available";
-    } else if (this.referral || this.mailingListBonus) {
-      return false;
-    }
-
-    return this.grainTitle + " is backgrounded";
-  },
-
-  titleHelperText: function () {
-    if (this.admin) {
-      return "Dismiss this system notification";
-    } else if (this.referral) {
-      return "Dismiss this referral notification";
-    } else {
-      return "Stop the background app";
-    }
-  },
-
-  dismissText: function () {
-    if (this.admin && this.admin.type === "reportStats") {
-      return false;
-    } else if (this.referral) {
-      return "Dismiss";
-    }
-
-    return "Cancel";
-  },
-
-  adminLink: function () {
-    return this.admin && this.admin.action;
-  },
-
-  appUpdatesList: function () {
-    return _.values(this.appUpdates);
-  },
-
-  paidUser: function () {
-    const plan = Meteor.user().plan;
-    return plan && plan !== "free";
-  },
-});
-
-Template.notificationItem.events({
-  "click .cancel-notification": function (event) {
-    Meteor.call("dismissNotification", this._id);
-    return false;
-  },
-
-  "click .accept-notification": function (event) {
-    if (this.appUpdates) {
-      Meteor.call("updateApps", this.appUpdates, (err) => {
-        // TODO(someday): if (err)
-        Meteor.call("dismissNotification", this._id);
-      });
-    }
-
-    return false;
-  },
-
-  "click .dismiss-notification": function (event) {
-    Meteor.call("dismissNotification", this._id);
-  },
-});
-
 Meteor.startup(function () {
   // Tell app authors how to run JS in the context of the grain-frame.
   if (!Meteor._localStorage.getItem("muteDevNote")) {
@@ -733,23 +634,6 @@ Meteor.startup(function () {
         "\nWe can also provide personal assistance! Get in touch: https://sandstorm.io/community",
       "font-size: large; background-color: yellow;");
   }
-
-  Meteor.subscribe("notifications");
-
-  Meteor.autorun(function () {
-    Meteor.subscribe("notificationGrains",
-      Notifications.find().map(function (row) {
-        return row._id;
-      })
-    );
-  });
-});
-
-Meteor.methods({
-  dismissNotification(notificationId) {
-    // Client-side simulation of dismissNotification.
-    Notifications.remove({ _id: notificationId });
-  },
 });
 
 Router.configure({

@@ -87,30 +87,6 @@ Meteor.publish("devPackages", function () {
   return DevPackages.find();
 });
 
-Meteor.publish("notifications", function () {
-  return Notifications.find({ userId: this.userId },
-    { fields: { timestamp: 1, text: 1, grainId: 1, userId: 1, isUnread: 1, appUpdates: 1,
-              admin: 1, referral: 1, mailingListBonus: 1, }, });
-});
-
-Meteor.publish("notificationGrains", function (notificationIds) {
-  // Since publishes can't be reactive, we leave it to the client to subscribe to both
-  // "notifications" and "notificationGrains" reactively.
-  check(notificationIds, [String]);
-  const notifications =  Notifications.find({
-    _id: { $in: notificationIds },
-    userId: this.userId,
-  }, {
-    fields: { grainId: 1 },
-  });
-
-  const grainIds = notifications.map(function (row) {
-    return row.grainId;
-  });
-
-  return Grains.find({ _id: { $in: grainIds } }, { fields: { title: 1 } });
-});
-
 Meteor.publish("hasUsers", function () {
   // Publish pseudo-collection which tells the client if there are any users at all.
   //

@@ -139,6 +139,12 @@ SessionContextImpl = class SessionContextImpl {
       );
     });
   }
+
+  activity(event) {
+    return inMeteor(() => {
+      logActivity(this.grainId, this.identityId, event);
+    });
+  }
 };
 
 Meteor.methods({

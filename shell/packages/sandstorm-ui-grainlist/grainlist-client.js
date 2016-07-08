@@ -22,6 +22,7 @@ SandstormGrainListPage.mapGrainsToTemplateObject = function (grains, db) {
       iconSrc: iconSrc,
       isOwnedByMe: true,
       trashed: grain.trashed,
+      unread: !grain.ownerSeenAllActivity,
     };
   });
 };
@@ -48,6 +49,7 @@ SandstormGrainListPage.mapApiTokensToTemplateObject = function (apiTokens, stati
       iconSrc: iconSrc,
       isOwnedByMe: false,
       trashed: token.trashed,
+      unread: !ownerData.seenAllActivity,
     };
 
     if (ownerData.upstreamTitle) {

@@ -25,6 +25,7 @@ $import "/capnp/c++.capnp".namespace("sandstorm");
 using Grain = import "grain.capnp";
 using Email = import "email.capnp";
 using Ip = import "ip.capnp";
+using Identity = import "identity.capnp";
 
 interface HackSessionContext @0xe14c1f5321159b8f
     extends(Grain.SessionContext, Email.EmailSendPort) {
@@ -63,7 +64,7 @@ interface HackSessionContext @0xe14c1f5321159b8f
   getUserAddress @2 () -> Email.EmailAddress;
   # Returns the address of the owner of the grain.
 
-  obsoleteGenerateApiToken @3 (petname :Text, userInfo :Grain.UserInfo, expires :UInt64 = 0)
+  obsoleteGenerateApiToken @3 (petname :Text, userInfo :Identity.UserInfo, expires :UInt64 = 0)
       -> (token :Text, endpointUrl :Text, tokenId :Text);
   obsoleteListApiTokens @4 () -> (tokens :List(TokenInfo));
   obsoleteRevokeApiToken @5 (tokenId :Text);
@@ -84,7 +85,7 @@ interface HackSessionContext @0xe14c1f5321159b8f
   struct TokenInfo {
     tokenId @0 :Text;
     petname @1 :Text;
-    userInfo @2 :Grain.UserInfo;
+    userInfo @2 :Identity.UserInfo;
   }
 
   getIpNetwork @6 () -> (network: Ip.IpNetwork);

@@ -99,6 +99,19 @@ Tracker.autorun(function () {
   });
 });
 
+Tracker.autorun(function () {
+  // While the tab is visible, keep the active grain marked read.
+
+  if (!browserTabHidden.get()) {
+    const activeGrain = globalGrains.getActive();
+    if (activeGrain && activeGrain.isUnread()) {
+      Tracker.nonreactive(() => {
+        activeGrain.markRead();
+      });
+    }
+  }
+});
+
 Template.layout.events({
   "click .incognito-button": function (event) {
     console.log(event);
@@ -1284,6 +1297,7 @@ Meteor.startup(function () {
       check(path.charAt(0), "/");
       // TODO(security): More sanitization of this path. E.g. reject "/../../".
       senderGrain.setPath(path);
+      currentPathChanged();
     } else if (event.data.startSharing) {
       // Allow the current grain to request that the "Share Access" menu be shown.
       // Only show this popup if no other popup is currently active.

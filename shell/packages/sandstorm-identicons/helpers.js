@@ -23,6 +23,9 @@ Identicon.hashAppIdForIdenticon = function (id) {
   // producing an identicon. Since app IDs are already high-
   // entropy base32 strings, we simply turn each of the first
   // 32 digits to base16 by chopping off a bit.
+
+  if (!id) return "00000000000000000000000000000000";
+
   result = [];
   const digits16 = "0123456789abcdef";
   const digits32 = "0123456789acdefghjkmnpqrstuvwxyz";
@@ -68,8 +71,10 @@ const iconSrcFor = function (appId, iconObj, staticHost, usage) {
     return identiconForApp(appId, usage);
   }
 
-  if (iconObj.assetId) {
-    const src = window.location.protocol + "//" + staticHost + "/" + iconObj.assetId;
+  // TODO(someday): Actually choose the best DPI.
+  const assetId = iconObj.assetId2xDpi || iconObj.assetId;
+  if (assetId) {
+    const src = window.location.protocol + "//" + staticHost + "/" + assetId;
     return src;
   }
 
@@ -80,6 +85,7 @@ const iconSrcFor = function (appId, iconObj, staticHost, usage) {
   }
 
   if (iconObj.png) {
+    // TODO(someday): Actually choose the best DPI.
     const png = iconObj.png.dpi2x || iconObj.png.dpi1x;
     let data;
     if (png) {
@@ -98,14 +104,13 @@ Identicon.identiconForApp = function (appId, usage) {
 };
 
 Identicon.iconSrcForPackage = function (pkg, usage, staticHost) {
+  // Works for regular packages and dev packages.
+
   checkUsage(usage);
-  // N.B. only works for installed packages, for dev packages use iconSrcForDevPackage
   const iconObj = iconFromManifest(pkg.manifest, usage);
   return iconSrcFor(pkg.appId, iconObj, staticHost, usage);
 };
 
-Identicon.iconSrcForDevPackage = function (devpkg, usage, staticHost) {
-  checkUsage(usage);
-  const iconObj = iconFromManifest(devpkg.manifest, usage);
-  return iconSrcFor(devpkg._id, iconObj, staticHost, usage);
+Identicon.iconSrcForDenormalizedGrainMetadata = function (metadata, usage, staticHost) {
+  return iconSrcFor(metadata.appId, metadata.icon, staticHost, usage);
 };

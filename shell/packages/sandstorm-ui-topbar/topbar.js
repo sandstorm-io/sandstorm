@@ -86,10 +86,12 @@ Template.sandstormTopbar.helpers({
       return {
         grainId: grain.grainId(),
         active: grain.isActive(),
+        unread: grain.isUnread(),
         title: grain.title() || "(unknown grain)",
         grainLink: grain.route(),
         iconSrc: grain.iconSrc(),
         appTitle: grain.appTitle(),
+        notificationCount: grain.notificationCount(),
       };
     });
 

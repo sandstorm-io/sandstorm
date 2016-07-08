@@ -217,6 +217,8 @@ Grains = new Mongo.Collection("grains");
 //                   time a session to this grain was opened.
 //   trashed: If present, the Date when this grain was moved to the trash bin. Thirty days after
 //            this date, the grain will be automatically deleted.
+//   ownerSeenAllActivity: True if the owner has viewed the grain since the last activity event
+//       occurred. See also ApiTokenOwner.user.seenAllActivity.
 //
 // The following fields *might* also exist. These are temporary hacks used to implement e-mail and
 // web publishing functionality without powerbox support; they will be replaced once the powerbox
@@ -382,6 +384,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //                      list; they should be ignored.
 //       verifiedEmail: An VerifiedEmail capability that is implemented by the frontend.
 //                      An object containing `verifierId`, `tabId`, and `address`.
+//       identity: An Identity capability. The field is the identity ID.
 //   parentToken: If present, then this token represents exactly the capability represented by
 //              the ApiToken with _id = parentToken, except possibly (if it is a UiView) attenuated
 //              by `roleAssignment` (if present). To facilitate permissions computations, if the
@@ -443,6 +446,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //         tabId :Text;
 //         address :Text;
 //       }
+//       identity :Text;
 //     }
 //     child :group {
 //       parentToken :Text;
@@ -498,6 +502,13 @@ Notifications = new Mongo.Collection("notifications");
 //   text:         The JSON-ified LocalizedText to display in the notification.
 //   isUnread:     Boolean indicating if this notification is unread.
 //   timestamp:    Date when this notification was last updated
+//   eventType:    If this notification is due to an activity event, this is the numeric index
+//                 of the event type on the grain's ViewInfo.
+//   count:        The number of times this exact event has repeated. Identical events are
+//                 aggregated by incrementing the count.
+//   initiatingIdentity: Identity ID of the user who initiated this notification.
+//   path:         Path inside the grain to which the user should be directed if they click on
+//                 the notification.
 //   ongoing:      If present, this is an ongoing notification, and this field contains an
 //                 ApiToken referencing the `OngoingNotification` capability.
 //   admin:        If present, this is a notification intended for an admin.
@@ -516,6 +527,26 @@ Notifications = new Mongo.Collection("notifications");
 //   mailingListBonus: Like `referral`, but notify the user about the mailing list bonus. This is
 //                 a one-time notification only to Oasis users who existed when the bonus program
 //                 was implemented.
+
+ActivitySubscriptions = new Mongo.Collection("activitySubscriptions");
+// Activity events to which a user is subscribed.
+//
+// Each contains:
+//   _id:          random
+//   identityId:   Who is subscribed.
+//   grainId:      Grain to which subscription applies.
+//   threadPath:   If present, the subscription is on a specific thread. Otherwise, it is on the
+//                 whole grain.
+//   mute:         If true, this is an anti-subscription -- matching events should NOT notify.
+//                 This allows is useful to express:
+//                 - A user wants to subscribe to a grain but mute a specific thread.
+//                 - The owner of a grain does not want notifications (normally, they are
+//                   implicitly subscribed).
+//                 - A user no longer wishes to be implicitly subscribed to threads in a grain on
+//                   which they comment, so they mute the grain.
+
+ActivitySubscriptions.ensureIndexOnServer("identityId");
+ActivitySubscriptions.ensureIndexOnServer({ "grainId": 1, "threadPath": 1 });
 
 StatsTokens = new Mongo.Collection("statsTokens");
 // Access tokens for the Stats collection
@@ -1479,6 +1510,44 @@ _.extend(SandstormDb.prototype, {
     const setting = Settings.findOne({ _id: "samlEntityId" });
     return setting ? setting.value : ""; // empty if subscription is not ready.
   },
+
+  getActivitySubscriptions: function (grainId, threadPath) {
+    return ActivitySubscriptions.find({
+      grainId: grainId,
+      threadPath: threadPath || { $exists: false },
+    }, {
+      fields: { identityId: 1, mute: 1, _id: 0 },
+    }).fetch();
+  },
+
+  subscribeToActivity: function (identityId, grainId, threadPath) {
+    // Subscribe the given identity to activity events with the given grainId and (optional)
+    // threadPath -- unless the identity has previously muted this grainId/threadPath, in which
+    // case do nothing.
+
+    const record = { identityId, grainId };
+    if (threadPath) {
+      record.threadPath = threadPath;
+    }
+
+    // The $set here is redundant since an upsert automatically initializes a new record to contain
+    // the fields from the query, but if we try to do { $set: {} } Mongo throws an exception, and
+    // if we try to just pass {}, Mongo interprets it as "replace the record with an empty record".
+    // What a wonderful query language.
+    ActivitySubscriptions.upsert(record, { $set: record });
+  },
+
+  muteActivity: function (identityId, grainId, threadPath) {
+    // Mute notifications for the given identity originating from the given grainId and
+    // (optional) threadPath.
+
+    const record = { identityId, grainId };
+    if (threadPath) {
+      record.threadPath = threadPath;
+    }
+
+    ActivitySubscriptions.upsert(record, { $set: { mute: true } });
+  },
 });
 
 SandstormDb.escapeMongoKey = (key) => {
@@ -1796,6 +1865,8 @@ if (Meteor.isServer) {
       });
 
       this.removeApiTokens({ "owner.grain.grainId": grain._id });
+
+      ActivitySubscriptions.remove({ grainId: grain._id });
 
       if (grain.lastUsed) {
         DeleteStats.insert({

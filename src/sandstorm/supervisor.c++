@@ -1879,6 +1879,14 @@ public:
     });
   }
 
+  kj::Promise<void> backgroundActivity(BackgroundActivityContext context) override {
+    auto params = context.getParams();
+    auto req = sandstormCore.backgroundActivityRequest(params.totalSize());
+    req.setEvent(params.getEvent());
+    context.releaseParams();
+    return req.send().ignoreResult();
+  }
+
 private:
   void dropHandle(kj::ArrayPtr<byte> sturdyRef) {
     auto req = sandstormCore.dropRequest();

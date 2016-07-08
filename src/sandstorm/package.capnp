@@ -216,6 +216,11 @@ struct BridgeConfig {
   # holder is allowed to do, you MUST use permissions and enforce them for both API and UI
   # requests. See:
   #     https://docs.sandstorm.io/en/latest/developing/auth/
+
+  saveIdentityCaps @2 :Bool;
+  # If true, the first time a new user accesses the grain, the bridge will save the user's Identity
+  # capability so that it can be fetched later using `SandstormHttpBridge.getSavedIdentity`. You
+  # will probably want to enable this if your app supports notifications.
 }
 
 struct Metadata {

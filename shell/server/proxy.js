@@ -1164,10 +1164,16 @@ class Proxy {
         throw new Error("identity not found: " + this.identityId);
       }
 
+      // The identity cap becomes invalid if the user no longer has access to the grain.
+      const idCapRequirement = {
+        permissionsHeld: { identityId: identity._id, grainId: this.grainId },
+      };
+
       this.userInfo = {
         displayName: { defaultText: identity.profile.name },
         preferredHandle: identity.profile.handle,
         identityId: new Buffer(identity._id, "hex"),
+        identity: makeIdentity(identity._id, null, [idCapRequirement]),
       };
       if (identity.profile.pictureUrl) this.userInfo.pictureUrl = identity.profile.pictureUrl;
       if (identity.profile.pronoun) this.userInfo.pronouns = identity.profile.pronoun;

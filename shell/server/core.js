@@ -24,6 +24,7 @@ const SandstormCoreFactory = Capnp.importSystem("sandstorm/backend.capnp").Sands
 const PersistentOngoingNotification = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentOngoingNotification;
 const PersistentUiView = Capnp.importSystem("sandstorm/persistentuiview.capnp").PersistentUiView;
 const StaticAsset = Capnp.importSystem("sandstorm/grain.capnp").StaticAsset;
+const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;
 
 class SandstormCoreImpl {
   constructor(grainId) {
@@ -126,6 +127,12 @@ class SandstormCoreImpl {
         },
       },
     };
+  }
+
+  backgroundActivity(event) {
+    return inMeteor(() => {
+      logActivity(this.grainId, null, event);
+    });
   }
 }
 
@@ -355,8 +362,9 @@ checkRequirements = (requirements) => {
         return false;
       }
 
-      for (let ii = 0; ii < p.permissions.length; ++ii) {
-        if (p.permissions[ii] && !currentPermissions[ii]) {
+      const requiredPermissions = p.permissions || [];
+      for (let ii = 0; ii < requiredPermissions.length; ++ii) {
+        if (requiredPermissions[ii] && !currentPermissions[ii]) {
           return false;
         }
       }
@@ -462,7 +470,9 @@ restoreInternal = (originalToken, ownerPattern, requirements, tokenId, saveByCop
   if (token.frontendRef) {
     // A token which represents a capability implemented by a pseudo-driver.
 
-    if (token.frontendRef.notificationHandle) {
+    if (token.frontendRef.identity) {
+      return { cap: makeIdentity(token.frontendRef.identity, persistentMethods) };
+    } else if (token.frontendRef.notificationHandle) {
       const notificationId = token.frontendRef.notificationHandle;
       return { cap: makeNotificationHandle(notificationId, true, persistentMethods) };
     } else if (token.frontendRef.ipNetwork) {
@@ -632,4 +642,43 @@ SandstormCoreFactoryImpl.prototype.getSandstormCore = (grainId) => {
 
 makeSandstormCoreFactory = () => {
   return new Capnp.Capability(new SandstormCoreFactoryImpl(), SandstormCoreFactory);
+};
+
+unwrapFrontendCap = (cap, type, callback) => {
+  // Expect that `cap` is a Cap'n Proto capability implemented by the frontend as a frontendRef
+  // with the given type (the name of one of the fields of frontendRef). Unwraps the capability
+  // and then calls callback() with the `frontendRef[type]` descriptor object as
+  // the paramater. The callback runs in a Meteor fiber, but this function can be called from
+  // anywhere. The function returns a Promise for the result of the callback.
+  //
+  // (The reason for the callback, rather than just returning a Promise for the descriptor, is
+  // so that you don't have to do your own inMeteor() dance.)
+
+  // For now, we save() the capability and then dig through ApiTokens to find where it leads.
+  // TODO(cleanup): In theory we should be using something like CapabilityServerSet, but it is
+  //   not available in Javascript yet and even if it were, it wouldn't work in the case where
+  //   there are multiple front-end replicas, since the capability could be on a different
+  //   replica.
+
+  return cap.castAs(SystemPersistent).save({ frontend: null }).then(saveResult => {
+    return inMeteor(() => {
+      const tokenId = hashSturdyRef(saveResult.sturdyRef);
+      let tokenInfo = ApiTokens.findOne(tokenId);
+
+      // Delete the token now since it's not needed.
+      ApiTokens.remove(tokenId);
+
+      for (;;) {
+        if (!tokenInfo) throw new Error("missing token?");
+        if (!tokenInfo.parentToken) break;
+        tokenInfo = ApiTokens.findOne(tokenInfo.parentToken);
+      }
+
+      if (!tokenInfo.frontendRef || !tokenInfo.frontendRef[type]) {
+        throw new Error("not a " + type + " capability");
+      }
+
+      return callback(tokenInfo.frontendRef[type]);
+    });
+  });
 };

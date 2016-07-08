@@ -162,12 +162,26 @@ limitations under the License.
 </template>
 
 <template name="notificationItem">
-  <div class="notification-item">
-    {{#if notificationTitle}}
-      <div class="notification-title">
-        {{notificationTitle}}:
+  <a class="notification-item {{#if hasIcon}}has-icon{{/if}}" href="{{notificationUrl}}">
+    {{#if hasIcon}}
+      <div class="notification-icon">
+        {{#if senderIcon}}<img src="{{senderIcon}}">{{/if}}
+        {{#if grainIcon}}<img src="{{grainIcon}}">{{/if}}
       </div>
     {{/if}}
+
+    {{#if senderName}}
+      <div class="notification-title">
+        <strong>{{senderName}}</strong> in <strong>{{grainTitle}}</strong>:
+      </div>
+    {{else}}
+      {{#if notificationTitle}}
+        <div class="notification-title">
+          {{notificationTitle}}:
+        </div>
+      {{/if}}
+    {{/if}}
+
     {{#if isAppUpdates}}
       <ul class="app-updates">
       {{#each appUpdatesList}}
@@ -184,7 +198,7 @@ limitations under the License.
           {{else}}
             Unlimited grains &amp; up to 2 GB bonus with the
           {{/if}}
-          {{#linkTo route="referrals" class="dismiss-notification"}}
+          {{#linkTo route="referrals"}}
             referral program &raquo;
           {{/linkTo}}
         {{else}}
@@ -192,6 +206,7 @@ limitations under the License.
             {{> mailingListBonusNotification}}
           {{else}}
             {{text.defaultText}}
+            {{#if multiple}}x{{count}}{{/if}}
           {{/if}}
         {{/if}}
       {{/if}}
@@ -211,7 +226,7 @@ limitations under the License.
         {{/if}}
       {{/if}}
     </div>
-  </div>
+  </a>
 </template>
 
 <template name="title">

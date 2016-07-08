@@ -663,6 +663,13 @@ body>.topbar {
           background-color: $topbar-background-color-hover;
           color: $topbar-foreground-color-hover;
         }
+        &.unread {
+          background-color: $topbar-background-color-unread;
+          color: $topbar-foreground-color-unread;
+        }
+        &.unread:hover {
+          background-color: $topbar-background-color-unread-hover;
+        }
         &.current, &.current:hover {
           background-color: $topbar-background-color-active;
           color: $topbar-foreground-color-active;
@@ -674,6 +681,22 @@ body>.topbar {
           left: (($navbar-width-desktop-shrunk - 24px) / 2);
           width: 24px;
           height: 24px;
+        }
+        .notification-count {
+          position: absolute;
+          display: block;
+          top: 16px;
+          left: 28px;
+          width: 16px;
+          height: 16px;
+          background-color: red;
+          color: white;
+          border-radius: 50%;
+          z-index: 2;
+          font-size: 12px;
+          font-weight: bold;
+          line-height: 16px;
+          text-align: center;
         }
         .close-button {
           @extend %unstyled-button;
@@ -1194,6 +1217,9 @@ body>.popup {
       >.frame>h4 {
         margin: 0;
       }
+
+      // TODO(soon): This makes the little triangle pointing at the top bar disappear. :(
+      overflow: auto;
     }
 
     ul.notification-list {
@@ -1205,7 +1231,6 @@ body>.popup {
       }
 
       >li {
-        padding: $topbar-popup-padding;
         border-bottom: 1px solid #ccc;
         &:last-child {
           border-bottom: 0px;
@@ -1213,7 +1238,42 @@ body>.popup {
       }
 
       .notification-item {
+        display: block;
         font-size: 14px;
+        text-decoration: inherit;
+        font-weight: inherit;
+        color: inherit;
+        padding: $topbar-popup-padding;
+        position: relative;
+
+        &.has-icon {
+          padding-left: $topbar-popup-padding + 96px;
+        }
+
+        &[href]:hover {
+          background-color: #eee;
+        }
+
+        >.notification-icon {
+          width: 96px;
+          height: 96px;
+          position: absolute;
+          top: 0;
+          left: 0;
+
+          >img {
+            display: block;
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            right: 0;
+            bottom: 0;
+          }
+          >img:first-of-type {
+            width: 100%;
+            height: 100%;
+          }
+        }
 
         >p {
           white-space: pre;

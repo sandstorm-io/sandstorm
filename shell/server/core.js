@@ -194,7 +194,7 @@ class PersistentUiViewImpl {
       const pkg = Packages.findOne({ _id: grain.packageId });
       const manifest = pkg.manifest || {};
 
-      const viewInfo = grain.cachedViewInfo;
+      const viewInfo = grain.cachedViewInfo || {};
 
       if (!viewInfo.appTitle) {
         viewInfo.appTitle = manifest.appTitle || {};

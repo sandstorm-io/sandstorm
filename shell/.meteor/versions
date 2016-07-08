@@ -23,7 +23,6 @@ caching-compiler@1.0.5
 caching-html-compiler@1.0.6
 callback-hook@1.0.9
 check@1.2.3
-connect@0.0.0
 ddp@1.2.5
 ddp-client@1.2.8
 ddp-common@1.2.6

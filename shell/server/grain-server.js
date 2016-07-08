@@ -325,14 +325,28 @@ Meteor.methods({
     check(grainId, String);
 
     if (this.userId) {
-      if (!this.isSimulation) {
-        const query = {
-          _id: grainId,
-          userId: this.userId,
-          trashed: { $exists: true },
-        };
-        globalDb.deleteGrains(query, globalBackend, isDemoUser() ? "demoGrain" : "grain");
-      }
+      const query = {
+        _id: grainId,
+        userId: this.userId,
+        trashed: { $exists: true },
+      };
+      globalDb.deleteGrains(query, globalBackend, isDemoUser() ? "demoGrain" : "grain");
+
+      // Usually we don't automatically remove user-owned tokens that have become invalid,
+      // because if we did their owner might become confused as to why they have mysteriously
+      // disappeared. In this particular case, however, for tokens held by the grain owner,
+      // there should be no confusion. Indeed, it would be more confusing *not* to remove these
+      // tokens, because then the grain could still show up in the trash bin as a "shared with me"
+      // grain after the owner clicks "delete permanently".
+      //
+      // Note that these tokens may be visible to other accounts if there are identities shared
+      // between the accounts; by only removing 'trashed' tokens, we minimize confusion in that
+      // case too.
+      globalDb.removeApiTokens({
+        grainId: grainId,
+        "owner.user.identityId": { $in: SandstormDb.getUserIdentityIds(Meteor.user()) },
+        "trashed": { $exists: true },
+      });
     }
   },
 

@@ -128,14 +128,12 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
         },
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
-          const grainIds = ownedGrainIds.concat(sharedGrainIds);
-
-          grainIds.forEach((grainId) => {
+          ownedGrainIds.forEach((grainId) => {
             Meteor.call("deleteGrain", grainId);
           });
 
           const identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
-          grainIds.forEach((grainId) => {
+          sharedGrainIds.forEach((grainId) => {
             identityIds.forEach((identityId) => {
               Meteor.call("forgetGrain", grainId, identityId);
             });

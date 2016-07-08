@@ -57,17 +57,36 @@ WebApp.connectHandlers.use(connect.urlencoded()).use(function (req, res, next) {
   }).run();
 });
 
+function generateService() {
+  const entityId = SandstormDb.prototype.getSamlEntityId();
+  const service = {
+    "provider": "default",
+    "entryPoint": SandstormDb.prototype.getSamlEntryPoint(),
+    // TODO(someday): find a better way to inject the DB
+    "issuer": entityId || HOSTNAME,
+    "cert": SandstormDb.prototype.getSamlPublicCert(),
+  };
+  return service;
+}
+
 middleware = function (req, res, next) {
   // Make sure to catch any exceptions because otherwise we'd crash
   // the runner
   try {
-    if (!Accounts.identityServices.saml.isEnabled()) {
+    const samlObject = samlUrlToObject(req.url);
+    if (!samlObject || !samlObject.serviceName) {
       next();
       return;
     }
 
-    const samlObject = samlUrlToObject(req.url);
-    if (!samlObject || !samlObject.serviceName) {
+    if (samlObject.actionName === "config") {
+      _saml = new SAML(generateService());
+      res.writeHead(200, { "Content-Type": "text/xml" });
+      res.end(_saml.generateServiceProviderMetadata());
+      return;
+    }
+
+    if (!Accounts.identityServices.saml.isEnabled()) {
       next();
       return;
     }
@@ -75,14 +94,7 @@ middleware = function (req, res, next) {
     if (!samlObject.actionName)
       throw new Error("Missing SAML action");
 
-    const entityId = SandstormDb.prototype.getSamlEntityId();
-    const service = {
-      "provider": "default",
-      "entryPoint": SandstormDb.prototype.getSamlEntryPoint(),
-      // TODO(someday): find a better way to inject the DB
-      "issuer": entityId || HOSTNAME,
-      "cert": SandstormDb.prototype.getSamlPublicCert(),
-    };
+    const service = generateService();
 
     // Skip everything if there's no service set by the saml middleware
     if (!service || samlObject.serviceName !== service.provider)
@@ -121,10 +133,6 @@ middleware = function (req, res, next) {
 
         closePopup(res);
       });
-    } else if (samlObject.actionName === "config") {
-      _saml = new SAML(service);
-      res.writeHead(200, { "Content-Type": "text/xml" });
-      res.end(_saml.generateServiceProviderMetadata());
     } else {
       throw new Error("Unexpected SAML action " + samlObject.actionName);
     }

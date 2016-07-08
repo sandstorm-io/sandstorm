@@ -4,7 +4,10 @@ if (!Accounts.saml) {
 
 const Url = Npm.require("url");
 const Fiber = Npm.require("fibers");
-const connect = Npm.require("connect");
+
+// We need to use connect. Let's make sure we're using the same version as Meteor's WebApp module
+// uses. Fortunately, they let us extract it.
+const connect = WebAppInternals.NpmModules.connect.module;
 
 RoutePolicy.declare("/_saml/", "network");
 
@@ -46,7 +49,7 @@ Accounts.saml.retrieveCredential = function (credentialToken) {
 };
 
 // Listen to incoming OAuth http requests
-WebApp.connectHandlers.use(connect.bodyParser()).use(function (req, res, next) {
+WebApp.connectHandlers.use(connect.urlencoded()).use(function (req, res, next) {
   // Need to create a Fiber since we're using synchronous http calls and nothing
   // else is wrapping this in a fiber automatically
   Fiber(function () {

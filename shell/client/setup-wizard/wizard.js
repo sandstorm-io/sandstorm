@@ -1,4 +1,5 @@
 import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";
+import AccountsUi from "/imports/client/accounts/accounts-ui.js";
 
 // Pseudocollection telling the client if there's an admin user yet.
 HasAdmin = new Mongo.Collection("hasAdmin");

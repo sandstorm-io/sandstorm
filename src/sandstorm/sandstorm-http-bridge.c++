@@ -1023,7 +1023,7 @@ public:
         auto req = apiCap.saveRequest();
         req.setCap(identity);
         req.initLabel().setDefaultText("user identity");
-        tasks.add(req.send().then([this,textIdRef](auto result) {
+        tasks.add(req.send().then([this,textIdRef](auto result) -> void {
           // Sandstorm tokens are primarily text but use percent-encoding to be safe.
           auto tokenText = percentEncode(result.getToken());
 

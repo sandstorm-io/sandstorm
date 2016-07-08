@@ -330,7 +330,8 @@ Meteor.methods({
         userId: this.userId,
         trashed: { $exists: true },
       };
-      globalDb.deleteGrains(query, globalBackend, isDemoUser() ? "demoGrain" : "grain");
+      const numDeleted = globalDb.deleteGrains(query, globalBackend,
+                                               isDemoUser() ? "demoGrain" : "grain");
 
       // Usually we don't automatically remove user-owned tokens that have become invalid,
       // because if we did their owner might become confused as to why they have mysteriously
@@ -342,11 +343,13 @@ Meteor.methods({
       // Note that these tokens may be visible to other accounts if there are identities shared
       // between the accounts; by only removing 'trashed' tokens, we minimize confusion in that
       // case too.
-      globalDb.removeApiTokens({
-        grainId: grainId,
-        "owner.user.identityId": { $in: SandstormDb.getUserIdentityIds(Meteor.user()) },
-        "trashed": { $exists: true },
-      });
+      if (numDeleted > 0) {
+        globalDb.removeApiTokens({
+          grainId: grainId,
+          "owner.user.identityId": { $in: SandstormDb.getUserIdentityIds(Meteor.user()) },
+          "trashed": { $exists: true },
+        });
+      }
     }
   },
 

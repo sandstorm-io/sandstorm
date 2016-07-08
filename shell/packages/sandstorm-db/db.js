@@ -1775,11 +1775,14 @@ if (Meteor.isServer) {
   SandstormDb.periodicCleanup(3600000, cleanupExpiredAssetUploads);
 
   SandstormDb.prototype.deleteGrains = function (query, backend, type) {
+    // Returns the number of grains deleted.
+
     check(type, Match.OneOf("grain", "demoGrain"));
 
+    let numDeleted = 0;
     Grains.find(query).forEach((grain) => {
       waitPromise(backend.deleteGrain(grain._id, grain.userId));
-      Grains.remove({ _id: grain._id });
+      numDeleted += Grains.remove({ _id: grain._id });
       this.removeApiTokens({
         grainId: grain._id,
         $or: [
@@ -1798,19 +1801,9 @@ if (Meteor.isServer) {
         });
       }
 
-      if (grain.cachedViewInfo) {
-        const icon = (grain.cachedViewInfo.metadata || {}).icon || {};
-        if (icon.assetId) {
-          this.unrefStaticAsset(icon.assetId);
-        }
-
-        if (icon.assetId2xDpi) {
-          this.unrefStaticAsset(icon.assetId2xDpi);
-        }
-      }
-
       this.deleteUnusedPackages(grain.appId);
     });
+    return numDeleted;
   };
 
   SandstormDb.prototype.userGrainTitle = function (grainId, accountId, identityId) {

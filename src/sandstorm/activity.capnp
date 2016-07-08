@@ -141,22 +141,36 @@ struct ActivityTypeDef {
 
   notifySubscribers @7 :Bool;
   # Should subscribers to this event (including subscribers to the event's thread, if any, and
-  # subscribers to the event's grain) receive a notification?
+  # subscribers to the event's grain) receive a notification of this event, by default?
+  #
+  # Note that when the user explicitly subscribes through they UI, they will have the opportunity
+  # to choose exactly which event types they want to produce notifications. Moreover, when an app
+  # provides a "subscribe" button in its own UI, and the user clicks it, the app can specify
+  # different defaults that should apply to that button.
+  #
+  # Therefore, the `notifySubscribers` bit primarily serves two purposes:
+  # - It applies to auto-subscriptions as created due to the `autoSubscribeToThread` or
+  #   `autoSubscribeToGrain` bits (below).
+  # - It applies when an update to the app defines a new type of event. Users who are subscribed
+  #   to other kinds of notifications will be subscribed to the new notification type if and only
+  #   if it has `notifySubscribers = true`.
 
-  notifyMentions @8 :Bool;
-  # Should people mentioned on this event receive a notification, even if they are not subscribed?
-
-  autoSubscribeToThread @9 :Bool;
+  autoSubscribeToThread @8 :Bool;
   # Should the author of this event automatically become subscribed to the thread of which it is
   # a part? (If the event has no threadPath, this option has no effect.)
+  #
+  # Such an automatic subscription specifically subscribes the user to events which have
+  # `notifySubscribers = true` (above).
 
-  autoSubscribeToGrain @10 :Bool;
+  autoSubscribeToGrain @9 :Bool;
   # Should the author of this event automatically become subscribed to the grain?
+  #
+  # Such an automatic subscription specifically subscribes the user to events which have
+  # `notifySubscribers = true` (above).
 
-  silent @11 :Bool;
+  suppressUnread @10 :Bool;
   # If true, this kind of activity does not cause the grain to be marked "unread". This is useful
-  # in particular for activities that should produce notifications to specific people but should
-  # be invisible to the masses.
+  # for activities that should be logged but don't need attention.
 }
 
 struct NotificationDisplayInfo {

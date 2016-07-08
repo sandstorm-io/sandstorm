@@ -38,7 +38,7 @@ logActivity = function (grainId, identityId, event) {
     throw new Error("No such event type in app's ViewInfo: " + event.type);
   }
 
-  if (!eventType.silent) {
+  if (!eventType.suppressUnread) {
     // Clear the "seenAllActivity" bit for all users except the acting user.
     // TODO(perf): Consider throttling? Or should that be the app's responsibility?
     if (identityId != grain.identityId) {

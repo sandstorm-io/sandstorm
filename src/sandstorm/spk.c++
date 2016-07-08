@@ -726,7 +726,7 @@ private:
         "\n"
         "    actions = [\n"
         "      # Define your \"new document\" handlers here.\n"
-        "      ( title = (defaultText = \"New Instance\"),\n"
+        "      ( nounPhrase = (defaultText = \"instance\"),\n"
         "        command = .myCommand\n"
         "        # The command to run when starting for the first time. (\".myCommand\"\n"
         "        # is just a constant defined at the bottom of the file.)\n"

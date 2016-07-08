@@ -38,10 +38,7 @@ Meteor.publish("desktopNotifications", function () {
     return [];
   }
 
-  // Look up all identity ids associated with this account.
-  // Watch for notifications directed at any of them.
   const db = this.connection.sandstormDb;
-
   const callbacks = {
     added: (doc) => {
       this.added("desktopNotifications", doc._id, doc);
@@ -56,76 +53,15 @@ Meteor.publish("desktopNotifications", function () {
     },
   };
 
-  const identitySubs = {}; // Map from identity id to observe handle for that identity
-  const refIdentity = (identityId) => {
-    if (identitySubs[identityId]) {
-      console.log(`duplicate ref identity id ${identityId} in desktopNotifications sub for account ${this.userId}`);
-      return;
-    }
-
-    const sub = db.collections.desktopNotifications.find({
-      identityId,
-      creationDate: { $gt: subscribeTime },
-    }).observe(callbacks);
-    identitySubs[identityId] = sub;
-  };
-
-  const unrefIdentity = (identityId) => {
-    const sub = identitySubs[identityId];
-    if (!sub) {
-      console.log(`duplicate unref identity id ${identityId} in desktopNotifications sub for account ${this.userId}`);
-      return;
-    }
-
-    delete identitySubs[identityId];
-    sub.stop();
-  };
-
-  let userObserveHandle = undefined;
+  const sub = db.collections.desktopNotifications.find({
+    accountId: this.userId,
+    creationDate: { $gt: subscribeTime },
+  }).observe(callbacks);
 
   this.onStop(() => {
-    identities = Object.keys(identitySubs);
-    identities.forEach((identityId) => {
-      unrefIdentity(identityId);
-    });
-
-    if (userObserveHandle) {
-      userObserveHandle.stop();
+    if (sub) {
+      sub.stop();
     }
-  });
-
-  userObserveHandle = db.collections.users.find({
-    _id: this.userId,
-  }).observe({
-    added(doc) {
-      // for each identity, ref identity
-      const identityIds = SandstormDb.getUserIdentityIds(doc);
-      identityIds.forEach((identityId) => {
-        refIdentity(identityId);
-      });
-    },
-
-    changed(newDoc, oldDoc) {
-      const newIdentityIds = SandstormDb.getUserIdentityIds(newDoc);
-      const oldIdentityIds = SandstormDb.getUserIdentityIds(oldDoc);
-
-      const identityIdsAdded = _.difference(newIdentityIds, oldIdentityIds);
-      identityIdsAdded.forEach((identityId) => {
-        refIdentity(identityId);
-      });
-
-      const identityIdsRemoved = _.difference(oldIdentityIds, newIdentityIds);
-      identityIdsRemoved.forEach((identityId) => {
-        unrefIdentity(identityId);
-      });
-    },
-
-    removed(doc) {
-      const identityIds = SandstormDb.getUserIdentityIds(doc);
-      identityIds.forEach((identityId) => {
-        unrefIdentity(identityId);
-      });
-    },
   });
 
   this.ready();

@@ -575,10 +575,9 @@ const getProxyForHostId = (hostId, isAlreadyOpened) => {
         const session = Sessions.findOne({ hostId: hostId });
         if (!session) {
           if (isAlreadyOpened) {
+            let observer;
             return new Promise((resolve, reject) => {
-              let observer;
               const task = Meteor.setTimeout(() => {
-                observer.stop();
                 reject(new Meteor.Error(504, "Requested session that no longer exists, and " +
                     "timed out waiting for client to restore it. This can happen if you have " +
                     "opened an app's content in a new window and then closed it in the " +
@@ -587,11 +586,16 @@ const getProxyForHostId = (hostId, isAlreadyOpened) => {
               }, SESSION_PROXY_TIMEOUT);
               observer = Sessions.find({ hostId: hostId }).observe({
                 added() {
-                  observer.stop();
                   Meteor.clearTimeout(task);
                   resolve(getProxyForHostId(hostId, false));
                 },
               });
+            }).then((v) => {
+              observer.stop();
+              return v;
+            }, (e) => {
+              observer.stop();
+              throw e;
             });
           } else {
             // Does not appear to be a valid session host.

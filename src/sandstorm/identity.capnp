@@ -32,7 +32,7 @@ interface Identity {
   # - Powerbox-request an Identity to have the user choose from among their contacts. Note that the
   #   user will be prompted to share the grain with the target identity.
   # - offer() the identity to the user in order to let them see the identity's profile card and
-  #   choose to add the indentity to their contacts. You could do this e.g. when the user clicks
+  #   choose to add the identity to their contacts. You could do this e.g. when the user clicks
   #   on the identity's name in your app's UI. (TODO(someday): Not implemented yet.)
   #
   # This capability is always persistable.

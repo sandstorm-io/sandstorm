@@ -271,7 +271,7 @@ function dismissNotification(notificationId, callCancel) {
       }
     } else if (notification.appUpdates) {
       _.forEach(notification.appUpdates, (app, appId) => {
-        deletePackage(app.packageId);
+        globalDb.deleteUnusedPackages(appId);
       });
     }
   }

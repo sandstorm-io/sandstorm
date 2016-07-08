@@ -115,7 +115,7 @@ Tinytest.add("test update notifications", function (test) {
       };
     });
 
-    globalDb.addUserActions("mock-package-id1");
+    Meteor.call("addUserActions", "mock-package-id1");
     SandstormAutoupdateApps.updateAppIndex(globalDb);
   })(test);
 

@@ -459,10 +459,9 @@ Template.sandstormAppDetailsPage.events({
     if (window.confirm("Really uninstall " + getAppTitle(ref) + "?")) {
       // TODO(soon): make this a method on SandstormDb to uninstall an app for a user by appId/userId
       db.collections.userActions.find({ appId: ref._appId, userId: Meteor.userId() }).forEach(function (action) {
-        db.collections.userActions.remove(action._id);
+        Meteor.call("removeUserAction", action._id);
       });
 
-      Meteor.call("deleteUnusedPackages", ref._appId);
       Router.go("apps");
     }
   },

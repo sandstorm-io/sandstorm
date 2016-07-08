@@ -1257,42 +1257,6 @@ _.extend(SandstormDb.prototype, {
     return value;
   },
 
-  addUserActions: function (packageId) {
-    //TODO(cleanup): implement this with meteor methods rather than client-side inserts/removes.
-    const pack = Packages.findOne(packageId);
-    if (pack) {
-      // Remove old versions.
-      UserActions.find({ userId: Meteor.userId(), appId: pack.appId })
-          .forEach(function (action) {
-        UserActions.remove(action._id);
-      });
-
-      // Install new.
-      const actions = pack.manifest.actions;
-      for (const i in actions) {
-        const action = actions[i];
-        if ("none" in action.input) {
-          const userAction = {
-            userId: Meteor.userId(),
-            packageId: pack._id,
-            appId: pack.appId,
-            appTitle: pack.manifest.appTitle,
-            appMarketingVersion: pack.manifest.appMarketingVersion,
-            appVersion: pack.manifest.appVersion,
-            title: action.title,
-            nounPhrase: action.nounPhrase,
-            command: action.command,
-          };
-          UserActions.insert(userAction);
-        } else {
-          // TODO(someday):  Implement actions with capability inputs.
-        } //jscs:ignore disallowEmptyBlocks
-      }
-
-      Meteor.call("deleteUnusedPackages", pack.appId);
-    }
-  },
-
   sendAdminNotification: function (message, link) {
     Meteor.users.find({ isAdmin: true }, { fields: { _id: 1 } }).forEach(function (user) {
       Notifications.insert({
@@ -1845,7 +1809,7 @@ if (Meteor.isServer) {
         }
       }
 
-      Meteor.call("deleteUnusedPackages", grain.appId);
+      this.deleteUnusedPackages(grain.appId);
     });
   };
 
@@ -1899,6 +1863,14 @@ if (Meteor.isServer) {
     return pkg;
   };
 
+  SandstormDb.prototype.deleteUnusedPackages = function (appId) {
+    check(appId, String);
+    Packages.find({ appId: appId }).forEach((pkg) => {
+      // Mark package for possible deletion;
+      Packages.update({ _id: pkg._id, status: "ready" }, { $set: { shouldCleanup: true } });
+    });
+  };
+
   SandstormDb.prototype.sendAppUpdateNotifications = function (appId, packageId, name,
                                                                versionNumber, marketingVersion) {
     const _this = this;
@@ -1935,7 +1907,7 @@ if (Meteor.isServer) {
 
     // In the case where we replaced a previous notification and that was the only reference to the
     // package, we need to clean it up
-    Meteor.call("deleteUnusedPackages", appId);
+    this.deleteUnusedPackages(appId);
   };
 
   SandstormDb.prototype.sendReferralProgramNotification = sendReferralProgramNotification;
@@ -2184,3 +2156,62 @@ if (Meteor.isServer) {
     return featureKey;
   };
 }
+
+Meteor.methods({
+  addUserActions(packageId) {
+    check(packageId, String);
+    if (!this.userId || !Meteor.user().loginIdentities | !isSignedUpOrDemo()) {
+      throw new Meteor.Exception(403, "Must be logged in as a non-guest to add app actions.");
+    }
+
+    const pack = Packages.findOne({ _id: packageId });
+    if (pack) {
+      // Remove old versions.
+      const numRemoved = UserActions.remove({ userId: this.userId, appId: pack.appId });
+
+      // Install new.
+      const actions = pack.manifest.actions;
+      for (const i in actions) {
+        const action = actions[i];
+        if ("none" in action.input) {
+          const userAction = {
+            userId: this.userId,
+            packageId: pack._id,
+            appId: pack.appId,
+            appTitle: pack.manifest.appTitle,
+            appMarketingVersion: pack.manifest.appMarketingVersion,
+            appVersion: pack.manifest.appVersion,
+            title: action.title,
+            nounPhrase: action.nounPhrase,
+            command: action.command,
+          };
+          UserActions.insert(userAction);
+        } else {
+          // TODO(someday):  Implement actions with capability inputs.
+        }
+      }
+
+      if (numRemoved > 0 && !this.isSimulation) {
+        this.connection.sandstormDb.deleteUnusedPackages(pack.appId);
+      }
+    }
+  },
+
+  removeUserAction(actionId) {
+    check(actionId, String);
+    if (this.isSimulation) {
+      UserActions.remove({ _id: actionId });
+    } else {
+      if (this.userId) {
+        const action = UserActions.findAndModify({
+          query: { _id: actionId, userId: this.userId },
+          remove: true,
+        });
+
+        if (action) {
+          this.connection.sandstormDb.deleteUnusedPackages(action.appId);
+        }
+      }
+    }
+  },
+});

@@ -40,18 +40,6 @@ const verifyIsMainReplica = () => {
   }
 };
 
-Meteor.methods({
-  deleteUnusedPackages(appId) {
-    check(appId, String);
-    Packages.find({ appId: appId }).forEach((pkg) => {deletePackage(pkg._id);});
-  },
-});
-
-deletePackage = (packageId) => {
-  // Mark package for possible deletion;
-  Packages.update({ _id: packageId, status: "ready" }, { $set: { shouldCleanup: true } });
-};
-
 const deletePackageInternal = (pkg) => {
   verifyIsMainReplica();
 

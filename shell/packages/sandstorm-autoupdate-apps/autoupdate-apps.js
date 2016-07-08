@@ -87,7 +87,7 @@ Meteor.methods({
       } else {
         db.addUserActions(val.packageId);
         db.upgradeGrains(appId, val.version, val.packageId, backend);
-        Meteor.call("deleteUnusedPackages", appId);
+        db.deleteUnusedPackages(appId);
       }
     });
   },

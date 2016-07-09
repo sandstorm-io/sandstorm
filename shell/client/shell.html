@@ -124,6 +124,7 @@ limitations under the License.
     {{#unless identityUser}}
       {{#unless firstLogin}}
         {{#unless firstTimeBillingPromptState}}
+          {{> desktopNotifications }}
           {{> yield}}
         {{/unless}}
       {{/unless}}

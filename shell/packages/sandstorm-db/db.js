@@ -183,7 +183,7 @@ UserActions = new Mongo.Collection("userActions");
 //
 // Each contains:
 //   _id:  random
-//   userId:  User who has installed this action.
+//   userId:  Account ID of the user who has installed this action.
 //   packageId:  Package used to run this action.
 //   appId:  Same as Packages.findOne(packageId).appId; denormalized for searchability.
 //   appTitle:  Same as Packages.findOne(packageId).manifest.appTitle; denormalized so
@@ -262,7 +262,7 @@ Sessions = new Mongo.Collection("sessions");
 //       have the same `tabId` as the outer session.
 //   timestamp:  Time of last keep-alive message to this session.  Sessions time out after some
 //       period.
-//   userId:  User ID of the user who owns this session.
+//   userId:  Account ID of the user who owns this session.
 //   identityId:  Identity ID of the user who owns this session.
 //   hashedToken: If the session is owned by an anonymous user, the _id of the entry in ApiTokens
 //       that was used to open it. Note that for old-style sharing (i.e. when !grain.private),
@@ -498,7 +498,7 @@ Notifications = new Mongo.Collection("notifications");
 // Each contains:
 //   _id:          random
 //   grainId:      The grain originating this notification, if any.
-//   userId:       The user receiving the notification.
+//   userId:       Account ID of the user receiving the notification.
 //   text:         The JSON-ified LocalizedText to display in the notification.
 //   isUnread:     Boolean indicating if this notification is unread.
 //   timestamp:    Date when this notification was last updated
@@ -611,7 +611,7 @@ AssetUploadTokens = new Mongo.Collection("assetUploadTokens");
 //   _id:       Random ID.
 //   purpose:   Contains one of the following, indicating how the asset is to be used:
 //       profilePicture: Indicates that the upload is a new profile picture. Contains fields:
-//           userId: User whose picture shall be replaced.
+//           userId: Account ID of user whose picture shall be replaced.
 //           identityId: Which of the user's identities shall be updated.
 //   expires:   Time when this token will go away if unused.
 
@@ -673,6 +673,30 @@ SetupSession = new Mongo.Collection("setupSession");
 //   _id: "current-session"
 //   creationDate: Date object indicating when this session was created.
 //   hashedSessionId: the sha256 of the secret session id that was returned to the client
+
+const DesktopNotifications = new Mongo.Collection("desktopNotifications");
+// Responsible for very short-lived queueing of desktop notification information.
+// Entries are removed when they are ~30 seconds old.  This collection is a bit
+// odd in that it is intended primarily for edge-triggered communications, but
+// Meteor's collections aren't really designed to support that organization.
+// Fields for each :
+//
+//   _id: String.  Used as the tag to coordinate notification merging between browser tabs.
+//   creationDate: Date object. indicating when this notification was posted.
+//   userId: String. Account id to which this notification was published.
+//   title: String. Primary label of the notification.
+//   body: String (optional).  Additional context information to place in the notification.  May be
+//                             elided by the browser or by Sandstorm.
+//   action: Object. What to do when this desktop notification is activated.  Currently, only one
+//                   shape is supported:
+//           { grain: { grainId, path } }
+//   iconUrl: Optional String.  Primary icon to display with the notifications.
+//                              See https://notifications.spec.whatwg.org/#icon-url
+//   badgeUrl: Optional String. Secondary icon to display with the notification, used to represent
+//                              the notification if there is insufficient space to display the whole
+//                              notification.  Can also be displayed (though with less visual
+//                              priority than the primary icon) in the notification.
+//                              See https://notifications.spec.whatwg.org/#badge-url
 
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
@@ -981,6 +1005,7 @@ SandstormDb = function () {
     featureKey: FeatureKey,
     setupSession: SetupSession,
     users: Meteor.users,
+    desktopNotifications: DesktopNotifications,
 
     // Intentionally omitted:
     // - Migrations, since it's used only within this package.

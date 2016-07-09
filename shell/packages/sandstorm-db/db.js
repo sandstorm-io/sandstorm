@@ -183,7 +183,7 @@ UserActions = new Mongo.Collection("userActions");
 //
 // Each contains:
 //   _id:  random
-//   userId:  User who has installed this action.
+//   userId:  Account ID of the user who has installed this action.
 //   packageId:  Package used to run this action.
 //   appId:  Same as Packages.findOne(packageId).appId; denormalized for searchability.
 //   appTitle:  Same as Packages.findOne(packageId).manifest.appTitle; denormalized so
@@ -256,7 +256,7 @@ Sessions = new Mongo.Collection("sessions");
 //       have the same `tabId` as the outer session.
 //   timestamp:  Time of last keep-alive message to this session.  Sessions time out after some
 //       period.
-//   userId:  User ID of the user who owns this session.
+//   userId:  Account ID of the user who owns this session.
 //   identityId:  Identity ID of the user who owns this session.
 //   hashedToken: If the session is owned by an anonymous user, the _id of the entry in ApiTokens
 //       that was used to open it. Note that for old-style sharing (i.e. when !grain.private),
@@ -490,7 +490,7 @@ Notifications = new Mongo.Collection("notifications");
 // Each contains:
 //   _id:          random
 //   grainId:      The grain originating this notification, if any.
-//   userId:       The user receiving the notification.
+//   userId:       Account ID of the user receiving the notification.
 //   text:         The JSON-ified LocalizedText to display in the notification.
 //   isUnread:     Boolean indicating if this notification is unread.
 //   timestamp:    Date when this notification was last updated
@@ -576,7 +576,7 @@ AssetUploadTokens = new Mongo.Collection("assetUploadTokens");
 //   _id:       Random ID.
 //   purpose:   Contains one of the following, indicating how the asset is to be used:
 //       profilePicture: Indicates that the upload is a new profile picture. Contains fields:
-//           userId: User whose picture shall be replaced.
+//           userId: Account ID of user whose picture shall be replaced.
 //           identityId: Which of the user's identities shall be updated.
 //   expires:   Time when this token will go away if unused.
 

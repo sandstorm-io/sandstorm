@@ -18,6 +18,7 @@
 // It also covers the root page.
 
 import getBuildInfo from "/imports/client/build-info.js";
+import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";
 
 // Subscribe to basic grain information first and foremost, since
 // without it we might e.g. redirect to the wrong place on login.

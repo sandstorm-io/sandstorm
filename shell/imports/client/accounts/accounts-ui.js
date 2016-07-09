@@ -5,3 +5,4 @@ AccountsUi = function (db) {
   this._db = db;
 };
 
+export default AccountsUi;

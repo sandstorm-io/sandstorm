@@ -14,12 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-SandstormAccountSettingsUi = function (topbar, db, staticHost) {
-  this._topbar = topbar;
-  this._db = db;
-  this._staticHost = staticHost;
-};
-
 Template.sandstormAccountSettings.onCreated(function () {
   this._isLinkingNewIdentity = new ReactiveVar(false);
   this._selectedIdentityId = new ReactiveVar();

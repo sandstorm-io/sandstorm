@@ -21,7 +21,6 @@ reload
 random
 
 iron:router
-sandstorm-accounts-ui
 sandstorm-accounts-packages
 sandstorm-email
 accounts-email-token

@@ -1445,6 +1445,7 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
       title: String,
       renamed: Match.Optional(Boolean),
       upstreamTitle: Match.Optional(String),
+      seenAllActivity: Match.Optional(Boolean),
     },
   }, {
     grain: {

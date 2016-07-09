@@ -40,8 +40,6 @@ struct ActivityEvent {
   # important for deciding who gets notified and for grouping those notifications: a user might
   # subscribe to a particular thread, and e.g. email notifications related to a thread may be
   # designed to appear as a single email thread.
-  #
-  # TODO(now): Should this be a capability to a `Thread` object which must be created separately?
 
   struct ThreadInfo {
     path @0 :Text;

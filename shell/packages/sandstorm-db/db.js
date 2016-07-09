@@ -648,7 +648,7 @@ const DesktopNotifications = new Mongo.Collection("desktopNotifications");
 //
 //   _id: String.  Used as the tag to coordinate notification merging between browser tabs.
 //   creationDate: Date object. indicating when this notification was posted.
-//   accountId: String. Account id to which this notification was published.
+//   userId: String. Account id to which this notification was published.
 //   title: String. Primary label of the notification.
 //   body: String (optional).  Additional context information to place in the notification.  May be
 //                             elided by the browser or by Sandstorm.

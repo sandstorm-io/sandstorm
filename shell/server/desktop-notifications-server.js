@@ -54,7 +54,7 @@ Meteor.publish("desktopNotifications", function () {
   };
 
   const sub = db.collections.desktopNotifications.find({
-    accountId: this.userId,
+    userId: this.userId,
     creationDate: { $gt: subscribeTime },
   }).observe(callbacks);
 

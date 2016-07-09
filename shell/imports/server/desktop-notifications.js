@@ -18,7 +18,7 @@ import { Match } from "meteor/check";
 
 const createDesktopNotification = (options) => {
   Match.check(options, {
-    accountId: String,
+    userId: String,
     action: Match.OneOf({
       grain: {
         grainId: String,
@@ -32,7 +32,7 @@ const createDesktopNotification = (options) => {
   });
 
   globalDb.collections.desktopNotifications.insert({
-    accountId: options.accountId,
+    userId: options.userId,
     grainId: options.grainId,
     path: options.path,
     title: options.title,

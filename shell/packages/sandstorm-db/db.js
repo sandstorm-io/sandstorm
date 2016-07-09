@@ -2017,11 +2017,9 @@ if (Meteor.isServer) {
       packageId: { $ne: packageId },
     };
 
-    if (!this.isSimulation) {
-      Grains.find(selector).forEach(function (grain) {
-        backend.shutdownGrain(grain._id, grain.userId);
-      });
-    }
+    Grains.find(selector).forEach(function (grain) {
+      backend.shutdownGrain(grain._id, grain.userId);
+    });
 
     Grains.update(selector, {
       $set: { appVersion: version, packageId: packageId, packageSalt: Random.secret() },

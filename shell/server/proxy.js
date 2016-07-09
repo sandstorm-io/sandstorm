@@ -1562,18 +1562,17 @@ class Proxy {
       // (4) Prohibits anyone other than the Sandstorm shell from framing the app (as a backup
       //   defense vs. clickjacking, though unguessable hostnames already mostly prevent this).
     } else {
-      // jscs:disable validateQuoteMarks
       // This is an API request. Cookies are not supported.
 
       // We need to make sure caches know that different bearer tokens get totally different results.
-      response.setHeader('Vary', 'Authorization');
+      response.setHeader("Vary", "Authorization");
 
       // APIs can be called from any origin. Because we ignore cookies, there is no security problem.
-      response.setHeader('Access-Control-Allow-Origin', '*');
+      response.setHeader("Access-Control-Allow-Origin", "*");
 
       // Add a Content-Security-Policy as a backup in case someone finds a way to load this resource
       // in a browser context. This policy should thoroughly neuter it.
-      response.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+      response.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
     }
 
     // On first response, update the session to have hasLoaded=true
@@ -1581,38 +1580,38 @@ class Proxy {
 
     // TODO(security): Set X-Content-Type-Options: nosniff?
 
-    if ('content' in rpcResponse) {
+    if ("content" in rpcResponse) {
       const content = rpcResponse.content;
       const code = successCodes[content.statusCode];
       if (!code) {
-        throw new Error('Unknown status code: ', content.statusCode);
+        throw new Error("Unknown status code: ", content.statusCode);
       }
 
       if (content.mimeType) {
-        response.setHeader('Content-Type', content.mimeType);
+        response.setHeader("Content-Type", content.mimeType);
       }
 
       if (content.encoding) {
-        response.setHeader('Content-Encoding', content.encoding);
+        response.setHeader("Content-Encoding", content.encoding);
       }
 
       if (content.language) {
-        response.setHeader('Content-Language', content.language);
+        response.setHeader("Content-Language", content.language);
       }
 
       if (content.eTag) {
-        response.setHeader('ETag', composeETag(content.eTag));
+        response.setHeader("ETag", composeETag(content.eTag));
       }
 
-      if (('disposition' in content) && ('download' in content.disposition)) {
-        response.setHeader('Content-Disposition', 'attachment; filename="' +
+      if (("disposition" in content) && ("download" in content.disposition)) {
+        response.setHeader("Content-Disposition", 'attachment; filename="' +
             content.disposition.download.replace(/([\\"\n])/g, "\\$1") + '"');
       }
 
-      if ('stream' in content.body) {
-        if (request.method === 'HEAD') {
+      if ("stream" in content.body) {
+        if (request.method === "HEAD") {
           content.body.stream.close();
-          response.rejectResponseStream(new Error('HEAD request; content doesn\'t matter.'));
+          response.rejectResponseStream(new Error("HEAD request; content doesn't matter."));
         } else {
           const streamHandle = content.body.stream;
           const responseStream = new Capnp.Capability(
@@ -1623,86 +1622,86 @@ class Proxy {
         }
       } else {
         response.rejectResponseStream(
-          new Error('Response content body was not a stream.'));
+          new Error("Response content body was not a stream."));
 
-        if ('bytes' in content.body) {
-          response.setHeader('Content-Length', content.body.bytes.length);
+        if ("bytes" in content.body) {
+          response.setHeader("Content-Length", content.body.bytes.length);
         } else {
-          throw new Error('Unknown content body type.');
+          throw new Error("Unknown content body type.");
         }
       }
 
       response.writeHead(code.id, code.title);
 
-      if ('bytes' in content.body && request.method !== 'HEAD') {
+      if ("bytes" in content.body && request.method !== "HEAD") {
         response.write(content.body.bytes);
       }
 
       response.end();
-    } else if ('noContent' in rpcResponse) {
+    } else if ("noContent" in rpcResponse) {
       const noContent = rpcResponse.noContent;
       const noContentCode = noContentSuccessCodes[noContent.shouldResetForm * 1];
       response.writeHead(noContentCode.id, noContentCode.title);
       response.end();
-    } else if ('preconditionFailed' in rpcResponse) {
+    } else if ("preconditionFailed" in rpcResponse) {
       const preconditionFailed = rpcResponse.preconditionFailed;
-      if (request.method === 'GET' && 'if-none-match' in request.headers) {
+      if (request.method === "GET" && "if-none-match" in request.headers) {
         if (preconditionFailed.matchingETag) {
-          response.setHeader('ETag', composeETag(preconditionFailed.matchingETag));
+          response.setHeader("ETag", composeETag(preconditionFailed.matchingETag));
         }
 
-        response.writeHead(304, 'Not Modified');
+        response.writeHead(304, "Not Modified");
       } else {
-        response.writeHead(412, 'Precondition Failed');
+        response.writeHead(412, "Precondition Failed");
       }
 
       response.end();
-    } else if ('redirect' in rpcResponse) {
+    } else if ("redirect" in rpcResponse) {
       const redirect = rpcResponse.redirect;
       const redirectCode = redirectCodes[redirect.switchToGet * 2 + redirect.isPermanent];
       response.writeHead(redirectCode.id, redirectCode.title, {
-        'Location': redirect.location,
+        "Location": redirect.location,
       });
       response.end();
-    } else if ('clientError' in rpcResponse) {
+    } else if ("clientError" in rpcResponse) {
       const clientError = rpcResponse.clientError;
       const errorCode = errorCodes[clientError.statusCode];
       if (!errorCode) {
-        throw new Error('Unknown status code: ', clientError.statusCode);
+        throw new Error("Unknown status code: ", clientError.statusCode);
       }
 
       response.writeHead(errorCode.id, errorCode.title, {
-        'Content-Type': 'text/html',
+        "Content-Type": "text/html",
       });
 
-      if (request.method !== 'HEAD') {
+      if (request.method !== "HEAD") {
         if (clientError.descriptionHtml) {
           response.write(clientError.descriptionHtml);
         } else {
           // TODO(someday):  Better default error page.
-          response.write('<html><body><h1>' + errorCode.id + ': ' + errorCode.title +
-                         '</h1></body></html>');
+          response.write("<html><body><h1>" + errorCode.id + ": " + errorCode.title +
+                         "</h1></body></html>");
         }
       }
 
       response.end();
-    } else if ('serverError' in rpcResponse) {
-      response.writeHead(500, 'Internal Server Error', {
-        'Content-Type': 'text/html',
+    } else if ("serverError" in rpcResponse) {
+      response.writeHead(500, "Internal Server Error", {
+        "Content-Type": "text/html",
       });
 
-      if (request.method !== 'HEAD') {
+      if (request.method !== "HEAD") {
         if (rpcResponse.serverError.descriptionHtml) {
           response.write(rpcResponse.serverError.descriptionHtml);
         } else {
           // TODO(someday):  Better default error page.
-          response.write('<html><body><h1>500: Internal Server Error</h1></body></html>');
+          response.write("<html><body><h1>500: Internal Server Error</h1></body></html>");
         }
       }
 
       response.end();
     } else {
-      throw new Error('Unknown HTTP response type:\n' + JSON.stringify(rpcResponse));
+      throw new Error("Unknown HTTP response type:\n" + JSON.stringify(rpcResponse));
     }
 
     return {};
@@ -1719,88 +1718,88 @@ class Proxy {
         const requestContent = () => {
           return {
             content: data,
-            encoding: request.headers['content-encoding'],
-            mimeType: request.headers['content-type'],
+            encoding: request.headers["content-encoding"],
+            mimeType: request.headers["content-type"],
           };
         };
 
         const xmlContent = () => {
-          const type = request.headers['content-type'] || 'application/xml;charset=utf-8';
+          const type = request.headers["content-type"] || "application/xml;charset=utf-8";
           const match = type.match(/[^/]*\/xml(; *charset *= *([^ ;]*))?/);
           if (!match) {
-            response.writeHead(415, 'Unsupported media type.', {
-              'Content-Type': 'text/plain',
+            response.writeHead(415, "Unsupported media type.", {
+              "Content-Type": "text/plain",
             });
-            response.end('expected XML request body');
-            throw new Error('expected XML request body');
+            response.end("expected XML request body");
+            throw new Error("expected XML request body");
           }
 
-          const charset = match[2] || 'ISO-8859-1';
+          const charset = match[2] || "ISO-8859-1";
 
-          const encoding = request.headers['content-encoding'];
-          if (encoding && encoding !== 'identity') {
-            if (encoding !== 'gzip') throw new Error('unknown Content-Encoding: ' + encoding);
+          const encoding = request.headers["content-encoding"];
+          if (encoding && encoding !== "identity") {
+            if (encoding !== "gzip") throw new Error("unknown Content-Encoding: " + encoding);
             data = gunzipSync(data);
           }
 
-          return data.toString(charset.toLowerCase() === 'utf-8' ? 'utf8' : 'binary');
+          return data.toString(charset.toLowerCase() === "utf-8" ? "utf8" : "binary");
         };
 
         const propfindDepth = () => {
-          const depth = request.headers['depth'];
-          return depth === '0' ? 'zero'
-               : depth === '1' ? 'one'
-                               : 'infinity';
+          const depth = request.headers["depth"];
+          return depth === "0" ? "zero"
+               : depth === "1" ? "one"
+                               : "infinity";
         };
 
         const shallow = () => {
-          return request.headers['depth'] === '0';
+          return request.headers["depth"] === "0";
         };
 
         const noOverwrite = () => {
-          return (request.headers['overwrite'] || '').toLowerCase() === 'f';
+          return (request.headers["overwrite"] || "").toLowerCase() === "f";
         };
 
         const destination = () => {
-          const result = request.headers['destination'];
-          if (!result) throw new Error('missing destination');
+          const result = request.headers["destination"];
+          if (!result) throw new Error("missing destination");
           return Url.parse(result).path.slice(1);  // remove leading '/'
         };
 
-        if (request.method === 'GET' || request.method === 'HEAD') {
-          return session.get(path, context, request.method === 'HEAD');
-        } else if (request.method === 'POST') {
+        if (request.method === "GET" || request.method === "HEAD") {
+          return session.get(path, context, request.method === "HEAD");
+        } else if (request.method === "POST") {
           return session.post(path, requestContent(), context);
-        } else if (request.method === 'PUT') {
+        } else if (request.method === "PUT") {
           return session.put(path, requestContent(), context);
-        } else if (request.method === 'PATCH') {
+        } else if (request.method === "PATCH") {
           return session.patch(path, requestContent(), context);
-        } else if (request.method === 'DELETE') {
+        } else if (request.method === "DELETE") {
           return session.delete(path, context);
-        } else if (request.method === 'PROPFIND') {
+        } else if (request.method === "PROPFIND") {
           return session.propfind(path, xmlContent(), propfindDepth(), context);
-        } else if (request.method === 'PROPPATCH') {
+        } else if (request.method === "PROPPATCH") {
           return session.proppatch(path, xmlContent(), context);
-        } else if (request.method === 'MKCOL') {
+        } else if (request.method === "MKCOL") {
           return session.mkcol(path, requestContent(), context);
-        } else if (request.method === 'COPY') {
+        } else if (request.method === "COPY") {
           return session.copy(path, destination(), noOverwrite(), shallow(), context);
-        } else if (request.method === 'MOVE') {
+        } else if (request.method === "MOVE") {
           return session.move(path, destination(), noOverwrite(), context);
-        } else if (request.method === 'LOCK') {
+        } else if (request.method === "LOCK") {
           return session.lock(path, xmlContent(), shallow(), context);
-        } else if (request.method === 'UNLOCK') {
-          return session.unlock(path, request.headers['lock-token'], context);
-        } else if (request.method === 'ACL') {
+        } else if (request.method === "UNLOCK") {
+          return session.unlock(path, request.headers["lock-token"], context);
+        } else if (request.method === "ACL") {
           return session.acl(path, xmlContent(), context);
-        } else if (request.method === 'REPORT') {
+        } else if (request.method === "REPORT") {
           return session.report(path, requestContent(), context);
-        } else if (request.method === 'OPTIONS') {
+        } else if (request.method === "OPTIONS") {
           return session.options(path, context).then((options) => {
             const dav = [];
-            if (options.davClass1) dav.push('1');
-            if (options.davClass2) dav.push('2');
-            if (options.davClass3) dav.push('3');
+            if (options.davClass1) dav.push("1");
+            if (options.davClass2) dav.push("2");
+            if (options.davClass3) dav.push("3");
             if (options.davExtensions) {
               options.davExtensions.forEach((token) => {
                 if (token.match(/^([a-zA-Z0-9!#$%&'*+.^_`|~-]+|<[\x21-\x7E]*>)$/)) {
@@ -1817,12 +1816,12 @@ class Proxy {
             response.end();
             // Return no response; we already handled everything.
           }, (err) => {
-            if (err.kjType !== 'unimplemented') throw err;
+            if (err.kjType !== "unimplemented") throw err;
             response.end();
             // Return no response; we already handled everything.
           });
         } else {
-          throw new Error('Sandstorm only supports the following methods: GET, POST, PUT, PATCH, DELETE, HEAD, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, LOCK, UNLOCK, ACL, REPORT, and OPTIONS.');
+          throw new Error("Sandstorm only supports the following methods: GET, POST, PUT, PATCH, DELETE, HEAD, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, LOCK, UNLOCK, ACL, REPORT, and OPTIONS.");
         }
       });
     }).then((rpcResponse) => {
@@ -1841,16 +1840,16 @@ class Proxy {
       const path = request.url.slice(1);  // remove leading '/'
       const session = this.getSession(request);
 
-      const mimeType = request.headers['content-type'] || 'application/octet-stream';
-      const encoding = request.headers['content-encoding'];
+      const mimeType = request.headers["content-type"] || "application/octet-stream";
+      const encoding = request.headers["content-encoding"];
 
       let requestStreamPromise;
-      if (request.method === 'POST') {
+      if (request.method === "POST") {
         requestStreamPromise = session.postStreaming(path, mimeType, context, encoding);
-      } else if (request.method === 'PUT') {
+      } else if (request.method === "PUT") {
         requestStreamPromise = session.putStreaming(path, mimeType, context, encoding);
       } else {
-        throw new Error('Sandstorm only supports streaming POST and PUT requests.');
+        throw new Error("Sandstorm only supports streaming POST and PUT requests.");
       }
 
       // TODO(perf): We ought to be pipelining the body, but we can't currently, because we have to
@@ -1894,7 +1893,7 @@ class Proxy {
         if (contentLength !== undefined) {
           requestStream.expectSize(contentLength).catch((err) => {
             // expectSize() is allowed to be unimplemented.
-            if (err.kjType !== 'unimplemented') {
+            if (err.kjType !== "unimplemented") {
               reportUploadStreamError(err);
             }
           });
@@ -1903,7 +1902,7 @@ class Proxy {
         // Pipe the input stream to the app.
         let writesInFlight = 0;
         let readingPaused = false;
-        request.on('data', (buf) => {
+        request.on("data", (buf) => {
           // TODO(someday): Coalesce small writes.
           if (!uploadStreamError) {
             requestStream.write(buf).then(() => {
@@ -1921,18 +1920,18 @@ class Proxy {
           }
         });
 
-        request.on('end', () => {
+        request.on("end", () => {
           if (!uploadStreamError) requestStream.done().catch(reportUploadStreamError);
 
           // We're all done making calls to requestStream.
           requestStream.close();
         });
 
-        request.on('close', () => {
-          reportUploadStreamError(new Error('HTTP connection unexpectedly closed during request.'));
+        request.on("close", () => {
+          reportUploadStreamError(new Error("HTTP connection unexpectedly closed during request."));
         });
 
-        request.on('error', (err) => {
+        request.on("error", (err) => {
           reportUploadStreamError(err);
         });
 
@@ -1942,12 +1941,12 @@ class Proxy {
           downloadStreamHandle = this.translateResponse(rpcResponse, response, request).streamHandle;
         });
       }, (err) => {
-        if (err.kjType === 'failed' && err.message.indexOf('not implemented') !== -1) {
+        if (err.kjType === "failed" && err.message.indexOf("not implemented") !== -1) {
           // Hack to work around old apps using an old version of Cap'n Proto, before the
           // 'unimplemented' exception type was introduced. :(
           // TODO(cleanup): When we transition to API version 2, we can move this into the
           //   compatibility layer.
-          err.kjType = 'unimplemented';
+          err.kjType = "unimplemented";
         }
 
         if (SandstormBackend.shouldRestartGrain(err, 0)) {
@@ -1958,7 +1957,7 @@ class Proxy {
           return this.maybeRetryAfterError(err, retryCount).then(() => {
             return this.handleRequestStreaming(request, response, contentLength, retryCount + 1);
           });
-        } else if (err.kjType === 'unimplemented') {
+        } else if (err.kjType === "unimplemented") {
           // Streaming is not implemented. Fall back to non-streaming version.
           return readAll(request).then((data) => {
             return this.handleRequest(request, data, response, 0);
@@ -1976,17 +1975,17 @@ class Proxy {
         const path = request.url.slice(1);  // remove leading '/'
         const session = this.getSession(request);
 
-        if (!('sec-websocket-key' in request.headers)) {
-          throw new Error('Missing Sec-WebSocket-Accept header.');
+        if (!("sec-websocket-key" in request.headers)) {
+          throw new Error("Missing Sec-WebSocket-Accept header.");
         }
 
-        const magic = request.headers['sec-websocket-key'] + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
-        const acceptKey = Crypto.createHash('sha1').update(magic).digest('base64');
+        const magic = request.headers["sec-websocket-key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+        const acceptKey = Crypto.createHash("sha1").update(magic).digest("base64");
 
         let protocols = [];
-        if ('sec-websocket-protocol' in request.headers) {
-          protocols = request.headers['sec-websocket-protocol']
-              .split(',').map((s) => { return s.trim(); });
+        if ("sec-websocket-protocol" in request.headers) {
+          protocols = request.headers["sec-websocket-protocol"]
+              .split(",").map((s) => { return s.trim(); });
         }
 
         const receiver = new WebSocketReceiver(socket);
@@ -2004,19 +2003,19 @@ class Proxy {
 
         return promise.then((response) => {
           const headers = [
-              'HTTP/1.1 101 Switching Protocols',
-              'Upgrade: websocket',
-              'Connection: Upgrade',
-              'Sec-WebSocket-Accept: ' + acceptKey,
+              "HTTP/1.1 101 Switching Protocols",
+              "Upgrade: websocket",
+              "Connection: Upgrade",
+              "Sec-WebSocket-Accept: " + acceptKey,
           ];
           if (response.protocol && response.protocol.length > 0) {
-            headers.push('Sec-WebSocket-Protocol: ' + response.protocol.join(', '));
+            headers.push("Sec-WebSocket-Protocol: " + response.protocol.join(", "));
           }
 
-          headers.push('');
-          headers.push('');
+          headers.push("");
+          headers.push("");
 
-          socket.write(headers.join('\r\n'));
+          socket.write(headers.join("\r\n"));
           receiver.go();
 
           // Note:  At this point errors are out of our hands.
@@ -2044,13 +2043,13 @@ const PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;
 
 const isRfc1918OrLocal = (address) => {
   if (Net.isIPv4(address)) {
-    const quad = address.split('.').map((x) => { return parseInt(x, 10); });
+    const quad = address.split(".").map((x) => { return parseInt(x, 10); });
     return (quad[0] === 127 || quad[0] === 10 ||
             (quad[0] === 192 && quad[1] === 168) ||
             (quad[0] === 172 && quad[1] >= 16 && quad[1] < 32));
   } else if (Net.isIPv6(address)) {
     // IPv6 specifies ::1 as localhost and fd:: as reserved for private networks
-    return (address === '::1' || address.lastIndexOf('fd', 0) === 0);
+    return (address === "::1" || address.lastIndexOf("fd", 0) === 0);
   } else {
     // Ignore things that are neither IPv4 nor IPv6
     return false;
@@ -2070,24 +2069,24 @@ const quadToIntString = (quad) => {
 
 const parseCookies = (request) => {
   // jscs:disable requireDotNotation
-  const header = request.headers['cookie'];
+  const header = request.headers["cookie"];
 
   const result = { cookies: [] };
   if (header) {
-    const reqCookies = header.split(';');
+    const reqCookies = header.split(";");
     for (const i in reqCookies) {
       const reqCookie = reqCookies[i];
-      const equalsPos = reqCookie.indexOf('=');
+      const equalsPos = reqCookie.indexOf("=");
       let cookie;
       if (equalsPos === -1) {
-        cookie = { key: reqCookie.trim(), value: '' };
+        cookie = { key: reqCookie.trim(), value: "" };
       } else {
         cookie = { key: reqCookie.slice(0, equalsPos).trim(), value: reqCookie.slice(equalsPos + 1) };
       }
 
-      if (cookie.key === 'sandstorm-sid') {
+      if (cookie.key === "sandstorm-sid") {
         if (result.sessionId) {
-          throw new Error('Multiple sandstorm session IDs?');
+          throw new Error("Multiple sandstorm session IDs?");
         }
 
         result.sessionId = cookie.value;
@@ -2101,23 +2100,23 @@ const parseCookies = (request) => {
 };
 
 const parsePreconditionHeader = (request) => {
-  if (request.headers['if-match']) {
-    if (request.headers['if-match'].trim() === '*') {
+  if (request.headers["if-match"]) {
+    if (request.headers["if-match"].trim() === "*") {
       return { exists: null };
     }
 
-    const matches = parseETagList(request.headers['if-match']);
+    const matches = parseETagList(request.headers["if-match"]);
     if (matches.length > 0) {
       return { matchesOneOf: matches };
     }
   }
 
-  if (request.headers['if-none-match']) {
-    if (request.headers['if-none-match'].trim() === '*') {
+  if (request.headers["if-none-match"]) {
+    if (request.headers["if-none-match"].trim() === "*") {
       return { doesntExist: null };
     }
 
-    const noneMatches = parseETagList(request.headers['if-none-match']);
+    const noneMatches = parseETagList(request.headers["if-none-match"]);
     if (noneMatches.length > 0) {
       return { matchesNoneOf: noneMatches };
     }
@@ -2135,43 +2134,43 @@ const parseETagList = (input) => {
 
   while (input.length > 0) {
     const match = input.match(/^\s*(W\/)?"(([^"\\]|\\.)*)"\s*($|,)/);
-    if (!match) throw new Meteor.Error(400, 'invalid etag');
+    if (!match) throw new Meteor.Error(400, "invalid etag");
 
     input = input.slice(match[0].length).trim();
-    results.push({ weak: !!match[1], value: match[2].replace(/\\(.)/g, '$1') });
+    results.push({ weak: !!match[1], value: match[2].replace(/\\(.)/g, "$1") });
   }
 
   return results;
 };
 
 const composeETag = (tag) => {
-  let result = '"' + (tag.value || '').replace(/([\\"])/g, '\\$1') + '"';
-  if (tag.weak) result = 'W/' + result;
+  let result = '"' + (tag.value || "").replace(/([\\"])/g, "\\$1") + '"';
+  if (tag.weak) result = "W/" + result;
   return result;
 };
 
 const parseAcceptHeader = (request) => {
   // jscs:disable requireDotNotation
-  const header = request.headers['accept'];
+  const header = request.headers["accept"];
 
   const result = [];
   if (header) {
-    const acceptList = header.split(',');
+    const acceptList = header.split(",");
     for (const i in acceptList) {
       const acceptStr = acceptList[i];
-      const tokensList = acceptStr.split(';');
+      const tokensList = acceptStr.split(";");
 
       const temp = { mimeType: tokensList[0].trim() };
 
       const tokensListRest = tokensList.slice(1);
       for (const j in tokensListRest) {
         const token = tokensListRest[j];
-        const equalsPos = token.indexOf('=');
+        const equalsPos = token.indexOf("=");
         if (equalsPos) {
           const key = token.slice(0, equalsPos).trim();
           const value = token.slice(equalsPos + 1).trim();
 
-          if (key === 'q') {
+          if (key === "q") {
             temp.qValue = +value;
           }
         }
@@ -2190,71 +2189,71 @@ const parseAcceptHeader = (request) => {
 const readAll = (stream) => {
   return new Promise((resolve, reject) => {
     const buffers = [];
-    stream.on('data', (buf) => {
+    stream.on("data", (buf) => {
       buffers.push(buf);
     });
 
-    stream.on('end', () => {
+    stream.on("end", () => {
       resolve(Buffer.concat(buffers));
     });
 
-    stream.on('error', reject);
+    stream.on("error", reject);
   });
 };
 
 const makeSetCookieHeader = (cookie) => {
-  const result = [cookie.name, '=', cookie.value];
+  const result = [cookie.name, "=", cookie.value];
 
-  if ('absolute' in cookie.expires) {
-    result.push('; Expires=');
+  if ("absolute" in cookie.expires) {
+    result.push("; Expires=");
     result.push(new Date(cookie.expires.absolute * 1000).toUTCString());
-  } else if ('relative' in cookie.expires) {
-    result.push('; Max-Age=' + cookie.expires.relative);
+  } else if ("relative" in cookie.expires) {
+    result.push("; Max-Age=" + cookie.expires.relative);
   }
 
   if (cookie.path) {
-    result.push('; Path=' + cookie.path);
+    result.push("; Path=" + cookie.path);
   }
 
   if (cookie.httpOnly) {
-    result.push('; HttpOnly');
+    result.push("; HttpOnly");
   }
 
-  return result.join('');
+  return result.join("");
 };
 
 // TODO(cleanup):  Auto-generate based on annotations in web-session.capnp.
 const successCodes = {
-  ok:          { id: 200, title: 'OK' },
-  created:     { id: 201, title: 'Created' },
-  accepted:    { id: 202, title: 'Accepted' },
-  multiStatus: { id: 207, title: 'Multi-Status' },
+  ok:          { id: 200, title: "OK" },
+  created:     { id: 201, title: "Created" },
+  accepted:    { id: 202, title: "Accepted" },
+  multiStatus: { id: 207, title: "Multi-Status" },
 };
 const noContentSuccessCodes = [
   // Indexed by shouldResetForm * 1
-  { id: 204, title: 'No Content' },
-  { id: 205, title: 'Reset Content' },
+  { id: 204, title: "No Content" },
+  { id: 205, title: "Reset Content" },
 ];
 const redirectCodes = [
   // Indexed by switchToGet * 2 + isPermanent
-  { id: 307, title: 'Temporary Redirect' },
-  { id: 308, title: 'Permanent Redirect' },
-  { id: 303, title: 'See Other' },
-  { id: 301, title: 'Moved Permanently' },
+  { id: 307, title: "Temporary Redirect" },
+  { id: 308, title: "Permanent Redirect" },
+  { id: 303, title: "See Other" },
+  { id: 301, title: "Moved Permanently" },
 ];
 const errorCodes = {
-  badRequest:            { id: 400, title: 'Bad Request' },
-  forbidden:             { id: 403, title: 'Forbidden' },
-  notFound:              { id: 404, title: 'Not Found' },
-  methodNotAllowed:      { id: 405, title: 'Method Not Allowed' },
-  notAcceptable:         { id: 406, title: 'Not Acceptable' },
-  conflict:              { id: 409, title: 'Conflict' },
-  gone:                  { id: 410, title: 'Gone' },
-  requestEntityTooLarge: { id: 413, title: 'Request Entity Too Large' },
-  requestUriTooLong:     { id: 414, title: 'Request-URI Too Long' },
-  unsupportedMediaType:  { id: 415, title: 'Unsupported Media Type' },
-  imATeapot:             { id: 418, title: 'I\'m a teapot' },
-  unprocessableEntity:   { id: 422, title: 'Unprocessable Entity' },
+  badRequest:            { id: 400, title: "Bad Request" },
+  forbidden:             { id: 403, title: "Forbidden" },
+  notFound:              { id: 404, title: "Not Found" },
+  methodNotAllowed:      { id: 405, title: "Method Not Allowed" },
+  notAcceptable:         { id: 406, title: "Not Acceptable" },
+  conflict:              { id: 409, title: "Conflict" },
+  gone:                  { id: 410, title: "Gone" },
+  requestEntityTooLarge: { id: 413, title: "Request Entity Too Large" },
+  requestUriTooLong:     { id: 414, title: "Request-URI Too Long" },
+  unsupportedMediaType:  { id: 415, title: "Unsupported Media Type" },
+  imATeapot:             { id: 418, title: "I'm a teapot" },
+  unprocessableEntity:   { id: 422, title: "Unprocessable Entity" },
 };
 
 ResponseStream = class ResponseStream {
@@ -2397,7 +2396,7 @@ ResponseStream = class ResponseStream {
 };
 
 // TODO(cleanup): Node 0.12 has a `gunzipSync` but 0.10 (which Meteor still uses) does not.
-const Zlib = Npm.require('zlib');
+const Zlib = Npm.require("zlib");
 const gunzipSync = Meteor.wrapAsync(Zlib.gunzip, Zlib);
 
 // -----------------------------------------------------------------------------
@@ -2434,7 +2433,7 @@ WebSocketReceiver = class WebSocketReceiver {
 function pumpWebSocket(socket, rpcStream, destructor) {
   let writesInFlight = 0;
   let readingPaused = false;
-  socket.on('data', (chunk) => {
+  socket.on("data", (chunk) => {
     rpcStream.sendBytes(chunk).then(() => {
       writesInFlight--;
       if (readingPaused) {
@@ -2442,8 +2441,8 @@ function pumpWebSocket(socket, rpcStream, destructor) {
         readingPaused = false;
       }
     }).catch((err) => {
-      if (err.kjType !== 'disconnected') {
-        console.error('WebSocket sendBytes failed: ' + err.stack);
+      if (err.kjType !== "disconnected") {
+        console.error("WebSocket sendBytes failed: " + err.stack);
       }
 
       socket.destroy();
@@ -2455,7 +2454,7 @@ function pumpWebSocket(socket, rpcStream, destructor) {
     }
   });
 
-  socket.on('end', (chunk) => {
+  socket.on("end", (chunk) => {
     rpcStream.close();
   });
 
@@ -2467,12 +2466,12 @@ function pumpWebSocket(socket, rpcStream, destructor) {
 // =======================================================================================
 // Debug log access
 
-Meteor.publish('grainLog', function (grainId) {
+Meteor.publish("grainLog", function (grainId) {
   check(grainId, String);
   let id = 0;
   const grain = Grains.findOne(grainId);
   if (!grain || !this.userId || grain.userId !== this.userId) {
-    this.added('grainLog', id++, { text: 'Only the grain owner can view the debug log.' });
+    this.added("grainLog", id++, { text: "Only the grain owner can view the debug log." });
     this.ready();
     return;
   }
@@ -2483,13 +2482,13 @@ Meteor.publish('grainLog', function (grainId) {
   const receiver = {
     write(data) {
       connected = true;
-      _this.added('grainLog', id++, { text: data.toString('utf8') });
+      _this.added("grainLog", id++, { text: data.toString("utf8") });
     },
 
     close() {
       if (connected) {
-        _this.added('grainLog', id++, {
-          text: '*** lost connection to grain (probably because it shut down) ***',
+        _this.added("grainLog", id++, {
+          text: "*** lost connection to grain (probably because it shut down) ***",
         });
       }
     },
@@ -2505,8 +2504,8 @@ Meteor.publish('grainLog', function (grainId) {
     });
   } catch (err) {
     if (!connected) {
-      this.added('grainLog', id++, {
-        text: '*** couldn\'t connect to grain (' + err + ') ***',
+      this.added("grainLog", id++, {
+        text: "*** couldn't connect to grain (" + err + ") ***",
       });
     }
   }

@@ -1,3 +1,13 @@
+### v0.171 (2016-07-09)
+- **Activity/Notifications API:** Apps can now inform Sandstorm when a grain has been modified. Sandstorm will then highlight the grain in the user interface to show that it has new content, and in some cases deliver notifications to interested users. Apps need to be updated to use the API, but an update to Etherpad will ship on Sunday with updates to Rocket.Chat and Wekan soon thereafter.
+- Fixed regression where grain UIs would not refresh when the grain's package was updated.
+- Fixed bug where it was possible to have a "shared with me" copy of a grain you own show up in your grain list, which in turn caused other bugs.
+- Fixed spurrious deprecation warning in server logs and reduced the size of the Sandstorm bundle by 10% by eliminating redundant copies of the Connect framework which were being included due to npm dependency semantics.
+- Fixed some modal dialogs stretching off the screen on mobile.
+- Various code refactoring.
+- Oasis: Fixed that save()ing a capability was producing a SturdyRef that could not be restored due to bookkeeping errors.
+- Sandstorm for Work: The SAML XML blob is now available even if the SAML identity provider has not yet been enabled. This should make setup easier.
+
 ### v0.170 (2016-07-02) [bugfixes]
 - Meteor-based apps will no longer go into redirect loops when WebSockets are not working.
 - Sandstorm for Work: Fixed SAML login failing when a user's name contained non-ASCII characters.

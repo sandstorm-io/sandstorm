@@ -614,6 +614,7 @@ assert_dependencies() {
 
   which tar > /dev/null || fail "E_TAR_MISSING" "Please install tar(1)."
   which xz > /dev/null || fail "E_XZ_MISSING" "Please install xz(1). (Package may be called 'xz-utils'.)"
+  which openssl > /dev/null || fail "E_OPENSSL_MISSING" "Please install openssl(1). (Package may be called 'openssl'.)"
 }
 
 assert_valid_bundle_file() {

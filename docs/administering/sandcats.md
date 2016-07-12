@@ -193,7 +193,8 @@ for at least one request from your server.
 One reason this occurs is if you have the wrong `id_rsa*` certificate files in
 `/opt/sandstorm/var/sandcats`. You can fix this problem using the email-based recovery system; for
 now, this requires using `install.sh` on a throwaway VM. Once your new certificate files are
-registered with `sandcats.io`, you can move them to your server.
+registered with `sandcats.io`, you can move them to whichever server you want using file-based
+recovery.
 
 Another reason you might see `Not Authorized` in the log files is if your server has run afoul of
 sandcats.io's defense in depth against Sandstorm bugs. The HTTPS certificate service within

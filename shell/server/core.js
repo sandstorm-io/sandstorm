@@ -246,12 +246,6 @@ function makeNotificationHandle(notificationId, saved, persistentMethods) {
                               PersistentHandle);
 }
 
-function dropWakelock(grainId, wakeLockNotificationId) {
-  waitPromise(globalBackend.useGrain(grainId, (supervisor) => {
-    return supervisor.drop({ wakeLockNotification: wakeLockNotificationId });
-  }));
-}
-
 function dismissNotification(notificationId, callCancel) {
   const notification = Notifications.findOne({ _id: notificationId });
   if (notification) {
@@ -536,8 +530,11 @@ function dropInternal(sturdyRef, ownerPattern) {
       // No other tokens referencing this notification exist, so dismiss the notification
       dismissNotification(notificationId);
     }
-  } else if (token.objectId && token.objectId.wakeLockNotification) {
-    dropWakelock(token.grainId, token.objectId.wakeLockNotification);
+  } else if (token.objectId) {
+    waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
+      return supervisor.drop(token.objectId);
+    }));
+
     globalDb.removeApiTokens({ _id: hashedSturdyRef });
   } else {
     globalDb.removeApiTokens({ _id: hashedSturdyRef });

@@ -360,16 +360,6 @@
   border-bottom: 1px solid #dddddd;
 }
 
-.admin-settings {
-  .delete-account {
-    @extend %button-base;
-    @extend %button-secondary;
-    background-color: #d9534f;
-    color: white;
-    margin-top: 10px;
-  }
-}
-
 .admin-user-roles-form {
   display: inline-block;
 

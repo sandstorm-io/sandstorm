@@ -339,6 +339,9 @@ public:
       case WebSession::Response::NO_CONTENT: {
         auto noContent = builder.initNoContent();
         noContent.setShouldResetForm(statusInfo.noContent.shouldResetForm);
+        KJ_IF_MAYBE(etag, findHeader("etag")) {
+          parseETag(*etag, noContent.initETag());
+        }
         break;
       }
       case WebSession::Response::PRECONDITION_FAILED: {

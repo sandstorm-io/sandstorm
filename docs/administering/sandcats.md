@@ -180,18 +180,28 @@ running the `install.sh` script. We call that **file-based recovery.** Here are 
   to access your server.
 
 Note that if you are using sandcats.io free HTTPS certificates, we suggest also backing up and
-restoring the contents of `/opt/sandstorm/var/sandcats/https`. This is merely a suggestion, not a
-hard requirement, because Sandstorm will request new certificates at startup. However, if your
-server makes lots of requests and requests more than about 5 active certificates per week, you will
-run afoul of the sandcats.io anti-abuse protections.  Your server will keep retrying and the
-sandcats.io service will permit it to get certificates again when one of your certificates expire,
-typically about 1 week. Therefore, it is smart to minimize the number of requests you make to the
-Sandcats HTTPS service.
+restoring the contents of `/opt/sandstorm/var/sandcats/https`. This is a suggestion rather than a
+hard requirement; Sandstorm will request new certificates at startup. However, if your server makes
+lots of requests, you will run afoul of the sandcats.io anti-abuse protections. See the [Diagnosing
+"Not Authorized" problems](#diagnosing-not-authorized-problems) section for details.
 
 ## Diagnosing "Not Authorized" problems
 
-If you see `Not Authorized` in your log files, you might somehow have the wrong certificate in
-`/opt/sandstorm/var/sandcats`. If so, email support@sandstorm.io and we will attempt to help you.
+If you see `Not Authorized` in your log files, you might have the wrong certificate file in
+`/opt/sandstorm/var/sandcats`. You can fix this problem by requesting a new certificate through the
+email recovery flow; for now, this requires using `install.sh` on a throwaway VM. Once you have a new certificate, you
+can copy it to your server.
+
+Another reason you might see `Not Authorized` in the log files is if your server has run afoul of
+sandcats.io's defense in depth against Sandstorm bugs. The HTTPS certificate service within
+`sandcats.io` will reject new certificate requests if your server has more than approximately 5
+active certificates per week; this code exists to prevent a Sandstorm bug from requesting many
+thousands of certificates. If you are constantly requesting new certificates, you can request only
+about 5 before being automatically blocked in this way.  Typically, your server will keep retrying
+and the sandcats.io service will permit it to get certificates again when one of your certificates
+expire.
+
+In either case, if you need further help, please email support@sandstorm.io!
 
 # Terms of service, privacy policy, & contact information
 

@@ -1645,6 +1645,7 @@ class Proxy {
       if (noContent.eTag) {
         response.setHeader('ETag', composeETag(noContent.eTag));
       }
+
       response.writeHead(noContentCode.id, noContentCode.title);
       response.end();
     } else if ('preconditionFailed' in rpcResponse) {

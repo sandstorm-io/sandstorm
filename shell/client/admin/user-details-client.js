@@ -230,4 +230,18 @@ Template.newAdminUserDetails.events({
       isAdmin: false,
     });
   },
+
+  "click .delete-account"(evt) {
+    const instance = Template.instance();
+    const confirm = window.confirm("Really delete this account forever? This operation is permament and irreversible.");
+    if (confirm) {
+      Meteor.call("deleteAccount", instance.userId, function (err) {
+        if (err) {
+          window.alert(err);
+        } else {
+          Router.go("newAdminUsers");
+        }
+      });
+    }
+  },
 });

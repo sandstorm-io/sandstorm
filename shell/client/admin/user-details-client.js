@@ -258,6 +258,7 @@ Template.newAdminUserDetails.events({
 
   "click [name=\"delete-account\"]"(evt, instance) {
     instance.showDeletePopup.set(true);
+    instance.deleteError.set(null);
   },
 
   "click [name=\"cancel-delete-account\"]"(evt, instance) {

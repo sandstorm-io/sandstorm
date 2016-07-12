@@ -525,26 +525,19 @@ function dropInternal(sturdyRef, ownerPattern) {
 
   check(token.owner, ownerPattern);
 
-  if (token.frontendRef) {
-    if (token.frontendRef.notificationHandle) {
-      const notificationId = token.frontendRef.notificationHandle;
-      globalDb.removeApiTokens({ _id: hashedSturdyRef });
-      const anyToken = ApiTokens.findOne({ "frontendRef.notificationHandle": notificationId });
-      if (!anyToken) {
-        // No other tokens referencing this notification exist, so dismiss the notification
-        dismissNotification(notificationId);
-      }
-    } else {
-      throw new Error("Unknown frontend token type.");
+  if (token.frontendRef && token.frontendRef.notificationHandle) {
+    const notificationId = token.frontendRef.notificationHandle;
+    globalDb.removeApiTokens({ _id: hashedSturdyRef });
+    const anyToken = ApiTokens.findOne({ "frontendRef.notificationHandle": notificationId });
+    if (!anyToken) {
+      // No other tokens referencing this notification exist, so dismiss the notification
+      dismissNotification(notificationId);
     }
-  } else if (token.objectId) {
-    if (token.objectId.wakeLockNotification) {
-      dropWakelock(token.grainId, token.objectId.wakeLockNotification);
-    } else {
-      throw new Error("Unknown objectId token type.");
-    }
+  } else if (token.objectId && token.objectId.wakeLockNotification) {
+    dropWakelock(token.grainId, token.objectId.wakeLockNotification);
+    globalDb.removeApiTokens({ _id: hashedSturdyRef });
   } else {
-    throw new Error("Unknown token type.");
+    globalDb.removeApiTokens({ _id: hashedSturdyRef });
   }
 }
 

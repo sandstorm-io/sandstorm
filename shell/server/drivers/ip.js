@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import Bignum from "bignum";
+import { PersistentImpl } from "/imports/server/persistent.js";
 const Future = Npm.require("fibers/future");
 const Net = Npm.require("net");
 const Dgram = Npm.require("dgram");
@@ -40,9 +41,9 @@ ByteStreamConnection = class ByteStreamConnection{
   // expectSize(size) { }
 };
 
-IpInterfaceImpl = class IpInterfaceImpl {
-  constructor(persistentMethods) {
-    _.extend(this, persistentMethods);
+class IpInterfaceImpl extends PersistentImpl {
+  constructor(db, saveTemplate) {
+    super(db, saveTemplate);
   }
 
   listenTcp(portNum, port) {
@@ -121,9 +122,14 @@ IpInterfaceImpl = class IpInterfaceImpl {
   }
 };
 
-makeIpInterface = (persistentMethods) => {
-  return new Capnp.Capability(new IpInterfaceImpl(persistentMethods), IpRpc.PersistentIpInterface);
-};
+// TODO(cleanup): Meteor.startup() needed because 00-startup.js runs *after* code in subdirectories
+//   (ugh).
+Meteor.startup(() => {
+  globalFrontendRefRegistry.addRestoreHandler("ipInterface", (db, saveTemplate) => {
+    return new Capnp.Capability(new IpInterfaceImpl(db, saveTemplate),
+                                IpRpc.PersistentIpInterface);
+  });
+});
 
 BoundUdpPortImpl = class BoundUdpPortImpl {
   constructor(server, address, port) {
@@ -195,9 +201,9 @@ const addressType = (address) => {
   return type;
 };
 
-IpNetworkImpl = class IpNetworkImpl {
-  constructor(persistentMethods) {
-    _.extend(this, persistentMethods);
+class IpNetworkImpl extends PersistentImpl {
+  constructor(db, saveTemplate) {
+    super(db, saveTemplate);
   }
 
   getRemoteHost(address) {
@@ -209,9 +215,14 @@ IpNetworkImpl = class IpNetworkImpl {
   }
 };
 
-makeIpNetwork = (persistentMethods) => {
-  return new Capnp.Capability(new IpNetworkImpl(persistentMethods), IpRpc.PersistentIpNetwork);
-};
+// TODO(cleanup): Meteor.startup() needed because 00-startup.js runs *after* code in subdirectories
+//   (ugh).
+Meteor.startup(() => {
+  globalFrontendRefRegistry.addRestoreHandler("ipNetwork", (db, saveTemplate) => {
+    return new Capnp.Capability(new IpNetworkImpl(db, saveTemplate),
+                                IpRpc.PersistentIpNetwork);
+  });
+});
 
 IpRemoteHostImpl = class IpRemoteHostImpl {
   constructor(address) {

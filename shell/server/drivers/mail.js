@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { PersistentImpl } from "/imports/server/persistent.js";
+
 const Crypto = Npm.require("crypto");
 const Future = Npm.require("fibers/future");
 const Promise = Npm.require("es6-promise").Promise;
@@ -292,10 +294,10 @@ hackSendEmail = (session, email) => {
   });
 };
 
-class EmailVerifierImpl {
-  constructor(persistentMethods, id, params) {
-    _.extend(this, persistentMethods);
-    this._id = id;
+class EmailVerifierImpl extends PersistentImpl {
+  constructor(db, saveTemplate, params) {
+    super(db, saveTemplate);
+    this._id = saveTemplate.parentToken;  // TODO(now): Fix.
     this._services = params.services;
   }
 
@@ -323,18 +325,22 @@ class EmailVerifierImpl {
   }
 };
 
-class VerifiedEmailImpl {
-  constructor(persistentMethods, id) {
-    _.extend(this, persistentMethods);
+class VerifiedEmailImpl extends PersistentImpl {
+  constructor(db, saveTemplate) {
+    super(db, saveTemplate);
   }
 }
 
-makeEmailVerifier = (persistentMethods, id, params) => {
-  return new Capnp.Capability(new EmailVerifierImpl(persistentMethods, id, params),
-                              EmailImpl.PersistentEmailVerifier);
-};
+// TODO(cleanup): Meteor.startup() needed because 00-startup.js runs *after* code in subdirectories
+//   (ugh).
+Meteor.startup(() => {
+  globalFrontendRefRegistry.addRestoreHandler("emailVerifier", (db, saveTemplate, params) => {
+    return new Capnp.Capability(new EmailVerifierImpl(db, saveTemplate, params),
+                                EmailImpl.PersistentEmailVerifier);
+  });
 
-makeVerifiedEmail = (persistentMethods) => {
-  return new Capnp.Capability(new VerifiedEmailImpl(persistentMethods),
-                              EmailImpl.PersistentVerifiedEmail);
-};
+  globalFrontendRefRegistry.addRestoreHandler("verifiedEmail", (db, saveTemplate) => {
+    return new Capnp.Capability(new VerifiedEmailImpl(db, saveTemplate),
+                                EmailImpl.PersistentVerifiedEmail);
+  });
+});

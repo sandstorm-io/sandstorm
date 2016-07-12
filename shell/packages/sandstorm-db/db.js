@@ -2252,7 +2252,7 @@ if (Meteor.isServer) {
 
 if (Meteor.isServer) {
   SandstormDb.prototype.deleteIdentity = function (identityId) {
-    this.removeApiTokens({ identityId: identityId });
+    this.removeApiTokens({ "owner.user.identityId": identityId });
     this.collections.contacts.remove({ identityId: identityId });
     Meteor.users.remove({ _id: identityId });
   };
@@ -2281,7 +2281,6 @@ if (Meteor.isServer) {
         _this.deleteIdentity(identity.id);
       }
     });
-    this.removeApiTokens({ accountId: userId });
     this.collections.contacts.remove({ ownerId: userId });
     backend.deleteUser(userId);
     Meteor.users.remove({ _id: userId });

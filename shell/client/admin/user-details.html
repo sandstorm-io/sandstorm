@@ -1,5 +1,5 @@
 <template name="newAdminUserDetailsIdentityTableRow">
-{{!-- Expects: 
+{{!-- Expects:
          identity: Object
   isLoginIdentity: Boolean
      primaryEmail: String.  Account's primary contact address.
@@ -144,7 +144,7 @@
 </template>
 
 <template name="newAdminUserDetailsIdentityTable">
-{{!-- Expects: 
+{{!-- Expects:
   account: Object
 --}}
   <div class="admin-user-identity-list" role="grid">
@@ -284,6 +284,7 @@
 
     <h2>Identities</h2>
     {{> newAdminUserDetailsIdentityTable account=account }}
+    <button class="delete-account">Delete</button>
 
     {{/with}}
   {{else}}

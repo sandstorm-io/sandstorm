@@ -155,16 +155,20 @@ If you prefer, you can move your `sandcats.io` credentials to a new Sandstorm in
 running the `install.sh` script. We call that **file-based recovery.** Here are the steps.
 
 * Find your three three `id_rsa` certificate files (usually `/opt/sandstorm/var/sandcats`) and keep
-  them safe somewhere.
+  them safe somewhere. Also keep a copy of `/opt/sandstorm/var/sandcats/https` if it exists.
 
 * Do a new Sandstorm install, presumably on a new server somewhere. It will install to
-  `/opt/sandstorm`.
+  `/opt/sandstorm`. You should choose a non-sandcats.io host name during this process, such as using
+  literally `example.com`.
 
 * Copy those three `id_rsa` certificate files from the old server to the new server's Sandcats
-  directory, `/opt/sandstorm/var/sandcats`.
+  directory, `/opt/sandstorm/var/sandcats`. Do the same for `/opt/sandstorm/var/sandcats/https` if
+  you backed it up.
 
-* In your new Sandstorm install, ensure you have your `BASE_URL` and `WILDCARD_HOST` set properly in
-  your `sandstorm.conf`. Consider copying them from the old server's `sandstorm.conf`.
+* In your new Sandstorm install, ensure you have your `BASE_URL` and `WILDCARD_HOST` set properly.
+  If your sandcats.io subdomain is `example`, then you'll need `BASE_URL=example.sandcats.io` and
+  `WILDCARD_HOST=*.example.sandcats.io`. Consider copying these values from the old server's
+  `sandstorm.conf`.
 
 * Edit the new server's `sandstorm.conf` to contain this line: `SANDCATS_BASE_DOMAIN=sandcats.io`
 
@@ -174,6 +178,15 @@ running the `install.sh` script. We call that **file-based recovery.** Here are 
 * Your DNS hostname should have auto-updated. Check that DNS is working with `nslookup
   <myname>.sandcats.io` from another machine. This will help eliminate DNS as an issue when trying
   to access your server.
+
+Note that if you are using sandcats.io free HTTPS certificates, we suggest also backing up and
+restoring the contents of `/opt/sandstorm/var/sandcats/https`. This is merely a suggestion, not a
+hard requirement, because Sandstorm will request new certificates at startup. However, if your
+server makes lots of requests and requests more than about 5 active certificates per week, you will
+run afoul of the sandcats.io anti-abuse protections.  Your server will keep retrying and the
+sandcats.io service will permit it to get certificates again when one of your certificates expire,
+typically about 1 week. Therefore, it is smart to minimize the number of requests you make to the
+Sandcats HTTPS service.
 
 ## Diagnosing "Not Authorized" problems
 

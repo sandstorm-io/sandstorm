@@ -76,18 +76,23 @@ SandstormAutoupdateApps.updateAppIndex = function (db) {
 };
 
 Meteor.methods({
-  updateApps: function (appUpdates) {
+  updateApps: function (packages) {
+    check(packages, [String]);
+    if (!this.userId) {
+      throw new Meteor.Error(403, "Must be logged in to update apps.");
+    }
+
     const db = this.connection.sandstormDb;
     const backend = this.connection.sandstormBackend;
 
-    _.forEach(appUpdates, function (val, appId) {
-      const pack = db.collections.packages.findOne({ _id: val.packageId, appId: appId });
+    packages.forEach(packageId => {
+      const pack = db.collections.packages.findOne({ _id: packageId });
       if (!pack || !pack.manifest) {
-        console.error("Newer app not installed", val.name);
+        throw new Error("No such package on server: " + packageId);
       } else {
-        db.addUserActions(val.packageId);
-        db.upgradeGrains(appId, val.version, val.packageId, backend);
-        db.deleteUnusedPackages(appId);
+        db.addUserActions(this.userId, packageId);
+        db.upgradeGrains(pack.appId, pack.manifest.appVersion, packageId, backend);
+        db.deleteUnusedPackages(pack.appId);
       }
     });
   },

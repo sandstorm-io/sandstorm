@@ -1317,6 +1317,43 @@ _.extend(SandstormDb.prototype, {
     return value;
   },
 
+  addUserActions: function (userId, packageId) {
+    check(userId, String);
+    check(packageId, String);
+
+    const pack = Packages.findOne({ _id: packageId });
+    if (pack) {
+      // Remove old versions.
+      const numRemoved = UserActions.remove({ userId: userId, appId: pack.appId });
+
+      // Install new.
+      const actions = pack.manifest.actions;
+      for (const i in actions) {
+        const action = actions[i];
+        if ("none" in action.input) {
+          const userAction = {
+            userId: userId,
+            packageId: pack._id,
+            appId: pack.appId,
+            appTitle: pack.manifest.appTitle,
+            appMarketingVersion: pack.manifest.appMarketingVersion,
+            appVersion: pack.manifest.appVersion,
+            title: action.title,
+            nounPhrase: action.nounPhrase,
+            command: action.command,
+          };
+          UserActions.insert(userAction);
+        } else {
+          // TODO(someday):  Implement actions with capability inputs.
+        }
+      }
+
+      if (numRemoved > 0 && !this.isSimulation) {
+        this.deleteUnusedPackages(pack.appId);
+      }
+    }
+  },
+
   sendAdminNotification: function (message, link) {
     Meteor.users.find({ isAdmin: true }, { fields: { _id: 1 } }).forEach(function (user) {
       Notifications.insert({
@@ -2257,37 +2294,7 @@ Meteor.methods({
       throw new Meteor.Exception(403, "Must be logged in as a non-guest to add app actions.");
     }
 
-    const pack = Packages.findOne({ _id: packageId });
-    if (pack) {
-      // Remove old versions.
-      const numRemoved = UserActions.remove({ userId: this.userId, appId: pack.appId });
-
-      // Install new.
-      const actions = pack.manifest.actions;
-      for (const i in actions) {
-        const action = actions[i];
-        if ("none" in action.input) {
-          const userAction = {
-            userId: this.userId,
-            packageId: pack._id,
-            appId: pack.appId,
-            appTitle: pack.manifest.appTitle,
-            appMarketingVersion: pack.manifest.appMarketingVersion,
-            appVersion: pack.manifest.appVersion,
-            title: action.title,
-            nounPhrase: action.nounPhrase,
-            command: action.command,
-          };
-          UserActions.insert(userAction);
-        } else {
-          // TODO(someday):  Implement actions with capability inputs.
-        }
-      }
-
-      if (numRemoved > 0 && !this.isSimulation) {
-        this.connection.sandstormDb.deleteUnusedPackages(pack.appId);
-      }
-    }
+    this.connection.sandstormDb.addUserActions(this.userId, packageId);
   },
 
   removeUserAction(actionId) {

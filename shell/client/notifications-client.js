@@ -198,9 +198,14 @@ Template.notificationItem.events({
 
   "click .accept-notification": function (event) {
     if (this.appUpdates) {
-      Meteor.call("updateApps", this.appUpdates, (err) => {
-        // TODO(someday): if (err)
-        Meteor.call("dismissNotification", this._id);
+      const packages = _.map(this.appUpdates, app => app.packageId);
+
+      Meteor.call("updateApps", packages, (err) => {
+        if (err) {
+          window.alert(err.message);
+        } else {
+          Meteor.call("dismissNotification", this._id);
+        }
       });
     }
 

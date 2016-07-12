@@ -268,6 +268,7 @@ Template.newAdminUserDetails.events({
   "click [name=\"delete-account-real\"]"(evt, instance) {
     instance.deleteSubmitting.set(true);
     Meteor.call("deleteAccount", instance.userId, function (err) {
+      instance.deleteSubmitting.set(false);
       if (err) {
         instance.deleteError.set(err);
       } else {

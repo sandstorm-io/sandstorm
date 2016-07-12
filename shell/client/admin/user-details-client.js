@@ -70,6 +70,9 @@ Template.newAdminUserDetails.onCreated(function () {
     state: "default", // Also: submitting, error, success
     message: undefined,
   });
+  this.deleteSubmitting = new ReactiveVar(false);
+  this.showDeletePopup = new ReactiveVar(false);
+  this.deleteError = new ReactiveVar(null);
 
   this.isReady = () => {
     // We guard on Router.current().params.userId existing because Iron Router and Blaze
@@ -204,6 +207,28 @@ Template.newAdminUserDetails.helpers({
     const formState = instance.formState.get();
     return formState.state === "submitting";
   },
+
+  showDeletePopup() {
+    const instance = Template.instance();
+    return instance.showDeletePopup.get();
+  },
+
+  deleteError() {
+    const instance = Template.instance();
+    return instance.deleteError.get();
+  },
+
+  deleteSubmitting() {
+    const instance = Template.instance();
+    return instance.deleteSubmitting.get();
+  },
+
+  cancelDelete() {
+    const instance = Template.instance();
+    return () => {
+      instance.showDeletePopup.set(false);
+    };
+  },
 });
 
 Template.newAdminUserDetails.events({
@@ -231,17 +256,22 @@ Template.newAdminUserDetails.events({
     });
   },
 
-  "click .delete-account"(evt) {
-    const instance = Template.instance();
-    const confirm = window.confirm("Really delete this account forever? This operation is permament and irreversible.");
-    if (confirm) {
-      Meteor.call("deleteAccount", instance.userId, function (err) {
-        if (err) {
-          window.alert(err);
-        } else {
-          Router.go("newAdminUsers");
-        }
-      });
-    }
+  "click [name=\"delete-account\"]"(evt, instance) {
+    instance.showDeletePopup.set(true);
+  },
+
+  "click [name=\"cancel-delete-account\"]"(evt, instance) {
+    instance.showDeletePopup.set(false);
+  },
+
+  "click [name=\"delete-account-real\"]"(evt, instance) {
+    instance.deleteSubmitting.set(true);
+    Meteor.call("deleteAccount", instance.userId, function (err) {
+      if (err) {
+        instance.deleteError.set(err);
+      } else {
+        Router.go("newAdminUsers");
+      }
+    });
   },
 });

@@ -284,7 +284,36 @@
 
     <h2>Identities</h2>
     {{> newAdminUserDetailsIdentityTable account=account }}
-    <button class="delete-account">Delete</button>
+
+    <h2>Status</h2>
+
+    <div style="display: flex; flex-direction: row;">
+      Active
+    </div>
+    <form class="standard-form">
+      <div class="button-row">
+        <button type="button" name="delete-account">Delete...</button>
+      </div>
+    </form>
+
+    {{#if showDeletePopup}}
+      {{#modalDialogWithBackdrop onDismiss=cancelDelete}}
+        {{#if deleteError}}
+          {{#focusingErrorBox}}
+            {{deleteError}}
+          {{/focusingErrorBox}}
+        {{/if}}
+
+        <p>Are you sure? This operation is permament and irreversible.</p>
+        <form class="standard-form">
+          <div class="button-row">
+            <button class="danger" type="button"
+             disabled={{deleteSubmitting}} name="delete-account-real">Delete account</button>
+            <button type="button" name="cancel-delete-account">Cancel</button>
+          </div>
+        </form>
+      {{/modalDialogWithBackdrop}}
+    {{/if}}
 
     {{/with}}
   {{else}}

@@ -1410,13 +1410,17 @@ private:
 
     static const char* const TMPDIRS[2] = { "../tmp", "../var/sandstorm/tmp" };
     for (const char* tmpDir: TMPDIRS) {
-      if (access(tmpDir, F_OK) == 0) {
-        recursivelyDelete(tmpDir);
-      }
-      mkdir(tmpDir, 0770);
-      KJ_SYSCALL(chmod(tmpDir, 0770 | S_ISVTX));
-      if (runningAsRoot) {
-        KJ_SYSCALL(chown(tmpDir, 0, config.uids.gid));
+      KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
+        if (access(tmpDir, F_OK) == 0) {
+          recursivelyDelete(tmpDir);
+        }
+        mkdir(tmpDir, 0770);
+        KJ_SYSCALL(chmod(tmpDir, 0770 | S_ISVTX));
+        if (runningAsRoot) {
+          KJ_SYSCALL(chown(tmpDir, 0, config.uids.gid));
+        }
+      })) {
+        KJ_LOG(WARNING, "failed to clean up tmpdir; leaving it for now", tmpDir, *exception);
       }
     }
 

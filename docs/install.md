@@ -1,6 +1,9 @@
 # Installation and removal
 
-There are many options for installing Sandstorm with various trade-offs. Choose the one that is most comfortable for you. This document also covers [uninstallation](#uninstall).
+There are many options for installing Sandstorm with various trade-offs. Choose the one that is most
+comfortable for you. This document also covers [uninstallation](#uninstall).  If you want to perform
+unattended installation of Sandstorm, or learn how the install script works, read the [reference
+documentation on the Sandstorm install script.](administering/install-script.md)
 
 Sandstorm requires Linux x86_64, with kernel version 3.13 or later.
 

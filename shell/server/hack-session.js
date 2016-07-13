@@ -118,18 +118,34 @@ SessionContextImpl = class SessionContextImpl {
       const save = castedCap.save(apiTokenOwner);
       const sturdyRef = waitPromise(save).sturdyRef;
       ApiTokens.update({ _id: hashSturdyRef(sturdyRef) }, { $push: { requirements: requirement } });
-      const powerboxView = isUiView ? {
-        offer: {
-          uiView: {
-            token: sturdyRef.toString(),
-            tokenId: hashSturdyRef(sturdyRef.toString()),
+
+      let powerboxView;
+      if (isUiView) {
+        // Deduplicate.
+        let tokenId = hashSturdyRef(sturdyRef.toString());
+        const newApiToken = ApiTokens.findOne({ _id: tokenId });
+        const dupeQuery = _.pick(newApiToken, "grainId", "roleAssignment", "requirements",
+                                 "parentToken", "identityId", "accountId");
+        dupeQuery._id = { $ne: newApiToken._id };
+        dupeQuery["owner.user.identityId"] = this.identityId;
+        dupeQuery.trashed = { $exists: false };
+        dupeQuery.revoked = { $exists: false };
+
+        const dupeToken = ApiTokens.findOne(dupeQuery);
+        if (dupeToken) {
+          globalDb.removeApiTokens({ _id: tokenId });
+          tokenId = dupeToken._id;
+        }
+
+        powerboxView = { offer: { uiView: { tokenId } } };
+      } else {
+        powerboxView = {
+          offer: {
+            url: ROOT_URL.protocol + "//" + globalDb.makeApiHost(sturdyRef) + "#" + sturdyRef,
           },
-        },
-      } : {
-        offer: {
-          url: ROOT_URL.protocol + "//" + globalDb.makeApiHost(sturdyRef) + "#" + sturdyRef,
-        },
-      };
+        };
+      }
+
       Sessions.update({ _id: this.sessionId },
         {
           $set: {

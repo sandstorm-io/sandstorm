@@ -1348,7 +1348,7 @@ _.extend(SandstormDb.prototype, {
         }
       }
 
-      if (numRemoved > 0 && !this.isSimulation) {
+      if (numRemoved > 0) {
         this.deleteUnusedPackages(pack.appId);
       }
     }
@@ -2294,7 +2294,9 @@ Meteor.methods({
       throw new Meteor.Exception(403, "Must be logged in as a non-guest to add app actions.");
     }
 
-    this.connection.sandstormDb.addUserActions(this.userId, packageId);
+    if (!this.isSimulation) {
+      this.connection.sandstormDb.addUserActions(this.userId, packageId);
+    }
   },
 
   removeUserAction(actionId) {

@@ -51,6 +51,10 @@ if (isTesting) {
       clearMockGoogleUser: function () {
         clearUser("6WJcRo2gg2Ysuxsok");
       },
+
+      fetchAppIndexTest: function () {
+        SandstormAutoupdateApps.updateAppIndex(this.connection.sandstormDb);
+      },
     });
   }
 

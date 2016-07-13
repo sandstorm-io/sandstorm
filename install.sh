@@ -480,7 +480,7 @@ detect_how_to_enable_userns_or_die_trying() {
 
   # If the test binary failed, but the sysctl is set to 1, then allow the install to
   # continue. Perhaps the user has /tmp mounted noexec or something like that.
-  if [ "$(cat /proc/sys/kernel/unprivileged_userns_clone)" = "1" ] ; then
+  if [ "$(</proc/sys/kernel/unprivileged_userns_clone)" = "1" ] ; then
     return
   fi
 

@@ -76,6 +76,17 @@ SandstormAutoupdateApps.updateAppIndex = function (db) {
 };
 
 Meteor.methods({
+  updateAppIndex: function () {
+    // An undocumented method that the admin can use to force an app index update immediately.
+    // Probably not useful except for debugging.
+
+    if (!Meteor.user().isAdmin) {
+      throw new Meteor.Error(403, "Must be admin.");
+    }
+
+    SandstormAutoupdateApps.updateAppIndex(this.connection.sandstormDb);
+  },
+
   updateApps: function (packages) {
     check(packages, [String]);
     if (!this.userId) {

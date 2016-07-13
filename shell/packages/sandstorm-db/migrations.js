@@ -609,6 +609,18 @@ function markAllRead() {
                    { multi: true });
 }
 
+function clearAppIndex() {
+  // Due to a bug in the app update code, some app update notifications that the user accepted
+  // around July 9-16, 2016 may not have applied. We have no way of knowing exactly which updates
+  // the user accepted but didn't receive. Instead, to recover, we are clearing the local cache of
+  // the app index one time. This way, the next time the app index is re-fetched, the server will
+  // interpret all of the apps in the index as updated and will re-deliver notifications to
+  // everyone. This may mean users get notifications that they previously dismissed, but they can
+  // click "dismiss" again easily enough.
+
+  AppIndex.remove({});
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -640,6 +652,7 @@ const MIGRATIONS = [
   extractLastUsedFromApiTokenOwner,
   setUpstreamTitles,
   markAllRead,
+  clearAppIndex,
 ];
 
 function migrateToLatest() {

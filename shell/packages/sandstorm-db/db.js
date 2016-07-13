@@ -1317,7 +1317,7 @@ _.extend(SandstormDb.prototype, {
     return value;
   },
 
-  addUserActions: function (userId, packageId) {
+  addUserActions: function (userId, packageId, simulation) {
     check(userId, String);
     check(packageId, String);
 
@@ -1348,7 +1348,7 @@ _.extend(SandstormDb.prototype, {
         }
       }
 
-      if (numRemoved > 0) {
+      if (numRemoved > 0 && !simulation) {
         this.deleteUnusedPackages(pack.appId);
       }
     }
@@ -2290,11 +2290,15 @@ if (Meteor.isServer) {
 Meteor.methods({
   addUserActions(packageId) {
     check(packageId, String);
-    if (!this.userId || !Meteor.user().loginIdentities | !isSignedUpOrDemo()) {
+    if (!this.userId || !Meteor.user().loginIdentities || !isSignedUpOrDemo()) {
       throw new Meteor.Exception(403, "Must be logged in as a non-guest to add app actions.");
     }
 
-    if (!this.isSimulation) {
+    if (this.isSimulation) {
+      // TODO(cleanup): Appdemo code relies on this being simulated client-side but we don't have
+      //   a proper DB object to use.
+      new SandstormDb().addUserActions(this.userId, packageId, true);
+    } else {
       this.connection.sandstormDb.addUserActions(this.userId, packageId);
     }
   },

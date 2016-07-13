@@ -4,6 +4,7 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
+  api.use("ecmascript");
   api.use(["underscore", "random"]);
   api.use("accounts-base", ["client", "server"]);
   // Export Accounts (etc) to packages using this one.

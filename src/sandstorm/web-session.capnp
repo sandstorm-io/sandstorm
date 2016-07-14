@@ -313,6 +313,8 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
         # Distinguishes between HTTP response 204 (False) and 205 (True)
 
         eTag @19 :ETag;
+        # Optional entity tag header. Server can send this in a response to a modifying request
+        # to indicate for example the new version of the modified resource.
       }
 
       preconditionFailed :group {

@@ -43,7 +43,8 @@ Meteor.methods({
     const db = this.connection.sandstormDb;
     const frontendRefRegistry = this.connection.frontendRefRegistry;
 
-    const session = db.collections.sessions.findOne(sessionId);
+    const session = db.collections.sessions.findOne(
+        { _id: sessionId, userId: this.userId || { $exists: false } });
     if (!session) {
       throw new Meteor.Error(403, "Invalid session ID");
     }

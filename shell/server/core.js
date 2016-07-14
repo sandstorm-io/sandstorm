@@ -16,7 +16,8 @@
 
 const Capnp = Npm.require("capnp");
 const Url = Npm.require("url");
-import { PersistentImpl, hashSturdyRef, generateSturdyRef } from "/imports/server/persistent.js";
+import { PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements }
+    from "/imports/server/persistent.js";
 
 const PersistentHandle = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentHandle;
 const SandstormCore = Capnp.importSystem("sandstorm/supervisor.capnp").SandstormCore;
@@ -317,51 +318,6 @@ Meteor.methods({
   },
 });
 
-checkRequirements = (requirements) => {
-  if (!requirements) {
-    return true;
-  }
-
-  for (let i in requirements) {
-    const requirement = requirements[i];
-    if (requirement.tokenValid) {
-      const token = ApiTokens.findOne({ _id: requirement.tokenValid, revoked: { $ne: true }, },
-                                      { fields: { requirements: 1 } });
-      if (!token || !checkRequirements(token.requirements)) {
-        return false;
-      }
-
-      if (token.parentToken && !checkRequirements([{ tokenValid: token.parentToken }])) {
-        return false;
-      }
-    } else if (requirement.permissionsHeld) {
-      const p = requirement.permissionsHeld;
-      const viewInfo = Grains.findOne(p.grainId, { fields: { cachedViewInfo: 1 } }).cachedViewInfo;
-      const currentPermissions = SandstormPermissions.grainPermissions(
-        globalDb,
-        { grain: { _id: p.grainId, identityId: p.identityId } }, viewInfo || {}).permissions;
-      if (!currentPermissions) {
-        return false;
-      }
-
-      const requiredPermissions = p.permissions || [];
-      for (let ii = 0; ii < requiredPermissions.length; ++ii) {
-        if (requiredPermissions[ii] && !currentPermissions[ii]) {
-          return false;
-        }
-      }
-    } else if (requirement.userIsAdmin) {
-      if (!isAdminById(requirement.userIsAdmin)) {
-        return false;
-      }
-    } else {
-      throw new Meteor.Error(403, "Unknown requirement");
-    }
-  }
-
-  return true;
-};
-
 const makeSaveTemplateForChild = function (parentToken, requirements, parentTokenInfo) {
   // Constructs (part of) an ApiToken record appropriate to be used when save()ing a capability
   // that was originally created by restore()ing `parentToken`. This fills in everything that is
@@ -458,9 +414,7 @@ restoreInternal = (originalToken, ownerPattern, requirements, originalTokenInfo,
   check(token.owner, ownerPattern);
 
   // Check requirements on the token.
-  if (!checkRequirements(token.requirements)) {
-    throw new Meteor.Error(403, "Requirements not satisfied.");
-  }
+  checkRequirements(globalDb, token.requirements);
 
   // Check expiration.
   if (token.expires && token.expires.getTime() <= Date.now()) {
@@ -485,9 +439,7 @@ restoreInternal = (originalToken, ownerPattern, requirements, originalTokenInfo,
   }
 
   // Check the passed-in `requirements`.
-  if (!checkRequirements(requirements)) {
-    throw new Meteor.Error(403, "Requirements not satisfied.");
-  }
+  checkRequirements(globalDb, requirements);
 
   if (token.objectId) {
     // A token which represents a specific capability exported by a grain.

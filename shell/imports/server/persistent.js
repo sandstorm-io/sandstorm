@@ -90,4 +90,67 @@ function generateSturdyRef() {
   return Random.secret();
 }
 
-export { PersistentImpl, hashSturdyRef, generateSturdyRef };
+function checkRequirements(db, requirements) {
+  // Checks if the given list of MembraneRequirements are all satisfied, returning true if so and
+  // false otherwise.
+
+  // TODO(cleanup): SandstormPermissions has a different way of checking the same requirements.
+  //   Reuse?
+
+  // TODO(security): Eventually we want checkRequirements(), when it passes, to produce an observer
+  //   that can be used to receive a notification when the requirements may no longer be satisfied,
+  //   in order to revoke the live object. See RequirementObserver in supervisor.capnp.
+
+  if (!requirements) {
+    return true;
+  }
+
+  requirements.forEach(requirement => {
+    if (requirement.tokenValid) {
+      const token = db.collections.apiTokens.findOne(
+          { _id: requirement.tokenValid, revoked: { $ne: true }, },
+          { fields: { requirements: 1 } });
+      if (!token) {
+        throw new Meteor.Error(403,
+            "Capability revoked because the link through which it was introduced has been " +
+            "revoked or deleted.");
+      }
+
+      checkRequirements(db, token.requirements);
+
+      if (token.parentToken) {
+        checkRequirements(db, [{ tokenValid: token.parentToken }]);
+      }
+    } else if (requirement.permissionsHeld) {
+      const p = requirement.permissionsHeld;
+      const viewInfo = db.collections.grains.findOne(
+          p.grainId, { fields: { cachedViewInfo: 1 } }).cachedViewInfo;
+      const currentPermissions = SandstormPermissions.grainPermissions(db,
+          { grain: { _id: p.grainId, identityId: p.identityId } }, viewInfo || {}).permissions;
+      if (!currentPermissions) {
+        throw new Meteor.Error(403,
+            "Capability revoked because a user involved in introducing it no longer has " +
+            "the necessary permissions.");
+      }
+
+      const requiredPermissions = p.permissions || [];
+      for (let ii = 0; ii < requiredPermissions.length; ++ii) {
+        if (requiredPermissions[ii] && !currentPermissions[ii]) {
+          throw new Meteor.Error(403,
+              "Capability revoked because a user involved in introducing it no longer has " +
+              "the necessary permissions.");
+        }
+      }
+    } else if (requirement.userIsAdmin) {
+      if (!db.isAdminById(requirement.userIsAdmin)) {
+        throw new Meteor.Error(403,
+            "Capability revoked because the user who created it has lost their admin " +
+            "rights.");
+      }
+    } else {
+      throw new Meteor.Error(403, "Unknown requirement type.");
+    }
+  });
+};
+
+export { PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements };

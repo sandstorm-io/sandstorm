@@ -127,7 +127,7 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
           browser
             .switchWindow(windows.value[1])
             .waitForElementVisible(".grainlog-contents > pre", short_wait)
-            .assert.containsText(".grainlog-contents > pre", "Error: Requirements not satisfied")
+            .assert.containsText(".grainlog-contents > pre", "Error: Capability revoked because a user involved in introducing it no longer has the necessary permissions")
         });
     })
     .end();

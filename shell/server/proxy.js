@@ -1643,7 +1643,7 @@ class Proxy {
       const noContent = rpcResponse.noContent;
       const noContentCode = noContentSuccessCodes[noContent.shouldResetForm * 1];
       if (noContent.eTag) {
-        response.setHeader('ETag', composeETag(noContent.eTag));
+        response.setHeader("ETag", composeETag(noContent.eTag));
       }
 
       response.writeHead(noContentCode.id, noContentCode.title);

@@ -198,7 +198,11 @@ class PersistentUiViewImpl {
         throw new Error("grain no longer exists");
       }
 
-      const pkg = Packages.findOne({ _id: grain.packageId });
+      let pkg = Packages.findOne({ _id: grain.packageId });
+      if (!pkg) {
+        pkg = DevPackages.findOne({ appId: grain.appId });
+      }
+
       const manifest = pkg.manifest || {};
 
       const viewInfo = grain.cachedViewInfo || {};

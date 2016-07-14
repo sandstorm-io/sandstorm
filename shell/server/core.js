@@ -121,7 +121,7 @@ class SandstormCoreImpl {
             });
 
             return {
-              handle: globalFrontendRefRegistry.restore(globalDb,
+              handle: globalFrontendRefRegistry.create(globalDb,
                   { notificationHandle: notificationId }),
             };
           });
@@ -316,22 +316,6 @@ Meteor.methods({
     Notifications.update({ userId: Meteor.userId() }, { $set: { isUnread: false } }, { multi: true });
   },
 });
-
-// TODO(now): Get rid of this maybe?
-saveFrontendRef = (frontendRef, owner, requirements) => {
-  return inMeteor(() => {
-    const sturdyRef = new Buffer(generateSturdyRef());
-    const hashedSturdyRef = hashSturdyRef(sturdyRef);
-    ApiTokens.insert({
-      _id: hashedSturdyRef,
-      frontendRef: frontendRef,
-      owner: owner,
-      created: new Date(),
-      requirements: requirements,
-    });
-    return { sturdyRef: sturdyRef };
-  });
-};
 
 checkRequirements = (requirements) => {
   if (!requirements) {

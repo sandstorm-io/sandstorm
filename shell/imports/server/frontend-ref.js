@@ -20,19 +20,19 @@ class FrontendRefRegistry {
     this._queryHandlers = {};
   }
 
+  create(db, frontendRef, requirements) {
+    // Construct a fresh capability based on a `frontendRef` value.
+
+    const saveTemplate = { frontendRef };
+    if (requirements) {
+      saveTemplate.requirements = requirements;
+    }
+
+    return this.restore(db, saveTemplate, frontendRef);
+  }
+
   restore(db, saveTemplate, frontendRef) {
     // Restores a frontendRef capability using the appropriate registered handler.
-
-    if (!frontendRef) {
-      // saveTemplate is optional.
-      frontendRef = saveTemplate;
-      saveTemplate = undefined;
-    }
-
-    if (!saveTemplate) {
-      // If saveTemplate not provided, infer from frontendRef.
-      saveTemplate = { frontendRef };
-    }
 
     const keys = Object.keys(frontendRef);
     if (keys.length != 1) {

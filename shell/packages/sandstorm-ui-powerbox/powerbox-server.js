@@ -41,6 +41,7 @@ Meteor.methods({
     ));
 
     const db = this.connection.sandstormDb;
+    const frontendRefRegistry = this.connection.frontendRefRegistry;
 
     const session = db.collections.sessions.findOne(sessionId);
     if (!session) {
@@ -110,8 +111,9 @@ Meteor.methods({
       },
     };
 
-    // TODO(cleanup): refactor: reaches out into core.js
-    const sturdyRef = waitPromise(saveFrontendRef(frontendRefVariety, apiTokenOwner, requirements)).sturdyRef.toString();
+    const cap = frontendRefRegistry.create(db, frontendRefVariety, requirements);
+    const sturdyRef = waitPromise(cap.save(apiTokenOwner)).sturdyRef.toString();
+    cap.close();
     return { sturdyRef, descriptor };
   },
 

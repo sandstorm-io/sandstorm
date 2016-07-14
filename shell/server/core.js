@@ -147,13 +147,11 @@ class NotificationHandle extends PersistentImpl {
   constructor(db, saveTemplate, notificationId) {
     super(db, saveTemplate);
     this.notificationId = notificationId;
-    this.saved = !!saveTemplate.parentToken;  // TODO(cleanup): ugly
   }
 
   close() {
-    const _this = this;
     return inMeteor(() => {
-      if (!_this.saved) {
+      if (!this.isSaved()) {
         dismissNotification(_this.notificationId);
       }
     });

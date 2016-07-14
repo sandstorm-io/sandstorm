@@ -18,11 +18,25 @@ const Crypto = Npm.require("crypto");
 
 const privateDb = Symbol("PersistentImpl.db");
 const privateTemplate = Symbol("PersistentImpl.template");
+const privateIsSaved = Symbol("PersistentImpl.isSaved");
 
 class PersistentImpl {
   constructor(db, saveTemplate) {
     this[privateDb] = db;
     this[privateTemplate] = saveTemplate;
+
+    // TODO(someday): This may or may not be quite right in cases where we're saving a root token
+    //   by copy. Is the copy the "same" capability or not? Today, isSaved() is only used by
+    //   wakelock notification handles which are not issued through the powerbox, therefore do not
+    //   go through claimRequest(), therefore are not saved by copy, so the point is moot.
+    this[privateIsSaved] = !!saveTemplate.parentToken;
+  }
+
+  isSaved() {
+    // Can be called by subclasses to ask whether or not a record currently exists in the ApiTokens
+    // table representing this capability.
+
+    return this[privateIsSaved];
   }
 
   save(params) {
@@ -60,6 +74,7 @@ class PersistentImpl {
       newToken.created = new Date();
 
       db.collections.apiTokens.insert(newToken);
+      this[privateIsSaved] = true;
       return { sturdyRef: new Buffer(sturdyRef) };
     });
   }

@@ -20,7 +20,7 @@ const privateDb = Symbol("PersistentImpl.db");
 const privateTemplate = Symbol("PersistentImpl.template");
 
 class PersistentImpl {
-  constructor(db: SandstormDb, saveTemplate: ApiToken) {
+  constructor(db, saveTemplate) {
     this[privateDb] = db;
     this[privateTemplate] = saveTemplate;
   }

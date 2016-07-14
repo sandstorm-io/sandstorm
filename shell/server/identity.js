@@ -26,7 +26,7 @@ class IdentityImpl extends PersistentImpl {
 };
 
 makeIdentity = (identityId, requriements) => {
-  var saveTemplate = { frontendRef: { identity: identityId } };
+  const saveTemplate = { frontendRef: { identity: identityId } };
   return new Capnp.Capability(new IdentityImpl(globalDb, saveTemplate, identityId),
                               IdentityRpc.PersistentIdentity);
 };

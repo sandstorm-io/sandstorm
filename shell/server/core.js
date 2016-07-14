@@ -432,7 +432,7 @@ const makeSaveTemplateForChild = function (parentToken, requirements, parentToke
   }
 
   return saveTemplate;
-}
+};
 
 restoreInternal = (originalToken, ownerPattern, requirements, originalTokenInfo,
                    currentTokenId) => {

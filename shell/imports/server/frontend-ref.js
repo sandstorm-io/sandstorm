@@ -20,7 +20,7 @@ class FrontendRefRegistry {
     this._queryHandlers = {};
   }
 
-  restore(db: SandstormDb, saveTemplate: ApiToken, frontendRef: ApiToken.FrontendRef): Capability {
+  restore(db, saveTemplate, frontendRef) {
     // Restores a frontendRef capability using the appropriate registered handler.
 
     if (!frontendRef) {
@@ -48,7 +48,7 @@ class FrontendRefRegistry {
     return handler(db, saveTemplate, frontendRef[key]);
   }
 
-  query(db: SandstormDb, userAccountId: string, tag: PowerboxDescriptor.Tag): PowerboxOption[] {
+  query(db, userAccountId, tag) {
     // Performs a powerbox query using the appropriate registered handler.
 
     const handler = this._queryHandlers[tag.id];
@@ -59,9 +59,7 @@ class FrontendRefRegistry {
     }
   }
 
-  addRestoreHandler(fieldName: string,
-                    callback: (db: SandstormDb, saveTemplate: ApiToken, value: any)
-                              => Capability) {
+  addRestoreHandler(fieldName, callback) {
     // Registers a callback to use to restore frontendRef capabilities of this type.
     //
     // `fieldName` is the name of the field of `ApiTokens.frontendRef` which is filled in for this
@@ -76,11 +74,11 @@ class FrontendRefRegistry {
     if (fieldName in this._restoreHandlers) {
       throw new Error("restore handler already registered: " + fieldName);
     }
+
     this._restoreHandlers[fieldName] = callback;
   }
 
-  addQueryHandler(typeId: string,
-      callback: (db: SandstormDb, userAccountId: Text, tagValue: Buffer) => PowerboxOption[]) {
+  addQueryHandler(typeId, callback) {
     // Registers a callback to use to interpret a powerbox query for the given type ID.
     //
     // `typeId` is a stringified decimal 64-bit integer. (Stringification is needed as Javascript
@@ -94,6 +92,7 @@ class FrontendRefRegistry {
     if (typeId in this._queryHandlers) {
       throw new Error("query handler already registered: " + typeId);
     }
+
     this._queryHandlers[typeId] = callback;
   }
 }

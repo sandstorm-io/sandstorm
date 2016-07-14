@@ -518,7 +518,7 @@ restoreInternal = (originalToken, ownerPattern, requirements, originalTokenInfo,
     // Ensure the grain is running, then restore the capability.
     return waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
       // Note that in this case it is the supervisor's job to implement SystemPersistent, so we
-      // discard persistentMethods.
+      // don't generate a saveTemplate here.
       return supervisor.restore(token.objectId, requirements, originalToken);
     }));
   } else {

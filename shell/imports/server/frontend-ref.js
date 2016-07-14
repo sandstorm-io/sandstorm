@@ -65,7 +65,7 @@ class FrontendRefRegistry {
     // `fieldName` is the name of the field of `ApiTokens.frontendRef` which is filled in for this
     // ref type.
     //
-    // `callback` is of type `(db, value, saveTemplate) -> capability`, where
+    // `callback` is of type `(db, saveTemplate, value) -> capability`, where
     // `value` is the value of the single field of `ApiTokens.frontendRef` for this capability, and
     // `saveTemplate` is the token template to pass to the PersistentImpl constructor. The returned
     // object is a Cap'n Proto capability implementing SystemPersistent along with whatever other

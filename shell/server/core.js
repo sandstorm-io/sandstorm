@@ -539,7 +539,6 @@ restoreInternal = (originalToken, ownerPattern, requirements, originalTokenInfo,
       // do some transformation), which will return a different capability.
       return { cap: makePersistentUiView(globalDb, saveTemplate, token.grainId) };
     } else {
-      console.log(token);
       throw new Meteor.Error(500, "Unknown token type. ID: " + token._id);
     }
   }

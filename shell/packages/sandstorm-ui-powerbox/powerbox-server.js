@@ -321,7 +321,6 @@ function getVerifiedEmails(db, userId, verifierId) {
   let services = null;
 
   if (verifierId) {
-    console.log(verifierId);
     const verifier = db.collections.apiTokens.findOne(
         { "frontendRef.emailVerifier.id": verifierId });
     if (!verifier) return []; // invalid verifier

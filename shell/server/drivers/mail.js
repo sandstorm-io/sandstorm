@@ -297,7 +297,7 @@ hackSendEmail = (session, email) => {
 class EmailVerifierImpl extends PersistentImpl {
   constructor(db, saveTemplate, params) {
     super(db, saveTemplate);
-    this._id = saveTemplate.parentToken;  // TODO(now): Fix.
+    this._id = params.id;
     this._services = params.services;
   }
 

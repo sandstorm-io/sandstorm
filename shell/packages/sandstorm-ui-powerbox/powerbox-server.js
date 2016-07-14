@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+const Crypto = Npm.require("crypto");
 const Capnp = Npm.require("capnp");
 const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");
@@ -71,6 +72,10 @@ Meteor.methods({
           }
         });
       }
+
+      // Assign an ID to the verifier. Note that this isn't really security-sensitive but ideally
+      // will avoid collisions. Also note that various code expects this string to be base64.
+      frontendRefVariety.emailVerifier.id = Crypto.randomBytes(16).toString("base64");
 
       descriptor = encodePowerboxDescriptor({ tags: [{ id: Email.EmailVerifier.typeId }] });
     } else if (frontendRefVariety.verifiedEmail) {
@@ -316,9 +321,11 @@ function getVerifiedEmails(db, userId, verifierId) {
   let services = null;
 
   if (verifierId) {
-    const verifier = db.collections.apiTokens.findOne(verifierId);
-    const verifierInfo = ((verifier || {}).frontendRef || {}).emailVerifier;
-    if (!verifierInfo) return [];  // invalid verifier
+    console.log(verifierId);
+    const verifier = db.collections.apiTokens.findOne(
+        { "frontendRef.emailVerifier.id": verifierId });
+    if (!verifier) return []; // invalid verifier
+    const verifierInfo = verifier.frontendRef.emailVerifier;
 
     if (verifierInfo.services) {
       // Limit to the listed services.

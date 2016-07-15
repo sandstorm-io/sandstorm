@@ -29,16 +29,10 @@ function encodePowerboxDescriptor(desc) {
 }
 
 Meteor.methods({
-  newFrontendRef(sessionId, frontendRefVariety) {
-    // Checks if the requester is an admin, and if so, provides a new frontendref of the desired
-    // variety, provided by the requesting user, owned by the grain for this session.
+  newFrontendRef(sessionId, frontendRef) {
+    // Completes a powerbox request for a frontendRef capability.
     check(sessionId, String);
-    check(frontendRefVariety, Match.OneOf(
-      { ipNetwork: true },
-      { ipInterface: true },
-      { emailVerifier: { services: Match.Optional([String]) } },
-      { verifiedEmail: { verifierId: Match.Optional(String), address: String } },
-    ));
+    // frontendRef is type-checked by frontendRefRegistry.validate(), below.
 
     const db = this.connection.sandstormDb;
     const frontendRefRegistry = this.connection.frontendRefRegistry;
@@ -49,59 +43,8 @@ Meteor.methods({
       throw new Meteor.Error(403, "Invalid session ID");
     }
 
-    let descriptor;
-    let requirements = [];
-    if (frontendRefVariety.ipNetwork) {
-      if (!db.isAdmin(this.userId)) {
-        throw new Meteor.Error(403, "User must be an admin to powerbox offer IpNetwork");
-      }
-
-      descriptor = encodePowerboxDescriptor({ tags: [{ id: Ip.IpNetwork.typeId }] });
-      requirements.push({ userIsAdmin: Meteor.userId() });
-    } else if (frontendRefVariety.ipInterface) {
-      if (!db.isAdmin(this.userId)) {
-        throw new Meteor.Error(403, "User must be an admin to powerbox offer IpInterface");
-      }
-
-      descriptor = encodePowerboxDescriptor({ tags: [{ id: Ip.IpInterface.typeId }] });
-      requirements.push({ userIsAdmin: Meteor.userId() });
-    } else if (frontendRefVariety.emailVerifier) {
-      const services = frontendRefVariety.emailVerifier.services;
-      if (services) {
-        services.forEach(service => {
-          if (!Accounts.identityServices[service]) {
-            throw new Error("No such identity service: " + service);
-          }
-        });
-      }
-
-      // Assign an ID to the verifier. Note that this isn't really security-sensitive but ideally
-      // will avoid collisions. Also note that various code expects this string to be base64.
-      frontendRefVariety.emailVerifier.id = Crypto.randomBytes(16).toString("base64");
-
-      descriptor = encodePowerboxDescriptor({ tags: [{ id: Email.EmailVerifier.typeId }] });
-    } else if (frontendRefVariety.verifiedEmail) {
-      // Verify that the address actually belongs to the user.
-
-      if (!_.contains(
-          getVerifiedEmails(db, this.userId, frontendRefVariety.verifiedEmail.verifierId),
-          frontendRefVariety.verifiedEmail.address)) {
-        throw new Meteor.Error(403, "User has no such verified address");
-      }
-
-      // Add the session's tabId.
-      frontendRefVariety.verifiedEmail.tabId = session.tabId;
-
-      // Build the descriptor, which contains the verifier ID.
-      const tagValue = frontendRefVariety.verifiedEmail.verifierId &&
-          Capnp.serialize(Email.VerifiedEmail.PowerboxTag,
-              { verifierId: new Buffer(frontendRefVariety.verifiedEmail.verifierId, "hex") });
-      descriptor = encodePowerboxDescriptor({
-        tags: [{ id: Email.VerifiedEmail.typeId, value: tagValue }],
-      });
-    } else {
-      throw new Meteor.Error(500, "Unimplemented frontendRef type");
-    }
+    let { descriptor, requirements } = frontendRefRegistry.validate(db, session, frontendRef);
+    descriptor = encodePowerboxDescriptor(descriptor);
 
     const grainId = session.grainId;
     const apiTokenOwner = {
@@ -112,7 +55,7 @@ Meteor.methods({
       },
     };
 
-    const cap = frontendRefRegistry.create(db, frontendRefVariety, requirements);
+    const cap = frontendRefRegistry.create(db, frontendRef, requirements);
     const sturdyRef = waitPromise(cap.save(apiTokenOwner)).sturdyRef.toString();
     cap.close();
     return { sturdyRef, descriptor };
@@ -242,109 +185,25 @@ class PowerboxOption {
   }
 }
 
-const specialCaseTypes = {};
-// This object maps tag IDs to functions which return lists of matches for that tag.
+function registerUiViewQueryHandler(frontendRefRegistry) {
+  // TODO(cleanup): Maybe this belongs in a different file? But where?
 
-specialCaseTypes[Grain.UiView.typeId] = function (db, userId, value) {
-  if (!userId) return [];
+  frontendRefRegistry.addQueryHandler(Grain.UiView.typeId, (db, userId, value) => {
+    if (!userId) return [];
 
-  // TODO(someday): Allow `value` to specify app IDs to filter for.
+    // TODO(someday): Allow `value` to specify app IDs to filter for.
 
-  const sharedGrainIds = db.userApiTokens(userId).map(token => token.grainId);
-  const ownedGrainIds = db.userGrains(userId).map(grain => grain._id);
+    const sharedGrainIds = db.userApiTokens(userId).map(token => token.grainId);
+    const ownedGrainIds = db.userGrains(userId).map(grain => grain._id);
 
-  return _.uniq(sharedGrainIds.concat(ownedGrainIds)).map(grainId => {
-    return new PowerboxOption({
-      _id: "grain-" + grainId,
-      grainId: grainId,
-      uiView: {},
+    return _.uniq(sharedGrainIds.concat(ownedGrainIds)).map(grainId => {
+      return new PowerboxOption({
+        _id: "grain-" + grainId,
+        grainId: grainId,
+        uiView: {},
+      });
     });
   });
-};
-
-specialCaseTypes[Ip.IpNetwork.typeId] = function (db, userId, value) {
-  if (Meteor.users.findOne(userId).isAdmin) {
-    return [
-      new PowerboxOption({
-        _id: "frontendref-ipnetwork",
-        frontendRef: { ipNetwork: true },
-      }),
-    ];
-  } else {
-    return [];
-  }
-};
-
-specialCaseTypes[Ip.IpInterface.typeId] = function (db, userId, value) {
-  if (Meteor.users.findOne(userId).isAdmin) {
-    return [
-      new PowerboxOption({
-        _id: "frontendref-ipinterface",
-        frontendRef: { ipInterface: true },
-      }),
-    ];
-  } else {
-    return [];
-  }
-};
-
-specialCaseTypes[Email.EmailVerifier.typeId] = function (db, userId, value) {
-  const results = [];
-
-  results.push({
-    _id: "emailverifier-all",
-    frontendRef: { emailVerifier: {} },
-  });
-
-  for (const name in Accounts.identityServices) {
-    if (Accounts.identityServices[name].isEnabled()) {
-      results.push({
-        _id: "emailverifier-" + name,
-        frontendRef: { emailVerifier: { services: [name] } },
-      });
-    }
-  };
-
-  return results;
-};
-
-specialCaseTypes[Email.VerifiedEmail.typeId] = function (db, userId, value) {
-  const verifierId = value &&
-      Capnp.parse(Email.VerifiedEmail.PowerboxTag, value).verifierId.toString("base64");
-  return getVerifiedEmails(db, userId, verifierId).map(address => ({
-    _id: "email-" + address,
-    frontendRef: { verifiedEmail: { verifierId, address } },
-  }));
-};
-
-function getVerifiedEmails(db, userId, verifierId) {
-  // Get all of the email addresses verified as belonging to the given user using the given
-  // verifier.
-
-  let services = null;
-
-  if (verifierId) {
-    const verifier = db.collections.apiTokens.findOne(
-        { "frontendRef.emailVerifier.id": verifierId });
-    if (!verifier) return []; // invalid verifier
-    const verifierInfo = verifier.frontendRef.emailVerifier;
-
-    if (verifierInfo.services) {
-      // Limit to the listed services.
-      services = {};
-      verifierInfo.services.forEach(service => services[service] = true);
-    }
-  }
-
-  const user = Meteor.users.findOne(userId);
-  const emails = {};  // map address -> true, for uniquification
-  Meteor.users.find({ _id: { $in: SandstormDb.getUserIdentityIds(user) } }).forEach(identity => {
-    if (!services || services[identity.profile.service]) {
-      SandstormDb.getVerifiedEmails(identity).forEach(email => { emails[email.email] = true; });
-    }
-  });
-
-  return Object.keys(emails);
 }
 
 Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
@@ -379,6 +238,7 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
 
   const results = {};
   const db = this.connection.sandstormDb;
+  const frontendRefRegistry = this.connection.frontendRefRegistry;
 
   if (descriptorList.length > 0) {
     const descriptorMatches = descriptorList.map(packedDescriptor => {
@@ -395,14 +255,11 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
 
       // Expand each tag into a match map.
       const tagMatches = descriptor.tags.map(tag => {
-        const type = specialCaseTypes[tag.id];
         const result = {};
 
-        if (type) {
-          type(db, this.userId, tag.value).forEach(option => {
-            result[option._id] = option;
-          });
-        }
+        frontendRefRegistry.query(db, this.userId, tag).forEach(option => {
+          result[option._id] = new PowerboxOption(option);
+        });
 
         return result;
       });
@@ -478,3 +335,5 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
 
   this.ready();
 });
+
+SandstormPowerbox = { registerUiViewQueryHandler };

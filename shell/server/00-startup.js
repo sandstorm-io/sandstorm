@@ -19,6 +19,8 @@ import { FrontendRefRegistry } from "/imports/server/frontend-ref.js";
 
 globalFrontendRefRegistry = new FrontendRefRegistry();
 
+SandstormPowerbox.registerUiViewQueryHandler(globalFrontendRefRegistry);
+
 getWildcardOrigin = globalDb.getWildcardOrigin.bind(globalDb);
 
 Meteor.onConnection((connection) => {

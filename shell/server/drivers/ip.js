@@ -129,6 +129,30 @@ Meteor.startup(() => {
     return new Capnp.Capability(new IpInterfaceImpl(db, saveTemplate),
                                 IpRpc.PersistentIpInterface);
   });
+
+  globalFrontendRefRegistry.addValidateHandler("ipInterface", (db, session, value) => {
+    check(value, true);
+
+    if (!session.userId) {
+      throw new Meteor.Error(403, "Not logged in.");
+    }
+
+    return {
+      descriptor: { tags: [{ id: IpRpc.IpInterface.typeId }] },
+      requirements: [{ userIsAdmin: session.userId }],
+    };
+  });
+
+  globalFrontendRefRegistry.addQueryHandler(IpRpc.IpInterface.typeId, (db, userId, value) => {
+    if (Meteor.users.findOne(userId).isAdmin) {
+      return [{
+        _id: "frontendref-ipinterface",
+        frontendRef: { ipInterface: true },
+      }];
+    } else {
+      return [];
+    }
+  });
 });
 
 BoundUdpPortImpl = class BoundUdpPortImpl {
@@ -221,6 +245,30 @@ Meteor.startup(() => {
   globalFrontendRefRegistry.addRestoreHandler("ipNetwork", (db, saveTemplate) => {
     return new Capnp.Capability(new IpNetworkImpl(db, saveTemplate),
                                 IpRpc.PersistentIpNetwork);
+  });
+
+  globalFrontendRefRegistry.addValidateHandler("ipNetwork", (db, session, value) => {
+    check(value, true);
+
+    if (!session.userId) {
+      throw new Meteor.Error(403, "Not logged in.");
+    }
+
+    return {
+      descriptor: { tags: [{ id: IpRpc.IpNetwork.typeId }] },
+      requirements: [{ userIsAdmin: session.userId }],
+    };
+  });
+
+  globalFrontendRefRegistry.addQueryHandler(IpRpc.IpNetwork.typeId, (db, userId, value) => {
+    if (Meteor.users.findOne(userId).isAdmin) {
+      return [{
+        _id: "frontendref-ipnetwork",
+        frontendRef: { ipNetwork: true },
+      }];
+    } else {
+      return [];
+    }
   });
 });
 

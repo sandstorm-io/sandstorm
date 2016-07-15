@@ -331,6 +331,36 @@ class VerifiedEmailImpl extends PersistentImpl {
   }
 }
 
+function getVerifiedEmails(db, userId, verifierId) {
+  // Get all of the email addresses verified as belonging to the given user using the given
+  // verifier.
+
+  let services = null;
+
+  if (verifierId) {
+    const verifier = db.collections.apiTokens.findOne(
+        { "frontendRef.emailVerifier.id": verifierId });
+    if (!verifier) return []; // invalid verifier
+    const verifierInfo = verifier.frontendRef.emailVerifier;
+
+    if (verifierInfo.services) {
+      // Limit to the listed services.
+      services = {};
+      verifierInfo.services.forEach(service => services[service] = true);
+    }
+  }
+
+  const user = Meteor.users.findOne(userId);
+  const emails = {};  // map address -> true, for uniquification
+  Meteor.users.find({ _id: { $in: SandstormDb.getUserIdentityIds(user) } }).forEach(identity => {
+    if (!services || services[identity.profile.service]) {
+      SandstormDb.getVerifiedEmails(identity).forEach(email => { emails[email.email] = true; });
+    }
+  });
+
+  return Object.keys(emails);
+}
+
 // TODO(cleanup): Meteor.startup() needed because 00-startup.js runs *after* code in subdirectories
 //   (ugh).
 Meteor.startup(() => {
@@ -339,8 +369,86 @@ Meteor.startup(() => {
                                 EmailImpl.PersistentEmailVerifier);
   });
 
+  globalFrontendRefRegistry.addValidateHandler("emailVerifier", (db, session, value) => {
+    check(value, { services: Match.Optional([String]) });
+
+    const services = value.services;
+    if (services) {
+      services.forEach(service => {
+        if (!Accounts.identityServices[service]) {
+          throw new Error("No such identity service: " + service);
+        }
+      });
+    }
+
+    value.id = Crypto.randomBytes(16).toString("base64");
+
+    return {
+      descriptor: { tags: [{ id: EmailRpc.EmailVerifier.typeId }] },
+      requirements: [],
+    };
+  });
+
+  globalFrontendRefRegistry.addQueryHandler(
+      EmailRpc.EmailVerifier.typeId, (db, userId, value) => {
+    const results = [];
+
+    results.push({
+      _id: "emailverifier-all",
+      frontendRef: { emailVerifier: {} },
+    });
+
+    for (const name in Accounts.identityServices) {
+      if (Accounts.identityServices[name].isEnabled()) {
+        results.push({
+          _id: "emailverifier-" + name,
+          frontendRef: { emailVerifier: { services: [name] } },
+        });
+      }
+    };
+
+    return results;
+  });
+
   globalFrontendRefRegistry.addRestoreHandler("verifiedEmail", (db, saveTemplate) => {
     return new Capnp.Capability(new VerifiedEmailImpl(db, saveTemplate),
                                 EmailImpl.PersistentVerifiedEmail);
+  });
+
+  globalFrontendRefRegistry.addValidateHandler("verifiedEmail", (db, session, value) => {
+    check(value, { verifierId: Match.Optional(String), address: String });
+
+    if (!session.userId) {
+      throw new Meteor.Error(403, "Not logged in.");
+    }
+
+    // Verify that the address actually belongs to the user.
+
+    if (!_.contains(getVerifiedEmails(db, session.userId, value.verifierId), value.address)) {
+      throw new Meteor.Error(403, "User has no such verified address");
+    }
+
+    // Add the session's tabId.
+    value.tabId = session.tabId;
+
+    // Build the descriptor, which contains the verifier ID.
+    const tagValue = value.verifierId &&
+        Capnp.serialize(EmailRpc.VerifiedEmail.PowerboxTag,
+            { verifierId: new Buffer(value.verifierId, "hex") });
+
+    return {
+      descriptor: { tags: [{ id: EmailRpc.VerifiedEmail.typeId, value: tagValue }] },
+      requirements: [],
+    };
+  });
+
+  globalFrontendRefRegistry.addQueryHandler(
+      EmailRpc.VerifiedEmail.typeId, (db, userId, value) => {
+    const verifierId = value &&
+        Capnp.parse(EmailRpc.VerifiedEmail.PowerboxTag, value).verifierId.toString("base64");
+    return getVerifiedEmails(db, userId, verifierId).map(address => ({
+      _id: "email-" + address,
+      frontendRef: { verifiedEmail: { verifierId, address } },
+    }));
   });
 });

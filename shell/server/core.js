@@ -153,7 +153,7 @@ class NotificationHandle extends PersistentImpl {
   close() {
     return inMeteor(() => {
       if (!this.isSaved()) {
-        dismissNotification(_this.notificationId);
+        dismissNotification(this.notificationId);
       }
     });
   }

@@ -194,6 +194,9 @@
   button[type=button] {
     @extend %button-base;
     @extend %button-secondary;
+    &.danger {
+      @extend %button-danger;
+    }
   }
 
   &.disabled {

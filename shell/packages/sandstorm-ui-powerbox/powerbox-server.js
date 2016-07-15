@@ -18,8 +18,6 @@ const Crypto = Npm.require("crypto");
 const Capnp = Npm.require("capnp");
 const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");
-const Ip = Capnp.importSystem("sandstorm/ip.capnp");
-const Email = Capnp.importSystem("sandstorm/email.capnp");
 
 function encodePowerboxDescriptor(desc) {
   return Capnp.serializePacked(Powerbox.PowerboxDescriptor, desc)

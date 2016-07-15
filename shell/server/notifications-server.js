@@ -96,7 +96,7 @@ logActivity = function (grainId, identityId, event) {
   if (event.users && event.users.length > 0) {
     const promises = [];
     event.users.forEach(user => {
-      if (user.identity && user.mentioned) {
+      if (user.identity && (user.mentioned || user.subscribed)) {
         promises.push(unwrapFrontendCap(user.identity, "identity", targetId => {
           addRecipient({ identityId: targetId });
         }));

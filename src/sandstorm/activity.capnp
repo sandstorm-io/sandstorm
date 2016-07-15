@@ -74,8 +74,26 @@ struct ActivityEvent {
     identity @0 :Identity.Identity;
 
     mentioned @1 :Bool;
-    # This user is "mentioned" by this event. This is a hint that they should be more actively
-    # notified.
+    # This user is explicitly "mentioned" by this event, e.g. like an @-mention on Twitter or
+    # GitHub. In the activity log, the event may explicitly show who was mentioned, and mentioned
+    # users may be notified even if they are not explicitly subscribed to the event.
+    #
+    # Note that if you want a user to be notified but they *aren't* actually "mentioned" by the
+    # event, you may want to use `subscribed`, below, instead. As a rule of thumb, think about
+    # how to complete this sentence: "You received this notification because _______" If the blank
+    # should say "you were mentioned", then set `mentioned = true`. If it would say "you are
+    # subscribed to this thread" (or something like that), set `subscribed = true`.
+
+    subscribed @3 :Bool;
+    # Set true if the application manages a concept of "subscriptions" internally (rather than
+    # letting Sandstorm do it), and that according to this internal computation, the user is
+    # "subscribed" to this event. The effect of this is that the user will be notified of the
+    # event even though it doesn't specifically "mention" them. The user may be informed that they
+    # are being notified because they are subscribed.
+    #
+    # Generally, an app should *not* use this field if it uses `autoSubscribeToThread`,
+    # `autoSubscribeToGrain`, or the Sandstorm APIs for notification subscriptions. Only use this
+    # field if your app is implementing its own notion of subscriptions.
 
     canView @2 :Bool;
     # This user can view this event *even if* they do not meet the `requiredPermission` in the

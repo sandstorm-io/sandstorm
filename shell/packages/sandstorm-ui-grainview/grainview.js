@@ -807,9 +807,9 @@ GrainView = class GrainView {
           if (err) {
             console.error(err);
           }
-
-          Router.go("grain", { grainId: apiToken.grainId });
         });
+
+        Router.go("grain", { grainId: apiToken.grainId });
       }
     }
 

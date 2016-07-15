@@ -129,6 +129,7 @@ class FrontendRefRegistry {
       if (object.frontendRefField in this._frontendRefHandlers) {
         throw new Error("frontendRef handler already registered: " + object.frontendRefField);
       }
+
       this._frontendRefHandlers[object.frontendRefField] = object;
     }
 
@@ -136,6 +137,7 @@ class FrontendRefRegistry {
       if (object.typeId in this._typeIdHandlers) {
         throw new Error("typeId handler already registered: " + object.typeId);
       }
+
       this._typeIdHandlers[object.typeId] = object;
     }
   }

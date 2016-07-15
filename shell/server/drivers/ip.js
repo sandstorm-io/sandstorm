@@ -149,10 +149,12 @@ Meteor.startup(() => {
 
     query(db, userId, value) {
       if (Meteor.users.findOne(userId).isAdmin) {
-        return [{
-          _id: "frontendref-ipinterface",
-          frontendRef: { ipInterface: true },
-        }];
+        return [
+          {
+            _id: "frontendref-ipinterface",
+            frontendRef: { ipInterface: true },
+          },
+        ];
       } else {
         return [];
       }
@@ -271,14 +273,16 @@ Meteor.startup(() => {
 
     query(db, userId, value) {
       if (Meteor.users.findOne(userId).isAdmin) {
-        return [{
-          _id: "frontendref-ipnetwork",
-          frontendRef: { ipNetwork: true },
-        }];
+        return [
+          {
+            _id: "frontendref-ipnetwork",
+            frontendRef: { ipNetwork: true },
+          },
+        ];
       } else {
         return [];
       }
-    }
+    },
   });
 });
 

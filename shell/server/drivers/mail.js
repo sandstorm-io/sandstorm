@@ -364,91 +364,99 @@ function getVerifiedEmails(db, userId, verifierId) {
 // TODO(cleanup): Meteor.startup() needed because 00-startup.js runs *after* code in subdirectories
 //   (ugh).
 Meteor.startup(() => {
-  globalFrontendRefRegistry.addRestoreHandler("emailVerifier", (db, saveTemplate, params) => {
-    return new Capnp.Capability(new EmailVerifierImpl(db, saveTemplate, params),
-                                EmailImpl.PersistentEmailVerifier);
-  });
+  globalFrontendRefRegistry.register({
+    frontendRefField: "emailVerifier",
+    typeId: EmailRpc.EmailVerifier.typeId,
 
-  globalFrontendRefRegistry.addValidateHandler("emailVerifier", (db, session, value) => {
-    check(value, { services: Match.Optional([String]) });
+    restore(db, saveTemplate, params) {
+      return new Capnp.Capability(new EmailVerifierImpl(db, saveTemplate, params),
+                                  EmailImpl.PersistentEmailVerifier);
+    },
 
-    const services = value.services;
-    if (services) {
-      services.forEach(service => {
-        if (!Accounts.identityServices[service]) {
-          throw new Error("No such identity service: " + service);
-        }
-      });
-    }
+    validate(db, session, value) {
+      check(value, { services: Match.Optional([String]) });
 
-    value.id = Crypto.randomBytes(16).toString("base64");
-
-    return {
-      descriptor: { tags: [{ id: EmailRpc.EmailVerifier.typeId }] },
-      requirements: [],
-    };
-  });
-
-  globalFrontendRefRegistry.addQueryHandler(
-      EmailRpc.EmailVerifier.typeId, (db, userId, value) => {
-    const results = [];
-
-    results.push({
-      _id: "emailverifier-all",
-      frontendRef: { emailVerifier: {} },
-    });
-
-    for (const name in Accounts.identityServices) {
-      if (Accounts.identityServices[name].isEnabled()) {
-        results.push({
-          _id: "emailverifier-" + name,
-          frontendRef: { emailVerifier: { services: [name] } },
+      const services = value.services;
+      if (services) {
+        services.forEach(service => {
+          if (!Accounts.identityServices[service]) {
+            throw new Error("No such identity service: " + service);
+          }
         });
       }
-    };
 
-    return results;
+      value.id = Crypto.randomBytes(16).toString("base64");
+
+      return {
+        descriptor: { tags: [{ id: EmailRpc.EmailVerifier.typeId }] },
+        requirements: [],
+      };
+    },
+
+    query(db, userId, value) {
+      const results = [];
+
+      results.push({
+        _id: "emailverifier-all",
+        frontendRef: { emailVerifier: {} },
+      });
+
+      for (const name in Accounts.identityServices) {
+        if (Accounts.identityServices[name].isEnabled()) {
+          results.push({
+            _id: "emailverifier-" + name,
+            frontendRef: { emailVerifier: { services: [name] } },
+          });
+        }
+      };
+
+      return results;
+    },
   });
 
-  globalFrontendRefRegistry.addRestoreHandler("verifiedEmail", (db, saveTemplate) => {
-    return new Capnp.Capability(new VerifiedEmailImpl(db, saveTemplate),
-                                EmailImpl.PersistentVerifiedEmail);
-  });
+  globalFrontendRefRegistry.register({
+    frontendRefField: "verifiedEmail",
+    typeId: EmailRpc.VerifiedEmail.typeId,
 
-  globalFrontendRefRegistry.addValidateHandler("verifiedEmail", (db, session, value) => {
-    check(value, { verifierId: Match.Optional(String), address: String });
+    restore(db, saveTemplate) {
+      return new Capnp.Capability(new VerifiedEmailImpl(db, saveTemplate),
+                                  EmailImpl.PersistentVerifiedEmail);
+    },
 
-    if (!session.userId) {
-      throw new Meteor.Error(403, "Not logged in.");
-    }
+    validate(db, session, value) {
+      check(value, { verifierId: Match.Optional(String), address: String });
 
-    // Verify that the address actually belongs to the user.
+      if (!session.userId) {
+        throw new Meteor.Error(403, "Not logged in.");
+      }
 
-    if (!_.contains(getVerifiedEmails(db, session.userId, value.verifierId), value.address)) {
-      throw new Meteor.Error(403, "User has no such verified address");
-    }
+      // Verify that the address actually belongs to the user.
 
-    // Add the session's tabId.
-    value.tabId = session.tabId;
+      if (!_.contains(getVerifiedEmails(db, session.userId, value.verifierId), value.address)) {
+        throw new Meteor.Error(403, "User has no such verified address");
+      }
 
-    // Build the descriptor, which contains the verifier ID.
-    const tagValue = value.verifierId &&
-        Capnp.serialize(EmailRpc.VerifiedEmail.PowerboxTag,
-            { verifierId: new Buffer(value.verifierId, "hex") });
+      // Add the session's tabId.
+      value.tabId = session.tabId;
 
-    return {
-      descriptor: { tags: [{ id: EmailRpc.VerifiedEmail.typeId, value: tagValue }] },
-      requirements: [],
-    };
-  });
+      // Build the descriptor, which contains the verifier ID.
+      const tagValue = value.verifierId &&
+          Capnp.serialize(EmailRpc.VerifiedEmail.PowerboxTag,
+              { verifierId: new Buffer(value.verifierId, "hex") });
 
-  globalFrontendRefRegistry.addQueryHandler(
-      EmailRpc.VerifiedEmail.typeId, (db, userId, value) => {
-    const verifierId = value &&
-        Capnp.parse(EmailRpc.VerifiedEmail.PowerboxTag, value).verifierId.toString("base64");
-    return getVerifiedEmails(db, userId, verifierId).map(address => ({
-      _id: "email-" + address,
-      frontendRef: { verifiedEmail: { verifierId, address } },
-    }));
+      return {
+        descriptor: { tags: [{ id: EmailRpc.VerifiedEmail.typeId, value: tagValue }] },
+        requirements: [],
+      };
+    },
+
+    query(db, userId, value) {
+      const verifierId = value &&
+          Capnp.parse(EmailRpc.VerifiedEmail.PowerboxTag, value).verifierId.toString("base64");
+      return getVerifiedEmails(db, userId, verifierId).map(address => ({
+        _id: "email-" + address,
+        frontendRef: { verifiedEmail: { verifierId, address } },
+      }));
+    },
   });
 });

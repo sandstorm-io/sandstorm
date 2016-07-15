@@ -18,9 +18,8 @@ import { checkRequirements } from "./persistent.js";
 
 class FrontendRefRegistry {
   constructor() {
-    this._restoreHandlers = {};
-    this._queryHandlers = {};
-    this._validateHandlers = {};
+    this._frontendRefHandlers = {};
+    this._typeIdHandlers = {};
   }
 
   create(db, frontendRef, requirements) {
@@ -45,20 +44,20 @@ class FrontendRefRegistry {
     }
 
     const key = keys[0];
-    const handler = this._restoreHandlers[key];
+    const handler = this._frontendRefHandlers[key];
     if (!handler) {
       throw new Error("invalid frontendRef: " + JSON.stringify(frontendRef));
     }
 
-    return handler(db, saveTemplate, frontendRef[key]);
+    return handler.restore(db, saveTemplate, frontendRef[key]);
   }
 
   query(db, userAccountId, tag) {
     // Performs a powerbox query using the appropriate registered handler.
 
-    const handler = this._queryHandlers[tag.id];
+    const handler = this._typeIdHandlers[tag.id];
     if (handler) {
-      return handler(db, userAccountId, tag.value);
+      return handler.query(db, userAccountId, tag.value);
     } else {
       return [];  // no matches
     }
@@ -79,62 +78,33 @@ class FrontendRefRegistry {
     }
 
     const key = keys[0];
-    const handler = this._validateHandlers[key];
+    const handler = this._frontendRefHandlers[key];
     if (!handler) {
       throw new Error("invalid frontendRef: " + JSON.stringify(mutableFrontendRef));
     }
 
-    return handler(db, session, mutableFrontendRef[key]);
-  }
-
-  addRestoreHandler(fieldName, callback) {
-    // Registers a callback to use to restore frontendRef capabilities of this type.
-    //
-    // `fieldName` is the name of the field of `ApiTokens.frontendRef` which is filled in for this
-    // ref type.
-    //
-    // `callback` is of type `(db, saveTemplate, value) -> capability`, where
-    // `value` is the value of the single field of `ApiTokens.frontendRef` for this capability, and
-    // `saveTemplate` is the token template to pass to the PersistentImpl constructor. The returned
-    // object is a Cap'n Proto capability implementing SystemPersistent along with whatever other
-    // interfaces are appropriate for the ref type.
-
-    if (fieldName in this._restoreHandlers) {
-      throw new Error("restore handler already registered: " + fieldName);
+    if (!handler.validate) {
+      throw new Error("frontendRef type cannot be created via powerbox: " +
+                      JSON.stringify(mutableFrontendRef));
     }
 
-    this._restoreHandlers[fieldName] = callback;
+    return handler.validate(db, session, mutableFrontendRef[key]);
   }
 
-  addQueryHandler(typeId, callback) {
-    // Registers a callback to use to interpret a powerbox query for the given type ID.
-    //
-    // `typeId` is a stringified decimal 64-bit integer. (Stringification is needed as Javascript
-    // numbers cannot represent 64-bit integers precisely.)
-    //
-    // `callback` is of type `(db, userAccountId, tagValue) -> options`.
-    // * `tagValue` is a Buffer of the Cap'n-Proto-encoded `PowerboxDescriptor.Tag.value`.
-    // * The returned `options` is an array of objects representing the options that should be
-    //   offered to the user for this query. See the `powerboxOptions` Meteor publish in
-    //   powerbox-server.js for a full description of the fields of each option.
-
-    if (typeId in this._queryHandlers) {
-      throw new Error("query handler already registered: " + typeId);
-    }
-
-    this._queryHandlers[typeId] = callback;
-  }
-
-  addValidateHandler(fieldName, callback) {
-    // Registers a callback to validate creation of a new frontendRef of this type from a powerbox
-    // request. The callback does not actually construct the capability, validates the frontendRef
-    // (passed from the untrusted client), possibly modifying it, and also produces a list of
-    // MembraneRequirements that should apply to the new capability.
-    //
-    // `fieldName` is the name of the field of `ApiTokens.frontendRef` which is filled in for this
-    // ref type.
-    //
-    // `callback` is of type `(db, session, mutableValue) -> {descriptor, requirements}`, where:
+  register(object) {
+    // Register callbacks related to a particular frontendRef type. The object has the fields:
+    //   `frontendRefField`: Name of the field of `ApiTokens.frontendRef` that is filled in for
+    //       this type. Only needed if `create` and/or `validate` handlers are defined.
+    //   `typeId`: Type ID of powerbox tags handled by the `query` callback. Stringified decimal
+    //       64-bit integer. Only needed if `query` is defined.
+    //   `restore`: Callback to construct a capability of this type when restoring a saved
+    //       capability. Has signature `(db, saveTemplate, value) -> capability`, where:
+    //     `value`: The value of the single field of `ApiTokens.frontendRef` for this capability.
+    //     `saveTemplate`: The token template to pass to the PersistentImpl constructor.
+    //     `capability` (returned): A Cap'n Proto capability implementing SystemPersistent along
+    //         with whatever other interfaces are appropriate for the ref type.
+    //   `validate`: Callback to validate a powerbox request for a new capability of this type.
+    //       Has signature `(db, session, mutableValue) -> {descriptor, requirements}`, where:
     //     `mutableValue` is the value of the single field of `frontendRef` for this capability.
     //         If this is an object value, the callback may optionally modify it, e.g. adding
     //         additional fields that need to be generated server-side. The callback *must*, at
@@ -148,12 +118,26 @@ class FrontendRefRegistry {
     //     `requirements` (returned) is an array of MembraneRequirements which should apply to the
     //         new capability. Note that these requirements will be checked immediately and the
     //         powerbox request will fail if they aren't met.
+    //    `query`: Callback to populate options for a powerbox request for this type ID. Has
+    //        signature `(db, userAccountId, tagValue) -> options`, where:
+    //      `tagValue`: A Buffer of the Cap'n-Proto-encoded `PowerboxDescriptor.Tag.value`.
+    //      `options` (returned): An array of objects representing the options that should be
+    //          offered to the user for this query. See the `powerboxOptions` Meteor publish in
+    //          powerbox-server.js for a full description of the fields of each option.
 
-    if (fieldName in this._validateHandlers) {
-      throw new Error("restore handler already registered: " + fieldName);
+    if (object.frontendRefField) {
+      if (object.frontendRefField in this._frontendRefHandlers) {
+        throw new Error("frontendRef handler already registered: " + object.frontendRefField);
+      }
+      this._frontendRefHandlers[object.frontendRefField] = object;
     }
 
-    this._validateHandlers[fieldName] = callback;
+    if (object.typeId) {
+      if (object.typeId in this._typeIdHandlers) {
+        throw new Error("typeId handler already registered: " + object.typeId);
+      }
+      this._typeIdHandlers[object.typeId] = object;
+    }
   }
 }
 

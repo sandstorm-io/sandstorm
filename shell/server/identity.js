@@ -31,8 +31,11 @@ makeIdentity = (identityId, requriements) => {
                               IdentityRpc.PersistentIdentity);
 };
 
-globalFrontendRefRegistry.addRestoreHandler("identity",
-    (db, saveTemplate, identityId) => {
-  return new Capnp.Capability(new IdentityImpl(db, saveTemplate, identityId),
-                              IdentityRpc.PersistentIdentity);
+globalFrontendRefRegistry.register({
+  frontendRefField: "identity",
+
+  restore(db, saveTemplate, identityId) {
+    return new Capnp.Capability(new IdentityImpl(db, saveTemplate, identityId),
+                                IdentityRpc.PersistentIdentity);
+  },
 });

@@ -188,21 +188,25 @@ class PowerboxOption {
 function registerUiViewQueryHandler(frontendRefRegistry) {
   // TODO(cleanup): Maybe this belongs in a different file? But where?
 
-  frontendRefRegistry.addQueryHandler(Grain.UiView.typeId, (db, userId, value) => {
-    if (!userId) return [];
+  frontendRefRegistry.register({
+    typeId: Grain.UiView.typeId,
 
-    // TODO(someday): Allow `value` to specify app IDs to filter for.
+    query(db, userId, value) {
+      if (!userId) return [];
 
-    const sharedGrainIds = db.userApiTokens(userId).map(token => token.grainId);
-    const ownedGrainIds = db.userGrains(userId).map(grain => grain._id);
+      // TODO(someday): Allow `value` to specify app IDs to filter for.
 
-    return _.uniq(sharedGrainIds.concat(ownedGrainIds)).map(grainId => {
-      return new PowerboxOption({
-        _id: "grain-" + grainId,
-        grainId: grainId,
-        uiView: {},
+      const sharedGrainIds = db.userApiTokens(userId).map(token => token.grainId);
+      const ownedGrainIds = db.userGrains(userId).map(grain => grain._id);
+
+      return _.uniq(sharedGrainIds.concat(ownedGrainIds)).map(grainId => {
+        return new PowerboxOption({
+          _id: "grain-" + grainId,
+          grainId: grainId,
+          uiView: {},
+        });
       });
-    });
+    },
   });
 }
 

@@ -125,33 +125,38 @@ class IpInterfaceImpl extends PersistentImpl {
 // TODO(cleanup): Meteor.startup() needed because 00-startup.js runs *after* code in subdirectories
 //   (ugh).
 Meteor.startup(() => {
-  globalFrontendRefRegistry.addRestoreHandler("ipInterface", (db, saveTemplate) => {
-    return new Capnp.Capability(new IpInterfaceImpl(db, saveTemplate),
-                                IpRpc.PersistentIpInterface);
-  });
+  globalFrontendRefRegistry.register({
+    frontendRefField: "ipInterface",
+    typeId: IpRpc.IpInterface.typeId,
 
-  globalFrontendRefRegistry.addValidateHandler("ipInterface", (db, session, value) => {
-    check(value, true);
+    restore(db, saveTemplate) {
+      return new Capnp.Capability(new IpInterfaceImpl(db, saveTemplate),
+                                  IpRpc.PersistentIpInterface);
+    },
 
-    if (!session.userId) {
-      throw new Meteor.Error(403, "Not logged in.");
-    }
+    validate(db, session, value) {
+      check(value, true);
 
-    return {
-      descriptor: { tags: [{ id: IpRpc.IpInterface.typeId }] },
-      requirements: [{ userIsAdmin: session.userId }],
-    };
-  });
+      if (!session.userId) {
+        throw new Meteor.Error(403, "Not logged in.");
+      }
 
-  globalFrontendRefRegistry.addQueryHandler(IpRpc.IpInterface.typeId, (db, userId, value) => {
-    if (Meteor.users.findOne(userId).isAdmin) {
-      return [{
-        _id: "frontendref-ipinterface",
-        frontendRef: { ipInterface: true },
-      }];
-    } else {
-      return [];
-    }
+      return {
+        descriptor: { tags: [{ id: IpRpc.IpInterface.typeId }] },
+        requirements: [{ userIsAdmin: session.userId }],
+      };
+    },
+
+    query(db, userId, value) {
+      if (Meteor.users.findOne(userId).isAdmin) {
+        return [{
+          _id: "frontendref-ipinterface",
+          frontendRef: { ipInterface: true },
+        }];
+      } else {
+        return [];
+      }
+    },
   });
 });
 
@@ -242,32 +247,37 @@ class IpNetworkImpl extends PersistentImpl {
 // TODO(cleanup): Meteor.startup() needed because 00-startup.js runs *after* code in subdirectories
 //   (ugh).
 Meteor.startup(() => {
-  globalFrontendRefRegistry.addRestoreHandler("ipNetwork", (db, saveTemplate) => {
-    return new Capnp.Capability(new IpNetworkImpl(db, saveTemplate),
-                                IpRpc.PersistentIpNetwork);
-  });
+  globalFrontendRefRegistry.register({
+    frontendRefField: "ipNetwork",
+    typeId: IpRpc.IpNetwork.typeId,
 
-  globalFrontendRefRegistry.addValidateHandler("ipNetwork", (db, session, value) => {
-    check(value, true);
+    restore(db, saveTemplate) {
+      return new Capnp.Capability(new IpNetworkImpl(db, saveTemplate),
+                                  IpRpc.PersistentIpNetwork);
+    },
 
-    if (!session.userId) {
-      throw new Meteor.Error(403, "Not logged in.");
-    }
+    validate(db, session, value) {
+      check(value, true);
 
-    return {
-      descriptor: { tags: [{ id: IpRpc.IpNetwork.typeId }] },
-      requirements: [{ userIsAdmin: session.userId }],
-    };
-  });
+      if (!session.userId) {
+        throw new Meteor.Error(403, "Not logged in.");
+      }
 
-  globalFrontendRefRegistry.addQueryHandler(IpRpc.IpNetwork.typeId, (db, userId, value) => {
-    if (Meteor.users.findOne(userId).isAdmin) {
-      return [{
-        _id: "frontendref-ipnetwork",
-        frontendRef: { ipNetwork: true },
-      }];
-    } else {
-      return [];
+      return {
+        descriptor: { tags: [{ id: IpRpc.IpNetwork.typeId }] },
+        requirements: [{ userIsAdmin: session.userId }],
+      };
+    },
+
+    query(db, userId, value) {
+      if (Meteor.users.findOne(userId).isAdmin) {
+        return [{
+          _id: "frontendref-ipnetwork",
+          frontendRef: { ipNetwork: true },
+        }];
+      } else {
+        return [];
+      }
     }
   });
 });

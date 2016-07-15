@@ -249,10 +249,13 @@ const makePersistentUiView = function (db, saveTemplate, grainId) {
                               PersistentUiView);
 };
 
-globalFrontendRefRegistry.addRestoreHandler("notificationHandle",
-    (db, saveTemplate, notificationId) => {
-  return new Capnp.Capability(new NotificationHandle(db, saveTemplate, notificationId),
-                              PersistentHandle);
+globalFrontendRefRegistry.register({
+  frontendRefField: "notificationHandle",
+
+  restore(db, saveTemplate, notificationId) {
+    return new Capnp.Capability(new NotificationHandle(db, saveTemplate, notificationId),
+                                PersistentHandle);
+  },
 });
 
 function dismissNotification(notificationId, callCancel) {

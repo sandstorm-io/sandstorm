@@ -298,38 +298,6 @@ Meteor.methods({
     return { sent: true };
   },
 
-  offerIpNetwork: function (token) {
-    checkAuth(token);
-    if (!isAdmin()) {
-      throw new Meteor.Error(403, "Offering IpNetwork is only allowed for logged in users " +
-        "(a token is not sufficient). Please sign in with an admin account");
-    }
-
-    const requirements = [
-      { userIsAdmin: Meteor.userId() },
-    ];
-    const sturdyRef = waitPromise(
-      saveFrontendRef({ ipNetwork: true }, { webkey: null }, requirements)
-    ).sturdyRef;
-    return ROOT_URL.protocol + "//" + globalDb.makeApiHost(sturdyRef) + "#" + sturdyRef;
-  },
-
-  offerIpInterface: function (token) {
-    checkAuth(token);
-    if (!isAdmin()) {
-      throw new Meteor.Error(403, "Offering IpInterface is only allowed for logged in users " +
-        "(a token is not sufficient). Please sign in with an admin account");
-    }
-
-    const requirements = [
-      { userIsAdmin: Meteor.userId() },
-    ];
-    const sturdyRef = waitPromise(
-      saveFrontendRef({ ipInterface: true }, { webkey: null }, requirements)
-    ).sturdyRef;
-    return ROOT_URL.protocol + "//" + globalDb.makeApiHost(sturdyRef) + "#" + sturdyRef;
-  },
-
   adminToggleDisableCap: function (token, capId, value) {
     checkAuth(token);
     check(capId, String);

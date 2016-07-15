@@ -22,6 +22,7 @@ const Net = Npm.require("net");
 const Dgram = Npm.require("dgram");
 const Promise = Npm.require("es6-promise").Promise;
 const Capnp = Npm.require("capnp");
+import { hashSturdyRef, checkRequirements } from "/imports/server/persistent.js";
 
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 const HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;
@@ -73,7 +74,7 @@ SessionContextImpl = class SessionContextImpl {
       return restoreInternal(
           new Buffer(sturdyRef),
           { clientPowerboxRequest: Match.ObjectIncluding({ grainId: this.grainId }) },
-          requirements, hashedSturdyRef, true);
+          requirements, token);
     });
   }
 
@@ -111,9 +112,7 @@ SessionContextImpl = class SessionContextImpl {
         },
       };
 
-      if (!checkRequirements([requirement])) {
-        throw new Meteor.Error(403, "Permissions not satisfied.");
-      }
+      checkRequirements(globalDb, [requirement]);
 
       const save = castedCap.save(apiTokenOwner);
       const sturdyRef = waitPromise(save).sturdyRef;

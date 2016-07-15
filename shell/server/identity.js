@@ -16,23 +16,26 @@
 
 const Capnp = Npm.require("capnp");
 const IdentityRpc = Capnp.importSystem("sandstorm/identity-impl.capnp");
+import { PersistentImpl } from "/imports/server/persistent.js";
 
-class IdentityImpl {
-  constructor(identityId, persistentMethods) {
-    _.extend(this, persistentMethods);
+class IdentityImpl extends PersistentImpl {
+  constructor(db, saveTemplate, identityId) {
+    super(db, saveTemplate);
     this.identityId = identityId;
   }
 };
 
-makeIdentity = (identityId, persistentMethods, requriements) => {
-  if (!persistentMethods) {
-    persistentMethods = {
-      save(params) {
-        return saveFrontendRef({ identity: identityId }, params.sealFor, requriements || []);
-      },
-    };
-  }
-
-  return new Capnp.Capability(new IdentityImpl(identityId, persistentMethods),
+makeIdentity = (identityId, requriements) => {
+  const saveTemplate = { frontendRef: { identity: identityId } };
+  return new Capnp.Capability(new IdentityImpl(globalDb, saveTemplate, identityId),
                               IdentityRpc.PersistentIdentity);
 };
+
+globalFrontendRefRegistry.register({
+  frontendRefField: "identity",
+
+  restore(db, saveTemplate, identityId) {
+    return new Capnp.Capability(new IdentityImpl(db, saveTemplate, identityId),
+                                IdentityRpc.PersistentIdentity);
+  },
+});

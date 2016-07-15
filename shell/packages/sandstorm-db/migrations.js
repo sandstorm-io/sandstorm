@@ -621,6 +621,22 @@ function clearAppIndex() {
   AppIndex.remove({});
 }
 
+function assignEmailVerifierIds() {
+  // Originally, the ID of an EmailVerifier was actually the _id of the root token from which it
+  // was restored. This was broken, though: Conceptually, it meant that you couldn't have a working
+  // EmailVerifier that had not been restore()d from disk. In practice, that wasn't a problem due
+  // to the fact that powerbox selections always involve a restore(), but a different problem
+  // existed: the capability returned by claimRequest() would return one ID, but after save()ing
+  // and restore()ing that capability, the ID would be different, because the new capability would
+  // be a copy -- not a child -- of the original. Additionally, the whole thing made various code
+  // ugly because it was puncturing layers of abstraction. So, we switched to doing the right
+  // thing: assigning an ID to the EmailVerifier on first creation and storing it separately.
+
+  ApiTokens.find({ "frontendRef.emailVerifier": { $exists: true } }).forEach(token => {
+    ApiTokens.update(token._id, { $set: { "frontendRef.emailVerifier.id": token._id } });
+  });
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -653,6 +669,7 @@ const MIGRATIONS = [
   setUpstreamTitles,
   markAllRead,
   clearAppIndex,
+  assignEmailVerifierIds,
 ];
 
 function migrateToLatest() {

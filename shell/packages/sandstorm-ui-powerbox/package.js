@@ -24,5 +24,6 @@ Package.onUse(function (api) {
   api.use(["ecmascript", "check"], "server");
   api.addFiles(["powerbox.html", "powerbox-client.js"], "client");
   api.addFiles(["powerbox-server.js"], "server");
-  api.export("SandstormPowerboxRequest");
+  api.export("SandstormPowerboxRequest", "client");
+  api.export("SandstormPowerbox", "server");
 });

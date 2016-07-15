@@ -377,7 +377,9 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //                  it has been set.
 //       ipInterface: Ditto IpNetwork, except it's an IpInterface.
 //       emailVerifier: An EmailVerifier capability that is implemented by the frontend. The
-//                      value is an object containing the field `services`, which itself is a
+//                      value is an object containing the fields `id` and `services`. `id` is the
+//                      value returned by `EmailVerifier.getId()` and is used as part of a
+//                      powerbox query for matching verified emails. `services` is a
 //                      list of names of identity providers that are trusted to verify addresses.
 //                      If `services` is omitted or falsy, all configured identity providers are
 //                      trusted. Note that a malicious user could specify invalid names in the
@@ -439,6 +441,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //       ipNetwork :Bool;
 //       ipInterface :Bool;
 //       emailVerifier :group {
+//         id :Text;
 //         services :List(String);
 //       }
 //       verifiedEmail :group {
@@ -466,6 +469,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 
 ApiTokens.ensureIndexOnServer("grainId", { sparse: 1 });
 ApiTokens.ensureIndexOnServer("owner.user.identityId", { sparse: 1 });
+ApiTokens.ensureIndexOnServer("frontendRef.emailVerifier.id", { sparse: 1 });
 
 ApiHosts = new Mongo.Collection("apiHosts");
 // Allows defining some limited static behavior for an API host when accessed unauthenticated. This

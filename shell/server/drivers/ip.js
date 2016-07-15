@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import Bignum from "bignum";
+import { PersistentImpl } from "/imports/server/persistent.js";
 const Future = Npm.require("fibers/future");
 const Net = Npm.require("net");
 const Dgram = Npm.require("dgram");
@@ -40,9 +41,9 @@ ByteStreamConnection = class ByteStreamConnection{
   // expectSize(size) { }
 };
 
-IpInterfaceImpl = class IpInterfaceImpl {
-  constructor(persistentMethods) {
-    _.extend(this, persistentMethods);
+class IpInterfaceImpl extends PersistentImpl {
+  constructor(db, saveTemplate) {
+    super(db, saveTemplate);
   }
 
   listenTcp(portNum, port) {
@@ -121,9 +122,45 @@ IpInterfaceImpl = class IpInterfaceImpl {
   }
 };
 
-makeIpInterface = (persistentMethods) => {
-  return new Capnp.Capability(new IpInterfaceImpl(persistentMethods), IpRpc.PersistentIpInterface);
-};
+// TODO(cleanup): Meteor.startup() needed because 00-startup.js runs *after* code in subdirectories
+//   (ugh).
+Meteor.startup(() => {
+  globalFrontendRefRegistry.register({
+    frontendRefField: "ipInterface",
+    typeId: IpRpc.IpInterface.typeId,
+
+    restore(db, saveTemplate) {
+      return new Capnp.Capability(new IpInterfaceImpl(db, saveTemplate),
+                                  IpRpc.PersistentIpInterface);
+    },
+
+    validate(db, session, value) {
+      check(value, true);
+
+      if (!session.userId) {
+        throw new Meteor.Error(403, "Not logged in.");
+      }
+
+      return {
+        descriptor: { tags: [{ id: IpRpc.IpInterface.typeId }] },
+        requirements: [{ userIsAdmin: session.userId }],
+      };
+    },
+
+    query(db, userId, value) {
+      if (Meteor.users.findOne(userId).isAdmin) {
+        return [
+          {
+            _id: "frontendref-ipinterface",
+            frontendRef: { ipInterface: true },
+          },
+        ];
+      } else {
+        return [];
+      }
+    },
+  });
+});
 
 BoundUdpPortImpl = class BoundUdpPortImpl {
   constructor(server, address, port) {
@@ -195,9 +232,9 @@ const addressType = (address) => {
   return type;
 };
 
-IpNetworkImpl = class IpNetworkImpl {
-  constructor(persistentMethods) {
-    _.extend(this, persistentMethods);
+class IpNetworkImpl extends PersistentImpl {
+  constructor(db, saveTemplate) {
+    super(db, saveTemplate);
   }
 
   getRemoteHost(address) {
@@ -209,9 +246,45 @@ IpNetworkImpl = class IpNetworkImpl {
   }
 };
 
-makeIpNetwork = (persistentMethods) => {
-  return new Capnp.Capability(new IpNetworkImpl(persistentMethods), IpRpc.PersistentIpNetwork);
-};
+// TODO(cleanup): Meteor.startup() needed because 00-startup.js runs *after* code in subdirectories
+//   (ugh).
+Meteor.startup(() => {
+  globalFrontendRefRegistry.register({
+    frontendRefField: "ipNetwork",
+    typeId: IpRpc.IpNetwork.typeId,
+
+    restore(db, saveTemplate) {
+      return new Capnp.Capability(new IpNetworkImpl(db, saveTemplate),
+                                  IpRpc.PersistentIpNetwork);
+    },
+
+    validate(db, session, value) {
+      check(value, true);
+
+      if (!session.userId) {
+        throw new Meteor.Error(403, "Not logged in.");
+      }
+
+      return {
+        descriptor: { tags: [{ id: IpRpc.IpNetwork.typeId }] },
+        requirements: [{ userIsAdmin: session.userId }],
+      };
+    },
+
+    query(db, userId, value) {
+      if (Meteor.users.findOne(userId).isAdmin) {
+        return [
+          {
+            _id: "frontendref-ipnetwork",
+            frontendRef: { ipNetwork: true },
+          },
+        ];
+      } else {
+        return [];
+      }
+    },
+  });
+});
 
 IpRemoteHostImpl = class IpRemoteHostImpl {
   constructor(address) {

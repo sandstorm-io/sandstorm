@@ -46,7 +46,7 @@ const checkToken = function (tokens, token) {
   return foundToken;
 };
 
-function consumeToken(user, token) {
+const consumeToken = function (user, token) {
   const hashedToken = Accounts.emailToken._hashToken(token);
   const foundToken = checkToken(user.services.email.tokens, hashedToken);
 
@@ -55,7 +55,46 @@ function consumeToken(user, token) {
   }
 
   return foundToken;
-}
+};
+
+const makeBox = function (token, plaintext) {
+  // Encrypt plaintext symmetrically with a key derived from token.  Returns an object with
+  // ciphertext and associated data needed to decrypt later.
+
+  // Produce a symmetric key.  Note that the token itself does not have sufficient entropy to
+  // be used as a key directly, so we need to use a KDF with a strong random salt.
+  // In the fullness of time, it might be nice to move away from using a KDF (which blocks the whole
+  // node process) in favor of the token itself having enough entropy to serve as the key itself.
+  // This would require lengthening the token, which would make the manual-code-entry workflow
+  // worse, so I'm punting on that for now.
+  const salt = Random.secret(16);
+  const key = crypto.pbkdf2Sync(token, salt, V1_ROUNDS, V1_KEYSIZE, V1_HASHFUNC);
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv(V1_CIPHER, key, iv);
+  let ciphertext = cipher.update(new Buffer(plaintext, "binary"));
+  return {
+    version: 1,
+    salt: salt,
+    iv: iv.toString("base64"),
+    boxedValue: ciphertext.toString("base64"),
+  };
+};
+
+const tryUnbox = function (box, secret) {
+  if (box) {
+    if (box.version === 1) {
+      const key = crypto.pbkdf2Sync(secret, box.salt, V1_ROUNDS, V1_KEYSIZE, V1_HASHFUNC);
+      const iv = new Buffer(box.iv, "base64");
+      const cipher = crypto.createDecipheriv(V1_CIPHER, key, iv);
+      const cipherText = new Buffer(box.boxedValue, "base64");
+      const plaintext = cipher.update(cipherText);
+      return plaintext.toString("binary");
+    }
+  }
+
+  // If no box was provided, or it was of an unknown version, return no data.
+  return;
+};
 
 // Handler to login with a token.
 Accounts.registerLoginHandler("email", function (options) {
@@ -105,18 +144,7 @@ Accounts.registerLoginHandler("email", function (options) {
   }
 
   // Attempt to decrypt the resumePath, if provided.
-  let resumePath = undefined;
-  if (maybeToken.secureBox) {
-    const box = maybeToken.secureBox;
-    if (box.version === 1) {
-      const key = crypto.pbkdf2Sync(tokenString, box.salt, V1_ROUNDS, V1_KEYSIZE, V1_HASHFUNC);
-      const iv = new Buffer(box.iv, "base64");
-      const cipher = crypto.createDecipheriv(V1_CIPHER, key, iv);
-      const cipherText = new Buffer(box.boxedValue, "base64");
-      const plaintext = cipher.update(cipherText);
-      resumePath = plaintext.toString("binary");
-    }
-  }
+  const resumePath = tryUnbox(maybeToken.secureBox, tokenString);
 
   return {
     userId: user._id,
@@ -193,24 +221,7 @@ const createAndEmailTokenForUser = function (db, email, linkingIdentity, resumeP
   const token = Random.id(12);
   const tokenObj = Accounts.emailToken._hashToken(token);
   tokenObj.createdAt = new Date();
-
-  // Produce a symmetric key.  Note that the token itself does not have sufficient entropy to
-  // be used as a key directly, so we need to use a KDF with a strong random salt.
-  // In the fullness of time, it might be nice to move away from using a KDF (which blocks the whole
-  // node process) in favor of the token itself having enough entropy to serve as the key itself.
-  // This would require lengthening the token, which would make the manual-code-entry workflow
-  // worse, so I'm punting on that for now.
-  const salt = Random.secret(16);
-  const key = crypto.pbkdf2Sync(token, salt, V1_ROUNDS, V1_KEYSIZE, V1_HASHFUNC);
-  const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipheriv(V1_CIPHER, key, iv);
-  let ciphertext = cipher.update(new Buffer(resumePath, "binary"));
-  tokenObj.secureBox = {
-    version: 1,
-    salt: salt,
-    iv: iv.toString("base64"),
-    boxedValue: ciphertext.toString("base64"),
-  };
+  tokenObj.secureBox = makeBox(token, resumePath);
 
   if (user) {
     if (user.services.email.tokens && user.services.email.tokens.length > 2) {
@@ -280,5 +291,9 @@ Meteor.methods({
 
     Accounts.linkIdentityToAccount(this.connection.sandstormDb, this.connection.sandstormBackend,
                                    identity._id, account._id);
+
+    // Return the resume path, if we have one.
+    const resumePath = tryUnbox(maybeToken.secureBox, token);
+    return resumePath;
   },
 });

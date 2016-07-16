@@ -60,7 +60,7 @@ class PersistentImpl {
         // Fill in denormalizedGrainMetadata and upstreamTitle ourselves.
         userOwner.denormalizedGrainMetadata = db.getDenormalizedGrainInfo(newToken.grainId);
 
-        const grain = db.getGrain(saveTemplate.grainId);
+        const grain = db.getGrain(newToken.grainId);
         if (grain && grain.title !== userOwner.title) {
           userOwner.upstreamTitle = grain.title;
         }

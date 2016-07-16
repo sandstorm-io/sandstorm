@@ -1,3 +1,10 @@
+### v0.172 (2016-07-15) [bugfixes]
+- Fixed a regression that caused accepting an app update notification to have no effect. Sandstorm will re-notify about missed updates within 24 hours.
+- Fixed bugs preventing Sandstorm from working on IE10.
+- Tweaked new activity event API.
+- Major refactor of powerbox-related code.
+- Bugfixes related to upcoming collections app.
+
 ### v0.171 (2016-07-09)
 - **Activity/Notifications API:** Apps can now inform Sandstorm when a grain has been modified. Sandstorm will then highlight the grain in the user interface to show that it has new content, and in some cases deliver notifications to interested users. Apps need to be updated to use the API, but an update to Etherpad will ship on Sunday with updates to Rocket.Chat and Wekan soon thereafter.
 - Fixed regression where grain UIs would not refresh when the grain's package was updated.

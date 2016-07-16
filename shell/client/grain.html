@@ -31,9 +31,9 @@
       {{/if}}
     {{else}}
     {{#if appOrigin}}
-      {{!-- Selenium requires iframes to have an id in order to select them. id="grain-frame" is only
+      {{!-- Selenium requires iframes to have an id in order to select them. `id` is only
             used for testing purposes. --}}
-      <iframe data-grainid="{{grainId}}" id="grain-frame" class="grain-frame" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{originalPath}}"></iframe>
+      <iframe data-grainid="{{grainId}}" id="grain-frame-{{grainId}}" class="grain-frame" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{originalPath}}"></iframe>
       {{#if hasNotLoaded}}
         {{> _grainSpinner}}
       {{/if}}

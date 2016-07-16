@@ -107,7 +107,7 @@ You can attempt to find out if this is the problem by taking the following steps
 
 - Right-click on the grain area, where the page is not loading, and click ***Inspect** in your browser.
 
-- Look for an **IFRAME** tag, whose `id` is `grain-frame`.
+- Look for an **IFRAME** tag, whose `class` is `grain-frame`.
 
 - Attempt to load that URL in a separate tab, outside of Sandstorm.
 

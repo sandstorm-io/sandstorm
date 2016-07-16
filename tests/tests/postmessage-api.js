@@ -31,10 +31,11 @@ module.exports['Install and launch test app'] = function (browser) {
   browser
     .init()
     // test-3 introduces the JSON-formatted renderTemplate output
+    .loginDevAccount()
     .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-7.spk", "281d3ffbc93933001d6b28e44ffac615", "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh")
 
     .assert.containsText('#grainTitle', 'Untitled Test App test page')
-    .frame('grain-frame')
+    .grainFrame()
       .waitForElementPresent('#randomId', medium_wait)
       .assert.containsText('#randomId', 'initial state')
     .frameParent()
@@ -51,7 +52,7 @@ var grainId = undefined;
 module.exports['Test setPath'] = function (browser) {
   var expectedUrl = browser.launch_url + '/grain/' + grainId + '/#setpath';
   browser
-    .frame('grain-frame')
+    .grainFrame()
       .click('#setPath')
       .pause(very_short_wait)
     .frameParent()
@@ -69,7 +70,7 @@ module.exports['Test setTitle'] = function (browser) {
     .getTitle(function (title) {
       origTitle = title;
     })
-    .frame('grain-frame')
+    .grainFrame()
       .setValue('#title', [ randomValue ] )
       .click('#setTitle')
       .pause(very_short_wait)
@@ -86,7 +87,7 @@ module.exports['Test setTitle to blank'] = function (browser) {
     .getTitle(function (title) {
       origTitle = title;
     })
-    .frame('grain-frame')
+    .grainFrame()
       .clearValue('#title')
       .click('#setTitle')
       .pause(very_short_wait)
@@ -100,7 +101,7 @@ module.exports['Test setTitle to blank'] = function (browser) {
 
 module.exports['Test startSharing'] = function (browser) {
   browser
-    .frame('grain-frame')
+    .grainFrame()
       .click('#startSharing')
     .frameParent()
     .waitForElementVisible('.popup.share', short_wait)
@@ -110,7 +111,7 @@ module.exports['Test startSharing'] = function (browser) {
 
 module.exports['Test showConnectionGraph'] = function (browser) {
   browser
-    .frame('grain-frame')
+    .grainFrame()
       .click('#showConnectionGraph')
     .frameParent()
     .waitForElementVisible('.popup.who-has-access', short_wait)
@@ -120,7 +121,7 @@ module.exports['Test showConnectionGraph'] = function (browser) {
 
 module.exports['Test renderTemplate'] = function (browser) {
   browser
-    .frame('grain-frame')
+    .grainFrame()
       .click('#renderTemplate')
       .waitForElementVisible('#template-frame[data-rendered=true]', short_wait)
       .frame('template-frame')

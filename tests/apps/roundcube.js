@@ -26,6 +26,7 @@ module.exports = {};
 
 module.exports["Install"] = function (browser) {
   browser
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/jparyani/roundcube-6.spk", "373a821a7a9cde5b13258922046fe217", "0qhha1v9ne1p42s5jw7r6qq6rt5tcx80zpg1f5ptsg7ryr4hws1h")
     .assert.containsText("#grainTitle", "Untitled Roundcube mailbox");
 };
@@ -34,7 +35,7 @@ module.exports["Install"] = function (browser) {
 module.exports["Incoming Mail"] = function (browser) {
   browser
     .waitForElementVisible('.grain-frame', short_wait)
-    .frame("grain-frame")
+    .grainFrame()
     .waitForElementVisible(".button-settings", short_wait)
     .pause(short_wait) // Roundcube seems to swallow the click if you click while it's doing the initial mailbox load AJAX, sadly.
     .click(".button-settings")
@@ -57,7 +58,6 @@ module.exports["Incoming Mail"] = function (browser) {
             .waitForElementVisible(".mailbox.inbox > a", medium_wait)
             .click(".mailbox.inbox > a") // Make sure we have the inbox selected
             .pause(short_wait) // It's sad, but there's no good way to wait for the mail to be delivered other than pausing
-            .frame("grain-frame")
             .click(".mailbox.inbox > a") // This is equivalent to refreshing the inbox
             .waitForElementVisible("#messagelist tbody tr:nth-child(1)", short_wait)
             .assert.containsText("#messagelist tbody tr:nth-child(1) .subject", "Hello world email");

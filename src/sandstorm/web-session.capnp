@@ -311,6 +311,10 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
         shouldResetForm @15 :Bool;
         # If this is the response to a form submission, should the form be reset to empty?
         # Distinguishes between HTTP response 204 (False) and 205 (True)
+
+        eTag @19 :ETag;
+        # Optional entity tag header. Server can send this in a response to a modifying request
+        # to indicate for example the new version of the modified resource.
       }
 
       preconditionFailed :group {

@@ -1641,6 +1641,10 @@ class Proxy {
     } else if ("noContent" in rpcResponse) {
       const noContent = rpcResponse.noContent;
       const noContentCode = noContentSuccessCodes[noContent.shouldResetForm * 1];
+      if (noContent.eTag) {
+        response.setHeader("ETag", composeETag(noContent.eTag));
+      }
+
       response.writeHead(noContentCode.id, noContentCode.title);
       response.end();
     } else if ("preconditionFailed" in rpcResponse) {

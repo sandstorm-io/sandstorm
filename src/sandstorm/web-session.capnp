@@ -391,6 +391,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       # purposes. This whitelist exists to help avoid the need to modify code originally written
       # without Sandstorm in mind -- especially to avoid modifying client apps.
       # Feel free to send us pull requests adding additional headers.
+      "x-oc-mtime",            # Owncloud protocol
     ];
 
   }

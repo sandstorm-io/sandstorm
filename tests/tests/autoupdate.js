@@ -28,6 +28,7 @@ module.exports = {};
 module.exports["Test autoupdates"] = function (browser) {
   var appId = "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh";
   browser
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk",
                 "ca690ad886bf920026f8b876c19539c1",
                 appId,

@@ -34,6 +34,7 @@ var hackerCmsAppId = "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh";
 
 module.exports["Test restore open grains"] = function (browser) {
   browser
+    .loginDevAccount()
     // Create three Hacker CMS grains.
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk",
                 "ca690ad886bf920026f8b876c19539c1",

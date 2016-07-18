@@ -134,10 +134,9 @@ module.exports = utils.testAllLogins({
 
   "Test grain frame" : function (browser) {
     browser
-      .waitForElementPresent('iframe.grain-frame', short_wait)
-      .frame('grain-frame')
-        .waitForElementPresent('#publish', medium_wait)
-        .assert.containsText('#publish', 'Publish')
+      .grainFrame()
+      .waitForElementPresent('#publish', medium_wait)
+      .assert.containsText('#publish', 'Publish')
       .frameParent();
   },
 
@@ -145,9 +144,9 @@ module.exports = utils.testAllLogins({
     browser
       .click('#restartGrain')
       .pause(short_wait)
-      .frame('grain-frame')
-        .waitForElementPresent('#publish', medium_wait)
-        .assert.containsText('#publish', 'Publish')
+      .grainFrame()
+      .waitForElementPresent('#publish', medium_wait)
+      .assert.containsText('#publish', 'Publish')
       .frameParent();
   },
 
@@ -180,6 +179,7 @@ module.exports["Test grain not found"] = function (browser) {
 
 module.exports["Sign in at grain URL"] = function (browser) {
   browser
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible("#grainTitle", medium_wait)
     .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
@@ -193,10 +193,10 @@ module.exports["Sign in at grain URL"] = function (browser) {
             .waitForElementVisible(".request-access", medium_wait)
             .assert.containsText(".request-access", "Please sign in to request access.")
             .execute(function (name) { window.loginDevAccount(name) }, [devName.value])
-            .waitForElementVisible("#grain-frame", medium_wait)
+            .waitForElementVisible("iframe.grain-frame", medium_wait)
             .waitForElementVisible("#grainTitle", medium_wait)
             .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
-            .frame("grain-frame")
+            .grainFrame()
             .waitForElementPresent("#publish", medium_wait)
             .assert.containsText("#publish", "Publish")
             .frame(null)
@@ -215,7 +215,7 @@ module.exports["Sign in at grain URL"] = function (browser) {
                     .execute("window.Meteor.logout()")
                     .url(browser.launch_url)
                     .url(response.value)
-                    .waitForElementVisible("#grain-frame", medium_wait)
+                    .waitForElementVisible("iframe.grain-frame", medium_wait)
                     .waitForElementVisible("#grainTitle", medium_wait)
                     .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
                     .execute(function (name) { window.loginDevAccount(name) }, [otherName])
@@ -229,9 +229,9 @@ module.exports["Sign in at grain URL"] = function (browser) {
                     // The forget grain button only appears once we've logged in.
                     .waitForElementVisible("#deleteGrain", medium_wait)
                     .waitForElementVisible("#grainTitle", medium_wait)
-                    .waitForElementVisible("#grain-frame", medium_wait)
+                    .waitForElementVisible("iframe.grain-frame", medium_wait)
                     .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
-                    .frame("grain-frame")
+                    .grainFrame()
                     .waitForElementPresent("#publish", medium_wait)
                     .assert.containsText("#publish", "Publish")
                     .frame(null)
@@ -242,7 +242,7 @@ module.exports["Sign in at grain URL"] = function (browser) {
                     .execute("window.Meteor.logout()")
                     .url(browser.launch_url)
                     .url(response.value)
-                    .waitForElementVisible("#grain-frame", medium_wait)
+                    .waitForElementVisible("iframe.grain-frame", medium_wait)
                     .waitForElementVisible("#grainTitle", medium_wait)
                     .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
                     .execute(function (name) { window.loginDevAccount(name) }, [otherName])
@@ -250,9 +250,9 @@ module.exports["Sign in at grain URL"] = function (browser) {
                     // The forget grain button only appears once we've logged in.
                     .waitForElementVisible("#deleteGrain", medium_wait)
                     .waitForElementVisible("#grainTitle", medium_wait)
-                    .waitForElementVisible("#grain-frame", medium_wait)
+                    .waitForElementVisible("iframe.grain-frame", medium_wait)
                     .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
-                    .frame("grain-frame")
+                    .grainFrame()
                     .waitForElementPresent("#publish", medium_wait)
                     .assert.containsText("#publish", "Publish")
                     .frame(null)
@@ -266,6 +266,7 @@ module.exports["Sign in at grain URL"] = function (browser) {
 
 module.exports["Logging out closes grain"] = function (browser) {
   browser
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible("#grainTitle", medium_wait)
     .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
@@ -284,6 +285,7 @@ module.exports["Logging out closes grain"] = function (browser) {
 module.exports["Test grain anonymous user"] = function (browser) {
   browser
     // Upload app as normal user
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible('#grainTitle', medium_wait)
     .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
@@ -310,7 +312,7 @@ module.exports["Test grain anonymous user"] = function (browser) {
         .url(response.value)
         .waitForElementVisible('#grainTitle', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
-        .frame('grain-frame')
+        .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         .frame(null)
@@ -324,6 +326,7 @@ module.exports["Test roleless sharing"] = function (browser) {
   var secondUserName;
   browser
   // Upload app as 1st user
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .getDevName(function (result) {
       firstUserName = result.value;
@@ -349,7 +352,7 @@ module.exports["Test roleless sharing"] = function (browser) {
         .click("button.pick-identity")
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
-        .frame('grain-frame')
+        .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         .frame(null)
@@ -369,7 +372,7 @@ module.exports["Test roleless sharing"] = function (browser) {
             .click("button.pick-identity")
             .waitForElementVisible('.grain-frame', medium_wait)
             .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
-            .frame('grain-frame')
+            .grainFrame()
             .waitForElementPresent('#publish', medium_wait)
             .assert.containsText('#publish', 'Publish')
             .frame(null)
@@ -400,6 +403,7 @@ module.exports["Test roleless sharing"] = function (browser) {
 module.exports["Test role sharing"] = function (browser) {
   browser
     // Upload app as 1st user
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/david/gitweb5.spk",
                 "26eb486a44085512a678c543fc7c1fdd",
                 "6va4cjamc21j0znf5h5rrgnv0rpyvh1vaxurkrgknefvj0x63ash")
@@ -422,7 +426,7 @@ module.exports["Test role sharing"] = function (browser) {
         .click("button.pick-identity")
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedGitWebGrainTitle)
-        .frame('grain-frame')
+        .grainFrame()
         .waitForElementPresent('#offer-iframe', medium_wait) // Wait for GitWeb's offer iframe.
         .frame(null)
         .click('.topbar .share > .show-popup')
@@ -442,7 +446,7 @@ module.exports["Test role sharing"] = function (browser) {
             .click("button.pick-identity")
             .waitForElementVisible('.grain-frame', medium_wait)
             .assert.containsText('#grainTitle', expectedGitWebGrainTitle)
-            .frame('grain-frame')
+            .grainFrame()
             .waitForElementPresent('#offer-iframe', medium_wait) // Wait for GitWeb's offer iframe.
             .frame(null)
             .click('.topbar .share > .show-popup')
@@ -459,7 +463,8 @@ module.exports["Test role sharing"] = function (browser) {
 
 module.exports["Test grain identity chooser interstitial"] = function (browser) {
   browser
-    // Upload app as normal user
+     // Upload app as normal user
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible('.grain-frame', medium_wait)
     .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
@@ -476,7 +481,7 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         .url(shareLink.value)
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
-        .frame('grain-frame')
+        .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         .frame(null)
@@ -496,7 +501,7 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         }, [], function (response) {
           browser.assert.equal(response.value, null);
         })
-        .frame('grain-frame')
+        .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         // Try redeeming as current user
@@ -509,7 +514,7 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         .click("button.pick-identity")
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
-        .frame('grain-frame')
+        .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         .frame(null)
@@ -523,7 +528,7 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         }, [], function (response) {
           browser.assert.equal(!!response.value, true);
         })
-        .frame('grain-frame')
+        .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         .frame(null)
@@ -541,7 +546,7 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
             .url(shareLink.value)
             .waitForElementVisible('.grain-frame', medium_wait)
             .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
-            .frame('grain-frame')
+            .grainFrame()
             .waitForElementPresent('#publish', medium_wait)
             .assert.containsText('#publish', 'Publish')
             .frame(null)

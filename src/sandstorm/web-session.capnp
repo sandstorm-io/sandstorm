@@ -154,14 +154,18 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       # purposes. This whitelist exists to help avoid the need to modify code originally written
       # without Sandstorm in mind -- especially to avoid modifying client apps. Feel free
       # to send us pull requests adding additional headers.
-      # Values in this list that end with '*' whitelist a prefix.
 
       "oc-total-length",       # Owncloud client
       "oc-chunk-size",         # Owncloud client
       "x-oc-mtime",            # Owncloud client
       "oc-fileid",             # Owncloud client
       "oc-chunked",            # Owncloud client
-      "x-hgarg-*",             # Mercurial client
+    ];
+
+    const headerPrefixWhitelist :List(Text) = [
+      # Any headers matching any prefix here will be whitelisted.
+
+      "x-hgarg-",             # Mercurial client
     ];
   }
 

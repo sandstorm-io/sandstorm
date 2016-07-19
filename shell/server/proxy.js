@@ -1510,31 +1510,29 @@ class Proxy {
 
     context.additionalHeaders = [];
 
-    // If the whitelist entry is prefixed with the app header prefix, add it.
-    Object.keys(request.headers).forEach(function(requestHeaderName) {
+    // If the whitelist entry is prefixed with the app header prefix,
+    // or if it is prefixed with a whitelisted prefix, add it.
+    Object.keys(request.headers).forEach((requestHeaderName) => {
       if (requestHeaderName.startsWith(WebSession.appHeaderPrefix)) {
         context.additionalHeaders.push({
           name: requestHeaderName,
           value: request.headers[requestHeaderName]
+        });
+      } else {
+        WebSession.Context.headerPrefixWhitelist.forEach((prefix) => {
+          if (requestHeaderName.startsWith(prefix)) {
+            context.additionalHeaders.push({
+              name: requestHeaderName,
+              value: request.headers[requestHeaderName]
+            });
+          }
         });
       }
     });
 
     // Add any headers that appear in the whitelist.
     WebSession.Context.headerWhitelist.forEach((headerName) => {
-      if (headerName.endsWith("*")) {
-        const prefix = headerName.substr(0, headerName.length - 1);
-        for (const h in request.headers) {
-          if (!h.startsWith(prefix)) {
-            continue;
-          }
-
-          context.additionalHeaders.push({
-            name: h,
-            value: request.headers[h],
-          });
-        }
-      } else if (request.headers[headerName]) {
+      if (request.headers[headerName]) {
         context.additionalHeaders.push({
           name: headerName,
           value: request.headers[headerName],

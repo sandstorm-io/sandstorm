@@ -1561,6 +1561,14 @@ private:
             checkIsHttpToken(headerName),
             ": ",
             checkIsHeaderValue(headerValue)));
+        } else {
+          for (auto const &prefix : *WebSession::Context::HEADER_PREFIX_WHITELIST)
+            if (headerName.startsWith(prefix.cStr())) {
+              lines.add(kj::str(
+                checkIsHttpToken(headerName),
+                ": ",
+                checkIsHeaderValue(headerValue)));
+          }
         }
       }
     }

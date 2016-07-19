@@ -14,10 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Here we are testing a toy app (see https://github.com/jparyani/sandstorm-test-app/tree/ip-network
-// for the code). It has a "request" button that tests the basics of an IpNetwork
-
 "use strict";
+
+// Tests the `IpNetwork` and `IpInterface` capabilities using the sandstorm-test-python app.
+// The app's source code is hosted at https://github.com/zarvox/sandstorm-test-python.
 
 var utils = require("../utils"),
     short_wait = utils.short_wait,
@@ -32,7 +32,6 @@ module.exports = {};
 module.exports["Test Ip Networking"] = function (browser) {
   browser
     .loginDevAccount(null, true)
-    // sandstorm-test-python: David's branch that updates for the new claimRequest() flow.
     .installApp("http://sandstorm.io/apps/david/sandstorm-test-python4.spk",
                 "874e67d3cd02486198d046909149723c",
                 "umeqc9yhncg63fjj6sahtw30nf99kfm6tgkuz8rmhn5dqtusnwah")
@@ -57,7 +56,6 @@ module.exports["Test Ip Networking"] = function (browser) {
 module.exports["Test Ip Interface"] = function (browser) {
   browser
     .loginDevAccount(null, true)
-    // sandstorm-test-python: David's branch that updates for the new claimRequest() flow.
     .installApp("http://sandstorm.io/apps/david/sandstorm-test-python4.spk",
                 "874e67d3cd02486198d046909149723c",
                 "umeqc9yhncg63fjj6sahtw30nf99kfm6tgkuz8rmhn5dqtusnwah")

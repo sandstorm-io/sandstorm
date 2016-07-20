@@ -56,6 +56,23 @@ Meteor.publish("grainTopBar", function (grainId) {
   return result;
 });
 
+Meteor.publish("tokensOwnedByGrain", function (grainId) {
+  check(grainId, String);
+  const result = [];
+
+  if (this.userId) {
+    if (Grains.findOne({ _id: grainId, userId: this.userId })) {
+      // Only the grain owner is allowed to see these.
+      result.push(ApiTokens.find(
+        { "owner.grain.grainId": grainId },
+        { fields: { owner: 1 }, }
+      ));
+    }
+  }
+
+  return result;
+});
+
 // We allow users to learn package information about a grain they own.
 // This is used for obtaining icon and app title information for grains
 // you own, which is used in the sidebar. It is not a security/privacy

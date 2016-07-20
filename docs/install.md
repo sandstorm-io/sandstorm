@@ -7,6 +7,16 @@ documentation on the Sandstorm install script.](administering/install-script.md)
 
 Sandstorm requires Linux x86_64, with kernel version 3.13 or later.
 
+This page documents a number of ways to install Sandstorm, specifically:
+
+- [Most common: Downloading an executing our carefully-written install script, verified by HTTPS](#option-1-https-verified-install)
+- [Downloading the shell script via GitHub](#option-2-github-verified-install)
+- [Using PGP to verify the authenticity of the script](#option-3-pgp-verified-install)
+- [Installing Sandstorm from source code](#option-4-installing-from-source)
+- [Using Ansible, Puppet, or other configuration management tools](#option-5-integrating-with-configuration-management-systems-like-ansiblepuppet)
+- [Using Docker to run Sandstorm, with Sandstorm managing automatic updates](#option-6-using-sandstorm-within-docker)
+- [Running Sandstorm on Mac/Windows systems via Vagrant & VirtualBox](#option-7-use-vagrant-when-deploying-on-mac-or-windows)
+
 ## Option 1: HTTPS-verified install
 
 The easiest way to install Sandstorm is by running:
@@ -191,6 +201,135 @@ To do a debug build, run make like:
 
 If you suspect you'll be hacking on Sandstorm's dependencies as well, you may want to follow the dependency symlink trick described in the Ekam readme.
 
+## Option 5: Integrating with configuration management systems like Ansible/Puppet
+
+Configuration mangement tools like Ansible, Puppet, and Chef allow a sysadmin to declaratively state
+how the server should be configured. This allows sysadmins within an organization to collaborate
+more effectively.
+
+If you want to prepare a server to run Sandstorm using a configuration management system, the
+configuration management system should take the following steps.
+
+- Download install.sh at runtime within the configuration mangement system from
+  [https://install.sandstorm.io/](https://install.sandstorm.io/), and [verify the install.sh
+  signature](#option-3-pgp-verified-install).  Alternatively you can download
+  install.sh into your own trusted file storage area and verify it as part of copying it to your own
+  trusted file storage area.
+
+- Run install.sh with the options of your liking. Examine the [install.sh reference
+  documentation](administering/install-script.md) section for information about non-interactive use
+  of install.sh.
+
+- If you need to make further configuration changes, then stop the Sandstorm service with `sudo
+  service sandstorm stop`, modify the config file in `/opt/sandstorm/sandstorm.conf` so that it
+  contains the contents you want, and start the Sandstorm service.
+
+Note that `BASE_URL`, `WILDCARD_HOST`, and `ALLOW_DEV_ACCOUNTS` are three configuration file options
+whose value you will want to verify. See the [full documentation on
+sandstorm.conf](administering/config-file.md).
+
+You can look at these examples as a starting-point:
+
+- [Sandcastle](https://github.com/iflowfor8hours/sandcastle), an Ansible playbook that installs
+  Sandstorm as part of "An opinionated configuration for running sandstorm with a focus on security
+  and paranoid assumptions."
+
+- [Sandstorm's installer test suite](administering/install-script.md#examples), where you can find some automated
+  invocations of install.sh.
+
+Note that this process uses Sandstorm's install.sh to download Sandstorm. Another option would be if
+Sandstorm provided an APT repository. However, at the time of writing (July 2016), there is no APT
+repository for Sandstorm because we have not yet examined fully how to retain Sandstorm's
+self-containerization and auto-updates in conjunction with an APT repository. If you're interested
+in that feature, please email support@sandstorm.io so we can use that information to prioritize it
+further.
+
+## Option 6: Using Sandstorm within Docker
+
+Docker is a popular tool for declaring how to run code on servers. Sandstorm can run within Docker.
+We suggest running Sandstorm outside of Docker, but if your organization runs all server software
+within Docker, this is one way to make that work.
+
+To run Sandstorm within Docker, run the following commands in a shell.
+
+```bash
+$ docker run -i -t --cap-add SYS_ADMIN --security-opt seccomp=unconfined -v sandstorm-data-volume:/opt/sandstorm --name sandstorm-build buildpack-deps bash -c 'useradd --system --user-group sandstorm ; curl https://install.sandstorm.io/ > install.sh && REPORT=no bash install.sh -d -e'
+$ docker run -i -t --sig-proxy=true -p 0.0.0.0:6080:6080 --cap-add SYS_ADMIN --security-opt seccomp=unconfined -v sandstorm-data-volume:/opt/sandstorm buildpack-deps bash -c 'useradd --system --user-group sandstorm && /opt/sandstorm/sandstorm start && tail -f /opt/sandstorm/var/log/sandstorm.log & sleep infinity'
+```
+
+The first command runs the Sandstorm installation script, saving its output to a Docker volume
+called `sandstorm-data-volume`. You can choose a specific directory on your filesystem if you prefer
+by replacing `sandstorm-data-volume` with `/path/to/specific/directory`. It configures the Sandstorm
+install script to not attempt to report installation problems to us (`REPORT=no`), to use defaults
+(`-d`), and to listen on all network interfaces (`-e`) including the Docker bridge interface.
+
+The next command runs the Sandstorm bundle stored in the volume, serving forever. The `tail -f`
+command is used to print out the Sandstorm log while Sandstorm runs. Sandstorm will be available at
+http://local.sandstorm.io:6080/ . `local.sandstorm.io` is a DNS alias for localhost, indicating that
+the service is running on the computer where you run Docker. It uses `-i -t --sig-proxy=true` so
+that you can use Ctrl-C to stop the container on your terminal. The special security-related
+options, specifically `--cap-add SYS_ADMIN --security-opt seccomp=unconfined`, are needed so that
+Sandstorm can do its own containerization of itself and of apps within Sandstorm.
+
+This process uses Sandstorm's install.sh to download Sandstorm, and Sandstorm is configured via
+`sandstorm.conf` within the container. To configure and manage the container, note the following.
+
+- Sandstorm manages its own automatic updates in the `/opt/sandstorm` directory, which is
+  inconsistent with the typical Docker approach of using Docker images to manage updates and
+  versioning for application code.
+
+- The install script uses `local.sandstorm.io` and enables development accounts in the `-d` mode. To
+  configure Sandstorm for production use, clear the Docker volume (or create a new one), then remove
+  `-d` from the first `docker run` invocation so that the Sandstorm install script can ask you
+  questions.
+
+- Sandstorm depends on `curl`, `xz`, `openssl`, and `id` from the underlying container. We chose the
+  `buildpack-deps` image because it contains those utilities and is maintained by the Docker
+  team. We recommend periodically updating the `buildpack-deps` container for security reasons and
+  stopping & starting Sandstorm on the new `buildpacks-deps` container.
+
+- Sandstorm doesn't currently update its configuration when run under different environment
+  variables; instead, one must edit the `sandstorm.conf` file within the data volume.
+
+- Sandstorm is a single-machine program, and so you cannot safely run multiple instances of it
+  behind a load balancer on multiple nodes at once. Sandstorm's database lives within the same
+  container and its design currently assumes a single machine.
+
+We're hopeful that the above approach is useful, although we know that it is not the most idiomatic
+use of Docker. If your organization needs deeper integration with Docker, such as a Docker image
+maintained by the Sandstorm team that contains the latest version of Sandstorm, please send an email
+to support@sandstorm.io so we know that customers have a real need for it and can prioritize it
+accordingly.
+
+## Option 7: Use Vagrant when deploying on Mac or Windows
+
+If your organization's servers run Mac OS or Windows, you would need a virtualization tool to run
+Sandstorm, since Sandstorm requires the Linux kernel.
+
+One option is to use Vagrant and VirtualBox; the Sandstorm source repository contains a
+"Vagrantfile" that creates a Linux virtual machine containing Sandstorm. Through the Vagrantfile,
+your Linux virtual machine runs the latest version of Sandstorm, with automatic updates enabled; it
+uses the same install script as described earlier in this document.
+
+You must [install Vagrant](https://www.vagrantup.com/docs/installation/) and a virtualization
+software package such as [VirtualBox](https://www.virtualbox.org/wiki/Downloads), which has the
+upside that it is available free of cost.
+
+To try this, you can perform the following steps:
+
+```bash
+$ git clone https://github.com/sandstorm-io/sandstorm
+$ vagrant up
+```
+
+In this configuration, Vagrant/VirtualBox manage TCP port forwarding, and Sandstorm is available at
+http://local.sandstorm.io:6080/ by default. `local.sandstorm.io` is a DNS alias for localhost,
+indicating that the service is only visible on the computer where you ran Vagrant.
+
+We do recommend that you run Sandstorm on a native Linux system, but we understand that this isn't
+always an option. If you need further help making Sandstorm work with Vagrant or within
+virtualization generally, please email support@sandstorm.io.
+
 ## Tips
 
 * If installing Sandstorm under LXC / Docker, you will need to choose the option to install as a
@@ -205,7 +344,7 @@ If you suspect you'll be hacking on Sandstorm's dependencies as well, you may wa
 * If you want HTTPS/SSL, consider using our [free SSL certificate & dynamic DNS service](administering/ssl.md) or
   setting up a [reverse proxy](administering/reverse-proxy.md).
 
-# Uninstall
+## Uninstall
 
 If you installed Sandstorm with default options, the following actions will fully remove
 Sandstorm. If you customized the install, you'll need to change these commands accordingly.

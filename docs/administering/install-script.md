@@ -32,40 +32,6 @@ The job of `install.sh` is to:
 
 The install script can perform some other related tasks, but these are the core goals.
 
-## Integrating with configuration management systems like Ansible/Puppet
-
-If you want to prepare a server to run Sandstorm using a configuration management system, the
-configuration management system should take the following steps.
-
-- Download install.sh at runtime within the configuration mangement system from
-  [https://install.sandstorm.io/](https://install.sandstorm.io/), and [verify the install.sh
-  signature](../install.md#option-3-pgp-verified-install).  Alternatively you can download
-  install.sh into your own trusted file storage area and verify it as part of copying it to your own
-  trusted file storage area.
-
-- Run install.sh with the options of your liking, per this document's [Non-interactive
-  installation](#non-interactive-installation) section.
-
-- If you need to make further configuration changes, then stop the Sandstorm service with `sudo
-  service sandstorm stop`, modify the config file in `/opt/sandstorm/sandstorm.conf` so that it
-  contains the contents you want, and start the Sandstorm service.
-
-Note that `BASE_URL`, `WILDCARD_HOST`, and `ALLOW_DEV_ACCOUNTS` are three configuration file options
-whose value you will want to verify. See the [full documentation on sandstorm.conf](config-file.md).
-
-This process uses install.sh to download the Sandstorm binary bundle. Another option would
-hypothetically be an APT repository. However, at the time of writing (July 2016), there is no APT
-repository for Sandstorm because we have not yet examined fully how to retain Sandstorm's
-self-containerization and auto-updates in conjunction with an APT repository.
-
-You can look at these examples as a starting-point:
-
-- [Sandcastle](https://github.com/iflowfor8hours/sandcastle), an Ansible playbook that installs
-  Sandstorm as part of "An opinionated configuration for running sandstorm with a focus on security
-  and paranoid assumptions."
-
-- [Sandstorm's installer test suite](#examples) includes some automated invocations of install.sh.
-
 ## Non-interactive installation
 
 ### Command-line flag to skip interactive prompts

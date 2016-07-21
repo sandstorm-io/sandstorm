@@ -140,7 +140,7 @@ logActivity = function (grainId, identityId, event) {
       // Notify all accounts connected with this identity.
       Meteor.users.find({ $or: [
         { "loginIdentities.id": targetId },
-        { "nonLoginIdentities.id": targetId },
+        { "nonloginIdentities.id": targetId },
       ], }).forEach((account) => {
         Notifications.upsert(_.extend({ userId: account._id }, notification), {
           $set: update,

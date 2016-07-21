@@ -9,7 +9,7 @@ Sandstorm requires Linux x86_64, with kernel version 3.13 or later.
 
 This page documents a number of ways to install Sandstorm, specifically:
 
-- [Most common: Downloading an executing our carefully-written install script, verified by HTTPS](#option-1-https-verified-install)
+- [Most common: Downloading and executing our carefully-written install script, verified by HTTPS](#option-1-https-verified-install)
 - [Downloading the shell script via GitHub](#option-2-github-verified-install)
 - [Using PGP to verify the authenticity of the script](#option-3-pgp-verified-install)
 - [Installing Sandstorm from source code](#option-4-installing-from-source)

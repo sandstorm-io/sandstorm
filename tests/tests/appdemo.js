@@ -27,6 +27,7 @@ module.exports = {};
 
 module.exports["Test appdemo link"] = function (browser) {
   browser
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk",
                 "ca690ad886bf920026f8b876c19539c1",
                 "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh",
@@ -39,7 +40,7 @@ module.exports["Test appdemo link"] = function (browser) {
     .assert.containsText(".start", "Hacker CMS")
     .click(".start")
     .waitForElementPresent("iframe.grain-frame", short_wait)
-    .frame("grain-frame")
+    .grainFrame()
     .waitForElementPresent("#publish", medium_wait)
     .assert.containsText("#publish", "Publish")
     .end();

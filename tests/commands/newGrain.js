@@ -1,5 +1,5 @@
 // Sandstorm - Personal Cloud Sandbox
-// Copyright (c) 2014 Sandstorm Development Group, Inc. and contributors
+// Copyright (c) 2016 Sandstorm Development Group, Inc. and contributors
 // All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,31 +24,26 @@ var utils = require("../utils"),
     long_wait = utils.long_wait,
     very_long_wait = utils.very_long_wait;
 
-exports.command = function(url, packageId, appId, dontStartGrain, callback) {
-  var browser = this;
-  var ret = browser
-    .init()
-    .url(this.launch_url + "/install/" + packageId + "?url=" + url)
-    .waitForElementVisible("#step-confirm", very_long_wait)
-    .click("#confirmInstall")
-    .url(this.launch_url + "/apps")
-    .waitForElementVisible(".app-list", medium_wait)
-    .resizeWindow(utils.default_width, utils.default_height);
-
-  if (!dontStartGrain) {
-    ret = ret
-      // The introjs overlay often doesn't destroy itself fast enough and intercepts
-      // clicks that we don't want it to intercept. So we manually disable it here.
-      .disableGuidedTour()
-      .click(appSelector(appId))
+exports.command = function(appId, callback) {
+  // Callback is optional and takes a single argument, which will be the ID of the created grain.
+  var self = this;
+  var ret = self
+      .init()
+      .url(self.launch_url + "/apps/" + appId)
       .waitForElementVisible(actionSelector, short_wait)
       .click(actionSelector)
-      .waitForElementVisible("#grainTitle", medium_wait);
-  }
+      .grainFrame() // wait for the grain frame to exist
+      .frame(null)
+      .url(function (grainUrl) {
+        var regex = new RegExp(self.launch_url + "/grain/([\\w]*)");
+        var result = regex.exec(grainUrl.value);
+        self.perform(function(client, done) {
+          if (typeof callback === "function") {
+            callback.call(self, result[1]);
+          }
+          done();
+        });
+      });
 
-  if (typeof callback === "function") {
-    return ret.status(callback);
-  } else {
-    return ret;
-  }
+  return ret;
 };

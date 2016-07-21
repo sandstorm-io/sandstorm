@@ -32,6 +32,7 @@ module.exports["Test open direct share link"] = function (browser) {
   var devName2 = "A" + crypto.randomBytes(10).toString("hex");
   var devIdentityId2 = crypto.createHash("sha256").update("dev:" + devName2).digest("hex");
   browser
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
                 hackerCmsAppId)
     .waitForElementVisible("#grainTitle", medium_wait)
@@ -53,13 +54,13 @@ module.exports["Test open direct share link"] = function (browser) {
          // First, try visiting the link while already logged in.
         .loginDevAccount(devName2)
         .url(browser.launch_url + "/shared/" + result.value.result.token)
-        .waitForElementVisible("#grain-frame", medium_wait)
+        .waitForElementVisible("iframe.grain-frame", medium_wait)
         .waitForElementVisible("#grainTitle", medium_wait)
         .assert.containsText("#grainTitle", "user2 title")
         .url(function(grainUrl) {
           browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
         })
-        .frame("grain-frame")
+        .grainFrame()
         .waitForElementPresent("#publish", medium_wait)
         .assert.containsText("#publish", "Publish")
         .frame(null)
@@ -71,13 +72,13 @@ module.exports["Test open direct share link"] = function (browser) {
         .assert.containsText(".grain-interstitial",
                              "Access through this URL is restricted to the identity:")
         .click(".grain-interstitial button.sign-in")
-        .waitForElementVisible("#grain-frame", medium_wait)
+        .waitForElementVisible("iframe.grain-frame", medium_wait)
         .waitForElementVisible("#grainTitle", medium_wait)
         .assert.containsText("#grainTitle", "user2 title")
         .url(function(grainUrl) {
           browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
         })
-        .frame("grain-frame")
+        .grainFrame()
         .waitForElementPresent("#publish", medium_wait)
         .assert.containsText("#publish", "Publish")
         .frame(null)
@@ -90,13 +91,13 @@ module.exports["Test open direct share link"] = function (browser) {
         .assert.containsText(".grain-interstitial",
                              "Access through this URL is restricted to the identity:")
         .click(".grain-interstitial button.sign-in")
-        .waitForElementVisible("#grain-frame", medium_wait)
+        .waitForElementVisible("iframe.grain-frame", medium_wait)
         .waitForElementVisible("#grainTitle", medium_wait)
         .assert.containsText("#grainTitle", "user2 title")
         .url(function(grainUrl) {
           browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
         })
-        .frame("grain-frame")
+        .grainFrame()
         .waitForElementPresent("#publish", medium_wait)
         .assert.containsText("#publish", "Publish")
         .frame(null)
@@ -105,6 +106,7 @@ module.exports["Test open direct share link"] = function (browser) {
 
 module.exports["Test revoked share link"] = function (browser) {
   browser
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
                 hackerCmsAppId)
     .waitForElementVisible("#grainTitle", medium_wait)
@@ -142,6 +144,7 @@ module.exports["Test revoked share link"] = function (browser) {
 module.exports["Test share popup no permission"] = function (browser) {
   var sharePopupSelector = ".topbar .share > .show-popup";
   browser
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
                 hackerCmsAppId)
     .waitForElementVisible("#grainTitle", medium_wait)

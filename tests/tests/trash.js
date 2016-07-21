@@ -33,6 +33,7 @@ module.exports["Test grain trash"] = function (browser) {
   var grainCheckboxSelector;
 
   browser
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
                 hackerCmsAppId)
     .getDevName(function (result) {
@@ -63,7 +64,7 @@ module.exports["Test grain trash"] = function (browser) {
             .click("button.pick-identity")
             .waitForElementVisible('.grain-frame', medium_wait)
             .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
-            .frame('grain-frame')
+            .grainFrame()
             .waitForElementPresent('#publish', medium_wait)
             .assert.containsText('#publish', 'Publish')
             .frame(null)
@@ -84,7 +85,7 @@ module.exports["Test grain trash"] = function (browser) {
             .click("button.restore-from-trash")
             .waitForElementVisible('.grain-frame', medium_wait)
             .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
-            .frame('grain-frame')
+            .grainFrame()
             .waitForElementPresent('#publish', medium_wait)
             .assert.containsText('#publish', 'Publish')
             .frame(null)

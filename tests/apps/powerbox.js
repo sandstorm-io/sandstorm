@@ -32,12 +32,13 @@ module.exports = {};
 module.exports["Test Powerbox"] = function (browser) {
   browser
     .init()
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
                 "f855d3c96e18e785a3a734a49919ef18",
                 "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
     .assert.containsText("#grainTitle", "Untitled PowerboxTest")
     .waitForElementVisible('.grain-frame', short_wait)
-    .frame("grain-frame")
+    .grainFrame()
     .waitForElementVisible("#offer", short_wait)
     .click("#offer")
     .waitForElementVisible("#offer-result", short_wait)
@@ -47,13 +48,13 @@ module.exports["Test Powerbox"] = function (browser) {
     .getText("#powerbox-offer-url", function (result) {
         browser
           .click(".popup.offer .frame button.dismiss")
-          .frame("grain-frame")
+          .grainFrame()
           .click("#request")
           .frameParent()
           .waitForElementVisible("#powerbox-request-input", short_wait)
           .setValue("#powerbox-request-input", result.value)
           .click("#powerbox-request-form button")
-          .frame("grain-frame")
+          .grainFrame()
           .waitForElementVisible("#request-result", short_wait)
           .assert.containsText("#request-result", "request: footest");
     });
@@ -64,12 +65,13 @@ module.exports["Test PowerboxSave"] = function (browser) {
   browser
     browser
     .init()
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
                 "f855d3c96e18e785a3a734a49919ef18",
                 "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
     .assert.containsText("#grainTitle", "Untitled PowerboxTest")
     .waitForElementVisible('.grain-frame', short_wait)
-    .frame("grain-frame")
+    .grainFrame()
     .waitForElementVisible("#offer", short_wait)
     .click("#offer")
     .waitForElementVisible("#offer-result", short_wait)
@@ -79,13 +81,13 @@ module.exports["Test PowerboxSave"] = function (browser) {
     .getText("#powerbox-offer-url", function (result) {
         browser
           .click(".popup.offer .frame button.dismiss")
-          .frame("grain-frame")
+          .grainFrame()
           .click("#request-save-restore")
           .frameParent()
           .waitForElementVisible("#powerbox-request-input", short_wait)
           .setValue("#powerbox-request-input", result.value)
           .click("#powerbox-request-form button")
-          .frame("grain-frame")
+          .grainFrame()
           .waitForElementVisible("#request-result", short_wait)
           .assert.containsText("#request-result", "request: footest");
     });
@@ -96,6 +98,7 @@ module.exports["Test PowerboxSave"] = function (browser) {
 module.exports["Test Powerbox with failing requirements"] = function (browser) {
   browser
     .init()
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
                 "f855d3c96e18e785a3a734a49919ef18",
                 "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
@@ -104,7 +107,7 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
     // We'll use the debugLog at the bottom of the test, but it's nice to open it early and give it time to load.
     .click("#openDebugLog")
     .waitForElementVisible('.grain-frame', short_wait)
-    .frame("grain-frame")
+    .grainFrame()
     .waitForElementVisible("#offer", short_wait)
     .click("#offer")
     .waitForElementVisible("#offer-result", short_wait)
@@ -114,13 +117,13 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
     .getText("#powerbox-offer-url", function (result) {
        browser
         .click(".popup.offer .frame button.dismiss")
-        .frame("grain-frame")
+        .grainFrame()
         .click("#request-failing-requirements")
         .frame()
         .waitForElementVisible("#powerbox-request-input", short_wait)
         .setValue("#powerbox-request-input", result.value)
         .click("#powerbox-request-form button")
-        .frame("grain-frame")
+        .grainFrame()
         .waitForElementVisible("#request-result", short_wait)
         .assert.containsText("#request-result", "request:")
         .windowHandles(function (windows) {

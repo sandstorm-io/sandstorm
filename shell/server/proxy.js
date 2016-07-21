@@ -1175,7 +1175,14 @@ class Proxy {
         identityId: new Buffer(identity._id, "hex"),
         identity: makeIdentity(identity._id, [idCapRequirement]),
       };
-      if (identity.profile.pictureUrl) this.userInfo.pictureUrl = identity.profile.pictureUrl;
+      if (identity.profile.pictureUrl) {
+        this.userInfo.pictureUrl = identity.profile.pictureUrl;
+      } else {
+        this.userInfo.pictureUrl =
+            PROTOCOL + "//" + makeWildcardHost("static") + "/identicon/" +
+            this.identityId.slice(0, 32) + "?s=128";
+      }
+
       if (identity.profile.pronoun) this.userInfo.pronouns = identity.profile.pronoun;
     } else {
       this.userInfo = {
@@ -1641,6 +1648,10 @@ class Proxy {
     } else if ("noContent" in rpcResponse) {
       const noContent = rpcResponse.noContent;
       const noContentCode = noContentSuccessCodes[noContent.shouldResetForm * 1];
+      if (noContent.eTag) {
+        response.setHeader("ETag", composeETag(noContent.eTag));
+      }
+
       response.writeHead(noContentCode.id, noContentCode.title);
       response.end();
     } else if ("preconditionFailed" in rpcResponse) {

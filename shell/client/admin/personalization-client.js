@@ -4,8 +4,8 @@ Template.newAdminPersonalization.onCreated(function () {
   this.serverTitle = new ReactiveVar(globalDb.getSettingWithFallback("serverTitle", ""));
   this.splashUrl = new ReactiveVar(globalDb.getSettingWithFallback("splashUrl", ""));
   this.signupDialog = new ReactiveVar(globalDb.getSettingWithFallback("signupDialog", DEFAULT_SIGNUP_DIALOG));
-  this.termsOfServiceUrl = new ReactiveVar(globalDb.getSetting("termsUrl"));
-  this.privacyPolicyUrl = new ReactiveVar(globalDb.getSetting("privacyUrl"));
+  this.termsOfServiceUrl = new ReactiveVar(globalDb.getSettingWithFallback("termsUrl", ""));
+  this.privacyPolicyUrl = new ReactiveVar(globalDb.getSettingWithFallback("privacyUrl", ""));
 
   this.formState = new ReactiveVar("default");
   this.message = new ReactiveVar("");

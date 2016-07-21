@@ -93,11 +93,12 @@ module.exports["Test backup and restore"] = function(browser) {
   //v0: /install/9111a8c70938276d28a00468a18a25c7?url=https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-0.spk
   //v1: /install/f5fe6aa9fcbccc690fd36a86efe02b8a?url=https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-1.spk
   browser
+    .loginDevAccount()
     // sandstorm-test-python, v0
     .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-0.spk", "9111a8c70938276d28a00468a18a25c7", "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh")
     .assert.containsText('#grainTitle', 'Untitled Test App test page')
     .waitForElementVisible('.grain-frame', short_wait)
-    .frame('grain-frame')
+    .grainFrame()
     .waitForElementPresent('#randomId', medium_wait)
     .assert.containsText('#randomId', 'initial state')
     .setValue("#state", [randomValue, browser.Keys.ENTER])
@@ -174,7 +175,7 @@ module.exports["Test backup and restore"] = function(browser) {
     .waitForElementVisible('#grainTitle', medium_wait)
     .assert.containsText('#grainTitle', 'Untitled Test App test page')
     .waitForElementVisible('.grain-frame', short_wait)
-    .frame('grain-frame')
+    .grainFrame()
     .waitForElementPresent('#randomId', medium_wait)
     .assert.containsText('#randomId', randomValue)
     .frame(null)

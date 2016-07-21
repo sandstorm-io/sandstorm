@@ -311,9 +311,9 @@ One option is to use Vagrant and VirtualBox; the Sandstorm source repository con
 your Linux virtual machine runs the latest version of Sandstorm, with automatic updates enabled; it
 uses the same install script as described earlier in this document.
 
-You must [install Vagrant](https://www.vagrantup.com/docs/installation/) and a virtualization
-software package such as [VirtualBox](https://www.virtualbox.org/wiki/Downloads), which has the
-upside that it is available free of cost.
+You must [install Vagrant](https://www.vagrantup.com/docs/installation/) and a virtualization software
+package such as [VirtualBox](https://www.virtualbox.org/wiki/Downloads),. Both are available free of
+cost.
 
 To try this, you can perform the following steps:
 

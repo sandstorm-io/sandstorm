@@ -60,7 +60,7 @@ limitations under the License.
 
   {{!-- standard topbar items --}}
   {{#sandstormTopbarItem name="home-button" topbar=globalTopbar}}
-    <a href="/">Sandstorm</a>
+  <a href="/">{{effectiveServerTitle}}</a>
   {{/sandstormTopbarItem}}
   {{#if showAccountButtons}}
     {{>sandstormTopbarItem name="account" topbar=globalTopbar data=accountButtonsData

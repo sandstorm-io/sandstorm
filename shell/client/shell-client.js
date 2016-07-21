@@ -409,6 +409,13 @@ Template.referrals.helpers({
 });
 
 Template.layout.helpers({
+  effectiveServerTitle() {
+    const useServerTitle = globalDb.isFeatureKeyValid() &&
+        globalDb.getSettingWithFallback("whitelabelUseServerTitleForHomeText", false);
+    return useServerTitle ? globalDb.getSettingWithFallback("serverTitle", "Sandstorm") :
+        "Sandstorm";
+  },
+
   adminAlertIsTooLarge: function () {
     Template.instance().resizeTracker.depend();
     const setting = Settings.findOne({ _id: "adminAlert" });

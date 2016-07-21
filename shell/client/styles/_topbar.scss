@@ -228,7 +228,7 @@ body>.topbar {
         overflow: hidden;
 
         >a {
-          display: block;
+          @extend %overflow-ellipsis;
           color: inherit;
           margin: 0px;
           text-decoration: none;

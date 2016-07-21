@@ -27,6 +27,7 @@ const publicAdminSettings = [
   "serverTitle", "returnAddress", "ldapNameField", "organizationMembership",
   "organizationSettings",
   "whitelabelHideTroubleshooting",
+  "whitelabelUseServerTitleForHomeText",
 ];
 
 const FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS = [

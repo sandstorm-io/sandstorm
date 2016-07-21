@@ -55,8 +55,8 @@ Template.newAdminUserDetailsIdentityTable.helpers({
     return identities;
   },
 
-  nonLoginIdentities(account) {
-    const identityIds = account.nonLoginIdentities || [];
+  nonloginIdentities(account) {
+    const identityIds = account.nonloginIdentities || [];
     const identities = identityIds.map(lookupIdentity);
     return identities;
   },

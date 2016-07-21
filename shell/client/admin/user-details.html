@@ -169,7 +169,7 @@
           {{> newAdminUserDetailsIdentityMIATableRow }}
         {{/if}}
       {{/each}}
-      {{#each identity in (nonLoginIdentities account) }}
+      {{#each identity in (nonloginIdentities account) }}
         {{#if identity}}
           {{> newAdminUserDetailsIdentityTableRow
                 identity=identity

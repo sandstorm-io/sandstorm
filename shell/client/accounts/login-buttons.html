@@ -84,7 +84,11 @@ licenses, included in the LICENSES directory.
     {{#if isAdmin}}
       {{#linkTo route="newAdminRoot" role="menuitem"}}Admin panel{{/linkTo}}
     {{/if}}
-    <a href="mailto:support@sandstorm.io" target="_blank" role="menuitem">Send feedback</a>
+
+    {{#if showSendFeedback}}
+      <a href="mailto:support@sandstorm.io" target="_blank" role="menuitem">Send feedback</a>
+    {{/if}}
+
     {{#if quotaEnabled }}
       {{#linkTo route="referrals" role="menuitem"}}Referral program{{/linkTo}}
     {{/if}}

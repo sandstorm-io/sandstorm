@@ -519,7 +519,15 @@ Template.layout.helpers({
   },
 
   accountButtonsData: function () {
-    return { isAdmin: globalDb.isAdmin(), grains: globalGrains };
+    const hasFeatureKey = globalDb.isFeatureKeyValid();
+    const showSendFeedback = hasFeatureKey ?
+        !globalDb.getSettingWithFallback("whitelabelHideSendFeedback", false) :
+        true;
+    return {
+      isAdmin: globalDb.isAdmin(),
+      grains: globalGrains,
+      showSendFeedback,
+    };
   },
 
   firstLogin: function () {

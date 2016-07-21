@@ -249,7 +249,6 @@ NC_PATH="${OVERRIDE_NC_PATH:-nc}"
 
 # Defaults for some config options, so that if the user requests no
 # prompting, they get these values.
-DEFAULT_PORT=6080
 DEFAULT_DIR_FOR_ROOT="${OVERRIDE_SANDSTORM_DEFAULT_DIR:-/opt/sandstorm}"
 DEFAULT_DIR_FOR_NON_ROOT="${OVERRIDE_SANDSTORM_DEFAULT_DIR:-$HOME/sandstorm}"
 DEFAULT_UPDATE_CHANNEL="dev"
@@ -261,7 +260,7 @@ SANDCATS_GETCERTIFICATE="${OVERRIDE_SANDCATS_GETCERTIFICATE:-yes}"
 # Define functions for each stage of the install process.
 
 usage() {
-  echo "usage: $SCRIPT_NAME [-d] [-e] [-u] [<bundle>]" >&2
+  echo "usage: $SCRIPT_NAME [-d] [-e] [-p PORT_NUMBER] [-u] [<bundle>]" >&2
   echo "If <bundle> is provided, it must be the name of a Sandstorm bundle file," >&2
   echo "like 'sandstorm-123.tar.xz', which will be installed. Otherwise, the script" >&2
   echo "downloads a bundle from the internet via HTTP." >&2
@@ -269,6 +268,7 @@ usage() {
   echo 'If -d is specified, the auto-installs with defaults suitable for app development.' >&2
   echo 'If -e is specified, default to listening on an external interface, not merely loopback.' >&2
   echo 'If -i is specified, default to (i)nsecure mode where we do not request a HTTPS certificate.' >&2
+  echo 'If -p is specified, use its argument (PORT_NUMBER) as the default port for HTTP. Otherwise, use 6080. Note that if the install script enables HTTPS via sandcats.io, it will use 443 instead!'
   echo 'If -u is specified, default to avoiding root priviliges. Note that the dev tools only work if the server as root privileges.' >&2
   exit 1
 }
@@ -280,22 +280,18 @@ detect_current_uid() {
 }
 
 disable_https_if_ports_unavailable() {
-  # If port 80 and 443 are both available, then let's use
-  # DEFAULT_PORT=80. This value is what the Sandstorm installer will
-  # write to PORT= in the Sandstorm configuration file.
+  # If port 80 and 443 are both available, then let's use DEFAULT_PORT=80. This value is what the
+  # Sandstorm installer will write to PORT= in the Sandstorm configuration file.
   #
-  # If either 80 or 443 is not available, then we set
-  # SANDCATS_GETCERTIFICATE to no.
+  # If either 80 or 443 is not available, then we set SANDCATS_GETCERTIFICATE to no.
   #
-  # From the rest of the installer's perspective, if
-  # SANDCATS_GETCERTIFICATE is yes, it is safe to bind to port 443.
+  # From the rest of the installer's perspective, if SANDCATS_GETCERTIFICATE is yes, it is safe to
+  # bind to port 443.
   #
-  # There is a theoretical race condition here. I think that's
-  # life.
+  # There is a theoretical race condition here. I think that's life.
   #
-  # This also means that if a user has port 443 taken but port 80
-  # available, we will use port 6080 as the default port. I think
-  # that's OK.
+  # This also means that if a user has port 443 taken but port 80 available, we will use port 6080
+  # as the default port. If the user wants to override that, they can run install.sh with "-p 80".
   local PORT_80_AVAILABLE="no"
   is_port_bound 0.0.0.0 80 || PORT_80_AVAILABLE="yes"
 
@@ -313,7 +309,7 @@ handle_args() {
   SCRIPT_NAME=$1
   shift
 
-  while getopts ":deiu" opt; do
+  while getopts ":deiup:" opt; do
     case $opt in
       d)
         USE_DEFAULTS="yes"
@@ -327,11 +323,17 @@ handle_args() {
       u)
         PREFER_ROOT=no
         ;;
+      p)
+        DEFAULT_PORT="${OPTARG}"
+        ;;
       *)
         usage
         ;;
     esac
   done
+
+  # If DEFAULT_PORT didn't get set above, set it to 6080 here.
+  DEFAULT_PORT="${DEFAULT_PORT:-6080}"
 
   # Keep a copy of the ORIGINAL_ARGS so that, when re-execing ourself,
   # we can pass them in.
@@ -892,7 +894,7 @@ full_server_install() {
     USE_SANDCATS="yes"
     START_AT_BOOT="yes"
     DESIRED_SERVER_USER="$DEFAULT_SERVER_USER"
-    PORT="6080"
+    PORT="${DEFAULT_PORT}"
     MONGO_PORT="6081"
   else
     REPORT=no fail "E_USER_WANTS_CUSTOM_SETTINGS" "If you prefer a more manual setup experience, try installing in development mode."

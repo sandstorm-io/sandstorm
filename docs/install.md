@@ -247,8 +247,9 @@ further.
 ## Option 6: Using Sandstorm within Docker
 
 Docker is a popular tool for declaring how to run code on servers. Sandstorm can run within Docker.
-We suggest running Sandstorm outside of Docker, but if your organization runs all server software
-within Docker, this is one way to make that work.
+We recommend running Sandstorm outside of Docker because we mostly test Sandstorm outside of Docker
+and our integration with Docker is somewhat non-idiomatic. If your organization runs all server
+software within Docker, this is one way to make that work.
 
 To run Sandstorm within Docker, run the following commands in a shell.
 

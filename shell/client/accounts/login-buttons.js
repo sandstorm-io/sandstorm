@@ -265,8 +265,11 @@ Template.loginButtonsList.helpers({
   services: getServices,
 
   showTroubleshooting: function () {
-    return !(Meteor.settings && Meteor.settings.public &&
+    const hiddenByConfFile = (Meteor.settings && Meteor.settings.public &&
       Meteor.settings.public.hideTroubleshooting);
+    const hiddenByDbSetting = (this._db.isFeatureKeyValid() &&
+      this._db.getSettingWithFallback("whitelabelHideTroubleshooting", false));
+    return !hiddenByConfFile && !hiddenByDbSetting;
   },
 
   linkingNewIdentity: function () {

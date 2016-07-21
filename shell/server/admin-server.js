@@ -26,6 +26,7 @@ const publicAdminSettings = [
   "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled",
   "serverTitle", "returnAddress", "ldapNameField", "organizationMembership",
   "organizationSettings",
+  "whitelabelHideTroubleshooting",
 ];
 
 const FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS = [

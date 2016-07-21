@@ -53,7 +53,7 @@ const filteredSortedGrains = function (db, staticAssetHost, appId, appTitle, fil
 
   const tokensForGrain = _.groupBy(db.currentUserApiTokens(viewingTrash).fetch(), "grainId");
   const grainIdsForApiTokens = Object.keys(tokensForGrain)
-        .filter((t) => !(t.grainId in grainIdSet));
+        .filter((grainId) => !(grainId in grainIdSet));
 
   // grainTokens is a list of all apiTokens, but guarantees at most one token per grain
   const grainTokens = grainIdsForApiTokens

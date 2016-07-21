@@ -1175,7 +1175,14 @@ class Proxy {
         identityId: new Buffer(identity._id, "hex"),
         identity: makeIdentity(identity._id, [idCapRequirement]),
       };
-      if (identity.profile.pictureUrl) this.userInfo.pictureUrl = identity.profile.pictureUrl;
+      if (identity.profile.pictureUrl) {
+        this.userInfo.pictureUrl = identity.profile.pictureUrl;
+      } else {
+        this.userInfo.pictureUrl =
+            PROTOCOL + "//" + makeWildcardHost("static") + "/identicon/" +
+            this.identityId.slice(0, 32) + "?s=128";
+      }
+
       if (identity.profile.pronoun) this.userInfo.pronouns = identity.profile.pronoun;
     } else {
       this.userInfo = {

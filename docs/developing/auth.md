@@ -71,18 +71,13 @@ related to user identity and permissions:
 
 * `X-Sandstorm-User-Picture`: The URL of the user's profile picture.
   The exact resolution of the picture is not specified, but assume
-  it is optimized for a 256x256 or smaller viewport (i.e. the actual
-  size is around 512x512 for high-DPI displays). Although profile
+  it is optimized for a 64x64 or smaller viewport (i.e. the actual
+  size is around 128x128 for high-DPI displays). Although profile
   pictures are normally square, it is recommended to use CSS `max-width` and
   `max-height` instead of `width` and `height` in order to avoid
-  distorting a non-square picture. If this header is missing, the
-  user has no profile picture. In this case, it is recommended that
-  apps use [identicon.js](https://github.com/stewartlord/identicon.js),
-  with the user's ID (from `X-Sandstorm-User-Id`) as the input, to
-  produce identicons consistent with those that Sandstorm's own UI
-  would produce. Note that you should NOT hash the ID; just pass the
-  hex ID directly to the `Identicon` constructor as the `hash`
-  argument.
+  distorting a non-square picture. For logged-in users, this field is
+  always present. The default value is an identicon generated from the
+  user's ID.
 
 * `X-Sandstorm-User-Pronouns`: Indicates by which pronouns the user
   prefers to be referred. Possible values are `neutral` (English:

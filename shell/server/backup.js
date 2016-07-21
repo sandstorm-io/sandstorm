@@ -24,10 +24,18 @@ const GrainInfo = Capnp.importSystem("sandstorm/grain.capnp").GrainInfo;
 const TOKEN_CLEANUP_MINUTES = 15;
 const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
 
+const uploadTokens = {};
+
 function cleanupToken(tokenId) {
   check(tokenId, String);
-  waitPromise(globalBackend.cap().deleteBackup(tokenId));
   FileTokens.remove({ _id: tokenId });
+  waitPromise(globalBackend.cap().deleteBackup(tokenId));
+}
+
+function cleanupRestoreToken(tokenId) {
+  check(tokenId, String);
+  delete uploadTokens[tokenId];
+  waitPromise(globalBackend.cap().deleteBackup(tokenId));
 }
 
 Meteor.startup(() => {
@@ -67,10 +75,28 @@ Meteor.methods({
     return token._id;
   },
 
+  newRestoreToken() {
+    if (!isSignedUp()) {
+      throw new Meteor.Error(403, "Unauthorized", "Only invited users can restore backups.");
+    }
+
+    if (isUserOverQuota(Meteor.user())) {
+      throw new Meteor.Error(402,
+          "You are out of storage space. Please delete some things and try again.");
+    }
+
+    const token = Random.id(22);
+    uploadTokens[token] = setTimeout(function () {
+      cleanupRestoreToken(token);
+    }, 20 * 60 * 1000);
+
+    return token;
+  },
+
   restoreGrain(tokenId, identityId) {
     check(tokenId, String);
     check(identityId, String);
-    const token = FileTokens.findOne(tokenId);
+    const token = uploadTokens[tokenId];
     if (!token || !isSignedUpOrDemo()) {
       throw new Meteor.Error(403, "Unauthorized",
           "Token was not found, or user cannot create grains");
@@ -141,7 +167,7 @@ Meteor.methods({
         private: true,
       });
     } finally {
-      cleanupToken(tokenId);
+      cleanupRestoreToken(tokenId);
     }
 
     return grainId;
@@ -220,18 +246,21 @@ Router.map(function () {
 
   this.route("uploadBackup", {
     where: "server",
-    path: "/uploadBackup",
+    path: "/uploadBackup/:token",
     action() {
       if (this.request.method === "POST") {
+        if (!this.params.token || !uploadTokens[this.params.token]) {
+          this.response.writeHead(403, {
+            "Content-Type": "text/plain",
+          });
+          this.response.write("Invalid upload token.");
+          this.response.end();
+          return;
+        }
+
         const request = this.request;
         try {
-          const token = {
-            _id: Random.id(),
-            timestamp: new Date(),
-          };
-          const stream = globalBackend.cap().uploadBackup(token._id).stream;
-
-          FileTokens.insert(token);
+          const stream = globalBackend.cap().uploadBackup(this.params.token).stream;
 
           waitPromise(new Promise((resolve, reject) => {
             request.on("data", (data) => {
@@ -245,11 +274,7 @@ Router.map(function () {
             });
           }));
 
-          this.response.writeHead(200, {
-            "Content-Length": token._id.length,
-            "Content-Type": "text/plain",
-          });
-          this.response.write(token._id);
+          this.response.writeHead(204);
           this.response.end();
         } catch (error) {
           console.error(error.stack);

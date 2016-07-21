@@ -669,7 +669,7 @@ const startUpload = function (file, endpoint, onComplete) {
 
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4) {
-      if (xhr.status == 200) {
+      if (xhr.status == 204) {
         Session.set("uploadProgress", 0);
         onComplete(xhr.responseText);
       } else {
@@ -697,21 +697,28 @@ const startUpload = function (file, endpoint, onComplete) {
 
 restoreBackup = function (file) {
   // This function is global so tests can call it
-  startUpload(file, "/uploadBackup", function (response) {
-    Session.set("uploadStatus", "Unpacking");
-    const identityId = Accounts.getCurrentIdentityId();
-    Meteor.call("restoreGrain", response, identityId, function (err, grainId) {
-      if (err) {
-        console.log(err);
-        Session.set("uploadStatus", undefined);
-        Session.set("uploadError", {
-          status: "",
-          statusText: err.message,
+  Meteor.call("newRestoreToken", function (err, token) {
+    if (err) {
+      console.error(err);
+      alert(err.message);
+    } else {
+      startUpload(file, "/uploadBackup/" + token, function (response) {
+        Session.set("uploadStatus", "Unpacking");
+        const identityId = Accounts.getCurrentIdentityId();
+        Meteor.call("restoreGrain", token, identityId, function (err, grainId) {
+          if (err) {
+            console.log(err);
+            Session.set("uploadStatus", undefined);
+            Session.set("uploadError", {
+              status: "",
+              statusText: err.message,
+            });
+          } else {
+            Router.go("grain", { grainId: grainId });
+          }
         });
-      } else {
-        Router.go("grain", { grainId: grainId });
-      }
-    });
+      });
+    }
   });
 };
 

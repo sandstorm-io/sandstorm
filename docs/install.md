@@ -303,7 +303,7 @@ accordingly.
 
 ## Option 7: Use Vagrant when deploying on Mac or Windows
 
-If your organization's servers run Mac OS or Windows, you would need a virtualization tool to run
+If your organization's servers run Mac OS or Windows, you will need a virtualization tool to run
 Sandstorm, since Sandstorm requires the Linux kernel.
 
 One option is to use Vagrant and VirtualBox; the Sandstorm source repository contains a

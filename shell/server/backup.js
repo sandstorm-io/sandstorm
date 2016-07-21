@@ -24,17 +24,9 @@ const GrainInfo = Capnp.importSystem("sandstorm/grain.capnp").GrainInfo;
 const TOKEN_CLEANUP_MINUTES = 15;
 const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
 
-const uploadTokens = {};
-
 function cleanupToken(tokenId) {
   check(tokenId, String);
   FileTokens.remove({ _id: tokenId });
-  waitPromise(globalBackend.cap().deleteBackup(tokenId));
-}
-
-function cleanupRestoreToken(tokenId) {
-  check(tokenId, String);
-  delete uploadTokens[tokenId];
   waitPromise(globalBackend.cap().deleteBackup(tokenId));
 }
 
@@ -76,7 +68,7 @@ Meteor.methods({
   },
 
   newRestoreToken() {
-    if (!isSignedUp()) {
+    if (!isSignedUpOrDemo()) {
       throw new Meteor.Error(403, "Unauthorized", "Only invited users can restore backups.");
     }
 
@@ -85,18 +77,20 @@ Meteor.methods({
           "You are out of storage space. Please delete some things and try again.");
     }
 
-    const token = Random.id(22);
-    uploadTokens[token] = setTimeout(function () {
-      cleanupRestoreToken(token);
-    }, 20 * 60 * 1000);
+    const token = {
+      _id: Random.id(),
+      timestamp: new Date(),
+    };
 
-    return token;
+    FileTokens.insert(token);
+
+    return token._id;
   },
 
   restoreGrain(tokenId, identityId) {
     check(tokenId, String);
     check(identityId, String);
-    const token = uploadTokens[tokenId];
+    const token = FileTokens.findOne(tokenId);
     if (!token || !isSignedUpOrDemo()) {
       throw new Meteor.Error(403, "Unauthorized",
           "Token was not found, or user cannot create grains");
@@ -167,7 +161,7 @@ Meteor.methods({
         private: true,
       });
     } finally {
-      cleanupRestoreToken(tokenId);
+      cleanupToken(tokenId);
     }
 
     return grainId;
@@ -249,7 +243,8 @@ Router.map(function () {
     path: "/uploadBackup/:token",
     action() {
       if (this.request.method === "POST") {
-        if (!this.params.token || !uploadTokens[this.params.token]) {
+        const token = FileTokens.findOne(this.params.token);
+        if (!this.params.token || !token) {
           this.response.writeHead(403, {
             "Content-Type": "text/plain",
           });

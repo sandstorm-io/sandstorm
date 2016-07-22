@@ -33,9 +33,11 @@
         <button class="show-trash">View trash ({{trashCount}})</button>
       {{/if}}
 
+      {{#if isSignedUpOrDemo}}
       <button class="restore-button">Restore backup...
         <input type="file" style="display:none" accept=".zip">
       </button>
+      {{/if}}
     </div>
 
     {{#let grains=filteredSortedGrains}}

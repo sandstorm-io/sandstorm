@@ -91,13 +91,21 @@ SessionContextImpl = class SessionContextImpl {
           descriptor.tags[0] && descriptor.tags[0].id &&
           descriptor.tags[0].id === Grain.UiView.typeId;
       if (isUiView) {
+        let tagValue = {};
+        if (descriptor.tags[0].value) {
+          tagValue = Capnp.parse(Grain.UiView.PowerboxTag, descriptor.tags[0].value);
+        }
+
+        if (!tagValue.title) {
+          // TODO(someday): We should arguably throw here, but the collections app currently
+          //   fails to provide a title.
+          tagValue.title = "offer()ed grain had no title";
+        }
+
         apiTokenOwner = {
           user: {
             identityId: this.identityId,
-            // The following fields will be overwritten by PersistentUiView.save(), so no need to
-            // pass them in:
-            //title: "", // This will be replaced by the token's title
-            //denormalizedGrainMetadata: {}, // This will look up the package for the grain referenced.
+            title: tagValue.title,
           },
         };
       }

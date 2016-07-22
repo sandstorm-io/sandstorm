@@ -17,7 +17,7 @@ you to log into Sandstorm with a username and password that is checked against a
 expect Sandstorm's LDAP support to be compatible with Microsoft Active Directory, OpenLDAP, and many
 other systems.
 
-To enable either of these login providers, take the following steps:
+To enable LDAP login, take the following steps:
 
 - Log into your Sandstorm server as an administrator.
 
@@ -52,6 +52,39 @@ Implementation notes for LDAP that may apply to your site:
   logging in. `cn` is short for common name. If your LDAP server is configured differently, please
   adjust the **LDAP given name attribute**.
 
+### Authentication provider: SAML 2.0
+
+SAML 2.0 is a passwordless single sign-on protocol. It allows a web application such as Sandstorm to
+request the current user's credentials from a central service, typically administered by a
+university or corporate IT team. We expect Sandstorm's SAML support to be compatible with
+Shibboleth, Okta, SimpleSAMLphp, Microsoft ActiveDirectory, and many other systems.
+
+To enable SAML login on your Sandstorm server, take the following steps:
+
+- Log into your Sandstorm server as an administrator.
+
+- Make sure you have enabled [Sandstorm for Work on your server](#enabling-sandstorm-for-work).
+
+- Click **Admin panel** within your Sandstorm server; this should take you to `/admin`.
+
+- Under "Configuration", click on "Identity providers"; this should take you to `/admin/identity`.
+
+- In the Identity providers table, click the "Configure" button in the SAML row.
+
+- Complete the form and enabled SAML login.
+
+Your SAML IDP should be configured to return a persistent nameID. In addition, if you are not using
+Active Directory, you **must** configure your IDP to provide two extra attributes, email and
+displayName.
+
+The easiest way to integrate with SAML is if your SAML IDP supports reading the service provider
+metadata from a URL. If it does, you can point it to your Sandstorm base URL followed by
+`/_saml/config/default`. For example: `https://sandstorm.example.com/_saml/config/default`
+
+The Service URL of this server is displayed in the configuration dialog, and is always your server's
+hostname plus `/_saml/validate/default`. For example:
+`https://sandstorm.example.com/_saml/validate/default`
+
 ## Organization management
 
 For users who are within your organization, Sandstorm for Work can automatically grant them a user
@@ -85,11 +118,6 @@ to log in.
 ### Features coming soon
 
 We're still working on the following features:
-
-**SAML login.** SAML is a protocol for exchanging information about access control, typically used
-for single sign-on. If you need this feature, please feel free to [request a feature key
-today](https://sandstorm.io/business). SAML support should be compatible with Shibboleth and other
-systems.
 
 **Group management.** This will allow you to share a grain with everyone in a group, such as the
 marketing department, using groups from Google or LDAP.

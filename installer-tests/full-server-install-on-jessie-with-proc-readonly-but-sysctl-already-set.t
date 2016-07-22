@@ -10,13 +10,13 @@ $[slow]ok
 $[run]sudo cat /proc/sys/kernel/unprivileged_userns_clone
 $[slow]1
 $[run]sudo mkdir -p /tmp/read-only-proc && echo ok
-ok
+$[slow]ok
 $[run]sudo umount /tmp/read-only-proc || true && echo ok
-ok
+$[slow]ok
 $[run]sudo mount -o ro -t proc none /tmp/read-only-proc && echo ok
-ok
+$[slow]ok
 $[run]sudo mount --bind -o ro /tmp/read-only-proc/sys /proc/sys && echo ok
-ok
+$[slow]ok
 $[run]sudo CURL_USER_AGENT=testing REPORT=no bash /vagrant/install.sh -d
 $[slow]Config written to /opt/sandstorm/sandstorm.conf.
 Finding latest build for dev channel...

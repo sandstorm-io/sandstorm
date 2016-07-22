@@ -116,6 +116,8 @@ class PowerboxOption {
     //
     // Returns true if there was any overlap, or false if there was no overlap and therefore the
     // option should be dropped.
+    //
+    // TODO(cleanup): How do we factor out the type-specific logic through FrontendRefRegistry?
 
     if (other._id != this._id) {
       throw new Error("can only merge options with the same ID");
@@ -148,6 +150,8 @@ class PowerboxOption {
   union(other) {
     // Union two options with the same ID. Used when combining matches from multiple descriptors.
     // The descriptors are a disjunction.
+    //
+    // TODO(cleanup): How do we factor out the type-specific logic through FrontendRefRegistry?
 
     if (other._id != this._id) {
       throw new Error("can only merge options with the same ID");
@@ -202,6 +206,8 @@ function registerUiViewQueryHandler(frontendRefRegistry) {
           _id: "grain-" + grainId,
           grainId: grainId,
           uiView: {},
+          cardTemplate: "grainPowerboxCard",
+          configureTemplate: "uiViewPowerboxConfiguration",
         });
       });
     },
@@ -237,6 +243,14 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
   //       match the query. If selected, a request session to the grain embedded should be shown
   //       embedded in the powerbox and the same request should be passed to it. Only present when
   //       `grainId` is also present. `hostedObject`, when present, is (for now) an empty object.
+  //   cardTemplate: Names the client-side template to use to display this powerbox option. The
+  //       template's data context will be a "card" object as returned by
+  //       SandstormPowerboxRequest.filteredCardData(). Also, the template definition (in client
+  //       code) may have a static method `powerboxIconSrc` which takes the card as a parameter
+  //       and returns the URL of the icon to display next to the option.
+  //   configureTemplate: If selecting this option should then show a further dialog, names the
+  //       client-side template for that dialog.
+  //   ...: Other fields may be added for consumption by the client-side template.
 
   const results = {};
   const db = this.connection.sandstormDb;

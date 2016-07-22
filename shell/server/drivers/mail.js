@@ -399,6 +399,8 @@ Meteor.startup(() => {
       results.push({
         _id: "emailverifier-all",
         frontendRef: { emailVerifier: {} },
+        cardTemplate: "emailVerifierPowerboxCard",
+        iconSrc: "/email-m.svg",
       });
 
       for (const name in Accounts.identityServices) {
@@ -406,6 +408,7 @@ Meteor.startup(() => {
           results.push({
             _id: "emailverifier-" + name,
             frontendRef: { emailVerifier: { services: [name] } },
+            cardTemplate: "emailVerifierPowerboxCard",
           });
         }
       };
@@ -456,6 +459,7 @@ Meteor.startup(() => {
       return getVerifiedEmails(db, userId, verifierId).map(address => ({
         _id: "email-" + address,
         frontendRef: { verifiedEmail: { verifierId, address } },
+        cardTemplate: "verifiedEmailPowerboxCard",
       }));
     },
   });

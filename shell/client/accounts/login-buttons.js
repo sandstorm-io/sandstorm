@@ -317,6 +317,18 @@ Template.emailAuthenticationForm.helpers({
   },
 });
 
+Template.ldapLoginForm.helpers({
+  loginProviderLabel() {
+    const defaultLabel = "with LDAP";
+    if (globalDb.isFeatureKeyValid()) {
+      const override = globalDb.getSettingWithFallback("whitelabelCustomLoginProviderName", "");
+      return override || defaultLabel;
+    }
+
+    return defaultLabel;
+  },
+});
+
 Template.ldapLoginForm.events({
   "submit form": function (event, instance) {
     event.preventDefault();
@@ -378,6 +390,18 @@ Template.devLoginForm.events({
     event.preventDefault();
     const form = instance.find("form");
     loginDevHelper(form.name.value, false, instance.data.linkingNewIdentity);
+  },
+});
+
+Template.samlLoginForm.helpers({
+  loginProviderLabel() {
+    const defaultLabel = "with LDAP";
+    if (globalDb.isFeatureKeyValid()) {
+      const override = globalDb.getSettingWithFallback("whitelabelCustomLoginProviderName", "");
+      return override || defaultLabel;
+    }
+
+    return defaultLabel;
   },
 });
 

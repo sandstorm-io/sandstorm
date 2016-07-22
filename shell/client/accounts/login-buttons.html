@@ -238,7 +238,7 @@ licenses, included in the LICENSES directory.
 
 <template name="ldapLoginForm">
   <form class="ldap">
-    with LDAP
+    {{loginProviderLabel}}
 
     <label class="username">username
       <span title="This is your LDAP username. It will be the name that you normally use to log in to other internal services at your company." class="info">i</span>
@@ -257,7 +257,7 @@ licenses, included in the LICENSES directory.
 
 <template name="samlLoginForm">
   <button class="login oneclick saml">
-    with SAML
+    {{loginProviderLabel}}
   </button>
 </template>
 

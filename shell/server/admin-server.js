@@ -26,6 +26,7 @@ const publicAdminSettings = [
   "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled",
   "serverTitle", "returnAddress", "ldapNameField", "organizationMembership",
   "organizationSettings",
+  "whitelabelCustomLoginProviderName",
   "whitelabelHideSendFeedback",
   "whitelabelHideTroubleshooting",
   "whitelabelUseServerTitleForHomeText",

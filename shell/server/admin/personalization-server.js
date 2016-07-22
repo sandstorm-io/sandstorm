@@ -22,4 +22,24 @@ Meteor.methods({
     db.collections.settings.upsert({ _id: "termsUrl" }, { value: params.termsOfServiceUrl });
     db.collections.settings.upsert({ _id: "privacyUrl" }, { value: params.privacyPolicyUrl });
   },
+
+  getWhitelabelLogoUploadToken() {
+    checkAuth(undefined);
+    const db = this.connection.sandstormDb;
+    return db.newAssetUpload({ loginLogo: {} });
+  },
+
+  resetWhitelabelLogo() {
+    checkAuth(undefined);
+    const db = this.connection.sandstormDb;
+    const old = globalDb.collections.settings.findAndModify({
+      query: { _id: "whitelabelCustomLogoAssetId" },
+      remove: true,
+      fields: { value: 1 },
+    });
+
+    if (old) {
+      db.unrefStaticAsset(old.value);
+    }
+  },
 });

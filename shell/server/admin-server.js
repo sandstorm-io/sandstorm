@@ -27,6 +27,7 @@ const publicAdminSettings = [
   "serverTitle", "returnAddress", "ldapNameField", "organizationMembership",
   "organizationSettings",
   "whitelabelCustomLoginProviderName",
+  "whitelabelCustomLogoAssetId",
   "whitelabelHideSendFeedback",
   "whitelabelHideTroubleshooting",
   "whitelabelUseServerTitleForHomeText",

@@ -360,14 +360,12 @@ body>.popup.account>.frame-container {
     padding-right: 20px;
     margin: 0;
 
-    &::before {
-      content: " ";
+    .logo {
+      @extend %pseudo-img-tag;
       display: inline-block;
       width: 64px;
       height: 64px;
       vertical-align: bottom;
-      background-image: url("/sandstorm-gradient-logo.svg");
-      background-repeat: no-repeat;
     }
   }
 

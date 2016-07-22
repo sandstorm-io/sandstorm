@@ -1880,7 +1880,10 @@ if (Meteor.isServer) {
   };
 
   SandstormDb.prototype.newAssetUpload = function (purpose) {
-    check(purpose, { profilePicture: { userId: DatabaseId, identityId: DatabaseId } });
+    check(purpose, Match.OneOf(
+      { profilePicture: { userId: DatabaseId, identityId: DatabaseId } },
+      { loginLogo: {} },
+    ));
 
     return AssetUploadTokens.insert({
       purpose: purpose,

@@ -229,6 +229,18 @@ Template.loginButtonsDialog.helpers({
   allowUninvited: function () {
     return Meteor.settings.public.allowUninvited;
   },
+
+  logoUrl() {
+    const defaultLogoUrl = "/sandstorm-gradient-logo.svg";
+    if (globalDb.isFeatureKeyValid()) {
+      const assetId = globalDb.getSettingWithFallback("whitelabelCustomLogoAssetId", "");
+      if (assetId) {
+        return `${window.location.protocol}//${globalDb.makeWildcardHost("static")}/${assetId}`;
+      }
+    }
+
+    return defaultLogoUrl;
+  },
 });
 
 Template.loginButtonsList.onCreated(function () {

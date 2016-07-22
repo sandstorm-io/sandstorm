@@ -57,7 +57,7 @@ Implementation notes for LDAP that may apply to your site:
 SAML 2.0 is a passwordless single sign-on protocol. It allows a web application such as Sandstorm to
 request the current user's credentials from a central service, typically administered by a
 university or corporate IT team. Sandstorm's SAML support supports Shibboleth, Okta, SimpleSAMLphp,
-Microsoft ActiveDirectory, and other SAML services.
+Microsoft Active Directory, and other SAML services.
 
 To enable SAML login on your Sandstorm server, take the following steps:
 

@@ -13,9 +13,9 @@ Work, and it gives us time to finish testing the payments system.
 
 LDAP is a protocol for storing information of nearly any kind; it is typically used to store data
 about people who work at a company, including login credentials.  Sandstorm's LDAP support allows
-you to log into Sandstorm with a username and password that is checked against an LDAP store. We
-expect Sandstorm's LDAP support to be compatible with Microsoft Active Directory, OpenLDAP, and many
-other systems.
+you to log into Sandstorm with a username and password that is checked against an LDAP store.
+Sandstorm's LDAP support is compatible with Microsoft Active Directory, OpenLDAP, and many other
+LDAP servers.
 
 To enable LDAP login, take the following steps:
 
@@ -56,8 +56,8 @@ Implementation notes for LDAP that may apply to your site:
 
 SAML 2.0 is a passwordless single sign-on protocol. It allows a web application such as Sandstorm to
 request the current user's credentials from a central service, typically administered by a
-university or corporate IT team. We expect Sandstorm's SAML support to be compatible with
-Shibboleth, Okta, SimpleSAMLphp, Microsoft ActiveDirectory, and many other systems.
+university or corporate IT team. Sandstorm's SAML support is compatible with Shibboleth, Okta,
+Microsoft Active Directory, SimpleSAMLphp, and other SAML services.
 
 To enable SAML login on your Sandstorm server, take the following steps:
 

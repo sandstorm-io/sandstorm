@@ -9,11 +9,10 @@ Package.onUse(function (api) {
   // Export Accounts (etc) to packages using this one.
   api.imply("accounts-base", ["client", "server"]);
   api.use("check");
-  api.use("sha", ["client", "server"]);
+  api.use("sha", ["server"]);
   api.use("email", ["server"]);
   api.use("reactive-var", ["client"]);
 
-  api.addFiles("token_common.js", ["client", "server"]);
   api.addFiles(["token_client.js", "token_templates.html"], ["client"]);
   api.addFiles("token_server.js", ["server"]);
 });

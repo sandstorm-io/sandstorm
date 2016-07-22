@@ -32,6 +32,13 @@ Meteor.startup(cleanupExpiredTokens);
 // Tokens can actually last up to 2 * TOKEN_EXPIRATION_MS
 SandstormDb.periodicCleanup(TOKEN_EXPIRATION_MS, cleanupExpiredTokens);
 
+const hashToken = (token) => {
+  return {
+    digest: SHA256(token),
+    algorithm: "sha-256",
+  };
+};
+
 const checkToken = function (tokens, token) {
   // Looks for an object in `tokens` with `algorithm` and `digest` fields matching those in `token`.
   // Returns the matching object, if one is found, or undefined if none match.
@@ -47,7 +54,7 @@ const checkToken = function (tokens, token) {
 };
 
 const consumeToken = function (user, token) {
-  const hashedToken = Accounts.emailToken._hashToken(token);
+  const hashedToken = hashToken(token);
   const foundToken = checkToken(user.services.email.tokens, hashedToken);
 
   if (foundToken !== undefined) {
@@ -219,7 +226,7 @@ const createAndEmailTokenForUser = function (db, email, linkingIdentity, resumeP
   // TODO(someday): make this shorter, and handle requests that try to brute force it.
   // Alternately, require using the link over copy/pasting the code, and crank up the entropy.
   const token = Random.id(12);
-  const tokenObj = Accounts.emailToken._hashToken(token);
+  const tokenObj = hashToken(token);
   tokenObj.createdAt = new Date();
   tokenObj.secureBox = makeBox(token, resumePath);
 

@@ -26,8 +26,8 @@ const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
 
 function cleanupToken(tokenId) {
   check(tokenId, String);
-  waitPromise(globalBackend.cap().deleteBackup(tokenId));
   FileTokens.remove({ _id: tokenId });
+  waitPromise(globalBackend.cap().deleteBackup(tokenId));
 }
 
 Meteor.startup(() => {
@@ -63,6 +63,26 @@ Meteor.methods({
 
     FileTokens.insert(token);
     waitPromise(globalBackend.cap().backupGrain(token._id, this.userId, grainId, grainInfo));
+
+    return token._id;
+  },
+
+  newRestoreToken() {
+    if (!isSignedUpOrDemo()) {
+      throw new Meteor.Error(403, "Unauthorized", "Only invited users can restore backups.");
+    }
+
+    if (isUserOverQuota(Meteor.user())) {
+      throw new Meteor.Error(402,
+          "You are out of storage space. Please delete some things and try again.");
+    }
+
+    const token = {
+      _id: Random.id(),
+      timestamp: new Date(),
+    };
+
+    FileTokens.insert(token);
 
     return token._id;
   },
@@ -220,18 +240,22 @@ Router.map(function () {
 
   this.route("uploadBackup", {
     where: "server",
-    path: "/uploadBackup",
+    path: "/uploadBackup/:token",
     action() {
       if (this.request.method === "POST") {
+        const token = FileTokens.findOne(this.params.token);
+        if (!this.params.token || !token) {
+          this.response.writeHead(403, {
+            "Content-Type": "text/plain",
+          });
+          this.response.write("Invalid upload token.");
+          this.response.end();
+          return;
+        }
+
         const request = this.request;
         try {
-          const token = {
-            _id: Random.id(),
-            timestamp: new Date(),
-          };
-          const stream = globalBackend.cap().uploadBackup(token._id).stream;
-
-          FileTokens.insert(token);
+          const stream = globalBackend.cap().uploadBackup(this.params.token).stream;
 
           waitPromise(new Promise((resolve, reject) => {
             request.on("data", (data) => {
@@ -245,11 +269,7 @@ Router.map(function () {
             });
           }));
 
-          this.response.writeHead(200, {
-            "Content-Length": token._id.length,
-            "Content-Type": "text/plain",
-          });
-          this.response.write(token._id);
+          this.response.writeHead(204);
           this.response.end();
         } catch (error) {
           console.error(error.stack);

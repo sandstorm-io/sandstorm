@@ -225,6 +225,10 @@ Template.sandstormGrainListPage.helpers({
   bulkActionButtons: function () {
     return SandstormGrainListPage.bulkActionButtons(Template.instance().data.viewTrash);
   },
+
+  isSignedUpOrDemo: function () {
+    return this._db.isSignedUpOrDemo();
+  },
 });
 
 Template.sandstormGrainListPage.onCreated(function () {

@@ -153,6 +153,7 @@ Meteor.startup(() => {
           {
             _id: "frontendref-ipinterface",
             frontendRef: { ipInterface: true },
+            cardTemplate: "ipInterfacePowerboxCard",
           },
         ];
       } else {
@@ -277,6 +278,7 @@ Meteor.startup(() => {
           {
             _id: "frontendref-ipnetwork",
             frontendRef: { ipNetwork: true },
+            cardTemplate: "ipNetworkPowerboxCard",
           },
         ];
       } else {

@@ -59,204 +59,125 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     }
   }
 
-  completeUiView(roleAssignment) {
-    const fulfillingProvider = this._selectedProvider.get();
-    if (fulfillingProvider.type === "frontendref-uiview") {
-      const fulfillingGrainTitle = fulfillingProvider.title;
-      Meteor.call(
-        "fulfillUiViewRequest",
-        this._requestInfo.sessionId,
-        this._requestInfo.identityId,
-        fulfillingProvider.grainId,
-        fulfillingGrainTitle, // petname: for UiViews, just use the grain title.
-        roleAssignment,
-        this._requestInfo.grainId,
-        (err, result) => {
-          if (err) {
-            console.log("error:", err);
-            this._error.set(err.toString());
-          } else {
-            const apiToken = result.sturdyRef;
-            this._completed = true;
-            this._requestInfo.source.postMessage({
-              rpcId: this._requestInfo.rpcId,
-              token: apiToken,
-              descriptor: result.descriptor,
-            }, this._requestInfo.origin);
-            // Completion event closes popup.
-            this._requestInfo.onCompleted();
-          }
-        }
-      );
-    } else {
-      console.log("Unsupported provider", fulfillingProvider);
-    }
+  completeRequest(token, descriptor) {
+    this._completed = true;
+    this._requestInfo.source.postMessage({
+      rpcId: this._requestInfo.rpcId,
+      token: token,
+      descriptor: descriptor,
+    }, this._requestInfo.origin);
+    // Completion event closes popup.
+    this._requestInfo.onCompleted();
   }
 
-  selectGrain(grainCard, viewInfo) {
-    if (viewInfo.permissions) indexElements(viewInfo.permissions);
-    // It's essential that we index the roles *before* hiding obsolete roles,
-    // or else we'll produce the incorrect roleAssignment for roles that are
-    // described after obsolete roles in the pkgdef.
-    if (viewInfo.roles) indexElements(viewInfo.roles);
-    viewInfo.roles = removeObsolete(viewInfo.roles);
+  failRequest(err) {
+    console.error(err);
+    this._error.set(err.toString());
+  }
 
-    this._selectedProvider.set({
-      type: "frontendref-uiview",
-      grainId: grainCard.grainId,
-      title: grainCard.title,
-      templateName: "powerboxProviderUiView",
-      templateData: () => {
-        return {
-          _id: grainCard._id,
-          title: grainCard.title,
-          appTitle: grainCard.appTitle,
-          iconSrc: grainCard.iconSrc,
-          lastUsed: grainCard.lastUsed,
-          viewInfo: viewInfo,
-          onComplete: (roleAssignment) => {
-            this.completeUiView(roleAssignment);
-          },
-        };
-      },
-    });
+  selectCard(card) {
+    if (card.configureTemplate) {
+      // There is further UI to display.
+      this._selectedProvider.set(card);
+    } else if (card.option.frontendRef) {
+      this.completeNewFrontendRef(card.option.frontendRef);
+    } else {
+      this.failRequest(new Error("not sure how to complete powerbox request for non-frontedRef " +
+                                 "that didn't provide a configureTemplate"));
+    }
   }
 
   filteredCardData() {
     // Returns an array of "cards" (options from which the user can pick), sorted in the order in
-    // which they should appear. Each has the fields described in the comments for
-    // Meteor.publish("powerboxOptions") in powerbox-server.js as well as the following fields
-    // added client-side:
+    // which they should appear. Each "card" is intended to be the data context for a card or
+    // configuration template, and has the following fields:
     //
-    // _id: Unique identifier for this card among the results.
-    // title: Human-readable title string.
-    // appTitle (optional): Human-readable title of the app serving this option.
-    // iconSrc (optional): URL of an icon.
-    // lastUsed (optional): Date when this item was last accessed.
-    // callback: Function returning a function to call if this card is chosen. (The double-function
-    //     is necessary because when a function value is named in a Blaze template, Blaze calls
-    //     the function, thinking it is a helper.)
+    // db: The SansdtormDb.
+    // powerboxRequest: This SandstormPowerboxRequest object.
+    // option: The PowerboxOption returned by the `powerboxOptions` subscription.
+    // grainInfo: If option.grainId is present, extended display information about the grain:
+    //     title: Human-readable title string.
+    //     appTitle (optional): Human-readable title of the app serving this option.
+    //     iconSrc (optional): URL of an icon.
+    //     lastUsed (optional): Date when this item was last accessed.
+    //     cachedViewInfo (optional): The ViewInfo for the grain, if it is locally available.
+    //     apiTokenId (optional): The _id in ApiTokens of the token granting the user access to
+    //         this grain.
+    // cardTemplate: The Template object named by option.cardTemplate.
+    // configureTemplate: The Template object named by option.configureTemplate.
 
-    const cards = PowerboxOptions.find({ requestId: this._requestId }).map(cardData => {
-      // Use ID as title if we don't find anything better.
-      cardData.title = cardData._id;
+    const cards = PowerboxOptions.find({ requestId: this._requestId }).map(option => {
+      const result = {
+        db: this._db,
+        powerboxRequest: this,
+        option: option,
+        cardTemplate: option.cardTemplate && Template[option.cardTemplate],
+        configureTemplate: option.configureTemplate && Template[option.configureTemplate],
+      };
 
-      if (cardData.grainId) {
-        this.extendWithGrainInfo(cardData);
-      } else if (cardData.frontendRef) {
-        // TODO(cleanup): English text probably desn't belong in source files.
-        if (cardData.frontendRef.ipNetwork) {
-          cardData.title = "Admin: grant all outgoing network access";
-        } else if (cardData.frontendRef.ipInterface) {
-          cardData.title = "Admin: grant all incoming network access";
-        } else if (cardData.frontendRef.emailVerifier) {
-          const services = cardData.frontendRef.emailVerifier.services;
-          if (services) {
-            const name = services[0];
-            const service = Accounts.identityServices[name];
-            if (service.loginTemplate.name === "oauthLoginButton") {
-              cardData.title = "Verify e-mail addresses using " +
-                  service.loginTemplate.data.displayName;
-            } else if (name === "email") {
-              cardData.title = "Verify e-mail addresses using passwordless e-mail login";
-            } else if (name === "ldap") {
-              cardData.title = "Verify e-mail addresses using LDAP";
-            } else {
-              cardData.title = "Verify e-mail addresses using " + name;
-            }
-          } else {
-            cardData.title = "Verify e-mail addresses using any login service";
-          }
-
-          cardData.iconSrc = "/email-m.svg";
-        } else if (cardData.frontendRef.verifiedEmail) {
-          cardData.title = cardData.frontendRef.verifiedEmail.address;
-          cardData.iconSrc = "/email-m.svg";
-        }
-
-        cardData.callback = () => () => {
-          return this.completeNewFrontendRef(cardData.frontendRef, cardData.title);
-        };
+      if (option.grainId) {
+        result.grainInfo = this.collectGrainInfo(option.grainId);
       }
 
-      return cardData;
+      return result;
     });
 
     const now = new Date();
     return _.chain(cards)
         .filter(compileMatchFilter(this._filter.get()))
-        .sortBy(card => -(card.lastUsed || now).getTime())
+        .sortBy(card => -((card.grainInfo || {}).lastUsed || now).getTime())
         .value();
   }
 
-  extendWithGrainInfo(cardData) {
-    // Extend a grain card with display info.
+  collectGrainInfo(grainId) {
+    // Gather display info for a grain.
 
     // Look for an owned grain.
-    const grain = this._db.collections.grains.findOne(cardData.grainId);
+    const grain = this._db.collections.grains.findOne(grainId);
     if (grain && grain.userId === Meteor.userId()) {
-      cardData.title = grain.title;
       const pkg = this._db.collections.packages.findOne(grain.packageId);
-      cardData.appTitle = pkg ? SandstormDb.appNameFromPackage(pkg) : "";
-      cardData.iconSrc = pkg ? this._db.iconSrcForPackage(pkg, "grain") : "";
-      cardData.lastUsed = grain.lastUsed;
-
-      // Because Blaze always invokes functions when referenced as values from the data context, we
-      // need to double-wrap this callback.
-      cardData.callback = () => () => {
-        return this.selectGrain(cardData, grain.cachedViewInfo || {});
+      return {
+        title: grain.title,
+        appTitle: pkg ? SandstormDb.appNameFromPackage(pkg) : "",
+        iconSrc: pkg ? this._db.iconSrcForPackage(pkg, "grain") : "",
+        lastUsed: grain.lastUsed,
+        cachedViewInfo: grain.cachedViewInfo,
       };
-
-      return;
     }
 
     // Look for an ApiToken.
     const apiToken = this._db.collections.apiTokens.findOne(
-        { grainId: cardData.grainId, "owner.user": { $exists: true } });
+        { grainId: grainId, "owner.user": { $exists: true } });
     if (apiToken) {
       const ownerData = apiToken.owner.user;
       const grainInfo = ownerData.denormalizedGrainMetadata;
       const staticAssetHost = this._db.makeWildcardHost("static");
 
-      cardData.title = ownerData.title;
-      cardData.appTitle =
-          (grainInfo && grainInfo.appTitle && grainInfo.appTitle.defaultText) || "";
-      cardData.iconSrc = (grainInfo && grainInfo.icon && grainInfo.icon.assetId) ?
-          (window.location.protocol + "//" + staticAssetHost + "/" + grainInfo.icon.assetId) :
-          Identicon.identiconForApp(
-              (grainInfo && grainInfo.appId) || "00000000000000000000000000000000");
-      cardData.lastUsed = apiToken.lastUsed;
-      cardData.apiTokenId = apiToken._id;
-
-      cardData.callback = () => () => {
-        Meteor.call("getViewInfoForApiToken", cardData.apiTokenId, (err, result) => {
-          if (err) {
-            console.log(err);
-            this._error.set(err.toString());
-          } else {
-            this.selectGrain(cardData, result || {});
-          }
-        });
+      return {
+        title: ownerData.upstreamTitle && !ownerData.renamed ?
+            ownerData.upstreamTitle : ownerData.title,
+        appTitle:
+            (grainInfo && grainInfo.appTitle && grainInfo.appTitle.defaultText) || "",
+        iconSrc: (grainInfo && grainInfo.icon && grainInfo.icon.assetId) ?
+            (window.location.protocol + "//" + staticAssetHost + "/" + grainInfo.icon.assetId) :
+            Identicon.identiconForApp(
+                (grainInfo && grainInfo.appId) || "00000000000000000000000000000000"),
+        lastUsed: apiToken.lastUsed,
+        apiTokenId: apiToken._id,
       };
-
-      return;
     }
 
-    // Didn't find either. Don't know why this option was returned but oh well.
-    cardData.callback = () => () => {
-      this.selectGrain(cardData, {});
-    };
+    // Couldn't find anything.
+    return {};
   }
 
-  completeNewFrontendRef(frontendRef, defaultLabel) {
-
+  completeNewFrontendRef(frontendRef) {
     Meteor.call("newFrontendRef",
       this._requestInfo.sessionId,
       frontendRef,
       (err, result) => {
         if (err) {
-          console.log(err);
-          this._error.set(err.toString());
+          this.failRequest(err);
         } else {
           this._completed = true;
           this._requestInfo.source.postMessage({
@@ -266,6 +187,30 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
           }, this._requestInfo.origin);
           // Completion event closes popup.
           this._requestInfo.onCompleted();
+        }
+      }
+    );
+  }
+
+  completeUiView(grainId, roleAssignment) {
+    Meteor.call(
+      "fulfillUiViewRequest",
+      this._requestInfo.sessionId,
+      this._requestInfo.identityId,
+      grainId,
+      // TODO(cleanup): Petnames on ApiTokens have never really been used as intended, and it's
+      //   not clear that they are useful in any case. `ApiTokens.petname` was originally intended
+      //   to describe -- to the owner of the target grain -- the circumstances under which the
+      //   capability was issued, to be considered when auditing/revoking incoming capabilities.
+      //   It probably makes more sense to derive a visualization from `owner` and `requirements`.
+      "selected via Powerbox",
+      roleAssignment,
+      this._requestInfo.grainId,
+      (err, result) => {
+        if (err) {
+          this.failRequest(err);
+        } else {
+          this.completeRequest(result.sturdyRef, result.descriptor);
         }
       }
     );
@@ -291,6 +236,20 @@ const compileMatchFilter = function (searchString) {
         .reduce(function (a, b) { return a && b; })
         .value();
   };
+};
+
+const prepareViewInfoForDisplay = function (viewInfo) {
+  const result = _.clone(viewInfo || {});
+  if (result.permissions) indexElements(result.permissions);
+  // It's essential that we index the roles *before* hiding obsolete roles,
+  // or else we'll produce the incorrect roleAssignment for roles that are
+  // described after obsolete roles in the pkgdef.
+  if (result.roles) {
+    indexElements(result.roles);
+    result.roles = removeObsolete(result.roles);
+  }
+
+  return result;
 };
 
 const indexElements = function (arr) {
@@ -330,16 +289,6 @@ Template.powerboxRequest.helpers({
     return ref && ref._selectedProvider && ref._selectedProvider.get();
   },
 
-  selectedProviderTemplate: function () {
-    const ref = Template.instance().data.get();
-    return ref && ref._selectedProvider && ref._selectedProvider.get().templateName;
-  },
-
-  selectedProviderTemplateData: function () {
-    const ref = Template.instance().data.get();
-    return ref && ref._selectedProvider && ref._selectedProvider.get().templateData();
-  },
-
   showWebkeyInput: function () {
     // Transitional feature: treat requests that specified no query patterns to match, not even the
     // empty list, as requests for webkeys.  Later, we"ll want to transition the test apps to
@@ -352,6 +301,11 @@ Template.powerboxRequest.helpers({
     // Transitional function:
     const ref = Template.instance().data.get();
     return ref && ref._error.get();
+  },
+
+  iconSrc() {
+    // data context is a card here
+    return this.cardTemplate.powerboxIconSrc && this.cardTemplate.powerboxIconSrc(this);
   },
 });
 
@@ -366,8 +320,7 @@ Template.powerboxRequest.events({
       const ref = Template.instance().data.get();
       const cards = ref.filteredCardData();
       if (cards.length === 1) {
-        // Weird double function call needed  as described above, ugh.
-        const cb = cards[0].callback()();
+        cards[0].powerboxRequest.selectCard(cards[0]);
       }
     }
   },
@@ -396,27 +349,80 @@ Template.powerboxRequest.events({
       }
     );
   },
+
+  "click .card-button": function (event) {
+    this.powerboxRequest.selectCard(this);
+  },
 });
 
-Template.powerboxProviderUiView.events({
+// =======================================================================================
+// Templates for specific request types.
+//
+// TODO(cleanup): Find a better home for these.
+
+Template.grainPowerboxCard.powerboxIconSrc = card => {
+  return card.grainInfo.iconSrc;
+};
+
+Template.uiViewPowerboxConfiguration.onCreated(function () {
+  this._viewInfo = new ReactiveVar({});
+
+  // Fetch the view info for the grain.
+  if (this.data.grainInfo.cachedViewInfo) {
+    this._viewInfo.set(prepareViewInfoForDisplay(this.data.grainInfo.cachedViewInfo));
+  } else if (this.data.grainInfo.apiTokenId) {
+    Meteor.call("getViewInfoForApiToken", this.data.grainInfo.apiTokenId, (err, result) => {
+      if (err) {
+        console.log(err);
+        this.data.powerboxRequest.failRequest(err);
+      } else {
+        this._viewInfo.set(prepareViewInfoForDisplay(result));
+      }
+    });
+  }
+});
+
+Template.uiViewPowerboxConfiguration.helpers({
+  viewInfo: function () {
+    return Template.instance()._viewInfo.get();
+  },
+});
+
+Template.uiViewPowerboxConfiguration.events({
   "click .connect-button": function (event) {
     event.preventDefault();
     const ref = Template.instance().data;
     const selectedInput = Template.instance().find('form input[name="role"]:checked');
     if (selectedInput) {
+      let roleAssignment;
       if (selectedInput.value === "all") {
-        ref.onComplete({ allAccess: null });
+        roleAssignment = { allAccess: null };
       } else {
         const role = parseInt(selectedInput.value, 10);
-        ref.onComplete({ roleId: role });
+        roleAssignment = { roleId: role };
       }
+
+      this.powerboxRequest.completeUiView(this.option.grainId, roleAssignment);
     }
   },
 });
 
-Template.powerboxCardButton.events({
-  "click .card-button": function (event, tmpl) {
-    const ref = tmpl.data;
-    ref && ref.onClick && ref.onClick();
+Template.emailVerifierPowerboxCard.helpers({
+  serviceTitle: function () {
+    const services = this.option.frontendRef.emailVerifier.services;
+    const name = services[0];
+    const service = Accounts.identityServices[name];
+    if (service.loginTemplate.name === "oauthLoginButton") {
+      return service.loginTemplate.data.displayName;
+    } else if (name === "email") {
+      return "passwordless e-mail login";
+    } else if (name === "ldap") {
+      return "LDAP";
+    } else {
+      return name;
+    }
   },
 });
+
+Template.emailVerifierPowerboxCard.powerboxIconSrc = () => "/email-m.svg";
+Template.verifiedEmailPowerboxCard.powerboxIconSrc = () => "/email-m.svg";

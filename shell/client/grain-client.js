@@ -191,7 +191,12 @@ Template.grainBackupPopup.onCreated(function () {
   const grain = Grains.findOne({ _id: this._grainId });
 
   if (grain.appId === "s3u2xgmqwznz2n3apf30sm3gw1d85y029enw5pymx734cnk5n78h") {
-    // HACK: Display a warning if this is the Collections app.
+    // HACK: Display a warning if this is a Collections grain.
+    //
+    // TODO(soon): Figure out how to avoid special-casing here. Ideally, we would have some
+    // kind of machinery for rewiring the capabilities of restored backups, so that backup/restore
+    // would not result in a completely broken collection. Alternatively, we could add a field
+    // `Manifest.backupWarning` that we would display here if present.
     this._state.set({
       showWarning:
         "Backing up a collection does not back up any of its linked grains, " +

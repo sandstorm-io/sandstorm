@@ -155,32 +155,30 @@
 <template name="grainBackupPopup">
   <h4>Download Backup</h4>
   {{#if state.showWarning }}
-    <p class="warning-intro"> Warning! Restoring this backup might not work how you expect it to.
+    <p class="warning-intro">
+      Warning! Restoring this backup might not work how you expect it to.
     </p>
     <p class="warning-body">
       {{ state.showWarning }}
-     </p>
-   {{/if}}
-     {{#if state.processing}}
+    </p>
+  {{/if}}
+  {{#if state.processing}}
     <p> Preparing backup... </p>
-   {{/if}}
-   {{#if state.error}}
-     <p class="error"> Error </p>
-     {{/if}}
+  {{/if}}
+  {{#if state.error}}
+    <p class="error">Error: {{ state.error }}</p>
+  {{/if}}
 
+  <div class="button-row">
+    <button name="cancel" title="cancel">Cancel</button>
+    {{#if state.processing}}
+      <div class="spinner"></div>
+    {{/if}}
 
-     <div class="button-row">
-       <button name="cancel" title="cancel">Cancel</button>
-        {{#if state.processing}}
-          <div class="spinner"></div>
-         {{/if}}
-
-
-         {{#if state.showWarning }}
-         <button name="confirm" title="download backup">Download backup</button>
-         {{/if}}
-    </div>
-
+    {{#if state.showWarning}}
+      <button name="confirm" title="download backup">Download backup</button>
+    {{/if}}
+  </div>
 </template>
 
 <template name="grainRestartButton">

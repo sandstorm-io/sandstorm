@@ -189,12 +189,16 @@ Template.grainBackupPopup.onCreated(function () {
   };
 
   const grain = Grains.findOne({ _id: this._grainId });
-  let pkg = Packages.findOne({ _id: grain.packageId }) ||
-      DevPackages.findOne({ appId: grain.appId }) || {};
 
-  const manifest = pkg.manifest || {};
-  if (manifest.backupWarning) {
-    this._state.set({ showWarning: manifest.backupWarning.defaultText });
+  if (grain.appId === "s3u2xgmqwznz2n3apf30sm3gw1d85y029enw5pymx734cnk5n78h") {
+    // HACK: Display a warning if this is the Collections app.
+    this._state.set({
+      showWarning:
+        "Backing up a collection does not back up any of its linked grains, " +
+        "and restoring a collection does not automatically restore its links to grains. " +
+        "Unless your goal is to debug a problem with this collection, downloading " +
+        "a backup will not be very useful.",
+    });
   } else {
     this._doBackup();
   }

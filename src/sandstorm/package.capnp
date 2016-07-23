@@ -161,10 +161,6 @@ struct Manifest {
 
   continueCommand @3 :Command;
   # Command to run to restart an already-created grain.
-
-  backupWarning @9 :Util.LocalizedText;
-  # If present, a warning to display to the user when clicking the "download backup" button.
-  # Useful if backup/restore might not work as the user expects, e.g. as with the Collections app.
 }
 
 struct SourceMap {

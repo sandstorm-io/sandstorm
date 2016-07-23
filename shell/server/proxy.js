@@ -1516,20 +1516,30 @@ class Proxy {
     context.eTagPrecondition = parsePreconditionHeader(request);
 
     context.additionalHeaders = [];
-    WebSession.Context.headerWhitelist.forEach((headerName) => {
-      if (headerName.endsWith("*")) {
-        const prefix = headerName.substr(0, headerName.length - 1);
-        for (const h in request.headers) {
-          if (!h.startsWith(prefix)) {
-            continue;
-          }
 
-          context.additionalHeaders.push({
-            name: h,
-            value: request.headers[h],
-          });
-        }
-      } else if (request.headers[headerName]) {
+    // If the whitelist entry is prefixed with the app header prefix,
+    // or if it is prefixed with a whitelisted prefix, add it.
+    Object.keys(request.headers).forEach((requestHeaderName) => {
+      if (requestHeaderName.startsWith(WebSession.appHeaderPrefix)) {
+        context.additionalHeaders.push({
+          name: requestHeaderName,
+          value: request.headers[requestHeaderName]
+        });
+      } else {
+        WebSession.Context.headerPrefixWhitelist.forEach((prefix) => {
+          if (requestHeaderName.startsWith(prefix)) {
+            context.additionalHeaders.push({
+              name: requestHeaderName,
+              value: request.headers[requestHeaderName]
+            });
+          }
+        });
+      }
+    });
+
+    // Add any headers that appear in the whitelist.
+    WebSession.Context.headerWhitelist.forEach((headerName) => {
+      if (request.headers[headerName]) {
         context.additionalHeaders.push({
           name: headerName,
           value: request.headers[headerName],
@@ -1580,6 +1590,26 @@ class Proxy {
       // Add a Content-Security-Policy as a backup in case someone finds a way to load this resource
       // in a browser context. This policy should thoroughly neuter it.
       response.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
+    }
+
+    if (rpcResponse.additionalHeaders && rpcResponse.additionalHeaders.length > 0) {
+      // Build object for whitelisted header lookup
+      var whitelisted = {};
+      WebSession.Response.headerWhitelist.forEach(function(header) {
+        whitelisted[header] = 1;
+      });
+
+      // Add any additional prefixed/whitelisted headers to the response.
+      // We cannot trust that the headers in the RPC response are actually
+      // allowed, so we check if they are prefixed or whitelisted.
+      rpcResponse.additionalHeaders.forEach(function(header) {
+        if (header.name.startsWith(WebSession.appHeaderPrefix) ||
+            whitelisted[header.name]) {
+          // If header is prefixed with appHeaderPrefix,
+          // or if the header name is in whitelist, set it.
+          response.setHeader(header.name,  header.value);
+        }
+      });
     }
 
     // On first response, update the session to have hasLoaded=true

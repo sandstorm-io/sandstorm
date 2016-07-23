@@ -38,6 +38,11 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   # application's storage was written and may automatically implement etags based on hashing the
   # content.
 
+  const appHeaderPrefix :Text = "x-sandstorm-app-";
+  # Headers with this prefix will always be allowed in both the request and response.
+  # They represent custom HTTP headers that an app is intentionally exposing through
+  # Sandstorm.
+
   struct Params {
     # Startup params for web sessions.  See `UiView.newSession()`.
 
@@ -149,14 +154,18 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       # purposes. This whitelist exists to help avoid the need to modify code originally written
       # without Sandstorm in mind -- especially to avoid modifying client apps. Feel free
       # to send us pull requests adding additional headers.
-      # Values in this list that end with '*' whitelist a prefix.
 
       "oc-total-length",       # Owncloud client
       "oc-chunk-size",         # Owncloud client
       "x-oc-mtime",            # Owncloud client
       "oc-fileid",             # Owncloud client
       "oc-chunked",            # Owncloud client
-      "x-hgarg-*",             # Mercurial client
+    ];
+
+    const headerPrefixWhitelist :List(Text) = [
+      # Any headers matching any prefix here will be whitelisted.
+
+      "x-hgarg-",             # Mercurial client
     ];
   }
 
@@ -375,6 +384,24 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       # TODO(someday):  Return blob directly from storage, so data doesn't have to stream through
       #   the app?
     }
+
+    additionalHeaders @19 :List(Header);
+    # Additional headers present in the reponse. Only whitelisted headers are
+    # permitted.
+
+    struct Header {
+      name @0 :Text;  # lower-cased name
+      value @1 :Text;
+    }
+
+    const headerWhitelist :List(Text) = [
+      # Non-standard response headers which are whitelisted for backwards-compatibility
+      # purposes. This whitelist exists to help avoid the need to modify code originally written
+      # without Sandstorm in mind -- especially to avoid modifying client apps.
+      # Feel free to send us pull requests adding additional headers.
+      "x-oc-mtime",            # Owncloud protocol
+    ];
+
   }
 
   interface RequestStream extends(Util.ByteStream) {

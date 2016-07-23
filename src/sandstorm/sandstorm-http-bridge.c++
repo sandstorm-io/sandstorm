@@ -276,20 +276,20 @@ public:
     // Add whitelisted headers, and headers matching the app prefix, to a
     // temporary vector of headers. It is possible for a header name to appear
     // more than once.
-    kj::Vector<Header> headersMatching;
+    kj::Vector<Header*> headersMatching;
     for (auto& header: headers) {
       if (RESPONSE_HEADER_WHITELIST.matches(header.first)) {
-        headersMatching.add(kj::mv(header.second));
+        headersMatching.add(&header.second);
       }
     }
     // Initialize additionalHeaders once we know how many headers to include.
     auto headerList = builder.initAdditionalHeaders(headersMatching.size());
     // Add the headers matching the whitelist
     int i = 0;
-    for (auto const &header : headersMatching) {
+    for (auto header: headersMatching) {
       auto respHeader = headerList[i];
-      respHeader.setName(header.name);
-      respHeader.setValue(header.value);
+      respHeader.setName(header->name);
+      respHeader.setValue(header->value);
       i++;
     }
 

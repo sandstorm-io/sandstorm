@@ -367,14 +367,7 @@ body>.topbar {
     }
     >.delete>button    { background-image: url("/trash.svg"); }
     >.debug-log>button { background-image: url("/debug.svg"); }
-    >.backup>button    {
-      background-image: url("/download.svg");
-
-      &.loading {
-        background-image: url("/spinner_96.gif");
-        cursor: auto;
-      }
-    }
+    >.backup>button    { background-image: url("/download.svg"); }
     >.restart>button   { background-image: url("/restart.svg"); }
     >.webkey>button    { background-image: url("/key.svg"); }
     >.who-has-access img { width: 20px; }
@@ -1323,4 +1316,40 @@ body>.popup {
       margin-bottom: 14px;
     }
   }
+
+  &.backup {
+    >.frame-container {
+      width: 400px;
+    }
+
+    .warning-intro, .error {
+      color: #a94442;
+      background-color: #f2dede;
+      border-color: #ebccd1;
+      padding: 5px;
+    }
+
+    .button-row {
+      display: flex;
+      justify-content: flex-end;
+
+      button {
+        @extend %button-base;
+        &[name=confirm] {
+          @extend %button-primary;
+        }
+        &[name=cancel] {
+          @extend %button-secondary;
+        }
+      }
+
+      .spinner {
+        width: 32px;
+        height: 32px;
+        background-image: url("/spinner_96.gif");
+        background-size: 32px 32px;
+      }
+    }
+  }
+
 }

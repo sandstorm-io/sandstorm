@@ -165,31 +165,67 @@ Template.grainDebugLogButton.events({
   },
 });
 
-Template.grainBackupButton.onCreated(function () {
-  this.isLoading = new ReactiveVar(false);
-});
+Template.grainBackupPopup.onCreated(function () {
+  const activeGrain = globalGrains.getActive();
+  this._grainId = activeGrain.grainId();
+  this._title = activeGrain.title();
+  this._state = new ReactiveVar({ loading: true });
 
-Template.grainBackupButton.helpers({
-  isLoading: function () {
-    return Template.instance().isLoading.get();
-  },
-});
-
-Template.grainBackupButton.events({
-  "click button": function (event, template) {
-    template.isLoading.set(true);
-    this.reset();
-    const activeGrain = globalGrains.getActive();
-    Meteor.call("backupGrain", activeGrain.grainId(), function (err, id) {
-      template.isLoading.set(false);
+  const _this = this;
+  this._doBackup = function () {
+    _this._state.set({ processing: true });
+    Meteor.call("backupGrain", _this._grainId, function (err, id) {
       if (err) {
-        alert("Backup failed: " + err); // TODO(someday): make this better UI
-      } else {
+        _this._state.set({ error: "Backup failed: " + err });
+      } else if (!_this._state.get().canceled) {
         const url = "/downloadBackup/" + id;
         const suggestedFilename = activeGrain.title() + ".zip";
         downloadFile(url, suggestedFilename);
+
+        // Close the topbar popup.
+        _this.data.reset();
       }
     });
+  };
+
+  const grain = Grains.findOne({ _id: this._grainId });
+
+  if (grain.appId === "s3u2xgmqwznz2n3apf30sm3gw1d85y029enw5pymx734cnk5n78h") {
+    // HACK: Display a warning if this is a Collections grain.
+    //
+    // TODO(soon): Figure out how to avoid special-casing here. Ideally, we would have some
+    // kind of machinery for rewiring the capabilities of restored backups, so that backup/restore
+    // would not result in a completely broken collection. Alternatively, we could add a field
+    // `Manifest.backupWarning` that we would display here if present.
+    this._state.set({
+      showWarning:
+        "Backing up a collection does not back up any of its linked grains, " +
+        "and restoring a collection does not automatically restore its links to grains. " +
+        "Unless your goal is to debug a problem with this collection, downloading " +
+        "a backup will not be very useful.",
+    });
+  } else {
+    this._doBackup();
+  }
+});
+
+Template.grainBackupPopup.helpers({
+  state() {
+    return Template.instance()._state.get();
+  },
+});
+
+Template.grainBackupPopup.events({
+  "click button[name=confirm]": function (event, instance) {
+    instance._doBackup();
+  },
+
+  "click button[name=cancel]": function (event, instance) {
+    // TODO(someday): Wire up some way to cancel the zip process on the server.
+    instance._state.set({ canceled: true });
+
+    // Close the popup.
+    instance.data.reset();
   },
 });
 

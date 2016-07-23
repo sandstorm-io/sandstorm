@@ -19,6 +19,11 @@
 // licenses, included in the LICENSES directory.
 // ====================================================================
 
+import {
+  loginWithEmailToken,
+  createAndEmailTokenForUser,
+} from "/imports/client/accounts/email-token/token-login-helpers.js";
+
 // for convenience
 const loginButtonsSession = Accounts._loginButtonsSession;
 
@@ -195,7 +200,7 @@ const sendEmail = function (email, linkingNewIdentity) {
   loginButtonsSession.infoMessage("Sending email...");
   const loc = window.location;
   const pathToResume = loc.pathname + loc.search + loc.hash;
-  Accounts.createAndEmailTokenForUser(email, linkingNewIdentity, pathToResume, function (err) {
+  createAndEmailTokenForUser(email, linkingNewIdentity, pathToResume, function (err) {
     if (err) {
       loginButtonsSession.errorMessage(err.reason || "Unknown error");
       if (err.error === 409) {
@@ -213,7 +218,7 @@ const sendEmail = function (email, linkingNewIdentity) {
 
 const loginWithToken = function (email, token) {
   loginButtonsSession.infoMessage("Logging in...");
-  Meteor.loginWithEmailToken(email, token, function (err, resumePath) {
+  loginWithEmailToken(email, token, function (err, resumePath) {
     if (err) {
       loginButtonsSession.errorMessage(err.reason || "Unknown error");
     } else {

@@ -146,6 +146,8 @@ std::unordered_map<uint, HttpStatusInfo> makeStatusCodes() {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wglobal-constructors"
 const std::unordered_map<uint, HttpStatusInfo> HTTP_STATUS_CODES = makeStatusCodes();
+const HeaderWhitelist REQUEST_HEADER_WHITELIST(*WebSession::Context::HEADER_WHITELIST);
+const HeaderWhitelist RESPONSE_HEADER_WHITELIST(*WebSession::Response::HEADER_WHITELIST);
 #pragma clang diagnostic pop
 
 class HttpParser: public sandstorm::Handle::Server,
@@ -260,6 +262,35 @@ public:
           break;
       }
       cookie.setHttpOnly(cookies[i].httpOnly);
+    }
+
+    // Add whitelisted headers to additionalHeaders. With respect to security,
+    // the consumers of  WebSession::Response are responsible for making sure
+    // these headers are actually whitelisted. Since this bridge is included in
+    // the app package and runs in the grain itself, we cannot trust that the
+    // whitelist is correctly implemented here. An alternate implementation may
+    // not respect the whitelist. However, for the sake of building a Response
+    // that contains only valid headers, only whitelisted headers are added
+    // here.
+
+    // Add whitelisted headers, and headers matching the app prefix, to a
+    // temporary vector of headers. It is possible for a header name to appear
+    // more than once.
+    kj::Vector<Header*> headersMatching;
+    for (auto& header: headers) {
+      if (RESPONSE_HEADER_WHITELIST.matches(header.first)) {
+        headersMatching.add(&header.second);
+      }
+    }
+    // Initialize additionalHeaders once we know how many headers to include.
+    auto headerList = builder.initAdditionalHeaders(headersMatching.size());
+    // Add the headers matching the whitelist
+    int i = 0;
+    for (auto header: headersMatching) {
+      auto respHeader = headerList[i];
+      respHeader.setName(header->name);
+      respHeader.setValue(header->value);
+      i++;
     }
 
     switch (statusInfo.type) {
@@ -1369,7 +1400,7 @@ public:
 
     addCommonHeaders(lines, params.getContext());
 
-    auto httpRequest = toBytes(kj::strArray(lines, "\r\n"));
+    auto httpRequest = toBytes(catHeaderLines(lines));
     WebSession::WebSocketStream::Client clientStream = params.getClientStream();
     sandstorm::ByteStream::Client responseStream =
         context.getParams().getContext().getResponseStream();
@@ -1446,6 +1477,15 @@ private:
 
     addCommonHeaders(lines, context);
 
+    return catHeaderLines(lines);
+  }
+
+  static kj::String catHeaderLines(kj::Vector<kj::String>& lines) {
+    for (auto& line: lines) {
+      KJ_ASSERT(line.findFirst('\n') == nullptr,
+                "HTTP header contained newline; blocking to prevent injection.");
+    }
+
     return kj::strArray(lines, "\r\n");
   }
 
@@ -1509,8 +1549,20 @@ private:
     }
     auto additionalHeaderList = context.getAdditionalHeaders();
     if (additionalHeaderList.size() > 0) {
-      for (auto header : additionalHeaderList) {
-        lines.add(kj::str(header.getName(), ": ", header.getValue()));
+
+      for (auto header: additionalHeaderList) {
+        auto headerName = header.getName();
+        auto headerValue = header.getValue();
+
+        // Don't allow the header unless it is present in the whitelist. Note that Sandstorm never
+        // sends non-whitelisted headers, but it's possible that another app had directly obtained
+        // a WebSession capability to us, and that app could send whatever it wants, so we need
+        // to check.
+        if (REQUEST_HEADER_WHITELIST.matches(headerName)) {
+          // Note that we check elsewhere that each line contains no newlines, to prevent
+          // injections.
+          lines.add(kj::str(headerName, ": ", headerValue));
+        }
       }
     }
     auto eTagPrecondition = context.getETagPrecondition();

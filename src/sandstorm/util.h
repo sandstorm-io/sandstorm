@@ -31,6 +31,7 @@
 #include <kj/async.h>
 #include <capnp/rpc-twoparty.h>
 #include <sandstorm/util.capnp.h>
+#include <set>
 
 namespace kj {
   class UnixEventPort;
@@ -232,6 +233,21 @@ kj::String percentEncode(kj::StringPtr text);
 kj::String percentEncode(kj::ArrayPtr<const byte> bytes);
 kj::Array<byte> percentDecode(kj::StringPtr text);
 // URL-safe encode using % escapes.
+
+class HeaderWhitelist {
+  // Given a list of strings, some of which end in '*', create an efficient whitelist matcher,
+  // where the *'s are wildcards. The input whitelist must be all-lowercase, but the matching is
+  // case-insensitive.
+
+public:
+  template <typename T>
+  HeaderWhitelist(T&& list): patterns(list.begin(), list.end()) {}
+
+  bool matches(kj::StringPtr header) const;
+
+private:
+  std::set<kj::StringPtr> patterns;
+};
 
 class SubprocessSet;
 

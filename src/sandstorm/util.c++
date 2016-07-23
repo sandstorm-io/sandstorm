@@ -803,6 +803,35 @@ kj::Array<byte> percentDecode(kj::StringPtr text) {
   return result.releaseAsArray();
 }
 
+bool HeaderWhitelist::matches(kj::StringPtr header) const {
+  // Convert to lower-case on stack.
+  KJ_STACK_ARRAY(char, buffer, header.size() + 1, 64, 256);
+  memcpy(buffer.begin(), header.begin(), buffer.size());
+  toLower(buffer);
+  header = kj::StringPtr(buffer.begin(), header.size());
+
+  auto iter = patterns.lower_bound(header);
+  if (iter != patterns.end() && *iter == header) {
+    return true;
+  }
+
+  if (iter == patterns.begin()) return false;
+
+  // If there is a prefix that matches, it will be the item immediately before the lower_bound,
+  // because the character '*' sorts before all characters that are valid inside headers.
+  --iter;
+  if (iter->endsWith("*")) {
+    // Check if prefix matches.
+    auto prefix = iter->slice(0, iter->size() - 1);
+    if (header.size() >= prefix.size() &&
+        memcmp(header.begin(), prefix.begin(), prefix.size()) == 0) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // =======================================================================================
 
 Subprocess::Subprocess(Options&& options)

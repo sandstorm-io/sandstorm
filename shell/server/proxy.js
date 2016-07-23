@@ -123,6 +123,37 @@ function referralProgramLogSharingTokenUse(db, bobAccountId) {
   });
 }
 
+class HeaderWhitelist {
+  constructor(list) {
+    this._headers = {};
+    this._prefixes = [];
+
+    list.forEach(pattern => {
+      if (pattern.endsWith("*")) {
+        this._prefixes.push(pattern.slice(0, -1));
+      } else {
+        this._headers[pattern] = true;
+      }
+    });
+  }
+
+  matches(header) {
+    header = header.toLowerCase();
+    if (this._headers[header]) return true;
+
+    for (const i in this._prefixes) {
+      if (header.startsWith(this._prefixes[i])) {
+        return true;
+      }
+    };
+
+    return false;
+  }
+}
+
+const REQUEST_HEADER_WHITELIST = new HeaderWhitelist(WebSession.Context.headerWhitelist);
+const RESPONSE_HEADER_WHITELIST = new HeaderWhitelist(WebSession.Response.headerWhitelist);
+
 // User-agent strings that should be allowed to use http basic authentication.
 // These are regex matches, so ensure they are escaped properly with double
 // backslashes. For security reasons, we MUST NOT whitelist any user-agents
@@ -1516,26 +1547,14 @@ class Proxy {
     context.eTagPrecondition = parsePreconditionHeader(request);
 
     context.additionalHeaders = [];
-    WebSession.Context.headerWhitelist.forEach((headerName) => {
-      if (headerName.endsWith("*")) {
-        const prefix = headerName.substr(0, headerName.length - 1);
-        for (const h in request.headers) {
-          if (!h.startsWith(prefix)) {
-            continue;
-          }
-
-          context.additionalHeaders.push({
-            name: h,
-            value: request.headers[h],
-          });
-        }
-      } else if (request.headers[headerName]) {
+    for (const headerName in request.headers) {
+      if (REQUEST_HEADER_WHITELIST.matches(headerName)) {
         context.additionalHeaders.push({
           name: headerName,
           value: request.headers[headerName],
         });
-      };
-    });
+      }
+    }
 
     if (response) {
       const promise = new Promise((resolve, reject) => {
@@ -1580,6 +1599,19 @@ class Proxy {
       // Add a Content-Security-Policy as a backup in case someone finds a way to load this resource
       // in a browser context. This policy should thoroughly neuter it.
       response.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
+    }
+
+    if (rpcResponse.additionalHeaders && rpcResponse.additionalHeaders.length > 0) {
+      // Add any additional prefixed/whitelisted headers to the response.
+      // We cannot trust that the headers in the RPC response are actually
+      // allowed, so we check if they are prefixed or whitelisted.
+      rpcResponse.additionalHeaders.forEach(function (header) {
+        if (RESPONSE_HEADER_WHITELIST.matches(header.name)) {
+          // If header is prefixed with appHeaderPrefix,
+          // or if the header name is in whitelist, set it.
+          response.setHeader(header.name,  header.value);
+        }
+      });
     }
 
     // On first response, update the session to have hasLoaded=true

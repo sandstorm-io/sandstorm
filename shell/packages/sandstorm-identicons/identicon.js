@@ -27,8 +27,8 @@ Identicon.prototype = {
     render: function(){
         var hash    = this.hash,
             size    = this.size,
-            margin  = Math.floor(size * this.margin),
-            cell    = Math.floor((size - (margin * 2)) / 5),
+            cell    = Math.floor((size - (size * this.margin * 2)) / 5),
+            margin  = Math.floor((size - 5 * cell) / 2);
             image   = new PNGlib(size, size, 256);
 
         // light-grey background

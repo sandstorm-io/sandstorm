@@ -31,7 +31,6 @@
 #include <capnp/serialize.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <regex>
 #include <map>
 #include <unordered_map>
 #include <time.h>
@@ -1401,7 +1400,7 @@ public:
 
     addCommonHeaders(lines, params.getContext());
 
-    auto httpRequest = toBytes(kj::strArray(lines, "\r\n"));
+    auto httpRequest = toBytes(catHeaderLines(lines));
     WebSession::WebSocketStream::Client clientStream = params.getClientStream();
     sandstorm::ByteStream::Client responseStream =
         context.getParams().getContext().getResponseStream();
@@ -1478,6 +1477,15 @@ private:
 
     addCommonHeaders(lines, context);
 
+    return catHeaderLines(lines);
+  }
+
+  static kj::String catHeaderLines(kj::Vector<kj::String>& lines) {
+    for (auto& line: lines) {
+      KJ_ASSERT(line.findFirst('\n') == nullptr,
+                "HTTP header contained newline; blocking to prevent injection.");
+    }
+
     return kj::strArray(lines, "\r\n");
   }
 
@@ -1551,11 +1559,9 @@ private:
         // a WebSession capability to us, and that app could send whatever it wants, so we need
         // to check.
         if (REQUEST_HEADER_WHITELIST.matches(headerName)) {
-          // Check header name and value to prevent header injection.
-          lines.add(kj::str(
-            checkIsHttpToken(headerName),
-            ": ",
-            checkIsHeaderValue(headerValue)));
+          // Note that we check elsewhere that each line contains no newlines, to prevent
+          // injections.
+          lines.add(kj::str(headerName, ": ", headerValue));
         }
       }
     }
@@ -1593,36 +1599,6 @@ private:
 
     lines.add(kj::str(""));
     lines.add(kj::str(""));
-  }
-
-  static kj::StringPtr checkIsHttpToken(kj::StringPtr val) {
-    // Allowable values for HTTP tokens per RFC 7230 ("token").
-    // Same as valid header field names ("field-name").
-    // Notably, this excludes CR and LF, thus preventing header injection.
-    // TODO(cleanup): Use kj::parse rather than std::regex.
-    static const std::regex tokenRe = std::regex("^[a-zA-Z0-9_!#$%&'*+.^`|~-]+$");
-    if (!std::regex_match(val.cStr(), tokenRe)) {
-      KJ_FAIL_ASSERT("Invalid HTTP token.", val.cStr());
-    } else {
-      return val;
-    }
-  }
-
-  static kj::StringPtr  checkIsHeaderValue(kj::StringPtr val) {
-    static const std::regex headerValRe = std::regex(
-      "^[\x21-\x7E,\x80-\xFF]+([\x20,\x09]+[\x21-\x7E,\x80-\xFF]+)*?$");
-    // Allowable values for header field values per RFC 7230 ("field-content").
-    // Does not check for obsolete line-folding ("obs-fold").
-    // Notably, this excludes CR and LF, thus preventing header injection.
-    // Character ranges explained:
-    // \x21-\x7E: visible (printing) characters ("VCHAR").
-    // \x80-\xFF: characters outside of US ASCII, treated as opaque data ("obs-text").
-    // \x20,x09: space and horizontal tab ("SP / HTAB")
-    if (!std::regex_match(val.cStr(), headerValRe)) {
-      KJ_FAIL_ASSERT("Invalid HTTP token.", val.cStr());
-    } else {
-      return val;
-    }
   }
 
   template <typename Context>

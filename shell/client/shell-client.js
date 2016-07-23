@@ -669,7 +669,7 @@ const startUpload = function (file, endpoint, onComplete) {
 
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4) {
-      if (xhr.status == 204) {
+      if (xhr.status >= 200 && xhr.status < 300) {
         Session.set("uploadProgress", 0);
         onComplete(xhr.responseText);
       } else {

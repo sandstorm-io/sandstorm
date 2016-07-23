@@ -248,8 +248,9 @@ const prepareViewInfoForDisplay = function (viewInfo) {
     indexElements(result.roles);
     result.roles = removeObsolete(result.roles);
   }
+
   return result;
-}
+};
 
 const indexElements = function (arr) {
   // Helper function to annotate an array of objects with their indices
@@ -384,7 +385,7 @@ Template.uiViewPowerboxConfiguration.onCreated(function () {
 Template.uiViewPowerboxConfiguration.helpers({
   viewInfo: function () {
     return Template.instance()._viewInfo.get();
-  }
+  },
 });
 
 Template.uiViewPowerboxConfiguration.events({

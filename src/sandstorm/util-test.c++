@@ -83,6 +83,28 @@ KJ_TEST("percent encoding/decoding") {
   KJ_EXPECT(kj::str(percentDecode("%ab%BA").asChars()) == "\xab\xba");
 }
 
+KJ_TEST("HeaderWhitelist") {
+  const char* WHITELIST[] = {
+    "bar-baz",
+    "corge",
+    "foo-*",
+    "grault",
+    "qux-*",
+  };
+
+  HeaderWhitelist whitelist((kj::ArrayPtr<const char*>(WHITELIST)));
+
+  KJ_ASSERT(whitelist.matches("bar-baz"));
+  KJ_ASSERT(whitelist.matches("bar-BAZ"));
+  KJ_ASSERT(!whitelist.matches("bar-qux"));
+  KJ_ASSERT(whitelist.matches("foo-abcd"));
+  KJ_ASSERT(whitelist.matches("grault"));
+  KJ_ASSERT(whitelist.matches("Grault"));
+  KJ_ASSERT(!whitelist.matches("grault-abcd"));
+  KJ_ASSERT(whitelist.matches("QUX-abcd"));
+  KJ_ASSERT(!whitelist.matches("quxqux"));
+}
+
 struct Pipe {
   kj::AutoCloseFd readEnd;
   kj::AutoCloseFd writeEnd;

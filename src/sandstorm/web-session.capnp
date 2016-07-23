@@ -38,11 +38,6 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   # application's storage was written and may automatically implement etags based on hashing the
   # content.
 
-  const appHeaderPrefix :Text = "x-sandstorm-app-";
-  # Headers with this prefix will always be allowed in both the request and response.
-  # They represent custom HTTP headers that an app is intentionally exposing through
-  # Sandstorm.
-
   struct Params {
     # Startup params for web sessions.  See `UiView.newSession()`.
 
@@ -155,6 +150,8 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       # without Sandstorm in mind -- especially to avoid modifying client apps. Feel free
       # to send us pull requests adding additional headers.
       # Values in this list that end with '*' whitelist a prefix.
+
+      "x-sandstorm-app-*",     # For new headers introduced by Sandstorm apps.
 
       "oc-total-length",       # Owncloud client
       "oc-chunk-size",         # Owncloud client
@@ -381,7 +378,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       #   the app?
     }
 
-    additionalHeaders @19 :List(Header);
+    additionalHeaders @20 :List(Header);
     # Additional headers present in the reponse. Only whitelisted headers are
     # permitted.
 
@@ -395,6 +392,10 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       # purposes. This whitelist exists to help avoid the need to modify code originally written
       # without Sandstorm in mind -- especially to avoid modifying client apps.
       # Feel free to send us pull requests adding additional headers.
+      # Values in this list that end with '*' whitelist a prefix.
+
+      "x-sandstorm-app-*",     # For new headers introduced by Sandstorm apps.
+
       "x-oc-mtime",            # Owncloud protocol
     ];
 

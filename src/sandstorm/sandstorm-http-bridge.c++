@@ -34,7 +34,6 @@
 #include <regex>
 #include <map>
 #include <unordered_map>
-#include <set>
 #include <time.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -148,6 +147,8 @@ std::unordered_map<uint, HttpStatusInfo> makeStatusCodes() {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wglobal-constructors"
 const std::unordered_map<uint, HttpStatusInfo> HTTP_STATUS_CODES = makeStatusCodes();
+const HeaderWhitelist REQUEST_HEADER_WHITELIST(*WebSession::Context::HEADER_WHITELIST);
+const HeaderWhitelist RESPONSE_HEADER_WHITELIST(*WebSession::Response::HEADER_WHITELIST);
 #pragma clang diagnostic pop
 
 class HttpParser: public sandstorm::Handle::Server,
@@ -273,19 +274,12 @@ public:
     // that contains only valid headers, only whitelisted headers are added
     // here.
 
-    // Create a set from the headerWhitelist
-    auto headerWhitelist = std::set<std::string>(
-        WebSession::Response::HEADER_WHITELIST->begin(),
-        WebSession::Response::HEADER_WHITELIST->end());
-
     // Add whitelisted headers, and headers matching the app prefix, to a
     // temporary vector of headers. It is possible for a header name to appear
     // more than once.
     kj::Vector<Header> headersMatching;
-    for (auto &header : headers) {
-      auto headerName = header.first;
-      if (headerWhitelist.find(headerName) != headerWhitelist.end() ||
-          headerName.startsWith(WebSession::APP_HEADER_PREFIX)) {
+    for (auto& header: headers) {
+      if (RESPONSE_HEADER_WHITELIST.matches(header.first)) {
         headersMatching.add(kj::mv(header.second));
       }
     }
@@ -1548,17 +1542,15 @@ private:
     auto additionalHeaderList = context.getAdditionalHeaders();
     if (additionalHeaderList.size() > 0) {
 
-      // Create a set from the headerWhitelist
-      auto headerWhitelist = std::set<std::string>(
-          WebSession::Context::HEADER_WHITELIST->begin(),
-          WebSession::Context::HEADER_WHITELIST->end());
-
-      for (auto header : additionalHeaderList) {
+      for (auto header: additionalHeaderList) {
         auto headerName = header.getName();
         auto headerValue = header.getValue();
-        if (headerWhitelist.find(headerName) != headerWhitelist.end() ||
-            headerName.startsWith(WebSession::APP_HEADER_PREFIX)) {
-          // Check header is present in whitelist.
+
+        // Don't allow the header unless it is present in the whitelist. Note that Sandstorm never
+        // sends non-whitelisted headers, but it's possible that another app had directly obtained
+        // a WebSession capability to us, and that app could send whatever it wants, so we need
+        // to check.
+        if (REQUEST_HEADER_WHITELIST.matches(headerName)) {
           // Check header name and value to prevent header injection.
           lines.add(kj::str(
             checkIsHttpToken(headerName),

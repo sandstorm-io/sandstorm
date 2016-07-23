@@ -10,6 +10,26 @@
     <h2>Current feature key</h2>
     {{> adminFeatureKeyDetails featureKey=currentFeatureKey }}
     {{> adminFeatureKeyModifyForm }}
+
+    <p>Looking to configure Sandstorm for Work-exclusive features?</p>
+    <ul>
+      <li>Enable LDAP and/or SAML login under
+        {{#linkTo route="newAdminIdentity"}}
+          Identity providers
+        {{/linkTo}}
+      </li>
+      <li>Manage organization membership under
+        {{#linkTo route="newAdminOrganization"}}
+          Organization settings
+        {{/linkTo}}
+      </li>
+      <li>Configure whitelabeling under
+        {{#linkTo route="newAdminPersonalization"}}
+          Personalization
+        {{/linkTo}}
+      </li>
+    </ul>
+
   {{else}}
     <div class="feature-key-explanation-row">
       <div class="lanyard-image" role="presentation"></div>

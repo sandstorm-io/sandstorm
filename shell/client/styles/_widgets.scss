@@ -103,6 +103,7 @@
 .modal-content {
   min-height: 32px;
   background-color: #fff;
+  color: $default-content-foreground-color;
   opacity: 1;
   padding: 24px;
   >h2 {

@@ -75,8 +75,7 @@ body>.topbar {
   background-color: $topbar-background-color;
   color: #ccc;
 
-  // Using 0 rather than CSS default ("auto") allows introjs to highlight elements in the topbar.
-  z-index: 0;
+  z-index: 1;
 
   @media #{$mobile} {
     line-height: 48px;
@@ -367,12 +366,34 @@ body>.topbar {
     }
     >.delete>button    { background-image: url("/trash.svg"); }
     >.debug-log>button { background-image: url("/debug.svg"); }
-    >.backup>button    {
-      background-image: url("/download.svg");
+    >.backup {
+      >button    {
+        background-image: url("/download.svg");
+        &.loading {
+          background-image: url("/spinner_96.gif");
+          cursor: auto;
+        }
+      }
+      form[name=confirm] {
+        line-height: 22px;
+        >ul {
+          max-height: 300px;
+          overflow: auto;
+          margin-bottom: 15px;
+        }
+        .align-buttons {
+          display: flex;
+          justify-content: flex-end;
 
-      &.loading {
-        background-image: url("/spinner_96.gif");
-        cursor: auto;
+          button[name=confirm] {
+            @extend %button-base;
+            @extend %button-primary;
+          }
+          button[name=cancel] {
+            @extend %button-base;
+            @extend %button-secondary;
+          }
+        }
       }
     }
     >.restart>button   { background-image: url("/restart.svg"); }

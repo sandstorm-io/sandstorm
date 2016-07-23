@@ -89,6 +89,7 @@ Tracker.autorun(function () {
       Meteor.subscribe("grainTopBar", grainId);
       if (grain.isOwner()) {
         Meteor.subscribe("packageByGrainId", grainId);
+        Meteor.subscribe("tokensOwnedByGrain", grainId);
       }
 
       const token = grain.token();
@@ -166,30 +167,71 @@ Template.grainDebugLogButton.events({
 });
 
 Template.grainBackupButton.onCreated(function () {
-  this.isLoading = new ReactiveVar(false);
+  this.state = new ReactiveVar({ idle: true });
 });
 
 Template.grainBackupButton.helpers({
   isLoading: function () {
-    return Template.instance().isLoading.get();
+    return Template.instance().state.get().loading;
+  },
+
+  state: function () {
+    return Template.instance().state.get();
+  },
+
+  cancelBackup: function () {
+    const instance = Template.instance();
+    return () => {
+      instance.state.set({ idle: true });
+    };
   },
 });
 
+const performBackup = function (instance, grainId, title) {
+  instance.state.set({ loading: true });
+
+  Meteor.call("backupGrain", grainId, function (err, id) {
+    instance.state.set({ idle: true });
+    if (err) {
+      alert("Backup failed: " + err); // TODO(someday): make this better UI
+    } else {
+      const url = "/downloadBackup/" + id;
+      const suggestedFilename = title + ".zip";
+      downloadFile(url, suggestedFilename);
+    }
+  });
+};
+
 Template.grainBackupButton.events({
-  "click button": function (event, template) {
-    template.isLoading.set(true);
-    this.reset();
+  "submit form[name=confirm]": function (event, instance) {
     const activeGrain = globalGrains.getActive();
-    Meteor.call("backupGrain", activeGrain.grainId(), function (err, id) {
-      template.isLoading.set(false);
-      if (err) {
-        alert("Backup failed: " + err); // TODO(someday): make this better UI
-      } else {
-        const url = "/downloadBackup/" + id;
-        const suggestedFilename = activeGrain.title() + ".zip";
-        downloadFile(url, suggestedFilename);
-      }
-    });
+    event.preventDefault();
+    performBackup(instance, activeGrain.grainId(), activeGrain.title());
+  },
+
+  "click form[name=confirm] button[name=cancel]": function (event, instance) {
+    event.preventDefault();
+    instance.state.set({ idle: true });
+  },
+
+  "click button.grain-button": function (event, instance) {
+    const activeGrain = globalGrains.getActive();
+    const grainId = activeGrain.grainId();
+    const tokensOwnedByGrain = ApiTokens.find({
+      "owner.grain.grainId": grainId,
+
+      // HACK: We don't want to bother the user about Identity capabilities saved by
+      // sandstorm-http-bridge.
+      "owner.grain.saveLabel.defaultText": { $ne: "user identity" },
+    }).fetch();
+
+    if (tokensOwnedByGrain.length > 0) {
+      const saveLabels = tokensOwnedByGrain.map((t) => t.owner.grain.saveLabel.defaultText);
+      instance.state.set({ confirming: saveLabels });
+    } else {
+      this.reset();
+      performBackup(instance, grainId, activeGrain.title());
+    }
   },
 });
 

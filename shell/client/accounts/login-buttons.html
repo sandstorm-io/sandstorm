@@ -84,7 +84,11 @@ licenses, included in the LICENSES directory.
     {{#if isAdmin}}
       {{#linkTo route="newAdminRoot" role="menuitem"}}Admin panel{{/linkTo}}
     {{/if}}
-    <a href="mailto:support@sandstorm.io" target="_blank" role="menuitem">Send feedback</a>
+
+    {{#if showSendFeedback}}
+      <a href="mailto:support@sandstorm.io" target="_blank" role="menuitem">Send feedback</a>
+    {{/if}}
+
     {{#if quotaEnabled }}
       {{#linkTo route="referrals" role="menuitem"}}Referral program{{/linkTo}}
     {{/if}}
@@ -128,7 +132,10 @@ licenses, included in the LICENSES directory.
     {{!-- There's no actual difference between signing "up" and "in", but people expect there to
           be a difference, so humor them by making the front-page login say "sign up". (But for a
           private server, don't offer "sign up".) --}}
-    <h4>{{#if allowUninvited}}Create account{{else}}Sign in{{/if}}</h4>
+    <h4>
+      <span class="logo" style="background-image: url('{{logoUrl}}')"></span>
+      {{#if allowUninvited}}Create account{{else}}Sign in{{/if}}
+    </h4>
 
     {{> loginButtonsList}}
   </div>
@@ -234,7 +241,7 @@ licenses, included in the LICENSES directory.
 
 <template name="ldapLoginForm">
   <form class="ldap">
-    with LDAP
+    {{loginProviderLabel}}
 
     <label class="username">username
       <span title="This is your LDAP username. It will be the name that you normally use to log in to other internal services at your company." class="info">i</span>
@@ -253,7 +260,7 @@ licenses, included in the LICENSES directory.
 
 <template name="samlLoginForm">
   <button class="login oneclick saml">
-    with SAML
+    {{loginProviderLabel}}
   </button>
 </template>
 

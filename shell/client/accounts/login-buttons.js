@@ -229,6 +229,18 @@ Template.loginButtonsDialog.helpers({
   allowUninvited: function () {
     return Meteor.settings.public.allowUninvited;
   },
+
+  logoUrl() {
+    const defaultLogoUrl = "/sandstorm-gradient-logo.svg";
+    if (globalDb.isFeatureKeyValid()) {
+      const assetId = globalDb.getSettingWithFallback("whitelabelCustomLogoAssetId", "");
+      if (assetId) {
+        return `${window.location.protocol}//${globalDb.makeWildcardHost("static")}/${assetId}`;
+      }
+    }
+
+    return defaultLogoUrl;
+  },
 });
 
 Template.loginButtonsList.onCreated(function () {
@@ -265,8 +277,11 @@ Template.loginButtonsList.helpers({
   services: getServices,
 
   showTroubleshooting: function () {
-    return !(Meteor.settings && Meteor.settings.public &&
+    const hiddenByConfFile = (Meteor.settings && Meteor.settings.public &&
       Meteor.settings.public.hideTroubleshooting);
+    const hiddenByDbSetting = (this._db.isFeatureKeyValid() &&
+      this._db.getSettingWithFallback("whitelabelHideTroubleshooting", false));
+    return !hiddenByConfFile && !hiddenByDbSetting;
   },
 
   linkingNewIdentity: function () {
@@ -311,6 +326,18 @@ Template.emailAuthenticationForm.helpers({
 
   awaitingToken: function () {
     return loginButtonsSession.get("inSignupFlow");
+  },
+});
+
+Template.ldapLoginForm.helpers({
+  loginProviderLabel() {
+    const defaultLabel = "with LDAP";
+    if (globalDb.isFeatureKeyValid()) {
+      const override = globalDb.getSettingWithFallback("whitelabelCustomLoginProviderName", "");
+      return override || defaultLabel;
+    }
+
+    return defaultLabel;
   },
 });
 
@@ -375,6 +402,18 @@ Template.devLoginForm.events({
     event.preventDefault();
     const form = instance.find("form");
     loginDevHelper(form.name.value, false, instance.data.linkingNewIdentity);
+  },
+});
+
+Template.samlLoginForm.helpers({
+  loginProviderLabel() {
+    const defaultLabel = "with LDAP";
+    if (globalDb.isFeatureKeyValid()) {
+      const override = globalDb.getSettingWithFallback("whitelabelCustomLoginProviderName", "");
+      return override || defaultLabel;
+    }
+
+    return defaultLabel;
   },
 });
 

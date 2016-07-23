@@ -273,16 +273,24 @@ function serveStaticAsset(req, res, hostId) {
 
       const url = Url.parse(req.url);
       const purpose = globalDb.fulfillAssetUpload(url.pathname.slice(1));
+
+      // Sanity check the purpose of this upload token.
       if (!purpose) {
         res.writeHead(404, { "Content-Type": "text/plain" });
         res.end("Upload token not found or expired.");
         return;
+      } else if (purpose.profilePicture) {
+        const userId = purpose.profilePicture.userId;
+        const identityId = purpose.profilePicture.identityId;
+        check(userId, String);
+        check(identityId, String);
+      } else if (purpose.loginLogo) {
+        // no additional fields for loginLogo
+      } else {
+        res.writeHead(500, { "Content-Type": "text/plain" });
+        res.end("Found invalid purpose for upload");
+        return;
       }
-
-      const userId = purpose.profilePicture.userId;
-      const identityId = purpose.profilePicture.identityId;
-      check(userId, String);
-      check(identityId, String);
 
       const buffers = [];
       let totalSize = 0;
@@ -317,14 +325,32 @@ function serveStaticAsset(req, res, hostId) {
       }
 
       const assetId = globalDb.addStaticAsset({ mimeType: type }, content);
-      const old = Meteor.users.findAndModify({
-        query: { _id: identityId },
-        update: { $set: { "profile.picture": assetId } },
-        fields: { "profile.picture": 1 },
-      });
 
-      if (old && old.profile && old.profile.picture) {
-        globalDb.unrefStaticAsset(old.profile.picture);
+      if (purpose.profilePicture) {
+        const identityId = purpose.profilePicture.identityId;
+        const old = Meteor.users.findAndModify({
+          query: { _id: identityId },
+          update: { $set: { "profile.picture": assetId } },
+          fields: { "profile.picture": 1 },
+        });
+
+        if (old && old.profile && old.profile.picture) {
+          globalDb.unrefStaticAsset(old.profile.picture);
+        }
+      } else if (purpose.loginLogo) {
+        const old = globalDb.collections.settings.findAndModify({
+          query: { _id: "whitelabelCustomLogoAssetId" },
+          update: {
+            $setOnInsert: { _id: "whitelabelCustomLogoAssetId" },
+            $set: { value: assetId },
+          },
+          upsert: true,
+          fields: { value: 1 },
+        });
+
+        if (old && old.value) {
+          globalDb.unrefStaticAsset(old.value);
+        }
       }
 
       res.writeHead(204, {});

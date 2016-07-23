@@ -85,6 +85,86 @@
       </span>
     </div>
 
+    {{#if hasFeatureKey}}
+    <h2>Whitelabeling</h2>
+
+    <div class="form-group">
+      <label>
+        Custom logo on sign-in dialog
+      </label>
+      {{#if logoError}}
+        {{#focusingErrorBox}}
+          {{logoError}}
+        {{/focusingErrorBox}}
+      {{/if}}
+      <div class="logo" style="background-image: url('{{ logoUrl }}')"></div>
+      {{#if customLogo }}
+        <!-- show custom logo -->
+      {{else}}
+        <!-- show default -->
+      {{/if}}
+      <button type="button" name="reset-logo" disabled={{logoResetDisabled}}>Use default</button>
+      <button type="button" name="upload-logo">Upload logo</button>
+      <input type="file" name="upload-file" style="display:none;" />
+    </div>
+
+    <div class="checkbox-group">
+      <label>
+        <input
+          type="checkbox"
+          name="hide-troubleshooting"
+          checked="{{hideTroubleshootingChecked}}"
+          disabled="{{formDisabled}}"
+        />
+        Hide troubleshooting button
+      </label>
+    </div>
+
+    <div class="checkbox-group">
+      <label>
+        <input
+          type="checkbox"
+          name="hide-send-feedback"
+          checked="{{hideSendFeedbackChecked}}"
+          disabled="{{formDisabled}}"
+        />
+        Hide "Send feedback" link
+      </label>
+    </div>
+
+    <div class="checkbox-group">
+      <label>
+        <input
+          type="checkbox"
+          name="use-server-title-for-home-text"
+          checked="{{useServerTitleForHomeTextChecked}}"
+          disabled="{{formDisabled}}"
+        />
+        Use server title (above) for home link
+      </label>
+      <span class="form-subtext">
+        If enabled, changes the default label "Sandstorm" on the link at the very top left to match
+        whatever you specified for the Server title above.
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>
+        Custom login button text
+        <input
+          type="text"
+          name="custom-login-provider-name"
+          value="{{customLoginProviderName}}"
+          disabled="{{formDisabled}}"
+        />
+      </label>
+      <span class="form-subtext">
+        Replaces the text "with LDAP" and "with SAML" on the login page with
+        the specified text.
+      </span>
+    </div>
+    {{/if}}
+
     <div class="button-row">
       <button type="submit" disabled="{{formDisabled}}">Save</button>
     </div>

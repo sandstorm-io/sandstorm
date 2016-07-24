@@ -407,7 +407,7 @@ Template.devLoginForm.events({
 
 Template.samlLoginForm.helpers({
   loginProviderLabel() {
-    const defaultLabel = "with LDAP";
+    const defaultLabel = "with SAML";
     if (globalDb.isFeatureKeyValid()) {
       const override = globalDb.getSettingWithFallback("whitelabelCustomLoginProviderName", "");
       return override || defaultLabel;

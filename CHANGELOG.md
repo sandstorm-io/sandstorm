@@ -1,3 +1,17 @@
+### v0.173 (2016-07-23)
+- Sandstorm for Work: Added server whitelabeling features. Find under "Personalization" in the admin panel.
+- Apps now receive profile pictures for all users. Users who have no picture get an identicon. Previously, apps were expected to generate identicons themselves.
+- HTTP requests to / responses from apps now pass through any header prefixed with `X-Sandstorm-App-`. Also, `X-OC-Mtime` is whitelisted in responses, to improve Davros' compatibility with ownCloud clients.
+- Attempting to download a backup of a collection will show a warning explaining that this doesn't do what you expect.
+- Prevented guests from uploading grain backups. These uploads weren't creating actual grains, but could use up server-side disk space.
+- Fix bug in grainlist deduplification on app details page.
+- Fixed that the admin page for managing a specific user only showed their login identities, not non-login identities. The main list showed both, but the non-login identities would disappear when clicking through to a specific user.
+- The favicon is now transparent instead of white-background.
+- The guided tour highlight of the "share access" button no longer blacks out the button on Firefox.
+- The admin UI's "Personalization" page no longer fails to save if you haven't entered a Terms of Service or Privacy Policy URL.
+- "204 No Content" responses from apps now preserve the ETag.
+- Refactored powerbox client-side code to make it more pluggable.
+
 ### v0.172 (2016-07-15) [bugfixes]
 - Fixed a regression that caused accepting an app update notification to have no effect. Sandstorm will re-notify about missed updates within 24 hours.
 - Fixed bugs preventing Sandstorm from working on IE10.

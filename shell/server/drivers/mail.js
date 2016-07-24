@@ -400,7 +400,6 @@ Meteor.startup(() => {
         _id: "emailverifier-all",
         frontendRef: { emailVerifier: {} },
         cardTemplate: "emailVerifierPowerboxCard",
-        iconSrc: "/email-m.svg",
       });
 
       for (const name in Accounts.identityServices) {

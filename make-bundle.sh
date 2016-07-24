@@ -117,8 +117,7 @@ cp src/capnp/!(*test*).capnp bundle/usr/include/capnp
 cp src/sandstorm/*.capnp bundle/usr/include/sandstorm
 
 # Copy over node_modules.
-mkdir -p bundle/node_modules
-cp -r node_modules/!(sandstorm) bundle/node_modules
+cp -r node_modules bundle
 
 # Copy over all necessary shared libraries.
 (ldd bundle/bin/* $(find bundle -name '*.node') || true) | grep -o '[[:space:]]/[^ ]*' | copyDeps

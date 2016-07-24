@@ -16,10 +16,20 @@
 
 import "/imports/db-deprecated.js";
 import { FrontendRefRegistry } from "/imports/server/frontend-ref.js";
+import { PersistentImpl } from "/imports/server/persistent.js";
 
 globalFrontendRefRegistry = new FrontendRefRegistry();
 
 SandstormPowerbox.registerUiViewQueryHandler(globalFrontendRefRegistry);
+
+if (global.BlackrockPayments && BlackrockPayments.registerPaymentsApi) {
+  // TODO(cleanup): Meteor.startup() needed because unwrapFrontendCap is not defined yet when this
+  //   first runs. Move it into an import.
+  Meteor.startup(() => {
+    BlackrockPayments.registerPaymentsApi(
+        globalFrontendRefRegistry, PersistentImpl, unwrapFrontendCap);
+  });
+}
 
 getWildcardOrigin = globalDb.getWildcardOrigin.bind(globalDb);
 

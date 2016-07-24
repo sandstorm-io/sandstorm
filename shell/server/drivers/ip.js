@@ -148,7 +148,7 @@ Meteor.startup(() => {
     },
 
     query(db, userId, value) {
-      if (Meteor.users.findOne(userId).isAdmin) {
+      if (userId && Meteor.users.findOne(userId).isAdmin) {
         return [
           {
             _id: "frontendref-ipinterface",
@@ -273,7 +273,7 @@ Meteor.startup(() => {
     },
 
     query(db, userId, value) {
-      if (Meteor.users.findOne(userId).isAdmin) {
+      if (userId && Meteor.users.findOne(userId).isAdmin) {
         return [
           {
             _id: "frontendref-ipnetwork",

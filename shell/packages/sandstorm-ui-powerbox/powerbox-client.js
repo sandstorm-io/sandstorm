@@ -391,7 +391,6 @@ Template.uiViewPowerboxConfiguration.helpers({
 Template.uiViewPowerboxConfiguration.events({
   "click .connect-button": function (event) {
     event.preventDefault();
-    const ref = Template.instance().data;
     const selectedInput = Template.instance().find('form input[name="role"]:checked');
     if (selectedInput) {
       let roleAssignment;

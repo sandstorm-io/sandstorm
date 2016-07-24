@@ -4,7 +4,7 @@
 
 These documents help you get your own Sandstorm server set up the way you want it.
 
-* **Installing**: [Easy way](https://sandstorm.io/install/) | [Hard way](install.md) | [install.sh tech docs & non-interactive installs](administering/install-script.md)
+* **Installing**: [Install via our shell script, Ansible/Puppet, Docker, and more](install.md) | [Reference docs on customizing installs via install.sh](administering/install-script.md)
 * **Topic guide**: [Administrator's guide](administering/guide.md)
 * **Email**: [Sending](administering/email.md#outgoing-smtp) | [Receiving (running an email server)](administering/email.md#outbound-email-steps)
 * **DNS**: [Sandcats.io dynamic DNS](administering/sandcats.md) | [Wildcard hosts](administering/wildcard.md) | [Internal IP addresses](administering/faq.md#how-do-i-use-sandstorm-with-an-internal-ip-address)

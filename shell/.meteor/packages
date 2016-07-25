@@ -39,7 +39,6 @@ sandstorm-contacts
 sandstorm-identicons
 sandstorm-permissions
 sandstorm-ui-topbar
-sandstorm-ui-applist
 sandstorm-ui-app-details
 sandstorm-ui-app-install
 sandstorm-ui-grainlist

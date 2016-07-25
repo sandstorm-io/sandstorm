@@ -63,9 +63,9 @@ while allowing statistics gathering when the user consents to it.
 
 ## Case Studies
 
-By our analysis, Sandstorm automatically protected users from 95% of the publicly disclosed security
-vulnerabilities discovered in apps on the Sandstorm app market, before the vulnerabilities were even
-disclosed. We also mitigated most Linux kernel security issues. See [Security
+By our analysis, Sandstorm automatically protected users from over 95% of the publicly disclosed
+security vulnerabilities discovered in apps on the Sandstorm app market, before the vulnerabilities
+were even disclosed. We also mitigated most Linux kernel security issues. See [Security
 non-events](security-non-events) for examples of security problems which were mitigated by
 Sandstorm.
 

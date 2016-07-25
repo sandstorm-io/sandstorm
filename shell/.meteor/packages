@@ -40,7 +40,6 @@ sandstorm-identicons
 sandstorm-permissions
 sandstorm-ui-topbar
 sandstorm-ui-app-details
-sandstorm-ui-app-install
 sandstorm-ui-grainlist
 sandstorm-ui-grainview
 sandstorm-ui-autocomplete-input

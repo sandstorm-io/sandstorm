@@ -23,7 +23,6 @@ random
 iron:router
 sandstorm-accounts-packages
 sandstorm-email
-accounts-ldap
 accounts-saml
 email
 accounts-identity

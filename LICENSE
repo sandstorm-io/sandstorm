@@ -79,9 +79,9 @@ shell/packages/sandstorm-identicons/pnglib.js
     License: BSD 2-clause
     License URL: http://opensource.org/licenses/bsd-license.php
 
-
-shell/packages/accounts-ldap/*
-    What: Meteor accounts-ldap package
+shell/client/accounts/ldap/ldap-client.js
+shell/server/accounts/ldap/ldap-server.js
+    What: forked from Meteor accounts-ldap package
     Source URL: https://github.com/typ90/meteor-accounts-ldap
     Copyright: Eric Typaldos
     License: MIT

@@ -23,6 +23,7 @@ import {
   loginWithEmailToken,
   createAndEmailTokenForUser,
 } from "/imports/client/accounts/email-token/token-login-helpers.js";
+import { loginWithLDAP } from "/imports/client/accounts/ldap/ldap-client.js";
 
 // for convenience
 const loginButtonsSession = Accounts._loginButtonsSession;
@@ -360,7 +361,7 @@ Template.ldapLoginForm.events({
     const username = form.username.value;
     const password = form.password.value;
 
-    Meteor.loginWithLDAP(username, password, function (err) {
+    loginWithLDAP(username, password, function (err) {
       if (err) {
         loginButtonsSession.errorMessage(err.reason || "Unknown error");
       }

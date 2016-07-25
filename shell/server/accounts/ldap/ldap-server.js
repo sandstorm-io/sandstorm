@@ -1,4 +1,5 @@
-Future = Npm.require("fibers/future");
+const Future = Npm.require("fibers/future");
+import ldapjs from "ldapjs";
 
 // At a minimum, set up LDAP_DEFAULTS.url and .dn according to
 // your needs. url should appear as 'ldap://your.url.here'
@@ -25,12 +26,6 @@ LDAP_DEFAULTS = {
 let LDAP = function () {
   // Set options
   this.options = _.clone(LDAP_DEFAULTS);
-
-  // Because NPM ldapjs module has some binary builds,
-  // We had to create a wraper package for it and build for
-  // certain architectures. The package typ:ldap-js exports
-  // 'MeteorWrapperLdapjs' which is a wrapper for the npm module
-  this.ldapjs = MeteorWrapperLdapjs;
 };
 
 /**
@@ -75,14 +70,14 @@ LDAP.prototype.ldapCheck = function (db, options) {
     };
 
     if (fullUrl.indexOf("ldaps://") === 0) {
-      client = _this.ldapjs.createClient({
+      client = ldapjs.createClient({
         url: fullUrl,
         tlsOptions: {
           ca: [_this.options.ldapsCertificate],
         },
       }, errorFunc);
     } else {
-      client = _this.ldapjs.createClient({
+      client = ldapjs.createClient({
         url: fullUrl,
       }, errorFunc);
     }
@@ -200,9 +195,6 @@ LDAP.prototype.ldapCheck = function (db, options) {
 };
 
 // Register login handler with Meteor
-// Here we create a new LDAP instance with options passed from
-// Meteor.loginWithLDAP on client side
-// @param {Object} loginRequest will consist of username, ldapPass, ldap, and ldapOptions
 Accounts.registerLoginHandler("ldap", function (loginRequest) {
   // If 'ldap' isn't set in loginRequest object,
   // then this isn't the proper handler (return undefined)

@@ -32,6 +32,7 @@ http
 browser-policy
 
 reactive-var
+reactive-dict
 sandstorm-autoupdate-apps
 sandstorm-db
 sandstorm-backend
@@ -39,7 +40,6 @@ sandstorm-contacts
 sandstorm-identicons
 sandstorm-permissions
 sandstorm-ui-topbar
-sandstorm-ui-grainlist
 sandstorm-ui-grainview
 sandstorm-ui-powerbox
 fourseven:scss

@@ -87,7 +87,6 @@ sandstorm-db@0.1.0
 sandstorm-email@0.1.0
 sandstorm-identicons@0.1.0
 sandstorm-permissions@0.1.0
-sandstorm-ui-grainlist@0.1.0
 sandstorm-ui-grainview@0.1.0
 sandstorm-ui-powerbox@0.1.0
 sandstorm-ui-topbar@0.1.0

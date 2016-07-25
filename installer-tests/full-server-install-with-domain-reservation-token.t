@@ -13,7 +13,7 @@ $[run]curl -k https://sandcats-dev-machine.sandstorm.io/reserve --data 'email=sa
 $[slow]ok
 $[run]cat /tmp/json| sed -r 's/.*.token.:.([a-zA-Z0-9]*).*/\1/' > /tmp/domain-reservation-token ; echo ok
 $[slow]ok
-$[run]sudo ADMIN_TOKEN=$(</tmp/admin-token) CHOSEN_INSTALL_MODE=1 SANDCATS_DOMAIN_RESERVATION_TOKEN=$(</tmp/domain-reservation-token) DESIRED_SANDCATS_NAME=$(</tmp/sandcats-domain-name) CURL_USER_AGENT=testing REPORT=no OVERRIDE_SANDCATS_BASE_DOMAIN=sandcats-dev.sandstorm.io OVERRIDE_SANDCATS_API_BASE=https://sandcats-dev-machine.sandstorm.io OVERRIDE_SANDCATS_CURL_PARAMS=-k bash /vagrant/install.sh -d
+$[run]sudo ADMIN_TOKEN=$(</tmp/admin-token) CHOSEN_INSTALL_MODE=1 SANDCATS_DOMAIN_RESERVATION_TOKEN=$(</tmp/domain-reservation-token) DESIRED_SANDCATS_NAME=$(</tmp/sandcats-domain-name) CURL_USER_AGENT=testing REPORT=no OVERRIDE_SANDCATS_BASE_DOMAIN=sandcats-dev.sandstorm.io OVERRIDE_SANDCATS_API_BASE=https://sandcats-dev-machine.sandstorm.io OVERRIDE_SANDCATS_CURL_PARAMS=-k bash /vagrant/install.sh -d -p 80
 $[slow]As a Sandstorm user, you are invited to use a free Internet hostname as a subdomain of sandcats.io
 $[veryslow]Registering your pre-reserved domain
 $[slow]Congratulations! We have registered your
@@ -30,5 +30,5 @@ To learn how to control the server, run:
 $[exitcode]0
 $[run]sudo -u sandstorm cat /opt/sandstorm/var/sandstorm/adminToken; echo
 $[slow]insecureExampleAdminToken
-$[run]for i in `seq 0 20`; do nc -z localhost 6080 && { echo yay; break; } || sleep 1 ; done
+$[run]for i in `seq 0 20`; do nc -z localhost 80 && { echo yay; break; } || sleep 1 ; done
 $[slow]yay

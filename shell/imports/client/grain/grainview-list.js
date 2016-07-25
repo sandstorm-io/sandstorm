@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { GrainView, onceConditionIsTrue } from "./grainview.js";
+
 GrainViewList = class GrainViewList {
   constructor(db) {
     check(db, SandstormDb);
@@ -255,6 +257,8 @@ GrainViewList = class GrainViewList {
     }
   }
 };
+
+export { GrainViewList };
 
 try {
   // We want to clear "openGrains" entries more than a week old since those windows are

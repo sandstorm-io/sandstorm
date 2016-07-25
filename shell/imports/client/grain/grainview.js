@@ -17,9 +17,9 @@
 let counter = 0;
 
 // Pseudo-collection, published in shell/server/grain-server.js.
-GrainSizes = new Mongo.Collection("grainSizes");
+const GrainSizes = new Mongo.Collection("grainSizes");
 
-GrainView = class GrainView {
+class GrainView {
   constructor(grains, db, grainId, path, tokenInfo, parentElement) {
     // `path` starts with a slash and includes the query and fragment.
     //
@@ -889,3 +889,5 @@ onceConditionIsTrue = (condition, continuation) => {
     });
   });
 };
+
+export { GrainView, onceConditionIsTrue };

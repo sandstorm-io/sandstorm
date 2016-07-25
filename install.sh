@@ -759,8 +759,8 @@ to install without using root access. In that case, Sandstorm will operate OK bu
 
     # Reasonable default ports.
     PORT="${DEFAULT_PORT}"
-    # Allow the mongo prompting part to determine a reasonable
-    # MONGO_PORT.
+
+    # Allow the mongo prompting part to determine a reasonable MONGO_PORT.
 
     # Use the ALLOW_DEV_ACCOUNTS feature, which allows people to log
     # into a Sandstorm instance without setting up any accounts.
@@ -1168,7 +1168,14 @@ choose_mongo_port() {
     return
   fi
 
-  MONGO_PORT=$(prompt-numeric "Database port (choose any unused port):" "$((PORT + 1))")
+  # If the port we'll bind is less than 1024, then default to MONGO_PORT of 6081 because
+  # mongo can't listen on root-owned ports in our configuration.
+  local DEFAULT_MONGO_PORT="$((PORT + 1))"
+  if [ "$PORT" -lt 1024 ] ; then
+    DEFAULT_MONGO_PORT="6081"
+  fi
+
+  MONGO_PORT=$(prompt-numeric "Database port (choose any unused port):" "${DEFAULT_MONGO_PORT}")
 }
 
 choose_external_or_internal() {

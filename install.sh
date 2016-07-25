@@ -958,8 +958,17 @@ configure_hostnames() {
     fi
   fi
 
-  # A typical server's DEFAULT_BASE_URL is its hostname plus port over HTTP.
-  DEFAULT_BASE_URL="http://$SS_HOSTNAME:$PORT"
+  # A typical server's DEFAULT_BASE_URL is its hostname plus port over HTTP. If the port is 80, then
+  # don't add it to BASE_URL to avoid triggering this bug:
+  # https://github.com/sandstorm-io/sandstorm/issues/2252
+  local PORT_SUFFIX=""
+  if [ "$PORT" = "80" ] ; then
+    PORT_SUFFIX=""
+  else
+    PORT_SUFFIX=":${PORT}"
+  fi
+
+  DEFAULT_BASE_URL="http://${SS_HOSTNAME}${PORT_SUFFIX}"
 
   # If SANDCATS_HTTPS_SUCCESSFUL is true, then use a HTTPS URL.
   if [ "$SANDCATS_HTTPS_SUCCESSFUL" = "yes" ]; then

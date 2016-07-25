@@ -25,7 +25,6 @@ sandstorm-accounts-packages
 sandstorm-email
 accounts-saml
 email
-accounts-identity
 simplesmtp
 http
 browser-policy

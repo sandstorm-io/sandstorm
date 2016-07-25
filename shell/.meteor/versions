@@ -80,7 +80,6 @@ routepolicy@1.0.11
 sandstorm-accounts-packages@0.1.0
 sandstorm-autoupdate-apps@0.1.0
 sandstorm-backend@0.1.0
-sandstorm-contacts@0.1.0
 sandstorm-db@0.1.0
 sandstorm-email@0.1.0
 sandstorm-identicons@0.1.0

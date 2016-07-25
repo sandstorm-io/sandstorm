@@ -14,16 +14,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-Package.describe({
-  summary: "Sandstorm Contacts",
-  version: "0.1.0",
-});
+const transform = function (contact) {
+  SandstormDb.fillInPictureUrl(contact);
+  return contact;
+};
 
-Package.onUse(function (api) {
-  api.use("ecmascript");
-  api.use(["check", "tracker", "underscore", "mongo"], "client");
-  api.use(["sandstorm-db"], ["client", "server"]);
-  api.addFiles(["contacts-client.js"], "client");
-  api.addFiles(["contacts-server.js"], "server");
-  api.export("ContactProfiles");
-});
+ContactProfiles = new Mongo.Collection("contactProfiles", { transform: transform });
+// A psuedo-collection used to store the results of joining Contacts with identity profiles.
+//
+// Each contains:
+//   _id: the id of identity (from Meteor.users collection)
+//   profile: the profile of the identity (see db.js for fields in this object) with profile
+//     default values, `intrinsicName`, and `pictureUrl` filled in.
+
+export { ContactProfiles };

@@ -1,3 +1,5 @@
+import { ContactProfiles } from "/imports/client/contacts.js";
+
 const generateAutoCompleteContacts = function (template) {
   let currentText = template.currentText.get();
   if (!currentText) {

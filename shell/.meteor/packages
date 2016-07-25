@@ -34,7 +34,6 @@ reactive-dict
 sandstorm-autoupdate-apps
 sandstorm-db
 sandstorm-backend
-sandstorm-contacts
 sandstorm-identicons
 sandstorm-permissions
 sandstorm-ui-topbar

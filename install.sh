@@ -1528,10 +1528,12 @@ generate_admin_token() {
   # Allow the person running the install.sh script to pre-generate an admin token, specified as an
   # environment variable, so that they can ignore the output text of install.sh.
   if [ ! -z "${ADMIN_TOKEN:-}" ] ; then
+    local TMPFILENAME="$(mktemp ./var/sandstorm/adminTokenTmp.XXXXXXXXXX)"
+    echo -n "$ADMIN_TOKEN" > "$TMPFILENAME"
     local FILENAME="./var/sandstorm/adminToken"
-    touch "$FILENAME"
+    mv "$TMPFILENAME" "$FILENAME"
     chmod 0640 "$FILENAME"
-    echo -n "$ADMIN_TOKEN" > "$FILENAME"
+    chgrp "$SERVER_USER" "$FILENAME"
     return
   fi
 

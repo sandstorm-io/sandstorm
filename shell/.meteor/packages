@@ -39,7 +39,6 @@ sandstorm-contacts
 sandstorm-identicons
 sandstorm-permissions
 sandstorm-ui-topbar
-sandstorm-ui-app-details
 sandstorm-ui-grainlist
 sandstorm-ui-grainview
 sandstorm-ui-autocomplete-input

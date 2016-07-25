@@ -7,8 +7,7 @@ $[slow]0
 $[run]read line ; echo $line > /tmp/sandcats-domain-name ; echo ok
 $[type]gensym
 $[slow]ok
-$[run]read line ; echo $line > /tmp/admin-token ; echo ok
-$[type]gensym
+$[run]echo insecureExampleAdminToken > /tmp/admin-token ; echo ok
 $[slow]ok
 $[run]curl -k https://sandcats-dev-machine.sandstorm.io/reserve --data 'email=sandstorm-test-suite@asheesh.org&rawHostname='$(</tmp/sandcats-domain-name) > /tmp/json; echo ok
 $[slow]ok
@@ -29,5 +28,7 @@ $[veryslow]Visit this link to start using it:
 To learn how to control the server, run:
   sandstorm help
 $[exitcode]0
+$[run]sudo -u sandstorm cat /opt/sandstorm/var/sandstorm/adminToken; echo
+$[slow]insecureExampleAdminToken
 $[run]for i in `seq 0 20`; do nc -z localhost 6080 && { echo yay; break; } || sleep 1 ; done
 $[slow]yay

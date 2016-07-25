@@ -15,6 +15,9 @@
 // limitations under the License.
 
 import { PersistentImpl } from "/imports/server/persistent.js";
+import simplesmtp from "simplesmtp";
+import { MailParser } from "mailparser";
+import { MailComposer } from "mailcomposer";
 
 const Crypto = Npm.require("crypto");
 const Future = Npm.require("fibers/future");

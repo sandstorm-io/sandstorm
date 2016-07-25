@@ -1,6 +1,8 @@
 const Future = Npm.require("fibers/future");
-const urlModule = Npm.require("url");
-const MailComposer = Npm.require("mailcomposer").MailComposer;
+
+import urlModule from "url";
+import simplesmtp from "simplesmtp";
+import { MailComposer } from "mailcomposer";
 
 SandstormEmail = {};
 
@@ -10,7 +12,6 @@ const getSmtpConfig = function () {
 };
 
 const makePool = function (mailConfig) {
-  const simplesmtp = Npm.require("simplesmtp");
   let auth = false;
   if (mailConfig.auth && (mailConfig.auth.user || mailConfig.auth.pass)) {
     auth = mailConfig.auth;

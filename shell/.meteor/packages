@@ -22,10 +22,8 @@ random
 
 iron:router
 sandstorm-accounts-packages
-sandstorm-email
 accounts-saml
 email
-simplesmtp
 http
 browser-policy
 

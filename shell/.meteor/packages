@@ -41,7 +41,6 @@ sandstorm-permissions
 sandstorm-ui-topbar
 sandstorm-ui-grainlist
 sandstorm-ui-grainview
-sandstorm-ui-autocomplete-input
 sandstorm-ui-powerbox
 fourseven:scss
 sha

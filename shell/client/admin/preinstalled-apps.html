@@ -43,7 +43,7 @@
       <span class="form-subtext">
         We recommend pre-installing these system apps that greatly enhance the abilities of Sandstorm.
       </span>
-      <div class="productivity-suite" role="grid">
+      <div class="system-suite" role="grid">
         <div role="rowgroup">
           {{#each systemApps}}
             {{> _appRow getRowData}}
@@ -88,6 +88,13 @@
 </template>
 
 <template name="_appRow">
+  <!-- This template expects a single AppIndex row as the data context with the following extra
+  fields:
+    preinstalledAppIds: A reactive var that is a list of string appIds. It is used to tell if this
+      app is currently selected or not.
+    formChanged: A reactive var that is a bool. It is meant to be set to true whenever a change
+      occurs.
+  -->
   <div role="row" class="{{#if isAppPreinstalled}}checked{{/if}}">
     <div role="gridcell">
       <input name="installedApp" type="checkbox" checked="{{#if isAppPreinstalled}}true{{/if}}">

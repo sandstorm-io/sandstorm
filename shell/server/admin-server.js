@@ -17,8 +17,9 @@
 import { Meteor } from "meteor/meteor";
 import Fs from "fs";
 import Crypto from "crypto";
-import { clearAdminToken, checkAuth, tokenIsValid, tokenIsSetupSession } from "/imports/server/auth.js";
 import Heapdump from "heapdump";
+import { clearAdminToken, checkAuth, tokenIsValid, tokenIsSetupSession } from "/imports/server/auth.js";
+import { send as sendEmail } from "/imports/server/email.js";
 
 const publicAdminSettings = [
   "google", "github", "ldap", "saml", "emailToken", "splashUrl", "signupDialog",
@@ -219,7 +220,7 @@ Meteor.methods({
     const { returnAddress, ...restConfig } = smtpConfig;
 
     try {
-      SandstormEmail.send({
+      sendEmail({
         to: to,
         from: globalDb.getServerTitle() + " <" + returnAddress + ">",
         subject: "Testing your Sandstorm's SMTP setting",
@@ -289,7 +290,7 @@ Meteor.methods({
         };
         if (typeof quota === "number") content.quota = quota;
         SignupKeys.insert(content);
-        SandstormEmail.send({
+        sendEmail({
           to: email,
           from: from,
           envelopeFrom: globalDb.getReturnAddress(),

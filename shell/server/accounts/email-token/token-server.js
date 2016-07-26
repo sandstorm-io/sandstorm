@@ -1,5 +1,7 @@
 import crypto from "crypto";
 
+import { send as sendEmail } from "/imports/server/email.js";
+
 const V1_ROUNDS = 4096; // Selected to take ~5msec at creation time (2016) on a developer's laptop.
 const V1_KEYSIZE = 32; // 256 bits / 8 bits/byte = 32 bytes
 const V1_HASHFUNC = "sha512";
@@ -202,7 +204,7 @@ const sendTokenEmail = function (db, email, token, linkingIdentity) {
     text: text,
   };
 
-  SandstormEmail.send(options);
+  sendEmail(options);
 };
 
 ///

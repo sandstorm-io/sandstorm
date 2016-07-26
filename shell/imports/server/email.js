@@ -1,10 +1,9 @@
-const Future = Npm.require("fibers/future");
-
+import { Meteor } from "meteor/meteor";
 import urlModule from "url";
 import simplesmtp from "simplesmtp";
 import { MailComposer } from "mailcomposer";
 
-SandstormEmail = {};
+const Future = Npm.require("fibers/future");
 
 const getSmtpConfig = function () {
   const config = Settings.findOne({ _id: "smtpConfig" });
@@ -91,6 +90,28 @@ const smtpSend = function (pool, mc) {
   pool._futureWrappedSendMail(mc).wait();
 };
 
+/**
+ * @summary Sends a raw email with a MailComposer object.
+ * Throws an `Error` on failure to contact mail server
+ * or if mail server returns an error. All fields should match
+ * [RFC5322](http://tools.ietf.org/html/rfc5322) specification.
+ * @locus Server
+ * @param {Object} mc A MailCompser object that you wish to send
+ * @param {String} smtpUrl SMTP server to use. If falsey, defaults to configured one.
+*/
+const rawSend = function (mc, smtpConfig) {
+  // SimpleSmtp does not add leading dots, so we need to.
+  // See http://tools.ietf.org/html/rfc5321#section-4.5.2
+  mc._message.body = mc._message.body.replace(/(^|\n)\./g, "$1..");
+
+  const pool = getPool(smtpConfig);
+  if (pool) {
+    smtpSend(pool, mc);
+  } else {
+    throw new Error("SMTP pool is misconfigured.");
+  }
+};
+
 // Old comment below
 /**
  * Send an email.
@@ -135,7 +156,7 @@ const smtpSend = function (pool, mc) {
  *   https://github.com/nodemailer/mailcomposer/tree/v0.1.15#add-attachments
  * @param {String} [options.envelopeFrom] Envelope sender.
  */
-SandstormEmail.send = function (options) {
+const send = function (options) {
   const mc = new MailComposer();
 
   // setup message data
@@ -166,27 +187,7 @@ SandstormEmail.send = function (options) {
     mc.addAttachment(value);
   });
 
-  SandstormEmail.rawSend(mc, options.smtpConfig);
+  rawSend(mc, options.smtpConfig);
 };
 
-/**
- * @summary Sends a raw email with a MailComposer object.
- * Throws an `Error` on failure to contact mail server
- * or if mail server returns an error. All fields should match
- * [RFC5322](http://tools.ietf.org/html/rfc5322) specification.
- * @locus Server
- * @param {Object} mc A MailCompser object that you wish to send
- * @param {String} smtpUrl SMTP server to use. If falsey, defaults to configured one.
-*/
-SandstormEmail.rawSend = function (mc, smtpConfig) {
-  // SimpleSmtp does not add leading dots, so we need to.
-  // See http://tools.ietf.org/html/rfc5321#section-4.5.2
-  mc._message.body = mc._message.body.replace(/(^|\n)\./g, "$1..");
-
-  const pool = getPool(smtpConfig);
-  if (pool) {
-    smtpSend(pool, mc);
-  } else {
-    throw new Error("SMTP pool is misconfigured.");
-  }
-};
+export { send, rawSend };

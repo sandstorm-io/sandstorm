@@ -15,6 +15,7 @@
 // limitations under the License.
 
 const Crypto = Npm.require("crypto");
+import { send as sendEmail } from "/imports/server/email.js";
 
 const emailLinkWithInlineStyle = function (url, text) {
   return "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
@@ -508,7 +509,7 @@ Meteor.methods({
               "the share as well. To prevent this, remove the button before forwarding.</div>";
           try {
             globalDb.incrementDailySentMailCount(accountId);
-            SandstormEmail.send({
+            sendEmail({
               to: emailAddress,
               from: fromEmail,
               replyTo: replyTo,
@@ -554,7 +555,7 @@ Meteor.methods({
                   "Note: You will need to log in with your " + loginNote +
                   " to access this grain.";
               globalDb.incrementDailySentMailCount(accountId);
-              SandstormEmail.send({
+              sendEmail({
                 to: email.email,
                 from: fromEmail,
                 replyTo: replyTo,
@@ -658,7 +659,7 @@ Meteor.methods({
 
       Meteor.users.update({ _id: user._id }, modifier);
 
-      SandstormEmail.send({
+      sendEmail({
         to: emailAddress,
         from: fromEmail,
         replyTo: replyTo,

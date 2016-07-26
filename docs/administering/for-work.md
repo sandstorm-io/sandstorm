@@ -160,6 +160,10 @@ in due to using LDAP or SAML to create their accounts. You can switch between Sa
 Sandstorm for Work at any time, so long as you have a valid feature key and are complying with the
 [Sandstorm for Work terms of service](https://work.sandstorm.io/terms).
 
+You are always permitted to **move a feature key between servers,** so long as the feature key is
+not in use on multiple servers at once. You can read more in the [Sandstorm for Work Terms of
+Service.](https://work.sandstorm.io/terms).
+
 ### Open source
 
 The code for Sandstorm for Work is maintained in the Sandstorm open source project, under the Apache

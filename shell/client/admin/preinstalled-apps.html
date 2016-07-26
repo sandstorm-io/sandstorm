@@ -99,6 +99,9 @@
         <i class="download-checkmark"></i>Downloaded
       {{else}}{{#if isAppDownloading}}
         <progress value="{{progressFraction}}"></progress>
+      {{else}}{{#if isAppFailed}}
+        <i class="download-x-mark"></i>Failed
+      {{/if}}
       {{/if}}
       {{/if}}</div>
   </div>

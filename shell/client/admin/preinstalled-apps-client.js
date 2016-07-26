@@ -95,6 +95,11 @@ Template._appRow.helpers({
     return pack && pack.status === "download";
   },
 
+  isAppFailed() {
+    const pack = globalDb.collections.packages.findOne({ _id: this.packageId });
+    return pack && pack.status === "failed";
+  },
+
   progressFraction() {
     const pack = globalDb.collections.packages.findOne({ _id: this.packageId });
     return pack && pack.progress;

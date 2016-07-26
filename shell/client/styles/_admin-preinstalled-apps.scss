@@ -69,6 +69,15 @@
             @extend .icon-check;
             margin-right: 5px;
           }
+          i.download-x-mark {
+            color: red;
+            @extend .icon;
+            @extend .icon-plus;
+            margin-right: 5px;
+            -ms-transform: rotate(45deg);
+            -webkit-transform: rotate(45deg);
+            transform: rotate(45deg);
+          }
           progress {
             width: 115px;
             &::-webkit-progress-value {

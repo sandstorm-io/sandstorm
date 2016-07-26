@@ -640,6 +640,45 @@
           "resolved": "https://registry.npmjs.org/xoauth2/-/xoauth2-0.1.8.tgz"
         }
       }
+    },
+    "xml-crypto": {
+      "version": "0.0.20",
+      "from": "xml-crypto@0.0.20",
+      "resolved": "https://registry.npmjs.org/xml-crypto/-/xml-crypto-0.0.20.tgz",
+      "dependencies": {
+        "xmldom": {
+          "version": "0.1.16",
+          "from": "git+https://github.com/yaronn/xmldom.git",
+          "resolved": "git+https://github.com/yaronn/xmldom.git#68768a6a31f55b0737d7beb88807bc80146b2651"
+        },
+        "xpath.js": {
+          "version": "1.0.6",
+          "from": "xpath.js@>=0.0.3",
+          "resolved": "https://registry.npmjs.org/xpath.js/-/xpath.js-1.0.6.tgz"
+        }
+      }
+    },
+    "xml2js": {
+      "version": "0.2.0",
+      "from": "xml2js@0.2.0",
+      "resolved": "https://registry.npmjs.org/xml2js/-/xml2js-0.2.0.tgz",
+      "dependencies": {
+        "sax": {
+          "version": "1.2.1",
+          "from": "sax@>=0.1.1",
+          "resolved": "https://registry.npmjs.org/sax/-/sax-1.2.1.tgz"
+        }
+      }
+    },
+    "xmlbuilder": {
+      "version": "8.2.2",
+      "from": "xmlbuilder@8.2.2",
+      "resolved": "https://registry.npmjs.org/xmlbuilder/-/xmlbuilder-8.2.2.tgz"
+    },
+    "xmldom": {
+      "version": "0.1.6",
+      "from": "xmldom@0.1.6",
+      "resolved": "https://registry.npmjs.org/xmldom/-/xmldom-0.1.6.tgz"
     }
   }
 }

@@ -1,8 +1,4 @@
-if (!Accounts.saml) {
-  Accounts.saml = {};
-}
-
-Accounts.saml.initiateLogin = function (options, callback, dimensions) {
+const initiateLogin = function (options, callback, dimensions) {
   // default dimensions that worked well for facebook and google
   const popup = openCenteredPopup(
     Meteor.absoluteUrl("_saml/authorize/" + options.provider + "/" + options.credentialToken),
@@ -55,7 +51,7 @@ const openCenteredPopup = function (url, width, height) {
   return newwindow;
 };
 
-Meteor.loginWithSaml = function (options, callback) {
+const loginWithSaml = function (options, callback) {
   options = options || {};
 
   // TODO(cleanup): AFAICT "default" is the only provider; why is this an option?
@@ -64,10 +60,12 @@ Meteor.loginWithSaml = function (options, callback) {
   const credentialToken = "_" + Random.hexString(40);
   options.credentialToken = credentialToken;
 
-  Accounts.saml.initiateLogin(options, function (error, result) {
+  initiateLogin(options, function (error, result) {
     Accounts.callLoginMethod({
       methodArguments: [{ saml: true, credentialToken: credentialToken }],
       userCallback: callback,
     });
   });
 };
+
+export { loginWithSaml };

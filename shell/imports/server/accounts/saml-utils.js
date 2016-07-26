@@ -1,15 +1,15 @@
-const zlib = Npm.require("zlib");
-const xml2js = Npm.require("xml2js");
-const xmlCrypto = Npm.require("xml-crypto");
-const crypto = Npm.require("crypto");
-const xmldom = Npm.require("xmldom");
-const querystring = Npm.require("querystring");
-const xmlbuilder = Npm.require("xmlbuilder");
-const Url = Npm.require("url");
+import crypto from "crypto";
+import querystring from "querystring";
+import Url from "url";
+import xml2js from "xml2js";
+import xmlbuilder from "xmlbuilder";
+import xmlCrypto from "xml-crypto";
+import xmldom from "xmldom";
+import zlib from "zlib";
 
 const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 
-SAML = function (options) {
+const SAML = function (options) {
   this.options = this.initialize(options);
 };
 
@@ -422,3 +422,5 @@ SAML.prototype.generateServiceProviderMetadata = function () {
 
   return xmlbuilder.create(metadata).end({ pretty: true, indent: "  ", newline: "\n" });
 };
+
+export { SAML };

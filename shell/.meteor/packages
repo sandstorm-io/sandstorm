@@ -22,10 +22,10 @@ random
 
 iron:router
 sandstorm-accounts-packages
-accounts-saml
 email
 http
 browser-policy
+routepolicy
 
 reactive-var
 reactive-dict

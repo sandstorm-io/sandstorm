@@ -79,7 +79,7 @@ shell/packages/sandstorm-identicons/pnglib.js
     License: BSD 2-clause
     License URL: http://opensource.org/licenses/bsd-license.php
 
-shell/client/accounts/ldap/ldap-client.js
+shell/imports/client/accounts/ldap/ldap-client.js
 shell/server/accounts/ldap/ldap-server.js
     What: forked from Meteor accounts-ldap package
     Source URL: https://github.com/typ90/meteor-accounts-ldap
@@ -87,8 +87,10 @@ shell/server/accounts/ldap/ldap-server.js
     License: MIT
     License URL: https://github.com/typ90/meteor-accounts-ldap/blob/master/LICENSE
 
-shell/packages/accounts-saml/*
-    What: Meteor accounts-saml package
+shell/imports/client/accounts/saml/saml-client.js
+shell/imports/server/accounts/saml-utils.js
+shell/server/accounts/saml/saml-server.js
+    What: forked from Meteor accounts-saml package
     Source URL: https://github.com/nate-strauser/meteor-accounts-saml
     Copyright: Nathan Strauser
     License: MIT

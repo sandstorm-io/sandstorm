@@ -24,6 +24,7 @@ import {
   createAndEmailTokenForUser,
 } from "/imports/client/accounts/email-token/token-login-helpers.js";
 import { loginWithLDAP } from "/imports/client/accounts/ldap/ldap-client.js";
+import { loginWithSaml } from "/imports/client/accounts/saml/saml-client.js";
 
 // for convenience
 const loginButtonsSession = Accounts._loginButtonsSession;
@@ -431,7 +432,7 @@ Template.samlLoginForm.events({
 
     loginButtonsSession.resetMessages();
 
-    Meteor.loginWithSaml({
+    loginWithSaml({
       provider: "default",
     }, function (error, result) {
       if (error) {

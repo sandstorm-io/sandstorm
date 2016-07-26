@@ -56,7 +56,8 @@ const deletePackageInternal = (pkg) => {
     const grain = Grains.findOne({ packageId: packageId });
     const notificationQuery = {};
     notificationQuery["appUpdates." + pkg.appId] = { $exists: true };
-    if (!grain && !action && !(pkg.isAutoUpdated && Notifications.findOne(notificationQuery))) {
+    if (!grain && !action && !(pkg.isAutoUpdated && Notifications.findOne(notificationQuery))
+        && !globalDb.isPackagePreinstalled(ppackageId)) {
       Packages.update({
         _id: packageId,
       }, {
@@ -88,7 +89,8 @@ const startInstallInternal = (pkg) => {
     return;
   }
 
-  const installer = new AppInstaller(pkg._id, pkg.url, pkg.appId, pkg.isAutoUpdated);
+  const installer = new AppInstaller(pkg._id, pkg.url, pkg.appId, pkg.isAutoUpdated,
+    pkg.isPreinstalled);
   installers[pkg._id] = installer;
   installer.start();
 };
@@ -173,7 +175,7 @@ doClientUpload = (stream) => {
 };
 
 AppInstaller = class AppInstaller {
-  constructor(packageId, url, appId, isAutoUpdated) {
+  constructor(packageId, url, appId, isAutoUpdated, isPreinstalled) {
     verifyIsMainReplica();
 
     this.packageId = packageId;
@@ -181,6 +183,7 @@ AppInstaller = class AppInstaller {
     this.failed = false;
     this.appId = appId;
     this.isAutoUpdated = isAutoUpdated;
+    this.isPreinstalled = isPreinstalled;
 
     // Serializes database writes.
     this.writeChain = Promise.resolve();
@@ -384,6 +387,10 @@ AppInstaller = class AppInstaller {
           globalDb.sendAppUpdateNotifications(_this.appId, _this.packageId,
             (manifest.appTitle && manifest.appTitle.defaultText), manifest.appVersion,
             (manifest.appMarketingVersion && manifest.appMarketingVersion.defaultText));
+        }
+
+        if (_this.isPreinstalled) {
+          globalDb.setPreinstallAppAsReady(_this.appId);
         }
       });
     }).then(() => {

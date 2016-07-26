@@ -1,0 +1,82 @@
+.admin-preinstalled-apps {
+  @extend %standard-form;
+
+  .save {
+    @extend %button-base;
+    @extend %button-primary;
+    margin-left: 10px;
+  }
+
+  .productivity-suite {
+    margin-bottom: 40px;
+  }
+
+  .toggle-more {
+    color: #888888;
+  }
+
+  i.down-arrow {
+    @extend .icon;
+    @extend .icon-down;
+  }
+
+  i.up-arrow {
+    @extend .icon;
+    @extend .icon-up;
+  }
+
+  [role=grid] {
+    [role=row] {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-start;
+      border-top: 1px solid $default-table-border-color;
+      flex-basis: 0;
+      width: 100%;
+
+      &.checked, &.toggle-more {
+        background-color: white;
+        [role=row] {
+          border-top: 1px solid $default-content-background-color;
+        }
+      }
+
+      &.toggle-more {
+        cursor: pointer;
+        div {
+          margin-left: auto;
+        }
+      }
+
+      [role=gridcell] {
+        padding: 4px;
+        overflow: hidden;
+        @extend %overflow-ellipsis;
+        flex-grow: 0;
+        &.name {
+          width: 20%;
+        }
+        &.description {
+          width: 70%;
+          color: #888888;
+        }
+        &.download {
+          width: 130px;
+          color: #888888;
+          i.download-checkmark {
+            color: green;
+            @extend .icon;
+            @extend .icon-check;
+            margin-right: 5px;
+          }
+          progress {
+            width: 115px;
+            &::-webkit-progress-value {
+              background-color: green;
+            }
+          }
+        }
+      }
+    }
+  }
+}

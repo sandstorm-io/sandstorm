@@ -28,6 +28,7 @@ SandstormAutoupdateApps.updateAppIndex = function (db) {
   const appIndexUrl = db.collections.settings.findOne({ _id: "appIndexUrl" }).value;
   const appIndex = db.collections.appIndex;
   const data = HTTP.get(appIndexUrl + "/apps/index.json").data;
+  const preinstalledAppIds = db.getPreinstalledAppIds();
   data.apps.forEach(function (app) {
     app._id = app.appId;
 
@@ -35,7 +36,8 @@ SandstormAutoupdateApps.updateAppIndex = function (db) {
     app.hasSentNotifications = false;
     appIndex.upsert({ _id: app._id }, app);
     if ((!oldApp || app.versionNumber > oldApp.versionNumber) &&
-        db.collections.userActions.findOne({ appId: app.appId })) {
+        (db.collections.userActions.findOne({ appId: app.appId }) ||
+         _.contains(preinstalledAppIds, app.appId))) {
       const pack = db.collections.packages.findOne({ _id: app.packageId });
       const url = appIndexUrl + "/packages/" + app.packageId;
       if (pack) {

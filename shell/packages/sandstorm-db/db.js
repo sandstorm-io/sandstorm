@@ -153,6 +153,7 @@ Packages = new Mongo.Collection("packages");
 //   url:  When status is "download", the URL from which the SPK can be obtained, if provided.
 //   isAutoUpdated: This package was downloaded as part of an auto-update. We shouldn't clean it up
 //     even if it has no users.
+//   isPreinstalled: This package was downloaded in order to be pre-installed by users.
 //   authorPgpKeyFingerprint: Verified PGP key fingerprint (SHA-1, hex, all-caps) of the app
 //     packager.
 
@@ -1614,6 +1615,100 @@ _.extend(SandstormDb.prototype, {
 
     ActivitySubscriptions.upsert(record, { $set: { mute: true } });
   },
+
+  isPackagePreinstalled: function (packageId) {
+    const pack = this.collections.packages.findOne({ _id: packageId });
+    if (!pack) {
+      return false;
+    }
+
+    return this.getPackageIdForPreinstalledApp(pack.appId) === packageId;
+  },
+
+  getPackageIdForPreinstalledApp: function (appId) {
+    // TODO(soon): there's a timing issue during autoupdate. The appIndex will point to a package that hasn't been installed yet.
+    const pack = this.collections.appIndex.findOne({ appId: appId });
+    return pack && pack.packageId;
+  },
+
+  getPreinstalledAppIds: function () {
+    const setting = Settings.findOne({ _id: "preinstalledApps" });
+    const ret = setting && setting.value || {};
+    return _.chain(ret)
+            .filter((app) => { return app.status === "ready"; })
+            .map((app) => { return app.appId; })
+            .value();
+  },
+
+  preinstallAppsForUser: function (userId) {
+    const appIds = this.getPreinstalledAppIds();
+    appIds.forEach((appId) => {
+      try {
+        this.addUserActions(userId, this.getPackageIdForPreinstalledApp(appId));
+      } catch (e) {
+        console.error("failed to install app for user:", e);
+      }
+    });
+  },
+
+  setPreinstallAppAsDownloading: function (appId) {
+    this.collections.settings.update({ _id: "preinstalledApps", "value.appId": appId },
+      { $set: { "value.$.status": "downloading" } });
+  },
+
+  setPreinstallAppAsReady: function (appId) {
+    this.collections.settings.update({ _id: "preinstalledApps", "value.appId": appId },
+      { $set: { "value.$.status": "ready" } });
+  },
+
+  ensureAppPreinstall: function (appId) {
+    check(appId, String);
+
+    const packageId = this.collections.appIndex.findOne({ appId: appId },
+      { fields: { packageId: 1 } }).packageId;
+    const appIndexUrl = this.collections.settings.findOne({ _id: "appIndexUrl" }).value;
+    const pack = this.collections.packages.findOne({ _id: packageId });
+    const url = appIndexUrl + "/packages/" + packageId;
+    if (pack) {
+      if (pack.status === "ready") {
+        this.setPreinstallAppAsReady(appId);
+      } else {
+        const newPack = this.collections.packages.findAndModify({
+          query: { _id: packageId },
+          update: { $set: { isPreinstalled: true } },
+        });
+        if (newPack.status === "ready") {
+          // The package was marked as ready before we applied isPreinstalled=true. We should send
+          // set the DB ourself to be sure it happens.
+          this.setPreinstallAppAsReady(appId);
+        } else if (newPack.status === "failed") {
+          // If the package has failed, retry it
+          this.setPreinstallAppAsDownloading(appId);
+          this.startInstall(packageId, url, true, false, true);
+        }
+      }
+    } else {
+      this.setPreinstallAppAsDownloading(appId);
+      this.startInstall(packageId, url, false, false, true);
+    }
+  },
+
+  setPreinstalledApps: function (appIds) {
+    check(appIds, [String]);
+
+    // Start by clearing out the setting. We'll push appIds one by one to it
+    this.collections.settings.upsert({ _id: "preinstalledApps" }, { $set: {
+      value: appIds.map((appId) => {
+        return {
+          appId: appId,
+          status: "notReady",
+        };
+      }),
+    }, });
+    appIds.forEach((appId) => {
+      this.ensureAppPreinstall(appId);
+    });
+  },
 });
 
 SandstormDb.escapeMongoKey = (key) => {
@@ -2070,7 +2165,8 @@ if (Meteor.isServer) {
     }, { multi: true });
   };
 
-  SandstormDb.prototype.startInstall = function (packageId, url, retryFailed, isAutoUpdated) {
+  SandstormDb.prototype.startInstall = function (packageId, url, retryFailed, isAutoUpdated,
+    isPreinstalled) {
     // Mark package for possible installation.
 
     const fields = {
@@ -2078,6 +2174,7 @@ if (Meteor.isServer) {
       progress: 0,
       url: url,
       isAutoUpdated: !!isAutoUpdated,
+      isPreinstalled: !!isPreinstalled,
     };
 
     if (retryFailed) {

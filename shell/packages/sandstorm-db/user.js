@@ -98,6 +98,8 @@ Accounts.onCreateUser(function (options, user) {
       }
     }
 
+    localSandstormDb.preinstallAppsForUser(user._id);
+
     return user;
   }
 

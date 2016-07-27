@@ -99,8 +99,8 @@ body>.popup.request>.frame-container>.frame {
   vertical-align: middle;
   height: 32px;
   >button.card-button {
-    @extend %unstyled-button;
-    @extend %overflow-ellipsis;
+    @include unstyled-button();
+    @include overflow-ellipsis();
     width: 100%;
     background-size: 24px 24px;
     background-position: 4px 4px;

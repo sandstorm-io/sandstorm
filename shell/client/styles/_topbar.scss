@@ -1,6 +1,5 @@
 @mixin webfont-icon ($color, $mobile-color, $font-size, $mobile-font-size) {
   text-align: center;
-  @extend .icon;
   &:before {
     font-size: $font-size;
     color: $color;
@@ -99,7 +98,7 @@ body>.topbar {
   %topbar-button {
     // Common styling for buttons in the topbar (on desktop).
 
-    @extend %unstyled-button;
+    @include unstyled-button();
 
     @media #{$desktop} {
       display: block;
@@ -135,7 +134,7 @@ body>.topbar {
     // Common styling for topbar buttons that are displayed as a bare icon with no text label
     // (on mobile).
 
-    @extend %unstyled-button;
+    @include unstyled-button();
 
     @media #{$mobile} {
       display: block;
@@ -228,7 +227,7 @@ body>.topbar {
         overflow: hidden;
 
         >a {
-          @extend %overflow-ellipsis;
+          @include overflow-ellipsis();
           color: inherit;
           margin: 0px;
           text-decoration: none;
@@ -432,7 +431,6 @@ body>.topbar {
         @extend %mobile-icon-button;
 
         @include webfont-icon(#CCCCCC, #CCCCCC, 24px, 40px);
-        @extend .icon-notification;
 
         >.count {
           display: block;
@@ -490,9 +488,8 @@ body>.topbar {
       }
 
       button.navbar-shrink {
-        @extend %unstyled-button;
+        @include unstyled-button();
         @include webfont-icon(#CCCCCC, #CCCCCC, 28px, 28px);
-        @extend .icon-arrow;
         display: block;
         width: 100%;
         height: $navbar-shrink-button-height;
@@ -695,7 +692,7 @@ body>.topbar {
           text-align: center;
         }
         .close-button {
-          @extend %unstyled-button;
+          @include unstyled-button();
           position: absolute;
           top: 1px;
           right: 0px;
@@ -752,7 +749,7 @@ body>.topbar {
       }
 
       button {
-        @extend %unstyled-button;
+        @include unstyled-button();
         display: block;
         border: 1px solid $topbar-foreground-color;
         border-radius: 4px;
@@ -1021,7 +1018,7 @@ body>.popup {
     }
 
     button.who-has-access {
-      @extend %unstyled-button;
+      @include unstyled-button();
     }
 
     .share-tabs {
@@ -1090,7 +1087,7 @@ body>.popup {
     }
 
     button.reset-invite, button.reset-share-token, button.start-over-invite {
-      @extend %unstyled-button;
+      @include unstyled-button();
       border: 1px solid #ccc;
       border-radius: 4px;
       padding: 5px 16px;
@@ -1104,7 +1101,7 @@ body>.popup {
       margin-top: 10px;
     }
     .share-tabs form button {
-      @extend %unstyled-button;
+      @include unstyled-button();
       @extend %button-primary;
       border: 1px solid #ccc;
       border-radius: 4px;

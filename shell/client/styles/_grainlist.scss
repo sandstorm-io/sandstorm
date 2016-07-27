@@ -85,7 +85,7 @@
     font-size: 10pt;
 
     button.empty-trash {
-      @extend %unstyled-button;
+      @include unstyled-button();
       color: $sandstorm-purple-color;
       font-weight: bold;
     }
@@ -262,9 +262,9 @@
         }
       }
       button {
+        @include unstyled-button();
         color: black;
         font-weight: bold;
-        @extend %unstyled-button;
       }
     }
     &.grain {

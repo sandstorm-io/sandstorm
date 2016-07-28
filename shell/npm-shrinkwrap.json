@@ -626,8 +626,8 @@
     },
     "simplesmtp": {
       "version": "0.3.35",
-      "from": "simplesmtp@0.3.35",
-      "resolved": "https://registry.npmjs.org/simplesmtp/-/simplesmtp-0.3.35.tgz",
+      "from": "git+https://github.com/sandstorm-io/simplesmtp.git#f67dc06bb1705ee796a9d3f3ca3703970adfb833",
+      "resolved": "git+https://github.com/sandstorm-io/simplesmtp.git#f67dc06bb1705ee796a9d3f3ca3703970adfb833",
       "dependencies": {
         "rai": {
           "version": "0.1.12",

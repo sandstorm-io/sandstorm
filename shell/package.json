@@ -23,7 +23,7 @@
     "mimelib": "^0.2.14",
     "node-forge": "0.6.34",
     "request": "2.67.0",
-    "simplesmtp": "^0.3.35",
+    "simplesmtp": "git+https://github.com/sandstorm-io/simplesmtp#f67dc06bb1705ee796a9d3f3ca3703970adfb833",
     "xml-crypto": "0.0.20",
     "xml2js": "^0.2.0",
     "xmlbuilder": "^8.2.2",

@@ -14,11 +14,11 @@ Template.newAdminPreinstalledApps.onCreated(function () {
     message: undefined,
   });
   const preinstalledApps = globalDb.getSettingWithFallback("preinstalledApps", []);
-  const preinstalledAppAndPackgeIds = {};
+  const preinstalledAppAndPackageIds = {};
   preinstalledApps.forEach((row) => {
-    preinstalledAppAndPackgeIds[row.appId] = row.packageId;
+    preinstalledAppAndPackageIds[row.appId] = row.packageId;
   });
-  this.preinstalledAppAndPackgeIds = new ReactiveVar(preinstalledAppAndPackgeIds);
+  this.preinstalledAppAndPackageIds = new ReactiveVar(preinstalledAppAndPackageIds);
   this.showAllApps = new ReactiveVar(false);
   this.appIndexSubscription = this.subscribe("appIndexAdmin");
   this.packageSubscription = this.subscribe("allPackages");
@@ -74,7 +74,7 @@ Template.newAdminPreinstalledApps.helpers({
 
   getRowData() {
     const instance = Template.instance();
-    this.preinstalledAppAndPackgeIds = instance.preinstalledAppAndPackgeIds;
+    this.preinstalledAppAndPackageIds = instance.preinstalledAppAndPackageIds;
     this.formChanged = instance.formChanged;
     return this;
   },
@@ -86,7 +86,7 @@ Template.newAdminPreinstalledApps.helpers({
 
 Template._appRow.helpers({
   isAppPreinstalled() {
-    return !!this.preinstalledAppAndPackgeIds.get()[this.appId];
+    return !!this.preinstalledAppAndPackageIds.get()[this.appId];
   },
 
   isAppDownloaded() {
@@ -124,13 +124,13 @@ Template.newAdminPreinstalledApps.events({
 
   "click .save"(evt) {
     const instance = Template.instance();
-    const preinstalledAppAndPackgeIds = instance.preinstalledAppAndPackgeIds.get();
+    const preinstalledAppAndPackageIds = instance.preinstalledAppAndPackageIds.get();
 
     instance.formState.set({
       state: "submitting",
       message: "",
     });
-    const appAndPackageIdList = _.map(preinstalledAppAndPackgeIds, (val, key) => {
+    const appAndPackageIdList = _.map(preinstalledAppAndPackageIds, (val, key) => {
       return {
         appId: key,
         packageId: val,
@@ -144,7 +144,7 @@ Template.newAdminPreinstalledApps.events({
         });
       } else {
         let notYetInstalled = [];
-        _.each(preinstalledAppAndPackgeIds, (packageId) => {
+        _.each(preinstalledAppAndPackageIds, (packageId) => {
           const pack = globalDb.collections.packages.findOne({ _id: packageId });
           if (!pack || pack.status !== "ready") {
             notYetInstalled.push(packageId);
@@ -201,14 +201,14 @@ Template.newAdminPreinstalledApps.events({
 
 Template._appRow.events({
   "change input[name=installedApp]"(evt) {
-    let preinstalledAppAndPackgeIds = this.preinstalledAppAndPackgeIds.get();
+    let preinstalledAppAndPackageIds = this.preinstalledAppAndPackageIds.get();
     if (evt.currentTarget.checked) {
-      preinstalledAppAndPackgeIds[this.appId] = this.packageId;
+      preinstalledAppAndPackageIds[this.appId] = this.packageId;
     } else {
-      delete preinstalledAppAndPackgeIds[this.appId];
+      delete preinstalledAppAndPackageIds[this.appId];
     }
 
-    this.preinstalledAppAndPackgeIds.set(preinstalledAppAndPackgeIds);
+    this.preinstalledAppAndPackageIds.set(preinstalledAppAndPackageIds);
     this.formChanged.set(true);
   },
 });

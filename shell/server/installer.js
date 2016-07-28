@@ -57,7 +57,7 @@ const deletePackageInternal = (pkg) => {
     const notificationQuery = {};
     notificationQuery["appUpdates." + pkg.appId] = { $exists: true };
     if (!grain && !action && !(pkg.isAutoUpdated && Notifications.findOne(notificationQuery))
-        && !globalDb.isPackagePreinstalled(packageId)) {
+        && !globalDb.getAppIdForPreinstalledPackage(packageId)) {
       Packages.update({
         _id: packageId,
       }, {
@@ -390,7 +390,7 @@ AppInstaller = class AppInstaller {
         }
 
         if (_this.isPreinstalled) {
-          globalDb.setPreinstallAppAsReady(_this.appId);
+          globalDb.setPreinstallAppAsReady(_this.appId, _this.packageId);
         }
       });
     }).then(() => {

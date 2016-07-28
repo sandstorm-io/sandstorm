@@ -35,9 +35,10 @@ SandstormAutoupdateApps.updateAppIndex = function (db) {
     const oldApp = appIndex.findOne({ _id: app.appId });
     app.hasSentNotifications = false;
     appIndex.upsert({ _id: app._id }, app);
+    const isAppPreinstalled = _.contains(preinstalledAppIds, app.appId);
     if ((!oldApp || app.versionNumber > oldApp.versionNumber) &&
         (db.collections.userActions.findOne({ appId: app.appId }) ||
-         _.contains(preinstalledAppIds, app.appId))) {
+        isAppPreinstalled)) {
       const pack = db.collections.packages.findOne({ _id: app.packageId });
       const url = appIndexUrl + "/packages/" + app.packageId;
       if (pack) {
@@ -67,11 +68,11 @@ SandstormAutoupdateApps.updateAppIndex = function (db) {
             }
           } else if (newPack.status === "failed") {
             // If the package has failed, retry it
-            db.startInstall(app.packageId, url, true, true);
+            db.startInstall(app.packageId, url, true, true, isAppPreinstalled);
           }
         }
       } else {
-        db.startInstall(app.packageId, url, false, true);
+        db.startInstall(app.packageId, url, false, true, isAppPreinstalled);
       }
     }
   });

@@ -13,8 +13,12 @@ Template.newAdminPreinstalledApps.onCreated(function () {
     state: "edit", // Other allowed states: "submitting", "success", and "error"
     message: undefined,
   });
-  const preinstalledApps = globalDb.getSettingWithFallback("preinstalledApps", {});
-  this.preinstalledAppIds = new ReactiveVar(_.pluck(preinstalledApps, "appId"));
+  const preinstalledApps = globalDb.getSettingWithFallback("preinstalledApps", []);
+  const preinstalledAppAndPackgeIds = {};
+  preinstalledApps.forEach((row) => {
+    preinstalledAppAndPackgeIds[row.appId] = row.packageId;
+  });
+  this.preinstalledAppAndPackgeIds = new ReactiveVar(preinstalledAppAndPackgeIds);
   this.showAllApps = new ReactiveVar(false);
   this.appIndexSubscription = this.subscribe("appIndexAdmin");
   this.packageSubscription = this.subscribe("allPackages");
@@ -70,7 +74,7 @@ Template.newAdminPreinstalledApps.helpers({
 
   getRowData() {
     const instance = Template.instance();
-    this.preinstalledAppIds = instance.preinstalledAppIds;
+    this.preinstalledAppAndPackgeIds = instance.preinstalledAppAndPackgeIds;
     this.formChanged = instance.formChanged;
     return this;
   },
@@ -82,7 +86,7 @@ Template.newAdminPreinstalledApps.helpers({
 
 Template._appRow.helpers({
   isAppPreinstalled() {
-    return _.contains(this.preinstalledAppIds.get(), this.appId);
+    return !!this.preinstalledAppAndPackgeIds.get()[this.appId];
   },
 
   isAppDownloaded() {
@@ -120,13 +124,19 @@ Template.newAdminPreinstalledApps.events({
 
   "click .save"(evt) {
     const instance = Template.instance();
-    const preinstalledAppIds = instance.preinstalledAppIds.get();
+    const preinstalledAppAndPackgeIds = instance.preinstalledAppAndPackgeIds.get();
 
     instance.formState.set({
       state: "submitting",
       message: "",
     });
-    Meteor.call("setPreinstalledApps", preinstalledAppIds, (err) => {
+    const appAndPackageIdList = _.map(preinstalledAppAndPackgeIds, (val, key) => {
+      return {
+        appId: key,
+        packageId: val,
+      };
+    });
+    Meteor.call("setPreinstalledApps", appAndPackageIdList, (err) => {
       if (err) {
         instance.formState.set({
           state: "error",
@@ -134,8 +144,7 @@ Template.newAdminPreinstalledApps.events({
         });
       } else {
         let notYetInstalled = [];
-        preinstalledAppIds.forEach((appId) => {
-          const packageId = globalDb.collections.appIndex.findOne({ appId: appId }).packageId;
+        _.each(preinstalledAppAndPackgeIds, (packageId) => {
           const pack = globalDb.collections.packages.findOne({ _id: packageId });
           if (!pack || pack.status !== "ready") {
             notYetInstalled.push(packageId);
@@ -192,15 +201,14 @@ Template.newAdminPreinstalledApps.events({
 
 Template._appRow.events({
   "change input[name=installedApp]"(evt) {
-    const currentAppId = this.appId;
-    let preinstalledAppIds = this.preinstalledAppIds.get();
+    let preinstalledAppAndPackgeIds = this.preinstalledAppAndPackgeIds.get();
     if (evt.currentTarget.checked) {
-      preinstalledAppIds.push(currentAppId);
+      preinstalledAppAndPackgeIds[this.appId] = this.packageId;
     } else {
-      preinstalledAppIds = _.without(preinstalledAppIds, currentAppId);
+      delete preinstalledAppAndPackgeIds[this.appId];
     }
 
-    this.preinstalledAppIds.set(preinstalledAppIds);
+    this.preinstalledAppAndPackgeIds.set(preinstalledAppAndPackgeIds);
     this.formChanged.set(true);
   },
 });

@@ -399,11 +399,11 @@ Meteor.methods({
     return name;
   },
 
-  setPreinstalledApps: function (appIds) {
+  setPreinstalledApps: function (appAndPackageIds) {
     checkAuth();
-    check(appIds, [String]);
+    check(appAndPackageIds, [{ appId: String, packageId: String, }]);
 
-    this.connection.sandstormDb.setPreinstalledApps(appIds);
+    this.connection.sandstormDb.setPreinstalledApps(appAndPackageIds);
   },
 });
 

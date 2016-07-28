@@ -1676,7 +1676,7 @@ _.extend(SandstormDb.prototype, {
       { $set: { "value.$.status": "ready", "value.$.packageId": packageId } });
   },
 
-  ensureAppPreinstall: function (packageId, appId) {
+  ensureAppPreinstall: function (appId, packageId) {
     check(appId, String);
     const appIndexUrl = this.collections.settings.findOne({ _id: "appIndexUrl" }).value;
     const pack = this.collections.packages.findOne({ _id: packageId });
@@ -1727,7 +1727,7 @@ _.extend(SandstormDb.prototype, {
       }),
     }, });
     appAndPackageIds.forEach((data) => {
-      this.ensureAppPreinstall(data.packageId, data.appId);
+      this.ensureAppPreinstall(data.appId, data.packageId);
     });
   },
 });

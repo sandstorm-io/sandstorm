@@ -22,7 +22,6 @@ random
 
 iron:router
 sandstorm-accounts-packages
-email
 http
 browser-policy
 routepolicy

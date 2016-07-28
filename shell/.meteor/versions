@@ -29,7 +29,6 @@ ecmascript@0.4.5
 ecmascript-collections@0.1.6
 ecmascript-runtime@0.2.11
 ejson@1.0.12
-email@1.0.14
 fongandrew:find-and-modify@0.2.2
 fourseven:scss@3.4.3
 geojson-utils@1.0.9

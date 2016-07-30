@@ -784,6 +784,7 @@ private:
 #undef ON_EVENT
 
   static void parseETag(kj::StringPtr input, WebSession::ETag::Builder builder) {
+    // Apps sometimes send invalid ETag data. Rather than crash, we log a warning, due to #2295.
     auto trimmed = trim(input);
     input = trimmed;
     if (input.startsWith("W/")) {
@@ -791,8 +792,10 @@ private:
       builder.setWeak(true);
     }
 
-    KJ_REQUIRE(input.startsWith("\"") && input.endsWith("\"") && input.size() > 1,
-               "app returned invalid ETag header", input);
+    if (! (input.endsWith("\"") && input.size() > 1)) {
+      KJ_LOG(ERROR, "HTTP protocol error, dropping ETag: app returned invalid ETag header", input);
+      return;
+    }
 
     bool escaped = false;
     kj::Vector<char> result(input.size() - 2);
@@ -800,7 +803,10 @@ private:
       if (escaped) {
         escaped = false;
       } else {
-        KJ_REQUIRE(c != '"', "app returned invalid ETag header", input);
+        if (c == '"') {
+          KJ_LOG(ERROR, "HTTP protocol error, dropping ETag: app returned invalid ETag header", input);
+          return;
+        }
         if (c == '\\') {
           escaped = true;
           continue;

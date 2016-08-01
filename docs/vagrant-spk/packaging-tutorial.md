@@ -79,8 +79,8 @@ create the package.
 We'll use the `vagrant-spk` tool to create this directory.
 
 The purpose of `vagrant-spk` is to create a Linux system where Sandstorm and
-your app run successfully. It acts differently based on which [platform stack]
-(https://docs.sandstorm.io/en/latest/vagrant-spk/platform-stacks/)
+your app run successfully. It acts differently based on which 
+[platform stack](https://docs.sandstorm.io/en/latest/vagrant-spk/platform-stacks/)
 you want to use. In our case, we'll use the _lemp_ platform: Linux, nginx, MySQL,
 and PHP.
 

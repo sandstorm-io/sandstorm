@@ -294,10 +294,6 @@ module.exports["Test collections anonymous user"] = function (browser) {
         .click("table.grain-list-table>tbody tr:nth-child(1).grain .click-to-go")
         .frame(null)
 
-        // We get another login nag here.
-        .waitForElementVisible(".popup.login button.close-popup", short_wait)
-        .click(".popup.login button.close-popup")
-
         .grainFrame(grainIdB)
         .waitForElementVisible(".description-row p", short_wait)
         .assert.containsText(".description-row p", "This is Collection B")

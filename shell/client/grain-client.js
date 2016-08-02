@@ -1802,7 +1802,7 @@ Router.map(function () {
                 grainToOpen.revealIdentity(identityChosenByLogin);
               }
 
-              if (!Meteor.userId()) {
+              if (!Meteor.userId() && globalGrains.getAll().length <= 1) {
                 // Suggest to the user that they log in by opening the login menu.
                 globalTopbar.openPopup("login");
               }

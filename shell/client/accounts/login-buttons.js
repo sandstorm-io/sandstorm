@@ -72,8 +72,19 @@ function getActiveIdentityId(grains) {
 
 Template.accountButtons.helpers({
   displayName: function () {
+    if (Meteor.user() && !Meteor.user().loginIdentities && !Meteor.user().profile) {
+      // Need to wait for resume token to complete login. For some reason, `Meteor.loggingIn()`
+      // is still false in this case.
+      return "Loading...";
+    }
+
     const currentIdentityId = getActiveIdentityId(this.grains);
     const user = Meteor.users.findOne({ _id: currentIdentityId });
+    if (currentIdentityId && !user) {
+      // Need to wait for the `identityProfile` subscription to be ready.
+      return "Loading...";
+    }
+
     if (!user) return "(incognito)";
 
     SandstormDb.fillInProfileDefaults(user);

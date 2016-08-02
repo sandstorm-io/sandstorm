@@ -17,9 +17,15 @@
 // A collection of some global variables used in multiple places.
 
 import { Meteor } from "meteor/meteor";
+import Url from "url";
 
 const SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
 const SANDSTORM_LOGDIR = (SANDSTORM_ALTHOME || "") + "/var/log";
 const SANDSTORM_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandstorm";
 
-export { SANDSTORM_ALTHOME, SANDSTORM_LOGDIR, SANDSTORM_VARDIR };
+// TODO: dedupe this and the equivalent copy in sandstorm-db
+const wildcardHost = Meteor.settings.public.wildcardHost.toLowerCase().split("*");
+
+const staticAssetHost = `${Url.parse(process.env.ROOT_URL).protocol}//${wildcardHost[0]}static${wildcardHost[1]}`;
+
+export { SANDSTORM_ALTHOME, SANDSTORM_LOGDIR, SANDSTORM_VARDIR, staticAssetHost };

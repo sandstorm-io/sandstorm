@@ -37,9 +37,7 @@ BrowserPolicy.framing.disallow();  // Disallow framing of the UI.
 BrowserPolicy.content.allowFrameOrigin(getWildcardOrigin());
 
 // Allow anything to be loaded from the static asset host.
-const Url = Npm.require("url");
-const staticAssetHost = Url.parse(process.env.ROOT_URL).protocol + "//" +
-                        globalDb.makeWildcardHost("static");
+import { staticAssetHost } from "/imports/server/constants.js";
 BrowserPolicy.content.allowImageOrigin(staticAssetHost);
 BrowserPolicy.content.allowScriptOrigin(staticAssetHost);
 BrowserPolicy.content.allowFontOrigin(staticAssetHost);

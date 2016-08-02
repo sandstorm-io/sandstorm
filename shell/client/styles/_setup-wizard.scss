@@ -225,6 +225,8 @@
 
 .setup-preinstall {
   [role=grid] {
+    margin-bottom: 10px;
+
     [role=row] {
       display: flex;
       flex-direction: row;

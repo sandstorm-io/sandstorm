@@ -703,7 +703,7 @@ Template.setupWizardPreinstalled.helpers({
 
   isAppDownloading() {
     const pack = globalDb.collections.packages.findOne({ _id: this.packageId });
-    return pack && pack.status === "download";
+    return pack && _.contains(["verify", "unpack", "analyze", "download"], pack.status);
   },
 
   isAppFailed() {
@@ -713,6 +713,11 @@ Template.setupWizardPreinstalled.helpers({
 
   progressFraction() {
     const pack = globalDb.collections.packages.findOne({ _id: this.packageId });
+    if (_.contains(["verify", "unpack", "analyze"], pack.status)) {
+      // Downloading is done
+      return 1;
+    }
+
     return pack && pack.progress;
   },
 });

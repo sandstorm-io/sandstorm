@@ -91,7 +91,7 @@ Template._appRow.helpers({
 
   isAppDownloading() {
     const pack = globalDb.collections.packages.findOne({ _id: this.packageId });
-    return pack && pack.status === "download";
+    return pack && _.contains(["verify", "unpack", "analyze", "download"], pack.status);
   },
 
   isAppFailed() {
@@ -101,6 +101,11 @@ Template._appRow.helpers({
 
   progressFraction() {
     const pack = globalDb.collections.packages.findOne({ _id: this.packageId });
+    if (_.contains(["verify", "unpack", "analyze"], pack.status)) {
+      // Downloading is done
+      return 1;
+    }
+
     return pack && pack.progress;
   },
 });
@@ -162,7 +167,7 @@ Template.newAdminPreinstalledApps.events({
                 } else if (pack.status === "ready") {
                   progress += 1;
                   ready += 1;
-                } else if (_.contains["verify", "unpack", "analyze"], pack.status) {
+                } else if (_.contains(["verify", "unpack", "analyze"], pack.status)) {
                   // This means it's stuck on analyzing/unpacking/verifying
                   progress += 1;
                 }

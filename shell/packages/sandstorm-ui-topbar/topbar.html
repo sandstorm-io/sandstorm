@@ -33,8 +33,10 @@ limitations under the License.
       {{/each}}
     </ul>
     <ul class="navbar {{#if hideNavbar}}hide-desktop{{else}}{{#if shrinkNavbar}}shrink-desktop{{/if}}{{/if}}">
+      {{#if currentUser}}
       <li class="navitem-create-grain {{#if isCurrentRoute 'apps'}}current{{/if}}"><a href="{{pathFor route='apps'}}">Apps</a></li>
       <li class="navitem-open-grain {{#if isCurrentRoute 'grains'}}current{{/if}}"><a href="{{pathFor route='grains'}}"><span>Grains</span></a></li>
+      {{/if}}
 
       <li class="navbar-shrink-item">
         <button class="navbar-shrink icon icon-arrow {{#if shrinkNavbar}}shrunk{{/if}}"

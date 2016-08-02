@@ -605,7 +605,7 @@ credentialsSubscription = Meteor.subscribe("credentials");
 Template.registerHelper("dateString", makeDateString);
 Template.registerHelper("hideNavbar", function () {
   // Hide navbar if user is not logged in, since they can't go anywhere with it.
-  return !Meteor.userId() || isDemoExpired();
+  return (!Meteor.userId() && globalGrains.getAll().length <= 1) || isDemoExpired();
 });
 
 Template.registerHelper("shrinkNavbar", function () {

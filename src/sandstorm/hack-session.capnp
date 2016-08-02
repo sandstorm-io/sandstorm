@@ -88,13 +88,9 @@ interface HackSessionContext @0xe14c1f5321159b8f
     userInfo @2 :Identity.UserInfo;
   }
 
-  getIpNetwork @6 () -> (network: Ip.IpNetwork);
-  # Returns an IpNetwork for unrestricted outgoing network access. If the owner of the grain
-  # calling this is not an admin, then this will raise an exception
-
-  getIpInterface @7 () -> (interface: Ip.IpInterface);
-  # Returns an IpNetwork for unrestricted incoming network access. If the owner of the grain
-  # calling this is not an admin, then this will raise an exception
+  obsoleteGetIpNetwork @6 () -> (network: Ip.IpNetwork);
+  obsoleteGetIpInterface @7 () -> (interface: Ip.IpInterface);
+  # OBSOLETE. Apps that need IpNetwork or IpInterface should use the powerbox.
 }
 
 interface HackEmailSession @0xc3b5ced7344b04a6 extends(Grain.UiSession, Email.EmailSendPort) {

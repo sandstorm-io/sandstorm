@@ -1616,6 +1616,68 @@ _.extend(SandstormDb.prototype, {
     ActivitySubscriptions.upsert(record, { $set: { mute: true } });
   },
 
+  updateAppIndex: function () {
+    const appUpdatesEnabledSetting = this.collections.settings.findOne({ _id: "appUpdatesEnabled" });
+    const appUpdatesEnabled = appUpdatesEnabledSetting && appUpdatesEnabledSetting.value;
+    if (!appUpdatesEnabled) {
+      // It's much simpler to check appUpdatesEnabled here rather than reactively deactivate the
+      // timer that triggers this call.
+      return;
+    }
+
+    const appIndexUrl = this.collections.settings.findOne({ _id: "appIndexUrl" }).value;
+    const appIndex = this.collections.appIndex;
+    const data = HTTP.get(appIndexUrl + "/apps/index.json").data;
+    const preinstalledAppIds = this.getPreinstalledAppIds();
+    data.apps.forEach((app) => {
+      app._id = app.appId;
+
+      const oldApp = appIndex.findOne({ _id: app.appId });
+      app.hasSentNotifications = false;
+      appIndex.upsert({ _id: app._id }, app);
+      const isAppPreinstalled = _.contains(preinstalledAppIds, app.appId);
+      if ((!oldApp || app.versionNumber > oldApp.versionNumber) &&
+          (this.collections.userActions.findOne({ appId: app.appId }) ||
+          isAppPreinstalled)) {
+        const pack = this.collections.packages.findOne({ _id: app.packageId });
+        const url = appIndexUrl + "/packages/" + app.packageId;
+        if (pack) {
+          if (pack.status === "ready") {
+            if (pack.appId && pack.appId !== app.appId) {
+              console.error("app index returned app ID and package ID that don't match:",
+                            JSON.stringify(app));
+            } else {
+              this.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber,
+                app.version);
+            }
+          } else {
+            const newPack = Packages.findAndModify({
+              query: { _id: app.packageId },
+              update: { $set: { isAutoUpdated: true } },
+            });
+            if (newPack.status === "ready") {
+              // The package was marked as ready before we applied isAutoUpdated=true. We should send
+              // notifications ourselves to be sure there's no timing issue (sending more than one is
+              // fine, since it will de-dupe).
+              if (pack.appId && pack.appId !== app.appId) {
+                console.error("app index returned app ID and package ID that don't match:",
+                              JSON.stringify(app));
+              } else {
+                this.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber,
+                  app.version);
+              }
+            } else if (newPack.status === "failed") {
+              // If the package has failed, retry it
+              this.startInstall(app.packageId, url, true, true, isAppPreinstalled);
+            }
+          }
+        } else {
+          this.startInstall(app.packageId, url, false, true, isAppPreinstalled);
+        }
+      }
+    });
+  },
+
   getAppIdForPreinstalledPackage: function (packageId) {
     const setting = Settings.findOne({ _id: "preinstalledApps", "value.packageId": packageId },
     { fields: { "value.$": 1 } });

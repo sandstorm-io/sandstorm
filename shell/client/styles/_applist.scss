@@ -99,7 +99,7 @@
     }
   }
   >.app-button, >.popular-container>.app-button {
-    @extend %unstyled-button;
+    @include unstyled-button();
     float: left;
     display: block;
     // Browsers render button contents vertically-centered by default.
@@ -195,7 +195,7 @@
       }
     }
     %apptext {
-      @extend %overflow-ellipsis;
+      @include overflow-ellipsis();
       position: absolute;
       left: 0px;
       width: 100%;

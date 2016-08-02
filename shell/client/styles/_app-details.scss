@@ -173,7 +173,7 @@
             font-weight: 600;
           }
           >button.show-authorship-button {
-            @extend %unstyled-button;
+            @include unstyled-button();
             padding-left: 8px;
             padding-right: 24px;
 

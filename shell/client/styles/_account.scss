@@ -180,7 +180,7 @@ body>.popup.account>.frame-container {
     background-position: 16px 0px;
     height: auto;
     button.unexpand {
-      @extend %unstyled-button;
+      @include unstyled-button();
     }
     &:hover {
       background-image: url("/debug-m.svg");
@@ -276,7 +276,7 @@ body>.popup.account>.frame-container {
       text-indent: 0;
 
       button {
-        @extend %unstyled-button;
+        @include unstyled-button();
         border: 1px solid #9e9e9e;
         border-radius: 3px;
         line-height: normal;
@@ -515,10 +515,10 @@ body>.main-content>.account {
         }
 
         .make-login {
-          @extend %unstyled-button;
+          @include unstyled-button();
         }
         .make-no-login {
-          @extend %unstyled-button;
+          @include unstyled-button();
         }
       }
     }
@@ -1128,7 +1128,7 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
   }
 
   button.continue, button.subscribe {
-    @extend %unstyled-button;
+    @include unstyled-button();
 
     display: table;
     margin: 16px auto 64px;
@@ -1543,7 +1543,7 @@ ul.identity-card-list {
   li {
     list-style-type: none;
     button {
-      @extend %unstyled-button;
+      @include unstyled-button();
       border: 1px solid black;
     }
     &.current-identity>button {

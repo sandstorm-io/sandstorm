@@ -8,6 +8,9 @@ const Future = Npm.require("fibers/future");
 const Url = Npm.require("url");
 const Crypto = Npm.require("crypto");
 
+const localSandstormDb = new SandstormDb();
+// TODO(someday): fix this when SandstormDb actually stores meaningful state on the object.
+
 const updateLoginStyleToRedirect = function () {
   const configurations = Package["service-configuration"].ServiceConfiguration.configurations;
   ["google", "github"].forEach(function (serviceName) {
@@ -637,6 +640,30 @@ function assignEmailVerifierIds() {
   });
 }
 
+function startPreinstallingApps() {
+  // This isn't really a normal migration. It will run only on brand new servers, and it has to
+  // run after the `clearAppIndex` migration because it relies on populating AppIndex.
+
+  const startPreinstallingAppsHelper = function () {
+    localSandstormDb.updateAppIndex();
+
+    const preinstalledApps = globalDb.collections.appIndex.find({ _id: {
+      $in: globalDb.getProductivitySuiteAppIds(), },
+    }).fetch();
+    const appAndPackageIds = _.map(preinstalledApps, (app) => {
+      return {
+        appId: app.appId,
+        packageId: app.packageId,
+      };
+    });
+
+    localSandstormDb.setPreinstalledApps(appAndPackageIds);
+  };
+
+  // We want preinstalling apps to run async and not block startup.
+  Meteor.setTimeout(startPreinstallingAppsHelper, 0);
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -672,6 +699,10 @@ const MIGRATIONS = [
   assignEmailVerifierIds,
 ];
 
+const NEW_SERVER_STARTUP = [
+  startPreinstallingApps,
+];
+
 function migrateToLatest() {
   if (Meteor.settings.replicaNumber) {
     // This is a replica. Wait for the first replica to perform migrations.
@@ -695,12 +726,14 @@ function migrateToLatest() {
 
   } else {
     const applied = Migrations.findOne({ _id: "migrations_applied" });
+    let isNewServer = false;
     let start;
     if (!applied) {
       // Migrations table is not yet seeded with a value.  This means it has
       // applied 0 migrations.  Persist this.
       Migrations.insert({ _id: "migrations_applied", value: 0 });
       start = 0;
+      isNewServer = true;
     } else {
       start = applied.value;
     }
@@ -713,6 +746,14 @@ function migrateToLatest() {
       MIGRATIONS[i]();
       Migrations.update({ _id: "migrations_applied" }, { $set: { value: i + 1 } });
       console.log("Applied migration " + (i + 1));
+    }
+
+    if (isNewServer) {
+      for (i = start; i < NEW_SERVER_STARTUP.length; i++) {
+        console.log("Running new server startup function " + (i + 1));
+        NEW_SERVER_STARTUP[i]();
+        console.log("Running new server startup function " + (i + 1));
+      }
     }
   }
 }

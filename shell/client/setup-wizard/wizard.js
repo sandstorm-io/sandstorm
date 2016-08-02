@@ -6,8 +6,16 @@ HasAdmin = new Mongo.Collection("hasAdmin");
 
 const AdminToken = new Mongo.Collection("adminToken"); // see Meteor.publish("adminToken")
 
-const setupSteps = ["intro", "identity", "email", "user", "success"];
-const setupStepsForWork = ["intro", "identity", "organization", "email", "user", "success"];
+const setupSteps = ["intro", "identity", "email", "preinstalled", "user", "success"];
+const setupStepsForWork = [
+  "intro",
+  "identity",
+  "organization",
+  "email",
+  "preinstalled",
+  "user",
+  "success",
+];
 
 // Combined with the list of steps above to DRY up the ordering.
 const setupStepRouteMap = {
@@ -15,6 +23,7 @@ const setupStepRouteMap = {
   identity: "setupWizardIdentity",
   organization: "setupWizardOrganization",
   email: "setupWizardEmailConfig",
+  preinstalled: "setupWizardPreinstalled",
   user: "setupWizardLoginUser",
   success: "setupWizardSuccess",
 };
@@ -56,6 +65,10 @@ const setupIsStepCompleted = {
     } else {
       return true;
     }
+  },
+
+  preinstalled() {
+    return globalDb.isPreinstalledAppsReady();
   },
 
   user() {
@@ -632,6 +645,78 @@ Template.setupWizardEmailConfig.helpers({
   },
 });
 
+Template.setupWizardPreinstalled.onCreated(function () {
+  this.appIndexSubscription = this.subscribe("appIndexAdmin",
+    Iron.controller().state.get("token"));
+  this.packageSubscription = this.subscribe("allPackages",
+    Iron.controller().state.get("token"));
+});
+
+Template.setupWizardPreinstalled.events({
+  "click .setup-back-button": function (ev, instance) {
+    Router.go(getRouteBefore("preinstalled"));
+  },
+
+  "click .setup-next-button": function (ev, instance) {
+    // Actually do nothing, since apps are already pre-installed and ready
+    Router.go(getRouteAfter("preinstalled"));
+  },
+
+  "click .setup-skip-button": function (ev, instance) {
+    Meteor.call("setPreinstalledApps", []);
+    // Overwrite the default setting for "setPreinstalledApps"
+    Router.go(getRouteAfter("preinstalled"));
+  },
+});
+
+Template.setupWizardPreinstalled.helpers({
+  allowNext() {
+    return globalDb.isPreinstalledAppsReady();
+  },
+
+  allowSkip() {
+    const instance = Template.instance();
+    const apps = globalDb.collections.appIndex.find({ _id: {
+      $in: globalDb.getProductivitySuiteAppIds(), },
+    }).fetch();
+    const appIndexCount = globalDb.collections.appIndex.find({}).count();
+    const failedAppsCount = globalDb.collections.packages.find({
+      _id: {
+        $in: _.pluck(apps, "packageId"),
+      },
+      status: "failed",
+    }).count();
+    return (instance.appIndexSubscription.ready() && appIndexCount === 0) ||
+      failedAppsCount !== 0;
+  },
+
+  productivityApps() {
+    return globalDb.collections.appIndex.find({ _id: {
+      $in: globalDb.getProductivitySuiteAppIds(), },
+    }, { sort: { name: 1 } });
+  },
+
+  isAppDownloaded() {
+    const pack = globalDb.collections.packages.findOne({ _id: this.packageId });
+    return pack && pack.status === "ready";
+  },
+
+  isAppDownloading() {
+    const pack = globalDb.collections.packages.findOne({ _id: this.packageId });
+    return pack && pack.status === "download";
+  },
+
+  isAppFailed() {
+    const pack = globalDb.collections.packages.findOne({ _id: this.packageId });
+    return pack && pack.status === "failed";
+  },
+
+  progressFraction() {
+    const pack = globalDb.collections.packages.findOne({ _id: this.packageId });
+    return pack && pack.progress;
+  },
+});
+
 Template.setupWizardLoginUser.onCreated(function () {
   this.triedRedeemingToken = false;
   this.errorMessage = new ReactiveVar(undefined);
@@ -855,6 +940,11 @@ Router.map(function () {
   });
   this.route("setupWizardEmailConfig", {
     path: "/setup/email",
+    layoutTemplate: "setupWizardLayout",
+    controller: setupRoute,
+  });
+  this.route("setupWizardPreinstalled", {
+    path: "/setup/preinstalled",
     layoutTemplate: "setupWizardLayout",
     controller: setupRoute,
   });

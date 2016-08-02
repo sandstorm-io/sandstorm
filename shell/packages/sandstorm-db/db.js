@@ -1792,6 +1792,35 @@ _.extend(SandstormDb.prototype, {
       this.ensureAppPreinstall(data.appId, data.packageId);
     });
   },
+
+  getProductivitySuiteAppIds: function () {
+    return [
+      "8aspz4sfjnp8u89000mh2v1xrdyx97ytn8hq71mdzv4p4d8n0n3h", // Davros
+      "h37dm17aa89yrd8zuqpdn36p6zntumtv08fjpu8a8zrte7q1cn60", // Etherpad
+      "vfnwptfn02ty21w715snyyczw0nqxkv3jvawcah10c6z7hj1hnu0", // Rocket.Chat
+      "m86q05rdvj14yvn78ghaxynqz7u2svw6rnttptxx49g1785cdv1h", // Wekan
+    ];
+  },
+
+  getSystemSuiteAppIds: function () {
+    return [];
+  },
+
+  isPreinstalledAppsReady: function () {
+    const setting = Settings.findOne({ _id: "preinstalledApps" });
+    if (!setting || !setting.value) {
+      return true;
+    }
+
+    const packageIds = _.pluck(setting.value, "packageId");
+    const readyApps = this.collections.packages.find({
+      _id: {
+        $in: packageIds,
+      },
+      status: "ready",
+    });
+    return readyApps.count() === packageIds.length;
+  },
 });
 
 SandstormDb.escapeMongoKey = (key) => {

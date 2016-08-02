@@ -1,10 +1,3 @@
-const PRODUCTIVITY_APP_IDS = [
-  "8aspz4sfjnp8u89000mh2v1xrdyx97ytn8hq71mdzv4p4d8n0n3h", // Davros
-  "h37dm17aa89yrd8zuqpdn36p6zntumtv08fjpu8a8zrte7q1cn60", // Etherpad
-  "vfnwptfn02ty21w715snyyczw0nqxkv3jvawcah10c6z7hj1hnu0", // Rocket.Chat
-  "m86q05rdvj14yvn78ghaxynqz7u2svw6rnttptxx49g1785cdv1h", // Wekan
-];
-const SYSTEM_APP_IDS = [];
 const APP_LIMIT = 10;
 
 Template.newAdminPreinstalledApps.onCreated(function () {
@@ -46,13 +39,15 @@ Template.newAdminPreinstalledApps.helpers({
   },
 
   productivityApps() {
-    return globalDb.collections.appIndex.find({ _id: { $in: PRODUCTIVITY_APP_IDS } },
-      { sort: { name: 1 } });
+    return globalDb.collections.appIndex.find({ _id: {
+      $in: globalDb.getProductivitySuiteAppIds(), },
+    }, { sort: { name: 1 } });
   },
 
   systemApps() {
-    return globalDb.collections.appIndex.find({ _id: { $in: SYSTEM_APP_IDS } },
-      { sort: { name: 1 } });
+    return globalDb.collections.appIndex.find({ _id: {
+      $in: globalDb.getSystemSuiteAppIds(), },
+    }, { sort: { name: 1 } });
   },
 
   allApps() {

@@ -66,13 +66,22 @@
       Set up email
     {{/setupWizardProgressBarItem}}
 
+    {{#setupWizardProgressBarItem stepName="preinstalled"
+                                   isCurrentStep=(currentStepIs "preinstalled")
+                                   mayJumpTo=(mayJumpTo "preinstalled")
+                                   route="setupWizardPreinstalled"
+                                   className=itemClassName
+                                   }}
+      Pre-installed Apps
+    {{/setupWizardProgressBarItem}}
+
     {{#setupWizardProgressBarItem stepName="user"
                                    isCurrentStep=(currentStepIs "user")
                                    mayJumpTo=(mayJumpTo "user")
                                    route="setupWizardLoginUser"
                                    className=itemClassName
                                    }}
-      Create admin account
+      Admin account
     {{/setupWizardProgressBarItem}}
   </ol>
   <div class="setup-progress-bar">
@@ -81,6 +90,7 @@
     <div class="{{#if currentStepAtOrPast "organization"}}complete{{else}}incomplete{{/if}}"></div>
     {{/if}}
     <div class="{{#if currentStepAtOrPast "email"       }}complete{{else}}incomplete{{/if}}"></div>
+    <div class="{{#if currentStepAtOrPast "preinstalled"       }}complete{{else}}incomplete{{/if}}"></div>
     <div class="{{#if currentStepAtOrPast "user"        }}complete{{else}}incomplete{{/if}}"></div>
     <div class="{{#if currentStepAtOrPast "success"     }}complete{{else}}incomplete{{/if}}"></div>
   </div>
@@ -463,6 +473,56 @@
     <button class="setup-test-email-button" {{testHtmlDisabled}}>
       Test
     </button>
+    <button class="setup-back-button">
+      Back
+    </button>
+  {{/setupWizardButtonRow}}
+</div>
+</template>
+
+<template name="setupWizardPreinstalled">
+<div class="setup-page-content setup-preinstall">
+  <h1 class="setup-page-title">Pre-installed Apps Setup</h1>
+  {{> setupWizardProgressBar currentStep="preinstalled"}}
+
+  <p>
+    Please wait while Sandstorm installs the following Productivity Suite apps that are useful for most users. You will be able to configure all pre-installed apps in the Admin Settings panel after setup.
+  </p>
+  {{#if Template.subscriptionsReady}}
+  <div class="productivity-suite" role="grid">
+    <div role="rowgroup">
+      {{#each productivityApps}}
+        <div role="row" class="{{#if isAppPreinstalled}}checked{{/if}}">
+          <div class="name" role="gridcell">{{name}}</div>
+          <div class="description" role="gridcell">{{shortDescription}}</div>
+          <div class="download" role="gridcell">
+            {{#if isAppDownloaded}}
+              <i class="download-checkmark"></i>Downloaded
+            {{else}}{{#if isAppDownloading}}
+              <progress value="{{progressFraction}}"></progress>
+            {{else}}{{#if isAppFailed}}
+              <i class="download-x-mark"></i>Failed
+            {{/if}}
+            {{/if}}
+            {{/if}}
+          </div>
+        </div>
+      {{/each}}
+    </div>
+  </div>
+  {{else}}
+    <h2>Please wait, loading app index...</h2>
+  {{/if}}
+
+  {{#setupWizardButtonRow}}
+    <button class="setup-next-button" disabled="{{#unless allowNext}}true{{/unless}}">
+      Next
+    </button>
+    {{#if allowSkip}}
+    <button class="setup-skip-button">
+      Skip for now
+    </button>
+    {{/if}}
     <button class="setup-back-button">
       Back
     </button>

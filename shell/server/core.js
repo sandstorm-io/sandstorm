@@ -319,6 +319,42 @@ Meteor.methods({
 
     Notifications.update({ userId: Meteor.userId() }, { $set: { isUnread: false } }, { multi: true });
   },
+
+  acceptPowerboxOffer(sessionId, sturdyRef) {
+    const db = this.connection.sandstormDb;
+    check(sessionId, String);
+    check(sturdyRef, String);
+
+    const session = db.collections.sessions.findOne(
+        { _id: sessionId, userId: this.userId || { $exists: false } });
+    if (!session) {
+      throw new Meteor.Error(403, "Invalid session ID");
+    }
+
+    const tokenId = hashSturdyRef(sturdyRef);
+    const apiToken = db.collections.apiTokens.findOne({
+      _id: tokenId,
+      "owner.clientPowerboxOffer.sessionId": sessionId,
+    });
+
+    if (!apiToken) {
+      throw new Meteor.Error(404, "No such token.");
+    }
+
+    const cap = restoreInternal(
+      new Buffer(sturdyRef),
+      { clientPowerboxOffer: { sessionId } },
+      [],
+      apiToken).cap;
+
+    const owner = { webkey: null };
+
+    const castedCap = cap.castAs(SystemPersistent);
+    const result = waitPromise(castedCap.save(owner)).sturdyRef.toString();
+    db.removeApiTokens({ _id: tokenId });
+    return result;
+  },
+
 });
 
 const makeSaveTemplateForChild = function (parentToken, requirements, parentTokenInfo) {
@@ -339,8 +375,10 @@ const makeSaveTemplateForChild = function (parentToken, requirements, parentToke
     throw new Error("no such token");
   }
 
+  const parentOwner = parentTokenInfo.owner || {};
+
   let saveTemplate;
-  if ((parentTokenInfo.owner || {}).clientPowerboxRequest) {
+  if (parentOwner.clientPowerboxRequest || parentOwner.clientPowerboxOffer) {
     // Saving this token should make a copy of the restored token, rather than make a child
     // token.
 

@@ -186,7 +186,9 @@ class RequirementSet {
 
   constructor() {
     this.permissionsHeldRequirements = {};
-    // Two-level map. Maps a pair of a grain ID and an identity ID to a PermissionSet.
+    // Map from grain ID to objects of the form { identities, tokens }, where `identities` is a
+    // map from identity ID to PermissionSet and `tokens` is a map from token ID to PermissionSet.
+    // Represents a set of `permissionsHeld` requirements.
 
     this.userIsAdminRequirements = {};
     // Map from account ID to boolean. Represents a set of `userIsAdmin` requirements.
@@ -217,10 +219,32 @@ class RequirementSet {
     requirements.forEach((requirement) => {
       if (requirement.permissionsHeld) {
         const grainId = requirement.permissionsHeld.grainId;
-        const identityId = requirement.permissionsHeld.identityId;
         const permissions = new PermissionSet(requirement.permissionsHeld.permissions);
-        this._ensureEntryExists(grainId, identityId);
-        this.permissionsHeldRequirements[grainId][identityId].add(permissions);
+
+        if (!this.permissionsHeldRequirements[grainId]) {
+          this.permissionsHeldRequirements[grainId] = { identities: {}, tokens: {}, };
+        }
+
+        const grainReqs = this.permissionsHeldRequirements[grainId];
+
+        if (requirement.permissionsHeld.identityId) {
+          const identityId = requirement.permissionsHeld.identityId;
+          if (!grainReqs.identities[identityId]) {
+            grainReqs.identities[identityId] = new PermissionSet([]);
+          }
+
+          grainReqs.identities[identityId].add(permissions);
+        } else if (requirement.permissionsHeld.tokenId) {
+          const tokenId = requirement.permissionsHeld.tokenId;
+          if (!grainReqs.tokens[tokenId]) {
+            grainReqs.tokens[tokenId] = new PermissionSet([]);
+          }
+
+          grainReqs.tokens[tokenId].add(permissions);
+
+        } else {
+          throw new Error("unrecognized permissionsHeld requirement", JSON.stringify(requirement));
+        }
       } else if (requirement.userIsAdmin) {
         this.userIsAdminRequirements[requirement.userIsAdmin] = true;
       } else if (requirement.tokenValid) {
@@ -229,19 +253,6 @@ class RequirementSet {
         throw new Error("unsupported requirement: " + JSON.toString(requirement));
       }
     });
-  }
-
-  _ensureEntryExists(grainId, identityId) {
-    check(grainId, String);
-    check(identityId, String);
-
-    if (!this.permissionsHeldRequirements[grainId]) {
-      this.permissionsHeldRequirements[grainId] = {};
-    }
-
-    if (!this.permissionsHeldRequirements[grainId][identityId]) {
-      this.permissionsHeldRequirements[grainId][identityId] = new PermissionSet([]);
-    }
   }
 
   getGrainIds() {
@@ -262,15 +273,14 @@ class RequirementSet {
     }
 
     for (const grainId in this.permissionsHeldRequirements) {
-      for (const identityId in this.permissionsHeldRequirements[grainId]) {
-        const permissions = this.permissionsHeldRequirements[grainId][identityId];
-        func({
-          permissionsHeld: {
-            grainId: grainId,
-            identityId: identityId,
-            permissionSet: permissions,
-          },
-        });
+      for (const identityId in this.permissionsHeldRequirements[grainId].identities) {
+        const permissionSet = this.permissionsHeldRequirements[grainId].identities[identityId];
+        func({ permissionsHeld: { grainId, identityId, permissionSet }, });
+      }
+
+      for (const tokenId in this.permissionsHeldRequirements[grainId].tokens) {
+        const permissionSet = this.permissionsHeldRequirements[grainId].tokens[tokenId];
+        func({ permissionsHeld: { grainId, tokenId, permissionSet }, });
       }
     }
   }
@@ -297,7 +307,7 @@ function forEachPermission(permissions, func) {
 // or "t:" + a token ID. In some limited contexts, "o:Owner" is also allowed, signifying the
 // *account* of the grain owner, from which all permissions flow.
 
-function vertexIdOfTokenOwner(token) {
+const vertexIdOfTokenOwner = function (token) {
   // Returns which vertex recieves permissions from this token.
 
   let result = "t:" + token._id;  // the bearer of the token
@@ -306,7 +316,17 @@ function vertexIdOfTokenOwner(token) {
   }
 
   return result;
-}
+};
+
+const vertexIdOfPermissionsHeld = function (held) {
+  if (held.identityId) {
+    return "i:" + held.identityId;
+  } else if (held.tokenId) {
+    return "t:" + held.tokenId;
+  } else {
+    throw new Error("Unrecognized permissionsHeld: " + JSON.stringify(held));
+  }
+};
 
 class Variable {
   // Our permissions computation can be framed as a propositional HORNSAT problem; this `Variable`
@@ -564,7 +584,7 @@ class Context {
       requirements.forEach((requirement) => {
         if (requirement.permissionsHeld) {
           const reqGrainId = requirement.permissionsHeld.grainId;
-          const reqVertexId = "i:" + requirement.permissionsHeld.identityId;
+          const reqVertexId = vertexIdOfPermissionsHeld(requirement.permissionsHeld);
           const reqPermissions = requirement.permissionsHeld.permissions || [];
 
           forEachPermission(reqPermissions, (permissionId) => {
@@ -830,12 +850,13 @@ class Context {
     oldUnmetRequirements.forEach((req) => {
       if (req.permissionsHeld) {
         let next = req.permissionsHeld;
+        let nextVertexId = vertexIdOfPermissionsHeld(next);
         // Activate all tokens relevant to this requirement.
         // TODO(perf): We're actually overestimating, because we're activating tokens relevant to
         //   *all* permissions rather than just the permissions specified by the requirement. E.g.
         //   if the requirement is that Bob has write access, then tokens which only transmit read
         //   access are not relevant, but we'll end up activating them anyway.
-        if (this.activateRelevantTokens(next.grainId, "i:" + next.identityId)) {
+        if (this.activateRelevantTokens(next.grainId, nextVertexId)) {
           result = true;
         }
       } else if (req.tokenValid) {
@@ -979,7 +1000,8 @@ class Context {
           if (token.requirements) {
             token.requirements.forEach((requirement) => {
               if (requirement.permissionsHeld) {
-                const reqVertexId = "i:" + requirement.permissionsHeld.identityId;
+                const held = requirement.permissionsHeld;
+                const reqVertexId = held.identityId ? "i:" + held.identityId : "t:" + held.tokenId;
                 forEachPermission(requirement.permissionsHeld.permissions, (permissionId) => {
                   pushVertex(requirement.permissionsHeld.grainId, reqVertexId, permissionId);
                 });
@@ -1574,11 +1596,14 @@ SandstormPermissions.cleanupSelfDestructing = function (db) {
   };
 };
 
-SandstormPermissions.cleanupClientPowerboxRequests = function (db) {
+SandstormPermissions.cleanupClientPowerboxTokens = function (db) {
   return function () {
     const tenMinutesAgo = new Date(Date.now() - 1000 * 60 * 10);
     db.removeApiTokens({
-      "owner.clientPowerboxRequest": { $exists: true },
+      $or: [
+        { "owner.clientPowerboxRequest": { $exists: true } },
+        { "owner.clientPowerboxOffer": { $exists: true } },
+      ],
       created: { $lt: tenMinutesAgo },
     });
   };

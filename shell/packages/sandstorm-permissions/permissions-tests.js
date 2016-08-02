@@ -806,3 +806,32 @@ Tinytest.add("permissions: collections app basic requirements", function (test) 
   test.isTrue(bob.mayOpenGrain(collectionGrain));
   test.isTrue(bob.mayOpenGrain(otherGrain));
 });
+
+Tinytest.add("permissions: permissionsHeld with tokenId", function (test) {
+  const alice = new Identity(globalDb);
+  const aliceAccount = new Account(globalDb, [alice], false);
+  const bob = new Identity(globalDb);
+  const grain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+
+  const webkey = alice.shareToWebkey(grain, { allAccess: null });
+
+  test.isTrue(webkey.mayOpenGrain(grain));
+
+  alice.shareToIdentity(grain, bob, { allAccess: null },
+                        [
+                          {
+                            permissionsHeld: {
+                              permissions: [],
+                              tokenId: webkey.hashedToken,
+                              grainId: grain.id,
+                            },
+                          },
+                        ]
+                       );
+
+  test.isTrue(bob.mayOpenGrain(grain));
+
+  globalDb.collections.apiTokens.update(webkey.hashedToken, { $set: { revoked: true } });
+
+  test.isFalse(bob.mayOpenGrain(grain));
+});

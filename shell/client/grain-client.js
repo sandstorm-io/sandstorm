@@ -559,7 +559,7 @@ Template.grainShareButton.onRendered(() => {
 
 Template.grainPowerboxOfferPopup.events({
   "click button.dismiss": function (event) {
-    const data = Template.instance().data.get();
+    const data = Template.instance().data;
     data.onDismiss();
   },
 
@@ -1273,10 +1273,53 @@ Template.emailInviteTab.events({
   },
 });
 
+Template.grainPowerboxOfferPopup.onCreated(function () {
+  this._state = new ReactiveVar({ waiting: true });
+  const offer = this.data.offer;
+  const sessionId = this.data.sessionId;
+
+  if (offer && offer.uiView && offer.uiView.tokenId) {
+    // If this is an offer of a UiView, immediately dismiss the popup and open the grain.
+    const apiToken = ApiTokens.findOne(offer.uiView.tokenId);
+    if (apiToken && apiToken.grainId) {
+      Meteor.call("finishPowerboxOffer", sessionId, (err) => {
+        if (err) {
+          this._state.set({ error: err });
+        }
+      });
+
+      Router.go("grain", { grainId: apiToken.grainId });
+    }
+  } else if (offer && offer.uiView && offer.uiView.token) {
+    Meteor.call("acceptPowerboxOffer", sessionId, offer.uiView.token, (err, result) => {
+      if (err) {
+        this._state.set({ error: err });
+      } else {
+        Meteor.call("finishPowerboxOffer", sessionId, (err) => {
+          if (err) {
+            this._state.set({ error: err });
+          }
+        });
+
+        Router.go("shared", { token: result });
+      }
+    });
+  } else if (offer && offer.token) {
+    Meteor.call("acceptPowerboxOffer", sessionId, offer.token, (err, result) => {
+      if (err) {
+        this._state.set({ error: err });
+      } else {
+        this._state.set({
+          webkey: window.location.protocol + "//" + globalDb.makeApiHost(result) + "#" + result,
+        });
+      }
+    });
+  }
+});
+
 Template.grainPowerboxOfferPopup.helpers({
-  powerboxOfferUrl: function () {
-    const offer = Template.instance().data.get().offer;
-    return offer && offer.url;
+  state: function () {
+    return Template.instance()._state.get();
   },
 });
 

@@ -125,8 +125,15 @@ function checkRequirements(db, requirements) {
       const p = requirement.permissionsHeld;
       const viewInfo = db.collections.grains.findOne(
           p.grainId, { fields: { cachedViewInfo: 1 } }).cachedViewInfo;
+      let vertex;
+      if (p.identityId) {
+        vertex = { grain: { _id: p.grainId, identityId: p.identityId } };
+      } else {
+        vertex = { token: { _id: p.tokenId, grainId: p.grainId } };
+      }
+
       const currentPermissions = SandstormPermissions.grainPermissions(db,
-          { grain: { _id: p.grainId, identityId: p.identityId } }, viewInfo || {}).permissions;
+          vertex, viewInfo || {}).permissions;
       if (!currentPermissions) {
         throw new Meteor.Error(403,
             "Capability revoked because a user involved in introducing it no longer has " +

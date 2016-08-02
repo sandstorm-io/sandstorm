@@ -224,9 +224,7 @@ function serveStaticAsset(req, res, hostId) {
       let asset;
       if (pathname.startsWith("identicon/")) {
         const size = parseInt((url.query || {}).s);
-        if (size <= 512) {
-          asset = new Identicon(pathname.slice("identicon/".length), size).asAsset();
-        }
+        asset = new Identicon(pathname.slice("identicon/".length), size).asAsset();
       } else if (pathname.indexOf("/") == -1) {
         asset = globalDb.getStaticAsset(pathname);
       }

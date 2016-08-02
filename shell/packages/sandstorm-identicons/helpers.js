@@ -43,7 +43,7 @@ const cachedIdenticon = function (hashedAppId, size) {
   const cacheKey = hashedAppId + "-" + size;
   if (!cachedIdenticons[cacheKey]) {
     const data = new Identicon(hashedAppId, size).toString();
-    cachedIdenticons[cacheKey] = "data:image/png;base64," + data;
+    cachedIdenticons[cacheKey] = "data:image/svg+xml," + encodeURIComponent(data);
   }
 
   return cachedIdenticons[cacheKey];

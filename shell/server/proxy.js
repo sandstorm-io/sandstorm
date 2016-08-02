@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import Bignum from "bignum";
+import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
 const Crypto = Npm.require("crypto");
 const ChildProcess = Npm.require("child_process");
 const Fs = Npm.require("fs");

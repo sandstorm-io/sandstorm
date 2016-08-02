@@ -15,6 +15,11 @@
 // limitations under the License.
 
 // A collection of some global variables used in multiple places.
-SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
-SANDSTORM_LOGDIR = (SANDSTORM_ALTHOME || "") + "/var/log";
-SANDSTORM_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandstorm";
+
+import { Meteor } from "meteor/meteor";
+
+const SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
+const SANDSTORM_LOGDIR = (SANDSTORM_ALTHOME || "") + "/var/log";
+const SANDSTORM_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandstorm";
+
+export { SANDSTORM_ALTHOME, SANDSTORM_LOGDIR, SANDSTORM_VARDIR };

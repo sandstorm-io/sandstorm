@@ -362,6 +362,7 @@ body>.popup.account>.frame-container {
 
     .logo {
       @extend %pseudo-img-tag;
+      background-position: bottom;
       display: inline-block;
       width: 64px;
       height: 64px;

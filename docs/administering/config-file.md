@@ -95,12 +95,12 @@ BIND_IP=0.0.0.0
 ### MONGO_PORT
 
 A port number that Sandstorm will bind to for its built-in MongoDB service. By default,
-6080.
+6081.
 
 Example:
 
 ```
-MONGO_PORT=6080
+MONGO_PORT=6081
 ```
 
 ### UPDATE_CHANNEL

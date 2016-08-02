@@ -19,6 +19,13 @@
 // licenses, included in the LICENSES directory.
 // ====================================================================
 
+import {
+  loginWithEmailToken,
+  createAndEmailTokenForUser,
+} from "/imports/client/accounts/email-token/token-login-helpers.js";
+import { loginWithLDAP } from "/imports/client/accounts/ldap/ldap-client.js";
+import { loginWithSaml } from "/imports/client/accounts/saml/saml-client.js";
+
 // for convenience
 const loginButtonsSession = Accounts._loginButtonsSession;
 
@@ -195,7 +202,7 @@ const sendEmail = function (email, linkingNewIdentity) {
   loginButtonsSession.infoMessage("Sending email...");
   const loc = window.location;
   const pathToResume = loc.pathname + loc.search + loc.hash;
-  Accounts.createAndEmailTokenForUser(email, linkingNewIdentity, pathToResume, function (err) {
+  createAndEmailTokenForUser(email, linkingNewIdentity, pathToResume, function (err) {
     if (err) {
       loginButtonsSession.errorMessage(err.reason || "Unknown error");
       if (err.error === 409) {
@@ -213,7 +220,7 @@ const sendEmail = function (email, linkingNewIdentity) {
 
 const loginWithToken = function (email, token) {
   loginButtonsSession.infoMessage("Logging in...");
-  Meteor.loginWithEmailToken(email, token, function (err, resumePath) {
+  loginWithEmailToken(email, token, function (err, resumePath) {
     if (err) {
       loginButtonsSession.errorMessage(err.reason || "Unknown error");
     } else {
@@ -355,7 +362,7 @@ Template.ldapLoginForm.events({
     const username = form.username.value;
     const password = form.password.value;
 
-    Meteor.loginWithLDAP(username, password, function (err) {
+    loginWithLDAP(username, password, function (err) {
       if (err) {
         loginButtonsSession.errorMessage(err.reason || "Unknown error");
       }
@@ -425,7 +432,7 @@ Template.samlLoginForm.events({
 
     loginButtonsSession.resetMessages();
 
-    Meteor.loginWithSaml({
+    loginWithSaml({
       provider: "default",
     }, function (error, result) {
       if (error) {

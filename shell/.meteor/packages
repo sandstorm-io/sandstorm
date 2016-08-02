@@ -22,30 +22,18 @@ random
 
 iron:router
 sandstorm-accounts-packages
-sandstorm-email
-accounts-email-token
-accounts-ldap
-accounts-saml
-email
-accounts-identity
-simplesmtp
 http
 browser-policy
+routepolicy
 
 reactive-var
+reactive-dict
 sandstorm-autoupdate-apps
 sandstorm-db
 sandstorm-backend
-sandstorm-contacts
 sandstorm-identicons
 sandstorm-permissions
 sandstorm-ui-topbar
-sandstorm-ui-applist
-sandstorm-ui-app-details
-sandstorm-ui-app-install
-sandstorm-ui-grainlist
-sandstorm-ui-grainview
-sandstorm-ui-autocomplete-input
 sandstorm-ui-powerbox
 fourseven:scss
 sha

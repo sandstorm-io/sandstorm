@@ -15,6 +15,11 @@
 // limitations under the License.
 
 import { PersistentImpl } from "/imports/server/persistent.js";
+import simplesmtp from "simplesmtp";
+import { MailParser } from "mailparser";
+import { MailComposer } from "mailcomposer";
+
+import { rawSend } from "/imports/server/email.js";
 
 const Crypto = Npm.require("crypto");
 const Future = Npm.require("fibers/future");
@@ -287,7 +292,7 @@ hackSendEmail = (session, email) => {
     if (!grain) throw new Error("Grain does not exist.");
     globalDb.incrementDailySentMailCount(grain.userId);
 
-    SandstormEmail.rawSend(mc);
+    rawSend(mc);
   }).bind(this)).catch((err) => {
     console.error("Error sending e-mail:", err.stack);
     throw err;

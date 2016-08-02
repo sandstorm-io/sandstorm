@@ -19,6 +19,7 @@
 import { introJs } from "intro.js";
 
 import downloadFile from "/imports/client/download-file.js";
+import { ContactProfiles } from "/imports/client/contacts.js";
 
 // Pseudo-collections.
 TokenInfo = new Mongo.Collection("tokenInfo");

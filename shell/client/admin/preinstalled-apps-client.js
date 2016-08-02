@@ -86,7 +86,8 @@ Template._appRow.helpers({
 
   isAppDownloaded() {
     const pack = globalDb.collections.packages.findOne({ _id: this.packageId });
-    return pack && pack.status === "ready";
+    return pack && pack.status === "ready" &&
+      !!this.preinstalledAppAndPackageIds.get()[this.appId];
   },
 
   isAppDownloading() {

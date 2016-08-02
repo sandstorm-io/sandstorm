@@ -37,7 +37,11 @@
   // Generally, we do this to allow Internet Explorer to show
   // user-created SVG images (e.g., app icons) rescaled to
   // the size of the (pseudo) IMG tag.
-  background-size: cover;
+  //
+  // Prefer contain to cover here, because downscaling an image is
+  // more likely to produce good results for user-provided images
+  // (e.g. whitelabel logo or app icons) than clipping the image will.
+  background-size: contain;
   background-repeat: no-repeat;
 }
 

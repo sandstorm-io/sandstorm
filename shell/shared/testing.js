@@ -53,6 +53,7 @@ if (isTesting) {
       },
 
       fetchAppIndexTest: function () {
+        globalDb.collections.appIndex.remove({});
         SandstormAutoupdateApps.updateAppIndex(this.connection.sandstormDb);
       },
     });

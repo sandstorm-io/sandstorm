@@ -693,19 +693,18 @@ const DesktopNotifications = new Mongo.Collection("desktopNotifications");
 //   _id: String.  Used as the tag to coordinate notification merging between browser tabs.
 //   creationDate: Date object. indicating when this notification was posted.
 //   userId: String. Account id to which this notification was published.
-//   title: String. Primary label of the notification.
-//   body: String (optional).  Additional context information to place in the notification.  May be
-//                             elided by the browser or by Sandstorm.
-//   action: Object. What to do when this desktop notification is activated.  Currently, only one
-//                   shape is supported:
-//           { grain: { grainId, path } }
-//   iconUrl: Optional String.  Primary icon to display with the notifications.
-//                              See https://notifications.spec.whatwg.org/#icon-url
-//   badgeUrl: Optional String. Secondary icon to display with the notification, used to represent
-//                              the notification if there is insufficient space to display the whole
-//                              notification.  Can also be displayed (though with less visual
-//                              priority than the primary icon) in the notification.
-//                              See https://notifications.spec.whatwg.org/#badge-url
+//   notificationId: String.  ID of the matching event in the Notifications table to dismiss if this
+//                            notification is activated.
+//   appActivity: Object with fields:
+//     user: {               The user whose action caused this notification.
+//       name: String,       The user's display name.
+//       avatarUrl: String,  The URL for the user's profile picture.
+//     },
+//     grainId: String,      Which grain this action took place on
+//     path: String,         The path of the notification.
+//     body: Util.LocalizedText,  The main body of the activity event.
+//     actionText: Util.LocalizedText, What action the user took, e.g.
+//                                     { defaultText: "added a comment" }
 
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {

@@ -109,8 +109,8 @@ if (Meteor.isServer) {
   });
 
   makeIdenticon = function (id) {
-    // We only make identicons client-side.
-    return undefined;
+    const hash = id.slice(0, 32);
+    return httpProtocol + "//" + makeWildcardHost("static") + "/identicon/" + hash + "?s=256";
   };
 
   const Url = Npm.require("url");
@@ -126,16 +126,16 @@ if (Meteor.isServer) {
     // that apps can themselves use identicon.js to produce consistent identicons. As it turns out
     // identicon.js doesn't use the second half of the hash even if we provide it, but slice it
     // anyway to be safe.
-    id = id.slice(0, 32);
+    const hash = id.slice(0, 32);
 
-    if (id in identiconCache) {
-      return identiconCache[id];
+    if (hash in identiconCache) {
+      return identiconCache[hash];
     }
 
     // Unfortunately, Github's algorithm uses MD5. Whatever, we don't expect these to be secure.
-    const data = new Identicon(id, 512).toString();
+    const data = new Identicon(hash, 512).toString();
     const result = "data:image/svg+xml," + encodeURIComponent(data);
-    identiconCache[id] = result;
+    identiconCache[hash] = result;
     return result;
   };
 

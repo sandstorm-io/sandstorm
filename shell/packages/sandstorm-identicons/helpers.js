@@ -1,4 +1,4 @@
-const VALID_USAGES = ["appGrid", "grain"];
+const VALID_USAGES = ["appGrid", "grain", "notification"];
 const checkUsage = function (usage) {
   if (VALID_USAGES.indexOf(usage) === -1) throw new Error("Invalid icon usage.");
 };
@@ -8,7 +8,7 @@ const iconFromManifest = function (manifest, usage) {
   const icons = manifest && manifest.metadata && manifest.metadata.icons ?
       manifest.metadata.icons : undefined;
   if (icons) {
-    if (usage === "appGrid") {
+    if (usage === "appGrid" || usage === "notification") {
       return icons.appGrid;
     } else if (usage === "grain") {
       return icons.grain || icons.appGrid;

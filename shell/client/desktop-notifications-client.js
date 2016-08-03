@@ -30,34 +30,131 @@ try {
   // localStorage doesn't work.  Most of this code will be disabled.
 }
 
-const showDesktopNotification = (notif) => {
-  const data = notif;
-  const timestamp = +notif.creationDate;
-  const handle = new Notification(notif.title, {
-    tag: notif._id, // Merge desktop notifications from other browser tabs.
-    body: notif.body,
-    icon: notif.iconUrl,
-    badge: notif.iconUrl,
-    timestamp,
+const ICON_FETCHING_TIMEOUT_MSEC = 2000;
+
+const tryRenderImageToDataUri = (url) => {
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  const image = new Image();
+  image.crossOrigin = "anonymous";
+  image.src = url;
+
+  return new Promise((accept, reject) => {
+    image.onload = (evt) => {
+      canvas.width = image.width;
+      canvas.height = image.height;
+      context.clearRect(0, 0, image.width, image.height);
+      context.drawImage(image, 0, 0);
+      accept(canvas.toDataURL());
+    };
+
+    image.onerror = (evt) => {
+      // Silently squash errors into empty URIs.
+      accept("");
+    };
+  });
+};
+
+const tryRenderImageWithTimeout = (url, timeoutMsec) => {
+  const p1 = tryRenderImageToDataUri(url);
+  const p2 = new Promise((resolve, reject) => {
+    setTimeout(resolve, timeoutMsec, "");
   });
 
-  handle.onclick = () => {
-    if (notif.action) {
+  return Promise.race([p1, p2]);
+};
+
+const showActivityDesktopNotification = (notif) => {
+  // Unpack.
+  const timestamp = +notif.creationDate;
+  const { user, grainId, path, body, actionText } = notif.appActivity;
+
+  // Look up app icon and grain title for grain
+  let appIcon = "";
+  let grainTitle = "(unknown title)";
+  const staticPrefix = window.location.protocol + "//" + globalDb.makeWildcardHost("static");
+  const grain = globalDb.getGrain(grainId);
+  if (grain) {
+    // We own this grain.  We can look up the app icon directly.
+    const pkg = globalDb.collections.devPackages.findOne({ appId: grain.appId }) ||
+                globalDb.collections.packages.findOne({ _id: grain.packageId });
+    if (pkg) {
+      appIcon = Identicon.iconSrcForPackage(pkg, "notification", staticPrefix);
+    }
+
+    // We are the canonical title of this grain.
+    grainTitle = grain.title;
+  } else {
+    // Not our grain.  One of our identities must have an ApiToken for this grain.
+    const identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
+    const apiToken = globalDb.collections.apiTokens.findOne({
+      grainId,
+      "owner.user.identityId": { $in: identityIds },
+    }, {
+      sort: { created: 1 },
+    });
+
+    if (apiToken) {
+      const meta = apiToken.owner.user.denormalizedGrainMetadata;
+      if (meta && meta.icon && meta.icon.assetId) {
+        appIcon = staticPrefix + "/" + meta.icon.assetId;
+      } else {
+        appIcon = Identicon.identiconForApp((meta && meta.appId) || "00000000000000000000000000000000");
+      }
+
+      if (meta.upstreamTitle) {
+        if (meta.renamed) {
+          grainTitle = meta.title;
+        } else {
+          grainTitle = meta.upstreamTitle;
+        }
+      }
+    }
+  }
+
+  // TODO(someday): localize
+  const title = `${user.name} on ${grainTitle}: ${actionText.defaultText}`;
+
+  // Pick icons
+  const mainIconUrl = user.avatarUrl || appIcon;
+  const badgeIconUrl = (user.avatarUrl && appIcon) || "";
+
+  // We wait up to 2 seconds to load the icons.  If they're not done in time, we send the
+  // notification with whatever we have.
+  const mainIconPromise = tryRenderImageWithTimeout(mainIconUrl, ICON_FETCHING_TIMEOUT_MSEC);
+  const badgeIconPromise = tryRenderImageWithTimeout(badgeIconUrl, ICON_FETCHING_TIMEOUT_MSEC);
+
+  const bodyText = body.defaultText;
+
+  Promise.all([mainIconPromise, badgeIconPromise]).then((dataUris) => {
+    const iconData = dataUris[0];
+    const badgeData = dataUris[1];
+    const notificationOptions = {
+      tag: notif._id, // Merge desktop notifications from other browser tabs.
+      body: bodyText,
+      icon: iconData,
+      badge: badgeData,
+      timestamp,
+    };
+
+    const handle = new Notification(title, notificationOptions);
+
+    handle.onclick = () => {
       // Request that the Sandstorm window receive focus.  This attempts to switch
       // the browser's active tab and window to the Sandstorm window that created
       // the notification.
       window.focus();
 
-      // Now, do something based on what type of notification this was.
-      if (notif.action.grain) {
-        // For a notification about a grain, open that grain URL and path.
-        const grain = notif.action.grain;
-        Router.go(`/grain/${grain.grainId}/${grain.path}`);
-      }
+      // For a notification about a grain, open that grain URL and path.
+      Router.go(`/grain/${grainId}/${path || ""}`);
 
+      // Close this notification.
       handle.close();
-    }
-  };
+
+      // Dismiss the associated notification, ignoring errors and without blocking.
+      Meteor.call("dismissNotification", notif.notificationId, (err) => {});
+    };
+  });
 };
 
 Template.desktopNotifications.onCreated(function () {
@@ -129,7 +226,9 @@ Template.desktopNotifications.onCreated(function () {
 
     localStorage.setItem(storageKey, JSON.stringify(newStorageValue));
     // Create the actual desktop notification.
-    showDesktopNotification(notif);
+    if (notif.appActivity) {
+      showActivityDesktopNotification(notif);
+    }
   };
 
   this.shouldHandleNotificationImmediately = (notif) => {

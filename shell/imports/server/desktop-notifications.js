@@ -14,33 +14,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { Match } from "meteor/check";
+import { Match, check } from "meteor/check";
 
-const createDesktopNotification = (options) => {
-  Match.check(options, {
+const createAppActivityDesktopNotification = (options) => {
+  check(options, {
     userId: String,
-    action: Match.OneOf({
-      grain: {
-        grainId: String,
-        path: Match.Optional(String),
+    notificationId: String,
+    appActivity: {
+      user: {
+        identityId: String,
+        name: String,
+        avatarUrl: String,
       },
-    }),
-    title: String,
-    body: Match.Optional(String),
-    iconUrl: Match.Optional(String),
-    badgeUrl: Match.Optional(String),
+      grainId: String,
+      path: String,
+      body: Match.ObjectIncluding({
+        defaultText: String,
+      }),
+      actionText: Match.ObjectIncluding({
+        defaultText: String,
+      }),
+    },
   });
 
   globalDb.collections.desktopNotifications.insert({
     userId: options.userId,
-    grainId: options.grainId,
-    path: options.path,
-    title: options.title,
-    body: options.body,
-    iconUrl: options.iconUrl,
-    badgeUrl: options.badgeUrl,
+    notificationId: options.notificationId,
     creationDate: new Date(),
+    appActivity: options.appActivity,
   });
 };
 
-export { createDesktopNotification };
+export { createAppActivityDesktopNotification };

@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { createAppActivityDesktopNotification } from "/imports/server/desktop-notifications.js";
+
 const Capnp = Npm.require("capnp");
 const SupervisorCapnp = Capnp.importSystem("sandstorm/supervisor.capnp");
 const SystemPersistent = SupervisorCapnp.SystemPersistent;
@@ -136,16 +138,64 @@ logActivity = function (grainId, identityId, event) {
     notification.eventType = event.type;
     update.text = eventType.verbPhrase;
 
+    // Look up icon urls for the responsible identity and the app
+    const identity = Meteor.users.findOne({ _id: identityId });
+    if (!identity) {
+      throw new Error("no such identity");
+    }
+
+    SandstormDb.fillInProfileDefaults(identity);
+    SandstormDb.fillInPictureUrl(identity);
+
+    const body = (event.notification && event.notification.caption) || { defaultText: "" };
+
+    const appActivity = {
+      user: {
+        identityId: identity._id,
+        name: identity.profile.name,
+        avatarUrl: identity.profile.pictureUrl || "",
+      },
+      grainId: notification.grainId,
+      path: notification.path,
+      body,
+      actionText: eventType.verbPhrase,
+    };
+
     notify.forEach(targetId => {
       // Notify all accounts connected with this identity.
       Meteor.users.find({ $or: [
         { "loginIdentities.id": targetId },
         { "nonloginIdentities.id": targetId },
       ], }).forEach((account) => {
-        Notifications.upsert(_.extend({ userId: account._id }, notification), {
-          $set: update,
-          $inc: { count: 1 },
+        // We need to know the ID of the inserted/updated document so we can embed it in the
+        // desktop notification to bind them.
+        const idIfInserted = Random.id(17);
+        const result = Notifications.findAndModify({
+          query: _.extend({ userId: account._id }, notification),
+          update: {
+            $set: update,
+            $inc: { count: 1 },
+            $setOnInsert: {
+              _id: idIfInserted,
+            },
+          },
+          upsert: true,
         });
+
+        if (!result.ok) {
+          console.error("Couldn't create notification!", result.lastErrorObject);
+          return;
+        }
+
+        const notificationId = result.value._id || idIfInserted;
+
+        const desktopNotification = {
+          userId: account._id,
+          notificationId,
+          appActivity,
+        };
+
+        createAppActivityDesktopNotification(desktopNotification);
       });
     });
   }

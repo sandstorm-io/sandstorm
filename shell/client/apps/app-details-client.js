@@ -127,7 +127,7 @@ Template.sandstormAppDetails.helpers({
   appIconSrc: function () {
     const ref = Template.instance().data;
     const pkg = ref.pkg;
-    return pkg && Identicon.iconSrcForPackage(pkg, "appGrid", ref.staticHost);
+    return pkg && Identicon.iconSrcForPackage(pkg, "appGrid", window.location.protocol + "//" + ref.staticHost);
   },
 
   appId: function () {

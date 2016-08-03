@@ -1161,6 +1161,16 @@ if (Meteor.isServer) {
   };
 }
 
+// TODO(someday): clean this up.  Logic for building static asset urls on client and server
+// appears all over the codebase.
+let httpProtocol;
+if (Meteor.isServer) {
+  const Url = Npm.require("url");
+  httpProtocol = Url.parse(process.env.ROOT_URL).protocol;
+} else {
+  httpProtocol = window.location.protocol;
+}
+
 // =======================================================================================
 // Below this point are newly-written or refactored functions.
 
@@ -1232,7 +1242,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   iconSrcForPackage: function iconSrcForPackage(pkg, usage) {
-    return Identicon.iconSrcForPackage(pkg, usage, this.makeWildcardHost("static"));
+    return Identicon.iconSrcForPackage(pkg, usage, httpProtocol + "//" + this.makeWildcardHost("static"));
   },
 
   getDenormalizedGrainInfo: function getDenormalizedGrainInfo(grainId) {

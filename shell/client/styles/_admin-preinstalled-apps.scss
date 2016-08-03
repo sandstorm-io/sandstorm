@@ -15,14 +15,8 @@
     color: #888888;
   }
 
-  i.down-arrow {
-    @extend .icon;
-    @extend .icon-down;
-  }
-
-  i.up-arrow {
-    @extend .icon;
-    @extend .icon-up;
+  i.icon-down, i.icon-up {
+    transform: scale(.7, 1); // Fix the scaling of the icon to look a little better
   }
 
   [role=grid] {

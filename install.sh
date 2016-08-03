@@ -389,6 +389,11 @@ Try this command:
 curl https://install.sandstorm.io/ > install.sh && sudo bash install.sh"
 }
 
+set_umask() {
+  # Use umask 0022, to minimize how much 'mkdir -m' we have to do, etc. See #2300.
+  umask 0022
+}
+
 assert_on_terminal() {
   if [ "no" = "$USE_DEFAULTS" ] && [ ! -t 1 ]; then
     REPORT=no fail "E_NO_TTY" "This script is interactive. Please run it on a terminal."
@@ -2094,6 +2099,7 @@ sandcats_generate_keys() {
 # Now that the steps exist as functions, run them in an order that
 # would result in a working install.
 handle_args "$@"
+set_umask
 assert_on_terminal
 assert_linux_x86_64
 assert_usable_kernel

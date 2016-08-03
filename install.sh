@@ -988,6 +988,16 @@ configure_hostnames() {
     BASE_URL="$DEFAULT_BASE_URL"
   else
     BASE_URL=$(prompt "URL users will enter in browser:" "$DEFAULT_BASE_URL")
+    if ! [[ "$BASE_URL" =~ ^http(s?):// ]] ; then
+      local PROPOSED_BASE_URL="http://${BASE_URL}"
+      echo "** You entered ${BASE_URL}, which needs http:// at the front. I can use:" >&2
+      echo "        ${PROPOSED_BASE_URL}" >&2
+      if prompt-yesno "Is this OK?" yes; then
+        BASE_URL="${PROPOSED_BASE_URL}"
+      else
+        configure_hostnames
+      fi
+    fi
   fi
 
   # If the BASE_URL looks like localhost, then we had better use a

@@ -252,7 +252,7 @@
       [role=gridcell] {
         padding: 4px;
         overflow: hidden;
-        @extend %overflow-ellipsis;
+        @include overflow-ellipsis();
         flex-grow: 0;
         &.name {
           width: 20%;

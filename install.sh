@@ -265,7 +265,7 @@ NC_PATH="${OVERRIDE_NC_PATH:-nc}"
 # Defaults for some config options, so that if the user requests no
 # prompting, they get these values.
 DEFAULT_DIR_FOR_ROOT="${OVERRIDE_SANDSTORM_DEFAULT_DIR:-/opt/sandstorm}"
-DEFAULT_DIR_FOR_NON_ROOT="${OVERRIDE_SANDSTORM_DEFAULT_DIR:-$HOME/sandstorm}"
+DEFAULT_DIR_FOR_NON_ROOT="${OVERRIDE_SANDSTORM_DEFAULT_DIR:-${HOME:-opt}/sandstorm}"
 DEFAULT_SMTP_PORT="30025"
 DEFAULT_UPDATE_CHANNEL="dev"
 DEFAULT_SERVER_USER="${OVERRIDE_SANDSTORM_DEFAULT_SERVER_USER:-sandstorm}"
@@ -812,7 +812,8 @@ to install without using root access. In that case, Sandstorm will operate OK bu
 
     # Do not bother setting a DIR. This way, the existing prompting will
     # pick between /opt/sandstorm and $HOME/sandstorm, depending on if
-    # the install is being done as root or not.
+    # the install is being done as root or not. It will use /opt/sandstorm
+    # in all cases if the script is run without the HOME environment variable.
   fi
 }
 

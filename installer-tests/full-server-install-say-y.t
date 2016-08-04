@@ -40,7 +40,7 @@ $[veryslow]Successfully auto-configured HTTPS
 $[veryslow]Downloading: https://dl.sandstorm.io
 $[veryslow]GPG signature is valid.
 $[veryslow]Sandstorm started. PID =
-Your server is coming online
+$[veryslow]Your server is coming online. Waiting up to 90 seconds...
 $[veryslow]Visit this link to start using it:
   https://
 To learn how to control the server, run:

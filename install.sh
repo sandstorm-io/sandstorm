@@ -258,6 +258,7 @@ CURRENTLY_UID_ZERO="no"
 PREFER_ROOT="yes"
 USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET=""
 SHOW_MESSAGE_ABOUT_NEEDING_PORTS_OPEN="no"
+STARTED_SANDSTORM="no"
 
 # Allow the test suite to override the path to netcat in order to
 # reproduce a compatibility issue between different nc versions.
@@ -1568,6 +1569,7 @@ WantedBy=multi-user.target
 __EOF__
   systemctl enable sandstorm
   systemctl start sandstorm
+  STARTED_SANDSTORM="yes"
 }
 
 configure_sysvinit_init_system() {
@@ -1609,6 +1611,7 @@ __EOF__
 
   # Start it right now.
   service sandstorm start
+  STARTED_SANDSTORM="yes"
 }
 
 generate_admin_token() {
@@ -2078,17 +2081,20 @@ sandcats_configure_https() {
   fi
 }
 
-wait_for_server_bind_to_https_if_needed() {
-  if [ "${SANDCATS_HTTPS_SUCCESSFUL}" != "yes" ] ; then
+wait_for_server_bind_to_its_port() {
+  # If we haven't started Sandstorm ourselves, it's not sensible to expect it to be listening.
+  if [ "yes" != "${STARTED_SANDSTORM}" ] ; then
     return
   fi
 
-  # For sandcats HTTPS, we have to generate the initial non-SNI key before
-  # Sandstorm binds to port 443. So we let the user know it could be slow.
+  # For sandcats HTTPS, we have to generate the initial non-SNI key before Sandstorm binds to port
+  # 443. So we let the user know it could be slow. For all users, using the admin token requires
+  # that the server has started.
+  local PORT_TO_CHECK="${HTTPS_PORT:-$PORT}"
   echo -n "Your server is coming online. Waiting up to 90 seconds..."
   local ONLINE_YET="no"
   for waited_n_seconds in $(seq 0 89); do
-    is_port_bound 0.0.0.0 443 && ONLINE_YET="yes"
+    is_port_bound "${BIND_IP}" "${PORT_TO_CHECK}" && ONLINE_YET="yes"
     if [ "$ONLINE_YET" == "yes" ] ; then
       echo ''
       break
@@ -2098,7 +2104,7 @@ wait_for_server_bind_to_https_if_needed() {
   done
 
   # One last check before we bail out.
-  is_port_bound 0.0.0.0 443 && ONLINE_YET="yes"
+  is_port_bound "${BIND_IP}" "${PORT_TO_CHECK}" && ONLINE_YET="yes"
 
   if [ "$ONLINE_YET" == "yes" ]; then
     return
@@ -2197,7 +2203,7 @@ set_permissions
 install_sandstorm_symlinks
 ask_about_starting_at_boot
 configure_start_at_boot_if_desired
-wait_for_server_bind_to_https_if_needed
+wait_for_server_bind_to_its_port
 print_success
 }
 

@@ -437,7 +437,10 @@ assert_on_terminal() {
 
 assert_linux_x86_64() {
   if [ "$(uname)" != Linux ]; then
-    fail "E_NON_LINUX" "Sorry, the Sandstorm server only runs on Linux."
+    fail "E_NON_LINUX" "Sandstorm requires Linux. If you want to run Sandstorm on a Windows or
+Mac system, you can use Vagrant or another virtualization tool. See our install documentation:
+
+- https://docs.sandstorm.io/en/latest/install/"
   fi
 
   if [ "$(uname -m)" != x86_64 ]; then

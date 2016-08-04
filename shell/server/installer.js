@@ -89,8 +89,7 @@ const startInstallInternal = (pkg) => {
     return;
   }
 
-  const installer = new AppInstaller(pkg._id, pkg.url, pkg.appId, pkg.isAutoUpdated,
-    pkg.isPreinstalled);
+  const installer = new AppInstaller(pkg._id, pkg.url, pkg.appId, pkg.isAutoUpdated);
   installers[pkg._id] = installer;
   installer.start();
 };
@@ -175,7 +174,7 @@ doClientUpload = (stream) => {
 };
 
 AppInstaller = class AppInstaller {
-  constructor(packageId, url, appId, isAutoUpdated, isPreinstalled) {
+  constructor(packageId, url, appId, isAutoUpdated) {
     verifyIsMainReplica();
 
     this.packageId = packageId;
@@ -183,7 +182,6 @@ AppInstaller = class AppInstaller {
     this.failed = false;
     this.appId = appId;
     this.isAutoUpdated = isAutoUpdated;
-    this.isPreinstalled = isPreinstalled;
 
     // Serializes database writes.
     this.writeChain = Promise.resolve();
@@ -389,7 +387,12 @@ AppInstaller = class AppInstaller {
             (manifest.appMarketingVersion && manifest.appMarketingVersion.defaultText));
         }
 
-        if (_this.isPreinstalled) {
+        if (globalDb.getPackageIdForPreinstalledApp(_this.appId) &&
+            globalDb.collections.appIndex.findOne({ "packageId": _this.packageId })) {
+          // Only mark app as preinstall ready if its appId is in the preinstalledApps setting
+          // and if it's the latest package version in the appIndex. The updateAppIndex function
+          // will always trigger updates of preinstalled apps, even if a concurrent download of
+          // an older package is going on.
           globalDb.setPreinstallAppAsReady(_this.appId, _this.packageId);
         }
       });

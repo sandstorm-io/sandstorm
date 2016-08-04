@@ -153,7 +153,6 @@ Packages = new Mongo.Collection("packages");
 //   url:  When status is "download", the URL from which the SPK can be obtained, if provided.
 //   isAutoUpdated: This package was downloaded as part of an auto-update. We shouldn't clean it up
 //     even if it has no users.
-//   isPreinstalled: This package was downloaded in order to be pre-installed by users.
 //   authorPgpKeyFingerprint: Verified PGP key fingerprint (SHA-1, hex, all-caps) of the app
 //     packager.
 
@@ -1632,7 +1631,9 @@ _.extend(SandstormDb.prototype, {
     const appIndexUrl = this.collections.settings.findOne({ _id: "appIndexUrl" }).value;
     const appIndex = this.collections.appIndex;
     const data = HTTP.get(appIndexUrl + "/apps/index.json").data;
-    const preinstalledAppIds = this.getPreinstalledAppIds();
+    const preinstalledAppIds = this.getAllPreinstalledAppIds();
+    // We make sure to get all preinstalled appIds, even ones that are currently
+    // downloading/failed.
     data.apps.forEach((app) => {
       app._id = app.appId;
 
@@ -1672,11 +1673,11 @@ _.extend(SandstormDb.prototype, {
               }
             } else if (newPack.status === "failed") {
               // If the package has failed, retry it
-              this.startInstall(app.packageId, url, true, true, isAppPreinstalled);
+              this.startInstall(app.packageId, url, true, true);
             }
           }
         } else {
-          this.startInstall(app.packageId, url, false, true, isAppPreinstalled);
+          this.startInstall(app.packageId, url, false, true);
         }
       }
     });
@@ -1704,16 +1705,22 @@ _.extend(SandstormDb.prototype, {
 
   getPreinstalledAppIds: function () {
     const setting = Settings.findOne({ _id: "preinstalledApps" });
-    const ret = setting && setting.value || {};
+    const ret = setting && setting.value || [];
     return _.chain(ret)
             .filter((app) => { return app.status === "ready"; })
             .map((app) => { return app.appId; })
             .value();
   },
 
+  getAllPreinstalledAppIds: function () {
+    const setting = Settings.findOne({ _id: "preinstalledApps" });
+    const ret = setting && setting.value || [];
+    return _.map(ret, (app) => { return app.appId; });
+  },
+
   getPreinstalledPackageIds: function () {
     const setting = Settings.findOne({ _id: "preinstalledApps" });
-    const ret = setting && setting.value || {};
+    const ret = setting && setting.value || [];
     return _.chain(ret)
             .filter((app) => { return app.status === "ready"; })
             .map((app) => { return app.packageId; })
@@ -1755,23 +1762,19 @@ _.extend(SandstormDb.prototype, {
       if (pack.status === "ready") {
         this.setPreinstallAppAsReady(appId, packageId);
       } else {
-        const newPack = this.collections.packages.findAndModify({
-          query: { _id: packageId },
-          update: { $set: { isPreinstalled: true } },
-        });
         if (newPack.status === "ready") {
-          // The package was marked as ready before we applied isPreinstalled=true. We should send
-          // set the DB ourself to be sure it happens.
+          // The package was marked as ready while we were checking. We should set the DB ourself
+          // to be sure it happens.
           this.setPreinstallAppAsReady(appId, packageId);
         } else if (newPack.status === "failed") {
           // If the package has failed, retry it
           this.setPreinstallAppAsDownloading(appId, packageId);
-          this.startInstall(packageId, url, true, false, true);
+          this.startInstall(packageId, url, true, false);
         }
       }
     } else {
       this.setPreinstallAppAsDownloading(appId, packageId);
-      this.startInstall(packageId, url, false, false, true);
+      this.startInstall(packageId, url, false, false);
     }
   },
 
@@ -2280,8 +2283,7 @@ if (Meteor.isServer) {
     }, { multi: true });
   };
 
-  SandstormDb.prototype.startInstall = function (packageId, url, retryFailed, isAutoUpdated,
-    isPreinstalled) {
+  SandstormDb.prototype.startInstall = function (packageId, url, retryFailed, isAutoUpdated) {
     // Mark package for possible installation.
 
     const fields = {
@@ -2289,7 +2291,6 @@ if (Meteor.isServer) {
       progress: 0,
       url: url,
       isAutoUpdated: !!isAutoUpdated,
-      isPreinstalled: !!isPreinstalled,
     };
 
     if (retryFailed) {

@@ -1678,6 +1678,10 @@ _.extend(SandstormDb.prototype, {
     });
   },
 
+  isPackagePreinstalled: function (packageId) {
+    return Settings.find({ _id: "preinstalledApps", "value.packageId": packageId }).count() === 1;
+  },
+
   getAppIdForPreinstalledPackage: function (packageId) {
     const setting = Settings.findOne({ _id: "preinstalledApps", "value.packageId": packageId },
     { fields: { "value.$": 1 } });

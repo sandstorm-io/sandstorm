@@ -102,14 +102,16 @@
     <div class="name" role="gridcell">{{name}}</div>
     <div class="description" role="gridcell">{{shortDescription}}</div>
     <div class="download" role="gridcell">
-      {{#if isAppDownloaded}}
-        <i class="download-checkmark"></i>Downloaded
-      {{else}}{{#if isAppDownloading}}
-        <progress value="{{progressFraction}}"></progress>
-      {{else}}{{#if isAppFailed}}
-        <i class="download-x-mark"></i>Failed
-      {{/if}}
-      {{/if}}
+      {{#if showAppStatus}}
+        {{#if isAppDownloaded}}
+          <i class="download-checkmark"></i>Downloaded
+        {{else}}{{#if isAppDownloading}}
+          <progress value="{{progressFraction}}"></progress>
+        {{else}}{{#if isAppFailed}}
+          <i class="download-x-mark"></i>Failed
+        {{/if}}
+        {{/if}}
+        {{/if}}
       {{/if}}</div>
   </div>
 </template>

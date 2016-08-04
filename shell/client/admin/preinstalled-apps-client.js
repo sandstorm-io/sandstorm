@@ -84,6 +84,11 @@ Template._appRow.helpers({
     return !!this.preinstalledAppAndPackageIds.get()[this.appId];
   },
 
+  showAppStatus() {
+    // Only show package status if the app has been set as preinstalled in the DB
+    return globalDb.isPackagePreinstalled(this.packageId);
+  },
+
   isAppDownloaded() {
     const pack = globalDb.collections.packages.findOne({ _id: this.packageId });
     return pack && pack.status === "ready" &&

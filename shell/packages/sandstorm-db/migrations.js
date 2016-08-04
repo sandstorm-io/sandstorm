@@ -664,6 +664,12 @@ function startPreinstallingApps() {
   Meteor.setTimeout(startPreinstallingAppsHelper, 0);
 }
 
+function setNewServer() {
+  if (!Migrations.findOne({ _id: "new_server_migrations_applied" })) {
+    Migrations.insert({ _id: "new_server_migrations_applied", value: true });
+  }
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -697,6 +703,7 @@ const MIGRATIONS = [
   markAllRead,
   clearAppIndex,
   assignEmailVerifierIds,
+  setNewServer,
 ];
 
 const NEW_SERVER_STARTUP = [
@@ -720,20 +727,36 @@ function migrateToLatest() {
       changed: change,
     });
 
+    const newServerDone = new Future();
+    const newServerChange = function (doc) {
+      if (doc.value) {
+        console.log("New server migrations applied elsewhere");
+        newServerDone.return();
+      }
+    };
+
+    const newServerObserver = Migrations.find({ _id: "new_server_migrations_applied" }).observe({
+      added: newServerChange,
+      changed: newServerChange,
+    });
+
     done.wait();
     observer.stop();
+    newServerDone.wait();
+    newServerObserver.stop();
     console.log("Migrations have completed on replica zero.");
 
   } else {
     const applied = Migrations.findOne({ _id: "migrations_applied" });
-    let isNewServer = false;
     let start;
     if (!applied) {
       // Migrations table is not yet seeded with a value.  This means it has
       // applied 0 migrations.  Persist this.
       Migrations.insert({ _id: "migrations_applied", value: 0 });
       start = 0;
-      isNewServer = true;
+
+      // This also means this is a brand new server
+      Migrations.insert({ _id: "new_server_migrations_applied", value: false });
     } else {
       start = applied.value;
     }
@@ -748,12 +771,16 @@ function migrateToLatest() {
       console.log("Applied migration " + (i + 1));
     }
 
-    if (isNewServer) {
-      for (i = start; i < NEW_SERVER_STARTUP.length; i++) {
+    if (!Migrations.findOne({ _id: "new_server_migrations_applied" }).value) {
+      // new_server_migrations_applied is guaranteed to exist since we have a migration that
+      // ensures it.
+      for (let i = 0; i < NEW_SERVER_STARTUP.length; i++) {
         console.log("Running new server startup function " + (i + 1));
         NEW_SERVER_STARTUP[i]();
         console.log("Running new server startup function " + (i + 1));
       }
+
+      Migrations.update({ _id: "new_server_migrations_applied" }, { $set: { value: true } });
     }
   }
 }

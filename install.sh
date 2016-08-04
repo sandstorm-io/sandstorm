@@ -103,6 +103,21 @@ It would only contain this error code: $error_code" "yes" ; then
   exit 1
 }
 
+retryable_curl() {
+  # This function calls curl to download a file. If the file download fails, it asks the user if it
+  # is OK to retry.
+  local CURL_FAILED="no"
+  curl -A "${CURL_USER_AGENT}" -f "$1" > "$2" || CURL_FAILED="yes"
+  if [ "yes" = "${CURL_FAILED}" ] ; then
+    if prompt-yesno "Downloading $1 failed. OK to retry?" "yes" ; then
+      echo "" >&2
+      echo "Download failed. Waiting one second before retrying..." >&2
+      sleep 1
+      retryable_curl "$1" "$2"
+    fi
+  fi
+}
+
 dotdotdot_curl() {
   # This function calls curl, but first prints "..." to the screen, in
   # an attempt to indicate to the user that the script is waiting on
@@ -1304,20 +1319,20 @@ download_latest_bundle_and_extract_if_needed() {
   # to do a Sandstorm install. We had to stop using "install" because vagrant-spk happens to use
   # &type=install during situations that we do not want to categorize as an attempt by a human to
   # install Sandstorm.
-  BUILD=$(curl -A "$CURL_USER_AGENT" -fs "https://install.sandstorm.io/$DEFAULT_UPDATE_CHANNEL?from=0&type=install_v2")
-  BUILD_DIR=sandstorm-$BUILD
+  BUILD="$(curl -A "$CURL_USER_AGENT" -fs "https://install.sandstorm.io/$DEFAULT_UPDATE_CHANNEL?from=0&type=install_v2")"
+  BUILD_DIR="sandstorm-${BUILD}"
 
   if [[ ! "$BUILD" =~ ^[0-9]+$ ]]; then
     fail "E_INVALID_BUILD_NUM" "Server returned invalid build number: $BUILD"
   fi
 
   do-download() {
-    rm -rf $BUILD_DIR
+    rm -rf "${BUILD_DIR}"
     WORK_DIR="$(mktemp -d --tmpdir sandstorm-installer.XXXXXXXXXX)"
     local URL="https://dl.sandstorm.io/sandstorm-$BUILD.tar.xz"
     echo "Downloading: $URL"
-    curl -A "$CURL_USER_AGENT" -f "$URL" > "$WORK_DIR/sandstorm-$BUILD.tar.xz"
-    curl -s -A "$CURL_USER_AGENT" -f "$URL.sig" > "$WORK_DIR/sandstorm-$BUILD.tar.xz.sig"
+    retryable_curl "$URL" "$WORK_DIR/sandstorm-$BUILD.tar.xz"
+    retryable_curl "$URL.sig" "$WORK_DIR/sandstorm-$BUILD.tar.xz.sig"
 
     if which gpg > /dev/null; then
       export GNUPGHOME="$WORK_DIR/.gnupg"

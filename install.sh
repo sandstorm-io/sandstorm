@@ -1334,7 +1334,7 @@ download_latest_bundle_and_extract_if_needed() {
 
   do-download() {
     rm -rf "${BUILD_DIR}"
-    WORK_DIR="$(mktemp -d --tmpdir sandstorm-installer.XXXXXXXXXX)"
+    WORK_DIR="$(mktemp -d ./sandstorm-installer.XXXXXXXXXX)"
     local URL="https://dl.sandstorm.io/sandstorm-$BUILD.tar.xz"
     echo "Downloading: $URL"
     retryable_curl "$URL" "$WORK_DIR/sandstorm-$BUILD.tar.xz"
@@ -1400,7 +1400,7 @@ __EOF__
     fi
 
     if [ ! -e "$BUILD_DIR/buildstamp" ] || \
-       [ $(stat --printf=%Y "$BUILD_DIR/buildstamp") -lt $(( $(date +%s) - 30*24*60*60 )) ]; then
+       [ $(stat -c %Y "$BUILD_DIR/buildstamp") -lt $(( $(date +%s) - 30*24*60*60 )) ]; then
       rm -rf "$BUILD_DIR"
       fail "E_PKG_STALE" "The downloaded package seems to be more than a month old. Please verify that your" \
            "computer's clock is correct and try again. It could also be that an attacker is" \

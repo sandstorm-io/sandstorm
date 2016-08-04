@@ -251,6 +251,7 @@ NC_PATH="${OVERRIDE_NC_PATH:-nc}"
 # prompting, they get these values.
 DEFAULT_DIR_FOR_ROOT="${OVERRIDE_SANDSTORM_DEFAULT_DIR:-/opt/sandstorm}"
 DEFAULT_DIR_FOR_NON_ROOT="${OVERRIDE_SANDSTORM_DEFAULT_DIR:-$HOME/sandstorm}"
+DEFAULT_SMTP_PORT="30025"
 DEFAULT_UPDATE_CHANNEL="dev"
 DEFAULT_SERVER_USER="${OVERRIDE_SANDSTORM_DEFAULT_SERVER_USER:-sandstorm}"
 SANDCATS_BASE_DOMAIN="${OVERRIDE_SANDCATS_BASE_DOMAIN:-sandcats.io}"
@@ -277,6 +278,17 @@ detect_current_uid() {
   if [ $(id -u) = 0 ]; then
     CURRENTLY_UID_ZERO="yes"
   fi
+}
+
+disable_smtp_port_25_if_port_unavailable() {
+  PORT_25_AVAILABLE="no"
+  if is_port_bound 0.0.0.0 25; then
+    return
+  fi
+  if is_port_bound 127.0.0.1 25; then
+    return
+  fi
+  PORT_25_AVAILABLE="yes"
 }
 
 disable_https_if_ports_unavailable() {
@@ -732,6 +744,7 @@ to install without using root access. In that case, Sandstorm will operate OK bu
     else
         echo "* Configure Sandstorm to start on system boot (with $INIT_SYSTEM)."
     fi
+    echo "* Listen for inbound email on port ${DEFAULT_SMTP_PORT}."
     echo ""
 
     if prompt-yesno "Press enter to accept defaults. Type 'no' to customize." "yes" ; then
@@ -755,6 +768,9 @@ to install without using root access. In that case, Sandstorm will operate OK bu
     # short-circuits the code elsewhere that uses the system hostname if USE_EXTERNAL_INTERFACE is
     # "yes".
     SS_HOSTNAME="${SS_HOSTNAME:-local.sandstorm.io}"
+
+    # Use 30025 as the default SMTP_LISTEN_PORT.
+    SMTP_LISTEN_PORT="${DEFAULT_SMTP_PORT}"
 
     # Start the service at boot, if we can.
     START_AT_BOOT="yes"
@@ -808,6 +824,13 @@ full_server_install() {
     ACCEPTED_FULL_SERVER_INSTALL="yes"
   fi
 
+  # Use port 25 for email, if we can. This logic only gets executed for "full servers."
+  disable_smtp_port_25_if_port_unavailable
+  local PLANNED_SMTP_PORT="30025"
+  if [ "yes" = "$PORT_25_AVAILABLE" ] ; then
+    PLANNED_SMTP_PORT="25"
+  fi
+
   if [ "yes" != "${ACCEPTED_FULL_SERVER_INSTALL:-}" ]; then
     # Disable Sandcats HTTPS if ports 80 or 443 aren't available.
     disable_https_if_ports_unavailable
@@ -828,6 +851,7 @@ full_server_install() {
     if [ "yes" == "$USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET" ] ; then
       echo "* Configure your system to enable unprivileged user namespaces, via sysctl."
     fi
+    echo "* Listen for inbound email on port ${PLANNED_SMTP_PORT}."
     echo ""
 
     # If we're not root, we will ask if it's OK to use sudo.
@@ -901,6 +925,7 @@ full_server_install() {
     DESIRED_SERVER_USER="$DEFAULT_SERVER_USER"
     PORT="${DEFAULT_PORT}"
     MONGO_PORT="6081"
+    SMTP_LISTEN_PORT="${PLANNED_SMTP_PORT}"
   else
     REPORT=no fail "E_USER_WANTS_CUSTOM_SETTINGS" "If you prefer a more manual setup experience, try installing in development mode."
   fi
@@ -1054,6 +1079,20 @@ choose_install_dir() {
 
   mkdir -p "$DIR"
   cd "$DIR"
+}
+
+choose_smtp_port() {
+  # If SMTP_LISTEN_PORT is already decided, then don't bother asking.
+  if [ ! -z "${SMTP_LISTEN_PORT:-}" ] ; then
+    return
+  fi
+
+  local REQUESTED_SMTP_PORT=$(prompt-numeric "Sandstorm grains can receive email. What port should Sandstorm listen on, for inbound SMTP?" "${DEFAULT_SMTP_PORT}")
+  if [ -z "${REQUESTED_SMTP_PORT}" ] ; then
+    choose_smtp_port
+  else
+    SMTP_LISTEN_PORT="${REQUESTED_SMTP_PORT}"
+  fi
 }
 
 load_existing_settings() {
@@ -1241,7 +1280,7 @@ configure_dev_accounts() {
 }
 
 save_config() {
-  writeConfig SERVER_USER PORT MONGO_PORT BIND_IP BASE_URL WILDCARD_HOST UPDATE_CHANNEL ALLOW_DEV_ACCOUNTS > sandstorm.conf
+  writeConfig SERVER_USER PORT MONGO_PORT BIND_IP BASE_URL WILDCARD_HOST UPDATE_CHANNEL ALLOW_DEV_ACCOUNTS SMTP_LISTEN_PORT > sandstorm.conf
   if [ "yes" = "$SANDCATS_SUCCESSFUL" ] ; then
     writeConfig SANDCATS_BASE_DOMAIN >> sandstorm.conf
   fi
@@ -2122,6 +2161,7 @@ choose_install_mode
 enable_userns_sysctl_if_needed
 choose_external_or_internal
 choose_install_dir
+choose_smtp_port
 load_existing_settings
 choose_server_user_if_needed
 create_server_user_if_needed

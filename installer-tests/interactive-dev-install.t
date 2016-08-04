@@ -10,6 +10,7 @@ $[slow]How are you going to use this Sandstorm install? [1]$[type]2
 OK to continue? [yes]$[type]
 $[slow]We're going to:
 * Add you (vagrant) to the sandstorm group so you can read/write app data.
+* Listen for inbound email on port 30025
 Press enter to accept defaults. Type 'no' to customize. [yes]$[type]
 Config written to /opt/sandstorm/sandstorm.conf.
 Finding latest build for dev channel...
@@ -21,3 +22,5 @@ Visit this link to start using it:
 To learn how to control the server, run:
   sandstorm help
 $[exitcode]0
+$[run]for i in `seq 0 20`; do nc -z localhost 30025 && { echo yay; break; } || sleep 1 ; done
+$[veryslow]yay

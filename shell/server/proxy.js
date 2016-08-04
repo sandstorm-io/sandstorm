@@ -22,7 +22,6 @@ const Path = Npm.require("path");
 const Future = Npm.require("fibers/future");
 const Http = Npm.require("http");
 const Url = Npm.require("url");
-const Promise = Npm.require("es6-promise").Promise;
 const Capnp = Npm.require("capnp");
 const Net = Npm.require("net");
 

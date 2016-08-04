@@ -16,7 +16,6 @@
 
 const ChildProcess = Npm.require("child_process");
 const Future = Npm.require("fibers/future");
-const Promise = Npm.require("es6-promise").Promise;
 const Capnp = Npm.require("capnp");
 
 const GrainInfo = Capnp.importSystem("sandstorm/grain.capnp").GrainInfo;

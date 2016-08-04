@@ -20,7 +20,6 @@
 const Url = Npm.require("url");
 const Fs = Npm.require("fs");
 const Dns = Npm.require("dns");
-const Promise = Npm.require("es6-promise").Promise;
 const Future = Npm.require("fibers/future");
 const Http = Npm.require("http");
 const Capnp = Npm.require("capnp");

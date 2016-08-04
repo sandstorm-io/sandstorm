@@ -15,7 +15,6 @@
 // limitations under the License.
 
 const Future = Npm.require("fibers/future");
-const Promise = Npm.require("es6-promise").Promise;
 const Capnp = Npm.require("capnp");
 const Url = Npm.require("url");
 const Http = Npm.require("http");

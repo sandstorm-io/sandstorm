@@ -23,7 +23,6 @@ import { rawSend } from "/imports/server/email.js";
 
 const Crypto = Npm.require("crypto");
 const Future = Npm.require("fibers/future");
-const Promise = Npm.require("es6-promise").Promise;
 const Capnp = Npm.require("capnp");
 
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");

@@ -19,7 +19,6 @@ import { PersistentImpl } from "/imports/server/persistent.js";
 const Future = Npm.require("fibers/future");
 const Net = Npm.require("net");
 const Dgram = Npm.require("dgram");
-const Promise = Npm.require("es6-promise").Promise;
 const Capnp = Npm.require("capnp");
 
 const IpRpc = Capnp.importSystem("sandstorm/ip.capnp");

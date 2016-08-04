@@ -20,7 +20,6 @@ const Https = Npm.require("https");
 const Future = Npm.require("fibers/future");
 const Net = Npm.require("net");
 const Dgram = Npm.require("dgram");
-const Promise = Npm.require("es6-promise").Promise;
 const Capnp = Npm.require("capnp");
 import { hashSturdyRef, checkRequirements } from "/imports/server/persistent.js";
 

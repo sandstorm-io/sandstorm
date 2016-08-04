@@ -59,15 +59,15 @@ const helpers = {
   },
 
   identities: function () {
-    return SandstormDb.getUserIdentityIds(Meteor.user()).map(function (id) {
-      const identity = Meteor.users.findOne({ _id: id });
-      if (identity) {
+    return _.chain(SandstormDb.getUserIdentityIds(Meteor.user()))
+      .map((id) => Meteor.users.findOne({ _id: id }))
+      .filter((identity) => !!identity)
+      .map((identity) => {
         SandstormDb.fillInProfileDefaults(identity);
         SandstormDb.fillInIntrinsicName(identity);
         SandstormDb.fillInPictureUrl(identity);
         return identity;
-      }
-    });
+      }).value();
   },
 
   isNeutral: function () {

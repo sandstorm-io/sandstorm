@@ -585,6 +585,10 @@ Settings = new Mongo.Collection("settings");
 //                       needed. That object can have the following variants:
 //       baseUrlChangedFrom: The reset was due to BASE_URL changing. This field contains a string
 //                           with the old BASE_URL.
+//   preinstalledApps: A list of objects:
+//     appId: The Packages.appId of the app to install
+//     status: packageId
+//     packageId: The Packages._id of the app to install
 //
 //   potentially other fields that are unique to the setting
 
@@ -1774,11 +1778,6 @@ _.extend(SandstormDb.prototype, {
   setPreinstalledApps: function (appAndPackageIds) {
     // appAndPackageIds: A List[Object] where each element has fields:
     //     appId: The Packages.appId of the app to install
-    //     packageId: The Packages._id of the app to install
-    // The Settings table has a key for "preinstalledApps" with the following value:
-    //   value: A list of objects:
-    //     appId: The Packages.appId of the app to install
-    //     status: packageId
     //     packageId: The Packages._id of the app to install
     check(appAndPackageIds, [{ appId: String, packageId: String, }]);
 

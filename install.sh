@@ -1998,7 +1998,7 @@ sandcats_configure_https() {
       -w '%{http_code}' \
       -H 'X-Sand: cats' \
       --cert var/sandcats/id_rsa.private_combined \
-      "${SANDCATS_API_BASE}/getcertificate")
+      "${SANDCATS_API_BASE}/${OVERRIDE_SANDCATS_GETCERTIFICATE_API_PATH:-getcertificate}")
 
   chmod 0600 "$LOG_PATH"
 

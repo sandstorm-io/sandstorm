@@ -33,13 +33,17 @@ $[slow]Congratulations! We have registered your
 Your credentials to use it are in /opt/sandstorm/var/sandcats; consider making a backup.
 $[slow]Now we're going to auto-configure HTTPS for your server.
 $[veryslow]Requesting certificate
+$[veryslow]Successfully auto-configured HTTPS
 $[veryslow]Downloading: https://dl.sandstorm.io
 $[veryslow]GPG signature is valid.
 $[veryslow]Sandstorm started. PID =
+Your server is coming online
 $[veryslow]Visit this link to start using it:
-  http://
+  https://
 To learn how to control the server, run:
   sandstorm help
 $[exitcode]0
-$[run]for i in `seq 0 20`; do nc -z localhost 6080 && { echo yay; break; } || sleep 1 ; done
+$[run]nc -z localhost 443 && echo yay
+$[slow]yay
+$[run]nc -z localhost 80 && echo yay
 $[slow]yay

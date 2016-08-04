@@ -204,7 +204,8 @@ prompt() {
     return
   fi
 
-  echo -en '\e[0;34m' >&3
+  # We use "bold", rather than any particular color, to maximize readability. See #2037.
+  echo -en '\e[1m' >&3
   echo -n "$1 [$2]" >&3
   echo -en '\e[0m ' >&3
   read -u 3 VALUE

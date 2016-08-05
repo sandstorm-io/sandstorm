@@ -1,11 +1,11 @@
-Title: Ensure that installing with defaults succeeds (here we run it as root)
+Title: Ensure that installing with defaults succeeds (here we run it as root, without HOME set)
 Vagrant-Box: jessie
 Precondition: sandstorm_not_installed
 Cleanup: uninstall_sandstorm
 
 $[run]sudo cat /proc/sys/kernel/unprivileged_userns_clone
 $[slow]0
-$[run]sudo CURL_USER_AGENT=testing REPORT=no bash /vagrant/install.sh -d
+$[run]sudo env -u HOME CURL_USER_AGENT=testing REPORT=no bash /vagrant/install.sh -d
 $[slow]Sandstorm requires sysctl kernel.unprivileged_userns_clone to be enabled.
 Config written to /opt/sandstorm/sandstorm.conf.
 Finding latest build for dev channel...

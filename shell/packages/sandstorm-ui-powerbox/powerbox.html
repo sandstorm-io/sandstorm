@@ -13,7 +13,7 @@
     {{#with selectedProvider}}
       <div class="selected-card">
         <div class="powerbox-card" data-card-id="{{ option._id }}"
-             style="background-image: url({{ iconSrc }});">
+             style="background-image: url('{{ iconSrc }}');">
           {{>cardTemplate}}
         </div>
         {{>configureTemplate}}
@@ -29,7 +29,7 @@
       {{#each cards}}
         <li class="powerbox-card">
           <button class="card-button" data-card-id="{{ option._id }}"
-                  style="background-image: url({{ iconSrc }});">
+                  style="background-image: url('{{ iconSrc }}');">
             {{>cardTemplate}}
           </button>
         </li>

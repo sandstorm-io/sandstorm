@@ -41,7 +41,7 @@ module.exports["Test autoupdates"] = function (browser) {
     .assert.containsText(".package-info > .version > .content", "<unknown>")
     .click(".topbar .notifications>.show-popup")
     .waitForElementVisible(".app-updates", short_wait)
-    .click('.accept-notification')
+    .click('.notification-list .notification-item button[type=submit]')
     .waitForElementNotPresent(".app-updates", short_wait)
     .init()
     .url(browser.launch_url + "/apps/" + appId)

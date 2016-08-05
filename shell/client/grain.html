@@ -488,10 +488,17 @@
 </template>
 <template name="grainPowerboxOfferPopup">
   <h4>Powerbox Offer</h4>
+  {{#if state.webkey}}
   <div>
-    <a class="copy-me" href="{{powerboxOfferUrl}}" id="powerbox-offer-url">{{powerboxOfferUrl}}</a>
+    <a class="copy-me" href="{{state.webkey}}" id="powerbox-offer-url">{{state.webkey}}</a>
     <button class="dismiss">Dismiss</button>
   </div>
+  {{/if}}
+  {{#if state.error}}
+  <div>
+     Error: {{state.error}}
+  </div>
+  {{/if}}
 </template>
 
 <template name="grain">

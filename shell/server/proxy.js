@@ -410,7 +410,9 @@ Meteor.methods({
 
         // Create a new API token for the identity redeeming this token.
         const result = SandstormPermissions.createNewApiToken(
-          globalDb, { rawParentToken: token }, apiToken.grainId, apiToken.petname, { allAccess: null }, owner);
+          globalDb, { rawParentToken: token }, apiToken.grainId,
+          apiToken.petname || "redeemed webkey",
+          { allAccess: null }, owner);
         globalDb.addContact(apiToken.accountId, identityId);
 
         // If the parent API token is forSharing and it has an accountId, then the logged-in user (call

@@ -23,8 +23,8 @@ var utils = require("../utils"),
     long_wait = utils.long_wait;
 
 var COLLECTIONS_APP_ID = "s3u2xgmqwznz2n3apf30sm3gw1d85y029enw5pymx734cnk5n78h";
-var COLLECTIONS_PACKAGE_ID = "f636f1239d9bd0eace4de2f7e238b633";
-var COLLECTIONS_PACKAGE_URL = "https://sandstorm.io/apps/david/collections1.spk";
+var COLLECTIONS_PACKAGE_ID = "e9408a7c077f7a9baeb9c02f0437ae40";
+var COLLECTIONS_PACKAGE_URL = "https://sandstorm.io/apps/david/collections3.spk";
 
 module.exports = {};
 
@@ -37,8 +37,8 @@ function setGrainTitle(browser, collectionTitle) {
     .grainFrame()
     .waitForElementVisible("button[title='add description']", short_wait)
     .click("button[title='add description']")
-    .waitForElementVisible("form.description-row>textarea", short_wait)
-    .setValue("form.description-row>textarea", "This is " + collectionTitle)
+    .waitForElementVisible("form.description-row>input[type=text]", short_wait)
+    .setValue("form.description-row>input[type=text]", "This is " + collectionTitle)
     .click("form.description-row>button")
     .frame(null)
 }
@@ -127,7 +127,7 @@ module.exports["Test Collections"] = function (browser) {
 
           .waitForElementVisible("table.grain-list-table>tbody>tr.add-grain>td>button", short_wait)
           .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(2).grain", short_wait)
-          .assert.containsText("table.grain-list-table>tbody tr:nth-child(2).grain td>a",
+          .assert.containsText("table.grain-list-table>tbody tr:nth-child(2).grain td>button",
                                "Collection B")
           .click("table.grain-list-table>tbody tr:nth-child(2).grain .click-to-go")
           .frame(null)
@@ -157,7 +157,7 @@ module.exports["Test Collections"] = function (browser) {
           .grainFrame(grainIdA)
           .waitForElementVisible("table.grain-list-table>tbody>tr.add-grain>td>button", short_wait)
           .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(3).grain", short_wait)
-          .assert.containsText("table.grain-list-table>tbody tr:nth-child(3).grain td>a",
+          .assert.containsText("table.grain-list-table>tbody tr:nth-child(3).grain td>button",
                                "Collection C")
           .click("table.grain-list-table>tbody tr:nth-child(3).grain .click-to-go")
           .frame(null)
@@ -191,7 +191,7 @@ module.exports["Test Collections"] = function (browser) {
 
               .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(2).grain",
                                      short_wait)
-              .assert.containsText("table.grain-list-table>tbody tr:nth-child(2).grain td>a",
+              .assert.containsText("table.grain-list-table>tbody tr:nth-child(2).grain td>button",
                                    "Collection A")
               .click("table.grain-list-table>tbody tr:nth-child(2).grain .click-to-go")
 
@@ -217,7 +217,7 @@ module.exports["Test Collections"] = function (browser) {
                                      short_wait)
               .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(2).grain",
                                      short_wait)
-              .assert.containsText("table.grain-list-table>tbody tr:nth-child(2).grain td>a",
+              .assert.containsText("table.grain-list-table>tbody tr:nth-child(2).grain td>button",
                                    "Collection B")
               .click("table.grain-list-table>tbody tr:nth-child(2).grain td>input[type=checkbox]")
               .waitForElementVisible(".bulk-action-buttons>button[title='unlink selected grains']",
@@ -241,3 +241,73 @@ module.exports["Test Collections"] = function (browser) {
     });
   });
 };
+
+module.exports["Test collections anonymous user"] = function (browser) {
+  browser = browser
+    .init()
+    .loginDevAccount()
+    .installApp(COLLECTIONS_PACKAGE_URL, COLLECTIONS_PACKAGE_ID, COLLECTIONS_APP_ID);
+  browser = setGrainTitle(browser, "Collection A");
+  browser.executeAsync(function (done) {
+    var grainId = Grains.findOne()._id;
+    Meteor.call("newApiToken", { identityId: Meteor.user().loginIdentities[0].id },
+                grainId, "petname", { allAccess: null },
+                { webkey: { forSharing: true }, },
+                function(error, result) {
+                  done({ error: error, grainId: grainId, token: (result || {}).token });
+                });
+  }, [], function (result) {
+    var grainIdA = result.value.grainId;
+    var tokenA = result.value.token;
+    browser.assert.equal(!result.value.error, true);
+    browser.newGrain(COLLECTIONS_APP_ID, function (grainIdB) {
+      browser = setGrainTitle(browser, "Collection B");
+
+      browser
+        .url(browser.launch_url + "/grain/" + grainIdA)
+        .grainFrame()
+        .waitForElementVisible("table.grain-list-table>tbody>tr.add-grain>td>button", medium_wait)
+        .click("table.grain-list-table>tbody>tr.add-grain>td>button")
+        .frame(null)
+        .waitForElementVisible(powerboxCardSelector(grainIdB), short_wait)
+        .click(powerboxCardSelector(grainIdB))
+
+        // Add with 'editor' permissions.
+        .waitForElementVisible(".popup.request .selected-card>form input[value='0']", short_wait)
+        .click(".popup.request .selected-card>form input[value='0']")
+        .click(".popup.request .selected-card>form button.connect-button")
+
+        // Visit token A anonymously. The link should still work.
+        .frame(null)
+        .execute("window.Meteor.logout()")
+
+        .url(browser.launch_url + "/shared/" + tokenA)
+        .waitForElementVisible(".popup.login button.close-popup", short_wait)
+        .click(".popup.login button.close-popup")
+        .grainFrame()
+        .waitForElementVisible(".description-row p", short_wait)
+        .assert.containsText(".description-row p", "This is Collection A")
+        .waitForElementVisible(".description-row button.description-button", short_wait)
+        .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(1).grain", short_wait)
+        .assert.containsText("table.grain-list-table>tbody tr:nth-child(1).grain td>button",
+                             "Collection B")
+        .click("table.grain-list-table>tbody tr:nth-child(1).grain .click-to-go")
+        .frame(null)
+
+        .grainFrame(grainIdB)
+        .waitForElementVisible(".description-row p", short_wait)
+        .assert.containsText(".description-row p", "This is Collection B")
+        .waitForElementVisible(".description-row button.description-button", short_wait)
+
+        .frame(null)
+        .url(function (sharedUrlGrainB) {
+          browser.loginDevAccount()
+            .url(sharedUrlGrainB.value)
+            .waitForElementVisible(".grain-interstitial button.pick-identity", short_wait)
+            .click(".grain-interstitial button.pick-identity")
+            .grainFrame(grainIdB)
+            .end();
+        });
+    });
+  });
+}

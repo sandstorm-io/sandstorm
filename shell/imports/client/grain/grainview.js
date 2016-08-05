@@ -799,33 +799,17 @@ class GrainView {
     });
 
     const offer = session && session.powerboxView && session.powerboxView.offer;
-    if (offer && offer.uiView) {
-      // If this is an offer of a UiView, immediately dismiss the popup and open the grain.
-      const apiToken = this._db.collections.apiTokens.findOne(offer.uiView.tokenId);
-      if (apiToken && apiToken.grainId) {
+
+    return {
+      sessionId,
+      offer,
+      onDismiss: () => {
         Meteor.call("finishPowerboxOffer", sessionId, function (err) {
+          // TODO(someday): display the error nicely to the user
           if (err) {
             console.error(err);
           }
         });
-
-        Router.go("grain", { grainId: apiToken.grainId });
-      }
-    }
-
-    return {
-      get: function () {
-        return {
-          offer: offer,
-          onDismiss: () => {
-            Meteor.call("finishPowerboxOffer", sessionId, function (err) {
-              // TODO(someday): display the error nicely to the user
-              if (err) {
-                console.error(err);
-              }
-            });
-          },
-        };
       },
     };
   }

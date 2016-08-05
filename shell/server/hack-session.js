@@ -80,13 +80,15 @@ SessionContextImpl = class SessionContextImpl {
 
   offer(cap, requiredPermissions, descriptor, displayInfo) {
     return inMeteor(() => {
-      if (!this.identityId) {
-        // TODO(soon): allow non logged in users?
-        throw new Meteor.Error(400, "Only logged in users can offer capabilities.");
+
+      const session = Sessions.findOne({ _id: this.sessionId });
+
+      if (!session.identityId && !session.hashedToken) {
+        throw new Error("Session has neither an identityId nor a hashedToken.");
       }
 
       const castedCap = cap.castAs(SystemPersistent);
-      let apiTokenOwner = { webkey: null };
+      let apiTokenOwner = { clientPowerboxOffer: { sessionId: this.sessionId, }, };
       const isUiView = descriptor && descriptor.tags && descriptor.tags.length === 1 &&
           descriptor.tags[0] && descriptor.tags[0].id &&
           descriptor.tags[0].id === Grain.UiView.typeId;
@@ -102,23 +104,32 @@ SessionContextImpl = class SessionContextImpl {
           tagValue.title = "offer()ed grain had no title";
         }
 
-        apiTokenOwner = {
-          user: {
-            identityId: this.identityId,
-            title: tagValue.title,
-          },
-        };
+        if (session.identityId) {
+          apiTokenOwner = {
+            user: {
+              identityId: this.identityId,
+              title: tagValue.title,
+            },
+          };
+        }
       }
 
       // TODO(soon): This will eventually use SystemPersistent.addRequirements when membranes
       // are fully implemented for supervisors.
-      const requirement = {
-        permissionsHeld: {
-          grainId: this.grainId,
-          identityId: this.identityId,
-          permissions: requiredPermissions,
-        },
+      const permissionsHeld = {
+        grainId: this.grainId,
+        permissions: requiredPermissions,
       };
+
+      if (session.identityId) {
+        permissionsHeld.identityId = session.identityId;
+      } else if (session.hashedToken) {
+        permissionsHeld.tokenId = session.hashedToken;
+      } else {
+        throw new Error("Cannot offer to anonymous session that does not have a token.");
+      }
+
+      const requirement = { permissionsHeld };
 
       checkRequirements(globalDb, [requirement]);
 
@@ -128,27 +139,31 @@ SessionContextImpl = class SessionContextImpl {
 
       let powerboxView;
       if (isUiView) {
-        // Deduplicate.
-        let tokenId = hashSturdyRef(sturdyRef.toString());
-        const newApiToken = ApiTokens.findOne({ _id: tokenId });
-        const dupeQuery = _.pick(newApiToken, "grainId", "roleAssignment", "requirements",
-                                 "parentToken", "identityId", "accountId");
-        dupeQuery._id = { $ne: newApiToken._id };
-        dupeQuery["owner.user.identityId"] = this.identityId;
-        dupeQuery.trashed = { $exists: false };
-        dupeQuery.revoked = { $exists: false };
+        if (session.identityId) {
+          // Deduplicate.
+          let tokenId = hashSturdyRef(sturdyRef.toString());
+          const newApiToken = ApiTokens.findOne({ _id: tokenId });
+          const dupeQuery = _.pick(newApiToken, "grainId", "roleAssignment", "requirements",
+                                   "parentToken", "identityId", "accountId");
+          dupeQuery._id = { $ne: newApiToken._id };
+          dupeQuery["owner.user.identityId"] = this.identityId;
+          dupeQuery.trashed = { $exists: false };
+          dupeQuery.revoked = { $exists: false };
 
-        const dupeToken = ApiTokens.findOne(dupeQuery);
-        if (dupeToken) {
-          globalDb.removeApiTokens({ _id: tokenId });
-          tokenId = dupeToken._id;
+          const dupeToken = ApiTokens.findOne(dupeQuery);
+          if (dupeToken) {
+            globalDb.removeApiTokens({ _id: tokenId });
+            tokenId = dupeToken._id;
+          }
+
+          powerboxView = { offer: { uiView: { tokenId } } };
+        } else {
+          powerboxView = { offer: { uiView: { token: sturdyRef.toString() } } };
         }
-
-        powerboxView = { offer: { uiView: { tokenId } } };
       } else {
         powerboxView = {
           offer: {
-            url: ROOT_URL.protocol + "//" + globalDb.makeApiHost(sturdyRef) + "#" + sturdyRef,
+            token: sturdyRef.toString(),
           },
         };
       }

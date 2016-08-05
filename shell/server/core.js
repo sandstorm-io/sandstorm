@@ -15,6 +15,7 @@
 // limitations under the License.
 
 const Capnp = Npm.require("capnp");
+const Crypto = Npm.require("crypto");
 const Url = Npm.require("url");
 import { PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements }
     from "/imports/server/persistent.js";
@@ -319,6 +320,74 @@ Meteor.methods({
 
     Notifications.update({ userId: Meteor.userId() }, { $set: { isUnread: false } }, { multi: true });
   },
+
+  acceptPowerboxOffer(sessionId, sturdyRef, sessionToken) {
+    const db = this.connection.sandstormDb;
+    check(sessionId, String);
+    check(sturdyRef, String);
+    check(sessionToken, Match.OneOf(String, null, undefined));
+
+    const sessionQuery = { _id: sessionId };
+    if (sessionToken) {
+      sessionQuery.hashedToken = hashSturdyRef(sessionToken);
+    } else {
+      sessionQuery.userId = this.userId;
+    }
+
+    const session = db.collections.sessions.findOne(sessionQuery);
+    if (!session) {
+      throw new Meteor.Error(404, "No matching session found.");
+    }
+
+    const tokenId = hashSturdyRef(sturdyRef);
+    const apiToken = db.collections.apiTokens.findOne({
+      _id: tokenId,
+      "owner.clientPowerboxOffer.sessionId": sessionId,
+    });
+
+    if (!apiToken) {
+      throw new Meteor.Error(404, "No such token.");
+    }
+
+    let newSturdyRef;
+    let hashedNewSturdyRef;
+    if (sessionToken && apiToken.parentToken) {
+      // An anonymous user is being offered a child token. To avoid bloating the database,
+      // we deterministically derive the sturdyref from the session token and the hashed parent
+      // token.
+      //
+      // Note that an attacker with read access to the database might be able to derive
+      // `newSturdyRef` from `sessionToken` and gain access to the capability without ever having
+      // been explicitly offered it by the grain. Therefore, grains must assume that offering
+      // a capability to an anonymous user can possibly make that capability accessible to any
+      // other anonymous user who has connected through the same URL.
+
+      newSturdyRef = Crypto.createHash("sha256")
+        .update(sessionToken)
+        .update(apiToken.parentToken)
+        .digest("base64")
+        .slice(0, -1)                             // removing trailing "="
+        .replace(/\+/g, "-").replace(/\//g, "_"); // make URL-safe
+
+      hashedNewSturdyRef = hashSturdyRef(newSturdyRef);
+      if (db.collections.apiTokens.findOne({ _id: hashedNewSturdyRef })) {
+        // We have already generated this token.
+        db.removeApiTokens({ _id: tokenId });
+        return newSturdyRef;
+      }
+    } else {
+      newSturdyRef = generateSturdyRef();
+      hashedNewSturdyRef = hashSturdyRef(newSturdyRef);
+    }
+
+    apiToken._id = hashedNewSturdyRef;
+    apiToken.owner = { webkey: null };
+
+    db.collections.apiTokens.insert(apiToken);
+    db.removeApiTokens({ _id: tokenId });
+    return newSturdyRef;
+  },
+
 });
 
 const makeSaveTemplateForChild = function (parentToken, requirements, parentTokenInfo) {
@@ -339,8 +408,10 @@ const makeSaveTemplateForChild = function (parentToken, requirements, parentToke
     throw new Error("no such token");
   }
 
+  const parentOwner = parentTokenInfo.owner || {};
+
   let saveTemplate;
-  if ((parentTokenInfo.owner || {}).clientPowerboxRequest) {
+  if (parentOwner.clientPowerboxRequest || parentOwner.clientPowerboxOffer) {
     // Saving this token should make a copy of the restored token, rather than make a child
     // token.
 

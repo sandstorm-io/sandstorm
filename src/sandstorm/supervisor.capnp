@@ -192,17 +192,22 @@ struct MembraneRequirement {
     # specifies the `_id` of the other ApiToken.
 
     permissionsHeld :group {
-      # This token is valid only as long as some specified identity holds some specified set of
-      # permissions on some specified grain.
+      # This token is valid only as long as some vertex in the sharing graph holds some specified
+      # set of permissions on some specified grain.
 
-      identityId @5 :Text;
-      # The identity that must hold the permissions.
+      union {
+        identityId @5 :Text;
+        # The permissions must be held by the identity with this ID.
+
+        tokenId @6: Text;
+        # The permissions must be held by anyone who bears the token with this ID.
+      }
 
       grainId @2 :Text;
       # The grain on which the permissions must be held.
 
       permissions @3 :Identity.PermissionSet;
-      # The permissions the user must hold on the grain.
+      # The permissions that must be held.
 
       userId @1 :Text;
       # Deprecated. See `identityId`.
@@ -304,6 +309,23 @@ struct ApiTokenOwner {
       # The identity ID through which a user's powerbox action caused the grain to receive this
       # token. This is the identity against which the `requiredPermissions` parameter
       # to `claimRequest()` will be checked.
+    }
+
+    clientPowerboxOffer :group {
+       # When a grain calls `SessionContext.offer(cap)` and the powerbox decides to present the
+       # capability as a webkey, we push the offered capability to the client through the
+       # `Sessions` collection as a token with `clientPowerboxOffer` owner. The token will be
+       # automatically deleted after a short amount of time, before which the client must call the
+       # "acceptPowerboxOffer" Meteor method to convert the token into a durable webkey.
+       #
+       # This variant exists to avoid the need to write a durable webkey into the database, where,
+       # due to journaling, it would remain readable forever. In principle, the extra step entailed
+       # by `clientPowerboxOffer` is not strictly necessary, and we should be able to directly
+       # return the webkey without writing anything to the database. That approach, however, is a
+       # bit tricky in the case where Sandstorm is running multiple frontends.
+
+       sessionId @17 :Text;
+       # The ID of the session that is allowed to accept this offer.
     }
 
     internet @3 :AnyPointer;

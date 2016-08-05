@@ -1091,11 +1091,25 @@ choose_install_dir() {
     fi
 
     DIR=$(prompt "Where would you like to put Sandstorm?" "$DEFAULT_DIR")
+  fi
 
-    if [ -e "$DIR" ]; then
-      echo "$DIR already exists. Sandstorm will assume ownership of all contents."
-      prompt-yesno "Is this OK?" yes || fail "E_USER_ABORTED_OVERWRITE" "Aborting by user request to avoid over-writing existing data."
-    fi
+  if [ -e "$DIR" ]; then
+    # Clear the previous line, since in many cases, it's a "echo -n".
+    error ""
+    error "This script is trying to install to ${DIR}."
+    error ""
+    error "You seem to already have a ${DIR} directory. You should either:"
+    error ""
+    error "1. Reconfigure that Sandstorm install using its configuration file -- ${DIR}/sandstorm.conf -- or the admin interface. See docs at:"
+    error "https://docs.sandstorm.io/en/latest/administering/"
+    error ""
+    error "2. Uninstall Sandstorm before attempting to perform a new install. Even if you created a sandcats.io hostname, it is safe to uninstall so long as you do not need the data in your Sandstorm install. When you re-install Sandstorm, you can follow a process to use the old hostname with the new install. See uninstall docs at:"
+    error "https://docs.sandstorm.io/en/latest/install/#uninstall"
+    error ""
+    error "3. Use a different target directory for the new Sandstorm install. Try running install.sh with the -d option."
+    error ""
+    error "4. Retain your data, but restore your Sandstorm code and configuration to a fresh copy. To do that, keep a backup  of ${DIR}/var and then do a fresh install; stop the Sandstorm service, and restore your backup of ${DIR}/var. You may need to adjust permissions after doing that."
+    REPORT=no fail "E_DIR_ALREADY_EXISTS" "Please try one of the above. Contact https://groups.google.com/d/forum/sandstorm-dev for further help."
   fi
 
   mkdir -p "$DIR"

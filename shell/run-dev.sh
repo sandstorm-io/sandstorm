@@ -94,8 +94,4 @@ cat > $SETTINGS << __EOF__
 }
 __EOF__
 
-# Work-around for problem where Meteor's bundled npm prefers the system gyp
-# over its own bundled version, and the system gyp doesn't work.
-export PYTHONPATH=$("$SCRIPT_DIR/../find-meteor-dev-bundle.sh")/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib
-
 exec meteor run --port=$BIND_IP:$PORT --settings $SETTINGS

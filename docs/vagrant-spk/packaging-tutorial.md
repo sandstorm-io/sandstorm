@@ -202,13 +202,13 @@ Second, we will customize the text that Sandstorm users see when they want
 to create a new _instance_ of the app. To do this, find the line containing:
 
 ```bash
-      ( title = (defaultText = "New Instance"),
+      ( nounPhrase = (defaultText = "instance"),
 ```
 
 and change it to read:
 
 ```bash
-      ( title = (defaultText = "New Showcase"),
+      ( nounPhrase = (defaultText = "showcase"),
 ```
 
 ## Make the app available in the Sandstorm, in development mode
@@ -233,11 +233,11 @@ App is now available from Sandstorm server. Ctrl+C to disconnect.
 Now you can visit the Sandstorm at http://local.sandstorm.io:6080/ and log in
 as **Alice (admin)**. Your app name should appear in the list of apps.
 
-You can click **New Showcase** and see the PHP code running.
+You can click **New showcase** and see the PHP code running.
 
-Note that each app instance (each "Showcase", for this app) runs separate from
+Note that each app instance (each "showcase", for this app) runs separate from
 each other. You can see that for this app because the app stores the number
-of times you have reloaded the page. If you create another **New Showcase**,
+of times you have reloaded the page. If you create another **New showcase**,
 each instance will store their data separately.
 
 In Sandstorm, resources like a database are embedded into the package. That

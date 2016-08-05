@@ -295,13 +295,13 @@ create a new _instance_ of the app. To do this, find the line
 containing:
 
 ```bash
-      ( title = (defaultText = "New Instance"),
+      ( nounPhrase = (defaultText = "instance"),
 ```
 
 and change it to read:
 
 ```bash
-      ( title = (defaultText = "New Clock"),
+      ( nounPhrase = (defaultText = "clock"),
 ```
 
 To refresh the information that shows up in

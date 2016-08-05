@@ -665,6 +665,8 @@ function startPreinstallingApps() {
 }
 
 function setNewServer() {
+  // This migration only applies to "old" servers. New servers will set
+  // new_server_migrations_applied to false before any migrations run.
   if (!Migrations.findOne({ _id: "new_server_migrations_applied" })) {
     Migrations.insert({ _id: "new_server_migrations_applied", value: true });
   }

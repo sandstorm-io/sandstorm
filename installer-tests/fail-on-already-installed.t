@@ -8,5 +8,5 @@ $[slow]0
 $[run]sudo mkdir -p /opt/sandstorm && ok
 $[slow]ok
 $[run]sudo CURL_USER_AGENT=testing REPORT=no /vagrant/install.sh -d
-$[veryslow]This script is trying to install to /opt/sandstorm.
+$[veryslow]*** INSTALLATION FAILED ***
 $[exitcode]1

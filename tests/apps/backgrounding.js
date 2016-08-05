@@ -45,7 +45,7 @@ module.exports["Test Notification"] = function (browser) {
     .assert.containsText(".topbar .notifications .count", "1")
     .click(".topbar .notifications>.show-popup")
     .waitForElementNotPresent(".topbar .notifications .count", short_wait)
-    .click(".cancel-notification")
+    .click(".notification-list .notification-item button")
     .pause(short_wait)
     .windowHandles(function (windows) {
       browser

@@ -398,6 +398,13 @@ Meteor.methods({
     console.log("Wrote heapdump: /opt/sandstorm" + name);
     return name;
   },
+
+  setPreinstalledApps: function (appAndPackageIds) {
+    checkAuth();
+    check(appAndPackageIds, [{ appId: String, packageId: String, }]);
+
+    this.connection.sandstormDb.setPreinstalledApps(appAndPackageIds);
+  },
 });
 
 const authorizedAsAdmin = function (token, userId) {
@@ -545,7 +552,7 @@ Meteor.publish("allPackages", function (token) {
   if (!authorizedAsAdmin(token, this.userId)) return [];
   return Packages.find({ manifest: { $exists: true } },
       { fields: { appId: 1, "manifest.appVersion": 1,
-      "manifest.actions": 1, "manifest.appTitle": 1, }, });
+      "manifest.actions": 1, "manifest.appTitle": 1, progress: 1, status: 1, }, });
 });
 
 Meteor.publish("realTimeStats", function (token) {
@@ -690,6 +697,11 @@ Meteor.publish("hasAdmin", function (token) {
   }
 
   this.ready();
+});
+
+Meteor.publish("appIndexAdmin", function (token) {
+  if (!authorizedAsAdmin(token, this.userId)) return [];
+  return globalDb.collections.appIndex.find();
 });
 
 function observeOauthService(name) {

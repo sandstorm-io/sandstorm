@@ -56,7 +56,8 @@ const deletePackageInternal = (pkg) => {
     const grain = Grains.findOne({ packageId: packageId });
     const notificationQuery = {};
     notificationQuery["appUpdates." + pkg.appId] = { $exists: true };
-    if (!grain && !action && !(pkg.isAutoUpdated && Notifications.findOne(notificationQuery))) {
+    if (!grain && !action && !(pkg.isAutoUpdated && Notifications.findOne(notificationQuery))
+        && !globalDb.getAppIdForPreinstalledPackage(packageId)) {
       Packages.update({
         _id: packageId,
       }, {
@@ -384,6 +385,18 @@ AppInstaller = class AppInstaller {
           globalDb.sendAppUpdateNotifications(_this.appId, _this.packageId,
             (manifest.appTitle && manifest.appTitle.defaultText), manifest.appVersion,
             (manifest.appMarketingVersion && manifest.appMarketingVersion.defaultText));
+        }
+
+        if (globalDb.getPackageIdForPreinstalledApp(_this.appId) &&
+            globalDb.collections.appIndex.findOne({
+              _id: _this.appId,
+              packageId: _this.packageId,
+            })) {
+          // Only mark app as preinstall ready if its appId is in the preinstalledApps setting
+          // and if it's the latest package version in the appIndex. The updateAppIndex function
+          // will always trigger updates of preinstalled apps, even if a concurrent download of
+          // an older package is going on.
+          globalDb.setPreinstallAppAsReady(_this.appId, _this.packageId);
         }
       });
     }).then(() => {

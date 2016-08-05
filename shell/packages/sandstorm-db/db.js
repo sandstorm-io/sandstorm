@@ -584,6 +584,10 @@ Settings = new Mongo.Collection("settings");
 //                       needed. That object can have the following variants:
 //       baseUrlChangedFrom: The reset was due to BASE_URL changing. This field contains a string
 //                           with the old BASE_URL.
+//   preinstalledApps: A list of objects:
+//     appId: The Packages.appId of the app to install
+//     status: packageId
+//     packageId: The Packages._id of the app to install
 //
 //   potentially other fields that are unique to the setting
 
@@ -1613,6 +1617,197 @@ _.extend(SandstormDb.prototype, {
     }
 
     ActivitySubscriptions.upsert(record, { $set: { mute: true } });
+  },
+
+  updateAppIndex: function () {
+    const appUpdatesEnabledSetting = this.collections.settings.findOne({ _id: "appUpdatesEnabled" });
+    const appUpdatesEnabled = appUpdatesEnabledSetting && appUpdatesEnabledSetting.value;
+    if (!appUpdatesEnabled) {
+      // It's much simpler to check appUpdatesEnabled here rather than reactively deactivate the
+      // timer that triggers this call.
+      return;
+    }
+
+    const appIndexUrl = this.collections.settings.findOne({ _id: "appIndexUrl" }).value;
+    const appIndex = this.collections.appIndex;
+    const data = HTTP.get(appIndexUrl + "/apps/index.json").data;
+    const preinstalledAppIds = this.getAllPreinstalledAppIds();
+    // We make sure to get all preinstalled appIds, even ones that are currently
+    // downloading/failed.
+    data.apps.forEach((app) => {
+      app._id = app.appId;
+
+      const oldApp = appIndex.findOne({ _id: app.appId });
+      app.hasSentNotifications = false;
+      appIndex.upsert({ _id: app._id }, app);
+      const isAppPreinstalled = _.contains(preinstalledAppIds, app.appId);
+      if ((!oldApp || app.versionNumber > oldApp.versionNumber) &&
+          (this.collections.userActions.findOne({ appId: app.appId }) ||
+          isAppPreinstalled)) {
+        const pack = this.collections.packages.findOne({ _id: app.packageId });
+        const url = appIndexUrl + "/packages/" + app.packageId;
+        if (pack) {
+          if (pack.status === "ready") {
+            if (pack.appId && pack.appId !== app.appId) {
+              console.error("app index returned app ID and package ID that don't match:",
+                            JSON.stringify(app));
+            } else {
+              this.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber,
+                app.version);
+            }
+          } else {
+            const newPack = Packages.findAndModify({
+              query: { _id: app.packageId },
+              update: { $set: { isAutoUpdated: true } },
+            });
+            if (newPack.status === "ready") {
+              // The package was marked as ready before we applied isAutoUpdated=true. We should send
+              // notifications ourselves to be sure there's no timing issue (sending more than one is
+              // fine, since it will de-dupe).
+              if (pack.appId && pack.appId !== app.appId) {
+                console.error("app index returned app ID and package ID that don't match:",
+                              JSON.stringify(app));
+              } else {
+                this.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber,
+                  app.version);
+              }
+            } else if (newPack.status === "failed") {
+              // If the package has failed, retry it
+              this.startInstall(app.packageId, url, true, true);
+            }
+          }
+        } else {
+          this.startInstall(app.packageId, url, false, true);
+        }
+      }
+    });
+  },
+
+  isPackagePreinstalled: function (packageId) {
+    return Settings.find({ _id: "preinstalledApps", "value.packageId": packageId }).count() === 1;
+  },
+
+  getAppIdForPreinstalledPackage: function (packageId) {
+    const setting = Settings.findOne({ _id: "preinstalledApps", "value.packageId": packageId },
+    { fields: { "value.$": 1 } });
+    // value.$ causes mongo to transform the result and only return the first matching element in
+    // the array
+    return setting && setting.value && setting.value[0] && setting.value[0].appId;
+  },
+
+  getPackageIdForPreinstalledApp: function (appId) {
+    const setting = Settings.findOne({ _id: "preinstalledApps", "value.appId": appId },
+    { fields: { "value.$": 1 } });
+    // value.$ causes mongo to transform the result and only return the first matching element in
+    // the array
+    return setting && setting.value && setting.value[0] && setting.value[0].packageId;
+  },
+
+  getReadyPreinstalledAppIds: function () {
+    const setting = Settings.findOne({ _id: "preinstalledApps" });
+    const ret = setting && setting.value || [];
+    return _.chain(ret)
+            .filter((app) => { return app.status === "ready"; })
+            .map((app) => { return app.appId; })
+            .value();
+  },
+
+  getAllPreinstalledAppIds: function () {
+    const setting = Settings.findOne({ _id: "preinstalledApps" });
+    const ret = setting && setting.value || [];
+    return _.map(ret, (app) => { return app.appId; });
+  },
+
+  preinstallAppsForUser: function (userId) {
+    const appIds = this.getReadyPreinstalledAppIds();
+    appIds.forEach((appId) => {
+      try {
+        this.addUserActions(userId, this.getPackageIdForPreinstalledApp(appId));
+      } catch (e) {
+        console.error("failed to install app for user:", e);
+      }
+    });
+  },
+
+  setPreinstallAppAsDownloading: function (appId, packageId) {
+    this.collections.settings.update(
+      { _id: "preinstalledApps", "value.appId": appId, "value.packageId": packageId },
+      { $set: { "value.$.status": "downloading" } });
+  },
+
+  setPreinstallAppAsReady: function (appId, packageId) {
+    // This function both sets the appId as ready and updates the packageId for the given appId
+    // Setting the packageId is especially useful in installer.js, as it always ensures the
+    // latest installed package will be set as ready.
+    this.collections.settings.update(
+      { _id: "preinstalledApps", "value.appId": appId },
+      { $set: { "value.$.status": "ready", "value.$.packageId": packageId } });
+  },
+
+  ensureAppPreinstall: function (appId, packageId) {
+    check(appId, String);
+    const appIndexUrl = this.collections.settings.findOne({ _id: "appIndexUrl" }).value;
+    const pack = this.collections.packages.findOne({ _id: packageId });
+    const url = appIndexUrl + "/packages/" + packageId;
+    if (pack && pack.status === "ready") {
+      this.setPreinstallAppAsReady(appId, packageId);
+    } else if (pack && pack.status === "failed") {
+      this.setPreinstallAppAsDownloading(appId, packageId);
+      this.startInstall(packageId, url, true, false);
+    } else {
+      this.setPreinstallAppAsDownloading(appId, packageId);
+      this.startInstall(packageId, url, false, false);
+    }
+  },
+
+  setPreinstalledApps: function (appAndPackageIds) {
+    // appAndPackageIds: A List[Object] where each element has fields:
+    //     appId: The Packages.appId of the app to install
+    //     packageId: The Packages._id of the app to install
+    check(appAndPackageIds, [{ appId: String, packageId: String, }]);
+
+    // Start by clearing out the setting. We'll push appIds one by one to it
+    this.collections.settings.upsert({ _id: "preinstalledApps" }, { $set: {
+      value: appAndPackageIds.map((data) => {
+        return {
+          appId: data.appId,
+          status: "notReady",
+          packageId: data.packageId,
+        };
+      }),
+    }, });
+    appAndPackageIds.forEach((data) => {
+      this.ensureAppPreinstall(data.appId, data.packageId);
+    });
+  },
+
+  getProductivitySuiteAppIds: function () {
+    return [
+      "8aspz4sfjnp8u89000mh2v1xrdyx97ytn8hq71mdzv4p4d8n0n3h", // Davros
+      "h37dm17aa89yrd8zuqpdn36p6zntumtv08fjpu8a8zrte7q1cn60", // Etherpad
+      "vfnwptfn02ty21w715snyyczw0nqxkv3jvawcah10c6z7hj1hnu0", // Rocket.Chat
+      "m86q05rdvj14yvn78ghaxynqz7u2svw6rnttptxx49g1785cdv1h", // Wekan
+    ];
+  },
+
+  getSystemSuiteAppIds: function () {
+    return [];
+  },
+
+  isPreinstalledAppsReady: function () {
+    const setting = Settings.findOne({ _id: "preinstalledApps" });
+    if (!setting || !setting.value) {
+      return true;
+    }
+
+    const packageIds = _.pluck(setting.value, "packageId");
+    const readyApps = this.collections.packages.find({
+      _id: {
+        $in: packageIds,
+      },
+      status: "ready",
+    });
+    return readyApps.count() === packageIds.length;
   },
 });
 

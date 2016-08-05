@@ -136,6 +136,10 @@ Router.map(function () {
     path: "/admin/app-sources",
     controller: newAdminRoute,
   });
+  this.route("newAdminPreinstalledApps", {
+    path: "/admin/preinstalled-apps",
+    controller: newAdminRoute,
+  });
   this.route("newAdminMaintenance", {
     path: "/admin/maintenance",
     controller: newAdminRoute,

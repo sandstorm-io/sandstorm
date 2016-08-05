@@ -73,10 +73,10 @@
   // the endpoints of the progress bars below, but the number of steps varies, so we need to set
   // the size depending on how many there are.
   &.of-four {
-    flex: 0 1 25%;
+    flex: 0 1 20%;
   }
   &.of-five {
-    flex: 0 1 20%;
+    flex: 0 1 16.66%;
   }
   display: flex;
   flex-direction: column;
@@ -223,6 +223,74 @@
   }
 }
 
+.setup-preinstall {
+  [role=grid] {
+    margin-bottom: 10px;
+
+    [role=row] {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-start;
+      border-top: 1px solid $default-table-border-color;
+      flex-basis: 0;
+      width: 100%;
+
+      &.checked, &.toggle-more {
+        background-color: white;
+        [role=row] {
+          border-top: 1px solid $default-content-background-color;
+        }
+      }
+
+      &.toggle-more {
+        cursor: pointer;
+        div {
+          margin-left: auto;
+        }
+      }
+
+      [role=gridcell] {
+        padding: 4px;
+        overflow: hidden;
+        @include overflow-ellipsis();
+        flex-grow: 0;
+        &.name {
+          width: 20%;
+        }
+        &.description {
+          width: 70%;
+          color: #888888;
+        }
+        &.download {
+          width: 130px;
+          color: #888888;
+          i.download-checkmark {
+            color: green;
+            @extend .icon;
+            @extend .icon-check;
+            margin-right: 5px;
+          }
+          i.download-x-mark {
+            color: red;
+            @extend .icon;
+            @extend .icon-plus;
+            margin-right: 5px;
+            -ms-transform: rotate(45deg);
+            -webkit-transform: rotate(45deg);
+            transform: rotate(45deg);
+          }
+          progress {
+            width: 115px;
+            &::-webkit-progress-value {
+              background-color: green;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 .setup-next-steps {
   display: flex;
   flex-direction: row;
@@ -253,7 +321,7 @@
   margin-right: auto;
 }
 
-.setup-test-email-button, .setup-skip-email {
+.setup-test-email-button, .setup-skip-email, .setup-skip-button {
   @extend %button-base;
   @extend %button-secondary;
   margin-left: 10px;

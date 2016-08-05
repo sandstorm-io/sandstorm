@@ -8,6 +8,9 @@ const Future = Npm.require("fibers/future");
 const Url = Npm.require("url");
 const Crypto = Npm.require("crypto");
 
+const localSandstormDb = new SandstormDb();
+// TODO(someday): fix this when SandstormDb actually stores meaningful state on the object.
+
 const updateLoginStyleToRedirect = function () {
   const configurations = Package["service-configuration"].ServiceConfiguration.configurations;
   ["google", "github"].forEach(function (serviceName) {
@@ -637,6 +640,38 @@ function assignEmailVerifierIds() {
   });
 }
 
+function startPreinstallingApps() {
+  // This isn't really a normal migration. It will run only on brand new servers, and it has to
+  // run after the `clearAppIndex` migration because it relies on populating AppIndex.
+
+  const startPreinstallingAppsHelper = function () {
+    localSandstormDb.updateAppIndex();
+
+    const preinstalledApps = globalDb.collections.appIndex.find({ _id: {
+      $in: globalDb.getProductivitySuiteAppIds(), },
+    }).fetch();
+    const appAndPackageIds = _.map(preinstalledApps, (app) => {
+      return {
+        appId: app.appId,
+        packageId: app.packageId,
+      };
+    });
+
+    localSandstormDb.setPreinstalledApps(appAndPackageIds);
+  };
+
+  // We want preinstalling apps to run async and not block startup.
+  Meteor.setTimeout(startPreinstallingAppsHelper, 0);
+}
+
+function setNewServer() {
+  // This migration only applies to "old" servers. New servers will set
+  // new_server_migrations_applied to false before any migrations run.
+  if (!Migrations.findOne({ _id: "new_server_migrations_applied" })) {
+    Migrations.insert({ _id: "new_server_migrations_applied", value: true });
+  }
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -670,6 +705,11 @@ const MIGRATIONS = [
   markAllRead,
   clearAppIndex,
   assignEmailVerifierIds,
+  setNewServer,
+];
+
+const NEW_SERVER_STARTUP = [
+  startPreinstallingApps,
 ];
 
 function migrateToLatest() {
@@ -689,8 +729,23 @@ function migrateToLatest() {
       changed: change,
     });
 
+    const newServerDone = new Future();
+    const newServerChange = function (doc) {
+      if (doc.value) {
+        console.log("New server migrations applied elsewhere");
+        newServerDone.return();
+      }
+    };
+
+    const newServerObserver = Migrations.find({ _id: "new_server_migrations_applied" }).observe({
+      added: newServerChange,
+      changed: newServerChange,
+    });
+
     done.wait();
     observer.stop();
+    newServerDone.wait();
+    newServerObserver.stop();
     console.log("Migrations have completed on replica zero.");
 
   } else {
@@ -701,6 +756,9 @@ function migrateToLatest() {
       // applied 0 migrations.  Persist this.
       Migrations.insert({ _id: "migrations_applied", value: 0 });
       start = 0;
+
+      // This also means this is a brand new server
+      Migrations.insert({ _id: "new_server_migrations_applied", value: false });
     } else {
       start = applied.value;
     }
@@ -713,6 +771,18 @@ function migrateToLatest() {
       MIGRATIONS[i]();
       Migrations.update({ _id: "migrations_applied" }, { $set: { value: i + 1 } });
       console.log("Applied migration " + (i + 1));
+    }
+
+    if (!Migrations.findOne({ _id: "new_server_migrations_applied" }).value) {
+      // new_server_migrations_applied is guaranteed to exist since we have a migration that
+      // ensures it.
+      for (let i = 0; i < NEW_SERVER_STARTUP.length; i++) {
+        console.log("Running new server startup function " + (i + 1));
+        NEW_SERVER_STARTUP[i]();
+        console.log("Running new server startup function " + (i + 1));
+      }
+
+      Migrations.update({ _id: "new_server_migrations_applied" }, { $set: { value: true } });
     }
   }
 }

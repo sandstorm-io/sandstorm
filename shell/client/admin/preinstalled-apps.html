@@ -1,0 +1,117 @@
+<template name="newAdminPreinstalledApps">
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>Pre-installed apps</li>
+    </ul>
+  </h1>
+
+  {{#if hasSuccess}}
+    {{#focusingSuccessBox}}
+      {{message}}
+    {{/focusingSuccessBox}}
+  {{/if}}
+  {{#if hasError}}
+    {{#focusingErrorBox}}
+      {{message}}
+    {{/focusingErrorBox}}
+  {{/if}}
+  <p>
+    Apps you configure on this page to be pre-installed will automatically be installed (show under /apps) for new users.
+  </p>
+  <form class="admin-preinstalled-apps">
+    <div class="form-group">
+      <label>
+        Productivity Suite
+      </label>
+      <span class="form-subtext">
+        We recommend pre-installing these core apps that are useful to most users.
+      </span>
+      <div class="productivity-suite" role="grid">
+        <div role="rowgroup">
+          {{#each productivityApps}}
+            {{> _appRow getRowData}}
+          {{/each}}
+        </div>
+      </div>
+    </div>
+
+    <!-- <div class="form-group">
+      <label>
+        System apps
+      </label>
+      <span class="form-subtext">
+        We recommend pre-installing these system apps that greatly enhance the abilities of Sandstorm.
+      </span>
+      <div class="system-suite" role="grid">
+        <div role="rowgroup">
+          {{#each systemApps}}
+            {{> _appRow getRowData}}
+          {{/each}}
+        </div>
+      </div>
+    </div> -->
+
+    <div class="form-group all-apps-group">
+      <label>
+        All apps on market
+      </label>
+      <span class="form-subtext">
+        The checked apps below will be installed by default for all new users.
+      </span>
+      <div class="all-apps" role="grid">
+        <div role="rowgroup">
+          {{#each allApps}}
+            {{> _appRow getRowData}}
+          {{/each}}
+        </div>
+        {{#if paginateApps}}
+          <div role="row" class="toggle-more">
+            <div role="gridcell">
+              <div role="button">
+                {{#if showAllApps}}
+                  <i class="icon icon-up"></i>Show less apps
+                {{else}}
+                  <i class="icon icon-down"></i>Show {{appCountMinusShown}} more apps
+                {{/if}}
+              </div>
+            </div>
+          </div>
+        {{/if}}
+      </div>
+    </div>
+
+    <div class="button-row">
+      <button type="submit" class="save" disabled="{{saveDisabled}}">Save</button>
+    </div>
+  </form>
+</template>
+
+<template name="_appRow">
+  <!-- This template expects a single AppIndex row as the data context with the following extra
+  fields:
+    preinstalledAppIds: A reactive var that is a list of string appIds. It is used to tell if this
+      app is currently selected or not.
+    formChanged: A reactive var that is a bool. It is meant to be set to true whenever a change
+      occurs.
+  -->
+  <div role="row" class="{{#if isAppPreinstalled}}checked{{/if}}">
+    <div role="gridcell">
+      <input name="installedApp" type="checkbox" checked="{{#if isAppPreinstalled}}true{{/if}}">
+    </div>
+    <div class="name" role="gridcell">{{name}}</div>
+    <div class="description" role="gridcell">{{shortDescription}}</div>
+    <div class="download" role="gridcell">
+      {{#if showAppStatus}}
+        {{#if isAppDownloaded}}
+          <i class="download-checkmark"></i>Downloaded
+        {{else}}{{#if isAppDownloading}}
+          <progress value="{{progressFraction}}"></progress>
+        {{else}}{{#if isAppFailed}}
+          <i class="download-x-mark"></i>Failed
+        {{/if}}
+        {{/if}}
+        {{/if}}
+      {{/if}}</div>
+  </div>
+</template>

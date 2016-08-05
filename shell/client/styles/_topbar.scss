@@ -707,6 +707,10 @@ body>.topbar {
           z-index: 2;  // Stack above <a>.
         }
       }
+
+      >li.navitem-demo-notice {
+        height: auto !important;
+      }
     }
 
     .demo-notice {

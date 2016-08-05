@@ -1749,20 +1749,11 @@ _.extend(SandstormDb.prototype, {
     const appIndexUrl = this.collections.settings.findOne({ _id: "appIndexUrl" }).value;
     const pack = this.collections.packages.findOne({ _id: packageId });
     const url = appIndexUrl + "/packages/" + packageId;
-    if (pack) {
-      if (pack.status === "ready") {
-        this.setPreinstallAppAsReady(appId, packageId);
-      } else {
-        if (newPack.status === "ready") {
-          // The package was marked as ready while we were checking. We should set the DB ourself
-          // to be sure it happens.
-          this.setPreinstallAppAsReady(appId, packageId);
-        } else if (newPack.status === "failed") {
-          // If the package has failed, retry it
-          this.setPreinstallAppAsDownloading(appId, packageId);
-          this.startInstall(packageId, url, true, false);
-        }
-      }
+    if (pack && pack.status === "ready") {
+      this.setPreinstallAppAsReady(appId, packageId);
+    } else if (pack && pack.status === "failed") {
+      this.setPreinstallAppAsDownloading(appId, packageId);
+      this.startInstall(packageId, url, true, false);
     } else {
       this.setPreinstallAppAsDownloading(appId, packageId);
       this.startInstall(packageId, url, false, false);

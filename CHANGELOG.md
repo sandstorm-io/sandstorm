@@ -1,3 +1,13 @@
+### v0.174 (2016-08-05)
+- Admins can now choose to pre-install certain apps into new user accounts. For all new servers and Oasis, our four most-popular apps will be pre-installed by default: Etherpad, Wekan, Rocket.Chat, and Davros. Admins can disable this if they prefer, and servers predating this change will not pre-install any apps by default (but the admin can change this).
+- offer()ing a grain capability now works for anonymous users, which means anonymous users can use the collections app. This app will be officially released shortly.
+- Identicons are now rendered as SVGs rather than PNGs, which makes them much more efficient to generate. This in particular fixes the noticeable pause when the sharing contact auto-complete first appears for users who have many contacts.
+- Updated to Meteor 1.3.5.1 (1.4 / Node 4 coming soon!).
+- Fixed that Sandstorm sometimes temporarily incorrectly flashed "(incognito)" in place of the user name when starting.
+- Sandstorm for Work: Non-square whitelabel icons now do something reasonable.
+- Various refactoring.
+- Somewhat improved styling of bell-menu notifications. (More work to be done.)
+
 ### v0.173 (2016-07-23)
 - Sandstorm for Work: Added server whitelabeling features. Find under "Personalization" in the admin panel.
 - Apps now receive profile pictures for all users. Users who have no picture get an identicon. Previously, apps were expected to generate identicons themselves.

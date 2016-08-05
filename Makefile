@@ -31,6 +31,7 @@ PARALLEL=$(shell nproc)
 #   position-independent executables for security reasons?
 METEOR_DEV_BUNDLE=$(shell ./find-meteor-dev-bundle.sh)
 NODEJS=$(METEOR_DEV_BUNDLE)/bin/node
+NODE_GYP_PYTHONPATH=$(METEOR_DEV_BUNDLE)/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib
 NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
 WARNINGS=-Wall -Wextra -Wglobal-constructors -Wno-sign-compare -Wno-unused-parameter
 CXXFLAGS2=-std=c++1y $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -pthread -fPIC -I$(NODE_HEADERS)
@@ -334,7 +335,7 @@ shell/public/%-m.svg: icons/%.svg
 shell-build: shell/imports/* shell/imports/*/* shell/client/* shell/server/* shell/shared/* shell/public/* shell/packages/* shell/packages/*/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
 	@$(call color,meteor frontend)
 	@test -z "$$(find -L shell/* -type l)" || (echo "error: broken symlinks in shell: $$(find -L shell/* -type l)" >&2 && exit 1)
-	@OLD=`pwd` && cd shell && PYTHONPATH=$$HOME/.meteor/tools/latest/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib meteor build --directory "$$OLD/shell-build"
+	@OLD=`pwd` && cd shell && PYTHONPATH=$(NODE_GYP_PYTHONPATH) meteor build --directory "$$OLD/shell-build"
 
 # ====================================================================
 # Bundle

@@ -1703,7 +1703,7 @@ _.extend(SandstormDb.prototype, {
     return setting && setting.value && setting.value[0] && setting.value[0].packageId;
   },
 
-  getPreinstalledAppIds: function () {
+  getReadyPreinstalledAppIds: function () {
     const setting = Settings.findOne({ _id: "preinstalledApps" });
     const ret = setting && setting.value || [];
     return _.chain(ret)
@@ -1718,17 +1718,8 @@ _.extend(SandstormDb.prototype, {
     return _.map(ret, (app) => { return app.appId; });
   },
 
-  getPreinstalledPackageIds: function () {
-    const setting = Settings.findOne({ _id: "preinstalledApps" });
-    const ret = setting && setting.value || [];
-    return _.chain(ret)
-            .filter((app) => { return app.status === "ready"; })
-            .map((app) => { return app.packageId; })
-            .value();
-  },
-
   preinstallAppsForUser: function (userId) {
-    const appIds = this.getPreinstalledAppIds();
+    const appIds = this.getReadyPreinstalledAppIds();
     appIds.forEach((appId) => {
       try {
         this.addUserActions(userId, this.getPackageIdForPreinstalledApp(appId));

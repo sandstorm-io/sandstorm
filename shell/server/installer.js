@@ -388,7 +388,10 @@ AppInstaller = class AppInstaller {
         }
 
         if (globalDb.getPackageIdForPreinstalledApp(_this.appId) &&
-            globalDb.collections.appIndex.findOne({ "packageId": _this.packageId })) {
+            globalDb.collections.appIndex.findOne({
+              _id: _this.appId,
+              packageId: _this.packageId,
+            })) {
           // Only mark app as preinstall ready if its appId is in the preinstalledApps setting
           // and if it's the latest package version in the appIndex. The updateAppIndex function
           // will always trigger updates of preinstalled apps, even if a concurrent download of

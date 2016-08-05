@@ -181,6 +181,7 @@ Template.mailingListBonusNotificationItem.helpers({
       size = size / 1000;
       suffix = "kB";
     }
+
     return Math.floor(size) + suffix;
   },
 
@@ -190,14 +191,14 @@ Template.mailingListBonusNotificationItem.helpers({
     } else {
       return 0;
     }
-  }
+  },
 });
 
 Template.mailingListBonusNotificationItem.events({
   "submit form"(evt) {
     evt.preventDefault();
     evt.stopPropagation();
-    Meteor.call("subscribeMailingList", function(err) {
+    Meteor.call("subscribeMailingList", (err) => {
       if (err) {
         window.alert("Error subscribing to list: " + err.message);
       } else {

@@ -1274,6 +1274,11 @@ Template.emailInviteTab.events({
 });
 
 Template.grainPowerboxOfferPopup.onCreated(function () {
+  let sessionToken = null;
+  if (Router.current().route.getName() === "shared") {
+    sessionToken = Router.current().params.token;
+  }
+
   this._state = new ReactiveVar({ waiting: true });
   const offer = this.data.offer;
   const sessionId = this.data.sessionId;
@@ -1291,7 +1296,8 @@ Template.grainPowerboxOfferPopup.onCreated(function () {
       Router.go("grain", { grainId: apiToken.grainId });
     }
   } else if (offer && offer.uiView && offer.uiView.token) {
-    Meteor.call("acceptPowerboxOffer", sessionId, offer.uiView.token, (err, result) => {
+    Meteor.call("acceptPowerboxOffer", sessionId, offer.uiView.token, sessionToken,
+                (err, result) => {
       if (err) {
         this._state.set({ error: err });
       } else {
@@ -1305,7 +1311,7 @@ Template.grainPowerboxOfferPopup.onCreated(function () {
       }
     });
   } else if (offer && offer.token) {
-    Meteor.call("acceptPowerboxOffer", sessionId, offer.token, (err, result) => {
+    Meteor.call("acceptPowerboxOffer", sessionId, offer.token, sessionToken, (err, result) => {
       if (err) {
         this._state.set({ error: err });
       } else {

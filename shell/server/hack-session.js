@@ -84,7 +84,7 @@ SessionContextImpl = class SessionContextImpl {
       const session = Sessions.findOne({ _id: this.sessionId });
 
       if (!session.identityId && !session.hashedToken) {
-        throw new Meteor.Error(400, "");
+        throw new Error("Session has neither an identityId nor a hashedToken.");
       }
 
       const castedCap = cap.castAs(SystemPersistent);

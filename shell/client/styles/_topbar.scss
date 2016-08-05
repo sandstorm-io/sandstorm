@@ -1236,23 +1236,27 @@ body>.popup {
         text-decoration: inherit;
         font-weight: inherit;
         color: inherit;
-        padding: $topbar-popup-padding;
+
+        padding-left: $topbar-popup-padding + $topbar-popup-padding + 64px;
+        padding-right: $topbar-popup-padding;
+        padding-top: $topbar-popup-padding;
+        padding-bottom: $topbar-popup-padding;
+
         position: relative;
 
-        &.has-icon {
-          padding-left: $topbar-popup-padding + 96px;
-        }
+        // Guarantee position-absolute icons don't get cut off
+        min-height: $topbar-popup-padding + $topbar-popup-padding + 64px;
 
         &[href]:hover {
           background-color: #eee;
         }
 
         >.notification-icon {
-          width: 96px;
-          height: 96px;
+          width: 64px;
+          height: 64px;
           position: absolute;
-          top: 0;
-          left: 0;
+          top: $topbar-popup-padding;
+          left: $topbar-popup-padding;
 
           >img {
             display: block;
@@ -1279,22 +1283,16 @@ body>.popup {
         }
 
         .notification-footer {
-          margin: 12px 0px;
-          height: 26px;
-          >button {
-            @extend %button-base;
+          position: relative;
+          margin-top: 12px;
+          min-height: 18px;
 
-            &.accept-notification {
-              @extend %button-primary;
-              float: right;
-              margin-left: 5px;
-            }
-
-            &.cancel-notification {
-              @extend %button-secondary;
-              float: right;
-              margin-left: 5px;
-            }
+          .notification-timestamp {
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            text-align: left;
+            color: #aaa;
           }
         }
       }
@@ -1302,11 +1300,6 @@ body>.popup {
 
     .notification-selected button {
       background-color: #666;
-    }
-
-    .notification-timestamp {
-      text-align: left;
-      color: #ccc;
     }
 
     .notification-title {

@@ -119,70 +119,124 @@ Template.notifications.helpers({
   },
 });
 
-Template.notificationsPopup.events({
-  "click #notification-dropdown": function (event) {
-    return false;
-  },
-});
-
 Template.notificationItem.helpers({
   isAppUpdates: function () {
     return !!this.appUpdates;
   },
 
-  hasIcon: function () {
-    return !!this.senderIcon || !!this.grainIcon;
+  isMailingListBonus() {
+    return !!this.mailingListBonus;
   },
 
-  notificationUrl: function () {
-    return getNotificationPath(this);
+  isReferral() {
+    return !!this.referral;
   },
 
-  notificationTitle: function () {
-    if (this.admin) {
-      return "Notification from System";
-    } else if (this.appUpdates) {
-      return "App updates are available";
-    } else if (this.ongoing) {
-      return this.grainTitle + " is backgrounded";
-    } else {
-      return false;
-    }
+  isAdminNotification() {
+    return !!this.admin;
   },
 
-  titleHelperText: function () {
-    if (this.admin) {
-      return "Dismiss this system notification";
-    } else if (this.referral) {
-      return "Dismiss this referral notification";
-    } else if (this.ongoing) {
-      return "Stop the background app";
-    } else {
-      return "Dismiss this notification";
-    }
+  isOngoing() {
+    return !!this.ongoing;
   },
+});
 
-  dismissText: function () {
-    if (this.admin && this.admin.type === "reportStats") {
-      return false;
-    } else if (this.ongoing) {
-      return "Cancel";
-    } else {
-      return "Dismiss";
-    }
-  },
-
-  adminLink: function () {
-    return this.admin && this.admin.action;
-  },
-
-  appUpdatesList: function () {
+Template.appUpdateNotificationItem.helpers({
+  appUpdatesList() {
     return _.values(this.appUpdates);
   },
+});
 
+Template.appUpdateNotificationItem.events({
+  "submit form"(evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    const packages = _.map(this.appUpdates, app => app.packageId);
+
+    Meteor.call("updateApps", packages, (err) => {
+      if (err) {
+        window.alert(err.message);
+      } else {
+        Meteor.call("dismissNotification", this._id);
+      }
+    });
+  },
+
+  "click button[name=dismissUpdates]"(evt) {
+    Meteor.call("dismissNotification", this._id);
+  },
+});
+
+Template.mailingListBonusNotificationItem.helpers({
+  renderStorage(sizeInBytes) {
+    let size = sizeInBytes;
+    let suffix = "B";
+    if (size >= 1000000000) {
+      size = size / 1000000000;
+      suffix = "GB";
+    } else if (size >= 1000000) {
+      size = size / 1000000;
+      suffix = "MB";
+    } else if (size >= 1000) {
+      size = size / 1000;
+      suffix = "kB";
+    }
+    return Math.floor(size) + suffix;
+  },
+
+  MAILING_LIST_BONUS() {
+    if (window.BlackrockPayments) {
+      return BlackrockPayments.MAILING_LIST_BONUS || 0;
+    } else {
+      return 0;
+    }
+  }
+});
+
+Template.mailingListBonusNotificationItem.events({
+  "submit form"(evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    Meteor.call("subscribeMailingList", function(err) {
+      if (err) {
+        window.alert("Error subscribing to list: " + err.message);
+      } else {
+        Meteor.call("dismissNotification", this._id);
+      }
+    });
+  },
+
+  "click button[type=button]"(evt) {
+    Meteor.call("dismissNotification", this._id);
+  },
+});
+
+Template.referralNotificationItem.helpers({
   paidUser: function () {
     const plan = Meteor.user().plan;
     return plan && plan !== "free";
+  },
+});
+
+Template.referralNotificationItem.events({
+  "click button[type=button]"(evt) {
+    Meteor.call("dismissNotification", this._id);
+  },
+});
+
+Template.adminNotificationItem.helpers({
+  isStatsNotification() {
+    return this.admin.type === "reportStats";
+  },
+
+  actionTarget() {
+    return this.admin.action;
+  },
+});
+
+Template.backgroundedGrainNotificationItem.helpers({
+  notificationUrl: function () {
+    return getNotificationPath(this);
   },
 
   multiple: function () {
@@ -190,29 +244,23 @@ Template.notificationItem.helpers({
   },
 });
 
-Template.notificationItem.events({
-  "click .cancel-notification": function (event) {
+Template.backgroundedGrainNotificationItem.events({
+  "click button[type=button]"(evt) {
+    // Drops the backgrounded grain's wakelock.
     Meteor.call("dismissNotification", this._id);
-    return false;
+    evt.preventDefault();
+    evt.stopPropagation();
   },
+});
 
-  "click .accept-notification": function (event) {
-    if (this.appUpdates) {
-      const packages = _.map(this.appUpdates, app => app.packageId);
-
-      Meteor.call("updateApps", packages, (err) => {
-        if (err) {
-          window.alert(err.message);
-        } else {
-          Meteor.call("dismissNotification", this._id);
-        }
-      });
-    }
-
-    return false;
+Template.grainActivityNotificationItem.helpers({
+  notificationUrl: function () {
+    return getNotificationPath(this);
   },
+});
 
-  "click .dismiss-notification": function (event) {
+Template.grainActivityNotificationItem.events({
+  "click button[type=button]"(evt) {
     Meteor.call("dismissNotification", this._id);
   },
 });

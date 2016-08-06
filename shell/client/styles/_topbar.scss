@@ -1103,8 +1103,8 @@ body>.popup {
       margin-top: 10px;
     }
     .share-tabs form button {
+      @extend %button-base;
       @extend %button-primary;
-      height: 32px;
       border: 1px solid #ccc;
       border-radius: 4px;
       padding: 5px 16px;

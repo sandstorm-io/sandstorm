@@ -1791,7 +1791,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   isQuotaEnabled: function () {
-    const setting = Settings.findOne({ _id: "quotaEnabled" });
+    const setting = this.collections.settings.findOne({ _id: "quotaEnabled" });
     return Meteor.settings.public.quotaEnabled ||
       (setting && setting.value && this.isFeatureKeyValid());
   },
@@ -1807,7 +1807,8 @@ _.extend(SandstormDb.prototype, {
 
     const plan = getUserQuota(user);
     if (plan.grains < Infinity) {
-      const count = Grains.find({ userId: user._id }, { fields: {}, limit: plan.grains }).count();
+      const count = this.collections.grains.find({ userId: user._id },
+        { fields: {}, limit: plan.grains }).count();
       if (count >= plan.grains) return "outOfGrains";
     }
 
@@ -1826,7 +1827,8 @@ _.extend(SandstormDb.prototype, {
 
     // quota.grains = Infinity means unlimited grains. IEEE754 defines Infinity == Infinity.
     if (quota.grains < Infinity) {
-      const count = Grains.find({ userId: user._id }, { fields: {}, limit: quota.grains * 2 }).count();
+      const count = this.collections.grains.find({ userId: user._id },
+        { fields: {}, limit: quota.grains * 2 }).count();
       if (count >= quota.grains * 2) return "outOfGrains";
     }
 

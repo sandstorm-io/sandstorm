@@ -70,6 +70,11 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     this._requestInfo.onCompleted();
   }
 
+  cancelRequest() {
+    this.finalize();
+    this._requestInfo.onCompleted();
+  }
+
   failRequest(err) {
     console.error(err);
     this._error.set(err.toString());

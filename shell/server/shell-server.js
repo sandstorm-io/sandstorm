@@ -47,7 +47,7 @@ BrowserPolicy.content.allowConnectOrigin(staticAssetHost);
 
 Meteor.publish("grainsMenu", function () {
   if (this.userId) {
-    if (globalDb.isReferralEnabled()) {
+    if (globalDb.isQuotaEnabled()) {
       // Hack: Fire off an asynchronous update to the user's storage usage whenever they open the
       //   front page.
       // TODO(someday): Implement the ability to reactively subscribe to storage usage from the

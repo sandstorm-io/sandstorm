@@ -9,6 +9,12 @@
     <div class="error">{{webkeyError}}</div>
     {{/if}}
   {{else}}
+    {{#if error}}
+      {{#focusingErrorBox}}
+        {{error}}
+      {{/focusingErrorBox}}
+    {{/if}}
+
     <h4>Select one:</h4>
     {{#with selectedProvider}}
       <div class="selected-card">

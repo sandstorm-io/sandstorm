@@ -303,6 +303,11 @@ Template.powerboxRequest.helpers({
     return ref && ref._error.get();
   },
 
+  error() {
+    const ref = Template.instance().data.get();
+    return ref && ref._error.get();
+  },
+
   iconSrc() {
     // data context is a card here
     return this.cardTemplate.powerboxIconSrc && this.cardTemplate.powerboxIconSrc(this);

@@ -221,6 +221,7 @@ Template.referralNotificationItem.helpers({
 
 Template.referralNotificationItem.events({
   "click button[type=button]"(evt) {
+    evt.preventDefault();
     Meteor.call("dismissNotification", this._id);
   },
 });

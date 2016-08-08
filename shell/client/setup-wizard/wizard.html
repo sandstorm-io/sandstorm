@@ -459,7 +459,7 @@
 
   {{#if showTestSendEmailPopup}}
     {{#modalDialogWithBackdrop onDismiss=closePopupCallback}}
-      {{> emailTestPopup token=token smtpConfig=getSmtpConfig }}
+      {{> emailTestPopup token=token smtpConfig=getSmtpConfig onDismiss=closePopupCallback }}
     {{/modalDialogWithBackdrop}}
   {{/if}}
 

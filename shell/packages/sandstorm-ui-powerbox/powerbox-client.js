@@ -179,14 +179,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
         if (err) {
           this.failRequest(err);
         } else {
-          this._completed = true;
-          this._requestInfo.source.postMessage({
-            rpcId: this._requestInfo.rpcId,
-            token: result.sturdyRef,
-            descriptor: result.descriptor,
-          }, this._requestInfo.origin);
-          // Completion event closes popup.
-          this._requestInfo.onCompleted();
+          this.completeRequest(result.sturdyRef, result.descriptor);
         }
       }
     );

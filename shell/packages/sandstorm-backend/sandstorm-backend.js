@@ -197,7 +197,7 @@ SandstormBackend.prototype.updateLastActive = function (grainId, userId, identit
   // and also update the user's storage usage.
 
   let storagePromise = undefined;
-  if (Meteor.settings.public.quotaEnabled && !storageUsageUnimplemented) {
+  if (this._db.isQuotaEnabled() && !storageUsageUnimplemented) {
     storagePromise = globalBackend._backendCap.getUserStorageUsage(userId);
   }
 

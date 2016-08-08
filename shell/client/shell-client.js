@@ -332,12 +332,6 @@ HasUsers = new Mongo.Collection("hasUsers");  // dummy collection defined above
 Backers = new Mongo.Collection("backers");  // pseudo-collection defined above
 ReferralInfo = new Meteor.Collection("referralInfo"); // pseudo-collection
 
-if (Meteor.settings.public.quotaEnabled) {
-  window.testDisableQuotaClientSide = function () {
-    Meteor.settings.public.quotaEnabled = false;
-  };
-}
-
 Router.onRun(function () {
   // Close menus and popups any time we navigate.
   globalTopbar.reset();
@@ -614,7 +608,11 @@ Template.registerHelper("shrinkNavbar", function () {
 });
 
 Template.registerHelper("quotaEnabled", function () {
-  return Meteor.settings.public.quotaEnabled;
+  return globalDb.isQuotaEnabled();
+});
+
+Template.registerHelper("referralsEnabled", function () {
+  return globalDb.isReferralEnabled();
 });
 
 Template.root.helpers({

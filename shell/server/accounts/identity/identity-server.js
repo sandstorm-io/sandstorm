@@ -72,7 +72,7 @@ const linkIdentityToAccountInternal = function (db, backend, identityId, account
       $unset: { expires: 1 },
       $set: { upgradedFromDemo: Date.now() },
     };
-    if (Meteor.settings.public.quotaEnabled) {
+    if (db.isReferralEnabled()) {
       // Demo users never got the referral notification. Send it now:
       db.sendReferralProgramNotification(accountUser._id);
     }

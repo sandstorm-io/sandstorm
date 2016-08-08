@@ -780,6 +780,18 @@ getUserQuota = function (user) {
   return userQuota;
 };
 
+isReferralEnabled = function () {
+  // This function is a bit weird, in that we've transitioned from
+  // Meteor.settings.public.quotaEnabled to DB settings. For now,
+  // Meteor.settings.public.quotaEnabled implies bothisReferralEnabled and isQuotaEnabled are true.
+  return Meteor.settings.public.quotaEnabled;
+};
+
+isQuotaEnabled = function () {
+  const setting = Settings.findOne({ _id: "quotaEnabled" });
+  return Meteor.settings.public.quotaEnabled || (setting && setting.value);
+};
+
 isUserOverQuota = function (user) {
   // Return false if user has quota space remaining, true if it is full. When this returns true,
   // we will not allow the user to create new grains, though they may be able to open existing ones
@@ -787,7 +799,7 @@ isUserOverQuota = function (user) {
   //
   // (Actually returns a string which can be fed into `billingPrompt` as the reason.)
 
-  if (!Meteor.settings.public.quotaEnabled || user.isAdmin) return false;
+  if (!isQuotaEnabled() || user.isAdmin) return false;
 
   const plan = getUserQuota(user);
   if (plan.grains < Infinity) {
@@ -804,7 +816,7 @@ isUserExcessivelyOverQuota = function (user) {
   //
   // (Actually returns a string which can be fed into `billingPrompt` as the reason.)
 
-  if (!Meteor.settings.public.quotaEnabled || user.isAdmin) return false;
+  if (!isQuotaEnabled() || user.isAdmin) return false;
 
   const quota = getUserQuota(user);
 
@@ -1041,6 +1053,8 @@ _.extend(SandstormDb.prototype, {
   makeApiHost: makeApiHost,
   allowDevAccounts: allowDevAccounts,
   roleAssignmentPattern: roleAssignmentPattern,
+  isReferralEnabled: isReferralEnabled,
+  isQuotaEnabled: isQuotaEnabled,
 
   isDemoUser: function () {
     // Returns true if this is a demo user.

@@ -119,7 +119,7 @@ function fetchProfilePictures() {
 }
 
 function assignPlans() {
-  if (Meteor.settings.public.quotaEnabled && SandstormDb.paymentsMigrationHook) {
+  if (localSandstormDb.isReferralEnabled() && SandstormDb.paymentsMigrationHook) {
     SandstormDb.paymentsMigrationHook(SignupKeys, Plans.find().fetch());
   }
 }
@@ -429,7 +429,7 @@ function initServerTitleAndReturnAddress() {
 }
 
 function sendReferralNotifications() {
-  if (Meteor.settings.public.quotaEnabled) {
+  if (localSandstormDb.isReferralEnabled()) {
     Meteor.users.find({
       loginIdentities: { $exists: true },
       expires: { $exists: false },
@@ -440,7 +440,7 @@ function sendReferralNotifications() {
 }
 
 function assignBonuses() {
-  if (Meteor.settings.public.quotaEnabled && SandstormDb.bonusesMigrationHook) {
+  if (localSandstormDb.isReferralEnabled() && SandstormDb.bonusesMigrationHook) {
     SandstormDb.bonusesMigrationHook();
   }
 }

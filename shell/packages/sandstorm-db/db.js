@@ -780,55 +780,6 @@ getUserQuota = function (user) {
   return userQuota;
 };
 
-isReferralEnabled = function () {
-  // This function is a bit weird, in that we've transitioned from
-  // Meteor.settings.public.quotaEnabled to DB settings. For now,
-  // Meteor.settings.public.quotaEnabled implies bothisReferralEnabled and isQuotaEnabled are true.
-  return Meteor.settings.public.quotaEnabled;
-};
-
-isQuotaEnabled = function () {
-  const setting = Settings.findOne({ _id: "quotaEnabled" });
-  return Meteor.settings.public.quotaEnabled || (setting && setting.value);
-};
-
-isUserOverQuota = function (user) {
-  // Return false if user has quota space remaining, true if it is full. When this returns true,
-  // we will not allow the user to create new grains, though they may be able to open existing ones
-  // which may still increase their storage usage.
-  //
-  // (Actually returns a string which can be fed into `billingPrompt` as the reason.)
-
-  if (!isQuotaEnabled() || user.isAdmin) return false;
-
-  const plan = getUserQuota(user);
-  if (plan.grains < Infinity) {
-    const count = Grains.find({ userId: user._id }, { fields: {}, limit: plan.grains }).count();
-    if (count >= plan.grains) return "outOfGrains";
-  }
-
-  return plan && user.storageUsage && user.storageUsage >= plan.storage && "outOfStorage";
-};
-
-isUserExcessivelyOverQuota = function (user) {
-  // Return true if user is so far over quota that we should prevent their existing grains from
-  // running at all.
-  //
-  // (Actually returns a string which can be fed into `billingPrompt` as the reason.)
-
-  if (!isQuotaEnabled() || user.isAdmin) return false;
-
-  const quota = getUserQuota(user);
-
-  // quota.grains = Infinity means unlimited grains. IEEE754 defines Infinity == Infinity.
-  if (quota.grains < Infinity) {
-    const count = Grains.find({ userId: user._id }, { fields: {}, limit: quota.grains * 2 }).count();
-    if (count >= quota.grains * 2) return "outOfGrains";
-  }
-
-  return quota && user.storageUsage && user.storageUsage >= quota.storage * 1.2 && "outOfStorage";
-};
-
 isAdmin = function () {
   // Returns true if the user is the administrator.
 
@@ -1039,8 +990,6 @@ SandstormDb = function () {
 
 _.extend(SandstormDb.prototype, {
   getUserQuota: getUserQuota,
-  isUserOverQuota: isUserOverQuota,
-  isUserExcessivelyOverQuota: isUserExcessivelyOverQuota,
   isAdmin: isAdmin,
   isAdminById: isAdminById,
   findAdminUserForToken: findAdminUserForToken,
@@ -1053,8 +1002,6 @@ _.extend(SandstormDb.prototype, {
   makeApiHost: makeApiHost,
   allowDevAccounts: allowDevAccounts,
   roleAssignmentPattern: roleAssignmentPattern,
-  isReferralEnabled: isReferralEnabled,
-  isQuotaEnabled: isQuotaEnabled,
 
   isDemoUser: function () {
     // Returns true if this is a demo user.
@@ -1834,6 +1781,56 @@ _.extend(SandstormDb.prototype, {
       status: "ready",
     });
     return readyApps.count() === packageIds.length;
+  },
+
+  isReferralEnabled: function () {
+    // This function is a bit weird, in that we've transitioned from
+    // Meteor.settings.public.quotaEnabled to DB settings. For now,
+    // Meteor.settings.public.quotaEnabled implies bothisReferralEnabled and isQuotaEnabled are true.
+    return Meteor.settings.public.quotaEnabled;
+  },
+
+  isQuotaEnabled: function () {
+    const setting = Settings.findOne({ _id: "quotaEnabled" });
+    return Meteor.settings.public.quotaEnabled ||
+      (setting && setting.value && this.isFeatureKeyValid());
+  },
+
+  isUserOverQuota: function (user) {
+    // Return false if user has quota space remaining, true if it is full. When this returns true,
+    // we will not allow the user to create new grains, though they may be able to open existing ones
+    // which may still increase their storage usage.
+    //
+    // (Actually returns a string which can be fed into `billingPrompt` as the reason.)
+
+    if (!this.isQuotaEnabled() || user.isAdmin) return false;
+
+    const plan = getUserQuota(user);
+    if (plan.grains < Infinity) {
+      const count = Grains.find({ userId: user._id }, { fields: {}, limit: plan.grains }).count();
+      if (count >= plan.grains) return "outOfGrains";
+    }
+
+    return plan && user.storageUsage && user.storageUsage >= plan.storage && "outOfStorage";
+  },
+
+  isUserExcessivelyOverQuota: function (user) {
+    // Return true if user is so far over quota that we should prevent their existing grains from
+    // running at all.
+    //
+    // (Actually returns a string which can be fed into `billingPrompt` as the reason.)
+
+    if (!this.isQuotaEnabled() || user.isAdmin) return false;
+
+    const quota = getUserQuota(user);
+
+    // quota.grains = Infinity means unlimited grains. IEEE754 defines Infinity == Infinity.
+    if (quota.grains < Infinity) {
+      const count = Grains.find({ userId: user._id }, { fields: {}, limit: quota.grains * 2 }).count();
+      if (count >= quota.grains * 2) return "outOfGrains";
+    }
+
+    return quota && user.storageUsage && user.storageUsage >= quota.storage * 1.2 && "outOfStorage";
   },
 });
 

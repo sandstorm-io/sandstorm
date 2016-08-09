@@ -1,7 +1,6 @@
 import { Meteor } from "meteor/meteor";
-import urlModule from "url";
-import simplesmtp from "simplesmtp";
-import { MailComposer } from "mailcomposer";
+import nodemailer from "nodemailer";
+import smtpPool from "nodemailer-smtp-pool";
 
 const Future = Npm.require("fibers/future");
 
@@ -16,12 +15,13 @@ const makePool = function (mailConfig) {
     auth = mailConfig.auth;
   }
 
-  const pool = simplesmtp.createClientPool(
-    mailConfig.port,
-    mailConfig.hostname,
-    { secureConnection: (mailConfig.port === 465),
-      // XXX allow maxConnections to be configured?
-      auth, });
+  const pool = nodemailer.createTransport(smtpPool({
+    host: mailConfig.hostname,
+    port: mailConfig.port,
+    secure: (mailConfig.port === 465),
+    // XXX allow maxConnections to be configured?
+    auth,
+  }));
 
   pool._futureWrappedSendMail = _.bind(Future.wrap(pool.sendMail), pool);
   return pool;
@@ -62,51 +62,17 @@ const getPool = function (smtpConfig) {
   return pool;
 };
 
-let nextDevmodeMailId = 0;
-const outputStream = process.stdout;
-
-const devModeSend = function (mc) {
-  // This seems to be dead code.
-  const devmodeMailId = nextDevmodeMailId++;
-
-  const stream = outputStream;
-
-  // This approach does not prevent other writers to stdout from interleaving.
-  stream.write("====== BEGIN MAIL #" + devmodeMailId + " ======\n");
-  stream.write("(Mail not sent; to enable sending, set the MAIL_URL " +
-               "environment variable.)\n");
-  mc.streamMessage();
-  mc.pipe(stream, { end: false });
-  const future = new Future;
-  mc.on("end", function () {
-    stream.write("====== END MAIL #" + devmodeMailId + " ======\n");
-    future["return"]();
-  });
-
-  future.wait();
+const smtpSend = function (pool, mailOptions) {
+  pool._futureWrappedSendMail(mailOptions).wait();
 };
 
-const smtpSend = function (pool, mc) {
-  pool._futureWrappedSendMail(mc).wait();
-};
-
-/**
- * @summary Sends a raw email with a MailComposer object.
- * Throws an `Error` on failure to contact mail server
- * or if mail server returns an error. All fields should match
- * [RFC5322](http://tools.ietf.org/html/rfc5322) specification.
- * @locus Server
- * @param {Object} mc A MailCompser object that you wish to send
- * @param {String} smtpUrl SMTP server to use. If falsey, defaults to configured one.
-*/
-const rawSend = function (mc, smtpConfig) {
-  // SimpleSmtp does not add leading dots, so we need to.
-  // See http://tools.ietf.org/html/rfc5321#section-4.5.2
-  mc._message.body = mc._message.body.replace(/(^|\n)\./g, "$1..");
-
+const rawSend = function (mailOptions, smtpConfig) {
+  // Sends an email mailOptions object structured as described in
+  // https://github.com/nodemailer/mailcomposer#e-mail-message-fields
+  // across the transport described by smtpConfig.
   const pool = getPool(smtpConfig);
   if (pool) {
-    smtpSend(pool, mc);
+    smtpSend(pool, mailOptions);
   } else {
     throw new Error("SMTP pool is misconfigured.");
   }
@@ -157,37 +123,45 @@ const rawSend = function (mc, smtpConfig) {
  * @param {String} [options.envelopeFrom] Envelope sender.
  */
 const send = function (options) {
-  const mc = new MailComposer();
+  // Unpack options
+  const {
+    from,
+    to,
+    cc,
+    bcc,
+    replyTo,
+    subject,
+    text,
+    html,
+    envelopeFrom,
+    headers,
+    attachments,
+    smtpConfig,
+  } = options;
 
-  // setup message data
-  mc.setMessageOption({
-    from: options.from,
-    to: options.to,
-    cc: options.cc,
-    bcc: options.bcc,
-    replyTo: options.replyTo,
-    subject: options.subject,
-    text: options.text,
-    html: options.html,
-  });
+  const opts = {
+    from,
+    to,
+    cc,
+    bcc,
+    replyTo,
+    subject,
+    text,
+    html,
+    headers,
+    attachments,
+  };
 
-  if (options.envelopeFrom) {
-    const envelope = mc.getEnvelope();
-    envelope.from = options.envelopeFrom;
-    mc.setMessageOption({
-      envelope: envelope,
-    });
+  if (envelopeFrom) {
+    opts.envelope = {
+      from: envelopeFrom,
+      to,
+      cc,
+      bcc,
+    };
   }
 
-  _.each(options.headers, function (value, name) {
-    mc.addHeader(name, value);
-  });
-
-  _.each(options.attachments, function (value) {
-    mc.addAttachment(value);
-  });
-
-  rawSend(mc, options.smtpConfig);
+  rawSend(opts, smtpConfig);
 };
 
 export { send, rawSend };

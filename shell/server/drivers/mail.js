@@ -14,11 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { PersistentImpl } from "/imports/server/persistent.js";
-import simplesmtp from "simplesmtp";
+import { SMTPServer } from "smtp-server";
 import { MailParser } from "mailparser";
-import { MailComposer } from "mailcomposer";
 
+import { PersistentImpl } from "/imports/server/persistent.js";
 import { rawSend } from "/imports/server/email.js";
 
 const Crypto = Npm.require("crypto");
@@ -53,132 +52,142 @@ if (!Meteor.settings.replicaNumber) {  // only first replica
 }
 
 Meteor.startup(function () {
-  const server = simplesmtp.createSimpleServer({ SMTPBanner: "Sandstorm Mail Server" }, (req) => {
-    const mailparser = new MailParser();
-    req.pipe(mailparser);
+  const server = new SMTPServer({
+    banner: "Sandstorm Mail Server",
+    authOptional: true,
+    disabledCommands: ["STARTTLS", "AUTH"],
+    onData: (req, session, callback) => {
+      const mailparser = new MailParser();
+      req.pipe(mailparser);
 
-    mailparser.on("end", (mail) => {
-      // Wrap in outer promise for easier error handling.
-      Promise.resolve().then(() => {
-        // Extract the 'from' address.
-        let from;
-        if (mail.from && mail.from.length > 0) {
-          // It's theoretically possible for the message to have multiple 'from' headers, but this
-          // never really happens in legitimate practice so we'll just take the first one.
-          from = mail.from[0];
-        } else {
-          // The mail body is missing a 'From:' header. We'll use req.from instead. Note that
-          // req.from is actually the bounce address, which is sometimes *not* the original sender
-          // but rather some intermediate agent (e.g. a mailing list daemon). See:
-          //   http://en.wikipedia.org/wiki/Bounce_address
-          // TODO(someday): Is this really right, or should we report a blank address instead?
-          from = { address: req.from, name: false };
-        }
+      mailparser.on("end", (mail) => {
+        console.log(mail);
+        // Wrap in outer promise for easier error handling.
+        Promise.resolve().then(() => {
+          // Extract the 'from' address.
+          let from;
+          if (mail.from && mail.from.length > 0) {
+            // It's theoretically possible for the message to have multiple 'from' headers, but this
+            // never really happens in legitimate practice so we'll just take the first one.
+            from = mail.from[0];
+          } else {
+            // The mail body is missing a 'From:' header. We'll use the bounce address instead,
+            // with the caveat that this is sometimes *not* the original sender
+            // but rather some intermediate agent (e.g. a mailing list daemon). See:
+            //   http://en.wikipedia.org/wiki/Bounce_address
+            // TODO(someday): Is this really right, or should we report a blank address instead?
+            from = { address: session.envelope.mailFrom, name: false };
+          }
 
-        let attachments = [];
-        if (mail.attachments) {
-          attachments = mail.attachments.map((attachment) => {
-            let disposition = attachment.contentDisposition || "attachment";
-            disposition += ';\n\tfilename="' + (attachment.fileName || attachment.generatedFileName) + '"';
-            return {
-              contentType: attachment.contentType,
-              contentDisposition: disposition,
-              contentId: attachment.contentId,
-              content: attachment.content,
-            };
-          });
-        }
-
-        if (mail.replyTo && mail.replyTo.length > 1) {
-          console.error("More than one reply-to address address was received in an email.");
-        }
-
-        const mailMessage = {
-          // Note that converting the date to nanoseconds actually goes outside the range of
-          // integers that Javascript can represent precisely. But this is OK because dates aren't
-          // precise anyway.
-          date: (mail.date || new Date()).getTime() * 1000000,
-          from: from,
-          to: mail.to,
-          cc: mail.cc || [],
-          bcc: mail.bcc || [],
-          replyTo: (mail.replyTo && mail.replyTo[0]) || {},
-          messageId: mail.headers["message-id"] || Meteor.uuid() + "@" + HOSTNAME,
-          references: mail.references || [],
-          inReplyTo: mail.inReplyTo || [],
-          subject: mail.subject || "",
-          text: mail.text || null,
-          html: mail.html || null,
-          attachments: attachments,
-        };
-
-        // Get list of grain IDs.
-        const grainPublicIds = _.uniq(req.to.map((deliverTo) => {
-          // simplesmtp already validates that the address contains an @.
-          // To simplify things, we ignore the hostname part of the address and assume that the
-          // message would not have been sent here if it weren't intended for our host. Usually
-          // there will be an nginx frontend verifying hostnames anyway. Grain public IDs are
-          // globally unique anyway, so an e-mail meant for another server presumably won't match
-          // any ID at this one anyway.
-          return deliverTo.slice(0, deliverTo.indexOf("@"));
-        }));
-
-        // Deliver to each grain in parallel.
-        return Promise.all(grainPublicIds.map((publicId) => {
-          // Wrap in a function so that we can call it recursively to retry.
-          const tryDeliver = (retryCount) => {
-            let grainId;
-            return inMeteor(() => {
-              const grain = Grains.findOne({ publicId: publicId }, { fields: {} });
-              if (grain) {
-                grainId = grain._id;
-                return globalBackend.continueGrain(grainId, retryCount > 0);
-              } else {
-                // TODO(someday): We really ought to rig things up so that the 'RCPT TO' SMTP command
-                //   fails in this case, but simplesmtp doesn't appear to support that.
-                throw new Error("No such grain: " + publicId);
-              }
-            }).then((grainInfo) => {
-              const supervisor = grainInfo.supervisor;
-              const uiView = supervisor.getMainView().view;
-
-              // Create an arbitrary struct to use as the session params. E-mail sessions actually
-              // require no params, but node-capnp won't let us pass null and we don't have an
-              // EmptyStruct type available, so we just use EmailAddress, but any struct type would
-              // work.
-              // TODO(cleanup): Fix node-capnp to accept null.
-              const emptyParams = Capnp.serialize(EmailRpc.EmailAddress, {});
-
-              // Create a new session of type HackEmailSession. This is a short-term hack until
-              // persistent capabilities and the Powerbox are implemented. We need to pass along a
-              // HackSessionContext because old versions of sandstorm-http-bridge always use
-              // the context of the most recent session; if an old RoundCube grain has a
-              // WebSession open, receives an email, and then tries to send an email, the request
-              // will go out on the SessionContext associated with the HackEmailSession that
-              // delivered the email.
-              const session = uiView
-                  .newSession({}, makeHackSessionContext(grainId),
-                              "0xc3b5ced7344b04a6", emptyParams)
-                  .session.castAs(EmailSendPort);
-              return session.send(mailMessage);
-            }).catch((err) => {
-              if (SandstormBackend.shouldRestartGrain(err, retryCount)) {
-                return tryDeliver(retryCount + 1);
-              } else {
-                throw err;
-              }
+          let attachments = [];
+          if (mail.attachments) {
+            attachments = mail.attachments.map((attachment) => {
+              let disposition = attachment.contentDisposition || "attachment";
+              disposition += ';\n\tfilename="' + (attachment.fileName || attachment.generatedFileName) + '"';
+              return {
+                contentType: attachment.contentType,
+                contentDisposition: disposition,
+                contentId: attachment.contentId,
+                content: attachment.content,
+              };
             });
+          }
+
+          if (mail.replyTo && mail.replyTo.length > 1) {
+            console.error("More than one reply-to address address was received in an email.");
+          }
+
+          const mailMessage = {
+            // Note that converting the date to nanoseconds actually goes outside the range of
+            // integers that Javascript can represent precisely. But this is OK because dates aren't
+            // precise anyway.
+            date: (mail.date || new Date()).getTime() * 1000000,
+            from: from,
+            to: mail.to,
+            cc: mail.cc || [],
+            bcc: mail.bcc || [],
+            replyTo: (mail.replyTo && mail.replyTo[0]) || {},
+            messageId: mail.headers["message-id"] || Meteor.uuid() + "@" + HOSTNAME,
+            references: mail.references || [],
+            inReplyTo: mail.inReplyTo || [],
+            subject: mail.subject || "",
+            text: mail.text || null,
+            html: mail.html || null,
+            attachments: attachments,
           };
 
-          return tryDeliver(0);
-        }));
-      }).then(() => {
-        req.accept();
-      }, (err) => {
-        console.error("E-mail delivery failure:", err.stack);
-        req.reject(err.message);
+          // Get list of grain IDs.
+          const grainPublicIds = _.uniq(session.envelope.rcptTo.map((deliverTo) => {
+            console.log("Attempting to deliver to", deliverTo);
+            // smtp-server already validates that the address contains an @.
+            // To simplify things, we ignore the hostname part of the address and assume that the
+            // message would not have been sent here if it weren't intended for our host. Usually
+            // there will be an nginx frontend verifying hostnames anyway. Grain public IDs are
+            // globally unique anyway, so an e-mail meant for another server presumably won't match
+            // any ID at this one anyway.
+            const { address } = deliverTo;
+            return address.slice(0, address.indexOf("@"));
+          }));
+
+          // Deliver to each grain in parallel.
+          return Promise.all(grainPublicIds.map((publicId) => {
+            // Wrap in a function so that we can call it recursively to retry.
+            const tryDeliver = (retryCount) => {
+              let grainId;
+              return inMeteor(() => {
+                const grain = Grains.findOne({ publicId: publicId }, { fields: {} });
+                if (grain) {
+                  grainId = grain._id;
+                  return globalBackend.continueGrain(grainId, retryCount > 0);
+                } else {
+                  // TODO(someday): We really ought to rig things up so that the 'RCPT TO' SMTP command
+                  // fails in this case, by adding an onRcptTo() callback.
+                  throw new Error("No such grain: " + publicId);
+                }
+              }).then((grainInfo) => {
+                const supervisor = grainInfo.supervisor;
+                const uiView = supervisor.getMainView().view;
+
+                // Create an arbitrary struct to use as the session params. E-mail sessions actually
+                // require no params, but node-capnp won't let us pass null and we don't have an
+                // EmptyStruct type available, so we just use EmailAddress, but any struct type would
+                // work.
+                // TODO(cleanup): Fix node-capnp to accept null.
+                const emptyParams = Capnp.serialize(EmailRpc.EmailAddress, {});
+
+                // Create a new session of type HackEmailSession. This is a short-term hack until
+                // persistent capabilities and the Powerbox are implemented. We need to pass along a
+                // HackSessionContext because old versions of sandstorm-http-bridge always use
+                // the context of the most recent session; if an old RoundCube grain has a
+                // WebSession open, receives an email, and then tries to send an email, the request
+                // will go out on the SessionContext associated with the HackEmailSession that
+                // delivered the email.
+                const session = uiView
+                    .newSession({}, makeHackSessionContext(grainId),
+                                "0xc3b5ced7344b04a6", emptyParams)
+                    .session.castAs(EmailSendPort);
+                return session.send(mailMessage);
+              }).catch((err) => {
+                if (SandstormBackend.shouldRestartGrain(err, retryCount)) {
+                  return tryDeliver(retryCount + 1);
+                } else {
+                  throw err;
+                }
+              });
+            };
+
+            return tryDeliver(0);
+          }));
+        }).then(() => {
+          callback(null, "Message delivered");
+        }, (err) => {
+          console.error("E-mail delivery failure:", err.stack);
+          const mailErr = new Error(err.message);
+          err.responseCode = 451;
+          callback(err.message);
+        });
       });
-    });
+    },
   });
 
   if (global.SANDSTORM_SMTP_LISTEN_HANDLE) {
@@ -191,7 +200,7 @@ Meteor.startup(function () {
   }
 });
 
-function formatAddress(field) {
+const formatAddress = function (field) {
   if (!field) {
     return null;
   }
@@ -205,7 +214,7 @@ function formatAddress(field) {
   }
 
   return field.address;
-}
+};
 
 hackSendEmail = (session, email) => {
   return inMeteor((function () {
@@ -236,62 +245,69 @@ hackSendEmail = (session, email) => {
         userAddress.address + ". Yours was: " + email.from.address);
     }
 
-    const mc = new MailComposer();
+    const from = formatAddress(email.from);
+    const to = formatAddress(email.to);
+    const cc = formatAddress(email.cc);
+    const bcc = formatAddress(email.bcc);
+    const replyTo = formatAddress(email.replyTo);
 
-    mc.setMessageOption({
-      from:     formatAddress(email.from),
-      to:       formatAddress(email.to),
-      cc:       formatAddress(email.cc),
-      bcc:      formatAddress(email.bcc),
-      replyTo:  formatAddress(email.replyTo),
+    const options = {
+      from,
+      to,
+      cc,
+      bcc,
+      replyTo,
       subject:  email.subject,
       text:     email.text,
       html:     email.html,
-    });
-
-    const envelope = mc.getEnvelope();
-    envelope.from = grainAddress;
-
-    mc.setMessageOption({
-      envelope: envelope,
-    });
+      envelope: {
+        from: grainAddress,
+        to,
+        cc,
+        bcc,
+      },
+    };
 
     const headers = {};
     if (email.messageId) {
-      mc.addHeader("message-id", email.messageId);
+      headers["message-id"] = email.messageId;
     }
 
     if (email.references) {
-      mc.addHeader("references", email.references);
+      headers["references"] = email.references; // jscs:ignore requireDotNotation
     }
 
     if (email.inReplyTo) {
-      mc.addHeader("in-reply-to", email.inReplyTo);
+      headers["in-reply-to"] = email.inReplyTo;
     }
 
     if (email.date) {
       const date = new Date(email.date / 1000000);
       if (!isNaN(date.getTime())) { // Check to make sure date is valid
-        mc.addHeader("date", date.toUTCString());
+        headers["date"] = date.toUTCString(); // jscs:ignore requireDotNotation
       }
     }
 
+    options.headers = headers;
+
     if (email.attachments) {
+      const attachments = [];
       email.attachments.forEach((attachment) => {
-        mc.addAttachment({
+        attachments.push({
           cid: attachment.contentId,
           contentType: attachment.contentType,
           contentDisposition: attachment.contentDisposition,
-          contents: attachment.content,
+          content: attachment.content,
         });
       });
+      options.attachments = attachments;
     }
 
     const grain = Grains.findOne(session.grainId);
     if (!grain) throw new Error("Grain does not exist.");
     globalDb.incrementDailySentMailCount(grain.userId);
 
-    rawSend(mc);
+    rawSend(options);
   }).bind(this)).catch((err) => {
     console.error("Error sending e-mail:", err.stack);
     throw err;

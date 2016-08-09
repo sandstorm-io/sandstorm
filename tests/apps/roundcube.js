@@ -79,7 +79,7 @@ module.exports["Sending Mail"] = function (browser) {
     .assertReceiveEmail(".send", {
       to: to,
       subject: subject,
-      text: text + "\n..\n"
+      text: text + "\n.."
     })
     .end();
 };

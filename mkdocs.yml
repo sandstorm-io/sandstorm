@@ -31,6 +31,7 @@ pages:
     - "Debugging a running grain": "developing/debugging.md"
     - "Web publishing": "developing/web-publishing.md"
     - "Exporting HTTP APIs": "developing/http-apis.md"
+    - "Connecting grains to each other & Sandstorm via powerbox": "developing/powerbox.md"
     - "Email from apps": "developing/email-from-apps.md"
     - "vagrant-spk design document": "vagrant-spk/design.md"
     - "Troubleshooting": "developing/troubleshooting.md"

@@ -123,7 +123,7 @@ IMAGES= \
 # Meta rules
 
 .SUFFIXES:
-.PHONY: all install clean continuous shell-env fast deps bootstrap-ekam deps update-deps test installer-test app-index-dev
+.PHONY: all install clean continuous shell-env fast deps bootstrap-ekam deps update-deps clobber-deps test installer-test app-index-dev
 
 all: sandstorm-$(BUILD).tar.xz
 

@@ -15,16 +15,17 @@ corresponding interfaces for which are defined in
 [Here is an example app in Python](https://github.com/sandstorm-io/sandstorm-test-python)
 which (among other things) knows how to request an `IpNetwork`.
 
-One app that heavily depends on the powerbox is the
-[Collections app](https://github.com/sandstorm-io/collections-app).
-Here's a brief outline of how the it interacts with the powerbox:
+One app that heavily depends on the powerbox is the [Collections
+app](https://github.com/sandstorm-io/collections-app).  Here's a brief
+outline of how the app interacts with the powerbox:
 
-  1. A collection makes a powerbox request for a UiView capability: https://github.com/sandstorm-io/collections-app/blob/7129ce9ebb6cf9ed5fcbd3588cf98937557ebe28/main.jsx#L118
+1. A collection makes a powerbox request for a UiView capability. ([code link](https://github.com/sandstorm-io/collections-app/blob/7129ce9ebb6cf9ed5fcbd3588cf98937557ebe28/main.jsx#L118))
 
-  2. The collection calls `claimRequest()` on the returned token, and then calls `save()` on the returned capability: https://github.com/sandstorm-io/collections-app/blob/7129ce9ebb6cf9ed5fcbd3588cf98937557ebe28/src/server.rs#L746-L769
+2. The collection calls `claimRequest()` on the returned token, and then calls `save()` on the returned capability. ([code link](https://github.com/sandstorm-io/collections-app/blob/7129ce9ebb6cf9ed5fcbd3588cf98937557ebe28/src/server.rs#L746-L769))
 
-  3. When the collection wants to use the capability, it calls `restore()` to get a live reference: https://github.com/sandstorm-io/collections-app/blob/7129ce9ebb6cf9ed5fcbd3588cf98937557ebe28/src/server.rs#L263
+3. When the collection wants to use the capability, it calls `restore()` to get a live reference. ([code link](https://github.com/sandstorm-io/collections-app/blob/7129ce9ebb6cf9ed5fcbd3588cf98937557ebe28/src/server.rs#L263))
 
-  4. With this live reference, it can get grain metadata through `getViewInfo()`: https://github.com/sandstorm-io/collections-app/blob/7129ce9ebb6cf9ed5fcbd3588cf98937557ebe28/src/server.rs#L268
+4. With this live reference, it can get grain metadata through `getViewInfo()`. ([code link](https://github.com/sandstorm-io/collections-app/blob/7129ce9ebb6cf9ed5fcbd3588cf98937557ebe28/src/server.rs#L268))
 
-  5. The collection can also offer this live reference to the user through `offer()`, which opens the grain without opening a new browser tab: https://github.com/sandstorm-io/collections-app/blob/7129ce9ebb6cf9ed5fcbd3588cf98937557ebe28/src/server.rs#L683
+5. The collection can also offer this live reference to the user through `offer()`, which opens the grain without opening a new browser tab. ([code link](https://github.com/sandstorm-io/collections-app/blob/7129ce9ebb6cf9ed5fcbd3588cf98937557ebe28/src/server.rs#L683))
+

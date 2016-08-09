@@ -205,12 +205,17 @@ update-deps:
 
 clobber-deps:
 	@$(call color,forcibly updating all dependencies)
-	@$(foreach DEP,capnproto ekam libseccomp node-capnp, \
+	@$(foreach DEP,capnproto ekam libseccomp, \
 	    cd deps/$(DEP) && \
 	    echo "fetching $(DEP)..." && \
 	    git fetch $(REMOTE_$(DEP)) master && \
 	    git reset --hard FETCH_HEAD && \
 	    cd ../..;)
+	@cd deps/node-capnp && \
+	    echo "fetching node-capnp..." && \
+	    git fetch $(REMOTE_node-capnp) node4 && \
+	    git reset --hard FETCH_HEAD && \
+	    cd ../../
 	@cd deps/libsodium && \
 	    echo "fetching libsodium..." && \
 	    git fetch $(REMOTE_libsodium) stable && \

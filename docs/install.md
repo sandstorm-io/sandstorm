@@ -350,10 +350,7 @@ virtualization generally, please email support@sandstorm.io.
 ## Uninstall
 
 If you installed Sandstorm with default options, the following actions will fully remove
-Sandstorm. If you customized the install, you'll need to change these commands accordingly.  Note
-that you can always transfer a sandcats.io hostname to a new install, even if you delete the old
-install; learn about [re-installing Sandstorm and keeping your sandcats
-domain](administering/sandcats.md#reinstalling-sandstorm-and-keeping-your-sandcatsd-domain).
+Sandstorm. If you customized the install, you'll need to change these commands accordingly.
 
 If you want to _change settings_, you can edit `/opt/sandstorm/sandstorm.conf`.
 

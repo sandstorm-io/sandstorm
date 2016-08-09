@@ -729,7 +729,7 @@ restoreBackup = function (file) {
               statusText: err.message,
             });
           } else {
-            Router.go("grain", { grainId: grainId });
+            Router.go("grain", { grainId: grainId }, { replaceState: true });
           }
         });
       });
@@ -750,7 +750,7 @@ uploadApp = function (file) {
     } else {
       startUpload(file, "/upload/" + token, function (response) {
         Session.set("uploadStatus", undefined);
-        Router.go("install", { packageId: response });
+        Router.go("install", { packageId: response }, { replaceState: true });
       });
     }
   });

@@ -452,12 +452,17 @@ Meteor.methods({
     //   by them.
     check(sessionId, String);
 
-    const session = Sessions.findAndModify({
+    const result = Sessions.findAndModify({
       query: { _id: sessionId },
       update: { $set: { timestamp: new Date().getTime() } },
       fields: { grainId: 1, identityId: 1, hostId: 1 },
     });
 
+    if (!result.ok) {
+      return false;
+    }
+
+    const session = result.value;
     if (session) {
       // Session still present in database, so send keep-alive to backend.
       try {

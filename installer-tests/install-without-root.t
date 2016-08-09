@@ -7,7 +7,6 @@ $[run]CURL_USER_AGENT=testing REPORT=no /vagrant/install.sh -u
 $[slow]Sandstorm makes it easy to run web apps on your own server.
 Expose to localhost only? [yes] $[type]
 Where would you like to put Sandstorm? $[type]
-Sandstorm grains can receive email.$[type]
 Automatically keep Sandstorm updated? [yes]$[type]
 Sandstorm supports 'dev accounts', a feature that lets anyone log in
 as admin and other sample users to a Sandstorm server. We recommend

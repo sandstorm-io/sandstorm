@@ -263,6 +263,8 @@ Template.grainActivityNotificationItem.helpers({
 
 Template.grainActivityNotificationItem.events({
   "click button[type=button]"(evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
     Meteor.call("dismissNotification", this._id);
   },
 });

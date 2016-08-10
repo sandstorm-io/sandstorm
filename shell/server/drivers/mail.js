@@ -61,7 +61,6 @@ Meteor.startup(function () {
       req.pipe(mailparser);
 
       mailparser.on("end", (mail) => {
-        console.log(mail);
         // Wrap in outer promise for easier error handling.
         Promise.resolve().then(() => {
           // Extract the 'from' address.
@@ -118,7 +117,6 @@ Meteor.startup(function () {
 
           // Get list of grain IDs.
           const grainPublicIds = _.uniq(session.envelope.rcptTo.map((deliverTo) => {
-            console.log("Attempting to deliver to", deliverTo);
             // smtp-server already validates that the address contains an @.
             // To simplify things, we ignore the hostname part of the address and assume that the
             // message would not have been sent here if it weren't intended for our host. Usually

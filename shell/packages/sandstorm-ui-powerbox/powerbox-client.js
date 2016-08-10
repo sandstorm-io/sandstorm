@@ -232,7 +232,7 @@ const compileMatchFilter = function (searchString) {
   return function matchFilter(item) {
     if (searchKeys.length === 0) return true;
     return _.chain(searchKeys)
-        .map(function (searchKey) { return matchesAppOrGrainTitle(searchKey, item); })
+        .map((searchKey) => matchesAppOrGrainTitle(searchKey, (item || {}).grainInfo || {}))
         .reduce(function (a, b) { return a && b; })
         .value();
   };

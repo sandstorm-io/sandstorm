@@ -22,7 +22,6 @@ const Path = Npm.require("path");
 const Future = Npm.require("fibers/future");
 const Http = Npm.require("http");
 const Url = Npm.require("url");
-const Promise = Npm.require("es6-promise").Promise;
 const Capnp = Npm.require("capnp");
 const Net = Npm.require("net");
 
@@ -453,12 +452,17 @@ Meteor.methods({
     //   by them.
     check(sessionId, String);
 
-    const session = Sessions.findAndModify({
+    const result = Sessions.findAndModify({
       query: { _id: sessionId },
       update: { $set: { timestamp: new Date().getTime() } },
       fields: { grainId: 1, identityId: 1, hostId: 1 },
     });
 
+    if (!result.ok) {
+      return false;
+    }
+
+    const session = result.value;
     if (session) {
       // Session still present in database, so send keep-alive to backend.
       try {

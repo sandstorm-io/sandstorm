@@ -21,7 +21,6 @@ import ChildProcess from "child_process";
 import Http from "http";
 import Https from "https";
 import Url from "url";
-const Promise = Npm.require("es6-promise").Promise;
 import Request from "request";
 const Capnp = Npm.require("capnp");
 

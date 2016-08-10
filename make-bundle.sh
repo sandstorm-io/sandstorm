@@ -91,8 +91,10 @@ cp meteor-bundle-main.js bundle/sandstorm-main.js
 # The fibers package builds native extensions, choosing the target v8 version based on
 # the version of `/usr/bin/env node`. We need to make it does not pick up the wrong binary,
 # so we prepend `METEOR_DEV_BUNDLE/bin` to `PATH`.
+# Additional native extensions require node-pre-gyp, which lives in the .bin folder of the
+# dev bundle's node_modules.
 (cd bundle/programs/server && \
- PATH=$METEOR_DEV_BUNDLE/bin:$PATH "$METEOR_DEV_BUNDLE/bin/npm" install)
+ PATH=$METEOR_DEV_BUNDLE/lib/node_modules/.bin:$METEOR_DEV_BUNDLE/bin:$PATH "$METEOR_DEV_BUNDLE/bin/npm" install)
 
 # Copy over key binaries.
 mkdir -p bundle/bin

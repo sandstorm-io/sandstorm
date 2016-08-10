@@ -18,7 +18,6 @@ const Capnp = Npm.require("capnp");
 const Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
 const Crypto = Npm.require("crypto");
 const Future = Npm.require("fibers/future");
-const Promise = Npm.require("es6-promise").Promise;
 
 const inMeteorInternal = Meteor.bindEnvironment(function (callback) {
   callback();

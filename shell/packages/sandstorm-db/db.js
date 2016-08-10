@@ -1429,7 +1429,7 @@ _.extend(SandstormDb.prototype, {
     check(accountId, String);
 
     const DAILY_LIMIT = 50;
-    const user = Meteor.users.findAndModify({
+    const result = Meteor.users.findAndModify({
       query: { _id: accountId },
       update: {
         $inc: {
@@ -1439,6 +1439,11 @@ _.extend(SandstormDb.prototype, {
       fields: { dailySentMailCount: 1 },
     });
 
+    if (!result.ok) {
+      throw new Error("Couldn't update daily sent mail count.");
+    }
+
+    const user = result.value;
     if (user.dailySentMailCount >= DAILY_LIMIT) {
       throw new Error(
           "Sorry, you've reached your e-mail sending limit for today. Currently, Sandstorm " +
@@ -1656,10 +1661,16 @@ _.extend(SandstormDb.prototype, {
                 app.version);
             }
           } else {
-            const newPack = Packages.findAndModify({
+            const result = Packages.findAndModify({
               query: { _id: app.packageId },
               update: { $set: { isAutoUpdated: true } },
             });
+
+            if (!result.ok) {
+              return;
+            }
+
+            const newPack = result.value;
             if (newPack.status === "ready") {
               // The package was marked as ready before we applied isAutoUpdated=true. We should send
               // notifications ourselves to be sure there's no timing issue (sending more than one is
@@ -2000,11 +2011,17 @@ if (Meteor.isServer) {
     hasher.update(content);
     const hash = hasher.digest("base64");
 
-    const existing = StaticAssets.findAndModify({
+    const result = StaticAssets.findAndModify({
       query: { hash: hash, refcount: { $gte: 1 } },
       update: { $inc: { refcount: 1 } },
       fields: { _id: 1, refcount: 1 },
     });
+
+    if (!result.ok) {
+      throw new Error(`Couldn't increment refcount of asset with hash ${hash}`);
+    }
+
+    const existing = result.value;
     if (existing) {
       return existing._id;
     }
@@ -2028,12 +2045,17 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    const existing = StaticAssets.findAndModify({
+    const result = StaticAssets.findAndModify({
       query: { hash: hash },
       update: { $inc: { refcount: 1 } },
       fields: { _id: 1, content: 1, mimeType: 1 },
     });
 
+    if (!result.ok) {
+      throw new Error(`Couldn't increment refcount of asset with hash ${hash}`);
+    }
+
+    const existing = result.value;
     return existing;
   };
 
@@ -2046,12 +2068,18 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    const existing = StaticAssets.findAndModify({
+    const result = StaticAssets.findAndModify({
       query: { _id: id },
       update: { $inc: { refcount: -1 } },
       fields: { _id: 1, refcount: 1 },
       new: true,
     });
+
+    if (!result.ok) {
+      throw new Error(`Couldn't unref static asset ${id}`);
+    }
+
+    const existing = result.value;
     if (!existing) {
       console.error(new Error("unrefStaticAsset() called on asset that doesn't exist").stack);
     } else if (existing.refcount <= 0) {
@@ -2092,10 +2120,16 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    const upload = AssetUploadTokens.findAndModify({
+    const result = AssetUploadTokens.findAndModify({
       query: { _id: id },
       remove: true,
     });
+
+    if (!result.ok) {
+      throw new Error("Failed to remove asset upload token");
+    }
+
+    const upload = result.value;
 
     if (upload.expires.valueOf() < Date.now()) {
       return undefined;  // already expired
@@ -2511,11 +2545,16 @@ Meteor.methods({
       UserActions.remove({ _id: actionId });
     } else {
       if (this.userId) {
-        const action = UserActions.findAndModify({
+        const result = UserActions.findAndModify({
           query: { _id: actionId, userId: this.userId },
           remove: true,
         });
 
+        if (!result.ok) {
+          throw new Error(`Couldn't remove user action ${actionId}`);
+        }
+
+        const action = result.value;
         if (action) {
           this.connection.sandstormDb.deleteUnusedPackages(action.appId);
         }

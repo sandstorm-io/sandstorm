@@ -46,14 +46,19 @@ Meteor.methods({
   resetWhitelabelLogo() {
     checkAuth(undefined);
     const db = this.connection.sandstormDb;
-    const old = globalDb.collections.settings.findAndModify({
+    const result = globalDb.collections.settings.findAndModify({
       query: { _id: "whitelabelCustomLogoAssetId" },
       remove: true,
       fields: { value: 1 },
     });
 
-    if (old) {
-      db.unrefStaticAsset(old.value);
+    if (result.ok) {
+      const old = result.value;
+      if (old) {
+        db.unrefStaticAsset(old.value);
+      }
+    } else {
+      throw new Meteor.Error(500, "Couldn't remove whitelabelCustomLogoAssetId");
     }
   },
 });

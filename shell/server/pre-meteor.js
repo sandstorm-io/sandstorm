@@ -20,7 +20,6 @@
 const Url = Npm.require("url");
 const Fs = Npm.require("fs");
 const Dns = Npm.require("dns");
-const Promise = Npm.require("es6-promise").Promise;
 const Future = Npm.require("fibers/future");
 const Http = Npm.require("http");
 const Capnp = Npm.require("capnp");
@@ -326,17 +325,24 @@ function serveStaticAsset(req, res, hostId) {
 
       if (purpose.profilePicture) {
         const identityId = purpose.profilePicture.identityId;
-        const old = Meteor.users.findAndModify({
+        const result = Meteor.users.findAndModify({
           query: { _id: identityId },
           update: { $set: { "profile.picture": assetId } },
           fields: { "profile.picture": 1 },
         });
 
-        if (old && old.profile && old.profile.picture) {
-          globalDb.unrefStaticAsset(old.profile.picture);
+        if (result.ok) {
+          const old = result.value;
+          if (old && old.profile && old.profile.picture) {
+            globalDb.unrefStaticAsset(old.profile.picture);
+          }
+        } else {
+          res.writeHead(500, { "Content-Type": "text/plain" });
+          res.end("Couldn't update profile picture.");
+          return;
         }
       } else if (purpose.loginLogo) {
-        const old = globalDb.collections.settings.findAndModify({
+        const result = globalDb.collections.settings.findAndModify({
           query: { _id: "whitelabelCustomLogoAssetId" },
           update: {
             $setOnInsert: { _id: "whitelabelCustomLogoAssetId" },
@@ -346,8 +352,15 @@ function serveStaticAsset(req, res, hostId) {
           fields: { value: 1 },
         });
 
-        if (old && old.value) {
-          globalDb.unrefStaticAsset(old.value);
+        if (result.ok) {
+          const old = result.value;
+          if (old && old.value) {
+            globalDb.unrefStaticAsset(old.value);
+          }
+        } else {
+          res.writeHead(500, { "Content-Type": "text/plain" });
+          res.end("Couldn't update login logo.");
+          return;
         }
       }
 

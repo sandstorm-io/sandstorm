@@ -101,7 +101,36 @@ mkdir -p bundle/bin
 cp bin/sandstorm-http-bridge bundle/bin/sandstorm-http-bridge
 cp bin/sandstorm bundle/sandstorm
 cp $METEOR_DEV_BUNDLE/bin/node bundle/bin
-cp $METEOR_DEV_BUNDLE/mongodb/bin/{mongo,mongod} bundle/bin
+
+# We used to pull mongodb out of the meteor dev bundle, but we need to figure out how to safely
+# upgrade some databases created with very old mongo versions, so we're shipping mongo 2.6 for
+# now.
+#cp $METEOR_DEV_BUNDLE/mongodb/bin/{mongo,mongod} bundle/bin
+
+# Pull mongo v2.6 out of a previous Sandstorm package.
+OLD_BUNDLE_BASE=sandstorm-171
+OLD_BUNDLE_FILENAME=$OLD_BUNDLE_BASE.tar.xz
+OLD_BUNDLE_SHA256=ebffd643dffeba349f139bee34e4ce33fd9b1298fafc1d6a31eb35a191059a99
+OLD_MONGO_FILES="$OLD_BUNDLE_BASE/bin/mongo $OLD_BUNDLE_BASE/bin/mongod"
+if [ ! -e "$OLD_BUNDLE_FILENAME" ] ; then
+  echo "Fetching $OLD_BUNDLE_FILENAME to extract a mongo 2.6..."
+  curl --output "$OLD_BUNDLE_FILENAME" https://dl.sandstorm.io/$OLD_BUNDLE_FILENAME
+fi
+
+# Always check the checksum to guard against corrupted downloads.
+sha256sum --check <<EOF
+$OLD_BUNDLE_SHA256  $OLD_BUNDLE_FILENAME
+EOF
+# set -e should ensure we don't continue past here, but let's be doubly sure
+rc=$?
+if [ $rc -ne 0 ]; then
+  echo "Old bundle did not match expected checksum.  Aborting."
+  exit 1
+fi
+
+# Extract bin/mongo and bin/mongod from the old sandstorm bundle, and place them in bundle/.
+tar xf $OLD_BUNDLE_FILENAME --transform=s/^${OLD_BUNDLE_BASE}/bundle/ $OLD_MONGO_FILES
+
 cp $(which zip unzip xz gpg) bundle/bin
 
 # Older installs might be symlinking /usr/local/bin/spk to

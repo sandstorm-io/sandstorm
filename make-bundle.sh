@@ -110,16 +110,17 @@ cp $METEOR_DEV_BUNDLE/bin/node bundle/bin
 # Pull mongo v2.6 out of a previous Sandstorm package.
 OLD_BUNDLE_BASE=sandstorm-171
 OLD_BUNDLE_FILENAME=$OLD_BUNDLE_BASE.tar.xz
+OLD_BUNDLE_PATH=hack/$OLD_BUNDLE_FILENAME
 OLD_BUNDLE_SHA256=ebffd643dffeba349f139bee34e4ce33fd9b1298fafc1d6a31eb35a191059a99
 OLD_MONGO_FILES="$OLD_BUNDLE_BASE/bin/mongo $OLD_BUNDLE_BASE/bin/mongod"
-if [ ! -e "$OLD_BUNDLE_FILENAME" ] ; then
+if [ ! -e "$OLD_BUNDLE_PATH" ] ; then
   echo "Fetching $OLD_BUNDLE_FILENAME to extract a mongo 2.6..."
-  curl --output "$OLD_BUNDLE_FILENAME" https://dl.sandstorm.io/$OLD_BUNDLE_FILENAME
+  curl --output "$OLD_BUNDLE_PATH" https://dl.sandstorm.io/$OLD_BUNDLE_FILENAME
 fi
 
 # Always check the checksum to guard against corrupted downloads.
 sha256sum --check <<EOF
-$OLD_BUNDLE_SHA256  $OLD_BUNDLE_FILENAME
+$OLD_BUNDLE_SHA256  $OLD_BUNDLE_PATH
 EOF
 # set -e should ensure we don't continue past here, but let's be doubly sure
 rc=$?
@@ -129,7 +130,7 @@ if [ $rc -ne 0 ]; then
 fi
 
 # Extract bin/mongo and bin/mongod from the old sandstorm bundle, and place them in bundle/.
-tar xf $OLD_BUNDLE_FILENAME --transform=s/^${OLD_BUNDLE_BASE}/bundle/ $OLD_MONGO_FILES
+tar xf $OLD_BUNDLE_PATH --transform=s/^${OLD_BUNDLE_BASE}/bundle/ $OLD_MONGO_FILES
 
 cp $(which zip unzip xz gpg) bundle/bin
 

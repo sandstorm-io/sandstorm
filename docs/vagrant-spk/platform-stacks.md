@@ -20,7 +20,7 @@ Running this command:
 vagrant-spk setupvm platformname
 ```
 
-will set up a Linux virtual machine (with Sandstorm installeed) ready to
+will set up a Linux virtual machine (with Sandstorm installed) ready to
 run code in the platform called `platformname`.
 
 This page contains **reference documentation** you might use after

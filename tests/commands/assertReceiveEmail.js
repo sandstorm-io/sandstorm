@@ -34,7 +34,7 @@ ReceiveEmail.prototype.command = function(selector, expectedMessage, timeout, cb
     self.emit("complete");
   }, timeout);
 
-  var options = { SMTPBanner:"Sandstorm Testing Mail Server", timeout: 10000 };
+  var options = { SMTPBanner:"Sandstorm Testing Mail Server", timeout: 10000, disableSTARTTLS: true };
   server = simplesmtp.createSimpleServer(options, function (req) {
     var mailparser = new MailParser();
 
@@ -53,11 +53,11 @@ ReceiveEmail.prototype.command = function(selector, expectedMessage, timeout, cb
       var expected = expectedMessage;
 
       if ("to" in expected) {
-        self.client.api.assert.equal(expected.to, mail.to[0].address);
+        self.client.api.assert.equal(mail.to[0].address, expected.to);
         expected = _.omit(expected, "to");
       }
       Object.keys(expected).forEach(function (key) {
-        self.client.api.assert.equal(expected[key], mail[key]);
+        self.client.api.assert.equal(mail[key], expected[key]);
       });
     });
   });

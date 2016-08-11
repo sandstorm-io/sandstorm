@@ -1791,9 +1791,10 @@ _.extend(SandstormDb.prototype, {
   },
 
   isQuotaEnabled: function () {
+    if (Meteor.settings.public.quotaEnabled) return true;
+
     const setting = this.collections.settings.findOne({ _id: "quotaEnabled" });
-    return Meteor.settings.public.quotaEnabled ||
-      (setting && setting.value && this.isFeatureKeyValid());
+    return setting && setting.value && this.isFeatureKeyValid();
   },
 
   isUserOverQuota: function (user) {

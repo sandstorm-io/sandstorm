@@ -58,7 +58,13 @@ Meteor.publish("grainsMenu", function () {
           Meteor.users.update(userId, { $set: { storageUsage: parseInt(results.size) } });
         });
       }).catch(function (err) {
-        if (err.kjType !== "unimplemented") {
+        if (err.kjType === "unimplemented") {
+          // Compute based on sum of grain sizes instead.
+          let total = 0;
+          Grains.find({ userId: userId }, { fields: { size: 1 } })
+              .forEach(grain => total += (grain.size || 0));
+          Meteor.users.update(userId, { $set: { storageUsage: total } });
+        } else {
           console.error(err.stack);
         }
       });

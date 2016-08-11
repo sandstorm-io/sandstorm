@@ -214,66 +214,6 @@ Meteor.publish("requestingAccess", function (grainId) {
   this.onStop(() => handle.stop());
 });
 
-Meteor.publish("grainSize", function (grainId) {
-  // Publish pseudo-collection containing the size of the grain opened in the given session.
-  check(grainId, String);
-
-  const grain = Grains.findOne(grainId);
-  if (!grain || grain.userId !== this.userId) {
-    return [];
-  }
-
-  const supervisor = globalBackend.cap().getGrain(this.userId, grainId).supervisor;
-
-  const _this = this;
-  let stopped = false;
-  let promise = getGrainSize(supervisor);
-
-  function getNext(oldSize) {
-    promise = getGrainSize(supervisor, oldSize);
-    promise.then(function (size) {
-      if (!stopped) {
-        if (size !== oldSize) {  // sometimes there are false alarms
-          _this.changed("grainSizes", grainId, { size: size });
-        }
-
-        getNext(size);
-      }
-    }, function (err) {
-
-      if (!stopped) {
-        if (err.kjType === "disconnected") {
-          _this.stop();
-        } else {
-          _this.error(err);
-        }
-      }
-    });
-  }
-
-  promise.then(function (size) {
-    if (!stopped) {
-      _this.added("grainSizes", grainId, { size: size });
-      _this.ready();
-      getNext(size);
-    }
-  }, function (err) {
-
-    if (!stopped) {
-      if (err.kjType === "disconnected") {
-        _this.stop();
-      } else {
-        _this.error(err);
-      }
-    }
-  });
-
-  _this.onStop(function () {
-    stopped = true;
-    promise.cancel();
-  });
-});
-
 const GRAIN_DELETION_MS = 1000 * 60 * 60 * 24 * 30; // thirty days
 SandstormDb.periodicCleanup(86400000, () => {
   const trashExpiration = new Date(Date.now() - GRAIN_DELETION_MS);

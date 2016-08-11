@@ -219,6 +219,7 @@ Grains = new Mongo.Collection("grains");
 //            this date, the grain will be automatically deleted.
 //   ownerSeenAllActivity: True if the owner has viewed the grain since the last activity event
 //       occurred. See also ApiTokenOwner.user.seenAllActivity.
+//   size: On-disk size of the grain in bytes.
 //
 // The following fields *might* also exist. These are temporary hacks used to implement e-mail and
 // web publishing functionality without powerbox support; they will be replaced once the powerbox
@@ -2175,6 +2176,10 @@ if (Meteor.isServer) {
       }
 
       this.deleteUnusedPackages(grain.appId);
+
+      if (grain.size) {
+        Meteor.users.update(grain.userId, { $inc: { storageUsage: -grain.size } });
+      }
     });
     return numDeleted;
   };

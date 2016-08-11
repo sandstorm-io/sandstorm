@@ -176,6 +176,13 @@
         background-color: $grainlist-table-header-background-color-hover;
       }
       */
+      &.grain-size {
+        width: 80px;
+        // The mobile viewport is too small to display this much text
+        @media #{$mobile} {
+          display: none;
+        }
+      }
       &.shared-or-owned {
         width: 110px;
         // The mobile viewport is too small to display this much text
@@ -226,6 +233,13 @@
             font-size: 20px;
             @extend .icon;
           }
+        }
+      }
+      &.grain-size {
+        width: 80px;
+        // The mobile viewport is too small to display this much text
+        @media #{$mobile} {
+          display: none;
         }
       }
       &.last-used {

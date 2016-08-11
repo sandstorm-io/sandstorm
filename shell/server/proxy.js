@@ -306,6 +306,7 @@ Meteor.methods({
       identityId: identityId,
       title: title,
       private: true,
+      size: 0,
     });
 
     globalBackend.startGrainInternal(packageId, grainId, this.userId, command, true, isDev);
@@ -535,22 +536,6 @@ const validateWebkey = (apiToken, refreshedExpiration) => {
   if (apiToken.objectId || apiToken.frontendRef) {
     throw new Meteor.Error(403, "ApiToken refers to a non-webview Capability.");
   }
-};
-
-// Used by shared/grain.js (which sounds like a broken dependency, since this code is only available
-// on the server)
-getGrainSize = (supervisor, oldSize) => {
-  let promise;
-  if (oldSize === undefined) {
-    promise = supervisor.getGrainSize();
-  } else {
-    promise = supervisor.getGrainSizeWhenDifferent(oldSize);
-  }
-
-  const promise2 = promise.then((result) => { return parseInt(result.size); });
-  promise2.cancel = () => { promise.cancel(); };
-
-  return promise2;
 };
 
 Meteor.startup(() => {

@@ -23,6 +23,7 @@ SandstormGrainListPage.mapGrainsToTemplateObject = function (grains, db) {
       isOwnedByMe: true,
       trashed: grain.trashed,
       unread: !grain.ownerSeenAllActivity,
+      size: grain.size,
     };
   });
 };
@@ -462,6 +463,12 @@ Template.sandstormGrainTable.helpers({
   showTableHeaders: function () {
     return !!(Template.instance().data.alwaysShowTableHeaders ||
               Template.instance().data.grains.length);
+  },
+
+  grainSize: function () {
+    // TODO(cleanup): extract prettySize and other similar helpers from globals into a package
+    // TODO(cleanup): access Meteor.user() through db object
+    return this.size && prettySize(this.size);
   },
 });
 

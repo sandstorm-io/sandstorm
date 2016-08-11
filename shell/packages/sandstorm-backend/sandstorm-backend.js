@@ -190,12 +190,14 @@ SandstormBackend.prototype.startGrainInternal = function (packageId, grainId, ow
   return this._backendCap.startGrain(ownerId, grainId, packageId, command, isNew, isDev);
 };
 
+let storageUsageUnimplemented = false;
+
 SandstormBackend.prototype.updateLastActive = function (grainId, userId, identityId) {
   // Update the lastActive date on the grain, any relevant API tokens, and the user,
   // and also update the user's storage usage.
 
   let storagePromise = undefined;
-  if (Meteor.settings.public.quotaEnabled) {
+  if (Meteor.settings.public.quotaEnabled && !storageUsageUnimplemented) {
     storagePromise = globalBackend._backendCap.getUserStorageUsage(userId);
   }
 
@@ -217,7 +219,7 @@ SandstormBackend.prototype.updateLastActive = function (grainId, userId, identit
                      { multi: true });
   }
 
-  if (Meteor.settings.public.quotaEnabled) {
+  if (storagePromise) {
     try {
       const ownerId = Grains.findOne(grainId).userId;
       const size = parseInt(waitPromise(storagePromise).size);
@@ -225,7 +227,9 @@ SandstormBackend.prototype.updateLastActive = function (grainId, userId, identit
       // TODO(security): Consider actively killing grains if the user is excessively over quota?
       //   Otherwise a constantly-active grain could consume arbitrary space without being stopped.
     } catch (err) {
-      if (err.kjType !== "unimplemented") {
+      if (err.kjType === "unimplemented") {
+        storageUsageUnimplemented = true;
+      } else {
         console.error("error getting user storage usage:", err.stack);
       }
     }

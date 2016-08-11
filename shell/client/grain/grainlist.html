@@ -122,6 +122,7 @@
             </td>
             <td class="td-app-icon"></td>
             <td class="grain-name">Name</td>
+            <td class="grain-size">Size</td>
             <td class="last-used">Last activity</td>
             <td class="shared-or-owned">Mine/Shared</td>
             {{!-- Collaborators, size TODO
@@ -136,7 +137,7 @@
         <tr class="action">
           <td class="select-grain"></td>
           <td class="td-app-icon"><div class="new-grain-icon"></div></td>
-          <td class="action-button" colspan="3"><button class="action">{{buttonText}}</button></td>
+          <td class="action-button" colspan="4"><button class="action">{{buttonText}}</button></td>
         </tr>
         {{/each}}
         {{#each grains}}
@@ -159,6 +160,7 @@
               (renamed from: {{.}})
             {{/with}}
           </td>
+          <td class="grain-size click-to-go">{{grainSize}}</td>
           <td class="last-used click-to-go">{{dateString lastUsed}}</td>
           <td class="shared-or-owned click-to-go">{{#if isOwnedByMe }}My grain{{else}}Shared with me{{/if}}</td>
           {{!-- Collaborators, size TODO

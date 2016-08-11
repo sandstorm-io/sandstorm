@@ -537,22 +537,6 @@ const validateWebkey = (apiToken, refreshedExpiration) => {
   }
 };
 
-// Used by shared/grain.js (which sounds like a broken dependency, since this code is only available
-// on the server)
-getGrainSize = (supervisor, oldSize) => {
-  let promise;
-  if (oldSize === undefined) {
-    promise = supervisor.getGrainSize();
-  } else {
-    promise = supervisor.getGrainSizeWhenDifferent(oldSize);
-  }
-
-  const promise2 = promise.then((result) => { return parseInt(result.size); });
-  promise2.cancel = () => { promise.cancel(); };
-
-  return promise2;
-};
-
 Meteor.startup(() => {
   const shutdownApp = (appId) => {
     Grains.find({ appId: appId }).forEach((grain) => {

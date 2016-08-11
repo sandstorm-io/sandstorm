@@ -50,12 +50,10 @@ interface Supervisor {
   # Shut down the grain immediately.  Useful e.g. when upgrading to a newer app version.  This
   # call will never return successfully because the process kills itself.
 
-  getGrainSize @3 () -> (size :UInt64);
-  # Get the total storage size of the grain.
-
-  getGrainSizeWhenDifferent @4 (oldSize :UInt64) -> (size :UInt64);
-  # Wait until the storage size of the grain is different from `oldSize` and then return the new
-  # size. May occasionally return prematurely, with `size` equal to `oldSize`.
+  obsoleteGetGrainSize @3 () -> (size :UInt64);
+  obsoloteGetGrainSizeWhenDifferent @4 (oldSize :UInt64) -> (size :UInt64);
+  # OBSOLETE: We used to pull the grain size from the supervisor. Now the supervisor pushes the
+  #   size through SandstormCore.
 
   restore @5 (ref :SupervisorObjectId, requirements :List(MembraneRequirement), parentToken :Data)
           -> (cap :Capability);
@@ -181,6 +179,11 @@ interface SandstormCore {
 
   backgroundActivity @7 (event :Activity.ActivityEvent);
   # Implements SandstormApi.backgroundActivity().
+
+  reportGrainSize @8 (bytes :UInt64);
+  # Reports the current disk storage usage of the grain. The supervisor monitors storage usage
+  # while the grain runs and calls this method periodically. In order to avoid unnecessary traffic,
+  # the supervisor may choose not to report insignificant changes.
 }
 
 struct MembraneRequirement {

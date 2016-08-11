@@ -137,6 +137,10 @@ class SandstormCoreImpl {
       logActivity(this.grainId, null, event);
     });
   }
+
+  reportGrainSize(bytes) {
+    Grains.update(this.grainId, {$set: {size: bytes}});
+  }
 }
 
 const makeSandstormCore = (grainId) => {

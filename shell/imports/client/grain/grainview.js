@@ -16,9 +16,6 @@
 
 let counter = 0;
 
-// Pseudo-collection, published in shell/server/grain-server.js.
-const GrainSizes = new Mongo.Collection("grainSizes");
-
 class GrainView {
   constructor(grains, db, grainId, path, tokenInfo, parentElement) {
     // `path` starts with a slash and includes the query and fragment.
@@ -135,7 +132,6 @@ class GrainView {
     this._sessionSalt = null;
     this._permissions = undefined;
 
-    this._grainSizeSub = undefined;
     this._sessionObserver = undefined;
     this._sessionSub = undefined;
 
@@ -214,9 +210,6 @@ class GrainView {
     // rendering the iframe forever, even if it is no longer linked into the page DOM.
 
     Blaze.remove(this._blazeView);
-    if (this._grainSizeSub) {
-      this._grainSizeSub.stop();
-    }
 
     if (this._sessionObserver) {
       this._sessionObserver.stop();
@@ -271,8 +264,9 @@ class GrainView {
   }
 
   size() {
-    const size = GrainSizes.findOne(this._grainId);
-    return size && size.size;
+    // Note that only a user's own grains are found in the Grains collection.
+    const grain = this._db.getGrain(this._grainId);
+    return grain && grain.size;
   }
 
   title() {
@@ -601,8 +595,6 @@ class GrainView {
 
           _this._addSessionObserver(result.sessionId);
 
-          if (_this._grainSizeSub) _this._grainSizeSub.stop();
-          _this._grainSizeSub = Meteor.subscribe("grainSize", result.grainId);
           _this._dep.changed();
         }
       });

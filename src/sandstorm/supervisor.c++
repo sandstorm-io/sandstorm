@@ -87,12 +87,13 @@ namespace sandstorm {
 // =======================================================================================
 // Directory size watcher
 
-class DiskUsageWatcher {
+class DiskUsageWatcher: private kj::TaskSet::ErrorHandler {
   // Class which watches a directory tree, counts up the total disk usage, and fires events when
   // it changes. Uses inotify. Which turns out to be... harder than it should be.
 
 public:
-  DiskUsageWatcher(kj::UnixEventPort& eventPort): eventPort(eventPort) {}
+  DiskUsageWatcher(kj::UnixEventPort& eventPort, kj::Timer& timer, SandstormCore::Client core)
+      : eventPort(eventPort), timer(timer), core(kj::mv(core)), tasks(*this) {}
 
   kj::Promise<void> init() {
     // Start watching the current directory.
@@ -116,35 +117,15 @@ public:
     return readLoop();
   }
 
-  uint64_t getSize() { return totalSize; }
-
-  kj::Promise<uint64_t> getSizeWhenChanged(uint64_t oldSize) {
-    kj::Promise<void> trigger = nullptr;
-    if (totalSize == oldSize) {
-      auto paf = kj::newPromiseAndFulfiller<void>();
-      trigger = kj::mv(paf.promise);
-      listeners.add(kj::mv(paf.fulfiller));
-    } else {
-      trigger = kj::READY_NOW;
-    }
-
-    // Even when the value has changed, wait 100ms so that we're not streaming tons of updates
-    // whenever there is heavy disk I/O. This is just for a silly display anyway.
-    return trigger.then([this]() {
-      return eventPort.atSteadyTime(eventPort.steadyTime() + 100 * kj::MILLISECONDS);
-    }).then([this]() {
-      return totalSize;
-    });
-  }
-
 private:
   kj::UnixEventPort& eventPort;
+  kj::Timer& timer;
+  SandstormCore::Client core;
   kj::AutoCloseFd inotifyFd;
   kj::Own<kj::UnixEventPort::FdObserver> observer;
   uint64_t totalSize;
-
-  uint64_t lastUpdateSize = kj::maxValue;  // value of totalSize last time listeners were fired.
-  kj::Vector<kj::Own<kj::PromiseFulfiller<void>>> listeners;
+  uint64_t reportedSize = kj::maxValue;
+  bool reportInFlight = false;
 
   struct ChildInfo {
     kj::String name;
@@ -161,6 +142,8 @@ private:
   // Directories we would like to watch, but we can't add watches on them just yet because we need
   // to finish processing a list of events received from inotify before we mess with the watch
   // descriptor table.
+
+  kj::TaskSet tasks;
 
   void addPendingWatches() {
     // Start watching everything that has been added to the pendingWatches list.
@@ -253,7 +236,7 @@ private:
 
   kj::Promise<void> readLoop() {
     addPendingWatches();
-    maybeFireEvents();
+    maybeReportSize();
     return observer->whenBecomesReadable().then([this]() {
       alignas(uint64_t) kj::byte buffer[4096];
 
@@ -343,6 +326,8 @@ private:
       iter->second.size = usage.bytes;
     }
 
+    maybeReportSize();
+
     // If the child is a directory, plan to start watching it later. Note that IN_MODIFY events
     // are not generated for subdirectories (only files), so if we got an event on a directory it
     // must be create, move to, move from, or delete. In the latter two cases, the node wouldn't
@@ -414,14 +399,47 @@ private:
     }
   }
 
-  void maybeFireEvents() {
-    if (totalSize != lastUpdateSize) {
-      for (auto& listener: listeners) {
-        listener->fulfill();
-      }
-      listeners.resize(0);
-      lastUpdateSize = totalSize;
-    }
+  void maybeReportSize() {
+    // Don't send multiple reports at once. When the first one finishes we'll send another one if
+    // the size has changed in the meantime.
+    if (reportInFlight) return;
+
+    // If the last reported size is still correct, don't report.
+    if (reportedSize == totalSize) return;
+
+    reportInFlight = true;
+
+    // Wait 500ms before reporting to gather other changes.
+    tasks.add(timer.afterDelay(500 * kj::MILLISECONDS)
+        .then([this]() -> kj::Promise<void> {
+      auto req = core.reportGrainSizeRequest();
+      uint64_t sizeBeingReported = totalSize;
+      req.setBytes(sizeBeingReported);
+
+      return req.send().then([this,sizeBeingReported](auto) {
+        reportInFlight = false;
+        reportedSize = sizeBeingReported;
+
+        // If the size has changed further, initiate a new report.
+        maybeReportSize();
+      }, [this](kj::Exception&& e) {
+        reportInFlight = false;
+
+        if (e.getType() == kj::Exception::Type::DISCONNECTED) {
+          // SandstormCore disconnected. Due to our CoreRedirector logic, it will restore itself
+          // eventually, and in fact further calls to SandstormCore should block until than
+          // happens. So, initiate a new report immediately.
+          maybeReportSize();
+        } else {
+          // Some other error. Propagate.
+          kj::throwFatalException(kj::mv(e));
+        }
+      });
+    }));
+  }
+
+  void taskFailed(kj::Exception&& exception) override {
+    KJ_LOG(ERROR, exception);
   }
 };
 
@@ -1924,10 +1942,9 @@ private:
 class SupervisorMain::SupervisorImpl final: public Supervisor::Server {
 public:
   inline SupervisorImpl(kj::UnixEventPort& eventPort, MainView<>::Client&& mainView,
-                        DiskUsageWatcher& diskWatcher, WakelockSet& wakelockSet,
-                        kj::AutoCloseFd startAppEvent, SandstormCore::Client sandstormCore,
-                        kj::Own<CapRedirector> coreRedirector)
-      : eventPort(eventPort), mainView(kj::mv(mainView)), diskWatcher(diskWatcher),
+                        WakelockSet& wakelockSet, kj::AutoCloseFd startAppEvent,
+                        SandstormCore::Client sandstormCore, kj::Own<CapRedirector> coreRedirector)
+      : eventPort(eventPort), mainView(kj::mv(mainView)),
         wakelockSet(wakelockSet), sandstormCore(sandstormCore),
         coreRedirector(kj::mv(coreRedirector)), startAppEvent(kj::mv(startAppEvent)) {}
 
@@ -1957,19 +1974,6 @@ public:
   kj::Promise<void> shutdown(ShutdownContext context) override {
     SANDSTORM_LOG("Grain shutdown requested.");
     killChildAndExit(0);
-  }
-
-  kj::Promise<void> getGrainSize(GetGrainSizeContext context) override {
-    context.getResults(capnp::MessageSize { 2, 0 }).setSize(diskWatcher.getSize());
-    return kj::READY_NOW;
-  }
-
-  kj::Promise<void> getGrainSizeWhenDifferent(GetGrainSizeWhenDifferentContext context) override {
-    auto oldSize = context.getParams().getOldSize();
-    context.releaseParams();
-    return diskWatcher.getSizeWhenChanged(oldSize).then([context](uint64_t size) mutable {
-      context.getResults(capnp::MessageSize { 2, 0 }).setSize(size);
-    });
   }
 
   kj::Promise<void> watchLog(WatchLogContext context) override {
@@ -2077,7 +2081,6 @@ public:
 private:
   kj::UnixEventPort& eventPort;
   MainView<>::Client mainView;
-  DiskUsageWatcher& diskWatcher;
   WakelockSet& wakelockSet;
   SandstormCore::Client sandstormCore;
   kj::Own<CapRedirector> coreRedirector;
@@ -2242,8 +2245,9 @@ kj::Promise<void> SupervisorMain::DefaultSystemConnector::run(
   SandstormCore::Client coreCap = static_cast<capnp::Capability::Client>(
     kj::addRef(*coreRedirector)).castAs<SandstormCore>();
   SupervisorRealmGateway::Client gateway = kj::heap<SupervisorRealmGatewayImpl>(coreCap);
+
   // Compute grain size and watch for changes.
-  DiskUsageWatcher diskWatcher(ioContext.unixEventPort);
+  DiskUsageWatcher diskWatcher(ioContext.unixEventPort, ioContext.provider->getTimer(), coreCap);
   auto diskWatcherTask = diskWatcher.init();
 
   // Set up the RPC connection to the app and export the supervisor interface.
@@ -2270,7 +2274,7 @@ kj::Promise<void> SupervisorMain::DefaultSystemConnector::run(
   //   want to wrap the UiView and cache session objects.  Perhaps we could do this by making
   //   them persistable, though it's unclear how that would work with SessionContext.
   Supervisor::Client mainCap = kj::heap<SupervisorImpl>(
-      ioContext.unixEventPort, kj::mv(app), diskWatcher, wakelockSet, kj::mv(startEventFd),
+      ioContext.unixEventPort, kj::mv(app), wakelockSet, kj::mv(startEventFd),
       coreCap, kj::addRef(*coreRedirector));
 
   auto acceptTask = systemConnector->run(ioContext, kj::mv(mainCap), kj::mv(coreRedirector));

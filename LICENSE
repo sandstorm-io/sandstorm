@@ -58,13 +58,6 @@ shell/client/vendor/ansi-up.js
     License URL: https://github.com/drudru/ansi_up/blob/master/Readme.md
                  (at bottom)
 
-shell/client/vendor/es6-promise.js
-    What: ES6 Promise polyfill
-    Source URL: https://github.com/stefanpenner/es6-promise
-    Copyright: Yehuda Katz, Tom Dale, Stefan Penner and contributors
-    License: MIT
-    License URL: https://github.com/stefanpenner/es6-promise/blob/master/LICENSE
-
 shell/packages/sandstorm-identicons/identicon.js
     What: identicon.js
     Source URL: https://github.com/stewartlord/identicon.js

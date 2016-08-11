@@ -306,6 +306,7 @@ Meteor.methods({
       identityId: identityId,
       title: title,
       private: true,
+      size: 0,
     });
 
     globalBackend.startGrainInternal(packageId, grainId, this.userId, command, true, isDev);

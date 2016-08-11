@@ -139,7 +139,28 @@ class SandstormCoreImpl {
   }
 
   reportGrainSize(bytes) {
-    Grains.update(this.grainId, {$set: {size: bytes}});
+    bytes = parseInt(bytes);  // int64s are stringified but precision isn't critical here
+
+    const result = Grains.findAndModify({
+      query: { _id: this.grainId },
+      update: { $set: { size: bytes } },
+      fields: { _id: 1, userId: 1, size: 1 },
+    });
+
+    if (!result.ok) {
+      throw new Error("Grain not found.");
+    }
+
+    // If the grain did not have a "size" field before the update, then it is a grain created
+    // before per-grain size tracking was implemented. In that case, we don't want to update the
+    // user record because it may already be counting the grain (specifically on Blackrock, where
+    // whole-user size counting has existed for some time).
+    if (Meteor.settings.public.quotaEnabled && ("size" in result.value)) {
+      // Update the user record, too. Note that we periodically recompute the user's storage usage
+      // from scratch as well, so this doesn't have to be perfectly reliable.
+      const diff = bytes - (result.value.size || 0);
+      Meteor.users.update(result.value.userId, { $inc: { storageUsage: diff } });
+    }
   }
 }
 

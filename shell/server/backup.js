@@ -158,6 +158,7 @@ Meteor.methods({
         identityId: identityId,
         title: grainInfo.title,
         private: true,
+        size: 0,
       });
     } finally {
       cleanupToken(tokenId);

@@ -2176,6 +2176,10 @@ if (Meteor.isServer) {
       }
 
       this.deleteUnusedPackages(grain.appId);
+
+      if (grain.size) {
+        Meteor.users.update(grain.userId, { $inc: { storageUsage: -grain.size } });
+      }
     });
     return numDeleted;
   };

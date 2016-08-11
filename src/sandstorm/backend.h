@@ -50,6 +50,7 @@ protected:
   kj::Promise<void> uploadBackup(UploadBackupContext context) override;
   kj::Promise<void> downloadBackup(DownloadBackupContext context) override;
   kj::Promise<void> deleteBackup(DeleteBackupContext context) override;
+  kj::Promise<void> getGrainStorageUsage(GetGrainStorageUsageContext context) override;
 
 private:
   kj::LowLevelAsyncIoProvider& ioProvider;

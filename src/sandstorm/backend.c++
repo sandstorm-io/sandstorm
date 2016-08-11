@@ -587,5 +587,37 @@ kj::Promise<void> BackendImpl::deleteBackup(DeleteBackupContext context) {
   return kj::READY_NOW;
 }
 
+// =======================================================================================
+
+static uint64_t recursivelyCountSize(kj::StringPtr path) {
+  KJ_REQUIRE(!path.endsWith("/"),
+      "refusing to recursively traverse directory name with trailing / to reduce risk of "
+      "catastrophic empty-string bugs");
+
+  struct stat stats;
+  KJ_SYSCALL(lstat(path.cStr(), &stats));
+
+  // Count blocks, not length, because what we care about is allocated space.
+  uint64_t total = stats.st_blocks * 512;
+
+  if (S_ISDIR(stats.st_mode)) {
+    for (auto& file: listDirectory(path)) {
+      total += recursivelyCountSize(kj::str(path, '/', file));
+    }
+  } else if (stats.st_nlink != 0) {
+    // Don't overcount hard links. (Note that st_nlink can in fact be zero in cases where we are
+    // racing with directory modifications, so we check for that to avoid divide-by-zero crashes.)
+    total /= stats.st_nlink;
+  }
+
+  return total;
+}
+
+kj::Promise<void> BackendImpl::getGrainStorageUsage(GetGrainStorageUsageContext context) {
+  context.getResults(capnp::MessageSize { 4, 0 }).setSize(recursivelyCountSize(
+      kj::str("/var/sandstorm/grains/", validateId(context.getParams().getGrainId()))));
+  return kj::READY_NOW;
+}
+
 } // namespace sandstorm
 

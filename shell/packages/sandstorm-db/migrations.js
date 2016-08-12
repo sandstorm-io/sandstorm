@@ -672,6 +672,43 @@ function setNewServer() {
   }
 }
 
+function backgroundFillInGrainSizes() {
+  // Fill in sizes for all grains that don't have them. Since computing a grain size requires a
+  // directory walk, we don't want to do them all at once. Instead, we compute one a second until
+  // all grains have sizes.
+
+  try {
+    const grain = Grains.findOne({ size: { $exists: false } }, { fields: { _id: 1, userId: 1 } });
+
+    if (grain) {
+      // Compute size!
+      try {
+        const result = waitPromise(globalBackend.cap().getGrainStorageUsage(
+            grain.userId, grain._id));
+        Grains.update({ _id: grain._id, size: { $exists: false } },
+                      { $set: { size: parseInt(result.size) } });
+      } catch (err) {
+        if (err.kjType === "failed") {
+          // Backend had a problem. Maybe the grain doesn't actually exist on disk and the database
+          // is messed up. We'll set the size to zero and move on.
+          console.error("Error while backfilling grain size for", grain._id, ":", err.stack);
+          Grains.update({ _id: grain._id, size: { $exists: false } }, { $set: { size: 0 } });
+        } else {
+          // Rethrow on disconnected / overloaded / unimplemented.
+          throw err;
+        }
+      }
+
+      // Do another one in a second.
+      Meteor.setTimeout(backgroundFillInGrainSizes, 1000);
+    }
+  } catch (err) {
+    // We'll just stop for now, to avoid spamming logs if this error persists. Next time the server
+    // restarts, the migration will continue.
+    console.error("Error while backfilling grain sizes:", err.stack);
+  }
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -784,6 +821,9 @@ function migrateToLatest() {
 
       Migrations.update({ _id: "new_server_migrations_applied" }, { $set: { value: true } });
     }
+
+    // Start background migrations.
+    backgroundFillInGrainSizes();
   }
 }
 

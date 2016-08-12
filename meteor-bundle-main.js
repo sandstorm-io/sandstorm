@@ -126,6 +126,20 @@ function monkeypatchHttpAndHttps() {
         var metadataFilename = keyFilename + '.response-json';
         try {
           var metadata = JSON.parse(fs.readFileSync(metadataFilename));
+
+          if (metadata.ca && metadata.ca.length === 2) {
+            // Our metadata files contain a field `ca` which contains the CA certificate and
+            // intermediate certificate. However, Node doesn't want this field; it wants the server
+            // certificate followed by the intermediate concatenated as one text blob. Qualys
+            // complains if we send the root cert since it's not useful -- the user needs to have
+            // it in their trust store anyway. ca[1] is always the intermediate cert, whereas ca[0]
+            // is the root.
+            // TODO(cleanup): Adjust the Sandcats server so that it doesn't send the `ca` field at
+            //   all. This branch will then turn itself off.
+            metadata.cert = [metadata.cert, metadata.ca[1]].join("\r\n");
+            delete metadata.ca;
+          }
+
           var validity = forge.pki.certificateFromPem(metadata['cert']).validity;
           metadata.notBefore = Date.parse(validity.notBefore);
           metadata.notAfter = Date.parse(validity.notAfter);
@@ -357,9 +371,6 @@ function monkeypatchHttpAndHttps() {
       //
       // This ciphers list is from the nginx configuration for
       // oasis.sandstorm.io.
-      //
-      // TODO(security): Node 0.10.x, which we're on, doesn't support ECDHE nor DHE! :(
-      //   Upgrade soon, but this requires Meteor to support something newer.
       var ciphers = ("ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA");
       var honorCipherOrder = true;
 
@@ -376,31 +387,35 @@ function monkeypatchHttpAndHttps() {
       // automatic re-keying only works for clients that support the
       // HTTPS feature called Server Name Indication. Per
       // http://caniuse.com/#feat=sni SNI is very popular.
-      httpsOptions.SNICallback = function(servername) {
-        var certAtStart = sandcatsState.cert;
+      httpsOptions.SNICallback = function(servername, callback) {
+        try {
+          var certAtStart = sandcatsState.cert;
 
-        var jsTimeNow = new Date().getTime();
+          var jsTimeNow = new Date().getTime();
 
-        if ((sandcatsState.nextRekeyTime !== null) &&
-            (jsTimeNow >= sandcatsState.nextRekeyTime)) {
-          console.log("Since", jsTimeNow, "is greater than", sandcatsState.nextRekeyTime,
-                      "doing a https re-key.");
-          global.sandcats.rekey();
+          if ((sandcatsState.nextRekeyTime !== null) &&
+              (jsTimeNow >= sandcatsState.nextRekeyTime)) {
+            console.log("Since", jsTimeNow, "is greater than", sandcatsState.nextRekeyTime,
+                        "doing a https re-key.");
+            global.sandcats.rekey();
 
-          if (certAtStart == sandcatsState.cert) {
-            console.log("Re-keying resulted in the same certificate. Strange.");
-          } else {
-            console.log("Re-keying resulting in a new certificate. Good.");
+            if (certAtStart == sandcatsState.cert) {
+              console.log("Re-keying resulted in the same certificate. Strange.");
+            } else {
+              console.log("Re-keying resulting in a new certificate. Good.");
+            }
           }
-        }
 
-        return crypto.createCredentials({
-          ciphers: ciphers,
-          honorCipherOrder: honorCipherOrder,
-          ca: sandcatsState.ca,
-          key: sandcatsState.key,
-          cert: sandcatsState.cert
-        }).context;
+          callback(null, crypto.createCredentials({
+            ciphers: ciphers,
+            honorCipherOrder: honorCipherOrder,
+            ca: sandcatsState.ca,
+            key: sandcatsState.key,
+            cert: sandcatsState.cert
+          }).context);
+        } catch (err) {
+          callback(err);
+        }
       };
       var httpsServer = https.createServer(httpsOptions, requestListener);
 

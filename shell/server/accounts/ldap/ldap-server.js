@@ -23,7 +23,7 @@ LDAP_DEFAULTS = {
  @class LDAP
  @constructor
  */
-let LDAP = function () {
+LDAP = function () {
   // Set options
   this.options = _.clone(LDAP_DEFAULTS);
 };
@@ -44,10 +44,12 @@ LDAP.prototype.ldapCheck = function (db, options) {
 
   options = options || {};
 
-  if (options.hasOwnProperty("username") && options.hasOwnProperty("ldapPass")) {
+  if ((options.hasOwnProperty("username") && options.hasOwnProperty("ldapPass")) ||
+      options.hasOwnProperty("searchUsername")) {
     _this.options.base = db.getLdapBase();
     _this.options.searchBeforeBind = {};
-    _this.options.searchBeforeBind[db.getLdapSearchUsername()] = options.username;
+    _this.options.searchBeforeBind[db.getLdapSearchUsername()] = options.searchUsername ||
+      options.username;
     _this.options.filter = db.getLdapFilter() || "(objectclass=*)";
     _this.options.searchBindDn = db.getLdapSearchBindDn();
     _this.options.searchBindPassword =  db.getLdapSearchBindPassword();
@@ -84,19 +86,22 @@ LDAP.prototype.ldapCheck = function (db, options) {
 
     client.on("error", errorFunc);
 
-    // Slide @xyz.whatever from username if it was passed in
-    // and replace it with the domain specified in defaults
-    let emailSliceIndex = options.username.indexOf("@");
-    let username;
+    let username = options.username;
     let domain = _this.options.defaultDomain;
 
-    // If user appended email domain, strip it out
-    // And use the defaults.defaultDomain if set
-    if (emailSliceIndex !== -1) {
-      username = options.username.substring(0, emailSliceIndex);
-      domain = domain || options.username.substring((emailSliceIndex + 1), options.username.length);
-    } else {
-      username = options.username;
+    if (!options.hasOwnProperty("searchUsername")) {
+      // Slide @xyz.whatever from username if it was passed in
+      // and replace it with the domain specified in defaults
+      let emailSliceIndex = options.username.indexOf("@");
+
+      // If user appended email domain, strip it out
+      // And use the defaults.defaultDomain if set
+      if (emailSliceIndex !== -1) {
+        username = options.username.substring(0, emailSliceIndex);
+        domain = domain || options.username.substring((emailSliceIndex + 1), options.username.length);
+      } else {
+        username = options.username;
+      }
     }
 
     if (_this.options.searchBindDn) {
@@ -154,6 +159,13 @@ LDAP.prototype.ldapCheck = function (db, options) {
         retObject.emptySearch = false;
 
         retObject.searchResults = _.omit(entry.object, "userPassword");
+
+        if (options.hasOwnProperty("searchUsername")) {
+          // This was only a search, return immediately
+          resolved = true;
+          ldapAsyncFut.return(retObject);
+          return;
+        }
 
         // use the determined DN to bind
         client.bind(entry.objectName, options.ldapPass, function (err) {

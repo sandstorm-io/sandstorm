@@ -716,7 +716,7 @@ if (Meteor.isServer) {
         Meteor.users.find({ _id: this.userId },
             { fields: { signupKey: 1, isAdmin: 1, expires: 1, storageUsage: 1,
                       plan: 1, planBonus: 1, hasCompletedSignup: 1, experiments: 1,
-                      referredIdentityIds: 1, }, }),
+                      referredIdentityIds: 1, cachedStorageQuota: 1, }, }),
         Plans.find(),
       ];
     } else {
@@ -766,18 +766,6 @@ const calculateReferralBonus = function (user) {
 
     return bonus;
   }
-};
-
-getUserQuota = function (user) {
-  const plan = Plans.findOne(user.plan || "free");
-  const referralBonus = calculateReferralBonus(user);
-  const bonus = user.planBonus || {};
-  const userQuota = {
-    storage: plan.storage + referralBonus.storage + (bonus.storage || 0),
-    grains: plan.grains + referralBonus.grains + (bonus.grains || 0),
-    compute: plan.compute + (bonus.compute || 0),
-  };
-  return userQuota;
 };
 
 isAdmin = function () {
@@ -989,7 +977,6 @@ SandstormDb = function () {
 //   objects created in SandstormDb's constructor rather than globals.
 
 _.extend(SandstormDb.prototype, {
-  getUserQuota: getUserQuota,
   isAdmin: isAdmin,
   isAdminById: isAdminById,
   findAdminUserForToken: findAdminUserForToken,
@@ -1797,6 +1784,50 @@ _.extend(SandstormDb.prototype, {
     return setting && setting.value && this.isFeatureKeyValid();
   },
 
+  updateUserQuotaFromLdap: function (user) {
+    const fallback = user.cachedStorageQuota || 0;
+    if (Meteor.isClient) return fallback;
+
+    const setting = this.collections.settings.findOne({ _id: "quotaLdapAttribute" });
+    if (!setting) return fallback;
+
+    const ldap = new LDAP();
+
+    // TODO(someday): don't just assume the first login identity is the primary identity?
+    const email = this.getPrimaryEmail(user._id, user.loginIdentities[0].id);
+    if (!email) return fallback;
+
+    const ldapUser = ldap.ldapCheck(this, { searchUsername: email, });
+    if (!ldapUser || !ldapUser.searchResults) return fallback;
+
+    const newStorageQuota = +ldapUser.searchResults[setting.value];
+    Meteor.users.update({ _id: user._id }, { $set: { cachedStorageQuota: newStorageQuota } });
+    // TODO(someday): cache timestamp as well and only check/update if greater than 60s ago
+    return newStorageQuota || fallback;
+  },
+
+  getUserQuota: function (user) {
+    if (this.isReferralEnabled()) {
+      // TODO(someday): isReferralEnabled isn't quite the right check
+      const plan = Plans.findOne(user.plan || "free");
+      const referralBonus = calculateReferralBonus(user);
+      const bonus = user.planBonus || {};
+      const userQuota = {
+        storage: plan.storage + referralBonus.storage + (bonus.storage || 0),
+        grains: plan.grains + referralBonus.grains + (bonus.grains || 0),
+        compute: plan.compute + (bonus.compute || 0),
+      };
+      return userQuota;
+    } else {
+      const ldapQuota = this.updateUserQuotaFromLdap(user);
+      return {
+        storage: ldapQuota,
+        grains: Infinity,
+        compute: Infinity,
+      };
+    }
+  },
+
   isUserOverQuota: function (user) {
     // Return false if user has quota space remaining, true if it is full. When this returns true,
     // we will not allow the user to create new grains, though they may be able to open existing ones
@@ -1806,7 +1837,7 @@ _.extend(SandstormDb.prototype, {
 
     if (!this.isQuotaEnabled() || user.isAdmin) return false;
 
-    const plan = getUserQuota(user);
+    const plan = this.getUserQuota(user);
     if (plan.grains < Infinity) {
       const count = this.collections.grains.find({ userId: user._id },
         { fields: {}, limit: plan.grains }).count();
@@ -1824,7 +1855,7 @@ _.extend(SandstormDb.prototype, {
 
     if (!this.isQuotaEnabled() || user.isAdmin) return false;
 
-    const quota = getUserQuota(user);
+    const quota = this.getUserQuota(user);
 
     // quota.grains = Infinity means unlimited grains. IEEE754 defines Infinity == Infinity.
     if (quota.grains < Infinity) {

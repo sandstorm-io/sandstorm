@@ -97,6 +97,48 @@ kj::AutoCloseFd prepareMonitoringLoop() {
   return kj::AutoCloseFd(sigfd);
 }
 
+static bool symlinkPointsInto(kj::StringPtr symlink, kj::StringPtr targetPrefix) {
+  // Returns true if the given path names a symlink whose target has the given prefix, false if
+  // it points elsewhere or doesn't exist or isn't a symlink.
+retry:
+  char buffer[PATH_MAX];
+  ssize_t n = readlink(symlink.cStr(), buffer, sizeof(buffer) - 1);
+  if (n < 0) {
+    int error = errno;
+    switch (error) {
+      case ENOENT:
+      case ENOTDIR:
+      case EINVAL:
+        // File (or parent directory) dosen't exist or isn't a symlink.
+        return false;
+      case EINTR:
+        goto retry;
+      default:
+        KJ_FAIL_SYSCALL("readlink(symlink)", error, symlink);
+    }
+  } else {
+    buffer[n] = '\0';
+    return kj::StringPtr(buffer, n).startsWith(targetPrefix);
+  }
+}
+
+static bool fileHasLine(kj::StringPtr filename, kj::StringPtr expectedLine) {
+  // Returns true if the given text file contains a line matching exactly the given string.
+  auto file = raiiOpenIfExists(filename, O_RDONLY | O_CLOEXEC);
+  KJ_IF_MAYBE(f, file) {
+    for (auto& line: splitLines(readAll(*f))) {
+      if (line == expectedLine) {
+        return true;
+      }
+    }
+    // File doesn't contain line.
+    return false;
+  } else {
+    // File doesn't exist at all.
+    return false;
+  }
+}
+
 // =======================================================================================
 
 struct KernelVersion {
@@ -514,6 +556,16 @@ public:
                   .build();
             },
             "Generate admin token.")
+        .addSubCommand("uninstall",
+            [this]() {
+              return kj::MainBuilder(context, VERSION,
+                      "Uninstalls Sandstorm.")
+                  .addOption({"delete-user-data"}, [this]() { deleteUserData = true; return true; },
+                      "Also delete all user data.")
+                  .callAfterParsing(KJ_BIND_METHOD(*this, uninstall))
+                  .build();
+            },
+            "Generate admin token.")
         .build();
   }
 
@@ -652,8 +704,10 @@ public:
     runUpdateMonitor(config, pidfile);
   }
 
-  kj::MainBuilder::Validity stop() {
-    changeToInstallDir();
+  bool doStop() {
+    // Stop Sandstorm. Don't return until it's stopped. Returns false if it wasn't running to start
+    // with.
+    KJ_ASSERT(changedDir);
 
     registerAlarmHandler();
 
@@ -661,14 +715,14 @@ public:
     KJ_IF_MAYBE(pf, openPidfile()) {
       pidfile = kj::mv(*pf);
     } else {
-      context.exitInfo("Sandstorm is not running.");
+      return false;
     }
 
     pid_t pid;
     KJ_IF_MAYBE(p, getRunningPid(pidfile)) {
       pid = *p;
     } else {
-      context.exitInfo("Sandstorm is not running.");
+      return false;
     }
 
     context.warning(kj::str("Waiting for PID ", pid, " to terminate..."));
@@ -706,7 +760,17 @@ public:
       }
     }
 
-    context.exitInfo("Sandstorm server stopped.");
+    KJ_SYSCALL(alarm(0));
+    return true;
+  }
+
+  kj::MainBuilder::Validity stop() {
+    changeToInstallDir();
+    if (doStop()) {
+      context.exitInfo("Sandstorm server stopped.");
+    } else {
+      context.exitInfo("Sandstorm is not running.");
+    }
   }
 
   kj::MainBuilder::Validity startFe() {
@@ -853,6 +917,145 @@ public:
     }
   }
 
+  kj::MainBuilder::Validity uninstall() {
+    auto bundleDir = getInstallDir();
+    auto sandstormHome = kj::str(bundleDir.slice(0, KJ_ASSERT_NONNULL(bundleDir.findLast('/'))));
+
+    changeToInstallDir();
+    checkAccess();
+
+    // Make sure server is stopped.
+    if (doStop()) {
+      context.warning("Sandstorm stopped.");
+    } else {
+      context.warning("Sandstorm is not running.");
+    }
+
+    KJ_SYSCALL(chdir(sandstormHome.cStr()));
+
+    // Make extra-sure we're in a Sandstorm directory.
+    KJ_ASSERT(access("sandstorm", F_OK) >= 0 &&
+              access("sandstorm.conf", F_OK) >= 0 &&
+              access("latest", F_OK) >= 0 &&
+              sandstormHome != "/" &&
+              sandstormHome != "/usr",
+              "uninstaller is confused; bailing out to avoid doing any damage", sandstormHome);
+
+    bool hasCustomUser = fileHasLine("sandstorm.conf", "SERVER_USER=sandstorm");
+
+    // Delete Sandstorm bundles.
+    context.warning("Deleting installed Sandstorm bundles...");
+    static const kj::StringPtr BUNDLE_PREFIX = "sandstorm-";
+    for (auto& file: listDirectory(".")) {
+      if (file.startsWith(BUNDLE_PREFIX)) {
+        auto suffix = file.slice(BUNDLE_PREFIX.size());
+        if (parseUInt(suffix, 10) != nullptr || suffix.startsWith("custom.")) {
+          // Delete bundle.
+          recursivelyDelete(file);
+        }
+      }
+    }
+
+    // Delete symlinks.
+    KJ_SYSCALL(unlink("sandstorm"));
+    KJ_SYSCALL(unlink("latest"));
+
+    if (access("tmp", F_OK) >= 0) {
+      // Delete tmp since it's obviously not needed.
+      context.warning("Deleting temporary files...");
+      recursivelyDelete("tmp");
+    }
+
+    if (access("var", F_OK) >= 0) {
+      if (deleteUserData) {
+        // User wants to delete their user data... OK then.
+        context.warning("Deleting user data (per your request)...");
+        recursivelyDelete("var");
+        KJ_SYSCALL(unlink("sandstorm.conf"));
+      } else {
+        context.warning(kj::str("NOT deleting user data. Left at: ", sandstormHome, "/var"));
+      }
+    }
+
+    if (runningAsRoot) {
+      // Delete system-installed stuff. Be careful to verify that these files actually point at
+      // the installation of Sandstorm that we're removing, not some other installation that might
+      // be present on the machine.
+
+      bool seemsLikePrimarySandstorm = false;
+
+      // Remove `sandstorm` and `spk` command prefixes. Note that for historical reasons there are
+      // a few different places these might point, so we only check that they point somewhere under
+      // our Sandstorm install directory.
+      auto symlinkTargetPrefix = kj::str(sandstormHome, "/");
+
+      static const kj::StringPtr SANDSTORM_SYMLINK = "/usr/local/bin/sandstorm";
+      if (symlinkPointsInto(SANDSTORM_SYMLINK, symlinkTargetPrefix)) {
+        context.warning("Removing sandstorm command...");
+        KJ_SYSCALL(unlink(SANDSTORM_SYMLINK.cStr()));
+        seemsLikePrimarySandstorm = true;
+      }
+
+      static const kj::StringPtr SPK_SYMLINK = "/usr/local/bin/spk";
+      if (symlinkPointsInto(SPK_SYMLINK, symlinkTargetPrefix)) {
+        context.warning("Removing spk command...");
+        KJ_SYSCALL(unlink(SPK_SYMLINK.cStr()));
+      }
+
+      // SysV initscript. Remove if it inits this Sandstorm installation.
+      static const kj::StringPtr INITSCRIPT_FILE = "/etc/init.d/sandstorm";
+      auto initscriptLine = kj::str("DAEMON=", sandstormHome, "/sandstorm");
+      if (fileHasLine(INITSCRIPT_FILE, initscriptLine)) {
+        context.warning("Removing SysV initscript...");
+        KJ_SYSCALL(unlink(INITSCRIPT_FILE.cStr()));
+        system("update-rc.d sandstorm remove");
+      }
+
+      // systemd service file. Remove if it inits this Sandstorm installation.
+      static const kj::StringPtr SYSTEMD_FILE = "/etc/systemd/system/sandstorm.service";
+      auto systemdLine = kj::str("ExecStart=", sandstormHome, "/sandstorm start");
+      if (fileHasLine(SYSTEMD_FILE, systemdLine)) {
+        context.warning("Removing systemd service...");
+        system("systemctl disable sandstorm.service");
+        KJ_SYSCALL(unlink(SYSTEMD_FILE.cStr()));
+        system("systemctl daemon-reload");
+      }
+
+      if (seemsLikePrimarySandstorm) {
+        // Remove the sysctl modifications. Unfortunately this will break any other Sandstorm
+        // installations on the server, but it _looks_ like we're removing the primary
+        // installation.
+        kj::StringPtr SYSCTL_CONF = "/etc/sysctl.d/50-sandstorm.conf";
+        if (access(SYSCTL_CONF.cStr(), F_OK) >= 0) {
+          context.warning("Removing sysctl modifications...");
+          unlink(SYSCTL_CONF.cStr());
+        }
+
+        // Also check if the non-sysctl.d sysctl.conf was modified.
+        if (fileHasLine("/etc/sysctl.conf",
+            "# Enable non-root users to create sandboxes (needed by Sandstorm).")) {
+          context.warning("WARNING: /etc/sysctl.conf was modified by Sandstorm. Please edit "
+                          "it manually if you wish to undo these changes.");
+        }
+
+        if (hasCustomUser) {
+          context.warning("WARNING: A user account and group named 'sandstorm' were created to "
+                          "run the server. You may want to delete these manually if they are no "
+                          "longer needed. On most systems you can use these commands:\n\n"
+                          "  userdel sandstorm\n"
+                          "  groupdel sandstorm");
+        }
+      }
+    }
+
+    // Attempt to remove the Sandstorm home directory. This will fail if it isn't empty, but that's
+    // fine.
+    KJ_SYSCALL(chdir("/"));  // Can't delete directory if we're in it.
+    rmdir(sandstormHome.cStr());
+
+    context.exitInfo("Sandstorm has been uninstalled.");
+  }
+
   kj::MainBuilder::Validity dev() {
     // When called by the spk tool, stdout is a socket where we will send the fuse FD.
     struct stat stats;
@@ -914,6 +1117,7 @@ private:
   bool runningAsRoot = getuid() == 0;
   bool updateFileIsChannel = false;
   bool shortOutput = false;
+  bool deleteUserData = false;
 
   kj::String getInstallDir() {
     char exeNameBuf[PATH_MAX + 1];

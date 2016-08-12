@@ -105,7 +105,7 @@ limitations under the License.
   {{/with}}
 
   {{#with billingPromptState}}
-    {{>billingPrompt}}
+    {{> Template.dynamic template=billingPromptTemplate}}
   {{/with}}
 
   {{/with}} {{!-- firstTimeBillingPromptState --}}

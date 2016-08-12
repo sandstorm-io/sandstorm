@@ -2617,3 +2617,12 @@ Meteor.methods({
     }
   },
 });
+
+if (Meteor.isServer) {
+  Meteor.methods({
+    updateQuota() {
+      return this.connection.sandstormDb.updateUserQuotaFromLdap(Meteor.user());
+      // This is a no-op if settings aren't enabled
+    },
+  });
+}

@@ -155,7 +155,7 @@ class SandstormCoreImpl {
     // before per-grain size tracking was implemented. In that case, we don't want to update the
     // user record because it may already be counting the grain (specifically on Blackrock, where
     // whole-user size counting has existed for some time).
-    if (Meteor.settings.public.quotaEnabled && ("size" in result.value)) {
+    if (globalDb.isQuotaEnabled() && ("size" in result.value)) {
       // Update the user record, too. Note that we periodically recompute the user's storage usage
       // from scratch as well, so this doesn't have to be perfectly reliable.
       const diff = bytes - (result.value.size || 0);

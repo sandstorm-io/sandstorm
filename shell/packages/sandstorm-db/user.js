@@ -88,7 +88,7 @@ Accounts.onCreateUser(function (options, user) {
                   loginIdentities: [{ id: String }],
                   nonloginIdentities: [{ id: String }], });
 
-    if (Meteor.settings.public.quotaEnabled) {
+    if (localSandstormDb.isReferralEnabled()) {
       user.experiments = user.experiments || {};
       user.experiments = {
         firstTimeBillingPrompt: Math.random() < 0.5 ? "control" : "test",

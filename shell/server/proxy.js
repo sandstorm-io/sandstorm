@@ -39,8 +39,8 @@ const storeReferralProgramInfoApiTokenCreated = (db, accountId, identityId, apiT
   check(identityId, String);
   check(apiTokenAccountId, String);
 
-  // Bail out early if quota enforcement is disabled.
-  if (!Meteor.settings.public.quotaEnabled) {
+  // Bail out early if referrals aren't enabled
+  if (!db.isReferralEnabled()) {
     return;
   }
 
@@ -76,8 +76,8 @@ function referralProgramLogSharingTokenUse(db, bobAccountId) {
   // Implementation note: this does mean that Alice can get referral credit for Bob by sharing a
   // link with Bob, even if Bob already had an account.
 
-  // Bail out early if quota support is not enabled.
-  if (!Meteor.settings.public.quotaEnabled) {
+  // Bail out early if referrals aren't enabled
+  if (!db.isReferralEnabled()) {
     return;
   }
 

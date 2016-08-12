@@ -614,7 +614,11 @@ Template.registerHelper("shrinkNavbar", function () {
 });
 
 Template.registerHelper("quotaEnabled", function () {
-  return Meteor.settings.public.quotaEnabled;
+  return globalDb.isQuotaEnabled();
+});
+
+Template.registerHelper("referralsEnabled", function () {
+  return globalDb.isReferralEnabled();
 });
 
 Template.root.helpers({

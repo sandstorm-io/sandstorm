@@ -682,10 +682,22 @@ function backgroundFillInGrainSizes() {
 
     if (grain) {
       // Compute size!
-      const result = waitPromise(globalBackend.cap().getGrainStorageUsage(grain.userId, grain._id));
-      console.log("update", grain, result);
-      Grains.update({ _id: grain._id, size: { $exists: false } },
-                    { $set: { size: parseInt(result.size) } });
+      try {
+        const result = waitPromise(globalBackend.cap().getGrainStorageUsage(
+            grain.userId, grain._id));
+        Grains.update({ _id: grain._id, size: { $exists: false } },
+                      { $set: { size: parseInt(result.size) } });
+      } catch (err) {
+        if (err.kjType === "failed") {
+          // Backend had a problem. Maybe the grain doesn't actually exist on disk and the database
+          // is messed up. We'll set the size to zero and move on.
+          console.error("Error while backfilling grain size for", grain._id, ":", err.stack);
+          Grains.update({ _id: grain._id, size: { $exists: false } }, { $set: { size: 0 } });
+        } else {
+          // Rethrow on disconnected / overloaded / unimplemented.
+          throw err;
+        }
+      }
 
       // Do another one in a second.
       Meteor.setTimeout(backgroundFillInGrainSizes, 1000);

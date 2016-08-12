@@ -844,8 +844,9 @@ public:
     if (shortOutput) {
       context.exitInfo(hexString);
     } else {
-      context.exitInfo(kj::str("Generated new admin token.\n\nPlease proceed to ", config.rootUrl,
-        "/setup/token/", hexString, " in order to access the admin settings page and configure "
+      context.exitInfo(kj::str("Generated new admin token. Please proceed to:\n\n",
+        config.rootUrl, "/setup/token/", hexString, "\n\n"
+        "Here you can access the admin settings page and configure "
         "your login system. You must visit the link within 15 minutes, after which you will have "
         "24 hours to complete the setup process.  If you need more time, you can always generate "
         "a new token with `sandstorm admin-token`."));

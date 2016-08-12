@@ -660,7 +660,7 @@ function startPreinstallingApps() {
     localSandstormDb.setPreinstalledApps(appAndPackageIds);
   };
 
-  if (!Meteor.settings.public.isTesting) {
+  if (!Meteor.settings.public.isTesting && !localSandstormDb.allowDevAccounts()) {
     // We want preinstalling apps to run async and not block startup.
     Meteor.setTimeout(startPreinstallingAppsHelper, 0);
   }

@@ -34,7 +34,23 @@
 //   user, so maybe it's not a big deal...
 
 BrowserPolicy.framing.disallow();  // Disallow framing of the UI.
-BrowserPolicy.content.allowFrameOrigin(getWildcardOrigin());
+Meteor.startup(() => {
+  const frameSetter = () => {
+    BrowserPolicy.content.disallowFrame(); // This clears all the old rules
+    BrowserPolicy.content.allowFrameOrigin(getWildcardOrigin());
+    const billingPromptUrl = globalDb.getBillingPromptUrl();
+    if (billingPromptUrl) {
+      BrowserPolicy.content.allowFrameOrigin(billingPromptUrl);
+    }
+  };
+
+  frameSetter(); // Call once on startup
+  globalDb.collections.settings.find({ _id: "billingPromptUrl" }).observe({
+    added: frameSetter,
+    changed: frameSetter,
+    removed: frameSetter,
+  });
+});
 
 // Allow anything to be loaded from the static asset host.
 const Url = Npm.require("url");

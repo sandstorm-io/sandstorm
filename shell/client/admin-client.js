@@ -168,4 +168,8 @@ Router.map(function () {
     path: "/admin/organization",
     controller: newAdminRoute,
   });
+  this.route("newAdminHostingManagement", {
+    path: "/admin/hosting-management",
+    controller: newAdminRoute,
+  });
 });

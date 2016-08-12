@@ -1770,6 +1770,11 @@ _.extend(SandstormDb.prototype, {
     return readyApps.count() === packageIds.length;
   },
 
+  getBillingPromptUrl: function () {
+    const setting = this.collections.settings.findOne({ _id: "billingPromptUrl" });
+    return setting && setting.value;
+  },
+
   isReferralEnabled: function () {
     // This function is a bit weird, in that we've transitioned from
     // Meteor.settings.public.quotaEnabled to DB settings. For now,

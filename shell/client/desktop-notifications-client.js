@@ -137,23 +137,38 @@ const showActivityDesktopNotification = (notif) => {
       timestamp,
     };
 
-    const handle = new Notification(title, notificationOptions);
+    const showNotification = () => {
+      const handle = new Notification(title, notificationOptions);
 
-    handle.onclick = () => {
-      // Request that the Sandstorm window receive focus.  This attempts to switch
-      // the browser's active tab and window to the Sandstorm window that created
-      // the notification.
-      window.focus();
+      handle.onclick = () => {
+        // Request that the Sandstorm window receive focus.  This attempts to switch
+        // the browser's active tab and window to the Sandstorm window that created
+        // the notification.
+        window.focus();
 
-      // For a notification about a grain, open that grain URL and path.
-      Router.go(`/grain/${grainId}/${path || ""}`);
+        // For a notification about a grain, open that grain URL and path.
+        Router.go(`/grain/${grainId}/${path || ""}`);
 
-      // Close this notification.
-      handle.close();
+        // Close this notification.
+        handle.close();
 
-      // Dismiss the associated notification, ignoring errors and without blocking.
-      Meteor.call("dismissNotification", notif.notificationId, (err) => {});
+        // Dismiss the associated notification, ignoring errors and without blocking.
+        Meteor.call("dismissNotification", notif.notificationId, (err) => {});
+      };
     };
+
+    const currentPerm = Notification.permission;
+    if (currentPerm === "granted") {
+      showNotification();
+    } else if (currentPerm === "default") {
+      Notification.requestPermission().then((perm) => {
+        if (perm === "granted") {
+          showNotification();
+        }
+      });
+    } else {
+      // User explicitly denied desktop notifications.  Do nothing.
+    }
   });
 };
 

@@ -13,6 +13,10 @@
 
   .toggle-more {
     color: #888888;
+
+    button {
+      @include unstyled-button();
+    }
   }
 
   i.icon-down, i.icon-up {

@@ -628,6 +628,9 @@ Meteor.publish("adminApiTokens", function (token) {
 });
 
 Meteor.publish("featureKey", function (forAdmin, token) {
+  // Note: we publish the *raw* feature key data to the client, exactly as it was loaded from the
+  // signed blob.  Any mapping from the raw data to "effective" feature key/limits should be applied
+  // in the implementation of db.currentFeatureKey().
   if (forAdmin && !authorizedAsAdmin(token, this.userId)) return [];
 
   const fields = forAdmin ? FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS

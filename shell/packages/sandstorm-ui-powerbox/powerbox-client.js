@@ -56,6 +56,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
         rpcId: this._requestInfo.rpcId,
         canceled: true,
       }, this._requestInfo.origin);
+      this._completed = true;
     }
   }
 

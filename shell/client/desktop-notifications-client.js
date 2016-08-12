@@ -173,7 +173,11 @@ const showActivityDesktopNotification = (notif) => {
 };
 
 Template.desktopNotifications.onCreated(function () {
+  // Don't bother with any of this if we don't have both Notification support and localStorage.
   if (!localStorageWorks) return;
+  if (!window.Notification) return;
+  this.enabled = true;
+
   // There's some tricky logic here to try to make sure notifications are preferentially handled by
   // a tab that already has the associated grain open, rather than just by the first or last tab to
   // learn about the notification.  Otherwise your odds of getting the notification in the right tab
@@ -339,7 +343,7 @@ Template.desktopNotifications.onCreated(function () {
 });
 
 Template.desktopNotifications.onDestroyed(function () {
-  if (!localStorageWorks) return;
+  if (!this.enabled) return;
   window.removeEventListener("storage", this.storageEventHandler);
 
   if (this.dbHandle) {

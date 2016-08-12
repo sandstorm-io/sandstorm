@@ -32,6 +32,8 @@ const publicAdminSettings = [
   "whitelabelHideSendFeedback",
   "whitelabelHideTroubleshooting",
   "whitelabelUseServerTitleForHomeText",
+  "quotaEnabled",
+  "billingPromptUrl",
 ];
 
 const FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS = [

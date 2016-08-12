@@ -349,62 +349,18 @@ virtualization generally, please email support@sandstorm.io.
 
 ## Uninstall
 
+To uninstall Sandstorm, run:
+
+    sandstorm uninstall
+
+This will remove all files installed by Sandstorm, but will not delete your user data. If you
+wish to remove user data as well, do:
+
+    sandstorm uninstall --delete-user-data
+
 If you installed Sandstorm with default options, the following actions will fully remove
 Sandstorm. If you customized the install, you'll need to change these commands accordingly.
 
 If you want to _change settings_, you can edit `/opt/sandstorm/sandstorm.conf`.
-
-- Stop the service.
-
-```bash
-sudo sandstorm stop
-sudo service sandstorm stop
-```
-
-- Remove the service file(s).
-
-For systemd:
-
-```bash
-sudo systemctl disable sandstorm.service
-sudo rm -f /etc/systemd/system/sandstorm.service
-sudo systemctl daemon-reload
-```
-
-For sysvinit:
-
-```bash
-sudo update-rc.d sandstorm remove
-sudo rm -f /etc/init.d/sandstorm
-```
-
-- Remove the two symlinks Sandstorm creates.
-
-```bash
-sudo rm -f /usr/local/bin/spk
-sudo rm -f /usr/local/bin/sandstorm
-```
-
-- Edit `/etc/sysctl.conf` to remove any changes, and remove any `/etc/sysctl.d/50-sandstorm.conf`
-  file if present . `install.sh` can optionally customize that file. It will leave behind a comment
-  indicating that it did so, if it did so.
-
-```bash
-sudo rm -f /etc/sysctl.d/50-sandstorm.conf
-sudo nano /etc/sysctl.conf
-```
-
-- Remove the sandstorm user ID and group ID.
-
-```bash
-sudo groupdel sandstorm
-sudo userdel sandstorm
-
-```
-- Finally, remove Sandstorm and all its files.
-
-```bash
-sudo rm -rf /opt/sandstorm
-```
 
 Thanks for using Sandstorm!

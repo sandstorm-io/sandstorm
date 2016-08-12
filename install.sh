@@ -11,8 +11,12 @@
 #
 # This script only modifies your system in the following ways:
 # - Install Sandstorm into the directory you choose, typically /opt/sandstorm.
-# - Optionally add an initscript to /etc/init.d/sandstorm.
+# - Optionally add an initscript or systemd service:
+#     /etc/init.d/sandstorm
+#     /etc/systemd/system/sandstorm.service
 # - Add commands "sandstorm" and "spk" to /usr/local/bin.
+#
+# Once installed, you may uninstall with the command: sandstorm uninstall
 #
 # The script will ask you whether you're OK with giving it root privileges.
 # If you refuse, the script can still install Sandstorm (to a directory you

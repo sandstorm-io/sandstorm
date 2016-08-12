@@ -4,6 +4,8 @@ import { Random } from "meteor/random";
 import Crypto from "crypto";
 import Fs from "fs";
 
+import { SANDSTORM_LOGDIR } from "/imports/server/constants.js";
+
 const hashSessionId = function (sessionId) {
   return Crypto.createHash("sha256").update(sessionId).digest("base64");
 };

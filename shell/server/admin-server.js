@@ -18,6 +18,7 @@ import { Meteor } from "meteor/meteor";
 import Fs from "fs";
 import Crypto from "crypto";
 import Heapdump from "heapdump";
+import { SANDSTORM_LOGDIR } from "/imports/server/constants.js";
 import { clearAdminToken, checkAuth, tokenIsValid, tokenIsSetupSession } from "/imports/server/auth.js";
 import { send as sendEmail } from "/imports/server/email.js";
 

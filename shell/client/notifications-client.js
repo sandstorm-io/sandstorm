@@ -90,12 +90,12 @@ Template.notificationsPopup.helpers({
             const package = Packages.findOne(grain.packageId);
             if (package) {
               row.grainIcon = Identicon.iconSrcForPackage(
-                  package, usage, globalDb.makeWildcardHost("static"));
+                  package, usage, window.location.protocol + "//" + globalDb.makeWildcardHost("static"));
             } else {
               const devPackage = DevPackages.findOne({ appId: grain.appId });
               if (devPackage) {
                 row.grainIcon = Identicon.iconSrcForPackage(
-                    devPackage, usage, globalDb.makeWildcardHost("static"));
+                    devPackage, usage, window.location.protocol + "//" + globalDb.makeWildcardHost("static"));
               }
             }
           } else {
@@ -103,7 +103,7 @@ Template.notificationsPopup.helpers({
                 "owner.user.denormalizedGrainMetadata": { $exists: true }, });
             row.grainIcon = Identicon.iconSrcForDenormalizedGrainMetadata(
                 token.owner.user.denormalizedGrainMetadata, usage,
-                globalDb.makeWildcardHost("static"));
+                window.location.protocol + "//" + globalDb.makeWildcardHost("static"));
           }
         }
       }

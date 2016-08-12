@@ -693,7 +693,7 @@ class GrainView {
       if (grain) {
         const pkg = this._db.collections.devPackages.findOne({ appId: grain.appId }) ||
                   this._db.collections.packages.findOne({ _id: grain.packageId });
-        if (pkg) return Identicon.iconSrcForPackage(pkg, "grain", makeWildcardHost("static"));
+        if (pkg) return Identicon.iconSrcForPackage(pkg, "grain", window.location.protocol + "//" + makeWildcardHost("static"));
       }
     } else if (!this._isUsingAnonymously()) {
       // Case 2

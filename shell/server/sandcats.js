@@ -23,6 +23,8 @@ const fs = Npm.require("fs");
 const dgram = Npm.require("dgram");
 const Url = Npm.require("url");
 
+import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
+
 const SANDCATS_HOSTNAME = (Meteor.settings && Meteor.settings.public &&
                          Meteor.settings.public.sandcatsHostname);
 const SANDCATS_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandcats";

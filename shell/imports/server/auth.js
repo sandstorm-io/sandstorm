@@ -2,6 +2,7 @@ import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
 import Crypto from "crypto";
 import Fs from "fs";
+import { SANDSTORM_VARDIR } from "/imports/server/constants.js";
 // TODO(cleanup): globalDb is still an unbound global, but extracting it is Hard.
 
 const ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;

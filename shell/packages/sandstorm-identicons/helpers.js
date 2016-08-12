@@ -1,4 +1,4 @@
-const VALID_USAGES = ["appGrid", "grain"];
+const VALID_USAGES = ["appGrid", "grain", "notification"];
 const checkUsage = function (usage) {
   if (VALID_USAGES.indexOf(usage) === -1) throw new Error("Invalid icon usage.");
 };
@@ -8,7 +8,7 @@ const iconFromManifest = function (manifest, usage) {
   const icons = manifest && manifest.metadata && manifest.metadata.icons ?
       manifest.metadata.icons : undefined;
   if (icons) {
-    if (usage === "appGrid") {
+    if (usage === "appGrid" || usage === "notification") {
       return icons.appGrid;
     } else if (usage === "grain") {
       return icons.grain || icons.appGrid;
@@ -64,7 +64,7 @@ const bytesToBase64 = function (bytes) {
   return result;
 };
 
-const iconSrcFor = function (appId, iconObj, staticHost, usage) {
+const iconSrcFor = function (appId, iconObj, staticPrefix, usage) {
   if (iconObj === undefined) {
     // Return a identicon src based on hashing appId instead.
     // (We hash the appID even though it's already a hash because it's not hex)
@@ -74,7 +74,7 @@ const iconSrcFor = function (appId, iconObj, staticHost, usage) {
   // TODO(someday): Actually choose the best DPI.
   const assetId = iconObj.assetId2xDpi || iconObj.assetId;
   if (assetId) {
-    const src = window.location.protocol + "//" + staticHost + "/" + assetId;
+    const src = staticPrefix + "/" + assetId;
     return src;
   }
 
@@ -103,14 +103,14 @@ Identicon.identiconForApp = function (appId, usage) {
   return identiconForApp(appId, usage);
 };
 
-Identicon.iconSrcForPackage = function (pkg, usage, staticHost) {
+Identicon.iconSrcForPackage = function (pkg, usage, staticPrefix) {
   // Works for regular packages and dev packages.
 
   checkUsage(usage);
   const iconObj = iconFromManifest(pkg.manifest, usage);
-  return iconSrcFor(pkg.appId, iconObj, staticHost, usage);
+  return iconSrcFor(pkg.appId, iconObj, staticPrefix, usage);
 };
 
-Identicon.iconSrcForDenormalizedGrainMetadata = function (metadata, usage, staticHost) {
-  return iconSrcFor(metadata.appId, metadata.icon, staticHost, usage);
+Identicon.iconSrcForDenormalizedGrainMetadata = function (metadata, usage, staticPrefix) {
+  return iconSrcFor(metadata.appId, metadata.icon, staticPrefix, usage);
 };

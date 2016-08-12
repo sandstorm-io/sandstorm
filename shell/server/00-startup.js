@@ -47,5 +47,3 @@ SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
 });
 
 Meteor.startup(() => { globalDb.migrateToLatest(); });
-LDAP_DEFAULTS.url = globalDb.getLdapUrl();
-LDAP_DEFAULTS.base = globalDb.getLdapBase();

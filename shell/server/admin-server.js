@@ -33,6 +33,7 @@ const publicAdminSettings = [
   "whitelabelHideTroubleshooting",
   "whitelabelUseServerTitleForHomeText",
   "quotaEnabled",
+  "quotaLdapEnabled",
   "billingPromptUrl",
 ];
 

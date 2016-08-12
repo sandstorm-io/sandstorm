@@ -937,7 +937,17 @@ roleAssignmentPattern = {
   removePermissions: Match.Optional([Boolean]),
 };
 
-SandstormDb = function () {
+SandstormDb = function (quotaManager) {
+  // quotaManager is an object with the following method:
+  //   updateUserQuota: It is provided two arguments
+  //     db: This SandstormDb object
+  //     user: A collections.users account object
+  //   and returns a quota object:
+  //     storage: A number (can be Infinity)
+  //     compute: A number (can be Infinity)
+  //     grains: A number (can be Infinity)
+
+  this.quotaManager = quotaManager;
   this.collections = {
     // Direct access to underlying collections. DEPRECATED.
     //
@@ -1789,31 +1799,21 @@ _.extend(SandstormDb.prototype, {
     return setting && setting.value && this.isFeatureKeyValid();
   },
 
-  updateUserQuotaFromLdap: function (user) {
-    const fallback = user.cachedStorageQuota || 0;
-    if (Meteor.isClient) return fallback;
+  isQuotaLdapEnabled: function () {
+    const setting = this.collections.settings.findOne({ _id: "quotaLdapEnabled" });
+    return setting && setting.value && this.isFeatureKeyValid();
+  },
 
-    const setting = this.collections.settings.findOne({ _id: "quotaLdapAttribute" });
-    if (!setting) return fallback;
-
-    const ldap = new LDAP();
-
-    // TODO(someday): don't just assume the first login identity is the primary identity?
-    const email = this.getPrimaryEmail(user._id, user.loginIdentities[0].id);
-    if (!email) return fallback;
-
-    const ldapUser = ldap.ldapCheck(this, { searchUsername: email, });
-    if (!ldapUser || !ldapUser.searchResults) return fallback;
-
-    const newStorageQuota = +ldapUser.searchResults[setting.value];
-    Meteor.users.update({ _id: user._id }, { $set: { cachedStorageQuota: newStorageQuota } });
-    // TODO(someday): cache timestamp as well and only check/update if greater than 60s ago
-    return newStorageQuota || fallback;
+  updateUserQuota: function (user) {
+    if (this.quotaManager) {
+      return this.quotaManager.updateUserQuota(this, user);
+    }
   },
 
   getUserQuota: function (user) {
-    if (this.isReferralEnabled()) {
-      // TODO(someday): isReferralEnabled isn't quite the right check
+    if (this.isQuotaLdapEnabled()) {
+      return this.quotaManager.updateUserQuota(this, user);
+    } else {
       const plan = Plans.findOne(user.plan || "free");
       const referralBonus = calculateReferralBonus(user);
       const bonus = user.planBonus || {};
@@ -1823,13 +1823,6 @@ _.extend(SandstormDb.prototype, {
         compute: plan.compute + (bonus.compute || 0),
       };
       return userQuota;
-    } else {
-      const ldapQuota = this.updateUserQuotaFromLdap(user);
-      return {
-        storage: ldapQuota,
-        grains: Infinity,
-        compute: Infinity,
-      };
     }
   },
 
@@ -2617,12 +2610,3 @@ Meteor.methods({
     }
   },
 });
-
-if (Meteor.isServer) {
-  Meteor.methods({
-    updateQuota() {
-      return this.connection.sandstormDb.updateUserQuotaFromLdap(Meteor.user());
-      // This is a no-op if settings aren't enabled
-    },
-  });
-}

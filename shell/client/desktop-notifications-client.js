@@ -137,28 +137,47 @@ const showActivityDesktopNotification = (notif) => {
       timestamp,
     };
 
-    const handle = new Notification(title, notificationOptions);
+    const showNotification = () => {
+      const handle = new Notification(title, notificationOptions);
 
-    handle.onclick = () => {
-      // Request that the Sandstorm window receive focus.  This attempts to switch
-      // the browser's active tab and window to the Sandstorm window that created
-      // the notification.
-      window.focus();
+      handle.onclick = () => {
+        // Request that the Sandstorm window receive focus.  This attempts to switch
+        // the browser's active tab and window to the Sandstorm window that created
+        // the notification.
+        window.focus();
 
-      // For a notification about a grain, open that grain URL and path.
-      Router.go(`/grain/${grainId}/${path || ""}`);
+        // For a notification about a grain, open that grain URL and path.
+        Router.go(`/grain/${grainId}/${path || ""}`);
 
-      // Close this notification.
-      handle.close();
+        // Close this notification.
+        handle.close();
 
-      // Dismiss the associated notification, ignoring errors and without blocking.
-      Meteor.call("dismissNotification", notif.notificationId, (err) => {});
+        // Dismiss the associated notification, ignoring errors and without blocking.
+        Meteor.call("dismissNotification", notif.notificationId, (err) => {});
+      };
     };
+
+    const currentPerm = Notification.permission;
+    if (currentPerm === "granted") {
+      showNotification();
+    } else if (currentPerm === "default") {
+      Notification.requestPermission().then((perm) => {
+        if (perm === "granted") {
+          showNotification();
+        }
+      });
+    } else {
+      // User explicitly denied desktop notifications.  Do nothing.
+    }
   });
 };
 
 Template.desktopNotifications.onCreated(function () {
+  // Don't bother with any of this if we don't have both Notification support and localStorage.
   if (!localStorageWorks) return;
+  if (!window.Notification) return;
+  this.enabled = true;
+
   // There's some tricky logic here to try to make sure notifications are preferentially handled by
   // a tab that already has the associated grain open, rather than just by the first or last tab to
   // learn about the notification.  Otherwise your odds of getting the notification in the right tab
@@ -324,7 +343,7 @@ Template.desktopNotifications.onCreated(function () {
 });
 
 Template.desktopNotifications.onDestroyed(function () {
-  if (!localStorageWorks) return;
+  if (!this.enabled) return;
   window.removeEventListener("storage", this.storageEventHandler);
 
   if (this.dbHandle) {

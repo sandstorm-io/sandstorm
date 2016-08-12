@@ -412,7 +412,7 @@ private:
       uint64_t sizeBeingReported = totalSize;
       req.setBytes(sizeBeingReported);
 
-      return req.send().then([this,sizeBeingReported](auto) {
+      return req.send().then([this,sizeBeingReported](auto) -> void {
         reportInFlight = false;
         reportedSize = sizeBeingReported;
 

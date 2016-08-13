@@ -217,7 +217,14 @@ LDAP.prototype.updateUserQuota = function (db, user) {
   const email = db.getPrimaryEmail(user._id, user.loginIdentities[0].id);
   if (!email) return fallback;
 
-  const ldapUser = this.ldapCheck(db, { searchUsername: email, });
+  let ldapUser;
+  try {
+    ldapUser = this.ldapCheck(db, { searchUsername: email, });
+  } catch (err) {
+    console.error("Error looking up quota from LDAP");
+    return fallback;
+  }
+
   if (!ldapUser || !ldapUser.searchResults) return fallback;
 
   const newStorageQuota = +ldapUser.searchResults[setting.value];

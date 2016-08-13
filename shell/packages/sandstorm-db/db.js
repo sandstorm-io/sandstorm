@@ -715,7 +715,7 @@ if (Meteor.isServer) {
         Meteor.users.find({ _id: this.userId },
             { fields: { signupKey: 1, isAdmin: 1, expires: 1, storageUsage: 1,
                       plan: 1, planBonus: 1, hasCompletedSignup: 1, experiments: 1,
-                      referredIdentityIds: 1, }, }),
+                      referredIdentityIds: 1, cachedStorageQuota: 1, }, }),
         Plans.find(),
       ];
     } else {
@@ -765,18 +765,6 @@ const calculateReferralBonus = function (user) {
 
     return bonus;
   }
-};
-
-getUserQuota = function (user) {
-  const plan = Plans.findOne(user.plan || "free");
-  const referralBonus = calculateReferralBonus(user);
-  const bonus = user.planBonus || {};
-  const userQuota = {
-    storage: plan.storage + referralBonus.storage + (bonus.storage || 0),
-    grains: plan.grains + referralBonus.grains + (bonus.grains || 0),
-    compute: plan.compute + (bonus.compute || 0),
-  };
-  return userQuota;
 };
 
 isAdmin = function () {
@@ -948,7 +936,17 @@ roleAssignmentPattern = {
   removePermissions: Match.Optional([Boolean]),
 };
 
-SandstormDb = function () {
+SandstormDb = function (quotaManager) {
+  // quotaManager is an object with the following method:
+  //   updateUserQuota: It is provided two arguments
+  //     db: This SandstormDb object
+  //     user: A collections.users account object
+  //   and returns a quota object:
+  //     storage: A number (can be Infinity)
+  //     compute: A number (can be Infinity)
+  //     grains: A number (can be Infinity)
+
+  this.quotaManager = quotaManager;
   this.collections = {
     // Direct access to underlying collections. DEPRECATED.
     //
@@ -988,7 +986,6 @@ SandstormDb = function () {
 //   objects created in SandstormDb's constructor rather than globals.
 
 _.extend(SandstormDb.prototype, {
-  getUserQuota: getUserQuota,
   isAdmin: isAdmin,
   isAdminById: isAdminById,
   findAdminUserForToken: findAdminUserForToken,
@@ -1794,6 +1791,11 @@ _.extend(SandstormDb.prototype, {
     return readyApps.count() === packageIds.length;
   },
 
+  getBillingPromptUrl: function () {
+    const setting = this.collections.settings.findOne({ _id: "billingPromptUrl" });
+    return setting && setting.value;
+  },
+
   isReferralEnabled: function () {
     // This function is a bit weird, in that we've transitioned from
     // Meteor.settings.public.quotaEnabled to DB settings. For now,
@@ -1808,6 +1810,33 @@ _.extend(SandstormDb.prototype, {
     return setting && setting.value && this.isFeatureKeyValid();
   },
 
+  isQuotaLdapEnabled: function () {
+    const setting = this.collections.settings.findOne({ _id: "quotaLdapEnabled" });
+    return setting && setting.value && this.isFeatureKeyValid();
+  },
+
+  updateUserQuota: function (user) {
+    if (this.quotaManager) {
+      return this.quotaManager.updateUserQuota(this, user);
+    }
+  },
+
+  getUserQuota: function (user) {
+    if (this.isQuotaLdapEnabled()) {
+      return this.quotaManager.updateUserQuota(this, user);
+    } else {
+      const plan = Plans.findOne(user.plan || "free");
+      const referralBonus = calculateReferralBonus(user);
+      const bonus = user.planBonus || {};
+      const userQuota = {
+        storage: plan.storage + referralBonus.storage + (bonus.storage || 0),
+        grains: plan.grains + referralBonus.grains + (bonus.grains || 0),
+        compute: plan.compute + (bonus.compute || 0),
+      };
+      return userQuota;
+    }
+  },
+
   isUserOverQuota: function (user) {
     // Return false if user has quota space remaining, true if it is full. When this returns true,
     // we will not allow the user to create new grains, though they may be able to open existing ones
@@ -1817,7 +1846,7 @@ _.extend(SandstormDb.prototype, {
 
     if (!this.isQuotaEnabled() || user.isAdmin) return false;
 
-    const plan = getUserQuota(user);
+    const plan = this.getUserQuota(user);
     if (plan.grains < Infinity) {
       const count = this.collections.grains.find({ userId: user._id },
         { fields: {}, limit: plan.grains }).count();
@@ -1835,7 +1864,7 @@ _.extend(SandstormDb.prototype, {
 
     if (!this.isQuotaEnabled() || user.isAdmin) return false;
 
-    const quota = getUserQuota(user);
+    const quota = this.getUserQuota(user);
 
     // quota.grains = Infinity means unlimited grains. IEEE754 defines Infinity == Infinity.
     if (quota.grains < Infinity) {

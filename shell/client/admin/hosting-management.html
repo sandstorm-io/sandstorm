@@ -1,0 +1,66 @@
+<template name="newAdminHostingManagement">
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>Hosting management</li>
+    </ul>
+  </h1>
+
+  {{#unless hasFeatureKey }}
+    <div class="flash-message warning-message">
+        To enable hosting management, enter your
+        {{#linkTo route="newAdminFeatureKey"}}
+          Sandstorm for Work feature key
+        {{/linkTo}}.
+    </div>
+  {{/unless}}
+  <div class="flash-message warning-message">
+      This feature is experiemental and only works with the LDAP identity provider at the moment. Use with caution.
+  </div>
+
+  {{#if hasSuccess}}
+    {{#focusingSuccessBox}}
+      {{message}}
+    {{/focusingSuccessBox}}
+  {{/if}}
+  {{#if hasError}}
+    {{#focusingErrorBox}}
+      {{message}}
+    {{/focusingErrorBox}}
+  {{/if}}
+  <form class="admin-hosting-management-form {{#if formDisabled}}disabled{{/if}}">
+    <div class="form-group">
+      <label>
+        <input type="checkbox" name="quotaEnabled" checked="{{quotaEnabled}}" />
+        Enable quota for users
+      </label>
+      <span class="form-subtext">
+        Enable Quota management on this server. This requires both SAML and LDAP to be configured, and email addresses will be used to match between the two.
+      </span>
+    </div>
+
+    {{#if quotaEnabled}}
+    <div class="form-group">
+      <label>
+        LDAP quota attribute
+        <input type="text" name="quotaLdapAttribute" value="{{quotaLdapAttribute}}" />
+      </label>
+      <span class="form-subtext">
+        This is the attribute name that will be looked up from LDAP to determine quota for a user.
+      </span>
+      <label>
+        Billing prompt url
+        <input type="text" name="billingPromptUrl" value="{{billingPromptUrl}}" />
+      </label>
+      <span class="form-subtext">
+        This is the url that will be used in the billing prompt.
+      </span>
+    </div>
+    {{/if}}
+
+    <div class="button-row">
+      <button type="submit" class="save" disabled="{{saveDisabled}}">Save</button>
+      <button type="button" class="restore" disabled="{{restoreDisabled}}">Restore defaults</button>
+    </div>
+  </form>
+</template>

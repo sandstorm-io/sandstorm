@@ -198,6 +198,8 @@ Accounts.validateLoginAttempt(function (attempt) {
         !db.isUserInOrganization(user)) {
       throw new Meteor.Error(403, "User not in organization.");
     }
+
+    db.updateUserQuota(user); // This is a no-op if settings aren't enabled
   } else {
     if (db.getOrganizationDisallowGuests() &&
         !db.isIdentityInOrganization(user)) {

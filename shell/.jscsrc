@@ -8,5 +8,5 @@
   "requireShorthandArrowFunctions": false,
   "disallowQuotedKeysInObjects": false,  # https://github.com/jscs-dev/node-jscs/issues/2183
   "disallowEmptyBlocks": { "allExcept": [ "comments" ] },
-  "excludeFiles": ['.meteor', '**/node_modules', 'public/*', '**/*.css']
+  "excludeFiles": ['.meteor', '**/node_modules', 'public/*', '**/*.css', 'imports/db-deprecated.js']
 }

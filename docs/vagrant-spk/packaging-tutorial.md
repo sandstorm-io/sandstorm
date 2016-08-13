@@ -152,7 +152,7 @@ other apps.
 Your system is now running a Sandstorm instance. You should visit it
 in your web browser now by visiting
 
-http://local.sandstorm.io:6080/
+http://local.sandstorm.io:6080/ <-- ??
 
 Take a moment now to sign in by clicking on **Sign in** in the top-right corner.
 Choose **Sign in with a Dev account** and choose **Alice (admin)** as the user
@@ -199,7 +199,9 @@ Change it to the following.
 ```
 
 Second, we will customize the text that Sandstorm users see when they want
-to create a new _instance_ of the app. To do this, find the line containing:
+to create a new _grain_ of the app. In Sandstorm,  To do this, find the line containing:
+
+?? where in the UI will grain show up, gimme a screenshot
 
 ```bash
       ( nounPhrase = (defaultText = "instance"),

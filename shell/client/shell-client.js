@@ -162,9 +162,21 @@ const showBillingPrompt = function (reason, next) {
     db: globalDb,
     topbar: globalTopbar,
     accountsUi: globalAccountsUi,
+    billingPromptTemplate: window.BlackrockPayments ? "billingPrompt" : "billingPromptLocal",
     onComplete: function () {
       billingPromptState.set(null);
-      if (next) next();
+      if (!window.BlackrockPayments) {
+        Meteor.call("updateQuota", function (err) {
+          if (err) {
+            console.error(err);
+            alert(err);
+          }
+
+          if (next) next();
+        });
+      } else if (next) {
+        next();
+      }
     },
   });
 };
@@ -172,16 +184,12 @@ const showBillingPrompt = function (reason, next) {
 const ifQuotaAvailable = function (next) {
   const reason = isUserOverQuota(Meteor.user());
   if (reason) {
-    if (window.BlackrockPayments) {
-      showBillingPrompt(reason, function () {
-        // If the user successfully raised their quota, continue the operation.
-        if (!isUserOverQuota(Meteor.user())) {
-          next();
-        }
-      });
-    } else {
-      alert("You are out of storage space. Please delete some things and try again.");
-    }
+    showBillingPrompt(reason, function () {
+      // If the user successfully raised their quota, continue the operation.
+      if (!isUserOverQuota(Meteor.user())) {
+        next();
+      }
+    });
   } else {
     next();
   }
@@ -314,8 +322,25 @@ launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex) {
   // We need to ask the server to start a new grain, then browse to it.
   Meteor.call("newGrain", packageId, command, title, identityId, function (error, grainId) {
     if (error) {
-      console.error(error);
-      alert(error.message);
+      if (error.error === 402) {
+        // Sadly this can occur under LDAP quota management when the backend updates its quota
+        // while creating the grain.
+        showBillingPrompt("outOfStorage", function () {
+          // TODO(someday): figure out the actual reason, instead of hard-coding outOfStorage
+          Meteor.call("newGrain", packageId, command, title, identityId,
+          function (error, grainId) {
+            if (error) {
+              console.error(error);
+              alert(error.message);
+            } else {
+              Router.go("grain", { grainId: grainId });
+            }
+          });
+        });
+      } else {
+        console.error(error);
+        alert(error.message);
+      }
     } else {
       Router.go("grain", { grainId: grainId });
     }

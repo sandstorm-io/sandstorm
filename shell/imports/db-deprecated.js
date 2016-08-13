@@ -23,7 +23,27 @@
 //   the `globalDb` global should NOT go with it; the package should expect a SandstormDb to be
 //   passed in, thus allowing mocking the database for unit tests.
 
-globalDb = new SandstormDb();
+let quotaManager;
+if (Meteor.isServer) {
+  import { LDAP } from "/imports/server/accounts/ldap.js";
+  // Imports are usually not allowed to occur in a block. However, it is the only way to do
+  // this under Meteor. Using // jscs:disable doesn't work for what it considers syntax violations,
+  // and so we've added this file to .jscsrc's excludedFiles explicitly.
+
+  quotaManager = new LDAP();
+} else {
+  quotaManager = {
+    updateUserQuota(db, user) {
+      return {
+        storage: user.cachedStorageQuota || 0,
+        grains: Infinity,
+        compute: Infinity,
+      };
+    },
+  };
+}
+
+globalDb = new SandstormDb(quotaManager);
 
 Packages = globalDb.collections.packages;
 DevPackages = globalDb.collections.devPackages;

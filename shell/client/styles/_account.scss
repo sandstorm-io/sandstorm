@@ -1051,6 +1051,13 @@ body>.popup.billing-prompt>.frame-container {
   @media #{$mobile} {
     max-width: 500px;
   }
+
+  iframe.billing-prompt-local {
+    width: 100%;
+    height: 600px;
+    margin: 0px;
+    border: none;
+  }
 }
 
 .first-time-billing-prompt {

@@ -1,3 +1,18 @@
+### v0.175 (2016-08-13)
+- Grain sizes now appear on the grain list.
+- Added `sandstorm uninstall` shell command.
+- Upgraded to Meteor 1.4 and Node 4.
+- Sandcats: HTTPS connections now support ECDHE forward secrecy (as a result of the Node upgrade). Qualys grade increased from A- to A.
+- Bell-menu notifications now also trigger desktop notifications.
+- The collections app has been added to the default preinstall list for new servers. (We highly recommend existing servers add it in the admin settings, too.)
+- No apps will be automatically installed on dev/testing servers (e.g. vagrant-spk).
+- Switched to newer, better mail-handling libraries.
+- Fixed the "close" button on the email self-test dialog.
+- Fixed the "dismiss" button on notifications behaving like you'd clicked the notification body.
+- Errors during a powerbox request will now be shown on-screen rather than just printed to the console.
+- Fixed that uploading a backup left a bogus history entry, breaking the browser's back button.
+- Fixed powerbox search box, which was apparently completely broken.
+
 ### v0.174 (2016-08-05)
 - Admins can now choose to pre-install certain apps into new user accounts. For all new servers and Oasis, our four most-popular apps will be pre-installed by default: Etherpad, Wekan, Rocket.Chat, and Davros. Admins can disable this if they prefer, and servers predating this change will not pre-install any apps by default (but the admin can change this).
 - offer()ing a grain capability now works for anonymous users, which means anonymous users can use the collections app. This app will be officially released shortly.

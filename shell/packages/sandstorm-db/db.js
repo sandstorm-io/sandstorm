@@ -1773,7 +1773,9 @@ _.extend(SandstormDb.prototype, {
   },
 
   getSystemSuiteAppIds: function () {
-    return [];
+    return [
+      "s3u2xgmqwznz2n3apf30sm3gw1d85y029enw5pymx734cnk5n78h", // Collections
+    ];
   },
 
   isPreinstalledAppsReady: function () {

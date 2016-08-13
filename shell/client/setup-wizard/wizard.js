@@ -690,9 +690,11 @@ Template.setupWizardPreinstalled.helpers({
       failedAppsCount !== 0;
   },
 
-  productivityApps() {
+  preinstallApps() {
+    const allAppIds = globalDb.getProductivitySuiteAppIds().concat(
+      globalDb.getSystemSuiteAppIds());
     return globalDb.collections.appIndex.find({ _id: {
-      $in: globalDb.getProductivitySuiteAppIds(), },
+      $in: allAppIds, },
     }, { sort: { name: 1 } });
   },
 

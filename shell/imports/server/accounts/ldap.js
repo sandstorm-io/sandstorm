@@ -208,7 +208,11 @@ LDAP.prototype.ldapCheck = function (db, options) {
 };
 
 LDAP.prototype.updateUserQuota = function (db, user) {
-  const fallback = user.cachedStorageQuota || 0;
+  const fallback = {
+    storage: user.cachedStorageQuota || 0,
+    grains: Infinity,
+    compute: Infinity,
+  };
 
   const setting = db.collections.settings.findOne({ _id: "quotaLdapAttribute" });
   if (!setting) return fallback;
@@ -228,10 +232,13 @@ LDAP.prototype.updateUserQuota = function (db, user) {
   if (!ldapUser || !ldapUser.searchResults) return fallback;
 
   const newStorageQuota = +ldapUser.searchResults[setting.value];
-  Meteor.users.update({ _id: user._id }, { $set: { cachedStorageQuota: newStorageQuota } });
+  if (newStorageQuota !== user.cachedStorageQuota)  {
+    Meteor.users.update({ _id: user._id }, { $set: { cachedStorageQuota: newStorageQuota } });
+  }
+
   // TODO(someday): cache timestamp as well and only check/update if greater than 60s ago
   return {
-    storage: newStorageQuota || fallback,
+    storage: newStorageQuota,
     grains: Infinity,
     compute: Infinity,
   };

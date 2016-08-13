@@ -1,3 +1,6 @@
+### v0.176 (2016-08-13) [bugfixes]
+- Fix web publishing to alternate hosts, broken by an API change in Node.
+
 ### v0.175 (2016-08-13)
 - Grain sizes now appear on the grain list.
 - Added `sandstorm uninstall` shell command.

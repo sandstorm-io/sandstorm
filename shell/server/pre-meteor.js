@@ -670,7 +670,9 @@ function lookupPublicIdFromDns(hostname) {
       } else if (records.length !== 1) {
         reject(new Error('Host "sandstorm-www.' + hostname + '" must have exactly one TXT record.'));
       } else {
-        const result = records[0];
+        // Under node 0.12+, `records` is an array-of-arrays. Each sub-array contains "chunks" of a
+        // record, which should be joined.
+        const result = records[0].join("");
         dnsCache[hostname] = { value: result, expiration: Date.now() + DNS_CACHE_TTL };
         resolve(result);
       }

@@ -784,6 +784,7 @@ private:
 #undef ON_EVENT
 
   static void parseETag(kj::StringPtr input, WebSession::ETag::Builder builder) {
+    static bool alreadyLoggedMessage = false;
     // Apps sometimes send invalid ETag data. Rather than crash, we log a warning, due to #2295.
     auto trimmed = trim(input);
     input = trimmed;
@@ -793,7 +794,14 @@ private:
     }
 
     if (! (input.endsWith("\"") && input.size() > 1)) {
-      KJ_LOG(ERROR, "HTTP protocol error, dropping ETag: app returned invalid ETag header", input);
+      if (alreadyLoggedMessage) {
+        // We already logged the message once this session, which is plenty for now.
+      } else {
+        KJ_LOG(ERROR, "HTTP protocol error, dropping ETag: app returned invalid ETag data", input);
+        KJ_LOG(ERROR, "See Sandstorm documentation: "
+               "https://docs.sandstorm.io/en/latest/search.html?q=invalid+etag+data");
+        alreadyLoggedMessage = true;
+      }
       return;
     }
 

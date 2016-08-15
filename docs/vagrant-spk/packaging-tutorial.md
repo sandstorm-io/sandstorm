@@ -17,18 +17,23 @@ this tutorial, you'll learn:
 Keep in mind that if you make a Sandstorm package, your app will receive the following
 benefits.
 
+- Sandstorm can handle [single sign-on and permissions,](../developing/auth.md) so the app doesn't
+  need a login form.
+
 - Sandstorm can allow you to distribute an app, have as many users as you want, and pay nothing at
   all for hosting, since [each user hosts their own instance of the
   app.](https://sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting)
 
-- Sandstorm can handle single sign-on and permissions; see the [auth docs.](../developing/auth.md)
-
-- Sandstorm's [grain model](https://sandstorm.io/how-it-works) allows app authors to create
-  a "single document" app, then rely on Sandstorm to create new "documents," enabling app authors
-  to save time in some cases.
+- When the user needs a new document, chat room, mailbox, or other item that they create using your
+  app, they create a new [grain](https://sandstorm.io/how-it-works) of your app within Sandstorm.
+  Each grain runs totally isolated from each other grain, and Sandstorm auto-scales your app's
+  processes based on use.
 
 - Users can trust that your app is securely sandboxed, giving them the confidence to use it without
   fear.
+
+- A single codebase can support running within Sandstorm as well as running outside of Sandstorm, if
+  you wish.
 
 The tutorial uses a PHP app as an example. **Sandstorm supports any
 programming language that runs on Linux**, not just PHP, such as

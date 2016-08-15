@@ -14,6 +14,22 @@ this tutorial, you'll learn:
 * How our packaging helper (`vagrant-spk`) lets you edit the app's files on your main operating
   system (we support Mac OS, Linux, and Windows), even though Sandstorm apps always run on Linux.
 
+Keep in mind that if you make a Sandstorm package, your app will receive the following
+benefits.
+
+- Sandstorm can allow you to distribute an app, have as many users as you want, and pay nothing at
+  all for hosting, since [each user hosts their own instance of the
+  app.](https://sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting)
+
+- Sandstorm can handle single sign-on and permissions; see the [auth docs.](../developing/auth.md)
+
+- Sandstorm's [grain model](https://sandstorm.io/how-it-works) system allows app authors to create
+  a "single document" app, then rely on Sandstorm to create new "documents," enabling app authors
+  to save time in some cases.
+
+- Users can trust that your app is securely sandboxed, giving them the confidence to use it without
+  fear.
+
 The tutorial uses a PHP app as an example. **Sandstorm supports any
 programming language that runs on Linux**, not just PHP, such as
 Meteor, Python, Rails, Node, PHP, C++, Go, Rust, and more. Read about
@@ -209,8 +225,8 @@ Change it to the following.
     appTitle = (defaultText = "Sandstorm Showcase"),
 ```
 
-Second, we will customize the text that Sandstorm users see when they want
-to create a new _instance_ of the app. To do this, find the line containing:
+Second, we will customize the text that Sandstorm users see when they want to create a new grain of
+the app. To do this, find the line containing:
 
 ```bash
       ( nounPhrase = (defaultText = "instance"),
@@ -246,13 +262,12 @@ as **Alice (admin)**. Your app name should appear in the list of apps.
 
 You can click **New showcase** and see the PHP code running.
 
-Note that each app instance (each "showcase", for this app) runs separate from
-each other. You can see that for this app because the app stores the number
-of times you have reloaded the page. If you create another **New showcase**,
-each instance will store their data separately.
+Note that each grain of the app (each "showcase", for this app) runs separate from each other. You
+can see that for this app because the app stores the number of times you have reloaded the page. If
+you create another **New showcase**, each grain will store their data separately.
 
-In Sandstorm, resources like a database are embedded into the package. That
-helps enforce this isolation between app instances.
+In Sandstorm, resources like a database are embedded into the package. That helps enforce this
+isolation between all grains, even of the same app.
 
 ## Stop the development server and create a package file
 

@@ -79,7 +79,7 @@ create the package.
 We'll use the `vagrant-spk` tool to create this directory.
 
 The purpose of `vagrant-spk` is to create a Linux system where Sandstorm and
-your app run successfully. It acts differently based on which 
+your app run successfully. It acts differently based on which
 [platform stack](https://docs.sandstorm.io/en/latest/vagrant-spk/platform-stacks/)
 you want to use. In our case, we'll use the _lemp_ platform: Linux, nginx, MySQL,
 and PHP.
@@ -149,10 +149,21 @@ other apps.
 
 ## Examine the Sandstorm instance you will develop against
 
-Your system is now running a Sandstorm instance. You should visit it
-in your web browser now by visiting
+Your system is now running a Sandstorm instance. You should visit it in your web browser now by
+visiting
 
-http://local.sandstorm.io:6080/
+[http://local.sandstorm.io:6080/](http://local.sandstorm.io:6080/)
+
+Some quick facts on how that works:
+
+- Sandstorm is running within a Linux system created with the help of vagrant-spk,
+  vagrant, and VirtualBox.
+
+- local.sandstorm.io is a DNS alias that points to the same IP address as `localhost`.  We use
+  local.sandstorm.io instead of `localhost` because all subdomains of local.sandstorm.io also point
+  at the localhost IP address. You can read more about [wildcard DNS.](../administering/wildcard.md)
+
+- Sandstorm uses port 6080 by default.
 
 Take a moment now to sign in by clicking on **Sign in** in the top-right corner.
 Choose **Sign in with a Dev account** and choose **Alice (admin)** as the user

@@ -95,19 +95,22 @@ const showActivityDesktopNotification = (notif) => {
     });
 
     if (apiToken) {
-      const meta = apiToken.owner.user.denormalizedGrainMetadata;
+      const tokenOwnerUser = apiToken.owner.user;
+      const meta = tokenOwnerUser.denormalizedGrainMetadata;
       if (meta && meta.icon && meta.icon.assetId) {
         appIcon = staticPrefix + "/" + meta.icon.assetId;
       } else {
         appIcon = Identicon.identiconForApp((meta && meta.appId) || "00000000000000000000000000000000");
       }
 
-      if (meta.upstreamTitle) {
-        if (meta.renamed) {
-          grainTitle = meta.title;
+      if (tokenOwnerUser.upstreamTitle) {
+        if (tokenOwnerUser.renamed) {
+          grainTitle = tokenOwnerUser.title;
         } else {
-          grainTitle = meta.upstreamTitle;
+          grainTitle = tokenOwnerUser.upstreamTitle;
         }
+      } else if (tokenOwnerUser.title) {
+        grainTitle = tokenOwnerUser.title;
       }
     }
   }

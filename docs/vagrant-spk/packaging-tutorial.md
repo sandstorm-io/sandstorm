@@ -171,7 +171,7 @@ other apps.
 ## Examine the Sandstorm instance you will develop against
 
 Your system is now running a Sandstorm instance. You should visit it in your web browser now by
-visiting
+opening this link.
 
 [http://local.sandstorm.io:6080/](http://local.sandstorm.io:6080/)
 

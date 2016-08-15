@@ -784,9 +784,8 @@ private:
 #undef ON_EVENT
 
   static void parseETag(kj::StringPtr input, WebSession::ETag::Builder builder) {
-    static bool alreadyLoggedMessage = false;
-
     auto maybePrintInvalidEtagWarning = [](kj::StringPtr input) -> void {
+      static bool alreadyLoggedMessage = false;
       if (alreadyLoggedMessage) {
         // We already logged the message once this session, which is plenty for now.
       } else {

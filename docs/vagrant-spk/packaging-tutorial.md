@@ -23,7 +23,7 @@ benefits.
 
 - Sandstorm can handle single sign-on and permissions; see the [auth docs.](../developing/auth.md)
 
-- Sandstorm's [grain model](https://sandstorm.io/how-it-works) system allows app authors to create
+- Sandstorm's [grain model](https://sandstorm.io/how-it-works) allows app authors to create
   a "single document" app, then rely on Sandstorm to create new "documents," enabling app authors
   to save time in some cases.
 

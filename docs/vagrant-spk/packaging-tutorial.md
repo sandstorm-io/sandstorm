@@ -269,7 +269,7 @@ You can click **New showcase** and see the PHP code running.
 
 Note that each grain of the app (each "showcase", for this app) runs separate from each other. You
 can see that for this app because the app stores the number of times you have reloaded the page. If
-you create another **New showcase**, each grain will store their data separately.
+you create another **New showcase**, each grain will store its data separately.
 
 In Sandstorm, resources like a database are embedded into the package. That helps enforce this
 isolation between all grains, even of the same app.

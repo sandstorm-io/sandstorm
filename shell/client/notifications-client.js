@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
+
 testNotifications = () => {
   // Run on console to create some dummy notifications for the purpose of seeing what they look
   // like.
@@ -75,8 +77,11 @@ Template.notificationsPopup.helpers({
       }
 
       if (row.grainId) {
+        const usage = row.senderIcon ? "grain" : "appGrid";
         const grain = Grains.findOne({ _id: row.grainId });
+        const staticPrefix = window.location.protocol + "//" + globalDb.makeWildcardHost("static");
         if (grain) {
+          // We own this grain.
           row.grainTitle = grain.title;
 
           // Hack: If we have a sender avatar, that will be the main image, and we'll show the
@@ -84,26 +89,36 @@ Template.notificationsPopup.helpers({
           //   is going to be bigger. While the "grain" icon seems like the "correct" one to use,
           //   it is normally expected to be small, therefore may not look good if expanded. So,
           //   prefer the app icon, which is designed to be bigger.
-          const usage = row.senderIcon ? "grain" : "appGrid";
 
           if (grain.packageId) {
-            const package = Packages.findOne(grain.packageId);
-            if (package) {
-              row.grainIcon = Identicon.iconSrcForPackage(
-                  package, usage, window.location.protocol + "//" + globalDb.makeWildcardHost("static"));
+            const pkg = Packages.findOne(grain.packageId);
+            if (pkg) {
+              row.grainIcon = Identicon.iconSrcForPackage(pkg, usage, staticPrefix);
             } else {
               const devPackage = DevPackages.findOne({ appId: grain.appId });
               if (devPackage) {
-                row.grainIcon = Identicon.iconSrcForPackage(
-                    devPackage, usage, window.location.protocol + "//" + globalDb.makeWildcardHost("static"));
+                row.grainIcon = Identicon.iconSrcForPackage(devPackage, usage, staticPrefix);
               }
             }
-          } else {
-            const token = ApiTokens.findOne({ grainId: row.grainId,
-                "owner.user.denormalizedGrainMetadata": { $exists: true }, });
-            row.grainIcon = Identicon.iconSrcForDenormalizedGrainMetadata(
-                token.owner.user.denormalizedGrainMetadata, usage,
-                window.location.protocol + "//" + globalDb.makeWildcardHost("static"));
+          }
+        } else {
+          // We have an ApiToken for this grain.
+          const identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
+          const apiToken = ApiTokens.findOne({
+            grainId: row.grainId,
+            "owner.user.identityId": { $in: identityIds },
+            "owner.user.denormalizedGrainMetadata": { $exists: true },
+          }, {
+            sort: { created: 1 },
+          });
+
+          if (apiToken) {
+            const tokenOwnerUser = apiToken.owner.user;
+            const meta = tokenOwnerUser.denormalizedGrainMetadata;
+            row.grainIcon = Identicon.iconSrcForDenormalizedGrainMetadata(meta, usage, staticPrefix);
+
+            const titleObj = computeTitleFromTokenOwnerUser(tokenOwnerUser);
+            row.grainTitle = titleObj.title;
           }
         }
       }

@@ -37,9 +37,7 @@ via `curl|bash` etc. Use this file to install:
 When you **modify this script, you must manually re-provision the Vagrant box** as follows.
 
 ```bash
-cd .sandstorm
-vagrant provision
-cd ..
+vagrant-spk vm provision
 ```
 
 This is because `vagrant-spk` currently has no way to auto-detect that the `setup.sh` script needs

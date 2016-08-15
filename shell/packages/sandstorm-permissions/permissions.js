@@ -539,7 +539,11 @@ class Context {
     check(grainIds, [String]);
     if (grainIds.length == 0) return; // Nothing to do.
 
-    db.collections.grains.find({ _id: { $in: grainIds }, trashed: { $exists: false } }).forEach((grain) => {
+    db.collections.grains.find({
+      _id: { $in: grainIds },
+      trashed: { $exists: false },
+      suspended: { $ne: true },
+    }).forEach((grain) => {
       this.grains[grain._id] = grain;
       if (!this.userIdentityIds[grain.userId]) {
         this.userIdentityIds[grain.userId] = SandstormDb.getUserIdentityIds(
@@ -550,6 +554,7 @@ class Context {
     const query = { grainId: { $in: grainIds },
                     revoked: { $ne: true },
                     trashed: { $exists: false },
+                    suspended: { $ne: true },
                     objectId: { $exists: false }, };
     db.collections.apiTokens.find(query).forEach((token) => this.addToken(token));
   }
@@ -868,6 +873,7 @@ class Context {
             currentToken = db.collections.apiTokens.findOne({
               _id: currentTokenId,
               revoked: { $ne: true },
+              suspended: { $ne: true },
             });
             this.tokensById[currentTokenId] = currentToken;
           }
@@ -1269,6 +1275,7 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
     const tokenCursor = db.collections.apiTokens.find({
       _id: { $in: neededTokens },
       revoked: { $ne: true },
+      suspended: { $ne: true },
       objectId: { $exists: false },
     });
 
@@ -1278,6 +1285,7 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
         changed(newApiToken, oldApiToken) {
           if (newApiToken.trashed ||
               !_.isEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment) ||
+              !_.isEqual(newApiToken.suspended, oldApiToken.suspended) ||
               !_.isEqual(newApiToken.revoked, oldApiToken.revoked)) {
             observeHandle.stop();
             guardedOnInvalidated();
@@ -1293,7 +1301,7 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
       const grainCursor = db.collections.grains.find({ _id: { $in: neededGrains } });
       observeHandle.push(grainCursor.observe({
         changed(newGrain, oldGrain) {
-          if (newGrain.trashed ||
+          if (newGrain.trashed || newGrain.suspended ||
               (!oldGrain.private && newGrain.private)
              ) {
             observeHandle.stop();
@@ -1376,7 +1384,9 @@ SandstormPermissions.downstreamTokens = function (db, root) {
   if (!grain || !grain.private) { return result; }
 
   db.collections.apiTokens.find({ grainId: grainId,
-                                  revoked: { $ne: true }, }).forEach(function (token) {
+                                  revoked: { $ne: true },
+                                  suspended: { $ne: true },
+                                }).forEach(function (token) {
     tokensById[token._id] = token;
     if (token.parentToken) {
       if (!tokensByParent[token.parentToken]) {
@@ -1650,7 +1660,8 @@ Meteor.methods({
     check(token, String);
     check(newFields, { petname: Match.Optional(String),
                       roleAssignment: Match.Optional(db.roleAssignmentPattern),
-                      revoked: Match.Optional(Boolean), });
+                      revoked: Match.Optional(Boolean),
+                      suspended: Match.Optional(Boolean), });
 
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to modify a token");

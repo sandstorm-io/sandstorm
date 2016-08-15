@@ -797,7 +797,6 @@ private:
       }
     };
 
-    // Apps sometimes send invalid ETag data. Rather than crash, we log a warning, due to #2295.
     auto trimmed = trim(input);
     input = trimmed;
     if (input.startsWith("W/")) {
@@ -805,6 +804,7 @@ private:
       builder.setWeak(true);
     }
 
+    // Apps sometimes send invalid ETag data. Rather than crash, we log a warning, due to #2295.
     if (! (input.endsWith("\"") && input.size() > 1)) {
       maybePrintInvalidEtagWarning(input);
       return;

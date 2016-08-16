@@ -41,6 +41,7 @@
 }
 
 body>.topbar-update {
+  @include unstyled-button();
   position: fixed;
   width: 100%;
   height: 32px;
@@ -56,7 +57,6 @@ body>.topbar-update {
     line-height: 24px;
     height: 48px;
     left: 0;
-    width: auto;
     right: 0;
   }
 }

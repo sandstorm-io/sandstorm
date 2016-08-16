@@ -15,9 +15,9 @@ Many features of Sandstorm for Work depend on a server administrator specifying 
 be working together using Sandstorm. We call this **organization management.** You can enable and disable
 organization-related features via the `/admin/organization` settings area.
 
-To apply settings to all users within an organization, you must configure at least one login provider so
-that it knows which people are part of the organization. Users within the organization will automatically
-be able to log in, install apps, and create grains. 
+To apply settings to all users within an organization, you must use organization management settings to
+configure the boundary of your organization with regard to at least one login provider. Users within the
+organization will automatically be able to log in, install apps, and create grains.
 
 To enable this feature:
 

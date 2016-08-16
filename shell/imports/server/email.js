@@ -15,12 +15,20 @@ const makePool = function (mailConfig) {
     auth = mailConfig.auth;
   }
 
+  const secure = (mailConfig.port === 465);
+  const tlsOptions = {
+    // Previously, node 0.10 did not attempt to validate certificates received when connecting
+    // with STARTTLS, so to avoid regressing we need to preserve that behavior here for now.
+    rejectUnauthorized: false,
+  };
+
   const pool = nodemailer.createTransport(smtpPool({
     host: mailConfig.hostname,
     port: mailConfig.port,
-    secure: (mailConfig.port === 465),
-    // XXX allow maxConnections to be configured?
+    secure,
+    tls: tlsOptions,
     auth,
+    // TODO(someday): allow maxConnections to be configured?
   }));
 
   pool._futureWrappedSendMail = _.bind(Future.wrap(pool.sendMail), pool);

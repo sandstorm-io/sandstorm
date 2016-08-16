@@ -34,7 +34,7 @@ ReceiveEmail.prototype.command = function(selector, expectedMessage, timeout, cb
     self.emit("complete");
   }, timeout);
 
-  var options = { SMTPBanner:"Sandstorm Testing Mail Server", timeout: 10000, disableSTARTTLS: true };
+  var options = { SMTPBanner:"Sandstorm Testing Mail Server", timeout: 10000 };
   server = simplesmtp.createSimpleServer(options, function (req) {
     var mailparser = new MailParser();
 

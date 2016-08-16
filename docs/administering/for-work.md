@@ -11,14 +11,13 @@ Work, and it gives us time to finish testing the payments system.
 
 ### Defining an organization, and its impact on permissions
 
-Most Sandstorm for Work features depend on a server administrator specifying the group of users that are
-part of a company or organization. We call this **organization management.** You can automatically
-apply some settings to all members of your organization. These features can be configured via
-`/admin/organization` within your Sandstorm server.
+Many features of Sandstorm for Work  depend on a server administrator specifying the group of users that will
+be working together using Sandstorm. We call this **organization management.** You can enable and disable
+organization-related features via the `/admin/organization` settings area.
 
-To apply settings to all users within an organization, you must configure a login provider so that it
-knows which people are part of the organization. Users within the organization will automatically be able
-to log in, install apps, and create grains. This feature can be enabled or disabled per login provider.
+To apply settings to all users within an organization, you must configure at least one login provider so
+that it knows which people are part of the organization. Users within the organization will automatically
+be able to log in, install apps, and create grains. 
 
 To enable this feature:
 

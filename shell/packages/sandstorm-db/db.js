@@ -61,6 +61,14 @@ if (Meteor.isServer) {
 //              link. This field contains the app ID of the app that the user started out demoing.
 //              Unlike the `expires` field, this field is not cleared when the user upgrades from
 //              being a demo user.
+//   suspended: If this exists, this account/identity is supsended. Both accounts and identities
+//              can be suspended. After some amount of time, the user will be completely deleted
+//              and removed from the DB.
+//              It is an object with fields:
+//                voluntary: Boolean. This is true if the user initiated it. They will have the
+//                  chance to still login and reverse the suspension/deletion.
+//                admin: The userId of the admin who suspended the account.
+//                timestamp: Date object. When the suspension occurred.
 //
 // Identity users additionally contain the following fields:
 //   profile: Object containing the data that will be shared with users and grains that come into
@@ -217,6 +225,9 @@ Grains = new Mongo.Collection("grains");
 //                   time a session to this grain was opened.
 //   trashed: If present, the Date when this grain was moved to the trash bin. Thirty days after
 //            this date, the grain will be automatically deleted.
+//   suspended: If true, the owner of this grain has been suspended. They will soon be deleted,
+//              so treat this grain the same as "trashed". It is denormalized out of Users for ease
+//              of querying.
 //   ownerSeenAllActivity: True if the owner has viewed the grain since the last activity event
 //       occurred. See also ApiTokenOwner.user.seenAllActivity.
 //   size: On-disk size of the grain in bytes.
@@ -403,6 +414,9 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //              become un-revoked in the future.
 //   trashed:   If present, the Date when this token was moved to the trash bin. Thirty days after
 //              this date, the token will be automatically deleted.
+//   suspended: If true, the owner of this token has been suspended. They will soon be deleted,
+//              so treat this token the same as "trashed". It is denormalized out of Users for
+//              ease of querying.
 //   expires:   Optional expiration Date. If undefined, the token does not expire.
 //   lastUsed:  Optional Date when this token was last used.
 //   owner:     A `ApiTokenOwner` (defined in `supervisor.capnp`, stored as a JSON object)
@@ -1878,6 +1892,54 @@ _.extend(SandstormDb.prototype, {
 
     return quota && user.storageUsage && user.storageUsage >= quota.storage * 1.2 && "outOfStorage";
   },
+
+  suspendIdentity: function (userId, suspension) {
+    this.collections.users.update({ _id: userId }, { $set: { suspended: suspension } });
+    this.collections.apiTokens.update({ "owner.user.identityId": userId },
+      { $set: { suspended: true } }, { multi: true });
+  },
+
+  unsuspendIdentity: function (userId) {
+    this.collections.users.update({ _id: userId }, { $unset: { suspended: 1 } });
+    this.collections.apiTokens.update({ "owner.user.identityId": userId },
+      { $unset: { suspended: true } }, { multi: true });
+  },
+
+  suspendAccount: function (userId, byAdminUserId) {
+    const user = globalDb.collections.users.findOne({ _id: userId });
+    const suspension = { timestamp: new Date(), };
+    if (byAdminUserId) {
+      suspension.admin = byAdminUserId;
+    } else {
+      suspension.voluntary = true;
+    }
+
+    this.collections.users.update({ _id: userId }, { $set: { suspended: suspension } });
+    this.collections.grains.update({ userId: userId }, { $set: { suspended: true } }, { multi: true });
+
+    user.loginIdentities.forEach((identity) => {
+      this.suspendIdentity(identity.id, suspension);
+    });
+    // By default, suspend all login identities, but leave non-login identities alone.
+
+    // TODO(soon): add to deletion queue
+  },
+
+  unsuspendAccount: function (userId) {
+    const user = globalDb.collections.users.findOne({ _id: userId });
+    this.collections.users.update({ _id: userId }, { $unset: { suspended: 1 } });
+    this.collections.grains.update({ userId: userId }, { $unset: { suspended: 1 } }, { multi: true });
+
+    user.loginIdentities.forEach((identity) => {
+      this.unsuspendIdentity(identity.id);
+    });
+
+    user.nonloginIdentities.forEach((identity) => {
+      this.unsuspendIdentity(identity.id);
+    });
+
+    // TODO(soon): remove from deletion queue
+  },
 });
 
 SandstormDb.escapeMongoKey = (key) => {
@@ -2643,14 +2705,34 @@ if (Meteor.isServer) {
     deleteAccount(userId) {
       check(userId, String);
 
-      if (userId !== Meteor.userId()) {
-        if (!isAdmin()) {
-          throw new Meteor.Error(403, "Only admins can delete other users.");
-        }
+      if (userId !== Meteor.userId() && !isAdmin()) {
+        throw new Meteor.Error(403, "Only admins can delete other users.");
       }
 
       const connection = this.connection;
       connection.sandstormDb.deleteAccount(userId, connection.sandstormBackend);
+    },
+
+    suspendAccount(userId) {
+      // TODO(soon): make 2 methods. one for suspending own account and one for admins
+      // check(userId, String);
+
+      // if (userId !== Meteor.userId() && !isAdmin()) {
+      //   throw new Meteor.Error(403, "Only admins can suspend other users.");
+      // }
+
+      this.connection.sandstormDb.suspendAccount(userId || Meteor.userId());
+    },
+
+    unsuspendAccount(userId) {
+      // TODO(soon): make 2 methods. one for suspending own account and one for admins
+      // check(userId, String);
+
+      // if (userId !== Meteor.userId() && !isAdmin()) {
+      //   throw new Meteor.Error(403, "Only admins can unsuspend other users.");
+      // }
+
+      this.connection.sandstormDb.unsuspendAccount(userId || Meteor.userId());
     },
   });
 }

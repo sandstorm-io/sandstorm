@@ -11,7 +11,7 @@ Work, and it gives us time to finish testing the payments system.
 
 ### Defining an organization, and its impact on permissions
 
-Many features of Sandstorm for Work  depend on a server administrator specifying the group of users that will
+Many features of Sandstorm for Work depend on a server administrator specifying the group of users that will
 be working together using Sandstorm. We call this **organization management.** You can enable and disable
 organization-related features via the `/admin/organization` settings area.
 

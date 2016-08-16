@@ -302,6 +302,9 @@ Meteor.methods({
       throw new Meteor.Error(404, "Grain not found", "Grain ID: " + grainId);
     } else if (grain.trashed) {
       throw new Meteor.Error("grain-is-in-trash", "Grain is in trash", "Grain ID: " + grainId);
+    } else if (grain.suspended) {
+      throw new Meteor.Error("grain-owner-suspended", "Grain's ownder is suspended",
+        "Grain ID: " + grainId);
     }
 
     const db = this.connection.sandstormDb;

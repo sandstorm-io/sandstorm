@@ -29,14 +29,21 @@ To enable this feature:
 
 - Enable and configure your organization membership on a per-login-provider basis.
 
-Login providers have different settings that are used to define your organization.
+Login providers have different settings that are used to define your organization. A user is
+considered a member of your organization if the settings for **at least one** login provider
+declare the user to be a member. You can enable/disable this on a per-login-provider basis.
 
 - **Google authentication.** All users who use a particular Google Apps domain of your choosing can
-  receive user status in Sandstorm. To enable this, you must specify which Google Apps domain
-  represents your organization.
+  receive user status in Sandstorm. When you enable the use of Google Apps to define the boundary
+  of your organization, you must specify which Google Apps domain represents your organization.
 
 - **LDAP authentication.** All users who log in via LDAP can automatically receive user status in
-  Sandstorm.
+  Sandstorm. When you use LDAP to define the boundary of your organization, all users who log in via
+  LDAP are considered members of the organization.
+
+- **SAML authentication.** All users who log in via LDAP can automatically receive user status in
+  Sandstorm. When you use SAML to define the boundary of your organization, all users who log in via
+  SAML are considered members of the organization.
 
 - **Passwordless email login.** All users who use a particular email address domain name
   (e.g. @example.com) can receive user status in Sandstorm. To enable this, you must specify which

@@ -314,12 +314,12 @@ Template.powerboxRequest.helpers({
 });
 
 Template.powerboxRequest.events({
-  "input .search-bar": function (event) {
-    Template.instance().data.get()._filter.set(event.target.value);
+  "input .search-bar": function (evt) {
+    Template.instance().data.get()._filter.set(evt.target.value);
   },
 
-  "keypress .search-bar": function (event) {
-    if (event.keyCode === 13) {
+  "keypress .search-bar": function (evt) {
+    if (evt.keyCode === 13) {
       // Enter pressed.  If a single grain is shown, activate it.
       const ref = Template.instance().data.get();
       const cards = ref.filteredCardData();
@@ -329,15 +329,15 @@ Template.powerboxRequest.events({
     }
   },
 
-  "submit #powerbox-request-form": function (event) {
+  "submit #powerbox-request-form": function (evt) {
     // Legacy support for the webkey workflow.
-    event.preventDefault();
+    evt.preventDefault();
     const ref = Template.instance().data.get();
     const saveLabel = ref._requestInfo.saveLabel;
     const identityId = ref._requestInfo.identityId;
     const grainId = ref._requestInfo.grainId;
     const sessionId = ref._requestInfo.sessionId;
-    Meteor.call("finishPowerboxRequest", sessionId, event.target.token.value, saveLabel,
+    Meteor.call("finishPowerboxRequest", sessionId, evt.target.token.value, saveLabel,
                 identityId, grainId, function (err, token) {
         if (err) {
           ref._error.set(err.toString());
@@ -354,7 +354,7 @@ Template.powerboxRequest.events({
     );
   },
 
-  "click .card-button": function (event) {
+  "click .card-button": function (evt) {
     this.powerboxRequest.selectCard(this);
   },
 });
@@ -393,8 +393,8 @@ Template.uiViewPowerboxConfiguration.helpers({
 });
 
 Template.uiViewPowerboxConfiguration.events({
-  "click .connect-button": function (event) {
-    event.preventDefault();
+  "click .connect-button": function (evt) {
+    evt.preventDefault();
     const selectedInput = Template.instance().find('form input[name="role"]:checked');
     if (selectedInput) {
       let roleAssignment;

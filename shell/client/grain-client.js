@@ -114,10 +114,10 @@ Tracker.autorun(function () {
 });
 
 Template.layout.events({
-  "click .incognito-button": function (event) {
-    console.log(event);
+  "click .incognito-button": function (evt) {
+    console.log(evt);
     const grains = globalGrains.getAll();
-    const token = event.currentTarget.getAttribute("data-token");
+    const token = evt.currentTarget.getAttribute("data-token");
     if (token) {
       grains.forEach(function (grain) {
         if (grain.token() == token) {
@@ -131,22 +131,22 @@ Template.layout.events({
 });
 
 Template.grainTitle.events({
-  click: function (event) {
+  click: function (evt) {
     promptNewTitle();
   },
 
-  keydown: function (event) {
-    if ((event.keyCode === 13) || (event.keyCode === 32)) {
+  keydown: function (evt) {
+    if ((evt.keyCode === 13) || (evt.keyCode === 32)) {
       // Allow space or enter to trigger renaming the grain - Firefox doesn't treat enter on the
       // focused element as click().
       promptNewTitle();
-      event.preventDefault();
+      evt.preventDefault();
     }
   },
 });
 
 Template.grainDeleteButton.events({
-  "click button": function (event) {
+  "click button": function (evt) {
     const activeGrain = globalGrains.getActive();
     const grainId = activeGrain.grainId();
     let confirmationMessage = "Really move this grain to your trash?";
@@ -158,7 +158,7 @@ Template.grainDeleteButton.events({
 });
 
 Template.grainDebugLogButton.events({
-  "click button": function (event) {
+  "click button": function (evt) {
     this.reset();
     const activeGrain = globalGrains.getActive();
     window.open("/grainlog/" + activeGrain.grainId(), "_blank",
@@ -217,11 +217,11 @@ Template.grainBackupPopup.helpers({
 });
 
 Template.grainBackupPopup.events({
-  "click button[name=confirm]": function (event, instance) {
+  "click button[name=confirm]": function (evt, instance) {
     instance._doBackup();
   },
 
-  "click button[name=cancel]": function (event, instance) {
+  "click button[name=cancel]": function (evt, instance) {
     // TODO(someday): Wire up some way to cancel the zip process on the server.
     instance._state.set({ canceled: true });
 
@@ -231,7 +231,7 @@ Template.grainBackupPopup.events({
 });
 
 Template.grainRestartButton.events({
-  "click button": function (event) {
+  "click button": function (evt) {
     this.reset();
     const activeGrain = globalGrains.getActive();
     const grainId = activeGrain.grainId();
@@ -266,16 +266,16 @@ function selectElementContents(element) {
   }
 }
 
-function selectTargetContents(event) {
-  event.preventDefault();
-  selectElementContents(event.currentTarget);
+function selectTargetContents(evt) {
+  evt.preventDefault();
+  selectElementContents(evt.currentTarget);
 }
 
 Template.grainApiTokenPopup.events({
   "click .copy-me": selectTargetContents,
   "focus .copy-me": selectTargetContents,
-  "submit .newApiToken": function (event) {
-    event.preventDefault();
+  "submit .newApiToken": function (evt) {
+    evt.preventDefault();
     const activeGrain = globalGrains.getActive();
     const grainId = activeGrain.grainId();
     activeGrain.setGeneratedApiToken("pending");
@@ -302,22 +302,22 @@ Template.grainApiTokenPopup.events({
     });
   },
 
-  "click #resetApiToken": function (event) {
+  "click #resetApiToken": function (evt) {
     const activeGrain = globalGrains.getActive();
     activeGrain.setGeneratedApiToken(undefined);
   },
 
-  "click button.revoke-token": function (event) {
-    Meteor.call("updateApiToken", event.currentTarget.getAttribute("data-token-id"),
+  "click button.revoke-token": function (evt) {
+    Meteor.call("updateApiToken", evt.currentTarget.getAttribute("data-token-id"),
                 { revoked: true });
   },
 
-  "click .token-petname": function (event) {
+  "click .token-petname": function (evt) {
     // TODO(soon): Find a less-annoying way to get this input, perhaps by allowing the user
     //   to edit the petname in place.
     const petname = window.prompt("Set new label:", this.petname);
     if (petname) {
-      Meteor.call("updateApiToken", event.currentTarget.getAttribute("data-token-id"),
+      Meteor.call("updateApiToken", evt.currentTarget.getAttribute("data-token-id"),
                   { petname: petname });
     }
   },
@@ -326,21 +326,21 @@ Template.grainApiTokenPopup.events({
 Template.grainSharePopup.events({
   "click .copy-me": selectTargetContents,
   "focus .copy-me": selectTargetContents,
-  "click #share-grain-popup-closer": function (event) {
+  "click #share-grain-popup-closer": function (evt) {
     Session.set("show-share-grain", false);
   },
 
-  "click button.who-has-access": function (event, instance) {
-    event.preventDefault();
+  "click button.who-has-access": function (evt, instance) {
+    evt.preventDefault();
     showConnectionGraph();
   },
 
-  "click #privatize-grain": function (event) {
+  "click #privatize-grain": function (evt) {
     Meteor.call("privatizeGrain", globalGrains.getActive().grainId());
   },
 
-  "click a.open-non-anonymously": function (event) {
-    event.preventDefault();
+  "click a.open-non-anonymously": function (evt) {
+    evt.preventDefault();
     globalTopbar.closePopup();
     globalGrains.getActive().reset();
     globalGrains.getActive().openSession();
@@ -355,8 +355,8 @@ Template.shareWithOthers.onRendered(function () {
   this.find("[role=tab][aria-selected=true]").focus();
 });
 
-const activateTargetTab = function (event, instance) {
-  activateElementTab(event.currentTarget, instance);
+const activateTargetTab = function (evt, instance) {
+  activateElementTab(evt.currentTarget, instance);
 };
 
 const activateElementTab = function (elementToActivate, instance) {
@@ -380,30 +380,30 @@ const activateElementTab = function (elementToActivate, instance) {
 Template.shareWithOthers.events({
   "click #send-invite-tab-header": activateTargetTab,
   "click #shareable-link-tab-header": activateTargetTab,
-  "keydown [role=tab]": function (event, template) {
-    if (event.keyCode == 38 || event.keyCode == 40) { // up and down arrows
-      event.preventDefault();
+  "keydown [role=tab]": function (evt, template) {
+    if (evt.keyCode == 38 || evt.keyCode == 40) { // up and down arrows
+      evt.preventDefault();
     }
 
     const $focus = $(template.find(":focus"));
     const $items = template.$("[role=tab]:visible");
     const focusIndex = $items.index($focus);
     let newFocusIndex;
-    if (event.keyCode == 37) { // left arrow
-      event.preventDefault();
+    if (evt.keyCode == 37) { // left arrow
+      evt.preventDefault();
       newFocusIndex = focusIndex - 1;
       if (newFocusIndex == -1) {
         newFocusIndex = $items.length - 1;
       }
-    } else if (event.keyCode == 39) { // right arrow
-      event.preventDefault();
+    } else if (evt.keyCode == 39) { // right arrow
+      evt.preventDefault();
       newFocusIndex = focusIndex + 1;
       if (newFocusIndex >= $items.length) {
         newFocusIndex = 0;
       }
-    } else if (event.keyCode == 13) { // Enter key
-      event.preventDefault();
-      activateTargetTab(event, template);
+    } else if (evt.keyCode == 13) { // Enter key
+      evt.preventDefault();
+      activateTargetTab(evt, template);
     }
 
     if (newFocusIndex != null) {
@@ -416,10 +416,10 @@ Template.shareWithOthers.events({
 });
 
 Template.shareableLinkTab.events({
-  "change .share-token-role": function (event, instance) {
+  "change .share-token-role": function (evt, instance) {
     const success = instance.completionState.get().success;
     if (success) {
-      const roleList = event.target;
+      const roleList = evt.target;
       let assignment;
       if (roleList) {
         assignment = { roleId: roleList.selectedIndex };
@@ -435,10 +435,10 @@ Template.shareableLinkTab.events({
     }
   },
 
-  "change .label": function (event, instance) {
+  "change .label": function (evt, instance) {
     const success = instance.completionState.get().success;
     if (success) {
-      const label = event.target.value;
+      const label = evt.target.value;
       Meteor.call("updateApiToken", success.id, { petname: label }, function (error) {
         if (error) {
           console.error(error.stack);
@@ -447,15 +447,15 @@ Template.shareableLinkTab.events({
     }
   },
 
-  "submit form.new-share-token": function (event, instance) {
-    event.preventDefault();
+  "submit form.new-share-token": function (evt, instance) {
+    evt.preventDefault();
     if (!instance.completionState.get().clear) {
       return;
     }
 
     const currentGrain = globalGrains.getActive();
     const grainId = currentGrain.grainId();
-    const roleList = event.target.getElementsByClassName("share-token-role")[0];
+    const roleList = evt.target.getElementsByClassName("share-token-role")[0];
     let assignment;
     if (roleList) {
       assignment = { roleId: roleList.selectedIndex };
@@ -465,7 +465,7 @@ Template.shareableLinkTab.events({
 
     instance.completionState.set({ pending: true });
     Meteor.call("newApiToken", { identityId: currentGrain.identityId() }, grainId,
-                event.target.getElementsByClassName("label")[0].value,
+                evt.target.getElementsByClassName("label")[0].value,
                 assignment, { webkey: { forSharing: true } },
                 function (error, result) {
       if (error) {
@@ -483,7 +483,7 @@ Template.shareableLinkTab.events({
     });
   },
 
-  "click .reset-share-token": function (event, instance) {
+  "click .reset-share-token": function (evt, instance) {
     instance.completionState.set({ clear: true });
     instance.find("form").reset();
     instance.find("form option[data-default-selected=true]").selected = true;
@@ -558,7 +558,7 @@ Template.grainShareButton.onRendered(() => {
 });
 
 Template.grainPowerboxOfferPopup.events({
-  "click button.dismiss": function (event) {
+  "click button.dismiss": function (evt) {
     const data = Template.instance().data;
     data.onDismiss();
   },
@@ -585,7 +585,7 @@ Template.grainSharePopup.helpers({
 });
 
 Template.grainInMyTrash.events({
-  "click button.restore-from-trash": function (event, instance) {
+  "click button.restore-from-trash": function (evt, instance) {
     const grain = globalGrains.getActive();
     Meteor.call("moveGrainsOutOfTrash", [this.grainId], function (err, result) {
       if (err) {
@@ -625,7 +625,7 @@ Template.requestAccess.onCreated(function () {
 });
 
 Template.requestAccess.events({
-  "click button.request-access": function (event, instance) {
+  "click button.request-access": function (evt, instance) {
     instance._status.set({ chooseIdentity: true });
   },
 });
@@ -857,8 +857,8 @@ Template.whoHasAccessPopup.onCreated(function () {
 });
 
 Template.whoHasAccessPopup.events({
-  "change .share-token-role": function (event, instance) {
-    const roleList = event.target;
+  "change .share-token-role": function (evt, instance) {
+    const roleList = evt.target;
     let assignment;
     if (roleList) {
       assignment = { roleId: roleList.selectedIndex };
@@ -874,14 +874,14 @@ Template.whoHasAccessPopup.events({
     });
   },
 
-  "click button.revoke-token": function (event, instance) {
-    Meteor.call("updateApiToken", event.currentTarget.getAttribute("data-token-id"),
+  "click button.revoke-token": function (evt, instance) {
+    Meteor.call("updateApiToken", evt.currentTarget.getAttribute("data-token-id"),
                 { revoked: true });
     instance.resetTransitiveShares();
   },
 
-  "click button.revoke-access": function (event, instance) {
-    const recipient = event.currentTarget.getAttribute("data-recipient");
+  "click button.revoke-access": function (evt, instance) {
+    const recipient = evt.currentTarget.getAttribute("data-recipient");
     const transitiveShares = instance.transitiveShares.get();
     const tokensById = instance.downstreamTokensById.get();
     const recipientShares = _.findWhere(transitiveShares, { recipient: recipient });
@@ -990,12 +990,12 @@ Template.whoHasAccessPopup.events({
     instance.resetTransitiveShares();
   },
 
-  "click .token-petname": function (event, instance) {
+  "click .token-petname": function (evt, instance) {
     // TODO(soon): Find a less-annoying way to get this input, perhaps by allowing the user
     //   to edit the petname in place.
     const petname = window.prompt("Set new label:", this.petname);
     if (petname) {
-      Meteor.call("updateApiToken", event.currentTarget.getAttribute("data-token-id"),
+      Meteor.call("updateApiToken", evt.currentTarget.getAttribute("data-token-id"),
                   { petname: petname });
     }
 
@@ -1176,13 +1176,13 @@ Template.emailInviteTab.helpers({
 });
 
 Template.emailInviteTab.events({
-  "submit form.email-invite": function (event, instance) {
-    event.preventDefault();
+  "submit form.email-invite": function (evt, instance) {
+    evt.preventDefault();
     return false;
   },
 
-  "click form.email-invite button": function (event, instance) {
-    event.preventDefault();
+  "click form.email-invite button": function (evt, instance) {
+    evt.preventDefault();
     if (!instance.completionState.get().clear) {
       return;
     }
@@ -1261,14 +1261,14 @@ Template.emailInviteTab.events({
     });
   },
 
-  "click .reset-invite": function (event, instance) {
+  "click .reset-invite": function (evt, instance) {
     instance.contacts.set([]);
     instance.completionState.set({ clear: true });
     instance.find("form").reset();
     instance.find("form option[data-default-selected=true]").selected = true;
   },
 
-  "click .start-over-invite": function (event, instance) {
+  "click .start-over-invite": function (evt, instance) {
     instance.completionState.set({ clear: true });
   },
 });
@@ -1362,29 +1362,29 @@ const memoizedNewApiToken = {};
 
 // Message handler for Sandstorm's client-side postMessage API.
 Meteor.startup(function () {
-  const messageListener = function (event) {
-    if (event.origin === getOrigin()) {
+  const messageListener = function (evt) {
+    if (evt.origin === getOrigin()) {
       // Meteor likes to postMessage() to itself sometimes, so we ignore these messages.
       return;
     }
 
     // Look up the grain that this postmessage came from, so we can map behavior into that
     // particular grain's state
-    const senderGrain = globalGrains.getByOrigin(event.origin);
+    const senderGrain = globalGrains.getByOrigin(evt.origin);
     if (!senderGrain) {
       // We got a postMessage from an origin that is not a grain we currently believe is open.
       // Ignore it. (It may be aimed at some other message listener registered elsewhere...)
       return;
     }
 
-    if (event.data.setPath || event.data.setPath === "") {
-      const path = event.data.setPath || "/";
+    if (evt.data.setPath || evt.data.setPath === "") {
+      const path = evt.data.setPath || "/";
       check(path, String);
       check(path.charAt(0), "/");
       // TODO(security): More sanitization of this path. E.g. reject "/../../".
       senderGrain.setPath(path);
       currentPathChanged();
-    } else if (event.data.startSharing) {
+    } else if (evt.data.startSharing) {
       // Allow the current grain to request that the "Share Access" menu be shown.
       // Only show this popup if no other popup is currently active.
       // TODO(security): defend against malicious apps spamming this call, blocking all other UI.
@@ -1392,7 +1392,7 @@ Meteor.startup(function () {
       if (senderGrain === currentGrain && !globalTopbar.isPopupOpen()) {
         globalTopbar.openPopup("share");
       }
-    } else if (event.data.showConnectionGraph) {
+    } else if (evt.data.showConnectionGraph) {
       // Allow the current grain to request that the "Who has access" dialog be shown.
       // Only show this popup if no other popup is currently active.
       // TODO(security): defend against malicious apps spamming this call, blocking all other UI.
@@ -1400,9 +1400,9 @@ Meteor.startup(function () {
       if (senderGrain === currentGrain && !globalTopbar.isPopupOpen()) {
         showConnectionGraph();
       }
-    } else if (event.data.setTitle || event.data.setTitle === "") {
-      senderGrain.setFrameTitle(event.data.setTitle);
-    } else if (event.data.renderTemplate) {
+    } else if (evt.data.setTitle || evt.data.setTitle === "") {
+      senderGrain.setFrameTitle(evt.data.setTitle);
+    } else if (evt.data.renderTemplate) {
       // Request creation of a single-use template with a privileged API token.
       // Why?  Apps should not be able to obtain capabilities-as-keys to
       // themselves directly, because those can be leaked through an
@@ -1411,7 +1411,7 @@ Meteor.startup(function () {
       // privileged token contained within.  By providing this templating in
       // the platform, we can ensure that the token is only visible to the
       // shell's origin.
-      const call = event.data.renderTemplate;
+      const call = evt.data.renderTemplate;
       check(call, Object);
       const rpcId = call.rpcId;
       try {
@@ -1427,7 +1427,7 @@ Meteor.startup(function () {
           //   here.
         });
       } catch (error) {
-        event.source.postMessage({ rpcId: rpcId, error: error.toString() }, event.origin);
+        evt.source.postMessage({ rpcId: rpcId, error: error.toString() }, evt.origin);
         return;
       }
 
@@ -1522,12 +1522,12 @@ Meteor.startup(function () {
         // TODO(someday): Send back the tabId that requests to this token will use? Could be
         //   useful.
         templateLink = window.location.origin + "/offer-template.html#" + id2;
-        event.source.postMessage({ rpcId: rpcId, uri: templateLink }, event.origin);
+        evt.source.postMessage({ rpcId: rpcId, uri: templateLink }, evt.origin);
       }, (error) => {
-        event.source.postMessage({ rpcId: rpcId, error: error.toString() }, event.origin);
+        evt.source.postMessage({ rpcId: rpcId, error: error.toString() }, evt.origin);
       });
-    } else if (event.data.powerboxRequest) {
-      const powerboxRequest = event.data.powerboxRequest;
+    } else if (evt.data.powerboxRequest) {
+      const powerboxRequest = evt.data.powerboxRequest;
       check(powerboxRequest, {
         // TODO: be more strict, and check more fields, once the test apps are more conformant
         rpcId: Match.Any,
@@ -1536,8 +1536,8 @@ Meteor.startup(function () {
       });
 
       const powerboxRequestInfo = {
-        source: event.source,
-        origin: event.origin,
+        source: evt.source,
+        origin: evt.origin,
         // We'll need these to post a reply message
 
         rpcId: powerboxRequest.rpcId,
@@ -1557,8 +1557,8 @@ Meteor.startup(function () {
       senderGrain.setPowerboxRequest(requestContext);
       globalTopbar.openPopup("request");
     } else {
-      console.log("postMessage from app not understood: ", event.data);
-      console.log(event);
+      console.log("postMessage from app not understood: ", evt.data);
+      console.log(evt);
     }
   };
 

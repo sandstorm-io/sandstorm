@@ -132,9 +132,9 @@ class SandstormCoreImpl {
     };
   }
 
-  backgroundActivity(event) {
+  backgroundActivity(evt) {
     return inMeteor(() => {
-      logActivity(this.grainId, null, event);
+      logActivity(this.grainId, null, evt);
     });
   }
 

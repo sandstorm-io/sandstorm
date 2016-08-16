@@ -177,9 +177,9 @@ SessionContextImpl = class SessionContextImpl {
     });
   }
 
-  activity(event) {
+  activity(evt) {
     return inMeteor(() => {
-      logActivity(this.grainId, this.identityId, event);
+      logActivity(this.grainId, this.identityId, evt);
     });
   }
 };

@@ -370,11 +370,11 @@ Router.onRun(function () {
 });
 
 Template.layout.events({
-  "click a": function (event) {
+  "click a": function (evt) {
     // Close menus if a navigation link is clicked. Usually the Router.onRun(), above, will also
     // execute, but it will not in the case where the link points to the current page, yet we'd
     // really still like for the menus to close in such cases.
-    if (!event.isDefaultPrevented()) {
+    if (!evt.isDefaultPrevented()) {
       globalTopbar.reset();
     }
   },
@@ -620,7 +620,7 @@ Template.layout.helpers({
 });
 
 Template.layout.events({
-  "click #demo-expired .logout": function (event) {
+  "click #demo-expired .logout": function (evt) {
     logoutSandstorm();
   },
 });

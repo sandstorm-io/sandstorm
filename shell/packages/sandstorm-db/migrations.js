@@ -82,7 +82,7 @@ const denormalizeInviteInfo = function () {
   });
 };
 
-function mergeRoleAssignmentsIntoApiTokens() {
+const mergeRoleAssignmentsIntoApiTokens = function () {
   RoleAssignments.find().forEach(function (roleAssignment) {
     ApiTokens.insert({
       grainId: roleAssignment.grainId,
@@ -98,14 +98,14 @@ function mergeRoleAssignmentsIntoApiTokens() {
       },
     });
   });
-}
+};
 
-function fixOasisStorageUsageStats() {}
+const fixOasisStorageUsageStats = function () {};
 // This migration only pertained to Oasis and it was successfully applied there. Since it referred
 // to some global variables that we later wanted to remove and/or rename, we've since replaced it
 // with a no-op.
 
-function fetchProfilePictures() {
+const fetchProfilePictures = function () {
   Meteor.users.find({}).forEach(function (user) {
     const url = userPictureUrl(user);
     if (url) {
@@ -116,23 +116,23 @@ function fetchProfilePictures() {
       }
     }
   });
-}
+};
 
-function assignPlans() {
+const assignPlans = function () {
   if (localSandstormDb.isReferralEnabled() && SandstormDb.paymentsMigrationHook) {
     SandstormDb.paymentsMigrationHook(SignupKeys, Plans.find().fetch());
   }
-}
+};
 
-function removeKeyrings() {
+const removeKeyrings = function () {
   // These blobs full of public keys were not intended to find their way into mongo and while
   // harmless they slow things down because they're huge. Remove them.
   Packages.update({ "manifest.metadata.pgpKeyring": { $exists: true } },
       { $unset: { "manifest.metadata.pgpKeyring": "" } },
       { multi: true });
-}
+};
 
-function useLocalizedTextInUserActions() {
+const useLocalizedTextInUserActions = function () {
   function toLocalizedText(newObj, oldObj, field) {
     if (field in oldObj) {
       if (typeof oldObj[field] === "string") {
@@ -150,9 +150,9 @@ function useLocalizedTextInUserActions() {
     toLocalizedText(fields, userAction, "nounPhrase");
     UserActions.update(userAction._id, { $set: fields });
   });
-}
+};
 
-function verifyAllPgpSignatures() {
+const verifyAllPgpSignatures = function () {
   Packages.find({}).forEach(function (pkg) {
     try {
       console.log("checking PGP signature for package:", pkg._id);
@@ -168,9 +168,9 @@ function verifyAllPgpSignatures() {
       console.error(err.stack);
     }
   });
-}
+};
 
-function splitUserIdsIntoAccountIdsAndIdentityIds() {
+const splitUserIdsIntoAccountIdsAndIdentityIds = function () {
   Meteor.users.find().forEach(function (user) {
     const identity = {};
     let serviceUserId;
@@ -251,15 +251,15 @@ function splitUserIdsIntoAccountIdsAndIdentityIds() {
   // We've renamed `Grain.UserInfo.userId` to `Grain.userInfo.identityId`. The only place
   // that this field could show up in the database was in this deprecated, no-longer-functional
   // form of API token.
-}
+};
 
-function appUpdateSettings() {
+const appUpdateSettings = function () {
   Settings.insert({ _id: "appMarketUrl", value: "https://apps.sandstorm.io" });
   Settings.insert({ _id: "appIndexUrl", value: "https://app-index.sandstorm.io" });
   Settings.insert({ _id: "appUpdatesEnabled", value: true });
-}
+};
 
-function moveDevAndEmailLoginDataIntoIdentities() {
+const moveDevAndEmailLoginDataIntoIdentities = function () {
   Meteor.users.find().forEach(function (user) {
     if (user.identities.length != 1) {
       throw new Error("User does not have exactly one identity: ", user);
@@ -293,9 +293,9 @@ function moveDevAndEmailLoginDataIntoIdentities() {
 
     Meteor.users.update({ _id: user._id }, modifier);
   });
-}
+};
 
-function repairEmailIdentityIds() {
+const repairEmailIdentityIds = function () {
   Meteor.users.find({ "identities.service.emailToken": { $exists: 1 } }).forEach(function (user) {
     if (user.identities.length != 1) {
       throw new Error("User does not have exactly one identity: ", user);
@@ -326,9 +326,9 @@ function repairEmailIdentityIds() {
 
     Meteor.users.update({ _id: user._id }, { $set: { identities: [newIdentity] } });
   });
-}
+};
 
-function splitAccountUsersAndIdentityUsers() {
+const splitAccountUsersAndIdentityUsers = function () {
   Meteor.users.find({ identities: { $exists: true } }).forEach(function (user) {
     if (user.identities.length != 1) {
       throw new Error("User does not have exactly one identity: ", user);
@@ -373,9 +373,9 @@ function splitAccountUsersAndIdentityUsers() {
     Meteor.users.update({ _id: identity._id }, { $unset: { stagedServices: 1 },
                                               $set: { services: identity.stagedServices }, });
   });
-}
+};
 
-function populateContactsFromApiTokens() {
+const populateContactsFromApiTokens = function () {
   ApiTokens.find({ "owner.user.identityId": { $exists: 1 },
                   accountId: { $exists: 1 }, }).forEach(function (token) {
     const identityId = token.owner.user.identityId;
@@ -391,9 +391,9 @@ function populateContactsFromApiTokens() {
       });
     }
   });
-}
+};
 
-function cleanUpApiTokens() {
+const cleanUpApiTokens = function () {
   // The `splitUserIdsIntoAccountIdsAndIdentityIds()` migration only added `identityId` in cases
   // where the user still existed in the database.
   ApiTokens.remove({ userId: { $exists: true }, identityId: { $exists: false } });
@@ -420,15 +420,15 @@ function cleanUpApiTokens() {
 
   ApiTokens.find({ grainId: { $exists: true }, identityId: { $exists: true },
                   parentToken: { $exists: false }, }).forEach(repairChain);
-}
+};
 
-function initServerTitleAndReturnAddress() {
+const initServerTitleAndReturnAddress = function () {
   const hostname = Url.parse(process.env.ROOT_URL).hostname;
   Settings.insert({ _id: "serverTitle", value: hostname });
   Settings.insert({ _id: "returnAddress", value: "no-reply@" + hostname });
-}
+};
 
-function sendReferralNotifications() {
+const sendReferralNotifications = function () {
   if (localSandstormDb.isReferralEnabled()) {
     Meteor.users.find({
       loginIdentities: { $exists: true },
@@ -437,15 +437,15 @@ function sendReferralNotifications() {
       sendReferralProgramNotification(user._id);
     });
   }
-}
+};
 
-function assignBonuses() {
+const assignBonuses = function () {
   if (localSandstormDb.isReferralEnabled() && SandstormDb.bonusesMigrationHook) {
     SandstormDb.bonusesMigrationHook();
   }
-}
+};
 
-function splitSmtpUrl() {
+const splitSmtpUrl = function () {
   const smtpUrlSetting = Settings.findOne({ _id: "smtpUrl" });
   const smtpUrl = smtpUrlSetting ? smtpUrlSetting.value : process.env.MAIL_URL;
   const returnAddress = Settings.findOne({ _id: "returnAddress" });
@@ -490,9 +490,9 @@ function splitSmtpUrl() {
   Settings.upsert({ _id: "smtpConfig" }, { value: smtpConfig });
   Settings.remove({ _id: "returnAddress" });
   Settings.remove({ _id: "smtpUrl" });
-}
+};
 
-function smtpPortShouldBeNumber() {
+const smtpPortShouldBeNumber = function () {
   const entry = Settings.findOne({ _id: "smtpConfig" });
   if (entry) {
     const setting = entry.value;
@@ -501,9 +501,9 @@ function smtpPortShouldBeNumber() {
       Settings.upsert({ _id: "smtpConfig" }, { value: setting });
     }
   }
-}
+};
 
-function consolidateOrgSettings() {
+const consolidateOrgSettings = function () {
   const orgGoogleDomain = Settings.findOne({ _id: "organizationGoogle" });
   const orgEmailDomain = Settings.findOne({ _id: "organizationEmail" });
   const orgLdap = Settings.findOne({ _id: "organizationLdap" });
@@ -531,9 +531,9 @@ function consolidateOrgSettings() {
   Settings.remove({ _id: "organizationEmail" });
   Settings.remove({ _id: "organizationLdap" });
   Settings.remove({ _id: "organizationSaml" });
-}
+};
 
-function unsetSmtpDefaultHostnameIfNoUsersExist() {
+const unsetSmtpDefaultHostnameIfNoUsersExist = function () {
   // We don't actually want to have the default hostname "localhost" set.
   // If the user has already finished configuring their server, then this migration should do
   // nothing (since we might break their deployment), but for new installs (which will have no users
@@ -548,9 +548,9 @@ function unsetSmtpDefaultHostnameIfNoUsersExist() {
       Settings.upsert({ _id: "smtpConfig" }, { value: smtpConfig });
     }
   }
-}
+};
 
-function extractLastUsedFromApiTokenOwner() {
+const extractLastUsedFromApiTokenOwner = function () {
   // We used to store lastUsed as a field on owner.user.  It makes more sense to store lastUsed on
   // the apiToken as a whole.  This migration hoists such values from owner.user onto the apiToken
   // itself.
@@ -561,9 +561,9 @@ function extractLastUsedFromApiTokenOwner() {
       $unset: { "owner.user.lastUsed": true },
     });
   });
-}
+};
 
-function setUpstreamTitles() {
+const setUpstreamTitles = function () {
   // Initializes the `upstreamTitle` and `renamed` fields of `ApiToken.owner.user`.
 
   const apiTokensRaw = ApiTokens.rawCollection();
@@ -600,9 +600,9 @@ function setUpstreamTitles() {
       "owner.user.title": { $exists: true, $ne: grain.title },
     }, { $set: { "owner.user.upstreamTitle": grain.title } }, { multi: true });
   });
-}
+};
 
-function markAllRead() {
+const markAllRead = function () {
   // Mark as "read" all grains and tokens that predate the creation of read/unread status.
   // Otherwise it's pretty annoying to see all your old grains look like they have activity.
 
@@ -610,9 +610,9 @@ function markAllRead() {
   ApiTokens.update({ "owner.user": { $exists: true } },
                    { $set: { "owner.user.seenAllActivity": true } },
                    { multi: true });
-}
+};
 
-function clearAppIndex() {
+const clearAppIndex = function () {
   // Due to a bug in the app update code, some app update notifications that the user accepted
   // around July 9-16, 2016 may not have applied. We have no way of knowing exactly which updates
   // the user accepted but didn't receive. Instead, to recover, we are clearing the local cache of
@@ -622,9 +622,9 @@ function clearAppIndex() {
   // click "dismiss" again easily enough.
 
   AppIndex.remove({});
-}
+};
 
-function assignEmailVerifierIds() {
+const assignEmailVerifierIds = function () {
   // Originally, the ID of an EmailVerifier was actually the _id of the root token from which it
   // was restored. This was broken, though: Conceptually, it meant that you couldn't have a working
   // EmailVerifier that had not been restore()d from disk. In practice, that wasn't a problem due
@@ -638,9 +638,9 @@ function assignEmailVerifierIds() {
   ApiTokens.find({ "frontendRef.emailVerifier": { $exists: true } }).forEach(token => {
     ApiTokens.update(token._id, { $set: { "frontendRef.emailVerifier.id": token._id } });
   });
-}
+};
 
-function startPreinstallingApps() {
+const startPreinstallingApps = function () {
   // This isn't really a normal migration. It will run only on brand new servers, and it has to
   // run after the `clearAppIndex` migration because it relies on populating AppIndex.
 
@@ -664,15 +664,15 @@ function startPreinstallingApps() {
     // We want preinstalling apps to run async and not block startup.
     Meteor.setTimeout(startPreinstallingAppsHelper, 0);
   }
-}
+};
 
-function setNewServer() {
+const setNewServer = function () {
   // This migration only applies to "old" servers. New servers will set
   // new_server_migrations_applied to false before any migrations run.
   if (!Migrations.findOne({ _id: "new_server_migrations_applied" })) {
     Migrations.insert({ _id: "new_server_migrations_applied", value: true });
   }
-}
+};
 
 function backgroundFillInGrainSizes() {
   // Fill in sizes for all grains that don't have them. Since computing a grain size requires a
@@ -751,7 +751,7 @@ const NEW_SERVER_STARTUP = [
   startPreinstallingApps,
 ];
 
-function migrateToLatest() {
+const migrateToLatest = function () {
   if (Meteor.settings.replicaNumber) {
     // This is a replica. Wait for the first replica to perform migrations.
 
@@ -827,6 +827,6 @@ function migrateToLatest() {
     // Start background migrations.
     backgroundFillInGrainSizes();
   }
-}
+};
 
 SandstormDb.prototype.migrateToLatest = migrateToLatest;

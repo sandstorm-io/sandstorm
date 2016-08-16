@@ -29,7 +29,6 @@ Package.onUse(function (api) {
   api.use("sandstorm-identicons", ["client", "server"]);
 
   api.addFiles(["db.js", "profile.js"]);
-  api.addFiles(["user.js", "migrations.js"], "server");
   api.export("SandstormDb");
 });
 

@@ -9,13 +9,12 @@ Work, and it gives us time to finish testing the payments system.
 
 ## Sandstorm for Work in depth
 
-## Organization management
-
-Sandstorm for Work allows you to define an organization. You can automatically apply some settings to all
-members of your organization. These features can be configured via `/admin/organization` within your
-Sandstorm server.
-
 ### Defining an organization, and its impact on permissions
+
+Most Sandstorm for Work features depend on a server administrator specifying the group of users that are
+part of a company or organization. We call this **organization management.** You can automatically
+apply some settings to all members of your organization. These features can be configured via
+`/admin/organization` within your Sandstorm server.
 
 To apply settings to all users within an organization, you must configure a login provider so that it
 knows which people are part of the organization. Users within the organization will automatically be able
@@ -50,6 +49,9 @@ shared with them but cannot create grains of their own.
 
 ### Additional organization settings
 
+Once you have defined your organization, you can optionally configure system-wide rules based on
+organization membership. This can be done from `/admin/organization` within your Sandstorm server.
+
 You can **disallow collaboration with users outside the organization.** If you enable this option,
 grains can only be seen by users logged-in as a member of your organization. This means:
 
@@ -58,7 +60,7 @@ grains can only be seen by users logged-in as a member of your organization. Thi
 - Visitors (logged-in users who have no special permissions on your server) cannot view grains, even
   if they have a sharing link.
 
-You can also **make all organization users visible to each other.** This setting automatically adds
+You can **make all organization users visible to each other.** This setting automatically adds
 users within the organization to each other's contact list so that they can share grains with each
 other. The contact list is used for autocomplete when users are in the "Share access" dialog within
 a grain. Disable this if you have some users whose identity should stay hidden from other users.

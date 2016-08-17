@@ -20,6 +20,7 @@ import { MailParser } from "mailparser";
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { rawSend } from "/imports/server/email.js";
 import { shouldRestartGrain } from "/imports/server/backend.js";
+import { inMeteor } from "/imports/server/async-helpers.js";
 
 const Crypto = Npm.require("crypto");
 const Future = Npm.require("fibers/future");

@@ -15,38 +15,11 @@
 // limitations under the License.
 
 import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
+import { inMeteor, promiseToFuture, waitPromise } from "/imports/server/async-helpers.js";
 
 const Capnp = Npm.require("capnp");
 const Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
 const Crypto = Npm.require("crypto");
-const Future = Npm.require("fibers/future");
-
-const inMeteorInternal = Meteor.bindEnvironment(function (callback) {
-  callback();
-});
-
-inMeteor = function (callback) {
-  // Calls the callback in a Meteor context.  Returns a Promise for its result.
-  return new Promise(function (resolve, reject) {
-    inMeteorInternal(function () {
-      try {
-        resolve(callback());
-      } catch (err) {
-        reject(err);
-      }
-    });
-  });
-};
-
-promiseToFuture = function (promise) {
-  const result = new Future();
-  promise.then(result.return.bind(result), result.throw.bind(result));
-  return result;
-};
-
-waitPromise = function (promise) {
-  return promiseToFuture(promise).wait();
-};
 
 let storageUsageUnimplemented = false;
 

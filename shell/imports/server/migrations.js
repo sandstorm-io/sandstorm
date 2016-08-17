@@ -8,6 +8,7 @@ import { Meteor } from "meteor/meteor";
 import { _ } from "meteor/underscore";
 import { Match } from "meteor/check";
 import { userPictureUrl, fetchPicture } from "/imports/server/accounts/picture.js";
+import { waitPromise } from "/imports/server/async-helpers.js";
 
 const Future = Npm.require("fibers/future");
 const Url = Npm.require("url");

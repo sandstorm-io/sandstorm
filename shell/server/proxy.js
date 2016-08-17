@@ -17,11 +17,11 @@
 import Bignum from "bignum";
 import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
 import { SandstormBackend, shouldRestartGrain } from "/imports/server/backend.js";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 const Crypto = Npm.require("crypto");
 const ChildProcess = Npm.require("child_process");
 const Fs = Npm.require("fs");
 const Path = Npm.require("path");
-const Future = Npm.require("fibers/future");
 const Http = Npm.require("http");
 const Url = Npm.require("url");
 const Capnp = Npm.require("capnp");
@@ -220,37 +220,6 @@ Meteor.setInterval(() => {
     console.log("capnp.js: outer promise:", promise);
   }
 }, 30000);
-
-// =======================================================================================
-// Meteor context <-> Async Node.js context adapters
-// TODO(cleanup):  Move to a different file.
-
-const inMeteorInternal = Meteor.bindEnvironment((callback) => {
-  callback();
-});
-
-inMeteor = (callback) => {
-  // Calls the callback in a Meteor context.  Returns a Promise for its result.
-  return new Promise((resolve, reject) => {
-    inMeteorInternal(() => {
-      try {
-        resolve(callback());
-      } catch (err) {
-        reject(err);
-      }
-    });
-  });
-};
-
-promiseToFuture = (promise) => {
-  const result = new Future();
-  promise.then(result.return.bind(result), result.throw.bind(result));
-  return result;
-};
-
-waitPromise = (promise) => {
-  return promiseToFuture(promise).wait();
-};
 
 // =======================================================================================
 // API for creating / starting grains from Meteor methods.

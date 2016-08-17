@@ -2203,6 +2203,18 @@ if (Meteor.isServer) {
   // Cleanup tokens every hour.
   SandstormDb.periodicCleanup(3600000, cleanupExpiredAssetUploads);
 
+  // TODO(cleanup): lift this out of the package so it can share with the ones in async-helpers.js
+  const Future = Npm.require("fibers/future");
+  const promiseToFuture = (promise) => {
+    const result = new Future();
+    promise.then(result.return.bind(result), result.throw.bind(result));
+    return result;
+  };
+
+  const waitPromise = (promise) => {
+    return promiseToFuture(promise).wait();
+  };
+
   SandstormDb.prototype.deleteGrains = function (query, backend, type) {
     // Returns the number of grains deleted.
 

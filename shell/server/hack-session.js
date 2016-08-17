@@ -17,11 +17,11 @@
 const Crypto = Npm.require("crypto");
 const Http = Npm.require("http");
 const Https = Npm.require("https");
-const Future = Npm.require("fibers/future");
 const Net = Npm.require("net");
 const Dgram = Npm.require("dgram");
 const Capnp = Npm.require("capnp");
 import { hashSturdyRef, checkRequirements } from "/imports/server/persistent.js";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 const HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;

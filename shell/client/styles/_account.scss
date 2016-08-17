@@ -931,7 +931,7 @@ div.billing {
   }
 }
 
-.first-sign-in-main-content {
+.first-sign-in-main-content, .suspended-main-content {
   z-index: 1;
   h1 {
     text-align: center;
@@ -939,6 +939,27 @@ div.billing {
   .identity-editor {
     position: static;
     margin: auto;
+  }
+}
+
+.suspended-main-content {
+  h2 {
+    text-align: center;
+  }
+  button {
+    display: block;
+    margin: auto;
+    font-size: 18px;
+    @extend %button-base;
+
+    &.restore-account {
+      @extend %button-primary;
+      margin-bottom: 20px;
+    }
+
+    &.logout {
+      @extend %button-secondary;
+    }
   }
 }
 

@@ -69,6 +69,7 @@ if (Meteor.isServer) {
 //                  chance to still login and reverse the suspension/deletion.
 //                admin: The userId of the admin who suspended the account.
 //                timestamp: Date object. When the suspension occurred.
+//                willDelete: Boolean. If true, this account will be deleted after some time.
 //
 // Identity users additionally contain the following fields:
 //   profile: Object containing the data that will be shared with users and grains that come into
@@ -138,6 +139,7 @@ Meteor.users.ensureIndexOnServer("loginIdentities.id", { unique: 1, sparse: 1 })
 Meteor.users.ensureIndexOnServer("nonloginIdentities.id", { sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.google.id", { unique: 1, sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.github.id", { unique: 1, sparse: 1 });
+Meteor.users.ensureIndexOnServer("suspended.willDelete", { sparse: 1 });
 
 // TODO(cleanup): This index is obsolete; delete it.
 Meteor.users.ensureIndexOnServer("identities.id", { unique: 1, sparse: 1 });
@@ -729,7 +731,7 @@ if (Meteor.isServer) {
         Meteor.users.find({ _id: this.userId },
             { fields: { signupKey: 1, isAdmin: 1, expires: 1, storageUsage: 1,
                       plan: 1, planBonus: 1, hasCompletedSignup: 1, experiments: 1,
-                      referredIdentityIds: 1, cachedStorageQuota: 1, }, }),
+                      referredIdentityIds: 1, cachedStorageQuota: 1, suspended: 1, }, }),
         Plans.find(),
       ];
     } else {
@@ -1905,9 +1907,12 @@ _.extend(SandstormDb.prototype, {
       { $unset: { suspended: true } }, { multi: true });
   },
 
-  suspendAccount: function (userId, byAdminUserId) {
+  suspendAccount: function (userId, byAdminUserId, willDelete) {
     const user = globalDb.collections.users.findOne({ _id: userId });
-    const suspension = { timestamp: new Date(), };
+    const suspension = {
+      timestamp: new Date(),
+      willDelete: willDelete || false,
+    };
     if (byAdminUserId) {
       suspension.admin = byAdminUserId;
     } else {
@@ -1917,12 +1922,24 @@ _.extend(SandstormDb.prototype, {
     this.collections.users.update({ _id: userId }, { $set: { suspended: suspension } });
     this.collections.grains.update({ userId: userId }, { $set: { suspended: true } }, { multi: true });
 
+    delete suspension.willDelete;
+    // Only mark the parent account for deletion. This makes the query simpler later.
+
     user.loginIdentities.forEach((identity) => {
       this.suspendIdentity(identity.id, suspension);
     });
     // By default, suspend all login identities, but leave non-login identities alone.
 
-    // TODO(soon): add to deletion queue
+    if (byAdminUserId) {
+      // Force logout this user if suspended by an admin
+      this.collections.users.update({ _id: userId },
+        { $set: { "services.resume.loginTokens": [] } });
+      if (user && user.loginIdentities) {
+        user.loginIdentities.forEach(function (identity) {
+          Meteor.users.update({ _id: identity.id }, { $set: { "services.resume.loginTokens": [] } });
+        });
+      }
+    }
   },
 
   unsuspendAccount: function (userId) {
@@ -1937,8 +1954,16 @@ _.extend(SandstormDb.prototype, {
     user.nonloginIdentities.forEach((identity) => {
       this.unsuspendIdentity(identity.id);
     });
+  },
 
-    // TODO(soon): remove from deletion queue
+  deletePendingAccounts: function (deletionCoolingOffTime, backend) {
+    const queryDate = new Date(Date.now() - deletionCoolingOffTime);
+    this.collections.users.find({
+      "suspended.willDelete": true,
+      "suspended.timestamp": { $lt: queryDate },
+    }).forEach((user) => {
+      this.deleteAccount(user._id, backend);
+    });
   },
 });
 
@@ -2702,37 +2727,41 @@ if (Meteor.isServer) {
   };
 
   Meteor.methods({
-    deleteAccount(userId) {
+    suspendAccount(userId, willDelete) {
       check(userId, String);
+      check(willDelete, Boolean);
 
-      if (userId !== Meteor.userId() && !isAdmin()) {
-        throw new Meteor.Error(403, "Only admins can delete other users.");
+      if (!isAdmin()) {
+        throw new Meteor.Error(403, "Only admins can suspend other users.");
       }
 
-      const connection = this.connection;
-      connection.sandstormDb.deleteAccount(userId, connection.sandstormBackend);
+      this.connection.sandstormDb.suspendAccount(userId, Meteor.userId(), willDelete);
     },
 
-    suspendAccount(userId) {
-      // TODO(soon): make 2 methods. one for suspending own account and one for admins
-      // check(userId, String);
+    suspendOwnAccount() {
+      if (!Meteor.userId()) {
+        throw new Meteor.Error(403, "Must be logged in to suspend an account");
+      }
 
-      // if (userId !== Meteor.userId() && !isAdmin()) {
-      //   throw new Meteor.Error(403, "Only admins can suspend other users.");
-      // }
-
-      this.connection.sandstormDb.suspendAccount(userId || Meteor.userId());
+      this.connection.sandstormDb.suspendAccount(Meteor.userId(), null, true);
     },
 
     unsuspendAccount(userId) {
-      // TODO(soon): make 2 methods. one for suspending own account and one for admins
-      // check(userId, String);
+      check(userId, String);
 
-      // if (userId !== Meteor.userId() && !isAdmin()) {
-      //   throw new Meteor.Error(403, "Only admins can unsuspend other users.");
-      // }
+      if (!isAdmin()) {
+        throw new Meteor.Error(403, "Only admins can unsuspend other users.");
+      }
 
-      this.connection.sandstormDb.unsuspendAccount(userId || Meteor.userId());
+      this.connection.sandstormDb.unsuspendAccount(userId, Meteor.userId());
+    },
+
+    unsuspendOwnAccount() {
+      if (!Meteor.userId()) {
+        throw new Meteor.Error(403, "Must be logged in to unsuspend an account");
+      }
+
+      this.connection.sandstormDb.unsuspendAccount(Meteor.userId());
     },
   });
 }

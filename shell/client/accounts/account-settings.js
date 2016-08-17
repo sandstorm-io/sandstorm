@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { formatFutureTime } from "/imports/dates.js";
+import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants.js";
+
 Template.sandstormAccountSettings.onCreated(function () {
   this._isLinkingNewIdentity = new ReactiveVar(false);
   this._selectedIdentityId = new ReactiveVar();
@@ -243,6 +246,16 @@ Template.sandstormAccountSettings.events({
     });
   },
 
+  "click button.suspend-account": function (ev, instance) {
+    Meteor.call("suspendOwnAccount", function (err) {
+      if (err) {
+        instance._actionCompleted.set({ error: err });
+      } else {
+        instance._actionCompleted.set({ success: "suspended account successfully." });
+      }
+    });
+  },
+
   "click button.make-primary": function (ev, instance) {
     Meteor.call("setPrimaryEmail", ev.target.getAttribute("data-email"));
   },
@@ -340,6 +353,28 @@ const submitProfileForm = function (form, cb) {
   // Pass off to payments module.
   BlackrockPayments.processOptins(form);
 };
+
+Template.accountSuspended.helpers({
+  timeUntilDeletion: function () {
+    return formatFutureTime(Meteor.user().suspended.timestamp.getTime()
+      + ACCOUNT_DELETION_SUSPENSION_TIME - new Date());
+  },
+});
+
+Template.accountSuspended.events({
+  "click button.restore-account": function () {
+    Meteor.call("unsuspendOwnAccount", function (err) {
+      if (err) {
+        console.error(err);
+        alert(err); // TDOO(someday): better error handling
+      }
+    });
+  },
+
+  "click button.logout": function () {
+    Meteor.logout();
+  },
+});
 
 Template._accountProfileEditor.onCreated(function () {
   this.submitProfileForm = submitProfileForm; // Stored on the object so setup wizard can call it directly.

@@ -1,3 +1,6 @@
+import { formatFutureTime } from "/imports/dates.js";
+import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants.js";
+
 Template.newAdminUserDetailsIdentityTableRow.helpers({
   isOrganizationMember(identity) {
     return globalDb.isIdentityInOrganization(identity);
@@ -73,6 +76,9 @@ Template.newAdminUserDetails.onCreated(function () {
   this.deleteSubmitting = new ReactiveVar(false);
   this.showDeletePopup = new ReactiveVar(false);
   this.deleteError = new ReactiveVar(null);
+  this.suspendSubmitting = new ReactiveVar(false);
+  this.showSuspendPopup = new ReactiveVar(false);
+  this.suspendError = new ReactiveVar(null);
 
   this.isReady = () => {
     // We guard on Router.current().params.userId existing because Iron Router and Blaze
@@ -229,6 +235,45 @@ Template.newAdminUserDetails.helpers({
       instance.showDeletePopup.set(false);
     };
   },
+
+  showSuspendPopup() {
+    const instance = Template.instance();
+    return instance.showSuspendPopup.get();
+  },
+
+  suspendError() {
+    const instance = Template.instance();
+    return instance.suspendError.get();
+  },
+
+  suspendSubmitting() {
+    const instance = Template.instance();
+    return instance.suspendSubmitting.get();
+  },
+
+  cancelSuspend() {
+    const instance = Template.instance();
+    return () => {
+      instance.showSuspendPopup.set(false);
+    };
+  },
+
+  accountDeleting() {
+    const instance = Template.instance();
+    const account = instance.targetAccount();
+
+    if (!account.suspended || !account.suspended.willDelete) return false;
+
+    return formatFutureTime(account.suspended.timestamp.getTime()
+      + ACCOUNT_DELETION_SUSPENSION_TIME - new Date());
+  },
+
+  accountSuspended() {
+    const instance = Template.instance();
+    const account = instance.targetAccount();
+
+    return !!account.suspended;
+  },
 });
 
 Template.newAdminUserDetails.events({
@@ -267,12 +312,54 @@ Template.newAdminUserDetails.events({
 
   "click [name=\"delete-account-real\"]"(evt, instance) {
     instance.deleteSubmitting.set(true);
-    Meteor.call("deleteAccount", instance.userId, (err) => {
+    Meteor.call("suspendAccount", instance.userId, true, (err) => {
       instance.deleteSubmitting.set(false);
       if (err) {
         instance.deleteError.set(err.message);
       } else {
-        Router.go("newAdminUsers");
+        instance.showDeletePopup.set(false);
+      }
+    });
+  },
+
+  "click [name=\"suspend-account\"]"(evt, instance) {
+    instance.showSuspendPopup.set(true);
+    instance.suspendError.set(null);
+  },
+
+  "click [name=\"cancel-suspend-account\"]"(evt, instance) {
+    instance.showSuspendPopup.set(false);
+  },
+
+  "click [name=\"suspend-account-real\"]"(evt, instance) {
+    instance.suspendSubmitting.set(true);
+    Meteor.call("suspendAccount", instance.userId, false, (err) => {
+      instance.suspendSubmitting.set(false);
+      if (err) {
+        instance.suspendError.set(err.message);
+      } else {
+        instance.showSuspendPopup.set(false);
+      }
+    });
+  },
+
+  "click [name=\"unsuspend-account\"]"(evt, instance) {
+    instance.formState.set({
+      state: "submitting",
+      message: undefined,
+    });
+    Meteor.call("unsuspendAccount", instance.userId, (err) => {
+      instance.suspendSubmitting.set(false);
+      if (err) {
+        instance.formState.set({
+          state: "error",
+          message: err.message,
+        });
+      } else {
+        instance.formState.set({
+          state: "success",
+          message: "Account is no longer suspended.",
+        });
       }
     });
   },

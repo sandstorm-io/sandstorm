@@ -63,8 +63,13 @@ grains can only be seen by users logged-in as a member of your organization. Thi
 
 - Unauthenticated (aka anonymous) users cannot view grains, even if they have a sharing link.
 
-- Visitors (logged-in users who have no special permissions on your server) cannot view grains, even
-  if they have a sharing link.
+- When a user attempts to create an account or sign in, Sandstorm validates that they are part
+  of your organization. If not, then they may not create an account or sign in. This prevents
+  [Visitors](guide.md) from using their accounts.
+
+- Security note: at the moment, this setting only applies to new logins. If a user was already signed
+  in when you first enabled this option, the user would be able to continue to use their account even
+  if they're not a member of your organization.
 
 You can **make all organization users visible to each other.** This setting automatically adds
 users within the organization to each other's contact list so that they can share grains with each

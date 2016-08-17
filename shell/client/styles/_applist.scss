@@ -1,7 +1,7 @@
 .app-list {
   overflow: auto; // Needed to make the background span everything on screen.
   @media #{$desktop} {
-    padding: 0px 32px;
+    padding: 32px;
   }
   @media #{$mobile} {
     padding: 0px 8px;
@@ -9,12 +9,18 @@
   background-color: $applist-background-color;
   color: $applist-foreground-color;
   >h1 {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+
+    margin-top: 0px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid $applist-rule-color;
+    margin-bottom: 12px;
+
     font-size: 24pt;
     font-weight: 400;
-    @media #{$mobile} {
-      display: inline-block;
-      vertical-align: middle;
-    }
   }
   .hide {
     // !important used to override other classes that might assign e.g. display: block
@@ -22,19 +28,12 @@
   }
   >.search-row {
     position: relative;
-    @media #{$desktop} {
-      margin-bottom: 24px;
-      width: 100%;
-      vertical-align: top;
-    }
-    @media #{$mobile} {
-      margin-bottom: 0;
-      display: inline-block;
-      width: calc(100% - 100px);
-      vertical-align: middle;
-    }
+    margin-bottom: 8px;
     >label {
-      display: inline-block;
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: flex-start;
       >span.search-icon {
         @extend %pseudo-img-tag;
         background-image: url("/search.svg");
@@ -46,9 +45,9 @@
         vertical-align: top;
       }
       >input.search-bar {
+        flex: 1 1 auto;
         display: inline-block;
         vertical-align: top;
-        width: 33%;
         font-size: 16pt;
         height: 32px;
         background-color: $grainlist-searchbar-background-color;
@@ -56,27 +55,7 @@
         &:focus {
           border: 1px solid $grainlist-searchbar-outline-color-focus;
         }
-        @media #{$desktop} {
-          width: calc(100% - 36px);
-        }
-        @media #{$mobile} {
-          width: calc(100% - 60px);
-        }
       }
-      @media #{$desktop} {
-        width: 50%;
-      }
-    }
-    >button.toggle-uninstall, >button.upload-button {
-      @extend %button-base;
-      @extend %button-secondary;
-      display: inline-block;
-      float: right;
-      vertical-align: top;
-      font-size: 14pt;
-      line-height: 16pt;
-      height: 32px;
-      margin-left: 4px;
     }
   }
   >.popular-container {
@@ -91,9 +70,10 @@
     }
   }
   >h2, >.popular-container>h2 {
+    display: block;
     font-weight: 400;
     border-bottom: 1px solid $applist-rule-color;
-    clear: both;
+    margin-top: 0px;
     @media #{$mobile} {
       margin-bottom: 8px;
     }
@@ -105,7 +85,6 @@
     // Browsers render button contents vertically-centered by default.
     // I can't figure out how to suggest that the browser align contents to the top instead, so I
     // specify position: relative here and position: absolute for the image and text label.
-    // Strictly speaking, you're not supposed to have a <button> with a child <img>.  Oh well.
     position: relative;
     @media #{$desktop} {
       width: 148px;

@@ -1,7 +1,7 @@
 # How It Works
 
 * Sandstorm's server-side sandboxing is based on the same underlying Linux kernel features as LXC and Docker.  We use the system calls directly for finer-grained control.
-* (Planned) The kernel attack surface is reduced using seccomp-bpf to block and/or virtualize system calls.
+* The kernel attack surface is reduced using seccomp-bpf to block system calls.
 * procfs, sysfs, etc. are not mounted in the sandbox, and only a minimal set of devices are available.
 * (Planned) On the client side, apps run in a sandboxed iframe employing the `Content-Security-Policy` header to prevent them from sending any kind of network communication to any server other than their own.
 * All communication between the sandboxed server and the outside world takes place through a single [Cap'n Proto](http://capnproto.org) RPC socket which the app's root process receives as file descriptor #3.  We've provided a program, `sandstorm-http-bridge`, which can receive HTTP-over-RPC requests on this socket and proxy them to a regular HTTP server running in the sandbox.

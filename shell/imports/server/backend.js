@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
+
 const Capnp = Npm.require("capnp");
 const Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
 const Crypto = Npm.require("crypto");
@@ -46,8 +48,6 @@ waitPromise = function (promise) {
   return promiseToFuture(promise).wait();
 };
 
-SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
-
 let storageUsageUnimplemented = false;
 
 function generateSessionId(grainId, userId, packageSalt, clientSalt) {
@@ -71,7 +71,7 @@ const shouldRestartGrain = (error, retryCount) => {
   return error.kjType === "disconnected" && retryCount < 1;
 };
 
-SandstormBackend = class SandstormBackend {
+class SandstormBackend {
   constructor(db, backendCap) {
     this._db = db;
     this._backendCap = backendCap;
@@ -318,5 +318,4 @@ SandstormBackend = class SandstormBackend {
   }
 };
 
-// proxy.js and others want this to exist
-SandstormBackend.shouldRestartGrain = shouldRestartGrain;
+export { SandstormBackend, shouldRestartGrain };

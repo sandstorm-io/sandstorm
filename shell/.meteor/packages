@@ -30,7 +30,6 @@ reactive-var@1.0.10
 reactive-dict@1.1.8
 sandstorm-autoupdate-apps
 sandstorm-db
-sandstorm-backend
 sandstorm-identicons
 sandstorm-permissions
 sandstorm-ui-topbar

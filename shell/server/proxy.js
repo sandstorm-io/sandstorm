@@ -16,6 +16,7 @@
 
 import Bignum from "bignum";
 import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
+import { SandstormBackend, shouldRestartGrain } from "/imports/server/backend.js";
 const Crypto = Npm.require("crypto");
 const ChildProcess = Npm.require("child_process");
 const Fs = Npm.require("fs");
@@ -1475,7 +1476,7 @@ class Proxy {
     // returning a promise that resolves once restarted. Otherwise, just rethrow the error.
     // `retryCount` should be incremented for every successful retry as part of the same request;
     // we only want to retry once.
-    if (SandstormBackend.shouldRestartGrain(error, retryCount)) {
+    if (shouldRestartGrain(error, retryCount)) {
       this.resetConnection();
       return inMeteor(() => {
         this.supervisor = globalBackend.continueGrain(this.grainId).supervisor;
@@ -1984,7 +1985,7 @@ class Proxy {
           err.kjType = "unimplemented";
         }
 
-        if (SandstormBackend.shouldRestartGrain(err, 0)) {
+        if (shouldRestartGrain(err, 0)) {
           // This is the kind of error that indicates we should retry. Note that we passed 0 for
           // the retry count above because we were just checking if this is a retriable error (vs.
           // possibly a method-not-implemented error); maybeRetryAfterError() will check again with

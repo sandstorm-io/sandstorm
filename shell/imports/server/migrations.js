@@ -122,9 +122,8 @@ const fetchProfilePictures = function (db, backend) {
 };
 
 const assignPlans = function (db, backend) {
-  if (db.isReferralEnabled() && SandstormDb.paymentsMigrationHook) {
-    SandstormDb.paymentsMigrationHook(db.collections.signupKeys, db.collections.plans.find().fetch());
-  }
+  // This was a one-time migration intended to be applied on Oasis to existing users.
+  // It has run, so we only need this stub function here.
 };
 
 const removeKeyrings = function (db, backend) {
@@ -466,9 +465,8 @@ const sendReferralNotifications = function (db, backend) {
 };
 
 const assignBonuses = function (db, backend) {
-  if (db.isReferralEnabled() && SandstormDb.bonusesMigrationHook) {
-    SandstormDb.bonusesMigrationHook();
-  }
+  // This was a one-time migration intended to be applied on Oasis to existing users.
+  // It has run, so we only need this stub function here.
 };
 
 const splitSmtpUrl = function (db, backend) {

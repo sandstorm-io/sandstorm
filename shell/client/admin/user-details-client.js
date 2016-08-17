@@ -70,6 +70,9 @@ Template.newAdminUserDetails.onCreated(function () {
     state: "default", // Also: submitting, error, success
     message: undefined,
   });
+  this.deleteSubmitting = new ReactiveVar(false);
+  this.showDeletePopup = new ReactiveVar(false);
+  this.deleteError = new ReactiveVar(null);
 
   this.isReady = () => {
     // We guard on Router.current().params.userId existing because Iron Router and Blaze
@@ -204,6 +207,28 @@ Template.newAdminUserDetails.helpers({
     const formState = instance.formState.get();
     return formState.state === "submitting";
   },
+
+  showDeletePopup() {
+    const instance = Template.instance();
+    return instance.showDeletePopup.get();
+  },
+
+  deleteError() {
+    const instance = Template.instance();
+    return instance.deleteError.get();
+  },
+
+  deleteSubmitting() {
+    const instance = Template.instance();
+    return instance.deleteSubmitting.get();
+  },
+
+  cancelDelete() {
+    const instance = Template.instance();
+    return () => {
+      instance.showDeletePopup.set(false);
+    };
+  },
 });
 
 Template.newAdminUserDetails.events({
@@ -228,6 +253,27 @@ Template.newAdminUserDetails.events({
     instance.setUserOptions({
       signupKey: false,
       isAdmin: false,
+    });
+  },
+
+  "click [name=\"delete-account\"]"(evt, instance) {
+    instance.showDeletePopup.set(true);
+    instance.deleteError.set(null);
+  },
+
+  "click [name=\"cancel-delete-account\"]"(evt, instance) {
+    instance.showDeletePopup.set(false);
+  },
+
+  "click [name=\"delete-account-real\"]"(evt, instance) {
+    instance.deleteSubmitting.set(true);
+    Meteor.call("deleteAccount", instance.userId, (err) => {
+      instance.deleteSubmitting.set(false);
+      if (err) {
+        instance.deleteError.set(err.message);
+      } else {
+        Router.go("newAdminUsers");
+      }
     });
   },
 });

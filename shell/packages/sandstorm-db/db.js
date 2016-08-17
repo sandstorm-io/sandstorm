@@ -2582,6 +2582,58 @@ if (Meteor.isServer) {
   };
 }
 
+if (Meteor.isServer) {
+  SandstormDb.prototype.deleteIdentity = function (identityId) {
+    this.removeApiTokens({ "owner.user.identityId": identityId });
+    this.collections.contacts.remove({ identityId: identityId });
+    Meteor.users.remove({ _id: identityId });
+  };
+
+  SandstormDb.prototype.deleteAccount = function (userId, backend) {
+    const _this = this;
+    const user = Meteor.users.findOne({ _id: userId });
+    this.deleteGrains({ userId: userId }, backend, "grain");
+    this.collections.userActions.remove({ userId: userId });
+    this.collections.notifications.remove({ userId: userId });
+    user.loginIdentities.forEach((identity) => {
+      if (Meteor.users.find({ $or: [
+        { "loginIdentities.id": identity.id },
+        { "nonloginIdentities.id": identity.id },
+      ], }).count() === 1) {
+        // If this is the only account with the identity, then delete it
+        _this.deleteIdentity(identity.id);
+      }
+    });
+    user.nonloginIdentities.forEach((identity) => {
+      if (Meteor.users.find({ $or: [
+        { "loginIdentities.id": identity.id },
+        { "nonloginIdentities.id": identity.id },
+      ], }).count() === 1) {
+        // If this is the only account with the identity, then delete it
+        _this.deleteIdentity(identity.id);
+      }
+    });
+    this.collections.contacts.remove({ ownerId: userId });
+    backend.deleteUser(userId);
+    Meteor.users.remove({ _id: userId });
+  };
+
+  Meteor.methods({
+    deleteAccount(userId) {
+      check(userId, String);
+
+      if (userId !== Meteor.userId()) {
+        if (!isAdmin()) {
+          throw new Meteor.Error(403, "Only admins can delete other users.");
+        }
+      }
+
+      const connection = this.connection;
+      connection.sandstormDb.deleteAccount(userId, connection.sandstormBackend);
+    },
+  });
+}
+
 Meteor.methods({
   addUserActions(packageId) {
     check(packageId, String);

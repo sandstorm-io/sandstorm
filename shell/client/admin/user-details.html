@@ -1,5 +1,5 @@
 <template name="newAdminUserDetailsIdentityTableRow">
-{{!-- Expects: 
+{{!-- Expects:
          identity: Object
   isLoginIdentity: Boolean
      primaryEmail: String.  Account's primary contact address.
@@ -144,7 +144,7 @@
 </template>
 
 <template name="newAdminUserDetailsIdentityTable">
-{{!-- Expects: 
+{{!-- Expects:
   account: Object
 --}}
   <div class="admin-user-identity-list" role="grid">
@@ -284,6 +284,46 @@
 
     <h2>Identities</h2>
     {{> newAdminUserDetailsIdentityTable account=account }}
+
+    <h2>Status</h2>
+
+    <div style="display: flex; flex-direction: row;">
+      Active
+    </div>
+    <form class="standard-form">
+      <div class="button-row">
+        <button type="button" name="delete-account">Delete...</button>
+      </div>
+    </form>
+
+    {{#if showDeletePopup}}
+      {{#modalDialogWithBackdrop onDismiss=cancelDelete}}
+        {{#if deleteError}}
+          {{#focusingErrorBox}}
+            {{deleteError}}
+          {{/focusingErrorBox}}
+        {{/if}}
+
+        <h2>Delete {{guessUserName}}</h2>
+        <p>Deleting this user account will:</p>
+        <ul>
+          <li>Permanently delete any grains created by {{guessUserName}}</li>
+          <li>Revoke any sharing links created by {{guessUserName}}</li>
+          <li>Remove {{guessUserName}} from all users' contact lists</li>
+          <li>Delete all identities owned by this account (except identities associated with another account)</li>
+        </ul>
+        <p>
+          <strong>Account deletion is permanent and irreversible.</strong>  Please be certain.
+        </p>
+        <form class="standard-form">
+          <div class="button-row">
+            <button class="danger" type="button"
+             disabled={{deleteSubmitting}} name="delete-account-real">Delete account</button>
+            <button type="button" name="cancel-delete-account">Cancel</button>
+          </div>
+        </form>
+      {{/modalDialogWithBackdrop}}
+    {{/if}}
 
     {{/with}}
   {{else}}

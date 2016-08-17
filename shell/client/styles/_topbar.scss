@@ -464,10 +464,18 @@ body>.topbar {
         display: block;
 
         >button.show-popup {
-          padding: 0 8px;
+          padding-left: 8px;
+          padding-right: 8px;
           display: block;
+          &.has-picture {
+            padding-left: 32px;
+            background-position: 4px center;
+            background-size: 24px 24px;
+            background-repeat: no-repeat;
+          }
         }
       }
+
       @media #{$mobile} {
         >button.show-popup {
           font-weight: normal;

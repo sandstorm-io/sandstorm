@@ -90,6 +90,20 @@ Template.accountButtons.helpers({
     SandstormDb.fillInProfileDefaults(user);
     return user.profile.name;
   },
+
+  profilePictureUrl() {
+    const currentIdentityId = getActiveIdentityId(this.grains);
+    const user = Meteor.users.findOne({ _id: currentIdentityId });
+    if (currentIdentityId && !user) {
+      return "";
+    }
+
+    // TODO(someday): obtain an incognito icon, then return it here.
+    if (!user) return "";
+
+    SandstormDb.fillInPictureUrl(user);
+    return user.profile.pictureUrl;
+  },
 });
 
 function getServices() {

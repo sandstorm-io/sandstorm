@@ -546,6 +546,10 @@ body>.main-content>.account {
           @extend .icon;
         }
       }
+
+      &.delete-account {
+        @extend %button-danger;
+      }
     }
   }
 

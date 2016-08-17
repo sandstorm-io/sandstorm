@@ -246,8 +246,8 @@ Template.sandstormAccountSettings.events({
     });
   },
 
-  "click button.suspend-account": function (ev, instance) {
-    Meteor.call("suspendOwnAccount", function (err) {
+  "click button.delete-account": function (ev, instance) {
+    Meteor.call("deleteOwnAccount", function (err) {
       if (err) {
         instance._actionCompleted.set({ error: err });
       } else {

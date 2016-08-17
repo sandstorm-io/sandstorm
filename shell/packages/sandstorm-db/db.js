@@ -2738,9 +2738,9 @@ if (Meteor.isServer) {
       this.connection.sandstormDb.suspendAccount(userId, Meteor.userId(), willDelete);
     },
 
-    suspendOwnAccount() {
+    deleteOwnAccount() {
       if (!Meteor.userId()) {
-        throw new Meteor.Error(403, "Must be logged in to suspend an account");
+        throw new Meteor.Error(403, "Must be logged in to delete an account");
       }
 
       this.connection.sandstormDb.suspendAccount(Meteor.userId(), null, true);

@@ -13,7 +13,7 @@ const Future = Npm.require("fibers/future");
 const Url = Npm.require("url");
 const Crypto = Npm.require("crypto");
 
-const updateLoginStyleToRedirect = function(db, backend) {
+const updateLoginStyleToRedirect = function (db, backend) {
   const configurations = Package["service-configuration"].ServiceConfiguration.configurations;
   ["google", "github"].forEach(function (serviceName) {
     const config = configurations.findOne({ service: serviceName });
@@ -23,7 +23,7 @@ const updateLoginStyleToRedirect = function(db, backend) {
   });
 };
 
-const enableLegacyOAuthProvidersIfNotInSettings = function(db, backend) {
+const enableLegacyOAuthProvidersIfNotInSettings = function (db, backend) {
   // In the before time, Google and Github login were enabled by default.
   //
   // This actually didn't make much sense, required the first user to configure
@@ -54,7 +54,7 @@ const enableLegacyOAuthProvidersIfNotInSettings = function(db, backend) {
   });
 };
 
-const denormalizeInviteInfo = function(db, backend) {
+const denormalizeInviteInfo = function (db, backend) {
   // When a user is invited via a signup token, the `signupKey` field of their user table entry
   // has always been populated to indicate the key they used. This points into the SignupKeys table
   // which has more information about the key, namely a freeform note entered by the admin when
@@ -84,7 +84,7 @@ const denormalizeInviteInfo = function(db, backend) {
   });
 };
 
-const mergeRoleAssignmentsIntoApiTokens = function(db, backend) {
+const mergeRoleAssignmentsIntoApiTokens = function (db, backend) {
   db.collections.roleAssignments.find().forEach(function (roleAssignment) {
     db.collections.apiTokens.insert({
       grainId: roleAssignment.grainId,
@@ -102,12 +102,12 @@ const mergeRoleAssignmentsIntoApiTokens = function(db, backend) {
   });
 };
 
-const fixOasisStorageUsageStats = function(db, backend) {};
+const fixOasisStorageUsageStats = function (db, backend) {};
 // This migration only pertained to Oasis and it was successfully applied there. Since it referred
 // to some global variables that we later wanted to remove and/or rename, we've since replaced it
 // with a no-op.
 
-const fetchProfilePictures = function(db, backend) {
+const fetchProfilePictures = function (db, backend) {
   db.collections.users.find({}).forEach(function (user) {
     const url = userPictureUrl(user);
     if (url) {
@@ -120,13 +120,13 @@ const fetchProfilePictures = function(db, backend) {
   });
 };
 
-const assignPlans = function(db, backend) {
+const assignPlans = function (db, backend) {
   if (db.isReferralEnabled() && SandstormDb.paymentsMigrationHook) {
     SandstormDb.paymentsMigrationHook(db.collections.signupKeys, db.collections.plans.find().fetch());
   }
 };
 
-const removeKeyrings = function(db, backend) {
+const removeKeyrings = function (db, backend) {
   // These blobs full of public keys were not intended to find their way into mongo and while
   // harmless they slow things down because they're huge. Remove them.
   db.collections.packages.update({ "manifest.metadata.pgpKeyring": { $exists: true } },
@@ -134,7 +134,7 @@ const removeKeyrings = function(db, backend) {
       { multi: true });
 };
 
-const useLocalizedTextInUserActions = function(db, backend) {
+const useLocalizedTextInUserActions = function (db, backend) {
   function toLocalizedText(newObj, oldObj, field) {
     if (field in oldObj) {
       if (typeof oldObj[field] === "string") {
@@ -172,7 +172,7 @@ const verifyAllPgpSignatures = function (db, backend) {
   });
 };
 
-const splitUserIdsIntoAccountIdsAndIdentityIds = function(db, backend) {
+const splitUserIdsIntoAccountIdsAndIdentityIds = function (db, backend) {
   db.collections.users.find().forEach(function (user) {
     const identity = {};
     let serviceUserId;
@@ -259,13 +259,13 @@ const splitUserIdsIntoAccountIdsAndIdentityIds = function(db, backend) {
   // form of API token.
 };
 
-const appUpdateSettings = function(db, backend) {
+const appUpdateSettings = function (db, backend) {
   db.collections.settings.insert({ _id: "appMarketUrl", value: "https://apps.sandstorm.io" });
   db.collections.settings.insert({ _id: "appIndexUrl", value: "https://app-index.sandstorm.io" });
   db.collections.settings.insert({ _id: "appUpdatesEnabled", value: true });
 };
 
-const moveDevAndEmailLoginDataIntoIdentities = function(db, backend) {
+const moveDevAndEmailLoginDataIntoIdentities = function (db, backend) {
   db.collections.users.find().forEach(function (user) {
     if (user.identities.length !== 1) {
       throw new Error("User does not have exactly one identity: ", user);
@@ -301,7 +301,7 @@ const moveDevAndEmailLoginDataIntoIdentities = function(db, backend) {
   });
 };
 
-const repairEmailIdentityIds = function(db, backend) {
+const repairEmailIdentityIds = function (db, backend) {
   db.collections.users.find({ "identities.service.emailToken": { $exists: 1 } }).forEach(function (user) {
     if (user.identities.length !== 1) {
       throw new Error("User does not have exactly one identity: ", user);
@@ -334,7 +334,7 @@ const repairEmailIdentityIds = function(db, backend) {
   });
 };
 
-const splitAccountUsersAndIdentityUsers = function(db, backend) {
+const splitAccountUsersAndIdentityUsers = function (db, backend) {
   db.collections.users.find({ identities: { $exists: true } }).forEach(function (user) {
     if (user.identities.length !== 1) {
       throw new Error("User does not have exactly one identity: ", user);
@@ -385,7 +385,7 @@ const splitAccountUsersAndIdentityUsers = function(db, backend) {
   });
 };
 
-const populateContactsFromApiTokens = function(db, backend) {
+const populateContactsFromApiTokens = function (db, backend) {
   db.collections.apiTokens.find({
     "owner.user.identityId": { $exists: 1 },
     accountId: { $exists: 1 },
@@ -405,7 +405,7 @@ const populateContactsFromApiTokens = function(db, backend) {
   });
 };
 
-const cleanUpApiTokens = function(db, backend) {
+const cleanUpApiTokens = function (db, backend) {
   // The `splitUserIdsIntoAccountIdsAndIdentityIds()` migration only added `identityId` in cases
   // where the user still existed in the database.
   db.collections.apiTokens.remove({
@@ -447,13 +447,13 @@ const cleanUpApiTokens = function(db, backend) {
   }).forEach(repairChain);
 };
 
-const initServerTitleAndReturnAddress = function(db, backend) {
+const initServerTitleAndReturnAddress = function (db, backend) {
   const hostname = Url.parse(process.env.ROOT_URL).hostname;
   db.collections.settings.insert({ _id: "serverTitle", value: hostname });
   db.collections.settings.insert({ _id: "returnAddress", value: "no-reply@" + hostname });
 };
 
-const sendReferralNotifications = function(db, backend) {
+const sendReferralNotifications = function (db, backend) {
   if (db.isReferralEnabled()) {
     db.collections.users.find({
       loginIdentities: { $exists: true },
@@ -464,13 +464,13 @@ const sendReferralNotifications = function(db, backend) {
   }
 };
 
-const assignBonuses = function(db, backend) {
+const assignBonuses = function (db, backend) {
   if (db.isReferralEnabled() && SandstormDb.bonusesMigrationHook) {
     SandstormDb.bonusesMigrationHook();
   }
 };
 
-const splitSmtpUrl = function(db, backend) {
+const splitSmtpUrl = function (db, backend) {
   const smtpUrlSetting = db.collections.settings.findOne({ _id: "smtpUrl" });
   const smtpUrl = smtpUrlSetting ? smtpUrlSetting.value : process.env.MAIL_URL;
   const returnAddress = db.collections.settings.findOne({ _id: "returnAddress" });
@@ -517,7 +517,7 @@ const splitSmtpUrl = function(db, backend) {
   db.collections.settings.remove({ _id: "smtpUrl" });
 };
 
-const smtpPortShouldBeNumber = function(db, backend) {
+const smtpPortShouldBeNumber = function (db, backend) {
   const entry = db.collections.settings.findOne({ _id: "smtpConfig" });
   if (entry) {
     const setting = entry.value;
@@ -528,7 +528,7 @@ const smtpPortShouldBeNumber = function(db, backend) {
   }
 };
 
-const consolidateOrgSettings = function(db, backend) {
+const consolidateOrgSettings = function (db, backend) {
   const settings = db.collections.settings;
   const orgGoogleDomain = settings.findOne({ _id: "organizationGoogle" });
   const orgEmailDomain = settings.findOne({ _id: "organizationEmail" });
@@ -559,7 +559,7 @@ const consolidateOrgSettings = function(db, backend) {
   settings.remove({ _id: "organizationSaml" });
 };
 
-const unsetSmtpDefaultHostnameIfNoUsersExist = function(db, backend) {
+const unsetSmtpDefaultHostnameIfNoUsersExist = function (db, backend) {
   // We don't actually want to have the default hostname "localhost" set.
   // If the user has already finished configuring their server, then this migration should do
   // nothing (since we might break their deployment), but for new installs (which will have no users
@@ -576,7 +576,7 @@ const unsetSmtpDefaultHostnameIfNoUsersExist = function(db, backend) {
   }
 };
 
-const extractLastUsedFromApiTokenOwner = function(db, backend) {
+const extractLastUsedFromApiTokenOwner = function (db, backend) {
   // We used to store lastUsed as a field on owner.user.  It makes more sense to store lastUsed on
   // the apiToken as a whole.  This migration hoists such values from owner.user onto the apiToken
   // itself.
@@ -589,7 +589,7 @@ const extractLastUsedFromApiTokenOwner = function(db, backend) {
   });
 };
 
-const setUpstreamTitles = function(db, backend) {
+const setUpstreamTitles = function (db, backend) {
   // Initializes the `upstreamTitle` and `renamed` fields of `ApiToken.owner.user`.
 
   const apiTokensRaw = db.collections.apiTokens.rawCollection();
@@ -628,7 +628,7 @@ const setUpstreamTitles = function(db, backend) {
   });
 };
 
-const markAllRead = function(db, backend) {
+const markAllRead = function (db, backend) {
   // Mark as "read" all grains and tokens that predate the creation of read/unread status.
   // Otherwise it's pretty annoying to see all your old grains look like they have activity.
 
@@ -638,7 +638,7 @@ const markAllRead = function(db, backend) {
       { multi: true });
 };
 
-const clearAppIndex = function(db, backend) {
+const clearAppIndex = function (db, backend) {
   // Due to a bug in the app update code, some app update notifications that the user accepted
   // around July 9-16, 2016 may not have applied. We have no way of knowing exactly which updates
   // the user accepted but didn't receive. Instead, to recover, we are clearing the local cache of
@@ -650,7 +650,7 @@ const clearAppIndex = function(db, backend) {
   db.collections.appIndex.remove({});
 };
 
-const assignEmailVerifierIds = function(db, backend) {
+const assignEmailVerifierIds = function (db, backend) {
   // Originally, the ID of an EmailVerifier was actually the _id of the root token from which it
   // was restored. This was broken, though: Conceptually, it meant that you couldn't have a working
   // EmailVerifier that had not been restore()d from disk. In practice, that wasn't a problem due
@@ -692,7 +692,7 @@ const startPreinstallingApps = function (db, backend) {
   }
 };
 
-const setNewServer = function(db, backend) {
+const setNewServer = function (db, backend) {
   // This migration only applies to "old" servers. New servers will set
   // new_server_migrations_applied to false before any migrations run.
   if (!db.collections.migrations.findOne({ _id: "new_server_migrations_applied" })) {

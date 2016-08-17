@@ -627,6 +627,17 @@ body>.topbar {
             color: inherit;
           }
         }
+        &.navitem-open-grain, &.navitem-create-grain {
+          background-repeat: no-repeat;
+          background-position: 12px center;
+          background-size: 24px 24px;
+        }
+        &.navitem-open-grain {
+          background-image: url('/open-grain.svg');
+        }
+        &.navitem-create-grain {
+          background-image: url('/apps.svg');
+        }
       }
     }
     margin: 0;

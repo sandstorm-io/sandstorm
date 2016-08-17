@@ -59,7 +59,7 @@ Read about how grains work and how they affect your app.
 
 - **Grain URLs and the grain-frame**: [URLs, domain names, page titles](developing/path.md)
 - **Sandstorm system architecture**: [How Sandstorm works](using/how-it-works.md) | [Grain isolation and other security practices in Sandstorm](using/security-practices.md)
-- **How to choose the granularity for your app**: []
+- **How to choose the granularity for your app**: [granularity](developing/handbook.md#is-granular)
 
 ---
 

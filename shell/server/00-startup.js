@@ -47,4 +47,4 @@ SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
   SandstormAutoupdateApps.updateAppIndex(globalDb);
 });
 
-Meteor.startup(() => { migrateToLatest(globalDb); });
+Meteor.startup(() => { migrateToLatest(globalDb, globalBackend); });

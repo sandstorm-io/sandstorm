@@ -98,7 +98,6 @@ Template.accountButtons.helpers({
       return "";
     }
 
-    // TODO(someday): obtain an incognito icon, then return it here.
     if (!user) return "/incognito.svg";
 
     SandstormDb.fillInPictureUrl(user);

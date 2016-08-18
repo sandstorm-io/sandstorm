@@ -110,7 +110,7 @@ but you find yourself doing a fresh install of Sandstorm, you can use our **emai
 system.
 
 You won't need any files from the old Sandstorm install. Instead, run the Sandstorm install script
-(which I call `install.sh`) on a new server; follow the prompts to **recover a domain** by typing
+(which we call `install.sh`) on a new server; follow the prompts to **recover a domain** by typing
 `help` at the Sandcats prompts.
 
 **Overview.** This process will:

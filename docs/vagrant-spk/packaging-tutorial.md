@@ -309,7 +309,7 @@ You can see how large it is by running the following command:
 du -h ~/projects/package.spk
 ```
 
-On my system, I see:
+You will see output like this.
 
 ```bash
 16M

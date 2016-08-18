@@ -60,3 +60,8 @@ If you have a tar-based backup of `/opt/sandstorm`, the easiest way to restore i
 - Visit your Sandstorm server and make sure everything still works.
 
 - Remove the now-useless `/opt/sandstorm.empty` directory.
+
+You can also use the [Docker container
+documentation](../install.md#option-6-using-sandstorm-within-docker) to run your snapshot of
+`/opt/sandstorm`. You will need to create a Docker volume with your backup of `/opt/sandstorm`, and
+it will continue to execute until you stop the Docker container.

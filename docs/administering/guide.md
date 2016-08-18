@@ -59,6 +59,33 @@ Within `/opt/sandstorm` there are a few essential files and directories.
   dependencies. To install your own modified version, read our instructions on [building Sandstorm
   from source](../install.md#option-4-installing-from-source).
 
+### Processes and syscalls: Getting under the hood of Sandstorm
+
+When Sandstorm is running, it launches the **bundle runner,** a tool that ensures other components
+of Sandstorm are properly launched. The bundle runner starts by containerizing itself, using the
+Linux syscalls related to [namespaces, seccomp, and so forth.](../using/security-practices.md)
+
+The bundle runner ensures that other components of Sandstorm launch properly, including:
+
+- The auto-updater, which executes curl periodically to check for new versions of Sandstorm.
+
+- The Sandstorm shell, a nodejs process which serves HTTP(S) for visitors to your Sandstorm server.
+
+- MongoDB, the database used by Sandstorm.
+
+- The Sandstorm backend, a C++ program which itself uses namespace syscalls to launch grains.
+
+- The server monitor, which restarts the shell, MongoDB, and/or the Sandstorm backend if any of them
+  abruptly exit.
+
+If a server is idle, these are the only Sandstorm-related processes on a server.
+
+When a user navigates within the Sandstorm shell to launch a grain, a process tree is created
+starting at `supervisor`. The per-grain supervisor containerizes and launches the processes
+specified as the grain's entry point.
+
+To manually inspect these processes, consider using `strace` and `ps` on a running Sandstorm server.
+
 ## New versions and applying updates
 
 ### Sandstorm itself

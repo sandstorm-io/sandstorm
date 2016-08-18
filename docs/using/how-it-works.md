@@ -12,6 +12,9 @@
 * App servers are aggressively killed off as soon as the user closes the browser tab, then restarted when the user returns later.
 * Packages are cryptographically signed.  Packages signed with the same key represent versions of the same app, and are thus allowed to replace older versions -- although the user must still confirm these upgrades.
 
+To read more about how Sandstorm works from an system administrator's perspective, see the
+[Sandstorm administrator's guide.](../admin/guide.md)
+
 ## HTTP Communication Overview
 
 While web clients speak HTTP to Sandstorm, all communications between Sandstorm
@@ -73,4 +76,3 @@ bridge is not needed.
       websession -- app;
     }
 %}
-

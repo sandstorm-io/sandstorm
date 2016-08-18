@@ -127,11 +127,11 @@ if (allowDemo) {
     // is typically 6-24 hours delayed from reality, so if an app is newly-available
     // in the app market, it won't be in the app index. Therefore we don't bail-out if the app
     // is missing from the AppIndex collection.
-    let appIndexData = globalDb.collections.appIndex.findOne({appId: appId});
+    let appIndexData = globalDb.collections.appIndex.findOne({ appId: appId });
 
     // Prepare a helper function we can use to transform a package cursor into an appropriate return
     // value for this function.
-    const packageCursorAndMaybeUserActions = function(userId, appId, packageCursor) {
+    const packageCursorAndMaybeUserActions = function (userId, appId, packageCursor) {
       // This allows us to avoid creating duplicate UserActions.
       if (userId) {
         return [
@@ -139,23 +139,25 @@ if (allowDemo) {
           UserActions.find({ userId: userId, appId: appId }),
         ];
       }
+
       return packageCursor;
-    }
+    };
 
     // If the app is in the app index, and the current version is installed, always return that. If
     // that package isn't installed, store the version number so we can filter on it later.
     let packageQuery = {};
     if (appIndexData) {
-      let appIndexPackageQuery = Packages.find({_id: appIndexData.packageId});
+      let appIndexPackageQuery = Packages.find({ _id: appIndexData.packageId });
       if (appIndexPackageQuery.count() > 0) {
         return packageCursorAndMaybeUserActions(this.userId, appId, appIndexPackageQuery);
       }
-      packageQuery["manifest.appVersion"] = {$lte: appIndexData.versionNumber};
+
+      packageQuery["manifest.appVersion"] = { $lte: appIndexData.versionNumber };
     }
 
     // If the specific package from the app index isn't installed, or the app isn't there at all, do
     // our best.
-    packageQuery["appId"] = appId;
+    packageQuery.appId = appId;
     const packageCursor = Packages.find(
       packageQuery,
       { sort: { "manifest.appVersion": -1 } });

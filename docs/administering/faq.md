@@ -412,7 +412,7 @@ make an informed decision about your own security needs.
   [support@sandstorm.io.](mailto:support@sandstorm.io)
 
 - **OpenVZ users.** If you use an OpenVZ-based hosting provider, please ask your hosting provider
-  to read our [installation documentation](../install.md) to l
+  to read our [installation documentation](../install.md) and this document.
 
 - **Grsecurity kernel users.** Grsecurity seems to block unprivileged user namespaces. Consider
   running Sandstorm without Grsecurity. You might be interested to see [Sandstorm's track record of

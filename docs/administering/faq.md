@@ -443,7 +443,7 @@ that we provide. Pay special attention to the `RewriteRule` stanzas.
 
 ## Can I use Let's Encrypt for adding HTTPS to Sandstorm?
 
-**Short answer:** No. I wish we could say yes. We are eagerly awaiting support of wildcard
+**Short answer:** No. We wish we could say yes. We are eagerly awaiting support of wildcard
 certificates by Let's Encrypt. For advice that will work, read our [docs about configuring
 HTTPS.](ssl.md)
 

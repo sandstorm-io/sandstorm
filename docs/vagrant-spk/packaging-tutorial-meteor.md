@@ -372,7 +372,7 @@ You can see how large it is by running the following command:
 du -h ~/projects/package.spk
 ```
 
-In my case, I see:
+You will see output like this.
 
 ```bash
 21M     ~/projects/package.spk
@@ -436,5 +436,5 @@ might be interested in any of the following:
 * How do I learn more about the technical underpinnings of `vagrant-spk`? How do I make `vagrant-spk` faster?
 Read about [understanding & customizing vagrant-spk](customizing.md).
 * How do I package-up a Python, PHP, or other non-Meteor app? Read about [platform stacks](platform-stacks.md).
-* Will this work on Windows? Yes, probably, but I use `~` and `mkdir -p` above, and you can't typically use those on Windows.
+* Will this work on Windows? Yes, probably. This tutorial uses `~` and `mkdir -p` above, and you can't typically use those on Windows.
 * Will this work on a cloud Linux instance? Probably not, since `vagrant-spk` creates a virtual machine and running a VM inside a VM often fails.

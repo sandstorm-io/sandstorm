@@ -55,7 +55,7 @@ UPDATE_CHANNEL=dev
 then you need to change the `BIND_IP` value to `0.0.0.0`.
 
 (To be pedantic, this the unspecified IPv4 address. For IPv6
-compatibility, you may want `::` instead. I haven't tested this yet.)
+compatibility, you may want `::` instead. We haven't tested this yet.)
 
 ## What ports does Sandstorm need open?
 
@@ -82,7 +82,7 @@ _Optionally_
 * Disk space: 5 GB
 * Swap: Enabled, if possible
 
-You can probably get away with less, but I wouldn't advise it.
+You can probably get away with less, but we wouldn't advise it. 2GB is vastly better than 1 GB.
 
 Using a virtual machine from Amazon EC2, Google Compute Engine,
 Linode, Digital Ocean, etc., is fine; just make sure you have a recent

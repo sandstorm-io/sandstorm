@@ -401,10 +401,10 @@ of web applications can work.
 Thanks for reading this far!
 
 Sandstorm is continuously evolving, and we are continuously developing
-it, so some of these details may change. I hope this has been a useful
+it, so some of these details may change. We hope this has been a useful
 overview of the platform and helps you understand the platform's
-goals. I'm always eager for feedback; email me at
-asheesh@sandstorm.io. This handbook is very abbreviated; consider
+goals. We're always eager for feedback; email us at
+community@sandstorm.io. This handbook is very abbreviated; consider
 following the links in each section for more detail.
 
 To dig into the design of Sandstorm, read through the [Cap'n Proto

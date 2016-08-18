@@ -457,6 +457,24 @@ body>.topbar {
     >.account, >.login {
       >button.show-popup {
         @extend %hamburger-menu-item;
+        position: relative;
+        >.profile-picture {
+          position: absolute;
+          display: block;
+          width: 24px;
+          height: 24px;
+          background-size: contain;
+          background-repeat: no-repeat;
+          background-position: center;
+          @media #{$desktop} {
+            top: 4px;
+            left: 4px;
+          }
+          @media #{$mobile} {
+            left: 12px;
+            top: 12px;
+          }
+        }
       }
 
       @media #{$desktop} {
@@ -469,9 +487,6 @@ body>.topbar {
           display: block;
           &.has-picture {
             padding-left: 32px;
-            background-position: 4px center;
-            background-size: 24px 24px;
-            background-repeat: no-repeat;
           }
         }
       }

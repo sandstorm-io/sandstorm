@@ -477,11 +477,8 @@ detect_how_to_enable_userns_or_die_trying() {
     fail "E_NO_USERNS" "Your kernel does not appear to be compiled with" \
          "support for unprivileged user namespaces (CONFIG_USER_NS=y), or something else is" \
          "preventing creation of user namespaces. This feature is critical for sandboxing." \
-         "Arch Linux is known to ship with a kernel that disables this feature; if you are" \
-         "using Arch, you will unfortunately need to compile your own kernel (see" \
-         "https://bugs.archlinux.org/task/36969). If you are not using Arch, and don't" \
-         "know why your system wouldn't have user namespaces, please file a bug against" \
-         "Sandstorm so we can figure out what happened."
+         "Read more at:                                                                   " \
+         "https://docs.sandstorm.io/en/latest/administering/faq/#enabling-user-namespaces"
   fi
 
   # If the test binary failed, but the sysctl is set to 1, then allow the install to

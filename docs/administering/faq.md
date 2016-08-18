@@ -1,17 +1,14 @@
-One way to use Sandstorm is to run the software on your own server --
-we call that _self-hosting_. This page answers common questions from
-self-hosters.
+One way to use Sandstorm is to run the software on your own server -- we call that
+_self-hosting_. This page answers common questions from self-hosters.
 
 ## How do I log in, if there's a problem with logging in via the web?
 
-If logging into your Sandstorm server over the web isn't working, you
-can reset your Sandstorm's login providers. Resetting login providers
-will retain all existing accounts, including account metadata such as
-who is an admin.
+If logging into your Sandstorm server over the web isn't working, you can reset your Sandstorm's
+login providers. Resetting login providers will retain all existing accounts, including account
+metadata such as who is an admin.
 
-These instructions assume you've installed Sandstorm as root, which is
-the default recommendation. If not, remove the `sudo` from the
-instructions below.
+These instructions assume you've installed Sandstorm as root, which is the default
+recommendation. If not, remove the `sudo` from the instructions below.
 
 * Use e.g. `ssh` to log into the server running Sandstorm.
 
@@ -91,16 +88,15 @@ operating system.
 
 ## Sometimes I randomly see a lot of errors across the board, while other times the same functions work fine. What's going on?
 
-Do you have enough RAM? Linux will start randomly killing processes
-when it's low on RAM. Each grain you have open (or had open in the
-last couple minutes) will probably consume 50MB-500MB of RAM,
-depending on the app. We therefore recommend using a server with at
-least 2GB. If you have less that that, see the next question.
+Do you have enough RAM? Linux will start randomly killing processes when it's low on RAM. Each grain
+you have open (or had open in the last couple minutes) will probably consume 50MB-500MB of RAM,
+depending on the app. We therefore recommend using a server with at least 2GB. If you have less that
+that, see the next question.
 
 ## My virtual machine doesn't have that much RAM, what can I do?
 
-It might help to set up swap space. The following commands will set up
-a file on-disk to use as swap:
+It might help to set up swap space. The following commands will set up a file on-disk to use as
+swap:
 
     dd if=/dev/zero of=/swap.img bs=1M count=1024
     mkswap /swap.img
@@ -376,6 +372,53 @@ to address the issue.
 
 To get further help, please email support@sandstorm.io. Please include the most recent 100 lines
 from the MongoDB log file, if you can.
+
+## Enabling user namespaces
+
+Sandstorm requires the Linux feature called user namespaces to be enabled on your Linux system and
+available to unprivileged users. This allows Sandstorm to containerize itself and each grain that
+runs.
+
+Because this is required by Sandstorm, and because many users have difficulty setting up Sandstorm
+on their servers, this page provides advice on how to enable user namespaces. Please be sure to
+keep up to date with kernel updates if you follow the advice in this section, and please be sure to
+make an informed decision about your own security needs.
+
+- **People who don't know how to change a Linux kernel.** If you are a customer of a hosting
+  provider, please ask your hosting provider to read this page. They are also welcome to email the
+  Sandstorm team at [support@sandstorm.io.](mailto:support@sandstorm.io)
+
+- **Arch Linux users.** In [#36969](https://bugs.archlinux.org/task/36969), the Arch Linux kernel
+  maintainer indicated that they are not interested in supporting unprivileged user namespaecs. Try
+  the `linux-lqx` AUR package, or build your own kernel. Read the [Arch Linux wiki page on
+  kernels](https://wiki.archlinux.org/index.php/Kernels#AUR_packages) for more information.
+
+- **Docker users.** See the [Sandstorm recommendations for
+  Docker](../install.md#option-6-using-sandstorm-within-docker) in our installation guide.
+
+- **Debian and Ubuntu users.** The Sandstorm install script uses a [Debian-specific
+  sysctl](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=712870) to enable unprivileged user
+  namespaces. If you are unable to set it on your system, please run these commands as root
+  and/or upgrade your Linux kernel.
+
+```bash
+# sysctl -w kernel.unprivileged_userns_clone=1
+# echo 'kernel.unprivileged_userns_clone = 1' >> /etc/sysctl.conf"
+```
+
+- **RHEL and CentOS users.** CentOS/RHEL 7.2 ships a kernel that _may_ be able to support
+  unprivileged usernamespaces. If you need help with this, please email
+  [support@sandstorm.io.](mailto:support@sandstorm.io)
+
+- **OpenVZ users.** If you use an OpenVZ-based hosting provider, please ask your hosting provider
+  to read our [installation documentation](../install.md) to l
+
+- **Grsecurity kernel users.** Grsecurity seems to block unprivileged user namespaces. Consider
+  running Sandstorm without Grsecurity. You might be interested to see [Sandstorm's track record of
+  successfully blocking exploitation of Linux kernel
+  vulnerabilities.](../using/security-non-events.md#linux-kernel)
+
+- **Alpine Linux users.** Alpine Linux enables Grsecurity by default. See the previous item.
 
 ## How do I enable WebSockets proxying? or, Why do some apps seem to crash & reload?
 

@@ -159,7 +159,7 @@ Router.map(function () {
   this.route("appdemo", {
     path: "/appdemo/:appId",
     waitOn: function () {
-      return Meteor.subscribe("appInfo", this.params.appId);
+      return Meteor.subscribe("appDemoInfo", this.params.appId);
     },
 
     data: function () {

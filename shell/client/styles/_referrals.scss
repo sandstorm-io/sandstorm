@@ -20,6 +20,18 @@
     padding-left: 8em;
     padding-right: 8em;
 
+    // Minimize the padding on mobile, since 8em ends up being a large fraction
+    // of a small screen.
+    @media #{$mobile} {
+      padding-left: 10%;
+      padding-right: 10%;
+    }
+
+    // Remove the image background on very small screens, where it renders strangely.
+    @media (max-width: 450px) {
+      background: #6d5eb7;
+    }
+
     .reward-amount {
       font-size: 150%;
     }
@@ -32,6 +44,13 @@
     padding-right: 50px;
     padding-top: 40px;
     padding-bottom: 75px;
+
+    // On mobile, use 8px padding, which is the same as the rest of the page,
+    // to avoid wasting precious horizontal space.
+    @media #{$mobile} {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
 
     // Left-align all text in the SECTION element by default.
     text-align: left;
@@ -71,14 +90,30 @@
       text-align: center;
       list-style-position: inside;
 
+      ol {
+        @media #{$mobile} {
+          padding-left: 0;
+        }
+      }
+
       li {
         padding: 1em;
+
+        @media #{$mobile} {
+          padding-left: 0;
+          padding-right: 0;
+        }
       }
 
       img {
         display: block;
         margin: auto;
         max-width: 50%;
+
+        @media #{$mobile} {
+          width: 100%;
+          max-width: 100%;
+        }
       }
     }
 

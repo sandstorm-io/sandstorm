@@ -461,18 +461,20 @@ body>.topbar {
         >.profile-picture {
           position: absolute;
           display: block;
-          width: 24px;
-          height: 24px;
           background-size: contain;
           background-repeat: no-repeat;
           background-position: center;
           @media #{$desktop} {
+            width: 24px;
+            height: 24px;
             top: 4px;
             left: 4px;
           }
           @media #{$mobile} {
-            left: 12px;
-            top: 12px;
+            width: 32px;
+            height: 32px;
+            left: 8px;
+            top: 8px;
           }
         }
       }

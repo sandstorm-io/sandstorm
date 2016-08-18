@@ -407,7 +407,8 @@ make an informed decision about your own security needs.
 ```
 
 - **RHEL and CentOS users.** CentOS/RHEL 7.2 ships a kernel that _may_ be able to support
-  unprivileged usernamespaces. If you need help with this, please email
+  unprivileged usernamespaces. In our testing, further work is needed to properly enable Sandstorm
+  to work within CentOS/RHEL 7.2. If you need help with this, please email
   [support@sandstorm.io.](mailto:support@sandstorm.io)
 
 - **OpenVZ users.** If you use an OpenVZ-based hosting provider, please ask your hosting provider

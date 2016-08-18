@@ -419,7 +419,8 @@ make an informed decision about your own security needs.
   successfully blocking exploitation of Linux kernel
   vulnerabilities.](../using/security-non-events.md#linux-kernel)
 
-- **Alpine Linux users.** Alpine Linux enables Grsecurity by default. See the previous item.
+- **Alpine Linux users.** Alpine Linux enables Grsecurity by default. See the previous item and
+  consider using the [Alpine vanilla kernel.](http://forum.alpinelinux.org/downloads)
 
 ## How do I enable WebSockets proxying? or, Why do some apps seem to crash & reload?
 

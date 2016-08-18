@@ -389,7 +389,7 @@ make an informed decision about your own security needs.
   Sandstorm team at [support@sandstorm.io.](mailto:support@sandstorm.io)
 
 - **Arch Linux users.** In [#36969](https://bugs.archlinux.org/task/36969), the Arch Linux kernel
-  maintainer indicated that they are not interested in supporting unprivileged user namespaecs. Try
+  maintainer indicated that they are not interested in supporting unprivileged user namespaces. Try
   the `linux-lqx` AUR package, or build your own kernel. Read the [Arch Linux wiki page on
   kernels](https://wiki.archlinux.org/index.php/Kernels#AUR_packages) for more information.
 

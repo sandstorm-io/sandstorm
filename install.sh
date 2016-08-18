@@ -477,7 +477,7 @@ detect_how_to_enable_userns_or_die_trying() {
     fail "E_NO_USERNS" "Your kernel does not appear to be compiled with" \
          "support for unprivileged user namespaces (CONFIG_USER_NS=y), or something else is" \
          "preventing creation of user namespaces. This feature is critical for sandboxing." \
-         "Read more at:                                                                   " \
+         "Read more at: " \
          "https://docs.sandstorm.io/en/latest/administering/faq/#enabling-user-namespaces"
   fi
 

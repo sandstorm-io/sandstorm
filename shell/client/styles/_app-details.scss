@@ -27,47 +27,15 @@
       }
     }
   }
-  >.search-bar {
-    margin-top: 12px;
+
+  >.search-row {
+    @extend %search-row;
+    margin-bottom: 12px;
     clear: both;
-    >label {
-      >span.search-icon {
-        @extend %pseudo-img-tag;
-        background-image: url("/search.svg");
-        background-size: 24px 24px;
-        background-position: center;
-        display: inline-block;
-        width: 32px;
-        height: 32px;
-        vertical-align: top;
-      }
-      >input.search-bar {
-        font-size: 16pt;
-        height: 32px;
-        background-color: $app-details-searchbar-background-color;
-        border: 1px solid $app-details-searchbar-outline-color;
-        &:focus {
-          border: 1px solid $app-details-searchbar-outline-color-focus;
-        }
-      }
-    }
   }
 
   >.trash-explanation {
-    display: inline-block;
-    margin-bottom: 4px;
-    margin-top: 20px;
-    width: 100%;
-    font-size: 10pt;
-  }
-
-  >.bulk-action-buttons {
-    @extend %bulk-action-buttons;
-  }
-
-  button.toggle-show-trash {
-    @extend %button-base;
-    @extend %button-secondary;
+    @extend %trash-explanation;
   }
 
   >.no-grains {
@@ -96,16 +64,20 @@
     width: 128px;
     height: 128px;
   }
+
   >.app-details-box {
     margin-left: 128px;
     padding-left: 12px;
     min-height: 128px;
+    margin-bottom: 12px;
+
     >h1.app-title {
       margin: 0px;
       font-weight: normal;
       display: block;
       float: left;
     }
+
     >ul.app-links {
       display: block;
       float: right;
@@ -148,6 +120,7 @@
         }
       }
     }
+
     >div.info-row {
       display: block;
       clear: both;
@@ -190,6 +163,7 @@
         display: block;
         float: left;
       }
+
       >button.uninstall-button, >button.restore-button, >button.toggle-show-trash {
         @extend %button-base;
         @extend %button-secondary;
@@ -199,14 +173,17 @@
         margin-left: 4px;
       }
     }
+
     >div.publisher-details {
       display: block;
       clear: both;
       background-color: #ffffff;
       vertical-align: top;
+
       >p.no-fingerprint {
         padding: 8px;
       }
+
       >p.has-fingerprint {
         vertical-align: top;
         padding-left: 8px;
@@ -219,6 +196,7 @@
           width: 100%;
         }
       }
+
       >ul.publisher-proofs {
         @media #{$desktop} {
           display: inline-block;
@@ -263,6 +241,7 @@
           }
         }
       }
+
       &.hide {
         display:none;
       }

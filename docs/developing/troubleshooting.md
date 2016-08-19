@@ -66,10 +66,12 @@ applications however.
 
 ## ETag data
 
-Sandstorm drops invalid ETag data. This typically has no impact on app functionality. When Sandstorm
-drops invalid ETag data, it stores a warning in the grain log that it did so, limiting the log
-messages to at most one per launch of a grain to avoid filling up the log file. See also [issue
-#2295.](https://github.com/sandstorm-io/sandstorm/issues/2295)
+Sandstorm normally allows valid `ETag` headers to pass through to the client. However, the HTTP
+standard requires `ETag` values to take a specific form -- for example, they must be quoted. Many
+applications incorrectly provide non-quoted values for this header. Sandstorm does not permit
+invalid header values because ambiguity can lead to security problems. Therefore, Sandstorm will
+drop invalid `ETag` headers and will write a warning to the grain's debug log. Usually, this does
+not affect app functionality, other than to reduce the effectiveness of the browser's cache.
 
 In versions v0.176 and earlier, the grain would crash, rather than log an error message, if an
 invalid ETag header was emitted by the app.  In more-recent versions, Sandstorm drops the header and

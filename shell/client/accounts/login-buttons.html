@@ -41,10 +41,16 @@ licenses, included in the LICENSES directory.
 </template>
 
 <template name="accountButtons">
-    <button class="show-popup has-picture">
-      <span class="profile-picture" style="background-image: url('{{profilePictureUrl}}');"></span>
-    {{displayName}} ▾
-  </button>
+  {{#with profileData}}
+    {{#if loading}}
+      <button class="show-popup has-picture">Loading...</button>
+    {{else}}
+      <button class="show-popup has-picture">
+        <span class="profile-picture" style="background-image: url('{{pictureUrl}}');"></span>
+        {{displayName}} ▾
+      </button>
+    {{/if}}
+  {{/with}}
 </template>
 
 <template name="loginButtonsPopup">

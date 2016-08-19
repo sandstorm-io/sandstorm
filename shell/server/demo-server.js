@@ -152,7 +152,10 @@ if (allowDemo) {
         return packageCursorAndMaybeUserActions(this.userId, appId, appIndexPackageQuery);
       }
 
-      packageQuery["manifest.appVersion"] = { $lte: appIndexData.versionNumber };
+      // If the app index version isn't present, insist on a lower version than the app index
+      // version. This avoids accidentally catching some development version of the app that has the
+      // same version number as the app market version but isn't the app market version.
+      packageQuery["manifest.appVersion"] = { $lt: appIndexData.versionNumber };
     }
 
     // If the specific package from the app index isn't installed, or the app isn't there at all, do
@@ -160,7 +163,9 @@ if (allowDemo) {
     packageQuery.appId = appId;
     const packageCursor = Packages.find(
       packageQuery,
-      { sort: { "manifest.appVersion": -1 } });
+      { sort: { "manifest.appVersion": -1 },
+        limit: 1,
+      });
     return packageCursorAndMaybeUserActions(this.userId, appId, packageCursor);
   });
 

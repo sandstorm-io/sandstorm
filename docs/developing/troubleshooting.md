@@ -66,26 +66,17 @@ applications however.
 
 ## ETag data
 
-Sandstorm normally allows valid `ETag` headers to pass through to the client. However, the HTTP
-standard requires `ETag` values to take a specific form -- for example, they must be quoted. Many
-applications incorrectly provide non-quoted values for this header. Sandstorm does not permit
-invalid header values because ambiguity can lead to security problems. Therefore, Sandstorm will
-drop invalid `ETag` headers and will write a warning to the grain's debug log. Usually, this does
-not affect app functionality, other than to reduce the effectiveness of the browser's cache.
-
-In versions v0.176 and earlier, the grain would crash, rather than log an error message, if an
-invalid ETag header was emitted by the app.  In more-recent versions, Sandstorm drops the header and
-logs a message.
-
-Web apps often use the `ETag` HTTP header to control caching. In Sandstorm, this header is permitted
-so long as it follows the HTTP specification's requirement that the header values are formatted with
-double-quote marks, like: `ETag: "value"` or `ETag: W/"value"`.
+Web apps often use the `ETag` HTTP response header to control caching. In Sandstorm, this header is
+permitted so long as it follows the HTTP specification's requirement that the header values are
+formatted with double-quote marks, like: `ETag: "value"` or `ETag: W/"value"`.
 
 Some apps use strings without quotation marks in their ETag headers, such as `ETag: value`, which
-violates the HTTP standard. Sandstorm drops these headers because it is unable to understand the
-app's intent.  The headers are dropped within the grain at the
-[sandstorm-http-bridge](../using/how-it-works.md) layer.
+violates the HTTP standard.  Sandstorm does not permit invalid header values because ambiguity can
+lead to security problems. Therefore, Sandstorm will drop invalid `ETag` headers and will write a
+warning to the grain's debug log. Usually, this does not affect app functionality, other than to
+reduce the effectiveness of the browser's cache.
 
-If an ETag header is dropped, typically the worst-case behavior is that web browsers and other HTTP
-clients will refuse to cache a resource and will therefore download the resource more often. This
-can waste bandwidth but typically has no impact on app functionality.
+HTTP headers are processed within the grain at the [sandstorm-http-bridge](../using/how-it-works.md)
+layer. Recent versions of `sandstorm-http-bridge` drop the header and log a message. In versions
+v0.176 and earlier of `sandstorm-http-bridge`, invalid ETag data would trigger an exception,
+causing the request to fail.

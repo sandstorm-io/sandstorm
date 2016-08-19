@@ -78,5 +78,5 @@ reduce the effectiveness of the browser's cache.
 
 HTTP headers are processed within the grain at the [sandstorm-http-bridge](../using/how-it-works.md)
 layer. Recent versions of `sandstorm-http-bridge` drop the header and log a message. In versions
-v0.176 and earlier of `sandstorm-http-bridge`, invalid ETag data would trigger an exception,
+v0.177 and earlier of `sandstorm-http-bridge`, invalid ETag data would trigger an exception,
 causing the request to fail.

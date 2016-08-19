@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
+
 // Test if localStorage is usable.
 // We can't use Meteor._localStorage for this because we need to be able to enumerate the elements
 // in localStorage for periodic cleanup.
@@ -95,20 +97,16 @@ const showActivityDesktopNotification = (notif) => {
     });
 
     if (apiToken) {
-      const meta = apiToken.owner.user.denormalizedGrainMetadata;
+      const tokenOwnerUser = apiToken.owner.user;
+      const meta = tokenOwnerUser.denormalizedGrainMetadata;
       if (meta && meta.icon && meta.icon.assetId) {
         appIcon = staticPrefix + "/" + meta.icon.assetId;
       } else {
         appIcon = Identicon.identiconForApp((meta && meta.appId) || "00000000000000000000000000000000");
       }
 
-      if (meta.upstreamTitle) {
-        if (meta.renamed) {
-          grainTitle = meta.title;
-        } else {
-          grainTitle = meta.upstreamTitle;
-        }
-      }
+      const titleObj = computeTitleFromTokenOwnerUser(tokenOwnerUser);
+      grainTitle = titleObj.title;
     }
   }
 

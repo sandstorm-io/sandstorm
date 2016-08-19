@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
+
 let counter = 0;
 
 class GrainView {
@@ -298,13 +300,7 @@ class GrainView {
       }
 
       const info = apiToken.owner.user;
-      if (!info.upstreamTitle) {
-        return { title: info.title };
-      } else if (info.renamed) {
-        return { title: info.title, renamedFrom: info.upstreamTitle };
-      } else {
-        return { title: info.upstreamTitle, was: info.title };
-      }
+      return computeTitleFromTokenOwnerUser(info);
     } else {
       // Case 3.
       // TODO(someday): We don't show info about renames in this case, but we probably should.

@@ -178,7 +178,7 @@ send a `X-Forwarded-Proto` however.
 
 `X-Sandstorm-Base-Path` is created from the `WebSession` attribute called
 `basePath`. Read the [current
-implementation](https://github.com/sandstorm-io/sandstorm/blob/71fd830f0f1ac9fd1b759e4492eb70dabe001c48/src/sandstorm/web-session.capnp)
+implementation](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/web-session.capnp)
 for its Cap'n Proto documentation. Consider also reading the source of
 [sandstorm-http-bridge](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/sandstorm-http-bridge.c++#L1033).
 

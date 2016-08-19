@@ -6,8 +6,9 @@ The definitive reference for the powerbox's interfaces
 is the Cap'n Proto schema files where they are defined. The main relevant schemas are
 [powerbox.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/powerbox.capnp),
 [grain.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/grain.capnp),
+[identity.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/identity.capnp),
 and
-[identity.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/identity.capnp).
+[activity.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/activity.capnp).
 
 A common thing that a grain might want to request is network access, the
 corresponding interfaces for which are defined in

@@ -200,15 +200,15 @@ window.addEventListener("resize", function () {
 });
 
 Template.sandstormTopbar.events({
-  "click .topbar-update": function (event) {
+  "click .topbar-update": function (evt) {
     unblockUpdate();
   },
 
-  "click .topbar>.menubar>li": function (event) {
-    const data = Blaze.getData(event.currentTarget);
+  "click .topbar>.menubar>li": function (evt) {
+    const data = Blaze.getData(evt.currentTarget);
     if (data.popupTemplate) {
-      event.stopPropagation();
-      event.preventDefault();
+      evt.stopPropagation();
+      evt.preventDefault();
 
       const topbar = Template.instance().data;
       topbar._expanded.set(data.name);
@@ -216,51 +216,51 @@ Template.sandstormTopbar.events({
     }
   },
 
-  "click .popup": function (event) {
-    if (event.target === event.currentTarget) {
+  "click .popup": function (evt) {
+    if (evt.target === evt.currentTarget) {
       // Clicked outside the popup; close it.
-      event.stopPropagation();
+      evt.stopPropagation();
       Template.instance().data.closePopup();
     }
   },
 
   // The touchstart handler is to handle a bug in iOS with the click event above.
   // From what I can tell, mobile safari seems to be optimizing out the click.
-  "touchstart .popup": function (event) {
-    if (event.target === event.currentTarget) {
+  "touchstart .popup": function (evt) {
+    if (evt.target === evt.currentTarget) {
       // Clicked outside the popup; close it.
-      event.stopPropagation();
+      evt.stopPropagation();
       Template.instance().data.closePopup();
     }
   },
 
-  "click .popup>.frame-container>.frame>.close-popup": function (event) {
-    event.stopPropagation();
+  "click .popup>.frame-container>.frame>.close-popup": function (evt) {
+    evt.stopPropagation();
     Template.instance().data.closePopup();
   },
 
-  "click .toggle-navbar": function (event) {
+  "click .toggle-navbar": function (evt) {
     const topbar = Template.instance().data;
     topbar._shrinkNavbar.set(!topbar._shrinkNavbar.get());
   },
 
-  "click .menu-button": function (event) {
+  "click .menu-button": function (evt) {
     const topbar = Template.instance().data;
     topbar._menuExpanded.set(!topbar._menuExpanded.get());
   },
 
-  "click .navbar-shrink": function (event) {
+  "click .navbar-shrink": function (evt) {
     const topbar = Template.instance().data;
     topbar._shrinkNavbar.set(!topbar._shrinkNavbar.get());
   },
 
-  "click .navbar .close-button": function (event) {
-    const grainId = event.currentTarget.parentNode.getAttribute("data-grainid");
+  "click .navbar .close-button": function (evt) {
+    const grainId = evt.currentTarget.parentNode.getAttribute("data-grainid");
     const topbar = Template.instance().data;
     topbar._grains.remove(grainId, true);
   },
 
-  "click .demo-notice .sign-in": function (event) {
+  "click .demo-notice .sign-in": function (evt) {
     const topbar = Template.instance().data;
     topbar.openPopup("login");
   },

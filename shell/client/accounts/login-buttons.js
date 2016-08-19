@@ -152,11 +152,11 @@ Template._loginButtonsLoggedOutDropdown.helpers({
 });
 
 Template._loginButtonsLoggedOutDropdown.events({
-  "click .login-suggestion>button.login": function (event, instance) {
+  "click .login-suggestion>button.login": function (evt, instance) {
     instance._choseLogin.set(true);
   },
 
-  "click .login-suggestion>button.dismiss": function (event, instance) {
+  "click .login-suggestion>button.dismiss": function (evt, instance) {
     instance._topbar.closePopup();
   },
 });
@@ -205,7 +205,7 @@ Template._loginButtonsLoggedInDropdown.helpers({
 });
 
 Template._loginButtonsLoggedInDropdown.events({
-  "click button.switch-identity": function (event, instance) {
+  "click button.switch-identity": function (evt, instance) {
     instance._identitySwitcherExpanded.set(!instance._identitySwitcherExpanded.get());
   },
 });
@@ -271,7 +271,7 @@ Template.loginButtonsList.onCreated(function () {
 });
 
 Template.oauthLoginButton.events({
-  "click button.login.oneclick": function (event, instance) {
+  "click button.login.oneclick": function (evt, instance) {
     if (instance.data.linkingNewIdentity) {
       sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
     }
@@ -309,9 +309,9 @@ Template.loginButtonsList.helpers({
 });
 
 Template.emailAuthenticationForm.events({
-  "submit form": function (event, instance) {
-    event.preventDefault();
-    const form = event.currentTarget;
+  "submit form": function (evt, instance) {
+    evt.preventDefault();
+    const form = evt.currentTarget;
     const email = loginButtonsSession.get("inSignupFlow");
     if (email) {
       if (instance.data.linkingNewIdentity) {
@@ -332,7 +332,7 @@ Template.emailAuthenticationForm.events({
     }
   },
 
-  "click button.cancel": function (event) {
+  "click button.cancel": function (evt) {
     loginButtonsSession.set("inSignupFlow", false);
     loginButtonsSession.resetMessages();
   },
@@ -361,15 +361,15 @@ Template.ldapLoginForm.helpers({
 });
 
 Template.ldapLoginForm.events({
-  "submit form": function (event, instance) {
-    event.preventDefault();
+  "submit form": function (evt, instance) {
+    evt.preventDefault();
     if (instance.data.linkingNewIdentity) {
       sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
     }
 
     loginButtonsSession.resetMessages();
 
-    const form = event.currentTarget;
+    const form = evt.currentTarget;
 
     const username = form.username.value;
     const password = form.password.value;
@@ -401,24 +401,24 @@ function loginDevHelper(name, isAdmin, linkingNewIdentity) {
 }
 
 Template.devLoginForm.events({
-  "click button.expand": function (event, instance) {
-    event.preventDefault();
+  "click button.expand": function (evt, instance) {
+    evt.preventDefault();
     instance._expanded.set(true);
   },
 
-  "click button.unexpand": function (event, instance) {
-    event.preventDefault();
+  "click button.unexpand": function (evt, instance) {
+    evt.preventDefault();
     instance._expanded.set(false);
   },
 
-  "click button.login-dev-account": function (event, instance) {
-    const displayName = event.currentTarget.getAttribute("data-name");
-    const isAdmin = !!event.currentTarget.getAttribute("data-is-admin");
+  "click button.login-dev-account": function (evt, instance) {
+    const displayName = evt.currentTarget.getAttribute("data-name");
+    const isAdmin = !!evt.currentTarget.getAttribute("data-is-admin");
     loginDevHelper(displayName, isAdmin, instance.data.linkingNewIdentity);
   },
 
-  "submit form": function (event, instance) {
-    event.preventDefault();
+  "submit form": function (evt, instance) {
+    evt.preventDefault();
     const form = instance.find("form");
     loginDevHelper(form.name.value, false, instance.data.linkingNewIdentity);
   },
@@ -437,7 +437,7 @@ Template.samlLoginForm.helpers({
 });
 
 Template.samlLoginForm.events({
-  "click button": function (event, instance) {
+  "click button": function (evt, instance) {
     if (instance.data.linkingNewIdentity) {
       sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
     }

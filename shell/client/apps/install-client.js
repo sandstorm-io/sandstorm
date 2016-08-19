@@ -246,18 +246,18 @@ Template.sandstormAppInstallPage.helpers({
 });
 
 Template.sandstormAppInstallPage.events({
-  "click #retry": function (event) {
+  "click #retry": function (evt) {
     const ref = Template.instance().data;
     Meteor.call("ensureInstalled", ref._packageId, ref._packageUrl, true);
   },
 
-  "click #cancelDownload": function (event) {
+  "click #cancelDownload": function (evt) {
     const ref = Template.instance().data;
     Meteor.call("cancelDownload", ref.packageId());
     Router.go("apps");
   },
 
-  "click #confirmInstall": function (event) {
+  "click #confirmInstall": function (evt) {
     const ref = Template.instance().data;
     Meteor.call("addUserActions", ref.packageId());
   },

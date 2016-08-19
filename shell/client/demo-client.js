@@ -28,7 +28,7 @@ window.testExpireDemo = function () {
 };
 
 Template.demo.events({
-  "click button.start": function (event) {
+  "click button.start": function (evt) {
     const displayName = "Demo User";
 
     const userCallbackFunction = function (err) {
@@ -52,7 +52,7 @@ Template.demo.events({
 });
 
 Template.appdemo.events({
-  "click button.start": function (event) {
+  "click button.start": function (evt) {
     // When clicking on the createDemoUser button on the app demo,
     // we want to:
     //

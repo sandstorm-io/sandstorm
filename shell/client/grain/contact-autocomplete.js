@@ -137,31 +137,31 @@ Template.contactInputBox.helpers({
 });
 
 Template.contactInputBox.events({
-  "click .contact-box": function (event, template) {
+  "click .contact-box": function (evt, template) {
     // Clicking anywhere inside the fake contact-box should focus the input
     template.find("input").focus();
   },
 
-  "click .completed-contact": function (event, template) {
+  "click .completed-contact": function (evt, template) {
     // Prevent clicking on completed contacts from triggering the above focus
     return false;
   },
 
-  "input input": function (event, template) {
-    template.currentText.set(event.target.value);
+  "input input": function (evt, template) {
+    template.currentText.set(evt.target.value);
   },
 
-  "keydown .completed-contact": function (event, template) {
-    if (event.keyCode === 8 || event.keyCode == 46) { // Backspace or Delete
+  "keydown .completed-contact": function (evt, template) {
+    if (evt.keyCode === 8 || evt.keyCode == 46) { // Backspace or Delete
       deleteSelected(this, template);
       return false;
-    } else if (event.keyCode === 37 || event.keyCode === 38) { // Left or Up
-      const previous = event.target.previousElementSibling;
+    } else if (evt.keyCode === 37 || evt.keyCode === 38) { // Left or Up
+      const previous = evt.target.previousElementSibling;
       if (previous) {
         previous.focus();
       }
-    } else if (event.keyCode === 39 || event.keyCode === 40) { // Right or Down
-      const next = event.target.nextElementSibling;
+    } else if (evt.keyCode === 39 || evt.keyCode === 40) { // Right or Down
+      const next = evt.target.nextElementSibling;
       if (next) {
         next.focus();
       } else {
@@ -170,14 +170,14 @@ Template.contactInputBox.events({
     }
   },
 
-  "click .closer": function (event, template) {
+  "click .closer": function (evt, template) {
     deleteSelected(this, template);
     return false;
   },
 
-  "keyup input": function (event, template) {
-    if (event.keyCode === 8) { // Backspace
-      if (!event.target.value) {
+  "keyup input": function (evt, template) {
+    if (evt.keyCode === 8) { // Backspace
+      if (!evt.target.value) {
         const chip = template.find(".completed-contacts>li:last-child");
         if (chip) {
           chip.focus();
@@ -188,16 +188,16 @@ Template.contactInputBox.events({
     }
   },
 
-  "keydown input": function (event, template) {
-    if ((event.keyCode === 37 || event.keyCode === 38) && // Left or Up
-        event.currentTarget.selectionStart === 0) { // Check that cursor is at beginning of input
+  "keydown input": function (evt, template) {
+    if ((evt.keyCode === 37 || evt.keyCode === 38) && // Left or Up
+        evt.currentTarget.selectionStart === 0) { // Check that cursor is at beginning of input
       const chip = template.find(".completed-contacts>li:last-child");
       if (chip) {
         chip.focus();
       }
 
       return false;
-    } else if (event.keyCode === 38) { // Up
+    } else if (evt.keyCode === 38) { // Up
       const contacts = template.autoCompleteContacts.get();
       if (contacts.length === 0) {
         return true;
@@ -223,7 +223,7 @@ Template.contactInputBox.events({
       });
 
       return false;
-    } else if (event.keyCode === 40) { // Down
+    } else if (evt.keyCode === 40) { // Down
       const contacts = template.autoCompleteContacts.get();
       if (contacts.length === 0) {
         return true;
@@ -249,25 +249,25 @@ Template.contactInputBox.events({
       });
 
       return false;
-    } else if (event.keyCode === 13) { // Enter
+    } else if (evt.keyCode === 13) { // Enter
       const highlightedContact = template.highlightedContact.get();
       if (highlightedContact._id) {
-        selectContact(template, highlightedContact, event.target);
+        selectContact(template, highlightedContact, evt.target);
       }
 
       return false;
     }
   },
 
-  "focus input": function (event, template) {
+  "focus input": function (evt, template) {
     template.inputActive.set(true);
   },
 
-  "blur input": function (event, template) {
+  "blur input": function (evt, template) {
     template.inputActive.set(false);
   },
 
-  "mousedown .autocomplete": function (event, template) {
+  "mousedown .autocomplete": function (evt, template) {
     selectContact(template, this, template.find("input"));
     template.find("input").focus();
 

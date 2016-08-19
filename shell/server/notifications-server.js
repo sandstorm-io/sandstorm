@@ -20,10 +20,10 @@ const Capnp = Npm.require("capnp");
 const SupervisorCapnp = Capnp.importSystem("sandstorm/supervisor.capnp");
 const SystemPersistent = SupervisorCapnp.SystemPersistent;
 
-logActivity = function (grainId, identityId, event) {
+logActivity = function (grainId, identityId, evt) {
   check(grainId, String);
   check(identityId, String);
-  // `event` is always an ActivityEvent parsed from Cap'n Proto buf that's too complicated to check
+  // `evt` is always an ActivityEvent parsed from Cap'n Proto buf that's too complicated to check
   // here.
 
   // TODO(perf): A cached copy of the grain from when the session opened would be fine to use
@@ -35,9 +35,9 @@ logActivity = function (grainId, identityId, event) {
   }
 
   // Look up the event typedef.
-  const eventType = ((grain.cachedViewInfo || {}).eventTypes || [])[event.type];
+  const eventType = ((grain.cachedViewInfo || {}).eventTypes || [])[evt.type];
   if (!eventType) {
-    throw new Error("No such event type in app's ViewInfo: " + event.type);
+    throw new Error("No such event type in app's ViewInfo: " + evt.type);
   }
 
   if (!eventType.suppressUnread) {
@@ -60,8 +60,8 @@ logActivity = function (grainId, identityId, event) {
     globalDb.subscribeToActivity(identityId, grainId);
   }
 
-  if (event.thread && eventType.autoSubscribeToThread) {
-    globalDb.subscribeToActivity(identityId, grainId, event.thread.path || "");
+  if (evt.thread && eventType.autoSubscribeToThread) {
+    globalDb.subscribeToActivity(identityId, grainId, evt.thread.path || "");
   }
 
   // Figure out whom we need to notify.
@@ -88,16 +88,16 @@ logActivity = function (grainId, identityId, event) {
     // Add everyone subscribed to the grain.
     globalDb.getActivitySubscriptions(grainId).forEach(addRecipient);
 
-    if (event.thread) {
+    if (evt.thread) {
       // Add everyone subscribed to the thread.
-      globalDb.getActivitySubscriptions(grainId, event.thread.path || "").forEach(addRecipient);
+      globalDb.getActivitySubscriptions(grainId, evt.thread.path || "").forEach(addRecipient);
     }
   }
 
   // Add everyone who is mentioned.
-  if (event.users && event.users.length > 0) {
+  if (evt.users && evt.users.length > 0) {
     const promises = [];
-    event.users.forEach(user => {
+    evt.users.forEach(user => {
       if (user.identity && (user.mentioned || user.subscribed)) {
         promises.push(unwrapFrontendCap(user.identity, "identity", targetId => {
           addRecipient({ identityId: targetId });
@@ -118,7 +118,7 @@ logActivity = function (grainId, identityId, event) {
   if (notify.length > 0) {
     const notification = {
       grainId: grainId,
-      path: event.path || "",
+      path: evt.path || "",
     };
 
     // Fields we'll update even if the notification already exists.
@@ -127,15 +127,15 @@ logActivity = function (grainId, identityId, event) {
       timestamp: new Date(),
     };
 
-    if (event.thread) {
-      notification.threadPath = event.thread.path || "";
+    if (evt.thread) {
+      notification.threadPath = evt.thread.path || "";
     }
 
     if (identityId) {
       notification.initiatingIdentity = identityId;
     }
 
-    notification.eventType = event.type;
+    notification.eventType = evt.type;
     update.text = eventType.verbPhrase;
 
     // Look up icon urls for the responsible identity and the app
@@ -147,7 +147,7 @@ logActivity = function (grainId, identityId, event) {
     SandstormDb.fillInProfileDefaults(identity);
     SandstormDb.fillInPictureUrl(identity);
 
-    const body = (event.notification && event.notification.caption) || { defaultText: "" };
+    const body = (evt.notification && evt.notification.caption) || { defaultText: "" };
 
     const appActivity = {
       user: {

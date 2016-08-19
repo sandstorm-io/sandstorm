@@ -90,6 +90,19 @@ Template.accountButtons.helpers({
     SandstormDb.fillInProfileDefaults(user);
     return user.profile.name;
   },
+
+  profilePictureUrl() {
+    const currentIdentityId = getActiveIdentityId(this.grains);
+    const user = Meteor.users.findOne({ _id: currentIdentityId });
+    if (currentIdentityId && !user) {
+      return "";
+    }
+
+    if (!user) return "/incognito.svg";
+
+    SandstormDb.fillInPictureUrl(user);
+    return user.profile.pictureUrl;
+  },
 });
 
 function getServices() {

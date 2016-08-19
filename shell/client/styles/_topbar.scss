@@ -457,6 +457,26 @@ body>.topbar {
     >.account, >.login {
       >button.show-popup {
         @extend %hamburger-menu-item;
+        position: relative;
+        >.profile-picture {
+          position: absolute;
+          display: block;
+          background-size: contain;
+          background-repeat: no-repeat;
+          background-position: center;
+          @media #{$desktop} {
+            width: 24px;
+            height: 24px;
+            top: 4px;
+            left: 4px;
+          }
+          @media #{$mobile} {
+            width: 32px;
+            height: 32px;
+            left: 8px;
+            top: 8px;
+          }
+        }
       }
 
       @media #{$desktop} {
@@ -464,10 +484,15 @@ body>.topbar {
         display: block;
 
         >button.show-popup {
-          padding: 0 8px;
+          padding-left: 8px;
+          padding-right: 8px;
           display: block;
+          &.has-picture {
+            padding-left: 32px;
+          }
         }
       }
+
       @media #{$mobile} {
         >button.show-popup {
           font-weight: normal;
@@ -626,6 +651,17 @@ body>.topbar {
           &, &:visited, &:active, &:hover {
             color: inherit;
           }
+        }
+        &.navitem-open-grain, &.navitem-create-grain {
+          background-repeat: no-repeat;
+          background-position: 12px center;
+          background-size: 24px 24px;
+        }
+        &.navitem-open-grain {
+          background-image: url('/open-grain.svg');
+        }
+        &.navitem-create-grain {
+          background-image: url('/apps.svg');
         }
       }
     }

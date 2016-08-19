@@ -2,23 +2,45 @@
   {{setDocumentTitle}}
   {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar }}Grains{{/sandstormTopbarItem}}
   <div class="grain-list">
-    <div class="top-row">
-    <div class="non-usage-info">
-    <h1>Grains <button title="What is a grain?" class="question-mark"></button></h1>
-    <div class="search-row">
-      <label>
-        <span title="Search" class="search-icon"></span>
-        <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}">
-      </label>
+    <h1>
+      <div>
+        Grains <button title="What is a grain?" class="question-mark"></button>
+      </div>
+      <form class="standard-form">
+        <div class="button-row">
+        {{#if showTrash }}
+          <button type="button" class="show-main-list">View main list</button>
+        {{else}}
+          <button type="button" class="show-trash">View trash ({{trashCount}})</button>
+        {{/if}}
+
+        {{#if isSignedUpOrDemo}}
+        <button type="button" class="restore-button">Restore backup...
+          <input type="file" style="display:none" accept=".zip">
+        </button>
+        {{/if}}
+        </div>
+      </form>
+    </h1>
+
+    <div class="maybe-row">
+      {{!-- At desktop widths, we cram these into a single row.  On mobile, they need more space,
+            so we make them separate rows --}}
+      <div class="search-row">
+        <label>
+          <span title="Search" class="search-icon"></span>
+          <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}">
+        </label>
+      </div>
+
+      <div class="usage-info">
+        <p class="grain-count"><strong>Grains I own:</strong> {{ myGrainsCount }}</p>
+        {{#if quotaEnabled}}
+          <p class="grains-size"><strong>My grains' total size:</strong> {{ myGrainsSize }}</p>
+        {{/if}}
+      </div>
     </div>
-    </div>
-    <div class="usage-info">
-      <p class="grain-count"><strong>Grains I own:</strong> {{ myGrainsCount }}</p>
-      {{#if quotaEnabled}}
-        <p class="grains-size"><strong>My grains' total size:</strong> {{ myGrainsSize }}</p>
-      {{/if}}
-    </div>
-    </div>
+
     {{#if showTrash}}
       <p class="trash-explanation">
         <button class="empty-trash">Empty all trash</button>
@@ -26,19 +48,6 @@
         restore it to the Main list.)
       </p>
     {{/if}}
-    <div class="buttons">
-      {{#if showTrash }}
-        <button class="show-main-list">View main list</button>
-      {{else}}
-        <button class="show-trash">View trash ({{trashCount}})</button>
-      {{/if}}
-
-      {{#if isSignedUpOrDemo}}
-      <button class="restore-button">Restore backup...
-        <input type="file" style="display:none" accept=".zip">
-      </button>
-      {{/if}}
-    </div>
 
     {{#let grains=filteredSortedGrains}}
       {{>sandstormGrainTable grains=grains onGrainClicked=onGrainClicked
@@ -103,14 +112,14 @@
   Future work: callbacks for requesting different sort orders?
   --}}
   {{#let buttons=bulkActionButtons mine=mineSelected shared=sharedSelected}}
-  <div class="bulk-action-buttons">
+  <form class="standard-form bulk-action-buttons">
     {{#each buttons}}
-    <button class={{buttonClass}} disabled={{disabled mine shared}}
+    <button type="button" class={{buttonClass}} disabled={{disabled mine shared}}
             title="{{#if disabled mine shared}}To perform bulk actions, you must first select some grains in the list.{{else}}{{text mine shared}}{{/if}}">
       {{text mine shared}}
     </button>
     {{/each}}
-  </div>
+  </form>
   {{/let}}
 
     <table class="grain-list-table">

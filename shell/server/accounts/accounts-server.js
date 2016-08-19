@@ -14,64 +14,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Accounts } from "meteor/accounts-base";
+import { fetchPicture, userPictureUrl } from "/imports/server/accounts/picture.js";
+
 const Crypto = Npm.require("crypto");
 const Future = Npm.require("fibers/future");
-
-userPictureUrl = function (user) {
-  if (user.services && !(user.profile && user.profile.picture)) {
-    // Try to determine user's avatar URL from login service.
-
-    const google = user.services.google;
-    if (google && google.picture) {
-      return google.picture;
-    }
-
-    const github = user.services.github;
-    if (github && github.id) {
-      return "https://avatars.githubusercontent.com/u/" + github.id;
-    }
-
-    // Note that we do NOT support Gravatar for email addresses because pinging Gravatar would be
-    // a data leak, revealing that the user has logged into this Sandstorm server. Google and
-    // Github are different because they are actually the identity providers, so they already know
-    // the user logged in.
-  }
-};
-
-fetchPicture = function (url) {
-  try {
-    const result = HTTP.get(url, {
-      npmRequestOptions: { encoding: null },
-      timeout: 5000,
-    });
-
-    const metadata = {};
-
-    metadata.mimeType = result.headers["content-type"];
-    if (metadata.mimeType.lastIndexOf("image/png", 0) === -1 &&
-        metadata.mimeType.lastIndexOf("image/jpeg", 0) === -1) {
-      throw new Error("unexpected Content-Type:", metadata.mimeType);
-    }
-
-    const enc = result.headers["content-encoding"];
-    if (enc && enc !== "identity") {
-      metadata.encoding = enc;
-    }
-
-    return addStaticAsset(metadata, result.content);
-  } catch (err) {
-    console.error("failed to fetch user profile picture:", url, err.stack);
-  }
-};
 
 const ValidHandle = Match.Where(function (handle) {
   check(handle, String);
   return !!handle.match(/^[a-z_][a-z0-9_]*$/);
 });
-
-const localSandstormDb = new SandstormDb();
-// TODO(someday): fix this when SandstormDb actually stores meaningful state on the object.
-// Unfortunately, onCreateUser doesn't pass along the connection object.
 
 Accounts.onCreateUser(function (options, user) {
   if (user.loginIdentities) {
@@ -88,23 +40,23 @@ Accounts.onCreateUser(function (options, user) {
                   loginIdentities: [{ id: String }],
                   nonloginIdentities: [{ id: String }], });
 
-    if (localSandstormDb.isReferralEnabled()) {
+    if (globalDb.isReferralEnabled()) {
       user.experiments = user.experiments || {};
       user.experiments = {
         firstTimeBillingPrompt: Math.random() < 0.5 ? "control" : "test",
       };
       if (!("expires" in user)) {
-        sendReferralProgramNotification(user._id);
+        globalDb.sendReferralProgramNotification(user._id);
       }
     }
 
-    localSandstormDb.preinstallAppsForUser(user._id);
+    globalDb.preinstallAppsForUser(user._id);
 
     return user;
   }
 
-  if (localSandstormDb.getOrganizationDisallowGuests() &&
-      !localSandstormDb.isIdentityInOrganization(user)) {
+  if (globalDb.getOrganizationDisallowGuests() &&
+      !globalDb.isIdentityInOrganization(user)) {
     throw new Meteor.Error(400, "User not in organization.");
   }
 
@@ -129,7 +81,7 @@ Accounts.onCreateUser(function (options, user) {
   // Try downloading avatar.
   const url = userPictureUrl(user);
   if (url) {
-    const assetId = fetchPicture(url);
+    const assetId = fetchPicture(globalDb, url);
     if (assetId) {
       user.profile.picture = assetId;
     }

@@ -115,31 +115,58 @@ if (allowDemo) {
     },
   });
 
-  // If demo mode is enabled, we permit the client to subscribe to
-  // information about an app by appId. If this were available in
-  // non-demo mode, then anonymous users could effectively ask the
+  // If demo mode is enabled, we permit the client to subscribe to information about an app by
+  // appId. If this were available in non-demo mode, then anonymous users could effectively ask the
   // server which apps are installed.
-  Meteor.publish("appInfo", function (appId) {
-    // This publishes info about an app, including the latest
-    // version of it. Once you log in, it also publishes your
-    // list of UserActions.
+  Meteor.publish("appDemoInfo", function (appId) {
+    // This publishes info about an app, including the latest version of it. Once you log in, it
+    // also publishes your list of UserActions.
     check(appId, String);
 
-    const packageCursor = Packages.find(
-      { appId: appId },
-      { sort: { "manifest.appVersion": -1 } });
+    // Get data about this app from the app index. Note that the app index cache on this server
+    // is typically 6-24 hours delayed from reality, so if an app is newly-available
+    // in the app market, it won't be in the app index. Therefore we don't bail-out if the app
+    // is missing from the AppIndex collection.
+    let appIndexData = globalDb.collections.appIndex.findOne({ appId: appId });
 
-    const pkg = packageCursor.fetch()[0];
+    // Prepare a helper function we can use to transform a package cursor into an appropriate return
+    // value for this function.
+    const packageCursorAndMaybeUserActions = function (userId, appId, packageCursor) {
+      // This allows us to avoid creating duplicate UserActions.
+      if (userId) {
+        return [
+          packageCursor,
+          UserActions.find({ userId: userId, appId: appId }),
+        ];
+      }
 
-    // This allows us to avoid creating duplicate UserActions.
-    if (this.userId) {
-      return [
-        packageCursor,
-        UserActions.find({ userId: this.userId, appId: appId }),
-      ];
+      return packageCursor;
+    };
+
+    // If the app is in the app index, and the current version is installed, always return that. If
+    // that package isn't installed, store the version number so we can filter on it later.
+    let packageQuery = {};
+    if (appIndexData) {
+      let appIndexPackageQuery = Packages.find({ _id: appIndexData.packageId });
+      if (appIndexPackageQuery.count() > 0) {
+        return packageCursorAndMaybeUserActions(this.userId, appId, appIndexPackageQuery);
+      }
+
+      // If the app index version isn't present, insist on a lower version than the app index
+      // version. This avoids accidentally catching some development version of the app that has the
+      // same version number as the app market version but isn't the app market version.
+      packageQuery["manifest.appVersion"] = { $lt: appIndexData.versionNumber };
     }
 
-    return packageCursor;
+    // If the specific package from the app index isn't installed, or the app isn't there at all, do
+    // our best.
+    packageQuery.appId = appId;
+    const packageCursor = Packages.find(
+      packageQuery,
+      { sort: { "manifest.appVersion": -1 },
+        limit: 1,
+      });
+    return packageCursorAndMaybeUserActions(this.userId, appId, packageCursor);
   });
 
   SandstormDb.periodicCleanup(DEMO_EXPIRATION_MS, cleanupExpiredUsers);
@@ -147,4 +174,3 @@ if (allowDemo) {
   // Just run once, in case the config just changed from allowing demos to prohibiting them.
   Meteor.setTimeout(cleanupExpiredUsers, DEMO_EXPIRATION_MS + DEMO_GRACE_MS);
 }
-

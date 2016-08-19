@@ -18,9 +18,9 @@ limitations under the License.
 
 <template name="sandstormTopbar">
   {{#if isUpdateBlocked}}
-    <div class="topbar-update">
+    <button class="topbar-update">
       Sandstorm has been updated &mdash; Click here to reload
-    </div>
+    </button>
   {{/if}}
   <ul class="topbar {{#if _menuExpanded.get}}expanded{{/if}}">
     <ul class="menubar {{#if shrinkNavbar}}shrink-desktop{{/if}}">

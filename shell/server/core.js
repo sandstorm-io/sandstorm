@@ -15,9 +15,9 @@
 // limitations under the License.
 
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset.js";
 const Capnp = Npm.require("capnp");
 const Crypto = Npm.require("crypto");
-const Url = Npm.require("url");
 import { PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements }
     from "/imports/server/persistent.js";
 
@@ -26,7 +26,7 @@ const SandstormCore = Capnp.importSystem("sandstorm/supervisor.capnp").Sandstorm
 const SandstormCoreFactory = Capnp.importSystem("sandstorm/backend.capnp").SandstormCoreFactory;
 const PersistentOngoingNotification = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentOngoingNotification;
 const PersistentUiView = Capnp.importSystem("sandstorm/persistentuiview.capnp").PersistentUiView;
-const StaticAsset = Capnp.importSystem("sandstorm/grain.capnp").StaticAsset;
+const StaticAsset = Capnp.importSystem("sandstorm/util.capnp").StaticAsset;
 const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;
 
 class SandstormCoreImpl {
@@ -183,33 +183,6 @@ class NotificationHandle extends PersistentImpl {
         dismissNotification(this.notificationId);
       }
     });
-  }
-}
-
-const PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;
-
-class StaticAssetImpl {
-  constructor(assetId) {
-    check(assetId, String);
-    this._protocol = PROTOCOL.slice(0, -1);
-    this._hostPath = makeWildcardHost("static") + "/" + assetId;
-  }
-
-  getUrl() {
-    return { protocol: this._protocol, hostPath: this._hostPath, };
-  }
-}
-
-class IdenticonStaticAssetImpl {
-  constructor(hash, size) {
-    check(hash, String);
-    check(size, Match.Integer);
-    this._protocol = PROTOCOL.slice(0, -1);
-    this._hostPath =  makeWildcardHost("static") + "/identicon/" + hash + "?s=" + size;
-  }
-
-  getUrl() {
-    return { protocol: this._protocol, hostPath: this._hostPath, };
   }
 }
 

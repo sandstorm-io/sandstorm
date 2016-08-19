@@ -1346,69 +1346,95 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
   }
 
   >.faq {
+
     margin: 0;
-    padding: 16px 0 32px;
+    padding: 16px 32px 32px 32px;
     color: #494949;
     text-align: left;
 
     >h3 {
-      margin: 0 32px 24px;
+      margin-top: 0px;
+      margin-bottom: 24px;
       font-weight: normal;
       font-size: 20pt;
       border-bottom: 1px solid #c1c1c1;
     }
 
-    .answer {
-      display: inline-block;
-      width: 390px;
-      margin: 0 32px;
-      vertical-align: top;
-
-      >h4 {
-        margin: 0 0 16px;
-        font-size: 14pt;
-        font-weight: normal;
+    .answers {
+      display: flex;
+      @media #{$desktop} {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+      }
+      @media #{$mobile} {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: flex-start;
+        justify-content: stretch;
       }
 
-      >p {
-        font-size: 10pt;
-        >a {
-          text-decoration: none;
-          font-weight: 600;
-          color: inherit;
-          &:hover {
-            color: #65468e;
+      .answer {
+        @media #{$desktop} {
+          display: inline-block;
+          max-width: 390px;
+          margin-right: 16px;
+        }
+        @media #{$mobile} {
+          display: block;
+          margin: 0px;
+        }
+
+        vertical-align: top;
+
+        >h4 {
+          margin: 0 0 16px;
+          font-size: 14pt;
+          font-weight: normal;
+        }
+
+        >p {
+          font-size: 10pt;
+          >a {
+            text-decoration: none;
+            font-weight: 600;
+            color: inherit;
+            &:hover {
+              color: #65468e;
+            }
           }
         }
       }
-
-      &:last-of-type {
-        // Hacky space for "contact support" button.
-        padding-bottom: 40px;
-      }
     }
 
-    >a.button {
-      text-decoration: none;
-      display: block;
-      margin: -32px 64px 0;
-      float: right;
-      border: 1px solid #b7b7b7;
-      padding: 8px 8px 8px 32px;
-      background-image: url("/email-494949.svg");
-      background-repeat: no-repeat;
-      background-position: 8px center;
-      background-size: 16px 16px;
-      color: #494949;
-      border-radius: 2px;
-      text-transform: uppercase;
-      font-size: 10pt;
-      position: relative;
-      z-index: 10;
+    >.contact-button-wrapper {
+      display: flex;
+      flex-direction: row-reverse;
+      align-items: flex-start;
+      justify-content: flex-start;
 
-      &:hover {
-        background-color: white;
-        cursor: pointer;
+      >a.button {
+        text-decoration: none;
+        display: inline-block;
+        float: right;
+        border: 1px solid #b7b7b7;
+        padding: 8px 8px 8px 32px;
+        background-image: url("/email-494949.svg");
+        background-repeat: no-repeat;
+        background-position: 8px center;
+        background-size: 16px 16px;
+        color: #494949;
+        border-radius: 2px;
+        text-transform: uppercase;
+        font-size: 10pt;
+        position: relative;
+        z-index: 10;
+
+        &:hover {
+          background-color: white;
+          cursor: pointer;
+        }
       }
     }
 

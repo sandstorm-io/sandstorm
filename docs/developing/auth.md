@@ -98,21 +98,11 @@ repository on GitHub.
 
 ## Defining permissions and roles
 
-Apps define permissions by providing a
-[`UiView.ViewInfo`](https://github.com/sandstorm-io/sandstorm/blob/v0.177/src/sandstorm/grain.capnp#L160-L265) to Sandstorm.
-Apps that use `sandstorm-http-bridge`
-can specify a `ViewInfo` value in the `PackageDefinition.bridgeConfig` field
-of their `sandstorm-pkgdef.capnp`.
-Apps that do not use `sandstorm-http-bridge`
-can directly provide a `ViewInfo` by implementing the
-[`UiView.getViewInfo()`](https://github.com/sandstorm-io/sandstorm/blob/v0.177/src/sandstorm/grain.capnp#L157) Cap'n Proto method.
-
 When sharing a grain, a user selects a bundle of permissions to grant.
 Such a bundle of permissions is called a *role*.
 Roles are intended to give users a more human-friendly
 handle on permissions and to steer users away from
 combinitions of permissions that might not make sense.
-Like permissions, roles are defined in an app's `ViewInfo`.
 
 From Sandstorm's perspective, the meanings of permissions are completely opaque.
 Sandstorm merely tracks who is allowed to access which grain with which permissions.
@@ -123,6 +113,15 @@ precise *permissions*, which are are computed on-the-fly every time the recipien
 of the share opens the grain.
 Therefore, if a later version of the app modifies the role definition,
 existing shares will be affected.
+
+Apps define permissions and roles by providing a
+[`UiView.ViewInfo`](https://github.com/sandstorm-io/sandstorm/blob/v0.177/src/sandstorm/grain.capnp#L160-L265) to Sandstorm.
+Apps that use `sandstorm-http-bridge`
+can specify a `ViewInfo` value in the `PackageDefinition.bridgeConfig` field
+of their `sandstorm-pkgdef.capnp`.
+Apps that do not use `sandstorm-http-bridge`
+can directly provide a `ViewInfo` by implementing the
+[`UiView.getViewInfo()`](https://github.com/sandstorm-io/sandstorm/blob/v0.177/src/sandstorm/grain.capnp#L157) Cap'n Proto method.
 
 In a `ViewInfo`, permissions and roles are defined in lists of
 [`PermissionDef`](https://github.com/sandstorm-io/sandstorm/blob/v0.177/src/sandstorm/grain.capnp#L524-L545) and
@@ -141,3 +140,7 @@ Here are some examples:
 
 * A [sandstorm-pkgdef.capnp](https://github.com/dwrensha/groovebasin/blob/c6a2cbda0b7a94971f9671a6b4955e1007470556/.sandstorm/sandstorm-pkgdef.capnp)
   with five permissions defined.
+
+* An [implementation of `getViewInfo()`](https://github.com/sandstorm-io/sandstorm-rawapi-example/blob/e3f06c842dfde8d4eed6ac5b2c79fb7a5eaa33c3/server.c%2B%2B#L340-L361) in a C++ app that does not use `sandstorm-http-bridge`.
+
+* An [implementation of `getViewInfo()`](https://github.com/dwrensha/sandstorm-rawapi-example-rust/blob/14f5273673ca6827045faeb191c1478bf3e19131/src/server.rs#L261-L290) in a Rust app that does not use `sandstorm-http-bridge`.

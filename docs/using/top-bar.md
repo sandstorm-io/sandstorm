@@ -4,7 +4,7 @@
 
 When an app is running in Sandstorm, Sandstorm provides navigation elements at the top of the screen.
 
-You can see an example by opening an [EtherCalc demo grain](https://demo.sandstorm.io/appdemo/a0n6hwm32zjsrzes8gnjg734dh6jwt7x83xdgytspe761pe2asw0).
+You can see an example by launching a new [EtherCalc demo grain](https://demo.sandstorm.io/appdemo/a0n6hwm32zjsrzes8gnjg734dh6jwt7x83xdgytspe761pe2asw0).
 
 ## Summary of the elements
 

@@ -198,22 +198,6 @@ Meteor.startup(function () {
   }
 });
 
-const formatAddress = function (field) {
-  if (!field) {
-    return null;
-  }
-
-  if (Array.isArray(field)) {
-    return field.map(formatAddress);
-  }
-
-  if (field.name) {
-    return field.name + " <" + field.address + ">";
-  }
-
-  return field.address;
-};
-
 hackSendEmail = (session, email) => {
   return inMeteor((function () {
     let recipientCount = 0;
@@ -243,11 +227,8 @@ hackSendEmail = (session, email) => {
         userAddress.address + ". Yours was: " + email.from.address);
     }
 
-    const from = formatAddress(email.from);
-    const to = formatAddress(email.to);
-    const cc = formatAddress(email.cc);
-    const bcc = formatAddress(email.bcc);
-    const replyTo = formatAddress(email.replyTo);
+    // Unpack fields
+    const { from, to, cc, bcc, replyTo, subject, text, html } = email;
 
     const options = {
       from,
@@ -255,9 +236,9 @@ hackSendEmail = (session, email) => {
       cc,
       bcc,
       replyTo,
-      subject:  email.subject,
-      text:     email.text,
-      html:     email.html,
+      subject,
+      text,
+      html,
       envelope: {
         from: grainAddress,
         to,

@@ -75,12 +75,15 @@ IMAGES= \
     shell/public/up.svg \
     shell/public/web.svg \
                              \
+    shell/public/add-credit-m.svg \
+    shell/public/add-email-m.svg \
     shell/public/apps-m.svg \
     shell/public/appmarket-m.svg \
     shell/public/bug-m.svg \
     shell/public/clipboard-m.svg \
     shell/public/close-m.svg \
     shell/public/copy-m.svg \
+    shell/public/credit-m.svg \
     shell/public/down-m.svg \
     shell/public/debug-m.svg \
     shell/public/download-m.svg \

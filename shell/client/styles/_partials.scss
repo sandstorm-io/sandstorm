@@ -206,3 +206,34 @@
     color: #666 !important; // Grey out all text uniformly.
   }
 }
+
+%search-row {
+  // A search bar that grows to the size of its container.
+  >label {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+
+    >span.search-icon {
+      @extend %pseudo-img-tag;
+      background-image: url("/search.svg");
+      background-size: 24px 24px;
+      background-position: center;
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      vertical-align: top;
+    }
+    >input.search-bar {
+      flex: 1 1 auto;
+      font-size: 16pt;
+      height: 32px;
+      background-color: $grainlist-searchbar-background-color;
+      border: 1px solid $grainlist-searchbar-outline-color;
+      &:focus {
+        border: 1px solid $grainlist-searchbar-outline-color-focus;
+      }
+    }
+  }
+}

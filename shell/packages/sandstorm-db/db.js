@@ -948,15 +948,18 @@ SandstormDb = function (quotaManager) {
 
   this.quotaManager = quotaManager;
   this.collections = {
-    // Direct access to underlying collections. DEPRECATED.
+    // Direct access to underlying collections. DEPRECATED, but better than accessing the top-level
+    // collection globals directly.
     //
     // TODO(cleanup): Over time, we will provide methods covering each supported query and remove
     //   direct access to the collections.
+    users: Meteor.users,
 
     packages: Packages,
     devPackages: DevPackages,
     userActions: UserActions,
     grains: Grains,
+    roleAssignments: RoleAssignments, // Deprecated, only used by the migration that eliminated it.
     contacts: Contacts,
     sessions: Sessions,
     signupKeys: SignupKeys,
@@ -966,19 +969,19 @@ SandstormDb = function (quotaManager) {
     apiTokens: ApiTokens,
     apiHosts: ApiHosts,
     notifications: Notifications,
+    // Omitted: ActivitySubscriptions
     statsTokens: StatsTokens,
     misc: Misc,
     settings: Settings,
+    migrations: Migrations,
+    // Omitted: StaticAssets
+    // Omitted: AssetUploadTokens
+    plans: Plans,
     appIndex: AppIndex,
     keybaseProfiles: KeybaseProfiles,
     featureKey: FeatureKey,
     setupSession: SetupSession,
-    users: Meteor.users,
     desktopNotifications: DesktopNotifications,
-
-    // Intentionally omitted:
-    // - Migrations, since it's used only within this package.
-    // - RoleAssignments, since it is deprecated and only used by the migration that eliminated it.
   };
 };
 

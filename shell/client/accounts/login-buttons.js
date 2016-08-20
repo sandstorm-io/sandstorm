@@ -71,24 +71,25 @@ function getActiveIdentityId(grains) {
 }
 
 Template.accountButtons.helpers({
-  displayName: function () {
+  profileData: function () {
     if (Meteor.user() && !Meteor.user().loginIdentities && !Meteor.user().profile) {
       // Need to wait for resume token to complete login. For some reason, `Meteor.loggingIn()`
       // is still false in this case.
-      return "Loading...";
+      return { loading: true };
     }
 
     const currentIdentityId = getActiveIdentityId(this.grains);
     const user = Meteor.users.findOne({ _id: currentIdentityId });
     if (currentIdentityId && !user) {
       // Need to wait for the `identityProfile` subscription to be ready.
-      return "Loading...";
+      return { loading: true };
     }
 
-    if (!user) return "(incognito)";
+    if (!user) return { displayName: "(incognito)", pictureUrl: "/incognito.svg", };
 
     SandstormDb.fillInProfileDefaults(user);
-    return user.profile.name;
+    SandstormDb.fillInPictureUrl(user);
+    return { displayName: user.profile.name, pictureUrl: user.profile.pictureUrl };
   },
 });
 

@@ -52,6 +52,9 @@ $topbar-dropdown-border-color: #c1c1c1;
 $default-content-background-color: #efefef;
 $default-content-foreground-color: #191919;
 
+// Color used for horizontal rules separating sections in page content
+$default-rule-color: #a2a2a2;
+
 // Some table-related colors.
 $default-table-border-color: #ffffff; // Outlines the entire <table>.
 
@@ -99,7 +102,7 @@ $applist-foreground-color: $default-content-foreground-color;
 
 $applist-action-text-color: #5d5d5d;
 
-$applist-rule-color: #6d6d6d;
+$applist-rule-color: $default-rule-color;
 $applist-pseudoapp-background-color: #ffffff;
 $applist-pseudoapp-outline-color: #d3d3d3;
 

@@ -1,6 +1,6 @@
 .grain-list {
   overflow: auto;
-  padding: 0px 32px;
+  padding: 32px;
   @media #{$mobile} {
     padding: 0px 8px;
   }
@@ -25,109 +25,64 @@
     background-color: inherit;
   }
 
-  >.top-row>.non-usage-info {
-    float: left;
-    @media #{$mobile} {
-      float: none;
-    }
-    >h1 {
-      font-size: 24pt;
-      font-weight: 400;
-      @media #{$mobile} {
-        display: inline-block;
-        vertical-align: middle;
-      }
-    }
-    >.search-row {
-      display: inline-block;
-      vertical-align: top;
-      @media #{$mobile} {
-        margin-bottom: 0;
-        display: inline-block;
-        vertical-align: middle;
-        width: calc(100% - 100px);
-      }
-      >label {
-        >span.search-icon {
-          @extend %pseudo-img-tag;
-          background-image: url("/search.svg");
-          background-size: 24px 24px;
-          background-position: center;
-          display: inline-block;
-          width: 32px;
-          height: 32px;
-          vertical-align: top;
-        }
-        >input.search-bar {
-          font-size: 16pt;
-          height: 32px;
-          background-color: $grainlist-searchbar-background-color;
-          border: 1px solid $grainlist-searchbar-outline-color;
-          &:focus {
-            border: 1px solid $grainlist-searchbar-outline-color-focus;
-          }
-          @media #{$mobile} {
-            width: calc(100% - 36px);
-          }
-        }
-      }
-    }
-  }
-  button.show-trash, >button.show-main-list {
-    @extend %button-base;
-    @extend %button-secondary;
-  }
-  >.trash-explanation {
-    display: inline-block;
-    margin-bottom: 4px;
-    margin-top: 20px;
-    width: 100%;
-    font-size: 10pt;
+  >h1 {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
 
-    button.empty-trash {
-      @include unstyled-button();
-      color: $sandstorm-purple-color;
-      font-weight: bold;
+    margin-top: 0px;
+    padding-top: 0px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid $default-rule-color;
+    margin-bottom: 12px;
+
+    font-size: 24pt;
+    font-weight: 400;
+  }
+
+  >.maybe-row {
+    margin-bottom: 12px;
+    @media #{$desktop} {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    @media #{$mobile} {
+      display: block;
     }
   }
-  >.buttons {
-    float: right;
-    clear: right;
-    >button {
-      @extend %button-base;
-      @extend %button-secondary;
-      display: inline-block;
-      float: right;
-      font-size: 14pt;
-      line-height: 16pt;
-      height: 32px;
-      margin-top: 10px;
-      margin-bottom: 10px;
-      margin-left: 10px;
-    }
-  }
-  >.top-row>.usage-info {
-    float: right;
+
+  .search-row {
+    @extend %search-row;
+
+    flex: 1 1 auto;
     vertical-align: top;
-    margin: 4px;
-    margin-top: 80px;
+    clear: both;
+
+    @media #{$mobile} {
+      display: block;
+      margin-bottom: 12px;
+    }
+  }
+
+  >.trash-explanation {
+    @extend %trash-explanation;
+  }
+
+  .usage-info {
+    margin-left: 4px;
     padding: 8px;
     border-radius: 4px;
     background-color: white;
     >p { margin: 0; }
-    @media #{$mobile} {
-      float: none;
-      margin-top: 8px;
-    }
-  }
-
-  >.bulk-action-buttons {
-    @extend %bulk-action-buttons;
   }
 
   >table {
     @extend %grain-table;
   }
+
   >.no-grains {
     width: 100%;
     background-color: white;
@@ -137,6 +92,17 @@
       margin-left: auto;
       margin-right: auto;
     }
+  }
+}
+
+%trash-explanation {
+  width: 100%;
+  font-size: 10pt;
+
+  button.empty-trash {
+    @include unstyled-button();
+    color: $sandstorm-purple-color;
+    font-weight: bold;
   }
 }
 

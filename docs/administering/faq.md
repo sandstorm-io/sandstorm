@@ -1,17 +1,14 @@
-One way to use Sandstorm is to run the software on your own server --
-we call that _self-hosting_. This page answers common questions from
-self-hosters.
+One way to use Sandstorm is to run the software on your own server -- we call that
+_self-hosting_. This page answers common questions from self-hosters.
 
 ## How do I log in, if there's a problem with logging in via the web?
 
-If logging into your Sandstorm server over the web isn't working, you
-can reset your Sandstorm's login providers. Resetting login providers
-will retain all existing accounts, including account metadata such as
-who is an admin.
+If logging into your Sandstorm server over the web isn't working, you can reset your Sandstorm's
+login providers. Resetting login providers will retain all existing accounts, including account
+metadata such as who is an admin.
 
-These instructions assume you've installed Sandstorm as root, which is
-the default recommendation. If not, remove the `sudo` from the
-instructions below.
+These instructions assume you've installed Sandstorm as root, which is the default
+recommendation. If not, remove the `sudo` from the instructions below.
 
 * Use e.g. `ssh` to log into the server running Sandstorm.
 
@@ -55,7 +52,7 @@ UPDATE_CHANNEL=dev
 then you need to change the `BIND_IP` value to `0.0.0.0`.
 
 (To be pedantic, this the unspecified IPv4 address. For IPv6
-compatibility, you may want `::` instead. I haven't tested this yet.)
+compatibility, you may want `::` instead. We haven't tested this yet.)
 
 ## What ports does Sandstorm need open?
 
@@ -82,7 +79,7 @@ _Optionally_
 * Disk space: 5 GB
 * Swap: Enabled, if possible
 
-You can probably get away with less, but I wouldn't advise it.
+You can probably get away with less, but we wouldn't advise it. 2GB is vastly better than 1 GB.
 
 Using a virtual machine from Amazon EC2, Google Compute Engine,
 Linode, Digital Ocean, etc., is fine; just make sure you have a recent
@@ -91,16 +88,15 @@ operating system.
 
 ## Sometimes I randomly see a lot of errors across the board, while other times the same functions work fine. What's going on?
 
-Do you have enough RAM? Linux will start randomly killing processes
-when it's low on RAM. Each grain you have open (or had open in the
-last couple minutes) will probably consume 50MB-500MB of RAM,
-depending on the app. We therefore recommend using a server with at
-least 2GB. If you have less that that, see the next question.
+Do you have enough RAM? Linux will start randomly killing processes when it's low on RAM. Each grain
+you have open (or had open in the last couple minutes) will probably consume 50MB-500MB of RAM,
+depending on the app. We therefore recommend using a server with at least 2GB. If you have less that
+that, see the next question.
 
 ## My virtual machine doesn't have that much RAM, what can I do?
 
-It might help to set up swap space. The following commands will set up
-a file on-disk to use as swap:
+It might help to set up swap space. The following commands will set up a file on-disk to use as
+swap:
 
     dd if=/dev/zero of=/swap.img bs=1M count=1024
     mkswap /swap.img
@@ -377,6 +373,55 @@ to address the issue.
 To get further help, please email support@sandstorm.io. Please include the most recent 100 lines
 from the MongoDB log file, if you can.
 
+## Enabling user namespaces
+
+Sandstorm requires the Linux feature called user namespaces to be enabled on your Linux system and
+available to unprivileged users. This allows Sandstorm to containerize itself and each grain that
+runs.
+
+Because this is required by Sandstorm, and because many users have difficulty setting up Sandstorm
+on their servers, this page provides advice on how to enable user namespaces. Please be sure to
+keep up to date with kernel updates if you follow the advice in this section, and please be sure to
+make an informed decision about your own security needs.
+
+- **People who don't know how to change a Linux kernel.** If you are a customer of a hosting
+  provider, please ask your hosting provider to read this page. They are also welcome to email the
+  Sandstorm team at [support@sandstorm.io.](mailto:support@sandstorm.io)
+
+- **Arch Linux users.** In [#36969](https://bugs.archlinux.org/task/36969), the Arch Linux kernel
+  maintainer indicated that they are not interested in supporting unprivileged user namespaces. Try
+  the `linux-lqx` AUR package, or build your own kernel. Read the [Arch Linux wiki page on
+  kernels](https://wiki.archlinux.org/index.php/Kernels#AUR_packages) for more information.
+
+- **Docker users.** See the [Sandstorm recommendations for
+  Docker](../install.md#option-6-using-sandstorm-within-docker) in our installation guide.
+
+- **Debian and Ubuntu users.** The Sandstorm install script uses a [Debian-specific
+  sysctl](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=712870) to enable unprivileged user
+  namespaces. If you are unable to set it on your system, please run these commands as root
+  and/or upgrade your Linux kernel.
+
+```bash
+# sysctl -w kernel.unprivileged_userns_clone=1
+# echo 'kernel.unprivileged_userns_clone = 1' >> /etc/sysctl.conf"
+```
+
+- **RHEL and CentOS users.** CentOS/RHEL 7.2 ships a kernel that _may_ be able to support
+  unprivileged usernamespaces. In our testing, further work is needed to properly enable Sandstorm
+  to work within CentOS/RHEL 7.2. If you need help with this, please email
+  [support@sandstorm.io.](mailto:support@sandstorm.io)
+
+- **OpenVZ users.** If you use an OpenVZ-based hosting provider, please ask your hosting provider
+  to read our [installation documentation](../install.md) and this document.
+
+- **Grsecurity kernel users.** Grsecurity seems to block unprivileged user namespaces. Consider
+  running Sandstorm without Grsecurity. You might be interested to see [Sandstorm's track record of
+  successfully blocking exploitation of Linux kernel
+  vulnerabilities.](../using/security-non-events.md#linux-kernel)
+
+- **Alpine Linux users.** Alpine Linux enables Grsecurity by default. See the previous item and
+  consider using the [Alpine vanilla kernel.](http://forum.alpinelinux.org/downloads)
+
 ## How do I enable WebSockets proxying? or, Why do some apps seem to crash & reload?
 
 Some Sandstorm users find that apps like Telescope and Groove Basin seem to load an initial screen
@@ -395,3 +440,60 @@ that we provide. Pay special attention to:
 For `apache2`: consult the
 [apache-virtualhost.conf](https://github.com/sandstorm-io/sandstorm/blob/master/docs/administering/sample-config/apache-virtualhost.conf)
 that we provide. Pay special attention to the `RewriteRule` stanzas.
+
+## Can I use Let's Encrypt for adding HTTPS to Sandstorm?
+
+**Short answer:** No. We wish we could say yes. We are eagerly awaiting support of wildcard
+certificates by Let's Encrypt. For advice that will work, read our [docs about configuring
+HTTPS.](ssl.md)
+
+**Medium answer:** You can use Let's Encrypt for [static
+publishing](../developing/web-publishing.md) on personal or corporate domain names like
+`mysite.example.com`, but not your main Sandstorm server interface.
+
+Here's the long answer.
+
+To have working HTTPS, Sandstorm needs a wildcard certificate for all the reasons documented in [our
+documentation on wildcard DNS.](wildcard.md)
+
+One hypothetical alternative to a wildcard certificate is dynamic integration with Let's Encrypt.
+In this strategy, each new Sandstorm hostname generates a new Let's Encrypt certificate. However,
+this won't work for the following reasons.
+
+**Rate limits.** Sandstorm creates a new domain for every user session of every grain, for
+reachability self-tests, for each API endpoint, for each static publishing endpoint, for its own
+static assets, and for identicons. A user could conceivably cause Sandstorm to generate 20 hostnames
+in a minute of usage. Generating 20 hostnames would trigger the [rate
+limits[(https://letsencrypt.org/docs/rate-limits/), at which point all other visitors to Sandstorm
+qwould be unable to use grains. This issue alone makes the problem intractable.
+
+There are some additional problems as well.
+
+- **Loss of defense-in-depth for cross-site-request forgery protection and more.** Let's Encrypt
+  shares all certificate hostnames to the Certificate Transparency logs, which means you lose one of
+  Sandstorm's defense-in-depth mechanisms. Read the doc on [why we use wildcards](wildcard.md) for
+  more information on defense-in-depth via wildcards.
+
+- **Loss of privacy for static publishing URLs.** When users generate [static publishing
+  content](../developing/web-publishing.md) within a grain, they typically expect it to be private
+  until they choose a well-known domain name for the content. Let's Encrypt's integration with
+  Certificate Transparency would make all static publishing URLs by default.
+
+Some subproblems seem to have solutions, but they do not add up to a full solution for now.
+
+- **Latency.** The most straightforward way to implement Let's Encrypt dynamic provisioning with
+  Sandstorm would be for each new domain to be provisioned at the time it is created within
+  Sandstorm. Thhis would mean that a visitor to your Sandstorm server would perceive a >10 second
+  latency introduced by Let's Encrypt while Let's Encrypt validates the domain and provides a
+  certificate. This could be solved by pre-generating a large number of subdomain certificates, but
+  it's not feasible to pregenerate enough. Consider that a server with 20 users and 20 grains would
+  need at least 400 certificates, but Let's Encrypt permits 20 certificates per week at the time of
+  writing. Additionally, Sandstorm periodically cycles these hostnames out of use. Let's Encrypt's
+  support for SAN certificates would allow 2,000 hostnames per week, but if a grain suddenly became
+  popular, new visitors would overwhelm this rate limit.
+
+One approach is to use `*.example.sandcats.io` for wildcard hostnames, but use a `BASE_URL` of `example.com`
+where `example.com` is certified via Let's Encrypt. However, this would mean that `example.com` contains
+IFRAME elements pointing at `*.example.sandcats.io` and these IFRAMEs may not be able to set cookies within
+the subdomain due to the increasingly-common **third-party cookie-blocking** done by browsers such as Chrome
+and Firefox.

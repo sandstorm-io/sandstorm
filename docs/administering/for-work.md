@@ -9,6 +9,73 @@ Work, and it gives us time to finish testing the payments system.
 
 ## Sandstorm for Work in depth
 
+### Defining an organization, and its impact on permissions
+
+Many features of Sandstorm for Work depend on a server administrator specifying the group of users that will
+be working together using Sandstorm. We call this **organization management.** You can enable and disable
+organization-related features via the `/admin/organization` settings area.
+
+To apply settings to all users within an organization, you must use organization management settings to
+configure the boundary of your organization with regard to at least one login provider. Users within the
+organization will automatically be able to log in, install apps, and create grains.
+
+To enable this feature:
+
+- Log in to your server as an administrator.
+
+- Click your name at the top right, then **Admin panel**; this should take you to `/admin`.
+
+- Under the "Configuration" header, click "Organization settings"
+
+- Enable and configure your organization membership on a per-login-provider basis.
+
+Login providers have different settings that are used to define your organization. A user is
+considered a member of your organization if the settings for **at least one** login provider
+declare the user to be a member. You can enable/disable this on a per-login-provider basis.
+
+- **Google authentication.** All users who use a particular Google Apps domain of your choosing can
+  receive user status in Sandstorm. When you enable the use of Google Apps to define the boundary
+  of your organization, you must specify which Google Apps domain represents your organization.
+
+- **LDAP authentication.** All users who log in via LDAP can automatically receive user status in
+  Sandstorm. When you use LDAP to define the boundary of your organization, all users who log in via
+  LDAP are considered members of the organization.
+
+- **SAML authentication.** All users who log in via LDAP can automatically receive user status in
+  Sandstorm. When you use SAML to define the boundary of your organization, all users who log in via
+  SAML are considered members of the organization.
+
+- **Passwordless email login.** All users who use a particular email address domain name
+  (e.g. @example.com) can receive user status in Sandstorm. To enable this, you must specify which
+  Internet domain name represents your organization.
+
+This feature is important because, by default, when a user signs into a Sandstorm server for the
+first time, Sandstorm creates a _Visitor_ account for them. Visitors can use grains that have been
+shared with them but cannot create grains of their own.
+
+### Additional organization settings
+
+Once you have defined your organization, you can optionally configure system-wide rules based on
+organization membership. This can be done from `/admin/organization` within your Sandstorm server.
+
+You can **disallow collaboration with users outside the organization.** If you enable this option,
+grains can only be seen by users logged-in as a member of your organization. This means:
+
+- Unauthenticated (aka anonymous) users cannot view grains, even if they have a sharing link.
+
+- When a user attempts to create an account or sign in, Sandstorm validates that they are part
+  of your organization. If not, then they may not create an account or sign in. This prevents
+  [Visitors](guide.md) from using their accounts.
+
+- Security note: at the moment, this setting only applies to new logins. If a user was already signed
+  in when you first enabled this option, the user would be able to continue to use their account even
+  if they're not a member of your organization.
+
+You can **make all organization users visible to each other.** This setting automatically adds
+users within the organization to each other's contact list so that they can share grains with each
+other. The contact list is used for autocomplete when users are in the "Share access" dialog within
+a grain. Disable this if you have some users whose identity should stay hidden from other users.
+
 ### Authentication provider: LDAP
 
 LDAP is a protocol for storing information of nearly any kind; it is typically used to store data
@@ -85,45 +152,14 @@ The Service URL of this server is displayed in the configuration dialog, and is 
 hostname plus `/_saml/validate/default`. For example:
 `https://sandstorm.example.com/_saml/validate/default`
 
-## Organization management
-
-For users who are within your organization, Sandstorm for Work can automatically grant them a user
-account. This feature can be enabled or disabled per login provider.
-
-- **Google authentication.** All users who use a particular Google Apps domain of your choosing can
-  receive user status in Sandstorm.
-
-- **LDAP authentication.** All users who log in via LDAP can automatically receive user status in
-  Sandstorm.
-
-- **Passwordless email login.** All users who use a particular email address domain name
-  (e.g. @example.com) can receive user status in Sandstorm.
-
-To enable this feature:
-
-- Log in to your server as an administrator.
-
-- Click your name at the top right, then **Admin panel**; this should take you to `/admin`.
-
-- Under the "Configuration" header, click "Organization settings"
-
-- Enable and configure your organization membership on a per-login-provider basis.
-
-This feature is important because, by default, when a user signs into a Sandstorm server for the
-first time, Sandstorm creates a _Visitor_ account for them. Visitors can use grains that have been
-shared with them but cannot create grains of their own. The setting **Disallow collaboration with
-users outside the organization** can disable the ability for users not a part of your organization
-to log in.
-
 ### Features coming soon
 
 We're still working on the following features:
 
 **Group management.** This will allow you to share a grain with everyone in a group, such as the
-marketing department, using groups from Google or LDAP.
-
-**Global access control.** Configure organization-wide access control policies, such as prohibiting
-your employees from sharing grains outside of the organization.
+marketing department, using groups from Google or LDAP. For now, you can use the
+[Collections app](https://sandstorm.io/news/2016-08-09-collections-app) to create groups of grains
+that you share with the people who need access.
 
 **Global audit logging.** Monitor data across the whole organization to keep track of who has
 accessed what.

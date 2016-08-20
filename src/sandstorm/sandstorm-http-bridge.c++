@@ -783,6 +783,18 @@ private:
 #undef ON_DATA
 #undef ON_EVENT
 
+  static void maybePrintInvalidEtagWarning(kj::StringPtr input) {
+    static bool alreadyLoggedMessage = false;
+    if (alreadyLoggedMessage) {
+      // We already logged the message once this session, which is plenty for now.
+    } else {
+      KJ_LOG(ERROR, "HTTP protocol error, dropping ETag: app returned invalid ETag data", input);
+      KJ_LOG(ERROR, "See Sandstorm documentation: "
+             "https://docs.sandstorm.io/en/latest/search.html?q=invalid+etag+data");
+      alreadyLoggedMessage = true;
+    }
+  }
+
   static void parseETag(kj::StringPtr input, WebSession::ETag::Builder builder) {
     auto trimmed = trim(input);
     input = trimmed;
@@ -791,8 +803,11 @@ private:
       builder.setWeak(true);
     }
 
-    KJ_REQUIRE(input.startsWith("\"") && input.endsWith("\"") && input.size() > 1,
-               "app returned invalid ETag header", input);
+    // Apps sometimes send invalid ETag data. Rather than crash, we log a warning, due to #2295.
+    if (! (input.endsWith("\"") && input.size() > 1)) {
+      maybePrintInvalidEtagWarning(input);
+      return;
+    }
 
     bool escaped = false;
     kj::Vector<char> result(input.size() - 2);
@@ -800,7 +815,10 @@ private:
       if (escaped) {
         escaped = false;
       } else {
-        KJ_REQUIRE(c != '"', "app returned invalid ETag header", input);
+        if (c == '"') {
+          maybePrintInvalidEtagWarning(input);
+          return;
+        }
         if (c == '\\') {
           escaped = true;
           continue;

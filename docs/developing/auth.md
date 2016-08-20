@@ -25,7 +25,7 @@ requests. By default, it passes requests to your app via a tool called
 ### Headers that an app receives
 
 Per the
-[current implementation](https://github.com/sandstorm-io/sandstorm/blob/411b344f3acb151693036f3c061b153a2fd91d68/src/sandstorm/sandstorm-http-bridge.c%2B%2B)
+[current implementation](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/sandstorm-http-bridge.c%2B%2B)
 of `sandstorm-http-bridge`, an app receives the following headers
 related to user identity and permissions:
 
@@ -48,10 +48,10 @@ related to user identity and permissions:
   the same client.
 
 * `X-Sandstorm-Permissions`: This contains a list of the permissions
-  held by the current user, joined with a comma such as `edit,read` or
-  `read`. Permissions are defined in the package's
+  held by the current user, joined with a comma such as `edit,admin` or
+  just `edit`. Permissions are defined in the package's
   `sandstorm-pkgdef.capnp`. The grain's owner holds every permission
-  and can use the "Share" button to authorize other users.
+  and can use the "Share access" button to authorize other users.
 
 * `X-Sandstorm-Preferred-Handle`: The user's preferred "handle". A
   handle is like a Unix username. It contains only lower-case ASCII
@@ -95,9 +95,42 @@ the
 [sandstorm-rawapi-example](https://github.com/sandstorm-io/sandstorm-rawapi-example)
 repository on GitHub.
 
-## Further reading
 
-You might be interested in looking at:
+## Defining permissions and roles
+
+When sharing a grain, a user selects a bundle of permissions to grant.
+Such a bundle of permissions is called a *role*.
+Roles are intended to give users a more human-friendly
+handle on permissions and to steer users away from
+combinitions of permissions that might not make sense.
+
+From Sandstorm's perspective, the meanings of permissions are completely opaque.
+Sandstorm merely tracks who is allowed to access which grain with which permissions.
+Sandstorm represents those permissions as a bit vector and leaves it up to the app
+to interpret those bits in an appropriate way.
+When a share takes place, Sandstorm records the *role* that was shared, but not the
+precise *permissions*, which are are computed on-the-fly every time the recipient
+of the share opens the grain.
+Therefore, if a later version of the app modifies the role definition,
+existing shares will be affected.
+
+Apps define permissions and roles by providing a
+[`UiView.ViewInfo`](https://github.com/sandstorm-io/sandstorm/blob/v0.177/src/sandstorm/grain.capnp#L160-L265) to Sandstorm.
+Apps that use `sandstorm-http-bridge`
+can specify a `ViewInfo` value in the `PackageDefinition.bridgeConfig` field
+of their `sandstorm-pkgdef.capnp`.
+Apps that do not use `sandstorm-http-bridge`
+can directly provide a `ViewInfo` by implementing the
+[`UiView.getViewInfo()`](https://github.com/sandstorm-io/sandstorm/blob/v0.177/src/sandstorm/grain.capnp#L157) Cap'n Proto method.
+
+In a `ViewInfo`, permissions and roles are defined in lists of
+[`PermissionDef`](https://github.com/sandstorm-io/sandstorm/blob/v0.177/src/sandstorm/grain.capnp#L524-L545) and
+[`RoleDef`](https://github.com/sandstorm-io/sandstorm/blob/v0.177/src/sandstorm/grain.capnp#L547-L579)
+values. Later versions of an app can always add more permissions or
+roles, but it is important to never remove any element from these lists.
+Instead, you can set the `obsolete` field to `true`.
+
+Here are some examples:
 
 * A [sandstorm-pkgdef.capnp](https://github.com/kentonv/ssjekyll/blob/fd09dbdbd6644abe63c50060044b71556130c30d/sandstorm-pkgdef.capnp)
   with no permissions defined.
@@ -105,5 +138,9 @@ You might be interested in looking at:
 * A [sandstorm-pkgdef.capnp](https://github.com/jparyani/mediawiki-sandstorm/blob/8c7a7d10b6121cb5e94247f7ea27a46ebf8e84eb/sandstorm-pkgdef.capnp)
   with one permission defined.
 
-* The [implementation of
-  sandstorm-http-bridge](https://github.com/sandstorm-io/sandstorm/blob/411b344f3acb151693036f3c061b153a2fd91d68/src/sandstorm/sandstorm-http-bridge.c%2B%2B).
+* A [sandstorm-pkgdef.capnp](https://github.com/dwrensha/groovebasin/blob/c6a2cbda0b7a94971f9671a6b4955e1007470556/.sandstorm/sandstorm-pkgdef.capnp)
+  with five permissions defined.
+
+* An [implementation of `getViewInfo()`](https://github.com/sandstorm-io/sandstorm-rawapi-example/blob/e3f06c842dfde8d4eed6ac5b2c79fb7a5eaa33c3/server.c%2B%2B#L340-L361) in a C++ app that does not use `sandstorm-http-bridge`.
+
+* An [implementation of `getViewInfo()`](https://github.com/dwrensha/sandstorm-rawapi-example-rust/blob/14f5273673ca6827045faeb191c1478bf3e19131/src/server.rs#L261-L290) in a Rust app that does not use `sandstorm-http-bridge`.

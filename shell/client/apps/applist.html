@@ -7,21 +7,28 @@
     {{> _grainSpinner}}
   {{else}}{{#if isSignedUpOrDemo}}
   <div class="app-list">
-    <h1>Apps</h1>
+    <h1>Apps
+      <form class="standard-form">
+        <div class="button-row">
+          {{#if uninstalling}}
+            <button type="button" class="toggle-uninstall" title="Done uninstalling">Done uninstalling</button>
+          {{else}}
+            <button type="button" class="toggle-uninstall {{#unless actionsCount}}hide{{/unless}}"
+                    title="Uninstall an app"
+            >Uninstall...</button>
+          {{/if}}
+          <button type="button" class="upload-button {{#if searching}}hide{{/if}}">Upload app...
+            <input type="file" style="display:none" accept=".spk">
+          </button>
+        </div>
+      </form>
+    </h1>
 
     <div class="search-row">
       <label>
         <span class="search-icon" title="Search"></span>
         <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}" />
       </label>
-      {{#if uninstalling}}
-      <button class="toggle-uninstall" title="Done uninstalling">Done uninstalling</button>
-      {{else}}
-      <button class="toggle-uninstall {{#unless actionsCount}}hide{{/unless}}" title="Uninstall an app">Uninstall...</button>
-      {{/if}}
-      <button class="upload-button {{#if searching}}hide{{/if}}">Upload app...
-        <input type="file" style="display:none" accept=".spk">
-      </button>
     </div>
 
     {{#if showMostPopular}}

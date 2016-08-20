@@ -260,7 +260,6 @@ Meteor.publish("notificationGrains", function (notificationIds) {
   }).filter(x => x);
 
   return [
-    Grains.find({ _id: { $in: grainIds } }, { fields: { title: 1 } }),
     Meteor.users.find({ _id: { $in: identities } }, { fields: { profile: 1 } }),
   ];
 });

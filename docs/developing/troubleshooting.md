@@ -63,3 +63,20 @@ If your app wants to write to locations other than `/var`, and it's not easy to
 change the app's code, one work-around is to create a symlink from the location
 you app wants to modify to a location under `/var`.  This won't work for all
 applications however.
+
+## ETag data
+
+Web apps often use the `ETag` HTTP response header to control caching. In Sandstorm, this header is
+permitted so long as it follows the HTTP specification's requirement that the header values are
+formatted with double-quote marks, like: `ETag: "value"` or `ETag: W/"value"`.
+
+Some apps use strings without quotation marks in their ETag headers, such as `ETag: value`, which
+violates the HTTP standard.  Sandstorm does not permit invalid header values because ambiguity can
+lead to security problems. Therefore, Sandstorm will drop invalid `ETag` headers and will write a
+warning to the grain's debug log. Usually, this does not affect app functionality, other than to
+reduce the effectiveness of the browser's cache.
+
+HTTP headers are processed within the grain at the [sandstorm-http-bridge](../using/how-it-works.md)
+layer. Recent versions of `sandstorm-http-bridge` drop the header and log a message. In versions
+v0.177 and earlier of `sandstorm-http-bridge`, invalid ETag data would trigger an exception,
+causing the request to fail.

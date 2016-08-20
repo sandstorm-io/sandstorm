@@ -1,3 +1,14 @@
+### v0.178 (2016-08-20)
+- The grain list can now be sorted by clicking on the column headers.
+- Many improvements to mobile UI. (Still more to do.)
+- Your current identity's profile picture now appears next to your name in the upper-right.
+- Fixed desktop notifications displaying grain titles incorrectly.
+- Fixed `spk publish` throwing an exception due to a bug in email handling.
+- Improved accessibility of "Sandstorm has been updated - click to reload" bar.
+- When an app returns an invalid `ETag` header, sandstorm-http-bridge will now log an error and drop it rather than throw an exception.
+- Updated to Meteor 1.4.1.
+- Oasis: Fixed appdemo not working for Davros.
+
 ### v0.177 (2016-08-15) [bugfixes]
 - Changes to SMTP handling in v0.175 caused Sandstorm to begin verifying TLS certificates strictly. Unfortunately, the prevaling norm in SMTP is loose enforcement and many actual users found Sandstorm no longer worked with their SMTP providers. This update therefore relaxes the rules again, but in the near future we will add configuration options to control this.
 

@@ -89,7 +89,84 @@ const compileMatchFilter = function (searchString) {
   };
 };
 
-const filteredSortedGrains = function (showTrash) {
+const sortGrains = function (grains, sortRules) {
+  // Overengineered sort logic.
+  //
+  // grains is an Array of grain row objects
+  // sortRules is an Array of objects containing:
+  //   key: String ("lastActive" or "size" or "title")
+  //   order: String ("ascending" or "descending")
+  //
+  // Sort rules are given in order from highest precedence to lowest precedence.
+  const compileComparator = function (rule) {
+    const { key, order } = rule;
+    const multiplier = (order === "ascending" ? 1 : -1);
+    if (key === "title") {
+      // Compare strings case-insensitively.
+      return function (a, b) {
+        const aRaw = a[key];
+        const bRaw = b[key];
+        const aLower = aRaw.toLowerCase();
+        const bLower = bRaw.toLowerCase();
+        if (aLower < bLower) {
+          return -1 * multiplier;
+        } else if (aLower > bLower) {
+          return multiplier;
+        } else {
+          return 0;
+        }
+      };
+    } else if (key === "size") {
+      // Direct comparison of values is okay.
+      return function (a, b) {
+        // If we don't have a size (because this is an apiToken, or we haven't backfilled the size
+        // yet), fill with 0 so we don't get weird null propagation
+        const aRaw = a[key] || 0;
+        const bRaw = b[key] || 0;
+        if (aRaw < bRaw) {
+          return -1 * multiplier;
+        } else if (aRaw > bRaw) {
+          return multiplier;
+        } else {
+          return 0;
+        }
+      };
+    } else {
+      // Sorting by date.
+      return function (a, b) {
+        // Null propagation on dates does the thing we want by default.
+        const aRaw = a[key];
+        const bRaw = b[key];
+        if (aRaw < bRaw) {
+          return -1 * multiplier;
+        } else if (aRaw > bRaw) {
+          return multiplier;
+        } else {
+          return 0;
+        }
+      };
+    }
+  };
+
+  const compiledRules = sortRules.map(compileComparator);
+
+  const comparator = function (a, b) {
+    let i;
+    for (i = 0; i < sortRules.length; i++) {
+      const res = compiledRules[i](a, b);
+      if (res !== 0) return res;
+    }
+
+    return 0;
+  };
+
+  // copy the list; don't mutate args in place.
+  const sortableList = grains.slice();
+  sortableList.sort(comparator);
+  return sortableList;
+};
+
+const filteredGrains = function (showTrash) {
   const ref = Template.instance().data;
   const db = ref._db;
   const grains = db.currentUserGrains(showTrash).fetch();
@@ -105,8 +182,6 @@ const filteredSortedGrains = function (showTrash) {
   return _.chain([itemsFromGrains, itemsFromSharedGrains])
       .flatten()
       .filter(filter)
-      .sortBy("lastUsed") // TODO: allow sorting by other columns
-      .reverse()
       .value();
 };
 
@@ -186,12 +261,12 @@ Template.sandstormGrainListPage.helpers({
     document.title = "Grains · " + Template.instance().data._db.getServerTitle();
   },
 
-  filteredSortedGrains: function () {
-    return filteredSortedGrains(Template.instance().data.viewTrash);
+  filteredGrains: function () {
+    return filteredGrains(Template.instance().data.viewTrash);
   },
 
-  filteredSortedTrashedGrains: function () {
-    return filteredSortedGrains(true);
+  filteredTrashedGrains: function () {
+    return filteredGrains(true);
   },
 
   searchText: function () {
@@ -204,7 +279,7 @@ Template.sandstormGrainListPage.helpers({
   },
 
   trashCount: function () {
-    return filteredSortedGrains(true).length;
+    return filteredGrains(true).length;
   },
 
   myGrainsSize: function () {
@@ -318,7 +393,7 @@ Template.sandstormGrainListPage.events({
   "keypress .search-bar": function (event, instance) {
     if (event.keyCode === 13) {
       // Enter pressed.  If a single grain is shown, open it.
-      const grains = filteredSortedGrains(instance.data.viewTrash);
+      const grains = filteredGrains(instance.data.viewTrash);
       if (grains.length === 1) {
         // Unique grain found with current filter.  Activate it!
         const grainId = grains[0]._id;
@@ -405,6 +480,12 @@ Template.sandstormGrainTable.onCreated(function () {
   this._numMineSelectedShown = new ReactiveVar(0);
   this._numSharedWithMeSelectedShown = new ReactiveVar(0);
 
+  // This tracks the current sort order.
+  this.sortOrder = new ReactiveVar({
+    key: "lastUsed",
+    order: "descending",
+  });
+
   this.autorun(() => {
     const data = Template.currentData();
     let mineResult = 0;
@@ -470,9 +551,65 @@ Template.sandstormGrainTable.helpers({
     // TODO(cleanup): access Meteor.user() through db object
     return this.size && prettySize(this.size);
   },
+
+  sortedGrains(grains) {
+    const instance = Template.instance();
+    return sortGrains(grains, [instance.sortOrder.get()]);
+  },
+
+  sortOrder() {
+    const instance = Template.instance();
+    return instance.sortOrder.get();
+  },
+
+  equal(a, b) {
+    return a === b;
+  },
 });
 
 Template.sandstormGrainTable.events({
+  "click thead td.grain-name"(evt) {
+    const instance = Template.instance();
+    const currentSortOrder = instance.sortOrder.get();
+    const newSortOrder = {
+      key: "title",
+      order: "ascending",
+    };
+    if (currentSortOrder.key === "title" && currentSortOrder.order === "ascending") {
+      newSortOrder.order = "descending";
+    }
+
+    instance.sortOrder.set(newSortOrder);
+  },
+
+  "click thead td.grain-size"(evt) {
+    const instance = Template.instance();
+    const currentSortOrder = instance.sortOrder.get();
+    const newSortOrder = {
+      key: "size",
+      order: "descending",
+    };
+    if (currentSortOrder.key === "size" && currentSortOrder.order === "descending") {
+      newSortOrder.order = "ascending";
+    }
+
+    instance.sortOrder.set(newSortOrder);
+  },
+
+  "click thead td.last-used"(evt) {
+    const instance = Template.instance();
+    const currentSortOrder = instance.sortOrder.get();
+    const newSortOrder = {
+      key: "lastUsed",
+      order: "descending",
+    };
+    if (currentSortOrder.key === "lastUsed" && currentSortOrder.order === "descending") {
+      newSortOrder.order = "ascending";
+    }
+
+    instance.sortOrder.set(newSortOrder);
+  },
+
   "click tbody tr.action": function (event) {
     this && this.onClick();
   },

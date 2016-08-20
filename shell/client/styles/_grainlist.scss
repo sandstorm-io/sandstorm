@@ -136,12 +136,10 @@
     border-bottom: 1px solid #aaa;
     >td {
       border: 1px solid white;
-      /* interactivity disabled until we can sort by different column
-      cursor:pointer;
-      &:hover {
+      &.grain-name:hover, &.grain-size:hover, &.last-used:hover {
         background-color: $grainlist-table-header-background-color-hover;
+        cursor: pointer;
       }
-      */
       &.grain-size {
         width: 80px;
         // The mobile viewport is too small to display this much text

@@ -49,7 +49,7 @@
       </p>
     {{/if}}
 
-    {{#let grains=filteredSortedGrains}}
+    {{#let grains=filteredGrains}}
       {{>sandstormGrainTable grains=grains onGrainClicked=onGrainClicked
                              bulkActionButtons=bulkActionButtons}}
 
@@ -57,7 +57,7 @@
         <div class="no-grains">
           {{#if searchText}}
             <p><strong>No matching grains found.</strong></p>
-            {{#if filteredSortedTrashedGrains}}
+            {{#if filteredTrashedGrains}}
               <p>Some grains in your trash match your search.
                <button class="show-trash">View trash</button>
               </p>
@@ -78,7 +78,7 @@
 </template>
 
 <template name="sandstormGrainTable">
-  {{!-- A pure functional template.  Pass in grains as a list of objects with shape:
+  {{!-- A mostly pure-functional template.  Pass in grains as a list of objects with shape:
   {
     _id: String,
     appTitle: String,
@@ -109,7 +109,9 @@
       onClicked(myGrainIds, sharedWithMeGrainIds): function that performs the action on the
          selected grains.
     }
-  Future work: callbacks for requesting different sort orders?
+
+  The table itself tracks and applies a sort order to the grains passed in.  The initial sort
+  order is by lastUsed, descending.
   --}}
   {{#let buttons=bulkActionButtons mine=mineSelected shared=sharedSelected}}
   <form class="standard-form bulk-action-buttons">
@@ -130,9 +132,36 @@
               <input title={{selectAllTitle}} type="checkbox">
             </td>
             <td class="td-app-icon"></td>
-            <td class="grain-name">Name</td>
-            <td class="grain-size">Size</td>
-            <td class="last-used">Last activity</td>
+            <td class="grain-name">
+              Name
+              {{#if equal sortOrder.key "title"}}
+                {{#if equal sortOrder.order "ascending"}}
+                  ▾
+                {{else}}
+                  ▴
+                {{/if}}
+              {{/if}}
+            </td>
+            <td class="grain-size">
+              Size
+              {{#if equal sortOrder.key "size"}}
+                {{#if equal sortOrder.order "ascending"}}
+                  ▾
+                {{else}}
+                  ▴
+                {{/if}}
+              {{/if}}
+            </td>
+            <td class="last-used">
+              Last activity
+              {{#if equal sortOrder.key "lastUsed"}}
+                {{#if equal sortOrder.order "ascending"}}
+                  ▾
+                {{else}}
+                  ▴
+                {{/if}}
+              {{/if}}
+            </td>
             <td class="shared-or-owned">Mine/Shared</td>
             {{!-- Collaborators, size TODO
             <td>Collaborators</td>
@@ -149,7 +178,7 @@
           <td class="action-button" colspan="4"><button class="action">{{buttonText}}</button></td>
         </tr>
         {{/each}}
-        {{#each grains}}
+        {{#each (sortedGrains grains)}}
         <tr class="grain {{#if unread}}unread{{/if}}" data-grainid="{{ _id }}">
           <td class="select-grain {{#if isOwnedByMe}}mine{{else}}shared{{/if}}">
             <input title="select this grain"

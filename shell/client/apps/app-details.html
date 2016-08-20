@@ -49,7 +49,7 @@
       </p>
     {{/if}}
 
-    {{#let grains=filteredSortedGrains}}
+    {{#let grains=filteredGrains}}
       {{>sandstormGrainTable grains=grains actions=actions
                              onGrainClicked=onGrainClicked _db=_db showHintIfEmpty=1
                              alwaysShowTableHeaders=1 bulkActionButtons=bulkActionButtons}}
@@ -57,7 +57,7 @@
         {{#if isFiltering}}
           <div class="no-grains">
             <p><strong>No matching grains found.</strong></p>
-            {{#if filteredSortedTrashedGrains}}
+            {{#if filteredTrashedGrains}}
               <p>Some grains in your trash match your search.
                <button class="toggle-show-trash">View trash</button>
               </p>

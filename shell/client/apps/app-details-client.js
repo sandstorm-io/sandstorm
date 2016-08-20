@@ -44,7 +44,7 @@ const appGrains = function (db, appId, trashed) {
                   function (grain) {return grain.appId === appId; });
 };
 
-const filteredSortedGrains = function (db, staticAssetHost, appId, appTitle, filterText, viewingTrash) {
+const filteredGrains = function (db, staticAssetHost, appId, appTitle, filterText, viewingTrash) {
   const pkg = latestPackageForAppId(db, appId);
 
   const grainsMatchingAppId = appGrains(db, appId, viewingTrash);
@@ -73,8 +73,6 @@ const filteredSortedGrains = function (db, staticAssetHost, appId, appTitle, fil
   return _.chain([itemsFromGrains, itemsFromSharedGrains])
       .flatten()
       .filter(filter)
-      .sortBy("lastUsed") // TODO: allow sorting by other columns
-      .reverse()
       .value();
 };
 
@@ -343,18 +341,18 @@ Template.sandstormAppDetailsPage.helpers({
     };
   },
 
-  filteredSortedGrains: function () {
+  filteredGrains: function () {
     const instance = Template.instance();
     const ref = instance.data;
-    return filteredSortedGrains(ref._db, ref._staticHost, ref._appId, getAppTitle(ref),
+    return filteredGrains(ref._db, ref._staticHost, ref._appId, getAppTitle(ref),
                                 instance._filter.get(), ref.viewingTrash);
   },
 
-  filteredSortedTrashedGrains: function () {
+  filteredTrashedGrains: function () {
     const instance = Template.instance();
     const ref = instance.data;
-    return filteredSortedGrains(ref._db, ref._staticHost, ref._appId, getAppTitle(ref),
-                                instance._filter.get(), true);
+    return filteredGrains(ref._db, ref._staticHost, ref._appId, getAppTitle(ref),
+                          instance._filter.get(), true);
   },
 
   isFiltering: function () {
@@ -448,7 +446,7 @@ Template.sandstormAppDetailsPage.events({
     const ref = Template.instance().data;
     if (event.keyCode === 13) {
       // Enter pressed.  If a single grain is shown, open it.
-      const grains = filteredSortedGrains(ref._db, ref._staticHost, ref._appId,
+      const grains = filteredGrains(ref._db, ref._staticHost, ref._appId,
                                           getAppTitle(ref), instance._filter.get(), ref.viewingTrash);
       if (grains.length === 1) {
         // Unique grain found with current filter.  Activate it!

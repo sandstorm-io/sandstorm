@@ -273,6 +273,7 @@ hackSendEmail = (session, email) => {
       const attachments = [];
       email.attachments.forEach((attachment) => {
         attachments.push({
+          filename: false, // Tell nodemailer not to generate a new filename.
           cid: attachment.contentId,
           contentType: attachment.contentType,
           contentDisposition: attachment.contentDisposition,

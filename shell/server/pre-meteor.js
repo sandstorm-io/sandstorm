@@ -17,6 +17,7 @@
 // This file implements logic that we place in front of our main Meteor application,
 // including routing of requests to proxies and handling of static web publishing.
 
+import { inMeteor } from "/imports/server/async-helpers.js";
 const Url = Npm.require("url");
 const Fs = Npm.require("fs");
 const Dns = Npm.require("dns");

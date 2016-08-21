@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { allowDemo } from "/imports/demo.js";
+import { promiseToFuture } from "/imports/server/async-helpers.js";
 
 const localizedTextPattern = {
   defaultText: String,

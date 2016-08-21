@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { SandstormBackend } from "/imports/server/backend.js";
+
 const linkIdentityToAccountInternal = function (db, backend, identityId, accountId) {
   // Links the identity to the account and grants it login access if possible. Makes the account
   // durable if it is a demo account.

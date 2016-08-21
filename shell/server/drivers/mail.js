@@ -19,6 +19,8 @@ import { MailParser } from "mailparser";
 
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { rawSend } from "/imports/server/email.js";
+import { shouldRestartGrain } from "/imports/server/backend.js";
+import { inMeteor } from "/imports/server/async-helpers.js";
 
 const Crypto = Npm.require("crypto");
 const Future = Npm.require("fibers/future");
@@ -166,7 +168,7 @@ Meteor.startup(function () {
                     .session.castAs(EmailSendPort);
                 return session.send(mailMessage);
               }).catch((err) => {
-                if (SandstormBackend.shouldRestartGrain(err, retryCount)) {
+                if (shouldRestartGrain(err, retryCount)) {
                   return tryDeliver(retryCount + 1);
                 } else {
                   throw err;

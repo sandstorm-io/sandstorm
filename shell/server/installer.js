@@ -22,6 +22,9 @@ import Http from "http";
 import Https from "https";
 import Url from "url";
 import Request from "request";
+
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+
 const Capnp = Npm.require("capnp");
 
 const Manifest = Capnp.importSystem("sandstorm/package.capnp").Manifest;

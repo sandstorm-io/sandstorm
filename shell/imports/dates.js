@@ -24,11 +24,9 @@ function formatFutureTime(diff) {
   };
 
   for (const unit in units) {
-    // If it's more than one full unit away, then we'll print in terms of this unit. This does
-    // mean that we write e.g. "1 minute" for the whole range between 2 minutes and 1 minute, but
-    // whatever, this is typical of these sorts of displays.
+    // If it's more than one full unit away, then we'll print in terms of this unit.
     if (diff >= units[unit]) {
-      const count = Math.floor(diff / units[unit]);
+      const count = Math.round(diff / units[unit]);
       return "in " + count + " " + unit + (count > 1 ? "s" : "");
     }
   }

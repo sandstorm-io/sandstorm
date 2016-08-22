@@ -124,6 +124,19 @@ Template.newAdminUserDetails.onCreated(function () {
   };
 });
 
+function guessUserName(instance) {
+  if (!instance.isReady()) return "loading...";
+
+  const account = instance.targetAccount();
+  const identityIds = SandstormDb.getUserIdentityIds(account);
+  if (identityIds.length === 0) {
+    return "<unknown user>";
+  }
+
+  const chosenIdentity = lookupIdentityId(identityIds[identityIds.length - 1]);
+  return chosenIdentity.profile.name || "<unknown name>";
+}
+
 Template.newAdminUserDetails.helpers({
   ready() {
     const instance = Template.instance();
@@ -133,16 +146,7 @@ Template.newAdminUserDetails.helpers({
   guessUserName() {
     const instance = Template.instance();
 
-    if (!instance.isReady()) return "loading...";
-
-    const account = instance.targetAccount();
-    const identityIds = SandstormDb.getUserIdentityIds(account);
-    if (identityIds.length === 0) {
-      return "<unknown user>";
-    }
-
-    const chosenIdentity = lookupIdentityId(identityIds[identityIds.length - 1]);
-    return chosenIdentity.profile.name || "<unknown name>";
+    return guessUserName(instance);
   },
 
   targetAccount() {
@@ -356,9 +360,10 @@ Template.newAdminUserDetails.events({
           message: err.message,
         });
       } else {
+        const username = guessUserName(instance) || "Account";
         instance.formState.set({
           state: "success",
-          message: "Account is no longer suspended.",
+          message: username + " is no longer suspended.",
         });
       }
     });

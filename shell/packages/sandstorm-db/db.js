@@ -1938,15 +1938,13 @@ _.extend(SandstormDb.prototype, {
       }
     });
 
-    if (byAdminUserId) {
-      // Force logout this user if suspended by an admin
-      this.collections.users.update({ _id: userId },
-        { $set: { "services.resume.loginTokens": [] } });
-      if (user && user.loginIdentities) {
-        user.loginIdentities.forEach(function (identity) {
-          Meteor.users.update({ _id: identity.id }, { $set: { "services.resume.loginTokens": [] } });
-        });
-      }
+    // Force logout this user
+    this.collections.users.update({ _id: userId },
+      { $unset: { "services.resume.loginTokens": 1 } });
+    if (user && user.loginIdentities) {
+      user.loginIdentities.forEach(function (identity) {
+        Meteor.users.update({ _id: identity.id }, { $unset: { "services.resume.loginTokens": 1 } });
+      });
     }
   },
 

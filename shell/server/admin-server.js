@@ -21,7 +21,7 @@ import Heapdump from "heapdump";
 import { SANDSTORM_LOGDIR } from "/imports/server/constants.js";
 import { clearAdminToken, checkAuth, tokenIsValid, tokenIsSetupSession } from "/imports/server/auth.js";
 import { send as sendEmail } from "/imports/server/email.js";
-import { fillUndefinedForChangedDoc } from "/imports/server/observeHelpers.js";
+import { fillUndefinedForChangedDoc } from "/imports/server/observe-helpers.js";
 
 const publicAdminSettings = [
   "google", "github", "ldap", "saml", "emailToken", "splashUrl", "signupDialog",

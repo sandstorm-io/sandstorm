@@ -1896,18 +1896,31 @@ _.extend(SandstormDb.prototype, {
   },
 
   suspendIdentity: function (userId, suspension) {
+    check(userId, String);
+    check(suspension, {
+      timestamp: Date,
+      admin: Match.Optional(String),
+      voluntary: Match.Optional(Boolean),
+    });
+
     this.collections.users.update({ _id: userId }, { $set: { suspended: suspension } });
     this.collections.apiTokens.update({ "owner.user.identityId": userId },
       { $set: { suspended: true } }, { multi: true });
   },
 
   unsuspendIdentity: function (userId) {
+    check(userId, String);
+
     this.collections.users.update({ _id: userId }, { $unset: { suspended: 1 } });
     this.collections.apiTokens.update({ "owner.user.identityId": userId },
       { $unset: { suspended: true } }, { multi: true });
   },
 
   suspendAccount: function (userId, byAdminUserId, willDelete) {
+    check(userId, String);
+    check(byAdminUserId, Match.OneOf(String, null, undefined));
+    check(willDelete, Boolean);
+
     const user = globalDb.collections.users.findOne({ _id: userId });
     const suspension = {
       timestamp: new Date(),
@@ -1949,6 +1962,8 @@ _.extend(SandstormDb.prototype, {
   },
 
   unsuspendAccount: function (userId) {
+    check(userId, String);
+
     const user = globalDb.collections.users.findOne({ _id: userId });
     this.collections.users.update({ _id: userId }, { $unset: { suspended: 1 } });
     this.collections.grains.update({ userId: userId }, { $unset: { suspended: 1 } }, { multi: true });
@@ -1963,6 +1978,8 @@ _.extend(SandstormDb.prototype, {
   },
 
   deletePendingAccounts: function (deletionCoolingOffTime, backend) {
+    check(deletionCoolingOffTime, Number);
+
     const queryDate = new Date(Date.now() - deletionCoolingOffTime);
     this.collections.users.find({
       "suspended.willDelete": true,
@@ -2698,12 +2715,16 @@ if (Meteor.isServer) {
 
 if (Meteor.isServer) {
   SandstormDb.prototype.deleteIdentity = function (identityId) {
+    check(identityId, String);
+
     this.removeApiTokens({ "owner.user.identityId": identityId });
     this.collections.contacts.remove({ identityId: identityId });
     Meteor.users.remove({ _id: identityId });
   };
 
   SandstormDb.prototype.deleteAccount = function (userId, backend) {
+    check(userId, String);
+
     const _this = this;
     const user = Meteor.users.findOne({ _id: userId });
     this.deleteGrains({ userId: userId }, backend, "grain");

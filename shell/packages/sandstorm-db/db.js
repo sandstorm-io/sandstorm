@@ -1928,7 +1928,15 @@ _.extend(SandstormDb.prototype, {
     user.loginIdentities.forEach((identity) => {
       this.suspendIdentity(identity.id, suspension);
     });
-    // By default, suspend all login identities, but leave non-login identities alone.
+    user.nonloginIdentities.forEach((identity) => {
+      if (this.collections.users.find({ $or: [
+        { "loginIdentities.id": identity.id },
+        { "nonloginIdentities.id": identity.id },
+      ], }).count() === 1) {
+        // Only suspend non-login identities that are unique to this account.
+        this.suspendIdentity(identity.id, suspension);
+      }
+    });
 
     if (byAdminUserId) {
       // Force logout this user if suspended by an admin

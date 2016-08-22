@@ -2747,11 +2747,17 @@ if (Meteor.isServer) {
     },
 
     deleteOwnAccount() {
+      const db = this.connection.sandstormDb;
       if (!Meteor.userId()) {
         throw new Meteor.Error(403, "Must be logged in to delete an account");
       }
 
-      this.connection.sandstormDb.suspendAccount(Meteor.userId(), null, true);
+      if (db.isUserInOrganization(Meteor.user())) {
+        throw new Meteor.Error(403, "Users in an organization cannot delete their own account. " +
+          "Please ask your admin to do it for you.");
+      }
+
+      db.suspendAccount(Meteor.userId(), null, true);
     },
 
     unsuspendAccount(userId) {

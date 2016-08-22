@@ -70,9 +70,11 @@ limitations under the License.
       </button>
     </p>
     <p>
+      {{#if showDeleteButton}}
       <button class="account-button delete-account" disabled={{logoutOtherSessionsInFlight}}>
         Delete account
       </button>
+      {{/if}}
     </p>
   {{/unless}}
   </div><section class="profile">

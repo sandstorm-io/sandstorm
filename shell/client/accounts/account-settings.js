@@ -105,6 +105,10 @@ const helpers = {
     return Template.instance().data._db;
   },
 
+  showDeleteButton: function () {
+    return !Template.instance().data._db.isUserInOrganization(Meteor.user());
+  },
+
 };
 
 Template.sandstormAccountSettings.helpers(helpers);

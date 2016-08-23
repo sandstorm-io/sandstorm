@@ -141,11 +141,14 @@
         cursor: pointer;
       }
       &.grain-size {
-        width: 80px;
+        width: 70px;
         // The mobile viewport is too small to display this much text
         @media #{$mobile} {
           display: none;
         }
+      }
+      &.last-used {
+        width: 110px;
       }
       &.shared-or-owned {
         width: 110px;
@@ -200,14 +203,14 @@
         }
       }
       &.grain-size {
-        width: 80px;
+        width: 70px;
         // The mobile viewport is too small to display this much text
         @media #{$mobile} {
           display: none;
         }
       }
       &.last-used {
-        width: 100px;
+        width: 110px;
       }
       &.shared-or-owned {
         width: 110px;

@@ -684,8 +684,10 @@ Template.grainView.helpers({
     });
 
     const grain = globalGrains.getActive();
-    return { identities: identities,
-            onPicked: function (identityId) { grain.revealIdentity(identityId); }, };
+    return {
+      identities: identities,
+      onPicked: function (identityId) { grain.revealIdentity(identityId); },
+    };
   },
 });
 

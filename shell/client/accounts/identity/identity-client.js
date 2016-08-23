@@ -366,8 +366,9 @@ Template.identityPicker.events({
 
 Template.identityPicker.helpers({
   isCurrentIdentity() {
-    const instance = Template.instance();
-    return instance.data._id === Template.instance().data.currentIdentityId;
+    // N.B. currentData() is affected by #with and #each, but Template.instance().data is not
+    const currentData = Template.currentData();
+    return currentData._id === Template.instance().data.currentIdentityId;
   },
 });
 

@@ -44,6 +44,15 @@ Template.loginButtonsPopup.helpers(helpers);
 Template._loginButtonsLoggedOutDropdown.helpers(helpers);
 Template._loginButtonsLoggedInDropdown.helpers(helpers);
 
+Template.loginButtonsPopup.onCreated(function () {
+  this.autorun(() => {
+    const data = Template.currentData();
+    check(data, {
+      _db: SandstormDb,
+    });
+  });
+});
+
 Template.loginButtonsPopup.onRendered(function () {
   let element = this.find(".login-buttons-list :first-child");
   if (!element) {
@@ -51,6 +60,17 @@ Template.loginButtonsPopup.onRendered(function () {
   }
 
   if (element) element.focus();
+});
+
+Template.accountButtonsPopup.onCreated(function () {
+  this.autorun(() => {
+    const data = Template.currentData();
+    check(data, {
+      isAdmin: Boolean,
+      grains: GrainViewList,
+      showSendFeedback: Boolean,
+    });
+  });
 });
 
 Template.accountButtonsPopup.onRendered(function () {
@@ -78,7 +98,8 @@ Template.accountButtons.helpers({
       return { loading: true };
     }
 
-    const currentIdentityId = getActiveIdentityId(this.grains);
+    const grains = Template.currentData().grains;
+    const currentIdentityId = getActiveIdentityId(grains);
     const user = Meteor.users.findOne({ _id: currentIdentityId });
     if (currentIdentityId && !user) {
       // Need to wait for the `identityProfile` subscription to be ready.
@@ -175,7 +196,7 @@ Template._loginButtonsLoggedInDropdown.helpers({
   },
 
   identitySwitcherData: function () {
-    const grains = this.grains;
+    const grains = Template.currentData().grains;
     const identities = SandstormDb.getUserIdentityIds(Meteor.user()).map(function (id) {
       const identity = Meteor.users.findOne({ _id: id });
       if (identity) {
@@ -289,8 +310,9 @@ Template.oauthLoginButton.events({
 
 Template.loginButtonsList.helpers({
   configured: function () {
-    return !!ServiceConfiguration.configurations.findOne({ service: this.name }) ||
-           Template.instance().data._services.get(this.name);
+    const name = Template.currentData().name;
+    return !!ServiceConfiguration.configurations.findOne({ service: name }) ||
+           Template.instance().data._services.get(name);
   },
 
   services: getServices,

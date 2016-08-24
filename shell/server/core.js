@@ -52,7 +52,7 @@ class SandstormCoreImpl {
                         "introducerIdentity field. Please request a new capability.");
       }
 
-      return restoreInternal(sturdyRef,
+      return restoreInternal(this.db, sturdyRef,
                              { grain: Match.ObjectIncluding({ grainId: this.grainId }) },
                              [], token);
     });
@@ -299,7 +299,7 @@ function dismissNotification(db, notificationId, callCancel) {
       if (!callCancel) {
         dropInternal(db, id, { frontend: null });
       } else {
-        const notificationCap = restoreInternal(id, { frontend: null }, []).cap;
+        const notificationCap = restoreInternal(db, id, { frontend: null }, []).cap;
         const castedNotification = notificationCap.castAs(PersistentOngoingNotification);
         dropInternal(db, id, { frontend: null });
         try {
@@ -480,7 +480,7 @@ const makeSaveTemplateForChild = function (db, parentToken, requirements, parent
   return saveTemplate;
 };
 
-restoreInternal = (originalToken, ownerPattern, requirements, originalTokenInfo,
+restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenInfo,
                    currentTokenId) => {
   // Restores the token `originalToken`, which is a Buffer.
   //
@@ -500,14 +500,14 @@ restoreInternal = (originalToken, ownerPattern, requirements, originalTokenInfo,
   requirements = requirements || [];
 
   if (!originalTokenInfo) {
-    originalTokenInfo = ApiTokens.findOne(hashSturdyRef(originalToken));
+    originalTokenInfo = db.collections.apiTokens.findOne(hashSturdyRef(originalToken));
     if (!originalTokenInfo) {
       throw new Meteor.Error(403, "No token found to restore");
     }
   }
 
   const token = currentTokenId ?
-      ApiTokens.findOne(currentTokenId) : originalTokenInfo;
+      db.collections.apiTokens.findOne(currentTokenId) : originalTokenInfo;
   if (!token) {
     if (!originalTokenInfo) {
       throw new Meteor.Error(403, "Couldn't restore token because parent token has been deleted");
@@ -522,7 +522,7 @@ restoreInternal = (originalToken, ownerPattern, requirements, originalTokenInfo,
   check(token.owner, ownerPattern);
 
   // Check requirements on the token.
-  checkRequirements(globalDb, token.requirements);
+  checkRequirements(db, token.requirements);
 
   // Check expiration.
   if (token.expires && token.expires.getTime() <= Date.now()) {
@@ -534,7 +534,7 @@ restoreInternal = (originalToken, ownerPattern, requirements, originalTokenInfo,
       throw new Meteor.Error(403, "Authorization token expired");
     } else {
       // It's getting used now, so clear the expiresIfUnused field.
-      ApiTokens.update(token._id, { $unset: { expiresIfUnused: "" } });
+      db.collections.apiTokens.update(token._id, { $unset: { expiresIfUnused: "" } });
     }
   }
 
@@ -542,12 +542,12 @@ restoreInternal = (originalToken, ownerPattern, requirements, originalTokenInfo,
   if (token.parentToken) {
     // A token which chains to some parent token.  Restore the parent token (possibly recursively),
     // checking requirements on the way up.
-    return restoreInternal(originalToken, Match.Any, requirements,
+    return restoreInternal(db, originalToken, Match.Any, requirements,
                            originalTokenInfo, token.parentToken);
   }
 
   // Check the passed-in `requirements`.
-  checkRequirements(globalDb, requirements);
+  checkRequirements(db, requirements);
 
   if (token.objectId) {
     // A token which represents a specific capability exported by a grain.
@@ -565,12 +565,12 @@ restoreInternal = (originalToken, ownerPattern, requirements, originalTokenInfo,
     }));
   } else {
     // Construct a template ApiToken for use if the restored capability is save()d later.
-    const saveTemplate = makeSaveTemplateForChild(globalDb, originalToken, requirements, originalTokenInfo);
+    const saveTemplate = makeSaveTemplateForChild(db, originalToken, requirements, originalTokenInfo);
 
     if (token.frontendRef) {
       // A token which represents a capability implemented by a pseudo-driver.
 
-      const cap = globalFrontendRefRegistry.restore(globalDb, saveTemplate, token.frontendRef);
+      const cap = globalFrontendRefRegistry.restore(db, saveTemplate, token.frontendRef);
       return { cap };
     } else if (token.grainId) {
       // It's a UiView.
@@ -579,7 +579,7 @@ restoreInternal = (originalToken, ownerPattern, requirements, originalTokenInfo,
       // the method calls.  In the future, we may allow grains to restore UiViews that pass along the
       // "is human" pseudopermission (say, to allow an app to proxy all requests to some grain and
       // do some transformation), which will return a different capability.
-      return { cap: makePersistentUiView(globalDb, saveTemplate, token.grainId) };
+      return { cap: makePersistentUiView(db, saveTemplate, token.grainId) };
     } else {
       throw new Meteor.Error(500, "Unknown token type. ID: " + token._id);
     }

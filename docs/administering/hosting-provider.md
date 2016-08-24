@@ -18,7 +18,7 @@ There are three typical forms this can take.
   single sign-on by purchasing [Sandstorm for Work](for-work.md); Sandstorm.io shares revenue with
   the hosting provider.
 
-- **Selling acccounts on a Sandstorm server.** The hosting provider installs Sandstorm and each
+- **Selling accounts on a Sandstorm server.** The hosting provider installs Sandstorm and each
   customer receives an account on this Sandstorm server, giving the customer easy access to all the
   productivity and collaboration apps in the [Sandstorm App Market](https://apps.sandstorm.io/). To
   enforce storage quota limits, the hosting provider requests a feature key and enters into a

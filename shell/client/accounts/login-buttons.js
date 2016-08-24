@@ -25,6 +25,7 @@ import {
 } from "/imports/client/accounts/email-token/token-login-helpers.js";
 import { loginWithLDAP } from "/imports/client/accounts/ldap/ldap-client.js";
 import { loginWithSaml } from "/imports/client/accounts/saml/saml-client.js";
+import AccountsUi from "/imports/client/accounts/accounts-ui.js";
 
 // for convenience
 const loginButtonsSession = Accounts._loginButtonsSession;
@@ -38,9 +39,7 @@ Template.loginButtons.helpers({ isDemoUser: isDemoUserHelper });
 Template.loginButtonsPopup.onCreated(function () {
   this.autorun(() => {
     const data = Template.currentData();
-    check(data, {
-      _db: SandstormDb,
-    });
+    check(data, AccountsUi);
   });
 });
 

@@ -32,14 +32,21 @@ SELENIUM_DOWNLOAD_URL="https://selenium-release.storage.googleapis.com/2.53/$SEL
 cleanExit () {
   rc=$1
 
-  if [ $rc != 0 ]; then
+  if [ $rc -ne 0 ]; then
     echo "Log output: "
     cat "$SANDSTORM_DIR/var/log/sandstorm.log"
   fi
 
   "$SANDSTORM_DIR/sandstorm" stop
   sleep 1
-  rm -rf "$SANDSTORM_DIR"
+
+  if [ $rc -eq 0 ]; then
+    # Only clean up the test directory if the test run was successful - if tests failed,
+    # it's nice to be able to inspect the logs.  We wipe out $SANDSTORM_DIR before starting
+    # a new test run, so this is fine.
+    rm -rf "$SANDSTORM_DIR"
+  fi
+
   if [ -n "$XVFB_PID" ] ; then
     # Send SIGINT to the selenium-server child of the backgrounded xvfb-run, so
     # it will exit cleanly and the Xvfb process will also be cleaned up.

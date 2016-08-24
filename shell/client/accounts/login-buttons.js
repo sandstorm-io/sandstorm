@@ -123,13 +123,11 @@ function getServices() {
 }
 
 Template._loginButtonsMessages.helpers({
-  errorMessage: function () {
+  errorMessage() {
     return loginButtonsSession.get("errorMessage");
   },
-});
 
-Template._loginButtonsMessages.helpers({
-  infoMessage: function () {
+  infoMessage() {
     return loginButtonsSession.get("infoMessage");
   },
 });

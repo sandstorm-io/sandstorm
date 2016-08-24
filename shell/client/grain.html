@@ -7,7 +7,7 @@
     <div class="grain-container {{#if active}}active-grain{{else}}inactive-grain{{/if}}">
     {{#if error}}
       {{#if inMyTrash}}
-        {{> grainInMyTrash ""}}
+        {{> grainInMyTrash . }}
       {{else}}
         {{#if inOwnersTrash}}
           {{> grainInOwnersTrash ""}}

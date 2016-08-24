@@ -30,14 +30,15 @@ const StaticAsset = Capnp.importSystem("sandstorm/grain.capnp").StaticAsset;
 const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;
 
 class SandstormCoreImpl {
-  constructor(grainId) {
+  constructor(db, grainId) {
+    this.db = db;
     this.grainId = grainId;
   }
 
   restore(sturdyRef) {
     return inMeteor(() => {
       const hashedSturdyRef = hashSturdyRef(sturdyRef);
-      const token = ApiTokens.findOne({
+      const token = this.db.collections.apiTokens.findOne({
         _id: hashedSturdyRef,
         "owner.grain.grainId": this.grainId,
       });
@@ -59,18 +60,17 @@ class SandstormCoreImpl {
 
   drop(sturdyRef) {
     return inMeteor(() => {
-      return dropInternal(sturdyRef, { grain: Match.ObjectIncluding({ grainId: this.grainId }) });
+      return dropInternal(this.db, sturdyRef, { grain: Match.ObjectIncluding({ grainId: this.grainId }) });
     });
   }
 
   makeToken(ref, owner, requirements) {
-    const _this = this;
     return inMeteor(() => {
       const sturdyRef = new Buffer(generateSturdyRef());
       const hashedSturdyRef = hashSturdyRef(sturdyRef);
-      ApiTokens.insert({
+      this.db.collections.apiTokens.insert({
         _id: hashedSturdyRef,
-        grainId: _this.grainId,
+        grainId: this.grainId,
         objectId: ref,
         owner: owner,
         created: new Date(),
@@ -86,10 +86,10 @@ class SandstormCoreImpl {
   makeChildToken(parent, owner, requirements) {
     return inMeteor(() => {
       // Compute the save ApiToken template.
-      return makeSaveTemplateForChild(parent.toString(), requirements);
+      return makeSaveTemplateForChild(this.db, parent.toString(), requirements);
     }).then(saveTemplate => {
       // Create a dummy PersistentImpl and invoke its own save() method.
-      return new PersistentImpl(globalDb, saveTemplate).save({ sealFor: owner });
+      return new PersistentImpl(this.db, saveTemplate).save({ sealFor: owner });
     }).then(saveResult => {
       // Transform to expected result structure.
       return { token: saveResult.sturdyRef };
@@ -102,7 +102,7 @@ class SandstormCoreImpl {
       owner: {
         addOngoing: (displayInfo, notification) => {
           return inMeteor(() => {
-            const grain = Grains.findOne({ _id: grainId });
+            const grain = this.db.collections.grains.findOne({ _id: grainId });
             if (!grain) {
               throw new Error("Grain not found.");
             }
@@ -114,7 +114,7 @@ class SandstormCoreImpl {
             // node-capnp?
             castedNotification.close();
             notification.close();
-            const notificationId = Notifications.insert({
+            const notificationId = this.db.collections.notifications.insert({
               ongoing: wakelockToken,
               grainId: grainId,
               userId: grain.userId,
@@ -124,7 +124,7 @@ class SandstormCoreImpl {
             });
 
             return {
-              handle: globalFrontendRefRegistry.create(globalDb,
+              handle: globalFrontendRefRegistry.create(this.db,
                   { notificationHandle: notificationId }),
             };
           });
@@ -142,7 +142,7 @@ class SandstormCoreImpl {
   reportGrainSize(bytes) {
     bytes = parseInt(bytes);  // int64s are stringified but precision isn't critical here
 
-    const result = Grains.findAndModify({
+    const result = this.db.collections.grains.findAndModify({
       query: { _id: this.grainId },
       update: { $set: { size: bytes } },
       fields: { _id: 1, userId: 1, size: 1 },
@@ -156,17 +156,17 @@ class SandstormCoreImpl {
     // before per-grain size tracking was implemented. In that case, we don't want to update the
     // user record because it may already be counting the grain (specifically on Blackrock, where
     // whole-user size counting has existed for some time).
-    if (globalDb.isQuotaEnabled() && ("size" in result.value)) {
+    if (this.db.isQuotaEnabled() && ("size" in result.value)) {
       // Update the user record, too. Note that we periodically recompute the user's storage usage
       // from scratch as well, so this doesn't have to be perfectly reliable.
       const diff = bytes - (result.value.size || 0);
-      Meteor.users.update(result.value.userId, { $inc: { storageUsage: diff } });
+      this.db.collections.users.update(result.value.userId, { $inc: { storageUsage: diff } });
     }
   }
 }
 
-const makeSandstormCore = (grainId) => {
-  return new Capnp.Capability(new SandstormCoreImpl(grainId), SandstormCore);
+const makeSandstormCore = (db, grainId) => {
+  return new Capnp.Capability(new SandstormCoreImpl(db, grainId), SandstormCore);
 };
 
 class NotificationHandle extends PersistentImpl {
@@ -175,12 +175,13 @@ class NotificationHandle extends PersistentImpl {
   constructor(db, saveTemplate, notificationId) {
     super(db, saveTemplate);
     this.notificationId = notificationId;
+    this.db = db;
   }
 
   close() {
     return inMeteor(() => {
       if (!this.isSaved()) {
-        dismissNotification(this.notificationId);
+        dismissNotification(this.db, this.notificationId);
       }
     });
   }
@@ -285,21 +286,22 @@ globalFrontendRefRegistry.register({
   },
 });
 
-function dismissNotification(notificationId, callCancel) {
-  const notification = Notifications.findOne({ _id: notificationId });
+
+function dismissNotification(db, notificationId, callCancel) {
+  const notification = db.collections.notifications.findOne({ _id: notificationId });
   if (notification) {
-    Notifications.remove({ _id: notificationId });
+    db.collections.notifications.remove({ _id: notificationId });
     if (notification.ongoing) {
       // For some reason, Mongo returns an object that looks buffer-like, but isn't a buffer.
       // Only way to fix seems to be to copy it.
       const id = new Buffer(notification.ongoing);
 
       if (!callCancel) {
-        dropInternal(id, { frontend: null });
+        dropInternal(db, id, { frontend: null });
       } else {
         const notificationCap = restoreInternal(id, { frontend: null }, []).cap;
         const castedNotification = notificationCap.castAs(PersistentOngoingNotification);
-        dropInternal(id, { frontend: null });
+        dropInternal(db, id, { frontend: null });
         try {
           waitPromise(castedNotification.cancel());
           castedNotification.close();
@@ -314,7 +316,7 @@ function dismissNotification(notificationId, callCancel) {
       }
     } else if (notification.appUpdates) {
       _.forEach(notification.appUpdates, (app, appId) => {
-        globalDb.deleteUnusedPackages(appId);
+        db.deleteUnusedPackages(appId);
       });
     }
   }
@@ -328,13 +330,15 @@ Meteor.methods({
 
     check(notificationId, String);
 
-    const notification = Notifications.findOne({ _id: notificationId });
+    const db = this.connection.sandstormDb;
+
+    const notification = db.collections.notifications.findOne({ _id: notificationId });
     if (!notification) {
       throw new Meteor.Error(404, "Notification id not found.");
     } else if (notification.userId !== Meteor.userId()) {
       throw new Meteor.Error(403, "Notification does not belong to current user.");
     } else {
-      dismissNotification(notificationId, true);
+      dismissNotification(db, notificationId, true);
     }
   },
 
@@ -344,7 +348,11 @@ Meteor.methods({
       throw new Meteor.Error(403, "User not logged in.");
     }
 
-    Notifications.update({ userId: Meteor.userId() }, { $set: { isUnread: false } }, { multi: true });
+    const db = this.connection.sandstormDb;
+    db.collections.notifications.update(
+      { userId: Meteor.userId() },
+      { $set: { isUnread: false } },
+      { multi: true });
   },
 
   acceptPowerboxOffer(sessionId, sturdyRef, sessionToken) {
@@ -416,7 +424,7 @@ Meteor.methods({
 
 });
 
-const makeSaveTemplateForChild = function (parentToken, requirements, parentTokenInfo) {
+const makeSaveTemplateForChild = function (db, parentToken, requirements, parentTokenInfo) {
   // Constructs (part of) an ApiToken record appropriate to be used when save()ing a capability
   // that was originally created by restore()ing `parentToken`. This fills in everything that is
   // appropriate to fill in based only on the parent. Some fields -- especially `owner`, `created`,
@@ -429,7 +437,7 @@ const makeSaveTemplateForChild = function (parentToken, requirements, parentToke
   // `parentTokenInfo` is the ApiToken record for `parentToken`. Provide this only if you have
   // it handy; if omitted it will be looked up.
 
-  parentTokenInfo = parentTokenInfo || ApiTokens.findOne(hashSturdyRef(parentToken));
+  parentTokenInfo = parentTokenInfo || db.collections.apiTokens.findOne(hashSturdyRef(parentToken));
   if (!parentTokenInfo) {
     throw new Error("no such token");
   }
@@ -557,7 +565,7 @@ restoreInternal = (originalToken, ownerPattern, requirements, originalTokenInfo,
     }));
   } else {
     // Construct a template ApiToken for use if the restored capability is save()d later.
-    const saveTemplate = makeSaveTemplateForChild(originalToken, requirements, originalTokenInfo);
+    const saveTemplate = makeSaveTemplateForChild(globalDb, originalToken, requirements, originalTokenInfo);
 
     if (token.frontendRef) {
       // A token which represents a capability implemented by a pseudo-driver.
@@ -578,11 +586,11 @@ restoreInternal = (originalToken, ownerPattern, requirements, originalTokenInfo,
   }
 };
 
-function dropInternal(sturdyRef, ownerPattern) {
+function dropInternal(db, sturdyRef, ownerPattern) {
   // Drops `sturdyRef`, checking first that its owner matches `ownerPattern`.
 
   const hashedSturdyRef = hashSturdyRef(sturdyRef);
-  const token = ApiTokens.findOne({ _id: hashedSturdyRef });
+  const token = db.collections.apiTokens.findOne({ _id: hashedSturdyRef });
   if (!token) {
     return;
   }
@@ -591,32 +599,35 @@ function dropInternal(sturdyRef, ownerPattern) {
 
   if (token.frontendRef && token.frontendRef.notificationHandle) {
     const notificationId = token.frontendRef.notificationHandle;
-    globalDb.removeApiTokens({ _id: hashedSturdyRef });
-    const anyToken = ApiTokens.findOne({ "frontendRef.notificationHandle": notificationId });
+    db.removeApiTokens({ _id: hashedSturdyRef });
+    const anyToken = db.collections.apiTokens.findOne({ "frontendRef.notificationHandle": notificationId });
     if (!anyToken) {
       // No other tokens referencing this notification exist, so dismiss the notification
-      dismissNotification(notificationId);
+      dismissNotification(db, notificationId);
     }
   } else if (token.objectId) {
     waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
       return supervisor.drop(token.objectId);
     }));
 
-    globalDb.removeApiTokens({ _id: hashedSturdyRef });
+    db.removeApiTokens({ _id: hashedSturdyRef });
   } else {
-    globalDb.removeApiTokens({ _id: hashedSturdyRef });
+    db.removeApiTokens({ _id: hashedSturdyRef });
   }
 }
 
-function SandstormCoreFactoryImpl() {
+class SandstormCoreFactoryImpl {
+  constructor(db) {
+    this.db = db;
+  }
+
+  getSandstormCore(grainId) {
+    return { core: makeSandstormCore(this.db, grainId) };
+  }
 }
 
-SandstormCoreFactoryImpl.prototype.getSandstormCore = (grainId) => {
-  return { core: makeSandstormCore(grainId) };
-};
-
-makeSandstormCoreFactory = () => {
-  return new Capnp.Capability(new SandstormCoreFactoryImpl(), SandstormCoreFactory);
+makeSandstormCoreFactory = (db) => {
+  return new Capnp.Capability(new SandstormCoreFactoryImpl(db), SandstormCoreFactory);
 };
 
 unwrapFrontendCap = (cap, type, callback) => {

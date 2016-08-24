@@ -368,14 +368,18 @@ Template.identityPicker.helpers({
   isCurrentIdentity() {
     // N.B. currentData() is affected by #with and #each, but Template.instance().data is not
     const currentData = Template.currentData();
-    return currentData._id === Template.instance().data.currentIdentityId;
+    return (currentData && currentData._id) === Template.instance().data.currentIdentityId;
   },
 });
 
 Template.identityCard.helpers({
   intrinsicName() {
     const instance = Template.instance();
-    if (instance.data.privateIntrinsicName) {
+    if (!instance.data) {
+      // Still loading. We don't guarantee that identity subscriptions are ready before rendering
+      // the shell, so we have to catch that here instead.
+      return "";
+    } else if (instance.data.privateIntrinsicName) {
       return instance.data.privateIntrinsicName;
     } else {
       return instance.data.profile && instance.data.profile.intrinsicName;

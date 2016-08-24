@@ -29,20 +29,12 @@ import { loginWithSaml } from "/imports/client/accounts/saml/saml-client.js";
 // for convenience
 const loginButtonsSession = Accounts._loginButtonsSession;
 
-const helpers = {
-  isCurrentRoute: function (routeName) {
-    return Router.current().route.getName() == routeName;
-  },
 
-  isDemoUser: function () {
-    return this._db.isDemoUser();
-  },
+const isDemoUserHelper = function () {
+  return this._db.isDemoUser();
 };
 
-Template.loginButtons.helpers(helpers);
-Template.loginButtonsPopup.helpers(helpers);
-Template._loginButtonsLoggedOutDropdown.helpers(helpers);
-Template._loginButtonsLoggedInDropdown.helpers(helpers);
+Template.loginButtons.helpers({ isDemoUser: isDemoUserHelper });
 
 Template.loginButtonsPopup.onCreated(function () {
   this.autorun(() => {
@@ -165,6 +157,12 @@ Template._loginButtonsLoggedOutDropdown.onCreated(function () {
 });
 
 Template._loginButtonsLoggedOutDropdown.helpers({
+  isDemoUser: isDemoUserHelper,
+
+  isCurrentRoute: function (routeName) {
+    return Router.current().route.getName() == routeName;
+  },
+
   choseLogin: function () {
     return Template.instance()._choseLogin.get();
   },
@@ -182,6 +180,16 @@ Template._loginButtonsLoggedOutDropdown.events({
 
 Template._loginButtonsLoggedInDropdown.onCreated(function () {
   this._identitySwitcherExpanded = new ReactiveVar(false);
+
+  // Should be the same as the args to accountButtonsPopup
+  this.autorun(() => {
+    const data = Template.currentData();
+    check(data, {
+      isAdmin: Boolean,
+      grains: GrainViewList,
+      showSendFeedback: Boolean,
+    });
+  });
 });
 
 Template._loginButtonsLoggedInDropdown.helpers({

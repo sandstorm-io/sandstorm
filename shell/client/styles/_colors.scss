@@ -9,6 +9,9 @@ $darker-purple-color: #65468e;
 $focus-outline-color: $sandstorm-purple-color;
 $half-focus-outline-color: rgba(118, 47, 135, 0.5);
 
+// The color to use for your border when you want to faintly outline something.
+$generic-border-color: darken(white, 30%);
+
 // Colors for success/error message box backgrounds.
 $error-background-color: #ffdddd;
 $success-background-color: #ddffdd;

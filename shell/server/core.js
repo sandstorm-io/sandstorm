@@ -286,7 +286,6 @@ globalFrontendRefRegistry.register({
   },
 });
 
-
 function dismissNotification(db, notificationId, callCancel) {
   const notification = db.collections.notifications.findOne({ _id: notificationId });
   if (notification) {

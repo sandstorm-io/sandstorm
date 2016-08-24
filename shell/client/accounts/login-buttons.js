@@ -29,7 +29,6 @@ import { loginWithSaml } from "/imports/client/accounts/saml/saml-client.js";
 // for convenience
 const loginButtonsSession = Accounts._loginButtonsSession;
 
-
 const isDemoUserHelper = function () {
   return this._db.isDemoUser();
 };

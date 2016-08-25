@@ -78,12 +78,19 @@
     <div class="button-row">
       <button class="submit" type="submit" disabled={{saveDisabled}}>Save Configuration</button>
       <button class="test" type="button" disabled={{testDisabled}}>Test</button>
+      <button class="disable" type="button" disabled={{disableDisabled}}>Disable email</button>
     </div>
   </form>
 
   {{#if showTestSendEmailPopup}}
-    {{#modalDialogWithBackdrop onDismiss=closePopupCallback}}
-      {{> emailTestPopup smtpConfig=getSmtpConfig onDismiss=closePopupCallback }}
+    {{#modalDialogWithBackdrop onDismiss=closeTestPopupCallback}}
+      {{> emailTestPopup smtpConfig=getSmtpConfig onDismiss=closeTestPopupCallback }}
+    {{/modalDialogWithBackdrop}}
+  {{/if}}
+
+  {{#if showConfirmDisableEmailPopup}}
+    {{#modalDialogWithBackdrop onDismiss=closeConfirmDisableEmailPopupCallback}}
+      {{> emailDisablePopup onDismiss=closeConfirmDisableEmailPopupCallback}}
     {{/modalDialogWithBackdrop}}
   {{/if}}
 </template>
@@ -121,6 +128,35 @@
       {{/if}}
     </button>
     <button type="button" class="close-dialog">
+      Close
+    </button>
+  </div>
+</form>
+</template>
+
+<template name="emailDisablePopup">
+{{!-- Takes two arguments via data context:
+       token: String (optional) Setup token to use to authorize a disableEmail call.
+   onDismiss: Function to call when the Close button is clicked or the disableEmail call completes.
+--}}
+<h2>Really disable email?</h2>
+{{#if hasError}}
+  {{#focusingErrorBox}}
+    {{message}}
+  {{/focusingErrorBox}}
+{{/if}}
+
+<p>
+  This will disable all outbound email delivery for this server, including sharing via email, email
+  token login (if enabled), and email notifications to users.
+</p>
+
+<form class="email-disable-form">
+  <div class="button-row">
+    <button type="button" name="disable-email" class="danger" {{htmlDisabled}}>
+      Disable email
+    </button>
+    <button type="button" name="close-dialog">
       Close
     </button>
   </div>

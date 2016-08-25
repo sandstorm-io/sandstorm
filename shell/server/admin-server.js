@@ -99,6 +99,13 @@ Meteor.methods({
     Settings.upsert({ _id: "smtpConfig" }, { $set: { value: config } });
   },
 
+  disableEmail: function (token) {
+    checkAuth(token);
+
+    const db = this.connection.sandstormDb;
+    db.collections.settings.update({ _id: "smtpConfig" }, { $set: { "value.hostname": "" } });
+  },
+
   setSetting: function (token, name, value) {
     checkAuth(token);
     check(name, String);

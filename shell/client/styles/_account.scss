@@ -444,9 +444,27 @@ body>.popup.account>.frame-container {
 
 body>.main-content>.account {
   text-align: left;
-  padding-left: 32px;
+
+  @media #{$desktop} {
+    padding: 32px;
+  }
+
   @media #{$mobile} {
-    padding: 0;
+    padding-top: 0px;
+    padding-bottom: 32px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  h1 {
+    margin-top: 0px;
+    padding-top: 0px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid $default-rule-color;
+    margin-bottom: 12px;
+
+    font-size: 24pt;
+    font-weight: 400;
   }
 
   .identities-editor {
@@ -468,50 +486,61 @@ body>.main-content>.account {
   }
 
   h3.title-bar {
-    width: 660px;
     margin-bottom: 5px;
     border: none;
     font-size: 14pt;
     padding: 5px;
   }
 
-  div.action-completed {
-    margin-top: 10px;
-    width: 660px;
-    border: 1px solid transparent;
-    border-radius: 4px;
+  .identities-and-editor {
+    @media #{$not-mobile-only} {
+      width: 660px;
+      flex-direction: row;
+      align-items: flex-start;
+    }
 
-    &.success {
-      color: #3c763d;
-      background-color: #dff0d8;
-      border-color: #d6e9c6;
+    @media #{$mobile-only} {
+      flex-direction: column;
+      align-items: stretch;
     }
-    &.error {
-      color: #a94442;
-      background-color: #f2dede;
-      border-color: #ebccd1;
-    }
+
+    display: flex;
+    justify-content: flex-start;
   }
 
   .identities-tabs {
-    display: inline-block;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+
     white-space: normal;
     vertical-align: top;
-    width: 225px;
+
     ul {
       position: relative;
-      margin-top: 0;
-      padding-left: 0;
+      margin: 0px;
+      padding: 0px;
+
       li {
         list-style-type: none;
         cursor: pointer;
         background-color: white;
-        width: 218px;
         margin-bottom: 10px;
 
-        &[aria-selected=true] {
-          z-index: 1;
-          width: 225px;
+        @media #{$not-mobile-only} {
+          margin-right: 7px;
+
+          &[aria-selected=true] {
+            margin-right: 0px;
+          }
+        }
+        @media #{$mobile-only} {
+          border: 1px solid $generic-border-color;
+
+          &[aria-selected=true] {
+            border: 2px solid $generic-border-color;
+          }
         }
 
         &:focus {
@@ -527,25 +556,50 @@ body>.main-content>.account {
       }
     }
     .login-buttons-list {
+      width: 218px;
+      margin-right: 7px;
       .troubleshooting, a[href="/about"] {
         display: none;
+      }
+    }
+
+    .account-buttons {
+      @media #{$not-mobile-only} {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+      }
+      @media #{$mobile-only} {
+        order: -1;
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+        justify-content: flex-start;
       }
     }
 
     button.account-button {
       @extend %button-base;
       @extend %button-secondary;
-      width: 218px;
-      height: 30px;
+      @media #{$not-mobile-only} {
+        margin-right: 7px;
+      }
+
+      @media #{$mobile-only} {
+        flex: 1;
+        &:not(:last-child) {
+          margin-right: 8px;
+        }
+      }
+
+      min-height: 30px;
+
+      margin-bottom: 12px;
 
       &.link-new-identity {
-        position: relative;
-
         @extend .icon-link;
         &::before {
-          position: absolute;
-          left: 30px;
-          top: 2px;
           font-size: 24px;
           @extend .icon;
         }
@@ -558,7 +612,13 @@ body>.main-content>.account {
   }
 
   .profile {
-    display: inline-block;
+    @media #{$not-mobile-only} {
+      display: inline-block;
+    }
+    @media #{$mobile-only} {
+      display: block;
+    }
+
     white-space: normal;
 
     div[aria-hidden=true] {
@@ -574,10 +634,20 @@ body>.main-content>.account {
   .verified-emails-editor {
     position: relative;
     .already-verified {
-      display: inline-block;
-      width: 340px;
-      left: 0px;
-      vertical-align: top;
+      @media #{$not-mobile-only} {
+        display: inline-block;
+        width: 340px;
+        left: 0px;
+        vertical-align: top;
+      }
+
+      @media #{$mobile-only} {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+      }
+
       ul {
         margin-top: 4px;
         padding-left: 0px;
@@ -614,17 +684,46 @@ body>.main-content>.account {
         }
       }
     }
+
     .add-new {
-      display: inline-block;
-      width: 330px;
-      vertical-align: top;
+      @media #{$not-mobile-only} {
+        display: inline-block;
+        width: 330px;
+        vertical-align: top;
+        input[name="email"] {
+          width: 200px;
+          height: 26px;
+        }
+      }
+
+      @media #{$mobile-only} {
+        form.email {
+          display: flex;
+          flex-direction: row;
+          align-items: stretch;
+          justify-content: space-between;
+          label {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            justify-content: flex-start;
+          }
+          input[name="email"] {
+            flex: 1;
+            margin-right: 8px;
+          }
+
+          div.button-box {
+            flex: 0;
+          }
+        }
+      }
+
       .info, .hidden {
         display: none;
       }
-      input[name="email"] {
-        width: 200px;
-        height: 26px;
-      }
+
       div.button-box {
         display: inline-block;
         >button {
@@ -637,18 +736,14 @@ body>.main-content>.account {
 }
 
 div.billing {
-  padding-bottom: 64px;
-
   >section.payment-methods {
-    display: inline-block;
-    vertical-align: top;
+    display: block;
 
     h3 {
       margin: 0.5em 0;
     }
 
-    max-width: 432px;
-    padding: 0 16px;
+    max-width: 478px;
 
     >.balance {
       margin-left: 16px;
@@ -792,9 +887,8 @@ div.billing {
   }
 
   div.usage {
-    display: inline-block;
+    display: block;
     vertical-align: top;
-    margin-right: 32px;
 
     h3 {
       margin: 0.5em 0;
@@ -804,11 +898,16 @@ div.billing {
       margin: 0;
     }
 
-    max-width: 482px;
-    padding: 0 16px;
+    @media #{$not-mobile-only} {
+      max-width: 482px;
+    }
 
     span.plan-name {
       text-transform: capitalize;
+    }
+
+    table {
+      width: 100%;
     }
 
     tr:first-of-type {
@@ -856,7 +955,6 @@ div.billing {
 
     div.progress-bar {
       height: 12px;
-      width: 300px;
       background-color: white;
       border: 1px solid #b2b2b2;
       margin: 4px 0;
@@ -864,10 +962,6 @@ div.billing {
       >div {
         height: 100%;
         background-color: #65468e;
-      }
-
-      @media (max-width: 500px) {
-        width: 200px;
       }
     }
 
@@ -904,6 +998,12 @@ div.billing {
     tr.bonus {
       color: #6d6d6d;
       font-size: 90%;
+      p.bonus {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
     }
 
     h4.free-stuff-section-header {
@@ -977,13 +1077,16 @@ div.single-identity-editor {
 }
 
 div.identity-editor {
-  width: 435px;
+  @media #{$not-mobile-only} {
+    width: 435px;
+  }
+
   background-color: white;
   padding: 22px;
 
   form.account-profile-editor {
     @extend %standard-form;
-    width: 390px;
+    display: block;
 
     .inline-icon {
       width: 20px;

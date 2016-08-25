@@ -16,8 +16,14 @@
 
 import { formatFutureTime } from "/imports/dates.js";
 import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants.js";
+import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";
 
 Template.sandstormAccountSettings.onCreated(function () {
+  this.autorun(() => {
+    const data = Template.currentData();
+    check(data, SandstormAccountSettingsUi);
+  });
+
   this._isLinkingNewIdentity = new ReactiveVar(false);
   this._selectedIdentityId = new ReactiveVar();
   this._actionCompleted = new ReactiveVar();
@@ -43,24 +49,35 @@ Template.sandstormAccountSettings.onCreated(function () {
     Session.set("linkingIdentityError");
   }
 
-  this.autorun(function () {
+  this.autorun(() => {
     // Reset the selected identity ID when appropriate.
     const user = Meteor.user();
     if (user && user.loginIdentities) {
       const identities = user.loginIdentities.concat(user.nonloginIdentities);
-      const currentlySelected = _this._selectedIdentityId.get();
+      const currentlySelected = this._selectedIdentityId.get();
       if (!currentlySelected || !_.findWhere(identities, { id: currentlySelected })) {
         if (identities.length > 0) {
-          _this._selectedIdentityId.set(identities[0].id);
+          this._selectedIdentityId.set(identities[0].id);
         }
       }
     }
   });
 });
 
-GENDERS = { male: "male", female: "female", neutral: "neutral", robot: "robot" };
+Template.sandstormAccountSettings.helpers({
+  db: function () {
+    return Template.instance().data._db;
+  },
 
-const helpers = {
+  isPaymentsEnabled: function () {
+    try {
+      BlackrockPayments; // This checks that BlackrockPayments is defined.
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+
   setDocumentTitle: function () {
     document.title = "Account settings · " + Template.instance().data._db.getServerTitle();
   },
@@ -77,48 +94,10 @@ const helpers = {
       }).value();
   },
 
-  isNeutral: function () {
-    return this.pronoun === "neutral" || !(this.pronoun in GENDERS);
-  },
-
-  isMale: function () { return this.pronoun === "male"; },
-
-  isFemale: function () { return this.pronoun === "female"; },
-
-  isRobot: function () { return this.pronoun === "robot"; },
-
-  isPaymentsEnabled: function () {
-    try {
-      BlackrockPayments; // This checks that BlackrockPayments is defined.
-      return true;
-    } catch (e) {
-      return false;
-    }
-  },
-
   isAccountUser: function () {
     return Meteor.user() && !!Meteor.user().loginIdentities;
   },
 
-  profileSaved: function () {
-    return Meteor.user() && Meteor.user().hasCompletedSignup &&
-      Template.instance()._profileSaved.get();
-  },
-
-  db: function () {
-    return Template.instance().data._db;
-  },
-
-  showDeleteButton: function () {
-    return !Template.instance().data._db.isUserInOrganization(Meteor.user());
-  },
-
-};
-
-Template.sandstormAccountSettings.helpers(helpers);
-Template._accountProfileEditor.helpers(helpers);
-
-Template.sandstormAccountSettings.helpers({
   isIdentitySelected: function (id) {
     return Template.instance()._selectedIdentityId.get() === id;
   },
@@ -201,9 +180,39 @@ Template.sandstormAccountSettings.helpers({
     const instance = Template.instance();
     return instance._deleteError.get();
   },
+
+  showDeleteButton: function () {
+    return !Template.instance().data._db.isUserInOrganization(Meteor.user());
+  },
 });
 
+GENDERS = { male: "male", female: "female", neutral: "neutral", robot: "robot" };
+
 Template._accountProfileEditor.helpers({
+  isPaymentsEnabled: function () {
+    try {
+      BlackrockPayments; // This checks that BlackrockPayments is defined.
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+
+  isNeutral(pronoun) {
+    return pronoun === "neutral" || !(pronoun in GENDERS);
+  },
+
+  isMale(pronoun) { return pronoun === "male"; },
+
+  isFemale(pronoun) { return pronoun === "female"; },
+
+  isRobot(pronoun) { return pronoun === "robot"; },
+
+  profileSaved: function () {
+    return Meteor.user() && Meteor.user().hasCompletedSignup &&
+      Template.instance()._profileSaved.get();
+  },
+
   hasCompletedSignup: function () {
     const user = Meteor.user();
     return user && user.hasCompletedSignup;
@@ -319,6 +328,10 @@ Template.sandstormAccountSettings.events({
 
 Template.sandstormAccountsFirstSignIn.onCreated(function () {
   this.result = new ReactiveVar(undefined);
+  this.autorun(() => {
+    const data = Template.currentData();
+    check(data, SandstormAccountSettingsUi);
+  });
 });
 
 Template.sandstormAccountsFirstSignIn.helpers({
@@ -334,7 +347,7 @@ Template.sandstormAccountsFirstSignIn.helpers({
     return result && result.error;
   },
 
-  identityToConfirm: function () {
+  identityToConfirm() {
     const identityId = SandstormDb.getUserIdentityIds(Meteor.user())[0];
     const identity = Meteor.users.findOne({ _id: identityId });
     if (identity) {
@@ -345,7 +358,7 @@ Template.sandstormAccountsFirstSignIn.helpers({
     }
   },
 
-  termsAndPrivacy: function () {
+  termsAndPrivacy() {
     const result = {
       termsUrl: Template.currentData()._db.getSetting("termsUrl"),
       privacyUrl: Template.currentData()._db.getSetting("privacyUrl"),

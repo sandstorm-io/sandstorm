@@ -10,6 +10,8 @@
 //
 // NOTE: If you change the definition of $mobile or $desktop, run: `git grep -F '$mobile'`
 // in order to find places in the Javascript code that hard-code this 900px breakpoint.
+$mobile-only: "(max-width: 600px)";
+$not-mobile-only: "(min-width: 601px)";
 $mobile: "(max-width: 900px)";
 $desktop: "(min-width: 901px)";
 

@@ -136,23 +136,28 @@ Template.notifications.helpers({
 
 Template.notificationItem.helpers({
   isAppUpdates: function () {
-    return !!this.appUpdates;
+    const data = Template.currentData();
+    return !!data.appUpdates;
   },
 
   isMailingListBonus() {
-    return !!this.mailingListBonus;
+    const data = Template.currentData();
+    return !!data.mailingListBonus;
   },
 
   isReferral() {
-    return !!this.referral;
+    const data = Template.currentData();
+    return !!data.referral;
   },
 
   isAdminNotification() {
-    return !!this.admin;
+    const data = Template.currentData();
+    return !!data.admin;
   },
 
   isOngoing() {
-    return !!this.ongoing;
+    const data = Template.currentData();
+    return !!data.ongoing;
   },
 });
 

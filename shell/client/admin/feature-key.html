@@ -9,7 +9,7 @@
   {{#if currentFeatureKey}}
     <h2>Current feature key</h2>
     {{> adminFeatureKeyDetails featureKey=currentFeatureKey }}
-    {{> adminFeatureKeyModifyForm }}
+    {{> adminFeatureKeyModifyForm "" }}
 
     <p>Looking to configure Sandstorm for Work-exclusive features?</p>
     <ul>
@@ -60,7 +60,7 @@
       </div>
     </div>
 
-    {{> featureKeyUploadForm }}
+    {{> featureKeyUploadForm "" }}
   {{/if}}
 
 </template>
@@ -135,6 +135,9 @@
 </template>
 
 <template name="featureKeyUploadForm">
+  {{!-- Takes arguments:
+    successCb: optional Function to call when a new key is uploaded successfully
+  --}}
   <form class="feature-key-form">
     {{#with error=currentError}}
       {{#if error}}
@@ -154,6 +157,11 @@
 </template>
 
 <template name="featureKeyDeleteForm">
+  {{!-- Takes arguments:
+     token: optional String to pass as a session token to submitFeatureKey
+     cancelCb: optional Function to call when user decides not to erase feature key
+     successCb: optional Function to call when feature key is successfully removed
+  --}}
   <p>
     Really delete feature key?  This will disable Sandstorm for Work features, like LDAP and SAML
     login, organizational user management, and organizational controls.

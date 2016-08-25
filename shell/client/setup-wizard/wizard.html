@@ -109,7 +109,7 @@
 <template name="setupWizardLayout">
 <div class="setup-root">
   {{> yield}}
-  {{> setupWizardHelpFooter }}
+  {{> setupWizardHelpFooter "" }}
   <div class="sandstorm-logo-row">
     <div class="sandstorm-logo"></div>
   </div>
@@ -150,7 +150,7 @@
         </p>
       {{else}}
         {{#if identityUser}}
-          {{> identityLoginInterstitial }}
+          {{> identityLoginInterstitial "" }}
         {{else}}
           <p class="center">
             <button class="make-self-admin">Give yourself admin privileges</button>
@@ -232,12 +232,12 @@
   {{#if currentFeatureKey}}
     <h4>Current feature key</h4>
     {{> adminFeatureKeyDetails featureKey=currentFeatureKey }}
-    {{> adminFeatureKeyModifyForm }}
+    {{> adminFeatureKeyModifyForm "" }}
   {{else}}
     <h4>Upload feature key</h4>
     <p>To make use of Sandstorm for Work features like LDAP and SAML login and organization
       management, enter your feature key.</p>
-    {{> featureKeyUploadForm }}
+    {{> featureKeyUploadForm "" }}
 
     <h4>Don't have one?</h4>
     <p>Sandstorm for Work adds LDAP support, with more features arriving soon.</p>
@@ -295,7 +295,7 @@
 {{#if hasFeatureKey}}
   {{> setupWizardProgressBar currentStep="organization"}}
 
-  {{> organizationSettingsBlurb }}
+  {{> organizationSettingsBlurb "" }}
 
   {{#if errorMessage}}
     {{#focusingErrorBox}}
@@ -548,7 +548,7 @@
   {{/if}}
 
 {{#if identityUser}}
-  {{> identityLoginInterstitial }}
+  {{> identityLoginInterstitial "" }}
 {{else}}
   {{#if currentUser}}
     {{#if currentUserFirstLogin}}
@@ -556,7 +556,7 @@
         <h2>Confirm your profile</h2>
         <div class="single-identity-editor">
           {{#with accountProfileEditorData}}
-            {{> _accountProfileEditor}}
+            {{> _accountProfileEditor .}}
           {{/with}}
         </div>
       </div>

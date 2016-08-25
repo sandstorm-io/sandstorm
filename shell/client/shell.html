@@ -54,7 +54,7 @@ limitations under the License.
   {{else}}
   {{#with firstTimeBillingPromptState}}
     <div class="first-sign-in-main-content {{#if hideNavbar}}hide-navbar{{else}}{{#if shrinkNavbar}}shrink-navbar{{/if}}{{/if}}">
-      {{> billingPromptFirstTime}}
+      {{> billingPromptFirstTime . }}
     </div>
   {{else}}
 
@@ -124,7 +124,7 @@ limitations under the License.
     {{#unless identityUser}}
       {{#unless firstLogin}}
         {{#unless firstTimeBillingPromptState}}
-          {{> desktopNotifications }}
+          {{> desktopNotifications "" }}
           {{> yield}}
         {{/unless}}
       {{/unless}}
@@ -154,7 +154,7 @@ limitations under the License.
   <ul class="notification-list">
     {{#each notifications}}
       <li>
-        {{> notificationItem}}
+        {{> notificationItem .}}
       </li>
     {{else}}
     <li>No notifications...</li>
@@ -403,7 +403,7 @@ limitations under the License.
     <section class="changelog">
       <h2>Recent changes</h2>
 
-      {{> changelog}}
+      {{> changelog ""}}
     </section>
 
     <section class="developers">

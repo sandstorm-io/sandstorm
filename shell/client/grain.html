@@ -7,16 +7,16 @@
     <div class="grain-container {{#if active}}active-grain{{else}}inactive-grain{{/if}}">
     {{#if error}}
       {{#if inMyTrash}}
-        {{> grainInMyTrash}}
+        {{> grainInMyTrash . }}
       {{else}}
         {{#if inOwnersTrash}}
-          {{> grainInOwnersTrash}}
+          {{> grainInOwnersTrash ""}}
         {{else}}
           {{#if unauthorized}}
             {{#if token}}
-              {{> revokedShareLink}}
+              {{> revokedShareLink ""}}
             {{else}}
-              {{> requestAccess}}
+              {{> requestAccess . }}
             {{/if}}
           {{else}}
             {{#if notFound}}
@@ -35,7 +35,7 @@
             used for testing purposes. --}}
       <iframe data-grainid="{{grainId}}" id="grain-frame-{{grainId}}" class="grain-frame" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{originalPath}}"></iframe>
       {{#if hasNotLoaded}}
-        {{> _grainSpinner}}
+        {{> _grainSpinner ""}}
       {{/if}}
     {{else}}
     {{#if interstitial.chooseIdentity}}
@@ -47,7 +47,7 @@
         {{/if}}
       </div>
     {{else}}
-      {{> _grainSpinner}}
+      {{> _grainSpinner ""}}
     {{/if}}
     {{/if}}
     {{/if}}
@@ -507,7 +507,7 @@
     {{grainSize}}
   {{/sandstormTopbarItem}}
 
-  {{>sandstormTopbarBlockReload}}
+  {{>sandstormTopbarBlockReload ""}}
 
   {{setGrainWindowTitle}}
 

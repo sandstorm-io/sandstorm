@@ -514,6 +514,10 @@ body>.main-content>.account {
           width: 225px;
         }
 
+        &:focus {
+          @extend %custom-focus-ring;
+        }
+
         .make-login {
           @include unstyled-button();
         }

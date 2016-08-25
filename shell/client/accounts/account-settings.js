@@ -248,6 +248,14 @@ Template.sandstormAccountSettings.events({
     instance._selectedIdentityId.set(ev.currentTarget.getAttribute("data-identity-id"));
   },
 
+  "keydown [role='tab']"(ev, instance) {
+    if (ev.keyCode === 13) { // Enter key
+      ev.preventDefault();
+      instance._actionCompleted.set();
+      instance._selectedIdentityId.set(ev.currentTarget.getAttribute("data-identity-id"));
+    }
+  },
+
   "click button.link-new-identity": function (ev, instance) {
     instance._isLinkingNewIdentity.set(true);
   },

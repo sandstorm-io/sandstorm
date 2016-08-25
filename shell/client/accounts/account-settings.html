@@ -45,7 +45,7 @@ limitations under the License.
   {{#unless isLinkingNewIdentity}}
   <ul role="tablist" >
     {{#each identities}}
-    <li role="tab" aria-controls="profile-tab-{{_id}}" id="profile-tab-header-{{_id}}"
+    <li role="tab" tabindex="0" aria-controls="profile-tab-{{_id}}" id="profile-tab-header-{{_id}}"
         aria-selected="{{isIdentitySelected _id}}" data-identity-id="{{_id}}">
       {{> identityCard .}}
     </li>

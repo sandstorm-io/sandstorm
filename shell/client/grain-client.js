@@ -1528,7 +1528,7 @@ Meteor.startup(function () {
                                          .replace(/\$GRAIN_TITLE_SLUG/g, grainTitleSlug);
         let link = undefined;
         if (rawLink) {
-          link = `${rawLink.scheme}://${window.location.protocol}//${host}#${tokenId}`;
+          link = `${rawLink.scheme}:${window.location.protocol}//${host}#${tokenId}`;
         }
 
         sessionStorage.setItem(key, JSON.stringify({

@@ -67,6 +67,7 @@ const mapGrainStateToTemplateData = function (grainState) {
     notFound: error && (error.error == 404),
     inMyTrash: grainState.isInMyTrash(),
     inOwnersTrash: error && (error.error === "grain-is-in-trash"),
+    grainOwnerSuspended: error && (error.error === "grain-owner-suspended"),
     appOrigin: grainState.origin(),
     hasNotLoaded: !(grainState.hasLoaded()),
     sessionId: grainState.sessionId(),

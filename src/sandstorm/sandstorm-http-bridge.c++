@@ -1056,7 +1056,8 @@ class BridgeContext: private kj::TaskSet::ErrorHandler {
 public:
   BridgeContext(SandstormApi<>::Client apiCap, spk::BridgeConfig::Reader config)
       : apiCap(kj::mv(apiCap)), config(config),
-        identitiesDir(openIdentitiesDir(config)), tasks(*this) {}
+        identitiesDir(openIdentitiesDir(config)),
+        trashDir(openTrashDir(config)), tasks(*this) {}
 
   void saveIdentity(capnp::Data::Reader identityId, Identity::Client identity) {
     if (!config.getSaveIdentityCaps()) return;
@@ -1072,19 +1073,14 @@ public:
 
       if (faccessat(identitiesDir, textIdRef.cStr(), F_OK, AT_SYMLINK_NOFOLLOW) != 0) {
         // Not yet recorded to disk. Need to save a SturdyRef.
-        auto req = apiCap.saveRequest();
-        req.setCap(identity);
-        req.initLabel().setDefaultText("user identity");
-        tasks.add(req.send().then([this,textIdRef](auto result) -> void {
-          // Sandstorm tokens are primarily text but use percent-encoding to be safe.
-          auto tokenText = percentEncode(result.getToken());
-
-          // Store as a symlink. ext4 can store up to 60 bytes directly in the inode, avoiding
-          // allocating a block.
-          KJ_SYSCALL(symlinkat(tokenText.cStr(), identitiesDir, textIdRef.cStr()));
-
-          // Make sure it's really saved.
-          KJ_SYSCALL(fsync(identitiesDir));
+        saveIdentityInternal(textIdRef, kj::mv(identity));
+      } else {
+        // Try restoring the existing SturdyRef and re-save on failure.
+        tasks.add(loadIdentityFromDisk(textIdRef).whenResolved().catch_(
+            [this, textIdRef, KJ_MVCAP(identity)](auto error) mutable {
+          if (error.getType() == kj::Exception::Type::FAILED) {
+            saveIdentityInternal(textIdRef, kj::mv(identity));
+          }
         }));
       }
     }
@@ -1105,12 +1101,14 @@ public:
       // Not in the map. Load from disk.
       Identity::Client identity = loadIdentityFromDisk(textId);
 
-      // Add to map.
-      kj::StringPtr textIdRef = textId;
-      KJ_ASSERT(liveIdentities.insert(std::make_pair(
-          textIdRef, IdentityRecord { kj::mv(textId), kj::cp(identity) })).second);
+      tasks.add(identity.whenResolved().then([this, KJ_MVCAP(textId), identity]() mutable {
+        // Successfully resolved. Add to map.
+        kj::StringPtr textIdRef = textId;
+        KJ_ASSERT(liveIdentities.insert(std::make_pair(
+          textIdRef, IdentityRecord { kj::mv(textId), kj::mv(identity) })).second);
+      }));
 
-      return identity;
+      return kj::mv(identity);
     } else {
       // Identity is in the map.
       Identity::Client identity = iter->second.identity;
@@ -1130,13 +1128,14 @@ public:
         if (e2.getType() == kj::Exception::Type::DISCONNECTED) {
           // Disconnected. We'll need to reload from disk.
           Identity::Client newIdentity = loadIdentityFromDisk(textId);
+          tasks.add(newIdentity.whenResolved().then([this, KJ_MVCAP(textId), newIdentity]() mutable {
+            // Save the new identity to the map so that we don't have to reload it again.
+            auto iter = liveIdentities.find(textId);
+            KJ_ASSERT(iter != liveIdentities.end());
+            iter->second.identity = kj::mv(newIdentity);
+          }));
 
-          // Save the new identity to the map so that we don't have to reload it again.
-          auto iter = liveIdentities.find(textId);
-          KJ_ASSERT(iter != liveIdentities.end());
-          iter->second.identity = newIdentity;
-
-          return newIdentity;
+          return kj::mv(newIdentity);
         } else {
           // Some other error -- meaning we're NOT disconnected, so go ahead and use the cap.
           return kj::mv(identity);
@@ -1152,6 +1151,7 @@ private:
   SandstormApi<>::Client apiCap;
   spk::BridgeConfig::Reader config;
   kj::AutoCloseFd identitiesDir;
+  kj::AutoCloseFd trashDir;
 
   struct IdentityRecord {
     IdentityRecord(const IdentityRecord& other) = delete;
@@ -1178,6 +1178,16 @@ private:
                     O_RDONLY | O_DIRECTORY | O_CLOEXEC);
   }
 
+  static kj::AutoCloseFd openTrashDir(spk::BridgeConfig::Reader config) {
+    if (!config.getSaveIdentityCaps()) return kj::AutoCloseFd();
+
+    recursivelyCreateParent("/var/.sandstorm-http-bridge/trash/foo");
+
+    // Note: Using O_PATH here would prevent fsync().
+    return raiiOpen("/var/.sandstorm-http-bridge/trash",
+                    O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+  }
+
   Identity::Client loadIdentityFromDisk(kj::StringPtr textId) {
     KJ_ASSERT(textId.size() == 32, "invalid identity ID", textId);
     for (char c: textId) {
@@ -1196,6 +1206,56 @@ private:
     req.setToken(percentDecode(buf));
 
     return req.send().getCap().castAs<Identity>();
+  }
+
+  void saveIdentityInternal(kj::StringPtr textId, Identity::Client identity) {
+    // Writes the identity to disk, assuming that either we have not saved this identity yet
+    // or we have recently observed our existing save to be broken.
+
+    auto req = apiCap.saveRequest();
+    req.setCap(identity);
+    req.initLabel().setDefaultText("user identity");
+    tasks.add(req.send().then([this,textId](auto result) -> void {
+      // Sandstorm tokens are primarily text but use percent-encoding to be safe.
+      auto tokenText = percentEncode(result.getToken());
+
+      // Clean up any existing symlink.
+      dropIdentity(textId);
+
+      // Store as a symlink. ext4 can store up to 60 bytes directly in the inode, avoiding
+      // allocating a block.
+      KJ_SYSCALL(symlinkat(tokenText.cStr(), identitiesDir, textId.cStr()));
+
+      // Make sure it's really saved.
+      KJ_SYSCALL(fsync(identitiesDir));
+    }));
+  }
+
+  void dropIdentity(kj::StringPtr textId) {
+    auto symlink = kj::heapString(textId);
+
+    if (faccessat(identitiesDir, symlink.cStr(), F_OK, AT_SYMLINK_NOFOLLOW) == 0) {
+      char buf[512];
+      ssize_t n;
+      KJ_SYSCALL(n = readlinkat(identitiesDir, symlink.cStr(), buf, sizeof(buf)));
+      KJ_ASSERT(n < sizeof(buf), "token too long?");
+      buf[n] = '\0';
+
+      // We name the trash file after the token, not the identity ID. This way, it's okay
+      // if we overwrite an existing entry of the trash directory.
+      auto trashSymlink = kj::heapString(buf);
+      KJ_SYSCALL(renameat(identitiesDir, symlink.cStr(), trashDir, trashSymlink.cStr()));
+
+      auto req = apiCap.dropRequest();
+      req.setToken(percentDecode(buf));
+      tasks.add(req.send().then([KJ_MVCAP(trashSymlink), this](auto response) -> void {
+        KJ_SYSCALL(unlinkat(trashDir, trashSymlink.cStr(), 0));
+      }));
+
+      // TODO(someday): Implement some kind of garbage collection that clears out the trash
+      // directory periodically, to handle the rare case when the above drop() task fails to
+      // run to completion.
+    }
   }
 };
 

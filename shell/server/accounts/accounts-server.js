@@ -144,6 +144,12 @@ Accounts.validateLoginAttempt(function (attempt) {
 
   const db = attempt.connection.sandstormDb;
   const user = attempt.user;
+
+  if (user.suspended && user.suspended.admin) {
+    throw new Meteor.Error(403, "User has been suspended. Please contact the administrator " +
+      "of this server if you believe this to be in error.");
+  }
+
   if (user.loginIdentities) {
     // it's an account
     if (db.getOrganizationDisallowGuests() &&

@@ -18,6 +18,7 @@ import "/imports/db-deprecated.js";
 import { FrontendRefRegistry } from "/imports/server/frontend-ref.js";
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { migrateToLatest } from "/imports/server/migrations.js";
+import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants.js";
 
 globalFrontendRefRegistry = new FrontendRefRegistry();
 
@@ -45,6 +46,9 @@ SandstormDb.periodicCleanup(10 * 60 * 1000,
                             SandstormPermissions.cleanupClientPowerboxTokens(globalDb));
 SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
   SandstormAutoupdateApps.updateAppIndex(globalDb);
+});
+SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
+  globalDb.deletePendingAccounts(ACCOUNT_DELETION_SUSPENSION_TIME, globalBackend);
 });
 
 Meteor.startup(() => { migrateToLatest(globalDb, globalBackend); });

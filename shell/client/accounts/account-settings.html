@@ -69,6 +69,13 @@ limitations under the License.
         Log out all other sessions
       </button>
     </p>
+    <p>
+      {{#if showDeleteButton}}
+      <button class="account-button delete-account" disabled={{logoutOtherSessionsInFlight}}>
+        Delete account
+      </button>
+      {{/if}}
+    </p>
   {{/unless}}
   </div><section class="profile">
     {{#each identities}}
@@ -137,6 +144,22 @@ limitations under the License.
     {{>_accountProfileEditor identity=identityToConfirm termsAndPrivacy=termsAndPrivacy
                              staticHost=_staticHost db=_db setActionCompleted=onActionCompleted}}
   </div>
+</template>
+
+<template name="accountSuspended">
+  <h1>
+    This account has been suspended by you.
+  </h1>
+
+  <h2>
+    {{#if timeUntilDeletion}}
+     This account will be deleted in {{timeUntilDeletion}}. Would you like to cancel deletion and restore this account?
+     {{else}}
+     This account is suspended and all of its grains and shares are disabled. Would you like to restore this account?
+     {{/if}}
+  </h2>
+  <button class="restore-account">Restore account</button>
+  <button class="logout">Logout</button>
 </template>
 
 <template name="_accountProfileEditor">

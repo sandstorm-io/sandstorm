@@ -1436,11 +1436,9 @@ Meteor.startup(function () {
         });
 
         rawLink = call.link;
-        // TODO(soon): check against whitelist
         // rfc3986 specifies schemes as:
         // scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
-        if (rawLink && (rawLink.scheme.search(/^[^a-zA-Z]/) !== -1 ||
-                        rawLink.scheme.search(/[^a-zA-Z0-9+-.]/) !== -1)) {
+        if (rawLink && (rawLink.scheme.search(/[^a-zA-Z0-9+-.]/) !== -1)) {
           throw new Meteor.Error(400, "rawlink.scheme has invalid characters.");
         }
       } catch (error) {
@@ -1528,7 +1526,7 @@ Meteor.startup(function () {
                                          .replace(/\$GRAIN_TITLE_SLUG/g, grainTitleSlug);
         let link = undefined;
         if (rawLink) {
-          link = `${rawLink.scheme}:${window.location.protocol}//${host}#${tokenId}`;
+          link = `clientapp-${rawLink.scheme}:${window.location.protocol}//${host}#${tokenId}`;
         }
 
         sessionStorage.setItem(key, JSON.stringify({

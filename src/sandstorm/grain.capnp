@@ -429,7 +429,7 @@ interface SessionContext {
   # callback to the grain will occur. You can listen for such a message like so:
   # window.addEventListener("message", function (event) {
   #   if (event.data.rpcId === myRpcId && !event.data.error) {
-  #     // pass event.data.token to your app's server and call SandstormApi.restore() with it
+  #     // pass event.data.token to your app's server and call SessionContext.claimRequest() with it
   #   }
   # }, false)
 

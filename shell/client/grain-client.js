@@ -1439,8 +1439,8 @@ Meteor.startup(function () {
         // TODO(soon): check against whitelist
         // rfc3986 specifies schemes as:
         // scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
-        if (rawLink.scheme.search(/^[^a-zA-Z]/) !== -1 ||
-            rawLink.scheme.search(/[^a-zA-Z0-9+-.]/) !== -1) {
+        if (rawLink && (rawLink.scheme.search(/^[^a-zA-Z]/) !== -1 ||
+                        rawLink.scheme.search(/[^a-zA-Z0-9+-.]/) !== -1)) {
           throw new Meteor.Error(400, "rawlink.scheme has invalid characters.");
         }
       } catch (error) {

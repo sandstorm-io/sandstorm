@@ -61,6 +61,15 @@ if (Meteor.isServer) {
 //              link. This field contains the app ID of the app that the user started out demoing.
 //              Unlike the `expires` field, this field is not cleared when the user upgrades from
 //              being a demo user.
+//   suspended: If this exists, this account/identity is supsended. Both accounts and identities
+//              can be suspended. After some amount of time, the user will be completely deleted
+//              and removed from the DB.
+//              It is an object with fields:
+//                voluntary: Boolean. This is true if the user initiated it. They will have the
+//                  chance to still login and reverse the suspension/deletion.
+//                admin: The userId of the admin who suspended the account.
+//                timestamp: Date object. When the suspension occurred.
+//                willDelete: Boolean. If true, this account will be deleted after some time.
 //
 // Identity users additionally contain the following fields:
 //   profile: Object containing the data that will be shared with users and grains that come into
@@ -130,6 +139,7 @@ Meteor.users.ensureIndexOnServer("loginIdentities.id", { unique: 1, sparse: 1 })
 Meteor.users.ensureIndexOnServer("nonloginIdentities.id", { sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.google.id", { unique: 1, sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.github.id", { unique: 1, sparse: 1 });
+Meteor.users.ensureIndexOnServer("suspended.willDelete", { sparse: 1 });
 
 // TODO(cleanup): This index is obsolete; delete it.
 Meteor.users.ensureIndexOnServer("identities.id", { unique: 1, sparse: 1 });
@@ -217,6 +227,9 @@ Grains = new Mongo.Collection("grains");
 //                   time a session to this grain was opened.
 //   trashed: If present, the Date when this grain was moved to the trash bin. Thirty days after
 //            this date, the grain will be automatically deleted.
+//   suspended: If true, the owner of this grain has been suspended. They will soon be deleted,
+//              so treat this grain the same as "trashed". It is denormalized out of Users for ease
+//              of querying.
 //   ownerSeenAllActivity: True if the owner has viewed the grain since the last activity event
 //       occurred. See also ApiTokenOwner.user.seenAllActivity.
 //   size: On-disk size of the grain in bytes.
@@ -403,6 +416,9 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //              become un-revoked in the future.
 //   trashed:   If present, the Date when this token was moved to the trash bin. Thirty days after
 //              this date, the token will be automatically deleted.
+//   suspended: If true, the owner of this token has been suspended. They will soon be deleted,
+//              so treat this token the same as "trashed". It is denormalized out of Users for
+//              ease of querying.
 //   expires:   Optional expiration Date. If undefined, the token does not expire.
 //   lastUsed:  Optional Date when this token was last used.
 //   owner:     A `ApiTokenOwner` (defined in `supervisor.capnp`, stored as a JSON object)
@@ -715,7 +731,7 @@ if (Meteor.isServer) {
         Meteor.users.find({ _id: this.userId },
             { fields: { signupKey: 1, isAdmin: 1, expires: 1, storageUsage: 1,
                       plan: 1, planBonus: 1, hasCompletedSignup: 1, experiments: 1,
-                      referredIdentityIds: 1, cachedStorageQuota: 1, }, }),
+                      referredIdentityIds: 1, cachedStorageQuota: 1, suspended: 1, }, }),
         Plans.find(),
       ];
     } else {
@@ -1878,6 +1894,100 @@ _.extend(SandstormDb.prototype, {
 
     return quota && user.storageUsage && user.storageUsage >= quota.storage * 1.2 && "outOfStorage";
   },
+
+  suspendIdentity: function (userId, suspension) {
+    check(userId, String);
+    check(suspension, {
+      timestamp: Date,
+      admin: Match.Optional(String),
+      voluntary: Match.Optional(Boolean),
+    });
+
+    this.collections.users.update({ _id: userId }, { $set: { suspended: suspension } });
+    this.collections.apiTokens.update({ "owner.user.identityId": userId },
+      { $set: { suspended: true } }, { multi: true });
+  },
+
+  unsuspendIdentity: function (userId) {
+    check(userId, String);
+
+    this.collections.users.update({ _id: userId }, { $unset: { suspended: 1 } });
+    this.collections.apiTokens.update({ "owner.user.identityId": userId },
+      { $unset: { suspended: true } }, { multi: true });
+  },
+
+  suspendAccount: function (userId, byAdminUserId, willDelete) {
+    check(userId, String);
+    check(byAdminUserId, Match.OneOf(String, null, undefined));
+    check(willDelete, Boolean);
+
+    const user = globalDb.collections.users.findOne({ _id: userId });
+    const suspension = {
+      timestamp: new Date(),
+      willDelete: willDelete || false,
+    };
+    if (byAdminUserId) {
+      suspension.admin = byAdminUserId;
+    } else {
+      suspension.voluntary = true;
+    }
+
+    this.collections.users.update({ _id: userId }, { $set: { suspended: suspension } });
+    this.collections.grains.update({ userId: userId }, { $set: { suspended: true } }, { multi: true });
+
+    delete suspension.willDelete;
+    // Only mark the parent account for deletion. This makes the query simpler later.
+
+    user.loginIdentities.forEach((identity) => {
+      this.suspendIdentity(identity.id, suspension);
+    });
+    user.nonloginIdentities.forEach((identity) => {
+      if (this.collections.users.find({ $or: [
+        { "loginIdentities.id": identity.id },
+        { "nonloginIdentities.id": identity.id },
+      ], }).count() === 1) {
+        // Only suspend non-login identities that are unique to this account.
+        this.suspendIdentity(identity.id, suspension);
+      }
+    });
+
+    // Force logout this user
+    this.collections.users.update({ _id: userId },
+      { $unset: { "services.resume.loginTokens": 1 } });
+    if (user && user.loginIdentities) {
+      user.loginIdentities.forEach(function (identity) {
+        Meteor.users.update({ _id: identity.id }, { $unset: { "services.resume.loginTokens": 1 } });
+      });
+    }
+  },
+
+  unsuspendAccount: function (userId) {
+    check(userId, String);
+
+    const user = globalDb.collections.users.findOne({ _id: userId });
+    this.collections.users.update({ _id: userId }, { $unset: { suspended: 1 } });
+    this.collections.grains.update({ userId: userId }, { $unset: { suspended: 1 } }, { multi: true });
+
+    user.loginIdentities.forEach((identity) => {
+      this.unsuspendIdentity(identity.id);
+    });
+
+    user.nonloginIdentities.forEach((identity) => {
+      this.unsuspendIdentity(identity.id);
+    });
+  },
+
+  deletePendingAccounts: function (deletionCoolingOffTime, backend) {
+    check(deletionCoolingOffTime, Number);
+
+    const queryDate = new Date(Date.now() - deletionCoolingOffTime);
+    this.collections.users.find({
+      "suspended.willDelete": true,
+      "suspended.timestamp": { $lt: queryDate },
+    }).forEach((user) => {
+      this.deleteAccount(user._id, backend);
+    });
+  },
 });
 
 SandstormDb.escapeMongoKey = (key) => {
@@ -2601,6 +2711,92 @@ if (Meteor.isServer) {
     const featureKey = this.collections.featureKey.findOne({ _id: "currentFeatureKey" });
     return processRawFeatureKey(featureKey);
   };
+}
+
+if (Meteor.isServer) {
+  SandstormDb.prototype.deleteIdentity = function (identityId) {
+    check(identityId, String);
+
+    this.removeApiTokens({ "owner.user.identityId": identityId });
+    this.collections.contacts.remove({ identityId: identityId });
+    Meteor.users.remove({ _id: identityId });
+  };
+
+  SandstormDb.prototype.deleteAccount = function (userId, backend) {
+    check(userId, String);
+
+    const _this = this;
+    const user = Meteor.users.findOne({ _id: userId });
+    this.deleteGrains({ userId: userId }, backend, "grain");
+    this.collections.userActions.remove({ userId: userId });
+    this.collections.notifications.remove({ userId: userId });
+    user.loginIdentities.forEach((identity) => {
+      if (Meteor.users.find({ $or: [
+        { "loginIdentities.id": identity.id },
+        { "nonloginIdentities.id": identity.id },
+      ], }).count() === 1) {
+        // If this is the only account with the identity, then delete it
+        _this.deleteIdentity(identity.id);
+      }
+    });
+    user.nonloginIdentities.forEach((identity) => {
+      if (Meteor.users.find({ $or: [
+        { "loginIdentities.id": identity.id },
+        { "nonloginIdentities.id": identity.id },
+      ], }).count() === 1) {
+        // If this is the only account with the identity, then delete it
+        _this.deleteIdentity(identity.id);
+      }
+    });
+    this.collections.contacts.remove({ ownerId: userId });
+    backend.deleteUser(userId);
+    Meteor.users.remove({ _id: userId });
+  };
+
+  Meteor.methods({
+    suspendAccount(userId, willDelete) {
+      check(userId, String);
+      check(willDelete, Boolean);
+
+      if (!isAdmin()) {
+        throw new Meteor.Error(403, "Only admins can suspend other users.");
+      }
+
+      this.connection.sandstormDb.suspendAccount(userId, Meteor.userId(), willDelete);
+    },
+
+    deleteOwnAccount() {
+      const db = this.connection.sandstormDb;
+      if (!Meteor.userId()) {
+        throw new Meteor.Error(403, "Must be logged in to delete an account");
+      }
+
+      if (db.isUserInOrganization(Meteor.user())) {
+        throw new Meteor.Error(403, "Users in an organization cannot delete their own account. " +
+          "Please ask your admin to do it for you.");
+      }
+
+      db.suspendAccount(Meteor.userId(), null, true);
+    },
+
+    unsuspendAccount(userId) {
+      check(userId, String);
+
+      if (!isAdmin()) {
+        throw new Meteor.Error(403, "Only admins can unsuspend other users.");
+      }
+
+      this.connection.sandstormDb.unsuspendAccount(userId, Meteor.userId());
+    },
+
+    unsuspendOwnAccount() {
+      if (!Meteor.userId()) {
+        throw new Meteor.Error(403, "Must be logged in to unsuspend an account");
+      }
+
+      this.connection.sandstormDb.unsuspendAccount(Meteor.userId());
+    },
+  });
 }
 
 Meteor.methods({

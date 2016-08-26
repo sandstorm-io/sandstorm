@@ -1,5 +1,5 @@
 <template name="newAdminUserDetailsIdentityTableRow">
-{{!-- Expects: 
+{{!-- Expects:
          identity: Object
   isLoginIdentity: Boolean
      primaryEmail: String.  Account's primary contact address.
@@ -144,7 +144,7 @@
 </template>
 
 <template name="newAdminUserDetailsIdentityTable">
-{{!-- Expects: 
+{{!-- Expects:
   account: Object
 --}}
   <div class="admin-user-identity-list" role="grid">
@@ -284,6 +284,85 @@
 
     <h2>Identities</h2>
     {{> newAdminUserDetailsIdentityTable account=account }}
+
+    <h2>Status</h2>
+
+    <div style="display: flex; flex-direction: row;">
+      {{#if accountDeleting}}
+        Suspended - Pending deletion {{accountDeleting}}
+      {{else}}{{#if accountSuspended}}
+        Suspended
+      {{else}}
+        Active
+      {{/if}}{{/if}}
+    </div>
+    <form class="standard-form">
+      <div class="button-row">
+        {{#if accountSuspended}}
+        <button type="button" name="unsuspend-account">Unsuspend account</button>
+        {{else}}
+        <button type="button" name="suspend-account">Suspend account</button>
+        <button type="button" name="delete-account">Delete account</button>
+        {{/if}}
+      </div>
+    </form>
+
+    {{#if showDeletePopup}}
+      {{#modalDialogWithBackdrop onDismiss=cancelDelete}}
+        {{#if deleteError}}
+          {{#focusingErrorBox}}
+            {{deleteError}}
+          {{/focusingErrorBox}}
+        {{/if}}
+
+        <h2>Delete {{guessUserName}}</h2>
+        <p>Deleting this user account will:</p>
+        <ul>
+          <li>Permanently delete any grains created by {{guessUserName}}</li>
+          <li>Revoke any sharing links created by {{guessUserName}}</li>
+          <li>Remove {{guessUserName}} from all users' contact lists</li>
+          <li>Delete all identities owned by this account (except identities associated with another account)</li>
+        </ul>
+        <p>
+          <strong>Account deletion is permanent and irreversible.</strong>  Please be certain.
+          The account will first be suspended for 7 days so that you have a chance to undo the
+          deletion. At the end of the 7 days it will be deleted.
+        </p>
+        <form class="standard-form">
+          <div class="button-row">
+            <button class="danger" type="button"
+             disabled={{deleteSubmitting}} name="delete-account-real">Delete account</button>
+            <button type="button" name="cancel-delete-account">Cancel</button>
+          </div>
+        </form>
+      {{/modalDialogWithBackdrop}}
+    {{/if}}
+
+    {{#if showSuspendPopup}}
+      {{#modalDialogWithBackdrop onDismiss=cancelSuspend}}
+        {{#if suspendError}}
+          {{#focusingErrorBox}}
+            {{suspendError}}
+          {{/focusingErrorBox}}
+        {{/if}}
+
+        <h2>Suspend {{guessUserName}}</h2>
+        <p>Suspending this user account will:</p>
+        <ul>
+          <li>Prevent any grains created by {{guessUserName}} from being opened</li>
+          <li>Disable any sharing links created by {{guessUserName}}</li>
+          <li>This also applies to all identities owned by this account (except identities
+              associated with another account)</li>
+        </ul>
+        <form class="standard-form">
+          <div class="button-row">
+            <button class="danger" type="button"
+             disabled={{suspendSubmitting}} name="suspend-account-real">Suspend account</button>
+            <button type="button" name="cancel-suspend-account">Cancel</button>
+          </div>
+        </form>
+      {{/modalDialogWithBackdrop}}
+    {{/if}}
 
     {{/with}}
   {{else}}

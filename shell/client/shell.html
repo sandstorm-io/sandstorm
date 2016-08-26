@@ -47,6 +47,11 @@ limitations under the License.
   {{#if identityUser}}
       {{> identityLoginInterstitial grains=globalGrains}}
   {{else}}
+  {{#if isAccountSuspended}}
+    <div class="suspended-main-content {{#if hideNavbar}}hide-navbar{{else}}{{#if shrinkNavbar}}shrink-navbar{{/if}}{{/if}}">
+      {{> accountSuspended }}
+    </div>
+  {{else}}
   {{#if firstLogin}}
     <div class="first-sign-in-main-content {{#if hideNavbar}}hide-navbar{{else}}{{#if shrinkNavbar}}shrink-navbar{{/if}}{{/if}}">
       {{> sandstormAccountsFirstSignIn accountSettingsUi}}
@@ -110,6 +115,7 @@ limitations under the License.
 
   {{/with}} {{!-- firstTimeBillingPromptState --}}
   {{/if}} {{!-- firstLogin --}}
+  {{/if}} {{!-- isAccountSuspended --}}
   {{/if}} {{!-- identityUser --}}
   {{/with}} {{!-- demoExpired --}}
 

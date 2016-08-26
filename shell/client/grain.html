@@ -11,6 +11,8 @@
       {{else}}
         {{#if inOwnersTrash}}
           {{> grainInOwnersTrash ""}}
+        {{else}}{{#if grainOwnerSuspended}}
+          {{> grainOwnerSuspended ""}}
         {{else}}
           {{#if unauthorized}}
             {{#if token}}
@@ -27,7 +29,7 @@
                <pre>{{error}}</pre>
             {{/if}}
           {{/if}}
-        {{/if}}
+        {{/if}}{{/if}}
       {{/if}}
     {{else}}
     {{#if appOrigin}}
@@ -68,6 +70,14 @@
   <div class="grain-interstitial">
     <p>
       You can no longer access this grain because its owner has moved it to the trash.
+    </p>
+  </div>
+</template>
+
+<template name="grainOwnerSuspended">
+  <div class="grain-interstitial">
+    <p>
+      You can no longer access this grain because its owner's account has been suspended.
     </p>
   </div>
 </template>
@@ -566,4 +576,3 @@
     </div>
   </div>
 </template>
-

@@ -564,6 +564,11 @@ Template.layout.helpers({
     return makeAccountSettingsUi();
   },
 
+  isAccountSuspended: function () {
+    const user = Meteor.user();
+    return user && user.suspended;
+  },
+
   firstTimeBillingPromptState: function () {
     // Should we show the first-time billing plan selector?
 

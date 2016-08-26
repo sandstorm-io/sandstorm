@@ -71,6 +71,7 @@ SessionContextImpl = class SessionContextImpl {
       }
 
       return restoreInternal(
+          globalDb,
           new Buffer(sturdyRef),
           { clientPowerboxRequest: Match.ObjectIncluding({ grainId: this.grainId }) },
           requirements, token);
@@ -192,14 +193,16 @@ Meteor.methods({
     check(identityId, String);
     check(grainId, String);
 
+    const db = this.connection.sandstormDb;
+
     const userId = Meteor.userId();
-    if (!userId || !globalDb.userHasIdentity(userId, identityId)) {
+    if (!userId || !db.userHasIdentity(userId, identityId)) {
       throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
     }
 
     const parsedWebkey = Url.parse(webkeyUrl.trim());
     const hostId = matchWildcardHost(parsedWebkey.host);
-    if (!hostId || !globalDb.isApiHostId(hostId)) {
+    if (!hostId || !db.isApiHostId(hostId)) {
       throw new Meteor.Error(500, "Hostname does not match this server. External webkeys are not " +
         "supported (yet)");
     }
@@ -211,14 +214,14 @@ Meteor.methods({
     }
 
     token = token.slice(1);
-    if (globalDb.isTokenSpecificHostId(hostId) && hostId !== globalDb.apiHostIdForToken(token)) {
+    if (db.isTokenSpecificHostId(hostId) && hostId !== db.apiHostIdForToken(token)) {
       // Note: This case is not security-sensitive. The client could easily compute the correct
       //   host ID for this token. But since they've passed one that doesn't match, we assume
       //   something is wrong and stop here.
       throw new Meteor.Error(400, "Invalid webkey: token doesn't match hostname.");
     }
 
-    const cap = restoreInternal(new Buffer(token),
+    const cap = restoreInternal(db, new Buffer(token),
                                 Match.Optional({ webkey: Match.Optional(Match.Any) }), []).cap;
     const castedCap = cap.castAs(SystemPersistent);
     const owner = {

@@ -183,7 +183,7 @@ class SandstormBackend {
 
     let storagePromise = undefined;
     if (this._db.isQuotaEnabled() && !storageUsageUnimplemented) {
-      storagePromise = globalBackend._backendCap.getUserStorageUsage(userId);
+      storagePromise = this._backendCap.getUserStorageUsage(userId);
     }
 
     const now = new Date();

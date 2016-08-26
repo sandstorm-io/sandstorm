@@ -1076,9 +1076,12 @@ public:
         saveIdentityInternal(textIdRef, kj::mv(identity));
       } else {
         // Try restoring the existing SturdyRef and re-save on failure.
-        tasks.add(loadIdentityFromDisk(textIdRef).ignoreResult().catch_(
-            [this, textIdRef, identity](auto error) mutable {
+        tasks.add(loadIdentityFromDisk(textIdRef).whenResolved().catch_(
+            [this, textIdRef, KJ_MVCAP(identity)](auto error) mutable {
           if (error.getType() == kj::Exception::Type::FAILED) {
+            // Clean up existing symlink.
+            dropIdentity(textIdRef);
+
             saveIdentityInternal(textIdRef, kj::mv(identity));
           }
         }));
@@ -1086,7 +1089,7 @@ public:
     }
   }
 
-  kj::Promise<Identity::Client> loadIdentity(kj::StringPtr origId) {
+  Identity::Client loadIdentity(kj::StringPtr origId) {
     // Obtain the identity capability for the given identity ID.
 
     KJ_REQUIRE(config.getSaveIdentityCaps(),
@@ -1099,13 +1102,16 @@ public:
     auto iter = liveIdentities.find(textId);
     if (iter == liveIdentities.end()) {
       // Not in the map. Load from disk.
-      return loadIdentityFromDisk(origId).then([this, origId](auto identity) {
-        // Add to map.
-        KJ_ASSERT(liveIdentities.insert(std::make_pair(
-            origId, IdentityRecord { kj::heapString(origId), kj::cp(identity) })).second);
+      Identity::Client identity = loadIdentityFromDisk(textId);
 
-        return identity;
-      });
+      tasks.add(identity.whenResolved().then([this, KJ_MVCAP(textId), identity]() mutable {
+        // Successfully resolved. Add to map.
+        kj::StringPtr textIdRef = textId;
+        KJ_ASSERT(liveIdentities.insert(std::make_pair(
+          textIdRef, IdentityRecord { kj::mv(textId), kj::mv(identity) })).second);
+      }));
+
+      return kj::mv(identity);
     } else {
       // Identity is in the map.
       Identity::Client identity = iter->second.identity;
@@ -1124,14 +1130,15 @@ public:
                                       -> kj::Promise<Identity::Client> {
         if (e2.getType() == kj::Exception::Type::DISCONNECTED) {
           // Disconnected. We'll need to reload from disk.
-          return loadIdentityFromDisk(textId).then([this, KJ_MVCAP(textId)](auto identity) {
+          auto identity = loadIdentityFromDisk(textId);
+          tasks.add(identity.whenResolved().then([this, KJ_MVCAP(textId), identity]() mutable {
             // Save the new identity to the map so that we don't have to reload it again.
             auto iter = liveIdentities.find(textId);
             KJ_ASSERT(iter != liveIdentities.end());
-            iter->second.identity = identity;
+            iter->second.identity = kj::mv(identity);
+          }));
 
-            return identity;
-          });
+          return kj::mv(identity);
         } else {
           // Some other error -- meaning we're NOT disconnected, so go ahead and use the cap.
           return kj::mv(identity);
@@ -1184,7 +1191,7 @@ private:
                     O_RDONLY | O_DIRECTORY | O_CLOEXEC);
   }
 
-  kj::Promise<Identity::Client> loadIdentityFromDisk(kj::StringPtr textId) {
+  Identity::Client loadIdentityFromDisk(kj::StringPtr textId) {
     KJ_ASSERT(textId.size() == 32, "invalid identity ID", textId);
     for (char c: textId) {
       if ((c < '0' || '9' < c) && (c < 'a' && 'f' < c)) {
@@ -1201,11 +1208,7 @@ private:
     auto req = apiCap.restoreRequest();
     req.setToken(percentDecode(buf));
 
-    // Don't directly call `getCap()` on the `RemotePromise` because we want to make sure
-    // that the returned promise fails if the request fails.
-    return req.send().then([](auto response) {
-      return response.getCap().template castAs<Identity>();
-    });
+    return req.send().getCap().castAs<Identity>();
   }
 
   void saveIdentityInternal(kj::StringPtr textId, Identity::Client identity) {
@@ -1215,9 +1218,6 @@ private:
     tasks.add(req.send().then([this,textId](auto result) -> void {
       // Sandstorm tokens are primarily text but use percent-encoding to be safe.
       auto tokenText = percentEncode(result.getToken());
-
-      // Clean up any existing symlink.
-      dropIdentity(textId);
 
       // Store as a symlink. ext4 can store up to 60 bytes directly in the inode, avoiding
       // allocating a block.
@@ -1247,7 +1247,6 @@ private:
       req.setToken(percentDecode(buf));
       tasks.add(req.send().then([KJ_MVCAP(trashSymlink), this](auto response) -> void {
         KJ_SYSCALL(unlinkat(trashDir, trashSymlink.cStr(), 0));
-        KJ_SYSCALL(fsync(trashDir));
       }));
 
       // TODO(someday): Implement some kind of garbage collection that clears out the trash
@@ -1946,10 +1945,9 @@ public:
   }
 
   kj::Promise<void> getSavedIdentity(GetSavedIdentityContext context) override {
-    auto identityId = context.getParams().getIdentityId();
-    return bridgeContext.loadIdentity(identityId).then([context] (auto identity) mutable -> void {
-      context.getResults().setIdentity(identity);
-    });
+    context.getResults().setIdentity(
+        bridgeContext.loadIdentity(context.getParams().getIdentityId()));
+    return kj::READY_NOW;
   }
 
 private:

@@ -1418,7 +1418,6 @@ Meteor.startup(function () {
       check(call, Object);
       const rpcId = call.rpcId;
 
-      let rawLink;
       try {
         check(call, {
           rpcId: String,
@@ -1430,17 +1429,13 @@ Meteor.startup(function () {
           unauthenticated: Match.Optional(Object),
           // Note: `unauthenticated` will be validated on the server. We just pass it through
           //   here.
-          link: Match.Optional({
-            scheme: String,
-          }),
+          clientapp: Match.Optional(Match.Where(function (clientapp) {
+            check(clientapp, String);
+            // rfc3986 specifies schemes as:
+            // scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+            return clientapp.search(/[^a-zA-Z0-9+-.]/) === -1;
+          })),
         });
-
-        rawLink = call.link;
-        // rfc3986 specifies schemes as:
-        // scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
-        if (rawLink && (rawLink.scheme.search(/[^a-zA-Z0-9+-.]/) !== -1)) {
-          throw new Meteor.Error(400, "rawlink.scheme has invalid characters.");
-        }
       } catch (error) {
         event.source.postMessage({ rpcId: rpcId, error: error.toString() }, event.origin);
         return;
@@ -1461,6 +1456,11 @@ Meteor.startup(function () {
       const forSharing = call.forSharing ? call.forSharing : false;
       // Tokens expire by default in 5 minutes from generation date
       const selfDestructDuration = 5 * 60 * 1000;
+
+      let clientapp = call.clientapp;
+      if (clientapp) {
+        clientapp = clientapp.toLowerCase();
+      }
 
       let provider;
       if (Router.current().route.getName() === "shared") {
@@ -1525,8 +1525,8 @@ Meteor.startup(function () {
                                          .replace(/\$API_HOST/g, host)
                                          .replace(/\$GRAIN_TITLE_SLUG/g, grainTitleSlug);
         let link = undefined;
-        if (rawLink) {
-          link = `clientapp-${rawLink.scheme}:${window.location.protocol}//${host}#${tokenId}`;
+        if (clientapp) {
+          link = `clientapp-${clientapp}:${window.location.protocol}//${host}#${tokenId}`;
         }
 
         sessionStorage.setItem(key, JSON.stringify({

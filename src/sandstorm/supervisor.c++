@@ -1815,6 +1815,7 @@ public:
 
   kj::Promise<void> save(SaveContext context) override {
     auto args = context.getParams();
+    KJ_REQUIRE(args.hasCap(), "Cannot save a null capability.");
     auto req = args.getCap().template castAs<SystemPersistent>().saveRequest();
     auto grainOwner = req.getSealFor().initGrain();
     grainOwner.setGrainId(grainId);

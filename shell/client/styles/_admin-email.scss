@@ -26,6 +26,10 @@
   }
 }
 
-.email-test-form {
+.email-test-form, .email-disable-form {
   @extend %standard-form;
+
+  button.danger {
+    @extend %button-danger;
+  }
 }

@@ -10,6 +10,7 @@ Template.newAdminEmailConfig.onCreated(function () {
   this.state = new ReactiveVar("default");
   this.errorMessage = new ReactiveVar("");
   this.showTestSendEmailPopup = new ReactiveVar(false);
+  this.showConfirmDisableEmailPopup = new ReactiveVar(false);
   this.formChanged = new ReactiveVar(false);
   this.getSmtpConfig = () => {
     const hostname = this.hostname.get();
@@ -97,15 +98,35 @@ Template.newAdminEmailConfig.helpers({
     return emailLoginEnabled && instance.isDefinitelyInvalid() || instance.state.get() === "submitting" || !instance.formChanged.get();
   },
 
+  disableDisabled() {
+    const instance = Template.instance();
+    return instance.state.get() === "submitting" || !instance.hostname.get();
+  },
+
   showTestSendEmailPopup() {
     const instance = Template.instance();
     return instance.showTestSendEmailPopup.get();
   },
 
-  closePopupCallback() {
+  showConfirmDisableEmailPopup() {
+    const instance = Template.instance();
+    return instance.showConfirmDisableEmailPopup.get();
+  },
+
+  closeTestPopupCallback() {
     const instance = Template.instance();
     return () => {
       instance.showTestSendEmailPopup.set(false);
+    };
+  },
+
+  closeConfirmDisableEmailPopupCallback() {
+    const instance = Template.instance();
+    return (clearHostname) => {
+      instance.showConfirmDisableEmailPopup.set(false);
+      if (clearHostname) {
+        instance.hostname.set("");
+      }
     };
   },
 
@@ -166,6 +187,11 @@ Template.newAdminEmailConfig.events({
   "click .test"(evt) {
     const instance = Template.instance();
     instance.showTestSendEmailPopup.set(true);
+  },
+
+  "click button.disable"(evt) {
+    const instance = Template.instance();
+    instance.showConfirmDisableEmailPopup.set(true);
   },
 });
 
@@ -258,3 +284,47 @@ Template.emailTestPopup.events({
   },
 });
 
+Template.emailDisablePopup.onCreated(function () {
+  this.state = new ReactiveVar("idle");
+  this.errorMessage = new ReactiveVar(undefined);
+});
+
+Template.emailDisablePopup.helpers({
+  hasError() {
+    return !!Template.instance().errorMessage.get();
+  },
+
+  message() {
+    return Template.instance().errorMessage.get();
+  },
+
+  htmlDisabled() {
+    const instance = Template.instance();
+    const state = instance.state.get();
+    if (state.state === "submitting") {
+      return "disabled";
+    }
+
+    return "";
+  },
+});
+
+Template.emailDisablePopup.events({
+  "click button[name=disable-email]"(evt) {
+    const instance = Template.instance();
+    instance.state.set("submitting");
+    Meteor.call("disableEmail", instance.data.token, (err) => {
+      if (err) {
+        instance.errorMessage.set(err.message);
+        instance.state.set("idle");
+      } else {
+        instance.data.onDismiss && instance.data.onDismiss(true);
+      }
+    });
+  },
+
+  "click button[name=close-dialog]"(evt) {
+    const instance = Template.instance();
+    instance.data.onDismiss && instance.data.onDismiss(false);
+  },
+});

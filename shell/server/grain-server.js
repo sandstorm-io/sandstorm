@@ -17,6 +17,8 @@
 const Crypto = Npm.require("crypto");
 import { send as sendEmail } from "/imports/server/email.js";
 
+const ROOT_URL = process.env.ROOT_URL;
+
 const emailLinkWithInlineStyle = function (url, text) {
   return "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
    "font-family:sans-serif;width:200px;min-height:30px;line-height:30px;" +
@@ -394,10 +396,10 @@ Meteor.methods({
     }
   },
 
-  inviteUsersToGrain: function (origin, identityId, grainId, title, roleAssignment,
+  inviteUsersToGrain: function (_origin, identityId, grainId, title, roleAssignment,
                                 contacts, message) {
     if (!this.isSimulation) {
-      check(origin, String);
+      check(_origin, String);
       check(identityId, String);
       check(grainId, String);
       check(title, String);
@@ -441,7 +443,7 @@ Meteor.methods({
             globalDb, { identityId: identityId, accountId: accountId }, grainId,
             "email invitation for " + emailAddress,
             roleAssignment, { webkey: { forSharing: true } });
-          const url = origin + "/shared/" + result.token;
+          const url = ROOT_URL + "/shared/" + result.token;
           const html = message.html + "<br><br>" +
               emailLinkWithInlineStyle(url, "Open Shared Grain") +
               "<div style='font-size:8pt;font-style:italic;color:gray'>" +
@@ -467,7 +469,7 @@ Meteor.methods({
             globalDb, { identityId: identityId, accountId: accountId }, grainId,
             "direct invitation to " + contact.profile.intrinsicName,
             roleAssignment, { user: { identityId: contact._id, title: title } });
-          const url = origin + "/shared/" + result.token;
+          const url = ROOT_URL + "/shared/" + result.token;
           try {
             const identity = Meteor.users.findOne({ _id: contact._id });
             const email = _.findWhere(SandstormDb.getVerifiedEmails(identity),
@@ -522,8 +524,8 @@ Meteor.methods({
     }
   },
 
-  requestAccess: function (origin, grainId, identityId) {
-    check(origin, String);
+  requestAccess: function (_origin, grainId, identityId) {
+    check(_origin, String);
     check(grainId, String);
     check(identityId, String);
     if (!this.isSimulation) {
@@ -571,7 +573,7 @@ Meteor.methods({
       const message = identity.profile.name + identityNote +
             " is requesting access to your grain: " + grain.title + ".";
 
-      const url = origin + "/share/" + grainId + "/" + identityId;
+      const url = ROOT_URL + "/share/" + grainId + "/" + identityId;
 
       let html = message + "<br><br>" +
           emailLinkWithInlineStyle(url, "Open Sharing Menu");

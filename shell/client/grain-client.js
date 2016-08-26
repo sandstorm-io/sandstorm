@@ -1418,6 +1418,7 @@ Meteor.startup(function () {
       const call = event.data.renderTemplate;
       check(call, Object);
       const rpcId = call.rpcId;
+
       try {
         check(call, {
           rpcId: String,
@@ -1429,6 +1430,12 @@ Meteor.startup(function () {
           unauthenticated: Match.Optional(Object),
           // Note: `unauthenticated` will be validated on the server. We just pass it through
           //   here.
+          clientapp: Match.Optional(Match.Where(function (clientapp) {
+            check(clientapp, String);
+            // rfc3986 specifies schemes as:
+            // scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+            return clientapp.search(/[^a-zA-Z0-9+-.]/) === -1;
+          })),
         });
       } catch (error) {
         event.source.postMessage({ rpcId: rpcId, error: error.toString() }, event.origin);
@@ -1450,6 +1457,11 @@ Meteor.startup(function () {
       const forSharing = call.forSharing ? call.forSharing : false;
       // Tokens expire by default in 5 minutes from generation date
       const selfDestructDuration = 5 * 60 * 1000;
+
+      let clientapp = call.clientapp;
+      if (clientapp) {
+        clientapp = clientapp.toLowerCase();
+      }
 
       let provider;
       if (Router.current().route.getName() === "shared") {
@@ -1513,12 +1525,18 @@ Meteor.startup(function () {
         const renderedTemplate = template.replace(/\$API_TOKEN/g, tokenId)
                                          .replace(/\$API_HOST/g, host)
                                          .replace(/\$GRAIN_TITLE_SLUG/g, grainTitleSlug);
+        let link = undefined;
+        if (clientapp) {
+          link = `clientapp-${clientapp}:${window.location.protocol}//${host}#${tokenId}`;
+        }
+
         sessionStorage.setItem(key, JSON.stringify({
             token: tokenId,
             renderedTemplate: renderedTemplate,
             clipboardButton: clipboardButton,
             expires: Date.now() + selfDestructDuration,
             host,
+            link,
           })
         );
 

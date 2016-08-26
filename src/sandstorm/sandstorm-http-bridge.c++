@@ -1079,9 +1079,6 @@ public:
         tasks.add(loadIdentityFromDisk(textIdRef).whenResolved().catch_(
             [this, textIdRef, KJ_MVCAP(identity)](auto error) mutable {
           if (error.getType() == kj::Exception::Type::FAILED) {
-            // Clean up existing symlink.
-            dropIdentity(textIdRef);
-
             saveIdentityInternal(textIdRef, kj::mv(identity));
           }
         }));
@@ -1130,15 +1127,15 @@ public:
                                       -> kj::Promise<Identity::Client> {
         if (e2.getType() == kj::Exception::Type::DISCONNECTED) {
           // Disconnected. We'll need to reload from disk.
-          auto identity = loadIdentityFromDisk(textId);
-          tasks.add(identity.whenResolved().then([this, KJ_MVCAP(textId), identity]() mutable {
+          Identity::Client newIdentity = loadIdentityFromDisk(textId);
+          tasks.add(newIdentity.whenResolved().then([this, KJ_MVCAP(textId), newIdentity]() mutable {
             // Save the new identity to the map so that we don't have to reload it again.
             auto iter = liveIdentities.find(textId);
             KJ_ASSERT(iter != liveIdentities.end());
-            iter->second.identity = kj::mv(identity);
+            iter->second.identity = kj::mv(newIdentity);
           }));
 
-          return kj::mv(identity);
+          return kj::mv(newIdentity);
         } else {
           // Some other error -- meaning we're NOT disconnected, so go ahead and use the cap.
           return kj::mv(identity);
@@ -1212,12 +1209,18 @@ private:
   }
 
   void saveIdentityInternal(kj::StringPtr textId, Identity::Client identity) {
+    // Writes the identity to disk, assuming that either we have not saved this identity yet
+    // or we have recently observed our existing save to be broken.
+
     auto req = apiCap.saveRequest();
     req.setCap(identity);
     req.initLabel().setDefaultText("user identity");
     tasks.add(req.send().then([this,textId](auto result) -> void {
       // Sandstorm tokens are primarily text but use percent-encoding to be safe.
       auto tokenText = percentEncode(result.getToken());
+
+      // Clean up any existing symlink.
+      dropIdentity(textId);
 
       // Store as a symlink. ext4 can store up to 60 bytes directly in the inode, avoiding
       // allocating a block.

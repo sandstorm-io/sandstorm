@@ -1460,7 +1460,7 @@ private:
   kj::String userDisplayName;
   kj::String userHandle;
   kj::String userPicture;
-  UserInfo::Pronouns userPronouns = UserInfo::Pronouns::NEUTRAL;
+  Profile::Pronouns userPronouns = Profile::Pronouns::NEUTRAL;
   kj::Maybe<kj::String> userId;
   kj::String permissions;
   kj::String basePath;
@@ -1523,7 +1523,7 @@ private:
       if (userPicture.size() > 0) {
         lines.add(kj::str("X-Sandstorm-User-Picture: ", userPicture));
       }
-      capnp::EnumSchema schema = capnp::Schema::from<UserInfo::Pronouns>();
+      capnp::EnumSchema schema = capnp::Schema::from<Profile::Pronouns>();
       uint pronounValue = static_cast<uint>(userPronouns);
       auto enumerants = schema.getEnumerants();
       if (pronounValue > 0 && pronounValue < enumerants.size()) {

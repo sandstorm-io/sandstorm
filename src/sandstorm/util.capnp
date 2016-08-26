@@ -166,3 +166,20 @@ interface Assignable(T) {
     set @0 (value :T) -> ();
   }
 }
+
+interface StaticAsset @0xfabb5e621fa9a23f {
+  # A file served by the Sandstorm frontend, suitable for embedding e.g. in <img> elements
+  # inside of a grain iframe.
+
+  enum Protocol {
+    # To prevent XSS attacks, we restrict the protocols allowed in static asset URLs. For example,
+    # allowing "javascript:" URLs would be dangerous because then the static asset could provide
+    # abritrary code that would likely be executed in the context of the calling app.
+
+     https @0;
+     http @1;
+  }
+
+  getUrl @0 () -> (protocol: Protocol, hostPath :Text);
+  # To reconstruct the full URL from the return value, concatenate: `protocol + "://" + hostPath`.
+}

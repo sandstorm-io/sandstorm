@@ -17,11 +17,35 @@
 const Capnp = Npm.require("capnp");
 const IdentityRpc = Capnp.importSystem("sandstorm/identity-impl.capnp");
 import { PersistentImpl } from "/imports/server/persistent.js";
+import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset.js";
+const StaticAsset = Capnp.importSystem("sandstorm/util.capnp").StaticAsset;
 
 class IdentityImpl extends PersistentImpl {
   constructor(db, saveTemplate, identityId) {
     super(db, saveTemplate);
     this.identityId = identityId;
+    this.db = db;
+  }
+
+  getProfile() {
+    const identity = this.db.getIdentity(this.identityId);
+
+    const profile = {
+      displayName: { defaultText: identity.profile.name },
+      preferredHandle: identity.profile.handle,
+      pronouns: identity.profile.pronoun,
+    };
+
+    if (identity.profile.picture) {
+      profile.picture = new Capnp.Capability(new StaticAssetImpl(identity.profile.picture),
+                                             StaticAsset);
+    } else {
+      const hash = this.identityId.slice(0, 32);
+      profile.picture = new Capnp.Capability(new IdenticonStaticAssetImpl(hash, 24),
+                                             StaticAsset);
+    }
+
+    return { profile: profile };
   }
 };
 

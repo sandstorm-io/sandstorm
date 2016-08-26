@@ -121,23 +121,6 @@ interface SandstormApi(AppObjectId) {
   # user. For activity that should be attributed to a user, use SessionContext.activity().
 }
 
-interface StaticAsset @0xfabb5e621fa9a23f {
-  # A file served by the Sandstorm frontend, suitable for embedding e.g. in <img> elements
-  # inside of a grain iframe.
-
-  enum Protocol {
-    # To prevent XSS attacks, we restrict the protocols allowed in static asset URLs. For example,
-    # allowing "javascript:" URLs would be dangerous because then the static asset could provide
-    # abritrary code that would likely be executed in the context of the calling app.
-
-     https @0;
-     http @1;
-  }
-
-  getUrl @0 () -> (protocol: Protocol, hostPath :Text);
-  # To reconstruct the full URL from the return value, concatenate: `protocol + "://" + hostPath`.
-}
-
 interface UiView @0xdbb4d798ea67e2e7 {
   # Implements a user interface with which a user can interact with the grain.  We call this a
   # "view" because a single grain may actually have multiple "views" that provide different
@@ -255,7 +238,7 @@ interface UiView @0xdbb4d798ea67e2e7 {
     appTitle @5 :Util.LocalizedText;
     # Title for the app of which this grain is an instance.
 
-    grainIcon @6 :StaticAsset;
+    grainIcon @6 :Util.StaticAsset;
     # Icon for the app of which this grain is an instance, suitable for display in a grain list.
 
     eventTypes @7 :List(Activity.ActivityTypeDef);

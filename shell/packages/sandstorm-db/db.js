@@ -2540,11 +2540,17 @@ if (Meteor.isServer) {
     const grains = db.userGrains(this.userId);
     const grainsHandle = grains.observe({
       added: function (newGrain) {
-        refPackage(newGrain.packageId);
+        // Watch out: DevApp grains can lack a packageId.
+        if (newGrain.packageId) {
+          refPackage(newGrain.packageId);
+        }
       },
 
       changed: function (newGrain, oldGrain) {
-        refPackage(newGrain.packageId);
+        // Watch out: DevApp grains can lack a packageId.
+        if (newGrain.packageId) {
+          refPackage(newGrain.packageId);
+        }
       },
     });
 

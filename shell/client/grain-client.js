@@ -1417,6 +1417,8 @@ Meteor.startup(function () {
       const call = event.data.renderTemplate;
       check(call, Object);
       const rpcId = call.rpcId;
+
+      let rawLink;
       try {
         check(call, {
           rpcId: String,
@@ -1428,7 +1430,19 @@ Meteor.startup(function () {
           unauthenticated: Match.Optional(Object),
           // Note: `unauthenticated` will be validated on the server. We just pass it through
           //   here.
+          link: Match.Optional({
+            scheme: String,
+          }),
         });
+
+        rawLink = call.link;
+        // TODO(soon): check against whitelist
+        // rfc3986 specifies schemes as:
+        // scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+        if (rawLink.scheme.search(/^[^a-zA-Z]/) !== -1 ||
+            rawLink.scheme.search(/[^a-zA-Z0-9+-.]/) !== -1) {
+          throw new Meteor.Error(400, "rawlink.scheme has invalid characters.");
+        }
       } catch (error) {
         event.source.postMessage({ rpcId: rpcId, error: error.toString() }, event.origin);
         return;
@@ -1512,12 +1526,18 @@ Meteor.startup(function () {
         const renderedTemplate = template.replace(/\$API_TOKEN/g, tokenId)
                                          .replace(/\$API_HOST/g, host)
                                          .replace(/\$GRAIN_TITLE_SLUG/g, grainTitleSlug);
+        let link = undefined;
+        if (rawLink) {
+          link = `${rawLink.scheme}://${window.location.protocol}//${host}#${tokenId}`;
+        }
+
         sessionStorage.setItem(key, JSON.stringify({
             token: tokenId,
             renderedTemplate: renderedTemplate,
             clipboardButton: clipboardButton,
             expires: Date.now() + selfDestructDuration,
             host,
+            link,
           })
         );
 

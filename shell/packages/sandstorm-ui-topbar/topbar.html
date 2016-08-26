@@ -75,7 +75,7 @@ limitations under the License.
   <div class="menu-button {{#if _menuExpanded.get}}expanded{{/if}}"></div>
   {{!-- We wish to block reload if there are *any* grains open, regardless of the current route --}}
   {{#if grainCount }}
-    {{>sandstormTopbarBlockReload}}
+    {{>sandstormTopbarBlockReload ""}}
   {{/if}}
 
   {{#with currentPopup}}

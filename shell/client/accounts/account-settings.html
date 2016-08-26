@@ -106,7 +106,7 @@ limitations under the License.
     <div class="add-new">
       Add new e-mail address
       {{> emailAuthenticationForm emailLoginFormData}}
-      {{> _loginButtonsMessages}}
+      {{> _loginButtonsMessages "" }}
     </div>
   </div>
 
@@ -229,7 +229,7 @@ setActionCompleted: (optional) Function.  Callback triggered on profile saved or
             </li>
           {{/with}}
           {{#if isPaymentsEnabled}}
-            {{> billingOptins}}
+            {{> billingOptins "" }}
           {{/if}}
         {{/unless}}
 

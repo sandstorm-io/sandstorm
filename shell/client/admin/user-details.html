@@ -166,7 +166,7 @@
                 primaryEmail=account.primaryEmail
                 }}
         {{else}}
-          {{> newAdminUserDetailsIdentityMIATableRow }}
+          {{> newAdminUserDetailsIdentityMIATableRow "" }}
         {{/if}}
       {{/each}}
       {{#each identity in (nonloginIdentities account) }}
@@ -177,7 +177,7 @@
                 primaryEmail=account.primaryEmail
                 }}
         {{else}}
-          {{> newAdminUserDetailsIdentityMIATableRow }}
+          {{> newAdminUserDetailsIdentityMIATableRow "" }}
         {{/if}}
       {{/each}}
     </div>

@@ -1575,12 +1575,15 @@ ul.identity-card-list {
   padding-left: 0;
   li {
     list-style-type: none;
+    margin-bottom: 12px;
     button {
+      height: 54px;
       @include unstyled-button();
-      border: 1px solid black;
+      border: 1px solid $generic-border-color;
     }
     &.current-identity>button {
-      border: 3px solid black;
+      height: 56px;
+      border: 2px solid black;
     }
   }
 }

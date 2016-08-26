@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 const Capnp = Npm.require("capnp");
 const Crypto = Npm.require("crypto");
 const Url = Npm.require("url");

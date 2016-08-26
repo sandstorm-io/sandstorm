@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { waitPromise } from "/imports/server/async-helpers.js";
+
 const ChildProcess = Npm.require("child_process");
 const Future = Npm.require("fibers/future");
 const Capnp = Npm.require("capnp");

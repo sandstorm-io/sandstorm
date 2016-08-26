@@ -19,6 +19,18 @@ const Capnp = Npm.require("capnp");
 const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");
 
+// TODO(cleanup): lift this out of a package so it can share with async-helpers.js
+const Future = Npm.require("fibers/future");
+const promiseToFuture = (promise) => {
+  const result = new Future();
+  promise.then(result.return.bind(result), result.throw.bind(result));
+  return result;
+};
+
+const waitPromise = (promise) => {
+  return promiseToFuture(promise).wait();
+};
+
 function encodePowerboxDescriptor(desc) {
   return Capnp.serializePacked(Powerbox.PowerboxDescriptor, desc)
               .toString("base64")

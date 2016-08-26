@@ -33,6 +33,8 @@
 //   with encoded URLs to an evil server. Although, this attack would be very detectable to the
 //   user, so maybe it's not a big deal...
 
+import { inMeteor } from "/imports/server/async-helpers.js";
+
 BrowserPolicy.framing.disallow();  // Disallow framing of the UI.
 Meteor.startup(() => {
   const frameSetter = () => {

@@ -16,11 +16,12 @@
 
 import Bignum from "bignum";
 import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
+import { SandstormBackend, shouldRestartGrain } from "/imports/server/backend.js";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 const Crypto = Npm.require("crypto");
 const ChildProcess = Npm.require("child_process");
 const Fs = Npm.require("fs");
 const Path = Npm.require("path");
-const Future = Npm.require("fibers/future");
 const Http = Npm.require("http");
 const Url = Npm.require("url");
 const Capnp = Npm.require("capnp");
@@ -219,37 +220,6 @@ Meteor.setInterval(() => {
     console.log("capnp.js: outer promise:", promise);
   }
 }, 30000);
-
-// =======================================================================================
-// Meteor context <-> Async Node.js context adapters
-// TODO(cleanup):  Move to a different file.
-
-const inMeteorInternal = Meteor.bindEnvironment((callback) => {
-  callback();
-});
-
-inMeteor = (callback) => {
-  // Calls the callback in a Meteor context.  Returns a Promise for its result.
-  return new Promise((resolve, reject) => {
-    inMeteorInternal(() => {
-      try {
-        resolve(callback());
-      } catch (err) {
-        reject(err);
-      }
-    });
-  });
-};
-
-promiseToFuture = (promise) => {
-  const result = new Future();
-  promise.then(result.return.bind(result), result.throw.bind(result));
-  return result;
-};
-
-waitPromise = (promise) => {
-  return promiseToFuture(promise).wait();
-};
 
 // =======================================================================================
 // API for creating / starting grains from Meteor methods.
@@ -1475,7 +1445,7 @@ class Proxy {
     // returning a promise that resolves once restarted. Otherwise, just rethrow the error.
     // `retryCount` should be incremented for every successful retry as part of the same request;
     // we only want to retry once.
-    if (SandstormBackend.shouldRestartGrain(error, retryCount)) {
+    if (shouldRestartGrain(error, retryCount)) {
       this.resetConnection();
       return inMeteor(() => {
         this.supervisor = globalBackend.continueGrain(this.grainId).supervisor;
@@ -1984,7 +1954,7 @@ class Proxy {
           err.kjType = "unimplemented";
         }
 
-        if (SandstormBackend.shouldRestartGrain(err, 0)) {
+        if (shouldRestartGrain(err, 0)) {
           // This is the kind of error that indicates we should retry. Note that we passed 0 for
           // the retry count above because we were just checking if this is a retriable error (vs.
           // possibly a method-not-implemented error); maybeRetryAfterError() will check again with

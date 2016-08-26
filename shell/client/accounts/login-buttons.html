@@ -55,11 +55,11 @@ licenses, included in the LICENSES directory.
 
 <template name="loginButtonsPopup">
   {{!-- Data context is an instance of AccountsUi. --}}
-  {{> _loginButtonsLoggedOutDropdown}}
+  {{> _loginButtonsLoggedOutDropdown . }}
 </template>
 
 <template name="accountButtonsPopup">
-  {{> _loginButtonsLoggedInDropdown}}
+  {{> _loginButtonsLoggedInDropdown . }}
 </template>
 
 <template name="_loginButtonsMessages">
@@ -111,13 +111,13 @@ licenses, included in the LICENSES directory.
   {{#if isDemoUser}}
     <h4>Create account</h4>
     <p class="demo-note">Your demo data will be transferred to your new account.</p>
-    {{> loginButtonsList}}
+    {{> loginButtonsList . }}
   {{else}}
     <h4>Sign in</h4>
     {{#if isCurrentRoute 'shared'}}
       <p class="demo-note">Sign in so that collaborators know who you are.</p>
       {{#if choseLogin}}
-        {{> loginButtonsList}}
+        {{> loginButtonsList . }}
       {{else}}
         <div class="login-suggestion" role="menu">
           <button class="login" role="menuitem">
@@ -129,7 +129,7 @@ licenses, included in the LICENSES directory.
         </div>
       {{/if}}
     {{else}}
-      {{> loginButtonsList}}
+      {{> loginButtonsList . }}
     {{/if}}
   {{/if}}
 </template>
@@ -144,7 +144,7 @@ licenses, included in the LICENSES directory.
       {{#if allowUninvited}}Create account{{else}}Sign in{{/if}}
     </h4>
 
-    {{> loginButtonsList}}
+    {{> loginButtonsList . }}
   </div>
 </template>
 
@@ -160,10 +160,10 @@ licenses, included in the LICENSES directory.
     {{/linkTo}}
   {{/each}}
 
-  {{> _loginButtonsMessages}}
+  {{> _loginButtonsMessages "" }}
 
   {{#if showTroubleshooting}}
-    {{> _loginButtonsSeparator}}
+    {{> _loginButtonsSeparator "" }}
     <a class="troubleshooting" href="https://docs.sandstorm.io/en/latest/administering/faq/" target="_blank">troubleshooting</a>
   {{/if}}
 

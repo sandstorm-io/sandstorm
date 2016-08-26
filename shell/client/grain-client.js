@@ -587,9 +587,10 @@ Template.grainSharePopup.helpers({
 Template.grainInMyTrash.events({
   "click button.restore-from-trash": function (event, instance) {
     const grain = globalGrains.getActive();
-    Meteor.call("moveGrainsOutOfTrash", [this.grainId], function (err, result) {
+    const data = Template.currentData();
+    Meteor.call("moveGrainsOutOfTrash", [data.grainId], function (err, result) {
       if (err) {
-        console.error(error.stack);
+        console.error(err.stack);
       } else {
         grain.reset(grain.identityId());
         grain.openSession();
@@ -684,8 +685,10 @@ Template.grainView.helpers({
     });
 
     const grain = globalGrains.getActive();
-    return { identities: identities,
-            onPicked: function (identityId) { grain.revealIdentity(identityId); }, };
+    return {
+      identities: identities,
+      onPicked: function (identityId) { grain.revealIdentity(identityId); },
+    };
   },
 });
 

@@ -142,7 +142,7 @@ setInterval(function() {
           console.error(xhr.responseText);
           var textElement = document.getElementById("text");
           textElement.textContent = errorText;
-          var link = document.getElementById("href");
+          var link = document.getElementById("link");
           if (link) {
             var container = document.getElementById("container");
             container.removeChild(link);

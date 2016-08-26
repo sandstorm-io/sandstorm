@@ -22,7 +22,7 @@ const Capnp = Npm.require("capnp");
 
 const GrainInfo = Capnp.importSystem("sandstorm/grain.capnp").GrainInfo;
 
-const TOKEN_CLEANUP_MINUTES = 15;
+const TOKEN_CLEANUP_MINUTES = 120;  // Give enough time for large uploads on slow connections.
 const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
 
 function cleanupToken(tokenId) {

@@ -1,3 +1,15 @@
+### v0.179 (2016-08-26)
+- A user can now request deletion of their own account, unless they are a member of a Sandstorm for Work organization. Deletion has a 7-day cooldown during whith the user can change their mind.
+- Admins can now suspend and delete accounts from the admin panel.
+- Apps can now request that an offer template be a link with a special protocol scheme that can trigger a mobile intent, allowing one-click setup of mobile apps. Apps will need to be updated to take advantage of this.
+- Identity capabilities now have a getProfile() method, allowing a grain to discover when a user's profile information has changed without requiring the user to return to the grain.
+- Fixed that admins were unable to un-configure SMTP after it had been configured.
+- Fixed problems in sandstorm-http-bridge that could make notifications unreliable. Affected apps will need to rebuild.
+- Increased expiration time for uploading a backup from 15 minutes to 2 hours, to accommodate large backup files on slow connections.
+- Fixed email attachments from apps having incorrect filenames.
+- Fixed various styling issues.
+- Various ongoing refactoring.
+
 ### v0.178 (2016-08-20)
 - The grain list can now be sorted by clicking on the column headers.
 - Many improvements to mobile UI. (Still more to do.)

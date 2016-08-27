@@ -2752,51 +2752,6 @@ if (Meteor.isServer) {
     backend.deleteUser(userId);
     Meteor.users.remove({ _id: userId });
   };
-
-  Meteor.methods({
-    suspendAccount(userId, willDelete) {
-      check(userId, String);
-      check(willDelete, Boolean);
-
-      if (!isAdmin()) {
-        throw new Meteor.Error(403, "Only admins can suspend other users.");
-      }
-
-      this.connection.sandstormDb.suspendAccount(userId, Meteor.userId(), willDelete);
-    },
-
-    deleteOwnAccount() {
-      const db = this.connection.sandstormDb;
-      if (!Meteor.userId()) {
-        throw new Meteor.Error(403, "Must be logged in to delete an account");
-      }
-
-      if (db.isUserInOrganization(Meteor.user())) {
-        throw new Meteor.Error(403, "Users in an organization cannot delete their own account. " +
-          "Please ask your admin to do it for you.");
-      }
-
-      db.suspendAccount(Meteor.userId(), null, true);
-    },
-
-    unsuspendAccount(userId) {
-      check(userId, String);
-
-      if (!isAdmin()) {
-        throw new Meteor.Error(403, "Only admins can unsuspend other users.");
-      }
-
-      this.connection.sandstormDb.unsuspendAccount(userId, Meteor.userId());
-    },
-
-    unsuspendOwnAccount() {
-      if (!Meteor.userId()) {
-        throw new Meteor.Error(403, "Must be logged in to unsuspend an account");
-      }
-
-      this.connection.sandstormDb.unsuspendAccount(Meteor.userId());
-    },
-  });
 }
 
 Meteor.methods({

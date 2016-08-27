@@ -252,7 +252,7 @@ setActionCompleted: (optional) Function.  Callback triggered on profile saved or
             </li>
           {{/with}}
           {{#if isPaymentsEnabled}}
-            {{> billingOptins "" }}
+            {{> billingOptins . }}
           {{/if}}
         {{/unless}}
 

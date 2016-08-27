@@ -14,6 +14,52 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { send } from "/imports/server/email.js";
+
+function sendDeletionEmails(db, deletedUserId, byAdminUserId) {
+  const emailOptions = {
+    from: db.getReturnAddress(),
+    subject: `${db.getServerTitle()} account deletion initiated`,
+    text: "Account will be deleted in 7 days",
+  };
+  const deletedUser = db.getUser(deletedUserId);
+  if (!byAdminUserId) { // This was initiated by the user, send them an email
+    const email = _.findWhere(SandstormDb.getUserEmails(deletedUser), { primary: true });
+    if (!email) {
+      console.error("Couldn't send deletion email. No address found for user with userId:",
+        deletedUser._id);
+    } else {
+      try {
+        emailOptions.to = email.email;
+        send(emailOptions);
+      } catch (err) {
+        console.error(
+          `Failed to send deletion email to user (id=${user._id}) with error: ${err}`);
+      }
+    }
+  }
+
+  Meteor.users.find({ isAdmin: true }).forEach((user) => {
+    if (user._id === byAdminUserId) {
+      return; // Skip the admin who initiated the deletion.
+    }
+
+    const email = _.findWhere(SandstormDb.getUserEmails(user), { primary: true });
+    if (!email) {
+      console.error("No email found for admin with userId: ", user._id);
+      return;
+    }
+
+    try {
+      emailOptions.to = email.email;
+      send(emailOptions);
+    } catch (err) {
+      console.error(
+        `Failed to send deletion email to admin (id=${user._id}) with error: ${err}`);
+    }
+  });
+}
+
 Meteor.methods({
   suspendAccount(userId, willDelete) {
     check(userId, String);
@@ -24,6 +70,10 @@ Meteor.methods({
     }
 
     this.connection.sandstormDb.suspendAccount(userId, Meteor.userId(), willDelete);
+
+    if (willDelete) {
+      sendDeletionEmails(this.connection.sandstormDb, userId, byAdminUserId);
+    }
   },
 
   deleteOwnAccount() {
@@ -38,6 +88,8 @@ Meteor.methods({
     }
 
     db.suspendAccount(Meteor.userId(), null, true);
+
+    sendDeletionEmails(db, Meteor.userId());
   },
 
   unsuspendAccount(userId) {

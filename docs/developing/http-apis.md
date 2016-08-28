@@ -203,16 +203,16 @@ work around this, you must pass the token as part of the URL path. It must be at
 the path and of the form:
 
 ```
-/.sandstorm-api-token/<token>
+/.sandstorm-token/<token>
 ```
 
 For example:
 
 ```
-wss://api-qxJ58hKANkbmJLQdSDk4.oasis.sandstorm.io/.sandstorm-api-token/RfNqni4FEHXkWC5B8v6t/some/path
+wss://api-qxJ58hKANkbmJLQdSDk4.oasis.sandstorm.io/.sandstorm-token/RfNqni4FEHXkWC5B8v6t/some/path
 ```
 
-The "/.sandstorm-api-token/&lt;token&gt;" part of the path will be stripped, and the remaining
+The "/.sandstorm-token/&lt;token&gt;" part of the path will be stripped, and the remaining
 segment of the path will be passed onto your app.
 
 

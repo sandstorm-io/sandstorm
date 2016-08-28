@@ -921,7 +921,7 @@ const apiTokenForRequest = (req, hostId) => {
     } else {
       token = parts[1];
       req.url = "/" + parts.slice(2).join("/");
-      // remove .sandstorm-api-token/$TOKEN from path
+      // remove .sandstorm-token/$TOKEN from path
     }
   } else {
     token = undefined;

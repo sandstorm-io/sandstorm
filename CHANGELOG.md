@@ -10,7 +10,7 @@
 - Oasis: Fixed appdemo not working for Davros.
 
 ### v0.177 (2016-08-15) [bugfixes]
-- Changes to SMTP handling in v0.175 caused Sandstorm to begin verifying TLS certificates strictly. Unfortunately, the prevaling norm in SMTP is loose enforcement and many actual users found Sandstorm no longer worked with their SMTP providers. This update therefore relaxes the rules again, but in the near future we will add configuration options to control this.
+- Changes to SMTP handling in v0.175 caused Sandstorm to begin verifying TLS certificates strictly. Unfortunately, the prevailing norm in SMTP is loose enforcement and many actual users found Sandstorm no longer worked with their SMTP providers. This update therefore relaxes the rules again, but in the near future we will add configuration options to control this.
 
 ### v0.176 (2016-08-13) [bugfixes]
 - Fix web publishing to alternate hosts, broken by an API change in Node.

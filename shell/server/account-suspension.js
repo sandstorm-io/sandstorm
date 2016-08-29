@@ -17,26 +17,43 @@
 import { send } from "/imports/server/email.js";
 
 function sendDeletionEmails(db, deletedUserId, byAdminUserId) {
-  const emailOptions = {
-    from: db.getReturnAddress(),
-    subject: `${db.getServerTitle()} account deletion initiated`,
-    text: "Account will be deleted in 7 days",
-  };
   const deletedUser = db.getUser(deletedUserId);
+
+  const userEmail = _.findWhere(SandstormDb.getUserEmails(deletedUser), { primary: true });
   if (!byAdminUserId) { // This was initiated by the user, send them an email
-    const email = _.findWhere(SandstormDb.getUserEmails(deletedUser), { primary: true });
-    if (!email) {
+    if (!userEmail) {
       console.error("Couldn't send deletion email. No address found for user with userId:",
         deletedUser._id);
     } else {
+      const emailOptions = {
+        from: db.getReturnAddress(),
+        subject: `Your account on ${db.getServerTitle()} will be deleted in 7 days.`,
+        text: `You have requested that your Sandstorm account on ${db.getServerTitle()} be deleted. Your account has been suspended and will be fully deleted in seven days. If you chance your mind, log into ${process.env.ROOT_URL} to cancel the process.
+
+If you did not request this deletion, please contact the server administrator immediately.`,
+      };
       try {
-        emailOptions.to = email.email;
+        emailOptions.to = userEmail.email;
         send(emailOptions);
       } catch (err) {
         console.error(
-          `Failed to send deletion email to user (id=${user._id}) with error: ${err}`);
+          `Failed to send deletion email to user (id=${deletedUser._id}) with error: ${err}`);
       }
     }
+  }
+
+  const deleteUserString = (userEmail && userEmail.email) || ("userId=" + deletedUser._id);
+  const emailOptions = {
+    from: db.getReturnAddress(),
+    subject: `Account for ${deleteUserString} on ${db.getServerTitle()} will be deleted in 7 days`,
+  };
+
+  if (byAdminUserId) {
+    const initiatingAdmin = db.getUser(byAdminUserId);
+    const adminName = db.getIdentity(initiatingAdmin.loginIdentities[0].id).profile.name;
+    emailOptions.text = `${adminName} has requested that the Sandstorm account held by ${deleteUserString} on ${db.getServerTitle()} be deleted. The account has been suspended and will be fully deleted in seven days. To cancel the deletion, go to: ${process.env.ROOT_URL}/admin/users`;
+  } else {
+    emailOptions.text = `${deleteUserString} has requested that their acccount be deleted on ${db.getServerTitle()}. The account has been suspended and will be fully deleted in seven days. To cancel the deletion, go to: ${process.env.ROOT_URL}/admin/users`;
   }
 
   Meteor.users.find({ isAdmin: true }).forEach((user) => {
@@ -46,7 +63,7 @@ function sendDeletionEmails(db, deletedUserId, byAdminUserId) {
 
     const email = _.findWhere(SandstormDb.getUserEmails(user), { primary: true });
     if (!email) {
-      console.error("No email found for admin with userId: ", user._id);
+      console.error("No email found for admin with userId:", user._id);
       return;
     }
 

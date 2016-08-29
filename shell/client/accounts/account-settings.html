@@ -124,6 +124,42 @@ limitations under the License.
   {{> billingSettings db=db}}
   </div>
   {{/if}}
+
+  {{#if showDeletePopup}}
+    {{#modalDialogWithBackdrop onDismiss=cancelDelete class="user-confirm-delete"}}
+      {{#if deleteError}}
+        {{#focusingErrorBox}}
+          {{deleteError}}
+        {{/focusingErrorBox}}
+      {{/if}}
+
+      <h2>Delete your account</h2>
+      <p>Deleting this user account will:</p>
+      <ul>
+        <li>Permanently delete any grains created by you</li>
+        <li>Revoke any sharing links created by you</li>
+        <li>Remove you from all users' contact lists</li>
+        <li>Delete all identities owned by this account (except identities associated with another account)</li>
+      </ul>
+      <p>
+        <strong>Account deletion is permanent and irreversible.</strong>  Please be certain.
+        The account will first be suspended for 7 days so that you have a chance to undo the
+        deletion. At the end of the 7 days it will be deleted.
+
+      </p>
+      <p>
+        Please type "Yes, delete my account" below to confirm.
+      </p>
+      <input class="confirm" type="text">
+      <form class="standard-form">
+        <div class="button-row">
+          <button class="danger delete-account-real" type="button"
+           disabled={{disableDelete}}>Delete account</button>
+          <button type="button" class="cancel-delete-account">Cancel</button>
+        </div>
+      </form>
+    {{/modalDialogWithBackdrop}}
+  {{/if}}
 </template>
 
 <template name="sandstormAccountsFirstSignIn">

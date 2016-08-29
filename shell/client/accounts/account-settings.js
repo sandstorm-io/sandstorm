@@ -22,6 +22,10 @@ Template.sandstormAccountSettings.onCreated(function () {
   this._selectedIdentityId = new ReactiveVar();
   this._actionCompleted = new ReactiveVar();
   this._logoutOtherSessionsInFlight = new ReactiveVar(false);
+  this._showDeletePopup = new ReactiveVar(false);
+  this._deleteSubmitting = new ReactiveVar(false);
+  this._deleteError = new ReactiveVar(null);
+  this._deleteConfirmed = new ReactiveVar(false);
   const _this = this;
 
   // TODO(cleanup): Figure out a better way to pass in this data. Perhaps it should be part of
@@ -176,6 +180,27 @@ Template.sandstormAccountSettings.helpers({
   logoutOtherSessionsInFlight: function () {
     return Template.instance()._logoutOtherSessionsInFlight.get();
   },
+
+  showDeletePopup: function () {
+    return Template.instance()._showDeletePopup.get();
+  },
+
+  cancelDelete() {
+    const instance = Template.instance();
+    return () => {
+      instance._showDeletePopup.set(false);
+    };
+  },
+
+  disableDelete() {
+    const instance = Template.instance();
+    return instance._deleteSubmitting.get() || !instance._deleteConfirmed.get();
+  },
+
+  deleteError() {
+    const instance = Template.instance();
+    return instance._deleteError.get();
+  },
 });
 
 Template._accountProfileEditor.helpers({
@@ -251,17 +276,36 @@ Template.sandstormAccountSettings.events({
   },
 
   "click button.delete-account": function (ev, instance) {
+    instance._showDeletePopup.set(true);
+    instance._deleteError.set(null);
+    instance._deleteConfirmed.set(false);
+  },
+
+  "click button.cancel-delete-account": function (ev, instance) {
+    instance._showDeletePopup.set(false);
+  },
+
+  "click button.delete-account-real": function (ev, instance) {
+    instance._deleteSubmitting.set(true);
     Meteor.call("deleteOwnAccount", function (err) {
       if (err) {
-        instance._actionCompleted.set({ error: err });
+        instance._deleteError.set(err.message);
       } else {
-        instance._actionCompleted.set({ success: "suspended account successfully." });
+        // User will be logged out automatically, so no need to display anything.
       }
     });
   },
 
   "click button.make-primary": function (ev, instance) {
     Meteor.call("setPrimaryEmail", ev.target.getAttribute("data-email"));
+  },
+
+  "input input.confirm": function (evt, instance) {
+    if (evt.currentTarget.value === "Yes, delete my account") {
+      instance._deleteConfirmed.set(true);
+    } else {
+      instance._deleteConfirmed.set(false);
+    }
   },
 });
 

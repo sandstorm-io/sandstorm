@@ -308,7 +308,7 @@
     </form>
 
     {{#if showDeletePopup}}
-      {{#modalDialogWithBackdrop onDismiss=cancelDelete}}
+      {{#modalDialogWithBackdrop onDismiss=cancelDelete class="admin-user-confirm-delete"}}
         {{#if deleteError}}
           {{#focusingErrorBox}}
             {{deleteError}}
@@ -327,11 +327,16 @@
           <strong>Account deletion is permanent and irreversible.</strong>  Please be certain.
           The account will first be suspended for 7 days so that you have a chance to undo the
           deletion. At the end of the 7 days it will be deleted.
+
         </p>
+        <p>
+          Please type "Yes, delete this account" below to confirm.
+        </p>
+        <input class="confirm" type="text">
         <form class="standard-form">
           <div class="button-row">
             <button class="danger" type="button"
-             disabled={{deleteSubmitting}} name="delete-account-real">Delete account</button>
+             disabled={{disableDelete}} name="delete-account-real">Delete account</button>
             <button type="button" name="cancel-delete-account">Cancel</button>
           </div>
         </form>

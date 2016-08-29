@@ -568,8 +568,10 @@ function dropInternal(db, sturdyRef, ownerPattern) {
   }
 
   if (!Match.test(token.owner, ownerPattern)) {
-    // Not an error. For example, if a grain gets backed up and restored, there should not be an
-    // error when it tries to drop one of its pre-backup tokens.
+    // The caller of `drop()` does not own the token. From the caller's perspective, this means
+    // that there is actually nothing to be dropped. For example, perhaps a grain got backed up
+    // and restored, and now is trying to drop one of its pre-backup tokens. The call to
+    // `SandstormApi.drop()` should succeed, behaving exactly as if the token was not found.
     return;
   }
 

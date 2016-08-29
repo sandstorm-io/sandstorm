@@ -28,7 +28,7 @@ function sendDeletionEmails(db, deletedUserId, byAdminUserId) {
       const emailOptions = {
         from: db.getReturnAddress(),
         subject: `Your account on ${db.getServerTitle()} will be deleted in 7 days.`,
-        text: `You have requested that your Sandstorm account on ${db.getServerTitle()} be deleted. Your account has been suspended and will be fully deleted in seven days. If you chance your mind, log into ${process.env.ROOT_URL} to cancel the process.
+        text: `You have requested that your Sandstorm account on ${db.getServerTitle()} be deleted. Your account has been suspended and will be fully deleted in seven days. If you change your mind, log into ${process.env.ROOT_URL} to cancel the process.
 
 If you did not request this deletion, please contact the server administrator immediately.`,
       };

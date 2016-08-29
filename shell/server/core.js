@@ -567,7 +567,11 @@ function dropInternal(db, sturdyRef, ownerPattern) {
     return;
   }
 
-  check(token.owner, ownerPattern);
+  if (!Match.test(token.owner, ownerPattern)) {
+    // Not an error. For example, if a grain gets backed up and restored, there should not be an
+    // error when it tries to drop one of its pre-backup tokens.
+    return;
+  }
 
   if (token.frontendRef && token.frontendRef.notificationHandle) {
     const notificationId = token.frontendRef.notificationHandle;

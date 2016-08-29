@@ -899,7 +899,7 @@ const apiUseBasicAuth = (req, hostId) => {
   // Since many clients in the wild have already been configured to use the shared API host, we
   // must continue to support them, so this logic remains.
   const agent = req.headers["user-agent"];
-  return agent.match(BASIC_AUTH_USER_AGENTS_REGEX);
+  return agent && agent.match(BASIC_AUTH_USER_AGENTS_REGEX);
 };
 
 const apiTokenForRequest = (req, hostId) => {
@@ -921,7 +921,7 @@ const apiTokenForRequest = (req, hostId) => {
     } else {
       token = parts[1];
       req.url = "/" + parts.slice(2).join("/");
-      // remove .sandstorm-api-token/$TOKEN from path
+      // remove .sandstorm-token/$TOKEN from path
     }
   } else {
     token = undefined;

@@ -2202,12 +2202,30 @@ public:
       // Wait until connections are accepted.
       // TODO(soon): Don't block pure-Cap'n-Proto RPCs on this. Just block HTTP requests.
       bool success = false;
+      int numTriesSoFar = 0;
+      bool loggedSlowStartupMessage = false;
       for (;;) {
         kj::runCatchingExceptions([&]() {
+          if (! loggedSlowStartupMessage) {
+            numTriesSoFar++;
+          }
           address->connect().wait(ioContext.waitScope);
           success = true;
         });
-        if (success) break;
+        if (success) {
+          if (loggedSlowStartupMessage) {
+            KJ_LOG(WARNING, "App successfully started listening for TCP connections!");
+          }
+          break;
+        }
+
+        if (!loggedSlowStartupMessage && numTriesSoFar == (30 * 100)) {
+          // After 30 seconds (30 * 100 centiseconds) of failure, log a message once.
+          KJ_LOG(WARNING, "App isn't listening for TCP connections after 30 seconds. Continuing "
+                 "to attempt to connect",
+                 address->toString());
+          loggedSlowStartupMessage = true;
+        }
 
         // Wait 10ms and try again.
         usleep(10000);

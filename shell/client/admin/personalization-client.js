@@ -136,6 +136,10 @@ Template.newAdminPersonalization.helpers({
     const instance = Template.instance();
     return instance.message.get();
   },
+
+  serverUrl() {
+    return document.location.protocol + "//" + document.location.host;
+  },
 });
 
 Template.newAdminPersonalization.events({

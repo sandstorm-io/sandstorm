@@ -72,7 +72,7 @@ Meteor.methods({
     this.connection.sandstormDb.suspendAccount(userId, Meteor.userId(), willDelete);
 
     if (willDelete) {
-      sendDeletionEmails(this.connection.sandstormDb, userId, byAdminUserId);
+      sendDeletionEmails(this.connection.sandstormDb, userId, Meteor.userId());
     }
   },
 

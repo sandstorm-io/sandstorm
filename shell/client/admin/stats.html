@@ -50,7 +50,7 @@
 </template>
 
 <template name="statsAppsTable">
-{{!-- expects a single argument: 
+{{!-- expects a single argument:
   apps: Array of Object like ActivityStats, plus `appTitle`
  ready: Boolean, indicates readiness, to avoid rerendering as data streams in
 --}}
@@ -159,6 +159,9 @@
       Any stats shared are submitted anonymously.
     </p>
     <p>
+      {{#if featureKeyForceStats}}
+        You have a Sandstorm for Work trial key, and as part of that agreement, you elected to opt into stats reporting. Please upgrade to a paid key if you wish to disable this.
+      {{else}}
       Anonymous stats reporting to sandstorm.io:
       {{#if sendStats}}
         <span class="stats-enabled">Enabled</span>
@@ -172,6 +175,7 @@
         <button type="button" class="button-enable" name="enable-stats">Enable</button>
         {{/if}}
       </form>
+      {{/if}}
     </p>
   {{/if}}
 
@@ -223,4 +227,3 @@
 
   {{> statsAppsTable apps=apps ready=ready}}
 </template>
-

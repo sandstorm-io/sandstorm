@@ -45,6 +45,10 @@ Template.newAdminStats.onCreated(function () {
 });
 
 Template.newAdminStats.helpers({
+  featureKeyForceStats() {
+    return globalDb.isFeatureKeyOptedIntoStats();
+  },
+
   ready() {
     const instance = Template.instance();
     return instance.ready();
@@ -52,7 +56,7 @@ Template.newAdminStats.helpers({
 
   undecided() {
     const setting = Settings.findOne({ _id: "reportStats" });
-    return setting && setting.value === "unset";
+    return setting && setting.value === "unset" && !globalDb.isFeatureKeyOptedIntoStats();
   },
 
   sendStats() {

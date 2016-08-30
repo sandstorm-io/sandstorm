@@ -187,12 +187,18 @@ function recordStats() {
   const age = ActivityStats.find().count();
   if (age > 3) {
     const reportSetting = Settings.findOne({ _id: "reportStats" });
-    if (!reportSetting) {
+    const isFeatureKeyOptedIntoStats = globalDb.isFeatureKeyOptedIntoStats();
+
+    if (isFeatureKeyOptedIntoStats) {
+      record.customerId = globalDb.currentFeatureKey().customer.id;
+    }
+
+    if (!reportSetting && !isFeatureKeyOptedIntoStats) {
       // Setting not set yet, send out notifications and set it to false
       globalDb.sendAdminNotification("You can help Sandstorm by sending us some anonymous " +
         "usage stats. Click here for more info.", "/admin/stats");
       Settings.insert({ _id: "reportStats", value: "unset" });
-    } else if (reportSetting.value === true) {
+    } else if (reportSetting.value === true || isFeatureKeyOptedIntoStats) {
       // The stats page which the user agreed we can send actually displays the whole history
       // of the server, but we're only sending stats from the last day. Let's also throw in the
       // length of said history. This is still strictly less information than what the user said

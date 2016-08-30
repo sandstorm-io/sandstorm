@@ -567,7 +567,13 @@ function dropInternal(db, sturdyRef, ownerPattern) {
     return;
   }
 
-  check(token.owner, ownerPattern);
+  if (!Match.test(token.owner, ownerPattern)) {
+    // The caller of `drop()` does not own the token. From the caller's perspective, this means
+    // that there is actually nothing to be dropped. For example, perhaps a grain got backed up
+    // and restored, and now is trying to drop one of its pre-backup tokens. The call to
+    // `SandstormApi.drop()` should succeed, behaving exactly as if the token was not found.
+    return;
+  }
 
   if (token.frontendRef && token.frontendRef.notificationHandle) {
     const notificationId = token.frontendRef.notificationHandle;

@@ -182,6 +182,10 @@ function recordStats() {
     plans: planStats,
   };
   record.computeTime = Date.now() - now;
+  if (SandstormDb.getTotalCharges) {
+    // This only exists under Blackrock
+    record.totalCharges = SandstormDb.getTotalCharges();
+  }
 
   ActivityStats.insert(record);
   const age = ActivityStats.find().count();

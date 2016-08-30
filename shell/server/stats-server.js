@@ -182,9 +182,9 @@ function recordStats() {
     plans: planStats,
   };
   record.computeTime = Date.now() - now;
-  if (SandstormDb.getTotalCharges) {
+  if (global.BlackrockPayments && global.BlackrockPayments.getTotalCharges) {
     // This only exists under Blackrock
-    record.totalCharges = SandstormDb.getTotalCharges();
+    record.totalCharges = global.BlackrockPayments.getTotalCharges();
   }
 
   ActivityStats.insert(record);

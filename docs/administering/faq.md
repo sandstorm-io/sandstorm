@@ -35,6 +35,60 @@ recommendation. If not, remove the `sudo` from the instructions below.
 
 See [Why Sandstorm needs a wildcard host](wildcard.md).
 
+## How do I change the domain name for my Sandstorm server?
+
+If your Sandstorm server is currently online, and you want to change the domain name used to reach
+it, you'll need to adjust `/opt/sandstorm/sandstorm.conf` and restart Sandstorm.
+
+**Before you change the domain name,** read the following notes to avoid common problems.
+
+- If you're using sandcats free HTTPS, you'll need to disable Sandstorm's built-in HTTPS when you
+  switch to a new domain name. Sandstorm's built-in HTTPS only supports sandcats domains at the
+  moment. We recommend disabling HTTPS and getting Sandstorm working on your domain with just HTTP
+  first, to avoid confusion, and then adding HTTPS in a second step. When you're ready, you can
+  configure [nginx or other reverse proxy tools to get HTTPS on your own domain name.](ssl.md)
+
+- Your new Sandstorm domain will need to support [wildcard DNS.](wildcard.md) You should set up your
+  wildcard DNS record before you change Sandstorm's hostname.
+
+- Changing the server hostname will temporarily disable Google and GitHub login, since those login
+  providers embed an assumption about your server's hosntame. You will be able to re-enable the
+  login providers after you switch to the new Sandstorm server hostname; you can use command line
+  access to gain temporary admin access to the server while the loginp providers are disabled.
+
+**To change the domain name, edit /opt/sandstorm/sandstorm.conf.** To do that, use `ssh` or a similar tool
+to gain access to your server, and run a command such as:
+
+```bash
+sudo nano /opt/sandstorm/sandstorm.conf
+```
+
+In this file, you should change `BASE_URL` to your new URL, including `http://` or `https://` and
+any port number that you need. You should typically set `WILDCARD_HOST` to
+`*.{{yourSandstormDomain}}`.
+
+The WILDCARD_HOST setting should use the same port number as the BASE_URL. If your service is on
+port 80 and is a HTTP service, no port number is needed; if your service is on port 443 and is a
+HTTPS service, no port number is needed. WILDCARD_HOST should not specify a protocol.
+
+In order to disable HTTPS for sandcats, look for a line starting with `HTTPS_PORT=` and remove it.
+
+Finally, save and exit your text editor (for example with `Ctrl-o <ENTER>` and `Ctrl-x` in nano).
+
+**Now restart Sandstorm** to make the changes take effect. You can typically do that by running:
+
+```bash
+sudo sandstorm restart
+```
+
+**Now visit your server's admin panel** to make sure that all settings look OK. Make sure to review
+the login settings and test that grains launch properly. If you can't get into the admin panel, you
+can generate an "admin token" on the command line by running this command.
+
+```bash
+sudo sandstorm admin-token
+```
+
 ## Why can't I access Sandstorm from the Internet, even though the server is running?
 
 If your `sandstorm.conf` looks like this:

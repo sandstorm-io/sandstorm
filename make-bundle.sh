@@ -201,9 +201,9 @@ touch bundle/dev/{null,zero,random,urandom,fuse}
 mkdir -p bundle/usr/lib/locale
 localedef --no-archive --inputfile=./localedata-C --charmap=UTF-8 bundle/usr/lib/locale/C.UTF-8
 
-# Make bundle smaller by stripping stuff.
-strip bundle/sandstorm bundle/bin/*
-find bundle -name '*.so' | xargs strip
+# Don't strip binaries.  Having symbols is very useful for debugging and profiling.  Debug symbols
+# usually compress well, add basically no runtime perf impact when not being used by other tools,
+# and the debug sections probably won't even get mapped until used let alone faulted in.
 
 if [ -e .git ]; then
   git rev-parse HEAD > bundle/git-revision

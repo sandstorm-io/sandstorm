@@ -303,7 +303,7 @@ Meteor.methods({
     } else if (grain.trashed) {
       throw new Meteor.Error("grain-is-in-trash", "Grain is in trash", "Grain ID: " + grainId);
     } else if (grain.suspended) {
-      throw new Meteor.Error("grain-owner-suspended", "Grain's ownder is suspended",
+      throw new Meteor.Error("grain-owner-suspended", "Grain's owner is suspended",
         "Grain ID: " + grainId);
     }
 

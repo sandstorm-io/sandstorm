@@ -1872,6 +1872,7 @@ private:
   kj::String serverBinary;
   kj::StringPtr mountDir;
   bool fuseCaching = false;
+  bool mountProc = false;
 
   kj::MainFunc getDevMain() {
     return addCommonOptions(OptionSet::ALL_READONLY,
@@ -1893,6 +1894,10 @@ private:
             "Enable aggressive caching over the FUSE filesystem used to detect dependencies. "
             "This may improve performance but means that you will have to restart `spk dev` "
             "any time you make a change to your code.")
+        .addOption({"proc"}, KJ_BIND_METHOD(*this, enableMountProc),
+            "Mount /proc inside the sandbox. This can be useful for debugging. For security "
+            "reasons, this option is only available when you are developing an app; packaged "
+            "apps do not get access to /proc.")
         .callAfterParsing(KJ_BIND_METHOD(*this, doDev)))
         .build();
   }
@@ -1920,6 +1925,11 @@ private:
 
   kj::MainBuilder::Validity enableFuseCaching() {
     fuseCaching = true;
+    return true;
+  }
+
+  kj::MainBuilder::Validity enableMountProc() {
+    mountProc = true;
     return true;
   }
 
@@ -1982,6 +1992,12 @@ private:
       // Write the app ID to the socket.
       {
         auto msg = kj::str(packageDef.getId(), "\n");
+        kj::FdOutputStream((int)clientEnd).write(msg.begin(), msg.size());
+      }
+
+      // Write the mountProc option to the socket.
+      {
+        auto msg = kj::str(mountProc ? "1" : "0", "\n");
         kj::FdOutputStream((int)clientEnd).write(msg.begin(), msg.size());
       }
 

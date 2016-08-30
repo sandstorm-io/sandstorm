@@ -37,7 +37,8 @@ interface Backend {
   # ----------------------------------------------------------------------------
 
   startGrain @0 (ownerId :Text, grainId :Text, packageId :Text,
-                 command :Package.Manifest.Command, isNew :Bool, devMode :Bool = false)
+                 command :Package.Manifest.Command, isNew :Bool,
+                 devMode :Bool = false, mountProc :Bool = false)
              -> (supervisor :Supervisor);
   # Start a grain.
 

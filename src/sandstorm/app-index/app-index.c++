@@ -85,7 +85,7 @@ public:
 
         // Write content to upload stream: a write() followed by a done(), and a getResults().
         auto stream = indexer.newUploadStream();
-        auto promises = kj::heapArrayBuilder<kj::Promise<void>>(2);
+        auto promises = kj::heapArrayBuilder<kj::Promise<void>>(3);
         auto req1 = stream.writeRequest();
         req1.setData(content.getContent());
         promises.add(req1.send().then([](auto&&) {}));

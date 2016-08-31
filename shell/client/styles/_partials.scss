@@ -203,6 +203,18 @@
     }
   }
 
+  a.button {
+    @extend %button-base;
+    @extend %button-secondary;
+    &.primary {
+      @extend %button-primary;
+    }
+    &.danger {
+      @extend %button-danger;
+    }
+    font-weight: inherit;
+  }
+
   &.disabled {
     // Used for marking that the entire form is disabled.  Note that this does not disable the
     // <input>s; you should still add the disabled attribute to each control.

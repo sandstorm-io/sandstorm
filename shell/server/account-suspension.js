@@ -86,6 +86,10 @@ Meteor.methods({
       throw new Meteor.Error(403, "Only admins can suspend other users.");
     }
 
+    if (userId === Meteor.userId()) {
+      throw new Meteor.Error(400, "Admins cannot suspend their own accounts from the admin page. Please go to your account setttings.");
+    }
+
     this.connection.sandstormDb.suspendAccount(userId, Meteor.userId(), willDelete);
 
     if (willDelete) {

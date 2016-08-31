@@ -308,7 +308,7 @@
     </form>
 
     {{#if showDeletePopup}}
-      {{#modalDialogWithBackdrop onDismiss=cancelDelete}}
+      {{#modalDialogWithBackdrop onDismiss=cancelDelete class="admin-user-confirm-delete"}}
         {{#if deleteError}}
           {{#focusingErrorBox}}
             {{deleteError}}
@@ -316,22 +316,18 @@
         {{/if}}
 
         <h2>Delete {{guessUserName}}</h2>
-        <p>Deleting this user account will:</p>
+        <p>You are about to mark {{guessUserName}}'s account for deletion. Once marked for deletion, this account will be suspended, and admins will have 7 days to cancel the pending deletion by returning to this page and clicking the "Unsuspend Account" button. {{guessUserName}} will <strong>not</strong> be able to stop this suspension/deletion.</p>
+        <p>After 7 days, {{guessUserName}}'s account will be permanently deleted. Deleting this account will:</p>
         <ul>
-          <li>Permanently delete any grains created by {{guessUserName}}</li>
-          <li>Revoke any sharing links created by {{guessUserName}}</li>
+          <li>Permanently delete any grains {{guessUserName}} created</li>
+          <li>Revoke all sharing links {{guessUserName}} created</li>
           <li>Remove {{guessUserName}} from all users' contact lists</li>
-          <li>Delete all identities owned by this account (except identities associated with another account)</li>
+          <li>Delete all identities owned by this account (except identities also associated with another account).</li>
         </ul>
-        <p>
-          <strong>Account deletion is permanent and irreversible.</strong>  Please be certain.
-          The account will first be suspended for 7 days so that you have a chance to undo the
-          deletion. At the end of the 7 days it will be deleted.
-        </p>
         <form class="standard-form">
           <div class="button-row">
             <button class="danger" type="button"
-             disabled={{deleteSubmitting}} name="delete-account-real">Delete account</button>
+             disabled={{disableDelete}} name="delete-account-real">Delete account</button>
             <button type="button" name="cancel-delete-account">Cancel</button>
           </div>
         </form>

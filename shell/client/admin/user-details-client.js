@@ -228,7 +228,7 @@ Template.newAdminUserDetails.helpers({
     return instance.deleteError.get();
   },
 
-  deleteSubmitting() {
+  disableDelete() {
     const instance = Template.instance();
     return instance.deleteSubmitting.get();
   },

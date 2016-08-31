@@ -301,7 +301,7 @@ Template.sandstormAccountSettings.events({
   },
 
   "input input.confirm": function (evt, instance) {
-    if (evt.currentTarget.value === "Yes, delete my account") {
+    if (evt.currentTarget.value.toLowerCase() === "delete my account") {
       instance._deleteConfirmed.set(true);
     } else {
       instance._deleteConfirmed.set(false);

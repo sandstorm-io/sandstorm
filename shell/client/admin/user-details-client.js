@@ -77,7 +77,6 @@ Template.newAdminUserDetails.onCreated(function () {
   this.showDeletePopup = new ReactiveVar(false);
   this.deleteError = new ReactiveVar(null);
   this.suspendSubmitting = new ReactiveVar(false);
-  this.deleteConfirmed = new ReactiveVar(false);
   this.showSuspendPopup = new ReactiveVar(false);
   this.suspendError = new ReactiveVar(null);
 
@@ -231,7 +230,7 @@ Template.newAdminUserDetails.helpers({
 
   disableDelete() {
     const instance = Template.instance();
-    return instance.deleteSubmitting.get() || !instance.deleteConfirmed.get();
+    return instance.deleteSubmitting.get();
   },
 
   cancelDelete() {
@@ -309,7 +308,6 @@ Template.newAdminUserDetails.events({
   "click [name=\"delete-account\"]"(evt, instance) {
     instance.showDeletePopup.set(true);
     instance.deleteError.set(null);
-    instance.deleteConfirmed.set(false);
   },
 
   "click [name=\"cancel-delete-account\"]"(evt, instance) {
@@ -369,13 +367,5 @@ Template.newAdminUserDetails.events({
         });
       }
     });
-  },
-
-  "input input.confirm": function (evt, instance) {
-    if (evt.currentTarget.value === "Yes, delete this account") {
-      instance.deleteConfirmed.set(true);
-    } else {
-      instance.deleteConfirmed.set(false);
-    }
   },
 });

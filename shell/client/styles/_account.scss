@@ -605,9 +605,6 @@ body>.main-content>.account {
         }
       }
 
-      &.delete-account {
-        @extend %button-danger;
-      }
     }
   }
 
@@ -1036,6 +1033,13 @@ div.billing {
         flex-shrink: 0;
       }
     }
+  }
+}
+
+.danger-zone {
+  button.delete-account {
+    @extend %button-base;
+    @extend %button-danger;
   }
 }
 

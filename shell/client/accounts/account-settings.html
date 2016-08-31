@@ -67,11 +67,6 @@ limitations under the License.
             <button class="account-button logout-other-sessions" disabled={{logoutOtherSessionsInFlight}}>
               Log out all other sessions
             </button>
-            {{#if showDeleteButton}}
-            <button class="account-button delete-account" disabled={{logoutOtherSessionsInFlight}}>
-              Delete account
-            </button>
-            {{/if}}
           {{/if}}
         </div>
       </div>
@@ -122,6 +117,15 @@ limitations under the License.
   <h2>Billing</h2>
   {{> billingUsage db=db topbar=_topbar}}
   {{> billingSettings db=db}}
+  </div>
+  {{/if}}
+
+  {{#if showDeleteButton}}
+  <div class="danger-zone">
+    <h3>Delete account</h3>
+    <button class="delete-account" disabled={{logoutOtherSessionsInFlight}}>
+      Delete your account
+    </button>
   </div>
   {{/if}}
 

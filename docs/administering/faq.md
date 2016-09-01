@@ -557,7 +557,7 @@ and Firefox.
 Not yet, and there is currently no timeline on adding ARM support to Sandstorm.
 
 We might revisit this in a year or two, once we're happy with the Sandstorm experience on x86-64.
-You souldn't plan on ARM support existing at any particular time. If you want Sandstorm on a small
+You shouldn't plan on ARM support existing at any particular time. If you want Sandstorm on a small
 computer, we can suggest the following, though we haven't personally tried them.
 
 - Small desktop PCs like running 64-bit Intel CPUs, such as the [Asus Chromebox

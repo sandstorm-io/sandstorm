@@ -152,6 +152,20 @@ The Service URL of this server is displayed in the configuration dialog, and is 
 hostname plus `/_saml/validate/default`. For example:
 `https://sandstorm.example.com/_saml/validate/default`
 
+### How we calculate the number of users on your server
+
+Sandstorm for Work's pricing counts monthly **active** users.
+
+For the most flexible billing, choose monthly billing. In this mode, you will be charged each 30 days
+according to the number of users who had actually logged in and opened a grain in the last 30 days.
+
+For example, if you use monthly billing, if there are 2000 people who work with you, but only 100
+are using Sandstorm, and all 100 use Sandstorm at least once a month, you would pay for 100 users
+that month.
+
+Alternatively, you can choose annual billing. Here, you specify a user limit at purchase
+time. Sandstorm will not allow more than this many users to log in during any 30-day period.
+
 ### Features coming soon
 
 We're still working on the following features:

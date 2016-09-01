@@ -551,3 +551,53 @@ where `example.com` is certified via Let's Encrypt. However, this would mean tha
 IFRAME elements pointing at `*.example.sandcats.io` and these IFRAMEs may not be able to set cookies within
 the subdomain due to the increasingly-common **third-party cookie-blocking** done by browsers such as Chrome
 and Firefox.
+
+### Does Sandstorm run on ARM systems like Raspberry Pi?
+
+Not yet, and there is currently no timeline on adding ARM support to Sandstorm.
+
+We might revisit this in a year or two, once we're happy with the Sandstorm experience on x86-64.
+You souldn't plan on ARM support existing at any particular time. If you want Sandstorm on a small
+computer, we can suggest the following, though we haven't personally tried them.
+
+- Small desktop PCs like running 64-bit Intel CPUs, such as the [Asus Chromebox
+  M004U](https://www.amazon.com/Asus-CHROMEBOX-M004U-ASUS-Desktop/dp/B00IT1WJZQ/) ($150 at time of
+  writing), the [Dell Inspiron micro desktop
+  series](http://www.dell.com/us/p/inspiron-3050-micro-desktop/pd), or any Intel NUC such as the
+  [NUC5CPYH](https://www.amazon.com/gp/product/B00XPVRR5M/) ($130 at time of writing). Note that for
+  a Chromebox, you must modify it to run Ubuntu first by following [directions like
+  these.](http://dareneiri.github.io/Asus-Chromebox-With-Full-Linux-Install/)
+
+- [Jaguarboard](http://www.jaguarboard.org/index.php/products/buy/jaguarboard.html), a 1GB RAM
+  single-board computer running an [Intel Z3735G
+  64-bit CPU.](http://ark.intel.com/products/80275/Intel-Atom-Processor-Z3735G-2M-Cache-up-to-1_83-GHz)
+  $80 at the time of writing.
+
+- Intel Compute Sticks such as the [CS125](https://www.amazon.com/gp/product/B01AZC4NHS/) running
+  the [x5-Z8300 64-bit
+  CPU.](http://ark.intel.com/products/87383/Intel-Atom-x5-Z8300-Processor-2M-Cache-up-to-1_84-GHz).
+  $130 at the time of writing.
+
+We are focusing on x86-64 because we only have so much time in the day. If you're a volunteer and
+interested in tackling the ARM/multi-architecture situation, then please email us at
+community@sandstorm.io.
+
+There are a few obstacles we'd need to overcome for Sandstorm to provide a good experience
+on ARM.
+
+- **Sandstorm app authors compile their own app packages,** so we would need to either ask app
+  authors to cross-compile on their own systems, or we would need to set up a buildd network. If we
+  set up a buildd network, this would come into conflict with the Sandstorm app package signing
+  situation where app authors sign their binaries. They might not have a way to test the ARM
+  binaries that we build on the automated builders, so quality might suffer. This isn't a top
+  priority at the moment within Sandstorm-the-company because it would take time and attention from
+  other things which we think will better serve a greater number of users right now. We would welcome
+  help.
+
+- **Historically, MongoDB doesn't officially support ARM.** Thankfully all new versions of MongoDB
+  do support ARM! Read more at this [MongoDB issue.](https://jira.mongodb.org/browse/SERVER-1811)
+  Although some Sandstorm apps embed old versions of MongoDB, this is presumably not a big problem
+  anymore.
+
+We hope to be able to provide a more satisfying answer one day. If you don't need ARM in particular,
+but you want a power-efficient small computer that runs Sandstorm, see the links above.

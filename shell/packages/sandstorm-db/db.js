@@ -1179,15 +1179,14 @@ _.extend(SandstormDb.prototype, {
     return SandstormDb.getUserIdentityIds(user).indexOf(identityId) != -1;
   },
 
-  userGrains: function userGrains(userId, trashed) {
+  userGrains: function userGrains(userId, queryExtension) {
     check(userId, Match.OneOf(String, undefined, null));
-    check(trashed, Match.OneOf(Boolean, undefined, null));
-
-    return this.collections.grains.find({ userId: userId, trashed: { $exists: !!trashed, }, });
+    check(queryExtension, Match.OneOf(undefined, null, { trashed: { $exists: Boolean }, }));
+    return this.collections.grains.find(_.extend({ userId: userId }, queryExtension));
   },
 
-  currentUserGrains: function currentUserGrains(trashed) {
-    return this.userGrains(Meteor.userId(), trashed);
+  currentUserGrains: function currentUserGrains(queryExtension) {
+    return this.userGrains(Meteor.userId(), queryExtension);
   },
 
   getGrain: function getGrain(grainId) {

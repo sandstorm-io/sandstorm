@@ -126,7 +126,7 @@ Template.sandstormAppListPage.helpers({
     // Count the number of grains owned by this user created by each app.
     const actions = ref._db.currentUserActions().fetch();
     const appIds = _.pluck(actions, "appId");
-    const grains = ref._db.currentUserGrains().fetch();
+    const grains = ref._db.currentUserGrains({ trashed: { $exists: false }, }).fetch();
     const appCounts = _.countBy(grains, function (x) { return x.appId; });
     // Sort apps by the number of grains created, descending.
     const apps = matchApps(ref._filter.get());

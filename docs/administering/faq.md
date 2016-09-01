@@ -575,7 +575,7 @@ computer, we can suggest the following, though we haven't personally tried them.
 
 - Intel Compute Sticks such as the [CS125](https://www.amazon.com/gp/product/B01AZC4NHS/) running
   the [x5-Z8300 64-bit
-  CPU.](http://ark.intel.com/products/87383/Intel-Atom-x5-Z8300-Processor-2M-Cache-up-to-1_84-GHz).
+  CPU.](http://ark.intel.com/products/87383/Intel-Atom-x5-Z8300-Processor-2M-Cache-up-to-1_84-GHz)
   $130 at the time of writing.
 
 We are focusing on x86-64 because we only have so much time in the day. If you're a volunteer and

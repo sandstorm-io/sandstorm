@@ -54,6 +54,29 @@ SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
 
 Meteor.startup(() => { migrateToLatest(globalDb, globalBackend); });
 
+// If there are multiple replicas, prefix every log message with our replica number.
+if ("replicaNumber" in Meteor.settings) {
+  const prefix = "replica" + Meteor.settings.replicaNumber.toString() + ":";
+
+  function patchConsole(name) {
+    const old = console[name];
+    console[name] = function () {
+      // Meteor in dev mode writes "LISTENING" to tell the dev runner that it's ready to accept
+      // connections.
+      if (arguments.length == 1 && arguments[0] == "LISTENING") {
+        old.apply(this, arguments);
+      } else {
+        old.apply(this, [prefix].concat(Array.prototype.slice.call(arguments)));
+      }
+    }
+  }
+
+  patchConsole("log");
+  patchConsole("info");
+  patchConsole("warn");
+  patchConsole("error");
+}
+
 // Make the fiber pool size infinite(ish)!
 //
 // Each fiber created adds an entry to `v8::Isolate::ThreadDataTable`. Unfortunatley, items are

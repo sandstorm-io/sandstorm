@@ -26,14 +26,23 @@ Meteor.startup(() => {
     baseUrlRow = { _id: "BASE_URL", value: ROOT_URL };
     Misc.insert(baseUrlRow);
   } else if (baseUrlRow.value !== ROOT_URL) {
-    console.log("resetting oauth");
-    Settings.find({ _id: { $in: ["google", "github"] } }).forEach((setting) => {
-      if (!!setting.value) {
-        Settings.update({ _id: setting._id },
-                        { $set: { value: false,
-                                automaticallyReset: { baseUrlChangedFrom: baseUrlRow.value }, }, });
-      }
-    });
+    // If the only thing that happened is some trailing slashes got removed, then don't reset OAuth
+    // providers.
+    let resetOAuth = true;
+    if (baseUrlRow.value.replace(/[/]*$/, "") === ROOT_URL) {
+      console.log("Not resetting OAuth because old ROOT_URL and new ROOT_URL differ only by trailing slashes.");
+      resetOAuth = false;
+    }
+    if (resetOAuth) {
+      console.log("resetting oauth");
+      Settings.find({ _id: { $in: ["google", "github"] } }).forEach((setting) => {
+        if (!!setting.value) {
+          Settings.update({ _id: setting._id },
+                          { $set: { value: false,
+                                    automaticallyReset: { baseUrlChangedFrom: baseUrlRow.value }, }, });
+        }
+      });
+    }
     baseUrlRow = { _id: "BASE_URL", value: ROOT_URL };
     Misc.update({ _id: "BASE_URL" }, { $set: { value: ROOT_URL } });
   }

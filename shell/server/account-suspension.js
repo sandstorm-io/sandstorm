@@ -51,9 +51,9 @@ If you did not request this deletion, please contact the server administrator im
   if (byAdminUserId) {
     const initiatingAdmin = db.getUser(byAdminUserId);
     const adminName = db.getIdentity(initiatingAdmin.loginIdentities[0].id).profile.name;
-    emailOptions.text = `${adminName} has requested that the Sandstorm account held by ${deleteUserString} on ${db.getServerTitle()} be deleted. The account has been suspended and will be fully deleted in seven days. To cancel the deletion, go to: ${process.env.ROOT_URL}/admin/users`;
+    emailOptions.text = `${adminName} has requested that the Sandstorm account held by ${deleteUserString} on ${db.getServerTitle()} be deleted. The account has been suspended and will be fully deleted in seven days. To cancel the deletion, go to: ${process.env.ROOT_URL}/admin/users/${deletedUser._id}`;
   } else {
-    emailOptions.text = `${deleteUserString} has requested that their acccount be deleted on ${db.getServerTitle()}. The account has been suspended and will be fully deleted in seven days. To cancel the deletion, go to: ${process.env.ROOT_URL}/admin/users`;
+    emailOptions.text = `${deleteUserString} has requested that their acccount be deleted on ${db.getServerTitle()}. The account has been suspended and will be fully deleted in seven days. To cancel the deletion, go to: ${process.env.ROOT_URL}/admin/users/${deletedUser._id}`;
   }
 
   Meteor.users.find({ isAdmin: true }).forEach((user) => {

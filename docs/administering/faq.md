@@ -54,7 +54,7 @@ it, you'll need to adjust `/opt/sandstorm/sandstorm.conf` and restart Sandstorm.
 - Changing the server hostname will temporarily disable Google and GitHub login, since those login
   providers embed an assumption about your server's hosntame. You will be able to re-enable the
   login providers after you switch to the new Sandstorm server hostname; you can use command line
-  access to gain temporary admin access to the server while the loginp providers are disabled.
+  access to gain temporary admin access to the server while the login providers are disabled.
 
 **To change the domain name, edit /opt/sandstorm/sandstorm.conf.** To do that, use `ssh` or a similar tool
 to gain access to your server, and run a command such as:

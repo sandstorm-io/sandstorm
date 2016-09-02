@@ -169,7 +169,7 @@ const sortGrains = function (grains, sortRules) {
 const filteredGrains = function (showTrash) {
   const ref = Template.instance().data;
   const db = ref._db;
-  const grains = db.currentUserGrains({ trashed: { $exists: showTrash } }).fetch();
+  const grains = db.currentUserGrains({ includeTrashOnly: showTrash }).fetch();
   const grainIdSet = {};
   grains.map((g) => grainIdSet[g._id] = true);
 
@@ -274,7 +274,7 @@ Template.sandstormGrainListPage.helpers({
   },
 
   myGrainsCount: function () {
-    return Template.instance().data._db.currentUserGrains().count();
+    return Template.instance().data._db.currentUserGrains({ includeTrash: true }).count();
   },
 
   trashCount: function () {
@@ -702,7 +702,8 @@ Template.sandstormGrainTable.onRendered(function () {
   // We could abort this function if (! globalSubs['grainsMenu'].ready()). However, at the moment,
   // we already waitOn the globalSubs, so that would be a no-op.
 
-  const hasGrains = !!(_db.currentUserGrains().count() || _db.currentUserApiTokens().count());
+  const hasGrains = !!(_db.currentUserGrains({ includeTrash: true }).count() ||
+                       _db.currentUserApiTokens().count());
   if (!hasGrains) {
     const intro = Template.instance().intro = introJs();
     intro.setOptions({

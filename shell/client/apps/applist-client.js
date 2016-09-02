@@ -126,7 +126,7 @@ Template.sandstormAppListPage.helpers({
     // Count the number of grains owned by this user created by each app.
     const actions = ref._db.currentUserActions().fetch();
     const appIds = _.pluck(actions, "appId");
-    const grains = ref._db.currentUserGrains({ trashed: { $exists: false }, }).fetch();
+    const grains = ref._db.currentUserGrains().fetch();
     const appCounts = _.countBy(grains, function (x) { return x.appId; });
     // Sort apps by the number of grains created, descending.
     const apps = matchApps(ref._filter.get());
@@ -245,7 +245,7 @@ Template.sandstormAppListPage.onRendered(() => {
     // about how "Share access" works.
     //
     // Persist between reloads via localStorage.
-    const grainsCount = db.currentUserGrains().count();
+    const grainsCount = db.currentUserGrains({ includeTrash: true }).count();
     if (grainsCount === 0) {
       Meteor._localStorage.setItem("userNeedsShareAccessHint", true);
     }

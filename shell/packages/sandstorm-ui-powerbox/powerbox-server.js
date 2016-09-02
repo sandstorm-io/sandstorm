@@ -211,8 +211,7 @@ function registerUiViewQueryHandler(frontendRefRegistry) {
       // TODO(someday): Allow `value` to specify app IDs to filter for.
 
       const sharedGrainIds = db.userApiTokens(userId).map(token => token.grainId);
-      const ownedGrainIds = db.userGrains(userId, { trashed: { $exists: false }, })
-          .map(grain => grain._id);
+      const ownedGrainIds = db.userGrains(userId).map(grain => grain._id);
 
       return _.uniq(sharedGrainIds.concat(ownedGrainIds)).map(grainId => {
         return new PowerboxOption({

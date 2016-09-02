@@ -40,7 +40,7 @@ const compileMatchFilter = function (searchString) {
 };
 
 const appGrains = function (db, appId, trashed) {
-  return _.filter(db.currentUserGrains({ trashed: { $exists: trashed } }).fetch(),
+  return _.filter(db.currentUserGrains({ includeTrashOnly: trashed }).fetch(),
                   function (grain) {return grain.appId === appId; });
 };
 

@@ -119,10 +119,12 @@ class SandstormBackend {
     // package, so that the grain runs using the dev app.
     const devPackage = DevPackages.findOne({ appId: grain.appId });
     let isDev;
+    let mountProc;
     let pkg;
     if (devPackage) {
       isDev = true;
       pkg = devPackage;
+      mountProc = pkg.mountProc;
     } else {
       pkg = Packages.findOne(grain.packageId);
       if (!pkg) {
@@ -140,12 +142,12 @@ class SandstormBackend {
     }
 
     const result = this.startGrainInternal(
-        packageId, grainId, grain.userId, manifest.continueCommand, false, isDev);
+        packageId, grainId, grain.userId, manifest.continueCommand, false, isDev, mountProc);
     result.packageSalt = isDev ? pkg._id : grain.packageSalt;
     return result;
   }
 
-  startGrainInternal(packageId, grainId, ownerId, command, isNew, isDev) {
+  startGrainInternal(packageId, grainId, ownerId, command, isNew, isDev, mountProc) {
     // Starts the grain supervisor.  Must be executed in a Meteor context.  Blocks until grain is
     // started. Returns a promise for an object containing two fields: `owner` (the ID of the owning
     // user) and `supervisor` (the supervisor capability).
@@ -174,7 +176,7 @@ class SandstormBackend {
       delete command.executablePath;
     }
 
-    return this._backendCap.startGrain(ownerId, grainId, packageId, command, isNew, isDev);
+    return this._backendCap.startGrain(ownerId, grainId, packageId, command, isNew, isDev, mountProc);
   }
 
   updateLastActive(grainId, userId, identityId) {

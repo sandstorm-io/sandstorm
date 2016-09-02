@@ -190,6 +190,7 @@ DevPackages = new Mongo.Collection("devpackages", collectionOptions);
 //     published, all running instances are reset. This is used e.g. to reset the app each time
 //     changes are made to the source code.
 //   manifest:  The app's manifest, as with Packages.manifest.
+//   mountProc: True if the supervisor should mount /proc.
 
 UserActions = new Mongo.Collection("userActions", collectionOptions);
 // List of actions that each user has installed which create new grains.  Each app may install

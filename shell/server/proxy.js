@@ -255,10 +255,12 @@ Meteor.methods({
 
     let pkg = Packages.findOne(packageId);
     let isDev = false;
+    let mountProc = false;
     if (!pkg) {
       // Maybe they wanted a dev package.  Check there too.
       pkg = DevPackages.findOne(packageId);
       isDev = true;
+      mountProc = pkg.mountProc;
     }
 
     if (!pkg) {
@@ -280,7 +282,8 @@ Meteor.methods({
       size: 0,
     });
 
-    globalBackend.startGrainInternal(packageId, grainId, this.userId, command, true, isDev);
+    globalBackend.startGrainInternal(packageId, grainId, this.userId, command, true,
+                                     isDev, mountProc);
     globalBackend.updateLastActive(grainId, this.userId, identityId);
     return grainId;
   },

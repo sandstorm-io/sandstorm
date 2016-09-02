@@ -90,7 +90,8 @@ private:
   class FileUploadStream;
 
   kj::Promise<Supervisor::Client> bootGrain(kj::StringPtr grainId, kj::StringPtr packageId,
-      spk::Manifest::Command::Reader command, bool isNew, bool devMode, bool isRetry);
+      spk::Manifest::Command::Reader command, bool isNew, bool devMode, bool mountProce,
+      bool isRetry);
 
   static kj::Promise<void> ignoreAll(kj::AsyncInputStream& input);
   static kj::Promise<kj::String> readAll(kj::AsyncInputStream& input,

@@ -60,7 +60,8 @@ void BackendImpl::taskFailed(kj::Exception&& exception) {
 
 kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
     kj::StringPtr grainId, kj::StringPtr packageId,
-    spk::Manifest::Command::Reader command, bool isNew, bool devMode, bool isRetry) {
+    spk::Manifest::Command::Reader command, bool isNew, bool devMode, bool mountProc,
+    bool isRetry) {
   auto iter = supervisors.find(grainId);
   if (iter != supervisors.end()) {
     KJ_REQUIRE(!isNew, "new grain matched existing grainId");
@@ -86,7 +87,7 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
           // re-run.
           KJ_ASSERT(!isRetry, "retry supervisor startup logic failed");
           return kj::evalLater([=]() mutable {
-            return bootGrain(grainId, packageId, command, isNew, devMode, true);
+            return bootGrain(grainId, packageId, command, isNew, devMode, mountProc, true);
           });
         } else {
           return kj::mv(exception);
@@ -107,6 +108,10 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
 
   if (devMode) {
     argv.add(kj::heapString("--dev"));
+
+    if (mountProc) {
+      argv.add(kj::heapString("--proc"));
+    }
   }
 
   for (auto env: command.getEnviron()) {
@@ -223,7 +228,7 @@ kj::Promise<void> BackendImpl::startGrain(StartGrainContext context) {
   auto params = context.getParams();
   return bootGrain(validateId(params.getGrainId()),
                    validateId(params.getPackageId()), params.getCommand(),
-                   params.getIsNew(), params.getDevMode(), false)
+                   params.getIsNew(), params.getDevMode(), params.getMountProc(), false)
       .then([context](Supervisor::Client client) mutable {
     context.getResults().setSupervisor(kj::mv(client));
   });

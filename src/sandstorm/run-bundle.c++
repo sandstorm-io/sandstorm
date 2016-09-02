@@ -2621,6 +2621,16 @@ private:
         KJ_FAIL_ASSERT("Expected app ID.");
       }
 
+      bool mountProc = false;
+      KJ_IF_MAYBE(line, readLine(input)) {
+        kj::String mountProcLine = kj::mv(*line);
+        if (mountProcLine == "1") {
+          mountProc = true;
+        }
+      } else {
+        KJ_FAIL_ASSERT("Expected value of '1' or '0' for mountProc.");
+      }
+
       for (char c: appId) {
         if (!isalnum(c)) {
           context.exitError("Invalid app ID. Must contain only alphanumerics.");
@@ -2661,7 +2671,7 @@ private:
             raiiOpen(kj::str(dir, "/sandstorm-manifest"), O_RDONLY), manifestLimits);
 
         // Notify the front-end that the app exists.
-        insertDevPackage(config, appId, pkgId, reader.getRoot<spk::Manifest>());
+        insertDevPackage(config, appId, mountProc, pkgId, reader.getRoot<spk::Manifest>());
       }
 
       {
@@ -2717,14 +2727,15 @@ private:
     return json.encode(kj::fwd<T>(value));
   }
 
-  void insertDevPackage(const Config& config, kj::StringPtr appId, kj::StringPtr pkgId,
-                        spk::Manifest::Reader manifest) {
+  void insertDevPackage(const Config& config, kj::StringPtr appId, bool mountProc,
+                        kj::StringPtr pkgId, spk::Manifest::Reader manifest) {
     mongoCommand(config, kj::str(
         "db.devpackages.insert({"
           "_id:\"", pkgId, "\","
           "appId:\"", appId, "\","
           "timestamp:", time(nullptr), ","
-          "manifest:", toMongoJson(manifest),
+          "manifest:", toMongoJson(manifest), ","
+          "mountProc:", mountProc ? "true" : "false",
         "})"));
   }
 

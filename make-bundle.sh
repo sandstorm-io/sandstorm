@@ -85,12 +85,23 @@ METEOR_DEV_BUNDLE=$(./find-meteor-dev-bundle.sh)
 # Build patched nodejs from source.  Our patches significantly improve performance in the
 # presence of many fibers.  See https://github.com/sandstorm-io/sandstorm/pull/2484 and
 # https://github.com/sandstorm-io/node/tree/std-unordered-map-for-thread-data
-echo "Building node"
-pushd deps/node
+#
+# We build node out of tree because Jenkins wants to run builds in folders with spaces, and GNU make
+# makes dealing with spaces in implicit rules exceedingly difficult.  So we build in a fixed path in
+# /var/tmp.  If we were to vary the path, we would lose the ability to cache the build artifacts,
+# which is also rather undesirable.
+NODE_BUILD_ROOT=/var/tmp/sandstorm-node-build-dir
+echo "Building node out-of-tree"
+rm -rf "$NODE_BUILD_ROOT"
+mkdir -p "$NODE_BUILD_ROOT"
+cp -a deps/node "$NODE_BUILD_ROOT"
+pushd "$NODE_BUILD_ROOT/node"
 # The rebuild here is fast if nothing has changed.
 ./configure --partly-static
 make -j$(nproc)
 popd
+rm -rf deps/node/out
+mv "$NODE_BUILD_ROOT/node/out" deps/node/
 
 # Start with the meteor bundle.
 cp -r shell-build/bundle bundle

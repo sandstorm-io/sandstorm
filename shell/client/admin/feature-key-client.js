@@ -165,9 +165,7 @@ Template.adminFeatureKeyModifyForm.helpers({
 });
 
 Template.adminFeatureKeyModifyForm.events({
-  "submit .feature-key-modify-form"(evt) {
-    evt.preventDefault();
-    evt.stopPropagation();
+  "click button.feature-key-upload-button"(evt) {
     Template.instance().showForm.set("update");
   },
 

@@ -33,6 +33,7 @@ Meteor.startup(() => {
       console.log("Not resetting OAuth because old ROOT_URL and new ROOT_URL differ only by trailing slashes.");
       resetOAuth = false;
     }
+
     if (resetOAuth) {
       console.log("resetting oauth");
       Settings.find({ _id: { $in: ["google", "github"] } }).forEach((setting) => {
@@ -43,6 +44,7 @@ Meteor.startup(() => {
         }
       });
     }
+
     baseUrlRow = { _id: "BASE_URL", value: ROOT_URL };
     Misc.update({ _id: "BASE_URL" }, { $set: { value: ROOT_URL } });
   }

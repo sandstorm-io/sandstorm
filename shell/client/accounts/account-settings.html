@@ -23,69 +23,64 @@ limitations under the License.
     Account settings
   {{/sandstormTopbarItem}}
 
-  <h2>My account</h2>
+  <h1>Account</h1>
   <div class="identities-editor">
 
-  <h3 class="title-bar">Linked identities</h3>
+    <h3 class="title-bar">Linked identities</h3>
 
-  {{#with actionCompleted}}
-    {{#if success}}
-      {{#focusingSuccessBox}}
-        Success: {{success}}
-      {{/focusingSuccessBox}}
-    {{/if}}
-    {{#if error}}
-      {{#focusingErrorBox}}
-        {{error}}
-      {{/focusingErrorBox}}
-    {{/if}}
-  {{/with}}
-
-  <div class="identities-tabs">
-  {{#unless isLinkingNewIdentity}}
-  <ul role="tablist" >
-    {{#each identities}}
-    <li role="tab" aria-controls="profile-tab-{{_id}}" id="profile-tab-header-{{_id}}"
-        aria-selected="{{isIdentitySelected _id}}" data-identity-id="{{_id}}">
-      {{> identityCard .}}
-    </li>
-    {{/each}}
-  </ul>
-  {{/unless}}
-  {{#if isAccountUser}}
-    {{#if isLinkingNewIdentity}}
-      <h4>Link new identity:</h4>
-      {{#with linkingNewIdentity=linkingNewIdentityData}}
-        {{> loginButtonsList globalAccountsUi}}
-      {{/with}}
-    <p><button class="account-button cancel-link-new-identity">Cancel</button></p>
-    {{else}}
-    <p><button class="account-button link-new-identity">Link new identity</button></p>
-    {{/if}}
-  {{/if}}
-  {{#unless isLinkingNewIdentity}}
-    <p>
-      <button class="account-button logout-other-sessions" disabled={{logoutOtherSessionsInFlight}}>
-        Log out all other sessions
-      </button>
-    </p>
-    <p>
-      {{#if showDeleteButton}}
-      <button class="account-button delete-account" disabled={{logoutOtherSessionsInFlight}}>
-        Delete account
-      </button>
+    {{#with actionCompleted}}
+      {{#if success}}
+        {{#focusingSuccessBox}}
+          Success: {{success}}
+        {{/focusingSuccessBox}}
       {{/if}}
-    </p>
-  {{/unless}}
-  </div><section class="profile">
-    {{#each identities}}
-    <div id="profile-tab-{{_id}}" aria-labelled-by="profile-tab-header-{{_id}}"
-         role="tabpanel" aria-hidden="{{isIdentityHidden _id}}">
-      {{>_accountProfileEditor identity=. setActionCompleted=setActionCompleted
-                               staticHost=../_staticHost}}
-     </div>
-    {{/each}}
-  </section>
+      {{#if error}}
+        {{#focusingErrorBox}}
+          {{error}}
+        {{/focusingErrorBox}}
+      {{/if}}
+    {{/with}}
+
+    <div class="identities-and-editor">
+      <div class="identities-tabs">
+
+        {{#unless isLinkingNewIdentity}}
+        <ul role="tablist" >
+          {{#each identities}}
+          <li role="tab" tabindex="0" aria-controls="profile-tab-{{_id}}" id="profile-tab-header-{{_id}}"
+              aria-selected="{{isIdentitySelected _id}}" data-identity-id="{{_id}}">
+            {{> identityCard .}}
+          </li>
+          {{/each}}
+        </ul>
+        {{/unless}}
+
+        <div class="account-buttons">
+          {{#if isLinkingNewIdentity}}
+            <h4>Link new identity:</h4>
+            {{#with linkingNewIdentity=linkingNewIdentityData}}
+              {{> loginButtonsList globalAccountsUi}}
+            {{/with}}
+            <button class="account-button cancel-link-new-identity">Cancel</button>
+          {{else}}
+            <button class="account-button link-new-identity">Link new identity</button>
+            <button class="account-button logout-other-sessions" disabled={{logoutOtherSessionsInFlight}}>
+              Log out all other sessions
+            </button>
+          {{/if}}
+        </div>
+      </div>
+
+      <section class="profile">
+        {{#each identities}}
+        <div id="profile-tab-{{_id}}" aria-labelled-by="profile-tab-header-{{_id}}"
+             role="tabpanel" aria-hidden="{{isIdentityHidden _id}}">
+          {{>_accountProfileEditor identity=. setActionCompleted=setActionCompleted
+                                   staticHost=../_staticHost}}
+         </div>
+        {{/each}}
+      </section>
+    </div>
   </div>
 
   <h3 class="title-bar">Primary e-mail address for service-related notifications</h3>
@@ -122,6 +117,15 @@ limitations under the License.
   <h2>Billing</h2>
   {{> billingUsage db=db topbar=_topbar}}
   {{> billingSettings db=db}}
+  </div>
+  {{/if}}
+
+  {{#if showDeleteButton}}
+  <div class="danger-zone">
+    <h3>Delete account</h3>
+    <button class="delete-account" disabled={{logoutOtherSessionsInFlight}}>
+      Delete your account
+    </button>
   </div>
   {{/if}}
 
@@ -258,14 +262,14 @@ setActionCompleted: (optional) Function.  Callback triggered on profile saved or
         </li>
 
         <li class="form-group">
-          {{#with identity.profile}}
+          {{#with prounoun=identity.profile.pronoun}}
           <label>
             Preferred pronoun:
             <select name="pronoun">
-              <option value="neutral" selected="{{isNeutral}}">they (unspecified)</option>
-              <option value="male" selected="{{isMale}}">he/him (male)</option>
-              <option value="female" selected="{{isFemale}}">she/her (female)</option>
-              <option value="robot" selected="{{isRobot}}">it (robot)</option>
+              <option value="neutral" selected="{{isNeutral pronoun}}">they (unspecified)</option>
+              <option value="male" selected="{{isMale pronoun}}">he/him (male)</option>
+              <option value="female" selected="{{isFemale pronoun}}">she/her (female)</option>
+              <option value="robot" selected="{{isRobot pronoun}}">it (robot)</option>
             </select>
           </label>
           {{/with}}

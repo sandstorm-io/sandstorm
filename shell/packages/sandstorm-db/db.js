@@ -35,6 +35,10 @@ if (Meteor.isServer) {
 
 // TODO(soon): Systematically go through this file and add ensureIndexOnServer() as needed.
 
+const collectionOptions = { defineMutationMethods: Meteor.isClient };
+// Set to `true` on the client so that method simulation works. Set to `false` on the server
+// so that we can be extra certain that all mutations must go through methods.
+
 // Users = new Mongo.Collection("users");
 // The users collection is special and can be accessed through `Meteor.users`.
 // See https://docs.meteor.com/#/full/meteor_users.
@@ -144,7 +148,7 @@ Meteor.users.ensureIndexOnServer("suspended.willDelete", { sparse: 1 });
 // TODO(cleanup): This index is obsolete; delete it.
 Meteor.users.ensureIndexOnServer("identities.id", { unique: 1, sparse: 1 });
 
-Packages = new Mongo.Collection("packages");
+Packages = new Mongo.Collection("packages", collectionOptions);
 // Packages which are installed or downloading.
 //
 // Each contains:
@@ -166,7 +170,7 @@ Packages = new Mongo.Collection("packages");
 //   authorPgpKeyFingerprint: Verified PGP key fingerprint (SHA-1, hex, all-caps) of the app
 //     packager.
 
-DevPackages = new Mongo.Collection("devpackages");
+DevPackages = new Mongo.Collection("devpackages", collectionOptions);
 // List of packages currently made available via the dev tools running on the local machine.
 // This is normally empty; the only time it is non-empty is when a developer is using the spk tool
 // on the local machine to publish an under-development app to this server. That should only ever
@@ -187,7 +191,7 @@ DevPackages = new Mongo.Collection("devpackages");
 //     changes are made to the source code.
 //   manifest:  The app's manifest, as with Packages.manifest.
 
-UserActions = new Mongo.Collection("userActions");
+UserActions = new Mongo.Collection("userActions", collectionOptions);
 // List of actions that each user has installed which create new grains.  Each app may install
 // some number of actions (usually, one).
 //
@@ -206,7 +210,7 @@ UserActions = new Mongo.Collection("userActions");
 //   nounPhrase: JSON-encoded LocalizedText describing what is created when this action is run.
 //   command:  Manifest.Command to run this action (see package.capnp).
 
-Grains = new Mongo.Collection("grains");
+Grains = new Mongo.Collection("grains", collectionOptions);
 // Grains belonging to users.
 //
 // Each contains:
@@ -240,12 +244,12 @@ Grains = new Mongo.Collection("grains");
 //   publicId:  An id used to publicly identify this grain. Used e.g. to route incoming e-mail and
 //       web publishing. This field is initialized when first requested by the app.
 
-RoleAssignments = new Mongo.Collection("roleAssignments");
+RoleAssignments = new Mongo.Collection("roleAssignments", collectionOptions);
 // *OBSOLETE* Before `user` was a variant of ApiTokenOwner, this collection was used to store edges
 // in the permissions sharing graph. This functionality has been subsumed by the ApiTokens
 // collection.
 
-Contacts = new Mongo.Collection("contacts");
+Contacts = new Mongo.Collection("contacts", collectionOptions);
 // Edges in the social graph.
 //
 // If Alice has Bob as a contact, then she is allowed to see Bob's profile information and Bob
@@ -262,7 +266,7 @@ Contacts = new Mongo.Collection("contacts");
 //   created: Date when this contact was created.
 //   identityId: The `_id` of the user whose contact info this contains.
 
-Sessions = new Mongo.Collection("sessions");
+Sessions = new Mongo.Collection("sessions", collectionOptions);
 // UI sessions open to particular grains.  A new session is created each time a user opens a grain.
 //
 // Each contains:
@@ -292,7 +296,7 @@ Sessions = new Mongo.Collection("sessions");
 //   hasLoaded: Marked as true by the proxy when the underlying UiSession has responded to its first
 //       request
 
-SignupKeys = new Mongo.Collection("signupKeys");
+SignupKeys = new Mongo.Collection("signupKeys", collectionOptions);
 // Invite keys which may be used by users to get access to Sandstorm.
 //
 // Each contains:
@@ -301,7 +305,7 @@ SignupKeys = new Mongo.Collection("signupKeys");
 //   note:  Text note assigned when creating key, to keep track of e.g. whom the key was for.
 //   email: If this key was sent as an email invite, the email address to which it was sent.
 
-ActivityStats = new Mongo.Collection("activityStats");
+ActivityStats = new Mongo.Collection("activityStats", collectionOptions);
 // Contains usage statistics taken on a regular interval. Each entry is a data point.
 //
 // Each contains:
@@ -325,7 +329,7 @@ ActivityStats = new Mongo.Collection("activityStats");
 //       demoed: Number of demo grains created and expired.
 //       appDemoUsers: Number of app demos initiated with this app.
 
-DeleteStats = new Mongo.Collection("deleteStats");
+DeleteStats = new Mongo.Collection("deleteStats", collectionOptions);
 // Contains records of objects that were deleted, for stat-keeping purposes.
 //
 // Each contains:
@@ -334,7 +338,7 @@ DeleteStats = new Mongo.Collection("deleteStats");
 //   appId: For type = "grain", the app ID of the grain. For type = "appDemoUser", the app ID they
 //     arrived to demo. For others, undefined.
 
-FileTokens = new Mongo.Collection("fileTokens");
+FileTokens = new Mongo.Collection("fileTokens", collectionOptions);
 // Tokens corresponding to backup files that are currently stored on the server. A user receives
 // a token when they create a backup file (either by uploading it, or by backing up one of their
 // grains) and may use the token to read the file (either to download it, or to restore a new
@@ -345,7 +349,7 @@ FileTokens = new Mongo.Collection("fileTokens");
 //   name:      Suggested filename.
 //   timestamp: File creation time. Used to figure out when the token and file should be wiped.
 
-ApiTokens = new Mongo.Collection("apiTokens");
+ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 // Access tokens for APIs exported by apps.
 //
 // Originally API tokens were only used by external users through the HTTP API endpoint. However,
@@ -488,7 +492,7 @@ ApiTokens.ensureIndexOnServer("grainId", { sparse: 1 });
 ApiTokens.ensureIndexOnServer("owner.user.identityId", { sparse: 1 });
 ApiTokens.ensureIndexOnServer("frontendRef.emailVerifier.id", { sparse: 1 });
 
-ApiHosts = new Mongo.Collection("apiHosts");
+ApiHosts = new Mongo.Collection("apiHosts", collectionOptions);
 // Allows defining some limited static behavior for an API host when accessed unauthenticated. This
 // mainly exists to allow backwards-compatibility with client applications that expect to be able
 // to probe an API host without authentication to determine capabilities such as DAV protocols
@@ -513,7 +517,7 @@ ApiHosts = new Mongo.Collection("apiHosts");
 //     encoding:   Content-Encoding.
 //     body:       Entity-body as a string or buffer.
 
-Notifications = new Mongo.Collection("notifications");
+Notifications = new Mongo.Collection("notifications", collectionOptions);
 // Notifications for a user.
 //
 // Each contains:
@@ -549,7 +553,7 @@ Notifications = new Mongo.Collection("notifications");
 //                 a one-time notification only to Oasis users who existed when the bonus program
 //                 was implemented.
 
-ActivitySubscriptions = new Mongo.Collection("activitySubscriptions");
+ActivitySubscriptions = new Mongo.Collection("activitySubscriptions", collectionOptions);
 // Activity events to which a user is subscribed.
 //
 // Each contains:
@@ -569,7 +573,7 @@ ActivitySubscriptions = new Mongo.Collection("activitySubscriptions");
 ActivitySubscriptions.ensureIndexOnServer("identityId");
 ActivitySubscriptions.ensureIndexOnServer({ "grainId": 1, "threadPath": 1 });
 
-StatsTokens = new Mongo.Collection("statsTokens");
+StatsTokens = new Mongo.Collection("statsTokens", collectionOptions);
 // Access tokens for the Stats collection
 //
 // These tokens are used for accessing the ActivityStats collection remotely
@@ -578,7 +582,7 @@ StatsTokens = new Mongo.Collection("statsTokens");
 // Each contains:
 //   _id:       The token. At least 128 bits entropy (Random.id(22)).
 
-Misc = new Mongo.Collection("misc");
+Misc = new Mongo.Collection("misc", collectionOptions);
 // Miscellaneous configuration and other settings
 //
 // This table is currently only used for persisting BASE_URL from one session to the next,
@@ -588,7 +592,7 @@ Misc = new Mongo.Collection("misc");
 //   _id:       The name of the setting. eg. "BASE_URL"
 //   value:     The value of the setting.
 
-Settings = new Mongo.Collection("settings");
+Settings = new Mongo.Collection("settings", collectionOptions);
 // Settings for this Sandstorm instance go here. They are configured through the adminSettings
 // route. This collection differs from misc in that any admin user can update it through the admin
 // interface.
@@ -608,13 +612,13 @@ Settings = new Mongo.Collection("settings");
 //
 //   potentially other fields that are unique to the setting
 
-Migrations = new Mongo.Collection("migrations");
+Migrations = new Mongo.Collection("migrations", collectionOptions);
 // This table tracks which migrations we have applied to this instance.
 // It contains a single entry:
 //   _id:       "migrations_applied"
 //   value:     The number of migrations this instance has successfully completed.
 
-StaticAssets = new Mongo.Collection("staticAssets");
+StaticAssets = new Mongo.Collection("staticAssets", collectionOptions);
 // Collection of static assets served up from the Sandstorm server's "static" host. We only
 // support relatively small assets: under 1MB each.
 //
@@ -628,7 +632,7 @@ StaticAssets = new Mongo.Collection("staticAssets");
 //       have transactions, this needs to bias towards over-counting; a backup GC could be used
 //       to catch leaked assets, although it's probably not a big deal in practice.
 
-AssetUploadTokens = new Mongo.Collection("assetUploadTokens");
+AssetUploadTokens = new Mongo.Collection("assetUploadTokens", collectionOptions);
 // Collection of tokens representing a single-use permission to upload an asset, such as a new
 // profile picture.
 //
@@ -640,7 +644,7 @@ AssetUploadTokens = new Mongo.Collection("assetUploadTokens");
 //           identityId: Which of the user's identities shall be updated.
 //   expires:   Time when this token will go away if unused.
 
-Plans = new Mongo.Collection("plans");
+Plans = new Mongo.Collection("plans", collectionOptions);
 // Subscription plans, which determine quota.
 //
 // Each contains:
@@ -654,14 +658,14 @@ Plans = new Mongo.Collection("plans");
 //       allowed to switch away.
 //   title: Title from display purposes. If missing, default to capitalizing _id.
 
-AppIndex = new Mongo.Collection("appIndex");
+AppIndex = new Mongo.Collection("appIndex", collectionOptions);
 // A mirror of the data from the App Market index
 //
 // Each contains:
 //   _id: the appId of the app
 //  The rest of the fields are defined in src/sandstorm/app-index/app-index.capnp:AppIndexForMarket
 
-KeybaseProfiles = new Mongo.Collection("keybaseProfiles");
+KeybaseProfiles = new Mongo.Collection("keybaseProfiles", collectionOptions);
 // Cache of Keybase profile information. The profile for a user is re-fetched every time a package
 // by that user is installed, as well as if the keybase profile is requested and not already
 // present for some reason.
@@ -681,7 +685,7 @@ KeybaseProfiles = new Mongo.Collection("keybaseProfiles");
 //     WARNING: Currently verification is NOT IMPLEMENTED, so all proofs will be "unverified"
 //       for now and we just trust Keybase.
 
-FeatureKey = new Mongo.Collection("featureKey");
+FeatureKey = new Mongo.Collection("featureKey", collectionOptions);
 // Responsible for storing the current feature key that is active on the server.  Contains a single
 // document with two keys:
 //
@@ -691,7 +695,7 @@ FeatureKey = new Mongo.Collection("featureKey");
 //
 // This is only intended to be visible on the server.
 
-SetupSession = new Mongo.Collection("setupSession");
+SetupSession = new Mongo.Collection("setupSession", collectionOptions);
 // Responsible for storing information about setup sessions.  Contains a single document with three
 // keys:
 //
@@ -699,7 +703,7 @@ SetupSession = new Mongo.Collection("setupSession");
 //   creationDate: Date object indicating when this session was created.
 //   hashedSessionId: the sha256 of the secret session id that was returned to the client
 
-const DesktopNotifications = new Mongo.Collection("desktopNotifications");
+const DesktopNotifications = new Mongo.Collection("desktopNotifications", collectionOptions);
 // Responsible for very short-lived queueing of desktop notification information.
 // Entries are removed when they are ~30 seconds old.  This collection is a bit
 // odd in that it is intended primarily for edge-triggered communications, but

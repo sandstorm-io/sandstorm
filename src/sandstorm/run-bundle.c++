@@ -1526,7 +1526,13 @@ private:
       } else if (key == "BIND_IP") {
         config.bindIp = kj::mv(value);
       } else if (key == "BASE_URL") {
-        config.rootUrl = kj::mv(value);
+        // If the value ends in any number of "/" characters, remove them now. This allows the
+        // Sandstorm codebase to assume that BASE_URL does not end in a slash.
+        int desiredLength = value.size();
+        while (desiredLength > 0 && value[desiredLength-1] == '/') {
+          desiredLength -= 1;
+        }
+        config.rootUrl = kj::str(value.slice(0, desiredLength));
       } else if (key == "WILDCARD_HOST") {
         config.wildcardHost = kj::mv(value);
       } else if (key == "WILDCARD_PARENT_URL") {

@@ -182,6 +182,10 @@ function recordStats() {
     plans: planStats,
   };
   record.computeTime = Date.now() - now;
+  if (global.BlackrockPayments && global.BlackrockPayments.getTotalCharges) {
+    // This only exists under Blackrock
+    record.totalCharges = global.BlackrockPayments.getTotalCharges();
+  }
 
   ActivityStats.insert(record);
   const age = ActivityStats.find().count();

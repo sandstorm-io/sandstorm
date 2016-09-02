@@ -84,3 +84,18 @@ Meteor.startup(() => { migrateToLatest(globalDb, globalBackend); });
 //    https://github.com/laverdet/node-fibers/issues/305
 import Fiber from "fibers";
 Fiber.poolSize = 1e9;
+
+// TEMPORARY: Monitor the number of fibers created and kill the process any time it goes over 2000.
+//   Unfortunately, due to the aforementioned linked list in ThreadDataTable, the process will
+//   become unreasonably slow once the list gets this big. It's better to kill the process so that
+//   it restarts fresh rather than to let the Sandstorm server become unresponsive.
+// TODO(soon): Remove this when the bug is fixed.
+setInterval(() => {
+  if (Fiber.fibersCreated > 2000) {
+    console.error(
+        "Process has allocated more than 2000 concurrent fibers. Due to " +
+        "https://bugs.chromium.org/p/v8/issues/detail?id=5338 it will become extremely slow " +
+        "unless we restart it. ABORTING");
+    process.abort();
+  }
+}, 5000);

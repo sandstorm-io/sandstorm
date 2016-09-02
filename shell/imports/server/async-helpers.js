@@ -5,7 +5,7 @@ const Future = Npm.require("fibers/future");
 let inMeteorListener = undefined;
 const onInMeteor = (callback) => {
   inMeteorListener = callback;
-}
+};
 
 // Meteor context <-> Async Node.js context adapters
 const inMeteorInternal = Meteor.bindEnvironment((callback) => {

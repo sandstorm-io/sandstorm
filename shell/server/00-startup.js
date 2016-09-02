@@ -68,7 +68,7 @@ if ("replicaNumber" in Meteor.settings) {
       } else {
         old.apply(this, [prefix].concat(Array.prototype.slice.call(arguments)));
       }
-    }
+    };
   }
 
   patchConsole("log");
@@ -150,7 +150,7 @@ if ("replicaNumber" in Meteor.settings) {
     prototype[functionName] = function () {
       sampleStackIfTooManyFibers();
       return old.apply(this, arguments);
-    }
+    };
   }
 
   addFiberSampling(Meteor._SynchronousQueue.prototype, "runTask");

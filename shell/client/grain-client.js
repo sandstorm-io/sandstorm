@@ -810,6 +810,32 @@ Template.grainApiTokenPopup.helpers({
   },
 });
 
+const getGrainTitle = function (grainId) {
+  let title = "(Unknown grain)";
+  const grain = Grains.findOne({ _id: grainId });
+  if (grain && grain.title) {
+    title = grain.title;
+  }
+
+  if (!grain || grain.userId !== Meteor.userId()) {
+    const sharerToken = ApiTokens.findOne(
+      { grainId: grainId, },
+      { sort: { lastUsed: -1 } }
+    );
+
+    if (sharerToken) {
+      const ownerData = sharerToken.owner.user;
+      if (ownerData.title) {
+        title = ownerData.title;
+      } else if (ownerData.upstreamTitle) {
+        title = ownerData.upstreamTitle;
+      }
+    }
+  }
+
+  return title;
+};
+
 Template.whoHasAccessPopup.onCreated(function () {
   const _this = this;
   this.subscribe("contactProfiles", true);
@@ -825,33 +851,49 @@ Template.whoHasAccessPopup.onCreated(function () {
         console.error(error.stack);
       } else {
         const downstreamTokensById = {};
-        const sharesByRecipient = {};
+        const sharesByIdentityRecipient = {};
+        const sharesByGrainRecipient = {};
         downstream.forEach(function (token) {
           downstreamTokensById[token._id] = token;
+          let mapToUpdate;
+          let recipient;
           if (Match.test(token.owner, { user: Match.ObjectIncluding({ identityId: String }) })) {
-            const recipient = token.owner.user.identityId;
-            if (!sharesByRecipient[recipient]) {
-              sharesByRecipient[recipient] = {
+            mapToUpdate = sharesByIdentityRecipient;
+            recipient = token.owner.user.identityId;
+          } else if (Match.test(token.owner,
+                                { grain: Match.ObjectIncluding({ grainId: String }) })) {
+            mapToUpdate = sharesByGrainRecipient;
+            recipient = token.owner.grain.grainId;
+          }
+
+          if (mapToUpdate) {
+            if (!mapToUpdate[recipient]) {
+              mapToUpdate[recipient] = {
                 recipient: recipient,
                 dedupedShares: [],
                 allShares: [],
               };
             }
 
-            sharesByRecipient[recipient].allShares.push(token);
-            const dedupedShares = sharesByRecipient[recipient].dedupedShares;
+            mapToUpdate[recipient].allShares.push(token);
+            const dedupedShares = mapToUpdate[recipient].dedupedShares;
             if (!dedupedShares.some((share) => share.identityId === token.identityId)) {
               dedupedShares.push(token);
             }
           }
         });
 
-        let result = _.values(sharesByRecipient);
-        if (result.length == 0) {
-          result = { empty: true };
+        let identityOwnedShares = _.values(sharesByIdentityRecipient);
+        if (identityOwnedShares.length == 0) {
+          identityOwnedShares = { empty: true };
         }
 
-        _this.transitiveShares.set(result);
+        let grainOwnedShares = _.values(sharesByGrainRecipient);
+        if (grainOwnedShares.length == 0) {
+          grainOwnedShares = { empty: true };
+        }
+
+        _this.transitiveShares.set({ identityOwnedShares, grainOwnedShares, });
         _this.downstreamTokensById.set(downstreamTokensById);
       }
     });
@@ -884,11 +926,12 @@ Template.whoHasAccessPopup.events({
     instance.resetTransitiveShares();
   },
 
-  "click button.revoke-access": function (event, instance) {
+  "click table.people button.revoke-access": function (event, instance) {
     const recipient = event.currentTarget.getAttribute("data-recipient");
     const transitiveShares = instance.transitiveShares.get();
+    const identityOwnedShares = transitiveShares.identityOwnedShares;
     const tokensById = instance.downstreamTokensById.get();
-    const recipientShares = _.findWhere(transitiveShares, { recipient: recipient });
+    const recipientShares = _.findWhere(identityOwnedShares, { recipient: recipient });
     const currentIdentityId = globalGrains.getActive().identityId();
     const recipientTokens = _.where(recipientShares.allShares, { identityId: currentIdentityId });
 
@@ -934,8 +977,9 @@ Template.whoHasAccessPopup.events({
         }
       }
 
-      let otherAffectedIdentities = {};
-      let tokenStack = rootTokens.slice(0);
+      const otherAffectedIdentities = {};
+      const affectedGrains = {};
+      const tokenStack = rootTokens.slice(0);
       while (tokenStack.length > 0) {
         let current = tokenStack.pop();
         if (Match.test(current.owner,
@@ -944,6 +988,11 @@ Template.whoHasAccessPopup.events({
             otherAffectedIdentities[current.owner.user.identityId] = true;
           }
         } else {
+          if (Match.test(current.owner,
+                         { grain: Match.ObjectIncluding({ grainId: String }) })) {
+            affectedGrains[current.owner.grain.grainId] = true;
+          }
+
           if (tokensByParent[current._id]) {
             let children = tokensByParent[current._id];
             children.forEach(child => {
@@ -977,6 +1026,14 @@ Template.whoHasAccessPopup.events({
           " also been opened by:\n\n    " + othersNames;
       }
 
+      if (Object.keys(affectedGrains).length > 0) {
+        const grainNames = Object.keys(affectedGrains)
+            .map(grainId => getGrainTitle(grainId))
+            .join(", ");
+        othersNote = othersNote + "\n\n" + (singular ? "This link is" : "These links are") +
+          " used by the following grains:\n\n" + grainNames;
+      }
+
       if (window.confirm(confirmText + othersNote)) {
         rootTokens.forEach((token) => {
           Meteor.call("updateApiToken", token._id, { revoked: true });
@@ -988,6 +1045,22 @@ Template.whoHasAccessPopup.events({
     }
 
     directTokens.forEach((token) => {
+      Meteor.call("updateApiToken", token._id, { revoked: true });
+    });
+
+    instance.resetTransitiveShares();
+  },
+
+  "click table.grains button.revoke-access": function (event, instance) {
+    const recipient = event.currentTarget.getAttribute("data-recipient");
+    const transitiveShares = instance.transitiveShares.get();
+    const grainOwnedShares = transitiveShares.grainOwnedShares;
+    const tokensById = instance.downstreamTokensById.get();
+    const recipientShares = _.findWhere(grainOwnedShares, { recipient: recipient });
+    const currentIdentityId = globalGrains.getActive().identityId();
+    const recipientTokens = _.where(recipientShares.allShares, { identityId: currentIdentityId });
+
+    recipientTokens.forEach((token) => {
       Meteor.call("updateApiToken", token._id, { revoked: true });
     });
 
@@ -1054,7 +1127,7 @@ Template.whoHasAccessPopup.helpers({
     let identity = ContactProfiles.findOne({ _id: identityId });
     if (!identity) {
       identity = Meteor.users.findOne({ _id: identityId });
-      SandstormDb.fillInProfileDefaults(identity);
+      if (identity) SandstormDb.fillInProfileDefaults(identity);
     }
 
     if (identity) {
@@ -1062,6 +1135,10 @@ Template.whoHasAccessPopup.helpers({
     } else {
       return "Unknown User (" + identityId.slice(0, 16) + ")";
     }
+  },
+
+  grainTitle: function (grainId) {
+    return getGrainTitle(grainId);
   },
 
   transitiveShares: function () {

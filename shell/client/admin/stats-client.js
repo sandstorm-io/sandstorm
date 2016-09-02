@@ -45,6 +45,10 @@ Template.newAdminStats.onCreated(function () {
 });
 
 Template.newAdminStats.helpers({
+  featureKeyForceStats() {
+    return globalDb.isFeatureKeyOptedIntoStats();
+  },
+
   ready() {
     const instance = Template.instance();
     return instance.ready();

@@ -1464,6 +1464,12 @@ _.extend(SandstormDb.prototype, {
     return featureKey && (parseInt(featureKey.expires) > (Date.now() / 1000));
   },
 
+  isFeatureKeyOptedIntoStats: function () {
+    const featureKey = this.currentFeatureKey();
+    return featureKey && featureKey.isTrial && parseInt(featureKey.issued) > 1472601600;
+    // 1472601600 is 2016 Aug 31 in seconds since the epoch
+  },
+
   getLdapUrl: function () {
     const setting = Settings.findOne({ _id: "ldapUrl" });
     return setting ? setting.value : "";  // empty if subscription is not ready.

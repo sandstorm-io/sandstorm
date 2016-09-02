@@ -50,7 +50,7 @@
 </template>
 
 <template name="statsAppsTable">
-{{!-- expects a single argument: 
+{{!-- expects a single argument:
   apps: Array of Object like ActivityStats, plus `appTitle`
  ready: Boolean, indicates readiness, to avoid rerendering as data streams in
 --}}
@@ -117,6 +117,11 @@
     </ul>
   </h1>
 
+  {{#if featureKeyForceStats}}
+    <div class="flash-message info-message">
+      During your free trial of Sandstorm for Work, the stats on this page will be reported to Sandstorm.io so that we can help you get up and running. Once you purchase a key (or downgrade to standard Sandstorm by removing your trial key), these stats will stop being reported.
+    </div>
+  {{else}}
   <h2>Publish anonymously to Sandstorm dev team</h2>
 
   {{#if hasSuccess}}
@@ -174,6 +179,7 @@
       </form>
     </p>
   {{/if}}
+  {{/if}}
 
 
   <h2>Statistics</h2>
@@ -223,4 +229,3 @@
 
   {{> statsAppsTable apps=apps ready=ready}}
 </template>
-

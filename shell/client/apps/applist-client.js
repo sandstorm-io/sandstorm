@@ -245,7 +245,7 @@ Template.sandstormAppListPage.onRendered(() => {
     // about how "Share access" works.
     //
     // Persist between reloads via localStorage.
-    const grainsCount = db.currentUserGrains().count();
+    const grainsCount = db.currentUserGrains({ includeTrash: true }).count();
     if (grainsCount === 0) {
       Meteor._localStorage.setItem("userNeedsShareAccessHint", true);
     }

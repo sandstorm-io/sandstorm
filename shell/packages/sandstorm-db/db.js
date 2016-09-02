@@ -1184,15 +1184,25 @@ _.extend(SandstormDb.prototype, {
     return SandstormDb.getUserIdentityIds(user).indexOf(identityId) != -1;
   },
 
-  userGrains: function userGrains(userId, trashed) {
+  userGrains: function userGrains(userId, options) {
     check(userId, Match.OneOf(String, undefined, null));
-    check(trashed, Match.OneOf(Boolean, undefined, null));
+    check(options, Match.OneOf(undefined, null,
+        { includeTrashOnly: Match.Optional(Boolean), includeTrash: Match.Optional(Boolean), }));
 
-    return this.collections.grains.find({ userId: userId, trashed: { $exists: !!trashed, }, });
+    const query = { userId: userId };
+    if (options && options.includeTrashOnly) {
+      query.trashed = { $exists: true };
+    } else if (options && options.includeTrash) {
+      // Keep query as-is.
+    } else {
+      query.trashed = { $exists: false };
+    }
+
+    return this.collections.grains.find(query);
   },
 
-  currentUserGrains: function currentUserGrains(trashed) {
-    return this.userGrains(Meteor.userId(), trashed);
+  currentUserGrains: function currentUserGrains(options) {
+    return this.userGrains(Meteor.userId(), options);
   },
 
   getGrain: function getGrain(grainId) {
@@ -2664,7 +2674,7 @@ if (Meteor.isServer) {
     });
 
     // package source 2: packages referred to by grains directly
-    const grains = db.userGrains(this.userId);
+    const grains = db.userGrains(this.userId, { includeTrash: true });
     const grainsHandle = grains.observe({
       added: function (newGrain) {
         // Watch out: DevApp grains can lack a packageId.

@@ -48,8 +48,10 @@ SandstormDb.periodicCleanup(10 * 60 * 1000,
 SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
   SandstormAutoupdateApps.updateAppIndex(globalDb);
 });
+const deleteAccount = global.BlackrockPayments && global.BlackrockPayments.deleteAccount;
 SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
-  globalDb.deletePendingAccounts(ACCOUNT_DELETION_SUSPENSION_TIME, globalBackend);
+  globalDb.deletePendingAccounts(ACCOUNT_DELETION_SUSPENSION_TIME, globalBackend,
+    deleteAccount);
 });
 
 Meteor.startup(() => { migrateToLatest(globalDb, globalBackend); });

@@ -56,7 +56,7 @@ Template.newAdminStats.helpers({
 
   undecided() {
     const setting = Settings.findOne({ _id: "reportStats" });
-    return setting && setting.value === "unset" && !globalDb.isFeatureKeyOptedIntoStats();
+    return setting && setting.value === "unset";
   },
 
   sendStats() {

@@ -453,14 +453,9 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
 
       const token = parsedUrl.hash.slice(1); // Get rid of # which is always the first character
       const hostId = matchWildcardHost(parsedUrl.host);
-      if (hostId && globalDb.isApiHostId(hostId)) {
-        // Connecting to a local capability.
-        return getWrappedUiViewForToken(token);
-      } else {
-        // Connecting to a remote server with a bearer token.
-        // TODO(someday): Negotiate server-to-server Cap'n Proto connection.
-        return { view: new ExternalUiView(url, this.grainId, token) };
-      }
+      // Connecting to a remote server with a bearer token.
+      // TODO(someday): Negotiate server-to-server Cap'n Proto connection.
+      return { view: new ExternalUiView(url, this.grainId, token) };
     } else {
       return { view: new ExternalUiView(url, this.grainId) };
     }

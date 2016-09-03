@@ -21,47 +21,6 @@ const Http = Npm.require("http");
 const Https = Npm.require("https");
 const ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
 
-WrappedUiView = class WrappedUiView {
-  constructor(token, proxy) {
-    // TODO(someday): handle the fact that these proxies will be garbage collected every 2 minutes,
-    // even if it's in use.
-    this.token = token;
-    this.proxy = proxy;
-  }
-
-  newSession(userInfo, context, sessionType, sessionParams, retryCount) {
-    if (sessionType !== ApiSession.typeId) {
-      throw new Error("SessionType must be ApiSession.");
-    }
-
-    retryCount = retryCount || 0;
-    const _this = this;
-
-    return this.proxy.keepAlive().then(() => {
-      // ignore the passed userInfo and instead use the one associated with this
-      // token TODO(someday): Merge / intersect the two userInfo objects
-      // (especially permissions) rather than only taking the token's user info.
-      // This will allow the caller to request only a subset of the permissions
-      // granted by the token, which is useful to protect against bugs.
-      const session = _this.proxy.uiView.newSession(
-          _this.proxy.userInfo, context, sessionType, sessionParams).session;
-      return { session: session };
-    }).catch((error) => {
-      return _this.proxy.maybeRetryAfterError(error, retryCount).then(() => {
-        return _this.newSession(userInfo, context, sessionType, sessionParams, retryCount + 1);
-      });
-    });
-  }
-};
-
-getWrappedUiViewForToken = (token) => {
-  const proxyPromise = getProxyForApiToken(token);
-
-  return proxyPromise.then((proxy) => {
-    return { view: new WrappedUiView(token, proxy) };
-  });
-};
-
 ExternalUiView = class ExternalUiView {
   constructor(url, grainId, token) {
     this.url = url;

@@ -92,14 +92,14 @@ Meteor.methods({
 
     const db = this.connection.sandstormDb;
 
+    if (global.BlackrockPayments) {
+      BlackrockPayments.suspendAccount(db, userId);
+    }
+
     db.suspendAccount(userId, Meteor.userId(), willDelete);
 
     if (willDelete) {
       sendDeletionEmails(db, userId, Meteor.userId());
-    }
-
-    if (global.BlackrockPayments) {
-      BlackrockPayments.suspendAccount(db, userId);
     }
   },
 
@@ -114,13 +114,13 @@ Meteor.methods({
         "Please ask your admin to do it for you.");
     }
 
-    db.suspendAccount(Meteor.userId(), null, true);
-
-    sendDeletionEmails(db, Meteor.userId());
-
     if (global.BlackrockPayments) {
       BlackrockPayments.suspendAccount(db, Meteor.userId());
     }
+
+    db.suspendAccount(Meteor.userId(), null, true);
+
+    sendDeletionEmails(db, Meteor.userId());
   },
 
   unsuspendAccount(userId) {

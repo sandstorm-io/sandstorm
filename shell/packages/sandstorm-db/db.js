@@ -2006,8 +2006,8 @@ _.extend(SandstormDb.prototype, {
       "suspended.willDelete": true,
       "suspended.timestamp": { $lt: queryDate },
     }).forEach((user) => {
-      this.deleteAccount(user._id, backend);
       if (cb) cb(this, user);
+      this.deleteAccount(user._id, backend);
     });
   },
 });

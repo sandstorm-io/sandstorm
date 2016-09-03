@@ -734,7 +734,8 @@ body>.main-content>.account {
 
 div.billing {
   >section.payment-methods {
-    display: block;
+    display: inline-block;
+    vertical-align: top;
 
     h3 {
       margin: 0.5em 0;
@@ -884,8 +885,12 @@ div.billing {
   }
 
   div.usage {
-    display: block;
+    display: inline-block;
     vertical-align: top;
+
+    @media #{$not-mobile-only} {
+      margin-right: 32px;
+    }
 
     h3 {
       margin: 0.5em 0;

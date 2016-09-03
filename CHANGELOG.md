@@ -1,3 +1,17 @@
+### v0.180 (2016-09-03)
+- The "Who has access" dialog now shows collections of which the grain is a part, and (more generally) other grains through which this grain has been shared.
+- The "Delete Account" button now makes you type a phrase to confirm. (It still doesn't actually delete your account for 7 days.)
+- When a user deletes their own account, they will now receive an e-mail notification, in case of hijacking.
+- The "Sandstorm for Work" section of the admin panel now contains a direct link to manage your feature key's billing preferences.
+- Added `spk dev --proc` flag which requests that `/proc` be mounted in the sandbox for debugging purposes. This may decrease security of the sandbox, so is only allowed in dev mode.
+- The account settings page now looks reasonable on mobile.
+- Fixed grains in trash sometimes missing icon and other app details.
+- Setting a BASE_URL with a trailing slash will no longer subtly break things.
+- Dropping a SturdyRef not owned by the calling grain will now act as if the SturdyRef doesn't exist rather than throwing an exception. This particularly affects grains that have been backup/restored and so have someone else's tokens in their storage.
+- HTTP API requests will no longer throw an exception if the user-agent header is missing.
+- sandstorm-http-bridge will now log a note if the app doesn't seem to be coming up on the expected port.
+- Oasis: Added self-monitoring and auto-restart for the ["fiber bomb" problem](https://github.com/meteor/meteor/issues/7747). Also added instrumentation to track down root cause.
+
 ### v0.179 (2016-08-26)
 - A user can now request deletion of their own account, unless they are a member of a Sandstorm for Work organization. Deletion has a 7-day cooldown during whith the user can change their mind.
 - Admins can now suspend and delete accounts from the admin panel.

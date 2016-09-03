@@ -4,7 +4,7 @@ Sandstorm server running at their own organization. Special pricing, sometimes i
 feature keys, are available to [non-profits and community groups](#special-pricing). For pricing,
 please read the information on the [main website](https://sandstorm.io/business).
 
-For now, feature keys are typically 90-day trial keys. This gives you time to evaluate Sandstorm for
+For now, feature keys are typically 60-day trial keys. This gives you time to evaluate Sandstorm for
 Work, and it gives us time to finish testing the payments system.
 
 ## Sandstorm for Work in depth

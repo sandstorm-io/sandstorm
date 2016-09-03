@@ -149,12 +149,23 @@ Template.adminFeatureKeyModifyForm.helpers({
       instance.showForm.set(undefined);
     };
   },
+
+  keySecret() {
+    function hexString(bytes) {
+      const DIGITS = "0123456789abcdef";
+
+      // Watch out: Uint8Array.map() constructs a new Uint8Arary.
+      return Array.prototype.map
+          .call(bytes, byte => DIGITS[Math.floor(byte / 16)] + DIGITS[byte % 16])
+          .join("");
+    }
+
+    return hexString(globalDb.currentFeatureKey().secret);
+  },
 });
 
 Template.adminFeatureKeyModifyForm.events({
-  "submit .feature-key-modify-form"(evt) {
-    evt.preventDefault();
-    evt.stopPropagation();
+  "click button.feature-key-upload-button"(evt) {
     Template.instance().showForm.set("update");
   },
 

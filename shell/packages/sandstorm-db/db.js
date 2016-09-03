@@ -1998,7 +1998,7 @@ _.extend(SandstormDb.prototype, {
     });
   },
 
-  deletePendingAccounts: function (deletionCoolingOffTime, backend) {
+  deletePendingAccounts: function (deletionCoolingOffTime, backend, cb) {
     check(deletionCoolingOffTime, Number);
 
     const queryDate = new Date(Date.now() - deletionCoolingOffTime);
@@ -2007,6 +2007,7 @@ _.extend(SandstormDb.prototype, {
       "suspended.timestamp": { $lt: queryDate },
     }).forEach((user) => {
       this.deleteAccount(user._id, backend);
+      if (cb) cb(this, user);
     });
   },
 });

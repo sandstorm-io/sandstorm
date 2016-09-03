@@ -90,10 +90,16 @@ Meteor.methods({
       throw new Meteor.Error(400, "Admins cannot suspend their own accounts from the admin page. Please go to your account setttings.");
     }
 
-    this.connection.sandstormDb.suspendAccount(userId, Meteor.userId(), willDelete);
+    const db = this.connection.sandstormDb;
+
+    db.suspendAccount(userId, Meteor.userId(), willDelete);
 
     if (willDelete) {
-      sendDeletionEmails(this.connection.sandstormDb, userId, Meteor.userId());
+      sendDeletionEmails(db, userId, Meteor.userId());
+    }
+
+    if (global.BlackrockPayments) {
+      BlackrockPayments.suspendAccount(db, userId);
     }
   },
 
@@ -111,6 +117,10 @@ Meteor.methods({
     db.suspendAccount(Meteor.userId(), null, true);
 
     sendDeletionEmails(db, Meteor.userId());
+
+    if (global.BlackrockPayments) {
+      BlackrockPayments.suspendAccount(db, Meteor.userId());
+    }
   },
 
   unsuspendAccount(userId) {

@@ -1162,7 +1162,7 @@ body>.popup {
       // HACK. This should be computed from the max-height of the containing div. Is that even
       // possible?
     }
-    table.people, table.shared-links {
+    table.people, table.shared-links, table.grains {
       border: 1px solid #ddd;
       border-right: none;
       border-left: none;

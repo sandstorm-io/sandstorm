@@ -259,19 +259,24 @@
 <template name="whoHasAccess">
    <img src="/people.svg">
 </template>
+
 <template name="whoHasAccessPopup">
   <h4 class="who-has-access">Who has access</h4>
   <div class="tables-container">
     <h5>People</h5>
-    {{#if transitiveShares.empty}}
+    {{#if transitiveShares.identityOwnedShares.empty}}
       {{#if existingShareTokens}}
         <p>No logged-in users have visited your links yet.</p>
       {{else}}
-        <p>You have granted access to nobody.</p>
+        {{#if transitiveShares.grainOwnedShares.empty}}
+          <p>You have granted access to nobody.</p>
+        {{else}}
+          <p>No logged-in users have visited your links yet.</p>
+        {{/if}}
       {{/if}}
     {{else}}
       <table class="people">
-        {{#each transitiveShares}}
+        {{#each transitiveShares.identityOwnedShares}}
           <tr>
             <td> {{displayName recipient}} </td>
             <td> added by
@@ -292,6 +297,31 @@
         {{/each}}
       </table>
     {{/if}}
+    {{#unless transitiveShares.grainOwnedShares.empty}}
+      <h5>Grains</h5>
+      <table class="grains">
+        {{#each transitiveShares.grainOwnedShares}}
+          <tr>
+            <td>{{grainTitle recipient}}</td>
+            <td> added by
+              <ul>
+                {{#each dedupedShares}}
+                  <li>
+                    {{displayName identityId}}
+                    {{#if isCurrentIdentity identityId}}
+                      <button class="revoke-access" title="Revoke" data-recipient="{{../recipient}}">
+                        Revoke
+                      </button>
+                    {{/if}}
+                  </li>
+                {{/each}}
+              </ul>
+            </td>
+          </tr>
+        {{/each}}
+      </table>
+    {{/unless}}
+
     {{#if existingShareTokens}}
       <h5>Sharing Links</h5>
       <table class="shared-links">

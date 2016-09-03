@@ -57,10 +57,6 @@ If you did not request this deletion, please contact the server administrator im
   }
 
   Meteor.users.find({ isAdmin: true }).forEach((user) => {
-    if (user._id === byAdminUserId) {
-      return; // Skip the admin who initiated the deletion.
-    }
-
     const email = _.findWhere(SandstormDb.getUserEmails(user), { primary: true });
     if (!email) {
       console.error("No email found for admin with userId:", user._id);

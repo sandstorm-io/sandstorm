@@ -422,9 +422,6 @@
       &:not(:last-child) {
         border-bottom: 1px solid #dddddd;
       }
-      &:hover {
-        background-color: $default-table-row-background-color-hover;
-      }
 
       .admin-user-identity-body-cell {
         display: inline-block;

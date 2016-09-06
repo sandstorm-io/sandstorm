@@ -150,7 +150,7 @@ Accounts.onPageLoadLogin(function (attemptInfo) {
 });
 
 Template._loginButtonsLoggedOutDropdown.onCreated(function () {
-  this._topbar = Template.parentData(3);
+  this._topbar = globalTopbar;
   this._choseLogin = new ReactiveVar(false);
 });
 

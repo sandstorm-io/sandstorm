@@ -497,19 +497,9 @@ Template.sandstormGrainTable.onCreated(function () {
       if (this._selectedSharedWithMeIds.get(grain._id)) {
         sharedResult += 1;
       }
-
-      this._numMineSelectedShown.set(mineResult);
-      this._numSharedWithMeSelectedShown.set(sharedResult);
-
-      if (this.view.isRendered) {
-        let el = this.find(".select-all-grains>input");
-        if (mineResult == 0 && sharedResult == 0) {
-          el.checked = false;
-        } else {
-          el.checked = true;
-        }
-      }
     });
+    this._numMineSelectedShown.set(mineResult);
+    this._numSharedWithMeSelectedShown.set(sharedResult);
   });
 });
 
@@ -530,6 +520,12 @@ Template.sandstormGrainTable.helpers({
     } else {
       return "unselect all";
     }
+  },
+
+  selectAllChecked: function () {
+    const instance = Template.instance();
+    return instance._numMineSelectedShown.get() > 0 ||
+        instance._numSharedWithMeSelectedShown.get() > 0;
   },
 
   isChecked: function () {
@@ -619,6 +615,7 @@ Template.sandstormGrainTable.events({
   },
 
   "click .select-all-grains>input": function (event, instance) {
+    event.preventDefault();
     if (instance._numMineSelectedShown.get() == 0 &&
         instance._numSharedWithMeSelectedShown.get() == 0) {
       // select all

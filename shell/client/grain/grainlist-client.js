@@ -169,7 +169,7 @@ const sortGrains = function (grains, sortRules) {
 const filteredGrains = function (showTrash) {
   const ref = Template.instance().data;
   const db = ref._db;
-  const grains = db.currentUserGrains({ includeTrashOnly: showTrash }).fetch();
+  const grains = db.currentUserGrains({ includeTrashOnly: !!showTrash }).fetch();
   const grainIdSet = {};
   grains.map((g) => grainIdSet[g._id] = true);
 

@@ -412,7 +412,9 @@ interface SessionContext {
   # callback to the grain will occur. You can listen for such a message like so:
   # window.addEventListener("message", function (event) {
   #   if (event.data.rpcId === myRpcId && !event.data.error) {
-  #     // pass event.data.token to your app's server and call SessionContext.claimRequest() with it
+  #     // Pass `event.data.token` to your app's server and call SessionContext.claimRequest() with
+  #     // it. The token is guaranteed to be a URL-safe string. That is, passing it through
+  #     // encodeURIComponent() should be a no-op.
   #   }
   # }, false)
 

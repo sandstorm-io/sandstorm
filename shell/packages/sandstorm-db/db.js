@@ -732,12 +732,13 @@ if (Meteor.isServer) {
     // Data needed for isSignedUp() and isAdmin() to work.
 
     if (this.userId) {
+      const db = this.connection.sandstormDb;
       return [
         Meteor.users.find({ _id: this.userId },
             { fields: { signupKey: 1, isAdmin: 1, expires: 1, storageUsage: 1,
                       plan: 1, planBonus: 1, hasCompletedSignup: 1, experiments: 1,
                       referredIdentityIds: 1, cachedStorageQuota: 1, suspended: 1, }, }),
-        Plans.find(),
+        db.collections.plans.find(),
       ];
     } else {
       return [];
@@ -960,12 +961,12 @@ SandstormDb = function (quotaManager) {
     apiTokens: ApiTokens,
     apiHosts: ApiHosts,
     notifications: Notifications,
-    // Omitted: ActivitySubscriptions
+    activitySubscriptions: ActivitySubscriptions,
     statsTokens: StatsTokens,
     misc: Misc,
     settings: Settings,
     migrations: Migrations,
-    // Omitted: StaticAssets
+    staticAssets: StaticAssets,
     assetUploadTokens: AssetUploadTokens,
     plans: Plans,
     appIndex: AppIndex,
@@ -991,7 +992,7 @@ _.extend(SandstormDb.prototype, {
   apiHostIdForToken: apiHostIdForToken,
   makeApiHost: makeApiHost,
   allowDevAccounts() {
-    const setting = Settings.findOne({ _id: "devAccounts" });
+    const setting = this.collections.settings.findOne({ _id: "devAccounts" });
     if (setting) {
       return setting.value;
     } else {
@@ -1119,7 +1120,7 @@ if (Meteor.isServer) {
       // Clean up ApiHosts for webkey tokens.
       if (token.hasApiHost) {
         const hash2 = Crypto.createHash("sha256").update(token._id).digest("base64");
-        ApiHosts.remove({ hash2: hash2 });
+        this.collections.apiHosts.remove({ hash2: hash2 });
       }
     });
 
@@ -1247,7 +1248,7 @@ _.extend(SandstormDb.prototype, {
 
   getPlan(id) {
     check(id, String);
-    const plan = Plans.findOne(id);
+    const plan = this.collections.plans.findOne(id);
     if (!plan) {
       throw new Error("no such plan: " + id);
     }
@@ -1256,12 +1257,12 @@ _.extend(SandstormDb.prototype, {
   },
 
   listPlans() {
-    return Plans.find({}, { sort: { price: 1 } });
+    return this.collections.plans.find({}, { sort: { price: 1 } });
   },
 
   getMyPlan() {
     const user = Meteor.user();
-    return user && Plans.findOne(user.plan || "free");
+    return user && this.collections.plans.findOne(user.plan || "free");
   },
 
   getMyReferralBonus(user) {
@@ -1281,7 +1282,7 @@ _.extend(SandstormDb.prototype, {
         return user.pseudoUsage;
       } else {
         return {
-          grains: Grains.find({ userId: user._id }).count(),
+          grains: this.collections.grains.find({ userId: user._id }).count(),
           storage: user.storageUsage || 0,
           compute: 0,  // not tracked yet
         };
@@ -1299,7 +1300,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   getSetting(name) {
-    const setting = Settings.findOne(name);
+    const setting = this.collections.settings.findOne(name);
     return setting && setting.value;
   },
 
@@ -1316,10 +1317,10 @@ _.extend(SandstormDb.prototype, {
     check(userId, String);
     check(packageId, String);
 
-    const pack = Packages.findOne({ _id: packageId });
+    const pack = this.collections.packages.findOne({ _id: packageId });
     if (pack) {
       // Remove old versions.
-      const numRemoved = UserActions.remove({ userId: userId, appId: pack.appId });
+      const numRemoved = this.collections.userActions.remove({ userId: userId, appId: pack.appId });
 
       // Install new.
       const actions = pack.manifest.actions;
@@ -1337,7 +1338,7 @@ _.extend(SandstormDb.prototype, {
             nounPhrase: action.nounPhrase,
             command: action.command,
           };
-          UserActions.insert(userAction);
+          this.collections.userActions.insert(userAction);
         } else {
           // TODO(someday):  Implement actions with capability inputs.
         }
@@ -1369,12 +1370,12 @@ _.extend(SandstormDb.prototype, {
   },
 
   getServerTitle() {
-    const setting = Settings.findOne({ _id: "serverTitle" });
+    const setting = this.collections.settings.findOne({ _id: "serverTitle" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
   getSmtpConfig() {
-    const setting = Settings.findOne({ _id: "smtpConfig" });
+    const setting = this.collections.settings.findOne({ _id: "smtpConfig" });
     return setting ? setting.value : undefined; // undefined if subscription is not ready.
   },
 
@@ -1456,58 +1457,58 @@ _.extend(SandstormDb.prototype, {
   },
 
   getLdapUrl() {
-    const setting = Settings.findOne({ _id: "ldapUrl" });
+    const setting = this.collections.settings.findOne({ _id: "ldapUrl" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
   getLdapBase() {
-    const setting = Settings.findOne({ _id: "ldapBase" });
+    const setting = this.collections.settings.findOne({ _id: "ldapBase" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
   getLdapDnPattern() {
-    const setting = Settings.findOne({ _id: "ldapDnPattern" });
+    const setting = this.collections.settings.findOne({ _id: "ldapDnPattern" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
   getLdapSearchUsername() {
-    const setting = Settings.findOne({ _id: "ldapSearchUsername" });
+    const setting = this.collections.settings.findOne({ _id: "ldapSearchUsername" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
   getLdapNameField() {
-    const setting = Settings.findOne({ _id: "ldapNameField" });
+    const setting = this.collections.settings.findOne({ _id: "ldapNameField" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
   getLdapEmailField() {
-    const setting = Settings.findOne({ _id: "ldapEmailField" });
+    const setting = this.collections.settings.findOne({ _id: "ldapEmailField" });
     return setting ? setting.value : "mail";
     // default to "mail". This setting was added later, and so could potentially be unset.
   },
 
   getLdapExplicitDnSelected() {
-    const setting = Settings.findOne({ _id: "ldapExplicitDnSelected" });
+    const setting = this.collections.settings.findOne({ _id: "ldapExplicitDnSelected" });
     return setting && setting.value;
   },
 
   getLdapFilter() {
-    const setting = Settings.findOne({ _id: "ldapFilter" });
+    const setting = this.collections.settings.findOne({ _id: "ldapFilter" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
   getLdapSearchBindDn() {
-    const setting = Settings.findOne({ _id: "ldapSearchBindDn" });
+    const setting = this.collections.settings.findOne({ _id: "ldapSearchBindDn" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
   getLdapSearchBindPassword() {
-    const setting = Settings.findOne({ _id: "ldapSearchBindPassword" });
+    const setting = this.collections.settings.findOne({ _id: "ldapSearchBindPassword" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
   getOrganizationMembership() {
-    const setting = Settings.findOne({ _id: "organizationMembership" });
+    const setting = this.collections.settings.findOne({ _id: "organizationMembership" });
     return setting && setting.value;
   },
 
@@ -1546,7 +1547,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   getOrganizationDisallowGuestsRaw() {
-    const setting = Settings.findOne({ _id: "organizationSettings" });
+    const setting = this.collections.settings.findOne({ _id: "organizationSettings" });
     return setting && setting.value && setting.value.disallowGuests;
   },
 
@@ -1555,7 +1556,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   getOrganizationShareContactsRaw() {
-    const setting = Settings.findOne({ _id: "organizationSettings" });
+    const setting = this.collections.settings.findOne({ _id: "organizationSettings" });
     if (!setting || !setting.value || setting.value.shareContacts === undefined) {
       // default to true if undefined
       return true;
@@ -1565,22 +1566,22 @@ _.extend(SandstormDb.prototype, {
   },
 
   getSamlEntryPoint() {
-    const setting = Settings.findOne({ _id: "samlEntryPoint" });
+    const setting = this.collections.settings.findOne({ _id: "samlEntryPoint" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
   getSamlPublicCert() {
-    const setting = Settings.findOne({ _id: "samlPublicCert" });
+    const setting = this.collections.settings.findOne({ _id: "samlPublicCert" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
   getSamlEntityId() {
-    const setting = Settings.findOne({ _id: "samlEntityId" });
+    const setting = this.collections.settings.findOne({ _id: "samlEntityId" });
     return setting ? setting.value : ""; // empty if subscription is not ready.
   },
 
   getActivitySubscriptions(grainId, threadPath) {
-    return ActivitySubscriptions.find({
+    return this.collections.activitySubscriptions.find({
       grainId: grainId,
       threadPath: threadPath || { $exists: false },
     }, {
@@ -1602,7 +1603,7 @@ _.extend(SandstormDb.prototype, {
     // the fields from the query, but if we try to do { $set: {} } Mongo throws an exception, and
     // if we try to just pass {}, Mongo interprets it as "replace the record with an empty record".
     // What a wonderful query language.
-    ActivitySubscriptions.upsert(record, { $set: record });
+    this.collections.activitySubscriptions.upsert(record, { $set: record });
   },
 
   muteActivity(identityId, grainId, threadPath) {
@@ -1614,7 +1615,7 @@ _.extend(SandstormDb.prototype, {
       record.threadPath = threadPath;
     }
 
-    ActivitySubscriptions.upsert(record, { $set: { mute: true } });
+    this.collections.activitySubscriptions.upsert(record, { $set: { mute: true } });
   },
 
   updateAppIndex() {
@@ -1654,7 +1655,7 @@ _.extend(SandstormDb.prototype, {
                 app.version);
             }
           } else {
-            const result = Packages.findAndModify({
+            const result = this.collections.packages.findAndModify({
               query: { _id: app.packageId },
               update: { $set: { isAutoUpdated: true } },
             });
@@ -1688,11 +1689,11 @@ _.extend(SandstormDb.prototype, {
   },
 
   isPackagePreinstalled(packageId) {
-    return Settings.find({ _id: "preinstalledApps", "value.packageId": packageId }).count() === 1;
+    return this.collections.settings.find({ _id: "preinstalledApps", "value.packageId": packageId }).count() === 1;
   },
 
   getAppIdForPreinstalledPackage(packageId) {
-    const setting = Settings.findOne({ _id: "preinstalledApps", "value.packageId": packageId },
+    const setting = this.collections.settings.findOne({ _id: "preinstalledApps", "value.packageId": packageId },
     { fields: { "value.$": 1 } });
     // value.$ causes mongo to transform the result and only return the first matching element in
     // the array
@@ -1700,7 +1701,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   getPackageIdForPreinstalledApp(appId) {
-    const setting = Settings.findOne({ _id: "preinstalledApps", "value.appId": appId },
+    const setting = this.collections.settings.findOne({ _id: "preinstalledApps", "value.appId": appId },
     { fields: { "value.$": 1 } });
     // value.$ causes mongo to transform the result and only return the first matching element in
     // the array
@@ -1708,7 +1709,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   getReadyPreinstalledAppIds() {
-    const setting = Settings.findOne({ _id: "preinstalledApps" });
+    const setting = this.collections.settings.findOne({ _id: "preinstalledApps" });
     const ret = setting && setting.value || [];
     return _.chain(ret)
             .filter((app) => { return app.status === "ready"; })
@@ -1717,7 +1718,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   getAllPreinstalledAppIds() {
-    const setting = Settings.findOne({ _id: "preinstalledApps" });
+    const setting = this.collections.settings.findOne({ _id: "preinstalledApps" });
     const ret = setting && setting.value || [];
     return _.map(ret, (app) => { return app.appId; });
   },
@@ -1801,7 +1802,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   isPreinstalledAppsReady() {
-    const setting = Settings.findOne({ _id: "preinstalledApps" });
+    const setting = this.collections.settings.findOne({ _id: "preinstalledApps" });
     if (!setting || !setting.value) {
       return true;
     }
@@ -1850,7 +1851,7 @@ _.extend(SandstormDb.prototype, {
     if (this.isQuotaLdapEnabled()) {
       return this.quotaManager.updateUserQuota(this, user);
     } else {
-      const plan = Plans.findOne(user.plan || "free");
+      const plan = this.collections.plans.findOne(user.plan || "free");
       const referralBonus = calculateReferralBonus(user);
       const bonus = user.planBonus || {};
       const userQuota = {
@@ -2163,7 +2164,7 @@ if (Meteor.isServer) {
     return !!s.match(/^[a-zA-Z0-9_]+$/);
   });
 
-  addStaticAsset = function (metadata, content) {
+  SandstormDb.prototype.addStaticAsset = function (metadata, content) {
     // Add a new static asset to the database. If `content` is a string rather than a buffer, it
     // will be automatically gzipped before storage; do not specify metadata.encoding in this case.
 
@@ -2186,7 +2187,7 @@ if (Meteor.isServer) {
     hasher.update(content);
     const hash = hasher.digest("base64");
 
-    const result = StaticAssets.findAndModify({
+    const result = this.collections.staticAssets.findAndModify({
       query: { hash: hash, refcount: { $gte: 1 } },
       update: { $inc: { refcount: 1 } },
       fields: { _id: 1, refcount: 1 },
@@ -2201,14 +2202,12 @@ if (Meteor.isServer) {
       return existing._id;
     }
 
-    return StaticAssets.insert(_.extend({
+    return this.collections.staticAssets.insert(_.extend({
       hash: hash,
       content: content,
       refcount: 1,
     }, metadata));
   };
-
-  SandstormDb.prototype.addStaticAsset = addStaticAsset;
 
   SandstormDb.prototype.refStaticAsset = function (id) {
     // Increment the refcount on an existing static asset. Returns the asset on success.
@@ -2220,7 +2219,7 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    const result = StaticAssets.findAndModify({
+    const result = this.collections.staticAssets.findAndModify({
       query: { hash: hash },
       update: { $inc: { refcount: 1 } },
       fields: { _id: 1, content: 1, mimeType: 1 },
@@ -2243,7 +2242,7 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    const result = StaticAssets.findAndModify({
+    const result = this.collections.staticAssets.findAndModify({
       query: { _id: id },
       update: { $inc: { refcount: -1 } },
       fields: { _id: 1, refcount: 1 },
@@ -2258,7 +2257,7 @@ if (Meteor.isServer) {
     if (!existing) {
       console.error(new Error("unrefStaticAsset() called on asset that doesn't exist").stack);
     } else if (existing.refcount <= 0) {
-      StaticAssets.remove({ _id: existing._id });
+      this.collections.staticAssets.remove({ _id: existing._id });
     }
   };
 
@@ -2267,7 +2266,7 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    const asset = StaticAssets.findOne(id, { fields: { _id: 0, mimeType: 1, encoding: 1, content: 1 } });
+    const asset = this.collections.staticAssets.findOne(id, { fields: { _id: 0, mimeType: 1, encoding: 1, content: 1 } });
     if (asset) {
       // TODO(perf): Mongo converts buffers to something else. Figure out a way to avoid a copy
       //   here.
@@ -2283,7 +2282,7 @@ if (Meteor.isServer) {
       { loginLogo: {} },
     ));
 
-    return AssetUploadTokens.insert({
+    return this.collections.assetUploadTokens.insert({
       purpose: purpose,
       expires: new Date(Date.now() + 300000),  // in 5 minutes
     });
@@ -2295,7 +2294,7 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    const result = AssetUploadTokens.findAndModify({
+    const result = this.collections.assetUploadTokens.findAndModify({
       query: { _id: id },
       remove: true,
     });
@@ -2335,9 +2334,9 @@ if (Meteor.isServer) {
     check(type, Match.OneOf("grain", "demoGrain"));
 
     let numDeleted = 0;
-    Grains.find(query).forEach((grain) => {
+    this.collections.grains.find(query).forEach((grain) => {
       waitPromise(backend.deleteGrain(grain._id, grain.userId));
-      numDeleted += Grains.remove({ _id: grain._id });
+      numDeleted += this.collections.grains.remove({ _id: grain._id });
       this.removeApiTokens({
         grainId: grain._id,
         $or: [
@@ -2348,10 +2347,10 @@ if (Meteor.isServer) {
 
       this.removeApiTokens({ "owner.grain.grainId": grain._id });
 
-      ActivitySubscriptions.remove({ grainId: grain._id });
+      this.collections.activitySubscriptions.remove({ grainId: grain._id });
 
       if (grain.lastUsed) {
-        DeleteStats.insert({
+        this.collections.deleteStats.insert({
           type: "grain",  // Demo grains can never get here!
           lastActive: grain.lastUsed,
           appId: grain.appId,
@@ -2409,7 +2408,7 @@ if (Meteor.isServer) {
       return packageCache[packageId];
     }
 
-    const pkg = Packages.findOne(packageId);
+    const pkg = this.collections.packages.findOne(packageId);
     if (pkg && pkg.status === "ready") {
       packageCache[packageId] = pkg;
     }
@@ -2419,9 +2418,9 @@ if (Meteor.isServer) {
 
   SandstormDb.prototype.deleteUnusedPackages = function (appId) {
     check(appId, String);
-    Packages.find({ appId: appId }).forEach((pkg) => {
+    this.collections.packages.find({ appId: appId }).forEach((pkg) => {
       // Mark package for possible deletion;
-      Packages.update({ _id: pkg._id, status: "ready" }, { $set: { shouldCleanup: true } });
+      this.collections.packages.update({ _id: pkg._id, status: "ready" }, { $set: { shouldCleanup: true } });
     });
   };
 
@@ -2488,11 +2487,11 @@ if (Meteor.isServer) {
       packageId: { $ne: packageId },
     };
 
-    Grains.find(selector).forEach(function (grain) {
+    this.collections.grains.find(selector).forEach(function (grain) {
       backend.shutdownGrain(grain._id, grain.userId);
     });
 
-    Grains.update(selector, {
+    this.collections.grains.update(selector, {
       $set: { appVersion: version, packageId: packageId, packageSalt: Random.secret() },
     }, { multi: true });
   };
@@ -2508,11 +2507,11 @@ if (Meteor.isServer) {
     };
 
     if (retryFailed) {
-      Packages.update({ _id: packageId, status: "failed" }, { $set: fields });
+      this.collections.packages.update({ _id: packageId, status: "failed" }, { $set: fields });
     } else {
       try {
         fields._id = packageId;
-        Packages.insert(fields);
+        this.collections.packages.insert(fields);
       } catch (err) {
         console.error("Simultaneous startInstall()s?", err.stack);
       }
@@ -2575,7 +2574,7 @@ if (Meteor.isServer) {
           proof.status = "unverified";
         });
 
-        KeybaseProfiles.update(keyFingerprint, { $set: record }, { upsert: true });
+        this.collections.keybaseProfiles.update(keyFingerprint, { $set: record }, { upsert: true });
       } else {
         // Keybase reports no match, so remove what we know of this user. We don't want to remove
         // the item entirely from the cache as this will cause us to repeatedly re-fetch the data
@@ -2583,7 +2582,7 @@ if (Meteor.isServer) {
         //
         // TODO(someday): We could perhaps keep the proofs if we can still verify them directly,
         //   but at present we don't have the ability to verify proofs.
-        KeybaseProfiles.update(keyFingerprint,
+        this.collections.keybaseProfiles.update(keyFingerprint,
             { $unset: { displayName: "", handle: "", proofs: "" } }, { upsert: true });
       }
     });
@@ -2593,16 +2592,16 @@ if (Meteor.isServer) {
     // If there is an *unused* account that has `identityId` as a login identity, deletes it.
 
     check(identityId, String);
-    const account = Meteor.users.findOne({ "loginIdentities.id": identityId });
+    const account = this.collections.users.findOne({ "loginIdentities.id": identityId });
     if (account &&
         account.loginIdentities.length == 1 &&
         account.nonloginIdentities.length == 0 &&
-        !Grains.findOne({ userId: account._id }) &&
-        !ApiTokens.findOne({ accountId: account._id }) &&
+        !this.collections.grains.findOne({ userId: account._id }) &&
+        !this.collections.apiTokens.findOne({ accountId: account._id }) &&
         (!account.plan || account.plan === "free") &&
         !(account.payments && account.payments.id) &&
-        !Contacts.findOne({ ownerId: account._id })) {
-      Meteor.users.remove({ _id: account._id });
+        !this.collections.contacts.findOne({ ownerId: account._id })) {
+      this.collections.users.remove({ _id: account._id });
       backend.deleteUser(account._id);
     }
   };
@@ -2787,10 +2786,10 @@ Meteor.methods({
   removeUserAction(actionId) {
     check(actionId, String);
     if (this.isSimulation) {
-      UserActions.remove({ _id: actionId });
+      this.collections.userActions.remove({ _id: actionId });
     } else {
       if (this.userId) {
-        const result = UserActions.findAndModify({
+        const result = this.collections.userActions.findAndModify({
           query: { _id: actionId, userId: this.userId },
           remove: true,
         });

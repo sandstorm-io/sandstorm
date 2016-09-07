@@ -1118,9 +1118,57 @@ tryProxyRequest = (hostId, req, res) => {
 
     return Promise.resolve(true);
   } else {
-    const isAlreadyOpened = req.headers.cookie && req.headers.cookie.indexOf("sandstorm-sid=") !== -1;
+    const isAlreadyOpened = req.headers.cookie &&
+        req.headers.cookie.indexOf("sandstorm-sid=") !== -1;
+
     return getProxyForHostId(hostId, isAlreadyOpened).then((proxy) => {
       if (proxy) {
+        // Let's do some CSRF defense.
+        const expectedOrigin = PROTOCOL + "//" + req.headers.host;
+        const mainUrl = process.env.ROOT_URL;
+        const origin = req.headers.origin;
+        const referer = req.headers.referer;
+        if (origin) {
+          // If an origin header was provided, then it must be accurate. Note that Chrome and
+          // Safari always send an Origin header on non-GET requests (even same-origin), and
+          // therefore on those browsers this rule will block all CSRF attacks. Unfortunately,
+          // a patch to add this behavior to Firefox has stalled:
+          //     https://bugzilla.mozilla.org/show_bug.cgi?id=446344
+          // I haven't found any information on IE/Edge's behavior.
+          if (origin !== expectedOrigin) {
+            throw new Meteor.Error(403, "Blocked illegal cross-origin request from: " + origin);
+          }
+        } else if (referer) {
+          // Mark that we've seed a Referer header on this host, which indicates that the user's
+          // browser is not suppressing them.
+          proxy.seenReferer = true;
+
+          // Deny requests coming from an external referer, since there is no legitimate use case
+          // for these. Note of course that an attacker can trivially suppress the referer header
+          // in practice, so this check alone does not give us any security benefit if we accept
+          // requests that lack a referrer.
+          if (referer != expectedOrigin && !referer.startsWith(expectedOrigin + "/") &&
+              referer != mainUrl && !referer.startsWith(mainUrl + "/")) {
+            throw new Meteor.Error(403, "Blocked illegal cross-origin referral from: " + referer);
+          }
+        } else {
+          // We saw neither an Origin nor a Referer header.
+          if (req.method !== "GET" && req.method !== "HEAD") {
+            // This is possibly a side-effecting request, meaning we should worry about CSRF.
+            //
+            // Note that we'll never get to this branch for Chrome or Safari since they would have
+            // sent an Origin header.
+
+            if (!proxy.wroteCsrfWarning) {
+              console.warn(
+                  "Note: Observed session for which auto-CSRF-protection couldn't be applied.",
+                  "seenReferer:", !!proxy.seenReferer, "method:", req.method,
+                  "path:", req.url, "UA:", req.headers["user-agent"]);
+              proxy.wroteCsrfWarning = true;
+            }
+          }
+        }
+
         proxy.requestHandler(req, res);
         return true;
       } else {

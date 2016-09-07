@@ -966,7 +966,7 @@ SandstormDb = function (quotaManager) {
     settings: Settings,
     migrations: Migrations,
     // Omitted: StaticAssets
-    // Omitted: AssetUploadTokens
+    assetUploadTokens: AssetUploadTokens,
     plans: Plans,
     appIndex: AppIndex,
     keybaseProfiles: KeybaseProfiles,
@@ -2313,12 +2313,9 @@ if (Meteor.isServer) {
     }
   };
 
-  function cleanupExpiredAssetUploads() {
-    AssetUploadTokens.remove({ expires: { $lt: Date.now() } });
-  }
-
-  // Cleanup tokens every hour.
-  SandstormDb.periodicCleanup(3600000, cleanupExpiredAssetUploads);
+  SandstormDb.prototype.cleanupExpiredAssetUploads = function () {
+    this.collections.assetUploadTokens.remove({ expires: { $lt: Date.now() } });
+  };
 
   // TODO(cleanup): lift this out of the package so it can share with the ones in async-helpers.js
   const Future = Npm.require("fibers/future");

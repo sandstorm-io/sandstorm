@@ -45,6 +45,9 @@ Meteor.onConnection((connection) => {
 SandstormDb.periodicCleanup(5 * 60 * 1000, SandstormPermissions.cleanupSelfDestructing(globalDb));
 SandstormDb.periodicCleanup(10 * 60 * 1000,
                             SandstormPermissions.cleanupClientPowerboxTokens(globalDb));
+SandstormDb.periodicCleanup(60 * 60 * 1000, () => {
+  globalDb.cleanupExpiredAssetUploads();
+});
 SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
   SandstormAutoupdateApps.updateAppIndex(globalDb);
 });

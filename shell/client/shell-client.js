@@ -921,8 +921,4 @@ Router.map(function () {
       }
     },
   });
-
-  this.route("accountUsage", {
-    path: "/account/usage",
-  });
 });

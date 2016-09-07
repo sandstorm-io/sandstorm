@@ -927,16 +927,6 @@ if (Meteor.isServer) {
   };
 }
 
-allowDevAccounts = function () {
-  const setting = Settings.findOne({ _id: "devAccounts" });
-  if (setting) {
-    return setting.value;
-  } else {
-    return Meteor.settings && Meteor.settings.public &&
-           Meteor.settings.public.allowDevAccounts;
-  }
-};
-
 sendReferralProgramNotification = function (userId) {
   Notifications.upsert({
     userId: userId,
@@ -947,14 +937,6 @@ sendReferralProgramNotification = function (userId) {
     timestamp: new Date(),
     isUnread: true,
   });
-};
-
-roleAssignmentPattern = {
-  none: Match.Optional(null),
-  allAccess: Match.Optional(null),
-  roleId: Match.Optional(Match.Integer),
-  addPermissions: Match.Optional([Boolean]),
-  removePermissions: Match.Optional([Boolean]),
 };
 
 SandstormDb = function (quotaManager) {
@@ -1020,8 +1002,23 @@ _.extend(SandstormDb.prototype, {
   apiHostIdHashForToken: apiHostIdHashForToken,
   apiHostIdForToken: apiHostIdForToken,
   makeApiHost: makeApiHost,
-  allowDevAccounts: allowDevAccounts,
-  roleAssignmentPattern: roleAssignmentPattern,
+  allowDevAccounts() {
+    const setting = Settings.findOne({ _id: "devAccounts" });
+    if (setting) {
+      return setting.value;
+    } else {
+      return Meteor.settings && Meteor.settings.public &&
+             Meteor.settings.public.allowDevAccounts;
+    }
+  },
+
+  roleAssignmentPattern: {
+    none: Match.Optional(null),
+    allAccess: Match.Optional(null),
+    roleId: Match.Optional(Match.Integer),
+    addPermissions: Match.Optional([Boolean]),
+    removePermissions: Match.Optional([Boolean]),
+  },
 
   isDemoUser: function () {
     // Returns true if this is a demo user.

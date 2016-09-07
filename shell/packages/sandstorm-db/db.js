@@ -1020,7 +1020,7 @@ _.extend(SandstormDb.prototype, {
     removePermissions: Match.Optional([Boolean]),
   },
 
-  isDemoUser: function () {
+  isDemoUser() {
     // Returns true if this is a demo user.
 
     const user = Meteor.user();
@@ -1031,12 +1031,12 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  isSignedUp: function () {
+  isSignedUp() {
     const user = Meteor.user();
     return this.isAccountSignedUp(user);
   },
 
-  isAccountSignedUp: function (user) {
+  isAccountSignedUp(user) {
     // Returns true if the user has presented an invite key.
 
     if (!user) return false;  // not signed in
@@ -1054,12 +1054,12 @@ _.extend(SandstormDb.prototype, {
     return false;
   },
 
-  isSignedUpOrDemo: function () {
+  isSignedUpOrDemo() {
     const user = Meteor.user();
     return this.isAccountSignedUpOrDemo(user);
   },
 
-  isAccountSignedUpOrDemo: function (user) {
+  isAccountSignedUpOrDemo(user) {
     if (!user) return false;  // not signed in
 
     if (!user.loginIdentities) return false;  // not an account
@@ -1075,7 +1075,7 @@ _.extend(SandstormDb.prototype, {
     return false;
   },
 
-  isIdentityInOrganization: function (identity) {
+  isIdentityInOrganization(identity) {
     if (!identity || !identity.services) {
       return false;
     }
@@ -1104,7 +1104,7 @@ _.extend(SandstormDb.prototype, {
     return false;
   },
 
-  isUserInOrganization: function (user) {
+  isUserInOrganization(user) {
     if (!this.isFeatureKeyValid()) {
       return false;
     }
@@ -1153,14 +1153,14 @@ if (Meteor.isServer) {
 // Below this point are newly-written or refactored functions.
 
 _.extend(SandstormDb.prototype, {
-  getUser: function getUser(userId) {
+  getUser(userId) {
     check(userId, Match.OneOf(String, undefined, null));
     if (userId) {
       return Meteor.users.findOne(userId);
     }
   },
 
-  getIdentity: function getIdentity(identityId) {
+  getIdentity(identityId) {
     check(identityId, String);
     const identity = Meteor.users.findOne({ _id: identityId });
     if (identity) {
@@ -1171,7 +1171,7 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  userHasIdentity: function (userId, identityId) {
+  userHasIdentity(userId, identityId) {
     check(userId, String);
     check(identityId, String);
 
@@ -1181,7 +1181,7 @@ _.extend(SandstormDb.prototype, {
     return SandstormDb.getUserIdentityIds(user).indexOf(identityId) != -1;
   },
 
-  userGrains: function userGrains(userId, options) {
+  userGrains(userId, options) {
     check(userId, Match.OneOf(String, undefined, null));
     check(options, Match.OneOf(undefined, null,
         { includeTrashOnly: Match.Optional(Boolean), includeTrash: Match.Optional(Boolean), }));
@@ -1198,16 +1198,16 @@ _.extend(SandstormDb.prototype, {
     return this.collections.grains.find(query);
   },
 
-  currentUserGrains: function currentUserGrains(options) {
+  currentUserGrains(options) {
     return this.userGrains(Meteor.userId(), options);
   },
 
-  getGrain: function getGrain(grainId) {
+  getGrain(grainId) {
     check(grainId, String);
     return this.collections.grains.findOne(grainId);
   },
 
-  userApiTokens: function userApiTokens(userId, trashed) {
+  userApiTokens(userId, trashed) {
     check(userId, Match.OneOf(String, undefined, null));
     check(trashed, Match.OneOf(Boolean, undefined, null));
     const identityIds = SandstormDb.getUserIdentityIds(this.getUser(userId));
@@ -1217,23 +1217,23 @@ _.extend(SandstormDb.prototype, {
     });
   },
 
-  currentUserApiTokens: function currentUserApiTokens(trashed) {
+  currentUserApiTokens(trashed) {
     return this.userApiTokens(Meteor.userId(), trashed);
   },
 
-  userActions: function userActions(user) {
+  userActions(user) {
     return this.collections.userActions.find({ userId: user });
   },
 
-  currentUserActions: function currentUserActions() {
+  currentUserActions() {
     return this.userActions(Meteor.userId());
   },
 
-  iconSrcForPackage: function iconSrcForPackage(pkg, usage) {
+  iconSrcForPackage(pkg, usage) {
     return Identicon.iconSrcForPackage(pkg, usage, httpProtocol + "//" + this.makeWildcardHost("static"));
   },
 
-  getDenormalizedGrainInfo: function getDenormalizedGrainInfo(grainId) {
+  getDenormalizedGrainInfo(grainId) {
     const grain = this.getGrain(grainId);
     let pkg = this.collections.packages.findOne(grain.packageId);
 
@@ -1257,7 +1257,7 @@ _.extend(SandstormDb.prototype, {
     return grainInfo;
   },
 
-  getPlan: function (id) {
+  getPlan(id) {
     check(id, String);
     const plan = Plans.findOne(id);
     if (!plan) {
@@ -1267,16 +1267,16 @@ _.extend(SandstormDb.prototype, {
     return plan;
   },
 
-  listPlans: function () {
+  listPlans() {
     return Plans.find({}, { sort: { price: 1 } });
   },
 
-  getMyPlan: function () {
+  getMyPlan() {
     const user = Meteor.user();
     return user && Plans.findOne(user.plan || "free");
   },
 
-  getMyReferralBonus: function (user) {
+  getMyReferralBonus(user) {
     // This function is called from the server and from the client, similar to getMyPlan().
     //
     // The parameter may be omitted in which case the current user is assumed.
@@ -1284,7 +1284,7 @@ _.extend(SandstormDb.prototype, {
     return calculateReferralBonus(user || Meteor.user());
   },
 
-  getMyUsage: function (user) {
+  getMyUsage(user) {
     user = user || Meteor.user();
     if (user && (Meteor.isServer || user.pseudoUsage)) {
       if (Meteor.isClient) {
@@ -1303,19 +1303,19 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  isUninvitedFreeUser: function () {
+  isUninvitedFreeUser() {
     if (!Meteor.settings.public.allowUninvited) return false;
 
     const user = Meteor.user();
     return user && !user.expires && (!user.plan || user.plan === "free");
   },
 
-  getSetting: function (name) {
+  getSetting(name) {
     const setting = Settings.findOne(name);
     return setting && setting.value;
   },
 
-  getSettingWithFallback: function (name, fallbackValue) {
+  getSettingWithFallback(name, fallbackValue) {
     const value = this.getSetting(name);
     if (value === undefined) {
       return fallbackValue;
@@ -1324,7 +1324,7 @@ _.extend(SandstormDb.prototype, {
     return value;
   },
 
-  addUserActions: function (userId, packageId, simulation) {
+  addUserActions(userId, packageId, simulation) {
     check(userId, String);
     check(packageId, String);
 
@@ -1361,7 +1361,7 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  sendAdminNotification: function (message, link) {
+  sendAdminNotification(message, link) {
     Meteor.users.find({ isAdmin: true }, { fields: { _id: 1 } }).forEach(function (user) {
       Notifications.insert({
         admin: {
@@ -1376,11 +1376,11 @@ _.extend(SandstormDb.prototype, {
     });
   },
 
-  getKeybaseProfile: function (keyFingerprint) {
+  getKeybaseProfile(keyFingerprint) {
     return this.collections.keybaseProfiles.findOne(keyFingerprint) || {};
   },
 
-  getServerTitle: function () {
+  getServerTitle() {
     const setting = Settings.findOne({ _id: "serverTitle" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
@@ -1390,12 +1390,12 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : undefined; // undefined if subscription is not ready.
   },
 
-  getReturnAddress: function () {
+  getReturnAddress() {
     const config = this.getSmtpConfig();
     return config && config.returnAddress || ""; // empty if subscription is not ready.
   },
 
-  getReturnAddressWithDisplayName: function (identityId) {
+  getReturnAddressWithDisplayName(identityId) {
     check(identityId, String);
     const identity = this.getIdentity(identityId);
     const displayName = identity.profile.name + " (via " + this.getServerTitle() + ")";
@@ -1407,7 +1407,7 @@ _.extend(SandstormDb.prototype, {
     return "\"" + sanitized + "\" <" + this.getReturnAddress() + ">";
   },
 
-  getPrimaryEmail: function (accountId, identityId) {
+  getPrimaryEmail(accountId, identityId) {
     check(accountId, String);
     check(identityId, String);
 
@@ -1424,7 +1424,7 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  incrementDailySentMailCount: function (accountId) {
+  incrementDailySentMailCount(accountId) {
     check(accountId, String);
 
     const DAILY_LIMIT = 50;
@@ -1451,122 +1451,122 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  isFeatureKeyValid: function () {
+  isFeatureKeyValid() {
     const featureKey = this.currentFeatureKey();
     return !!featureKey;
   },
 
-  isFeatureKeyValidAndNotExpired: function () {
+  isFeatureKeyValidAndNotExpired() {
     const featureKey = this.currentFeatureKey();
     return featureKey && (parseInt(featureKey.expires) > (Date.now() / 1000));
   },
 
-  isFeatureKeyOptedIntoStats: function () {
+  isFeatureKeyOptedIntoStats() {
     const featureKey = this.currentFeatureKey();
     return featureKey && featureKey.isTrial && parseInt(featureKey.issued) > 1472601600;
     // 1472601600 is 2016 Aug 31 in seconds since the epoch
   },
 
-  getLdapUrl: function () {
+  getLdapUrl() {
     const setting = Settings.findOne({ _id: "ldapUrl" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapBase: function () {
+  getLdapBase() {
     const setting = Settings.findOne({ _id: "ldapBase" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapDnPattern: function () {
+  getLdapDnPattern() {
     const setting = Settings.findOne({ _id: "ldapDnPattern" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapSearchUsername: function () {
+  getLdapSearchUsername() {
     const setting = Settings.findOne({ _id: "ldapSearchUsername" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapNameField: function () {
+  getLdapNameField() {
     const setting = Settings.findOne({ _id: "ldapNameField" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapEmailField: function () {
+  getLdapEmailField() {
     const setting = Settings.findOne({ _id: "ldapEmailField" });
     return setting ? setting.value : "mail";
     // default to "mail". This setting was added later, and so could potentially be unset.
   },
 
-  getLdapExplicitDnSelected: function () {
+  getLdapExplicitDnSelected() {
     const setting = Settings.findOne({ _id: "ldapExplicitDnSelected" });
     return setting && setting.value;
   },
 
-  getLdapFilter: function () {
+  getLdapFilter() {
     const setting = Settings.findOne({ _id: "ldapFilter" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapSearchBindDn: function () {
+  getLdapSearchBindDn() {
     const setting = Settings.findOne({ _id: "ldapSearchBindDn" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapSearchBindPassword: function () {
+  getLdapSearchBindPassword() {
     const setting = Settings.findOne({ _id: "ldapSearchBindPassword" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getOrganizationMembership: function () {
+  getOrganizationMembership() {
     const setting = Settings.findOne({ _id: "organizationMembership" });
     return setting && setting.value;
   },
 
-  getOrganizationEmailEnabled: function () {
+  getOrganizationEmailEnabled() {
     const membership = this.getOrganizationMembership();
     return membership && membership.emailToken && membership.emailToken.enabled;
   },
 
-  getOrganizationEmailDomain: function () {
+  getOrganizationEmailDomain() {
     const membership = this.getOrganizationMembership();
     return membership && membership.emailToken && membership.emailToken.domain;
   },
 
-  getOrganizationGoogleEnabled: function () {
+  getOrganizationGoogleEnabled() {
     const membership = this.getOrganizationMembership();
     return membership && membership.google && membership.google.enabled;
   },
 
-  getOrganizationGoogleDomain: function () {
+  getOrganizationGoogleDomain() {
     const membership = this.getOrganizationMembership();
     return membership && membership.google && membership.google.domain;
   },
 
-  getOrganizationLdapEnabled: function () {
+  getOrganizationLdapEnabled() {
     const membership = this.getOrganizationMembership();
     return membership && membership.ldap && membership.ldap.enabled;
   },
 
-  getOrganizationSamlEnabled: function () {
+  getOrganizationSamlEnabled() {
     const membership = this.getOrganizationMembership();
     return membership && membership.saml && membership.saml.enabled;
   },
 
-  getOrganizationDisallowGuests: function () {
+  getOrganizationDisallowGuests() {
     return this.getOrganizationDisallowGuestsRaw() && this.isFeatureKeyValid();
   },
 
-  getOrganizationDisallowGuestsRaw: function () {
+  getOrganizationDisallowGuestsRaw() {
     const setting = Settings.findOne({ _id: "organizationSettings" });
     return setting && setting.value && setting.value.disallowGuests;
   },
 
-  getOrganizationShareContacts: function () {
+  getOrganizationShareContacts() {
     return this.getOrganizationShareContactsRaw() && this.isFeatureKeyValid();
   },
 
-  getOrganizationShareContactsRaw: function () {
+  getOrganizationShareContactsRaw() {
     const setting = Settings.findOne({ _id: "organizationSettings" });
     if (!setting || !setting.value || setting.value.shareContacts === undefined) {
       // default to true if undefined
@@ -1576,22 +1576,22 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  getSamlEntryPoint: function () {
+  getSamlEntryPoint() {
     const setting = Settings.findOne({ _id: "samlEntryPoint" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getSamlPublicCert: function () {
+  getSamlPublicCert() {
     const setting = Settings.findOne({ _id: "samlPublicCert" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getSamlEntityId: function () {
+  getSamlEntityId() {
     const setting = Settings.findOne({ _id: "samlEntityId" });
     return setting ? setting.value : ""; // empty if subscription is not ready.
   },
 
-  getActivitySubscriptions: function (grainId, threadPath) {
+  getActivitySubscriptions(grainId, threadPath) {
     return ActivitySubscriptions.find({
       grainId: grainId,
       threadPath: threadPath || { $exists: false },
@@ -1600,7 +1600,7 @@ _.extend(SandstormDb.prototype, {
     }).fetch();
   },
 
-  subscribeToActivity: function (identityId, grainId, threadPath) {
+  subscribeToActivity(identityId, grainId, threadPath) {
     // Subscribe the given identity to activity events with the given grainId and (optional)
     // threadPath -- unless the identity has previously muted this grainId/threadPath, in which
     // case do nothing.
@@ -1617,7 +1617,7 @@ _.extend(SandstormDb.prototype, {
     ActivitySubscriptions.upsert(record, { $set: record });
   },
 
-  muteActivity: function (identityId, grainId, threadPath) {
+  muteActivity(identityId, grainId, threadPath) {
     // Mute notifications for the given identity originating from the given grainId and
     // (optional) threadPath.
 
@@ -1629,7 +1629,7 @@ _.extend(SandstormDb.prototype, {
     ActivitySubscriptions.upsert(record, { $set: { mute: true } });
   },
 
-  updateAppIndex: function () {
+  updateAppIndex() {
     const appUpdatesEnabledSetting = this.collections.settings.findOne({ _id: "appUpdatesEnabled" });
     const appUpdatesEnabled = appUpdatesEnabledSetting && appUpdatesEnabledSetting.value;
     if (!appUpdatesEnabled) {
@@ -1699,11 +1699,11 @@ _.extend(SandstormDb.prototype, {
     });
   },
 
-  isPackagePreinstalled: function (packageId) {
+  isPackagePreinstalled(packageId) {
     return Settings.find({ _id: "preinstalledApps", "value.packageId": packageId }).count() === 1;
   },
 
-  getAppIdForPreinstalledPackage: function (packageId) {
+  getAppIdForPreinstalledPackage(packageId) {
     const setting = Settings.findOne({ _id: "preinstalledApps", "value.packageId": packageId },
     { fields: { "value.$": 1 } });
     // value.$ causes mongo to transform the result and only return the first matching element in
@@ -1711,7 +1711,7 @@ _.extend(SandstormDb.prototype, {
     return setting && setting.value && setting.value[0] && setting.value[0].appId;
   },
 
-  getPackageIdForPreinstalledApp: function (appId) {
+  getPackageIdForPreinstalledApp(appId) {
     const setting = Settings.findOne({ _id: "preinstalledApps", "value.appId": appId },
     { fields: { "value.$": 1 } });
     // value.$ causes mongo to transform the result and only return the first matching element in
@@ -1719,7 +1719,7 @@ _.extend(SandstormDb.prototype, {
     return setting && setting.value && setting.value[0] && setting.value[0].packageId;
   },
 
-  getReadyPreinstalledAppIds: function () {
+  getReadyPreinstalledAppIds() {
     const setting = Settings.findOne({ _id: "preinstalledApps" });
     const ret = setting && setting.value || [];
     return _.chain(ret)
@@ -1728,13 +1728,13 @@ _.extend(SandstormDb.prototype, {
             .value();
   },
 
-  getAllPreinstalledAppIds: function () {
+  getAllPreinstalledAppIds() {
     const setting = Settings.findOne({ _id: "preinstalledApps" });
     const ret = setting && setting.value || [];
     return _.map(ret, (app) => { return app.appId; });
   },
 
-  preinstallAppsForUser: function (userId) {
+  preinstallAppsForUser(userId) {
     const appIds = this.getReadyPreinstalledAppIds();
     appIds.forEach((appId) => {
       try {
@@ -1745,13 +1745,13 @@ _.extend(SandstormDb.prototype, {
     });
   },
 
-  setPreinstallAppAsDownloading: function (appId, packageId) {
+  setPreinstallAppAsDownloading(appId, packageId) {
     this.collections.settings.update(
       { _id: "preinstalledApps", "value.appId": appId, "value.packageId": packageId },
       { $set: { "value.$.status": "downloading" } });
   },
 
-  setPreinstallAppAsReady: function (appId, packageId) {
+  setPreinstallAppAsReady(appId, packageId) {
     // This function both sets the appId as ready and updates the packageId for the given appId
     // Setting the packageId is especially useful in installer.js, as it always ensures the
     // latest installed package will be set as ready.
@@ -1760,7 +1760,7 @@ _.extend(SandstormDb.prototype, {
       { $set: { "value.$.status": "ready", "value.$.packageId": packageId } });
   },
 
-  ensureAppPreinstall: function (appId, packageId) {
+  ensureAppPreinstall(appId, packageId) {
     check(appId, String);
     const appIndexUrl = this.collections.settings.findOne({ _id: "appIndexUrl" }).value;
     const pack = this.collections.packages.findOne({ _id: packageId });
@@ -1776,7 +1776,7 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  setPreinstalledApps: function (appAndPackageIds) {
+  setPreinstalledApps(appAndPackageIds) {
     // appAndPackageIds: A List[Object] where each element has fields:
     //     appId: The Packages.appId of the app to install
     //     packageId: The Packages._id of the app to install
@@ -1797,7 +1797,7 @@ _.extend(SandstormDb.prototype, {
     });
   },
 
-  getProductivitySuiteAppIds: function () {
+  getProductivitySuiteAppIds() {
     return [
       "8aspz4sfjnp8u89000mh2v1xrdyx97ytn8hq71mdzv4p4d8n0n3h", // Davros
       "h37dm17aa89yrd8zuqpdn36p6zntumtv08fjpu8a8zrte7q1cn60", // Etherpad
@@ -1806,13 +1806,13 @@ _.extend(SandstormDb.prototype, {
     ];
   },
 
-  getSystemSuiteAppIds: function () {
+  getSystemSuiteAppIds() {
     return [
       "s3u2xgmqwznz2n3apf30sm3gw1d85y029enw5pymx734cnk5n78h", // Collections
     ];
   },
 
-  isPreinstalledAppsReady: function () {
+  isPreinstalledAppsReady() {
     const setting = Settings.findOne({ _id: "preinstalledApps" });
     if (!setting || !setting.value) {
       return true;
@@ -1828,37 +1828,37 @@ _.extend(SandstormDb.prototype, {
     return readyApps.count() === packageIds.length;
   },
 
-  getBillingPromptUrl: function () {
+  getBillingPromptUrl() {
     const setting = this.collections.settings.findOne({ _id: "billingPromptUrl" });
     return setting && setting.value;
   },
 
-  isReferralEnabled: function () {
+  isReferralEnabled() {
     // This function is a bit weird, in that we've transitioned from
     // Meteor.settings.public.quotaEnabled to DB settings. For now,
     // Meteor.settings.public.quotaEnabled implies bothisReferralEnabled and isQuotaEnabled are true.
     return Meteor.settings.public.quotaEnabled;
   },
 
-  isQuotaEnabled: function () {
+  isQuotaEnabled() {
     if (Meteor.settings.public.quotaEnabled) return true;
 
     const setting = this.collections.settings.findOne({ _id: "quotaEnabled" });
     return setting && setting.value && this.isFeatureKeyValid();
   },
 
-  isQuotaLdapEnabled: function () {
+  isQuotaLdapEnabled() {
     const setting = this.collections.settings.findOne({ _id: "quotaLdapEnabled" });
     return setting && setting.value && this.isFeatureKeyValid();
   },
 
-  updateUserQuota: function (user) {
+  updateUserQuota(user) {
     if (this.quotaManager) {
       return this.quotaManager.updateUserQuota(this, user);
     }
   },
 
-  getUserQuota: function (user) {
+  getUserQuota(user) {
     if (this.isQuotaLdapEnabled()) {
       return this.quotaManager.updateUserQuota(this, user);
     } else {
@@ -1874,7 +1874,7 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  isUserOverQuota: function (user) {
+  isUserOverQuota(user) {
     // Return false if user has quota space remaining, true if it is full. When this returns true,
     // we will not allow the user to create new grains, though they may be able to open existing ones
     // which may still increase their storage usage.
@@ -1893,7 +1893,7 @@ _.extend(SandstormDb.prototype, {
     return plan && user.storageUsage && user.storageUsage >= plan.storage && "outOfStorage";
   },
 
-  isUserExcessivelyOverQuota: function (user) {
+  isUserExcessivelyOverQuota(user) {
     // Return true if user is so far over quota that we should prevent their existing grains from
     // running at all.
     //
@@ -1913,7 +1913,7 @@ _.extend(SandstormDb.prototype, {
     return quota && user.storageUsage && user.storageUsage >= quota.storage * 1.2 && "outOfStorage";
   },
 
-  suspendIdentity: function (userId, suspension) {
+  suspendIdentity(userId, suspension) {
     check(userId, String);
     check(suspension, {
       timestamp: Date,
@@ -1926,7 +1926,7 @@ _.extend(SandstormDb.prototype, {
       { $set: { suspended: true } }, { multi: true });
   },
 
-  unsuspendIdentity: function (userId) {
+  unsuspendIdentity(userId) {
     check(userId, String);
 
     this.collections.users.update({ _id: userId }, { $unset: { suspended: 1 } });
@@ -1934,7 +1934,7 @@ _.extend(SandstormDb.prototype, {
       { $unset: { suspended: true } }, { multi: true });
   },
 
-  suspendAccount: function (userId, byAdminUserId, willDelete) {
+  suspendAccount(userId, byAdminUserId, willDelete) {
     check(userId, String);
     check(byAdminUserId, Match.OneOf(String, null, undefined));
     check(willDelete, Boolean);
@@ -1979,7 +1979,7 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  unsuspendAccount: function (userId) {
+  unsuspendAccount(userId) {
     check(userId, String);
 
     const user = globalDb.collections.users.findOne({ _id: userId });
@@ -1995,7 +1995,7 @@ _.extend(SandstormDb.prototype, {
     });
   },
 
-  deletePendingAccounts: function (deletionCoolingOffTime, backend, cb) {
+  deletePendingAccounts(deletionCoolingOffTime, backend, cb) {
     check(deletionCoolingOffTime, Number);
 
     const queryDate = new Date(Date.now() - deletionCoolingOffTime);
@@ -2668,11 +2668,11 @@ if (Meteor.isServer) {
     // package source 1: packages referred to by actions
     const actions = db.userActions(this.userId);
     const actionsHandle = actions.observe({
-      added: function (newAction) {
+      added(newAction) {
         refPackage(newAction.packageId);
       },
 
-      changed: function (newAction, oldAction) {
+      changed(newAction, oldAction) {
         refPackage(newAction.packageId);
       },
     });
@@ -2680,14 +2680,14 @@ if (Meteor.isServer) {
     // package source 2: packages referred to by grains directly
     const grains = db.userGrains(this.userId, { includeTrash: true });
     const grainsHandle = grains.observe({
-      added: function (newGrain) {
+      added(newGrain) {
         // Watch out: DevApp grains can lack a packageId.
         if (newGrain.packageId) {
           refPackage(newGrain.packageId);
         }
       },
 
-      changed: function (newGrain, oldGrain) {
+      changed(newGrain, oldGrain) {
         // Watch out: DevApp grains can lack a packageId.
         if (newGrain.packageId) {
           refPackage(newGrain.packageId);

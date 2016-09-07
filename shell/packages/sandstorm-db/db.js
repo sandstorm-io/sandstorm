@@ -927,18 +927,6 @@ if (Meteor.isServer) {
   };
 }
 
-sendReferralProgramNotification = function (userId) {
-  Notifications.upsert({
-    userId: userId,
-    referral: true,
-  }, {
-    userId: userId,
-    referral: true,
-    timestamp: new Date(),
-    isUnread: true,
-  });
-};
-
 SandstormDb = function (quotaManager) {
   // quotaManager is an object with the following method:
   //   updateUserQuota: It is provided two arguments
@@ -2479,7 +2467,17 @@ if (Meteor.isServer) {
     this.deleteUnusedPackages(appId);
   };
 
-  SandstormDb.prototype.sendReferralProgramNotification = sendReferralProgramNotification;
+  SandstormDb.prototype.sendReferralProgramNotification = function (userId) {
+    this.collections.notifications.upsert({
+      userId: userId,
+      referral: true,
+    }, {
+      userId: userId,
+      referral: true,
+      timestamp: new Date(),
+      isUnread: true,
+    });
+  };
 
   SandstormDb.prototype.upgradeGrains =  function (appId, version, packageId, backend) {
     check(appId, String);

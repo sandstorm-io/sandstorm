@@ -1549,6 +1549,10 @@ class Proxy {
         response.setHeader("Set-Cookie", rpcResponse.setCookies.map(makeSetCookieHeader));
       }
 
+      const mainUrl = process.env.ROOT_URL;
+      response.setHeader("Content-Security-Policy", "frame-ancestors " + mainUrl);
+      response.setHeader("X-Frame-Options", "ALLOW-FROM " + mainUrl);
+
       // TODO(security): Add a Content-Security-Policy header which:
       // (1) Prevents the app from initiating HTTP requests to third parties.
       // (2) Prevents the app from navigating the parent frame.

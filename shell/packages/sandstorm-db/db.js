@@ -1928,7 +1928,7 @@ _.extend(SandstormDb.prototype, {
     check(byAdminUserId, Match.OneOf(String, null, undefined));
     check(willDelete, Boolean);
 
-    const user = globalDb.collections.users.findOne({ _id: userId });
+    const user = this.collections.users.findOne({ _id: userId });
     const suspension = {
       timestamp: new Date(),
       willDelete: willDelete || false,
@@ -1971,7 +1971,7 @@ _.extend(SandstormDb.prototype, {
   unsuspendAccount(userId) {
     check(userId, String);
 
-    const user = globalDb.collections.users.findOne({ _id: userId });
+    const user = this.collections.users.findOne({ _id: userId });
     this.collections.users.update({ _id: userId }, { $unset: { suspended: 1 } });
     this.collections.grains.update({ userId: userId }, { $unset: { suspended: 1 } }, { multi: true });
 

@@ -312,8 +312,11 @@ module.exports["Test grain anonymous user"] = function (browser) {
         .url(response.value)
         .waitForElementVisible('#grainTitle', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+        .waitForElementVisible(".popup.login button.dismiss", short_wait)
+        .click(".popup.login button.dismiss") // "Stay anonymous"
+        .waitForElementNotPresent(".popup.login", short_wait)
         .grainFrame()
-        .waitForElementPresent('#publish', medium_wait)
+        .waitForElementVisible('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         .frame(null)
         .end();

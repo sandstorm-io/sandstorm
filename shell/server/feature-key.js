@@ -73,3 +73,36 @@ loadSignedFeatureKey = function (buf) {
     return undefined;
   }
 };
+
+setNewFeatureKey = function (db, textBlock) {
+  if (!textBlock) {
+    // Delete the feature key.
+    db.collections.featureKey.remove("currentFeatureKey");
+    return;
+  }
+
+  // textBlock is a base64'd string, possibly with newlines and comment lines starting with "-"
+  const featureKeyBase64 = _.chain(textBlock.split("\n"))
+      .filter(line => (line.length > 0 && line[0] !== "-"))
+      .value()
+      .join("");
+
+  const buf = new Buffer(featureKeyBase64, "base64");
+  if (buf.length < 64) {
+    throw new Meteor.Error(401, "Invalid feature key");
+  }
+
+  const featureKey = loadSignedFeatureKey(buf);
+  if (!featureKey) {
+    throw new Meteor.Error(401, "Invalid feature key");
+  }
+
+  // Persist the feature key in the database.
+  db.collections.featureKey.upsert(
+    "currentFeatureKey",
+    {
+      _id: "currentFeatureKey",
+      value: buf,
+    }
+  );
+}

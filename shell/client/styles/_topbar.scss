@@ -727,6 +727,7 @@ body>.topbar {
         }
         .close-button {
           @include unstyled-button();
+          @extend %pseudo-img-tag;
           position: absolute;
           top: 1px;
           right: 0px;
@@ -735,7 +736,7 @@ body>.topbar {
           margin: 2px;
           display: block;
           background-image: url("/close.svg");
-          border: 1px transparent;
+          border: 1px solid transparent;
           border-radius: 4px;
           &:hover {
             border: 1px solid $topbar-foreground-color-hover;

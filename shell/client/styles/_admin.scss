@@ -86,3 +86,10 @@ form.feature-key-form, form.feature-key-modify-form {
     min-height: 60px;
   }
 }
+
+.feature-key-renewal-problem {
+  border-radius: 5px;
+  padding: 16px;
+  margin-bottom: 20px;
+  background-color: $error-background-color;
+}

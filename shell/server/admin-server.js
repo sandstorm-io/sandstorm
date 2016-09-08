@@ -41,7 +41,7 @@ const publicAdminSettings = [
 
 const FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS = [
   "customer", "expires", "features", "isElasticBilling", "isTrial", "issued", "userLimit",
-  "secret",
+  "secret", "renewalProblem",
 ];
 
 const PUBLIC_FEATURE_KEY_FIELDS = [
@@ -630,6 +630,9 @@ Meteor.publish("featureKey", function (forAdmin, token) {
       // Load and verify the signed feature key.
       const buf = new Buffer(doc.value);
       const featureKey = loadSignedFeatureKey(buf);
+      if (doc.renewalProblem) {
+        featureKey.renewalProblem = doc.renewalProblem;
+      }
 
       if (featureKey) {
         // If the signature is valid, publish the feature key information.
@@ -642,6 +645,11 @@ Meteor.publish("featureKey", function (forAdmin, token) {
       // Load and reverify the new signed feature key.
       const buf = new Buffer(newDoc.value);
       const featureKey = loadSignedFeatureKey(buf);
+      if (newDoc.renewalProblem) {
+        featureKey.renewalProblem = newDoc.renewalProblem;
+      } else if (oldDoc.renewalProblem) {
+        featureKey.renewalProblem = undefined;
+      }
 
       if (featureKey) {
         // If the signature is valid, call this.changed() with the interesting fields.

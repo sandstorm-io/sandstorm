@@ -126,6 +126,50 @@
       {{> featureKeyDeleteForm cancelCb=hideFormCb successCb=hideFormCb token=token }}
     {{/modalDialogWithBackdrop}}
   {{/if}}
+
+  {{#with renewalProblem}}
+    <div class="feature-key-renewal-problem">
+      {{#if noPaymentSource}}
+        Your feature key cannot be renewed because you have not provided a payment source.
+        Please <a class="button primary" target="_blank"
+           href="https://sandstorm.io/get-feature-key#key/{{keySecret}}">update your billing
+           settings &raquo;</a>
+      {{/if}}
+      {{#if paymentFailed}}
+        Your feature key cannot be renewed because there is a problem with your payment source:
+        {{paymentFailed}}<br>
+        Please <a class="button primary" target="_blank"
+        href="https://sandstorm.io/get-feature-key#key/{{keySecret}}">update your billing
+        settings &raquo;</a>
+      {{/if}}
+      {{#if noSuchKey}}
+        There is no record of your feature key in Sandstorm's database. If you believe this is an
+        error, contact <a target="_blank"
+        href="mailto:priority-support@sandstorm.io">priority-support@sandstorm.io</a>.
+        Otherwise, please <a target="_blank" href="https://sandstorm.io/get-feature-key">purchase
+        a new key &raquo;</a>
+      {{/if}}
+      {{#if revoked}}
+        Your feature key has been revoked. This can happen if your key is used on multiple servers
+        or if you have otherwise violated the Terms of Service. If you believe this is in error,
+        please contact <a target="_blank"
+        href="mailto:priority-support@sandstorm.io">priority-support@sandstorm.io</a>.
+      {{/if}}
+      {{#if unknownResponse}}
+        Your feature key could not be renewed because the renewal service returned an unrecognized
+        response. This is a bug in Sandstorm. Please report it to <a target="_blank"
+        href="mailto:priority-support@sandstorm.io">priority-support@sandstorm.io</a>.
+        Response text: <code>{{unknownResponse}}</code>
+      {{/if}}
+      {{#if exception}}
+        Sandstorm was unable to contact the renewal service. If your Sandstorm server is not
+        connected to the internet, you will need to <a class="button primary" target="_blank"
+        href="https://sandstorm.io/get-feature-key#key/{{keySecret}}">renew manually</a>
+        and then upload your new key. The error was: <code>{{exception}}</code>
+      {{/if}}
+    </div>
+  {{/with}}
+
   <form class="feature-key-modify-form">
     <div class="button-row">
       <a class="button primary" target="_blank" href="https://sandstorm.io/get-feature-key#key/{{keySecret}}">Manage billing</a>

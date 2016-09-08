@@ -693,6 +693,19 @@ FeatureKey = new Mongo.Collection("featureKey", collectionOptions);
 //   _id: "currentFeatureKey"
 //   value: the still-signed, binary-encoded feature key
 //          (a feature key with comments removed and base64 decoded)
+//   renewalProblem: If we tried to renew this feature key and failed, an object describing that
+//       failure. Includes exactly one of the following fields:
+//     noPaymentSource: True, indicating that the key could not be renewed because there was no
+//         payment source set for this key.
+//     paymentFailed: String error message returned by our payment processor describing why they
+//         declined the charge.
+//     noSuchKey: True, indicating the key doesn't exist.
+//     revoked: True, indicating the key has been revoked.
+//     unknownResponse: String response text from the renewal API which wasn't recognized. Should
+//         be reported to Sandstorm.
+//     exception: String error message from an exception thrown by the renewal code. This usually
+//         indicates some sort of connectivity problem, so could be reported to the user as:
+//         "There was a problem reaching the feature key renewal server."
 //
 // This is only intended to be visible on the server.
 
@@ -2698,10 +2711,14 @@ if (Meteor.isServer) {
   });
 }
 
-const processRawFeatureKey = function (featureKey) {
+const processRawFeatureKey = function (featureKey, renewalProblem) {
   // Maps the raw data of a signed feature key to the desired "effective" feature key we should use
   // to govern high-level behavior.
   const processedFeatureKey = _.clone(featureKey);
+
+  if (renewalProblem) {
+    processedFeatureKey.renewalProblem = renewalProblem;
+  }
 
   // Hook for future extensibility.
   return processedFeatureKey;

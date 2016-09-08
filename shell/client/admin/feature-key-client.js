@@ -162,6 +162,10 @@ Template.adminFeatureKeyModifyForm.helpers({
 
     return hexString(globalDb.currentFeatureKey().secret);
   },
+
+  renewalProblem() {
+    return globalDb.currentFeatureKey().renewalProblem;
+  },
 });
 
 Template.adminFeatureKeyModifyForm.events({

@@ -17,6 +17,7 @@
 import "/imports/db-deprecated.js";
 import AccountsUi from "/imports/client/accounts/accounts-ui.js";
 import { GrainViewList } from "/imports/client/grain/grainview-list.js";
+import { ActivityTracker } from "/imports/client/activity-tracker.js";
 
 Session.setDefault("shrink-navbar", false);
 globalGrains = new GrainViewList(globalDb);
@@ -47,6 +48,7 @@ globalTopbar = new SandstormTopbar(globalDb,
   });
 
 globalAccountsUi = new AccountsUi(globalDb);
+globalActivityTracker = new ActivityTracker();
 
 Template.registerHelper("globalTopbar", () => { return globalTopbar; });
 Template.registerHelper("globalAccountsUi", () => { return globalAccountsUi; });

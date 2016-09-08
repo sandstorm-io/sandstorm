@@ -909,6 +909,10 @@ Router.map(function () {
   this.route("account", {
     path: "/account",
 
+    waitOn() {
+      return globalSubs;
+    },
+
     data: function () {
       // Don't allow logged-out or demo users to visit the accounts page. There should be no way
       // for them to get there except for typing the URL manually. In theory showing the accounts

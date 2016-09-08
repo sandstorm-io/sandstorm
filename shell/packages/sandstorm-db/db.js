@@ -2708,17 +2708,40 @@ const processRawFeatureKey = function (featureKey) {
 };
 
 if (Meteor.isServer) {
-  SandstormDb.prototype.currentFeatureKey = function () {
-    // Returns an object with all of the current signed feature key properties,
-    // or undefined, if the feature key is missing or not correctly signed.
-    const doc = this.collections.featureKey.findOne({ _id: "currentFeatureKey" });
-    if (!doc) return undefined;
+  const processFeatureKeyDoc = doc => {
+    if (!doc) return null;
     const buf = new Buffer(doc.value);
     // We use loadSignedFeatureKey from server/feature-key.js.  This should probably get refactored
     // once we can use ES6 modules.
     const rawFeatureKey = loadSignedFeatureKey(buf);
-    return processRawFeatureKey(rawFeatureKey);
+    return processRawFeatureKey(rawFeatureKey, doc.renewalProblem);
+  }
+
+  SandstormDb.prototype.currentFeatureKey = function () {
+    // Returns an object with all of the current signed feature key properties,
+    // or null, if the feature key is missing or not correctly signed.
+    const doc = this.collections.featureKey.findOne({ _id: "currentFeatureKey" });
+    return processFeatureKeyDoc(doc);
   };
+
+  SandstormDb.prototype.observeFeatureKey = function (callback) {
+    // Calls `callback(currentFeatureKey())` whenever the feature key changes. Returns an observe
+    // handle (use .stop() to stop observing).
+
+    return this.collections.featureKey.find({ _id: "currentFeatureKey" }).observe({
+      added(doc) {
+        callback(processFeatureKeyDoc(doc));
+      },
+      changed(newDoc, oldDoc) {
+        if (newDoc.value !== oldDoc.value) {
+          callback(processFeatureKeyDoc(newDoc));
+        }
+      },
+      removed() {
+        callback(null);
+      },
+    });
+  }
 } else {
   SandstormDb.prototype.currentFeatureKey = function () {
     const featureKey = this.collections.featureKey.findOne({ _id: "currentFeatureKey" });

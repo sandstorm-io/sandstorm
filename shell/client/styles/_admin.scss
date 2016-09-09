@@ -96,7 +96,7 @@ form.feature-key-form, form.feature-key-modify-form {
 
   >.retry {
     @extend %button-base;
-    @extend %button-primary;
+    @extend %button-secondary;
 
     position: absolute;
     right: 16px;

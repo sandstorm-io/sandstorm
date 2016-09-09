@@ -134,9 +134,9 @@ const sortGrains = function (grains, sortRules) {
     } else {
       // Sorting by date.
       return function (a, b) {
-        // Null propagation on dates does the thing we want by default.
-        const aRaw = a[key];
-        const bRaw = b[key];
+        // Items with no lastUsed are new shares which we always want to show on top.
+        const aRaw = a[key] || new Date();
+        const bRaw = b[key] || new Date();
         if (aRaw < bRaw) {
           return -1 * multiplier;
         } else if (aRaw > bRaw) {

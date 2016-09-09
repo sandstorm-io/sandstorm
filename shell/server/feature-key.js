@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { send } from "/imports/server/email.js";
 import Bignum from "bignum";
 import ed25519 from "ed25519";
 const Capnp = Npm.require("capnp");
@@ -243,8 +244,34 @@ function reportRenewalProblem(db, key, options, problem) {
       db.sendAdminNotification("cantRenewFeatureKey", "/admin/feature-key");
     }
 
-    // TODO(now):
-    // - If not interactive, email admins.
+    const emailOptions = {
+      from: db.getReturnAddress(),
+      subject: key.isTrial
+          ? `URGENT: Sandstorm for Work trial for ${db.getServerTitle()} has expired`
+          : `URGENT: Couldn't renew Sandstorm for Work subscription for ${db.getServerTitle()}`,
+    };
+
+    emailOptions.text = key.isTrial
+        ? "This is an automated message from your Sandstorm server. Your trial of Sandstorm for Work has expired. To continue using Sandstorm for Work, update your subscription here:"
+        : "This is an automated message from your Sansdtorm server. There was an error when trying to renew your Sandstorm for Work subscription. To resolve the issue, please go to:";
+
+    emailOptions.text += `\n\n${process.env.ROOT_URL}/admin/feature-key`;
+
+    Meteor.users.find({ isAdmin: true }).forEach((user) => {
+      const email = _.findWhere(SandstormDb.getUserEmails(user), { primary: true });
+      if (!email) {
+        console.error("No email found for admin with userId:", user._id);
+        return;
+      }
+
+      try {
+        emailOptions.to = email.email;
+        send(emailOptions);
+      } catch (err) {
+        console.error(
+          `Failed to send deletion email to admin (id=${user._id}) with error: ${err}`);
+      }
+    });
   }
 }
 

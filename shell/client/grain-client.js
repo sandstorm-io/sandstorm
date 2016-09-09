@@ -731,8 +731,23 @@ Template.grain.helpers({
   },
 
   displayTrashButton: function () {
-    const grain = globalGrains.getActive();
-    return Meteor.userId() && grain && !grain.isInMyTrash();
+    const grainview = globalGrains.getActive();
+    if (!grainview) return false;
+    const grainId = grainview.grainId();
+    const grain = Grains.findOne({
+      _id: grainId,
+      userId: Meteor.userId(),
+      trashed: { $exists: false },
+    });
+
+    if (grain) return true;
+
+    const myIdentityIds = SandstormDb.getUserIdentityIds(Meteor.user());
+    return !!ApiTokens.findOne({
+      grainId: grainId,
+      "owner.user.identityId": { $in: myIdentityIds },
+      trashed: { $exists: false },
+    });
   },
 
   showPowerboxOffer: function () {

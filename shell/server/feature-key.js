@@ -75,6 +75,33 @@ loadSignedFeatureKey = function (buf) {
 };
 
 setNewFeatureKey = function (db, textBlock) {
+  // Set a new feature key. If the new key is expired, check with Sandstorm to see if it was
+  // renewed, and use that copy instead.
+  //
+  // This function under no circumstances stores an expired key to the database, because once
+  // a key is stored in the database it will be automatically renewed, and it would be surprising
+  // to users if accidentally uploading an old key suddenly caused that key to be renewed.
+
+  return setNewFeatureKeyInternal(db, textBlock, (expiredKey) => {
+    // Key is expired. Try to fetch an updated copy.
+
+    function throwExpired() {
+      throw new Meteor.Error(401, "Feature key is expired. Please purchase a new key.");
+    }
+
+    try {
+      const newTextBlock = fetchUpdatedFeautureKeyFromVendor(expiredKey);
+      return setNewFeatureKeyInternal(db, newTextBlock, throwExpired);
+    } catch (err) {
+      console.error("couldn't fetch newer version of key", err);
+    }
+
+    // No luck.
+    throwExpired();
+  });
+}
+
+function setNewFeatureKeyInternal(db, textBlock, ifExpired) {
   if (!textBlock) {
     // Delete the feature key.
     db.collections.featureKey.remove("currentFeatureKey");
@@ -95,6 +122,10 @@ setNewFeatureKey = function (db, textBlock) {
   const featureKey = loadSignedFeatureKey(buf);
   if (!featureKey) {
     throw new Meteor.Error(401, "Invalid feature key");
+  }
+
+  if (parseInt(featureKey.expires) * 1000 < Date.now()) {
+    return ifExpired(featureKey);
   }
 
   // Persist the feature key in the database.
@@ -174,8 +205,12 @@ renewFeatureKey = function (db, options) {
       // If we're doing a dry run, then the key wasn't actually updated so there's nothing to
       // fetch. However, if the server indicates that current key is newer than the one we have
       // here, then we should take this chance to update to the current key.
-      if (!options.dryRun || data.expires > key.expries) {
-        refreshFeatureKey(db);
+      if (!options.dryRun || parseInt(data.expires) > parseInt(key.expries)) {
+        const newTextBlock = fetchUpdatedFeautureKeyFromVendor(key);
+        setNewFeatureKeyInternal(db, newTextBlock, () => {
+          throw new Error("Renewal seemed to succeed but the service returned an expired key. " +
+                          "Is your system clock wrong?");
+        });
       }
     } else {
       reportRenewalProblem(db, options, {unknownResponse: response.content});
@@ -186,19 +221,15 @@ renewFeatureKey = function (db, options) {
   }
 }
 
-function refreshFeatureKey(db) {
-  // Check the feature key vendor to see if it has a new version of our key and, if so, download
-  // it now.
-
-  const key = db.currentFeatureKey();
-  if (!key) return;  // nothing to do
-
+function fetchUpdatedFeautureKeyFromVendor(key) {
   const fetchResponse = HTTP.get(RENEW_API_HOST + "/keys/" + key.secret.toString("hex"), {
     headers: {
       "Authorization": "Bearer " + RENEW_API_TOKEN,
     }
   });
-  setNewFeatureKey(db, fetchResponse.data.key);
+  const result = fetchResponse.data.key;
+  if (!result) throw new Error("Renewal server returned invalid GetKeyResponse.");
+  return result;
 }
 
 function reportRenewalProblem(db, options, problem) {

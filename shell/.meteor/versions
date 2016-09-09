@@ -65,7 +65,7 @@ oauth@1.1.11
 oauth2@1.1.10
 observe-sequence@1.0.12
 ordered-dict@1.0.8
-promise@0.8.4
+promise@0.8.5
 random@1.0.10
 rate-limit@1.0.5
 reactive-dict@1.1.8

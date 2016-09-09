@@ -1510,6 +1510,12 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
   }
 
   const token = Random.secret();
+  if (encodeURIComponent(token) !== token) {
+    // Sandstorm guarantees that tokens with a `clientPowerboxRequest` owner are URL-safe.
+    // `Random.secret()` only uses base64url characters, so we should never get here.
+    throw new Meteor.Error(500, "Random.secret() returned a non-URL safe token: " + token);
+  }
+
   const apiToken = {
     _id: Crypto.createHash("sha256").update(token).digest("base64"),
     grainId: grainId,

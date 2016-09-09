@@ -730,6 +730,8 @@ const DesktopNotifications = new Mongo.Collection("desktopNotifications", collec
 //   userId: String. Account id to which this notification was published.
 //   notificationId: String.  ID of the matching event in the Notifications table to dismiss if this
 //                            notification is activated.
+//   deliveredToUser: Boolean.  Used to flag that this notification was delivered to a session with
+//                              a low idle time.
 //   appActivity: Object with fields:
 //     user: {               The user whose action caused this notification.
 //       name: String,       The user's display name.

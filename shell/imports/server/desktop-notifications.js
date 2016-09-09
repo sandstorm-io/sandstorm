@@ -42,6 +42,7 @@ const createAppActivityDesktopNotification = (options) => {
     notificationId: options.notificationId,
     creationDate: new Date(),
     appActivity: options.appActivity,
+    deliveredToUser: false,
   });
 };
 

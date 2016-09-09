@@ -24,6 +24,8 @@ SandstormDb.periodicCleanup(120000, () => {
   globalDb.collections.desktopNotifications.find({
     creationDate: { $lt: then },
   }).forEach((doc) => {
+    // TODO(now): for each notification that wasn't marked as delivered to a user,
+    // send an email to their primary contact address.
     globalDb.collections.desktopNotifications.remove({
       _id: doc._id,
     });
@@ -65,4 +67,18 @@ Meteor.publish("desktopNotifications", function () {
   });
 
   this.ready();
+});
+
+Meteor.methods({
+  markDesktopNotificationDelivered(desktopNotificationId) {
+    if (!this.userId) throw new Meteor.Error("Not logged in");
+
+    const db = this.connection.sandstormDb;
+    db.collections.desktopNotifications.update({
+      _id: desktopNotificationId,
+      userId: this.userId,
+    }, {
+      $set: { deliveredToUser: true },
+    });
+  },
 });

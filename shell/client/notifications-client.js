@@ -247,12 +247,17 @@ Template.referralNotificationItem.events({
 });
 
 Template.adminNotificationItem.helpers({
-  isStatsNotification() {
-    return this.admin.type === "reportStats";
+  isType(type) {
+    return this.admin.type === type;
   },
 
   actionTarget() {
     return this.admin.action;
+  },
+
+  isUrgent() {
+    const map = { cantRenewFeatureKey: true, trialFeatureKeyExpired: true };
+    return map[this.admin.type];
   },
 });
 

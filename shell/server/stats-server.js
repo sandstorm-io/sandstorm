@@ -213,8 +213,7 @@ function recordStats() {
 
     if (!reportSetting) {
       // Setting not set yet, send out notifications and set it to false
-      globalDb.sendAdminNotification("You can help Sandstorm by sending us some anonymous " +
-        "usage stats. Click here for more info.", "/admin/stats");
+      globalDb.sendAdminNotification("reportStats", "/admin/stats");
       Settings.insert({ _id: "reportStats", value: "unset" });
     } else if (reportSetting.value === true) {
       postStats(record);

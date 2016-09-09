@@ -213,8 +213,26 @@ Meteor.methods({
         type: "reportStats",
       },
       userId: this.userId,
-      text: { defaultText: "You can help Sandstorm by sending us some anonymous " +
-                           "usage stats. Click here for more info.", },
+      timestamp: new Date(),
+      isUnread: true,
+    });
+
+    Notifications.insert({
+      admin: {
+        action: "/admin/feature-key",
+        type: "cantRenewFeatureKey",
+      },
+      userId: this.userId,
+      timestamp: new Date(),
+      isUnread: true,
+    });
+
+    Notifications.insert({
+      admin: {
+        action: "/admin/feature-key",
+        type: "trialFeatureKeyExpired",
+      },
+      userId: this.userId,
       timestamp: new Date(),
       isUnread: true,
     });

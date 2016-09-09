@@ -160,8 +160,9 @@ renewFeatureKey = function (db, options) {
 
   options = options || {};
 
+  let key;
   try {
-    const key = db.currentFeatureKey();
+    key = db.currentFeatureKey();
     if (!key) return;  // nothing to do
 
     // Count number of user accounts (not including visitors) active in the last month.
@@ -189,13 +190,13 @@ renewFeatureKey = function (db, options) {
 
     const data = response.data;
     if (data.noPaymentSource !== undefined) {
-      reportRenewalProblem(db, options, {noPaymentSource: true});
+      reportRenewalProblem(db, key, options, {noPaymentSource: true});
     } else if (data.paymentFailed !== undefined) {
-      reportRenewalProblem(db, options, {paymentFailed: data.paymentFailed});
+      reportRenewalProblem(db, key, options, {paymentFailed: data.paymentFailed});
     } else if (data.revoked !== undefined) {
-      reportRenewalProblem(db, options, {revoked: true});
+      reportRenewalProblem(db, key, options, {revoked: true});
     } else if (data.noSuchKey !== undefined) {
-      reportRenewalProblem(db, options, {noSuchKey: true});
+      reportRenewalProblem(db, key, options, {noSuchKey: true});
     } else if (data.success !== undefined ||
                data.tooEarly !== undefined ||
                data.pendingPayment !== undefined) {
@@ -213,11 +214,11 @@ renewFeatureKey = function (db, options) {
         });
       }
     } else {
-      reportRenewalProblem(db, options, {unknownResponse: response.content});
+      reportRenewalProblem(db, key, options, {unknownResponse: response.content});
     }
   } catch (err) {
     console.error("Exception when trying to renew feature key:", err.stack);
-    reportRenewalProblem(db, options, {exception: err.message});
+    reportRenewalProblem(db, key, options, {exception: err.message});
   }
 }
 
@@ -232,13 +233,18 @@ function fetchUpdatedFeautureKeyFromVendor(key) {
   return result;
 }
 
-function reportRenewalProblem(db, options, problem) {
+function reportRenewalProblem(db, key, options, problem) {
   db.collections.featureKey.update("currentFeatureKey", { $set: { renewalProblem: problem } });
 
   if (!options.interactive) {
+    if (key.isTrial) {
+      db.sendAdminNotification("trialFeatureKeyExpired", "/admin/feature-key");
+    } else {
+      db.sendAdminNotification("cantRenewFeatureKey", "/admin/feature-key");
+    }
+
     // TODO(now):
     // - If not interactive, email admins.
-    // - If not interactive, notify admins via bell menu.
   }
 }
 

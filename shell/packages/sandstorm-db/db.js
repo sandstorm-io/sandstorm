@@ -540,7 +540,8 @@ Notifications = new Mongo.Collection("notifications", collectionOptions);
 //   admin:        If present, this is a notification intended for an admin.
 //     action:     If present, this is a (string) link that the notification should direct the
 //                 admin to.
-//     type:       The type of notification (currently only "reportStats").
+//     type:       The type of notification -- can be "reportStats", "cantRenewFeatureKey", or
+//                 "trialFeatureKeyExpired".
 //   appUpdates:   If present, this is an app update notification. It is an object with the appIds
 //                 as keys.
 //     $appId:     The appId that has an outstanding update.
@@ -1363,15 +1364,11 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  sendAdminNotification(message, link) {
+  sendAdminNotification(type, action) {
     Meteor.users.find({ isAdmin: true }, { fields: { _id: 1 } }).forEach(function (user) {
       Notifications.insert({
-        admin: {
-          action: link,
-          type: "reportStats",
-        },
+        admin: { action, type },
         userId: user._id,
-        text: { defaultText: message },
         timestamp: new Date(),
         isUnread: true,
       });

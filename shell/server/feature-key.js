@@ -106,3 +106,107 @@ setNewFeatureKey = function (db, textBlock) {
     }
   );
 }
+
+// =======================================================================================
+// Renewal
+
+const RENEW_API_HOST = "https://api.oasis.sandstorm.io";
+const RENEW_API_TOKEN = "objFPmEL0gOGfwKYLIwHNmfdKp1FCgMNSrxW4lEeeLk";
+
+renewFeatureKey = function (db, options) {
+  // Attempts to renew the current feature key.
+  //
+  // If any errors are detected, admins will be notified and the error information will be stored
+  // to the database for display on the feature key page.
+  //
+  // `options` is an object optionally containing:
+  //   interactive: Set true if the function was called in response to an admin interactively
+  //     requesting the action. This suppresses sending notifications on error, as the admin
+  //     will see the error message on the feature key page.
+  //   dryRun: Go through as many of the motions of renewing as possible without actually renewing,
+  //     in order to detect and report if anything would go wrong, and also detect if a newer key
+  //     is already available. Useful to test for problems and warn the administrators in advance.
+
+  options = options || {};
+
+  try {
+    const key = db.currentFeatureKey();
+    if (!key) return;  // nothing to do
+
+    // Count number of user accounts (not including visitors) active in the last month.
+    let count = 0;
+    const oneMonthAgo = new Date(Date.now() - 30 * 86400000);
+    Meteor.users.find({loginIdentities: {$exists: true}, lastActive: {$gt: oneMonthAgo}})
+        .forEach(user => {
+      if (db.isAccountSignedUp(user)) {
+        ++count;
+      }
+    });
+
+    console.log("Attempting to renew fetaure key. Active users:", count);
+
+    // Request renewal.
+    const response = HTTP.post(RENEW_API_HOST + "/renew/" + key.secret.toString("hex"), {
+      headers: {
+        "Authorization": "Bearer " + RENEW_API_TOKEN,
+      },
+      data: {
+        activeUsers: count,
+        dryRun: options.dryRun,
+      },
+    });
+
+    const data = response.data;
+    if (data.noPaymentSource !== undefined) {
+      reportRenewalProblem(db, options, {noPaymentSource: true});
+    } else if (data.paymentFailed !== undefined) {
+      reportRenewalProblem(db, options, {paymentFailed: data.paymentFailed});
+    } else if (data.revoked !== undefined) {
+      reportRenewalProblem(db, options, {revoked: true});
+    } else if (data.noSuchKey !== undefined) {
+      reportRenewalProblem(db, options, {noSuchKey: true});
+    } else if (data.success !== undefined ||
+               data.tooEarly !== undefined ||
+               data.pendingPayment !== undefined) {
+      // Either we successfully renewed the key, or the key had already been renewed out-of-band.
+      // Either way, the next step is to fetch it.
+      //
+      // If we're doing a dry run, then the key wasn't actually updated so there's nothing to
+      // fetch. However, if the server indicates that current key is newer than the one we have
+      // here, then we should take this chance to update to the current key.
+      if (!options.dryRun || data.expires > key.expries) {
+        refreshFeatureKey(db);
+      }
+    } else {
+      reportRenewalProblem(db, options, {unknownResponse: response.content});
+    }
+  } catch (err) {
+    console.error("Exception when trying to renew feature key:", err.stack);
+    reportRenewalProblem(db, options, {exception: err.message});
+  }
+}
+
+function refreshFeatureKey(db) {
+  // Check the feature key vendor to see if it has a new version of our key and, if so, download
+  // it now.
+
+  const key = db.currentFeatureKey();
+  if (!key) return;  // nothing to do
+
+  const fetchResponse = HTTP.get(RENEW_API_HOST + "/keys/" + key.secret.toString("hex"), {
+    headers: {
+      "Authorization": "Bearer " + RENEW_API_TOKEN,
+    }
+  });
+  setNewFeatureKey(db, fetchResponse.data.key);
+}
+
+function reportRenewalProblem(db, options, problem) {
+  db.collections.featureKey.update("currentFeatureKey", { $set: { renewalProblem: problem } });
+
+  if (!options.interactive) {
+    // TODO(now):
+    // - If not interactive, email admins.
+    // - If not interactive, notify admins via bell menu.
+  }
+}

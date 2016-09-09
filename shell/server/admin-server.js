@@ -126,6 +126,15 @@ Meteor.methods({
     setNewFeatureKey(db, textBlock);
   },
 
+  renewFeatureKey: function (token) {
+    checkAuth(token);
+
+    const db = this.connection.sandstormDb;
+
+    // renewFeatureKey is provided in feature-key.js.
+    renewFeatureKey(db, {interactive: true});
+  },
+
   saveOrganizationSettings(token, params) {
     checkAuth(token);
     check(params, {

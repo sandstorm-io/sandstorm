@@ -193,6 +193,7 @@ Template.adminFeatureKeyModifyForm.events({
       if (err) {
         // Note: Renewal failures aren't reported this way. If we get here there was a bug.
         console.error(err);
+        alert(err.message);
       }
     });
   },

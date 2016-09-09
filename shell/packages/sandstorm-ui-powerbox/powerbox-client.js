@@ -177,10 +177,11 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     return {};
   }
 
-  completeNewFrontendRef(frontendRef) {
+  completeNewFrontendRef(frontendRef, options) {
     Meteor.call("newFrontendRef",
       this._requestInfo.sessionId,
       frontendRef,
+      options,
       (err, result) => {
         if (err) {
           this.failRequest(err);
@@ -216,9 +217,18 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
   }
 };
 
-const matchesAppOrGrainTitle = function (needle, cardData) {
-  if (cardData.title && cardData.title.toLowerCase().indexOf(needle) !== -1) return true;
-  if (cardData.appTitle && cardData.appTitle.toLowerCase().indexOf(needle) !== -1) return true;
+const matchesCard = function (needle, grainInfo, searchTerms) {
+  if (grainInfo) {
+    if (grainInfo.title && grainInfo.title.toLowerCase().indexOf(needle) !== -1) return true;
+    if (grainInfo.appTitle && grainInfo.appTitle.toLowerCase().indexOf(needle) !== -1) return true;
+  }
+
+  if (searchTerms) {
+    for (let idx = 0; idx < searchTerms.length; ++idx) {
+      if (searchTerms[idx] && searchTerms[idx].toLowerCase().indexOf(needle) !== -1) return true;
+    }
+  }
+
   return false;
 };
 
@@ -231,7 +241,7 @@ const compileMatchFilter = function (searchString) {
   return function matchFilter(item) {
     if (searchKeys.length === 0) return true;
     return _.chain(searchKeys)
-        .map((searchKey) => matchesAppOrGrainTitle(searchKey, (item || {}).grainInfo || {}))
+        .map((searchKey) => matchesCard(searchKey, (item || {}).grainInfo, item.option.searchTerms))
         .reduce(function (a, b) { return a && b; })
         .value();
   };
@@ -409,6 +419,39 @@ Template.uiViewPowerboxConfiguration.events({
     }
   },
 });
+
+Template.identityPowerboxConfiguration.helpers({
+  viewInfo: function () {
+    const session = this.db.collections.sessions.findOne(
+      { _id: this.powerboxRequest._requestInfo.sessionId, });
+    return prepareViewInfoForDisplay(session.viewInfo);
+  },
+});
+
+Template.identityPowerboxConfiguration.events({
+  "click .connect-button": function (event, instance) {
+    event.preventDefault();
+    const selectedInput = instance.find('form input[name="role"]:checked');
+    if (selectedInput) {
+      let roleAssignment;
+      if (selectedInput.value === "all") {
+        roleAssignment = { allAccess: null };
+      } else {
+        const role = parseInt(selectedInput.value, 10);
+        roleAssignment = { roleId: role };
+      }
+
+      this.powerboxRequest.completeNewFrontendRef(
+        instance.data.option.frontendRef,
+        { roleAssignment }
+      );
+    }
+  },
+});
+
+Template.identityPowerboxCard.powerboxIconSrc = card => {
+  return card.option.profile.pictureUrl;
+};
 
 Template.emailVerifierPowerboxCard.helpers({
   serviceTitle: function () {

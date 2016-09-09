@@ -63,7 +63,7 @@ class FrontendRefRegistry {
     }
   }
 
-  validate(db, session, mutableFrontendRef) {
+  validate(db, session, mutableFrontendRef, options) {
     // Validates a powerbox request on the given `session` (a record from the Sessions table)
     // requesting the creation of the given frontendRef type. `mutableFrontendRef` is expected to
     // come directly from the client; calling validate() verifies that it has a valid type, and
@@ -88,7 +88,7 @@ class FrontendRefRegistry {
                       JSON.stringify(mutableFrontendRef));
     }
 
-    return handler.validate(db, session, mutableFrontendRef[key]);
+    return handler.validate(db, session, mutableFrontendRef[key], options);
   }
 
   register(object) {
@@ -104,7 +104,8 @@ class FrontendRefRegistry {
     //     `capability` (returned): A Cap'n Proto capability implementing SystemPersistent along
     //         with whatever other interfaces are appropriate for the ref type.
     //   `validate`: Callback to validate a powerbox request for a new capability of this type.
-    //       Has signature `(db, session, mutableValue) -> {descriptor, requirements}`, where:
+    //       Has signature `(db, session, mutableValue, options) -> {descriptor, requirements}`,
+    //       where:
     //     `mutableValue` is the value of the single field of `frontendRef` for this capability.
     //         If this is an object value, the callback may optionally modify it, e.g. adding
     //         additional fields that need to be generated server-side. The callback *must*, at
@@ -112,6 +113,7 @@ class FrontendRefRegistry {
     //         not valid.
     //     `session` is the record from the Sessions table of the UI session where the powerbox
     //         request occurred.
+    //     `options` is an optional object with supplemental information.
     //     `descriptor` (returned) is the JSON-encoded PowerboxDescriptor for the capability. Note
     //         that if the descriptor contains any `tag.value`s, they of course need to be
     //         presented as capnp-encoded Buffers.

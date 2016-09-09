@@ -17,7 +17,7 @@
 "use strict";
 
 // Tests the `IpNetwork` and `IpInterface` capabilities using the sandstorm-test-python app.
-// The app's source code is hosted at https://github.com/zarvox/sandstorm-test-python.
+// The app's source code is hosted at https://github.com/sandstorm-io/sandstorm-test-python.
 
 var utils = require("../utils"),
     short_wait = utils.short_wait,
@@ -32,8 +32,8 @@ module.exports = {};
 module.exports["Test Ip Networking"] = function (browser) {
   browser
     .loginDevAccount(null, true)
-    .installApp("http://sandstorm.io/apps/david/sandstorm-test-python4.spk",
-                "874e67d3cd02486198d046909149723c",
+    .installApp("http://sandstorm.io/apps/david/sandstorm-test-python6.spk",
+                "a8c2128e401f1d20a426b24aa589c637",
                 "umeqc9yhncg63fjj6sahtw30nf99kfm6tgkuz8rmhn5dqtusnwah")
     .assert.containsText("#grainTitle", "Untitled Test App test page")
     .waitForElementVisible('.grain-frame', short_wait)
@@ -56,8 +56,8 @@ module.exports["Test Ip Networking"] = function (browser) {
 module.exports["Test Ip Interface"] = function (browser) {
   browser
     .loginDevAccount(null, true)
-    .installApp("http://sandstorm.io/apps/david/sandstorm-test-python4.spk",
-                "874e67d3cd02486198d046909149723c",
+    .installApp("http://sandstorm.io/apps/david/sandstorm-test-python6.spk",
+                "a8c2128e401f1d20a426b24aa589c637",
                 "umeqc9yhncg63fjj6sahtw30nf99kfm6tgkuz8rmhn5dqtusnwah")
     .assert.containsText("#grainTitle", "Untitled Test App test page")
     .waitForElementVisible('.grain-frame', short_wait)

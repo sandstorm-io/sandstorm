@@ -16,6 +16,7 @@
 
 const Capnp = Npm.require("capnp");
 const IdentityRpc = Capnp.importSystem("sandstorm/identity-impl.capnp");
+const Identity = Capnp.importSystem("sandstorm/identity.capnp").Identity;
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset.js";
 const StaticAsset = Capnp.importSystem("sandstorm/util.capnp").StaticAsset;
@@ -71,9 +72,72 @@ makeIdentity = (identityId, requirements) => {
 
 globalFrontendRefRegistry.register({
   frontendRefField: "identity",
+  typeId: Identity.typeId,
 
   restore(db, saveTemplate, identityId) {
     return new Capnp.Capability(new IdentityImpl(db, saveTemplate, identityId),
                                 IdentityRpc.PersistentIdentity);
+  },
+
+  validate(db, session, identityId, options) {
+    check(identityId, String);
+
+    if (!session.userId) {
+      throw new Meteor.Error(403, "Not logged in.");
+    }
+
+    const grain = db.getGrain(session.grainId);
+    SandstormPermissions.createNewApiToken(
+      db,
+      { identityId: session.identityId,
+        accountId: session.userId,
+      },
+      session.grainId,
+      "petname",
+      options.roleAssignment,
+      { user: { identityId: identityId, title: grain.title, }, });
+
+    return {
+      descriptor: {
+        tags: [
+          {
+            id: Identity.typeId,
+            value: Capnp.serialize(
+              Identity.PowerboxTag,
+              { identityId: new Buffer(identityId, "hex"), }),
+          },
+        ],
+      },
+      requirements: [
+        {
+          permissionsHeld: {
+            identityId: identityId,
+            grainId: session.grainId,
+            permissions: [],
+          },
+        },
+      ],
+    };
+  },
+
+  query(db, userId, value) {
+    const result = [];
+    db.collections.contacts.find({ ownerId: userId }).forEach(contact => {
+      const identity = db.getIdentity(contact.identityId);
+      result.push({
+        _id: "frontendref-identity-" + contact.identityId,
+        frontendRef: { identity: contact.identityId },
+        cardTemplate: "identityPowerboxCard",
+        configureTemplate: "identityPowerboxConfiguration",
+        profile: identity.profile,
+        searchTerms: [
+          identity.profile.name,
+          identity.profile.handle,
+          identity.profile.intrinsicName,
+        ],
+      });
+    });
+
+    return result;
   },
 });

@@ -2729,7 +2729,7 @@ if (Meteor.isServer) {
     // once we can use ES6 modules.
     const rawFeatureKey = loadSignedFeatureKey(buf);
     return processRawFeatureKey(rawFeatureKey, doc.renewalProblem);
-  }
+  };
 
   SandstormDb.prototype.currentFeatureKey = function () {
     // Returns an object with all of the current signed feature key properties,
@@ -2746,16 +2746,18 @@ if (Meteor.isServer) {
       added(doc) {
         callback(processFeatureKeyDoc(doc));
       },
+
       changed(newDoc, oldDoc) {
         if (newDoc.value !== oldDoc.value) {
           callback(processFeatureKeyDoc(newDoc));
         }
       },
+
       removed() {
         callback(null);
       },
     });
-  }
+  };
 } else {
   SandstormDb.prototype.currentFeatureKey = function () {
     const featureKey = this.collections.featureKey.findOne({ _id: "currentFeatureKey" });

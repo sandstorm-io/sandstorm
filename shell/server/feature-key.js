@@ -100,7 +100,7 @@ setNewFeatureKey = function (db, textBlock) {
     // No luck.
     throwExpired();
   });
-}
+};
 
 function setNewFeatureKeyInternal(db, textBlock, ifExpired) {
   if (!textBlock) {
@@ -169,7 +169,7 @@ renewFeatureKey = function (db, options) {
     // Count number of user accounts (not including visitors) active in the last month.
     let count = 0;
     const oneMonthAgo = new Date(Date.now() - 30 * 86400000);
-    Meteor.users.find({loginIdentities: {$exists: true}, lastActive: {$gt: oneMonthAgo}})
+    Meteor.users.find({ loginIdentities: { $exists: true }, lastActive: { $gt: oneMonthAgo } })
         .forEach(user => {
       if (db.isAccountSignedUp(user)) {
         ++count;
@@ -191,13 +191,13 @@ renewFeatureKey = function (db, options) {
 
     const data = response.data;
     if (data.noPaymentSource !== undefined) {
-      reportRenewalProblem(db, key, options, {noPaymentSource: true});
+      reportRenewalProblem(db, key, options, { noPaymentSource: true });
     } else if (data.paymentFailed !== undefined) {
-      reportRenewalProblem(db, key, options, {paymentFailed: data.paymentFailed});
+      reportRenewalProblem(db, key, options, { paymentFailed: data.paymentFailed });
     } else if (data.revoked !== undefined) {
-      reportRenewalProblem(db, key, options, {revoked: true});
+      reportRenewalProblem(db, key, options, { revoked: true });
     } else if (data.noSuchKey !== undefined) {
-      reportRenewalProblem(db, key, options, {noSuchKey: true});
+      reportRenewalProblem(db, key, options, { noSuchKey: true });
     } else if (data.success !== undefined ||
                data.tooEarly !== undefined ||
                data.pendingPayment !== undefined) {
@@ -215,19 +215,19 @@ renewFeatureKey = function (db, options) {
         });
       }
     } else {
-      reportRenewalProblem(db, key, options, {unknownResponse: response.content});
+      reportRenewalProblem(db, key, options, { unknownResponse: response.content });
     }
   } catch (err) {
     console.error("Exception when trying to renew feature key:", err.stack);
-    reportRenewalProblem(db, key, options, {exception: err.message});
+    reportRenewalProblem(db, key, options, { exception: err.message });
   }
-}
+};
 
 function fetchUpdatedFeautureKeyFromVendor(key) {
   const fetchResponse = HTTP.get(RENEW_API_HOST + "/keys/" + key.secret.toString("hex"), {
     headers: {
       "Authorization": "Bearer " + RENEW_API_TOKEN,
-    }
+    },
   });
   const result = fetchResponse.data.key;
   if (!result) throw new Error("Renewal server returned invalid GetKeyResponse.");
@@ -255,7 +255,9 @@ function reportRenewalProblem(db, key, options, problem) {
         ? "This is an automated message from your Sandstorm server. Your trial of Sandstorm for Work has expired. To continue using Sandstorm for Work, update your subscription here:"
         : "This is an automated message from your Sansdtorm server. There was an error when trying to renew your Sandstorm for Work subscription. To resolve the issue, please go to:";
 
-    emailOptions.text += `\n\n${process.env.ROOT_URL}/admin/feature-key`;
+    emailOptions.text += `
+
+${process.env.ROOT_URL}/admin/feature-key`;
 
     Meteor.users.find({ isAdmin: true }).forEach((user) => {
       const email = _.findWhere(SandstormDb.getUserEmails(user), { primary: true });
@@ -320,4 +322,4 @@ keepFeatureKeyRenewed = function (db) {
 
     scheduleRenewal();
   });
-}
+};

@@ -132,7 +132,7 @@ Meteor.methods({
     const db = this.connection.sandstormDb;
 
     // renewFeatureKey is provided in feature-key.js.
-    renewFeatureKey(db, {interactive: true});
+    renewFeatureKey(db, { interactive: true });
   },
 
   saveOrganizationSettings(token, params) {

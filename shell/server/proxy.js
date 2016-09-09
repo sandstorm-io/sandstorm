@@ -1146,7 +1146,7 @@ tryProxyRequest = (hostId, req, res) => {
           // Deny requests coming from an external referer, since there is no legitimate use case
           // for these. Note of course that an attacker can trivially suppress the referer header
           // in practice, so this check alone does not give us any security benefit if we accept
-          // requests that lack a referrer.
+          // requests that lack a referer.
           if (referer != expectedOrigin && !referer.startsWith(expectedOrigin + "/") &&
               referer != mainUrl && !referer.startsWith(mainUrl + "/")) {
             throw new Meteor.Error(403, "Blocked illegal cross-origin referral from: " + referer);

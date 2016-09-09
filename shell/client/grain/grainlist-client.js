@@ -46,7 +46,8 @@ SandstormGrainListPage.mapApiTokensToTemplateObject = function (apiTokens, stati
       _id: grainId,
       title: ownerData.title,
       appTitle: appTitle,
-      lastUsed: token.lastUsed,
+      lastUsed: token.lastUsed || token.created,
+      isNewShare: !token.lastUsed,
       iconSrc: iconSrc,
       isOwnedByMe: false,
       trashed: token.trashed,
@@ -94,7 +95,7 @@ const sortGrains = function (grains, sortRules) {
   //
   // grains is an Array of grain row objects
   // sortRules is an Array of objects containing:
-  //   key: String ("lastActive" or "size" or "title")
+  //   key: String ("lastUsed" or "size" or "title")
   //   order: String ("ascending" or "descending")
   //
   // Sort rules are given in order from highest precedence to lowest precedence.

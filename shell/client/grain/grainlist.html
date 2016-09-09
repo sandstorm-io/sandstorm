@@ -199,7 +199,13 @@
             {{/with}}
           </td>
           <td class="grain-size click-to-go">{{grainSize}}</td>
-          <td class="last-used click-to-go">{{dateString lastUsed}}</td>
+          <td class="last-used click-to-go">
+            {{#if isNewShare}}
+              Unopened
+            {{else}}
+              {{dateString lastUsed}}
+            {{/if}}
+          </td>
           <td class="shared-or-owned click-to-go">{{#if isOwnedByMe }}My grain{{else}}Shared with me{{/if}}</td>
           {{!-- Collaborators, size TODO
           <td>TODO: collaborators</td>

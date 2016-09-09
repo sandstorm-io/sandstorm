@@ -162,3 +162,10 @@ if ("replicaNumber" in Meteor.settings) {
   addFiberSampling(Meteor._SynchronousQueue.prototype, "queueTask");
   addFiberSampling(Meteor, "bindEnvironment");
 }
+
+if (!Meteor.settings.replicaNumber) {
+  Meteor.startup(() => {
+    // Defined in feature-key.js.
+    keepFeatureKeyRenewed(globalDb);
+  });
+}

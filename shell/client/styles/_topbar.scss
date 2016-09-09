@@ -1286,6 +1286,10 @@ body>.popup {
         // Guarantee position-absolute icons don't get cut off
         min-height: $topbar-popup-padding + $topbar-popup-padding + 64px;
 
+        &.urgent {
+          background-color: $error-background-color;
+        }
+
         &[href]:hover {
           background-color: #eee;
         }

@@ -540,7 +540,8 @@ Notifications = new Mongo.Collection("notifications", collectionOptions);
 //   admin:        If present, this is a notification intended for an admin.
 //     action:     If present, this is a (string) link that the notification should direct the
 //                 admin to.
-//     type:       The type of notification (currently only "reportStats").
+//     type:       The type of notification -- can be "reportStats", "cantRenewFeatureKey", or
+//                 "trialFeatureKeyExpired".
 //   appUpdates:   If present, this is an app update notification. It is an object with the appIds
 //                 as keys.
 //     $appId:     The appId that has an outstanding update.
@@ -693,6 +694,19 @@ FeatureKey = new Mongo.Collection("featureKey", collectionOptions);
 //   _id: "currentFeatureKey"
 //   value: the still-signed, binary-encoded feature key
 //          (a feature key with comments removed and base64 decoded)
+//   renewalProblem: If we tried to renew this feature key and failed, an object describing that
+//       failure. Includes exactly one of the following fields:
+//     noPaymentSource: True, indicating that the key could not be renewed because there was no
+//         payment source set for this key.
+//     paymentFailed: String error message returned by our payment processor describing why they
+//         declined the charge.
+//     noSuchKey: True, indicating the key doesn't exist.
+//     revoked: True, indicating the key has been revoked.
+//     unknownResponse: String response text from the renewal API which wasn't recognized. Should
+//         be reported to Sandstorm.
+//     exception: String error message from an exception thrown by the renewal code. This usually
+//         indicates some sort of connectivity problem, so could be reported to the user as:
+//         "There was a problem reaching the feature key renewal server."
 //
 // This is only intended to be visible on the server.
 
@@ -1350,15 +1364,11 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  sendAdminNotification(message, link) {
+  sendAdminNotification(type, action) {
     Meteor.users.find({ isAdmin: true }, { fields: { _id: 1 } }).forEach(function (user) {
       Notifications.insert({
-        admin: {
-          action: link,
-          type: "reportStats",
-        },
+        admin: { action, type },
         userId: user._id,
-        text: { defaultText: message },
         timestamp: new Date(),
         isUnread: true,
       });
@@ -2698,26 +2708,55 @@ if (Meteor.isServer) {
   });
 }
 
-const processRawFeatureKey = function (featureKey) {
+const processRawFeatureKey = function (featureKey, renewalProblem) {
   // Maps the raw data of a signed feature key to the desired "effective" feature key we should use
   // to govern high-level behavior.
   const processedFeatureKey = _.clone(featureKey);
+
+  if (renewalProblem) {
+    processedFeatureKey.renewalProblem = renewalProblem;
+  }
 
   // Hook for future extensibility.
   return processedFeatureKey;
 };
 
 if (Meteor.isServer) {
-  SandstormDb.prototype.currentFeatureKey = function () {
-    // Returns an object with all of the current signed feature key properties,
-    // or undefined, if the feature key is missing or not correctly signed.
-    const doc = this.collections.featureKey.findOne({ _id: "currentFeatureKey" });
-    if (!doc) return undefined;
+  const processFeatureKeyDoc = doc => {
+    if (!doc) return null;
     const buf = new Buffer(doc.value);
     // We use loadSignedFeatureKey from server/feature-key.js.  This should probably get refactored
     // once we can use ES6 modules.
     const rawFeatureKey = loadSignedFeatureKey(buf);
-    return processRawFeatureKey(rawFeatureKey);
+    return processRawFeatureKey(rawFeatureKey, doc.renewalProblem);
+  };
+
+  SandstormDb.prototype.currentFeatureKey = function () {
+    // Returns an object with all of the current signed feature key properties,
+    // or null, if the feature key is missing or not correctly signed.
+    const doc = this.collections.featureKey.findOne({ _id: "currentFeatureKey" });
+    return processFeatureKeyDoc(doc);
+  };
+
+  SandstormDb.prototype.observeFeatureKey = function (callback) {
+    // Calls `callback(currentFeatureKey())` whenever the feature key changes. Returns an observe
+    // handle (use .stop() to stop observing).
+
+    return this.collections.featureKey.find({ _id: "currentFeatureKey" }).observe({
+      added(doc) {
+        callback(processFeatureKeyDoc(doc));
+      },
+
+      changed(newDoc, oldDoc) {
+        if (newDoc.value !== oldDoc.value) {
+          callback(processFeatureKeyDoc(newDoc));
+        }
+      },
+
+      removed() {
+        callback(null);
+      },
+    });
   };
 } else {
   SandstormDb.prototype.currentFeatureKey = function () {

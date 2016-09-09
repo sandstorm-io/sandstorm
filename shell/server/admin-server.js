@@ -41,7 +41,7 @@ const publicAdminSettings = [
 
 const FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS = [
   "customer", "expires", "features", "isElasticBilling", "isTrial", "issued", "userLimit",
-  "secret",
+  "secret", "renewalProblem",
 ];
 
 const PUBLIC_FEATURE_KEY_FIELDS = [
@@ -122,37 +122,17 @@ Meteor.methods({
 
     const db = this.connection.sandstormDb;
 
-    if (!textBlock) {
-      // Delete the feature key.
-      db.collections.featureKey.remove("currentFeatureKey");
-      return;
-    }
+    // setNewFeatureKey is provided in feature-key.js
+    setNewFeatureKey(db, textBlock);
+  },
 
-    // textBlock is a base64'd string, possibly with newlines and comment lines starting with "-"
-    const featureKeyBase64 = _.chain(textBlock.split("\n"))
-        .filter(line => (line.length > 0 && line[0] !== "-"))
-        .value()
-        .join("");
+  renewFeatureKey: function (token) {
+    checkAuth(token);
 
-    const buf = new Buffer(featureKeyBase64, "base64");
-    if (buf.length < 64) {
-      throw new Meteor.Error(401, "Invalid feature key");
-    }
+    const db = this.connection.sandstormDb;
 
-    // loadSignedFeatureKey is provided in feature-key.js
-    const featureKey = loadSignedFeatureKey(buf);
-    if (!featureKey) {
-      throw new Meteor.Error(401, "Invalid feature key");
-    }
-
-    // Persist the feature key in the database.
-    db.collections.featureKey.upsert(
-      "currentFeatureKey",
-      {
-        _id: "currentFeatureKey",
-        value: buf,
-      }
-    );
+    // renewFeatureKey is provided in feature-key.js.
+    renewFeatureKey(db, { interactive: true });
   },
 
   saveOrganizationSettings(token, params) {
@@ -659,6 +639,9 @@ Meteor.publish("featureKey", function (forAdmin, token) {
       // Load and verify the signed feature key.
       const buf = new Buffer(doc.value);
       const featureKey = loadSignedFeatureKey(buf);
+      if (doc.renewalProblem) {
+        featureKey.renewalProblem = doc.renewalProblem;
+      }
 
       if (featureKey) {
         // If the signature is valid, publish the feature key information.
@@ -671,6 +654,11 @@ Meteor.publish("featureKey", function (forAdmin, token) {
       // Load and reverify the new signed feature key.
       const buf = new Buffer(newDoc.value);
       const featureKey = loadSignedFeatureKey(buf);
+      if (newDoc.renewalProblem) {
+        featureKey.renewalProblem = newDoc.renewalProblem;
+      } else if (oldDoc.renewalProblem) {
+        featureKey.renewalProblem = undefined;
+      }
 
       if (featureKey) {
         // If the signature is valid, call this.changed() with the interesting fields.

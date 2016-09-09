@@ -77,23 +77,28 @@
 </template>
 
 <template name="adminNotificationItem">
-{{!-- The only admin notification type that exists is the stats notification.
-      If there wind up being more types, extract those into separate
-      notification items --}}
-  {{#if isStatsNotification}}
-    {{#linkTo route="newAdminStats" class="notification-item"}}
-      <div class="notification-title">
-        Notification from system:
-      </div>
+  <a href="{{actionTarget}}" class="notification-item {{#if isUrgent}}urgent{{/if}}">
+    <div class="notification-icon">
+      <img src="/sandstorm-gradient-logo.svg">
+    </div>
 
+    {{#if isType "reportStats"}}
       You can help Sandstorm by sending us some anonymous usage stats.
       Click here for more info.
+    {{/if}}
+    {{#if isType "cantRenewFeatureKey"}}
+      Error renewing your Sandstorm for Work subscription.
+      Click here to resolve the problem, or Sandstorm for Work features may become unavailable.
+    {{/if}}
+    {{#if isType "trialFeatureKeyExpired"}}
+      Your Sandstorm for Work trial has expired.
+      Click here to upgrade, or Sandstorm for Work features may become unavailable.
+    {{/if}}
 
-      <div class="notification-footer">
-        <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
-      </div>
-    {{/linkTo}}
-  {{/if}}
+    <div class="notification-footer">
+      <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
+    </div>
+  </a>
 </template>
 
 <template name="backgroundedGrainNotificationItem">

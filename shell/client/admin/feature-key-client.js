@@ -127,6 +127,7 @@ Template.featureKeyUploadForm.helpers({
 
 Template.adminFeatureKeyModifyForm.onCreated(function () {
   this.showForm = new ReactiveVar(undefined);
+  this.renewInFlight = new ReactiveVar(false);
 });
 
 Template.adminFeatureKeyModifyForm.helpers({
@@ -162,6 +163,14 @@ Template.adminFeatureKeyModifyForm.helpers({
 
     return hexString(globalDb.currentFeatureKey().secret);
   },
+
+  renewalProblem() {
+    return globalDb.currentFeatureKey().renewalProblem;
+  },
+
+  renewInFlight() {
+    return Template.instance().renewInFlight.get();
+  },
 });
 
 Template.adminFeatureKeyModifyForm.events({
@@ -171,6 +180,22 @@ Template.adminFeatureKeyModifyForm.events({
 
   "click button.feature-key-delete-button"(evt) {
     Template.instance().showForm.set("delete");
+  },
+
+  "click .feature-key-renewal-problem button.retry"(evt) {
+    const instance = Template.instance();
+    const state = Iron.controller().state;
+    const token = state.get("token");
+    const renewInFlight = instance.renewInFlight;
+    renewInFlight.set(true);
+    Meteor.call("renewFeatureKey", token, (err) => {
+      renewInFlight.set(false);
+      if (err) {
+        // Note: Renewal failures aren't reported this way. If we get here there was a bug.
+        console.error(err);
+        alert(err.message);
+      }
+    });
   },
 });
 

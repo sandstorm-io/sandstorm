@@ -86,3 +86,20 @@ form.feature-key-form, form.feature-key-modify-form {
     min-height: 60px;
   }
 }
+
+.feature-key-renewal-problem {
+  border-radius: 5px;
+  padding: 16px 66px 16px 16px;  // space for retry button on right
+  margin-bottom: 20px;
+  background-color: $error-background-color;
+  position: relative;
+
+  >.retry {
+    @extend %button-base;
+    @extend %button-secondary;
+
+    position: absolute;
+    right: 16px;
+    top: 16px;
+  }
+}

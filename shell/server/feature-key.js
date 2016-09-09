@@ -241,3 +241,50 @@ function reportRenewalProblem(db, options, problem) {
     // - If not interactive, notify admins via bell menu.
   }
 }
+
+let keyRenewalTimeout = null;
+let keyObserver = null;
+let currentlyRenewing = false;
+keepFeatureKeyRenewed = function (db) {
+  // Whenever the feature key is expired, try to renew it.
+
+  if (keyObserver) keyObserver.stop();
+
+  keyObserver = db.observeFeatureKey(key => {
+    if (keyRenewalTimeout) {
+      Meteor.clearTimeout(keyRenewalTimeout);
+      keyRenewalTimeout = null;
+    }
+
+    if (!key) return;
+
+    function scheduleRenewal() {
+      keyRenewalTimeout = null;
+
+      // Fucking Javascript setTimeout() treats any timeout longer than 2^31 as zero. Documented
+      // behavior. Same across all browsers. Node.js has its own custom setTimeout() implementation
+      // and still does it. WHHHHYYYYYYYYYYY?
+      //
+      // So instead we cap the delay and we re-check the time in the callback.
+      const delay = Math.min(1e9, parseInt(key.expires) * 1000 - Date.now());
+      if (delay > 0) {
+        keyRenewalTimeout = Meteor.setTimeout(scheduleRenewal, delay);
+        return;
+      }
+
+      // OK, ready to renew now. Do it.
+
+      // Careful that flapping doesn't cause us to make concurrent calls.
+      if (!currentlyRenewing) {
+        currentlyRenewing = true;
+        try {
+          renewFeatureKey(db);
+        } finally {
+          currentlyRenewing = false;
+        }
+      }
+    }
+
+    scheduleRenewal();
+  });
+}

@@ -88,5 +88,17 @@ const appIdReplacementList :List(AppIdReplacement) = [
 
   # ---- end Paperwork entry ----
 
+  # ---- draw.io entry ----
+
+  (original = "nfqhx83vvzm80edpgkpax8mhqp176qj2vwg67rgq5e3kjc5r4cyh",
+   replacement = "a3w50h1435gsxczugm16q0amwkqm9f4crykzea53sv61pt7phk8h",
+   revokeExceptPackageIds = ["1450e0caa29b59ec938b3795bf17cb02", "738f0e56a9ca462e77245e3f392686d7"]),
+  # This is the ID for the draw.io app by David Benson. The old app key was compromised when it was
+  # accidentally published briefly in an upload to the Sandstorm app market. The upload was rejected
+  # from the app market. Two versions had been published to the Sandstorm App Market ("1450..." and
+  # "738f...").
+
+  # ---- end draw.io entry ----
+
   # Add your entry here!
 ];

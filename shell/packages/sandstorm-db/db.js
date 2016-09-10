@@ -2436,10 +2436,9 @@ if (Meteor.isServer) {
 
   SandstormDb.prototype.sendAppUpdateNotifications = function (appId, packageId, name,
                                                                versionNumber, marketingVersion) {
-    const _this = this;
-    const actions = _this.collections.userActions.find({ appId: appId, appVersion: { $lt: versionNumber } },
+    const actions = this.collections.userActions.find({ appId: appId, appVersion: { $lt: versionNumber } },
       { fields: { userId: 1 } });
-    actions.forEach(function (action) {
+    actions.forEach((action) => {
       const userId = action.userId;
       const updater = {
         timestamp: new Date(),
@@ -2458,15 +2457,15 @@ if (Meteor.isServer) {
 
       // We unfortunately cannot upsert because upserts can only have field equality conditions in
       // the query. If we try to upsert, Mongo complaints that "$exists" isn't valid to store.
-      if (_this.collections.notifications.update(
+      if (this.collections.notifications.update(
           { userId: userId, appUpdates: { $exists: true } },
           { $set: updater }) == 0) {
         // Update failed; try an insert instead.
-        _this.collections.notifications.insert(inserter);
+        this.collections.notifications.insert(inserter);
       }
     });
 
-    _this.collections.appIndex.update({ _id: appId }, { $set: { hasSentNotifications: true } });
+    this.collections.appIndex.update({ _id: appId }, { $set: { hasSentNotifications: true } });
 
     // In the case where we replaced a previous notification and that was the only reference to the
     // package, we need to clean it up
@@ -2544,7 +2543,7 @@ if (Meteor.isServer) {
         "https://keybase.io/_/api/1.0/user/lookup.json?key_fingerprint=" + keyFingerprint +
         "&fields=basics,profile,proofs_summary", {
       timeout: 5000,
-    }, function (err, keybaseResponse) {
+    }, (err, keybaseResponse) => {
       if (err) {
         console.log("keybase lookup error:", err.stack);
         return;
@@ -2825,10 +2824,10 @@ Meteor.methods({
   removeUserAction(actionId) {
     check(actionId, String);
     if (this.isSimulation) {
-      this.collections.userActions.remove({ _id: actionId });
+      UserActions.remove({ _id: actionId });
     } else {
       if (this.userId) {
-        const result = this.collections.userActions.findAndModify({
+        const result = this.connection.sandstormDb.collections.userActions.findAndModify({
           query: { _id: actionId, userId: this.userId },
           remove: true,
         });

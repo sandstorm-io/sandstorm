@@ -1,3 +1,15 @@
+### v0.181 (2016-09-10)
+- Sandstorm for Work: Feature keys now automatically renew when they expire. If automatic renewal isn't possible, the administrators will receive notifications by bell menu and (if possible) e-mail.
+- Added hardening against clickjacking and CSRF attacks on apps. On Chrome and Safari, CSRF attacks should now be totally blocked, even if the app fails to implement proper protections.
+- Fixed that newly-received shares were appearing at the bottom of the grain list using the default sort order (by last-opened date). Never-opened grains will now sort according to the share date, and will show "Unopened" in the last-opened column.
+- Fixed bug in Meteor that could cause the server to suddenly spawn tens of thousands of fibers, which in turn due to a bug in V8 would make the server permanently consume excessive CPU, even after the fibers exited.
+- Fixed that the "stay anonymous" button on the sign-in hint didn't work (but closing the hint dialog worked and had the same effect).
+- Fixed that after manually updating an app, the button to upgrade existing grains did not appear. (When auto-updating an app via the notifications menu, grains are updated automatically.)
+- Fixed grain tab close buttons sometimes being the wrong size on new builds of Chrome.
+- Fixed some console log spam.
+- Various refactoring.
+- Updated all dependencies.
+
 ### v0.180 (2016-09-03)
 - The "Who has access" dialog now shows collections of which the grain is a part, and (more generally) other grains through which this grain has been shared.
 - The "Delete Account" button now makes you type a phrase to confirm. (It still doesn't actually delete your account for 7 days.)

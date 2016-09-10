@@ -1809,8 +1809,10 @@ ul.identity-card-list {
 }
 
 .user-confirm-delete {
-  .confirm {
+  .confirm, .feedback {
     width: 100%;
+  }
+  .feedback {
     margin-bottom: 10px;
   }
 }

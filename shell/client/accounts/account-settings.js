@@ -32,6 +32,7 @@ Template.sandstormAccountSettings.onCreated(function () {
   this._deleteSubmitting = new ReactiveVar(false);
   this._deleteError = new ReactiveVar(null);
   this._deleteConfirmed = new ReactiveVar(false);
+  this._deleteFeedback = new ReactiveVar(null);
   const _this = this;
 
   // TODO(cleanup): Figure out a better way to pass in this data. Perhaps it should be part of
@@ -304,7 +305,7 @@ Template.sandstormAccountSettings.events({
 
   "click button.delete-account-real": function (ev, instance) {
     instance._deleteSubmitting.set(true);
-    Meteor.call("deleteOwnAccount", function (err) {
+    Meteor.call("deleteOwnAccount", instance._deleteFeedback.get(), function (err) {
       if (err) {
         instance._deleteError.set(err.message);
       } else {
@@ -323,6 +324,10 @@ Template.sandstormAccountSettings.events({
     } else {
       instance._deleteConfirmed.set(false);
     }
+  },
+
+  "input input.feedback": function (evt, instance) {
+    instance._deleteFeedback.set(evt.currentTarget.value);
   },
 });
 

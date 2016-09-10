@@ -19,14 +19,14 @@
     "intro.js": "git+https://github.com/sandstorm-io/intro.js.git#8e1c7604f251ec874bf4ae4d7b4f11a14cee697e",
     "ldapjs": "^0.7.1",
     "mailparser": "^0.6.1",
-    "node-forge": "0.6.34",
-    "nodemailer": "^2.5.0",
-    "nodemailer-smtp-pool": "^2.7.0",
-    "request": "2.67.0",
-    "smtp-server": "^1.13.1",
+    "node-forge": "^0.6.34",
+    "nodemailer": "^2.6.0",
+    "nodemailer-smtp-pool": "^2.8.2",
+    "request": "^2.67.0",
+    "smtp-server": "^1.14.2",
     "xml-crypto": "0.0.20",
-    "xml2js": "^0.2.0",
+    "xml2js": "^0.2.8",
     "xmlbuilder": "^8.2.2",
-    "xmldom": "^0.1.6"
+    "xmldom": "^0.1.22"
   }
 }

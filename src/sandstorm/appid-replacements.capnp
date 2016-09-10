@@ -88,5 +88,16 @@ const appIdReplacementList :List(AppIdReplacement) = [
 
   # ---- end Paperwork entry ----
 
+  # ---- draw.io entry ----
+
+  (original = "nfqhx83vvzm80edpgkpax8mhqp176qj2vwg67rgq5e3kjc5r4cyh",
+   replacement = "a3w50h1435gsxczugm16q0amwkqm9f4crykzea53sv61pt7phk8h",
+   revokeExceptPackageIds = [
+       "1450e0caa29b59ec938b3795bf17cb02", "738f0e56a9ca462e77245e3f392686d7"]),
+  # This is the ID for draw.io. The old app key may have been leaked (probably not, but we're
+  # cautious). Two versions had been published under the original key.
+
+  # ---- end draw.io entry ----
+
   # Add your entry here!
 ];

@@ -11,7 +11,7 @@ ecmascript-collections
 # which was deprecated in favor of splitting things out separately
 meteor-base@1.0.4
 underscore@1.0.9
-mongo@1.1.11
+mongo@1.1.12
 blaze-html-templates@1.0.4
 jquery@1.11.9
 session@1.1.6
@@ -38,4 +38,4 @@ fourseven:scss
 sha@1.0.8
 standard-minifier-css@1.2.0
 standard-minifier-js@1.2.0
-shell-server
+shell-server@0.2.1

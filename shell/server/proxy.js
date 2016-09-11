@@ -1598,7 +1598,8 @@ class Proxy {
       }
 
       const mainUrl = process.env.ROOT_URL;
-      response.setHeader("Content-Security-Policy", "frame-ancestors " + mainUrl);
+      const grainHost = PROTOCOL + "//" + request.headers.host;
+      response.setHeader("Content-Security-Policy", "frame-ancestors " + mainUrl + " " + grainHost);
       response.setHeader("X-Frame-Options", "ALLOW-FROM " + mainUrl);
 
       // TODO(security): Add a Content-Security-Policy header which:

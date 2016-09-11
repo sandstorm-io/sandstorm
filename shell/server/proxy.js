@@ -1136,7 +1136,23 @@ tryProxyRequest = (hostId, req, res) => {
           //     https://bugzilla.mozilla.org/show_bug.cgi?id=446344
           // I haven't found any information on IE/Edge's behavior.
           if (origin !== expectedOrigin) {
-            throw new Meteor.Error(403, "Blocked illegal cross-origin request from: " + origin);
+            // TODO(security): Alas, it turns out we have apps that have:
+            //   <meta name="referrer" content="no-referrer">
+            // as Chrome sends "Origin: null" in these cases. :( These apps need to switch to:
+            //   <meta name="referrer" content="same-origin">
+            // It's important that we don't break apps, so we will accept null origins for now,
+            // which of course completely defeats any CSRF protection. We should get the apps to
+            // update or apply a whitelist soon.
+            if (origin === "null") {
+              if (!proxy.wroteCsrfWarning) {
+                console.warn(
+                    "Note: Observed null Origin header. App needs to be updated so that " +
+                    "we can apply automatic CSRF protection. grain ID:", proxy.grainId);
+                proxy.wroteCsrfWarning = true;
+              }
+            } else {
+              throw new Meteor.Error(403, "Blocked illegal cross-origin request from: " + origin);
+            }
           }
         } else if (referer) {
           // Mark that we've seed a Referer header on this host, which indicates that the user's

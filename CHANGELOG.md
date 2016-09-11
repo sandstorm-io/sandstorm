@@ -1,3 +1,6 @@
+### v0.182 (2016-09-11) [bugfixes]
+- The security hardening in 0.181 broke Ethercalc. This release fixes it.
+
 ### v0.181 (2016-09-10)
 - Sandstorm for Work: Feature keys now automatically renew when they expire. If automatic renewal isn't possible, the administrators will receive notifications by bell menu and (if possible) e-mail.
 - Added hardening against clickjacking and CSRF attacks on apps. On Chrome and Safari, CSRF attacks should now be totally blocked, even if the app fails to implement proper protections.

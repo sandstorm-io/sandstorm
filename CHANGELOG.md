@@ -1,3 +1,6 @@
+### v0.183 (2016-09-11) [bugfixes]
+- The security hardening in 0.181 broke Gogs, for a different reason. This release rolls back the hardening temporarily while we resolve the issue.
+
 ### v0.182 (2016-09-11) [bugfixes]
 - The security hardening in 0.181 broke Ethercalc. This release fixes it.
 

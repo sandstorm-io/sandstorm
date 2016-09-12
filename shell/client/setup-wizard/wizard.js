@@ -677,7 +677,8 @@ Template.setupWizardPreinstalled.helpers({
   allowSkip() {
     const instance = Template.instance();
     const apps = globalDb.collections.appIndex.find({ _id: {
-      $in: globalDb.getProductivitySuiteAppIds(), },
+      $in: globalDb.getProductivitySuiteAppIds().concat(
+        globalDb.getSystemSuiteAppIds()), },
     }).fetch();
     const appIndexCount = globalDb.collections.appIndex.find({}).count();
     const failedAppsCount = globalDb.collections.packages.find({

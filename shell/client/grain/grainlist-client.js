@@ -107,8 +107,16 @@ const sortGrains = function (grains, sortRules) {
       return function (a, b) {
         const aRaw = a[key];
         const bRaw = b[key];
+
+        // Use locale-aware comparison if available.  Not all browsers support this.
+        if (String.prototype.localeCompare) {
+          return aRaw.localeCompare(bRaw) * multiplier;
+        }
+
+        // Otherwise, fall back to direct string comparison on lowercased strings.
         const aLower = aRaw.toLowerCase();
         const bLower = bRaw.toLowerCase();
+
         if (aLower < bLower) {
           return -1 * multiplier;
         } else if (aLower > bLower) {

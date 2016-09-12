@@ -1,3 +1,6 @@
+### v0.185 (2016-09-12) [bugfixes]
+- Fixed a problem preventing some LDAP users from receiving notification e-mails.
+
 ### v0.184 (2016-09-12) [bugfixes]
 - Fixed that refactoring in 0.181 could cause SAML login to fail.
 

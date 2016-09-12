@@ -235,9 +235,15 @@ function fetchUpdatedFeautureKeyFromVendor(key) {
 }
 
 function reportRenewalProblem(db, key, options, problem) {
+  const old = db.collections.featureKey.findOne("currentFeatureKey");
+
   db.collections.featureKey.update("currentFeatureKey", { $set: { renewalProblem: problem } });
 
-  if (!options.interactive) {
+  console.error("Couldn't renew feature key:", problem);
+
+  if (old && old.renewalProblem) {
+    // There was already a renewal problem reported. Don't report again.
+  } else if (!options.interactive) {
     if (key.isTrial) {
       db.sendAdminNotification("trialFeatureKeyExpired", "/admin/feature-key");
     } else {

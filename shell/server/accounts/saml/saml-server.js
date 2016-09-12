@@ -75,13 +75,16 @@ const closePopup = function (res, err) {
 };
 
 const generateService = function () {
-  const entityId = SandstormDb.prototype.getSamlEntityId();
+  // TODO(cleanup): Inject the db.
+  const db = new SandstormDb();
+
+  const entityId = db.getSamlEntityId();
   const service = {
     "provider": "default",
-    "entryPoint": SandstormDb.prototype.getSamlEntryPoint(),
+    "entryPoint": db.getSamlEntryPoint(),
     // TODO(someday): find a better way to inject the DB
     "issuer": entityId || HOSTNAME,
-    "cert": SandstormDb.prototype.getSamlPublicCert(),
+    "cert": db.getSamlPublicCert(),
   };
   return service;
 };
@@ -154,6 +157,7 @@ const middleware = function (req, res, next) {
       throw new Error("Unexpected SAML action " + samlObject.actionName);
     }
   } catch (err) {
+    console.error(err.stack);
     closePopup(res, err);
   }
 };

@@ -1,3 +1,6 @@
+### v0.184 (2016-09-12) [bugfixes]
+- Fixed that refactoring in 0.181 could cause SAML login to fail.
+
 ### v0.183 (2016-09-11) [bugfixes]
 - The security hardening in 0.181 broke Gogs, for a different reason. This release rolls back the hardening temporarily while we resolve the issue.
 

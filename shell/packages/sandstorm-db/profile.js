@@ -263,7 +263,8 @@ SandstormDb.getVerifiedEmails = function (identity) {
       .map((email) => _.pick(email, "email", "primary"))
       .value();
   } else if (identity.services.ldap) {
-    const email = identity.services.ldap.rawAttrs[SandstormDb.prototype.getLdapEmailField()];
+    // TODO(cleanup): don't create a new SandstormDb here, make this non-static
+    const email = identity.services.ldap.rawAttrs[new SandstormDb().getLdapEmailField()];
     if (email) {
       return [{ email: email, primary: true }];
     }

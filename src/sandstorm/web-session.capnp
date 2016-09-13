@@ -159,6 +159,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       "oc-fileid",             # Owncloud client
       "oc-chunked",            # Owncloud client
       "x-hgarg-*",             # Mercurial client
+      "x-phabricator-*",       # Phabricator
     ];
   }
 

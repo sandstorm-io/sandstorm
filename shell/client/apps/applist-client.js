@@ -114,11 +114,32 @@ Template.sandstormAppListPage.helpers({
   apps: function () {
     const ref = Template.instance().data;
     const apps = matchApps(ref._filter.get());
-    return _.chain(apps)
-            .map(appToTemplateObject)
-            .sortBy(function (appTemplateObj) { return appTemplateObj.appTitle.toLowerCase(); })
-            .sortBy(function (appTemplateObj) { return appTemplateObj.dev ? 0 : 1; })
-            .value();
+    const appTemplateObjects = apps.map(appToTemplateObject);
+
+    appTemplateObjects.sort((a, b) => {
+      // Dev apps sort first.
+      if (a.dev && !b.dev) return -1;
+      if (b.dev && !a.dev) return 1;
+
+      // Use locale-aware comparison if available.
+      // Otherwise, directly compare lowercased app titles.
+      if (String.prototype.localeCompare) {
+        return a.appTitle.localeCompare(b.appTitle);
+      }
+
+      const aLower = a.appTitle.toLowerCase();
+      const bLower = b.appTitle.toLowerCase();
+
+      if (aLower < bLower) {
+        return -1;
+      } else if (aLower > bLower) {
+        return 1;
+      } else {
+        return 0;
+      }
+    });
+
+    return appTemplateObjects;
   },
 
   popularApps: function () {

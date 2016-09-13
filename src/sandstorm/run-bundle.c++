@@ -1849,6 +1849,16 @@ private:
           KJ_UNREACHABLE;
         }
       } else if (siginfo.ssi_signo == SIGINT) {
+        // Frontend startup or shutdown request, used with run-dev.
+
+        if (!siginfo.ssi_int) {
+          // We have to close all the listen ports otherwise run-dev won't be able to open them
+          // for itself. Note that we never re-open them here in the parent process, meaning that
+          // if you stop-fe and then start-fe and then do an update, you won't get a zero-downtime
+          // update. This only affects developers so whatever.
+          fdBundle.closeAll();
+        }
+
         // Pass along to server monitor.
         union sigval sigval;
         memset(&sigval, 0, sizeof(sigval));

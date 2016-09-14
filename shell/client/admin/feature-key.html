@@ -74,7 +74,8 @@
     <div class="feature-key-properties">
       <div class="feature-key-property-row">
         <span class="feature-key-property-key">Plan</span>
-        <span class="feature-key-property-value">{{featureKey.userLimit}} users
+        <span class="feature-key-property-value">
+          {{renderUserLimitString featureKey.userLimit}}
           {{#if featureKey.isFreeKey}}
             <span class="feature-key-label feature-key-free">Free</span>
           {{else}}

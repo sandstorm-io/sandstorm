@@ -1,6 +1,6 @@
 # Sandstorm
 
-Sandstorm makes it easy to run your own server.
+Sandstorm is a self-hostable web productivity suite. It's implemented as a security-hardened web app package manager. Sandstorm makes it easy to run your own server.
 
 Use Sandstorm to install apps to create [documents](https://apps.sandstorm.io/app/h37dm17aa89yrd8zuqpdn36p6zntumtv08fjpu8a8zrte7q1cn60),
 [spreadsheets](https://apps.sandstorm.io/app/a0n6hwm32zjsrzes8gnjg734dh6jwt7x83xdgytspe761pe2asw0), [blogs](https://apps.sandstorm.io/app/aax9j672p6z8n7nyupzvj2nmumeqd4upa0f7mgu8gprwmy53x04h),

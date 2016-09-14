@@ -69,14 +69,16 @@ related to user identity and permissions:
   as primary keys or for security; use `X-Sandstorm-User-Id`
   instead.
 
-    * **Our recommendation on how to use this:** Use the preferred handle as a hint when creating a
-      new account. If there is already an account for the user ID, don't change its handle. If
-      another account exists with the same handle, then append some numbers to make the new one
-      unique (this should be rare). This is for example how GitLab works on Sandstorm. See
-      [sample code.](https://github.com/dwrensha/gitlabhq/blob/7f2b131c8e632b1a9c261e8ca1b6d46667b99d70/config/initializers/sandstorm_strategy.rb#L12-L21) In GitLab, the `X-Sandstorm-User-Id` is
-      used as a unique identifier (embedded within the user's "email address"). This code
-      relies on the fact that GitLab's user schema verifies that email addresses (therefore,
-      `X-Sandstorm-User-Id` values) are unique.
+    * **Our recommendation on how to use this:** If you need a unique identifier, use the
+      `X-Sandstorm-User-Id`. If your app requires that handles also be unique, then use the
+      following algorithm. If there is already an account for the user ID, don't change its
+      handle. If another account exists with the same handle, then append some numbers to make the
+      new one unique (this should be rare). This is for example how GitLab works on Sandstorm. See
+      [sample
+      code.](https://github.com/dwrensha/gitlabhq/blob/7f2b131c8e632b1a9c261e8ca1b6d46667b99d70/config/initializers/sandstorm_strategy.rb#L12-L21)
+      In GitLab, the `X-Sandstorm-User-Id` is used as a unique identifier (embedded within the
+      user's "email address"). This code relies on the fact that GitLab's user schema verifies that
+      email addresses (therefore, `X-Sandstorm-User-Id` values) are unique.
 
 * `X-Sandstorm-User-Picture`: The URL of the user's profile picture.
   The exact resolution of the picture is not specified, but assume

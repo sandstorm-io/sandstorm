@@ -314,12 +314,6 @@ Template.oauthLoginButton.events({
 });
 
 Template.loginButtonsList.helpers({
-  configured: function () {
-    const name = Template.currentData().name;
-    return !!ServiceConfiguration.configurations.findOne({ service: name }) ||
-           Template.instance().data._services.get(name);
-  },
-
   services: getServices,
 
   showTroubleshooting: function () {

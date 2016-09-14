@@ -21,7 +21,7 @@ Template.newAdminFeatureKey.helpers({
 });
 
 Template.adminFeatureKeyDetails.helpers({
-  computeValidity: function (featureKey) {
+  computeValidity(featureKey) {
     const nowSec = Date.now() / 1000;
     const expires = parseInt(featureKey.expires);
     if (expires >= nowSec) {
@@ -45,7 +45,15 @@ Template.adminFeatureKeyDetails.helpers({
     }
   },
 
-  renderDateString: function (stringSecondsSinceEpoch) {
+  renderUserLimitString(userLimit) {
+    if (userLimit == 4294967295) {
+      return "Unlimited users";
+    } else {
+      return `${userLimit} users`;
+    }
+  },
+
+  renderDateString(stringSecondsSinceEpoch) {
     if (stringSecondsSinceEpoch === "18446744073709551615") { // UINT64_MAX means "never expires"
       return "Never";
     }

@@ -29,6 +29,7 @@ import AccountsUi from "/imports/client/accounts/accounts-ui.js";
 
 // for convenience
 const loginButtonsSession = Accounts._loginButtonsSession;
+const ServiceConfiguration = Package["service-configuration"].ServiceConfiguration;
 
 const isDemoUserHelper = function () {
   return this._db.isDemoUser();

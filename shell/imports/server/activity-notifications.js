@@ -16,7 +16,7 @@
 
 import { Match, check } from "meteor/check";
 
-const createAppActivityDesktopNotification = (options) => {
+function createAppActivityDesktopNotification(options) {
   check(options, {
     userId: String,
     notificationId: String,
@@ -44,6 +44,6 @@ const createAppActivityDesktopNotification = (options) => {
     appActivity: options.appActivity,
     deliveredToUser: false,
   });
-};
+}
 
 export { createAppActivityDesktopNotification };

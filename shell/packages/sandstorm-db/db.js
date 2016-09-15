@@ -1130,7 +1130,7 @@ if (Meteor.isServer) {
   SandstormDb.prototype.removeApiTokens = function (query) {
     // Remove all API tokens matching the query, making sure to clean up ApiHosts as well.
 
-    this.collections.apiTokens.find(query).forEach(function (token) {
+    this.collections.apiTokens.find(query).forEach((token) => {
       // Clean up ApiHosts for webkey tokens.
       if (token.hasApiHost) {
         const hash2 = Crypto.createHash("sha256").update(token._id).digest("base64");

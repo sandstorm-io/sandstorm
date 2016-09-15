@@ -19,33 +19,55 @@ class ActivityTracker {
     this._lastVisibilityChangeTime = now;
     this._lastScrollTime = 0;
     this._lastOtherActivityTime = 0;
+    this._listeners = []; // A list of { callback, minIdleTimeMsec } objects
 
     window.addEventListener("focus", (evt) => {
-      this._lastFocusChangeTime = this._timeProvider.now();
+      const prevActivity = this._lastClearlyActive();
+      const now = this._timeProvider.now();
+      this._lastFocusChangeTime = now;
+      this._notifyActivity(now - prevActivity);
     });
 
     window.addEventListener("blur", (evt) => {
-      this._lastFocusChangeTime = this._timeProvider.now();
+      const prevActivity = this._lastClearlyActive();
+      const now = this._timeProvider.now();
+      this._lastFocusChangeTime = now;
+      this._notifyActivity(now - prevActivity);
     });
 
     window.addEventListener("mousemove", (evt) => {
-      this._lastMouseMoveTime = this._timeProvider.now();
+      const prevActivity = this._lastClearlyActive();
+      const now = this._timeProvider.now();
+      this._lastMouseMoveTime = now;
+      this._notifyActivity(now - prevActivity);
     }, { capture: true });
 
     window.addEventListener("click", (evt) => {
-      this._lastClickTime = this._timeProvider.now();
+      const prevActivity = this._lastClearlyActive();
+      const now = this._timeProvider.now();
+      this._lastClickTime = now();
+      this._notifyActivity(now - prevActivity);
     }, { capture: true });
 
     window.addEventListener("keydown", (evt) => {
-      this._lastKeyDownTime = this._timeProvider.now();
+      const prevActivity = this._lastClearlyActive();
+      const now = this._timeProvider.now();
+      this._lastKeyDownTime = now;
+      this._notifyActivity(now - prevActivity);
     }, { capture: true });
 
     window.addEventListener("visibilitychange", (evt) => {
-      this._lastVisibilityChangeTime = this._timeProvider.now();
+      const prevActivity = this._lastClearlyActive();
+      const now = this._timeProvider.now();
+      this._lastVisibilityChangeTime = now;
+      this._notifyActivity(now - prevActivity);
     });
 
     window.addEventListener("scroll", (evt) => {
-      this._lastScrollTime = this._timeProvider.now();
+      const prevActivity = this._lastClearlyActive();
+      const now = this._timeProvider.now();
+      this._lastScrollTime = now;
+      this._notifyActivity(now - prevActivity);
     }, { capture: true });
   }
 
@@ -65,7 +87,10 @@ class ActivityTracker {
   markOtherActivity() {
     // A function that can be called when some other event demonstrates user interaction.
     // Initially, we'll use this for when users activate desktop notifications.
-    this._lastOtherActivityTime = this._timeProvider.now();
+    const prevActivity = this._lastClearlyActive();
+    const now = this._timeProvider.now();
+    this._lastOtherActivityTime = now;
+    this._notifyActivity(now - prevActivity);
   }
 
   _lastClearlyActive() {
@@ -83,6 +108,24 @@ class ActivityTracker {
   idleTime() {
     // Returns an upper bound on possible idle time in milliseconds
     return this._timeProvider.now() - this._lastClearlyActive();
+  }
+
+  _notifyActivity(prevIdleTime) {
+    for (let i = 0; i < this._listeners.length; i++) {
+      const listener = this._listeners[i];
+      if (prevIdleTime > listener.minIdleTimeMsec) {
+        listener.callback();
+      }
+    }
+  }
+
+  onReturnFromIdle(listener, minIdleTimeMsec) {
+    // Requests that this activity tracker call listener() when observable activity occurs after at
+    // least minIdleTimeMsec of nonactivity.
+    this._listeners.push({
+      callback: listener,
+      minIdleTimeMsec,
+    });
   }
 }
 

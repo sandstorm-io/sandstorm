@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
 
 // Test if localStorage is usable.
@@ -33,6 +34,39 @@ try {
 }
 
 const ICON_FETCHING_TIMEOUT_MSEC = 2000;
+
+// How long this session has to be idle for before we stop marking events as deliveredToUser.
+const IDLE_TIME_MIN_THRESHOLD = 120000;
+
+// Cache marking which desktop notification we're already making the RPC to mark as delivered
+const deliveryCalls = {};
+
+function maybeMarkNotificationDelivered(notif) {
+  if (notif.deliveredToUser) return;
+  if (notif._id in deliveryCalls) return;
+
+  if (Notification.permission === "granted") {
+    // If we're allowed to show notifications,
+    // mark the desktop notification as delivered to the user.  Either this tab or another
+    // tab watching localStorage will claim the notification and show it to the user.
+    deliveryCalls[notif._id] = Date.now();
+    console.log(`marking ${notif._id} delivered at ${deliveryCallse[notif._id]}`);
+    Meteor.call("markDesktopNotificationDelivered", notif._id, (err) => {
+      if (err) {
+        console.log(`Failed to mark notification ${notif._id} as delivered`, err.message);
+      }
+
+      delete deliveryCalls[notif._id];
+    });
+  }
+}
+
+function maybeMarkAllNotificationsDelivered() {
+  // This function is to be called when we see the user return from being idle.
+  globalDb.collections.desktopNotifications.find({ deliveredToUser: false }).forEach((notif) => {
+    maybeMarkNotificationDelivered(notif);
+  });
+}
 
 const tryRenderImageToDataUri = (url) => {
   const canvas = document.createElement("canvas");
@@ -271,15 +305,8 @@ Template.desktopNotifications.onCreated(function () {
   };
 
   this.handleDiscoveredNotification = (notif, storageValue) => {
-    if (Notification.permission === "granted" && globalActivityTracker.idleTime() < 120000) {
-      // If we're allowed to show notifications, and this tab's idle time is low,
-      // mark the desktop notification as delivered to the user.  Either this tab or another
-      // tab watching localStorage will claim the notification and show it to the user.
-      Meteor.call("markDesktopNotificationDelivered", notif._id, (err) => {
-        if (err) {
-          console.log(`Failed to mark notification ${notif._id} as delivered`, err.message);
-        }
-      });
+    if (globalActivityTracker.idleTime() < IDLE_TIME_MIN_THRESHOLD) {
+      maybeMarkNotificationDelivered(notif);
     }
 
     if (this.shouldHandleNotificationImmediately(notif)) {
@@ -362,4 +389,8 @@ Template.desktopNotifications.onDestroyed(function () {
   if (this.periodicCleanupTimerHandle) {
     window.clearInterval(this.periodicCleanupTimerHandle);
   }
+});
+
+Meteor.startup(() => {
+  globalActivityTracker.onReturnFromIdle(maybeMarkAllNotificationsDelivered, IDLE_TIME_MIN_THRESHOLD);
 });

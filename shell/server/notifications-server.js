@@ -192,6 +192,7 @@ logActivity = function (grainId, identityId, event) {
 
         const desktopNotification = {
           userId: account._id,
+          identityId: targetId,
           notificationId,
           appActivity,
         };

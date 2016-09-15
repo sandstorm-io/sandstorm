@@ -19,6 +19,7 @@ import { Match, check } from "meteor/check";
 function createAppActivityDesktopNotification(options) {
   check(options, {
     userId: String,
+    identityId: String,
     notificationId: String,
     appActivity: {
       user: {
@@ -39,6 +40,7 @@ function createAppActivityDesktopNotification(options) {
 
   globalDb.collections.desktopNotifications.insert({
     userId: options.userId,
+    identityId: options.identityId,
     notificationId: options.notificationId,
     creationDate: new Date(),
     appActivity: options.appActivity,

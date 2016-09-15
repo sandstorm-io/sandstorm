@@ -728,6 +728,7 @@ const DesktopNotifications = new Mongo.Collection("desktopNotifications", collec
 //   _id: String.  Used as the tag to coordinate notification merging between browser tabs.
 //   creationDate: Date object. indicating when this notification was posted.
 //   userId: String. Account id to which this notification was published.
+//   identityId: Optional(String).  Identity ID to which this notification was published.
 //   notificationId: String.  ID of the matching event in the Notifications table to dismiss if this
 //                            notification is activated.
 //   deliveredToUser: Boolean.  Used to flag that this notification was delivered to a session with

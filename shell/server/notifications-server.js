@@ -15,7 +15,7 @@
 // limitations under the License.
 
 import { waitPromise } from "/imports/server/async-helpers.js";
-import { createAppActivityDesktopNotification } from "/imports/server/desktop-notifications.js";
+import { createAppActivityDesktopNotification } from "/imports/server/activity-notifications.js";
 
 const Capnp = Npm.require("capnp");
 const SupervisorCapnp = Capnp.importSystem("sandstorm/supervisor.capnp");

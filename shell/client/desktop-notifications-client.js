@@ -15,7 +15,7 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
-import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
+import { computeTitleFromTokenOwnerUser } from "/imports/model-helpers.js";
 
 // Test if localStorage is usable.
 // We can't use Meteor._localStorage for this because we need to be able to enumerate the elements

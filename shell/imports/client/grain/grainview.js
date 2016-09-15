@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
+import { computeTitleFromTokenOwnerUser } from "/imports/model-helpers.js";
 
 let counter = 0;
 

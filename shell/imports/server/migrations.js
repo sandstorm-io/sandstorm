@@ -700,6 +700,31 @@ const setNewServer = function (db, backend) {
   }
 };
 
+const addMembraneRequirementsToIdentities = function (db, backend) {
+  const query = {
+    "frontendRef.identity": { $exists: true, },
+    "owner.grain.grainId": { $exists: true, },
+    "requirements.0": { $exists: false, },
+  };
+
+  db.collections.apiTokens.find(query).map((apiToken) => {
+    db.collections.apiTokens.update(
+      { _id: apiToken._id },
+      {
+        $push: {
+          requirements: {
+            permissionsHeld: {
+              grainId: apiToken.owner.grain.grainId,
+              identityId: apiToken.frontendRef.identity,
+              permissions: [],
+            },
+          },
+        },
+      }
+    );
+  });
+};
+
 function backgroundFillInGrainSizes(db, backend) {
   // Fill in sizes for all grains that don't have them. Since computing a grain size requires a
   // directory walk, we don't want to do them all at once. Instead, we compute one a second until
@@ -771,6 +796,7 @@ const MIGRATIONS = [
   clearAppIndex,
   assignEmailVerifierIds,
   setNewServer,
+  addMembraneRequirementsToIdentities,
 ];
 
 const NEW_SERVER_STARTUP = [

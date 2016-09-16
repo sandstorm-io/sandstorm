@@ -673,7 +673,8 @@ const startPreinstallingApps = function (db, backend) {
     db.updateAppIndex();
 
     const preinstalledApps = db.collections.appIndex.find({ _id: {
-      $in: db.getProductivitySuiteAppIds(), },
+      $in: db.getProductivitySuiteAppIds().concat(
+        db.getSystemSuiteAppIds()), },
     }).fetch();
     const appAndPackageIds = _.map(preinstalledApps, (app) => {
       return {

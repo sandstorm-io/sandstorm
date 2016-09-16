@@ -304,7 +304,7 @@ Template.sandstormAccountSettings.events({
 
   "click button.delete-account-real": function (ev, instance) {
     instance._deleteSubmitting.set(true);
-    Meteor.call("deleteOwnAccount", function (err) {
+    Meteor.call("deleteOwnAccount", instance.find(".feedback").value, function (err) {
       if (err) {
         instance._deleteError.set(err.message);
       } else {

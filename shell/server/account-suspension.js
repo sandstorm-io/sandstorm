@@ -16,7 +16,7 @@
 
 import { send } from "/imports/server/email.js";
 
-function sendDeletionEmails(db, deletedUserId, byAdminUserId) {
+function sendDeletionEmails(db, deletedUserId, byAdminUserId, feedback) {
   const deletedUser = db.getUser(deletedUserId);
 
   const userEmail = _.findWhere(SandstormDb.getUserEmails(deletedUser), { primary: true });
@@ -54,6 +54,9 @@ If you did not request this deletion, please contact the server administrator im
     emailOptions.text = `${adminName} has requested that the Sandstorm account held by ${deleteUserString} on ${db.getServerTitle()} be deleted. The account has been suspended and will be fully deleted in seven days. To cancel the deletion, go to: ${process.env.ROOT_URL}/admin/users/${deletedUser._id}`;
   } else {
     emailOptions.text = `${deleteUserString} has requested that their account be deleted on ${db.getServerTitle()}. The account has been suspended and will be fully deleted in seven days. To cancel the deletion, go to: ${process.env.ROOT_URL}/admin/users/${deletedUser._id}`;
+    if (feedback) {
+      emailOptions.text += "\nUser gave the following feedback: " + feedback;
+    }
   }
 
   Meteor.users.find({ isAdmin: true }).forEach((user) => {
@@ -99,7 +102,7 @@ Meteor.methods({
     }
   },
 
-  deleteOwnAccount() {
+  deleteOwnAccount(feedback) {
     const db = this.connection.sandstormDb;
     if (!Meteor.userId()) {
       throw new Meteor.Error(403, "Must be logged in to delete an account");
@@ -116,7 +119,7 @@ Meteor.methods({
 
     db.suspendAccount(Meteor.userId(), null, true);
 
-    sendDeletionEmails(db, Meteor.userId());
+    sendDeletionEmails(db, Meteor.userId(), null, feedback);
   },
 
   unsuspendAccount(userId) {

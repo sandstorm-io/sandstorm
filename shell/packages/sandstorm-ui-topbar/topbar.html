@@ -22,7 +22,7 @@ limitations under the License.
       Sandstorm has been updated &mdash; Click here to reload
     </button>
   {{/if}}
-  <ul class="topbar {{#if _menuExpanded.get}}expanded{{/if}}">
+  <ul class="topbar{{#if _menuExpanded.get}} expanded{{/if}}{{#if isCurrentRoute "standalone"}} standalone{{/if}}">
     <ul class="menubar {{#if shrinkNavbar}}shrink-desktop{{/if}}">
       {{#each items}}
         {{#unless onlyPopup}}

@@ -159,6 +159,11 @@ button.revoke-token, button.revoke-access {
   z-index: 0;
 }
 
+.main-content.standalone {
+  top: 0px;
+  left: 0px;
+}
+
 @import "_grainlog.scss";
 
 .centered-box {

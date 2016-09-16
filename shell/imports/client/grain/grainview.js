@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
+import { isStandalone } from "/imports/client/standalone.js";
 
 let counter = 0;
 
@@ -447,6 +448,7 @@ class GrainView {
       return;
     }
 
+    const oldIdentityId = this._userIdentityId.get();
     const myIdentityIds = SandstormDb.getUserIdentityIds(Meteor.user());
     let resultIdentityId = Accounts.getCurrentIdentityId();
     const grain = this._db.getGrain(this._grainId);
@@ -468,13 +470,17 @@ class GrainView {
       }
     }
 
-    this._userIdentityId.set(resultIdentityId);
-    this._dep.changed();
+    if (oldIdentityId !== resultIdentityId) {
+      this._userIdentityId.set(resultIdentityId);
+      this._dep.changed();
+    }
   }
 
   doNotRevealIdentity() {
-    this._userIdentityId.set(false);
-    this._dep.changed();
+    if (this._userIdentityId.get() !== false) {
+      this._userIdentityId.set(false);
+      this._dep.changed();
+    }
   }
 
   identityId() {
@@ -678,7 +684,9 @@ class GrainView {
 
   route() {
     this._dep.depend();
-    if (this._token) {
+    if (isStandalone()) {
+      return window.location + "";
+    } else if (this._token) {
       return "/shared/" + this._token + this._path;
     } else {
       return "/grain/" + this._grainId + this._path;

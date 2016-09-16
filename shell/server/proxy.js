@@ -348,6 +348,7 @@ Meteor.methods({
 
     const token = params.token;
     const incognito = params.incognito;
+    const standalone = true;
     const hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
     const apiToken = ApiTokens.findOne(hashedToken);
     validateWebkey(apiToken);
@@ -380,7 +381,23 @@ Meteor.methods({
       }
     }
 
-    if (this.userId && !incognito) {
+    if (this.userId && standalone) {
+      if (!SandstormPermissions.mayOpenGrain(globalDb, { token: apiToken })) {
+        throw new Meteor.Error(403, "Unauthorized",
+                               "User is not authorized to open this grain.");
+      }
+
+      const opened = globalBackend.openSessionInternal(apiToken.grainId, null, null,
+                                                       title, apiToken, cachedSalt);
+
+      const result = opened.methodResult;
+      const proxy = new Proxy(apiToken.grainId, grain.userId, result.sessionId,
+                              result.hostId, result.tabId, identityId, false,
+                              opened.supervisor);
+      proxy.apiToken = apiToken;
+      proxiesByHostId[result.hostId] = proxy;
+      return result;
+    } else if (this.userId && !incognito) {
       if (identityId != apiToken.identityId && identityId != grain.identityId &&
           !ApiTokens.findOne({ "owner.user.identityId": identityId, parentToken: hashedToken })) {
         const owner = { user: { identityId: identityId, title: title } };

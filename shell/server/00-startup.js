@@ -20,6 +20,7 @@ import { PersistentImpl } from "/imports/server/persistent.js";
 import { migrateToLatest } from "/imports/server/migrations.js";
 import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants.js";
 import { onInMeteor } from "/imports/server/async-helpers.js";
+let url = require("url");
 
 globalFrontendRefRegistry = new FrontendRefRegistry();
 
@@ -169,3 +170,19 @@ if (!Meteor.settings.replicaNumber) {
     keepFeatureKeyRenewed(globalDb);
   });
 }
+
+OAuth._checkRedirectUrlOrigin = function (redirectUrl) {
+  // Mostly copied from meteor/packages/oauth/oauth_server.js
+  let appHost = Meteor.absoluteUrl();
+  let appHostReplacedLocalhost = Meteor.absoluteUrl(undefined, {
+    replaceLocalhost: true,
+  });
+
+  const redirectParsed = url.parse(redirectUrl);
+
+  return !(
+    redirectUrl.substr(0, appHost.length) === appHost ||
+    redirectUrl.substr(0, appHostReplacedLocalhost.length) === appHostReplacedLocalhost ||
+    globalDb.hostIsStandalone(redirectParsed.hostname)
+  );
+};

@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { GrainView, onceConditionIsTrue } from "./grainview.js";
+import { isStandalone } from "/imports/client/standalone.js";
 
 GrainViewList = class GrainViewList {
   constructor(db) {
@@ -29,7 +30,7 @@ GrainViewList = class GrainViewList {
     // be really obvious and well fix it.
     const key = "openGrains-" + SHA256(window.location.toString());
     const old = Meteor._localStorage.getItem(key);
-    if (old) {
+    if (old && !isStandalone()) {
       Meteor.startup(() => this.restoreOpenGrains(JSON.parse(old)));
       Meteor._localStorage.removeItem(key);
     }
@@ -81,7 +82,17 @@ GrainViewList = class GrainViewList {
           current.state.set("beforeActionHookRan", false);
         }
 
-        this.clear();
+        if (isStandalone()) {
+          const activeGrain = globalGrains.getActive();
+          if (activeGrain) {
+            activeGrain.reset(Meteor.user() && Meteor.user().loginIdentities &&
+              Meteor.user().loginIdentities[0]);
+            activeGrain.openSession();
+          }
+        } else {
+          this.clear();
+        }
+
         this._grainsUserId.set(currentUserId);
       }
     });

@@ -20,6 +20,7 @@ import { introJs } from "intro.js";
 
 import downloadFile from "/imports/client/download-file.js";
 import { ContactProfiles } from "/imports/client/contacts.js";
+import { isStandalone } from "/imports/client/standalone.js";
 
 // Pseudo-collections.
 TokenInfo = new Mongo.Collection("tokenInfo");
@@ -72,7 +73,7 @@ const mapGrainStateToTemplateData = function (grainState) {
     hasNotLoaded: !(grainState.hasLoaded()),
     sessionId: grainState.sessionId(),
     originalPath: grainState._originalPath,
-    interstitial: grainState.shouldShowInterstitial(),
+    interstitial: !isStandalone() && grainState.shouldShowInterstitial(),
     token: grainState.token(),
     viewInfo: grainState.viewInfo(),
     signinOverlay: grainState.signinOverlay(),
@@ -2036,4 +2037,113 @@ Router.map(function () {
       }
     },
   });
+});
+
+Meteor.startup(function () {
+  if (isStandalone()) {
+    // TODO(soon): delete all other routes (maybe change how they're created?)
+    const route = Router.routes.root;
+    _.extend(route.options, {
+      template: "grain",
+      loadingTemplate: "loadingNoMessage",
+
+      waitOn: function () {
+        const standalone = globalDb.collections.standaloneDomains.findOne({
+          _id: window.location.hostname, });
+        return [
+          Meteor.subscribe("devPackages"),
+          Meteor.subscribe("tokenInfo", standalone && standalone.token),
+          Meteor.subscribe("standaloneDomain", window.location.hostname),
+          Meteor.subscribe("grainsMenu"),
+          // This subscription gives us the data we need for deciding whether to automatically reveal
+          // our identity.
+          // TODO(soon): Subscribe to contacts instead.
+        ];
+      },
+
+      onBeforeAction: function () {
+        // Don't do anything for non-account users.
+        if (Meteor.userId() && !Meteor.user().loginIdentities) return;
+
+        // Only run the hook once.
+        if (this.state.get("beforeActionHookRan")) return this.next();
+        this.state.set("beforeActionHookRan", true);
+
+        Tracker.nonreactive(() => {
+          const token = globalDb.collections.standaloneDomains.findOne({
+            _id: window.location.hostname, }).token;
+          const path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");
+          const hash = this.params.hash;
+
+          const tokenInfo = TokenInfo.findOne({ _id: token });
+          if (!tokenInfo) {
+            return this.next();
+          } else if (tokenInfo.invalidToken) {
+            this.state.set("invalidToken", true);
+          } else if (tokenInfo.revoked) {
+            this.state.set("revoked", true);
+          } else if (tokenInfo.identityOwner) {
+            this.state.set("invalidToken", true);
+          } else if (tokenInfo.alreadyRedeemed) {
+            this.state.set("invalidToken", true);
+          } else if (tokenInfo.grainId) {
+            const grainId = tokenInfo.grainId;
+
+            const openView = function openView() {
+              // If the grain is already open in a tab, switch to that tab. We have to re-check this
+              // every time we defer to avoid race conditions (especially at startup, with the
+              // restore-last-opened code).
+              const grain = globalGrains.getById(grainId);
+              if (grain) {
+                globalGrains.setActive(grainId);
+                return;
+              }
+
+              const mainContentElement = document.querySelector("body>.main-content");
+              if (mainContentElement) {
+                const grainToOpen = globalGrains.addNewGrainView(grainId, path, tokenInfo,
+                                                                 mainContentElement);
+                if (Meteor.user()) {
+                  grainToOpen.revealIdentity(Meteor.user().loginIdentities[0]);
+                }
+
+                grainToOpen.openSession();
+                globalGrains.setActive(grainId);
+              } else {
+                Meteor.defer(openView);
+              }
+            };
+
+            openView();
+          }
+        });
+
+        this.next();
+      },
+
+      action: function () {
+        if (this.state.get("invalidToken")) {
+          this.render("invalidToken", { data: { token: this.params.token } });
+        } else if (this.state.get("revoked")) {
+          this.render("revokedShareLink");
+        } else if (this.state.get("identityOwner")) {
+          const tokenInfo = this.state.get("identityOwner");
+          this.render("wrongIdentity",
+                      { data: {
+                        recipient: tokenInfo.identityOwner,
+                        login: tokenInfo.login,
+                      }, });
+        } else {
+          this.render();
+        }
+      },
+
+      onStop: function () {
+        this.state.set("beforeActionHookRan", false);
+        this.state.set("invalidToken", undefined);
+        this.state.set("identityOwner", undefined);
+        globalGrains.setAllInactive();
+      },
+    });
+  }
 });

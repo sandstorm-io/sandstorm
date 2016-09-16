@@ -76,7 +76,7 @@ Accounts.onCreateUser(function (options, user) {
     user.unverifiedEmail = options.unverifiedEmail;
   }
 
-  user.profile = _.pick(options.profile || {}, "name", "handle", "pronouns");
+  user.profile = _.pick(options.profile || {}, "name", "handle", "pronoun");
 
   // Try downloading avatar.
   const url = userPictureUrl(user);

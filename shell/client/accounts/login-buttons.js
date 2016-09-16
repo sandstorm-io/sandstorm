@@ -29,6 +29,7 @@ import AccountsUi from "/imports/client/accounts/accounts-ui.js";
 
 // for convenience
 const loginButtonsSession = Accounts._loginButtonsSession;
+const ServiceConfiguration = Package["service-configuration"].ServiceConfiguration;
 
 const isDemoUserHelper = function () {
   return this._db.isDemoUser();
@@ -69,7 +70,7 @@ Template.accountButtonsPopup.onRendered(function () {
 });
 
 Template.accountButtonsPopup.events({
-  "click button.logout": function () {
+  "click button.logout"() {
     // TODO(cleanup): Don't rely on global var set in outermost package!
     logoutSandstorm();
   },
@@ -81,7 +82,7 @@ function getActiveIdentityId(grains) {
 }
 
 Template.accountButtons.helpers({
-  profileData: function () {
+  profileData() {
     if (Meteor.user() && !Meteor.user().loginIdentities && !Meteor.user().profile) {
       // Need to wait for resume token to complete login. For some reason, `Meteor.loggingIn()`
       // is still false in this case.
@@ -157,21 +158,21 @@ Template._loginButtonsLoggedOutDropdown.onCreated(function () {
 Template._loginButtonsLoggedOutDropdown.helpers({
   isDemoUser: isDemoUserHelper,
 
-  isCurrentRoute: function (routeName) {
+  isCurrentRoute(routeName) {
     return Router.current().route.getName() == routeName;
   },
 
-  choseLogin: function () {
+  choseLogin() {
     return Template.instance()._choseLogin.get();
   },
 });
 
 Template._loginButtonsLoggedOutDropdown.events({
-  "click .login-suggestion>button.login": function (event, instance) {
+  "click .login-suggestion>button.login"(event, instance) {
     instance._choseLogin.set(true);
   },
 
-  "click .login-suggestion>button.dismiss": function (event, instance) {
+  "click .login-suggestion>button.dismiss"(event, instance) {
     instance._topbar.closePopup();
   },
 });
@@ -191,15 +192,15 @@ Template._loginButtonsLoggedInDropdown.onCreated(function () {
 });
 
 Template._loginButtonsLoggedInDropdown.helpers({
-  showIdentitySwitcher: function () {
+  showIdentitySwitcher() {
     return SandstormDb.getUserIdentityIds(Meteor.user()).length > 1;
   },
 
-  identitySwitcherExpanded: function () {
+  identitySwitcherExpanded() {
     return Template.instance()._identitySwitcherExpanded.get();
   },
 
-  identitySwitcherData: function () {
+  identitySwitcherData() {
     const grains = Template.currentData().grains;
     const identities = SandstormDb.getUserIdentityIds(Meteor.user()).map(function (id) {
       const identity = Meteor.users.findOne({ _id: id });
@@ -230,7 +231,7 @@ Template._loginButtonsLoggedInDropdown.helpers({
 });
 
 Template._loginButtonsLoggedInDropdown.events({
-  "click button.switch-identity": function (event, instance) {
+  "click button.switch-identity"(event, instance) {
     instance._identitySwitcherExpanded.set(!instance._identitySwitcherExpanded.get());
   },
 });
@@ -270,7 +271,7 @@ const loginWithToken = function (email, token) {
 };
 
 Template.loginButtonsDialog.helpers({
-  allowUninvited: function () {
+  allowUninvited() {
     return Meteor.settings.public.allowUninvited;
   },
 
@@ -289,14 +290,14 @@ Template.loginButtonsDialog.helpers({
 
 Template.loginButtonsList.onCreated(function () {
   if (isDemoUser()) {
-    this._linkingNewIdentity = { doneCallback: function () {} };
+    this._linkingNewIdentity = { doneCallback() {} };
   } else if (Template.parentData(1).linkingNewIdentity) {
     this._linkingNewIdentity = Template.parentData(1).linkingNewIdentity;
   }
 });
 
 Template.oauthLoginButton.events({
-  "click button.login.oneclick": function (event, instance) {
+  "click button.login.oneclick"(event, instance) {
     if (instance.data.linkingNewIdentity) {
       sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
     }
@@ -313,15 +314,9 @@ Template.oauthLoginButton.events({
 });
 
 Template.loginButtonsList.helpers({
-  configured: function () {
-    const name = Template.currentData().name;
-    return !!ServiceConfiguration.configurations.findOne({ service: name }) ||
-           Template.instance().data._services.get(name);
-  },
-
   services: getServices,
 
-  showTroubleshooting: function () {
+  showTroubleshooting() {
     const hiddenByConfFile = (Meteor.settings && Meteor.settings.public &&
       Meteor.settings.public.hideTroubleshooting);
     const hiddenByDbSetting = (this._db.isFeatureKeyValid() &&
@@ -329,13 +324,13 @@ Template.loginButtonsList.helpers({
     return !hiddenByConfFile && !hiddenByDbSetting;
   },
 
-  linkingNewIdentity: function () {
+  linkingNewIdentity() {
     return Template.instance()._linkingNewIdentity;
   },
 });
 
 Template.emailAuthenticationForm.events({
-  "submit form": function (event, instance) {
+  "submit form"(event, instance) {
     event.preventDefault();
     const form = event.currentTarget;
     const email = loginButtonsSession.get("inSignupFlow");
@@ -358,18 +353,18 @@ Template.emailAuthenticationForm.events({
     }
   },
 
-  "click button.cancel": function (event) {
+  "click button.cancel"(event) {
     loginButtonsSession.set("inSignupFlow", false);
     loginButtonsSession.resetMessages();
   },
 });
 
 Template.emailAuthenticationForm.helpers({
-  disabled: function () {
+  disabled() {
     return !(Accounts.identityServices.email && Accounts.identityServices.email.isEnabled());
   },
 
-  awaitingToken: function () {
+  awaitingToken() {
     return loginButtonsSession.get("inSignupFlow");
   },
 });
@@ -387,7 +382,7 @@ Template.ldapLoginForm.helpers({
 });
 
 Template.ldapLoginForm.events({
-  "submit form": function (event, instance) {
+  "submit form"(event, instance) {
     event.preventDefault();
     if (instance.data.linkingNewIdentity) {
       sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
@@ -413,7 +408,7 @@ Template.devLoginForm.onCreated(function () {
 });
 
 Template.devLoginForm.helpers({
-  expanded: function () {
+  expanded() {
     return Template.instance()._expanded.get();
   },
 });
@@ -427,23 +422,23 @@ function loginDevHelper(name, isAdmin, linkingNewIdentity) {
 }
 
 Template.devLoginForm.events({
-  "click button.expand": function (event, instance) {
+  "click button.expand"(event, instance) {
     event.preventDefault();
     instance._expanded.set(true);
   },
 
-  "click button.unexpand": function (event, instance) {
+  "click button.unexpand"(event, instance) {
     event.preventDefault();
     instance._expanded.set(false);
   },
 
-  "click button.login-dev-account": function (event, instance) {
+  "click button.login-dev-account"(event, instance) {
     const displayName = event.currentTarget.getAttribute("data-name");
     const isAdmin = !!event.currentTarget.getAttribute("data-is-admin");
     loginDevHelper(displayName, isAdmin, instance.data.linkingNewIdentity);
   },
 
-  "submit form": function (event, instance) {
+  "submit form"(event, instance) {
     event.preventDefault();
     const form = instance.find("form");
     loginDevHelper(form.name.value, false, instance.data.linkingNewIdentity);
@@ -463,7 +458,7 @@ Template.samlLoginForm.helpers({
 });
 
 Template.samlLoginForm.events({
-  "click button": function (event, instance) {
+  "click button"(event, instance) {
     if (instance.data.linkingNewIdentity) {
       sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
     }

@@ -1236,10 +1236,7 @@ class Proxy {
         displayName: { defaultText: identity.profile.name },
         preferredHandle: identity.profile.handle,
         identityId: new Buffer(identity._id, "hex"),
-        identity: globalFrontendRefRegistry.create(
-          globalDb,
-          { identity: identityId },
-          [idCapRequirement]),
+        identity: makeIdentity(identity._id, [idCapRequirement]),
       };
       if (identity.profile.pictureUrl) {
         this.userInfo.pictureUrl = identity.profile.pictureUrl;

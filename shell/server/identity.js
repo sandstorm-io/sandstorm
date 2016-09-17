@@ -49,6 +49,27 @@ class IdentityImpl extends PersistentImpl {
   }
 };
 
+// TODO(cleanup): Find a better home for this.
+const MembraneRequirement = Match.OneOf(
+  { tokenValid: String },
+  { permissionsHeld:
+    { identityId: String, grainId: String, permissions: Match.Optional([Boolean]), } },
+  { permissionsHeld:
+    { tokenId: String, grainId: String, permissions: Match.Optional([Boolean]), } },
+  { userIsAdmin: String });
+
+
+makeIdentity = (identityId, requirements) => {
+  const saveTemplate = { frontendRef: { identity: identityId } };
+  if (requirements) {
+    check(requirements, [MembraneRequirement])
+    saveTemplate.requirements = requirements;
+  }
+
+  return new Capnp.Capability(new IdentityImpl(globalDb, saveTemplate, identityId),
+                              IdentityRpc.PersistentIdentity);
+};
+
 globalFrontendRefRegistry.register({
   frontendRefField: "identity",
 

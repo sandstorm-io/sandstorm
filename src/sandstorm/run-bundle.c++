@@ -42,6 +42,7 @@
 #include <sys/utsname.h>
 #include <sys/capability.h>
 #include <sys/eventfd.h>
+#include <sys/ioctl.h>
 #include <linux/securebits.h>
 #include <sched.h>
 #include <grp.h>
@@ -532,7 +533,9 @@ public:
                   .addOption({"userns"}, [this]() { unsharedUidNamespace = true; return true; },
                       "Pass this flag if the parent has already set up and entered a UID "
                       "namespace.")
-                  .expectArg("<pidfile-fd>", KJ_BIND_METHOD(*this, continue_))
+                  .expectArg("<pidfile-fd>", KJ_BIND_METHOD(*this, inheritPidfileFd))
+                  .expectZeroOrMoreArgs("<fd>:tcp:<port>", KJ_BIND_METHOD(*this, inheritFd))
+                  .callAfterParsing(KJ_BIND_METHOD(*this, continue_))
                   .build();
             },
             "For internal use only.")
@@ -680,12 +683,57 @@ public:
     // Detach from controlling terminal and make ourselves session leader.
     KJ_SYSCALL(setsid());
 
-    runUpdateMonitor(config, pidfile);
+    FdBundle fdBundle(config);
+
+    runUpdateMonitor(config, fdBundle, pidfile);
   }
 
-  kj::MainBuilder::Validity continue_(kj::StringPtr pidfileFdStr) {
+  kj::MainBuilder::Validity inheritFd(kj::StringPtr mapping) {
+    auto parts = split(mapping, ':');
+    if (parts.size() != 3) {
+      return "invalid syntax for port mapping";
+    }
+
+    int fd;
+    KJ_IF_MAYBE(p, parseUInt(kj::str(parts[0]), 10)) {
+      fd = *p;
+    } else {
+      return "invalid fd";
+    }
+
+    kj::String type = kj::str(parts[1]);
+    if (type != "tcp") {
+      return "invalid type";
+    }
+
+    uint port;
+    KJ_IF_MAYBE(p, parseUInt(kj::str(parts[2]), 10)) {
+      port = *p;
+    } else {
+      return "invalid port";
+    }
+
+    KJ_SYSCALL(ioctl(fd, FIOCLEX));  // set CLOEXEC
+    if (!inheritedTcpPorts.insert(std::make_pair(port, kj::AutoCloseFd(fd))).second) {
+      return "duplicate port";
+    }
+
+    return true;
+  }
+
+  kj::MainBuilder::Validity inheritPidfileFd(kj::StringPtr pidfileFdStr) {
+    KJ_IF_MAYBE(p, parseUInt(pidfileFdStr, 10)) {
+      inheritedPidfile = kj::AutoCloseFd(*p);
+      KJ_SYSCALL(ioctl(inheritedPidfile, FIOCLEX));  // set CLOEXEC
+      return true;
+    } else {
+      return "invalid fd";
+    }
+  }
+
+  kj::MainBuilder::Validity continue_() {
     if (getpid() != 1) {
-      return "This command is only internal use only.";
+      return "This command is for internal use only.";
     }
 
     if (unsharedUidNamespace) {
@@ -694,14 +742,10 @@ public:
       runningAsRoot = false;
     }
 
-    int pidfile = KJ_ASSERT_NONNULL(parseUInt(pidfileFdStr, 10));
-
-    // Make sure the pidfile is close-on-exec.
-    KJ_SYSCALL(fcntl(pidfile, F_SETFD, FD_CLOEXEC));
-
     changeToInstallDir();
     Config config = readConfig();
-    runUpdateMonitor(config, pidfile);
+    FdBundle fdBundle(config, kj::mv(inheritedTcpPorts));
+    runUpdateMonitor(config, fdBundle, inheritedPidfile);
   }
 
   bool doStop() {
@@ -1089,6 +1133,10 @@ private:
 
   kj::Own<AbstractMain> alternateMain;
   // Alternate main function we'll use depending on the program name.
+
+  kj::AutoCloseFd inheritedPidfile;
+  std::map<uint, kj::AutoCloseFd> inheritedTcpPorts;
+  // Pidfile and TCP ports inherited by "continue" command.
 
   struct Config {
     kj::Maybe<uint> httpsPort;
@@ -1592,7 +1640,124 @@ private:
     return config;
   }
 
-  [[noreturn]] void runUpdateMonitor(const Config& config, int pidfile) {
+  class FdBundle {
+    // Represents the bundle of file descriptors that we open early and then pass into the
+    // frontend. Currently this is only TCP listen ports.
+
+  public:
+    FdBundle(const Config& config,
+             std::map<uint, kj::AutoCloseFd> inherited = std::map<uint, kj::AutoCloseFd>())
+        // STDERR + 1 (fd after STDERR) + HTTP ports + SMTP port
+        : minFd(STDERR_FILENO + 1 + config.ports.size() + 1) {
+      int targetFd = STDERR_FILENO + 1;
+      openPort(config, config.smtpListenPort, targetFd++, inherited);
+      for (auto& port: config.ports) {
+        openPort(config, port, targetFd++, inherited);
+      }
+      KJ_ASSERT(minFd == targetFd);
+    }
+
+    FdBundle(decltype(nullptr)): minFd(0) {};
+
+    void closeAll() {
+      ports.clear();
+    }
+
+    kj::Array<kj::String> prepareForContinue() {
+      auto args = kj::heapArrayBuilder<kj::String>(ports.size());
+      for (auto& port: ports) {
+        args.add(kj::str(port.second.fd.get(), ":tcp:", port.first));
+        KJ_SYSCALL(ioctl(port.second.fd, FIONCLEX));
+      }
+      return args.finish();
+    }
+
+    void prepareInheritedFds() {
+      for (auto& port: ports) {
+        KJ_SYSCALL(dup2(port.second.fd, port.second.targetFd));
+      }
+    }
+
+  private:
+    struct FdInfo {
+      kj::AutoCloseFd fd;
+      int targetFd;  // FD number to use when passing to Node.
+    };
+
+    int minFd;
+    std::map<uint, FdInfo> ports;
+
+    void openPort(const Config& config, uint port, int targetFd,
+                  std::map<uint, kj::AutoCloseFd>& inherited) {
+      auto iter = inherited.find(port);
+      if (iter != inherited.end()) {
+        ports.insert(std::make_pair(port, FdInfo { ensureMinFd(kj::mv(iter->second)), targetFd }));
+        inherited.erase(iter);
+        return;
+      }
+
+      sockaddr_storage sa;
+      sockaddr_in* sa4 = reinterpret_cast<sockaddr_in*>(&sa);
+      sockaddr_in6* sa6 = reinterpret_cast<sockaddr_in6*>(&sa);
+
+      // Various syscalls require slightly different arguments for v4 and v6 addresses.
+      // Keep track of which we're trying.
+      bool useV6 = false;
+
+      memset(&sa, 0, sizeof sa);
+
+      sa.ss_family = AF_INET;
+      int rc = inet_pton(AF_INET, config.bindIp.cStr(), &(sa4->sin_addr));
+
+      if (rc == 0) {
+        // If IPv4 address parsing fails, try IPv6
+        useV6 = true;
+        sa.ss_family = AF_INET6;
+        rc = inet_pton(AF_INET6, config.bindIp.cStr(), &(sa6->sin6_addr));
+        KJ_REQUIRE(rc == 1, "Bind IP is an invalid IP address:", config.bindIp);
+      }
+
+      int sockFd_;
+
+      if (useV6) {
+        KJ_SYSCALL(sockFd_ = socket(
+            AF_INET6, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP));
+      } else {
+        KJ_SYSCALL(sockFd_ = socket(
+            AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, IPPROTO_TCP));
+      }
+      kj::AutoCloseFd sockFd(sockFd_);
+
+      // Enable SO_REUSEADDR so that `sandstorm restart` doesn't take minutes to succeed.
+      int optval = 1;
+      KJ_SYSCALL(setsockopt(sockFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)));
+
+      if (useV6) {
+        sa6->sin6_port = htons(port);
+        KJ_SYSCALL(bind(sockFd, reinterpret_cast<sockaddr *>(&sa), sizeof(sockaddr_in6)));
+      } else {
+        sa4->sin_port = htons(port);
+        KJ_SYSCALL(bind(sockFd, reinterpret_cast<sockaddr *>(&sa), sizeof(sockaddr_in)));
+      }
+
+      KJ_SYSCALL(listen(sockFd, SOMAXCONN));
+
+      ports.insert(std::make_pair(port, FdInfo { ensureMinFd(kj::mv(sockFd)), targetFd}));
+    }
+
+    kj::AutoCloseFd ensureMinFd(kj::AutoCloseFd fd) {
+      if (fd.get() < minFd) {
+        // Push the FD number beyond our minimum.
+        int fd_;
+        KJ_SYSCALL(fd_ = fcntl(fd, F_DUPFD_CLOEXEC, minFd));
+        fd = kj::AutoCloseFd(fd_);
+        KJ_ASSERT(fd.get() >= minFd);
+      }
+      return kj::mv(fd);
+    }
+  };
+
+  [[noreturn]] void runUpdateMonitor(const Config& config, FdBundle& fdBundle, int pidfile) {
     // Run the update monitor process.  This process runs two subprocesses:  the sandstorm server
     // and the auto-updater.
 
@@ -1637,11 +1802,11 @@ private:
 
     auto sigfd = prepareMonitoringLoop();
 
-    pid_t updaterPid = startUpdater(config, false);
+    pid_t updaterPid = startUpdater(config, fdBundle, false);
 
     pid_t sandstormPid = fork();
     if (sandstormPid == 0) {
-      runServerMonitor(config);
+      runServerMonitor(config, fdBundle);
       KJ_UNREACHABLE;
     }
 
@@ -1674,16 +1839,26 @@ private:
         if (updaterSucceeded) {
           context.warning("** Restarting to apply update");
           killChild("Server Monitor", sandstormPid);
-          restartForUpdate(pidfile);
+          restartForUpdate(pidfile, fdBundle);
           KJ_UNREACHABLE;
         } else if (updaterDied) {
           context.warning("** Updater died; restarting it");
-          updaterPid = startUpdater(config, true);
+          updaterPid = startUpdater(config, fdBundle, true);
         } else if (sandstormDied) {
           context.exitError("** Server monitor died. Aborting.");
           KJ_UNREACHABLE;
         }
       } else if (siginfo.ssi_signo == SIGINT) {
+        // Frontend startup or shutdown request, used with run-dev.
+
+        if (!siginfo.ssi_int) {
+          // We have to close all the listen ports otherwise run-dev won't be able to open them
+          // for itself. Note that we never re-open them here in the parent process, meaning that
+          // if you stop-fe and then start-fe and then do an update, you won't get a zero-downtime
+          // update. This only affects developers so whatever.
+          fdBundle.closeAll();
+        }
+
         // Pass along to server monitor.
         union sigval sigval;
         memset(&sigval, 0, sizeof(sigval));
@@ -1703,7 +1878,7 @@ private:
         // Handle signal.
         if (siginfo.ssi_signo == SIGHUP) {
           context.warning("** Restarting");
-          restartForUpdate(pidfile);
+          restartForUpdate(pidfile, fdBundle);
         } else {
           // SIGTERM or something.
           context.exitInfo("** Exiting");
@@ -1713,7 +1888,7 @@ private:
     }
   }
 
-  [[noreturn]] void runServerMonitor(const Config& config) {
+  [[noreturn]] void runServerMonitor(const Config& config, FdBundle& fdBundle) {
     // Run the server monitor, which runs node and mongo and deals with them dying.
 
     enterChroot(true);
@@ -1727,15 +1902,15 @@ private:
     auto sigfd = prepareMonitoringLoop();
 
     context.warning("** Starting back-end...");
-    pid_t backendPid = startBackend(config);
+    pid_t backendPid = startBackend(config, fdBundle);
     uint64_t backendStartTime = getTime();
 
     context.warning("** Starting MongoDB...");
-    pid_t mongoPid = startMongo(config);
+    pid_t mongoPid = startMongo(config, fdBundle);
     int64_t mongoStartTime = getTime();
 
     // Create the mongo user if it hasn't been created already.
-    maybeCreateMongoUser(config);
+    maybeCreateMongoUser(config, fdBundle);
 
     context.warning("** Back-end and Mongo started; now starting front-end...");
 
@@ -1750,6 +1925,7 @@ private:
         sigfd = nullptr;
         clearSignalMask();
         KJ_SYSCALL(signal(SIGALRM, SIG_DFL));
+        fdBundle.closeAll();
         runDevDaemon(config);
         KJ_UNREACHABLE;
       }
@@ -1758,7 +1934,7 @@ private:
       context.warning("Note: Not accepting \"spk dev\" connections because not running as root.");
     }
 
-    pid_t nodePid = startNode(config);
+    pid_t nodePid = startNode(config, fdBundle);
     int64_t nodeStartTime = getTime();
 
     for (;;) {
@@ -1797,17 +1973,17 @@ private:
         // Deal with mongo or node dying.
         if (backendDied) {
           maybeWaitAfterChildDeath("Back-end", backendStartTime);
-          backendPid = startBackend(config);
+          backendPid = startBackend(config, fdBundle);
           backendStartTime = getTime();
         }
         if (mongoDied) {
           maybeWaitAfterChildDeath("MongoDB", mongoStartTime);
-          mongoPid = startMongo(config);
+          mongoPid = startMongo(config, fdBundle);
           mongoStartTime = getTime();
         }
         if (nodeDied) {
           maybeWaitAfterChildDeath("Front-end", nodeStartTime);
-          nodePid = startNode(config);
+          nodePid = startNode(config, fdBundle);
           nodeStartTime = getTime();
         }
 
@@ -1815,7 +1991,7 @@ private:
           // If the back-end died then we unfortunately need to restart node as well.
           context.warning("** Restarting front-end due to back-end failure");
           killChild("Front-end", nodePid);
-          nodePid = startNode(config);
+          nodePid = startNode(config, fdBundle);
           nodeStartTime = getTime();
         }
       } else if (siginfo.ssi_signo == SIGINT) {
@@ -1823,7 +1999,8 @@ private:
           // Requested startup of front-end after previous shutdown.
           if (nodePid == 0) {
             context.warning("** Starting front-end by admin request");
-            nodePid = startNode(config);
+            fdBundle = FdBundle(config);  // re-open FDs
+            nodePid = startNode(config, fdBundle);
             nodeStartTime = getTime();
           } else {
             context.warning("** Request to start front-end, but it is already running");
@@ -1833,6 +2010,9 @@ private:
           context.warning("** Shutting down front-end by admin request");
           killChild("Front-end", nodePid);
           nodePid = 0;
+
+          // We have to close the FD bundle otherwise run-dev won't work.
+          fdBundle.closeAll();
         }
       } else {
         // SIGTERM or something.
@@ -1846,8 +2026,9 @@ private:
     }
   }
 
-  pid_t startMongo(const Config& config) {
+  pid_t startMongo(const Config& config, FdBundle& fdBundle) {
     Subprocess process([&]() -> int {
+      fdBundle.closeAll();
       dropPrivs(config.uids);
       clearSignalMask();
 
@@ -1928,11 +2109,11 @@ private:
     return 0;
   }
 
-  void maybeCreateMongoUser(const Config& config) {
+  void maybeCreateMongoUser(const Config& config, FdBundle& fdBundle) {
     if (access("/var/mongo/passwd", F_OK) != 0) {
       // We need to initialize the repl set to get oplog tailing. Our set isn't actually much of a
       // set since it only contains one instance, but you need that for oplog.
-      mongoCommand(config, kj::str(
+      mongoCommand(config, fdBundle, kj::str(
           "rs.initiate({_id: 'ssrs', members: [{_id: 0, host: 'localhost:",
           config.mongoPort, "'}]})"));
 
@@ -1977,7 +2158,7 @@ private:
       auto command = kj::str(
         "db.createUser({user: \"sandstorm\", pwd: \"", password, "\", "
         "roles: [\"readWriteAnyDatabase\",\"userAdminAnyDatabase\",\"dbAdminAnyDatabase\"]})");
-      mongoCommand(config, command, "admin");
+      mongoCommand(config, fdBundle, command, "admin");
 
       // Store the password.
       auto outFd = raiiOpen("/var/mongo/passwd", O_WRONLY | O_CREAT | O_EXCL, 0640);
@@ -1986,7 +2167,7 @@ private:
     }
   }
 
-  pid_t startBackend(const Config& config) {
+  pid_t startBackend(const Config& config, FdBundle& fdBundle) {
     int pipeFds[2];
     KJ_SYSCALL(pipe2(pipeFds, O_CLOEXEC));
     kj::AutoCloseFd inPipe(pipeFds[0]);
@@ -1994,6 +2175,7 @@ private:
 
     Subprocess process([&]() -> int {
       inPipe = nullptr;
+      fdBundle.closeAll();
 
       // Mainly to cause Cap'n Proto to log exceptions being returned over RPC so we can see the
       // stack traces.
@@ -2045,70 +2227,9 @@ private:
     return result;
   }
 
-  void bindSocketToFd(const Config& config, uint port, uint targetFdNum) {
-    sockaddr_storage sa;
-    sockaddr_in* sa4 = reinterpret_cast<sockaddr_in*>(&sa);
-    sockaddr_in6* sa6 = reinterpret_cast<sockaddr_in6*>(&sa);
-
-    // Various syscalls require slightly different arguments for v4 and v6 addresses.
-    // Keep track of which we're trying.
-    bool useV6 = false;
-
-    memset(&sa, 0, sizeof sa);
-
-    sa.ss_family = AF_INET;
-    int rc = inet_pton(AF_INET, config.bindIp.cStr(), &(sa4->sin_addr));
-
-    if (rc == 0) {
-      // If IPv4 address parsing fails, try IPv6
-      useV6 = true;
-      sa.ss_family = AF_INET6;
-      rc = inet_pton(AF_INET6, config.bindIp.cStr(), &(sa6->sin6_addr));
-      KJ_REQUIRE(rc == 1, "Bind IP is an invalid IP address:", config.bindIp);
-    }
-
-    int sockFd;
-
-    if (useV6) {
-      KJ_SYSCALL(sockFd = socket(AF_INET6, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP));
-    } else {
-      KJ_SYSCALL(sockFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP));
-    }
-
-    // Enable SO_REUSEADDR so that `sandstorm restart` doesn't take minutes to succeed.
-    int optval = 1;
-    KJ_SYSCALL(setsockopt(sockFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)));
-
-    if (useV6) {
-      sa6->sin6_port = htons(port);
-      KJ_SYSCALL(bind(sockFd, reinterpret_cast<sockaddr *>(&sa), sizeof(sockaddr_in6)));
-    } else {
-      sa4->sin_port = htons(port);
-      KJ_SYSCALL(bind(sockFd, reinterpret_cast<sockaddr *>(&sa), sizeof(sockaddr_in)));
-    }
-
-    KJ_SYSCALL(listen(sockFd, 511)); // 511 is what node uses as its default backlog
-
-    if (sockFd != targetFdNum) {
-      // dup socket to correct fd.
-      KJ_SYSCALL(dup2(sockFd, targetFdNum));
-      KJ_SYSCALL(close(sockFd));
-    }
-  }
-
-  pid_t startNode(const Config& config) {
+  pid_t startNode(const Config& config, FdBundle& fdBundle) {
     Subprocess process([&]() -> int {
-      // Create a listening socket for the meteor app on fd=3 and up
-      uint socketFdStart = 3;
-
-      // First, bind the SMTP port to FD #3.
-      bindSocketToFd(config, config.smtpListenPort, socketFdStart);
-
-      // Then, bind the HTTP(S) port(s) to FD #4 and higher.
-      socketFdStart++;
-      for (size_t i = 0; i < config.ports.size(); i++) {
-        bindSocketToFd(config, config.ports[i], i + socketFdStart);
-      }
+      fdBundle.prepareInheritedFds();
 
       dropPrivs(config.uids);
       clearSignalMask();
@@ -2387,7 +2508,7 @@ private:
     KJ_SYSCALL(rename(tmpLink.cStr(), "../latest"));
   }
 
-  pid_t startUpdater(const Config& config, bool isRetry) {
+  pid_t startUpdater(const Config& config, FdBundle& fdBundle, bool isRetry) {
     if (config.updateChannel == nullptr) {
       context.warning("WARNING: Auto-updates are disabled by config.");
       return 0;
@@ -2398,6 +2519,7 @@ private:
     } else {
       pid_t pid = fork();
       if (pid == 0) {
+        fdBundle.closeAll();
         doUpdateLoop(config.updateChannel, isRetry, config);
         KJ_UNREACHABLE;
       }
@@ -2444,9 +2566,11 @@ private:
     }
   }
 
-  [[noreturn]] void restartForUpdate(int pidfileFd) {
+  [[noreturn]] void restartForUpdate(int pidfileFd, FdBundle& fdBundle) {
     // Change pidfile to not close on exec, since we want it to live through the following exec!
     KJ_SYSCALL(fcntl(pidfileFd, F_SETFD, 0));
+
+    auto inheritArgs = fdBundle.prepareForContinue();
 
     // Create arg list.
     kj::Vector<const char*> argv;
@@ -2457,6 +2581,9 @@ private:
     }
     auto pidfileFdStr = kj::str(pidfileFd);
     argv.add(pidfileFdStr.cStr());
+    for (auto& a: inheritArgs) {
+      argv.add(a.cStr());
+    }
     argv.add(EXEC_END_ARGS);
 
     // Exec the new version with our magic "continue".
@@ -2735,7 +2862,8 @@ private:
 
   void insertDevPackage(const Config& config, kj::StringPtr appId, bool mountProc,
                         kj::StringPtr pkgId, spk::Manifest::Reader manifest) {
-    mongoCommand(config, kj::str(
+    FdBundle fakeBundle(nullptr);
+    mongoCommand(config, fakeBundle, kj::str(
         "db.devpackages.insert({"
           "_id:\"", pkgId, "\","
           "appId:\"", appId, "\","
@@ -2746,7 +2874,8 @@ private:
   }
 
   void updateDevPackage(const Config& config, kj::StringPtr pkgId, spk::Manifest::Reader manifest) {
-    mongoCommand(config, kj::str(
+    FdBundle fakeBundle(nullptr);
+    mongoCommand(config, fakeBundle, kj::str(
         "db.devpackages.update({_id:\"", pkgId, "\"}, {$set: {"
           "timestamp:", time(nullptr), ","
           "manifest:", toMongoJson(manifest),
@@ -2754,15 +2883,18 @@ private:
   }
 
   void removeDevPackage(const Config& config, kj::StringPtr pkgId) {
-    mongoCommand(config, kj::str(
+    FdBundle fakeBundle(nullptr);
+    mongoCommand(config, fakeBundle, kj::str(
         "db.devpackages.remove({_id:\"", pkgId, "\"})"));
   }
 
   void clearDevPackages(const Config& config) {
-    mongoCommand(config, kj::str("db.devpackages.remove({})"));
+    FdBundle fakeBundle(nullptr);
+    mongoCommand(config, fakeBundle, kj::str("db.devpackages.remove({})"));
   }
 
-  void mongoCommand(const Config& config, kj::StringPtr command, kj::StringPtr db = "meteor") {
+  void mongoCommand(const Config& config, FdBundle& fdBundle,
+                    kj::StringPtr command, kj::StringPtr db = "meteor") {
     char commandFile[] = "/tmp/mongo-command.XXXXXX";
     int commandRawFd;
     KJ_SYSCALL(commandRawFd = mkstemp(commandFile));
@@ -2775,6 +2907,8 @@ private:
     kj::FdOutputStream(kj::mv(commandFd)).write(command.begin(), command.size());
 
     Subprocess process([&]() -> int {
+      fdBundle.closeAll();
+
       // Don't run as root.
       dropPrivs(config.uids);
 

@@ -179,8 +179,13 @@ You are receiving this because you are subscribed to this thread.<br>
     text,
     html,
     envelopeFrom: db.getReturnAddress(),
-    // TODO(someday): add mailinglist headers to make reply-to-unsubscribe magic work.
-    // Probably needs some way to check that replies actually get routed back to the server.
+    headers: [
+      {
+        key: "List-Unsubscribe",
+        value: muteUrl,
+      },
+      //TODO(someday): implement other headers from https://www.ietf.org/rfc/rfc2369.txt
+    ],
   };
 
   // Actually send the mail.

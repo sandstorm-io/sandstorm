@@ -160,6 +160,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       "oc-chunked",            # Owncloud client
       "x-hgarg-*",             # Mercurial client
       "x-phabricator-*",       # Phabricator
+      "x-requested-with",      # JQuery header used by Rails and other frameworks
     ];
   }
 

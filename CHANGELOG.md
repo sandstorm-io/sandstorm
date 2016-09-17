@@ -1,3 +1,13 @@
+### v0.186 (2016-09-17)
+- Self-hosted Sandstorm updates will now have "zero" downtime, whereas previously users would experience connection failures for several seconds. This is accomplished by keeping the listen sockets open, so instead of errors, users only perceive a delay.
+- Fixed that pronoun selection was always showing up as "they" in account settings.
+- Alphabetical sorting of grains is now locale-aware.
+- Changed various text to call Sandstorm a "productivity suite".
+- Fixed that the collections app was not being automatically selected for pre-installation on self-hosted instances.
+- Added a way for users to leave feedback when deleting their account.
+- Fixed display of user limit for feature keys with unlimited users.
+- Whitelisted `X-Requested-With` and `X-Phabricator-*` headers in HTTP requests.
+
 ### v0.185 (2016-09-12) [bugfixes]
 - Fixed a problem preventing some LDAP users from receiving notification e-mails.
 

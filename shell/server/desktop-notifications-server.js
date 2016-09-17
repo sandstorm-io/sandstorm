@@ -27,7 +27,7 @@ SandstormDb.periodicCleanup(120000, () => {
   }).forEach((doc) => {
     // For each notification that wasn't marked as delivered to a user,
     // send an email to their primary contact address.
-    deliverNotificationViaEmail(doc);
+    deliverNotificationViaEmail(globalDb, doc);
     globalDb.collections.desktopNotifications.remove({
       _id: doc._id,
     });

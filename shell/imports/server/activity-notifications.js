@@ -61,9 +61,9 @@ function createAppActivityDesktopNotification(options) {
   });
 }
 
-function deliverNotificationViaEmail(doc) {
+function deliverNotificationViaEmail(db, doc) {
   // If email is not configured on this server, don't bother trying to send any.
-  const smtpConfig = globalDb.getSmtpConfig();
+  const smtpConfig = db.getSmtpConfig();
   const emailUnconfigured = (!smtpConfig.hostname || !smtpConfig.port || !smtpConfig.returnAddress);
   if (emailUnconfigured) return;
 
@@ -86,18 +86,18 @@ function deliverNotificationViaEmail(doc) {
 
   // Compute the title of the grain, as seen by userId (the account to which the email is being
   // delivered)
-  const grainTitle = globalDb.userGrainTitle(grainId, userId, identityId);
+  const grainTitle = db.userGrainTitle(grainId, userId, identityId);
 
   // Pick the name and address to send this mail to and from
-  const toAddress = globalDb.getPrimaryEmail(userId, identityId);
-  const toName = globalDb.getIdentity(identityId).profile.name;
+  const toAddress = db.getPrimaryEmail(userId, identityId);
+  const toName = db.getIdentity(identityId).profile.name;
   const to = {
     name: toName,
     address: toAddress,
   };
   const from = {
     name: actingUser.name,
-    address: globalDb.getReturnAddress(),
+    address: db.getReturnAddress(),
   };
 
   // Construct an email
@@ -121,7 +121,7 @@ ${bodyText}`;
 
 ----
 You are receiving this because you are subscribed to this thread.
-View on ${globalDb.getServerTitle()}:
+View on ${db.getServerTitle()}:
 
 ${threadUrl}
 
@@ -151,7 +151,7 @@ ${muteUrl}
 
 ----<br>
 You are receiving this because you are subscribed to this thread.<br>
-<a href="${threadUrl}">View on ${globalDb.getServerTitle()}</a> or <a href="${muteUrl}">mute the thread</a>.
+<a href="${threadUrl}">View on ${db.getServerTitle()}</a> or <a href="${muteUrl}">mute the thread</a>.
 `;
 
   const emailOpts = {
@@ -161,7 +161,7 @@ You are receiving this because you are subscribed to this thread.<br>
     subject: grainTitle,
     text,
     html,
-    envelopeFrom: globalDb.getReturnAddress(),
+    envelopeFrom: db.getReturnAddress(),
     // TODO(someday): add mailinglist headers to make reply-to-unsubscribe magic work.
     // Probably needs some way to check that replies actually get routed back to the server.
   };

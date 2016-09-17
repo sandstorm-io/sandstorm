@@ -53,16 +53,15 @@ class IdentityImpl extends PersistentImpl {
 const MembraneRequirement = Match.OneOf(
   { tokenValid: String },
   { permissionsHeld:
-    { identityId: String, grainId: String, permissions: Match.Optional([Boolean]), } },
+    { identityId: String, grainId: String, permissions: Match.Optional([Boolean]), }, },
   { permissionsHeld:
-    { tokenId: String, grainId: String, permissions: Match.Optional([Boolean]), } },
+    { tokenId: String, grainId: String, permissions: Match.Optional([Boolean]), }, },
   { userIsAdmin: String });
-
 
 makeIdentity = (identityId, requirements) => {
   const saveTemplate = { frontendRef: { identity: identityId } };
   if (requirements) {
-    check(requirements, [MembraneRequirement])
+    check(requirements, [MembraneRequirement]);
     saveTemplate.requirements = requirements;
   }
 

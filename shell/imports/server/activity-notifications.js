@@ -84,6 +84,23 @@ function deliverNotificationViaEmail(db, doc) {
   const { grainId, path, body, actionText } = appActivity;
   const actingUser = appActivity.user;
 
+  // Check that the user hasn't muted this thread.  If they have, we'd best respect that!
+  // Subscriptions may exist on a per-grain or a per-thread basis.  Mute dominates non-mute.
+  const grainWideActivitySubscription = db.lookupActivitySubscription(identityId, grainId, undefined);
+  if (grainWideActivitySubscription && grainWideActivitySubscription.mute) return;
+  let activitySubscriptionId;
+  const threadSpecificActivitySubscription = db.lookupActivitySubscription(identityId, grainId, path);
+  if (!threadSpecificActivitySubscription) {
+    // No activity subscription exists for this user/grain/thread combination.  Create one.
+    subresult = db.subscribeToActivity(identityId, grainId, path);
+    console.log(subresult);
+    activitySubscriptionId = subresult.insertedId;
+  } else if (threadSpecificActivitySubscription.mute) {
+    return;
+  } else {
+    activitySubscriptionId = threadSpecificActivitySubscription._id;
+  }
+
   // Compute the title of the grain, as seen by userId (the account to which the email is being
   // delivered)
   const grainTitle = db.userGrainTitle(grainId, userId, identityId);
@@ -102,7 +119,7 @@ function deliverNotificationViaEmail(db, doc) {
 
   // Construct an email
   const threadUrl = `${process.env.ROOT_URL}/grain/${grainId}/${path}`;
-  const muteUrl = ""; // TODO(now): implement thread-muting route?
+  const muteUrl = `${process.env.ROOT_URL}/muteSubscription/${activitySubscriptionId}`;
 
   const actingUserText = actingUser.name;
   // TODO(someday): localization rather than jumping to defaultText

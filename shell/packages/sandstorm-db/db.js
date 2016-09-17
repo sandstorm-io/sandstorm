@@ -1602,6 +1602,18 @@ _.extend(SandstormDb.prototype, {
     }).fetch();
   },
 
+  lookupActivitySubscription(identityId, grainId, threadPath) {
+    check(identityId, String);
+    check(grainId, String);
+    check(threadPath, Match.Optional(String));
+
+    return this.collections.activitySubscriptions.findOne({
+      identityId,
+      grainId,
+      threadPath: threadPath || { $exists: false },
+    });
+  },
+
   subscribeToActivity(identityId, grainId, threadPath) {
     // Subscribe the given identity to activity events with the given grainId and (optional)
     // threadPath -- unless the identity has previously muted this grainId/threadPath, in which
@@ -1616,7 +1628,10 @@ _.extend(SandstormDb.prototype, {
     // the fields from the query, but if we try to do { $set: {} } Mongo throws an exception, and
     // if we try to just pass {}, Mongo interprets it as "replace the record with an empty record".
     // What a wonderful query language.
-    this.collections.activitySubscriptions.upsert(record, { $set: record });
+    //
+    // We return the result object here so that if a subscription was newly created we can obtain
+    // its ID.
+    return this.collections.activitySubscriptions.upsert(record, { $set: record });
   },
 
   muteActivity(identityId, grainId, threadPath) {
@@ -1629,6 +1644,13 @@ _.extend(SandstormDb.prototype, {
     }
 
     this.collections.activitySubscriptions.upsert(record, { $set: { mute: true } });
+  },
+
+  muteActivityById(activitySubscriptionId) {
+    check(activitySubscriptionId, String);
+    this.collections.activitySubscriptions.update(
+      { _id: activitySubscriptionId },
+      { $set: { mute: true } });
   },
 
   updateAppIndex() {

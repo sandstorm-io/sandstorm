@@ -283,3 +283,19 @@ Meteor.publish("notificationGrains", function (notificationIds) {
     Meteor.users.find({ _id: { $in: identities } }, { fields: { profile: 1 } }),
   ];
 });
+
+Router.map(function () {
+  this.route("muteActivitySubscriptionThread", {
+    where: "server",
+    path: "/muteSubscription/:subscriptionId",
+    action() {
+      const subId = this.params.subscriptionId;
+      globalDb.muteActivityById(subId);
+      this.response.writeHead(200, {
+        "Content-Type": "text/plain",
+      });
+      this.response.write("You have been unsubscribed.");
+      this.response.end();
+    },
+  });
+});

@@ -15,7 +15,7 @@
 // limitations under the License.
 
 import { waitPromise } from "/imports/server/async-helpers.js";
-import { createAppActivityDesktopNotification } from "/imports/server/desktop-notifications.js";
+import { createAppActivityDesktopNotification } from "/imports/server/activity-notifications.js";
 
 const Capnp = Npm.require("capnp");
 const SupervisorCapnp = Capnp.importSystem("sandstorm/supervisor.capnp");
@@ -192,6 +192,7 @@ logActivity = function (grainId, identityId, event) {
 
         const desktopNotification = {
           userId: account._id,
+          identityId: targetId,
           notificationId,
           appActivity,
         };
@@ -281,4 +282,20 @@ Meteor.publish("notificationGrains", function (notificationIds) {
   return [
     Meteor.users.find({ _id: { $in: identities } }, { fields: { profile: 1 } }),
   ];
+});
+
+Router.map(function () {
+  this.route("muteActivitySubscriptionThread", {
+    where: "server",
+    path: "/muteSubscription/:subscriptionId",
+    action() {
+      const subId = this.params.subscriptionId;
+      globalDb.muteActivityById(subId);
+      this.response.writeHead(200, {
+        "Content-Type": "text/plain",
+      });
+      this.response.write("You have been unsubscribed.");
+      this.response.end();
+    },
+  });
 });

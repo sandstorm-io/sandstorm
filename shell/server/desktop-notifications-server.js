@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
+import { deliverNotificationViaEmail } from "/imports/server/activity-notifications.js";
 
 SandstormDb.periodicCleanup(120000, () => {
   // Remove old desktop notfications regularly.
@@ -24,6 +25,9 @@ SandstormDb.periodicCleanup(120000, () => {
   globalDb.collections.desktopNotifications.find({
     creationDate: { $lt: then },
   }).forEach((doc) => {
+    // For each notification that wasn't marked as delivered to a user,
+    // send an email to their primary contact address.
+    deliverNotificationViaEmail(globalDb, doc);
     globalDb.collections.desktopNotifications.remove({
       _id: doc._id,
     });
@@ -65,4 +69,18 @@ Meteor.publish("desktopNotifications", function () {
   });
 
   this.ready();
+});
+
+Meteor.methods({
+  markDesktopNotificationDelivered(desktopNotificationId) {
+    if (!this.userId) throw new Meteor.Error("Not logged in");
+
+    const db = this.connection.sandstormDb;
+    db.collections.desktopNotifications.update({
+      _id: desktopNotificationId,
+      userId: this.userId,
+    }, {
+      $set: { deliveredToUser: true },
+    });
+  },
 });

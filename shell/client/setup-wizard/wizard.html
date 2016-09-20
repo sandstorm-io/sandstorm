@@ -16,7 +16,7 @@
 --}}
 <li class="setup-progress-step step-{{stepName}} {{className}}">
   {{#if isCurrentStep}}
-    <span>
+    <span class="setup-current-step">
       {{> Template.contentBlock}}
     </span>
   {{else}}
@@ -25,7 +25,7 @@
         {{> Template.contentBlock}}
       {{/linkTo}}
     {{else}}
-      <span>
+      <span class="setup-not-current-step">
         {{> Template.contentBlock}}
       </span>
     {{/if}}

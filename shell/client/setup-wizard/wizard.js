@@ -144,7 +144,7 @@ Template.setupWizardProgressBar.helpers({
 Template.setupWizardProgressBarItem.helpers({
   linkClassName() {
     const instance = Template.instance();
-    return instance.data.isCurrentStep ? "setup-current-step" : "";
+    return instance.data.isCurrentStep ? "setup-current-step" : "setup-not-current-step";
   },
 });
 

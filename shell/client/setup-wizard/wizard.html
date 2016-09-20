@@ -44,7 +44,7 @@
                                    mayJumpTo=(mayJumpTo "identity")
                                    route="setupWizardIdentity"
                                    className=itemClassName}}
-      Login provider(s)
+      Identity providers
     {{/setupWizardProgressBarItem}}
 
     {{#if hasFeatureKey}}
@@ -63,7 +63,7 @@
                                    route="setupWizardEmailConfig"
                                    className=itemClassName
                                    }}
-      Set up email
+      Email
     {{/setupWizardProgressBarItem}}
 
     {{#setupWizardProgressBarItem stepName="preinstalled"
@@ -72,7 +72,7 @@
                                    route="setupWizardPreinstalled"
                                    className=itemClassName
                                    }}
-      Pre-installed Apps
+      Pre-installed apps
     {{/setupWizardProgressBarItem}}
 
     {{#setupWizardProgressBarItem stepName="user"
@@ -262,7 +262,7 @@
 
 <template name="setupWizardIdentity">
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Configure Identity Provider(s)</h1>
+  <h1 class="setup-page-title">Identity providers</h1>
   {{> setupWizardProgressBar currentStep="identity"}}
 
   <p>
@@ -272,7 +272,7 @@
   </p>
 
   <p>
-    Configure the identity provider(s) you wish to enable.
+    Configure the identity provider or providers you wish to enable.
   </p>
 
   {{> adminIdentityProviderTable idpData=idpData featureKeyRoute="setupWizardFeatureKey" }}
@@ -290,7 +290,7 @@
 
 <template name="setupWizardOrganization">
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Configure Organization</h1>
+  <h1 class="setup-page-title">Organization settings</h1>
 
 {{#if hasFeatureKey}}
   {{> setupWizardProgressBar currentStep="organization"}}
@@ -394,7 +394,7 @@
 
 <template name="setupWizardEmailConfig">
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Outbound Email Setup</h1>
+  <h1 class="setup-page-title">Email delivery</h1>
   {{> setupWizardProgressBar currentStep="email"}}
 
   <p>

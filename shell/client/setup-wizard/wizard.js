@@ -181,7 +181,7 @@ Template.setupWizardIntro.helpers({
     return instance.showSignInPanel.get();
   },
 
-  identityUser: function () {
+  identityUser() {
     const user = Meteor.user();
     return user && user.profile;
   },
@@ -653,16 +653,16 @@ Template.setupWizardPreinstalled.onCreated(function () {
 });
 
 Template.setupWizardPreinstalled.events({
-  "click .setup-back-button": function (ev, instance) {
+  "click .setup-back-button"(ev, instance) {
     Router.go(getRouteBefore("preinstalled"));
   },
 
-  "click .setup-next-button": function (ev, instance) {
+  "click .setup-next-button"(ev, instance) {
     // Actually do nothing, since apps are already pre-installed and ready
     Router.go(getRouteAfter("preinstalled"));
   },
 
-  "click .setup-skip-button": function (ev, instance) {
+  "click .setup-skip-button"(ev, instance) {
     Meteor.call("setPreinstalledApps", []);
     // Overwrite the default setting for "setPreinstalledApps"
     Router.go(getRouteAfter("preinstalled"));
@@ -752,7 +752,7 @@ Template.setupWizardLoginUser.helpers({
       staticHost: window.location.protocol + "//" + makeWildcardHost("static"),
       db: globalDb,
       hideButtons: true,
-      setActionCompleted: function (result) {
+      setActionCompleted(result) {
         if (result.success) {
           instance.successMessage.set(result.success);
         } else if (result.error) {
@@ -774,7 +774,7 @@ Template.setupWizardLoginUser.helpers({
     return !Meteor.loggingIn() && Meteor.user() && !Meteor.user().hasCompletedSignup;
   },
 
-  identityUser: function () {
+  identityUser() {
     const user = Meteor.user();
     return user && user.profile;
   },
@@ -877,7 +877,7 @@ Template.setupWizardSuccess.events({
 });
 
 const setupRoute = RouteController.extend({
-  waitOn: function () {
+  waitOn() {
     const token = sessionStorage.getItem("setup-token");
     const subs = [
       Meteor.subscribe("admin", token),
@@ -894,7 +894,7 @@ const setupRoute = RouteController.extend({
     return subs;
   },
 
-  action: function () {
+  action() {
     const token = sessionStorage.getItem("setup-token");
     const state = this.state;
     state.set("token", token);
@@ -912,7 +912,7 @@ const setupRoute = RouteController.extend({
     this.render();
   },
 
-  onAfterAction: function () {
+  onAfterAction() {
     // Scroll to the top of the page each time you navigate to a setup wizard page.
     document.getElementsByTagName("body")[0].scrollTop = 0;
   },
@@ -969,7 +969,7 @@ Router.map(function () {
   this.route("setupWizardVerifyToken", {
     path: "/setup/token/:_token",
     layoutTemplate: "setupWizardLayout",
-    onBeforeAction: function () {
+    onBeforeAction() {
       this.state.set("redeemStatus", "in-progress");
       // For whatever reason, the RouteController is no longer available in the async callback
       // below, so we save a handle to the state object.

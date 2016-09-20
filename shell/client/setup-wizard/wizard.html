@@ -610,6 +610,9 @@
 <template name="setupWizardSuccess">
 <div class="setup-page-content">
   <h1 class="setup-page-title">Ready to roll!</h1>
+
+  {{> setupWizardProgressBar currentStep="success"}}
+
   <p>Your Sandstorm server is now ready to use.</p>
   <p>What would you like to do next?</p>
 

@@ -162,8 +162,13 @@ Template.adminIdentityProviderConfigureEmail.events({
 });
 
 Template.adminIdentityProviderConfigureEmail.helpers({
-  emailEnabled() {
+  emailLoginEnabled() {
     return globalDb.getSettingWithFallback("emailToken", false);
+  },
+
+  emailUnconfigured() {
+    const c = globalDb.getSmtpConfig();
+    return (!c.hostname || !c.port || !c.returnAddress);
   },
 
   errorMessage() {

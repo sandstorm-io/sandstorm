@@ -166,6 +166,37 @@ that month.
 Alternatively, you can choose annual billing. Here, you specify a user limit at purchase
 time. Sandstorm will not allow more than this many users to log in during any 30-day period.
 
+### Whitelabeling
+
+Sandstorm for Work adds server customization features that allow you to:
+
+- Change the logo used when users sign in
+
+- Hide the "Troubleshooting" button on the login page
+
+- Hide the "Send feedback" link on the login page
+
+- Change the title the server shows to all its users in the top-left
+
+To do that, visit the **Admin settings** area, then click **Personalization** and look for the
+**Whitelabeling** options.
+
+These features are in addition to Sandstorm's existing customization options, enabling the
+admin to:
+
+- Set a server title
+
+- Set a custom splash URL on home page, as you can see on [Oasis](https://oasis.sandstorm.io).
+
+- Change the message that users see when they receive an invitation to the server.
+
+- Set a URL for a terms of service.
+
+- Set a URL for a privacy policy.
+
+You can read about these features in the [Sandstorm administration
+FAQ.](faq.md#can-i-customize-the-root-page-of-my-sandstorm-install)
+
 ### Features coming soon
 
 We're still working on the following features:

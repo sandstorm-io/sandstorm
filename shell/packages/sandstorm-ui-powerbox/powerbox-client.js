@@ -88,7 +88,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     } else if (card.option.frontendRef) {
       this.completeNewFrontendRef(card.option.frontendRef);
     } else {
-      this.failRequest(new Error("not sure how to complete powerbox request for non-frontedRef " +
+      this.failRequest(new Error("not sure how to complete powerbox request for non-frontendRef " +
                                  "that didn't provide a configureTemplate"));
     }
   }
@@ -177,11 +177,10 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     return {};
   }
 
-  completeNewFrontendRef(frontendRef, options) {
+  completeNewFrontendRef(frontendRefRequest) {
     Meteor.call("newFrontendRef",
       this._requestInfo.sessionId,
-      frontendRef,
-      options,
+      frontendRefRequest,
       (err, result) => {
         if (err) {
           this.failRequest(err);
@@ -441,10 +440,12 @@ Template.identityPowerboxConfiguration.events({
         roleAssignment = { roleId: role };
       }
 
-      this.powerboxRequest.completeNewFrontendRef(
-        instance.data.option.frontendRef,
-        { roleAssignment }
-      );
+      this.powerboxRequest.completeNewFrontendRef({
+        identity: {
+          id: instance.data.option.frontendRef.identity,
+          roleAssignment,
+        },
+      });
     }
   },
 });

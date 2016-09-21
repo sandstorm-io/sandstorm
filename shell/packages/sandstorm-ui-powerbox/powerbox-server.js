@@ -39,10 +39,10 @@ function encodePowerboxDescriptor(desc) {
 }
 
 Meteor.methods({
-  newFrontendRef(sessionId, frontendRef, options) {
+  newFrontendRef(sessionId, frontendRefRequest) {
     // Completes a powerbox request for a frontendRef capability.
     check(sessionId, String);
-    // frontendRef is type-checked by frontendRefRegistry.validate(), below.
+    // frontendRefRequest is type-checked by frontendRefRegistry.validate(), below.
 
     const db = this.connection.sandstormDb;
     const frontendRefRegistry = this.connection.frontendRefRegistry;
@@ -53,8 +53,8 @@ Meteor.methods({
       throw new Meteor.Error(403, "Invalid session ID");
     }
 
-    let { descriptor, requirements } =
-        frontendRefRegistry.validate(db, session, frontendRef, options);
+    let { descriptor, requirements, frontendRef } =
+        frontendRefRegistry.validate(db, session, frontendRefRequest);
     descriptor = encodePowerboxDescriptor(descriptor);
 
     const grainId = session.grainId;

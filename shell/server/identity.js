@@ -79,8 +79,8 @@ globalFrontendRefRegistry.register({
                                 IdentityRpc.PersistentIdentity);
   },
 
-  validate(db, session, identityId, options) {
-    check(identityId, String);
+  validate(db, session, value) {
+    check(value, { id: String, roleAssignment: SandstormDb.prototype.roleAssignmentPattern, });
 
     if (!session.userId) {
       throw new Meteor.Error(403, "Not logged in.");
@@ -94,8 +94,8 @@ globalFrontendRefRegistry.register({
       },
       session.grainId,
       "petname",
-      options.roleAssignment,
-      { user: { identityId: identityId, title: grain.title, }, });
+      value.roleAssignment,
+      { user: { identityId: value.id, title: grain.title, }, });
 
     return {
       descriptor: {
@@ -104,19 +104,20 @@ globalFrontendRefRegistry.register({
             id: Identity.typeId,
             value: Capnp.serialize(
               Identity.PowerboxTag,
-              { identityId: new Buffer(identityId, "hex"), }),
+              { identityId: new Buffer(value.id, "hex"), }),
           },
         ],
       },
       requirements: [
         {
           permissionsHeld: {
-            identityId: identityId,
+            identityId: value.id,
             grainId: session.grainId,
             permissions: [],
           },
         },
       ],
+      frontendRef: value.id,
     };
   },
 

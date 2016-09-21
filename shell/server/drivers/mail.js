@@ -392,6 +392,7 @@ Meteor.startup(() => {
       return {
         descriptor: { tags: [{ id: EmailRpc.EmailVerifier.typeId }] },
         requirements: [],
+        frontendRef: value,
       };
     },
 
@@ -451,6 +452,7 @@ Meteor.startup(() => {
       return {
         descriptor: { tags: [{ id: EmailRpc.VerifiedEmail.typeId, value: tagValue }] },
         requirements: [],
+        frontendRef: value,
       };
     },
 

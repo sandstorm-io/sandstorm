@@ -97,6 +97,14 @@ globalFrontendRefRegistry.register({
       value.roleAssignment,
       { user: { identityId: value.id, title: grain.title, }, });
 
+    // TODO(soon): Somehow notify this user that they now have access.
+
+    // TODO(perf): This permissions computation happens once here and then once again when the
+    //   `permissionsHeld` requirement is checked. Is there a way to avoid the duplicated work?
+    const permissions = SandstormPermissions.grainPermissions(
+      db, { grain: { _id: session.grainId, identityId: value.id, }, },
+      session.viewInfo ||  {}).permissions;
+
     return {
       descriptor: {
         tags: [
@@ -104,7 +112,10 @@ globalFrontendRefRegistry.register({
             id: Identity.typeId,
             value: Capnp.serialize(
               Identity.PowerboxTag,
-              { identityId: new Buffer(value.id, "hex"), }),
+              {
+                identityId: new Buffer(value.id, "hex"),
+                permissions: permissions,
+              }),
           },
         ],
       },
@@ -123,6 +134,11 @@ globalFrontendRefRegistry.register({
 
   query(db, userId, value) {
     const result = [];
+    let requestedPermissions = [];
+    if (value) {
+      requestedPermissions = Capnp.parse(Identity.PowerboxTag, value).permissions || [];
+    }
+
     db.collections.contacts.find({ ownerId: userId }).forEach(contact => {
       const identity = db.getIdentity(contact.identityId);
       result.push({
@@ -131,6 +147,7 @@ globalFrontendRefRegistry.register({
         cardTemplate: "identityPowerboxCard",
         configureTemplate: "identityPowerboxConfiguration",
         profile: identity.profile,
+        requestedPermissions,
         searchTerms: [
           identity.profile.name,
           identity.profile.handle,

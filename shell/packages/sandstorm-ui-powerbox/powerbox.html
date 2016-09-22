@@ -92,7 +92,7 @@
 <template name="identityPowerboxConfiguration">
   <form>
     <p>with permissions:</p>
-    {{#each role in viewInfo.roles}}
+    {{#each role in sufficientRoles}}
       <label><input type="radio" name="role" value="{{role.index}}">{{role.title.defaultText}} - {{role.verbPhrase.defaultText}}</label>
     {{else}}
       <label><input type="radio" checked="true" name="role" value="all">Full access</label>

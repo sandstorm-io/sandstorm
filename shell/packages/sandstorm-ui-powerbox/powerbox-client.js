@@ -419,11 +419,25 @@ Template.uiViewPowerboxConfiguration.events({
   },
 });
 
+const isSubsetOf = function (p1, p2) {
+  for (let idx = 0; idx < p1.length; ++idx) {
+    if (p1[idx] && !p2[idx]) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 Template.identityPowerboxConfiguration.helpers({
-  viewInfo: function () {
+  sufficientRoles: function () {
+    const requestedPermissions = this.option.requestedPermissions;
+
     const session = this.db.collections.sessions.findOne(
       { _id: this.powerboxRequest._requestInfo.sessionId, });
-    return prepareViewInfoForDisplay(session.viewInfo);
+    const roles = prepareViewInfoForDisplay(session.viewInfo).roles;
+
+    return roles && roles.filter(r => isSubsetOf(requestedPermissions, r.permissions));
   },
 });
 

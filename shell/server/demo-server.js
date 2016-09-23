@@ -50,7 +50,7 @@ function cleanupExpiredUsers() {
   // Delete expired demo accounts and all their grains.
 
   const now = new Date(Date.now() - DEMO_GRACE_MS);
-  Meteor.users.find({ expires: { $lt: now }, loginIdentities: {$exists: true} },
+  Meteor.users.find({ expires: { $lt: now }, loginIdentities: { $exists: true } },
                     { fields: { _id: 1, loginIdentities: 1, lastActive: 1, appDemoId: 1 } })
               .forEach(function (user) {
     console.log("delete demo user: " + user._id);

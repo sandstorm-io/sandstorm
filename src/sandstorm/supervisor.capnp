@@ -184,6 +184,9 @@ interface SandstormCore {
   # Reports the current disk storage usage of the grain. The supervisor monitors storage usage
   # while the grain runs and calls this method periodically. In order to avoid unnecessary traffic,
   # the supervisor may choose not to report insignificant changes.
+
+  getIdentityId @9 (identity :Identity.Identity) -> (id :Data);
+  # Gets the ID of the identity, as it would appear in UserInfo.identityId.
 }
 
 struct MembraneRequirement {

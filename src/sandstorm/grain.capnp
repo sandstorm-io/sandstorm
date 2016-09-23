@@ -119,6 +119,13 @@ interface SandstormApi(AppObjectId) {
   backgroundActivity @9 (event :Activity.ActivityEvent);
   # Post an activity event to the grain's activity log that was *not* initiated by any particular
   # user. For activity that should be attributed to a user, use SessionContext.activity().
+
+  getIdentityId @10 (identity: Identity.Identity) -> (id :Data);
+  # Gets the ID of the identity, as it would appear in UserInfo.identityId.
+  #
+  # This method is here on `SandstormApi` rather than on `Identity` in order to ease a possible
+  # future transition to a model where identity IDs are not globally stable and each grain has a
+  # separate (possibly incompatible) map from identity ID to account ID.
 }
 
 interface UiView @0xdbb4d798ea67e2e7 {

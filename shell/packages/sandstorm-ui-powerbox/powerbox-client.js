@@ -88,7 +88,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     } else if (card.option.frontendRef) {
       this.completeNewFrontendRef(card.option.frontendRef);
     } else {
-      this.failRequest(new Error("not sure how to complete powerbox request for non-frontedRef " +
+      this.failRequest(new Error("not sure how to complete powerbox request for non-frontendRef " +
                                  "that didn't provide a configureTemplate"));
     }
   }
@@ -177,10 +177,10 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     return {};
   }
 
-  completeNewFrontendRef(frontendRef) {
+  completeNewFrontendRef(frontendRefRequest) {
     Meteor.call("newFrontendRef",
       this._requestInfo.sessionId,
-      frontendRef,
+      frontendRefRequest,
       (err, result) => {
         if (err) {
           this.failRequest(err);
@@ -216,9 +216,18 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
   }
 };
 
-const matchesAppOrGrainTitle = function (needle, cardData) {
-  if (cardData.title && cardData.title.toLowerCase().indexOf(needle) !== -1) return true;
-  if (cardData.appTitle && cardData.appTitle.toLowerCase().indexOf(needle) !== -1) return true;
+const matchesCard = function (needle, grainInfo, searchTerms) {
+  if (grainInfo) {
+    if (grainInfo.title && grainInfo.title.toLowerCase().indexOf(needle) !== -1) return true;
+    if (grainInfo.appTitle && grainInfo.appTitle.toLowerCase().indexOf(needle) !== -1) return true;
+  }
+
+  if (searchTerms) {
+    for (let idx = 0; idx < searchTerms.length; ++idx) {
+      if (searchTerms[idx] && searchTerms[idx].toLowerCase().indexOf(needle) !== -1) return true;
+    }
+  }
+
   return false;
 };
 
@@ -231,7 +240,7 @@ const compileMatchFilter = function (searchString) {
   return function matchFilter(item) {
     if (searchKeys.length === 0) return true;
     return _.chain(searchKeys)
-        .map((searchKey) => matchesAppOrGrainTitle(searchKey, (item || {}).grainInfo || {}))
+        .map((searchKey) => matchesCard(searchKey, (item || {}).grainInfo, item.option.searchTerms))
         .reduce(function (a, b) { return a && b; })
         .value();
   };
@@ -409,6 +418,55 @@ Template.uiViewPowerboxConfiguration.events({
     }
   },
 });
+
+const isSubsetOf = function (p1, p2) {
+  for (let idx = 0; idx < p1.length; ++idx) {
+    if (p1[idx] && !p2[idx]) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+Template.identityPowerboxConfiguration.helpers({
+  sufficientRoles: function () {
+    const requestedPermissions = this.option.requestedPermissions;
+
+    const session = this.db.collections.sessions.findOne(
+      { _id: this.powerboxRequest._requestInfo.sessionId, });
+    const roles = prepareViewInfoForDisplay(session.viewInfo).roles;
+
+    return roles && roles.filter(r => isSubsetOf(requestedPermissions, r.permissions));
+  },
+});
+
+Template.identityPowerboxConfiguration.events({
+  "click .connect-button": function (event, instance) {
+    event.preventDefault();
+    const selectedInput = instance.find('form input[name="role"]:checked');
+    if (selectedInput) {
+      let roleAssignment;
+      if (selectedInput.value === "all") {
+        roleAssignment = { allAccess: null };
+      } else {
+        const role = parseInt(selectedInput.value, 10);
+        roleAssignment = { roleId: role };
+      }
+
+      this.powerboxRequest.completeNewFrontendRef({
+        identity: {
+          id: instance.data.option.frontendRef.identity,
+          roleAssignment,
+        },
+      });
+    }
+  },
+});
+
+Template.identityPowerboxCard.powerboxIconSrc = card => {
+  return card.option.profile.pictureUrl;
+};
 
 Template.emailVerifierPowerboxCard.helpers({
   serviceTitle: function () {

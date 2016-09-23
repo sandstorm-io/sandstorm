@@ -63,32 +63,37 @@ class FrontendRefRegistry {
     }
   }
 
-  validate(db, session, mutableFrontendRef) {
+  validate(db, session, frontendRefRequest) {
     // Validates a powerbox request on the given `session` (a record from the Sessions table)
-    // requesting the creation of the given frontendRef type. `mutableFrontendRef` is expected to
-    // come directly from the client; calling validate() verifies that it has a valid type, and
-    // may modify the value to add bits that need to be generated server-side. `validate()` also
-    // returns an array of MembraneRequirements that shall apply to the capability. These
-    // requirements will not yet have been checked, so the caller should check them before
-    // proceeding.
+    // requesting the creation of the given frontendRef type. `frontendRefRequest` is expected to
+    // come directly from the client; calling validate() verifies that it is well-formed and
+    // carries out any type-specific server-side work needed to construct the desired frontendRef.
+    // `validate()` also returns an array of MembraneRequirements that shall apply to the
+    // capability. These requirements will not yet have been checked, so the caller should check
+    // them before proceeding.
 
-    const keys = Object.keys(mutableFrontendRef);
+    const keys = Object.keys(frontendRefRequest);
     if (keys.length != 1) {
-      throw new Error("invalid frontendRef: " + JSON.stringify(mutableFrontendRef));
+      throw new Error("invalid frontendRefRequest: " + JSON.stringify(frontendRefRequest));
     }
 
     const key = keys[0];
     const handler = this._frontendRefHandlers[key];
     if (!handler) {
-      throw new Error("invalid frontendRef: " + JSON.stringify(mutableFrontendRef));
+      throw new Error("invalid frontendRefRequest: " + JSON.stringify(frontendRefRequest));
     }
 
     if (!handler.validate) {
       throw new Error("frontendRef type cannot be created via powerbox: " +
-                      JSON.stringify(mutableFrontendRef));
+                      JSON.stringify(frontendRefRequest));
     }
 
-    return handler.validate(db, session, mutableFrontendRef[key]);
+    const { descriptor, requirements, frontendRef } =
+          handler.validate(db, session, frontendRefRequest[key]);
+
+    const result = { descriptor, requirements, frontendRef: {}, };
+    result.frontendRef[key] = frontendRef;
+    return result;
   }
 
   register(object) {
@@ -104,11 +109,10 @@ class FrontendRefRegistry {
     //     `capability` (returned): A Cap'n Proto capability implementing SystemPersistent along
     //         with whatever other interfaces are appropriate for the ref type.
     //   `validate`: Callback to validate a powerbox request for a new capability of this type.
-    //       Has signature `(db, session, mutableValue) -> {descriptor, requirements}`, where:
-    //     `mutableValue` is the value of the single field of `frontendRef` for this capability.
-    //         If this is an object value, the callback may optionally modify it, e.g. adding
-    //         additional fields that need to be generated server-side. The callback *must*, at
-    //         the very least, type-check this value. It should throw an exception if the vaule is
+    //       Has signature `(db, session, request) -> {descriptor, requirements, frontendRef}`,
+    //       where:
+    //     `request` is type-specific information describing the requested capability. The
+    //         callback *must* type-check this value, and should throw an exception if it is
     //         not valid.
     //     `session` is the record from the Sessions table of the UI session where the powerbox
     //         request occurred.
@@ -118,6 +122,8 @@ class FrontendRefRegistry {
     //     `requirements` (returned) is an array of MembraneRequirements which should apply to the
     //         new capability. Note that these requirements will be checked immediately and the
     //         powerbox request will fail if they aren't met.
+    //     `frontendRef` (returned) is the value that will be written for the key specified
+    //         by `frontendRefField` in the single-key object `ApiTokens.frontendRef`.
     //    `query`: Callback to populate options for a powerbox request for this type ID. Has
     //        signature `(db, userAccountId, tagValue) -> options`, where:
     //      `tagValue`: A Buffer of the Cap'n-Proto-encoded `PowerboxDescriptor.Tag.value`.

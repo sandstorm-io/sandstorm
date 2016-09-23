@@ -1902,6 +1902,16 @@ public:
     return req.send().ignoreResult();
   }
 
+  kj::Promise<void> getIdentityId(GetIdentityIdContext context) override {
+    auto params = context.getParams();
+    auto req = sandstormCore.getIdentityIdRequest(params.totalSize());
+    req.setIdentity(params.getIdentity());
+    context.releaseParams();
+    return req.send().then([context](auto args) mutable -> void {
+      context.getResults().setId(args.getId());
+    });
+  }
+
 private:
   void dropHandle(kj::ArrayPtr<byte> sturdyRef) {
     auto req = sandstormCore.dropRequest();

@@ -16,6 +16,7 @@
 
 const Capnp = Npm.require("capnp");
 const IdentityRpc = Capnp.importSystem("sandstorm/identity-impl.capnp");
+const Identity = Capnp.importSystem("sandstorm/identity.capnp").Identity;
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset.js";
 const StaticAsset = Capnp.importSystem("sandstorm/util.capnp").StaticAsset;
@@ -71,9 +72,89 @@ makeIdentity = (identityId, requirements) => {
 
 globalFrontendRefRegistry.register({
   frontendRefField: "identity",
+  typeId: Identity.typeId,
 
   restore(db, saveTemplate, identityId) {
     return new Capnp.Capability(new IdentityImpl(db, saveTemplate, identityId),
                                 IdentityRpc.PersistentIdentity);
+  },
+
+  validate(db, session, value) {
+    check(value, { id: String, roleAssignment: SandstormDb.prototype.roleAssignmentPattern, });
+
+    if (!session.userId) {
+      throw new Meteor.Error(403, "Not logged in.");
+    }
+
+    const grain = db.getGrain(session.grainId);
+    SandstormPermissions.createNewApiToken(
+      db,
+      { identityId: session.identityId,
+        accountId: session.userId,
+      },
+      session.grainId,
+      "petname",
+      value.roleAssignment,
+      { user: { identityId: value.id, title: grain.title, }, });
+
+    // TODO(soon): Somehow notify this user that they now have access.
+
+    // TODO(perf): This permissions computation happens once here and then once again when the
+    //   `permissionsHeld` requirement is checked. Is there a way to avoid the duplicated work?
+    const permissions = SandstormPermissions.grainPermissions(
+      db, { grain: { _id: session.grainId, identityId: value.id, }, },
+      session.viewInfo ||  {}).permissions;
+
+    return {
+      descriptor: {
+        tags: [
+          {
+            id: Identity.typeId,
+            value: Capnp.serialize(
+              Identity.PowerboxTag,
+              {
+                permissions: permissions,
+              }),
+          },
+        ],
+      },
+      requirements: [
+        {
+          permissionsHeld: {
+            identityId: value.id,
+            grainId: session.grainId,
+            permissions: [],
+          },
+        },
+      ],
+      frontendRef: value.id,
+    };
+  },
+
+  query(db, userId, value) {
+    const result = [];
+    let requestedPermissions = [];
+    if (value) {
+      requestedPermissions = Capnp.parse(Identity.PowerboxTag, value).permissions || [];
+    }
+
+    db.collections.contacts.find({ ownerId: userId }).forEach(contact => {
+      const identity = db.getIdentity(contact.identityId);
+      result.push({
+        _id: "frontendref-identity-" + contact.identityId,
+        frontendRef: { identity: contact.identityId },
+        cardTemplate: "identityPowerboxCard",
+        configureTemplate: "identityPowerboxConfiguration",
+        profile: identity.profile,
+        requestedPermissions,
+        searchTerms: [
+          identity.profile.name,
+          identity.profile.handle,
+          identity.profile.intrinsicName,
+        ],
+      });
+    });
+
+    return result;
   },
 });

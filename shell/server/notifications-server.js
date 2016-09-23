@@ -24,7 +24,7 @@ const SystemPersistent = SupervisorCapnp.SystemPersistent;
 logActivity = function (grainId, identityId, event) {
   check(grainId, String);
   check(identityId, String);
-  // `event` is always an ActivityEvent parsed from Cap'n Proto buf that's too complicated to check
+  // `event` is always an ActivityEvent parsed from Cap'n Proto but that's too complicated to check
   // here.
 
   // TODO(perf): A cached copy of the grain from when the session opened would be fine to use

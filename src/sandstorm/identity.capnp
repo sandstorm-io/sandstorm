@@ -23,7 +23,7 @@ using Util = import "util.capnp";
 using PermissionSet = List(Bool);
 # Set of permission IDs, represented as a bitfield.
 
-interface Identity {
+interface Identity @0xc084987aa951dd18  {
   # Represents a user identity.
   #
   # Things you can do:
@@ -38,6 +38,17 @@ interface Identity {
   # This capability is always persistable.
 
   # TODO(someday): Public key info? Ability to seal messages / check signatures?
+
+  struct PowerboxTag {
+    # Tag to be used in a `PowerboxDescriptor` to describe an `Identity`.
+
+    permissions @0 :PermissionSet;
+    # In a query, the permissions that the requester wishes to be held by the identity. When
+    # the powerbox UI asks the user to select a role, it hides any roles that do not provide all of
+    # these permissions.
+    #
+    # In a fulfillment, the current permissions actually held by the identity.
+  }
 
   getProfile @0 () -> (profile: Profile);
   # Get the identity's current profile.

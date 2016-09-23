@@ -143,6 +143,7 @@ Meteor.startup(() => {
       return {
         descriptor: { tags: [{ id: IpRpc.IpInterface.typeId }] },
         requirements: [{ userIsAdmin: session.userId }],
+        frontendRef: value,
       };
     },
 
@@ -268,6 +269,7 @@ Meteor.startup(() => {
       return {
         descriptor: { tags: [{ id: IpRpc.IpNetwork.typeId }] },
         requirements: [{ userIsAdmin: session.userId }],
+        frontendRef: value,
       };
     },
 

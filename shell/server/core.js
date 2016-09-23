@@ -163,6 +163,12 @@ class SandstormCoreImpl {
       this.db.collections.users.update(result.value.userId, { $inc: { storageUsage: diff } });
     }
   }
+
+  getIdentityId(identity) {
+    return unwrapFrontendCap(identity, "identity", (identityId) => {
+      return { id: new Buffer(identityId, "hex") };
+    });
+  }
 }
 
 const makeSandstormCore = (db, grainId) => {

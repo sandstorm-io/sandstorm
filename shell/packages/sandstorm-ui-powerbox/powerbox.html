@@ -84,3 +84,19 @@
 <template name="verifiedEmailPowerboxCard">
   {{ option.frontendRef.verifiedEmail.address }}
 </template>
+
+<template name="identityPowerboxCard">
+  {{ option.profile.name }}
+</template>
+
+<template name="identityPowerboxConfiguration">
+  <form>
+    <p>with permissions:</p>
+    {{#each role in sufficientRoles}}
+      <label><input type="radio" name="role" value="{{role.index}}">{{role.title.defaultText}} - {{role.verbPhrase.defaultText}}</label>
+    {{else}}
+      <label><input type="radio" checked="true" name="role" value="all">Full access</label>
+    {{/each}}
+    <button class="connect-button">Connect</button>
+  </form>
+</template>

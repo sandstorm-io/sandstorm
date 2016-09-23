@@ -320,7 +320,7 @@ Meteor.methods({
     const opened = globalBackend.openSessionInternal(grainId, this.userId, identityId,
                                                      null, null, cachedSalt);
     const result = opened.methodResult;
-    const proxy = new Proxy(grainId, this.userId, result.sessionId,
+    const proxy = new Proxy(grain, result.sessionId,
                             result.hostId, result.tabId, identityId, false, opened.supervisor);
     proxiesByHostId[result.hostId] = proxy;
     return result;
@@ -416,7 +416,7 @@ Meteor.methods({
                                                        title, apiToken, cachedSalt);
 
       const result = opened.methodResult;
-      const proxy = new Proxy(apiToken.grainId, grain.userId, result.sessionId,
+      const proxy = new Proxy(grain, result.sessionId,
                               result.hostId, result.tabId, identityId, false,
                               opened.supervisor);
       proxy.apiToken = apiToken;
@@ -621,7 +621,7 @@ const getProxyForHostId = (hostId, isAlreadyOpened) => {
         // Note that we don't need to call mayOpenGrain() because the existence of a session
         // implies this check was already performed.
 
-        const proxy = new Proxy(grain._id, grain.userId, session._id, hostId, session.tabId,
+        const proxy = new Proxy(grain, session._id, hostId, session.tabId,
                                 session.identityId, false);
         if (apiToken) proxy.apiToken = apiToken;
 
@@ -858,7 +858,7 @@ getProxyForApiToken = (token, request) => {
             identityId = tokenInfo.identityId;
           }
 
-          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, tabId, identityId, true);
+          proxy = new Proxy(grain, null, null, tabId, identityId, true);
           proxy.apiToken = tokenInfo;
           proxy.apiSessionParams = serializedParams;
         }
@@ -1201,9 +1201,10 @@ tryProxyRequest = (hostId, req, res) => {
 //
 
 class Proxy {
-  constructor(grainId, ownerId, sessionId, hostId, tabId, identityId, isApi, supervisor) {
-    this.grainId = grainId;
-    this.ownerId = ownerId;
+  constructor(grain, sessionId, hostId, tabId, identityId, isApi, supervisor) {
+    // `grain` is an entry in the `Grains` collection.
+    this.grainId = grain._id;
+    this.ownerId = grain.userId;
     this.identityId = identityId;
     this.supervisor = supervisor;  // note: optional parameter; we can reconnect
     this.sessionId = sessionId;

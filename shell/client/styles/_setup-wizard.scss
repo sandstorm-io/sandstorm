@@ -68,6 +68,18 @@
   justify-content: center;
 }
 
+.setup-current-step {
+  color: black;
+}
+
+span.setup-not-current-step {
+  color: #888;
+}
+
+a.setup-not-current-step {
+  text-decoration: none;
+}
+
 .setup-progress-step {
   // base percent to flex: should be 100%/(num_steps + 1) to make the steps' labels line up with
   // the endpoints of the progress bars below, but the number of steps varies, so we need to set

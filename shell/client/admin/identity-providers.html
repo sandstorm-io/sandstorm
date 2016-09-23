@@ -28,12 +28,16 @@
   {{/if}}
 
   <form class="setup-idp-form">
-    <p>To use email login, you'll also need to configure an email relay.</p>
+    {{#if emailUnconfigured}}
+      <p class="flash-message warning-message">Note: to use email login, you'll need to configure email delivery after this.</p>
+    {{/if}}
+
+    <p>Email login has no additional configuration options.</p>
   </form>
 
   <div class="idp-modal-button-row">
     <button class="idp-modal-save">
-      {{#if emailEnabled}}
+      {{#if emailLoginEnabled}}
       Save
       {{else}}
       Enable
@@ -42,7 +46,7 @@
     <button class="idp-modal-cancel">
       Cancel
     </button>
-    {{#if emailEnabled}}
+    {{#if emailLoginEnabled}}
     <button class="idp-modal-disable">
       Disable
     </button>

@@ -47,7 +47,7 @@ interface Identity @0xc084987aa951dd18  {
     # the powerbox UI asks the user to select a role, it hides any roles that do not provide all of
     # these permissions.
     #
-    # In a  provision, the current permissions actually held by the identity.
+    # In a fulfillment, the current permissions actually held by the identity.
   }
 
   getProfile @0 () -> (profile: Profile);

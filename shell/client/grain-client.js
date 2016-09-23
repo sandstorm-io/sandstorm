@@ -1299,11 +1299,6 @@ Template.emailInviteTab.events({
 
     const currentGrain = globalGrains.getActive();
 
-    // HTML-escape the message.
-    const div = document.createElement("div");
-    div.appendChild(document.createTextNode(message));
-    const htmlMessage = div.innerHTML.replace(/\n/g, "<br>");
-
     const contacts = instance.contacts.get();
     const emails = instance.find("input.emails");
     const emailsValue = emails.value;
@@ -1329,8 +1324,7 @@ Template.emailInviteTab.events({
     }
 
     Meteor.call("inviteUsersToGrain", getOrigin(), currentGrain.identityId(),
-                grainId, title, assignment, contacts,
-                { text: message, html: htmlMessage }, function (error, result) {
+                grainId, title, assignment, contacts, message, function (error, result) {
       if (error) {
         instance.completionState.set({ error: error.toString() });
       } else {

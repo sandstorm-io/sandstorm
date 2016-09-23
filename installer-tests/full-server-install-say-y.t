@@ -22,6 +22,7 @@ We're going to:
 * Create a service user (sandstorm) that owns Sandstorm's files
 * Configure Sandstorm to start on system boot (with sysvinit)
 * Configure your system to enable unprivileged user namespaces, via sysctl.
+* Listen for inbound email on port 25.
 
 OK to continue? [yes] $[type]
 $[slow]As a Sandstorm user, you are invited to use a free Internet hostname as a subdomain of sandcats.io
@@ -43,5 +44,7 @@ $[veryslow]Visit this link to start using it:
 To learn how to control the server, run:
   sandstorm help
 $[exitcode]0
-$[run]for i in `seq 0 20`; do nc -z localhost 6080 && { echo yay; break; } || sleep 1 ; done
+$[run]nc -z localhost 6080 && echo yay
+$[slow]yay
+$[run]nc -z localhost 25 && echo yay
 $[slow]yay

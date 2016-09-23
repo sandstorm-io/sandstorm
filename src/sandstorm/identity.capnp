@@ -42,10 +42,7 @@ interface Identity @0xc084987aa951dd18  {
   struct PowerboxTag {
     # Tag to be used in a `PowerboxDescriptor` to describe an `Identity`.
 
-    identityId @0 :Data;
-    # The 32-byte identity ID of the identity.
-
-    permissions @1 :PermissionSet;
+    permissions @0 :PermissionSet;
     # In a query, the permissions that the requester wishes to be held by the identity. When
     # the powerbox UI asks the user to select a role, it hides any roles that do not provide all of
     # these permissions.

@@ -43,8 +43,8 @@ module.exports["Test powerbox request contact"] = function (browser) {
 
   browser
     .loginDevAccount(aliceName)
-    .installApp("http://sandstorm.io/apps/david/sandstorm-test-python6.spk",
-                "a8c2128e401f1d20a426b24aa589c637",
+    .installApp("http://sandstorm.io/apps/david/sandstorm-test-python7.spk",
+                "b06dc34b21ba3e8dcedc6d8bab351eac",
                 APP_ID)
     .assert.containsText("#grainTitle", "Untitled Test App test page")
     .waitForElementVisible('.grain-frame', short_wait)
@@ -94,6 +94,7 @@ module.exports["Test powerbox request contact"] = function (browser) {
                 .assert.containsText("form.test-identity div.result", bobName)
 
                 // Now trash the grain as Bob.
+                .frame()
                 .execute("window.Meteor.logout()")
                 .loginDevAccount(bobName)
                 .url(browser.launch_url + "/grain")

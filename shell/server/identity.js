@@ -113,7 +113,6 @@ globalFrontendRefRegistry.register({
             value: Capnp.serialize(
               Identity.PowerboxTag,
               {
-                identityId: new Buffer(value.id, "hex"),
                 permissions: permissions,
               }),
           },

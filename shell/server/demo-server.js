@@ -53,21 +53,15 @@ function cleanupExpiredUsers() {
   Meteor.users.find({ expires: { $lt: now } },
                     { fields: { _id: 1, loginIdentities: 1, lastActive: 1, appDemoId: 1 } })
               .forEach(function (user) {
+    console.log("delete demo user: " + user._id);
+    if (user.loginIdentities) {
+      globalDb.deleteAccount(user._id, globalBackend);
+    } else {
+      globalDb.deleteIdentity(user._id);
+    }
 
-    globalDb.deleteGrains({ userId: user._id }, globalBackend, "demoGrain");
-
-    console.log("delete user: " + user._id);
-    // We intentionally do not do `ApiTokens.remove({accountId: user._id})`, because some such
-    // tokens might still play an active role in the sharing graph.
-    Contacts.remove({ ownerId: user._id });
-    UserActions.remove({ userId: user._id });
-    Notifications.remove({ userId: user._id });
-    Meteor.users.remove(user._id);
-    waitPromise(globalBackend.cap().deleteUser(user._id));
     if (user.loginIdentities && user.lastActive) {
-      // When deleting a user, we can specify it as a "normal" user
-      // (type: user) or as a user who started out by using the app
-      // demo feature (type: appDemoUser).
+      // Record stats about demo accounts.
       let deleteStatsType = "demoUser";
       const isAppDemoUser = !!user.appDemoId;
       if (isAppDemoUser) {

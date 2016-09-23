@@ -21,11 +21,16 @@ const Capnp = Npm.require("capnp");
 const SupervisorCapnp = Capnp.importSystem("sandstorm/supervisor.capnp");
 const SystemPersistent = SupervisorCapnp.SystemPersistent;
 
-logActivity = function (grainId, identityId, event) {
+logActivity = function (grainId, identityIdOrAnonymous, event) {
+  // identityIdOrAnonymous is the string "anonymous" for an anonymous user, or is null for a
+  // non-user-initiated ("background") activity.
+
   check(grainId, String);
-  check(identityId, String);
+  check(identityIdOrAnonymous, Match.Maybe(String));
   // `event` is always an ActivityEvent parsed from Cap'n Proto but that's too complicated to check
   // here.
+
+  const identityId = identityIdOrAnonymous === "anonymous" ? null : identityIdOrAnonymous;
 
   // TODO(perf): A cached copy of the grain from when the session opened would be fine to use
   //   here, rather than looking it up every time.
@@ -56,13 +61,15 @@ logActivity = function (grainId, identityId, event) {
     }, { $unset: { "owner.user.seenAllActivity": true } }, { multi: true });
   }
 
-  // Apply auto-subscriptions.
-  if (eventType.autoSubscribeToGrain) {
-    globalDb.subscribeToActivity(identityId, grainId);
-  }
+  if (identityId) {
+    // Apply auto-subscriptions.
+    if (eventType.autoSubscribeToGrain) {
+      globalDb.subscribeToActivity(identityId, grainId);
+    }
 
-  if (event.thread && eventType.autoSubscribeToThread) {
-    globalDb.subscribeToActivity(identityId, grainId, event.thread.path || "");
+    if (event.thread && eventType.autoSubscribeToThread) {
+      globalDb.subscribeToActivity(identityId, grainId, event.thread.path || "");
+    }
   }
 
   // Figure out whom we need to notify.
@@ -70,7 +77,7 @@ logActivity = function (grainId, identityId, event) {
   const addRecipient = recipient => {
     // Mutes take priority over subscriptions.
     if (recipient.mute) {
-      notifyMap[identityId] = false;
+      notifyMap[recipient.identityId] = false;
     } else {
       if (!(recipient.identityId in notifyMap)) {
         notifyMap[recipient.identityId] = true;
@@ -78,8 +85,10 @@ logActivity = function (grainId, identityId, event) {
     }
   };
 
-  // Don't notify self.
-  addRecipient({ identityId: identityId, mute: true });
+  if (identityId) {
+    // Don't notify self.
+    addRecipient({ identityId: identityId, mute: true });
+  }
 
   // Notify subscribers, if desired.
   if (eventType.notifySubscribers) {
@@ -134,33 +143,40 @@ logActivity = function (grainId, identityId, event) {
 
     if (identityId) {
       notification.initiatingIdentity = identityId;
+    } else if (identityIdOrAnonymous) {
+      notification.initiatorAnonymous = true;
     }
 
     notification.eventType = event.type;
     update.text = eventType.verbPhrase;
 
-    // Look up icon urls for the responsible identity and the app
-    const identity = Meteor.users.findOne({ _id: identityId });
-    if (!identity) {
-      throw new Error("no such identity");
-    }
-
-    SandstormDb.fillInProfileDefaults(identity);
-    SandstormDb.fillInPictureUrl(identity);
-
     const body = (event.notification && event.notification.caption) || { defaultText: "" };
 
     const appActivity = {
-      user: {
-        identityId: identity._id,
-        name: identity.profile.name,
-        avatarUrl: identity.profile.pictureUrl || "",
-      },
       grainId: notification.grainId,
       path: notification.path,
       body,
       actionText: eventType.verbPhrase,
     };
+
+    if (identityId) {
+      // Look up icon urls for the responsible identity and the app
+      const identity = Meteor.users.findOne({ _id: identityId });
+      if (!identity) {
+        throw new Error("no such identity");
+      }
+
+      SandstormDb.fillInProfileDefaults(identity);
+      SandstormDb.fillInPictureUrl(identity);
+
+      appActivity.user = {
+        identityId: identity._id,
+        name: identity.profile.name,
+        avatarUrl: identity.profile.pictureUrl || "",
+      };
+    } else if (identityIdOrAnonymous) {
+      appActivity.user = { anonymous: true };
+    }
 
     notify.forEach(targetId => {
       // Notify all accounts connected with this identity.

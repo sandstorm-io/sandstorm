@@ -50,28 +50,31 @@ function cleanupExpiredUsers() {
   // Delete expired demo accounts and all their grains.
 
   const now = new Date(Date.now() - DEMO_GRACE_MS);
-  Meteor.users.find({ expires: { $lt: now } },
+  Meteor.users.find({ expires: { $lt: now }, loginIdentities: {$exists: true} },
                     { fields: { _id: 1, loginIdentities: 1, lastActive: 1, appDemoId: 1 } })
               .forEach(function (user) {
     console.log("delete demo user: " + user._id);
-    if (user.loginIdentities) {
-      globalDb.deleteAccount(user._id, globalBackend);
-    } else {
-      globalDb.deleteIdentity(user._id);
+    globalDb.deleteAccount(user._id, globalBackend);
+
+    // Record stats about demo accounts.
+    let deleteStatsType = "demoUser";
+    const isAppDemoUser = !!user.appDemoId;
+    if (isAppDemoUser) {
+      deleteStatsType = "appDemoUser";
     }
 
-    if (user.loginIdentities && user.lastActive) {
-      // Record stats about demo accounts.
-      let deleteStatsType = "demoUser";
-      const isAppDemoUser = !!user.appDemoId;
-      if (isAppDemoUser) {
-        deleteStatsType = "appDemoUser";
-      }
+    // Intentionally record deleted users at time of deletion to avoid miscounting users that
+    // were demoing just before the day rolled over.
+    DeleteStats.insert({ type: deleteStatsType, lastActive: new Date(), appId: user.appDemoId });
+  });
 
-      // Intentionally record deleted users at time of deletion to avoid miscounting users that
-      // were demoing just before the day rolled over.
-      DeleteStats.insert({ type: deleteStatsType, lastActive: new Date(), appId: user.appDemoId });
-    }
+  // All demo identities should have been deleted as part of deleting the demo users, but just in
+  // case, check for them too.
+  Meteor.users.find({ expires: { $lt: now }, loginIdentities: { $exists: false } },
+                    { fields: { _id: 1 } })
+              .forEach(function (user) {
+    console.log("delete demo identity: " + user._id);
+    globalDb.deleteIdentity(user._id);
   });
 }
 

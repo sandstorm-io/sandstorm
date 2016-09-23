@@ -1136,20 +1136,17 @@ tryProxyRequest = (hostId, req, res) => {
           //     https://bugzilla.mozilla.org/show_bug.cgi?id=446344
           // I haven't found any information on IE/Edge's behavior.
           if (origin !== expectedOrigin) {
-            // TODO(security): Alas, it turns out we have apps that have:
-            //   <meta name="referrer" content="no-referrer">
-            // as Chrome sends "Origin: null" in these cases. :( These apps need to switch to:
-            //   <meta name="referrer" content="same-origin">
-            // It's important that we don't break apps, so we will accept null origins for now,
-            // which of course completely defeats any CSRF protection. We should get the apps to
-            // update or apply a whitelist soon.
-            if (origin === "null") {
-              if (!proxy.wroteCsrfWarning) {
-                console.warn(
-                    "Note: Observed null Origin header. App needs to be updated so that " +
-                    "we can apply automatic CSRF protection. grain ID:", proxy.grainId);
-                proxy.wroteCsrfWarning = true;
-              }
+            const ALLOW_NULL_ORIGIN_WHITELIST = [
+              // Alas, it turns out that some packages specify:
+              //   <meta name="referrer" content="no-referrer">
+              // which causes Chrome to send "Origin: null". In order to keep backwards
+              // compatibility, we allow "Origin: null" in such cases.
+
+              "6a91d9096e1120c7ef7faa5654d9c8c4", // Gogs version 3.
+            ];
+
+            if (origin === "null" && ALLOW_NULL_ORIGIN_WHITELIST.indexOf(proxy.packageId) !== -1) {
+              // Allow.
             } else {
               throw new Meteor.Error(403, "Blocked illegal cross-origin request from: " + origin);
             }
@@ -1205,6 +1202,12 @@ class Proxy {
     // `grain` is an entry in the `Grains` collection.
     this.grainId = grain._id;
     this.ownerId = grain.userId;
+
+    this.packageId = grain.packageId;
+    // Note: for an API proxy, this field can become stale if a grain gets upgraded. However, for a
+    // non-API proxy, this field should always be accurate because an upgrade will clear all of
+    // the grain's entries in `Sessions`, triggering deletion of the corresponding proxies.
+
     this.identityId = identityId;
     this.supervisor = supervisor;  // note: optional parameter; we can reconnect
     this.sessionId = sessionId;

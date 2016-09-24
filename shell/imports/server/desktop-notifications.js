@@ -21,11 +21,15 @@ const createAppActivityDesktopNotification = (options) => {
     userId: String,
     notificationId: String,
     appActivity: {
-      user: {
-        identityId: String,
-        name: String,
-        avatarUrl: String,
-      },
+      user: Match.OneOf(
+        undefined,
+        {
+          identityId: String,
+          name: String,
+          avatarUrl: String,
+        },
+        { anonymous: true },
+      ),
       grainId: String,
       path: String,
       body: Match.ObjectIncluding({

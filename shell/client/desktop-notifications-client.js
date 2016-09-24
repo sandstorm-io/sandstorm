@@ -110,12 +110,18 @@ const showActivityDesktopNotification = (notif) => {
     }
   }
 
-  // TODO(someday): localize
-  const title = `${user.name} on ${grainTitle}: ${actionText.defaultText}`;
+  // TODO(i18n): localize
+  const titlePrefix =
+      !user ? "" :
+      user.anonymous ? "Anonymous user on " :
+      `${user.name} on `;
+
+  const title = `${titlePrefix}${grainTitle}: ${actionText.defaultText}`;
 
   // Pick icons
-  const mainIconUrl = user.avatarUrl || appIcon;
-  const badgeIconUrl = (user.avatarUrl && appIcon) || "";
+  const userAvatar = user && (user.anonymous ? "/incognito.svg" : user.avatarUrl);
+  const mainIconUrl = userAvatar || appIcon;
+  const badgeIconUrl = (userAvatar && appIcon) || "";
 
   // We wait up to 2 seconds to load the icons.  If they're not done in time, we send the
   // notification with whatever we have.

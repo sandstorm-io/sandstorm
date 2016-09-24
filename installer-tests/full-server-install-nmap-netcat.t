@@ -41,6 +41,7 @@ Your credentials to use it are in /opt/sandstorm/var/sandcats; consider making a
 $[veryslow]Downloading: https://dl.sandstorm.io
 $[veryslow]GPG signature is valid.
 $[veryslow]Sandstorm started. PID =
+$[veryslow]Your server is coming online. Waiting up to 90 seconds...
 $[veryslow]Visit this link to start using it:
   http://
 To learn how to control the server, run:

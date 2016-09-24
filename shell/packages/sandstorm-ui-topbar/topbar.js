@@ -431,7 +431,15 @@ SandstormTopbar.prototype.addItem = function (item) {
   }
 
   if (item.name in this._items) {
-    throw new Error("duplicate top bar item name:", item.name);
+    // Duplicate item. This can sometimes happen due to template redraw timing issues: the old
+    // item was supposed to be removed before the new item was added, but things were scheduled
+    // in the wrong order. So, we replace the old item with the new one, and also make sure to
+    // close the old item if it is currently expanded. (We can't directly call close() since that's
+    // a callback we returned without holding on to, but it would do redundant work anyway.)
+    console.warn("duplicate top bar item name:", item.name);
+    if (this._expanded.get() === item.name) {
+      this._expanded.set(null);
+    }
   }
 
   this._items[item.name] = item;

@@ -74,6 +74,9 @@ Template.notificationsPopup.helpers({
           SandstormDb.fillInPictureUrl(sender);
           row.senderIcon = sender.profile.pictureUrl;
         }
+      } else if (row.initiatorAnonymous) {
+        row.senderName = "Anonymous user";  // TODO(i18n)
+        row.senderIcon = "/incognito.svg";
       }
 
       if (row.grainId) {

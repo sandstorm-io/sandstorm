@@ -180,7 +180,7 @@ SessionContextImpl = class SessionContextImpl {
 
   activity(event) {
     return inMeteor(() => {
-      logActivity(this.grainId, this.identityId, event);
+      logActivity(this.grainId, this.identityId || "anonymous", event);
     });
   }
 };

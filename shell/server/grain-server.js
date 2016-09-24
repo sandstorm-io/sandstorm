@@ -398,6 +398,12 @@ Meteor.methods({
 
   inviteUsersToGrain: function (_origin, identityId, grainId, title, roleAssignment,
                                 contacts, message) {
+    if (typeof message === "object") {
+      // Older versions of the client passed an object here, but we only care about the `text`
+      // parameter. (This block can eventually be removed.)
+      message = message.text;
+    }
+
     if (!this.isSimulation) {
       check(_origin, String);
       check(identityId, String);
@@ -415,7 +421,7 @@ Meteor.methods({
           }),
         },
       ]);
-      check(message, { text: String, html: String });
+      check(message, String);
       if (!this.userId) {
         throw new Meteor.Error(403, "Must be logged in to share by email.");
       }
@@ -432,6 +438,12 @@ Meteor.methods({
         throw new Meteor.Error(403, "Demo users are not allowed to share by email.");
       }
 
+      const escapedMessage = message.replace(/&/g, "&amp;")
+                                    .replace(/</g, "&lt;")
+                                    .replace(/>/g, "&gt;")
+                                    .replace(/"/g, "&quot;")
+                                    .replace(/\n/g, "<br>");
+
       const accountId = this.userId;
       const outerResult = { successes: [], failures: [] };
       const fromEmail = globalDb.getReturnAddressWithDisplayName(identityId);
@@ -444,7 +456,7 @@ Meteor.methods({
             "email invitation for " + emailAddress,
             roleAssignment, { webkey: { forSharing: true } });
           const url = ROOT_URL + "/shared/" + result.token;
-          const html = message.html + "<br><br>" +
+          const html = escapedMessage + "<br><br>" +
               emailLinkWithInlineStyle(url, "Open Shared Grain") +
               "<div style='font-size:8pt;font-style:italic;color:gray'>" +
               "Note: If you forward this email to other people, they will be able to access " +
@@ -456,7 +468,7 @@ Meteor.methods({
               from: fromEmail,
               replyTo: replyTo,
               subject: title + " - Invitation to collaborate",
-              text: message.text + "\n\nFollow this link to open the shared grain:\n\n" + url +
+              text: message + "\n\nFollow this link to open the shared grain:\n\n" + url +
                 "\n\nNote: If you forward this email to other people, they will be able to " +
                 "access the share as well. To prevent this, remove the link before forwarding.",
               html: html,
@@ -491,7 +503,7 @@ Meteor.methods({
                 throw new Meteor.Error(500, "Unknown service to email share link.");
               }
 
-              const html = message.html + "<br><br>" +
+              const html = escapedMessage + "<br><br>" +
                   emailLinkWithInlineStyle(url, "Open Shared Grain") +
                   "<div style='font-size:8pt;font-style:italic;color:gray'>" +
                   "Note: You will need to log in with your " + loginNote +
@@ -502,7 +514,7 @@ Meteor.methods({
                 from: fromEmail,
                 replyTo: replyTo,
                 subject: title + " - Invitation to collaborate",
-                text: message.text + "\n\nFollow this link to open the shared grain:\n\n" + url +
+                text: message + "\n\nFollow this link to open the shared grain:\n\n" + url +
                   "\n\nNote: You will need to log in with your " + loginNote +
                   " to access this grain.",
                 html: html,

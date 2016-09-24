@@ -55,7 +55,7 @@ class SandstormBackend {
   }
 
   deleteUser(userId) {
-    return waitPromise(this._backendCap.deleteUser());
+    return waitPromise(this._backendCap.deleteUser(userId));
   }
 
   shutdownGrain(grainId, ownerId, keepSessions) {

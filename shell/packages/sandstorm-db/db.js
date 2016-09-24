@@ -1700,6 +1700,10 @@ _.extend(SandstormDb.prototype, {
         } else {
           this.startInstall(app.packageId, url, false, true);
         }
+      } else if (isAppPreinstalled) {
+        // The new version is already installed, but we still need to update the preinstall
+        // packageId.
+        globalDb.setPreinstallAppAsReady(app.appId, app.packageId);
       }
     });
   },

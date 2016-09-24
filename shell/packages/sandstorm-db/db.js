@@ -1670,7 +1670,7 @@ _.extend(SandstormDb.prototype, {
               this.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber,
                 app.version);
               if (isAppPreinstalled) {
-                globalDb.setPreinstallAppAsReady(app.appId, app.packageId);
+                this.setPreinstallAppAsReady(app.appId, app.packageId);
               }
             }
           } else {
@@ -1695,7 +1695,7 @@ _.extend(SandstormDb.prototype, {
                 this.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber,
                   app.version);
                 if (isAppPreinstalled) {
-                  globalDb.setPreinstallAppAsReady(app.appId, app.packageId);
+                  this.setPreinstallAppAsReady(app.appId, app.packageId);
                 }
               }
             } else if (newPack.status === "failed") {

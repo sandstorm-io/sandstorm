@@ -1669,6 +1669,9 @@ _.extend(SandstormDb.prototype, {
             } else {
               this.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber,
                 app.version);
+              if (isAppPreinstalled) {
+                globalDb.setPreinstallAppAsReady(app.appId, app.packageId);
+              }
             }
           } else {
             const result = this.collections.packages.findAndModify({
@@ -1691,6 +1694,9 @@ _.extend(SandstormDb.prototype, {
               } else {
                 this.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber,
                   app.version);
+                if (isAppPreinstalled) {
+                  globalDb.setPreinstallAppAsReady(app.appId, app.packageId);
+                }
               }
             } else if (newPack.status === "failed") {
               // If the package has failed, retry it
@@ -1700,10 +1706,6 @@ _.extend(SandstormDb.prototype, {
         } else {
           this.startInstall(app.packageId, url, false, true);
         }
-      } else if (isAppPreinstalled) {
-        // The new version is already installed, but we still need to update the preinstall
-        // packageId.
-        globalDb.setPreinstallAppAsReady(app.appId, app.packageId);
       }
     });
   },

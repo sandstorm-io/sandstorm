@@ -15,13 +15,6 @@ system.
 * Try the demo: https://demo.sandstorm.io/
 * Documentation available at: https://docs.sandstorm.io/
 
-## Caveats
-
-Sandstorm is in early beta. Lots of features are not done yet, and more review
-needs to be done before relying on it for mission-critical tasks.
-That said, we use it ourselves to get work done every day, and we hope you'll
-find it useful as well.
-
 ## Installing
 
 See [installation instructions in the Sandstorm documentation](https://docs.sandstorm.io/en/latest/install/).

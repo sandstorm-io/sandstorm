@@ -86,7 +86,7 @@ cat > $SETTINGS << __EOF__
     "quotaEnabled": ${QUOTA_ENABLED:-false},
     "stripePublicKey": "${STRIPE_PUBLIC_KEY:-}",
     "smtpListenPort": ${SMTP_LISTEN_PORT:-30025},
-    "rootUrl": "http://local.sandstorm.io:30000",
+    "rootUrl": "http://local.sandstorm.io:30000"
   },
   "home": "$SANDSTORM_HOME",
   "stripeKey": "${STRIPE_KEY:-}",

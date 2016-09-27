@@ -281,10 +281,15 @@ SandstormDb.prototype.findIdentitiesByEmail = function (email) {
 
   check(email, String);
 
+  // For LDAP, the field containing the e-mail address is configurable...
+  const ldapQuery = {};
+  ldapQuery["services.ldap.rawAttrs." + this.getLdapEmailField()] = email;
+
   return Meteor.users.find({ $or: [
     { "services.google.email": email },
     { "services.email.email": email },
     { "services.github.emails.email": email },
+    ldapQuery,
     { "services.saml.email": email },
   ], }).fetch().filter(function (identity) {
     // Verify that the email is verified, since our query doesn't technically do that.

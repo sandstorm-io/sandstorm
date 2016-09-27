@@ -114,6 +114,10 @@ Template.sandstormTopbar.helpers({
     }
   },
 
+  overlaySignin: function () {
+    return this._overlaySignin.get();
+  },
+
   template: function () {
     // Spacebars' {{>foo bar}} passes `bar` by pushing it onto the data context stack rather than
     // passing it as a parameter. The original data context must be accessed via `parentData()`.
@@ -327,6 +331,7 @@ SandstormTopbar = function (db, expandedVar, grainsVar, shrinkNavbarVar) {
   this._itemsTracker = new Tracker.Dependency();
 
   this._expanded = expandedVar || new ReactiveVar(null);
+  this._overlaySignin = new ReactiveVar(null);
   this._menuExpanded = new ReactiveVar(false);
   // shrinkNavbar is different from menuExpanded:
   //  - on desktop, we want to show the navbar by default,
@@ -371,6 +376,17 @@ SandstormTopbar.prototype.isPopupOpen = function () {
 SandstormTopbar.prototype.openPopup = function (name) {
   this._expanded.set(name);
   this._menuExpanded.set(false);
+};
+
+SandstormTopbar.prototype.overlaySignin = function (left, top) {
+  check(left, Number);
+  check(top, Number);
+
+  this._overlaySignin.set({ left: left, top: top, });
+};
+
+SandstormTopbar.prototype.disableOverlaySignin = function () {
+  this._overlaySignin.set(null);
 };
 
 SandstormTopbar.prototype.isUpdateBlocked = function () {

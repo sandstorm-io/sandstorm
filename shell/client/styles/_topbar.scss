@@ -809,6 +809,13 @@ body>.popup.who-has-access>.frame-container {
   width: 500px;
 }
 
+body>.signin {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100000;
+}
+
 body>.popup {
   // Popup windows hang off the topbar, usually appearing when a topbar item is clicked.
 

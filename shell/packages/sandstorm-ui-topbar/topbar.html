@@ -99,6 +99,12 @@ limitations under the License.
       {{/if}}
     </div>
   {{/with}}
+
+  {{#with overlaySignin}}
+    <div class="signin" style="left: {{left}}px; top: {{top}}px">
+      {{> loginButtonsDialog globalAccountsUi}}
+    </div>
+  {{/with}}
 </template>
 
 <template name="sandstormTopbarItem">

@@ -288,7 +288,7 @@ SandstormDb.prototype.findIdentitiesByEmail = function (email) {
     { "services.saml.email": email },
   ], }).fetch().filter(function (identity) {
     // Verify that the email is verified, since our query doesn't technically do that.
-    return !!_findWhere(SandstormDb.getVerifiedEmails(identity), { email: email });
+    return !!_.findWhere(SandstormDb.getVerifiedEmails(identity), { email: email });
   });
 };
 

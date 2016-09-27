@@ -159,7 +159,7 @@ struct ActivityTypeDef {
   # Should subscribers to this event (including subscribers to the event's thread, if any, and
   # subscribers to the event's grain) receive a notification of this event, by default?
   #
-  # Note that when the user explicitly subscribes through they UI, they will have the opportunity
+  # Note that when the user explicitly subscribes through the UI, they will have the opportunity
   # to choose exactly which event types they want to produce notifications. Moreover, when an app
   # provides a "subscribe" button in its own UI, and the user clicks it, the app can specify
   # different defaults that should apply to that button.

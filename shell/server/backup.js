@@ -183,7 +183,7 @@ Router.map(function () {
       }
 
       let started = false;
-      const filename = encodeURIComponent(token.name || "backup") + ".zip";
+      const encodedFilename = encodeURIComponent(token.name || "backup") + ".zip";
       let sawEnd = false;
 
       const stream = {
@@ -193,7 +193,7 @@ Router.map(function () {
             response.writeHead(200, {
               "Content-Length": size,
               "Content-Type": "application/zip",
-              "Content-Disposition": "attachment;filename*=utf-8''" + filename,
+              "Content-Disposition": "attachment;filename*=utf-8''" + encodedFilename,
             });
           }
         },
@@ -203,7 +203,7 @@ Router.map(function () {
             started = true;
             response.writeHead(200, {
               "Content-Type": "application/zip",
-              "Content-Disposition": "attachment;filename*=utf-8''" + filename,
+              "Content-Disposition": "attachment;filename*=utf-8''" + encodedFilename,
             });
           }
 
@@ -216,7 +216,7 @@ Router.map(function () {
             response.writeHead(200, {
               "Content-Length": 0,
               "Content-Type": "application/zip",
-              "Content-Disposition": "attachment;filename*=utf-8''" + filename,
+              "Content-Disposition": "attachment;filename*=utf-8''" + encodedFilename,
             });
           }
 

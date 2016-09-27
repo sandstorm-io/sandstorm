@@ -54,4 +54,4 @@ Template.registerHelper("globalAccountsUi", () => { return globalAccountsUi; });
 forceReplica = function (replica) {
   // Helper function for blackrock debugging.
   document.cookie = "force_replica=" + replica + ";path=/;domain=." + window.location.hostname;
-}
+};

@@ -140,19 +140,21 @@ globalFrontendRefRegistry.register({
 
     db.collections.contacts.find({ ownerId: userId }).forEach(contact => {
       const identity = db.getIdentity(contact.identityId);
-      result.push({
-        _id: "frontendref-identity-" + contact.identityId,
-        frontendRef: { identity: contact.identityId },
-        cardTemplate: "identityPowerboxCard",
-        configureTemplate: "identityPowerboxConfiguration",
-        profile: identity.profile,
-        requestedPermissions,
-        searchTerms: [
-          identity.profile.name,
-          identity.profile.handle,
-          identity.profile.intrinsicName,
-        ],
-      });
+      if (identity) {
+        result.push({
+          _id: "frontendref-identity-" + contact.identityId,
+          frontendRef: { identity: contact.identityId },
+          cardTemplate: "identityPowerboxCard",
+          configureTemplate: "identityPowerboxConfiguration",
+          profile: identity.profile,
+          requestedPermissions,
+          searchTerms: [
+            identity.profile.name,
+            identity.profile.handle,
+            identity.profile.intrinsicName,
+          ],
+        });
+      }
     });
 
     return result;

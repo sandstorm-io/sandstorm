@@ -114,6 +114,11 @@ Template.sandstormTopbar.helpers({
     }
   },
 
+  modal: function () {
+    const topbar = Template.instance().data;
+    return topbar._modal.get();
+  },
+
   template: function () {
     // Spacebars' {{>foo bar}} passes `bar` by pushing it onto the data context stack rather than
     // passing it as a parameter. The original data context must be accessed via `parentData()`.
@@ -326,6 +331,7 @@ SandstormTopbar = function (db, expandedVar, grainsVar, shrinkNavbarVar) {
   this._items = {};
   this._itemsTracker = new Tracker.Dependency();
 
+  this._modal = new ReactiveVar(false);
   this._expanded = expandedVar || new ReactiveVar(null);
   this._menuExpanded = new ReactiveVar(false);
   // shrinkNavbar is different from menuExpanded:
@@ -368,8 +374,9 @@ SandstormTopbar.prototype.isPopupOpen = function () {
   return !!this._expanded.get();
 };
 
-SandstormTopbar.prototype.openPopup = function (name) {
+SandstormTopbar.prototype.openPopup = function (name, modal) {
   this._expanded.set(name);
+  this._modal.set(modal);
   this._menuExpanded.set(false);
 };
 

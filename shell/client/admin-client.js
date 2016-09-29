@@ -46,6 +46,7 @@ const newAdminRoute = RouteController.extend({
         Router.current().route.getName() == "newAdminStatus";
 
     return {
+      hasSetupToken,
       isUserPermitted: isAdmin() || isUserPermittedBySetupToken,
       wildcardHostSeemsBroken,
       websocketSeemsBroken,

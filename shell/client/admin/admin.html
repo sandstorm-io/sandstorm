@@ -45,10 +45,18 @@
     {{#if isUserPermitted}}
       {{> Template.dynamic template=adminTab}}
     {{else}}
-      <p>
-        You are not logged in as an admin. To access the admin panel, log in as an admin user or
-        generate a token from the command line by running `sandstorm admin-token`.
-      </p>
+      {{#if hasSetupToken}}
+        <p>
+          You are not logged in as an admin, but you do have a setup token. You can either
+          <a href="/setup">visit the setup wizard</a> or
+          <a href="/admin/status">view the system log</a>.
+        </p>
+      {{else}}
+        <p>
+          You are not logged in as an admin. To access the admin panel, log in as an admin user or
+          generate a token from the command line by running `sandstorm admin-token`.
+        </p>
+      {{/if}}
     {{/if}}
   </div>
 </template>

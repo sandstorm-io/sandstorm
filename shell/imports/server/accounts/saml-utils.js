@@ -208,14 +208,14 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
   parser.parseString(xml, function (err, doc) {
     // Verify signature
     if (_this.options.cert && !_this.validateSignature(xml, _this.options.cert)) {
-      return callback(new Error("Invalid signature"), null, false);
+      return callback(new Error("Invalid signature"), null, false, xml);
     }
 
     const response = _this.getElement(doc, "Response");
     if (response) {
       const assertion = _this.getElement(response, "Assertion");
       if (!assertion) {
-        return callback(new Error("Missing SAML assertion"), null, false);
+        return callback(new Error("Missing SAML assertion"), null, false, xml);
       }
 
       profile = {};
@@ -227,7 +227,7 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
       if (response.$ && response.$.Destination) {
         if (!response.$.Destination.startsWith(process.env.ROOT_URL)) {
           return callback(new Error("SAML Response received with invalid Destination: " +
-            response.$.Destination));
+            response.$.Destination), null, false, xml);
         }
       }
 
@@ -247,7 +247,7 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
             if (profile.nameIDFormat.toLowerCase().indexOf("transient") !== -1) {
               return callback(new Error(
                   "SAML returned a transient NameID. Sandstorm requires a persistent NameID. " +
-                  "Please check your IdP config."));
+                  "Please check your IdP config."), null, false, xml);
             }
           }
         }
@@ -259,18 +259,18 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
           if (subjectConfirmationData) {
             const recipient = subjectConfirmationData.$.Recipient;
             if (recipient && !recipient.startsWith(process.env.ROOT_URL)) {
-              return callback(new Error("SAML sent to wrong recipient"));
+              return callback(new Error("SAML sent to wrong recipient"), null, false, xml);
             }
 
             const nowMs = Date.now();
             const notBefore = subjectConfirmationData.$.NotBefore;
             if (notBefore && nowMs < Date.parse(notBefore)) {
-              return callback(new Error("SAML assertion was signed for the future."));
+              return callback(new Error("SAML assertion was signed for the future."), null, false, xml);
             }
 
             const notOnOrAfter = subjectConfirmationData.$.NotOnOrAfter;
             if (notOnOrAfter && nowMs >= Date.parse(notOnOrAfter)) {
-              return callback(new Error("SAML assertion was signed for the past."));
+              return callback(new Error("SAML assertion was signed for the past."), null, false, xml);
             }
           }
         }
@@ -285,12 +285,14 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
               const nowMs = Date.now();
               const notBefore = value.NotBefore;
               if (notBefore && nowMs < Date.parse(notBefore)) {
-                return callback(new Error("SAML condition NotBefore is in the future."));
+                return callback(new Error("SAML condition NotBefore is in the future."),
+                                null, false, xml);
               }
 
               const notOnOrAfter = value.NotOnOrAfter;
               if (notOnOrAfter && nowMs >= Date.parse(notOnOrAfter)) {
-                return callback(new Error("SAML condition notOnOrAfter is in the past."));
+                return callback(new Error("SAML condition notOnOrAfter is in the past."),
+                                null, false, xml);
               }
             } else if (key.endsWith("AudienceRestriction") ||
                        key.endsWith("OneTimeUse") ||
@@ -308,7 +310,7 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
               // SP. We don't fall under this constraint so it's meaningless to us. As per the
               // spec, it is always considered valid.
             } else {
-              return callback(new Error("Unrecognized SAML constraint: " + key));
+              return callback(new Error("Unrecognized SAML constraint: " + key), null, false, xml);
             }
           }
         }
@@ -353,14 +355,14 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
         profile.email = profile.nameID;
       }
 
-      callback(null, profile, false);
+      callback(null, profile, false, xml);
     } else {
       const logoutResponse = _this.getElement(doc, "LogoutResponse");
 
       if (logoutResponse) {
-        callback(null, null, true);
+        callback(null, null, true, xml);
       } else {
-        return callback(new Error("Unknown SAML response message"), null, false);
+        return callback(new Error("Unknown SAML response message"), null, false, xml);
       }
 
     }

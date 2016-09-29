@@ -70,7 +70,7 @@ const closePopup = function (res, err) {
   let content =
         "<html><head><script>window.close()</script></head></html>";
   if (err)
-    content = "<html><body><h2>Sorry, an error occured</h2><div>" + err + '</div><a onclick="window.close();">Close Window</a></body></html>';
+    content = "<html><body><h2>Sorry, an error occured</h2><div>" + err + '</div><a onclick="window.close();">Close Window</a> <a href="/admin/status" target="_blank">View system log (admin only)</a></body></html>';
   res.end(content, "utf-8");
 };
 
@@ -132,10 +132,12 @@ const middleware = function (req, res, next) {
       });
     } else if (samlObject.actionName === "validate") {
       const _saml = new SAML(service);
-      _saml.validateResponse(req.body.SAMLResponse, function (err, profile, loggedOut) {
+      _saml.validateResponse(req.body.SAMLResponse,
+          function (err, profile, loggedOut, responseText) {
         if (err) {
-          console.error("Error validating SAML response", err.toString());
-          throw new Error("Unable to validate response url");
+          console.error("Error validating SAML response:", err.toString(),
+                        "\nFull SAML response XML:\n", responseText);
+          throw new Error("Unable to validate SAML response.");
         }
 
         // Do NOT use samlObject.credentialToken; it isn't signed!

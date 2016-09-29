@@ -349,20 +349,27 @@ class GrainView {
   }
 
   frameTitle() {
+    let serverTitle;
+    if (isStandalone()) {
+      serverTitle = window.location.hostname;
+    } else {
+      serverTitle = globalDb.getServerTitle();
+    }
+
     this._dep.depend();
     if (this._frameTitle !== undefined) {
-      return this._frameTitle + " · " + globalDb.getServerTitle();
+      return this._frameTitle + " · " + serverTitle;
     }
 
     const appTitle = this.appTitle();
     const grainTitle = this.title();
     // Actually set the values
     if (appTitle && grainTitle) {
-      return grainTitle + " · " + appTitle + " · " + globalDb.getServerTitle();
+      return grainTitle + " · " + appTitle + " · " + serverTitle;
     } else if (grainTitle) {
-      return grainTitle + " · " + globalDb.getServerTitle();
+      return grainTitle + " · " + serverTitle;
     } else {
-      return globalDb.getServerTitle();
+      return serverTitle;
     }
   }
 

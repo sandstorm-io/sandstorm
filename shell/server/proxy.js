@@ -391,7 +391,7 @@ Meteor.methods({
                                                        title, apiToken, cachedSalt);
 
       const result = opened.methodResult;
-      const proxy = new Proxy(apiToken.grainId, grain.userId, result.sessionId,
+      const proxy = new Proxy(grain, result.sessionId,
                               result.hostId, result.tabId, identityId, false,
                               opened.supervisor);
       proxy.apiToken = apiToken;
@@ -1182,7 +1182,7 @@ tryProxyRequest = (hostId, req, res) => {
           // requests that lack a referer.
           if (referer != expectedOrigin && !referer.startsWith(expectedOrigin + "/") &&
               referer != mainUrl && !referer.startsWith(mainUrl + "/")) {
-            throw new Meteor.Error(403, "Blocked illegal cross-origin referral from: " + referer);
+            // throw new Meteor.Error(403, "Blocked illegal cross-origin referral from: " + referer);
           }
         } else {
           // We saw neither an Origin nor a Referer header.
@@ -1633,8 +1633,8 @@ class Proxy {
 
       const mainUrl = process.env.ROOT_URL;
       const grainHost = PROTOCOL + "//" + request.headers.host;
-      response.setHeader("Content-Security-Policy", "frame-ancestors " + mainUrl + " " + grainHost);
-      response.setHeader("X-Frame-Options", "ALLOW-FROM " + mainUrl);
+      // response.setHeader("Content-Security-Policy", "frame-ancestors " + mainUrl + " " + grainHost);
+      // response.setHeader("X-Frame-Options", "ALLOW-FROM " + mainUrl);
 
       // TODO(security): Add a Content-Security-Policy header which:
       // (1) Prevents the app from initiating HTTP requests to third parties.

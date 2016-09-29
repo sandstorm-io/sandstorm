@@ -110,7 +110,8 @@ Template.newAdminLog.helpers({
 });
 
 Template.newAdminStatus.onCreated(function () {
-  this.subscribe("adminLog");
+  // This route can be used with a setup token (unlike most admin routes).
+  this.subscribe("adminLog", sessionStorage.getItem("setup-token"));
 });
 
 Template.newAdminStatus.onDestroyed(function () {
@@ -119,7 +120,8 @@ Template.newAdminStatus.onDestroyed(function () {
 
 Template.newAdminStatus.events({
   "click button[name=download-full-log]"(evt) {
-    Meteor.call("adminGetServerLogDownloadToken", (err, token) => {
+    Meteor.call("adminGetServerLogDownloadToken", sessionStorage.getItem("setup-token"),
+        (err, token) => {
       if (err) {
         console.log(err.message);
       } else {

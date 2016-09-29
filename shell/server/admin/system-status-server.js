@@ -3,6 +3,7 @@ import { Router } from "meteor/iron:router";
 import { Random } from "meteor/random";
 import Crypto from "crypto";
 import Fs from "fs";
+import { checkAuth } from "/imports/server/auth.js";
 
 import { SANDSTORM_LOGDIR } from "/imports/server/constants.js";
 
@@ -16,11 +17,8 @@ const SYSTEM_LOG_DOWNLOAD_TOKENS = {};
 const SYSTEM_LOG_DOWNLOAD_TOKEN_VALIDITY_DURATION = 60000; // 60 seconds
 
 Meteor.methods({
-  adminGetServerLogDownloadToken() {
-    const db = this.connection.sandstormDb;
-    if (!db.isAdminById(this.userId)) {
-      throw new Meteor.Error(403, "User must be admin to download system log.");
-    }
+  adminGetServerLogDownloadToken(setupToken) {
+    checkAuth(setupToken);
 
     const token = Random.id(22);
     SYSTEM_LOG_DOWNLOAD_TOKENS[token] = Date.now();

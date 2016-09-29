@@ -37,8 +37,16 @@ const newAdminRoute = RouteController.extend({
     const websocketSeemsBroken = (
       Session.get("websocketSeemsBroken")
     );
+
+    const hasSetupToken = !!sessionStorage.getItem("setup-token");
+
+    // Most of the admin panel requires login, but we make a special exception for viewing the
+    // system log, since this is important for debugging problems that could be preventing login.
+    const isUserPermittedBySetupToken = hasSetupToken &&
+        Router.current().route.getName() == "newAdminStatus";
+
     return {
-      isUserPermitted: isAdmin(),
+      isUserPermitted: isAdmin() || isUserPermittedBySetupToken,
       wildcardHostSeemsBroken,
       websocketSeemsBroken,
     };

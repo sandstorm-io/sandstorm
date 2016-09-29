@@ -2050,15 +2050,20 @@ Meteor.startup(function () {
       waitOn: function () {
         const standalone = globalDb.collections.standaloneDomains.findOne({
           _id: window.location.hostname, });
-        return [
+
+        const subs = [
           Meteor.subscribe("devPackages"),
-          Meteor.subscribe("tokenInfo", standalone && standalone.token),
           Meteor.subscribe("standaloneDomain", window.location.hostname),
           Meteor.subscribe("grainsMenu"),
           // This subscription gives us the data we need for deciding whether to automatically reveal
           // our identity.
           // TODO(soon): Subscribe to contacts instead.
         ];
+        if (standalone) {
+          subs.push(Meteor.subscribe("tokenInfo", standalone.token));
+        }
+
+        return subs;
       },
 
       onBeforeAction: function () {

@@ -58,6 +58,8 @@ const createAndEmailTokenForUser = function (email, options, callback) {
   check(email, String);
   check(options, { resumePath: String, linking: Match.Optional({ allowLogin: Boolean }), });
 
+  options.rootUrl = window.location.protocol + "//" + window.location.host;
+
   Meteor.call("createAndEmailTokenForUser", email, options, callback);
 };
 

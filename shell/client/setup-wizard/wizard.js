@@ -906,7 +906,7 @@ const setupRoute = RouteController.extend({
 
     const isUserPermitted = isAdmin() || (tokenStatus && tokenStatus.tokenIsValid);
     if (!isUserPermitted) {
-      Router.go("setupWizardTokenExpired");
+      Router.go("setupWizardTokenExpired", {}, { replaceState: true });
     }
 
     this.render();

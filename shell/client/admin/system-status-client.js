@@ -110,62 +110,18 @@ Template.newAdminLog.helpers({
 });
 
 Template.newAdminStatus.onCreated(function () {
-  this.subscribe("adminLog");
-  this.subscribe("systemStatus");
-  // global exported from lib/demo.js
-  if (allowDemo) {
-    this.subscribe("adminDemoUsers");
-  }
-  // We keep a reference date in a ReactiveVar so that we can update it ever so often and the demo
-  // user count will reflect users that are still not expired at the current time.
-  this.referenceDate = new ReactiveVar(new Date());
-  this.intervalHandle = window.setInterval(() => {
-    this.referenceDate.set(new Date());
-  }, 60000);
+  // This route can be used with a setup token (unlike most admin routes).
+  this.subscribe("adminLog", sessionStorage.getItem("setup-token"));
 });
 
 Template.newAdminStatus.onDestroyed(function () {
   window.clearInterval(this.intervalHandle);
 });
 
-Template.newAdminStatus.helpers({
-  grainsActive() {
-    const data = systemStatus.findOne("globalStatus");
-    return data && data.activeGrains || 0;
-  },
-
-  usersActive() {
-    const data = systemStatus.findOne("globalStatus");
-    return data && data.activeUsers || 0;
-  },
-
-  allowDemo() {
-    // global exported from lib/demo.js
-    return allowDemo;
-  },
-
-  demosActive() {
-    const instance = Template.instance();
-    const query = globalDb.collections.users.find({
-      expires: {
-        $gt: instance.referenceDate.get(),
-      },
-      loginIdentities: {
-        $exists: true,
-      },
-    });
-    return query.count();
-  },
-
-  sandstormVersion() {
-    const buildInfo = getBuildInfo();
-    return buildInfo.build;
-  },
-});
-
 Template.newAdminStatus.events({
   "click button[name=download-full-log]"(evt) {
-    Meteor.call("adminGetServerLogDownloadToken", (err, token) => {
+    Meteor.call("adminGetServerLogDownloadToken", sessionStorage.getItem("setup-token"),
+        (err, token) => {
       if (err) {
         console.log(err.message);
       } else {

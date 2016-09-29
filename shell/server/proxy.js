@@ -348,7 +348,7 @@ Meteor.methods({
 
     const token = params.token;
     const incognito = params.incognito;
-    const standalone = true;
+    const standalone = globalDb.tokenIsStandalone(token);
     const hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
     const apiToken = ApiTokens.findOne(hashedToken);
     validateWebkey(apiToken);

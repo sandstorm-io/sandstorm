@@ -19,10 +19,12 @@ Meteor.subscribe("publicAdminSettings");
 const newAdminRoute = RouteController.extend({
   template: "newAdmin",
   waitOn: function () {
+    const token = sessionStorage.getItem("setup-token");
+
     const subs = [
-      Meteor.subscribe("admin", this.params._token),
-      Meteor.subscribe("adminServiceConfiguration", this.params._token),
-      Meteor.subscribe("featureKey", true, this.params._token),
+      Meteor.subscribe("admin", token),
+      Meteor.subscribe("adminServiceConfiguration", token),
+      Meteor.subscribe("featureKey", true, token),
     ];
 
     return subs;

@@ -811,9 +811,32 @@ body>.popup.who-has-access>.frame-container {
 
 body>.signin {
   position: fixed;
-  top: 0;
-  left: 0;
+  top: 32px;
+  left: 200px;
   z-index: 100000;
+
+  &.shrink-desktop {
+    @media #{$desktop} {
+      left: 48px;
+      &.standalone {
+        left: 0px;
+      }
+    }
+  }
+
+  @media #{$mobile} {
+    top: 48px;
+    left: 0px;
+  }
+
+  &.standalone {
+    top: 0px;
+    left: 0px;
+  }
+
+  >.signin-frame {
+    position: absolute;
+  }
 }
 
 body>.popup {

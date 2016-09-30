@@ -132,6 +132,7 @@ all: sandstorm-$(BUILD).tar.xz
 
 clean:
 	rm -rf bin tmp node_modules shell/node_modules bundle shell-build sandstorm-*.tar.xz shell/.meteor/local $(IMAGES) shell/client/changelog.html shell/packages/*/.build* shell/packages/*/.npm/package/node_modules *.sig *.update-sig icons/node_modules shell/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff
+	test -e deps/node && cd deps/node && make clean
 	@(if test -d deps && test ! -h deps; then printf "\033[0;33mTo update dependencies, use: make update-deps\033[0m\n"; fi)
 
 install: sandstorm-$(BUILD)-fast.tar.xz install.sh
@@ -203,8 +204,6 @@ deps/node:
 	@$(call color,downloading node)
 	@mkdir -p deps
 	git clone $(REMOTE_node) deps/node
-	@echo "checking out std-unordered-map-for-thread-data branch..."
-	@cd deps/node && git checkout std-unordered-map-for-thread-data && cd ../..
 
 update-deps:
 	@$(call color,updating all dependencies)
@@ -234,7 +233,7 @@ clobber-deps:
 	    cd ../../
 	@cd deps/node && \
 	    echo "fetching node..." && \
-	    git fetch $(REMOTE_node) std-unordered-map-for-thread-data && \
+	    git fetch $(REMOTE_node) sandstorm && \
 	    git reset --hard FETCH_HEAD && \
 	    cd ../../
 

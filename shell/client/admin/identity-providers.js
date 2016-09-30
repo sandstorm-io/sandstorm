@@ -192,8 +192,8 @@ Template.googleLoginSetupInstructions.helpers({
 Template.adminIdentityProviderConfigureGoogle.onCreated(function () {
   const configurations = Package["service-configuration"].ServiceConfiguration.configurations;
   const googleConfiguration = configurations.findOne({ service: "google" });
-  const clientId = googleConfiguration && googleConfiguration.clientId;
-  const clientSecret = googleConfiguration && googleConfiguration.secret;
+  const clientId = (googleConfiguration && googleConfiguration.clientId) || "";
+  const clientSecret = (googleConfiguration && googleConfiguration.secret) || "";
 
   this.clientId = new ReactiveVar(clientId);
   this.clientSecret = new ReactiveVar(clientSecret);
@@ -258,8 +258,8 @@ Template.adminIdentityProviderConfigureGoogle.events({
     const token = Iron.controller().state.get("token");
     const configuration = {
       service: "google",
-      clientId: instance.clientId.get(),
-      secret: instance.clientSecret.get(),
+      clientId: instance.clientId.get().trim(),
+      secret: instance.clientSecret.get().trim(),
       loginStyle: "redirect",
     };
     // TODO: rework this into a single Meteor method call.
@@ -290,8 +290,8 @@ Template.githubLoginSetupInstructions.helpers({
 Template.adminIdentityProviderConfigureGitHub.onCreated(function () {
   const configurations = Package["service-configuration"].ServiceConfiguration.configurations;
   const githubConfiguration = configurations.findOne({ service: "github" });
-  const clientId = githubConfiguration && githubConfiguration.clientId;
-  const clientSecret = githubConfiguration && githubConfiguration.secret;
+  const clientId = (githubConfiguration && githubConfiguration.clientId) || "";
+  const clientSecret = (githubConfiguration && githubConfiguration.secret) || "";
 
   this.clientId = new ReactiveVar(clientId);
   this.clientSecret = new ReactiveVar(clientSecret);
@@ -350,8 +350,8 @@ Template.adminIdentityProviderConfigureGitHub.events({
     const token = Iron.controller().state.get("token");
     const configuration = {
       service: "github",
-      clientId: instance.clientId.get(),
-      secret: instance.clientSecret.get(),
+      clientId: instance.clientId.get().trim(),
+      secret: instance.clientSecret.get().trim(),
       loginStyle: "redirect",
     };
     // TODO: rework this into a single Meteor method call.
@@ -554,15 +554,15 @@ Template.adminIdentityProviderConfigureLdap.events({
 
     // A list of settings to save with the setSetting method, in order.
     const settingsToSave = [
-      { name: "ldapUrl",                value: instance.ldapUrl.get() },
-      { name: "ldapSearchBindDn",       value: instance.ldapSearchBindDn.get() },
-      { name: "ldapSearchBindPassword", value: instance.ldapSearchBindPassword.get() },
-      { name: "ldapBase",               value: instance.ldapBase.get() },
-      { name: "ldapSearchUsername",     value: instance.ldapSearchUsername.get() },
-      { name: "ldapNameField",          value: instance.ldapNameField.get() },
-      { name: "ldapEmailField",         value: instance.ldapEmailField.get() },
-      { name: "ldapFilter",             value: instance.ldapFilter.get() },
-      { name: "ldapCaCert",             value: instance.ldapCaCert.get() },
+      { name: "ldapUrl",                value: instance.ldapUrl.get().trim() },
+      { name: "ldapSearchBindDn",       value: instance.ldapSearchBindDn.get().trim() },
+      { name: "ldapSearchBindPassword", value: instance.ldapSearchBindPassword.get().trim() },
+      { name: "ldapBase",               value: instance.ldapBase.get().trim() },
+      { name: "ldapSearchUsername",     value: instance.ldapSearchUsername.get().trim() },
+      { name: "ldapNameField",          value: instance.ldapNameField.get().trim() },
+      { name: "ldapEmailField",         value: instance.ldapEmailField.get().trim() },
+      { name: "ldapFilter",             value: instance.ldapFilter.get().trim() },
+      { name: "ldapCaCert",             value: instance.ldapCaCert.get().trim() },
     ];
 
     const saveSettings = function (settingList, errback, callback) {
@@ -689,9 +689,9 @@ Template.adminIdentityProviderConfigureSaml.events({
 
   "click .idp-modal-save"(evt) {
     const instance = Template.instance();
-    const samlEntryPoint = instance.samlEntryPoint.get();
-    const samlPublicCert = instance.samlPublicCert.get();
-    const samlEntityId = instance.samlEntityId.get();
+    const samlEntryPoint = instance.samlEntryPoint.get().trim();
+    const samlPublicCert = instance.samlPublicCert.get().trim();
+    const samlEntityId = instance.samlEntityId.get().trim();
     const token = Iron.controller().state.get("token");
     // TODO: rework this into a single Meteor method call.
     Meteor.call("setSetting", token, "samlEntryPoint", samlEntryPoint, (err) => {

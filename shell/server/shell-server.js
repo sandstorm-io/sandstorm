@@ -40,6 +40,8 @@ Meteor.startup(() => {
   const frameSetter = () => {
     BrowserPolicy.content.disallowFrame(); // This clears all the old rules
     BrowserPolicy.content.allowFrameOrigin(getWildcardOrigin());
+    BrowserPolicy.content.allowFrameOrigin("data:");
+    BrowserPolicy.content.allowFrameOrigin("blob:");
     const billingPromptUrl = globalDb.getBillingPromptUrl();
     if (billingPromptUrl) {
       BrowserPolicy.content.allowFrameOrigin(billingPromptUrl);

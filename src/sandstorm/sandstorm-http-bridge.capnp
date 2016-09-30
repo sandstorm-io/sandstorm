@@ -36,4 +36,8 @@ interface SandstormHttpBridge {
   # If BridgeConfig.saveIdentityCaps is true for this app, then you can call this method to fetch
   # the saved identity capability for a particular identityId as passed in the
   # `X-Sandstorm-User-Id` header.
+
+  saveIdentity @3 (identity :Identity.Identity);
+  # If BridgeConfig.saveIdentityCaps is true for this app, adds the given identity to the
+  # grain's database, allowing it to be fetched later with `getSavedIdentity()`.
 }

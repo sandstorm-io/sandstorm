@@ -1953,6 +1953,16 @@ public:
     return kj::READY_NOW;
   }
 
+  kj::Promise<void> saveIdentity(SaveIdentityContext context) override {
+    auto identity = context.getParams().getIdentity();
+    context.releaseParams();
+    auto request = apiCap.getIdentityIdRequest();
+    request.setIdentity(identity);
+    return request.send().then([this, KJ_MVCAP(identity)](auto response) mutable -> void {
+      bridgeContext.saveIdentity(response.getId(), kj::mv(identity));
+    });
+  }
+
 private:
   SandstormApi<>::Client apiCap;
   BridgeContext& bridgeContext;

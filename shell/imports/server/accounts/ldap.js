@@ -73,11 +73,15 @@ LDAP.prototype.ldapCheck = function (db, options) {
     };
 
     if (fullUrl.indexOf("ldaps://") === 0) {
+      const tlsOptions = {};
+      const cert = db.getLdapCaCert();
+      if (cert) {
+        tlsOptions.ca = cert;
+      }
+
       client = ldapjs.createClient({
         url: fullUrl,
-        tlsOptions: {
-          ca: [db.getLdapCaCert() || false],
-        },
+        tlsOptions: tlsOptions,
       }, errorFunc);
     } else {
       client = ldapjs.createClient({

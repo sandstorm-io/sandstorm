@@ -75,6 +75,7 @@ const mapGrainStateToTemplateData = function (grainState) {
     interstitial: grainState.shouldShowInterstitial(),
     token: grainState.token(),
     viewInfo: grainState.viewInfo(),
+    signinOverlay: grainState.signinOverlay(),
     grainView: grainState,
   };
   return templateData;
@@ -1484,17 +1485,14 @@ Meteor.startup(function () {
       }
     } else if (event.data.overlaySignin) {
       if (event.data.overlaySignin.disable) {
-        globalTopbar.disableOverlaySignin();
+        senderGrain.disableSigninOverlay();
       } else {
         const left = event.data.overlaySignin.left;
         const top = event.data.overlaySignin.top;
         check(left, Number);
         check(top, Number);
 
-        const currentGrain = globalGrains.getActive();
-        if (senderGrain === currentGrain) {
-          globalTopbar.overlaySignin(left, top);
-        }
+        senderGrain.showSigninOverlay(left, top);
       }
     } else if (event.data.showConnectionGraph) {
       // Allow the current grain to request that the "Who has access" dialog be shown.

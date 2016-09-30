@@ -275,6 +275,10 @@ class GrainView {
     return this.fullTitle().title;
   }
 
+  signinOverlay() {
+    return this._signinOverlay;
+  }
+
   fullTitle() {
     // Returns the user's name for this grain, not the browser tab title.
     // Three cases:
@@ -417,6 +421,18 @@ class GrainView {
     if (this.isActive()) {
       window.history.replaceState({}, "", this.route());
     }
+
+    this._dep.changed();
+  }
+
+  showSigninOverlay(left, top) {
+    this._signinOverlay = { left: left, top: top, };
+
+    this._dep.changed();
+  }
+
+  disableSigninOverlay() {
+    this._signinOverlay = null;
 
     this._dep.changed();
   }

@@ -51,7 +51,7 @@ interface Supervisor {
   # call will never return successfully because the process kills itself.
 
   obsoleteGetGrainSize @3 () -> (size :UInt64);
-  obsoloteGetGrainSizeWhenDifferent @4 (oldSize :UInt64) -> (size :UInt64);
+  obsoleteGetGrainSizeWhenDifferent @4 (oldSize :UInt64) -> (size :UInt64);
   # OBSOLETE: We used to pull the grain size from the supervisor. Now the supervisor pushes the
   #   size through SandstormCore.
 

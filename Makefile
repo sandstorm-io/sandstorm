@@ -126,7 +126,7 @@ IMAGES= \
 # Meta rules
 
 .SUFFIXES:
-.PHONY: all install clean continuous shell-env fast deps bootstrap-ekam deps update-deps clobber-deps test installer-test app-index-dev
+.PHONY: all install clean continuous shell-env fast deps bootstrap-ekam update-deps clobber-deps test installer-test app-index-dev
 
 all: sandstorm-$(BUILD).tar.xz
 
@@ -164,10 +164,11 @@ REMOTE_ekam=https://github.com/sandstorm-io/ekam.git
 REMOTE_libseccomp=https://github.com/seccomp/libseccomp
 REMOTE_libsodium=https://github.com/jedisct1/libsodium.git
 REMOTE_node-capnp=https://github.com/kentonv/node-capnp.git
+REMOTE_node=https://github.com/sandstorm-io/node
 
 deps: tmp/.deps
 
-tmp/.deps: deps/capnproto deps/ekam deps/libseccomp deps/libsodium deps/node-capnp
+tmp/.deps: deps/capnproto deps/ekam deps/libseccomp deps/libsodium deps/node-capnp deps/node
 	@mkdir -p tmp
 	@touch tmp/.deps
 
@@ -198,9 +199,16 @@ deps/node-capnp:
 	@mkdir -p deps
 	git clone $(REMOTE_node-capnp) deps/node-capnp
 
+deps/node:
+	@$(call color,downloading node)
+	@mkdir -p deps
+	git clone $(REMOTE_node) deps/node
+	@echo "checking out std-unordered-map-for-thread-data branch..."
+	@cd deps/node && git checkout std-unordered-map-for-thread-data && cd ../..
+
 update-deps:
 	@$(call color,updating all dependencies)
-	@$(foreach DEP,capnproto ekam libseccomp libsodium node-capnp, \
+	@$(foreach DEP,capnproto ekam libseccomp libsodium node-capnp node, \
 	    cd deps/$(DEP) && \
 	    echo "pulling $(DEP)..." && \
 	    git pull $(REMOTE_$(DEP)) `git symbolic-ref --short HEAD` && \
@@ -222,6 +230,11 @@ clobber-deps:
 	@cd deps/libsodium && \
 	    echo "fetching libsodium..." && \
 	    git fetch $(REMOTE_libsodium) stable && \
+	    git reset --hard FETCH_HEAD && \
+	    cd ../../
+	@cd deps/node && \
+	    echo "fetching node..." && \
+	    git fetch $(REMOTE_node) std-unordered-map-for-thread-data && \
 	    git reset --hard FETCH_HEAD && \
 	    cd ../../
 

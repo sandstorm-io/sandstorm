@@ -168,7 +168,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
             (window.location.protocol + "//" + staticAssetHost + "/" + grainInfo.icon.assetId) :
             Identicon.identiconForApp(
                 (grainInfo && grainInfo.appId) || "00000000000000000000000000000000"),
-        lastUsed: apiToken.lastUsed,
+        lastUsed: apiToken.lastUsed || apiToken.created,
         apiTokenId: apiToken._id,
       };
     }

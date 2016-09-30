@@ -76,7 +76,7 @@ LDAP.prototype.ldapCheck = function (db, options) {
       client = ldapjs.createClient({
         url: fullUrl,
         tlsOptions: {
-          ca: [_this.options.ldapsCertificate],
+          ca: [db.getLdapCaCert() || false],
         },
       }, errorFunc);
     } else {

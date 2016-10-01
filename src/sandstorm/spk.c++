@@ -1302,7 +1302,9 @@ private:
       }
     }
 
-    node.setTarget(kj::mv(mapping.sourcePaths[0]));
+    if (mapping.sourcePaths.size() > 0) {
+      node.setTarget(kj::mv(mapping.sourcePaths[0]));
+    }
   }
 
   kj::String getHttpBridgeExe() {

@@ -262,13 +262,13 @@
     </div>
 
     <div class="form-group">
-      <label>LDAP CA cert for self-signed certificates
+      <label>LDAP CA certificate
         <textarea name="ldapCaCert" value="{{ldapCaCert}}" placeholder="-----BEGIN CERTIFICATE-----
 MIID...
 -----END CERTIFICATE-----"></textarea>
       </label>
       <span class="form-subtext">
-        This is only necessary if your server supports SSL and is using a self-signed CA.
+        This is only necessary if your server supports SSL and is using a private CA not in the common trusted set. Note that it does NOT work to enter the LDAP server's own certificate here -- it must be the certificate of a CA which has signed the LDAP server's certificate.
       </span>
     </div>
 

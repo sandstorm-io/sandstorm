@@ -417,7 +417,7 @@ private:
       appid = replacement;
     } else {
       if (appid != replacement) {
-        KJ_LOG(WARNING, "the requested key is obsolote", appid, replacement);
+        KJ_LOG(WARNING, "the requested key is obsolete", appid, replacement);
       }
     }
 
@@ -1302,7 +1302,9 @@ private:
       }
     }
 
-    node.setTarget(kj::mv(mapping.sourcePaths[0]));
+    if (mapping.sourcePaths.size() > 0) {
+      node.setTarget(kj::mv(mapping.sourcePaths[0]));
+    }
   }
 
   kj::String getHttpBridgeExe() {

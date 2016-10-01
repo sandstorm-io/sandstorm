@@ -388,6 +388,7 @@ Template.adminIdentityProviderConfigureLdap.onCreated(function () {
   const nameField = globalDb.getLdapNameField() || "cn";
   const emailField = globalDb.getLdapEmailField() || "mail";
   const filter = globalDb.getLdapFilter();
+  const ldapCaCert = globalDb.getLdapCaCert();
 
   this.ldapUrl = new ReactiveVar(url);
   this.ldapSearchBindDn = new ReactiveVar(searchBindDn);
@@ -397,6 +398,7 @@ Template.adminIdentityProviderConfigureLdap.onCreated(function () {
   this.ldapNameField = new ReactiveVar(nameField);
   this.ldapEmailField = new ReactiveVar(emailField);
   this.ldapFilter = new ReactiveVar(filter);
+  this.ldapCaCert = new ReactiveVar(ldapCaCert);
   this.errorMessage = new ReactiveVar(undefined);
   this.formChanged = new ReactiveVar(false);
   this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
@@ -430,6 +432,11 @@ Template.adminIdentityProviderConfigureLdap.helpers({
   ldapFilter() {
     const instance = Template.instance();
     return instance.ldapFilter.get();
+  },
+
+  ldapCaCert() {
+    const instance = Template.instance();
+    return instance.ldapCaCert.get();
   },
 
   ldapSearchBindDn() {
@@ -522,6 +529,18 @@ Template.adminIdentityProviderConfigureLdap.events({
     instance.formChanged.set(true);
   },
 
+  "change textarea[name=ldapCaCert]"(evt) {
+    const instance = Template.instance();
+    instance.ldapCaCert.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
+  "paste textarea[name=ldapCaCert]"(evt) {
+    const instance = Template.instance();
+    instance.ldapCaCert.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
   "click .idp-modal-disable"(evt) {
     const instance = Template.instance();
     const token = Iron.controller().state.get("token");
@@ -543,6 +562,7 @@ Template.adminIdentityProviderConfigureLdap.events({
       { name: "ldapNameField",          value: instance.ldapNameField.get() },
       { name: "ldapEmailField",         value: instance.ldapEmailField.get() },
       { name: "ldapFilter",             value: instance.ldapFilter.get() },
+      { name: "ldapCaCert",             value: instance.ldapCaCert.get() },
     ];
 
     const saveSettings = function (settingList, errback, callback) {

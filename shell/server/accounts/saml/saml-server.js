@@ -84,7 +84,8 @@ const generateService = function () {
     "entryPoint": db.getSamlEntryPoint(),
     // TODO(someday): find a better way to inject the DB
     "issuer": entityId || HOSTNAME,
-    "cert": db.getSamlPublicCert(),
+    // If the certificate has "-----BEGIN CERTIFICATE-----" markers, automatically remove those.
+    "cert": db.getSamlPublicCert().replace(/-[^\n]*-/g, "").trim(),
   };
   return service;
 };

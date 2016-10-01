@@ -13,11 +13,11 @@ Template.newAdminEmailConfig.onCreated(function () {
   this.showConfirmDisableEmailPopup = new ReactiveVar(false);
   this.formChanged = new ReactiveVar(false);
   this.getSmtpConfig = () => {
-    const hostname = this.hostname.get();
+    const hostname = this.hostname.get().trim();
     const port = parseInt(this.port.get());
-    const user = this.username.get();
-    const pass = this.password.get();
-    const returnAddress = this.returnAddress.get();
+    const user = this.username.get().trim();
+    const pass = this.password.get().trim();
+    const returnAddress = this.returnAddress.get().trim();
     const formData = {
       hostname,
       port,
@@ -263,7 +263,8 @@ Template.emailTestPopup.events({
       state: "submitting",
       message: undefined,
     });
-    Meteor.call("testSend", instance.data.token, instance.data.smtpConfig, instance.testAddress.get(), (err) => {
+    const testAddress = instance.testAddress.get().trim();
+    Meteor.call("testSend", instance.data.token, instance.data.smtpConfig, testAddress, (err) => {
       if (err) {
         instance.formStatus.set({
           state: "error",
@@ -272,7 +273,7 @@ Template.emailTestPopup.events({
       } else {
         instance.formStatus.set({
           state: "success",
-          message: "Sent a test email to " + instance.testAddress.get() + ".  It should arrive shortly.",
+          message: `Sent a test email to ${testAddress}.  It should arrive shortly.`,
         });
       }
     });

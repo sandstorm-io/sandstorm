@@ -217,6 +217,7 @@ Template.sandstormTopbar.events({
 
       const topbar = Template.instance().data;
       topbar._expanded.set(data.name);
+      topbar._modal.set(false);
       topbar._menuExpanded.set(false);
     }
   },
@@ -406,6 +407,10 @@ SandstormTopbar.prototype.addItem = function (item) {
     startOpen: Match.Optional(Boolean),
     // If true, this item's popup should start out open.
 
+    startOpenModal: Match.Optional(Boolean),
+    // Like `startOpen`, but indicates that the initial state of the popup should be "modal", i.e.
+    // not hanging off the top bar.
+
     priority: Match.Optional(Number),
     // Specifies ordering of items. Higher-priority items will be at the top of the list. Items
     // with the same priority are sorted in the order in which addItem() was called. The default
@@ -452,8 +457,9 @@ SandstormTopbar.prototype.addItem = function (item) {
   this._items[item.name] = item;
   this._itemsTracker.changed();
 
-  if (item.startOpen) {
+  if (item.startOpen || item.startOpenModal) {
     this._expanded.set(item.name);
+    this._modal.set(!!item.startOpenModal);
   }
 
   return {

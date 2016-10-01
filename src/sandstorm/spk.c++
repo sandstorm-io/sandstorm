@@ -417,7 +417,7 @@ private:
       appid = replacement;
     } else {
       if (appid != replacement) {
-        KJ_LOG(WARNING, "the requested key is obsolote", appid, replacement);
+        KJ_LOG(WARNING, "the requested key is obsolete", appid, replacement);
       }
     }
 

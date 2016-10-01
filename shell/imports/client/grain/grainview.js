@@ -276,6 +276,7 @@ class GrainView {
   }
 
   signinOverlay() {
+    this._dep.depend();
     return this._signinOverlay;
   }
 

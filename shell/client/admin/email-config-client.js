@@ -14,7 +14,7 @@ Template.newAdminEmailConfig.onCreated(function () {
   this.formChanged = new ReactiveVar(false);
   this.getSmtpConfig = () => {
     const hostname = this.hostname.get().trim();
-    const port = parseInt(this.port.get().trim());
+    const port = parseInt(this.port.get());
     const user = this.username.get().trim();
     const pass = this.password.get().trim();
     const returnAddress = this.returnAddress.get().trim();

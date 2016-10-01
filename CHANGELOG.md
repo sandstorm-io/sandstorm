@@ -1,3 +1,17 @@
+### v0.188 (2016-10-01) [bugfixes]
+- We now use a version of Node.js patched to fix [V8 issue 5338](https://bugs.chromium.org/p/v8/issues/detail?id=5338). We hope that V8 will eventually fix the bug upstream.
+- When the app initiates the sharing dialog, powerbox, or other dialogs (as opposed to the user initiating them by clicking on the top bar), the dialog will now appear centered rather than hanging from the topbar.
+- `spk pack` will no longer segfault when the package's root path does not map to any source path.
+- Fixed bug where if a grain's title containing non-ASCII characters, downloading a backup might fail.
+- Fixed that powerbox identity picker didn't work if you'd ever shared with a demo user or a user that was later deleted.
+- Fixed that unopened shares would always appear at the top of the powerbox grain picker, rather than being sorted by date.
+- Self-hosting: You can now access the system log during setup, before logging in. This is useful for debugging login problems.
+- Self-hosting: Identity provider configuration will now strip leading and trailing whitespace from configured values. A bug in Firefox's "copy" operation often adds such whitespace when copy/pasting keys e.g. from the Google OAuth config.
+- Sandstorm for Work: You can now specify a private CA cert for LDAP TLS negotiation.
+- Sandstorm for Work: When a response from the SAML IdP is not understood, it is written to the system log, to help debug.
+- Oasis: Trashed (but not yet deleted) grains will no longer count against the 5-grain limit for free users.
+- Oasis: Fixed that bonus storage for subscribing to the mailing list was not being updated if you subscribed or unsubscribed from outside of the Oasis UI (e.g. subscribing from the form on our web site, or unsubscribing by clicking the link on the page).
+
 ### v0.187 (2016-09-24)
 - Apps can now make a powerbox request for an identity. The user will choose from among their contacts. This can be used e.g. to assign a task in Wekan to a user who hasn't yet visited the board.
 - Improved usability of setup wizard based on user testing.

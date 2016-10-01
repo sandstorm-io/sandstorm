@@ -1896,7 +1896,7 @@ _.extend(SandstormDb.prototype, {
 
     const plan = this.getUserQuota(user);
     if (plan.grains < Infinity) {
-      const count = this.collections.grains.find({ userId: user._id },
+      const count = this.collections.grains.find({ userId: user._id, trashed: { $exists: false } },
         { fields: {}, limit: plan.grains }).count();
       if (count >= plan.grains) return "outOfGrains";
     }
@@ -1916,7 +1916,7 @@ _.extend(SandstormDb.prototype, {
 
     // quota.grains = Infinity means unlimited grains. IEEE754 defines Infinity == Infinity.
     if (quota.grains < Infinity) {
-      const count = this.collections.grains.find({ userId: user._id },
+      const count = this.collections.grains.find({ userId: user._id, trashed: { $exists: false } },
         { fields: {}, limit: quota.grains * 2 }).count();
       if (count >= quota.grains * 2) return "outOfGrains";
     }

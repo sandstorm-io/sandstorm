@@ -579,12 +579,12 @@
     {{/if}}
     {{#if showPowerboxRequest}}
     {{>sandstormTopbarItem name="request" topbar=globalTopbar template="grainPowerboxRequest"
-          startOpen=true popupTemplate="grainPowerboxRequestPopup" data=powerboxRequestData
+          startOpenModal=true popupTemplate="grainPowerboxRequestPopup" data=powerboxRequestData
           onDismiss=cancelPowerboxRequest}}
     {{/if}}
     {{#if showPowerboxOffer}}
       {{>sandstormTopbarItem name="offer" topbar=globalTopbar template="grainPowerboxOffer"
-          startOpen=true popupTemplate="grainPowerboxOfferPopup" data=powerboxOfferData}}
+          startOpenModal=true popupTemplate="grainPowerboxOfferPopup" data=powerboxOfferData}}
     {{/if}}
   {{/if}}
 </template>

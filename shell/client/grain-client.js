@@ -1675,7 +1675,8 @@ Meteor.startup(function () {
       };
       const requestContext = new SandstormPowerboxRequest(globalDb, powerboxRequestInfo);
       senderGrain.setPowerboxRequest(requestContext);
-      globalTopbar.openPopup("request", true);
+      // Note that we don't do openPopup() here because the template will be redrawn to create the
+      // powerbox popup with startOpen=true.
     } else {
       console.log("postMessage from app not understood: ", event.data);
       console.log(event);

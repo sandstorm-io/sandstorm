@@ -17,7 +17,7 @@
     "ed25519": "0.0.4",
     "heapdump": "^0.3.7",
     "intro.js": "git+https://github.com/sandstorm-io/intro.js.git#8e1c7604f251ec874bf4ae4d7b4f11a14cee697e",
-    "ldapjs": "^0.7.1",
+    "ldapjs": "^1.0.0",
     "mailparser": "^0.6.1",
     "node-forge": "^0.6.34",
     "nodemailer": "^2.6.0",

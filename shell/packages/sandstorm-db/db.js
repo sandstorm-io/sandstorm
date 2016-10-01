@@ -1523,6 +1523,11 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
+  getLdapCaCert() {
+    const setting = this.collections.settings.findOne({ _id: "ldapCaCert" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
   getOrganizationMembership() {
     const setting = this.collections.settings.findOne({ _id: "organizationMembership" });
     return setting && setting.value;

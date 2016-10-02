@@ -2,7 +2,7 @@
 - We now use a version of Node.js patched to fix [V8 issue 5338](https://bugs.chromium.org/p/v8/issues/detail?id=5338). We hope that V8 will eventually fix the bug upstream.
 - When the app initiates the sharing dialog, powerbox, or other dialogs (as opposed to the user initiating them by clicking on the top bar), the dialog will now appear centered rather than hanging from the topbar.
 - `spk pack` will no longer segfault when the package's root path does not map to any source path.
-- Fixed bug where if a grain's title containing non-ASCII characters, downloading a backup might fail.
+- Fixed bug where if a grain's title contained non-ASCII characters, downloading a backup might fail.
 - Fixed that powerbox identity picker didn't work if you'd ever shared with a demo user or a user that was later deleted.
 - Fixed that unopened shares would always appear at the top of the powerbox grain picker, rather than being sorted by date.
 - Self-hosting: You can now access the system log during setup, before logging in. This is useful for debugging login problems.

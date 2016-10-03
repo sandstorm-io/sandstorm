@@ -2044,10 +2044,11 @@ _.extend(SandstormDb.prototype, {
     return !!this.collections.standaloneDomains.findOne({ _id: hostname, });
   },
 
-  tokenIsStandalone: function (token) {
+  getStadaloneDomainForToken: function (token) {
     check(token, String);
 
-    return !!this.collections.standaloneDomains.findOne({ token: token, });
+    const domain = this.collections.standaloneDomains.findOne({ token: token, });
+    return domain && domain._id;
   },
 });
 

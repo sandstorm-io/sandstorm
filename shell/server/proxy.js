@@ -34,6 +34,10 @@ const HackSession = Capnp.importSystem("sandstorm/hack-session.capnp");
 const Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
 const Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
 
+const PARSED_ROOT_URL = Url.parse(process.env.ROOT_URL);
+const PROTOCOL = PARSED_ROOT_URL.protocol;
+const PORT = PARSED_ROOT_URL.port;
+
 const storeReferralProgramInfoApiTokenCreated = (db, accountId, identityId, apiTokenAccountId) => {
   // From the Referral program's perspective, if Bob's Account has no referredByComplete, then we
   // update Bob's Identity to say it's referredBy Alice's Account (which is apiTokenAccountId).
@@ -321,7 +325,8 @@ Meteor.methods({
                                                      null, null, cachedSalt);
     const result = opened.methodResult;
     const proxy = new Proxy(grain, result.sessionId,
-                            result.hostId, result.tabId, identityId, false, opened.supervisor);
+                            result.hostId, result.tabId, identityId, false, null,
+                            opened.supervisor);
     proxiesByHostId[result.hostId] = proxy;
     return result;
   },
@@ -348,7 +353,7 @@ Meteor.methods({
 
     const token = params.token;
     const incognito = params.incognito;
-    const standalone = globalDb.tokenIsStandalone(token);
+    const standalone = globalDb.getStadaloneDomainForToken(token);
     const hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
     const apiToken = ApiTokens.findOne(hashedToken);
     validateWebkey(apiToken);
@@ -418,7 +423,7 @@ Meteor.methods({
 
       const result = opened.methodResult;
       const proxy = new Proxy(grain, result.sessionId,
-                              result.hostId, result.tabId, identityId, false,
+                              result.hostId, result.tabId, identityId, false, standalone,
                               opened.supervisor);
       proxy.apiToken = apiToken;
       proxiesByHostId[result.hostId] = proxy;
@@ -1129,6 +1134,7 @@ tryProxyRequest = (hostId, req, res) => {
         const mainUrl = process.env.ROOT_URL;
         const origin = req.headers.origin;
         const referer = req.headers.referer;
+        const parsedReferer = Url.parse(referer);
         if (origin) {
           // If an origin header was provided, then it must be accurate. Note that Chrome and
           // Safari always send an Origin header on non-GET requests (even same-origin), and
@@ -1165,8 +1171,9 @@ tryProxyRequest = (hostId, req, res) => {
           // in practice, so this check alone does not give us any security benefit if we accept
           // requests that lack a referer.
           if (referer != expectedOrigin && !referer.startsWith(expectedOrigin + "/") &&
-              referer != mainUrl && !referer.startsWith(mainUrl + "/")) {
-            // throw new Meteor.Error(403, "Blocked illegal cross-origin referral from: " + referer);
+              referer != mainUrl && !referer.startsWith(mainUrl + "/") &&
+              !globalDb.hostIsStandalone(parsedReferer.hostname)) {
+            throw new Meteor.Error(403, "Blocked illegal cross-origin referral from: " + referer);
           }
         } else {
           // We saw neither an Origin nor a Referer header.
@@ -1202,7 +1209,7 @@ tryProxyRequest = (hostId, req, res) => {
 //
 
 class Proxy {
-  constructor(grain, sessionId, hostId, tabId, identityId, isApi, supervisor) {
+  constructor(grain, sessionId, hostId, tabId, identityId, isApi, standaloneHostname, supervisor) {
     // `grain` is an entry in the `Grains` collection.
     this.grainId = grain._id;
     this.ownerId = grain.userId;
@@ -1214,6 +1221,11 @@ class Proxy {
     this.hasLoaded = false;
     this.websockets = {};
     this.websocketCounter = 0; // Used for generating unique socket IDs.
+
+    if (standaloneHostname) {
+      this.standaloneUrl = PROTOCOL + "//" + standaloneHostname + (PORT ? ":" + PORT : "");
+    }
+
     if (sessionId) {
       if (!hostId) throw new Error("sessionId must come with hostId");
       if (isApi) throw new Error("API proxy shouldn't have sessionId");
@@ -1615,10 +1627,14 @@ class Proxy {
         response.setHeader("Set-Cookie", rpcResponse.setCookies.map(makeSetCookieHeader));
       }
 
-      const mainUrl = process.env.ROOT_URL;
+      let mainUrl = process.env.ROOT_URL;
+      if (this.standaloneUrl) {
+        mainUrl += " " + this.standaloneUrl;
+      }
+
       const grainHost = PROTOCOL + "//" + request.headers.host;
-      // response.setHeader("Content-Security-Policy", "frame-ancestors " + mainUrl + " " + grainHost);
-      // response.setHeader("X-Frame-Options", "ALLOW-FROM " + mainUrl);
+      response.setHeader("Content-Security-Policy", "frame-ancestors " + mainUrl + " " + grainHost);
+      response.setHeader("X-Frame-Options", "ALLOW-FROM " + mainUrl);
 
       // TODO(security): Add a Content-Security-Policy header which:
       // (1) Prevents the app from initiating HTTP requests to third parties.
@@ -2120,8 +2136,6 @@ class Proxy {
     }
   }
 }
-
-const PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;
 
 const isRfc1918OrLocal = (address) => {
   if (Net.isIPv4(address)) {

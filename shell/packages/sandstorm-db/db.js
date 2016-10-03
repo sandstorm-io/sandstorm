@@ -751,7 +751,7 @@ const StandaloneDomains = new Mongo.Collection("standaloneDomains", collectionOp
 // A standalone domain that points to a single share link. These domains act a little different
 // than a normal shared Sandstorm grain. They completely drop any Sandstorm topbar/sidebar, and at
 // first glance look completely like a non-Sandstorm hosted webserver. The apps instead act in
-// concert with Sandstorm through the postMessage API, which allows it to do things prompt for
+// concert with Sandstorm through the postMessage API, which allows it to do things like prompt for
 // login.
 // Fields for each :
 //
@@ -2044,7 +2044,7 @@ _.extend(SandstormDb.prototype, {
     return !!this.collections.standaloneDomains.findOne({ _id: hostname, });
   },
 
-  getStadaloneDomainForToken: function (token) {
+  getStandaloneDomainForToken: function (token) {
     check(token, String);
 
     const domain = this.collections.standaloneDomains.findOne({ token: token, });

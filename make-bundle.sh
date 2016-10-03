@@ -100,8 +100,9 @@ pushd "$NODE_BUILD_ROOT/node"
 ./configure --partly-static
 make -j$(nproc)
 popd
-rm -rf deps/node/out
-mv "$NODE_BUILD_ROOT/node/out" deps/node/
+mkdir -p deps/node/out
+rm -rf deps/node/out/*
+mv "$NODE_BUILD_ROOT/node/out"/* deps/node/out/
 
 # Start with the meteor bundle.
 cp -r shell-build/bundle bundle

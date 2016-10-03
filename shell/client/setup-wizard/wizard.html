@@ -100,10 +100,36 @@
 <template name="setupWizardHelpFooter">
 <div class="setup-help-row">
   <span class="setup-help-label">Need help?</span>
-  <a class="setup-help-link" target="_blank" href="/admin/status">System Log</a>
   <a class="setup-help-link" target="_blank" href="https://docs.sandstorm.io/en/latest/administering/">Documentation</a>
   <a class="setup-help-link" href="mailto:support@sandstorm.io">Email support</a>
+  <button type="button" name="system-log" class="setup-help-link">System Log</button>
   {{!-- TODO(someday): Live Chat link --}}
+  {{#if showSystemLog}}
+    {{#modalDialogWithBackdrop onDismiss=hideSystemLogCallback}}
+      {{> setupWizardSystemLog "" }}
+    {{/modalDialogWithBackdrop}}
+  {{/if}}
+</div>
+</template>
+
+<template name="setupWizardSystemLog">
+<div class="setup-system-log">
+  {{#if ready}}
+    {{#if isUserPermitted}}
+      <h2 class="setup-system-log-header">
+        <span class="setup-system-log-header-text">System log</span>
+        <form class="standard-form">
+          <button type="button" name="download-full-log">Download log</button>
+        </form>
+      </h2>
+      {{> newAdminLog ""}}
+    {{else}}
+      <p>
+        You cannot view the system log because you are not logged in as an admin
+        and you do not have a setup token.
+      </p>
+    {{/if}}
+  {{/if}}
 </div>
 </template>
 

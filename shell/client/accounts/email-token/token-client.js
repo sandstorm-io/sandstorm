@@ -1,4 +1,23 @@
-import { loginWithEmailToken } from "/imports/client/accounts/email-token/token-login-helpers.js";
+// Sandstorm - Personal Cloud Sandbox
+// Copyright (c) 2014-2016 Sandstorm Development Group, Inc. and contributors
+// All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import {
+  loginWithEmailToken,
+  createAndEmailTokenForUser,
+} from "/imports/client/accounts/email-token/token-login-helpers.js";
 
 // Email token login routes.
 Router.route("/_emailLogin/:_email/:_token", function () {
@@ -39,8 +58,9 @@ Router.route("/_emailLinkIdentity/:_email/:_token/:_accountId", function () {
     this.render("_emailLinkIdentityError", { data: { error: this.state.get("error") } });
   } else {
     if (Meteor.userId() === this.params._accountId) {
+      const allowLogin = this.params.query.allowLogin === "true";
       Meteor.call("linkEmailIdentityToAccount",
-                  this.params._email, this.params._token, (err, resumePath) => {
+                  this.params._email, this.params._token, allowLogin, (err, resumePath) => {
                     if (err) {
                       this.state.set("error", err.toString());
                     } else {
@@ -55,4 +75,107 @@ Router.route("/_emailLinkIdentity/:_email/:_token/:_accountId", function () {
 }, {
   // See above.
   name: "_emailLinkIdentity",
+});
+
+Template.addNewVerifiedEmailPowerboxConfiguration.onCreated(function () {
+  this.state = new ReactiveVar({ enterEmail: true });
+  this.email = new ReactiveVar(null);
+  this.verifiedEmails = new ReactiveVar([]);
+  const _this = this;
+  this.autorun(() => {
+    const result = [];
+    SandstormDb.getUserIdentityIds(Meteor.user()).forEach((identityId) => {
+      let identity = Meteor.users.findOne({ _id: identityId });
+      if (identity) {
+        SandstormDb.getVerifiedEmails(identity).forEach((value) => {
+          result.push(value.email);
+        });
+      }
+    });
+    _this.verifiedEmails.set(result);
+  });
+});
+
+Template.addNewVerifiedEmailPowerboxConfiguration.helpers({
+  state() {
+    return Template.instance().state.get();
+  },
+
+  email() {
+    return Template.instance().email.get();
+  },
+
+  alreadyVerified() {
+    const instance = Template.instance();
+    return instance.verifiedEmails.get().indexOf(instance.email.get()) > -1;
+  },
+});
+
+Template.addNewVerifiedEmailPowerboxConfiguration.events({
+  "input form[name='enter-email'] input[name='email']": function (event, instance) {
+    instance.email.set(event.currentTarget.value);
+  },
+
+  "submit form[name='enter-email']": function (event, instance) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const email = form.email.value;
+
+    instance.email.set(email);
+    instance.state.set({ sendingEmail: true });
+
+    const complete = () => {
+      this.powerboxRequest.completeNewFrontendRef({
+        verifiedEmail: {
+          address: email,
+          verifierId: instance.data.option.frontendRef.verifiedEmail.verifierId,
+        },
+      });
+    };
+
+    if (instance.verifiedEmails.get().indexOf(email) > -1) {
+      complete();
+    } else {
+      instance.completionObserver = instance.autorun(() => {
+        // If the user click the link in the email rather than copy/pasting the token,
+        // we still want to be able to finish our flow.
+        if (instance.verifiedEmails.get().indexOf(email) > -1) {
+          complete();
+        }
+      });
+
+      const loc = window.location;
+      const resumePath = loc.pathname + loc.search + loc.hash;
+      const options = { resumePath, linking: { allowLogin: false }, };
+      createAndEmailTokenForUser(email, options, function (err) {
+        if (err && err.error === "alreadySentEmailToken") {
+          instance.state.set({ enterToken: err.reason });
+        } else if (err) {
+          instance.state.set({ error: err.reason || "Unknown error" });
+        } else {
+          instance.state.set({
+            enterToken: "We've sent a confirmation e-mail to " + email +
+              ". It may take a few moments for it to show up in your inbox.",
+          });
+        }
+      });
+    }
+  },
+
+  "submit form[name='enter-token']": function (event, instance) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const token = form.token.value;
+    const email = instance.email.get();
+    Meteor.call("linkEmailIdentityToAccount", email, token, false, function (err, result) {
+      if (err && err.error !== "alreadyLinked") {
+        instance.state.set({ error: err.reason || "Unknown error" });
+      }
+    });
+  },
+
+  "click button[name='reset']": function (event, instance) {
+    instance.completionObserver.stop();
+    instance.state.set({ enterEmail: true });
+  },
 });

@@ -487,3 +487,4 @@ Template.emailVerifierPowerboxCard.helpers({
 
 Template.emailVerifierPowerboxCard.powerboxIconSrc = () => "/email-m.svg";
 Template.verifiedEmailPowerboxCard.powerboxIconSrc = () => "/email-m.svg";
+Template.addNewVerifiedEmailPowerboxCard.powerboxIconSrc = () => "/plus-6A237C.svg";

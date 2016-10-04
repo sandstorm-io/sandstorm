@@ -88,6 +88,15 @@ body>.popup.request>.frame-container>.frame {
       @extend %button-base;
       @extend %button-primary;
     }
+    button[name=reset] {
+      @extend %button-base;
+      @extend %button-secondary;
+    }
+    form.verified-email {
+      >input[type=text] {
+        font-size: 16pt;
+      }
+    }
   }
 }
 

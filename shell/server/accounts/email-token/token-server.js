@@ -168,10 +168,11 @@ const Url = Npm.require("url");
 const ROOT_URL = Url.parse(process.env.ROOT_URL);
 const HOSTNAME = ROOT_URL.hostname;
 
-const makeTokenUrl = function (email, token, linkingIdentity) {
-  if (linkingIdentity) {
+const makeTokenUrl = function (email, token, options) {
+  if (options.linking) {
     return process.env.ROOT_URL + "/_emailLinkIdentity/" + encodeURIComponent(email) + "/" +
-        encodeURIComponent(token) + "/" + Meteor.userId();
+      encodeURIComponent(token) + "/" + Meteor.userId() +
+      "?allowLogin=" + options.linking.allowLogin;
   } else {
     return process.env.ROOT_URL + "/_emailLogin/" + encodeURIComponent(email) + "/" +
         encodeURIComponent(token);
@@ -181,10 +182,10 @@ const makeTokenUrl = function (email, token, linkingIdentity) {
 ///
 /// EMAIL VERIFICATION
 ///
-const sendTokenEmail = function (db, email, token, linkingIdentity) {
+const sendTokenEmail = function (db, email, token, options) {
   let subject;
   let text;
-  if (!linkingIdentity) {
+  if (!options.linking) {
     subject = "Log in to " + HOSTNAME;
     text = "To confirm this email address on ";
   } else {
@@ -193,28 +194,27 @@ const sendTokenEmail = function (db, email, token, linkingIdentity) {
   }
 
   text = text + HOSTNAME + ", click on the following link:\n\n" +
-      makeTokenUrl(email, token, linkingIdentity) + "\n\n" +
+      makeTokenUrl(email, token, options) + "\n\n" +
       "Alternatively, enter the following one-time authentication code into the log-in form:\n\n" +
       token;
 
-  const options = {
+  const sendOptions = {
     to:  email,
     from: db.getServerTitle() + " <" + db.getReturnAddress() + ">",
     subject: subject,
     text: text,
   };
 
-  sendEmail(options);
+  sendEmail(sendOptions);
 };
 
 ///
 /// CREATING USERS
 ///
 // returns the user id
-const createAndEmailTokenForUser = function (db, email, linkingIdentity, resumePath) {
+const createAndEmailTokenForUser = function (db, email, options) {
   check(email, String);
-  check(linkingIdentity, Boolean);
-  check(resumePath, String);
+  check(options, { resumePath: String, linking: Match.Optional({ allowLogin: Boolean }), });
 
   const atIndex = email.indexOf("@");
   if (atIndex === -1) {
@@ -230,11 +230,13 @@ const createAndEmailTokenForUser = function (db, email, linkingIdentity, resumeP
   const token = Random.id(12);
   const tokenObj = hashToken(token);
   tokenObj.createdAt = new Date();
-  tokenObj.secureBox = makeBox(token, resumePath);
+  tokenObj.secureBox = makeBox(token, options.resumePath);
 
   if (user) {
     if (user.services.email.tokens && user.services.email.tokens.length > 2) {
-      throw new Meteor.Error(409, "It looks like we sent a log in email to this address not long " +
+      throw new Meteor.Error(
+        "alreadySentEmailToken",
+        "It looks like we sent a log in email to this address not long " +
         "ago. Please use the one that was already sent (check your spam folder if you can't find " +
         "it), or wait a while and try again");
     }
@@ -256,32 +258,32 @@ const createAndEmailTokenForUser = function (db, email, linkingIdentity, resumeP
     userId = Accounts.insertUserDoc(options, user);
   }
 
-  sendTokenEmail(db, email, token, linkingIdentity);
+  sendTokenEmail(db, email, token, options);
 
   return userId;
 };
 
 Meteor.methods({
-  createAndEmailTokenForUser: function (email, linkingIdentity, resumePath) {
+  createAndEmailTokenForUser: function (email, options) {
     // method for create user. Requests come from the client.
     // This method will create a user if it doesn't exist, otherwise it will generate a token.
     // It will always send an email to the user
 
     check(email, String);
-    check(linkingIdentity, Boolean);
-    check(resumePath, String);
+    check(options, { resumePath: String, linking: Match.Optional({ allowLogin: Boolean }), });
 
     if (!Accounts.identityServices.email.isEnabled()) {
       throw new Meteor.Error(403, "Email identity service is disabled.");
     }
     // Create user. result contains id and token.
-    const user = createAndEmailTokenForUser(this.connection.sandstormDb, email, linkingIdentity, resumePath);
+    const user = createAndEmailTokenForUser(this.connection.sandstormDb, email, options);
   },
 
-  linkEmailIdentityToAccount: function (email, token) {
+  linkEmailIdentityToAccount: function (email, token, allowLogin) {
     // Links the email identity with address `email` and login token `token` to the current account.
     check(email, String);
     check(token, String);
+    check(allowLogin, Boolean);
     const account = Meteor.user();
     if (!account || !account.loginIdentities) {
       throw new Meteor.Error(403, "Must be logged in to an account to link an email identity.");
@@ -299,7 +301,7 @@ Meteor.methods({
     }
 
     Accounts.linkIdentityToAccount(this.connection.sandstormDb, this.connection.sandstormBackend,
-                                   identity._id, account._id);
+                                   identity._id, account._id, allowLogin);
 
     // Return the resume path, if we have one.
     const resumePath = tryUnbox(maybeToken.secureBox, token);

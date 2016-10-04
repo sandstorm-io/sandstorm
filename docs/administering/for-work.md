@@ -245,6 +245,20 @@ You are always permitted to **move a feature key between servers,** so long as t
 not in use on multiple servers at once. You can read more in the [Sandstorm for Work Terms of
 Service.](https://work.sandstorm.io/terms).
 
+**Billing period and renewal.** The Sandstorm for Work admin page on your own server will show a
+renewal/expiration date for your feature key. Under normal operation, your Sandstorm server will
+contact our billing server when your feature key expires and bill you at your own rate for your
+Sandstorm for Work usage. Once that succeeds, your Sandstorm server will automatically download a
+new feature key with an expiration date in the future. For that reason, the "Expires" or "Next
+Renewal" date in the Sandstorm for Work admin page on your server will change over time. If
+Sandstorm is unable to renew your feature key automatically, it will notify all admins by email (if
+correctly configured) and by a notification delivered via the bell menu. Sandstorm for Work will
+continue to operate for at least one week to allow time for the problem to be fixed. For customers
+who chose monthly billing, the new feature key will have a next renewal date one month in the
+future. For customers who chose annual billing, the new feature key will have a next renewal date
+one year in the future. Customers who use a free-of-cost key typically use annual billing and the
+billing rate is $0/year, allowing renewals to occur automatically.
+
 ### Open source
 
 The code for Sandstorm for Work is maintained in the Sandstorm open source project, under the Apache

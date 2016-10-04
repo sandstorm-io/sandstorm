@@ -126,14 +126,18 @@ IMAGES= \
 # Meta rules
 
 .SUFFIXES:
-.PHONY: all install clean continuous shell-env fast deps bootstrap-ekam update-deps clobber-deps test installer-test app-index-dev
+.PHONY: all install clean ci-clean continuous shell-env fast deps bootstrap-ekam update-deps clobber-deps test installer-test app-index-dev
 
 all: sandstorm-$(BUILD).tar.xz
 
-clean:
-	rm -rf bin tmp node_modules shell/node_modules bundle shell-build sandstorm-*.tar.xz shell/.meteor/local $(IMAGES) shell/client/changelog.html shell/packages/*/.build* shell/packages/*/.npm/package/node_modules *.sig *.update-sig icons/node_modules shell/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff
+clean: ci-clean
+	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/client/changelog.html shell/packages/*/.build* shell/packages/*/.npm/package/node_modules *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff
 	test -e deps/node && cd deps/node && make clean
 	@(if test -d deps && test ! -h deps; then printf "\033[0;33mTo update dependencies, use: make update-deps\033[0m\n"; fi)
+
+ci-clean:
+	@# Clean only the stuff that we want to clean between CI builds.
+	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz
 
 install: sandstorm-$(BUILD)-fast.tar.xz install.sh
 	@$(call color,install)

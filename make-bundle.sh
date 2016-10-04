@@ -100,8 +100,12 @@ pushd "$NODE_BUILD_ROOT/node"
 ./configure --partly-static
 make -j$(nproc)
 popd
-rm -rf deps/node/out
-mv "$NODE_BUILD_ROOT/node/out" deps/node/
+# Avoid making changes that would update the mtime of deps/node, which make would interpret
+# as needing to rebuild all the C++ (and everything after it in the build flow) again.
+# Instead, just modify the contents of deps/node/out.
+mkdir -p deps/node/out
+rm -rf deps/node/out/*
+mv "$NODE_BUILD_ROOT/node/out"/* deps/node/out/
 
 # Start with the meteor bundle.
 cp -r shell-build/bundle bundle

@@ -252,7 +252,7 @@ usage. Once that succeeds, your Sandstorm server will automatically download a n
 an expiration date in the future. For that reason, the "expires" date in the Sandstorm for Work
 admin page on your server will change over time. For customers who chose monthly billing, the new
 feature key will expire one month in the future. For customers who chose annual billing, the new
-feature key will expire one month in the future. Customers who use a free-of-cost key are typically
+feature key will expire one year in the future. Customers who use a free-of-cost key are typically
 use annual billing and the billing rate is $0/year, so renewals will occur automatically.
 
 ### Open source

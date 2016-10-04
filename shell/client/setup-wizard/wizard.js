@@ -165,7 +165,7 @@ Template.setupWizardHelpFooter.onCreated(function () {
 
 Template.setupWizardHelpFooter.helpers({
   showSystemLog() {
-    const instance = Template.instance()
+    const instance = Template.instance();
     return instance.showSystemLogOverlay.get();
   },
 
@@ -192,7 +192,6 @@ Template.setupWizardSystemLog.onCreated(function () {
   }
 
   this.adminLogSub = this.subscribe("adminLog", token);
-  systemLog = this;
 });
 
 Template.setupWizardSystemLog.helpers({

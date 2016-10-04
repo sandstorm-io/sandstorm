@@ -245,15 +245,18 @@ You are always permitted to **move a feature key between servers,** so long as t
 not in use on multiple servers at once. You can read more in the [Sandstorm for Work Terms of
 Service.](https://work.sandstorm.io/terms).
 
-**Billing period and renewal.** The Sandstorm for Work admin page on your own server will show an
-expiration date for your feature key. Under normal operation, your Sandstorm server will contact our
-billing server shortly before this date and bill you at your own rate for your Sandstorm for Work
-usage. Once that succeeds, your Sandstorm server will automatically download a new feature key with
-an expiration date in the future. For that reason, the "expires" date in the Sandstorm for Work
-admin page on your server will change over time. For customers who chose monthly billing, the new
-feature key will expire one month in the future. For customers who chose annual billing, the new
-feature key will expire one year in the future. Customers who use a free-of-cost key are typically
-use annual billing and the billing rate is $0/year, so renewals will occur automatically.
+**Billing period and renewal.** The Sandstorm for Work admin page on your own server will show a
+renewal/expiration date for your feature key. Under normal operation, your Sandstorm server will
+contact our billing server when your feature key expires and bill you at your own rate for your
+Sandstorm for Work usage. Once that succeeds, your Sandstorm server will automatically download a
+new feature key with an expiration date in the future. For that reason, the "Expires" or "Next
+Renewal" date in the Sandstorm for Work admin page on your server will change over time. To account
+for the fact that reaching the billing server can take some time, Sandstorm for Work has a small
+grace period where an expired key will continue to work. For customers who chose monthly billing,
+the new feature key will have a next renewal date one month in the future. For customers who chose
+annual billing, the new feature key will have a next renewal date one year in the future. Customers
+who use a free-of-cost key are typically use annual billing and the billing rate is $0/year,
+allowing renewals to occur automatically.
 
 ### Open source
 

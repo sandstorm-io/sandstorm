@@ -86,10 +86,8 @@ Template.addNewVerifiedEmailPowerboxConfiguration.onCreated(function () {
     const result = [];
     SandstormDb.getUserIdentityIds(Meteor.user()).forEach((identityId) => {
       let identity = Meteor.users.findOne({ _id: identityId });
-      if (identity) {
-        SandstormDb.getVerifiedEmails(identity).forEach((value) => {
-          result.push(value.email);
-        });
+      if (identity && identity.services.email) {
+        result.push(identity.services.email.email);
       }
     });
     _this.verifiedEmails.set(result);

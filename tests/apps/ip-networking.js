@@ -32,9 +32,9 @@ module.exports = {};
 module.exports["Test Ip Networking"] = function (browser) {
   browser
     .loginDevAccount(null, true)
-    .installApp("http://sandstorm.io/apps/david/sandstorm-test-python6.spk",
-                "a8c2128e401f1d20a426b24aa589c637",
-                "umeqc9yhncg63fjj6sahtw30nf99kfm6tgkuz8rmhn5dqtusnwah")
+    .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-11.spk",
+                "9e431ec70f1ee66901bb73f48687f485",
+                "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh")
     .assert.containsText("#grainTitle", "Untitled Test App test page")
     .waitForElementVisible('.grain-frame', short_wait)
     .grainFrame()
@@ -56,9 +56,9 @@ module.exports["Test Ip Networking"] = function (browser) {
 module.exports["Test Ip Interface"] = function (browser) {
   browser
     .loginDevAccount(null, true)
-    .installApp("http://sandstorm.io/apps/david/sandstorm-test-python6.spk",
-                "a8c2128e401f1d20a426b24aa589c637",
-                "umeqc9yhncg63fjj6sahtw30nf99kfm6tgkuz8rmhn5dqtusnwah")
+    .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-11.spk",
+                "9e431ec70f1ee66901bb73f48687f485",
+                "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh")
     .assert.containsText("#grainTitle", "Untitled Test App test page")
     .waitForElementVisible('.grain-frame', short_wait)
     .grainFrame()
@@ -72,8 +72,14 @@ module.exports["Test Ip Interface"] = function (browser) {
       .waitForElementVisible("form.test-ip-interface input[type=number]", short_wait)
       .setValue("form.test-ip-interface input[type=number]", IP_INTERFACE_TEST_PORT)
       .click("form.test-ip-interface button")
+      .waitForElementVisible("form.test-ip-interface div.result", short_wait)
+      .assert.containsText("form.test-ip-interface div.result", "listening on")
     .frameParent()
     .assertTcpConnection(IP_INTERFACE_TEST_PORT, "tcptest")
+    .grainFrame()
+      .waitForElementNotPresent("form.test-ip-interface input[disabled]", short_wait)
+      .assert.containsText("form.test-ip-interface div.result", "success")
+    .frameParent()
     .end();
 };
 

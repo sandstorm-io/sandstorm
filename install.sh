@@ -1094,12 +1094,16 @@ choose_install_dir() {
     DIR=$(prompt "Where would you like to put Sandstorm?" "$DEFAULT_DIR")
   fi
 
-  if [ -e "$DIR" ]; then
+  # Check for the existence of any partial Sandstorm installation. Note that by default, the
+  # Sandstorm uninstall process will retain $DIR/sandstorm.conf and $DIR/var. Since the install
+  # script can't reliably use those to preseed a new Sandstorm install, we still bail out in that
+  # situation.
+  if [ -e "$DIR/sandstorm.conf" ] || [ -e "$DIR/var" ] || [ -e "$DIR/sandstorm" ] ; then
     # Clear the previous line, since in many cases, it's a "echo -n".
     error ""
     error "This script is trying to install to ${DIR}."
     error ""
-    error "You seem to already have a ${DIR} directory. You should either:"
+    error "You seem to already have a ${DIR} directory with a Sandstorm installation inside. You should either:"
     error ""
     error "1. Reconfigure that Sandstorm install using its configuration file -- ${DIR}/sandstorm.conf -- or the admin interface. See docs at:"
     error "https://docs.sandstorm.io/en/latest/administering/"

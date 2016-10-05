@@ -601,3 +601,16 @@ on ARM.
 
 We hope to be able to provide a more satisfying answer one day. If you don't need ARM in particular,
 but you want a power-efficient small computer that runs Sandstorm, see the links above.
+
+## Is Sandstorm ready for production use? Is it in beta?
+
+Sandstorm, and Sandstorm for Work, are ready for production use.
+
+On August 31, 2016, we announced that our [self-hostable Sandstorm for Work
+product](https://sandstorm.io/news/2016-08-31-sandstorm-for-work-ready) is ready.  We rely on
+Sandstorm extensively for our day-to-day work including project management, collaboration, and file
+management, as do many other individuals and companies.  As with any software product, there are
+plenty of things on our roadmap that we intend to add or improve over time, but the core
+functionality has been stable for a while.
+
+Our hosted offering, Oasis, is still marked beta, but we intend for it to graduate soon.

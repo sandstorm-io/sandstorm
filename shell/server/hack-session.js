@@ -447,7 +447,7 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
     const parsedUrl = Url.parse(url);
 
     if (parsedUrl.hash) { // Assume that anything with a fragment is a webkey
-      if (parsedUrl.pathname) {
+      if (parsedUrl.pathname && parsedUrl.pathname !== "/") {
         throw new Error("Webkey urls cannot contain a path.");
       }
 

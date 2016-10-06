@@ -15,8 +15,8 @@
       {{/focusingErrorBox}}
     {{/if}}
 
-    <h4>Select one:</h4>
     {{#with selectedProvider}}
+      <h4>Selected:</h4>
       <div class="selected-card">
         <div class="powerbox-card" data-card-id="{{ option._id }}"
              style="background-image: url('{{ iconSrc }}');">
@@ -25,6 +25,7 @@
         {{>configureTemplate . }}
       </div>
     {{else}}
+      <h4>Select one:</h4>
       <div class="search-row">
         <label>
           <span title="Search" class="search-icon"></span>

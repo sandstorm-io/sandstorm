@@ -88,9 +88,8 @@ body>.popup.request>.frame-container>.frame {
       @extend %button-base;
       @extend %button-primary;
     }
-    button[name=reset] {
-      @extend %button-base;
-      @extend %button-secondary;
+    p.error {
+      background-color: $error-background-color;
     }
     form.verified-email {
       >input[type=text] {

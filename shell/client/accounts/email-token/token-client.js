@@ -80,6 +80,8 @@ Router.route("/_emailLinkIdentity/:_email/:_token/:_accountId", function () {
 Template.addNewVerifiedEmailPowerboxConfiguration.onCreated(function () {
   this.state = new ReactiveVar({ enterEmail: true });
   this.email = new ReactiveVar(null);
+  this.token = new ReactiveVar(null);
+  this.enterTokenMessage = new ReactiveVar(null);
   this.verifiedEmails = new ReactiveVar([]);
   const _this = this;
   this.autorun(() => {
@@ -103,6 +105,14 @@ Template.addNewVerifiedEmailPowerboxConfiguration.helpers({
     return Template.instance().email.get();
   },
 
+  token() {
+    return Template.instance().token.get();
+  },
+
+  enterTokenMessage() {
+    return Template.instance().enterTokenMessage.get();
+  },
+
   alreadyVerified() {
     const instance = Template.instance();
     return instance.verifiedEmails.get().indexOf(instance.email.get()) > -1;
@@ -112,6 +122,10 @@ Template.addNewVerifiedEmailPowerboxConfiguration.helpers({
 Template.addNewVerifiedEmailPowerboxConfiguration.events({
   "input form[name='enter-email'] input[name='email']": function (event, instance) {
     instance.email.set(event.currentTarget.value);
+  },
+
+  "input form[name='enter-token'] input[name='token']": function (event, instance) {
+    instance.token.set(event.currentTarget.value);
   },
 
   "submit form[name='enter-email']": function (event, instance) {
@@ -147,14 +161,15 @@ Template.addNewVerifiedEmailPowerboxConfiguration.events({
       const options = { resumePath, linking: { allowLogin: false }, };
       createAndEmailTokenForUser(email, options, function (err) {
         if (err && err.error === "alreadySentEmailToken") {
-          instance.state.set({ enterToken: err.reason });
+          instance.enterTokenMessage.set(err.reason);
+          instance.state.set({ enterToken: true });
         } else if (err) {
-          instance.state.set({ error: err.reason || "Unknown error" });
+          instance.state.set({ enterEmail: true, error: err.reason || "Unknown error", });
         } else {
-          instance.state.set({
-            enterToken: "We've sent a confirmation e-mail to " + email +
-              ". It may take a few moments for it to show up in your inbox.",
-          });
+          instance.enterTokenMessage.set(
+            "We've sent a confirmation e-mail to " + email +
+              ". It may take a few moments for it to show up in your inbox.");
+          instance.state.set({ enterToken: true, });
         }
       });
     }
@@ -165,15 +180,11 @@ Template.addNewVerifiedEmailPowerboxConfiguration.events({
     const form = event.currentTarget;
     const token = form.token.value;
     const email = instance.email.get();
+    instance.state.set({ sendingToken: true });
     Meteor.call("linkEmailIdentityToAccount", email, token, false, function (err, result) {
       if (err && err.error !== "alreadyLinked") {
-        instance.state.set({ error: err.reason || "Unknown error" });
+        instance.state.set({ enterToken: true, error: err.reason || "Unknown error", });
       }
     });
-  },
-
-  "click button[name='reset']": function (event, instance) {
-    instance.completionObserver.stop();
-    instance.state.set({ enterEmail: true });
   },
 });

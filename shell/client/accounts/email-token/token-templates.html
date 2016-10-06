@@ -12,11 +12,13 @@
 <template name="addNewVerifiedEmailPowerboxConfiguration">
   {{#if state.enterEmail}}
     <form class="verified-email" name="enter-email">
-      <input type="text" name="email" placeholder="enter email address">
+      <input type="text" name="email" placeholder="enter email address" value={{email}}>
       {{#if alreadyVerified}}
-        <button class="connect-button">Select (already verified)</button>
+        <button class="connect-button">Select</button>
       {{else}}
-        <button class="connect-button">Send verification email</button>
+        <button class="connect-button" disabled={{#unless email}}true{{/unless}}>
+          Send verification email
+        </button>
       {{/if}}
     </form>
   {{/if}}
@@ -26,10 +28,10 @@
   {{/if}}
 
   {{#if state.enterToken }}
-    <p>{{state.enterToken}}</p>
+    <p>{{enterTokenMessage}}</p>
     <form class="verified-email" name="enter-token">
-      <input type="text" name="token" placeholder="enter your token">
-      <button class="connect-button">Confirm</button>
+      <input type="text" name="token" placeholder="enter your token" value={{token}}>
+      <button class="connect-button" disabled={{#unless token}}true{{/unless}}>Confirm</button>
     </form>
   {{/if}}
 
@@ -38,7 +40,6 @@
   {{/if}}
 
   {{#if state.error}}
-    <p>{{state.error}}</p>
-    <button name="reset">Start over</button>
+    <p class="error">{{state.error}}</p>
   {{/if}}
 </template>

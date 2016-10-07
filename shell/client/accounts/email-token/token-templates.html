@@ -35,7 +35,9 @@
 
   {{#if state.enterToken }}
     {{#if state.error}}
+    <div class="reset-row">
       <button name="reset" type="button">Try a different address</button>
+    </div>
     {{/if}}
     <p>{{enterTokenMessage}}</p>
     <form class="verified-email" name="enter-token">

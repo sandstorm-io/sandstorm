@@ -93,9 +93,13 @@ body>.popup.request>.frame-container>.frame {
         font-size: 16pt;
       }
     }
-    button[name=reset] {
-      @extend %button-base;
-      @extend %button-secondary;
+    div.reset-row {
+      display: flex;
+      justify-content: flex-end;
+      button[name=reset] {
+        @extend %button-base;
+        @extend %button-secondary;
+      }
     }
   }
 }

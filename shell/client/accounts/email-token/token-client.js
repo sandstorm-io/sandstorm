@@ -187,4 +187,14 @@ Template.addNewVerifiedEmailPowerboxConfiguration.events({
       }
     });
   },
+
+  "click button[name='reset']": function (event, instance) {
+    if (instance.completionObserver) {
+      instance.completionObserver.stop();
+    }
+
+    instance.token.set(null);
+    instance.email.set(null);
+    instance.state.set({ enterEmail: true });
+  },
 });

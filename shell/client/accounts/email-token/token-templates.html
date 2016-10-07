@@ -38,6 +38,9 @@
     <form class="verified-email" name="enter-token">
       <input type="text" name="token" placeholder="enter your token" value={{token}}>
       <button class="connect-button" disabled={{#unless token}}true{{/unless}}>Confirm</button>
+      {{#if state.error}}
+        <button name="reset" type="button">Try a different address</button>
+      {{/if}}
     </form>
   {{/if}}
 

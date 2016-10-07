@@ -52,6 +52,22 @@
     margin: 4px;
     text-decoration: none;
   }
+
+  .setup-system-log {
+    color: #000000;
+  }
+
+  .setup-system-log-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+
+    .setup-system-log-header-text {
+      font-size: 24px;
+      font-weight: normal;
+    }
+  }
 }
 
 .setup-progress {

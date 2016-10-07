@@ -1,5 +1,6 @@
 import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";
 import AccountsUi from "/imports/client/accounts/accounts-ui.js";
+import downloadFile from "/imports/client/download-file.js";
 
 // Pseudocollection telling the client if there's an admin user yet.
 HasAdmin = new Mongo.Collection("hasAdmin");
@@ -155,6 +156,75 @@ Template.setupWizardVerifyToken.helpers({
 
   rejected() {
     return Iron.controller().state.get("redeemStatus") === "rejected";
+  },
+});
+
+Template.setupWizardHelpFooter.onCreated(function () {
+  this.showSystemLogOverlay = new ReactiveVar(false);
+});
+
+Template.setupWizardHelpFooter.helpers({
+  showSystemLog() {
+    const instance = Template.instance();
+    return instance.showSystemLogOverlay.get();
+  },
+
+  hideSystemLogCallback() {
+    const instance = Template.instance();
+    return () => {
+      instance.showSystemLogOverlay.set(false);
+    };
+  },
+});
+
+Template.setupWizardHelpFooter.events({
+  "click button[name=system-log]"() {
+    const instance = Template.instance();
+    instance.showSystemLogOverlay.set(true);
+  },
+});
+
+Template.setupWizardSystemLog.onCreated(function () {
+  const token = sessionStorage.getItem("setup-token");
+  this.token = token;
+  if (this.token) {
+    this.adminTokenSub = this.subscribe("adminToken", token);
+  }
+
+  this.adminLogSub = this.subscribe("adminLog", token);
+});
+
+Template.setupWizardSystemLog.helpers({
+  ready() {
+    const instance = Template.instance();
+    return (!instance.token || instance.adminTokenSub.ready()) &&
+        instance.adminLogSub.ready();
+  },
+
+  isUserPermitted() {
+    const instance = Template.instance();
+    let tokenStatus = undefined;
+    if (instance.token) {
+      tokenStatus = AdminToken.findOne();
+    }
+
+    const isUserPermitted = isAdmin() || (tokenStatus && tokenStatus.tokenIsValid);
+    return isUserPermitted;
+  },
+});
+
+Template.setupWizardSystemLog.events({
+  "click button[name=download-full-log]"(evt) {
+    Meteor.call("adminGetServerLogDownloadToken", sessionStorage.getItem("setup-token"),
+        (err, token) => {
+      if (err) {
+        console.log(err.message);
+      } else {
+        const url = "/admin/status/server-log/" + token;
+        const suggestedFilename = "sandstorm.log";
+        downloadFile(url, suggestedFilename);
+      }
+    });
   },
 });
 
@@ -898,7 +968,6 @@ const setupRoute = RouteController.extend({
     const token = sessionStorage.getItem("setup-token");
     const state = this.state;
     state.set("token", token);
-    // Using AdminToken pseudocollection from admin-client.js
     let tokenStatus = undefined;
     if (token) {
       tokenStatus = AdminToken.findOne();

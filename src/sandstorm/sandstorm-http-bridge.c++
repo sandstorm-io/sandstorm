@@ -1106,6 +1106,8 @@ public:
         kj::StringPtr textIdRef = textId;
         KJ_ASSERT(liveIdentities.insert(std::make_pair(
           textIdRef, IdentityRecord { kj::mv(textId), kj::mv(identity) })).second);
+      }, [] (auto e) {
+        // Ignore the error here because the returned capability will report it upon use.
       }));
 
       return kj::mv(identity);
@@ -1133,6 +1135,8 @@ public:
             auto iter = liveIdentities.find(textId);
             KJ_ASSERT(iter != liveIdentities.end());
             iter->second.identity = kj::mv(newIdentity);
+          }, [] (auto e) {
+            // Ignore the error here because the returned capability will report it upon use.
           }));
 
           return kj::mv(newIdentity);

@@ -92,10 +92,10 @@ body>.popup.request>.frame-container>.frame {
       >input[type=text] {
         font-size: 16pt;
       }
-      button[name=reset] {
-        @extend %button-base;
-        @extend %button-secondary;
-      }
+    }
+    button[name=reset] {
+      @extend %button-base;
+      @extend %button-secondary;
     }
   }
 }

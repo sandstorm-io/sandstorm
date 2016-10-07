@@ -238,7 +238,7 @@ const createAndEmailTokenForUser = function (db, email, options) {
         "alreadySentEmailToken",
         "It looks like we sent a log in email to this address not long " +
         "ago. Please use the one that was already sent (check your spam folder if you can't find " +
-        "it), or wait a while and try again");
+        "it), or wait a while and try again.");
     }
 
     userId = user._id;

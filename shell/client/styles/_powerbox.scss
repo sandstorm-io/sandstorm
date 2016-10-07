@@ -88,9 +88,6 @@ body>.popup.request>.frame-container>.frame {
       @extend %button-base;
       @extend %button-primary;
     }
-    p.error {
-      background-color: $error-background-color;
-    }
     form.verified-email {
       >input[type=text] {
         font-size: 16pt;

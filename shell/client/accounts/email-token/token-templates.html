@@ -10,6 +10,12 @@
 </template>
 
 <template name="addNewVerifiedEmailPowerboxConfiguration">
+  {{#if state.error}}
+    {{#focusingErrorBox}}
+      {{state.error}}
+    {{/focusingErrorBox}}
+  {{/if}}
+
   {{#if state.enterEmail}}
     <form class="verified-email" name="enter-email">
       <input type="text" name="email" placeholder="enter email address" value={{email}}>
@@ -37,9 +43,5 @@
 
   {{#if state.sendingToken }}
     <p>Verifying token...</p>
-  {{/if}}
-
-  {{#if state.error}}
-    <p class="error">{{state.error}}</p>
   {{/if}}
 </template>

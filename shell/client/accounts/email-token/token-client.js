@@ -167,7 +167,7 @@ Template.addNewVerifiedEmailPowerboxConfiguration.events({
           instance.state.set({ enterEmail: true, error: err.reason || "Unknown error", });
         } else {
           instance.enterTokenMessage.set(
-            "We've sent a confirmation e-mail to " + email +
+            "We've sent a confirmation email to " + email +
               ". It may take a few moments for it to show up in your inbox.");
           instance.state.set({ enterToken: true, });
         }

@@ -23,14 +23,14 @@
         <button class="connect-button">Select</button>
       {{else}}
         <button class="connect-button" disabled={{#unless email}}true{{/unless}}>
-          Send verification email
+          Send confirmation email
         </button>
       {{/if}}
     </form>
   {{/if}}
 
   {{#if state.sendingEmail }}
-    <p>Sending e-mail to {{email}}...</p>
+    <p>Sending to {{email}}...</p>
   {{/if}}
 
   {{#if state.enterToken }}

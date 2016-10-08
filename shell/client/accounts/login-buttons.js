@@ -239,14 +239,17 @@ Template._loginButtonsLoggedInDropdown.events({
 const sendEmail = function (email, linkingNewIdentity) {
   loginButtonsSession.infoMessage("Sending email...");
   const loc = window.location;
-  const pathToResume = loc.pathname + loc.search + loc.hash;
-  createAndEmailTokenForUser(email, linkingNewIdentity, pathToResume, function (err) {
+  const resumePath = loc.pathname + loc.search + loc.hash;
+  const options = { resumePath };
+  if (linkingNewIdentity) {
+    options.linking = { allowLogin: true };
+  }
+
+  createAndEmailTokenForUser(email, options, function (err) {
     if (err) {
       loginButtonsSession.errorMessage(err.reason || "Unknown error");
-      if (err.error === 409) {
-        // 409 is a special case where the user can resolve the problem on their own.
-        // Specifically, we're using 409 to mean that the email wasn't sent because a rate limit
-        // was hit.
+      if (err.error === "alreadySentEmailToken") {
+        // This is a special case where the user can resolve the problem on their own.
         loginButtonsSession.set("inSignupFlow", email);
       }
     } else {
@@ -336,7 +339,7 @@ Template.emailAuthenticationForm.events({
     const email = loginButtonsSession.get("inSignupFlow");
     if (email) {
       if (instance.data.linkingNewIdentity) {
-        Meteor.call("linkEmailIdentityToAccount", email, form.token.value, function (err, result) {
+        Meteor.call("linkEmailIdentityToAccount", email, form.token.value, true, (err, result) => {
           if (err) {
             loginButtonsSession.errorMessage(err.reason || "Unknown error");
           } else {

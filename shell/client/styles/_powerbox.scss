@@ -88,6 +88,19 @@ body>.popup.request>.frame-container>.frame {
       @extend %button-base;
       @extend %button-primary;
     }
+    form.verified-email {
+      >input[type=text] {
+        font-size: 16pt;
+      }
+    }
+    div.reset-row {
+      display: flex;
+      justify-content: flex-end;
+      button[name=reset] {
+        @extend %button-base;
+        @extend %button-secondary;
+      }
+    }
   }
 }
 
@@ -110,6 +123,6 @@ body>.popup.request>.frame-container>.frame {
     background-position: 4px 4px;
     background-repeat: no-repeat;
     padding-left: 32px;
-    height: 32px;
+    height: 31px;
   }
 }

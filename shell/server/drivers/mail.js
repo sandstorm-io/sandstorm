@@ -338,6 +338,7 @@ function getVerifiedEmails(db, userId, verifierId) {
   // verifier.
 
   let services = null;
+  let couldAddAnother = true;
 
   if (verifierId) {
     const verifier = db.collections.apiTokens.findOne(
@@ -349,6 +350,7 @@ function getVerifiedEmails(db, userId, verifierId) {
       // Limit to the listed services.
       services = {};
       verifierInfo.services.forEach(service => services[service] = true);
+      couldAddAnother = !!services.email;
     }
   }
 
@@ -360,7 +362,7 @@ function getVerifiedEmails(db, userId, verifierId) {
     }
   });
 
-  return Object.keys(emails);
+  return { emails: Object.keys(emails), couldAddAnother };
 }
 
 // TODO(cleanup): Meteor.startup() needed because 00-startup.js runs *after* code in subdirectories
@@ -437,7 +439,8 @@ Meteor.startup(() => {
 
       // Verify that the address actually belongs to the user.
 
-      if (!_.contains(getVerifiedEmails(db, session.userId, value.verifierId), value.address)) {
+      if (!_.contains(getVerifiedEmails(db, session.userId, value.verifierId).emails,
+                      value.address)) {
         throw new Meteor.Error(403, "User has no such verified address");
       }
 
@@ -458,12 +461,25 @@ Meteor.startup(() => {
 
     query(db, userId, value) {
       const verifierId = value &&
-          Capnp.parse(EmailRpc.VerifiedEmail.PowerboxTag, value).verifierId.toString("base64");
-      return getVerifiedEmails(db, userId, verifierId).map(address => ({
+           Capnp.parse(EmailRpc.VerifiedEmail.PowerboxTag, value).verifierId.toString("base64");
+      const verified = getVerifiedEmails(db, userId, verifierId);
+      const result = verified.emails.map(address => ({
         _id: "email-" + address,
         frontendRef: { verifiedEmail: { verifierId, address } },
         cardTemplate: "verifiedEmailPowerboxCard",
+        searchTerms: [address],
       }));
+
+      if (verified.couldAddAnother) {
+        result.push({
+          _id: "email-add-a-new-one",
+          frontendRef: { verifiedEmail: { verifierId }, },
+          cardTemplate: "addNewVerifiedEmailPowerboxCard",
+          configureTemplate: "addNewVerifiedEmailPowerboxConfiguration",
+        });
+      }
+
+      return result;
     },
   });
 });

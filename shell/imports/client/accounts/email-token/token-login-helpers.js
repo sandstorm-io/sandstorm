@@ -54,12 +54,11 @@ const loginWithEmailToken = function (email, token, callback) {
  * @param {String} resumePath If the user logs in by opening the link from the email, redirect them to this path on successful login.
  * @param {Function} [callback] Client only, optional callback. Called with no arguments on success, or with a single `Error` argument on failure.
  */
-const createAndEmailTokenForUser = function (email, linkingNewIdentity, resumePath, callback) {
+const createAndEmailTokenForUser = function (email, options, callback) {
   check(email, String);
-  check(linkingNewIdentity, Boolean);
-  check(resumePath, String);
+  check(options, { resumePath: String, linking: Match.Optional({ allowLogin: Boolean }), });
 
-  Meteor.call("createAndEmailTokenForUser", email, linkingNewIdentity, resumePath, callback);
+  Meteor.call("createAndEmailTokenForUser", email, options, callback);
 };
 
 export { loginWithEmailToken, createAndEmailTokenForUser };

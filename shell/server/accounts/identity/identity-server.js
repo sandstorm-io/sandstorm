@@ -16,9 +16,9 @@
 
 import { SandstormBackend } from "/imports/server/backend.js";
 
-const linkIdentityToAccountInternal = function (db, backend, identityId, accountId) {
-  // Links the identity to the account and grants it login access if possible. Makes the account
-  // durable if it is a demo account.
+const linkIdentityToAccountInternal = function (db, backend, identityId, accountId, allowLogin) {
+  // Links the identity to the account. If `allowLogin` is true, grants the identity login access
+  // if possible. Makes the account durable if it is a demo account.
 
   check(db, SandstormDb);
   check(backend, SandstormBackend);
@@ -58,7 +58,7 @@ const linkIdentityToAccountInternal = function (db, backend, identityId, account
 
   const alreadyLinked = !!Meteor.users.findOne({ "nonloginIdentities.id": identityUser._id });
 
-  const pushModifier = alreadyLinked
+  const pushModifier = (alreadyLinked || !allowLogin)
         ? { nonloginIdentities: { id: identityUser._id } }
         : { loginIdentities: { id: identityUser._id } };
 
@@ -198,7 +198,7 @@ Meteor.methods({
     const accountUser = Meteor.users.findOne({ "services.resume.loginTokens.hashedToken": hashed });
 
     linkIdentityToAccountInternal(this.connection.sandstormDb, this.connection.sandstormBackend,
-                                  this.userId, accountUser._id);
+                                  this.userId, accountUser._id, true);
   },
 
   unlinkIdentity: function (accountUserId, identityId) {
@@ -265,14 +265,15 @@ Meteor.methods({
   },
 });
 
-Accounts.linkIdentityToAccount = function (db, backend, identityId, accountId) {
-  // Links the identity to the account. If the account is a demo account, makes it durable and
-  // gives the identity login access to it.
+Accounts.linkIdentityToAccount = function (db, backend, identityId, accountId, allowLogin) {
+  // Links the identity to the account. If the account is a demo account, makes it durable.
+  // If `allowLogin` is true, attempts to give the identity login access.
   check(db, SandstormDb);
   check(backend, SandstormBackend);
   check(identityId, String);
   check(accountId, String);
-  linkIdentityToAccountInternal(db, backend, identityId, accountId);
+  check(allowLogin, Boolean);
+  linkIdentityToAccountInternal(db, backend, identityId, accountId, allowLogin);
 };
 
 Meteor.publish("accountsOfIdentity", function (identityId) {

@@ -1,3 +1,9 @@
+### v0.189 (2016-10-08) [bugfixes]
+- During an e-mail verification powerbox request, there is now an "add new e-mail" option which links a new e-mail identity to your account on-the-fly.
+- Fixed issues with the Cap'n Proto API where passing a Sandstorm-provided capability back to Sandstorm in the presence of promise pipelining could sometimes fail.
+- Self-hosting: Improved the display of the system log during setup.
+- Sandstorm for Work: Links to the billing dashboard are now more direct.
+
 ### v0.188 (2016-10-01) [bugfixes]
 - We now use a version of Node.js patched to fix [V8 issue 5338](https://bugs.chromium.org/p/v8/issues/detail?id=5338). We hope that V8 will eventually fix the bug upstream.
 - When the app initiates the sharing dialog, powerbox, or other dialogs (as opposed to the user initiating them by clicking on the top bar), the dialog will now appear centered rather than hanging from the topbar.

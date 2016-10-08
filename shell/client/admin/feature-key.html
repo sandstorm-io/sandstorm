@@ -79,10 +79,13 @@
           {{#if featureKey.isFreeKey}}
             <span class="feature-key-label feature-key-free">Free</span>
           {{else}}
-            {{#if featureKey.isTrial}}<span class="feature-key-label feature-key-trial">Trial</span>{{/if}}
             {{#with validity=(computeValidity featureKey)}}
               <span class="feature-key-label feature-key-{{validity.className}}">{{validity.labelText}}</span>
             {{/with}}
+            {{#if featureKey.isTrial}}
+              <span class="feature-key-label feature-key-trial">Trial</span>
+              <a target="_blank" href="https://sandstorm.io/get-feature-key#key/{{keySecret featureKey}}/manage">Purchase...</a>
+            {{/if}}
           {{/if}}
         </span>
       </div>
@@ -92,7 +95,11 @@
       </div>
       <div class="feature-key-property-row">
         <span class="feature-key-property-key">
-          {{#if featureKey.isTrial}}Expires{{else}}Next Renewal{{/if}}
+          {{#if featureKey.isTrial}}
+            Expires
+          {{else}}
+            Next Renewal
+          {{/if}}
         </span>
         <span class="feature-key-property-value">{{renderDateString featureKey.expires}}</span>
       </div>
@@ -133,14 +140,14 @@
       {{#if noPaymentSource}}
         Your feature key cannot be renewed because you have not provided a payment source.
         Please <a class="button primary" target="_blank"
-           href="https://sandstorm.io/get-feature-key#key/{{keySecret}}">update your billing
+           href="https://sandstorm.io/get-feature-key#key/{{keySecret}}/manage">update your billing
            settings &raquo;</a>
       {{/if}}
       {{#if paymentFailed}}
         Your feature key cannot be renewed because there is a problem with your payment source:
         {{paymentFailed}}<br>
         Please <a class="button primary" target="_blank"
-        href="https://sandstorm.io/get-feature-key#key/{{keySecret}}">update your billing
+        href="https://sandstorm.io/get-feature-key#key/{{keySecret}}/manage">update your billing
         settings &raquo;</a>
       {{/if}}
       {{#if noSuchKey}}

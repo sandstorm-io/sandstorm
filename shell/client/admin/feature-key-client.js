@@ -20,6 +20,15 @@ Template.newAdminFeatureKey.helpers({
   },
 });
 
+function hexString(bytes) {
+  const DIGITS = "0123456789abcdef";
+
+  // Watch out: Uint8Array.map() constructs a new Uint8Arary.
+  return Array.prototype.map
+      .call(bytes, byte => DIGITS[Math.floor(byte / 16)] + DIGITS[byte % 16])
+      .join("");
+}
+
 Template.adminFeatureKeyDetails.helpers({
   computeValidity(featureKey) {
     const nowSec = Date.now() / 1000;
@@ -65,6 +74,10 @@ Template.adminFeatureKeyDetails.helpers({
     d.setTime(parseInt(stringSecondsSinceEpoch) * 1000);
 
     return MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
+  },
+
+  keySecret(featureKey) {
+    return hexString(featureKey.secret);
   },
 });
 
@@ -160,15 +173,6 @@ Template.adminFeatureKeyModifyForm.helpers({
   },
 
   keySecret() {
-    function hexString(bytes) {
-      const DIGITS = "0123456789abcdef";
-
-      // Watch out: Uint8Array.map() constructs a new Uint8Arary.
-      return Array.prototype.map
-          .call(bytes, byte => DIGITS[Math.floor(byte / 16)] + DIGITS[byte % 16])
-          .join("");
-    }
-
     return hexString(globalDb.currentFeatureKey().secret);
   },
 

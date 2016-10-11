@@ -1430,15 +1430,15 @@ private:
   }
 
   void dropPrivs(const UserIds& uids) {
+    // Defense in depth: Don't give my children any new caps for any reason.
+    KJ_SYSCALL(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0));
+
     if (runningAsRoot) {
       KJ_SYSCALL(setresgid(uids.gid, uids.gid, uids.gid));
       KJ_SYSCALL(setgroups(uids.groups.size(), uids.groups.begin()));
       KJ_SYSCALL(setresuid(uids.uid, uids.uid, uids.uid));
     } else {
       // We're using UID namespaces.
-
-      // Defense in depth: Don't give my children any new caps for any reason.
-      KJ_SYSCALL(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0));
 
       // Defense in depth: Drop all capabilities from the set of caps which my children are allowed
       //   to ever have.

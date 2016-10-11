@@ -317,7 +317,8 @@ class BackendImpl::PackageUploadStreamImpl: public Backend::PackageUploadStream:
 public:
   PackageUploadStreamImpl(BackendImpl& backend, Pipe inPipe = Pipe::make(),
                           Pipe outPipe = Pipe::make())
-      : inputWriteFd(kj::mv(inPipe.writeEnd)),
+      : sandboxUid(backend.sandboxUid),
+        inputWriteFd(kj::mv(inPipe.writeEnd)),
         outputReadFd(kj::mv(outPipe.readEnd)),
         inputWriteEnd(backend.ioProvider.wrapOutputFd(inputWriteFd,
             kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC)),
@@ -391,7 +392,7 @@ protected:
       auto results = context.getResults(sizeHint);
       results.setAppId(trim(text));
       results.setManifest(manifest);
-      KJ_IF_MAYBE(fp, checkPgpSignature(results.getAppId(), manifest.getMetadata())) {
+      KJ_IF_MAYBE(fp, checkPgpSignature(results.getAppId(), manifest.getMetadata(), sandboxUid)) {
         results.setAuthorPgpKeyFingerprint(*fp);
       }
     }, [this](kj::Exception&& e) {
@@ -401,6 +402,7 @@ protected:
   }
 
 private:
+  kj::Maybe<uid_t> sandboxUid;
   kj::AutoCloseFd inputWriteFd;
   kj::AutoCloseFd outputReadFd;
   kj::Maybe<kj::Own<kj::AsyncOutputStream>> inputWriteEnd;

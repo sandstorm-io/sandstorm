@@ -33,7 +33,8 @@ kj::String unpackSpk(int spkfd, kj::StringPtr outdir, kj::StringPtr tmpdir);
 void verifySpk(int spkfd, int tmpfile, spk::VerifiedInfo::Builder output);
 // Temporarily uncompress the spk, check its signature, and fill in `output` with relevant info.
 
-kj::Maybe<kj::String> checkPgpSignature(kj::StringPtr appIdString, spk::Metadata::Reader metadata);
+kj::Maybe<kj::String> checkPgpSignature(kj::StringPtr appIdString, spk::Metadata::Reader metadata,
+                                        kj::Maybe<uid_t> sandboxUid = nullptr);
 // Checks that the PGP signature embedded in the given package metadata matches the given app ID,
 // and returns the PGP key fingerprint. Returns null if there is no signature. Throws if there is
 // an invalid signature.

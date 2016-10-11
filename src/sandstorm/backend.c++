@@ -450,7 +450,7 @@ kj::Promise<void> BackendImpl::tryGetPackage(TryGetPackageContext context) {
     auto results = context.getResults(sizeHint);
     results.setAppId(trim(appid));
     results.setManifest(manifest);
-    KJ_IF_MAYBE(fp, checkPgpSignature(results.getAppId(), manifest.getMetadata())) {
+    KJ_IF_MAYBE(fp, checkPgpSignature(results.getAppId(), manifest.getMetadata(), sandboxUid)) {
       results.setAuthorPgpKeyFingerprint(*fp);
     }
   }

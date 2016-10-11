@@ -474,8 +474,22 @@ kj::Promise<void> BackendImpl::backupGrain(BackupGrainContext context) {
   auto path = kj::str("/var/sandstorm/backups/", params.getBackupId());
   recursivelyCreateParent(path);
   auto grainDir = kj::str("/var/sandstorm/grains/", params.getGrainId());
-  Subprocess::Options processOptions({"backup", path, grainDir});
-  processOptions.uid = sandboxUid;
+
+  // Similar to the supervisor, the "backup" command sets up its own sandbox, and for that to work
+  // we need to pass along root privileges to it.
+  kj::Vector<kj::StringPtr> argv;
+  kj::String ownUid;
+  argv.add("backup");
+  KJ_IF_MAYBE(u, sandboxUid) {
+    argv.add("--uid");
+    ownUid = kj::str(*u);
+    argv.add(ownUid);
+  }
+  argv.add(path);
+  argv.add(grainDir);
+
+  Subprocess::Options processOptions(argv.asPtr());
+  if (sandboxUid != nullptr) processOptions.uid = uid_t(0);
   processOptions.executable = "/proc/self/exe";
   auto inPipe = Pipe::make();
   processOptions.stdin = inPipe.readEnd;
@@ -504,9 +518,24 @@ kj::Promise<void> BackendImpl::restoreGrain(RestoreGrainContext context) {
 
   auto path = kj::str("/var/sandstorm/backups/", params.getBackupId());
   auto grainDir = kj::str("/var/sandstorm/grains/", params.getGrainId());
+
+  // Similar to the supervisor, the "backup" command sets up its own sandbox, and for that to work
+  // we need to pass along root privileges to it.
+  kj::Vector<kj::StringPtr> argv;
+  kj::String ownUid;
+  argv.add("backup");
+  KJ_IF_MAYBE(u, sandboxUid) {
+    argv.add("--uid");
+    ownUid = kj::str(*u);
+    argv.add(ownUid);
+  }
+  argv.add("-r");
+  argv.add(path);
+  argv.add(grainDir);
+
   KJ_SYSCALL(mkdir(grainDir.cStr(), 0777));
-  Subprocess::Options processOptions({"backup", "-r", path, grainDir});
-  processOptions.uid = sandboxUid;
+  Subprocess::Options processOptions(argv.asPtr());
+  if (sandboxUid != nullptr) processOptions.uid = uid_t(0);
   processOptions.executable = "/proc/self/exe";
   auto outPipe = Pipe::make();
   processOptions.stdout = outPipe.writeEnd;

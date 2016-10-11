@@ -49,8 +49,9 @@ static void tryRecursivelyDelete(kj::StringPtr path) {
 }
 
 BackendImpl::BackendImpl(kj::LowLevelAsyncIoProvider& ioProvider, kj::Network& network,
-  SandstormCoreFactory::Client&& sandstormCoreFactory)
-    : ioProvider(ioProvider), network(network), coreFactory(kj::mv(sandstormCoreFactory)), tasks(*this) {}
+  SandstormCoreFactory::Client&& sandstormCoreFactory, kj::Maybe<uid_t> sandboxUid)
+    : ioProvider(ioProvider), network(network), coreFactory(kj::mv(sandstormCoreFactory)),
+      sandboxUid(sandboxUid), tasks(*this) {}
 
 void BackendImpl::taskFailed(kj::Exception&& exception) {
   KJ_LOG(ERROR, exception);

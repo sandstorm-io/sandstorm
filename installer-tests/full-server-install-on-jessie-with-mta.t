@@ -9,8 +9,12 @@ $[run]sudo dpkg --configure -a && sudo apt-get -f -y install && echo dpkg-fixed
 $[veryslow]dpkg-fixed
 $[run]sudo DEBIAN_FRONTEND=noninteractive apt-get install -d -y --no-install-recommends postfix && echo postfix-downloaded
 $[veryslow]postfix-downloaded
+$[run]printf "\x23\x21/bin/sh\nexit 101\n" | sudo dd of=/usr/sbin/policy-rc.d && sudo chmod 755 /usr/sbin/policy-rc.d && echo policy-rc.d-configured
+$[slow]policy-rc.d-configured
 $[run]sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends postfix && echo postfix-installed
 $[veryslow]postfix-installed
+$[run]sudo service postfix start && echo postfix-started
+$[veryslow]postfix-started
 $[run]for i in `seq 0 20`; do nc -z localhost 25 && { echo postfix-bound-port-25; break; } || sleep 1 ; done
 $[veryslow]postfix-bound-port-25
 $[run]CURL_USER_AGENT=testing REPORT=no OVERRIDE_SANDCATS_BASE_DOMAIN=sandcats-dev.sandstorm.io OVERRIDE_SANDCATS_API_BASE=https://sandcats-dev-machine.sandstorm.io OVERRIDE_SANDCATS_CURL_PARAMS=-k bash /vagrant/install.sh -i

@@ -280,6 +280,11 @@ public:
     // An array of 'NAME=VALUE' pairs specifying the child's environment. If null, inherits the
     // parent's environment.
 
+    kj::Maybe<uid_t> uid;
+    kj::Maybe<gid_t> gid;
+    // Values to change the UID and GID to in the child process before exec. Leave null for no
+    // change.
+
     Options(kj::StringPtr executable): executable(executable), argv(&this->executable, 1) {}
     Options(kj::ArrayPtr<const kj::StringPtr> argv): executable(argv[0]), argv(argv) {}
     Options(kj::Array<const kj::StringPtr>&& argv)

@@ -103,6 +103,11 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
 
   argv.add(kj::heapString("supervisor"));
 
+  KJ_IF_MAYBE(u, sandboxUid) {
+    argv.add(kj::heapString("--uid"));
+    argv.add(kj::str(*u));
+  }
+
   if (isNew) {
     argv.add(kj::heapString("-n"));
   }
@@ -133,6 +138,11 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
 
   Subprocess::Options options(KJ_MAP(a, argv) -> const kj::StringPtr { return a; });
   options.executable = "/sandstorm";
+
+  if (sandboxUid != nullptr) {
+    // Supervisor must run as root since user namespaces are not available.
+    options.uid = uid_t(0);
+  }
 
   int pipefds[2];
   KJ_SYSCALL(pipe2(pipefds, O_CLOEXEC));
@@ -314,7 +324,8 @@ public:
         outputReadEnd(backend.ioProvider.wrapInputFd(outputReadFd,
             kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC)),
         tmpdir(tempDirname()),
-        unpackProcess(startProcess(kj::mv(inPipe.readEnd), kj::mv(outPipe.writeEnd), tmpdir)) {}
+        unpackProcess(startProcess(kj::mv(inPipe.readEnd), kj::mv(outPipe.writeEnd), tmpdir,
+                                   backend.sandboxUid)) {}
   ~PackageUploadStreamImpl() noexcept(false) {
     if (access(tmpdir.cStr(), F_OK) >= 0) {
       recursivelyDelete(tmpdir);
@@ -405,8 +416,10 @@ private:
   }
 
   static Subprocess startProcess(
-      kj::AutoCloseFd input, kj::AutoCloseFd output, kj::StringPtr outdir) {
+      kj::AutoCloseFd input, kj::AutoCloseFd output, kj::StringPtr outdir,
+      kj::Maybe<uid_t> sandboxUid) {
     Subprocess::Options options({"spk", "unpack", "-", outdir});
+    options.uid = sandboxUid;
     options.executable = "/proc/self/exe";
     options.stdin = input;
     options.stdout = output;
@@ -460,6 +473,7 @@ kj::Promise<void> BackendImpl::backupGrain(BackupGrainContext context) {
   recursivelyCreateParent(path);
   auto grainDir = kj::str("/var/sandstorm/grains/", params.getGrainId());
   Subprocess::Options processOptions({"backup", path, grainDir});
+  processOptions.uid = sandboxUid;
   processOptions.executable = "/proc/self/exe";
   auto inPipe = Pipe::make();
   processOptions.stdin = inPipe.readEnd;
@@ -490,6 +504,7 @@ kj::Promise<void> BackendImpl::restoreGrain(RestoreGrainContext context) {
   auto grainDir = kj::str("/var/sandstorm/grains/", params.getGrainId());
   KJ_SYSCALL(mkdir(grainDir.cStr(), 0777));
   Subprocess::Options processOptions({"backup", "-r", path, grainDir});
+  processOptions.uid = sandboxUid;
   processOptions.executable = "/proc/self/exe";
   auto outPipe = Pipe::make();
   processOptions.stdout = outPipe.writeEnd;

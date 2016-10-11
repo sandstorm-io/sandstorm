@@ -559,8 +559,16 @@ kj::Promise<void> BackendImpl::restoreGrain(RestoreGrainContext context) {
 class BackendImpl::FileUploadStream: public ByteStream::Server {
 public:
   FileUploadStream(kj::String finalPath)
-      : fd(raiiOpen(dirname(finalPath), O_WRONLY | O_TMPFILE)),
-        finalPath(kj::mv(finalPath)) {}
+      : tmpPath(kj::str(finalPath, ".uploading")),
+        finalPath(kj::mv(finalPath)),
+        fd(raiiOpen(tmpPath, O_WRONLY | O_CREAT | O_EXCL)) {}
+
+  ~FileUploadStream() noexcept(false) {
+    if (!isDone) {
+      // Delete file that was never used. (Ignore errors here.)
+      unlink(tmpPath.cStr());
+    }
+  }
 
 protected:
   kj::Promise<void> write(WriteContext context) override {
@@ -570,11 +578,9 @@ protected:
   }
 
   kj::Promise<void> done(DoneContext context) override {
-    KJ_SYSCALL(fdatasync(fd));
-
-    // Link temporary file into filesystem.
-    KJ_SYSCALL(linkat(AT_FDCWD, kj::str("/proc/self/fd/", fd.get()).cStr(),
-                      AT_FDCWD, finalPath.cStr(), AT_SYMLINK_FOLLOW));
+    KJ_SYSCALL(fsync(fd));
+    KJ_SYSCALL(rename(tmpPath.cStr(), finalPath.cStr()));
+    isDone = true;
     return kj::READY_NOW;
   }
 
@@ -584,8 +590,10 @@ protected:
   }
 
 private:
-  kj::AutoCloseFd fd;
+  kj::String tmpPath;
   kj::String finalPath;
+  kj::AutoCloseFd fd;
+  bool isDone = false;
 
   static kj::String dirname(kj::StringPtr path) {
     KJ_IF_MAYBE(pos, path.findLast('/')) {

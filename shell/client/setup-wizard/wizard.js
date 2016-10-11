@@ -515,11 +515,11 @@ Template.setupWizardOrganization.events({
       membership: {
         emailToken: {
           enabled: instance.emailChecked.get(),
-          domain: instance.emailDomain.get(),
+          domain: instance.emailDomain.get().trim(),
         },
         google: {
           enabled: instance.gappsChecked.get(),
-          domain: instance.gappsDomain.get(),
+          domain: instance.gappsDomain.get().trim(),
         },
         ldap: {
           enabled: instance.ldapChecked.get(),
@@ -564,13 +564,13 @@ Template.setupWizardEmailConfig.onCreated(function () {
   this.getSmtpConfig = () => {
     const portValue = parseInt(this.smtpPort.get());
     const smtpConfig = {
-      hostname: this.smtpHostname.get(),
+      hostname: this.smtpHostname.get().trim(),
       port: _.isNaN(portValue) ? 25 : portValue,
       auth: {
         user: this.smtpUsername.get(),
         pass: this.smtpPassword.get(),
       },
-      returnAddress: this.smtpReturnAddress.get(),
+      returnAddress: this.smtpReturnAddress.get().trim(),
     };
     return smtpConfig;
   };

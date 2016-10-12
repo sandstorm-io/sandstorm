@@ -150,6 +150,8 @@ licenses, included in the LICENSES directory.
 
 <template name="loginButtonsList">
   <div class="login-buttons-list">
+  {{> _loginButtonsMessages "" }}
+
   {{#each services}}
     {{#with data=loginTemplate.data linkingNewIdentity=linkingNewIdentity}}
       {{> Template.dynamic template=../loginTemplate.name }}
@@ -159,8 +161,6 @@ licenses, included in the LICENSES directory.
       configure login
     {{/linkTo}}
   {{/each}}
-
-  {{> _loginButtonsMessages "" }}
 
   {{#if showTroubleshooting}}
     {{> _loginButtonsSeparator "" }}

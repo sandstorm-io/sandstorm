@@ -552,7 +552,7 @@ IFRAME elements pointing at `*.example.sandcats.io` and these IFRAMEs may not be
 the subdomain due to the increasingly-common **third-party cookie-blocking** done by browsers such as Chrome
 and Firefox.
 
-### Does Sandstorm run on ARM systems like Raspberry Pi?
+## Does Sandstorm run on ARM systems like Raspberry Pi?
 
 Not yet, and there is currently no timeline on adding ARM support to Sandstorm.
 

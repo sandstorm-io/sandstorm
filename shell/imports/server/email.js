@@ -10,6 +10,10 @@ const getSmtpConfig = function () {
 };
 
 const makePool = function (mailConfig) {
+  if (!mailConfig.hostname) {
+    throw new Error("No hostname configured");
+  }
+
   let auth = false;
   if (mailConfig.auth && (mailConfig.auth.user || mailConfig.auth.pass)) {
     auth = mailConfig.auth;

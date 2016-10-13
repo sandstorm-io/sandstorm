@@ -631,12 +631,17 @@ on GitHub](https://github.com/sandstorm-io/sandstorm/releases) and look for the 
 number. You can download (for example) version `v0.xyz` of Sandstorm by running `wget
 https://dl.sandstorm.io/sandstorm-0.xyz.tar.xz`. To learn more about installing using a
 pre-downloaded bundle, run `./install.sh -h` or read the [install.sh technical
-documentation.](install.md)
+documentation.](install.md) Alternatively, you can download Sandstorm while online, then keep using
+it while offline.
 
-**Apps within Sandstorm.** People who use Sandstorm may expect the app installation flow to work properly.
-You can run your own app market and point Sandstorm to that. It is possible to create an offline
-copy of the Sandstorm app market as static HTML. If you need help with this process, please email
-support@sandstorm.io.
+**Apps within Sandstorm.** People who use Sandstorm may expect the app installation flow to work
+properly.  You can run your own app market and point Sandstorm to that. It is possible to create an
+offline copy of the Sandstorm app market as static HTML. If you need help with this process, please
+email support@sandstorm.io. Alternatively, you can connect the machine to the Internet while you are
+choosing apps, and then disconnect it. Note that this will only install the apps for the user you
+are logged-in as; that user will be able to create grains and share them with others
+successfully. To give other users the full Sandstorm experience, you will need to configure a custom
+app market URL.
 
 **Updating Sandstorm itself.** You can download a Sandstorm bundle from a computer that is online,
 and then copy it to the server that runs Sandstorm. You can run `sudo sandstorm update

@@ -614,3 +614,42 @@ plenty of things on our roadmap that we intend to add or improve over time, but 
 functionality has been stable for a while.
 
 Our hosted offering, Oasis, is still marked beta, but we intend for it to graduate soon.
+
+## Can I run Sandstorm on a totally-offline server or airgapped network?
+
+Some people need to provide collaborative tools in an environment without any Internet access.  This
+should be possible with Sandstorm, but is not a well-tested configuration. We welcome any questions
+you might have so that we can fix any issues that come up; send them to support@sandstorm.io.
+
+Here is a list of technical issues and our suggestions on how to overcome them.
+
+**Sandstorm installation.** Sandstorm [bundles its dependencies,](guide.md#sandstorm-itself)
+allowing for reliable installation.  You can download the [typical Sandstorm install
+script](../install.md) and the most recent Sandstorm bundle, then provide that Sandstorm bundle to
+the script. To download a specific version of Sandstorm, you can visit the [Sandstorm releases page
+on GitHub](https://github.com/sandstorm-io/sandstorm/releases) and look for the latest version
+number. You can download (for example) version `v0.xyz` of Sandstorm by running `wget
+https://dl.sandstorm.io/sandstorm-0.xyz.tar.xz`. To learn more about installing using a
+pre-downloaded bundle, run `./install.sh -h` or read the [install.sh technical
+documentation.](install.md)
+
+**Apps within Sandstorm.** People who use Sandstorm may expect the app installation flow to work properly.
+You can run your own app market and point Sandstorm to that. It is possible to create an offline
+copy of the Sandstorm app market as static HTML. If you need help with this process, please email
+support@sandstorm.io.
+
+**Updating Sandstorm itself.** You can download a Sandstorm bundle from a computer that is online,
+and then copy it to the server that runs Sandstorm. You can run `sudo sandstorm update
+filename.tar.xz` to update to that version. Note that at the time of writing, there may be no way to
+verify the ed25519 signature of the Sandstorm update, so please use this feature carefully. If you
+need a signature-checking strategy for delivering updates to an airgapped/offline Sandstorm server,
+please get in touch with us!
+
+**Wildcard DNS.** Since Sandstorm [requires wildcard hosts](wildcard.md), your local/airgap network
+will need a wildcard record for the Sandstorm server. One way to configure that is by following this
+[dnsmasq
+tutorial.](https://davejamesmiller.wordpress.com/2013/03/14/installing-dnsmasq-wildcard-local-domains-debian/)
+
+**Email configuration within Sandstorm.** Some Sandstorm features expect email delivery to be
+configured. If you cannot configure email on your server, those features may be disabled or not work
+properly. However, this is not specific to an offline/airgap network.

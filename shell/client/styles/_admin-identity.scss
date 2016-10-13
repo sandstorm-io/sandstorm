@@ -83,49 +83,11 @@
 }
 
 .setup-idp-form {
+  @extend %standard-form;
   margin-bottom: 10px;
-
-  .idp-options-group {
-    display: block;
-    position: relative;
-    padding-left: 24px;
-    margin-bottom: 20px;
-    input[type=checkbox] {
-      position: absolute;
-      margin-left: -24px;
-    }
-    &::after {
-      border-bottom: 1px solid #ddd;
-    }
-  }
-
-  .form-group {
-    margin-bottom: 10px;
-  }
-
-  label {
-    display: block;
-    font-weight: normal;
-    font-size: 20px;
-  }
-
-  input[type="text"], textarea {
-    display: block;
-    width: 100%;
-    background-color: white;
-    padding: 4px;
-    font-size: 16px;
-    border-radius: 2px;
-    border: 1px solid #d3d3d3;
-  }
 
   textarea {
     min-height: 200px;
-  }
-
-  .form-subtext {
-    font-size: 14px;
-    color: #666;
   }
 }
 

@@ -98,7 +98,7 @@ private:
   bool devmode = false;
   bool seccompDumpPfc = false;
   bool isIpTablesAvailable = false;
-  kj::Maybe<uid_t> setuidMode;
+  kj::Maybe<uid_t> sandboxUid;  // nullptr = use userns
 
   class SandstormApiImpl;
   class SupervisorImpl;

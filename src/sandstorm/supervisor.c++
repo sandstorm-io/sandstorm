@@ -643,7 +643,7 @@ kj::MainBuilder::Validity SupervisorMain::setUid(kj::StringPtr arg) {
       return "can't run sandbox as root";
     }
     KJ_SYSCALL(seteuid(*u));
-    setuidMode = *u;
+    sandboxUid = *u;
     return true;
   } else {
     return "UID must be a number";
@@ -673,10 +673,10 @@ kj::MainBuilder::Validity SupervisorMain::run() {
   // Exits if another supervisor is still running in this sandbox.
   systemConnector->checkIfAlreadyRunning();
 
-  if (setuidMode == nullptr) {
+  if (sandboxUid == nullptr) {
     SANDSTORM_LOG("Starting up grain. Sandbox type: userns");
   } else {
-    SANDSTORM_LOG("Starting up grain. Sandbox type: setuid");
+    SANDSTORM_LOG("Starting up grain. Sandbox type: privileged");
   }
 
   registerSignalHandlers();
@@ -895,7 +895,7 @@ void SupervisorMain::writeUserNSMap(const char *type, kj::StringPtr contents) {
 }
 
 void SupervisorMain::unshareOuter() {
-  if (setuidMode == nullptr) {
+  if (sandboxUid == nullptr) {
     // Use user namespaces.
     pid_t uid = getuid(), gid = getgid();
 
@@ -909,7 +909,7 @@ void SupervisorMain::unshareOuter() {
     writeUserNSMap("uid", kj::str("1000 ", uid, " 1\n"));
     writeUserNSMap("gid", kj::str("1000 ", gid, " 1\n"));
   } else {
-    // Use setuid instead of user namespaces.
+    // Use root privileges instead of user namespaces.
 
     // We need to raise our privileges to call unshare(), and to perform other setup that occurs
     // after unshare().
@@ -1495,7 +1495,7 @@ void SupervisorMain::maybeFinishMountingProc() {
 }
 
 void SupervisorMain::permanentlyDropSuperuser() {
-  KJ_IF_MAYBE(ruid, setuidMode) {
+  KJ_IF_MAYBE(ruid, sandboxUid) {
     // setuid() to non-zero implicitly drops capabilities.
     KJ_SYSCALL(setresuid(*ruid, *ruid, *ruid));
   } else {
@@ -1599,7 +1599,8 @@ void SupervisorMain::DefaultSystemConnector::checkIfAlreadyRunning() const {
   enterSandbox();
 
   // Wait until we get the signal to start. (It's important to do this after entering the sandbox
-  // so that the parent process has permission to send SIGKILL to the child even in setuid-mode.)
+  // so that the parent process has permission to send SIGKILL to the child even in
+  // privileged-mode.)
   uint64_t dummy;
   KJ_SYSCALL(read(startEventFd, &dummy, sizeof(dummy)));
 

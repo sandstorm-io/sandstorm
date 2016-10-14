@@ -689,7 +689,7 @@ class GrainView {
   route() {
     this._dep.depend();
     if (isStandalone()) {
-      return window.location + "";
+      return this._path;
     } else if (this._token) {
       return "/shared/" + this._token + this._path;
     } else {

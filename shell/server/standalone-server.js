@@ -15,7 +15,7 @@
 // limitations under the License.
 
 Meteor.publish("standaloneDomain", function (domain) {
-  check(domain, Match.OneOf(String, undefined, null));
+  check(domain, String);
 
   return globalDb.collections.standaloneDomains.find({ _id: domain, });
 });

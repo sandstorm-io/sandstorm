@@ -349,12 +349,7 @@ class GrainView {
   }
 
   frameTitle() {
-    let serverTitle;
-    if (isStandalone()) {
-      serverTitle = window.location.hostname;
-    } else {
-      serverTitle = globalDb.getServerTitle();
-    }
+    const serverTitle = globalDb.getServerTitle();
 
     this._dep.depend();
     if (this._frameTitle !== undefined) {
@@ -363,6 +358,11 @@ class GrainView {
 
     const appTitle = this.appTitle();
     const grainTitle = this.title();
+
+    if (isStandalone()) {
+      return grainTitle || window.location.hostname;
+    }
+
     // Actually set the values
     if (appTitle && grainTitle) {
       return grainTitle + " · " + appTitle + " · " + serverTitle;

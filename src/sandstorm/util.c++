@@ -879,7 +879,7 @@ Subprocess::Subprocess(Options&& options)
         KJ_SYSCALL(dup2(options.moreFds[i], STDERR_FILENO + 1 + i));
       }
 
-      // Drop priveleges if requested.
+      // Drop privileges if requested.
       KJ_IF_MAYBE(g, options.gid) {
         KJ_SYSCALL(setresgid(*g, *g, *g));
       }

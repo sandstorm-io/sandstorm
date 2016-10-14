@@ -1131,7 +1131,7 @@ tryProxyRequest = (hostId, req, res) => {
       if (proxy) {
         // Let's do some CSRF defense.
         const expectedOrigin = PROTOCOL + "//" + req.headers.host;
-        const mainUrl = process.env.ROOT_URL;
+        const mainUrl = proxy.standaloneUrl || process.env.ROOT_URL;
         const origin = req.headers.origin;
         const referer = req.headers.referer;
         const parsedReferer = Url.parse(referer);
@@ -1171,8 +1171,7 @@ tryProxyRequest = (hostId, req, res) => {
           // in practice, so this check alone does not give us any security benefit if we accept
           // requests that lack a referer.
           if (referer != expectedOrigin && !referer.startsWith(expectedOrigin + "/") &&
-              referer != mainUrl && !referer.startsWith(mainUrl + "/") &&
-              !globalDb.hostIsStandalone(parsedReferer.hostname)) {
+              referer != mainUrl && !referer.startsWith(mainUrl + "/")) {
             throw new Meteor.Error(403, "Blocked illegal cross-origin referral from: " + referer);
           }
         } else {

@@ -564,6 +564,9 @@ kj::MainFunc SupervisorMain::getMain() {
                          "Runs a Sandstorm grain supervisor for the grain <grain-id>, which is "
                          "an instance of app <app-id>.  Executes <command> inside the grain "
                          "sandbox.")
+      .addOptionWithArg({"uid"}, KJ_BIND_METHOD(*this, setUid), "<uid>",
+                        "Use setuid sandbox rather than userns. Must start as root, but swiches "
+                        "to <uid> to run the app.")
       .addOptionWithArg({"pkg"}, KJ_BIND_METHOD(*this, setPkg), "<path>",
                         "Set directory containing the app package.  "
                         "Defaults to '$SANDSTORM_HOME/var/sandstorm/apps/<app-name>'.")
@@ -631,6 +634,22 @@ kj::MainBuilder::Validity SupervisorMain::setVar(kj::StringPtr path) {
   return true;
 }
 
+kj::MainBuilder::Validity SupervisorMain::setUid(kj::StringPtr arg) {
+  KJ_IF_MAYBE(u, parseUInt(arg, 10)) {
+    if (getuid() != 0) {
+      return "must start as root to use --uid";
+    }
+    if (*u == 0) {
+      return "can't run sandbox as root";
+    }
+    KJ_SYSCALL(seteuid(*u));
+    sandboxUid = *u;
+    return true;
+  } else {
+    return "UID must be a number";
+  }
+}
+
 kj::MainBuilder::Validity SupervisorMain::addEnv(kj::StringPtr arg) {
   environment.add(kj::heapString(arg));
   return true;
@@ -644,6 +663,9 @@ kj::MainBuilder::Validity SupervisorMain::addCommandArg(kj::StringPtr arg) {
 // =====================================================================================
 
 kj::MainBuilder::Validity SupervisorMain::run() {
+  KJ_ASSERT(geteuid() != 0, "can't run as user ID zero (root)");
+  KJ_ASSERT(getegid() != 0, "can't run as group ID zero (root)");
+
   isIpTablesAvailable = checkIfIpTablesLoaded();
 
   setupSupervisor();
@@ -651,7 +673,11 @@ kj::MainBuilder::Validity SupervisorMain::run() {
   // Exits if another supervisor is still running in this sandbox.
   systemConnector->checkIfAlreadyRunning();
 
-  SANDSTORM_LOG("Starting up grain.");
+  if (sandboxUid == nullptr) {
+    SANDSTORM_LOG("Starting up grain. Sandbox type: userns");
+  } else {
+    SANDSTORM_LOG("Starting up grain. Sandbox type: privileged");
+  }
 
   registerSignalHandlers();
 
@@ -869,17 +895,31 @@ void SupervisorMain::writeUserNSMap(const char *type, kj::StringPtr contents) {
 }
 
 void SupervisorMain::unshareOuter() {
-  pid_t uid = getuid(), gid = getgid();
+  if (sandboxUid == nullptr) {
+    // Use user namespaces.
+    pid_t uid = getuid(), gid = getgid();
 
-  // Unshare all of the namespaces except network.  Note that unsharing the pid namespace is a
-  // little odd in that it doesn't actually affect this process, but affects later children
-  // created by it.
-  KJ_SYSCALL(unshare(CLONE_NEWUSER | CLONE_NEWNS | CLONE_NEWIPC | CLONE_NEWUTS | CLONE_NEWPID));
+    // Unshare all of the namespaces except network.  Note that unsharing the pid namespace is a
+    // little odd in that it doesn't actually affect this process, but affects later children
+    // created by it.
+    KJ_SYSCALL(unshare(CLONE_NEWUSER | CLONE_NEWNS | CLONE_NEWIPC | CLONE_NEWUTS | CLONE_NEWPID));
 
-  // Map ourselves as 1000:1000, since it costs nothing to mask the uid and gid.
-  writeSetgroupsIfPresent("deny\n");
-  writeUserNSMap("uid", kj::str("1000 ", uid, " 1\n"));
-  writeUserNSMap("gid", kj::str("1000 ", gid, " 1\n"));
+    // Map ourselves as 1000:1000, since it costs nothing to mask the uid and gid.
+    writeSetgroupsIfPresent("deny\n");
+    writeUserNSMap("uid", kj::str("1000 ", uid, " 1\n"));
+    writeUserNSMap("gid", kj::str("1000 ", gid, " 1\n"));
+  } else {
+    // Use root privileges instead of user namespaces.
+
+    // We need to raise our privileges to call unshare(), and to perform other setup that occurs
+    // after unshare().
+    KJ_SYSCALL(seteuid(0));
+
+    // Unshare all of the namespaces except network.  Note that unsharing the pid namespace is a
+    // little odd in that it doesn't actually affect this process, but affects later children
+    // created by it.
+    KJ_SYSCALL(unshare(CLONE_NEWNS | CLONE_NEWIPC | CLONE_NEWUTS | CLONE_NEWPID));
+  }
 
   // To really unshare the mount namespace, we also have to make sure all mounts are private.
   // The parameters here were derived by strace'ing `mount --make-rprivate /`.  AFAICT the flags
@@ -1455,18 +1495,23 @@ void SupervisorMain::maybeFinishMountingProc() {
 }
 
 void SupervisorMain::permanentlyDropSuperuser() {
-  // Drop all Linux "capabilities".  (These are Linux/POSIX "capabilities", which are not true
-  // object-capabilities, hence the quotes.)
-  //
-  // This unfortunately must be performed post-fork (in both parent and child), because the child
-  // needs to do one final unshare().
+  KJ_IF_MAYBE(ruid, sandboxUid) {
+    // setuid() to non-zero implicitly drops capabilities.
+    KJ_SYSCALL(setresuid(*ruid, *ruid, *ruid));
+  } else {
+    // Drop all Linux "capabilities".  (These are Linux/POSIX "capabilities", which are not true
+    // object-capabilities, hence the quotes.)
+    //
+    // This unfortunately must be performed post-fork (in both parent and child), because the child
+    // needs to do one final unshare().
 
-  struct __user_cap_header_struct hdr;
-  struct __user_cap_data_struct data[2];
-  hdr.version = _LINUX_CAPABILITY_VERSION_3;
-  hdr.pid = 0;
-  memset(data, 0, sizeof(data));  // All capabilities disabled!
-  KJ_SYSCALL(capset(&hdr, data));
+    struct __user_cap_header_struct hdr;
+    struct __user_cap_data_struct data[2];
+    hdr.version = _LINUX_CAPABILITY_VERSION_3;
+    hdr.pid = 0;
+    memset(data, 0, sizeof(data));  // All capabilities disabled!
+    KJ_SYSCALL(capset(&hdr, data));
+  }
 
   // Sandstorm data is private.  Don't let other users see it.  But, do grant full access to the
   // group.  The idea here is that you might have a dedicated sandstorm-sandbox user account but
@@ -1551,11 +1596,13 @@ void SupervisorMain::DefaultSystemConnector::checkIfAlreadyRunning() const {
 [[noreturn]] void SupervisorMain::runChild(int apiFd, kj::AutoCloseFd startEventFd) {
   // We are the child.
 
-  // Wait until we get the signal to start.
+  enterSandbox();
+
+  // Wait until we get the signal to start. (It's important to do this after entering the sandbox
+  // so that the parent process has permission to send SIGKILL to the child even in
+  // privileged-mode.)
   uint64_t dummy;
   KJ_SYSCALL(read(startEventFd, &dummy, sizeof(dummy)));
-
-  enterSandbox();
 
   // Reset all signal handlers to default.  (exec() will leave ignored signals ignored, and KJ
   // code likes to ignore e.g. SIGPIPE.)

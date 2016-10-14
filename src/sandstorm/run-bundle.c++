@@ -172,19 +172,43 @@ KernelVersion getKernelVersion() {
 
 bool isKernelNewEnough() {
   auto version = getKernelVersion();
-  if (version.major < 3 || (version.major == 3 && version.minor < 13)) {
+  if (version.major < 3 || (version.major == 3 && version.minor < 10)) {
     // Insufficient kernel version.
     return false;
   }
 
-  // unprivileged_userns_clone, for systems that have it, must be enabled (set to 1).
-  if (access("/proc/sys/kernel/unprivileged_userns_clone", F_OK) == 0 &&
-      !KJ_ASSERT_NONNULL(parseUInt(trim(
-          readAll("/proc/sys/kernel/unprivileged_userns_clone")), 10))) {
-    return false;
-  }
-
   return true;
+}
+
+bool isUserNsAvailable() {
+  Subprocess child([]() {
+    if (getuid() == 0) {
+      if (setuid(1000) < 0) {
+        // setuid() failed?
+        return 2;
+      }
+    }
+
+    if (unshare(CLONE_NEWUSER) < 0) {
+      return 1;
+    }
+
+    return 0;
+  });
+
+  int status = child.waitForExit();
+  switch (status) {
+    case 0:
+      return true;
+    case 1:
+      return false;
+    case 2:
+      KJ_LOG(ERROR, "setuid() failed when trying to test if unprivileged userns works");
+      return true;
+    default:
+      KJ_LOG(ERROR, "userns test process exited with unexpected status code", status);
+      return true;
+  }
 }
 
 // =======================================================================================
@@ -418,13 +442,9 @@ public:
     clearSignalMask();
     umask(0022);
 
-    if (!kernelNewEnough) {
-      context.warning(
-          "WARNING: Your Linux kernel is too old or unprivileged user namespaces are disabled. "
-          "You need at least kernel version 3.13 and must set the "
-          "kernel.unprivileged_userns_clone sysctl (if your system has it) to 1. The next "
-          "version of Sandstorm will require these things, so updates will be disabled for now. "
-          "If in doubt, re-run the Sandstorm installer for help.");
+    if (!isKernelNewEnough()) {
+      context.exitError(
+          "ERROR: Your Linux kernel is too old. You need at least kernel version 3.10.");
     }
   }
 
@@ -1161,7 +1181,6 @@ private:
 
   bool changedDir = false;
   bool unsharedUidNamespace = false;
-  bool kernelNewEnough = isKernelNewEnough();
   bool runningAsRoot = getuid() == 0;
   bool updateFileIsChannel = false;
   bool shortOutput = false;
@@ -1299,8 +1318,8 @@ private:
       // But if our UID is zero, then the file's attributes are ignored and all capabilities are
       // inherited.
       writeSetgroupsIfPresent("deny\n");
-      writeUserNSMap("uid", kj::str("0 ", uid, " 1\n"));
-      writeUserNSMap("gid", kj::str("0 ", gid, " 1\n"));
+      writeUserNSMap("uid", kj::str("1000 ", uid, " 1\n"));
+      writeUserNSMap("gid", kj::str("1000 ", gid, " 1\n"));
 
       unsharedUidNamespace = true;
     }
@@ -1429,16 +1448,28 @@ private:
     restoreResolvConfIfNeeded();
   }
 
-  void dropPrivs(const UserIds& uids) {
+  void dropPrivs(const UserIds& uids, bool keepRealUid = false) {
+    // Defense in depth: Don't give my children any new caps for any reason.
+    KJ_SYSCALL(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0));
+
     if (runningAsRoot) {
       KJ_SYSCALL(setresgid(uids.gid, uids.gid, uids.gid));
       KJ_SYSCALL(setgroups(uids.groups.size(), uids.groups.begin()));
-      KJ_SYSCALL(setresuid(uids.uid, uids.uid, uids.uid));
+
+      if (keepRealUid) {
+        // We're prepping to run the backend and user namespaces are not available, therefore the
+        // backend needs to keep its superuser powers stashed in order to hand them off to the
+        // grain supervisors so that they can set up sandboxes. Instead of creating a suid binary
+        // (with all the danger that entails), we merely drop the effective UID, but raise it again
+        // when invoking the supervisor.
+        KJ_SYSCALL(seteuid(uids.uid));
+      } else {
+        KJ_SYSCALL(setresuid(uids.uid, uids.uid, uids.uid));
+      }
     } else {
       // We're using UID namespaces.
 
-      // Defense in depth: Don't give my children any new caps for any reason.
-      KJ_SYSCALL(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0));
+      KJ_ASSERT(!keepRealUid);
 
       // Defense in depth: Drop all capabilities from the set of caps which my children are allowed
       //   to ever have.
@@ -2203,13 +2234,20 @@ private:
         }
       }
 
-      dropPrivs(config.uids);
+      // If we're not running as root, we have to use user namespaces. Otherwise, dynamically
+      // check if they're available. If not, we'll need to pass superuser privileges on to the
+      // backend.
+      bool avoidUserns = runningAsRoot && !isUserNsAvailable();
+      kj::Maybe<uid_t> sandboxUid;
+      if (avoidUserns) sandboxUid = config.uids.uid;
+
+      dropPrivs(config.uids, avoidUserns);
       clearSignalMask();
 
       auto paf = kj::newPromiseAndFulfiller<Backend::Client>();
       TwoPartyServerWithClientBootstrap server(kj::mv(paf.promise));
       paf.fulfiller->fulfill(kj::heap<BackendImpl>(*io.lowLevelProvider, network,
-        server.getBootstrap().castAs<SandstormCoreFactory>()));
+        server.getBootstrap().castAs<SandstormCoreFactory>(), sandboxUid));
 
       // Signal readiness.
       write(outPipe, "ready", 5);
@@ -2298,7 +2336,6 @@ private:
 
       kj::String settingsString = kj::str(
           "{\"public\":{\"build\":", buildstamp,
-          ", \"kernelTooOld\":", kernelNewEnough ? "false" : "true",
           ", \"allowDemoAccounts\":", config.allowDemoAccounts ? "true" : "false",
           ", \"allowDevAccounts\":", config.allowDevAccounts ? "true" : "false",
           ", \"isTesting\":", config.isTesting ? "true" : "false",
@@ -2371,15 +2408,6 @@ private:
   }
 
   bool checkForUpdates(kj::StringPtr channel, kj::StringPtr type, const Config& config) {
-    if (!kernelNewEnough) {
-      context.warning(
-          "Refusing to update because kernel is too old or unprivileged user namespaces are "
-          "disabled. You need at least kernel version 3.13 and must set the "
-          "kernel.unprivileged_userns_clone sysctl (if your system has it) to 1. If in doubt, "
-          "re-run the Sandstorm installer for help.");
-      return false;
-    }
-
     // GET install.sandstorm.io/$channel?from=$oldBuild&type=[manual|startup|daily]
     //     -> result is build number
     context.warning(kj::str("Checking for updates on channel ", channel, "..."));

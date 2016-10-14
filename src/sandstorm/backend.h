@@ -33,7 +33,8 @@ namespace sandstorm {
 class BackendImpl: public Backend::Server, private kj::TaskSet::ErrorHandler {
 public:
   BackendImpl(kj::LowLevelAsyncIoProvider& ioProvider, kj::Network& network,
-              SandstormCoreFactory::Client&& sandstormCoreFactory);
+              SandstormCoreFactory::Client&& sandstormCoreFactory,
+              kj::Maybe<uid_t> sandboxUid);
 
 protected:
   kj::Promise<void> ping(PingContext context) override;
@@ -56,6 +57,7 @@ private:
   kj::LowLevelAsyncIoProvider& ioProvider;
   kj::Network& network;
   SandstormCoreFactory::Client coreFactory;
+  kj::Maybe<uid_t> sandboxUid;   // if not using user namespaces
   kj::TaskSet tasks;
 
   class RunningGrain {

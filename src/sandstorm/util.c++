@@ -879,6 +879,14 @@ Subprocess::Subprocess(Options&& options)
         KJ_SYSCALL(dup2(options.moreFds[i], STDERR_FILENO + 1 + i));
       }
 
+      // Drop privileges if requested.
+      KJ_IF_MAYBE(g, options.gid) {
+        KJ_SYSCALL(setresgid(*g, *g, *g));
+      }
+      KJ_IF_MAYBE(u, options.uid) {
+        KJ_SYSCALL(setresuid(*u, *u, *u));
+      }
+
       // Make the args vector.
       char* argv[options.argv.size() + 1];
       for (auto i: kj::indices(options.argv)) {

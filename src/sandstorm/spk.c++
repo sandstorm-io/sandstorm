@@ -1390,7 +1390,7 @@ private:
   friend kj::String unpackSpk(int spkfd, kj::StringPtr outdir, kj::StringPtr tmpdir);
   friend void verifySpk(int spkfd, int tmpfile, spk::VerifiedInfo::Builder output);
   friend kj::Maybe<kj::String> checkPgpSignature(
-      kj::StringPtr appIdString, spk::Metadata::Reader metadata);
+      kj::StringPtr appIdString, spk::Metadata::Reader metadata, kj::Maybe<uid_t> sandboxUid);
 
   static kj::String verifyImpl(
       int spkfd, int tmpfile, kj::Maybe<spk::VerifiedInfo::Builder> maybeInfo,
@@ -1592,7 +1592,8 @@ private:
 
   static kj::String checkPgpSignature(
       kj::StringPtr appIdString, kj::ArrayPtr<const byte> sig, kj::ArrayPtr<const byte> key,
-      kj::Function<kj::String(kj::StringPtr problem)>& validationError) {
+      kj::Function<kj::String(kj::StringPtr problem)>& validationError,
+      kj::Maybe<uid_t> sandboxUid = nullptr) {
     auto expectedContent = kj::str(
         "I am the author of the Sandstorm.io app with the following ID: ",
         appIdString);
@@ -1625,6 +1626,7 @@ private:
     Subprocess::Options gpgOptions({
         "gpg", "--homedir", gpghome, "--status-fd", "3", "--no-default-keyring",
         "--keyring", keyfile, "--decrypt", sigfile});
+    gpgOptions.uid = sandboxUid;
     gpgOptions.stdout = outPipe.writeEnd;
     gpgOptions.stderr = messagePipe.writeEnd;
     int moreFds[1] = { statusPipe.writeEnd };
@@ -2437,7 +2439,8 @@ void verifySpk(int spkfd, int tmpfile, spk::VerifiedInfo::Builder output) {
   });
 }
 
-kj::Maybe<kj::String> checkPgpSignature(kj::StringPtr appIdString, spk::Metadata::Reader metadata) {
+kj::Maybe<kj::String> checkPgpSignature(kj::StringPtr appIdString, spk::Metadata::Reader metadata,
+                                        kj::Maybe<uid_t> sandboxUid) {
   auto author = metadata.getAuthor();
 
   if (author.hasPgpSignature()) {
@@ -2448,7 +2451,7 @@ kj::Maybe<kj::String> checkPgpSignature(kj::StringPtr appIdString, spk::Metadata
       KJ_FAIL_ASSERT("PGP signature verification problem", problem);
     };
     return SpkTool::checkPgpSignature(appIdString,
-        author.getPgpSignature(), metadata.getPgpKeyring(), error);
+        author.getPgpSignature(), metadata.getPgpKeyring(), error, sandboxUid);
   } else {
     return nullptr;
   }

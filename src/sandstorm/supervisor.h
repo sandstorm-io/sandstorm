@@ -49,6 +49,7 @@ public:
   kj::MainBuilder::Validity setGrainId(kj::StringPtr id);
   kj::MainBuilder::Validity setPkg(kj::StringPtr path);
   kj::MainBuilder::Validity setVar(kj::StringPtr path);
+  kj::MainBuilder::Validity setUid(kj::StringPtr arg);
   kj::MainBuilder::Validity addEnv(kj::StringPtr arg);
   kj::MainBuilder::Validity addCommandArg(kj::StringPtr arg);
   // Flag handlers
@@ -97,6 +98,7 @@ private:
   bool devmode = false;
   bool seccompDumpPfc = false;
   bool isIpTablesAvailable = false;
+  kj::Maybe<uid_t> sandboxUid;  // nullptr = use userns
 
   class SandstormApiImpl;
   class SupervisorImpl;

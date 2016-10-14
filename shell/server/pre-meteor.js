@@ -549,13 +549,6 @@ Meteor.startup(() => {
 
   WebApp.httpServer.removeAllListeners("request");
   WebApp.httpServer.on("request", (req, res) => {
-    function nonMeteor() {
-      // Otherwise, dispatch to our own middleware proxy chain.
-      nonMeteorRequestHandler(req, res);
-      // Adjust timeouts on proxied requests to allow apps to long-poll if needed.
-      WebApp._timeoutAdjustmentRequestCallback(req, res);
-    }
-
     Promise.resolve(undefined).then(() => {
       if (!req.headers.host) {
         res.writeHead(400, { "Content-Type": "text/plain" });

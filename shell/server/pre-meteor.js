@@ -566,6 +566,8 @@ Meteor.startup(() => {
       const hostname = req.headers.host.split(":")[0]; // strip port if it exists
       if (isSandstormShell(hostname)) {
         if (req.url.startsWith("/_oauth/")) {
+          // Intercept oauth callbacks on the main host to check if the user was actually logging
+          // into a standalone host, in which case we need to redirect to that host instead.
           const parsedUrl = Url.parse(req.url, true);
           if (parsedUrl.query && parsedUrl.query.state) {
             const rawState = new Buffer(parsedUrl.query.state, "base64");
@@ -573,17 +575,19 @@ Meteor.startup(() => {
             if (state.redirectUrl) {
               const parsedRedirect = Url.parse(state.redirectUrl);
               const redirectHostname = parsedRedirect.hostname;
-              return inMeteor(function () {
-                if (globalDb.hostIsStandalone(redirectHostname)) {
-                  res.writeHead(302, { "Location": parsedRedirect.protocol + "//" +
-                    parsedRedirect.host + req.url, });
-                  res.end();
-                  return;
-                } else {
-                  throw new Meteor.Error(400, "redirectUrl in OAuth was for an unknown host: " +
-                    state.redirectUrl);
-                }
-              });
+              if (redirectHostname !== HOSTNAME) {
+                return inMeteor(function () {
+                  if (globalDb.hostIsStandalone(redirectHostname)) {
+                    res.writeHead(302, { "Location": parsedRedirect.protocol + "//" +
+                      parsedRedirect.host + req.url, });
+                    res.end();
+                    return;
+                  } else {
+                    throw new Meteor.Error(400, "redirectUrl in OAuth was for an unknown host: " +
+                      state.redirectUrl);
+                  }
+                });
+              }
             }
           }
         }

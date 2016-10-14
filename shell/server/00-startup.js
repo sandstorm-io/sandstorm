@@ -173,6 +173,7 @@ if (!Meteor.settings.replicaNumber) {
 
 OAuth._checkRedirectUrlOrigin = function (redirectUrl) {
   // Mostly copied from meteor/packages/oauth/oauth_server.js
+  // We override this method in order to support login from stand-alone grain domains.
   let appHost = Meteor.absoluteUrl();
   let appHostReplacedLocalhost = Meteor.absoluteUrl(undefined, {
     replaceLocalhost: true,

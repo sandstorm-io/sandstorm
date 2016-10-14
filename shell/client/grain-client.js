@@ -97,7 +97,7 @@ Tracker.autorun(function () {
 
       const token = grain.token();
       if (token) {
-        Meteor.subscribe("tokenInfo", token);
+        Meteor.subscribe("tokenInfo", token, false);
       }
     }
   });
@@ -1865,7 +1865,7 @@ Router.map(function () {
     waitOn: function () {
       return [
         Meteor.subscribe("devPackages"),
-        Meteor.subscribe("tokenInfo", this.params.token),
+        Meteor.subscribe("tokenInfo", this.params.token, false),
 
         Meteor.subscribe("grainsMenu"),
         // This subscription gives us the data we need for deciding whether to automatically reveal
@@ -2060,7 +2060,7 @@ Meteor.startup(function () {
           // TODO(soon): Subscribe to contacts instead.
         ];
         if (standalone) {
-          subs.push(Meteor.subscribe("tokenInfo", standalone.token));
+          subs.push(Meteor.subscribe("tokenInfo", standalone.token, true));
         }
 
         return subs;
@@ -2090,6 +2090,7 @@ Meteor.startup(function () {
           } else if (tokenInfo.identityOwner) {
             this.state.set("invalidToken", true);
           } else if (tokenInfo.alreadyRedeemed) {
+            console.error("token was already redeemed, but that shouldn't be possible.");
             this.state.set("invalidToken", true);
           } else if (tokenInfo.grainId) {
             const grainId = tokenInfo.grainId;

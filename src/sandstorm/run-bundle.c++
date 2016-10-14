@@ -2303,7 +2303,6 @@ private:
           ", \"allowDevAccounts\":", config.allowDevAccounts ? "true" : "false",
           ", \"isTesting\":", config.isTesting ? "true" : "false",
           ", \"hideTroubleshooting\":", config.hideTroubleshooting ? "true" : "false",
-          ", \"rootUrl\":\"", config.rootUrl.cStr(), "\"",
           ", \"wildcardHost\":\"", config.wildcardHost, "\"");
       if (config.sandcatsHostname.size() > 0) {
           settingsString = kj::str(settingsString,

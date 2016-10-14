@@ -85,8 +85,7 @@ cat > $SETTINGS << __EOF__
     "wildcardHost": "$WILDCARD_HOST",
     "quotaEnabled": ${QUOTA_ENABLED:-false},
     "stripePublicKey": "${STRIPE_PUBLIC_KEY:-}",
-    "smtpListenPort": ${SMTP_LISTEN_PORT:-30025},
-    "rootUrl": "http://local.sandstorm.io:30000"
+    "smtpListenPort": ${SMTP_LISTEN_PORT:-30025}
   },
   "home": "$SANDSTORM_HOME",
   "stripeKey": "${STRIPE_KEY:-}",

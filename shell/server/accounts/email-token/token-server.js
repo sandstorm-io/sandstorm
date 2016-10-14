@@ -219,7 +219,7 @@ const createAndEmailTokenForUser = function (db, email, options) {
     rootUrl: String,
   });
 
-  if (options.rootUrl !== Meteor.settings.public.rootUrl) {
+  if (options.rootUrl !== process.env.ROOT_URL) {
     const parsedUrl = Url.parse(options.rootUrl);
     if (!db.hostIsStandalone(parsedUrl.hostname)) {
       throw new Meteor.Error(400, "rootUrl is not valid");

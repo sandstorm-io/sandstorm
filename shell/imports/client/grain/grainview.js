@@ -477,10 +477,7 @@ class GrainView {
       }
     }
 
-    if (oldIdentityId !== resultIdentityId) {
-      this._userIdentityId.set(resultIdentityId);
-      this._dep.changed();
-    }
+    this._userIdentityId.set(resultIdentityId);
   }
 
   doNotRevealIdentity() {

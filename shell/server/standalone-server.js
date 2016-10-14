@@ -14,9 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This file covers creation and consumption of invite keys (i.e. to invite people to become
-// users of the Sandstorm server).
-
 Meteor.publish("standaloneDomain", function (domain) {
   check(domain, Match.OneOf(String, undefined, null));
 

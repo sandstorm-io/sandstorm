@@ -331,9 +331,15 @@ Meteor.methods({
     return result;
   },
 
-  openSessionFromApiToken(params, identityId, cachedSalt) {
+  openSessionFromApiToken(params, identityId, cachedSalt, neverRedeem, parentOrigin) {
     // Given an API token, either opens a new WebSession to the underlying grain or returns a
     // path to which the client should redirect in order to open such a session.
+    //
+    // `parentOrigin` is the origin of the parent frame of the grain iframe. This may differ from
+    // ROOT_URL for standalone domains.
+
+    neverRedeem = neverRedeem || false;
+    parentOrigin = parentOrigin || process.env.ROOT_URL;
 
     check(params, {
       token: String,
@@ -341,6 +347,8 @@ Meteor.methods({
     });
     check(identityId, Match.OneOf(undefined, null, String));
     check(cachedSalt, Match.OneOf(undefined, null, String));
+    check(neverRedeem, Boolean);
+    check(parentOrigin, String);
 
     if (this.userId && identityId && !globalDb.userHasIdentity(this.userId, identityId)) {
       throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
@@ -353,7 +361,6 @@ Meteor.methods({
 
     const token = params.token;
     const incognito = params.incognito;
-    const standalone = globalDb.getStandaloneDomainForToken(token);
     const hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
     const apiToken = ApiTokens.findOne(hashedToken);
     validateWebkey(apiToken);
@@ -386,7 +393,7 @@ Meteor.methods({
       }
     }
 
-    if (this.userId && !incognito && !standalone) {
+    if (this.userId && !incognito && !neverRedeem) {
       if (identityId != apiToken.identityId && identityId != grain.identityId &&
           !ApiTokens.findOne({ "owner.user.identityId": identityId, parentToken: hashedToken })) {
         const owner = { user: { identityId: identityId, title: title } };
@@ -423,7 +430,7 @@ Meteor.methods({
 
       const result = opened.methodResult;
       const proxy = new Proxy(grain, result.sessionId,
-                              result.hostId, result.tabId, identityId, false, standalone,
+                              result.hostId, result.tabId, identityId, false, parentOrigin,
                               opened.supervisor);
       proxy.apiToken = apiToken;
       proxiesByHostId[result.hostId] = proxy;
@@ -1131,7 +1138,7 @@ tryProxyRequest = (hostId, req, res) => {
       if (proxy) {
         // Let's do some CSRF defense.
         const expectedOrigin = PROTOCOL + "//" + req.headers.host;
-        const mainUrl = proxy.standaloneUrl || process.env.ROOT_URL;
+        const mainUrl = proxy.parentOrigin;
         const origin = req.headers.origin;
         const referer = req.headers.referer;
         const parsedReferer = Url.parse(referer);
@@ -1208,7 +1215,7 @@ tryProxyRequest = (hostId, req, res) => {
 //
 
 class Proxy {
-  constructor(grain, sessionId, hostId, tabId, identityId, isApi, standaloneHostname, supervisor) {
+  constructor(grain, sessionId, hostId, tabId, identityId, isApi, parentOrigin, supervisor) {
     // `grain` is an entry in the `Grains` collection.
     this.grainId = grain._id;
     this.ownerId = grain.userId;
@@ -1220,10 +1227,7 @@ class Proxy {
     this.hasLoaded = false;
     this.websockets = {};
     this.websocketCounter = 0; // Used for generating unique socket IDs.
-
-    if (standaloneHostname) {
-      this.standaloneUrl = PROTOCOL + "//" + standaloneHostname + (PORT ? ":" + PORT : "");
-    }
+    this.parentOrigin = parentOrigin || process.env.ROOT_URL;
 
     if (sessionId) {
       if (!hostId) throw new Error("sessionId must come with hostId");
@@ -1626,11 +1630,7 @@ class Proxy {
         response.setHeader("Set-Cookie", rpcResponse.setCookies.map(makeSetCookieHeader));
       }
 
-      let mainUrl = process.env.ROOT_URL;
-      if (this.standaloneUrl) {
-        mainUrl += " " + this.standaloneUrl;
-      }
-
+      const mainUrl = this.parentOrigin;
       const grainHost = PROTOCOL + "//" + request.headers.host;
       response.setHeader("Content-Security-Policy", "frame-ancestors " + mainUrl + " " + grainHost);
       response.setHeader("X-Frame-Options", "ALLOW-FROM " + mainUrl);

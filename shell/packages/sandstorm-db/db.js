@@ -758,8 +758,6 @@ const StandaloneDomains = new Mongo.Collection("standaloneDomains", collectionOp
 //   _id: String. The domain name to use.
 //   token: String. _id of a sharing token (it must be a webkey).
 
-StandaloneDomains.ensureIndexOnServer("token");
-
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
     // Data needed for isSignedUp() and isAdmin() to work.
@@ -2042,13 +2040,6 @@ _.extend(SandstormDb.prototype, {
     check(hostname, String);
 
     return !!this.collections.standaloneDomains.findOne({ _id: hostname, });
-  },
-
-  getStandaloneDomainForToken: function (token) {
-    check(token, String);
-
-    const domain = this.collections.standaloneDomains.findOne({ token: token, });
-    return domain && domain._id;
   },
 });
 

@@ -636,8 +636,10 @@ class GrainView {
         token: _this._token,
         incognito: !identityId,
       };
+      const neverRedeem = isStandalone();
       Meteor.call("openSessionFromApiToken",
-        openSessionArg, identityId, _this._sessionSalt, (error, result) => {
+        openSessionArg, identityId, _this._sessionSalt,
+        neverRedeem, getOrigin(), (error, result) => {
           if (error) {
             console.error("openSessionFromApiToken error", error);
             _this._error = error;

@@ -92,7 +92,6 @@ fwkPemD3mf9sCbF+QdeTQgARCWIRDXIREYL/QmlnIHNwZW4AB2Rlcv9EYXZlIERldgAfIFVz
 ZXL/dGVzdEB6YXIBdm94Lm9yZwA=
 ---------------------- END SANDSTORM FEATURE KEY -----------------------`;
 
-
 Template.featureKeyUploadForm.onCreated(function () {
   this.error = new ReactiveVar(undefined);
   this.text = new ReactiveVar("");

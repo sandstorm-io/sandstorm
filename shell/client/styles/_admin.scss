@@ -83,7 +83,9 @@
 form.feature-key-form, form.feature-key-modify-form {
   @extend %standard-form;
   textarea {
-    min-height: 60px;
+    min-height: 96px;
+    font-family: monospace;
+    font-size: 12px;
   }
 }
 

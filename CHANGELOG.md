@@ -1,3 +1,10 @@
+### v0.190 (2016-10-15)
+- Sandstorm can now run on systems where user namespaces are not available, including on kernel vension 3.10 (previously, 3.13 was required). This means RHEL 7, CentOS 7, and Arch should now be supported. However, we plan to spend some time testing this new mode before updating the installer script to accept these platforms. If you'd like to test it now -- with the caveat that there may be bugs -- try the updated installer script from [this pull request](https://github.com/sandstorm-io/sandstorm/pull/2656). Or, copy an existing Sandstorm install to a new server -- the new sandboxing mode is used automatically when user namespaces are unavailable.
+- Changed LDAP config to mask the search password.
+- Moved login errors to the top of the login dialog / menu, from the bottom.
+- Fixed more admin settings inputs to automatically trim whitespace.
+- Added internal support for "standalone grains", where a grain runs on a separate domain with Sandstorm UI hidden. This is experimental and currently requires poking the database to enable.
+
 ### v0.189 (2016-10-08) [bugfixes]
 - During an e-mail verification powerbox request, there is now an "add new e-mail" option which links a new e-mail identity to your account on-the-fly.
 - Fixed issues with the Cap'n Proto API where passing a Sandstorm-provided capability back to Sandstorm in the presence of promise pipelining could sometimes fail.

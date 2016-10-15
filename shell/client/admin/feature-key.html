@@ -201,9 +201,12 @@
         {{/focusingErrorBox}}
       {{/if}}
     {{/with}}
-    <label>Enter feature key:
-      <textarea class="feature-key" placeholder="Paste feature key here..." value="{{text}}"></textarea>
-    </label>
+    <div class="form-group">
+      <label>Enter feature key:
+        <textarea class="feature-key" placeholder="{{placeholderKey}}" value="{{text}}"></textarea>
+      </label>
+      <span class="form-subtext">Paste your feature key here, then click "Verify"</span>
+    </div>
     <div class="feature-key-button-row">
       <button type="submit" class="check-key" disabled={{disabled}}>Verify</button>
     </div>

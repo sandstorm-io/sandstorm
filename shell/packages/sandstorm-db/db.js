@@ -747,6 +747,19 @@ const DesktopNotifications = new Mongo.Collection("desktopNotifications", collec
 //     actionText: Util.LocalizedText, What action the user took, e.g.
 //                                     { defaultText: "added a comment" }
 
+const StandaloneDomains = new Mongo.Collection("standaloneDomains", collectionOptions);
+// A standalone domain that points to a single share link. These domains act a little different
+// than a normal shared Sandstorm grain. They completely drop any Sandstorm topbar/sidebar, and at
+// first glance look completely like a non-Sandstorm hosted webserver. The apps instead act in
+// concert with Sandstorm through the postMessage API, which allows it to do things like prompt for
+// login.
+// Fields for each :
+//
+//   _id: String. The domain name to use.
+//   token: String. _id of a sharing token (it must be a webkey).
+
+StandaloneDomains.ensureIndexOnServer("token");
+
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
     // Data needed for isSignedUp() and isAdmin() to work.
@@ -994,6 +1007,7 @@ SandstormDb = function (quotaManager) {
     featureKey: FeatureKey,
     setupSession: SetupSession,
     desktopNotifications: DesktopNotifications,
+    standaloneDomains: StandaloneDomains,
   };
 };
 
@@ -2022,6 +2036,19 @@ _.extend(SandstormDb.prototype, {
       if (cb) cb(this, user);
       this.deleteAccount(user._id, backend);
     });
+  },
+
+  hostIsStandalone: function (hostname) {
+    check(hostname, String);
+
+    return !!this.collections.standaloneDomains.findOne({ _id: hostname, });
+  },
+
+  getStandaloneDomainForToken: function (token) {
+    check(token, String);
+
+    const domain = this.collections.standaloneDomains.findOne({ token: token, });
+    return domain && domain._id;
   },
 });
 

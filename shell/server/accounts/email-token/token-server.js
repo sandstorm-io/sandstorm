@@ -2,6 +2,8 @@ import crypto from "crypto";
 
 import { send as sendEmail } from "/imports/server/email.js";
 
+const Url = Npm.require("url");
+
 const V1_ROUNDS = 4096; // Selected to take ~5msec at creation time (2016) on a developer's laptop.
 const V1_KEYSIZE = 32; // 256 bits / 8 bits/byte = 32 bytes
 const V1_HASHFUNC = "sha512";
@@ -163,19 +165,13 @@ Accounts.registerLoginHandler("email", function (options) {
   };
 });
 
-const Url = Npm.require("url");
-
-const ROOT_URL = Url.parse(process.env.ROOT_URL);
-const HOSTNAME = ROOT_URL.hostname;
-
 const makeTokenUrl = function (email, token, options) {
   if (options.linking) {
-    return process.env.ROOT_URL + "/_emailLinkIdentity/" + encodeURIComponent(email) + "/" +
+    return options.rootUrl + "/_emailLinkIdentity/" + encodeURIComponent(email) + "/" +
       encodeURIComponent(token) + "/" + Meteor.userId() +
       "?allowLogin=" + options.linking.allowLogin;
   } else {
-    return process.env.ROOT_URL + "/_emailLogin/" + encodeURIComponent(email) + "/" +
-        encodeURIComponent(token);
+    return options.rootUrl + "/_emailLogin/" + encodeURIComponent(email) + "/" + encodeURIComponent(token);
   }
 };
 
@@ -185,15 +181,18 @@ const makeTokenUrl = function (email, token, options) {
 const sendTokenEmail = function (db, email, token, options) {
   let subject;
   let text;
+
+  const rootHostname = Url.parse(options.rootUrl).hostname;
+
   if (!options.linking) {
-    subject = "Log in to " + HOSTNAME;
+    subject = "Log in to " + rootHostname;
     text = "To confirm this email address on ";
   } else {
-    subject = "Confirm this email address on " + HOSTNAME;
+    subject = "Confirm this email address on " + rootHostname;
     text = "To confirm this email address on ";
   }
 
-  text = text + HOSTNAME + ", click on the following link:\n\n" +
+  text = text + rootHostname + ", click on the following link:\n\n" +
       makeTokenUrl(email, token, options) + "\n\n" +
       "Alternatively, enter the following one-time authentication code into the log-in form:\n\n" +
       token;
@@ -214,7 +213,18 @@ const sendTokenEmail = function (db, email, token, options) {
 // returns the user id
 const createAndEmailTokenForUser = function (db, email, options) {
   check(email, String);
-  check(options, { resumePath: String, linking: Match.Optional({ allowLogin: Boolean }), });
+  check(options, {
+    resumePath: String,
+    linking: Match.Optional({ allowLogin: Boolean }),
+    rootUrl: String,
+  });
+
+  if (options.rootUrl !== process.env.ROOT_URL) {
+    const parsedUrl = Url.parse(options.rootUrl);
+    if (!db.hostIsStandalone(parsedUrl.hostname)) {
+      throw new Meteor.Error(400, "rootUrl is not valid");
+    }
+  }
 
   const atIndex = email.indexOf("@");
   if (atIndex === -1) {
@@ -270,7 +280,11 @@ Meteor.methods({
     // It will always send an email to the user
 
     check(email, String);
-    check(options, { resumePath: String, linking: Match.Optional({ allowLogin: Boolean }), });
+    check(options, {
+      resumePath: String,
+      linking: Match.Optional({ allowLogin: Boolean }),
+      rootUrl: String,
+    });
 
     if (!Accounts.identityServices.email.isEnabled()) {
       throw new Meteor.Error(403, "Email identity service is disabled.");

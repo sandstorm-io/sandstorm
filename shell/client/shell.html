@@ -125,7 +125,7 @@ limitations under the License.
         {{#if firstLogin}} block, then grain views could appear to become blanked out when a demo
         user upgrades to a real account by linking an email identity.
    --}}
-  <div class="main-content {{#if hideNavbar}}hide-navbar{{else}}{{#if shrinkNavbar}}shrink-navbar{{/if}}{{/if}}">
+  <div class="main-content{{#if hideNavbar}} hide-navbar{{else}}{{#if shrinkNavbar}} shrink-navbar{{/if}}{{/if}}{{#if isStandalone}} standalone{{/if}}">
   {{#unless demoExpired}}
     {{#unless identityUser}}
       {{#unless firstLogin}}

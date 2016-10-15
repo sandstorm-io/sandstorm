@@ -85,7 +85,7 @@ Meteor.publish("packageByGrainId", function (grainId) {
   return publishThis;
 });
 
-Meteor.publish("tokenInfo", function (token) {
+Meteor.publish("tokenInfo", function (token, isStandalone) {
   // Allows the client side to map a raw token to its entry in ApiTokens, and the additional
   // metadata that it will need to display the app icon and title.  We do not care about making
   // the metadata reactive.
@@ -134,7 +134,7 @@ Meteor.publish("tokenInfo", function (token) {
           this.added("tokenInfo", token, { invalidToken: true });
         }
       } else if (!apiToken.owner || "webkey" in apiToken.owner) {
-        if (this.userId) {
+        if (this.userId && !isStandalone) {
           const user = Meteor.users.findOne({ _id: this.userId });
           const identityIds = SandstormDb.getUserIdentityIds(user);
           const childToken = ApiTokens.findOne({

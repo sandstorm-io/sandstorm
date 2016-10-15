@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
+import { isStandalone } from "/imports/client/standalone.js";
 
 let counter = 0;
 
@@ -348,20 +349,27 @@ class GrainView {
   }
 
   frameTitle() {
+    const serverTitle = globalDb.getServerTitle();
+
     this._dep.depend();
     if (this._frameTitle !== undefined) {
-      return this._frameTitle + " · " + globalDb.getServerTitle();
+      return this._frameTitle + " · " + serverTitle;
     }
 
     const appTitle = this.appTitle();
     const grainTitle = this.title();
+
+    if (isStandalone()) {
+      return grainTitle || window.location.hostname;
+    }
+
     // Actually set the values
     if (appTitle && grainTitle) {
-      return grainTitle + " · " + appTitle + " · " + globalDb.getServerTitle();
+      return grainTitle + " · " + appTitle + " · " + serverTitle;
     } else if (grainTitle) {
-      return grainTitle + " · " + globalDb.getServerTitle();
+      return grainTitle + " · " + serverTitle;
     } else {
-      return globalDb.getServerTitle();
+      return serverTitle;
     }
   }
 
@@ -447,6 +455,7 @@ class GrainView {
       return;
     }
 
+    const oldIdentityId = this._userIdentityId.get();
     const myIdentityIds = SandstormDb.getUserIdentityIds(Meteor.user());
     let resultIdentityId = Accounts.getCurrentIdentityId();
     const grain = this._db.getGrain(this._grainId);
@@ -469,12 +478,13 @@ class GrainView {
     }
 
     this._userIdentityId.set(resultIdentityId);
-    this._dep.changed();
   }
 
   doNotRevealIdentity() {
-    this._userIdentityId.set(false);
-    this._dep.changed();
+    if (this._userIdentityId.get() !== false) {
+      this._userIdentityId.set(false);
+      this._dep.changed();
+    }
   }
 
   identityId() {
@@ -678,7 +688,9 @@ class GrainView {
 
   route() {
     this._dep.depend();
-    if (this._token) {
+    if (isStandalone()) {
+      return this._path;
+    } else if (this._token) {
       return "/shared/" + this._token + this._path;
     } else {
       return "/grain/" + this._grainId + this._path;

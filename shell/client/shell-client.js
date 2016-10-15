@@ -19,6 +19,7 @@
 
 import getBuildInfo from "/imports/client/build-info.js";
 import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";
+import { isStandalone } from "/imports/client/standalone.js";
 
 // Subscribe to basic grain information first and foremost, since
 // without it we might e.g. redirect to the wrong place on login.
@@ -58,8 +59,10 @@ logoutSandstorm = function () {
     sessionStorage.removeItem("linkingIdentityLoginToken");
     Accounts._loginButtonsSession.closeDropdown();
     globalTopbar.closePopup();
-    globalGrains.clear();
-    Router.go("root");
+    if (!isStandalone()) {
+      globalGrains.clear();
+      Router.go("root");
+    }
   });
 };
 
@@ -557,7 +560,8 @@ Template.layout.helpers({
 
   firstLogin: function () {
     return credentialsSubscription.ready() && !isDemoUser() && !Meteor.loggingIn()
-        && Meteor.user() && !Meteor.user().hasCompletedSignup;
+        && Meteor.user() && !Meteor.user().hasCompletedSignup &&
+        !isStandalone();
   },
 
   accountSettingsUi: function () {
@@ -567,6 +571,10 @@ Template.layout.helpers({
   isAccountSuspended: function () {
     const user = Meteor.user();
     return user && user.suspended;
+  },
+
+  isStandalone: function () {
+    return isStandalone();
   },
 
   firstTimeBillingPromptState: function () {
@@ -805,6 +813,9 @@ Router.map(function () {
     },
 
     data: function () {
+      if (isStandalone()) {
+        return; // TODO(soon): move the route logic here?
+      }
       // If the user is logged-in, and can create new grains, and
       // has no grains yet, then send them to "new".
       if (this.ready() && Meteor.userId() && !Meteor.loggingIn() && Meteor.user().loginIdentities) {

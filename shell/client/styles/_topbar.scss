@@ -77,6 +77,10 @@ body>.topbar {
   // Using 0 rather than CSS default ("auto") allows introjs to highlight elements in the topbar.
   z-index: 0;
 
+  &.standalone {
+    display: none;
+  }
+
   @media #{$mobile} {
     line-height: 48px;
     height: 48px;

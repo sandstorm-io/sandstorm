@@ -515,6 +515,7 @@ const handleNonMainPortRequest = (req, res, next) => {
       res.end();
       return;
     }
+    // TODO(someday): check for standalone hosts and do something reasonable
 
     handleNonMeteorRequest(req, res, next, true);
   } catch (e) {
@@ -548,32 +549,67 @@ Meteor.startup(() => {
 
   WebApp.httpServer.removeAllListeners("request");
   WebApp.httpServer.on("request", (req, res) => {
-    try {
+    Promise.resolve(undefined).then(() => {
       if (!req.headers.host) {
         res.writeHead(400, { "Content-Type": "text/plain" });
         res.end("Missing Host header");
         return;
       }
 
-      const hostname = req.headers.host.split(":")[0];
+      const hostname = req.headers.host.split(":")[0]; // strip port if it exists
       if (isSandstormShell(hostname)) {
+        if (req.url.startsWith("/_oauth/")) {
+          // Intercept oauth callbacks on the main host to check if the user was actually logging
+          // into a standalone host, in which case we need to redirect to that host instead.
+          const parsedUrl = Url.parse(req.url, true);
+          if (parsedUrl.query && parsedUrl.query.state) {
+            const rawState = new Buffer(parsedUrl.query.state, "base64");
+            const state = JSON.parse(rawState.toString());
+            if (state.redirectUrl) {
+              const parsedRedirect = Url.parse(state.redirectUrl);
+              const redirectHostname = parsedRedirect.hostname;
+              if (redirectHostname !== HOSTNAME) {
+                return inMeteor(function () {
+                  if (globalDb.hostIsStandalone(redirectHostname)) {
+                    res.writeHead(302, { "Location": parsedRedirect.protocol + "//" +
+                      parsedRedirect.host + req.url, });
+                    res.end();
+                    return;
+                  } else {
+                    throw new Meteor.Error(400, "redirectUrl in OAuth was for an unknown host: " +
+                      state.redirectUrl);
+                  }
+                });
+              }
+            }
+          }
+        }
         // If destined for the DDP host or the main host, pass on to Meteor
         for (let i = 0; i < meteorRequestListeners.length; i++) {
           meteorRequestListeners[i](req, res);
         }
       } else {
-        // Otherwise, dispatch to our own middleware proxy chain.
-        nonMeteorRequestHandler(req, res);
-        // Adjust timeouts on proxied requests to allow apps to long-poll if needed.
-        WebApp._timeoutAdjustmentRequestCallback(req, res);
+        return inMeteor(function () {
+          if (globalDb.hostIsStandalone(hostname)) {
+            // If it's a standalone host, also pass on to meteor
+            for (let i = 0; i < meteorRequestListeners.length; i++) {
+              meteorRequestListeners[i](req, res);
+            }
+          } else {
+            // Otherwise, dispatch to our own middleware proxy chain.
+            nonMeteorRequestHandler(req, res);
+            // Adjust timeouts on proxied requests to allow apps to long-poll if needed.
+            WebApp._timeoutAdjustmentRequestCallback(req, res);
+          }
+        });
       }
-    } catch (e) {
+    }).catch(function (e) {
       // This should never be reached, because all the request handlers should be catching
       // exceptions, but you can never be too careful in a top-level request handler.
-      console.err("Unhandled exception in request handler:", e.stack);
+      console.error("Unhandled exception in request handler:", e.stack);
       res.writeHead(500, { "Content-Type": "text/plain" });
       res.end("Unhandled exception: " + e.stack);
-    }
+    });
   });
 
   const meteorUpgradeListeners = WebApp.httpServer.listeners("upgrade");
@@ -591,12 +627,25 @@ Meteor.startup(() => {
 
         return true;
       } else {
-        const id = matchWildcardHost(req.headers.host);
-        if (id) {
-          return tryProxyUpgrade(id, req, socket, head);
-        } else {
-          return false;
-        }
+        return inMeteor(function () {
+          // TODO(someday): This is slightly sad that some requests will now need a Meteor fiber
+          // If we disallow standalone domains from being in the wildcard host, then we can move
+          // this check to the bottom.
+          if (globalDb.hostIsStandalone(req.headers.host.split(":")[0])) {
+            for (let ii = 0; ii < meteorUpgradeListeners.length; ++ii) {
+              meteorUpgradeListeners[ii](req, socket, head);
+            }
+
+            return true;
+          } else {
+            const id = matchWildcardHost(req.headers.host);
+            if (id) {
+              return tryProxyUpgrade(id, req, socket, head);
+            } else {
+              return false;
+            }
+          }
+        });
       }
     }).then((handled) => {
       if (!handled) socket.destroy();

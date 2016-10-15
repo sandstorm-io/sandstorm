@@ -36,6 +36,13 @@ const webPublishingHandlers = {};
 // Maps grain public IDs to Connect handlers.
 // TODO(perf): Garbage-collect this map?
 
+// TODO(perf): Implement a more general cache not just of web publishing handlers but of all sorts
+//   of hosts, in order to avoid database lookups to determine how to handle requests. Host types
+//   to distinguish between:
+//   - Grain hosts
+//   - Web publishing hosts
+//   - Standalone grain hosts
+
 const dnsCache = {};
 // Unfortunately, node's DNS library doesn't cache results, so we do our own caching.
 // Unfortunately, node's DNS library also dosen't give us TTLs. So, we'll cache for

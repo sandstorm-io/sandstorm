@@ -1141,7 +1141,6 @@ tryProxyRequest = (hostId, req, res) => {
         const mainUrl = proxy.parentOrigin;
         const origin = req.headers.origin;
         const referer = req.headers.referer;
-        const parsedReferer = Url.parse(referer);
         if (origin) {
           // If an origin header was provided, then it must be accurate. Note that Chrome and
           // Safari always send an Origin header on non-GET requests (even same-origin), and

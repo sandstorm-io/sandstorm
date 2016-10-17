@@ -645,13 +645,6 @@ assert_dependencies() {
     which curl > /dev/null|| fail "E_CURL_MISSING" "Please install curl(1). Sandstorm uses it to download updates."
   fi
 
-  if [ "yes" = "$USE_SANDCATS" ] ; then
-    # To set up sandcats, we need `openssl` on the path. Check for that,
-    # and if it is missing, bail out and tell the user they have to
-    # install it.
-    which openssl > /dev/null|| fail "E_OPENSSL_MISSING" "Please install openssl(1). Sandstorm uses it for the Sandcats.io dynamic DNS service."
-  fi
-
   # To find out if port 80 and 443 are available, we need a working bash /dev/net or `nc` on
   # the path.
   if [ "${DEV_TCP_USABLE}" = "unchecked" ] ; then
@@ -729,10 +722,18 @@ choose_install_mode() {
   fi
 
   if [ "1" = "$CHOSEN_INSTALL_MODE" ] ; then
+    assert_full_server_dependencies
     full_server_install
   else
     dev_server_install
   fi
+}
+
+assert_full_server_dependencies() {
+  # To set up sandcats, we need `openssl` on the path. Check for that,
+  # and if it is missing, bail out and tell the user they have to
+  # install it.
+  which openssl > /dev/null|| fail "E_OPENSSL_MISSING" "Please install openssl(1). Sandstorm uses it for the Sandcats.io dynamic DNS service."
 }
 
 dev_server_install() {

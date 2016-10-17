@@ -146,6 +146,23 @@ dotdotdot_curl() {
 }
 
 is_port_bound() {
+  local SCAN_HOST="$1"
+  local SCAN_PORT="$2"
+
+  if [ "${DEV_TCP_USABLE}" = "unchecked" ] ; then
+    REPORT=no fail "E_DEV_TCP_UNCHECKED" "Programmer error. The author of install.sh used an uninitialized variable."
+  fi
+
+  # We also use timeout(1) from coreutils to avoid this process taking a very long
+  # time in the case of e.g. weird network rules or something.
+  if [ "${DEV_TCP_USABLE}" = "yes" ] ; then
+    if timeout 1 bash -c ": < /dev/tcp/${SCAN_HOST}/${SCAN_PORT}" 2>/dev/null; then
+      return 0
+    else
+      return 1
+    fi
+  fi
+
   # If we are using a traditional netcat, then -z (zero i/o mode)
   # works for scanning-type uses. (Debian defaults to this.)
   #
@@ -164,8 +181,6 @@ is_port_bound() {
   # So if either if these invocations returns true, then we know the
   # port is bound.
   local DEBIAN_STYLE_INDICATED_BOUND="no"
-  local SCAN_HOST="$1"
-  local SCAN_PORT="$2"
   ${NC_PATH} -z "$SCAN_HOST" "$SCAN_PORT" >/dev/null 2>/dev/null && DEBIAN_STYLE_INDICATED_BOUND=yes
 
   if [ "$DEBIAN_STYLE_INDICATED_BOUND" == "yes" ] ; then
@@ -267,6 +282,9 @@ STARTED_SANDSTORM="no"
 # Allow the test suite to override the path to netcat in order to
 # reproduce a compatibility issue between different nc versions.
 NC_PATH="${OVERRIDE_NC_PATH:-nc}"
+
+# Allow install.sh to store if bash /dev/tcp works.
+DEV_TCP_USABLE="unchecked"
 
 # Defaults for some config options, so that if the user requests no
 # prompting, they get these values.
@@ -605,6 +623,23 @@ __EOF__
   fi
 }
 
+test_if_dev_tcp_works() {
+  # In is_port_bound(), we prefer to use bash /dev/tcp to check if the port is bound. This is
+  # available on most Linux distributions, but it is a compile-time flag for bash and at least
+  # Debian historically disabled it.
+  #
+  # To test availability, we connect to localhost port 0, which is never available, hoping for a
+  # TCP-related error message from bash. We use a subshell here because we don't care that timeout
+  # will return false; we care if the grep returns false.
+  if (timeout 1 bash -c ': < /dev/tcp/localhost/0' 2>&1 || true) | grep -q 'connect:' ; then
+    # Good! bash should get "Connection refused" on this, and this message is prefixed
+    # by the syscall it was trying to do, so therefore it tried to connect!
+    DEV_TCP_USABLE="yes"
+  else
+    DEV_TCP_USABLE="no"
+  fi
+}
+
 assert_dependencies() {
   if [ -z "${BUNDLE_FILE:-}" ]; then
     which curl > /dev/null|| fail "E_CURL_MISSING" "Please install curl(1). Sandstorm uses it to download updates."
@@ -615,8 +650,14 @@ assert_dependencies() {
     # and if it is missing, bail out and tell the user they have to
     # install it.
     which openssl > /dev/null|| fail "E_OPENSSL_MISSING" "Please install openssl(1). Sandstorm uses it for the Sandcats.io dynamic DNS service."
-    # To find out if port 80 and 443 are available, we need `nc` on
-    # the path.
+  fi
+
+  # To find out if port 80 and 443 are available, we need a working bash /dev/net or `nc` on
+  # the path.
+  if [ "${DEV_TCP_USABLE}" = "unchecked" ] ; then
+    test_if_dev_tcp_works
+  fi
+  if [ "${DEV_TCP_USABLE}" = "no" ] ; then
     which nc > /dev/null || fail "E_NC_MISSING" "Please install nc(1). (Package may be called 'netcat-traditional' or 'netcat-openbsd'.)"
   fi
 

@@ -6,7 +6,7 @@ integration requires [Sandstorm for Work.](for-work.md)
 
 Sandstorm can rely on AD to authenticate users.
 
-ActiveDirectory exists as a cloud product called Windows Azure as well as a software product called
+Active Directory exists as a cloud product called Windows Azure as well as a software product called
 Windows Server. Sandstorm supports both products.
 
 Sandstorm can be configured to use single sign-on in a configuration where Sandstorm never sees the
@@ -129,7 +129,7 @@ follow these instructions.
 
 ## Windows Server Active Directory
 
-**Summary:** Once you have created a directory, you must use ActiveDirectory Federation Services to
+**Summary:** Once you have created a directory, you must use Active Directory Federation Services to
 add a new Relying Party, namely the Sandstorm web application. Each Sandstorm server publishes
 federation metadata information at a URL available within the SAML configuration page.  You must
 configure a rule that sends the user email address to Sandstorm, as well as a rule that declares

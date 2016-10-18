@@ -127,16 +127,176 @@ follow these instructions.
 
 **Congratulations!** You have enabled Sandstorm for all the users in your Microsoft Azure Active Directory service.
 
-<!--
 ## Windows Server Active Directory
 
 **Summary:** Once you have created a directory, you must use ActiveDirectory Federation Services to
 add a new Relying Party, namely the Sandstorm web application. Each Sandstorm server publishes
 federation metadata information at a URL available within the SAML configuration page.  You must
-configure a rule that sends user email address to Sandstorm, as well as a rule that declares email
-addresses are the persistent identifier. You must also export the custom SAML certificate to
+configure a rule that sends the user email address to Sandstorm, as well as a rule that declares
+email addresses are the persistent identifier. You must also export the custom SAML certificate to
 Sandstorm.  Once you have done this, you can use Active Directory to choose which users in your
 domain are allowed to use Sandstorm.
 
+To connect to Active Directory via SAML, you must enable Active Directory Federation Services (AD
+FS). We will assume you have already done this.
+
+Note that AD FS requires that your Sandstorm server supports HTTPS with a valid certificate. You can
+use a private CA for this, but setting up a private CA is beyond the scope of this document.
+
 Here is a screenshot tour, using example.sandcats.io as an example Sandstorm server.
--->
+
+### Part 1: Configure AD FS
+
+- Open the AD FS management UI.
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/01.png)
+
+- In the left sidebar, browse to: "Trust Relationships > Relying Party Trusts". In the right sidebar, click: "Add Relying Party Trust...".
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/02.png)
+
+- You will see the "Add Relying Party Trust Wizard." Click "Start."
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/03.png)
+
+- At this time, open the Sandstorm SAML configuration interface in a new browser tab. Take note of
+  the Sandstorm service provider metadata URL. This is typically of the form:
+  https://example.sandcats.io/_saml/config/default
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/13-blanked.png)
+
+- Back in the "Add Relying Party Trust Wizard," choose the radio button for: "Import data about the
+  relying party published online or on a local network".  Under "Federation metadata address (host
+  name or URL)", enter the address of Sandstorm server's service URL. This is typically of the form:
+  https://example.sandcats.io/_saml/config/default . Then, click Next.
+
+    - If your Sandstorm server does not support HTTPS, AD FS will complain at this point. Do NOT try to work around this by downloading the metadata and feeding it to AD FS manually. If you do that, AD FS may appear to accept the metadata, but it will leave all the endpoints unconfigured, because AD FS will not accept a non-HTTPS endpoint.
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/04.png)
+
+- Choose a display name (for example, the server's hostname like example.sandcats.io) and notes if
+  desired, then click "Next".
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/05.png)
+
+- Choose whether to configure multi-factor authentication and click "Next". (Configuring
+  multi-factor is beyond the scope of this document.)
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/06.png)
+
+- Choose "Permit all users to access this relying party" and click "Next".
+
+    - Note that Sandstorm only counts a user for billing purposes if they actually log into
+      Sandstorm during a particular month.
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/07.png)
+
+- Review your choices and click "Next".
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/08.png)
+
+- Check the box for: "Open the Edit Claim Rules dialog for this relying party trust when the wizard closes".
+  Then, click Close.
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/09.png)
+
+- The "Edit Claim Rules" dialog appears. Click "Add Rule..."
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/10.png)
+
+- Under "Claim rule template", choose: "Send LDAP Attributes as Claims". Then click "Next."
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/11.png)
+
+- Under "Claim rule name", enter: "Send e-mail address" (or any name you want). Configure the LDAP Attribute
+  as E-Mail Addresses and the Outgoing Claim Type as E-Mail Address. Then click "Finish."
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/12.png)
+
+- Click "Add Rule...".
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/13.png)
+
+- Under "Claim rule template", choose: "Transform an Incoming Claim". Click "Next."
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/14.png)
+
+- Under "Claim rule name", enter: "Assign name ID from e-mail address" (or any name you want). Configure the
+  Incoming claim type as "E-Mail Address" and set the Outgoing claim type to "Name ID." Set the Outgoing
+  format to "Persistent Identifier." Choose to "Pass through all claim values." Finally, click "Finish."
+
+    - NOTE: This differs from many other services. Do NOT choose "Email" here. You MUST choose
+      "Persistent Identifier". This is because Sandstorm allows an advanced administrator to choose
+      a different user attribute to use as the primary identifier. For example, if your system has a
+      notion of numeric user IDs that never change, you could use that as the Name ID instead. This
+      way, you could change a user's e-mail address in the future without requiring that they
+      transfer all of their Sandstorm data to a new account. However, most administrators choose to
+      use e-mail addresses as the primary identifier, accepting that this means that e-mail
+      addresses can never change.
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/15.png)
+
+- Click "OK" to finish editing claim rules.
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/16.png)
+
+
+
+### Part 2: Extract your certificate
+
+- Open the AD FS management UI.
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/17.png)
+
+- In the left sidebar, browse to: "Service > Certificates"
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/18.png)
+
+- Right-click on the certificate under "Token-signing", and choose "View Certificate..."
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/19.png)
+
+- In the Certificate dialog, go to the "Details" tab. Click "Copy to File..."
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/20.png)
+
+- The Certificate Export Wizard appears. Click "Next".
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/21.png)
+
+- Choose the radio button for: "Base-64 encoded X.509 (.CER)". Click "Next."
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/22.png)
+
+- Choose where to save the certificate. Click "Next."
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/23.png)
+
+- Review the "Completing the Certificate Export Wizard" information, then click "Finish."
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/24.png)
+
+- Open the certificate file using a text editor, such as Notepad. You will need to copy/paste this next in the next part.
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/25.png)
+
+### Part 3: Configure Sandstorm
+
+- Open Sandstorm's SAML login configuration.
+
+    - Under "SAML provider entry point URL", enter your AD FS login entry point. This is usually
+      "/adfs/ls" at the host associated with your Active Directory server. For example, if your Active
+      Directory server is ad.example.com, the URL would be: https://ad.example.com/adfs/ls
+
+    - Under "SAML cert for above provider", copy the contents of the certificate you extracted in part
+      2, above.
+
+    - Use the full server URL as the entity ID. For example, https://example.sandcats.io
+
+    - Finally, click "Save."
+
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/26.png)
+
+This concludes setting up Windows Server Active Directory with Sandstorm! If you have any questions
+or need further help, please email support@sandstorm.io! We'd be honored to work with you to get
+your server set up properly.

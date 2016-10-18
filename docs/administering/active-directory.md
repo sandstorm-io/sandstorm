@@ -116,7 +116,7 @@ follow these instructions.
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/azure-ad-config/19.png)
 
 - Click: "Users and Groups", then "All Users". Click the check-mark to request Sandstorm access for
-  all users. Note that Sandstorm only counts a user for billing purposes if they actually log into
+  all users. Note that Sandstorm only counts a user for [billing](for-work.md) if they actually log into
   Sandstorm during a particular month.
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/azure-ad-config/22.png)
@@ -186,7 +186,7 @@ Here is a screenshot tour, using example.sandcats.io as an example Sandstorm ser
 
 - Choose "Permit all users to access this relying party" and click "Next".
 
-    - Note that Sandstorm only counts a user for billing purposes if they actually log into
+    - Note that Sandstorm only counts a user for [billing](for-work.md) purposes if they actually log into
       Sandstorm during a particular month.
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/07.png)

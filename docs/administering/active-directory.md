@@ -244,19 +244,19 @@ Here is a screenshot tour, using example.sandcats.io as an example Sandstorm ser
 
 ### Part 2: Extract your certificate
 
-- Open the AD FS management UI.
+- Open the AD FS management UI. In the left sidebar, browse to: "Service > Certificates".
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/17.png)
 
-- In the left sidebar, browse to: "Service > Certificates"
+- Click on the certificate under "Token-signing" to select it.
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/18.png)
 
-- Right-click on the certificate under "Token-signing", and choose "View Certificate..."
+- Click "View Certificate..." In the Certificate dialog, go to the "Details" tab.
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/19.png)
 
-- In the Certificate dialog, go to the "Details" tab. Click "Copy to File..."
+- In the "Details" tab, click "Copy to File..."
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/20.png)
 

@@ -463,6 +463,51 @@ assert_usable_kernel() {
   fi
 }
 
+maybe_enable_userns_sysctl() {
+  # This function enables the Debian/Ubuntu-specific unprivileged
+  # userns sysctl, if the system has it and we want it.
+
+  if [ "$USE_DEFAULTS" != "yes" ] ; then
+    # Only do this when -d is passed. -d means "use defaults suitable for app development", and
+    # we want userns enabled for app development if possible since it enables UID randomization
+    # which helps catch app bugs. For the rest of the world, we're fine using the privileged
+    # sandbox instead.
+    return
+  fi
+
+  if [ "no" = "$CURRENTLY_UID_ZERO" ] ; then
+    # Not root. Can't do anything about it.
+    return
+  fi
+
+  if [ ! -e /proc/sys/kernel/unprivileged_userns_clone ]; then
+    # No such sysctl on this system.
+    return
+  fi
+
+  if [ "$(sysctl -n kernel.unprivileged_userns_clone)" = "1" ]; then
+    # Already enabled.
+    return
+  fi
+
+  # Enable it.
+  echo "NOTE: Enabling unprivileged user namespaces because you passed -d."
+  sysctl -wq kernel.unprivileged_userns_clone=1
+
+  # Also make sure it is re-enabled on boot. If sysctl.d exists, we drop our own config in there.
+  # Otherwise we edit sysctl.conf, but that's less polite.
+  local SYSCTL_FILENAME="/etc/sysctl.conf"
+  if [ -d /etc/sysctl.d ] ; then
+    SYSCTL_FILENAME="/etc/sysctl.d/50-sandstorm.conf"
+  fi
+
+  cat >> "$SYSCTL_FILENAME"  << __EOF__
+
+# Enable non-root users to create sandboxes (needed by Sandstorm).
+kernel.unprivileged_userns_clone = 1
+__EOF__
+}
+
 assert_dependencies() {
   if [ -z "${BUNDLE_FILE:-}" ]; then
     which curl > /dev/null|| fail "E_CURL_MISSING" "Please install curl(1). Sandstorm uses it to download updates."
@@ -2054,6 +2099,7 @@ assert_dependencies
 assert_valid_bundle_file
 detect_init_system
 choose_install_mode
+maybe_enable_userns_sysctl
 choose_external_or_internal
 choose_install_dir
 choose_smtp_port

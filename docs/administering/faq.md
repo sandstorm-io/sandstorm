@@ -518,7 +518,7 @@ this won't work for the following reasons.
 reachability self-tests, for each API endpoint, for each static publishing endpoint, for its own
 static assets, and for identicons. A user could conceivably cause Sandstorm to generate 20 hostnames
 in a minute of usage. Generating 20 hostnames would trigger the [rate
-limits[(https://letsencrypt.org/docs/rate-limits/), at which point all other visitors to Sandstorm
+limits](https://letsencrypt.org/docs/rate-limits/), at which point all other visitors to Sandstorm
 qwould be unable to use grains. This issue alone makes the problem intractable.
 
 There are some additional problems as well.

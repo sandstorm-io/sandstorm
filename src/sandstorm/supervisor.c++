@@ -905,9 +905,22 @@ void SupervisorMain::unshareOuter() {
     KJ_SYSCALL(unshare(CLONE_NEWUSER | CLONE_NEWNS | CLONE_NEWIPC | CLONE_NEWUTS | CLONE_NEWPID));
 
     // Map ourselves as 1000:1000, since it costs nothing to mask the uid and gid.
+    uid_t fakeUid = 1000;
+    gid_t fakeGid = 1000;
+
+    if (devmode) {
+      // "Randomize" the UID and GID in dev mode. This catches app bugs where the app expects the
+      // UID or GID to be always 1000, which is not true of servers that use the privileged sandbox
+      // rather than the userns sandbox. (The "randomization" algorithm here is only meant to
+      // appear random to a human.)
+      time_t now = time(nullptr);
+      fakeUid = now * 4721 % 2000 + 1;
+      fakeGid = now * 2791 % 2000 + 1;
+    }
+
     writeSetgroupsIfPresent("deny\n");
-    writeUserNSMap("uid", kj::str("1000 ", uid, " 1\n"));
-    writeUserNSMap("gid", kj::str("1000 ", gid, " 1\n"));
+    writeUserNSMap("uid", kj::str(fakeUid, " ", uid, " 1\n"));
+    writeUserNSMap("gid", kj::str(fakeGid, " ", gid, " 1\n"));
   } else {
     // Use root privileges instead of user namespaces.
 

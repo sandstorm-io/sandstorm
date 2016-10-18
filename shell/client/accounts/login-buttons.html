@@ -135,16 +135,21 @@ licenses, included in the LICENSES directory.
 </template>
 
 <template name="loginButtonsDialog">
+{{!-- takes arguments:
+  accountsUi: instance of AccountsUi
+       label: optional String which replaces top-of-dialog-label.  If absent, the dialog will show
+              either "Create account" if the server allows uninvited users or "Sign in" if not.
+--}}
   <div class="login-dialog">
     {{!-- There's no actual difference between signing "up" and "in", but people expect there to
           be a difference, so humor them by making the front-page login say "sign up". (But for a
           private server, don't offer "sign up".) --}}
     <h4>
       <span class="logo" style="background-image: url('{{logoUrl}}')"></span>
-      {{#if allowUninvited}}Create account{{else}}Sign in{{/if}}
+      {{ labelOrFallback }}
     </h4>
 
-    {{> loginButtonsList . }}
+    {{> loginButtonsList accountsUi }}
   </div>
 </template>
 

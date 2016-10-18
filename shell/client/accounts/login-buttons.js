@@ -274,8 +274,9 @@ const loginWithToken = function (email, token) {
 };
 
 Template.loginButtonsDialog.helpers({
-  allowUninvited() {
-    return Meteor.settings.public.allowUninvited;
+  labelOrFallback() {
+    if (this.label) return this.label;
+    return Meteor.settings.public.allowUninvited ? "Create account" : "Sign in";
   },
 
   logoUrl() {

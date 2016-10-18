@@ -18,7 +18,7 @@ successfully set up Sandstorm!
 
 Note that you can also set up Sandstorm to integrate with Active Directory using LDAP bind to
 authenticate users. We recommend Active Directory Federation Services or Microsoft Azure AD Single
-Sign-On instead, which use SAML. SAML has the advantage that user never type passwords into
+Sign-On instead, which use SAML. SAML has the advantage that users never type passwords into
 Sandstorm. If you must use LDAP instead, see the general [Sandstorm for Work documentation about
 LDAP](for-work.md#authentication-provider-ldap) or email support@sandstorm.io.
 

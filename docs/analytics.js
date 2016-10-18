@@ -1,3 +1,12 @@
+<!-- Not analytics, but this was an easy place to add some custom JS -->
+var fixWidth = function() {
+  if (window.location.pathname.indexOf("active-directory") !== -1) {
+    document.getElementsByClassName("wy-nav-content")[0].style.maxWidth="10000px";
+  }
+};
+document.addEventListener("DOMContentLoaded", fixWidth);
+<!-- end Active Directory page styling -->
+
 <!-- Piwik -->
   var _paq = _paq || [];
   _paq.push(['trackPageView']);

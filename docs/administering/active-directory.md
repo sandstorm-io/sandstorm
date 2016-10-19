@@ -141,9 +141,12 @@ Sandstorm.  Once you have done this, you can use Active Directory to choose whic
 domain are allowed to use Sandstorm.
 
 To connect to Active Directory via SAML, you must enable Active Directory Federation Services (AD
-FS). We will assume you have already done this. We also assume that the Sandstorm server can
-reach the Active Directory server, e.g. they are on the same VPN, or firewall rules permit them
-to communicate.
+FS). We will assume you have already done this. We also assume that your users' web browsers can
+reach the the Sandstorm server as well as the AD server. With SAML, all communication between the
+Service Provider (Sandstorm) and the Identity Provider (AD) is through the browser. The only
+server-to-server communication happens during setup, where AD FS fetches a configuration XML file
+from Sandstorm. If desired, the admin can avoid this server-to-server communication be by
+downloading the XML from Sandstorm and then uploading it to AD separately.
 
 Note that AD FS requires that your Sandstorm server supports HTTPS with a valid certificate. You can
 use a private CA for this, but setting up a private CA is beyond the scope of this document.

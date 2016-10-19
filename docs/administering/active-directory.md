@@ -116,9 +116,9 @@ follow these instructions.
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/azure-ad-config/18.png)
 
-- Click the checkbox to complete configuration.
+- Click "Assign accounts".
 
-![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/azure-ad-config/19.png)
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/azure-ad-config/10.png)
 
 - Click: "Users and Groups", then "All Users". Click the check-mark to request Sandstorm access for
   all users. Note that Sandstorm only counts a user for [billing](for-work.md) if they actually log into

@@ -168,7 +168,7 @@ Here is a screenshot tour, using example.sandcats.io as an example Sandstorm ser
   the Sandstorm service provider metadata URL. This is typically of the form:
   https://example.sandcats.io/_saml/config/default
 
-![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/13-blanked.png)
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/26-blanked.png)
 
 - Back in the "Add Relying Party Trust Wizard," choose the radio button for: "Import data about the
   relying party published online or on a local network".  Under "Federation metadata address (host
@@ -296,7 +296,9 @@ Here is a screenshot tour, using example.sandcats.io as an example Sandstorm ser
     - Under "SAML cert for above provider", copy the contents of the certificate you extracted in part
       2, above.
 
-    - Use the full server URL as the entity ID. For example, https://example.sandcats.io
+    - For the entity ID, keep the Sandstorm default, which is your server hostname. For example,
+      example.sandcats.io. If you change this value, logins will not work until you resynchronize AD
+      FS with Sandstorm's SAML metadata.
 
     - Finally, click "Save."
 

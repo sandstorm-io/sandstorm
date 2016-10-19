@@ -699,7 +699,7 @@ Template.grainView.helpers({
       const grain = globalGrains.getActive();
       grain.disableSigninOverlay();
     };
-  }
+  },
 });
 
 Template.grain.helpers({

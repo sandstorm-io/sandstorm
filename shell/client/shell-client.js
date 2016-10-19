@@ -633,7 +633,9 @@ Template.layout.helpers({
 });
 
 Template.layout.events({
-  "click #demo-expired .logout": function (event) {
+  "click #demo-expired button[name=logout]"(evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
     logoutSandstorm();
   },
 });

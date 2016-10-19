@@ -554,8 +554,13 @@ body>.topbar {
           padding-right: 0 !important;
         }
         .demo-notice {
-          p { font-size: 0 !important; padding: 4px !important; }
+          p { font-size: 0 !important; padding: 0px; }
+          span { display: none !important; }
           button { display: none !important; }
+          a { display: none !important; }
+        }
+        .demo-timer {
+          p { font-size: 0 !important; padding: 4px !important; }
         }
       }
       &.hide-desktop {
@@ -578,26 +583,33 @@ body>.topbar {
       background-color: #303030;
       color: #606060;
       li {
-        line-height: 32px;
-        height: 32px;
         display: block;
         position: relative;
         border-bottom: 1px solid $topbar-border-color;
         margin: 0;
         list-style-type: none;
-        a {
-          display: block;
-          min-height: 32px;
-          padding-left: $navbar-width-desktop-shrunk;
-          text-decoration: none;
-          text-overflow: ellipsis;
-          overflow: hidden;
-          white-space: nowrap;
-          &, &:visited, &:active, &:hover {
-            color: inherit;
+
+        &.navitem-open-grain, &.navitem-create-grain, &.navitem-grain {
+          a {
+            display: block;
+            min-height: 32px;
+            padding-left: $navbar-width-desktop-shrunk;
+            text-decoration: none;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+            &, &:visited, &:active, &:hover {
+              color: inherit;
+            }
           }
         }
+        &.navitem-grain {
+          line-height: 32px;
+          height: 32px;
+        }
         &.navitem-open-grain, &.navitem-create-grain {
+          display: block;
+          position: relative;
           background-repeat: no-repeat;
           background-position: (($navbar-width-desktop-shrunk - 24px) / 2) center;
           background-size: 24px 24px;
@@ -633,6 +645,12 @@ body>.topbar {
           height: auto;
           width: auto;
         }
+        &.navitem-demo-timer {
+          position: absolute;
+          bottom: 0;
+          height: auto;
+          width: 100%;
+        }
       }
     }
     @media #{$mobile} {
@@ -645,15 +663,17 @@ body>.topbar {
         position: relative;
         border-bottom: 1px solid #676767;
         margin: 0;
-        a {
-          display: block;
-          padding-left: 48px;
-          text-decoration: none;
-          text-overflow: ellipsis;
-          overflow: hidden;
-          white-space: nowrap;
-          &, &:visited, &:active, &:hover {
-            color: inherit;
+        &.navitem-open-grain, &.navitem-create-grain, &.navitem-grain {
+          a {
+            display: block;
+            padding-left: 48px;
+            text-decoration: none;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+            &, &:visited, &:active, &:hover {
+              color: inherit;
+            }
           }
         }
         &.navitem-open-grain, &.navitem-create-grain {
@@ -666,6 +686,9 @@ body>.topbar {
         }
         &.navitem-create-grain {
           background-image: url('/apps.svg');
+        }
+        &.navitem-demo-timer {
+          height: auto;
         }
       }
     }
@@ -748,61 +771,70 @@ body>.topbar {
           z-index: 2;  // Stack above <a>.
         }
       }
+    }
 
-      >li.navitem-demo-notice {
-        height: auto !important;
+    li.navitem-demo-notice {
+      height: auto !important;
+    }
+  }
+
+  .demo-notice {
+    width: 100%;
+    overflow: hidden;
+
+    p {
+      color: white;
+      padding: 8px;
+      margin: 0;
+      line-height: normal;
+      font-size: 14px;
+      transition: font-size 0.2s;
+
+      a.get-sandstorm-button {
+        display: block;
+        @extend %button-base;
+        background-color: #606060;
+        color: white;
+        &:hover {
+          background-color: #717171;
+        }
       }
     }
 
-    .demo-notice {
+    button {
+      display: block;
       width: 100%;
-      overflow: hidden;
+      text-align: center;
+      margin-top: 2px;
+      margin-bottom: 2px;
+    }
 
-      p {
-        color: $topbar-foreground-color;
-        padding: 8px;
-        margin: 0;
-        line-height: normal;
-        font-size: 14px;
-        transition: font-size 0.2s;
+    .subtext {
+      font-size: 12px;
+      color: $topbar-foreground-color;
+    }
+  }
 
-        a {
-          color: white;
-          padding: 0;
-          white-space: normal;
-          &:hover {
-            text-decoration: underline;
-          }
-        }
-      }
+  .demo-timer {
+    p {
+      margin: 0;
+      padding: 4px;
+      color: $topbar-foreground-color;
+      font-size: 14px;
+    }
+  }
 
-      .countdown {
-        display: block;
-        font-size: 30px;
-        font-weight: bold;
-        color: #bb0;
-        text-align: center;
-        border: 1px solid $topbar-foreground-color;
-        border-radius: 4px;
-        margin-top: 8px;
+  .countdown {
+    display: block;
+    font-size: 30px;
+    font-weight: bold;
+    color: #a0a0a0;
+    text-align: center;
+    border: 1px solid $topbar-foreground-color;
+    border-radius: 4px;
 
-        &.urgent {
-          color: #f00;
-        }
-      }
-
-      button {
-        @include unstyled-button();
-        display: block;
-        border: 1px solid $topbar-foreground-color;
-        border-radius: 4px;
-        width: 100%;
-        text-align: center;
-        padding: 4px;
-        background-color: $topbar-background-color-active;
-        color: $topbar-foreground-color-active;
-        margin-top: 8px;
-      }
+    &.urgent {
+      color: #f00;
     }
   }
 }
@@ -1403,5 +1435,4 @@ body>.popup {
       }
     }
   }
-
 }

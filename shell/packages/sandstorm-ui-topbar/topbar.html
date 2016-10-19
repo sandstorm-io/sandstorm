@@ -55,18 +55,33 @@ limitations under the License.
           <button class="close-button" title="Close {{title}}"></button>
         </li>
         {{/each}}
-
-        {{#with accountExpires}}
-          <li class="navitem-demo-notice"><div class="demo-notice">
-            <p>This demo expires in: <span class="countdown {{#if urgent}}urgent{{/if}}">{{countdown}}</span></p>
-
-            <p>To make your data permanent, create an account:
-              <button class="sign-in">Create account »</button></p>
-
-            <p class="self-host"><a href="https://sandstorm.io/install/" target="_blank">Or, get Sandstorm on your own server (it's open source) »</a></p>
-          </div></li>
-        {{/with}}
       </ul>
+
+      {{#with accountExpires}}
+      <li class="navitem-demo-notice">
+        <div class="demo-notice">
+          <p>Start collaborating with others by using Sandstorm on Oasis:
+            <button class="button-primary sign-in">Create free account »</button>
+            <span class="subtext">Your demo data will be transferred.</span>
+          </p>
+
+          <p class="self-host">
+            Or, install Sandstorm for your team (it's open source):
+            <a class="get-sandstorm-button" href="https://sandstorm.io/install/" target="_blank">
+              Get Sandstorm »
+            </a>
+          </p>
+        </div>
+      </li>
+
+      <li class="navitem-demo-timer">
+        <div class="demo-timer">
+          <p>Sign up within:
+            <span class="countdown {{#if urgent}}urgent{{/if}}">{{countdown}}</span>
+          </p>
+        </div>
+      </li>
+      {{/with}}
     </ul>
   </ul>
   {{!-- Becomes hamburger menu button in mobile view.  Placed after the topbar so it stacks above

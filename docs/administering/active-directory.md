@@ -66,7 +66,9 @@ follow these instructions.
 
 - Choose "custom" from the sidebar. Choose "Add an unlisted application my organization is using".
 
-    - If this option is not displayed: Make sure you are using the classic portal. This option does not yet appear in the new portal. This option may require upgrading to Azure AD Premium.
+    - If this option is not displayed: Make sure you are using the classic portal. At the time of
+      writing, Microsoft is still working on addig this option to the new portal. This option may
+      require upgrading to Azure AD Premium.
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/azure-ad-config/08.png)
 

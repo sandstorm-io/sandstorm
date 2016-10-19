@@ -37,13 +37,15 @@ declare the user to be a member. You can enable/disable this on a per-login-prov
   receive user status in Sandstorm. When you enable the use of Google Apps to define the boundary
   of your organization, you must specify which Google Apps domain represents your organization.
 
+- **SAML authentication, including Active Directory.** All users who log in via SAML can
+  automatically receive user status in Sandstorm. When you use SAML to define the boundary of your
+  organization, all users who log in via SAML are considered members of the organization. Sandstorm
+  supports logging in via Active Directory via support for SAML 2.0 and provides a [step-by-step
+  tutorial.](active-directory.md)
+
 - **LDAP authentication.** All users who log in via LDAP can automatically receive user status in
   Sandstorm. When you use LDAP to define the boundary of your organization, all users who log in via
   LDAP are considered members of the organization.
-
-- **SAML authentication.** All users who log in via LDAP can automatically receive user status in
-  Sandstorm. When you use SAML to define the boundary of your organization, all users who log in via
-  SAML are considered members of the organization.
 
 - **Passwordless email login.** All users who use a particular email address domain name
   (e.g. @example.com) can receive user status in Sandstorm. To enable this, you must specify which
@@ -75,6 +77,40 @@ You can **make all organization users visible to each other.** This setting auto
 users within the organization to each other's contact list so that they can share grains with each
 other. The contact list is used for autocomplete when users are in the "Share access" dialog within
 a grain. Disable this if you have some users whose identity should stay hidden from other users.
+
+### Authentication provider: SAML 2.0
+
+SAML 2.0 is a passwordless single sign-on protocol. It allows a web application such as Sandstorm to
+request the current user's credentials from a central service, typically administered by a
+university or corporate IT team. Sandstorm's SAML support is compatible with Shibboleth, Okta,
+Microsoft Active Directory, SimpleSAMLphp, and other SAML services. We have special documentation
+for [single sign-on with Active Directory.](active-directory.md)
+
+To enable SAML login on your Sandstorm server, take the following steps:
+
+- Log into your Sandstorm server as an administrator.
+
+- Make sure you have enabled [Sandstorm for Work on your server](#enabling-sandstorm-for-work).
+
+- Click **Admin panel** within your Sandstorm server; this should take you to `/admin`.
+
+- Under "Configuration", click on "Identity providers"; this should take you to `/admin/identity`.
+
+- In the Identity providers table, click the "Configure" button in the SAML row.
+
+- Complete the form and enabled SAML login.
+
+Your SAML IDP should be configured to return a persistent nameID. In addition, if you are not using
+Active Directory, you **must** configure your IDP to provide two extra attributes, email and
+displayName.
+
+The easiest way to integrate with SAML is if your SAML IDP supports reading the service provider
+metadata from a URL. If it does, you can point it to your Sandstorm base URL followed by
+`/_saml/config/default`. For example: `https://sandstorm.example.com/_saml/config/default`
+
+The Service URL of this server is displayed in the configuration dialog, and is always your server's
+hostname plus `/_saml/validate/default`. For example:
+`https://sandstorm.example.com/_saml/validate/default`
 
 ### Authentication provider: LDAP
 
@@ -118,39 +154,6 @@ Implementation notes for LDAP that may apply to your site:
 - Typically LDAP servers use the `cn` field to store the name of the person who is successfully
   logging in. `cn` is short for common name. If your LDAP server is configured differently, please
   adjust the **LDAP given name attribute**.
-
-### Authentication provider: SAML 2.0
-
-SAML 2.0 is a passwordless single sign-on protocol. It allows a web application such as Sandstorm to
-request the current user's credentials from a central service, typically administered by a
-university or corporate IT team. Sandstorm's SAML support is compatible with Shibboleth, Okta,
-Microsoft Active Directory, SimpleSAMLphp, and other SAML services.
-
-To enable SAML login on your Sandstorm server, take the following steps:
-
-- Log into your Sandstorm server as an administrator.
-
-- Make sure you have enabled [Sandstorm for Work on your server](#enabling-sandstorm-for-work).
-
-- Click **Admin panel** within your Sandstorm server; this should take you to `/admin`.
-
-- Under "Configuration", click on "Identity providers"; this should take you to `/admin/identity`.
-
-- In the Identity providers table, click the "Configure" button in the SAML row.
-
-- Complete the form and enabled SAML login.
-
-Your SAML IDP should be configured to return a persistent nameID. In addition, if you are not using
-Active Directory, you **must** configure your IDP to provide two extra attributes, email and
-displayName.
-
-The easiest way to integrate with SAML is if your SAML IDP supports reading the service provider
-metadata from a URL. If it does, you can point it to your Sandstorm base URL followed by
-`/_saml/config/default`. For example: `https://sandstorm.example.com/_saml/config/default`
-
-The Service URL of this server is displayed in the configuration dialog, and is always your server's
-hostname plus `/_saml/validate/default`. For example:
-`https://sandstorm.example.com/_saml/validate/default`
 
 ### How we calculate the number of users on your server
 

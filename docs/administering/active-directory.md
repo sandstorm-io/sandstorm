@@ -104,15 +104,19 @@ follow these instructions.
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/azure-ad-config/13.png)
 
+- Back in the Azure AD configuration, copy the line titled "Single Sign-On Service URL". In the Sandstorm config, paste this under "SAML provider entry point URL:".
+
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/azure-ad-config/16.png)
 
-- Back in the Azure AD configuration, copy the line titled "Single Sign-On Service URL". In the Sandstorm config, paste this under "SAML provider entry point URL:".
+![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/azure-ad-config/13.png)
+
+- In the Azure AD config, check the box: "Confirm that you have configured single sign-on as
+  described above." Click the "next" arrow.
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/azure-ad-config/17.png)
 
-- In the Azure AD config, check the box: "Confirm that you have configured single sign-on as
-  described above." Click the "next" arrow and enter your email address for service alerts from
-  Microsoft. Click the checkbox to complete configuration.
+- Enter your email address for service alerts from Microsoft. Click
+  the checkbox to complete configuration.
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/azure-ad-config/18.png)
 

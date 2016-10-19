@@ -218,8 +218,9 @@ Here is a screenshot tour, using example.sandcats.io as an example Sandstorm ser
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/11.png)
 
-- Under "Claim rule name", enter: "Send e-mail address" (or any name you want). Configure the LDAP Attribute
-  as E-Mail Addresses and the Outgoing Claim Type as E-Mail Address. Then click "Finish."
+- Under "Claim rule name", enter: "Send e-mail address" (or any name you want). Use "Active
+  Directory" as the attribute store. Configure the LDAP Attribute as E-Mail Addresses and the
+  Outgoing Claim Type as E-Mail Address. Then click "Finish."
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/12.png)
 

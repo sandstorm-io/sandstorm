@@ -82,7 +82,7 @@ follow these instructions.
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/azure-ad-config/11.png)
 
-- Now, visit your Sandstorm server and begin configuring SAML login. In the Sandstorm SAML config, make sure your "Entity ID" is the full URL to your Sandstorm server, including the leading "https://", which you will also use as the Azure AD "Identifier". Azure AD requires that the entity ID be a full URL, not a hostname. You will also need to copy the Sandstorm server's Service URL to your clipboard.
+- Now, visit your Sandstorm server and begin configuring SAML login. In the Sandstorm SAML config, adjust the "Entity ID" to be the full URL to your Sandstorm server, including the leading "https://", which you will also use as the Azure AD "Identifier". Azure AD requires that the entity ID be a full URL, not a hostname. You will also need to copy the Sandstorm server's Service URL to your clipboard.
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/azure-ad-config/13-blanked.png)
 

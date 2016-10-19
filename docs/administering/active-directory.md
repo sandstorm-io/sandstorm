@@ -18,8 +18,9 @@ successfully set up Sandstorm!
 
 Note that you can also set up Sandstorm to integrate with Active Directory using LDAP bind to
 authenticate users. We recommend Active Directory Federation Services or Microsoft Azure AD Single
-Sign-On instead, which use SAML. SAML has the advantage that users never type passwords into
-Sandstorm. If you must use LDAP instead, see the general [Sandstorm for Work documentation about
+Sign-On instead. Both of these produccts use SAML, which provides a unified login screen for your
+organization as well as the security advantage that users never type passwords into Sandstorm. If
+you must use LDAP instead, see the general [Sandstorm for Work documentation about
 LDAP](for-work.md#authentication-provider-ldap) or email support@sandstorm.io.
 
 ## Windows Azure Active Directory
@@ -106,7 +107,7 @@ follow these instructions.
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/azure-ad-config/17.png)
 
 - In the Azure AD config, check the box: "Confirm that you have configured single sign-on as
-  described above." Clik the "next" arrow and enter your email address for service alerts from
+  described above." Click the "next" arrow and enter your email address for service alerts from
   Microsoft. Click the checkbox to complete configuration.
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/azure-ad-config/18.png)

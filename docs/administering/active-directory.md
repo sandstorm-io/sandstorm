@@ -6,11 +6,14 @@ integration requires [Sandstorm for Work.](for-work.md)
 
 Sandstorm can rely on AD to authenticate users.
 
-Active Directory exists as a cloud product called Windows Azure as well as a software product called
-Windows Server. Sandstorm supports both products.
+Active Directory exists as part of a cloud product called Windows Azure as well as a software
+product called Windows Server. Sandstorm supports both products.
 
-Sandstorm can be configured to use single sign-on in a configuration where Sandstorm never sees the
-user's passwords. This relies on Sandstorm's support for SAML 2.0.
+Sandstorm can be configured to use single sign-on in a configuration where AD has full control over
+the login form, allowing you to enjoy AD's support for multi-factor authentication, Windows
+credentials login, and a consistent sign-in experience for all apps within your organization. As a
+security benefit, the Sandstorm software never sees the user's passwords. This relies on Sandstorm's
+support for SAML 2.0.
 
 This document provides textual advice as well as a great deal of screenshots to allow you to proceed
 with confidence. If you have questions, please email support@sandstorm.io. We want to help you
@@ -18,9 +21,8 @@ successfully set up Sandstorm!
 
 Note that you can also set up Sandstorm to integrate with Active Directory using LDAP bind to
 authenticate users. We recommend Active Directory Federation Services or Microsoft Azure AD Single
-Sign-On instead. Both of these produccts use SAML, which provides a unified login screen for your
-organization as well as the security advantage that users never type passwords into Sandstorm. If
-you must use LDAP instead, see the general [Sandstorm for Work documentation about
+Sign-On instead. Both of these products use SAML for authentication. If you must use LDAP bind for
+authentication instead, see the general [Sandstorm for Work documentation about
 LDAP](for-work.md#authentication-provider-ldap) or email support@sandstorm.io.
 
 ## Windows Azure Active Directory

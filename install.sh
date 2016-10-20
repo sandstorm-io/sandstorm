@@ -493,12 +493,10 @@ maybe_enable_userns_sysctl() {
   fi
 
   # Enable it.
-  echo "NOTE: Enabling unprivileged user namespaces because you passed -d."
-  if ! sysctl -wq kernel.unprivileged_userns_clone=1; then
-    echo "WARNING: 'sysctl -w kernel.unprivileged_userns_clone=1' failed. If you" >&2
-    echo "  are using Docker, you will need to run this command manually outside" >&2
-    echo "  of Docker and update /etc/sysctl.conf. For more info, see:" >&2
-    echo "    https://docs.sandstorm.io/en/latest/install/#option-6-using-sandstorm-within-docker" >&2
+  if sysctl -wq kernel.unprivileged_userns_clone=1 2>/dev/null; then
+    echo "NOTE: Enabled unprivileged user namespaces because you passed -d."
+  else
+    # Apparently we can't. Maybe we're in a Docker container. Give up and use privileged sandbox.
     return
   fi
 
@@ -518,6 +516,7 @@ __EOF__
     # We couldn't make the change permanent, so undo the change. Probably everything will work
     # fine with the privileged sandbox. But if it doesn't, it's better that things fail now rather
     # than wait for a reboot.
+    echo "NOTE: Never mind, not enabling userns because can't write /etc/sysctl.d."
     sysctl -wq "kernel.unprivileged_userns_clone=$OLD_VALUE" || true
     return
   fi

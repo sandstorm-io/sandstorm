@@ -61,6 +61,10 @@ done
 (vagrant box list | grep -q 'precise64') || vagrant box add precise64 https://vagrantcloud.com/hashicorp/boxes/precise64/versions/1.1.0/providers/virtualbox.box
 (vagrant box list | grep -q 'precise64.*libvirt') || vagrant mutate precise64 libvirt
 
+# Do the same for a CentOS base box. See notes in Vagrantfile about that.
+(vagrant box list | grep -q 'centos7_convertible') || vagrant box add centos7_convertible http://cloud.centos.org/centos/7/vagrant/x86_64/images/CentOS-7-x86_64-Vagrant-1609_01.VirtualBox.box
+(vagrant box list | grep -q 'centos7_convertible.*libvirt') || vagrant mutate centos7_convertible libvirt
+
 # Download the latest released version of Asheesh's stodgy-tester tool, if it is absent.
 if [ ! -f ~/.local/bin/stodgy-tester ] ; then
   pip install --user --upgrade git+https://github.com/paulproteus/stodgy-tester.git#egg=stodgy-tester

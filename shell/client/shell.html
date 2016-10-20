@@ -36,7 +36,7 @@ limitations under the License.
         <p>Thanks for trying the Sandstorm Demo! Your demo account has expired. If
           you'd like to continue using Sandstorm and make your data permanent, please sign in.</p>
         <div class="login">
-          {{> loginButtonsDialog globalAccountsUi}}
+          {{> loginButtonsDialog accountsUi=globalAccountsUi}}
         </div>
       {{else}}
         <p>Thanks for trying the Sandstorm Demo! Your demo account has expired.</p>
@@ -193,7 +193,7 @@ limitations under the License.
   {{>title "Home"}}
 
   <div id="intro" class="{{#if splashUrl}}has-splash{{/if}}">
-    {{> loginButtonsDialog globalAccountsUi}}
+    {{> loginButtonsDialog accountsUi=globalAccountsUi}}
     {{#if splashUrl}}
       <iframe src="{{splashUrl}}"></iframe>
     {{/if}}

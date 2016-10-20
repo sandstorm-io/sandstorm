@@ -66,6 +66,26 @@
   z-index: 1010;
   display: block;
   overflow-y: auto;
+
+  &.signin {
+    // Used by the sign-in overlay, which would prefer to be minimally wide, have no background, but
+    // retain the close button.
+    .modal {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-dialog {
+      display: inline-block;
+    }
+
+    .modal-content {
+      background-color: transparent;
+      padding: 0px;
+    }
+  }
 }
 
 .modal-dialog {

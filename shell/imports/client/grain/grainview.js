@@ -434,14 +434,16 @@ class GrainView {
     this._dep.changed();
   }
 
-  showSigninOverlay(left, top) {
-    this._signinOverlay = { left: left, top: top, };
+  showSigninOverlay(creatingAccount) {
+    this._signinOverlay = {
+      label: creatingAccount ? "Create account" : "Sign in",
+    };
 
     this._dep.changed();
   }
 
   disableSigninOverlay() {
-    this._signinOverlay = null;
+    this._signinOverlay = undefined;
 
     this._dep.changed();
   }

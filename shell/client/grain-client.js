@@ -693,6 +693,13 @@ Template.grainView.helpers({
       onPicked: function (identityId) { grain.revealIdentity(identityId); },
     };
   },
+
+  closeSignInOverlay() {
+    return () => {
+      const grain = globalGrains.getActive();
+      grain.disableSigninOverlay();
+    };
+  },
 });
 
 Template.grain.helpers({
@@ -1488,12 +1495,8 @@ Meteor.startup(function () {
       if (event.data.overlaySignin.disable) {
         senderGrain.disableSigninOverlay();
       } else {
-        const left = event.data.overlaySignin.left;
-        const top = event.data.overlaySignin.top;
-        check(left, Number);
-        check(top, Number);
-
-        senderGrain.showSigninOverlay(left, top);
+        const creatingAccount = !!event.data.overlaySignin.creatingAccount;
+        senderGrain.showSigninOverlay(creatingAccount);
       }
     } else if (event.data.showConnectionGraph) {
       // Allow the current grain to request that the "Who has access" dialog be shown.

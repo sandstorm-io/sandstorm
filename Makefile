@@ -113,8 +113,8 @@ IMAGES= \
     shell/public/email-494949.svg \
     shell/public/close-FFFFFF.svg \
                                   \
-    shell/public/install-6A237C.svg \
-    shell/public/install-9E40B5.svg \
+    shell/public/install-714DAA.svg \
+    shell/public/install-896AC6.svg \
     shell/public/plus-6A237C.svg \
     shell/public/plus-9E40B5.svg \
     shell/public/upload-B7B7B7.svg \
@@ -295,13 +295,13 @@ shell/public/close-FFFFFF.svg: icons/close.svg
 	@$(call color,custom color $<)
 	@sed -e 's/#111111/#FFFFFF/g' < $< > $@
 
-shell/public/install-6A237C.svg: icons/install.svg
+shell/public/install-714DAA.svg: icons/install.svg
 	@$(call color,custom color $<)
-	@sed -e 's/#111111/#6A237C/g' < $< > $@
+	@sed -e 's/#111111/#714DAA/g' < $< > $@
 
-shell/public/install-9E40B5.svg: icons/install.svg
+shell/public/install-896AC6.svg: icons/install.svg
 	@$(call color,custom color $<)
-	@sed -e 's/#111111/#9E40B5/g' < $< > $@
+	@sed -e 's/#111111/#896AC6/g' < $< > $@
 
 shell/public/plus-6A237C.svg: icons/plus.svg
 	@$(call color,custom color $<)

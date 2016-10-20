@@ -39,8 +39,13 @@ limitations under the License.
           {{> loginButtonsDialog accountsUi=globalAccountsUi}}
         </div>
       {{else}}
-        <p>Thanks for trying the Sandstorm Demo! Your demo account has expired.</p>
-        <p><button class="logout">Sign out</button></p>
+        <p>Thanks for trying the Sandstorm Demo! Your demo account has expired.
+          <form class="standard-form">
+            <div class="button-row">
+              <button name="logout" type="submit">Sign out</button>
+            </div>
+          </form>
+        </p>
       {{/if}}
     </div>
   {{else}}

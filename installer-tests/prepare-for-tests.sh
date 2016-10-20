@@ -43,6 +43,15 @@ fi
 for vgplugin in vagrant-mutate vagrant-libvirt; do
   (vagrant plugin list | grep -q "$vgplugin") || vagrant plugin install "$vgplugin"
 done
+cd $(mktemp -d)
+git clone https://github.com/sciurus/vagrant-mutate
+cd vagrant-mutate
+rake build
+vagrant plugin install pkg/vagrant-mutate-1.2.0.gem
+
+# Also get vagrant-mutate from git, due to this bug:
+# https://github.com/sciurus/vagrant-mutate/issues/88
+
 
 # Download this particular random Debian Jessie VM and then convert it to
 # libvirt format.

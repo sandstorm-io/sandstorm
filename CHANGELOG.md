@@ -2,7 +2,7 @@
 - Fix bug that broke Ethercalc.
 
 ### v0.190 (2016-10-15)
-- Sandstorm can now run on systems where user namespaces are not available, including on kernel vension 3.10 (previously, 3.13 was required). This means RHEL 7, CentOS 7, and Arch should now be supported. However, we plan to spend some time testing this new mode before updating the installer script to accept these platforms. If you'd like to test it now -- with the caveat that there may be bugs -- try the updated installer script from [this pull request](https://github.com/sandstorm-io/sandstorm/pull/2656). Or, copy an existing Sandstorm install to a new server -- the new sandboxing mode is used automatically when user namespaces are unavailable.
+- Sandstorm can now run on systems where user namespaces are not available, including on kernel version 3.10 (previously, 3.13 was required). This means RHEL 7, CentOS 7, and Arch should now be supported. However, we plan to spend some time testing this new mode before updating the installer script to accept these platforms. If you'd like to test it now -- with the caveat that there may be bugs -- try the updated installer script from [this pull request](https://github.com/sandstorm-io/sandstorm/pull/2656). Or, copy an existing Sandstorm install to a new server -- the new sandboxing mode is used automatically when user namespaces are unavailable.
 - Changed LDAP config to mask the search password.
 - Moved login errors to the top of the login dialog / menu, from the bottom.
 - Fixed more admin settings inputs to automatically trim whitespace.

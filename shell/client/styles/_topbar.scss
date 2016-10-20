@@ -786,11 +786,13 @@ body>.topbar {
       color: white;
       padding: 8px;
       margin: 0;
+      margin-bottom: 8px;
       line-height: normal;
       font-size: 14px;
       transition: font-size 0.2s;
 
       a.get-sandstorm-button {
+        margin-top: 6px;
         display: block;
         @extend %button-base;
         background-color: #606060;
@@ -805,8 +807,8 @@ body>.topbar {
       display: block;
       width: 100%;
       text-align: center;
-      margin-top: 2px;
-      margin-bottom: 2px;
+      margin-top: 6px;
+      margin-bottom: 4px;
     }
 
     .subtext {

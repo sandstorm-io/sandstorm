@@ -912,7 +912,8 @@ void SupervisorMain::unshareOuter() {
       // "Randomize" the UID and GID in dev mode. This catches app bugs where the app expects the
       // UID or GID to be always 1000, which is not true of servers that use the privileged sandbox
       // rather than the userns sandbox. (The "randomization" algorithm here is only meant to
-      // appear random to a human.)
+      // appear random to a human. The funny-looking numbers are just arbitrary primes chosen
+      // without much thought.)
       time_t now = time(nullptr);
       fakeUid = now * 4721 % 2000 + 1;
       fakeGid = now * 2791 % 2000 + 1;

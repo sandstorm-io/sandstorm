@@ -1354,7 +1354,7 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
             background-color: #cccccc;
             color: #494949;
           }
-          >tr:nth-child(6)>td {
+          >tr:nth-child(5)>td {
             button {
               background-color: #cccccc;
               background: #cccccc;
@@ -1426,12 +1426,6 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
         }
 
         tr:nth-child(3)>td {
-          >p:nth-child(2) {
-            font-size: 12px;
-          }
-        }
-
-        tr:nth-child(4)>td {
           >p:nth-child(1) {
             text-transform: capitalize;
           }
@@ -1441,7 +1435,7 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
           }
         }
 
-        tr:nth-child(5) {
+        tr:nth-child(4) {
           border-bottom: 0px;
 
           >td>p:nth-child(2) {
@@ -1449,7 +1443,7 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
           }
         }
 
-        tr:nth-child(6) {
+        tr:nth-child(5) {
           button {
             width: 95%;
             height: 40px;

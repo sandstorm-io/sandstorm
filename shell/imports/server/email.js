@@ -10,6 +10,10 @@ const getSmtpConfig = function () {
 };
 
 const makePool = function (mailConfig) {
+  if (!mailConfig.hostname) {
+    throw new Error("This Sandstorm server has not been configured to send email.");
+  }
+
   let auth = false;
   if (mailConfig.auth && (mailConfig.auth.user || mailConfig.auth.pass)) {
     auth = mailConfig.auth;

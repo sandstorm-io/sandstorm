@@ -1,3 +1,11 @@
+### v0.192 (2016-10-22)
+- Apps can now request via postMessage that Sandstorm display a large sign-in prompt.
+- On (experimental) standalone domains, the app can now request that the user be logged out.
+- When running an app in dev mode, the perceived UID and GID inside the sandbox are now randomized. This is to help catch app bugs in which the app incorrectly assumes that these numbers will always be the same. When using the new "privileged" sandbox mode (which supports older Linux kernels), the UID depends on the host system, whereas in the past it has always been 1000.
+- Fixed that if e-mail was not configured in Sandstorm, but the local machine had an MTA listening on port 25, sometimes Sandstorm would unexpectedly use it.
+- Oasis: Restyled demo sidebar.
+- Oasis: Restyled plan pricing table.
+
 ### v0.191 (2016-10-16) [bugfixes]
 - Fix bug that broke Ethercalc.
 

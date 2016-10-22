@@ -269,6 +269,8 @@ const loginWithToken = function (email, token) {
       // the login-initiating path if it's not the current path already anyway.
       loginButtonsSession.set("inSignupFlow", false);
       loginButtonsSession.closeDropdown();
+
+      closeLoginOverlays();
     }
   });
 };
@@ -402,6 +404,8 @@ Template.ldapLoginForm.events({
     loginWithLDAP(username, password, function (err) {
       if (err) {
         loginButtonsSession.errorMessage(err.reason || "Unknown error");
+      } else {
+        closeLoginOverlays();
       }
     });
   },
@@ -417,12 +421,26 @@ Template.devLoginForm.helpers({
   },
 });
 
+function closeLoginOverlays() {
+  // Close any open sign-in overlays
+  const grainviews = globalGrains.getAll();
+  grainviews.forEach((grainview) => {
+    grainview.disableSigninOverlay();
+  });
+}
+
 function loginDevHelper(name, isAdmin, linkingNewIdentity) {
   if (linkingNewIdentity) {
     sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
   }
 
-  loginDevAccount(name, isAdmin);
+  loginDevAccount(name, isAdmin, (err) => {
+    if (err) {
+      console.error(err);
+    } else {
+      closeLoginOverlays();
+    }
+  });
 }
 
 Template.devLoginForm.events({

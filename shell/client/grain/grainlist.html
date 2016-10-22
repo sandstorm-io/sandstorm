@@ -67,7 +67,13 @@
               <p><strong>Trash is empty.</strong></p>
             {{else}}
               <p>You don't have any grains yet.
-                <a href="{{ pathFor route='apps' }}">Install an app to create your first grain.</a>
+                <a href="{{ pathFor route='apps' }}">
+                  {{#if hasApps}}
+                    Select an app and create your first grain.
+                  {{else}}
+                    Install an app to create your first grain.
+                  {{/if}}
+                </a>
               </p>
             {{/if}}
           {{/if}}

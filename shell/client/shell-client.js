@@ -54,6 +54,7 @@ Tracker.autorun(function () {
 });
 
 // export: called by sandstorm-accounts-ui/login_buttons.js
+//               and grain-client.js
 logoutSandstorm = function () {
   Meteor.logout(function () {
     sessionStorage.removeItem("linkingIdentityLoginToken");

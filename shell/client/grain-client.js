@@ -1498,6 +1498,14 @@ Meteor.startup(function () {
         const creatingAccount = !!event.data.overlaySignin.creatingAccount;
         senderGrain.showSigninOverlay(creatingAccount);
       }
+    } else if (event.data.requestLogout) {
+      if (isStandalone()) {
+        // Only standalone grains get to ask the shell to log them out, and then, only because their
+        // login state is tracked separately.  In the fullness of time, maybe we should unify the
+        // login state, in which case we'll probably want to disable this option lest a malicious
+        // grain be able to DoS a user.
+        logoutSandstorm();
+      }
     } else if (event.data.showConnectionGraph) {
       // Allow the current grain to request that the "Who has access" dialog be shown.
       // Only show this popup if no other popup is currently active.

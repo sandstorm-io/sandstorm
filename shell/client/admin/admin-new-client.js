@@ -7,3 +7,9 @@ Template.newAdmin.helpers({
     return Session.get("alreadyTestedWildcardHost") && !Session.get("wildcardHostWorks");
   },
 });
+
+Template.newAdminRoot.helpers({
+  hasFeatureKey() {
+    return globalDb.isFeatureKeyValid();
+  },
+});

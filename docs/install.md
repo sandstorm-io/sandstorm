@@ -260,14 +260,13 @@ software within Docker, this is one way to make that work.
 To run Sandstorm within Docker, run the following commands in a shell.
 
 ```bash
-$ docker run -i -t --cap-add SYS_ADMIN --security-opt seccomp=unconfined -v sandstorm-data-volume:/opt/sandstorm --name sandstorm-build buildpack-deps bash -c 'useradd --system --user-group sandstorm ; curl https://install.sandstorm.io/ > install.sh && REPORT=no bash install.sh -d -e'
-$ docker run -i -t --sig-proxy=true -p 0.0.0.0:6080:6080 --cap-add SYS_ADMIN --security-opt seccomp=unconfined -v sandstorm-data-volume:/opt/sandstorm buildpack-deps bash -c 'useradd --system --user-group sandstorm && /opt/sandstorm/sandstorm start && tail -f /opt/sandstorm/var/log/sandstorm.log & sleep infinity'
+$ docker run --privileged -i -t -v sandstorm-data-volume:/opt/sandstorm --name sandstorm-build buildpack-deps bash -c 'useradd --system --user-group sandstorm ; curl https://install.sandstorm.io/ > install.sh && REPORT=no bash install.sh -d -e'
+$ docker run --privileged -i -t --sig-proxy=true -p 0.0.0.0:6080:6080 -v sandstorm-data-volume:/opt/sandstorm buildpack-deps bash -c 'useradd --system --user-group sandstorm && /opt/sandstorm/sandstorm start && tail -f /opt/sandstorm/var/log/sandstorm.log & sleep infinity'
 ```
 
-The special security-related options, specifically
-`--cap-add SYS_ADMIN --security-opt seccomp=unconfined`, are needed so that Sandstorm can do its own
-containerization of itself and of apps within Sandstorm. We use `-i -t --sig-proxy=true` so that you
-can use Ctrl-C to stop the container on your terminal.
+Sandstorm needs to start as root so it can do its own containerization of itself and of apps within
+Sandstorm. We use `-i -t --sig-proxy=true` so that you can use Ctrl-C to stop the container on your
+terminal.
 
 The first command runs the Sandstorm installation script, saving its output to a Docker volume
 called `sandstorm-data-volume`. You can choose a specific directory on your filesystem if you prefer

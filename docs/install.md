@@ -44,6 +44,12 @@ You can also read [technical documentation on how the install script
 works](administering/install-script.md), including non-interactive modes, or learn [how to
 administer Sandstorm](administering.md) once it is installed.
 
+Once Sandstorm is installed, it will update itself and all Sandstorm apps, gaining new features and
+security updates automatically. If you desire security updates of the underlying system, and are
+using Debian or Ubuntu, you can use the unattended-upgrades package, which can even reboot the
+system as needed. Consider following [this
+tutorial.](https://blog.mafr.de/2015/02/26/ubuntu-unattended-upgrades/)
+
 ## Option 2: GitHub-verified install
 
 If you are uncomfortable with `curl|bash`, another option is to [download install.sh from our GitHub repository](https://raw.githubusercontent.com/sandstorm-io/sandstorm/master/install.sh) and then run it:

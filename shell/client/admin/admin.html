@@ -87,7 +87,13 @@
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminFeatureKey"}}
             <div class="item-name">Sandstorm for Work</div>
-            <div class="item-subtext">Get a feature key and unlock advanced features.</div>
+            <div class="item-subtext">
+                {{#if hasFeatureKey }}
+                  Manage subscription and billing.
+                {{else}}
+                  Subscribe to unlock advanced features.
+                {{/if}}
+            </div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminPersonalization"}}
             <div class="item-name">Personalization</div>

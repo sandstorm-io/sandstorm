@@ -313,6 +313,10 @@ Template.sandstormGrainListPage.helpers({
   isSignedUpOrDemo: function () {
     return this._db.isSignedUpOrDemo();
   },
+
+  hasApps() {
+    return this._db.currentUserActions().count() > 0;
+  },
 });
 
 Template.sandstormGrainListPage.onCreated(function () {

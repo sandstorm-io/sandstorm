@@ -435,11 +435,19 @@ In Sandstorm v0.190 and higher, Sandstorm requires either:
 
 - Unprivileged user namespaces enabled in your system's Linux kernel.
 
+You can ask Sandstorm to do an install as non-root by passing `-u` to the install script. For
+example:
+
+```
+curl https://install.sandstorm.io/ > install.sh
+bash install.sh -u
+```
+
 If you start Sandstorm as a non-root user, Sandstorm uses unprivileged user namespaces as part of an
 alternative grain isolation strategy. Some Linux kernels do not have user namespaces available, or
 make them only available to root, so this article provides advice on how to enable user
 namespaces. If you use the userns-based sandbox, please be sure to keep up to date with kernel
-updates and please be sure to make an informed decision about your own security needs.
+updates.
 
 - **People who don't know how to change a Linux kernel.** If you are a customer of a hosting
   provider, please ask your hosting provider to read this page. They are also welcome to email the
@@ -486,7 +494,7 @@ updates and please be sure to make an informed decision about your own security 
   consider using the [Alpine vanilla kernel.](http://forum.alpinelinux.org/downloads)
 
 As an implementation detail, running install.sh with `-d` uses user namespaces if available, and
-enables the Debian-specific sysctl on Debian/Ubuntu systems.
+enables the Debian-specific sysctl on Debian/Ubuntu systems if possible.
 
 ## How do I enable WebSockets proxying? or, Why do some apps seem to crash & reload?
 

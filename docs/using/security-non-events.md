@@ -111,6 +111,7 @@ Bugs mitigated:
 * [CVE-2015-3214](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2015-3214), [4036](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2015-4036): These are bugs in common virtualization drivers which could allow a guest OS user to execute code on the host OS. Exploiting them requires access to virtualization devices in the guest. Sandstorm hides direct access to these devices. Interestingly, these seem to be cases where Sandstorm's sandbox is "more secure" than a VM, going against common wisdom that VMs are "more secure" than containers.
 * [CVE-2016-0728](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-0728): Use-after-free caused by crafted `keyctl()` calls could lead to privilege escalation. Sandstorm disables `keyctl()` inside the sandbox using seccomp.
 * [CVE-2016-2383](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-2383): A bug it eBPF -- the special in-kernel DSL used to express things like seccomp filters -- allowed arbitrary reads of kernel memory. The `bpf()` system call as well as the ability to set seccomp filters are blocked inside Sandstorm using (ironically) seccomp.
+* [CVE-2016-5195](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-5195): The "Dirty COW" privilege escalation bug. To exploit, you need either `ptrace()` (which Sandstorm blocks using seccomp) or `/proc/<pid>/mem` (but `/proc` is not mounted in the Sandstorm sandbox).
 
 Bugs *not* mitigated:
 

@@ -425,17 +425,10 @@ Meteor.methods({
                                "User is not authorized to open this grain.");
       }
 
-      let maybeUserId = null;
-      let maybeIdentityId = null;
-      if (neverRedeem) {
-        // Powerbox offers expect that sessions will have a userId attached to them, and will fail
-        // without it if the user is actually logged in.
-        maybeUserId = this.userId;
-        maybeIdentityId = identityId;
-      }
-
-      const opened = globalBackend.openSessionInternal(apiToken.grainId, maybeUserId,
-        maybeIdentityId, title, apiToken, cachedSalt);
+      // Pass in userId/identityId because in the case of a user being logged in, powerbox offers
+      // require it.
+      const opened = globalBackend.openSessionInternal(apiToken.grainId, this.userId,
+        identityId, title, apiToken, cachedSalt);
 
       const result = opened.methodResult;
       const proxy = new Proxy(grain, result.sessionId,

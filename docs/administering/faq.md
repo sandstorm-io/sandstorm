@@ -689,13 +689,14 @@ browser sends the request to Sandstorm.
 
 Once Sandstorm receives this request, it needs to know which grain it should dispatch this request
 to. This is supported by having the user create a DNS TXT record for sandstorm-www.example.com
-containing the grain's "public ID". If no such DNS record is found, Sandstorm takes that as an
-indication that the domain owner has not indicated their desire to publish a particular Sandstorm
-grain at the domain from the HTTP request.
+containing the grain's "public ID". If no such DNS record is found, Sandstorm concludes that the
+domain owner has not indicated a desire to publish a particular Sandstorm grain at the domain
+from the HTTP request.
 
 What's happening in your log traces is that Sandstorm is receiving HTTP requests for those domains,
 performing the DNS lookup to see what grain's static publishing folder should be used to answer
-those requests, and the DNS lookup is failing, which is distinct from returning no record.
+those requests, and the DNS lookup is either failing (in the case of `ETIMEOUT`) or returning a
+response whose format surprises Sandstorm.
 
-Sandstorm logs this event, since it's a failed DNS lookup, and could indicate a configuration
-problem if it occurred for a domain name that **should** be served from this Sandstorm server.
+Sandstorm logs this event since it could indicate a configuration problem if it occurred for a
+domain name that **should** be served from this Sandstorm server.

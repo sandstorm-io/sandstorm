@@ -1,7 +1,8 @@
 site_name: Docs
 theme_dir: 'docs/sandstorm_readthedocs_modified_theme'
 theme: 'readthedocs'
-repo_url: https://github.com/sandstorm-io/sandstorm/tree/master/docs
+repo_url: https://github.com/sandstorm-io/sandstorm
+edit_uri: edit/master/docs/
 markdown_extensions:
     - inline_graphviz
 extra_css:

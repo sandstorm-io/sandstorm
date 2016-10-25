@@ -58,7 +58,7 @@ kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode) {
 
 kj::AutoCloseFd raiiOpenAt(int dirfd, kj::StringPtr name, int flags, mode_t mode) {
   int fd;
-  if (flags & O_TMPFILE) {
+  if ((flags & O_TMPFILE) == O_TMPFILE) {
     // work around glibc bug: https://sourceware.org/bugzilla/show_bug.cgi?id=17523
     KJ_SYSCALL(fd = syscall(SYS_openat, dirfd, name.cStr(), flags, mode), name);
   } else {

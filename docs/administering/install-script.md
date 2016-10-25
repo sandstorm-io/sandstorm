@@ -50,14 +50,16 @@ If -i is specified, default to (i)nsecure mode where we do not request a HTTPS c
 If -u is specified, default to avoiding root priviliges. Note that the dev tools only work if the server as root privileges.
 ```
 
-The `-d` option will use **defaults** for all options, creating a fully non-interactive install.  If
-you provide that option by itself, you will get a `sandstorm.conf` configured to use:
+The `-d` option will use **development defaults** for all options, creating a fully non-interactive
+install.  If you provide that option by itself, you will get a `sandstorm.conf` configured to use:
 
 - `BASE_URL=http://local.sandstorm.io:6080`
 - `BIND_IP=127.0.0.1` (or `BIND_IP=0.0.0.0` if you pass `-e`)
 
-and other defaults. One way to get a fully-automated install is to use `-d`, accept all defaults,
-and stop Sandstorm, modify `/opt/sandstorm/sandstorm.conf` to your liking, and then start Sandstorm.
+and other defaults optimized for app development. This includes enabling unprivileged user
+namespaces system-wide if necessary. One way to get a fully-automated install is to use `-d`, accept
+all defaults, and stop Sandstorm, modify `/opt/sandstorm/sandstorm.conf` to your liking, and then
+start Sandstorm.
 
 Another way is to request specific custom behavior from `install.sh`.
 

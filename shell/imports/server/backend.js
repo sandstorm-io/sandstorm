@@ -184,8 +184,10 @@ class SandstormBackend {
     // and also update the user's storage usage.
 
     let storagePromise = undefined;
+    let ownerId = undefined;
     if (this._db.isQuotaEnabled() && !storageUsageUnimplemented) {
-      storagePromise = this._backendCap.getUserStorageUsage(userId);
+      ownerId = Grains.findOne(grainId).userId;
+      storagePromise = this._backendCap.getUserStorageUsage(ownerId);
     }
 
     const now = new Date();
@@ -208,7 +210,6 @@ class SandstormBackend {
 
     if (storagePromise) {
       try {
-        const ownerId = Grains.findOne(grainId).userId;
         const size = parseInt(waitPromise(storagePromise).size);
         Meteor.users.update(ownerId, { $set: { storageUsage: size } });
         // TODO(security): Consider actively killing grains if the user is excessively over quota?

@@ -425,8 +425,15 @@ Meteor.methods({
                                "User is not authorized to open this grain.");
       }
 
-      const opened = globalBackend.openSessionInternal(apiToken.grainId, null, null,
-                                                       title, apiToken, cachedSalt);
+      let maybeUserId = null;
+      let maybeIdentityId = null;
+      if (neverRedeem) {
+        maybeUserId = this.userId;
+        maybeIdentityId = identityId;
+      }
+
+      const opened = globalBackend.openSessionInternal(apiToken.grainId, maybeUserId,
+        maybeIdentityId, title, apiToken, cachedSalt);
 
       const result = opened.methodResult;
       const proxy = new Proxy(grain, result.sessionId,

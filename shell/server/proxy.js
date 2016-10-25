@@ -428,6 +428,8 @@ Meteor.methods({
       let maybeUserId = null;
       let maybeIdentityId = null;
       if (neverRedeem) {
+        // Powerbox offers expect that sessions will have a userId attached to them, and will fail
+        // without it if the user is actually logged in.
         maybeUserId = this.userId;
         maybeIdentityId = identityId;
       }

@@ -427,36 +427,19 @@ to address the issue.
 To get further help, please email support@sandstorm.io. Please include the most recent 100 lines
 from the MongoDB log file, if you can.
 
-## Enabling user namespaces
+## Installing and running without root privileges
 
-Until version v0.190, Sandstorm required the Linux feature called user namespaces to be enabled on
-your Linux system and available to unprivileged users. This became optional in v0.190 with the
-introduction of a new sandboxing strategy, the "privileged" sandbox, which is the new default.
-
-Today, Sandstorm requires either:
+In Sandstorm v0.190 and higher, Sandstorm requires either:
 
 - The ability to launch Sandstorm as root so it can drop privileges itself, or
 
 - Unprivileged user namespaces enabled in your system's Linux kernel.
 
-If you start Sandstorm as a non-root user ID, Sandstorm still needs unprivileged user
-namespaces. Therefore this FAQ entry remains here for those few that require the userns-based
-sandbox.
-
-If you are considering choosing between these, our suggestion is the privileged sandbox, which is
-the default on new Sandstorm installations. Both sandboxing mechanisms are quite secure and reliable.
-
-The two sandboxes continue to exist for compatibility reasons. If you feel the need to consider your
-options and pick one, consider that Linux's unprivileged user namespaces feature has had a number of
-security issues. Consider further that Sandstorm's privileged sandbox requires a process running
-with root privileges, but that for most of the process's lifetime, it runs with decreased
-privileges. The new "privileged" sandbox is the default, and is a good option. You can check which
-sandbox is in use on your system by starting a new grain and viewing the grain's debug log. Look for
-a line including the word "sandbox."
-
-This article provides advice on how to enable user namespaces. If you use the userns-based sandbox,
-please be sure to keep up to date with kernel updates and please be sure to make an informed
-decision about your own security needs.
+If you start Sandstorm as a non-root user, Sandstorm uses unprivileged user namespaces as part of an
+alternative grain isolation strategy. Some Linux kernels do not have user namespaces available, or
+make them only available to root, so this article provides advice on how to enable user
+namespaces. If you use the userns-based sandbox, please be sure to keep up to date with kernel
+updates and please be sure to make an informed decision about your own security needs.
 
 - **People who don't know how to change a Linux kernel.** If you are a customer of a hosting
   provider, please ask your hosting provider to read this page. They are also welcome to email the
@@ -468,8 +451,10 @@ decision about your own security needs.
   the `linux-lqx` AUR package, or build your own kernel. Read the [Arch Linux wiki page on
   kernels](https://wiki.archlinux.org/index.php/Kernels#AUR_packages) for more information.
 
-- **Docker users.** See the [Sandstorm recommendations for
+- **Docker users.** You can launch Sandstorm as root per our [recommendations for
   Docker](../install.md#option-6-using-sandstorm-within-docker) in our installation guide.
+  Alternatively, if your system needs it, you can use the Debian-specific sysctl, but you
+  will need to provide `--cap-add SYS_ADMIN --security-opt seccomp=unconfined` to `docker run`.
 
 - **Debian and Ubuntu users.** The Sandstorm install script can use a [Debian-specific
   sysctl](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=712870) to enable unprivileged user
@@ -499,6 +484,9 @@ decision about your own security needs.
 
 - **Alpine Linux users.** Alpine Linux enables Grsecurity by default. See the previous item and
   consider using the [Alpine vanilla kernel.](http://forum.alpinelinux.org/downloads)
+
+As an implementation detail, running install.sh with `-d` uses user namespaces if available, and
+enables the Debian-specific sysctl on Debian/Ubuntu systems.
 
 ## How do I enable WebSockets proxying? or, Why do some apps seem to crash & reload?
 

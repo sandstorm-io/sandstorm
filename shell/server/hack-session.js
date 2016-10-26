@@ -121,10 +121,15 @@ SessionContextImpl = class SessionContextImpl {
         permissions: requiredPermissions,
       };
 
-      if (session.identityId) {
-        permissionsHeld.identityId = session.identityId;
-      } else if (session.hashedToken) {
+      // Note that if both hashedToken and identityId are present, this indicates that the session
+      // is authorized by a token which the user has NOT redeemed. Thus the identity does not
+      // directly have access to the grain; the token does. (This is the case in particular for
+      // standalone domains.) So clearly we want our requirement to be based on the token, not the
+      // identity.
+      if (session.hashedToken) {
         permissionsHeld.tokenId = session.hashedToken;
+      } else if (session.identityId) {
+        permissionsHeld.identityId = session.identityId;
       } else {
         throw new Error("Cannot offer to anonymous session that does not have a token.");
       }

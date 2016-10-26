@@ -343,7 +343,7 @@ Meteor.methods({
 
     check(params, {
       token: String,
-      incognito: Boolean,
+      incognito: Match.Optional(Boolean),  // obsolete, ignored
     });
     check(identityId, Match.OneOf(undefined, null, String));
     check(cachedSalt, Match.OneOf(undefined, null, String));
@@ -360,7 +360,7 @@ Meteor.methods({
     }
 
     const token = params.token;
-    const incognito = params.incognito;
+    const incognito = !identityId;
     const hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
     const apiToken = ApiTokens.findOne(hashedToken);
     validateWebkey(apiToken);
@@ -425,8 +425,13 @@ Meteor.methods({
                                "User is not authorized to open this grain.");
       }
 
-      // Pass in userId/identityId because in the case of a user being logged in, powerbox offers
-      // require it.
+      // Even in incognito mode, we want to record the user ID on the session. The user ID is not
+      // leaked to the app in any way -- it is used to decide what options to show in a powerbox
+      // request. Even if the user is incognito, they should be able to offer their full range of
+      // capabilities.
+      //
+      // The identity ID passed here IS revealed to the app, but for incognito mode it is always
+      // null/undefined.
       const opened = globalBackend.openSessionInternal(apiToken.grainId, this.userId,
         identityId, title, apiToken, cachedSalt);
 

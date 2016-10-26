@@ -633,11 +633,14 @@ class GrainView {
     };
 
     onceConditionIsTrue(condition, () => {
+      // Note that a null/undefined identityId when the user is logged in implies incognito mode.
       const identityId = _this.identityId();
+
+      // This is an object for historical reasons.
       const openSessionArg = {
         token: _this._token,
-        incognito: !identityId,
       };
+
       const neverRedeem = isStandalone();
       Meteor.call("openSessionFromApiToken",
         openSessionArg, identityId, _this._sessionSalt,

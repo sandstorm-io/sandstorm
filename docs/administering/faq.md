@@ -658,3 +658,45 @@ tutorial.](https://davejamesmiller.wordpress.com/2013/03/14/installing-dnsmasq-w
 **Email configuration within Sandstorm.** Some Sandstorm features expect email delivery to be
 configured. If you cannot configure email on your server, those features may be disabled or not work
 properly. However, this is not specific to an offline/airgap network.
+
+## Why do I see strange DNS lookups in my server log?
+
+When viewing your server's admin log, you might see DNS-related messages like this. They are
+harmless and can be ignored. They are probably the result of bots scanning the Internet for security
+issues that do not affect Sandstorm.
+
+```
+Error: Host "sandstorm-www.notyourdomain.example.com" must have exactly one TXT record.
+    at server/pre-meteor.js:728:16
+    at QueryReqWrap.asyncCallback [as callback] (dns.js:64:16)
+    at QueryReqWrap.onresolve [as oncomplete] (dns.js:216:10)
+
+Error: Error looking up DNS TXT records for host "notyourdomain.example.com": queryTxt ETIMEOUT sandstorm-www.notyourdomain.example.com
+    at server/pre-meteor.js:728:16
+    at QueryReqWrap.asyncCallback [as callback] (dns.js:64:16)
+    at QueryReqWrap.onresolve [as oncomplete] (dns.js:216:10)
+```
+
+The odd log messages are the result of misdirected HTTP requests (probably from bots) and the way
+Sandstorm's static publishing for external domains works. There's no security issue here, nor any
+action required by the server admin.
+
+Sandstorm supports publishing static sites at domains that are not part of its "wildcard domain."
+This allows you to publish a website at a domain like example.com from your Sandstorm server,
+preserving the domain. To achieve this, you would make a DNS A record for example.com pointing at
+your Sandstorm server. This ensures that when users navigate to example.com in their browser, the
+browser sends the request to Sandstorm.
+
+Once Sandstorm receives this request, it needs to know which grain it should dispatch this request
+to. This is supported by having the user create a DNS TXT record for sandstorm-www.example.com
+containing the grain's "public ID". If no such DNS record is found, Sandstorm concludes that the
+domain owner has not indicated a desire to publish a particular Sandstorm grain at the domain
+from the HTTP request.
+
+What's happening in your log traces is that Sandstorm is receiving HTTP requests for those domains,
+performing the DNS lookup to see what grain's static publishing folder should be used to answer
+those requests, and the DNS lookup is either failing (in the case of `ETIMEOUT`) or returning a
+response whose format surprises Sandstorm.
+
+Sandstorm logs this event since it could indicate a configuration problem if it occurred for a
+domain name that **should** be served from this Sandstorm server.

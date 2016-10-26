@@ -425,8 +425,10 @@ Meteor.methods({
                                "User is not authorized to open this grain.");
       }
 
-      const opened = globalBackend.openSessionInternal(apiToken.grainId, null, null,
-                                                       title, apiToken, cachedSalt);
+      // Pass in userId/identityId because in the case of a user being logged in, powerbox offers
+      // require it.
+      const opened = globalBackend.openSessionInternal(apiToken.grainId, this.userId,
+        identityId, title, apiToken, cachedSalt);
 
       const result = opened.methodResult;
       const proxy = new Proxy(grain, result.sessionId,

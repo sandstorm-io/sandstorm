@@ -270,13 +270,16 @@ class SandstormBackend {
     };
 
     if (userId) {
-      session.identityId = identityId;
       session.userId = userId;
-    } else if (apiToken) {
+    }
+
+    if (identityId) {
+      session.identityId = identityId;
+    }
+
+    if (apiToken) {
       session.hashedToken = apiToken._id;
-    } else {
-      // Must be old-style sharing, i.e. !grain.private.
-    } // jscs:ignore disallowEmptyBlocks
+    }
 
     Sessions.insert(session);
 

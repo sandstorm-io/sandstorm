@@ -427,54 +427,74 @@ to address the issue.
 To get further help, please email support@sandstorm.io. Please include the most recent 100 lines
 from the MongoDB log file, if you can.
 
-## Enabling user namespaces
+## Installing and running without root privileges
 
-Sandstorm requires the Linux feature called user namespaces to be enabled on your Linux system and
-available to unprivileged users. This allows Sandstorm to containerize itself and each grain that
-runs.
+In Sandstorm v0.190 and higher, Sandstorm requires either:
 
-Because this is required by Sandstorm, and because many users have difficulty setting up Sandstorm
-on their servers, this page provides advice on how to enable user namespaces. Please be sure to
-keep up to date with kernel updates if you follow the advice in this section, and please be sure to
-make an informed decision about your own security needs.
+- The ability to launch Sandstorm as root so it can drop privileges itself, or
+
+- Unprivileged user namespaces enabled in your system's Linux kernel.
+
+You can ask Sandstorm to do an install as non-root by passing `-u` to the install script. For
+example:
+
+```
+curl https://install.sandstorm.io/ > install.sh
+bash install.sh -u
+```
+
+If you start Sandstorm as a non-root user, Sandstorm uses unprivileged user namespaces as part of an
+alternative grain isolation strategy. Some Linux kernels do not have user namespaces available, or
+make them only available to root, so this article provides advice on how to enable user
+namespaces. If you use the userns-based sandbox, please be sure to keep up to date with kernel
+updates.
 
 - **People who don't know how to change a Linux kernel.** If you are a customer of a hosting
   provider, please ask your hosting provider to read this page. They are also welcome to email the
   Sandstorm team at [support@sandstorm.io.](mailto:support@sandstorm.io)
 
-- **Arch Linux users.** In [#36969](https://bugs.archlinux.org/task/36969), the Arch Linux kernel
+- **Arch Linux users.** We suggest starting Sandstorm as root instead to avoid the dependency on
+  user namespaces. In [#36969](https://bugs.archlinux.org/task/36969), the Arch Linux kernel
   maintainer indicated that they are not interested in supporting unprivileged user namespaces. Try
   the `linux-lqx` AUR package, or build your own kernel. Read the [Arch Linux wiki page on
   kernels](https://wiki.archlinux.org/index.php/Kernels#AUR_packages) for more information.
 
-- **Docker users.** See the [Sandstorm recommendations for
+- **Docker users.** You can launch Sandstorm as root per our [recommendations for
   Docker](../install.md#option-6-using-sandstorm-within-docker) in our installation guide.
+  Alternatively, if your system needs it, you can use the Debian-specific sysctl, but you
+  will need to provide `--cap-add SYS_ADMIN --security-opt seccomp=unconfined` to `docker run`.
 
-- **Debian and Ubuntu users.** The Sandstorm install script uses a [Debian-specific
+- **Debian and Ubuntu users.** The Sandstorm install script can use a [Debian-specific
   sysctl](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=712870) to enable unprivileged user
-  namespaces. If you are unable to set it on your system, please run these commands as root
-  and/or upgrade your Linux kernel.
+  namespaces. If you are unable to set it on your system, please run these commands as root and/or
+  upgrade your Linux kernel.
 
 ```bash
 # sysctl -w kernel.unprivileged_userns_clone=1
 # echo 'kernel.unprivileged_userns_clone = 1' >> /etc/sysctl.conf"
 ```
 
-- **RHEL and CentOS users.** CentOS/RHEL 7.2 ships a kernel that _may_ be able to support
-  unprivileged usernamespaces. In our testing, further work is needed to properly enable Sandstorm
-  to work within CentOS/RHEL 7.2. If you need help with this, please email
+- **RHEL and CentOS users.** We suggest starting Sandstorm as root. If you must use the userns
+  sandbox, note that CentOS/RHEL 7.2 ships a kernel that _may_ be able to support unprivileged
+  usernamespaces. In our testing, further work is needed to properly enable Sandstorm to work within
+  CentOS/RHEL 7.2. If you need help with this, please email
   [support@sandstorm.io.](mailto:support@sandstorm.io)
 
-- **OpenVZ users.** If you use an OpenVZ-based hosting provider, please ask your hosting provider
-  to read our [installation documentation](../install.md) and this document.
+- **OpenVZ users.** If you use an OpenVZ-based hosting provider, please try to run Sandstorm as
+  root.  If that does not work, please ask your hosting provider to read our [installation
+  documentation](../install.md) and this document.
 
-- **Grsecurity kernel users.** Grsecurity seems to block unprivileged user namespaces. Consider
-  running Sandstorm without Grsecurity. You might be interested to see [Sandstorm's track record of
-  successfully blocking exploitation of Linux kernel
+- **Grsecurity kernel users.** Grsecurity seems to block unprivileged user namespaces. Sandstorm
+  should operate properly if you start it as root. If you need use Sandstorm with user namespaces,
+  consider running Sandstorm without Grsecurity. You might be interested to see [Sandstorm's track
+  record of successfully blocking exploitation of Linux kernel
   vulnerabilities.](../using/security-non-events.md#linux-kernel)
 
 - **Alpine Linux users.** Alpine Linux enables Grsecurity by default. See the previous item and
   consider using the [Alpine vanilla kernel.](http://forum.alpinelinux.org/downloads)
+
+As an implementation detail, running install.sh with `-d` uses user namespaces if available, and
+enables the Debian-specific sysctl on Debian/Ubuntu systems if possible.
 
 ## How do I enable WebSockets proxying? or, Why do some apps seem to crash & reload?
 

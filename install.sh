@@ -275,7 +275,6 @@ SANDCATS_SUCCESSFUL="no"
 SANDCATS_HTTPS_SUCCESSFUL="no"
 CURRENTLY_UID_ZERO="no"
 PREFER_ROOT="yes"
-USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET=""
 SHOW_MESSAGE_ABOUT_NEEDING_PORTS_OPEN="no"
 STARTED_SANDSTORM="no"
 
@@ -475,151 +474,69 @@ Mac system, you can use Vagrant or another virtualization tool. See our install 
 assert_usable_kernel() {
   KVERSION=( $(uname -r | grep -o '^[0-9.]*' | tr . ' ') )
 
-  if (( KVERSION[0] < 3 || (KVERSION[0] == 3 && KVERSION[1] < 13) )); then
+  if (( KVERSION[0] < 3 || (KVERSION[0] == 3 && KVERSION[1] < 10) )); then
     error "Detected Linux kernel version: $(uname -r)"
-    fail "E_KERNEL_OLDER_THAN_313" "Sorry, your kernel is too old to run Sandstorm. We require kernel" \
-         "version 3.13 or newer."
+    fail "E_KERNEL_OLDER_THAN_310" "Sorry, your kernel is too old to run Sandstorm. We require kernel" \
+         "version 3.10 or newer."
   fi
 }
 
-detect_how_to_enable_userns_or_die_trying() {
-  # You might think it's a little bit silly to embed an x86_64 binary
-  # in this shell script, just find out if user namespaces work for
-  # unprivileged users.
-  #
-  # However, here's the story:
-  #
-  # - Many people use the Debian backports kernel (where user namespaces work great) with older
-  #   userspace, so we can't run unshare(1) with the --user option to test it, since their version
-  #   of unshare(1) doesn't have a --user option.
-  #
-  # - Many people run Arch Linux, where user namespaces are disabled as a kernel option.
-  #
-  # - Many people run Debian and/or Ubuntu, where user namespaces are enabled but require a sysctl
-  #   to enable.
-  #
-  # - We used to compile a test binary, but sometimes people would install Sandstorm on cloud VMs
-  #   where there is no compiler.
-  #
-  # We export the following variable:
-  #
-  # - USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET = yes/no
-  #
-  # Also at the end of the function, if the program is still running, unprivileged userns either
-  # works or can be made to work.
-
-  USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET=no
-
-  # Let's run a test program that creates a user namespace. If it passes, we know that no further
-  # configuration is required.
-  #
-  # Source of this program: https://github.com/sandstorm-io/check-for-unprivileged-userns
-  local USERNS_TEST_PROGRAM="$(mktemp)"
-  printf '\x7fELF\x02\x01\x01\x00kmc!!!\n\x00\x02\x00>\x00\x01\x00\x00\x00x\x00@\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00@\x008\x00\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x9d\x00\x00\x00\x00\x00\x00\x00\x9d\x00\x00\x00\x00\x00\x00\x00\x00\x10\x00\x00\x00\x00\x00\x00\xb8i\x00\x00\x00\xbf\xfe\xff\x00\x00\x0f\x05\xb8\x10\x01\x00\x00\xbf\x00\x00\x00\x10\x0f\x05H\x89\xc1\xb8<\x00\x00\x00H\x89\xcf\x0f\x05' > "$USERNS_TEST_PROGRAM"
-  chmod a+x "$USERNS_TEST_PROGRAM"
-  if "$USERNS_TEST_PROGRAM" ; then
-    return  # success!
-  fi
-
-  # Clean up after ourselves.
-  rm -f "$USERNS_TEST_PROGRAM"
-
-  # If we're still here, the test program failed.
-
-  # Let's see if there's a Debian-style sysctl. If not, bail out because we have no idea how to help
-  # the user.
-  if [ ! -e /proc/sys/kernel/unprivileged_userns_clone ]; then
-    fail "E_NO_USERNS" "Your kernel does not appear to be compiled with" \
-         "support for unprivileged user namespaces (CONFIG_USER_NS=y), or something else is" \
-         "preventing creation of user namespaces. This feature is critical for sandboxing." \
-         "Read more at: " \
-         "https://docs.sandstorm.io/en/latest/administering/faq/#enabling-user-namespaces"
-  fi
-
-  # If the test binary failed, but the sysctl is set to 1, then allow the install to
-  # continue. Perhaps the user has /tmp mounted noexec or something like that.
-  if [ "$(</proc/sys/kernel/unprivileged_userns_clone)" = "1" ] ; then
-    return
-  fi
-
-  # If /proc/sys is mounted read-only, then they won't be able to run sysctl with our
-  # help. Similarly if there's no /etc/sysctl.conf we won't be able to help.
-  #
-  # The /proc/sys issue applies to Docker containers and probably other sorts of containers, too.
-  if egrep -q '/proc/sys\s+proc\s+ro' /proc/mounts || [ ! -e /etc/sysctl.conf ] ; then
-    fail "E_PROC_SYS_READ_ONLY" "You are using a Debian-derived Linux kernel, which needs a configuration option" \
-         "set in order to run Sandstorm. To set that option, please run the shell commands" \
-         "below as root. (If you are running this in a container through e.g. Docker, you will" \
-         "have to run the above commands _outside_ the container.)
-
-# sysctl -w kernel.unprivileged_userns_clone=1
-# echo 'kernel.unprivileged_userns_clone = 1' >> /etc/sysctl.conf"
-  fi
-
-  # OK, so it's a reasonable idea to ask the user to let us enable the sysctl.
-  USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET=yes
-}
-
-enable_userns_sysctl_if_needed() {
+maybe_enable_userns_sysctl() {
   # This function enables the Debian/Ubuntu-specific unprivileged
-  # userns sysctl.
-  #
-  # We only run it if we need to.
-  if [ "$USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET" != "yes" ] ; then
+  # userns sysctl, if the system has it and we want it.
+
+  if [ "$USE_DEFAULTS" != "yes" ] ; then
+    # Only do this when -d is passed. -d means "use defaults suitable for app development", and
+    # we want userns enabled for app development if possible since it enables UID randomization
+    # which helps catch app bugs. For the rest of the world, we're fine using the privileged
+    # sandbox instead.
     return
   fi
 
-  # It only makes sense when running as root, so if we are not currently running as root, just skip
-  # this code. If the user is not root, but they need this sysctl enabled, install.sh will
-  # eventually ask them for help escalating to root... hopefully.
   if [ "no" = "$CURRENTLY_UID_ZERO" ] ; then
+    # Not root. Can't do anything about it.
     return
   fi
 
-  local PRINT_USERNS_PROMPT="yes"
-  local ACCEPTED_SYSCTL_SWITCH="no"
-  local USE_SYSCTL_D="no"
-  local ENABLE_SYSCTL_STRING="(including in /etc/sysctl.conf)"
+  if [ ! -e /proc/sys/kernel/unprivileged_userns_clone ]; then
+    # No such sysctl on this system.
+    return
+  fi
+
+  local OLD_VALUE="$(< /proc/sys/kernel/unprivileged_userns_clone)"
+
+  if [ "$OLD_VALUE" = "1" ]; then
+    # Already enabled.
+    return
+  fi
+
+  # Enable it.
+  if sysctl -wq kernel.unprivileged_userns_clone=1 2>/dev/null; then
+    echo "NOTE: Enabled unprivileged user namespaces because you passed -d."
+  else
+    # Apparently we can't. Maybe we're in a Docker container. Give up and use privileged sandbox.
+    return
+  fi
+
+  # Also make sure it is re-enabled on boot. If sysctl.d exists, we drop our own config in there.
+  # Otherwise we edit sysctl.conf, but that's less polite.
+  local SYSCTL_FILENAME="/etc/sysctl.conf"
   if [ -d /etc/sysctl.d ] ; then
-    # It's more polite to add drop-in files in /etc/sysctl.d than to modify /etc/sysctl.conf
-    # directly, so do that when possible.
-    USE_SYSCTL_D="yes"
-    ENABLE_SYSCTL_STRING="(including creating /etc/sysctl.d/50-sandstorm.conf)"
+    SYSCTL_FILENAME="/etc/sysctl.d/50-sandstorm.conf"
   fi
 
-  if [ "yes" = "${ACCEPTED_FULL_SERVER_INSTALL:-}" ] ; then
-    PRINT_USERNS_PROMPT="no"
-    ACCEPTED_SYSCTL_SWITCH="yes"
-  fi
-
-  if [ "${PRINT_USERNS_PROMPT}" = "yes" ] ; then
-    echo "Sandstorm requires sysctl kernel.unprivileged_userns_clone to be enabled."
-    echo "Currently, it is not enabled on your system."
-    if prompt-yesno "Shall I enable it for you ${ENABLE_SYSCTL_STRING}?" yes; then
-      ACCEPTED_SYSCTL_SWITCH="yes"
-    fi
-  fi
-
-  if [ "$ACCEPTED_SYSCTL_SWITCH" = "yes" ] ; then
-    # Make the change first.
-    sysctl -w kernel.unprivileged_userns_clone=1 >/dev/null \
-      || fail "E_SYSCTL_WRITING_FAILED" "'sysctl -w" \
-              "kernel.unprivileged_userns_clone=1' failed. If you are inside docker, please run the" \
-              "command manually inside your host and update /etc/sysctl.conf."
-
-    # If that worked, then make the change stick. Use sysctl.d if present.
-    local SYSCTL_FILENAME="/etc/sysctl.conf"
-    if [ "${USE_SYSCTL_D}" = "yes" ] ; then
-      SYSCTL_FILENAME="/etc/sysctl.d/50-sandstorm.conf"
-    fi
-
-    cat >> "$SYSCTL_FILENAME"  << __EOF__
+  if ! cat >> "$SYSCTL_FILENAME" << __EOF__
 
 # Enable non-root users to create sandboxes (needed by Sandstorm).
 kernel.unprivileged_userns_clone = 1
 __EOF__
-  else
-    fail "E_USER_REFUSED_SYSCTL_WRITING" "OK, please enable this option yourself and try again."
+  then
+    # We couldn't make the change permanent, so undo the change. Probably everything will work
+    # fine with the privileged sandbox. But if it doesn't, it's better that things fail now rather
+    # than wait for a reboot.
+    echo "NOTE: Never mind, not enabling userns because can't write /etc/sysctl.d."
+    sysctl -wq "kernel.unprivileged_userns_clone=$OLD_VALUE" || true
+    return
   fi
 }
 
@@ -799,9 +716,6 @@ to install without using root access. In that case, Sandstorm will operate OK bu
     fi
     echo "* Expose the service only on localhost aka local.sandstorm.io, not the public Internet."
     echo "* Enable 'dev accounts', for easy developer login."
-    if [ "yes" == "$USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET" ] ; then
-      echo "* Configure your system to enable unprivileged user namespaces, via sysctl"
-    fi
     if [ "unknown" == "$INIT_SYSTEM" ]; then
       echo "*** WARNING: Could not detect how to run Sandstorm at startup on your system. ***"
     else
@@ -911,9 +825,6 @@ full_server_install() {
       echo "*** WARNING: Could not detect how to run Sandstorm at startup on your system. ***"
     else
       echo "* Configure Sandstorm to start on system boot (with $INIT_SYSTEM)"
-    fi
-    if [ "yes" == "$USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET" ] ; then
-      echo "* Configure your system to enable unprivileged user namespaces, via sysctl."
     fi
     echo "* Listen for inbound email on port ${PLANNED_SMTP_PORT}."
     echo ""
@@ -2240,12 +2151,11 @@ assert_on_terminal
 assert_linux_x86_64
 assert_usable_kernel
 detect_current_uid
-detect_how_to_enable_userns_or_die_trying
 assert_dependencies
 assert_valid_bundle_file
 detect_init_system
 choose_install_mode
-enable_userns_sysctl_if_needed
+maybe_enable_userns_sysctl
 choose_external_or_internal
 choose_install_dir
 choose_smtp_port

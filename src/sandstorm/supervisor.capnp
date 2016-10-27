@@ -312,9 +312,7 @@ struct ApiTokenOwner {
       # The ID of the session that created this token.
 
       introducerIdentity @14 :Text;
-      # The identity ID through which a user's powerbox action caused the grain to receive this
-      # token. This is the identity against which the `requiredPermissions` parameter
-      # to `claimRequest()` will be checked.
+      # Obsolete. (The introducer identity can be derived from sessionId instead.)
     }
 
     clientPowerboxOffer :group {

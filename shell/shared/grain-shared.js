@@ -39,4 +39,44 @@ Meteor.methods({
     ApiTokens.update({ "grainId": grainId, "owner.user.identityId": identityId },
                      { $set: { "owner.user.seenAllActivity": true } }, { multi: true });
   },
+
+  moveGrainsToTrash: function (grainIds) {
+    check(grainIds, [String]);
+
+    if (this.userId) {
+      Grains.update({ userId: { $eq: this.userId },
+                      _id: { $in: grainIds },
+                      trashed: { $exists: false }, },
+                    { $set: { trashed: new Date() } },
+                    { multi: true });
+
+      const identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
+
+      ApiTokens.update({ grainId: { $in: grainIds },
+                        "owner.user.identityId": { $in: identityIds },
+                        trashed: { $exists: false }, },
+                       { $set: { "trashed": new Date() } },
+                       { multi: true });
+    }
+  },
+
+  moveGrainsOutOfTrash: function (grainIds) {
+    check(grainIds, [String]);
+
+    if (this.userId) {
+      Grains.update({ userId: { $eq: this.userId },
+                      _id: { $in: grainIds },
+                      trashed: { $exists: true }, },
+                    { $unset: { trashed: 1 } },
+                    { multi: true });
+
+      const identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
+
+      ApiTokens.update({ grainId: { $in: grainIds },
+                        "owner.user.identityId": { $in: identityIds },
+                        "trashed": { $exists: true }, },
+                       { $unset: { "trashed": 1 } },
+                       { multi: true });
+    }
+  },
 });

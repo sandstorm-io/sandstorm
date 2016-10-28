@@ -584,6 +584,9 @@ Template.layout.helpers({
     // Don't show if billing is not enabled.
     if (!window.BlackrockPayments) return;
 
+    // Don't show on standalone domains.
+    if (isStandalone()) return;
+
     const user = Meteor.user();
 
     // Don't show if not logged in.

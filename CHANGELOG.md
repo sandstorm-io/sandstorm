@@ -1,3 +1,13 @@
+### v0.193 (2016-10-29)
+- Installer should now work on RHEL, CentOS, Arch, and other distros where user namespaces are unavailable and/or kernel version 3.10 is in use.
+- Fixed that trashed grains were not being shut down immediately.
+- Fixed that non-root installs (an unusual configuration) were crashing on updates since v0.190. Unfortunately they will crash again on 0.193 but future updates should succeed.
+- Fixed various bugs with standalone domains.
+- Fixed that app-requested sign-in overlay appeared off-center on IE.
+- The "Who has access?" dialog now shows a spinner while loading, since it can take several seconds.
+- Made danger buttons less loud.
+- Oasis: Fixed bug where storage could be temporarily miscalculated while a collaborator has one of your grains open.
+
 ### v0.192 (2016-10-22)
 - Apps can now request via postMessage that Sandstorm display a large sign-in prompt.
 - On (experimental) standalone domains, the app can now request that the user be logged out.

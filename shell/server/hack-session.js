@@ -58,16 +58,39 @@ SessionContextImpl = class SessionContextImpl {
         throw new Error("no such token");
       }
 
+      const session = Sessions.findOne({ _id: this.sessionId });
+
+      if (!session) {
+        throw new Error("no such session");
+      }
+
       // Honor `requiredPermissions`.
       const requirements = [];
-      if (token.owner.clientPowerboxRequest.introducerIdentity) {
+      if (session.hashedToken) {
+        // Session is authorized by token. Note that it's important to check this before identityId
+        // e.g. in the case of standalone domains.
         requirements.push({
           permissionsHeld: {
             permissions: requiredPermissions || [],
-            identityId: token.owner.clientPowerboxRequest.introducerIdentity,
+            tokenId: session.hashedToken,
             grainId: this.grainId,
           },
         });
+      } else if (session.identityId) {
+        // Session is authorized by identity.
+        requirements.push({
+          permissionsHeld: {
+            permissions: requiredPermissions || [],
+            identityId: session.identityId,
+            grainId: this.grainId,
+          },
+        });
+      } else {
+        // This can only happen with old-style sharing which has been deprecated for years. If
+        // we wanted to support this, I suppose we could do so as long as requiredPermissions is
+        // all-false? But probably this will never come up.
+        throw new Error("Cannot accept powerbox request from anonymous session that " +
+                        "doesn't have a token.");
       }
 
       return restoreInternal(

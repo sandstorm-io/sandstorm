@@ -61,7 +61,6 @@ Meteor.methods({
     const apiTokenOwner = {
       clientPowerboxRequest: {
         grainId: grainId,
-        introducerIdentity: session.identityId,
         sessionId: session._id,
       },
     };
@@ -103,7 +102,6 @@ Meteor.methods({
     const owner = {
       clientPowerboxRequest: {
         grainId: ownerGrainId,
-        introducerIdentity: identityId,
         sessionId: sessionId,
       },
     };

@@ -870,7 +870,6 @@ Template.whoHasAccessPopup.onCreated(function () {
   _this.downstreamTokensById = new ReactiveVar({});
   _this.isReady = new ReactiveVar(false);
   this.resetTransitiveShares = function () {
-    _this.isReady.set(false);
     Meteor.call("transitiveShares", _this.identityId, _this.grainId,
                 function (error, downstream) {
       if (error) {

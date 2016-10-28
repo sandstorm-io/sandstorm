@@ -103,11 +103,12 @@
 }
 
 %button-danger {
-  background-color: red;
-  color: white;
-  border: 1px solid darken(red, 30%);
+  color: #900;
+  background-color: white;
+  border: 1px solid darken(white, 30%);
   &:hover {
-    background-color: darken(red, 10%);
+    background-color: #af1010;
+    color: white;
   }
   &:disabled {
     @extend %button-disabled;

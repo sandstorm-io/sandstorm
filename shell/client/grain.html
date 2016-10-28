@@ -267,6 +267,7 @@
 
 <template name="whoHasAccessPopup">
   <h4 class="who-has-access">Who has access</h4>
+  {{#if isReady}}
   <div class="tables-container">
     <h5>People</h5>
     {{#if transitiveShares.identityOwnedShares.empty}}
@@ -366,6 +367,9 @@
       </table>
       {{/if}}
    </div>
+   {{else}}
+   <img class="spinner" src="/spinner_96.gif" alt="loading">
+   {{/if}}
 </template>
 
 <template name="selectRole">

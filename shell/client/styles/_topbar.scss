@@ -843,8 +843,17 @@ body>.topbar {
 
 // =======================================================================================
 
-body>.popup.who-has-access>.frame-container {
-  width: 500px;
+body>.popup.who-has-access {
+  img.spinner {
+    display: block;
+    margin: auto;
+    width: 48px;
+    height: 48px;
+  }
+
+  >.frame-container {
+    width: 500px;
+  }
 }
 
 body>.popup.modal {

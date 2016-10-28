@@ -868,11 +868,14 @@ Template.whoHasAccessPopup.onCreated(function () {
   _this.grainId = currentGrain.grainId();
   _this.transitiveShares = new ReactiveVar(null);
   _this.downstreamTokensById = new ReactiveVar({});
+  _this.isReady = new ReactiveVar(false);
   this.resetTransitiveShares = function () {
+    _this.isReady.set(false);
     Meteor.call("transitiveShares", _this.identityId, _this.grainId,
                 function (error, downstream) {
       if (error) {
         console.error(error.stack);
+        _this.isReady.set(true);
       } else {
         const downstreamTokensById = {};
         const sharesByIdentityRecipient = {};
@@ -919,6 +922,8 @@ Template.whoHasAccessPopup.onCreated(function () {
 
         _this.transitiveShares.set({ identityOwnedShares, grainOwnedShares, });
         _this.downstreamTokensById.set(downstreamTokensById);
+
+        _this.isReady.set(true);
       }
     });
   };
@@ -1218,6 +1223,10 @@ Template.whoHasAccessPopup.helpers({
   viewInfo: function () {
     const activeGrain = globalGrains.getActive();
     return activeGrain && activeGrain.viewInfo();
+  },
+
+  isReady: function () {
+    return Template.instance().isReady.get();
   },
 });
 

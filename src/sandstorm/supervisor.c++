@@ -663,9 +663,6 @@ kj::MainBuilder::Validity SupervisorMain::addCommandArg(kj::StringPtr arg) {
 // =====================================================================================
 
 kj::MainBuilder::Validity SupervisorMain::run() {
-  KJ_ASSERT(geteuid() != 0, "can't run as user ID zero (root)");
-  KJ_ASSERT(getegid() != 0, "can't run as group ID zero (root)");
-
   isIpTablesAvailable = checkIfIpTablesLoaded();
 
   setupSupervisor();

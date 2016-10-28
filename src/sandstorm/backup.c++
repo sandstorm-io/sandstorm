@@ -106,9 +106,6 @@ void BackupMain::bind(kj::StringPtr src, kj::StringPtr dst, unsigned long flags)
 }
 
 bool BackupMain::run(kj::StringPtr grainDir) {
-  KJ_ASSERT(geteuid() != 0, "can't run as user ID zero (root)");
-  KJ_ASSERT(getegid() != 0, "can't run as group ID zero (root)");
-
   // Enable no_new_privs so that once we drop privileges we can never regain them through e.g.
   // execing a suid-root binary, as a backup measure. This is a backup measure in case someone
   // finds an arbitrary code execution exploit in zip/unzip; it's not needed otherwise.

@@ -1318,8 +1318,8 @@ private:
       // But if our UID is zero, then the file's attributes are ignored and all capabilities are
       // inherited.
       writeSetgroupsIfPresent("deny\n");
-      writeUserNSMap("uid", kj::str("1000 ", uid, " 1\n"));
-      writeUserNSMap("gid", kj::str("1000 ", gid, " 1\n"));
+      writeUserNSMap("uid", kj::str("0 ", uid, " 1\n"));
+      writeUserNSMap("gid", kj::str("0 ", gid, " 1\n"));
 
       unsharedUidNamespace = true;
     }

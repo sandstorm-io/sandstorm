@@ -79,4 +79,73 @@ Meteor.methods({
                        { multi: true });
     }
   },
+
+  deleteGrain: function (grainId) {
+    check(grainId, String);
+
+    if (this.userId) {
+      const grainsQuery = {
+        _id: grainId,
+        userId: this.userId,
+        trashed: { $exists: true },
+      };
+
+      let numDeleted = 0;
+      if (this.isSimulation) {
+        numDeleted = Grains.remove(grainsQuery);
+      } else {
+        numDeleted = globalDb.deleteGrains(grainsQuery, globalBackend,
+                                           isDemoUser() ? "demoGrain" : "grain");
+      }
+
+      // Usually we don't automatically remove user-owned tokens that have become invalid,
+      // because if we did their owner might become confused as to why they have mysteriously
+      // disappeared. In this particular case, however, for tokens held by the grain owner,
+      // there should be no confusion. Indeed, it would be more confusing *not* to remove these
+      // tokens, because then the grain could still show up in the trash bin as a "shared with me"
+      // grain after the owner clicks "delete permanently".
+      //
+      // Note that these tokens may be visible to other accounts if there are identities shared
+      // between the accounts; by only removing 'trashed' tokens, we minimize confusion in that
+      // case too.
+      const apiTokensQuery = {
+        grainId: grainId,
+        "owner.user.identityId": { $in: SandstormDb.getUserIdentityIds(Meteor.user()) },
+        "trashed": { $exists: true },
+      };
+
+      if (numDeleted > 0) {
+        if (this.isSimulation) {
+          ApiTokens.remove(apiTokensQuery);
+        } else {
+          globalDb.removeApiTokens(apiTokensQuery);
+        }
+      }
+    }
+  },
+
+  forgetGrain: function (grainId, identityId) {
+    check(grainId, String);
+    check(identityId, String);
+
+    if (!this.userId) {
+      throw new Meteor.Error(403, "Must be logged in to forget a grain.");
+    }
+
+    if (!globalDb.userHasIdentity(this.userId, identityId)) {
+      throw new Meteor.Error(403, "Current user does not have the identity " + identityId);
+    }
+
+    const query = {
+      grainId: grainId,
+      "owner.user.identityId": identityId,
+      "trashed": { $exists: true },
+    };
+
+    if (this.isSimulation) {
+      ApiTokens.remove(query);
+    } else {
+      globalDb.removeApiTokens(query);
+    }
+  },
 });

@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { waitPromise } from "/imports/server/async-helpers.js";
+
 Meteor.methods({
   // Methods defined in this file have meaningful latency compensation (client-side prediction)
   // potential.
@@ -57,6 +59,19 @@ Meteor.methods({
                         trashed: { $exists: false }, },
                        { $set: { "trashed": new Date() } },
                        { multi: true });
+
+      const grainsOwned = Grains.find({
+        userId: { $eq: this.userId },
+        _id: { $in: grainIds },
+      }, { fields: { _id: 1, }, });
+      grainsOwned.forEach((grain) => {
+        try {
+          Sessions.remove({ grainId: grain._id, });
+          waitPromise(this.connection.sandstormBackend.shutdownGrain(grain._id, this.userId));
+        } catch (err) {
+          console.error("Failed to shutdown trashed grain", grain._id, err);
+        }
+      });
     }
   },
 

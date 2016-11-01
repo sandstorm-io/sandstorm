@@ -527,7 +527,7 @@ void registerSignalHandlers() {
   action.sa_handler = &signalHandler;
   sigfillset(&action.sa_mask);
 
-  // SIGALRM will fire every five minutes and will kill us if no keepalive was received in that
+  // SIGALRM will fire every 1.5 minutes and will kill us if no keepalive was received in that
   // time.
   KJ_SYSCALL(sigaction(SIGALRM, &action, nullptr));
 

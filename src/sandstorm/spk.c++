@@ -1731,6 +1731,13 @@ private:
     kj::ArrayPtr<const capnp::word> tmpWords = tmpMapping;
     capnp::ReaderOptions options;
     options.traversalLimitInWords = tmpWords.size();
+
+    // We've observed that apps which use npm can have insanely deep directory trees due to npm's
+    // insane approach to dependency management. We've seen at least one app creep over the default
+    // nesting limit of 64, so we double it to 128. (We can't just set this to infinity for the
+    // same security reasons this limit exists in the first place.)
+    options.nestingLimit = 128;
+
     capnp::FlatArrayMessageReader archiveMessage(tmpWords, options);
 
     // Unpack.

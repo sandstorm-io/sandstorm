@@ -127,6 +127,9 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     accept @2 :List(AcceptedType);
     # This corresponds to the Accept header
 
+    acceptEncoding @9 :List(AcceptedEncoding);
+    # This corresponds to the Accept-Encoding header
+
     eTagPrecondition :union {
       none @4 :Void;  # No precondition.
       exists @5 :Void;  # If-Match: *
@@ -208,6 +211,16 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     # For example, the Accept header with value 'text/javascript; q=0.01' would have a mimeType of
     # "text/javascript" and a qValue of .01.
     mimeType @0 :Text;
+    qValue @1 :Float32 = 1;
+  }
+
+  struct AcceptedEncoding {
+    # The Accept-Encoding header contains a list of valid content codings.
+    # Each content coding could be "*", indicating an arbitrary encoding.
+    # Each content coding comes with a qValue, defaulting to 1.
+    # For example, gzip;q=0.5 indicates the "gzip" coding with qValue "0.5"
+
+    contentCoding @0 :Text;
     qValue @1 :Float32 = 1;
   }
 

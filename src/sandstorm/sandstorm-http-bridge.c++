@@ -1552,7 +1552,6 @@ private:
     if (extraHeader3 != nullptr) {
       lines.add(kj::mv(extraHeader3));
     }
-    lines.add(kj::str("Accept-Encoding: gzip"));
     if (acceptLanguages.size() > 0) {
       lines.add(kj::str("Accept-Language: ", acceptLanguages));
     }
@@ -1628,6 +1627,17 @@ private:
             }, ", ")));
     } else {
       lines.add(kj::str("Accept: */*"));
+    }
+    auto acceptEncodingList = context.getAcceptEncoding();
+    if (acceptEncodingList.size() > 0) {
+      lines.add(kj::str("Accept-Encoding: ", kj::strArray(
+            KJ_MAP(c, acceptEncodingList) {
+              if (c.getQValue() == 1.0) {
+                return kj::str(c.getContentCoding());
+              } else {
+                return kj::str(c.getContentCoding(), "; q=", c.getQValue());
+              }
+            }, ", ")));
     }
     auto additionalHeaderList = context.getAdditionalHeaders();
     if (additionalHeaderList.size() > 0) {

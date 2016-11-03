@@ -21,6 +21,7 @@ import { migrateToLatest } from "/imports/server/migrations.js";
 import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants.js";
 import { onInMeteor } from "/imports/server/async-helpers.js";
 let url = require("url");
+const Capnp = require("capnp");
 
 globalFrontendRefRegistry = new FrontendRefRegistry();
 
@@ -162,6 +163,11 @@ if ("replicaNumber" in Meteor.settings) {
   addFiberSampling(Meteor._SynchronousQueue.prototype, "runTask");
   addFiberSampling(Meteor._SynchronousQueue.prototype, "queueTask");
   addFiberSampling(Meteor, "bindEnvironment");
+}
+
+if ("replicaNumber" in Meteor.settings) {
+  // On Blackrock, dump debug info about local capability counts every minute.
+  Meteor.setInterval(Capnp.dumpLocalCapTypeCounts, 60000);
 }
 
 if (!Meteor.settings.replicaNumber) {

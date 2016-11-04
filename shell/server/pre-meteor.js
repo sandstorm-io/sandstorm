@@ -76,6 +76,9 @@ function wwwHandlerForGrain(grainId) {
     // Strip leading "/".
     if (path[0] === "/") path = path.slice(1);
 
+    // URI-decode the rest. Note that this allows filenames to contain spaces and question marks.
+    path = decodeURIComponent(path);
+
     let type = mime.lookup(path);
     const charset = mime.charsets.lookup(type);
     if (charset) {

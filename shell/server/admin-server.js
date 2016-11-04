@@ -33,6 +33,7 @@ const publicAdminSettings = [
   "whitelabelCustomLogoAssetId",
   "whitelabelHideSendFeedback",
   "whitelabelHideTroubleshooting",
+  "whiteLabelHideAbout",
   "whitelabelUseServerTitleForHomeText",
   "quotaEnabled",
   "quotaLdapEnabled",

@@ -99,7 +99,9 @@ licenses, included in the LICENSES directory.
     {{#if referralsEnabled }}
       {{#linkTo route="referrals" role="menuitem"}}Referral program{{/linkTo}}
     {{/if}}
-    {{#linkTo route="about" role="menuitem"}}About Sandstorm{{/linkTo}}
+    {{#if showAbout}}
+      {{#linkTo route="about" role="menuitem"}}About Sandstorm{{/linkTo}}
+    {{/if}}
 
     <button class="logout" role="menuitem">
       Sign out
@@ -172,7 +174,9 @@ licenses, included in the LICENSES directory.
     <a class="troubleshooting" href="https://docs.sandstorm.io/en/latest/administering/faq/" target="_blank">troubleshooting</a>
   {{/if}}
 
-  {{#linkTo route="about"}}about Sandstorm{{/linkTo}}
+  {{#if showAbout}}
+    {{#linkTo route="about"}}about Sandstorm{{/linkTo}}
+  {{/if}}
   </div>
 </template>
 

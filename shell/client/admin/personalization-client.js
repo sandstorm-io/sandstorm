@@ -16,6 +16,8 @@ Template.newAdminPersonalization.onCreated(function () {
     new ReactiveVar(globalDb.getSettingWithFallback("whitelabelHideSendFeedback", false));
   this.whitelabelHideTroubleshooting =
     new ReactiveVar(globalDb.getSettingWithFallback("whitelabelHideTroubleshooting", false));
+  this.whiteLabelHideAbout =
+    new ReactiveVar(globalDb.getSettingWithFallback("whiteLabelHideAbout", false));
   this.whitelabelUseServerTitleForHomeText =
     new ReactiveVar(globalDb.getSettingWithFallback("whitelabelUseServerTitleForHomeText", false));
 
@@ -105,6 +107,11 @@ Template.newAdminPersonalization.helpers({
   hideTroubleshootingChecked() {
     const instance = Template.instance();
     return instance.whitelabelHideTroubleshooting.get();
+  },
+
+  hideAboutChecked() {
+    const instance = Template.instance();
+    return instance.whiteLabelHideAbout.get();
   },
 
   hideSendFeedbackChecked() {
@@ -209,6 +216,11 @@ Template.newAdminPersonalization.events({
     instance.whitelabelHideTroubleshooting.set(evt.currentTarget.checked);
   },
 
+  "click input[name=hide-about]"(evt) {
+    const instance = Template.instance();
+    instance.whiteLabelHideAbout.set(evt.currentTarget.checked);
+  },
+
   "click input[name=hide-send-feedback]"(evt) {
     const instance = Template.instance();
     instance.whitelabelHideSendFeedback.set(evt.currentTarget.checked);
@@ -238,6 +250,7 @@ Template.newAdminPersonalization.events({
       whitelabelCustomLoginProviderName: instance.whitelabelCustomLoginProviderName.get(),
       whitelabelHideSendFeedback: !!instance.whitelabelHideSendFeedback.get(),
       whitelabelHideTroubleshooting: !!instance.whitelabelHideTroubleshooting.get(),
+      whiteLabelHideAbout: !!instance.whiteLabelHideAbout.get(),
       whitelabelUseServerTitleForHomeText: !!instance.whitelabelUseServerTitleForHomeText.get(),
     };
 

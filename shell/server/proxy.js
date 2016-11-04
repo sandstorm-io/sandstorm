@@ -1599,6 +1599,8 @@ class Proxy {
 
     context.accept = parseAcceptHeader(request);
 
+    context.acceptEncoding = parseAcceptEncodingHeader(request);
+
     context.eTagPrecondition = parsePreconditionHeader(request);
 
     context.additionalHeaders = [];
@@ -2250,10 +2252,7 @@ const composeETag = (tag) => {
   return result;
 };
 
-const parseAcceptHeader = (request) => {
-  // jscs:disable requireDotNotation
-  const header = request.headers["accept"];
-
+const parseAcceptHeaderString = (header, field) => {
   const result = [];
   if (header) {
     const acceptList = header.split(",");
@@ -2261,7 +2260,8 @@ const parseAcceptHeader = (request) => {
       const acceptStr = acceptList[i];
       const tokensList = acceptStr.split(";");
 
-      const temp = { mimeType: tokensList[0].trim() };
+      const temp = {};
+      temp[field] = tokensList[0].trim();
 
       const tokensListRest = tokensList.slice(1);
       for (const j in tokensListRest) {
@@ -2282,6 +2282,18 @@ const parseAcceptHeader = (request) => {
   }
 
   return result;
+};
+
+const parseAcceptHeader = (request) => {
+  // jscs:disable requireDotNotation
+  const header = request.headers["accept"];
+  return parseAcceptHeaderString(header, "mimeType");
+};
+
+const parseAcceptEncodingHeader = (request) => {
+  // jscs:disable requireDotNotation
+  const header = request.headers["accept-encoding"];
+  return parseAcceptHeaderString(header, "contentCoding");
 };
 
 // -----------------------------------------------------------------------------

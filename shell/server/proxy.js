@@ -1751,7 +1751,7 @@ class Proxy {
           content.body.stream.close();
           response.rejectResponseStream(new Error("client disconnected"));
         } else {
-          const idx = this.streamingResponseCounter.toString();
+          const idx = this.streamingResponseCounter;
           this.streamingResponseCounter += 1;
           const streamHandle = content.body.stream;
           const rawResponseStream = new ResponseStream(
@@ -2066,7 +2066,7 @@ class Proxy {
           }
         });
 
-        const idx = this.streamingRequestCounter.toString();
+        const idx = this.streamingRequestCounter;
         this.streamingRequestCounter += 1;
         this.streamingRequests[idx] = request;
         destructor = () => { delete this.streamingRequests[idx]; };
@@ -2150,7 +2150,7 @@ class Proxy {
           promise.serverStream.sendBytes(head);
         }
 
-        const socketIdx = this.websocketCounter.toString();
+        const socketIdx = this.websocketCounter;
         this.websockets[socketIdx] = socket;
         this.websocketCounter += 1;
         pumpWebSocket(socket, promise.serverStream, () => { delete this.websockets[socketIdx]; });

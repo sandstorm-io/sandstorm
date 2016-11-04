@@ -683,8 +683,10 @@ class ApiSessionProxies {
                 this.newBucket[oldHashedToken][oldHashedParams];
           const oldProxy = this.oldBucket[oldHashedToken][oldHashedParams];
           if (oldProxy && !newProxy) {
-            if (Object.keys(oldProxy.websockets).length > 0) {
-              // A client has an open websocket. Keep the proxy around.
+            if (Object.keys(oldProxy.websockets).length > 0 ||
+                Object.keys(oldProxy.streamingRequests).length > 0 ||
+                Object.keys(oldProxy.streamingResponses).length > 0) {
+              // A client has an open stream. Keep the proxy around.
               this.put(oldHashedToken, oldHashedParams, oldProxy);
             } else {
               // We can close this proxy and forget about it.
@@ -696,6 +698,18 @@ class ApiSessionProxies {
 
       this.oldBucket = this.newBucket;
       this.newBucket = {};
+
+      const keepAlives = [];
+      for (const hashedToken in this.oldBucket) {
+        for (const hashedParams in this.oldBucket[hashedToken]) {
+          const proxy = this.oldBucket[hashedToken][hashedParams];
+          keepAlives.push(proxy.supervisor.keepAlive().catch((e) => {
+            console.error("supervisor.keepAlive() failed.", e);
+          }));
+        }
+      }
+
+      waitPromise(Promise.all(keepAlives));
     }, intervalMillis);
   }
 
@@ -739,7 +753,9 @@ class ApiSessionProxies {
   }
 }
 
-const apiSessionProxies = new ApiSessionProxies(3 * 60 * 1000);
+// The interval of 60 seconds here deliberately matches the `keepSessionAlive()` interval
+// in the case of non-API proxies.
+const apiSessionProxies = new ApiSessionProxies(60 * 1000);
 
 Meteor.startup(() => {
   Grains.find().observe({
@@ -1233,6 +1249,10 @@ class Proxy {
     this.hasLoaded = false;
     this.websockets = {};
     this.websocketCounter = 0; // Used for generating unique socket IDs.
+    this.streamingRequests = {};
+    this.streamingRequestCounter = 0; // Used for generating unique request IDs.
+    this.streamingResponses = {};
+    this.streamingResponseCounter = 0; // Used for generating unique response IDs.
     this.parentOrigin = parentOrigin || process.env.ROOT_URL;
 
     if (sessionId) {
@@ -1336,6 +1356,18 @@ class Proxy {
   }
 
   close() {
+    for (const streamingResponseIdx in this.streamingResponses) {
+      this.streamingResponses[streamingResponseIdx].abort();
+    }
+
+    this.streamingResponses = {};
+
+    for (const streamingRequestIdx in this.streamingRequests) {
+      this.streamingRequests[streamingRequestIdx].destroy();
+    }
+
+    this.streamingRequests = {};
+
     for (const socketIdx in this.websockets) {
       this.websockets[socketIdx].destroy();
     };
@@ -1713,11 +1745,22 @@ class Proxy {
         if (request.method === "HEAD") {
           content.body.stream.close();
           response.rejectResponseStream(new Error("HEAD request; content doesn't matter."));
+        } else if (response.socket.destroyed) {
+          // The client has already closed the stream. No additional "close" event will be
+          // emitted. Annoyingly, we cannot rely on `response.write()` throwing an exception
+          // in this case, so if we don't handle it specially we could end up with a
+          // `ResponseStream` that gets stuck waiting for a "drain" event that never arrives.
+          content.body.stream.close();
+          response.rejectResponseStream(new Error("client disconnected"));
         } else {
+          const idx = this.streamingResponseCounter;
+          this.streamingResponseCounter += 1;
           const streamHandle = content.body.stream;
-          const responseStream = new Capnp.Capability(
-            new ResponseStream(response, code.id, code.title, streamHandle),
-            ByteStream);
+          const rawResponseStream = new ResponseStream(
+            response, code.id, code.title, streamHandle,
+            () => { delete this.streamingResponses[idx]; });
+          this.streamingResponses[idx] = rawResponseStream;
+          const responseStream = new Capnp.Capability(rawResponseStream, ByteStream);
           response.resolveResponseStream(responseStream);
           return { streamHandle: responseStream };
         }
@@ -2025,19 +2068,27 @@ class Proxy {
           }
         });
 
+        const idx = this.streamingRequestCounter;
+        this.streamingRequestCounter += 1;
+        this.streamingRequests[idx] = request;
+        destructor = () => { delete this.streamingRequests[idx]; };
+
         request.on("end", () => {
           if (!uploadStreamError) requestStream.done().catch(reportUploadStreamError);
 
           // We're all done making calls to requestStream.
           requestStream.close();
+          destructor();
         });
 
         request.on("close", () => {
           reportUploadStreamError(new Error("HTTP connection unexpectedly closed during request."));
+          destructor();
         });
 
         request.on("error", (err) => {
           reportUploadStreamError(err);
+          destructor();
         });
 
         return responsePromise.then((rpcResponse) => {
@@ -2101,7 +2152,7 @@ class Proxy {
           promise.serverStream.sendBytes(head);
         }
 
-        const socketIdx = this.websocketCounter.toString();
+        const socketIdx = this.websocketCounter;
         this.websockets[socketIdx] = socket;
         this.websocketCounter += 1;
         pumpWebSocket(socket, promise.serverStream, () => { delete this.websockets[socketIdx]; });
@@ -2372,7 +2423,7 @@ const errorCodes = {
 ResponseStream = class ResponseStream {
   // Note: This class is used in pre-meteor.js as well as in this file.
 
-  constructor(response, httpCode, httpStatus, upstreamHandle) {
+  constructor(response, httpCode, httpStatus, upstreamHandle, idempotentCleanup) {
     // This is stupidly complicated, because:
     // - New versions of sandstorm-http-bridge (and other well-behaved apps) wait on write()
     //   completion for flow control, so we want write() to complete only when there is space
@@ -2394,9 +2445,10 @@ ResponseStream = class ResponseStream {
     this.httpCode = httpCode;
     this.httpStatus = httpStatus;
     this.upstreamHandle = upstreamHandle;
+    this.idempotentCleanup = idempotentCleanup;
 
     this.started = false;
-    this.ended = false;
+    this.ended = false; // Invariant: if `ended` is true, then `started` is also true.
     this.waiting = [];
 
     response.on("drain", () => {
@@ -2404,18 +2456,20 @@ ResponseStream = class ResponseStream {
       this.waiting = [];
     });
 
-    response.on("close", () => {
-      this.aborted = true;
+    response.on("close", () => { this.abort(); });
+  }
 
-      // Resolve all outstanding writes. This is OK even if they didn't actually go through because
-      // an incomplete download is the client's problem, not the server's. The important thing is
-      // to cancel the stream if it is still being generated; to that end, the next new write()
-      // call after this point will throw.
-      this.waiting.forEach(f => f());
-      this.waiting = [];
+  abort() {
+    this.aborted = true;
 
-      this.close();
-    });
+    // Resolve all outstanding writes. This is OK even if they didn't actually go through because
+    // an incomplete download is the client's problem, not the server's. The important thing is
+    // to cancel the stream if it is still being generated; to that end, the next new write() call
+    // after this point will throw.
+    this.waiting.forEach(f => f());
+    this.waiting = [];
+
+    this.close();
   }
 
   expectSize(size) {
@@ -2472,6 +2526,10 @@ ResponseStream = class ResponseStream {
   close() {
     if (this.upstreamHandle) {
       this.upstreamHandle.close();
+    }
+
+    if (this.idempotentCleanup) {
+      this.idempotentCleanup();
     }
 
     // If `this.done()` has not been called, we should report an error to the client. Unfortunately,

@@ -1868,6 +1868,11 @@ _.extend(SandstormDb.prototype, {
     return Meteor.settings.public.quotaEnabled;
   },
 
+  isHideAboutEnabled() {
+    const setting = this.collections.settings.findOne({ _id: "whiteLabelHideAbout" });
+    return setting && setting.value && this.isFeatureKeyValid();
+  },
+
   isQuotaEnabled() {
     if (Meteor.settings.public.quotaEnabled) return true;
 

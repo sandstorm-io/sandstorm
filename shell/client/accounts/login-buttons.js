@@ -228,6 +228,10 @@ Template._loginButtonsLoggedInDropdown.helpers({
     };
   },
 
+  showAbout() {
+    return !globalDb.isHideAboutEnabled();
+  },
+
 });
 
 Template._loginButtonsLoggedInDropdown.events({
@@ -332,6 +336,10 @@ Template.loginButtonsList.helpers({
 
   linkingNewIdentity() {
     return Template.instance()._linkingNewIdentity;
+  },
+
+  showAbout() {
+    return !this._db.isHideAboutEnabled();
   },
 });
 

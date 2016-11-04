@@ -12,6 +12,7 @@ const personalizationMessageShape = {
   whitelabelCustomLoginProviderName: String,
   whitelabelHideSendFeedback: Boolean,
   whitelabelHideTroubleshooting: Boolean,
+  whiteLabelHideAbout: Boolean,
   whitelabelUseServerTitleForHomeText: Boolean,
 };
 
@@ -33,6 +34,8 @@ Meteor.methods({
       { value: params.whitelabelHideSendFeedback });
     db.collections.settings.upsert({ _id: "whitelabelHideTroubleshooting" },
       { value: params.whitelabelHideTroubleshooting });
+    db.collections.settings.upsert({ _id: "whiteLabelHideAbout" },
+      { value: params.whiteLabelHideAbout });
     db.collections.settings.upsert({ _id: "whitelabelUseServerTitleForHomeText" },
       { value: params.whitelabelUseServerTitleForHomeText });
   },

@@ -99,5 +99,18 @@ const appIdReplacementList :List(AppIdReplacement) = [
 
   # ---- end draw.io entry ----
 
+  # ---- Wekan entry ----
+
+  (original = "m86q05rdvj14yvn78ghaxynqz7u2svw6rnttptxx49g1785cdv1h",
+   replacement = "6jz1aawur7kga7tdsj9kgpxx1yzh6xz1qmrpnqukcp1rekprd9f0"),
+  # The original key is held by Maxime Quandalle. The Sandstorm team generated this replacement
+  # key in order to publish the update posted [here](https://github.com/wekan/wekan/pull/704),
+  # after failing to contact Maxime over the course of many weeks.
+  #
+  # See also [this discussion](https://github.com/wekan/wekan/issues/640) about the future
+  # governance of Wekan.
+
+# ---- end Wekan entry ----
+
   # Add your entry here!
 ];

@@ -1,3 +1,9 @@
+### v0.194 (2016-11-05)
+- Sandstorm for Work: You can now disable the "about sandstorm" menu item as a whitelabeling setting.
+- Fixed bug where grains that are actively handling API requests but which weren't open in any browser windows would shut down every couple minutes, only to start back up on the next request. These grains will now stay running.
+- Fixed that apps were always being told "Accept-Encoding: gzip" whether or not the client actually sent this header. (Apps must be rebuilt with the latest sandstorm-http-bridge to receive this change.)
+- Increased directory nesting limit in SPK files from 64 to 128 to work around long npm dependency chains.
+
 ### v0.193 (2016-10-29)
 - Installer should now work on RHEL, CentOS, Arch, and other distros where user namespaces are unavailable and/or kernel version 3.10 is in use.
 - Fixed that trashed grains were not being shut down immediately.

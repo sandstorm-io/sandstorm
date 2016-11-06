@@ -62,10 +62,14 @@ Meteor.methods({
         const grainsOwned = Grains.find({
           userId: { $eq: this.userId },
           _id: { $in: grainIds },
-        }, { fields: { _id: 1, }, });
+        }, { fields: { _id: 1, publicId: 1, }, });
 
         grainsOwned.forEach((grain) => {
           Sessions.remove({ grainId: grain._id, });
+          if (grain.publicId) {
+            deleteWebPublishingHandler(grain.publicId);
+          }
+
           try {
             this.connection.sandstormBackend.shutdownGrain(grain._id, this.userId).await();
           } catch (err) {

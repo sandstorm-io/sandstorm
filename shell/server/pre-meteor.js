@@ -43,6 +43,10 @@ const webPublishingHandlers = {};
 //   - Web publishing hosts
 //   - Standalone grain hosts
 
+deleteWebPublishingHandler = (publicId) => {
+  delete webPublishingHandlers[publicId];
+};
+
 const dnsCache = {};
 // Unfortunately, node's DNS library doesn't cache results, so we do our own caching.
 // Unfortunately, node's DNS library also dosen't give us TTLs. So, we'll cache for
@@ -466,7 +470,9 @@ const handleNonMeteorRequest = (req, res, next, redirectIfInWildcard) => {
         } else {
           // We don't have a handler for this publicId, so look it up in the grain DB.
           return inMeteor(() => {
-            const grain = Grains.findOne({ publicId: publicId }, { fields: { _id: 1 } });
+            const grain = Grains.findOne(
+              { publicId: publicId, trashed: { $exists: false }, },
+              { fields: { _id: 1 } });
             if (!grain) {
               throw new Meteor.Error(404, "No such grain for public ID: " + publicId);
             }

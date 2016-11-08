@@ -602,10 +602,12 @@ Template.adminIdentityProviderConfigureLdap.events({
 // SAML form.
 Template.adminIdentityProviderConfigureSaml.onCreated(function () {
   const samlEntryPoint = globalDb.getSamlEntryPoint();
+  const samlLogout = globalDb.getSamlLogout();
   const samlPublicCert = globalDb.getSamlPublicCert();
   const samlEntityId = globalDb.getSamlEntityId() || window.location.hostname;
 
   this.samlEntryPoint = new ReactiveVar(samlEntryPoint);
+  this.samlLogout = new ReactiveVar(samlLogout);
   this.samlPublicCert = new ReactiveVar(samlPublicCert);
   this.samlEntityId = new ReactiveVar(samlEntityId);
   this.errorMessage = new ReactiveVar(undefined);
@@ -626,6 +628,11 @@ Template.adminIdentityProviderConfigureSaml.helpers({
   samlEntryPoint() {
     const instance = Template.instance();
     return instance.samlEntryPoint.get();
+  },
+
+  samlLogout() {
+    const instance = Template.instance();
+    return instance.samlLogout.get();
   },
 
   samlPublicCert() {
@@ -669,6 +676,12 @@ Template.adminIdentityProviderConfigureSaml.events({
     instance.formChanged.set(true);
   },
 
+  "input input[name=logout]"(evt) {
+    const instance = Template.instance();
+    instance.samlLogout.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
   "input textarea[name=publicCert]"(evt) {
     const instance = Template.instance();
     instance.samlPublicCert.set(evt.currentTarget.value);
@@ -690,6 +703,7 @@ Template.adminIdentityProviderConfigureSaml.events({
   "click .idp-modal-save"(evt) {
     const instance = Template.instance();
     const samlEntryPoint = instance.samlEntryPoint.get().trim();
+    const samlLogout = instance.samlLogout.get().trim();
     const samlPublicCert = instance.samlPublicCert.get().trim();
     const samlEntityId = instance.samlEntityId.get().trim();
     const token = Iron.controller().state.get("token");
@@ -706,7 +720,13 @@ Template.adminIdentityProviderConfigureSaml.events({
               if (err) {
                 instance.errorMessage.set(err.message);
               } else {
-                Meteor.call("setAccountSetting", token, "saml", true, instance.setAccountSettingCallback);
+                Meteor.call("setSetting", token, "samlLogout", samlLogout, (err) => {
+                  if (err) {
+                    instance.errorMessage.set(err.message);
+                  } else {
+                    Meteor.call("setAccountSetting", token, "saml", true, instance.setAccountSettingCallback);
+                  }
+                });
               }
             });
           }

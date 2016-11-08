@@ -326,6 +326,12 @@ MIID...
     </div>
 
     <div class="form-group">
+      <label>SAML provider logout URL:
+        <input type="text" name="logout" value="{{samlLogout}}" placeholder="https://YOUR_SAML_PROVIDER.com/sso/saml/SingleLogoutService" />
+      </label>
+    </div>
+
+    <div class="form-group">
       <label>SAML cert for above provider:
         <textarea type="text" name="publicCert" value="{{samlPublicCert}}" placeholder="base64 encoded cert (e.g. MIID...8F==)"></textarea>
       </label>

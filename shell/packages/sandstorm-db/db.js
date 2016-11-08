@@ -1603,6 +1603,11 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
+  getSamlLogout() {
+    const setting = this.collections.settings.findOne({ _id: "samlLogout" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
   getSamlPublicCert() {
     const setting = this.collections.settings.findOne({ _id: "samlPublicCert" });
     return setting ? setting.value : "";  // empty if subscription is not ready.

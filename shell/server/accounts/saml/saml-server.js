@@ -38,7 +38,7 @@ Accounts.registerLoginHandler(function (loginRequest) {
   if (!loginResult) {
     throw new Meteor.Error(500, "SAML login did not complete.");
   } else if (loginResult.profile && loginResult.profile.email) {
-    let user = _.pick(loginResult.profile, "displayName", "email");
+    let user = _.pick(loginResult.profile, "displayName", "email", "nameIDFormat");
     user.id = loginResult.profile.nameID;
     return Accounts.updateOrCreateUserFromExternalService("saml", user, {});
   } else {
@@ -82,6 +82,7 @@ const generateService = function () {
   const service = {
     "provider": "default",
     "entryPoint": db.getSamlEntryPoint(),
+    "logoutUrl": db.getSamlLogout(),
     // TODO(someday): find a better way to inject the DB
     "issuer": entityId || HOSTNAME,
     // If the certificate has "-----BEGIN CERTIFICATE-----" markers, automatically remove those.
@@ -172,4 +173,21 @@ WebApp.connectHandlers.use(connect.urlencoded()).use(function (req, res, next) {
   Fiber(function () {
     middleware(req, res, next);
   }).run();
+});
+
+Meteor.methods({
+  generateSamlLogout: function () {
+    const _saml = new SAML(generateService());
+    const identityId = Meteor.user().loginIdentities[0].id;
+    // TODO(soon): handle more the case where a user has merged a SAML identity
+    const identity = Meteor.users.findOne({ _id: identityId, });
+
+    return Meteor.wrapAsync(_saml.getLogoutUrl.bind(_saml))({
+      user: {
+        nameID: identity.services.saml.id,
+        nameIDFormat: identity.services.saml.nameIDFormat ||
+          "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent",
+      },
+    });
+  },
 });

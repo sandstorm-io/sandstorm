@@ -65,7 +65,7 @@ logoutSandstorm = function () {
     }
   };
 
-  if (globalDb.collections.users.findOne({ "services.saml": { $exists: 1, }, })) {
+  if (globalDb.userHasSamlLoginIdentity()) {
     Meteor.call("generateSamlLogout", function (err, url) {
       Meteor.logout(function () {
         logoutHelper();

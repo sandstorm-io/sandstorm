@@ -178,9 +178,14 @@ WebApp.connectHandlers.use(connect.urlencoded()).use(function (req, res, next) {
 Meteor.methods({
   generateSamlLogout: function () {
     const _saml = new SAML(generateService());
-    const identityId = Meteor.user().loginIdentities[0].id;
-    // TODO(soon): handle more the case where a user has merged a SAML identity
-    const identity = Meteor.users.findOne({ _id: identityId, });
+    let identity;
+    Meteor.user().loginIdentities.forEach((_identity) => {
+      const currIdentity = Meteor.users.findOne({ _id: _identity.id, });
+      if (currIdentity.services.saml) {
+        identity = currIdentity;
+      }
+    });
+    // TODO(someday): handle user having more than one SAML identity
 
     return Meteor.wrapAsync(_saml.getLogoutUrl.bind(_saml))({
       user: {

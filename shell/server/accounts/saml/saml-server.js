@@ -1,4 +1,5 @@
 import Url from "url";
+import zlib from "zlib";
 import { SAML } from "/imports/server/accounts/saml-utils.js";
 
 const Fiber = Npm.require("fibers");
@@ -165,6 +166,39 @@ const middleware = function (req, res, next) {
     closePopup(res, err);
   }
 };
+
+Meteor.methods({
+  validateSamlLogout: function (SAMLRequest) {
+    const db = this.connection.sandstormDb;
+    const userId = Meteor.userId();
+
+    const service = generateService();
+    const _saml = new SAML(service);
+    if (SAMLRequest) {
+      const buf = new Buffer(SAMLRequest, "base64");
+      const xml = zlib.inflateRawSync(buf).toString();
+      _saml.parseLogoutRequest(xml, function (err, nameId) {
+        if (err) {
+          console.error("Error validating SAML logout response:", err.toString(),
+                        "\nFull SAML response XML:\n", responseText);
+          throw new Error("Unable to validate SAML logout response.");
+        }
+
+        check(nameId, String);
+        const identity = db.collections.users.findOne({ "services.saml.id": nameId, },
+          { fields: { _id: 1, }, });
+        const user = db.collections.users.findOne({ "loginIdentities.id": identity._id, },
+          { fields: { _id: 1, }, });
+
+        if (user._id !== userId) {
+          const txt = "SAML logout requested for wrong user: " + nameId + ", " + userId;
+          console.error(txt);
+          throw new Error(txt);
+        }
+      });
+    }
+  },
+});
 
 // Listen to incoming OAuth http requests
 WebApp.connectHandlers.use(connect.urlencoded()).use(function (req, res, next) {

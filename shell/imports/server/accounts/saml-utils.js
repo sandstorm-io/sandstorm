@@ -201,6 +201,21 @@ SAML.prototype.getElement = function (parentElement, elementName) {
   return parentElement[elementName];
 };
 
+SAML.prototype.parseLogoutRequest = function (xml, callback) {
+  const _this = this;
+  const parser = new xml2js.Parser({ explicitRoot: true });
+  parser.parseString(xml, function (err, doc) {
+    if (err) {
+      callback(err);
+      return;
+    }
+
+    const request = _this.getElement(doc, "LogoutRequest");
+    const nameId = _this.getElement(request, "NameID")[0];
+    callback(null, nameId && nameId._);
+  });
+};
+
 SAML.prototype.validateResponse = function (samlResponse, callback) {
   const _this = this;
   const xml = new Buffer(samlResponse, "base64").toString("utf8");

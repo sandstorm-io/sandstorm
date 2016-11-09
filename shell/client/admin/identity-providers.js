@@ -664,6 +664,10 @@ Template.adminIdentityProviderConfigureSaml.helpers({
     return Meteor.absoluteUrl("_saml/validate/default");
   },
 
+  logoutUrl() {
+    return Meteor.absoluteUrl("saml/logout/default");
+  },
+
   configUrl() {
     return Meteor.absoluteUrl("_saml/config/default");
   },

@@ -422,12 +422,10 @@ SAML.prototype.generateServiceProviderMetadata = function () {
     };
   }
 
-  if (this.options.logoutCallbackUrl) {
-    metadata.EntityDescriptor.SPSSODescriptor.SingleLogoutService = {
-      "@Binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST",
-      "@Location": this.options.logoutCallbackUrl,
-    };
-  }
+  metadata.EntityDescriptor.SPSSODescriptor.SingleLogoutService = {
+    "@Binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
+    "@Location": Meteor.absoluteUrl("saml/logout/default"),
+  };
 
   metadata.EntityDescriptor.SPSSODescriptor.NameIDFormat = this.options.identifierFormat;
   metadata.EntityDescriptor.SPSSODescriptor.AssertionConsumerService = {

@@ -211,7 +211,12 @@ WebApp.connectHandlers.use(connect.urlencoded()).use(function (req, res, next) {
 
 Meteor.methods({
   generateSamlLogout: function () {
-    const _saml = new SAML(generateService());
+    const service = generateService();
+    if (!service.logoutUrl) {
+      throw new Meteor.Error(500, "No SAML logout url specified");
+    }
+
+    const _saml = new SAML(service);
     let identity;
     Meteor.user().loginIdentities.forEach((_identity) => {
       const currIdentity = Meteor.users.findOne({ _id: _identity.id, });

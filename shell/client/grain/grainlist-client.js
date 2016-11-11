@@ -322,8 +322,12 @@ Template.sandstormGrainListPage.helpers({
     return prettySize(this._db.getUserQuota(Meteor.user()).storage);
   },
 
-  quotaAvailable() {
-    return prettySize(this._db.getUserQuota(Meteor.user()).storage - Meteor.user().storageUsage);
+  grainQuota() {
+    return 5;
+    const quota = this._db.getUserQuota(Meteor.user()).grains;
+    if (quota === Infinity) return null;
+
+    return quota;
   },
 });
 

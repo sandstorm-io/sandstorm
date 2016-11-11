@@ -33,14 +33,14 @@
         </label>
       </div>
 
+      {{#if quotaEnabled}}
       <div class="usage-info">
-        <p class="grain-count"><strong>Grains I own:</strong> {{ myGrainsCount }}</p>
-        {{#if quotaEnabled}}
-          <p class="grains-size"><strong>My grains' total size:</strong> {{ myGrainsSize }}</p>
-          <p><strong>My quota:</strong> {{ quotaTotal }}</p>
-          <p><strong>My available space:</strong> {{ quotaAvailable }}</p>
-        {{/if}}
+          {{#if grainQuota}}
+            <p class="grain-count">{{ myGrainsCount }} of {{ grainQuota }} grains</p>
+          {{/if}}
+          <p>{{ myGrainsSize }} of {{ quotaTotal }} used</p>
       </div>
+      {{/if}}
     </div>
 
     {{#if showTrash}}

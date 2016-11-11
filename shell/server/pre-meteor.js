@@ -65,6 +65,9 @@ function wwwHandlerForGrain(grainId) {
   return (request, response) => {
     let path = request.url;
 
+    // Strip query.
+    path = path.split("?")[0];
+
     // If a directory, open "index.html".
     if (path.slice(-1) === "/") {
       path = path + "index.html";
@@ -72,9 +75,6 @@ function wwwHandlerForGrain(grainId) {
 
     // Strip leading "/".
     if (path[0] === "/") path = path.slice(1);
-
-    // Strip query.
-    path = path.split("?")[0];
 
     let type = mime.lookup(path);
     const charset = mime.charsets.lookup(type);

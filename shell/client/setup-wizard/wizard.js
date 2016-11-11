@@ -985,6 +985,8 @@ const setupRoute = RouteController.extend({
     // Scroll to the top of the page each time you navigate to a setup wizard page.
     document.getElementsByTagName("body")[0].scrollTop = 0;
   },
+
+  loadingTemplate: "setupWizardLoading",
 });
 
 Template.setupWizardTokenExpired.helpers({

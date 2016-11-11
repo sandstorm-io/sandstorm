@@ -85,6 +85,7 @@ cat > $SETTINGS << __EOF__
     "wildcardHost": "$WILDCARD_HOST",
     "quotaEnabled": ${QUOTA_ENABLED:-false},
     "stripePublicKey": "${STRIPE_PUBLIC_KEY:-}",
+    "outOfBeta": ${OUT_OF_BETA:-false},
     "smtpListenPort": ${SMTP_LISTEN_PORT:-30025}
   },
   "home": "$SANDSTORM_HOME",

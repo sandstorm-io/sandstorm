@@ -202,8 +202,8 @@ Meteor.methods({
     });
   },
 
-  validateSamlLogout: function (SAMLRequest) {
-    check(SAMLRequest, String);
+  validateSamlLogout: function (samlRequest) {
+    check(samlRequest, String);
 
     const db = this.connection.sandstormDb;
     const userId = Meteor.userId();
@@ -213,8 +213,8 @@ Meteor.methods({
 
     const service = generateService();
     const _saml = new SAML(service);
-    if (SAMLRequest) {
-      const buf = new Buffer(SAMLRequest, "base64");
+    if (samlRequest) {
+      const buf = new Buffer(samlRequest, "base64");
       const xml = zlib.inflateRawSync(buf).toString();
       _saml.parseLogoutRequest(xml, function (err, nameId) {
         if (err) {

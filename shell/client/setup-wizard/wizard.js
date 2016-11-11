@@ -242,6 +242,10 @@ Template.setupWizardIntro.helpers({
     return hasUsersEntry && hasUsersEntry.hasUsers;
   },
 
+  noIdpEnabled() {
+    return !setupIsStepCompleted.identity();
+  },
+
   currentUserIsAdmin() {
     return isAdmin();
   },

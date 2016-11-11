@@ -317,10 +317,20 @@ Template.sandstormGrainListPage.helpers({
   hasApps() {
     return this._db.currentUserActions().count() > 0;
   },
+
+  quotaTotal() {
+    return prettySize(this._db.getUserQuota(Meteor.user()).storage);
+  },
+
+  quotaAvailable() {
+    return prettySize(this._db.getUserQuota(Meteor.user()).storage - Meteor.user().storageUsage);
+  },
 });
 
 Template.sandstormGrainListPage.onCreated(function () {
   this._filter = new ReactiveVar("");
+  this.subscribe("myBonuses");
+  // Maybe this subscription should be moved to the top level so it's not ever dropped?
 });
 
 Template.sandstormGrainListPage.onRendered(function () {

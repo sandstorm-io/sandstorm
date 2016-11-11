@@ -37,6 +37,8 @@
         <p class="grain-count"><strong>Grains I own:</strong> {{ myGrainsCount }}</p>
         {{#if quotaEnabled}}
           <p class="grains-size"><strong>My grains' total size:</strong> {{ myGrainsSize }}</p>
+          <p><strong>My quota:</strong> {{ quotaTotal }}</p>
+          <p><strong>My available space:</strong> {{ quotaAvailable }}</p>
         {{/if}}
       </div>
     </div>

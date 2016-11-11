@@ -203,8 +203,13 @@ Meteor.methods({
   },
 
   validateSamlLogout: function (SAMLRequest) {
+    check(SAMLRequest, String);
+
     const db = this.connection.sandstormDb;
     const userId = Meteor.userId();
+    if (!userId) {
+      return new Meteor.Error(403, "Non-logged in users can't logout.");
+    }
 
     const service = generateService();
     const _saml = new SAML(service);
@@ -221,8 +226,15 @@ Meteor.methods({
         check(nameId, String);
         const identity = db.collections.users.findOne({ "services.saml.id": nameId, },
           { fields: { _id: 1, }, });
+        if (!identity) {
+          return new Meteor.Error(400, "No identity found matching SAML nameID.");
+        }
+
         const user = db.collections.users.findOne({ "loginIdentities.id": identity._id, },
           { fields: { _id: 1, }, });
+        if (!user) {
+          return new Meteor.Error(403, "No user found for expected SAML identity.");
+        }
 
         if (user._id !== userId) {
           const txt = "SAML logout requested for wrong user: " + nameId + ", " + userId;

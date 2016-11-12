@@ -317,6 +317,17 @@ Template.sandstormGrainListPage.helpers({
   hasApps() {
     return this._db.currentUserActions().count() > 0;
   },
+
+  quotaTotal() {
+    return prettySize(this._db.getUserQuota(Meteor.user()).storage);
+  },
+
+  grainQuota() {
+    const quota = this._db.getUserQuota(Meteor.user()).grains;
+    if (quota === Infinity) return null;
+
+    return quota;
+  },
 });
 
 Template.sandstormGrainListPage.onCreated(function () {

@@ -75,6 +75,16 @@
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
   <h2>Google login configuration</h2>
 
+  {{#if formerBaseUrl}}
+    <p class="flash-message warning-message" tabindex="-1">
+      This server moved from <code>{{ formerBaseUrl }}</code> to <code>{{ siteUrlNoSlash }}</code>.
+      You'll need to visit
+      <a target="_blank" href="https://console.developers.google.com/">https://console.developers.google.com/</a>
+      and update the "Authorized Javascript Origins" and "Authorized Redirect URI" for this Client ID to
+      include the values below.
+    </p>
+  {{/if}}
+
   {{#if errorMessage}}
     {{#focusingErrorBox}}
       Failed to save changes: {{errorMessage}}
@@ -134,6 +144,15 @@
 <template name="adminIdentityProviderConfigureGitHub">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
   <h2>GitHub login configuration</h2>
+
+  {{#if formerBaseUrl}}
+    <p class="flash-message warning-message" tabindex="-1">
+      This server moved from <code>{{ formerBaseUrl }}</code> to <code>{{ siteUrl }}</code>.
+      You'll need to visit
+      <a target="_blank" href="https://github.com/settings/developers">https://github.com/settings/developers</a>
+      and update the Homepage URL and Authorization callback URL for this application to the values below.
+    </p>
+  {{/if}}
 
   <form class="setup-idp-form">
     {{> githubLoginSetupInstructions "" }}
@@ -389,17 +408,28 @@ MIID...
 <div class="idp-table-row" role="row">
   <span class="idp" role="gridcell">{{idp.label}}</span>
   <span class="idp-status" role="gridcell">
+    <span class="left">
     {{#if idp.enabled}}
       <span class="idp-enabled">Enabled</span>
     {{else}}
       <span class="idp-disabled">Not enabled</span>
     {{/if}}
+    {{#if idp.resetNote}}
+      {{#if idp.resetNote.baseUrlChangedFrom}}
+      <span class="base-url-change-note">
+        Disabled due to BASE_URL change <button class="button-link base-url-change-button">reconfigure</button>
+      </span>
+      {{/if}}
+    {{/if}}
+    </span>
 
+    <span class="right">
     {{#if needsFeatureKey}}
       <button class="get-feature-key" title="Configure Sandstorm for Work">Configure Sandstorm for Work</button>
     {{else}}
       <button class="configure-idp" title="Configure {{idp.label}} login">Configure</button>
     {{/if}}
+    </span>
   </span>
 </div>
 </template>

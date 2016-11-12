@@ -154,6 +154,15 @@
   <h1 class="setup-page-title">Welcome to Sandstorm!</h1>
 
   {{#if initialSetupComplete}}
+    {{#if noIdpEnabled}}
+    <p>
+      This Sandstorm server has been set up previously, but due to a change in
+      <code>sandstorm.conf</code>, you'll need to configure identity providers again.
+    </p>
+    <p class="center">
+      {{#linkTo route="setupWizardIdentity" class="setup-button-primary"}}Revisit setup wizard{{/linkTo}}
+    </p>
+    {{else}}
     <p>
       This Sandstorm server is ready to roll.
       You can adjust server settings, including which providers are
@@ -210,7 +219,7 @@
     <p class="center">
       {{#linkTo route="setupWizardIdentity" class="rerun-wizard-button"}}Revisit setup wizard{{/linkTo}}
     </p>
-
+    {{/if}}
   {{else}}
     <p>Choose what type of Sandstorm server to set up:</p>
 

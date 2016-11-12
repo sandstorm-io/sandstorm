@@ -8,8 +8,10 @@ Template.newAdminIdentity.helpers({
 
 const idpData = function (configureCallback) {
   const emailTokenEnabled = globalDb.getSettingWithFallback("emailToken", false);
-  const googleEnabled = globalDb.getSettingWithFallback("google", false);
-  const githubEnabled = globalDb.getSettingWithFallback("github", false);
+  const googleSetting = globalDb.collections.settings.findOne("google");
+  const googleEnabled = (googleSetting && googleSetting.value) || false;
+  const githubSetting = globalDb.collections.settings.findOne("github");
+  const githubEnabled = (githubSetting && githubSetting.value) || false;
   const ldapEnabled = globalDb.getSettingWithFallback("ldap", false);
   const samlEnabled = globalDb.getSettingWithFallback("saml", false);
   return [
@@ -28,6 +30,7 @@ const idpData = function (configureCallback) {
       label: "Google",
       icon: "/google.svg", // Or use identicons
       enabled: googleEnabled,
+      resetNote: !googleEnabled && googleSetting && googleSetting.automaticallyReset,
       popupTemplate: "adminIdentityProviderConfigureGoogle",
       onConfigure() {
         configureCallback("google");
@@ -38,6 +41,7 @@ const idpData = function (configureCallback) {
       label: "GitHub",
       icon: "/github.svg", // Or use identicons
       enabled: githubEnabled,
+      resetNote: !githubEnabled && githubSetting && githubSetting.automaticallyReset,
       popupTemplate: "adminIdentityProviderConfigureGitHub",
       onConfigure() {
         configureCallback("github");
@@ -99,6 +103,11 @@ Template.adminIdentityProviderTable.helpers({
 });
 
 Template.adminIdentityRow.events({
+  "click button.base-url-change-button"() {
+    const instance = Template.instance();
+    instance.data.idp.onConfigure();
+  },
+
   "click button.configure-idp"() {
     const instance = Template.instance();
     instance.data.idp.onConfigure();
@@ -177,15 +186,17 @@ Template.adminIdentityProviderConfigureEmail.helpers({
   },
 });
 
+function siteUrlNoSlash() {
+  // Google complains if the Javascript origin contains a trailing slash - it wants just the
+  // scheme/host/port, no path.
+  const urlWithTrailingSlash = Meteor.absoluteUrl();
+  return urlWithTrailingSlash[urlWithTrailingSlash.length - 1] === "/" ?
+         urlWithTrailingSlash.slice(0, urlWithTrailingSlash.length - 1) :
+         urlWithTrailingSlash;
+}
+
 Template.googleLoginSetupInstructions.helpers({
-  siteUrlNoSlash() {
-    // Google complains if the Javascript origin contains a trailing slash - it wants just the
-    // scheme/host/port, no path.
-    const urlWithTrailingSlash = Meteor.absoluteUrl();
-    return urlWithTrailingSlash[urlWithTrailingSlash.length - 1] === "/" ?
-           urlWithTrailingSlash.slice(0, urlWithTrailingSlash.length - 1) :
-           urlWithTrailingSlash;
-  },
+  siteUrlNoSlash,
 });
 
 // Google form.
@@ -208,6 +219,14 @@ Template.adminIdentityProviderConfigureGoogle.onRendered(function () {
 });
 
 Template.adminIdentityProviderConfigureGoogle.helpers({
+  formerBaseUrl() {
+    const setting = globalDb.collections.settings.findOne("google");
+    const googleEnabled = (setting && setting.value) || false;
+    return !googleEnabled && setting && setting.automaticallyReset && setting.automaticallyReset.baseUrlChangedFrom;
+  },
+
+  siteUrlNoSlash,
+
   googleEnabled() {
     return globalDb.getSettingWithFallback("google", false);
   },
@@ -308,6 +327,16 @@ Template.adminIdentityProviderConfigureGitHub.onRendered(function () {
 Template.adminIdentityProviderConfigureGitHub.helpers({
   githubEnabled() {
     return globalDb.getSettingWithFallback("github", false);
+  },
+
+  formerBaseUrl() {
+    const setting = globalDb.collections.settings.findOne("github");
+    const googleEnabled = (setting && setting.value) || false;
+    return !googleEnabled && setting && setting.automaticallyReset && setting.automaticallyReset.baseUrlChangedFrom;
+  },
+
+  siteUrl() {
+    return Meteor.absoluteUrl();
   },
 
   clientId() {

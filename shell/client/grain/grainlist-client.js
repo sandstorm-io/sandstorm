@@ -323,7 +323,6 @@ Template.sandstormGrainListPage.helpers({
   },
 
   grainQuota() {
-    return 5;
     const quota = this._db.getUserQuota(Meteor.user()).grains;
     if (quota === Infinity) return null;
 

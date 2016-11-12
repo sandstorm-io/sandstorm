@@ -328,6 +328,10 @@ MIID...
   </p>
 
   <p>
+    The Service Logout URL of this server is: <code>{{ logoutUrl }}</code>
+  </p>
+
+  <p>
     If your SAML IDP supports reading the service provider metadata from a URL, then you can point it at: <code><a href="{{configUrl}}" target="_blank">{{ configUrl }}</a></code>
   </p>
 
@@ -341,6 +345,12 @@ MIID...
     <div class="form-group">
       <label>SAML provider entry point URL:
         <input type="text" name="entryPoint" value="{{samlEntryPoint}}" placeholder="https://YOUR_SAML_PROVIDER.com/sso/saml" />
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label>SAML provider logout URL (optional):
+        <input type="text" name="logout" value="{{samlLogout}}" placeholder="https://YOUR_SAML_PROVIDER.com/sso/saml/SingleLogoutService" />
       </label>
     </div>
 

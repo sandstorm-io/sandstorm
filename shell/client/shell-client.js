@@ -56,15 +56,34 @@ Tracker.autorun(function () {
 // export: called by sandstorm-accounts-ui/login_buttons.js
 //               and grain-client.js
 logoutSandstorm = function () {
-  Meteor.logout(function () {
+  const logoutHelper = function () {
     sessionStorage.removeItem("linkingIdentityLoginToken");
     Accounts._loginButtonsSession.closeDropdown();
     globalTopbar.closePopup();
     if (!isStandalone()) {
       globalGrains.clear();
-      Router.go("root");
     }
-  });
+  };
+
+  if (globalDb.userHasSamlLoginIdentity()) {
+    Meteor.call("generateSamlLogout", function (err, url) {
+      Meteor.logout(function () {
+        logoutHelper();
+        if (err) {
+          console.error(err);
+        } else {
+          window.location = url;
+        }
+      });
+    });
+  } else {
+    Meteor.logout(function () {
+      logoutHelper();
+      if (!isStandalone()) {
+        Router.go("root");
+      }
+    });
+  }
 };
 
 const makeAccountSettingsUi = function () {

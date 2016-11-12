@@ -1,4 +1,5 @@
 import Url from "url";
+import zlib from "zlib";
 import { SAML } from "/imports/server/accounts/saml-utils.js";
 
 const Fiber = Npm.require("fibers");
@@ -38,7 +39,7 @@ Accounts.registerLoginHandler(function (loginRequest) {
   if (!loginResult) {
     throw new Meteor.Error(500, "SAML login did not complete.");
   } else if (loginResult.profile && loginResult.profile.email) {
-    let user = _.pick(loginResult.profile, "displayName", "email");
+    let user = _.pick(loginResult.profile, "displayName", "email", "nameIDFormat");
     user.id = loginResult.profile.nameID;
     return Accounts.updateOrCreateUserFromExternalService("saml", user, {});
   } else {
@@ -82,6 +83,7 @@ const generateService = function () {
   const service = {
     "provider": "default",
     "entryPoint": db.getSamlEntryPoint(),
+    "logoutUrl": db.getSamlLogout(),
     // TODO(someday): find a better way to inject the DB
     "issuer": entityId || HOSTNAME,
     // If the certificate has "-----BEGIN CERTIFICATE-----" markers, automatically remove those.
@@ -172,4 +174,74 @@ WebApp.connectHandlers.use(connect.urlencoded()).use(function (req, res, next) {
   Fiber(function () {
     middleware(req, res, next);
   }).run();
+});
+
+Meteor.methods({
+  generateSamlLogout: function () {
+    const service = generateService();
+    if (!service.logoutUrl) {
+      throw new Meteor.Error(500, "No SAML logout url specified");
+    }
+
+    const _saml = new SAML(service);
+    let identity;
+    Meteor.user().loginIdentities.forEach((_identity) => {
+      const currIdentity = Meteor.users.findOne({ _id: _identity.id, });
+      if (currIdentity.services.saml) {
+        identity = currIdentity;
+      }
+    });
+    // TODO(someday): handle user having more than one SAML identity
+
+    return Meteor.wrapAsync(_saml.getLogoutUrl.bind(_saml))({
+      user: {
+        nameID: identity.services.saml.id,
+        nameIDFormat: identity.services.saml.nameIDFormat ||
+          "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent",
+      },
+    });
+  },
+
+  validateSamlLogout: function (samlRequest) {
+    check(samlRequest, String);
+
+    const db = this.connection.sandstormDb;
+    const userId = Meteor.userId();
+    if (!userId) {
+      return new Meteor.Error(403, "Non-logged in users can't logout.");
+    }
+
+    const service = generateService();
+    const _saml = new SAML(service);
+    if (samlRequest) {
+      const buf = new Buffer(samlRequest, "base64");
+      const xml = zlib.inflateRawSync(buf).toString();
+      _saml.parseLogoutRequest(xml, function (err, nameId) {
+        if (err) {
+          console.error("Error validating SAML logout response:", err.toString(),
+                        "\nFull SAML response XML:\n", responseText);
+          throw new Error("Unable to validate SAML logout response.");
+        }
+
+        check(nameId, String);
+        const identity = db.collections.users.findOne({ "services.saml.id": nameId, },
+          { fields: { _id: 1, }, });
+        if (!identity) {
+          return new Meteor.Error(400, "No identity found matching SAML nameID.");
+        }
+
+        const user = db.collections.users.findOne({ "loginIdentities.id": identity._id, },
+          { fields: { _id: 1, }, });
+        if (!user) {
+          return new Meteor.Error(403, "No user found for expected SAML identity.");
+        }
+
+        if (user._id !== userId) {
+          const txt = "SAML logout requested for wrong user: " + nameId + ", " + userId;
+          console.error(txt);
+          throw new Error(txt);
+        }
+      });
+    }
+  },
 });

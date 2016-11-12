@@ -201,6 +201,21 @@ SAML.prototype.getElement = function (parentElement, elementName) {
   return parentElement[elementName];
 };
 
+SAML.prototype.parseLogoutRequest = function (xml, callback) {
+  const _this = this;
+  const parser = new xml2js.Parser({ explicitRoot: true });
+  parser.parseString(xml, function (err, doc) {
+    if (err) {
+      callback(err);
+      return;
+    }
+
+    const request = _this.getElement(doc, "LogoutRequest");
+    const nameId = _this.getElement(request, "NameID")[0];
+    callback(null, nameId && nameId._);
+  });
+};
+
 SAML.prototype.validateResponse = function (samlResponse, callback) {
   const _this = this;
   const xml = new Buffer(samlResponse, "base64").toString("utf8");
@@ -407,12 +422,10 @@ SAML.prototype.generateServiceProviderMetadata = function () {
     };
   }
 
-  if (this.options.logoutCallbackUrl) {
-    metadata.EntityDescriptor.SPSSODescriptor.SingleLogoutService = {
-      "@Binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST",
-      "@Location": this.options.logoutCallbackUrl,
-    };
-  }
+  metadata.EntityDescriptor.SPSSODescriptor.SingleLogoutService = {
+    "@Binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
+    "@Location": Meteor.absoluteUrl("saml/logout/default"),
+  };
 
   metadata.EntityDescriptor.SPSSODescriptor.NameIDFormat = this.options.identifierFormat;
   metadata.EntityDescriptor.SPSSODescriptor.AssertionConsumerService = {

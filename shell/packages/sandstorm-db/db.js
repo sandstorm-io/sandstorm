@@ -1603,6 +1603,11 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
+  getSamlLogout() {
+    const setting = this.collections.settings.findOne({ _id: "samlLogout" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
   getSamlPublicCert() {
     const setting = this.collections.settings.findOne({ _id: "samlPublicCert" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
@@ -1611,6 +1616,22 @@ _.extend(SandstormDb.prototype, {
   getSamlEntityId() {
     const setting = this.collections.settings.findOne({ _id: "samlEntityId" });
     return setting ? setting.value : ""; // empty if subscription is not ready.
+  },
+
+  userHasSamlLoginIdentity() {
+    const user = Meteor.user();
+    if (!user.loginIdentities) {
+      return false;
+    }
+
+    let hasSaml = false;
+    user.loginIdentities.forEach((identity) => {
+      if (Meteor.users.findOne({ _id: identity.id }).services.saml) {
+        hasSaml = true;
+      }
+    });
+
+    return hasSaml;
   },
 
   getActivitySubscriptions(grainId, threadPath) {

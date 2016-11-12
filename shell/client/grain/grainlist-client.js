@@ -332,8 +332,6 @@ Template.sandstormGrainListPage.helpers({
 
 Template.sandstormGrainListPage.onCreated(function () {
   this._filter = new ReactiveVar("");
-  this.subscribe("myBonuses");
-  // Maybe this subscription should be moved to the top level so it's not ever dropped?
 });
 
 Template.sandstormGrainListPage.onRendered(function () {

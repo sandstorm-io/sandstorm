@@ -908,6 +908,12 @@ div.billing {
       text-transform: capitalize;
     }
 
+    span.plan-ends {
+      color: #666;
+      font-size: 80%;
+      display: block;
+    }
+
     table {
       width: 100%;
     }
@@ -926,6 +932,9 @@ div.billing {
       }
       p:last-child {
         margin-bottom: 0;
+      }
+      &.current-plan {
+        position: relative;
       }
     }
     td:first-of-type {
@@ -976,9 +985,11 @@ div.billing {
       &.change-plan {
         @extend %button-base;
         @extend %button-primary;
-        float: right;
         font-size: 16px;
         width: 125px;
+        position: absolute;
+        top: 0;
+        right: 0;
       }
 
       &.subscribe {

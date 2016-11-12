@@ -1,3 +1,10 @@
+### v0.195 (2016-11-12)
+- Fixed that published web sites would incorrectly handle a query string when the path ended with '/'.
+- Self-hosting: Improved messaging around changes to BASE_URL causing OAuth login providers to be de-configured.
+- Sandstorm for Work: SAML now supports configuring a logout endpoint. If configured, SAML users who log out of Sandstorm will also be logged out of the IdP, and vice versa.
+- Oasis: The user's total quota is now displayed along-side their current usage above the grain list.
+- Oasis: When canceling a paid subscription (i.e. switching to "free"), you will now retain the benefits of the paid plan until the end of the current pay period. (This is in preparation for ending the beta discount, which makes all paid plans effectively free.)
+
 ### v0.194 (2016-11-05)
 - Sandstorm for Work: You can now disable the "about sandstorm" menu item as a whitelabeling setting.
 - Fixed bug where grains that are actively handling API requests but which weren't open in any browser windows would shut down every couple minutes, only to start back up on the next request. These grains will now stay running.

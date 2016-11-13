@@ -578,7 +578,7 @@ public:
                   .callAfterParsing(KJ_BIND_METHOD(*this, adminToken))
                   .build();
             },
-            "Generate admin token.")
+            "Uninstalls Sandstorm.")
         .addSubCommand("uninstall",
             [this]() {
               return kj::MainBuilder(context, VERSION,

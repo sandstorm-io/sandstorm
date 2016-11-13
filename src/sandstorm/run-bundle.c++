@@ -588,7 +588,7 @@ public:
                   .callAfterParsing(KJ_BIND_METHOD(*this, uninstall))
                   .build();
             },
-            "Generate admin token.")
+            "Uninstall Sandstorm.")
         .build();
   }
 

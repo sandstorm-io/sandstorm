@@ -481,6 +481,20 @@ assert_usable_kernel() {
   fi
 }
 
+assert_kernel_has_seccomp() {
+  ret = prctl(PR_GET_SECCOMP, 0, 0, 0, 0);
+  if (ret < 0) {
+    switch (errno) {
+      case ENOSYS:
+        fail "seccomp not available: pre-2.6.23"
+      case EINVAL:
+        fail "seccomp not available: not built in"
+      default:
+        fail "seccomp not available: unknown code"
+    }
+  }
+}
+
 maybe_enable_userns_sysctl() {
   # This function enables the Debian/Ubuntu-specific unprivileged
   # userns sysctl, if the system has it and we want it.
@@ -2150,6 +2164,7 @@ set_umask
 assert_on_terminal
 assert_linux_x86_64
 assert_usable_kernel
+assert_kernel_has_seccomp
 detect_current_uid
 assert_dependencies
 assert_valid_bundle_file

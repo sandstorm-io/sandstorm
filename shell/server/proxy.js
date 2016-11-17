@@ -2052,6 +2052,16 @@ class Proxy {
         let readingPaused = false;
         request.on("data", (buf) => {
           // TODO(someday): Coalesce small writes.
+
+          if (buf.length > 4194304) {
+            // Whoa, buffer is more than 4MB. We should be splitting it. But does this actually
+            // happen? Let's try to detect this problem before we try to do anything about it.
+            console.log("whoa, huge upload buffer:", buf.length);
+            reportUploadStreamError(new Error("upload buffer too big (bug in Sandstorm)"));
+            destructor();
+            return;
+          }
+
           if (!uploadStreamError) {
             requestStream.write(buf).then(() => {
               writesInFlight--;

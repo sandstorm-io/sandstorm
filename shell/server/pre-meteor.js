@@ -76,6 +76,10 @@ function wwwHandlerForGrain(grainId) {
     // Strip leading "/".
     if (path[0] === "/") path = path.slice(1);
 
+    // URI-decode the rest. Note that this allows filenames to contain spaces and question marks.
+    const encoded = path;
+    path = decodeURIComponent(encoded);
+
     let type = mime.lookup(path);
     const charset = mime.charsets.lookup(type);
     if (charset) {
@@ -113,7 +117,7 @@ function wwwHandlerForGrain(grainId) {
     const streamCap = new Capnp.Capability(stream, ByteStream);
 
     globalBackend.useGrain(grainId, (supervisor) => {
-      return supervisor.getWwwFileHack(path, streamCap).then((result) => {
+      const tryPath = (path) => supervisor.getWwwFileHack(path, streamCap).then((result) => {
         // jscs:disable disallowQuotedKeysInObjects
         const status = result.status;
         if (status === "file") {
@@ -127,6 +131,13 @@ function wwwHandlerForGrain(grainId) {
           });
           response.end("redirect: /" + path + "/");
         } else if (status === "notFound") {
+          if (path !== encoded) {
+            // Compatibility hack: Try getting the URL-encoded version of the path. We used to not
+            // URL-decode paths at all, hence the need for this fallback.
+            // TODO(apibump): Move this hack to the compat layer.
+            return tryPath(encoded);
+          }
+
           stream.sendingDirectResponse();
           response.writeHead(404, {
             "Content-Type": "text/plain",
@@ -143,6 +154,7 @@ function wwwHandlerForGrain(grainId) {
 
         streamCap.close();
       });
+      return tryPath(path);
     }).catch((err) => {
       console.error(err.stack);
       streamCap.close();

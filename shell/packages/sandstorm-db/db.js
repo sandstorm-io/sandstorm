@@ -1267,7 +1267,10 @@ _.extend(SandstormDb.prototype, {
 
     if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
       const icons = pkg.manifest.metadata.icons;
-      grainInfo.icon = icons.grain || icons.appGrid;
+      const icon = icons.grain || icons.appGrid;
+      if (icon) {
+        grainInfo.icon = icon;
+      }
     }
 
     // Only provide an app ID if we have no icon asset to provide and need to offer an identicon.

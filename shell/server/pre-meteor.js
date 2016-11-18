@@ -132,7 +132,7 @@ function wwwHandlerForGrain(grainId) {
           response.end("redirect: /" + path + "/");
         } else if (status === "notFound") {
           if (path !== encoded) {
-            // Compatibility hack: Try geting the URL-encoded version of the path. We used to not
+            // Compatibility hack: Try getting the URL-encoded version of the path. We used to not
             // URL-decode paths at all, hence the need for this fallback.
             // TODO(apibump): Move this hack to the compat layer.
             return tryPath(encoded);

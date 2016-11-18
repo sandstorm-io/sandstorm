@@ -65,7 +65,7 @@ const bytesToBase64 = function (bytes) {
 };
 
 const iconSrcFor = function (appId, iconObj, staticPrefix, usage) {
-  if (iconObj === undefined) {
+  if (iconObj === undefined || iconObj === null) {
     // Return a identicon src based on hashing appId instead.
     // (We hash the appID even though it's already a hash because it's not hex)
     return identiconForApp(appId, usage);

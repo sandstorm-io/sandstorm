@@ -1,11 +1,7 @@
 <template name="sandstormAppListPage">
   {{setDocumentTitle}}
   {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar }}Apps{{/sandstormTopbarItem}}
-  {{#if appIsLoading}}
-    {{!-- It's bad style to use the globally defined _grainSpinner, but we get the benefit of blaze
-          re-using the live HTML and not causing a flash for the user. --}}
-    {{> _grainSpinner "" }}
-  {{else}}{{#if isSignedUpOrDemo}}
+  {{#if isSignedUpOrDemo}}
   <div class="app-list">
     <h1>Apps
       <form class="standard-form">
@@ -88,6 +84,5 @@
           by the admin. The admin can invite you from the admin panel.</p>
       </div>
     {{/if}}
-  {{/if}}
   {{/if}}
 </template>

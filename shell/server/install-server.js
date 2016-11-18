@@ -71,12 +71,9 @@ Meteor.methods({
       } else { // jscs:ignore disallowEmptyBlocks
         throw new Meteor.Error(403, "You must be logged in to install packages.");
       }
-    } else if (!isSignedUp() && !isDemoUser()) {
+    } else if (!isSignedUpOrDemo()) {
       throw new Meteor.Error(403,
           "This Sandstorm server requires you to get an invite before installing apps.");
-    } else if (isUserOverQuota(Meteor.user())) {
-      throw new Meteor.Error(402,
-          "You are out of storage space. Please delete some things and try again.");
     }
 
     const pkg = Packages.findOne(packageId);

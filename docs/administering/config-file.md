@@ -54,7 +54,7 @@ typically a static publishing website, then serve a normal response.
 A port number for Sandstorm to bind on and listen for HTTPS. Note that Sandstorm's built-in HTTPS
 assumes you are using the sandcats service, so that it can automatically renew a wildcard
 certificate for you. On a default install, if port 443 was available and the user chose to use
-sandcats, this is 443. If this config option is missing, Snadstorm's built-in HTTPS server is
+sandcats, this is 443. If this config option is missing, Sandstorm's built-in HTTPS server is
 disabled.
 
 If Sandstorm is started as root, Sandstorm binds to this port as root, allowing it to use

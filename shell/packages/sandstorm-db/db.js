@@ -133,6 +133,8 @@ const collectionOptions = { defineMutationMethods: Meteor.isClient };
 //               (possibly "free") before they can create grains (but not when opening someone
 //               else's shared grain). The goal of the experiment is to determine whether this
 //               prompt scares users away -- and also whether it increases paid signups.
+//       freeGrainLimit: Value is "control" or or a number indicating the grain limit that the
+//               user should receive when on the "free" plan, e.g. "Infinity".
 //   stashedOldUser: A complete copy of this user from before the accounts/identities migration.
 //                   TODO(cleanup): Delete this field once we're sure it's safe to do so.
 
@@ -1281,18 +1283,43 @@ _.extend(SandstormDb.prototype, {
     return grainInfo;
   },
 
-  getPlan(id) {
+  getPlan(id, user) {
     check(id, String);
+
+    // `user`, if provided, is the user observing the plan. This matters only for checking if the
+    // user is in an experiment.
+
     const plan = this.collections.plans.findOne(id);
     if (!plan) {
       throw new Error("no such plan: " + id);
     }
 
+    if (plan._id === "free") {
+      user = user || Meteor.user();
+      if (user && user.experiments &&
+          typeof user.experiments.freeGrainLimit === "number") {
+        plan.grains = user.experiments.freeGrainLimit;
+      }
+    }
+
     return plan;
   },
 
-  listPlans() {
-    return this.collections.plans.find({}, { sort: { price: 1 } });
+  listPlans(user) {
+    user = user || Meteor.user();
+    if (user && user.experiments &&
+        typeof user.experiments.freeGrainLimit === "number") {
+      return this.collections.plans.find({}, { sort: { price: 1 } })
+          .map(plan => {
+        if (plan._id === "free") {
+          plan.grains = user.experiments.freeGrainLimit;
+        }
+
+        return plan;
+      });
+    } else {
+      return this.collections.plans.find({}, { sort: { price: 1 } }).fetch();
+    }
   },
 
   getMyPlan() {
@@ -1919,7 +1946,7 @@ _.extend(SandstormDb.prototype, {
     if (this.isQuotaLdapEnabled()) {
       return this.quotaManager.updateUserQuota(this, user);
     } else {
-      const plan = this.collections.plans.findOne(user.plan || "free");
+      const plan = this.getPlan(user.plan || "free", user);
       const referralBonus = calculateReferralBonus(user);
       const bonus = user.planBonus || {};
       const userQuota = {

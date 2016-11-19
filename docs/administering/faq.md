@@ -539,7 +539,7 @@ reachability self-tests, for each API endpoint, for each static publishing endpo
 static assets, and for identicons. A user could conceivably cause Sandstorm to generate 20 hostnames
 in a minute of usage. Generating 20 hostnames would trigger the [rate
 limits](https://letsencrypt.org/docs/rate-limits/), at which point all other visitors to Sandstorm
-qwould be unable to use grains. This issue alone makes the problem intractable.
+would be unable to use grains. This issue alone makes the problem intractable.
 
 There are some additional problems as well.
 
@@ -557,7 +557,7 @@ Some subproblems seem to have solutions, but they do not add up to a full soluti
 
 - **Latency.** The most straightforward way to implement Let's Encrypt dynamic provisioning with
   Sandstorm would be for each new domain to be provisioned at the time it is created within
-  Sandstorm. Thhis would mean that a visitor to your Sandstorm server would perceive a >10 second
+  Sandstorm. This would mean that a visitor to your Sandstorm server would perceive a >10 second
   latency introduced by Let's Encrypt while Let's Encrypt validates the domain and provides a
   certificate. This could be solved by pre-generating a large number of subdomain certificates, but
   it's not feasible to pregenerate enough. Consider that a server with 20 users and 20 grains would

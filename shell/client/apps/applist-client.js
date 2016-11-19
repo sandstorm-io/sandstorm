@@ -192,10 +192,8 @@ Template.sandstormAppListPage.events({
   "click .install-button": function (event) {
     event.preventDefault();
     event.stopPropagation();
-    Template.instance().data._quotaEnforcer.ifQuotaAvailable(function () {
-      window.open("https://apps.sandstorm.io/?host=" +
-          document.location.protocol + "//" + document.location.host, "_blank");
-    });
+    window.open("https://apps.sandstorm.io/?host=" +
+        document.location.protocol + "//" + document.location.host, "_blank");
   },
 
   "click .upload-button": function (event, instance) {

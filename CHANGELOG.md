@@ -1,3 +1,10 @@
+### v0.196 (2016-11-19) [bugfixes]
+- Fixed web publishing for URLs containing %-escaped characters, e.g. spaces.
+- Fixed problem where notifications were available but opening the notifications menu reported "no notifications".
+- Fixed problem where overly large Cap'n Proto messages could cause the front-end to become disconnected from the back-end.
+- Fixed problems in IE11.
+- Oasis: You will no longer be blocked from installing apps because you are over-quota. You will still be prevented from creating grains. This is to avoid giving users the impression that uninstalling apps will make it possible to install more apps -- you actually have to delete some grains.
+
 ### v0.195 (2016-11-12)
 - Fixed that published web sites would incorrectly handle a query string when the path ended with '/'.
 - Self-hosting: Improved messaging around changes to BASE_URL causing OAuth login providers to be de-configured.

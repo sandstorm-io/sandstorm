@@ -340,6 +340,7 @@ DeleteStats = new Mongo.Collection("deleteStats", collectionOptions);
 //   lastActive: Date of the user's or grain's last activity.
 //   appId: For type = "grain", the app ID of the grain. For type = "appDemoUser", the app ID they
 //     arrived to demo. For others, undefined.
+//   experiments: The experiments the user (or owner of the grain) was in. See user.experiments.
 
 FileTokens = new Mongo.Collection("fileTokens", collectionOptions);
 // Tokens corresponding to backup files that are currently stored on the server. A user receives
@@ -2436,6 +2437,8 @@ if (Meteor.isServer) {
 
     let numDeleted = 0;
     this.collections.grains.find(query).forEach((grain) => {
+      const user = Meteor.users.findOne(grain.userId);
+
       waitPromise(backend.deleteGrain(grain._id, grain.userId));
       numDeleted += this.collections.grains.remove({ _id: grain._id });
       this.removeApiTokens({
@@ -2451,11 +2454,15 @@ if (Meteor.isServer) {
       this.collections.activitySubscriptions.remove({ grainId: grain._id });
 
       if (grain.lastUsed) {
-        this.collections.deleteStats.insert({
+        const record = {
           type: "grain",  // Demo grains can never get here!
           lastActive: grain.lastUsed,
           appId: grain.appId,
-        });
+        };
+        if (user && user.experiments) {
+          record.experiments = user.experiments;
+        }
+        this.collections.deleteStats.insert(record);
       }
 
       this.deleteUnusedPackages(grain.appId);

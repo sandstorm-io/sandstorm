@@ -51,7 +51,7 @@ function cleanupExpiredUsers() {
 
   const now = new Date(Date.now() - DEMO_GRACE_MS);
   Meteor.users.find({ expires: { $lt: now }, loginIdentities: { $exists: true } },
-                    { fields: { _id: 1, loginIdentities: 1, lastActive: 1, appDemoId: 1 } })
+      { fields: { _id: 1, loginIdentities: 1, lastActive: 1, appDemoId: 1, experiments: 1 } })
               .forEach(function (user) {
     console.log("delete demo user: " + user._id);
     globalDb.deleteAccount(user._id, globalBackend);
@@ -65,7 +65,12 @@ function cleanupExpiredUsers() {
 
     // Intentionally record deleted users at time of deletion to avoid miscounting users that
     // were demoing just before the day rolled over.
-    DeleteStats.insert({ type: deleteStatsType, lastActive: new Date(), appId: user.appDemoId });
+    const record = { type: deleteStatsType, lastActive: new Date(), appId: user.appDemoId };
+    if (user.experiments) {
+      record.experiments = user.experiments;
+    }
+
+    DeleteStats.insert(record);
   });
 
   // All demo identities should have been deleted as part of deleting the demo users, but just in

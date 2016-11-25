@@ -2462,6 +2462,7 @@ if (Meteor.isServer) {
         if (user && user.experiments) {
           record.experiments = user.experiments;
         }
+
         this.collections.deleteStats.insert(record);
       }
 

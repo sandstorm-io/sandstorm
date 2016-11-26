@@ -300,8 +300,8 @@ IpRemoteHostImpl = class IpRemoteHostImpl {
     }
   }
 
-  getTcpPort(portNum) {
-    return { port: new TcpPortImpl(this.address, portNum) };
+  getTcpPort(portNum, tls) {
+    return { port: new TcpPortImpl(this.address, portNum, !!tls) };
   }
 
   getUdpPort(portNum) {
@@ -309,17 +309,23 @@ IpRemoteHostImpl = class IpRemoteHostImpl {
   }
 };
 
-TcpPortImpl = class TcpPortImpl {
-  constructor(address, portNum) {
+class TcpPortImpl {
+  constructor(address, portNum, tls) {
     this.address = address;
     this.port = portNum;
+    this.tls = tls;
   }
 
   connect(downstream) {
     const _this = this;
     let resolved = false;
+    let connectMethod = Net.connect;
+    if (this.tls) {
+      connectMethod = Tls.connect;
+    }
+
     return new Promise((resolve, reject) => {
-      const client = Net.connect({ host: _this.address, port: _this.port }, () => {
+      const client = connectMethod({ host: _this.address, port: _this.port }, () => {
         resolved = true;
         resolve({ upstream: new ByteStreamConnection(client) });
       });
@@ -342,35 +348,6 @@ TcpPortImpl = class TcpPortImpl {
       });
     });
   }
-
-  connectTls(downstream) {
-    const _this = this;
-    let resolved = false;
-    return new Promise((resolve, reject) => {
-      const client = Tls.connect({ host: _this.address, port: _this.port }, () => {
-        resolved = true;
-        resolve({ upstream: new ByteStreamConnection(client) });
-      });
-
-      client.on("data", (data) => {
-        downstream.write(data);
-      });
-
-      client.on("close", (hadError) => {
-        downstream.done();
-      });
-
-      client.on("error", (err) => {
-        if (resolved) {
-          client.write = errorWrite;
-        } else {
-          // upstream hasn't been resolved yet, so it's safe to reject
-          reject(err);
-        }
-      });
-    });
-  }
-
 };
 
 const errorWrite = (data) => {

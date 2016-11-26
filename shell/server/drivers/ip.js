@@ -18,6 +18,7 @@ import Bignum from "bignum";
 import { PersistentImpl } from "/imports/server/persistent.js";
 const Future = Npm.require("fibers/future");
 const Net = Npm.require("net");
+const Tls = Npm.require("tls");
 const Dgram = Npm.require("dgram");
 const Capnp = Npm.require("capnp");
 
@@ -341,6 +342,35 @@ TcpPortImpl = class TcpPortImpl {
       });
     });
   }
+
+  connectTls(downstream) {
+    const _this = this;
+    let resolved = false;
+    return new Promise((resolve, reject) => {
+      const client = Tls.connect({ host: _this.address, port: _this.port }, () => {
+        resolved = true;
+        resolve({ upstream: new ByteStreamConnection(client) });
+      });
+
+      client.on("data", (data) => {
+        downstream.write(data);
+      });
+
+      client.on("close", (hadError) => {
+        downstream.done();
+      });
+
+      client.on("error", (err) => {
+        if (resolved) {
+          client.write = errorWrite;
+        } else {
+          // upstream hasn't been resolved yet, so it's safe to reject
+          reject(err);
+        }
+      });
+    });
+  }
+
 };
 
 const errorWrite = (data) => {

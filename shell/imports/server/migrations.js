@@ -725,6 +725,14 @@ const addMembraneRequirementsToIdentities = function (db, backend) {
   });
 };
 
+const addEncryptionToFrontendRefIpNetwork = function (db, backend) {
+  db.collections.apiTokens.find({ "frontendRef.ipNetwork": true }).map((apiToken) => {
+    db.collections.apiTokens.update(
+      { _id: apiToken._id },
+      { $set: { "frontendRef.ipNetwork": { encryption: { none: null } } } });
+  });
+};
+
 function backgroundFillInGrainSizes(db, backend) {
   // Fill in sizes for all grains that don't have them. Since computing a grain size requires a
   // directory walk, we don't want to do them all at once. Instead, we compute one a second until
@@ -797,6 +805,7 @@ const MIGRATIONS = [
   assignEmailVerifierIds,
   setNewServer,
   addMembraneRequirementsToIdentities,
+  addEncryptionToFrontendRefIpNetwork,
 ];
 
 const NEW_SERVER_STARTUP = [

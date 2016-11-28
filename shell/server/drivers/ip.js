@@ -241,7 +241,14 @@ class IpNetworkImpl extends PersistentImpl {
   }
 
   getRemoteHost(address) {
-    return { host: new IpRemoteHostImpl(address, this.tls) };
+    // Note that TLS typically authenticates hostnames, not raw IP addresses. So if `this.tls`
+    // is true, then the returned `IpRemoteHost` will likely refuse to make any connections.
+    // However, we keep that code path active because there is in principle no reason why it
+    // should always fail, and we wish to allow for a possible future in which we let users
+    // specify custom certificate authorities, in which case it might be more likely for TLS
+    // to be be expected to authenticate raw IP addresses.
+
+    return { host: new IpRemoteHostImpl(addressToString(address), this.tls) };
   }
 
   getRemoteHostByName(address) {
@@ -306,15 +313,9 @@ Meteor.startup(() => {
   });
 });
 
-IpRemoteHostImpl = class IpRemoteHostImpl {
+class IpRemoteHostImpl {
   constructor(address, tls) {
-    if (address.upper64 || address.upper64 === 0) {
-      // address is an ip.capnp:IpAddress, we need to convert it
-      this.address = addressToString(address);
-    } else {
-      this.address = address;
-    }
-
+    this.address = address;
     this.tls = tls;
   }
 
@@ -324,7 +325,7 @@ IpRemoteHostImpl = class IpRemoteHostImpl {
 
   getUdpPort(portNum) {
     if (this.tls) {
-      const error = new Error("UDP over TLS is not yet supported");
+      const error = new Error("Datagram Transport Layer Security is not yet supported");
       error.kjType = "unimplemented";
       throw error;
     }

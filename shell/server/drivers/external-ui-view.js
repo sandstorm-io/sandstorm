@@ -125,7 +125,7 @@ ExternalWebSession = class ExternalWebSession {
     return new Promise((resolve, reject) => {
       const options = _.clone(session.options);
       options.headers = options.headers || {};
-      options.path = path;
+      options.path = "/" + path;
       options.method = method;
       if (contentType) {
         options.headers["content-type"] = contentType;

@@ -53,15 +53,24 @@ interface IpNetwork @0xa982576b7a2a2040 {
   struct PowerboxTag {
     # Tag to be used in a `PowerboxDescriptor` to describe an `IpNetwork`.
 
-    encryption :union {
-      # The encryption scheme, if any, on top of which the IpNetwork will layer its connections
-      # and messages.
+    encryption @0 :Encryption;
+    # The encryption scheme, if any, on top of which the `IpNetwork` layers its connections
+    # and messages.
 
-      none @0 :Void;
-      # No encryption.
+    struct Encryption @0xe2d94cf90fe4078d {
+      # Describes an encryption scheme.
+      #
+      # Capabilities derived from an `IpNetwork` may use this struct in their own powerbox
+      # descriptors, either in an explicit `PowerboxTag.encryption` field, like here with
+      # `IpNetwork`, or in an independent powerbox tag, marked by this struct's type ID.
 
-      tls  @1 :Void;
-      # Transport Layer Security, using a standard set of certificates.
+      union {
+        none @0 :Void;
+        # No encryption.
+
+        tls @1 :Void;
+        # Transport Layer Security, using a standard set of certificates.
+      }
     }
   }
 

@@ -613,7 +613,7 @@ struct GrainInfo {
 # ========================================================================================
 # Persistent objects
 
-interface AppPersistent(AppObjectId) {
+interface AppPersistent @0xaffa789add8747b8 (AppObjectId) {
   # To make an object implemented by your own app persistent, implement this interface.
   #
   # `AppObjectId` is a structure like a URL which identifies a specific object within your app.

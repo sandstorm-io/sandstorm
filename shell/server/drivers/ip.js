@@ -323,7 +323,7 @@ IpRemoteHostImpl = class IpRemoteHostImpl {
   }
 
   getUdpPort(portNum) {
-    if (!this.tls) {
+    if (this.tls) {
       const error = new Error("UDP over TLS is not yet supported");
       error.kjType = "unimplemented";
       throw error;

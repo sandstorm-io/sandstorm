@@ -246,7 +246,7 @@ class IpNetworkImpl extends PersistentImpl {
     // However, we keep that code path active because there is in principle no reason why it
     // should always fail, and we wish to allow for a possible future in which we let users
     // specify custom certificate authorities, in which case it might be more likely for TLS
-    // to be be expected to authenticate raw IP addresses.
+    // to be expected to authenticate raw IP addresses.
 
     return { host: new IpRemoteHostImpl(addressToString(address), this.tls) };
   }

@@ -49,7 +49,7 @@ LDAP.prototype.ldapCheck = function (db, options) {
     _this.options.base = db.getLdapBase();
     _this.options.url = db.getLdapUrl();
     _this.options.searchBeforeBind = {};
-    _this.options.searchBeforeBind[db.getLdapSearchUsername()] = options.searchUsername ||
+    _this.options.searchBeforeBind[options.searchUsernameField || db.getLdapSearchUsername()] = options.searchUsername ||
       options.username;
     _this.options.filter = db.getLdapFilter() || "(objectclass=*)";
     _this.options.searchBindDn = db.getLdapSearchBindDn();
@@ -227,7 +227,7 @@ LDAP.prototype.updateUserQuota = function (db, user) {
 
   let ldapUser;
   try {
-    ldapUser = this.ldapCheck(db, { searchUsername: email, });
+    ldapUser = this.ldapCheck(db, { searchUsername: email, searchUsernameField: "mail", });
   } catch (err) {
     console.error("Error looking up quota from LDAP");
     return fallback;

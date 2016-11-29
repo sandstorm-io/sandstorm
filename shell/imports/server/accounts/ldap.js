@@ -219,7 +219,7 @@ LDAP.prototype.updateUserQuota = function (db, user) {
   };
 
   const setting = db.collections.settings.findOne({ _id: "quotaLdapAttribute" });
-  if (!setting) return fallback;
+  if (!setting || !setting.value) return fallback;
 
   // TODO(someday): don't just assume the first login identity is the primary identity?
   const email = db.getPrimaryEmail(user._id, user.loginIdentities[0].id);

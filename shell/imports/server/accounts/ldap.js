@@ -49,7 +49,7 @@ LDAP.prototype.ldapCheck = function (db, options) {
     _this.options.base = db.getLdapBase();
     _this.options.url = db.getLdapUrl();
     _this.options.searchBeforeBind = {};
-    _this.options.searchBeforeBind[db.getLdapSearchUsername()] = options.searchUsername ||
+    _this.options.searchBeforeBind[options.searchUsernameField || db.getLdapSearchUsername()] = options.searchUsername ||
       options.username;
     _this.options.filter = db.getLdapFilter() || "(objectclass=*)";
     _this.options.searchBindDn = db.getLdapSearchBindDn();
@@ -219,7 +219,7 @@ LDAP.prototype.updateUserQuota = function (db, user) {
   };
 
   const setting = db.collections.settings.findOne({ _id: "quotaLdapAttribute" });
-  if (!setting) return fallback;
+  if (!setting || !setting.value) return fallback;
 
   // TODO(someday): don't just assume the first login identity is the primary identity?
   const email = db.getPrimaryEmail(user._id, user.loginIdentities[0].id);
@@ -227,7 +227,7 @@ LDAP.prototype.updateUserQuota = function (db, user) {
 
   let ldapUser;
   try {
-    ldapUser = this.ldapCheck(db, { searchUsername: email, });
+    ldapUser = this.ldapCheck(db, { searchUsername: email, searchUsernameField: "mail", });
   } catch (err) {
     console.error("Error looking up quota from LDAP");
     return fallback;

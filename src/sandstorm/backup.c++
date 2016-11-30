@@ -123,7 +123,6 @@ bool BackupMain::run(kj::StringPtr grainDir) {
   if (sandboxUid == nullptr) {
     uid_t uid = getuid();
     gid_t gid = getgid();
-    KJ_REQUIRE(uid != 0);
 
     KJ_SYSCALL(unshare(CLONE_NEWUSER | CLONE_NEWNS |
         // Unshare other stuff; like no_new_privs, this is only to defend against hypothetical

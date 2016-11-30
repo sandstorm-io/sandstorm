@@ -83,8 +83,13 @@ module.exports = {
 module.exports["Test backup and restore"] = function(browser) {
   // For setting up an async watch on the filesystem
   var watcherPromise = undefined;
+
   // Fulfilled when the file is downloaded, rejected if a timeout is reached
   var downloadPromise = undefined;
+
+  // Filled in if downloading fails.
+  var downloadError = undefined;
+
   // For using the file after download completes.
   var downloadPath = undefined;
 
@@ -148,7 +153,14 @@ module.exports["Test backup and restore"] = function(browser) {
         client.assert.ok(!!stateFile, "" + fileDownloaded + " contains file /data/state");
         client.assert.ok(stateFile.asText() === randomValue, "" + fileDownloaded + "/data/state contains the expected value " + randomValue);
         done();
+      }).catch(function (error) {
+        downloadError = error;
+        done();
       });
+    })
+    .perform(function (client, done) {
+      client.assert.ifError(downloadError);
+      done();
     })
     .click('li.navitem-grain.current button.close-button')
     .url(browser.launch_url + "/grain")

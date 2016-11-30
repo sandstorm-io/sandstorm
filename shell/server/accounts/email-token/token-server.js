@@ -207,6 +207,7 @@ const sendTokenEmail = function (db, email, token, options) {
   sendEmail(sendOptions);
 };
 
+const parsedRootUrl = Url.parse(process.env.ROOT_URL);
 ///
 /// CREATING USERS
 ///
@@ -219,11 +220,13 @@ const createAndEmailTokenForUser = function (db, email, options) {
     rootUrl: String,
   });
 
-  if (options.rootUrl !== process.env.ROOT_URL) {
-    const parsedUrl = Url.parse(options.rootUrl);
-    if (!db.hostIsStandalone(parsedUrl.hostname)) {
-      throw new Meteor.Error(400, "rootUrl is not valid");
-    }
+  const parsedUrl = Url.parse(options.rootUrl);
+  if ((parsedUrl.hostname !== parsedRootUrl.hostname ||
+       parsedUrl.protocol !== parsedRootUrl.protocol) &&
+      !db.hostIsStandalone(parsedUrl.hostname)) {
+    // Ignore port and only check hostname/protocol since IE will differ from other browsers and
+    // sometimes include port 80/443 and sometimes won't
+    throw new Meteor.Error(400, "rootUrl is not valid");
   }
 
   const atIndex = email.indexOf("@");

@@ -125,7 +125,15 @@ ExternalWebSession = class ExternalWebSession {
     return new Promise((resolve, reject) => {
       const options = _.clone(session.options);
       options.headers = options.headers || {};
-      options.path = "/" + path;
+
+      // According to the specification of `WebSession`, `path` should not contain a
+      // leading slash, and therefore we need to prepend "/". However, for a long time
+      // this implementation did not in fact prepend a "/". Since some apps might rely on
+      // that behavior, we only prepend "/" if the path does not start with "/".
+      //
+      // TODO(soon): Once apps have updated, prepend "/" unconditionally.
+      options.path = path.startsWith("/") ? path : "/" + path;
+
       options.method = method;
       if (contentType) {
         options.headers["content-type"] = contentType;

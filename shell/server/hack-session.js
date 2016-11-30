@@ -122,9 +122,7 @@ SessionContextImpl = class SessionContextImpl {
         }
 
         if (!tagValue.title) {
-          // TODO(someday): We should arguably throw here, but the collections app currently
-          //   fails to provide a title.
-          tagValue.title = "offer()ed grain had no title";
+          throw new Error("No value provided for UiView.PowerboxTag.title.");
         }
 
         if (session.identityId) {

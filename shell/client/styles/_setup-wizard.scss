@@ -70,6 +70,21 @@
   }
 }
 
+.setup-intro-instruction-block {
+  text-align: center;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.setup-intro-instruction {
+  margin: 0;
+}
+
+.setup-intro-instruction-deemphasized {
+  margin: 0;
+  color: #888;
+}
+
 .setup-progress {
   margin-bottom: 32px;
 }
@@ -132,10 +147,6 @@ a.setup-not-current-step {
   }
 }
 
-.setup-welcome {
-  text-align: center;
-}
-
 .setup-type-selection {
   display: flex;
   flex-direction: row;
@@ -146,7 +157,7 @@ a.setup-not-current-step {
 
 .setup-type {
   flex: 1 1 auto;
-  min-width: 300px;
+  min-width: 280px;
   background-color: #fff;
   border: 1px solid #d0d0d0;
   border-radius: 4px;
@@ -160,7 +171,7 @@ a.setup-not-current-step {
   h3 {
     text-align: center;
     font-size: 20px;
-    font-weight: 600;
+    font-weight: normal;
     margin-left: 0px;
     margin-right: 0px;
     margin-top: 0px;
@@ -172,22 +183,83 @@ a.setup-not-current-step {
     flex: 1 1 auto;
     list-style-type: none;
     padding-left: 12px;
-    margin-top: 0;
-    margin-bottom: 16px;
+    margin-top: 8px;
+    margin-bottom: 0px;
 
     .setup-additional-feature {
       color: #888;
     }
     >li {
-      margin-bottom: 8px;
-    }
+      &:not(:last-child) {
+        margin-bottom: 14px;
+      }
+      font-size: 20px;
 
-    border-bottom: 1px solid #aaa
+      &.muted {
+        color: #aaa;
+      }
+
+      .feature-list {
+        list-style-type: none;
+        font-size: 14px;
+        padding-left: 0;
+        >li {
+          margin-top: .5em;
+          margin-bottom: .5em;
+        }
+        .checkbox {
+          display: inline-block;
+          width: 14px;
+          height: 14px;
+        }
+      }
+    }
   }
 
   .setup-pricing-block {
-    text-align: center;
+    display: inline-flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: stretch;
+    width: calc(100% + 20px);
+    min-height: 96px;
+
     margin-bottom: 8px;
+    background-color: #f4f4f4;
+
+    .image {
+      display: block;
+      height: 80px;
+      margin-top: 16px;
+      flex: 1 1 35%;
+      background-size: contain;
+      background-repeat: no-repeat;
+      &.standard {
+        background-image: url('/standard-install.svg');
+      }
+      &.sfw {
+        background-image: url('/sfw-install.svg');
+      }
+    }
+
+    .text {
+      display: block;
+      height: 100%;
+      flex: 1 1 65%;
+      margin-top: 16px;
+
+      .price {
+        font-size: 36px;
+        color: #565656;
+        .former-price {
+          color: #aaa;
+        }
+      }
+      .price-notes {
+        font-size: 14px;
+      }
+    }
+
     .setup-price {
       font-size: 24px;
       margin-top: 0px;
@@ -205,9 +277,30 @@ a.setup-not-current-step {
     text-align: center;
     width: 100%;
     @extend %button-base;
-    @extend %button-primary;
     height: 32px;
     font-size: 16px;
+  }
+  button.setup-sandstorm-standard {
+    background-color: #962751;
+    color: white;
+    border: 1px solid darken(#962751, 10%);
+    &:hover {
+      background-color: lighten(#962751, 10%);
+    }
+    &:disabled {
+      @extend %button-disabled;
+    }
+  }
+  button.setup-sandstorm-for-work {
+    background-color: #4049a7;
+    color: white;
+    border: 1px solid darken(#4049a7, 10%);
+    &:hover {
+      background-color: lighten(#4049a7, 10%);
+    }
+    &:disabled {
+      @extend %button-disabled;
+    }
   }
 }
 

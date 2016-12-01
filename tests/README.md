@@ -18,10 +18,9 @@ In the parent directory, run:
 ## Run Tests -- Manual
 
 First, you have to be running selenium server. You can start one with
-`./node_modules/selenium-standalone/bin/selenium-standalone start`. Wait for a line that looks like
-`Started org.openqa.jetty.jetty.Server...` before running tests. If you are running on a headless
+`java -jar selenium-server-standalone-2.53.0.jar`. If you are running on a headless
 system, you will need to run `xvfb` in order to allow firefox to be runnable by selenium. You can do
-this by running `xvfb-run ./node_modules/selenium-standalone/bin/selenium-standalone start`, or
+this by running `xvfb-run java -jar selenium-server-standalone-2.53.0.jar`, or
 running `sudo Xvfb :10 -ac`, and then `export DISPLAY=:10` before starting selenium.
 
 Run the tests with `npm test`. This requires a running instance of sandstorm, and **WILL**

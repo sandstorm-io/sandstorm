@@ -44,6 +44,7 @@ pages:
 - Administering:
     - "Overview": "administering.md"
     - "Installation & uninstall": "install.md"
+    - "Troubleshooting a new install": "administering/install-troubleshooting.md"
     - "Reference docs for install.sh": "administering/install-script.md"
     - "Reference docs for sandstorm.conf": "administering/config-file.md"
     - "Administrator's guide": "administering/guide.md"

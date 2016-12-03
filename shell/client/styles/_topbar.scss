@@ -870,6 +870,54 @@ body>.popup.modal {
     overflow-y: auto;
   }
 }
+.demo-startup-modal {
+  .modal-dialog {
+    margin-top: 80px;
+    .modal-content {
+      // max-height: calc(100vh - 64px);
+      // overflow-y: auto;
+      padding: 0px;
+
+      div.top {
+        background: #2D1E3A url('/demo-logo-bg.svg') no-repeat;
+        width: 100%;
+        background-position: center;
+        background-size: auto 250px;
+        height: 250px;
+        top: 0px;
+        left: 0px;
+        width: 100%;
+        padding-top: 25px;
+
+        >.header {
+          color: white;
+          font-size: 23px;
+          font-weight: normal;
+          text-align: center;
+        }
+
+        >.body {
+          color: #C5B0CC;
+          font-size: 23px;
+          font-weight: normal;
+          text-align: center;
+          margin-top: 10px;
+        }
+        >.start {
+          font-size: 23px;
+          width: 90%;
+          margin: auto 5%;
+          height: 48px;
+        }
+      }
+
+      div.bottom {
+        padding: 10px 10px 15px 30px;
+        font-size: 16px;
+      }
+    }
+  }
+}
 
 body>.popup {
   // Popup windows hang off the topbar, usually appearing when a topbar item is clicked.

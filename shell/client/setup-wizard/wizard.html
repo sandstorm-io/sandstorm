@@ -221,20 +221,31 @@
     </p>
     {{/if}}
   {{else}}
-    <p>Choose what type of Sandstorm server to set up:</p>
+    <div class="setup-intro-instruction-block">
+      <p class="setup-intro-instruction">
+        Choose what type of Sandstorm server to set up:
+      </p>
+      <p class="setup-intro-instruction-deemphasized">
+        (You can change your mind later.)
+      </p>
+    </div>
 
     <div class="setup-type-selection">
       <div class="setup-type">
-        <h3>Standard</h3>
-        <ul class="setup-features">
-          <li>Login with Google, GitHub, or email address</li>
-          <li>Each user gets their own workspace</li>
-          <li>Share grains with anyone</li>
-        </ul>
+        <h3>Sandstorm Standard</h3>
+        <div class="setup-type-byline">
+          Open source
+        </div>
         <div class="setup-pricing-block">
-          <p class="setup-price">Free</p>
-          <p class="subheader">Open source</p>
-          <p class="subheader">&nbsp;</p>
+          <div class="image standard">
+
+          </div>
+          <div class="text">
+            <div class="price">
+              Free
+            </div>
+            <span class="price-notes"></span>
+          </div>
         </div>
         {{#if hasFeatureKey}}
           <button class="setup-sandstorm-standard" disabled>
@@ -245,22 +256,76 @@
             Begin Standard Setup
           </button>
         {{/if}}
+
+        <ul class="setup-features">
+          <li>Sandstorm Standard features
+            <ul class="feature-list">
+              <li><span class="icon icon-check"></span> Use any app on the App Market</li>
+              <li><span class="icon icon-check"></span> Single sign-on to access all apps</li>
+              <li><span class="icon icon-check"></span> Collaborate with anyone on the server</li>
+              <li><span class="icon icon-check"></span> Guest access</li>
+              <li><span class="icon icon-check"></span> Individual app sandboxing</li>
+              <li><span class="icon icon-check"></span> Automatic app updates</li>
+              <li><span class="icon icon-check"></span> App notifications</li>
+              <li><span class="icon icon-check"></span> Multi-app search</li>
+              <li><span class="icon icon-check"></span> One-click backups</li>
+            </ul>
+          </li>
+          <li class="muted">
+            No Sandstorm for Work features
+            <ul class="feature-list">
+              <li><span class="icon icon-close"></span> No Organization-wide access control</li>
+              <li><span class="icon icon-close"></span> No ActiveDirectory/LDAP/SAML integration</li>
+              <li><span class="icon icon-close"></span> No Personalization &amp; whitelabeling</li>
+            </ul>
+          </li>
+        </ul>
       </div>
+
       <div class="setup-type">
         <h3>Sandstorm for Work</h3>
-        <ul class="setup-features">
-          <li>Includes everything in Standard</li>
-          <li class="setup-additional-feature">+ Single sign-on: email/LDAP/SAML</li>
-          <li class="setup-additional-feature">+ Automatic user provisioning</li>
-        </ul>
+        <div class="setup-type-byline setup-for-work">
+          Introductory Offer &dash; Save 50%
+        </div>
         <div class="setup-pricing-block">
-          <p class="setup-price">$10/user/month</p>
-          <p class="subheader">Free trial for every organization</p>
-          <p class="subheader">Special pricing/discounts for charities and co-ops</p>
+          <div class="image sfw">
+
+          </div>
+          <div class="text">
+            <div class="price">
+              $5
+              <del class="former-price">$10</del>
+            </div>
+            <span class="price-notes">/user/month - billed annually</span>
+          </div>
         </div>
         <button class="setup-sandstorm-for-work">
           Begin Sandstorm for Work Setup
         </button>
+
+        <ul class="setup-features">
+          <li>Sandstorm Standard features
+            <ul class="feature-list">
+              <li><span class="icon icon-check"></span> Use any app on the App Market</li>
+              <li><span class="icon icon-check"></span> Single sign-on to access all apps</li>
+              <li><span class="icon icon-check"></span> Collaborate with anyone on the server</li>
+              <li><span class="icon icon-check"></span> Guest access</li>
+              <li><span class="icon icon-check"></span> Individual app sandboxing</li>
+              <li><span class="icon icon-check"></span> Automatic app updates</li>
+              <li><span class="icon icon-check"></span> App notifications</li>
+              <li><span class="icon icon-check"></span> Multi-app search</li>
+              <li><span class="icon icon-check"></span> One-click backups</li>
+            </ul>
+          </li>
+          <li>
+            Sandstorm for Work features
+            <ul class="feature-list">
+              <li><span class="icon icon-check"></span> Organization-wide access control</li>
+              <li><span class="icon icon-check"></span> ActiveDirectory/LDAP/SAML integration</li>
+              <li><span class="icon icon-check"></span> Personalization &amp; whitelabeling</li>
+            </ul>
+          </li>
+        </ul>
       </div>
     </div>
   {{/if}}

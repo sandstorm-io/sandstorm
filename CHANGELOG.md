@@ -1,3 +1,9 @@
+### v0.197 (2016-12-03) [bugfixes]
+- Self-hosting: Fixed grain backup/restore on non-root installs (unusual configuration).
+- Self-hosting: Fixed spurrious "rootUrl is not valid" when using Internet Explorer.
+- Self-hosting: Improved setup wizard intro page to show feature comparison between standard version and Sandstorm for Work.
+- Sandstorm for Work: Fix LDAP-based quota display.
+
 ### v0.196 (2016-11-19) [bugfixes]
 - Fixed web publishing for URLs containing %-escaped characters, e.g. spaces.
 - Fixed problem where notifications were available but opening the notifications menu reported "no notifications".

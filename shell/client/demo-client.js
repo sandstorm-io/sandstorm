@@ -35,19 +35,23 @@ Router.map(function () {
 
     data: function () {
       if (!this.ready()) return;
+      if (Meteor.loggingIn()) return;
+
       if (Meteor.userId() && !globalDb.isDemoUser()) {
         Router.go("root", {}, { replaceState: true });
       }
 
       Session.set("globalDemoModal", true);
 
-      Accounts.callLoginMethod({
-        methodName: "createDemoUser",
-        methodArguments: ["Demo User", null],
-        userCallback: function () {
-          Router.go("root");
-        },
-      });
+      if (!Meteor.userId()) {
+        Accounts.callLoginMethod({
+          methodName: "createDemoUser",
+          methodArguments: ["Demo User", null],
+          userCallback: function () {
+            Router.go("root");
+          },
+        });
+      }
     },
   });
 

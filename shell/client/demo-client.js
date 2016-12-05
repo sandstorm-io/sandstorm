@@ -64,6 +64,9 @@ Router.map(function () {
   });
 });
 
+let handle;
+// Use this variable to store the autorun handle made in `onRun` below.
+// There doesn't seem to be a better way to tie a non-serializable value to a route.
 Router.map(function () {
   this.route("appdemo", {
     path: "/appdemo/:appId",
@@ -72,25 +75,7 @@ Router.map(function () {
       return Meteor.subscribe("appDemoInfo", this.params.appId);
     },
 
-    data: function () {
-      // find the newest (highest version, so "first" when sorting by
-      // inverse order) matching package.
-      const thisPackage = Packages.findOne({
-        appId: this.params.appId,
-      }, {
-        sort: { "manifest.appVersion": -1 },
-      });
-
-      // In the case that the app requested is not present, we show
-      // this string as the app name.
-      let appName = "missing package";
-
-      if (thisPackage) {
-        appName = SandstormDb.appNameFromPackage(thisPackage);
-      }
-
-      Session.set("globalDemoModal", { appdemo: appName });
-
+    onRun: function () {
       // When navigating to the appdemo route, we want to:
       //
       // 1. Create the Demo User if they are not logged in.
@@ -103,8 +88,6 @@ Router.map(function () {
       //
       // 5. Take them into this grain.
 
-      // calculate the appId
-
       // We copy the appId into the scope so the autorun function can access it.
       const appId = this.params.appId;
       let signingIn = false;
@@ -112,12 +95,10 @@ Router.map(function () {
       // TODO(cleanup): Is there a better way to do this? Before multi-identity, we could use the
       //   `userCallback` option of `Accounts.callLoginMethod()`, but now that doesn't work because
       //   it fires too early.
-      //
-      // Note that we don't use Template.instance().autorun() because the template gets destroyed
-      // and recreated during account creation.
       let done = false;
-      const handle = Tracker.autorun(function () {
+      handle = Tracker.autorun(function () {
         if (done) return;
+        if (Meteor.loggingIn()) return;
 
         if (!isSignedUpOrDemo()) {
           if (!signingIn) {
@@ -154,6 +135,26 @@ Router.map(function () {
           launchAndEnterGrainByPackageId(packageId);
         }
       });
+    },
+
+    data: function () {
+      // find the newest (highest version, so "first" when sorting by
+      // inverse order) matching package.
+      const thisPackage = Packages.findOne({
+        appId: this.params.appId,
+      }, {
+        sort: { "manifest.appVersion": -1 },
+      });
+
+      // In the case that the app requested is not present, we show
+      // this string as the app name.
+      let appName = "missing package";
+
+      if (thisPackage) {
+        appName = SandstormDb.appNameFromPackage(thisPackage);
+      }
+
+      Session.set("globalDemoModal", { appdemo: appName });
     },
   });
 });

@@ -263,6 +263,9 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
   //       client-side template for that dialog.
   //   ...: Other fields may be added for consumption by the client-side template.
 
+  check(requestId, String);
+  check(descriptorList, [String]);
+
   const results = {};
   const db = this.connection.sandstormDb;
   const frontendRefRegistry = this.connection.frontendRefRegistry;
@@ -273,15 +276,15 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
       // TODO(now): Also single-segment? Canonical?
 
       // Note: Node's base64 decoder also accepts URL-safe base64, so no need to translate.
-      const descriptor = Capnp.parse(
+      const queryDescriptor = Capnp.parse(
           Powerbox.PowerboxDescriptor,
           new Buffer(packedDescriptor, "base64"),
           { packed: true });
 
-      if (!descriptor.tags || descriptor.tags.length === 0) return {};
+      if (!queryDescriptor.tags || queryDescriptor.tags.length === 0) return {};
 
       // Expand each tag into a match map.
-      const tagMatches = descriptor.tags.map(tag => {
+      const tagMatches = queryDescriptor.tags.map(tag => {
         const result = {};
 
         frontendRefRegistry.query(db, this.userId, tag).forEach(option => {
@@ -308,7 +311,70 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
         return a;
       });
 
-      return { descriptor, matches };
+      // Search among the user's grains for hosted objects that match.
+
+      if (this.userId) {
+        const user = Meteor.users.findOne(this.userId);
+
+        // Find all grains shared to this user.
+        const sharedGrainIds = db.userApiTokens(this.userId).map(token => token.grainId);
+
+        // Among all grains owned by the user or shared with the user, search for grains having
+        // any powerbox tag IDs matching the tag IDs in the query.
+        db.collections.grains
+            .find({$or: [ {userId: this.userId}, {_id: {$in: sharedGrainIds}} ],
+                   "cachedViewInfo.matchRequests.tags.id":
+                       {$in: queryDescriptor.tags.map(tag => tag.id)}},
+                  {fields: { "cachedViewInfo.matchRequests": 1 }})
+            .forEach(grain => {
+          // Filter down to grains that actually have a matching descriptor.
+          let alreadyMatched = false;
+          grain.cachedViewInfo.matchRequests.forEach(grainDescriptor => {
+            if (alreadyMatched) return;
+
+            // Build map of descriptor tags by ID.
+            const grainTagsById = {};
+            grainDescriptor.tags.forEach(tag => {
+              grainTagsById[tag.id] = tag.value;
+            });
+
+            let allMatched = true;
+            queryDescriptor.tags.forEach(queryTag => {
+              if (!allMatched) return;
+
+              if (queryTag.id in grainTagsById) {
+                const value = grainTagsById[queryTag.id];
+                // Null values match everything, so only pay attention if non-null.
+                if (value && queryTag.value) {
+                  if (!Capnp.matchPowerboxQuery(queryTag.value, value)) {
+                    allMatched = false;
+                  }
+                }
+              } else {
+                allMatched = false;
+              }
+            });
+
+            if (allMatched) {
+              alreadyMatched = true;
+              const option = new PowerboxOption({
+                _id: "grain-" + grain._id,
+                grainId: grain._id,
+                hostedObject: {},
+                cardTemplate: "grainPowerboxCard",
+                configureTemplate: "uiViewPowerboxConfiguration",  // TODO(cleanup): rename
+              });
+              if (option._id in matches) {
+                matches[option._id].union(option);
+              } else {
+                matches[option._id] = option;
+              }
+            }
+          });
+        });
+      }
+
+      return { descriptor: queryDescriptor, matches };
     });
 
     // TODO(someday): The implementation of matchQuality here is not quite right. In theory, we're

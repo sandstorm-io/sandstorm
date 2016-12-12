@@ -247,6 +247,8 @@ Grains = new Mongo.Collection("grains", collectionOptions);
 //   publicId:  An id used to publicly identify this grain. Used e.g. to route incoming e-mail and
 //       web publishing. This field is initialized when first requested by the app.
 
+Grains.ensureIndexOnServer("cachedViewInfo.matchRequests.tags.id", { sparse: 1 });
+
 RoleAssignments = new Mongo.Collection("roleAssignments", collectionOptions);
 // *OBSOLETE* Before `user` was a variant of ApiTokenOwner, this collection was used to store edges
 // in the permissions sharing graph. This functionality has been subsumed by the ApiTokens

@@ -5,7 +5,7 @@ comfortable for you. This document also covers [uninstallation](#uninstall).  If
 unattended installation of Sandstorm, or learn how the install script works, read the [reference
 documentation on the Sandstorm install script.](administering/install-script.md)
 
-Sandstorm requires Linux x86_64, with kernel version 3.13 or later.
+Sandstorm requires Linux x86_64, with kernel version 3.10 or later.
 
 This page documents a number of ways to install Sandstorm, specifically:
 

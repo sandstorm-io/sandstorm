@@ -653,6 +653,16 @@ Template.layout.helpers({
       },
     };
   },
+
+  demoModal: function () {
+    return Session.get("globalDemoModal");
+  },
+
+  dismissDemoModal: function () {
+    return function () {
+      Session.set("globalDemoModal", null);
+    };
+  },
 });
 
 Template.layout.events({
@@ -660,6 +670,10 @@ Template.layout.events({
     evt.preventDefault();
     evt.stopPropagation();
     logoutSandstorm();
+  },
+
+  "click .demo-startup-modal .start"(evt) {
+    Session.set("globalDemoModal", null);
   },
 });
 

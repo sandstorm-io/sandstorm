@@ -143,6 +143,28 @@ limitations under the License.
   {{/unless}}
   </div>
 
+  {{#with demoModal}}
+    {{#modalDialogWithBackdrop onDismiss=dismissDemoModal class="demo-startup-modal"}}
+      <div class="top">
+          <p class="header">Sandstorm is a self-hostable web productivity suite.</p>
+          <p class="body">
+          {{#if appdemo}}
+            with apps like {{appdemo}}.
+          {{else}}
+            with all the apps you need in one place.
+          {{/if}}</p>
+
+          <button class="button-primary start">
+            {{#if appdemo}}Try {{appdemo}}{{else}}Start{{/if}} &raquo;
+          </button>
+
+      </div>
+      <div class="bottom">
+        <p>Sandstorm makes it easy to run apps on your own server. In addition to improving privacy and control, <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html" target="_blank">this brings Open Source apps to a wide audience.</a></p>
+        <p>Sandstorm is also ridiculously secure. If security interests you, check out <a href="https://docs.sandstorm.io/en/latest/developing/security-practices/" target="_blank">Sandstorm's security model overview</a>.</p>
+      </div>
+    {{/modalDialogWithBackdrop}}
+  {{/with}}
 </template>
 
 <template name="noLayout">

@@ -40,8 +40,8 @@ module.exports["Test link identities"] = function (browser) {
     // Upgrade a demo account to a real account by linking an identity.
     .url(browser.launch_url + "/demo")
     .disableGuidedTour()
-    .waitForElementVisible(".demo-box button.start", medium_wait)
-    .click(".demo-box button.start")
+    .waitForElementVisible(".demo-startup-modal .start", medium_wait)
+    .click(".demo-startup-modal .start")
     .disableGuidedTour()
     .waitForElementPresent(".main-content>.app-list", medium_wait)
     .click(".login>button.show-popup")

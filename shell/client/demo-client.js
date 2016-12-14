@@ -68,9 +68,6 @@ Router.map(function () {
   });
 });
 
-let handle;
-// Use this variable to store the autorun handle made in `onRun` below.
-// There doesn't seem to be a better way to tie a non-serializable value to a route.
 Router.map(function () {
   this.route("appdemo", {
     path: "/appdemo/:appId",
@@ -100,7 +97,7 @@ Router.map(function () {
       //   `userCallback` option of `Accounts.callLoginMethod()`, but now that doesn't work because
       //   it fires too early.
       let done = false;
-      handle = Tracker.autorun(function () {
+      const handle = Tracker.autorun(function () {
         if (done) return;
         if (Meteor.loggingIn()) return;
 

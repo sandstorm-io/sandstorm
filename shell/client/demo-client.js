@@ -41,6 +41,7 @@ Router.map(function () {
         Router.go("root", {}, { replaceState: true });
       }
 
+      Session.set("dismissedInstallHint", true);
       Session.set("globalDemoModal", true);
 
       if (!Meteor.userId()) {

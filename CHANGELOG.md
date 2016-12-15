@@ -1,6 +1,6 @@
 ### v0.197 (2016-12-03) [bugfixes]
 - Self-hosting: Fixed grain backup/restore on non-root installs (unusual configuration).
-- Self-hosting: Fixed spurrious "rootUrl is not valid" when using Internet Explorer.
+- Self-hosting: Fixed spurious "rootUrl is not valid" when using Internet Explorer.
 - Self-hosting: Improved setup wizard intro page to show feature comparison between standard version and Sandstorm for Work.
 - Sandstorm for Work: Fix LDAP-based quota display.
 

@@ -63,8 +63,9 @@ Router.map(function () {
     },
 
     data: function () {
-      Meteor.logout();
-      Router.go("demo", {}, { replaceState: true });
+      Meteor.logout(() => {
+        Router.go("demo", {}, { replaceState: true });
+      });
     },
   });
 });

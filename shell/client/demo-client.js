@@ -37,14 +37,14 @@ Router.map(function () {
       if (!this.ready()) return;
       if (Meteor.loggingIn()) return;
 
-      if (Meteor.userId() && !globalDb.isDemoUser()) {
-        Router.go("root", {}, { replaceState: true });
+      if (!isSignedUp()) {
+        Session.set("dismissedInstallHint", true);
+        Session.set("globalDemoModal", true);
       }
 
-      Session.set("dismissedInstallHint", true);
-      Session.set("globalDemoModal", true);
-
-      if (!Meteor.userId()) {
+      if (Meteor.userId()) {
+        Router.go("root", {}, { replaceState: true });
+      } else {
         Accounts.callLoginMethod({
           methodName: "createDemoUser",
           methodArguments: ["Demo User", null],

@@ -74,7 +74,7 @@ Router.map(function () {
     path: "/appdemo/:appId",
     template: "loading",
     waitOn: function () {
-      return Meteor.subscribe("appDemoInfo", this.params.appId);
+      return globalSubs.concat([Meteor.subscribe("appDemoInfo", this.params.appId)]);
     },
 
     onRun: function () {
@@ -98,8 +98,9 @@ Router.map(function () {
       //   `userCallback` option of `Accounts.callLoginMethod()`, but now that doesn't work because
       //   it fires too early.
       let done = false;
-      const handle = Tracker.autorun(function () {
+      const handle = Tracker.autorun(() => {
         if (done) return;
+        if (!this.ready()) return;
         if (Meteor.loggingIn()) return;
 
         if (!isSignedUpOrDemo()) {

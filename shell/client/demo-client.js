@@ -99,9 +99,32 @@ Router.map(function () {
       //   `userCallback` option of `Accounts.callLoginMethod()`, but now that doesn't work because
       //   it fires too early.
       let done = false;
+      let splashShown = false;
       const handle = Tracker.autorun(() => {
         if (done) return;
         if (!this.ready()) return;
+
+        if (!splashShown) {
+          // find the newest (highest version, so "first" when sorting by
+          // inverse order) matching package.
+          const thisPackage = Packages.findOne({
+            appId: this.params.appId,
+          }, {
+            sort: { "manifest.appVersion": -1 },
+          });
+
+          // In the case that the app requested is not present, we show
+          // this string as the app name.
+          let appName = "missing package";
+
+          if (thisPackage) {
+            appName = SandstormDb.appNameFromPackage(thisPackage);
+          }
+
+          Session.set("globalDemoModal", { appdemo: appName });
+          splashShown = true;
+        }
+
         if (Meteor.loggingIn()) return;
 
         if (!isSignedUpOrDemo()) {
@@ -142,23 +165,6 @@ Router.map(function () {
     },
 
     data: function () {
-      // find the newest (highest version, so "first" when sorting by
-      // inverse order) matching package.
-      const thisPackage = Packages.findOne({
-        appId: this.params.appId,
-      }, {
-        sort: { "manifest.appVersion": -1 },
-      });
-
-      // In the case that the app requested is not present, we show
-      // this string as the app name.
-      let appName = "missing package";
-
-      if (thisPackage) {
-        appName = SandstormDb.appNameFromPackage(thisPackage);
-      }
-
-      Session.set("globalDemoModal", { appdemo: appName });
     },
   });
 });

@@ -1,3 +1,7 @@
+### v0.198 (2016-12-17) [bugfixes]
+- Fixed obscure bug where an auto-downloaded app update could be uninstalled before the user gets around to accepting the update.
+- Oasis: Redesigned demo intro.
+
 ### v0.197 (2016-12-03) [bugfixes]
 - Self-hosting: Fixed grain backup/restore on non-root installs (unusual configuration).
 - Self-hosting: Fixed spurious "rootUrl is not valid" when using Internet Explorer.

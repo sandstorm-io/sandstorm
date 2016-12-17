@@ -49,7 +49,7 @@ Router.map(function () {
           methodName: "createDemoUser",
           methodArguments: ["Demo User", null],
           userCallback: function () {
-            Router.go("root");
+            Router.go("root", {}, { replaceState: true });
           },
         });
       }
@@ -64,7 +64,7 @@ Router.map(function () {
 
     data: function () {
       Meteor.logout();
-      Router.go("demo");
+      Router.go("demo", {}, { replaceState: true });
     },
   });
 });
@@ -135,7 +135,7 @@ Router.map(function () {
           }
 
           // 4. Create new grain and 5. browse to it.
-          launchAndEnterGrainByPackageId(packageId);
+          launchAndEnterGrainByPackageId(packageId, { replaceState: true });
         }
       });
     },

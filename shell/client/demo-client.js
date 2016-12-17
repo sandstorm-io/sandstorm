@@ -37,19 +37,19 @@ Router.map(function () {
       if (!this.ready()) return;
       if (Meteor.loggingIn()) return;
 
-      if (Meteor.userId() && !globalDb.isDemoUser()) {
-        Router.go("root", {}, { replaceState: true });
+      if (!isSignedUp()) {
+        Session.set("dismissedInstallHint", true);
+        Session.set("globalDemoModal", true);
       }
 
-      Session.set("dismissedInstallHint", true);
-      Session.set("globalDemoModal", true);
-
-      if (!Meteor.userId()) {
+      if (Meteor.userId()) {
+        Router.go("root", {}, { replaceState: true });
+      } else {
         Accounts.callLoginMethod({
           methodName: "createDemoUser",
           methodArguments: ["Demo User", null],
           userCallback: function () {
-            Router.go("root");
+            Router.go("root", {}, { replaceState: true });
           },
         });
       }
@@ -63,8 +63,9 @@ Router.map(function () {
     },
 
     data: function () {
-      Meteor.logout();
-      Router.go("demo");
+      Meteor.logout(() => {
+        Router.go("demo", {}, { replaceState: true });
+      });
     },
   });
 });
@@ -74,7 +75,7 @@ Router.map(function () {
     path: "/appdemo/:appId",
     template: "loading",
     waitOn: function () {
-      return Meteor.subscribe("appDemoInfo", this.params.appId);
+      return globalSubs.concat([Meteor.subscribe("appDemoInfo", this.params.appId)]);
     },
 
     onRun: function () {
@@ -98,8 +99,32 @@ Router.map(function () {
       //   `userCallback` option of `Accounts.callLoginMethod()`, but now that doesn't work because
       //   it fires too early.
       let done = false;
-      const handle = Tracker.autorun(function () {
+      let splashShown = false;
+      const handle = Tracker.autorun(() => {
         if (done) return;
+        if (!this.ready()) return;
+
+        if (!splashShown) {
+          // find the newest (highest version, so "first" when sorting by
+          // inverse order) matching package.
+          const thisPackage = Packages.findOne({
+            appId: this.params.appId,
+          }, {
+            sort: { "manifest.appVersion": -1 },
+          });
+
+          // In the case that the app requested is not present, we show
+          // this string as the app name.
+          let appName = "missing package";
+
+          if (thisPackage) {
+            appName = SandstormDb.appNameFromPackage(thisPackage);
+          }
+
+          Session.set("globalDemoModal", { appdemo: appName });
+          splashShown = true;
+        }
+
         if (Meteor.loggingIn()) return;
 
         if (!isSignedUpOrDemo()) {
@@ -134,29 +159,12 @@ Router.map(function () {
           }
 
           // 4. Create new grain and 5. browse to it.
-          launchAndEnterGrainByPackageId(packageId);
+          launchAndEnterGrainByPackageId(packageId, { replaceState: true });
         }
       });
     },
 
     data: function () {
-      // find the newest (highest version, so "first" when sorting by
-      // inverse order) matching package.
-      const thisPackage = Packages.findOne({
-        appId: this.params.appId,
-      }, {
-        sort: { "manifest.appVersion": -1 },
-      });
-
-      // In the case that the app requested is not present, we show
-      // this string as the app name.
-      let appName = "missing package";
-
-      if (thisPackage) {
-        appName = SandstormDb.appNameFromPackage(thisPackage);
-      }
-
-      Session.set("globalDemoModal", { appdemo: appName });
     },
   });
 });

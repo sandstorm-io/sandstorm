@@ -294,18 +294,18 @@ prettySize = function (size) {
 };
 
 // export: used in shared/demo.js
-launchAndEnterGrainByPackageId = function (packageId) {
+launchAndEnterGrainByPackageId = function (packageId, options) {
   const action = UserActions.findOne({ packageId: packageId });
   if (!action) {
     alert("Somehow, you seem to have attempted to launch a package you have not installed.");
     return;
   } else {
-    launchAndEnterGrainByActionId(action._id, null, null);
+    launchAndEnterGrainByActionId(action._id, null, null, options);
   }
 };
 
 // export: used in sandstorm-ui-app-details
-launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex) {
+launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex, options) {
   // Note that this takes a devPackageId and a devIndex as well. If provided,
   // they override the actionId.
   let packageId;
@@ -356,7 +356,7 @@ launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex) {
               console.error(error);
               alert(error.message);
             } else {
-              Router.go("grain", { grainId: grainId });
+              Router.go("grain", { grainId: grainId }, options);
             }
           });
         });
@@ -365,7 +365,7 @@ launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex) {
         alert(error.message);
       }
     } else {
-      Router.go("grain", { grainId: grainId });
+      Router.go("grain", { grainId: grainId }, options);
     }
   });
 };

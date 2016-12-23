@@ -291,9 +291,18 @@ Sessions = new Mongo.Collection("sessions", collectionOptions);
 //       that was used to open it. Note that for old-style sharing (i.e. when !grain.private),
 //       anonymous users can get access without an API token and so neither userId nor hashedToken
 //       are present.
-//   powerboxView: If present, this is a view that should be presented as part of a powerbox
-//       interaction.
-//     offer: The webkey that corresponds to cap that was passed to the `offer` RPC.
+//   powerboxView: Information about a server-initiated powerbox interaction taking place in this
+//       session. When the client sees a `powerboxView` appear on the session, it opens the
+//       powerbox popup according to the contents. This field is an object containing one of:
+//     offer: A capability is being offered to the user by the app. This is an object containing:
+//       token: For a non-UiView capability, the API token that can be used to restore this
+//           capability.
+//       uiView: A UiView capability. This object contains one of:
+//         tokenId: The _id of an ApiToken belonging to the current user.
+//         token: A full webkey token which can be opened by an anonymous user.
+//   powerboxRequest: If present, this session is a powerbox request session. Object containing:
+//     descriptors: Array of PowerboxDescriptors representing the request.
+//     requestingSession: Session ID of the session initiating the request.
 //   viewInfo: The UiView.ViewInfo corresponding to the underlying UiSession. This isn't populated
 //       until newSession is called on the UiView.
 //   permissions: The permissions for the current identity on this UiView. This isn't populated

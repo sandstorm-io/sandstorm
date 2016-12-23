@@ -21,6 +21,7 @@ import { introJs } from "intro.js";
 import downloadFile from "/imports/client/download-file.js";
 import { ContactProfiles } from "/imports/client/contacts.js";
 import { isStandalone } from "/imports/client/standalone.js";
+import { GrainView } from "/imports/client/grain/grainview.js";
 
 // Pseudo-collections.
 TokenInfo = new Mongo.Collection("tokenInfo");
@@ -1693,7 +1694,7 @@ Meteor.startup(function () {
         onCompleted: function () { globalTopbar.closePopup(); },
         // Allow the grain to close the popup when we've completed the request.
       };
-      const requestContext = new SandstormPowerboxRequest(globalDb, powerboxRequestInfo);
+      const requestContext = new SandstormPowerboxRequest(globalDb, powerboxRequestInfo, GrainView);
       senderGrain.setPowerboxRequest(requestContext);
       // Note that we don't do openPopup() here because the template will be redrawn to create the
       // powerbox popup with startOpen=true.

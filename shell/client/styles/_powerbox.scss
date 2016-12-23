@@ -84,9 +84,16 @@ body>.popup.request>.frame-container>.frame {
         margin-top: 10px;
       }
     }
-    button.connect-button {
-      @extend %button-base;
-      @extend %button-primary;
+    div.choose-buttons {
+      >button {
+        @extend %button-base;
+        &.connect-button {
+          @extend %button-primary;
+        }
+        &.choose-hosted-object {
+          @extend %button-secondary;
+        }
+      }
     }
     form.verified-email {
       >input[type=text] {
@@ -99,6 +106,22 @@ body>.popup.request>.frame-container>.frame {
       button[name=reset] {
         @extend %button-base;
         @extend %button-secondary;
+      }
+    }
+    >div.powerbox-iframe-mount {
+      width: 100%;
+      height: 500px;
+      border: 1px solid #ddd;
+      margin-top: 10px;
+
+      >div.grain-container {
+        height: 100%;
+        >iframe.grain-frame {
+          position: static;
+          width: 100%;
+          height: 100%;
+          display: block;
+        }
       }
     }
   }

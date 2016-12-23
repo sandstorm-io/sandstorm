@@ -55,15 +55,24 @@
 </template>
 
 <template name="uiViewPowerboxConfiguration">
-  <form>
-    <p>with permissions:</p>
-    {{#each role in viewInfo.roles}}
-      <label><input type="radio" name="role" value="{{role.index}}">{{role.title.defaultText}} - {{role.verbPhrase.defaultText}}</label>
-    {{else}}
-      <label><input type="radio" checked="true" name="role" value="all">Full access</label>
-    {{/each}}
-    <button class="connect-button">Connect</button>
-  </form>
+  {{#if choseHostedObject}}
+    <div class="powerbox-iframe-mount">{{ setupIframe }}</div>
+  {{else}}
+    <form>
+      <p>with permissions:</p>
+      {{#each role in viewInfo.roles}}
+        <label><input type="radio" name="role" value="{{role.index}}">{{role.title.defaultText}} - {{role.verbPhrase.defaultText}}</label>
+      {{else}}
+        <label><input type="radio" checked="true" name="role" value="all">Full access</label>
+      {{/each}}
+      <div class="choose-buttons">
+        <button class="connect-button">Connect</button>
+        {{#if option.hostedObject}}
+          <button class="choose-hosted-object">Browse grain contents &raquo;</button>
+        {{/if}}
+      </div>
+    </form>
+  {{/if}}
 </template>
 
 <template name="ipNetworkPowerboxCard">

@@ -50,7 +50,6 @@ SessionContextImpl = class SessionContextImpl {
 
       const token = ApiTokens.findOne({
         _id: hashedSturdyRef,
-        "owner.clientPowerboxRequest.grainId": this.grainId,
         "owner.clientPowerboxRequest.sessionId": this.sessionId,
       });
 
@@ -96,7 +95,7 @@ SessionContextImpl = class SessionContextImpl {
       return restoreInternal(
           globalDb,
           new Buffer(sturdyRef),
-          { clientPowerboxRequest: Match.ObjectIncluding({ grainId: this.grainId }) },
+          { clientPowerboxRequest: Match.ObjectIncluding({ sessionId: this.sessionId }) },
           requirements, token);
     });
   }

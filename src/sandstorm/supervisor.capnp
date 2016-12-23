@@ -305,11 +305,11 @@ struct ApiTokenOwner {
       # The token will be automatically deleted after a short amount of time. Before then, the
       # grain must call `SandstormApi.claimRequest()` to get a proper sturdyref.
 
-      grainId @13 :Text;
-      # Grain ID owning the ref.
-
       sessionId @15 :Text;
       # The ID of the session that created this token.
+
+      grainId @13 :Text;
+      # Obsolete. (The owning grain is the one associated with sessionId.)
 
       introducerIdentity @14 :Text;
       # Obsolete. (The introducer identity can be derived from sessionId instead.)

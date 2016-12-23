@@ -585,6 +585,7 @@ class GrainView {
         if (_this._options.powerboxRequest) {
           _this._fulfilledInfo = (session.powerboxView || {}).fulfill;
         }
+
         _this._dep.changed();
       },
 
@@ -595,6 +596,7 @@ class GrainView {
         if (_this._options.powerboxRequest) {
           _this._fulfilledInfo = (session.powerboxView || {}).fulfill;
         }
+
         _this._dep.changed();
       },
     });

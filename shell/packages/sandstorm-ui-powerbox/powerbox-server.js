@@ -322,10 +322,11 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
         // Among all grains owned by the user or shared with the user, search for grains having
         // any powerbox tag IDs matching the tag IDs in the query.
         db.collections.grains
-            .find({$or: [ {userId: this.userId}, {_id: {$in: sharedGrainIds}} ],
-                   "cachedViewInfo.matchRequests.tags.id":
-                       {$in: queryDescriptor.tags.map(tag => tag.id)}},
-                  {fields: { "cachedViewInfo.matchRequests": 1 }})
+            .find({
+              $or: [{ userId: this.userId }, { _id: { $in: sharedGrainIds } }],
+              "cachedViewInfo.matchRequests.tags.id":
+                  { $in: queryDescriptor.tags.map(tag => tag.id) },
+            }, { fields: { "cachedViewInfo.matchRequests": 1 } })
             .forEach(grain => {
           // Filter down to grains that actually have a matching descriptor.
           let alreadyMatched = false;

@@ -30,6 +30,7 @@ const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").System
 const IpRpc = Capnp.importSystem("sandstorm/ip.capnp");
 const EmailSendPort = EmailRpc.EmailSendPort;
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");
+const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 
 const Url = Npm.require("url");
 
@@ -100,13 +101,18 @@ SessionContextImpl = class SessionContextImpl {
     });
   }
 
-  offer(cap, requiredPermissions, descriptor, displayInfo) {
+  _offerOrFulfill(isFulfill, cap, requiredPermissions, descriptor, displayInfo) {
     return inMeteor(() => {
 
       const session = Sessions.findOne({ _id: this.sessionId });
 
       if (!session.identityId && !session.hashedToken) {
         throw new Error("Session has neither an identityId nor a hashedToken.");
+      }
+
+      if (isFulfill && !session.powerboxRequest) {
+        // Not a request session, so treat fulfillRequest() same as offer().
+        isFulfill = false;
       }
 
       const castedCap = cap.castAs(SystemPersistent);
@@ -132,6 +138,15 @@ SessionContextImpl = class SessionContextImpl {
             },
           };
         }
+      }
+
+      if (isFulfill) {
+        // The capability will pass directly to the requesting grain.
+        apiTokenOwner = {
+          clientPowerboxRequest: {
+            sessionId: session.powerboxRequest.requestingSession,
+          },
+        };
       }
 
       // TODO(soon): This will eventually use SystemPersistent.addRequirements when membranes
@@ -163,7 +178,15 @@ SessionContextImpl = class SessionContextImpl {
       ApiTokens.update({ _id: hashSturdyRef(sturdyRef) }, { $push: { requirements: requirement } });
 
       let powerboxView;
-      if (isUiView) {
+      if (isFulfill) {
+        powerboxView = {
+          fulfill: {
+            token: sturdyRef.toString(),
+            descriptor: Capnp.serializePacked(Powerbox.PowerboxDescriptor, descriptor)
+                             .toString("base64"),
+          },
+        };
+      } else if (isUiView) {
         if (session.identityId) {
           // Deduplicate.
           let tokenId = hashSturdyRef(sturdyRef.toString());
@@ -201,6 +224,14 @@ SessionContextImpl = class SessionContextImpl {
         },
       );
     });
+  }
+
+  offer(cap, requiredPermissions, descriptor, displayInfo) {
+    return this._offerOrFulfill(false, cap, requiredPermissions, descriptor, displayInfo);
+  }
+
+  fulfillRequest(cap, requiredPermissions, descriptor, displayInfo) {
+    return this._offerOrFulfill(true, cap, requiredPermissions, descriptor, displayInfo);
   }
 
   activity(event) {

@@ -300,6 +300,12 @@ Sessions = new Mongo.Collection("sessions", collectionOptions);
 //       uiView: A UiView capability. This object contains one of:
 //         tokenId: The _id of an ApiToken belonging to the current user.
 //         token: A full webkey token which can be opened by an anonymous user.
+//     fulfill: A capability is being offered which fulfills the active powerbox request. This
+//         is an object with members:
+//       token: The SturdyRef of the fulfilling capability. This token can only be used in a call
+//           to claimRequest() by the requesting
+//           grain.
+//       descriptor: Packed-base64 PowerboxDescriptor for the capability.
 //   powerboxRequest: If present, this session is a powerbox request session. Object containing:
 //     descriptors: Array of PowerboxDescriptors representing the request.
 //     requestingSession: Session ID of the session initiating the request.

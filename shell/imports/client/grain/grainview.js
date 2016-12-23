@@ -429,6 +429,11 @@ class GrainView {
     return this._sessionId;
   }
 
+  fulfilledInfo() {
+    this._dep.depend();
+    return this._fulfilledInfo;
+  }
+
   setTitle(newTitle) {
     this._title = newTitle;
     if (this._userIdentityId.get()) {
@@ -577,6 +582,9 @@ class GrainView {
       changed(session) {
         _this._viewInfo = session.viewInfo || _this._viewInfo;
         _this._updatePermissions(session.permissions);
+        if (_this._options.powerboxRequest) {
+          _this._fulfilledInfo = (session.powerboxView || {}).fulfill;
+        }
         _this._dep.changed();
       },
 
@@ -584,6 +592,9 @@ class GrainView {
         _this._viewInfo = session.viewInfo || _this._viewInfo;
         _this._updatePermissions(session.permissions);
         _this._status = "opened";
+        if (_this._options.powerboxRequest) {
+          _this._fulfilledInfo = (session.powerboxView || {}).fulfill;
+        }
         _this._dep.changed();
       },
     });

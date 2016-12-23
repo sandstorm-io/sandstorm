@@ -80,14 +80,16 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
   }
 
   completeRequest(token, descriptor) {
-    this._completed = true;
-    this._requestInfo.source.postMessage({
-      rpcId: this._requestInfo.rpcId,
-      token: token,
-      descriptor: descriptor,
-    }, this._requestInfo.origin);
-    // Completion event closes popup.
-    this._requestInfo.onCompleted();
+    if (!this._completed) {
+      this._completed = true;
+      this._requestInfo.source.postMessage({
+        rpcId: this._requestInfo.rpcId,
+        token: token,
+        descriptor: descriptor,
+      }, this._requestInfo.origin);
+      // Completion event closes popup.
+      this._requestInfo.onCompleted();
+    }
   }
 
   cancelRequest() {
@@ -447,6 +449,13 @@ Template.uiViewPowerboxConfiguration.helpers({
 
         this.powerboxRequest.onFinalize(() => {
           tmpl._grainView.destroy();
+        });
+
+        tmpl.autorun(() => {
+          const fulfilledInfo = tmpl._grainView.fulfilledInfo();
+          if (fulfilledInfo) {
+            this.powerboxRequest.completeRequest(fulfilledInfo.token, fulfilledInfo.descriptor);
+          }
         });
       }
     });

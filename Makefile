@@ -149,8 +149,8 @@ update: sandstorm-$(BUILD)-fast.tar.xz
 
 fast: sandstorm-$(BUILD)-fast.tar.xz
 
-test: sandstorm-$(BUILD)-fast.tar.xz
-	tests/run-local.sh sandstorm-$(BUILD)-fast.tar.xz
+test: sandstorm-$(BUILD)-fast.tar.xz test-app.spk
+	tests/run-local.sh sandstorm-$(BUILD)-fast.tar.xz test-app.spk
 
 installer-test:
 	(cd installer-tests && bash prepare-for-tests.sh && PYTHONUNBUFFERED=yes TERM=xterm SLOW_TEXT_TIMEOUT=120 ~/.local/bin/stodgy-tester --plugin stodgy_tester.plugins.sandstorm_installer_tests --on-vm-start=uninstall_sandstorm --rsync)

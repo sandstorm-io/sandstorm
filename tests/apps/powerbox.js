@@ -220,12 +220,6 @@ module.exports["Test Powerbox query"] = function (browser) {
             }
           }
 
-          browser
-              .grainFrame(grainId)
-              .waitForElementPresent("#do-powerbox-request", medium_wait)
-              .click("#do-powerbox-request")
-              .frameParent();
-
           tryQuery("#do-powerbox-request", {[grainId]: true, [otherGrainId]: false});
           tryQuery("#do-powerbox-request-no-match", {[grainId]: false, [otherGrainId]: false});
           tryQuery("#do-powerbox-request-wildcard", {[grainId]: true, [otherGrainId]: false});

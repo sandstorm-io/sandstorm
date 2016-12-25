@@ -58,6 +58,7 @@ shell/public/icons/icons-*.woff
 shell-build
 sandstorm-*.tar.xz
 sandstorm-*.tar.xz.sig
+sandstorm-*.tar.xz.update-sig
 install.sh.sig
 bundle/
 .docker
@@ -68,6 +69,12 @@ selenium-debug.log
 tests/assets/*
 tests/nightwatch.tmp.json
 tests/screenshots/
+tests/sandstorm-tests.config
+tests/sandstorm-tests.creator
+tests/sandstorm-tests.creator.user
+tests/sandstorm-tests.files
+tests/sandstorm-tests.includes
+tests/tmp-sandstorm
 app-index.spk
 app-index-sandstorm-files.list
 test-app.spk

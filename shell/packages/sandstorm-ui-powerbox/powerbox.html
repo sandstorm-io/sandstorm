@@ -25,25 +25,29 @@
         {{>configureTemplate . }}
       </div>
     {{else}}
-      <h4>Select one:</h4>
-      <div class="search-row">
-        <label>
-          <span title="Search" class="search-icon"></span>
-          <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}">
-        </label>
-      </div>
-      <ul class="candidate-cards">
-      {{#each cards}}
-        <li class="powerbox-card">
-          <button class="card-button" data-card-id="{{ option._id }}"
-                  style="background-image: url('{{ iconSrc }}');">
-            {{>cardTemplate . }}
-          </button>
-        </li>
+      {{#if Template.subscriptionsReady}}
+        <h4>Select one:</h4>
+        <div class="search-row">
+          <label>
+            <span title="Search" class="search-icon"></span>
+            <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}">
+          </label>
+        </div>
+        <ul class="candidate-cards">
+        {{#each cards}}
+          <li class="powerbox-card">
+            <button class="card-button" data-card-id="{{ option._id }}"
+                    style="background-image: url('{{ iconSrc }}');">
+              {{>cardTemplate . }}
+            </button>
+          </li>
+        {{else}}
+          <p>No grains can provide the requested interface.</p>
+        {{/each}}
+        </ul>
       {{else}}
-        <p>No grains can provide the requested interface.</p>
-      {{/each}}
-      </ul>
+        <p>Loading...</p>
+      {{/if}}
     {{/with}}
   {{/if}}
 </template>

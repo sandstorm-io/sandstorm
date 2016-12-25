@@ -231,7 +231,7 @@ Meteor.setInterval(() => {
 
 const proxiesByHostId = {};
 
-function parsePowerboxDescirptorList(list) {
+function parsePowerboxDescriptorList(list) {
   return list.map(packedDescriptor =>
       Capnp.parse(Powerbox.PowerboxDescriptor, new Buffer(packedDescriptor, "base64"),
                   { packed: true }));
@@ -339,7 +339,7 @@ Meteor.methods({
     const sessionFields = {};
     if (options.powerboxRequest) {
       sessionFields.powerboxRequest = {
-        descriptors: parsePowerboxDescirptorList(options.powerboxRequest.descriptors),
+        descriptors: parsePowerboxDescriptorList(options.powerboxRequest.descriptors),
         requestingSession: options.powerboxRequest.requestingSession,
       };
     }
@@ -463,7 +463,7 @@ Meteor.methods({
       const sessionFields = {};
       if (options.powerboxRequest) {
         sessionFields.powerboxRequest = {
-          descriptors: parsePowerboxDescirptorList(options.powerboxRequest.descriptors),
+          descriptors: parsePowerboxDescriptorList(options.powerboxRequest.descriptors),
           requestingSession: options.powerboxRequest.requestingSession,
         };
       }

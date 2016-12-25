@@ -245,6 +245,10 @@ class GrainView {
     return this._isActive;
   }
 
+  isPowerboxRequest() {
+    return !!this._options.powerboxRequest;
+  }
+
   setActive(isActive) {
     this._isActive = isActive;
     this._dep.changed();

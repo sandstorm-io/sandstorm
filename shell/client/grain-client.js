@@ -79,6 +79,7 @@ const mapGrainStateToTemplateData = function (grainState) {
     viewInfo: grainState.viewInfo(),
     signinOverlay: grainState.signinOverlay(),
     grainView: grainState,
+    isPowerbox: grainState.isPowerboxRequest(),
   };
   return templateData;
 };
@@ -700,6 +701,11 @@ Template.grainView.helpers({
       const grain = globalGrains.getActive();
       grain.disableSigninOverlay();
     };
+  },
+
+  idPrefix: function () {
+    // Prefix to add to the iframe id, for testing purposes.
+    return this.isPowerbox ? "powerbox-" : "";
   },
 });
 

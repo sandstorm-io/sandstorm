@@ -408,7 +408,7 @@ app-index-dev: tmp/.ekam-run
 test-app.spk: tmp/.ekam-run
 	@cp src/sandstorm/test-app/test-app.capnp tmp/sandstorm/test-app/test-app.capnp
 	@cp src/sandstorm/test-app/*.html tmp/sandstorm/test-app
-	spk pack -ksrc/sandstorm/test-app/test-app.key -Isrc -Itmp -ptmp/sandstorm/test-app/test-app.capnp:pkgdef test-app.spk
+	bin/spk pack -ksrc/sandstorm/test-app/test-app.key -Isrc -Itmp -ptmp/sandstorm/test-app/test-app.capnp:pkgdef test-app.spk
 
 test-app-dev: tmp/.ekam-run
 	@cp src/sandstorm/test-app/test-app.capnp tmp/sandstorm/test-app/test-app.capnp

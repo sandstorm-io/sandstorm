@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Sandstorm Raw API sample app</title>
+    <meta charset="utf-8">
+    <script type="text/javascript">
+let rpcCounter = 0;
+const rpcs = {};
+
+window.addEventListener("message", (event) => {
+  if (event.source !== window.parent ||
+      typeof event.data !== "object" ||
+      typeof event.data.rpcId !== "number") {
+    console.warn("got unexpected postMessage:", event);
+    return;
+  }
+
+  const handler = rpcs[event.data.rpcId];
+  if (!handler) {
+    console.error("no such rpc ID for event", event);
+    return;
+  }
+
+  delete rpcs[event.data.rpcId];
+  handler(event.data);
+});
+
+function sendRpc(name, message) {
+  const id = rpcCounter++; // eslint-disable-line no-plusplus
+  const rpc = {
+    rpcId: id,
+  };
+  Object.assign(rpc, message);
+  const obj = {
+    [name]: rpc,
+  };
+  window.parent.postMessage(obj, "*");
+  return new Promise((resolve, reject) => {
+    rpcs[id] = (response) => {
+      if (response.error) {
+        reject(new Error(response.error));
+      } else {
+        resolve(response);
+      }
+    };
+  });
+}
+
+function fetch(url, options) {
+  // Somewhat pleasant wrapper around XHR.
+
+  options = options || {};
+  return new Promise(function(resolve, reject) {
+    var xhr = new XMLHttpRequest();
+    xhr.onload = function () {
+      if (xhr.status >= 400) {
+        reject(new Error("XHR returned status " + xhr.status + ":\n" + xhr.responseText));
+      } else {
+        resolve(xhr);
+      }
+    };
+    xhr.onerror = function(e) { reject(e); };
+    if (options.hasOwnProperty('responseType'))
+      xhr.responseType = options.responseType;
+    var method = 'get';
+    if (options.hasOwnProperty('method'))
+      method = options.method;
+    xhr.open(method, url)
+    var data = undefined;
+    if (options.hasOwnProperty('data'))
+      data = options.data;
+    xhr.send(data);
+  });
+}
+function doGet(url) {
+  return fetch(url);
+}
+function doPost(url, data) {
+  return fetch(url, { method: "post", data: data });
+}
+function doPut(url, data) {
+  return fetch(url, { method: "put", data: data });
+}
+function doDelete(url) {
+  return fetch(url, { method: "delete" });
+}
+
+function doPowerboxRequest(desc) {
+  sendRpc("powerboxRequest", {
+    query: desc instanceof Array ? desc : [desc],
+    saveLabel: {defaultText: "E-mail Verifier"},
+  }).then((response) => {
+    console.log(response);
+    doPost("/accept", response.token).then(function (xhr) {
+      var elem = document.createElement("p");
+      elem.id = "result-text";
+      elem.textContent = xhr.responseText;
+      document.body.appendChild(elem);
+    });
+  }).catch((e) => {
+    console.error(e);
+  });
+}
+    </script>
+  </head>
+  <body>
+    <h1>Test App</h1>
+    <p><button onclick="doPowerboxRequest('EAlQAQEAABEBF1EEAQH_y9-dR8kYld8AUAEBAXsRASIHZm9v')" id="do-powerbox-request">Powerbox Request</button></p>
+    <p><button onclick="doPowerboxRequest('EAlQAQEAABEBF1EEAQH_y9-dR8kYld8AUAEBAXsRASIHYmFy')" id="do-powerbox-request-no-match">Powerbox Request -- no match</button></p>
+    <p><button onclick="doPowerboxRequest('EAhQAQEAABEBF1EEAQH_y9-dR8kYld8AUAEBAXsAAA')" id="do-powerbox-request-wildcard">Powerbox Request -- wildcard</button></p>
+    <p><button onclick="doPowerboxRequest(['EAlQAQEAABEBF1EEAQH_y9-dR8kYld8AUAEBAXsRASIHZm9v', 'EAZQAQEAABEBF1EEAQH_5-Jn6pjXtNsAAAA'])" id="do-powerbox-request-multi-descriptor">Powerbox Request -- multiple descriptors</button></p>
+  </body>
+</html>

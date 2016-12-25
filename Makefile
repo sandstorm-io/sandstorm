@@ -394,3 +394,23 @@ app-index-dev: tmp/.ekam-run
 	@cp src/sandstorm/app-index/app-index.capnp tmp/sandstorm/app-index/app-index.capnp
 	@cp src/sandstorm/app-index/review.html tmp/sandstorm/app-index/review.html
 	spk dev -Isrc -Itmp -ptmp/sandstorm/app-index/app-index.capnp:pkgdef
+
+# ====================================================================
+# test-app.spk
+
+# This is currently really really hacky because spk is not good at using package definition file
+# that is not located at the root of the source tree. In particular it is hard for the package
+# definition file (living in the src tree) to refer to the `test-app` binary (living in the
+# tmp tree).
+#
+# TODO(cleanup): Make spk better so that it can handle this.
+
+test-app.spk: tmp/.ekam-run
+	@cp src/sandstorm/test-app/test-app.capnp tmp/sandstorm/test-app/test-app.capnp
+	@cp src/sandstorm/test-app/*.html tmp/sandstorm/test-app
+	spk pack -ksrc/sandstorm/test-app/test-app.key -Isrc -Itmp -ptmp/sandstorm/test-app/test-app.capnp:pkgdef test-app.spk
+
+test-app-dev: tmp/.ekam-run
+	@cp src/sandstorm/test-app/test-app.capnp tmp/sandstorm/test-app/test-app.capnp
+	@cp src/sandstorm/test-app/*.html tmp/sandstorm/test-app
+	spk dev -Isrc -Itmp -ptmp/sandstorm/test-app/test-app.capnp:pkgdef

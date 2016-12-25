@@ -70,3 +70,4 @@ tests/nightwatch.tmp.json
 tests/screenshots/
 app-index.spk
 app-index-sandstorm-files.list
+test-app.spk

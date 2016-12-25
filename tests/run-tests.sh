@@ -21,7 +21,6 @@ set -euo pipefail
 THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
 cd "$THIS_DIR"
-../shell/test-packages.sh -f
 
 export SANDSTORM_DIR="${SANDSTORM_DIR:-/opt/sandstorm}"
 
@@ -44,12 +43,14 @@ fi
 
 if [[ -z "${LAUNCH_URL:-}" ]]; then
   if [[ -z "${SKIP_UNITTESTS:-}" ]]; then
+    ../shell/test-packages.sh -f
     nightwatch -e unittests "${NIGHTWATCH_PARAMS[@]:-}"
   fi
   nightwatch -e default "${NIGHTWATCH_PARAMS[@]:-}"
 else
   sed "s|.*launch_url.*|\"launch_url\" : \"$LAUNCH_URL\",|g" nightwatch.json > nightwatch.tmp.json
   if [[ -z "${SKIP_UNITTESTS:-}" ]]; then
+    ../shell/test-packages.sh -f
     nightwatch -e unittests -c ./nightwatch.tmp.json "${NIGHTWATCH_PARAMS[@]:-}"
   fi
   nightwatch -e default -c ./nightwatch.tmp.json "${NIGHTWATCH_PARAMS[@]:-}"

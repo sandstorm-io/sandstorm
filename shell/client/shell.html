@@ -310,6 +310,15 @@ limitations under the License.
   </div>
 </template>
 
+<template name="uploadTest">
+  {{>title "Upload test page"}}
+
+  <p>This page is intended for use by the test scripts.</p>
+
+  <p>Upload app: <input type="file" id="upload-app"></p>
+  <p>Upload backup: <input type="file" id="upload-backup"></p>
+</template>
+
 <template name="referrals">
   {{#if referralsEnabled}}
   {{>title "Referral Program"}}

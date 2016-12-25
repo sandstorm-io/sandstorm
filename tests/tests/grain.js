@@ -25,94 +25,88 @@ var utils = require('../utils'),
     very_long_wait = utils.very_long_wait;
 var path = require('path');
 var assetsPath = path.resolve(__dirname, '../assets');
-var expectedHackerCMSButtonText = 'New Hacker CMS site';
+var expectedHackerCMSButtonText = 'Create new site';
 var expectedHackerCMSGrainTitle = 'Untitled Hacker CMS site';
 var expectedGitWebGrainTitle = 'Untitled GitWeb repository';
 
 module.exports = utils.testAllLogins({
   // TODO(soon): Uploading tests are broken. Waiting on refactor of upload input to fix.
-  // "Test local install" : function (browser) {
-  //   browser
-  //     .click('#upload-app-button')
-  //     .ifDemo(function () {
-  //       browser
-  //         .waitForElementVisible('.upload-button', medium_wait)
-  //         .assert.containsText('#uploadButton', 'Upload')
-  //         .waitForElementVisible('#uploadButton', short_wait)
-  //         .setValue('#uploadFile', path.join(assetsPath, 'ssjekyll6.spk'))
-  //         .click('#uploadButton')
-  //         // .waitForElementVisible('#upload p', medium_wait)
-  //         // .assert.containsText('#upload p', 'Sorry, this server requires an invite before you can install apps.')
-  //         .init()
-  //         .waitForElementVisible('#applist-apps', medium_wait);
-  //     })
-  //     .ifNotDemo(function () {
-  //       browser
-  //         .waitForElementVisible('#uploadButton', medium_wait)
-  //         .assert.containsText('#uploadButton', 'Upload')
-  //         .waitForElementVisible('#uploadButton', short_wait)
-  //         .setValue('#uploadFile', path.join(assetsPath, 'ssjekyll6.spk'))
-  //         .click('#uploadButton')
-  //         .waitForElementVisible('#step-confirm', long_wait)
-  //         .click('#confirmInstall')
-  //         .waitForElementVisible('.new-grain-button', short_wait)
-  //         .assert.containsText('.new-grain-button', expectedHackerCMSButtonText);
-  //     });
-  // },
+  "Test local install" : function (browser) {
+    browser
+      .url(browser.launch_url + "/upload-test")
+      .waitForElementVisible("#upload-app", short_wait)
+      .setValue("#upload-app", path.join(assetsPath, 'ssjekyll6.spk'))
+      .ifDemo(function () {
+        // Not allowed in demo.
+        browser
+          .pause(1000)
+          .getAlertText(function (text) {
+            browser.assert.equal("Unauthorized [403]", text.value)
+          })
+          .acceptAlert();
+      })
+      .ifNotDemo(function () {
+        browser
+          .waitForElementVisible("#step-confirm", long_wait)
+          .click('#confirmInstall')
+          .disableGuidedTour()
+          .waitForElementVisible(actionSelector, short_wait)
+          .assert.containsText(actionSelector, expectedHackerCMSButtonText)
 
-  // "Test upgrade" : function (browser) {
-  //   browser
-  //     .click("#applist-apps > ul > li:nth-child(1)")
-  //     .waitForElementVisible('#upload-app-button', medium_wait)
-  //     .click('#upload-app-button')
-  //     .ifDemo(function () {
-  //       browser
-  //         .waitForElementVisible('#upload p', medium_wait)
-  //         // .assert.containsText('#upload p', 'demo users are not allowed')
-  //         .init()
-  //         .waitForElementVisible('#applist-apps', medium_wait);
-  //     })
-  //     .ifNotDemo(function () {
-  //       browser
-  //         .waitForElementVisible('#uploadButton', medium_wait)
-  //         .assert.containsText('#uploadButton', 'Upload')
-  //         .waitForElementVisible('#uploadButton', short_wait)
-  //         .setValue('#uploadFile', path.join(assetsPath, 'ssjekyll7.spk'))
-  //         .click('#uploadButton')
-  //         .waitForElementVisible('#step-confirm', long_wait)
-  //         .assert.containsText('#confirmInstall', 'Upgrade')
-  //         .click('#confirmInstall')
-  //         .waitForElementVisible('.new-grain-button', short_wait)
-  //         .assert.containsText('.new-grain-button', expectedHackerCMSButtonText);
-  //     });
-  // },
+          // Create a grain so that we see the newer version / older version indicators after
+          // upgrade / downgrade.
+          .click(actionSelector)
+          .waitForElementVisible("#grainTitle", medium_wait);
+      });
+  },
 
-  // "Test downgrade" : function (browser) {
-  //   browser
-  //     .click("#applist-apps > ul > li:nth-child(1)")
-  //     .waitForElementVisible('#upload-app-button', medium_wait)
-  //     .click('#upload-app-button')
-  //     .ifDemo(function () {
-  //       browser
-  //         .waitForElementVisible('#upload p', medium_wait)
-  //         // .assert.containsText('#upload p', 'demo users are not allowed')
-  //         .init()
-  //         .waitForElementVisible('#applist-apps', medium_wait);
-  //     })
-  //     .ifNotDemo(function () {
-  //       browser
-  //         .waitForElementVisible('#uploadButton', medium_wait)
-  //         .assert.containsText('#uploadButton', 'Upload')
-  //         .waitForElementVisible('#uploadButton', short_wait)
-  //         .setValue('#uploadFile', path.join(assetsPath, 'ssjekyll5.spk'))
-  //         .click('#uploadButton')
-  //         .waitForElementVisible('#step-confirm', long_wait)
-  //         .assert.containsText('#confirmInstall', 'Downgrade')
-  //         .click('#confirmInstall')
-  //         .waitForElementVisible('.new-grain-button', short_wait)
-  //         .assert.containsText('.new-grain-button', expectedHackerCMSButtonText);
-  //     });
-  // },
+  "Test upgrade" : function (browser) {
+    browser
+      .url(browser.launch_url + "/upload-test")
+      .waitForElementVisible("#upload-app", short_wait)
+      .setValue("#upload-app", path.join(assetsPath, 'ssjekyll7.spk'))
+      .ifDemo(function () {
+        // Not allowed in demo.
+        browser
+          .pause(1000)
+          .getAlertText(function (text) {
+            browser.assert.equal("Unauthorized [403]", text.value)
+          })
+          .acceptAlert();
+      })
+      .ifNotDemo(function () {
+        browser
+          .waitForElementVisible('#step-confirm', long_wait)
+          .click('#confirmInstall')
+          .disableGuidedTour()
+          .waitForElementVisible(".app-details .older-version", short_wait)
+          .click(".app-details .older-version .upgradeGrains")
+          .waitForElementNotPresent(".app-details .older-version", short_wait);
+      });
+  },
+
+  "Test downgrade" : function (browser) {
+    browser
+      .url(browser.launch_url + "/upload-test")
+      .waitForElementVisible("#upload-app", short_wait)
+      .setValue("#upload-app", path.join(assetsPath, 'ssjekyll5.spk'))
+      .ifDemo(function () {
+        // Not allowed in demo.
+        browser
+          .pause(1000)
+          .getAlertText(function (text) {
+            browser.assert.equal("Unauthorized [403]", text.value)
+          })
+          .acceptAlert();
+      })
+      .ifNotDemo(function () {
+        browser
+          .waitForElementVisible('#step-confirm', long_wait)
+          .click('#confirmInstall')
+          .disableGuidedTour()
+          .waitForElementVisible(".app-details .newer-version", short_wait);
+      });
+  },
 
   "Test remote install" : function (browser) {
     browser

@@ -169,7 +169,7 @@ module.exports["Test Powerbox embedded request flow"] = function (browser) {
         .waitForElementPresent("#do-powerbox-request", medium_wait)
         .click("#do-powerbox-request")
         .frameParent()
-        .waitForElementVisible(cardSelector, short_wait)
+        .waitForElementVisible(cardSelector, medium_wait)
         .click(cardSelector)
         .waitForElementVisible(".powerbox-iframe-mount iframe", short_wait)
         .frame("powerbox-grain-frame-" + grainId)

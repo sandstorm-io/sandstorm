@@ -85,19 +85,24 @@ function doDelete(url) {
   return fetch(url, { method: "delete" });
 }
 
+function addText(id, text) {
+  var elem = document.createElement("pre");
+  elem.id = id;
+  elem.textContent = text;
+  document.body.appendChild(elem);
+}
+
 function doPowerboxRequest(desc) {
   sendRpc("powerboxRequest", {
     query: desc instanceof Array ? desc : [desc],
     saveLabel: {defaultText: "E-mail Verifier"},
   }).then((response) => {
-    console.log(response);
-    doPost("/accept", response.token).then(function (xhr) {
-      var elem = document.createElement("p");
-      elem.id = "result-text";
-      elem.textContent = xhr.responseText;
-      document.body.appendChild(elem);
+    addText("pb-response", JSON.stringify(response));
+    return doPost("/accept", response.token).then(function (xhr) {
+      addText("result-text", xhr.responseText);
     });
   }).catch((e) => {
+    addText("pb-error", e.toString());
     console.error(e);
   });
 }

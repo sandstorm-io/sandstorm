@@ -7,7 +7,7 @@
 let rpcCounter = 0;
 const rpcs = {};
 
-window.addEventListener("message", (event) => {
+window.addEventListener("message", function (event) {
   if (event.source !== window.parent ||
       typeof event.data !== "object" ||
       typeof event.data.rpcId !== "number") {
@@ -35,8 +35,8 @@ function sendRpc(name, message) {
     [name]: rpc,
   };
   window.parent.postMessage(obj, "*");
-  return new Promise((resolve, reject) => {
-    rpcs[id] = (response) => {
+  return new Promise(function (resolve, reject) {
+    rpcs[id] = function (response) {
       if (response.error) {
         reject(new Error(response.error));
       } else {
@@ -96,12 +96,12 @@ function doPowerboxRequest(desc) {
   sendRpc("powerboxRequest", {
     query: desc instanceof Array ? desc : [desc],
     saveLabel: {defaultText: "E-mail Verifier"},
-  }).then((response) => {
+  }).then(function (response) {
     addText("pb-response", JSON.stringify(response));
     return doPost("/accept", response.token).then(function (xhr) {
       addText("result-text", xhr.responseText);
     });
-  }).catch((e) => {
+  }).catch(function (e) {
     addText("pb-error", e.toString());
     console.error(e);
   });

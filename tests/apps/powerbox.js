@@ -144,11 +144,6 @@ module.exports["Test Powerbox embedded request flow"] = function (browser) {
     .loginDevAccount()
     .uploadTestApp()
     .assert.containsText("#grainTitle", "Untitled Sandstorm Test App instance")
-    .click("#grainTitle")
-    .setAlertText("powerbox-provider")
-    .acceptAlert()
-    .pause(1000)
-    .assert.containsText("#grainTitle", "powerbox-provider")
     .url(function (grainUrl) {
       var grainId = grainUrl.value.split("/").pop();
       var cardSelector = ".powerbox-card button[data-card-id=\"grain-" + grainId + "\"]";
@@ -160,11 +155,6 @@ module.exports["Test Powerbox embedded request flow"] = function (browser) {
         .click(actionSelector)
         .waitForElementVisible("#grainTitle", medium_wait)
         .assert.containsText("#grainTitle", "Untitled Sandstorm Test App instance")
-        .click("#grainTitle")
-        .setAlertText("powerbox-requester")
-        .acceptAlert()
-        .pause(1000)
-        .assert.containsText("#grainTitle", "powerbox-requester")
         .grainFrame()
         .waitForElementPresent("#do-powerbox-request", medium_wait)
         .click("#do-powerbox-request")

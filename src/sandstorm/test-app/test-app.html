@@ -110,9 +110,18 @@ function doPowerboxRequest(desc) {
   </head>
   <body>
     <h1>Test App</h1>
+
+    <!-- See testDesc in test-app.capnp. -->
     <p><button onclick="doPowerboxRequest('EAlQAQEAABEBF1EEAQH_y9-dR8kYld8AUAEBAXsRASIHZm9v')" id="do-powerbox-request">Powerbox Request</button></p>
+
+    <!-- See testDescNoMatch in test-app.capnp. -->
     <p><button onclick="doPowerboxRequest('EAlQAQEAABEBF1EEAQH_y9-dR8kYld8AUAEBAXsRASIHYmFy')" id="do-powerbox-request-no-match">Powerbox Request -- no match</button></p>
+
+    <!-- See testDescWildcard in test-app.capnp. -->
     <p><button onclick="doPowerboxRequest('EAhQAQEAABEBF1EEAQH_y9-dR8kYld8AUAEBAXsAAA')" id="do-powerbox-request-wildcard">Powerbox Request -- wildcard</button></p>
+
+    <!-- First descriptor in the list is testDesc. Second is a query for a UiView. -->
     <p><button onclick="doPowerboxRequest(['EAlQAQEAABEBF1EEAQH_y9-dR8kYld8AUAEBAXsRASIHZm9v', 'EAZQAQEAABEBF1EEAQH_5-Jn6pjXtNsAAAA'])" id="do-powerbox-request-multi-descriptor">Powerbox Request -- multiple descriptors</button></p>
+
   </body>
 </html>

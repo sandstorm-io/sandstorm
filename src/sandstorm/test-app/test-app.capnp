@@ -18,6 +18,13 @@ interface TestPowerboxCap @0xdf9518c9479ddfcb extends(Grain.AppPersistent(Text))
   read @0 () -> (text: Text);
 }
 
+# Constants used to generate powerbox queries in test-app.html.
+#
+# To convert e.g. `testDesc` to a base64-packed query string, do:
+#
+#     capnp eval -p -Isrc src/sandstorm/test-app/test-app.capnp testDesc |
+#       base64 -w0 | tr '/+' '_-' | tr -d '='
+
 const testTag :TestPowerboxCap.PowerboxTag = (i = 123, s = "foo");
 
 const testDesc :Powerbox.PowerboxDescriptor = (
@@ -29,24 +36,24 @@ const testDesc :Powerbox.PowerboxDescriptor = (
   ]
 );
 
-const testTag2 :TestPowerboxCap.PowerboxTag = (i = 123, s = "bar");
+const testTagNoMatch :TestPowerboxCap.PowerboxTag = (i = 123, s = "bar");
 
-const testDesc2 :Powerbox.PowerboxDescriptor = (
+const testDescNoMatch :Powerbox.PowerboxDescriptor = (
   tags = [
     (
       id = 0xdf9518c9479ddfcb,
-      value = .testTag2,
+      value = .testTagNoMatch,
     )
   ]
 );
 
-const testTag3 :TestPowerboxCap.PowerboxTag = (i = 123);
+const testTagWildcard :TestPowerboxCap.PowerboxTag = (i = 123);
 
-const testDesc3 :Powerbox.PowerboxDescriptor = (
+const testDescWildcard :Powerbox.PowerboxDescriptor = (
   tags = [
     (
       id = 0xdf9518c9479ddfcb,
-      value = .testTag3,
+      value = .testTagWildcard,
     )
   ]
 );

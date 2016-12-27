@@ -378,7 +378,7 @@ sandstorm-$(BUILD)-fast.tar.xz: bundle
 # ====================================================================
 # app-index.spk
 
-# This is currently really really hacky because spk is not good at using package definition file
+# This is currently really really hacky because spk is not good at using a package definition file
 # that is not located at the root of the source tree. In particular it is hard for the package
 # definition file (living in the src tree) to refer to the `app-index` binary (living in the
 # tmp tree).
@@ -398,7 +398,7 @@ app-index-dev: tmp/.ekam-run
 # ====================================================================
 # test-app.spk
 
-# This is currently really really hacky because spk is not good at using package definition file
+# This is currently really really hacky because spk is not good at using a package definition file
 # that is not located at the root of the source tree. In particular it is hard for the package
 # definition file (living in the src tree) to refer to the `test-app` binary (living in the
 # tmp tree).

@@ -31,6 +31,8 @@
 #include <sandstorm/hack-session.capnp.h>
 #include <sandstorm/test-app/test-app.capnp.h>
 
+namespace sandstorm {
+namespace testapp {
 namespace {
 
 typedef unsigned int uint;
@@ -215,5 +217,7 @@ private:
 };
 
 }  // anonymous namespace
+}  // namespace testapp
+}  // namespace sandstorm
 
-KJ_MAIN(ServerMain)
+KJ_MAIN(sandstorm::testapp::ServerMain)

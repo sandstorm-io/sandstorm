@@ -1,6 +1,6 @@
 @0xdb849475182f3bb4;
 
-#$import "/capnp/c++.capnp".namespace("sandstorm::testapp");
+$import "/capnp/c++.capnp".namespace("sandstorm::testapp");
 
 using Powerbox = import "/sandstorm/powerbox.capnp";
 using Grain = import "/sandstorm/grain.capnp";

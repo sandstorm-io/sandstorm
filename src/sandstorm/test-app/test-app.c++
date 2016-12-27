@@ -94,12 +94,12 @@ public:
     if (path == "fulfill") {
       // Fulfill powerbox request by creating a new capability with the input text.
       context.getResults().initNoContent();
-    
+
       auto req = sessionContext.fulfillRequestRequest();
       req.setCap(kj::heap<TestPowerboxCapImpl>(
           kj::str(context.getParams().getContent().getContent().asChars())));
       req.setDescriptor(TEST_DESC);
-      
+
       return req.send().ignoreResult();
     } else if (path == "accept") {
       // Accept capability from powerbox request. Call read() and return the text.
@@ -120,7 +120,7 @@ public:
 
 private:
   bool isPowerboxRequest;
-  
+
   sandstorm::SessionContext::Client sessionContext;
 };
 
@@ -154,7 +154,7 @@ public:
 
   kj::Promise<void> newRequestSession(NewRequestSessionContext context) override {
     auto params = context.getParams();
-    
+
     KJ_DBG(kj::strArray(params.getRequestInfo(), "\n"));
 
     KJ_REQUIRE(params.getSessionType() == capnp::typeId<sandstorm::WebSession>(),

@@ -30,7 +30,6 @@ var expectedHackerCMSGrainTitle = 'Untitled Hacker CMS site';
 var expectedGitWebGrainTitle = 'Untitled GitWeb repository';
 
 module.exports = utils.testAllLogins({
-  // TODO(soon): Uploading tests are broken. Waiting on refactor of upload input to fix.
   "Test local install" : function (browser) {
     browser
       .url(browser.launch_url + "/upload-test")

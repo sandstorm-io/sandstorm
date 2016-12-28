@@ -29,6 +29,7 @@
 #include <map>
 #include <sys/mman.h>
 #include <sys/socket.h>
+#include <sys/sendfile.h>
 
 namespace sandstorm {
 
@@ -474,6 +475,33 @@ kj::ArrayPtr<const char> extractProtocolFromUrl(kj::StringPtr url) {
   } else {
     KJ_FAIL_REQUIRE("Base URL does not have a protocol scheme.", url);
   }
+}
+
+kj::Promise<void> rotateLog(kj::Timer& timer, int logFd, kj::StringPtr path, size_t threshold) {
+  struct stat stats;
+  KJ_SYSCALL(fstat(logFd, &stats));
+  if (stats.st_size >= threshold) {
+    // TODO(someday): If .1 exists, we could move it to .2, which we could move to .3, etc. We could
+    //   also gzip older logs to save space. But does anyone actually care? Probably not?
+    auto out = raiiOpen(kj::str(path, ".1"), O_WRONLY | O_CREAT | O_TRUNC);
+
+    // `logFd` might be write-only, so we reopen it for read.
+    auto in = raiiOpen(path, O_RDONLY);
+
+    // Transfer data using `sendfile()` to avoid unnecessary copies and context switches.
+    for (;;) {
+      ssize_t n;
+      KJ_SYSCALL(n = sendfile(out, in, nullptr, threshold));
+      if (n == 0) break;
+    }
+
+    // EOF. Quick, truncate before any other log data appears.
+    KJ_SYSCALL(ftruncate(logFd, 0));
+  }
+
+  return timer.afterDelay(5 * kj::MINUTES).then([=,&timer]() mutable {
+    return rotateLog(timer, logFd, path, threshold);
+  });
 }
 
 // =======================================================================================

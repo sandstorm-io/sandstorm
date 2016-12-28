@@ -2048,11 +2048,34 @@ public:
     // Seek to desired start point.
     struct stat stats;
     KJ_SYSCALL(fstat(logFile, &stats));
-    uint64_t backlog = kj::min(params.getBacklogAmount(), stats.st_size);
+    uint64_t requestedBacklog = params.getBacklogAmount();
+    uint64_t backlog = kj::min(requestedBacklog, stats.st_size);
     KJ_SYSCALL(lseek(logFile, stats.st_size - backlog, SEEK_SET));
+
+    // If the existing log file doesn't cover the whole request, check the previous log file.
+    kj::Maybe<kj::Promise<void>> firstWrite;
+    if (stats.st_size < requestedBacklog) {
+      KJ_IF_MAYBE(log1, raiiOpenIfExists("log.1", O_RDONLY)) {
+        struct stat stats1;
+        KJ_SYSCALL(fstat(*log1, &stats1));
+        uint64_t requestedBacklog1 = requestedBacklog - stats.st_size;
+        uint64_t backlog1 = kj::min(requestedBacklog1, stats1.st_size);
+        KJ_SYSCALL(lseek(*log1, stats1.st_size - backlog1, SEEK_SET));
+
+        kj::FdInputStream in(log1->get());
+        auto req = params.getStream().writeRequest();
+        auto data = req.initData(backlog1);
+        in.read(data.begin(), backlog1);
+        firstWrite = req.send().ignoreResult();
+      }
+    }
 
     // Create the watcher.
     auto watcher = kj::heap<LogWatcher>(eventPort, "log", kj::mv(logFile), params.getStream());
+
+    KJ_IF_MAYBE(f, firstWrite) {
+      watcher->addTask(kj::mv(*f));
+    }
 
     context.releaseParams();
     context.getResults(capnp::MessageSize { 4, 1 }).setHandle(kj::mv(watcher));
@@ -2175,12 +2198,18 @@ private:
       tasks.add(watchLoop());
     }
 
+    void addTask(kj::Promise<void> task) {
+      // HACK for watchLog().
+      tasks.add(kj::mv(task));
+    }
+
   private:
     kj::AutoCloseFd logFile;
     kj::AutoCloseFd inotify;
     kj::UnixEventPort::FdObserver inotifyObserver;
     ByteStream::Client stream;
     kj::TaskSet tasks;
+    off_t lastOffset = 0;
 
     void taskFailed(kj::Exception&& exception) override {
       KJ_LOG(ERROR, exception);
@@ -2196,6 +2225,15 @@ private:
         KJ_NONBLOCKING_SYSCALL(n = read(inotify, buffer, sizeof(buffer)));
         if (n < 0) break;
         KJ_ASSERT(n > 0);
+      }
+
+      // Check for recent rotation.
+      struct stat stats;
+      KJ_SYSCALL(fstat(logFile, &stats));
+      if (lastOffset > stats.st_size) {
+        // Looks like log was rotated.
+        lastOffset = 0;
+        KJ_SYSCALL(lseek(logFile, 0, SEEK_SET));
       }
 
       // Read all unread data from logFile and send it to the stream.
@@ -2219,6 +2257,8 @@ private:
 
         if (done) break;
       }
+
+      KJ_SYSCALL(lastOffset = lseek(logFile, 0, SEEK_CUR));
 
       // OK, now wait for more.
       return inotifyObserver.whenBecomesReadable().then([this]() {
@@ -2344,9 +2384,12 @@ kj::Promise<void> SupervisorMain::DefaultSystemConnector::run(
 
   auto acceptTask = systemConnector->run(ioContext, kj::mv(mainCap), kj::mv(coreRedirector));
 
-  // Wait for disconnect or accept loop failure or disk watch failure, then exit.
+  // Wait for disconnect or accept loop failure or disk watch failure, then exit. Also rotate log
+  // every 512k (thus having at most 1MB of logs at a time).
   acceptTask.exclusiveJoin(kj::mv(diskWatcherTask))
             .exclusiveJoin(appNetwork.onDisconnect())
+            .exclusiveJoin(rotateLog(ioContext.provider->getTimer(),
+                                     STDERR_FILENO, "log", 512u << 10))
             .wait(ioContext.waitScope);
 
   // Only onDisconnect() would return normally (rather than throw), so the app must have

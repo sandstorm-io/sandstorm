@@ -35,7 +35,7 @@
     {{#if appOrigin}}
       {{!-- Selenium requires iframes to have an id in order to select them. `id` is only
             used for testing purposes. --}}
-      <iframe data-grainid="{{grainId}}" id="grain-frame-{{grainId}}" class="grain-frame" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{originalPath}}"></iframe>
+      <iframe data-grainid="{{grainId}}" id="{{idPrefix}}grain-frame-{{grainId}}" class="grain-frame" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{originalPath}}"></iframe>
       {{#with signinOverlay}}
         {{#modalDialogWithBackdrop class="signin" onDismiss=closeSignInOverlay}}
           {{> loginButtonsDialog label=label accountsUi=globalAccountsUi}}

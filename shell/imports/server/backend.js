@@ -224,7 +224,7 @@ class SandstormBackend {
     }
   }
 
-  openSessionInternal(grainId, userId, identityId, title, apiToken, cachedSalt) {
+  openSessionInternal(grainId, userId, identityId, title, apiToken, cachedSalt, sessionFields) {
     // Start the grain if it is not running. This is an optimization: if we didn't start it here,
     // it would start on the first request to the session host, but we'd like to get started before
     // the round trip.
@@ -279,6 +279,10 @@ class SandstormBackend {
 
     if (apiToken) {
       session.hashedToken = apiToken._id;
+    }
+
+    if (sessionFields) {
+      _.extend(session, sessionFields);
     }
 
     Sessions.insert(session);

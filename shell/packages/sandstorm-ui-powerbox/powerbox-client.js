@@ -17,7 +17,7 @@
 const PowerboxOptions = new Mongo.Collection("powerboxOptions");
 
 SandstormPowerboxRequest = class SandstormPowerboxRequest {
-  constructor(db, requestInfo) {
+  constructor(db, requestInfo, GrainView) {
     check(requestInfo, Match.ObjectIncluding({
       source: Match.Any,
       origin: Match.Any,
@@ -41,6 +41,10 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     this._selectedProvider = new ReactiveVar(undefined);
 
     this._requestId = Random.id();
+
+    this._finalizers = [];
+
+    this.GrainView = GrainView;
   }
 
   subscribe(tmpl) {
@@ -50,6 +54,9 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
   }
 
   finalize() {
+    this._finalizers.forEach(f => f());
+    this._finalizers = [];
+
     if (!this._completed) {
       // postMessage back to the origin frame that the request was cancelled.
       this._requestInfo.source.postMessage({
@@ -60,15 +67,29 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     }
   }
 
+  onFinalize(cb) {
+    this._finalizers.push(cb);
+  }
+
+  getQuery() {
+    return this._requestInfo.query || [];
+  }
+
+  getSessionId() {
+    return this._requestInfo.sessionId;
+  }
+
   completeRequest(token, descriptor) {
-    this._completed = true;
-    this._requestInfo.source.postMessage({
-      rpcId: this._requestInfo.rpcId,
-      token: token,
-      descriptor: descriptor,
-    }, this._requestInfo.origin);
-    // Completion event closes popup.
-    this._requestInfo.onCompleted();
+    if (!this._completed) {
+      this._completed = true;
+      this._requestInfo.source.postMessage({
+        rpcId: this._requestInfo.rpcId,
+        token: token,
+        descriptor: descriptor,
+      }, this._requestInfo.origin);
+      // Completion event closes popup.
+      this._requestInfo.onCompleted();
+    }
   }
 
   cancelRequest() {
@@ -378,6 +399,10 @@ Template.grainPowerboxCard.powerboxIconSrc = card => {
 };
 
 Template.uiViewPowerboxConfiguration.onCreated(function () {
+  // this.data is a card; see filteredCardData()
+
+  this._choseHostedObject = new ReactiveVar(false);
+
   this._viewInfo = new ReactiveVar({});
 
   // Fetch the view info for the grain.
@@ -396,8 +421,44 @@ Template.uiViewPowerboxConfiguration.onCreated(function () {
 });
 
 Template.uiViewPowerboxConfiguration.helpers({
+  choseHostedObject: function () {
+    return !this.option.uiView || Template.instance()._choseHostedObject.get();
+  },
+
   viewInfo: function () {
     return Template.instance()._viewInfo.get();
+  },
+
+  setupIframe: function () {
+    // HACK: A GrainView iframe has to be managed outside of the usual Blaze template flow and
+    //   reactive contexts. We manually attach the iframe as a child of the "powerbox-iframe-mount"
+    //   div and hope that that div doesn't get re-rendered unexpectedly.
+    // TODO(cleanup): This is terrible but what else can we do?
+    const tmpl = Template.instance();
+    Meteor.defer(() => {
+      if (!tmpl._grainView) {
+        const mount = tmpl.find(".powerbox-iframe-mount");
+        const powerboxRequest = {
+          descriptors: this.powerboxRequest.getQuery(),
+          requestingSession: this.powerboxRequest.getSessionId(),
+        };
+        tmpl._grainView = new this.powerboxRequest.GrainView(
+            null, this.db, this.option.grainId, "", null, mount, { powerboxRequest });
+        tmpl._grainView.setActive(true);
+        tmpl._grainView.openSession();
+
+        this.powerboxRequest.onFinalize(() => {
+          tmpl._grainView.destroy();
+        });
+
+        tmpl.autorun(() => {
+          const fulfilledInfo = tmpl._grainView.fulfilledInfo();
+          if (fulfilledInfo) {
+            this.powerboxRequest.completeRequest(fulfilledInfo.token, fulfilledInfo.descriptor);
+          }
+        });
+      }
+    });
   },
 });
 
@@ -416,6 +477,11 @@ Template.uiViewPowerboxConfiguration.events({
 
       this.powerboxRequest.completeUiView(this.option.grainId, roleAssignment);
     }
+  },
+
+  "click .choose-hosted-object": function (event, tmpl) {
+    event.preventDefault();
+    tmpl._choseHostedObject.set(true);
   },
 });
 

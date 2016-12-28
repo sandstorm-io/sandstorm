@@ -21,6 +21,8 @@
 "use strict";
 
 var utils = require("../utils"),
+    actionSelector = utils.actionSelector,
+    appSelector = utils.appSelector,
     short_wait = utils.short_wait,
     medium_wait = utils.medium_wait,
     long_wait = utils.long_wait,
@@ -134,4 +136,87 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
         });
     })
     .end();
+};
+
+module.exports["Test Powerbox embedded request flow"] = function (browser) {
+  browser
+    .init()
+    .loginDevAccount()
+    .uploadTestApp()
+    .assert.containsText("#grainTitle", "Untitled Sandstorm Test App instance")
+    .url(function (grainUrl) {
+      var grainId = grainUrl.value.split("/").pop();
+      var cardSelector = ".powerbox-card button[data-card-id=\"grain-" + grainId + "\"]";
+      browser
+        .url(browser.launch_url + "/apps")
+        .waitForElementVisible(appSelector("6r8gt8ct5e774489grqvzz7dc4fzntpxjrusdwcy329ppnkt3kuh"), short_wait)
+        .click(appSelector("6r8gt8ct5e774489grqvzz7dc4fzntpxjrusdwcy329ppnkt3kuh"))
+        .waitForElementVisible(actionSelector, short_wait)
+        .click(actionSelector)
+        .waitForElementVisible("#grainTitle", medium_wait)
+        .assert.containsText("#grainTitle", "Untitled Sandstorm Test App instance")
+        .grainFrame()
+        .waitForElementPresent("#do-powerbox-request", medium_wait)
+        .click("#do-powerbox-request")
+        .frameParent()
+        .waitForElementVisible(cardSelector, medium_wait)
+        .click(cardSelector)
+        .waitForElementVisible(".powerbox-iframe-mount iframe", short_wait)
+        .frame("powerbox-grain-frame-" + grainId)
+        .waitForElementVisible("#cap-text", medium_wait)
+        .setValue("#cap-text", "foo bar baz")
+        .click("#do-fulfill")
+        .frameParent()
+        .grainFrame()
+        .waitForElementVisible("#result-text", short_wait)
+        .assert.containsText("#result-text", "foo bar baz");
+    });
+};
+
+module.exports["Test Powerbox query"] = function (browser) {
+  browser
+    .init()
+    .loginDevAccount()
+
+    // Install another app that we can match against. This can be any app other than
+    // test-app.spk -- I'm only using the old test app here because it's probably already
+    // downloaded.
+    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
+                "f855d3c96e18e785a3a734a49919ef18",
+                "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
+    .url(function (otherGrainUrl) {
+      var otherGrainId = otherGrainUrl.value.split("/").pop();
+
+      browser
+        .uploadTestApp()
+        .url(function (grainUrl) {
+          var grainId = grainUrl.value.split("/").pop();
+
+          function tryQuery(buttonId, expectedMatches) {
+            browser
+                .grainFrame(grainId)
+                .waitForElementPresent(buttonId, medium_wait)
+                .click(buttonId)
+                .frameParent()
+                .waitForElementVisible(".popup ul.candidate-cards", short_wait);
+
+            for (var id in expectedMatches) {
+              var cardSelector = ".powerbox-card button[data-card-id=\"grain-" + id + "\"]";
+              if (expectedMatches[id]) {
+                browser.assert.elementPresent(cardSelector);
+              } else {
+                browser.assert.elementNotPresent(cardSelector);
+              }
+            }
+          }
+
+          tryQuery("#do-powerbox-request", {[grainId]: true, [otherGrainId]: false});
+          tryQuery("#do-powerbox-request-no-match", {[grainId]: false, [otherGrainId]: false});
+          tryQuery("#do-powerbox-request-wildcard", {[grainId]: true, [otherGrainId]: false});
+
+          // multi-descriptor adds a UiView descriptor into the mix, so our grain of another app
+          // will be returned.
+          tryQuery("#do-powerbox-request-multi-descriptor", {[grainId]: true, [otherGrainId]: true});
+        });
+    });
 };

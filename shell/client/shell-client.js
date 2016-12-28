@@ -841,6 +841,16 @@ promptUploadApp = function (input) {
   promptForFile(input, uploadApp);
 };
 
+Template.uploadTest.events({
+  "change #upload-app": function (event, tmpl) {
+    uploadApp(event.currentTarget.files[0]);
+  },
+
+  "change #upload-backup": function (event, tmpl) {
+    restoreBackup(event.currentTarget.files[0]);
+  },
+});
+
 Router.map(function () {
   this.route("root", {
     path: "/",
@@ -946,6 +956,16 @@ Router.map(function () {
         error: Session.get("uploadError"),
       };
     },
+  });
+
+  this.route("uploadTest", {
+    path: "/upload-test",
+
+    waitOn: function () {
+      return Meteor.subscribe("credentials");
+    },
+
+    data: function () {},
   });
 
   this.route("referrals", {

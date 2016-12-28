@@ -20,7 +20,7 @@ import { isStandalone } from "/imports/client/standalone.js";
 let counter = 0;
 
 class GrainView {
-  constructor(grains, db, grainId, path, tokenInfo, parentElement) {
+  constructor(grains, db, grainId, path, tokenInfo, parentElement, options) {
     // `path` starts with a slash and includes the query and fragment.
     //
     // Owned grains:
@@ -37,9 +37,21 @@ class GrainView {
     // grainId, token, path, dep
     //   callback sets error, openingSession on failure
     //                 grainId, sessionId, title, and session Sub on success
+    //
+    // Powerbox sessions: options.powerboxRequest is an object containing:
+    //   descriptors: Array of packed-base64 PowerboxDescriptors representing the query.
+    //   requestingSession: Session ID that initiated the request.
 
-    check(grains, GrainViewList);
+    options = options || {};
+
+    check(grains, Match.Maybe(GrainViewList));
     check(db, SandstormDb);
+    check(options, {
+      powerboxRequest: Match.Optional({
+        descriptors: [String],
+        requestingSession: String,
+      }),
+    });
     if (Tracker.active) {
       throw new Error("Can't construct a GrainView inside a reactive computation.");
     }
@@ -54,6 +66,7 @@ class GrainView {
     this._parentElement = parentElement;
     this._status = "closed";
     this._dep = new Tracker.Dependency();
+    this._options = options;
 
     this._powerboxRequest = new ReactiveVar(undefined);
 
@@ -148,7 +161,7 @@ class GrainView {
 
     // We want the iframe to receive the most recently-set path whenever we rerender.
     this._originalPath = this._path;
-    if (this._grains.contains(this)) {
+    if (!this._grains || this._grains.contains(this)) {
       this._blazeView = Blaze.renderWithData(Template.grainView, this, this._parentElement);
     }
   }
@@ -230,6 +243,10 @@ class GrainView {
   isActive() {
     this._dep.depend();
     return this._isActive;
+  }
+
+  isPowerboxRequest() {
+    return !!this._options.powerboxRequest;
   }
 
   setActive(isActive) {
@@ -416,6 +433,11 @@ class GrainView {
     return this._sessionId;
   }
 
+  fulfilledInfo() {
+    this._dep.depend();
+    return this._fulfilledInfo;
+  }
+
   setTitle(newTitle) {
     this._title = newTitle;
     if (this._userIdentityId.get()) {
@@ -533,6 +555,11 @@ class GrainView {
     // will set up its own tab for this grain.  There could even already be a tab open, if the
     // user reuses a /shared/ link.
 
+    if (!this._grains) {
+      // Shouldn't ever happen -- powerbox sessions never redeem sharing tokens.
+      throw new Error("can't redirect detached GrainView");
+    }
+
     this._grains.remove(this._grainId, false);
     Router.go("/grain/" + this._tokenInfo.grainId + this._path, {},
               { replaceState: true });
@@ -559,6 +586,10 @@ class GrainView {
       changed(session) {
         _this._viewInfo = session.viewInfo || _this._viewInfo;
         _this._updatePermissions(session.permissions);
+        if (_this._options.powerboxRequest) {
+          _this._fulfilledInfo = (session.powerboxView || {}).fulfill;
+        }
+
         _this._dep.changed();
       },
 
@@ -566,6 +597,10 @@ class GrainView {
         _this._viewInfo = session.viewInfo || _this._viewInfo;
         _this._updatePermissions(session.permissions);
         _this._status = "opened";
+        if (_this._options.powerboxRequest) {
+          _this._fulfilledInfo = (session.powerboxView || {}).fulfill;
+        }
+
         _this._dep.changed();
       },
     });
@@ -601,7 +636,8 @@ class GrainView {
     };
 
     onceConditionIsTrue(condition, () => {
-      Meteor.call("openSession", _this._grainId, identityId, _this._sessionSalt, (error, result) => {
+      Meteor.call("openSession", _this._grainId, identityId, _this._sessionSalt, this._options,
+                  (error, result) => {
         if (error) {
           console.error("openSession error", error);
           _this._error = error;
@@ -644,7 +680,7 @@ class GrainView {
       const neverRedeem = isStandalone();
       Meteor.call("openSessionFromApiToken",
         openSessionArg, identityId, _this._sessionSalt,
-        neverRedeem, getOrigin(), (error, result) => {
+        neverRedeem, getOrigin(), this._options, (error, result) => {
           if (error) {
             console.error("openSessionFromApiToken error", error);
             _this._error = error;

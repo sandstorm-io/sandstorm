@@ -21,6 +21,7 @@ set -euo pipefail
 XVFB_PID=""
 RUN_SELENIUM="${RUN_SELENIUM:-true}"
 BUNDLE_PATH=""
+SANDSTORM_TESTAPP_PATH=""
 THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 METEOR_DEV_BUNDLE=$("$THIS_DIR/../find-meteor-dev-bundle.sh")
 NODEJS="$METEOR_DEV_BUNDLE/bin/node"
@@ -85,20 +86,31 @@ while [ $# -gt 0 ] ; do
       RUN_SELENIUM="false"
       ;;
     *)
-      if [ -n "$BUNDLE_PATH" ]; then
-        echo "Multiple bundle paths specified, please name only one."
+      if [ -n "$SANDSTORM_TESTAPP_PATH" ]; then
+        echo "Too many arguments. Please specify Sandstorm bundle and test app SPK as two arguments."
         exit 1
+      elif [ -n "$BUNDLE_PATH" ]; then
+        SANDSTORM_TESTAPP_PATH=$(readlink -f "$1")
+      else
+        BUNDLE_PATH=$(readlink -f "$1")
       fi
-      BUNDLE_PATH=$(readlink -f "$1")
       ;;
   esac
   shift
 done
 
 if [ -z "$BUNDLE_PATH" ] ; then
-  echo "No bundle path specified; perhaps you meant to write '$0 sandstorm-0-fast.tar.xz'?"
+  echo "No bundle path specified; perhaps you meant to write '$0 sandstorm-0-fast.tar.xz test-app.spk'?"
   exit 1
 fi
+
+if [ -z "$SANDSTORM_TESTAPP_PATH" ] ; then
+  echo "No test app path specified; perhaps you meant to write '$0 $BUNDLE_PATH test-app.spk'?"
+  exit 1
+fi
+
+# We'll use this env var from the tests.
+export SANDSTORM_TESTAPP_PATH
 
 cd "$THIS_DIR"
 

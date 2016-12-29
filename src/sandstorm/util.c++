@@ -482,11 +482,19 @@ kj::Promise<void> rotateLog(kj::Timer& timer, int logFd, kj::StringPtr path, siz
   KJ_SYSCALL(fstat(logFd, &stats));
   if (stats.st_size >= threshold) {
     // TODO(someday): If .1 exists, we could move it to .2, which we could move to .3, etc. We could
-    //   also gzip older logs to save space. But does anyone actually care? Probably not?
+    //   also gzip older logs to save space. But does anyone actually care? Probably not? Note that
+    //   if this changes, the lseek() below probably needs to be replaced with something more
+    //   sophisticated.
     auto out = raiiOpen(kj::str(path, ".1"), O_WRONLY | O_CREAT | O_TRUNC);
 
     // `logFd` might be write-only, so we reopen it for read.
     auto in = raiiOpen(path, O_RDONLY);
+
+    // Only copy over the last `threshold` bytes of the log. We do this specifically to help deal
+    // with old grains that grew enormous logs before log rotation was introduced -- we'd like them
+    // to chop their logs down to size the first time they are opened. Note that this means "log.1"
+    // will tend to start mid-line, which is ugly, but it's probably not worth trying to avoid.
+    KJ_SYSCALL(lseek(in, stats.st_size - threshold, SEEK_SET));
 
     // Transfer data using `sendfile()` to avoid unnecessary copies and context switches.
     for (;;) {

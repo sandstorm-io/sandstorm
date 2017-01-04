@@ -1877,7 +1877,7 @@ class Proxy {
       const redirect = rpcResponse.redirect;
       const redirectCode = redirectCodes[redirect.switchToGet * 2 + redirect.isPermanent];
       response.writeHead(redirectCode.id, redirectCode.title, {
-        "Location": redirect.location,
+        "Location": encodeURI(redirect.location),
       });
       response.end();
     } else if ("clientError" in rpcResponse) {

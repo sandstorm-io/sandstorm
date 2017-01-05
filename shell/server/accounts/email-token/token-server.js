@@ -14,7 +14,7 @@ const V1_HASHFUNC = "sha512";
 // sufficient to reconstruct the output of pbkdf2().
 const V1_CIPHER = "AES-256-CTR"; // cipher used
 
-const TOKEN_EXPIRATION_MS = 15 * 60 * 1000;
+const TOKEN_EXPIRATION_MS = 60 * 60 * 1000;
 
 const cleanupExpiredTokens = function () {
   Meteor.users.update({

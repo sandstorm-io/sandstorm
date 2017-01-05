@@ -5,7 +5,7 @@ import Fs from "fs";
 import { SANDSTORM_VARDIR } from "/imports/server/constants.js";
 // TODO(cleanup): globalDb is still an unbound global, but extracting it is Hard.
 
-const ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;
+const ADMIN_TOKEN_EXPIRATION_TIME = 60 * 60 * 1000;
 const SANDSTORM_ADMIN_TOKEN = SANDSTORM_VARDIR + "/adminToken";
 
 function clearAdminToken(token) {

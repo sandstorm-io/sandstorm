@@ -1,3 +1,9 @@
+### v0.199 (2017-01-07)
+- App-to-app powerbox is now implemented. A grain can advertise that it is able to serve powerbox requests of a certain type. Powerbox queries for that type will show the grain. When selected, the grain will be able to display a picker / configuring UI embedded directly inside the Powerbox. Currently, only raw-Cap'n-Proto-API apps can take advantage of this, but we'll be adding HTTP bridge support soon.
+- Implemented log rotation: When grain debug logs or the system log grow large, older logs will now be automatically discarded. This should fix long-running grains which "mysteriously" appear much larger than they should be.
+- Fixed URL-encoding of `Location` header in HTTP responses.
+- Increased e-mail token timeout and admin token timeout to 1 hour.
+
 ### v0.198 (2016-12-17) [bugfixes]
 - Fixed obscure bug where an auto-downloaded app update could be uninstalled before the user gets around to accepting the update.
 - Oasis: Redesigned demo intro.

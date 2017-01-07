@@ -576,16 +576,42 @@ Meteor.publish("adminLog", function (token) {
   const fd = Fs.openSync(logfile, "r");
   const startSize = Fs.fstatSync(fd).size;
 
+  // Difference between the current file offset and the subscription offset. Can be non-zero when
+  // logs have rotated.
+  let extraOffset = 0;
+
+  if (startSize < 8192) {
+    // Log size is less than window size. Check for rotated log and grab its tail.
+    const logfile1 = SANDSTORM_LOGDIR + "/sandstorm.log.1";
+    if (Fs.existsSync(logfile1)) {
+      const fd1 = Fs.openSync(logfile1, "r");
+      const startSize1 = Fs.fstatSync(fd1).size;
+      const amountFromLog1 = Math.min(startSize1, 8192 - startSize);
+      const offset1 = startSize1 - amountFromLog1;
+      const buf = new Buffer(amountFromLog1);
+      const n = Fs.readSync(fd1, buf, 0, buf.length, offset);
+      if (n > 0) {
+        this.added("adminLog", 0, { text: buf.toString("utf8", 0, n) });
+        extraOffset += n;
+      }
+    }
+  }
+
   // Start tailing at EOF - 8k.
   let offset = Math.max(0, startSize - 8192);
 
   const _this = this;
   function doTail() {
+    if (Fs.fstatSync(fd).size < offset) {
+      extraOffset += offset;
+      offset = 0;
+    }
+
     for (;;) {
       const buf = new Buffer(Math.max(1024, startSize - offset));
       const n = Fs.readSync(fd, buf, 0, buf.length, offset);
       if (n <= 0) break;
-      _this.added("adminLog", offset, { text: buf.toString("utf8", 0, n) });
+      _this.added("adminLog", offset + extraOffset, { text: buf.toString("utf8", 0, n) });
       offset += n;
     }
   }

@@ -214,6 +214,22 @@ kj::Maybe<kj::ArrayPtr<const char>> splitFirst(kj::ArrayPtr<const char>& input, 
 kj::ArrayPtr<const char> extractHostFromUrl(kj::StringPtr url);
 kj::ArrayPtr<const char> extractProtocolFromUrl(kj::StringPtr url);
 
+kj::Promise<void> rotateLog(kj::Timer& timer, int logFd, kj::StringPtr path, size_t threshold);
+// Rotate the open log file `logFd` located at the given path using "copytruncate" strategy
+// whenever it crosses `threshold` bytes.
+//
+// Each time the log is rotated, the contents of the log file are copied to a new file at
+// `path` + ".1", and then the original file is truncated.
+//
+// This is used for hacky log rotation, for both Sandstorm apps and the main server. We generally
+// log whatever is written to stdout. Usually apps don't have any particular way to tell them to
+// reopen stdout, so if stdout is a file, we can't convince them to redirect to a new file. We
+// could instead have stdout be a pipe to a log manager process which reads from the pipe and
+// writes to a file, but that would introduce context switching on every log write, which is sad.
+//
+// This "copytruncate" logging method could in theory lose some log data written right around the
+// time of the rotation. It is unlikely, though, and we deem it acceptable for our purposes.
+
 kj::String base64Encode(kj::ArrayPtr<const byte> input, bool breakLines);
 // Encode the input as base64. If `breakLines` is true, insert line breaks every 72 characters and
 // at the end of the output. (Otherwise, return one long line.)

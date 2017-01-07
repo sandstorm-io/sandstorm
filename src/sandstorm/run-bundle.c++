@@ -2253,7 +2253,12 @@ private:
       write(outPipe, "ready", 5);
       outPipe = nullptr;
 
-      server.listen(kj::mv(listener)).wait(io.waitScope);
+      server.listen(kj::mv(listener))
+            // Rotate logs, keeping 1-2MB worth. We do this in the backend process mainly because
+            // it is the only asynchronous process in run-bundle.c++.
+            .exclusiveJoin(rotateLog(io.provider->getTimer(),
+                                     STDERR_FILENO, "/var/log/sandstorm.log", 1u << 20))
+            .wait(io.waitScope);
       KJ_UNREACHABLE;
     });
 

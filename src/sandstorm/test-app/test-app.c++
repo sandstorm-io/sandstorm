@@ -108,7 +108,6 @@ public:
       auto req = sessionContext.claimRequestRequest();
       req.setRequestToken(
           kj::str(context.getParams().getContent().getContent().asChars()));
-      KJ_DBG(req);
       return req.send().getCap().castAs<TestPowerboxCap>().readRequest().send()
           .then([context](auto response) mutable -> void {
         auto httpResponse = context.getResults().initContent();
@@ -156,8 +155,6 @@ public:
 
   kj::Promise<void> newRequestSession(NewRequestSessionContext context) override {
     auto params = context.getParams();
-
-    KJ_DBG(kj::strArray(params.getRequestInfo(), "\n"));
 
     KJ_REQUIRE(params.getSessionType() == capnp::typeId<sandstorm::WebSession>(),
                "Unsupported session type.");

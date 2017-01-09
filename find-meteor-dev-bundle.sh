@@ -35,13 +35,20 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 METEOR_WAREHOUSE_DIR="${METEOR_WAREHOUSE_DIR:-$HOME/.meteor}"
 
-echo -n "Finding meteor-tool installation (can take a few seconds)..." >&2
-
 # If we run the meteor tool outside of `shell`, it might try to update itself. Inside `shell`, it
 # sees the meteor version we're using and sticks to that.
 cd "$SCRIPT_DIR/shell"
 
 METEOR_RELEASE=$(<.meteor/release)
+CACHE_FILE="../tmp/$METEOR_RELEASE.location"
+
+mkdir -p ../tmp
+if [ -e "$CACHE_FILE" ]; then
+  cat "$CACHE_FILE"
+  exit
+fi
+
+echo -n "Finding meteor-tool installation (can take a few seconds)..." >&2
 
 # TODO(cleanup): It would be nice to use a real JSON parser here, but I don't particularly want
 #   to depend on one, nor do I want to depend on Node being installed.
@@ -52,4 +59,5 @@ TOOLDIR=$(echo $TOOL_VERSION | tr @ /)
 
 echo " $TOOL_VERSION" >&2
 
-readlink -f $METEOR_WAREHOUSE_DIR/packages/$TOOLDIR/mt-os.linux.x86_64/dev_bundle
+readlink -f $METEOR_WAREHOUSE_DIR/packages/$TOOLDIR/mt-os.linux.x86_64/dev_bundle > "$CACHE_FILE"
+cat "$CACHE_FILE"

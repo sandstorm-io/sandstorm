@@ -43,16 +43,10 @@ cd "$SCRIPT_DIR/shell"
 
 METEOR_RELEASE=$(<.meteor/release)
 
-if [ "$METEOR_RELEASE" = "METEOR@1.0.2" ]; then
-  # Some time after 1.0.2, the output format of `meteor show` changed and the --ejson flag was
-  # added. But as of this writing we're still at 1.0.2, so parse the old output format.
-  TOOL_VERSION=$(meteor show "$METEOR_RELEASE" | grep -o 'meteor-tool@[0-9a-zA-Z_.-]*')
-else
-  # TODO(cleanup): It would be nice to use a real JSON parser here, but I don't particularly want
-  #   to depend on one, nor do I want to depend on Node being installed.
-  TOOL_VERSION=$(meteor show --ejson $METEOR_RELEASE | grep '^ *"tool":' |
-      sed -re 's/^.*"(meteor-tool@[^"]*)".*$/\1/g')
-fi
+# TODO(cleanup): It would be nice to use a real JSON parser here, but I don't particularly want
+#   to depend on one, nor do I want to depend on Node being installed.
+TOOL_VERSION=$(meteor show --ejson $METEOR_RELEASE | grep '^ *"tool":' |
+    sed -re 's/^.*"(meteor-tool@[^"]*)".*$/\1/g')
 
 TOOLDIR=$(echo $TOOL_VERSION | tr @ /)
 

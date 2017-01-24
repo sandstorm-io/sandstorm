@@ -2196,8 +2196,10 @@ public:
                                 kj::Timer& timer,
                                 bool loggedSlowStartupMessage,
                                 int numTriesSoFar) {
-    return address->connect().then([this](auto x) -> void {
-      KJ_LOG(WARNING, "App successfully started listening for TCP connections!");
+    return address->connect().then([this, loggedSlowStartupMessage](auto x) -> void {
+      if (loggedSlowStartupMessage) {
+        KJ_LOG(WARNING, "App successfully started listening for TCP connections!");
+      }
     }).catch_(
         [KJ_MVCAP(address), &timer, loggedSlowStartupMessage, numTriesSoFar, this]
         (kj::Exception&& e) mutable {

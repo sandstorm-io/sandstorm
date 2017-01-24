@@ -1986,8 +1986,12 @@ class UiViewImpl final: public UiView::Server {
 public:
   explicit UiViewImpl(kj::NetworkAddress& serverAddress,
                       BridgeContext& bridgeContext,
-                      spk::BridgeConfig::Reader config)
-      : serverAddress(serverAddress), bridgeContext(bridgeContext), config(config) {}
+                      spk::BridgeConfig::Reader config,
+                      kj::Promise<void>&& connectPromise)
+      : serverAddress(serverAddress),
+        bridgeContext(bridgeContext),
+        config(config),
+        connectPromise(connectPromise.fork()) {}
 
   kj::Promise<void> getViewInfo(GetViewInfoContext context) override {
     context.setResults(config.getViewInfo());
@@ -2012,16 +2016,21 @@ public:
       auto userPermissions = userInfo.getPermissions();
       auto sessionParams = params.getSessionParams().getAs<WebSession::Params>();
 
+      UiSession::Client session =
+        kj::heap<WebSessionImpl>(serverAddress, userInfo, params.getContext(),
+                                 bridgeContext, kj::str(sessionIdCounter++),
+                                 hexEncode(params.getTabId()),
+                                 kj::heapString(sessionParams.getBasePath()),
+                                 kj::heapString(sessionParams.getUserAgent()),
+                                 kj::strArray(sessionParams.getAcceptableLanguages(), ","),
+                                 kj::heapString("/"),
+                                 formatPermissions(userPermissions),
+                                 nullptr);
+
       context.getResults(capnp::MessageSize {2, 1}).setSession(
-          kj::heap<WebSessionImpl>(serverAddress, userInfo, params.getContext(),
-                                   bridgeContext, kj::str(sessionIdCounter++),
-                                   hexEncode(params.getTabId()),
-                                   kj::heapString(sessionParams.getBasePath()),
-                                   kj::heapString(sessionParams.getUserAgent()),
-                                   kj::strArray(sessionParams.getAcceptableLanguages(), ","),
-                                   kj::heapString("/"),
-                                   formatPermissions(userPermissions),
-                                   nullptr));
+        connectPromise.addBranch().then([KJ_MVCAP(session)]() mutable {
+          return kj::mv(session);
+        }));
     } else if (sessionType == capnp::typeId<ApiSession>()) {
       auto userPermissions = userInfo.getPermissions();
       auto sessionParams = params.getSessionParams().getAs<ApiSession::Params>();
@@ -2030,14 +2039,19 @@ public:
         addr = addressToString(sessionParams.getRemoteAddress());
       }
 
+      UiSession::Client session =
+        kj::heap<WebSessionImpl>(serverAddress, userInfo, params.getContext(),
+                                 bridgeContext, kj::str(sessionIdCounter++),
+                                 hexEncode(params.getTabId()),
+                                 kj::heapString(""), kj::heapString(""), kj::heapString(""),
+                                 kj::heapString(config.getApiPath()),
+                                 formatPermissions(userPermissions),
+                                 kj::mv(addr));
+
       context.getResults(capnp::MessageSize {2, 1}).setSession(
-          kj::heap<WebSessionImpl>(serverAddress, userInfo, params.getContext(),
-                                   bridgeContext, kj::str(sessionIdCounter++),
-                                   hexEncode(params.getTabId()),
-                                   kj::heapString(""), kj::heapString(""), kj::heapString(""),
-                                   kj::heapString(config.getApiPath()),
-                                   formatPermissions(userPermissions),
-                                   kj::mv(addr)));
+        connectPromise.addBranch().then([KJ_MVCAP(session)]() mutable {
+          return kj::mv(session);
+        }));
     } else if (sessionType == capnp::typeId<HackEmailSession>()) {
       context.getResults(capnp::MessageSize {2, 1}).setSession(kj::heap<EmailSessionImpl>());
     }
@@ -2103,6 +2117,11 @@ private:
   kj::NetworkAddress& serverAddress;
   BridgeContext& bridgeContext;
   spk::BridgeConfig::Reader config;
+
+  kj::ForkedPromise<void> connectPromise;
+  // A promise that resolves once we have successfully connected to the app. Only after
+  // this resolves do we attempt to forward any incoming HTTP requests to the app.
+
   uint sessionIdCounter = 0;
   // SessionIds are assigned sequentially.
   // TODO(security): It might be useful to make these sessionIds more random, to reduce the chance
@@ -2173,6 +2192,37 @@ public:
     });
   }
 
+  kj::Promise<void> connectLoop(kj::Own<kj::NetworkAddress>&& address,
+                                kj::Timer& timer,
+                                bool loggedSlowStartupMessage,
+                                int numTriesSoFar) {
+    return address->connect().then([this, loggedSlowStartupMessage](auto x) -> void {
+      if (loggedSlowStartupMessage) {
+        KJ_LOG(WARNING, "App successfully started listening for TCP connections!");
+      }
+    }).catch_(
+        [KJ_MVCAP(address), &timer, loggedSlowStartupMessage, numTriesSoFar, this]
+        (kj::Exception&& e) mutable {
+      if (!loggedSlowStartupMessage) {
+        numTriesSoFar++;
+      }
+      if (!loggedSlowStartupMessage && numTriesSoFar == (30 * 100)) {
+        // After 30 seconds (30 * 100 centiseconds) of failure, log a message once.
+        KJ_LOG(WARNING, "App isn't listening for TCP connections after 30 seconds. Continuing "
+               "to attempt to connect",
+               address->toString());
+        loggedSlowStartupMessage = true;
+      }
+      // Wait 10ms and try again.
+      return timer.afterDelay(10 * kj::MILLISECONDS).then(
+          [KJ_MVCAP(address), &timer, loggedSlowStartupMessage, numTriesSoFar, this]
+          () mutable -> kj::Promise<void> {
+        return connectLoop(kj::mv(address), timer,
+                           loggedSlowStartupMessage, numTriesSoFar);
+      });
+    });
+  }
+
   class ErrorHandlerImpl: public kj::TaskSet::ErrorHandler {
   public:
     void taskFailed(kj::Exception&& exception) override {
@@ -2223,37 +2273,8 @@ public:
             "** HTTP-BRIDGE: Uncaught exception waiting for child process:\n", e));
       });
 
-      // Wait until connections are accepted.
-      // TODO(soon): Don't block pure-Cap'n-Proto RPCs on this. Just block HTTP requests.
-      bool success = false;
-      int numTriesSoFar = 0;
-      bool loggedSlowStartupMessage = false;
-      for (;;) {
-        kj::runCatchingExceptions([&]() {
-          if (! loggedSlowStartupMessage) {
-            numTriesSoFar++;
-          }
-          address->connect().wait(ioContext.waitScope);
-          success = true;
-        });
-        if (success) {
-          if (loggedSlowStartupMessage) {
-            KJ_LOG(WARNING, "App successfully started listening for TCP connections!");
-          }
-          break;
-        }
-
-        if (!loggedSlowStartupMessage && numTriesSoFar == (30 * 100)) {
-          // After 30 seconds (30 * 100 centiseconds) of failure, log a message once.
-          KJ_LOG(WARNING, "App isn't listening for TCP connections after 30 seconds. Continuing "
-                 "to attempt to connect",
-                 address->toString());
-          loggedSlowStartupMessage = true;
-        }
-
-        // Wait 10ms and try again.
-        usleep(10000);
-      }
+      auto connectPromise =
+        connectLoop(address->clone(), ioContext.provider->getTimer(), false, 0);
 
       // We potentially re-traverse the BridgeConfig on every request, so make sure to max out the
       // traversal limit.
@@ -2269,8 +2290,9 @@ public:
       // Set up the Supervisor API socket.
       auto stream = ioContext.lowLevelProvider->wrapSocketFd(3);
       capnp::TwoPartyVatNetwork network(*stream, capnp::rpc::twoparty::Side::CLIENT);
-      auto rpcSystem = capnp::makeRpcServer(network,
-          kj::heap<UiViewImpl>(*address, bridgeContext, config));
+      auto rpcSystem = capnp::makeRpcServer(
+        network,
+        kj::heap<UiViewImpl>(*address, bridgeContext, config, kj::mv(connectPromise)));
 
       // Get the SandstormApi by restoring a null SturdyRef.
       capnp::MallocMessageBuilder message;

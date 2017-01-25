@@ -109,7 +109,10 @@ interface IpRemoteHost @0x905dd76b298b3130 {
   # This way the user can more easily understand what is being requested and can more easily
   # reroute when desired.
 
-  getTcpPort @0 (portNum :UInt16) -> (port :TcpPort);
+  getTcpPort @0 (portNum :UInt16, tls :Bool) -> (port :TcpPort);
+  # If `tls` is true, then the port's streams will be layered on top of Transport Layer Security,
+  # seamlessly hiding the details of session negotiation and encryption.
+
   getUdpPort @1 (portNum :UInt16) -> (port :UdpPort);
 }
 
@@ -127,7 +130,7 @@ interface TcpPort @0xeab20e1af07806b4 {
   # assigned.
 
   connect @0 (downstream :Util.ByteStream) -> (upstream :Util.ByteStream);
-  # Open a new byte stream connection. The callee sends bytes to the caller via `downstream`, while
+  # Opens a new byte stream connection. The callee sends bytes to the caller via `downstream`, while
   # the caller sends bytes to the callee via `upstream`. Notice that the caller may start sending
   # bytes via pipelining immediately.
 }

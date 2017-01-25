@@ -18,6 +18,7 @@ import Bignum from "bignum";
 import { PersistentImpl } from "/imports/server/persistent.js";
 const Future = Npm.require("fibers/future");
 const Net = Npm.require("net");
+const Tls = Npm.require("tls");
 const Dgram = Npm.require("dgram");
 const Capnp = Npm.require("capnp");
 
@@ -299,8 +300,8 @@ IpRemoteHostImpl = class IpRemoteHostImpl {
     }
   }
 
-  getTcpPort(portNum) {
-    return { port: new TcpPortImpl(this.address, portNum) };
+  getTcpPort(portNum, tls) {
+    return { port: new TcpPortImpl(this.address, portNum, !!tls) };
   }
 
   getUdpPort(portNum) {
@@ -308,17 +309,23 @@ IpRemoteHostImpl = class IpRemoteHostImpl {
   }
 };
 
-TcpPortImpl = class TcpPortImpl {
-  constructor(address, portNum) {
+class TcpPortImpl {
+  constructor(address, portNum, tls) {
     this.address = address;
     this.port = portNum;
+    this.tls = tls;
   }
 
   connect(downstream) {
     const _this = this;
     let resolved = false;
+    let connectMethod = Net.connect;
+    if (this.tls) {
+      connectMethod = Tls.connect;
+    }
+
     return new Promise((resolve, reject) => {
-      const client = Net.connect({ host: _this.address, port: _this.port }, () => {
+      const client = connectMethod({ host: _this.address, port: _this.port }, () => {
         resolved = true;
         resolve({ upstream: new ByteStreamConnection(client) });
       });

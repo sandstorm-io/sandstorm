@@ -66,6 +66,7 @@ kj::Array<byte> toBytes(kj::StringPtr text, kj::ArrayPtr<const byte> data = null
 
 kj::String textIdentityId(capnp::Data::Reader id) {
   // We truncate to 128 bits to be a little more wieldy. Still 32 chars, though.
+  KJ_ASSERT(id.size() == 32, "Identity ID not a SHA-256?");
   return hexEncode(id.slice(0, kj::min(id.size(), 16)));
 }
 
@@ -1286,9 +1287,6 @@ public:
         rootPath(kj::mv(rootPath)),
         remoteAddress(kj::mv(remoteAddress)) {
     if (userInfo.hasIdentityId()) {
-      auto id = userInfo.getIdentityId();
-      KJ_ASSERT(id.size() == 32, "Identity ID not a SHA-256?");
-
       userId = textIdentityId(userInfo.getIdentityId());
     }
     bridgeContext.sessions.insert({kj::StringPtr(this->sessionId), this->sessionContext});

@@ -29,6 +29,7 @@
 #include <capnp/rpc.capnp.h>
 #include <capnp/schema.h>
 #include <capnp/serialize.h>
+#include <capnp/compat/json.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <map>
@@ -2027,6 +2028,137 @@ private:
   }
 };
 
+class RequestSessionImpl final: public WebSession::Server {
+public:
+  RequestSessionImpl(kj::NetworkAddress& serverAddress, BridgeContext& bridgeContext,
+                     SessionContext::Client sessionContext,
+                     kj::Array<byte>&& identityId, kj::Array<bool>&& permissions)
+      : serverAddress(serverAddress),
+        bridgeContext(bridgeContext),
+        sessionContext(kj::mv(sessionContext)),
+        identityId(kj::mv(identityId)),
+        permissions(kj::mv(permissions)) {
+    // Find where we're supposed to inject the config blob into the HTML.
+    kj::StringPtr html = *BRIDGE_REQUEST_SESSION_HTML;
+
+    static char MARKER[] = "@CONFIG@";
+    const char* configPos = strstr(html.begin(), MARKER);
+    KJ_ASSERT(configPos != nullptr);
+
+    prefix = html.slice(0, configPos - html.begin());
+    suffix = html.slice(configPos - html.begin() + strlen(MARKER), html.size());
+  }
+
+  kj::Promise<void> get(GetContext context) override {
+    auto params = context.getParams();
+    auto path = params.getPath();
+    auto results = context.getResults();
+
+    if (path == "") {
+      // Determine the subset of PowerboxApis which the user has permission to choose.
+      //
+      // TODO(now): Also match against descriptors.
+      kj::Vector<spk::BridgeConfig::PowerboxApi::Reader> apis;
+      for (auto api: bridgeContext.getPowerboxApis()) {
+        bool requirementsMet = true;
+
+        if (api.hasPermissions()) {
+          auto requiredPermissions = api.getPermissions();
+          for (size_t i: kj::indices(requiredPermissions)) {
+            if (requiredPermissions[i]) {
+              if (permissions.size() <= i || !permissions[i]) {
+                requirementsMet = false;
+                break;
+              }
+            }
+          }
+        }
+
+        if (requirementsMet) {
+          apis.add(api);
+        }
+      }
+
+      // JSON-ify that list as the config blob.
+      capnp::MallocMessageBuilder filteredConfig;
+      auto list = filteredConfig.getRoot<spk::BridgeConfig>().initPowerboxApis(apis.size());
+      for (size_t i: kj::indices(apis)) {
+        list.setWithCaveats(i, apis[i]);
+      }
+
+      capnp::JsonCodec codec;
+      auto config = codec.encode(list);
+
+      // Send back our static HTML with the config blob injected into it.
+      auto content = results.initContent();
+      content.setMimeType("text/html; charset=UTF-8");
+      auto body = content.initBody().initBytes(prefix.size() + config.size() + suffix.size());
+      memcpy(body.begin(), prefix.begin(), prefix.size());
+      memcpy(body.begin() + prefix.size(), config.begin(), config.size());
+      memcpy(body.begin() + prefix.size() + config.size(), suffix.begin(), suffix.size());
+      return kj::READY_NOW;
+    } else {
+      auto error = results.initClientError();
+      error.setStatusCode(WebSession::Response::ClientErrorCode::NOT_FOUND);
+      error.setDescriptionHtml("404 not found");
+      return kj::READY_NOW;
+    }
+  }
+
+  kj::Promise<void> post(PostContext context) override {
+    auto params = context.getParams();
+    auto path = params.getPath();
+    auto results = context.getResults();
+
+    if (path == "") {
+      auto name = kj::str(params.getContent().getContent().asChars());
+
+      for (auto api: bridgeContext.getPowerboxApis()) {
+        if (api.getName() == name) {
+          auto req = sessionContext.fulfillRequestRequest();
+
+          auto tag = req.initDescriptor().initTags(1)[0];
+          tag.setId(capnp::typeId<ApiSession>());
+          tag.initValue().setAs<ApiSession::PowerboxTag>(api.getTag());
+
+          req.setRequiredPermissions(api.getPermissions());
+          req.setDisplayInfo(api.getDisplayInfo());
+
+          capnp::MallocMessageBuilder message(32);
+          auto httpApi = message.getRoot<BridgeObjectId::HttpApi>();
+          httpApi.setIdentityId(identityId);
+          httpApi.setName(name);
+          httpApi.setPath(api.getPath());
+          httpApi.setPermissions(api.getPermissions());
+
+          req.setCap(newPowerboxApiSession(serverAddress, bridgeContext,
+              newOwnCapnp(httpApi.asReader())));
+
+          results.initNoContent();
+          return req.send().ignoreResult();
+        }
+      }
+
+      KJ_FAIL_REQUIRE("unknown API", name);
+
+    } else {
+      auto error = results.initClientError();
+      error.setStatusCode(WebSession::Response::ClientErrorCode::NOT_FOUND);
+      error.setDescriptionHtml("404 not found");
+      return kj::READY_NOW;
+    }
+  }
+
+private:
+  kj::NetworkAddress& serverAddress;
+  BridgeContext& bridgeContext;
+  SessionContext::Client sessionContext;
+  kj::Array<byte> identityId;
+  kj::Array<bool> permissions;
+
+  kj::ArrayPtr<const char> prefix;
+  kj::ArrayPtr<const char> suffix;
+};
 
 class SandstormHttpBridgeImpl: public SandstormHttpBridge::Server {
 public:
@@ -2143,6 +2275,31 @@ public:
       context.getResults(capnp::MessageSize {2, 1}).setSession(kj::heap<EmailSessionImpl>());
     }
 
+    return kj::READY_NOW;
+  }
+
+  kj::Promise<void> newRequestSession(NewRequestSessionContext context) override {
+    auto params = context.getParams();
+
+    KJ_REQUIRE(params.getSessionType() == capnp::typeId<WebSession>(),
+               "Unsupported request session type.");
+
+    auto userInfo = params.getUserInfo();
+    if (userInfo.hasIdentity() && config.getSaveIdentityCaps()) {
+      bridgeContext.saveIdentity(userInfo.getIdentityId(), userInfo.getIdentity());
+    }
+
+    auto permissions = kj::heapArrayFromIterable<bool>(userInfo.getPermissions());
+
+    UiSession::Client session =
+        kj::heap<RequestSessionImpl>(
+            serverAddress, bridgeContext, params.getContext(),
+            kj::heapArray(userInfo.getIdentityId()), kj::mv(permissions));
+
+    context.getResults(capnp::MessageSize {2, 1}).setSession(
+        connectPromise.addBranch().then([KJ_MVCAP(session)]() mutable {
+          return kj::mv(session);
+        }));
     return kj::READY_NOW;
   }
 

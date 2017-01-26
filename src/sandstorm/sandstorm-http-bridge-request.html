@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <style type="text/css">
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: sans-serif;
+        font-size: 20px;
+      }
+      button {
+        border: none;
+        font-size: inherit;
+        font-family: inherit;
+        font-weight: inherit;
+        text-decoration: inherit;
+        color: inherit;
+        line-height: inherit;
+        background-color: transparent;
+        text-align: inherit;
+        padding: 0;
+        cursor: pointer;
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        width: 100%;
+        padding-left: 32px;
+        height: 31px;
+      }
+      li {
+        border: 1px solid #ddd;
+        border-bottom: none;
+        background-color: #eee;
+        vertical-align: middle;
+        height: 32px;
+      }
+      ul {
+        border-bottom: 1px solid #ddd;
+        padding: 0;
+        margin: 10px;
+        list-style-type: none;
+      }
+    </style>
+  </head>
+  <body>
+    <ul id="list">
+    </ul>
+
+    <script type="text/javascript">
+      var config = @CONFIG@;
+
+      function makeClickHandler(name) {
+        return function () {
+          var xhr = new XMLHttpRequest();
+          xhr.onload = function () {
+            if (xhr.status >= 400) {
+              alert("XHR returned status " + xhr.status + ":\n" + xhr.responseText);
+            }
+          }
+          xhr.onerror = function(e) { alert(e); };
+          xhr.open("post", "/");
+          xhr.send(name);
+        }
+      }
+
+      var list = document.getElementById("list");
+      for (var i in config) {
+        var api = config[i];
+
+        var button = document.createElement("button");
+        button.addEventListener("click", makeClickHandler(api.name));
+        if (api.displayInfo && api.displayInfo.title && api.displayInfo.title.defaultText) {
+          button.textContent = api.displayInfo.title.defaultText;
+        } else {
+          button.textContent = "Use this grain";
+        }
+
+        var item = document.createElement("li");
+        item.appendChild(button);
+
+        list.appendChild(item);
+      }
+    </script>
+  </body>
+</html>

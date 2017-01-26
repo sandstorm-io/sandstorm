@@ -70,9 +70,8 @@ interface ApiSession @0xc879e379c625cdc7 extends(WebSession.WebSession) {
     # Google Calendar API version 2 as "https://apidata.googleusercontent.com/caldav/v2". However,
     # you would not normally request "https://api.github.com/users" because "GitHub users" is not
     # considered a separate API but rather one part of the overall GitHub API. Note that
-    # `canonicalUrl` should never end with a '/', because request paths to `ApiSession` are
-    # required to start with a '/', so this would result in two consecutive '/'s which is usually
-    # wrong.
+    # `canonicalUrl` should never end with a '/', because a '/' is added implicitly to separate
+    # the API URL from the individual request's path.
     #
     # The HTTP driver will present `canonicalUrl` as a strong suggestion to the user. However, the
     # user is always allowed to substitute a different URL instead, causing requests to be

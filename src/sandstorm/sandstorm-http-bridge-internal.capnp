@@ -21,6 +21,8 @@
 $import "/capnp/c++.capnp".namespace("sandstorm");
 using Identity = import "identity.capnp";
 using WebSession = import "web-session.capnp".WebSession;
+using ApiSession = import "api-session.capnp".ApiSession;
+using AppPersistent = import "grain.capnp".AppPersistent;
 
 struct BridgeObjectId {
   # The object ID format used by sandstorm-http-bridge.
@@ -52,3 +54,7 @@ struct BridgeObjectId {
     # TODO(someday): restore() should provide identity information so that we don't need this.
   }
 }
+
+interface BridgeHttpSession extends(ApiSession, AppPersistent(BridgeObjectId)) {}
+
+const bridgeRequestSessionHtml :Text = embed "sandstorm-http-bridge-request.html";

@@ -1073,6 +1073,10 @@ public:
     return kj::strArray(permissionVec, ",");
   }
 
+  capnp::List<spk::BridgeConfig::PowerboxApi>::Reader getPowerboxApis() {
+    return config.getPowerboxApis();
+  }
+
   void saveIdentity(capnp::Data::Reader identityId, Identity::Client identity) {
     if (!config.getSaveIdentityCaps()) return;
 
@@ -1277,7 +1281,7 @@ private:
   }
 };
 
-class WebSessionImpl final: public WebSession::Server {
+class WebSessionImpl final: public BridgeHttpSession::Server {
 public:
   WebSessionImpl(kj::NetworkAddress& serverAddr,
                  UserInfo::Reader userInfo, SessionContext::Client sessionContext,
@@ -1531,6 +1535,22 @@ public:
             });
           });
     });
+  }
+
+  kj::Promise<void> save(SaveContext context) override {
+    KJ_IF_MAYBE(info, apiInfo) {
+      auto results = context.getResults();
+      results.initObjectId().setHttpApi(*info);
+      for (auto meta: bridgeContext.getPowerboxApis()) {
+        if (meta.getName() == info->getName()) {
+          results.setLabel(meta.getDisplayInfo().getTitle());
+          break;
+        }
+      }
+      return kj::READY_NOW;
+    } else {
+      KJ_UNIMPLEMENTED("can't save() non-powerbox BridgeHttpSession");
+    }
   }
 
 private:

@@ -63,15 +63,17 @@ const pingUdp = () => {
     }
   });
 
-  socket.send(message, 0, message.length, 8080, SANDCATS_HOSTNAME, (err) => {
-    if (err) {
-      console.error("Couldn't send UDP sandcats ping", err);
-    }
-  });
+  socket.bind({ address: process.env.BIND_IP }, () => {
+    socket.send(message, 0, message.length, 8080, SANDCATS_HOSTNAME, (err) => {
+      if (err) {
+        console.error("Couldn't send UDP sandcats ping", err);
+      }
+    });
 
-  Meteor.setTimeout(() => {
-    socket.close();
-  }, 10 * 1000);
+    Meteor.setTimeout(() => {
+      socket.close();
+    }, 10 * 1000);
+  });
 };
 
 const performSandcatsRequest = (path, hostname, postData, errorCallback, responseCallback) => {

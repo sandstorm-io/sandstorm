@@ -26,7 +26,7 @@ const Url = Npm.require("url");
 import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
 
 const SANDCATS_HOSTNAME = (Meteor.settings && Meteor.settings.public &&
-                         Meteor.settings.public.sandcatsHostname);
+                           Meteor.settings.public.sandcatsHostname);
 const SANDCATS_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandcats";
 
 const ROOT_URL = Url.parse(process.env.ROOT_URL);

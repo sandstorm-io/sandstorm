@@ -1060,6 +1060,18 @@ public:
         identitiesDir(openIdentitiesDir(config)),
         trashDir(openTrashDir(config)), tasks(*this) {}
 
+  kj::String formatPermissions(capnp::List<bool>::Reader userPermissions) {
+    auto configPermissions = config.getViewInfo().getPermissions();
+    kj::Vector<kj::String> permissionVec(configPermissions.size());
+
+    for (uint i = 0; i < configPermissions.size() && i < userPermissions.size(); ++i) {
+      if (userPermissions[i]) {
+        permissionVec.add(kj::str(configPermissions[i].getName()));
+      }
+    }
+    return kj::strArray(permissionVec, ",");
+  }
+
   void saveIdentity(capnp::Data::Reader identityId, Identity::Client identity) {
     if (!config.getSaveIdentityCaps()) return;
 
@@ -2022,7 +2034,7 @@ public:
                                  kj::heapString(sessionParams.getUserAgent()),
                                  kj::strArray(sessionParams.getAcceptableLanguages(), ","),
                                  kj::heapString("/"),
-                                 formatPermissions(userPermissions),
+                                 bridgeContext.formatPermissions(userPermissions),
                                  nullptr);
 
       context.getResults(capnp::MessageSize {2, 1}).setSession(
@@ -2043,7 +2055,7 @@ public:
                                  hexEncode(params.getTabId()),
                                  kj::heapString(""), kj::heapString(""), kj::heapString(""),
                                  kj::heapString(config.getApiPath()),
-                                 formatPermissions(userPermissions),
+                                 bridgeContext.formatPermissions(userPermissions),
                                  kj::mv(addr));
 
       context.getResults(capnp::MessageSize {2, 1}).setSession(
@@ -2058,18 +2070,6 @@ public:
   }
 
 private:
-  inline kj::String formatPermissions(capnp::List<bool>::Reader& userPermissions) {
-    auto configPermissions = config.getViewInfo().getPermissions();
-    kj::Vector<kj::String> permissionVec(configPermissions.size());
-
-    for (uint i = 0; i < configPermissions.size() && i < userPermissions.size(); ++i) {
-      if (userPermissions[i]) {
-        permissionVec.add(kj::str(configPermissions[i].getName()));
-      }
-    }
-    return kj::strArray(permissionVec, ",");
-  }
-
   inline kj::String addressToString(::sandstorm::IpAddress::Reader&& address) {
     uint64_t lower64 = address.getLower64();
     uint64_t upper64 = address.getUpper64();

@@ -2214,6 +2214,19 @@ public:
 
   kj::Promise<void> getViewInfo(GetViewInfoContext context) override {
     context.setResults(config.getViewInfo());
+
+    // Copy in powerbox API descriptors.
+    auto apis = config.getPowerboxApis();
+    if (apis.size() > 0) {
+      auto viewInfo = context.getResults();
+      auto descriptors = viewInfo.initMatchRequests(apis.size());
+      for (size_t i: kj::indices(apis)) {
+        auto tag = descriptors[i].initTags(1)[0];
+        tag.setId(capnp::typeId<ApiSession>());
+        tag.getValue().setAs<ApiSession::PowerboxTag>(apis[i].getTag());
+      }
+    }
+
     return kj::READY_NOW;
   }
 

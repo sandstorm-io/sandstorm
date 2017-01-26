@@ -80,6 +80,7 @@ const performSandcatsRequest = (path, hostname, postData, errorCallback, respons
   const options = {
     hostname: hostname,
     path: path,
+    localAddress: process.env.BIND_IP,
     method: "POST",
     agent: false,
     key: fs.readFileSync(SANDCATS_VARDIR + "/id_rsa"),

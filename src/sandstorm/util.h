@@ -21,6 +21,7 @@
 // TODO(cleanup): A lot of stuff in here should move into KJ, after proper cleanup.
 
 #include <kj/io.h>
+#include <kj/one-of.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -446,8 +447,13 @@ class CapRedirector
   // want to spurriously fail calls.
 
 public:
+  CapRedirector(kj::Function<capnp::Capability::Client()> reconnect);
+  // Creates a CapRedirector which calls reconnect() on disconnect. It will also call reconnect()
+  // immediately to form the initial connection.
+
   CapRedirector(kj::PromiseFulfillerPair<capnp::Capability::Client> paf =
                 kj::newPromiseAndFulfiller<capnp::Capability::Client>());
+  // Creates a CapRedirector which, upon disconnect, waits for setTarget() to be called.
 
   uint setTarget(capnp::Capability::Client newTarget);
 
@@ -460,7 +466,10 @@ public:
 private:
   uint iteration = 0;
   capnp::Capability::Client target;
-  kj::Own<kj::PromiseFulfiller<capnp::Capability::Client>> fulfiller;
+
+  typedef kj::Own<kj::PromiseFulfiller<capnp::Capability::Client>> Passive;
+  typedef kj::Function<capnp::Capability::Client()> Active;
+  kj::OneOf<Passive, Active> state;
 };
 
 class TwoPartyServerWithClientBootstrap: private kj::TaskSet::ErrorHandler {

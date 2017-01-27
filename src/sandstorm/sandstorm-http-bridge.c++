@@ -56,6 +56,7 @@
 
 #include "version.h"
 #include "util.h"
+#include "bridge-proxy.h"
 
 namespace sandstorm {
 
@@ -2495,6 +2496,12 @@ public:
   };
 
   kj::MainBuilder::Validity run() {
+    static constexpr uint PROXY_PORT = 15239;  // random; hopefully doesn't conflict with anything
+
+    auto proxyEnv = kj::str("http://127.0.0.1:", PROXY_PORT, "/");
+    KJ_SYSCALL(setenv("http_proxy", proxyEnv.cStr(), true));
+    KJ_SYSCALL(setenv("HTTP_PROXY", proxyEnv.cStr(), true));
+
     pid_t child;
     KJ_SYSCALL(child = fork());
     if (child == 0) {
@@ -2569,16 +2576,35 @@ public:
       // Export a Unix socket on which the application can connect and make calls directly to the
       // Sandstorm API.
       SandstormHttpBridge::Client sandstormHttpBridge =
-          kj::heap<SandstormHttpBridgeImpl>(kj::mv(api), bridgeContext);
+          kj::heap<SandstormHttpBridgeImpl>(kj::cp(api), bridgeContext);
       ErrorHandlerImpl errorHandler;
       kj::TaskSet tasks(errorHandler);
       unlink("/tmp/sandstorm-api");  // Clear stale socket, if any.
       auto acceptTask = ioContext.provider->getNetwork()
           .parseAddress("unix:/tmp/sandstorm-api", 0)
-          .then([&, KJ_MVCAP(sandstormHttpBridge)](kj::Own<kj::NetworkAddress>&& addr) mutable {
+          .then([&, sandstormHttpBridge](kj::Own<kj::NetworkAddress>&& addr) mutable {
         auto serverPort = addr->listen();
         auto promise = acceptLoop(*serverPort, kj::mv(sandstormHttpBridge), tasks);
         return promise.attach(kj::mv(serverPort));
+      });
+
+      // Export an HTTP proxy which the app can use to make HTTP API requests.
+      kj::HttpHeaderTable::Builder headerTableBuilder;
+      auto bridgeProxy = newBridgeProxy(api, sandstormHttpBridge, config, headerTableBuilder);
+      auto headerTable = headerTableBuilder.build();
+
+      // No need for request timeouts on this proxy. We trust the app.
+      kj::HttpServer::Settings settings;
+      settings.headerTimeout = 1 * kj::DAYS;
+      settings.pipelineTimeout = 1 * kj::DAYS;
+      kj::HttpServer server(ioContext.provider->getTimer(), *headerTable, *bridgeProxy, settings);
+
+      auto proxyAddress = ioContext.provider->getNetwork()
+          .parseAddress("127.0.0.1", PROXY_PORT).wait(ioContext.waitScope);
+      auto proxyListener = proxyAddress->listen();
+      auto listenTask = server.listenHttp(*proxyListener)
+          .eagerlyEvaluate([this](kj::Exception&& e) {
+        context.exitError(kj::str("** HTTP-BRIDGE: Outgoing HTTP proxy died; aborting:\n", e));
       });
 
       exitPromise.wait(ioContext.waitScope);

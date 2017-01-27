@@ -70,7 +70,7 @@ const pingUdp = () => {
       }
     });
 
-    Meteor.setTimeout(() => {
+    setTimeout(() => {
       socket.close();
     }, 10 * 1000);
   });

@@ -1056,7 +1056,7 @@ private:
 
 class BridgeContext: private kj::TaskSet::ErrorHandler {
 public:
-  BridgeContext(SandstormApi<>::Client apiCap, spk::BridgeConfig::Reader config)
+  BridgeContext(SandstormApi<BridgeObjectId>::Client apiCap, spk::BridgeConfig::Reader config)
       : apiCap(kj::mv(apiCap)), config(config),
         identitiesDir(openIdentitiesDir(config)),
         trashDir(openTrashDir(config)), tasks(*this) {}
@@ -1170,7 +1170,7 @@ public:
   // TODO(cleanup): Make this private with appropriate accessor methods.
 
 private:
-  SandstormApi<>::Client apiCap;
+  SandstormApi<BridgeObjectId>::Client apiCap;
   spk::BridgeConfig::Reader config;
   kj::AutoCloseFd identitiesDir;
   kj::AutoCloseFd trashDir;
@@ -2030,13 +2030,13 @@ private:
 
 class SandstormHttpBridgeImpl: public SandstormHttpBridge::Server {
 public:
-  explicit SandstormHttpBridgeImpl(SandstormApi<>::Client&& apiCap,
+  explicit SandstormHttpBridgeImpl(SandstormApi<BridgeObjectId>::Client&& apiCap,
                                    BridgeContext& bridgeContext)
       : apiCap(kj::mv(apiCap)),
         bridgeContext(bridgeContext) {}
 
   kj::Promise<void> getSandstormApi(GetSandstormApiContext context) override {
-    context.getResults().setApi(apiCap);
+    context.getResults().setApi(apiCap.castAs<SandstormApi<>>());
     return kj::READY_NOW;
   }
 
@@ -2065,7 +2065,7 @@ public:
   }
 
 private:
-  SandstormApi<>::Client apiCap;
+  SandstormApi<BridgeObjectId>::Client apiCap;
   BridgeContext& bridgeContext;
 };
 
@@ -2378,7 +2378,7 @@ public:
           raiiOpen("/sandstorm-http-bridge-config", O_RDONLY), options);
       auto config = reader.getRoot<spk::BridgeConfig>();
 
-      auto apiPaf = kj::newPromiseAndFulfiller<SandstormApi<>::Client>();
+      auto apiPaf = kj::newPromiseAndFulfiller<SandstormApi<BridgeObjectId>::Client>();
       BridgeContext bridgeContext(kj::mv(apiPaf.promise), config);
 
       // Set up the Supervisor API socket.
@@ -2392,7 +2392,8 @@ public:
       capnp::MallocMessageBuilder message;
       auto vatId = message.initRoot<capnp::rpc::twoparty::VatId>();
       vatId.setSide(capnp::rpc::twoparty::Side::SERVER);
-      SandstormApi<>::Client api = rpcSystem.bootstrap(vatId).castAs<SandstormApi<>>();
+      SandstormApi<BridgeObjectId>::Client api = rpcSystem.bootstrap(vatId)
+          .castAs<SandstormApi<BridgeObjectId>>();
       apiPaf.fulfiller->fulfill(kj::cp(api));
 
       // Export a Unix socket on which the application can connect and make calls directly to the

@@ -63,6 +63,10 @@ const pingUdp = () => {
     }
   });
 
+  socket.on("error", (err) => {
+    throw err;
+  });
+
   socket.bind({ address: process.env.BIND_IP }, () => {
     socket.send(message, 0, message.length, 8080, SANDCATS_HOSTNAME, (err) => {
       if (err) {

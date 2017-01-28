@@ -26,7 +26,7 @@ const Url = Npm.require("url");
 import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
 
 const SANDCATS_HOSTNAME = (Meteor.settings && Meteor.settings.public &&
-                         Meteor.settings.public.sandcatsHostname);
+                           Meteor.settings.public.sandcatsHostname);
 const SANDCATS_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandcats";
 
 const ROOT_URL = Url.parse(process.env.ROOT_URL);
@@ -63,21 +63,28 @@ const pingUdp = () => {
     }
   });
 
-  socket.send(message, 0, message.length, 8080, SANDCATS_HOSTNAME, (err) => {
-    if (err) {
-      console.error("Couldn't send UDP sandcats ping", err);
-    }
+  socket.on("error", (err) => {
+    throw err;
   });
 
-  Meteor.setTimeout(() => {
-    socket.close();
-  }, 10 * 1000);
+  socket.bind({ address: process.env.BIND_IP }, () => {
+    socket.send(message, 0, message.length, 8080, SANDCATS_HOSTNAME, (err) => {
+      if (err) {
+        console.error("Couldn't send UDP sandcats ping", err);
+      }
+    });
+
+    setTimeout(() => {
+      socket.close();
+    }, 10 * 1000);
+  });
 };
 
 const performSandcatsRequest = (path, hostname, postData, errorCallback, responseCallback) => {
   const options = {
     hostname: hostname,
     path: path,
+    localAddress: process.env.BIND_IP,
     method: "POST",
     agent: false,
     key: fs.readFileSync(SANDCATS_VARDIR + "/id_rsa"),

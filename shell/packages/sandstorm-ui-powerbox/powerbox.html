@@ -81,6 +81,9 @@
 
 <template name="ipNetworkPowerboxCard">
   Admin: grant all outgoing network access
+  {{#with encryption}}
+    (encrypted with {{.}})
+  {{/with}}
 </template>
 
 <template name="ipInterfacePowerboxCard">

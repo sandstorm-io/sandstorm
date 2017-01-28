@@ -13,7 +13,6 @@ const lookupIdentityById = function (identityId) {
 const capDetails = function (cap) {
   let introducer = {};
   let ownerInfo = {};
-  console.log(cap);
   if (cap.owner.grain !== undefined) {
     const grainId = cap.owner.grain.grainId;
     const grain = Grains.findOne(grainId);
@@ -26,7 +25,18 @@ const capDetails = function (cap) {
     const packageId = grain && grain.packageId;
     const pkg = packageId && globalDb.collections.packages.findOne(packageId);
     const appIcon = pkg && globalDb.iconSrcForPackage(pkg, "grain", globalDb.makeWildcardHost("static"));
-    const introducerIdentityId = cap && cap.owner && cap.owner.grain && cap.owner.grain.introducerIdentity;
+
+    let introducerIdentityId;
+    if (cap && cap.requirements) {
+      for (let idx = 0; idx < cap.requirements.length; ++idx) {
+        const req = cap.requirements[idx];
+        if (req.permissionsHeld && req.permissionsHeld.identityId) {
+          introducerIdentityId = req.permissionsHeld.identityId;
+          break;
+        }
+      }
+    }
+
     const introducerIdentity = lookupIdentityById(introducerIdentityId);
     const grainOwnerIdentity = (introducerIdentityId === grain.identityId) ? undefined : lookupIdentityById(grain.identityId);
 
@@ -85,29 +95,28 @@ Template.newAdminNetworkCapabilities.onCreated(function () {
       ],
     });
     const grainIds = apiTokens.map(token => token.owner.grain.grainId);
-    if (this.adminGrainInfoSub) {
-      this.adminGrainInfoSub.stop();
-    }
-
-    this.adminGrainInfoSub = this.subscribe("adminGrainInfo", grainIds);
+    this.subscribe("adminGrains", grainIds);
 
     const packageIds = Grains.find({
       _id: {
         $in: grainIds,
       },
     }).map(grain => grain.packageId);
-    if (this.adminPackagesSub) {
-      this.adminPackagesSub.stop();
-    }
 
-    this.adminPackagesSub = this.subscribe("adminPackages", packageIds);
+    this.subscribe("adminPackages", packageIds);
 
-    const identityIds = apiTokens.map(token => token.owner.grain.introducerIdentity);
-    if (this.adminIdentitiesSub) {
-      this.adminIdentitiesSub.stop();
-    }
+    const identityIds = [];
+    apiTokens.forEach((token) => {
+      if (token.requirements) {
+        token.requirements.forEach((req) => {
+          if (req.permissionsHeld && req.permissionsHeld.identityId) {
+            identityIds.push(req.permissionsHeld.identityId);
+          }
+        });
+      }
+    });
 
-    this.adminIdentitiesSub = this.subscribe("adminIdentities", identityIds);
+    this.subscribe("adminIdentities", identityIds);
   });
 });
 
@@ -115,6 +124,19 @@ Template.newAdminNetworkCapabilities.helpers({
   ipNetworkCaps() {
     return ApiTokens.find({
       "frontendRef.ipNetwork": { $exists: true },
+      $or: [
+        { "frontendRef.ipNetwork.encryption": { $exists: false } },
+        { "frontendRef.ipNetwork.encryption.none": { $exists: true } },
+      ],
+      "owner.clientPowerboxRequest": { $exists: false },
+    }).map(capDetails)
+      .filter((item) => !!item);
+  },
+
+  ipNetworkCapsTls() {
+    return ApiTokens.find({
+      "frontendRef.ipNetwork.encryption.tls": { $exists: true },
+      "owner.clientPowerboxRequest": { $exists: false },
     }).map(capDetails)
       .filter((item) => !!item);
   },

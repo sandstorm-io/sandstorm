@@ -394,6 +394,17 @@ Template.powerboxRequest.events({
 //
 // TODO(cleanup): Find a better home for these.
 
+Template.ipNetworkPowerboxCard.helpers({
+  encryption: function () {
+    const encryption = this.option.frontendRef.ipNetwork.encryption || {};
+    if ("tls" in encryption) {
+      return "TLS";
+    } else {
+      return null;
+    }
+  },
+});
+
 Template.grainPowerboxCard.powerboxIconSrc = card => {
   return card.grainInfo.iconSrc;
 };

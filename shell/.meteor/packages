@@ -4,29 +4,29 @@
 # but you can also edit it by hand.
 
 # ES6 support.
-ecmascript@0.5.8
+ecmascript@0.6.1
 ecmascript-collections
 
 # Formerly standard-app-packages, which was deprecated in favor of meteor-platform,
 # which was deprecated in favor of splitting things out separately
 meteor-base@1.0.4
-underscore@1.0.9
-mongo@1.1.12
+underscore@1.0.10
+mongo@1.1.14
 blaze-html-templates@1.0.4
-jquery@1.11.9
-session@1.1.6
-tracker@1.1.0
-check@1.2.3
-reload@1.1.10
+jquery@1.11.10
+session@1.1.7
+tracker@1.1.1
+check@1.2.4
+reload@1.1.11
 random@1.0.10
 
 iron:router
 sandstorm-accounts-packages
-http@1.2.9
+http@1.2.10
 browser-policy@1.0.9
-routepolicy@1.0.11
+routepolicy@1.0.12
 
-reactive-var@1.0.10
+reactive-var@1.0.11
 reactive-dict@1.1.8
 sandstorm-autoupdate-apps
 sandstorm-db
@@ -35,9 +35,9 @@ sandstorm-permissions
 sandstorm-ui-topbar
 sandstorm-ui-powerbox
 fourseven:scss
-sha@1.0.8
-standard-minifier-css@1.2.0
-standard-minifier-js@1.2.0
+sha@1.0.9
+standard-minifier-css@1.3.2
+standard-minifier-js@1.2.1
 shell-server@0.2.1
 
-oauth
+oauth@1.1.12

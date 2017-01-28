@@ -2058,7 +2058,7 @@ public:
     if (path == "") {
       // Determine the subset of PowerboxApis which the user has permission to choose.
       //
-      // TODO(now): Also match against descriptors.
+      // TODO(soon): Also match against descriptors.
       kj::Vector<spk::BridgeConfig::PowerboxApi::Reader> apis;
       for (auto api: bridgeContext.getPowerboxApis()) {
         bool requirementsMet = true;

@@ -21,6 +21,7 @@
 // TODO(cleanup): A lot of stuff in here should move into KJ, after proper cleanup.
 
 #include <kj/io.h>
+#include <kj/one-of.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -446,8 +447,13 @@ class CapRedirector
   // want to spurriously fail calls.
 
 public:
+  CapRedirector(kj::Function<capnp::Capability::Client()> reconnect);
+  // Creates a CapRedirector which calls reconnect() on disconnect. It will also call reconnect()
+  // immediately to form the initial connection.
+
   CapRedirector(kj::PromiseFulfillerPair<capnp::Capability::Client> paf =
                 kj::newPromiseAndFulfiller<capnp::Capability::Client>());
+  // Creates a CapRedirector which, upon disconnect, waits for setTarget() to be called.
 
   uint setTarget(capnp::Capability::Client newTarget);
 
@@ -460,7 +466,10 @@ public:
 private:
   uint iteration = 0;
   capnp::Capability::Client target;
-  kj::Own<kj::PromiseFulfiller<capnp::Capability::Client>> fulfiller;
+
+  typedef kj::Own<kj::PromiseFulfiller<capnp::Capability::Client>> Passive;
+  typedef kj::Function<capnp::Capability::Client()> Active;
+  kj::OneOf<Passive, Active> state;
 };
 
 class TwoPartyServerWithClientBootstrap: private kj::TaskSet::ErrorHandler {
@@ -494,6 +503,38 @@ private:
 
   void taskFailed(kj::Exception&& exception) override;
 };
+
+template <typename T>
+class OwnCapnp;
+
+template <typename Reader>
+OwnCapnp<capnp::FromReader<Reader>> newOwnCapnp(Reader value);
+
+template <typename T>
+class OwnCapnp: public T::Reader {
+  // A copy of a capnp object which lives in-memory and can be passed by ownership.
+
+public:
+  // Inherits methods of reader.
+
+private:
+  kj::Array<capnp::word> words;
+
+  OwnCapnp(kj::Array<capnp::word> words)
+      : T::Reader(capnp::readMessageUnchecked<T>(words.begin())),
+        words(kj::mv(words)) {}
+
+  template <typename Reader>
+  friend OwnCapnp<capnp::FromReader<Reader>> newOwnCapnp(Reader value);
+};
+
+template <typename Reader>
+OwnCapnp<capnp::FromReader<Reader>> newOwnCapnp(Reader value) {
+  auto words = kj::heapArray<capnp::word>(value.totalSize().wordCount + 1);
+  memset(words.asBytes().begin(), 0, words.asBytes().size());
+  capnp::copyToUnchecked(value, words);
+  return OwnCapnp<capnp::FromReader<Reader>>(kj::mv(words));
+}
 
 }  // namespace sandstorm
 

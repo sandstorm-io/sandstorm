@@ -648,6 +648,10 @@ interface AppPersistent @0xaffa789add8747b8 (AppObjectId) {
   # canonicalization rules) so that it can recognize when the same object is saved multiple times.
   # `MainView.drop()` will be called when all such references have been dropped by their respective
   # clients.
+  #
+  # TODO(cleanup): How does `label` here relate to `PowerboxDisplayInfo` on `offer()` and
+  #   `fulfillRequest()`? Maybe `label` here should actually be `PowerboxDisplayInfo` and those
+  #   other methods shouldn't take that parameter?
 }
 
 interface MainView(AppObjectId) extends(UiView) {

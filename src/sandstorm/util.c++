@@ -1126,16 +1126,24 @@ void SubprocessSet::alreadyReaped(pid_t pid) {
 
 // =======================================================================================
 
+CapRedirector::CapRedirector(kj::Function<capnp::Capability::Client()> reconnect)
+    : target(reconnect()) {
+  state.init<Active>(kj::mv(reconnect));
+}
+
 CapRedirector::CapRedirector(kj::PromiseFulfillerPair<capnp::Capability::Client> paf)
-    : target(kj::mv(paf.promise)),
-      fulfiller(kj::mv(paf.fulfiller)) {}
+    : target(kj::mv(paf.promise)) {
+  state.init<Passive>(kj::mv(paf.fulfiller));
+}
 
 uint CapRedirector::setTarget(capnp::Capability::Client newTarget) {
+  KJ_REQUIRE(state.is<Passive>());
+
   ++iteration;
   target = newTarget;
 
   // If the previous target was a promise target, fulfill it.
-  fulfiller->fulfill(kj::mv(newTarget));
+  state.get<Passive>()->fulfill(kj::mv(newTarget));
 
   return iteration;
 }
@@ -1144,9 +1152,14 @@ void CapRedirector::setDisconnected(uint oldIteration) {
   if (iteration == oldIteration) {
     // Our current client was disconnected.
     ++iteration;
-    auto paf = kj::newPromiseAndFulfiller<capnp::Capability::Client>();
-    target = kj::mv(paf.promise);
-    fulfiller = kj::mv(paf.fulfiller);
+
+    if (state.is<Passive>()) {
+      auto paf = kj::newPromiseAndFulfiller<capnp::Capability::Client>();
+      target = kj::mv(paf.promise);
+      state.get<Passive>() = kj::mv(paf.fulfiller);
+    } else {
+      target = state.get<Active>()();
+    }
   }
 }
 

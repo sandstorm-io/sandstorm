@@ -22,6 +22,9 @@ $import "/capnp/c++.capnp".namespace("sandstorm::spk");
 using Util = import "util.capnp";
 using Powerbox = import "powerbox.capnp";
 using Grain = import "grain.capnp";
+using ApiSession = import "api-session.capnp".ApiSession;
+using Identity = import "identity.capnp";
+using WebSession = import "web-session.capnp".WebSession;
 
 struct PackageDefinition {
   id @0 :Text;
@@ -207,6 +210,11 @@ struct BridgeConfig {
   # through the API endpoint as described in:
   #     https://docs.sandstorm.io/en/latest/developing/http-apis/
   #
+  # Note that this form of HTTP APIs is old and will eventually be deprecated. In the fantastic
+  # future, available APIs should be defined by `powerboxApis`, below. However, as of this writing,
+  # `powerboxApis` cannot do everything that old-style HTTP APIs do. Why yes, I did once work at
+  # Google, how could you tell?
+  #
   # apiPath must end with "/".
   #
   # WARNING: Specifying this does NOT prevent access to other paths. Anyone holding an API token
@@ -221,6 +229,58 @@ struct BridgeConfig {
   # If true, the first time a new user accesses the grain, the bridge will save the user's Identity
   # capability so that it can be fetched later using `SandstormHttpBridge.getSavedIdentity`. You
   # will probably want to enable this if your app supports notifications.
+
+  powerboxApis @3 :List(PowerboxApi);
+  struct PowerboxApi {
+    # Defines an HTTP API which this application exports, to which other apps can request access
+    # via the powerbox.
+    #
+    # Use this to define APIs to which other applications can request access.
+    #
+    # Note that this metadata is consulted at the time of a powerbox request. Once the request is
+    # complete and a connection has been formed, future changes to the app's manifest will not
+    # affect the already-made connection.
+
+    name @0 :Text;
+    # Symbolic name for this API. This is passed back to the app as the value of the
+    # `X-Sandstorm-Api` header, in all requests made to this API. Note that removing an API
+    # definition will NOT revoke existing connections formed through the powerbox. So, the app
+    # should be prepared to handle all API names that it has ever defined (or, perhaps, return
+    # an appropriate error when it receives a request for an API that no longer exists).
+
+    displayInfo @1 :Powerbox.PowerboxDisplayInfo;
+    # Information for display to the user when representing this API.
+    #
+    # displayInfo.title in particular will be used when displaying a chooser to the user to choose
+    # among the app's available APIs.
+
+    path @2 :Text;
+    # Specifies the path which will be prefixed to all requests to this API.
+    #
+    # Like `apiPath` (above), this must end with "/". It is perfectly reasonable for the path to be
+    # just "/", if you consider your app's entire HTTP surface to be an API. However, note that
+    # unlike with `apiPath`, restricting a powerbox API to a sub-path actually does prevent
+    # consumers of the API from accessing other paths. You may wish to use this to your advantage.
+
+    tag @3 :ApiSession.PowerboxTag;
+    # Tag defining this API for powerbox matching purposes.
+
+    permissions @4 :Identity.PermissionSet;
+    # The permissions represented by this API. A user interacting with the powerbox will not have
+    # the option of choosing this API unless they posess at least these permissions. Meanwhile,
+    # when a request is made to this API, the `Sandstorm-Permissions` header will always cortain
+    # exactly these permissions, even if the user who made the powerbox connection has greater
+    # permissions.
+    #
+    # If not specified, the `X-Sandstorm-Permissions` header will contain the exact list of
+    # permissions that the user had at the time that they formed the connection. Note that if any
+    # of these permissions are later revoked from the user, then the API connection will be revoked
+    # in whole.
+
+    # TODO(someday): Allow non-singleton APIs, for grains that contain many objects. Requires app
+    #   to implement an embeddable picker UI.
+    # TODO(someday): Allow implementing Cap'n Proto APIs via JSON conversion.
+  }
 }
 
 struct Metadata {

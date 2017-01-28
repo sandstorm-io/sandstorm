@@ -17,16 +17,16 @@
     "ed25519": "0.0.4",
     "heapdump": "^0.3.7",
     "intro.js": "git+https://github.com/sandstorm-io/intro.js.git#8e1c7604f251ec874bf4ae4d7b4f11a14cee697e",
-    "ldapjs": "^1.0.0",
-    "mailparser": "^0.6.1",
-    "node-forge": "^0.6.34",
-    "nodemailer": "^2.6.0",
+    "ldapjs": "^1.0.1",
+    "mailparser": "^0.6.2",
+    "node-forge": "^0.6.48",
+    "nodemailer": "^2.7.2",
     "nodemailer-smtp-pool": "^2.8.2",
-    "request": "^2.67.0",
-    "smtp-server": "^1.14.2",
+    "request": "^2.79.0",
+    "smtp-server": "^1.17.0",
     "xml-crypto": "0.0.20",
     "xml2js": "^0.2.8",
     "xmlbuilder": "^8.2.2",
-    "xmldom": "^0.1.22"
+    "xmldom": "^0.1.27"
   }
 }

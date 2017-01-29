@@ -151,7 +151,7 @@ To do that, in your terminal, run the following commands.
 ```bash
 mkdir -p ~/projects
 cd ~/projects
-git clone git://github.com/sandstorm-io/vagrant-spk
+git clone https://github.com/sandstorm-io/vagrant-spk.git
 cd vagrant-spk
 sudo ln -s $PWD/vagrant-spk /usr/local/bin
 ```

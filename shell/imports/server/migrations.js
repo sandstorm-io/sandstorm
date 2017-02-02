@@ -770,6 +770,13 @@ function backgroundFillInGrainSizes(db, backend) {
   }
 }
 
+function removeFeatureKeys(db, backend) {
+  // Remove obsolete data related to the Sandstorm for Work paywall, which was eliminated.
+
+  db.notifications.remove({"admin.type": "cantRenewFeatureKey"});
+  db.notifications.remove({"admin.type": "trialFeatureKeyExpired"});
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.

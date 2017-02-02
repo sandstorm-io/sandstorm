@@ -29,7 +29,6 @@ globalSubs = [
   Meteor.subscribe("devPackages"),
   Meteor.subscribe("credentials"),
   Meteor.subscribe("accountIdentities"),
-  Meteor.subscribe("featureKey", false),
 ];
 
 Tracker.autorun(function () {
@@ -458,7 +457,7 @@ Template.referrals.helpers({
 
 Template.layout.helpers({
   effectiveServerTitle() {
-    const useServerTitle = globalDb.isFeatureKeyValid() &&
+    const useServerTitle =
         globalDb.getSettingWithFallback("whitelabelUseServerTitleForHomeText", false);
     return useServerTitle ? globalDb.getSettingWithFallback("serverTitle", "Sandstorm") :
         "Sandstorm";
@@ -567,10 +566,7 @@ Template.layout.helpers({
   },
 
   accountButtonsData: function () {
-    const hasFeatureKey = globalDb.isFeatureKeyValid();
-    const showSendFeedback = hasFeatureKey ?
-        !globalDb.getSettingWithFallback("whitelabelHideSendFeedback", false) :
-        true;
+    const showSendFeedback = !globalDb.getSettingWithFallback("whitelabelHideSendFeedback", false);
     return {
       isAdmin: globalDb.isAdmin(),
       grains: globalGrains,

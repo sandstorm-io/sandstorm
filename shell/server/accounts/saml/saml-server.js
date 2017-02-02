@@ -17,7 +17,7 @@ RoutePolicy.declare("/_saml/", "network");
 const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 
 // TODO(soon): This may need to be a Mongo collection in order to work when the frontend is
-//   replicated (but currently Sandstorm for Work is not replicated).
+//   replicated (but currently SAML is not used on any Blackrock servers).
 const _loginResultForCredentialToken = {};
 
 const retrieveCredential = function (credentialToken) {

@@ -234,26 +234,6 @@ Meteor.methods({
     });
 
     Notifications.insert({
-      admin: {
-        action: "/admin/feature-key",
-        type: "cantRenewFeatureKey",
-      },
-      userId: this.userId,
-      timestamp: new Date(),
-      isUnread: true,
-    });
-
-    Notifications.insert({
-      admin: {
-        action: "/admin/feature-key",
-        type: "trialFeatureKeyExpired",
-      },
-      userId: this.userId,
-      timestamp: new Date(),
-      isUnread: true,
-    });
-
-    Notifications.insert({
       userId: this.userId,
       referral: true,
       timestamp: new Date(),

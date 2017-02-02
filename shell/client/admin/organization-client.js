@@ -4,12 +4,8 @@ Template.newAdminOrganization.onCreated(function () {
   const ldapChecked = globalDb.getOrganizationLdapEnabled() || false;
   const samlChecked = globalDb.getOrganizationSamlEnabled() || false;
 
-  const featureKey = globalDb.currentFeatureKey();
-  const featureKeyContactAddress = featureKey && featureKey.customer && featureKey.customer.contactEmail;
-  const inferredDomain = featureKeyContactAddress && featureKeyContactAddress.split("@")[1] || "";
-
-  const emailDomain = globalDb.getOrganizationEmailDomain() || inferredDomain;
-  const gappsDomain = globalDb.getOrganizationGoogleDomain() || inferredDomain;
+  const emailDomain = globalDb.getOrganizationEmailDomain() || "example.com";
+  const gappsDomain = globalDb.getOrganizationGoogleDomain() || "example.com";
 
   const disallowGuests = globalDb.getOrganizationDisallowGuestsRaw() || false;
   const shareContacts = globalDb.getOrganizationShareContactsRaw() || false;
@@ -39,13 +35,9 @@ const providerEnabled = function (providerString) {
 };
 
 Template.newAdminOrganization.helpers({
-  hasFeatureKey() {
-    return globalDb.isFeatureKeyValid();
-  },
-
   formDisabled() {
     const instance = Template.instance();
-    return !globalDb.isFeatureKeyValid() || instance.formState.get() === "submitting";
+    return instance.formState.get() === "submitting";
   },
 
   hasSuccess() {
@@ -74,7 +66,7 @@ Template.newAdminOrganization.helpers({
   },
 
   emailDisabled() {
-    return !globalDb.isFeatureKeyValid() || !providerEnabled("emailToken");
+    return !providerEnabled("emailToken");
   },
 
   gappsChecked() {
@@ -88,7 +80,7 @@ Template.newAdminOrganization.helpers({
   },
 
   gappsDisabled() {
-    return !globalDb.isFeatureKeyValid() || !providerEnabled("google");
+    return !providerEnabled("google");
   },
 
   ldapChecked() {
@@ -97,7 +89,7 @@ Template.newAdminOrganization.helpers({
   },
 
   ldapDisabled() {
-    return !globalDb.isFeatureKeyValid() || !providerEnabled("ldap");
+    return !providerEnabled("ldap");
   },
 
   samlChecked() {
@@ -106,7 +98,7 @@ Template.newAdminOrganization.helpers({
   },
 
   samlDisabled() {
-    return !globalDb.isFeatureKeyValid() || !providerEnabled("saml");
+    return !providerEnabled("saml");
   },
 
   disallowGuests() {
@@ -121,7 +113,7 @@ Template.newAdminOrganization.helpers({
 
   saveDisabled() {
     const instance = Template.instance();
-    return !globalDb.isFeatureKeyValid() || !instance.hasChanged.get() || instance.formState.get() === "submitting";
+    return !instance.hasChanged.get() || instance.formState.get() === "submitting";
   },
 });
 

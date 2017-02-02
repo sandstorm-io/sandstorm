@@ -259,7 +259,9 @@ Template.adminNotificationItem.helpers({
   },
 
   isUrgent() {
-    const map = { cantRenewFeatureKey: true, trialFeatureKeyExpired: true };
+    // There used to be urgent notifications, but currently there are none. Maybe there will be
+    // new ones in the future, though?
+    const map = { /* someTypeName: true */ };
     return map[this.admin.type];
   },
 });

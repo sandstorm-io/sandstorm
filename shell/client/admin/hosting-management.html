@@ -6,14 +6,6 @@
     </ul>
   </h1>
 
-  {{#unless hasFeatureKey }}
-    <div class="flash-message warning-message">
-        To enable hosting management, enter your
-        {{#linkTo route="newAdminFeatureKey"}}
-          Sandstorm for Work feature key
-        {{/linkTo}}.
-    </div>
-  {{/unless}}
   <div class="flash-message warning-message">
       This feature is experiemental and only works with the LDAP identity provider at the moment. Use with caution.
   </div>

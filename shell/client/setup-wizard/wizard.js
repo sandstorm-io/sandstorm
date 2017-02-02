@@ -7,8 +7,7 @@ HasAdmin = new Mongo.Collection("hasAdmin");
 
 const AdminToken = new Mongo.Collection("adminToken"); // see Meteor.publish("adminToken")
 
-const setupSteps = ["intro", "identity", "email", "preinstalled", "user", "success"];
-const setupStepsForWork = [
+const setupSteps = [
   "intro",
   "identity",
   "organization",
@@ -82,17 +81,15 @@ const setupIsStepCompleted = {
 };
 
 const getRouteAfter = (currentStep) => {
-  const steps = globalDb.isFeatureKeyValid() ? setupStepsForWork : setupSteps;
-  const currentIdx = steps.indexOf(currentStep);
+  const currentIdx = setupSteps.indexOf(currentStep);
   const nextIdx = currentIdx + 1;
-  return setupStepRouteMap[steps[nextIdx]];
+  return setupStepRouteMap[setupSteps[nextIdx]];
 };
 
 const getRouteBefore = (currentStep) => {
-  const steps = globalDb.isFeatureKeyValid() ? setupStepsForWork : setupSteps;
-  const currentIdx = steps.indexOf(currentStep);
+  const currentIdx = setupSteps.indexOf(currentStep);
   const prevIdx = currentIdx - 1;
-  return setupStepRouteMap[steps[prevIdx]];
+  return setupStepRouteMap[setupSteps[prevIdx]];
 };
 
 Template.setupWizardProgressBar.helpers({
@@ -105,26 +102,24 @@ Template.setupWizardProgressBar.helpers({
   },
 
   currentStepAtOrPast(otherStep) {
-    const steps = globalDb.isFeatureKeyValid() ? setupStepsForWork : setupSteps;
     const currentStep = Template.instance().data.currentStep;
-    const currentIdx = steps.indexOf(currentStep);
-    const otherIdx = steps.indexOf(otherStep);
+    const currentIdx = setupSteps.indexOf(currentStep);
+    const otherIdx = setupSteps.indexOf(otherStep);
     if (otherIdx === -1) {
-      console.error("Invalid step '" + otherStep + "' - acceptable steps are " + steps);
+      console.error("Invalid step '" + otherStep + "' - acceptable steps are " + setupSteps);
     }
 
     return currentIdx >= otherIdx;
   },
 
   itemClassName() {
-    return globalDb.isFeatureKeyValid() ? "of-five" : "of-four";
+    return "of-five";
   },
 
   mayJumpTo(step) {
     // You may jump to a step if all the previous steps are considered completed.
-    const steps = globalDb.isFeatureKeyValid() ? setupStepsForWork : setupSteps;
-    for (let i = 0; i < steps.length; i++) {
-      const stepName = steps[i];
+    for (let i = 0; i < setupSteps.length; i++) {
+      const stepName = setupSteps[i];
       if (stepName === step) {
         return true;
       }
@@ -135,10 +130,6 @@ Template.setupWizardProgressBar.helpers({
     }
 
     return true;
-  },
-
-  hasFeatureKey() {
-    return globalDb.isFeatureKeyValid();
   },
 });
 
@@ -277,19 +268,11 @@ Template.setupWizardIntro.helpers({
   freshAccountsUi() {
     return new AccountsUi(globalDb);
   },
-
-  hasFeatureKey() {
-    return globalDb.isFeatureKeyValid();
-  },
 });
 
 Template.setupWizardIntro.events({
-  "click .setup-sandstorm-standard"() {
+  "click .setup-sandstorm"() {
     Router.go("setupWizardIdentity");
-  },
-
-  "click .setup-sandstorm-for-work"() {
-    Router.go("setupWizardFeatureKey");
   },
 
   "click .make-self-admin"() {
@@ -308,28 +291,6 @@ Template.setupWizardIntro.events({
   "click .sign-in-button"() {
     const instance = Template.instance();
     instance.showSignInPanel.set(true);
-  },
-});
-
-Template.setupWizardFeatureKey.helpers({
-  currentFeatureKey() {
-    return globalDb.currentFeatureKey();
-  },
-
-  nextButtonClass() {
-    return globalDb.isFeatureKeyValid() ? "" : "disabled";
-  },
-});
-
-Template.setupWizardFeatureKey.events({
-  "click .setup-next-button"() {
-    if (globalDb.isFeatureKeyValid()) {
-      Router.go(getRouteAfter("intro"));
-    }
-  },
-
-  "click .setup-back-button"() {
-    Router.go("setupWizardIntro");
   },
 });
 
@@ -356,12 +317,8 @@ Template.setupWizardOrganization.onCreated(function () {
   const gappsChecked = globalDb.getOrganizationGoogleEnabled() || false;
   const emailChecked = globalDb.getOrganizationEmailEnabled() || false;
 
-  const featureKey = globalDb.currentFeatureKey();
-  const featureKeyContactAddress = featureKey && featureKey.customer && featureKey.customer.contactEmail;
-  const inferredDomain = featureKeyContactAddress && featureKeyContactAddress.split("@")[1] || "";
-
-  const gappsDomain = globalDb.getOrganizationGoogleDomain() || inferredDomain;
-  const emailDomain = globalDb.getOrganizationEmailDomain() || inferredDomain;
+  const gappsDomain = globalDb.getOrganizationGoogleDomain() || "example.com";
+  const emailDomain = globalDb.getOrganizationEmailDomain() || "example.com";
 
   const disallowGuests = globalDb.getOrganizationDisallowGuestsRaw() || false;
   const shareContacts = globalDb.getOrganizationShareContactsRaw() || false;
@@ -378,10 +335,6 @@ Template.setupWizardOrganization.onCreated(function () {
 });
 
 Template.setupWizardOrganization.helpers({
-  hasFeatureKey() {
-    return globalDb.isFeatureKeyValid();
-  },
-
   emailChecked() {
     const instance = Template.instance();
     return instance.emailChecked.get();
@@ -957,7 +910,6 @@ const setupRoute = RouteController.extend({
       Meteor.subscribe("admin", token),
       Meteor.subscribe("adminServiceConfiguration", token),
       Meteor.subscribe("credentials"),
-      Meteor.subscribe("featureKey", true, token),
       Meteor.subscribe("hasUsers"),
       Meteor.subscribe("hasAdmin", token),
     ];
@@ -1003,11 +955,6 @@ Template.setupWizardTokenExpired.helpers({
 Router.map(function () {
   this.route("setupWizardIntro", {
     path: "/setup",
-    layoutTemplate: "setupWizardLayout",
-    controller: setupRoute,
-  });
-  this.route("setupWizardFeatureKey", {
-    path: "/setup/feature-key",
     layoutTemplate: "setupWizardLayout",
     controller: setupRoute,
   });

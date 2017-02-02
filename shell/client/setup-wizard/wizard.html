@@ -53,15 +53,13 @@
       Identity providers
     {{/setupWizardProgressBarItem}}
 
-    {{#if hasFeatureKey}}
-      {{#setupWizardProgressBarItem stepName="organization"
-                                     isCurrentStep=(currentStepIs "organization")
-                                     mayJumpTo=(mayJumpTo "organization")
-                                     route="setupWizardOrganization"
-                                     className=itemClassName}}
-        Organization
-      {{/setupWizardProgressBarItem}}
-    {{/if}}
+    {{#setupWizardProgressBarItem stepName="organization"
+                                   isCurrentStep=(currentStepIs "organization")
+                                   mayJumpTo=(mayJumpTo "organization")
+                                   route="setupWizardOrganization"
+                                   className=itemClassName}}
+      Organization
+    {{/setupWizardProgressBarItem}}
 
     {{#setupWizardProgressBarItem stepName="email"
                                    isCurrentStep=(currentStepIs "email")
@@ -92,9 +90,7 @@
   </ol>
   <div class="setup-progress-bar">
     <div class="{{#if currentStepAtOrPast "identity"    }}complete{{else}}incomplete{{/if}}"></div>
-    {{#if hasFeatureKey}}
     <div class="{{#if currentStepAtOrPast "organization"}}complete{{else}}incomplete{{/if}}"></div>
-    {{/if}}
     <div class="{{#if currentStepAtOrPast "email"       }}complete{{else}}incomplete{{/if}}"></div>
     <div class="{{#if currentStepAtOrPast "preinstalled"}}complete{{else}}incomplete{{/if}}"></div>
     <div class="{{#if currentStepAtOrPast "user"        }}complete{{else}}incomplete{{/if}}"></div>
@@ -221,149 +217,14 @@
     </p>
     {{/if}}
   {{else}}
-    <div class="setup-intro-instruction-block">
-      <p class="setup-intro-instruction">
-        Choose what type of Sandstorm server to set up:
-      </p>
-      <p class="setup-intro-instruction-deemphasized">
-        (You can change your mind later.)
-      </p>
+    <div class="sandstorm-logo-row">
+      <div class="sandstorm-logo"></div>
     </div>
 
-    <div class="setup-type-selection">
-      <div class="setup-type">
-        <h3>Sandstorm Standard</h3>
-        <div class="setup-type-byline">
-          Open source
-        </div>
-        <div class="setup-pricing-block">
-          <div class="image standard">
-
-          </div>
-          <div class="text">
-            <div class="price">
-              Free
-            </div>
-            <span class="price-notes"></span>
-          </div>
-        </div>
-        {{#if hasFeatureKey}}
-          <button class="setup-sandstorm-standard" disabled>
-            Sandstorm for Work chosen
-          </button>
-        {{else}}
-          <button class="setup-sandstorm-standard">
-            Begin Standard Setup
-          </button>
-        {{/if}}
-
-        <ul class="setup-features">
-          <li>Sandstorm Standard features
-            <ul class="feature-list">
-              <li><span class="icon icon-check"></span> Use any app on the App Market</li>
-              <li><span class="icon icon-check"></span> Single sign-on to access all apps</li>
-              <li><span class="icon icon-check"></span> Collaborate with anyone on the server</li>
-              <li><span class="icon icon-check"></span> Guest access</li>
-              <li><span class="icon icon-check"></span> Individual app sandboxing</li>
-              <li><span class="icon icon-check"></span> Automatic app updates</li>
-              <li><span class="icon icon-check"></span> App notifications</li>
-              <li><span class="icon icon-check"></span> Multi-app search</li>
-              <li><span class="icon icon-check"></span> One-click backups</li>
-            </ul>
-          </li>
-          <li class="muted">
-            No Sandstorm for Work features
-            <ul class="feature-list">
-              <li><span class="icon icon-close"></span> No Organization-wide access control</li>
-              <li><span class="icon icon-close"></span> No ActiveDirectory/LDAP/SAML integration</li>
-              <li><span class="icon icon-close"></span> No Personalization &amp; whitelabeling</li>
-            </ul>
-          </li>
-        </ul>
-      </div>
-
-      <div class="setup-type">
-        <h3>Sandstorm for Work</h3>
-        <div class="setup-type-byline setup-for-work">
-          Introductory Offer &dash; Save 50%
-        </div>
-        <div class="setup-pricing-block">
-          <div class="image sfw">
-
-          </div>
-          <div class="text">
-            <div class="price">
-              $5
-              <del class="former-price">$10</del>
-            </div>
-            <span class="price-notes">/user/month - billed annually</span>
-          </div>
-        </div>
-        <button class="setup-sandstorm-for-work">
-          Begin Sandstorm for Work Setup
-        </button>
-
-        <ul class="setup-features">
-          <li>Sandstorm Standard features
-            <ul class="feature-list">
-              <li><span class="icon icon-check"></span> Use any app on the App Market</li>
-              <li><span class="icon icon-check"></span> Single sign-on to access all apps</li>
-              <li><span class="icon icon-check"></span> Collaborate with anyone on the server</li>
-              <li><span class="icon icon-check"></span> Guest access</li>
-              <li><span class="icon icon-check"></span> Individual app sandboxing</li>
-              <li><span class="icon icon-check"></span> Automatic app updates</li>
-              <li><span class="icon icon-check"></span> App notifications</li>
-              <li><span class="icon icon-check"></span> Multi-app search</li>
-              <li><span class="icon icon-check"></span> One-click backups</li>
-            </ul>
-          </li>
-          <li>
-            Sandstorm for Work features
-            <ul class="feature-list">
-              <li><span class="icon icon-check"></span> Organization-wide access control</li>
-              <li><span class="icon icon-check"></span> ActiveDirectory/LDAP/SAML integration</li>
-              <li><span class="icon icon-check"></span> Personalization &amp; whitelabeling</li>
-            </ul>
-          </li>
-        </ul>
-      </div>
-    </div>
-  {{/if}}
-</div>
-</template>
-
-<template name="setupWizardFeatureKey">
-<div class="setup-page-content">
-  <h1 class="setup-page-title">Sandstorm for Work feature key</h1>
-
-  {{#if currentFeatureKey}}
-    <h4>Current feature key</h4>
-    {{> adminFeatureKeyDetails featureKey=currentFeatureKey }}
-    {{> adminFeatureKeyModifyForm "" }}
-  {{else}}
-    <h4>Upload feature key</h4>
-    <p>To make use of Sandstorm for Work features like LDAP and SAML login and organization
-      management, enter your feature key.</p>
-    {{> featureKeyUploadForm "" }}
-
-    <h4>Don't have one?</h4>
-    <p>Sandstorm for Work adds LDAP support, with more features arriving soon.</p>
-    <a class="button-secondary request-feature-key"
-       target="_blank"
-       href="https://sandstorm.io/get-feature-key">
-       Request a feature key
-    </a>
-  {{/if}}
-
-
-  {{#setupWizardButtonRow}}
-    <button class="setup-next-button" {{nextButtonClass}}>
-      Next
+    <button class="setup-sandstorm">
+      Begin Sandstorm Setup
     </button>
-    <button class="setup-back-button">
-      Back
-    </button>
-  {{/setupWizardButtonRow}}
+  {{/if}}
 </div>
 </template>
 
@@ -382,7 +243,7 @@
     Configure the identity provider or providers you wish to enable.
   </p>
 
-  {{> adminIdentityProviderTable idpData=idpData featureKeyRoute="setupWizardFeatureKey" }}
+  {{> adminIdentityProviderTable idpData=idpData }}
 
   {{#setupWizardButtonRow}}
     <button class="setup-next-button" {{nextHtmlDisabled}}>
@@ -399,7 +260,6 @@
 <div class="setup-page-content">
   <h1 class="setup-page-title">Organization settings</h1>
 
-{{#if hasFeatureKey}}
   {{> setupWizardProgressBar currentStep="organization"}}
 
   {{> organizationSettingsBlurb "" }}
@@ -490,12 +350,6 @@
       Back
     </button>
   {{/setupWizardButtonRow}}
-{{else}}
-  <p>Sandstorm for Work allows you to define an organization.  To use Sandstorm for Work, please
-  {{#linkTo route="setupWizardFeatureKey"}}
-    provide a feature key
-  {{/linkTo}}.</p>
-{{/if}}
 </div>
 </template>
 

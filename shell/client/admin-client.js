@@ -24,7 +24,6 @@ const newAdminRoute = RouteController.extend({
     const subs = [
       Meteor.subscribe("admin", token),
       Meteor.subscribe("adminServiceConfiguration", token),
-      Meteor.subscribe("featureKey", true, token),
     ];
 
     return subs;
@@ -169,10 +168,6 @@ Router.map(function () {
   });
   this.route("newAdminStats", {
     path: "/admin/stats",
-    controller: newAdminRoute,
-  });
-  this.route("newAdminFeatureKey", {
-    path: "/admin/feature-key",
     controller: newAdminRoute,
   });
   this.route("newAdminOrganization", {

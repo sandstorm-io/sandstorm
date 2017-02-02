@@ -40,15 +40,6 @@ const publicAdminSettings = [
   "billingPromptUrl",
 ];
 
-const FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS = [
-  "customer", "expires", "features", "isElasticBilling", "isTrial", "issued", "userLimit",
-  "secret", "renewalProblem",
-];
-
-const PUBLIC_FEATURE_KEY_FIELDS = [
-  "expires", "features",
-];
-
 const smtpConfigShape = {
   hostname: String,
   port: Number,
@@ -115,25 +106,6 @@ Meteor.methods({
     check(value, Match.OneOf(null, String, Date, Boolean));
 
     Settings.upsert({ _id: name }, { $set: { value: value } });
-  },
-
-  submitFeatureKey: function (token, textBlock) {
-    checkAuth(token);
-    check(textBlock, Match.OneOf(null, String));
-
-    const db = this.connection.sandstormDb;
-
-    // setNewFeatureKey is provided in feature-key.js
-    setNewFeatureKey(db, textBlock);
-  },
-
-  renewFeatureKey: function (token) {
-    checkAuth(token);
-
-    const db = this.connection.sandstormDb;
-
-    // renewFeatureKey is provided in feature-key.js.
-    renewFeatureKey(db, { interactive: true });
   },
 
   saveOrganizationSettings(token, params) {
@@ -648,65 +620,6 @@ Meteor.publish("adminApiTokens", function (token) {
       owner: 1,
     },
   });
-});
-
-Meteor.publish("featureKey", function (forAdmin, token) {
-  // Note: we publish the *raw* feature key data to the client, exactly as it was loaded from the
-  // signed blob.  Any mapping from the raw data to "effective" feature key/limits should be applied
-  // in the implementation of db.currentFeatureKey().
-  if (forAdmin && !authorizedAsAdmin(token, this.userId)) return [];
-
-  const fields = forAdmin ? FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS
-                          : PUBLIC_FEATURE_KEY_FIELDS;
-
-  const db = this.connection.sandstormDb;
-  const featureKeyQuery = db.collections.featureKey.find({ _id: "currentFeatureKey" });
-  const observeHandle = featureKeyQuery.observe({
-    added: (doc) => {
-      // Load and verify the signed feature key.
-      const buf = new Buffer(doc.value);
-      const featureKey = loadSignedFeatureKey(buf);
-      if (doc.renewalProblem) {
-        featureKey.renewalProblem = doc.renewalProblem;
-      }
-
-      if (featureKey) {
-        // If the signature is valid, publish the feature key information.
-        const filteredFeatureKey = _.pick(featureKey, ...fields);
-        this.added("featureKey", doc._id, filteredFeatureKey);
-      }
-    },
-
-    changed: (newDoc, oldDoc) => {
-      // Load and reverify the new signed feature key.
-      const buf = new Buffer(newDoc.value);
-      const featureKey = loadSignedFeatureKey(buf);
-      if (newDoc.renewalProblem) {
-        featureKey.renewalProblem = newDoc.renewalProblem;
-      } else if (oldDoc.renewalProblem) {
-        featureKey.renewalProblem = undefined;
-      }
-
-      if (featureKey) {
-        // If the signature is valid, call this.changed() with the interesting fields.
-        const filteredFeatureKey = _.pick(featureKey, ...fields);
-        this.changed("featureKey", newDoc._id, filteredFeatureKey);
-      } else {
-        // Otherwise, call this.removed(), since the new feature key is invalid.
-        this.removed("featureKey", oldDoc._id);
-      }
-    },
-
-    removed: (oldDoc) => {
-      this.removed("featureKey", oldDoc._id);
-    },
-  });
-
-  this.onStop(() => {
-    observeHandle.stop();
-  });
-
-  this.ready();
 });
 
 Meteor.publish("hasAdmin", function (token) {

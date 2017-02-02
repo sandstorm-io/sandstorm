@@ -32,10 +32,6 @@ Template.newAdminHostingManagement.helpers({
     return instance.formState.get().message;
   },
 
-  hasFeatureKey() {
-    return globalDb.isFeatureKeyValid();
-  },
-
   quotaEnabled: function () {
     const instance = Template.instance();
     return instance.quotaEnabled.get();

@@ -1,6 +1,6 @@
 <template name="organizationSettingsBlurb">
   <p>
-    Sandstorm for Work allows you to define an organization. You can automatically apply some settings
+    Sandstorm allows you to define an organization. You can automatically apply some settings
     to all members of your organization. Users within the organization will automatically be able to
     log in, install apps, and create grains.
   </p>
@@ -13,15 +13,6 @@
       <li>Organization settings</li>
     </ul>
   </h1>
-
-  {{#unless hasFeatureKey }}
-    <div class="flash-message warning-message">
-        To enable organization settings, enter your
-        {{#linkTo route="newAdminFeatureKey"}}
-          Sandstorm for Work feature key
-        {{/linkTo}}.
-    </div>
-  {{/unless}}
 
   {{> organizationSettingsBlurb "" }}
 

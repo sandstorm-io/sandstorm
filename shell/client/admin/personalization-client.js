@@ -7,9 +7,6 @@ Template.newAdminPersonalization.onCreated(function () {
   this.termsOfServiceUrl = new ReactiveVar(globalDb.getSettingWithFallback("termsUrl", ""));
   this.privacyPolicyUrl = new ReactiveVar(globalDb.getSettingWithFallback("privacyUrl", ""));
 
-  // While these whitelabeling features are only for Sandstorm for Work users, it's simpler to just
-  // always populate these fields in the DB and in RPC shapes and only make use of their values if
-  // the server has a valid feature key.
   this.whitelabelCustomLoginProviderName =
     new ReactiveVar(globalDb.getSettingWithFallback("whitelabelCustomLoginProviderName", ""));
   this.whitelabelHideSendFeedback =
@@ -83,25 +80,18 @@ Template.newAdminPersonalization.helpers({
     return instance.privacyPolicyUrl.get();
   },
 
-  hasFeatureKey() {
-    return globalDb.isFeatureKeyValid();
-  },
-
   logoError() {
     const instance = Template.instance();
     return instance.logoError.get();
   },
 
   logoUrl() {
-    const defaultLogoUrl = "/sandstorm-gradient-logo.svg";
-    if (globalDb.isFeatureKeyValid()) {
-      const assetId = globalDb.getSettingWithFallback("whitelabelCustomLogoAssetId", "");
-      if (assetId) {
-        return `${window.location.protocol}//${globalDb.makeWildcardHost("static")}/${assetId}`;
-      }
+    const assetId = globalDb.getSettingWithFallback("whitelabelCustomLogoAssetId", "");
+    if (assetId) {
+      return `${window.location.protocol}//${globalDb.makeWildcardHost("static")}/${assetId}`;
     }
 
-    return defaultLogoUrl;
+    return "/sandstorm-gradient-logo.svg";
   },
 
   hideTroubleshootingChecked() {

@@ -286,15 +286,12 @@ Template.loginButtonsDialog.helpers({
   },
 
   logoUrl() {
-    const defaultLogoUrl = "/sandstorm-gradient-logo.svg";
-    if (globalDb.isFeatureKeyValid()) {
-      const assetId = globalDb.getSettingWithFallback("whitelabelCustomLogoAssetId", "");
-      if (assetId) {
-        return `${window.location.protocol}//${globalDb.makeWildcardHost("static")}/${assetId}`;
-      }
+    const assetId = globalDb.getSettingWithFallback("whitelabelCustomLogoAssetId", "");
+    if (assetId) {
+      return `${window.location.protocol}//${globalDb.makeWildcardHost("static")}/${assetId}`;
     }
 
-    return defaultLogoUrl;
+    return "/sandstorm-gradient-logo.svg";
   },
 });
 
@@ -329,8 +326,8 @@ Template.loginButtonsList.helpers({
   showTroubleshooting() {
     const hiddenByConfFile = (Meteor.settings && Meteor.settings.public &&
       Meteor.settings.public.hideTroubleshooting);
-    const hiddenByDbSetting = (this._db.isFeatureKeyValid() &&
-      this._db.getSettingWithFallback("whitelabelHideTroubleshooting", false));
+    const hiddenByDbSetting =
+        this._db.getSettingWithFallback("whitelabelHideTroubleshooting", false);
     return !hiddenByConfFile && !hiddenByDbSetting;
   },
 
@@ -385,13 +382,8 @@ Template.emailAuthenticationForm.helpers({
 
 Template.ldapLoginForm.helpers({
   loginProviderLabel() {
-    const defaultLabel = "with LDAP";
-    if (globalDb.isFeatureKeyValid()) {
-      const override = globalDb.getSettingWithFallback("whitelabelCustomLoginProviderName", "");
-      return override || defaultLabel;
-    }
-
-    return defaultLabel;
+    const override = globalDb.getSettingWithFallback("whitelabelCustomLoginProviderName", "");
+    return override || "with LDAP";
   },
 });
 
@@ -477,13 +469,8 @@ Template.devLoginForm.events({
 
 Template.samlLoginForm.helpers({
   loginProviderLabel() {
-    const defaultLabel = "with SAML";
-    if (globalDb.isFeatureKeyValid()) {
-      const override = globalDb.getSettingWithFallback("whitelabelCustomLoginProviderName", "");
-      return override || defaultLabel;
-    }
-
-    return defaultLabel;
+    const override = globalDb.getSettingWithFallback("whitelabelCustomLoginProviderName", "");
+    return override || "with SAML";
   },
 });
 

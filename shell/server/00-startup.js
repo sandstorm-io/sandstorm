@@ -170,13 +170,6 @@ if ("replicaNumber" in Meteor.settings) {
   Meteor.setInterval(Capnp.dumpLocalCapTypeCounts, 60000);
 }
 
-if (!Meteor.settings.replicaNumber) {
-  Meteor.startup(() => {
-    // Defined in feature-key.js.
-    keepFeatureKeyRenewed(globalDb);
-  });
-}
-
 OAuth._checkRedirectUrlOrigin = function (redirectUrl) {
   // Mostly copied from meteor/packages/oauth/oauth_server.js
   // We override this method in order to support login from stand-alone grain domains.

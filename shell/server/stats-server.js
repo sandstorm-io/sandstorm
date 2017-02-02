@@ -205,10 +205,7 @@ function recordStats() {
   // we're allowed to send.
   record.serverAge = age;
 
-  if (globalDb.isFeatureKeyOptedIntoStats()) {
-    record.customerId = globalDb.currentFeatureKey().customer.id;
-    postStats(record);
-  } else if (age > 3) {
+  if (age > 3) {
     const reportSetting = Settings.findOne({ _id: "reportStats" });
 
     if (!reportSetting) {

@@ -562,8 +562,7 @@ Notifications = new Mongo.Collection("notifications", collectionOptions);
 //   admin:        If present, this is a notification intended for an admin.
 //     action:     If present, this is a (string) link that the notification should direct the
 //                 admin to.
-//     type:       The type of notification -- can be "reportStats", "cantRenewFeatureKey", or
-//                 "trialFeatureKeyExpired".
+//     type:       The type of notification -- currently can only be "reportStats".
 //   appUpdates:   If present, this is an app update notification. It is an object with the appIds
 //                 as keys.
 //     $appId:     The appId that has an outstanding update.
@@ -710,27 +709,9 @@ KeybaseProfiles = new Mongo.Collection("keybaseProfiles", collectionOptions);
 //       for now and we just trust Keybase.
 
 FeatureKey = new Mongo.Collection("featureKey", collectionOptions);
-// Responsible for storing the current feature key that is active on the server.  Contains a single
-// document with two keys:
-//
-//   _id: "currentFeatureKey"
-//   value: the still-signed, binary-encoded feature key
-//          (a feature key with comments removed and base64 decoded)
-//   renewalProblem: If we tried to renew this feature key and failed, an object describing that
-//       failure. Includes exactly one of the following fields:
-//     noPaymentSource: True, indicating that the key could not be renewed because there was no
-//         payment source set for this key.
-//     paymentFailed: String error message returned by our payment processor describing why they
-//         declined the charge.
-//     noSuchKey: True, indicating the key doesn't exist.
-//     revoked: True, indicating the key has been revoked.
-//     unknownResponse: String response text from the renewal API which wasn't recognized. Should
-//         be reported to Sandstorm.
-//     exception: String error message from an exception thrown by the renewal code. This usually
-//         indicates some sort of connectivity problem, so could be reported to the user as:
-//         "There was a problem reaching the feature key renewal server."
-//
-// This is only intended to be visible on the server.
+// OBSOLETE: This was used to implement the Sandstorm for Work paywall, which has been removed.
+//   Collection object still defined because it could have old data in it, for servers that used
+//   to have a feature key.
 
 SetupSession = new Mongo.Collection("setupSession", collectionOptions);
 // Responsible for storing information about setup sessions.  Contains a single document with three
@@ -1022,7 +1003,6 @@ SandstormDb = function (quotaManager) {
     plans: Plans,
     appIndex: AppIndex,
     keybaseProfiles: KeybaseProfiles,
-    featureKey: FeatureKey,
     setupSession: SetupSession,
     desktopNotifications: DesktopNotifications,
     standaloneDomains: StandaloneDomains,
@@ -1146,10 +1126,6 @@ _.extend(SandstormDb.prototype, {
   },
 
   isUserInOrganization(user) {
-    if (!this.isFeatureKeyValid()) {
-      return false;
-    }
-
     for (let i = 0; i < user.loginIdentities.length; i++) {
       let identity = Meteor.users.findOne({ _id: user.loginIdentities[i].id });
       if (this.isIdentityInOrganization(identity)) {
@@ -1516,22 +1492,6 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  isFeatureKeyValid() {
-    const featureKey = this.currentFeatureKey();
-    return !!featureKey;
-  },
-
-  isFeatureKeyValidAndNotExpired() {
-    const featureKey = this.currentFeatureKey();
-    return featureKey && (parseInt(featureKey.expires) > (Date.now() / 1000));
-  },
-
-  isFeatureKeyOptedIntoStats() {
-    const featureKey = this.currentFeatureKey();
-    return featureKey && featureKey.isTrial && parseInt(featureKey.issued) > 1472601600;
-    // 1472601600 is 2016 Aug 31 in seconds since the epoch
-  },
-
   getLdapUrl() {
     const setting = this.collections.settings.findOne({ _id: "ldapUrl" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
@@ -1624,7 +1584,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   getOrganizationDisallowGuests() {
-    return this.getOrganizationDisallowGuestsRaw() && this.isFeatureKeyValid();
+    return this.getOrganizationDisallowGuestsRaw();
   },
 
   getOrganizationDisallowGuestsRaw() {
@@ -1633,7 +1593,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   getOrganizationShareContacts() {
-    return this.getOrganizationShareContactsRaw() && this.isFeatureKeyValid();
+    return this.getOrganizationShareContactsRaw();
   },
 
   getOrganizationShareContactsRaw() {
@@ -1939,19 +1899,19 @@ _.extend(SandstormDb.prototype, {
 
   isHideAboutEnabled() {
     const setting = this.collections.settings.findOne({ _id: "whiteLabelHideAbout" });
-    return setting && setting.value && this.isFeatureKeyValid();
+    return setting && setting.value;
   },
 
   isQuotaEnabled() {
     if (Meteor.settings.public.quotaEnabled) return true;
 
     const setting = this.collections.settings.findOne({ _id: "quotaEnabled" });
-    return setting && setting.value && this.isFeatureKeyValid();
+    return setting && setting.value;
   },
 
   isQuotaLdapEnabled() {
     const setting = this.collections.settings.findOne({ _id: "quotaLdapEnabled" });
-    return setting && setting.value && this.isFeatureKeyValid();
+    return setting && setting.value;
   },
 
   updateUserQuota(user) {
@@ -2821,63 +2781,6 @@ if (Meteor.isServer) {
 
     this.ready();
   });
-}
-
-const processRawFeatureKey = function (featureKey, renewalProblem) {
-  // Maps the raw data of a signed feature key to the desired "effective" feature key we should use
-  // to govern high-level behavior.
-  const processedFeatureKey = _.clone(featureKey);
-
-  if (renewalProblem) {
-    processedFeatureKey.renewalProblem = renewalProblem;
-  }
-
-  // Hook for future extensibility.
-  return processedFeatureKey;
-};
-
-if (Meteor.isServer) {
-  const processFeatureKeyDoc = doc => {
-    if (!doc) return null;
-    const buf = new Buffer(doc.value);
-    // We use loadSignedFeatureKey from server/feature-key.js.  This should probably get refactored
-    // once we can use ES6 modules.
-    const rawFeatureKey = loadSignedFeatureKey(buf);
-    return processRawFeatureKey(rawFeatureKey, doc.renewalProblem);
-  };
-
-  SandstormDb.prototype.currentFeatureKey = function () {
-    // Returns an object with all of the current signed feature key properties,
-    // or null, if the feature key is missing or not correctly signed.
-    const doc = this.collections.featureKey.findOne({ _id: "currentFeatureKey" });
-    return processFeatureKeyDoc(doc);
-  };
-
-  SandstormDb.prototype.observeFeatureKey = function (callback) {
-    // Calls `callback(currentFeatureKey())` whenever the feature key changes. Returns an observe
-    // handle (use .stop() to stop observing).
-
-    return this.collections.featureKey.find({ _id: "currentFeatureKey" }).observe({
-      added(doc) {
-        callback(processFeatureKeyDoc(doc));
-      },
-
-      changed(newDoc, oldDoc) {
-        if (newDoc.value !== oldDoc.value) {
-          callback(processFeatureKeyDoc(newDoc));
-        }
-      },
-
-      removed() {
-        callback(null);
-      },
-    });
-  };
-} else {
-  SandstormDb.prototype.currentFeatureKey = function () {
-    const featureKey = this.collections.featureKey.findOne({ _id: "currentFeatureKey" });
-    return processRawFeatureKey(featureKey);
-  };
 }
 
 if (Meteor.isServer) {

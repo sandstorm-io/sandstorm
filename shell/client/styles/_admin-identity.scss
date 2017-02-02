@@ -48,7 +48,7 @@
     @extend %idp-table-row;
     color: #5b5b5b;
     background-color: white;
-    button.get-feature-key, button.configure-idp {
+    button.configure-idp {
       @extend %button-base;
       @extend %button-secondary;
       min-height: 26px;

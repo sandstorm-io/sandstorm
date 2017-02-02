@@ -35,8 +35,8 @@ benefits.
 - A single codebase can support running within Sandstorm as well as running outside of Sandstorm, if
   you wish.
 
-The tutorial uses a PHP app as an example. **Sandstorm supports any
-programming language that runs on Linux**, not just PHP, such as
+The tutorial uses a PHP app as an example, but **Sandstorm supports any
+programming language that runs on Linux**, such as
 Meteor, Python, Rails, Node, PHP, C++, Go, Rust, and more. Read about
 [vagrant-spk's platform stacks](platform-stacks.md) to see how to optimize
 your package for your app's programming language.

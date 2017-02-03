@@ -180,7 +180,7 @@ Key concepts:
 
 There are three standard levels of users.
 
-- **Visitors** can use and re-share grains that have been shared with them. They cannot create grains of their own nor install apps. By default, anyone can click **Sign in** and become a Visitor. (This can be disabled on Sandstorm for Work servers.)
+- **Visitors** can use and re-share grains that have been shared with them. They cannot create grains of their own nor install apps. By default, anyone can click **Sign in** and become a Visitor. If you would prefer to disallow visitors entirely, you can enable the setting "Dissalow collaboration with users outside the organization", found under "Organization settings" in the admin panel.
 
 - **Users** can install apps for their own use, create grains, and share them with others. By default, these users must be invited by an Admin.
 

@@ -1,19 +1,15 @@
-[Sandstorm for Work](https://sandstorm.io/business) is the name for a collection of features that
-are typically used by companies. Customers can buy a _feature key_ to enable these features on a
-Sandstorm server running at their own organization. Special pricing, sometimes including free
-feature keys, are available to [non-profits and community groups](#special-pricing). For pricing,
-please read the information on the [main website](https://sandstorm.io/business).
+Sandstorm offers [a variety of features](https://sandstorm.io/business) intended for use by
+organizations (e.g., companies) that make Sandstorm available to their members (e.g., employees).
+These features used to be a part of a product called "Sandstorm for Work", but have since been
+merged into the standard Sandstorm build, available to everyone.
 
-For now, feature keys are typically 60-day trial keys. This gives you time to evaluate Sandstorm for
-Work, and it gives us time to finish testing the payments system.
-
-## Sandstorm for Work in depth
+## Organizational features in depth
 
 ### Defining an organization, and its impact on permissions
 
-Many features of Sandstorm for Work depend on a server administrator specifying the group of users that will
-be working together using Sandstorm. We call this **organization management.** You can enable and disable
-organization-related features via the `/admin/organization` settings area.
+Many of Sandstorm's organization features depend on a server administrator specifying the group of users
+that will be working together using Sandstorm. We call this **organization management.** You can enable
+and disable organization-related features via the `/admin/organization` settings area.
 
 To apply settings to all users within an organization, you must use organization management settings to
 configure the boundary of your organization with regard to at least one login provider. Users within the
@@ -90,8 +86,6 @@ To enable SAML login on your Sandstorm server, take the following steps:
 
 - Log into your Sandstorm server as an administrator.
 
-- Make sure you have enabled [Sandstorm for Work on your server](#enabling-sandstorm-for-work).
-
 - Click **Admin panel** within your Sandstorm server; this should take you to `/admin`.
 
 - Under "Configuration", click on "Identity providers"; this should take you to `/admin/identity`.
@@ -124,8 +118,6 @@ To enable LDAP login, take the following steps:
 
 - Log into your Sandstorm server as an administrator.
 
-- Make sure you have enabled [Sandstorm for Work on your server](#enabling-sandstorm-for-work).
-
 - Click **Admin panel** within your Sandstorm server; this should take you to `/admin`.
 
 - Under "Configuration", click on "Identity providers"; this should take you to `/admin/identity`.
@@ -155,23 +147,10 @@ Implementation notes for LDAP that may apply to your site:
   logging in. `cn` is short for common name. If your LDAP server is configured differently, please
   adjust the **LDAP given name attribute**.
 
-### How we calculate the number of users on your server
-
-Sandstorm for Work's pricing counts monthly **active** users.
-
-For the most flexible billing, choose monthly billing. In this mode, you will be charged each 30 days
-according to the number of users who had actually logged in and opened a grain in the last 30 days.
-
-For example, if you use monthly billing, if there are 2000 people who work with you, but only 100
-are using Sandstorm, and all 100 use Sandstorm at least once a month, you would pay for 100 users
-that month.
-
-Alternatively, you can choose annual billing. Here, you specify a user limit at purchase
-time. Sandstorm will not allow more than this many users to log in during any 30-day period.
-
 ### Whitelabeling
 
-Sandstorm for Work adds server customization features that allow you to:
+You may customize Sandstorm's appearance to make it appear more like a service of your organization.
+For instance, you can:
 
 - Change the logo used when users sign in
 
@@ -211,97 +190,3 @@ that you share with the people who need access.
 
 **Global audit logging.** Monitor data across the whole organization to keep track of who has
 accessed what.
-
-If you're interested in these features, we'd love to hear from you. Please [contact
-us](https://sandstorm.io/business)!
-
-### All about feature keys
-
-A feature key is a text file of this format:
-
-```
---------------------- BEGIN SANDSTORM FEATURE KEY ----------------------
-AAAAB3NzaC1yc2EAAAADAQABAAABAQC80vEoj2Mgpprswcj5WmWY4KLwU/SWb6UE+FVpHg6+
-qwVpCggjJiPYH/WZX7d4tuqXtifx6uuQp1Pm8So86ke3AQODHFmAVgqt19QcWu1LkEFEL1c2
-4RhL8gM8lxpzWBn/3eRZ+rdUNSaVJwrXHRetjetwksfyaByQwApSphip2+HGSMxlEqATg5uh
-mxR0PzpfIwLxun8rc18j8JZQLHUim1njS8X/p7E3s9/6HeGz
----------------------- END SANDSTORM FEATURE KEY -----------------------
-```
-
-It is a text serialization of a [Cap'n Proto](https://capnproto.org/) structure, defined in
-[feature-key.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/feature-key.capnp).
-Feature keys are signed by an ed25519 signing key.
-
-If you are developing Sandstorm, and you need to enable Sandstorm for Work features, you can get a
-testing feature key by contacting Kenton Varda. You must also enable testing mode by setting
-`IS_TESTING=yes` in `sandstorm.conf` for testing keys to be considered valid. Note that enabling
-testing mode forfeits all security.
-
-To switch back to Sandstorm Standard, you can **remove the feature key from your system.** You can
-find this option within the admin settings area. This will disable Sandstorm for Work features. All
-your data and user accounts will remain intact, although some users might no longer be able to log
-in due to using LDAP or SAML to create their accounts. You can switch between Sandstorm Standard and
-Sandstorm for Work at any time, so long as you have a valid feature key and are complying with the
-[Sandstorm for Work terms of service](https://work.sandstorm.io/terms).
-
-You are always permitted to **move a feature key between servers,** so long as the feature key is
-not in use on multiple servers at once. You can read more in the [Sandstorm for Work Terms of
-Service.](https://work.sandstorm.io/terms).
-
-**Billing period and renewal.** The Sandstorm for Work admin page on your own server will show a
-renewal/expiration date for your feature key. Under normal operation, your Sandstorm server will
-contact our billing server when your feature key expires and bill you at your own rate for your
-Sandstorm for Work usage. Once that succeeds, your Sandstorm server will automatically download a
-new feature key with an expiration date in the future. For that reason, the "Expires" or "Next
-Renewal" date in the Sandstorm for Work admin page on your server will change over time. If
-Sandstorm is unable to renew your feature key automatically, it will notify all admins by email (if
-correctly configured) and by a notification delivered via the bell menu. Sandstorm for Work will
-continue to operate for at least one week to allow time for the problem to be fixed. For customers
-who chose monthly billing, the new feature key will have a next renewal date one month in the
-future. For customers who chose annual billing, the new feature key will have a next renewal date
-one year in the future. Customers who use a free-of-cost key typically use annual billing and the
-billing rate is $0/year, allowing renewals to occur automatically.
-
-### Open source
-
-The code for Sandstorm for Work is maintained in the Sandstorm open source project, under the Apache
-License 2.0. Feel free to read [the code in GitHub](https://github.com/sandstorm-io/sandstorm).
-
-## How to get Sandstorm for Work
-
-### Installing Sandstorm for Work
-
-Sandstorm comes bundled with the code needed to convert it into a Sandstorm for Work installation.
-
-If you don't have Sandstorm yet, follow these steps first.
-
-- [Install Sandstorm](https://sandstorm.io/install) via the usual directions.
-
-- Obtain a feature key from our automated [feature key generator](https://sandstorm.io/get-feature-key).
-
-Now that you have Sandstorm, enable Sandstorm for Work. These steps work properly on any up-to-date
-Sandstorm install, even if you installed before Sandstorm for Work was avaiable.
-
-- Log in as an administrator.
-
-- Click on your name at the top right of the page, then click on **Admin panel** to visit `/admin`.
-
-- Click on **Sandstorm for Work** to visit `/admin/feature-key`.
-
-- Click **Choose File** to upload a feature key file. You can alternatively paste a feature key into
-  the text area and click Verify.
-
-Once you've done this, you will see information about your feature key on the **Sandstorm for Work**
-page. All Sandstorm features enabled by your feature key will be available to you in the most
-contextually-relevant location.
-
-### Special pricing
-
-We're grateful for all the work of volunteer-oriented and community groups. For that reason,
-charities and small unincorporated community groups can often receive feature keys for free. Please
-[contact us via the Sandstorm for Work page](https://sandstorm.io/business) and tell us one to two
-sentences about your volunteer or community group. It'll be our honor to help.
-
-Free feature keys don't come with priority support, but they do come with our standard
-`support@sandstorm.io` best-effort email support, as well as community support via the sandstorm-dev
-Google Group and GitHub issues.

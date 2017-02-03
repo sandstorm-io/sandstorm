@@ -14,21 +14,21 @@ There are three typical forms this can take.
 
 - **One Sandstorm server per customer.** The hosting provider creates a Linux virtual machine for
   each customer, installs Sandstorm, and gives the customer access to that one server. The customer
-  enjoys full admin access to their Sandstorm server, including the ability to enable enterprise
-  single sign-on by purchasing [Sandstorm for Work](for-work.md); Sandstorm.io shares revenue with
-  the hosting provider.
+  enjoys full admin access to their Sandstorm server.
 
 - **Selling accounts on a Sandstorm server.** The hosting provider installs Sandstorm and each
   customer receives an account on this Sandstorm server, giving the customer easy access to all the
-  productivity and collaboration apps in the [Sandstorm App Market](https://apps.sandstorm.io/). To
-  enforce storage quota limits, the hosting provider requests a feature key and enters into a
-  revenue-sharing agreement with Sandstorm.io.
+  productivity and collaboration apps in the [Sandstorm App Market](https://apps.sandstorm.io/).
+  The hosting provider enforces resource quotas on each user through Sandstorm.
 
-- **Selling accounts on a Sandstorm server, plus auto-scaling.** Sandstorm itself runs on only one
-  machine, and if you are serving many thousands of users, then you would need a clustering
-  solution. Our [oasis.sandstorm.io](https://oasis.sandstorm.io/) service uses proprietary scaling
-  technology that we built for this purpose that is still in beta testing. If you need that
-  technology, please email [sales@sandstorm.io](mailto:sales@sandstorm.io).
+- **Selling accounts on a Sandstorm server, plus auto-scaling.** Sandstorm by default runs on only
+  one machine. If you are serving many thousands of users, then you would need a clustering
+  solution. Our [oasis.sandstorm.io](https://oasis.sandstorm.io/) service uses an alternate back-end
+  for Sandstorm which we call Blackrock. [Blackrock is open source](https://github.com/sandstorm-io/blackrock),
+  so your own hosting service can use it as well. However, at this time, Blackrock is far less
+  "turn-key" than regular Sandstorm. Hence, you will likely have to coordinate closely with the
+  Sandstorm developers and write some additional code if you choose this path. It may be better
+  to start with a single server, then transition to Blackrock when needed.
 
 ## One Sandstorm server per customer
 
@@ -36,9 +36,7 @@ In this approach, the hosting provider creates one Linux virtual machine with Sa
 pre-installed for each customer.  When the customer enables [for-pay features within
 Sandstorm](for-work.md), the hosting provider earns a portion of this revenue. This is the best
 approach for enterprise/organization-oriented hosting providers because it allows the customer the
-ability to enable enterprise single sign-on and other organization-oriented features as part of
-Sandstorm for Work, and allows the hosting provider to earn revenue via Sandstorm for Work
-revenue-sharing.
+ability to enable enterprise single sign-on and other organization-oriented features.
 
 When setting up one Sandstorm server per customer, consider the following tips.
 
@@ -54,11 +52,6 @@ When setting up one Sandstorm server per customer, consider the following tips.
 - Sandstorm works best with an outbound email gateway. Consider providing SMTP service to these
   customers as part of the Sandstorm product. You can provision outbound email via a service like
   Mailgun for free, or you can integrate with your own existing SMTP infrastructure.
-
-- Typical deals with hosting providers include some engineering support from the Sandstorm.io team
-  and a per-customer revenue-share deal for each VM that the hosting provider sells. The hosting
-  provider can also re-sell [Sandstorm for Work](for-work.md) and earn further revenue via rev-share
-  with the Sandstorm.io team.
 
 ## Selling accounts on a Sandstorm server
 
@@ -76,16 +69,14 @@ Sandstorm server.
 Manager](http://support.hostgator.com/articles/what-is-whm-web-host-manager) to create accounts for
 each customer. Configure the account management tool to write user data to LDAP, and create a SAML
 login provider. You can use [SimpleSAMLphp](https://simplesamlphp.org/) as a SAML login
-provider. Use the [Sandstorm for Work](for-work.md) features to enable SAML login.
+provider.
 
 **Synchronizing accounts between SAML and LDAP.** Currently, the quota enforcement code assumes that
 the user's email address is unique, and that the LDAP user uses the same email address as the SAML
 provider provides. The LDAP field name can be configured via `/admin/hosting-management`.
 
 **Quota enforcement and billing prompt.** When the user has run out of disk storage quota, Sandstorm
-shows a billing prompt page. In order to enable quota enforcement, you must obtain a "feature key"
-from the Sandstorm.io team, which typically comes with a revenue-sharing agreement for a percentage
-of the revenue from your hosting service. The billing prompt is a page of your choosing, shown to
+shows a billing prompt page. The billing prompt is a page of your choosing, shown to
 the user via an IFRAME within Sandstorm. You should be sure to configure `target=_blank` in your `A
 HREF` links so that any links open in a new window. At the moment, Sandstorm only checks the user's
 disk quota when the user attempts to launch a grain.
@@ -112,5 +103,8 @@ machines.
 
 The hosting service run by the Sandstorm.io team at
 [oasis.sandstorm.io](https://oasis.sandstorm.io/) uses a scale-out software stack that we wrote for
-this purpose. It is currently in beta, but if you are interested in licensing it, you can email us
-at sales@sandstorm.io.
+this purpose, codenamed Blackrock. [Blackrock is open source](https://github.com/sandstorm-io/blackrock),
+so your own hosting service can use it as well. However, at this time, Blackrock is far less
+"turn-key" than regular Sandstorm. Hence, you will likely have to coordinate closely with the
+Sandstorm developers and write some additional code if you choose this path. It may be better
+to start with a single server, then transition to Blackrock when needed.

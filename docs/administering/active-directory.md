@@ -1,6 +1,5 @@
 This document explains how to integrate with Microsoft Active Directory (also known as AD).  This
-allows all users, or specific users within your Windows domain, to log into a Sandstorm server. The
-integration requires [Sandstorm for Work.](for-work.md)
+allows all users, or specific users within your Windows domain, to log into a Sandstorm server.
 
 ## AD & Sandstorm: Overview
 
@@ -22,7 +21,7 @@ successfully set up Sandstorm!
 Note that you can also set up Sandstorm to integrate with Active Directory using LDAP bind to
 authenticate users. We recommend Active Directory Federation Services or Microsoft Azure AD Single
 Sign-On instead. Both of these products use SAML for authentication. If you must use LDAP bind for
-authentication instead, see the general [Sandstorm for Work documentation about
+authentication instead, see the general [documentation about
 LDAP](for-work.md#authentication-provider-ldap) or email support@sandstorm.io.
 
 ## Windows Azure Active Directory
@@ -125,8 +124,7 @@ follow these instructions.
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/azure-ad-config/10.png)
 
 - Click: "Users and Groups", then "All Users". Click the check-mark to request Sandstorm access for
-  all users. Note that Sandstorm only counts a user for [billing](for-work.md) if they actually log into
-  Sandstorm during a particular month.
+  all users.
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/azure-ad-config/22.png)
 
@@ -199,9 +197,6 @@ Here is a screenshot tour, using example.sandcats.io as an example Sandstorm ser
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/06.png)
 
 - Choose "Permit all users to access this relying party" and click "Next".
-
-    - Note that Sandstorm only counts a user for [billing](for-work.md) purposes if they actually log into
-      Sandstorm during a particular month.
 
 ![Screenshot of this step](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/windows-server-ad-config/07.png)
 

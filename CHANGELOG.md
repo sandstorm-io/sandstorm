@@ -1,9 +1,13 @@
+### v0.201 (2017-02-03) [bugfixes]
+- Sandcats: Fixed bug where if `BIND_IP` was set to 127.0.0.1 (which it often is for servers that sit behind sniproxy), Sandcats requests would fail, eventually leading to certificate expiration.
+
 ### v0.200 (2017-01-28)
 - Added the ability for http-bridge-based apps to publish and request HTTP APIs via the Powerbox without the application needing to understand Cap'n Proto. On the publishing side, an app can declare a list of APIs that it implements in its bridge config. On the requesting side, sandstorm-http-bridge now automatically sets up an HTTP proxy through which the app can redeem powerbox request tokens and make HTTP requests to the remote APIs. Later, this proxy will be extended to support communicating via HTTP to the outside world (with proper permissions checks) and utilizing Sandstorm Cap'n Proto APIs without Cap'n Proto (using JSON instead).
 - Apps can now request IP networking interfaces with TLS encryption support handled by Sandstorm (relying on Sandstorm's certificate bundle, so that the app doesn't need its own).
 - Fixed bug where, when "Disallow collaboration with users outside the organization." is enabled and a user visits a sharing link without logging in, the page doesn't render correctly, leaving the user confused.
 - SAML login now works with non-password-based authentication in ADFS (e.g. Kerberos / Windows login). Apparently, the SAML code was unnecessarily demanding password login previously. We're not sure why the protocol even lets it do that.
 - sandstorm-http-bridge apps can now utilize Cap'n Proto APIs before they begin accepting HTTP connections. Previously, sandstorm-http-bridge would not start accepting connections on its Cap'n Proto API until the app started accepting connections via HTTP.
+- Sandcats: On machines with multiple IP addresses, Sandcats now makes sure that dynamic DNS ends up pointing to the address specified by `BIND_IP`.
 
 ### v0.199 (2017-01-07)
 - App-to-app powerbox is now implemented. A grain can advertise that it is able to serve powerbox requests of a certain type. Powerbox queries for that type will show the grain. When selected, the grain will be able to display a picker / configuring UI embedded directly inside the Powerbox. Currently, only raw-Cap'n-Proto-API apps can take advantage of this, but we'll be adding HTTP bridge support soon.

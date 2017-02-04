@@ -267,8 +267,8 @@ struct BridgeConfig {
 
     permissions @4 :Identity.PermissionSet;
     # The permissions represented by this API. A user interacting with the powerbox will not have
-    # the option of choosing this API unless they posess at least these permissions. Meanwhile,
-    # when a request is made to this API, the `Sandstorm-Permissions` header will always cortain
+    # the option of choosing this API unless they possess at least these permissions. Meanwhile,
+    # when a request is made to this API, the `Sandstorm-Permissions` header will always contain
     # exactly these permissions, even if the user who made the powerbox connection has greater
     # permissions.
     #

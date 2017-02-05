@@ -33,4 +33,4 @@ See [the developer hub in the Sandstorm documentation](https://docs.sandstorm.io
 
 ## Contribute
 
-Want to help?  See our [community page](https://sandstorm.io/community) or get on our [discussion group](https://groups.google.com/group/sandstorm-dev) and let us know!
+Want to help? Check out [CONTRIBUTING.md](https://github.com/sandstorm-io/sandstorm/blob/master/CONTRIBUTING.md). Also see our [community page](https://sandstorm.io/community) or get on our [discussion group](https://groups.google.com/group/sandstorm-dev) and let us know!

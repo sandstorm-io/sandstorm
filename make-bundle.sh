@@ -170,7 +170,7 @@ chmod u+w bundle/bin/*
 # Copy over capnp schemas.
 mkdir -p bundle/usr/include/{capnp,sandstorm}
 cp src/capnp/!(*test*).capnp bundle/usr/include/capnp
-cp src/sandstorm/*.capnp bundle/usr/include/sandstorm
+cp src/sandstorm/!(*-internal).capnp bundle/usr/include/sandstorm
 
 # Copy over node_modules.
 cp -r node_modules bundle

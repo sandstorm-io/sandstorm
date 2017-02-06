@@ -53,7 +53,7 @@ When a user shares a grain with a new recipient, the newly-created sharing link 
 
 Petnames allow the sharing graph to be represented without a global identity authority. With petnames, even if all of the recipients of sharing are completely anonymous, the sending user can still understand who they shared with.
 
-With that said, where possible we will also supplement the sharing graph visualization with names and photos based on [account profiles](../accounts#profiles).
+With that said, where possible we will also supplement the sharing graph visualization with names and photos based on [account profiles](../accounts#profile).
 
 ## Sending
 

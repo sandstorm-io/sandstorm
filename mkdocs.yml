@@ -57,7 +57,7 @@ pages:
     - "Free sandcats.io HTTPS": "administering/sandcats-https.md"
     - "Reverse Proxy": "administering/reverse-proxy.md"
     - "Self-signed SSL": "administering/self-signed.md"
-    - "Sandstorm for Work": "administering/for-work.md"
+    - "Organizational Features": "administering/for-work.md"
     - "Active Directory integration": "administering/active-directory.md"
     - "Frequently asked questions": "administering/faq.md"
     - "Running a Sandstorm hosting provider": "administering/hosting-provider.md"

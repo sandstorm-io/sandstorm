@@ -109,7 +109,7 @@ The Sandstorm distro should support secure boot, like ChromeOS and CoreOS.
 
 Once we have a Sandstorm distro, we can use it to create VM images for easy deploy on OpenStack, AWS, Digital Ocean, Google Cloud, etc.
 
-### Better Devolpment Tools
+### Better Development Tools
 
 Currently, Sandstorm's `spk` and `vagrant-spk` tools are designed to be very general, such that they can work for any tech stack. The down side of this is that they are not very easy to use for any particular stack.
 

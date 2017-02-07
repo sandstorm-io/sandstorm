@@ -1,6 +1,6 @@
 ### v0.202 (2017-02-04)
 - Removed Sandstorm for Work paywall. All Sandstorm for Work features are now available on all servers for free. Feature keys are no longer needed and all code related to them has been removed.
-- `sandstorm-http-bridge-internal.capnp` is no longer included with the other, public `.capnp` files in the package. This file was not intended to be used by third parties, and indeed did not parse correctly after installation since it references other files that are not installed. This caused some dev tools to report spurrious errors.
+- `sandstorm-http-bridge-internal.capnp` is no longer included with the other, public `.capnp` files in the package. This file was not intended to be used by third parties, and indeed did not parse correctly after installation since it references other files that are not installed. This caused some dev tools to report spurious errors.
 
 ### v0.201 (2017-02-03) [bugfixes]
 - Sandcats: Fixed bug where if `BIND_IP` was set to 127.0.0.1 (which it often is for servers that sit behind sniproxy), Sandcats requests would fail, eventually leading to certificate expiration.

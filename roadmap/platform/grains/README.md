@@ -64,24 +64,24 @@ Sometimes it makes sense to perform the operations above on a whole group of gra
 
 It's currently unclear how a "group" should be defined -- should the user manually specify, or can it be automated somehow? Maybe a selection UI can be informed by analyzing the capability graph?
 
-## TODO(project): Subbordinate Grains
+## TODO(project): Subordinate Grains
 
-A grain can create additional grains that it directly owns. A subbordinate grain runs in its own container, but does not export a `UiView`. Instead, the bootstap capability exported by the subbordinate's main process can have any type, as it is only given to the parent grain, and the parent similarly exports an arbitrary bootstrap capability to the subbordinate. A subbordinate grain runs the same package as its parent, but starts up (and continues) using a different command, specified by the parent grain when it creates the subbordinate.
+A grain can create additional grains that it directly owns. A subordinate grain runs in its own container, but does not export a `UiView`. Instead, the bootstap capability exported by the subordinate's main process can have any type, as it is only given to the parent grain, and the parent similarly exports an arbitrary bootstrap capability to the subordinate. A subordinate grain runs the same package as its parent, but starts up (and continues) using a different command, specified by the parent grain when it creates the subordinate.
 
-Subbordinate grains are useful for two main purposes:
+Subordinate grains are useful for two main purposes:
 
-1. They allow a grain to distribute itself over a Blackrock cluster, since each subbordinate grain may execute on a different machine. This could be useful, for example, to run Hadoop on Sandstorm.
-2. They allow an app to use Sandstorm containers to isolate its own components from each other for added security. This may be particularly useful if the app needs to run some code it doesn't trust, such as a continuous integration system trying to test a pull request from an untrusted third party. (However, where practical, apps should instead use a language that allows for sandboxing, especially an object-capability language, which will be much more efficient than subbordinate grains.)
+1. They allow a grain to distribute itself over a Blackrock cluster, since each subordinate grain may execute on a different machine. This could be useful, for example, to run Hadoop on Sandstorm.
+2. They allow an app to use Sandstorm containers to isolate its own components from each other for added security. This may be particularly useful if the app needs to run some code it doesn't trust, such as a continuous integration system trying to test a pull request from an untrusted third party. (However, where practical, apps should instead use a language that allows for sandboxing, especially an object-capability language, which will be much more efficient than subordinate grains.)
 
-Subbordinate grains are completely invisible to the user. They do not appear in the user's [account](../accounts), and any action that normally operates on a whole grain (like downloading a backup) includes all subbordinate grains as well.
+Subordinate grains are completely invisible to the user. They do not appear in the user's [account](../accounts), and any action that normally operates on a whole grain (like downloading a backup) includes all subordinate grains as well.
 
-Subbordinate grains can start up and shut down independently of their parent. When creating a new grain, the parent receives a capability to force it to stay open, similar to the [background processing API](../background).
+Subordinate grains can start up and shut down independently of their parent. When creating a new grain, the parent receives a capability to force it to stay open, similar to the [background processing API](../background).
 
-Note that it is up to the parent grain to implement SturdyRef infrastructure that reaches the subbordinate. From the platform's point of view, externally-held SturdyRefs pointing into a grain point at the top-level grain only, never directly to a subbordinate, although the app may internally implement routing of `restore()` requests into subbordinate grains. Similarly, a subbordinate grain does not, by default, receive `SandstormApi` and thus has no way to restore SturdyRefs unless the parent gives it such a capability.
+Note that it is up to the parent grain to implement SturdyRef infrastructure that reaches the subordinate. From the platform's point of view, externally-held SturdyRefs pointing into a grain point at the top-level grain only, never directly to a subordinate, although the app may internally implement routing of `restore()` requests into subordinate grains. Similarly, a subordinate grain does not, by default, receive `SandstormApi` and thus has no way to restore SturdyRefs unless the parent gives it such a capability.
 
 ### Owned grains
 
-A slightly different class of subbordinate grains, owned grains are grains that run a different app from the owner, but are treated like subbordinate grains for ownership purposes. That is, the grain is owned by another grain, not by a user. This could be used to implement an app which contains or embeds other apps, but where it is inappropriate for the contained/embedded grains to appear directly on the owners's grain list, and where the embedded grains should be destroyed when the owning grain is destroyed.
+A slightly different class of subordinate grains, owned grains are grains that run a different app from the owner, but are treated like subordinate grains for ownership purposes. That is, the grain is owned by another grain, not by a user. This could be used to implement an app which contains or embeds other apps, but where it is inappropriate for the contained/embedded grains to appear directly on the owners's grain list, and where the embedded grains should be destroyed when the owning grain is destroyed.
 
 An app responding to a powerbox request may actually create a new grain that satisfies the request, and may cause the requesting grain to take ownership of the newly-created grain. This is useful for a couple reasons:
 

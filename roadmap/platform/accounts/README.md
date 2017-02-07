@@ -124,7 +124,7 @@ Sandstorm supports a notion of "organizations" -- a set of credentials which bel
 
 ### Self-hosted Single-org
 
-The admin of a Sansdtorm server can define a single organization for the server. Any account which possesses a credential within that organization will automatically be promoted to a full user (not a visitor).
+The admin of a Sandstorm server can define a single organization for the server. Any account which possesses a credential within that organization will automatically be promoted to a full user (not a visitor).
 
 The admin can also specify that:
 - All members of the organization will automatically have all other members in their contact list.

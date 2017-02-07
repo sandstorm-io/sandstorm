@@ -22,7 +22,7 @@ TODO(feature): The above methods of configuring an app require opening the Sands
 
 Unfortunately, both iOS and Android push notification frameworks assume a centralized design. Each app can declare exactly one cloud server from which push notifications are delivered. For users to receive notifications directly from their Sandstorm server, they would need to recompile each mobile app they use to give it the appropriate server address.
 
-Because most users do not want to do this, Sansdtorm will operate a push notification relay through Sandstorm Oasis, which apps can set as their default notification source. It will also be possible for apps to specify a third-party relay, e.g. for apps that aren't Sandstorm-exclusive and already operate a relay for this purpose.
+Because most users do not want to do this, Sandstorm will operate a push notification relay through Sandstorm Oasis, which apps can set as their default notification source. It will also be possible for apps to specify a third-party relay, e.g. for apps that aren't Sandstorm-exclusive and already operate a relay for this purpose.
 
 Unfortunately, as we understand it, relayed notifications will necessarily be visible to the relay operator, because (at least on iOS) the app cannot run its own code to decrypt the notification before it is displayed to the user.
 
@@ -43,7 +43,7 @@ Probably, the app should be implemented using Meteor's Cordova integration, so t
 
 - On first run, the app should prompt the user to name the device, e.g. "Kenton's Nexus 5". This name will be used later for labeling API keys issued to this device.
 - Next, the app will need to find your Sandstorm server.
-  - Can we trigger an intent on opening an arbitrary Sandsorm server in your browser? If not automatically, we can at least have a "open in Android app" button on the server front page when opened from an Android user-agent.
+  - Can we trigger an intent on opening an arbitrary Sandstorm server in your browser? If not automatically, we can at least have a "open in Android app" button on the server front page when opened from an Android user-agent.
 - The app should offer to log you in using your Google or Github accounts registered with the Android account system.
 - User can switch between known Sandstorm servers and accounts in the UI.
 - The app talks to the Sandstorm server via Meteor's DDP protocol. Thus, the Meteor.publish()s and Meteor.method()s implemented by Sandstorm currently become the API for Android to use. (We may need to clean some of these up.) DDP libraries for Android exist.

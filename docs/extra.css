@@ -33,6 +33,7 @@
     .wy-nav-top {
         text-align: left;
         display: flex;
+        background-color: #4d52ac;
     }
 }
 

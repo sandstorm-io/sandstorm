@@ -35,7 +35,7 @@ Queries are made by sending a `postMessage()` to the grain's parent frame inside
 query itself is passed as one or more strings, each of which is a base64'd, serialize-packed,
 Cap'n-Proto message of type `PowerboxDescriptor`.
 
-Since there is currently no in-browser implemnetation of Cap'n Proto, typically the easiest way to
+Since there is currently no in-browser implementation of Cap'n Proto, typically the easiest way to
 create a descriptor is to construct your query in advance and then embed the raw string directly
 into your code. To construct a query, you might create a Cap'n Proto file like this:
 

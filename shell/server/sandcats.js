@@ -33,7 +33,8 @@ const SANDCATS_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandcats";
 // is important to use the IP to which we're binding. However, some people set BIND_IP to 127.0.0.1
 // and put sniproxy in front of Sandstorm. In those cases, it won't work to send from BIND_IP;
 // we'll have to let the system choose.
-const BIND_IP = process.env.BIND_IP.startsWith("127.") ? null : process.env.BIND_IP;
+const BIND_IP = process.env.BIND_IP && process.env.BIND_IP.startsWith("127.")
+    ? null : process.env.BIND_IP;
 
 const ROOT_URL = Url.parse(process.env.ROOT_URL);
 const HOSTNAME = ROOT_URL.hostname;

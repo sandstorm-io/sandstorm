@@ -143,6 +143,13 @@ interface UiView @0xdbb4d798ea67e2e7 {
   # sheet.  To accomplish this, the app would create an alternate UiView object that implements
   # an interface just to those cells, and then would use `UiSession.offer()` to offer this object
   # to the user.  The user could then choose to open it, share it, save it for later, etc.
+  #
+  # TODO(apibump): Parameterize UiView on:
+  # - A struct type representing permissions, which must have only boolean fields, each annotated
+  #   with a PermissionDef. Replace all istances of PermissionSet with this.
+  # - An enum type representing roles, each annotated with its permission set and a RoleDef.
+  #   (Requires Cap'n Proto changes to allow parametirizing on enum types, I guess...)
+  # - An enum type representing activity event types, each annotated with an ActivityTypeDef.
 
   getViewInfo @0 () -> ViewInfo;
   # Get metadata about the view, especially relating to sharing.

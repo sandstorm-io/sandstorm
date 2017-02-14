@@ -22,9 +22,8 @@ const Https = Npm.require("https");
 const ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
 
 ExternalUiView = class ExternalUiView {
-  constructor(url, grainId, token) {
+  constructor(url, token) {
     this.url = url;
-    this.grainId = grainId;
     this.token = token;
   }
 
@@ -41,7 +40,7 @@ ExternalUiView = class ExternalUiView {
       };
     }
 
-    return { session: new Capnp.Capability(new ExternalWebSession(this.url, this.grainId, options), ApiSession) };
+    return { session: new Capnp.Capability(new ExternalWebSession(this.url, options), ApiSession) };
   }
 };
 
@@ -84,12 +83,11 @@ const responseCodes = {
 };
 
 ExternalWebSession = class ExternalWebSession {
-  constructor(url, grainId, options) {
+  constructor(url, options) {
     const parsedUrl = Url.parse(url);
     this.host = parsedUrl.hostname;
     this.port = parsedUrl.port;
     this.protocol = parsedUrl.protocol;
-    this.grainId = grainId;
     this.options = options || {};
   }
 

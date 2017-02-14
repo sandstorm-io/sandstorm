@@ -511,9 +511,9 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
       const hostId = matchWildcardHost(parsedUrl.host);
       // Connecting to a remote server with a bearer token.
       // TODO(someday): Negotiate server-to-server Cap'n Proto connection.
-      return { view: new ExternalUiView(url, this.grainId, token) };
+      return { view: new ExternalUiView(url, token) };
     } else {
-      return { view: new ExternalUiView(url, this.grainId) };
+      return { view: new ExternalUiView(url) };
     }
   }
 };

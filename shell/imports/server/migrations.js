@@ -41,7 +41,7 @@ const enableLegacyOAuthProvidersIfNotInSettings = function (db, backend) {
   // explicitly enable it in Settings, and then the rest of the logic can just
   // depend on what value is in Settings and default to false without breaking
   // user installations.
-  const configurations = Package["service-configuration"].ServiceConfiguration.configurations;
+  const configurations = ServiceConfiguration.configurations;
   ["google", "github"].forEach(function (serviceName) {
     const config = configurations.findOne({ service: serviceName });
     const serviceConfig = db.collections.settings.findOne({ _id: serviceName });

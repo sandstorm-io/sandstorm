@@ -1109,7 +1109,16 @@ _.extend(SandstormDb.prototype, {
     const ldapEnabled = orgMembership && orgMembership.ldap && orgMembership.ldap.enabled;
     const samlEnabled = orgMembership && orgMembership.saml && orgMembership.saml.enabled;
     if (emailEnabled && emailDomain && identity.services.email) {
-      if (identity.services.email.email.toLowerCase().split("@").pop() === emailDomain) {
+      if (/^\/(.*)\/$/.test(emailDomain)) {
+        try {
+          const emailDomainRegex = new RegExp(RegExp.$1);
+          if (emailDomainRegex.test(identity.services.email.email.toLowerCase().split("@").pop())) {
+            return true;
+          }
+        } catch (e) {
+          console.error("Invalid emain romain regex:", emailDomain);
+        }      
+      } else if (identity.services.email.email.toLowerCase().split("@").pop() === emailDomain) {
         return true;
       }
     } else if (ldapEnabled && identity.services.ldap) {

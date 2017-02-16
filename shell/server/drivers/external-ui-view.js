@@ -95,8 +95,6 @@ function refreshOAuth(url, refreshToken) {
           + "&grant_type=refresh_token",
   });
 
-  console.log(response.data);
-
   return response.data;
 }
 
@@ -124,7 +122,7 @@ function newExternalHttpSession(url, auth, db, saveTemplate) {
 function registerHttpApiFrontendRef(registry) {
   registry.register({
     frontendRefField: "http",
-    typeId: "14445827391922490823",
+    typeId: ApiSession.typeId,
 
     restore(db, saveTemplate, value) {
       return newExternalHttpSession(value.url, value.auth, db, saveTemplate);
@@ -154,7 +152,7 @@ function registerHttpApiFrontendRef(registry) {
           if ("none" in request.auth) {
             request.auth = { basic: { username: parts[0], password: parts[1] } };
           } else {
-            throw new Meteor.Error(400, "Can't supprot multiple authentication mechanisms at once");
+            throw new Meteor.Error(400, "Can't support multiple authentication mechanisms at once");
           }
         }
 
@@ -213,7 +211,7 @@ function registerHttpApiFrontendRef(registry) {
           //   user that the option exists but inform them that it will only work if the admin
           //   configures this service.
           options.push({
-            _id: "http-oauth",
+            _id: "http-oauth-" + tag.canonicalUrl,
             cardTemplate: "httpOAuthPowerboxCard",
             configureTemplate: "httpOAuthPowerboxConfiguration",
             httpUrl: tag.canonicalUrl,
@@ -231,6 +229,8 @@ function registerHttpApiFrontendRef(registry) {
         }
       }
 
+      // Always offer the user the option to connect to an arbitrary URL of their choosing, even
+      // if canonicalUrl exists.
       options.push({
         _id: "http-arbitrary",
         cardTemplate: "httpArbitraryPowerboxCard",

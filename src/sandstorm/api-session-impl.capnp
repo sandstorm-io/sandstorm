@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This is used specifically with hack-session.capnp.
-# It is subject to change after the Powerbox functionality is implemented.
-
 @0xa949cfa7be07085b;
 
 $import "/capnp/c++.capnp".namespace("sandstorm");

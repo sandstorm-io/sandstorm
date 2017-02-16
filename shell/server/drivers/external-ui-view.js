@@ -288,8 +288,25 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
   constructor(url, options, db, saveTemplate) {
     super(db, saveTemplate);
 
+    if (!saveTemplate) {
+      // enable backwards-compatibilty tweaks.
+      this.fromHackSession = true;
+    }
+
     const parsedUrl = Url.parse(url);
     this.host = parsedUrl.hostname;
+    if (this.fromHackSession) {
+      // HackSessionContext.getExternalUiView() apparently ignored any path on the URL. Whoops.
+    } else {
+      if (parsedUrl.path === "/") {
+        // The URL parser says path = "/" for both "http://foo" and "http://foo/". We want to be
+        // strict, though.
+        this.path = url.endsWith("/") ? "/" : "";
+      } else {
+        this.path = parsedUrl.path;
+      }
+    }
+
     this.port = parsedUrl.port;
     this.protocol = parsedUrl.protocol;
     this.options = options || {};
@@ -328,13 +345,17 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
       const options = _.clone(session.options);
       options.headers = options.headers || {};
 
-      // According to the specification of `WebSession`, `path` should not contain a
-      // leading slash, and therefore we need to prepend "/". However, for a long time
-      // this implementation did not in fact prepend a "/". Since some apps might rely on
-      // that behavior, we only prepend "/" if the path does not start with "/".
-      //
-      // TODO(soon): Once apps have updated, prepend "/" unconditionally.
-      options.path = path.startsWith("/") ? path : "/" + path;
+      if (this.fromHackSession) {
+        // According to the specification of `WebSession`, `path` should not contain a
+        // leading slash, and therefore we need to prepend "/". However, for a long time
+        // this implementation did not in fact prepend a "/". Since some apps might rely on
+        // that behavior, we only prepend "/" if the path does not start with "/".
+        //
+        // TODO(soon): Once apps have updated, prepend "/" unconditionally.
+        options.path = path.startsWith("/") ? path : "/" + path;
+      } else {
+        options.path = this.path + "/" + path;
+      }
 
       options.method = method;
       if (contentType) {

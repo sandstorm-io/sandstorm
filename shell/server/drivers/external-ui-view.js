@@ -195,7 +195,7 @@ function registerHttpApiFrontendRef(registry) {
         //   account? (As a non-login credential.)
       }
 
-      const descriptor = { tags: [ { id: ApiSession.typeId } ] };
+      const descriptor = { tags: [{ id: ApiSession.typeId }] };
       return { descriptor, requirements: [], frontendRef: request };
     },
 

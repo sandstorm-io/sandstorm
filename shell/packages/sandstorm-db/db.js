@@ -1176,6 +1176,10 @@ if (Meteor.isServer) {
         const hash2 = Crypto.createHash("sha256").update(token._id).digest("base64");
         this.collections.apiHosts.remove({ hash2: hash2 });
       }
+
+      // TODO(soon): Drop remote OAuth tokens for frontendRef.http. Unfortunately the way to do
+      //   this is different for every service. :( Also we may need to clarify with the "bearer"
+      //   type whether or not the token is "owned" by us...
     });
 
     this.collections.apiTokens.remove(query);

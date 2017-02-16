@@ -164,75 +164,79 @@ ExternalWebSession = class ExternalWebSession {
       }
 
       req = requestMethod(options, (resp) => {
-        const buffers = [];
-        const statusInfo = responseCodes[resp.statusCode];
+        try {
+          const buffers = [];
+          const statusInfo = responseCodes[resp.statusCode];
 
-        const rpcResponse = {};
+          const rpcResponse = {};
 
-        switch (statusInfo.type) {
-          case "content":
-            resp.on("data", (buf) => {
-              buffers.push(buf);
-            });
+          switch (statusInfo ? statusInfo.type : resp.statusCode) {
+            case "content":
+              resp.on("data", (buf) => {
+                buffers.push(buf);
+              });
 
-            resp.on("end", () => {
-              const content = {};
-              rpcResponse.content = content;
+              resp.on("end", () => {
+                const content = {};
+                rpcResponse.content = content;
 
-              content.statusCode = statusInfo.code;
-              if ("content-encoding" in resp.headers) content.encoding = resp.headers["content-encoding"];
-              if ("content-language" in resp.headers) content.language = resp.headers["content-language"];
-              if ("content-type" in resp.headers) content.language = resp.headers["content-type"];
-              if ("content-disposition" in resp.headers) {
-                const disposition = resp.headers["content-disposition"];
-                const parts = disposition.split(";");
-                if (parts[0].toLowerCase().trim() === "attachment") {
-                  parts.forEach((part) => {
-                    const splitPart = part.split("=");
-                    if (splitPart[0].toLowerCase().trim() === "filename") {
-                      content.disposition = { download: splitPart[1].trim() };
-                    }
-                  });
+                content.statusCode = statusInfo.code;
+                if ("content-encoding" in resp.headers) content.encoding = resp.headers["content-encoding"];
+                if ("content-language" in resp.headers) content.language = resp.headers["content-language"];
+                if ("content-type" in resp.headers) content.language = resp.headers["content-type"];
+                if ("content-disposition" in resp.headers) {
+                  const disposition = resp.headers["content-disposition"];
+                  const parts = disposition.split(";");
+                  if (parts[0].toLowerCase().trim() === "attachment") {
+                    parts.forEach((part) => {
+                      const splitPart = part.split("=");
+                      if (splitPart[0].toLowerCase().trim() === "filename") {
+                        content.disposition = { download: splitPart[1].trim() };
+                      }
+                    });
+                  }
                 }
-              }
 
-              content.body = {};
-              content.body.bytes = Buffer.concat(buffers);
+                content.body = {};
+                content.body.bytes = Buffer.concat(buffers);
 
+                resolve(rpcResponse);
+              });
+              break;
+            case "noContent":
+              const noContent = {};
+              rpcResponse.noContent = noContent;
+              noContent.setShouldResetForm = statusInfo.shouldResetForm;
               resolve(rpcResponse);
-            });
-            break;
-          case "noContent":
-            const noContent = {};
-            rpcResponse.noContent = noContent;
-            noContent.setShouldResetForm = statusInfo.shouldResetForm;
-            resolve(rpcResponse);
-            break;
-          case "redirect":
-            const redirect = {};
-            rpcResponse.redirect = redirect;
-            redirect.isPermanent = statusInfo.isPermanent;
-            redirect.switchToGet = statusInfo.switchToGet;
-            if ("location" in resp.headers) redirect.location = resp.headers.location;
-            resolve(rpcResponse);
-            break;
-          case "clientError":
-            const clientError = {};
-            rpcResponse.clientError = clientError;
-            clientError.statusCode = statusInfo.clientErrorCode;
-            clientError.descriptionHtml = statusInfo.descriptionHtml;
-            resolve(rpcResponse);
-            break;
-          case "serverError":
-            const serverError = {};
-            rpcResponse.serverError = serverError;
-            clientError.descriptionHtml = statusInfo.descriptionHtml;
-            resolve(rpcResponse);
-            break;
-          default: // ???
-            err = new Error("Invalid status code " + resp.statusCode + " received in response.");
-            reject(err);
-            break;
+              break;
+            case "redirect":
+              const redirect = {};
+              rpcResponse.redirect = redirect;
+              redirect.isPermanent = statusInfo.isPermanent;
+              redirect.switchToGet = statusInfo.switchToGet;
+              if ("location" in resp.headers) redirect.location = resp.headers.location;
+              resolve(rpcResponse);
+              break;
+            case "clientError":
+              const clientError = {};
+              rpcResponse.clientError = clientError;
+              clientError.statusCode = statusInfo.clientErrorCode;
+              clientError.descriptionHtml = statusInfo.descriptionHtml;
+              resolve(rpcResponse);
+              break;
+            case "serverError":
+              const serverError = {};
+              rpcResponse.serverError = serverError;
+              clientError.descriptionHtml = statusInfo.descriptionHtml;
+              resolve(rpcResponse);
+              break;
+            default: // ???
+              err = new Error("Invalid status code " + resp.statusCode + " received in response.");
+              reject(err);
+              break;
+          }
+        } catch (err) {
+          reject(err);
         }
       });
 

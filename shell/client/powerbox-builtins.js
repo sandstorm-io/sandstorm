@@ -213,3 +213,20 @@ Template.emailVerifierPowerboxCard.helpers({
 Template.emailVerifierPowerboxCard.powerboxIconSrc = () => "/email-m.svg";
 Template.verifiedEmailPowerboxCard.powerboxIconSrc = () => "/email-m.svg";
 Template.addNewVerifiedEmailPowerboxCard.powerboxIconSrc = () => "/add-email-m.svg";
+
+Template.httpUrlPowerboxCard.powerboxIconSrc = () => "/web-m.svg";
+
+Template.httpArbitraryPowerboxCard.powerboxIconSrc = () => "/web-m.svg";
+Template.httpArbitraryPowerboxConfiguration.events({
+  "click .connect-button": function (event, instance) {
+    event.preventDefault();
+    const input = instance.find("form>input.url");
+
+    this.powerboxRequest.completeNewFrontendRef({
+      http: {
+        url: input.value,
+        auth: { none: null },
+      },
+    });
+  },
+});

@@ -14,12 +14,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { PersistentImpl } from "/imports/server/persistent.js";
+
 const Future = Npm.require("fibers/future");
 const Capnp = Npm.require("capnp");
 const Url = Npm.require("url");
 const Http = Npm.require("http");
 const Https = Npm.require("https");
 const ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
+const PersistentApiSession =
+    Capnp.importSystem("sandstorm/api-session-impl.capnp").PersistentApiSession;
 
 ExternalUiView = class ExternalUiView {
   constructor(url, token) {
@@ -43,6 +47,112 @@ ExternalUiView = class ExternalUiView {
     return { session: new Capnp.Capability(new ExternalWebSession(this.url, options), ApiSession) };
   }
 };
+
+function newExternalHttpSession(url, auth, db, saveTemplate) {
+  // `url` and `auth` are the corresponding members of `ApiToken.frontendRef.http`.
+
+  const createCap = authorization => {
+    return new Capnp.Capability(new ExternalWebSession(url,
+        authorization ? { headers: { authorization } } : {},
+        db, saveTemplate), PersistentApiSession);
+  };
+
+  if (auth.refresh) {
+    throw new Error("refresh tokens unimplemented");
+  } else if (auth.bearer) {
+    return createCap("Bearer " + auth.bearer);
+  } else if (auth.basic) {
+    const userpass = [auth.basic.username, auth.basic.password].join(":");
+    return createCap("Basic " + new Buffer(userpass, "utf8").toString("base64"));
+  } else {
+    return createCap(null);
+  }
+}
+
+function registerHttpApiFrontendRef(registry) {
+  registry.register({
+    frontendRefField: "http",
+    typeId: "14445827391922490823",
+
+    restore(db, saveTemplate, value) {
+      return newExternalHttpSession(value.url, value.auth, db, saveTemplate);
+    },
+
+    validate(db, session, request) {
+      check(request, {
+        url: String,
+        auth: Match.OneOf(
+            { none: null },
+            { bearer: String },
+            { basic: { username: String, password: String } }),
+      });
+
+      if (!request.url.startsWith("https://") &&
+          !request.url.startsWith("http://")) {
+        throw new Meteor.Error(400, "URL must be HTTP or HTTPS.");
+      }
+
+      // Check for URL patterns.
+      const parsedUrl = Url.parse(request.url);
+
+      if (parsedUrl.auth) {
+        const parts = parsedUrl.auth.split(":");
+        if (parts.length === 2) {
+          if ("none" in request.auth) {
+            request.auth = { basic: { username: parts[0], password: parts[1] } };
+          } else {
+            throw new Meteor.Error(400, "Can't supprot multiple authentication mechanisms at once");
+          }
+        }
+
+        parsedUrl.auth = null;
+        request.url = Url.format(parsedUrl);
+      }
+
+      if (parsedUrl.hash) {
+        if ("none" in request.auth) {
+          request.auth = { bearer: parsedUrl.hash.slice(1) };
+        } else {
+          throw new Meteor.Error(400, "Can't supprot multiple authentication mechanisms at once");
+        }
+
+        parsedUrl.hash = null;
+        request.url = Url.format(parsedUrl);
+      }
+
+      const descriptor = { tags: [ { id: ApiSession.typeId } ] };
+      return { descriptor, requirements: [], frontendRef: request };
+    },
+
+    query(db, userAccountId, tagValue) {
+      const tag = tagValue ? Capnp.parse(ApiSession.PowerboxTag, tagValue) : {};
+
+      const options = [];
+
+      if (tag.canonicalUrl &&
+          (tag.canonicalUrl.startsWith("https://") ||
+           tag.canonicalUrl.startsWith("http://"))) {
+        options.push({
+          _id: "http-url-" + tag.canonicalUrl,
+          frontendRef: { http: { url: tag.canonicalUrl, auth: { none: null } } },
+          cardTemplate: "httpUrlPowerboxCard",
+        });
+      }
+
+      options.push({
+        _id: "http-arbitrary",
+        cardTemplate: "httpArbitraryPowerboxCard",
+        configureTemplate: "httpArbitraryPowerboxConfiguration",
+      });
+
+      return options;
+    },
+  });
+}
+
+Meteor.startup(() => { registerHttpApiFrontendRef(globalFrontendRefRegistry); });
+
+// =======================================================================================
 
 const responseCodes = {
   200: { type: "content", code: "ok" },
@@ -82,8 +192,10 @@ const responseCodes = {
   505: { type: "serverError" },
 };
 
-ExternalWebSession = class ExternalWebSession {
-  constructor(url, options) {
+ExternalWebSession = class ExternalWebSession extends PersistentImpl {
+  constructor(url, options, db, saveTemplate) {
+    super(db, saveTemplate);
+
     const parsedUrl = Url.parse(url);
     this.host = parsedUrl.hostname;
     this.port = parsedUrl.port;

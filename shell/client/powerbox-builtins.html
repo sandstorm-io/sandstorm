@@ -67,3 +67,21 @@
 <template name="addNewVerifiedEmailPowerboxCard">
   Add a new address
 </template>
+
+<template name="httpUrlPowerboxCard">
+  Use {{option.frontendRef.http.url}}
+</template>
+
+<template name="httpArbitraryPowerboxCard">
+  Specify URL...
+</template>
+
+<template name="httpArbitraryPowerboxConfiguration">
+  <form>
+    Enter URL:
+    <input class="url" type="text" placeholder="https://example.com">
+    <div class="choose-buttons">
+      <button class="connect-button">Connect</button>
+    </div>
+  </form>
+</template>

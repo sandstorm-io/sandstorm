@@ -446,15 +446,21 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
               const clientError = {};
               rpcResponse.clientError = clientError;
               clientError.statusCode = statusInfo.clientErrorCode;
+              // TODO(soon): Pass along the body from upstream.
               clientError.descriptionHtml = statusInfo.descriptionHtml;
               resolve(rpcResponse);
               break;
             case "serverError":
               const serverError = {};
               rpcResponse.serverError = serverError;
+              // TODO(soon): Pass along the body from upstream.
               clientError.descriptionHtml = statusInfo.descriptionHtml;
               resolve(rpcResponse);
               break;
+
+            // TODO(soon): Handle token-expired errors by throwing DISCONNECTED -- this will force
+            //   the client to reload the capability which will refresh the token.
+
             default: // ???
               err = new Error("Invalid status code " + resp.statusCode + " received in response.");
               reject(err);

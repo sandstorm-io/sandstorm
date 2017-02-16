@@ -230,3 +230,33 @@ Template.httpArbitraryPowerboxConfiguration.events({
     });
   },
 });
+
+Template.httpOAuthPowerboxCard.powerboxIconSrc = () => "/web-m.svg";
+Template.httpOAuthPowerboxConfiguration.onCreated(function () {
+  const option = this.data.option;
+
+  const serviceMap = { google: Google, github: Github };
+
+  const serviceHandler = serviceMap[option.oauthServiceInfo.service];
+
+  if (!serviceHandler) {
+    throw new Error("unknown service: " + option.oauthServiceInfo.service);
+  }
+
+  serviceHandler.requestCredential({
+    loginStyle: "popup",
+    requestPermissions: option.oauthScopes.map(scope => scope.name),
+
+    // Google-specific options... others should ignore.
+    forceApprovalPrompt: true,
+    requestOfflineToken: true,
+  }, credentialToken => {
+    const credentialSecret = OAuth._retrieveCredentialSecret(credentialToken);
+    this.data.powerboxRequest.completeNewFrontendRef({
+      http: {
+        url: option.httpUrl,
+        auth: { oauth: { credentialToken, credentialSecret } },
+      },
+    });
+  });
+});

@@ -426,6 +426,14 @@ ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 //       verifiedEmail: An VerifiedEmail capability that is implemented by the frontend.
 //                      An object containing `verifierId`, `tabId`, and `address`.
 //       identity: An Identity capability. The field is the identity ID.
+//       http: An ApiSession capability pointing to an external HTTP service. Object containing:
+//           url: Base URL of the external service.
+//           auth: Authentitation mechanism. Object containing one of:
+//               none: Value "null". Indicates no authorization.
+//               bearer: A bearer token to pass in the `Authorization: Bearer` header on all
+//                   requests.
+//               basic: A `{username, password}` object.
+//               refresh: An OAuth refresh token, which can be exchanged for an access token.
 //   parentToken: If present, then this token represents exactly the capability represented by
 //              the ApiToken with _id = parentToken, except possibly (if it is a UiView) attenuated
 //              by `roleAssignment` (if present). To facilitate permissions computations, if the
@@ -492,6 +500,15 @@ ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 //         address :Text;
 //       }
 //       identity :Text;
+//       http :group {
+//         url :Text;
+//         auth :union {
+//           none :Void;
+//           bearer :Text;
+//           basic :group { username :Text; password :Text; }
+//           refresh :Text;
+//         }
+//       }
 //     }
 //     child :group {
 //       parentToken :Text;

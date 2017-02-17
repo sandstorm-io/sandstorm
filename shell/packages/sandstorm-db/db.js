@@ -1109,17 +1109,17 @@ _.extend(SandstormDb.prototype, {
     const ldapEnabled = orgMembership && orgMembership.ldap && orgMembership.ldap.enabled;
     const samlEnabled = orgMembership && orgMembership.saml && orgMembership.saml.enabled;
     if (emailEnabled && emailDomain && identity.services.email) {
-      if (/^\/(.*)\/$/.test(emailDomain)) {
-        try {
-          const emailDomainRegex = new RegExp(RegExp.$1);
-          if (emailDomainRegex.test(identity.services.email.email.toLowerCase().split("@").pop())) {
+      const domainSuffixes = emailDomain.split(/\s*,\s*/);
+      for (let i = 0; i < domainSuffixes.length; i++) {
+        const suffix = domainSuffixes[i];
+        const domain = identity.services.email.email.toLowerCase().split("@").pop();
+        if (suffix.startsWith("*.")) {
+          if (domain.endsWith(suffix.substr(2))) {
             return true;
           }
-        } catch (e) {
-          console.error("Invalid emain romain regex:", emailDomain);
-        }      
-      } else if (identity.services.email.email.toLowerCase().split("@").pop() === emailDomain) {
-        return true;
+        } else if (domain === suffix) {
+          return true;
+        }
       }
     } else if (ldapEnabled && identity.services.ldap) {
       return true;

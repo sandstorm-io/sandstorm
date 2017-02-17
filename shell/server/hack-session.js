@@ -90,8 +90,7 @@ SessionContextImpl = class SessionContextImpl {
       }
 
       return restoreInternal(
-          globalDb,
-          new Buffer(sturdyRef),
+          globalDb, sturdyRef,
           { clientPowerboxRequest: Match.ObjectIncluding({ sessionId: this.sessionId }) },
           requirements, token);
     });
@@ -273,7 +272,7 @@ Meteor.methods({
       throw new Meteor.Error(400, "Invalid webkey: token doesn't match hostname.");
     }
 
-    const cap = restoreInternal(db, new Buffer(token),
+    const cap = restoreInternal(db, token,
                                 Match.Optional({ webkey: Match.Optional(Match.Any) }), []).cap;
     const castedCap = cap.castAs(SystemPersistent);
     const owner = {

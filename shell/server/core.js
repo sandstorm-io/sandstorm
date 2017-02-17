@@ -103,7 +103,7 @@ class SandstormCoreImpl {
             }
 
             const castedNotification = notification.castAs(PersistentOngoingNotification);
-            const wakelockToken = waitPromise(castedNotification.save()).sturdyRef;
+            const wakelockToken = waitPromise(castedNotification.save()).sturdyRef.toString("utf8");
 
             // We have to close both the casted cap and the original. Perhaps this should be fixed in
             // node-capnp?
@@ -265,8 +265,6 @@ function dismissNotification(db, notificationId, callCancel) {
   if (notification) {
     db.collections.notifications.remove({ _id: notificationId });
     if (notification.ongoing) {
-      // For some reason, Mongo returns an object that looks buffer-like, but isn't a buffer.
-      // Only way to fix seems to be to copy it.
       const id = notification.ongoing;
 
       if (!callCancel) {
@@ -629,7 +627,7 @@ unwrapFrontendCap = (cap, type, callback) => {
 
   return cap.castAs(SystemPersistent).save({ frontend: null }).then(saveResult => {
     return inMeteor(() => {
-      let tokenInfo = fetchApiToken(globalDb, saveResult.sturdyRef);
+      let tokenInfo = fetchApiToken(globalDb, saveResult.sturdyRef.toString("utf8"));
 
       // Delete the token now since it's not needed.
       ApiTokens.remove(tokenInfo._id);

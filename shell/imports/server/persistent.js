@@ -71,12 +71,9 @@ class PersistentImpl {
         newToken.owner.user = userOwner;
       }
 
-      const sturdyRef = generateSturdyRef();
-      newToken._id = hashSturdyRef(sturdyRef);
-
       newToken.created = new Date();
+      const sturdyRef = insertApiToken(db, newToken);
 
-      db.collections.apiTokens.insert(newToken);
       this[privateIsSaved] = true;
       return { sturdyRef: new Buffer(sturdyRef) };
     });

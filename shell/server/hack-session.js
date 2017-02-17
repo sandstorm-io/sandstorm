@@ -20,7 +20,7 @@ const Https = Npm.require("https");
 const Net = Npm.require("net");
 const Dgram = Npm.require("dgram");
 const Capnp = Npm.require("capnp");
-import { hashSturdyRef, checkRequirements } from "/imports/server/persistent.js";
+import { hashSturdyRef, checkRequirements, fetchApiToken } from "/imports/server/persistent.js";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
@@ -47,12 +47,8 @@ SessionContextImpl = class SessionContextImpl {
 
   claimRequest(sturdyRef, requiredPermissions) {
     return inMeteor(() => {
-      const hashedSturdyRef = hashSturdyRef(sturdyRef);
-
-      const token = ApiTokens.findOne({
-        _id: hashedSturdyRef,
-        "owner.clientPowerboxRequest.sessionId": this.sessionId,
-      });
+      const token = fetchApiToken(globalDb, sturdyRef,
+        { "owner.clientPowerboxRequest.sessionId": this.sessionId });
 
       if (!token) {
         throw new Error("no such token");
@@ -189,10 +185,10 @@ SessionContextImpl = class SessionContextImpl {
       } else if (isUiView) {
         if (session.identityId) {
           // Deduplicate.
-          let tokenId = hashSturdyRef(sturdyRef.toString());
-          const newApiToken = ApiTokens.findOne({ _id: tokenId });
+          const newApiToken = fetchApiToken(globalDb, sturdyRef.toString());
+          let tokenId = newApiToken._id;
           const dupeQuery = _.pick(newApiToken, "grainId", "roleAssignment", "requirements",
-                                   "parentToken", "identityId", "accountId");
+                                   "parentToken", "parentTokenKey", "identityId", "accountId");
           dupeQuery._id = { $ne: newApiToken._id };
           dupeQuery["owner.user.identityId"] = this.identityId;
           dupeQuery.trashed = { $exists: false };

@@ -129,12 +129,20 @@ function cryptApiToken(key, entry, cryptIn, cryptOut) {
 function fetchApiToken(db, key, moreQuery) {
   // Reads an ApiToken from the database and decrypts its encrypted fields.
 
+  function bufferToString(buf) {
+    // un-pad short secrets
+    let size = buf.length;
+    while (size > 0 && buf[size-1] == 0) {
+      --size;
+    }
+    return buf.slice(0, size).toString("utf8");
+  }
+
   const query = { _id: hashSturdyRef(key) };
   Object.assign(query, moreQuery || {});
-
   const entry = db.collections.apiTokens.findOne(query);
   if (entry) {
-    cryptApiToken(key, entry, x => x, x => x.toString("utf8"));
+    cryptApiToken(key, entry, x => x, bufferToString);
   }
 
   return entry;
@@ -146,9 +154,19 @@ function insertApiToken(db, entry, key) {
   // is filled in. Also, as a side effect, some fields of `entry` will become encrypted, but
   // ideally callers should not depend on this behavior.
 
+  function stringToBuffer(str) {
+    const buf = new Buffer(str, "utf8");
+    if (buf.length >= 32) return buf;
+
+    const padded = new Buffer(32);
+    padded.fill(0);
+    buf.copy(padded);
+    return padded;
+  }
+
   if (!key) key = generateSturdyRef();
   entry._id = hashSturdyRef(key);
-  cryptApiToken(key, entry, x => new Buffer(x, "utf8"), x => x);
+  cryptApiToken(key, entry, stringToBuffer, x => x);
   db.collections.apiTokens.insert(entry);
   return key;
 }

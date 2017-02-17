@@ -555,7 +555,7 @@ ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 // strings, hence can be used directly as the key. No MAC is applied, because this scheme is not
 // intended to protect against attackers who have write access to the database -- such an attacker
 // could almost certainly do more damage by modifying the non-encrypted fields anyway. (Put another
-// way, if we wanted to MAC something, we'd needto MAC the entire ApiToken structure, not just
+// way, if we wanted to MAC something, we'd need to MAC the entire ApiToken structure, not just
 // the encrypted key. But we don't have a way to do that at present.)
 //
 // ChaCha20 requires a nonce. Luckily, all of the fields we wish to encrypt are immutable, so we

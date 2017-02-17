@@ -132,9 +132,10 @@ function fetchApiToken(db, key, moreQuery) {
   function bufferToString(buf) {
     // un-pad short secrets
     let size = buf.length;
-    while (size > 0 && buf[size-1] == 0) {
+    while (size > 0 && buf[size - 1] == 0) {
       --size;
     }
+
     return buf.slice(0, size).toString("utf8");
   }
 

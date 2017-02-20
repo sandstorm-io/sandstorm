@@ -1109,8 +1109,17 @@ _.extend(SandstormDb.prototype, {
     const ldapEnabled = orgMembership && orgMembership.ldap && orgMembership.ldap.enabled;
     const samlEnabled = orgMembership && orgMembership.saml && orgMembership.saml.enabled;
     if (emailEnabled && emailDomain && identity.services.email) {
-      if (identity.services.email.email.toLowerCase().split("@").pop() === emailDomain) {
-        return true;
+      const domainSuffixes = emailDomain.split(/\s*,\s*/);
+      for (let i = 0; i < domainSuffixes.length; i++) {
+        const suffix = domainSuffixes[i];
+        const domain = identity.services.email.email.toLowerCase().split("@").pop();
+        if (suffix.startsWith("*.")) {
+          if (domain.endsWith(suffix.substr(1))) {
+            return true;
+          }
+        } else if (domain === suffix) {
+          return true;
+        }
       }
     } else if (ldapEnabled && identity.services.ldap) {
       return true;

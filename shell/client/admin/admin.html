@@ -15,6 +15,7 @@
 
 <template name="newAdmin">
   {{>title "Admin panel"}}
+  {{setDocumentTitle}}
 
   {{#if wildcardHostSeemsBroken}}
   <div class="flash-message warning-message">

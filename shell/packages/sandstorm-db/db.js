@@ -2228,7 +2228,6 @@ if (Meteor.isServer) {
     // same data at the same time.
     first += Math.floor(intervalMs * computeStagger(replicaNumber));
 
-
     // If the stagger put us more than an interval away from now, back up.
     if (first > intervalMs) first -= intervalMs;
 

@@ -1114,7 +1114,7 @@ _.extend(SandstormDb.prototype, {
         const suffix = domainSuffixes[i];
         const domain = identity.services.email.email.toLowerCase().split("@").pop();
         if (suffix.startsWith("*.")) {
-          if (domain.endsWith(suffix.substr(2))) {
+          if (domain.endsWith(suffix.substr(1))) {
             return true;
           }
         } else if (domain === suffix) {
@@ -2227,6 +2227,7 @@ if (Meteor.isServer) {
     // Stagger cleanups across replicas so that we don't have all replicas trying to clean the
     // same data at the same time.
     first += Math.floor(intervalMs * computeStagger(replicaNumber));
+
 
     // If the stagger put us more than an interval away from now, back up.
     if (first > intervalMs) first -= intervalMs;

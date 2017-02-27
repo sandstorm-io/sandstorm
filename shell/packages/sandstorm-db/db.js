@@ -428,7 +428,7 @@ ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 //       identity: An Identity capability. The field is the identity ID.
 //       http: An ApiSession capability pointing to an external HTTP service. Object containing:
 //           url: Base URL of the external service.
-//           auth: Authentitation mechanism. Object containing one of:
+//           auth: Authentication mechanism. Object containing one of:
 //               none: Value "null". Indicates no authorization.
 //               bearer: A bearer token to pass in the `Authorization: Bearer` header on all
 //                   requests. Encrypted with nonce 0.

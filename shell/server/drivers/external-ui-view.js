@@ -164,7 +164,7 @@ function registerHttpApiFrontendRef(registry) {
         if ("none" in request.auth) {
           request.auth = { bearer: parsedUrl.hash.slice(1) };
         } else {
-          throw new Meteor.Error(400, "Can't supprot multiple authentication mechanisms at once");
+          throw new Meteor.Error(400, "Can't support multiple authentication mechanisms at once");
         }
 
         parsedUrl.hash = null;

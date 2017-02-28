@@ -794,7 +794,8 @@ restoreBackup = function (file) {
       console.error(err);
       alert(err.message);
     } else {
-      startUpload(file, "/uploadBackup/" + token, function (response) {
+      const origin = __meteor_runtime_config__.DDP_DEFAULT_CONNECTION_URL || "";
+      startUpload(file, origin + "/uploadBackup/" + token, function (response) {
         Session.set("uploadStatus", "Unpacking");
         const identityId = Accounts.getCurrentIdentityId();
         Meteor.call("restoreGrain", token, identityId, function (err, grainId) {

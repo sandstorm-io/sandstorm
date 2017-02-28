@@ -294,6 +294,7 @@ Router.map(function () {
         if (requestedHeaders) {
           this.response.setHeader("Access-Control-Allow-Headers", requestedHeaders);
         }
+
         this.response.writeHead(204, {
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "POST, OPTIONS",

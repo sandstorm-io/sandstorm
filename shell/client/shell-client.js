@@ -794,7 +794,7 @@ restoreBackup = function (file) {
       console.error(err);
       alert(err.message);
     } else {
-      const origin = __meteor_runtime_config__.DDP_DEFAULT_CONNECTION_URL || "";
+      const origin = __meteor_runtime_config__.DDP_DEFAULT_CONNECTION_URL || "";  // jscs:ignore requireCamelCaseOrUpperCaseIdentifiers
       startUpload(file, origin + "/uploadBackup/" + token, function (response) {
         Session.set("uploadStatus", "Unpacking");
         const identityId = Accounts.getCurrentIdentityId();

@@ -18,12 +18,11 @@ import Fs from "fs";
 import Path from "path";
 import Crypto from "crypto";
 import ChildProcess from "child_process";
-import Http from "http";
-import Https from "https";
 import Url from "url";
-import Request from "request";
 
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+
+const Request = HTTPInternals.NpmModules.request.module;
 
 const Capnp = Npm.require("capnp");
 

@@ -24,7 +24,6 @@ const Https = Npm.require("https");
 const ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
 const PersistentApiSession =
     Capnp.importSystem("sandstorm/api-session-impl.capnp").PersistentApiSession;
-const Request = HTTPInternals.NpmModules.request;
 
 ExternalUiView = class ExternalUiView {
   constructor(url, token) {

@@ -252,23 +252,23 @@ void BackupMain::pump(kj::InputStream& in, kj::OutputStream& out) {
 }
 
 bool BackupMain::findFilesToZip(kj::StringPtr path, kj::OutputStream& out) {
+  // If the path contains a newline, we cannot correctly pass it to `zip` since `zip` expects
+  // one file per line. For security reasons, we must detect and filter out these files.
+  // Hopefully this never happens legitimately?
+  if (path.findFirst('\n') != nullptr) {
+    KJ_LOG(ERROR, "tried to backup file containing newlines", path);
+    return false;
+  }
+
   struct stat stats;
   KJ_SYSCALL(lstat(path.cStr(), &stats));
   if (S_ISREG(stats.st_mode) || S_ISLNK(stats.st_mode)) {
     // Regular file or link can be zipped; write to file stream.
-    // If the path contains a newline, we cannot correctly pass it to `zip` since `zip` expects
-    // one file per line. For security reasons, we must detect and filter out these files.
-    // Hopefully this never happens legitimately?
-    if (path.findFirst('\n') == nullptr) {
-      kj::ArrayPtr<const byte> pieces[2];
-      pieces[0] = path.asBytes();
-      pieces[1] = kj::StringPtr("\n").asBytes();
-      out.write(pieces);
-      return true;
-    } else {
-      KJ_LOG(ERROR, "tried to backup file containing newlines", path);
-      return false;
-    }
+    kj::ArrayPtr<const byte> pieces[2];
+    pieces[0] = path.asBytes();
+    pieces[1] = kj::StringPtr("\n").asBytes();
+    out.write(pieces);
+    return true;
   } else if (S_ISDIR(stats.st_mode)) {
     // Subdirectory; enumerate contents.
     bool packedAny = false;

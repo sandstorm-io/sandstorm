@@ -1516,9 +1516,11 @@ _.extend(SandstormDb.prototype, {
 
     // First remove any instances of characters that cause trouble for SimpleSmtp. Ideally,
     // we could escape such characters with a backslash, but that does not seem to help here.
+    // TODO(cleanup): Unclear whether this sanitization is still necessary now that we return a
+    //   structured object and have moved to nodemailer. I'm not touching it for now.
     const sanitized = displayName.replace(/"|<|>|\\|\r/g, "");
 
-    return "\"" + sanitized + "\" <" + this.getReturnAddress() + ">";
+    return { name: sanitized, address: this.getReturnAddress() };
   },
 
   getPrimaryEmail(accountId, identityId) {

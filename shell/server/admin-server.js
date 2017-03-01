@@ -185,7 +185,7 @@ Meteor.methods({
     try {
       sendEmail({
         to: to,
-        from: globalDb.getServerTitle() + " <" + returnAddress + ">",
+        from: { name: globalDb.getServerTitle(), address: returnAddress },
         subject: "Testing your Sandstorm's SMTP setting",
         text: "Success! Your outgoing SMTP is working.",
         smtpConfig: restConfig,
@@ -224,10 +224,11 @@ Meteor.methods({
 
   sendInvites: function (token, origin, from, list, subject, message, quota) {
     checkAuth(token);
-    check([origin, from, list, subject, message], [String]);
+    check(from, { name: String, address: String });
+    check([origin, list, subject, message], [String]);
     check(quota, Match.OneOf(undefined, null, Number));
 
-    if (!from.trim()) {
+    if (!from.address.trim()) {
       throw new Meteor.Error(403, "Must enter 'from' address.");
     }
 

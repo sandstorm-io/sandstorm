@@ -199,7 +199,7 @@ const sendTokenEmail = function (db, email, token, options) {
 
   const sendOptions = {
     to:  email,
-    from: db.getServerTitle() + " <" + db.getReturnAddress() + ">",
+    from: { name: globalDb.getServerTitle(), address: db.getReturnAddress() },
     subject: subject,
     text: text,
   };

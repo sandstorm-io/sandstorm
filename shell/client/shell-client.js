@@ -754,6 +754,13 @@ const startUpload = function (file, endpoint, onComplete) {
   // TODO(cleanup): Use Meteor's HTTP, although this may require sending them a PR to support
   //   progress callbacks (and officially document that binary input is accepted).
 
+  if (endpoint.startsWith("/") && !endpoint.startsWith("//")) {
+    // Endpoint is relative to the current host. Use the DDP host instead, if one is defined,
+    // so that we don't do file transfers over the main host, which may be a CDN.
+    const origin = __meteor_runtime_config__.DDP_DEFAULT_CONNECTION_URL || "";  // jscs:ignore requireCamelCaseOrUpperCaseIdentifiers
+    endpoint = origin + endpoint;
+  }
+
   Session.set("uploadStatus", "Uploading");
   Session.set("uploadError", undefined);
 
@@ -794,8 +801,7 @@ restoreBackup = function (file) {
       console.error(err);
       alert(err.message);
     } else {
-      const origin = __meteor_runtime_config__.DDP_DEFAULT_CONNECTION_URL || "";  // jscs:ignore requireCamelCaseOrUpperCaseIdentifiers
-      startUpload(file, origin + "/uploadBackup/" + token, function (response) {
+      startUpload(file, "/uploadBackup/" + token, function (response) {
         Session.set("uploadStatus", "Unpacking");
         const identityId = Accounts.getCurrentIdentityId();
         Meteor.call("restoreGrain", token, identityId, function (err, grainId) {

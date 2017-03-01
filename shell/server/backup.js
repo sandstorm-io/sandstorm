@@ -249,6 +249,7 @@ Router.map(function () {
         if (!this.params.token || !token) {
           this.response.writeHead(403, {
             "Content-Type": "text/plain",
+            "Access-Control-Allow-Origin": "*",
           });
           this.response.write("Invalid upload token.");
           this.response.end();
@@ -271,16 +272,35 @@ Router.map(function () {
             });
           }));
 
-          this.response.writeHead(204);
+          this.response.writeHead(204, {
+            "Access-Control-Allow-Origin": "*",
+          });
           this.response.end();
         } catch (error) {
           console.error(error.stack);
           this.response.writeHead(500, {
             "Content-Type": "text/plain",
+            "Access-Control-Allow-Origin": "*",
           });
           this.response.write(error.stack);
           this.response.end();
         }
+      } else if (this.request.method == "OPTIONS") {
+        // Allow cross-origin posts to uploadBackup so that uploads can occur on the DDP host
+        // rather than the main host. In theory we could have Access-Control-Allow-Origin specify
+        // the main host rather than "*", but an uploadBackup request already requires a valid
+        // upload token, which is plenty of access control in itself.
+        const requestedHeaders = this.request.headers["access-control-request-headers"];
+        if (requestedHeaders) {
+          this.response.setHeader("Access-Control-Allow-Headers", requestedHeaders);
+        }
+
+        this.response.writeHead(204, {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Max-Age": "3600",
+        });
+        this.response.end();
       } else {
         this.response.writeHead(405, {
           "Content-Type": "text/plain",

@@ -184,7 +184,8 @@ Template.grainBackupPopup.onCreated(function () {
       if (err) {
         _this._state.set({ error: "Backup failed: " + err });
       } else if (!_this._state.get().canceled) {
-        const url = "/downloadBackup/" + id;
+        const origin = __meteor_runtime_config__.DDP_DEFAULT_CONNECTION_URL || "";  // jscs:ignore requireCamelCaseOrUpperCaseIdentifiers
+        const url = origin + "/downloadBackup/" + id;
         const suggestedFilename = activeGrain.title() + ".zip";
         downloadFile(url, suggestedFilename);
 

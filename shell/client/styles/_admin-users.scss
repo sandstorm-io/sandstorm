@@ -154,6 +154,7 @@
     align-items: flex-start;
     justify-content: flex-start;
     background-color: $default-table-row-action-background-color;
+    cursor: pointer;
 
     .plus-icon {
       @extend %pseudo-img-tag;
@@ -185,6 +186,7 @@
     align-items: flex-start;
     justify-content: flex-start;
     background-color: $default-table-row-background-color;
+    cursor: pointer;
     &:not(:last-child) {
       border-bottom: 1px solid #dddddd;
     }

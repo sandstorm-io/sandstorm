@@ -426,6 +426,21 @@ ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 //       verifiedEmail: An VerifiedEmail capability that is implemented by the frontend.
 //                      An object containing `verifierId`, `tabId`, and `address`.
 //       identity: An Identity capability. The field is the identity ID.
+//       http: An ApiSession capability pointing to an external HTTP service. Object containing:
+//           url: Base URL of the external service.
+//           auth: Authentication mechanism. Object containing one of:
+//               none: Value "null". Indicates no authorization.
+//               bearer: A bearer token to pass in the `Authorization: Bearer` header on all
+//                   requests. Encrypted with nonce 0.
+//               basic: A `{username, password}` object. The password is encrypted with nonce 0.
+//                   Before encryption, the password is padded to 32 bytes by appending NUL bytes,
+//                   in order to mask the length of small passwords.
+//               refresh: An OAuth refresh token, which can be exchanged for an access token.
+//                   Encrypted with nonce 0.
+//               TODO(security): How do we protect URLs that directly embed their secret? We don't
+//                   want to encrypt the full URL since this would make it hard to show a
+//                   meaningful audit UI, but maybe we could figure out a way to extract the key
+//                   part and encrypt it separately?
 //   parentToken: If present, then this token represents exactly the capability represented by
 //              the ApiToken with _id = parentToken, except possibly (if it is a UiView) attenuated
 //              by `roleAssignment` (if present). To facilitate permissions computations, if the
@@ -433,6 +448,11 @@ ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 //              is set to the identity that shared the view, and `accountId` is set to the account
 //              that shared the view. Neither `objectId` nor `frontendRef` is present when
 //              `parentToken` is present.
+//   parentTokenKey: The actual parent token -- whereas `parentToken` is only the parent token ID
+//              (hash). `parentTokenFull` is encrypted with nonce 0 (see below). This is needed
+//              in particular when the parent contains encrypted fields, since those would need to
+//              be decrypted using this key. If the parent contains no encrypted fields then
+//              `parentTokenKey` may be omitted from the child.
 //   petname:   Human-readable label for this access token, useful for identifying tokens for
 //              revocation. This should be displayed when visualizing incoming capabilities to
 //              the grain identified by `grainId`.
@@ -492,6 +512,15 @@ ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 //         address :Text;
 //       }
 //       identity :Text;
+//       http :group {
+//         url :Text;
+//         auth :union {
+//           none :Void;
+//           bearer :Text;
+//           basic :group { username :Text; password :Text; }
+//           refresh :Text;
+//         }
+//       }
 //     }
 //     child :group {
 //       parentToken :Text;
@@ -508,6 +537,37 @@ ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 //   requirements: List(Supervisor.MembraneRequirement);
 //   ...
 // }
+//
+// ENCRYPTION
+//
+// We want to make sure that someone who obtains a copy of the database cannot use it to gain live
+// credentials.
+//
+// The actual token corresponding to an ApiToken entry is not stored in the entry itself. Instead,
+// the ApiToken's `_id` is constructed as a SHA256 hash of the actual token. To use an ApiToken
+// in the live system, you must present the original token.
+//
+// Additionally, some ApiToken entries contain tokens to third-party services, e.g. OAuth tokens
+// or even passwords. Such tokens are encrypted, using the ApiToken entry's own full token (which,
+// again, is not stored in the database) as the encryption key.
+//
+// When such encryption is applied, the cipher used is ChaCha20. All API tokens are 256-bit base64
+// strings, hence can be used directly as the key. No MAC is applied, because this scheme is not
+// intended to protect against attackers who have write access to the database -- such an attacker
+// could almost certainly do more damage by modifying the non-encrypted fields anyway. (Put another
+// way, if we wanted to MAC something, we'd need to MAC the entire ApiToken structure, not just
+// the encrypted key. But we don't have a way to do that at present.)
+//
+// ChaCha20 requires a nonce. Luckily, all of the fields we wish to encrypt are immutable, so we
+// don't have to worry about tracking nonces over time -- we can just assign a static nonce to each
+// field. Moreover, many (currently, all) of these fields are mutually exclusive, so can even share
+// nonces. Currently, nonces map to fields as follows:
+//
+// nonce 0:
+//     parentTokenKey
+//     frontendRef.http.auth.basic.password
+//     frontendRef.http.auth.bearer
+//     frontendRef.http.auth.refresh
 
 ApiTokens.ensureIndexOnServer("grainId", { sparse: 1 });
 ApiTokens.ensureIndexOnServer("owner.user.identityId", { sparse: 1 });
@@ -1159,6 +1219,10 @@ if (Meteor.isServer) {
         const hash2 = Crypto.createHash("sha256").update(token._id).digest("base64");
         this.collections.apiHosts.remove({ hash2: hash2 });
       }
+
+      // TODO(soon): Drop remote OAuth tokens for frontendRef.http. Unfortunately the way to do
+      //   this is different for every service. :( Also we may need to clarify with the "bearer"
+      //   type whether or not the token is "owned" by us...
     });
 
     this.collections.apiTokens.remove(query);

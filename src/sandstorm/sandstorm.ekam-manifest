@@ -5,6 +5,7 @@ email.capnp node_modules/sandstorm/email.capnp
 email-impl.capnp node_modules/sandstorm/email-impl.capnp
 grain.capnp node_modules/sandstorm/grain.capnp
 api-session.capnp node_modules/sandstorm/api-session.capnp
+api-session-impl.capnp node_modules/sandstorm/api-session-impl.capnp
 hack-session.capnp node_modules/sandstorm/hack-session.capnp
 ip.capnp node_modules/sandstorm/ip.capnp
 package.capnp node_modules/sandstorm/package.capnp

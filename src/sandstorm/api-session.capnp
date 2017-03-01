@@ -83,6 +83,11 @@ interface ApiSession @0xc879e379c625cdc7 extends(WebSession.WebSession) {
     # rules. That is, a grain may advertise that it can handle queries for HTTP APIs with a
     # particular `canonicalUrl`, indicating that the grain offers ApiSession capabilities
     # implementing a compatible protocol.
+    #
+    # TODO(soon): How do we request a standard protocol that doesn't have a canonical URL, like
+    #     WebDAV? Does any of ApiSession.PowerboxTag even make sense in this case?
+    # TODO(soon): How do we request a single resource with a particular MIME type? Probably should
+    #     be a separate interface, which http-bridge can implement...
 
     struct OAuthScope {
       name @0 :Text;

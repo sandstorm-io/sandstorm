@@ -83,8 +83,14 @@ body>.popup.request>.frame-container>.frame {
       >button {
         margin-top: 10px;
       }
+      input[type="text"] {
+        width: 100%;
+        font-size: inherit;
+        padding: 4px;
+      }
     }
     div.choose-buttons {
+      text-align: right;
       >button {
         @extend %button-base;
         &.connect-button {

@@ -17,6 +17,7 @@
 import { inMeteor } from "/imports/server/async-helpers.js";
 
 const Crypto = Npm.require("crypto");
+const Capnp = Npm.require("capnp");
 
 const privateDb = Symbol("PersistentImpl.db");
 const privateTemplate = Symbol("PersistentImpl.template");
@@ -70,12 +71,9 @@ class PersistentImpl {
         newToken.owner.user = userOwner;
       }
 
-      const sturdyRef = generateSturdyRef();
-      newToken._id = hashSturdyRef(sturdyRef);
-
       newToken.created = new Date();
+      const sturdyRef = insertApiToken(db, newToken);
 
-      db.collections.apiTokens.insert(newToken);
       this[privateIsSaved] = true;
       return { sturdyRef: new Buffer(sturdyRef) };
     });
@@ -90,6 +88,88 @@ function hashSturdyRef(sturdyRef) {
 
 function generateSturdyRef() {
   return Random.secret();
+}
+
+function cryptApiToken(key, entry, cryptIn, cryptOut) {
+  // Encrypts or decrypts all fields of an ApiToken.
+  // `cryptIn` translates a token in the input to a buffer.
+  // `cryptOut` translates a buffer to a token in the output.
+
+  check(key, String);
+  check(entry, Object);
+
+  const nonce0 = new Buffer(8);
+  nonce0.fill(0);
+
+  const keyBuf = new Buffer(32);
+  keyBuf.fill(0);
+  keyBuf.write(key, 0, 32, "base64");
+
+  function encrypt0(token) {
+    return cryptOut(Capnp.chacha20(cryptIn(token), nonce0, keyBuf));
+  }
+
+  if (entry.parentTokenKey) {
+    entry.parentTokenKey = encrypt0(entry.parentTokenKey);
+  } else if (entry.frontendRef && entry.frontendRef.http) {
+    const http = entry.frontendRef.http;
+    if (http.auth) {
+      const auth = http.auth;
+      if (auth.bearer) {
+        auth.bearer = encrypt0(auth.bearer);
+      } else if (auth.basic) {
+        auth.basic.password = encrypt0(auth.basic.password);
+      } else if (auth.refresh) {
+        auth.refresh = encrypt0(auth.refresh);
+      }
+    }
+  }
+}
+
+function fetchApiToken(db, key, moreQuery) {
+  // Reads an ApiToken from the database and decrypts its encrypted fields.
+
+  function bufferToString(buf) {
+    // un-pad short secrets
+    let size = buf.length;
+    while (size > 0 && buf[size - 1] == 0) {
+      --size;
+    }
+
+    return buf.slice(0, size).toString("utf8");
+  }
+
+  const query = { _id: hashSturdyRef(key) };
+  Object.assign(query, moreQuery || {});
+  const entry = db.collections.apiTokens.findOne(query);
+  if (entry) {
+    cryptApiToken(key, entry, x => x, bufferToString);
+  }
+
+  return entry;
+}
+
+function insertApiToken(db, entry, key) {
+  // Adds a new ApiToken to the database. `key`, if specified, *must* be a base64-encoded 256-bit
+  // value. If omitted, a key will be generated. Either way, the key is returned, and entry._id
+  // is filled in. Also, as a side effect, some fields of `entry` will become encrypted, but
+  // ideally callers should not depend on this behavior.
+
+  function stringToBuffer(str) {
+    const buf = new Buffer(str, "utf8");
+    if (buf.length >= 32) return buf;
+
+    const padded = new Buffer(32);
+    padded.fill(0);
+    buf.copy(padded);
+    return padded;
+  }
+
+  if (!key) key = generateSturdyRef();
+  entry._id = hashSturdyRef(key);
+  cryptApiToken(key, entry, stringToBuffer, x => x);
+  db.collections.apiTokens.insert(entry);
+  return key;
 }
 
 function checkRequirements(db, requirements) {
@@ -162,4 +242,7 @@ function checkRequirements(db, requirements) {
   });
 };
 
-export { PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements };
+export {
+  PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements,
+  fetchApiToken, insertApiToken,
+};

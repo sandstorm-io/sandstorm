@@ -67,7 +67,6 @@ Meteor.methods({
     // Only check configurations for OAuth services.
     const oauthServices = ["google", "github"];
     if (value && (oauthServices.indexOf(serviceName) != -1)) {
-      const ServiceConfiguration = Package["service-configuration"].ServiceConfiguration;
       const config = ServiceConfiguration.configurations.findOne({ service: serviceName });
       if (!config) {
         throw new Meteor.Error(403, "You must configure the " + serviceName +
@@ -140,8 +139,6 @@ Meteor.methods({
   adminConfigureLoginService: function (token, options) {
     checkAuth(token);
     check(options, Match.ObjectIncluding({ service: String }));
-
-    const ServiceConfiguration = Package["service-configuration"].ServiceConfiguration;
 
     ServiceConfiguration.configurations.upsert({ service: options.service }, options);
   },
@@ -385,7 +382,7 @@ Meteor.publish("admin", function (token) {
 
 Meteor.publish("adminServiceConfiguration", function (token) {
   if (!authorizedAsAdmin(token, this.userId)) return [];
-  return Package["service-configuration"].ServiceConfiguration.configurations.find();
+  return ServiceConfiguration.configurations.find();
 });
 
 Meteor.publish("publicAdminSettings", function () {

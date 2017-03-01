@@ -18,8 +18,8 @@ import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset.js";
 const Capnp = Npm.require("capnp");
 const Crypto = Npm.require("crypto");
-import { PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements }
-    from "/imports/server/persistent.js";
+import { PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements,
+         fetchApiToken, insertApiToken } from "/imports/server/persistent.js";
 
 const PersistentHandle = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentHandle;
 const SandstormCore = Capnp.importSystem("sandstorm/supervisor.capnp").SandstormCore;
@@ -37,12 +37,9 @@ class SandstormCoreImpl {
 
   restore(sturdyRef) {
     return inMeteor(() => {
-      const hashedSturdyRef = hashSturdyRef(sturdyRef);
-      const token = this.db.collections.apiTokens.findOne({
-        _id: hashedSturdyRef,
-        "owner.grain.grainId": this.grainId,
-      });
-
+      sturdyRef = sturdyRef.toString("utf8");
+      const token = fetchApiToken(this.db, sturdyRef,
+          { "owner.grain.grainId": this.grainId });
       if (!token) {
         throw new Error("no such token");
       }
@@ -60,16 +57,14 @@ class SandstormCoreImpl {
 
   drop(sturdyRef) {
     return inMeteor(() => {
+      sturdyRef = sturdyRef.toString("utf8");
       return dropInternal(this.db, sturdyRef, { grain: Match.ObjectIncluding({ grainId: this.grainId }) });
     });
   }
 
   makeToken(ref, owner, requirements) {
     return inMeteor(() => {
-      const sturdyRef = new Buffer(generateSturdyRef());
-      const hashedSturdyRef = hashSturdyRef(sturdyRef);
-      this.db.collections.apiTokens.insert({
-        _id: hashedSturdyRef,
+      const sturdyRef = insertApiToken(this.db, {
         grainId: this.grainId,
         objectId: ref,
         owner: owner,
@@ -78,7 +73,7 @@ class SandstormCoreImpl {
       });
 
       return {
-        token: sturdyRef,
+        token: new Buffer(sturdyRef),
       };
     });
   }
@@ -108,7 +103,7 @@ class SandstormCoreImpl {
             }
 
             const castedNotification = notification.castAs(PersistentOngoingNotification);
-            const wakelockToken = waitPromise(castedNotification.save()).sturdyRef;
+            const wakelockToken = waitPromise(castedNotification.save()).sturdyRef.toString("utf8");
 
             // We have to close both the casted cap and the original. Perhaps this should be fixed in
             // node-capnp?
@@ -270,9 +265,7 @@ function dismissNotification(db, notificationId, callCancel) {
   if (notification) {
     db.collections.notifications.remove({ _id: notificationId });
     if (notification.ongoing) {
-      // For some reason, Mongo returns an object that looks buffer-like, but isn't a buffer.
-      // Only way to fix seems to be to copy it.
-      const id = new Buffer(notification.ongoing);
+      const id = notification.ongoing;
 
       if (!callCancel) {
         dropInternal(db, id, { frontend: null });
@@ -351,18 +344,15 @@ Meteor.methods({
       throw new Meteor.Error(404, "No matching session found.");
     }
 
-    const tokenId = hashSturdyRef(sturdyRef);
-    const apiToken = db.collections.apiTokens.findOne({
-      _id: tokenId,
-      "owner.clientPowerboxOffer.sessionId": sessionId,
-    });
-
+    const apiToken = fetchApiToken(db, sturdyRef,
+        { "owner.clientPowerboxOffer.sessionId": sessionId });
     if (!apiToken) {
       throw new Meteor.Error(404, "No such token.");
     }
 
+    const tokenId = apiToken._id;
+
     let newSturdyRef;
-    let hashedNewSturdyRef;
     if (sessionToken && apiToken.parentToken) {
       // An anonymous user is being offered a child token. To avoid bloating the database,
       // we deterministically derive the sturdyref from the session token and the hashed parent
@@ -381,21 +371,18 @@ Meteor.methods({
         .slice(0, -1)                             // removing trailing "="
         .replace(/\+/g, "-").replace(/\//g, "_"); // make URL-safe
 
-      hashedNewSturdyRef = hashSturdyRef(newSturdyRef);
-      if (db.collections.apiTokens.findOne({ _id: hashedNewSturdyRef })) {
+      if (fetchApiToken(db, newSturdyRef)) {
         // We have already generated this token.
         db.removeApiTokens({ _id: tokenId });
         return newSturdyRef;
       }
     } else {
       newSturdyRef = generateSturdyRef();
-      hashedNewSturdyRef = hashSturdyRef(newSturdyRef);
     }
 
-    apiToken._id = hashedNewSturdyRef;
     apiToken.owner = { webkey: null };
 
-    db.collections.apiTokens.insert(apiToken);
+    insertApiToken(db, apiToken, newSturdyRef);
     db.removeApiTokens({ _id: tokenId });
     return newSturdyRef;
   },
@@ -415,7 +402,7 @@ const makeSaveTemplateForChild = function (db, parentToken, requirements, parent
   // `parentTokenInfo` is the ApiToken record for `parentToken`. Provide this only if you have
   // it handy; if omitted it will be looked up.
 
-  parentTokenInfo = parentTokenInfo || db.collections.apiTokens.findOne(hashSturdyRef(parentToken));
+  parentTokenInfo = parentTokenInfo || fetchApiToken(db, parentToken);
   if (!parentTokenInfo) {
     throw new Error("no such token");
   }
@@ -448,6 +435,9 @@ const makeSaveTemplateForChild = function (db, parentToken, requirements, parent
 
     // Saved token should be a child of the restored token.
     saveTemplate.parentToken = parentTokenInfo._id;
+
+    // Will be encrypted on save().
+    saveTemplate.parentTokenKey = parentToken;
   }
 
   if (requirements) {
@@ -459,7 +449,7 @@ const makeSaveTemplateForChild = function (db, parentToken, requirements, parent
 };
 
 restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenInfo,
-                   currentTokenId) => {
+                   currentTokenId, currentTokenKey) => {
   // Restores the token `originalToken`, which is a Buffer.
   //
   // `ownerPattern` is a match pattern (i.e. used with check()) that the token's owner must match.
@@ -478,14 +468,15 @@ restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenI
   requirements = requirements || [];
 
   if (!originalTokenInfo) {
-    originalTokenInfo = db.collections.apiTokens.findOne(hashSturdyRef(originalToken));
+    originalTokenInfo = fetchApiToken(db, originalToken);
     if (!originalTokenInfo) {
       throw new Meteor.Error(403, "No token found to restore");
     }
   }
 
-  const token = currentTokenId ?
-      db.collections.apiTokens.findOne(currentTokenId) : originalTokenInfo;
+  const token = !currentTokenId ? originalTokenInfo :
+      typeof currentTokenKey === "string" ? fetchApiToken(db, currentTokenKey) :
+      db.collections.apiTokens.findOne(currentTokenId);
   if (!token) {
     if (!originalTokenInfo) {
       throw new Meteor.Error(403, "Couldn't restore token because parent token has been deleted");
@@ -521,7 +512,7 @@ restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenI
     // A token which chains to some parent token.  Restore the parent token (possibly recursively),
     // checking requirements on the way up.
     return restoreInternal(db, originalToken, Match.Any, requirements,
-                           originalTokenInfo, token.parentToken);
+                           originalTokenInfo, token.parentToken, token.parentTokenKey);
   }
 
   // Check the passed-in `requirements`.
@@ -539,7 +530,7 @@ restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenI
     return waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
       // Note that in this case it is the supervisor's job to implement SystemPersistent, so we
       // don't generate a saveTemplate here.
-      return supervisor.restore(token.objectId, requirements, originalToken);
+      return supervisor.restore(token.objectId, requirements, new Buffer(originalToken, "utf8"));
     }));
   } else {
     // Construct a template ApiToken for use if the restored capability is save()d later.
@@ -567,11 +558,12 @@ restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenI
 function dropInternal(db, sturdyRef, ownerPattern) {
   // Drops `sturdyRef`, checking first that its owner matches `ownerPattern`.
 
-  const hashedSturdyRef = hashSturdyRef(sturdyRef);
-  const token = db.collections.apiTokens.findOne({ _id: hashedSturdyRef });
+  const token = fetchApiToken(db, sturdyRef);
   if (!token) {
     return;
   }
+
+  const hashedSturdyRef = token._id;
 
   if (!Match.test(token.owner, ownerPattern)) {
     // The caller of `drop()` does not own the token. From the caller's perspective, this means
@@ -581,10 +573,13 @@ function dropInternal(db, sturdyRef, ownerPattern) {
     return;
   }
 
+  // TODO(soon): Revoke OAuth tokens.
+
   if (token.frontendRef && token.frontendRef.notificationHandle) {
     const notificationId = token.frontendRef.notificationHandle;
     db.removeApiTokens({ _id: hashedSturdyRef });
-    const anyToken = db.collections.apiTokens.findOne({ "frontendRef.notificationHandle": notificationId });
+    const anyToken = db.collections.apiTokens.findOne(
+        { "frontendRef.notificationHandle": notificationId });
     if (!anyToken) {
       // No other tokens referencing this notification exist, so dismiss the notification
       dismissNotification(db, notificationId);
@@ -632,16 +627,21 @@ unwrapFrontendCap = (cap, type, callback) => {
 
   return cap.castAs(SystemPersistent).save({ frontend: null }).then(saveResult => {
     return inMeteor(() => {
-      const tokenId = hashSturdyRef(saveResult.sturdyRef);
-      let tokenInfo = ApiTokens.findOne(tokenId);
+      let tokenInfo = fetchApiToken(globalDb, saveResult.sturdyRef.toString("utf8"));
 
       // Delete the token now since it's not needed.
-      ApiTokens.remove(tokenId);
+      ApiTokens.remove(tokenInfo._id);
 
       for (;;) {
         if (!tokenInfo) throw new Error("missing token?");
         if (!tokenInfo.parentToken) break;
-        tokenInfo = ApiTokens.findOne(tokenInfo.parentToken);
+        if (typeof tokenInfo.parentTokenKey === "string") {
+          tokenInfo = fetchApiToken(globalDb, tokenInfo.parentTokenKey);
+        } else {
+          // Hmm, parentTokenKey doesn't exist or is still encrypted. We can't decrypt the parent
+          // but we can still fetch it in encrypted format.
+          tokenInfo = ApiTokens.findOne(tokenInfo.parentToken);
+        }
       }
 
       if (!tokenInfo.frontendRef || !tokenInfo.frontendRef[type]) {

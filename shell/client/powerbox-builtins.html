@@ -1,0 +1,95 @@
+<template name="grainPowerboxCard">
+  {{ grainInfo.title }}
+</template>
+
+<template name="uiViewPowerboxConfiguration">
+  {{#if choseHostedObject}}
+    <div class="powerbox-iframe-mount">{{ setupIframe }}</div>
+  {{else}}
+    <form>
+      <p>with permissions:</p>
+      {{#each role in viewInfo.roles}}
+        <label><input type="radio" name="role" value="{{role.index}}">{{role.title.defaultText}} - {{role.verbPhrase.defaultText}}</label>
+      {{else}}
+        <label><input type="radio" checked="true" name="role" value="all">Full access</label>
+      {{/each}}
+      <div class="choose-buttons">
+        <button class="connect-button">Connect</button>
+        {{#if option.hostedObject}}
+          <button class="choose-hosted-object">Browse grain contents &raquo;</button>
+        {{/if}}
+      </div>
+    </form>
+  {{/if}}
+</template>
+
+<template name="ipNetworkPowerboxCard">
+  Admin: grant all outgoing network access
+  {{#with encryption}}
+    (encrypted with {{.}})
+  {{/with}}
+</template>
+
+<template name="ipInterfacePowerboxCard">
+  Admin: grant all incoming network access
+</template>
+
+<template name="emailVerifierPowerboxCard">
+  {{#if option.frontendRef.emailVerifier.services}}
+    Verify e-mail addresses using {{ serviceTitle }}
+  {{else}}
+    Verify e-mail addresses using any login service
+  {{/if}}
+</template>
+
+<template name="verifiedEmailPowerboxCard">
+  {{ option.frontendRef.verifiedEmail.address }}
+</template>
+
+<template name="identityPowerboxCard">
+  {{ option.profile.name }}
+</template>
+
+<template name="identityPowerboxConfiguration">
+  <form>
+    <p>with permissions:</p>
+    {{#each role in sufficientRoles}}
+      <label><input type="radio" name="role" value="{{role.index}}">{{role.title.defaultText}} - {{role.verbPhrase.defaultText}}</label>
+    {{else}}
+      <label><input type="radio" checked="true" name="role" value="all">Full access</label>
+    {{/each}}
+    <div class="choose-buttons">
+      <button class="connect-button">Connect</button>
+    </div>
+  </form>
+</template>
+
+<template name="addNewVerifiedEmailPowerboxCard">
+  Add a new address
+</template>
+
+<template name="httpUrlPowerboxCard">
+  Use {{option.frontendRef.http.url}}
+</template>
+
+<template name="httpArbitraryPowerboxCard">
+  Specify URL...
+</template>
+
+<template name="httpArbitraryPowerboxConfiguration">
+  <form>
+    Enter URL:
+    <input class="url" type="text" placeholder="https://example.com">
+    <div class="choose-buttons">
+      <button class="connect-button">Connect</button>
+    </div>
+  </form>
+</template>
+
+<template name="httpOAuthPowerboxCard">
+  Use {{option.oauthServiceInfo.service}}
+</template>
+
+<template name="httpOAuthPowerboxConfiguration">
+  Requesting permissions from {{option.oauthServiceInfo.service}} (see popup).
+</template>

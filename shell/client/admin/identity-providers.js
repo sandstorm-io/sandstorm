@@ -177,7 +177,7 @@ Template.googleLoginSetupInstructions.helpers({
 
 // Google form.
 Template.adminIdentityProviderConfigureGoogle.onCreated(function () {
-  const configurations = Package["service-configuration"].ServiceConfiguration.configurations;
+  const configurations = ServiceConfiguration.configurations;
   const googleConfiguration = configurations.findOne({ service: "google" });
   const clientId = (googleConfiguration && googleConfiguration.clientId) || "";
   const clientSecret = (googleConfiguration && googleConfiguration.secret) || "";
@@ -283,7 +283,7 @@ Template.githubLoginSetupInstructions.helpers({
 
 // GitHub form.
 Template.adminIdentityProviderConfigureGitHub.onCreated(function () {
-  const configurations = Package["service-configuration"].ServiceConfiguration.configurations;
+  const configurations = ServiceConfiguration.configurations;
   const githubConfiguration = configurations.findOne({ service: "github" });
   const clientId = (githubConfiguration && githubConfiguration.clientId) || "";
   const clientSecret = (githubConfiguration && githubConfiguration.secret) || "";

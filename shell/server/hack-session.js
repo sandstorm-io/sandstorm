@@ -20,7 +20,7 @@ const Https = Npm.require("https");
 const Net = Npm.require("net");
 const Dgram = Npm.require("dgram");
 const Capnp = Npm.require("capnp");
-import { hashSturdyRef, checkRequirements } from "/imports/server/persistent.js";
+import { hashSturdyRef, checkRequirements, fetchApiToken } from "/imports/server/persistent.js";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
@@ -47,12 +47,8 @@ SessionContextImpl = class SessionContextImpl {
 
   claimRequest(sturdyRef, requiredPermissions) {
     return inMeteor(() => {
-      const hashedSturdyRef = hashSturdyRef(sturdyRef);
-
-      const token = ApiTokens.findOne({
-        _id: hashedSturdyRef,
-        "owner.clientPowerboxRequest.sessionId": this.sessionId,
-      });
+      const token = fetchApiToken(globalDb, sturdyRef,
+        { "owner.clientPowerboxRequest.sessionId": this.sessionId });
 
       if (!token) {
         throw new Error("no such token");
@@ -94,8 +90,7 @@ SessionContextImpl = class SessionContextImpl {
       }
 
       return restoreInternal(
-          globalDb,
-          new Buffer(sturdyRef),
+          globalDb, sturdyRef,
           { clientPowerboxRequest: Match.ObjectIncluding({ sessionId: this.sessionId }) },
           requirements, token);
     });
@@ -189,10 +184,10 @@ SessionContextImpl = class SessionContextImpl {
       } else if (isUiView) {
         if (session.identityId) {
           // Deduplicate.
-          let tokenId = hashSturdyRef(sturdyRef.toString());
-          const newApiToken = ApiTokens.findOne({ _id: tokenId });
+          const newApiToken = fetchApiToken(globalDb, sturdyRef.toString());
+          let tokenId = newApiToken._id;
           const dupeQuery = _.pick(newApiToken, "grainId", "roleAssignment", "requirements",
-                                   "parentToken", "identityId", "accountId");
+                                   "parentToken", "parentTokenKey", "identityId", "accountId");
           dupeQuery._id = { $ne: newApiToken._id };
           dupeQuery["owner.user.identityId"] = this.identityId;
           dupeQuery.trashed = { $exists: false };
@@ -277,7 +272,7 @@ Meteor.methods({
       throw new Meteor.Error(400, "Invalid webkey: token doesn't match hostname.");
     }
 
-    const cap = restoreInternal(db, new Buffer(token),
+    const cap = restoreInternal(db, token,
                                 Match.Optional({ webkey: Match.Optional(Match.Any) }), []).cap;
     const castedCap = cap.castAs(SystemPersistent);
     const owner = {
@@ -511,9 +506,9 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
       const hostId = matchWildcardHost(parsedUrl.host);
       // Connecting to a remote server with a bearer token.
       // TODO(someday): Negotiate server-to-server Cap'n Proto connection.
-      return { view: new ExternalUiView(url, this.grainId, token) };
+      return { view: new ExternalUiView(url, token) };
     } else {
-      return { view: new ExternalUiView(url, this.grainId) };
+      return { view: new ExternalUiView(url) };
     }
   }
 };

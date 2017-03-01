@@ -41,3 +41,6 @@ standard-minifier-js@1.2.1
 shell-server@0.2.1
 
 oauth@1.1.12
+service-configuration
+google
+github

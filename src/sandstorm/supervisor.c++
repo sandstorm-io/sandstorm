@@ -1136,6 +1136,18 @@ void SupervisorMain::setupSeccomp() {
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1,
      SCMP_A0(SCMP_CMP_EQ, AF_KEY)));
 
+  // Disallow DCCP sockets due to Linux CVE-2017-6074.
+  //
+  // The `type` parameter to `socket()` can have SOCK_NONBLOCK and SOCK_CLOEXEC bitwise-or'd in,
+  // so we need to mask those out for our check. The kernel defines a constant SOCK_TYPE_MASK
+  // as 0x0f, but this constant doesn't appear to be in the headers, so we specify by hand.
+  //
+  // TODO(security): We should probably disallow everything except SOCK_STREAM and SOCK_DGRAM but
+  //   I don't totally get how to write such conditionals with libseccomp. We should really dump
+  //   libseccomp and write in BPF assembly, which is frankly much easier to understand.
+  CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPROTONOSUPPORT), SCMP_SYS(socket), 1,
+     SCMP_A1(SCMP_CMP_MASKED_EQ, 0x0f, SOCK_DCCP)));
+
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(add_key), 0));
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(request_key), 0));
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(keyctl), 0));

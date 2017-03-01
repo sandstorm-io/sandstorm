@@ -144,21 +144,22 @@ bool BackupMain::run(kj::StringPtr grainDir) {
   // are undocumented.  :(
   KJ_SYSCALL(mount("none", "/", nullptr, MS_REC | MS_PRIVATE, nullptr));
 
-  // Mount root read-only.
-  bind(kj::str(root, "/"), "/tmp", MS_BIND | MS_NOSUID | MS_RDONLY);
+  // Create tmpfs root to whitelist directories that we want to bind in.
+  KJ_SYSCALL(mount("tmpfs", "/tmp", "tmpfs", 0, "size=8m,nr_inodes=128,mode=755"));
 
-  if (access("/tmp/dev/null", F_OK) != 0) {
-    // Looks like we need to bind in /dev.
-    KJ_SYSCALL(mount("/dev", "/tmp/dev", nullptr, MS_BIND, nullptr));
+  // Bind in whitelisted directories.
+  const char* WHITELIST[] = { "dev", "bin", "lib", "lib64", "usr" };
+  for (const char* dir: WHITELIST) {
+    auto src = kj::str(root, "/", dir);
+    auto dst = kj::str("/tmp/", dir);
+    if (access(src.cStr(), F_OK) == 0) {
+      KJ_SYSCALL(mkdir(dst.cStr(), 0755));
+      bind(src, dst, MS_BIND | MS_NOSUID | MS_RDONLY);
+    }
   }
 
-  // Hide sensitive directories.
-  KJ_SYSCALL(mount("tmpfs", "/tmp/proc", "tmpfs", 0, "size=32k,nr_inodes=8,mode=000"));
-  KJ_SYSCALL(mount("tmpfs", "/tmp/var", "tmpfs", 0, "size=32k,nr_inodes=8,mode=000"));
-  KJ_SYSCALL(mount("tmpfs", "/tmp/etc", "tmpfs", 0, "size=32k,nr_inodes=8,mode=000"));
-
-  // Mount inner tmpfs.
-  KJ_SYSCALL(mount("tmpfs", "/tmp/tmp", "tmpfs", 0, "size=8m,nr_inodes=128,mode=777"));
+  // Make sandboxed /tmp.
+  KJ_SYSCALL(mkdir("/tmp/tmp", 0777));
 
   // Bind in the grain's `data` (=`sandbox`).
   KJ_SYSCALL(mkdir("/tmp/tmp/data", 0777));

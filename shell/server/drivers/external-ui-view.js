@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { PersistentImpl } from "/imports/server/persistent.js";
+import { ssrfSafeLookup } from "/imports/server/networking.js";
 
 const Future = Npm.require("fibers/future");
 const Capnp = Npm.require("capnp");
@@ -44,7 +45,12 @@ ExternalUiView = class ExternalUiView {
       };
     }
 
-    return { session: new Capnp.Capability(new ExternalWebSession(this.url, options), ApiSession) };
+    return inMeteor(() => {
+      return {
+        session: new Capnp.Capability(new ExternalWebSession(this.url, options, globalDb),
+                                      ApiSession)
+      };
+    });
   }
 };
 
@@ -287,12 +293,20 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
   constructor(url, options, db, saveTemplate) {
     super(db, saveTemplate);
 
+    // TODO(soon): Support HTTP proxy.
+    const safe = ssrfSafeLookup(db, url);
+
+    if (!options) options = {};
+    if (!options.headers) options.headers = {};
+    options.headers.host = safe.host;
+    options.servername = safe.host.split(":")[0];
+
     if (!saveTemplate) {
       // enable backwards-compatibilty tweaks.
       this.fromHackSession = true;
     }
 
-    const parsedUrl = Url.parse(url);
+    const parsedUrl = Url.parse(safe.url);
     this.host = parsedUrl.hostname;
     if (this.fromHackSession) {
       // HackSessionContext.getExternalUiView() apparently ignored any path on the URL. Whoops.
@@ -308,7 +322,7 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
 
     this.port = parsedUrl.port;
     this.protocol = parsedUrl.protocol;
-    this.options = options || {};
+    this.options = options;
   }
 
   get(path, context) {

@@ -21,6 +21,7 @@ import ChildProcess from "child_process";
 import Url from "url";
 
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { ssrfSafeLookupOrProxy } from "/imports/server/networking.js";
 
 const Request = HTTPInternals.NpmModules.request.module;
 
@@ -298,82 +299,67 @@ AppInstaller = class AppInstaller {
   }
 
   doDownloadTo(out) {
-    const url = Url.parse(this.url);
-    const options = {
-      hostname: url.hostname,
-      port: url.port,
-      path: url.path,
-    };
+    inMeteor(this.wrapCallback(function () {
+      const safe = ssrfSafeLookupOrProxy(globalDb, this.url);
 
-    let protocol;
-    if (url.protocol === "http:" || url.protocol === "https:") {
-      protocol = Request.defaults({
-        maxRedirects: 20,
-        // Since we will verify the download against a hash anyway, we don't need to verify the
-        // server's certificate. In fact, the only reason we support HTTPS at all here is because
-        // some servers refuse to serve over HTTP (which is, in general, a good thing). Skipping the
-        // certificate check here is helpful in that it means we don't have to worry about having a
-        // reasonable list of trusted CAs available to Sandstorm.
-        strictSSL: false,
-      });
-    } else {
-      throw new Error("Protocol not supported: " + url.protocol);
-    }
-
-    // TODO(security):  It could arguably be a security problem that it's possible to probe the
-    //   server's local network (behind any firewalls) by presenting URLs here.
-    let bytesExpected = undefined;
-    let bytesReceived = 0;
-    const hasher = Crypto.createHash("sha256");
-    let done = false;
-    const updateDownloadProgress = _.throttle(this.wrapCallback(() => {
-      if (!done) {
-        if (bytesExpected) {
-          this.updateProgress("download", bytesReceived / bytesExpected);
-        } else {
-          this.updateProgress("download", bytesReceived);
+      let bytesExpected = undefined;
+      let bytesReceived = 0;
+      const hasher = Crypto.createHash("sha256");
+      let done = false;
+      const updateDownloadProgress = _.throttle(this.wrapCallback(() => {
+        if (!done) {
+          if (bytesExpected) {
+            this.updateProgress("download", bytesReceived / bytesExpected);
+          } else {
+            this.updateProgress("download", bytesReceived);
+          }
         }
-      }
-    }), 500);
+      }), 500);
 
-    const request = protocol.get(this.url);
+      const request = safe.proxy
+          ? Request.get(this.url, { proxy: safe.proxy })
+          : Request.get(safe.url, {
+              headers: { host: safe.host },
+              servername: safe.host.split(":")[0],
+            });
 
-    request.on("response", this.wrapCallback((response) => {
-      if ("content-length" in response.headers) {
-        bytesExpected = parseInt(response.headers["content-length"]);
-      }
-    }));
-
-    request.on("data", this.wrapCallback((chunk) => {
-      hasher.update(chunk);
-      out.write(chunk);
-      bytesReceived += chunk.length;
-      updateDownloadProgress();
-    }));
-
-    request.on("end", this.wrapCallback(() => {
-      out.done();
-
-      if (hasher.digest("hex").slice(0, 32) !== this.packageId) {
-        throw new Error("Package hash did not match.");
-      }
-
-      done = true;
-      delete this.downloadRequest;
-
-      this.updateProgress("unpack");
-      out.saveAs(this.packageId).then(this.wrapCallback((info) => {
-        this.appId = info.appId;
-        this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
-        this.done(info.manifest);
-      }), this.wrapCallback((err) => {
-        throw err;
+      request.on("response", this.wrapCallback((response) => {
+        if ("content-length" in response.headers) {
+          bytesExpected = parseInt(response.headers["content-length"]);
+        }
       }));
+
+      request.on("data", this.wrapCallback((chunk) => {
+        hasher.update(chunk);
+        out.write(chunk);
+        bytesReceived += chunk.length;
+        updateDownloadProgress();
+      }));
+
+      request.on("end", this.wrapCallback(() => {
+        out.done();
+
+        if (hasher.digest("hex").slice(0, 32) !== this.packageId) {
+          throw new Error("Package hash did not match.");
+        }
+
+        done = true;
+        delete this.downloadRequest;
+
+        this.updateProgress("unpack");
+        out.saveAs(this.packageId).then(this.wrapCallback((info) => {
+          this.appId = info.appId;
+          this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
+          this.done(info.manifest);
+        }), this.wrapCallback((err) => {
+          throw err;
+        }));
+      }));
+
+      request.on("error", this.wrapCallback((err) => { throw err; }));
+
+      this.downloadRequest = request;
     }));
-
-    request.on("error", this.wrapCallback((err) => { throw err; }));
-
-    this.downloadRequest = request;
   }
 
   done(manifest) {

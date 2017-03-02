@@ -20,6 +20,7 @@ import { PersistentImpl } from "/imports/server/persistent.js";
 import { migrateToLatest } from "/imports/server/migrations.js";
 import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants.js";
 import { onInMeteor } from "/imports/server/async-helpers.js";
+import { monkeyPatchHttp } from "/imports/server/networking.js";
 let url = require("url");
 const Capnp = require("capnp");
 
@@ -58,6 +59,8 @@ SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
   globalDb.deletePendingAccounts(ACCOUNT_DELETION_SUSPENSION_TIME, globalBackend,
     deleteAccount);
 });
+
+monkeyPatchHttp(globalDb, HTTP);
 
 Meteor.startup(() => { migrateToLatest(globalDb, globalBackend); });
 

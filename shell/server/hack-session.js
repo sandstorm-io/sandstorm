@@ -22,6 +22,7 @@ const Dgram = Npm.require("dgram");
 const Capnp = Npm.require("capnp");
 import { hashSturdyRef, checkRequirements, fetchApiToken } from "/imports/server/persistent.js";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { ssrfSafeLookup } from "/imports/server/networking.js";
 
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 const HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;
@@ -411,68 +412,76 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
     const _this = this;
     const session = _this;
 
-    return new Promise((resolve, reject) => {
-      let requestMethod = Http.request;
-      if (url.indexOf("https://") === 0) {
-        requestMethod = Https.request;
-      } else if (url.indexOf("http://") !== 0) {
-        err = new Error("Protocol not recognized.");
-        err.nature = "precondition";
-        reject(err);
-      }
-
-      req = requestMethod(url, (resp) => {
-        const buffers = [];
-        let err;
-
-        switch (Math.floor(resp.statusCode / 100)) {
-          case 2: // 2xx response -- OK.
-            resp.on("data", (buf) => {
-              buffers.push(buf);
-            });
-
-            resp.on("end", () => {
-              resolve({
-                content: Buffer.concat(buffers),
-                mimeType: resp.headers["content-type"] || null,
-              });
-            });
-            break;
-          case 3: // 3xx response -- redirect.
-            resolve(session.httpGet(resp.headers.location));
-            break;
-          case 4: // 4xx response -- client error.
-            err = new Error("Status code " + resp.statusCode + " received in response.");
-            err.nature = "precondition";
-            reject(err);
-            break;
-          case 5: // 5xx response -- internal server error.
-            err = new Error("Status code " + resp.statusCode + " received in response.");
-            err.nature = "localBug";
-            reject(err);
-            break;
-          default: // ???
-            err = new Error("Invalid status code " + resp.statusCode + " received in response.");
-            err.nature = "localBug";
-            reject(err);
-            break;
+    return inMeteor(() => {
+      return ssrfSafeLookup(globalDb, url);
+    }).then(safe => {
+      return new Promise((resolve, reject) => {
+        let requestMethod = Http.request;
+        if (safe.url.indexOf("https://") === 0) {
+          requestMethod = Https.request;
+        } else if (safe.url.indexOf("http://") !== 0) {
+          err = new Error("Protocol not recognized.");
+          err.nature = "precondition";
+          reject(err);
         }
-      });
 
-      req.on("error", (e) => {
-        e.nature = "networkFailure";
-        reject(e);
-      });
+        const options = Url.parse(safe.url);
+        options.headers = { host: safe.host };
+        options.servername = safe.host.split(":")[0];
 
-      req.setTimeout(15000, () => {
-        req.abort();
-        err = new Error("Request timed out.");
-        err.nature = "localBug";
-        err.durability = "overloaded";
-        reject(err);
+        req = requestMethod(options, (resp) => {
+          const buffers = [];
+          let err;
+  
+          switch (Math.floor(resp.statusCode / 100)) {
+            case 2: // 2xx response -- OK.
+              resp.on("data", (buf) => {
+                buffers.push(buf);
+              });
+  
+              resp.on("end", () => {
+                resolve({
+                  content: Buffer.concat(buffers),
+                  mimeType: resp.headers["content-type"] || null,
+                });
+              });
+              break;
+            case 3: // 3xx response -- redirect.
+              resolve(session.httpGet(resp.headers.location));
+              break;
+            case 4: // 4xx response -- client error.
+              err = new Error("Status code " + resp.statusCode + " received in response.");
+              err.nature = "precondition";
+              reject(err);
+              break;
+            case 5: // 5xx response -- internal server error.
+              err = new Error("Status code " + resp.statusCode + " received in response.");
+              err.nature = "localBug";
+              reject(err);
+              break;
+            default: // ???
+              err = new Error("Invalid status code " + resp.statusCode + " received in response.");
+              err.nature = "localBug";
+              reject(err);
+              break;
+          }
+        });
+  
+        req.on("error", (e) => {
+          e.nature = "networkFailure";
+          reject(e);
+        });
+  
+        req.setTimeout(15000, () => {
+          req.abort();
+          err = new Error("Request timed out.");
+          err.nature = "localBug";
+          err.durability = "overloaded";
+          reject(err);
+        });
+  
+        req.end();
       });
-
-      req.end();
     });
   }
 

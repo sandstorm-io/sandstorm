@@ -9,6 +9,7 @@ import { _ } from "meteor/underscore";
 import { Match } from "meteor/check";
 import { userPictureUrl, fetchPicture } from "/imports/server/accounts/picture.js";
 import { waitPromise } from "/imports/server/async-helpers.js";
+import { PRIVATE_IPV4_ADDRESSES, PRIVATE_IPV6_ADDRESSES } from "/imports/constants.js";
 
 const Future = Npm.require("fibers/future");
 const Url = Npm.require("url");
@@ -777,6 +778,15 @@ function removeFeatureKeys(db, backend) {
   db.notifications.remove({ "admin.type": "trialFeatureKeyExpired" });
 }
 
+function setIpBlacklist(db, backend) {
+  if (Meteor.settings.public.isTesting) {
+    db.collections.settings.insert({ _id: "ipBlacklist", value: "192.168.0.0/16" });
+  } else {
+    const defaultIpBlacklist = PRIVATE_IPV4_ADDRESSES.concat(PRIVATE_IPV6_ADDRESSES).join("\n");
+    db.collections.settings.insert({ _id: "ipBlacklist", value: defaultIpBlacklist });
+  }
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -813,6 +823,7 @@ const MIGRATIONS = [
   setNewServer,
   addMembraneRequirementsToIdentities,
   addEncryptionToFrontendRefIpNetwork,
+  setIpBlacklist,
 ];
 
 const NEW_SERVER_STARTUP = [

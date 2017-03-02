@@ -150,6 +150,10 @@ Router.map(function () {
     path: "/admin/preinstalled-apps",
     controller: newAdminRoute,
   });
+  this.route("newAdminNetworking", {
+    path: "/admin/networking",
+    controller: newAdminRoute,
+  });
   this.route("newAdminMaintenance", {
     path: "/admin/maintenance",
     controller: newAdminRoute,

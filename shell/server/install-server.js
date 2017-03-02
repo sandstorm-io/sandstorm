@@ -17,12 +17,30 @@
 import { allowDemo } from "/imports/demo.js";
 import { promiseToFuture } from "/imports/server/async-helpers.js";
 
+const TOKEN_CLEANUP_MINUTES = 120;  // Give enough time for large uploads on slow connections.
+const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
+
+function cleanupToken(tokenId) {
+  check(tokenId, String);
+  globalDb.collections.spkTokens.remove({ _id: tokenId });
+  waitPromise(globalBackend.cap().deleteBackup(tokenId));
+}
+
+Meteor.startup(() => {
+  // Cleanup tokens every TOKEN_CLEANUP_MINUTES
+  SandstormDb.periodicCleanup(TOKEN_CLEANUP_TIMER, () => {
+    const queryDate = new Date(Date.now() - TOKEN_CLEANUP_TIMER);
+
+    globalDb.collections.spkTokens.find({ timestamp: { $lt: queryDate } }).forEach((token) => {
+      cleanupToken(token._id);
+    });
+  });
+});
+
 const localizedTextPattern = {
   defaultText: String,
   localizations: Match.Optional([{ locale: String, text: String }]),
 };
-
-const uploadTokens = {};
 
 // Not all users are allowed to upload apps. We need to manually implement authorization
 // because Meteor.userId() is not available in server-side routes.
@@ -45,9 +63,7 @@ Meteor.methods({
     }
 
     const token = Random.id(22);
-    uploadTokens[token] = setTimeout(function () {
-      delete uploadTokens[token];
-    }, 20 * 60 * 1000);
+    globalDb.collections.spkTokens.insert({ _id: token, timestamp: new Date() });
 
     return token;
   },
@@ -116,7 +132,8 @@ Router.map(function () {
     path: "/upload/:token",
 
     action: function () {
-      if (!this.params.token || !uploadTokens[this.params.token]) {
+      if (typeof this.params.token !== "string" ||
+          !globalDb.collections.spkTokens.findOne(this.params.token)) {
         this.response.writeHead(403, {
           "Content-Type": "text/plain",
           "Access-Control-Allow-Origin": "*",
@@ -133,8 +150,7 @@ Router.map(function () {
           });
           this.response.write(packageId);
           this.response.end();
-          clearTimeout(uploadTokens[this.params.token]);
-          delete uploadTokens[this.params.token];
+          globalDb.collections.spkTokens.remove(this.params.token);
         } catch (error) {
           console.error(error.stack);
           this.response.writeHead(500, {

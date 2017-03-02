@@ -370,6 +370,13 @@ FileTokens = new Mongo.Collection("fileTokens", collectionOptions);
 //   name:      Suggested filename.
 //   timestamp: File creation time. Used to figure out when the token and file should be wiped.
 
+SpkTokens = new Mongo.Collection("spkTokens", collectionOptions);
+// A lot like FileTokens, but for SPK uploads.
+//
+// Each contains:
+//   _id:       The unguessable token string.
+//   timestamp: Creation time. Used to figure out when the token should be wiped.
+
 ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 // Access tokens for APIs exported by apps.
 //
@@ -1050,6 +1057,7 @@ SandstormDb = function (quotaManager) {
     activityStats: ActivityStats,
     deleteStats: DeleteStats,
     fileTokens: FileTokens,
+    spkTokens: SpkTokens,
     apiTokens: ApiTokens,
     apiHosts: ApiHosts,
     notifications: Notifications,

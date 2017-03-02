@@ -1,3 +1,8 @@
+### v0.203 (2017-03-02)
+- Fixed security issues discovered during security review by [DevCore Inc.](http://devco.re/), commissioned by Department of Cyber Security of Taiwan. See blog post coming soon.
+- Apps may now request access via the Powerbox to HTTP resources external to Sandstorm, in the same way that they request access to HTTP resources hosted by other apps. Credentials -- including basic auth passwords and OAuth tokens -- are stored and protected by Sandstorm, not the app.
+- An e-mail organization can now be defined by multiple domains, including wildcard subdomains.
+
 ### v0.202 (2017-02-04)
 - Removed Sandstorm for Work paywall. All Sandstorm for Work features are now available on all servers for free. Feature keys are no longer needed and all code related to them has been removed.
 - `sandstorm-http-bridge-internal.capnp` is no longer included with the other, public `.capnp` files in the package. This file was not intended to be used by third parties, and indeed did not parse correctly after installation since it references other files that are not installed. This caused some dev tools to report spurious errors.

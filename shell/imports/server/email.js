@@ -75,7 +75,6 @@ const getPool = function (smtpConfig) {
 };
 
 const smtpSend = function (pool, mailOptions) {
-  console.log(mailOptions);
   pool._futureWrappedSendMail(mailOptions).wait();
 };
 
@@ -100,7 +99,6 @@ function validateEmail(email) {
     check(email, String);
 
     if (!email.match(EMAIL_REGEX)) {
-      console.log(email);
       throw new Meteor.Error(400, "invalid e-mail address");
     }
   }

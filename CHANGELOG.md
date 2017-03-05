@@ -1,3 +1,6 @@
+### v0.204 (2017-03-05) [bugfixes]
+- Removed stray console logging on e-mail send.
+
 ### v0.203 (2017-03-02)
 - Fixed security issues discovered during security review by [DevCore Inc.](http://devco.re/), commissioned by Department of Cyber Security of Taiwan. See blog post coming soon.
 - Apps may now request access via the Powerbox to HTTP resources external to Sandstorm, in the same way that they request access to HTTP resources hosted by other apps. Credentials -- including basic auth passwords and OAuth tokens -- are stored and protected by Sandstorm, not the app.

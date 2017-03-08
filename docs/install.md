@@ -137,6 +137,7 @@ Please install the following:
 * `unzip`
 * `strace`
 * `curl`
+* `python`
 * discount (markdown parser)
 * [Clang compiler](http://clang.llvm.org/) version 3.4 or better
 * [Meteor](http://meteor.com)
@@ -144,7 +145,7 @@ Please install the following:
 On Debian or Ubuntu, you should be able to get all these with:
 
     sudo apt-get install build-essential libcap-dev xz-utils zip \
-        unzip strace curl clang-3.4 discount git
+        unzip strace curl clang-3.4 discount git python
     curl https://install.meteor.com/ | sh
 
 ### Get the source code

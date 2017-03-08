@@ -354,6 +354,11 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
           profile.email = microsoftEmail;
         }
 
+        const azureAdEmail = profile["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"];
+        if (!profile.email && azureAdEmail) {
+          profile.email = azureAdEmail;
+        }
+
         const microsoftDisplayName = profile["http://schemas.microsoft.com/identity/claims/displayname"];
         if (!profile.displayName && microsoftDisplayName) {
           profile.displayName = microsoftDisplayName;

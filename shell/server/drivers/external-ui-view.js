@@ -48,7 +48,7 @@ ExternalUiView = class ExternalUiView {
     return inMeteor(() => {
       return {
         session: new Capnp.Capability(new ExternalWebSession(this.url, options, globalDb),
-                                      ApiSession)
+                                      ApiSession),
       };
     });
   }

@@ -30,6 +30,7 @@ function getNetwork(addr, bits) {
   for (let i = Math.ceil(bits / 8); i < parsed.length; i++) {
     parsed[i] = 0;
   }
+
   const n = Math.floor(bits / 8);
   if (n < parsed.length) {
     parsed[n] = parsed[n] & (0xff << (8 - bits % 8));
@@ -49,7 +50,7 @@ function parseCidr(cidr) {
     cidr = cidr.trim();
     if (cidr === "") return null;
 
-    const parts = cidr.split('/');
+    const parts = cidr.split("/");
     if (parts.length === 1) {
       // Bare address.
       return addr => Ip.isEqual(cidr, addr);
@@ -95,6 +96,7 @@ function ssrfSafeLookup(db, url) {
 
     let ok = true;
     blacklist.forEach(test => { if (test(address.address)) { ok = false; } });
+
     SPECIAL_FILTERS.forEach(test => { if (test(address.address)) { ok = false; } });
 
     if (ok) {
@@ -134,6 +136,7 @@ function ssrfSafeHttp(originalHttpCall, db, method, url, options, callback) {
     callback = options;
     options = undefined;
   }
+
   if (!options) options = {};
 
   if (options.npmRequestOptions && options.npmRequestOptions.proxy) {

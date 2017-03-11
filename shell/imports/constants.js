@@ -42,7 +42,7 @@ const SPECIAL_IPV4_ADDRESSES = [
   "203.0.113.0/24",        // RFC5737 "example address" block 3 -- like example.com for IPs
   "224.0.0.0/4",           // RFC1112 multicast
   "240.0.0.0/4",           // RFC1112 multicast / reserved for future use
-  "255.255.255.255/32"     // RFC0919 broadcast address
+  "255.255.255.255/32",     // RFC0919 broadcast address
 ];
 
 const SPECIAL_IPV6_ADDRESSES = [

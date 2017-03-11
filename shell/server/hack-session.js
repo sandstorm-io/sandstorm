@@ -432,13 +432,13 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
         req = requestMethod(options, (resp) => {
           const buffers = [];
           let err;
-  
+
           switch (Math.floor(resp.statusCode / 100)) {
             case 2: // 2xx response -- OK.
               resp.on("data", (buf) => {
                 buffers.push(buf);
               });
-  
+
               resp.on("end", () => {
                 resolve({
                   content: Buffer.concat(buffers),
@@ -466,12 +466,12 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
               break;
           }
         });
-  
+
         req.on("error", (e) => {
           e.nature = "networkFailure";
           reject(e);
         });
-  
+
         req.setTimeout(15000, () => {
           req.abort();
           err = new Error("Request timed out.");
@@ -479,7 +479,7 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
           err.durability = "overloaded";
           reject(err);
         });
-  
+
         req.end();
       });
     });

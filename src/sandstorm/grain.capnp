@@ -153,9 +153,6 @@ interface SandstormApi(AppObjectId) {
   # grain for some reason, the callback will be retried. After a limited number of failed retries,
   # Sandstorm may alert the owner to a problem and stop retrying.
 
-  const minimumSchedulingSlack :Util.DurationInNs = 60000000000;
-  # 60 seconds: The minimum value allowable for the `slack` parameter passed to `scheduleAt()`.
-
   schedulePeriodic @12 (period :SchedulingPeriod, callback :Util.Runnable)
                     -> (handle :Util.Handle);
   # Schedule a callback to be called on a regular interval.
@@ -177,6 +174,9 @@ interface SandstormApi(AppObjectId) {
   # Sandstorm may alert the owner to a problem and stop retrying (but will call the callback again
   # on the next scheduling period).
 }
+
+const minimumSchedulingSlack :Util.DurationInNs = 60000000000;
+# 60 seconds: The minimum value allowable for the `slack` parameter passed to `scheduleAt()`.
 
 enum SchedulingPeriod {
   annually @3;

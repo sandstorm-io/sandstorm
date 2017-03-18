@@ -1,3 +1,7 @@
+### v0.205 (2017-03-18) [bugfixes]
+- Fixed grain backups not working under "privileged" sandbox (which is the default for most newer self-hosted Sandstorm installs).
+- Fixed SAML integration with Azure Active Directory when users are not Microsoft accounts.
+
 ### v0.204 (2017-03-05) [bugfixes]
 - Removed stray console logging on e-mail send.
 

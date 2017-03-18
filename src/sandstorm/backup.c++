@@ -160,6 +160,9 @@ bool BackupMain::run(kj::StringPtr grainDir) {
 
   // Make sandboxed /tmp.
   KJ_SYSCALL(mkdir("/tmp/tmp", 0777));
+  KJ_IF_MAYBE(u, sandboxUid) {
+    KJ_SYSCALL(chown("/tmp/tmp", *u, 0));
+  }
 
   // Bind in the grain's `data` (=`sandbox`).
   KJ_SYSCALL(mkdir("/tmp/tmp/data", 0777));

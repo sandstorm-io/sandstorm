@@ -127,12 +127,7 @@ const collectionOptions = { defineMutationMethods: Meteor.isClient };
 //           experiment. Each experiment may define a point in time where users not already in the
 //           experiment may be added to it and assigned to a group (for example, at user creation
 //           time). Current experiments:
-//       firstTimeBillingPrompt: Value is "control" or "test". Users are assigned to groups at
-//               account creation on servers where billing is enabled (i.e. Oasis). Users in the
-//               test group will see a plan selection dialog and asked to make an explitic choice
-//               (possibly "free") before they can create grains (but not when opening someone
-//               else's shared grain). The goal of the experiment is to determine whether this
-//               prompt scares users away -- and also whether it increases paid signups.
+//       firstTimeBillingPrompt: OBSOLETE
 //       freeGrainLimit: Value is "control" or or a number indicating the grain limit that the
 //               user should receive when on the "free" plan, e.g. "Infinity".
 //   stashedOldUser: A complete copy of this user from before the accounts/identities migration.

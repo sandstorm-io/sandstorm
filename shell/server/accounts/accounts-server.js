@@ -43,7 +43,6 @@ Accounts.onCreateUser(function (options, user) {
     if (globalDb.isReferralEnabled()) {
       user.experiments = user.experiments || {};
       user.experiments = {
-        firstTimeBillingPrompt: Math.random() < 0.5 ? "control" : "test",
         freeGrainLimit: Math.random() < 0.1 ? 100 : "control",
       };
       if (!("expires" in user)) {

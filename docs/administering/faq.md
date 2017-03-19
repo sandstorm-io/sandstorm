@@ -715,3 +715,14 @@ response whose format surprises Sandstorm.
 
 Sandstorm logs this event since it could indicate a configuration problem if it occurred for a
 domain name that **should** be served from this Sandstorm server.
+
+## How do I notify the owner of a resource-hogging process?
+
+1. Identify the process via `top`.
+2. `cat /proc/<pid>/mountinfo` and find the mapping that looks like `/opt/sandstorm/var/sandstorm/grains/<grain-id>/sandbox /var`. This gives you the grain ID.
+3. `sudo sandstorm mongo` to get to the Sandstorm mongo shell.
+4. `db.grains.find({_id: "<grain-id>"})` to get info about the grain. In particular, the `userId` is shown.
+5. `db.users.find({_id: "<user-id>"})` to get the user record. Look for the list of `loginIdentities`, and take the first ID shown.
+6. `db.users.find({_id: "<login-identity-id>"})` to get info about the user identity.
+
+This should show you the user's profile info including e-mail address, etc.

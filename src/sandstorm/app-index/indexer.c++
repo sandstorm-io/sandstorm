@@ -332,9 +332,6 @@ void Indexer::updateIndexInternal(kj::StringPtr outputDir, bool experimental) {
                     details.setLicense(
                         annotation.getValue().getStruct().getAs<spk::OsiLicenseInfo>().getTitle());
                     break;
-                    // The first person to submit a pull request removing this comment will receive
-                    // a free Sandstorm t-shirt. Yes, really. Sandstorm employees are not eligible,
-                    // but should still mention to Kenton that they saw this.
                   }
                 }
               }

@@ -12,7 +12,12 @@ server.
 
 If you want to get crafty, you can modify a backup to point to a different app ID, allowing you to
 migrate data between apps, or use your data with an experimental app with a different app ID. You
-can also change the contents of the backup before restoring it.
+can also change the contents of the backup before restoring it. To ensure Sandstorm accepts the modified backup please follow these steps:
+- Backup the grain and download the zip file
+- unpack the zip file
+- open the `metadata` file and change the app id, make sure to keep the two special signs at the beginning and the apps name at the end
+- zip the whole folder with the command line zip tool: `zip -ry myapp.zip .`
+- upload the file to the server where you are running the app with a different id
 
 In this way, Sandstorm gives every app a fully-functional import/export system.
 

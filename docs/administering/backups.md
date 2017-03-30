@@ -15,8 +15,13 @@ migrate data between apps, or use your data with an experimental app with a diff
 can also change the contents of the backup before restoring it. To ensure Sandstorm accepts the modified backup please follow these steps:
 - Backup the grain and download the zip file
 - unpack the zip file
-- open the `metadata` file and change the app id, make sure to keep the two special signs at the beginning and the apps name at the end
-- zip the whole folder with the command line zip tool: `zip -ry myapp.zip .`
+- to edit the app id
+  - create a new dummy Sandstorm package (see https://github.com/sandstorm-io/vagrant-spk)
+  - copy the new app id from the packages `sandstorm-pkgdef.capnp` file
+  - open the `metadata` file from the unpacked zip foder and exchange the app id in that file
+  - make sure to keep the two special signs at the beginning and the app name at the end
+- To change any app specific content go to the data folder and you'll find the writable part of the grains folder structure
+- zip the whole folder with the command line zip tool: `zip -ry myapp.zip .` (at least the macOS onboard tool does not produce usable zip files for Sandstorm)
 - upload the file to the server where you are running the app with a different id
 
 In this way, Sandstorm gives every app a fully-functional import/export system.

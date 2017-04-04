@@ -16,13 +16,14 @@ can also change the contents of the backup before restoring it. To ensure Sandst
 - Backup the grain and download the zip file
 - unpack the zip file
 - to edit the app id
-  - create a new dummy Sandstorm package (see https://github.com/sandstorm-io/vagrant-spk)
-  - copy the new app id from the packages `sandstorm-pkgdef.capnp` file
-  - open the `metadata` file from the unpacked zip foder and exchange the app id in that file
-  - make sure to keep the two special signs at the beginning and the app name at the end
+  - create your new Sandstorm package (see https://github.com/sandstorm-io/vagrant-spk)
+  - open one new grain and download the backup
+  - unzip the backup and copy the whole `metadata` file (this binary file includes the app id)
+  - unzip also the backup of the grain where you want to change the app id
+  - paste the previously copied `metadata` file
 - To change any app specific content go to the data folder and you'll find the writable part of the grains folder structure
 - zip the whole folder with the command line zip tool: `zip -ry myapp.zip .` (at least the macOS onboard tool does not produce usable zip files for Sandstorm)
-- upload the file to the server where you are running the app with a different id
+- upload the manually packed backup file to the server where you are running the app
 
 In this way, Sandstorm gives every app a fully-functional import/export system.
 

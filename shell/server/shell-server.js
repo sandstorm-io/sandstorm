@@ -60,6 +60,8 @@ BrowserPolicy.content.allowImageOrigin(staticAssetHost);
 BrowserPolicy.content.allowScriptOrigin(staticAssetHost);
 BrowserPolicy.content.allowFontOrigin(staticAssetHost);
 BrowserPolicy.content.allowConnectOrigin(staticAssetHost);
+BrowserPolicy.content.allowConnectOrigin("wss:");
+BrowserPolicy.content.allowConnectOrigin("ws:");
 
 Meteor.publish("grainsMenu", function () {
   if (this.userId) {

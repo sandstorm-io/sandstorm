@@ -10,8 +10,8 @@ Package.onUse(function (api) {
   // Export Accounts (etc) to packages using this one.
   api.imply("accounts-base", ["client", "server"]);
   api.use("accounts-oauth", ["client", "server"]);
-  api.use("google", ["client", "server"]);
-  api.use("github", ["client", "server"]);
+  api.use("google-oauth", ["client", "server"]);
+  api.use("github-oauth", ["client", "server"]);
 
   api.addFiles("accounts.js", ["client", "server"]);
 });

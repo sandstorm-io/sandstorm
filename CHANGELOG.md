@@ -1,3 +1,7 @@
+### v0.206 (2017-04-09) [bugfixes]
+- Worked around MacOS Safari bug breaking WebSockets.
+- Oasis: Removed experiment that caused 50% of users to see a plan-chooser prompt immediately upon creating their account. All users will now default to the free plan without having to choose it explicitly. (Showing the plan chooser did not appear to make any more people choose a paid plan.)
+
 ### v0.205 (2017-03-18) [bugfixes]
 - Fixed grain backups not working under "privileged" sandbox (which is the default for most newer self-hosted Sandstorm installs).
 - Fixed SAML integration with Azure Active Directory when users are not Microsoft accounts.

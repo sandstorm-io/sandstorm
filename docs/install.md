@@ -145,7 +145,7 @@ Please install the following:
 On Debian or Ubuntu, you should be able to get all these with:
 
     sudo apt-get install build-essential libcap-dev xz-utils zip \
-        unzip strace curl clang-3.4 discount git python
+        unzip strace curl clang discount git python
     curl https://install.meteor.com/ | sh
 
 ### Get the source code

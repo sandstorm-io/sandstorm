@@ -21,8 +21,22 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Use a shell script to "provision" the box. This installs Sandstorm using
   # the bundled installer.
-  config.vm.provision "shell",
-    inline: "cd /vagrant && echo localhost > /etc/hostname && hostname localhost && sudo OVERRIDE_DEFAULT_SERVER_USER=vagrant ./install.sh -d -e > /dev/null && sudo sed --in-place='' --expression='s/^BIND_IP=.*/BIND_IP=0.0.0.0/' /opt/sandstorm/sandstorm.conf && sudo service sandstorm restart && printf '\nYour server is online. It has the dev accounts feature enabled, so anyone can log in.\n\nDetails and customization instructions are available here:\n- https://github.com/sandstorm-io/sandstorm/wiki/Using-the-Vagrantfile\n\nVisit it at:\n  http://local.sandstorm.io:6080/'"
+  config.vm.provision "shell", inline: <<-EOF
+    set -e
+    cd /vagrant
+    echo localhost > /etc/hostname
+    hostname localhost
+    sudo OVERRIDE_DEFAULT_SERVER_USER=vagrant ./install.sh -d -e > /dev/null
+    sudo sed --in-place='' --expression='s/^BIND_IP=.*/BIND_IP=0.0.0.0/' /opt/sandstorm/sandstorm.conf
+    sudo service sandstorm restart
+    printf '\nYour server is online. It has the dev accounts feature enabled, so anyone can log in.'
+    printf '\nDetails and customization instructions are available here:'
+    printf '\n- https://github.com/sandstorm-io/sandstorm/wiki/Using-the-Vagrantfile'
+    printf '\n'
+    printf '\nVisit it at:'
+    printf '\n  http://local.sandstorm.io:6080/'
+    printf '\n'
+EOF
 
   # Use NFS for the /vagrant shared directory, for performance and
   # compatibility.

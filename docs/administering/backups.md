@@ -11,8 +11,16 @@ contents. This contains the full writable state of the app, so you can restore i
 server.
 
 If you want to get crafty, you can modify a backup to point to a different app ID, allowing you to
-migrate data between apps, or use your data with an experimental app with a different app ID. You
-can also change the contents of the backup before restoring it.
+migrate data between apps, or use your data with an experimental app with a different app ID. To
+do this:
+- Make a backup of your data from the "old" app.
+- With the "new" app, create a new empty grain and make a backup of it.
+- Find the file called "metadata" inside the second backup, and copy it over to the first backup,
+  overwriting its own "metadata". Now you have a zip which Sandstorm will recognize as belonging
+  to the new app, even though the data came from the old app.
+
+You can also change the contents of the backup before restoring it, by modifying the files in the
+zip.
 
 In this way, Sandstorm gives every app a fully-functional import/export system.
 

@@ -593,63 +593,6 @@ Template.layout.helpers({
     return isStandalone();
   },
 
-  firstTimeBillingPromptState: function () {
-    // Should we show the first-time billing plan selector?
-
-    // Don't show if billing is not enabled.
-    if (!window.BlackrockPayments) return;
-
-    // Don't show on standalone domains.
-    if (isStandalone()) return;
-
-    const user = Meteor.user();
-
-    // Don't show if not logged in.
-    if (!user) return;
-
-    // Don't show if not in the experiment.
-    if (!user.experiments || user.experiments.firstTimeBillingPrompt !== "test") return;
-
-    // Don't show if the user has selected a plan already.
-    if (user.plan && !Session.get("firstTimeBillingPromptOpen")) return;
-
-    // Only show to account users (not identities).
-    if (!user.loginIdentities) return;
-
-    // Don't show to demo users.
-    if (user.expires) return;
-
-    // Don't show when viewing another user's grain. We don't want to scare people away from
-    // logging in to collaborate.
-    const route = Router.current().route.getName();
-    if (route === "shared") return;
-    if (route === "grain") {
-      if (_.some(globalGrains.getAll(), function (grain) {
-        return grain.isActive() && !grain.isOwner();
-      })) {
-
-        return;
-      }
-    }
-
-    // Don't show if user is trying to use a signup key. We're probably going to assign them
-    // a plan shortly.
-    if (route === "signup") return;
-
-    // Don't let the plan chooser disappear instantly once user.plan is set.
-    Session.set("firstTimeBillingPromptOpen", true);
-
-    // OK, show it.
-    return {
-      db: globalDb,
-      topbar: globalTopbar,
-      accountsUi: globalAccountsUi,
-      onComplete: function () {
-        Session.set("firstTimeBillingPromptOpen", false);
-      },
-    };
-  },
-
   demoModal: function () {
     return Session.get("globalDemoModal");
   },

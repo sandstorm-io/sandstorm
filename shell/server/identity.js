@@ -132,31 +132,46 @@ globalFrontendRefRegistry.register({
   },
 
   query(db, userId, value) {
-    const result = [];
+    const resultSet = {};
     let requestedPermissions = [];
     if (value) {
       requestedPermissions = Capnp.parse(Identity.PowerboxTag, value).permissions || [];
     }
 
+    const resultForIdentity = function (identity) {
+      return {
+        _id: "frontendref-identity-" + identity._id,
+        frontendRef: { identity: identity._id },
+        cardTemplate: "identityPowerboxCard",
+        configureTemplate: "identityPowerboxConfiguration",
+        profile: identity.profile,
+        requestedPermissions,
+        searchTerms: [
+          identity.profile.name,
+          identity.profile.handle,
+          identity.profile.intrinsicName,
+        ],
+      };
+    };
+
     db.collections.contacts.find({ ownerId: userId }).forEach(contact => {
       const identity = db.getIdentity(contact.identityId);
       if (identity) {
-        result.push({
-          _id: "frontendref-identity-" + contact.identityId,
-          frontendRef: { identity: contact.identityId },
-          cardTemplate: "identityPowerboxCard",
-          configureTemplate: "identityPowerboxConfiguration",
-          profile: identity.profile,
-          requestedPermissions,
-          searchTerms: [
-            identity.profile.name,
-            identity.profile.handle,
-            identity.profile.intrinsicName,
-          ],
-        });
+        resultSet[contact.identityId] = resultForIdentity(identity);
       }
     });
 
-    return result;
+    if (db.getOrganizationShareContacts() &&
+        db.isUserInOrganization(db.collections.users.findOne({ _id: userId }))) {
+
+      // TODO(perf): Add some way to efficiently fetch all members in an organization.
+      db.collections.users.find({ profile: { $exists: 1 } }).forEach((user) => {
+        if (db.isIdentityInOrganization(user)) {
+          resultSet[user._id] = resultForIdentity(db.getIdentity(user._id));
+        }
+      });
+    }
+
+    return _.values(resultSet);
   },
 });

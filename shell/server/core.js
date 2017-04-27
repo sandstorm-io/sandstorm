@@ -164,6 +164,10 @@ class SandstormCoreImpl {
       return { id: new Buffer(identityId, "hex") };
     });
   }
+
+  schedulePeriodic(period, callback) {
+    return { job: makeScheduledJob(this.db, this.grainId, period, callback) };
+  }
 }
 
 const makeSandstormCore = (db, grainId) => {

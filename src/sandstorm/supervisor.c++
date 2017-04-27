@@ -1982,6 +1982,17 @@ public:
     });
   }
 
+  kj::Promise<void> schedulePeriodic(SchedulePeriodicContext context) override {
+    auto params = context.getParams();
+    auto req = sandstormCore.schedulePeriodicRequest(params.totalSize());
+    req.setPeriod(params.getPeriod());
+    req.setCallback(params.getCallback());
+    context.releaseParams();
+    return req.send().then([context](auto args) mutable -> void {
+      context.getResults().setJob(args.getJob());
+    });
+  }
+
 private:
   void dropHandle(kj::ArrayPtr<byte> sturdyRef) {
     auto req = sandstormCore.dropRequest();

@@ -29,6 +29,7 @@ Package.onUse(function (api) {
   api.use("sandstorm-identicons", ["client", "server"]);
 
   api.addFiles(["db.js", "profile.js"]);
+  api.addFiles(["scheduled-jobs-db.js"], "server");
   api.export("SandstormDb");
 });
 

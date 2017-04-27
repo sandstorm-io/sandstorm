@@ -128,14 +128,15 @@ interface SandstormApi(AppObjectId) {
   # separate (possibly incompatible) map from identity ID to account ID.
 
   scheduleAt @11 (when :Util.DateInNs, callback :Util.Runnable, slack :Util.DurationInNs = 0)
-              -> (handle :Util.Handle);
+              -> (job :ScheduledJob);
+  # (currently unimplemented)
+  #
   # Schedule a callback to be called at a specific time.
   #
-  # To cancel the scheduled task, drop the returned handle. (Most apps will want to *save* the
-  # handle using SandstormApi.save() in order to prevent it from being dropped automatically. For
-  # one-time events, it is OK if the app does not store the token returned by save(), if the app
-  # has no need to cancel the event -- the handle object will be implicitly deleted when the
-  # event executes.)
+  # Returns a persistable ScheduledJob handle that allows cancellation of the job.
+  #
+  # To activate the job, you must call confirm() on the returned `job` capability shortly after
+  # receiving it. Otherwise the job will remain inactive and may be automatically canceled.
   #
   # In order to improve resource utilization, Sandstorm prefers imprecise scheduling -- this allows
   # it to choose a time of low activity to invoke the callback. The parameter `slack` tells
@@ -154,13 +155,13 @@ interface SandstormApi(AppObjectId) {
   # Sandstorm may alert the owner to a problem and stop retrying.
 
   schedulePeriodic @12 (period :SchedulingPeriod, callback :Util.Runnable)
-                    -> (handle :Util.Handle);
-  # Schedule a callback to be called on a regular interval.
+                    -> (job :ScheduledJob);
+  # Schedules a callback to be called on a regular interval.
   #
-  # To cancel future runs of the task, drop the returned handle. (Most apps will want to *save* the
-  # handle using SandstormApi.save() in order to prevent it from being dropped automatically. If
-  # the grain wishes for the task to continue forever as long as the grain exists, it can safely
-  # discard the token returned by save().)
+  # Returns a persistable ScheduledJob handle that allows cancellation of the job.
+  #
+  # To activate the job, you must call confirm() on the returned `job` capability shortly after
+  # receiving it. Otherwise the job will remain inactive and may be automatically canceled.
   #
   # In order to improve resource utilization, Sandstorm prefers imprecise scheduling -- this allows
   # it to choose a time of low activity to invoke the callback. Therefore, Sandstorm guarantees
@@ -173,6 +174,19 @@ interface SandstormApi(AppObjectId) {
   # grain for some reason, the callback will be retried. After a limited number of failed retries,
   # Sandstorm may alert the owner to a problem and stop retrying (but will call the callback again
   # on the next scheduling period).
+}
+
+interface ScheduledJob @0xa34f0cfe24c69d74 {
+  # A handle to a job that has been scheduled by scheduleAt() or schedulePeriodic(). The
+  # job is not active until confirm() is called. This two-step activation handshake gives the
+  # grain a chance to save the ScheduledJob before activation, thus avoiding situations where
+  # a crash causes the job to be active but uncancellable.
+
+  confirm @0 ();
+  # Activates the job. This method only has an effect the first time it is called.
+
+  cancel @1 ();
+  # Cancels the job. This method only has an effect the first time it is called.
 }
 
 const minimumSchedulingSlack :Util.DurationInNs = 60000000000;

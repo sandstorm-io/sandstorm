@@ -66,7 +66,7 @@ interface Handle {
   # such an interface for all apps it hosts.
 }
 
-interface Runnable {
+interface Runnable @0xc31c857a87ffddc0 {
   run @0 ();
 }
 

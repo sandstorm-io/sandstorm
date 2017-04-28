@@ -100,6 +100,9 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
   failRequest(err) {
     console.error(err);
     this._error.set(err.toString());
+
+    // Completion event closes popup.
+    this._requestInfo.onCompleted();
   }
 
   selectCard(card) {

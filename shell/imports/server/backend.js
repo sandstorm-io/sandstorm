@@ -115,6 +115,10 @@ class SandstormBackend {
       throw new Meteor.Error(404, "Grain Not Found", "Grain ID: " + grainId);
     }
 
+    if (grain.trashed) {
+      throw new Meteor.Error(403, "Grain is in the trash bin", "Grain ID: " + grainId);
+    }
+
     // If a DevPackage with the same app ID is currently active, we let it override the installed
     // package, so that the grain runs using the dev app.
     const devPackage = DevPackages.findOne({ appId: grain.appId });

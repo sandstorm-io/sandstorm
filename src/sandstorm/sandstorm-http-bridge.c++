@@ -2514,7 +2514,9 @@ public:
       sigset_t sigset;
       KJ_SYSCALL(sigemptyset(&sigset));
       KJ_SYSCALL(sigprocmask(SIG_SETMASK, &sigset, nullptr));
-      KJ_SYSCALL(signal(SIGPIPE, SIG_DFL));
+      if (signal(SIGPIPE, SIG_DFL) == SIG_ERR) {
+        KJ_FAIL_SYSCALL("signal(SIGPIPE, SIG_DFL)", errno);
+      }
 
       char* argv[command.size() + 1];
       for (uint i: kj::indices(command)) {

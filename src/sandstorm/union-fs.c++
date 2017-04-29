@@ -631,8 +631,10 @@ kj::Own<fuse::Node> makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader 
       struct stat stats;
       KJ_SYSCALL(lstat(sourcePath.cStr(), &stats), sourcePath);
       if (S_ISLNK(stats.st_mode)) {
-        char* real;
-        KJ_SYSCALL(real = realpath(sourcePath.cStr(), NULL));
+        char* real = realpath(sourcePath.cStr(), NULL);
+        if (real == NULL) {
+          KJ_FAIL_SYSCALL("realpath(sourcePath)", errno, sourcePath);
+        }
         KJ_DEFER(free(real));
         ownSourcePath = kj::str(real);
         sourcePath = ownSourcePath;
@@ -758,8 +760,10 @@ FileMapping mapFile(kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap, k
           struct stat stats;
           KJ_SYSCALL(lstat(candidate.cStr(), &stats));
           if (S_ISLNK(stats.st_mode)) {
-            char* real;
-            KJ_SYSCALL(real = realpath(candidate.cStr(), NULL));
+            char* real = realpath(candidate.cStr(), NULL);
+            if (real == NULL) {
+              KJ_FAIL_SYSCALL("realpath(candidate)", errno, candidate);
+            }
             KJ_DEFER(free(real));
             candidate = kj::str(real);
           }

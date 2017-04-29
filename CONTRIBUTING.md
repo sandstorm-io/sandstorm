@@ -14,7 +14,7 @@ There are many ways to contribute without writing code. Check out the [Sandstorm
 
 ## How to hack on the code
 
-To learn how to set up a dev environment and hack on the code, check out the documentation on [installing Sansdtorm from source](https://docs.sandstorm.io/en/latest/install/#option-4-installing-from-source).
+To learn how to set up a dev environment and hack on the code, check out the documentation on [installing Sandstorm from source](https://docs.sandstorm.io/en/latest/install/#option-4-installing-from-source).
 
 ## What to work on
 
@@ -53,7 +53,7 @@ Check out [`/tests`](https://github.com/sandstorm-io/sandstorm/tree/master/tests
 Here is an incomplete list of things we need to test better:
 
 - SAML and LDAP login. (Requires running a SAML and an LDAP server in the background to test against!)
-- Account settinsgc page / profile editing.
+- Account settings page / profile editing.
 - Backwards-compatibility (test various old app packages and make sure they still work).
 - Quota enforcement.
 - Subscriptions and payments.

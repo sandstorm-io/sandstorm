@@ -8,6 +8,7 @@ to go from the app's source code to a running web server.
 
 The following stacks exist:
 
+* `golang`: a stack for Go programs
 * `lemp`: a PHP-oriented software collection including nginx, MySQL, and PHP.
 * `meteor`: a stack for [Meteor](https://meteor.com) apps, including MongoDB.
 * `static`: `nginx` configured to serve static files from `/opt/app`.

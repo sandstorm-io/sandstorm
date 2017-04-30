@@ -933,8 +933,10 @@ void SupervisorMain::unshareOuter() {
   }
 
   // To really unshare the mount namespace, we also have to make sure all mounts are private.
-  // The parameters here were derived by strace'ing `mount --make-rprivate /`.  AFAICT the flags
-  // are undocumented.  :(
+  // See the "SHARED SUBTREES" section of mount_namespaces(7) and the section "Changing the
+  // propagation type of an existing mount" in mount(2). Cliffsnotes version: MS_PRIVATE sets
+  // the "target" argument (in this case "/") to private, and MS_REC applies this recursively.
+  // All other arguments are ignored.
   KJ_SYSCALL(mount("none", "/", nullptr, MS_REC | MS_PRIVATE, nullptr));
 
   // Set a dummy host / domain so the grain can't see the real one.  (unshare(CLONE_NEWUTS) means

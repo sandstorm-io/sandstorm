@@ -644,28 +644,48 @@ private:
 
           auto status = lookupStatus(errorCodeTable, error.getStatusCode());
 
-          auto body = error.getDescriptionHtml();
-          headers.set(kj::HttpHeaderId::CONTENT_TYPE, "text/html; charset=UTF-8");
-
-          auto stream = out.send(status.getId(), status.getTitle(), headers, body.size());
-          auto promise = stream->write(body.begin(), body.size());
-          return promise.attach(kj::mv(stream), kj::mv(in));
+          return handleErrorBody(
+              error, status.getId(), status.getTitle(), headers, kj::mv(in), out);
         }
 
         case WebSession::Response::SERVER_ERROR: {
           auto error = in.getServerError();
 
-          auto body = error.getDescriptionHtml();
-          headers.set(kj::HttpHeaderId::CONTENT_TYPE, "text/html; charset=UTF-8");
-
-          auto stream = out.send(500, "Internal Server Error", headers, body.size());
-          auto promise = stream->write(body.begin(), body.size());
-          return promise.attach(kj::mv(stream), kj::mv(in));
+          return handleErrorBody(
+              error, 500, "Internal Server Error", headers, kj::mv(in), out);
         }
       }
 
       KJ_UNREACHABLE;
     });
+  }
+
+  template <typename T>
+  kj::Promise<void> handleErrorBody(T error, uint statusCode, kj::StringPtr statusText,
+                                    kj::HttpHeaders& headers,
+                                    capnp::Response<WebSession::Response>&& in,
+                                    kj::HttpService::Response& out) {
+    kj::ArrayPtr<const byte> data;
+    if (error.hasNonHtmlBody()) {
+      auto body = error.getNonHtmlBody();
+      headers.set(kj::HttpHeaderId::CONTENT_TYPE, body.getMimeType());
+
+      if (body.hasEncoding()) {
+        headers.set(hContentEncoding, body.getEncoding());
+      }
+      if (body.hasLanguage()) {
+        headers.set(hContentLanguage, body.getLanguage());
+      }
+
+      data = body.getData();
+    } else if (error.hasDescriptionHtml()) {
+      data = error.getDescriptionHtml().asBytes();
+      headers.set(kj::HttpHeaderId::CONTENT_TYPE, "text/html; charset=UTF-8");
+    }
+
+    auto stream = out.send(statusCode, statusText, headers, data.size());
+    auto promise = stream->write(data.begin(), data.size());
+    return promise.attach(kj::mv(stream), kj::mv(in));
   }
 
   void setETag(kj::HttpHeaders& headers, WebSession::ETag::Reader etag) {

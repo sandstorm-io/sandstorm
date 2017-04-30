@@ -22,6 +22,14 @@ Meteor bundle.
 directory and, if present, downloads and runs `composer.phar`
 to download the dependencies listed in `composer.json`.
 
+* The `golang` stack expects the app directory define the `main` package
+for your program. It will pull in dependencies with `go get`. If you
+need to pull in dependencies versioned with tools other than git,
+you'll have to modify `.sandstorm/setup.sh` to install the appropriate
+version control system. If your app is composed of multiple packages in
+one repository, you'll have to set `$pkgpath` in `.sandstorm/build.sh`;
+see the comments in that file for details.
+
 ## Beyond the platform stack
 
 If you need to install extra Debian packages, such as PHP extensions

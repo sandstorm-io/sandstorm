@@ -377,6 +377,14 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
 
         descriptionHtml @8 :Text;
         # Optional extended description of the error, as an HTML document.
+        #
+        # If the response is not text/html, use nonHtmlContent.
+        #
+        # TODO(apibump): Get rid of this and use only nonHtmlContent.
+
+        nonHtmlBody @21 :ErrorBody;
+        # Response body, of a type that isn't text/html. If present, descriptionHtml should be
+        # ignored. However, older programs only know about descriptionHtml.
       }
 
       serverError :group {
@@ -387,6 +395,12 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
 
         descriptionHtml @9 :Text;
         # Optional extended description of the error, as an HTML document.
+        #
+        # TODO(apibump): Get rid of this and use only nonHtmlContent.
+
+        nonHtmlBody @22 :ErrorBody;
+        # Response body, of a type that isn't text/html. If present, descriptionHtml should be
+        # ignored. However, older programs only know about descriptionHtml.
       }
 
       # TODO(someday):  Return blob directly from storage, so data doesn't have to stream through
@@ -400,6 +414,13 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     struct Header {
       name @0 :Text;  # lower-cased name
       value @1 :Text;
+    }
+
+    struct ErrorBody {
+      data @0 :Data;
+      encoding @1 :Text;  # Content-Encoding header (optional).
+      language @2 :Text;  # Content-Language header (optional).
+      mimeType @3 :Text;  # Content-Type header.
     }
 
     const headerWhitelist :List(Text) = [

@@ -358,6 +358,10 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
       const options = _.clone(session.options);
       options.headers = options.headers || {};
 
+      if (!options.headers["user-agent"]) {
+        options.headers["user-agent"] = "sandstorm app";
+      }
+
       if (this.fromHackSession) {
         // According to the specification of `WebSession`, `path` should not contain a
         // leading slash, and therefore we need to prepend "/". However, for a long time
@@ -408,20 +412,37 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
 
           const rpcResponse = {};
 
-          switch (statusInfo ? statusInfo.type : resp.statusCode) {
-            case "content":
-              resp.on("data", (buf) => {
-                buffers.push(buf);
-              });
+          resp.on("data", (buf) => {
+            buffers.push(buf);
+          });
 
-              resp.on("end", () => {
+          resp.on("end", () => {
+            const data = Buffer.concat(buffers);
+
+            function fillInErrorBody(error) {
+              const contentType = resp.headers["content-type"];
+              if (contentType && (contentType == "text/html" ||
+                                  contentType.startsWith("text/html;"))) {
+                // TODO(someday): Check for non-UTF-8 charset and translate?
+                error.descriptionHtml = data.toString("utf8");
+              } else if (contentType || data.length > 0) {
+                const content = { data };
+                if (contentType) content.mimeType = contentType;
+                if ("content-encoding" in resp.headers) content.encoding = resp.headers["content-encoding"];
+                if ("content-language" in resp.headers) content.language = resp.headers["content-language"];
+                error.nonHtmlBody = content;
+              }
+            }
+
+            switch (statusInfo ? statusInfo.type : resp.statusCode) {
+              case "content":
                 const content = {};
                 rpcResponse.content = content;
 
                 content.statusCode = statusInfo.code;
                 if ("content-encoding" in resp.headers) content.encoding = resp.headers["content-encoding"];
                 if ("content-language" in resp.headers) content.language = resp.headers["content-language"];
-                if ("content-type" in resp.headers) content.language = resp.headers["content-type"];
+                if ("content-type" in resp.headers) content.mimeType = resp.headers["content-type"];
                 if ("content-disposition" in resp.headers) {
                   const disposition = resp.headers["content-disposition"];
                   const parts = disposition.split(";");
@@ -436,49 +457,48 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
                 }
 
                 content.body = {};
-                content.body.bytes = Buffer.concat(buffers);
+                content.body.bytes = data;
 
                 resolve(rpcResponse);
-              });
-              break;
-            case "noContent":
-              const noContent = {};
-              rpcResponse.noContent = noContent;
-              noContent.setShouldResetForm = statusInfo.shouldResetForm;
-              resolve(rpcResponse);
-              break;
-            case "redirect":
-              const redirect = {};
-              rpcResponse.redirect = redirect;
-              redirect.isPermanent = statusInfo.isPermanent;
-              redirect.switchToGet = statusInfo.switchToGet;
-              if ("location" in resp.headers) redirect.location = resp.headers.location;
-              resolve(rpcResponse);
-              break;
-            case "clientError":
-              const clientError = {};
-              rpcResponse.clientError = clientError;
-              clientError.statusCode = statusInfo.clientErrorCode;
-              // TODO(soon): Pass along the body from upstream.
-              clientError.descriptionHtml = statusInfo.descriptionHtml;
-              resolve(rpcResponse);
-              break;
-            case "serverError":
-              const serverError = {};
-              rpcResponse.serverError = serverError;
-              // TODO(soon): Pass along the body from upstream.
-              clientError.descriptionHtml = statusInfo.descriptionHtml;
-              resolve(rpcResponse);
-              break;
+                break;
+              case "noContent":
+                const noContent = {};
+                rpcResponse.noContent = noContent;
+                noContent.setShouldResetForm = statusInfo.shouldResetForm;
+                resolve(rpcResponse);
+                break;
+              case "redirect":
+                const redirect = {};
+                rpcResponse.redirect = redirect;
+                redirect.isPermanent = statusInfo.isPermanent;
+                redirect.switchToGet = statusInfo.switchToGet;
+                if ("location" in resp.headers) redirect.location = resp.headers.location;
+                resolve(rpcResponse);
+                break;
+              case "clientError":
+                const clientError = {};
+                rpcResponse.clientError = clientError;
+                clientError.statusCode = statusInfo.clientErrorCode;
 
-            // TODO(soon): Handle token-expired errors by throwing DISCONNECTED -- this will force
-            //   the client to reload the capability which will refresh the token.
+                fillInErrorBody(clientError);
+                resolve(rpcResponse);
+                break;
+              case "serverError":
+                const serverError = {};
+                rpcResponse.serverError = serverError;
+                fillInErrorBody(serverError);
+                resolve(rpcResponse);
+                break;
 
-            default: // ???
-              err = new Error("Invalid status code " + resp.statusCode + " received in response.");
-              reject(err);
-              break;
-          }
+              // TODO(soon): Handle token-expired errors by throwing DISCONNECTED -- this will force
+              //   the client to reload the capability which will refresh the token.
+
+              default: // ???
+                err = new Error("Invalid status code " + resp.statusCode + " received in response.");
+                reject(err);
+                break;
+            }
+          });
         } catch (err) {
           reject(err);
         }

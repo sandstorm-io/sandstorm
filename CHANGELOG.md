@@ -1,3 +1,9 @@
+### v0.207 (2017-04-29) [bugfixes]
+- Improved handling of powerbox HTTP APIs, including correctly returning HTTP error bodies.
+- The contact chooser powerbox (e.g. as used by Wekan when adding people to a board or a card) now respects the "Make all organization users visible to each other" setting.
+- Fixed some server-side memory leaks, which might fix the occasional-100%-CPU bug.
+- Fixed bug where trashed grains could be started by trying to use capabilities they serve.
+
 ### v0.206 (2017-04-09) [bugfixes]
 - Worked around MacOS Safari bug breaking WebSockets.
 - Oasis: Removed experiment that caused 50% of users to see a plan-chooser prompt immediately upon creating their account. All users will now default to the free plan without having to choose it explicitly. (Showing the plan chooser did not appear to make any more people choose a paid plan.)

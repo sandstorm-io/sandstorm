@@ -23,6 +23,7 @@ var utils = require('../utils'),
 var path = require('path');
 // Use sandstorm qr code as new profile picture
 var newPicPath = path.resolve(__dirname + "/../../sandstorm-qr.png");
+var testappPath = path.resolve(__dirname + "/../assets/testapp.spk");
 
 module.exports["Test profile changes"] = function (browser) {
   // Prepend 'A' so that the default handle is valid
@@ -89,3 +90,27 @@ module.exports["Test profile changes"] = function (browser) {
     .execute("window.Meteor.logout()")
     .end();
 };
+
+module.exports["Test passing profile data to test app"] = function (browser) {
+  browser
+    .loginDevAccount()
+    .click("a.introjs-skipbutton")
+    .waitForElementNotPresent("div.introjs-overlay", short_wait)
+    // Make input field visible in order to manipulate it in Firefox
+    .execute(function () {
+        document.querySelector("input[type=file]")
+                .setAttribute("style", ""); 
+      }, [])
+    .perform(function (client, done) {
+      client.setValue("input[type=file]", testappPath, function(){
+        console.log("finished setting new profile picture path");
+        done();
+      })
+    })
+    .pause(5000)
+    .execute("window.Meteor.logout()")
+    .end();
+    // TODO: upload testapp
+    // TODO: add more stuff
+    // TESTCASE="tests/account-settings.js Test passing profile data to test app" make test
+}

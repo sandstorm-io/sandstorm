@@ -2634,7 +2634,6 @@ ResponseStream = class ResponseStream {
 
     if (this.started) {
       throw new Error("can't sendDirectResponse() because response already started");
-      this.response.end();
     } else if (this.ended) {
       throw new Error("can't sendDirectResponse() because response already sent");
     } else {

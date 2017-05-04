@@ -22,7 +22,8 @@ var utils = require('../utils'),
     medium_wait = utils.medium_wait;
 var path = require('path');
 // Use sandstorm qr code as new profile picture
-var newPicPath = path.resolve(__dirname + "/../../sandstorm-qr.png");
+var newPicPath  = path.resolve(__dirname + "/../../sandstorm-qr.png");
+// TODO: implement autobuilding of testapp
 var testappPath = path.resolve(__dirname + "/../assets/testapp.spk");
 
 module.exports["Test profile changes"] = function (browser) {
@@ -98,19 +99,39 @@ module.exports["Test passing profile data to test app"] = function (browser) {
     .waitForElementNotPresent("div.introjs-overlay", short_wait)
     // Make input field visible in order to manipulate it in Firefox
     .execute(function () {
-        document.querySelector("input[type=file]")
-                .setAttribute("style", ""); 
+      document.querySelector("input[type=file]")
+              .setAttribute("style", ""); 
       }, [])
     .perform(function (client, done) {
-      client.setValue("input[type=file]", testappPath, function(){
-        console.log("finished setting new profile picture path");
+      client.setValue("input[type=file]", testappPath, () => {
         done();
       })
     })
-    .pause(5000)
+    .execute(function () {
+      const testappFile = document.querySelector("input[type=file]").files[0];
+      uploadApp(testappFile);
+    }, [])
+    .waitForElementVisible('#confirmInstall', medium_wait)
+    .click('#confirmInstall')
+    .waitForElementVisible('button.action', medium_wait)
+    .click('button.action')
+    // TODO: trigger next test when user data renders
+    // instead of waiting for an arbitrary duration
+    .pause(15000)
+    .grainFrame()
+    .executeAsync(function (done) {
+      done(Meteor.sandstormUser());
+    }, [], function (result) {
+      this
+        .assert.containsText('#id', result.value.id)
+        .assert.containsText('#name', result.value.name)
+        .assert.containsText('#picture', result.value.picture)
+        .assert.containsText('#preferredHandle', result.value.preferredHandle)
+        .assert.containsText('#pronouns', result.value.pronouns);
+    })
     .execute("window.Meteor.logout()")
     .end();
-    // TODO: upload testapp
+    // TODO: upload testapp with makefile
     // TODO: add more stuff
     // TESTCASE="tests/account-settings.js Test passing profile data to test app" make test
-}
+};

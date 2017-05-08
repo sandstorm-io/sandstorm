@@ -28,6 +28,11 @@ limitations under the License.
 
     <h3 class="title-bar">Linked identities</h3>
 
+    {{#if affectedByIdentityRefactor}}
+    <p class="alert-identity-refactor">We're changing the way identities work. Your account may be affected.
+        <a href="https://sandstorm.io/news/2017-05-08-refactoring-identities">Learn more &raquo;</a></p>
+    {{/if}}
+
     {{#with actionCompleted}}
       {{#if success}}
         {{#focusingSuccessBox}}

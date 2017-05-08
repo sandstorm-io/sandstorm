@@ -492,6 +492,11 @@ body>.main-content>.account {
     padding: 5px;
   }
 
+  p.alert-identity-refactor {
+    color: red;
+    padding-left: 5px;
+  }
+
   .identities-and-editor {
     @media #{$not-mobile-only} {
       width: 660px;

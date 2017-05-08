@@ -787,6 +787,48 @@ function setIpBlacklist(db, backend) {
   }
 }
 
+function notifyIdentityChanges(db, backend) {
+  // Notify users who might be affected by the identity model changes.
+  //
+  // Two types of users are affected:
+  // - Users who have multiple identities with differing names.
+  // - Users who have identities that are shared with other users.
+  //
+  // However, the second group seems like it must be a subset of the first group. So we only check
+  // for the first.
+
+  const names = {};
+  Meteor.users.find({ "profile.name": { $exists: true } }, { fields: { "profile.name": 1 } })
+      .forEach(user => {
+    names[user._id] = user.profile.name;
+  });
+
+  Meteor.users.find({ loginIdentities: { $exists: true } },
+                    { fields: { loginIdentities: 1, nonloginIdentities: 1 } }).forEach(user => {
+    let previousName = null;
+    let needsNotification = false;
+    SandstormDb.getUserIdentityIds( user).forEach(identityId => {
+      const name = names[identityId];
+      if (!name || (previousName && previousName !== name)) {
+        needsNotification = true;
+      }
+      previousName = name;
+    });
+
+    if (needsNotification) {
+      db.collections.notifications.upsert({
+        userId: user._id,
+        identityChanges: true,
+      }, {
+        userId: user._id,
+        identityChanges: true,
+        timestamp: new Date(),
+        isUnread: true,
+      });
+    }
+  });
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -824,6 +866,7 @@ const MIGRATIONS = [
   addMembraneRequirementsToIdentities,
   addEncryptionToFrontendRefIpNetwork,
   setIpBlacklist,
+  notifyIdentityChanges,
 ];
 
 const NEW_SERVER_STARTUP = [

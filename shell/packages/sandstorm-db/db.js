@@ -637,6 +637,8 @@ Notifications = new Mongo.Collection("notifications", collectionOptions);
 //   mailingListBonus: Like `referral`, but notify the user about the mailing list bonus. This is
 //                 a one-time notification only to Oasis users who existed when the bonus program
 //                 was implemented.
+//   identityChanges: If this boolean field is true, this notification should show a warning about
+//                 upcoming changes to the identity model.
 
 ActivitySubscriptions = new Mongo.Collection("activitySubscriptions", collectionOptions);
 // Activity events to which a user is subscribed.

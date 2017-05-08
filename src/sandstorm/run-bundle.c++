@@ -1435,7 +1435,7 @@ private:
     KJ_SYSCALL(clearenv());
 
     // Set up an environment appropriate for us.
-    KJ_SYSCALL(setenv("LANG", "C.UTF-8", true));
+    KJ_SYSCALL(setenv("LANG", "C", true));
     KJ_SYSCALL(setenv("PATH", "/usr/bin:/bin", true));
     KJ_SYSCALL(setenv("LD_LIBRARY_PATH", "/usr/local/lib:/usr/lib:/lib", true));
 

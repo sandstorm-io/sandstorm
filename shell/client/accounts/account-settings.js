@@ -197,6 +197,7 @@ Template.sandstormAccountSettings.helpers({
         if (!name || (previousName && previousName !== name)) {
           needsNotification = true;
         }
+
         previousName = name;
       });
 

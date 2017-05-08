@@ -807,11 +807,12 @@ function notifyIdentityChanges(db, backend) {
                     { fields: { loginIdentities: 1, nonloginIdentities: 1 } }).forEach(user => {
     let previousName = null;
     let needsNotification = false;
-    SandstormDb.getUserIdentityIds( user).forEach(identityId => {
+    SandstormDb.getUserIdentityIds(user).forEach(identityId => {
       const name = names[identityId];
       if (!name || (previousName && previousName !== name)) {
         needsNotification = true;
       }
+
       previousName = name;
     });
 

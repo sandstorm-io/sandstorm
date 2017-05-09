@@ -1637,9 +1637,12 @@ private:
     }
     lines.add(kj::str("X-Sandstorm-Permissions: ", permissions));
     if (basePath.size() > 0) {
+      auto host = extractHostFromUrl(basePath);
+      auto protocol = extractProtocolFromUrl(basePath);
       lines.add(kj::str("X-Sandstorm-Base-Path: ", basePath));
-      lines.add(kj::str("Host: ", extractHostFromUrl(basePath)));
-      lines.add(kj::str("X-Forwarded-Proto: ", extractProtocolFromUrl(basePath)));
+      lines.add(kj::str("Host: ", host));
+      lines.add(kj::str("X-Forwarded-Proto: ", protocol));
+      lines.add(kj::str("Origin: ", protocol, "://", host));
     } else {
       // Dummy value. Some API servers (e.g. git-http-backend) fail if Host is not present.
       lines.add(kj::str("Host: sandbox"));

@@ -167,7 +167,7 @@ pack-meteor-testapp:
 		../meteor-spk-0.3.2/meteor-spk pack ../tests/assets/meteor-testapp.spk; \
 	elif test "$$(find meteor-testapp -name '*' -newer ./tests/assets/meteor-testapp.spk -not -path "*node_modules*" -not -path "*.meteor-spk*" -not -path "*.meteor*" | wc -l)" != "0" ; then \
 		cd meteor-testapp && \
-		echo "meteor-testapp.spk has changed, repacking..." && \
+		echo "meteor-testapp source file(s) have changed, repacking meteor-testapp.spk..." && \
 		../meteor-spk-0.3.2/meteor-spk pack ../tests/assets/meteor-testapp.spk; \
 	else \
 		echo "meteor-testapp.spk is up to date, no repack required."; \

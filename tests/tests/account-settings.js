@@ -24,7 +24,7 @@ var path = require('path');
 // Use sandstorm qr code as new profile picture
 var newPicPath  = path.resolve(__dirname + "/../../sandstorm-qr.png");
 // TODO: implement autobuilding of testapp
-var testappPath = path.resolve(__dirname + "/../assets/testapp.spk");
+var testappPath = path.resolve(__dirname + "/../assets/meteor-testapp.spk");
 
 module.exports["Test profile changes"] = function (browser) {
   // Prepend 'A' so that the default handle is valid
@@ -115,8 +115,6 @@ module.exports["Test passing profile data to test app"] = function (browser) {
     .click('#confirmInstall')
     .waitForElementVisible('button.action', medium_wait)
     .click('button.action')
-    // TODO: trigger next test when user data renders
-    // instead of waiting for an arbitrary duration
     .pause(15000)
     .grainFrame()
     .executeAsync(function (done) {
@@ -131,7 +129,4 @@ module.exports["Test passing profile data to test app"] = function (browser) {
     })
     .execute("window.Meteor.logout()")
     .end();
-    // TODO: upload testapp with makefile
-    // TODO: add more stuff
-    // TESTCASE="tests/account-settings.js Test passing profile data to test app" make test
 };

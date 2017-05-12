@@ -127,7 +127,7 @@ IMAGES= \
 # Meta rules
 
 .SUFFIXES:
-.PHONY: all install clean ci-clean continuous shell-env fast deps bootstrap-ekam update-deps clobber-deps test installer-test app-index-dev
+.PHONY: all install clean ci-clean continuous shell-env fast deps bootstrap-ekam update-deps clobber-deps test installer-test app-index-dev meteor-testapp-clean pack-meteor-testapp
 
 all: sandstorm-$(BUILD).tar.xz
 
@@ -136,7 +136,7 @@ clean: ci-clean
 	test -e deps/node && cd deps/node && make clean
 	@(if test -d deps && test ! -h deps; then printf "\033[0;33mTo update dependencies, use: make update-deps\033[0m\n"; fi)
 
-ci-clean:
+ci-clean: meteor-testapp-clean
 	@# Clean only the stuff that we want to clean between CI builds.
 	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz
 
@@ -150,8 +150,31 @@ update: sandstorm-$(BUILD)-fast.tar.xz
 
 fast: sandstorm-$(BUILD)-fast.tar.xz
 
-test: sandstorm-$(BUILD)-fast.tar.xz test-app.spk
+test: sandstorm-$(BUILD)-fast.tar.xz test-app.spk pack-meteor-testapp
 	tests/run-local.sh sandstorm-$(BUILD)-fast.tar.xz test-app.spk
+
+meteor-testapp-clean:
+	rm -rf tests/assets/meteor-testapp.spk meteor-spk-0.3.2 meteor-testapp/.meteor-spk
+
+# TODO: only pack spk if current spk is older than changes in meteor-testapp directory
+# if [[ $(find meteor-testapp -name '*' -newer ./tests/assets/meteor-testapp.spk -not -path "*node_modules*" -not -path "*.meteor-spk*" -not -path "*.meteor*") ]]; then echo rebuilding test app; else echo test app up to date; fi
+
+pack-meteor-testapp:
+	@if [ ! -f ./meteor-spk-0.3.2/meteor-spk ]; then \
+		echo "Downloading meteor-spk into" $(PWD)"..." && \
+		curl https://dl.sandstorm.io/meteor-spk-0.3.2.tar.xz | tar Jxf -; \
+	fi; \
+	if [ ! -f ./tests/assets/meteor-testapp.spk ]; then \
+		cd meteor-testapp && \
+		echo "No meteor-testapp.spk found in sandstorm/tests/assets, packing one now..." && \
+		../meteor-spk-0.3.2/meteor-spk pack ../tests/assets/meteor-testapp.spk; \
+	elif test "$$(find meteor-testapp -name '*' -newer ./tests/assets/meteor-testapp.spk -not -path "*node_modules*" -not -path "*.meteor-spk*" -not -path "*.meteor*" | wc -l)" != "0" ; then \
+		cd meteor-testapp && \
+		echo "meteor-testapp.spk has changed, repacking..." && \
+		../meteor-spk-0.3.2/meteor-spk pack ../tests/assets/meteor-testapp.spk; \
+	else \
+		echo "meteor-testapp.spk is up to date, no repack required."; \
+	fi
 
 installer-test:
 	(cd installer-tests && bash prepare-for-tests.sh && PYTHONUNBUFFERED=yes TERM=xterm SLOW_TEXT_TIMEOUT=120 ~/.local/bin/stodgy-tester --plugin stodgy_tester.plugins.sandstorm_installer_tests --on-vm-start=uninstall_sandstorm --rsync)

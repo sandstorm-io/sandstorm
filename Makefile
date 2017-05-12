@@ -156,9 +156,6 @@ test: sandstorm-$(BUILD)-fast.tar.xz test-app.spk pack-meteor-testapp
 meteor-testapp-clean:
 	rm -rf tests/assets/meteor-testapp.spk meteor-spk-0.3.2 meteor-testapp/.meteor-spk
 
-# TODO: only pack spk if current spk is older than changes in meteor-testapp directory
-# if [[ $(find meteor-testapp -name '*' -newer ./tests/assets/meteor-testapp.spk -not -path "*node_modules*" -not -path "*.meteor-spk*" -not -path "*.meteor*") ]]; then echo rebuilding test app; else echo test app up to date; fi
-
 pack-meteor-testapp:
 	@if [ ! -f ./meteor-spk-0.3.2/meteor-spk ]; then \
 		echo "Downloading meteor-spk into" $(PWD)"..." && \

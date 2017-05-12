@@ -23,7 +23,6 @@ var utils = require('../utils'),
 var path = require('path');
 // Use sandstorm qr code as new profile picture
 var newPicPath  = path.resolve(__dirname + "/../../sandstorm-qr.png");
-// TODO: implement autobuilding of testapp
 var testappPath = path.resolve(__dirname + "/../assets/meteor-testapp.spk");
 
 module.exports["Test profile changes"] = function (browser) {

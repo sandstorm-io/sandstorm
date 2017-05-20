@@ -1,3 +1,6 @@
+### v0.208 (2017-05-20) [bugfixes]
+- Sent a one-time bell menu notification and added a note on the account settings page notifying affected users of [our upcoming changes to the identity system](https://sandstorm.io/news/2017-05-08-refactoring-identities).
+
 ### v0.207 (2017-04-29) [bugfixes]
 - Improved handling of powerbox HTTP APIs, including correctly returning HTTP error bodies.
 - The contact chooser powerbox (e.g. as used by Wekan when adding people to a board or a card) now respects the "Make all organization users visible to each other" setting.

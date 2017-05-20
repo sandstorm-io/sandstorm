@@ -184,6 +184,25 @@ Template.sandstormAccountSettings.helpers({
   showDeleteButton: function () {
     return !Template.instance().data._db.isUserInOrganization(Meteor.user());
   },
+
+  affectedByIdentityRefactor: function () {
+    let previousName = null;
+    let needsNotification = false;
+
+    SandstormDb.getUserIdentityIds(Meteor.user())
+      .map((id) => Meteor.users.findOne({ _id: id }))
+      .filter((identity) => !!identity)
+      .forEach((identity) => {
+        const name = identity.profile && identity.profile.name;
+        if (!name || (previousName && previousName !== name)) {
+          needsNotification = true;
+        }
+
+        previousName = name;
+      });
+
+    return needsNotification;
+  },
 });
 
 GENDERS = { male: "male", female: "female", neutral: "neutral", robot: "robot" };

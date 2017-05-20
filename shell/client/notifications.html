@@ -116,6 +116,22 @@
   {{/linkTo}}
 </template>
 
+<template name="identityChangesNotificationItem">
+  <a href="https://sandstorm.io/news/2017-05-08-refactoring-identities" class="notification-item"
+     target="_blank">
+    <div class="notification-icon">
+      <img src="/sandstorm-gradient-logo.svg">
+    </div>
+
+    We're changing the way identities work in Sandstorm. Your account may be affected. Click here
+    to learn more.
+
+    <div class="notification-footer">
+      <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
+    </div>
+  </a>
+</template>
+
 <template name="grainActivityNotificationItem">
   <a class="notification-item" href="{{notificationUrl}}">
     <div class="notification-icon">
@@ -158,7 +174,11 @@
   {{#if isOngoing }}
     {{> backgroundedGrainNotificationItem . }}
   {{else}}
+  {{#if isIdentityChanges }}
+    {{> identityChangesNotificationItem . }}
+  {{else}}
     {{> grainActivityNotificationItem . }}
+  {{/if}}
   {{/if}}
   {{/if}}
   {{/if}}

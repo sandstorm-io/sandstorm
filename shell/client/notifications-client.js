@@ -162,6 +162,11 @@ Template.notificationItem.helpers({
     const data = Template.currentData();
     return !!data.ongoing;
   },
+
+  isIdentityChanges() {
+    const data = Template.currentData();
+    return !!data.identityChanges;
+  },
 });
 
 Template.appUpdateNotificationItem.helpers({
@@ -245,6 +250,12 @@ Template.referralNotificationItem.helpers({
 Template.referralNotificationItem.events({
   "click button[type=button]"(evt) {
     evt.preventDefault();
+    Meteor.call("dismissNotification", this._id);
+  },
+});
+
+Template.identityChangesNotificationItem.events({
+  "click .notification-item"(evt) {
     Meteor.call("dismissNotification", this._id);
   },
 });

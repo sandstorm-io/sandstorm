@@ -20,6 +20,7 @@
 #include <sandstorm/id-to-text.h>
 #include <sandstorm/appid-replacements.h>
 #include <capnp/serialize.h>
+#include <kj/encoding.h>
 #include <stdlib.h>
 #include <map>
 #include <sodium/crypto_generichash_blake2b.h>
@@ -198,7 +199,7 @@ class DataHandler: public capnp::JsonCodec::Handler<capnp::Data> {
 public:
   void encode(const capnp::JsonCodec& codec, capnp::Data::Reader input,
               capnp::JsonValue::Builder output) const override {
-    output.setString(base64Encode(input, false));
+    output.setString(kj::encodeBase64(input, false));
   }
 
   capnp::Orphan<capnp::Data> decode(
@@ -453,7 +454,7 @@ kj::String Indexer::writeImage(kj::ArrayPtr<const byte> data, kj::StringPtr exte
   crypto_generichash_blake2b(hash, sizeof(hash), data.begin(), data.size(), nullptr, 0);
 
   // Write if not already present.
-  auto basename = kj::str(hexEncode(hash), extension);
+  auto basename = kj::str(kj::encodeHex(hash), extension);
   auto filename = kj::str("/var/www/images/", basename);
 
   if (access(filename.cStr(), F_OK) < 0) {

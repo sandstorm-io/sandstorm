@@ -19,6 +19,7 @@
 #include <kj/io.h>
 #include <kj/parse/common.h>
 #include <kj/parse/char.h>
+#include <kj/encoding.h>
 #include <capnp/schema.h>
 #include <capnp/dynamic.h>
 #include <capnp/serialize.h>
@@ -954,7 +955,7 @@ public:
     // Get 20 random bytes for token.
     kj::byte bytes[20];
     randombytes_buf(bytes, sizeof(bytes));
-    auto hexString = hexEncode(bytes);
+    auto hexString = kj::encodeHex(bytes);
 
     auto config = readConfig();
 
@@ -2883,7 +2884,7 @@ private:
       call.setFunction("BinData");
       auto params = call.initParams(2);
       params[0].setNumber(0);
-      params[1].setString(base64Encode(input, false));
+      params[1].setString(kj::encodeBase64(input, false));
     }
 
     capnp::Orphan<capnp::Data> decode(

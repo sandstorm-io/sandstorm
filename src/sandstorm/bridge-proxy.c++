@@ -20,6 +20,7 @@
 #include <sandstorm/bridge-proxy.capnp.h>
 #include <capnp/compat/json.h>
 #include <kj/debug.h>
+#include <kj/encoding.h>
 #include "util.h"
 
 namespace sandstorm {
@@ -127,7 +128,7 @@ public:
             (capnp::Response<SandstormApi<BridgeObjectId>::SaveResults>&& claim) {
           capnp::MallocMessageBuilder builder(64);
           auto root = builder.initRoot<ProxyClaimRequestResponse>();
-          root.setCap(base64Encode(claim.getToken(), false));
+          root.setCap(kj::encodeBase64(claim.getToken(), false));
 
           capnp::JsonCodec json;
           kj::String text = json.encode(root);
@@ -221,7 +222,7 @@ private:
       auto cap = capnp::Capability::Client(
           kj::heap<CapRedirector>([sandstormApi=sandstormApi,token=kj::str(token)]() mutable {
         auto req = sandstormApi.restoreRequest();
-        req.setToken(base64Decode(token));
+        req.setToken(kj::decodeBase64(token));
         return req.send().getCap();
       })).castAs<ApiSession>();
 

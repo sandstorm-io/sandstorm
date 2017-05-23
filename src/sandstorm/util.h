@@ -231,21 +231,6 @@ kj::Promise<void> rotateLog(kj::Timer& timer, int logFd, kj::StringPtr path, siz
 // This "copytruncate" logging method could in theory lose some log data written right around the
 // time of the rotation. It is unlikely, though, and we deem it acceptable for our purposes.
 
-kj::String base64Encode(kj::ArrayPtr<const byte> input, bool breakLines);
-// Encode the input as base64. If `breakLines` is true, insert line breaks every 72 characters and
-// at the end of the output. (Otherwise, return one long line.)
-
-kj::Array<byte> base64Decode(kj::StringPtr input);
-// Decode base64 input to bytes. Non-base64 characters in the input will be ignored.
-
-kj::String hexEncode(kj::ArrayPtr<const byte> input);
-// Return the hex string corresponding to this array of bytes.
-
-kj::String percentEncode(kj::StringPtr text);
-kj::String percentEncode(kj::ArrayPtr<const byte> bytes);
-kj::Array<byte> percentDecode(kj::StringPtr text);
-// URL-safe encode using % escapes.
-
 class HeaderWhitelist {
   // Given a list of strings, some of which end in '*', create an efficient whitelist matcher,
   // where the *'s are wildcards. The input whitelist must be all-lowercase, but the matching is

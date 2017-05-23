@@ -22,67 +22,6 @@
 namespace sandstorm {
 namespace {
 
-KJ_TEST("base64 encoding/decoding") {
-  {
-    auto encoded = base64Encode(kj::StringPtr("foo").asBytes(), false);
-    KJ_EXPECT(encoded == "Zm9v", encoded, encoded.size());
-    KJ_EXPECT(kj::heapString(base64Decode(encoded).asChars()) == "foo");
-  }
-
-  {
-    auto encoded = base64Encode(kj::StringPtr("corge").asBytes(), false);
-    KJ_EXPECT(encoded == "Y29yZ2U=", encoded);
-    KJ_EXPECT(kj::heapString(base64Decode(encoded).asChars()) == "corge");
-  }
-
-  KJ_EXPECT(kj::heapString(base64Decode("Y29yZ2U").asChars()) == "corge");
-  KJ_EXPECT(kj::heapString(base64Decode("Y\n29y Z@2U=\n").asChars()) == "corge");
-
-  {
-    auto encoded = base64Encode(kj::StringPtr("corge").asBytes(), true);
-    KJ_EXPECT(encoded == "Y29yZ2U=\n", encoded);
-  }
-
-  kj::StringPtr fullLine = "012345678901234567890123456789012345678901234567890123";
-  {
-    auto encoded = base64Encode(fullLine.asBytes(), false);
-    KJ_EXPECT(
-        encoded == "MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIz",
-        encoded);
-  }
-  {
-    auto encoded = base64Encode(fullLine.asBytes(), true);
-    KJ_EXPECT(
-        encoded == "MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIz\n",
-        encoded);
-  }
-
-  kj::String multiLine = kj::str(fullLine, "456");
-  {
-    auto encoded = base64Encode(multiLine.asBytes(), false);
-    KJ_EXPECT(
-        encoded == "MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2",
-        encoded);
-  }
-  {
-    auto encoded = base64Encode(multiLine.asBytes(), true);
-    KJ_EXPECT(
-        encoded == "MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIz\n"
-                   "NDU2\n",
-        encoded);
-  }
-}
-
-KJ_TEST("percent encoding/decoding") {
-  KJ_EXPECT(percentEncode("foo") == "foo");
-  KJ_EXPECT(percentEncode("foo bar") == "foo%20bar");
-  KJ_EXPECT(percentEncode("\xab\xba") == "%ab%ba");
-  KJ_EXPECT(percentEncode(kj::StringPtr("foo\0bar", 7)) == "foo%00bar");
-
-  KJ_EXPECT(kj::str(percentDecode("foo%20bar").asChars()) == "foo bar");
-  KJ_EXPECT(kj::str(percentDecode("%ab%BA").asChars()) == "\xab\xba");
-}
-
 KJ_TEST("HeaderWhitelist") {
   const char* WHITELIST[] = {
     "bar-baz",

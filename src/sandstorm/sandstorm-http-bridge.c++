@@ -25,6 +25,7 @@
 #include <kj/async-io.h>
 #include <kj/async-unix.h>
 #include <kj/io.h>
+#include <kj/encoding.h>
 #include <capnp/rpc-twoparty.h>
 #include <capnp/rpc.capnp.h>
 #include <capnp/schema.h>
@@ -70,7 +71,7 @@ kj::Array<byte> toBytes(kj::StringPtr text, kj::ArrayPtr<const byte> data = null
 kj::String textIdentityId(capnp::Data::Reader id) {
   // We truncate to 128 bits to be a little more wieldy. Still 32 chars, though.
   KJ_ASSERT(id.size() == 32, "Identity ID not a SHA-256?");
-  return hexEncode(id.slice(0, kj::min(id.size(), 16)));
+  return kj::encodeHex(id.slice(0, kj::min(id.size(), 16)));
 }
 
 struct HttpStatusInfo {
@@ -1227,7 +1228,7 @@ private:
     buf[n] = '\0';
 
     auto req = apiCap.restoreRequest();
-    req.setToken(percentDecode(buf));
+    req.setToken(kj::decodeBinaryUriComponent(buf));
 
     return req.send().getCap().castAs<Identity>();
   }
@@ -1241,7 +1242,7 @@ private:
     req.initLabel().setDefaultText("user identity");
     tasks.add(req.send().then([this,textId](auto result) -> void {
       // Sandstorm tokens are primarily text but use percent-encoding to be safe.
-      auto tokenText = percentEncode(result.getToken());
+      auto tokenText = kj::encodeUriComponent(result.getToken());
 
       // Clean up any existing symlink.
       dropIdentity(textId);
@@ -1271,7 +1272,7 @@ private:
       KJ_SYSCALL(renameat(identitiesDir, symlink.cStr(), trashDir, trashSymlink.cStr()));
 
       auto req = apiCap.dropRequest();
-      req.setToken(percentDecode(buf));
+      req.setToken(kj::decodeBinaryUriComponent(buf));
       tasks.add(req.send().then([KJ_MVCAP(trashSymlink), this](auto response) -> void {
         KJ_SYSCALL(unlinkat(trashDir, trashSymlink.cStr(), 0));
       }));
@@ -1297,7 +1298,7 @@ public:
         bridgeContext(bridgeContext),
         sessionId(kj::mv(sessionId)),
         tabId(kj::mv(tabId)),
-        userDisplayName(percentEncode(userInfo.getDisplayName().getDefaultText())),
+        userDisplayName(kj::encodeUriComponent(userInfo.getDisplayName().getDefaultText())),
         userHandle(kj::heapString(userInfo.getPreferredHandle())),
         userPicture(kj::heapString(userInfo.getPictureUrl())),
         userPronouns(userInfo.getPronouns()),
@@ -2025,7 +2026,7 @@ private:
     addHeader(lines, "Content-Id", attachment.getContentId());
     lines.add(nullptr);
 
-    lines.add(base64Encode(attachment.getContent(), true));
+    lines.add(kj::encodeBase64(attachment.getContent(), true));
   }
 };
 
@@ -2252,7 +2253,7 @@ public:
       UiSession::Client session =
         kj::heap<WebSessionImpl>(serverAddress, userInfo, params.getContext(),
                                  bridgeContext, kj::str(sessionIdCounter++),
-                                 hexEncode(params.getTabId()),
+                                 kj::encodeHex(params.getTabId()),
                                  kj::heapString(sessionParams.getBasePath()),
                                  kj::heapString(sessionParams.getUserAgent()),
                                  kj::strArray(sessionParams.getAcceptableLanguages(), ","),
@@ -2275,7 +2276,7 @@ public:
       UiSession::Client session =
         kj::heap<WebSessionImpl>(serverAddress, userInfo, params.getContext(),
                                  bridgeContext, kj::str(sessionIdCounter++),
-                                 hexEncode(params.getTabId()),
+                                 kj::encodeHex(params.getTabId()),
                                  kj::heapString(""), kj::heapString(""), kj::heapString(""),
                                  kj::heapString(config.getApiPath()),
                                  bridgeContext.formatPermissions(userPermissions),

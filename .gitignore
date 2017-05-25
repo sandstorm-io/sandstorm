@@ -64,6 +64,7 @@ bundle/
 .docker
 .shell-env
 .vagrant/
+.*.swp
 phantomjsdriver.log
 selenium-debug.log
 tests/downloads

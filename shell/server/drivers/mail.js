@@ -41,8 +41,21 @@ const RECIPIENT_LIMIT = 20;
 
 const CLIENT_TIMEOUT = 15000; // 15s
 
-// A similar regex is also in hack-session.js. Keep in sync.
-const PUBLIC_ID_REGEX = new RegExp("^(.+?)(?:\\+[a-zA-Z0-9_-]+)?@");
+function removeValidPlusSuffix(address) {
+  const parts = address.split('@');
+  const plusParts = parts[0].split('+');
+  if (plusParts.length > 2 ||
+      (plusParts.length == 2 && !plusParts[1].match(/^[a-zA-Z0-9_.-]+$/))) {
+    throw new Error("Email address suffix can only contain letters, numbers, ., _, and -.");
+  }
+  parts[0] = plusParts[0];
+  return parts.join("@");
+}
+
+function publicIdFromAddress(address) {
+  const addressWithoutPlusSuffix = removeValidPlusSuffix(address);
+  return addressWithoutPlusSuffix.slice(0, addressWithoutPlusSuffix.indexOf("@"));
+}
 
 // Every day, reset all per-user sent counts to zero.
 // TODO(cleanup): Consider a more granular approach. For example, each user could have a timer
@@ -128,13 +141,7 @@ Meteor.startup(function () {
             // there will be an nginx frontend verifying hostnames anyway. Grain public IDs are
             // globally unique anyway, so an e-mail meant for another server presumably won't match
             // any ID at this one anyway.
-            const { address } = deliverTo;
-            const match = PUBLIC_ID_REGEX.exec(address);
-            if (match) {
-              return match[1];
-            } else {
-              return null;
-            }
+            return publicIdFromAddress(deliverTo.address);
           }));
 
           // Deliver to each grain in parallel.
@@ -224,7 +231,6 @@ hackSendEmail = (session, email) => {
     }
 
     const grainAddress = session._getAddress();
-    const allowedOutgoingAddressesRegex = session._getAllowedOutgoingAddressesRegex();
     const userAddress = session._getUserAddress();
 
     // Overwrite the 'from' address with the grain's address.
@@ -234,7 +240,7 @@ hackSendEmail = (session, email) => {
       };
     }
 
-    if (!allowedOutgoingAddressesRegex.test(email.from.address) && email.from.address !== userAddress.address) {
+    if (removeValidPlusSuffix(email.from.address) !== grainAddress && email.from.address !== userAddress.address) {
       throw new Error(
         "FROM header in outgoing emails need to equal either " + grainAddress + " (with optional suffix) or " +
         userAddress.address + ". Yours was: " + email.from.address);
@@ -247,7 +253,7 @@ hackSendEmail = (session, email) => {
     // addresses when sending out e-mails which allow better handling of e-mail bounces - app can
     // match bounce with the sent e-mail.
     let envelopeFrom = email.envelopeFrom || from.address;
-    if (!allowedOutgoingAddressesRegex.test(envelopeFrom) {
+    if (removeValidPlusSuffix(envelopeFrom) !== grainAddress) {
       envelopeFrom = grainAddress;
     }
 

@@ -38,15 +38,6 @@ const Url = Npm.require("url");
 ROOT_URL = Url.parse(process.env.ROOT_URL);
 HOSTNAME = ROOT_URL.hostname;
 
-const escapeRegExp = function (string) {
-  let escaped = "";
-  for (let i = 0; i < string.length; i++) {
-    escaped += "\\u" + ("0000" + string.charCodeAt(i).toString(16)).slice(-4);
-  }
-
-  return escaped;
-};
-
 SessionContextImpl = class SessionContextImpl {
   constructor(grainId, sessionId, identityId, tabId) {
     this.grainId = grainId;
@@ -372,12 +363,6 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
     // Must be called in a Meteor context.
 
     return this._getPublicId() + "@" + HOSTNAME;
-  }
-
-  _getAllowedOutgoingAddressesRegex() {
-    // We allow also <publicId>+<suffix>@hostname outgoing e-mail addresses.
-    // A similar regex is also in mail.js. Keep in sync.
-    return new RegExp("^" + escapeRegExp(this._getPublicId()) + "(?:\\+[a-zA-Z0-9_-]+)?" + escapeRegExp("@" + HOSTNAME) + "$");
   }
 
   _getUserAddress() {

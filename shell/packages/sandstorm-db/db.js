@@ -35,6 +35,10 @@ if (Meteor.isServer) {
 
 // TODO(soon): Systematically go through this file and add ensureIndexOnServer() as needed.
 
+const collectionOptions = { defineMutationMethods: Meteor.isClient };
+// Set to `true` on the client so that method simulation works. Set to `false` on the server
+// so that we can be extra certain that all mutations must go through methods.
+
 // Users = new Mongo.Collection("users");
 // The users collection is special and can be accessed through `Meteor.users`.
 // See https://docs.meteor.com/#/full/meteor_users.
@@ -61,6 +65,15 @@ if (Meteor.isServer) {
 //              link. This field contains the app ID of the app that the user started out demoing.
 //              Unlike the `expires` field, this field is not cleared when the user upgrades from
 //              being a demo user.
+//   suspended: If this exists, this account/identity is supsended. Both accounts and identities
+//              can be suspended. After some amount of time, the user will be completely deleted
+//              and removed from the DB.
+//              It is an object with fields:
+//                voluntary: Boolean. This is true if the user initiated it. They will have the
+//                  chance to still login and reverse the suspension/deletion.
+//                admin: The userId of the admin who suspended the account.
+//                timestamp: Date object. When the suspension occurred.
+//                willDelete: Boolean. If true, this account will be deleted after some time.
 //
 // Identity users additionally contain the following fields:
 //   profile: Object containing the data that will be shared with users and grains that come into
@@ -114,12 +127,9 @@ if (Meteor.isServer) {
 //           experiment. Each experiment may define a point in time where users not already in the
 //           experiment may be added to it and assigned to a group (for example, at user creation
 //           time). Current experiments:
-//       firstTimeBillingPrompt: Value is "control" or "test". Users are assigned to groups at
-//               account creation on servers where billing is enabled (i.e. Oasis). Users in the
-//               test group will see a plan selection dialog and asked to make an explitic choice
-//               (possibly "free") before they can create grains (but not when opening someone
-//               else's shared grain). The goal of the experiment is to determine whether this
-//               prompt scares users away -- and also whether it increases paid signups.
+//       firstTimeBillingPrompt: OBSOLETE
+//       freeGrainLimit: Value is "control" or or a number indicating the grain limit that the
+//               user should receive when on the "free" plan, e.g. "Infinity".
 //   stashedOldUser: A complete copy of this user from before the accounts/identities migration.
 //                   TODO(cleanup): Delete this field once we're sure it's safe to do so.
 
@@ -130,11 +140,12 @@ Meteor.users.ensureIndexOnServer("loginIdentities.id", { unique: 1, sparse: 1 })
 Meteor.users.ensureIndexOnServer("nonloginIdentities.id", { sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.google.id", { unique: 1, sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.github.id", { unique: 1, sparse: 1 });
+Meteor.users.ensureIndexOnServer("suspended.willDelete", { sparse: 1 });
 
 // TODO(cleanup): This index is obsolete; delete it.
 Meteor.users.ensureIndexOnServer("identities.id", { unique: 1, sparse: 1 });
 
-Packages = new Mongo.Collection("packages");
+Packages = new Mongo.Collection("packages", collectionOptions);
 // Packages which are installed or downloading.
 //
 // Each contains:
@@ -156,7 +167,7 @@ Packages = new Mongo.Collection("packages");
 //   authorPgpKeyFingerprint: Verified PGP key fingerprint (SHA-1, hex, all-caps) of the app
 //     packager.
 
-DevPackages = new Mongo.Collection("devpackages");
+DevPackages = new Mongo.Collection("devpackages", collectionOptions);
 // List of packages currently made available via the dev tools running on the local machine.
 // This is normally empty; the only time it is non-empty is when a developer is using the spk tool
 // on the local machine to publish an under-development app to this server. That should only ever
@@ -176,14 +187,15 @@ DevPackages = new Mongo.Collection("devpackages");
 //     published, all running instances are reset. This is used e.g. to reset the app each time
 //     changes are made to the source code.
 //   manifest:  The app's manifest, as with Packages.manifest.
+//   mountProc: True if the supervisor should mount /proc.
 
-UserActions = new Mongo.Collection("userActions");
+UserActions = new Mongo.Collection("userActions", collectionOptions);
 // List of actions that each user has installed which create new grains.  Each app may install
 // some number of actions (usually, one).
 //
 // Each contains:
 //   _id:  random
-//   userId:  User who has installed this action.
+//   userId:  Account ID of the user who has installed this action.
 //   packageId:  Package used to run this action.
 //   appId:  Same as Packages.findOne(packageId).appId; denormalized for searchability.
 //   appTitle:  Same as Packages.findOne(packageId).manifest.appTitle; denormalized so
@@ -196,12 +208,15 @@ UserActions = new Mongo.Collection("userActions");
 //   nounPhrase: JSON-encoded LocalizedText describing what is created when this action is run.
 //   command:  Manifest.Command to run this action (see package.capnp).
 
-Grains = new Mongo.Collection("grains");
+Grains = new Mongo.Collection("grains", collectionOptions);
 // Grains belonging to users.
 //
 // Each contains:
 //   _id:  random
 //   packageId:  _id of the package of which this grain is an instance.
+//   packageSalt: If present, a random string that will used in session ID generation. This field
+//       is usually updated when `packageId` is updated, triggering automatic refreshes for
+//       clients with active sessions.
 //   appId:  Same as Packages.findOne(packageId).appId; denormalized for searchability.
 //   appVersion:  Same as Packages.findOne(packageId).manifest.appVersion; denormalized for
 //       searchability.
@@ -212,6 +227,14 @@ Grains = new Mongo.Collection("grains");
 //   private: If true, then knowledge of `_id` does not suffice to open this grain.
 //   cachedViewInfo: The JSON-encoded result of `UiView.getViewInfo()`, cached from the most recent
 //                   time a session to this grain was opened.
+//   trashed: If present, the Date when this grain was moved to the trash bin. Thirty days after
+//            this date, the grain will be automatically deleted.
+//   suspended: If true, the owner of this grain has been suspended. They will soon be deleted,
+//              so treat this grain the same as "trashed". It is denormalized out of Users for ease
+//              of querying.
+//   ownerSeenAllActivity: True if the owner has viewed the grain since the last activity event
+//       occurred. See also ApiTokenOwner.user.seenAllActivity.
+//   size: On-disk size of the grain in bytes.
 //
 // The following fields *might* also exist. These are temporary hacks used to implement e-mail and
 // web publishing functionality without powerbox support; they will be replaced once the powerbox
@@ -219,12 +242,14 @@ Grains = new Mongo.Collection("grains");
 //   publicId:  An id used to publicly identify this grain. Used e.g. to route incoming e-mail and
 //       web publishing. This field is initialized when first requested by the app.
 
-RoleAssignments = new Mongo.Collection("roleAssignments");
+Grains.ensureIndexOnServer("cachedViewInfo.matchRequests.tags.id", { sparse: 1 });
+
+RoleAssignments = new Mongo.Collection("roleAssignments", collectionOptions);
 // *OBSOLETE* Before `user` was a variant of ApiTokenOwner, this collection was used to store edges
 // in the permissions sharing graph. This functionality has been subsumed by the ApiTokens
 // collection.
 
-Contacts = new Mongo.Collection("contacts");
+Contacts = new Mongo.Collection("contacts", collectionOptions);
 // Edges in the social graph.
 //
 // If Alice has Bob as a contact, then she is allowed to see Bob's profile information and Bob
@@ -241,11 +266,12 @@ Contacts = new Mongo.Collection("contacts");
 //   created: Date when this contact was created.
 //   identityId: The `_id` of the user whose contact info this contains.
 
-Sessions = new Mongo.Collection("sessions");
+Sessions = new Mongo.Collection("sessions", collectionOptions);
 // UI sessions open to particular grains.  A new session is created each time a user opens a grain.
 //
 // Each contains:
-//   _id:  random
+//   _id:  String generated as a SHA256 hash of the grain ID, the user ID, a salt generated by the
+//       client, and the grain's `packageSalt`.
 //   grainId:  _id of the grain to which this session is connected.
 //   hostId: ID part of the hostname from which this grain is being served. I.e. this replaces the
 //       '*' in WILDCARD_HOST.
@@ -254,15 +280,30 @@ Sessions = new Mongo.Collection("sessions");
 //       have the same `tabId` as the outer session.
 //   timestamp:  Time of last keep-alive message to this session.  Sessions time out after some
 //       period.
-//   userId:  User ID of the user who owns this session.
+//   userId:  Account ID of the user who owns this session.
 //   identityId:  Identity ID of the user who owns this session.
 //   hashedToken: If the session is owned by an anonymous user, the _id of the entry in ApiTokens
 //       that was used to open it. Note that for old-style sharing (i.e. when !grain.private),
 //       anonymous users can get access without an API token and so neither userId nor hashedToken
 //       are present.
-//   powerboxView: If present, this is a view that should be presented as part of a powerbox
-//       interaction.
-//     offer: The webkey that corresponds to cap that was passed to the `offer` RPC.
+//   powerboxView: Information about a server-initiated powerbox interaction taking place in this
+//       session. When the client sees a `powerboxView` appear on the session, it opens the
+//       powerbox popup according to the contents. This field is an object containing one of:
+//     offer: A capability is being offered to the user by the app. This is an object containing:
+//       token: For a non-UiView capability, the API token that can be used to restore this
+//           capability.
+//       uiView: A UiView capability. This object contains one of:
+//         tokenId: The _id of an ApiToken belonging to the current user.
+//         token: A full webkey token which can be opened by an anonymous user.
+//     fulfill: A capability is being offered which fulfills the active powerbox request. This
+//         is an object with members:
+//       token: The SturdyRef of the fulfilling capability. This token can only be used in a call
+//           to claimRequest() by the requesting
+//           grain.
+//       descriptor: Packed-base64 PowerboxDescriptor for the capability.
+//   powerboxRequest: If present, this session is a powerbox request session. Object containing:
+//     descriptors: Array of PowerboxDescriptors representing the request.
+//     requestingSession: Session ID of the session initiating the request.
 //   viewInfo: The UiView.ViewInfo corresponding to the underlying UiSession. This isn't populated
 //       until newSession is called on the UiView.
 //   permissions: The permissions for the current identity on this UiView. This isn't populated
@@ -270,7 +311,7 @@ Sessions = new Mongo.Collection("sessions");
 //   hasLoaded: Marked as true by the proxy when the underlying UiSession has responded to its first
 //       request
 
-SignupKeys = new Mongo.Collection("signupKeys");
+SignupKeys = new Mongo.Collection("signupKeys", collectionOptions);
 // Invite keys which may be used by users to get access to Sandstorm.
 //
 // Each contains:
@@ -279,7 +320,7 @@ SignupKeys = new Mongo.Collection("signupKeys");
 //   note:  Text note assigned when creating key, to keep track of e.g. whom the key was for.
 //   email: If this key was sent as an email invite, the email address to which it was sent.
 
-ActivityStats = new Mongo.Collection("activityStats");
+ActivityStats = new Mongo.Collection("activityStats", collectionOptions);
 // Contains usage statistics taken on a regular interval. Each entry is a data point.
 //
 // Each contains:
@@ -303,7 +344,7 @@ ActivityStats = new Mongo.Collection("activityStats");
 //       demoed: Number of demo grains created and expired.
 //       appDemoUsers: Number of app demos initiated with this app.
 
-DeleteStats = new Mongo.Collection("deleteStats");
+DeleteStats = new Mongo.Collection("deleteStats", collectionOptions);
 // Contains records of objects that were deleted, for stat-keeping purposes.
 //
 // Each contains:
@@ -311,8 +352,9 @@ DeleteStats = new Mongo.Collection("deleteStats");
 //   lastActive: Date of the user's or grain's last activity.
 //   appId: For type = "grain", the app ID of the grain. For type = "appDemoUser", the app ID they
 //     arrived to demo. For others, undefined.
+//   experiments: The experiments the user (or owner of the grain) was in. See user.experiments.
 
-FileTokens = new Mongo.Collection("fileTokens");
+FileTokens = new Mongo.Collection("fileTokens", collectionOptions);
 // Tokens corresponding to backup files that are currently stored on the server. A user receives
 // a token when they create a backup file (either by uploading it, or by backing up one of their
 // grains) and may use the token to read the file (either to download it, or to restore a new
@@ -323,7 +365,14 @@ FileTokens = new Mongo.Collection("fileTokens");
 //   name:      Suggested filename.
 //   timestamp: File creation time. Used to figure out when the token and file should be wiped.
 
-ApiTokens = new Mongo.Collection("apiTokens");
+SpkTokens = new Mongo.Collection("spkTokens", collectionOptions);
+// A lot like FileTokens, but for SPK uploads.
+//
+// Each contains:
+//   _id:       The unguessable token string.
+//   timestamp: Creation time. Used to figure out when the token should be wiped.
+
+ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 // Access tokens for APIs exported by apps.
 //
 // Originally API tokens were only used by external users through the HTTP API endpoint. However,
@@ -369,13 +418,31 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //                  it has been set.
 //       ipInterface: Ditto IpNetwork, except it's an IpInterface.
 //       emailVerifier: An EmailVerifier capability that is implemented by the frontend. The
-//                      value is an object containing the field `services`, which itself is a
+//                      value is an object containing the fields `id` and `services`. `id` is the
+//                      value returned by `EmailVerifier.getId()` and is used as part of a
+//                      powerbox query for matching verified emails. `services` is a
 //                      list of names of identity providers that are trusted to verify addresses.
 //                      If `services` is omitted or falsy, all configured identity providers are
 //                      trusted. Note that a malicious user could specify invalid names in the
 //                      list; they should be ignored.
 //       verifiedEmail: An VerifiedEmail capability that is implemented by the frontend.
 //                      An object containing `verifierId`, `tabId`, and `address`.
+//       identity: An Identity capability. The field is the identity ID.
+//       http: An ApiSession capability pointing to an external HTTP service. Object containing:
+//           url: Base URL of the external service.
+//           auth: Authentication mechanism. Object containing one of:
+//               none: Value "null". Indicates no authorization.
+//               bearer: A bearer token to pass in the `Authorization: Bearer` header on all
+//                   requests. Encrypted with nonce 0.
+//               basic: A `{username, password}` object. The password is encrypted with nonce 0.
+//                   Before encryption, the password is padded to 32 bytes by appending NUL bytes,
+//                   in order to mask the length of small passwords.
+//               refresh: An OAuth refresh token, which can be exchanged for an access token.
+//                   Encrypted with nonce 0.
+//               TODO(security): How do we protect URLs that directly embed their secret? We don't
+//                   want to encrypt the full URL since this would make it hard to show a
+//                   meaningful audit UI, but maybe we could figure out a way to extract the key
+//                   part and encrypt it separately?
 //   parentToken: If present, then this token represents exactly the capability represented by
 //              the ApiToken with _id = parentToken, except possibly (if it is a UiView) attenuated
 //              by `roleAssignment` (if present). To facilitate permissions computations, if the
@@ -383,12 +450,22 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //              is set to the identity that shared the view, and `accountId` is set to the account
 //              that shared the view. Neither `objectId` nor `frontendRef` is present when
 //              `parentToken` is present.
+//   parentTokenKey: The actual parent token -- whereas `parentToken` is only the parent token ID
+//              (hash). `parentTokenFull` is encrypted with nonce 0 (see below). This is needed
+//              in particular when the parent contains encrypted fields, since those would need to
+//              be decrypted using this key. If the parent contains no encrypted fields then
+//              `parentTokenKey` may be omitted from the child.
 //   petname:   Human-readable label for this access token, useful for identifying tokens for
 //              revocation. This should be displayed when visualizing incoming capabilities to
 //              the grain identified by `grainId`.
 //   created:   Date when this token was created.
 //   revoked:   If true, then this sturdyref has been revoked and can no longer be restored. It may
 //              become un-revoked in the future.
+//   trashed:   If present, the Date when this token was moved to the trash bin. Thirty days after
+//              this date, the token will be automatically deleted.
+//   suspended: If true, the owner of this token has been suspended. They will soon be deleted,
+//              so treat this token the same as "trashed". It is denormalized out of Users for
+//              ease of querying.
 //   expires:   Optional expiration Date. If undefined, the token does not expire.
 //   lastUsed:  Optional Date when this token was last used.
 //   owner:     A `ApiTokenOwner` (defined in `supervisor.capnp`, stored as a JSON object)
@@ -428,12 +505,23 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //       ipNetwork :Bool;
 //       ipInterface :Bool;
 //       emailVerifier :group {
+//         id :Text;
 //         services :List(String);
 //       }
 //       verifiedEmail :group {
 //         verifierId :Text;
 //         tabId :Text;
 //         address :Text;
+//       }
+//       identity :Text;
+//       http :group {
+//         url :Text;
+//         auth :union {
+//           none :Void;
+//           bearer :Text;
+//           basic :group { username :Text; password :Text; }
+//           refresh :Text;
+//         }
 //       }
 //     }
 //     child :group {
@@ -451,11 +539,43 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   requirements: List(Supervisor.MembraneRequirement);
 //   ...
 // }
+//
+// ENCRYPTION
+//
+// We want to make sure that someone who obtains a copy of the database cannot use it to gain live
+// credentials.
+//
+// The actual token corresponding to an ApiToken entry is not stored in the entry itself. Instead,
+// the ApiToken's `_id` is constructed as a SHA256 hash of the actual token. To use an ApiToken
+// in the live system, you must present the original token.
+//
+// Additionally, some ApiToken entries contain tokens to third-party services, e.g. OAuth tokens
+// or even passwords. Such tokens are encrypted, using the ApiToken entry's own full token (which,
+// again, is not stored in the database) as the encryption key.
+//
+// When such encryption is applied, the cipher used is ChaCha20. All API tokens are 256-bit base64
+// strings, hence can be used directly as the key. No MAC is applied, because this scheme is not
+// intended to protect against attackers who have write access to the database -- such an attacker
+// could almost certainly do more damage by modifying the non-encrypted fields anyway. (Put another
+// way, if we wanted to MAC something, we'd need to MAC the entire ApiToken structure, not just
+// the encrypted key. But we don't have a way to do that at present.)
+//
+// ChaCha20 requires a nonce. Luckily, all of the fields we wish to encrypt are immutable, so we
+// don't have to worry about tracking nonces over time -- we can just assign a static nonce to each
+// field. Moreover, many (currently, all) of these fields are mutually exclusive, so can even share
+// nonces. Currently, nonces map to fields as follows:
+//
+// nonce 0:
+//     parentTokenKey
+//     frontendRef.http.auth.basic.password
+//     frontendRef.http.auth.bearer
+//     frontendRef.http.auth.refresh
 
 ApiTokens.ensureIndexOnServer("grainId", { sparse: 1 });
 ApiTokens.ensureIndexOnServer("owner.user.identityId", { sparse: 1 });
+ApiTokens.ensureIndexOnServer("frontendRef.emailVerifier.id", { sparse: 1 });
 
-ApiHosts = new Mongo.Collection("apiHosts");
+ApiHosts = new Mongo.Collection("apiHosts", collectionOptions);
 // Allows defining some limited static behavior for an API host when accessed unauthenticated. This
 // mainly exists to allow backwards-compatibility with client applications that expect to be able
 // to probe an API host without authentication to determine capabilities such as DAV protocols
@@ -480,22 +600,31 @@ ApiHosts = new Mongo.Collection("apiHosts");
 //     encoding:   Content-Encoding.
 //     body:       Entity-body as a string or buffer.
 
-Notifications = new Mongo.Collection("notifications");
+Notifications = new Mongo.Collection("notifications", collectionOptions);
 // Notifications for a user.
 //
 // Each contains:
 //   _id:          random
 //   grainId:      The grain originating this notification, if any.
-//   userId:       The user receiving the notification.
+//   userId:       Account ID of the user receiving the notification.
 //   text:         The JSON-ified LocalizedText to display in the notification.
 //   isUnread:     Boolean indicating if this notification is unread.
 //   timestamp:    Date when this notification was last updated
+//   eventType:    If this notification is due to an activity event, this is the numeric index
+//                 of the event type on the grain's ViewInfo.
+//   count:        The number of times this exact event has repeated. Identical events are
+//                 aggregated by incrementing the count.
+//   initiatingIdentity: Identity ID of the user who initiated this notification.
+//   initiatorAnonymous: True if the initiator is an anonymous user. If neither this nor
+//                 initiatingIdentity is present, the notification is not from a user.
+//   path:         Path inside the grain to which the user should be directed if they click on
+//                 the notification.
 //   ongoing:      If present, this is an ongoing notification, and this field contains an
 //                 ApiToken referencing the `OngoingNotification` capability.
 //   admin:        If present, this is a notification intended for an admin.
 //     action:     If present, this is a (string) link that the notification should direct the
 //                 admin to.
-//     type:       The type of notification (currently only "reportStats").
+//     type:       The type of notification -- currently can only be "reportStats".
 //   appUpdates:   If present, this is an app update notification. It is an object with the appIds
 //                 as keys.
 //     $appId:     The appId that has an outstanding update.
@@ -508,8 +637,30 @@ Notifications = new Mongo.Collection("notifications");
 //   mailingListBonus: Like `referral`, but notify the user about the mailing list bonus. This is
 //                 a one-time notification only to Oasis users who existed when the bonus program
 //                 was implemented.
+//   identityChanges: If this boolean field is true, this notification should show a warning about
+//                 upcoming changes to the identity model.
 
-StatsTokens = new Mongo.Collection("statsTokens");
+ActivitySubscriptions = new Mongo.Collection("activitySubscriptions", collectionOptions);
+// Activity events to which a user is subscribed.
+//
+// Each contains:
+//   _id:          random
+//   identityId:   Who is subscribed.
+//   grainId:      Grain to which subscription applies.
+//   threadPath:   If present, the subscription is on a specific thread. Otherwise, it is on the
+//                 whole grain.
+//   mute:         If true, this is an anti-subscription -- matching events should NOT notify.
+//                 This allows is useful to express:
+//                 - A user wants to subscribe to a grain but mute a specific thread.
+//                 - The owner of a grain does not want notifications (normally, they are
+//                   implicitly subscribed).
+//                 - A user no longer wishes to be implicitly subscribed to threads in a grain on
+//                   which they comment, so they mute the grain.
+
+ActivitySubscriptions.ensureIndexOnServer("identityId");
+ActivitySubscriptions.ensureIndexOnServer({ "grainId": 1, "threadPath": 1 });
+
+StatsTokens = new Mongo.Collection("statsTokens", collectionOptions);
 // Access tokens for the Stats collection
 //
 // These tokens are used for accessing the ActivityStats collection remotely
@@ -518,7 +669,7 @@ StatsTokens = new Mongo.Collection("statsTokens");
 // Each contains:
 //   _id:       The token. At least 128 bits entropy (Random.id(22)).
 
-Misc = new Mongo.Collection("misc");
+Misc = new Mongo.Collection("misc", collectionOptions);
 // Miscellaneous configuration and other settings
 //
 // This table is currently only used for persisting BASE_URL from one session to the next,
@@ -528,7 +679,7 @@ Misc = new Mongo.Collection("misc");
 //   _id:       The name of the setting. eg. "BASE_URL"
 //   value:     The value of the setting.
 
-Settings = new Mongo.Collection("settings");
+Settings = new Mongo.Collection("settings", collectionOptions);
 // Settings for this Sandstorm instance go here. They are configured through the adminSettings
 // route. This collection differs from misc in that any admin user can update it through the admin
 // interface.
@@ -541,16 +692,20 @@ Settings = new Mongo.Collection("settings");
 //                       needed. That object can have the following variants:
 //       baseUrlChangedFrom: The reset was due to BASE_URL changing. This field contains a string
 //                           with the old BASE_URL.
+//   preinstalledApps: A list of objects:
+//     appId: The Packages.appId of the app to install
+//     status: packageId
+//     packageId: The Packages._id of the app to install
 //
 //   potentially other fields that are unique to the setting
 
-Migrations = new Mongo.Collection("migrations");
+Migrations = new Mongo.Collection("migrations", collectionOptions);
 // This table tracks which migrations we have applied to this instance.
 // It contains a single entry:
 //   _id:       "migrations_applied"
 //   value:     The number of migrations this instance has successfully completed.
 
-StaticAssets = new Mongo.Collection("staticAssets");
+StaticAssets = new Mongo.Collection("staticAssets", collectionOptions);
 // Collection of static assets served up from the Sandstorm server's "static" host. We only
 // support relatively small assets: under 1MB each.
 //
@@ -564,7 +719,7 @@ StaticAssets = new Mongo.Collection("staticAssets");
 //       have transactions, this needs to bias towards over-counting; a backup GC could be used
 //       to catch leaked assets, although it's probably not a big deal in practice.
 
-AssetUploadTokens = new Mongo.Collection("assetUploadTokens");
+AssetUploadTokens = new Mongo.Collection("assetUploadTokens", collectionOptions);
 // Collection of tokens representing a single-use permission to upload an asset, such as a new
 // profile picture.
 //
@@ -572,11 +727,11 @@ AssetUploadTokens = new Mongo.Collection("assetUploadTokens");
 //   _id:       Random ID.
 //   purpose:   Contains one of the following, indicating how the asset is to be used:
 //       profilePicture: Indicates that the upload is a new profile picture. Contains fields:
-//           userId: User whose picture shall be replaced.
+//           userId: Account ID of user whose picture shall be replaced.
 //           identityId: Which of the user's identities shall be updated.
 //   expires:   Time when this token will go away if unused.
 
-Plans = new Mongo.Collection("plans");
+Plans = new Mongo.Collection("plans", collectionOptions);
 // Subscription plans, which determine quota.
 //
 // Each contains:
@@ -590,14 +745,14 @@ Plans = new Mongo.Collection("plans");
 //       allowed to switch away.
 //   title: Title from display purposes. If missing, default to capitalizing _id.
 
-AppIndex = new Mongo.Collection("appIndex");
+AppIndex = new Mongo.Collection("appIndex", collectionOptions);
 // A mirror of the data from the App Market index
 //
 // Each contains:
 //   _id: the appId of the app
 //  The rest of the fields are defined in src/sandstorm/app-index/app-index.capnp:AppIndexForMarket
 
-KeybaseProfiles = new Mongo.Collection("keybaseProfiles");
+KeybaseProfiles = new Mongo.Collection("keybaseProfiles", collectionOptions);
 // Cache of Keybase profile information. The profile for a user is re-fetched every time a package
 // by that user is installed, as well as if the keybase profile is requested and not already
 // present for some reason.
@@ -617,17 +772,12 @@ KeybaseProfiles = new Mongo.Collection("keybaseProfiles");
 //     WARNING: Currently verification is NOT IMPLEMENTED, so all proofs will be "unverified"
 //       for now and we just trust Keybase.
 
-FeatureKey = new Mongo.Collection("featureKey");
-// Responsible for storing the current feature key that is active on the server.  Contains a single
-// document with two keys:
-//
-//   _id: "currentFeatureKey"
-//   value: the still-signed, binary-encoded feature key
-//          (a feature key with comments removed and base64 decoded)
-//
-// This is only intended to be visible on the server.
+FeatureKey = new Mongo.Collection("featureKey", collectionOptions);
+// OBSOLETE: This was used to implement the Sandstorm for Work paywall, which has been removed.
+//   Collection object still defined because it could have old data in it, for servers that used
+//   to have a feature key.
 
-SetupSession = new Mongo.Collection("setupSession");
+SetupSession = new Mongo.Collection("setupSession", collectionOptions);
 // Responsible for storing information about setup sessions.  Contains a single document with three
 // keys:
 //
@@ -635,17 +785,56 @@ SetupSession = new Mongo.Collection("setupSession");
 //   creationDate: Date object indicating when this session was created.
 //   hashedSessionId: the sha256 of the secret session id that was returned to the client
 
+const DesktopNotifications = new Mongo.Collection("desktopNotifications", collectionOptions);
+// Responsible for very short-lived queueing of desktop notification information.
+// Entries are removed when they are ~30 seconds old.  This collection is a bit
+// odd in that it is intended primarily for edge-triggered communications, but
+// Meteor's collections aren't really designed to support that organization.
+// Fields for each :
+//
+//   _id: String.  Used as the tag to coordinate notification merging between browser tabs.
+//   creationDate: Date object. indicating when this notification was posted.
+//   userId: String. Account id to which this notification was published.
+//   notificationId: String.  ID of the matching event in the Notifications table to dismiss if this
+//                            notification is activated.
+//   appActivity: Object with fields:
+//     user: Optional Object. Not present if this notification wasn't generated by a user. If
+//           present, it will have one of the following shapes:
+//       { anonymous: true } if this notification was generated by an anonymous user.  Otherwise:
+//       {
+//         identityId: String  The user's identity ID.
+//         name: String        The user's display name.
+//         avatarUrl: String   The URL for the user's profile picture.
+//       },
+//     grainId: String,      Which grain this action took place on
+//     path: String,         The path of the notification.
+//     body: Util.LocalizedText,  The main body of the activity event.
+//     actionText: Util.LocalizedText, What action the user took, e.g.
+//                                     { defaultText: "added a comment" }
+
+const StandaloneDomains = new Mongo.Collection("standaloneDomains", collectionOptions);
+// A standalone domain that points to a single share link. These domains act a little different
+// than a normal shared Sandstorm grain. They completely drop any Sandstorm topbar/sidebar, and at
+// first glance look completely like a non-Sandstorm hosted webserver. The apps instead act in
+// concert with Sandstorm through the postMessage API, which allows it to do things like prompt for
+// login.
+// Fields for each :
+//
+//   _id: String. The domain name to use.
+//   token: String. _id of a sharing token (it must be a webkey).
+
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
     // Data needed for isSignedUp() and isAdmin() to work.
 
     if (this.userId) {
+      const db = this.connection.sandstormDb;
       return [
         Meteor.users.find({ _id: this.userId },
             { fields: { signupKey: 1, isAdmin: 1, expires: 1, storageUsage: 1,
                       plan: 1, planBonus: 1, hasCompletedSignup: 1, experiments: 1,
-                      referredIdentityIds: 1, }, }),
-        Plans.find(),
+                      referredIdentityIds: 1, cachedStorageQuota: 1, suspended: 1, }, }),
+        db.collections.plans.find(),
       ];
     } else {
       return [];
@@ -694,55 +883,6 @@ const calculateReferralBonus = function (user) {
 
     return bonus;
   }
-};
-
-getUserQuota = function (user) {
-  const plan = Plans.findOne(user.plan || "free");
-  const referralBonus = calculateReferralBonus(user);
-  const bonus = user.planBonus || {};
-  const userQuota = {
-    storage: plan.storage + referralBonus.storage + (bonus.storage || 0),
-    grains: plan.grains + referralBonus.grains + (bonus.grains || 0),
-    compute: plan.compute + (bonus.compute || 0),
-  };
-  return userQuota;
-};
-
-isUserOverQuota = function (user) {
-  // Return false if user has quota space remaining, true if it is full. When this returns true,
-  // we will not allow the user to create new grains, though they may be able to open existing ones
-  // which may still increase their storage usage.
-  //
-  // (Actually returns a string which can be fed into `billingPrompt` as the reason.)
-
-  if (!Meteor.settings.public.quotaEnabled || user.isAdmin) return false;
-
-  const plan = getUserQuota(user);
-  if (plan.grains < Infinity) {
-    const count = Grains.find({ userId: user._id }, { fields: {}, limit: plan.grains }).count();
-    if (count >= plan.grains) return "outOfGrains";
-  }
-
-  return plan && user.storageUsage && user.storageUsage >= plan.storage && "outOfStorage";
-};
-
-isUserExcessivelyOverQuota = function (user) {
-  // Return true if user is so far over quota that we should prevent their existing grains from
-  // running at all.
-  //
-  // (Actually returns a string which can be fed into `billingPrompt` as the reason.)
-
-  if (!Meteor.settings.public.quotaEnabled || user.isAdmin) return false;
-
-  const quota = getUserQuota(user);
-
-  // quota.grains = Infinity means unlimited grains. IEEE754 defines Infinity == Infinity.
-  if (quota.grains < Infinity) {
-    const count = Grains.find({ userId: user._id }, { fields: {}, limit: quota.grains * 2 }).count();
-    if (count >= quota.grains * 2) return "outOfGrains";
-  }
-
-  return quota && user.storageUsage && user.storageUsage >= quota.storage * 1.2 && "outOfStorage";
 };
 
 isAdmin = function () {
@@ -884,68 +1024,53 @@ if (Meteor.isServer) {
   };
 }
 
-allowDevAccounts = function () {
-  const setting = Settings.findOne({ _id: "devAccounts" });
-  if (setting) {
-    return setting.value;
-  } else {
-    return Meteor.settings && Meteor.settings.public &&
-           Meteor.settings.public.allowDevAccounts;
-  }
-};
+SandstormDb = function (quotaManager) {
+  // quotaManager is an object with the following method:
+  //   updateUserQuota: It is provided two arguments
+  //     db: This SandstormDb object
+  //     user: A collections.users account object
+  //   and returns a quota object:
+  //     storage: A number (can be Infinity)
+  //     compute: A number (can be Infinity)
+  //     grains: A number (can be Infinity)
 
-sendReferralProgramNotification = function (userId) {
-  Notifications.upsert({
-    userId: userId,
-    referral: true,
-  }, {
-    userId: userId,
-    referral: true,
-    timestamp: new Date(),
-    isUnread: true,
-  });
-};
-
-roleAssignmentPattern = {
-  none: Match.Optional(null),
-  allAccess: Match.Optional(null),
-  roleId: Match.Optional(Match.Integer),
-  addPermissions: Match.Optional([Boolean]),
-  removePermissions: Match.Optional([Boolean]),
-};
-
-SandstormDb = function () {
+  this.quotaManager = quotaManager;
   this.collections = {
-    // Direct access to underlying collections. DEPRECATED.
+    // Direct access to underlying collections. DEPRECATED, but better than accessing the top-level
+    // collection globals directly.
     //
     // TODO(cleanup): Over time, we will provide methods covering each supported query and remove
     //   direct access to the collections.
+    users: Meteor.users,
 
     packages: Packages,
     devPackages: DevPackages,
     userActions: UserActions,
     grains: Grains,
+    roleAssignments: RoleAssignments, // Deprecated, only used by the migration that eliminated it.
     contacts: Contacts,
     sessions: Sessions,
     signupKeys: SignupKeys,
     activityStats: ActivityStats,
     deleteStats: DeleteStats,
     fileTokens: FileTokens,
+    spkTokens: SpkTokens,
     apiTokens: ApiTokens,
     apiHosts: ApiHosts,
     notifications: Notifications,
+    activitySubscriptions: ActivitySubscriptions,
     statsTokens: StatsTokens,
     misc: Misc,
     settings: Settings,
+    migrations: Migrations,
+    staticAssets: StaticAssets,
+    assetUploadTokens: AssetUploadTokens,
+    plans: Plans,
     appIndex: AppIndex,
     keybaseProfiles: KeybaseProfiles,
-    featureKey: FeatureKey,
     setupSession: SetupSession,
-    users: Meteor.users,
-
-    // Intentionally omitted:
-    // - Migrations, since it's used only within this package.
-    // - RoleAssignments, since it is deprecated and only used by the migration that eliminated it.
+    desktopNotifications: DesktopNotifications,
+    standaloneDomains: StandaloneDomains,
   };
 };
 
@@ -953,9 +1078,6 @@ SandstormDb = function () {
 //   objects created in SandstormDb's constructor rather than globals.
 
 _.extend(SandstormDb.prototype, {
-  getUserQuota: getUserQuota,
-  isUserOverQuota: isUserOverQuota,
-  isUserExcessivelyOverQuota: isUserExcessivelyOverQuota,
   isAdmin: isAdmin,
   isAdminById: isAdminById,
   findAdminUserForToken: findAdminUserForToken,
@@ -966,10 +1088,25 @@ _.extend(SandstormDb.prototype, {
   apiHostIdHashForToken: apiHostIdHashForToken,
   apiHostIdForToken: apiHostIdForToken,
   makeApiHost: makeApiHost,
-  allowDevAccounts: allowDevAccounts,
-  roleAssignmentPattern: roleAssignmentPattern,
+  allowDevAccounts() {
+    const setting = this.collections.settings.findOne({ _id: "devAccounts" });
+    if (setting) {
+      return setting.value;
+    } else {
+      return Meteor.settings && Meteor.settings.public &&
+             Meteor.settings.public.allowDevAccounts;
+    }
+  },
 
-  isDemoUser: function () {
+  roleAssignmentPattern: {
+    none: Match.Optional(null),
+    allAccess: Match.Optional(null),
+    roleId: Match.Optional(Match.Integer),
+    addPermissions: Match.Optional([Boolean]),
+    removePermissions: Match.Optional([Boolean]),
+  },
+
+  isDemoUser() {
     // Returns true if this is a demo user.
 
     const user = Meteor.user();
@@ -980,12 +1117,12 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  isSignedUp: function () {
+  isSignedUp() {
     const user = Meteor.user();
     return this.isAccountSignedUp(user);
   },
 
-  isAccountSignedUp: function (user) {
+  isAccountSignedUp(user) {
     // Returns true if the user has presented an invite key.
 
     if (!user) return false;  // not signed in
@@ -1003,12 +1140,12 @@ _.extend(SandstormDb.prototype, {
     return false;
   },
 
-  isSignedUpOrDemo: function () {
+  isSignedUpOrDemo() {
     const user = Meteor.user();
     return this.isAccountSignedUpOrDemo(user);
   },
 
-  isAccountSignedUpOrDemo: function (user) {
+  isAccountSignedUpOrDemo(user) {
     if (!user) return false;  // not signed in
 
     if (!user.loginIdentities) return false;  // not an account
@@ -1024,7 +1161,7 @@ _.extend(SandstormDb.prototype, {
     return false;
   },
 
-  isIdentityInOrganization: function (identity) {
+  isIdentityInOrganization(identity) {
     if (!identity || !identity.services) {
       return false;
     }
@@ -1037,8 +1174,17 @@ _.extend(SandstormDb.prototype, {
     const ldapEnabled = orgMembership && orgMembership.ldap && orgMembership.ldap.enabled;
     const samlEnabled = orgMembership && orgMembership.saml && orgMembership.saml.enabled;
     if (emailEnabled && emailDomain && identity.services.email) {
-      if (identity.services.email.email.toLowerCase().split("@").pop() === emailDomain) {
-        return true;
+      const domainSuffixes = emailDomain.split(/\s*,\s*/);
+      for (let i = 0; i < domainSuffixes.length; i++) {
+        const suffix = domainSuffixes[i];
+        const domain = identity.services.email.email.toLowerCase().split("@").pop();
+        if (suffix.startsWith("*.")) {
+          if (domain.endsWith(suffix.substr(1))) {
+            return true;
+          }
+        } else if (domain === suffix) {
+          return true;
+        }
       }
     } else if (ldapEnabled && identity.services.ldap) {
       return true;
@@ -1053,11 +1199,7 @@ _.extend(SandstormDb.prototype, {
     return false;
   },
 
-  isUserInOrganization: function (user) {
-    if (!this.isFeatureKeyValid()) {
-      return false;
-    }
-
+  isUserInOrganization(user) {
     for (let i = 0; i < user.loginIdentities.length; i++) {
       let identity = Meteor.users.findOne({ _id: user.loginIdentities[i].id });
       if (this.isIdentityInOrganization(identity)) {
@@ -1076,30 +1218,44 @@ if (Meteor.isServer) {
   SandstormDb.prototype.removeApiTokens = function (query) {
     // Remove all API tokens matching the query, making sure to clean up ApiHosts as well.
 
-    this.collections.apiTokens.find(query).forEach(function (token) {
+    this.collections.apiTokens.find(query).forEach((token) => {
       // Clean up ApiHosts for webkey tokens.
       if (token.hasApiHost) {
         const hash2 = Crypto.createHash("sha256").update(token._id).digest("base64");
-        ApiHosts.remove({ hash2: hash2 });
+        this.collections.apiHosts.remove({ hash2: hash2 });
       }
+
+      // TODO(soon): Drop remote OAuth tokens for frontendRef.http. Unfortunately the way to do
+      //   this is different for every service. :( Also we may need to clarify with the "bearer"
+      //   type whether or not the token is "owned" by us...
     });
 
     this.collections.apiTokens.remove(query);
   };
 }
 
+// TODO(someday): clean this up.  Logic for building static asset urls on client and server
+// appears all over the codebase.
+let httpProtocol;
+if (Meteor.isServer) {
+  const Url = Npm.require("url");
+  httpProtocol = Url.parse(process.env.ROOT_URL).protocol;
+} else {
+  httpProtocol = window.location.protocol;
+}
+
 // =======================================================================================
 // Below this point are newly-written or refactored functions.
 
 _.extend(SandstormDb.prototype, {
-  getUser: function getUser(userId) {
+  getUser(userId) {
     check(userId, Match.OneOf(String, undefined, null));
     if (userId) {
       return Meteor.users.findOne(userId);
     }
   },
 
-  getIdentity: function getIdentity(identityId) {
+  getIdentity(identityId) {
     check(identityId, String);
     const identity = Meteor.users.findOne({ _id: identityId });
     if (identity) {
@@ -1110,7 +1266,7 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  userHasIdentity: function (userId, identityId) {
+  userHasIdentity(userId, identityId) {
     check(userId, String);
     check(identityId, String);
 
@@ -1120,43 +1276,59 @@ _.extend(SandstormDb.prototype, {
     return SandstormDb.getUserIdentityIds(user).indexOf(identityId) != -1;
   },
 
-  userGrains: function userGrains(userId) {
+  userGrains(userId, options) {
     check(userId, Match.OneOf(String, undefined, null));
-    return this.collections.grains.find({ userId: userId });
+    check(options, Match.OneOf(undefined, null,
+        { includeTrashOnly: Match.Optional(Boolean), includeTrash: Match.Optional(Boolean), }));
+
+    const query = { userId: userId };
+    if (options && options.includeTrashOnly) {
+      query.trashed = { $exists: true };
+    } else if (options && options.includeTrash) {
+      // Keep query as-is.
+    } else {
+      query.trashed = { $exists: false };
+    }
+
+    return this.collections.grains.find(query);
   },
 
-  currentUserGrains: function currentUserGrains() {
-    return this.userGrains(Meteor.userId());
+  currentUserGrains(options) {
+    return this.userGrains(Meteor.userId(), options);
   },
 
-  getGrain: function getGrain(grainId) {
+  getGrain(grainId) {
     check(grainId, String);
     return this.collections.grains.findOne(grainId);
   },
 
-  userApiTokens: function userApiTokens(userId) {
+  userApiTokens(userId, trashed) {
     check(userId, Match.OneOf(String, undefined, null));
+    check(trashed, Match.OneOf(Boolean, undefined, null));
     const identityIds = SandstormDb.getUserIdentityIds(this.getUser(userId));
-    return this.collections.apiTokens.find({ "owner.user.identityId": { $in: identityIds } });
+    return this.collections.apiTokens.find({
+      "owner.user.identityId": { $in: identityIds },
+      trashed: { $exists: !!trashed },
+    });
   },
 
-  currentUserApiTokens: function currentUserApiTokens() {
-    return this.userApiTokens(Meteor.userId());
+  currentUserApiTokens(trashed) {
+    return this.userApiTokens(Meteor.userId(), trashed);
   },
 
-  userActions: function userActions(user) {
+  userActions(user) {
     return this.collections.userActions.find({ userId: user });
   },
 
-  currentUserActions: function currentUserActions() {
+  currentUserActions() {
     return this.userActions(Meteor.userId());
   },
 
-  iconSrcForPackage: function iconSrcForPackage(pkg, usage) {
-    return Identicon.iconSrcForPackage(pkg, usage, this.makeWildcardHost("static"));
+  iconSrcForPackage(pkg, usage) {
+    return Identicon.iconSrcForPackage(pkg, usage, httpProtocol + "//" + this.makeWildcardHost("static"));
   },
 
-  getDenormalizedGrainInfo: function getDenormalizedGrainInfo(grainId) {
+  getDenormalizedGrainInfo(grainId) {
     const grain = this.getGrain(grainId);
     let pkg = this.collections.packages.findOne(grain.packageId);
 
@@ -1169,7 +1341,10 @@ _.extend(SandstormDb.prototype, {
 
     if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
       const icons = pkg.manifest.metadata.icons;
-      grainInfo.icon = icons.grain || icons.appGrid;
+      const icon = icons.grain || icons.appGrid;
+      if (icon) {
+        grainInfo.icon = icon;
+      }
     }
 
     // Only provide an app ID if we have no icon asset to provide and need to offer an identicon.
@@ -1180,26 +1355,51 @@ _.extend(SandstormDb.prototype, {
     return grainInfo;
   },
 
-  getPlan: function (id) {
+  getPlan(id, user) {
     check(id, String);
-    const plan = Plans.findOne(id);
+
+    // `user`, if provided, is the user observing the plan. This matters only for checking if the
+    // user is in an experiment.
+
+    const plan = this.collections.plans.findOne(id);
     if (!plan) {
       throw new Error("no such plan: " + id);
+    }
+
+    if (plan._id === "free") {
+      user = user || Meteor.user();
+      if (user && user.experiments &&
+          typeof user.experiments.freeGrainLimit === "number") {
+        plan.grains = user.experiments.freeGrainLimit;
+      }
     }
 
     return plan;
   },
 
-  listPlans: function () {
-    return Plans.find({}, { sort: { price: 1 } });
+  listPlans(user) {
+    user = user || Meteor.user();
+    if (user && user.experiments &&
+        typeof user.experiments.freeGrainLimit === "number") {
+      return this.collections.plans.find({}, { sort: { price: 1 } })
+          .map(plan => {
+        if (plan._id === "free") {
+          plan.grains = user.experiments.freeGrainLimit;
+        }
+
+        return plan;
+      });
+    } else {
+      return this.collections.plans.find({}, { sort: { price: 1 } }).fetch();
+    }
   },
 
-  getMyPlan: function () {
+  getMyPlan() {
     const user = Meteor.user();
-    return user && Plans.findOne(user.plan || "free");
+    return user && this.collections.plans.findOne(user.plan || "free");
   },
 
-  getMyReferralBonus: function (user) {
+  getMyReferralBonus(user) {
     // This function is called from the server and from the client, similar to getMyPlan().
     //
     // The parameter may be omitted in which case the current user is assumed.
@@ -1207,16 +1407,16 @@ _.extend(SandstormDb.prototype, {
     return calculateReferralBonus(user || Meteor.user());
   },
 
-  getMyUsage: function (user) {
+  getMyUsage(user) {
     user = user || Meteor.user();
     if (user && (Meteor.isServer || user.pseudoUsage)) {
       if (Meteor.isClient) {
-        // Filled by pseudo-subscription to "getMyUsage". WARNING: The subscription is currenly
+        // Filled by pseudo-subscription to "getMyUsage". WARNING: The subscription is currently
         // not reactive.
         return user.pseudoUsage;
       } else {
         return {
-          grains: Grains.find({ userId: user._id }).count(),
+          grains: this.collections.grains.find({ userId: user._id }).count(),
           storage: user.storageUsage || 0,
           compute: 0,  // not tracked yet
         };
@@ -1226,19 +1426,19 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  isUninvitedFreeUser: function () {
+  isUninvitedFreeUser() {
     if (!Meteor.settings.public.allowUninvited) return false;
 
     const user = Meteor.user();
     return user && !user.expires && (!user.plan || user.plan === "free");
   },
 
-  getSetting: function (name) {
-    const setting = Settings.findOne(name);
+  getSetting(name) {
+    const setting = this.collections.settings.findOne(name);
     return setting && setting.value;
   },
 
-  getSettingWithFallback: function (name, fallbackValue) {
+  getSettingWithFallback(name, fallbackValue) {
     const value = this.getSetting(name);
     if (value === undefined) {
       return fallbackValue;
@@ -1247,15 +1447,14 @@ _.extend(SandstormDb.prototype, {
     return value;
   },
 
-  addUserActions: function (packageId) {
-    //TODO(cleanup): implement this with meteor methods rather than client-side inserts/removes.
-    const pack = Packages.findOne(packageId);
+  addUserActions(userId, packageId, simulation) {
+    check(userId, String);
+    check(packageId, String);
+
+    const pack = this.collections.packages.findOne({ _id: packageId });
     if (pack) {
       // Remove old versions.
-      UserActions.find({ userId: Meteor.userId(), appId: pack.appId })
-          .forEach(function (action) {
-        UserActions.remove(action._id);
-      });
+      const numRemoved = this.collections.userActions.remove({ userId: userId, appId: pack.appId });
 
       // Install new.
       const actions = pack.manifest.actions;
@@ -1263,7 +1462,7 @@ _.extend(SandstormDb.prototype, {
         const action = actions[i];
         if ("none" in action.input) {
           const userAction = {
-            userId: Meteor.userId(),
+            userId: userId,
             packageId: pack._id,
             appId: pack.appId,
             appTitle: pack.manifest.appTitle,
@@ -1273,63 +1472,63 @@ _.extend(SandstormDb.prototype, {
             nounPhrase: action.nounPhrase,
             command: action.command,
           };
-          UserActions.insert(userAction);
+          this.collections.userActions.insert(userAction);
         } else {
           // TODO(someday):  Implement actions with capability inputs.
-        } //jscs:ignore disallowEmptyBlocks
+        }
       }
 
-      Meteor.call("deleteUnusedPackages", pack.appId);
+      if (numRemoved > 0 && !simulation) {
+        this.deleteUnusedPackages(pack.appId);
+      }
     }
   },
 
-  sendAdminNotification: function (message, link) {
+  sendAdminNotification(type, action) {
     Meteor.users.find({ isAdmin: true }, { fields: { _id: 1 } }).forEach(function (user) {
       Notifications.insert({
-        admin: {
-          action: link,
-          type: "reportStats",
-        },
+        admin: { action, type },
         userId: user._id,
-        text: { defaultText: message },
         timestamp: new Date(),
         isUnread: true,
       });
     });
   },
 
-  getKeybaseProfile: function (keyFingerprint) {
+  getKeybaseProfile(keyFingerprint) {
     return this.collections.keybaseProfiles.findOne(keyFingerprint) || {};
   },
 
-  getServerTitle: function () {
-    const setting = Settings.findOne({ _id: "serverTitle" });
+  getServerTitle() {
+    const setting = this.collections.settings.findOne({ _id: "serverTitle" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
   getSmtpConfig() {
-    const setting = Settings.findOne({ _id: "smtpConfig" });
+    const setting = this.collections.settings.findOne({ _id: "smtpConfig" });
     return setting ? setting.value : undefined; // undefined if subscription is not ready.
   },
 
-  getReturnAddress: function () {
+  getReturnAddress() {
     const config = this.getSmtpConfig();
     return config && config.returnAddress || ""; // empty if subscription is not ready.
   },
 
-  getReturnAddressWithDisplayName: function (identityId) {
+  getReturnAddressWithDisplayName(identityId) {
     check(identityId, String);
     const identity = this.getIdentity(identityId);
     const displayName = identity.profile.name + " (via " + this.getServerTitle() + ")";
 
     // First remove any instances of characters that cause trouble for SimpleSmtp. Ideally,
     // we could escape such characters with a backslash, but that does not seem to help here.
+    // TODO(cleanup): Unclear whether this sanitization is still necessary now that we return a
+    //   structured object and have moved to nodemailer. I'm not touching it for now.
     const sanitized = displayName.replace(/"|<|>|\\|\r/g, "");
 
-    return "\"" + sanitized + "\" <" + this.getReturnAddress() + ">";
+    return { name: sanitized, address: this.getReturnAddress() };
   },
 
-  getPrimaryEmail: function (accountId, identityId) {
+  getPrimaryEmail(accountId, identityId) {
     check(accountId, String);
     check(identityId, String);
 
@@ -1346,11 +1545,11 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  incrementDailySentMailCount: function (accountId) {
+  incrementDailySentMailCount(accountId) {
     check(accountId, String);
 
     const DAILY_LIMIT = 50;
-    const user = Meteor.users.findAndModify({
+    const result = Meteor.users.findAndModify({
       query: { _id: accountId },
       update: {
         $inc: {
@@ -1360,6 +1559,11 @@ _.extend(SandstormDb.prototype, {
       fields: { dailySentMailCount: 1 },
     });
 
+    if (!result.ok) {
+      throw new Error("Couldn't update daily sent mail count.");
+    }
+
+    const user = result.value;
     if (user.dailySentMailCount >= DAILY_LIMIT) {
       throw new Error(
           "Sorry, you've reached your e-mail sending limit for today. Currently, Sandstorm " +
@@ -1368,117 +1572,112 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  isFeatureKeyValid: function () {
-    const featureKey = this.currentFeatureKey();
-    return !!featureKey;
-  },
-
-  isFeatureKeyValidAndNotExpired: function () {
-    const featureKey = this.currentFeatureKey();
-    return featureKey && (parseInt(featureKey.expires) > (Date.now() / 1000));
-  },
-
-  getLdapUrl: function () {
-    const setting = Settings.findOne({ _id: "ldapUrl" });
+  getLdapUrl() {
+    const setting = this.collections.settings.findOne({ _id: "ldapUrl" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapBase: function () {
-    const setting = Settings.findOne({ _id: "ldapBase" });
+  getLdapBase() {
+    const setting = this.collections.settings.findOne({ _id: "ldapBase" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapDnPattern: function () {
-    const setting = Settings.findOne({ _id: "ldapDnPattern" });
+  getLdapDnPattern() {
+    const setting = this.collections.settings.findOne({ _id: "ldapDnPattern" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapSearchUsername: function () {
-    const setting = Settings.findOne({ _id: "ldapSearchUsername" });
+  getLdapSearchUsername() {
+    const setting = this.collections.settings.findOne({ _id: "ldapSearchUsername" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapNameField: function () {
-    const setting = Settings.findOne({ _id: "ldapNameField" });
+  getLdapNameField() {
+    const setting = this.collections.settings.findOne({ _id: "ldapNameField" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapEmailField: function () {
-    const setting = Settings.findOne({ _id: "ldapEmailField" });
+  getLdapEmailField() {
+    const setting = this.collections.settings.findOne({ _id: "ldapEmailField" });
     return setting ? setting.value : "mail";
     // default to "mail". This setting was added later, and so could potentially be unset.
   },
 
-  getLdapExplicitDnSelected: function () {
-    const setting = Settings.findOne({ _id: "ldapExplicitDnSelected" });
+  getLdapExplicitDnSelected() {
+    const setting = this.collections.settings.findOne({ _id: "ldapExplicitDnSelected" });
     return setting && setting.value;
   },
 
-  getLdapFilter: function () {
-    const setting = Settings.findOne({ _id: "ldapFilter" });
+  getLdapFilter() {
+    const setting = this.collections.settings.findOne({ _id: "ldapFilter" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapSearchBindDn: function () {
-    const setting = Settings.findOne({ _id: "ldapSearchBindDn" });
+  getLdapSearchBindDn() {
+    const setting = this.collections.settings.findOne({ _id: "ldapSearchBindDn" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapSearchBindPassword: function () {
-    const setting = Settings.findOne({ _id: "ldapSearchBindPassword" });
+  getLdapSearchBindPassword() {
+    const setting = this.collections.settings.findOne({ _id: "ldapSearchBindPassword" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getOrganizationMembership: function () {
-    const setting = Settings.findOne({ _id: "organizationMembership" });
+  getLdapCaCert() {
+    const setting = this.collections.settings.findOne({ _id: "ldapCaCert" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
+  getOrganizationMembership() {
+    const setting = this.collections.settings.findOne({ _id: "organizationMembership" });
     return setting && setting.value;
   },
 
-  getOrganizationEmailEnabled: function () {
+  getOrganizationEmailEnabled() {
     const membership = this.getOrganizationMembership();
     return membership && membership.emailToken && membership.emailToken.enabled;
   },
 
-  getOrganizationEmailDomain: function () {
+  getOrganizationEmailDomain() {
     const membership = this.getOrganizationMembership();
     return membership && membership.emailToken && membership.emailToken.domain;
   },
 
-  getOrganizationGoogleEnabled: function () {
+  getOrganizationGoogleEnabled() {
     const membership = this.getOrganizationMembership();
     return membership && membership.google && membership.google.enabled;
   },
 
-  getOrganizationGoogleDomain: function () {
+  getOrganizationGoogleDomain() {
     const membership = this.getOrganizationMembership();
     return membership && membership.google && membership.google.domain;
   },
 
-  getOrganizationLdapEnabled: function () {
+  getOrganizationLdapEnabled() {
     const membership = this.getOrganizationMembership();
     return membership && membership.ldap && membership.ldap.enabled;
   },
 
-  getOrganizationSamlEnabled: function () {
+  getOrganizationSamlEnabled() {
     const membership = this.getOrganizationMembership();
     return membership && membership.saml && membership.saml.enabled;
   },
 
-  getOrganizationDisallowGuests: function () {
-    return this.getOrganizationDisallowGuestsRaw() && this.isFeatureKeyValid();
+  getOrganizationDisallowGuests() {
+    return this.getOrganizationDisallowGuestsRaw();
   },
 
-  getOrganizationDisallowGuestsRaw: function () {
-    const setting = Settings.findOne({ _id: "organizationSettings" });
+  getOrganizationDisallowGuestsRaw() {
+    const setting = this.collections.settings.findOne({ _id: "organizationSettings" });
     return setting && setting.value && setting.value.disallowGuests;
   },
 
-  getOrganizationShareContacts: function () {
-    return this.getOrganizationShareContactsRaw() && this.isFeatureKeyValid();
+  getOrganizationShareContacts() {
+    return this.getOrganizationShareContactsRaw();
   },
 
-  getOrganizationShareContactsRaw: function () {
-    const setting = Settings.findOne({ _id: "organizationSettings" });
+  getOrganizationShareContactsRaw() {
+    const setting = this.collections.settings.findOne({ _id: "organizationSettings" });
     if (!setting || !setting.value || setting.value.shareContacts === undefined) {
       // default to true if undefined
       return true;
@@ -1487,14 +1686,474 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  getSamlEntryPoint: function () {
-    const setting = Settings.findOne({ _id: "samlEntryPoint" });
+  getSamlEntryPoint() {
+    const setting = this.collections.settings.findOne({ _id: "samlEntryPoint" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getSamlPublicCert: function () {
-    const setting = Settings.findOne({ _id: "samlPublicCert" });
+  getSamlLogout() {
+    const setting = this.collections.settings.findOne({ _id: "samlLogout" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
+  getSamlPublicCert() {
+    const setting = this.collections.settings.findOne({ _id: "samlPublicCert" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
+  getSamlEntityId() {
+    const setting = this.collections.settings.findOne({ _id: "samlEntityId" });
+    return setting ? setting.value : ""; // empty if subscription is not ready.
+  },
+
+  userHasSamlLoginIdentity() {
+    const user = Meteor.user();
+    if (!user.loginIdentities) {
+      return false;
+    }
+
+    let hasSaml = false;
+    user.loginIdentities.forEach((identity) => {
+      if (Meteor.users.findOne({ _id: identity.id }).services.saml) {
+        hasSaml = true;
+      }
+    });
+
+    return hasSaml;
+  },
+
+  getActivitySubscriptions(grainId, threadPath) {
+    return this.collections.activitySubscriptions.find({
+      grainId: grainId,
+      threadPath: threadPath || { $exists: false },
+    }, {
+      fields: { identityId: 1, mute: 1, _id: 0 },
+    }).fetch();
+  },
+
+  subscribeToActivity(identityId, grainId, threadPath) {
+    // Subscribe the given identity to activity events with the given grainId and (optional)
+    // threadPath -- unless the identity has previously muted this grainId/threadPath, in which
+    // case do nothing.
+
+    const record = { identityId, grainId };
+    if (threadPath) {
+      record.threadPath = threadPath;
+    }
+
+    // The $set here is redundant since an upsert automatically initializes a new record to contain
+    // the fields from the query, but if we try to do { $set: {} } Mongo throws an exception, and
+    // if we try to just pass {}, Mongo interprets it as "replace the record with an empty record".
+    // What a wonderful query language.
+    this.collections.activitySubscriptions.upsert(record, { $set: record });
+  },
+
+  muteActivity(identityId, grainId, threadPath) {
+    // Mute notifications for the given identity originating from the given grainId and
+    // (optional) threadPath.
+
+    const record = { identityId, grainId };
+    if (threadPath) {
+      record.threadPath = threadPath;
+    }
+
+    this.collections.activitySubscriptions.upsert(record, { $set: { mute: true } });
+  },
+
+  updateAppIndex() {
+    const appUpdatesEnabledSetting = this.collections.settings.findOne({ _id: "appUpdatesEnabled" });
+    const appUpdatesEnabled = appUpdatesEnabledSetting && appUpdatesEnabledSetting.value;
+    if (!appUpdatesEnabled) {
+      // It's much simpler to check appUpdatesEnabled here rather than reactively deactivate the
+      // timer that triggers this call.
+      return;
+    }
+
+    const appIndexUrl = this.collections.settings.findOne({ _id: "appIndexUrl" }).value;
+    const appIndex = this.collections.appIndex;
+    const data = HTTP.get(appIndexUrl + "/apps/index.json").data;
+    const preinstalledAppIds = this.getAllPreinstalledAppIds();
+    // We make sure to get all preinstalled appIds, even ones that are currently
+    // downloading/failed.
+    data.apps.forEach((app) => {
+      app._id = app.appId;
+
+      const oldApp = appIndex.findOne({ _id: app.appId });
+      app.hasSentNotifications = false;
+      appIndex.upsert({ _id: app._id }, app);
+      const isAppPreinstalled = _.contains(preinstalledAppIds, app.appId);
+      if ((!oldApp || app.versionNumber > oldApp.versionNumber) &&
+          (this.collections.userActions.findOne({ appId: app.appId }) ||
+          isAppPreinstalled)) {
+        const pack = this.collections.packages.findOne({ _id: app.packageId });
+        const url = appIndexUrl + "/packages/" + app.packageId;
+        if (pack) {
+          if (pack.status === "ready") {
+            if (pack.appId && pack.appId !== app.appId) {
+              console.error("app index returned app ID and package ID that don't match:",
+                            JSON.stringify(app));
+            } else {
+              this.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber,
+                app.version);
+              if (isAppPreinstalled) {
+                this.setPreinstallAppAsReady(app.appId, app.packageId);
+              }
+            }
+          } else {
+            const result = this.collections.packages.findAndModify({
+              query: { _id: app.packageId },
+              update: { $set: { isAutoUpdated: true } },
+            });
+
+            if (!result.ok) {
+              return;
+            }
+
+            const newPack = result.value;
+            if (newPack.status === "ready") {
+              // The package was marked as ready before we applied isAutoUpdated=true. We should send
+              // notifications ourselves to be sure there's no timing issue (sending more than one is
+              // fine, since it will de-dupe).
+              if (pack.appId && pack.appId !== app.appId) {
+                console.error("app index returned app ID and package ID that don't match:",
+                              JSON.stringify(app));
+              } else {
+                this.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber,
+                  app.version);
+                if (isAppPreinstalled) {
+                  this.setPreinstallAppAsReady(app.appId, app.packageId);
+                }
+              }
+            } else if (newPack.status === "failed") {
+              // If the package has failed, retry it
+              this.startInstall(app.packageId, url, true, true);
+            }
+          }
+        } else {
+          this.startInstall(app.packageId, url, false, true);
+        }
+      }
+    });
+  },
+
+  isPackagePreinstalled(packageId) {
+    return this.collections.settings.find({ _id: "preinstalledApps", "value.packageId": packageId }).count() === 1;
+  },
+
+  getAppIdForPreinstalledPackage(packageId) {
+    const setting = this.collections.settings.findOne({ _id: "preinstalledApps", "value.packageId": packageId },
+    { fields: { "value.$": 1 } });
+    // value.$ causes mongo to transform the result and only return the first matching element in
+    // the array
+    return setting && setting.value && setting.value[0] && setting.value[0].appId;
+  },
+
+  getPackageIdForPreinstalledApp(appId) {
+    const setting = this.collections.settings.findOne({ _id: "preinstalledApps", "value.appId": appId },
+    { fields: { "value.$": 1 } });
+    // value.$ causes mongo to transform the result and only return the first matching element in
+    // the array
+    return setting && setting.value && setting.value[0] && setting.value[0].packageId;
+  },
+
+  getReadyPreinstalledAppIds() {
+    const setting = this.collections.settings.findOne({ _id: "preinstalledApps" });
+    const ret = setting && setting.value || [];
+    return _.chain(ret)
+            .filter((app) => { return app.status === "ready"; })
+            .map((app) => { return app.appId; })
+            .value();
+  },
+
+  getAllPreinstalledAppIds() {
+    const setting = this.collections.settings.findOne({ _id: "preinstalledApps" });
+    const ret = setting && setting.value || [];
+    return _.map(ret, (app) => { return app.appId; });
+  },
+
+  preinstallAppsForUser(userId) {
+    const appIds = this.getReadyPreinstalledAppIds();
+    appIds.forEach((appId) => {
+      try {
+        this.addUserActions(userId, this.getPackageIdForPreinstalledApp(appId));
+      } catch (e) {
+        console.error("failed to install app for user:", e);
+      }
+    });
+  },
+
+  setPreinstallAppAsDownloading(appId, packageId) {
+    this.collections.settings.update(
+      { _id: "preinstalledApps", "value.appId": appId, "value.packageId": packageId },
+      { $set: { "value.$.status": "downloading" } });
+  },
+
+  setPreinstallAppAsReady(appId, packageId) {
+    // This function both sets the appId as ready and updates the packageId for the given appId
+    // Setting the packageId is especially useful in installer.js, as it always ensures the
+    // latest installed package will be set as ready.
+    this.collections.settings.update(
+      { _id: "preinstalledApps", "value.appId": appId },
+      { $set: { "value.$.status": "ready", "value.$.packageId": packageId } });
+  },
+
+  ensureAppPreinstall(appId, packageId) {
+    check(appId, String);
+    const appIndexUrl = this.collections.settings.findOne({ _id: "appIndexUrl" }).value;
+    const pack = this.collections.packages.findOne({ _id: packageId });
+    const url = appIndexUrl + "/packages/" + packageId;
+    if (pack && pack.status === "ready") {
+      this.setPreinstallAppAsReady(appId, packageId);
+    } else if (pack && pack.status === "failed") {
+      this.setPreinstallAppAsDownloading(appId, packageId);
+      this.startInstall(packageId, url, true, false);
+    } else {
+      this.setPreinstallAppAsDownloading(appId, packageId);
+      this.startInstall(packageId, url, false, false);
+    }
+  },
+
+  setPreinstalledApps(appAndPackageIds) {
+    // appAndPackageIds: A List[Object] where each element has fields:
+    //     appId: The Packages.appId of the app to install
+    //     packageId: The Packages._id of the app to install
+    check(appAndPackageIds, [{ appId: String, packageId: String, }]);
+
+    // Start by clearing out the setting. We'll push appIds one by one to it
+    this.collections.settings.upsert({ _id: "preinstalledApps" }, { $set: {
+      value: appAndPackageIds.map((data) => {
+        return {
+          appId: data.appId,
+          status: "notReady",
+          packageId: data.packageId,
+        };
+      }),
+    }, });
+    appAndPackageIds.forEach((data) => {
+      this.ensureAppPreinstall(data.appId, data.packageId);
+    });
+  },
+
+  getProductivitySuiteAppIds() {
+    return [
+      "8aspz4sfjnp8u89000mh2v1xrdyx97ytn8hq71mdzv4p4d8n0n3h", // Davros
+      "h37dm17aa89yrd8zuqpdn36p6zntumtv08fjpu8a8zrte7q1cn60", // Etherpad
+      "vfnwptfn02ty21w715snyyczw0nqxkv3jvawcah10c6z7hj1hnu0", // Rocket.Chat
+      "m86q05rdvj14yvn78ghaxynqz7u2svw6rnttptxx49g1785cdv1h", // Wekan
+    ];
+  },
+
+  getSystemSuiteAppIds() {
+    return [
+      "s3u2xgmqwznz2n3apf30sm3gw1d85y029enw5pymx734cnk5n78h", // Collections
+    ];
+  },
+
+  isPreinstalledAppsReady() {
+    const setting = this.collections.settings.findOne({ _id: "preinstalledApps" });
+    if (!setting || !setting.value) {
+      return true;
+    }
+
+    const packageIds = _.pluck(setting.value, "packageId");
+    const readyApps = this.collections.packages.find({
+      _id: {
+        $in: packageIds,
+      },
+      status: "ready",
+    });
+    return readyApps.count() === packageIds.length;
+  },
+
+  getBillingPromptUrl() {
+    const setting = this.collections.settings.findOne({ _id: "billingPromptUrl" });
+    return setting && setting.value;
+  },
+
+  isReferralEnabled() {
+    // This function is a bit weird, in that we've transitioned from
+    // Meteor.settings.public.quotaEnabled to DB settings. For now,
+    // Meteor.settings.public.quotaEnabled implies bothisReferralEnabled and isQuotaEnabled are true.
+    return Meteor.settings.public.quotaEnabled;
+  },
+
+  isHideAboutEnabled() {
+    const setting = this.collections.settings.findOne({ _id: "whiteLabelHideAbout" });
+    return setting && setting.value;
+  },
+
+  isQuotaEnabled() {
+    if (Meteor.settings.public.quotaEnabled) return true;
+
+    const setting = this.collections.settings.findOne({ _id: "quotaEnabled" });
+    return setting && setting.value;
+  },
+
+  isQuotaLdapEnabled() {
+    const setting = this.collections.settings.findOne({ _id: "quotaLdapEnabled" });
+    return setting && setting.value;
+  },
+
+  updateUserQuota(user) {
+    if (this.quotaManager) {
+      return this.quotaManager.updateUserQuota(this, user);
+    }
+  },
+
+  getUserQuota(user) {
+    if (this.isQuotaLdapEnabled()) {
+      return this.quotaManager.updateUserQuota(this, user);
+    } else {
+      const plan = this.getPlan(user.plan || "free", user);
+      const referralBonus = calculateReferralBonus(user);
+      const bonus = user.planBonus || {};
+      const userQuota = {
+        storage: plan.storage + referralBonus.storage + (bonus.storage || 0),
+        grains: plan.grains + referralBonus.grains + (bonus.grains || 0),
+        compute: plan.compute + (bonus.compute || 0),
+      };
+      return userQuota;
+    }
+  },
+
+  isUserOverQuota(user) {
+    // Return false if user has quota space remaining, true if it is full. When this returns true,
+    // we will not allow the user to create new grains, though they may be able to open existing ones
+    // which may still increase their storage usage.
+    //
+    // (Actually returns a string which can be fed into `billingPrompt` as the reason.)
+
+    if (!this.isQuotaEnabled() || user.isAdmin) return false;
+
+    const plan = this.getUserQuota(user);
+    if (plan.grains < Infinity) {
+      const count = this.collections.grains.find({ userId: user._id, trashed: { $exists: false } },
+        { fields: {}, limit: plan.grains }).count();
+      if (count >= plan.grains) return "outOfGrains";
+    }
+
+    return plan && user.storageUsage && user.storageUsage >= plan.storage && "outOfStorage";
+  },
+
+  isUserExcessivelyOverQuota(user) {
+    // Return true if user is so far over quota that we should prevent their existing grains from
+    // running at all.
+    //
+    // (Actually returns a string which can be fed into `billingPrompt` as the reason.)
+
+    if (!this.isQuotaEnabled() || user.isAdmin) return false;
+
+    const quota = this.getUserQuota(user);
+
+    // quota.grains = Infinity means unlimited grains. IEEE754 defines Infinity == Infinity.
+    if (quota.grains < Infinity) {
+      const count = this.collections.grains.find({ userId: user._id, trashed: { $exists: false } },
+        { fields: {}, limit: quota.grains * 2 }).count();
+      if (count >= quota.grains * 2) return "outOfGrains";
+    }
+
+    return quota && user.storageUsage && user.storageUsage >= quota.storage * 1.2 && "outOfStorage";
+  },
+
+  suspendIdentity(userId, suspension) {
+    check(userId, String);
+    check(suspension, {
+      timestamp: Date,
+      admin: Match.Optional(String),
+      voluntary: Match.Optional(Boolean),
+    });
+
+    this.collections.users.update({ _id: userId }, { $set: { suspended: suspension } });
+    this.collections.apiTokens.update({ "owner.user.identityId": userId },
+      { $set: { suspended: true } }, { multi: true });
+  },
+
+  unsuspendIdentity(userId) {
+    check(userId, String);
+
+    this.collections.users.update({ _id: userId }, { $unset: { suspended: 1 } });
+    this.collections.apiTokens.update({ "owner.user.identityId": userId },
+      { $unset: { suspended: true } }, { multi: true });
+  },
+
+  suspendAccount(userId, byAdminUserId, willDelete) {
+    check(userId, String);
+    check(byAdminUserId, Match.OneOf(String, null, undefined));
+    check(willDelete, Boolean);
+
+    const user = this.collections.users.findOne({ _id: userId });
+    const suspension = {
+      timestamp: new Date(),
+      willDelete: willDelete || false,
+    };
+    if (byAdminUserId) {
+      suspension.admin = byAdminUserId;
+    } else {
+      suspension.voluntary = true;
+    }
+
+    this.collections.users.update({ _id: userId }, { $set: { suspended: suspension } });
+    this.collections.grains.update({ userId: userId }, { $set: { suspended: true } }, { multi: true });
+
+    delete suspension.willDelete;
+    // Only mark the parent account for deletion. This makes the query simpler later.
+
+    user.loginIdentities.forEach((identity) => {
+      this.suspendIdentity(identity.id, suspension);
+    });
+    user.nonloginIdentities.forEach((identity) => {
+      if (this.collections.users.find({ $or: [
+        { "loginIdentities.id": identity.id },
+        { "nonloginIdentities.id": identity.id },
+      ], }).count() === 1) {
+        // Only suspend non-login identities that are unique to this account.
+        this.suspendIdentity(identity.id, suspension);
+      }
+    });
+
+    // Force logout this user
+    this.collections.users.update({ _id: userId },
+      { $unset: { "services.resume.loginTokens": 1 } });
+    if (user && user.loginIdentities) {
+      user.loginIdentities.forEach(function (identity) {
+        Meteor.users.update({ _id: identity.id }, { $unset: { "services.resume.loginTokens": 1 } });
+      });
+    }
+  },
+
+  unsuspendAccount(userId) {
+    check(userId, String);
+
+    const user = this.collections.users.findOne({ _id: userId });
+    this.collections.users.update({ _id: userId }, { $unset: { suspended: 1 } });
+    this.collections.grains.update({ userId: userId }, { $unset: { suspended: 1 } }, { multi: true });
+
+    user.loginIdentities.forEach((identity) => {
+      this.unsuspendIdentity(identity.id);
+    });
+
+    user.nonloginIdentities.forEach((identity) => {
+      this.unsuspendIdentity(identity.id);
+    });
+  },
+
+  deletePendingAccounts(deletionCoolingOffTime, backend, cb) {
+    check(deletionCoolingOffTime, Number);
+
+    const queryDate = new Date(Date.now() - deletionCoolingOffTime);
+    this.collections.users.find({
+      "suspended.willDelete": true,
+      "suspended.timestamp": { $lt: queryDate },
+    }).forEach((user) => {
+      if (cb) cb(this, user);
+      this.deleteAccount(user._id, backend);
+    });
+  },
+
+  hostIsStandalone: function (hostname) {
+    check(hostname, String);
+
+    return !!this.collections.standaloneDomains.findOne({ _id: hostname, });
   },
 });
 
@@ -1594,6 +2253,7 @@ if (Meteor.isServer) {
   const Crypto = Npm.require("crypto");
   const ContentType = Npm.require("content-type");
   const Zlib = Npm.require("zlib");
+  const Url = Npm.require("url");
 
   const replicaNumber = Meteor.settings.replicaNumber || 0;
 
@@ -1663,7 +2323,7 @@ if (Meteor.isServer) {
     return !!s.match(/^[a-zA-Z0-9_]+$/);
   });
 
-  addStaticAsset = function (metadata, content) {
+  SandstormDb.prototype.addStaticAsset = function (metadata, content) {
     // Add a new static asset to the database. If `content` is a string rather than a buffer, it
     // will be automatically gzipped before storage; do not specify metadata.encoding in this case.
 
@@ -1686,26 +2346,31 @@ if (Meteor.isServer) {
     hasher.update(content);
     const hash = hasher.digest("base64");
 
-    const existing = StaticAssets.findAndModify({
+    const result = this.collections.staticAssets.findAndModify({
       query: { hash: hash, refcount: { $gte: 1 } },
       update: { $inc: { refcount: 1 } },
       fields: { _id: 1, refcount: 1 },
     });
+
+    if (!result.ok) {
+      throw new Error(`Couldn't increment refcount of asset with hash ${hash}`);
+    }
+
+    const existing = result.value;
     if (existing) {
       return existing._id;
     }
 
-    return StaticAssets.insert(_.extend({
+    return this.collections.staticAssets.insert(_.extend({
       hash: hash,
       content: content,
       refcount: 1,
     }, metadata));
   };
 
-  SandstormDb.prototype.addStaticAsset = addStaticAsset;
-
   SandstormDb.prototype.refStaticAsset = function (id) {
-    // Increment the refcount on an existing static asset.
+    // Increment the refcount on an existing static asset. Returns the asset on success.
+    // If the asset does not exist, returns a falsey value.
     //
     // You must call this BEFORE adding the new reference to the DB, in case of failure between
     // the two calls. (This way, the failure case is a storage leak, which is probably not a big
@@ -1713,14 +2378,18 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    const existing = StaticAssets.findAndModify({
+    const result = this.collections.staticAssets.findAndModify({
       query: { hash: hash },
       update: { $inc: { refcount: 1 } },
-      fields: { _id: 1, refcount: 1 },
+      fields: { _id: 1, content: 1, mimeType: 1 },
     });
-    if (!existing) {
-      throw new Error("refStaticAsset() called on asset that doesn't exist");
+
+    if (!result.ok) {
+      throw new Error(`Couldn't increment refcount of asset with hash ${hash}`);
     }
+
+    const existing = result.value;
+    return existing;
   };
 
   SandstormDb.prototype.unrefStaticAsset = function (id) {
@@ -1732,16 +2401,22 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    const existing = StaticAssets.findAndModify({
+    const result = this.collections.staticAssets.findAndModify({
       query: { _id: id },
       update: { $inc: { refcount: -1 } },
       fields: { _id: 1, refcount: 1 },
       new: true,
     });
+
+    if (!result.ok) {
+      throw new Error(`Couldn't unref static asset ${id}`);
+    }
+
+    const existing = result.value;
     if (!existing) {
       console.error(new Error("unrefStaticAsset() called on asset that doesn't exist").stack);
     } else if (existing.refcount <= 0) {
-      StaticAssets.remove({ _id: existing._id });
+      this.collections.staticAssets.remove({ _id: existing._id });
     }
   };
 
@@ -1750,7 +2425,7 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    const asset = StaticAssets.findOne(id, { fields: { _id: 0, mimeType: 1, encoding: 1, content: 1 } });
+    const asset = this.collections.staticAssets.findOne(id, { fields: { _id: 0, mimeType: 1, encoding: 1, content: 1 } });
     if (asset) {
       // TODO(perf): Mongo converts buffers to something else. Figure out a way to avoid a copy
       //   here.
@@ -1761,9 +2436,12 @@ if (Meteor.isServer) {
   };
 
   SandstormDb.prototype.newAssetUpload = function (purpose) {
-    check(purpose, { profilePicture: { userId: DatabaseId, identityId: DatabaseId } });
+    check(purpose, Match.OneOf(
+      { profilePicture: { userId: DatabaseId, identityId: DatabaseId } },
+      { loginLogo: {} },
+    ));
 
-    return AssetUploadTokens.insert({
+    return this.collections.assetUploadTokens.insert({
       purpose: purpose,
       expires: new Date(Date.now() + 300000),  // in 5 minutes
     });
@@ -1775,10 +2453,16 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    const upload = AssetUploadTokens.findAndModify({
+    const result = this.collections.assetUploadTokens.findAndModify({
       query: { _id: id },
       remove: true,
     });
+
+    if (!result.ok) {
+      throw new Error("Failed to remove asset upload token");
+    }
+
+    const upload = result.value;
 
     if (upload.expires.valueOf() < Date.now()) {
       return undefined;  // already expired
@@ -1787,12 +2471,96 @@ if (Meteor.isServer) {
     }
   };
 
-  function cleanupExpiredAssetUploads() {
-    AssetUploadTokens.remove({ expires: { $lt: Date.now() } });
-  }
+  SandstormDb.prototype.cleanupExpiredAssetUploads = function () {
+    this.collections.assetUploadTokens.remove({ expires: { $lt: Date.now() } });
+  };
 
-  // Cleanup tokens every hour.
-  SandstormDb.periodicCleanup(3600000, cleanupExpiredAssetUploads);
+  // TODO(cleanup): lift this out of the package so it can share with the ones in async-helpers.js
+  const Future = Npm.require("fibers/future");
+  const promiseToFuture = (promise) => {
+    const result = new Future();
+    promise.then(result.return.bind(result), result.throw.bind(result));
+    return result;
+  };
+
+  const waitPromise = (promise) => {
+    return promiseToFuture(promise).wait();
+  };
+
+  SandstormDb.prototype.deleteGrains = function (query, backend, type) {
+    // Returns the number of grains deleted.
+
+    check(type, Match.OneOf("grain", "demoGrain"));
+
+    let numDeleted = 0;
+    this.collections.grains.find(query).forEach((grain) => {
+      const user = Meteor.users.findOne(grain.userId);
+
+      waitPromise(backend.deleteGrain(grain._id, grain.userId));
+      numDeleted += this.collections.grains.remove({ _id: grain._id });
+      this.removeApiTokens({
+        grainId: grain._id,
+        $or: [
+          { owner: { $exists: false } },
+          { owner: { webkey: null } },
+        ],
+      });
+
+      this.removeApiTokens({ "owner.grain.grainId": grain._id });
+
+      this.collections.activitySubscriptions.remove({ grainId: grain._id });
+
+      if (grain.lastUsed) {
+        const record = {
+          type: "grain",  // Demo grains can never get here!
+          lastActive: grain.lastUsed,
+          appId: grain.appId,
+        };
+        if (user && user.experiments) {
+          record.experiments = user.experiments;
+        }
+
+        this.collections.deleteStats.insert(record);
+      }
+
+      this.deleteUnusedPackages(grain.appId);
+
+      if (grain.size) {
+        Meteor.users.update(grain.userId, { $inc: { storageUsage: -grain.size } });
+      }
+    });
+    return numDeleted;
+  };
+
+  SandstormDb.prototype.userGrainTitle = function (grainId, accountId, identityId) {
+    check(grainId, String);
+    check(accountId, Match.OneOf(String, undefined, null));
+    check(identityId, String);
+
+    const grain = this.getGrain(grainId);
+    if (!grain) {
+      throw new Error("called userGrainTitle() for a grain that doesn't exist");
+    }
+
+    let title = grain.title;
+    if (grain.userId !== accountId) {
+      const sharerToken = this.collections.apiTokens.findOne({
+        grainId: grainId,
+        "owner.user.identityId": identityId,
+      }, {
+        sort: {
+          lastUsed: -1,
+        },
+      });
+      if (sharerToken) {
+        title = sharerToken.owner.user.title;
+      } else {
+        title = "shared grain";
+      }
+    }
+
+    return title;
+  };
 
   const packageCache = {};
   // Package info is immutable. Let's cache to save on mongo queries.
@@ -1806,7 +2574,7 @@ if (Meteor.isServer) {
       return packageCache[packageId];
     }
 
-    const pkg = Packages.findOne(packageId);
+    const pkg = this.collections.packages.findOne(packageId);
     if (pkg && pkg.status === "ready") {
       packageCache[packageId] = pkg;
     }
@@ -1814,38 +2582,63 @@ if (Meteor.isServer) {
     return pkg;
   };
 
+  SandstormDb.prototype.deleteUnusedPackages = function (appId) {
+    check(appId, String);
+    this.collections.packages.find({ appId: appId }).forEach((pkg) => {
+      // Mark package for possible deletion;
+      this.collections.packages.update({ _id: pkg._id, status: "ready" }, { $set: { shouldCleanup: true } });
+    });
+  };
+
   SandstormDb.prototype.sendAppUpdateNotifications = function (appId, packageId, name,
                                                                versionNumber, marketingVersion) {
-    const _this = this;
-    const actions = _this.collections.userActions.find({ appId: appId, appVersion: { $lt: versionNumber } },
+    const actions = this.collections.userActions.find({ appId: appId, appVersion: { $lt: versionNumber } },
       { fields: { userId: 1 } });
-    actions.forEach(function (action) {
+    actions.forEach((action) => {
       const userId = action.userId;
       const updater = {
-        userId: userId,
         timestamp: new Date(),
         isUnread: true,
       };
+      const inserter = _.extend({ userId, appUpdates: {} }, updater);
 
       // Set only the appId that we care about. Use mongo's dot notation to specify only a single
       // field inside of an object to update
-      updater["appUpdates." + appId] = {
+      inserter.appUpdates[appId] = updater["appUpdates." + appId] = {
         marketingVersion: marketingVersion,
         packageId: packageId,
         name: name,
         version: versionNumber,
       };
-      _this.collections.notifications.upsert({ userId: userId }, { $set: updater });
+
+      // We unfortunately cannot upsert because upserts can only have field equality conditions in
+      // the query. If we try to upsert, Mongo complaints that "$exists" isn't valid to store.
+      if (this.collections.notifications.update(
+          { userId: userId, appUpdates: { $exists: true } },
+          { $set: updater }) == 0) {
+        // Update failed; try an insert instead.
+        this.collections.notifications.insert(inserter);
+      }
     });
 
-    _this.collections.appIndex.update({ _id: appId }, { $set: { hasSentNotifications: true } });
+    this.collections.appIndex.update({ _id: appId }, { $set: { hasSentNotifications: true } });
 
     // In the case where we replaced a previous notification and that was the only reference to the
     // package, we need to clean it up
-    Meteor.call("deleteUnusedPackages", appId);
+    this.deleteUnusedPackages(appId);
   };
 
-  SandstormDb.prototype.sendReferralProgramNotification = sendReferralProgramNotification;
+  SandstormDb.prototype.sendReferralProgramNotification = function (userId) {
+    this.collections.notifications.upsert({
+      userId: userId,
+      referral: true,
+    }, {
+      userId: userId,
+      referral: true,
+      timestamp: new Date(),
+      isUnread: true,
+    });
+  };
 
   SandstormDb.prototype.upgradeGrains =  function (appId, version, packageId, backend) {
     check(appId, String);
@@ -1859,13 +2652,13 @@ if (Meteor.isServer) {
       packageId: { $ne: packageId },
     };
 
-    if (!this.isSimulation) {
-      Grains.find(selector).forEach(function (grain) {
-        backend.shutdownGrain(grain._id, grain.userId);
-      });
-    }
+    this.collections.grains.find(selector).forEach(function (grain) {
+      backend.shutdownGrain(grain._id, grain.userId);
+    });
 
-    Grains.update(selector, { $set: { appVersion: version, packageId: packageId } }, { multi: true });
+    this.collections.grains.update(selector, {
+      $set: { appVersion: version, packageId: packageId, packageSalt: Random.secret() },
+    }, { multi: true });
   };
 
   SandstormDb.prototype.startInstall = function (packageId, url, retryFailed, isAutoUpdated) {
@@ -1879,11 +2672,11 @@ if (Meteor.isServer) {
     };
 
     if (retryFailed) {
-      Packages.update({ _id: packageId, status: "failed" }, { $set: fields });
+      this.collections.packages.update({ _id: packageId, status: "failed" }, { $set: fields });
     } else {
       try {
         fields._id = packageId;
-        Packages.insert(fields);
+        this.collections.packages.insert(fields);
       } catch (err) {
         console.error("Simultaneous startInstall()s?", err.stack);
       }
@@ -1906,7 +2699,7 @@ if (Meteor.isServer) {
         "https://keybase.io/_/api/1.0/user/lookup.json?key_fingerprint=" + keyFingerprint +
         "&fields=basics,profile,proofs_summary", {
       timeout: 5000,
-    }, function (err, keybaseResponse) {
+    }, (err, keybaseResponse) => {
       if (err) {
         console.log("keybase lookup error:", err.stack);
         return;
@@ -1946,7 +2739,7 @@ if (Meteor.isServer) {
           proof.status = "unverified";
         });
 
-        KeybaseProfiles.update(keyFingerprint, { $set: record }, { upsert: true });
+        this.collections.keybaseProfiles.update(keyFingerprint, { $set: record }, { upsert: true });
       } else {
         // Keybase reports no match, so remove what we know of this user. We don't want to remove
         // the item entirely from the cache as this will cause us to repeatedly re-fetch the data
@@ -1954,7 +2747,7 @@ if (Meteor.isServer) {
         //
         // TODO(someday): We could perhaps keep the proofs if we can still verify them directly,
         //   but at present we don't have the ability to verify proofs.
-        KeybaseProfiles.update(keyFingerprint,
+        this.collections.keybaseProfiles.update(keyFingerprint,
             { $unset: { displayName: "", handle: "", proofs: "" } }, { upsert: true });
       }
     });
@@ -1964,16 +2757,16 @@ if (Meteor.isServer) {
     // If there is an *unused* account that has `identityId` as a login identity, deletes it.
 
     check(identityId, String);
-    const account = Meteor.users.findOne({ "loginIdentities.id": identityId });
+    const account = this.collections.users.findOne({ "loginIdentities.id": identityId });
     if (account &&
         account.loginIdentities.length == 1 &&
         account.nonloginIdentities.length == 0 &&
-        !Grains.findOne({ userId: account._id }) &&
-        !ApiTokens.findOne({ accountId: account._id }) &&
+        !this.collections.grains.findOne({ userId: account._id }) &&
+        !this.collections.apiTokens.findOne({ accountId: account._id }) &&
         (!account.plan || account.plan === "free") &&
         !(account.payments && account.payments.id) &&
-        !Contacts.findOne({ ownerId: account._id })) {
-      Meteor.users.remove({ _id: account._id });
+        !this.collections.contacts.findOne({ ownerId: account._id })) {
+      this.collections.users.remove({ _id: account._id });
       backend.deleteUser(account._id);
     }
   };
@@ -2034,24 +2827,30 @@ if (Meteor.isServer) {
     // package source 1: packages referred to by actions
     const actions = db.userActions(this.userId);
     const actionsHandle = actions.observe({
-      added: function (newAction) {
+      added(newAction) {
         refPackage(newAction.packageId);
       },
 
-      changed: function (oldAction, newAction) {
+      changed(newAction, oldAction) {
         refPackage(newAction.packageId);
       },
     });
 
     // package source 2: packages referred to by grains directly
-    const grains = db.userGrains(this.userId);
+    const grains = db.userGrains(this.userId, { includeTrash: true });
     const grainsHandle = grains.observe({
-      added: function (newGrain) {
-        refPackage(newGrain.packageId);
+      added(newGrain) {
+        // Watch out: DevApp grains can lack a packageId.
+        if (newGrain.packageId) {
+          refPackage(newGrain.packageId);
+        }
       },
 
-      changed: function (oldGrain, newGrain) {
-        refPackage(newGrain.packageId);
+      changed(newGrain, oldGrain) {
+        // Watch out: DevApp grains can lack a packageId.
+        if (newGrain.packageId) {
+          refPackage(newGrain.packageId);
+        }
       },
     });
 
@@ -2065,18 +2864,82 @@ if (Meteor.isServer) {
 }
 
 if (Meteor.isServer) {
-  SandstormDb.prototype.currentFeatureKey = function () {
-    // Returns an object with all of the current signed feature key properties,
-    // or undefined, if the feature key is missing or not correctly signed.
-    const doc = this.collections.featureKey.findOne({ _id: "currentFeatureKey" });
-    if (!doc) return undefined;
-    const buf = new Buffer(doc.value);
-    // We use loadSignedFeatureKey from server/feature-key.js.  This should probably get refactored
-    // once we can use ES6 modules.
-    return loadSignedFeatureKey(buf);
+  SandstormDb.prototype.deleteIdentity = function (identityId) {
+    check(identityId, String);
+
+    this.removeApiTokens({ "owner.user.identityId": identityId });
+    this.collections.contacts.remove({ identityId: identityId });
+    Meteor.users.remove({ _id: identityId });
   };
-} else {
-  SandstormDb.prototype.currentFeatureKey = function () {
-    return this.collections.featureKey.findOne({ _id: "currentFeatureKey" });
+
+  SandstormDb.prototype.deleteAccount = function (userId, backend) {
+    check(userId, String);
+
+    const _this = this;
+    const user = Meteor.users.findOne({ _id: userId });
+    this.deleteGrains({ userId: userId }, backend, "grain");
+    this.collections.userActions.remove({ userId: userId });
+    this.collections.notifications.remove({ userId: userId });
+    user.loginIdentities.forEach((identity) => {
+      if (Meteor.users.find({ $or: [
+        { "loginIdentities.id": identity.id },
+        { "nonloginIdentities.id": identity.id },
+      ], }).count() === 1) {
+        // If this is the only account with the identity, then delete it
+        _this.deleteIdentity(identity.id);
+      }
+    });
+    user.nonloginIdentities.forEach((identity) => {
+      if (Meteor.users.find({ $or: [
+        { "loginIdentities.id": identity.id },
+        { "nonloginIdentities.id": identity.id },
+      ], }).count() === 1) {
+        // If this is the only account with the identity, then delete it
+        _this.deleteIdentity(identity.id);
+      }
+    });
+    this.collections.contacts.remove({ ownerId: userId });
+    backend.deleteUser(userId);
+    Meteor.users.remove({ _id: userId });
   };
 }
+
+Meteor.methods({
+  addUserActions(packageId) {
+    check(packageId, String);
+    if (!this.userId || !Meteor.user().loginIdentities || !isSignedUpOrDemo()) {
+      throw new Meteor.Exception(403, "Must be logged in as a non-guest to add app actions.");
+    }
+
+    if (this.isSimulation) {
+      // TODO(cleanup): Appdemo code relies on this being simulated client-side but we don't have
+      //   a proper DB object to use.
+      new SandstormDb().addUserActions(this.userId, packageId, true);
+    } else {
+      this.connection.sandstormDb.addUserActions(this.userId, packageId);
+    }
+  },
+
+  removeUserAction(actionId) {
+    check(actionId, String);
+    if (this.isSimulation) {
+      UserActions.remove({ _id: actionId });
+    } else {
+      if (this.userId) {
+        const result = this.connection.sandstormDb.collections.userActions.findAndModify({
+          query: { _id: actionId, userId: this.userId },
+          remove: true,
+        });
+
+        if (!result.ok) {
+          throw new Error(`Couldn't remove user action ${actionId}`);
+        }
+
+        const action = result.value;
+        if (action) {
+          this.connection.sandstormDb.deleteUnusedPackages(action.appId);
+        }
+      }
+    }
+  },
+});

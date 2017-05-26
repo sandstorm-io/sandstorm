@@ -14,41 +14,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { allowDemo } from "/imports/demo.js";
+import { promiseToFuture } from "/imports/server/async-helpers.js";
+
+const TOKEN_CLEANUP_MINUTES = 120;  // Give enough time for large uploads on slow connections.
+const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
+
+function cleanupToken(tokenId) {
+  check(tokenId, String);
+  globalDb.collections.spkTokens.remove({ _id: tokenId });
+  waitPromise(globalBackend.cap().deleteBackup(tokenId));
+}
+
+Meteor.startup(() => {
+  // Cleanup tokens every TOKEN_CLEANUP_MINUTES
+  SandstormDb.periodicCleanup(TOKEN_CLEANUP_TIMER, () => {
+    const queryDate = new Date(Date.now() - TOKEN_CLEANUP_TIMER);
+
+    globalDb.collections.spkTokens.find({ timestamp: { $lt: queryDate } }).forEach((token) => {
+      cleanupToken(token._id);
+    });
+  });
+});
+
 const localizedTextPattern = {
   defaultText: String,
   localizations: Match.Optional([{ locale: String, text: String }]),
 };
-
-const uploadTokens = {};
-
-UserActions.allow({
-  insert: function (userId, action) {
-    // TODO(cleanup): This check keeps breaking. Use a method instead that takes the package
-    //   ID as an argument.
-    check(action, {
-      userId: String,
-      packageId: String,
-      appId: String,
-      appTitle: Match.Optional(localizedTextPattern),
-      appMarketingVersion: Match.Optional(Object),
-      appVersion: Match.Integer,
-      title: localizedTextPattern,
-      nounPhrase: Match.Optional(localizedTextPattern),
-      command: {
-        executablePath: Match.Optional(String),
-        deprecatedExecutablePath: Match.Optional(String),
-        args: Match.Optional([String]),
-        argv: Match.Optional([String]),
-        environ: Match.Optional([{ key: String, value: String }]),
-      },
-    });
-    return userId && isSignedUpOrDemo() && action.userId === userId;
-  },
-
-  remove: function (userId, action) {
-    return userId && action.userId === userId;
-  },
-});
 
 // Not all users are allowed to upload apps. We need to manually implement authorization
 // because Meteor.userId() is not available in server-side routes.
@@ -70,10 +62,8 @@ Meteor.methods({
       throw new Meteor.Error(403, "Unauthorized", "Only paid users can upload apps.");
     }
 
-    const token = Random.id();
-    uploadTokens[token] = setTimeout(function () {
-      delete uploadTokens[token];
-    }, 20 * 60 * 1000);
+    const token = Random.id(22);
+    globalDb.collections.spkTokens.insert({ _id: token, timestamp: new Date() });
 
     return token;
   },
@@ -97,12 +87,9 @@ Meteor.methods({
       } else { // jscs:ignore disallowEmptyBlocks
         throw new Meteor.Error(403, "You must be logged in to install packages.");
       }
-    } else if (!isSignedUp() && !isDemoUser()) {
+    } else if (!isSignedUpOrDemo()) {
       throw new Meteor.Error(403,
           "This Sandstorm server requires you to get an invite before installing apps.");
-    } else if (isUserOverQuota(Meteor.user())) {
-      throw new Meteor.Error(402,
-          "You are out of storage space. Please delete some things and try again.");
     }
 
     const pkg = Packages.findOne(packageId);
@@ -123,15 +110,33 @@ Meteor.methods({
   },
 });
 
+Meteor.publish("packageInfo", function (packageId) {
+  check(packageId, String);
+  const db = this.connection.sandstormDb;
+  const pkgCursor = db.collections.packages.find(packageId);
+  const pkg = pkgCursor.fetch()[0];
+  if (pkg && this.userId) {
+    return [
+      pkgCursor,
+      db.collections.userActions.find({ userId: this.userId, appId: pkg.appId }),
+      db.collections.grains.find({ userId: this.userId, appId: pkg.appId }),
+    ];
+  } else {
+    return pkgCursor;
+  }
+});
+
 Router.map(function () {
   this.route("upload", {
     where: "server",
     path: "/upload/:token",
 
     action: function () {
-      if (!this.params.token || !uploadTokens[this.params.token]) {
+      if (typeof this.params.token !== "string" ||
+          !globalDb.collections.spkTokens.findOne(this.params.token)) {
         this.response.writeHead(403, {
           "Content-Type": "text/plain",
+          "Access-Control-Allow-Origin": "*",
         });
         this.response.write("Invalid upload token.");
         this.response.end();
@@ -141,22 +146,40 @@ Router.map(function () {
           this.response.writeHead(200, {
             "Content-Length": packageId.length,
             "Content-Type": "text/plain",
+            "Access-Control-Allow-Origin": "*",
           });
           this.response.write(packageId);
           this.response.end();
-          clearTimeout(uploadTokens[this.params.token]);
-          delete uploadTokens[this.params.token];
+          globalDb.collections.spkTokens.remove(this.params.token);
         } catch (error) {
           console.error(error.stack);
           this.response.writeHead(500, {
             "Content-Type": "text/plain",
+            "Access-Control-Allow-Origin": "*",
           });
           this.response.write("Unpacking SPK failed; is it valid?");
           this.response.end();
         };
+      } else if (this.request.method == "OPTIONS") {
+        // Allow cross-origin posts to upload so that uploads can occur on the DDP host
+        // rather than the main host. In theory we could have Access-Control-Allow-Origin specify
+        // the main host rather than "*", but an upload request already requires a valid
+        // upload token, which is plenty of access control in itself.
+        const requestedHeaders = this.request.headers["access-control-request-headers"];
+        if (requestedHeaders) {
+          this.response.setHeader("Access-Control-Allow-Headers", requestedHeaders);
+        }
+
+        this.response.writeHead(204, {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Max-Age": "3600",
+        });
+        this.response.end();
       } else {
         this.response.writeHead(405, {
           "Content-Type": "text/plain",
+          "Access-Control-Allow-Origin": "*",
         });
         this.response.write("You can only POST here.");
         this.response.end();

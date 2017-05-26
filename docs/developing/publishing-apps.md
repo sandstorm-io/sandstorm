@@ -96,10 +96,8 @@ should connect some of your public identites with your Keybase
 account, like Twitter and GitHub.
 
 Sandstorm app authors are verified using a PGP key linked to
-Keybase. You should get the
-[prerequisites](https://keybase.io/docs/command_line/prerequisites)
-and follow [their
-directions](https://keybase.io/docs/command_line/installation) to get
+Keybase. You should follow [their
+directions](https://keybase.io/download) to get
 their software set up.
 
 ### Link your Sandstorm package with your Keybase key

@@ -1,3 +1,339 @@
+### v0.208 (2017-05-20) [bugfixes]
+- Sent a one-time bell menu notification and added a note on the account settings page notifying affected users of [our upcoming changes to the identity system](https://sandstorm.io/news/2017-05-08-refactoring-identities).
+
+### v0.207 (2017-04-29) [bugfixes]
+- Improved handling of powerbox HTTP APIs, including correctly returning HTTP error bodies.
+- The contact chooser powerbox (e.g. as used by Wekan when adding people to a board or a card) now respects the "Make all organization users visible to each other" setting.
+- Fixed some server-side memory leaks, which might fix the occasional-100%-CPU bug.
+- Fixed bug where trashed grains could be started by trying to use capabilities they serve.
+
+### v0.206 (2017-04-09) [bugfixes]
+- Worked around MacOS Safari bug breaking WebSockets.
+- Oasis: Removed experiment that caused 50% of users to see a plan-chooser prompt immediately upon creating their account. All users will now default to the free plan without having to choose it explicitly. (Showing the plan chooser did not appear to make any more people choose a paid plan.)
+
+### v0.205 (2017-03-18) [bugfixes]
+- Fixed grain backups not working under "privileged" sandbox (which is the default for most newer self-hosted Sandstorm installs).
+- Fixed SAML integration with Azure Active Directory when users are not Microsoft accounts.
+
+### v0.204 (2017-03-05) [bugfixes]
+- Removed stray console logging on e-mail send.
+
+### v0.203 (2017-03-02)
+- Fixed security issues discovered during security review by [DevCore Inc.](http://devco.re/), commissioned by Department of Cyber Security of Taiwan. See blog post coming soon.
+- Apps may now request access via the Powerbox to HTTP resources external to Sandstorm, in the same way that they request access to HTTP resources hosted by other apps. Credentials -- including basic auth passwords and OAuth tokens -- are stored and protected by Sandstorm, not the app.
+- An e-mail organization can now be defined by multiple domains, including wildcard subdomains.
+
+### v0.202 (2017-02-04)
+- Removed Sandstorm for Work paywall. All Sandstorm for Work features are now available on all servers for free. Feature keys are no longer needed and all code related to them has been removed.
+- `sandstorm-http-bridge-internal.capnp` is no longer included with the other, public `.capnp` files in the package. This file was not intended to be used by third parties, and indeed did not parse correctly after installation since it references other files that are not installed. This caused some dev tools to report spurious errors.
+
+### v0.201 (2017-02-03) [bugfixes]
+- Sandcats: Fixed bug where if `BIND_IP` was set to 127.0.0.1 (which it often is for servers that sit behind sniproxy), Sandcats requests would fail, eventually leading to certificate expiration.
+
+### v0.200 (2017-01-28)
+- Added the ability for http-bridge-based apps to publish and request HTTP APIs via the Powerbox without the application needing to understand Cap'n Proto. On the publishing side, an app can declare a list of APIs that it implements in its bridge config. On the requesting side, sandstorm-http-bridge now automatically sets up an HTTP proxy through which the app can redeem powerbox request tokens and make HTTP requests to the remote APIs. Later, this proxy will be extended to support communicating via HTTP to the outside world (with proper permissions checks) and utilizing Sandstorm Cap'n Proto APIs without Cap'n Proto (using JSON instead).
+- Apps can now request IP networking interfaces with TLS encryption support handled by Sandstorm (relying on Sandstorm's certificate bundle, so that the app doesn't need its own).
+- Fixed bug where, when "Disallow collaboration with users outside the organization." is enabled and a user visits a sharing link without logging in, the page doesn't render correctly, leaving the user confused.
+- SAML login now works with non-password-based authentication in ADFS (e.g. Kerberos / Windows login). Apparently, the SAML code was unnecessarily demanding password login previously. We're not sure why the protocol even lets it do that.
+- sandstorm-http-bridge apps can now utilize Cap'n Proto APIs before they begin accepting HTTP connections. Previously, sandstorm-http-bridge would not start accepting connections on its Cap'n Proto API until the app started accepting connections via HTTP.
+- Sandcats: On machines with multiple IP addresses, Sandcats now makes sure that dynamic DNS ends up pointing to the address specified by `BIND_IP`.
+
+### v0.199 (2017-01-07)
+- App-to-app powerbox is now implemented. A grain can advertise that it is able to serve powerbox requests of a certain type. Powerbox queries for that type will show the grain. When selected, the grain will be able to display a picker / configuring UI embedded directly inside the Powerbox. Currently, only raw-Cap'n-Proto-API apps can take advantage of this, but we'll be adding HTTP bridge support soon.
+- Implemented log rotation: When grain debug logs or the system log grow large, older logs will now be automatically discarded. This should fix long-running grains which "mysteriously" appear much larger than they should be.
+- Fixed URL-encoding of `Location` header in HTTP responses.
+- Increased e-mail token timeout and admin token timeout to 1 hour.
+
+### v0.198 (2016-12-17) [bugfixes]
+- Fixed obscure bug where an auto-downloaded app update could be uninstalled before the user gets around to accepting the update.
+- Oasis: Redesigned demo intro.
+
+### v0.197 (2016-12-03) [bugfixes]
+- Self-hosting: Fixed grain backup/restore on non-root installs (unusual configuration).
+- Self-hosting: Fixed spurious "rootUrl is not valid" when using Internet Explorer.
+- Self-hosting: Improved setup wizard intro page to show feature comparison between standard version and Sandstorm for Work.
+- Sandstorm for Work: Fix LDAP-based quota display.
+
+### v0.196 (2016-11-19) [bugfixes]
+- Fixed web publishing for URLs containing %-escaped characters, e.g. spaces.
+- Fixed problem where notifications were available but opening the notifications menu reported "no notifications".
+- Fixed problem where overly large Cap'n Proto messages could cause the front-end to become disconnected from the back-end.
+- Fixed problems in IE11.
+- Oasis: You will no longer be blocked from installing apps because you are over-quota. You will still be prevented from creating grains. This is to avoid giving users the impression that uninstalling apps will make it possible to install more apps -- you actually have to delete some grains.
+
+### v0.195 (2016-11-12)
+- Fixed that published web sites would incorrectly handle a query string when the path ended with '/'.
+- Self-hosting: Improved messaging around changes to BASE_URL causing OAuth login providers to be de-configured.
+- Sandstorm for Work: SAML now supports configuring a logout endpoint. If configured, SAML users who log out of Sandstorm will also be logged out of the IdP, and vice versa.
+- Oasis: The user's total quota is now displayed along-side their current usage above the grain list.
+- Oasis: When canceling a paid subscription (i.e. switching to "free"), you will now retain the benefits of the paid plan until the end of the current pay period. (This is in preparation for ending the beta discount, which makes all paid plans effectively free.)
+
+### v0.194 (2016-11-05)
+- Sandstorm for Work: You can now disable the "about sandstorm" menu item as a whitelabeling setting.
+- Fixed bug where grains that are actively handling API requests but which weren't open in any browser windows would shut down every couple minutes, only to start back up on the next request. These grains will now stay running.
+- Fixed that apps were always being told "Accept-Encoding: gzip" whether or not the client actually sent this header. (Apps must be rebuilt with the latest sandstorm-http-bridge to receive this change.)
+- Increased directory nesting limit in SPK files from 64 to 128 to work around long npm dependency chains.
+
+### v0.193 (2016-10-29)
+- Installer should now work on RHEL, CentOS, Arch, and other distros where user namespaces are unavailable and/or kernel version 3.10 is in use.
+- Fixed that trashed grains were not being shut down immediately.
+- Fixed that non-root installs (an unusual configuration) were crashing on updates since v0.190. Unfortunately they will crash again on 0.193 but future updates should succeed.
+- Fixed various bugs with standalone domains.
+- Fixed that app-requested sign-in overlay appeared off-center on IE.
+- The "Who has access?" dialog now shows a spinner while loading, since it can take several seconds.
+- Made danger buttons less loud.
+- Oasis: Fixed bug where storage could be temporarily miscalculated while a collaborator has one of your grains open.
+
+### v0.192 (2016-10-22)
+- Apps can now request via postMessage that Sandstorm display a large sign-in prompt.
+- On (experimental) standalone domains, the app can now request that the user be logged out.
+- When running an app in dev mode, the perceived UID and GID inside the sandbox are now randomized. This is to help catch app bugs in which the app incorrectly assumes that these numbers will always be the same. When using the new "privileged" sandbox mode (which supports older Linux kernels), the UID depends on the host system, whereas in the past it has always been 1000.
+- Fixed that if e-mail was not configured in Sandstorm, but the local machine had an MTA listening on port 25, sometimes Sandstorm would unexpectedly use it.
+- Oasis: Restyled demo sidebar.
+- Oasis: Restyled plan pricing table.
+
+### v0.191 (2016-10-16) [bugfixes]
+- Fix bug that broke Ethercalc.
+
+### v0.190 (2016-10-15)
+- Sandstorm can now run on systems where user namespaces are not available, including on kernel version 3.10 (previously, 3.13 was required). This means RHEL 7, CentOS 7, and Arch should now be supported. However, we plan to spend some time testing this new mode before updating the installer script to accept these platforms. If you'd like to test it now -- with the caveat that there may be bugs -- try the updated installer script from [this pull request](https://github.com/sandstorm-io/sandstorm/pull/2656). Or, copy an existing Sandstorm install to a new server -- the new sandboxing mode is used automatically when user namespaces are unavailable.
+- Changed LDAP config to mask the search password.
+- Moved login errors to the top of the login dialog / menu, from the bottom.
+- Fixed more admin settings inputs to automatically trim whitespace.
+- Added internal support for "standalone grains", where a grain runs on a separate domain with Sandstorm UI hidden. This is experimental and currently requires poking the database to enable.
+
+### v0.189 (2016-10-08) [bugfixes]
+- During an e-mail verification powerbox request, there is now an "add new e-mail" option which links a new e-mail identity to your account on-the-fly.
+- Fixed issues with the Cap'n Proto API where passing a Sandstorm-provided capability back to Sandstorm in the presence of promise pipelining could sometimes fail.
+- Self-hosting: Improved the display of the system log during setup.
+- Sandstorm for Work: Links to the billing dashboard are now more direct.
+
+### v0.188 (2016-10-01) [bugfixes]
+- We now use a version of Node.js patched to fix [V8 issue 5338](https://bugs.chromium.org/p/v8/issues/detail?id=5338). We hope that V8 will eventually fix the bug upstream.
+- When the app initiates the sharing dialog, powerbox, or other dialogs (as opposed to the user initiating them by clicking on the top bar), the dialog will now appear centered rather than hanging from the topbar.
+- `spk pack` will no longer segfault when the package's root path does not map to any source path.
+- Fixed bug where if a grain's title contained non-ASCII characters, downloading a backup might fail.
+- Fixed that powerbox identity picker didn't work if you'd ever shared with a demo user or a user that was later deleted.
+- Fixed that unopened shares would always appear at the top of the powerbox grain picker, rather than being sorted by date.
+- Self-hosting: You can now access the system log during setup, before logging in. This is useful for debugging login problems.
+- Self-hosting: Identity provider configuration will now strip leading and trailing whitespace from configured values. A bug in Firefox's "copy" operation often adds such whitespace when copy/pasting keys e.g. from the Google OAuth config.
+- Sandstorm for Work: You can now specify a private CA cert for LDAP TLS negotiation.
+- Sandstorm for Work: When a response from the SAML IdP is not understood, it is written to the system log, to help debug.
+- Oasis: Trashed (but not yet deleted) grains will no longer count against the 5-grain limit for free users.
+- Oasis: Fixed that bonus storage for subscribing to the mailing list was not being updated if you subscribed or unsubscribed from outside of the Oasis UI (e.g. subscribing from the form on our web site, or unsubscribing by clicking the link on the page).
+
+### v0.187 (2016-09-24)
+- Apps can now make a powerbox request for an identity. The user will choose from among their contacts. This can be used e.g. to assign a task in Wekan to a user who hasn't yet visited the board.
+- Improved usability of setup wizard based on user testing.
+- Improved installer usability.
+- Activity events generated by anonymous users should now work correctly.
+- Fixed that if a user on a server manually updated a preinstalled app via the app market before the update notification had gone out, then new users would continue to receive the old version of the app.
+- Fixed bug where timing issues in template rendering could lead to a blank screen, for instance when a demo account expires.
+
+### v0.186 (2016-09-17)
+- Self-hosted Sandstorm updates will now have "zero" downtime, whereas previously users would experience connection failures for several seconds. This is accomplished by keeping the listen sockets open, so instead of errors, users only perceive a delay.
+- Fixed that pronoun selection was always showing up as "they" in account settings.
+- Alphabetical sorting of grains is now locale-aware.
+- Changed various text to call Sandstorm a "productivity suite".
+- Fixed that the collections app was not being automatically selected for pre-installation on self-hosted instances.
+- Added a way for users to leave feedback when deleting their account.
+- Fixed display of user limit for feature keys with unlimited users.
+- Whitelisted `X-Requested-With` and `X-Phabricator-*` headers in HTTP requests.
+
+### v0.185 (2016-09-12) [bugfixes]
+- Fixed a problem preventing some LDAP users from receiving notification e-mails.
+
+### v0.184 (2016-09-12) [bugfixes]
+- Fixed that refactoring in 0.181 could cause SAML login to fail.
+
+### v0.183 (2016-09-11) [bugfixes]
+- The security hardening in 0.181 broke Gogs, for a different reason. This release rolls back the hardening temporarily while we resolve the issue.
+
+### v0.182 (2016-09-11) [bugfixes]
+- The security hardening in 0.181 broke Ethercalc. This release fixes it.
+
+### v0.181 (2016-09-10)
+- Sandstorm for Work: Feature keys now automatically renew when they expire. If automatic renewal isn't possible, the administrators will receive notifications by bell menu and (if possible) e-mail.
+- Added hardening against clickjacking and CSRF attacks on apps. On Chrome and Safari, CSRF attacks should now be totally blocked, even if the app fails to implement proper protections.
+- Fixed that newly-received shares were appearing at the bottom of the grain list using the default sort order (by last-opened date). Never-opened grains will now sort according to the share date, and will show "Unopened" in the last-opened column.
+- Fixed bug in Meteor that could cause the server to suddenly spawn tens of thousands of fibers, which in turn due to a bug in V8 would make the server permanently consume excessive CPU, even after the fibers exited.
+- Fixed that the "stay anonymous" button on the sign-in hint didn't work (but closing the hint dialog worked and had the same effect).
+- Fixed that after manually updating an app, the button to upgrade existing grains did not appear. (When auto-updating an app via the notifications menu, grains are updated automatically.)
+- Fixed grain tab close buttons sometimes being the wrong size on new builds of Chrome.
+- Fixed some console log spam.
+- Various refactoring.
+- Updated all dependencies.
+
+### v0.180 (2016-09-03)
+- The "Who has access" dialog now shows collections of which the grain is a part, and (more generally) other grains through which this grain has been shared.
+- The "Delete Account" button now makes you type a phrase to confirm. (It still doesn't actually delete your account for 7 days.)
+- When a user deletes their own account, they will now receive an e-mail notification, in case of hijacking.
+- The "Sandstorm for Work" section of the admin panel now contains a direct link to manage your feature key's billing preferences.
+- Added `spk dev --proc` flag which requests that `/proc` be mounted in the sandbox for debugging purposes. This may decrease security of the sandbox, so is only allowed in dev mode.
+- The account settings page now looks reasonable on mobile.
+- Fixed grains in trash sometimes missing icon and other app details.
+- Setting a BASE_URL with a trailing slash will no longer subtly break things.
+- Dropping a SturdyRef not owned by the calling grain will now act as if the SturdyRef doesn't exist rather than throwing an exception. This particularly affects grains that have been backup/restored and so have someone else's tokens in their storage.
+- HTTP API requests will no longer throw an exception if the user-agent header is missing.
+- sandstorm-http-bridge will now log a note if the app doesn't seem to be coming up on the expected port.
+- Oasis: Added self-monitoring and auto-restart for the ["fiber bomb" problem](https://github.com/meteor/meteor/issues/7747). Also added instrumentation to track down root cause.
+
+### v0.179 (2016-08-26)
+- A user can now request deletion of their own account, unless they are a member of a Sandstorm for Work organization. Deletion has a 7-day cooldown during whith the user can change their mind.
+- Admins can now suspend and delete accounts from the admin panel.
+- Apps can now request that an offer template be a link with a special protocol scheme that can trigger a mobile intent, allowing one-click setup of mobile apps. Apps will need to be updated to take advantage of this.
+- Identity capabilities now have a getProfile() method, allowing a grain to discover when a user's profile information has changed without requiring the user to return to the grain.
+- Fixed that admins were unable to un-configure SMTP after it had been configured.
+- Fixed problems in sandstorm-http-bridge that could make notifications unreliable. Affected apps will need to rebuild.
+- Increased expiration time for uploading a backup from 15 minutes to 2 hours, to accommodate large backup files on slow connections.
+- Fixed email attachments from apps having incorrect filenames.
+- Fixed various styling issues.
+- Various ongoing refactoring.
+
+### v0.178 (2016-08-20)
+- The grain list can now be sorted by clicking on the column headers.
+- Many improvements to mobile UI. (Still more to do.)
+- Your current identity's profile picture now appears next to your name in the upper-right.
+- Fixed desktop notifications displaying grain titles incorrectly.
+- Fixed `spk publish` throwing an exception due to a bug in email handling.
+- Improved accessibility of "Sandstorm has been updated - click to reload" bar.
+- When an app returns an invalid `ETag` header, sandstorm-http-bridge will now log an error and drop it rather than throw an exception.
+- Updated to Meteor 1.4.1.
+- Oasis: Fixed appdemo not working for Davros.
+
+### v0.177 (2016-08-15) [bugfixes]
+- Changes to SMTP handling in v0.175 caused Sandstorm to begin verifying TLS certificates strictly. Unfortunately, the prevailing norm in SMTP is loose enforcement and many actual users found Sandstorm no longer worked with their SMTP providers. This update therefore relaxes the rules again, but in the near future we will add configuration options to control this.
+
+### v0.176 (2016-08-13) [bugfixes]
+- Fix web publishing to alternate hosts, broken by an API change in Node.
+
+### v0.175 (2016-08-13)
+- Grain sizes now appear on the grain list.
+- Added `sandstorm uninstall` shell command.
+- Upgraded to Meteor 1.4 and Node 4.
+- Sandcats: HTTPS connections now support ECDHE forward secrecy (as a result of the Node upgrade). Qualys grade increased from A- to A.
+- Bell-menu notifications now also trigger desktop notifications.
+- The collections app has been added to the default preinstall list for new servers. (We highly recommend existing servers add it in the admin settings, too.)
+- No apps will be automatically installed on dev/testing servers (e.g. vagrant-spk).
+- Switched to newer, better mail-handling libraries.
+- Fixed the "close" button on the email self-test dialog.
+- Fixed the "dismiss" button on notifications behaving like you'd clicked the notification body.
+- Errors during a powerbox request will now be shown on-screen rather than just printed to the console.
+- Fixed that uploading a backup left a bogus history entry, breaking the browser's back button.
+- Fixed powerbox search box, which was apparently completely broken.
+
+### v0.174 (2016-08-05)
+- Admins can now choose to pre-install certain apps into new user accounts. For all new servers and Oasis, our four most-popular apps will be pre-installed by default: Etherpad, Wekan, Rocket.Chat, and Davros. Admins can disable this if they prefer, and servers predating this change will not pre-install any apps by default (but the admin can change this).
+- offer()ing a grain capability now works for anonymous users, which means anonymous users can use the collections app. This app will be officially released shortly.
+- Identicons are now rendered as SVGs rather than PNGs, which makes them much more efficient to generate. This in particular fixes the noticeable pause when the sharing contact auto-complete first appears for users who have many contacts.
+- Updated to Meteor 1.3.5.1 (1.4 / Node 4 coming soon!).
+- Fixed that Sandstorm sometimes temporarily incorrectly flashed "(incognito)" in place of the user name when starting.
+- Sandstorm for Work: Non-square whitelabel icons now do something reasonable.
+- Various refactoring.
+- Somewhat improved styling of bell-menu notifications. (More work to be done.)
+
+### v0.173 (2016-07-23)
+- Sandstorm for Work: Added server whitelabeling features. Find under "Personalization" in the admin panel.
+- Apps now receive profile pictures for all users. Users who have no picture get an identicon. Previously, apps were expected to generate identicons themselves.
+- HTTP requests to / responses from apps now pass through any header prefixed with `X-Sandstorm-App-`. Also, `X-OC-Mtime` is whitelisted in responses, to improve Davros' compatibility with ownCloud clients.
+- Attempting to download a backup of a collection will show a warning explaining that this doesn't do what you expect.
+- Prevented guests from uploading grain backups. These uploads weren't creating actual grains, but could use up server-side disk space.
+- Fix bug in grainlist deduplification on app details page.
+- Fixed that the admin page for managing a specific user only showed their login identities, not non-login identities. The main list showed both, but the non-login identities would disappear when clicking through to a specific user.
+- The favicon is now transparent instead of white-background.
+- The guided tour highlight of the "share access" button no longer blacks out the button on Firefox.
+- The admin UI's "Personalization" page no longer fails to save if you haven't entered a Terms of Service or Privacy Policy URL.
+- "204 No Content" responses from apps now preserve the ETag.
+- Refactored powerbox client-side code to make it more pluggable.
+
+### v0.172 (2016-07-15) [bugfixes]
+- Fixed a regression that caused accepting an app update notification to have no effect. Sandstorm will re-notify about missed updates within 24 hours.
+- Fixed bugs preventing Sandstorm from working on IE10.
+- Tweaked new activity event API.
+- Major refactor of powerbox-related code.
+- Bugfixes related to upcoming collections app.
+
+### v0.171 (2016-07-09)
+- **Activity/Notifications API:** Apps can now inform Sandstorm when a grain has been modified. Sandstorm will then highlight the grain in the user interface to show that it has new content, and in some cases deliver notifications to interested users. Apps need to be updated to use the API, but an update to Etherpad will ship on Sunday with updates to Rocket.Chat and Wekan soon thereafter.
+- Fixed regression where grain UIs would not refresh when the grain's package was updated.
+- Fixed bug where it was possible to have a "shared with me" copy of a grain you own show up in your grain list, which in turn caused other bugs.
+- Fixed spurrious deprecation warning in server logs and reduced the size of the Sandstorm bundle by 10% by eliminating redundant copies of the Connect framework which were being included due to npm dependency semantics.
+- Fixed some modal dialogs stretching off the screen on mobile.
+- Various code refactoring.
+- Oasis: Fixed that save()ing a capability was producing a SturdyRef that could not be restored due to bookkeeping errors.
+- Sandstorm for Work: The SAML XML blob is now available even if the SAML identity provider has not yet been enabled. This should make setup easier.
+
+### v0.170 (2016-07-02) [bugfixes]
+- Meteor-based apps will no longer go into redirect loops when WebSockets are not working.
+- Sandstorm for Work: Fixed SAML login failing when a user's name contained non-ASCII characters.
+- The Powerbox API has changed slightly to involve a server-side exchange after the client-side selection operation. This improve security. Existing powerbox-using apps will need to be updated -- but no major apps are using it yet.
+- When using email login and clicking the link (rather than copy/pasting the token), you will now be redirected back to the URL from which you initiated login.
+- Improved design of profile editor UI.
+- The user table in the admin panel can now be sorted by clicking column headers.
+- Fixed "guided tour" hint bubble for installing apps showing for users who aren't allowed to install apps.
+
+### v0.169 (2016-06-26) [bugfixes]
+- Fixed regression in static web publishing that caused requests that should have returned 404s or redirect-to-add-trailing-slash to instead return a 500 status with a blank page.
+- Added ability for admin to request a heapdump (to debug memory leaks).
+
+### v0.168 (2016-06-24) [bugfixes]
+- Sandstorm for Work: SAML connector should now work with Active Directory.
+- Fixed various subtle resource leaks in Sandstorm front-end and sandstorm-http-bridge.
+- Fixed random crash/hang bug introduced in sandstorm-http-bridge v0.166. Apps build since that time will need to be rebuilt.
+- The old admin interface has been completely removed (the new admin interface has been the default since v0.164).
+- The email configuration test dialog now shows more informative error messages.
+- The "most-used" apps row is now only shown if you have more than 6 apps, without which it isn't helping.
+- Added "guided tour" hint highlighting the "share access" button.
+- Added explanatory text to admin user invite page.
+- Fixed search bar autofocus on app list page.
+- The question mark info button on Grains page was supposed to have a circle around it.
+
+### v0.167 (2016-06-18) [bugfixes]
+- Updated to Meteor 1.3.3.1.
+- Implemented hard flow control at the Cap'n Proto layer so that an errant (or malicious) app cannot cause excessive memory use elsewhere in the system by making excessive simultaneous calls. This should improve the stability of Oasis.
+- Implemented flow control for uploads to an app (though it rarely comes into play unless running Sandstorm locally).
+- Fixed that after losing internet connectivity for a while (or suspending your laptop) and then coming back, grains would refresh.
+- Fixed some memory leaks in shell server.
+- Added more "guided tour" points to help new users learn Sandstorm.
+- Sandstorm for Work: SAML connector now exports XML auto-configuration blob.
+- Sandstorm for Work: Improved UI around feature keys.
+
+### v0.166 (2016-06-11) [bugfixes]
+- Implemented flow control for large file downloads from apps so that they don't buffer in the front-end consuming excessive RAM. Apps that handle large files will need to re-pack using the latest sandstorm-http-bridge and push an update.
+- Sandstorm for Work: Made SAML entity ID configurable; added more setup instructions.
+- Updated Google login setup instructions to match latest gratuitous UI changes.
+
+### v0.165 (2016-06-04) [bugfixes]
+- Re-enabled websocket self-check under new admin UI.
+
+### v0.164 (2016-05-20)
+- Self-hosting: The admin settings UI has been completely revamped.
+- Fixed grain debug log auto-scrolling.
+- Sandcats: Fixed obscure ASN.1 type issue in CSRs that was causing Globalsign API to complain.
+- Fixed bug where logging in via Google or Github while viewing a sharing link which you had already redeemed previously would lead to an error.
+
+### v0.163 (2016-05-15) [bugfixes]
+- Fixed subtle bug introduced in 0.162 which caused shared grains to refresh every minute.
+
+### v0.162 (2016-05-14)
+- Implemented "trash". Deleted grains go to the trash where they can be recovered for up to 30 days.
+- Grains can now be deleted from the grain list, without opening them first. Multiple grains can be selected for deletion at once.
+- An app can now request that the "who has access" dialog be displayed.
+- Fixed bug where after an upload failed, future uploads would show the same error despite not having failed.
+- Tweaked the "logout other sessions" button to give better feedback that the request is in-progress.
+- When visiting a Sandstorm server that hasn't been set up yet, you'll now be redirected to the setup wizard.
+- The API endpoint now allows the authorization token to be specified as part of the path, for cases where setting the `Authorization` header is not possible (especially cross-origin WebSocket).
+
+### v0.161 (2016-04-29) [bugfixes]
+- API requests can now include Mercurial headers, potentially allowing a Mercurial server app.
+- You can now configure Sandstorm to accept SMTP connections on low-numbered ports, such as 25.
+- Apps that send email can now omit the "from" address and have it filled in automatically to the grain's auto-generated address. (Previously, the app had to explicitly call another method to find out this address.)
+- Rewrote permissions algorithm to support upcoming features. Should have no visible changes currently.
+- Fixed some bugs around grain renaming when a grain was received through multiple sharing links.
+- Sharing emails are now included in the per-user email send limit of 50 per day.
+- Oasis: Demo users can no longer send sharing invite emails, due to abuse.
+- Sandstorm for Work: The SAML configuration now clearly displays the entity ID used by Sandstorm.
+
 ### v0.160 (2016-04-23) [bugfixes]
 - When the owner renames a grain, the change will now be visible by people with whom the grain has already been shared.
 - Sandstorm for Work: Enforce various rarely-used SAML constraints. (The important ones were already enforced.)

@@ -122,7 +122,7 @@ interface VerifiedEmail @0xf88bf102464dfa5a {
   #
   # To verify a user, make a powerbox request for `VerifiedEmail`. In your `PowerboxDescriptor`,
   # set the tag value to a `VerifiedEmail.PowerboxTag` which has `authority` set to the
-  # capability returned by you `EmailVerifier`'s `getAuthority()` method. The user will be asked to
+  # capability returned by your `EmailVerifier`'s `getAuthority()` method. The user will be asked to
   # choose one of their addresses. The Powerbox returns an `VerifiedEmail` for the address they
   # chose. You must then pass this object to `EmailVerifier.verifyEmail()` to verify that
   # the capability really is attached to the user's account and obtain the final address.
@@ -152,7 +152,7 @@ interface VerifiedEmail @0xf88bf102464dfa5a {
     # the matching address.
 
     domain @2 :Text;
-    # Specify a domain (like "example.com") in a Powerbox request to requiure that the user choose
+    # Specify a domain (like "example.com") in a Powerbox request to require that the user choose
     # an address under the specified domain. The user will still have the choice to refuse
     # verification, but will not be offered addresses under other domains.
     #

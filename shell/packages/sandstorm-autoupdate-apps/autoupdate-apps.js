@@ -17,77 +17,38 @@
 SandstormAutoupdateApps = {};
 
 SandstormAutoupdateApps.updateAppIndex = function (db) {
-  const appUpdatesEnabledSetting = db.collections.settings.findOne({ _id: "appUpdatesEnabled" });
-  const appUpdatesEnabled = appUpdatesEnabledSetting && appUpdatesEnabledSetting.value;
-  if (!appUpdatesEnabled) {
-    // It's much simpler to check appUpdatesEnabled here rather than reactively deactivate the
-    // timer that triggers this call.
-    return;
-  }
-
-  const appIndexUrl = db.collections.settings.findOne({ _id: "appIndexUrl" }).value;
-  const appIndex = db.collections.appIndex;
-  const data = HTTP.get(appIndexUrl + "/apps/index.json").data;
-  data.apps.forEach(function (app) {
-    app._id = app.appId;
-
-    const oldApp = appIndex.findOne({ _id: app.appId });
-    app.hasSentNotifications = false;
-    appIndex.upsert({ _id: app._id }, app);
-    if ((!oldApp || app.versionNumber > oldApp.versionNumber) &&
-        db.collections.userActions.findOne({ appId: app.appId })) {
-      const pack = db.collections.packages.findOne({ _id: app.packageId });
-      const url = appIndexUrl + "/packages/" + app.packageId;
-      if (pack) {
-        if (pack.status === "ready") {
-          if (pack.appId && pack.appId !== app.appId) {
-            console.error("app index returned app ID and package ID that don't match:",
-                          JSON.stringify(app));
-          } else {
-            db.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber,
-              app.version);
-          }
-        } else {
-          const newPack = Packages.findAndModify({
-            query: { _id: app.packageId },
-            update: { $set: { isAutoUpdated: true } },
-          });
-          if (newPack.status === "ready") {
-            // The package was marked as ready before we applied isAutoUpdated=true. We should send
-            // notifications ourselves to be sure there's no timing issue (sending more than one is
-            // fine, since it will de-dupe).
-            if (pack.appId && pack.appId !== app.appId) {
-              console.error("app index returned app ID and package ID that don't match:",
-                            JSON.stringify(app));
-            } else {
-              db.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber,
-                app.version);
-            }
-          } else if (newPack.status === "failed") {
-            // If the package has failed, retry it
-            db.startInstall(app.packageId, url, true, true);
-          }
-        }
-      } else {
-        db.startInstall(app.packageId, url, false, true);
-      }
-    }
-  });
+  db.updateAppIndex();
 };
 
 Meteor.methods({
-  updateApps: function (appUpdates) {
+  updateAppIndex: function () {
+    // An undocumented method that the admin can use to force an app index update immediately.
+    // Probably not useful except for debugging.
+
+    if (!Meteor.user().isAdmin) {
+      throw new Meteor.Error(403, "Must be admin.");
+    }
+
+    SandstormAutoupdateApps.updateAppIndex(this.connection.sandstormDb);
+  },
+
+  updateApps: function (packages) {
+    check(packages, [String]);
+    if (!this.userId) {
+      throw new Meteor.Error(403, "Must be logged in to update apps.");
+    }
+
     const db = this.connection.sandstormDb;
     const backend = this.connection.sandstormBackend;
 
-    _.forEach(appUpdates, function (val, appId) {
-      const pack = db.collections.packages.findOne({ _id: val.packageId, appId: appId });
+    packages.forEach(packageId => {
+      const pack = db.collections.packages.findOne({ _id: packageId });
       if (!pack || !pack.manifest) {
-        console.error("Newer app not installed", val.name);
+        throw new Error("No such package on server: " + packageId);
       } else {
-        db.addUserActions(val.packageId);
-        db.upgradeGrains(appId, val.version, val.packageId, backend);
-        Meteor.call("deleteUnusedPackages", appId);
+        db.addUserActions(this.userId, packageId);
+        db.upgradeGrains(pack.appId, pack.manifest.appVersion, packageId, backend);
+        db.deleteUnusedPackages(pack.appId);
       }
     });
   },

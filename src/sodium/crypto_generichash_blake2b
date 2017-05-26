@@ -1,1 +1,1 @@
-../../deps/libsodium/src/libsodium/crypto_generichash/blake2
+../../deps/libsodium/src/libsodium/crypto_generichash/blake2b

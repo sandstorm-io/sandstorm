@@ -21,13 +21,12 @@ set -euo pipefail
 THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
 cd "$THIS_DIR"
-../shell/test-packages.sh -f
 
 export SANDSTORM_DIR="${SANDSTORM_DIR:-/opt/sandstorm}"
 
-test -e assets/ssjekyll5.spk || curl http://sandstorm.io/apps/ssjekyll5.spk > assets/ssjekyll5.spk
-test -e assets/ssjekyll6.spk || curl http://sandstorm.io/apps/ssjekyll6.spk > assets/ssjekyll6.spk
-test -e assets/ssjekyll7.spk || curl http://sandstorm.io/apps/ssjekyll7.spk > assets/ssjekyll7.spk
+test -e assets/ssjekyll5.spk || curl https://sandstorm.io/apps/ssjekyll5.spk > assets/ssjekyll5.spk
+test -e assets/ssjekyll6.spk || curl https://sandstorm.io/apps/ssjekyll6.spk > assets/ssjekyll6.spk
+test -e assets/ssjekyll7.spk || curl https://sandstorm.io/apps/ssjekyll7.spk > assets/ssjekyll7.spk
 
 if [ ! -z "${TESTCASE:-}" ]; then
   # This is awkward because the test case name usually has spaces, but we need
@@ -44,12 +43,14 @@ fi
 
 if [[ -z "${LAUNCH_URL:-}" ]]; then
   if [[ -z "${SKIP_UNITTESTS:-}" ]]; then
+    ../shell/test-packages.sh -f
     nightwatch -e unittests "${NIGHTWATCH_PARAMS[@]:-}"
   fi
   nightwatch -e default "${NIGHTWATCH_PARAMS[@]:-}"
 else
   sed "s|.*launch_url.*|\"launch_url\" : \"$LAUNCH_URL\",|g" nightwatch.json > nightwatch.tmp.json
   if [[ -z "${SKIP_UNITTESTS:-}" ]]; then
+    ../shell/test-packages.sh -f
     nightwatch -e unittests -c ./nightwatch.tmp.json "${NIGHTWATCH_PARAMS[@]:-}"
   fi
   nightwatch -e default -c ./nightwatch.tmp.json "${NIGHTWATCH_PARAMS[@]:-}"

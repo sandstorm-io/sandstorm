@@ -35,27 +35,29 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 METEOR_WAREHOUSE_DIR="${METEOR_WAREHOUSE_DIR:-$HOME/.meteor}"
 
-echo -n "Finding meteor-tool installation (can take a few seconds)..." >&2
-
 # If we run the meteor tool outside of `shell`, it might try to update itself. Inside `shell`, it
 # sees the meteor version we're using and sticks to that.
 cd "$SCRIPT_DIR/shell"
 
 METEOR_RELEASE=$(<.meteor/release)
+CACHE_FILE="../tmp/$METEOR_RELEASE.location"
 
-if [ "$METEOR_RELEASE" = "METEOR@1.0.2" ]; then
-  # Some time after 1.0.2, the output format of `meteor show` changed and the --ejson flag was
-  # added. But as of this writing we're still at 1.0.2, so parse the old output format.
-  TOOL_VERSION=$(meteor show "$METEOR_RELEASE" | grep -o 'meteor-tool@[0-9a-zA-Z_.-]*')
-else
-  # TODO(cleanup): It would be nice to use a real JSON parser here, but I don't particularly want
-  #   to depend on one, nor do I want to depend on Node being installed.
-  TOOL_VERSION=$(meteor show --ejson $METEOR_RELEASE | grep '^ *"tool":' |
-      sed -re 's/^.*"(meteor-tool@[^"]*)".*$/\1/g')
+mkdir -p ../tmp
+if [ -e "$CACHE_FILE" ]; then
+  cat "$CACHE_FILE"
+  exit
 fi
+
+echo -n "Finding meteor-tool installation (can take a few seconds)..." >&2
+
+# TODO(cleanup): It would be nice to use a real JSON parser here, but I don't particularly want
+#   to depend on one, nor do I want to depend on Node being installed.
+TOOL_VERSION=$(meteor show --ejson $METEOR_RELEASE | grep '^ *"tool":' |
+    sed -re 's/^.*"(meteor-tool@[^"]*)".*$/\1/g')
 
 TOOLDIR=$(echo $TOOL_VERSION | tr @ /)
 
 echo " $TOOL_VERSION" >&2
 
-readlink -f $METEOR_WAREHOUSE_DIR/packages/$TOOLDIR/mt-os.linux.x86_64/dev_bundle
+readlink -f $METEOR_WAREHOUSE_DIR/packages/$TOOLDIR/mt-os.linux.x86_64/dev_bundle > "$CACHE_FILE"
+cat "$CACHE_FILE"

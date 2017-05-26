@@ -49,8 +49,9 @@ static void tryRecursivelyDelete(kj::StringPtr path) {
 }
 
 BackendImpl::BackendImpl(kj::LowLevelAsyncIoProvider& ioProvider, kj::Network& network,
-  SandstormCoreFactory::Client&& sandstormCoreFactory)
-    : ioProvider(ioProvider), network(network), coreFactory(kj::mv(sandstormCoreFactory)), tasks(*this) {}
+  SandstormCoreFactory::Client&& sandstormCoreFactory, kj::Maybe<uid_t> sandboxUid)
+    : ioProvider(ioProvider), network(network), coreFactory(kj::mv(sandstormCoreFactory)),
+      sandboxUid(sandboxUid), tasks(*this) {}
 
 void BackendImpl::taskFailed(kj::Exception&& exception) {
   KJ_LOG(ERROR, exception);
@@ -60,7 +61,8 @@ void BackendImpl::taskFailed(kj::Exception&& exception) {
 
 kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
     kj::StringPtr grainId, kj::StringPtr packageId,
-    spk::Manifest::Command::Reader command, bool isNew, bool devMode, bool isRetry) {
+    spk::Manifest::Command::Reader command, bool isNew, bool devMode, bool mountProc,
+    bool isRetry) {
   auto iter = supervisors.find(grainId);
   if (iter != supervisors.end()) {
     KJ_REQUIRE(!isNew, "new grain matched existing grainId");
@@ -86,7 +88,7 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
           // re-run.
           KJ_ASSERT(!isRetry, "retry supervisor startup logic failed");
           return kj::evalLater([=]() mutable {
-            return bootGrain(grainId, packageId, command, isNew, devMode, true);
+            return bootGrain(grainId, packageId, command, isNew, devMode, mountProc, true);
           });
         } else {
           return kj::mv(exception);
@@ -101,12 +103,21 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
 
   argv.add(kj::heapString("supervisor"));
 
+  KJ_IF_MAYBE(u, sandboxUid) {
+    argv.add(kj::heapString("--uid"));
+    argv.add(kj::str(*u));
+  }
+
   if (isNew) {
     argv.add(kj::heapString("-n"));
   }
 
   if (devMode) {
     argv.add(kj::heapString("--dev"));
+
+    if (mountProc) {
+      argv.add(kj::heapString("--proc"));
+    }
   }
 
   for (auto env: command.getEnviron()) {
@@ -127,6 +138,11 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
 
   Subprocess::Options options(KJ_MAP(a, argv) -> const kj::StringPtr { return a; });
   options.executable = "/sandstorm";
+
+  if (sandboxUid != nullptr) {
+    // Supervisor must run as root since user namespaces are not available.
+    options.uid = uid_t(0);
+  }
 
   int pipefds[2];
   KJ_SYSCALL(pipe2(pipefds, O_CLOEXEC));
@@ -223,7 +239,7 @@ kj::Promise<void> BackendImpl::startGrain(StartGrainContext context) {
   auto params = context.getParams();
   return bootGrain(validateId(params.getGrainId()),
                    validateId(params.getPackageId()), params.getCommand(),
-                   params.getIsNew(), params.getDevMode(), false)
+                   params.getIsNew(), params.getDevMode(), params.getMountProc(), false)
       .then([context](Supervisor::Client client) mutable {
     context.getResults().setSupervisor(kj::mv(client));
   });
@@ -301,14 +317,16 @@ class BackendImpl::PackageUploadStreamImpl: public Backend::PackageUploadStream:
 public:
   PackageUploadStreamImpl(BackendImpl& backend, Pipe inPipe = Pipe::make(),
                           Pipe outPipe = Pipe::make())
-      : inputWriteFd(kj::mv(inPipe.writeEnd)),
+      : sandboxUid(backend.sandboxUid),
+        inputWriteFd(kj::mv(inPipe.writeEnd)),
         outputReadFd(kj::mv(outPipe.readEnd)),
         inputWriteEnd(backend.ioProvider.wrapOutputFd(inputWriteFd,
             kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC)),
         outputReadEnd(backend.ioProvider.wrapInputFd(outputReadFd,
             kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC)),
         tmpdir(tempDirname()),
-        unpackProcess(startProcess(kj::mv(inPipe.readEnd), kj::mv(outPipe.writeEnd), tmpdir)) {}
+        unpackProcess(startProcess(kj::mv(inPipe.readEnd), kj::mv(outPipe.writeEnd), tmpdir,
+                                   backend.sandboxUid)) {}
   ~PackageUploadStreamImpl() noexcept(false) {
     if (access(tmpdir.cStr(), F_OK) >= 0) {
       recursivelyDelete(tmpdir);
@@ -374,7 +392,7 @@ protected:
       auto results = context.getResults(sizeHint);
       results.setAppId(trim(text));
       results.setManifest(manifest);
-      KJ_IF_MAYBE(fp, checkPgpSignature(results.getAppId(), manifest.getMetadata())) {
+      KJ_IF_MAYBE(fp, checkPgpSignature(results.getAppId(), manifest.getMetadata(), sandboxUid)) {
         results.setAuthorPgpKeyFingerprint(*fp);
       }
     }, [this](kj::Exception&& e) {
@@ -384,6 +402,7 @@ protected:
   }
 
 private:
+  kj::Maybe<uid_t> sandboxUid;
   kj::AutoCloseFd inputWriteFd;
   kj::AutoCloseFd outputReadFd;
   kj::Maybe<kj::Own<kj::AsyncOutputStream>> inputWriteEnd;
@@ -399,8 +418,10 @@ private:
   }
 
   static Subprocess startProcess(
-      kj::AutoCloseFd input, kj::AutoCloseFd output, kj::StringPtr outdir) {
+      kj::AutoCloseFd input, kj::AutoCloseFd output, kj::StringPtr outdir,
+      kj::Maybe<uid_t> sandboxUid) {
     Subprocess::Options options({"spk", "unpack", "-", outdir});
+    options.uid = sandboxUid;
     options.executable = "/proc/self/exe";
     options.stdin = input;
     options.stdout = output;
@@ -429,7 +450,7 @@ kj::Promise<void> BackendImpl::tryGetPackage(TryGetPackageContext context) {
     auto results = context.getResults(sizeHint);
     results.setAppId(trim(appid));
     results.setManifest(manifest);
-    KJ_IF_MAYBE(fp, checkPgpSignature(results.getAppId(), manifest.getMetadata())) {
+    KJ_IF_MAYBE(fp, checkPgpSignature(results.getAppId(), manifest.getMetadata(), sandboxUid)) {
       results.setAuthorPgpKeyFingerprint(*fp);
     }
   }
@@ -453,7 +474,22 @@ kj::Promise<void> BackendImpl::backupGrain(BackupGrainContext context) {
   auto path = kj::str("/var/sandstorm/backups/", params.getBackupId());
   recursivelyCreateParent(path);
   auto grainDir = kj::str("/var/sandstorm/grains/", params.getGrainId());
-  Subprocess::Options processOptions({"backup", path, grainDir});
+
+  // Similar to the supervisor, the "backup" command sets up its own sandbox, and for that to work
+  // we need to pass along root privileges to it.
+  kj::Vector<kj::StringPtr> argv;
+  kj::String ownUid;
+  argv.add("backup");
+  KJ_IF_MAYBE(u, sandboxUid) {
+    argv.add("--uid");
+    ownUid = kj::str(*u);
+    argv.add(ownUid);
+  }
+  argv.add(path);
+  argv.add(grainDir);
+
+  Subprocess::Options processOptions(argv.asPtr());
+  if (sandboxUid != nullptr) processOptions.uid = uid_t(0);
   processOptions.executable = "/proc/self/exe";
   auto inPipe = Pipe::make();
   processOptions.stdin = inPipe.readEnd;
@@ -482,8 +518,24 @@ kj::Promise<void> BackendImpl::restoreGrain(RestoreGrainContext context) {
 
   auto path = kj::str("/var/sandstorm/backups/", params.getBackupId());
   auto grainDir = kj::str("/var/sandstorm/grains/", params.getGrainId());
+
+  // Similar to the supervisor, the "backup" command sets up its own sandbox, and for that to work
+  // we need to pass along root privileges to it.
+  kj::Vector<kj::StringPtr> argv;
+  kj::String ownUid;
+  argv.add("backup");
+  KJ_IF_MAYBE(u, sandboxUid) {
+    argv.add("--uid");
+    ownUid = kj::str(*u);
+    argv.add(ownUid);
+  }
+  argv.add("-r");
+  argv.add(path);
+  argv.add(grainDir);
+
   KJ_SYSCALL(mkdir(grainDir.cStr(), 0777));
-  Subprocess::Options processOptions({"backup", "-r", path, grainDir});
+  Subprocess::Options processOptions(argv.asPtr());
+  if (sandboxUid != nullptr) processOptions.uid = uid_t(0);
   processOptions.executable = "/proc/self/exe";
   auto outPipe = Pipe::make();
   processOptions.stdout = outPipe.writeEnd;
@@ -507,8 +559,16 @@ kj::Promise<void> BackendImpl::restoreGrain(RestoreGrainContext context) {
 class BackendImpl::FileUploadStream: public ByteStream::Server {
 public:
   FileUploadStream(kj::String finalPath)
-      : fd(raiiOpen(dirname(finalPath), O_WRONLY | O_TMPFILE)),
-        finalPath(kj::mv(finalPath)) {}
+      : tmpPath(kj::str(finalPath, ".uploading")),
+        finalPath(kj::mv(finalPath)),
+        fd(raiiOpen(tmpPath, O_WRONLY | O_CREAT | O_EXCL)) {}
+
+  ~FileUploadStream() noexcept(false) {
+    if (!isDone) {
+      // Delete file that was never used. (Ignore errors here.)
+      unlink(tmpPath.cStr());
+    }
+  }
 
 protected:
   kj::Promise<void> write(WriteContext context) override {
@@ -518,11 +578,9 @@ protected:
   }
 
   kj::Promise<void> done(DoneContext context) override {
-    KJ_SYSCALL(fdatasync(fd));
-
-    // Link temporary file into filesystem.
-    KJ_SYSCALL(linkat(AT_FDCWD, kj::str("/proc/self/fd/", fd.get()).cStr(),
-                      AT_FDCWD, finalPath.cStr(), AT_SYMLINK_FOLLOW));
+    KJ_SYSCALL(fsync(fd));
+    KJ_SYSCALL(rename(tmpPath.cStr(), finalPath.cStr()));
+    isDone = true;
     return kj::READY_NOW;
   }
 
@@ -532,8 +590,10 @@ protected:
   }
 
 private:
-  kj::AutoCloseFd fd;
+  kj::String tmpPath;
   kj::String finalPath;
+  kj::AutoCloseFd fd;
+  bool isDone = false;
 
   static kj::String dirname(kj::StringPtr path) {
     KJ_IF_MAYBE(pos, path.findLast('/')) {
@@ -584,6 +644,38 @@ kj::Promise<void> BackendImpl::deleteBackup(DeleteBackupContext context) {
       KJ_FAIL_SYSCALL("unlink", error, path);
     }
   }
+  return kj::READY_NOW;
+}
+
+// =======================================================================================
+
+static uint64_t recursivelyCountSize(kj::StringPtr path) {
+  KJ_REQUIRE(!path.endsWith("/"),
+      "refusing to recursively traverse directory name with trailing / to reduce risk of "
+      "catastrophic empty-string bugs");
+
+  struct stat stats;
+  KJ_SYSCALL(lstat(path.cStr(), &stats));
+
+  // Count blocks, not length, because what we care about is allocated space.
+  uint64_t total = stats.st_blocks * 512;
+
+  if (S_ISDIR(stats.st_mode)) {
+    for (auto& file: listDirectory(path)) {
+      total += recursivelyCountSize(kj::str(path, '/', file));
+    }
+  } else if (stats.st_nlink != 0) {
+    // Don't overcount hard links. (Note that st_nlink can in fact be zero in cases where we are
+    // racing with directory modifications, so we check for that to avoid divide-by-zero crashes.)
+    total /= stats.st_nlink;
+  }
+
+  return total;
+}
+
+kj::Promise<void> BackendImpl::getGrainStorageUsage(GetGrainStorageUsageContext context) {
+  context.getResults(capnp::MessageSize { 4, 0 }).setSize(recursivelyCountSize(
+      kj::str("/var/sandstorm/grains/", validateId(context.getParams().getGrainId()))));
   return kj::READY_NOW;
 }
 

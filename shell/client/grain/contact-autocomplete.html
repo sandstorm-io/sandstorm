@@ -1,0 +1,28 @@
+<template name="contactInputBox">
+  <div class="contact-box {{#if inputActive}}active{{/if}}">
+    <ul class="completed-contacts">
+    {{#each completedContacts}}
+      <li class="completed-contact" tabindex="-1">
+       <div class="picture" style="background-image: url('{{ profile.pictureUrl }}');"></div>{{profile.name}}<span class="closer"></span></li>
+    {{/each}}
+    </ul>
+    <input type="text" class="emails" placeholder="Enter email addresses or names"
+           tabindex="0" role="combobox" aria-expanded="true" aria-autocomplete="list"
+           aria-owns="{{templateId}}autocomplete-suggestions"
+           aria-activedescendant="{{templateId}}contact-selected" autocomplete="off"
+           disabled={{disabled}}>
+    {{#if inputActive}}
+      {{#if autoCompleteContacts}}
+        <ul class="autocomplete-suggestions" id="{{templateId}}autocomplete-suggestions">
+        {{#each autoCompleteContacts}}
+          <li class="autocomplete {{#if isCurrentlySelected}}selected {{/if}}{{#if failure}}failed{{/if}}"
+              id="{{#if isCurrentlySelected}}{{templateId}}contact-selected{{/if}}">
+            {{> identityCard . }}
+            {{failure}}
+          </li>
+        {{/each}}
+        </ul>
+      {{/if}}
+    {{/if}}
+  </div>
+</template>

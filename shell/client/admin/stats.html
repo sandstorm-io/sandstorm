@@ -1,0 +1,225 @@
+<template name="statsUserGrainsTable">
+{{!-- Takes an argument:
+   points: Array of Objects containing the fields in ActivityStats, plus `day`
+    ready: Boolean, indicates readiness, to avoid rerendering as data streams in
+   --}}
+<table class="stats-users-grains">
+  <thead>
+    <tr>
+      <th rowspan="2">date</th>
+      <th colspan="4">users</th>
+      <th colspan="4">grains</th>
+    </tr>
+    <tr>
+      <th>daily</th>
+      <th>weekly</th>
+      <th>monthly</th>
+      <th>forever</th>
+      <th>daily</th>
+      <th>weekly</th>
+      <th>monthly</th>
+      <th>forever</th>
+    </tr>
+  </thead>
+  <tbody>
+  {{#if ready}}
+    {{#each points}}
+      <tr>
+        <td>{{day}}</td>
+        <td>{{daily.activeUsers}}</td>
+        <td>{{weekly.activeUsers}}</td>
+        <td>{{monthly.activeUsers}}</td>
+        <td>{{forever.activeUsers}}</td>
+        <td>{{daily.activeGrains}}</td>
+        <td>{{weekly.activeGrains}}</td>
+        <td>{{monthly.activeGrains}}</td>
+        <td>{{forever.activeGrains}}</td>
+      </tr>
+    {{else}}
+      <tr>
+        <td colspan="9">There are no stats recorded yet.</td>
+      </tr>
+    {{/each}}
+  {{else}}
+    <tr>
+      <td colspan="9">Loading...</td>
+    </tr>
+  {{/if}}
+  </tbody>
+</table>
+</template>
+
+<template name="statsAppsTable">
+{{!-- expects a single argument:
+  apps: Array of Object like ActivityStats, plus `appTitle`
+ ready: Boolean, indicates readiness, to avoid rerendering as data streams in
+--}}
+<table class="stats-apps">
+  <thead>
+    <tr>
+      <th rowspan="2">App Name</th>
+      <th colspan="4">owners</th>
+      <th colspan="4">sharedUsers</th>
+      <th colspan="4">grains</th>
+    </tr>
+    <tr>
+      <th>daily</th>
+      <th>weekly</th>
+      <th>monthly</th>
+      <th>forever</th>
+      <th>daily</th>
+      <th>weekly</th>
+      <th>monthly</th>
+      <th>forever</th>
+      <th>daily</th>
+      <th>weekly</th>
+      <th>monthly</th>
+      <th>forever</th>
+    </tr>
+  </thead>
+  <tbody>
+  {{#if ready}}
+    {{#each apps}}
+      <tr>
+        <td title="{{appId}}">{{appTitle}}</td>
+        <td>{{daily.owners}}</td>
+        <td>{{weekly.owners}}</td>
+        <td>{{monthly.owners}}</td>
+        <td>{{forever.owners}}</td>
+        <td>{{daily.sharedUsers}}</td>
+        <td>{{weekly.sharedUsers}}</td>
+        <td>{{monthly.sharedUsers}}</td>
+        <td>{{forever.sharedUsers}}</td>
+        <td>{{daily.grains}}</td>
+        <td>{{weekly.grains}}</td>
+        <td>{{monthly.grains}}</td>
+        <td>{{forever.grains}}</td>
+      </tr>
+    {{else}}
+      <tr>
+        <td colspan="13">There are no stats recorded yet.</td>
+      </tr>
+    {{/each}}
+  {{else}}
+    <tr>
+      <td colspan="13">Loading...</td>
+    </tr>
+  {{/if}}
+  </tbody>
+</table>
+</template>
+
+<template name="newAdminStats">
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>Statistics</li>
+    </ul>
+  </h1>
+
+  <h2>Publish anonymously to Sandstorm dev team</h2>
+
+  {{#if hasSuccess}}
+    {{#focusingSuccessBox}}
+      {{message}}
+    {{/focusingSuccessBox}}
+  {{/if}}
+
+  {{#if hasError}}
+    {{#focusingErrorBox}}
+      {{message}}
+    {{/focusingErrorBox}}
+  {{/if}}
+
+  {{#if undecided}}
+    <div class="flash-message info-message">
+      <p>
+        We'd like to know how many Sandstorm users there are, to make graphs
+        and such.  Is it okay to send the numbers on this page once a day to the
+        Sandstorm team, so that we can add them to the totals?  Any stats you send are
+        anonymous.
+      </p>
+
+      <form class="stats-request">
+        <div class="button-row">
+          <button type="submit" class="button-primary" name="enable-stats">
+            Send anonymous stats
+          </button>
+          <button type="button" class="button-link" name="disable-stats">
+            Don't send
+          </button>
+        </div>
+      </form>
+    </div>
+  {{else}}
+    <p>
+      The developers of Sandstorm like to know how many Sandstorm users there are, to make graphs
+      and such.  You can help us by opting in to sharing the numbers on this page once a day to the
+      Sandstorm team, so that we can add them to our totals.
+      Any stats shared are submitted anonymously.
+    </p>
+    <p>
+      Anonymous stats reporting to sandstorm.io:
+      {{#if sendStats}}
+        <span class="stats-enabled">Enabled</span>
+      {{else}}
+        <span class="stats-disabled">Disabled</span>
+      {{/if}}
+      <form class="stats-toggle">
+        {{#if sendStats}}
+        <button type="button" class="button-disable" name="disable-stats">Disable</button>
+        {{else}}
+        <button type="button" class="button-enable" name="enable-stats">Enable</button>
+        {{/if}}
+      </form>
+    </p>
+  {{/if}}
+
+
+  <h2>Statistics</h2>
+  <h3>View as JSON</h3>
+  <p>
+    If you want to integrate Sandstorm stats with an internal stats tool, use this secret link to
+    retrieve the tables below as JSON.
+    You can revoke the current link at any time by generating a new link.
+  </p>
+
+  <form class="stats-json">
+    <div class="form-group">
+      <label>
+        Stats JSON link:
+        {{> autoSelectingInput value=statsLink}}
+      </label>
+    </div>
+
+    <div class="button-row">
+      <button type="button" name="regenerate-stats-token">
+        Generate new link
+      </button>
+    </div>
+  </form>
+  <h3>Users and grains</h3>
+
+  {{#with current=current}}
+  <p>Right now: {{current.activeUsers}} users, {{current.activeGrains}} grains</p>
+  {{/with}}
+  {{#with today=today}}
+  <p>Today: {{today.activeUsers}} users, {{today.activeGrains}} grains</p>
+  {{/with}}
+
+  {{> statsUserGrainsTable points=points ready=ready}}
+
+  <h3>Apps</h3>
+  <form class="stats-apps-date">
+    <label>
+      Select a date:
+      <select class="package-date">
+        {{#each appDates }}
+          <option value="{{_id}}" selected="{{#if selected}}true{{/if}}">{{day}}</option>
+        {{/each}}
+      </select>
+    </label>
+  </form>
+
+  {{> statsAppsTable apps=apps ready=ready}}
+</template>

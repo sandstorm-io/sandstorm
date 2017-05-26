@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Sandstorm Raw API sample app -- Powerbox request</title>
+    <meta charset="utf-8">
+    <script type="text/javascript">
+function fetch(url, options) {
+  // Somewhat pleasant wrapper around XHR.
+
+  options = options || {};
+  return new Promise(function(resolve, reject) {
+    var xhr = new XMLHttpRequest();
+    xhr.onload = function () {
+      if (xhr.status >= 400) {
+        reject(new Error("XHR returned status " + xhr.status + ":\n" + xhr.responseText));
+      } else {
+        resolve(xhr);
+      }
+    };
+    xhr.onerror = function(e) { reject(e); };
+    if (options.hasOwnProperty('responseType'))
+      xhr.responseType = options.responseType;
+    var method = 'get';
+    if (options.hasOwnProperty('method'))
+      method = options.method;
+    xhr.open(method, url)
+    var data = undefined;
+    if (options.hasOwnProperty('data'))
+      data = options.data;
+    xhr.send(data);
+  });
+}
+function doGet(url) {
+  return fetch(url);
+}
+function doPost(url, data) {
+  return fetch(url, { method: "post", data: data });
+}
+function doPut(url, data) {
+  return fetch(url, { method: "put", data: data });
+}
+function doDelete(url) {
+  return fetch(url, { method: "delete" });
+}
+
+function doFulfill() {
+  doPost("/fulfill", document.getElementById("cap-text").value);
+}
+    </script>
+  </head>
+  <body>
+    <p><input id="cap-text" type="text" placeholder="Text to save"><button id="do-fulfill" onclick="doFulfill()">OK</button></p>
+  </body>
+</html>

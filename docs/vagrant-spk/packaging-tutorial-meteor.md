@@ -5,6 +5,10 @@
 This tutorial will show you how to make a
 [Sandstorm.io](https://sandstorm.io) package from a Meteor app.
 
+**Compatibility note:** Sandstorm's Meteor tooling is currently compatible with Meteor 1.3.5.1
+and earlier. If your app uses Meteor 1.4, you may need to wait until September 2016 for an
+updated `vagrant-spk` that is compatible with Meteor 1.4.
+
 Creating the package will take about five minutes of focused time,
 interspersed with the downloading of various components, which can
 take up to half an hour.
@@ -67,7 +71,8 @@ with Meteor. To create it, run the following commands:
 ```bash
 mkdir -p ~/projects/sandstorm-packaging-tutorial
 cd ~/projects/sandstorm-packaging-tutorial
-meteor create --example clock
+git clone https://github.com/meteor/clock
+cd clock
 ```
 
 You now have a fully functional Meteor app stored in
@@ -295,13 +300,13 @@ create a new _instance_ of the app. To do this, find the line
 containing:
 
 ```bash
-      ( title = (defaultText = "New Instance"),
+      ( nounPhrase = (defaultText = "instance"),
 ```
 
 and change it to read:
 
 ```bash
-      ( title = (defaultText = "New Clock"),
+      ( nounPhrase = (defaultText = "clock"),
 ```
 
 To refresh the information that shows up in
@@ -367,7 +372,7 @@ You can see how large it is by running the following command:
 du -h ~/projects/package.spk
 ```
 
-In my case, I see:
+You will see output like this.
 
 ```bash
 21M     ~/projects/package.spk
@@ -431,5 +436,5 @@ might be interested in any of the following:
 * How do I learn more about the technical underpinnings of `vagrant-spk`? How do I make `vagrant-spk` faster?
 Read about [understanding & customizing vagrant-spk](customizing.md).
 * How do I package-up a Python, PHP, or other non-Meteor app? Read about [platform stacks](platform-stacks.md).
-* Will this work on Windows? Yes, probably, but I use `~` and `mkdir -p` above, and you can't typically use those on Windows.
+* Will this work on Windows? Yes, probably. This tutorial uses `~` and `mkdir -p` above, and you can't typically use those on Windows.
 * Will this work on a cloud Linux instance? Probably not, since `vagrant-spk` creates a virtual machine and running a VM inside a VM often fails.

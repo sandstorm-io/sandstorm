@@ -67,4 +67,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   end
 
+  # OpenSuSE provides a libvirt box, so we do not special-case this box in prepare-for-tests.sh.
+  config.vm.define "opensuse42.1" do |default|
+    default.vm.box = "opensuse/openSUSE-42.1-x86_64"
+  end
+
+  # CentOS provides a libvirt box; however, it seems to have a broken curl and/or TLS CA certificate
+  # store. Converting from VirtualBox does the job, so we do that.
+  config.vm.define "centos7" do |default|
+    default.vm.box = "centos7_convertible"
+  end
+
 end

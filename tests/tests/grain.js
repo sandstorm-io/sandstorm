@@ -25,94 +25,87 @@ var utils = require('../utils'),
     very_long_wait = utils.very_long_wait;
 var path = require('path');
 var assetsPath = path.resolve(__dirname, '../assets');
-var expectedHackerCMSButtonText = 'New Hacker CMS site';
+var expectedHackerCMSButtonText = 'Create new site';
 var expectedHackerCMSGrainTitle = 'Untitled Hacker CMS site';
 var expectedGitWebGrainTitle = 'Untitled GitWeb repository';
 
 module.exports = utils.testAllLogins({
-  // TODO(soon): Uploading tests are broken. Waiting on refactor of upload input to fix.
-  // "Test local install" : function (browser) {
-  //   browser
-  //     .click('#upload-app-button')
-  //     .ifDemo(function () {
-  //       browser
-  //         .waitForElementVisible('.upload-button', medium_wait)
-  //         .assert.containsText('#uploadButton', 'Upload')
-  //         .waitForElementVisible('#uploadButton', short_wait)
-  //         .setValue('#uploadFile', path.join(assetsPath, 'ssjekyll6.spk'))
-  //         .click('#uploadButton')
-  //         // .waitForElementVisible('#upload p', medium_wait)
-  //         // .assert.containsText('#upload p', 'Sorry, this server requires an invite before you can install apps.')
-  //         .init()
-  //         .waitForElementVisible('#applist-apps', medium_wait);
-  //     })
-  //     .ifNotDemo(function () {
-  //       browser
-  //         .waitForElementVisible('#uploadButton', medium_wait)
-  //         .assert.containsText('#uploadButton', 'Upload')
-  //         .waitForElementVisible('#uploadButton', short_wait)
-  //         .setValue('#uploadFile', path.join(assetsPath, 'ssjekyll6.spk'))
-  //         .click('#uploadButton')
-  //         .waitForElementVisible('#step-confirm', long_wait)
-  //         .click('#confirmInstall')
-  //         .waitForElementVisible('.new-grain-button', short_wait)
-  //         .assert.containsText('.new-grain-button', expectedHackerCMSButtonText);
-  //     });
-  // },
+  "Test local install" : function (browser) {
+    browser
+      .url(browser.launch_url + "/upload-test")
+      .waitForElementVisible("#upload-app", short_wait)
+      .setValue("#upload-app", path.join(assetsPath, 'ssjekyll6.spk'))
+      .ifDemo(function () {
+        // Not allowed in demo.
+        browser
+          .pause(1000)
+          .getAlertText(function (text) {
+            browser.assert.equal("Unauthorized [403]", text.value)
+          })
+          .acceptAlert();
+      })
+      .ifNotDemo(function () {
+        browser
+          .waitForElementVisible("#step-confirm", long_wait)
+          .click('#confirmInstall')
+          .disableGuidedTour()
+          .waitForElementVisible(actionSelector, short_wait)
+          .assert.containsText(actionSelector, expectedHackerCMSButtonText)
 
-  // "Test upgrade" : function (browser) {
-  //   browser
-  //     .click("#applist-apps > ul > li:nth-child(1)")
-  //     .waitForElementVisible('#upload-app-button', medium_wait)
-  //     .click('#upload-app-button')
-  //     .ifDemo(function () {
-  //       browser
-  //         .waitForElementVisible('#upload p', medium_wait)
-  //         // .assert.containsText('#upload p', 'demo users are not allowed')
-  //         .init()
-  //         .waitForElementVisible('#applist-apps', medium_wait);
-  //     })
-  //     .ifNotDemo(function () {
-  //       browser
-  //         .waitForElementVisible('#uploadButton', medium_wait)
-  //         .assert.containsText('#uploadButton', 'Upload')
-  //         .waitForElementVisible('#uploadButton', short_wait)
-  //         .setValue('#uploadFile', path.join(assetsPath, 'ssjekyll7.spk'))
-  //         .click('#uploadButton')
-  //         .waitForElementVisible('#step-confirm', long_wait)
-  //         .assert.containsText('#confirmInstall', 'Upgrade')
-  //         .click('#confirmInstall')
-  //         .waitForElementVisible('.new-grain-button', short_wait)
-  //         .assert.containsText('.new-grain-button', expectedHackerCMSButtonText);
-  //     });
-  // },
+          // Create a grain so that we see the newer version / older version indicators after
+          // upgrade / downgrade.
+          .click(actionSelector)
+          .waitForElementVisible("#grainTitle", medium_wait);
+      });
+  },
 
-  // "Test downgrade" : function (browser) {
-  //   browser
-  //     .click("#applist-apps > ul > li:nth-child(1)")
-  //     .waitForElementVisible('#upload-app-button', medium_wait)
-  //     .click('#upload-app-button')
-  //     .ifDemo(function () {
-  //       browser
-  //         .waitForElementVisible('#upload p', medium_wait)
-  //         // .assert.containsText('#upload p', 'demo users are not allowed')
-  //         .init()
-  //         .waitForElementVisible('#applist-apps', medium_wait);
-  //     })
-  //     .ifNotDemo(function () {
-  //       browser
-  //         .waitForElementVisible('#uploadButton', medium_wait)
-  //         .assert.containsText('#uploadButton', 'Upload')
-  //         .waitForElementVisible('#uploadButton', short_wait)
-  //         .setValue('#uploadFile', path.join(assetsPath, 'ssjekyll5.spk'))
-  //         .click('#uploadButton')
-  //         .waitForElementVisible('#step-confirm', long_wait)
-  //         .assert.containsText('#confirmInstall', 'Downgrade')
-  //         .click('#confirmInstall')
-  //         .waitForElementVisible('.new-grain-button', short_wait)
-  //         .assert.containsText('.new-grain-button', expectedHackerCMSButtonText);
-  //     });
-  // },
+  "Test upgrade" : function (browser) {
+    browser
+      .url(browser.launch_url + "/upload-test")
+      .waitForElementVisible("#upload-app", short_wait)
+      .setValue("#upload-app", path.join(assetsPath, 'ssjekyll7.spk'))
+      .ifDemo(function () {
+        // Not allowed in demo.
+        browser
+          .pause(1000)
+          .getAlertText(function (text) {
+            browser.assert.equal("Unauthorized [403]", text.value)
+          })
+          .acceptAlert();
+      })
+      .ifNotDemo(function () {
+        browser
+          .waitForElementVisible('#step-confirm', long_wait)
+          .click('#confirmInstall')
+          .disableGuidedTour()
+          .waitForElementVisible(".app-details .older-version", short_wait)
+          .click(".app-details .older-version .upgradeGrains")
+          .waitForElementNotPresent(".app-details .older-version", short_wait);
+      });
+  },
+
+  "Test downgrade" : function (browser) {
+    browser
+      .url(browser.launch_url + "/upload-test")
+      .waitForElementVisible("#upload-app", short_wait)
+      .setValue("#upload-app", path.join(assetsPath, 'ssjekyll5.spk'))
+      .ifDemo(function () {
+        // Not allowed in demo.
+        browser
+          .pause(1000)
+          .getAlertText(function (text) {
+            browser.assert.equal("Unauthorized [403]", text.value)
+          })
+          .acceptAlert();
+      })
+      .ifNotDemo(function () {
+        browser
+          .waitForElementVisible('#step-confirm', long_wait)
+          .click('#confirmInstall')
+          .disableGuidedTour()
+          .waitForElementVisible(".app-details .newer-version", short_wait);
+      });
+  },
 
   "Test remote install" : function (browser) {
     browser
@@ -134,10 +127,9 @@ module.exports = utils.testAllLogins({
 
   "Test grain frame" : function (browser) {
     browser
-      .waitForElementPresent('iframe.grain-frame', short_wait)
-      .frame('grain-frame')
-        .waitForElementPresent('#publish', medium_wait)
-        .assert.containsText('#publish', 'Publish')
+      .grainFrame()
+      .waitForElementPresent('#publish', medium_wait)
+      .assert.containsText('#publish', 'Publish')
       .frameParent();
   },
 
@@ -145,9 +137,9 @@ module.exports = utils.testAllLogins({
     browser
       .click('#restartGrain')
       .pause(short_wait)
-      .frame('grain-frame')
-        .waitForElementPresent('#publish', medium_wait)
-        .assert.containsText('#publish', 'Publish')
+      .grainFrame()
+      .waitForElementPresent('#publish', medium_wait)
+      .assert.containsText('#publish', 'Publish')
       .frameParent();
   },
 
@@ -171,6 +163,7 @@ module.exports["Test grain not found"] = function (browser) {
     .waitForElementVisible(".grain-not-found", medium_wait)
     .assert.containsText(".grain-not-found", "No grain found")
     .loginDevAccount()
+    .disableGuidedTour()
     .url(browser.launch_url + "/grain/BogusGrainId")
     .waitForElementVisible(".grain-not-found", medium_wait)
     .assert.containsText(".grain-not-found", "No grain found")
@@ -179,6 +172,7 @@ module.exports["Test grain not found"] = function (browser) {
 
 module.exports["Sign in at grain URL"] = function (browser) {
   browser
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible("#grainTitle", medium_wait)
     .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
@@ -192,10 +186,10 @@ module.exports["Sign in at grain URL"] = function (browser) {
             .waitForElementVisible(".request-access", medium_wait)
             .assert.containsText(".request-access", "Please sign in to request access.")
             .execute(function (name) { window.loginDevAccount(name) }, [devName.value])
-            .waitForElementVisible("#grain-frame", medium_wait)
+            .waitForElementVisible("iframe.grain-frame", medium_wait)
             .waitForElementVisible("#grainTitle", medium_wait)
             .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
-            .frame("grain-frame")
+            .grainFrame()
             .waitForElementPresent("#publish", medium_wait)
             .assert.containsText("#publish", "Publish")
             .frame(null)
@@ -214,7 +208,7 @@ module.exports["Sign in at grain URL"] = function (browser) {
                     .execute("window.Meteor.logout()")
                     .url(browser.launch_url)
                     .url(response.value)
-                    .waitForElementVisible("#grain-frame", medium_wait)
+                    .waitForElementVisible("iframe.grain-frame", medium_wait)
                     .waitForElementVisible("#grainTitle", medium_wait)
                     .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
                     .execute(function (name) { window.loginDevAccount(name) }, [otherName])
@@ -228,12 +222,34 @@ module.exports["Sign in at grain URL"] = function (browser) {
                     // The forget grain button only appears once we've logged in.
                     .waitForElementVisible("#deleteGrain", medium_wait)
                     .waitForElementVisible("#grainTitle", medium_wait)
-                    .waitForElementVisible("#grain-frame", medium_wait)
+                    .waitForElementVisible("iframe.grain-frame", medium_wait)
                     .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
-                    .frame("grain-frame")
+                    .grainFrame()
                     .waitForElementPresent("#publish", medium_wait)
                     .assert.containsText("#publish", "Publish")
                     .frame(null)
+
+                    // Log out then log in again while visiting the grain URL. Since the token has
+                    // already been redeemed, this may exercise a different code path than is
+                    // exercised above.
+                    .execute("window.Meteor.logout()")
+                    .url(browser.launch_url)
+                    .url(response.value)
+                    .waitForElementVisible("iframe.grain-frame", medium_wait)
+                    .waitForElementVisible("#grainTitle", medium_wait)
+                    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+                    .execute(function (name) { window.loginDevAccount(name) }, [otherName])
+                    .waitForElementNotPresent(".request-access", medium_wait)
+                    // The forget grain button only appears once we've logged in.
+                    .waitForElementVisible("#deleteGrain", medium_wait)
+                    .waitForElementVisible("#grainTitle", medium_wait)
+                    .waitForElementVisible("iframe.grain-frame", medium_wait)
+                    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+                    .grainFrame()
+                    .waitForElementPresent("#publish", medium_wait)
+                    .assert.containsText("#publish", "Publish")
+                    .frame(null)
+
                     .end()
                 })
             });
@@ -243,18 +259,26 @@ module.exports["Sign in at grain URL"] = function (browser) {
 
 module.exports["Logging out closes grain"] = function (browser) {
   browser
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible("#grainTitle", medium_wait)
     .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
     .execute("window.Meteor.logout()")
     .waitForElementVisible(".request-access", medium_wait)
     .assert.containsText(".request-access", "Please sign in to request access.")
-    .end()
+
+    // At one point, we erroneously displayed two copies of the message. Check that there's only one.
+    .execute(function () {
+      return document.querySelectorAll(".request-access").length;
+    }, [], function (response) {
+      browser.assert.equal(response.value, 1);
+    }).end();
 }
 
 module.exports["Test grain anonymous user"] = function (browser) {
   browser
     // Upload app as normal user
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible('#grainTitle', medium_wait)
     .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
@@ -281,8 +305,11 @@ module.exports["Test grain anonymous user"] = function (browser) {
         .url(response.value)
         .waitForElementVisible('#grainTitle', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
-        .frame('grain-frame')
-        .waitForElementPresent('#publish', medium_wait)
+        .waitForElementVisible(".popup.login button.dismiss", short_wait)
+        .click(".popup.login button.dismiss") // "Stay anonymous"
+        .waitForElementNotPresent(".popup.login", short_wait)
+        .grainFrame()
+        .waitForElementVisible('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         .frame(null)
         .end();
@@ -295,6 +322,7 @@ module.exports["Test roleless sharing"] = function (browser) {
   var secondUserName;
   browser
   // Upload app as 1st user
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .getDevName(function (result) {
       firstUserName = result.value;
@@ -311,6 +339,7 @@ module.exports["Test roleless sharing"] = function (browser) {
     .getText('#share-token-text', function(response) {
       browser
         .loginDevAccount()
+        .disableGuidedTour()
         .getDevName(function(result) {
           secondUserName = result.value;
         })
@@ -319,7 +348,7 @@ module.exports["Test roleless sharing"] = function (browser) {
         .click("button.pick-identity")
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
-        .frame('grain-frame')
+        .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         .frame(null)
@@ -333,12 +362,13 @@ module.exports["Test roleless sharing"] = function (browser) {
         .getText('#share-token-text', function(response) {
           browser
             .loginDevAccount()
+            .disableGuidedTour()
             .url(response.value)
             .waitForElementVisible("button.pick-identity", short_wait)
             .click("button.pick-identity")
             .waitForElementVisible('.grain-frame', medium_wait)
             .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
-            .frame('grain-frame')
+            .grainFrame()
             .waitForElementPresent('#publish', medium_wait)
             .assert.containsText('#publish', 'Publish')
             .frame(null)
@@ -350,6 +380,7 @@ module.exports["Test roleless sharing"] = function (browser) {
             .waitForElementVisible('#share-token-text', medium_wait)
 
             .loginDevAccount(firstUserName)
+            .disableGuidedTour()
             .url(response.value)
             .waitForElementVisible('.grain-frame', medium_wait)
             .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
@@ -368,6 +399,7 @@ module.exports["Test roleless sharing"] = function (browser) {
 module.exports["Test role sharing"] = function (browser) {
   browser
     // Upload app as 1st user
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/david/gitweb5.spk",
                 "26eb486a44085512a678c543fc7c1fdd",
                 "6va4cjamc21j0znf5h5rrgnv0rpyvh1vaxurkrgknefvj0x63ash")
@@ -384,12 +416,13 @@ module.exports["Test role sharing"] = function (browser) {
     .getText('#share-token-text', function(response) {
       browser
         .loginDevAccount()
+        .disableGuidedTour()
         .url(response.value)
         .waitForElementVisible("button.pick-identity", short_wait)
         .click("button.pick-identity")
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedGitWebGrainTitle)
-        .frame('grain-frame')
+        .grainFrame()
         .waitForElementPresent('#offer-iframe', medium_wait) // Wait for GitWeb's offer iframe.
         .frame(null)
         .click('.topbar .share > .show-popup')
@@ -403,12 +436,13 @@ module.exports["Test role sharing"] = function (browser) {
         .getText('#share-token-text', function(response) {
           browser
             .loginDevAccount()
+            .disableGuidedTour()
             .url(response.value)
             .waitForElementVisible("button.pick-identity", short_wait)
             .click("button.pick-identity")
             .waitForElementVisible('.grain-frame', medium_wait)
             .assert.containsText('#grainTitle', expectedGitWebGrainTitle)
-            .frame('grain-frame')
+            .grainFrame()
             .waitForElementPresent('#offer-iframe', medium_wait) // Wait for GitWeb's offer iframe.
             .frame(null)
             .click('.topbar .share > .show-popup')
@@ -425,7 +459,8 @@ module.exports["Test role sharing"] = function (browser) {
 
 module.exports["Test grain identity chooser interstitial"] = function (browser) {
   browser
-    // Upload app as normal user
+     // Upload app as normal user
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible('.grain-frame', medium_wait)
     .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
@@ -442,13 +477,14 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         .url(shareLink.value)
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
-        .frame('grain-frame')
+        .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         .frame(null)
 
-        // Navigate to the url with an anonymous user
+        // Navigate to the url as a different user
         .loginDevAccount()
+        .disableGuidedTour()
         .pause(short_wait)
         // Try incognito
         .url(shareLink.value)
@@ -457,11 +493,11 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
         .execute(function() {
-          return Accounts.getCurrentIdentityId();
+          return globalGrains.getActive().identityId();
         }, [], function (response) {
           browser.assert.equal(response.value, null);
         })
-        .frame('grain-frame')
+        .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         // Try redeeming as current user
@@ -474,7 +510,7 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         .click("button.pick-identity")
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
-        .frame('grain-frame')
+        .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         .frame(null)
@@ -484,11 +520,11 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
         .execute(function() {
-          return Accounts.getCurrentIdentityId();
+          return globalGrains.getActive().identityId();
         }, [], function (response) {
           browser.assert.equal(!!response.value, true);
         })
-        .frame('grain-frame')
+        .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         .frame(null)
@@ -506,7 +542,7 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
             .url(shareLink.value)
             .waitForElementVisible('.grain-frame', medium_wait)
             .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
-            .frame('grain-frame')
+            .grainFrame()
             .waitForElementPresent('#publish', medium_wait)
             .assert.containsText('#publish', 'Publish')
             .frame(null)

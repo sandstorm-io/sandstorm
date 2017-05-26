@@ -1,0 +1,182 @@
+<template name="newAdminPersonalization">
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>Personalization</li>
+    </ul>
+  </h1>
+
+  {{#if hasSuccess }}
+    {{#focusingSuccessBox}}
+      {{message}}
+    {{/focusingSuccessBox}}
+  {{/if}}
+
+  {{#if hasError }}
+    {{#focusingErrorBox}}
+      {{message}}
+    {{/focusingErrorBox}}
+  {{/if}}
+
+  <form class="admin-personalization-form">
+    <div class="form-group">
+      <label>
+        Server title:
+        <input type="text" name="server-title" value="{{serverTitle}}" disabled="{{formDisabled}}"/>
+      </label>
+      <span class="form-subtext">
+        The name of this server, as used when communicating with users.
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>
+        Splash URL (experimental):
+        <input type="text" name="splash-url" value="{{splashUrl}}"
+               placeholder="{{exampleSplashUrl}}" disabled="{{formDisabled}}"/>
+      </label>
+      <span class="form-subtext">
+        This web page will be displayed in the background behind the login dialog (the home page
+        when logged out). For security reasons, the page must be hosted within this Sandstorm
+        server's wildcard host (otherwise it will be blocked by <code>Content-Security-Policy</code>). We
+        suggest using a static web publishing app like
+        <a target="_blank" href="https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh/?host={{serverUrl}}">
+          Hacker CMS
+        </a>
+        to host the content.
+        <strong>
+          WARNING: This feature is experimental; in particular the style and positioning of
+          the login box is subject to change without notice.
+        </strong>
+        Please let us know if you'd like to see it stabilize.
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>
+        Signup dialog:
+        <input type="text" name="signup-dialog" value="{{signupDialog}}"
+               disabled="{{formDisabled}}"/>
+      </label>
+      <span class="form-subtext">
+        This text will be displayed to users who click on signup links.
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>
+        Terms of service URL:
+        <input type="text" name="terms-of-service" value="{{termsOfServiceUrl}}"
+               placeholder="https://example.com/tos" disabled="{{formDisabled}}"/>
+      </label>
+      <span class="form-subtext">
+        If provided, new users will be required to agree to the linked terms of service.
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>
+        Privacy policy URL:
+        <input type="text" name="privacy-policy" value="{{privacyPolicyUrl}}"
+               placeholder="https://example.com/privacy" disabled="{{formDisabled}}"/>
+      </label>
+      <span class="form-subtext">
+        If provided, new users will be required to agree to the linked privacy policy.
+      </span>
+    </div>
+
+    <h2>Whitelabeling</h2>
+
+    <div class="form-group">
+      <label>
+        Custom logo on sign-in dialog
+      </label>
+      {{#if logoError}}
+        {{#focusingErrorBox}}
+          {{logoError}}
+        {{/focusingErrorBox}}
+      {{/if}}
+      <div class="logo" style="background-image: url('{{ logoUrl }}')"></div>
+      {{#if customLogo }}
+        <!-- show custom logo -->
+      {{else}}
+        <!-- show default -->
+      {{/if}}
+      <button type="button" name="reset-logo" disabled={{logoResetDisabled}}>Use default</button>
+      <button type="button" name="upload-logo">Upload logo</button>
+      <input type="file" name="upload-file" style="display:none;" />
+    </div>
+
+    <div class="checkbox-group">
+      <label>
+        <input
+          type="checkbox"
+          name="hide-troubleshooting"
+          checked="{{hideTroubleshootingChecked}}"
+          disabled="{{formDisabled}}"
+        />
+        Hide troubleshooting button
+      </label>
+    </div>
+
+    <div class="checkbox-group">
+      <label>
+        <input
+          type="checkbox"
+          name="hide-about"
+          checked="{{hideAboutChecked}}"
+          disabled="{{formDisabled}}"
+        />
+        Hide "About Sandstorm" links
+      </label>
+    </div>
+
+    <div class="checkbox-group">
+      <label>
+        <input
+          type="checkbox"
+          name="hide-send-feedback"
+          checked="{{hideSendFeedbackChecked}}"
+          disabled="{{formDisabled}}"
+        />
+        Hide "Send feedback" link
+      </label>
+    </div>
+
+    <div class="checkbox-group">
+      <label>
+        <input
+          type="checkbox"
+          name="use-server-title-for-home-text"
+          checked="{{useServerTitleForHomeTextChecked}}"
+          disabled="{{formDisabled}}"
+        />
+        Use server title (above) for home link
+      </label>
+      <span class="form-subtext">
+        If enabled, changes the default label "Sandstorm" on the link at the very top left to match
+        whatever you specified for the Server title above.
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>
+        Custom login button text
+        <input
+          type="text"
+          name="custom-login-provider-name"
+          value="{{customLoginProviderName}}"
+          disabled="{{formDisabled}}"
+        />
+      </label>
+      <span class="form-subtext">
+        Replaces the text "with LDAP" and "with SAML" on the login page with
+        the specified text.
+      </span>
+    </div>
+
+    <div class="button-row">
+      <button type="submit" disabled="{{formDisabled}}">Save</button>
+    </div>
+  </form>
+</template>

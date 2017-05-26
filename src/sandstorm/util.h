@@ -21,6 +21,7 @@
 // TODO(cleanup): A lot of stuff in here should move into KJ, after proper cleanup.
 
 #include <kj/io.h>
+#include <kj/one-of.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -31,6 +32,7 @@
 #include <kj/async.h>
 #include <capnp/rpc-twoparty.h>
 #include <sandstorm/util.capnp.h>
+#include <set>
 
 namespace kj {
   class UnixEventPort;
@@ -38,15 +40,10 @@ namespace kj {
 
 namespace sandstorm {
 
-#if __QTCREATOR
-#define KJ_MVCAP(var) var
-// QtCreator dosen't understand C++14 syntax yet.
-#else
 #define KJ_MVCAP(var) var = ::kj::mv(var)
 // Capture the given variable by move.  Place this in a lambda capture list.  Requires C++14.
 //
 // TODO(cleanup):  Move to libkj.
-#endif
 
 typedef unsigned int uint;
 typedef unsigned char byte;
@@ -218,15 +215,36 @@ kj::Maybe<kj::ArrayPtr<const char>> splitFirst(kj::ArrayPtr<const char>& input, 
 kj::ArrayPtr<const char> extractHostFromUrl(kj::StringPtr url);
 kj::ArrayPtr<const char> extractProtocolFromUrl(kj::StringPtr url);
 
-kj::String base64Encode(kj::ArrayPtr<const byte> input, bool breakLines);
-// Encode the input as base64. If `breakLines` is true, insert line breaks every 72 characters and
-// at the end of the output. (Otherwise, return one long line.)
+kj::Promise<void> rotateLog(kj::Timer& timer, int logFd, kj::StringPtr path, size_t threshold);
+// Rotate the open log file `logFd` located at the given path using "copytruncate" strategy
+// whenever it crosses `threshold` bytes.
+//
+// Each time the log is rotated, the contents of the log file are copied to a new file at
+// `path` + ".1", and then the original file is truncated.
+//
+// This is used for hacky log rotation, for both Sandstorm apps and the main server. We generally
+// log whatever is written to stdout. Usually apps don't have any particular way to tell them to
+// reopen stdout, so if stdout is a file, we can't convince them to redirect to a new file. We
+// could instead have stdout be a pipe to a log manager process which reads from the pipe and
+// writes to a file, but that would introduce context switching on every log write, which is sad.
+//
+// This "copytruncate" logging method could in theory lose some log data written right around the
+// time of the rotation. It is unlikely, though, and we deem it acceptable for our purposes.
 
-kj::Array<byte> base64Decode(kj::StringPtr input);
-// Decode base64 input to bytes. Non-base64 characters in the input will be ignored.
+class HeaderWhitelist {
+  // Given a list of strings, some of which end in '*', create an efficient whitelist matcher,
+  // where the *'s are wildcards. The input whitelist must be all-lowercase, but the matching is
+  // case-insensitive.
 
-kj::String hexEncode(kj::ArrayPtr<const byte> input);
-// Return the hex string corresponding to this array of bytes.
+public:
+  template <typename T>
+  HeaderWhitelist(T&& list): patterns(list.begin(), list.end()) {}
+
+  bool matches(kj::StringPtr header) const;
+
+private:
+  std::set<kj::StringPtr> patterns;
+};
 
 class SubprocessSet;
 
@@ -263,6 +281,11 @@ public:
     kj::Maybe<kj::ArrayPtr<const kj::StringPtr>> environment;
     // An array of 'NAME=VALUE' pairs specifying the child's environment. If null, inherits the
     // parent's environment.
+
+    kj::Maybe<uid_t> uid;
+    kj::Maybe<gid_t> gid;
+    // Values to change the UID and GID to in the child process before exec. Leave null for no
+    // change.
 
     Options(kj::StringPtr executable): executable(executable), argv(&this->executable, 1) {}
     Options(kj::ArrayPtr<const kj::StringPtr> argv): executable(argv[0]), argv(argv) {}
@@ -409,8 +432,13 @@ class CapRedirector
   // want to spurriously fail calls.
 
 public:
+  CapRedirector(kj::Function<capnp::Capability::Client()> reconnect);
+  // Creates a CapRedirector which calls reconnect() on disconnect. It will also call reconnect()
+  // immediately to form the initial connection.
+
   CapRedirector(kj::PromiseFulfillerPair<capnp::Capability::Client> paf =
                 kj::newPromiseAndFulfiller<capnp::Capability::Client>());
+  // Creates a CapRedirector which, upon disconnect, waits for setTarget() to be called.
 
   uint setTarget(capnp::Capability::Client newTarget);
 
@@ -423,7 +451,10 @@ public:
 private:
   uint iteration = 0;
   capnp::Capability::Client target;
-  kj::Own<kj::PromiseFulfiller<capnp::Capability::Client>> fulfiller;
+
+  typedef kj::Own<kj::PromiseFulfiller<capnp::Capability::Client>> Passive;
+  typedef kj::Function<capnp::Capability::Client()> Active;
+  kj::OneOf<Passive, Active> state;
 };
 
 class TwoPartyServerWithClientBootstrap: private kj::TaskSet::ErrorHandler {
@@ -457,6 +488,38 @@ private:
 
   void taskFailed(kj::Exception&& exception) override;
 };
+
+template <typename T>
+class OwnCapnp;
+
+template <typename Reader>
+OwnCapnp<capnp::FromReader<Reader>> newOwnCapnp(Reader value);
+
+template <typename T>
+class OwnCapnp: public T::Reader {
+  // A copy of a capnp object which lives in-memory and can be passed by ownership.
+
+public:
+  // Inherits methods of reader.
+
+private:
+  kj::Array<capnp::word> words;
+
+  OwnCapnp(kj::Array<capnp::word> words)
+      : T::Reader(capnp::readMessageUnchecked<T>(words.begin())),
+        words(kj::mv(words)) {}
+
+  template <typename Reader>
+  friend OwnCapnp<capnp::FromReader<Reader>> newOwnCapnp(Reader value);
+};
+
+template <typename Reader>
+OwnCapnp<capnp::FromReader<Reader>> newOwnCapnp(Reader value) {
+  auto words = kj::heapArray<capnp::word>(value.totalSize().wordCount + 1);
+  memset(words.asBytes().begin(), 0, words.asBytes().size());
+  capnp::copyToUnchecked(value, words);
+  return OwnCapnp<capnp::FromReader<Reader>>(kj::mv(words));
+}
 
 }  // namespace sandstorm
 

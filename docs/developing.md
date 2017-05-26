@@ -59,7 +59,7 @@ Read about how grains work and how they affect your app.
 
 - **Grain URLs and the grain-frame**: [URLs, domain names, page titles](developing/path.md)
 - **Sandstorm system architecture**: [How Sandstorm works](using/how-it-works.md) | [Grain isolation and other security practices in Sandstorm](using/security-practices.md)
-- **How to choose the granularity for your app**: []
+- **How to choose the granularity for your app**: [granularity](developing/handbook.md#is-granular)
 
 ---
 
@@ -97,7 +97,7 @@ and optional.
 
 ---
 
-## Raw Sandstorm APIs: Cap'n Proto
+## Powerbox & raw Sandstorm APIs via Cap'n Proto
 
 To make components easier to isolate while retaining high performance, most communication in
 Sandstorm occurs using Cap'n Proto. Cap'n Proto files in the Sandstorm source repository contain
@@ -106,6 +106,7 @@ git master** of capnproto. Configuration files such as `sandstorm-pkgdef.capnp` 
 their file format.
 
 - **Overview**: [Cap'n Proto website](https://capnproto.org/) | [How Cap'n Proto makes Sandstorm more secure](https://sandstorm.io/news/2014-12-15-capnproto-0.5)
+- **Implementation guide for app authors**: [Documentation on powerbox](developing/powerbox.md)
 - **Example**: [Explanation of how drivers will work, found within ip.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/ip.capnp)
 - **Cap'n Proto implementations**: [C++, Erlang, Go, Javascript, Python, Rust, and others](https://capnproto.org/otherlang.html)
 - **Further reading**: [A list of all Cap'n Proto files in the source repository](https://github.com/sandstorm-io/sandstorm/search?l=cap%27n-proto&p=2&q=type%3Acapnp+&utf8=%E2%9C%93)

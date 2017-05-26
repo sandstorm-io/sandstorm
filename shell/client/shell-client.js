@@ -17,6 +17,10 @@
 // This file implements the common shell components such as the top bar.
 // It also covers the root page.
 
+import getBuildInfo from "/imports/client/build-info.js";
+import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";
+import { isStandalone } from "/imports/client/standalone.js";
+
 // Subscribe to basic grain information first and foremost, since
 // without it we might e.g. redirect to the wrong place on login.
 globalSubs = [
@@ -25,7 +29,6 @@ globalSubs = [
   Meteor.subscribe("devPackages"),
   Meteor.subscribe("credentials"),
   Meteor.subscribe("accountIdentities"),
-  Meteor.subscribe("featureKey", false),
 ];
 
 Tracker.autorun(function () {
@@ -50,14 +53,36 @@ Tracker.autorun(function () {
 });
 
 // export: called by sandstorm-accounts-ui/login_buttons.js
+//               and grain-client.js
 logoutSandstorm = function () {
-  Meteor.logout(function () {
+  const logoutHelper = function () {
     sessionStorage.removeItem("linkingIdentityLoginToken");
     Accounts._loginButtonsSession.closeDropdown();
     globalTopbar.closePopup();
-    globalGrains.clear();
-    Router.go("root");
-  });
+    if (!isStandalone()) {
+      globalGrains.clear();
+    }
+  };
+
+  if (globalDb.userHasSamlLoginIdentity()) {
+    Meteor.call("generateSamlLogout", function (err, url) {
+      Meteor.logout(function () {
+        logoutHelper();
+        if (err) {
+          console.error(err);
+        } else {
+          window.location = url;
+        }
+      });
+    });
+  } else {
+    Meteor.logout(function () {
+      logoutHelper();
+      if (!isStandalone()) {
+        Router.go("root");
+      }
+    });
+  }
 };
 
 const makeAccountSettingsUi = function () {
@@ -159,9 +184,21 @@ const showBillingPrompt = function (reason, next) {
     db: globalDb,
     topbar: globalTopbar,
     accountsUi: globalAccountsUi,
+    billingPromptTemplate: window.BlackrockPayments ? "billingPrompt" : "billingPromptLocal",
     onComplete: function () {
       billingPromptState.set(null);
-      if (next) next();
+      if (!window.BlackrockPayments) {
+        Meteor.call("updateQuota", function (err) {
+          if (err) {
+            console.error(err);
+            alert(err);
+          }
+
+          if (next) next();
+        });
+      } else if (next) {
+        next();
+      }
     },
   });
 };
@@ -169,16 +206,12 @@ const showBillingPrompt = function (reason, next) {
 const ifQuotaAvailable = function (next) {
   const reason = isUserOverQuota(Meteor.user());
   if (reason) {
-    if (window.BlackrockPayments) {
-      showBillingPrompt(reason, function () {
-        // If the user successfully raised their quota, continue the operation.
-        if (!isUserOverQuota(Meteor.user())) {
-          next();
-        }
-      });
-    } else {
-      alert("You are out of storage space. Please delete some things and try again.");
-    }
+    showBillingPrompt(reason, function () {
+      // If the user successfully raised their quota, continue the operation.
+      if (!isUserOverQuota(Meteor.user())) {
+        next();
+      }
+    });
   } else {
     next();
   }
@@ -260,18 +293,18 @@ prettySize = function (size) {
 };
 
 // export: used in shared/demo.js
-launchAndEnterGrainByPackageId = function (packageId) {
+launchAndEnterGrainByPackageId = function (packageId, options) {
   const action = UserActions.findOne({ packageId: packageId });
   if (!action) {
     alert("Somehow, you seem to have attempted to launch a package you have not installed.");
     return;
   } else {
-    launchAndEnterGrainByActionId(action._id, null, null);
+    launchAndEnterGrainByActionId(action._id, null, null, options);
   }
 };
 
 // export: used in sandstorm-ui-app-details
-launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex) {
+launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex, options) {
   // Note that this takes a devPackageId and a devIndex as well. If provided,
   // they override the actionId.
   let packageId;
@@ -311,10 +344,27 @@ launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex) {
   // We need to ask the server to start a new grain, then browse to it.
   Meteor.call("newGrain", packageId, command, title, identityId, function (error, grainId) {
     if (error) {
-      console.error(error);
-      alert(error.message);
+      if (error.error === 402) {
+        // Sadly this can occur under LDAP quota management when the backend updates its quota
+        // while creating the grain.
+        showBillingPrompt("outOfStorage", function () {
+          // TODO(someday): figure out the actual reason, instead of hard-coding outOfStorage
+          Meteor.call("newGrain", packageId, command, title, identityId,
+          function (error, grainId) {
+            if (error) {
+              console.error(error);
+              alert(error.message);
+            } else {
+              Router.go("grain", { grainId: grainId }, options);
+            }
+          });
+        });
+      } else {
+        console.error(error);
+        alert(error.message);
+      }
     } else {
-      Router.go("grain", { grainId: grainId });
+      Router.go("grain", { grainId: grainId }, options);
     }
   });
 };
@@ -406,6 +456,13 @@ Template.referrals.helpers({
 });
 
 Template.layout.helpers({
+  effectiveServerTitle() {
+    const useServerTitle =
+        globalDb.getSettingWithFallback("whitelabelUseServerTitleForHomeText", false);
+    return useServerTitle ? globalDb.getSettingWithFallback("serverTitle", "Sandstorm") :
+        "Sandstorm";
+  },
+
   adminAlertIsTooLarge: function () {
     Template.instance().resizeTracker.depend();
     const setting = Settings.findOne({ _id: "adminAlert" });
@@ -495,6 +552,10 @@ Template.layout.helpers({
     return globalAccountsUi;
   },
 
+  globalGrains: function () {
+    return globalGrains;
+  },
+
   identityUser: function () {
     const user = Meteor.user();
     return user && user.profile;
@@ -505,76 +566,53 @@ Template.layout.helpers({
   },
 
   accountButtonsData: function () {
-    return { isAdmin: globalDb.isAdmin() };
+    const showSendFeedback = !globalDb.getSettingWithFallback("whitelabelHideSendFeedback", false);
+    return {
+      isAdmin: globalDb.isAdmin(),
+      grains: globalGrains,
+      showSendFeedback,
+    };
   },
 
   firstLogin: function () {
     return credentialsSubscription.ready() && !isDemoUser() && !Meteor.loggingIn()
-        && Meteor.user() && !Meteor.user().hasCompletedSignup;
+        && Meteor.user() && !Meteor.user().hasCompletedSignup &&
+        !isStandalone();
   },
 
   accountSettingsUi: function () {
     return makeAccountSettingsUi();
   },
 
-  firstTimeBillingPromptState: function () {
-    // Should we show the first-time billing plan selector?
-
-    // Don't show if billing is not enabled.
-    if (!window.BlackrockPayments) return;
-
+  isAccountSuspended: function () {
     const user = Meteor.user();
+    return user && user.suspended;
+  },
 
-    // Don't show if not logged in.
-    if (!user) return;
+  isStandalone: function () {
+    return isStandalone();
+  },
 
-    // Don't show if not in the experiment.
-    if (!user.experiments || user.experiments.firstTimeBillingPrompt !== "test") return;
+  demoModal: function () {
+    return Session.get("globalDemoModal");
+  },
 
-    // Don't show if the user has selected a plan already.
-    if (user.plan && !Session.get("firstTimeBillingPromptOpen")) return;
-
-    // Only show to account users (not identities).
-    if (!user.loginIdentities) return;
-
-    // Don't show to demo users.
-    if (user.expires) return;
-
-    // Don't show when viewing another user's grain. We don't want to scare people away from
-    // logging in to collaborate.
-    const route = Router.current().route.getName();
-    if (route === "shared") return;
-    if (route === "grain") {
-      if (_.some(globalGrains.getAll(), function (grain) {
-        return grain.isActive() && !grain.isOwner();
-      })) {
-
-        return;
-      }
-    }
-
-    // Don't show if user is trying to use a signup key. We're probably going to assign them
-    // a plan shortly.
-    if (route === "signup") return;
-
-    // Don't let the plan chooser disappear instantly once user.plan is set.
-    Session.set("firstTimeBillingPromptOpen", true);
-
-    // OK, show it.
-    return {
-      db: globalDb,
-      topbar: globalTopbar,
-      accountsUi: globalAccountsUi,
-      onComplete: function () {
-        Session.set("firstTimeBillingPromptOpen", false);
-      },
+  dismissDemoModal: function () {
+    return function () {
+      Session.set("globalDemoModal", null);
     };
   },
 });
 
 Template.layout.events({
-  "click #demo-expired .logout": function (event) {
+  "click #demo-expired button[name=logout]"(evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
     logoutSandstorm();
+  },
+
+  "click .demo-startup-modal .start"(evt) {
+    Session.set("globalDemoModal", null);
   },
 });
 
@@ -583,7 +621,7 @@ credentialsSubscription = Meteor.subscribe("credentials");
 Template.registerHelper("dateString", makeDateString);
 Template.registerHelper("hideNavbar", function () {
   // Hide navbar if user is not logged in, since they can't go anywhere with it.
-  return !Meteor.userId() || isDemoExpired();
+  return (!Meteor.userId() && globalGrains.getAll().length <= 1) || isDemoExpired();
 });
 
 Template.registerHelper("shrinkNavbar", function () {
@@ -592,7 +630,11 @@ Template.registerHelper("shrinkNavbar", function () {
 });
 
 Template.registerHelper("quotaEnabled", function () {
-  return Meteor.settings.public.quotaEnabled;
+  return globalDb.isQuotaEnabled();
+});
+
+Template.registerHelper("referralsEnabled", function () {
+  return globalDb.isReferralEnabled();
 });
 
 Template.root.helpers({
@@ -607,120 +649,6 @@ Template.root.helpers({
 
   overQuota: function () {
     return !window.BlackrockPayments && isUserOverQuota(Meteor.user());
-  },
-});
-
-Template.root.events({
-  "click .uninstall-app-button": function (event) {
-    // TODO(cleanup): This event handler is no longer used, but the new UI does not yet implement
-    //   uninstall. Leave this code here for reference until it does.
-    const appId = event.currentTarget.getAttribute("data-appid");
-    if (window.confirm("Really uninstall this app?")) {
-      UserActions.find({ appId: appId, userId: Meteor.userId() }).forEach(function (action) {
-        UserActions.remove(action._id);
-      });
-
-      Meteor.call("deleteUnusedPackages", appId);
-    }
-  },
-});
-
-Template.notificationsPopup.helpers({
-  notifications: function () {
-    Meteor.call("readAllNotifications");
-    return Notifications.find({ userId: Meteor.userId() }, { sort: { timestamp: -1 } }).map(function (row) {
-      const grain = Grains.findOne({ _id: row.grainId });
-      if (grain) {
-        row.grainTitle = grain.title;
-      }
-
-      return row;
-    });
-  },
-});
-
-Template.notifications.helpers({
-  notificationCount: function () {
-    return Notifications.find({ userId: Meteor.userId(), isUnread: true }).count();
-  },
-});
-
-Template.notificationsPopup.events({
-  "click #notification-dropdown": function (event) {
-    return false;
-  },
-});
-
-Template.notificationItem.helpers({
-  isAppUpdates: function () {
-    return !!this.appUpdates;
-  },
-
-  notificationTitle: function () {
-    if (this.admin) {
-      return "Notification from System";
-    } else if (this.appUpdates) {
-      return "App updates are available";
-    } else if (this.referral || this.mailingListBonus) {
-      return false;
-    }
-
-    return this.grainTitle + " is backgrounded";
-  },
-
-  titleHelperText: function () {
-    if (this.admin) {
-      return "Dismiss this system notification";
-    } else if (this.referral) {
-      return "Dismiss this referral notification";
-    } else {
-      return "Stop the background app";
-    }
-  },
-
-  dismissText: function () {
-    if (this.admin && this.admin.type === "reportStats") {
-      return false;
-    } else if (this.referral) {
-      return "Dismiss";
-    }
-
-    return "Cancel";
-  },
-
-  adminLink: function () {
-    return this.admin && this.admin.action;
-  },
-
-  appUpdatesList: function () {
-    return _.values(this.appUpdates);
-  },
-
-  paidUser: function () {
-    const plan = Meteor.user().plan;
-    return plan && plan !== "free";
-  },
-});
-
-Template.notificationItem.events({
-  "click .cancel-notification": function (event) {
-    Meteor.call("dismissNotification", this._id);
-    return false;
-  },
-
-  "click .accept-notification": function (event) {
-    if (this.appUpdates) {
-      Meteor.call("updateApps", this.appUpdates, (err) => {
-        // TODO(someday): if (err)
-        Meteor.call("dismissNotification", this._id);
-      });
-    }
-
-    return false;
-  },
-
-  "click .dismiss-notification": function (event) {
-    Meteor.call("dismissNotification", this._id);
   },
 });
 
@@ -742,23 +670,6 @@ Meteor.startup(function () {
         "\nWe can also provide personal assistance! Get in touch: https://sandstorm.io/community",
       "font-size: large; background-color: yellow;");
   }
-
-  Meteor.subscribe("notifications");
-
-  Meteor.autorun(function () {
-    Meteor.subscribe("notificationGrains",
-      Notifications.find().map(function (row) {
-        return row._id;
-      })
-    );
-  });
-});
-
-Meteor.methods({
-  dismissNotification(notificationId) {
-    // Client-side simulation of dismissNotification.
-    Notifications.remove({ _id: notificationId });
-  },
 });
 
 Router.configure({
@@ -769,21 +680,6 @@ Router.configure({
 
 if (Meteor.isClient) {
   Router.onBeforeAction("loading");
-}
-
-function getBuildInfo() {
-  let build = Meteor.settings && Meteor.settings.public && Meteor.settings.public.build;
-  const isNumber = typeof build === "number";
-  if (!build) {
-    build = "(unknown)";
-  } else if (isNumber) {
-    build = String(Math.floor(build / 1000)) + "." + String(build % 1000);
-  }
-
-  return {
-    build: build,
-    isUnofficial: !isNumber,
-  };
 }
 
 const promptForFile = function (input, callback) {
@@ -801,13 +697,21 @@ const startUpload = function (file, endpoint, onComplete) {
   // TODO(cleanup): Use Meteor's HTTP, although this may require sending them a PR to support
   //   progress callbacks (and officially document that binary input is accepted).
 
+  if (endpoint.startsWith("/") && !endpoint.startsWith("//")) {
+    // Endpoint is relative to the current host. Use the DDP host instead, if one is defined,
+    // so that we don't do file transfers over the main host, which may be a CDN.
+    const origin = __meteor_runtime_config__.DDP_DEFAULT_CONNECTION_URL || "";  // jscs:ignore requireCamelCaseOrUpperCaseIdentifiers
+    endpoint = origin + endpoint;
+  }
+
   Session.set("uploadStatus", "Uploading");
+  Session.set("uploadError", undefined);
 
   const xhr = new XMLHttpRequest();
 
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4) {
-      if (xhr.status == 200) {
+      if (xhr.status >= 200 && xhr.status < 300) {
         Session.set("uploadProgress", 0);
         onComplete(xhr.responseText);
       } else {
@@ -835,21 +739,28 @@ const startUpload = function (file, endpoint, onComplete) {
 
 restoreBackup = function (file) {
   // This function is global so tests can call it
-  startUpload(file, "/uploadBackup", function (response) {
-    Session.set("uploadStatus", "Unpacking");
-    const identityId = Accounts.getCurrentIdentityId();
-    Meteor.call("restoreGrain", response, identityId, function (err, grainId) {
-      if (err) {
-        console.log(err);
-        Session.set("uploadStatus", undefined);
-        Session.set("uploadError", {
-          status: "",
-          statusText: err.message,
+  Meteor.call("newRestoreToken", function (err, token) {
+    if (err) {
+      console.error(err);
+      alert(err.message);
+    } else {
+      startUpload(file, "/uploadBackup/" + token, function (response) {
+        Session.set("uploadStatus", "Unpacking");
+        const identityId = Accounts.getCurrentIdentityId();
+        Meteor.call("restoreGrain", token, identityId, function (err, grainId) {
+          if (err) {
+            console.log(err);
+            Session.set("uploadStatus", undefined);
+            Session.set("uploadError", {
+              status: "",
+              statusText: err.message,
+            });
+          } else {
+            Router.go("grain", { grainId: grainId }, { replaceState: true });
+          }
         });
-      } else {
-        Router.go("grain", { grainId: grainId });
-      }
-    });
+      });
+    }
   });
 };
 
@@ -866,7 +777,7 @@ uploadApp = function (file) {
     } else {
       startUpload(file, "/upload/" + token, function (response) {
         Session.set("uploadStatus", undefined);
-        Router.go("install", { packageId: response });
+        Router.go("install", { packageId: response }, { replaceState: true });
       });
     }
   });
@@ -876,21 +787,34 @@ promptUploadApp = function (input) {
   promptForFile(input, uploadApp);
 };
 
+Template.uploadTest.events({
+  "change #upload-app": function (event, tmpl) {
+    uploadApp(event.currentTarget.files[0]);
+  },
+
+  "change #upload-backup": function (event, tmpl) {
+    restoreBackup(event.currentTarget.files[0]);
+  },
+});
+
 Router.map(function () {
   this.route("root", {
     path: "/",
-    waitOn: function () {
-      return [
-        Meteor.subscribe("hasUsers"),
-        Meteor.subscribe("grainsMenu"),
-      ];
+    subscriptions: function () {
+      this.subscribe("hasUsers").wait();
+      if (!Meteor.loggingIn() && Meteor.user() && Meteor.user().loginIdentities) {
+        this.subscribe("grainsMenu").wait();
+      }
     },
 
     data: function () {
+      if (isStandalone()) {
+        return; // TODO(soon): move the route logic here?
+      }
       // If the user is logged-in, and can create new grains, and
       // has no grains yet, then send them to "new".
-      if (this.ready() && Meteor.userId() && !Meteor.loggingIn()) {
-        if (globalDb.currentUserGrains({}, {}).count() === 0 &&
+      if (this.ready() && Meteor.userId() && !Meteor.loggingIn() && Meteor.user().loginIdentities) {
+        if (globalDb.currentUserGrains().count() === 0 &&
             globalDb.currentUserApiTokens().count() === 0) {
           Router.go("apps", {}, { replaceState: true });
         } else {
@@ -898,8 +822,12 @@ Router.map(function () {
         }
       }
 
+      if (this.ready() && !HasUsers.findOne("hasUsers") && !globalDb.allowDevAccounts()) {
+        // This server has no users and hasn't been setup yet.
+        this.redirect("setupWizardIntro");
+      }
+
       return {
-        needsAdminTokenLogin: this.ready() && !HasUsers.findOne("hasUsers") && !globalDb.allowDevAccounts(),
         build: getBuildInfo().build,
         splashUrl: (Settings.findOne("splashUrl") || {}).value,
       };
@@ -976,6 +904,16 @@ Router.map(function () {
     },
   });
 
+  this.route("uploadTest", {
+    path: "/upload-test",
+
+    waitOn: function () {
+      return Meteor.subscribe("credentials");
+    },
+
+    data: function () {},
+  });
+
   this.route("referrals", {
     path: "/referrals",
 
@@ -986,6 +924,10 @@ Router.map(function () {
 
   this.route("account", {
     path: "/account",
+
+    waitOn() {
+      return globalSubs;
+    },
 
     data: function () {
       // Don't allow logged-out or demo users to visit the accounts page. There should be no way
@@ -999,9 +941,4 @@ Router.map(function () {
       }
     },
   });
-
-  this.route("accountUsage", {
-    path: "/account/usage",
-  });
 });
-

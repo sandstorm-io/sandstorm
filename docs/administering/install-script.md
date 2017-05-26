@@ -50,14 +50,16 @@ If -i is specified, default to (i)nsecure mode where we do not request a HTTPS c
 If -u is specified, default to avoiding root priviliges. Note that the dev tools only work if the server as root privileges.
 ```
 
-The `-d` option will use **defaults** for all options, creating a fully non-interactive install.  If
-you provide that option by itself, you will get a `sandstorm.conf` configured to use:
+The `-d` option will use **development defaults** for all options, creating a fully non-interactive
+install.  If you provide that option by itself, you will get a `sandstorm.conf` configured to use:
 
 - `BASE_URL=http://local.sandstorm.io:6080`
 - `BIND_IP=127.0.0.1` (or `BIND_IP=0.0.0.0` if you pass `-e`)
 
-and other defaults. One way to get a fully-automated install is to use `-d`, accept all defaults,
-and stop Sandstorm, modify `/opt/sandstorm/sandstorm.conf` to your liking, and then start Sandstorm.
+and other defaults optimized for app development. This includes enabling unprivileged user
+namespaces system-wide if necessary. One way to get a fully-automated install is to use `-d`, accept
+all defaults, and stop Sandstorm, modify `/opt/sandstorm/sandstorm.conf` to your liking, and then
+start Sandstorm.
 
 Another way is to request specific custom behavior from `install.sh`.
 
@@ -67,7 +69,7 @@ Over the time we have spent maintaining the install script, we hae found it easi
 user-provided configuration options from environment variables, rather than command line flags. Here
 are some environment variables that `install.sh` can look for, and their meanings.
 
-- `OVERRIDE_SANDSTORM_DEFAULT_INSTALL_DIR`: If you specify this, Sandstorm will install into this
+- `OVERRIDE_SANDSTORM_DEFAULT_DIR`: If you specify this, Sandstorm will install into this
   directory rather than `/opt/sandstorm` by default.
 
 - `OVERRIDE_SANDSTORM_DEFAULT_SERVER_USER`: If you specify this, Sandstorm will use this username
@@ -80,7 +82,7 @@ free HTTPS certificate service.
 
 - `DESIRED_SANDCATS_NAME`: The name of the the sandcats.io subdomain you would like to use for this install.
 
-- `DOMAIN_RESERVATION_TOKEN`: A token that indicates you have pre-reserved a sandcats.io subdomain.
+- `SANDCATS_DOMAIN_RESERVATION_TOKEN`: A token that indicates you have pre-reserved a sandcats.io subdomain.
 
 - `OVERRIDE_SANDCATS_GETCERTIFICATE`: If you specify this as `no`, then Sandstorm will not bother
   requesting a HTTPS certificate from sandcats.io. The install script will prompt you about sandcats
@@ -89,13 +91,17 @@ free HTTPS certificate service.
 - `OVERRIDE_SANDCATS_BASE_DOMAIN`: If you run a different instance of the sandcats.io software,
   adjust this variable.
 
+- `REPORT`: This controls if install.sh should ask you to report an installation error to us. Set
+  it to a non-`yes` value (e.g. `no`) if you want to disable that question. Most headless installations
+  would want to set `REPORT=no`.
+
 ### Examples
 
 To pass an environment variable to the Sandstorm installer, you can do as follows.
 
 ```bash
 curl https://install.sandstorm.io/ > install.sh
-sudo OVERRIDE_SANDSTORM_DEFAULT_INSTALL_DIR=/opt/sandstorm-is-awesome bash install.sh -d
+sudo OVERRIDE_SANDSTORM_DEFAULT_DIR=/opt/sandstorm-is-awesome bash install.sh -d
 ```
 
 This will install Sandstorm to `/opt/sandstorm-is-awesome` instead of the default directory.

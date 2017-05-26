@@ -29,6 +29,7 @@
 #include <map>
 #include <sys/mman.h>
 #include <sys/socket.h>
+#include <sys/sendfile.h>
 
 namespace sandstorm {
 
@@ -58,7 +59,7 @@ kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode) {
 
 kj::AutoCloseFd raiiOpenAt(int dirfd, kj::StringPtr name, int flags, mode_t mode) {
   int fd;
-  if (flags & O_TMPFILE) {
+  if ((flags & O_TMPFILE) == O_TMPFILE) {
     // work around glibc bug: https://sourceware.org/bugzilla/show_bug.cgi?id=17523
     KJ_SYSCALL(fd = syscall(SYS_openat, dirfd, name.cStr(), flags, mode), name);
   } else {
@@ -476,279 +477,73 @@ kj::ArrayPtr<const char> extractProtocolFromUrl(kj::StringPtr url) {
   }
 }
 
-// =======================================================================================
-// This code is derived from libb64 which has been placed in the public domain.
-// For details, see http://sourceforge.net/projects/libb64
+kj::Promise<void> rotateLog(kj::Timer& timer, int logFd, kj::StringPtr path, size_t threshold) {
+  struct stat stats;
+  KJ_SYSCALL(fstat(logFd, &stats));
+  if (stats.st_size >= threshold) {
+    // TODO(someday): If .1 exists, we could move it to .2, which we could move to .3, etc. We could
+    //   also gzip older logs to save space. But does anyone actually care? Probably not? Note that
+    //   if this changes, the lseek() below probably needs to be replaced with something more
+    //   sophisticated.
+    auto out = raiiOpen(kj::str(path, ".1"), O_WRONLY | O_CREAT | O_TRUNC);
 
-// -------------------------------------------------------------------
-// Encoder
+    // `logFd` might be write-only, so we reopen it for read.
+    auto in = raiiOpen(path, O_RDONLY);
 
-namespace {
+    // Only copy over the last `threshold` bytes of the log. We do this specifically to help deal
+    // with old grains that grew enormous logs before log rotation was introduced -- we'd like them
+    // to chop their logs down to size the first time they are opened. Note that this means "log.1"
+    // will tend to start mid-line, which is ugly, but it's probably not worth trying to avoid.
+    KJ_SYSCALL(lseek(in, stats.st_size - threshold, SEEK_SET));
 
-typedef enum {
-  step_A, step_B, step_C
-} base64_encodestep;
-
-typedef struct {
-  base64_encodestep step;
-  char result;
-  int stepcount;
-} base64_encodestate;
-
-const int CHARS_PER_LINE = 72;
-
-void base64_init_encodestate(base64_encodestate* state_in) {
-  state_in->step = step_A;
-  state_in->result = 0;
-  state_in->stepcount = 0;
-}
-
-char base64_encode_value(char value_in) {
-  static const char* encoding = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-  if (value_in > 63) return '=';
-  return encoding[(int)value_in];
-}
-
-int base64_encode_block(const char* plaintext_in, int length_in,
-                        char* code_out, base64_encodestate* state_in, bool breakLines) {
-  const char* plainchar = plaintext_in;
-  const char* const plaintextend = plaintext_in + length_in;
-  char* codechar = code_out;
-  char result;
-  char fragment;
-
-  result = state_in->result;
-
-  switch (state_in->step) {
-    while (1) {
-  case step_A:
-      if (plainchar == plaintextend) {
-        state_in->result = result;
-        state_in->step = step_A;
-        return codechar - code_out;
-      }
-      fragment = *plainchar++;
-      result = (fragment & 0x0fc) >> 2;
-      *codechar++ = base64_encode_value(result);
-      result = (fragment & 0x003) << 4;
-  case step_B:
-      if (plainchar == plaintextend) {
-        state_in->result = result;
-        state_in->step = step_B;
-        return codechar - code_out;
-      }
-      fragment = *plainchar++;
-      result |= (fragment & 0x0f0) >> 4;
-      *codechar++ = base64_encode_value(result);
-      result = (fragment & 0x00f) << 2;
-  case step_C:
-      if (plainchar == plaintextend) {
-        state_in->result = result;
-        state_in->step = step_C;
-        return codechar - code_out;
-      }
-      fragment = *plainchar++;
-      result |= (fragment & 0x0c0) >> 6;
-      *codechar++ = base64_encode_value(result);
-      result  = (fragment & 0x03f) >> 0;
-      *codechar++ = base64_encode_value(result);
-
-      ++(state_in->stepcount);
-      if (breakLines && state_in->stepcount == CHARS_PER_LINE/4) {
-        *codechar++ = '\n';
-        state_in->stepcount = 0;
-      }
+    // Transfer data using `sendfile()` to avoid unnecessary copies and context switches.
+    for (;;) {
+      ssize_t n;
+      KJ_SYSCALL(n = sendfile(out, in, nullptr, threshold));
+      if (n == 0) break;
     }
-  }
-  /* control should not reach here */
-  return codechar - code_out;
-}
 
-int base64_encode_blockend(char* code_out, base64_encodestate* state_in, bool breakLines) {
-  char* codechar = code_out;
-
-  switch (state_in->step) {
-  case step_B:
-    *codechar++ = base64_encode_value(state_in->result);
-    *codechar++ = '=';
-    *codechar++ = '=';
-    ++state_in->stepcount;
-    break;
-  case step_C:
-    *codechar++ = base64_encode_value(state_in->result);
-    *codechar++ = '=';
-    ++state_in->stepcount;
-    break;
-  case step_A:
-    break;
-  }
-  if (breakLines && state_in->stepcount > 0) {
-    *codechar++ = '\n';
+    // EOF. Quick, truncate before any other log data appears.
+    KJ_SYSCALL(ftruncate(logFd, 0));
   }
 
-  return codechar - code_out;
-}
-
-}  // namespace
-
-kj::String base64Encode(kj::ArrayPtr<const byte> input, bool breakLines) {
-  /* set up a destination buffer large enough to hold the encoded data */
-  // equivalent to ceil(input.size() / 3) * 4
-  auto numChars = (input.size() + 2) / 3 * 4;
-  if (breakLines) {
-    // Add space for newline characters.
-    uint lineCount = numChars / CHARS_PER_LINE;
-    if (numChars % CHARS_PER_LINE > 0) {
-      // Partial line.
-      ++lineCount;
-    }
-    numChars = numChars + lineCount;
-  }
-  auto output = kj::heapString(numChars);
-  /* keep track of our encoded position */
-  char* c = output.begin();
-  /* store the number of bytes encoded by a single call */
-  int cnt = 0;
-  size_t total = 0;
-  /* we need an encoder state */
-  base64_encodestate s;
-
-  /*---------- START ENCODING ----------*/
-  /* initialise the encoder state */
-  base64_init_encodestate(&s);
-  /* gather data from the input and send it to the output */
-  cnt = base64_encode_block((const char *)input.begin(), input.size(), c, &s, breakLines);
-  c += cnt;
-  total += cnt;
-
-  /* since we have encoded the entire input string, we know that
-     there is no more input data; finalise the encoding */
-  cnt = base64_encode_blockend(c, &s, breakLines);
-  c += cnt;
-  total += cnt;
-  /*---------- STOP ENCODING  ----------*/
-
-  KJ_ASSERT(total == output.size(), total, output.size());
-
-  return output;
-}
-
-// -------------------------------------------------------------------
-// Decoder
-
-namespace {
-
-typedef enum {
-  step_a, step_b, step_c, step_d
-} base64_decodestep;
-
-typedef struct {
-  base64_decodestep step;
-  char plainchar;
-} base64_decodestate;
-
-int base64_decode_value(char value_in) {
-  static const char decoding[] = {
-    62,-1,-1,-1,63,52,53,54,55,56,57,58,59,60,61,-1,-1,-1,-2,-1,-1,-1,
-    0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,-1,-1,-1,-1,-1,-1,
-    26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51};
-  static const char decoding_size = sizeof(decoding);
-  value_in -= 43;
-  if (value_in < 0 || value_in > decoding_size) return -1;
-  return decoding[(int)value_in];
-}
-
-void base64_init_decodestate(base64_decodestate* state_in) {
-  state_in->step = step_a;
-  state_in->plainchar = 0;
-}
-
-int base64_decode_block(const char* code_in, const int length_in,
-                        char* plaintext_out, base64_decodestate* state_in) {
-  const char* codechar = code_in;
-  char* plainchar = plaintext_out;
-  char fragment;
-
-  *plainchar = state_in->plainchar;
-
-  switch (state_in->step)
-  {
-    while (1)
-    {
-  case step_a:
-      do {
-        if (codechar == code_in+length_in) {
-          state_in->step = step_a;
-          state_in->plainchar = *plainchar;
-          return plainchar - plaintext_out;
-        }
-        fragment = (char)base64_decode_value(*codechar++);
-      } while (fragment < 0);
-      *plainchar    = (fragment & 0x03f) << 2;
-  case step_b:
-      do {
-        if (codechar == code_in+length_in) {
-          state_in->step = step_b;
-          state_in->plainchar = *plainchar;
-          return plainchar - plaintext_out;
-        }
-        fragment = (char)base64_decode_value(*codechar++);
-      } while (fragment < 0);
-      *plainchar++ |= (fragment & 0x030) >> 4;
-      *plainchar    = (fragment & 0x00f) << 4;
-  case step_c:
-      do {
-        if (codechar == code_in+length_in) {
-          state_in->step = step_c;
-          state_in->plainchar = *plainchar;
-          return plainchar - plaintext_out;
-        }
-        fragment = (char)base64_decode_value(*codechar++);
-      } while (fragment < 0);
-      *plainchar++ |= (fragment & 0x03c) >> 2;
-      *plainchar    = (fragment & 0x003) << 6;
-  case step_d:
-      do {
-        if (codechar == code_in+length_in) {
-          state_in->step = step_d;
-          state_in->plainchar = *plainchar;
-          return plainchar - plaintext_out;
-        }
-        fragment = (char)base64_decode_value(*codechar++);
-      } while (fragment < 0);
-      *plainchar++   |= (fragment & 0x03f);
-    }
-  }
-  /* control should not reach here */
-  return plainchar - plaintext_out;
-}
-
-}  // namespace
-
-kj::Array<byte> base64Decode(kj::StringPtr input) {
-  base64_decodestate state;
-  base64_init_decodestate(&state);
-
-  auto output = kj::heapArray<byte>((input.size() * 6 + 7) / 8);
-
-  size_t n = base64_decode_block(input.begin(), input.size(),
-      reinterpret_cast<char*>(output.begin()), &state);
-
-  if (n < output.size()) {
-    auto copy = kj::heapArray<byte>(n);
-    memcpy(copy.begin(), output.begin(), n);
-    output = kj::mv(copy);
-  }
-
-  return output;
+  return timer.afterDelay(5 * kj::MINUTES).then([=,&timer]() mutable {
+    return rotateLog(timer, logFd, path, threshold);
+  });
 }
 
 // =======================================================================================
 
-kj::String hexEncode(kj::ArrayPtr<const byte> input) {
-  const char DIGITS[] = "0123456789abcdef";
-  return kj::strArray(KJ_MAP(b, input) { return kj::heapArray<char>({DIGITS[b/16], DIGITS[b%16]}); }, "");
+bool HeaderWhitelist::matches(kj::StringPtr header) const {
+  // Convert to lower-case on stack.
+  KJ_STACK_ARRAY(char, buffer, header.size() + 1, 64, 256);
+  memcpy(buffer.begin(), header.begin(), buffer.size());
+  toLower(buffer);
+  header = kj::StringPtr(buffer.begin(), header.size());
+
+  auto iter = patterns.lower_bound(header);
+  if (iter != patterns.end() && *iter == header) {
+    return true;
+  }
+
+  if (iter == patterns.begin()) return false;
+
+  // If there is a prefix that matches, it will be the item immediately before the lower_bound,
+  // because the character '*' sorts before all characters that are valid inside headers.
+  --iter;
+  if (iter->endsWith("*")) {
+    // Check if prefix matches.
+    auto prefix = iter->slice(0, iter->size() - 1);
+    if (header.size() >= prefix.size() &&
+        memcmp(header.begin(), prefix.begin(), prefix.size()) == 0) {
+      return true;
+    }
+  }
+
+  return false;
 }
+
+// =======================================================================================
 
 Subprocess::Subprocess(Options&& options)
     : name(kj::heapString(options.argv.size() > 0 ? options.argv[0] : options.executable)) {
@@ -793,6 +588,14 @@ Subprocess::Subprocess(Options&& options)
 
       for (auto i: kj::indices(options.moreFds)) {
         KJ_SYSCALL(dup2(options.moreFds[i], STDERR_FILENO + 1 + i));
+      }
+
+      // Drop privileges if requested.
+      KJ_IF_MAYBE(g, options.gid) {
+        KJ_SYSCALL(setresgid(*g, *g, *g));
+      }
+      KJ_IF_MAYBE(u, options.uid) {
+        KJ_SYSCALL(setresuid(*u, *u, *u));
       }
 
       // Make the args vector.
@@ -998,16 +801,24 @@ void SubprocessSet::alreadyReaped(pid_t pid) {
 
 // =======================================================================================
 
+CapRedirector::CapRedirector(kj::Function<capnp::Capability::Client()> reconnect)
+    : target(reconnect()) {
+  state.init<Active>(kj::mv(reconnect));
+}
+
 CapRedirector::CapRedirector(kj::PromiseFulfillerPair<capnp::Capability::Client> paf)
-    : target(kj::mv(paf.promise)),
-      fulfiller(kj::mv(paf.fulfiller)) {}
+    : target(kj::mv(paf.promise)) {
+  state.init<Passive>(kj::mv(paf.fulfiller));
+}
 
 uint CapRedirector::setTarget(capnp::Capability::Client newTarget) {
+  KJ_REQUIRE(state.is<Passive>());
+
   ++iteration;
   target = newTarget;
 
   // If the previous target was a promise target, fulfill it.
-  fulfiller->fulfill(kj::mv(newTarget));
+  state.get<Passive>()->fulfill(kj::mv(newTarget));
 
   return iteration;
 }
@@ -1016,9 +827,14 @@ void CapRedirector::setDisconnected(uint oldIteration) {
   if (iteration == oldIteration) {
     // Our current client was disconnected.
     ++iteration;
-    auto paf = kj::newPromiseAndFulfiller<capnp::Capability::Client>();
-    target = kj::mv(paf.promise);
-    fulfiller = kj::mv(paf.fulfiller);
+
+    if (state.is<Passive>()) {
+      auto paf = kj::newPromiseAndFulfiller<capnp::Capability::Client>();
+      target = kj::mv(paf.promise);
+      state.get<Passive>() = kj::mv(paf.fulfiller);
+    } else {
+      target = state.get<Active>()();
+    }
   }
 }
 

@@ -1,7 +1,8 @@
 site_name: Docs
 theme_dir: 'docs/sandstorm_readthedocs_modified_theme'
 theme: 'readthedocs'
-repo_url: https://github.com/sandstorm-io/sandstorm/tree/master/docs
+repo_url: https://github.com/sandstorm-io/sandstorm
+edit_uri: edit/master/docs/
 markdown_extensions:
     - inline_graphviz
 extra_css:
@@ -28,8 +29,10 @@ pages:
     - "Platform stacks": "vagrant-spk/platform-stacks.md"
     - "Code dependencies": "vagrant-spk/code-dependencies.md"
     - "Service dependencies": "vagrant-spk/services.md"
+    - "Debugging a running grain": "developing/debugging.md"
     - "Web publishing": "developing/web-publishing.md"
     - "Exporting HTTP APIs": "developing/http-apis.md"
+    - "Connecting grains to each other & Sandstorm via powerbox": "developing/powerbox.md"
     - "Email from apps": "developing/email-from-apps.md"
     - "vagrant-spk design document": "vagrant-spk/design.md"
     - "Troubleshooting": "developing/troubleshooting.md"
@@ -41,7 +44,9 @@ pages:
 - Administering:
     - "Overview": "administering.md"
     - "Installation & uninstall": "install.md"
+    - "Troubleshooting a new install": "administering/install-troubleshooting.md"
     - "Reference docs for install.sh": "administering/install-script.md"
+    - "Reference docs for sandstorm.conf": "administering/config-file.md"
     - "Administrator's guide": "administering/guide.md"
     - "Sandcats dynamic DNS": "administering/sandcats.md"
     - "Email": "administering/email.md"
@@ -52,5 +57,7 @@ pages:
     - "Free sandcats.io HTTPS": "administering/sandcats-https.md"
     - "Reverse Proxy": "administering/reverse-proxy.md"
     - "Self-signed SSL": "administering/self-signed.md"
-    - "Sandstorm for Work": "administering/for-work.md"
+    - "Organizational Features": "administering/for-work.md"
+    - "Active Directory integration": "administering/active-directory.md"
     - "Frequently asked questions": "administering/faq.md"
+    - "Running a Sandstorm hosting provider": "administering/hosting-provider.md"

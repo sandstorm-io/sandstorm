@@ -8,6 +8,7 @@ to go from the app's source code to a running web server.
 
 The following stacks exist:
 
+* `golang`: a stack for Go programs
 * `lemp`: a PHP-oriented software collection including nginx, MySQL, and PHP.
 * `meteor`: a stack for [Meteor](https://meteor.com) apps, including MongoDB.
 * `static`: `nginx` configured to serve static files from `/opt/app`.
@@ -20,7 +21,7 @@ Running this command:
 vagrant-spk setupvm platformname
 ```
 
-will set up a Linux virtual machine (with Sandstorm installeed) ready to
+will set up a Linux virtual machine (with Sandstorm installed) ready to
 run code in the platform called `platformname`.
 
 This page contains **reference documentation** you might use after

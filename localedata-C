@@ -15,18 +15,18 @@ territory  ""
 revision   "1.0"
 date       "2015-11-30"
 %
-category  "C:2015";LC_IDENTIFICATION
-category  "C:2015";LC_CTYPE
-category  "C:2015";LC_COLLATE
-category  "C:2015";LC_TIME
-category  "C:2015";LC_NUMERIC
-category  "C:2015";LC_MONETARY
-category  "C:2015";LC_MESSAGES
-category  "C:2015";LC_PAPER
-category  "C:2015";LC_NAME
-category  "C:2015";LC_ADDRESS
-category  "C:2015";LC_TELEPHONE
-category  "C:2015";LC_MEASUREMENT
+category  "i18n:2012";LC_IDENTIFICATION
+category  "i18n:2012";LC_CTYPE
+category  "i18n:2012";LC_COLLATE
+category  "i18n:2012";LC_TIME
+category  "i18n:2012";LC_NUMERIC
+category  "i18n:2012";LC_MONETARY
+category  "i18n:2012";LC_MESSAGES
+category  "i18n:2012";LC_PAPER
+category  "i18n:2012";LC_NAME
+category  "i18n:2012";LC_ADDRESS
+category  "i18n:2012";LC_TELEPHONE
+category  "i18n:2012";LC_MEASUREMENT
 END LC_IDENTIFICATION
 
 LC_CTYPE

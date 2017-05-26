@@ -9,70 +9,45 @@
     <div class="error">{{webkeyError}}</div>
     {{/if}}
   {{else}}
-    <h4>Select one:</h4>
-    {{#if selectedProvider }}
-      {{> Template.dynamic template=selectedProviderTemplate data=selectedProviderTemplateData }}
-    {{else}}
-      <div class="search-row">
-        <label>
-          <span title="Search" class="search-icon"></span>
-          <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}">
-        </label>
-      </div>
-      <ul class="candidate-cards">
-      {{#each cards}}
-        <li class="powerbox-card">
-          {{>powerboxCardButton title=title iconSrc=iconSrc id=_id onClick=callback}}
-        </li>
-      {{else}}
-        <p>No grains can provide the requested interface.</p>
-      {{/each}}
-      </ul>
+    {{#if error}}
+      {{#focusingErrorBox}}
+        {{error}}
+      {{/focusingErrorBox}}
     {{/if}}
-  {{/if}}
-</template>
 
-<template name="powerboxCardButton">
-  {{!-- Pure template. Expects:
-        title: String     The title to show in the button.
-      iconSrc: String     The URL for the icon image.
-           id: String     The card id associated with this card.  Used primarily for tests.
-      onClick: Function   A parameterless callback function triggered on button activation.
-                          Note that Blaze will unhelpfully invoke the function if it's in the data
-                          context, so you may need to use a function which returns your actual
-                          callback function.
-  --}}
-    <button class="card-button" data-card-id="{{ id }}" style="background-image: url({{ iconSrc }});">{{ title }}</button>
-</template>
-
-<template name="powerboxCard">
-  {{!-- Pure template  Expects:
-        title: String  The title to show in the button.
-           id: String  The card id associated with this card.  Used primarily for tests.
-      iconSrc: String  The URL for the icon image.
-  --}}
-    <div class="powerbox-card" data-card-id="{{ id }}" style="background-image: url({{ iconSrc }});">{{ title }}</div>
-</template>
-
-<template name="powerboxProviderUiView">
-  {{!-- Pure template.  Expects:
-             _id: String     Card ID.
-           title: String     Selected grain title.
-         iconSrc: String     URL to app icon.
-        viewInfo: Object     JSON rendition of Grain.UiView.ViewInfo.
-      onComplete: Function   Takes a single argument, which is a roleAssignment.  Called when the
-                             form is submitted.
-  --}}
-  <div class="selected-card">
-    {{>powerboxCard id=_id title=title iconSrc=iconSrc}}
-    <form>
-    <p>with permissions:</p>
-    {{#each role in viewInfo.roles}}
-    <label><input type="radio" name="role" value="{{role.index}}">{{role.title.defaultText}} - {{role.verbPhrase.defaultText}}</label>
+    {{#with selectedProvider}}
+      <h4>Selected:</h4>
+      <div class="selected-card">
+        <div class="powerbox-card" data-card-id="{{ option._id }}"
+             style="background-image: url('{{ iconSrc }}');">
+          {{>cardTemplate . }}
+        </div>
+        {{>configureTemplate . }}
+      </div>
     {{else}}
-    <label><input type="radio" checked="true" name="role" value="all">Full access</label>
-    {{/each}}
-    <button class="connect-button">Connect</button>
-    </form>
-  </div>
+      {{#if Template.subscriptionsReady}}
+        <h4>Select one:</h4>
+        <div class="search-row">
+          <label>
+            <span title="Search" class="search-icon"></span>
+            <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}">
+          </label>
+        </div>
+        <ul class="candidate-cards">
+        {{#each cards}}
+          <li class="powerbox-card">
+            <button class="card-button" data-card-id="{{ option._id }}"
+                    style="background-image: url('{{ iconSrc }}');">
+              {{>cardTemplate . }}
+            </button>
+          </li>
+        {{else}}
+          <p>No grains can provide the requested interface.</p>
+        {{/each}}
+        </ul>
+      {{else}}
+        <p>Loading...</p>
+      {{/if}}
+    {{/with}}
+  {{/if}}
 </template>

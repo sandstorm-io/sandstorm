@@ -5,6 +5,7 @@ email.capnp node_modules/sandstorm/email.capnp
 email-impl.capnp node_modules/sandstorm/email-impl.capnp
 grain.capnp node_modules/sandstorm/grain.capnp
 api-session.capnp node_modules/sandstorm/api-session.capnp
+api-session-impl.capnp node_modules/sandstorm/api-session-impl.capnp
 hack-session.capnp node_modules/sandstorm/hack-session.capnp
 ip.capnp node_modules/sandstorm/ip.capnp
 package.capnp node_modules/sandstorm/package.capnp
@@ -14,4 +15,7 @@ web-session.capnp node_modules/sandstorm/web-session.capnp
 backend.capnp node_modules/sandstorm/backend.capnp
 persistentuiview.capnp node_modules/sandstorm/persistentuiview.capnp
 update-tool.capnp node_modules/sandstorm/update-tool.capnp
-feature-key.capnp node_modules/sandstorm/feature-key.capnp
+powerbox.capnp node_modules/sandstorm/powerbox.capnp
+activity.capnp node_modules/sandstorm/activity.capnp
+identity.capnp node_modules/sandstorm/identity.capnp
+identity-impl.capnp node_modules/sandstorm/identity-impl.capnp

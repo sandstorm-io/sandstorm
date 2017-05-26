@@ -52,6 +52,37 @@
     margin: 4px;
     text-decoration: none;
   }
+
+  .setup-system-log {
+    color: #000000;
+  }
+
+  .setup-system-log-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+
+    .setup-system-log-header-text {
+      font-size: 24px;
+      font-weight: normal;
+    }
+  }
+}
+
+.setup-intro-instruction-block {
+  text-align: center;
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.setup-intro-instruction {
+  margin: 0;
+}
+
+.setup-intro-instruction-deemphasized {
+  margin: 0;
+  color: #888;
 }
 
 .setup-progress {
@@ -68,15 +99,27 @@
   justify-content: center;
 }
 
+.setup-current-step {
+  color: black;
+}
+
+span.setup-not-current-step {
+  color: #888;
+}
+
+a.setup-not-current-step {
+  text-decoration: none;
+}
+
 .setup-progress-step {
   // base percent to flex: should be 100%/(num_steps + 1) to make the steps' labels line up with
   // the endpoints of the progress bars below, but the number of steps varies, so we need to set
   // the size depending on how many there are.
   &.of-four {
-    flex: 0 1 25%;
+    flex: 0 1 20%;
   }
   &.of-five {
-    flex: 0 1 20%;
+    flex: 0 1 16.66%;
   }
   display: flex;
   flex-direction: column;
@@ -104,82 +147,22 @@
   }
 }
 
-.setup-welcome {
+button.setup-sandstorm {
   text-align: center;
-}
-
-.setup-type-selection {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.setup-type {
-  flex: 1 1 auto;
-  min-width: 300px;
-  background-color: #fff;
-  border: 1px solid #d0d0d0;
-  border-radius: 4px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px;
-  margin: 10px;
-
-  h3 {
-    text-align: center;
-    font-size: 20px;
-    font-weight: 600;
-    margin-left: 0px;
-    margin-right: 0px;
-    margin-top: 0px;
-    margin-bottom: 8px;
+  width: 300px;
+  margin: 0 auto;
+  display: block;
+  @extend %button-base;
+  height: 32px;
+  font-size: 16px;
+  background-color: #962751;
+  color: white;
+  border: 1px solid darken(#962751, 10%);
+  &:hover {
+    background-color: lighten(#962751, 10%);
   }
-
-  .setup-features {
-    width: 100%;
-    flex: 1 1 auto;
-    list-style-type: none;
-    padding-left: 12px;
-    margin-top: 0;
-    margin-bottom: 16px;
-
-    .setup-additional-feature {
-      color: #888;
-    }
-    >li {
-      margin-bottom: 8px;
-    }
-
-    border-bottom: 1px solid #aaa
-  }
-
-  .setup-pricing-block {
-    text-align: center;
-    margin-bottom: 8px;
-    .setup-price {
-      font-size: 24px;
-      margin-top: 0px;
-      margin-bottom: 2px;
-    }
-    .subheader {
-      color: #444;
-      font-size: 12px;
-      margin-top: 2px;
-      margin-bottom: 2px;
-    }
-  }
-
-  button {
-    text-align: center;
-    width: 100%;
-    @extend %button-base;
-    @extend %button-primary;
-    height: 32px;
-    font-size: 16px;
+  &:disabled {
+    @extend %button-disabled;
   }
 }
 
@@ -223,6 +206,74 @@
   }
 }
 
+.setup-preinstall {
+  [role=grid] {
+    margin-bottom: 10px;
+
+    [role=row] {
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-start;
+      border-top: 1px solid $default-table-border-color;
+      flex-basis: 0;
+      width: 100%;
+
+      &.checked, &.toggle-more {
+        background-color: white;
+        [role=row] {
+          border-top: 1px solid $default-content-background-color;
+        }
+      }
+
+      &.toggle-more {
+        cursor: pointer;
+        div {
+          margin-left: auto;
+        }
+      }
+
+      [role=gridcell] {
+        padding: 4px;
+        overflow: hidden;
+        @include overflow-ellipsis();
+        flex-grow: 0;
+        &.name {
+          width: 20%;
+        }
+        &.description {
+          width: 70%;
+          color: #888888;
+        }
+        &.download {
+          width: 130px;
+          color: #888888;
+          i.download-checkmark {
+            color: green;
+            @extend .icon;
+            @extend .icon-check;
+            margin-right: 5px;
+          }
+          i.download-x-mark {
+            color: red;
+            @extend .icon;
+            @extend .icon-plus;
+            margin-right: 5px;
+            -ms-transform: rotate(45deg);
+            -webkit-transform: rotate(45deg);
+            transform: rotate(45deg);
+          }
+          progress {
+            width: 115px;
+            &::-webkit-progress-value {
+              background-color: green;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 .setup-next-steps {
   display: flex;
   flex-direction: row;
@@ -239,7 +290,6 @@
   flex-direction: row-reverse;
   align-items: stretch;
   justify-content: flex-start;
-  margin-bottom: 15px;
 }
 
 .setup-next-button {
@@ -254,15 +304,10 @@
   margin-right: auto;
 }
 
-.setup-test-email-button, .setup-skip-email {
+.setup-test-email-button, .setup-skip-email, .setup-skip-button {
   @extend %button-base;
   @extend %button-secondary;
   margin-left: 10px;
-}
-
-.setup-get-feature-key {
-  @extend %button-base;
-  @extend %button-secondary;
 }
 
 .setup-button-primary {
@@ -294,74 +339,6 @@
 
 .rerun-wizard-button {
   @extend %button-secondary;
-}
-
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 1000;
-  background-color: #000;
-  opacity: .5;
-}
-
-.modal {
-  position: fixed;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  opacity: 1;
-  z-index: 1010;
-  display: block;
-  overflow-y: auto;
-}
-
-.modal-dialog {
-  position: relative;
-  width: 600px;
-  margin-top: 36px;
-  margin-bottom: auto;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.modal-close-button {
-  display: block;
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 32px;
-  height: 32px;
-  color: transparent;
-  overflow: hidden;
-  background-image: url("/close-m.svg");
-  background-size: 20px 20px;
-  background-repeat: no-repeat;
-  background-position: center;
-  border: none;
-  border-radius: 16px;
-  background-color: transparent;
-  margin: 0;
-  &:hover {
-    background-color: #eee;
-    cursor: pointer;
-  }
-}
-
-.modal-content {
-  min-height: 32px;
-  background-color: #fff;
-  opacity: 1;
-  padding: 24px;
-  >h2 {
-    font-weight: normal;
-    margin: 0;
-    margin-bottom: 24px;
-    border-bottom: 1px solid #ddd;
-  }
 }
 
 .sandstorm-logo-row {

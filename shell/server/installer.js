@@ -14,14 +14,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const Fs = Npm.require("fs");
-const Path = Npm.require("path");
-const Crypto = Npm.require("crypto");
-const ChildProcess = Npm.require("child_process");
-const Http = Npm.require("http");
-const Https = Npm.require("https");
-const Url = Npm.require("url");
-const Promise = Npm.require("es6-promise").Promise;
+import Fs from "fs";
+import Path from "path";
+import Crypto from "crypto";
+import ChildProcess from "child_process";
+import Url from "url";
+
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { ssrfSafeLookupOrProxy } from "/imports/server/networking.js";
+
+const Request = HTTPInternals.NpmModules.request.module;
+
 const Capnp = Npm.require("capnp");
 
 const Manifest = Capnp.importSystem("sandstorm/package.capnp").Manifest;
@@ -39,18 +42,6 @@ const verifyIsMainReplica = () => {
   }
 };
 
-Meteor.methods({
-  deleteUnusedPackages(appId) {
-    check(appId, String);
-    Packages.find({ appId:appId }).forEach((pkg) => {deletePackage(pkg._id);});
-  },
-});
-
-deletePackage = (packageId) => {
-  // Mark package for possible deletion;
-  Packages.update({ _id: packageId, status: "ready" }, { $set: { shouldCleanup: true } });
-};
-
 const deletePackageInternal = (pkg) => {
   verifyIsMainReplica();
 
@@ -63,12 +54,18 @@ const deletePackageInternal = (pkg) => {
   installers[packageId] = "uninstalling";
 
   try {
-    const action = UserActions.findOne({ packageId:packageId });
-    const grain = Grains.findOne({ packageId:packageId });
+    const action = UserActions.findOne({ packageId: packageId });
+    const grain = Grains.findOne({ packageId: packageId });
     const notificationQuery = {};
-    notificationQuery["appUpdates." + pkg.appId] = { $exists: true };
-    if (!grain && !action && !(pkg.isAutoUpdated && Notifications.findOne(notificationQuery))) {
-      Packages.update({ _id:packageId }, { $set: { status:"delete" }, $unset: { shouldCleanup: "" } });
+    notificationQuery["appUpdates." + pkg.appId + ".packageId"] = packageId;
+    if (!grain && !action && !Notifications.findOne(notificationQuery)
+        && !globalDb.getAppIdForPreinstalledPackage(packageId)) {
+      Packages.update({
+        _id: packageId,
+      }, {
+        $set: { status: "delete" },
+        $unset: { shouldCleanup: "" },
+      });
       waitPromise(globalBackend.cap().deletePackage(packageId));
       Packages.remove(packageId);
 
@@ -77,7 +74,7 @@ const deletePackageInternal = (pkg) => {
         globalDb.unrefStaticAsset(assetId);
       });
     } else {
-      Packages.update({ _id:packageId }, { $unset: { shouldCleanup: "" } });
+      Packages.update({ _id: packageId }, { $unset: { shouldCleanup: "" } });
     }
 
     delete installers[packageId];
@@ -302,82 +299,67 @@ AppInstaller = class AppInstaller {
   }
 
   doDownloadTo(out) {
-    const url = Url.parse(this.url);
-    const options = {
-      hostname: url.hostname,
-      port: url.port,
-      path: url.path,
-    };
+    inMeteor(this.wrapCallback(function () {
+      const safe = ssrfSafeLookupOrProxy(globalDb, this.url);
 
-    let protocol;
-    if (url.protocol === "http:" || url.protocol === "https:") {
-      protocol = Request.defaults({
-        maxRedirects: 20,
-        // Since we will verify the download against a hash anyway, we don't need to verify the
-        // server's certificate. In fact, the only reason we support HTTPS at all here is because
-        // some servers refuse to serve over HTTP (which is, in general, a good thing). Skipping the
-        // certificate check here is helpful in that it means we don't have to worry about having a
-        // reasonable list of trusted CAs available to Sandstorm.
-        strictSSL: false,
-      });
-    } else {
-      throw new Error("Protocol not supported: " + url.protocol);
-    }
-
-    // TODO(security):  It could arguably be a security problem that it's possible to probe the
-    //   server's local network (behind any firewalls) by presenting URLs here.
-    let bytesExpected = undefined;
-    let bytesReceived = 0;
-    const hasher = Crypto.createHash("sha256");
-    let done = false;
-    const updateDownloadProgress = _.throttle(this.wrapCallback(() => {
-      if (!done) {
-        if (bytesExpected) {
-          this.updateProgress("download", bytesReceived / bytesExpected);
-        } else {
-          this.updateProgress("download", bytesReceived);
+      let bytesExpected = undefined;
+      let bytesReceived = 0;
+      const hasher = Crypto.createHash("sha256");
+      let done = false;
+      const updateDownloadProgress = _.throttle(this.wrapCallback(() => {
+        if (!done) {
+          if (bytesExpected) {
+            this.updateProgress("download", bytesReceived / bytesExpected);
+          } else {
+            this.updateProgress("download", bytesReceived);
+          }
         }
-      }
-    }), 500);
+      }), 500);
 
-    const request = protocol.get(this.url);
+      const request = safe.proxy
+          ? Request.get(this.url, { proxy: safe.proxy })
+          : Request.get(safe.url, {
+              headers: { host: safe.host },
+              servername: safe.host.split(":")[0],
+            });
 
-    request.on("response", this.wrapCallback((response) => {
-      if ("content-length" in response.headers) {
-        bytesExpected = parseInt(response.headers["content-length"]);
-      }
-    }));
-
-    request.on("data", this.wrapCallback((chunk) => {
-      hasher.update(chunk);
-      out.write(chunk);
-      bytesReceived += chunk.length;
-      updateDownloadProgress();
-    }));
-
-    request.on("end", this.wrapCallback(() => {
-      out.done();
-
-      if (hasher.digest("hex").slice(0, 32) !== this.packageId) {
-        throw new Error("Package hash did not match.");
-      }
-
-      done = true;
-      delete this.downloadRequest;
-
-      this.updateProgress("unpack");
-      out.saveAs(this.packageId).then(this.wrapCallback((info) => {
-        this.appId = info.appId;
-        this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
-        this.done(info.manifest);
-      }), this.wrapCallback((err) => {
-        throw err;
+      request.on("response", this.wrapCallback((response) => {
+        if ("content-length" in response.headers) {
+          bytesExpected = parseInt(response.headers["content-length"]);
+        }
       }));
+
+      request.on("data", this.wrapCallback((chunk) => {
+        hasher.update(chunk);
+        out.write(chunk);
+        bytesReceived += chunk.length;
+        updateDownloadProgress();
+      }));
+
+      request.on("end", this.wrapCallback(() => {
+        out.done();
+
+        if (hasher.digest("hex").slice(0, 32) !== this.packageId) {
+          throw new Error("Package hash did not match.");
+        }
+
+        done = true;
+        delete this.downloadRequest;
+
+        this.updateProgress("unpack");
+        out.saveAs(this.packageId).then(this.wrapCallback((info) => {
+          this.appId = info.appId;
+          this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
+          this.done(info.manifest);
+        }), this.wrapCallback((err) => {
+          throw err;
+        }));
+      }));
+
+      request.on("error", this.wrapCallback((err) => { throw err; }));
+
+      this.downloadRequest = request;
     }));
-
-    request.on("error", this.wrapCallback((err) => { throw err; }));
-
-    this.downloadRequest = request;
   }
 
   done(manifest) {
@@ -390,6 +372,18 @@ AppInstaller = class AppInstaller {
           globalDb.sendAppUpdateNotifications(_this.appId, _this.packageId,
             (manifest.appTitle && manifest.appTitle.defaultText), manifest.appVersion,
             (manifest.appMarketingVersion && manifest.appMarketingVersion.defaultText));
+        }
+
+        if (globalDb.getPackageIdForPreinstalledApp(_this.appId) &&
+            globalDb.collections.appIndex.findOne({
+              _id: _this.appId,
+              packageId: _this.packageId,
+            })) {
+          // Only mark app as preinstall ready if its appId is in the preinstalledApps setting
+          // and if it's the latest package version in the appIndex. The updateAppIndex function
+          // will always trigger updates of preinstalled apps, even if a concurrent download of
+          // an older package is going on.
+          globalDb.setPreinstallAppAsReady(_this.appId, _this.packageId);
         }
       });
     }).then(() => {

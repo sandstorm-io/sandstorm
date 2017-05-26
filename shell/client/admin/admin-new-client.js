@@ -1,10 +1,8 @@
-Template.adminNavPill.helpers({
-  currentRouteNameIs(name) {
-    return Router.current().route.getName() === name;
-  },
-});
-
 Template.newAdmin.helpers({
+  setDocumentTitle: function () {
+    document.title = "Admin panel · " + globalDb.getServerTitle();
+  },
+
   adminTab() {
     return Router.current().route.getName();
   },

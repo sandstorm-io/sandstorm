@@ -1,7 +1,5 @@
 {
   "preset": "airbnb",
-  "esnext": true,
-  "verbose": true,
   "fileExtensions": [".js"],
   "validateQuoteMarks": {"mark": "\"", "escape": true},
   "disallowVar": true,
@@ -9,5 +7,6 @@
   "requirePaddingNewLinesBeforeLineComments": false,
   "requireShorthandArrowFunctions": false,
   "disallowQuotedKeysInObjects": false,  # https://github.com/jscs-dev/node-jscs/issues/2183
-  "excludeFiles": ['.meteor', '**/node_modules', 'public/*', '**/*.css']
+  "disallowEmptyBlocks": { "allExcept": [ "comments" ] },
+  "excludeFiles": ['.meteor', '**/node_modules', 'public/*', '**/*.css', 'imports/db-deprecated.js']
 }

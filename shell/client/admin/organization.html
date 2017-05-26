@@ -1,0 +1,121 @@
+<template name="organizationSettingsBlurb">
+  <p>
+    Sandstorm allows you to define an organization. You can automatically apply some settings
+    to all members of your organization. Users within the organization will automatically be able to
+    log in, install apps, and create grains.
+  </p>
+</template>
+
+<template name="newAdminOrganization">
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>Organization settings</li>
+    </ul>
+  </h1>
+
+  {{> organizationSettingsBlurb "" }}
+
+  {{#if hasSuccess }}
+    {{#focusingSuccessBox}}
+      Saved changes.
+    {{/focusingSuccessBox}}
+  {{/if}}
+
+  {{#if hasError}}
+    {{#focusingErrorBox}}
+      Failed to save changes: {{message}}
+    {{/focusingErrorBox}}
+  {{/if}}
+
+  <form class="admin-organization-management-form {{#if formDisabled}}disabled{{/if}}">
+    <h2>Organization membership</h2>
+
+    <div class="org-membership">
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" name="email-toggle" checked="{{emailChecked}}" disabled="{{emailDisabled}}" />
+          Users authenticated via email address
+        </label>
+        {{#if emailDisabled }}
+        <span class="form-subtext">Note: disabled because email login is not configured.</span>
+        {{/if}}
+        <div class="form-group">
+          <label>Domain:
+            <input type="text" name="email-domain" value="{{emailDomain}}" disabled="{{emailDisabled}}" />
+          </label>
+          <span class="form-subtext">
+            Users with an email address at this domain will be members of this server's organization.
+          </span>
+        </div>
+      </div>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" name="gapps-toggle" checked="{{gappsChecked}}" disabled="{{gappsDisabled}}" />
+          Users authenticated via Google Apps for Work
+        </label>
+        {{#if gappsDisabled }}
+        <span class="form-subtext">Note: disabled because Google login is not configured.</span>
+        {{/if}}
+        <div class="form-group">
+          <label>Domain:
+            <input type="text" name="gapps-domain" value="{{gappsDomain}}" disabled="{{gappsDisabled}}" />
+          </label>
+          <span class="form-subtext">
+            Users with a Google Apps for Work account under this domain will be members of this server's organization.
+          </span>
+        </div>
+      </div>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" name="ldap-toggle" checked="{{ldapChecked}}" disabled="{{ldapDisabled}}" />
+          Users authenticated via LDAP
+        </label>
+        {{#if ldapDisabled }}
+        <span class="form-subtext">Note: disabled because LDAP login is not configured.</span>
+        {{/if}}
+      </div>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" name="saml-toggle" checked="{{samlChecked}}" disabled="{{samlDisabled}}" />
+          Users authenticated via SAML
+        </label>
+        {{#if samlDisabled }}
+        <span class="form-subtext">Note: disabled because SAML login is not configured.</span>
+        {{/if}}
+      </div>
+    </div>
+
+    <h2>Organization settings</h2>
+    <div class="org-settings">
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" name="disallow-guests" checked={{disallowGuests}} disabled="{{formDisabled}}" />
+          Disallow collaboration with users outside the organization.
+        </label>
+        <span class="form-subtext">
+          Users will be required to log in as a member of your organization to view sharing links. Guest access will be disabled.
+        </span>
+      </div>
+
+      <div class="checkbox-group">
+        <label>
+          <input type="checkbox" name="share-contacts" checked="{{shareContacts}}" disabled="{{formDisabled}}" />
+          Make all organization users visible to each other
+        </label>
+        <span class="form-subtext">
+          This setting automatically adds users within the organization to each
+          other's contact list so that they can share grains with each other.  Disable
+          this if you have some users whose identity should stay hidden from other users.
+        </span>
+      </div>
+    </div>
+
+    <div class="button-row">
+      <button class="save" type="submit" disabled="{{saveDisabled}}">Save</button>
+    </div>
+  </form>
+</template>

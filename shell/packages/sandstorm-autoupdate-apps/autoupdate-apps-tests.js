@@ -47,19 +47,20 @@ const packageV0 = { _id: "mock-package-id1",
   progress: 1,
   isAutoUpdated: false,
   error: null,
-  manifest:
-   { minApiVersion: 0,
-     maxApiVersion: 0,
-     appMarketingVersion: { defaultText: "0.1" },
-     appTitle: { defaultText: "Mock App" },
-     actions: [
-       {
-         input: { none: null },
-         title: { defaultText: "New Mock App" },
-       },
-     ],
-     appVersion: 0,
-     minUpgradableAppVersion: 0, },
+  manifest: {
+    minApiVersion: 0,
+    maxApiVersion: 0,
+    appMarketingVersion: { defaultText: "0.1" },
+    appTitle: { defaultText: "Mock App" },
+    actions: [
+      {
+        input: { none: null },
+        title: { defaultText: "New Mock App" },
+      },
+    ],
+    appVersion: 0,
+    minUpgradableAppVersion: 0,
+  },
   appId: "mock-app-id",
 };
 
@@ -68,14 +69,15 @@ const packageV1 = { _id: "mock-package-id2",
   progress: 1,
   isAutoUpdated: false,
   error: null,
-  manifest:
-   { minApiVersion: 0,
-     maxApiVersion: 0,
-     appMarketingVersion: { defaultText: "0.2" },
-     appTitle: { defaultText: "Mock App" },
-     actions: [{ title: { defaultText: "New Mock App" } }],
-     appVersion: 2,
-     minUpgradableAppVersion: 0, },
+  manifest: {
+    minApiVersion: 0,
+    maxApiVersion: 0,
+    appMarketingVersion: { defaultText: "0.2" },
+    appTitle: { defaultText: "Mock App" },
+    actions: [{ title: { defaultText: "New Mock App" } }],
+    appVersion: 2,
+    minUpgradableAppVersion: 0,
+  },
   appId: "mock-app-id",
 };
 
@@ -113,7 +115,7 @@ Tinytest.add("test update notifications", function (test) {
       };
     });
 
-    globalDb.addUserActions("mock-package-id1");
+    Meteor.call("addUserActions", "mock-package-id1");
     SandstormAutoupdateApps.updateAppIndex(globalDb);
   })(test);
 

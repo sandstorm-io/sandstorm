@@ -22,55 +22,26 @@
 namespace sandstorm {
 namespace {
 
-KJ_TEST("base64 encoding/decoding") {
-  {
-    auto encoded = base64Encode(kj::StringPtr("foo").asBytes(), false);
-    KJ_EXPECT(encoded == "Zm9v", encoded, encoded.size());
-    KJ_EXPECT(kj::heapString(base64Decode(encoded).asChars()) == "foo");
-  }
+KJ_TEST("HeaderWhitelist") {
+  const char* WHITELIST[] = {
+    "bar-baz",
+    "corge",
+    "foo-*",
+    "grault",
+    "qux-*",
+  };
 
-  {
-    auto encoded = base64Encode(kj::StringPtr("corge").asBytes(), false);
-    KJ_EXPECT(encoded == "Y29yZ2U=", encoded);
-    KJ_EXPECT(kj::heapString(base64Decode(encoded).asChars()) == "corge");
-  }
+  HeaderWhitelist whitelist((kj::ArrayPtr<const char*>(WHITELIST)));
 
-  KJ_EXPECT(kj::heapString(base64Decode("Y29yZ2U").asChars()) == "corge");
-  KJ_EXPECT(kj::heapString(base64Decode("Y\n29y Z@2U=\n").asChars()) == "corge");
-
-  {
-    auto encoded = base64Encode(kj::StringPtr("corge").asBytes(), true);
-    KJ_EXPECT(encoded == "Y29yZ2U=\n", encoded);
-  }
-
-  kj::StringPtr fullLine = "012345678901234567890123456789012345678901234567890123";
-  {
-    auto encoded = base64Encode(fullLine.asBytes(), false);
-    KJ_EXPECT(
-        encoded == "MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIz",
-        encoded);
-  }
-  {
-    auto encoded = base64Encode(fullLine.asBytes(), true);
-    KJ_EXPECT(
-        encoded == "MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIz\n",
-        encoded);
-  }
-
-  kj::String multiLine = kj::str(fullLine, "456");
-  {
-    auto encoded = base64Encode(multiLine.asBytes(), false);
-    KJ_EXPECT(
-        encoded == "MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2",
-        encoded);
-  }
-  {
-    auto encoded = base64Encode(multiLine.asBytes(), true);
-    KJ_EXPECT(
-        encoded == "MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIz\n"
-                   "NDU2\n",
-        encoded);
-  }
+  KJ_ASSERT(whitelist.matches("bar-baz"));
+  KJ_ASSERT(whitelist.matches("bar-BAZ"));
+  KJ_ASSERT(!whitelist.matches("bar-qux"));
+  KJ_ASSERT(whitelist.matches("foo-abcd"));
+  KJ_ASSERT(whitelist.matches("grault"));
+  KJ_ASSERT(whitelist.matches("Grault"));
+  KJ_ASSERT(!whitelist.matches("grault-abcd"));
+  KJ_ASSERT(whitelist.matches("QUX-abcd"));
+  KJ_ASSERT(!whitelist.matches("quxqux"));
 }
 
 struct Pipe {

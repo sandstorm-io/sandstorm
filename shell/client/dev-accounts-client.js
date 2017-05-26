@@ -14,12 +14,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-loginDevAccount = function (displayName, isAdmin) {
+loginDevAccount = function (displayName, isAdmin, callback) {
   Accounts.callLoginMethod({
     methodName: "createDevAccount",
     methodArguments: [displayName, isAdmin],
-    userCallback: function (err) {
-      if (err) {
+    userCallback(err) {
+      if (callback) {
+        callback(err);
+      } else if (err) {
         window.alert(err);
       }
     },
@@ -38,7 +40,7 @@ loginDevAccountFast = function (displayName, isAdmin) {
     Accounts.callLoginMethod({
       methodName: "createDevAccount",
       methodArguments: [displayName, isAdmin, profile, displayName + "@example.com"],
-      userCallback: function (err) {
+      userCallback(err) {
         if (err) {
           reject(new Error(err));
         } else {

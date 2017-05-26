@@ -19,6 +19,7 @@
 #include "spk.h"
 #include <kj/debug.h>
 #include <kj/io.h>
+#include <kj/encoding.h>
 #include <capnp/serialize.h>
 #include <capnp/serialize-packed.h>
 #include <capnp/compat/json.h>
@@ -86,7 +87,7 @@ public:
     } else {
       auto call = output.initCall();
       call.setFunction("Base64");
-      call.initParams(1)[0].setString(base64Encode(input, false));
+      call.initParams(1)[0].setString(kj::encodeBase64(input, false));
     }
   }
 
@@ -417,7 +418,7 @@ private:
       appid = replacement;
     } else {
       if (appid != replacement) {
-        KJ_LOG(WARNING, "the requested key is obsolote", appid, replacement);
+        KJ_LOG(WARNING, "the requested key is obsolete", appid, replacement);
       }
     }
 
@@ -726,7 +727,7 @@ private:
         "\n"
         "    actions = [\n"
         "      # Define your \"new document\" handlers here.\n"
-        "      ( title = (defaultText = \"New Instance\"),\n"
+        "      ( nounPhrase = (defaultText = \"instance\"),\n"
         "        command = .myCommand\n"
         "        # The command to run when starting for the first time. (\".myCommand\"\n"
         "        # is just a constant defined at the bottom of the file.)\n"
@@ -1302,7 +1303,9 @@ private:
       }
     }
 
-    node.setTarget(kj::mv(mapping.sourcePaths[0]));
+    if (mapping.sourcePaths.size() > 0) {
+      node.setTarget(kj::mv(mapping.sourcePaths[0]));
+    }
   }
 
   kj::String getHttpBridgeExe() {
@@ -1388,7 +1391,7 @@ private:
   friend kj::String unpackSpk(int spkfd, kj::StringPtr outdir, kj::StringPtr tmpdir);
   friend void verifySpk(int spkfd, int tmpfile, spk::VerifiedInfo::Builder output);
   friend kj::Maybe<kj::String> checkPgpSignature(
-      kj::StringPtr appIdString, spk::Metadata::Reader metadata);
+      kj::StringPtr appIdString, spk::Metadata::Reader metadata, kj::Maybe<uid_t> sandboxUid);
 
   static kj::String verifyImpl(
       int spkfd, int tmpfile, kj::Maybe<spk::VerifiedInfo::Builder> maybeInfo,
@@ -1590,7 +1593,8 @@ private:
 
   static kj::String checkPgpSignature(
       kj::StringPtr appIdString, kj::ArrayPtr<const byte> sig, kj::ArrayPtr<const byte> key,
-      kj::Function<kj::String(kj::StringPtr problem)>& validationError) {
+      kj::Function<kj::String(kj::StringPtr problem)>& validationError,
+      kj::Maybe<uid_t> sandboxUid = nullptr) {
     auto expectedContent = kj::str(
         "I am the author of the Sandstorm.io app with the following ID: ",
         appIdString);
@@ -1623,6 +1627,7 @@ private:
     Subprocess::Options gpgOptions({
         "gpg", "--homedir", gpghome, "--status-fd", "3", "--no-default-keyring",
         "--keyring", keyfile, "--decrypt", sigfile});
+    gpgOptions.uid = sandboxUid;
     gpgOptions.stdout = outPipe.writeEnd;
     gpgOptions.stderr = messagePipe.writeEnd;
     int moreFds[1] = { statusPipe.writeEnd };
@@ -1727,6 +1732,13 @@ private:
     kj::ArrayPtr<const capnp::word> tmpWords = tmpMapping;
     capnp::ReaderOptions options;
     options.traversalLimitInWords = tmpWords.size();
+
+    // We've observed that apps which use npm can have insanely deep directory trees due to npm's
+    // insane approach to dependency management. We've seen at least one app creep over the default
+    // nesting limit of 64, so we double it to 128. (We can't just set this to infinity for the
+    // same security reasons this limit exists in the first place.)
+    options.nestingLimit = 128;
+
     capnp::FlatArrayMessageReader archiveMessage(tmpWords, options);
 
     // Unpack.
@@ -1872,6 +1884,7 @@ private:
   kj::String serverBinary;
   kj::StringPtr mountDir;
   bool fuseCaching = false;
+  bool mountProc = false;
 
   kj::MainFunc getDevMain() {
     return addCommonOptions(OptionSet::ALL_READONLY,
@@ -1893,6 +1906,10 @@ private:
             "Enable aggressive caching over the FUSE filesystem used to detect dependencies. "
             "This may improve performance but means that you will have to restart `spk dev` "
             "any time you make a change to your code.")
+        .addOption({"proc"}, KJ_BIND_METHOD(*this, enableMountProc),
+            "Mount /proc inside the sandbox. This can be useful for debugging. For security "
+            "reasons, this option is only available when you are developing an app; packaged "
+            "apps do not get access to /proc.")
         .callAfterParsing(KJ_BIND_METHOD(*this, doDev)))
         .build();
   }
@@ -1920,6 +1937,11 @@ private:
 
   kj::MainBuilder::Validity enableFuseCaching() {
     fuseCaching = true;
+    return true;
+  }
+
+  kj::MainBuilder::Validity enableMountProc() {
+    mountProc = true;
     return true;
   }
 
@@ -1982,6 +2004,12 @@ private:
       // Write the app ID to the socket.
       {
         auto msg = kj::str(packageDef.getId(), "\n");
+        kj::FdOutputStream((int)clientEnd).write(msg.begin(), msg.size());
+      }
+
+      // Write the mountProc option to the socket.
+      {
+        auto msg = kj::str(mountProc ? "1" : "0", "\n");
         kj::FdOutputStream((int)clientEnd).write(msg.begin(), msg.size());
       }
 
@@ -2318,7 +2346,7 @@ private:
                 case appindex::SubmissionState::PUBLISH:
                   context.exitInfo(
                       "Thanks for your submission! A human will look at your submission to make "
-                      "sure that everything is order before it goes live. If we spot any mistakes "
+                      "sure that everything is in order before it goes live. If we spot any mistakes "
                       "we'll let you know, otherwise your app will go live as soon as it has been "
                       "checked. Either way, we'll send you an email at the contact address you "
                       "provided in the metadata. (If you'd like to prevent this submission "
@@ -2419,7 +2447,8 @@ void verifySpk(int spkfd, int tmpfile, spk::VerifiedInfo::Builder output) {
   });
 }
 
-kj::Maybe<kj::String> checkPgpSignature(kj::StringPtr appIdString, spk::Metadata::Reader metadata) {
+kj::Maybe<kj::String> checkPgpSignature(kj::StringPtr appIdString, spk::Metadata::Reader metadata,
+                                        kj::Maybe<uid_t> sandboxUid) {
   auto author = metadata.getAuthor();
 
   if (author.hasPgpSignature()) {
@@ -2430,7 +2459,7 @@ kj::Maybe<kj::String> checkPgpSignature(kj::StringPtr appIdString, spk::Metadata
       KJ_FAIL_ASSERT("PGP signature verification problem", problem);
     };
     return SpkTool::checkPgpSignature(appIdString,
-        author.getPgpSignature(), metadata.getPgpKeyring(), error);
+        author.getPgpSignature(), metadata.getPgpKeyring(), error, sandboxUid);
   } else {
     return nullptr;
   }

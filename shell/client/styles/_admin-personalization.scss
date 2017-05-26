@@ -1,0 +1,13 @@
+form.admin-personalization-form {
+  @extend %standard-form;
+
+  .logo {
+    @extend %pseudo-img-tag;
+    background-position: bottom;
+    display: inline-block;
+    width: 64px;
+    height: 64px;
+    vertical-align: bottom;
+    margin-right: 32px;
+  }
+}

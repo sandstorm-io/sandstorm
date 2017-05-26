@@ -4,56 +4,43 @@
 # but you can also edit it by hand.
 
 # ES6 support.
-ecmascript
+ecmascript@0.7.3
 ecmascript-collections
 
 # Formerly standard-app-packages, which was deprecated in favor of meteor-platform,
 # which was deprecated in favor of splitting things out separately
-meteor-base
-underscore
-mongo
-blaze-html-templates
-jquery
-session
-tracker
-check
-reload
-random
+meteor-base@1.0.4
+underscore@1.0.10
+mongo@1.1.17
+blaze-html-templates@1.0.4
+jquery@1.11.10
+session@1.1.7
+tracker@1.1.3
+check@1.2.5
+reload@1.1.11
+random@1.0.10
 
 iron:router
-sandstorm-accounts-ui
 sandstorm-accounts-packages
-sandstorm-email
-accounts-email-token
-accounts-ldap
-accounts-saml
-email
-accounts-identity
-simplesmtp
-bignum
-connect
-http
-browser-policy
+http@1.2.12
+browser-policy@1.1.0
+routepolicy@1.0.12
 
-reactive-var
+reactive-var@1.0.11
+reactive-dict@1.1.8
 sandstorm-autoupdate-apps
 sandstorm-db
-sandstorm-backend
-sandstorm-contacts
 sandstorm-identicons
 sandstorm-permissions
 sandstorm-ui-topbar
-sandstorm-ui-applist
-sandstorm-ui-app-details
-sandstorm-ui-app-install
-sandstorm-ui-grainlist
-sandstorm-ui-grainview
-sandstorm-ui-autocomplete-input
 sandstorm-ui-powerbox
-meteor-node-forge
 fourseven:scss
-npm-ed25519
-npm-request
-sha
-standard-minifier-css
-standard-minifier-js
+sha@1.0.9
+standard-minifier-css@1.3.4
+standard-minifier-js@2.0.0
+shell-server@0.2.3
+
+oauth@1.1.13
+service-configuration@1.0.11
+github-oauth@1.2.0
+google-oauth@1.2.4

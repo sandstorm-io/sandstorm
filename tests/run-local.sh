@@ -21,24 +21,33 @@ set -euo pipefail
 XVFB_PID=""
 RUN_SELENIUM="${RUN_SELENIUM:-true}"
 BUNDLE_PATH=""
+SANDSTORM_TESTAPP_PATH=""
 THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 METEOR_DEV_BUNDLE=$("$THIS_DIR/../find-meteor-dev-bundle.sh")
 NODEJS="$METEOR_DEV_BUNDLE/bin/node"
 NPM="$METEOR_DEV_BUNDLE/bin/npm"
 SELENIUM_JAR="selenium-server-standalone-2.53.0.jar"
-SELENIUM_DOWNLOAD_URL="http://selenium-release.storage.googleapis.com/2.53/$SELENIUM_JAR"
+SELENIUM_JAR_SHA256="67b88cbfd3b130de6ff3770948f56cc485fd1abb5b7a769397d9050a59b1e036"
+SELENIUM_DOWNLOAD_URL="https://selenium-release.storage.googleapis.com/2.53/$SELENIUM_JAR"
 
 cleanExit () {
   rc=$1
 
-  if [ $rc != 0 ]; then
+  if [ $rc -ne 0 ]; then
     echo "Log output: "
     cat "$SANDSTORM_DIR/var/log/sandstorm.log"
   fi
 
   "$SANDSTORM_DIR/sandstorm" stop
   sleep 1
-  rm -rf "$SANDSTORM_DIR"
+
+  if [ $rc -eq 0 ]; then
+    # Only clean up the test directory if the test run was successful - if tests failed,
+    # it's nice to be able to inspect the logs.  We wipe out $SANDSTORM_DIR before starting
+    # a new test run, so this is fine.
+    rm -rf "$SANDSTORM_DIR"
+  fi
+
   if [ -n "$XVFB_PID" ] ; then
     # Send SIGINT to the selenium-server child of the backgrounded xvfb-run, so
     # it will exit cleanly and the Xvfb process will also be cleaned up.
@@ -49,18 +58,25 @@ cleanExit () {
   exit $rc
 }
 
+cacheSeleniumJar() {
+  if [[ ! -e ./$SELENIUM_JAR ]] ; then
+    DOWNLOAD=$(mktemp selenium-download.XXXXXX)
+    curl -o $DOWNLOAD $SELENIUM_DOWNLOAD_URL
+    DOWNLOAD_SHASUM=$(sha256sum $DOWNLOAD | cut -f 1 -d ' ')
+    if [[ "$DOWNLOAD_SHASUM" = "$SELENIUM_JAR_SHA256" ]] ; then
+      mv $DOWNLOAD ./$SELENIUM_JAR
+    else
+      echo "Selenium jar download didn't match expected checksum.  Discarding."
+      exit 1
+    fi
+  fi
+}
+
 checkInstalled() {
   if ! $(which $1 >/dev/null 2>/dev/null) ; then
     echo "Couldn't find executable '$1' - try installing the $2 package?"
     exit 1
   fi
-}
-
-getNewPort() {
-  "$NODEJS" -e 'var net = require("net");
-  var sock = net.connect({port: 0});
-  console.log(sock.address().port);
-  sock.destroy()';
 }
 
 # Parse arguments.
@@ -70,20 +86,31 @@ while [ $# -gt 0 ] ; do
       RUN_SELENIUM="false"
       ;;
     *)
-      if [ -n "$BUNDLE_PATH" ]; then
-        echo "Multiple bundle paths specified, please name only one."
+      if [ -n "$SANDSTORM_TESTAPP_PATH" ]; then
+        echo "Too many arguments. Please specify Sandstorm bundle and test app SPK as two arguments."
         exit 1
+      elif [ -n "$BUNDLE_PATH" ]; then
+        SANDSTORM_TESTAPP_PATH=$(readlink -f "$1")
+      else
+        BUNDLE_PATH=$(readlink -f "$1")
       fi
-      BUNDLE_PATH=$(readlink -f "$1")
       ;;
   esac
   shift
 done
 
 if [ -z "$BUNDLE_PATH" ] ; then
-  echo "No bundle path specified; perhaps you meant to write '$0 sandstorm-0-fast.tar.xz'?"
+  echo "No bundle path specified; perhaps you meant to write '$0 sandstorm-0-fast.tar.xz test-app.spk'?"
   exit 1
 fi
+
+if [ -z "$SANDSTORM_TESTAPP_PATH" ] ; then
+  echo "No test app path specified; perhaps you meant to write '$0 $BUNDLE_PATH test-app.spk'?"
+  exit 1
+fi
+
+# We'll use this env var from the tests.
+export SANDSTORM_TESTAPP_PATH
 
 cd "$THIS_DIR"
 
@@ -95,18 +122,20 @@ if [ "$RUN_SELENIUM" != "false" ] ; then
   checkInstalled java default-jre-headless
   checkInstalled xvfb-run Xvfb
   checkInstalled pgrep procps
-  test -e ./$SELENIUM_JAR || curl -o $SELENIUM_JAR $SELENIUM_DOWNLOAD_URL
+  cacheSeleniumJar
   xvfb-run --server-args="-screen 0, 1280x1024x24" java -jar ./$SELENIUM_JAR &
   XVFB_PID=$!
 fi
 
 export SANDSTORM_DIR=$THIS_DIR/tmp-sandstorm
 export OVERRIDE_SANDSTORM_DEFAULT_DIR=$SANDSTORM_DIR
-export PORT=$(getNewPort)
-export MONGO_PORT=$(getNewPort)
-export SMTP_LISTEN_PORT=$(getNewPort)
-export SMTP_OUTGOING_PORT=$(getNewPort)
-export IP_INTERFACE_TEST_PORT=$(getNewPort)
+# Picking some fixed ports because email tests are being flaky with system-assigned ports and we
+# don't do parallel tests yet anyway.
+export PORT=9000
+export MONGO_PORT=9001
+export SMTP_LISTEN_PORT=9002
+export SMTP_OUTGOING_PORT=9003
+export IP_INTERFACE_TEST_PORT=9004
 export LAUNCH_URL="http://local.sandstorm.io:$PORT"
 
 rm -rf "$SANDSTORM_DIR"

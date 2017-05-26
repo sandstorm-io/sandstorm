@@ -39,8 +39,10 @@ module.exports["Test link identities"] = function (browser) {
 
     // Upgrade a demo account to a real account by linking an identity.
     .url(browser.launch_url + "/demo")
-    .waitForElementVisible(".demo-box button.start", medium_wait)
-    .click(".demo-box button.start")
+    .disableGuidedTour()
+    .waitForElementVisible(".demo-startup-modal .start", medium_wait)
+    .click(".demo-startup-modal .start")
+    .disableGuidedTour()
     .waitForElementPresent(".main-content>.app-list", medium_wait)
     .click(".login>button.show-popup")
     .waitForElementVisible(".login-buttons-list", short_wait)
@@ -65,8 +67,8 @@ module.exports["Test link identities"] = function (browser) {
     .waitForElementVisible("input[name=name]", short_wait)
     .setValue("input[name=name]", devName1)
     .submitForm(".login-buttons-list form.dev")
-    .waitForElementPresent(".action-completed.error", medium_wait)
-    .assert.containsText(".action-completed.error", "Error linking identity")
+    .waitForElementPresent(".flash-message.error-message", medium_wait)
+    .assert.containsText(".flash-message.error-message", "Error linking identity")
 
     // Linking a third identity to the second account should succeed.
     .click("button.link-new-identity")

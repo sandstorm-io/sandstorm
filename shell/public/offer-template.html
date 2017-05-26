@@ -76,8 +76,19 @@ body {
 // Templates are namespaced in sessionStorage by the prefix "offerTemplate"
 var templateToken = "offerTemplate" + window.location.hash.substring(1);
 var record = JSON.parse(sessionStorage.getItem(templateToken));
+var textElement = document.getElementById("text");
+textElement.textContent = record.renderedTemplate;
+if (record.link) {
+  var container = document.getElementById("container");
+  var link = document.createElement("a");
+  link.href = record.link;
+  link.target = "_blank";
+  link.id = "link";
 
-document.getElementById("text").textContent = record.renderedTemplate;
+  container.appendChild(link);
+  container.removeChild(textElement);
+  link.appendChild(textElement);
+}
 
 if(record.clipboardButton && record.clipboardButton !== "none") {
   if(record.clipboardButton === "left") {
@@ -129,7 +140,14 @@ setInterval(function() {
        } else {
           var errorText = "Error refreshing token. Reloading the page might help.";
           console.error(xhr.responseText);
-          document.getElementById("text").textContent = errorText;
+          var textElement = document.getElementById("text");
+          textElement.textContent = errorText;
+          var link = document.getElementById("link");
+          if (link) {
+            var container = document.getElementById("container");
+            container.removeChild(link);
+            container.appendChild(textElement);
+          }
        }
     }
   };

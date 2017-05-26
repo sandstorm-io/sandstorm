@@ -1,14 +1,12 @@
-// The purple used for the new design's nav pills.
-$darker-purple-color: #65468e;
-
 .admin-settings {
   padding: 32px;
 
   h1 {
     font-weight: normal;
-    padding-top: 12px;
+    margin-top: 0;
+    //padding-top: 12px;
     padding-bottom: 12px;
-    border-bottom: 1px solid #a2a2a2;
+    border-bottom: 1px solid $default-rule-color;
   }
 
   h2 {
@@ -17,35 +15,93 @@ $darker-purple-color: #65468e;
   }
 }
 
-.nav-pills {
+.admin-breadcrumbs {
   margin: 0;
   padding: 0;
+  list-style-type: none;
   >li {
     display: inline-block;
-    list-style-type: none;
-    height: 32px;
-    margin: 2px;
-    a {
-      display: inline-block;
-      height: 32px;
-      border: 1px solid #dddddd;
-      border-radius: 4px;
-      padding: 4px 8px;
-      font-weight: normal;
-      color: black;
-      background-color: white;
-    }
-
-    &.active a {
-      color: white;
-      background-color: $darker-purple-color;
+  }
+  >li:not(:last-child) {
+    &:after {
+      content: " / ";
     }
   }
 }
 
+.nav-sections {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+
+  margin: 0;
+  padding: 0;
+
+  list-style-type: none;
+  font-size: 24px;
+  >li {
+    min-width: 260px;
+    max-width: 360px;
+    flex: 1 1 0;
+    &:not(:last-child) {
+      margin-right: 32px;
+    }
+  }
+}
+
+.nav-items {
+  margin: 0;
+  padding: 0;
+  font-size: 16px;
+
+  >li {
+    list-style-type: none;
+    display: block;
+
+    a {
+      display: block;
+
+      border: 1px solid #e8e8e8;
+      border-radius: 4px;
+
+      min-height: 32px;
+      padding: 8px 8px;
+      margin-bottom: 4px;
+
+      font-weight: normal;
+      color: black;
+      background-color: #fff;
+      &:hover {
+        background-color: #d8d8d8;
+      }
+
+      .item-name {
+        color: $darker-purple-color;
+        font-weight: 600;
+        font-size: 16px;
+      }
+
+      .item-subtext {
+        font-size: 14px;
+        color: #666;
+      }
+    }
+  }
+
+}
+
 @import "_admin-identity.scss";
 @import "_admin-email.scss";
+@import "_admin-organization.scss";
 @import "_admin-status.scss";
+@import "_admin-personalization.scss";
+@import "_admin-network-capabilities.scss";
 @import "_admin-apps.scss";
+@import "_admin-preinstalled-apps.scss";
 @import "_admin-maintenance.scss";
 @import "_admin-users.scss";
+@import "_admin-stats.scss";
+@import "_admin-hosting-management.scss";
+@import "_admin-networking.scss";

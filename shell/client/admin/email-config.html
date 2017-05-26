@@ -1,19 +1,33 @@
 <template name="newAdminEmailConfig">
-  <h1>Email Configuration</h1>
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>Email configuration</li>
+    </ul>
+  </h1>
 
   <h2>Outbound email</h2>
 
-  <p>
-    Sandstorm needs a way to send email. You can leave email unconfigured, but email-related
-    features like email login, notifications, sharing by identity, requesting access and will be
-    unavailable until you configure email in the future.
-  </p>
+  {{#if emailUnconfigured}}
+  <div class="flash-message warning-message">
+    <p>
+      <strong>Email is unconfigured.</strong>
+      Email-related features like email login, notifications, sharing by identity, and requesting
+      access will be unavailable until you configure email.
+    </p>
+  </div>
+  {{/if}}
 
+  <h3>
+    How Sandstorm uses email
+  </h3>
   <p>
-    How Sandstorm uses email: Sandstorm sends email notifications, and Sandstorm apps can send email
-    notifications, too. Every app receives a unique email address, so Sandstorm needs to send email
-    from a variety of "From:" addresses. Therefore, Gmail SMTP won't work, but there are other free
-    services. See more info in the docs.
+    Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too. Every
+    app receives a unique email address, so Sandstorm needs to send email from a variety of "From:"
+    addresses. Therefore, Gmail SMTP won't work, but there are other free services. See
+    <a href="https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp">
+      more info in the docs
+    </a>.
   </p>
 
   {{#if hasSuccess}}<p class="flash-message success-message">Saved changes.</p>{{/if}}
@@ -64,18 +78,29 @@
     <div class="button-row">
       <button class="submit" type="submit" disabled={{saveDisabled}}>Save Configuration</button>
       <button class="test" type="button" disabled={{testDisabled}}>Test</button>
+      <button class="disable" type="button" disabled={{disableDisabled}}>Disable email</button>
     </div>
   </form>
 
   {{#if showTestSendEmailPopup}}
-    {{#modalDialogWithBackdrop onDismiss=closePopupCallback}}
-      {{> emailTestPopup smtpConfig=getSmtpConfig }}
+    {{#modalDialogWithBackdrop onDismiss=closeTestPopupCallback}}
+      {{> emailTestPopup smtpConfig=getSmtpConfig onDismiss=closeTestPopupCallback }}
+    {{/modalDialogWithBackdrop}}
+  {{/if}}
+
+  {{#if showConfirmDisableEmailPopup}}
+    {{#modalDialogWithBackdrop onDismiss=closeConfirmDisableEmailPopupCallback}}
+      {{> emailDisablePopup onDismiss=closeConfirmDisableEmailPopupCallback}}
     {{/modalDialogWithBackdrop}}
   {{/if}}
 </template>
 
 <template name="emailTestPopup">
-{{!-- Expects a single String argument "token" to be passed in via the data context. --}}
+{{!-- Takes three arguments via data context:
+       token: String (optional) Setup token to use to authorize a testSend request.
+  smtpConfig: Object containing the SMTP config object to provide to testSend.
+   onDismiss: Function to call when the Close button is clicked.
+--}}
 <h2>Send a test email</h2>
 {{#if hasError}}
   {{#focusingErrorBox}}
@@ -94,12 +119,46 @@
       <input class="test-address" type="email" name="test-address" value="{{testAddress}}" required />
     </label>
   </div>
-  <button type="submit" class="send-test-email" {{htmlDisabled}}>
-    {{#if isSubmitting}}
-    Sending...
-    {{else}}
-    Send test email
-    {{/if}}
-  </button>
+  <div class="button-row">
+    <button type="submit" class="send-test-email" {{htmlDisabled}}>
+      {{#if isSubmitting}}
+      Sending...
+      {{else}}
+      Send test email
+      {{/if}}
+    </button>
+    <button type="button" class="close-dialog">
+      Close
+    </button>
+  </div>
+</form>
+</template>
+
+<template name="emailDisablePopup">
+{{!-- Takes two arguments via data context:
+       token: String (optional) Setup token to use to authorize a disableEmail call.
+   onDismiss: Function to call when the Close button is clicked or the disableEmail call completes.
+--}}
+<h2>Really disable email?</h2>
+{{#if hasError}}
+  {{#focusingErrorBox}}
+    {{message}}
+  {{/focusingErrorBox}}
+{{/if}}
+
+<p>
+  This will disable all outbound email delivery for this server, including sharing via email, email
+  token login (if enabled), and email notifications to users.
+</p>
+
+<form class="email-disable-form">
+  <div class="button-row">
+    <button type="button" name="disable-email" class="danger" {{htmlDisabled}}>
+      Disable email
+    </button>
+    <button type="button" name="close-dialog">
+      Close
+    </button>
+  </div>
 </form>
 </template>

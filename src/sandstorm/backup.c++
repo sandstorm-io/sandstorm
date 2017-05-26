@@ -41,6 +41,9 @@ kj::MainFunc BackupMain::getMain() {
                          "metadata struct on stdin. Or, restores the backup in <file>, "
                          "unpacking it to <grain>, and writing the metadata to stdout. In "
                          "backup mode, <file> can be `-` to write the data to stdout.")
+      .addOptionWithArg({"uid"}, KJ_BIND_METHOD(*this, setUid), "<uid>",
+                        "Use setuid sandbox rather than userns. Must start as root, but swiches "
+                        "to <uid> to run the app.")
       .addOption({'r', "restore"}, KJ_BIND_METHOD(*this, setRestore),
                  "Restore a backup, rather than create a backup.")
       .addOptionWithArg({"root"}, KJ_BIND_METHOD(*this, setRoot), "<root>",
@@ -63,6 +66,22 @@ bool BackupMain::setFile(kj::StringPtr arg) {
 bool BackupMain::setRoot(kj::StringPtr arg) {
   root = arg;
   return true;
+}
+
+bool BackupMain::setUid(kj::StringPtr arg) {
+  KJ_IF_MAYBE(u, parseUInt(arg, 10)) {
+    if (getuid() != 0) {
+      return false;
+    }
+    if (*u == 0) {
+      return false;
+    }
+    KJ_SYSCALL(seteuid(*u));
+    sandboxUid = *u;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void BackupMain::writeSetgroupsIfPresent(const char *contents) {
@@ -92,59 +111,74 @@ bool BackupMain::run(kj::StringPtr grainDir) {
   // finds an arbitrary code execution exploit in zip/unzip; it's not needed otherwise.
   KJ_SYSCALL(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0));
 
-  uid_t uid = getuid();
-  gid_t gid = getgid();
+  // Create files / directories before we potentially change the UID, so that they are created
+  // with the right owner.
+  if (restore) {
+    KJ_SYSCALL(mkdir(kj::str(grainDir, "/sandbox").cStr(), 0770));
+  } else if (filename != "-") {
+    // Instead of binding into mount tree later, just open the file and we'll compress to stdout.
+    KJ_SYSCALL(dup2(raiiOpen(filename, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC), STDOUT_FILENO));
+  }
 
-  KJ_SYSCALL(unshare(CLONE_NEWUSER | CLONE_NEWNS |
-      // Unshare other stuff; like no_new_privs, this is only to defend against hypothetical
-      // arbitrary code execution bugs in zip/unzip.
-      CLONE_NEWNET | CLONE_NEWIPC | CLONE_NEWPID | CLONE_NEWUTS));
-  writeSetgroupsIfPresent("deny\n");
-  writeUserNSMap("uid", kj::str("1000 ", uid, " 1\n"));
-  writeUserNSMap("gid", kj::str("1000 ", gid, " 1\n"));
+  if (sandboxUid == nullptr) {
+    uid_t uid = getuid();
+    gid_t gid = getgid();
+
+    KJ_SYSCALL(unshare(CLONE_NEWUSER | CLONE_NEWNS |
+        // Unshare other stuff; like no_new_privs, this is only to defend against hypothetical
+        // arbitrary code execution bugs in zip/unzip.
+        CLONE_NEWNET | CLONE_NEWIPC | CLONE_NEWPID | CLONE_NEWUTS));
+    writeSetgroupsIfPresent("deny\n");
+    writeUserNSMap("uid", kj::str("1000 ", uid, " 1\n"));
+    writeUserNSMap("gid", kj::str("1000 ", gid, " 1\n"));
+  } else {
+    KJ_SYSCALL(seteuid(0));
+    KJ_SYSCALL(unshare(CLONE_NEWNS |
+        // Unshare other stuff; like no_new_privs, this is only to defend against hypothetical
+        // arbitrary code execution bugs in zip/unzip.
+        CLONE_NEWNET | CLONE_NEWIPC | CLONE_NEWPID | CLONE_NEWUTS));
+  }
 
   // To really unshare the mount namespace, we also have to make sure all mounts are private.
   // The parameters here were derived by strace'ing `mount --make-rprivate /`.  AFAICT the flags
   // are undocumented.  :(
   KJ_SYSCALL(mount("none", "/", nullptr, MS_REC | MS_PRIVATE, nullptr));
 
-  // Mount root read-only.
-  bind(kj::str(root, "/"), "/tmp", MS_BIND | MS_NOSUID | MS_RDONLY);
+  // Create tmpfs root to whitelist directories that we want to bind in.
+  KJ_SYSCALL(mount("tmpfs", "/tmp", "tmpfs", 0, "size=8m,nr_inodes=128,mode=755"));
 
-  if (access("/tmp/dev/null", F_OK) != 0) {
-    // Looks like we need to bind in /dev.
-    KJ_SYSCALL(mount("/dev", "/tmp/dev", nullptr, MS_BIND, nullptr));
+  // Bind in whitelisted directories.
+  const char* WHITELIST[] = { "dev", "bin", "lib", "lib64", "usr" };
+  for (const char* dir: WHITELIST) {
+    auto src = kj::str(root, "/", dir);
+    auto dst = kj::str("/tmp/", dir);
+    if (access(src.cStr(), F_OK) == 0) {
+      KJ_SYSCALL(mkdir(dst.cStr(), 0755));
+      bind(src, dst, MS_BIND | MS_NOSUID | MS_RDONLY);
+    }
   }
 
-  // Hide sensitive directories.
-  KJ_SYSCALL(mount("tmpfs", "/tmp/proc", "tmpfs", 0, "size=32k,nr_inodes=8,mode=000"));
-  KJ_SYSCALL(mount("tmpfs", "/tmp/var", "tmpfs", 0, "size=32k,nr_inodes=8,mode=000"));
-  KJ_SYSCALL(mount("tmpfs", "/tmp/etc", "tmpfs", 0, "size=32k,nr_inodes=8,mode=000"));
-
-  // Mount inner tmpfs.
-  KJ_SYSCALL(mount("tmpfs", "/tmp/tmp", "tmpfs", 0, "size=8m,nr_inodes=128,mode=777"));
+  // Make sandboxed /tmp.
+  KJ_SYSCALL(mkdir("/tmp/tmp", 0777));
+  KJ_IF_MAYBE(u, sandboxUid) {
+    KJ_SYSCALL(chown("/tmp/tmp", *u, 0));
+  }
 
   // Bind in the grain's `data` (=`sandbox`).
-  if (restore) {
-    KJ_SYSCALL(mkdir(kj::str(grainDir, "/sandbox").cStr(), 0770));
-  }
-  KJ_SYSCALL(mkdir("/tmp/tmp/data", 0700));
+  KJ_SYSCALL(mkdir("/tmp/tmp/data", 0777));
   bind(kj::str(grainDir, "/sandbox"), "/tmp/tmp/data",
        MS_NODEV | MS_NOSUID | MS_NOEXEC | (restore ? 0 : MS_RDONLY));
 
   // Bind in the grain's `log`. When restoring, we discard the log.
   if (!restore) {
-    KJ_SYSCALL(mknod("/tmp/tmp/log", S_IFREG | 0600, 0));
+    KJ_SYSCALL(mknod("/tmp/tmp/log", S_IFREG | 0666, 0));
     bind(kj::str(grainDir, "/log"), "/tmp/tmp/log", MS_RDONLY | MS_NOEXEC | MS_NOSUID | MS_NODEV);
   }
 
   // Bind in the file.
   if (restore) {
-    KJ_SYSCALL(mknod("/tmp/tmp/file.zip", S_IFREG | 0600, 0));
+    KJ_SYSCALL(mknod("/tmp/tmp/file.zip", S_IFREG | 0666, 0));
     KJ_SYSCALL(mount(filename.cStr(), "/tmp/tmp/file.zip", nullptr, MS_BIND, nullptr));
-  } else if (filename != "-") {
-    // Instead of binding, just open the file and we'll compress to stdout.
-    KJ_SYSCALL(dup2(raiiOpen(filename, O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC), STDOUT_FILENO));
   }
 
   // Use Andy's ridiculous pivot_root trick to place ourselves into the sandbox.
@@ -155,6 +189,10 @@ bool BackupMain::run(kj::StringPtr grainDir) {
     KJ_SYSCALL(fchdir(oldRootDir));
     KJ_SYSCALL(umount2(".", MNT_DETACH));
     KJ_SYSCALL(chdir("/tmp"));
+  }
+
+  KJ_IF_MAYBE(u, sandboxUid) {
+    KJ_SYSCALL(setresuid(*u, *u, *u));
   }
 
   // TODO(security): We could seccomp this pretty tightly, but that would only be necessary to
@@ -217,23 +255,23 @@ void BackupMain::pump(kj::InputStream& in, kj::OutputStream& out) {
 }
 
 bool BackupMain::findFilesToZip(kj::StringPtr path, kj::OutputStream& out) {
+  // If the path contains a newline, we cannot correctly pass it to `zip` since `zip` expects
+  // one file per line. For security reasons, we must detect and filter out these files.
+  // Hopefully this never happens legitimately?
+  if (path.findFirst('\n') != nullptr) {
+    KJ_LOG(ERROR, "tried to backup file containing newlines", path);
+    return false;
+  }
+
   struct stat stats;
   KJ_SYSCALL(lstat(path.cStr(), &stats));
   if (S_ISREG(stats.st_mode) || S_ISLNK(stats.st_mode)) {
     // Regular file or link can be zipped; write to file stream.
-    // If the path contains a newline, we cannot correctly pass it to `zip` since `zip` expects
-    // one file per line. For security reasons, we must detect and filter out these files.
-    // Hopefully this never happens legitimately?
-    if (path.findFirst('\n') == nullptr) {
-      kj::ArrayPtr<const byte> pieces[2];
-      pieces[0] = path.asBytes();
-      pieces[1] = kj::StringPtr("\n").asBytes();
-      out.write(pieces);
-      return true;
-    } else {
-      KJ_LOG(ERROR, "tried to backup file containing newlines", path);
-      return false;
-    }
+    kj::ArrayPtr<const byte> pieces[2];
+    pieces[0] = path.asBytes();
+    pieces[1] = kj::StringPtr("\n").asBytes();
+    out.write(pieces);
+    return true;
   } else if (S_ISDIR(stats.st_mode)) {
     // Subdirectory; enumerate contents.
     bool packedAny = false;

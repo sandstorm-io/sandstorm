@@ -37,7 +37,8 @@ interface Backend {
   # ----------------------------------------------------------------------------
 
   startGrain @0 (ownerId :Text, grainId :Text, packageId :Text,
-                 command :Package.Manifest.Command, isNew :Bool, devMode :Bool = false)
+                 command :Package.Manifest.Command, isNew :Bool,
+                 devMode :Bool = false, mountProc :Bool = false)
              -> (supervisor :Supervisor);
   # Start a grain.
 
@@ -97,6 +98,12 @@ interface Backend {
   #
   # This method is not implemented by the single-machine version of Sandstorm, which does not track
   # per-user storage quotas.
+
+  getGrainStorageUsage @15 (ownerId :Text, grainId :Text) -> (size :UInt64);
+  # Returns the number of bytes of data in storage attributed to the given grain.
+  #
+  # On single-machine Sandstorm, this walks the directory tree, which may be slow. Therefore,
+  # it is recommended that this not be called often.
 }
 
 interface SandstormCoreFactory {

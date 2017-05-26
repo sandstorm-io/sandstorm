@@ -1,19 +1,23 @@
 <template name="newAdminIdentity">
-  <h1>Identity Providers</h1>
-  <p>Choose which services users may use to identify themselves.  Anyone can log in, but only users you invite will be able to install apps or create grains.</p>
-  {{>adminIdentityProviderTable idpData=idpData featureKeyRoute="newAdminFeatureKey"}}
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>Identity providers</li>
+    </ul>
+  </h1>
 
-  {{#if hasFeatureKey}}
-    <p>
-    To configure organization membership and settings, see
-    {{#linkTo route="newAdminOrganization"}}Organization Settings{{/linkTo}}.
-    </p>
-  {{/if}}
+  <p>Choose which services users may use to identify themselves.  Anyone can log in, but only users you invite will be able to install apps or create grains.</p>
+  {{>adminIdentityProviderTable idpData=idpData}}
+
+  <p>
+  To configure organization membership and settings, see
+  {{#linkTo route="newAdminOrganization"}}organization settings{{/linkTo}}.
+  </p>
 </template>
 
 <template name="adminIdentityProviderConfigureEmail">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
-  <h2>Email Login Configuration</h2>
+  <h2>Email login configuration</h2>
 
   {{#if errorMessage}}
     {{#focusingErrorBox}}
@@ -22,12 +26,16 @@
   {{/if}}
 
   <form class="setup-idp-form">
-    <p>To use email login, you'll also need to configure an email relay.</p>
+    {{#if emailUnconfigured}}
+      <p class="flash-message warning-message">Note: to use email login, you'll need to configure email delivery after this.</p>
+    {{/if}}
+
+    <p>Email login has no additional configuration options.</p>
   </form>
 
   <div class="idp-modal-button-row">
     <button class="idp-modal-save">
-      {{#if emailEnabled}}
+      {{#if emailLoginEnabled}}
       Save
       {{else}}
       Enable
@@ -36,7 +44,7 @@
     <button class="idp-modal-cancel">
       Cancel
     </button>
-    {{#if emailEnabled}}
+    {{#if emailLoginEnabled}}
     <button class="idp-modal-disable">
       Disable
     </button>
@@ -52,8 +60,9 @@
   <ol>
     <li>Visit <a href="https://console.developers.google.com/" target="blank">https://console.developers.google.com/</a></li>
     <li>"Create Project", if needed. Wait for Google to finish provisioning.</li>
-    <li>On the left sidebar, go to "Credentials" and, on the right, "OAuth Consent Screen". Make sure to enter an email address and a product name, and save.</li>
-    <li>On the left sidebar, go to "Credentials".  Press the "Create credentials" button, then select "Web application" as the type.</li>
+    <li>On the left sidebar, go to "Credentials" and, on the right, "OAuth consent screen". Make sure to enter an email address and a product name, and save.</li>
+    <li>On the left sidebar, go to "Credentials".  Click the "Create credentials" button, then select "OAuth client ID" as the type.</li>
+    <li>Select "Web application" as your application type.</li>
     <li>Set Authorized Javascript Origins to: <span class="idp-config-url">{{siteUrlNoSlash}}</span></li>
     <li>Set Authorized Redirect URI to: <span class="idp-config-url">{{siteUrlNoSlash}}/_oauth/google</span></li>
     <li>Finish by clicking "Create".</li>
@@ -62,7 +71,17 @@
 
 <template name="adminIdentityProviderConfigureGoogle">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
-  <h2>Google Login Configuration</h2>
+  <h2>Google login configuration</h2>
+
+  {{#if formerBaseUrl}}
+    <p class="flash-message warning-message" tabindex="-1">
+      This server moved from <code>{{ formerBaseUrl }}</code> to <code>{{ siteUrlNoSlash }}</code>.
+      You'll need to visit
+      <a target="_blank" href="https://console.developers.google.com/">https://console.developers.google.com/</a>
+      and update the "Authorized Javascript Origins" and "Authorized Redirect URI" for this Client ID to
+      include the values below.
+    </p>
+  {{/if}}
 
   {{#if errorMessage}}
     {{#focusingErrorBox}}
@@ -71,9 +90,9 @@
   {{/if}}
 
   <form class="setup-idp-form">
-    {{> googleLoginSetupInstructions }}
+    {{> googleLoginSetupInstructions "" }}
 
-    <p>Then, copy over your Client ID and Client Secret below:</p>
+    <p>Then, copy over your Client ID and Client secret below:</p>
 
     <div class="form-group">
       <label>
@@ -83,7 +102,7 @@
     </div>
     <div class="form-group">
       <label>
-        Client Secret:
+        Client secret:
         <input type="text" name="clientSecret" value="{{clientSecret}}"/>
       </label>
     </div>
@@ -111,7 +130,7 @@
 
 <template name="githubLoginSetupInstructions">
   <p>
-    First, you'll need to get a Github Client ID and Client Secret. Follow these steps:
+    First, you'll need to get a Github Client ID and Client secret. Follow these steps:
   </p>
   <ol>
     <li>Visit <a href="https://github.com/settings/applications/new" target="blank">https://github.com/settings/applications/new</a></li>
@@ -122,12 +141,21 @@
 
 <template name="adminIdentityProviderConfigureGitHub">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
-  <h2>GitHub Configuration</h2>
+  <h2>GitHub login configuration</h2>
+
+  {{#if formerBaseUrl}}
+    <p class="flash-message warning-message" tabindex="-1">
+      This server moved from <code>{{ formerBaseUrl }}</code> to <code>{{ siteUrl }}</code>.
+      You'll need to visit
+      <a target="_blank" href="https://github.com/settings/developers">https://github.com/settings/developers</a>
+      and update the Homepage URL and Authorization callback URL for this application to the values below.
+    </p>
+  {{/if}}
 
   <form class="setup-idp-form">
-    {{> githubLoginSetupInstructions }}
+    {{> githubLoginSetupInstructions "" }}
 
-    <p>Then, copy over your Client ID and Client Secret below:</p>
+    <p>Then, copy over your Client ID and Client secret below:</p>
     <div class="form-group">
       <label>
         Client ID:
@@ -136,7 +164,7 @@
     </div>
     <div class="form-group">
       <label>
-        Client Secret:
+        Client secret:
         <input type="text" name="clientSecret" value="{{clientSecret}}"/>
       </label>
     </div>
@@ -164,7 +192,7 @@
 
 <template name="adminIdentityProviderConfigureLdap">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
-  <h2>LDAP Configuration</h2>
+  <h2>LDAP login configuration</h2>
 
   {{#if errorMessage}}
     {{#focusingErrorBox}}
@@ -195,7 +223,7 @@
 
     <div class="form-group">
       <label>Bind user password
-        <input type="text" name="ldapSearchBindPassword" value="{{ldapSearchBindPassword}}"/>
+        <input type="password" name="ldapSearchBindPassword" value="{{ldapSearchBindPassword}}"/>
       </label>
       <span class="form-subtext">
         Optional, needed if specifying bind DN above.
@@ -250,6 +278,17 @@
       </span>
     </div>
 
+    <div class="form-group">
+      <label>LDAP CA certificate
+        <textarea name="ldapCaCert" value="{{ldapCaCert}}" placeholder="-----BEGIN CERTIFICATE-----
+MIID...
+-----END CERTIFICATE-----"></textarea>
+      </label>
+      <span class="form-subtext">
+        This is only necessary if your server supports SSL and is using a private CA not in the common trusted set. Note that it does NOT work to enter the LDAP server's own certificate here -- it must be the certificate of a CA which has signed the LDAP server's certificate.
+      </span>
+    </div>
+
   </form>
 
   <div class="idp-modal-button-row">
@@ -274,15 +313,24 @@
 
 <template name="adminIdentityProviderConfigureSaml">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
-  <h2>SAML Login Configuration</h2>
+  <h2>SAML login configuration</h2>
 
   <p>
-    Your SAML IDP should be configured to return a persistent nameID. In addition you <strong>must</strong>
+    Your SAML IDP should be configured to return a persistent nameID. In addition, if you are not
+    using Active Directory, you <strong>must</strong>
     configure your IDP to provide two extra attributes, <code>email</code> and <code>displayName</code>.
   </p>
 
   <p>
-    The Entity ID of this server is <code>{{entityId}}</code>. Please supply that to your IDP.
+    The Service URL of this server is: <code>{{ serviceUrl }}</code>
+  </p>
+
+  <p>
+    The Service Logout URL of this server is: <code>{{ logoutUrl }}</code>
+  </p>
+
+  <p>
+    If your SAML IDP supports reading the service provider metadata from a URL, then you can point it at: <code><a href="{{configUrl}}" target="_blank">{{ configUrl }}</a></code>
   </p>
 
   {{#if errorMessage}}
@@ -299,8 +347,20 @@
     </div>
 
     <div class="form-group">
+      <label>SAML provider logout URL (optional):
+        <input type="text" name="logout" value="{{samlLogout}}" placeholder="https://YOUR_SAML_PROVIDER.com/sso/saml/SingleLogoutService" />
+      </label>
+    </div>
+
+    <div class="form-group">
       <label>SAML cert for above provider:
         <textarea type="text" name="publicCert" value="{{samlPublicCert}}" placeholder="base64 encoded cert (e.g. MIID...8F==)"></textarea>
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label>Entity ID:
+        <input type="text" name="entityId" value="{{samlEntityId}}" placeholder="{{exampleEntityId}}" />
       </label>
     </div>
   </form>
@@ -326,20 +386,17 @@
 </template>
 
 <template name="adminIdentityProviderTable">
-{{!-- Expects a single argument in the data context:
-   featureKeyRoute: String.  Name of the route that the "Get Sandstorm for Work" button should
-                             redirect you to.
---}}
+{{!-- Expects an empty data context. --}}
 <div class="identity-provider-table" role="grid">
   <div class="idp-table-header" role="rowgroup">
     <div class="idp-header-row" role="row">
-      <span class="idp" role="rowheader">Identity Provider</span>
+      <span class="idp" role="rowheader">Identity provider</span>
       <span class="idp-status" role="rowheader">Status</span>
     </div>
   </div>
   <div class="idp-table-rows" role="rowgroup">
   {{#each idp in idpData}}
-    {{> adminIdentityRow idp=idp featureKeyRoute=featureKeyRoute}}
+    {{> adminIdentityRow idp=idp}}
   {{/each}}
   {{#each idp in idpData}}
     {{#if currentPopupIs idp.id}}
@@ -356,17 +413,24 @@
 <div class="idp-table-row" role="row">
   <span class="idp" role="gridcell">{{idp.label}}</span>
   <span class="idp-status" role="gridcell">
+    <span class="left">
     {{#if idp.enabled}}
       <span class="idp-enabled">Enabled</span>
     {{else}}
-      <span class="idp-disabled">Not Enabled</span>
+      <span class="idp-disabled">Not enabled</span>
     {{/if}}
+    {{#if idp.resetNote}}
+      {{#if idp.resetNote.baseUrlChangedFrom}}
+      <span class="base-url-change-note">
+        Disabled due to BASE_URL change <button class="button-link base-url-change-button">reconfigure</button>
+      </span>
+      {{/if}}
+    {{/if}}
+    </span>
 
-    {{#if needsFeatureKey}}
-      <button class="get-feature-key" title="Configure Sandstorm for Work">Configure Sandstorm for Work</button>
-    {{else}}
+    <span class="right">
       <button class="configure-idp" title="Configure {{idp.label}} login">Configure</button>
-    {{/if}}
+    </span>
   </span>
 </div>
 </template>

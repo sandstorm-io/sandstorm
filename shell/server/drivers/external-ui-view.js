@@ -14,59 +14,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { PersistentImpl } from "/imports/server/persistent.js";
+import { ssrfSafeLookup } from "/imports/server/networking.js";
+
 const Future = Npm.require("fibers/future");
-const Promise = Npm.require("es6-promise").Promise;
 const Capnp = Npm.require("capnp");
 const Url = Npm.require("url");
 const Http = Npm.require("http");
 const Https = Npm.require("https");
 const ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
-
-WrappedUiView = class WrappedUiView {
-  constructor(token, proxy) {
-    // TODO(someday): handle the fact that these proxies will be garbage collected every 2 minutes,
-    // even if it's in use.
-    this.token = token;
-    this.proxy = proxy;
-  }
-
-  newSession(userInfo, context, sessionType, sessionParams, retryCount) {
-    if (sessionType !== ApiSession.typeId) {
-      throw new Error("SessionType must be ApiSession.");
-    }
-
-    retryCount = retryCount || 0;
-    const _this = this;
-
-    return this.proxy.keepAlive().then(() => {
-      // ignore the passed userInfo and instead use the one associated with this
-      // token TODO(someday): Merge / intersect the two userInfo objects
-      // (especially permissions) rather than only taking the token's user info.
-      // This will allow the caller to request only a subset of the permissions
-      // granted by the token, which is useful to protect against bugs.
-      const session = _this.proxy.uiView.newSession(
-          _this.proxy.userInfo, context, sessionType, sessionParams).session;
-      return { session: session };
-    }).catch((error) => {
-      return _this.proxy.maybeRetryAfterError(error, retryCount).then(() => {
-        return _this.newSession(userInfo, context, sessionType, sessionParams, retryCount + 1);
-      });
-    });
-  }
-};
-
-getWrappedUiViewForToken = (token) => {
-  const proxyPromise = getProxyForApiToken(token);
-
-  return proxyPromise.then((proxy) => {
-    return { view: new WrappedUiView(token, proxy) };
-  });
-};
+const PersistentApiSession =
+    Capnp.importSystem("sandstorm/api-session-impl.capnp").PersistentApiSession;
 
 ExternalUiView = class ExternalUiView {
-  constructor(url, grainId, token) {
+  constructor(url, token) {
     this.url = url;
-    this.grainId = grainId;
     this.token = token;
   }
 
@@ -83,9 +45,211 @@ ExternalUiView = class ExternalUiView {
       };
     }
 
-    return { session: new Capnp.Capability(new ExternalWebSession(this.url, this.grainId, options), ApiSession) };
+    return inMeteor(() => {
+      return {
+        session: new Capnp.Capability(new ExternalWebSession(this.url, options, globalDb),
+                                      ApiSession),
+      };
+    });
   }
 };
+
+function getOAuthServiceInfo(url) {
+  // TODO(soon): Define a table somewhere (probably in a .capnp file) mapping API hosts to OAuth
+  //   metadata.
+  if (url.startsWith("https://apidata.googleusercontent.com/") ||
+      url.startsWith("https://www.googleapis.com/")) {
+    return {
+      service: "google",
+      endpoint: "https://www.googleapis.com/oauth2/v4/token",
+    };
+  } else if (url.startsWith("https://api.github.com/users")) {
+    return {
+      service: "github",
+      endpoint: "https://github.com/login/oauth/access_token",
+    };
+  } else {
+    return null;
+  }
+}
+
+function refreshOAuth(url, refreshToken) {
+  // TODO(perf): Cache access tokens until they expire? Currently we re-do the refresh on every
+  //   restore. In particular, this means we always drop the first access token returned (which
+  //   is returned together with the refresh token) and then immediately request a new one.
+
+  const serviceInfo = getOAuthServiceInfo(url);
+  if (!serviceInfo) {
+    throw new Error("Don't know how to OAuth for: " + url);
+  }
+
+  const config = ServiceConfiguration.configurations.findOne({ service: serviceInfo.service });
+  if (!config) {
+    throw new Error("can't refresh OAuth token for service that isn't configured: " +
+                    serviceInfo.service);
+  }
+
+  const response = HTTP.post(serviceInfo.endpoint, {
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Accept": "application/json",
+    },
+    content: "client_id=" + encodeURIComponent(config.clientId)
+          + "&client_secret=" + encodeURIComponent(config.secret)
+          + "&refresh_token=" + encodeURIComponent(refreshToken)
+          + "&grant_type=refresh_token",
+  });
+
+  return response.data;
+}
+
+function newExternalHttpSession(url, auth, db, saveTemplate) {
+  // `url` and `auth` are the corresponding members of `ApiToken.frontendRef.http`.
+
+  const createCap = authorization => {
+    return new Capnp.Capability(new ExternalWebSession(url,
+        authorization ? { headers: { authorization } } : {},
+        db, saveTemplate), PersistentApiSession);
+  };
+
+  if (auth.refresh) {
+    return createCap("Bearer " + refreshOAuth(url, auth.refresh).access_token);
+  } else if (auth.bearer) {
+    return createCap("Bearer " + auth.bearer);
+  } else if (auth.basic) {
+    const userpass = [auth.basic.username, auth.basic.password].join(":");
+    return createCap("Basic " + new Buffer(userpass, "utf8").toString("base64"));
+  } else {
+    return createCap(null);
+  }
+}
+
+function registerHttpApiFrontendRef(registry) {
+  registry.register({
+    frontendRefField: "http",
+    typeId: ApiSession.typeId,
+
+    restore(db, saveTemplate, value) {
+      return newExternalHttpSession(value.url, value.auth, db, saveTemplate);
+    },
+
+    validate(db, session, request) {
+      check(request, {
+        url: String,
+        auth: Match.OneOf(
+            { none: null },
+            { bearer: String },
+            { basic: { username: String, password: String } },
+            { oauth: { credentialToken: String, credentialSecret: String } }),
+      });
+
+      if (!request.url.startsWith("https://") &&
+          !request.url.startsWith("http://")) {
+        throw new Meteor.Error(400, "URL must be HTTP or HTTPS.");
+      }
+
+      // Check for URL patterns.
+      const parsedUrl = Url.parse(request.url);
+
+      if (parsedUrl.auth) {
+        const parts = parsedUrl.auth.split(":");
+        if (parts.length === 2) {
+          if ("none" in request.auth) {
+            request.auth = { basic: { username: parts[0], password: parts[1] } };
+          } else {
+            throw new Meteor.Error(400, "Can't support multiple authentication mechanisms at once");
+          }
+        }
+
+        parsedUrl.auth = null;
+        request.url = Url.format(parsedUrl);
+      }
+
+      if (parsedUrl.hash) {
+        if ("none" in request.auth) {
+          request.auth = { bearer: parsedUrl.hash.slice(1) };
+        } else {
+          throw new Meteor.Error(400, "Can't support multiple authentication mechanisms at once");
+        }
+
+        parsedUrl.hash = null;
+        request.url = Url.format(parsedUrl);
+      }
+
+      if (request.auth.oauth) {
+        // We did an OAuth handshake client-side.
+        const oauthResult = OAuth.retrieveCredential(request.auth.oauth.credentialToken,
+                                                     request.auth.oauth.credentialSecret);
+
+        if (oauthResult instanceof Error) {
+          throw oauthResult;
+        }
+
+        const serviceData = oauthResult.serviceData;
+        if (serviceData.refreshToken) {
+          request.auth = { refresh: serviceData.refreshToken };
+        } else {
+          request.auth = { bearer: serviceData.accessToken };
+        }
+
+        // TODO(security): We could maybe add a MembraneRequirement that this user account
+        //   possesses credentials for this OAuth service. Conversely, perhaps if an authCode was
+        //   specified, we should automatically add the associated credential to the user's
+        //   account? (As a non-login credential.)
+      }
+
+      const descriptor = { tags: [{ id: ApiSession.typeId }] };
+      return { descriptor, requirements: [], frontendRef: request };
+    },
+
+    query(db, userAccountId, tagValue) {
+      const tag = tagValue ? Capnp.parse(ApiSession.PowerboxTag, tagValue) : {};
+
+      const options = [];
+
+      if (tag.canonicalUrl &&
+          (tag.canonicalUrl.startsWith("https://") ||
+           tag.canonicalUrl.startsWith("http://"))) {
+        const serviceInfo = getOAuthServiceInfo(tag.canonicalUrl);
+        if (serviceInfo && tag.oauthScopes) {
+          // Note: We don't check if the service is configured, because it's useful to show the
+          //   user that the option exists but inform them that it will only work if the admin
+          //   configures this service.
+          options.push({
+            _id: "http-oauth-" + tag.canonicalUrl,
+            cardTemplate: "httpOAuthPowerboxCard",
+            configureTemplate: "httpOAuthPowerboxConfiguration",
+            httpUrl: tag.canonicalUrl,
+            oauthServiceInfo: serviceInfo,
+            oauthScopes: tag.oauthScopes,
+          });
+        } else {
+          // TODO(soon): Support tag.authentication.
+
+          options.push({
+            _id: "http-url-" + tag.canonicalUrl,
+            frontendRef: { http: { url: tag.canonicalUrl, auth: { none: null } } },
+            cardTemplate: "httpUrlPowerboxCard",
+          });
+        }
+      }
+
+      // Always offer the user the option to connect to an arbitrary URL of their choosing, even
+      // if canonicalUrl exists.
+      options.push({
+        _id: "http-arbitrary",
+        cardTemplate: "httpArbitraryPowerboxCard",
+        configureTemplate: "httpArbitraryPowerboxConfiguration",
+      });
+
+      return options;
+    },
+  });
+}
+
+Meteor.startup(() => { registerHttpApiFrontendRef(globalFrontendRefRegistry); });
+
+// =======================================================================================
 
 const responseCodes = {
   200: { type: "content", code: "ok" },
@@ -125,14 +289,40 @@ const responseCodes = {
   505: { type: "serverError" },
 };
 
-ExternalWebSession = class ExternalWebSession {
-  constructor(url, grainId, options) {
-    const parsedUrl = Url.parse(url);
+ExternalWebSession = class ExternalWebSession extends PersistentImpl {
+  constructor(url, options, db, saveTemplate) {
+    super(db, saveTemplate);
+
+    // TODO(soon): Support HTTP proxy.
+    const safe = ssrfSafeLookup(db, url);
+
+    if (!options) options = {};
+    if (!options.headers) options.headers = {};
+    options.headers.host = safe.host;
+    options.servername = safe.host.split(":")[0];
+
+    if (!saveTemplate) {
+      // enable backwards-compatibilty tweaks.
+      this.fromHackSession = true;
+    }
+
+    const parsedUrl = Url.parse(safe.url);
     this.host = parsedUrl.hostname;
+    if (this.fromHackSession) {
+      // HackSessionContext.getExternalUiView() apparently ignored any path on the URL. Whoops.
+    } else {
+      if (parsedUrl.path === "/") {
+        // The URL parser says path = "/" for both "http://foo" and "http://foo/". We want to be
+        // strict, though.
+        this.path = url.endsWith("/") ? "/" : "";
+      } else {
+        this.path = parsedUrl.path;
+      }
+    }
+
     this.port = parsedUrl.port;
     this.protocol = parsedUrl.protocol;
-    this.grainId = grainId;
-    this.options = options || {};
+    this.options = options;
   }
 
   get(path, context) {
@@ -151,15 +341,15 @@ ExternalWebSession = class ExternalWebSession {
     return this._requestHelper("DELETE", path, context);
   }
 
-// TODO(someday): implement streaming and websockets for ExternalWebSession
-// postStreaming(path, mimeType, context) {
-// }
+  // TODO(someday): implement streaming and websockets for ExternalWebSession
+  //postStreaming(path, mimeType, context) {
+  //}
 
-// putStreaming(path, mimeType, context) {
-// }
+  //putStreaming(path, mimeType, context) {
+  //}
 
-// openWebSocket(path, context, protocol, clientStream) {
-// }
+  //openWebSocket(path, context, protocol, clientStream) {
+  //}
 
   _requestHelper(method, path, context, content, contentType) {
     const _this = this;
@@ -167,7 +357,23 @@ ExternalWebSession = class ExternalWebSession {
     return new Promise((resolve, reject) => {
       const options = _.clone(session.options);
       options.headers = options.headers || {};
-      options.path = path;
+
+      if (!options.headers["user-agent"]) {
+        options.headers["user-agent"] = "sandstorm app";
+      }
+
+      if (this.fromHackSession) {
+        // According to the specification of `WebSession`, `path` should not contain a
+        // leading slash, and therefore we need to prepend "/". However, for a long time
+        // this implementation did not in fact prepend a "/". Since some apps might rely on
+        // that behavior, we only prepend "/" if the path does not start with "/".
+        //
+        // TODO(soon): Once apps have updated, prepend "/" unconditionally.
+        options.path = path.startsWith("/") ? path : "/" + path;
+      } else {
+        options.path = this.path + "/" + path;
+      }
+
       options.method = method;
       if (contentType) {
         options.headers["content-type"] = contentType;
@@ -200,75 +406,101 @@ ExternalWebSession = class ExternalWebSession {
       }
 
       req = requestMethod(options, (resp) => {
-        const buffers = [];
-        const statusInfo = responseCodes[resp.statusCode];
+        try {
+          const buffers = [];
+          const statusInfo = responseCodes[resp.statusCode];
 
-        const rpcResponse = {};
+          const rpcResponse = {};
 
-        switch (statusInfo.type) {
-          case "content":
-            resp.on("data", (buf) => {
-              buffers.push(buf);
-            });
+          resp.on("data", (buf) => {
+            buffers.push(buf);
+          });
 
-            resp.on("end", () => {
-              const content = {};
-              rpcResponse.content = content;
+          resp.on("end", () => {
+            const data = Buffer.concat(buffers);
 
-              content.statusCode = statusInfo.code;
-              if ("content-encoding" in resp.headers) content.encoding = resp.headers["content-encoding"];
-              if ("content-language" in resp.headers) content.language = resp.headers["content-language"];
-              if ("content-type" in resp.headers) content.language = resp.headers["content-type"];
-              if ("content-disposition" in resp.headers) {
-                const disposition = resp.headers["content-disposition"];
-                const parts = disposition.split(";");
-                if (parts[0].toLowerCase().trim() === "attachment") {
-                  parts.forEach((part) => {
-                    const splitPart = part.split("=");
-                    if (splitPart[0].toLowerCase().trim() === "filename") {
-                      content.disposition = { download: splitPart[1].trim() };
-                    }
-                  });
-                }
+            function fillInErrorBody(error) {
+              const contentType = resp.headers["content-type"];
+              if (contentType && (contentType == "text/html" ||
+                                  contentType.startsWith("text/html;"))) {
+                // TODO(someday): Check for non-UTF-8 charset and translate?
+                error.descriptionHtml = data.toString("utf8");
+              } else if (contentType || data.length > 0) {
+                const content = { data };
+                if (contentType) content.mimeType = contentType;
+                if ("content-encoding" in resp.headers) content.encoding = resp.headers["content-encoding"];
+                if ("content-language" in resp.headers) content.language = resp.headers["content-language"];
+                error.nonHtmlBody = content;
               }
+            }
 
-              content.body = {};
-              content.body.bytes = Buffer.concat(buffers);
+            switch (statusInfo ? statusInfo.type : resp.statusCode) {
+              case "content":
+                const content = {};
+                rpcResponse.content = content;
 
-              resolve(rpcResponse);
-            });
-            break;
-          case "noContent":
-            const noContent = {};
-            rpcResponse.noContent = noContent;
-            noContent.setShouldResetForm = statusInfo.shouldResetForm;
-            resolve(rpcResponse);
-            break;
-          case "redirect":
-            const redirect = {};
-            rpcResponse.redirect = redirect;
-            redirect.isPermanent = statusInfo.isPermanent;
-            redirect.switchToGet = statusInfo.switchToGet;
-            if ("location" in resp.headers) redirect.location = resp.headers.location;
-            resolve(rpcResponse);
-            break;
-          case "clientError":
-            const clientError = {};
-            rpcResponse.clientError = clientError;
-            clientError.statusCode = statusInfo.clientErrorCode;
-            clientError.descriptionHtml = statusInfo.descriptionHtml;
-            resolve(rpcResponse);
-            break;
-          case "serverError":
-            const serverError = {};
-            rpcResponse.serverError = serverError;
-            clientError.descriptionHtml = statusInfo.descriptionHtml;
-            resolve(rpcResponse);
-            break;
-          default: // ???
-            err = new Error("Invalid status code " + resp.statusCode + " received in response.");
-            reject(err);
-            break;
+                content.statusCode = statusInfo.code;
+                if ("content-encoding" in resp.headers) content.encoding = resp.headers["content-encoding"];
+                if ("content-language" in resp.headers) content.language = resp.headers["content-language"];
+                if ("content-type" in resp.headers) content.mimeType = resp.headers["content-type"];
+                if ("content-disposition" in resp.headers) {
+                  const disposition = resp.headers["content-disposition"];
+                  const parts = disposition.split(";");
+                  if (parts[0].toLowerCase().trim() === "attachment") {
+                    parts.forEach((part) => {
+                      const splitPart = part.split("=");
+                      if (splitPart[0].toLowerCase().trim() === "filename") {
+                        content.disposition = { download: splitPart[1].trim() };
+                      }
+                    });
+                  }
+                }
+
+                content.body = {};
+                content.body.bytes = data;
+
+                resolve(rpcResponse);
+                break;
+              case "noContent":
+                const noContent = {};
+                rpcResponse.noContent = noContent;
+                noContent.setShouldResetForm = statusInfo.shouldResetForm;
+                resolve(rpcResponse);
+                break;
+              case "redirect":
+                const redirect = {};
+                rpcResponse.redirect = redirect;
+                redirect.isPermanent = statusInfo.isPermanent;
+                redirect.switchToGet = statusInfo.switchToGet;
+                if ("location" in resp.headers) redirect.location = resp.headers.location;
+                resolve(rpcResponse);
+                break;
+              case "clientError":
+                const clientError = {};
+                rpcResponse.clientError = clientError;
+                clientError.statusCode = statusInfo.clientErrorCode;
+
+                fillInErrorBody(clientError);
+                resolve(rpcResponse);
+                break;
+              case "serverError":
+                const serverError = {};
+                rpcResponse.serverError = serverError;
+                fillInErrorBody(serverError);
+                resolve(rpcResponse);
+                break;
+
+              // TODO(soon): Handle token-expired errors by throwing DISCONNECTED -- this will force
+              //   the client to reload the capability which will refresh the token.
+
+              default: // ???
+                err = new Error("Invalid status code " + resp.statusCode + " received in response.");
+                reject(err);
+                break;
+            }
+          });
+        } catch (err) {
+          reject(err);
         }
       });
 

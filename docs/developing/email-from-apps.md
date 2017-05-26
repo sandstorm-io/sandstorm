@@ -59,11 +59,19 @@ limits in the future by doing more careful abuse monitoring.
 
 ### Receiving
 
-In this case, receipt of e-mails is already handled for you. Upon your
-grain receiving an e-mail, it will be written to `/var/mail/new`. This
-follows the [maildir](https://en.wikipedia.org/wiki/Maildir)
-convention, and many e-mail apps will be able to use this out of the
-box.
+To receive emails:
+
+- Your app needs to create the [maildir](https://en.wikipedia.org/wiki/Maildir) directories within
+  `/var/mail` - `/var/mail/new` and `/var/mail/cur` and `/var/mail/tmp`. You can do this in e.g.
+  `launcher.sh`.
+
+- Now when your app receives email at its publicId email address
+  (e.g. JBuaKxjkwiJq7oksS@alpha.sandstorm.io), Sandstorm will pass the email to
+  sandstorm-http-bridge, which will save it in `/var/mail` as a Maildir.
+
+- Your app can process the Maildir using whatever tools are convenient for your app. This could take
+  the form of a programming language library, or you could embed a Maildir-aware IMAP daemon into
+  the app such as Dovecot.
 
 ### Sending
 

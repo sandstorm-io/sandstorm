@@ -119,7 +119,7 @@ button.revoke-token, button.revoke-access {
 }
 
 .main-content, .first-sign-in-main-content, .demo-expired-main-content,
-.identity-login-interstitial {
+.identity-login-interstitial, .suspended-main-content {
   margin: 0;
   padding: 0;
   position: fixed;
@@ -147,7 +147,7 @@ button.revoke-token, button.revoke-access {
   a {
     font-weight: bold;
     text-decoration: none;
-    color: #65468e;
+    color: $darker-purple-color;
   }
 }
 
@@ -157,6 +157,11 @@ button.revoke-token, button.revoke-access {
   // that is the value Chrome gives this element anyway, without specifying
   // it explicitly.
   z-index: 0;
+}
+
+.main-content.standalone {
+  top: 0px;
+  left: 0px;
 }
 
 @import "_grainlog.scss";
@@ -204,7 +209,7 @@ button.revoke-token, button.revoke-access {
   align-items: center;
   flex-direction: column;
   background-color: $default-content-background-color;
-  button.request-access, button.incognito-button {
+  button.request-access, button.incognito-button, button.restore-from-trash {
     @extend %button-base;
     @extend %button-primary;
     font-weight: 600;
@@ -267,6 +272,10 @@ div.grain-container {
   &.inactive-grain {
     z-index: -2;
     display: none;
+  }
+  .signin-frame {
+    position: absolute;
+    z-index: 100;
   }
 }
 
@@ -385,7 +394,7 @@ div.popup h2 {
   h2 {
     font-weight: normal;
     font-size: 24pt;
-    margin: 56px 120px 1em;
+    margin: 56px 80px 1em;
     >a {
       font-weight: bold;
       color: black;
@@ -397,12 +406,12 @@ div.popup h2 {
     text-align: left;
     >a {
       font-weight: 600;
-      color: #65468e;
+      color: $darker-purple-color;
     }
   }
 
   button {
-    @extend %unstyled-button;
+    @include unstyled-button();
     display: block;
     width: 100%;
     height: 100px;
@@ -437,7 +446,6 @@ div.popup h2 {
 }
 
 // Admin settings styles
-@import "_admin.scss";
 @import "_new-admin.scss";
 
 // Setup wizard styles
@@ -472,3 +480,5 @@ body>.popup.admin-alert>.frame>p {
     font-size: 30px;
   }
 }
+
+@import "_styleguide.scss";

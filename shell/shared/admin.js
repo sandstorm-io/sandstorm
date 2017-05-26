@@ -14,6 +14,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO(someday): split out fields by locus
+// isEnabled is available on both client and server
+// getLoginId is only used on server
+// initiateLogin and loginTemplate are only used on client
+
 function serviceEnabled(name) {
   const setting = Settings.findOne({ _id: name });
   return setting && !!setting.value;
@@ -92,7 +97,7 @@ Accounts.identityServices.email = {
 
 Accounts.identityServices.ldap = {
   isEnabled: function () {
-    return serviceEnabled("ldap") && globalDb.isFeatureKeyValid();
+    return serviceEnabled("ldap");
   },
 
   getLoginId: function (identity) {
@@ -111,7 +116,7 @@ Accounts.identityServices.ldap = {
 
 Accounts.identityServices.saml = {
   isEnabled: function () {
-    return serviceEnabled("saml") && globalDb.isFeatureKeyValid();
+    return serviceEnabled("saml");
   },
 
   getLoginId: function (identity) {

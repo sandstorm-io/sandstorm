@@ -42,23 +42,23 @@ ReceiveEmail.prototype.command = function(selector, expectedMessage, timeout, cb
     req.accept();
     mailparser.on("end", function (mail) {
       clearTimeout(timeoutHandle);
-      server.server.end(function () {});
+      server.server.end(function () {
+        if (cb) {
+          cb.call(self.client.api);
+        }
+
+        self.emit("complete");
+      });
 
       var expected = expectedMessage;
 
       if ("to" in expected) {
-        self.client.api.assert.equal(expected.to, mail.to[0].address);
+        self.client.api.assert.equal(mail.to[0].address, expected.to);
         expected = _.omit(expected, "to");
       }
       Object.keys(expected).forEach(function (key) {
-        self.client.api.assert.equal(expected[key], mail[key]);
+        self.client.api.assert.equal(mail[key], expected[key]);
       });
-
-      if (cb) {
-        cb.call(self.client.api);
-      }
-
-      self.emit("complete");
     });
   });
 

@@ -1,6 +1,95 @@
 <template name="styleguide">
 {{!-- Insert whatever HTML you want to demonstrate here. --}}
-<h1>Sandstorm Style Guide</h1>
+<div class="styleguide">
+<h1>Sandstorm style guide</h1>
 
-<p>Work in progress.</p>
+<p>(note: this is a work in progress.)</p>
+
+<h2>Copy rules</h2>
+<ul>
+  <li>Be terse but clear.  Avoid technical terms where less-technical ones will do.</li>
+  <li>
+    Capitalize the first letter of the first word of a section heading or button.  Do not
+    capitalize the second word, or anything else, unless referring to a proper noun like Google or
+    GitHub.
+  </li>
+  <li>Use verbs for text on buttons. The button text should describe what clicking that button will do.</li>
+  <li>Use nouns for text which is a link.  The link text should indicate what the link will take you to.</li>
+  <li>
+    Use nouns for basically everything else, too, to communicate the information architecture.
+    Section headings should be nouns which describe the content of the section.  Labels should be
+    nouns which describe the content of the field.
+  </li>
+</ul>
+
+<h2>Style rules</h2>
+<ul>
+  <li>
+    Stick to a limited color palette.  (TODO: add specific colors)
+  </li>
+  <li>
+    Use typefaces no smaller than 13px for text content.  Readability is important and not everyone
+    has young eyes.
+  </li>
+  <li>
+    Make click targets no smaller than 32px square or 26px tall if appreciably wider.  Remember
+    that due to Fitts' Law, larger click targets are easier to interact with.
+  </li>
+</ul>
+
+<h2>Forms</h2>
+
+<ul>
+  <li>Use the <code>standard-form</code> class where appropriate.</li>
+  <li>
+    The primary action button of a form should be at the bottom right of the form. Secondary
+    buttons should line up to the left of that primary action button.
+  </li>
+  <li>
+    When providing text input fields, place labels above the input, not side-by-side or inside the
+    field as placeholder text.  Place additional explanation or instructions below the input.
+    Placeholder text should be used for examples, not instructions.
+  </li>
+  <li>
+    Forms are generally used for transactional interactions, where the user cares about the success
+    or failure of the application.  Avoid optimistic UI in favor of multi-state UI which
+    communicates network activity, success, and failure.  A common pattern is:
+    <ul>
+      <li>
+        Have the default state of the form.  Disable a save button until the user makes a change.
+      </li>
+      <li>
+        When the user clicks an action button, start the RPC, and disable the entire form to
+        indicate that the action is underway.
+      </li>
+      <li>
+        When the RPC completes, if the RPC failed, show an error message at the top of the context
+        over which the action applies.  If the RPC succeeded, either indicate a success message
+        (again, at the top of the context over which the action applies) or if this was a modal
+        interaction and the completion of the RPC indicates successful completion of the workflow,
+        dismiss the form with no additional message.
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<p>An example:</p>
+
+<form class="standard-form">
+  <div class="form-group">
+    <label>
+      Email
+      <input type="email" placeholder="alice@example.com" />
+    </label>
+    <span class="form-subtext">You might want to receive notifications.</span>
+  </div>
+
+
+  <div class="button-row">
+    <button type="submit">Save</button>
+    <button type="button">Discard</button>
+  </div>
+</form>
+
+</div>
 </template>

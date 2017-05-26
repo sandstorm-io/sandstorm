@@ -68,6 +68,16 @@ numeric IP address because you cannot configure wildcard DNS, consider reading a
 Sandstorm with an internal IP address and
 xip.io](faq.md#how-do-i-use-sandstorm-with-an-internal-ip-address).
 
+## Testing wildcard HTTPS
+
+If your server uses SSL or HTTPS, you will also need working HTTPS for all possible subdomains of
+your server's domain name. This is also known as wildcard HTTPS.
+
+If your server is at https://example.com/, you can visit https://testing.example.com/ and
+https://testing2.example.com/ in your browser. If you see any kind of certificate warning or error,
+then note that you need to adjust your configuration for Sandstorm to work properly. Read more in
+our [SSL topic guide.](ssl.md)
+
 ## local.sandstorm.io and sandcats.io provide wildcard DNS
 
 If you are using `vagrant-spk` to develop Sandstorm apps, or are developing Sandstorm itself, you

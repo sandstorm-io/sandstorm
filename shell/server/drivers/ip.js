@@ -14,10 +14,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Bignum from "bignum";
+import { PersistentImpl } from "/imports/server/persistent.js";
 const Future = Npm.require("fibers/future");
 const Net = Npm.require("net");
+const Tls = Npm.require("tls");
 const Dgram = Npm.require("dgram");
-const Promise = Npm.require("es6-promise").Promise;
 const Capnp = Npm.require("capnp");
 
 const IpRpc = Capnp.importSystem("sandstorm/ip.capnp");
@@ -39,9 +41,9 @@ ByteStreamConnection = class ByteStreamConnection{
   // expectSize(size) { }
 };
 
-IpInterfaceImpl = class IpInterfaceImpl {
-  constructor(persistentMethods) {
-    _.extend(this, persistentMethods);
+class IpInterfaceImpl extends PersistentImpl {
+  constructor(db, saveTemplate) {
+    super(db, saveTemplate);
   }
 
   listenTcp(portNum, port) {
@@ -120,9 +122,47 @@ IpInterfaceImpl = class IpInterfaceImpl {
   }
 };
 
-makeIpInterface = (persistentMethods) => {
-  return new Capnp.Capability(new IpInterfaceImpl(persistentMethods), IpRpc.PersistentIpInterface);
-};
+// TODO(cleanup): Meteor.startup() needed because 00-startup.js runs *after* code in subdirectories
+//   (ugh).
+Meteor.startup(() => {
+  globalFrontendRefRegistry.register({
+    frontendRefField: "ipInterface",
+    typeId: IpRpc.IpInterface.typeId,
+
+    restore(db, saveTemplate) {
+      return new Capnp.Capability(new IpInterfaceImpl(db, saveTemplate),
+                                  IpRpc.PersistentIpInterface);
+    },
+
+    validate(db, session, value) {
+      check(value, true);
+
+      if (!session.userId) {
+        throw new Meteor.Error(403, "Not logged in.");
+      }
+
+      return {
+        descriptor: { tags: [{ id: IpRpc.IpInterface.typeId }] },
+        requirements: [{ userIsAdmin: session.userId }],
+        frontendRef: value,
+      };
+    },
+
+    query(db, userId, value) {
+      if (userId && Meteor.users.findOne(userId).isAdmin) {
+        return [
+          {
+            _id: "frontendref-ipinterface",
+            frontendRef: { ipInterface: true },
+            cardTemplate: "ipInterfacePowerboxCard",
+          },
+        ];
+      } else {
+        return [];
+      }
+    },
+  });
+});
 
 BoundUdpPortImpl = class BoundUdpPortImpl {
   constructor(server, address, port) {
@@ -194,54 +234,123 @@ const addressType = (address) => {
   return type;
 };
 
-IpNetworkImpl = class IpNetworkImpl {
-  constructor(persistentMethods) {
-    _.extend(this, persistentMethods);
+class IpNetworkImpl extends PersistentImpl {
+  constructor(db, saveTemplate, tls) {
+    super(db, saveTemplate);
+    this.tls = tls;
   }
 
   getRemoteHost(address) {
-    return { host: new IpRemoteHostImpl(address) };
+    // Note that TLS typically authenticates hostnames, not raw IP addresses. So if `this.tls`
+    // is true, then the returned `IpRemoteHost` will likely refuse to make any connections.
+    // However, we keep that code path active because there is in principle no reason why it
+    // should always fail, and we wish to allow for a possible future in which we let users
+    // specify custom certificate authorities, in which case it might be more likely for TLS
+    // to be expected to authenticate raw IP addresses.
+
+    return { host: new IpRemoteHostImpl(addressToString(address), this.tls) };
   }
 
   getRemoteHostByName(address) {
-    return { host: new IpRemoteHostImpl(address) };
+    return { host: new IpRemoteHostImpl(address, this.tls) };
   }
 };
 
-makeIpNetwork = (persistentMethods) => {
-  return new Capnp.Capability(new IpNetworkImpl(persistentMethods), IpRpc.PersistentIpNetwork);
-};
+// TODO(cleanup): Meteor.startup() needed because 00-startup.js runs *after* code in subdirectories
+//   (ugh).
+Meteor.startup(() => {
+  globalFrontendRefRegistry.register({
+    frontendRefField: "ipNetwork",
+    typeId: IpRpc.IpNetwork.typeId,
 
-IpRemoteHostImpl = class IpRemoteHostImpl {
-  constructor(address) {
-    if (address.upper64 || address.upper64 === 0) {
-      // address is an ip.capnp:IpAddress, we need to convert it
-      this.address = addressToString(address);
-    } else {
-      this.address = address;
-    }
+    restore(db, saveTemplate, value) {
+      return new Capnp.Capability(
+        new IpNetworkImpl(db, saveTemplate, "tls" in value.encryption),
+        IpRpc.PersistentIpNetwork);
+    },
+
+    validate(db, session, value) {
+      check(value, { encryption: Match.OneOf({ none: null }, { tls: null }) });
+
+      if (!session.userId) {
+        throw new Meteor.Error(403, "Not logged in.");
+      }
+
+      return {
+        descriptor: {
+          tags: [
+            {
+              id: IpRpc.IpNetwork.typeId,
+              value: Capnp.serialize(
+                IpRpc.IpNetwork.PowerboxTag,
+                value),
+            },
+          ],
+        },
+        requirements: [{ userIsAdmin: session.userId }],
+        frontendRef: value,
+      };
+    },
+
+    query(db, userId, value) {
+      let encryption = { none: null };
+      if (value) {
+        encryption = Capnp.parse(IpRpc.IpNetwork.PowerboxTag, value).encryption || encryption;
+      }
+
+      if (userId && Meteor.users.findOne(userId).isAdmin) {
+        return [
+          {
+            _id: "frontendref-ipnetwork",
+            frontendRef: { ipNetwork: { encryption } },
+            cardTemplate: "ipNetworkPowerboxCard",
+          },
+        ];
+      } else {
+        return [];
+      }
+    },
+  });
+});
+
+class IpRemoteHostImpl {
+  constructor(address, tls) {
+    this.address = address;
+    this.tls = tls;
   }
 
   getTcpPort(portNum) {
-    return { port: new TcpPortImpl(this.address, portNum) };
+    return { port: new TcpPortImpl(this.address, portNum, this.tls) };
   }
 
   getUdpPort(portNum) {
+    if (this.tls) {
+      const error = new Error("Datagram Transport Layer Security is not yet supported");
+      error.kjType = "unimplemented";
+      throw error;
+    }
+
     return { port: new UdpPortImpl(this.address, portNum) };
   }
 };
 
 TcpPortImpl = class TcpPortImpl {
-  constructor(address, portNum) {
+  constructor(address, portNum, tls) {
     this.address = address;
     this.port = portNum;
+    this.tls = tls;
   }
 
   connect(downstream) {
     const _this = this;
     let resolved = false;
+    let connectMethod = Net.connect;
+    if (this.tls) {
+      connectMethod = Tls.connect;
+    }
+
     return new Promise((resolve, reject) => {
-      const client = Net.connect({ host: _this.address, port: _this.port }, () => {
+      const client = connectMethod({ host: _this.address, port: _this.port }, () => {
         resolved = true;
         resolve({ upstream: new ByteStreamConnection(client) });
       });

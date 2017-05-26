@@ -16,6 +16,7 @@
 
 #include "fuse.h"
 #include "send-fd.h"
+#include "util.h"
 #include <linux/fuse.h>
 #include <kj/debug.h>
 #include <kj/one-of.h>
@@ -36,16 +37,6 @@
 #include <sys/socket.h>
 
 namespace sandstorm {
-
-#if __QTCREATOR
-#define KJ_MVCAP(var) var
-// QtCreator dosen't understand C++14 syntax yet.
-#else
-#define KJ_MVCAP(var) var = ::kj::mv(var)
-// Capture the given variable by move.  Place this in a lambda capture list.  Requires C++14.
-//
-// TODO(cleanup):  Move to libkj.
-#endif
 
 using kj::uint;
 

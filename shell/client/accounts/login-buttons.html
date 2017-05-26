@@ -1,0 +1,289 @@
+<!--
+forked from Meteor's accounts-ui from
+https://github.com/meteor/meteor/tree/ab9ef40d258bbb9b9de453600495c8337577c565/packages/accounts-ui-unstyled
+
+========================================
+Meteor is licensed under the MIT License
+========================================
+
+Copyright (C) 2011-2015 Meteor Development Group
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
+OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+====================================================================
+This license applies to all code in Meteor that is not an externally
+maintained library. Externally maintained libraries have their own
+licenses, included in the LICENSES directory.
+====================================================================
+-->
+
+<template name="loginButtons">
+  {{!-- Data context is an instance of AccountsUi. --}}
+  {{#if isDemoUser}}
+    <button class="show-popup">Create account ▾</button>
+  {{else}}
+    <button class="show-popup">Sign in ▾</button>
+  {{/if}}
+</template>
+
+<template name="accountButtons">
+  {{#with profileData}}
+    {{#if loading}}
+      <button class="show-popup has-picture">Loading...</button>
+    {{else}}
+      <button class="show-popup has-picture">
+        <span class="profile-picture" style="background-image: url('{{pictureUrl}}');"></span>
+        {{displayName}} ▾
+      </button>
+    {{/if}}
+  {{/with}}
+</template>
+
+<template name="loginButtonsPopup">
+  {{!-- Data context is an instance of AccountsUi. --}}
+  {{> _loginButtonsLoggedOutDropdown . }}
+</template>
+
+<template name="accountButtonsPopup">
+  {{> _loginButtonsLoggedInDropdown . }}
+</template>
+
+<template name="_loginButtonsMessages">
+  {{#if errorMessage}}
+    <p class="message error-message" role="menuitem" aria-disabled="true">{{errorMessage}}</p>
+  {{/if}}
+  {{#if infoMessage}}
+    <p class="message info-message" role="menuitem" aria-disabled="true">{{infoMessage}}</p>
+  {{/if}}
+</template>
+
+<template name="_loginButtonsLoggedInDropdown">
+  <h4>Account</h4>
+
+  <div class="account-buttons-list" role="menu">
+    {{#linkTo route="account" role="menuitem"}}
+      Account settings
+    {{/linkTo}}
+    {{#if showIdentitySwitcher}}
+    <button class="switch-identity">
+      Switch identity {{#if identitySwitcherExpanded}}▴{{else}}▾{{/if}}
+    </button>
+    {{#if identitySwitcherExpanded}}
+    <div class="inline-identity-switcher">
+      {{> identityPicker identitySwitcherData}}
+    </div>
+    {{/if}}
+    {{/if}}
+    {{#if isAdmin}}
+      {{#linkTo route="newAdminRoot" role="menuitem"}}Admin panel{{/linkTo}}
+    {{/if}}
+
+    {{#if showSendFeedback}}
+      <a href="mailto:support@sandstorm.io" target="_blank" role="menuitem">Send feedback</a>
+    {{/if}}
+
+    {{#if referralsEnabled }}
+      {{#linkTo route="referrals" role="menuitem"}}Referral program{{/linkTo}}
+    {{/if}}
+    {{#if showAbout}}
+      {{#linkTo route="about" role="menuitem"}}About Sandstorm{{/linkTo}}
+    {{/if}}
+
+    <button class="logout" role="menuitem">
+      Sign out
+    </button>
+  </div>
+</template>
+
+<template name="_loginButtonsLoggedOutDropdown">
+  {{#if isDemoUser}}
+    <h4>Create account</h4>
+    <p class="demo-note">Your demo data will be transferred to your new account.</p>
+    {{> loginButtonsList . }}
+  {{else}}
+    <h4>Sign in</h4>
+    {{#if isCurrentRoute 'shared'}}
+      <p class="demo-note">Sign in so that collaborators know who you are.</p>
+      {{#if choseLogin}}
+        {{> loginButtonsList . }}
+      {{else}}
+        <div class="login-suggestion" role="menu">
+          <button class="login" role="menuitem">
+            Sign in
+          </button>
+          <button class="dismiss" role="menuitem">
+            Stay anonymous
+          </button>
+        </div>
+      {{/if}}
+    {{else}}
+      {{> loginButtonsList . }}
+    {{/if}}
+  {{/if}}
+</template>
+
+<template name="loginButtonsDialog">
+{{!-- takes arguments:
+  accountsUi: instance of AccountsUi
+       label: optional String which replaces top-of-dialog-label.  If absent, the dialog will show
+              either "Create account" if the server allows uninvited users or "Sign in" if not.
+--}}
+  <div class="login-dialog">
+    {{!-- There's no actual difference between signing "up" and "in", but people expect there to
+          be a difference, so humor them by making the front-page login say "sign up". (But for a
+          private server, don't offer "sign up".) --}}
+    <h4>
+      <span class="logo" style="background-image: url('{{logoUrl}}')"></span>
+      {{ labelOrFallback }}
+    </h4>
+
+    {{> loginButtonsList accountsUi }}
+  </div>
+</template>
+
+<template name="loginButtonsList">
+  <div class="login-buttons-list">
+  {{#each services}}
+    {{#with data=loginTemplate.data linkingNewIdentity=linkingNewIdentity}}
+      {{> Template.dynamic template=../loginTemplate.name }}
+    {{/with}}
+  {{else}}
+    {{#linkTo route="newAdminIdentity" class="troubleshooting"}}
+      configure login
+    {{/linkTo}}
+  {{/each}}
+
+  {{> _loginButtonsMessages "" }}
+
+  {{#if showTroubleshooting}}
+    {{> _loginButtonsSeparator "" }}
+    <a class="troubleshooting" href="https://docs.sandstorm.io/en/latest/administering/faq/" target="_blank">troubleshooting</a>
+  {{/if}}
+
+  {{#if showAbout}}
+    {{#linkTo route="about"}}about Sandstorm{{/linkTo}}
+  {{/if}}
+  </div>
+</template>
+
+<template name="oauthLoginButton">
+  <button class="login oneclick {{data.name}}">
+    with {{data.displayName}}
+  </button>
+</template>
+
+<template name="devLoginForm">
+  {{#if expanded}}
+  <form class="dev login expanded">
+    with a Dev account <button type="button" title="unexpand" class="unexpand"> ▴ </button>
+    <ul class="dev-identities">
+      <li><button type="button" class="login-dev-account" data-name="Alice Dev Admin"
+                  data-is-admin="true">
+          Alice (admin)
+      </button></li>
+      <li><button type="button" class="login-dev-account" data-name="Bob Dev User">
+          Bob
+      </button></li>
+      <li><button type="button" class="login-dev-account" data-name="Carol Dev User">
+          Carol
+      </button></li>
+      <li><button type="button" class="login-dev-account" data-name="Dave Dev User">
+          Dave
+      </button></li>
+      <li class="custom-name">
+        <input name="name" type="text" placeholder="Eve" required>
+        <button type="submit">Custom</button>
+      </li>
+    </ul>
+  </form>
+  {{else}}
+  <button class="dev login expand">
+    with a Dev account ▾
+  </button>
+  {{/if}}
+</template>
+
+<template name="emailLoginForm">
+  {{> emailAuthenticationForm linkingNewIdentity=linkingNewIdentity description="with e-mail"
+                              prompt="email" sendButtonText="send Login Email"
+                              loginId=loginId}}
+</template>
+
+<template name="emailAuthenticationForm">
+  <form class="email">
+    {{description}}
+
+    <label class="email {{#if awaitingToken}}hidden{{/if}}">{{prompt}}
+      <span title="Passwordless E-mail Login allows you to log in using an e-mail address. No password is required; instead, every time you log in, we send you a new email confirmation code. You will only need to log in once per device." class="info">i</span>
+      <input name="email" type="email" disabled={{disabled}} value={{loginId}}>
+    </label>
+
+    {{#with awaitingToken}}
+    <p>We've sent a login e-mail to {{.}}. It may take a few moments to show up in your
+      inbox.</p>
+    <label class="token">
+      Enter your token:
+      <input name="token" type="text">
+    </label>
+    <div class="button-box">
+      <button class="login token">Confirm</button>
+      <button type="reset" class="cancel">Cancel</button>
+    </div>
+    {{else}}
+    <div class="button-box">
+      <button class="login email" disabled={{disabled}}>{{sendButtonText}}</button>
+    </div>
+    {{/with}}
+
+    {{#if disabled}}
+    <p>A server admin must enable email authentication before you can confirm your email.</p>
+    {{/if}}
+  </form>
+</template>
+
+<template name="ldapLoginForm">
+  <form class="ldap">
+    {{loginProviderLabel}}
+
+    <label class="username">username
+      <span title="This is your LDAP username. It will be the name that you normally use to log in to other internal services at your company." class="info">i</span>
+      <input name="username" type="text" value="{{loginId}}">
+    </label>
+
+    <label class="password">password
+      <span title="This is your LDAP password. It will be the password that you normally use to log in to other internal services at your company." class="info">i</span>
+      <input name="password" type="password">
+    </label>
+    <div class="button-box">
+      <button class="login email">Log in</button>
+    </div>
+  </form>
+</template>
+
+<template name="samlLoginForm">
+  <button class="login oneclick saml">
+    {{loginProviderLabel}}
+  </button>
+</template>
+
+<template name="_loginButtonsSeparator">
+  <div class="or">
+    <span class="hline">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+    <span class="or-text">or</span>
+    <span class="hline">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+  </div>
+</template>

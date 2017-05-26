@@ -1,149 +1,132 @@
-A Sandstorm app can export an HTTP-based API to the internet. This
-page explains how to support the following use-cases while relying on
-Sandstorm for access control.
-
-* Allowing a mobile client app to connect to a Sandstorm server.
-
-* Allowing static web pages to interact with Sandstorm servers. (For
-  instance, this could be used to implement comments on a blog
-  published via [Sandstorm's web publishing](web-publishing.md) --
-  posting a comment would make an API request.)
-
-* Federation between servers.
-
-* Many other things!
+Sandstorm apps may wish to respond to HTTP requests from Javascript code, native mobile apps, or
+command-line tools, outside of the grain-frame. These clients sometimes need a permanent URL to
+reach the app; the Sandstorm **HTTP APIs** feature allows apps to make specific parts of themselves
+available this way.
 
 ## Overview
 
-When custom code needs to interact with a Sandstorm app, it sends a
-HTTP request to the **API hostname** of the Sandstorm host where app
-is running, along with an **API token** embedded in an `Authorization`
-HTTP header.
+Sandstorm allows apps to expose their HTTP APIs at a permanent URL, as opposed to [ephemeral domains
+used within the grain-frame](path.md). Sandstorm does access control on each inbound HTTP API
+request to the app. Briefly:
 
-You can try making a request to a Sandstorm app's API right now via `curl`:
+- When Sandstorm receives a request for an app's HTTP API via a Sandstorm API subdomain, it verifies
+  that the request has a valid API token, then passes it on to the app.
+
+- When the app receives the HTTP request, the token has been removed and typical Sandstorm
+  permission headers like `X-Sandstorm-User-Id` have been added instead.
+
+- When the app responds, Sandstorm modifies some HTTP headers in the response, then passes the
+  response to the client. This is flexible to any MIME type as well as to WebSockets.
+
+**Try it now.** You can try making a request to a Sandstorm app's JSON API right now via `curl`:
 
 ```bash
 curl -H "Authorization: Bearer 49Np9sqkYV4g_FpOQk1p0j1yJlvoHrZm9SVhQt7H2-9" https://alpha-api.sandstorm.io/
 ```
 
-Sandstorm is responsible for generating the API token. The API token
-is used for both **access control** and **routing a request** to the
-appropriate grain.
+## Configuring an app to permit requests via the API subdomain
 
-When a request comes in with a valid API token, Sandstorm sanitizes
-the request, removing the `Cookie` header and the API token, adding
-typical Sandstorm authentication headers like `X-Sandstorm-User-Id`,
-and passes the request to the app. Sandstorm combines it with the app
-package's `bridgeConfig.apiPath` as part of sending the request to the
-grain. Sandstorm sanitizes responses and removes any `Set-Cookie`
-response header. Sandstorm **removes the user IP address** from the
-request by default; API clients can
-[opt-in](#getting-the-user-ip-address) to sending it.
+The handling of inbound HTTP API requests is configured in `sandstorm-pkgdef.capnp`. Look for this
+line.
 
-The API endpoint is set up to allow **cross-origin requests from any
-origin**, which means you can access an API from `XMLHttpRequest` on
-any domain.
+```bash
+    # apiPath = "/api",
+```
 
-An app can **request the generation of an API token**, and a Sandstorm
-user can manually create a valid API token by clicking on the Webkey icon
-in the Sandstorm shell.
+Before your app will accept requests on an API subdomain, you need to uncomment this line and
+specify a string here. All inbound requests to the Sandstorm API subdomain for your app will have
+their path prefixed by this string. The empty string (`""`) indicates that your app disallows API
+requests; a single slash (`"/"`) indicates that your entire app should be available over the
+Sandstorm API subdomain.
+
+For apps not using `sandstorm-http-bridge`, read [the relevant Cap'n Proto
+files](https://github.com/sandstorm-io/sandstorm/search?l=cap%27n-proto&type=Code&utf8=%E2%9C%93&q=ApiSession).
 
 ## How to generate an API token
 
+Sandstorm uses API tokens to determine the which grain the user is requesting, the identity of the
+user, and the permission level to apply to this request.
+
 There are various ways to obtain an API token:
 
-* The best is via *offer templates*, where the app specifies textual
-  information for the user of the app, and Sandstorm places the token
-  into this template before displaying it to the user.
+- **Recommended:** Client-side Javascript embedded within your app, aka *offer templates*. The app
+  specifies some text which Sandstorm shows to the user, doing string substitution to add an API
+  token to the text.
 
-* The user can click the key icon in the top bar when they have an app
-  open.
+- The user can click the key icon in the top bar when they have an app open.
 
-In the future, we will implement an OAuth flow allowing a third party
-to initiate a request for access to the user's apps.
+- Cap'n Proto RPC: Sandstorm's `HackSessionContext` exports a Cap'n Proto RPC method called
+  `HackSessionContext.generateApiToken()`. That method is deprecated in favor of offer templates. If
+  you need to use it, read the [web publishing guide](web-publishing.md) for more about how to
+  access `HackSessionContext`.
 
-Sandstorm's `HackSessionContext` exports a Cap'n Proto RPC method
-called `HackSessionContext.generateApiToken()`. That method is
-deprecated in favor of offer templates. If you need to use it, read
-the [web publishing guide](web-publishing.md) for more about how to
-access `HackSessionContext`.
+In the future, we will implement an OAuth flow allowing a third party to initiate a request for
+access to the user's apps.
 
-## Creating an offer template
+### Creating an offer template
 
-An _offer template_ is a way for Sandstorm to display an API token to
-the user without the app being able to see the token.
+An _offer template_ is a way for an app to create an element that appears like a DIV, containing
+text controlled by the app, which also has an API token inside. Because it is implemented with an
+IFRAME, the app cannot read the token out of the offer template, which is good for app isolation.
 
 You can see an example by launching [a GitWeb
 demo](https://oasis.sandstorm.io/appdemo/6va4cjamc21j0znf5h5rrgnv0rpyvh1vaxurkrgknefvj0x63ash).
 
-We implement this as an `IFRAME` from the Sandstorm server. The grain
-cannot peek into the element. To fill the `IFRAME` with helpful information
-for the user, including an API token, client-side Javascript in the grain
-provides a template to Sandstorm, and Sandstorm responds with a URL that
-the app can use as the `SRC` of the `IFRAME`.
-
 To create an offer template:
 
-1. Create an `IFRAME` element within your page with a memorable ID. For example:
+- Create full-width, 55-pixel-tall `IFRAME` element within your page with an ID of `offer-iframe`,
+  with no margins so as to blend in seamlessly into your app. (The ID can be any valid ID, so long
+  as you use the same one in a later step.) For example:
 
-  ```html
-  <iframe style="width: 100%; height: 55px; margin: 0; border: 0;" id="offer-iframe">
-  </iframe>
-  ```
+```html
+<iframe style="width: 100%; height: 55px; margin: 0; border: 0;" id="offer-iframe">
+</iframe>
+```
 
-2. Add JavaScript to your page to ask Sandstorm to fill the iframe with
-  content. For example:
+- Modify your page so that when it loads, the page will ask Sandstorm to generate a URL with the
+  text of the offer template. (The `rpcId` parameter can be any string, so long as you use the same
+  one in this step and the next step. Sandstorm will echo it back with the response.)
 
-  ```html
-  <script>
-    function fillIframe() {
-      var template = "You can use the $API_TOKEN key to reach me at $API_HOST.";
-      window.parent.postMessage({renderTemplate: {
-        rpcId: "0",
-        template: template,
-        clipboardButton: 'left'
-      }}, "*");
-    }
-  </script>
-  ```
+```html
+<script>
+  function requestIframeURL() {
+    var template = "You can use the $API_TOKEN key to reach me at $API_HOST.";
+    window.parent.postMessage({renderTemplate: {
+      rpcId: "0",
+      template: template,
+      clipboardButton: 'left'
+    }}, "*");
+  }
 
-3. Add a window event listener so the Sandstorm shell can provide the
-  URL to you.
+  document.addEventListener("DOMContentLoaded", requestIframeURL);
+</script>
+```
 
-  ```html
-  <script>
-    var messageListener = function(event) {
-      if (event.data.rpcId === "0") {
-        if (event.data.error) {
-          console.log("ERROR: " + event.data.error);
-        } else {
-          var el = document.getElementById("offer-iframe");
-          el.setAttribute("src", event.data.uri);
-        }
+- Modify your page so that when Sandstorm provides the unique URL for this offer template, your page
+  will place that URL into the `src` element of the IFRAME.
+
+```html
+<script>
+  var copyIframeURLToElement = function(event) {
+    if (event.data.rpcId === "0") {
+      if (event.data.error) {
+        console.log("ERROR: " + event.data.error);
+      } else {
+        var el = document.getElementById("offer-iframe");
+        el.setAttribute("src", event.data.uri);
       }
-    };
+    }
+  };
 
-    window.addEventListener("message", messageListener);
-  </script>
-  ```
+  window.addEventListener("message", copyIframeURLToElement);
+</script>
+```
 
-  As an implementation detail: the `rpcId` in the `event.data` response
-  is the same as the value provided to the `renderTemplate` request. We
-  used `"0"` here; you can choose any value.
+- Your offer template will now contain text such as this.
 
-4. When your page loads, make the request.
-
-  ```html
-  <script>
-  document.addEventListener("DOMContentLoaded", fillIframe);
-  </script>
-  ```
-
-5. Your offer template will now contain text such as:
-
-  ```html
-  You can use the 49Np9sqkYV4g_FpOQk1p0j1yJlvoHrZm9SVhQt7H2-9 key to reach me at https://alpha-api.sandstorm.io/.
-  ```
+```html
+You can use the DT5hkM18CejvQomjIM1AVT4zqQdOdoFCid898bP2hQS key to reach me at https://api-d9bc3de0bed9cb9b321d3c491c10dbca.alpha.sandstorm.io/.
+```
 
 **Note**: API tokens created this way must be used within 5 minutes,
 or else they [automatically
@@ -151,7 +134,7 @@ expire](https://github.com/sandstorm-io/sandstorm/search?utf8=%E2%9C%93&q=selfDe
 prevent this from becoming a serious problem, the Sandstorm shell
 automatically refreshes the IFRAME every 5 minutes.
 
-## Parameters to renderTemplate()
+### Parameters to renderTemplate()
 
 `renderTemplate()` accepts the following parameters:
 
@@ -179,66 +162,111 @@ automatically refreshes the IFRAME every 5 minutes.
   button in either the top left or top right corner of the `IFRAME`.
   Valid values are `left` and `right`. Left unspecified, no button is shown.
 
-## Getting the user IP address
+### WebKeys
 
-By default, for privacy, Sandstorm removes the user's IP address from
-API requests. The API _client code_ can request that Sandstorm pass
-the IP address to the grain by setting a header on the API request:
+Sandstorm users can directly create an API token by clicking on the key icon within the [Sandstorm
+top bar](../using/top-bar.md). This creates a [webkey](http://waterken.sourceforge.net/web-key/),
+which is a combination of an endpoint URL and an API token separated by a `#`. An example is:
 
+    https://alpha-api.sandstorm.io#49Np9sqkYV4g_FpOQk1p0j1yJlvoHrZm9SVhQt7H2-9
+
+This format is intentionally chosen to look like a valid URL that could be opened in a
+browser. Eventually, when such a URL is loaded directly in a browser, Sandstorm will show the user
+information about the API and possibly offer the ability to explore the API and initiate requests
+for debugging purposes. As of this writing, these features are not yet implemented.
+
+The part of the webkey before the `#` is the API endpoint for the server (in this case, for
+alpha.sandstorm.io). After the `#` is the API token.
+
+## How to provide the API token with a request
+
+There are two main ways to provide the API token to Sandstorm.
+
+- **Recommended:** OAuth 2.0-style Bearer header. You can pass an `Authorization: Bearer foo` header
+  with the HTTP request, replacing `foo` with the API token. For example:
+
+```bash
+curl -H "Authorization: Bearer 49Np9sqkYV4g_FpOQk1p0j1yJlvoHrZm9SVhQt7H2-9" https://alpha-api.sandstorm.io/
+```
+
+- HTTP Basic auth. You can use any username so long as you provide the API token as the password.
+  For example,
+  `https://anything:DT5hkM18CejvQomjIM1AVT4zqQdOdoFCid898bP2hQS@api-d9bc3de0bed9cb9b321d3c491c10dbca.alpha.sandstorm.io/`.
+
+We recommend the Bearer header option because web browsers will not cache the API token (unlike
+Basic auth), and because one cannot accidentally use the token in a web browser.
+
+### WebSockets
+
+Unfortunately, WebSockets have no way to set headers in most languages (specifically Javascript). To
+work around this, you must pass the token as part of the URL path. It must be at the beginning of
+the path and of the form:
+
+```
+/.sandstorm-token/<token>
+```
+
+For example:
+
+```
+wss://api-qxJ58hKANkbmJLQdSDk4.oasis.sandstorm.io/.sandstorm-token/RfNqni4FEHXkWC5B8v6t/some/path
+```
+
+The "/.sandstorm-token/&lt;token&gt;" part of the path will be stripped, and the remaining
+segment of the path will be passed onto your app.
+
+
+## API hostnames
+
+Each API token has a unique subdomain of the server where it is allowed. This ensures that in the
+unlikely case where if a web browser connects to the API endpoint, and if the browser ignores the
+Content-Security-Policy header provided by Sandstorm, grains cannot communicate by storing data in
+the browser that the other can read.
+
+There is also a generic API hostname that allows all API tokens. However, if you make a request to
+the generic API hostname using HTTP Basic auth, then those requests are subject to a [whitelist of
+non-web-browser `User-Agent`
+strings](https://github.com/sandstorm-io/sandstorm/search?utf8=%E2%9C%93&q=BASIC_AUTH_USER_AGENTS). Therefore,
+it is vastly easier to configure HTTP clients to use the token-specific hostname.
+
+## Header modification by Sandstorm
+
+Sandstorm sanitizes HTTP request and response headers it does not recognize, and adds a few response
+headers.
+
+- Sandstorm applies a CORS header of `Access-Control-Allow-Origin: *` to allow Javascript on any
+  domain to interact with the app's API. This is safe because the API token serves as the
+  access control.
+
+- Sandstorm applies a `Content-Security-Policy: default-src "none"; sandbox` header to ensure that
+  if you visit an API host within a web browser, the browser will prevent the API host from reaching
+  other domains. This helps keeps the app confined.
+
+- Sandstorm removes cookie-related headers because cookies are not allowed within the Sandstorm HTTP
+  API system. The API token should be used for access control.
+
+- Sandstorm applies a HTTP request and response header whitelist because some HTTP headers modify
+  the meaning of the request, and we do not have a full list of safe headers. If your app needs HTTP
+  headers that Sandstorm does not support, please file an issue similar to [this
+  one](https://github.com/sandstorm-io/sandstorm/issues/1897) and accept our apologies.
+
+If you run into trouble with Sandstorm's header modification, please email the [sandstorm-dev Google
+Group](groups.google.com/d/forum/sandstorm-dev).
+
+### Getting the user IP address
+
+One special request header modifies Sandstorm's privacy defaults. By default, Sandstorm removes the
+user's IP address from API requests. The API **client code** can request that Sandstorm pass the IP
+address to the grain by setting a request header on the API call:
 
 ```
 X-Sandstorm-Passthrough: address
 ```
 
-Your app will receive the IP address via the `X-Real-IP` request
-header, assuming it is using `sandstorm-http-bridge`.
+When the app receives the request from Sandstorm, it will be enriched by a `X-Real-IP` request
+header containing the API user's IP address, assuming it is using `sandstorm-http-bridge`.
 
-To make sure API requests to your API provide an IP address, if your
-API requires an IP address to be useful, your app can provide sample
-JavaScript code that sets header on `XMLHttpRequest` calls to the API
-endpoint.
-
-## About WebKeys
-
-When a user clicks on the key icon within app, it creates a
-[webkey](http://waterken.sourceforge.net/web-key/), which is a
-combination of an endpoint URL and an API token separated by a `#`. An
-example is:
-
-    https://alpha-api.sandstorm.io#49Np9sqkYV4g_FpOQk1p0j1yJlvoHrZm9SVhQt7H2-9
-
-This format is intentionally chosen to look like a valid URL that
-could be opened in a browser. Eventually, when such a URL is loaded
-directly in a browser, Sandstorm will show the user information about
-the API and possibly offer the ability to explore the API and initiate
-requests for debugging purposes. As of this writing, these features
-are not yet implemented.
-
-The part of the webkey before the `#` is the API endpoint for the
-server (in this case, for alpha.sandstorm.io). After the `#` is the
-API token. So, to make a request to the webkey specified above, you
-might use the following `curl` command:
-
-    curl -H "Authorization: Bearer 49Np9sqkYV4g_FpOQk1p0j1yJlvoHrZm9SVhQt7H2-9" https://alpha-api.sandstorm.io
-
-## Bearer tokens vs. Basic auth
-
-Typically, HTTP APIs on Sandstorm should be accessed using an OAuth
-2.0-style Bearer token in an Authorization header:
-
-```bash
-    Authorization: Bearer <token>
-```
-
-Because an `Authorization` header is required, it is impossible for a
-web browser to open a Sandstorm HTTP API directly in a browser
-window. This is intentional: this prevents Sandstorm apps from
-executing arbitrary scripts from the API host.
-
-Some apps are unable to use Bearer tokens; they can use HTTP Basic
-auth. The Sandstorm code maintains a [whitelist of `User-Agent`
-strings](https://github.com/sandstorm-io/sandstorm/search?utf8=%E2%9C%93&q=BASIC_AUTH_USER_AGENTS)
-that are allowed to use Basic auth. If your Sandstorm app has a client
-that cannot use an Authoriztion header, consider [filing a
-bug](https://github.com/sandstorm-io/sandstorm/issues) requesting the
-white-listing of its user-agent value.
+If you want to capture IP address by default for your app, you can distribute sample Javascript code
+with the app that sets the `X-Sandstorm-Passthrough` header on `XMLHttpRequest` calls. One app that
+does this is
+[Piwik](https://apps.sandstorm.io/app/xuajusd5d4a9v4js71ru0cwj9wn984q1x8kny10htsp8f5dcfep0).

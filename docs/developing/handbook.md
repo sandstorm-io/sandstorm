@@ -155,12 +155,7 @@ A third header, `X-Sandstorm-Permissions`, specifies the permissions
 this user has on the particular app instance, such as "read" or
 "write". These permissions are set through the Sandstorm sharing UI,
 outside of the app itself, although the app defines what permissions
-are available in its package definition. (As of this writing, the
-sharing UI is still in development, but you can use permissions to
-distinguish between the grain's owner vs. other users. Currently, the
-owner will always have all defined permissions, whereas other users
-will have none, so you may simply define a permission called `owner`
-or `admin` to distinguish.)
+are available in its package definition.
 
 With these headers in hand, a Sandstorm app can and should avoid
 implementing any internal user model. An app should not ask users to
@@ -192,9 +187,8 @@ means for the app, and automatically log the user into that account.
 
 When the sharing link was created, Sandstorm asked the user what
 permissions to grant to someone who visits a grain with the link.
-Your app needs to make its own decisions about what permission levels
-exist.  You can read the [full description
-here](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/grain.capnp#L179).
+Your app needs to make its own decisions about what permission levels exist.
+[Read more about how to define permissions](/developing/auth#defining-permissions-and-roles).
 
 A totally logged-out user can also visit a sharing link. They should
 be granted the same permission level as a logged-in user with the
@@ -401,10 +395,10 @@ of web applications can work.
 Thanks for reading this far!
 
 Sandstorm is continuously evolving, and we are continuously developing
-it, so some of these details may change. I hope this has been a useful
+it, so some of these details may change. We hope this has been a useful
 overview of the platform and helps you understand the platform's
-goals. I'm always eager for feedback; email me at
-asheesh@sandstorm.io. This handbook is very abbreviated; consider
+goals. We're always eager for feedback; email us at
+community@sandstorm.io. This handbook is very abbreviated; consider
 following the links in each section for more detail.
 
 To dig into the design of Sandstorm, read through the [Cap'n Proto

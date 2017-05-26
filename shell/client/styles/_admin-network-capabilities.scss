@@ -1,0 +1,108 @@
+.admin-caps-filter {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: flex-start;
+  .search-bar {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+    margin-right: 32px;
+  }
+  .filter-checkboxes {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+    .filter-checkboxes-label, ul {
+      display: inline-block;
+    }
+    ul {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+  }
+}
+
+.admin-caps-table {
+  border: 1px solid $default-table-border-color;
+
+  div[role=columnheader] {
+    // Column header text should "stick" to the bottom of the row, to be
+    // closest to the contents of the column.
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: flex-start;
+  }
+
+  div[role=columnheader], div[role=gridcell] {
+    padding: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  div[role=rowgroup].thead {
+    background-color: $default-table-header-background-color;
+    color: $default-table-header-foreground-color;
+  }
+
+  div[role=row], div[role=gridcell] {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  .capability-row, .none-row {
+    background-color: $default-table-row-background-color;
+    color: $default-table-row-foreground-color;
+  }
+
+  .grant-by {
+    width: 218px; // Width of an identity-card
+    flex: none;
+  }
+
+  .grant-to {
+    flex: 1 1 auto;
+  }
+
+  .grant-time {
+    width: 100px;
+    flex: none;
+  }
+
+  .actions {
+    width: 70px;
+    flex: none;
+  }
+
+  .grain-context {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    .grain-details {
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: flex-start;
+      margin-right: 10px;
+      .app-icon {
+        @extend %pseudo-img-tag;
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+      }
+    }
+    .identity-card {
+      flex: 0 1 auto;
+    }
+  }
+}
+

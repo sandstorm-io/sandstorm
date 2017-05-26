@@ -27,19 +27,20 @@ module.exports = {};
 
 module.exports["Test appdemo link"] = function (browser) {
   browser
+    .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk",
                 "ca690ad886bf920026f8b876c19539c1",
                 "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh",
                 true)
     .execute("window.Meteor.logout()")
-    .init()
     .pause(short_wait)
+    .init()
     .url(browser.launch_url + "/appdemo/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
-    .waitForElementVisible(".start", medium_wait)
-    .assert.containsText(".start", "Hacker CMS")
-    .click(".start")
+    .waitForElementVisible(".demo-startup-modal .start", medium_wait)
+    .assert.containsText(".demo-startup-modal .start", "Hacker CMS")
+    .click(".demo-startup-modal .start")
     .waitForElementPresent("iframe.grain-frame", short_wait)
-    .frame("grain-frame")
+    .grainFrame()
     .waitForElementPresent("#publish", medium_wait)
     .assert.containsText("#publish", "Publish")
     .end();

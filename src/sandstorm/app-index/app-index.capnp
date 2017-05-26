@@ -31,8 +31,8 @@
 #   descriptions     Serialized ShortDescriptionOverrides
 #   www/
 #     apps/
-#       index        GZIP-JSON of AppIndexForMatker.
-#       <appId>      GZIP-JSON of AppDetailsForMarket for given app.
+#       index.json   JSON of AppIndexForMatker.
+#       <appId>.json JSON of AppDetailsForMarket for given app.
 #     images/
 #       <imageId>    An image.
 #     packages/

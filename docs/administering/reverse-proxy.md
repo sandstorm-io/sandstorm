@@ -49,8 +49,25 @@ read more about [wildcard DNS for Sandstorm.](wildcard.md)
 
 Obtain or generate a key and TLS certificate with `example.com` and `*.example.com` in
 subjectAltName. You can do that by [buying a wildcard HTTPS
-certificate](https://google.com/search?q=cheap+wildcard+ssl) or by following our [self-signed
-certificate authority instructions.](self-signed.md)
+certificate](https://google.com/search?q=cheap+wildcard+ssl), following our [self-signed certificate
+authority instructions](self-signed.md), or using [CloudFlare Origin CA's free wildcard
+certificates.](https://blog.cloudflare.com/cloudflare-ca-encryption-origin/)
+
+If you are using nginx, place the following certificate data in the following paths on your system.
+
+- **HTTPS private key** in `/etc/nginx/ssl/sandstorm.key`. This should be owned by root, permissions
+  mode 0600. To set the permissions, you can run the following commands.
+
+    - `sudo chown root.root /etc/nginx/ssl/sandstorm.key`
+    - `sudo chmod 0600 /etc/nginx/ssl/sandstorm.key`
+
+- **HTTPS certificate** in `/etc/nginx/ssl/sandstorm.crt`. With nginx, the certificate file should
+  contain the full intermediate certificate chain. This should be owned by root or any other user,
+  and the mode should be 0600 or any other permissions. To set the permissions, you can run the
+  following commands.
+
+    - `sudo chown root.root /etc/nginx/ssl/sandstorm.crt`
+    - `sudo chmod 0600 /etc/nginx/ssl/sandstorm.crt`
 
 ### Configure nginx
 
@@ -110,7 +127,7 @@ Make sure to test your Sandstorm install by visiting it on the web.
 
 **Make sure login works.** If you changed your `BASE_URL`, Sandstorm will temporarily disable any
 OAuth providers like Google or GitHub so that you can ensure they are configured correctly. Make
-sure to visit **Admin Settings** within your Sandstorm install and re-enable them. If OAuth
+sure to visit **Identity providers** in the **Admin panel** within your Sandstorm install and re-enable them. If OAuth
 providers were your only way to log in, you might need to get a [login token via the command
 line.](faq.md#how-do-i-log-in-if-theres-a-problem-with-logging-in-via-the-web)
 

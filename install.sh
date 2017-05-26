@@ -11,8 +11,12 @@
 #
 # This script only modifies your system in the following ways:
 # - Install Sandstorm into the directory you choose, typically /opt/sandstorm.
-# - Optionally add an initscript to /etc/init.d/sandstorm.
+# - Optionally add an initscript or systemd service:
+#     /etc/init.d/sandstorm
+#     /etc/systemd/system/sandstorm.service
 # - Add commands "sandstorm" and "spk" to /usr/local/bin.
+#
+# Once installed, you may uninstall with the command: sandstorm uninstall
 #
 # The script will ask you whether you're OK with giving it root privileges.
 # If you refuse, the script can still install Sandstorm (to a directory you
@@ -70,10 +74,9 @@ fail() {
   fi
   error "$@"
   echo "" >&2
-  # Temporarily: export REPORT=yes to get the error reporting behavior. Once it seems stable, adjust
-  # the default from disabledfornow to yes.
-  if [ "${REPORT:-disabledfornow}" = "yes" ] ; then
-    if prompt-yesno "Sorry that installation failed. Would it be OK to send an anonymous error report to the sandstorm.io team?
+  # Users can export REPORT=no to avoid the error-reporting behavior, if they need to.
+  if [ "${REPORT:-yes}" = "yes" ] ; then
+    if USE_DEFAULTS=no prompt-yesno "Hmm, installation failed. Would it be OK to send an anonymous error report to the sandstorm.io team so we know something is wrong?
 It would only contain this error code: $error_code" "yes" ; then
       echo "Sending problem report..." >&2
       local BEARER_TOKEN="ZiV1jbwHBPfpIjF3LNFv9-glp53F7KcsvVvljgKxQAL"
@@ -82,14 +85,14 @@ It would only contain this error code: $error_code" "yes" ; then
         dotdotdot_curl \
           --silent \
           --max-time 20 \
-          --data-raw "{\"error_code\":\"$error_code\",\"user-agent\":\"$CURL_USER_AGENT\"}" \
+          --data-binary "{\"error_code\":\"$error_code\",\"user-agent\":\"$CURL_USER_AGENT\"}" \
           -H "Authorization: Bearer $BEARER_TOKEN" \
           -X POST \
           --output "/dev/null" \
           -w '%{http_code}' \
           "$API_ENDPOINT")
       if [ "200" == "$HTTP_STATUS" ] ; then
-        echo "... success." >&2
+        echo "... problem reported successfully. Your installation did not succeed." >&2
       elif [ "000" == "$HTTP_STATUS" ] ; then
         error "Submitting error report failed. Maybe there is a connectivity problem."
       else
@@ -102,6 +105,21 @@ It would only contain this error code: $error_code" "yes" ; then
   fi
   echo "You can report bugs at: http://github.com/sandstorm-io/sandstorm" >&2
   exit 1
+}
+
+retryable_curl() {
+  # This function calls curl to download a file. If the file download fails, it asks the user if it
+  # is OK to retry.
+  local CURL_FAILED="no"
+  curl -A "${CURL_USER_AGENT}" -f "$1" > "$2" || CURL_FAILED="yes"
+  if [ "yes" = "${CURL_FAILED}" ] ; then
+    if prompt-yesno "Downloading $1 failed. OK to retry?" "yes" ; then
+      echo "" >&2
+      echo "Download failed. Waiting one second before retrying..." >&2
+      sleep 1
+      retryable_curl "$1" "$2"
+    fi
+  fi
 }
 
 dotdotdot_curl() {
@@ -128,6 +146,23 @@ dotdotdot_curl() {
 }
 
 is_port_bound() {
+  local SCAN_HOST="$1"
+  local SCAN_PORT="$2"
+
+  if [ "${DEV_TCP_USABLE}" = "unchecked" ] ; then
+    REPORT=no fail "E_DEV_TCP_UNCHECKED" "Programmer error. The author of install.sh used an uninitialized variable."
+  fi
+
+  # We also use timeout(1) from coreutils to avoid this process taking a very long
+  # time in the case of e.g. weird network rules or something.
+  if [ "${DEV_TCP_USABLE}" = "yes" ] ; then
+    if timeout 1 bash -c ": < /dev/tcp/${SCAN_HOST}/${SCAN_PORT}" 2>/dev/null; then
+      return 0
+    else
+      return 1
+    fi
+  fi
+
   # If we are using a traditional netcat, then -z (zero i/o mode)
   # works for scanning-type uses. (Debian defaults to this.)
   #
@@ -146,8 +181,6 @@ is_port_bound() {
   # So if either if these invocations returns true, then we know the
   # port is bound.
   local DEBIAN_STYLE_INDICATED_BOUND="no"
-  local SCAN_HOST="$1"
-  local SCAN_PORT="$2"
   ${NC_PATH} -z "$SCAN_HOST" "$SCAN_PORT" >/dev/null 2>/dev/null && DEBIAN_STYLE_INDICATED_BOUND=yes
 
   if [ "$DEBIAN_STYLE_INDICATED_BOUND" == "yes" ] ; then
@@ -190,7 +223,8 @@ prompt() {
     return
   fi
 
-  echo -en '\e[0;34m' >&3
+  # We use "bold", rather than any particular color, to maximize readability. See #2037.
+  echo -en '\e[1m' >&3
   echo -n "$1 [$2]" >&3
   echo -en '\e[0m ' >&3
   read -u 3 VALUE
@@ -198,6 +232,20 @@ prompt() {
     VALUE=$2
   fi
   echo "$VALUE"
+}
+
+prompt-numeric() {
+  local NUMERIC_REGEX="^[0-9]+$"
+  while true; do
+    local VALUE=$(prompt "$@")
+
+    if ! [[ "$VALUE" =~ $NUMERIC_REGEX ]] ; then
+      echo "You entered '$VALUE'. Please enter a number." >&3
+    else
+      echo "$VALUE"
+      return
+    fi
+  done
 }
 
 prompt-yesno() {
@@ -227,20 +275,21 @@ SANDCATS_SUCCESSFUL="no"
 SANDCATS_HTTPS_SUCCESSFUL="no"
 CURRENTLY_UID_ZERO="no"
 PREFER_ROOT="yes"
-USERNS_CLONE_AT_ALL=""
-USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET=""
-SYSCTL_PROBABLY_WORKS="yes"
 SHOW_MESSAGE_ABOUT_NEEDING_PORTS_OPEN="no"
+STARTED_SANDSTORM="no"
 
 # Allow the test suite to override the path to netcat in order to
 # reproduce a compatibility issue between different nc versions.
 NC_PATH="${OVERRIDE_NC_PATH:-nc}"
 
+# Allow install.sh to store if bash /dev/tcp works.
+DEV_TCP_USABLE="unchecked"
+
 # Defaults for some config options, so that if the user requests no
 # prompting, they get these values.
-DEFAULT_PORT=6080
 DEFAULT_DIR_FOR_ROOT="${OVERRIDE_SANDSTORM_DEFAULT_DIR:-/opt/sandstorm}"
-DEFAULT_DIR_FOR_NON_ROOT="${OVERRIDE_SANDSTORM_DEFAULT_DIR:-$HOME/sandstorm}"
+DEFAULT_DIR_FOR_NON_ROOT="${OVERRIDE_SANDSTORM_DEFAULT_DIR:-${HOME:-opt}/sandstorm}"
+DEFAULT_SMTP_PORT="30025"
 DEFAULT_UPDATE_CHANNEL="dev"
 DEFAULT_SERVER_USER="${OVERRIDE_SANDSTORM_DEFAULT_SERVER_USER:-sandstorm}"
 SANDCATS_BASE_DOMAIN="${OVERRIDE_SANDCATS_BASE_DOMAIN:-sandcats.io}"
@@ -250,7 +299,7 @@ SANDCATS_GETCERTIFICATE="${OVERRIDE_SANDCATS_GETCERTIFICATE:-yes}"
 # Define functions for each stage of the install process.
 
 usage() {
-  echo "usage: $SCRIPT_NAME [-d] [-e] [-u] [<bundle>]" >&2
+  echo "usage: $SCRIPT_NAME [-d] [-e] [-p PORT_NUMBER] [-u] [<bundle>]" >&2
   echo "If <bundle> is provided, it must be the name of a Sandstorm bundle file," >&2
   echo "like 'sandstorm-123.tar.xz', which will be installed. Otherwise, the script" >&2
   echo "downloads a bundle from the internet via HTTP." >&2
@@ -258,6 +307,7 @@ usage() {
   echo 'If -d is specified, the auto-installs with defaults suitable for app development.' >&2
   echo 'If -e is specified, default to listening on an external interface, not merely loopback.' >&2
   echo 'If -i is specified, default to (i)nsecure mode where we do not request a HTTPS certificate.' >&2
+  echo 'If -p is specified, use its argument (PORT_NUMBER) as the default port for HTTP. Otherwise, use 6080. Note that if the install script enables HTTPS via sandcats.io, it will use 443 instead!'
   echo 'If -u is specified, default to avoiding root priviliges. Note that the dev tools only work if the server as root privileges.' >&2
   exit 1
 }
@@ -268,23 +318,30 @@ detect_current_uid() {
   fi
 }
 
+disable_smtp_port_25_if_port_unavailable() {
+  PORT_25_AVAILABLE="no"
+  if is_port_bound 0.0.0.0 25; then
+    return
+  fi
+  if is_port_bound 127.0.0.1 25; then
+    return
+  fi
+  PORT_25_AVAILABLE="yes"
+}
+
 disable_https_if_ports_unavailable() {
-  # If port 80 and 443 are both available, then let's use
-  # DEFAULT_PORT=80. This value is what the Sandstorm installer will
-  # write to PORT= in the Sandstorm configuration file.
+  # If port 80 and 443 are both available, then let's use DEFAULT_PORT=80. This value is what the
+  # Sandstorm installer will write to PORT= in the Sandstorm configuration file.
   #
-  # If either 80 or 443 is not available, then we set
-  # SANDCATS_GETCERTIFICATE to no.
+  # If either 80 or 443 is not available, then we set SANDCATS_GETCERTIFICATE to no.
   #
-  # From the rest of the installer's perspective, if
-  # SANDCATS_GETCERTIFICATE is yes, it is safe to bind to port 443.
+  # From the rest of the installer's perspective, if SANDCATS_GETCERTIFICATE is yes, it is safe to
+  # bind to port 443.
   #
-  # There is a theoretical race condition here. I think that's
-  # life.
+  # There is a theoretical race condition here. I think that's life.
   #
-  # This also means that if a user has port 443 taken but port 80
-  # available, we will use port 6080 as the default port. I think
-  # that's OK.
+  # This also means that if a user has port 443 taken but port 80 available, we will use port 6080
+  # as the default port. If the user wants to override that, they can run install.sh with "-p 80".
   local PORT_80_AVAILABLE="no"
   is_port_bound 0.0.0.0 80 || PORT_80_AVAILABLE="yes"
 
@@ -302,7 +359,7 @@ handle_args() {
   SCRIPT_NAME=$1
   shift
 
-  while getopts ":deiu" opt; do
+  while getopts ":deiup:" opt; do
     case $opt in
       d)
         USE_DEFAULTS="yes"
@@ -316,11 +373,17 @@ handle_args() {
       u)
         PREFER_ROOT=no
         ;;
+      p)
+        DEFAULT_PORT="${OPTARG}"
+        ;;
       *)
         usage
         ;;
     esac
   done
+
+  # If DEFAULT_PORT didn't get set above, set it to 6080 here.
+  DEFAULT_PORT="${DEFAULT_PORT:-6080}"
 
   # Keep a copy of the ORIGINAL_ARGS so that, when re-execing ourself,
   # we can pass them in.
@@ -362,14 +425,23 @@ rerun_script_as_root() {
     # Probably ran like "bash install.sh" or "./install.sh".
     echo "Re-running script as root..."
     if [ ${#ORIGINAL_ARGS[@]} = 0 ]; then
-      exec sudo "$@" bash "$SCRIPT_NAME"
+      exec sudo $ENVVARS bash "$SCRIPT_NAME"
     else
-      exec sudo "$@" bash "$SCRIPT_NAME" "${ORIGINAL_ARGS[@]}"
+      exec sudo $ENVVARS bash "$SCRIPT_NAME" "${ORIGINAL_ARGS[@]}"
     fi
   fi
 
   # Don't know how to run the script. Let the user figure it out.
-  REPORT=no fail "E_CANT_SWITCH_TO_ROOT" "Oops, I couldn't figure out how to switch to root. Please re-run the installer as root."
+  REPORT=no fail "E_CANT_SWITCH_TO_ROOT" "ERROR: This script could not detect its own filename, so could not switch to root. \
+Please download a copy and name it 'install.sh' and run that as root, perhaps using sudo. \
+Try this command:
+
+curl https://install.sandstorm.io/ > install.sh && sudo bash install.sh"
+}
+
+set_umask() {
+  # Use umask 0022, to minimize how much 'mkdir -m' we have to do, etc. See #2300.
+  umask 0022
 }
 
 assert_on_terminal() {
@@ -388,7 +460,10 @@ assert_on_terminal() {
 
 assert_linux_x86_64() {
   if [ "$(uname)" != Linux ]; then
-    fail "E_NON_LINUX" "Sorry, the Sandstorm server only runs on Linux."
+    fail "E_NON_LINUX" "Sandstorm requires Linux. If you want to run Sandstorm on a Windows or
+Mac system, you can use Vagrant or another virtualization tool. See our install documentation:
+
+- https://docs.sandstorm.io/en/latest/install/"
   fi
 
   if [ "$(uname -m)" != x86_64 ]; then
@@ -399,172 +474,86 @@ assert_linux_x86_64() {
 assert_usable_kernel() {
   KVERSION=( $(uname -r | grep -o '^[0-9.]*' | tr . ' ') )
 
-  if (( KVERSION[0] < 3 || (KVERSION[0] == 3 && KVERSION[1] < 13) )); then
+  if (( KVERSION[0] < 3 || (KVERSION[0] == 3 && KVERSION[1] < 10) )); then
     error "Detected Linux kernel version: $(uname -r)"
-    fail "E_KERNEL_OLDER_THAN_313" "Sorry, your kernel is too old to run Sandstorm. We require kernel" \
-         "version 3.13 or newer."
+    fail "E_KERNEL_OLDER_THAN_310" "Sorry, your kernel is too old to run Sandstorm. We require kernel" \
+         "version 3.10 or newer."
   fi
 }
 
-detect_userns_clone() {
-  # You might think it's a little bit silly to embed an x86_64 binary
-  # in this shell script, just find out if user namespaces work for
-  # unprivileged users.
-  #
-  # However, here's the story:
-  #
-  # - Many people use the Debian backports kernel (where user
-  #   namespaces work great) with older userspace, so we can't
-  #   run unshare(1) with the --user option to test it, since
-  #   their version of unshare(1) doesn't have a --user option.
-  #
-  # - Many people run Arch Linux, where user namespaces are disabled
-  #   as a kernel option.
-  #
-  # - Many people run Debian and/or Ubuntu, where user namespaces are
-  #   enabled but require a sysctl to enable.
-  #
-  # - We used to compile a test binary, but sometimes people would
-  #   install Sandstorm on cloud VMs where there is no compiler.
-
-  # If the kernel has this sysctl, then it has user namespaces. We
-  # also check the value, since we want unprivileged users to be able
-  # to create user namespaces.
-
-  if [ -e /proc/sys/kernel/unprivileged_userns_clone ]; then
-    USERNS_CLONE_AT_ALL="yes"
-    if [ "$(</proc/sys/kernel/unprivileged_userns_clone)" == "0" ]; then
-      USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET="yes"
-    fi
-    return
-  fi
-
-  # In the absence of that, we attempt to create a user namespace with
-  # this test program.
-  #
-  # Source of this program: https://github.com/sandstorm-io/check-for-unprivileged-userns
-  local USERNS_TEST_PROGRAM="$(mktemp)"
-  printf '\x7fELF\x02\x01\x01\x00kmc!!!\n\x00\x02\x00>\x00\x01\x00\x00\x00x\x00@\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00@\x008\x00\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x9d\x00\x00\x00\x00\x00\x00\x00\x9d\x00\x00\x00\x00\x00\x00\x00\x00\x10\x00\x00\x00\x00\x00\x00\xb8i\x00\x00\x00\xbf\xfe\xff\x00\x00\x0f\x05\xb8\x10\x01\x00\x00\xbf\x00\x00\x00\x10\x0f\x05H\x89\xc1\xb8<\x00\x00\x00H\x89\xcf\x0f\x05' > "$USERNS_TEST_PROGRAM"
-  chmod a+x "$USERNS_TEST_PROGRAM"
-  if "$USERNS_TEST_PROGRAM" ; then
-    USERNS_CLONE_AT_ALL="yes"
-    USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET="no"
-  else
-    USERNS_CLONE_AT_ALL="no"
-  fi
-
-  # Clean up after ourselves.
-  rm -f "$USERNS_TEST_PROGRAM"
-}
-
-assert_userns_clone_works_or_can_be_made_to_work() {
-  # The purpose of this function is to bail out early if people have no way
-  # to run Sandstorm and we can't help them via e.g. sysctl.
-
-  # If they don't have working unprivileged user namespaces, then we bail.
-  if [ "$USERNS_CLONE_AT_ALL" = "no" ] ; then
-    fail "E_NO_USERNS" "Your kernel does not appear to be compiled with" \
-         "support for unprivileged user namespaces (CONFIG_USER_NS=y), or something else is" \
-         "preventing creation of user namespaces. This feature is critical for sandboxing." \
-         "Arch Linux is known to ship with a kernel that disables this feature; if you are" \
-         "using Arch, you will unfortunately need to compile your own kernel (see" \
-         "https://bugs.archlinux.org/task/36969). If you are not using Arch, and don't" \
-         "know why your system wouldn't have user namespaces, please file a bug against" \
-         "Sandstorm so we can figure out what happened."
-  fi
-
-  # We know that unprivileged user namespaces basically work. If they
-  # work, and the user doesn't need a sysctl set, then we are happy.
-  if [ "$USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET" = "no" ] ; then
-    return
-  fi
-
-  # At this point, we're going to need this sysctl set.
-  #
-  # But that won't work under one of a few circumstances. Let's identify
-  # those so we know to bail out.
-  local SYSCTL_PROBABLY_WORKS="yes"
-
-  # If /proc/sys is mounted read-only, then they won't be able to run
-  # sysctl with our help.
-  #
-  # This applies to Docker containers and probably other sorts of
-  # containers, too.
-  if egrep -q '/proc/sys\s+proc\s+ro' /proc/mounts ; then
-    SYSCTL_PROBABLY_WORKS="no"
-  fi
-
-  # If this system doesn't have a sysctl.conf, then we don't know how
-  # to set the default value for the next reboot.
-  if [ ! -e /etc/sysctl.conf ] ; then
-    SYSCTL_PROBABLY_WORKS="no"
-  fi
-
-  # OK, so they need the sysctl set.
-  #
-  # If, however, they _can't_ set the sysctl, make the install fail
-  # now.
-  if [ "$SYSCTL_PROBABLY_WORKS" = "no" ] ; then
-    echo "  sysctl -w kernel.unprivileged_userns_clone=1"
-    echo "  echo 'kernel.unprivileged_userns_clone = 1' >> /etc/sysctl.conf"
-    echo ""
-    fail "E_PROC_SYS_READ_ONLY" "You are using a Debian-derived Linux kernel, which needs a configuration option" \
-         "set in order to run Sandstorm. To set that option, please run the shell commands" \
-         "above as root. (If you are running this in a container through e.g. Docker, you will" \
-         "have to run the above commands _outside_ the container.)"
-  fi
-
-  # OK, so either it already works, or we know it's a reasonable idea to ask
-  # the user to let us enable the sysctl.
-}
-
-enable_userns_sysctl_if_needed() {
+maybe_enable_userns_sysctl() {
   # This function enables the Debian/Ubuntu-specific unprivileged
-  # userns sysctl.
-  #
-  # We only run it if we need to.
-  if [ "$USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET" != "yes" ] ; then
+  # userns sysctl, if the system has it and we want it.
+
+  if [ "$USE_DEFAULTS" != "yes" ] ; then
+    # Only do this when -d is passed. -d means "use defaults suitable for app development", and
+    # we want userns enabled for app development if possible since it enables UID randomization
+    # which helps catch app bugs. For the rest of the world, we're fine using the privileged
+    # sandbox instead.
     return
   fi
 
-  # It only makes sense when running as root, so if we are not
-  # currently running as root, just skip this code.
   if [ "no" = "$CURRENTLY_UID_ZERO" ] ; then
+    # Not root. Can't do anything about it.
     return
   fi
 
-  local PRINT_USERNS_PROMPT="yes"
-  local ACCEPTED_SYSCTL_SWITCH="no"
-
-  if [ "yes" = "${ACCEPTED_FULL_SERVER_INSTALL:-}" ] ; then
-    PRINT_USERNS_PROMPT="no"
-    ACCEPTED_SYSCTL_SWITCH="yes"
+  if [ ! -e /proc/sys/kernel/unprivileged_userns_clone ]; then
+    # No such sysctl on this system.
+    return
   fi
 
-  if [ "${PRINT_USERNS_PROMPT}" = "yes" ] ; then
-    echo "Sandstorm requires sysctl kernel.unprivileged_userns_clone to be enabled."
-    echo "Currently, it is not enabled on your system."
-    if prompt-yesno "Shall I enable it for you (including in sysctl.conf)?" yes; then
-      ACCEPTED_SYSCTL_SWITCH="yes"
-    fi
+  local OLD_VALUE="$(< /proc/sys/kernel/unprivileged_userns_clone)"
+
+  if [ "$OLD_VALUE" = "1" ]; then
+    # Already enabled.
+    return
   fi
 
-  if [ "$ACCEPTED_SYSCTL_SWITCH" = "yes" ] ; then
-    # Make the change first.
-    sysctl -w kernel.unprivileged_userns_clone=1 >/dev/null \
-      || fail "E_SYSCTL_WRITING_FAILED" "'sysctl -w" \
-              "kernel.unprivileged_userns_clone=1' failed. If you are inside docker, please run the" \
-              "command manually inside your host and update /etc/sysctl.conf."
+  # Enable it.
+  if sysctl -wq kernel.unprivileged_userns_clone=1 2>/dev/null; then
+    echo "NOTE: Enabled unprivileged user namespaces because you passed -d."
+  else
+    # Apparently we can't. Maybe we're in a Docker container. Give up and use privileged sandbox.
+    return
+  fi
 
-    # If that worked, then make the change stick.
-    cat >> /etc/sysctl.conf << __EOF__
+  # Also make sure it is re-enabled on boot. If sysctl.d exists, we drop our own config in there.
+  # Otherwise we edit sysctl.conf, but that's less polite.
+  local SYSCTL_FILENAME="/etc/sysctl.conf"
+  if [ -d /etc/sysctl.d ] ; then
+    SYSCTL_FILENAME="/etc/sysctl.d/50-sandstorm.conf"
+  fi
+
+  if ! cat >> "$SYSCTL_FILENAME" << __EOF__
 
 # Enable non-root users to create sandboxes (needed by Sandstorm).
 kernel.unprivileged_userns_clone = 1
 __EOF__
+  then
+    # We couldn't make the change permanent, so undo the change. Probably everything will work
+    # fine with the privileged sandbox. But if it doesn't, it's better that things fail now rather
+    # than wait for a reboot.
+    echo "NOTE: Never mind, not enabling userns because can't write /etc/sysctl.d."
+    sysctl -wq "kernel.unprivileged_userns_clone=$OLD_VALUE" || true
+    return
+  fi
+}
 
+test_if_dev_tcp_works() {
+  # In is_port_bound(), we prefer to use bash /dev/tcp to check if the port is bound. This is
+  # available on most Linux distributions, but it is a compile-time flag for bash and at least
+  # Debian historically disabled it.
+  #
+  # To test availability, we connect to localhost port 0, which is never available, hoping for a
+  # TCP-related error message from bash. We use a subshell here because we don't care that timeout
+  # will return false; we care if the grep returns false.
+  if (timeout 1 bash -c ': < /dev/tcp/localhost/0' 2>&1 || true) | grep -q 'connect:' ; then
+    # Good! bash should get "Connection refused" on this, and this message is prefixed
+    # by the syscall it was trying to do, so therefore it tried to connect!
+    DEV_TCP_USABLE="yes"
   else
-    fail "E_USER_REFUSED_SYSCTL_WRITING" "OK, please enable this option yourself and try again."
+    DEV_TCP_USABLE="no"
   fi
 }
 
@@ -573,13 +562,12 @@ assert_dependencies() {
     which curl > /dev/null|| fail "E_CURL_MISSING" "Please install curl(1). Sandstorm uses it to download updates."
   fi
 
-  if [ "yes" = "$USE_SANDCATS" ] ; then
-    # To set up sandcats, we need `openssl` on the path. Check for that,
-    # and if it is missing, bail out and tell the user they have to
-    # install it.
-    which openssl > /dev/null|| fail "E_OPENSSL_MISSING" "Please install openssl(1). Sandstorm uses it for the Sandcats.io dynamic DNS service."
-    # To find out if port 80 and 443 are available, we need `nc` on
-    # the path.
+  # To find out if port 80 and 443 are available, we need a working bash /dev/net or `nc` on
+  # the path.
+  if [ "${DEV_TCP_USABLE}" = "unchecked" ] ; then
+    test_if_dev_tcp_works
+  fi
+  if [ "${DEV_TCP_USABLE}" = "no" ] ; then
     which nc > /dev/null || fail "E_NC_MISSING" "Please install nc(1). (Package may be called 'netcat-traditional' or 'netcat-openbsd'.)"
   fi
 
@@ -647,14 +635,22 @@ choose_install_mode() {
     echo "1. A typical install, to use Sandstorm (press enter to accept this default)"
     echo "2. A development server, for working on Sandstorm itself or localhost-based app development"
     echo ""
-    CHOSEN_INSTALL_MODE=$(prompt "How are you going to use this Sandstorm install?" "1")
+    CHOSEN_INSTALL_MODE=$(prompt-numeric "How are you going to use this Sandstorm install?" "1")
   fi
 
   if [ "1" = "$CHOSEN_INSTALL_MODE" ] ; then
+    assert_full_server_dependencies
     full_server_install
   else
     dev_server_install
   fi
+}
+
+assert_full_server_dependencies() {
+  # To set up sandcats, we need `openssl` on the path. Check for that,
+  # and if it is missing, bail out and tell the user they have to
+  # install it.
+  which openssl > /dev/null|| fail "E_OPENSSL_MISSING" "Please install openssl(1). Sandstorm uses it for the Sandcats.io dynamic DNS service."
 }
 
 dev_server_install() {
@@ -720,14 +716,12 @@ to install without using root access. In that case, Sandstorm will operate OK bu
     fi
     echo "* Expose the service only on localhost aka local.sandstorm.io, not the public Internet."
     echo "* Enable 'dev accounts', for easy developer login."
-    if [ "yes" == "$USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET" ] ; then
-      echo "* Configure your system to enable unprivileged user namespaces, via sysctl"
-    fi
     if [ "unknown" == "$INIT_SYSTEM" ]; then
       echo "*** WARNING: Could not detect how to run Sandstorm at startup on your system. ***"
     else
         echo "* Configure Sandstorm to start on system boot (with $INIT_SYSTEM)."
     fi
+    echo "* Listen for inbound email on port ${DEFAULT_SMTP_PORT}."
     echo ""
 
     if prompt-yesno "Press enter to accept defaults. Type 'no' to customize." "yes" ; then
@@ -744,8 +738,16 @@ to install without using root access. In that case, Sandstorm will operate OK bu
     # Use the default UPDATE_CHANNEL for auto-updates.
     UPDATE_CHANNEL="$DEFAULT_UPDATE_CHANNEL"
 
-    # Bind to localhost.
-    USE_EXTERNAL_INTERFACE="no"
+    # Bind to localhost, unless -e specified in argv.
+    USE_EXTERNAL_INTERFACE="${USE_EXTERNAL_INTERFACE:-no}"
+
+    # Use local.sandstorm.io as hostname unless environment variable declared otherwise. This
+    # short-circuits the code elsewhere that uses the system hostname if USE_EXTERNAL_INTERFACE is
+    # "yes".
+    SS_HOSTNAME="${SS_HOSTNAME:-local.sandstorm.io}"
+
+    # Use 30025 as the default SMTP_LISTEN_PORT.
+    SMTP_LISTEN_PORT="${DEFAULT_SMTP_PORT}"
 
     # Start the service at boot, if we can.
     START_AT_BOOT="yes"
@@ -755,8 +757,8 @@ to install without using root access. In that case, Sandstorm will operate OK bu
 
     # Reasonable default ports.
     PORT="${DEFAULT_PORT}"
-    # Allow the mongo prompting part to determine a reasonable
-    # MONGO_PORT.
+
+    # Allow the mongo prompting part to determine a reasonable MONGO_PORT.
 
     # Use the ALLOW_DEV_ACCOUNTS feature, which allows people to log
     # into a Sandstorm instance without setting up any accounts.
@@ -769,7 +771,8 @@ to install without using root access. In that case, Sandstorm will operate OK bu
 
     # Do not bother setting a DIR. This way, the existing prompting will
     # pick between /opt/sandstorm and $HOME/sandstorm, depending on if
-    # the install is being done as root or not.
+    # the install is being done as root or not. It will use /opt/sandstorm
+    # in all cases if the script is run without the HOME environment variable.
   fi
 }
 
@@ -799,6 +802,13 @@ full_server_install() {
     ACCEPTED_FULL_SERVER_INSTALL="yes"
   fi
 
+  # Use port 25 for email, if we can. This logic only gets executed for "full servers."
+  disable_smtp_port_25_if_port_unavailable
+  local PLANNED_SMTP_PORT="30025"
+  if [ "yes" = "$PORT_25_AVAILABLE" ] ; then
+    PLANNED_SMTP_PORT="25"
+  fi
+
   if [ "yes" != "${ACCEPTED_FULL_SERVER_INSTALL:-}" ]; then
     # Disable Sandcats HTTPS if ports 80 or 443 aren't available.
     disable_https_if_ports_unavailable
@@ -816,9 +826,7 @@ full_server_install() {
     else
       echo "* Configure Sandstorm to start on system boot (with $INIT_SYSTEM)"
     fi
-    if [ "yes" == "$USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET" ] ; then
-      echo "* Configure your system to enable unprivileged user namespaces, via sysctl."
-    fi
+    echo "* Listen for inbound email on port ${PLANNED_SMTP_PORT}."
     echo ""
 
     # If we're not root, we will ask if it's OK to use sudo.
@@ -890,8 +898,9 @@ full_server_install() {
     USE_SANDCATS="yes"
     START_AT_BOOT="yes"
     DESIRED_SERVER_USER="$DEFAULT_SERVER_USER"
-    PORT="6080"
+    PORT="${DEFAULT_PORT}"
     MONGO_PORT="6081"
+    SMTP_LISTEN_PORT="${PLANNED_SMTP_PORT}"
   else
     REPORT=no fail "E_USER_WANTS_CUSTOM_SETTINGS" "If you prefer a more manual setup experience, try installing in development mode."
   fi
@@ -954,8 +963,17 @@ configure_hostnames() {
     fi
   fi
 
-  # A typical server's DEFAULT_BASE_URL is its hostname plus port over HTTP.
-  DEFAULT_BASE_URL="http://$SS_HOSTNAME:$PORT"
+  # A typical server's DEFAULT_BASE_URL is its hostname plus port over HTTP. If the port is 80, then
+  # don't add it to BASE_URL to avoid triggering this bug:
+  # https://github.com/sandstorm-io/sandstorm/issues/2252
+  local PORT_SUFFIX=""
+  if [ "$PORT" = "80" ] ; then
+    PORT_SUFFIX=""
+  else
+    PORT_SUFFIX=":${PORT}"
+  fi
+
+  DEFAULT_BASE_URL="http://${SS_HOSTNAME}${PORT_SUFFIX}"
 
   # If SANDCATS_HTTPS_SUCCESSFUL is true, then use a HTTPS URL.
   if [ "$SANDCATS_HTTPS_SUCCESSFUL" = "yes" ]; then
@@ -970,6 +988,16 @@ configure_hostnames() {
     BASE_URL="$DEFAULT_BASE_URL"
   else
     BASE_URL=$(prompt "URL users will enter in browser:" "$DEFAULT_BASE_URL")
+    if ! [[ "$BASE_URL" =~ ^http(s?):// ]] ; then
+      local PROPOSED_BASE_URL="http://${BASE_URL}"
+      echo "** You entered ${BASE_URL}, which needs http:// at the front. I can use:" >&2
+      echo "        ${PROPOSED_BASE_URL}" >&2
+      if prompt-yesno "Is this OK?" yes; then
+        BASE_URL="${PROPOSED_BASE_URL}"
+      else
+        configure_hostnames
+      fi
+    fi
   fi
 
   # If the BASE_URL looks like localhost, then we had better use a
@@ -1017,15 +1045,47 @@ choose_install_dir() {
     fi
 
     DIR=$(prompt "Where would you like to put Sandstorm?" "$DEFAULT_DIR")
+  fi
 
-    if [ -e "$DIR" ]; then
-      echo "$DIR already exists. Sandstorm will assume ownership of all contents."
-      prompt-yesno "Is this OK?" yes || fail "E_USER_ABORTED_OVERWRITE" "Aborting by user request to avoid over-writing existing data."
-    fi
+  # Check for the existence of any partial Sandstorm installation. Note that by default, the
+  # Sandstorm uninstall process will retain $DIR/sandstorm.conf and $DIR/var. Since the install
+  # script can't reliably use those to preseed a new Sandstorm install, we still bail out in that
+  # situation.
+  if [ -e "$DIR/sandstorm.conf" ] || [ -e "$DIR/var" ] || [ -e "$DIR/sandstorm" ] ; then
+    # Clear the previous line, since in many cases, it's a "echo -n".
+    error ""
+    error "This script is trying to install to ${DIR}."
+    error ""
+    error "You seem to already have a ${DIR} directory with a Sandstorm installation inside. You should either:"
+    error ""
+    error "1. Reconfigure that Sandstorm install using its configuration file -- ${DIR}/sandstorm.conf -- or the admin interface. See docs at:"
+    error "https://docs.sandstorm.io/en/latest/administering/"
+    error ""
+    error "2. Uninstall Sandstorm before attempting to perform a new install. Even if you created a sandcats.io hostname, it is safe to uninstall so long as you do not need the data in your Sandstorm install. When you re-install Sandstorm, you can follow a process to use the old hostname with the new install. See uninstall docs at:"
+    error "https://docs.sandstorm.io/en/latest/install/#uninstall"
+    error ""
+    error "3. Use a different target directory for the new Sandstorm install. Try running install.sh with the -d option."
+    error ""
+    error "4. Retain your data, but restore your Sandstorm code and configuration to a fresh copy. To do that, keep a backup  of ${DIR}/var and then do a fresh install; stop the Sandstorm service, and restore your backup of ${DIR}/var. You may need to adjust permissions after doing that."
+    REPORT=no fail "E_DIR_ALREADY_EXISTS" "Please try one of the above. Contact https://groups.google.com/d/forum/sandstorm-dev for further help."
   fi
 
   mkdir -p "$DIR"
   cd "$DIR"
+}
+
+choose_smtp_port() {
+  # If SMTP_LISTEN_PORT is already decided, then don't bother asking.
+  if [ ! -z "${SMTP_LISTEN_PORT:-}" ] ; then
+    return
+  fi
+
+  local REQUESTED_SMTP_PORT=$(prompt-numeric "Sandstorm grains can receive email. What port should Sandstorm listen on, for inbound SMTP?" "${DEFAULT_SMTP_PORT}")
+  if [ -z "${REQUESTED_SMTP_PORT}" ] ; then
+    choose_smtp_port
+  else
+    SMTP_LISTEN_PORT="${REQUESTED_SMTP_PORT}"
+  fi
 }
 
 load_existing_settings() {
@@ -1103,8 +1163,15 @@ create_server_user_if_needed() {
     return
   fi
 
-  # OK!
-  useradd --system "$SERVER_USER"
+  # OK! Let's proceed.
+  #
+  # useradd comes from the passwd package, whereas adduser is a Debian-specific utility
+  # <https://packages.debian.org/adduser>, so we prefer useradd here. Per the man page for useradd,
+  # USERGROUPS_ENAB in /etc/login.defs controls if useradd will automatically create a group for
+  # this user (the new group would have the same name as the new user). On systems such as OpenSuSE
+  # where that flag is set to false by default, or on systems where the administrator has personally
+  # tuned that flag, we need to provide --user-group to useradd so that it creates the group.
+  useradd --system --user-group "$SERVER_USER"
 
   echo "Note: Sandstorm's storage will only be accessible to the group '$SERVER_USER'."
 
@@ -1131,14 +1198,14 @@ choose_port() {
     return
   fi
 
-  PORT=$(prompt "Server main HTTP port:" $DEFAULT_PORT)
+  PORT=$(prompt-numeric "Server main HTTP port:" $DEFAULT_PORT)
 
   while [ "$PORT" -lt 1024 ]; do
     echo "Ports below 1024 require root privileges. Sandstorm does not run as root."
     echo "To use port $PORT, you'll need to set up a reverse proxy like nginx that "
     echo "forwards to the internal higher-numbered port. The Sandstorm git repo "
     echo "contains an example nginx config for this."
-    PORT=$(prompt "Server main HTTP port:" $DEFAULT_PORT)
+    PORT=$(prompt-numeric "Server main HTTP port:" $DEFAULT_PORT)
   done
 }
 
@@ -1148,7 +1215,14 @@ choose_mongo_port() {
     return
   fi
 
-  MONGO_PORT=$(prompt "Database port (choose any unused port):" "$((PORT + 1))")
+  # If the port we'll bind is less than 1024, then default to MONGO_PORT of 6081 because
+  # mongo can't listen on root-owned ports in our configuration.
+  local DEFAULT_MONGO_PORT="$((PORT + 1))"
+  if [ "$PORT" -lt 1024 ] ; then
+    DEFAULT_MONGO_PORT="6081"
+  fi
+
+  MONGO_PORT=$(prompt-numeric "Database port (choose any unused port):" "${DEFAULT_MONGO_PORT}")
 }
 
 choose_external_or_internal() {
@@ -1199,7 +1273,7 @@ configure_dev_accounts() {
 }
 
 save_config() {
-  writeConfig SERVER_USER PORT MONGO_PORT BIND_IP BASE_URL WILDCARD_HOST UPDATE_CHANNEL ALLOW_DEV_ACCOUNTS > sandstorm.conf
+  writeConfig SERVER_USER PORT MONGO_PORT BIND_IP BASE_URL WILDCARD_HOST UPDATE_CHANNEL ALLOW_DEV_ACCOUNTS SMTP_LISTEN_PORT > sandstorm.conf
   if [ "yes" = "$SANDCATS_SUCCESSFUL" ] ; then
     writeConfig SANDCATS_BASE_DOMAIN >> sandstorm.conf
   fi
@@ -1223,20 +1297,20 @@ download_latest_bundle_and_extract_if_needed() {
   # to do a Sandstorm install. We had to stop using "install" because vagrant-spk happens to use
   # &type=install during situations that we do not want to categorize as an attempt by a human to
   # install Sandstorm.
-  BUILD=$(curl -A "$CURL_USER_AGENT" -fs "https://install.sandstorm.io/$DEFAULT_UPDATE_CHANNEL?from=0&type=install_v2")
-  BUILD_DIR=sandstorm-$BUILD
+  BUILD="$(curl -A "$CURL_USER_AGENT" -fs "https://install.sandstorm.io/$DEFAULT_UPDATE_CHANNEL?from=0&type=install_v2")"
+  BUILD_DIR="sandstorm-${BUILD}"
 
   if [[ ! "$BUILD" =~ ^[0-9]+$ ]]; then
     fail "E_INVALID_BUILD_NUM" "Server returned invalid build number: $BUILD"
   fi
 
   do-download() {
-    rm -rf $BUILD_DIR
-    WORK_DIR="$(mktemp -d --tmpdir sandstorm-installer.XXXXXXXXXX)"
+    rm -rf "${BUILD_DIR}"
+    WORK_DIR="$(mktemp -d ./sandstorm-installer.XXXXXXXXXX)"
     local URL="https://dl.sandstorm.io/sandstorm-$BUILD.tar.xz"
     echo "Downloading: $URL"
-    curl -A "$CURL_USER_AGENT" -f "$URL" > "$WORK_DIR/sandstorm-$BUILD.tar.xz"
-    curl -s -A "$CURL_USER_AGENT" -f "$URL.sig" > "$WORK_DIR/sandstorm-$BUILD.tar.xz.sig"
+    retryable_curl "$URL" "$WORK_DIR/sandstorm-$BUILD.tar.xz"
+    retryable_curl "$URL.sig" "$WORK_DIR/sandstorm-$BUILD.tar.xz.sig"
 
     if which gpg > /dev/null; then
       export GNUPGHOME="$WORK_DIR/.gnupg"
@@ -1298,7 +1372,7 @@ __EOF__
     fi
 
     if [ ! -e "$BUILD_DIR/buildstamp" ] || \
-       [ $(stat --printf=%Y "$BUILD_DIR/buildstamp") -lt $(( $(date +%s) - 30*24*60*60 )) ]; then
+       [ $(stat -c %Y "$BUILD_DIR/buildstamp") -lt $(( $(date +%s) - 30*24*60*60 )) ]; then
       rm -rf "$BUILD_DIR"
       fail "E_PKG_STALE" "The downloaded package seems to be more than a month old. Please verify that your" \
            "computer's clock is correct and try again. It could also be that an attacker is" \
@@ -1467,6 +1541,7 @@ WantedBy=multi-user.target
 __EOF__
   systemctl enable sandstorm
   systemctl start sandstorm
+  STARTED_SANDSTORM="yes"
 }
 
 configure_sysvinit_init_system() {
@@ -1508,6 +1583,7 @@ __EOF__
 
   # Start it right now.
   service sandstorm start
+  STARTED_SANDSTORM="yes"
 }
 
 generate_admin_token() {
@@ -1519,10 +1595,12 @@ generate_admin_token() {
   # Allow the person running the install.sh script to pre-generate an admin token, specified as an
   # environment variable, so that they can ignore the output text of install.sh.
   if [ ! -z "${ADMIN_TOKEN:-}" ] ; then
+    local TMPFILENAME="$(mktemp ./var/sandstorm/adminTokenTmp.XXXXXXXXXX)"
+    echo -n "$ADMIN_TOKEN" > "$TMPFILENAME"
     local FILENAME="./var/sandstorm/adminToken"
-    touch "$FILENAME"
+    mv "$TMPFILENAME" "$FILENAME"
     chmod 0640 "$FILENAME"
-    echo -n "$ADMIN_TOKEN" > "$FILENAME"
+    chgrp "$SERVER_USER" "$FILENAME"
     return
   fi
 
@@ -1532,15 +1610,15 @@ generate_admin_token() {
 print_success() {
   echo ""
   if [ "yes" = "$SANDSTORM_NEEDS_TO_BE_STARTED" ] ; then
-    echo "Setup complete. To start your server now, run:"
+    echo "Installation complete. To start your server now, run:"
     echo "  $DIR/sandstorm start"
-    echo "Once that's done, visit this link to configure it:"
+    echo "Once that's done, visit this link to start using it:"
   else
     echo -n "Your server is now online! "
     if [ "${SANDCATS_HTTPS_SUCCESSFUL}" = "yes" ] ; then
       echo "It should work immediately if you use Chrome."
     fi
-    echo "Visit this link to configure it:"
+    echo "Visit this link to start using it:"
   fi
 
   echo ""
@@ -1549,8 +1627,15 @@ print_success() {
   # when dev accounts are enabled, it is advantageous to not print an admin token URL.
   if [ ! -z "${ADMIN_TOKEN:-}" ] ; then
     echo "  ${BASE_URL:-(unknown; bad config)}/setup/token/$ADMIN_TOKEN"
+    echo ""
+    echo "NOTE: This URL expires in 15 minutes. You can generate a new setup URL by running"
+    echo "'sudo sandstorm admin-token' from the command line."
   else
     echo "  ${BASE_URL:-(unknown; bad config)}/"
+  fi
+  if [ "yes" = "${ALLOW_DEV_ACCOUNTS}" ] ; then
+   echo ""
+   echo "NOTE: Use the passwordless admin account called Alice for convenient dev login (since you have 'dev accounts' enabled)."
   fi
   echo ""
 
@@ -1559,9 +1644,6 @@ print_success() {
     echo "(If your browser shows you an OCSP error, wait 10 minutes for it to auto-resolve"
     echo "and try Chrome until then.)"
   fi
-  echo ""
-  echo "NOTE: This URL expires in 15 minutes. You can generate a new setup URL by running"
-  echo "'sudo sandstorm admin-token' from the command line."
   echo
   echo "To learn how to control the server, run:"
   if [ "yes" = "$CURRENTLY_UID_ZERO" ] ; then
@@ -1950,7 +2032,7 @@ sandcats_configure_https() {
       -w '%{http_code}' \
       -H 'X-Sand: cats' \
       --cert var/sandcats/id_rsa.private_combined \
-      "${SANDCATS_API_BASE}/getcertificate")
+      "${SANDCATS_API_BASE}/${OVERRIDE_SANDCATS_GETCERTIFICATE_API_PATH:-getcertificate}")
 
   chmod 0600 "$LOG_PATH"
 
@@ -1971,17 +2053,20 @@ sandcats_configure_https() {
   fi
 }
 
-wait_for_server_bind_to_https_if_needed() {
-  if [ "${SANDCATS_HTTPS_SUCCESSFUL}" != "yes" ] ; then
+wait_for_server_bind_to_its_port() {
+  # If we haven't started Sandstorm ourselves, it's not sensible to expect it to be listening.
+  if [ "yes" != "${STARTED_SANDSTORM}" ] ; then
     return
   fi
 
-  # For sandcats HTTPS, we have to generate the initial non-SNI key before
-  # Sandstorm binds to port 443. So we let the user know it could be slow.
+  # For sandcats HTTPS, we have to generate the initial non-SNI key before Sandstorm binds to port
+  # 443. So we let the user know it could be slow. For all users, using the admin token requires
+  # that the server has started.
+  local PORT_TO_CHECK="${HTTPS_PORT:-$PORT}"
   echo -n "Your server is coming online. Waiting up to 90 seconds..."
   local ONLINE_YET="no"
   for waited_n_seconds in $(seq 0 89); do
-    is_port_bound 0.0.0.0 443 && ONLINE_YET="yes"
+    is_port_bound "${BIND_IP}" "${PORT_TO_CHECK}" && ONLINE_YET="yes"
     if [ "$ONLINE_YET" == "yes" ] ; then
       echo ''
       break
@@ -1991,7 +2076,7 @@ wait_for_server_bind_to_https_if_needed() {
   done
 
   # One last check before we bail out.
-  is_port_bound 0.0.0.0 443 && ONLINE_YET="yes"
+  is_port_bound "${BIND_IP}" "${PORT_TO_CHECK}" && ONLINE_YET="yes"
 
   if [ "$ONLINE_YET" == "yes" ]; then
     return
@@ -2060,20 +2145,20 @@ sandcats_generate_keys() {
 
 # Now that the steps exist as functions, run them in an order that
 # would result in a working install.
+handle_args "$@"
+set_umask
+assert_on_terminal
 assert_linux_x86_64
 assert_usable_kernel
 detect_current_uid
-detect_userns_clone
-assert_userns_clone_works_or_can_be_made_to_work
-handle_args "$@"
-assert_on_terminal
 assert_dependencies
 assert_valid_bundle_file
 detect_init_system
 choose_install_mode
-enable_userns_sysctl_if_needed
+maybe_enable_userns_sysctl
 choose_external_or_internal
 choose_install_dir
+choose_smtp_port
 load_existing_settings
 choose_server_user_if_needed
 create_server_user_if_needed
@@ -2089,7 +2174,7 @@ set_permissions
 install_sandstorm_symlinks
 ask_about_starting_at_boot
 configure_start_at_boot_if_desired
-wait_for_server_bind_to_https_if_needed
+wait_for_server_bind_to_its_port
 print_success
 }
 

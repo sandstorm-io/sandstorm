@@ -1,6 +1,6 @@
 # Sandstorm
 
-Sandstorm makes it easy to run your own server.
+Sandstorm is a self-hostable web productivity suite. It's implemented as a security-hardened web app package manager. Sandstorm makes it easy to run your own server.
 
 Use Sandstorm to install apps to create [documents](https://apps.sandstorm.io/app/h37dm17aa89yrd8zuqpdn36p6zntumtv08fjpu8a8zrte7q1cn60),
 [spreadsheets](https://apps.sandstorm.io/app/a0n6hwm32zjsrzes8gnjg734dh6jwt7x83xdgytspe761pe2asw0), [blogs](https://apps.sandstorm.io/app/aax9j672p6z8n7nyupzvj2nmumeqd4upa0f7mgu8gprwmy53x04h),
@@ -14,13 +14,6 @@ system.
 * Read more at: https://sandstorm.io/
 * Try the demo: https://demo.sandstorm.io/
 * Documentation available at: https://docs.sandstorm.io/
-
-## Caveats
-
-Sandstorm is in early beta. Lots of features are not done yet, and more review
-needs to be done before relying on it for mission-critical tasks.
-That said, we use it ourselves to get work done every day, and we hope you'll
-find it useful as well.
 
 ## Installing
 
@@ -40,4 +33,4 @@ See [the developer hub in the Sandstorm documentation](https://docs.sandstorm.io
 
 ## Contribute
 
-Want to help?  See our [community page](https://sandstorm.io/community) or get on our [discussion group](https://groups.google.com/group/sandstorm-dev) and let us know!
+Want to help? Check out [CONTRIBUTING.md](https://github.com/sandstorm-io/sandstorm/blob/master/CONTRIBUTING.md). Also see our [community page](https://sandstorm.io/community) or get on our [discussion group](https://groups.google.com/group/sandstorm-dev) and let us know!

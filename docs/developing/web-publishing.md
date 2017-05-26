@@ -78,9 +78,7 @@ fi
 Now, run the improved `.sandstorm/setup.sh` script by doing:
 
 ```bash
-cd .sandstorm
-vagrant provision
-cd ..
+vagrant-spk vm provision
 ```
 
 This should result in a
@@ -94,7 +92,7 @@ inspiration. If you prefer to call Sandstorm's RPC directly, keep
 reading.
 
 **Note**: At the time of writing, some vagrant-spk stacks crash if you
-run `vagrant provision` a second time. We're [working on fixing
+run `vagrant-spk vm provision` a second time. We're [working on fixing
 that.](https://github.com/sandstorm-io/vagrant-spk/issues/87)
 
 ## Show DNS instructions to the user

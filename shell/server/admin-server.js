@@ -14,79 +14,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;
+import { Meteor } from "meteor/meteor";
+import Fs from "fs";
+import Crypto from "crypto";
+import Heapdump from "heapdump";
+import { SANDSTORM_LOGDIR } from "/imports/server/constants.js";
+import { clearAdminToken, checkAuth, tokenIsValid, tokenIsSetupSession } from "/imports/server/auth.js";
+import { send as sendEmail } from "/imports/server/email.js";
+import { fillUndefinedForChangedDoc } from "/imports/server/observe-helpers.js";
+
 const publicAdminSettings = [
   "google", "github", "ldap", "saml", "emailToken", "splashUrl", "signupDialog",
   "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
   "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled",
   "serverTitle", "returnAddress", "ldapNameField", "organizationMembership",
   "organizationSettings",
+  "whitelabelCustomLoginProviderName",
+  "whitelabelCustomLogoAssetId",
+  "whitelabelHideSendFeedback",
+  "whitelabelHideTroubleshooting",
+  "whiteLabelHideAbout",
+  "whitelabelUseServerTitleForHomeText",
+  "quotaEnabled",
+  "quotaLdapEnabled",
+  "billingPromptUrl",
 ];
-
-const FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS = [
-  "customer", "expires", "features", "isElasticBilling", "isTrial", "issued", "userLimit",
-];
-
-const PUBLIC_FEATURE_KEY_FIELDS = [
-  "expires", "features",
-];
-
-const Fs = Npm.require("fs");
-const Crypto = Npm.require("crypto");
-const SANDSTORM_ADMIN_TOKEN = SANDSTORM_VARDIR + "/adminToken";
-
-const tokenIsValid = function (token) {
-  if (token && Fs.existsSync(SANDSTORM_ADMIN_TOKEN)) {
-    const stats = Fs.statSync(SANDSTORM_ADMIN_TOKEN);
-    const expireTime = new Date(Date.now() - ADMIN_TOKEN_EXPIRATION_TIME);
-    if (stats.mtime < expireTime) {
-      return false;
-    } else {
-      return Fs.readFileSync(SANDSTORM_ADMIN_TOKEN, { encoding: "utf8" }) === token;
-    }
-  } else {
-    return false;
-  }
-};
-
-const tokenIsSetupSession = function (token) {
-  if (token) {
-    const setupSession = globalDb.collections.setupSession.findOne({ _id: "current-session" });
-    if (setupSession) {
-      const hash = Crypto.createHash("sha256").update(token).digest("base64");
-      const now = new Date();
-      const sessionLifetime = 24 * 60 * 60 * 1000; // length of setup session validity, in milliseconds: 1 day
-      if (setupSession.hashedSessionId === hash && ((now - setupSession.creationDate) < sessionLifetime)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-};
-
-// Export for use in other admin/ routes
-checkAuth = function (token) {
-  check(token, Match.OneOf(undefined, null, String));
-  if (!isAdmin() && !tokenIsValid(token) && !tokenIsSetupSession(token)) {
-    throw new Meteor.Error(403, "User must be admin or provide a valid token");
-  }
-};
-
-const clearAdminToken = function (token) {
-  if (tokenIsSetupSession(token)) {
-    const hash = Crypto.createHash("sha256").update(token).digest("base64");
-    globalDb.collections.setupSession.remove({
-      _id: "current-session",
-      hashedSessionId: hash,
-    });
-  }
-
-  if (tokenIsValid(token)) {
-    Fs.unlinkSync(SANDSTORM_ADMIN_TOKEN);
-    console.log("Admin token deleted.");
-  }
-};
 
 const smtpConfigShape = {
   hostname: String,
@@ -115,7 +67,6 @@ Meteor.methods({
     // Only check configurations for OAuth services.
     const oauthServices = ["google", "github"];
     if (value && (oauthServices.indexOf(serviceName) != -1)) {
-      const ServiceConfiguration = Package["service-configuration"].ServiceConfiguration;
       const config = ServiceConfiguration.configurations.findOne({ service: serviceName });
       if (!config) {
         throw new Meteor.Error(403, "You must configure the " + serviceName +
@@ -141,51 +92,19 @@ Meteor.methods({
     Settings.upsert({ _id: "smtpConfig" }, { $set: { value: config } });
   },
 
+  disableEmail: function (token) {
+    checkAuth(token);
+
+    const db = this.connection.sandstormDb;
+    db.collections.settings.update({ _id: "smtpConfig" }, { $set: { "value.hostname": "" } });
+  },
+
   setSetting: function (token, name, value) {
     checkAuth(token);
     check(name, String);
     check(value, Match.OneOf(null, String, Date, Boolean));
 
     Settings.upsert({ _id: name }, { $set: { value: value } });
-  },
-
-  submitFeatureKey: function (token, textBlock) {
-    checkAuth(token);
-    check(textBlock, Match.OneOf(null, String));
-
-    const db = this.connection.sandstormDb;
-
-    if (!textBlock) {
-      // Delete the feature key.
-      db.collections.featureKey.remove("currentFeatureKey");
-      return;
-    }
-
-    // textBlock is a base64'd string, possibly with newlines and comment lines starting with "-"
-    const featureKeyBase64 = _.chain(textBlock.split("\n"))
-        .filter(line => (line.length > 0 && line[0] !== "-"))
-        .value()
-        .join("");
-
-    const buf = new Buffer(featureKeyBase64, "base64");
-    if (buf.length < 64) {
-      throw new Meteor.Error(401, "Invalid feature key");
-    }
-
-    // loadSignedFeatureKey is provided in feature-key.js
-    const featureKey = loadSignedFeatureKey(buf);
-    if (!featureKey) {
-      throw new Meteor.Error(401, "Invalid feature key");
-    }
-
-    // Persist the feature key in the database.
-    db.collections.featureKey.upsert(
-      "currentFeatureKey",
-      {
-        _id: "currentFeatureKey",
-        value: buf,
-      }
-    );
   },
 
   saveOrganizationSettings(token, params) {
@@ -220,8 +139,6 @@ Meteor.methods({
   adminConfigureLoginService: function (token, options) {
     checkAuth(token);
     check(options, Match.ObjectIncluding({ service: String }));
-
-    const ServiceConfiguration = Package["service-configuration"].ServiceConfiguration;
 
     ServiceConfiguration.configurations.upsert({ service: options.service }, options);
   },
@@ -265,13 +182,32 @@ Meteor.methods({
     check(to, String);
     const { returnAddress, ...restConfig } = smtpConfig;
 
-    SandstormEmail.send({
-      to: to,
-      from: globalDb.getServerTitle() + " <" + returnAddress + ">",
-      subject: "Testing your Sandstorm's SMTP setting",
-      text: "Success! Your outgoing SMTP is working.",
-      smtpConfig: restConfig,
-    });
+    try {
+      sendEmail({
+        to: to,
+        from: { name: globalDb.getServerTitle(), address: returnAddress },
+        subject: "Testing your Sandstorm's SMTP setting",
+        text: "Success! Your outgoing SMTP is working.",
+        smtpConfig: restConfig,
+      });
+    } catch (e) {
+      // Attempt to give more accurate error messages for a variety of known failure modes,
+      // and the actual exception data in the event a user hits a new failure mode.
+      if (e.syscall === "getaddrinfo") {
+        if (e.code === "EIO" || e.code === "ENOTFOUND") {
+          throw new Meteor.Error("getaddrinfo " + e.code, "Couldn't resolve \"" + smtpConfig.hostname + "\" - check for typos or broken DNS.");
+        }
+      } else if (e.syscall === "connect") {
+        if (e.code === "ECONNREFUSED") {
+          throw new Meteor.Error("connect ECONNREFUSED", "Server at " + smtpConfig.hostname + ":" + smtpConfig.port + " refused connection.  Check your settings, firewall rules, and that your mail server is up.");
+        }
+      } else if (e.name === "AuthError") {
+        throw new Meteor.Error("auth error", "Authentication failed.  Check your credentials.  Message from " +
+                smtpConfig.hostname + ": " + e.data);
+      }
+
+      throw new Meteor.Error("other-email-sending-error", "Error while trying to send test email: " + JSON.stringify(e));
+    }
   },
 
   createSignupKey: function (token, note, quota) {
@@ -288,10 +224,11 @@ Meteor.methods({
 
   sendInvites: function (token, origin, from, list, subject, message, quota) {
     checkAuth(token);
-    check([origin, from, list, subject, message], [String]);
+    check(from, { name: String, address: String });
+    check([origin, list, subject, message], [String]);
     check(quota, Match.OneOf(undefined, null, Number));
 
-    if (!from.trim()) {
+    if (!from.address.trim()) {
       throw new Meteor.Error(403, "Must enter 'from' address.");
     }
 
@@ -317,7 +254,7 @@ Meteor.methods({
         };
         if (typeof quota === "number") content.quota = quota;
         SignupKeys.insert(content);
-        SandstormEmail.send({
+        sendEmail({
           to: email,
           from: from,
           envelopeFrom: globalDb.getReturnAddress(),
@@ -329,38 +266,6 @@ Meteor.methods({
     }
 
     return { sent: true };
-  },
-
-  offerIpNetwork: function (token) {
-    checkAuth(token);
-    if (!isAdmin()) {
-      throw new Meteor.Error(403, "Offering IpNetwork is only allowed for logged in users " +
-        "(a token is not sufficient). Please sign in with an admin account");
-    }
-
-    const requirements = [
-      { userIsAdmin: Meteor.userId() },
-    ];
-    const sturdyRef = waitPromise(
-      saveFrontendRef({ ipNetwork: true }, { webkey: null }, requirements)
-    ).sturdyRef;
-    return ROOT_URL.protocol + "//" + globalDb.makeApiHost(sturdyRef) + "#" + sturdyRef;
-  },
-
-  offerIpInterface: function (token) {
-    checkAuth(token);
-    if (!isAdmin()) {
-      throw new Meteor.Error(403, "Offering IpInterface is only allowed for logged in users " +
-        "(a token is not sufficient). Please sign in with an admin account");
-    }
-
-    const requirements = [
-      { userIsAdmin: Meteor.userId() },
-    ];
-    const sturdyRef = waitPromise(
-      saveFrontendRef({ ipInterface: true }, { webkey: null }, requirements)
-    ).sturdyRef;
-    return ROOT_URL.protocol + "//" + globalDb.makeApiHost(sturdyRef) + "#" + sturdyRef;
   },
 
   adminToggleDisableCap: function (token, capId, value) {
@@ -435,11 +340,34 @@ Meteor.methods({
         hashedSessionId,
       });
       // Then, invalidate the token, so one one else can use it.
-      Fs.unlinkSync(SANDSTORM_ADMIN_TOKEN);
+      clearAdminToken(token);
       return sessId;
     } else {
       throw new Meteor.Error(401, "Invalid setup token");
     }
+  },
+
+  heapdump() {
+    // Requests a heap dump. Intended for use by Sandstorm developers. Requires admin.
+    //
+    // Call this from the JS console like:
+    //   Meteor.call("heapdump");
+
+    checkAuth();
+
+    // We use /var/log because it's a location in the container to which the front-end is allowed
+    // to write.
+    const name = "/var/log/" + Date.now() + ".heapsnapshot";
+    Heapdump.writeSnapshot(name);
+    console.log("Wrote heapdump: /opt/sandstorm" + name);
+    return name;
+  },
+
+  setPreinstalledApps: function (appAndPackageIds) {
+    checkAuth();
+    check(appAndPackageIds, [{ appId: String, packageId: String, }]);
+
+    this.connection.sandstormDb.setPreinstalledApps(appAndPackageIds);
   },
 });
 
@@ -455,7 +383,7 @@ Meteor.publish("admin", function (token) {
 
 Meteor.publish("adminServiceConfiguration", function (token) {
   if (!authorizedAsAdmin(token, this.userId)) return [];
-  return Package["service-configuration"].ServiceConfiguration.configurations.find();
+  return ServiceConfiguration.configurations.find();
 });
 
 Meteor.publish("publicAdminSettings", function () {
@@ -490,7 +418,7 @@ Meteor.publish("adminUserDetails", function (userId) {
     }
 
     const observeHandle = identitySubs[identityId];
-    identitySubs[identityId] = undefined;
+    delete identitySubs[identityId];
     observeHandle.stop();
     this.removed("users", identityId);
   };
@@ -510,6 +438,7 @@ Meteor.publish("adminUserDetails", function (userId) {
       },
 
       changed: (newDoc, oldDoc) => {
+        fillUndefinedForChangedDoc(newDoc, oldDoc);
         this.changed("users", newDoc._id, newDoc);
       },
 
@@ -547,6 +476,8 @@ Meteor.publish("adminUserDetails", function (userId) {
       identitiesRemoved.forEach((identityId) => {
         unrefIdentity(identityId);
       });
+
+      fillUndefinedForChangedDoc(newDoc, oldDoc);
 
       this.changed("users", newDoc._id, newDoc);
     },
@@ -588,7 +519,7 @@ Meteor.publish("allPackages", function (token) {
   if (!authorizedAsAdmin(token, this.userId)) return [];
   return Packages.find({ manifest: { $exists: true } },
       { fields: { appId: 1, "manifest.appVersion": 1,
-      "manifest.actions": 1, "manifest.appTitle": 1, }, });
+      "manifest.actions": 1, "manifest.appTitle": 1, progress: 1, status: 1, }, });
 });
 
 Meteor.publish("realTimeStats", function (token) {
@@ -615,16 +546,42 @@ Meteor.publish("adminLog", function (token) {
   const fd = Fs.openSync(logfile, "r");
   const startSize = Fs.fstatSync(fd).size;
 
+  // Difference between the current file offset and the subscription offset. Can be non-zero when
+  // logs have rotated.
+  let extraOffset = 0;
+
+  if (startSize < 8192) {
+    // Log size is less than window size. Check for rotated log and grab its tail.
+    const logfile1 = SANDSTORM_LOGDIR + "/sandstorm.log.1";
+    if (Fs.existsSync(logfile1)) {
+      const fd1 = Fs.openSync(logfile1, "r");
+      const startSize1 = Fs.fstatSync(fd1).size;
+      const amountFromLog1 = Math.min(startSize1, 8192 - startSize);
+      const offset1 = startSize1 - amountFromLog1;
+      const buf = new Buffer(amountFromLog1);
+      const n = Fs.readSync(fd1, buf, 0, buf.length, offset);
+      if (n > 0) {
+        this.added("adminLog", 0, { text: buf.toString("utf8", 0, n) });
+        extraOffset += n;
+      }
+    }
+  }
+
   // Start tailing at EOF - 8k.
   let offset = Math.max(0, startSize - 8192);
 
   const _this = this;
   function doTail() {
+    if (Fs.fstatSync(fd).size < offset) {
+      extraOffset += offset;
+      offset = 0;
+    }
+
     for (;;) {
       const buf = new Buffer(Math.max(1024, startSize - offset));
       const n = Fs.readSync(fd, buf, 0, buf.length, offset);
       if (n <= 0) break;
-      _this.added("adminLog", offset, { text: buf.toString("utf8", 0, n) });
+      _this.added("adminLog", offset + extraOffset, { text: buf.toString("utf8", 0, n) });
       offset += n;
     }
   }
@@ -658,56 +615,9 @@ Meteor.publish("adminApiTokens", function (token) {
       created: 1,
       requirements: 1,
       revoked: 1,
+      owner: 1,
     },
   });
-});
-
-Meteor.publish("featureKey", function (forAdmin, token) {
-  if (forAdmin && !authorizedAsAdmin(token, this.userId)) return [];
-
-  const fields = forAdmin ? FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS
-                          : PUBLIC_FEATURE_KEY_FIELDS;
-
-  const db = this.connection.sandstormDb;
-  const featureKeyQuery = db.collections.featureKey.find({ _id: "currentFeatureKey" });
-  const observeHandle = featureKeyQuery.observe({
-    added: (doc) => {
-      // Load and verify the signed feature key.
-      const buf = new Buffer(doc.value);
-      const featureKey = loadSignedFeatureKey(buf);
-
-      if (featureKey) {
-        // If the signature is valid, publish the feature key information.
-        const filteredFeatureKey = _.pick(featureKey, ...fields);
-        this.added("featureKey", doc._id, filteredFeatureKey);
-      }
-    },
-
-    changed: (newDoc, oldDoc) => {
-      // Load and reverify the new signed feature key.
-      const buf = new Buffer(newDoc.value);
-      const featureKey = loadSignedFeatureKey(buf);
-
-      if (featureKey) {
-        // If the signature is valid, call this.changed() with the interesting fields.
-        const filteredFeatureKey = _.pick(featureKey, ...fields);
-        this.changed("featureKey", newDoc._id, filteredFeatureKey);
-      } else {
-        // Otherwise, call this.removed(), since the new feature key is invalid.
-        this.removed("featureKey", oldDoc._id);
-      }
-    },
-
-    removed: (oldDoc) => {
-      this.removed("featureKey", oldDoc._id);
-    },
-  });
-
-  this.onStop(() => {
-    observeHandle.stop();
-  });
-
-  this.ready();
 });
 
 Meteor.publish("hasAdmin", function (token) {
@@ -732,6 +642,11 @@ Meteor.publish("hasAdmin", function (token) {
   }
 
   this.ready();
+});
+
+Meteor.publish("appIndexAdmin", function (token) {
+  if (!authorizedAsAdmin(token, this.userId)) return [];
+  return globalDb.collections.appIndex.find();
 });
 
 function observeOauthService(name) {

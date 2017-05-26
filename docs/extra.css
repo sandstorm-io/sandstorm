@@ -33,6 +33,7 @@
     .wy-nav-top {
         text-align: left;
         display: flex;
+        background-color: #4d52ac;
     }
 }
 
@@ -91,4 +92,12 @@
 }
 .next-step.demo-app::before {
   background-image: url("https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/try-demo-app.svg");
+}
+
+#get-help {
+  padding: 20px 0;
+}
+
+#get-help a {
+  margin: 5px;
 }

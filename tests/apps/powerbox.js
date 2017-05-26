@@ -21,6 +21,8 @@
 "use strict";
 
 var utils = require("../utils"),
+    actionSelector = utils.actionSelector,
+    appSelector = utils.appSelector,
     short_wait = utils.short_wait,
     medium_wait = utils.medium_wait,
     long_wait = utils.long_wait,
@@ -28,108 +30,193 @@ var utils = require("../utils"),
 
 module.exports = {};
 
-module.exports["Install Powerbox"] = function (browser) {
-  browser
-    .init()
-    .installApp("http://sandstorm.io/apps/jparyani/powerbox-4.spk", "baaceb4cda0d9451968670a3d4ffe5e7", "jm40yaw7zvnxyggqt2dddp5ztt0f5wku7a8wfz8uzn9cjus46ygh")
-    .assert.containsText("#grainTitle", "Untitled PowerboxTest");
-};
-
+// Source at https://github.com/jparyani/sandstorm-test-app/tree/powerbox
 module.exports["Test Powerbox"] = function (browser) {
   browser
+    .init()
+    .loginDevAccount()
+    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
+                "f855d3c96e18e785a3a734a49919ef18",
+                "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
+    .assert.containsText("#grainTitle", "Untitled PowerboxTest")
     .waitForElementVisible('.grain-frame', short_wait)
-    .frame("grain-frame")
-      .waitForElementVisible("#offer", short_wait)
-      .click("#offer")
-      .waitForElementVisible("#offer-result", short_wait)
-      .assert.containsText("#offer-result", "offer: success")
+    .grainFrame()
+    .waitForElementVisible("#offer", short_wait)
+    .click("#offer")
+    .waitForElementVisible("#offer-result", short_wait)
+    .assert.containsText("#offer-result", "offer: success")
     .frameParent()
     .waitForElementVisible("#powerbox-offer-url", short_wait)
     .getText("#powerbox-offer-url", function (result) {
         browser
-          .frame("grain-frame")
-            .click("#request")
+          .click(".popup.offer .frame button.dismiss")
+          .grainFrame()
+          .click("#request")
           .frameParent()
           .waitForElementVisible("#powerbox-request-input", short_wait)
           .setValue("#powerbox-request-input", result.value)
           .click("#powerbox-request-form button")
-          .frame("grain-frame")
+          .grainFrame()
           .waitForElementVisible("#request-result", short_wait)
           .assert.containsText("#request-result", "request: footest");
     });
 };
 
-// Source at https://github.com/jparyani/sandstorm-test-app/tree/powerbox-save
-module.exports["Install PowerboxSave"] = function (browser) {
-  browser
-    .init()
-    .installApp("http://sandstorm.io/apps/jparyani/powerbox-save-0.spk", "5af2a3ca2a4e99ff082c458321c85105", "f6pf7a9my5vrcxk22f00msk97zss1ukz5fvesuh2mxfhs8uzvwu0")
-    .assert.containsText("#grainTitle", "Untitled PowerboxSaveTest");
-};
 
 module.exports["Test PowerboxSave"] = function (browser) {
   browser
+    browser
+    .init()
+    .loginDevAccount()
+    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
+                "f855d3c96e18e785a3a734a49919ef18",
+                "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
+    .assert.containsText("#grainTitle", "Untitled PowerboxTest")
     .waitForElementVisible('.grain-frame', short_wait)
-    .frame("grain-frame")
-      .waitForElementVisible("#offer", short_wait)
-      .click("#offer")
-      .waitForElementVisible("#offer-result", short_wait)
-      .assert.containsText("#offer-result", "offer: success")
+    .grainFrame()
+    .waitForElementVisible("#offer", short_wait)
+    .click("#offer")
+    .waitForElementVisible("#offer-result", short_wait)
+    .assert.containsText("#offer-result", "offer: success")
     .frameParent()
     .waitForElementVisible("#powerbox-offer-url", short_wait)
     .getText("#powerbox-offer-url", function (result) {
         browser
-          .frame("grain-frame")
-            .click("#request")
+          .click(".popup.offer .frame button.dismiss")
+          .grainFrame()
+          .click("#request-save-restore")
           .frameParent()
           .waitForElementVisible("#powerbox-request-input", short_wait)
           .setValue("#powerbox-request-input", result.value)
           .click("#powerbox-request-form button")
-          .frame("grain-frame")
+          .grainFrame()
           .waitForElementVisible("#request-result", short_wait)
           .assert.containsText("#request-result", "request: footest");
     });
 };
 
-// This powerbox app adds `requiredPermissions` to the `restore` call that aren't satisfied.
+// This test adds `requiredPermissions` to the `restore` call that aren't satisfied.
 // We test to make sure an error is thrown.
-// Source at https://github.com/jparyani/sandstorm-test-app/tree/powerbox-permissions
-module.exports["Install Powerbox with failing requirements"] = function (browser) {
-  browser
-    .init()
-    .installApp("http://sandstorm.io/apps/jparyani/powerbox-2.spk", "9d6493e63bc9919de3959fe0c5a131ad", "jm40yaw7zvnxyggqt2dddp5ztt0f5wku7a8wfz8uzn9cjus46ygh")
-    .assert.containsText("#grainTitle", "Untitled PowerboxTest sandstormtest");
-};
-
 module.exports["Test Powerbox with failing requirements"] = function (browser) {
   browser
+    .init()
+    .loginDevAccount()
+    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
+                "f855d3c96e18e785a3a734a49919ef18",
+                "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
+    .assert.containsText("#grainTitle", "Untitled PowerboxTest")
+
     // We'll use the debugLog at the bottom of the test, but it's nice to open it early and give it time to load.
     .click("#openDebugLog")
     .waitForElementVisible('.grain-frame', short_wait)
-    .frame("grain-frame")
-      .waitForElementVisible("#offer", short_wait)
-      .click("#offer")
-      .waitForElementVisible("#offer-result", short_wait)
-      .assert.containsText("#offer-result", "offer: success")
+    .grainFrame()
+    .waitForElementVisible("#offer", short_wait)
+    .click("#offer")
+    .waitForElementVisible("#offer-result", short_wait)
+    .assert.containsText("#offer-result", "offer: success")
     .frameParent()
     .waitForElementVisible("#powerbox-offer-url", short_wait)
     .getText("#powerbox-offer-url", function (result) {
-        browser
-          .frame("grain-frame")
-            .click("#request")
-          .frame()
-          .waitForElementVisible("#powerbox-request-input", short_wait)
-          .setValue("#powerbox-request-input", result.value)
-          .click("#powerbox-request-form button")
-          .frame("grain-frame")
-            .waitForElementVisible("#request-result", short_wait)
-            .assert.containsText("#request-result", "request:")
-            .windowHandles(function (windows) {
-              browser
-                .switchWindow(windows.value[1])
-                .waitForElementVisible(".grainlog-contents > pre", short_wait)
-                .assert.containsText(".grainlog-contents > pre", "Error: Requirements not satisfied")
-            });
+       browser
+        .click(".popup.offer .frame button.dismiss")
+        .grainFrame()
+        .click("#request-failing-requirements")
+        .frame()
+        .waitForElementVisible("#powerbox-request-input", short_wait)
+        .setValue("#powerbox-request-input", result.value)
+        .click("#powerbox-request-form button")
+        .grainFrame()
+        .waitForElementVisible("#request-result", short_wait)
+        .assert.containsText("#request-result", "request:")
+        .windowHandles(function (windows) {
+          browser
+            .switchWindow(windows.value[1])
+            .waitForElementVisible(".grainlog-contents > pre", short_wait)
+            .assert.containsText(".grainlog-contents > pre", "Error: Capability revoked because a user involved in introducing it no longer has the necessary permissions")
+        });
     })
     .end();
+};
+
+module.exports["Test Powerbox embedded request flow"] = function (browser) {
+  browser
+    .init()
+    .loginDevAccount()
+    .uploadTestApp()
+    .assert.containsText("#grainTitle", "Untitled Sandstorm Test App instance")
+    .url(function (grainUrl) {
+      var grainId = grainUrl.value.split("/").pop();
+      var cardSelector = ".powerbox-card button[data-card-id=\"grain-" + grainId + "\"]";
+      browser
+        .url(browser.launch_url + "/apps")
+        .waitForElementVisible(appSelector("6r8gt8ct5e774489grqvzz7dc4fzntpxjrusdwcy329ppnkt3kuh"), short_wait)
+        .click(appSelector("6r8gt8ct5e774489grqvzz7dc4fzntpxjrusdwcy329ppnkt3kuh"))
+        .waitForElementVisible(actionSelector, short_wait)
+        .click(actionSelector)
+        .waitForElementVisible("#grainTitle", medium_wait)
+        .assert.containsText("#grainTitle", "Untitled Sandstorm Test App instance")
+        .grainFrame()
+        .waitForElementPresent("#do-powerbox-request", medium_wait)
+        .click("#do-powerbox-request")
+        .frameParent()
+        .waitForElementVisible(cardSelector, medium_wait)
+        .click(cardSelector)
+        .waitForElementVisible(".powerbox-iframe-mount iframe", short_wait)
+        .frame("powerbox-grain-frame-" + grainId)
+        .waitForElementVisible("#cap-text", medium_wait)
+        .setValue("#cap-text", "foo bar baz")
+        .click("#do-fulfill")
+        .frameParent()
+        .grainFrame()
+        .waitForElementVisible("#result-text", short_wait)
+        .assert.containsText("#result-text", "foo bar baz");
+    });
+};
+
+module.exports["Test Powerbox query"] = function (browser) {
+  browser
+    .init()
+    .loginDevAccount()
+
+    // Install another app that we can match against. This can be any app other than
+    // test-app.spk -- I'm only using the old test app here because it's probably already
+    // downloaded.
+    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
+                "f855d3c96e18e785a3a734a49919ef18",
+                "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
+    .url(function (otherGrainUrl) {
+      var otherGrainId = otherGrainUrl.value.split("/").pop();
+
+      browser
+        .uploadTestApp()
+        .url(function (grainUrl) {
+          var grainId = grainUrl.value.split("/").pop();
+
+          function tryQuery(buttonId, expectedMatches) {
+            browser
+                .grainFrame(grainId)
+                .waitForElementPresent(buttonId, medium_wait)
+                .click(buttonId)
+                .frameParent()
+                .waitForElementVisible(".popup ul.candidate-cards", short_wait);
+
+            for (var id in expectedMatches) {
+              var cardSelector = ".powerbox-card button[data-card-id=\"grain-" + id + "\"]";
+              if (expectedMatches[id]) {
+                browser.assert.elementPresent(cardSelector);
+              } else {
+                browser.assert.elementNotPresent(cardSelector);
+              }
+            }
+          }
+
+          tryQuery("#do-powerbox-request", {[grainId]: true, [otherGrainId]: false});
+          tryQuery("#do-powerbox-request-no-match", {[grainId]: false, [otherGrainId]: false});
+          tryQuery("#do-powerbox-request-wildcard", {[grainId]: true, [otherGrainId]: false});
+
+          // multi-descriptor adds a UiView descriptor into the mix, so our grain of another app
+          // will be returned.
+          tryQuery("#do-powerbox-request-multi-descriptor", {[grainId]: true, [otherGrainId]: true});
+        });
+    });
 };

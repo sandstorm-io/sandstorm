@@ -72,8 +72,11 @@
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
         <ul class="current">
+	  {% set navlevel = 1 %}
           {% for nav_item in nav %}
-            <li>{% include "toc.html" %}<li>
+            <li class="toctree-l{{ navlevel }}{% if nav_item.active and not nav_item.children %} current{%endif%}">
+		{% include 'nav.html' %}
+	    </li>
           {% endfor %}
         </ul>
       </div>
@@ -104,6 +107,8 @@
           </div>
 	  {%- block footer %}
           {% include "footer.html" %}
+          <div id="get-help">Need help?<a href="https://groups.google.com/forum/#!forum/sandstorm-dev" class="btn btn-neutral">Sandstorm-dev Group</a> <a href="https://kiwiirc.com/client/irc.freenode.net/?channel=#sandstorm" class="btn btn-neutral">IRC</a>
+          </div>
 	  {% endblock %}
         </div>
       </div>

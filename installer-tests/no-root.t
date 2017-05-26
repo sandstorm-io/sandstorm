@@ -4,7 +4,7 @@ Precondition: sandstorm_not_installed
 Vagrant-Postcondition-bash: ! -d $HOME/sandstorm
 Vagrant-Postcondition-bash: ! -d /opt/sandstorm
 
-$[run]CURL_USER_AGENT=testing /vagrant/install.sh
+$[run]CURL_USER_AGENT=testing REPORT=no /vagrant/install.sh
 $[slow]Sandstorm makes it easy to run web apps on your own server. You can have:
 
 1. A typical install, to use Sandstorm (press enter to accept this default)

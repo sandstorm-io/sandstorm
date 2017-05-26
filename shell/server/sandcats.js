@@ -16,15 +16,25 @@
 
 Sandcats = {};
 
+import { pki, asn1 } from "node-forge";
 const querystring = Npm.require("querystring");
 const https = Npm.require("https");
 const fs = Npm.require("fs");
 const dgram = Npm.require("dgram");
 const Url = Npm.require("url");
 
+import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
+
 const SANDCATS_HOSTNAME = (Meteor.settings && Meteor.settings.public &&
-                         Meteor.settings.public.sandcatsHostname);
+                           Meteor.settings.public.sandcatsHostname);
 const SANDCATS_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandcats";
+
+// Figure out what IP address to send Sandcats requests from. For machines with multiple IPs, it
+// is important to use the IP to which we're binding. However, some people set BIND_IP to 127.0.0.1
+// and put sniproxy in front of Sandstorm. In those cases, it won't work to send from BIND_IP;
+// we'll have to let the system choose.
+const BIND_IP = process.env.BIND_IP && process.env.BIND_IP.startsWith("127.")
+    ? null : process.env.BIND_IP;
 
 const ROOT_URL = Url.parse(process.env.ROOT_URL);
 const HOSTNAME = ROOT_URL.hostname;
@@ -60,15 +70,27 @@ const pingUdp = () => {
     }
   });
 
-  socket.send(message, 0, message.length, 8080, SANDCATS_HOSTNAME, (err) => {
-    if (err) {
-      console.error("Couldn't send UDP sandcats ping", err);
-    }
+  socket.on("error", (err) => {
+    throw err;
   });
 
-  Meteor.setTimeout(() => {
-    socket.close();
-  }, 10 * 1000);
+  const callback = () => {
+    socket.send(message, 0, message.length, 8080, SANDCATS_HOSTNAME, (err) => {
+      if (err) {
+        console.error("Couldn't send UDP sandcats ping", err);
+      }
+    });
+
+    setTimeout(() => {
+      socket.close();
+    }, 10 * 1000);
+  };
+
+  if (BIND_IP) {
+    socket.bind({ address: BIND_IP }, callback);
+  } else {
+    callback();
+  }
 };
 
 const performSandcatsRequest = (path, hostname, postData, errorCallback, responseCallback) => {
@@ -84,6 +106,10 @@ const performSandcatsRequest = (path, hostname, postData, errorCallback, respons
       "Content-Type": "application/x-www-form-urlencoded",
     },
   };
+
+  if (BIND_IP) {
+    options.localAddress = BIND_IP;
+  }
 
   if (postData.certificateSigningRequest) {
     console.log("Submitting certificate request for host",
@@ -111,33 +137,35 @@ const performSandcatsRequest = (path, hostname, postData, errorCallback, respons
 };
 
 const generateKeyAndCsr = (commonName) => {
-  // This function relies on the this.forge object created by the
-  // meteor-node-forge package.
   check(commonName, String);
 
   // Generate key pair. Using Meteor.wrapAsync because forge supports
   // a synchronous as well as an asynchronous API, and the synchronous
   // one blocks for a while.
-  const wrappedGenerateKeyPair = Meteor.wrapAsync(this.forge.pki.rsa.generateKeyPair);
+  const wrappedGenerateKeyPair = Meteor.wrapAsync(pki.rsa.generateKeyPair);
 
   // I could pick an `e`[xponent] value for the resulting RSA key, but
   // I will refrain.
   const keys = wrappedGenerateKeyPair({ bits: 2048 });
 
   // Create a certificate request (CSR).
-  const csr = this.forge.pki.createCertificationRequest();
+  const csr = pki.createCertificationRequest();
   csr.publicKey = keys.publicKey;
   csr.setSubject([
     {
       name: "commonName",
       value: commonName,
+      valueTagClass: asn1.Type.UTF8,
+      // We specify UTF8 to encode a UTF8String (rather than the default of PRINTABLESTRING) in the
+      // commonName so that GlobalSign does not report a warning, and also because that happens to
+      // be what openssl(1) does when asked to create a CSR.
     },
   ]);
   csr.sign(keys.privateKey);
   console.log("generateKeyAndCsr created new key & certificate request for", commonName);
   return {
-    privateKeyAsPem: this.forge.pki.privateKeyToPem(keys.privateKey),
-    csrAsPem: this.forge.pki.certificationRequestToPem(csr),
+    privateKeyAsPem: pki.privateKeyToPem(keys.privateKey),
+    csrAsPem: pki.certificationRequestToPem(csr),
   };
 };
 

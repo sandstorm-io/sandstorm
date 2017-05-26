@@ -1,91 +1,88 @@
 .grain-list {
   overflow: auto;
-  padding: 0px 32px;
+  padding: 32px;
   @media #{$mobile} {
     padding: 0px 8px;
   }
   background-color: $grainlist-background-color;
   color: $grainlist-foreground-color;
-  >.non-usage-info {
-    float: left;
-    @media #{$mobile} {
-      float: none;
-    }
-    >h1 {
-      font-size: 24pt;
-      font-weight: 400;
-      @media #{$mobile} {
-        display: inline-block;
-        vertical-align: middle;
-      }
-    }
-    >.search-row {
-      display: inline-block;
-      vertical-align: top;
-      margin-bottom: 36px;
-      @media #{$mobile} {
-        margin-bottom: 0;
-        display: inline-block;
-        vertical-align: middle;
-        width: calc(100% - 100px);
-      }
-      >label {
-        >span.search-icon {
-          @extend %pseudo-img-tag;
-          background-image: url("/search.svg");
-          background-size: 24px 24px;
-          background-position: center;
-          display: inline-block;
-          width: 32px;
-          height: 32px;
-          vertical-align: top;
-        }
-        >input.search-bar {
-          font-size: 16pt;
-          height: 32px;
-          background-color: $grainlist-searchbar-background-color;
-          border: 1px solid $grainlist-searchbar-outline-color;
-          &:focus {
-            border: 1px solid $grainlist-searchbar-outline-color-focus;
-          }
-          @media #{$mobile} {
-            width: calc(100% - 36px);
-          }
-        }
-      }
-    }
-  }
-  >.buttons {
-    float: right;
-    >button {
-      @extend %button-base;
-      @extend %button-secondary;
-      display: inline-block;
-      float: right;
-      font-size: 14pt;
-      line-height: 16pt;
-      height: 32px;
-      margin-top: 80px;
-    }
-  }
-  >.usage-info {
-    float: right;
+
+  .question-mark {
+    @extend %button-base;
+    @extend %button-secondary;
+    border: none;
+    background-color: inherit;
+    background-image: url("/question-a9a9a9.svg");
+    background-size: 24px 24px;
+    background-position: center;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
     vertical-align: top;
-    margin: 4px;
-    margin-top: 80px;
+  }
+  .question-mark:hover {
+    background-image: url("/question-727272.svg");
+    background-color: inherit;
+  }
+
+  >h1 {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+
+    margin-top: 0px;
+    padding-top: 0px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid $default-rule-color;
+    margin-bottom: 12px;
+
+    font-size: 24pt;
+    font-weight: 400;
+  }
+
+  >.maybe-row {
+    margin-bottom: 12px;
+    @media #{$desktop} {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    @media #{$mobile} {
+      display: block;
+    }
+  }
+
+  .search-row {
+    @extend %search-row;
+
+    flex: 1 1 auto;
+    vertical-align: top;
+    clear: both;
+
+    @media #{$mobile} {
+      display: block;
+      margin-bottom: 12px;
+    }
+  }
+
+  >.trash-explanation {
+    @extend %trash-explanation;
+  }
+
+  .usage-info {
+    margin-left: 4px;
     padding: 8px;
     border-radius: 4px;
     background-color: white;
     >p { margin: 0; }
-    @media #{$mobile} {
-      float: none;
-      margin-top: 8px;
-    }
   }
 
   >table {
     @extend %grain-table;
   }
+
   >.no-grains {
     width: 100%;
     background-color: white;
@@ -95,6 +92,34 @@
       margin-left: auto;
       margin-right: auto;
     }
+  }
+}
+
+%trash-explanation {
+  width: 100%;
+  font-size: 10pt;
+
+  button.empty-trash {
+    @include unstyled-button();
+    color: $sandstorm-purple-color;
+    font-weight: bold;
+  }
+}
+
+%bulk-action-buttons {
+  float: left;
+  clear: left;
+  >button {
+    @extend %button-base;
+    @extend %button-secondary;
+    display: inline-block;
+    float: left;
+    font-size: 14pt;
+    line-height: 16pt;
+    height: 32px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    margin-right: 10px;
   }
 }
 
@@ -111,12 +136,20 @@
     border-bottom: 1px solid #aaa;
     >td {
       border: 1px solid white;
-      /* interactivity disabled until we can sort by different column
-      cursor:pointer;
-      &:hover {
+      &.grain-name:hover, &.grain-size:hover, &.last-used:hover {
         background-color: $grainlist-table-header-background-color-hover;
+        cursor: pointer;
       }
-      */
+      &.grain-size {
+        width: 70px;
+        // The mobile viewport is too small to display this much text
+        @media #{$mobile} {
+          display: none;
+        }
+      }
+      &.last-used {
+        width: 110px;
+      }
       &.shared-or-owned {
         width: 110px;
         // The mobile viewport is too small to display this much text
@@ -128,6 +161,9 @@
         width: 64px;
         padding-left: 16px;
       }
+      &.select-all-grains {
+        width: 20px;
+      }
     }
   }
   >tbody>tr {
@@ -138,8 +174,13 @@
     border-bottom: 1px solid $grainlist-table-row-outline-color;
     border-left: 1px solid #fff;
     border-right: 1px solid #fff;
+
+    &.unread {
+      background-color: $grainlist-table-row-background-color-unread;
+    }
+
     >td {
-      cursor: pointer;
+      position: relative;
       &.td-app-icon {
         >.app-icon {
           @extend %pseudo-img-tag;
@@ -148,9 +189,28 @@
         }
         width: 64px;
         padding-left: 16px;
+        &.in-trash {
+          padding-left: 30px;
+
+          @extend .icon-trash;
+          &::before {
+            position: absolute;
+            left: 4px;
+            top: 4px;
+            font-size: 20px;
+            @extend .icon;
+          }
+        }
+      }
+      &.grain-size {
+        width: 70px;
+        // The mobile viewport is too small to display this much text
+        @media #{$mobile} {
+          display: none;
+        }
       }
       &.last-used {
-        width: 100px;
+        width: 110px;
       }
       &.shared-or-owned {
         width: 110px;
@@ -183,13 +243,15 @@
         }
       }
       button {
+        @include unstyled-button();
         color: black;
         font-weight: bold;
-        @extend %unstyled-button;
       }
     }
     &.grain {
-      cursor: pointer;
+      .click-to-go {
+        cursor: pointer;
+      }
       &:hover {
         background-color: $grainlist-table-row-background-color-hover;
       }

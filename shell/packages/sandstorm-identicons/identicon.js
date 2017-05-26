@@ -1,91 +1,101 @@
 /**
+ * Based on:
  * Identicon.js v1.0
  * http://github.com/stewartlord/identicon.js
- *
- * Requires PNGLib
- * http://www.xarg.org/download/pnglib.js
  *
  * Copyright 2013, Stewart Lord
  * Released under the BSD license
  * http://www.opensource.org/licenses/bsd-license.php
  */
 
-// (Trivially modified for Meteor context by Kenton Varda.)
-// jscs:disable
+// Trivially modified for Meteor context by Kenton Varda.
+// Later modified to produce an SVG rather than a PNG.
 
-Identicon = function(hash, size, margin){
+Identicon = class Identicon {
+  constructor(hash, size, margin) {
     this.hash   = hash;
     this.size   = size   || 64;
     this.margin = margin || .08;
-}
+  }
 
-Identicon.prototype = {
-    hash:   null,
-    size:   null,
-    margin: null,
+  render() {
+    const hash    = this.hash;
+    const size    = this.size;
+    const margin  = size * this.margin;
+    const cell    = (size - (margin * 2)) / 5;
 
-    render: function(){
-        var hash    = this.hash,
-            size    = this.size,
-            margin  = Math.floor(size * this.margin),
-            cell    = Math.floor((size - (margin * 2)) / 5),
-            image   = new PNGlib(size, size, 256);
+    const rects = [];
 
-        // light-grey background
-        var bg      = image.color(240, 240, 240);
+    // foreground is last 7 chars as hue at 50% saturation, 70% brightness
+    const rgb     = this.hsl2rgb(parseInt(hash.substr(-7), 16) / 0xfffffff, .5, .7);
+    const fg = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
 
-        // foreground is last 7 chars as hue at 50% saturation, 70% brightness
-        var rgb     = this.hsl2rgb(parseInt(hash.substr(-7), 16) / 0xfffffff, .5, .7),
-            fg      = image.color(rgb[0] * 255, rgb[1] * 255, rgb[2] * 255);
-
-        // the first 15 characters of the hash control the pixels (even/odd)
-        // they are drawn down the middle first, then mirrored outwards
-        var i, color;
-        for (i = 0; i < 15; i++) {
-            color = parseInt(hash.charAt(i), 16) % 2 ? bg : fg;
-            if (i < 5) {
-                this.rectangle(2 * cell + margin, i * cell + margin, cell, cell, color, image);
-            } else if (i < 10) {
-                this.rectangle(1 * cell + margin, (i - 5) * cell + margin, cell, cell, color, image);
-                this.rectangle(3 * cell + margin, (i - 5) * cell + margin, cell, cell, color, image);
-            } else if (i < 15) {
-                this.rectangle(0 * cell + margin, (i - 10) * cell + margin, cell, cell, color, image);
-                this.rectangle(4 * cell + margin, (i - 10) * cell + margin, cell, cell, color, image);
-            }
+    // the first 15 characters of the hash control the pixels (even/odd)
+    // they are drawn down the middle first, then mirrored outwards
+    for (let i = 0; i < 15; i++) {
+      if (!(parseInt(hash.charAt(i), 16) % 2)) {
+        if (i < 5) {
+          this.rectangle(2 * cell + margin, i * cell + margin, cell, cell, rects);
+        } else if (i < 10) {
+          this.rectangle(1 * cell + margin, (i - 5) * cell + margin, cell, cell, rects);
+          this.rectangle(3 * cell + margin, (i - 5) * cell + margin, cell, cell, rects);
+        } else if (i < 15) {
+          this.rectangle(0 * cell + margin, (i - 10) * cell + margin, cell, cell, rects);
+          this.rectangle(4 * cell + margin, (i - 10) * cell + margin, cell, cell, rects);
         }
-
-        return image;
-    },
-
-    rectangle: function(x, y, w, h, color, image) {
-        var i, j;
-        for (i = x; i < x + w; i++) {
-            for (j = y; j < y + h; j++) {
-                image.buffer[image.index(i, j)] = color;
-            }
-        }
-    },
-
-    // adapted from: https://gist.github.com/aemkei/1325937
-    hsl2rgb: function(h, s, b){
-        h *= 6;
-        s = [
-            b += s *= b < .5 ? b : 1 - b,
-            b - h % 1 * s * 2,
-            b -= s *= 2,
-            b,
-            b + h % 1 * s,
-            b + s
-        ];
-
-        return[
-            s[ ~~h    % 6 ],  // red
-            s[ (h|16) % 6 ],  // green
-            s[ (h|8)  % 6 ]   // blue
-        ];
-    },
-
-    toString: function(){
-        return this.render().getBase64();
+      }
     }
+
+    // We specify a non-zero stroke width to ensure that adjacent cells connect.
+    const strokeWidth = size * 0.005;
+    return `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">
+            <rect style="fill:rgb(240,240,240)" x="0" y="0" width="${size}" height="${size}"/>
+            <g style="fill:${fg};stroke-width:${strokeWidth};stroke:${fg};">
+            ${rects.join("\n")}</g> </svg>`;
+  }
+
+  rectangle(x, y, w, h, rectangles) {
+    rectangles.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}"/>`);
+  }
+
+  // adapted from: https://gist.github.com/aemkei/1325937
+  hsl2rgb(h, s, b) {
+    h *= 6;
+    s = [
+      b += s *= b < .5 ? b : 1 - b,
+      b - h % 1 * s * 2,
+      b -= s *= 2,
+      b,
+      b + h % 1 * s,
+      b + s,
+    ];
+
+    return [
+      Math.floor(s[~~h    % 6] * 256),  // red
+      Math.floor(s[(h | 16) % 6] * 256),  // green
+      Math.floor(s[(h | 8)  % 6] * 256),  // blue
+    ];
+  }
+
+  toString() {
+    return this.render();
+  }
+};
+
+if (Meteor.isServer) {
+  // Because identicons are so simple, we can save a lot of bandwidth by applying compression
+  // before sending them from the server to the client. The PNG format has built-in support for
+  // lossless compression, but indenticon.js does not take advantage of it. We could work around
+  // that fact by roundtripping the PNGs through a more complete library like pngjs, or we could
+  // just apply gzip on top of the suboptimal PNG. We opt for the latter approach.
+  const Zlib = Npm.require("zlib");
+  const gzipSync = Meteor.wrapAsync(Zlib.gzip, Zlib);
+
+  Identicon.prototype.asAsset = function () {
+    return {
+      mimeType: "image/svg+xml",
+      content: gzipSync(new Buffer(this.render())),
+      encoding: "gzip",
+    };
+  };
 }

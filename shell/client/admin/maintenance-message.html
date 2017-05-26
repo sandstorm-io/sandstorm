@@ -1,5 +1,10 @@
 <template name="newAdminMaintenance">
-  <h1>Maintenance message</h1>
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>Maintenance message</li>
+    </ul>
+  </h1>
 
   <p>
     You can set a maintenance message which will be shown to all users in the menu bar, on the top right.
@@ -8,14 +13,14 @@
   </p>
 
   <p>
-    You may use the following variables in the "Message Text" field, which will be automatically
+    You may use the following variables in the "Message text" field, which will be automatically
     substituted with useful values:
   </p>
 
   <ul>
-    <li><code>$TIME</code> : The time component of "Maintenance Time", converted to the user's local time (eg. "1:15:45 PM")</li>
-    <li><code>$DATE</code> : The date component of "Maintenance Time", converted to the user's local time (eg. "6/19/2015")</li>
-    <li><code>$IN_COUNTDOWN</code> : An active countdown until "Maintenance Time" (eg. "in 3 days" or "in 1 minute"). Displays "any moment" at the time specified in "Maintenance Time" and then disappears after an hour.</li>
+    <li><code>$TIME</code> : The time component of "Maintenance time", converted to the user's local time (eg. "1:15:45 PM")</li>
+    <li><code>$DATE</code> : The date component of "Maintenance time", converted to the user's local time (eg. "6/19/2015")</li>
+    <li><code>$IN_COUNTDOWN</code> : An active countdown until "Maintenance time" (eg. "in 3 days" or "in 1 minute"). Displays "any moment" at the time specified in "Maintenance time" and then disappears after an hour.</li>
   </ul>
 
   {{#if hasSuccess}}
@@ -32,7 +37,7 @@
   <form class="maintenance-message-form">
     <div class="form-group">
       <label>
-        Message Text:
+        Message text:
         <input type="text" name="message-text" value="{{messageText}}" />
       </label>
       <span class="form-subtext">
@@ -41,17 +46,17 @@
 
     <div class="form-group">
       <label>
-        Maintenance Time:
+        Maintenance time:
         <input type="text" name="maintenance-time" value="{{maintenanceTime}}" />
       </label>
       <span class="form-subtext">
-		The time you intend to start performing maintenance, formatted like "{{ exampleDate }}".
+        The time you intend to start performing maintenance, formatted like "{{ exampleDate }}".
       </span>
     </div>
 
     <div class="form-group">
       <label>
-        Link Url (optional):
+        Link URL (optional):
         <input type="text" name="url" value="{{linkUrl}}" />
       </label>
       <span class="form-subtext">

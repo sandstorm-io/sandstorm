@@ -1,5 +1,5 @@
 <template name="newAdminUserDetailsIdentityTableRow">
-{{!-- Expects: 
+{{!-- Expects:
          identity: Object
   isLoginIdentity: Boolean
      primaryEmail: String.  Account's primary contact address.
@@ -50,7 +50,7 @@
           <ul class="identity-emails-list">
           {{#each email in (emailsForIdentity identity primaryEmail) }}
             <li>
-              <code><a href="mailto:{{email.email}}">{{ email.email }}</a></code>
+              <a href="mailto:{{email.email}}">{{ email.email }}</a>
               {{#if email.primary}}
                 <span class="email-primary">Primary</span>
               {{/if}}
@@ -83,8 +83,68 @@
   </div>
 </template>
 
+<template name="newAdminUserDetailsIdentityMIATableRow">
+{{!-- Filler row to deal with the fact that sometimes identities are missing in
+      the database. --}}
+  <div class="admin-user-identity-body-row" role="row">
+    <div class="admin-user-identity-body-cell identity" role="gridcell">
+      <ul class="identity-information">
+        <li class="identity-picture-name">
+          <div class="identity-profile-picture">
+            Profile picture
+          </div>
+          <span class="identity-name">
+            (unknown name)
+          </span>
+        </li>
+        <li class="identity-provider">
+          <div class="identity-provider-icon" title="unknown service">
+            <span class="provider-icon">
+              (unknown service)
+            </span>
+          </div>
+          <span class="intrinsic-name">
+            (unknown name)
+          </span>
+        </li>
+        <li class="identity-handle">
+          <div class="identity-handle-decorator" role="presentation" title="Handle">
+            @
+          </div>
+          <code>(unknown handle)</code>
+        </li>
+        <li class="identity-pronouns">
+          <div class="identity-pronouns-decorator" role="presentation" title="Pronouns">
+            <span class="identity-pronouns-icon">
+              Pronouns
+            </span>
+          </div>
+          <span class="identity-pronouns-preference">
+            (unknown pronouns)
+          </span>
+        </li>
+        <li class="identity-emails">
+          <div class="identity-emails-decorator" role="presentation" title="Emails">
+            <span class="identity-emails-icon">
+              Emails
+            </span>
+          </div>
+          <ul class="identity-emails-list">
+            <li>
+              No known emails.
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="admin-user-identity-body-cell created" role="gridcell">unknown creation date</div>
+    <div class="admin-user-identity-body-cell last-active" role="gridcell">unknown activity date</div>
+    <div class="admin-user-identity-body-cell properties" role="gridcell"></div>
+  </div>
+</template>
+
 <template name="newAdminUserDetailsIdentityTable">
-{{!-- Expects: 
+{{!-- Expects:
   account: Object
 --}}
   <div class="admin-user-identity-list" role="grid">
@@ -99,25 +159,39 @@
 
     <div class="admin-user-identity-body" role="rowgroup">
       {{#each identity in (loginIdentities account) }}
-        {{> newAdminUserDetailsIdentityTableRow
-              identity=identity
-              isLoginIdentity=true
-              primaryEmail=account.primaryEmail
-              }}
+        {{#if identity}}
+          {{> newAdminUserDetailsIdentityTableRow
+                identity=identity
+                isLoginIdentity=true
+                primaryEmail=account.primaryEmail
+                }}
+        {{else}}
+          {{> newAdminUserDetailsIdentityMIATableRow "" }}
+        {{/if}}
       {{/each}}
-      {{#each identity in (nonLoginIdentities account) }}
-        {{> newAdminUserDetailsIdentityTableRow
-              identity=identity
-              isLoginIdentity=false
-              primaryEmail=account.primaryEmail
-              }}
+      {{#each identity in (nonloginIdentities account) }}
+        {{#if identity}}
+          {{> newAdminUserDetailsIdentityTableRow
+                identity=identity
+                isLoginIdentity=false
+                primaryEmail=account.primaryEmail
+                }}
+        {{else}}
+          {{> newAdminUserDetailsIdentityMIATableRow "" }}
+        {{/if}}
       {{/each}}
     </div>
   </div>
 </template>
 
 <template name="newAdminUserDetails">
-  <h1>{{#linkTo route="newAdminUsers"}}Users{{/linkTo}} / {{ guessUserName }}</h1>
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>{{#linkTo route="newAdminUsers"}}Users{{/linkTo}}</li>
+      <li>{{ guessUserName }}</li>
+    </ul>
+  </h1>
 
   {{#if ready}}
     {{#with account=targetAccount}}
@@ -135,59 +209,75 @@
     {{/if}}
 
 
-    <h2 class="user-details-account-role">
-      <span class="account-info">
-        <span class="account-name">
-          {{ guessUserName }}
-        </span>
-        {{#if account.isAdmin}}
-        <span class="user-class-admin">Admin</span>
-        {{else}}
-          {{#if isSignedUpOrDemo account}}
-          <span class="user-class-user">User</span>
-          {{else}}
-          <span class="user-class-visitor">Visitor</span>
-          {{/if}}
-        {{/if}}
-      </span>
-      <form class="admin-user-roles-form">
-        {{#unless (isAdmin account) }}
-        <button class="make-admin" type="button" disabled="{{ isSubmitting }}">Promote to admin</button>
-        {{/unless}}
-
-        {{#if (canBeMadeUser account) }}
-        <button class="make-user" type="button" disabled="{{ isSubmitting }}">
-          {{#if (isAdmin account)}}
-            Demote to user
-          {{else}}
-            Promote to user
-          {{/if}}
-        </button>
-        {{/if}}
-
-        {{#if (canBeMadeVisitor account) }}
-        <button class="make-visitor" type="button" disabled="{{ isSubmitting }}">Demote to visitor</button>
-        {{/if}}
-      </form>
+    <h2>
+      Role
     </h2>
 
     <ul class="role-explanations">
-      <li>
-        <span class="role">Admin: </span>
+      <li class="role-explanation {{#if account.isAdmin}}current-role{{/if}}">
+        <span class="role">
+          <span class="user-class-label admin">
+            Admin
+          </span>
+        </span>
         <span class="explanation">
           Manages all accounts.  Can install apps, create grains, and administer the server.
         </span>
+        <span class="status-or-actions">
+          {{#if (isAdmin account)}}
+            <span class="current-role-label">Current role</span>
+          {{/if}}
+          {{#unless (isAdmin account) }}
+            <form class="admin-user-roles-form">
+              <button class="make-admin" type="button" disabled="{{ isSubmitting }}">Promote to admin</button>
+            </form>
+          {{/unless}}
+        </span>
       </li>
-      <li>
-        <span class="role">User: </span>
+      <li class="role-explanation {{#if (isPreciselyUser account)}}current-role{{/if}}">
+        <span class="role">
+          <span class="user-class-label user">
+            User
+          </span>
+        </span>
         <span class="explanation">
           Can install apps and create grains.
         </span>
+        <span class="status-or-actions">
+          {{#if (isPreciselyUser account)}}
+            <span class="current-role-label">Current role</span>
+          {{/if}}
+          {{#if (canBeMadeUser account) }}
+            <form class="admin-user-roles-form">
+              <button class="make-user" type="button" disabled="{{ isSubmitting }}">
+                {{#if (isAdmin account)}}
+                  Demote to user
+                {{else}}
+                  Promote to user
+                {{/if}}
+              </button>
+            </form>
+          {{/if}}
+        </span>
       </li>
-      <li>
-        <span class="role">Visitor: </span>
+      <li class="role-explanation {{#if (isPreciselyVisitor account)}}current-role{{/if}}">
+        <span class="role">
+          <span class="user-class-label visitor">
+            Visitor
+          </span>
+        </span>
         <span class="explanation">
-          Can visit and re-share shared grains, but cannot create grains of their own nor install apps.
+          Can use and re-share shared grains, but cannot create grains of their own nor install apps.
+        </span>
+        <span class="status-or-actions">
+          {{#if (isPreciselyVisitor account)}}
+            <span class="current-role-label">Current role</span>
+          {{/if}}
+          <form class="admin-user-roles-form">
+            {{#if (canBeMadeVisitor account) }}
+              <button class="make-visitor" type="button" disabled="{{ isSubmitting }}">Demote to visitor</button>
+            {{/if}}
+          </form>
         </span>
       </li>
     </ul>
@@ -195,26 +285,80 @@
     <h2>Identities</h2>
     {{> newAdminUserDetailsIdentityTable account=account }}
 
-    {{!--
-    {{#each identity in identities}}
-    <ul>
-      <li>service: {{identity.profile.service}}</li>
-      <li>name: {{identity.profile.name}}</li>
-      <li>intrinsicName: {{identity.profile.name}}</li>
-      <li>pronoun: {{identity.profile.pronoun}}</li>
-      <li>handle: {{identity.profile.handle}}</li>
-      <li>emails:
-        <ul>
-        {{#each email in (emailsForIdentity identity)}}
-        <li>email: {{email.email}} {{#if email.primary}}primary{{/if}} {{#unless email.verified}}unverified{{/unless}}</li>
+    <h2>Status</h2>
+
+    <div style="display: flex; flex-direction: row;">
+      {{#if accountDeleting}}
+        Suspended - Pending deletion {{accountDeleting}}
+      {{else}}{{#if accountSuspended}}
+        Suspended
+      {{else}}
+        Active
+      {{/if}}{{/if}}
+    </div>
+    <form class="standard-form">
+      <div class="button-row">
+        {{#if accountSuspended}}
+        <button type="button" name="unsuspend-account">Unsuspend account</button>
         {{else}}
-          <li>no email address on file for identity</li>
-        {{/each}}
+        <button type="button" name="suspend-account">Suspend account</button>
+        <button type="button" name="delete-account">Delete account</button>
+        {{/if}}
+      </div>
+    </form>
+
+    {{#if showDeletePopup}}
+      {{#modalDialogWithBackdrop onDismiss=cancelDelete class="admin-user-confirm-delete"}}
+        {{#if deleteError}}
+          {{#focusingErrorBox}}
+            {{deleteError}}
+          {{/focusingErrorBox}}
+        {{/if}}
+
+        <h2>Delete {{guessUserName}}</h2>
+        <p>You are about to mark {{guessUserName}}'s account for deletion. Once marked for deletion, this account will be suspended, and admins will have 7 days to cancel the pending deletion by returning to this page and clicking the "Unsuspend Account" button. {{guessUserName}} will <strong>not</strong> be able to stop this suspension/deletion.</p>
+        <p>After 7 days, {{guessUserName}}'s account will be permanently deleted. Deleting this account will:</p>
+        <ul>
+          <li>Permanently delete any grains {{guessUserName}} created</li>
+          <li>Revoke all sharing links {{guessUserName}} created</li>
+          <li>Remove {{guessUserName}} from all users' contact lists</li>
+          <li>Delete all identities owned by this account (except identities also associated with another account).</li>
         </ul>
-      </li>
-    </ul>
-    {{/each}}
-    --}}
+        <form class="standard-form">
+          <div class="button-row">
+            <button class="danger" type="button"
+             disabled={{disableDelete}} name="delete-account-real">Delete account</button>
+            <button type="button" name="cancel-delete-account">Cancel</button>
+          </div>
+        </form>
+      {{/modalDialogWithBackdrop}}
+    {{/if}}
+
+    {{#if showSuspendPopup}}
+      {{#modalDialogWithBackdrop onDismiss=cancelSuspend}}
+        {{#if suspendError}}
+          {{#focusingErrorBox}}
+            {{suspendError}}
+          {{/focusingErrorBox}}
+        {{/if}}
+
+        <h2>Suspend {{guessUserName}}</h2>
+        <p>Suspending this user account will:</p>
+        <ul>
+          <li>Prevent any grains created by {{guessUserName}} from being opened</li>
+          <li>Disable any sharing links created by {{guessUserName}}</li>
+          <li>This also applies to all identities owned by this account (except identities
+              associated with another account)</li>
+        </ul>
+        <form class="standard-form">
+          <div class="button-row">
+            <button class="danger" type="button"
+             disabled={{suspendSubmitting}} name="suspend-account-real">Suspend account</button>
+            <button type="button" name="cancel-suspend-account">Cancel</button>
+          </div>
+        </form>
+      {{/modalDialogWithBackdrop}}
+    {{/if}}
 
     {{/with}}
   {{else}}

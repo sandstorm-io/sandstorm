@@ -112,8 +112,15 @@ class Identity {
     this.db = db;
     this.id = Accounts.insertUserDoc(
       { profile: { name: name }, },
-      { services: { dev: { name: name,
-                           isAdmin: false, hasCompletedSignup: true, }, }, });
+      {
+        services: {
+          dev: {
+            name: name,
+            isAdmin: false,
+            hasCompletedSignup: true,
+          },
+        },
+      });
   }
 
   mayOpenGrain(grain) {
@@ -216,8 +223,13 @@ Tinytest.add("permissions: legacy public grain", function (test) {
 
   // anonymous
   test.isTrue(
-    SandstormPermissions.mayOpenGrain(globalDb, { grain: { _id: grain.id,
-                                                           identityId: null, }, }));
+    SandstormPermissions.mayOpenGrain(globalDb, {
+      grain: {
+        _id: grain.id,
+        identityId: null,
+      },
+    })
+  );
 
   test.equal(alice.grainPermissions(grain), [true, true, true]);
   test.equal(bob.grainPermissions(grain), [true, false, false]);
@@ -704,7 +716,6 @@ Tinytest.add("permissions: tokenValid requirements", function (test) {
   const aliceAccount = new Account(globalDb, [alice], false);
   const bob = new Identity(globalDb);
   const bobAccount = new Account(globalDb, [bob], false);
-  const carol = new Identity(globalDb);
   const aliceGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
   const bobGrain = new Grain(globalDb, bobAccount, bob, commonViewInfo);
 
@@ -751,4 +762,76 @@ Tinytest.add("permissions: tokenValid requirements", function (test) {
 
   test.isFalse(webkey2.mayOpenGrain());
   test.isFalse(!!webkey2.grainPermissions());
+});
+
+Tinytest.add("permissions: collections app basic requirements", function (test) {
+  const alice = new Identity(globalDb);
+  const aliceAccount = new Account(globalDb, [alice], false);
+  const bob = new Identity(globalDb);
+  const collectionGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+  const otherGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+
+  alice.shareToIdentity(collectionGrain, bob, { allAccess: null });
+
+  test.isTrue(bob.mayOpenGrain(collectionGrain));
+  test.isFalse(bob.mayOpenGrain(otherGrain));
+
+  const webkey = alice.shareToWebkey(otherGrain, { allAccess: null },
+                                     [
+                                       {
+                                        permissionsHeld: {
+                                          permissions: [],
+                                          identityId: alice.id,
+                                          grainId: collectionGrain.id,
+                                        },
+                                      },
+                                     ]
+                                    );
+
+  test.isTrue(bob.mayOpenGrain(collectionGrain));
+  test.isFalse(bob.mayOpenGrain(otherGrain));
+
+  webkey.shareToIdentity(bob, { allAccess: null },
+                         [
+                           {
+                            permissionsHeld: {
+                              permissions: [],
+                              identityId: bob.id,
+                              grainId: collectionGrain.id,
+                            },
+                          },
+                         ]
+                        );
+
+  test.isTrue(bob.mayOpenGrain(collectionGrain));
+  test.isTrue(bob.mayOpenGrain(otherGrain));
+});
+
+Tinytest.add("permissions: permissionsHeld with tokenId", function (test) {
+  const alice = new Identity(globalDb);
+  const aliceAccount = new Account(globalDb, [alice], false);
+  const bob = new Identity(globalDb);
+  const grain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+
+  const webkey = alice.shareToWebkey(grain, { allAccess: null });
+
+  test.isTrue(webkey.mayOpenGrain(grain));
+
+  alice.shareToIdentity(grain, bob, { allAccess: null },
+                        [
+                          {
+                            permissionsHeld: {
+                              permissions: [],
+                              tokenId: webkey.hashedToken,
+                              grainId: grain.id,
+                            },
+                          },
+                        ]
+                       );
+
+  test.isTrue(bob.mayOpenGrain(grain));
+
+  globalDb.collections.apiTokens.update(webkey.hashedToken, { $set: { revoked: true } });
+
+  test.isFalse(bob.mayOpenGrain(grain));
 });

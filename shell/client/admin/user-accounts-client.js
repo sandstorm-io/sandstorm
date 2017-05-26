@@ -13,6 +13,8 @@ const matchesUser = function (searchKey, user) {
 
   for (let i = 0; i < user.identities.length; i++) {
     const identity = user.identities[i];
+    if (!identity) continue; // Sometimes we have identity IDs but no identity object. :(
+
     if (identity._id.indexOf(searchKey) !== -1) return true;
 
     if (identity.profile.intrinsicName.toLowerCase().indexOf(searchKey) !== -1) return true;
@@ -66,6 +68,84 @@ Template.newAdminUserTableRow.events({
   },
 });
 
+Template.newAdminUserTable.onCreated(function () {
+  this.sortOrder = new ReactiveVar({
+    key: "createdAt",
+    order: "ascending",
+  });
+});
+
+Template.newAdminUserTable.helpers({
+  sortOrder() {
+    return Template.instance().sortOrder.get();
+  },
+
+  equal(a, b) {
+    return a === b;
+  },
+
+  sortUsers(users) {
+    const instance = Template.instance();
+    const sortOrder = instance.sortOrder.get();
+
+    const multiplier = sortOrder.order === "ascending" ? 1 : -1;
+    if (sortOrder.key === "createdAt") {
+      return _.sortBy(users, (user) => {
+        return multiplier * (user.account.createdAt);
+      });
+    } else if (sortOrder.key === "lastActive") {
+      return _.sortBy(users, (user) => {
+        // If the account has a lastActive time, use that.
+        if (user.account.lastActive) return multiplier * user.account.lastActive;
+        // If not, check any of the identities for a lastActive time.
+        for (let i = 0; i < user.identities.length; i++) {
+          const identity = user.identities[i];
+          if (identity.lastActive) return multiplier * identity.lastActive;
+        }
+
+        return 0;
+      });
+    }
+
+    // If we don't know about the requested sort order, just return the original set as-is.
+    return users;
+  },
+});
+
+Template.newAdminUserTable.events({
+  "click .header-row .created"(evt) {
+    const instance = Template.instance();
+    const currentSortOrder = instance.sortOrder.get();
+
+    const newSortOrder = {
+      key: "createdAt",
+      order: "ascending",
+    };
+
+    if (currentSortOrder.key === "createdAt" && currentSortOrder.order === "ascending") {
+      newSortOrder.order = "decending";
+    }
+
+    instance.sortOrder.set(newSortOrder);
+  },
+
+  "click .header-row .last-active"(evt) {
+    const instance = Template.instance();
+    const currentSortOrder = instance.sortOrder.get();
+
+    const newSortOrder = {
+      key: "lastActive",
+      order: "descending",
+    };
+
+    if (currentSortOrder.key === "lastActive" && currentSortOrder.order === "descending") {
+      newSortOrder.order = "ascending";
+    }
+
+    instance.sortOrder.set(newSortOrder);
+  },
+});
+
 Template.newAdminUsers.onCreated(function () {
   this.usersSub = this.subscribe("allUsers", undefined);
   this.searchString = new ReactiveVar("");
@@ -92,12 +172,9 @@ Template.newAdminUsers.onCreated(function () {
 
   this.allUsers = () => {
     if (!this.usersSub.ready()) return [];
+
     const accounts = Meteor.users.find({
       loginIdentities: { $exists: 1 },
-    }, {
-      $sort: {
-        createdAt: 1,
-      },
     });
 
     const users = accounts.map((account) => {
@@ -105,11 +182,17 @@ Template.newAdminUsers.onCreated(function () {
       // Identity IDs are given in creation order.
       const identities = identityIds.map((identityId) => {
         const identity = Meteor.users.findOne({ _id: identityId });
-        SandstormDb.fillInProfileDefaults(identity);
-        SandstormDb.fillInIntrinsicName(identity);
+        if (identity) {
+          // For some reason, various servers (including alpha) appear to have accounts that
+          // reference identities which do not exist in the database.
+          SandstormDb.fillInProfileDefaults(identity);
+          SandstormDb.fillInIntrinsicName(identity);
+        }
+
         return identity;
       });
       return {
+        _id: account._id,
         account,
         identities,
       };

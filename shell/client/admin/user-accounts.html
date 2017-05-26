@@ -17,6 +17,7 @@
     <div class="identities" role="gridcell">
       <ul class="identity-list">
         {{#each identity in user.identities}}
+          {{#if identity}}
           <li class="identity">
             <div class="identity-provider-icon">
               <span class="provider-icon {{identity.profile.service}}">{{identity.profile.service}}</span>
@@ -24,6 +25,15 @@
             <div class="identity-name">{{ identity.profile.name }}</div>
             <div class="identity-intrinsic-name">{{ identity.profile.intrinsicName }}</div>
           </li>
+          {{else}}
+          <li class="identity">
+            <div class="identity-provider-icon">
+              <span class="provider-icon">Unknown identity</span>
+            </div>
+            <div class="identity-name">unknown name</div>
+            <div class="identity-intrinsic-name">unknown identifier</div>
+          </li>
+          {{/if}}
         {{/each}}
       </ul>
     </div>
@@ -48,11 +58,31 @@
   <div class="admin-user-table" role="grid">
     <div role="rowgroup">
       <div class="header-row" role="row">
+        {{#with sortOrder=sortOrder}}
         <div class="account-role" role="columnheader"></div>
         <div class="identities" role="columnheader">Account</div>
-        <div class="created" role="columnheader">Created</div>
-        <div class="last-active" role="columnheader">Last Active</div>
+        <div class="created" role="columnheader">
+          Created
+          {{#if equal sortOrder.key "createdAt"}}
+            {{#if equal sortOrder.order "ascending"}}
+              ▾
+            {{else}}
+              ▴
+            {{/if}}
+          {{/if}}
+        </div>
+        <div class="last-active" role="columnheader">
+          Last Active
+          {{#if equal sortOrder.key "lastActive"}}
+            {{#if equal sortOrder.order "ascending"}}
+              ▾
+            {{else}}
+              ▴
+            {{/if}}
+          {{/if}}
+        </div>
         <div class="actions" role="columnheader">Actions</div>
+        {{/with}}
       </div>
     </div>
 
@@ -66,7 +96,7 @@
 
     {{!-- for each account, look up the identities --}}
     {{#if ready}}
-      {{#each user in users }}
+      {{#each user in sortUsers users }}
         {{> newAdminUserTableRow user=user}}
       {{else}}
         <div class="no-match-row" role="row">
@@ -86,26 +116,35 @@
 
 
 <template name="newAdminUsers">
-  <h1>Users</h1>
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>Users</li>
+    </ul>
+  </h1>
 
   {{#with users=allUsers ready=userSubReady}}
   <div class="admin-user-filters">
     <span class="search-icon"></span>
     <input class="search-bar" name="search-bar" placeholder="search" />
     <div class="filter-user-classes">
-      Show:
-      <label>
-        <input type="checkbox" name="show-admins" checked="{{showAdmins}}">
-        <span class="user-class-admin">Admin</span> {{#if ready}}({{adminCount users}}){{/if}}
-      </label>
-      <label>
-        <input type="checkbox" name="show-users" checked="{{showUsers}}">
-        <span class="user-class-user">User</span> {{#if ready}}({{userCount users}}){{/if}}
-      </label>
-      <label>
-        <input type="checkbox" name="show-visitors" checked="{{showVisitors}}">
-        <span class="user-class-visitor">Visitor</span> {{#if ready}}({{visitorCount users}}){{/if}}
-      </label>
+      <div class="show-label">
+        Show:
+      </div>
+      <div class="filter-boxes">
+        <label>
+          <input type="checkbox" name="show-admins" checked="{{showAdmins}}">
+          <span class="user-class-admin">Admin</span> {{#if ready}}({{adminCount users}}){{/if}}
+        </label>
+        <label>
+          <input type="checkbox" name="show-users" checked="{{showUsers}}">
+          <span class="user-class-user">User</span> {{#if ready}}({{userCount users}}){{/if}}
+        </label>
+        <label>
+          <input type="checkbox" name="show-visitors" checked="{{showVisitors}}">
+          <span class="user-class-visitor">Visitor</span> {{#if ready}}({{visitorCount users}}){{/if}}
+        </label>
+      </div>
     </div>
   </div>
 

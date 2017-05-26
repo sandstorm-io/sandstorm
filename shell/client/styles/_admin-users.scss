@@ -20,8 +20,10 @@
 .admin-user-filters {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-start;
+
+  margin-bottom: 20px;
 
   >.search-icon {
     @extend %pseudo-img-tag;
@@ -29,8 +31,8 @@
     background-size: 24px 24px;
     background-position: center;
     display: inline-block;
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     flex: 0 1 auto;
   }
 
@@ -40,11 +42,21 @@
   }
 
   .filter-user-classes {
+    margin-left: 20px;
     flex: 0 1 auto;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: flex-start;
     justify-content: flex-start;
+    .show-label {
+    }
+    .filter-boxes {
+      flex: 0 1 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-start;
+    }
   }
 }
 
@@ -89,7 +101,7 @@
       background-image: url('/ldap.svg');
     }
     &.saml {
-      background-image: url('/saml.svg');
+      background-image: url('/ldap.svg');
     }
   }
 }
@@ -123,6 +135,9 @@
     >div[role=columnheader]:not(:first-child) {
       border-left: 1px solid $default-table-header-border-color;
     }
+    .created, .last-active {
+      cursor: pointer;
+    }
   }
 
   .loading-row {
@@ -139,6 +154,7 @@
     align-items: flex-start;
     justify-content: flex-start;
     background-color: $default-table-row-action-background-color;
+    cursor: pointer;
 
     .plus-icon {
       @extend %pseudo-img-tag;
@@ -170,6 +186,7 @@
     align-items: flex-start;
     justify-content: flex-start;
     background-color: $default-table-row-background-color;
+    cursor: pointer;
     &:not(:last-child) {
       border-bottom: 1px solid #dddddd;
     }
@@ -277,36 +294,72 @@
 }
 
 .role-explanations {
-  list-item-style: none;
+  list-style-type: none;
   padding: 0;
+  margin-bottom: 16px;
   >li {
     display: flex;
     flex-direction: row;
-    align-items: flex-start;
+    align-items: center;
     justify-content: flex-start;
     margin-bottom: 8px;
+
+    color: #5d5d5d;
+    &.current-role {
+      color: black;
+    }
+
     .role {
       flex: 0 1 auto;
       width: 4em;
-      text-align: right;
     }
+
     .explanation {
       padding-left: 8px;
       flex: 1 1 auto;
     }
+
+    .current-role-label {
+      display: inline-block;
+      padding: 2px 4px;
+      border-radius: 2px;
+      margin-top: 2px;
+      margin-bottom: 2px;
+
+      background-color: #dcefdd;
+    }
+
+    .user-class-label {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 2px;
+      margin-top: 2px;
+      margin-bottom: 2px;
+
+    }
+
+    &.current-role {
+      .user-class-label {
+        &.admin {
+          color: #ffffff;
+          background-color: #C66822;
+        }
+        &.user {
+          color: #ffffff;
+          background-color: #7EB54D;
+        }
+        &.visitor {
+          color: #ffffff;
+          background-color: #939393;
+        }
+      }
+    }
   }
 }
 
-.user-details-account-role {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
+.user-details-name {
   padding-bottom: 8px;
   border-bottom: 1px solid #dddddd;
-  .account-name {
-    margin-right: 8px;
-  }
 }
 
 .admin-user-roles-form {
@@ -370,9 +423,6 @@
       background-color: $default-table-row-background-color;
       &:not(:last-child) {
         border-bottom: 1px solid #dddddd;
-      }
-      &:hover {
-        background-color: $default-table-row-background-color-hover;
       }
 
       .admin-user-identity-body-cell {
@@ -451,6 +501,7 @@
       width: 36px;
       height: 36px;
       font-weight: bold;
+      color: #cccccc;
     }
     code {
       flex: 1 1 auto;
@@ -474,6 +525,8 @@
         width: 24px;
         height: 24px;
         background-image: url('/pronoun-m.svg');
+        opacity: .60; // Hack to get this to look a desired intermediate color.  The icon lines are
+                      // too thin for it to look normal if the color matches the rest.
         display: inline-block;
         font-size: 0px;
       }
@@ -543,5 +596,15 @@
   .email-unverified {
     @extend %identity-property-label;
     background-color: #efdcdd;
+  }
+}
+
+.admin-invite-email-form, .admin-invite-button-form {
+  @extend %standard-form;
+}
+
+.admin-invite-email-form {
+  textarea {
+    min-height: 200px;
   }
 }

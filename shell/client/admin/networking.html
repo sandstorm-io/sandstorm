@@ -1,0 +1,37 @@
+<template name="newAdminNetworking">
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
+      <li>Security</li>
+    </ul>
+  </h1>
+
+  {{#if hasSuccess}}
+    {{#focusingSuccessBox}}
+      {{message}}
+    {{/focusingSuccessBox}}
+  {{/if}}
+  {{#if hasError}}
+    {{#focusingErrorBox}}
+      {{message}}
+    {{/focusingErrorBox}}
+  {{/if}}
+
+  <form class="admin-networking">
+    <div class="form-group">
+      <label>
+        Server-side request IP blacklist:
+        <textarea class="ip-blacklist" value="{{ ipBlacklist }}"></textarea>
+      </label>
+      <span class="form-subtext">Users will be prohibited from making requests to these IP addresses. This includes making a request from an app, downloading an SPK file from a user-provided URL, etc. You may specify one IP address or network (in CIDR notation, e.g. "127.0.0.0/8") per line. The default value includes standard local and private network addresses. Note that when an HTTP proxy is in use, this setting may be ignored; the proxy must implement its own blacklist.</span>
+    </div>
+
+    {{!-- TODO(someday): Allow whitelisting certain IPs or hosts? --}}
+    {{!-- TODO(someday): Configure HTTP proxy here. --}}
+
+    <div class="button-row">
+      <button type="submit" class="save" disabled="{{saveDisabled}}">Save</button>
+      <button type="button" class="restore" disabled="{{restoreDisabled}}">Restore defaults</button>
+    </div>
+  </form>
+</template>

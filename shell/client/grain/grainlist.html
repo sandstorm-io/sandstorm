@@ -1,0 +1,226 @@
+<template name="sandstormGrainListPage">
+  {{setDocumentTitle}}
+  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar }}Grains{{/sandstormTopbarItem}}
+  <div class="grain-list">
+    <h1>
+      <div>
+        Grains <button title="What is a grain?" class="question-mark"></button>
+      </div>
+      <form class="standard-form">
+        <div class="button-row">
+        {{#if showTrash }}
+          <button type="button" class="show-main-list">View main list</button>
+        {{else}}
+          <button type="button" class="show-trash">View trash ({{trashCount}})</button>
+        {{/if}}
+
+        {{#if isSignedUpOrDemo}}
+        <button type="button" class="restore-button">Restore backup...
+          <input type="file" style="display:none" accept=".zip">
+        </button>
+        {{/if}}
+        </div>
+      </form>
+    </h1>
+
+    <div class="maybe-row">
+      {{!-- At desktop widths, we cram these into a single row.  On mobile, they need more space,
+            so we make them separate rows --}}
+      <div class="search-row">
+        <label>
+          <span title="Search" class="search-icon"></span>
+          <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}">
+        </label>
+      </div>
+
+      {{#if quotaEnabled}}
+      <div class="usage-info">
+          {{#if grainQuota}}
+            <p class="grain-count">{{ myGrainsCount }} of {{ grainQuota }} grains</p>
+          {{/if}}
+          <p>{{ myGrainsSize }} of {{ quotaTotal }} used</p>
+      </div>
+      {{/if}}
+    </div>
+
+    {{#if showTrash}}
+      <p class="trash-explanation">
+        <button class="empty-trash">Empty all trash</button>
+        (Grains will be permanently removed after 30 days in the trash. To keep a grain,
+        restore it to the Main list.)
+      </p>
+    {{/if}}
+
+    {{#let grains=filteredGrains}}
+      {{>sandstormGrainTable grains=grains onGrainClicked=onGrainClicked
+                             bulkActionButtons=bulkActionButtons}}
+
+      {{#unless grains}}
+        <div class="no-grains">
+          {{#if searchText}}
+            <p><strong>No matching grains found.</strong></p>
+            {{#if filteredTrashedGrains}}
+              <p>Some grains in your trash match your search.
+               <button class="show-trash">View trash</button>
+              </p>
+            {{/if}}
+          {{else}}
+            {{#if showTrash}}
+              <p><strong>Trash is empty.</strong></p>
+            {{else}}
+              <p>You don't have any grains yet.
+                <a href="{{ pathFor route='apps' }}">
+                  {{#if hasApps}}
+                    Select an app and create your first grain.
+                  {{else}}
+                    Install an app to create your first grain.
+                  {{/if}}
+                </a>
+              </p>
+            {{/if}}
+          {{/if}}
+        </div>
+      {{/unless}}
+    {{/let}}
+  </div>
+</template>
+
+<template name="sandstormGrainTable">
+  {{!-- A mostly pure-functional template.  Pass in grains as a list of objects with shape:
+  {
+    _id: String,
+    appTitle: String,
+    iconSrc: String,
+    title: String,
+    lastUsed: Date,
+    isOwnedByMe: Boolean,
+    trashed: Optional(Date),
+  }
+  and (optionally):
+  * a list "actions" containing objects with shape:
+    {
+      buttonText: String,
+      onClick: parameterless callback function
+    }, and/or
+  * an onGrainClicked callback function, which takes a single argument grainId as a String
+  * a showHintIfEmpty value, which if truthy, tells the JS to show a guided tour if the grains
+    list is empty.
+  * an alwaysShowTableHeaders value, which if truthy, always shows table headers. By contrast,
+    if empty or falsey, when the grains list is missing, we only show the action button(s).
+  * a list "bulkActionButtons" containing object with shape
+    {
+      buttonClass: a string to be used in the button's class attribute
+      text(numMyGrainsSelected, numSharedWithMeGrainsSelected): function that returns a string
+         that will be displayed as the button's text.
+      disabled(numMyGrainsSelected, numSharedWithMeGrainsSelected): function that returns a
+         boolean, indicating whether the button should be diabled
+      onClicked(myGrainIds, sharedWithMeGrainIds): function that performs the action on the
+         selected grains.
+    }
+
+  The table itself tracks and applies a sort order to the grains passed in.  The initial sort
+  order is by lastUsed, descending.
+  --}}
+  {{#let buttons=bulkActionButtons mine=mineSelected shared=sharedSelected}}
+  <form class="standard-form bulk-action-buttons">
+    {{#each buttons}}
+    <button type="button" class={{buttonClass}} disabled={{disabled mine shared}}
+            title="{{#if disabled mine shared}}To perform bulk actions, you must first select some grains in the list.{{else}}{{text mine shared}}{{/if}}">
+      {{text mine shared}}
+    </button>
+    {{/each}}
+  </form>
+  {{/let}}
+
+    <table class="grain-list-table">
+      <thead>
+        {{#if showTableHeaders}}
+        <tr>
+            <td class="select-all-grains">
+              <input title={{selectAllTitle}} type="checkbox" checked={{selectAllChecked}}>
+            </td>
+            <td class="td-app-icon"></td>
+            <td class="grain-name">
+              Name
+              {{#if equal sortOrder.key "title"}}
+                {{#if equal sortOrder.order "ascending"}}
+                  ▾
+                {{else}}
+                  ▴
+                {{/if}}
+              {{/if}}
+            </td>
+            <td class="grain-size">
+              Size
+              {{#if equal sortOrder.key "size"}}
+                {{#if equal sortOrder.order "ascending"}}
+                  ▾
+                {{else}}
+                  ▴
+                {{/if}}
+              {{/if}}
+            </td>
+            <td class="last-used">
+              Last activity
+              {{#if equal sortOrder.key "lastUsed"}}
+                {{#if equal sortOrder.order "ascending"}}
+                  ▾
+                {{else}}
+                  ▴
+                {{/if}}
+              {{/if}}
+            </td>
+            <td class="shared-or-owned">Mine/Shared</td>
+            {{!-- Collaborators, size TODO
+            <td>Collaborators</td>
+            <td>Size</td>
+            --}}
+        </tr>
+        {{/if}}
+      </thead>
+      <tbody>
+        {{#each actions}}
+        <tr class="action">
+          <td class="select-grain"></td>
+          <td class="td-app-icon"><div class="new-grain-icon"></div></td>
+          <td class="action-button" colspan="4"><button class="action">{{buttonText}}</button></td>
+        </tr>
+        {{/each}}
+        {{#each (sortedGrains grains)}}
+        <tr class="grain {{#if unread}}unread{{/if}}" data-grainid="{{ _id }}">
+          <td class="select-grain {{#if isOwnedByMe}}mine{{else}}shared{{/if}}">
+            <input title="select this grain"
+                   type="checkbox" data-grainid="{{ _id }}" checked={{isChecked}}>
+          </td>
+          <td class="td-app-icon click-to-go {{#if trashed}}in-trash{{/if}}">
+            <div class="app-icon" title="{{appTitle}}"
+                 style="background-image: url('{{ iconSrc }}');">
+            </div>
+          </td>
+          <td class="grain-name click-to-go">
+            <a href="{{ pathFor route='grain' grainId=_id }}">{{title}}</a>
+            {{#with was}}
+              (was: {{.}})
+            {{/with}}
+            {{#with renamedFrom}}
+              (renamed from: {{.}})
+            {{/with}}
+          </td>
+          <td class="grain-size click-to-go">{{grainSize}}</td>
+          <td class="last-used click-to-go">
+            {{#if isNewShare}}
+              Unopened
+            {{else}}
+              {{dateString lastUsed}}
+            {{/if}}
+          </td>
+          <td class="shared-or-owned click-to-go">{{#if isOwnedByMe }}My grain{{else}}Shared with me{{/if}}</td>
+          {{!-- Collaborators, size TODO
+          <td>TODO: collaborators</td>
+          <td>{{ size }}</td>
+          --}}
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+</template>

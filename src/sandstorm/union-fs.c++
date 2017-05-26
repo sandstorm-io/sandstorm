@@ -26,16 +26,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include "fuse.h"
-
-#if __QTCREATOR
-#define KJ_MVCAP(var) var
-// QtCreator dosen't understand C++14 syntax yet.
-#else
-#define KJ_MVCAP(var) var = ::kj::mv(var)
-// Capture the given variable by move.  Place this in a lambda capture list.  Requires C++14.
-//
-// TODO(cleanup):  Move to libkj.
-#endif
+#include "util.h"
 
 namespace sandstorm {
 namespace {
@@ -640,8 +631,10 @@ kj::Own<fuse::Node> makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader 
       struct stat stats;
       KJ_SYSCALL(lstat(sourcePath.cStr(), &stats), sourcePath);
       if (S_ISLNK(stats.st_mode)) {
-        char* real;
-        KJ_SYSCALL(real = realpath(sourcePath.cStr(), NULL));
+        char* real = realpath(sourcePath.cStr(), NULL);
+        if (real == NULL) {
+          KJ_FAIL_SYSCALL("realpath(sourcePath)", errno, sourcePath);
+        }
         KJ_DEFER(free(real));
         ownSourcePath = kj::str(real);
         sourcePath = ownSourcePath;
@@ -767,8 +760,10 @@ FileMapping mapFile(kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap, k
           struct stat stats;
           KJ_SYSCALL(lstat(candidate.cStr(), &stats));
           if (S_ISLNK(stats.st_mode)) {
-            char* real;
-            KJ_SYSCALL(real = realpath(candidate.cStr(), NULL));
+            char* real = realpath(candidate.cStr(), NULL);
+            if (real == NULL) {
+              KJ_FAIL_SYSCALL("realpath(candidate)", errno, candidate);
+            }
             KJ_DEFER(free(real));
             candidate = kj::str(real);
           }

@@ -180,7 +180,7 @@ body>.popup.account>.frame-container {
     background-position: 16px 0px;
     height: auto;
     button.unexpand {
-      @extend %unstyled-button;
+      @include unstyled-button();
     }
     &:hover {
       background-image: url("/debug-m.svg");
@@ -276,7 +276,7 @@ body>.popup.account>.frame-container {
       text-indent: 0;
 
       button {
-        @extend %unstyled-button;
+        @include unstyled-button();
         border: 1px solid #9e9e9e;
         border-radius: 3px;
         line-height: normal;
@@ -360,14 +360,13 @@ body>.popup.account>.frame-container {
     padding-right: 20px;
     margin: 0;
 
-    &::before {
-      content: " ";
+    .logo {
+      @extend %pseudo-img-tag;
+      background-position: bottom;
       display: inline-block;
       width: 64px;
       height: 64px;
       vertical-align: bottom;
-      background-image: url("/sandstorm-gradient-logo.svg");
-      background-repeat: no-repeat;
     }
   }
 
@@ -445,14 +444,33 @@ body>.popup.account>.frame-container {
 
 body>.main-content>.account {
   text-align: left;
-  padding-left: 32px;
+
+  @media #{$desktop} {
+    padding: 32px;
+  }
+
   @media #{$mobile} {
-    padding: 0;
+    padding-top: 0px;
+    padding-bottom: 32px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  h1 {
+    margin-top: 0px;
+    padding-top: 0px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid $default-rule-color;
+    margin-bottom: 12px;
+
+    font-size: 24pt;
+    font-weight: 400;
   }
 
   .identities-editor {
     position: relative;
     white-space: nowrap;
+    max-width: 660px;
   }
 
   h2, h3 {
@@ -468,90 +486,141 @@ body>.main-content>.account {
   }
 
   h3.title-bar {
-    background-color: white;
-    width: 660px;
     margin-bottom: 5px;
     border: none;
-    font-size: 12pt;
+    font-size: 14pt;
     padding: 5px;
   }
 
-  div.action-completed {
-    margin-top: 10px;
-    width: 660px;
-    border: 1px solid transparent;
-    border-radius: 4px;
+  p.alert-identity-refactor {
+    color: red;
+    padding-left: 5px;
+  }
 
-    &.success {
-      color: #3c763d;
-      background-color: #dff0d8;
-      border-color: #d6e9c6;
+  .identities-and-editor {
+    @media #{$not-mobile-only} {
+      width: 660px;
+      flex-direction: row;
+      align-items: flex-start;
     }
-    &.error {
-      color: #a94442;
-      background-color: #f2dede;
-      border-color: #ebccd1;
+
+    @media #{$mobile-only} {
+      flex-direction: column;
+      align-items: stretch;
     }
+
+    display: flex;
+    justify-content: flex-start;
   }
 
   .identities-tabs {
-    display: inline-block;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+
     white-space: normal;
     vertical-align: top;
-    width: 225px;
+
     ul {
       position: relative;
-      margin-top: 0;
-      padding-left: 0;
+      margin: 0px;
+      padding: 0px;
+
       li {
         list-style-type: none;
         cursor: pointer;
         background-color: white;
-        width: 218px;
         margin-bottom: 10px;
 
-        &[aria-selected=true] {
-          z-index: 1;
-          width: 225px;
+        @media #{$not-mobile-only} {
+          margin-right: 7px;
+
+          &[aria-selected=true] {
+            margin-right: 0px;
+          }
+        }
+        @media #{$mobile-only} {
+          border: 1px solid $generic-border-color;
+
+          &[aria-selected=true] {
+            border: 2px solid $generic-border-color;
+          }
+        }
+
+        &:focus {
+          @extend %custom-focus-ring;
         }
 
         .make-login {
-          @extend %unstyled-button;
+          @include unstyled-button();
         }
         .make-no-login {
-          @extend %unstyled-button;
+          @include unstyled-button();
         }
       }
     }
     .login-buttons-list {
+      width: 218px;
+      margin-right: 7px;
       .troubleshooting, a[href="/about"] {
         display: none;
+      }
+    }
+
+    .account-buttons {
+      @media #{$not-mobile-only} {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+      }
+      @media #{$mobile-only} {
+        order: -1;
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+        justify-content: flex-start;
       }
     }
 
     button.account-button {
       @extend %button-base;
       @extend %button-secondary;
-      width: 218px;
-      height: 30px;
+      @media #{$not-mobile-only} {
+        margin-right: 7px;
+      }
+
+      @media #{$mobile-only} {
+        flex: 1;
+        &:not(:last-child) {
+          margin-right: 8px;
+        }
+      }
+
+      min-height: 30px;
+
+      margin-bottom: 12px;
 
       &.link-new-identity {
-        position: relative;
-
         @extend .icon-link;
         &::before {
-          position: absolute;
-          left: 30px;
-          top: 2px;
           font-size: 24px;
           @extend .icon;
         }
       }
+
     }
   }
 
   .profile {
-    display: inline-block;
+    @media #{$not-mobile-only} {
+      display: inline-block;
+    }
+    @media #{$mobile-only} {
+      display: block;
+    }
+
     white-space: normal;
 
     div[aria-hidden=true] {
@@ -567,10 +636,20 @@ body>.main-content>.account {
   .verified-emails-editor {
     position: relative;
     .already-verified {
-      display: inline-block;
-      width: 340px;
-      left: 0px;
-      vertical-align: top;
+      @media #{$not-mobile-only} {
+        display: inline-block;
+        width: 340px;
+        left: 0px;
+        vertical-align: top;
+      }
+
+      @media #{$mobile-only} {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+      }
+
       ul {
         margin-top: 4px;
         padding-left: 0px;
@@ -607,17 +686,46 @@ body>.main-content>.account {
         }
       }
     }
+
     .add-new {
-      display: inline-block;
-      width: 330px;
-      vertical-align: top;
+      @media #{$not-mobile-only} {
+        display: inline-block;
+        width: 330px;
+        vertical-align: top;
+        input[name="email"] {
+          width: 200px;
+          height: 26px;
+        }
+      }
+
+      @media #{$mobile-only} {
+        form.email {
+          display: flex;
+          flex-direction: row;
+          align-items: stretch;
+          justify-content: space-between;
+          label {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            justify-content: flex-start;
+          }
+          input[name="email"] {
+            flex: 1;
+            margin-right: 8px;
+          }
+
+          div.button-box {
+            flex: 0;
+          }
+        }
+      }
+
       .info, .hidden {
         display: none;
       }
-      input[name="email"] {
-        width: 200px;
-        height: 26px;
-      }
+
       div.button-box {
         display: inline-block;
         >button {
@@ -630,8 +738,6 @@ body>.main-content>.account {
 }
 
 div.billing {
-  padding-bottom: 64px;
-
   >section.payment-methods {
     display: inline-block;
     vertical-align: top;
@@ -640,8 +746,7 @@ div.billing {
       margin: 0.5em 0;
     }
 
-    max-width: 432px;
-    padding: 0 16px;
+    max-width: 478px;
 
     >.balance {
       margin-left: 16px;
@@ -787,7 +892,10 @@ div.billing {
   div.usage {
     display: inline-block;
     vertical-align: top;
-    margin-right: 32px;
+
+    @media #{$not-mobile-only} {
+      margin-right: 32px;
+    }
 
     h3 {
       margin: 0.5em 0;
@@ -797,11 +905,22 @@ div.billing {
       margin: 0;
     }
 
-    max-width: 482px;
-    padding: 0 16px;
+    @media #{$not-mobile-only} {
+      max-width: 482px;
+    }
 
     span.plan-name {
       text-transform: capitalize;
+    }
+
+    span.plan-ends {
+      color: #666;
+      font-size: 80%;
+      display: block;
+    }
+
+    table {
+      width: 100%;
     }
 
     tr:first-of-type {
@@ -818,6 +937,9 @@ div.billing {
       }
       p:last-child {
         margin-bottom: 0;
+      }
+      &.current-plan {
+        position: relative;
       }
     }
     td:first-of-type {
@@ -849,7 +971,6 @@ div.billing {
 
     div.progress-bar {
       height: 12px;
-      width: 300px;
       background-color: white;
       border: 1px solid #b2b2b2;
       margin: 4px 0;
@@ -857,10 +978,6 @@ div.billing {
       >div {
         height: 100%;
         background-color: #65468e;
-      }
-
-      @media (max-width: 500px) {
-        width: 200px;
       }
     }
 
@@ -873,9 +990,11 @@ div.billing {
       &.change-plan {
         @extend %button-base;
         @extend %button-primary;
-        float: right;
         font-size: 16px;
         width: 125px;
+        position: absolute;
+        top: 0;
+        right: 0;
       }
 
       &.subscribe {
@@ -897,6 +1016,12 @@ div.billing {
     tr.bonus {
       color: #6d6d6d;
       font-size: 90%;
+      p.bonus {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
     }
 
     h4.free-stuff-section-header {
@@ -932,7 +1057,14 @@ div.billing {
   }
 }
 
-.first-sign-in-main-content {
+.danger-zone {
+  button.delete-account {
+    @extend %button-base;
+    @extend %button-danger;
+  }
+}
+
+.first-sign-in-main-content, .suspended-main-content {
   z-index: 1;
   h1 {
     text-align: center;
@@ -943,130 +1075,96 @@ div.billing {
   }
 }
 
-div.identity-editor {
-  width: 435px;
-  background-color: white;
-  padding: 15px 22px;
-
-  .details {
+.suspended-main-content {
+  h2 {
+    text-align: center;
+  }
+  button {
     display: block;
-    clear: right;
-    font-size: 80%;
-    color: #777777;
-  }
+    margin: auto;
+    font-size: 18px;
+    @extend %button-base;
 
-  .editor .picture {
-    width: 128px;
-    position: absolute;
-    label {
-      display: block;
-      font-weight: bold;
+    &.restore-account {
+      @extend %button-primary;
+      margin-bottom: 20px;
     }
-    button {
-      display:block;
-      border: none;
-      padding: 0;
-      width: 115px;
-      height: 115px;
-      position: relative;
-      background-color: transparent;
 
-      &:hover {
-        cursor: pointer;
-        &::before {
-          position: absolute;
-          content: " ";
-          display: block;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-color: rgba(0, 0, 0, 0.3);
-          background-image: url("/upload.svg");
-          opacity: 0.75;
-          z-index: 1;
-        }
-      }
-
-      >img {
-        display: block;
-        max-width: 100%;
-        max-height: 100%;
-        margin: auto;
-      }
-
-      @media (max-width: 352px) {
-        width: 192px;
-        height: 192px;
-      }
+    &.logout {
+      @extend %button-secondary;
     }
   }
+}
 
-  .editor {
+div.single-identity-editor {
+  max-width: 435px;
+  margin: auto;
+}
+
+div.identity-editor {
+  @media #{$not-mobile-only} {
+    width: 435px;
+  }
+
+  background-color: white;
+  padding: 22px;
+
+  form.account-profile-editor {
+    @extend %standard-form;
+    display: block;
+
     .inline-icon {
       width: 20px;
     }
-    >ul {
-      position: relative;
-      left: 140px;
-      padding: 8px;
-      width: 250px;
 
+    ul {
+      list-style-type: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    ul.verified-email-list {
       >li {
-        list-style-type: none;
-        overflow: hidden;
-        margin-bottom: 8px;
-
-        label {
-          display: block;
-          font-weight: bold;
-        }
-
-        &.terms, &.mailingListOptin {
-          padding-left: 24px;
-          label { font-weight: inherit; text-indent: -24px; }
-        }
-
-        input[type="text"], select {
-          display: block;
-          width: 230px;
-          font-size: inherit;
-          line-height: inherit;
-          background-color: white;
-          border: 1px solid #ccc;
-          padding: 2px;
-        }
-
-        input:invalid {
-          border: 1px solid #c00;
-        }
-
-        &.handle .input-container {
-          position: relative;
-          input[type="text"] {
-            font-size: 12pt;
-            font-family: monospace;
-          }
-        }
-
-        &.save {
-          text-align: right;
-          >button {
-            @extend %button-base;
-            @extend %button-primary;
-          }
-          >button.logout{
-            @extend %button-secondary;
-          }
+        // Vertically center each email address within a 30px space.
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 30px;
+        border-top: 1px solid #dddddd;
+        &:last-child {
+          border-bottom: 1px solid #dddddd;
         }
       }
     }
 
-    ul.verified-email-list {
-      padding: 0;
-      li {
-        list-style-type: none;
+    .picture-row {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: flex-start;
+      .picture-box {
+        flex: none;
+        width: 128px;
+        height: 128px;
+        margin-right: 16px;
+        img {
+          max-width: 128px;
+          max-height: 128px;
+        }
       }
+    }
+
+    .terms, .mailingListOptin {
+      padding-left: 24px;
+      label {
+        font-weight: inherit;
+        text-indent: -24px;
+      }
+    }
+
+    .handle input[type="text"] {
+      font-family: monospace;
     }
   }
 }
@@ -1109,6 +1207,13 @@ body>.popup.billing-prompt>.frame-container {
 
   @media #{$mobile} {
     max-width: 500px;
+  }
+
+  iframe.billing-prompt-local {
+    width: 100%;
+    height: 600px;
+    margin: 0px;
+    border: none;
   }
 }
 
@@ -1187,7 +1292,7 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
   }
 
   button.continue, button.subscribe {
-    @extend %unstyled-button;
+    @include unstyled-button();
 
     display: table;
     margin: 16px auto 64px;
@@ -1265,7 +1370,7 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
             background-color: #cccccc;
             color: #494949;
           }
-          >tr:nth-child(6)>td {
+          >tr:nth-child(5)>td {
             button {
               background-color: #cccccc;
               background: #cccccc;
@@ -1337,12 +1442,6 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
         }
 
         tr:nth-child(3)>td {
-          >p:nth-child(2) {
-            font-size: 12px;
-          }
-        }
-
-        tr:nth-child(4)>td {
           >p:nth-child(1) {
             text-transform: capitalize;
           }
@@ -1352,7 +1451,7 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
           }
         }
 
-        tr:nth-child(5) {
+        tr:nth-child(4) {
           border-bottom: 0px;
 
           >td>p:nth-child(2) {
@@ -1360,7 +1459,7 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
           }
         }
 
-        tr:nth-child(6) {
+        tr:nth-child(5) {
           button {
             width: 95%;
             height: 40px;
@@ -1398,69 +1497,95 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
   }
 
   >.faq {
+
     margin: 0;
-    padding: 16px 0 32px;
+    padding: 16px 32px 32px 32px;
     color: #494949;
     text-align: left;
 
     >h3 {
-      margin: 0 32px 24px;
+      margin-top: 0px;
+      margin-bottom: 24px;
       font-weight: normal;
       font-size: 20pt;
       border-bottom: 1px solid #c1c1c1;
     }
 
-    .answer {
-      display: inline-block;
-      width: 390px;
-      margin: 0 32px;
-      vertical-align: top;
-
-      >h4 {
-        margin: 0 0 16px;
-        font-size: 14pt;
-        font-weight: normal;
+    .answers {
+      display: flex;
+      @media #{$desktop} {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+      }
+      @media #{$mobile} {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: flex-start;
+        justify-content: stretch;
       }
 
-      >p {
-        font-size: 10pt;
-        >a {
-          text-decoration: none;
-          font-weight: 600;
-          color: inherit;
-          &:hover {
-            color: #65468e;
+      .answer {
+        @media #{$desktop} {
+          display: inline-block;
+          max-width: 390px;
+          margin-right: 16px;
+        }
+        @media #{$mobile} {
+          display: block;
+          margin: 0px;
+        }
+
+        vertical-align: top;
+
+        >h4 {
+          margin: 0 0 16px;
+          font-size: 14pt;
+          font-weight: normal;
+        }
+
+        >p {
+          font-size: 10pt;
+          >a {
+            text-decoration: none;
+            font-weight: 600;
+            color: inherit;
+            &:hover {
+              color: #65468e;
+            }
           }
         }
       }
-
-      &:last-of-type {
-        // Hacky space for "contact support" button.
-        padding-bottom: 40px;
-      }
     }
 
-    >a.button {
-      text-decoration: none;
-      display: block;
-      margin: -32px 64px 0;
-      float: right;
-      border: 1px solid #b7b7b7;
-      padding: 8px 8px 8px 32px;
-      background-image: url("/email-494949.svg");
-      background-repeat: no-repeat;
-      background-position: 8px center;
-      background-size: 16px 16px;
-      color: #494949;
-      border-radius: 2px;
-      text-transform: uppercase;
-      font-size: 10pt;
-      position: relative;
-      z-index: 10;
+    >.contact-button-wrapper {
+      display: flex;
+      flex-direction: row-reverse;
+      align-items: flex-start;
+      justify-content: flex-start;
 
-      &:hover {
-        background-color: white;
-        cursor: pointer;
+      >a.button {
+        text-decoration: none;
+        display: inline-block;
+        float: right;
+        border: 1px solid #b7b7b7;
+        padding: 8px 8px 8px 32px;
+        background-image: url("/email-494949.svg");
+        background-repeat: no-repeat;
+        background-position: 8px center;
+        background-size: 16px 16px;
+        color: #494949;
+        border-radius: 2px;
+        text-transform: uppercase;
+        font-size: 10pt;
+        position: relative;
+        z-index: 10;
+
+        &:hover {
+          background-color: white;
+          cursor: pointer;
+        }
       }
     }
 
@@ -1478,7 +1603,6 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
 .identity-login-interstitial {
   z-index: 1;
   background-color: #efefef;
-  height: 100%;
   div.centered-content{
     margin: auto;
     text-align: center;
@@ -1495,7 +1619,16 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
     ul {
       list-style-type: none;
       padding: 0;
-      li{
+      li.non-login-account {
+        padding-top: 10px;
+        margin-bottom: 10px;
+
+        &:first-child {
+          border-top: 1px solid #ddd;
+        }
+        border-bottom: 1px solid #ddd;
+      }
+      li {
         position: relative;
         padding-bottom: 10px;
         button.unlink {
@@ -1503,9 +1636,13 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
           @extend %button-secondary;
           position: absolute;
           right: 25px;
-          top: 20px;
+          top: 10px;
         }
       }
+    }
+    button.danger {
+      @extend %button-base;
+      @extend %button-danger;
     }
     button.logout {
       @extend %button-base;
@@ -1588,12 +1725,15 @@ ul.identity-card-list {
   padding-left: 0;
   li {
     list-style-type: none;
+    margin-bottom: 12px;
     button {
-      @extend %unstyled-button;
-      border: 1px solid black;
+      height: 54px;
+      @include unstyled-button();
+      border: 1px solid $generic-border-color;
     }
     &.current-identity>button {
-      border: 3px solid black;
+      height: 56px;
+      border: 2px solid black;
     }
   }
 }
@@ -1674,5 +1814,14 @@ ul.identity-card-list {
     white-space: nowrap;
     font-size: 10pt;
     color: #777777;
+  }
+}
+
+.user-confirm-delete {
+  .confirm, .feedback {
+    width: 100%;
+  }
+  .feedback {
+    margin-bottom: 10px;
   }
 }

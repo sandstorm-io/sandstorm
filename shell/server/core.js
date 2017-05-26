@@ -14,66 +14,58 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const Crypto = Npm.require("crypto");
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset.js";
 const Capnp = Npm.require("capnp");
+const Crypto = Npm.require("crypto");
+import { PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements,
+         fetchApiToken, insertApiToken } from "/imports/server/persistent.js";
 
 const PersistentHandle = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentHandle;
 const SandstormCore = Capnp.importSystem("sandstorm/supervisor.capnp").SandstormCore;
 const SandstormCoreFactory = Capnp.importSystem("sandstorm/backend.capnp").SandstormCoreFactory;
 const PersistentOngoingNotification = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentOngoingNotification;
 const PersistentUiView = Capnp.importSystem("sandstorm/persistentuiview.capnp").PersistentUiView;
+const StaticAsset = Capnp.importSystem("sandstorm/util.capnp").StaticAsset;
+const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;
 
 class SandstormCoreImpl {
-  constructor(grainId) {
+  constructor(db, grainId) {
+    this.db = db;
     this.grainId = grainId;
   }
 
-  restore(sturdyRef, requiredPermissions) {
-    const _this = this;
+  restore(sturdyRef) {
     return inMeteor(() => {
-      const hashedSturdyRef = hashSturdyRef(sturdyRef);
-      const token = ApiTokens.findOne({
-        _id: hashedSturdyRef,
-        "owner.grain.grainId": this.grainId,
-      });
-
+      sturdyRef = sturdyRef.toString("utf8");
+      const token = fetchApiToken(this.db, sturdyRef,
+          { "owner.grain.grainId": this.grainId });
       if (!token) {
         throw new Error("no such token");
       }
 
-      // Honor `requiredPermissions`.
-      const requirements = [];
-      if (requiredPermissions && token.owner.grain.introducerIdentity) {
-        requirements.push({
-          permissionsHeld: {
-            permissions: requiredPermissions,
-            identityId: token.owner.grain.introducerIdentity,
-            grainId: _this.grainId,
-          },
-        });
+      if (token.owner.grain.introducerIdentity) {
+        throw new Error("Cannot restore grain-owned sturdyref that contains the obsolete " +
+                        "introducerIdentity field. Please request a new capability.");
       }
 
-      return restoreInternal(sturdyRef,
-                             { grain: Match.ObjectIncluding({ grainId: _this.grainId }) },
-                             requirements, hashedSturdyRef);
+      return restoreInternal(this.db, sturdyRef,
+                             { grain: Match.ObjectIncluding({ grainId: this.grainId }) },
+                             [], token);
     });
   }
 
   drop(sturdyRef) {
-    const _this = this;
     return inMeteor(() => {
-      return dropInternal(sturdyRef, { grain: Match.ObjectIncluding({ grainId: _this.grainId }) });
+      sturdyRef = sturdyRef.toString("utf8");
+      return dropInternal(this.db, sturdyRef, { grain: Match.ObjectIncluding({ grainId: this.grainId }) });
     });
   }
 
   makeToken(ref, owner, requirements) {
-    const _this = this;
     return inMeteor(() => {
-      const sturdyRef = new Buffer(generateSturdyRef());
-      const hashedSturdyRef = hashSturdyRef(sturdyRef);
-      ApiTokens.insert({
-        _id: hashedSturdyRef,
-        grainId: _this.grainId,
+      const sturdyRef = insertApiToken(this.db, {
+        grainId: this.grainId,
         objectId: ref,
         owner: owner,
         created: new Date(),
@@ -81,17 +73,21 @@ class SandstormCoreImpl {
       });
 
       return {
-        token: sturdyRef,
+        token: new Buffer(sturdyRef),
       };
     });
   }
 
   makeChildToken(parent, owner, requirements) {
-    const _this = this;
     return inMeteor(() => {
-      return {
-        token: new Buffer(makeChildTokenInternal(parent, owner, requirements)),
-      };
+      // Compute the save ApiToken template.
+      return makeSaveTemplateForChild(this.db, parent.toString(), requirements);
+    }).then(saveTemplate => {
+      // Create a dummy PersistentImpl and invoke its own save() method.
+      return new PersistentImpl(this.db, saveTemplate).save({ sealFor: owner });
+    }).then(saveResult => {
+      // Transform to expected result structure.
+      return { token: saveResult.sturdyRef };
     });
   }
 
@@ -101,19 +97,19 @@ class SandstormCoreImpl {
       owner: {
         addOngoing: (displayInfo, notification) => {
           return inMeteor(() => {
-            const grain = Grains.findOne({ _id: grainId });
+            const grain = this.db.collections.grains.findOne({ _id: grainId });
             if (!grain) {
               throw new Error("Grain not found.");
             }
 
             const castedNotification = notification.castAs(PersistentOngoingNotification);
-            const wakelockToken = waitPromise(castedNotification.save()).sturdyRef;
+            const wakelockToken = waitPromise(castedNotification.save()).sturdyRef.toString("utf8");
 
             // We have to close both the casted cap and the original. Perhaps this should be fixed in
             // node-capnp?
             castedNotification.close();
             notification.close();
-            const notificationId = Notifications.insert({
+            const notificationId = this.db.collections.notifications.insert({
               ongoing: wakelockToken,
               grainId: grainId,
               userId: grain.userId,
@@ -122,44 +118,119 @@ class SandstormCoreImpl {
               isUnread: true,
             });
 
-            const persistentMethods = {
-              save(params) {
-                return saveFrontendRef({ notificationHandle: notificationId }, params.sealFor);
-              },
+            return {
+              handle: globalFrontendRefRegistry.create(this.db,
+                  { notificationHandle: notificationId }),
             };
-
-            return { handle: makeNotificationHandle(notificationId, false, persistentMethods) };
           });
         },
       },
     };
   }
+
+  backgroundActivity(event) {
+    return inMeteor(() => {
+      logActivity(this.grainId, null, event);
+    });
+  }
+
+  reportGrainSize(bytes) {
+    bytes = parseInt(bytes);  // int64s are stringified but precision isn't critical here
+
+    const result = this.db.collections.grains.findAndModify({
+      query: { _id: this.grainId },
+      update: { $set: { size: bytes } },
+      fields: { _id: 1, userId: 1, size: 1 },
+    });
+
+    if (!result.ok) {
+      throw new Error("Grain not found.");
+    }
+
+    // If the grain did not have a "size" field before the update, then it is a grain created
+    // before per-grain size tracking was implemented. In that case, we don't want to update the
+    // user record because it may already be counting the grain (specifically on Blackrock, where
+    // whole-user size counting has existed for some time).
+    if (this.db.isQuotaEnabled() && ("size" in result.value)) {
+      // Update the user record, too. Note that we periodically recompute the user's storage usage
+      // from scratch as well, so this doesn't have to be perfectly reliable.
+      const diff = bytes - (result.value.size || 0);
+      this.db.collections.users.update(result.value.userId, { $inc: { storageUsage: diff } });
+    }
+  }
+
+  getIdentityId(identity) {
+    return unwrapFrontendCap(identity, "identity", (identityId) => {
+      return { id: new Buffer(identityId, "hex") };
+    });
+  }
 }
 
-const makeSandstormCore = (grainId) => {
-  return new Capnp.Capability(new SandstormCoreImpl(grainId), SandstormCore);
+const makeSandstormCore = (db, grainId) => {
+  return new Capnp.Capability(new SandstormCoreImpl(db, grainId), SandstormCore);
 };
 
-class NotificationHandle {
-  constructor(notificationId, saved, persistentMethods) {
+class NotificationHandle extends PersistentImpl {
+  // TODO(cleanup): Move to a different file.
+
+  constructor(db, saveTemplate, notificationId) {
+    super(db, saveTemplate);
     this.notificationId = notificationId;
-    this.saved = saved;
-    _.extend(this, persistentMethods);
+    this.db = db;
   }
 
   close() {
-    const _this = this;
     return inMeteor(() => {
-      if (!_this.saved) {
-        dismissNotification(_this.notificationId);
+      if (!this.isSaved()) {
+        dismissNotification(this.db, this.notificationId);
       }
     });
   }
 }
 
-class PersistentUiViewImpl {
-  constructor(persistentMethods) {
-    _.extend(this, persistentMethods);
+class PersistentUiViewImpl extends PersistentImpl {
+  // TODO(cleanup): Move out of core.js.
+
+  constructor(db, saveTemplate, grainId) {
+    super(db, saveTemplate);
+    check(grainId, String);
+    this._db = db;
+    this._grainId = grainId;
+  }
+
+  getViewInfo() {
+    return inMeteor(() => {
+      const grain = this._db.getGrain(this._grainId);
+      if (!grain || grain.trashed) {
+        throw new Error("grain no longer exists");
+      }
+
+      let pkg = this._db.getPackage(grain.packageId) ||
+        DevPackages.findOne({ appId: grain.appId }) ||
+        {};
+
+      const manifest = pkg.manifest || {};
+
+      const viewInfo = grain.cachedViewInfo || {};
+
+      if (!viewInfo.appTitle) {
+        viewInfo.appTitle = manifest.appTitle || {};
+      }
+
+      if (!viewInfo.grainIcon) {
+        const grainIcon = ((manifest.metadata || {}).icons || {}).grain;
+        if (grainIcon) {
+          viewInfo.grainIcon = new Capnp.Capability(new StaticAssetImpl(grainIcon.assetId),
+                                                    StaticAsset);
+        } else {
+          const hash = Identicon.hashAppIdForIdenticon(pkg.appId);
+          viewInfo.grainIcon = new Capnp.Capability(new IdenticonStaticAssetImpl(hash, 24),
+                                                    StaticAsset);
+        }
+      }
+
+      return viewInfo;
+    });
   }
 
   // All other UiView methods are currently unimplemented, which, while not strictly correct,
@@ -167,36 +238,41 @@ class PersistentUiViewImpl {
   // and grains can't call methods on UiViews because they lack the "is human" pseudopermission.
 }
 
-const makePersistentUiView = function (persistentMethods) {
-  return new Capnp.Capability(new PersistentUiViewImpl(persistentMethods), PersistentUiView);
+const makePersistentUiView = function (db, saveTemplate, grainId) {
+  check(grainId, String);
+
+  // Verify that the grain exists and hasn't been trashed.
+  const grain = db.getGrain(grainId);
+  if (!grain || grain.trashed) {
+    throw new Meteor.Error(404, "grain not found");
+  }
+
+  return new Capnp.Capability(new PersistentUiViewImpl(db, saveTemplate, grainId),
+                              PersistentUiView);
 };
 
-function makeNotificationHandle(notificationId, saved, persistentMethods) {
-  return new Capnp.Capability(new NotificationHandle(notificationId, saved, persistentMethods),
-                              PersistentHandle);
-}
+globalFrontendRefRegistry.register({
+  frontendRefField: "notificationHandle",
 
-function dropWakelock(grainId, wakeLockNotificationId) {
-  waitPromise(globalBackend.useGrain(grainId, (supervisor) => {
-    return supervisor.drop({ wakeLockNotification: wakeLockNotificationId });
-  }));
-}
+  restore(db, saveTemplate, notificationId) {
+    return new Capnp.Capability(new NotificationHandle(db, saveTemplate, notificationId),
+                                PersistentHandle);
+  },
+});
 
-function dismissNotification(notificationId, callCancel) {
-  const notification = Notifications.findOne({ _id: notificationId });
+function dismissNotification(db, notificationId, callCancel) {
+  const notification = db.collections.notifications.findOne({ _id: notificationId });
   if (notification) {
-    Notifications.remove({ _id: notificationId });
+    db.collections.notifications.remove({ _id: notificationId });
     if (notification.ongoing) {
-      // For some reason, Mongo returns an object that looks buffer-like, but isn't a buffer.
-      // Only way to fix seems to be to copy it.
-      const id = new Buffer(notification.ongoing);
+      const id = notification.ongoing;
 
       if (!callCancel) {
-        dropInternal(id, { frontend: null });
+        dropInternal(db, id, { frontend: null });
       } else {
-        const notificationCap = restoreInternal(id, { frontend: null }, []).cap;
+        const notificationCap = restoreInternal(db, id, { frontend: null }, []).cap;
         const castedNotification = notificationCap.castAs(PersistentOngoingNotification);
-        dropInternal(id, { frontend: null });
+        dropInternal(db, id, { frontend: null });
         try {
           waitPromise(castedNotification.cancel());
           castedNotification.close();
@@ -211,18 +287,10 @@ function dismissNotification(notificationId, callCancel) {
       }
     } else if (notification.appUpdates) {
       _.forEach(notification.appUpdates, (app, appId) => {
-        deletePackage(app.packageId);
+        db.deleteUnusedPackages(appId);
       });
     }
   }
-}
-
-hashSturdyRef = (sturdyRef) => {
-  return Crypto.createHash("sha256").update(sturdyRef).digest("base64");
-};
-
-function generateSturdyRef() {
-  return Random.secret();
 }
 
 Meteor.methods({
@@ -233,13 +301,15 @@ Meteor.methods({
 
     check(notificationId, String);
 
-    const notification = Notifications.findOne({ _id: notificationId });
+    const db = this.connection.sandstormDb;
+
+    const notification = db.collections.notifications.findOne({ _id: notificationId });
     if (!notification) {
       throw new Meteor.Error(404, "Notification id not found.");
     } else if (notification.userId !== Meteor.userId()) {
       throw new Meteor.Error(403, "Notification does not belong to current user.");
     } else {
-      dismissNotification(notificationId, true);
+      dismissNotification(db, notificationId, true);
     }
   },
 
@@ -249,70 +319,137 @@ Meteor.methods({
       throw new Meteor.Error(403, "User not logged in.");
     }
 
-    Notifications.update({ userId: Meteor.userId() }, { $set: { isUnread: false } }, { multi: true });
+    const db = this.connection.sandstormDb;
+    db.collections.notifications.update(
+      { userId: Meteor.userId() },
+      { $set: { isUnread: false } },
+      { multi: true });
   },
-});
 
-saveFrontendRef = (frontendRef, owner, requirements) => {
-  return inMeteor(() => {
-    const sturdyRef = new Buffer(generateSturdyRef());
-    const hashedSturdyRef = hashSturdyRef(sturdyRef);
-    ApiTokens.insert({
-      _id: hashedSturdyRef,
-      frontendRef: frontendRef,
-      owner: owner,
-      created: new Date(),
-      requirements: requirements,
-    });
-    return { sturdyRef: sturdyRef };
-  });
-};
+  acceptPowerboxOffer(sessionId, sturdyRef, sessionToken) {
+    const db = this.connection.sandstormDb;
+    check(sessionId, String);
+    check(sturdyRef, String);
+    check(sessionToken, Match.OneOf(String, null, undefined));
 
-checkRequirements = (requirements) => {
-  if (!requirements) {
-    return true;
-  }
+    const sessionQuery = { _id: sessionId };
+    if (sessionToken) {
+      sessionQuery.hashedToken = hashSturdyRef(sessionToken);
+    } else {
+      sessionQuery.userId = this.userId;
+    }
 
-  for (let i in requirements) {
-    const requirement = requirements[i];
-    if (requirement.tokenValid) {
-      const token = ApiTokens.findOne({ _id: requirement.tokenValid, revoked: { $ne: true }, },
-                                      { fields: { requirements: 1 } });
-      if (!token || !checkRequirements(token.requirements)) {
-        return false;
-      }
+    const session = db.collections.sessions.findOne(sessionQuery);
+    if (!session) {
+      throw new Meteor.Error(404, "No matching session found.");
+    }
 
-      if (token.parentToken && !checkRequirements([{ tokenValid: token.parentToken }])) {
-        return false;
-      }
-    } else if (requirement.permissionsHeld) {
-      const p = requirement.permissionsHeld;
-      const viewInfo = Grains.findOne(p.grainId, { fields: { cachedViewInfo: 1 } }).cachedViewInfo;
-      const currentPermissions = SandstormPermissions.grainPermissions(
-        globalDb,
-        { grain: { _id: p.grainId, identityId: p.identityId } }, viewInfo || {}).permissions;
-      if (!currentPermissions) {
-        return false;
-      }
+    const apiToken = fetchApiToken(db, sturdyRef,
+        { "owner.clientPowerboxOffer.sessionId": sessionId });
+    if (!apiToken) {
+      throw new Meteor.Error(404, "No such token.");
+    }
 
-      for (let ii = 0; ii < p.permissions.length; ++ii) {
-        if (p.permissions[ii] && !currentPermissions[ii]) {
-          return false;
-        }
-      }
-    } else if (requirement.userIsAdmin) {
-      if (!isAdminById(requirement.userIsAdmin)) {
-        return false;
+    const tokenId = apiToken._id;
+
+    let newSturdyRef;
+    if (sessionToken && apiToken.parentToken) {
+      // An anonymous user is being offered a child token. To avoid bloating the database,
+      // we deterministically derive the sturdyref from the session token and the hashed parent
+      // token.
+      //
+      // Note that an attacker with read access to the database might be able to derive
+      // `newSturdyRef` from `sessionToken` and gain access to the capability without ever having
+      // been explicitly offered it by the grain. Therefore, grains must assume that offering
+      // a capability to an anonymous user can possibly make that capability accessible to any
+      // other anonymous user who has connected through the same URL.
+
+      newSturdyRef = Crypto.createHash("sha256")
+        .update(sessionToken)
+        .update(apiToken.parentToken)
+        .digest("base64")
+        .slice(0, -1)                             // removing trailing "="
+        .replace(/\+/g, "-").replace(/\//g, "_"); // make URL-safe
+
+      if (fetchApiToken(db, newSturdyRef)) {
+        // We have already generated this token.
+        db.removeApiTokens({ _id: tokenId });
+        return newSturdyRef;
       }
     } else {
-      throw new Meteor.Error(403, "Unknown requirement");
+      newSturdyRef = generateSturdyRef();
     }
+
+    apiToken.owner = { webkey: null };
+
+    insertApiToken(db, apiToken, newSturdyRef);
+    db.removeApiTokens({ _id: tokenId });
+    return newSturdyRef;
+  },
+
+});
+
+const makeSaveTemplateForChild = function (db, parentToken, requirements, parentTokenInfo) {
+  // Constructs (part of) an ApiToken record appropriate to be used when save()ing a capability
+  // that was originally created by restore()ing `parentToken`. This fills in everything that is
+  // appropriate to fill in based only on the parent. Some fields -- especially `owner`, `created`,
+  // and `_id` -- obviously cannot be filled in until `save()` is called.
+  //
+  // `parentToken` is the raw SturdyRef of the parent.
+  //
+  // `requirements` is a list of MembraneRequirements that should be added to any children.
+  //
+  // `parentTokenInfo` is the ApiToken record for `parentToken`. Provide this only if you have
+  // it handy; if omitted it will be looked up.
+
+  parentTokenInfo = parentTokenInfo || fetchApiToken(db, parentToken);
+  if (!parentTokenInfo) {
+    throw new Error("no such token");
   }
 
-  return true;
+  const parentOwner = parentTokenInfo.owner || {};
+
+  let saveTemplate;
+  if (parentOwner.clientPowerboxRequest || parentOwner.clientPowerboxOffer) {
+    // Saving this token should make a copy of the restored token, rather than make a child
+    // token.
+
+    saveTemplate = _.clone(parentTokenInfo);
+
+    // Don't copy over fields that should be determined at save() time.
+    delete saveTemplate._id;
+    delete saveTemplate.owner;
+    delete saveTemplate.created;
+  } else {
+    if (parentTokenInfo.identityId) {
+      // A UiView token. Need to denormalize some fields from the parent.
+      saveTemplate = _.pick(parentTokenInfo, "grainId", "identityId", "accountId");
+
+      // By default, a save()d copy should have the same permissions, so set an allAccess role
+      // assignment.
+      saveTemplate.roleAssignment = { allAccess: null };
+    } else {
+      // A non-UiView child token.
+      saveTemplate = {};
+    }
+
+    // Saved token should be a child of the restored token.
+    saveTemplate.parentToken = parentTokenInfo._id;
+
+    // Will be encrypted on save().
+    saveTemplate.parentTokenKey = parentToken;
+  }
+
+  if (requirements) {
+    // Append additional requirements requested by caller.
+    saveTemplate.requirements = (saveTemplate.requirements || []).concat(requirements);
+  }
+
+  return saveTemplate;
 };
 
-restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
+restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenInfo,
+                   currentTokenId, currentTokenKey) => {
   // Restores the token `originalToken`, which is a Buffer.
   //
   // `ownerPattern` is a match pattern (i.e. used with check()) that the token's owner must match.
@@ -321,20 +458,29 @@ restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
   // `requirements` is a list of additional MembraneRequirements to add to the returned capability,
   // beyond what's already stored in ApiTokens. This is often an empty list.
   //
-  // `tokenId` is optional. If specified, it should be hashSturdyRef(originalToken); only specify
-  // it if you happen to have computed this already.
+  // `originalTokenInfo` is optional. If specified, it should be the ApiToken record associated
+  // with `originalToken`. Provide this if you happen to have looked it up already.
   //
-  // (When the token turns out to have a parent, this function will call itself recursively. When
-  // it does, `originalToken` stays the same, but `tokenId` is replaced with the parent. This is
-  // because the capability we ultimately restore needs to become a child of the token that is
-  // being restored.)
+  // `currentTokenId` is only provided when this function calls itself recursively. It is the
+  // _id (hashed token) of an ancestor of originalToken. The function recurses until it gets to
+  // the top-level token.
 
-  tokenId = tokenId || hashSturdyRef(originalToken);
   requirements = requirements || [];
 
-  const token = ApiTokens.findOne(tokenId);
+  if (!originalTokenInfo) {
+    originalTokenInfo = fetchApiToken(db, originalToken);
+    if (!originalTokenInfo) {
+      throw new Meteor.Error(403, "No token found to restore");
+    }
+  }
+
+  const token = !currentTokenId ? originalTokenInfo :
+      typeof currentTokenKey === "string" ? fetchApiToken(db, currentTokenKey) :
+      db.collections.apiTokens.findOne(currentTokenId);
   if (!token) {
-    throw new Meteor.Error(403, "No token found to restore");
+    if (!originalTokenInfo) {
+      throw new Meteor.Error(403, "Couldn't restore token because parent token has been deleted");
+    }
   }
 
   if (token.revoked) {
@@ -345,9 +491,7 @@ restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
   check(token.owner, ownerPattern);
 
   // Check requirements on the token.
-  if (!checkRequirements(token.requirements)) {
-    throw new Meteor.Error(403, "Requirements not satisfied.");
-  }
+  checkRequirements(db, token.requirements);
 
   // Check expiration.
   if (token.expires && token.expires.getTime() <= Date.now()) {
@@ -359,7 +503,7 @@ restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
       throw new Meteor.Error(403, "Authorization token expired");
     } else {
       // It's getting used now, so clear the expiresIfUnused field.
-      ApiTokens.update(token._id, { $unset: { expiresIfUnused: "" } });
+      db.collections.apiTokens.update(token._id, { $unset: { expiresIfUnused: "" } });
     }
   }
 
@@ -367,50 +511,14 @@ restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
   if (token.parentToken) {
     // A token which chains to some parent token.  Restore the parent token (possibly recursively),
     // checking requirements on the way up.
-    return restoreInternal(originalToken, Match.Any, requirements, token.parentToken);
+    return restoreInternal(db, originalToken, Match.Any, requirements,
+                           originalTokenInfo, token.parentToken, token.parentTokenKey);
   }
 
   // Check the passed-in `requirements`.
-  if (!checkRequirements(requirements)) {
-    throw new Meteor.Error(403, "Requirements not satisfied.");
-  }
+  checkRequirements(db, requirements);
 
-  // The capability we restore must implement SystemPersistent, and we already know what the
-  // implementation will look like. So, construct it here.
-  //
-  // TODO(cleanup): It would probably be a lot cleaner to have a common base class that these
-  //   inherit, and to pass down some common parameters to the constructor.
-  const persistentMethods = {
-    save(params) {
-      return inMeteor(() => {
-        const sturdyRef = new Buffer(makeChildTokenInternal(
-            originalToken, params.sealFor, requirements, token));
-        return { sturdyRef };
-      });
-    },
-
-    // TODO(someday): Implement SystemPersistent.addRequirements().
-  };
-
-  if (token.frontendRef) {
-    // A token which represents a capability implemented by a pseudo-driver.
-
-    if (token.frontendRef.notificationHandle) {
-      const notificationId = token.frontendRef.notificationHandle;
-      return { cap: makeNotificationHandle(notificationId, true, persistentMethods) };
-    } else if (token.frontendRef.ipNetwork) {
-      return { cap: makeIpNetwork(persistentMethods) };
-    } else if (token.frontendRef.ipInterface) {
-      return { cap: makeIpInterface(persistentMethods) };
-    } else if (token.frontendRef.emailVerifier) {
-      return { cap: makeEmailVerifier(
-          persistentMethods, tokenId, token.frontendRef.emailVerifier), };
-    } else if (token.frontendRef.verifiedEmail) {
-      return { cap: makeVerifiedEmail(persistentMethods) };
-    } else {
-      throw new Meteor.Error(500, "Unknown frontend token type.");
-    }
-  } else if (token.objectId) {
+  if (token.objectId) {
     // A token which represents a specific capability exported by a grain.
 
     // Fix Mongo converting Buffers to Uint8Arrays.
@@ -421,125 +529,126 @@ restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
     // Ensure the grain is running, then restore the capability.
     return waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
       // Note that in this case it is the supervisor's job to implement SystemPersistent, so we
-      // discard persistentMethods.
-      return supervisor.restore(token.objectId, requirements, originalToken);
+      // don't generate a saveTemplate here.
+      return supervisor.restore(token.objectId, requirements, new Buffer(originalToken, "utf8"));
     }));
-  } else if (token.grainId) {
-    // It's a UiView.
-
-    // If a grain is attempting to restore a UiView, it gets a UiView which filters out all
-    // the method calls.  In the future, we may allow grains to restore UiViews that pass along the
-    // "is human" pseudopermission (say, to allow an app to proxy all requests to some grain and
-    // do some transformation), which will return a different capability.
-    return { cap: makePersistentUiView(persistentMethods) };
   } else {
-    throw new Meteor.Error(500, "Unknown token type. ID: " + token._id);
+    // Construct a template ApiToken for use if the restored capability is save()d later.
+    const saveTemplate = makeSaveTemplateForChild(db, originalToken, requirements, originalTokenInfo);
+
+    if (token.frontendRef) {
+      // A token which represents a capability implemented by a pseudo-driver.
+
+      const cap = globalFrontendRefRegistry.restore(db, saveTemplate, token.frontendRef);
+      return { cap };
+    } else if (token.grainId) {
+      // It's a UiView.
+
+      // If a grain is attempting to restore a UiView, it gets a UiView which filters out all
+      // the method calls.  In the future, we may allow grains to restore UiViews that pass along the
+      // "is human" pseudopermission (say, to allow an app to proxy all requests to some grain and
+      // do some transformation), which will return a different capability.
+      return { cap: makePersistentUiView(db, saveTemplate, token.grainId) };
+    } else {
+      throw new Meteor.Error(500, "Unknown token type. ID: " + token._id);
+    }
   }
 };
 
-function dropInternal(sturdyRef, ownerPattern) {
+function dropInternal(db, sturdyRef, ownerPattern) {
   // Drops `sturdyRef`, checking first that its owner matches `ownerPattern`.
 
-  const hashedSturdyRef = hashSturdyRef(sturdyRef);
-  const token = ApiTokens.findOne({ _id: hashedSturdyRef });
+  const token = fetchApiToken(db, sturdyRef);
   if (!token) {
     return;
   }
 
-  check(token.owner, ownerPattern);
+  const hashedSturdyRef = token._id;
 
-  if (token.frontendRef) {
-    if (token.frontendRef.notificationHandle) {
-      const notificationId = token.frontendRef.notificationHandle;
-      globalDb.removeApiTokens({ _id: hashedSturdyRef });
-      const anyToken = ApiTokens.findOne({ "frontendRef.notificationHandle": notificationId });
-      if (!anyToken) {
-        // No other tokens referencing this notification exist, so dismiss the notification
-        dismissNotification(notificationId);
-      }
-    } else {
-      throw new Error("Unknown frontend token type.");
+  if (!Match.test(token.owner, ownerPattern)) {
+    // The caller of `drop()` does not own the token. From the caller's perspective, this means
+    // that there is actually nothing to be dropped. For example, perhaps a grain got backed up
+    // and restored, and now is trying to drop one of its pre-backup tokens. The call to
+    // `SandstormApi.drop()` should succeed, behaving exactly as if the token was not found.
+    return;
+  }
+
+  // TODO(soon): Revoke OAuth tokens.
+
+  if (token.frontendRef && token.frontendRef.notificationHandle) {
+    const notificationId = token.frontendRef.notificationHandle;
+    db.removeApiTokens({ _id: hashedSturdyRef });
+    const anyToken = db.collections.apiTokens.findOne(
+        { "frontendRef.notificationHandle": notificationId });
+    if (!anyToken) {
+      // No other tokens referencing this notification exist, so dismiss the notification
+      dismissNotification(db, notificationId);
     }
   } else if (token.objectId) {
-    if (token.objectId.wakeLockNotification) {
-      dropWakelock(token.grainId, token.objectId.wakeLockNotification);
-    } else {
-      throw new Error("Unknown objectId token type.");
-    }
+    waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
+      return supervisor.drop(token.objectId);
+    }));
+
+    db.removeApiTokens({ _id: hashedSturdyRef });
   } else {
-    throw new Error("Unknown token type.");
+    db.removeApiTokens({ _id: hashedSturdyRef });
   }
 }
 
-function makeChildTokenInternal(rawParentToken, owner, requirements, tokenInfo) {
-  const hashedParent = hashSturdyRef(rawParentToken);
-
-  // If we don't have tokenInfo (we were called from SandstormCore.makeChildToken()), look up
-  // the parent token now and use that.
-  // TODO(someday): I think this makeChildToken() will lose titles because of this.
-  //   Option 1: Somehow pass info through the supervisor for it to pass back through
-  //       makeChildToken().
-  //   Option 2: Follow the chain of parentTokens here.
-  //   Option 3: Maybe the title should actually be passed in a PowerboxDescriptor which the app
-  //       is expected to thread through to offer(). This is analogous to how file transfers
-  //       work: the file name is not normally stored in the content. Our petname system for
-  //       grains already matches that model better -- and if we decide to get rid of said petname
-  //       system and instead have everyone see the author's title, then we'd presumably stop
-  //       storing it in the token `owner` field altogether, so this becomes moot.
-  tokenInfo = tokenInfo || ApiTokens.findOne(hashedParent);
-  if (!tokenInfo) {
-    throw new Error("parent token doesn't exist");
+class SandstormCoreFactoryImpl {
+  constructor(db) {
+    this.db = db;
   }
 
-  if (tokenInfo.identityId) {
-    // This is a UiView capability. We need to use SandstormPermissions to create it in order
-    // to properly denormalize fields.
+  getSandstormCore(grainId) {
+    return { core: makeSandstormCore(this.db, grainId) };
+  }
+}
 
-    if (owner.user) {
-      // Initialize the grain's title to a copy of the title set by the human user closest in the
-      // sharing graph. It turns out that the "root token" is actually the token representing that
-      // user, not the grain owner, because user-to-user sharing relationships are not parent-child
-      // token relationships.
-      const rootTitle = (((tokenInfo.owner || {}).grain || {}).saveLabel || {}).defaultText;
-      if (!owner.user.title && rootTitle) {
-        owner.user.title = rootTitle;
+makeSandstormCoreFactory = (db) => {
+  return new Capnp.Capability(new SandstormCoreFactoryImpl(db), SandstormCoreFactory);
+};
+
+unwrapFrontendCap = (cap, type, callback) => {
+  // Expect that `cap` is a Cap'n Proto capability implemented by the frontend as a frontendRef
+  // with the given type (the name of one of the fields of frontendRef). Unwraps the capability
+  // and then calls callback() with the `frontendRef[type]` descriptor object as
+  // the paramater. The callback runs in a Meteor fiber, but this function can be called from
+  // anywhere. The function returns a Promise for the result of the callback.
+  //
+  // (The reason for the callback, rather than just returning a Promise for the descriptor, is
+  // so that you don't have to do your own inMeteor() dance.)
+
+  // For now, we save() the capability and then dig through ApiTokens to find where it leads.
+  // TODO(cleanup): In theory we should be using something like CapabilityServerSet, but it is
+  //   not available in Javascript yet and even if it were, it wouldn't work in the case where
+  //   there are multiple front-end replicas, since the capability could be on a different
+  //   replica.
+
+  return cap.castAs(SystemPersistent).save({ frontend: null }).then(saveResult => {
+    return inMeteor(() => {
+      let tokenInfo = fetchApiToken(globalDb, saveResult.sturdyRef.toString("utf8"));
+
+      // Delete the token now since it's not needed.
+      ApiTokens.remove(tokenInfo._id);
+
+      for (;;) {
+        if (!tokenInfo) throw new Error("missing token?");
+        if (!tokenInfo.parentToken) break;
+        if (typeof tokenInfo.parentTokenKey === "string") {
+          tokenInfo = fetchApiToken(globalDb, tokenInfo.parentTokenKey);
+        } else {
+          // Hmm, parentTokenKey doesn't exist or is still encrypted. We can't decrypt the parent
+          // but we can still fetch it in encrypted format.
+          tokenInfo = ApiTokens.findOne(tokenInfo.parentToken);
+        }
       }
-    }
 
-    return SandstormPermissions.createNewApiToken(globalDb, { rawParentToken },
-        tokenInfo.grainId, tokenInfo.petname, { allAccess: null }, owner).token;
-  }
+      if (!tokenInfo.frontendRef || !tokenInfo.frontendRef[type]) {
+        throw new Error("not a " + type + " capability");
+      }
 
-  if (owner.user) {
-    throw new Error("can't save non-UiView with user as owner");
-  }
-
-  const sturdyRef = generateSturdyRef();
-  const hashedSturdyRef = hashSturdyRef(sturdyRef);
-
-  const newTokenInfo = {
-    _id: hashedSturdyRef,
-    parentToken: hashedParent,
-    owner: owner,
-    created: new Date(),
-    requirements: requirements,
-  };
-
-  // For non-UiView capabilities, we need not denormalize grainId, identityId, etc. into the child
-  // token.
-
-  ApiTokens.insert(newTokenInfo);
-
-  return sturdyRef;
-};
-
-function SandstormCoreFactoryImpl() {
-}
-
-SandstormCoreFactoryImpl.prototype.getSandstormCore = (grainId) => {
-  return { core: makeSandstormCore(grainId) };
-};
-
-makeSandstormCoreFactory = () => {
-  return new Capnp.Capability(new SandstormCoreFactoryImpl(), SandstormCoreFactory);
+      return callback(tokenInfo.frontendRef[type]);
+    });
+  });
 };

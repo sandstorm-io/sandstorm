@@ -34,6 +34,7 @@ NODEJS=$(METEOR_DEV_BUNDLE)/bin/node
 NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
 WARNINGS=-Wall -Wextra -Wglobal-constructors -Wno-sign-compare -Wno-unused-parameter
 CXXFLAGS2=-std=c++1y $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -pthread -fPIC -I$(NODE_HEADERS)
+CFLAGS2=$(CFLAGS) -pthread -fPIC
 LIBS=-pthread
 
 define color
@@ -61,6 +62,8 @@ IMAGES= \
     shell/public/notification.svg \
     shell/public/open-grain.svg \
     shell/public/people.svg \
+    shell/public/question-727272.svg \
+    shell/public/question-a9a9a9.svg \
     shell/public/restart.svg \
     shell/public/restore.svg \
     shell/public/settings.svg \
@@ -73,12 +76,15 @@ IMAGES= \
     shell/public/up.svg \
     shell/public/web.svg \
                              \
+    shell/public/add-credit-m.svg \
+    shell/public/add-email-m.svg \
     shell/public/apps-m.svg \
     shell/public/appmarket-m.svg \
     shell/public/bug-m.svg \
     shell/public/clipboard-m.svg \
     shell/public/close-m.svg \
     shell/public/copy-m.svg \
+    shell/public/credit-m.svg \
     shell/public/down-m.svg \
     shell/public/debug-m.svg \
     shell/public/download-m.svg \
@@ -108,8 +114,8 @@ IMAGES= \
     shell/public/email-494949.svg \
     shell/public/close-FFFFFF.svg \
                                   \
-    shell/public/install-6A237C.svg \
-    shell/public/install-9E40B5.svg \
+    shell/public/install-714DAA.svg \
+    shell/public/install-896AC6.svg \
     shell/public/plus-6A237C.svg \
     shell/public/plus-9E40B5.svg \
     shell/public/upload-B7B7B7.svg \
@@ -121,13 +127,18 @@ IMAGES= \
 # Meta rules
 
 .SUFFIXES:
-.PHONY: all install clean continuous shell-env fast deps bootstrap-ekam deps update-deps test installer-test app-index-dev
+.PHONY: all install clean ci-clean continuous shell-env fast deps bootstrap-ekam update-deps clobber-deps test installer-test app-index-dev
 
 all: sandstorm-$(BUILD).tar.xz
 
-clean:
-	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz shell/.meteor/local $(IMAGES) shell/client/changelog.html shell/packages/*/.build* shell/packages/*/.npm/package/node_modules *.sig *.update-sig icons/node_modules shell/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff
+clean: ci-clean
+	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/client/changelog.html shell/packages/*/.build* shell/packages/*/.npm/package/node_modules *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff
+	test -e deps/node && cd deps/node && make clean
 	@(if test -d deps && test ! -h deps; then printf "\033[0;33mTo update dependencies, use: make update-deps\033[0m\n"; fi)
+
+ci-clean:
+	@# Clean only the stuff that we want to clean between CI builds.
+	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz
 
 install: sandstorm-$(BUILD)-fast.tar.xz install.sh
 	@$(call color,install)
@@ -139,8 +150,8 @@ update: sandstorm-$(BUILD)-fast.tar.xz
 
 fast: sandstorm-$(BUILD)-fast.tar.xz
 
-test: sandstorm-$(BUILD)-fast.tar.xz
-	tests/run-local.sh sandstorm-$(BUILD)-fast.tar.xz
+test: sandstorm-$(BUILD)-fast.tar.xz test-app.spk
+	tests/run-local.sh sandstorm-$(BUILD)-fast.tar.xz test-app.spk
 
 installer-test:
 	(cd installer-tests && bash prepare-for-tests.sh && PYTHONUNBUFFERED=yes TERM=xterm SLOW_TEXT_TIMEOUT=120 ~/.local/bin/stodgy-tester --plugin stodgy_tester.plugins.sandstorm_installer_tests --on-vm-start=uninstall_sandstorm --rsync)
@@ -159,10 +170,11 @@ REMOTE_ekam=https://github.com/sandstorm-io/ekam.git
 REMOTE_libseccomp=https://github.com/seccomp/libseccomp
 REMOTE_libsodium=https://github.com/jedisct1/libsodium.git
 REMOTE_node-capnp=https://github.com/kentonv/node-capnp.git
+REMOTE_node=https://github.com/sandstorm-io/node
 
 deps: tmp/.deps
 
-tmp/.deps: deps/capnproto deps/ekam deps/libseccomp deps/libsodium deps/node-capnp
+tmp/.deps: deps/capnproto deps/ekam deps/libseccomp deps/libsodium deps/node-capnp deps/node
 	@mkdir -p tmp
 	@touch tmp/.deps
 
@@ -193,9 +205,14 @@ deps/node-capnp:
 	@mkdir -p deps
 	git clone $(REMOTE_node-capnp) deps/node-capnp
 
+deps/node:
+	@$(call color,downloading node)
+	@mkdir -p deps
+	git clone $(REMOTE_node) deps/node
+
 update-deps:
 	@$(call color,updating all dependencies)
-	@$(foreach DEP,capnproto ekam libseccomp libsodium node-capnp, \
+	@$(foreach DEP,capnproto ekam libseccomp libsodium node-capnp node, \
 	    cd deps/$(DEP) && \
 	    echo "pulling $(DEP)..." && \
 	    git pull $(REMOTE_$(DEP)) `git symbolic-ref --short HEAD` && \
@@ -203,15 +220,25 @@ update-deps:
 
 clobber-deps:
 	@$(call color,forcibly updating all dependencies)
-	@$(foreach DEP,capnproto ekam libseccomp node-capnp, \
+	@$(foreach DEP,capnproto ekam libseccomp, \
 	    cd deps/$(DEP) && \
 	    echo "fetching $(DEP)..." && \
 	    git fetch $(REMOTE_$(DEP)) master && \
 	    git reset --hard FETCH_HEAD && \
 	    cd ../..;)
+	@cd deps/node-capnp && \
+	    echo "fetching node-capnp..." && \
+	    git fetch $(REMOTE_node-capnp) node4 && \
+	    git reset --hard FETCH_HEAD && \
+	    cd ../../
 	@cd deps/libsodium && \
 	    echo "fetching libsodium..." && \
 	    git fetch $(REMOTE_libsodium) stable && \
+	    git reset --hard FETCH_HEAD && \
+	    cd ../../
+	@cd deps/node && \
+	    echo "fetching node..." && \
+	    git fetch $(REMOTE_node) sandstorm && \
 	    git reset --hard FETCH_HEAD && \
 	    cd ../../
 
@@ -228,13 +255,13 @@ tmp/ekam-bin: tmp/.deps
 
 tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps
 	@$(call color,building sandstorm with ekam)
-	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS2)" \
+	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS2)" CXXFLAGS="$(CXXFLAGS2)" \
 	    LIBS="$(LIBS)" NODEJS=$(NODEJS) tmp/ekam-bin -j$(PARALLEL) || \
 	    ($(call color,build failed. You might need to: make update-deps) && false)
 	@touch tmp/.ekam-run
 
 continuous:
-	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS2)" \
+	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS2)" CXXFLAGS="$(CXXFLAGS2)" \
 	    LIBS="$(LIBS)" NODEJS=$(NODEJS) ekam -j$(PARALLEL) -c -n :41315 || \
 	    ($(call color,You probably need to install ekam and put it on your path; see github.com/sandstorm-io/ekam) && false)
 
@@ -245,12 +272,12 @@ shell-env: tmp/.shell-env
 
 # Note that we need Ekam to build node_modules before we can run Meteor, hence
 # the dependency on tmp/.ekam-run.
-tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html shell/client/styles/_icons.scss
+tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html shell/client/styles/_icons.scss shell/package.json shell/npm-shrinkwrap.json
 	@mkdir -p tmp
-	@touch tmp/.shell-env
 	@mkdir -p node_modules/capnp
 	@bash -O extglob -c 'cp src/capnp/!(*test*).capnp node_modules/capnp'
-	@cd shell/ && meteor npm install
+	@cd shell/ && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install
+	@touch tmp/.shell-env
 
 icons/node_modules: icons/package.json
 	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install
@@ -269,13 +296,13 @@ shell/public/close-FFFFFF.svg: icons/close.svg
 	@$(call color,custom color $<)
 	@sed -e 's/#111111/#FFFFFF/g' < $< > $@
 
-shell/public/install-6A237C.svg: icons/install.svg
+shell/public/install-714DAA.svg: icons/install.svg
 	@$(call color,custom color $<)
-	@sed -e 's/#111111/#6A237C/g' < $< > $@
+	@sed -e 's/#111111/#714DAA/g' < $< > $@
 
-shell/public/install-9E40B5.svg: icons/install.svg
+shell/public/install-896AC6.svg: icons/install.svg
 	@$(call color,custom color $<)
-	@sed -e 's/#111111/#9E40B5/g' < $< > $@
+	@sed -e 's/#111111/#896AC6/g' < $< > $@
 
 shell/public/plus-6A237C.svg: icons/plus.svg
 	@$(call color,custom color $<)
@@ -316,15 +343,23 @@ shell/public/email-494949.svg: icons/email.svg
 	@$(call color,custom color $<)
 	@sed -e 's/#111111/#494949/g' < $< > $@
 
+shell/public/question-a9a9a9.svg: icons/question.svg
+	@$(call color,custom color $<)
+	@sed -e 's/#111111/#A9A9A9/g' < $< > $@
+
+shell/public/question-727272.svg: icons/question.svg
+	@$(call color,custom color $<)
+	@sed -e 's/#111111/#727272/g' < $< > $@
+
 shell/public/%-m.svg: icons/%.svg
 	@$(call color,color for light background $<)
 	@# Make completely black.
 	@sed -e 's/#111111/#000000/g' < $< > $@
 
-shell-build: shell/lib/* shell/client/* shell/server/* shell/shared/* shell/public/* shell/packages/* shell/packages/*/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
+shell-build: shell/imports/* shell/imports/*/* shell/client/* shell/server/* shell/shared/* shell/public/* shell/packages/* shell/packages/*/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
 	@$(call color,meteor frontend)
 	@test -z "$$(find -L shell/* -type l)" || (echo "error: broken symlinks in shell: $$(find -L shell/* -type l)" >&2 && exit 1)
-	@OLD=`pwd` && cd shell && PYTHONPATH=$$HOME/.meteor/tools/latest/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib meteor build --directory "$$OLD/shell-build"
+	@OLD=`pwd` && cd shell && meteor build --directory "$$OLD/shell-build"
 
 # ====================================================================
 # Bundle
@@ -344,7 +379,7 @@ sandstorm-$(BUILD)-fast.tar.xz: bundle
 # ====================================================================
 # app-index.spk
 
-# This is currently really really hacky because spk is not good at using package definition file
+# This is currently really really hacky because spk is not good at using a package definition file
 # that is not located at the root of the source tree. In particular it is hard for the package
 # definition file (living in the src tree) to refer to the `app-index` binary (living in the
 # tmp tree).
@@ -360,3 +395,23 @@ app-index-dev: tmp/.ekam-run
 	@cp src/sandstorm/app-index/app-index.capnp tmp/sandstorm/app-index/app-index.capnp
 	@cp src/sandstorm/app-index/review.html tmp/sandstorm/app-index/review.html
 	spk dev -Isrc -Itmp -ptmp/sandstorm/app-index/app-index.capnp:pkgdef
+
+# ====================================================================
+# test-app.spk
+
+# This is currently really really hacky because spk is not good at using a package definition file
+# that is not located at the root of the source tree. In particular it is hard for the package
+# definition file (living in the src tree) to refer to the `test-app` binary (living in the
+# tmp tree).
+#
+# TODO(cleanup): Make spk better so that it can handle this.
+
+test-app.spk: tmp/.ekam-run
+	@cp src/sandstorm/test-app/test-app.capnp tmp/sandstorm/test-app/test-app.capnp
+	@cp src/sandstorm/test-app/*.html tmp/sandstorm/test-app
+	bin/spk pack -ksrc/sandstorm/test-app/test-app.key -Isrc -Itmp -ptmp/sandstorm/test-app/test-app.capnp:pkgdef test-app.spk
+
+test-app-dev: tmp/.ekam-run
+	@cp src/sandstorm/test-app/test-app.capnp tmp/sandstorm/test-app/test-app.capnp
+	@cp src/sandstorm/test-app/*.html tmp/sandstorm/test-app
+	spk dev -Isrc -Itmp -ptmp/sandstorm/test-app/test-app.capnp:pkgdef

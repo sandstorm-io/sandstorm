@@ -61,6 +61,14 @@ the user's back.
 Sandstorm aims to prevent apps from engaging in covert surveillance
 while allowing statistics gathering when the user consents to it.
 
+## Case Studies
+
+By our analysis, Sandstorm automatically protected users from over 95% of the publicly disclosed
+security vulnerabilities discovered in apps on the Sandstorm app market, before the vulnerabilities
+were even disclosed. We also mitigated most Linux kernel security issues. See [Security
+non-events](security-non-events) for examples of security problems which were mitigated by
+Sandstorm.
+
 ## Strategies
 
 Sandstorm's primary overarching security strategies are as follows.
@@ -303,7 +311,3 @@ permission, in order to implement full confinement. As of this writing
 (May 2015), this has not yet been put in place, mostly because
 server-side confinement is not complete (as described earlier) which
 makes client-side confinement largely moot for the moment.
-
-## Case Studies
-
-See [Security non-events](security-non-events) for examples of security problems in apps and in the Linux kernel which were mitigated by Sandstorm.

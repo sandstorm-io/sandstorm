@@ -25,8 +25,9 @@ var utils = require("../utils"),
     very_long_wait = utils.very_long_wait;
 
 exports.command = function(url, packageId, appId, dontStartGrain, callback) {
-  var ret = this
-    .loginDevAccount()
+  var browser = this;
+  var ret = browser
+    .init()
     .url(this.launch_url + "/install/" + packageId + "?url=" + url)
     .waitForElementVisible("#step-confirm", very_long_wait)
     .click("#confirmInstall")

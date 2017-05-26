@@ -58,36 +58,37 @@ if (Meteor.isServer) {
 
     return Meteor.users.find({ _id: identityId },
       { fields: {
-        profile:1,
-        unverifiedEmail:1,
+        profile: 1,
+        unverifiedEmail: 1,
         expires: 1,
         createdAt: 1,
 
-        "services.dev.name":1,
+        "services.dev.name": 1,
 
-        "services.google.id":1,
-        "services.google.email":1,
-        "services.google.verified_email":1,
-        "services.google.name":1,
-        "services.google.picture":1,
-        "services.google.gender":1,
-        "services.google.hd":1,
+        "services.google.id": 1,
+        "services.google.email": 1,
+        "services.google.verified_email": 1,
+        "services.google.name": 1,
+        "services.google.picture": 1,
+        "services.google.gender": 1,
+        "services.google.hd": 1,
 
-        "services.github.id":1,
-        "services.github.email":1,
-        "services.github.emails":1,
-        "services.github.username":1,
+        "services.github.id": 1,
+        "services.github.email": 1,
+        "services.github.emails": 1,
+        "services.github.username": 1,
 
-        "services.email.email":1,
+        "services.email.email": 1,
 
-        "services.ldap.id":1,
-        "services.ldap.username":1,
-        "services.ldap.rawAttrs":1,
+        "services.ldap.id": 1,
+        "services.ldap.username": 1,
+        "services.ldap.rawAttrs": 1,
 
-        "services.saml.id":1,
-        "services.saml.email":1,
-        "services.saml.displayName":1,
-      }, });
+        "services.saml.id": 1,
+        "services.saml.email": 1,
+        "services.saml.displayName": 1,
+      },
+    });
   }),
 
   Meteor.publish("accountIdentities", function () {
@@ -108,8 +109,8 @@ if (Meteor.isServer) {
   });
 
   makeIdenticon = function (id) {
-    // We only make identicons client-side.
-    return undefined;
+    const hash = id.slice(0, 32);
+    return httpProtocol + "//" + makeWildcardHost("static") + "/identicon/" + hash + "?s=256";
   };
 
   const Url = Npm.require("url");
@@ -125,16 +126,16 @@ if (Meteor.isServer) {
     // that apps can themselves use identicon.js to produce consistent identicons. As it turns out
     // identicon.js doesn't use the second half of the hash even if we provide it, but slice it
     // anyway to be safe.
-    id = id.slice(0, 32);
+    const hash = id.slice(0, 32);
 
-    if (id in identiconCache) {
-      return identiconCache[id];
+    if (hash in identiconCache) {
+      return identiconCache[hash];
     }
 
     // Unfortunately, Github's algorithm uses MD5. Whatever, we don't expect these to be secure.
-    const data = new Identicon(id, 512).toString();
-    const result = "data:image/png;base64," + data;
-    identiconCache[id] = result;
+    const data = new Identicon(hash, 512).toString();
+    const result = "data:image/svg+xml," + encodeURIComponent(data);
+    identiconCache[hash] = result;
     return result;
   };
 
@@ -262,7 +263,8 @@ SandstormDb.getVerifiedEmails = function (identity) {
       .map((email) => _.pick(email, "email", "primary"))
       .value();
   } else if (identity.services.ldap) {
-    const email = identity.services.ldap.rawAttrs[SandstormDb.prototype.getLdapEmailField()];
+    // TODO(cleanup): don't create a new SandstormDb here, make this non-static
+    const email = identity.services.ldap.rawAttrs[new SandstormDb().getLdapEmailField()];
     if (email) {
       return [{ email: email, primary: true }];
     }
@@ -279,14 +281,19 @@ SandstormDb.prototype.findIdentitiesByEmail = function (email) {
 
   check(email, String);
 
+  // For LDAP, the field containing the e-mail address is configurable...
+  const ldapQuery = {};
+  ldapQuery["services.ldap.rawAttrs." + this.getLdapEmailField()] = email;
+
   return Meteor.users.find({ $or: [
     { "services.google.email": email },
     { "services.email.email": email },
     { "services.github.emails.email": email },
+    ldapQuery,
     { "services.saml.email": email },
   ], }).fetch().filter(function (identity) {
     // Verify that the email is verified, since our query doesn't technically do that.
-    return !!_findWhere(SandstormDb.getVerifiedEmails(identity), { email: email });
+    return !!_.findWhere(SandstormDb.getVerifiedEmails(identity), { email: email });
   });
 };
 
@@ -347,8 +354,8 @@ SandstormDb.getUserEmails = function (user) {
   const result = [];
   _.keys(verifiedEmails).map(function (email) {
     result.push({ email: email,
-                 verified: true,
-                 primary: email === user.primaryEmail, });
+                  verified: true,
+                  primary: email === user.primaryEmail, });
   });
 
   _.keys(unverifiedEmails).map(function (email) {

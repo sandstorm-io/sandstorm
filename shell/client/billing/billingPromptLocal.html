@@ -1,0 +1,9 @@
+<template name="billingPromptLocal">
+  {{> sandstormTopbarItem name="billing-prompt" topbar=topbar
+                          onlyPopup=true popupTemplate="_billingPromptPopupLocal"
+                          onDismiss=onDismiss}}
+</template>
+
+<template name="_billingPromptPopupLocal">
+  <iframe src="{{billingPromptUrl}}" class="billing-prompt-local"></iframe>
+</template>

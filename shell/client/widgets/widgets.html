@@ -2,9 +2,11 @@
 {{!-- expects some arguments:
    onDismiss: Function.  A callback to trigger when the user requests that this modal be dismissed,
                          by clicking on a close button or outside the boundary of the modal.
+   class: String. An optional string that will be append to the class attribute. It can contain
+                  spaces if you wish to add multiple classes.
    A content block of what to put inside the modal.
 --}}
-<div class="modal" role="dialog">
+<div class="modal {{class}}" role="dialog">
   {{!-- TODO: animate --}}
   <div class="modal-backdrop"></div>
   <div class="fade in modal" role="dialog">
@@ -32,4 +34,11 @@
 <p class="flash-message success-message" tabindex="-1">
   {{> Template.contentBlock}}
 </p>
+</template>
+
+<template name="autoSelectingInput">
+{{!-- expects a single argument:
+      value: String
+--}}
+  <input readonly="true" type="text" value="{{value}}" />
 </template>

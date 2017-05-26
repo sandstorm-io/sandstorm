@@ -1,0 +1,321 @@
+<!--
+Sandstorm - Personal Cloud Sandbox
+Copyright (c) 2015 Sandstorm Development Group, Inc. and contributors
+All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<template name="sandstormAccountSettings">
+  {{setDocumentTitle}}
+
+  {{#sandstormTopbarItem name="title" priority=5 topbar=_topbar}}
+    Account settings
+  {{/sandstormTopbarItem}}
+
+  <h1>Account</h1>
+  <div class="identities-editor">
+
+    <h3 class="title-bar">Linked identities</h3>
+
+    {{#if affectedByIdentityRefactor}}
+    <p class="alert-identity-refactor">We're changing the way identities work. Your account may be affected.
+        <a href="https://sandstorm.io/news/2017-05-08-refactoring-identities" target="_blank">Learn more &raquo;</a></p>
+    {{/if}}
+
+    {{#with actionCompleted}}
+      {{#if success}}
+        {{#focusingSuccessBox}}
+          Success: {{success}}
+        {{/focusingSuccessBox}}
+      {{/if}}
+      {{#if error}}
+        {{#focusingErrorBox}}
+          {{error}}
+        {{/focusingErrorBox}}
+      {{/if}}
+    {{/with}}
+
+    <div class="identities-and-editor">
+      <div class="identities-tabs">
+
+        {{#unless isLinkingNewIdentity}}
+        <ul role="tablist" >
+          {{#each identities}}
+          <li role="tab" tabindex="0" aria-controls="profile-tab-{{_id}}" id="profile-tab-header-{{_id}}"
+              aria-selected="{{isIdentitySelected _id}}" data-identity-id="{{_id}}">
+            {{> identityCard .}}
+          </li>
+          {{/each}}
+        </ul>
+        {{/unless}}
+
+        <div class="account-buttons">
+          {{#if isLinkingNewIdentity}}
+            <h4>Link new identity:</h4>
+            {{#with linkingNewIdentity=linkingNewIdentityData}}
+              {{> loginButtonsList globalAccountsUi}}
+            {{/with}}
+            <button class="account-button cancel-link-new-identity">Cancel</button>
+          {{else}}
+            <button class="account-button link-new-identity">Link new identity</button>
+            <button class="account-button logout-other-sessions" disabled={{logoutOtherSessionsInFlight}}>
+              Log out all other sessions
+            </button>
+          {{/if}}
+        </div>
+      </div>
+
+      <section class="profile">
+        {{#each identities}}
+        <div id="profile-tab-{{_id}}" aria-labelled-by="profile-tab-header-{{_id}}"
+             role="tabpanel" aria-hidden="{{isIdentityHidden _id}}">
+          {{>_accountProfileEditor identity=. setActionCompleted=setActionCompleted
+                                   staticHost=../_staticHost}}
+         </div>
+        {{/each}}
+      </section>
+    </div>
+  </div>
+
+  <h3 class="title-bar">Primary e-mail address for service-related notifications</h3>
+  <div class="verified-emails-editor">
+    <div class="already-verified">
+      {{#if verifiedEmails}}
+      <ul>
+        {{#each verifiedEmails}}
+        <li>
+          <span class="email" title="{{email}}">{{email}}</span>
+          {{#if primary}}
+          <span class="primary-badge">Primary</span>
+          {{else}}
+          <button class="make-primary" data-email="{{email}}" checked={{primary}}>
+            Set as primary
+          </button>
+          {{/if}}
+        </li>
+        {{/each}}
+      </ul>
+      {{else}}
+      <p> No verified emails! </p>
+      {{/if}}
+    </div>
+    <div class="add-new">
+      Add new e-mail address
+      {{> emailAuthenticationForm emailLoginFormData}}
+      {{> _loginButtonsMessages "" }}
+    </div>
+  </div>
+
+  {{#if isPaymentsEnabled}}
+  <div class="billing">
+  <h2>Billing</h2>
+  {{> billingUsage db=db topbar=_topbar}}
+  {{> billingSettings db=db}}
+  </div>
+  {{/if}}
+
+  {{#if showDeleteButton}}
+  <div class="danger-zone">
+    <h3>Delete account</h3>
+    <button class="delete-account" disabled={{logoutOtherSessionsInFlight}}>
+      Delete your account
+    </button>
+  </div>
+  {{/if}}
+
+  {{#if showDeletePopup}}
+    {{#modalDialogWithBackdrop onDismiss=cancelDelete class="user-confirm-delete"}}
+      {{#if deleteError}}
+        {{#focusingErrorBox}}
+          {{deleteError}}
+        {{/focusingErrorBox}}
+      {{/if}}
+
+      <h2>Delete your account</h2>
+      <p>You are about to mark your account for deletion. Once marked for deletion, your account will be suspended, and you will have 7 days to cancel the pending deletion by logging back into your account.</p>
+      <p>After 7 days, your account will be permanently deleted. Deleting your account will:</p>
+      <ul>
+        <li>Permanently delete any grains you created</li>
+        <li>Revoke all sharing links you created</li>
+        <li>Remove you from all users' contact lists</li>
+        <li>Delete all identities owned by your account (except identities also associated with another account).</li>
+      </ul>
+      <p>
+        Please type "delete my account" below to confirm.
+      </p>
+      <input class="confirm" type="text">
+      <p>
+        We're sorry to see you go. Feel free to share any feedback you have with the server admin.
+      </p>
+      <textarea class="feedback" type="text" placeholder="Optional" rows="3"></textarea>
+      <form class="standard-form">
+        <div class="button-row">
+          <button class="danger delete-account-real" type="button"
+           disabled={{disableDelete}}>Delete account</button>
+          <button type="button" class="cancel-delete-account">Cancel</button>
+        </div>
+      </form>
+    {{/modalDialogWithBackdrop}}
+  {{/if}}
+</template>
+
+<template name="sandstormAccountsFirstSignIn">
+  <h1>Confirm your profile</h1>
+  <div class="single-identity-editor">
+    {{#if success}}
+      {{#focusingSuccessBox}}
+        Success: {{success}}
+      {{/focusingSuccessBox}}
+    {{/if}}
+
+    {{#if error}}
+      {{#focusingErrorBox}}
+        {{error}}
+      {{/focusingErrorBox}}
+    {{/if}}
+
+    {{>_accountProfileEditor identity=identityToConfirm termsAndPrivacy=termsAndPrivacy
+                             staticHost=_staticHost db=_db setActionCompleted=onActionCompleted}}
+  </div>
+</template>
+
+<template name="accountSuspended">
+  <h1>
+    This account has been suspended by you.
+  </h1>
+
+  <h2>
+    {{#if timeUntilDeletion}}
+     This account will be deleted in {{timeUntilDeletion}}. Would you like to cancel deletion and restore this account?
+     {{else}}
+     This account is suspended and all of its grains and shares are disabled. Would you like to restore this account?
+     {{/if}}
+  </h2>
+  <button class="restore-account">Restore account</button>
+  <button class="logout">Logout</button>
+</template>
+
+<template name="_accountProfileEditor">
+{{!-- Expected arguments to data context:
+          identity: Object.  Should contain the usual Meteor.user fields (_id, profile, etc.)
+setActionCompleted: (optional) Function.  Callback triggered on profile saved or picture updated.
+   termsAndPrivacy: (optional) Object containing Strings termsUrl and/or privacyUrl.
+        staticHost: String.  Used to generate avatar URL.
+                db: instance of SandstormDb (optional, but needed for sandstormAccountsFirstSignIn?)
+       hideButtons: Boolean (optional, default value is false)
+--}}
+  <div class="identity-editor">
+    <form class="account-profile-editor" data-identity-id="{{identity._id}}">
+      <ul>
+        <li class="form-group">
+          <label>Profile picture:</label>
+          <div class="picture-row">
+            <div class="picture-box">
+              <img src="{{identity.profile.pictureUrl}}">
+            </div>
+            <input type="file" name="picture" style="display:none">
+            <div class="form-subtext">
+              <button type="button" name="upload-picture">Upload new picture</button>
+              <p>This picture will be shown to other users to help identify you.</p>
+              <p>512x512px, 64KiB max.</p>
+            </div>
+          </div>
+        </li>
+
+        <li class="form-group">
+          <label>
+            Full name:
+            <input type="text" name="nameInput" value="{{identity.profile.name}}"
+                   placeholder="full name" required>
+          </label>
+          <span class="form-subtext">Your regular first and last name, as you would like it
+            displayed to others. This does not have to be your real name.
+          </span>
+        </li>
+
+        <li class="form-group handle">
+          <label>Handle:
+            <div class="input-container">
+              <input type="text" name="handle" value="{{identity.profile.handle}}"
+                     placeholder="handle" pattern="^[a-z_][a-z0-9_]*$"
+                     title="Handles must start with a lower-case letter and contain only lower-case letters, digits, and underscores." required>
+            </div>
+          </label>
+          <span class="form-subtext">
+            To be displayed in apps that use handles. Your handle must start with a letter and
+            contain only lower-case letters, digits, and underscores.
+          </span>
+        </li>
+
+        <li class="form-group">
+          <label>
+            E-mail:
+          </label>
+          <ul class="verified-email-list">
+            {{#each verifiedEmails}}
+            <li> {{.}} </li>
+            {{/each}}
+          </ul>
+          <span class="form-subtext">{{emailDetails}}</span>
+        </li>
+
+        <li class="form-group">
+          {{#with pronoun=identity.profile.pronoun}}
+          <label>
+            Preferred pronoun:
+            <select name="pronoun">
+              <option value="neutral" selected="{{isNeutral pronoun}}">they (unspecified)</option>
+              <option value="male" selected="{{isMale pronoun}}">he/him (male)</option>
+              <option value="female" selected="{{isFemale pronoun}}">she/her (female)</option>
+              <option value="robot" selected="{{isRobot pronoun}}">it (robot)</option>
+            </select>
+          </label>
+          {{/with}}
+        </li>
+
+        {{#unless hasCompletedSignup}}
+          {{#with termsAndPrivacy}}
+            <li class="form-group">
+              <label>
+                <input type="checkbox" name="agreedToTerms" required> I have read and agree to the
+                {{#if termsUrl}}<a target="_blank" href="{{termsUrl}}">Terms of Service</a>
+                {{#if privacyUrl}} and {{/if}}{{/if}}{{#if privacyUrl}}
+                <a target="_blank" href="{{privacyUrl}}">Privacy policy</a>{{/if}}.
+              </label>
+            </li>
+          {{/with}}
+          {{#if isPaymentsEnabled}}
+            {{> billingOptins . }}
+          {{/if}}
+        {{/unless}}
+
+        {{#unless hideButtons}}
+        <li class="button-row">
+          <button disabled="{{profileSaved}}" type="submit">
+            {{#if hasCompletedSignup}}Save{{else}}Continue{{/if}}
+          </button>
+          {{#unless hasCompletedSignup}}
+          <button class="logout" type="button">Cancel</button>
+          {{/unless}}
+        </li>
+        {{/unless}}
+      </ul>
+    </form>
+
+    {{#if hasCompletedSignup}}
+      <hr>
+      {{> identityManagementButtons identityManagementButtonsData}}
+    {{/if}}
+  </div>
+</template>

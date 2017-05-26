@@ -5,7 +5,7 @@ Cleanup: uninstall_sandstorm
 
 $[run]sudo cat /proc/sys/kernel/unprivileged_userns_clone
 $[slow]0
-$[run]CURL_USER_AGENT=testing OVERRIDE_SANDCATS_BASE_DOMAIN=sandcats-dev.sandstorm.io OVERRIDE_SANDCATS_API_BASE=https://sandcats-dev-machine.sandstorm.io OVERRIDE_SANDCATS_CURL_PARAMS=-k bash /vagrant/install.sh -i
+$[run]CURL_USER_AGENT=testing REPORT=no OVERRIDE_SANDCATS_BASE_DOMAIN=sandcats-dev.sandstorm.io OVERRIDE_SANDCATS_API_BASE=https://sandcats-dev-machine.sandstorm.io OVERRIDE_SANDCATS_CURL_PARAMS=-k bash /vagrant/install.sh -i
 $[slow]Sandstorm makes it easy to run web apps on your own server. You can have:
 
 1. A typical install, to use Sandstorm (press enter to accept this default)
@@ -35,7 +35,8 @@ Your credentials to use it are in /opt/sandstorm/var/sandcats; consider making a
 $[veryslow]Downloading: https://dl.sandstorm.io
 $[veryslow]GPG signature is valid.
 $[veryslow]Sandstorm started. PID =
-$[veryslow]Visit this link to configure it:
+$[veryslow]Your server is coming online. Waiting up to 90 seconds...
+$[veryslow]Visit this link to start using it:
   http://
 To learn how to control the server, run:
   sandstorm help

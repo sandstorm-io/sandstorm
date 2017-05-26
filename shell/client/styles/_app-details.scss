@@ -27,31 +27,28 @@
       }
     }
   }
-  >.search-bar {
-    margin-top: 12px;
+
+  >.search-row {
+    @extend %search-row;
+    margin-bottom: 12px;
     clear: both;
-    >label {
-      >span.search-icon {
-        @extend %pseudo-img-tag;
-        background-image: url("/search.svg");
-        background-size: 24px 24px;
-        background-position: center;
-        display: inline-block;
-        width: 32px;
-        height: 32px;
-        vertical-align: top;
-      }
-      >input.search-bar {
-        font-size: 16pt;
-        height: 32px;
-        background-color: $app-details-searchbar-background-color;
-        border: 1px solid $app-details-searchbar-outline-color;
-        &:focus {
-          border: 1px solid $app-details-searchbar-outline-color-focus;
-        }
-      }
+  }
+
+  >.trash-explanation {
+    @extend %trash-explanation;
+  }
+
+  >.no-grains {
+    width: 100%;
+    background-color: white;
+    overflow: hidden;  // don't let margins escape box
+    >p {
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
     }
   }
+
   >table.grain-list-table {
     @extend %grain-table;
   }
@@ -67,16 +64,20 @@
     width: 128px;
     height: 128px;
   }
+
   >.app-details-box {
     margin-left: 128px;
     padding-left: 12px;
     min-height: 128px;
+    margin-bottom: 12px;
+
     >h1.app-title {
       margin: 0px;
       font-weight: normal;
       display: block;
       float: left;
     }
+
     >ul.app-links {
       display: block;
       float: right;
@@ -119,6 +120,7 @@
         }
       }
     }
+
     >div.info-row {
       display: block;
       clear: both;
@@ -144,7 +146,7 @@
             font-weight: 600;
           }
           >button.show-authorship-button {
-            @extend %unstyled-button;
+            @include unstyled-button();
             padding-left: 8px;
             padding-right: 24px;
 
@@ -161,7 +163,8 @@
         display: block;
         float: left;
       }
-      >button.uninstall-button, >button.restore-button {
+
+      >button.uninstall-button, >button.restore-button, >button.toggle-show-trash {
         @extend %button-base;
         @extend %button-secondary;
         display: block;
@@ -170,14 +173,17 @@
         margin-left: 4px;
       }
     }
+
     >div.publisher-details {
       display: block;
       clear: both;
       background-color: #ffffff;
       vertical-align: top;
+
       >p.no-fingerprint {
         padding: 8px;
       }
+
       >p.has-fingerprint {
         vertical-align: top;
         padding-left: 8px;
@@ -190,6 +196,7 @@
           width: 100%;
         }
       }
+
       >ul.publisher-proofs {
         @media #{$desktop} {
           display: inline-block;
@@ -214,6 +221,7 @@
             background-image: url("/key-m.svg");
             >span {
               padding-right: 4px;
+              overflow-wrap: break-word;
             }
           }
           >a.keybase {
@@ -233,6 +241,7 @@
           }
         }
       }
+
       &.hide {
         display:none;
       }

@@ -1,8 +1,22 @@
 ## Self-hosted HTTPS with a custom certificate authority
 
-The following is a process for self-hosted instances of Sandstorm to use SSL with any DNS name, including a sandcats.io hostname. These steps create a Certificate Authority (CA), corresponding CA Certificate, and the private and public keys for the `[anything]` and `*.[anything]` domains.
+To use Sandstorm with a self-signed certificate, you must create a certificate authority (CA)
+certificate and import the CA certificate into all web browsers where you want the Sandstorm server
+to able to be viewed. Web browsers do not show a "OK to continue?" prompt for IFRAMEs, and Sandstorm
+embeds IFRAMEs to subdomains of its main domain, so there is no warning that users can click
+through. Therefore you must add the CA certificate to web browsers.
 
-Note: Web browsers will display a big red certificate error when you try to connect to this install. This tutorial is appropriate if you are OK with **reconfiguring web browsers to trust a custom certificate authority** that you will create during this tutorial. To read about other options for configuring HTTPS/SSL, including a **free auto-renewing HTTPS certificate**, visit the [HTTPS/SSL topic guide](ssl.md).
+This document explains one way to for self-hosted instances of Sandstorm to use SSL with any DNS
+name, including a sandcats.io hostname. These steps create a Certificate Authority (CA),
+corresponding CA Certificate, and the private and public keys for the `[anything]` and
+`*.[anything]` domains, and provides a link to information on installing the certificate in web
+browsers.
+
+**Web browsers will display a big red certificate error when you try to connect to this install
+unless you install the certificate in them.** Therefore, this tutorial is appropriate if you are OK
+with reconfiguring web browsers to trust a custom certificate authority that you will create during
+this tutorial. To read about other options for configuring HTTPS/SSL, including a **free
+globally-trusted auto-renewing HTTPS certificate**, visit the [HTTPS/SSL topic guide](ssl.md).
 
 1. Make a copy openssl.cnf:
 
@@ -93,7 +107,7 @@ You can attempt to find out if this is the problem by taking the following steps
 
 - Right-click on the grain area, where the page is not loading, and click ***Inspect** in your browser.
 
-- Look for an **IFRAME** tag, whose `id` is `grain-frame`.
+- Look for an **IFRAME** tag, whose `class` is `grain-frame`.
 
 - Attempt to load that URL in a separate tab, outside of Sandstorm.
 

@@ -13,7 +13,11 @@ tutorial on Mac OS and GNU/Linux, and partly-tested on Windows.
 
 ## Ensure git is installed
 
-In this tutorial, we use git to download some code, so you need it on your computer.
+**Windows users**: You should skip this git step. Continue to the next section to ensure Vagrant is
+installed.
+
+**Mac or Linux users:** This installation process uses git to download vagrant-spk, so you need git
+on your computer. We'll first check if git is currently installed.
 
 In the terminal, type the following and press enter.
 
@@ -37,10 +41,13 @@ git: Command not found.
 
 Then you need to install git via the following instructions.
 
-* On Mac OS, visit the [official git for Mac download page](https://git-scm.com/download/mac) and follow their instructions.
-* On Ubuntu or Debian, run: `sudo apt-get install git`. (On other Linux systems, use your package manager to install git.)
-* On Windows, git is optional. Consider installing it via the [msysgit installer](https://msysgit.github.io/).
-
+* **Mac OS:** Visit the [official git for Mac download page](https://git-scm.com/download/mac) and
+  follow their instructions.
+* **Linux:** Run: `sudo apt-get install git` if you use Debian or Ubuntu. On other Linux systems, use
+  your package manager to install git.
+* **Windows:** We recommend you skip setting up git and proceed to the next section to ensure
+  Vagrant is installed. If you really want git, you can install it via the [msysgit
+  installer](https://msysgit.github.io/).
 
 ## Ensure Vagrant is installed
 
@@ -67,20 +74,24 @@ If instead you see a message like:
 vagrant: Command not found.
 ```
 
-Then you need to install Vagrant by doing the following.
+Then you need to install Vagrant.
 
-* On Mac OS or Linux or Windows, visit the [official Vagrant
-  website](http://vagrantup.com/) and follow their instructions to
-  install it.
-
+**Mac, Windows, or Linux users:** Visit the [official Vagrant website](http://vagrantup.com/) and
+follow their instructions to install it.
 
 ## Ensure VirtualBox is installed
 
-In this tutorial, we use VirtualBox to emulate a computer on which we run
-Linux, controlled via Vagrant.
+In this tutorial, we use VirtualBox to emulate a computer on which we run Linux, controlled via
+Vagrant.
 
-To check if it is installed, in the terminal, type the following and press
-enter:
+**Windows users:** To check if VirtualBox is properly installed on Windows systems, press the
+Windows key on your keyboard. This should open a program launcher. Type "virtualbox" into the
+program launcher. If you see a program you can launch whose name resembles "Oracle VirtualBox", then
+you can can skip to the next section. If not, then you will need to keep reading this section and
+install VirtualBox.
+
+**Mac or Linux users:** To check if VirtualBox is installed properly on Mac OS or Linux systems,
+in the terminal, type the following and press enter:
 
 ```bash
 VirtualBox --help
@@ -102,19 +113,18 @@ If you saw instead:
 VirtualBox: Command not found.
 ```
 
-Then you need to install VirtualBox by doing following:
+**Mac, Windows, or Linux users:** To install VirtualBox, you can do the following:
 
 * Visit the [VirtualBox downloads page](https://www.virtualbox.org/wiki/Downloads)
 * In the **top**, underneath **VirtualBox platform packages**, find the package for your operating system. Click the link, download, and install it.
-* Once you are done with that, go to the top of this section and make sure you can see the VirtualBox help output.
+* Once you are done with that, go to the top of this section and make sure VirtualBox is installed.
 
 ## No need to install Sandstorm directly
 
-You do _not_ need Sandstorm installed on your computer before you
-start packaging an app. Sandstorm's `vagrant-spk` helper tool handles
-installing it for you.
-
-It creates a Sandstorm install unique to each app you are developing.
+You do _not_ need Sandstorm installed on your computer before you start packaging an
+app. Sandstorm's `vagrant-spk` helper tool handles installing it for you. As an implementation
+detail, `vagrant-spk` creates an isolated virtual machine for each app you are developing, and each
+virtual machine will have Sandstorm installed.
 
 ## Install `vagrant-spk`
 
@@ -122,23 +132,30 @@ Finally, you can install `vagrant-spk` itself. This tool uses Vagrant
 and VirtualBox so that you can run your app within Sandstorm on a
 Linux virtual machine.
 
-### Windows users
+**Windows users:** Run the vagrant-spk installer EXE. To get it:
 
-Visit the [vagrant-spk releases
-list](https://github.com/sandstorm-io/vagrant-spk/releases) and run
-the Windows installer (`vagrant-spk-setup-v0.xyy.exe`). It may need
-administrator privileges to successfully install.
+- Visit the [vagrant-spk releases list](https://github.com/sandstorm-io/vagrant-spk/releases).
 
-### Mac OS or Linux
+- Download and run the latest EXE file, whose name is typically `vagrant-spk-setup-v0.nnn.exe`. You
+  may need administrator privileges to successfully run the installer.  This will result in a
+  `vagrant-spk` executable on your system path.
 
-In your terminal, run the following commands to download and install `vagrant-spk`.
+You can test it by launching a new Command Prompt and typing `vagrant-spk`, which should result a
+message starting with `usage: ...`. If so, you have successfully installed vagrant-spk. To upgrade
+in the future, download and run any newer version of the vagrant-spk setup EXE.
+
+**Mac or Linux users:** Download vagrant-spk via git.
+
+To do that, in your terminal, run the following commands.
 
 ```bash
 mkdir -p ~/projects
 cd ~/projects
-git clone git://github.com/sandstorm-io/vagrant-spk
+git clone https://github.com/sandstorm-io/vagrant-spk.git
 cd vagrant-spk
 sudo ln -s $PWD/vagrant-spk /usr/local/bin
 ```
 
-(Note: If you prefer different paths, that is OK.)
+If you prefer different paths, that is OK; adjust these steps to your liking.
+
+To upgrade in the future, `cd` into this directory and run `git pull`.

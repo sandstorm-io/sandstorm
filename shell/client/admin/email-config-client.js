@@ -10,13 +10,14 @@ Template.newAdminEmailConfig.onCreated(function () {
   this.state = new ReactiveVar("default");
   this.errorMessage = new ReactiveVar("");
   this.showTestSendEmailPopup = new ReactiveVar(false);
+  this.showConfirmDisableEmailPopup = new ReactiveVar(false);
   this.formChanged = new ReactiveVar(false);
   this.getSmtpConfig = () => {
-    const hostname = this.hostname.get();
+    const hostname = this.hostname.get().trim();
     const port = parseInt(this.port.get());
-    const user = this.username.get();
-    const pass = this.password.get();
-    const returnAddress = this.returnAddress.get();
+    const user = this.username.get().trim();
+    const pass = this.password.get().trim();
+    const returnAddress = this.returnAddress.get().trim();
     const formData = {
       hostname,
       port,
@@ -39,6 +40,12 @@ Template.newAdminEmailConfig.onCreated(function () {
 });
 
 Template.newAdminEmailConfig.helpers({
+  emailUnconfigured() {
+    // Derive this from the config directly, rather than the locally-modified state.
+    const c = globalDb.getSmtpConfig();
+    return (!c.hostname || !c.port || !c.returnAddress);
+  },
+
   hostname() {
     const instance = Template.instance();
     return instance.hostname.get();
@@ -91,15 +98,35 @@ Template.newAdminEmailConfig.helpers({
     return emailLoginEnabled && instance.isDefinitelyInvalid() || instance.state.get() === "submitting" || !instance.formChanged.get();
   },
 
+  disableDisabled() {
+    const instance = Template.instance();
+    return instance.state.get() === "submitting" || !instance.hostname.get();
+  },
+
   showTestSendEmailPopup() {
     const instance = Template.instance();
     return instance.showTestSendEmailPopup.get();
   },
 
-  closePopupCallback() {
+  showConfirmDisableEmailPopup() {
+    const instance = Template.instance();
+    return instance.showConfirmDisableEmailPopup.get();
+  },
+
+  closeTestPopupCallback() {
     const instance = Template.instance();
     return () => {
       instance.showTestSendEmailPopup.set(false);
+    };
+  },
+
+  closeConfirmDisableEmailPopupCallback() {
+    const instance = Template.instance();
+    return (clearHostname) => {
+      instance.showConfirmDisableEmailPopup.set(false);
+      if (clearHostname) {
+        instance.hostname.set("");
+      }
     };
   },
 
@@ -147,7 +174,7 @@ Template.newAdminEmailConfig.events({
     const formData = instance.getSmtpConfig();
     Meteor.call("setSmtpConfig", undefined, formData, (err) => {
       if (err) {
-        instance.errorMessage.set(err.toString());
+        instance.errorMessage.set(err.message);
         instance.state.set("error");
       } else {
         instance.state.set("success");
@@ -160,6 +187,11 @@ Template.newAdminEmailConfig.events({
   "click .test"(evt) {
     const instance = Template.instance();
     instance.showTestSendEmailPopup.set(true);
+  },
+
+  "click button.disable"(evt) {
+    const instance = Template.instance();
+    instance.showConfirmDisableEmailPopup.set(true);
   },
 });
 
@@ -231,7 +263,8 @@ Template.emailTestPopup.events({
       state: "submitting",
       message: undefined,
     });
-    Meteor.call("testSend", instance.data.token, instance.data.smtpConfig, instance.testAddress.get(), (err) => {
+    const testAddress = instance.testAddress.get().trim();
+    Meteor.call("testSend", instance.data.token, instance.data.smtpConfig, testAddress, (err) => {
       if (err) {
         instance.formStatus.set({
           state: "error",
@@ -240,10 +273,59 @@ Template.emailTestPopup.events({
       } else {
         instance.formStatus.set({
           state: "success",
-          message: "Sent a test email to " + instance.testAddress.get() + ".  It should arrive shortly.",
+          message: `Sent a test email to ${testAddress}.  It should arrive shortly.`,
         });
       }
     });
   },
+
+  "click button.close-dialog"(evt) {
+    const instance = Template.instance();
+    instance.data.onDismiss && instance.data.onDismiss();
+  },
 });
 
+Template.emailDisablePopup.onCreated(function () {
+  this.state = new ReactiveVar("idle");
+  this.errorMessage = new ReactiveVar(undefined);
+});
+
+Template.emailDisablePopup.helpers({
+  hasError() {
+    return !!Template.instance().errorMessage.get();
+  },
+
+  message() {
+    return Template.instance().errorMessage.get();
+  },
+
+  htmlDisabled() {
+    const instance = Template.instance();
+    const state = instance.state.get();
+    if (state.state === "submitting") {
+      return "disabled";
+    }
+
+    return "";
+  },
+});
+
+Template.emailDisablePopup.events({
+  "click button[name=disable-email]"(evt) {
+    const instance = Template.instance();
+    instance.state.set("submitting");
+    Meteor.call("disableEmail", instance.data.token, (err) => {
+      if (err) {
+        instance.errorMessage.set(err.message);
+        instance.state.set("idle");
+      } else {
+        instance.data.onDismiss && instance.data.onDismiss(true);
+      }
+    });
+  },
+
+  "click button[name=close-dialog]"(evt) {
+    const instance = Template.instance();
+    instance.data.onDismiss && instance.data.onDismiss(false);
+  },
+});

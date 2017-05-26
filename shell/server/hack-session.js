@@ -17,11 +17,12 @@
 const Crypto = Npm.require("crypto");
 const Http = Npm.require("http");
 const Https = Npm.require("https");
-const Future = Npm.require("fibers/future");
 const Net = Npm.require("net");
 const Dgram = Npm.require("dgram");
-const Promise = Npm.require("es6-promise").Promise;
 const Capnp = Npm.require("capnp");
+import { hashSturdyRef, checkRequirements, fetchApiToken } from "/imports/server/persistent.js";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { ssrfSafeLookup } from "/imports/server/networking.js";
 
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 const HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;
@@ -30,6 +31,7 @@ const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").System
 const IpRpc = Capnp.importSystem("sandstorm/ip.capnp");
 const EmailSendPort = EmailRpc.EmailSendPort;
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");
+const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 
 const Url = Npm.require("url");
 
@@ -53,59 +55,172 @@ SessionContextImpl = class SessionContextImpl {
     this.tabId = tabId;
   }
 
-  offer(cap, requiredPermissions, descriptor, displayInfo) {
+  claimRequest(sturdyRef, requiredPermissions) {
     return inMeteor(() => {
-      if (!this.identityId) {
-        // TODO(soon): allow non logged in users?
-        throw new Meteor.Error(400, "Only logged in users can offer capabilities.");
+      const token = fetchApiToken(globalDb, sturdyRef,
+        { "owner.clientPowerboxRequest.sessionId": this.sessionId });
+
+      if (!token) {
+        throw new Error("no such token");
+      }
+
+      const session = Sessions.findOne({ _id: this.sessionId });
+
+      if (!session) {
+        throw new Error("no such session");
+      }
+
+      // Honor `requiredPermissions`.
+      const requirements = [];
+      if (session.hashedToken) {
+        // Session is authorized by token. Note that it's important to check this before identityId
+        // e.g. in the case of standalone domains.
+        requirements.push({
+          permissionsHeld: {
+            permissions: requiredPermissions || [],
+            tokenId: session.hashedToken,
+            grainId: this.grainId,
+          },
+        });
+      } else if (session.identityId) {
+        // Session is authorized by identity.
+        requirements.push({
+          permissionsHeld: {
+            permissions: requiredPermissions || [],
+            identityId: session.identityId,
+            grainId: this.grainId,
+          },
+        });
+      } else {
+        // This can only happen with old-style sharing which has been deprecated for years. If
+        // we wanted to support this, I suppose we could do so as long as requiredPermissions is
+        // all-false? But probably this will never come up.
+        throw new Error("Cannot accept powerbox request from anonymous session that " +
+                        "doesn't have a token.");
+      }
+
+      return restoreInternal(
+          globalDb, sturdyRef,
+          { clientPowerboxRequest: Match.ObjectIncluding({ sessionId: this.sessionId }) },
+          requirements, token);
+    });
+  }
+
+  _offerOrFulfill(isFulfill, cap, requiredPermissions, descriptor, displayInfo) {
+    return inMeteor(() => {
+
+      const session = Sessions.findOne({ _id: this.sessionId });
+
+      if (!session.identityId && !session.hashedToken) {
+        throw new Error("Session has neither an identityId nor a hashedToken.");
+      }
+
+      if (isFulfill && !session.powerboxRequest) {
+        // Not a request session, so treat fulfillRequest() same as offer().
+        isFulfill = false;
       }
 
       const castedCap = cap.castAs(SystemPersistent);
-      let apiTokenOwner = { webkey: null };
+      let apiTokenOwner = { clientPowerboxOffer: { sessionId: this.sessionId, }, };
       const isUiView = descriptor && descriptor.tags && descriptor.tags.length === 1 &&
           descriptor.tags[0] && descriptor.tags[0].id &&
           descriptor.tags[0].id === Grain.UiView.typeId;
       if (isUiView) {
+        let tagValue = {};
+        if (descriptor.tags[0].value) {
+          tagValue = Capnp.parse(Grain.UiView.PowerboxTag, descriptor.tags[0].value);
+        }
+
+        if (!tagValue.title) {
+          throw new Error("No value provided for UiView.PowerboxTag.title.");
+        }
+
+        if (session.identityId) {
+          apiTokenOwner = {
+            user: {
+              identityId: this.identityId,
+              title: tagValue.title,
+            },
+          };
+        }
+      }
+
+      if (isFulfill) {
+        // The capability will pass directly to the requesting grain.
         apiTokenOwner = {
-          user: {
-            identityId: this.identityId,
-            // The following fields will be overwritten by PersistentUiView.save(), so no need to
-            // pass them in:
-            //title: "", // This will be replaced by the token's title
-            //denormalizedGrainMetadata: {}, // This will look up the package for the grain referenced.
+          clientPowerboxRequest: {
+            sessionId: session.powerboxRequest.requestingSession,
           },
         };
       }
 
       // TODO(soon): This will eventually use SystemPersistent.addRequirements when membranes
       // are fully implemented for supervisors.
-      const requirement = {
-        permissionsHeld: {
-          grainId: this.grainId,
-          identityId: this.identityId,
-          permissions: requiredPermissions,
-        },
+      const permissionsHeld = {
+        grainId: this.grainId,
+        permissions: requiredPermissions,
       };
 
-      if (!checkRequirements([requirement])) {
-        throw new Meteor.Error(403, "Permissions not satisfied.");
+      // Note that if both hashedToken and identityId are present, this indicates that the session
+      // is authorized by a token which the user has NOT redeemed. Thus the identity does not
+      // directly have access to the grain; the token does. (This is the case in particular for
+      // standalone domains.) So clearly we want our requirement to be based on the token, not the
+      // identity.
+      if (session.hashedToken) {
+        permissionsHeld.tokenId = session.hashedToken;
+      } else if (session.identityId) {
+        permissionsHeld.identityId = session.identityId;
+      } else {
+        throw new Error("Cannot offer to anonymous session that does not have a token.");
       }
+
+      const requirement = { permissionsHeld };
+
+      checkRequirements(globalDb, [requirement]);
 
       const save = castedCap.save(apiTokenOwner);
       const sturdyRef = waitPromise(save).sturdyRef;
       ApiTokens.update({ _id: hashSturdyRef(sturdyRef) }, { $push: { requirements: requirement } });
-      const powerboxView = isUiView ? {
-        offer: {
-          uiView: {
+
+      let powerboxView;
+      if (isFulfill) {
+        powerboxView = {
+          fulfill: {
             token: sturdyRef.toString(),
-            tokenId: hashSturdyRef(sturdyRef.toString()),
+            descriptor: Capnp.serializePacked(Powerbox.PowerboxDescriptor, descriptor)
+                             .toString("base64"),
           },
-        },
-      } : {
-        offer: {
-          url: ROOT_URL.protocol + "//" + globalDb.makeApiHost(sturdyRef) + "#" + sturdyRef,
-        },
-      };
+        };
+      } else if (isUiView) {
+        if (session.identityId) {
+          // Deduplicate.
+          const newApiToken = fetchApiToken(globalDb, sturdyRef.toString());
+          let tokenId = newApiToken._id;
+          const dupeQuery = _.pick(newApiToken, "grainId", "roleAssignment", "requirements",
+                                   "parentToken", "parentTokenKey", "identityId", "accountId");
+          dupeQuery._id = { $ne: newApiToken._id };
+          dupeQuery["owner.user.identityId"] = this.identityId;
+          dupeQuery.trashed = { $exists: false };
+          dupeQuery.revoked = { $exists: false };
+
+          const dupeToken = ApiTokens.findOne(dupeQuery);
+          if (dupeToken) {
+            globalDb.removeApiTokens({ _id: tokenId });
+            tokenId = dupeToken._id;
+          }
+
+          powerboxView = { offer: { uiView: { tokenId } } };
+        } else {
+          powerboxView = { offer: { uiView: { token: sturdyRef.toString() } } };
+        }
+      } else {
+        powerboxView = {
+          offer: {
+            token: sturdyRef.toString(),
+          },
+        };
+      }
+
       Sessions.update({ _id: this.sessionId },
         {
           $set: {
@@ -115,23 +230,40 @@ SessionContextImpl = class SessionContextImpl {
       );
     });
   }
+
+  offer(cap, requiredPermissions, descriptor, displayInfo) {
+    return this._offerOrFulfill(false, cap, requiredPermissions, descriptor, displayInfo);
+  }
+
+  fulfillRequest(cap, requiredPermissions, descriptor, displayInfo) {
+    return this._offerOrFulfill(true, cap, requiredPermissions, descriptor, displayInfo);
+  }
+
+  activity(event) {
+    return inMeteor(() => {
+      logActivity(this.grainId, this.identityId || "anonymous", event);
+    });
+  }
 };
 
 Meteor.methods({
-  finishPowerboxRequest(webkeyUrl, saveLabel, identityId, grainId) {
+  finishPowerboxRequest(sessionId, webkeyUrl, saveLabel, identityId, grainId) {
+    check(sessionId, String);
     check(webkeyUrl, String);
     check(saveLabel, Match.OneOf(undefined, null, String));
     check(identityId, String);
     check(grainId, String);
 
+    const db = this.connection.sandstormDb;
+
     const userId = Meteor.userId();
-    if (!userId || !globalDb.userHasIdentity(userId, identityId)) {
+    if (!userId || !db.userHasIdentity(userId, identityId)) {
       throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
     }
 
     const parsedWebkey = Url.parse(webkeyUrl.trim());
     const hostId = matchWildcardHost(parsedWebkey.host);
-    if (!hostId || !globalDb.isApiHostId(hostId)) {
+    if (!hostId || !db.isApiHostId(hostId)) {
       throw new Meteor.Error(500, "Hostname does not match this server. External webkeys are not " +
         "supported (yet)");
     }
@@ -143,19 +275,22 @@ Meteor.methods({
     }
 
     token = token.slice(1);
-    if (globalDb.isTokenSpecificHostId(hostId) && hostId !== globalDb.apiHostIdForToken(token)) {
+    if (db.isTokenSpecificHostId(hostId) && hostId !== db.apiHostIdForToken(token)) {
       // Note: This case is not security-sensitive. The client could easily compute the correct
       //   host ID for this token. But since they've passed one that doesn't match, we assume
       //   something is wrong and stop here.
       throw new Meteor.Error(400, "Invalid webkey: token doesn't match hostname.");
     }
 
-    const cap = restoreInternal(new Buffer(token),
+    const cap = restoreInternal(db, token,
                                 Match.Optional({ webkey: Match.Optional(Match.Any) }), []).cap;
     const castedCap = cap.castAs(SystemPersistent);
-    const grainOwner = {
-      grainId: grainId,
-      introducerIdentity: identityId,
+    const owner = {
+      clientPowerboxRequest: {
+        grainId: grainId,
+        introducerIdentity: identityId,
+        sessionId: sessionId,
+      },
     };
     if (saveLabel) {
       grainOwner.saveLabel = {
@@ -163,9 +298,8 @@ Meteor.methods({
       };
     }
 
-    const save = castedCap.save({ grain: grainOwner });
+    const save = castedCap.save(owner);
     const sturdyRef = waitPromise(save).sturdyRef;
-
     return sturdyRef.toString();
   },
 
@@ -293,68 +427,76 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
     const _this = this;
     const session = _this;
 
-    return new Promise((resolve, reject) => {
-      let requestMethod = Http.request;
-      if (url.indexOf("https://") === 0) {
-        requestMethod = Https.request;
-      } else if (url.indexOf("http://") !== 0) {
-        err = new Error("Protocol not recognized.");
-        err.nature = "precondition";
-        reject(err);
-      }
-
-      req = requestMethod(url, (resp) => {
-        const buffers = [];
-        let err;
-
-        switch (Math.floor(resp.statusCode / 100)) {
-          case 2: // 2xx response -- OK.
-            resp.on("data", (buf) => {
-              buffers.push(buf);
-            });
-
-            resp.on("end", () => {
-              resolve({
-                content: Buffer.concat(buffers),
-                mimeType: resp.headers["content-type"] || null,
-              });
-            });
-            break;
-          case 3: // 3xx response -- redirect.
-            resolve(session.httpGet(resp.headers.location));
-            break;
-          case 4: // 4xx response -- client error.
-            err = new Error("Status code " + resp.statusCode + " received in response.");
-            err.nature = "precondition";
-            reject(err);
-            break;
-          case 5: // 5xx response -- internal server error.
-            err = new Error("Status code " + resp.statusCode + " received in response.");
-            err.nature = "localBug";
-            reject(err);
-            break;
-          default: // ???
-            err = new Error("Invalid status code " + resp.statusCode + " received in response.");
-            err.nature = "localBug";
-            reject(err);
-            break;
+    return inMeteor(() => {
+      return ssrfSafeLookup(globalDb, url);
+    }).then(safe => {
+      return new Promise((resolve, reject) => {
+        let requestMethod = Http.request;
+        if (safe.url.indexOf("https://") === 0) {
+          requestMethod = Https.request;
+        } else if (safe.url.indexOf("http://") !== 0) {
+          err = new Error("Protocol not recognized.");
+          err.nature = "precondition";
+          reject(err);
         }
-      });
 
-      req.on("error", (e) => {
-        e.nature = "networkFailure";
-        reject(e);
-      });
+        const options = Url.parse(safe.url);
+        options.headers = { host: safe.host };
+        options.servername = safe.host.split(":")[0];
 
-      req.setTimeout(15000, () => {
-        req.abort();
-        err = new Error("Request timed out.");
-        err.nature = "localBug";
-        err.durability = "overloaded";
-        reject(err);
-      });
+        req = requestMethod(options, (resp) => {
+          const buffers = [];
+          let err;
 
-      req.end();
+          switch (Math.floor(resp.statusCode / 100)) {
+            case 2: // 2xx response -- OK.
+              resp.on("data", (buf) => {
+                buffers.push(buf);
+              });
+
+              resp.on("end", () => {
+                resolve({
+                  content: Buffer.concat(buffers),
+                  mimeType: resp.headers["content-type"] || null,
+                });
+              });
+              break;
+            case 3: // 3xx response -- redirect.
+              resolve(session.httpGet(resp.headers.location));
+              break;
+            case 4: // 4xx response -- client error.
+              err = new Error("Status code " + resp.statusCode + " received in response.");
+              err.nature = "precondition";
+              reject(err);
+              break;
+            case 5: // 5xx response -- internal server error.
+              err = new Error("Status code " + resp.statusCode + " received in response.");
+              err.nature = "localBug";
+              reject(err);
+              break;
+            default: // ???
+              err = new Error("Invalid status code " + resp.statusCode + " received in response.");
+              err.nature = "localBug";
+              reject(err);
+              break;
+          }
+        });
+
+        req.on("error", (e) => {
+          e.nature = "networkFailure";
+          reject(e);
+        });
+
+        req.setTimeout(15000, () => {
+          req.abort();
+          err = new Error("Request timed out.");
+          err.nature = "localBug";
+          err.durability = "overloaded";
+          reject(err);
+        });
+
+        req.end();
+      });
     });
   }
 
@@ -362,7 +504,7 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
     return inMeteor((function () {
       return this._getUserAddress();
     }).bind(this));
-  };
+  }
 
   obsoleteGenerateApiToken(petname, userInfo, expires) {
     throw new Error("generateApiToken() has been removed. Use offer templates instead.");
@@ -380,22 +522,17 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
     const parsedUrl = Url.parse(url);
 
     if (parsedUrl.hash) { // Assume that anything with a fragment is a webkey
-      if (parsedUrl.pathname) {
+      if (parsedUrl.pathname && parsedUrl.pathname !== "/") {
         throw new Error("Webkey urls cannot contain a path.");
       }
 
       const token = parsedUrl.hash.slice(1); // Get rid of # which is always the first character
       const hostId = matchWildcardHost(parsedUrl.host);
-      if (hostId && globalDb.isApiHostId(hostId)) {
-        // Connecting to a local capability.
-        return getWrappedUiViewForToken(token);
-      } else {
-        // Connecting to a remote server with a bearer token.
-        // TODO(someday): Negotiate server-to-server Cap'n Proto connection.
-        return { view: new ExternalUiView(url, this.grainId, token) };
-      }
+      // Connecting to a remote server with a bearer token.
+      // TODO(someday): Negotiate server-to-server Cap'n Proto connection.
+      return { view: new ExternalUiView(url, token) };
     } else {
-      return { view: new ExternalUiView(url, this.grainId) };
+      return { view: new ExternalUiView(url) };
     }
   }
 };

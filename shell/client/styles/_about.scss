@@ -174,7 +174,7 @@
           display: block;
           color: black;
           &:hover {
-            color: #65468e;
+            color: $darker-purple-color;
           }
 
           &::after {
@@ -247,7 +247,7 @@
           color: black;
           font-weight: normal;
           &:hover {
-            color: #65468e;
+            color: $darker-purple-color;
           }
         }
       }

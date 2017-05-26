@@ -2,13 +2,21 @@
 
 // The purple that we use for
 $sandstorm-purple-color: #762F87;
+$darker-purple-color: #65468e;
 
 // The color that we use to outline focused elements, for accessibility
+// Keep $half-focus-outline-color's values in sync with the values from the outline color.
 $focus-outline-color: $sandstorm-purple-color;
+$half-focus-outline-color: rgba(118, 47, 135, 0.5);
+
+// The color to use for your border when you want to faintly outline something.
+$generic-border-color: darken(white, 30%);
 
 // Colors for success/error message box backgrounds.
 $error-background-color: #ffdddd;
 $success-background-color: #ddffdd;
+$warning-background-color: #ffffaa;
+$info-background-color: #d8bfd8;
 
 ////////  General shell elements
 // Default shell background and text colors
@@ -18,6 +26,11 @@ $topbar-foreground-color: #9e9e9e;
 // Colors for UI elements when hovered
 $topbar-background-color-hover: #383838;
 $topbar-foreground-color-hover: #ffffff;
+
+// Colors for topbar and navbar entries when "unread"
+$topbar-background-color-unread: #634488;
+$topbar-foreground-color-unread: #ffffff;
+$topbar-background-color-unread-hover: #7b55aa;
 
 // Colors for topbar and navbar entries when "active" (i.e. current tab)
 $topbar-background-color-active: #efefef;
@@ -42,6 +55,9 @@ $topbar-dropdown-border-color: #c1c1c1;
 $default-content-background-color: #efefef;
 $default-content-foreground-color: #191919;
 
+// Color used for horizontal rules separating sections in page content
+$default-rule-color: #a2a2a2;
+
 // Some table-related colors.
 $default-table-border-color: #ffffff; // Outlines the entire <table>.
 
@@ -60,7 +76,7 @@ $default-table-row-action-background-color-hover: lighten($sandstorm-purple-colo
 // Default text input field colors
 $default-textinput-background-color: #ffffff;
 $default-textinput-outline-color: #9e9e9e;
-$default-textinput-outline-color-focus: #65468e;
+$default-textinput-outline-color-focus: $darker-purple-color;
 
 //////// Grain list ("Open...") styles
 $grainlist-background-color: $default-content-background-color;
@@ -78,6 +94,7 @@ $grainlist-table-header-background-color-hover: $default-table-header-background
 $grainlist-table-row-background-color: $default-table-row-background-color;
 $grainlist-table-row-foreground-color: #5d5d5d;
 $grainlist-table-row-background-color-hover: $default-table-row-background-color-hover;
+$grainlist-table-row-background-color-unread: #eee9f4;
 $grainlist-table-row-action-background-color: $default-table-row-action-background-color;
 $grainlist-table-row-action-background-color-hover: $default-table-row-action-background-color-hover;
 $grainlist-table-row-outline-color: #d3d3d3;
@@ -88,7 +105,7 @@ $applist-foreground-color: $default-content-foreground-color;
 
 $applist-action-text-color: #5d5d5d;
 
-$applist-rule-color: #6d6d6d;
+$applist-rule-color: $default-rule-color;
 $applist-pseudoapp-background-color: #ffffff;
 $applist-pseudoapp-outline-color: #d3d3d3;
 

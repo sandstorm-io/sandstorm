@@ -50,6 +50,30 @@ interface IpNetwork @0xa982576b7a2a2040 {
   # access". The IpNetwork capability is a dangerous capability that should only be granted to
   # trusted drivers. Only the Sandstorm server administrator is likely to possess this capability.
 
+  struct PowerboxTag {
+    # Tag to be used in a `PowerboxDescriptor` to describe an `IpNetwork`.
+
+    encryption @0 :Encryption;
+    # The encryption scheme, if any, on top of which the `IpNetwork` layers its connections
+    # and messages.
+
+    struct Encryption @0xe2d94cf90fe4078d {
+      # Describes an encryption scheme.
+      #
+      # Capabilities derived from an `IpNetwork` may use this struct in their own powerbox
+      # descriptors, either in an explicit `PowerboxTag.encryption` field, like here with
+      # `IpNetwork`, or in an independent powerbox tag, marked by this struct's type ID.
+
+      union {
+        none @0 :Void;
+        # No encryption.
+
+        tls @1 :Void;
+        # Transport Layer Security, using a standard set of certificates.
+      }
+    }
+  }
+
   getRemoteHost @0 (address :IpAddress) -> (host :IpRemoteHost);
   # Get the remote host corresponding to the given address.
 

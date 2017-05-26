@@ -1,3 +1,9 @@
+<template name="setupWizardLoading">
+<div class="setup-page-content">
+  <div class="centered-box">Loading...</div>
+</div>
+</template>
+
 <template name="setupWizardButtonRow">
 <div class="setup-button-row">
   {{>Template.contentBlock }}
@@ -16,7 +22,7 @@
 --}}
 <li class="setup-progress-step step-{{stepName}} {{className}}">
   {{#if isCurrentStep}}
-    <span>
+    <span class="setup-current-step">
       {{> Template.contentBlock}}
     </span>
   {{else}}
@@ -25,7 +31,7 @@
         {{> Template.contentBlock}}
       {{/linkTo}}
     {{else}}
-      <span>
+      <span class="setup-not-current-step">
         {{> Template.contentBlock}}
       </span>
     {{/if}}
@@ -44,18 +50,16 @@
                                    mayJumpTo=(mayJumpTo "identity")
                                    route="setupWizardIdentity"
                                    className=itemClassName}}
-      Login provider(s)
+      Identity providers
     {{/setupWizardProgressBarItem}}
 
-    {{#if hasFeatureKey}}
-      {{#setupWizardProgressBarItem stepName="organization"
-                                     isCurrentStep=(currentStepIs "organization")
-                                     mayJumpTo=(mayJumpTo "organization")
-                                     route="setupWizardOrganization"
-                                     className=itemClassName}}
-        Organization
-      {{/setupWizardProgressBarItem}}
-    {{/if}}
+    {{#setupWizardProgressBarItem stepName="organization"
+                                   isCurrentStep=(currentStepIs "organization")
+                                   mayJumpTo=(mayJumpTo "organization")
+                                   route="setupWizardOrganization"
+                                   className=itemClassName}}
+      Organization
+    {{/setupWizardProgressBarItem}}
 
     {{#setupWizardProgressBarItem stepName="email"
                                    isCurrentStep=(currentStepIs "email")
@@ -63,7 +67,16 @@
                                    route="setupWizardEmailConfig"
                                    className=itemClassName
                                    }}
-      Set up email
+      Email
+    {{/setupWizardProgressBarItem}}
+
+    {{#setupWizardProgressBarItem stepName="preinstalled"
+                                   isCurrentStep=(currentStepIs "preinstalled")
+                                   mayJumpTo=(mayJumpTo "preinstalled")
+                                   route="setupWizardPreinstalled"
+                                   className=itemClassName
+                                   }}
+      Pre-installed apps
     {{/setupWizardProgressBarItem}}
 
     {{#setupWizardProgressBarItem stepName="user"
@@ -72,15 +85,14 @@
                                    route="setupWizardLoginUser"
                                    className=itemClassName
                                    }}
-      Create admin account
+      Admin account
     {{/setupWizardProgressBarItem}}
   </ol>
   <div class="setup-progress-bar">
     <div class="{{#if currentStepAtOrPast "identity"    }}complete{{else}}incomplete{{/if}}"></div>
-    {{#if hasFeatureKey}}
     <div class="{{#if currentStepAtOrPast "organization"}}complete{{else}}incomplete{{/if}}"></div>
-    {{/if}}
     <div class="{{#if currentStepAtOrPast "email"       }}complete{{else}}incomplete{{/if}}"></div>
+    <div class="{{#if currentStepAtOrPast "preinstalled"}}complete{{else}}incomplete{{/if}}"></div>
     <div class="{{#if currentStepAtOrPast "user"        }}complete{{else}}incomplete{{/if}}"></div>
     <div class="{{#if currentStepAtOrPast "success"     }}complete{{else}}incomplete{{/if}}"></div>
   </div>
@@ -92,14 +104,41 @@
   <span class="setup-help-label">Need help?</span>
   <a class="setup-help-link" target="_blank" href="https://docs.sandstorm.io/en/latest/administering/">Documentation</a>
   <a class="setup-help-link" href="mailto:support@sandstorm.io">Email support</a>
+  <button type="button" name="system-log" class="setup-help-link">System Log</button>
   {{!-- TODO(someday): Live Chat link --}}
+  {{#if showSystemLog}}
+    {{#modalDialogWithBackdrop onDismiss=hideSystemLogCallback}}
+      {{> setupWizardSystemLog "" }}
+    {{/modalDialogWithBackdrop}}
+  {{/if}}
+</div>
+</template>
+
+<template name="setupWizardSystemLog">
+<div class="setup-system-log">
+  {{#if ready}}
+    {{#if isUserPermitted}}
+      <h2 class="setup-system-log-header">
+        <span class="setup-system-log-header-text">System log</span>
+        <form class="standard-form">
+          <button type="button" name="download-full-log">Download log</button>
+        </form>
+      </h2>
+      {{> newAdminLog ""}}
+    {{else}}
+      <p>
+        You cannot view the system log because you are not logged in as an admin
+        and you do not have a setup token.
+      </p>
+    {{/if}}
+  {{/if}}
 </div>
 </template>
 
 <template name="setupWizardLayout">
 <div class="setup-root">
   {{> yield}}
-  {{> setupWizardHelpFooter }}
+  {{> setupWizardHelpFooter "" }}
   <div class="sandstorm-logo-row">
     <div class="sandstorm-logo"></div>
   </div>
@@ -111,6 +150,15 @@
   <h1 class="setup-page-title">Welcome to Sandstorm!</h1>
 
   {{#if initialSetupComplete}}
+    {{#if noIdpEnabled}}
+    <p>
+      This Sandstorm server has been set up previously, but due to a change in
+      <code>sandstorm.conf</code>, you'll need to configure identity providers again.
+    </p>
+    <p class="center">
+      {{#linkTo route="setupWizardIdentity" class="setup-button-primary"}}Revisit setup wizard{{/linkTo}}
+    </p>
+    {{else}}
     <p>
       This Sandstorm server is ready to roll.
       You can adjust server settings, including which providers are
@@ -136,11 +184,11 @@
     {{#if currentUser}}
       {{#if currentUserIsAdmin}}
         <p class="center">
-          {{#linkTo route="adminSettings" class="admin-settings-button"}}Proceed to Admin Panel{{/linkTo}}
+          {{#linkTo route="newAdminRoot" class="admin-settings-button"}}Proceed to admin panel{{/linkTo}}
         </p>
       {{else}}
         {{#if identityUser}}
-          {{> identityLoginInterstitial }}
+          {{> identityLoginInterstitial "" }}
         {{else}}
           <p class="center">
             <button class="make-self-admin">Give yourself admin privileges</button>
@@ -155,7 +203,7 @@
         <div class="center">
           {{#if showSignInPanel}}
             {{#with linkingNewIdentity=notLinkingNewIdentity}}
-              {{> loginButtonsDialog freshAccountsUi}}
+              {{> loginButtonsDialog label="Sign in" accountsUi=freshAccountsUi}}
             {{/with}}
           {{else}}
           <button class="sign-in-button">Sign in to become admin</button>
@@ -167,75 +215,22 @@
     <p class="center">
       {{#linkTo route="setupWizardIdentity" class="rerun-wizard-button"}}Revisit setup wizard{{/linkTo}}
     </p>
-
+    {{/if}}
   {{else}}
-    <p>Choose what type of Sandstorm server to set up:</p>
-
-    <div class="setup-type-selection">
-      <div class="setup-type">
-        <h3>Standard</h3>
-        <ul class="setup-features">
-          <li>Login with Google, GitHub, or email address</li>
-          <li>Each user gets their own workspace</li>
-          <li>Share grains with anyone</li>
-        </ul>
-        <div class="setup-pricing-block">
-          <p class="setup-price">Free</p>
-          <p class="subheader">Open source</p>
-          <p class="subheader">&nbsp;</p>
-        </div>
-        {{#if hasFeatureKey}}
-          <button class="setup-sandstorm-standard" disabled>
-            Sandstorm for Work chosen
-          </button>
-        {{else}}
-          <button class="setup-sandstorm-standard">
-            Begin Standard Setup
-          </button>
-        {{/if}}
-      </div>
-      <div class="setup-type">
-        <h3>Sandstorm for Work</h3>
-        <ul class="setup-features">
-          <li>Includes everything in Standard</li>
-          <li class="setup-additional-feature">+ Single sign-on: email/LDAP/SAML</li>
-          <li class="setup-additional-feature">+ Automatic user provisioning</li>
-        </ul>
-        <div class="setup-pricing-block">
-          <p class="setup-price">$15/user/month</p>
-          <p class="subheader">Free trial for every organization</p>
-          <p class="subheader">Special pricing/discounts for non-profits</p>
-        </div>
-        <button class="setup-sandstorm-for-work">
-          Begin Sandstorm for Work Setup
-        </button>
-      </div>
+    <div class="sandstorm-logo-row">
+      <div class="sandstorm-logo"></div>
     </div>
+
+    <button class="setup-sandstorm">
+      Begin Sandstorm Setup
+    </button>
   {{/if}}
-</div>
-</template>
-
-<template name="setupWizardFeatureKey">
-<div class="setup-page-content">
-  <h1 class="setup-page-title">Sandstorm for Work feature key</h1>
-
-  {{!-- feature key form --}}
-  {{> adminFeatureKey }}
-
-  {{#setupWizardButtonRow}}
-    <button class="setup-next-button" {{nextButtonClass}}>
-      Next
-    </button>
-    <button class="setup-back-button">
-      Back
-    </button>
-  {{/setupWizardButtonRow}}
 </div>
 </template>
 
 <template name="setupWizardIdentity">
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Configure Identity Provider(s)</h1>
+  <h1 class="setup-page-title">Identity providers</h1>
   {{> setupWizardProgressBar currentStep="identity"}}
 
   <p>
@@ -245,10 +240,10 @@
   </p>
 
   <p>
-    Configure the identity provider(s) you wish to enable.
+    Configure the identity provider or providers you wish to enable.
   </p>
 
-  {{> adminIdentityProviderTable idpData=idpData featureKeyRoute="setupWizardFeatureKey" }}
+  {{> adminIdentityProviderTable idpData=idpData }}
 
   {{#setupWizardButtonRow}}
     <button class="setup-next-button" {{nextHtmlDisabled}}>
@@ -263,16 +258,11 @@
 
 <template name="setupWizardOrganization">
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Configure Organization</h1>
+  <h1 class="setup-page-title">Organization settings</h1>
 
-{{#if hasFeatureKey}}
   {{> setupWizardProgressBar currentStep="organization"}}
 
-  <p>
-    Sandstorm for Work allows you to define an organization.
-    You can automatically apply some settings to all members of your organization.
-    Users within the organization will automatically be able to log in, install apps, and create grains.
-  </p>
+  {{> organizationSettingsBlurb "" }}
 
   {{#if errorMessage}}
     {{#focusingErrorBox}}
@@ -360,18 +350,12 @@
       Back
     </button>
   {{/setupWizardButtonRow}}
-{{else}}
-  <p>Sandstorm for Work allows you to define an organization.  To use Sandstorm for Work, please
-  {{#linkTo route="setupWizardFeatureKey"}}
-    provide a feature key
-  {{/linkTo}}.</p>
-{{/if}}
 </div>
 </template>
 
 <template name="setupWizardEmailConfig">
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Outbound Email Setup</h1>
+  <h1 class="setup-page-title">Email delivery</h1>
   {{> setupWizardProgressBar currentStep="email"}}
 
   <p>
@@ -436,7 +420,7 @@
 
   {{#if showTestSendEmailPopup}}
     {{#modalDialogWithBackdrop onDismiss=closePopupCallback}}
-      {{> emailTestPopup token=token smtpConfig=getSmtpConfig }}
+      {{> emailTestPopup token=token smtpConfig=getSmtpConfig onDismiss=closePopupCallback }}
     {{/modalDialogWithBackdrop}}
   {{/if}}
 
@@ -450,6 +434,56 @@
     <button class="setup-test-email-button" {{testHtmlDisabled}}>
       Test
     </button>
+    <button class="setup-back-button">
+      Back
+    </button>
+  {{/setupWizardButtonRow}}
+</div>
+</template>
+
+<template name="setupWizardPreinstalled">
+<div class="setup-page-content setup-preinstall">
+  <h1 class="setup-page-title">Pre-installed Apps Setup</h1>
+  {{> setupWizardProgressBar currentStep="preinstalled"}}
+
+  <p>
+    Please wait while Sandstorm installs the following Productivity Suite apps that are useful for most users. You will be able to configure all pre-installed apps in the Admin Settings panel after setup.
+  </p>
+  {{#if Template.subscriptionsReady}}
+  <div class="productivity-suite" role="grid">
+    <div role="rowgroup">
+      {{#each preinstallApps}}
+        <div role="row" class="{{#if isAppPreinstalled}}checked{{/if}}">
+          <div class="name" role="gridcell">{{name}}</div>
+          <div class="description" role="gridcell">{{shortDescription}}</div>
+          <div class="download" role="gridcell">
+            {{#if isAppDownloaded}}
+              <i class="download-checkmark"></i>Downloaded
+            {{else}}{{#if isAppDownloading}}
+              <progress value="{{progressFraction}}"></progress>
+            {{else}}{{#if isAppFailed}}
+              <i class="download-x-mark"></i>Failed
+            {{/if}}
+            {{/if}}
+            {{/if}}
+          </div>
+        </div>
+      {{/each}}
+    </div>
+  </div>
+  {{else}}
+    <h2>Please wait, loading app index...</h2>
+  {{/if}}
+
+  {{#setupWizardButtonRow}}
+    <button class="setup-next-button" disabled="{{#unless allowNext}}true{{/unless}}">
+      Next
+    </button>
+    {{#if allowSkip}}
+    <button class="setup-skip-button">
+      Skip for now
+    </button>
+    {{/if}}
     <button class="setup-back-button">
       Back
     </button>
@@ -475,15 +509,17 @@
   {{/if}}
 
 {{#if identityUser}}
-  {{> identityLoginInterstitial }}
+  {{> identityLoginInterstitial "" }}
 {{else}}
   {{#if currentUser}}
     {{#if currentUserFirstLogin}}
-      <h1>Confirm your profile</h1>
-      <div class="single-identity-editor">
-        {{#with accountProfileEditorData}}
-          {{> _accountProfileEditor}}
-        {{/with}}
+      <div class="center">
+        <h2>Confirm your profile</h2>
+        <div class="single-identity-editor">
+          {{#with accountProfileEditorData}}
+            {{> _accountProfileEditor .}}
+          {{/with}}
+        </div>
       </div>
 
       {{#unless serverHasAdmin}}
@@ -515,7 +551,7 @@
       {{!-- The loginButtonsDialog apparently requires this in the parent data context, which seems
             wrong.  It should probably be passed in explicitly instead.  --}}
       {{#with linkingNewIdentity=notLinkingNewIdentity}}
-        {{> loginButtonsDialog freshAccountsUi}}
+        {{> loginButtonsDialog label="Create account" accountsUi=freshAccountsUi}}
       {{/with}}
     </div>
   {{/if}}
@@ -535,16 +571,19 @@
 <template name="setupWizardSuccess">
 <div class="setup-page-content">
   <h1 class="setup-page-title">Ready to roll!</h1>
+
+  {{> setupWizardProgressBar currentStep="success"}}
+
   <p>Your Sandstorm server is now ready to use.</p>
   <p>What would you like to do next?</p>
 
   <div class="setup-next-steps">
     {{#unless someOrgMembershipEnabled}}
-      {{#linkTo route="adminInvites" class="setup-button-secondary"}}
+      {{#linkTo route="newAdminUserInvite" class="setup-button-secondary"}}
         Add users
       {{/linkTo}}
     {{/unless}}
-    {{#linkTo route="adminSettings" class="setup-button-secondary"}}
+    {{#linkTo route="newAdminRoot" class="setup-button-secondary"}}
       Edit other settings
     {{/linkTo}}
     {{#linkTo route="apps" class="setup-button-primary"}}
@@ -582,7 +621,7 @@
   {{#if hasUsers}}
   <p>
   This server is already set up, so we recommend administering it via the main
-  {{#linkTo route="adminSettings"}}administration panel{{/linkTo}}.
+  {{#linkTo route="newAdminRoot"}}administration panel{{/linkTo}}.
   </p>
   {{/if}}
 

@@ -1,5 +1,5 @@
-%unstyled-button {
-  // Styles for <button>s should extend this to remove the browser's default styling.
+@mixin unstyled-button () {
+  // Styles for <button>s should @include this to remove the browser's default styling.
   border: none;
   font-size: inherit;
   font-family: inherit;
@@ -21,7 +21,7 @@
   background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wJGBYxHYxl31wAAAHpSURBVDjLpZI/aFNRFMZ/973bJqGRPopV4qNq/+SpTYnWRhCKilShg9BGcHOM+GfQoZuLk4iLgw4qZNBaHLuIdBNHl7Ta1qdNFI3SihnaNG1MpH3vuiQYQnwZvHCG893zffc751z4z6PX5T5gA1DAKnAaOAQEgAfAVeCpl+CeCrlRuEC6maO4h0A1wl4tPAHMqNUthvrDdHYY7A3t4rDVjeO6rBU2FaABM1WCrBNoi48Mi+nH9yj+KtPibAKwJXfQ5vcRG7soUnYmWEuQgAEIYBv4cGpoILI0Z4tyYYPegS6UguyijZQ6J45GSNmZHzUcJYD2ii2Ajv7efZ8WZ6ZwXFj79hXpayW4O0SL1Nl/8jzZlZ9dQLFS70pgvZKIyGD0yvu5eRmMnrk1PjI81ir1qBACTdPevXj95mVuNX8XKDQc/+T334bZZ104cvzYw2s3J3qAL5WXSsDbf61NNMBu+wOBs+VSyQ84Nfhg028ZGx3/qyy0lC7lgi7lghBitoon03lvB8l0/k7Wnk+8mny0cyXzEcfZxgwfZPTyRMHsOzAFXE9YhtNQIJnOx4FpJXT1eSkn2g0frqMoFrfoCXcqlCOAGwnLuO/l4JymcWl5uRxzXUKghBAiZ5r+WaV4lrCM555zqO+x2d0ftGmpiA/0k70AAAAASUVORK5CYII=");
 }
 
-%overflow-ellipsis {
+@mixin overflow-ellipsis () {
   // For when you want a block of text to fit within a box on a single line and
   // use ellipsis if it would overflow the box.
   display: block;
@@ -37,7 +37,11 @@
   // Generally, we do this to allow Internet Explorer to show
   // user-created SVG images (e.g., app icons) rescaled to
   // the size of the (pseudo) IMG tag.
-  background-size: cover;
+  //
+  // Prefer contain to cover here, because downscaling an image is
+  // more likely to produce good results for user-provided images
+  // (e.g. whitelabel logo or app icons) than clipping the image will.
+  background-size: contain;
   background-repeat: no-repeat;
 }
 
@@ -54,6 +58,7 @@
 }
 
 %button-disabled {
+  cursor: auto;
   color: #777777;
   background-color: #efefef;
   border: 1px solid lighten(#afafaf, 10%);
@@ -64,11 +69,18 @@
   }
 }
 
+%button-link {
+  background: none;
+  border: none;
+  color: black;
+  text-decoration: underline;
+}
+
 %button-primary {
   // A button coloring for the primary action of a form.
-  background-color: #65468e;
+  background-color: $darker-purple-color;
   color: white;
-  border: 1px solid darken($sandstorm-purple-color, 10%);
+  border: 1px solid darken($darker-purple-color, 10%);
   &:hover {
     background-color: #714daa;
   }
@@ -91,11 +103,12 @@
 }
 
 %button-danger {
-  background-color: red;
-  color: white;
-  border: 1px solid darken(red, 30%);
+  color: #900;
+  background-color: white;
+  border: 1px solid darken(white, 30%);
   &:hover {
-    background-color: darken(red, 10%);
+    background-color: #af1010;
+    color: white;
   }
   &:disabled {
     @extend %button-disabled;
@@ -114,10 +127,23 @@
 
 %standard-form {
   // Styles that we tend to reuse in forms, particularly in the admin panel.
-  margin-bottom: 10px;
-
   .form-group {
     margin-bottom: 10px;
+  }
+
+  .checkbox-group {
+    // We want to make it so that labels for checkboxes and other associated content align neatly.
+    // To accomplish this, we remove the checkbox from the flow, place all other content inside a
+    // box with some left padding, and then pull the checkbox back out to the side with negative margin.
+    // We might want to do something similar for radio buttons some day.
+    position: relative;
+    padding-left: 24px;
+    margin-bottom: 10px;
+    input[type=checkbox] {
+      position: absolute;
+      margin-left: -24px;
+      font-size: 16px;
+    }
   }
 
   label {
@@ -126,7 +152,11 @@
     font-size: 20px;
   }
 
-  input[type=text], input[type=password], input[type=number], input[type=email], textarea {
+  input[type=text], input[type=password], input[type=number], input[type=email], select {
+    min-height: 30px;
+  }
+
+  input[type=text], input[type=password], input[type=number], input[type=email], select, textarea {
     display: block;
     width: 100%;
     color: #222;
@@ -136,6 +166,13 @@
     font-family: inherit;
     border-radius: 2px;
     border: 1px solid #d3d3d3;
+    &:disabled {
+      color: #666;
+      background-color: #efefef;
+    }
+    &:invalid {
+      border: 1px solid #c00;
+    }
   }
 
   .form-subtext {
@@ -162,5 +199,58 @@
   button[type=button] {
     @extend %button-base;
     @extend %button-secondary;
+    &.danger {
+      @extend %button-danger;
+    }
+  }
+
+  a.button {
+    @extend %button-base;
+    @extend %button-secondary;
+    &.primary {
+      @extend %button-primary;
+    }
+    &.danger {
+      @extend %button-danger;
+    }
+    font-weight: inherit;
+  }
+
+  &.disabled {
+    // Used for marking that the entire form is disabled.  Note that this does not disable the
+    // <input>s; you should still add the disabled attribute to each control.
+    color: #666 !important; // Grey out all text uniformly.
+  }
+}
+
+%search-row {
+  // A search bar that grows to the size of its container.
+  >label {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+
+    >span.search-icon {
+      @extend %pseudo-img-tag;
+      background-image: url("/search.svg");
+      background-size: 24px 24px;
+      background-position: center;
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      vertical-align: top;
+    }
+    >input.search-bar {
+      flex: 1 1 auto;
+      font-size: 16pt;
+      height: 32px;
+      padding-left: 4px;
+      background-color: $grainlist-searchbar-background-color;
+      border: 1px solid $grainlist-searchbar-outline-color;
+      &:focus {
+        border: 1px solid $grainlist-searchbar-outline-color-focus;
+      }
+    }
   }
 }

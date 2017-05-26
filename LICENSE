@@ -41,7 +41,9 @@ shell/public/fonts/WOFF/OTF/SourceSansPro-BoldIt.otf.woff
     License: SIL Open Font License, Version 1.1
     License URL: https://github.com/adobe-fonts/source-sans-pro/blob/master/LICENSE.txt
 
-shell/packages/sandstorm-accounts-ui
+shell/client/accounts/login-buttons.html
+shell/client/accounts/login-buttons.js
+shell/client/accounts/login-buttons-session.js
     What: forked from accounts-ui/accounts-ui-unstyled
     Source URL: https://github.com/meteor/meteor
     Copyright: Meteor Development Group
@@ -55,13 +57,6 @@ shell/client/vendor/ansi-up.js
     License: MIT
     License URL: https://github.com/drudru/ansi_up/blob/master/Readme.md
                  (at bottom)
-
-shell/client/vendor/es6-promise.js
-    What: ES6 Promise polyfill
-    Source URL: https://github.com/stefanpenner/es6-promise
-    Copyright: Yehuda Katz, Tom Dale, Stefan Penner and contributors
-    License: MIT
-    License URL: https://github.com/stefanpenner/es6-promise/blob/master/LICENSE
 
 shell/packages/sandstorm-identicons/identicon.js
     What: identicon.js
@@ -77,23 +72,18 @@ shell/packages/sandstorm-identicons/pnglib.js
     License: BSD 2-clause
     License URL: http://opensource.org/licenses/bsd-license.php
 
-shell/packages/introjs/client/*
-    What: intro.js
-    Source URL: https://github.com/usablica/intro.js
-    Copyright: Afshin Mehrabani
-    License: MIT
-    License URL: https://github.com/usablica/intro.js/blob/master/README.md
-                 (at bottom)
-
-shell/packages/accounts-ldap/*
-    What: Meteor accounts-ldap package
+shell/imports/client/accounts/ldap/ldap-client.js
+shell/server/accounts/ldap/ldap-server.js
+    What: forked from Meteor accounts-ldap package
     Source URL: https://github.com/typ90/meteor-accounts-ldap
     Copyright: Eric Typaldos
     License: MIT
     License URL: https://github.com/typ90/meteor-accounts-ldap/blob/master/LICENSE
 
-shell/packages/accounts-saml/*
-    What: Meteor accounts-saml package
+shell/imports/client/accounts/saml/saml-client.js
+shell/imports/server/accounts/saml-utils.js
+shell/server/accounts/saml/saml-server.js
+    What: forked from Meteor accounts-saml package
     Source URL: https://github.com/nate-strauser/meteor-accounts-saml
     Copyright: Nathan Strauser
     License: MIT

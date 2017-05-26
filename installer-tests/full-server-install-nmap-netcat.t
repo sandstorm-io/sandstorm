@@ -11,7 +11,7 @@ $[run]sudo DEBIAN_FRONTEND=noninteractive apt-get install -d -y --no-install-rec
 $[veryslow]nmap-downloaded
 $[run]sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nmap && echo nmap-installed
 $[veryslow]nmap-installed
-$[run]CURL_USER_AGENT=testing OVERRIDE_SANDCATS_BASE_DOMAIN=sandcats-dev.sandstorm.io OVERRIDE_SANDCATS_API_BASE=https://sandcats-dev-machine.sandstorm.io OVERRIDE_SANDCATS_CURL_PARAMS=-k OVERRIDE_NC_PATH=/usr/bin/ncat bash /vagrant/install.sh -i
+$[run]CURL_USER_AGENT=testing REPORT=no OVERRIDE_SANDCATS_BASE_DOMAIN=sandcats-dev.sandstorm.io OVERRIDE_SANDCATS_API_BASE=https://sandcats-dev-machine.sandstorm.io OVERRIDE_SANDCATS_CURL_PARAMS=-k OVERRIDE_NC_PATH=/usr/bin/ncat bash /vagrant/install.sh -i
 $[slow]Sandstorm makes it easy to run web apps on your own server. You can have:
 
 1. A typical install, to use Sandstorm (press enter to accept this default)
@@ -41,7 +41,8 @@ Your credentials to use it are in /opt/sandstorm/var/sandcats; consider making a
 $[veryslow]Downloading: https://dl.sandstorm.io
 $[veryslow]GPG signature is valid.
 $[veryslow]Sandstorm started. PID =
-$[veryslow]Visit this link to configure it:
+$[veryslow]Your server is coming online. Waiting up to 90 seconds...
+$[veryslow]Visit this link to start using it:
   http://
 To learn how to control the server, run:
   sandstorm help

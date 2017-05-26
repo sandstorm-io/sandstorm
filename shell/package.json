@@ -13,6 +13,19 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "intro.js": "git+https://github.com/sandstorm-io/intro.js.git#sandstorm"
+    "babel-runtime": "^6.23.0",
+    "bignum": "^0.12.5",
+    "heapdump": "^0.3.9",
+    "intro.js": "git+https://github.com/sandstorm-io/intro.js.git#8e1c7604f251ec874bf4ae4d7b4f11a14cee697e",
+    "ldapjs": "^1.0.1",
+    "mailparser": "^0.6.2",
+    "node-forge": "^0.6.49",
+    "nodemailer": "^2.7.2",
+    "nodemailer-smtp-pool": "^2.8.3",
+    "smtp-server": "^1.17.0",
+    "xml-crypto": "0.0.20",
+    "xml2js": "^0.2.8",
+    "xmlbuilder": "^8.2.2",
+    "xmldom": "^0.1.27"
   }
 }

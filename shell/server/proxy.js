@@ -14,14 +14,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Bignum from "bignum";
+import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
+import { SandstormBackend, shouldRestartGrain } from "/imports/server/backend.js";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 const Crypto = Npm.require("crypto");
 const ChildProcess = Npm.require("child_process");
 const Fs = Npm.require("fs");
 const Path = Npm.require("path");
-const Future = Npm.require("fibers/future");
-const Http = Npm.require("http");
 const Url = Npm.require("url");
-const Promise = Npm.require("es6-promise").Promise;
 const Capnp = Npm.require("capnp");
 const Net = Npm.require("net");
 
@@ -31,6 +32,11 @@ const WebSession = Capnp.importSystem("sandstorm/web-session.capnp").WebSession;
 const HackSession = Capnp.importSystem("sandstorm/hack-session.capnp");
 const Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
 const Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
+const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
+
+const PARSED_ROOT_URL = Url.parse(process.env.ROOT_URL);
+const PROTOCOL = PARSED_ROOT_URL.protocol;
+const PORT = PARSED_ROOT_URL.port;
 
 const storeReferralProgramInfoApiTokenCreated = (db, accountId, identityId, apiTokenAccountId) => {
   // From the Referral program's perspective, if Bob's Account has no referredByComplete, then we
@@ -39,8 +45,8 @@ const storeReferralProgramInfoApiTokenCreated = (db, accountId, identityId, apiT
   check(identityId, String);
   check(apiTokenAccountId, String);
 
-  // Bail out early if quota enforcement is disabled.
-  if (!Meteor.settings.public.quotaEnabled) {
+  // Bail out early if referrals aren't enabled
+  if (!db.isReferralEnabled()) {
     return;
   }
 
@@ -76,8 +82,8 @@ function referralProgramLogSharingTokenUse(db, bobAccountId) {
   // Implementation note: this does mean that Alice can get referral credit for Bob by sharing a
   // link with Bob, even if Bob already had an account.
 
-  // Bail out early if quota support is not enabled.
-  if (!Meteor.settings.public.quotaEnabled) {
+  // Bail out early if referrals aren't enabled
+  if (!db.isReferralEnabled()) {
     return;
   }
 
@@ -122,6 +128,37 @@ function referralProgramLogSharingTokenUse(db, bobAccountId) {
   });
 }
 
+class HeaderWhitelist {
+  constructor(list) {
+    this._headers = {};
+    this._prefixes = [];
+
+    list.forEach(pattern => {
+      if (pattern.endsWith("*")) {
+        this._prefixes.push(pattern.slice(0, -1));
+      } else {
+        this._headers[pattern] = true;
+      }
+    });
+  }
+
+  matches(header) {
+    header = header.toLowerCase();
+    if (this._headers[header]) return true;
+
+    for (const i in this._prefixes) {
+      if (header.startsWith(this._prefixes[i])) {
+        return true;
+      }
+    };
+
+    return false;
+  }
+}
+
+const REQUEST_HEADER_WHITELIST = new HeaderWhitelist(WebSession.Context.headerWhitelist);
+const RESPONSE_HEADER_WHITELIST = new HeaderWhitelist(WebSession.Response.headerWhitelist);
+
 // User-agent strings that should be allowed to use http basic authentication.
 // These are regex matches, so ensure they are escaped properly with double
 // backslashes. For security reasons, we MUST NOT whitelist any user-agents
@@ -139,7 +176,7 @@ BASIC_AUTH_USER_AGENTS_REGEX = new RegExp("^(" + BASIC_AUTH_USER_AGENTS.join("|"
 
 const SESSION_PROXY_TIMEOUT = 60000;
 
-const sandstormCoreFactory = makeSandstormCoreFactory();
+const sandstormCoreFactory = makeSandstormCoreFactory(globalDb);
 const backendAddress = "unix:" + (SANDSTORM_ALTHOME || "") + Backend.socketPath;
 let sandstormBackendConnection = Capnp.connect(backendAddress, sandstormCoreFactory);
 let sandstormBackend = sandstormBackendConnection.restore(null, Backend);
@@ -189,40 +226,15 @@ Meteor.setInterval(() => {
 }, 30000);
 
 // =======================================================================================
-// Meteor context <-> Async Node.js context adapters
-// TODO(cleanup):  Move to a different file.
-
-const inMeteorInternal = Meteor.bindEnvironment((callback) => {
-  callback();
-});
-
-inMeteor = (callback) => {
-  // Calls the callback in a Meteor context.  Returns a Promise for its result.
-  return new Promise((resolve, reject) => {
-    inMeteorInternal(() => {
-      try {
-        resolve(callback());
-      } catch (err) {
-        reject(err);
-      }
-    });
-  });
-};
-
-promiseToFuture = (promise) => {
-  const result = new Future();
-  promise.then(result.return.bind(result), result.throw.bind(result));
-  return result;
-};
-
-waitPromise = (promise) => {
-  return promiseToFuture(promise).wait();
-};
-
-// =======================================================================================
 // API for creating / starting grains from Meteor methods.
 
 const proxiesByHostId = {};
+
+function parsePowerboxDescriptorList(list) {
+  return list.map(packedDescriptor =>
+      Capnp.parse(Powerbox.PowerboxDescriptor, new Buffer(packedDescriptor, "base64"),
+                  { packed: true }));
+}
 
 Meteor.methods({
   newGrain(packageId, command, title, identityId) {
@@ -253,10 +265,12 @@ Meteor.methods({
 
     let pkg = Packages.findOne(packageId);
     let isDev = false;
+    let mountProc = false;
     if (!pkg) {
       // Maybe they wanted a dev package.  Check there too.
       pkg = DevPackages.findOne(packageId);
       isDev = true;
+      mountProc = pkg.mountProc;
     }
 
     if (!pkg) {
@@ -275,27 +289,43 @@ Meteor.methods({
       identityId: identityId,
       title: title,
       private: true,
+      size: 0,
     });
 
-    globalBackend.startGrainInternal(packageId, grainId, this.userId, command, true, isDev);
+    globalBackend.startGrainInternal(packageId, grainId, this.userId, command, true,
+                                     isDev, mountProc);
     globalBackend.updateLastActive(grainId, this.userId, identityId);
     return grainId;
   },
 
-  openSession(grainId, identityId, cachedSalt) {
+  openSession(grainId, identityId, cachedSalt, options) {
     // Open a new UI session on an existing grain.  Starts the grain if it is not already
     // running.
+
+    options = options || {};
 
     check(grainId, String);
     check(identityId, Match.OneOf(undefined, null, String));
     check(cachedSalt, Match.OneOf(undefined, null, String));
+    check(options, {
+      powerboxRequest: Match.Optional({
+        descriptors: [String],
+        requestingSession: String,
+      }),
+    });
 
     if (this.userId && identityId && !globalDb.userHasIdentity(this.userId, identityId)) {
       throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
     }
 
-    if (!Grains.findOne({ _id: grainId })) {
+    const grain = Grains.findOne({ _id: grainId });
+    if (!grain) {
       throw new Meteor.Error(404, "Grain not found", "Grain ID: " + grainId);
+    } else if (grain.trashed) {
+      throw new Meteor.Error("grain-is-in-trash", "Grain is in trash", "Grain ID: " + grainId);
+    } else if (grain.suspended) {
+      throw new Meteor.Error("grain-owner-suspended", "Grain's owner is suspended",
+        "Grain ID: " + grainId);
     }
 
     const db = this.connection.sandstormDb;
@@ -305,25 +335,54 @@ Meteor.methods({
       throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }
 
+    const sessionFields = {};
+    if (options.powerboxRequest) {
+      sessionFields.powerboxRequest = {
+        descriptors: parsePowerboxDescriptorList(options.powerboxRequest.descriptors),
+        requestingSession: options.powerboxRequest.requestingSession,
+      };
+    }
+
     const opened = globalBackend.openSessionInternal(grainId, this.userId, identityId,
-                                                     null, null, cachedSalt);
+                                                     null, null, cachedSalt, sessionFields);
     const result = opened.methodResult;
-    const proxy = new Proxy(grainId, this.userId, result.sessionId,
-                            result.hostId, result.tabId, identityId, false, opened.supervisor);
+    const proxy = new Proxy(grain, result.sessionId,
+                            result.hostId, result.tabId, identityId, false, null,
+                            opened.supervisor);
+
+    if (sessionFields.powerboxRequest) {
+      proxy.powerboxRequest = sessionFields.powerboxRequest;
+    }
+
     proxiesByHostId[result.hostId] = proxy;
     return result;
   },
 
-  openSessionFromApiToken(params, identityId, cachedSalt) {
+  openSessionFromApiToken(params, identityId, cachedSalt, neverRedeem, parentOrigin, options) {
     // Given an API token, either opens a new WebSession to the underlying grain or returns a
     // path to which the client should redirect in order to open such a session.
+    //
+    // `parentOrigin` is the origin of the parent frame of the grain iframe. This may differ from
+    // ROOT_URL for standalone domains.
+
+    neverRedeem = neverRedeem || false;
+    parentOrigin = parentOrigin || process.env.ROOT_URL;
+    options = options || {};
 
     check(params, {
       token: String,
-      incognito: Boolean,
+      incognito: Match.Optional(Boolean),  // obsolete, ignored
     });
     check(identityId, Match.OneOf(undefined, null, String));
     check(cachedSalt, Match.OneOf(undefined, null, String));
+    check(neverRedeem, Boolean);
+    check(parentOrigin, String);
+    check(options, {
+      powerboxRequest: Match.Optional({
+        descriptors: [String],
+        requestingSession: String,
+      }),
+    });
 
     if (this.userId && identityId && !globalDb.userHasIdentity(this.userId, identityId)) {
       throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
@@ -335,7 +394,7 @@ Meteor.methods({
     }
 
     const token = params.token;
-    const incognito = params.incognito;
+    const incognito = !identityId;
     const hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
     const apiToken = ApiTokens.findOne(hashedToken);
     validateWebkey(apiToken);
@@ -368,14 +427,16 @@ Meteor.methods({
       }
     }
 
-    if (this.userId && !incognito) {
+    if (this.userId && !incognito && !neverRedeem) {
       if (identityId != apiToken.identityId && identityId != grain.identityId &&
           !ApiTokens.findOne({ "owner.user.identityId": identityId, parentToken: hashedToken })) {
         const owner = { user: { identityId: identityId, title: title } };
 
         // Create a new API token for the identity redeeming this token.
         const result = SandstormPermissions.createNewApiToken(
-          globalDb, { rawParentToken: token }, apiToken.grainId, apiToken.petname, { allAccess: null }, owner);
+          globalDb, { rawParentToken: token }, apiToken.grainId,
+          apiToken.petname || "redeemed webkey",
+          { allAccess: null }, owner);
         globalDb.addContact(apiToken.accountId, identityId);
 
         // If the parent API token is forSharing and it has an accountId, then the logged-in user (call
@@ -398,13 +459,33 @@ Meteor.methods({
                                "User is not authorized to open this grain.");
       }
 
-      const opened = globalBackend.openSessionInternal(apiToken.grainId, null, null,
-                                                       title, apiToken, cachedSalt);
+      const sessionFields = {};
+      if (options.powerboxRequest) {
+        sessionFields.powerboxRequest = {
+          descriptors: parsePowerboxDescriptorList(options.powerboxRequest.descriptors),
+          requestingSession: options.powerboxRequest.requestingSession,
+        };
+      }
+
+      // Even in incognito mode, we want to record the user ID on the session. The user ID is not
+      // leaked to the app in any way -- it is used to decide what options to show in a powerbox
+      // request. Even if the user is incognito, they should be able to offer their full range of
+      // capabilities.
+      //
+      // The identity ID passed here IS revealed to the app, but for incognito mode it is always
+      // null/undefined.
+      const opened = globalBackend.openSessionInternal(apiToken.grainId, this.userId,
+        identityId, title, apiToken, cachedSalt, sessionFields);
 
       const result = opened.methodResult;
-      const proxy = new Proxy(apiToken.grainId, grain.userId, result.sessionId,
-                              result.hostId, result.tabId, identityId, false);
+      const proxy = new Proxy(grain, result.sessionId,
+                              result.hostId, result.tabId, identityId, false, parentOrigin,
+                              opened.supervisor);
       proxy.apiToken = apiToken;
+      if (sessionFields.powerboxRequest) {
+        proxy.powerboxRequest = sessionFields.powerboxRequest;
+      }
+
       proxiesByHostId[result.hostId] = proxy;
       return result;
     }
@@ -415,12 +496,17 @@ Meteor.methods({
     //   by them.
     check(sessionId, String);
 
-    const session = Sessions.findAndModify({
+    const result = Sessions.findAndModify({
       query: { _id: sessionId },
       update: { $set: { timestamp: new Date().getTime() } },
       fields: { grainId: 1, identityId: 1, hostId: 1 },
     });
 
+    if (!result.ok) {
+      return false;
+    }
+
+    const session = result.value;
     if (session) {
       // Session still present in database, so send keep-alive to backend.
       try {
@@ -495,22 +581,6 @@ const validateWebkey = (apiToken, refreshedExpiration) => {
   }
 };
 
-// Used by shared/grain.js (which sounds like a broken dependency, since this code is only available
-// on the server)
-getGrainSize = (supervisor, oldSize) => {
-  let promise;
-  if (oldSize === undefined) {
-    promise = supervisor.getGrainSize();
-  } else {
-    promise = supervisor.getGrainSizeWhenDifferent(oldSize);
-  }
-
-  const promise2 = promise.then((result) => { return parseInt(result.size); });
-  promise2.cancel = () => { promise.cancel(); };
-
-  return promise2;
-};
-
 Meteor.startup(() => {
   const shutdownApp = (appId) => {
     Grains.find({ appId: appId }).forEach((grain) => {
@@ -521,7 +591,7 @@ Meteor.startup(() => {
   DevPackages.find().observe({
     removed(devPackage) { shutdownApp(devPackage.appId); },
 
-    changed(oldDevPackage, newDevPackage) {
+    changed(newDevPackage, oldDevPackage) {
       shutdownApp(oldDevPackage.appId);
       if (oldDevPackage.appId !== newDevPackage.appId) {
         shutdownApp(newDevPackage.appId);
@@ -570,10 +640,9 @@ const getProxyForHostId = (hostId, isAlreadyOpened) => {
         const session = Sessions.findOne({ hostId: hostId });
         if (!session) {
           if (isAlreadyOpened) {
+            let observer;
             return new Promise((resolve, reject) => {
-              let observer;
               const task = Meteor.setTimeout(() => {
-                observer.stop();
                 reject(new Meteor.Error(504, "Requested session that no longer exists, and " +
                     "timed out waiting for client to restore it. This can happen if you have " +
                     "opened an app's content in a new window and then closed it in the " +
@@ -582,11 +651,16 @@ const getProxyForHostId = (hostId, isAlreadyOpened) => {
               }, SESSION_PROXY_TIMEOUT);
               observer = Sessions.find({ hostId: hostId }).observe({
                 added() {
-                  observer.stop();
                   Meteor.clearTimeout(task);
                   resolve(getProxyForHostId(hostId, false));
                 },
               });
+            }).then((v) => {
+              observer.stop();
+              return v;
+            }, (e) => {
+              observer.stop();
+              throw e;
             });
           } else {
             // Does not appear to be a valid session host.
@@ -613,9 +687,13 @@ const getProxyForHostId = (hostId, isAlreadyOpened) => {
         // Note that we don't need to call mayOpenGrain() because the existence of a session
         // implies this check was already performed.
 
-        const proxy = new Proxy(grain._id, grain.userId, session._id, hostId, session.tabId,
+        const proxy = new Proxy(grain, session._id, hostId, session.tabId,
                                 session.identityId, false);
         if (apiToken) proxy.apiToken = apiToken;
+
+        if (session.powerboxRequest) {
+          proxy.powerboxRequest = session.powerboxRequest;
+        }
 
         // Only add the proxy to the table if it was not concurrently deleted (which could happen
         // e.g. if the user's access was revoked).
@@ -655,8 +733,10 @@ class ApiSessionProxies {
                 this.newBucket[oldHashedToken][oldHashedParams];
           const oldProxy = this.oldBucket[oldHashedToken][oldHashedParams];
           if (oldProxy && !newProxy) {
-            if (Object.keys(oldProxy.websockets).length > 0) {
-              // A client has an open websocket. Keep the proxy around.
+            if (Object.keys(oldProxy.websockets).length > 0 ||
+                Object.keys(oldProxy.streamingRequests).length > 0 ||
+                Object.keys(oldProxy.streamingResponses).length > 0) {
+              // A client has an open stream. Keep the proxy around.
               this.put(oldHashedToken, oldHashedParams, oldProxy);
             } else {
               // We can close this proxy and forget about it.
@@ -668,6 +748,18 @@ class ApiSessionProxies {
 
       this.oldBucket = this.newBucket;
       this.newBucket = {};
+
+      const keepAlives = [];
+      for (const hashedToken in this.oldBucket) {
+        for (const hashedParams in this.oldBucket[hashedToken]) {
+          const proxy = this.oldBucket[hashedToken][hashedParams];
+          keepAlives.push(proxy.supervisor.keepAlive().catch((e) => {
+            console.error("supervisor.keepAlive() failed.", e);
+          }));
+        }
+      }
+
+      waitPromise(Promise.all(keepAlives));
     }, intervalMillis);
   }
 
@@ -711,7 +803,9 @@ class ApiSessionProxies {
   }
 }
 
-const apiSessionProxies = new ApiSessionProxies(3 * 60 * 1000);
+// The interval of 60 seconds here deliberately matches the `keepSessionAlive()` interval
+// in the case of non-API proxies.
+const apiSessionProxies = new ApiSessionProxies(60 * 1000);
 
 Meteor.startup(() => {
   Grains.find().observe({
@@ -850,7 +944,7 @@ getProxyForApiToken = (token, request) => {
             identityId = tokenInfo.identityId;
           }
 
-          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, tabId, identityId, true);
+          proxy = new Proxy(grain, null, null, tabId, identityId, true);
           proxy.apiToken = tokenInfo;
           proxy.apiSessionParams = serializedParams;
         }
@@ -894,7 +988,7 @@ const apiUseBasicAuth = (req, hostId) => {
   // Since many clients in the wild have already been configured to use the shared API host, we
   // must continue to support them, so this logic remains.
   const agent = req.headers["user-agent"];
-  return agent.match(BASIC_AUTH_USER_AGENTS_REGEX);
+  return agent && agent.match(BASIC_AUTH_USER_AGENTS_REGEX);
 };
 
 const apiTokenForRequest = (req, hostId) => {
@@ -907,6 +1001,17 @@ const apiTokenForRequest = (req, hostId) => {
   } else if (auth && auth.slice(0, 6).toLowerCase() === "basic " &&
              apiUseBasicAuth(req, hostId)) {
     token = (new Buffer(auth.slice(6).trim(), "base64")).toString().split(":")[1];
+  } else if (hostId !== "api" && req.url.startsWith("/.sandstorm-token/")) {
+    // Disallow clients that use the old "api" hostId from using tokens in the path.
+    // Allowing them would be a security problem in browsers that ignore CSP.
+    let parts = req.url.slice(1).split("/"); // remove leading / and split
+    if (parts.length < 2) {
+      token = undefined;
+    } else {
+      token = parts[1];
+      req.url = "/" + parts.slice(2).join("/");
+      // remove .sandstorm-token/$TOKEN from path
+    }
   } else {
     token = undefined;
   }
@@ -1099,9 +1204,73 @@ tryProxyRequest = (hostId, req, res) => {
 
     return Promise.resolve(true);
   } else {
-    const isAlreadyOpened = req.headers.cookie && req.headers.cookie.indexOf("sandstorm-sid=") !== -1;
+    const isAlreadyOpened = req.headers.cookie &&
+        req.headers.cookie.indexOf("sandstorm-sid=") !== -1;
+
     return getProxyForHostId(hostId, isAlreadyOpened).then((proxy) => {
       if (proxy) {
+        // Let's do some CSRF defense.
+        const expectedOrigin = PROTOCOL + "//" + req.headers.host;
+        const mainUrl = proxy.parentOrigin;
+        const origin = req.headers.origin;
+        const referer = req.headers.referer;
+        if (origin) {
+          // If an origin header was provided, then it must be accurate. Note that Chrome and
+          // Safari always send an Origin header on non-GET requests (even same-origin), and
+          // therefore on those browsers this rule will block all CSRF attacks. Unfortunately,
+          // a patch to add this behavior to Firefox has stalled:
+          //     https://bugzilla.mozilla.org/show_bug.cgi?id=446344
+          // I haven't found any information on IE/Edge's behavior.
+          if (origin !== expectedOrigin) {
+            // TODO(security): Alas, it turns out we have apps that have:
+            //   <meta name="referrer" content="no-referrer">
+            // as Chrome sends "Origin: null" in these cases. :( These apps need to switch to:
+            //   <meta name="referrer" content="same-origin">
+            // It's important that we don't break apps, so we will accept null origins for now,
+            // which of course completely defeats any CSRF protection. We should get the apps to
+            // update or apply a whitelist soon.
+            if (origin === "null") {
+              if (!proxy.wroteCsrfWarning) {
+                console.warn(
+                    "Note: Observed null Origin header. App needs to be updated so that " +
+                    "we can apply automatic CSRF protection. grain ID:", proxy.grainId);
+                proxy.wroteCsrfWarning = true;
+              }
+            } else {
+              throw new Meteor.Error(403, "Blocked illegal cross-origin request from: " + origin);
+            }
+          }
+        } else if (referer) {
+          // Mark that we've seed a Referer header on this host, which indicates that the user's
+          // browser is not suppressing them.
+          proxy.seenReferer = true;
+
+          // Deny requests coming from an external referer, since there is no legitimate use case
+          // for these. Note of course that an attacker can trivially suppress the referer header
+          // in practice, so this check alone does not give us any security benefit if we accept
+          // requests that lack a referer.
+          if (referer != expectedOrigin && !referer.startsWith(expectedOrigin + "/") &&
+              referer != mainUrl && !referer.startsWith(mainUrl + "/")) {
+            throw new Meteor.Error(403, "Blocked illegal cross-origin referral from: " + referer);
+          }
+        } else {
+          // We saw neither an Origin nor a Referer header.
+          if (req.method !== "GET" && req.method !== "HEAD") {
+            // This is possibly a side-effecting request, meaning we should worry about CSRF.
+            //
+            // Note that we'll never get to this branch for Chrome or Safari since they would have
+            // sent an Origin header.
+
+            if (!proxy.wroteCsrfWarning) {
+              console.warn(
+                  "Note: Observed session for which auto-CSRF-protection couldn't be applied.",
+                  "seenReferer:", !!proxy.seenReferer, "method:", req.method,
+                  "path:", req.url, "UA:", req.headers["user-agent"]);
+              proxy.wroteCsrfWarning = true;
+            }
+          }
+        }
+
         proxy.requestHandler(req, res);
         return true;
       } else {
@@ -1118,9 +1287,10 @@ tryProxyRequest = (hostId, req, res) => {
 //
 
 class Proxy {
-  constructor(grainId, ownerId, sessionId, hostId, tabId, identityId, isApi, supervisor) {
-    this.grainId = grainId;
-    this.ownerId = ownerId;
+  constructor(grain, sessionId, hostId, tabId, identityId, isApi, parentOrigin, supervisor) {
+    // `grain` is an entry in the `Grains` collection.
+    this.grainId = grain._id;
+    this.ownerId = grain.userId;
     this.identityId = identityId;
     this.supervisor = supervisor;  // note: optional parameter; we can reconnect
     this.sessionId = sessionId;
@@ -1129,6 +1299,12 @@ class Proxy {
     this.hasLoaded = false;
     this.websockets = {};
     this.websocketCounter = 0; // Used for generating unique socket IDs.
+    this.streamingRequests = {};
+    this.streamingRequestCounter = 0; // Used for generating unique request IDs.
+    this.streamingResponses = {};
+    this.streamingResponseCounter = 0; // Used for generating unique response IDs.
+    this.parentOrigin = parentOrigin || process.env.ROOT_URL;
+
     if (sessionId) {
       if (!hostId) throw new Error("sessionId must come with hostId");
       if (isApi) throw new Error("API proxy shouldn't have sessionId");
@@ -1144,12 +1320,25 @@ class Proxy {
         throw new Error("identity not found: " + this.identityId);
       }
 
+      // The identity cap becomes invalid if the user no longer has access to the grain.
+      const idCapRequirement = {
+        permissionsHeld: { identityId: identity._id, grainId: this.grainId },
+      };
+
       this.userInfo = {
         displayName: { defaultText: identity.profile.name },
         preferredHandle: identity.profile.handle,
         identityId: new Buffer(identity._id, "hex"),
+        identity: makeIdentity(identity._id, [idCapRequirement]),
       };
-      if (identity.profile.pictureUrl) this.userInfo.pictureUrl = identity.profile.pictureUrl;
+      if (identity.profile.pictureUrl) {
+        this.userInfo.pictureUrl = identity.profile.pictureUrl;
+      } else {
+        this.userInfo.pictureUrl =
+            PROTOCOL + "//" + makeWildcardHost("static") + "/identicon/" +
+            this.identityId.slice(0, 32) + "?s=128";
+      }
+
       if (identity.profile.pronoun) this.userInfo.pronouns = identity.profile.pronoun;
     } else {
       this.userInfo = {
@@ -1158,14 +1347,12 @@ class Proxy {
       };
     }
 
-    const _this = this;
-
     this.requestHandler = (request, response) => {
       if (this.sessionId) {
         // Implement /_sandstorm-init for setting the session cookie.
         const url = Url.parse(request.url, true);
-        if (url.pathname === "/_sandstorm-init" && url.query.sessionid === _this.sessionId) {
-          _this.doSessionInit(request, response, url.query.path);
+        if (url.pathname === "/_sandstorm-init" && url.query.sessionid === this.sessionId) {
+          this.doSessionInit(request, response, url.query.path);
           return;
         }
       }
@@ -1175,14 +1362,14 @@ class Proxy {
         if ((request.method === "POST" || request.method === "PUT") &&
             (contentLength === undefined || contentLength > 1024 * 1024)) {
           // The input is either very long, or we don't know how long it is, so use streaming mode.
-          return _this.handleRequestStreaming(request, response, contentLength, 0);
+          return this.handleRequestStreaming(request, response, contentLength, 0);
         } else {
           return readAll(request).then((data) => {
-            return _this.handleRequest(request, data, response, 0);
+            return this.handleRequest(request, data, response, 0);
           });
         }
       }).catch((err) => {
-        _this.setHasLoaded();
+        this.setHasLoaded();
 
         let body = err.stack;
         if (err.cppFile) {
@@ -1210,7 +1397,7 @@ class Proxy {
     };
 
     this.upgradeHandler = (request, socket, head) => {
-      _this.handleWebSocket(request, socket, head, 0).catch((err) => {
+      this.handleWebSocket(request, socket, head, 0).catch((err) => {
         console.error("WebSocket setup failed:", err.stack);
         // TODO(cleanup):  Manually send back a 500 response?
         socket.destroy();
@@ -1219,6 +1406,18 @@ class Proxy {
   }
 
   close() {
+    for (const streamingResponseIdx in this.streamingResponses) {
+      this.streamingResponses[streamingResponseIdx].abort();
+    }
+
+    this.streamingResponses = {};
+
+    for (const streamingRequestIdx in this.streamingRequests) {
+      this.streamingRequests[streamingRequestIdx].destroy();
+    }
+
+    this.streamingRequests = {};
+
     for (const socketIdx in this.websockets) {
       this.websockets[socketIdx].destroy();
     };
@@ -1289,40 +1488,57 @@ class Proxy {
         }, (err) => {
           return this._callNewWebSession(request, userInfo);
         });
-  };
+  }
+
+  _callNewRequestSession(request, userInfo) {
+    const params = Capnp.serialize(WebSession.Params, {
+      basePath: PROTOCOL + "//" + request.headers.host,
+      userAgent: "user-agent" in request.headers
+          ? request.headers["user-agent"]
+          : "UnknownAgent/0.0",
+      acceptableLanguages: "accept-language" in request.headers
+          ? request.headers["accept-language"].split(",").map((s) => { return s.trim(); })
+          : ["en-US", "en"],
+    });
+    return this.uiView.newRequestSession(userInfo,
+         makeHackSessionContext(this.grainId, this.sessionId, this.identityId, this.tabId),
+         WebSession.typeId, params, this.powerboxRequest.descriptors,
+         new Buffer(this.tabId, "hex")).session;
+  }
 
   _callNewSession(request, viewInfo) {
     const userInfo = _.clone(this.userInfo);
-    const _this = this;
     const promise = inMeteor(() => {
       let vertex;
-      if (_this.apiToken) {
-        vertex = { token: _this.apiToken };
+      if (this.apiToken) {
+        vertex = { token: this.apiToken };
       } else {
-        // (_this.identityId might be null; this is fine)
-        vertex = { grain: { _id: _this.grainId, identityId: _this.identityId } };
+        // (this.identityId might be null; this is fine)
+        vertex = { grain: { _id: this.grainId, identityId: this.identityId } };
       }
 
-      let onInvalidated = function () {
-        Sessions.remove({ _id: _this.sessionId });
+      let onInvalidated = () => {
+        Sessions.remove({ _id: this.sessionId });
       };
 
-      if (!_this.sessionId) {
-        onInvalidated = function () {
-          apiSessionProxies.removeProxiesOfToken(_this.apiToken._id);
+      if (!this.sessionId) {
+        onInvalidated = () => {
+          apiSessionProxies.removeProxiesOfToken(this.apiToken._id);
         };
       }
 
       const permissions = SandstormPermissions.grainPermissions(globalDb, vertex, viewInfo,
                                                                 onInvalidated);
+
+      if (this.permissionsObserver) this.permissionsObserver.stop();
+      this.permissionsObserver = permissions.observeHandle;
+
       if (!permissions.permissions) {
         throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
       }
 
-      _this.permissionsObserver = permissions.observeHandle;
-
       Sessions.update({
-        _id: _this.sessionId,
+        _id: this.sessionId,
       }, {
         $set: {
           viewInfo: viewInfo,
@@ -1352,23 +1568,26 @@ class Proxy {
 
       userInfo.deprecatedPermissionsBlob = buf;
 
-      if (_this.isApi) {
-        return _this._callNewApiSession(request, userInfo);
+      if (this.isApi) {
+        return this._callNewApiSession(request, userInfo);
+      } else if (this.powerboxRequest) {
+        return this._callNewRequestSession(request, userInfo);
       } else {
-        return _this._callNewWebSession(request, userInfo);
+        return this._callNewWebSession(request, userInfo);
       }
     });
-  };
+  }
 
   getSession(request) {
     if (!this.session) {
       this.getConnection();  // make sure we're connected
-      const _this = this;
       const promise = this.uiView.getViewInfo().then((viewInfo) => {
         return inMeteor(() => {
-          Grains.update(_this.grainId, { $set: { cachedViewInfo: viewInfo } });
+          // For now, we don't allow grains to set `appTitle` or `grainIcon`.
+          const cachedViewInfo = _.omit(viewInfo, "appTitle", "grainIcon");
+          Grains.update(this.grainId, { $set: { cachedViewInfo: cachedViewInfo } });
         }).then(() => {
-          return _this._callNewSession(request, viewInfo);
+          return this._callNewSession(request, viewInfo);
         });
       }, (error) => {
         if (error.kjType === "failed" || error.kjType === "unimplemented") {
@@ -1376,7 +1595,7 @@ class Proxy {
           // TODO(apibump): Don't treat 'failed' as 'unimplemented'. Unfortunately, old apps built
           //   with old versions of Cap'n Proto don't throw 'unimplemented' exceptions, so we have
           //   to accept 'failed' here at least until the next API bump.
-          return _this._callNewSession(request, {});
+          return this._callNewSession(request, {});
         } else {
           return Promise.reject(error);
         }
@@ -1407,6 +1626,11 @@ class Proxy {
       this.supervisor.close();
       delete this.supervisor;
     }
+
+    if (this.permissionsObserver) {
+      this.permissionsObserver.stop();
+      delete this.permissionsObserver;
+    }
   }
 
   maybeRetryAfterError(error, retryCount) {
@@ -1414,11 +1638,10 @@ class Proxy {
     // returning a promise that resolves once restarted. Otherwise, just rethrow the error.
     // `retryCount` should be incremented for every successful retry as part of the same request;
     // we only want to retry once.
-    const _this = this;
-    if (SandstormBackend.shouldRestartGrain(error, retryCount)) {
+    if (shouldRestartGrain(error, retryCount)) {
       this.resetConnection();
       return inMeteor(() => {
-        _this.supervisor = globalBackend.continueGrain(_this.grainId).supervisor;
+        this.supervisor = globalBackend.continueGrain(this.grainId).supervisor;
       });
     } else {
       throw error;
@@ -1449,10 +1672,14 @@ class Proxy {
     response.end();
   }
 
-  makeContext(request, response) {
+  makeContext(request, response, callback) {
     // Parses the cookies from the request, checks that the session ID is present and valid, then
-    // returns the request context which contains the other cookies.  Throws an exception if the
-    // session ID is missing or invalid.
+    // synchronously calls callback() passing it the request context object which contains the
+    // other cookies. Throws an exception if the session ID is missing or invalid. The callback
+    // must immediately use the context in an RPC. Once the callback returns, the context object
+    // will be torn down.
+    //
+    // `makeContext()` returns the result of `callback()`.
 
     const context = {};
 
@@ -1472,38 +1699,37 @@ class Proxy {
 
     context.accept = parseAcceptHeader(request);
 
+    context.acceptEncoding = parseAcceptEncodingHeader(request);
+
     context.eTagPrecondition = parsePreconditionHeader(request);
 
     context.additionalHeaders = [];
-    WebSession.Context.headerWhitelist.forEach((headerName) => {
-      if (headerName.endsWith("*")) {
-        const prefix = headerName.substr(0, headerName.length - 1);
-        for (const h in request.headers) {
-          if (!h.startsWith(prefix)) {
-            continue;
-          }
-
-          context.additionalHeaders.push({
-            name: h,
-            value: request.headers[h],
-          });
-        }
-      } else if (request.headers[headerName]) {
+    for (const headerName in request.headers) {
+      if (REQUEST_HEADER_WHITELIST.matches(headerName)) {
         context.additionalHeaders.push({
           name: headerName,
           value: request.headers[headerName],
         });
-      };
-    });
+      }
+    }
 
-    const promise = new Promise((resolve, reject) => {
-      response.resolveResponseStream = resolve;
-      response.rejectResponseStream = reject;
-    });
+    if (response) {
+      const promise = new Promise((resolve, reject) => {
+        response.resolveResponseStream = resolve;
+        response.rejectResponseStream = reject;
+      });
 
-    context.responseStream = new Capnp.Capability(promise, ByteStream);
+      context.responseStream = new Capnp.Capability(promise, ByteStream);
 
-    return context;
+      try {
+        return callback(context);
+      } finally {
+        context.responseStream.close();
+      }
+    } else {
+      // WebSocket -- no response object.
+      return callback(context);
+    }
   }
 
   translateResponse(rpcResponse, response, request) {
@@ -1512,6 +1738,11 @@ class Proxy {
         response.setHeader("Set-Cookie", rpcResponse.setCookies.map(makeSetCookieHeader));
       }
 
+      const mainUrl = this.parentOrigin;
+      const grainHost = PROTOCOL + "//" + request.headers.host;
+      response.setHeader("Content-Security-Policy", "frame-ancestors " + mainUrl + " " + grainHost);
+      response.setHeader("X-Frame-Options", "ALLOW-FROM " + mainUrl);
+
       // TODO(security): Add a Content-Security-Policy header which:
       // (1) Prevents the app from initiating HTTP requests to third parties.
       // (2) Prevents the app from navigating the parent frame.
@@ -1519,18 +1750,30 @@ class Proxy {
       // (4) Prohibits anyone other than the Sandstorm shell from framing the app (as a backup
       //   defense vs. clickjacking, though unguessable hostnames already mostly prevent this).
     } else {
-      // jscs:disable validateQuoteMarks
       // This is an API request. Cookies are not supported.
 
       // We need to make sure caches know that different bearer tokens get totally different results.
-      response.setHeader('Vary', 'Authorization');
+      response.setHeader("Vary", "Authorization");
 
       // APIs can be called from any origin. Because we ignore cookies, there is no security problem.
-      response.setHeader('Access-Control-Allow-Origin', '*');
+      response.setHeader("Access-Control-Allow-Origin", "*");
 
       // Add a Content-Security-Policy as a backup in case someone finds a way to load this resource
       // in a browser context. This policy should thoroughly neuter it.
-      response.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+      response.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
+    }
+
+    if (rpcResponse.additionalHeaders && rpcResponse.additionalHeaders.length > 0) {
+      // Add any additional prefixed/whitelisted headers to the response.
+      // We cannot trust that the headers in the RPC response are actually
+      // allowed, so we check if they are prefixed or whitelisted.
+      rpcResponse.additionalHeaders.forEach(function (header) {
+        if (RESPONSE_HEADER_WHITELIST.matches(header.name)) {
+          // If header is prefixed with appHeaderPrefix,
+          // or if the header name is in whitelist, set it.
+          response.setHeader(header.name,  header.value);
+        }
+      });
     }
 
     // On first response, update the session to have hasLoaded=true
@@ -1538,444 +1781,483 @@ class Proxy {
 
     // TODO(security): Set X-Content-Type-Options: nosniff?
 
-    if ('content' in rpcResponse) {
+    if ("content" in rpcResponse) {
       const content = rpcResponse.content;
       const code = successCodes[content.statusCode];
       if (!code) {
-        throw new Error('Unknown status code: ', content.statusCode);
+        throw new Error("Unknown status code: ", content.statusCode);
       }
 
       if (content.mimeType) {
-        response.setHeader('Content-Type', content.mimeType);
+        response.setHeader("Content-Type", content.mimeType);
       }
 
       if (content.encoding) {
-        response.setHeader('Content-Encoding', content.encoding);
+        response.setHeader("Content-Encoding", content.encoding);
       }
 
       if (content.language) {
-        response.setHeader('Content-Language', content.language);
+        response.setHeader("Content-Language", content.language);
       }
 
       if (content.eTag) {
-        response.setHeader('ETag', composeETag(content.eTag));
+        response.setHeader("ETag", composeETag(content.eTag));
       }
 
-      if (('disposition' in content) && ('download' in content.disposition)) {
-        response.setHeader('Content-Disposition', 'attachment; filename="' +
+      if (("disposition" in content) && ("download" in content.disposition)) {
+        response.setHeader("Content-Disposition", 'attachment; filename="' +
             content.disposition.download.replace(/([\\"\n])/g, "\\$1") + '"');
       }
 
-      if ('stream' in content.body) {
-        if (request.method === 'HEAD') {
+      if ("stream" in content.body) {
+        if (request.method === "HEAD") {
           content.body.stream.close();
-          response.rejectResponseStream(new Error('HEAD request; content doesn\'t matter.'));
+          response.rejectResponseStream(new Error("HEAD request; content doesn't matter."));
+        } else if (response.socket.destroyed) {
+          // The client has already closed the stream. No additional "close" event will be
+          // emitted. Annoyingly, we cannot rely on `response.write()` throwing an exception
+          // in this case, so if we don't handle it specially we could end up with a
+          // `ResponseStream` that gets stuck waiting for a "drain" event that never arrives.
+          content.body.stream.close();
+          response.rejectResponseStream(new Error("client disconnected"));
         } else {
+          const idx = this.streamingResponseCounter;
+          this.streamingResponseCounter += 1;
           const streamHandle = content.body.stream;
-          response.writeHead(code.id, code.title);
-          const promise = new Promise((resolve, reject) => {
-            response.resolveResponseStream(new Capnp.Capability(
-                new ResponseStream(response, streamHandle, resolve, reject), ByteStream));
-          });
-          promise.streamHandle = streamHandle;
-          return promise;
+          const rawResponseStream = new ResponseStream(
+            response, code.id, code.title, streamHandle,
+            () => { delete this.streamingResponses[idx]; });
+          this.streamingResponses[idx] = rawResponseStream;
+          const responseStream = new Capnp.Capability(rawResponseStream, ByteStream);
+          response.resolveResponseStream(responseStream);
+          return { streamHandle: responseStream };
         }
       } else {
         response.rejectResponseStream(
-          new Error('Response content body was not a stream.'));
+          new Error("Response content body was not a stream."));
 
-        if ('bytes' in content.body) {
-          response.setHeader('Content-Length', content.body.bytes.length);
+        if ("bytes" in content.body) {
+          response.setHeader("Content-Length", content.body.bytes.length);
         } else {
-          throw new Error('Unknown content body type.');
+          throw new Error("Unknown content body type.");
         }
       }
 
       response.writeHead(code.id, code.title);
 
-      if ('bytes' in content.body && request.method !== 'HEAD') {
+      if ("bytes" in content.body && request.method !== "HEAD") {
         response.write(content.body.bytes);
       }
 
       response.end();
-    } else if ('noContent' in rpcResponse) {
+    } else if ("noContent" in rpcResponse) {
       const noContent = rpcResponse.noContent;
       const noContentCode = noContentSuccessCodes[noContent.shouldResetForm * 1];
+      if (noContent.eTag) {
+        response.setHeader("ETag", composeETag(noContent.eTag));
+      }
+
       response.writeHead(noContentCode.id, noContentCode.title);
       response.end();
-    } else if ('preconditionFailed' in rpcResponse) {
+    } else if ("preconditionFailed" in rpcResponse) {
       const preconditionFailed = rpcResponse.preconditionFailed;
-      if (request.method === 'GET' && 'if-none-match' in request.headers) {
+      if (request.method === "GET" && "if-none-match" in request.headers) {
         if (preconditionFailed.matchingETag) {
-          response.setHeader('ETag', composeETag(preconditionFailed.matchingETag));
+          response.setHeader("ETag", composeETag(preconditionFailed.matchingETag));
         }
 
-        response.writeHead(304, 'Not Modified');
+        response.writeHead(304, "Not Modified");
       } else {
-        response.writeHead(412, 'Precondition Failed');
+        response.writeHead(412, "Precondition Failed");
       }
 
       response.end();
-    } else if ('redirect' in rpcResponse) {
+    } else if ("redirect" in rpcResponse) {
       const redirect = rpcResponse.redirect;
       const redirectCode = redirectCodes[redirect.switchToGet * 2 + redirect.isPermanent];
       response.writeHead(redirectCode.id, redirectCode.title, {
-        'Location': redirect.location,
+        "Location": encodeURI(redirect.location),
       });
       response.end();
-    } else if ('clientError' in rpcResponse) {
+    } else if ("clientError" in rpcResponse) {
       const clientError = rpcResponse.clientError;
       const errorCode = errorCodes[clientError.statusCode];
       if (!errorCode) {
-        throw new Error('Unknown status code: ', clientError.statusCode);
+        throw new Error("Unknown status code: ", clientError.statusCode);
       }
 
       response.writeHead(errorCode.id, errorCode.title, {
-        'Content-Type': 'text/html',
+        "Content-Type": "text/html",
       });
 
-      if (request.method !== 'HEAD') {
+      if (request.method !== "HEAD") {
         if (clientError.descriptionHtml) {
           response.write(clientError.descriptionHtml);
         } else {
           // TODO(someday):  Better default error page.
-          response.write('<html><body><h1>' + errorCode.id + ': ' + errorCode.title +
-                         '</h1></body></html>');
+          response.write("<html><body><h1>" + errorCode.id + ": " + errorCode.title +
+                         "</h1></body></html>");
         }
       }
 
       response.end();
-    } else if ('serverError' in rpcResponse) {
-      response.writeHead(500, 'Internal Server Error', {
-        'Content-Type': 'text/html',
+    } else if ("serverError" in rpcResponse) {
+      response.writeHead(500, "Internal Server Error", {
+        "Content-Type": "text/html",
       });
 
-      if (request.method !== 'HEAD') {
+      if (request.method !== "HEAD") {
         if (rpcResponse.serverError.descriptionHtml) {
           response.write(rpcResponse.serverError.descriptionHtml);
         } else {
           // TODO(someday):  Better default error page.
-          response.write('<html><body><h1>500: Internal Server Error</h1></body></html>');
+          response.write("<html><body><h1>500: Internal Server Error</h1></body></html>");
         }
       }
 
       response.end();
     } else {
-      throw new Error('Unknown HTTP response type:\n' + JSON.stringify(rpcResponse));
+      throw new Error("Unknown HTTP response type:\n" + JSON.stringify(rpcResponse));
     }
 
-    return Promise.resolve(undefined);
+    return {};
   }
 
   handleRequest(request, data, response, retryCount) {
-    const _this = this;
     return Promise.resolve(undefined).then(() => {
-      return _this.makeContext(request, response);
-    }).then((context) => {
-      // jscs:disable requireDotNotation
-      // Send the RPC.
-      const path = request.url.slice(1);  // remove leading '/'
-      const session = _this.getSession(request);
+      return this.makeContext(request, response, (context) => {
+        // jscs:disable requireDotNotation
+        // Send the RPC.
+        const path = request.url.slice(1);  // remove leading '/'
+        const session = this.getSession(request);
 
-      const requestContent = () => {
-        return {
-          content: data,
-          encoding: request.headers['content-encoding'],
-          mimeType: request.headers['content-type'],
+        const requestContent = () => {
+          return {
+            content: data,
+            encoding: request.headers["content-encoding"],
+            mimeType: request.headers["content-type"],
+          };
         };
-      };
 
-      const xmlContent = () => {
-        const type = request.headers['content-type'] || 'application/xml;charset=utf-8';
-        const match = type.match(/[^/]*\/xml(; *charset *= *([^ ;]*))?/);
-        if (!match) {
-          response.writeHead(415, 'Unsupported media type.', {
-            'Content-Type': 'text/plain',
-          });
-          response.end('expected XML request body');
-          throw new Error('expected XML request body');
-        }
-
-        const charset = match[2] || 'ISO-8859-1';
-
-        const encoding = request.headers['content-encoding'];
-        if (encoding && encoding !== 'identity') {
-          if (encoding !== 'gzip') throw new Error('unknown Content-Encoding: ' + encoding);
-          data = gunzipSync(data);
-        }
-
-        return data.toString(charset.toLowerCase() === 'utf-8' ? 'utf8' : 'binary');
-      };
-
-      const propfindDepth = () => {
-        const depth = request.headers['depth'];
-        return depth === '0' ? 'zero'
-             : depth === '1' ? 'one'
-                             : 'infinity';
-      };
-
-      const shallow = () => {
-        return request.headers['depth'] === '0';
-      };
-
-      const noOverwrite = () => {
-        return (request.headers['overwrite'] || '').toLowerCase() === 'f';
-      };
-
-      const destination = () => {
-        const result = request.headers['destination'];
-        if (!result) throw new Error('missing destination');
-        return Url.parse(result).path.slice(1);  // remove leading '/'
-      };
-
-      if (request.method === 'GET' || request.method === 'HEAD') {
-        return session.get(path, context, request.method === 'HEAD');
-      } else if (request.method === 'POST') {
-        return session.post(path, requestContent(), context);
-      } else if (request.method === 'PUT') {
-        return session.put(path, requestContent(), context);
-      } else if (request.method === 'PATCH') {
-        return session.patch(path, requestContent(), context);
-      } else if (request.method === 'DELETE') {
-        return session.delete(path, context);
-      } else if (request.method === 'PROPFIND') {
-        return session.propfind(path, xmlContent(), propfindDepth(), context);
-      } else if (request.method === 'PROPPATCH') {
-        return session.proppatch(path, xmlContent(), context);
-      } else if (request.method === 'MKCOL') {
-        return session.mkcol(path, requestContent(), context);
-      } else if (request.method === 'COPY') {
-        return session.copy(path, destination(), noOverwrite(), shallow(), context);
-      } else if (request.method === 'MOVE') {
-        return session.move(path, destination(), noOverwrite(), context);
-      } else if (request.method === 'LOCK') {
-        return session.lock(path, xmlContent(), shallow(), context);
-      } else if (request.method === 'UNLOCK') {
-        return session.unlock(path, request.headers['lock-token'], context);
-      } else if (request.method === 'ACL') {
-        return session.acl(path, xmlContent(), context);
-      } else if (request.method === 'REPORT') {
-        return session.report(path, requestContent(), context);
-      } else if (request.method === 'OPTIONS') {
-        return session.options(path, context).then((options) => {
-          const dav = [];
-          if (options.davClass1) dav.push('1');
-          if (options.davClass2) dav.push('2');
-          if (options.davClass3) dav.push('3');
-          if (options.davExtensions) {
-            options.davExtensions.forEach((token) => {
-              if (token.match(/^([a-zA-Z0-9!#$%&'*+.^_`|~-]+|<[\x21-\x7E]*>)$/)) {
-                dav.push(token);
-              }
+        const xmlContent = () => {
+          const type = request.headers["content-type"] || "application/xml;charset=utf-8";
+          const match = type.match(/[^/]*\/xml(; *charset *= *([^ ;]*))?/);
+          if (!match) {
+            response.writeHead(415, "Unsupported media type.", {
+              "Content-Type": "text/plain",
             });
+            response.end("expected XML request body");
+            throw new Error("expected XML request body");
           }
 
-          if (dav.length > 0) {
-            response.setHeader("DAV", dav.join(", "));
-            response.setHeader("Access-Control-Expose-Headers", "DAV");
+          const charset = match[2] || "ISO-8859-1";
+
+          const encoding = request.headers["content-encoding"];
+          if (encoding && encoding !== "identity") {
+            if (encoding !== "gzip") throw new Error("unknown Content-Encoding: " + encoding);
+            data = gunzipSync(data);
           }
 
-          response.end();
-          // Return no response; we already handled everything.
-        }, (err) => {
-          if (err.kjType !== 'unimplemented') throw err;
-          response.end();
-          // Return no response; we already handled everything.
-        });
-      } else {
-        throw new Error('Sandstorm only supports the following methods: GET, POST, PUT, PATCH, DELETE, HEAD, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, LOCK, UNLOCK, ACL, REPORT, and OPTIONS.');
-      }
+          return data.toString(charset.toLowerCase() === "utf-8" ? "utf8" : "binary");
+        };
+
+        const propfindDepth = () => {
+          const depth = request.headers["depth"];
+          return depth === "0" ? "zero"
+               : depth === "1" ? "one"
+                               : "infinity";
+        };
+
+        const shallow = () => {
+          return request.headers["depth"] === "0";
+        };
+
+        const noOverwrite = () => {
+          return (request.headers["overwrite"] || "").toLowerCase() === "f";
+        };
+
+        const destination = () => {
+          const result = request.headers["destination"];
+          if (!result) throw new Error("missing destination");
+          return Url.parse(result).path.slice(1);  // remove leading '/'
+        };
+
+        if (request.method === "GET" || request.method === "HEAD") {
+          return session.get(path, context, request.method === "HEAD");
+        } else if (request.method === "POST") {
+          return session.post(path, requestContent(), context);
+        } else if (request.method === "PUT") {
+          return session.put(path, requestContent(), context);
+        } else if (request.method === "PATCH") {
+          return session.patch(path, requestContent(), context);
+        } else if (request.method === "DELETE") {
+          return session.delete(path, context);
+        } else if (request.method === "PROPFIND") {
+          return session.propfind(path, xmlContent(), propfindDepth(), context);
+        } else if (request.method === "PROPPATCH") {
+          return session.proppatch(path, xmlContent(), context);
+        } else if (request.method === "MKCOL") {
+          return session.mkcol(path, requestContent(), context);
+        } else if (request.method === "COPY") {
+          return session.copy(path, destination(), noOverwrite(), shallow(), context);
+        } else if (request.method === "MOVE") {
+          return session.move(path, destination(), noOverwrite(), context);
+        } else if (request.method === "LOCK") {
+          return session.lock(path, xmlContent(), shallow(), context);
+        } else if (request.method === "UNLOCK") {
+          return session.unlock(path, request.headers["lock-token"], context);
+        } else if (request.method === "ACL") {
+          return session.acl(path, xmlContent(), context);
+        } else if (request.method === "REPORT") {
+          return session.report(path, requestContent(), context);
+        } else if (request.method === "OPTIONS") {
+          return session.options(path, context).then((options) => {
+            const dav = [];
+            if (options.davClass1) dav.push("1");
+            if (options.davClass2) dav.push("2");
+            if (options.davClass3) dav.push("3");
+            if (options.davExtensions) {
+              options.davExtensions.forEach((token) => {
+                if (token.match(/^([a-zA-Z0-9!#$%&'*+.^_`|~-]+|<[\x21-\x7E]*>)$/)) {
+                  dav.push(token);
+                }
+              });
+            }
+
+            if (dav.length > 0) {
+              response.setHeader("DAV", dav.join(", "));
+              response.setHeader("Access-Control-Expose-Headers", "DAV");
+            }
+
+            response.end();
+            // Return no response; we already handled everything.
+          }, (err) => {
+            if (err.kjType !== "unimplemented") throw err;
+            response.end();
+            // Return no response; we already handled everything.
+          });
+        } else {
+          throw new Error("Sandstorm only supports the following methods: GET, POST, PUT, PATCH, DELETE, HEAD, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, LOCK, UNLOCK, ACL, REPORT, and OPTIONS.");
+        }
+      });
     }).then((rpcResponse) => {
       if (rpcResponse !== undefined) {  // Will be undefined for OPTIONS request.
-        return _this.translateResponse(rpcResponse, response, request);
+        return this.translateResponse(rpcResponse, response, request);
       }
     }).catch((error) => {
-      return _this.maybeRetryAfterError(error, retryCount).then(() => {
-        return _this.handleRequest(request, data, response, retryCount + 1);
+      return this.maybeRetryAfterError(error, retryCount).then(() => {
+        return this.handleRequest(request, data, response, retryCount + 1);
       });
     });
   }
 
   handleRequestStreaming(request, response, contentLength, retryCount) {
-    const _this = this;
-    const context = this.makeContext(request, response);
-    const path = request.url.slice(1);  // remove leading '/'
-    const session = this.getSession(request);
+    return this.makeContext(request, response, (context) => {
+      const path = request.url.slice(1);  // remove leading '/'
+      const session = this.getSession(request);
 
-    const mimeType = request.headers['content-type'] || 'application/octet-stream';
-    const encoding = request.headers['content-encoding'];
+      const mimeType = request.headers["content-type"] || "application/octet-stream";
+      const encoding = request.headers["content-encoding"];
 
-    let requestStreamPromise;
-    if (request.method === 'POST') {
-      requestStreamPromise = session.postStreaming(path, mimeType, context, encoding);
-    } else if (request.method === 'PUT') {
-      requestStreamPromise = session.putStreaming(path, mimeType, context, encoding);
-    } else {
-      throw new Error('Sandstorm only supports streaming POST and PUT requests.');
-    }
-
-    // TODO(perf): We ought to be pipelining the body, but we can't currently, because we have to
-    //   handle the case where the app doesn't actually support streaming. We could pipeline while
-    //   also buffering the data on the side in case we need it again later, but that's kind of
-    //   complicated. We should fix the whole protocol to make streaming the standard.
-    return requestStreamPromise.then((requestStreamResult) => {
-      const requestStream = requestStreamResult.stream;
-
-      // Initialized when getResponse() returns, if the response is streaming.
-      let downloadStreamHandle;
-
-      // Initialized if an upload-stream method throws.
-      let uploadStreamError;
-
-      // We call `getResponse()` immediately so that the app can start streaming data down even while
-      // data is still being streamed up. This theoretically allows apps to perform bidirectional
-      // streaming, though probably very few actually do that.
-      //
-      // Note that we need to be able to cancel `responsePromise` below, so it's important that it is
-      // the raw Cap'n Proto promise. Hence `translateResponsePromise` is a separate variable.
-      const responsePromise = requestStream.getResponse();
-
-      const reportUploadStreamError = (err) => {
-        // Called when an upload-stream method throws.
-
-        if (!uploadStreamError) {
-          uploadStreamError = err;
-
-          // If we're still waiting on any response stuff, cancel it.
-          responsePromise.cancel();
-          requestStream.close();
-          if (downloadStreamHandle) {
-            downloadStreamHandle.close();
-          }
-        }
-      };
-
-      // If we have a Content-Length, pass it along to the app by calling `expectSize()`.
-      if (contentLength !== undefined) {
-        requestStream.expectSize(contentLength).catch((err) => {
-          // expectSize() is allowed to be unimplemented.
-          if (err.kjType !== 'unimplemented') {
-            reportUploadStreamError(err);
-          }
-        });
-      }
-
-      // Pipe the input stream to the app.
-      request.on('data', (buf) => {
-        // TODO(soon): Only allow a small number of write()s to be in-flight at once,
-        //   pausing the input stream if we hit that limit, so that we block the TCP socket all the
-        //   way back to the source. May want to also coalesce small writes for this purpose.
-        // TODO(security): The above problem may allow a DoS attack on the front-end.
-        if (!uploadStreamError) requestStream.write(buf).catch(reportUploadStreamError);
-      });
-
-      request.on('end', () => {
-        if (!uploadStreamError) requestStream.done().catch(reportUploadStreamError);
-
-        // We're all done making calls to requestStream.
-        requestStream.close();
-      });
-
-      request.on('close', () => {
-        reportUploadStreamError(new Error('HTTP connection unexpectedly closed during request.'));
-      });
-
-      request.on('error', (err) => {
-        reportUploadStreamError(err);
-      });
-
-      return responsePromise.then((rpcResponse) => {
-        // Stop here if the upload stream has already failed.
-        if (uploadStreamError) throw uploadStreamError;
-        const promise = _this.translateResponse(rpcResponse, response, request);
-        downloadStreamHandle = promise.streamHandle;
-        return promise;
-      });
-    }, (err) => {
-      if (err.kjType === 'failed' && err.message.indexOf('not implemented') !== -1) {
-        // Hack to work around old apps using an old version of Cap'n Proto, before the
-        // 'unimplemented' exception type was introduced. :(
-        // TODO(cleanup): When we transition to API version 2, we can move this into the
-        //   compatibility layer.
-        err.kjType = 'unimplemented';
-      }
-
-      if (SandstormBackend.shouldRestartGrain(err, 0)) {
-        // This is the kind of error that indicates we should retry. Note that we passed 0 for the
-        // retry count above because we were just checking if this is a retriable error (vs. possibly
-        // a method-not-implemented error); maybeRetryAfterError() will check again with the proper
-        // retry count.
-        return _this.maybeRetryAfterError(err, retryCount).then(() => {
-          return _this.handleRequestStreaming(request, response, contentLength, retryCount + 1);
-        });
-      } else if (err.kjType === 'unimplemented') {
-        // Streaming is not implemented. Fall back to non-streaming version.
-        return readAll(request).then((data) => {
-          return _this.handleRequest(request, data, response, 0);
-        });
+      let requestStreamPromise;
+      if (request.method === "POST") {
+        requestStreamPromise = session.postStreaming(path, mimeType, context, encoding);
+      } else if (request.method === "PUT") {
+        requestStreamPromise = session.putStreaming(path, mimeType, context, encoding);
       } else {
-        throw err;
+        throw new Error("Sandstorm only supports streaming POST and PUT requests.");
       }
+
+      // TODO(perf): We ought to be pipelining the body, but we can't currently, because we have to
+      //   handle the case where the app doesn't actually support streaming. We could pipeline while
+      //   also buffering the data on the side in case we need it again later, but that's kind of
+      //   complicated. We should fix the whole protocol to make streaming the standard.
+      return requestStreamPromise.then((requestStreamResult) => {
+        const requestStream = requestStreamResult.stream;
+
+        // Initialized when getResponse() returns, if the response is streaming.
+        let downloadStreamHandle;
+
+        // Initialized if an upload-stream method throws.
+        let uploadStreamError;
+
+        // We call `getResponse()` immediately so that the app can start streaming data down even
+        // while data is still being streamed up. This theoretically allows apps to perform
+        // bidirectional streaming, though probably very few actually do that.
+        //
+        // Note that we need to be able to cancel `responsePromise` below, so it's important that
+        // it is the raw Cap'n Proto promise. Hence `translateResponsePromise` is a separate
+        // variable.
+        const responsePromise = requestStream.getResponse();
+
+        const reportUploadStreamError = (err) => {
+          // Called when an upload-stream method throws.
+
+          if (!uploadStreamError) {
+            uploadStreamError = err;
+
+            // If we're still waiting on any response stuff, cancel it.
+            responsePromise.cancel();
+            requestStream.close();
+            if (downloadStreamHandle) {
+              downloadStreamHandle.close();
+            }
+          }
+        };
+
+        // If we have a Content-Length, pass it along to the app by calling `expectSize()`.
+        if (contentLength !== undefined) {
+          requestStream.expectSize(contentLength).catch((err) => {
+            // expectSize() is allowed to be unimplemented.
+            if (err.kjType !== "unimplemented") {
+              reportUploadStreamError(err);
+            }
+          });
+        }
+
+        // Pipe the input stream to the app.
+        let writesInFlight = 0;
+        let readingPaused = false;
+        request.on("data", (buf) => {
+          // TODO(someday): Coalesce small writes.
+
+          if (buf.length > 4194304) {
+            // Whoa, buffer is more than 4MB. We should be splitting it. But does this actually
+            // happen? Let's try to detect this problem before we try to do anything about it.
+            console.log("whoa, huge upload buffer:", buf.length);
+            reportUploadStreamError(new Error("upload buffer too big (bug in Sandstorm)"));
+            destructor();
+            return;
+          }
+
+          if (!uploadStreamError) {
+            requestStream.write(buf).then(() => {
+              writesInFlight--;
+              if (readingPaused) {
+                request.resume();
+                readingPaused = false;
+              }
+            }).catch(reportUploadStreamError);
+
+            if (writesInFlight++ > 16) {
+              request.pause();
+              readingPaused = true;
+            }
+          }
+        });
+
+        const idx = this.streamingRequestCounter;
+        this.streamingRequestCounter += 1;
+        this.streamingRequests[idx] = request;
+        destructor = () => { delete this.streamingRequests[idx]; };
+
+        request.on("end", () => {
+          if (!uploadStreamError) requestStream.done().catch(reportUploadStreamError);
+
+          // We're all done making calls to requestStream.
+          requestStream.close();
+          destructor();
+        });
+
+        request.on("close", () => {
+          reportUploadStreamError(new Error("HTTP connection unexpectedly closed during request."));
+          destructor();
+        });
+
+        request.on("error", (err) => {
+          reportUploadStreamError(err);
+          destructor();
+        });
+
+        return responsePromise.then((rpcResponse) => {
+          // Stop here if the upload stream has already failed.
+          if (uploadStreamError) throw uploadStreamError;
+          downloadStreamHandle = this.translateResponse(rpcResponse, response, request).streamHandle;
+        });
+      }, (err) => {
+        if (err.kjType === "failed" && err.message.indexOf("not implemented") !== -1) {
+          // Hack to work around old apps using an old version of Cap'n Proto, before the
+          // 'unimplemented' exception type was introduced. :(
+          // TODO(cleanup): When we transition to API version 2, we can move this into the
+          //   compatibility layer.
+          err.kjType = "unimplemented";
+        }
+
+        if (shouldRestartGrain(err, 0)) {
+          // This is the kind of error that indicates we should retry. Note that we passed 0 for
+          // the retry count above because we were just checking if this is a retriable error (vs.
+          // possibly a method-not-implemented error); maybeRetryAfterError() will check again with
+          // the proper retry count.
+          return this.maybeRetryAfterError(err, retryCount).then(() => {
+            return this.handleRequestStreaming(request, response, contentLength, retryCount + 1);
+          });
+        } else if (err.kjType === "unimplemented") {
+          // Streaming is not implemented. Fall back to non-streaming version.
+          return readAll(request).then((data) => {
+            return this.handleRequest(request, data, response, 0);
+          });
+        } else {
+          throw err;
+        }
+      });
     });
   }
 
   handleWebSocket(request, socket, head, retryCount) {
-    const _this = this;
-
     return Promise.resolve(undefined).then(() => {
-      return _this.makeContext(request);
-    }).then((context) => {
-      const path = request.url.slice(1);  // remove leading '/'
-      const session = _this.getSession(request);
+      return this.makeContext(request, undefined, (context) => {
+        const path = request.url.slice(1);  // remove leading '/'
+        const session = this.getSession(request);
 
-      if (!('sec-websocket-key' in request.headers)) {
-        throw new Error('Missing Sec-WebSocket-Accept header.');
-      }
-
-      const magic = request.headers['sec-websocket-key'] + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
-      const acceptKey = Crypto.createHash('sha1').update(magic).digest('base64');
-
-      let protocols = [];
-      if ('sec-websocket-protocol' in request.headers) {
-        protocols = request.headers['sec-websocket-protocol']
-            .split(',').map((s) => { return s.trim(); });
-      }
-
-      const receiver = new WebSocketReceiver(socket);
-
-      const promise = session.openWebSocket(path, context, protocols, receiver);
-
-      if (head.length > 0) {
-        promise.serverStream.sendBytes(head);
-      }
-
-      const socketIdx = _this.websocketCounter.toString();
-      _this.websockets[socketIdx] = socket;
-      _this.websocketCounter += 1;
-      pumpWebSocket(socket, promise.serverStream, () => { delete _this.websockets[socketIdx]; });
-
-      return promise.then((response) => {
-        const headers = [
-            'HTTP/1.1 101 Switching Protocols',
-            'Upgrade: websocket',
-            'Connection: Upgrade',
-            'Sec-WebSocket-Accept: ' + acceptKey,
-        ];
-        if (response.protocol && response.protocol.length > 0) {
-          headers.push('Sec-WebSocket-Protocol: ' + response.protocol.join(', '));
+        if (!("sec-websocket-key" in request.headers)) {
+          throw new Error("Missing Sec-WebSocket-Accept header.");
         }
 
-        headers.push('');
-        headers.push('');
+        const magic = request.headers["sec-websocket-key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+        const acceptKey = Crypto.createHash("sha1").update(magic).digest("base64");
 
-        socket.write(headers.join('\r\n'));
-        receiver.go();
+        let protocols = [];
+        if ("sec-websocket-protocol" in request.headers) {
+          protocols = request.headers["sec-websocket-protocol"]
+              .split(",").map((s) => { return s.trim(); });
+        }
 
-        // Note:  At this point errors are out of our hands.
+        const receiver = new WebSocketReceiver(socket);
+
+        const promise = session.openWebSocket(path, context, protocols, receiver);
+
+        if (head.length > 0) {
+          promise.serverStream.sendBytes(head);
+        }
+
+        const socketIdx = this.websocketCounter;
+        this.websockets[socketIdx] = socket;
+        this.websocketCounter += 1;
+        pumpWebSocket(socket, promise.serverStream, () => { delete this.websockets[socketIdx]; });
+
+        return promise.then((response) => {
+          const headers = [
+              "HTTP/1.1 101 Switching Protocols",
+              "Upgrade: websocket",
+              "Connection: Upgrade",
+              "Sec-WebSocket-Accept: " + acceptKey,
+          ];
+          if (response.protocol && response.protocol.length > 0) {
+            headers.push("Sec-WebSocket-Protocol: " + response.protocol.join(", "));
+          }
+
+          headers.push("");
+          headers.push("");
+
+          socket.write(headers.join("\r\n"));
+          receiver.go();
+
+          // Note:  At this point errors are out of our hands.
+        });
       });
     }).catch((error) => {
-      return _this.maybeRetryAfterError(error, retryCount).then(() => {
-        return _this.handleWebSocket(request, socket, head, retryCount + 1);
+      return this.maybeRetryAfterError(error, retryCount).then(() => {
+        return this.handleWebSocket(request, socket, head, retryCount + 1);
       });
     });
   }
@@ -1989,19 +2271,17 @@ class Proxy {
       });
     }
   }
-};
-
-const PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;
+}
 
 const isRfc1918OrLocal = (address) => {
   if (Net.isIPv4(address)) {
-    quad = address.split('.').map((x) => { return parseInt(x, 10); });
+    const quad = address.split(".").map((x) => { return parseInt(x, 10); });
     return (quad[0] === 127 || quad[0] === 10 ||
             (quad[0] === 192 && quad[1] === 168) ||
             (quad[0] === 172 && quad[1] >= 16 && quad[1] < 32));
   } else if (Net.isIPv6(address)) {
     // IPv6 specifies ::1 as localhost and fd:: as reserved for private networks
-    return (address === '::1' || address.lastIndexOf('fd', 0) === 0);
+    return (address === "::1" || address.lastIndexOf("fd", 0) === 0);
   } else {
     // Ignore things that are neither IPv4 nor IPv6
     return false;
@@ -2021,24 +2301,24 @@ const quadToIntString = (quad) => {
 
 const parseCookies = (request) => {
   // jscs:disable requireDotNotation
-  const header = request.headers['cookie'];
+  const header = request.headers["cookie"];
 
   const result = { cookies: [] };
   if (header) {
-    const reqCookies = header.split(';');
+    const reqCookies = header.split(";");
     for (const i in reqCookies) {
       const reqCookie = reqCookies[i];
-      const equalsPos = reqCookie.indexOf('=');
+      const equalsPos = reqCookie.indexOf("=");
       let cookie;
       if (equalsPos === -1) {
-        cookie = { key: reqCookie.trim(), value: '' };
+        cookie = { key: reqCookie.trim(), value: "" };
       } else {
         cookie = { key: reqCookie.slice(0, equalsPos).trim(), value: reqCookie.slice(equalsPos + 1) };
       }
 
-      if (cookie.key === 'sandstorm-sid') {
+      if (cookie.key === "sandstorm-sid") {
         if (result.sessionId) {
-          throw new Error('Multiple sandstorm session IDs?');
+          throw new Error("Multiple sandstorm session IDs?");
         }
 
         result.sessionId = cookie.value;
@@ -2052,23 +2332,23 @@ const parseCookies = (request) => {
 };
 
 const parsePreconditionHeader = (request) => {
-  if (request.headers['if-match']) {
-    if (request.headers['if-match'].trim() === '*') {
+  if (request.headers["if-match"]) {
+    if (request.headers["if-match"].trim() === "*") {
       return { exists: null };
     }
 
-    const matches = parseETagList(request.headers['if-match']);
+    const matches = parseETagList(request.headers["if-match"]);
     if (matches.length > 0) {
       return { matchesOneOf: matches };
     }
   }
 
-  if (request.headers['if-none-match']) {
-    if (request.headers['if-none-match'].trim() === '*') {
+  if (request.headers["if-none-match"]) {
+    if (request.headers["if-none-match"].trim() === "*") {
       return { doesntExist: null };
     }
 
-    const noneMatches = parseETagList(request.headers['if-none-match']);
+    const noneMatches = parseETagList(request.headers["if-none-match"]);
     if (noneMatches.length > 0) {
       return { matchesNoneOf: noneMatches };
     }
@@ -2086,43 +2366,41 @@ const parseETagList = (input) => {
 
   while (input.length > 0) {
     const match = input.match(/^\s*(W\/)?"(([^"\\]|\\.)*)"\s*($|,)/);
-    if (!match) throw new Meteor.Error(400, 'invalid etag');
+    if (!match) throw new Meteor.Error(400, "invalid etag");
 
     input = input.slice(match[0].length).trim();
-    results.push({ weak: !!match[1], value: match[2].replace(/\\(.)/g, '$1') });
+    results.push({ weak: !!match[1], value: match[2].replace(/\\(.)/g, "$1") });
   }
 
   return results;
 };
 
 const composeETag = (tag) => {
-  let result = '"' + (tag.value || '').replace(/([\\"])/g, '\\$1') + '"';
-  if (tag.weak) result = 'W/' + result;
+  let result = '"' + (tag.value || "").replace(/([\\"])/g, "\\$1") + '"';
+  if (tag.weak) result = "W/" + result;
   return result;
 };
 
-const parseAcceptHeader = (request) => {
-  // jscs:disable requireDotNotation
-  const header = request.headers['accept'];
-
+const parseAcceptHeaderString = (header, field) => {
   const result = [];
   if (header) {
-    const acceptList = header.split(',');
+    const acceptList = header.split(",");
     for (const i in acceptList) {
       const acceptStr = acceptList[i];
-      const tokensList = acceptStr.split(';');
+      const tokensList = acceptStr.split(";");
 
-      const temp = { mimeType: tokensList[0].trim() };
+      const temp = {};
+      temp[field] = tokensList[0].trim();
 
       const tokensListRest = tokensList.slice(1);
       for (const j in tokensListRest) {
         const token = tokensListRest[j];
-        const equalsPos = token.indexOf('=');
+        const equalsPos = token.indexOf("=");
         if (equalsPos) {
           const key = token.slice(0, equalsPos).trim();
           const value = token.slice(equalsPos + 1).trim();
 
-          if (key === 'q') {
+          if (key === "q") {
             temp.qValue = +value;
           }
         }
@@ -2135,110 +2413,238 @@ const parseAcceptHeader = (request) => {
   return result;
 };
 
+const parseAcceptHeader = (request) => {
+  // jscs:disable requireDotNotation
+  const header = request.headers["accept"];
+  return parseAcceptHeaderString(header, "mimeType");
+};
+
+const parseAcceptEncodingHeader = (request) => {
+  // jscs:disable requireDotNotation
+  const header = request.headers["accept-encoding"];
+  return parseAcceptHeaderString(header, "contentCoding");
+};
+
 // -----------------------------------------------------------------------------
 // Regular HTTP request handling
 
 const readAll = (stream) => {
   return new Promise((resolve, reject) => {
     const buffers = [];
-    stream.on('data', (buf) => {
+    stream.on("data", (buf) => {
       buffers.push(buf);
     });
 
-    stream.on('end', () => {
+    stream.on("end", () => {
       resolve(Buffer.concat(buffers));
     });
 
-    stream.on('error', reject);
+    stream.on("error", reject);
   });
 };
 
 const makeSetCookieHeader = (cookie) => {
-  const result = [cookie.name, '=', cookie.value];
+  const result = [cookie.name, "=", cookie.value];
 
-  if ('absolute' in cookie.expires) {
-    result.push('; Expires=');
+  if ("absolute" in cookie.expires) {
+    result.push("; Expires=");
     result.push(new Date(cookie.expires.absolute * 1000).toUTCString());
-  } else if ('relative' in cookie.expires) {
-    result.push('; Max-Age=' + cookie.expires.relative);
+  } else if ("relative" in cookie.expires) {
+    result.push("; Max-Age=" + cookie.expires.relative);
   }
 
   if (cookie.path) {
-    result.push('; Path=' + cookie.path);
+    result.push("; Path=" + cookie.path);
   }
 
   if (cookie.httpOnly) {
-    result.push('; HttpOnly');
+    result.push("; HttpOnly");
   }
 
-  return result.join('');
+  return result.join("");
 };
 
 // TODO(cleanup):  Auto-generate based on annotations in web-session.capnp.
 const successCodes = {
-  ok:          { id: 200, title: 'OK' },
-  created:     { id: 201, title: 'Created' },
-  accepted:    { id: 202, title: 'Accepted' },
-  multiStatus: { id: 207, title: 'Multi-Status' },
+  ok:          { id: 200, title: "OK" },
+  created:     { id: 201, title: "Created" },
+  accepted:    { id: 202, title: "Accepted" },
+  multiStatus: { id: 207, title: "Multi-Status" },
 };
 const noContentSuccessCodes = [
   // Indexed by shouldResetForm * 1
-  { id: 204, title: 'No Content' },
-  { id: 205, title: 'Reset Content' },
+  { id: 204, title: "No Content" },
+  { id: 205, title: "Reset Content" },
 ];
 const redirectCodes = [
   // Indexed by switchToGet * 2 + isPermanent
-  { id: 307, title: 'Temporary Redirect' },
-  { id: 308, title: 'Permanent Redirect' },
-  { id: 303, title: 'See Other' },
-  { id: 301, title: 'Moved Permanently' },
+  { id: 307, title: "Temporary Redirect" },
+  { id: 308, title: "Permanent Redirect" },
+  { id: 303, title: "See Other" },
+  { id: 301, title: "Moved Permanently" },
 ];
 const errorCodes = {
-  badRequest:            { id: 400, title: 'Bad Request' },
-  forbidden:             { id: 403, title: 'Forbidden' },
-  notFound:              { id: 404, title: 'Not Found' },
-  methodNotAllowed:      { id: 405, title: 'Method Not Allowed' },
-  notAcceptable:         { id: 406, title: 'Not Acceptable' },
-  conflict:              { id: 409, title: 'Conflict' },
-  gone:                  { id: 410, title: 'Gone' },
-  requestEntityTooLarge: { id: 413, title: 'Request Entity Too Large' },
-  requestUriTooLong:     { id: 414, title: 'Request-URI Too Long' },
-  unsupportedMediaType:  { id: 415, title: 'Unsupported Media Type' },
-  imATeapot:             { id: 418, title: 'I\'m a teapot' },
-  unprocessableEntity:   { id: 422, title: 'Unprocessable Entity' },
+  badRequest:            { id: 400, title: "Bad Request" },
+  forbidden:             { id: 403, title: "Forbidden" },
+  notFound:              { id: 404, title: "Not Found" },
+  methodNotAllowed:      { id: 405, title: "Method Not Allowed" },
+  notAcceptable:         { id: 406, title: "Not Acceptable" },
+  conflict:              { id: 409, title: "Conflict" },
+  gone:                  { id: 410, title: "Gone" },
+  requestEntityTooLarge: { id: 413, title: "Request Entity Too Large" },
+  requestUriTooLong:     { id: 414, title: "Request-URI Too Long" },
+  unsupportedMediaType:  { id: 415, title: "Unsupported Media Type" },
+  imATeapot:             { id: 418, title: "I'm a teapot" },
+  unprocessableEntity:   { id: 422, title: "Unprocessable Entity" },
 };
 
 ResponseStream = class ResponseStream {
-  constructor(response, streamHandle, resolve, reject) {
+  // Note: This class is used in pre-meteor.js as well as in this file.
+
+  constructor(response, httpCode, httpStatus, upstreamHandle, idempotentCleanup) {
+    // This is stupidly complicated, because:
+    // - New versions of sandstorm-http-bridge (and other well-behaved apps) wait on write()
+    //   completion for flow control, so we want write() to complete only when there is space
+    //   available for more writes.
+    // - Old versions of sandstorm-http-bridge would make a zillion simultaneous calls to write()
+    //   with all of the data they wanted to send without waiting for previous calls to complete.
+    //   While in-flight, these writes can consume a lot of RAM at multiple points in the system.
+    // - Old versions of sandstorm-http-bridge would print any thrown error to stderr and then
+    //   keep going. So if canceling a download early on causes all future write()s to fail, this
+    //   can lead to very excessive log spam.
+    // - If a write() fails to complete (it returns a promise that never resolves), then later
+    //   upon garbage collection the RPC will actually throw an exception about a PromiseFulfiller
+    //   never having been fulfilled. Hence, if we simply stop responding to write()s after some
+    //   point, we again get log spam.
+    // - If the connection closes during a write, Node never calls the completion callback at all.
+    //   We have to listen for the "close" event.
+
     this.response = response;
-    this.streamHandle = streamHandle;
-    this.resolve = resolve;
-    this.reject = reject;
-    this.ended = false;
+    this.httpCode = httpCode;
+    this.httpStatus = httpStatus;
+    this.upstreamHandle = upstreamHandle;
+    this.idempotentCleanup = idempotentCleanup;
+
+    this.started = false;
+    this.ended = false; // Invariant: if `ended` is true, then `started` is also true.
+    this.waiting = [];
+
+    response.on("drain", () => {
+      this.waiting.forEach(f => f());
+      this.waiting = [];
+    });
+
+    response.on("close", () => { this.abort(); });
+  }
+
+  abort() {
+    this.aborted = true;
+
+    // Resolve all outstanding writes. This is OK even if they didn't actually go through because
+    // an incomplete download is the client's problem, not the server's. The important thing is
+    // to cancel the stream if it is still being generated; to that end, the next new write() call
+    // after this point will throw.
+    this.waiting.forEach(f => f());
+    this.waiting = [];
+
+    this.close();
+  }
+
+  expectSize(size) {
+    if (!this.started) {
+      this.started = true;
+      this.response.writeHead(this.httpCode, this.httpStatus, { "Content-Length": size });
+    }
   }
 
   write(data) {
-    this.response.write(data);
+    if (!this.started) {
+      this.started = true;
+      this.response.writeHead(this.httpCode, this.httpStatus);
+    }
+
+    if (this.aborted) {
+      // Connection has been aborted.
+      if (this.alreadyThrew) {
+        // We already threw an error from a previous write(). Do not throw more errors, because
+        // older versions of sandstorm-http-bridge do not stop on the first error and will print
+        // every error to the log, wasting space. Newer versions stop on the first failure.
+        return;
+      } else {
+        this.alreadyThrew = true;
+        throw new Error("client disconnected");
+      }
+    } else {
+      if (this.response.write(data)) {
+        // All written.
+        return;
+      } else {
+        // Write buffer is full. Don't complete until it has more space.
+        return new Promise((resolve, reject) => {
+          this.waiting.push(resolve);
+        });
+      }
+    }
   }
 
   done() {
-    this.response.end();
-    this.streamHandle.close();
-    this.ended = true;
+    if (!this.started) {
+      this.started = true;
+      this.response.writeHead(this.httpCode, this.httpStatus, { "Content-Length": 0 });
+    }
+
+    if (!this.ended) {
+      this.ended = true;
+      this.response.end();
+    }
+
+    this.close();
   }
 
   close() {
-    if (this.ended) {
-      this.resolve();
+    if (this.upstreamHandle) {
+      this.upstreamHandle.close();
+    }
+
+    if (this.idempotentCleanup) {
+      this.idempotentCleanup();
+    }
+
+    // If `this.done()` has not been called, we should report an error to the client. Unfortunately,
+    // the only case in which we can actually report the error is when we haven't done any writes
+    // yet. So we handle that case and ignore the error otherwise. Note that `!this.started`
+    // implies `!this.ended`.
+    if (!this.started) {
+      this.started = true;
+      this.response.writeHead(500, "done() never called on response stream",
+                              { "Content-Type": "text/plain" });
+    }
+
+    if (!this.ended) {
+      this.ended = true;
+      this.response.end();
+    }
+  }
+
+  sendingDirectResponse() {
+    // For internal front-end use: Indicates that the caller is going to fill in the response
+    // instead. If a response has already been started, this throws an exception.
+    //
+    // This is used in particular in pre-meteor.js, when dealing with static web publishing.
+
+    if (this.started) {
+      throw new Error("can't sendDirectResponse() because response already started");
+    } else if (this.ended) {
+      throw new Error("can't sendDirectResponse() because response already sent");
     } else {
-      this.streamHandle.close();
-      this.reject(new Error('done() was never called on outbound stream.'));
+      this.started = true;
+      this.ended = true;
     }
   }
 };
 
 // TODO(cleanup): Node 0.12 has a `gunzipSync` but 0.10 (which Meteor still uses) does not.
-const Zlib = Npm.require('zlib');
+const Zlib = Npm.require("zlib");
 const gunzipSync = Meteor.wrapAsync(Zlib.gunzip, Zlib);
 
 // -----------------------------------------------------------------------------
@@ -2272,18 +2678,31 @@ WebSocketReceiver = class WebSocketReceiver {
   }
 };
 
-pumpWebSocket = (socket, rpcStream, destructor) => {
-  socket.on('data', (chunk) => {
-    rpcStream.sendBytes(chunk).catch((err) => {
-      if (err.kjType !== 'disconnected') {
-        console.error('WebSocket sendBytes failed: ' + err.stack);
+function pumpWebSocket(socket, rpcStream, destructor) {
+  let writesInFlight = 0;
+  let readingPaused = false;
+  socket.on("data", (chunk) => {
+    rpcStream.sendBytes(chunk).then(() => {
+      writesInFlight--;
+      if (readingPaused) {
+        socket.resume();
+        readingPaused = false;
+      }
+    }).catch((err) => {
+      if (err.kjType !== "disconnected") {
+        console.error("WebSocket sendBytes failed: " + err.stack);
       }
 
       socket.destroy();
     });
+
+    if (writesInFlight++ > 16) {
+      socket.pause();
+      readingPaused = true;
+    }
   });
 
-  socket.on('end', (chunk) => {
+  socket.on("end", (chunk) => {
     rpcStream.close();
   });
 
@@ -2295,12 +2714,12 @@ pumpWebSocket = (socket, rpcStream, destructor) => {
 // =======================================================================================
 // Debug log access
 
-Meteor.publish('grainLog', function (grainId) {
+Meteor.publish("grainLog", function (grainId) {
   check(grainId, String);
   let id = 0;
   const grain = Grains.findOne(grainId);
   if (!grain || !this.userId || grain.userId !== this.userId) {
-    this.added('grainLog', id++, { text: 'Only the grain owner can view the debug log.' });
+    this.added("grainLog", id++, { text: "Only the grain owner can view the debug log." });
     this.ready();
     return;
   }
@@ -2311,13 +2730,13 @@ Meteor.publish('grainLog', function (grainId) {
   const receiver = {
     write(data) {
       connected = true;
-      _this.added('grainLog', id++, { text: data.toString('utf8') });
+      _this.added("grainLog", id++, { text: data.toString("utf8") });
     },
 
     close() {
       if (connected) {
-        _this.added('grainLog', id++, {
-          text: '*** lost connection to grain (probably because it shut down) ***',
+        _this.added("grainLog", id++, {
+          text: "*** lost connection to grain (probably because it shut down) ***",
         });
       }
     },
@@ -2333,8 +2752,8 @@ Meteor.publish('grainLog', function (grainId) {
     });
   } catch (err) {
     if (!connected) {
-      this.added('grainLog', id++, {
-        text: '*** couldn\'t connect to grain (' + err + ') ***',
+      this.added("grainLog", id++, {
+        text: "*** couldn't connect to grain (" + err + ") ***",
       });
     }
   }

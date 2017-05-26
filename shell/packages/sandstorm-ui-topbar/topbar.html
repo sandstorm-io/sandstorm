@@ -18,11 +18,11 @@ limitations under the License.
 
 <template name="sandstormTopbar">
   {{#if isUpdateBlocked}}
-    <div class="topbar-update">
+    <button class="topbar-update">
       Sandstorm has been updated &mdash; Click here to reload
-    </div>
+    </button>
   {{/if}}
-  <ul class="topbar {{#if _menuExpanded.get}}expanded{{/if}}">
+  <ul class="topbar{{#if _menuExpanded.get}} expanded{{/if}}{{#if isCurrentRoute "standalone"}} standalone{{/if}}">
     <ul class="menubar {{#if shrinkNavbar}}shrink-desktop{{/if}}">
       {{#each items}}
         {{#unless onlyPopup}}
@@ -33,35 +33,55 @@ limitations under the License.
       {{/each}}
     </ul>
     <ul class="navbar {{#if hideNavbar}}hide-desktop{{else}}{{#if shrinkNavbar}}shrink-desktop{{/if}}{{/if}}">
+      {{#if currentUser}}
       <li class="navitem-create-grain {{#if isCurrentRoute 'apps'}}current{{/if}}"><a href="{{pathFor route='apps'}}">Apps</a></li>
       <li class="navitem-open-grain {{#if isCurrentRoute 'grains'}}current{{/if}}"><a href="{{pathFor route='grains'}}"><span>Grains</span></a></li>
+      {{/if}}
 
       <li class="navbar-shrink-item">
-        <button class="navbar-shrink {{#if shrinkNavbar}}shrunk{{/if}}"
+        <button class="navbar-shrink icon icon-arrow {{#if shrinkNavbar}}shrunk{{/if}}"
                 title="{{#if shrinkNavbar}}Grow{{else}}Shrink{{/if}} sidebar"></button>
       </li>
 
       {{!-- TODO(cleanup): ul's can only contain li's, so this ul is not really valid --}}
       <ul class="navbar-grains">
         {{#each grains}}
-        <li data-grainid="{{grainId}}" class="navitem-grain {{#if active}}current{{/if}}" title={{title}}>
+        <li data-grainid="{{grainId}}" class="navitem-grain {{#if active}}current{{/if}} {{#if unread}}unread{{/if}}" title={{title}}>
           <div class="app-icon" style="background-image: url('{{iconSrc}}');" alt="{{appTitle}}"></div>
           <a href="{{grainLink}}">{{title}}</a>
+          {{#with notificationCount}}
+            <span class="notification-count" title="notifications">{{.}}</span>
+          {{/with}}
           <button class="close-button" title="Close {{title}}"></button>
         </li>
         {{/each}}
-
-        {{#with accountExpires}}
-          <li><div class="demo-notice">
-            <p>This demo expires in: <span class="countdown {{#if urgent}}urgent{{/if}}">{{countdown}}</span></p>
-
-            <p>To make your data permanent, create an account:
-              <button class="sign-in">Create account »</button></p>
-
-            <p class="self-host"><a href="https://sandstorm.io/install/" target="_blank">Or, get Sandstorm on your own server (it's open source) »</a></p>
-          </div></li>
-        {{/with}}
       </ul>
+
+      {{#with accountExpires}}
+      <li class="navitem-demo-notice">
+        <div class="demo-notice">
+          <p>Start collaborating with others by using Sandstorm on Oasis:
+            <button class="button-primary sign-in">Create free account »</button>
+            <span class="subtext">Your demo data will be transferred.</span>
+          </p>
+
+          <p class="self-host">
+            Or, install Sandstorm for your team (it's open source):
+            <a class="get-sandstorm-button" href="https://sandstorm.io/get?utm_source=demo&amp;utm_campaign=2016-11&amp;utm_medium=oasis" target="_blank">
+              Get Sandstorm »
+            </a>
+          </p>
+        </div>
+      </li>
+
+      <li class="navitem-demo-timer">
+        <div class="demo-timer">
+          <p>Sign up within:
+            <span class="countdown {{#if urgent}}urgent{{/if}}">{{countdown}}</span>
+          </p>
+        </div>
+      </li>
+      {{/with}}
     </ul>
   </ul>
   {{!-- Becomes hamburger menu button in mobile view.  Placed after the topbar so it stacks above
@@ -70,11 +90,11 @@ limitations under the License.
   <div class="menu-button {{#if _menuExpanded.get}}expanded{{/if}}"></div>
   {{!-- We wish to block reload if there are *any* grains open, regardless of the current route --}}
   {{#if grainCount }}
-    {{>sandstormTopbarBlockReload}}
+    {{>sandstormTopbarBlockReload ""}}
   {{/if}}
 
   {{#with currentPopup}}
-    <div class="popup {{name}}">
+    <div class="popup {{name}} {{#if modal}}modal{{/if}}">
       {{#if onlyPopup}}
         <div class="frame-container centered">
           <div class="frame">

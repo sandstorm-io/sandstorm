@@ -40,7 +40,7 @@ Within `/opt/sandstorm` there are a few essential files and directories.
 
 - `/opt/sandstorm/var/log/sandstorm.log` - this is the log file for Sandstorm. If you are logged in
   to a Sandstorm install as an administrator, you can view this on the web by visiting **Admin
-  Settings** then clicking **Log**.
+  panel** then clicking **System log**.
 
 - `/opt/sandstorm/var/mongo` - this is the data directory for MongoDB, the database engine that
   stores all Sandstorm data like grain names, user names, and permissions. You can query it by
@@ -58,6 +58,33 @@ Within `/opt/sandstorm` there are a few essential files and directories.
 - `/opt/sandstorm/sandstorm-{{versionNumber}}` - this directory contains Sandstorm and all its
   dependencies. To install your own modified version, read our instructions on [building Sandstorm
   from source](../install.md#option-4-installing-from-source).
+
+### Processes and syscalls: Getting under the hood of Sandstorm
+
+When Sandstorm is running, it launches the **bundle runner,** a tool that ensures other components
+of Sandstorm are properly launched. The bundle runner starts by containerizing itself, using the
+Linux syscalls related to [namespaces, seccomp, and so forth.](../using/security-practices.md)
+
+The bundle runner ensures that other components of Sandstorm launch properly, including:
+
+- The auto-updater, which executes curl periodically to check for new versions of Sandstorm.
+
+- The Sandstorm shell, a nodejs process which serves HTTP(S) for visitors to your Sandstorm server.
+
+- MongoDB, the database used by Sandstorm.
+
+- The Sandstorm backend, a C++ program which itself uses namespace syscalls to launch grains.
+
+- The server monitor, which restarts the shell, MongoDB, and/or the Sandstorm backend if any of them
+  abruptly exit.
+
+If a server is idle, these are the only Sandstorm-related processes on a server.
+
+When a user navigates within the Sandstorm shell to launch a grain, a process tree is created
+starting at `supervisor`. The per-grain supervisor containerizes and launches the processes
+specified as the grain's entry point.
+
+To manually inspect these processes, consider using `strace` and `ps` on a running Sandstorm server.
 
 ## New versions and applying updates
 
@@ -103,7 +130,7 @@ available, called the **app index.** Every day, Sandstorm downloads this file. F
 app index, if a user on your Sandstorm server has an older version installed, Sandstorm creates a
 notification suggesting that the user click a button to update to the latest version.
 
-This behavior can be customized within **Admin Settings** under **Advanced**. We strongly recommend
+This behavior can be customized within the **Admin panel** under **App sources**. We strongly recommend
 keeping this enabled. You can also point your Sandstorm install at a different app market URL and
 app index URL.
 
@@ -149,17 +176,17 @@ Key concepts:
 
 - Every Sandstorm user starts by seeing no apps installed, and must install apps on their own.
 
-- Sandstorm supports multiple **login providers** which be enabled/disabled from **Admin Settings**.
+- Sandstorm supports multiple **login providers** which can be enabled/disabled from the **Admin panel**.
 
-There are three levels of users.
+There are three standard levels of users.
 
-- **Guest** users can see grains that have been shared with them. By default, anyone can click
-  **Sign in** and become a guest user.
+- **Visitors** can use and re-share grains that have been shared with them. They cannot create grains of their own nor install apps. By default, anyone can click **Sign in** and become a Visitor. If you would prefer to disallow visitors entirely, you can enable the setting "Disallow collaboration with users outside the organization", found under "Organization settings" in the admin panel.
 
-- **Invited users** can install apps for their own use, create grains, and share them.
+- **Users** can install apps for their own use, create grains, and share them with others. By default, these users must be invited by an Admin.
 
-- **Admin users** can also see the **Admin Settings** control panel, allowing them to change a user
-  between these user levels. They can also invite users via the **Admin Settings** control panel.
+- **Admins** can also see the **Admin panel**, allowing them to invite users, modify user levels, and configure server settings like login providers and email settings.
+
+Additionally, Sandstorm has **demo accounts** which are disabled by default. See the [Demo mode](demo.md) documentation for details.
 
 If you see a message saying your Sandstorm install has no users, read the [How do I log in, if
 there's a problem with logging in via the

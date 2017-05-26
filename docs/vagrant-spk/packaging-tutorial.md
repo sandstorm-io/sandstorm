@@ -14,8 +14,29 @@ this tutorial, you'll learn:
 * How our packaging helper (`vagrant-spk`) lets you edit the app's files on your main operating
   system (we support Mac OS, Linux, and Windows), even though Sandstorm apps always run on Linux.
 
-The tutorial uses a PHP app as an example. **Sandstorm supports any
-programming language that runs on Linux**, not just PHP, such as
+Keep in mind that if you make a Sandstorm package, your app will receive the following
+benefits.
+
+- Sandstorm can handle [single sign-on and permissions,](../developing/auth.md) so the app doesn't
+  need a login form.
+
+- Sandstorm can allow you to distribute an app, have as many users as you want, and pay nothing at
+  all for hosting, since [each user hosts their own instance of the
+  app.](https://sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting)
+
+- When the user needs a new document, chat room, mailbox, or other item that they create using your
+  app, they create a new [grain](https://sandstorm.io/how-it-works) of your app within Sandstorm.
+  Each grain runs totally isolated from each other grain, and Sandstorm auto-scales your app's
+  processes based on use.
+
+- Users can trust that your app is securely sandboxed, giving them the confidence to use it without
+  fear.
+
+- A single codebase can support running within Sandstorm as well as running outside of Sandstorm, if
+  you wish.
+
+The tutorial uses a PHP app as an example, but **Sandstorm supports any
+programming language that runs on Linux**, such as
 Meteor, Python, Rails, Node, PHP, C++, Go, Rust, and more. Read about
 [vagrant-spk's platform stacks](platform-stacks.md) to see how to optimize
 your package for your app's programming language.
@@ -65,8 +86,9 @@ The app's code will be stored at
 of the tutorial in that directory and its sub-directories.
 
 **Note**: Feel free to spend a moment looking around this folder you
-just downloaded. You'll find an `index.php` and some CSS and
-Javascript.
+just downloaded (or [view its contents on
+GitHub](https://github.com/sandstorm-io/php-app-to-package-for-sandstorm)).
+You'll find an `index.php` and some CSS and Javascript.
 
 ## Create .sandstorm, to store packaging information for the app
 
@@ -78,7 +100,8 @@ create the package.
 We'll use the `vagrant-spk` tool to create this directory.
 
 The purpose of `vagrant-spk` is to create a Linux system where Sandstorm and
-your app run successfully. It acts differently based on which _language platform_
+your app run successfully. It acts differently based on which
+[platform stack](https://docs.sandstorm.io/en/latest/vagrant-spk/platform-stacks/)
 you want to use. In our case, we'll use the _lemp_ platform: Linux, nginx, MySQL,
 and PHP.
 
@@ -147,10 +170,21 @@ other apps.
 
 ## Examine the Sandstorm instance you will develop against
 
-Your system is now running a Sandstorm instance. You should visit it
-in your web browser now by visiting
+Your system is now running a Sandstorm instance. You should visit it in your web browser now by
+opening this link.
 
-http://local.sandstorm.io:6080/
+[http://local.sandstorm.io:6080/](http://local.sandstorm.io:6080/)
+
+Some quick facts on how that works:
+
+- Sandstorm is running within a Linux system created with the help of vagrant-spk,
+  vagrant, and VirtualBox.
+
+- local.sandstorm.io is a DNS alias that points to the same IP address as `localhost`.  We use
+  local.sandstorm.io instead of `localhost` because all subdomains of local.sandstorm.io also point
+  at the localhost IP address. You can read more about [wildcard DNS.](../administering/wildcard.md)
+
+- Sandstorm uses port 6080 by default.
 
 Take a moment now to sign in by clicking on **Sign in** in the top-right corner.
 Choose **Sign in with a Dev account** and choose **Alice (admin)** as the user
@@ -196,17 +230,17 @@ Change it to the following.
     appTitle = (defaultText = "Sandstorm Showcase"),
 ```
 
-Second, we will customize the text that Sandstorm users see when they want
-to create a new _instance_ of the app. To do this, find the line containing:
+Second, we will customize the text that Sandstorm users see when they want to create a new grain of
+the app. To do this, find the line containing:
 
 ```bash
-      ( title = (defaultText = "New Instance"),
+      ( nounPhrase = (defaultText = "instance"),
 ```
 
 and change it to read:
 
 ```bash
-      ( title = (defaultText = "New Showcase"),
+      ( nounPhrase = (defaultText = "showcase"),
 ```
 
 ## Make the app available in the Sandstorm, in development mode
@@ -231,15 +265,14 @@ App is now available from Sandstorm server. Ctrl+C to disconnect.
 Now you can visit the Sandstorm at http://local.sandstorm.io:6080/ and log in
 as **Alice (admin)**. Your app name should appear in the list of apps.
 
-You can click **New Showcase** and see the PHP code running.
+You can click **New showcase** and see the PHP code running.
 
-Note that each app instance (each "Showcase", for this app) runs separate from
-each other. You can see that for this app because the app stores the number
-of times you have reloaded the page. If you create another **New Showcase**,
-each instance will store their data separately.
+Note that each grain of the app (each "showcase", for this app) runs separate from each other. You
+can see that for this app because the app stores the number of times you have reloaded the page. If
+you create another **New showcase**, each grain will store its data separately.
 
-In Sandstorm, resources like a database are embedded into the package. That
-helps enforce this isolation between app instances.
+In Sandstorm, resources like a database are embedded into the package. That helps enforce this
+isolation between all grains, even of the same app.
 
 ## Stop the development server and create a package file
 
@@ -276,7 +309,7 @@ You can see how large it is by running the following command:
 du -h ~/projects/package.spk
 ```
 
-On my system, I see:
+You will see output like this.
 
 ```bash
 16M

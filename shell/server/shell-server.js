@@ -33,21 +33,39 @@
 //   with encoded URLs to an evil server. Although, this attack would be very detectable to the
 //   user, so maybe it's not a big deal...
 
+import { inMeteor } from "/imports/server/async-helpers.js";
+
 BrowserPolicy.framing.disallow();  // Disallow framing of the UI.
-BrowserPolicy.content.allowFrameOrigin(getWildcardOrigin());
+Meteor.startup(() => {
+  const frameSetter = () => {
+    BrowserPolicy.content.disallowFrame(); // This clears all the old rules
+    BrowserPolicy.content.allowFrameOrigin(getWildcardOrigin());
+    const billingPromptUrl = globalDb.getBillingPromptUrl();
+    if (billingPromptUrl) {
+      BrowserPolicy.content.allowFrameOrigin(billingPromptUrl);
+    }
+  };
+
+  frameSetter(); // Call once on startup
+  globalDb.collections.settings.find({ _id: "billingPromptUrl" }).observe({
+    added: frameSetter,
+    changed: frameSetter,
+    removed: frameSetter,
+  });
+});
 
 // Allow anything to be loaded from the static asset host.
-const Url = Npm.require("url");
-const staticAssetHost = Url.parse(process.env.ROOT_URL).protocol + "//" +
-                        globalDb.makeWildcardHost("static");
+import { staticAssetHost } from "/imports/server/constants.js";
 BrowserPolicy.content.allowImageOrigin(staticAssetHost);
 BrowserPolicy.content.allowScriptOrigin(staticAssetHost);
 BrowserPolicy.content.allowFontOrigin(staticAssetHost);
 BrowserPolicy.content.allowConnectOrigin(staticAssetHost);
+BrowserPolicy.content.allowConnectOrigin("wss:");
+BrowserPolicy.content.allowConnectOrigin("ws:");
 
 Meteor.publish("grainsMenu", function () {
   if (this.userId) {
-    if (Meteor.settings.public.quotaEnabled) {
+    if (globalDb.isQuotaEnabled()) {
       // Hack: Fire off an asynchronous update to the user's storage usage whenever they open the
       //   front page.
       // TODO(someday): Implement the ability to reactively subscribe to storage usage from the
@@ -58,7 +76,13 @@ Meteor.publish("grainsMenu", function () {
           Meteor.users.update(userId, { $set: { storageUsage: parseInt(results.size) } });
         });
       }).catch(function (err) {
-        if (err.kjType !== "unimplemented") {
+        if (err.kjType === "unimplemented") {
+          // Compute based on sum of grain sizes instead.
+          let total = 0;
+          Grains.find({ userId: userId }, { fields: { size: 1 } })
+              .forEach(grain => total += (grain.size || 0));
+          Meteor.users.update(userId, { $set: { storageUsage: total } });
+        } else {
           console.error(err.stack);
         }
       });
@@ -80,35 +104,15 @@ Meteor.publish("sessions", function (sessionId) {
   // a backup we only publish the session to its owner. Note that `userId` can be null if the
   // user is not logged in or is using incognito mode.
   check(sessionId, String);
-  return Sessions.find({ _id: sessionId, $or: [{ userId: this.userId }, { userId: null }] });
+
+  // We exclude powerboxRequest because the client already has the descriptor list in packed
+  // format, and the parsed format can be kind of large.
+  return Sessions.find({ _id: sessionId, $or: [{ userId: this.userId }, { userId: null }] },
+      { fields: { powerboxRequest: 0 } });
 });
 
 Meteor.publish("devPackages", function () {
   return DevPackages.find();
-});
-
-Meteor.publish("notifications", function () {
-  return Notifications.find({ userId: this.userId },
-    { fields: { timestamp: 1, text: 1, grainId: 1, userId: 1, isUnread: 1, appUpdates: 1,
-              admin: 1, referral: 1, mailingListBonus: 1, }, });
-});
-
-Meteor.publish("notificationGrains", function (notificationIds) {
-  // Since publishes can't be reactive, we leave it to the client to subscribe to both
-  // "notifications" and "notificationGrains" reactively.
-  check(notificationIds, [String]);
-  const notifications =  Notifications.find({
-    _id: { $in: notificationIds },
-    userId: this.userId,
-  }, {
-    fields: { grainId: 1 },
-  });
-
-  const grainIds = notifications.map(function (row) {
-    return row.grainId;
-  });
-
-  return Grains.find({ _id: { $in: grainIds } }, { fields: { title: 1 } });
 });
 
 Meteor.publish("hasUsers", function () {

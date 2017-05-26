@@ -1,3 +1,7 @@
+import { Meteor } from "meteor/meteor";
+import { Match, check } from "meteor/check";
+import { checkAuth } from "/imports/server/auth.js";
+
 const maintenanceMessageShape = {
   text: String,
   time: Match.OneOf(Date, undefined, null),

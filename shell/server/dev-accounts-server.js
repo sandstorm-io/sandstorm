@@ -41,12 +41,18 @@ Meteor.methods({
     if (user) {
       userId = user._id;
     } else {
-      userId = Accounts.insertUserDoc({ profile: profile,
-                                        unverifiedEmail: unverifiedEmail, },
-                                      { services:
-                                          { dev: { name: displayName,
-                                                 isAdmin: isAdmin,
-                                                 hasCompletedSignup: hasCompletedSignup, }, }, });
+      userId = Accounts.insertUserDoc({
+        profile: profile,
+        unverifiedEmail: unverifiedEmail,
+      }, {
+        services: {
+          dev: {
+            name: displayName,
+            isAdmin: isAdmin,
+            hasCompletedSignup: hasCompletedSignup,
+          },
+        },
+      });
     }
     // Log them in on this connection.
     return Accounts._loginMethod(this, "createDevAccount", arguments,

@@ -1,12 +1,13 @@
-Title: Ensure a non-root install with -u can succeed, prompting for all questions
+Title: Ensure a non-root dev install with -u can succeed, prompting for all questions
 Vagrant-Box: jessie
 Vagrant-Destroy-If-bash: -d $HOME/sandstorm
 Cleanup: uninstall_sandstorm
 
-$[run]CURL_USER_AGENT=testing /vagrant/install.sh -u
+$[run]CURL_USER_AGENT=testing REPORT=no /vagrant/install.sh -u
 $[slow]Sandstorm makes it easy to run web apps on your own server.
 Expose to localhost only? [yes] $[type]
 Where would you like to put Sandstorm? $[type]
+Sandstorm grains can receive email.$[type]
 Automatically keep Sandstorm updated? [yes]$[type]
 Sandstorm supports 'dev accounts', a feature that lets anyone log in
 as admin and other sample users to a Sandstorm server. We recommend
@@ -36,12 +37,11 @@ Config written to
 Finding latest build for dev channel...
 $[veryslow]Downloading: https://dl.sandstorm.io/sandstorm-
 $[veryslow]GPG signature is valid.
-$[slow]Setup complete. To start your server now, run:
+$[slow]Installation complete. To start your server now, run:
 sandstorm start
-Once that's done, visit this link to configure it:
+Once that's done, visit this link to start using it:
   http://local.sandstorm.io:6080/
-NOTE: This URL expires in 15 minutes.
-
+NOTE: Use the passwordless admin account
 To learn how to control the server, run:
 help
 $[exitcode]0

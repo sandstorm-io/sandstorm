@@ -1,6 +1,5 @@
 @mixin webfont-icon ($color, $mobile-color, $font-size, $mobile-font-size) {
   text-align: center;
-  @extend .icon;
   &:before {
     font-size: $font-size;
     color: $color;
@@ -42,6 +41,7 @@
 }
 
 body>.topbar-update {
+  @include unstyled-button();
   position: fixed;
   width: 100%;
   height: 32px;
@@ -57,7 +57,6 @@ body>.topbar-update {
     line-height: 24px;
     height: 48px;
     left: 0;
-    width: auto;
     right: 0;
   }
 }
@@ -74,6 +73,13 @@ body>.topbar {
   height: 32px;
   background-color: $topbar-background-color;
   color: #ccc;
+
+  // Using 0 rather than CSS default ("auto") allows introjs to highlight elements in the topbar.
+  z-index: 0;
+
+  &.standalone {
+    display: none;
+  }
 
   @media #{$mobile} {
     line-height: 48px;
@@ -96,7 +102,7 @@ body>.topbar {
   %topbar-button {
     // Common styling for buttons in the topbar (on desktop).
 
-    @extend %unstyled-button;
+    @include unstyled-button();
 
     @media #{$desktop} {
       display: block;
@@ -132,7 +138,7 @@ body>.topbar {
     // Common styling for topbar buttons that are displayed as a bare icon with no text label
     // (on mobile).
 
-    @extend %unstyled-button;
+    @include unstyled-button();
 
     @media #{$mobile} {
       display: block;
@@ -225,7 +231,7 @@ body>.topbar {
         overflow: hidden;
 
         >a {
-          display: block;
+          @include overflow-ellipsis();
           color: inherit;
           margin: 0px;
           text-decoration: none;
@@ -364,14 +370,7 @@ body>.topbar {
     }
     >.delete>button    { background-image: url("/trash.svg"); }
     >.debug-log>button { background-image: url("/debug.svg"); }
-    >.backup>button    {
-      background-image: url("/download.svg");
-
-      &.loading {
-        background-image: url("/spinner_96.gif");
-        cursor: auto;
-      }
-    }
+    >.backup>button    { background-image: url("/download.svg"); }
     >.restart>button   { background-image: url("/restart.svg"); }
     >.webkey>button    { background-image: url("/key.svg"); }
     >.who-has-access img { width: 20px; }
@@ -436,7 +435,6 @@ body>.topbar {
         @extend %mobile-icon-button;
 
         @include webfont-icon(#CCCCCC, #CCCCCC, 24px, 40px);
-        @extend .icon-notification;
 
         >.count {
           display: block;
@@ -463,6 +461,26 @@ body>.topbar {
     >.account, >.login {
       >button.show-popup {
         @extend %hamburger-menu-item;
+        position: relative;
+        >.profile-picture {
+          position: absolute;
+          display: block;
+          background-size: contain;
+          background-repeat: no-repeat;
+          background-position: center;
+          @media #{$desktop} {
+            width: 24px;
+            height: 24px;
+            top: 4px;
+            left: 4px;
+          }
+          @media #{$mobile} {
+            width: 32px;
+            height: 32px;
+            left: 8px;
+            top: 8px;
+          }
+        }
       }
 
       @media #{$desktop} {
@@ -470,10 +488,15 @@ body>.topbar {
         display: block;
 
         >button.show-popup {
-          padding: 0 8px;
+          padding-left: 8px;
+          padding-right: 8px;
           display: block;
+          &.has-picture {
+            padding-left: 32px;
+          }
         }
       }
+
       @media #{$mobile} {
         >button.show-popup {
           font-weight: normal;
@@ -494,9 +517,8 @@ body>.topbar {
       }
 
       button.navbar-shrink {
-        @extend %unstyled-button;
+        @include unstyled-button();
         @include webfont-icon(#CCCCCC, #CCCCCC, 28px, 28px);
-        @extend .icon-arrow;
         display: block;
         width: 100%;
         height: $navbar-shrink-button-height;
@@ -532,8 +554,13 @@ body>.topbar {
           padding-right: 0 !important;
         }
         .demo-notice {
-          p { font-size: 0 !important; padding: 4px !important; }
+          p { font-size: 0 !important; padding: 0px; }
+          span { display: none !important; }
           button { display: none !important; }
+          a { display: none !important; }
+        }
+        .demo-timer {
+          p { font-size: 0 !important; padding: 4px !important; }
         }
       }
       &.hide-desktop {
@@ -556,26 +583,33 @@ body>.topbar {
       background-color: #303030;
       color: #606060;
       li {
-        line-height: 32px;
-        height: 32px;
         display: block;
         position: relative;
         border-bottom: 1px solid $topbar-border-color;
         margin: 0;
         list-style-type: none;
-        a {
-          display: block;
-          min-height: 32px;
-          padding-left: $navbar-width-desktop-shrunk;
-          text-decoration: none;
-          text-overflow: ellipsis;
-          overflow: hidden;
-          white-space: nowrap;
-          &, &:visited, &:active, &:hover {
-            color: inherit;
+
+        &.navitem-open-grain, &.navitem-create-grain, &.navitem-grain {
+          a {
+            display: block;
+            min-height: 32px;
+            padding-left: $navbar-width-desktop-shrunk;
+            text-decoration: none;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+            &, &:visited, &:active, &:hover {
+              color: inherit;
+            }
           }
         }
+        &.navitem-grain {
+          line-height: 32px;
+          height: 32px;
+        }
         &.navitem-open-grain, &.navitem-create-grain {
+          display: block;
+          position: relative;
           background-repeat: no-repeat;
           background-position: (($navbar-width-desktop-shrunk - 24px) / 2) center;
           background-size: 24px 24px;
@@ -611,6 +645,12 @@ body>.topbar {
           height: auto;
           width: auto;
         }
+        &.navitem-demo-timer {
+          position: absolute;
+          bottom: 0;
+          height: auto;
+          width: 100%;
+        }
       }
     }
     @media #{$mobile} {
@@ -623,16 +663,32 @@ body>.topbar {
         position: relative;
         border-bottom: 1px solid #676767;
         margin: 0;
-        a {
-          display: block;
-          padding-left: 48px;
-          text-decoration: none;
-          text-overflow: ellipsis;
-          overflow: hidden;
-          white-space: nowrap;
-          &, &:visited, &:active, &:hover {
-            color: inherit;
+        &.navitem-open-grain, &.navitem-create-grain, &.navitem-grain {
+          a {
+            display: block;
+            padding-left: 48px;
+            text-decoration: none;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+            &, &:visited, &:active, &:hover {
+              color: inherit;
+            }
           }
+        }
+        &.navitem-open-grain, &.navitem-create-grain {
+          background-repeat: no-repeat;
+          background-position: 12px center;
+          background-size: 24px 24px;
+        }
+        &.navitem-open-grain {
+          background-image: url('/open-grain.svg');
+        }
+        &.navitem-create-grain {
+          background-image: url('/apps.svg');
+        }
+        &.navitem-demo-timer {
+          height: auto;
         }
       }
     }
@@ -641,8 +697,6 @@ body>.topbar {
     >ul.navbar-grains {
       margin: 0;
       padding: 0;
-      position: absolute;
-      top: (96px + $navbar-shrink-button-height);
       bottom: 0px;
       left: 0px;
       width: 100%;
@@ -663,6 +717,13 @@ body>.topbar {
           background-color: $topbar-background-color-hover;
           color: $topbar-foreground-color-hover;
         }
+        &.unread {
+          background-color: $topbar-background-color-unread;
+          color: $topbar-foreground-color-unread;
+        }
+        &.unread:hover {
+          background-color: $topbar-background-color-unread-hover;
+        }
         &.current, &.current:hover {
           background-color: $topbar-background-color-active;
           color: $topbar-foreground-color-active;
@@ -675,8 +736,25 @@ body>.topbar {
           width: 24px;
           height: 24px;
         }
+        .notification-count {
+          position: absolute;
+          display: block;
+          top: 16px;
+          left: 28px;
+          width: 16px;
+          height: 16px;
+          background-color: red;
+          color: white;
+          border-radius: 50%;
+          z-index: 2;
+          font-size: 12px;
+          font-weight: bold;
+          line-height: 16px;
+          text-align: center;
+        }
         .close-button {
-          @extend %unstyled-button;
+          @include unstyled-button();
+          @extend %pseudo-img-tag;
           position: absolute;
           top: 1px;
           right: 0px;
@@ -685,7 +763,7 @@ body>.topbar {
           margin: 2px;
           display: block;
           background-image: url("/close.svg");
-          border: 1px transparent;
+          border: 1px solid transparent;
           border-radius: 4px;
           &:hover {
             border: 1px solid $topbar-foreground-color-hover;
@@ -695,63 +773,150 @@ body>.topbar {
       }
     }
 
-    .demo-notice {
+    li.navitem-demo-notice {
+      height: auto !important;
+    }
+  }
+
+  .demo-notice {
+    width: 100%;
+    overflow: hidden;
+
+    p {
+      color: white;
+      padding: 8px;
+      margin: 0;
+      margin-bottom: 8px;
+      line-height: normal;
+      font-size: 14px;
+      transition: font-size 0.2s;
+
+      a.get-sandstorm-button {
+        margin-top: 6px;
+        display: block;
+        @extend %button-base;
+        background-color: #606060;
+        color: white;
+        &:hover {
+          background-color: #717171;
+        }
+      }
+    }
+
+    button {
+      display: block;
       width: 100%;
-      overflow: hidden;
+      text-align: center;
+      margin-top: 6px;
+      margin-bottom: 4px;
+    }
 
-      p {
-        color: $topbar-foreground-color;
-        padding: 8px;
-        margin: 0;
-        line-height: normal;
-        font-size: 14px;
-        transition: font-size 0.2s;
+    .subtext {
+      font-size: 12px;
+      color: $topbar-foreground-color;
+    }
+  }
 
-        a {
-          color: white;
-          padding: 0;
-          white-space: normal;
-          &:hover {
-            text-decoration: underline;
-          }
-        }
-      }
+  .demo-timer {
+    p {
+      margin: 0;
+      padding: 4px;
+      color: $topbar-foreground-color;
+      font-size: 14px;
+    }
+  }
 
-      .countdown {
-        display: block;
-        font-size: 30px;
-        font-weight: bold;
-        color: #bb0;
-        text-align: center;
-        border: 1px solid $topbar-foreground-color;
-        border-radius: 4px;
-        margin-top: 8px;
+  .countdown {
+    display: block;
+    font-size: 30px;
+    font-weight: bold;
+    color: #a0a0a0;
+    text-align: center;
+    border: 1px solid $topbar-foreground-color;
+    border-radius: 4px;
 
-        &.urgent {
-          color: #f00;
-        }
-      }
-
-      button {
-        @extend %unstyled-button;
-        display: block;
-        border: 1px solid $topbar-foreground-color;
-        border-radius: 4px;
-        width: 100%;
-        text-align: center;
-        padding: 4px;
-        background-color: $topbar-background-color-active;
-        color: $topbar-foreground-color-active;
-        margin-top: 8px;
-      }
+    &.urgent {
+      color: #f00;
     }
   }
 }
 
 // =======================================================================================
 
-body>.popup.who-has-access>.frame-container {
-  width: 500px;
+body>.popup.who-has-access {
+  img.spinner {
+    display: block;
+    margin: auto;
+    width: 48px;
+    height: 48px;
+  }
+
+  >.frame-container {
+    width: 500px;
+  }
+}
+
+body>.popup.modal {
+  background-color: rgba(0, 0, 0, 0.5);
+
+  >.frame-container {
+    width: 600px;
+
+    position: static;
+    margin: 64px auto 32px;
+    font-size: 20px;
+    max-width: 90%;
+    border: 1px solid #ccc;
+    overflow-y: auto;
+  }
+}
+.demo-startup-modal {
+  .modal-dialog {
+    margin-top: 80px;
+    .modal-content {
+      // max-height: calc(100vh - 64px);
+      // overflow-y: auto;
+      padding: 0px;
+
+      div.top {
+        background: #2D1E3A url('/demo-logo-bg.svg') no-repeat;
+        width: 100%;
+        background-position: center;
+        background-size: auto 250px;
+        height: 250px;
+        top: 0px;
+        left: 0px;
+        width: 100%;
+        padding-top: 25px;
+
+        >.header {
+          color: white;
+          font-size: 23px;
+          font-weight: normal;
+          text-align: center;
+        }
+
+        >.body {
+          color: #C5B0CC;
+          font-size: 23px;
+          font-weight: normal;
+          text-align: center;
+          margin-top: 10px;
+        }
+        >.start {
+          font-size: 23px;
+          width: 90%;
+          margin: auto 5%;
+          height: 48px;
+        }
+      }
+
+      div.bottom {
+        padding: 10px 10px 15px 30px;
+        font-size: 16px;
+      }
+    }
+  }
 }
 
 body>.popup {
@@ -1002,7 +1167,7 @@ body>.popup {
     }
 
     button.who-has-access {
-      @extend %unstyled-button;
+      @include unstyled-button();
     }
 
     .share-tabs {
@@ -1071,7 +1236,7 @@ body>.popup {
     }
 
     button.reset-invite, button.reset-share-token, button.start-over-invite {
-      @extend %unstyled-button;
+      @include unstyled-button();
       border: 1px solid #ccc;
       border-radius: 4px;
       padding: 5px 16px;
@@ -1085,7 +1250,7 @@ body>.popup {
       margin-top: 10px;
     }
     .share-tabs form button {
-      @extend %unstyled-button;
+      @extend %button-base;
       @extend %button-primary;
       border: 1px solid #ccc;
       border-radius: 4px;
@@ -1108,7 +1273,7 @@ body>.popup {
       // HACK. This should be computed from the max-height of the containing div. Is that even
       // possible?
     }
-    table.people, table.shared-links {
+    table.people, table.shared-links, table.grains {
       border: 1px solid #ddd;
       border-right: none;
       border-left: none;
@@ -1194,6 +1359,9 @@ body>.popup {
       >.frame>h4 {
         margin: 0;
       }
+
+      // TODO(soon): This makes the little triangle pointing at the top bar disappear. :(
+      overflow: auto;
     }
 
     ul.notification-list {
@@ -1205,7 +1373,6 @@ body>.popup {
       }
 
       >li {
-        padding: $topbar-popup-padding;
         border-bottom: 1px solid #ccc;
         &:last-child {
           border-bottom: 0px;
@@ -1213,7 +1380,50 @@ body>.popup {
       }
 
       .notification-item {
+        display: block;
         font-size: 14px;
+        text-decoration: inherit;
+        font-weight: inherit;
+        color: inherit;
+
+        padding-left: $topbar-popup-padding + $topbar-popup-padding + 64px;
+        padding-right: $topbar-popup-padding;
+        padding-top: $topbar-popup-padding;
+        padding-bottom: $topbar-popup-padding;
+
+        position: relative;
+
+        // Guarantee position-absolute icons don't get cut off
+        min-height: $topbar-popup-padding + $topbar-popup-padding + 64px;
+
+        &.urgent {
+          background-color: $error-background-color;
+        }
+
+        &[href]:hover {
+          background-color: #eee;
+        }
+
+        >.notification-icon {
+          width: 64px;
+          height: 64px;
+          position: absolute;
+          top: $topbar-popup-padding;
+          left: $topbar-popup-padding;
+
+          >img {
+            display: block;
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            right: 0;
+            bottom: 0;
+          }
+          >img:first-of-type {
+            width: 100%;
+            height: 100%;
+          }
+        }
 
         >p {
           white-space: pre;
@@ -1226,22 +1436,16 @@ body>.popup {
         }
 
         .notification-footer {
-          margin: 12px 0px;
-          height: 26px;
-          >button {
-            @extend %button-base;
+          position: relative;
+          margin-top: 12px;
+          min-height: 18px;
 
-            &.accept-notification {
-              @extend %button-primary;
-              float: right;
-              margin-left: 5px;
-            }
-
-            &.cancel-notification {
-              @extend %button-secondary;
-              float: right;
-              margin-left: 5px;
-            }
+          .notification-timestamp {
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            text-align: left;
+            color: #aaa;
           }
         }
       }
@@ -1251,13 +1455,43 @@ body>.popup {
       background-color: #666;
     }
 
-    .notification-timestamp {
-      text-align: left;
-      color: #ccc;
-    }
-
     .notification-title {
       margin-bottom: 14px;
+    }
+  }
+
+  &.backup {
+    >.frame-container {
+      width: 400px;
+    }
+
+    .warning-intro, .error {
+      color: #a94442;
+      background-color: #f2dede;
+      border-color: #ebccd1;
+      padding: 5px;
+    }
+
+    .button-row {
+      display: flex;
+      justify-content: flex-end;
+
+      button {
+        @extend %button-base;
+        &[name=confirm] {
+          @extend %button-primary;
+        }
+        &[name=cancel] {
+          @extend %button-secondary;
+        }
+      }
+
+      .spinner {
+        width: 32px;
+        height: 32px;
+        background-image: url("/spinner_96.gif");
+        background-size: 32px 32px;
+      }
     }
   }
 }

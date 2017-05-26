@@ -110,7 +110,7 @@ but you find yourself doing a fresh install of Sandstorm, you can use our **emai
 system.
 
 You won't need any files from the old Sandstorm install. Instead, run the Sandstorm install script
-(which I call `install.sh`) on a new server; follow the prompts to **recover a domain** by typing
+(which we call `install.sh`) on a new server; follow the prompts to **recover a domain** by typing
 `help` at the Sandcats prompts.
 
 **Overview.** This process will:
@@ -155,16 +155,20 @@ If you prefer, you can move your `sandcats.io` credentials to a new Sandstorm in
 running the `install.sh` script. We call that **file-based recovery.** Here are the steps.
 
 * Find your three three `id_rsa` certificate files (usually `/opt/sandstorm/var/sandcats`) and keep
-  them safe somewhere.
+  them safe somewhere. Also keep a copy of `/opt/sandstorm/var/sandcats/https` if it exists.
 
 * Do a new Sandstorm install, presumably on a new server somewhere. It will install to
-  `/opt/sandstorm`.
+  `/opt/sandstorm`. You should choose a non-sandcats.io host name during this process, such as using
+  literally `example.com`.
 
 * Copy those three `id_rsa` certificate files from the old server to the new server's Sandcats
-  directory, `/opt/sandstorm/var/sandcats`.
+  directory, `/opt/sandstorm/var/sandcats`. Do the same for `/opt/sandstorm/var/sandcats/https` if
+  you backed it up.
 
-* In your new Sandstorm install, ensure you have your `BASE_URL` and `WILDCARD_HOST` set properly in
-  your `sandstorm.conf`. Consider copying them from the old server's `sandstorm.conf`.
+* In your new Sandstorm install, ensure you have your `BASE_URL` and `WILDCARD_HOST` set properly.
+  If your sandcats.io subdomain is `example`, then you'll need `BASE_URL=example.sandcats.io` and
+  `WILDCARD_HOST=*.example.sandcats.io`. Consider copying these values from the old server's
+  `sandstorm.conf`.
 
 * Edit the new server's `sandstorm.conf` to contain this line: `SANDCATS_BASE_DOMAIN=sandcats.io`
 
@@ -175,10 +179,33 @@ running the `install.sh` script. We call that **file-based recovery.** Here are 
   <myname>.sandcats.io` from another machine. This will help eliminate DNS as an issue when trying
   to access your server.
 
+Note that if you are using sandcats.io free HTTPS certificates, we suggest also backing up and
+restoring the contents of `/opt/sandstorm/var/sandcats/https`. This is a suggestion rather than a
+hard requirement; Sandstorm will request new certificates at startup. However, if your server makes
+lots of requests, you will run afoul of the sandcats.io anti-abuse protections. See the [Diagnosing
+"Not Authorized" problems](#diagnosing-not-authorized-problems) section for details.
+
 ## Diagnosing "Not Authorized" problems
 
-If you see `Not Authorized` in your log files, you might somehow have the wrong certificate in
-`/opt/sandstorm/var/sandcats`. If so, email support@sandstorm.io and we will attempt to help you.
+If you see `Not Authorized` in your log files, the sandcats.io service is returning HTTP code 403
+for at least one request from your server.
+
+One reason this occurs is if you have the wrong `id_rsa*` certificate files in
+`/opt/sandstorm/var/sandcats`. You can fix this problem using the email-based recovery system; for
+now, this requires using `install.sh` on a throwaway VM. Once your new certificate files are
+registered with `sandcats.io`, you can move them to whichever server you want using file-based
+recovery.
+
+Another reason you might see `Not Authorized` in the log files is if your server has run afoul of
+sandcats.io's defense in depth against Sandstorm bugs. The HTTPS certificate service within
+`sandcats.io` will reject new certificate requests if your server has more than approximately 5
+active certificates per week; this code exists to prevent a Sandstorm bug from requesting many
+thousands of certificates. If you are constantly requesting new certificates, you can request only
+about 5 before being automatically blocked in this way.  Typically, your server will keep retrying
+and the sandcats.io service will permit it to get certificates again when one of your certificates
+expire.
+
+In either case, if you need further help, please email support@sandstorm.io!
 
 # Terms of service, privacy policy, & contact information
 

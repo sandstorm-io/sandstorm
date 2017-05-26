@@ -1,0 +1,187 @@
+<template name="appUpdateNotificationItem">
+  <div class="notification-item">
+    <div class="notification-icon">
+      <img src="/apps.svg">
+      {{#if senderIcon}}<img src="{{senderIcon}}">{{/if}}
+      {{#if grainIcon}}<img src="{{grainIcon}}">{{/if}}
+    </div>
+
+    <div class="notification-title">
+      App updates are available:
+    </div>
+
+    <ul class="app-updates">
+    {{#each appUpdatesList}}
+      <li><strong>{{name}}</strong>: version {{marketingVersion}} is available</li>
+    {{/each}}
+    </ul>
+
+    <div class="notification-footer">
+      <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
+      <form class="standard-form">
+        <div class="button-row">
+          <button type="submit" title="Update all of the above apps">Apply updates</button>
+          <button type="button" name="dismissUpdates" title="Ignore the above updates">Dismiss</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</template>
+
+<template name="mailingListBonusNotificationItem">
+{{!-- This template is only instantiated in the Blackrock deployment, but it's easier
+      to all the notification templates together, since it's not really sensitive. --}}
+  <div class="notification-item">
+    <div class="notification-icon">
+      <img src="/email.svg">
+    </div>
+
+    Subscribe to our announcement list and get <strong>{{renderStorage MAILING_LIST_BONUS}} bonus
+    storage</strong> (1-2 emails per month).
+
+    <div class="notification-footer">
+      <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
+      <form class="standard-form">
+        <div class="button-row">
+          <button type="submit">Subscribe</button>
+          <button type="button">No thanks</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</template>
+
+<template name="referralNotificationItem">
+  {{#linkTo route="referrals" class="notification-item"}}
+    <div class="notification-icon">
+    </div>
+
+    {{#if paidUser}}
+      Get up to 30 GB bonus with the
+    {{else}}
+      Unlimited grains &amp; up to 2 GB bonus with the
+    {{/if}}
+    {{#linkTo route="referrals"}}
+      referral program &raquo;
+    {{/linkTo}}
+
+    <div class="notification-footer">
+      <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
+      <form class="standard-form">
+        <div class="button-row">
+          <button type="button">Dismiss</button>
+        </div>
+      </form>
+    </div>
+  {{/linkTo}}
+</template>
+
+<template name="adminNotificationItem">
+  <a href="{{actionTarget}}" class="notification-item {{#if isUrgent}}urgent{{/if}}">
+    <div class="notification-icon">
+      <img src="/sandstorm-gradient-logo.svg">
+    </div>
+
+    {{#if isType "reportStats"}}
+      You can help Sandstorm by sending us some anonymous usage stats.
+      Click here for more info.
+    {{/if}}
+
+    <div class="notification-footer">
+      <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
+    </div>
+  </a>
+</template>
+
+<template name="backgroundedGrainNotificationItem">
+  {{#linkTo route="grain" class="notification-item"}}
+    <div class="notification-icon">
+      <img src="{{grainIcon}}">
+    </div>
+
+    <div class="notification-title">
+      <strong>{{grainTitle}}</strong> is backgrounded:
+    </div>
+
+    {{text.defaultText}}
+
+    <div class="notification-footer">
+      <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
+      <form class="standard-form">
+        <div class="button-row">
+          <button title="Stop the background app" type="button">Cancel</button>
+        </div>
+      </form>
+    </div>
+  {{/linkTo}}
+</template>
+
+<template name="identityChangesNotificationItem">
+  <a href="https://sandstorm.io/news/2017-05-08-refactoring-identities" class="notification-item"
+     target="_blank">
+    <div class="notification-icon">
+      <img src="/sandstorm-gradient-logo.svg">
+    </div>
+
+    We're changing the way identities work in Sandstorm. Your account may be affected. Click here
+    to learn more.
+
+    <div class="notification-footer">
+      <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
+    </div>
+  </a>
+</template>
+
+<template name="grainActivityNotificationItem">
+  <a class="notification-item" href="{{notificationUrl}}">
+    <div class="notification-icon">
+      {{#if senderIcon}}<img src="{{senderIcon}}">{{/if}}
+      {{#if grainIcon}}<img src="{{grainIcon}}">{{/if}}
+    </div>
+
+    <div class="notification-title">
+      <strong>{{senderName}}</strong> in <strong>{{grainTitle}}</strong>:
+    </div>
+
+    {{text.defaultText}} {{#if multiple}}x{{count}}{{/if}}
+
+    <div class="notification-footer">
+      <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
+      <form class="standard-form">
+        <div class="button-row">
+          <button type="button" title="Dismiss this notification">Dismiss</button>
+        </div>
+      </form>
+    </div>
+  </a>
+</template>
+
+<template name="notificationItem">
+  {{!-- TODO(someday): make these be more explicitly typed, and dispatch on type.
+        Ideally, allow dynamic registration of types --}}
+  {{#if isAppUpdates}}
+    {{> appUpdateNotificationItem . }}
+  {{else}}
+  {{#if isMailingListBonus }}
+    {{> mailingListBonusNotificationItem . }}
+  {{else}}
+  {{#if isReferral}}
+    {{> referralNotificationItem . }}
+  {{else}}
+  {{#if isAdminNotification}}
+    {{> adminNotificationItem . }}
+  {{else}}
+  {{#if isOngoing }}
+    {{> backgroundedGrainNotificationItem . }}
+  {{else}}
+  {{#if isIdentityChanges }}
+    {{> identityChangesNotificationItem . }}
+  {{else}}
+    {{> grainActivityNotificationItem . }}
+  {{/if}}
+  {{/if}}
+  {{/if}}
+  {{/if}}
+  {{/if}}
+  {{/if}}
+</template>

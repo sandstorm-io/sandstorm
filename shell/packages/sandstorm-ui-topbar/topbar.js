@@ -86,10 +86,12 @@ Template.sandstormTopbar.helpers({
       return {
         grainId: grain.grainId(),
         active: grain.isActive(),
+        unread: grain.isUnread(),
         title: grain.title() || "(unknown grain)",
         grainLink: grain.route(),
         iconSrc: grain.iconSrc(),
         appTitle: grain.appTitle(),
+        notificationCount: grain.notificationCount(),
       };
     });
 
@@ -110,6 +112,11 @@ Template.sandstormTopbar.helpers({
     } else {
       return null;
     }
+  },
+
+  modal: function () {
+    const topbar = Template.instance().data;
+    return topbar._modal.get();
   },
 
   template: function () {
@@ -210,6 +217,7 @@ Template.sandstormTopbar.events({
 
       const topbar = Template.instance().data;
       topbar._expanded.set(data.name);
+      topbar._modal.set(false);
       topbar._menuExpanded.set(false);
     }
   },
@@ -324,6 +332,7 @@ SandstormTopbar = function (db, expandedVar, grainsVar, shrinkNavbarVar) {
   this._items = {};
   this._itemsTracker = new Tracker.Dependency();
 
+  this._modal = new ReactiveVar(false);
   this._expanded = expandedVar || new ReactiveVar(null);
   this._menuExpanded = new ReactiveVar(false);
   // shrinkNavbar is different from menuExpanded:
@@ -366,8 +375,9 @@ SandstormTopbar.prototype.isPopupOpen = function () {
   return !!this._expanded.get();
 };
 
-SandstormTopbar.prototype.openPopup = function (name) {
+SandstormTopbar.prototype.openPopup = function (name, modal) {
   this._expanded.set(name);
+  this._modal.set(modal);
   this._menuExpanded.set(false);
 };
 
@@ -396,6 +406,10 @@ SandstormTopbar.prototype.addItem = function (item) {
 
     startOpen: Match.Optional(Boolean),
     // If true, this item's popup should start out open.
+
+    startOpenModal: Match.Optional(Boolean),
+    // Like `startOpen`, but indicates that the initial state of the popup should be "modal", i.e.
+    // not hanging off the top bar.
 
     priority: Match.Optional(Number),
     // Specifies ordering of items. Higher-priority items will be at the top of the list. Items
@@ -429,14 +443,23 @@ SandstormTopbar.prototype.addItem = function (item) {
   }
 
   if (item.name in this._items) {
-    throw new Error("duplicate top bar item name:", item.name);
+    // Duplicate item. This can sometimes happen due to template redraw timing issues: the old
+    // item was supposed to be removed before the new item was added, but things were scheduled
+    // in the wrong order. So, we replace the old item with the new one, and also make sure to
+    // close the old item if it is currently expanded. (We can't directly call close() since that's
+    // a callback we returned without holding on to, but it would do redundant work anyway.)
+    console.warn("duplicate top bar item name:", item.name);
+    if (this._expanded.get() === item.name) {
+      this._expanded.set(null);
+    }
   }
 
   this._items[item.name] = item;
   this._itemsTracker.changed();
 
-  if (item.startOpen) {
+  if (item.startOpen || item.startOpenModal) {
     this._expanded.set(item.name);
+    this._modal.set(!!item.startOpenModal);
   }
 
   return {

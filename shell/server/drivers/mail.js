@@ -53,8 +53,8 @@ function removeValidPlusSuffix(address) {
 }
 
 function publicIdFromAddress(address) {
-  const addressWithoutPlusSuffix = removeValidPlusSuffix(address);
-  return addressWithoutPlusSuffix.slice(0, addressWithoutPlusSuffix.indexOf("@"));
+  const addressWithoutSuffix = removeValidPlusSuffix(address);
+  return addressWithoutSuffix.slice(0, addressWithoutSuffix.indexOf("@"));
 }
 
 // Every day, reset all per-user sent counts to zero.

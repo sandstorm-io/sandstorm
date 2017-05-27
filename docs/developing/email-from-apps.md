@@ -29,15 +29,15 @@ any e-mail address that the user has proven they own.
 When you launch an e-mail application on Sandstorm, it is assigned a
 random e-mail address at your server, like
 "JBuaKxjkwiJq7oksS@alpha.sandstorm.io". Any e-mail sent to that
-address is delivered to the app. The idea is not
-that you'd actually use this address publicly, but rather that you
-should set up e-mail forwarding from your real address to this address.
-For example, GMail allows you to set up such forwarding while still
-keeping a copy in your GMail inbox, and even lets you do the forwarding
-conditionally based on a filter.  Additionally, most domain registrars
-have the ability to set up basic e-mail forwarding, so if you have your
-own domain, it's easy to set up an address that redirects to a
-Sandstorm app.
+address is delivered to the app. The idea is not that you'd actually
+use this address publicly, but rather that you should set up e-mail
+forwarding from your real address to this address. For example, GMail
+allows you to set up such forwarding while still keeping a copy in
+your GMail inbox, and even lets you do the forwarding conditionally
+based on a filter.  Additionally, most domain registrars have the
+ability to set up basic e-mail forwarding, so if you have your own
+domain, it's easy to set up an address that redirects to a Sandstorm
+app.
 
 These Sandstorm email addresses support sub-addressing using
 the + character. For example, if an app can receive email at
@@ -48,10 +48,10 @@ specific to a particular purpose.
 
 When you send e-mail from a Sandstorm app, we allow you to set the
 "From" header either to your app's random address or to your verified
-Sandstorm login address. In the future, we'd like to add the ability to attach
-additional verified addresses to your account. Either way, the
-message's envelope return address is always the app's address. As a
-result, the mail recipient may see that the message was sent "via"
+Sandstorm login address. In the future, we'd like to add the ability
+to attach additional verified addresses to your account. Either way,
+the message's envelope return address is always the app's address. As
+a result, the mail recipient may see that the message was sent "via"
 your server.
 
 In order to prevent abuse, E-mail usage is rate-limited

@@ -16,18 +16,19 @@
 
 "use strict";
 
-var crypto = require("crypto");
-var utils = require('../utils'),
-    short_wait = utils.short_wait,
-    medium_wait = utils.medium_wait;
+var crypto      = require("crypto");
+var utils       = require('../utils'),
+    short_wait  = utils.short_wait,
+    medium_wait = utils.medium_wait,
+    long_wait   = utils.long_wait;
 var path = require('path');
 // Use sandstorm qr code as new profile picture
 var newPicPath  = path.resolve(__dirname + "/../../sandstorm-qr.png");
 var testappPath = path.resolve(__dirname + "/../assets/meteor-testapp.spk");
+// Prepend 'A' so that the default handle is valid
+var devName2 = "A" + crypto.randomBytes(10).toString("hex");
 
-module.exports["Test profile changes"] = function (browser) {
-  // Prepend 'A' so that the default handle is valid
-  var devName2 = "A" + crypto.randomBytes(10).toString("hex");
+module.exports["Test profile changes passing to testapp"] = function (browser) {
   browser
     .loginDevAccount()
     .click("a.introjs-skipbutton")
@@ -38,6 +39,8 @@ module.exports["Test profile changes"] = function (browser) {
     .waitForElementVisible("a[href='/account']", medium_wait)
     .click("a[href='/account']")
     .waitForElementVisible("form.account-profile-editor", short_wait)
+
+
     // Change profile picture
     .waitForElementPresent("input[name=picture]", short_wait)
     // Make input field visible in order to manipulate it in Firefox
@@ -68,6 +71,8 @@ module.exports["Test profile changes"] = function (browser) {
     }, [])
     .waitForElementVisible('p.flash-message.success-message', medium_wait)
     .assert.containsText('p.flash-message.success-message', 'Success: picture updated')
+    
+
     // Change name, handle, and pronoun
     .waitForElementVisible("input[name=nameInput]", short_wait)
     .clearValue("input[name=nameInput]")
@@ -82,21 +87,11 @@ module.exports["Test profile changes"] = function (browser) {
         .waitForElementVisible("p.success-message", short_wait)
         .assert.containsText('p.flash-message.success-message', 'Success: profile saved');
     })
-    // Verify profile changes
-    .assert.attributeContains('.picture-box img', 'src', 'sandstorm.io')
-    .assert.value("input[name=nameInput]", devName2)
-    .assert.value("input[name=handle]",    devName2.toLowerCase())
-    .assert.value("select[name=pronoun]",  "robot")
-    .execute("window.Meteor.logout()")
-    .end();
-};
 
-module.exports["Test passing profile data to test app"] = function (browser) {
-  browser
-    .loginDevAccount()
-    .click("a.introjs-skipbutton")
-    .waitForElementNotPresent("div.introjs-overlay", short_wait)
-    // Make input field visible in order to manipulate it in Firefox
+
+    // Navigate to apps page, upload meteor-testapp.spk, create new instance
+    .click('a[href="/apps"]')
+    .waitForElementVisible('.upload-button', short_wait)
     .execute(function () {
       document.querySelector("input[type=file]")
               .setAttribute("style", ""); 
@@ -110,22 +105,23 @@ module.exports["Test passing profile data to test app"] = function (browser) {
       const testappFile = document.querySelector("input[type=file]").files[0];
       uploadApp(testappFile);
     }, [])
-    .waitForElementVisible('#confirmInstall', medium_wait)
+    .waitForElementVisible('#confirmInstall', long_wait)
     .click('#confirmInstall')
     .waitForElementVisible('button.action', medium_wait)
     .click('button.action')
-    .pause(15000)
+
+
+    // Switch to grain frame and test data
+    .waitForElementVisible('.grain-frame', medium_wait)
     .grainFrame()
-    .executeAsync(function (done) {
-      done(Meteor.sandstormUser());
-    }, [], function (result) {
-      this
-        .assert.containsText('#id', result.value.id)
-        .assert.containsText('#name', result.value.name)
-        .assert.containsText('#picture', result.value.picture)
-        .assert.containsText('#preferredHandle', result.value.preferredHandle)
-        .assert.containsText('#pronouns', result.value.pronouns);
-    })
+    .waitForElementVisible('#name', medium_wait)
+    .pause(5000)
+    .assert.containsText('#name', devName2)
+    .assert.containsText('#picture', 'sandstorm.io')
+    .assert.containsText('#preferredHandle', devName2.toLowerCase())
+    .assert.containsText('#pronouns', 'robot')
+    
+
     .execute("window.Meteor.logout()")
     .end();
 };

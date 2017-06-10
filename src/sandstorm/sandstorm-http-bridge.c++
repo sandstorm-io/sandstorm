@@ -2502,6 +2502,7 @@ public:
     auto proxyEnv = kj::str("http://127.0.0.1:", PROXY_PORT, "/");
     KJ_SYSCALL(setenv("http_proxy", proxyEnv.cStr(), true));
     KJ_SYSCALL(setenv("HTTP_PROXY", proxyEnv.cStr(), true));
+    KJ_SYSCALL(setenv("no_proxy", "localhost,127.0.0.1", true));
 
     pid_t child;
     KJ_SYSCALL(child = fork());

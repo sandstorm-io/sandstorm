@@ -18,6 +18,8 @@ import Bignum from "bignum";
 import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
 import { SandstormBackend, shouldRestartGrain } from "/imports/server/backend.js";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { REQUEST_HEADER_WHITELIST, RESPONSE_HEADER_WHITELIST }
+    from "/imports/server/header-whitelist.js";
 const Crypto = Npm.require("crypto");
 const ChildProcess = Npm.require("child_process");
 const Fs = Npm.require("fs");
@@ -127,37 +129,6 @@ function referralProgramLogSharingTokenUse(db, bobAccountId) {
     $unset: { referredBy: true },
   });
 }
-
-class HeaderWhitelist {
-  constructor(list) {
-    this._headers = {};
-    this._prefixes = [];
-
-    list.forEach(pattern => {
-      if (pattern.endsWith("*")) {
-        this._prefixes.push(pattern.slice(0, -1));
-      } else {
-        this._headers[pattern] = true;
-      }
-    });
-  }
-
-  matches(header) {
-    header = header.toLowerCase();
-    if (this._headers[header]) return true;
-
-    for (const i in this._prefixes) {
-      if (header.startsWith(this._prefixes[i])) {
-        return true;
-      }
-    };
-
-    return false;
-  }
-}
-
-const REQUEST_HEADER_WHITELIST = new HeaderWhitelist(WebSession.Context.headerWhitelist);
-const RESPONSE_HEADER_WHITELIST = new HeaderWhitelist(WebSession.Response.headerWhitelist);
 
 // User-agent strings that should be allowed to use http basic authentication.
 // These are regex matches, so ensure they are escaped properly with double

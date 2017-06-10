@@ -16,6 +16,8 @@
 
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { ssrfSafeLookup } from "/imports/server/networking.js";
+import { REQUEST_HEADER_WHITELIST, RESPONSE_HEADER_WHITELIST }
+    from "/imports/server/header-whitelist.js";
 
 const Future = Npm.require("fibers/future");
 const Capnp = Npm.require("capnp");
@@ -397,6 +399,13 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
         options.headers.cookies = options.headers.cookies.slice(0, -1);
       }
 
+      // set additional headers
+      (context.additionalHeaders || []).forEach(header => {
+        if (REQUEST_HEADER_WHITELIST.matches(header.name)) {
+          options.headers[header.name] = header.value;
+        }
+      });
+
       options.host = session.host;
       options.port = session.port;
 
@@ -411,6 +420,16 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
           const statusInfo = responseCodes[resp.statusCode];
 
           const rpcResponse = {};
+
+          rpcResponse.additionalHeaders = [];
+          for (const headerName in resp.headers) {
+            if (RESPONSE_HEADER_WHITELIST.matches(headerName)) {
+              rpcResponse.additionalHeaders.push({
+                name: headerName,
+                value: resp.headers[headerName],
+              });
+            }
+          }
 
           resp.on("data", (buf) => {
             buffers.push(buf);

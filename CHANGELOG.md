@@ -1,3 +1,8 @@
+### v0.209 (2017-06-10) [bugfixes]
+- Powerbox HTTP APIs can now send and receive headers prefixed with `X-Sandstorm-App-` and other "whitelisted" headers.
+- sandstorm-http-bridge now sets the environment variable `no_proxy=localhost,127.0.01` in order to avoid breaking apps that make localhost/loopback requests. Such apps may have been broken by the earlier introduction of `http_proxy` in version 0.200 (but would only be affected if the package was rebuilt since then).
+- Updated Meteor to 1.5.
+
 ### v0.208 (2017-05-20) [bugfixes]
 - Sent a one-time bell menu notification and added a note on the account settings page notifying affected users of [our upcoming changes to the identity system](https://sandstorm.io/news/2017-05-08-refactoring-identities).
 

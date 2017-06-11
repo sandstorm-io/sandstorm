@@ -41,6 +41,22 @@ const RECIPIENT_LIMIT = 20;
 
 const CLIENT_TIMEOUT = 15000; // 15s
 
+function removeValidPlusSuffix(address) {
+  const parts = address.split('@');
+  const plusParts = parts[0].split('+');
+  if (plusParts.length > 2 ||
+      (plusParts.length == 2 && !plusParts[1].match(/^[a-zA-Z0-9_.-]+$/))) {
+    throw new Error("Email address suffix can only contain letters, numbers, ., _, and -.");
+  }
+  parts[0] = plusParts[0];
+  return parts.join("@");
+}
+
+function publicIdFromAddress(address) {
+  const addressWithoutSuffix = removeValidPlusSuffix(address);
+  return addressWithoutSuffix.slice(0, addressWithoutSuffix.indexOf("@"));
+}
+
 // Every day, reset all per-user sent counts to zero.
 // TODO(cleanup): Consider a more granular approach. For example, each user could have a timer
 //   after which their count will reset. We'd only check the timer when that user is trying to
@@ -125,8 +141,7 @@ Meteor.startup(function () {
             // there will be an nginx frontend verifying hostnames anyway. Grain public IDs are
             // globally unique anyway, so an e-mail meant for another server presumably won't match
             // any ID at this one anyway.
-            const { address } = deliverTo;
-            return address.slice(0, address.indexOf("@"));
+            return publicIdFromAddress(deliverTo.address);
           }));
 
           // Deliver to each grain in parallel.
@@ -135,15 +150,17 @@ Meteor.startup(function () {
             const tryDeliver = (retryCount) => {
               let grainId;
               return inMeteor(() => {
-                const grain = Grains.findOne({ publicId: publicId }, { fields: {} });
-                if (grain) {
-                  grainId = grain._id;
-                  return globalBackend.continueGrain(grainId, retryCount > 0);
-                } else {
-                  // TODO(someday): We really ought to rig things up so that the 'RCPT TO' SMTP command
-                  // fails in this case, by adding an onRcptTo() callback.
-                  throw new Error("No such grain: " + publicId);
+                if (publicId) {
+                  const grain = Grains.findOne({ publicId: publicId }, { fields: {} });
+                  if (grain) {
+                    grainId = grain._id;
+                    return globalBackend.continueGrain(grainId, retryCount > 0);
+                  }
                 }
+
+                // TODO(someday): We really ought to rig things up so that the 'RCPT TO' SMTP command
+                // fails in this case, by adding an onRcptTo() callback.
+                throw new Error("No such grain: " + publicId);
               }).then((grainInfo) => {
                 const supervisor = grainInfo.supervisor;
                 const uiView = supervisor.getMainView().view;
@@ -223,14 +240,22 @@ hackSendEmail = (session, email) => {
       };
     }
 
-    if (email.from.address !== grainAddress && email.from.address !== userAddress.address) {
+    if (removeValidPlusSuffix(email.from.address) !== grainAddress && email.from.address !== userAddress.address) {
       throw new Error(
-        "FROM header in outgoing emails need to equal either " + grainAddress + " or " +
+        "FROM header in outgoing emails need to equal either " + grainAddress + " (with optional suffix) or " +
         userAddress.address + ". Yours was: " + email.from.address);
     }
 
     // Unpack fields
     const { from, to, cc, bcc, replyTo, subject, text, html } = email;
+
+    // We allow envelope address to have a suffix as well. In this way apps can use unique envelope
+    // addresses when sending out e-mails which allow better handling of e-mail bounces - app can
+    // match bounce with the sent e-mail.
+    let envelopeFrom = email.envelopeFrom || from.address;
+    if (removeValidPlusSuffix(envelopeFrom) !== grainAddress) {
+      envelopeFrom = grainAddress;
+    }
 
     const options = {
       from,
@@ -242,7 +267,7 @@ hackSendEmail = (session, email) => {
       text,
       html,
       envelope: {
-        from: grainAddress,
+        from: envelopeFrom,
         to,
         cc,
         bcc,

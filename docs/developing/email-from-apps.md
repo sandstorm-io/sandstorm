@@ -39,6 +39,13 @@ ability to set up basic e-mail forwarding, so if you have your own
 domain, it's easy to set up an address that redirects to a Sandstorm
 app.
 
+These Sandstorm email addresses support sub-addressing using
+the + character. For example, if an app can receive email at
+"JBuaKxjkwiJq7oksS@alpha.sandstorm.io", then it can also receive email
+at "JBuaKxjkwiJq7oksS+foobar@alpha.sandstorm.io'.
+This allows app authors to generate email addresses that are
+specific to a particular purpose.
+
 When you send e-mail from a Sandstorm app, we allow you to set the
 "From" header either to your app's random address or to your verified
 Sandstorm login address. In the future, we'd like to add the ability

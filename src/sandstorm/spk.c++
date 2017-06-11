@@ -1309,10 +1309,10 @@ private:
   }
 
   kj::String getHttpBridgeExe() {
-    KJ_IF_MAYBE(slashPos, exePath.findLast('/')) {
-      return kj::str(exePath.slice(0, *slashPos), "/bin/sandstorm-http-bridge");
+    KJ_IF_MAYBE(h, installHome) {
+      return kj::str(*h, "/bin/sandstorm-http-bridge");
     } else {
-      return kj::heapString("/bin/sandstorm-http-bridge");
+      KJ_FAIL_ASSERT("don't know where to find sandstorm-http-bridge");
     }
   }
 

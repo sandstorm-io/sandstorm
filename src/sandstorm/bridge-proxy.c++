@@ -354,9 +354,16 @@ private:
     }
   }
 
-  kj::Own<kj::PromiseFulfiller<ByteStream::Client>> initContext(
+  struct ContextInitInfo {
+    kj::Own<kj::PromiseFulfiller<ByteStream::Client>> streamer;
+    bool hadIfNoneMatch = false;
+  };
+
+  ContextInitInfo initContext(
       WebSession::Context::Builder context, const kj::HttpHeaders& headers) {
     // We intentionally ignore cookies.
+
+    bool hadIfNoneMatch = false;
 
     auto paf = kj::newPromiseAndFulfiller<ByteStream::Client>();
     context.setResponseStream(kj::mv(paf.promise));
@@ -409,6 +416,7 @@ private:
             parseETagList(capnp::Orphanage::getForMessageContaining(context), *match));
       }
     } else KJ_IF_MAYBE(match, headers.get(hIfNoneMatch)) {
+      hadIfNoneMatch = true;
       if (*match == "*") {
         context.getETagPrecondition().setDoesntExist();
       } else {
@@ -432,7 +440,7 @@ private:
       }
     }
 
-    return kj::mv(paf.fulfiller);
+    return { kj::mv(paf.fulfiller), hadIfNoneMatch };
   }
 
   template <typename Builder>
@@ -451,7 +459,7 @@ private:
     parsed.add(parseETagInternal(text));
     if (text.size() > 0) {
       KJ_REQUIRE(text[0] == ',', "etag must be followed by comma", text);
-      return parseETagList(orphanage, text, kj::mv(parsed));
+      return parseETagList(orphanage, text.slice(1), kj::mv(parsed));
     } else {
       auto result = orphanage.newOrphan<capnp::List<WebSession::ETag>>(parsed.size());
       auto list = result.get();
@@ -486,8 +494,10 @@ private:
       switch (*p) {
         case '\"':
           // done
+          ++p;
           while (p[0] == ' ') ++p;
           text = text.slice(p - text.begin());
+          chars.add('\0');
           return kj::tuple(kj::String(chars.releaseAsArray()), weak);
         case '\\':
           ++p;
@@ -507,19 +517,19 @@ private:
   kj::Promise<void> handleStreamingRequestResponse(
       WebSession::RequestStream::Client reqStream,
       kj::AsyncInputStream& requestBody,
-      kj::Own<kj::PromiseFulfiller<ByteStream::Client>>&& streamer,
+      ContextInitInfo&& contextInitInfo,
       kj::HttpService::Response& out) {
     auto promises = kj::heapArrayBuilder<kj::Promise<void>>(2);
     promises.add(pump(requestBody, reqStream));
     promises.add(handleResponse(reqStream.getResponseRequest().send(),
-                                kj::mv(streamer), out));
+                                kj::mv(contextInitInfo), out));
     return kj::joinPromises(promises.finish());
   }
 
   kj::Promise<void> handleResponse(kj::Promise<capnp::Response<WebSession::Response>>&& promise,
-                                   kj::Own<kj::PromiseFulfiller<ByteStream::Client>>&& streamer,
+                                   ContextInitInfo&& contextInitInfo,
                                    kj::HttpService::Response& out) {
-    return promise.then([this,KJ_MVCAP(streamer),&out](
+    return promise.then([this,KJ_MVCAP(contextInitInfo),&out](
         capnp::Response<WebSession::Response>&& in) mutable -> kj::Promise<void> {
       // TODO(someday): cachePolicy (not supported in Sandstorm proper as of this writing)
 
@@ -577,7 +587,7 @@ private:
               auto outStream = kj::heap<ByteStreamImpl>(
                   status, kj::mv(headers), kj::mv(in), out);
               auto promise = outStream->whenDone();
-              streamer->fulfill(kj::mv(outStream));
+              contextInitInfo.streamer->fulfill(kj::mv(outStream));
               return promise.attach(kj::mv(handle));
             }
           }
@@ -603,11 +613,16 @@ private:
         case WebSession::Response::PRECONDITION_FAILED: {
           auto failed = in.getPreconditionFailed();
 
-          if (failed.hasMatchingETag()) {
-            setETag(headers, failed.getMatchingETag());
-          }
+          if (contextInitInfo.hadIfNoneMatch) {
+            if (failed.hasMatchingETag()) {
+              setETag(headers, failed.getMatchingETag());
+            }
 
-          return sendError(out, 412, "Precondition Failed", headers);
+            out.send(304, "Not Modified", headers);
+            return kj::READY_NOW;
+          } else {
+            return sendError(out, 412, "Precondition Failed", headers);
+          }
         }
 
         case WebSession::Response::REDIRECT: {

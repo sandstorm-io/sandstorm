@@ -1,3 +1,6 @@
+### v0.210 (2017-06-17) [bugfixes]
+- Powerbox HTTP APIs can now use the `ETag`, `If-Match`, and `If-None-Match` headers, as well as HTTP response codes 304 (not modified) and 412 (precondition failed).
+
 ### v0.209 (2017-06-10) [bugfixes]
 - Powerbox HTTP APIs can now send and receive headers prefixed with `X-Sandstorm-App-` and other "whitelisted" headers.
 - sandstorm-http-bridge now sets the environment variable `no_proxy=localhost,127.0.01` in order to avoid breaking apps that make localhost/loopback requests. Such apps may have been broken by the earlier introduction of `http_proxy` in version 0.200 (but would only be affected if the package was rebuilt since then).

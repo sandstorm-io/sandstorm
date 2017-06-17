@@ -267,8 +267,9 @@ const responseCodes = {
   302: { type: "redirect", switchToGet: true, isPermanent: false },
   303: { type: "redirect", switchToGet: true, isPermanent: false },
 
+  304: { type: "preconditionFailed" },
+
   // Unsupported until something demonstrates need.
-  // 304: {type: 'redirect'},
   // 305: {type: 'redirect'},
   307: { type: "redirect", switchToGet: false, isPermanent: false },
   308: { type: "redirect", switchToGet: false, isPermanent: true },
@@ -279,6 +280,7 @@ const responseCodes = {
   406: { type: "clientError", clientErrorCode: "notAcceptable", descriptionHtml: "Not Acceptable" },
   409: { type: "clientError", clientErrorCode: "conflict", descriptionHtml: "Conflict" },
   410: { type: "clientError", clientErrorCode: "gone", descriptionHtml: "Gone" },
+  412: { type: "preconditionFailed" },
   413: { type: "clientError", clientErrorCode: "requestEntityTooLarge", descriptionHtml: "Request Entity Too Large" },
   414: { type: "clientError", clientErrorCode: "requestUriTooLong", descriptionHtml: "Request-URI Too Long" },
   415: { type: "clientError", clientErrorCode: "unsupportedMediaType", descriptionHtml: "Unsupported Media Type" },
@@ -290,6 +292,40 @@ const responseCodes = {
   504: { type: "serverError" },
   505: { type: "serverError" },
 };
+
+function composeETag(etag) {
+  if (etag.weak) {
+    return "W/\"" + etag.value + "\"";
+  } else {
+    return "\"" + etag.value + "\"";
+  }
+}
+
+function parseETag(input) {
+  const etag = { value: "", weak: false };
+
+  input = input.trim();
+  if (input.startsWith("W/")) {
+    input = input.slice(2);
+    etag.weak = true;
+  }
+
+  if (!(input.startsWith("\"") && input.endsWith("\"") && input.length >= 2)) {
+    // Invalid etag. Drop.
+    // (It would be nice to tell the developer about this but... how?)
+    return undefined;
+  }
+
+  try {
+    // Since the text starts with a quote, the only way it could parse as JSON is if it is a single
+    // string. This nicely handles escape sequences for us.
+    etag.value = JSON.parse(input);
+    return etag;
+  } catch (err) {
+    // Invalid etag.
+    return undefined;
+  }
+}
 
 ExternalWebSession = class ExternalWebSession extends PersistentImpl {
   constructor(url, options, db, saveTemplate) {
@@ -399,6 +435,23 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
         options.headers.cookies = options.headers.cookies.slice(0, -1);
       }
 
+      // set precondition
+      if (context.eTagPrecondition) {
+        if (context.eTagPrecondition.none) {
+          // nothing
+        } else if (context.eTagPrecondition.exists) {
+          options.headers["if-match"] = "*";
+        } else if (context.eTagPrecondition.doesntExist) {
+          options.headers["if-none-match"] = "*";
+        } else if (context.eTagPrecondition.matchesOneOf) {
+          options.headers["if-match"] =
+              context.eTagPrecondition.matchesOneOf.map(composeETag).join(", ");
+        } else if (context.eTagPrecondition.matchesNoneOf) {
+          options.headers["if-none-match"] =
+              context.eTagPrecondition.matchesNoneOf.map(composeETag).join(", ");
+        }
+      }
+
       // set additional headers
       (context.additionalHeaders || []).forEach(header => {
         if (REQUEST_HEADER_WHITELIST.matches(header.name)) {
@@ -436,86 +489,108 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
           });
 
           resp.on("end", () => {
-            const data = Buffer.concat(buffers);
+            try {
+              const data = Buffer.concat(buffers);
 
-            function fillInErrorBody(error) {
-              const contentType = resp.headers["content-type"];
-              if (contentType && (contentType == "text/html" ||
-                                  contentType.startsWith("text/html;"))) {
-                // TODO(someday): Check for non-UTF-8 charset and translate?
-                error.descriptionHtml = data.toString("utf8");
-              } else if (contentType || data.length > 0) {
-                const content = { data };
-                if (contentType) content.mimeType = contentType;
-                if ("content-encoding" in resp.headers) content.encoding = resp.headers["content-encoding"];
-                if ("content-language" in resp.headers) content.language = resp.headers["content-language"];
-                error.nonHtmlBody = content;
-              }
-            }
-
-            switch (statusInfo ? statusInfo.type : resp.statusCode) {
-              case "content":
-                const content = {};
-                rpcResponse.content = content;
-
-                content.statusCode = statusInfo.code;
-                if ("content-encoding" in resp.headers) content.encoding = resp.headers["content-encoding"];
-                if ("content-language" in resp.headers) content.language = resp.headers["content-language"];
-                if ("content-type" in resp.headers) content.mimeType = resp.headers["content-type"];
-                if ("content-disposition" in resp.headers) {
-                  const disposition = resp.headers["content-disposition"];
-                  const parts = disposition.split(";");
-                  if (parts[0].toLowerCase().trim() === "attachment") {
-                    parts.forEach((part) => {
-                      const splitPart = part.split("=");
-                      if (splitPart[0].toLowerCase().trim() === "filename") {
-                        content.disposition = { download: splitPart[1].trim() };
-                      }
-                    });
-                  }
+              function fillInErrorBody(error) {
+                const contentType = resp.headers["content-type"];
+                if (contentType && (contentType == "text/html" ||
+                                    contentType.startsWith("text/html;"))) {
+                  // TODO(someday): Check for non-UTF-8 charset and translate?
+                  error.descriptionHtml = data.toString("utf8");
+                } else if (contentType || data.length > 0) {
+                  const content = { data };
+                  if (contentType) content.mimeType = contentType;
+                  if ("content-encoding" in resp.headers) content.encoding = resp.headers["content-encoding"];
+                  if ("content-language" in resp.headers) content.language = resp.headers["content-language"];
+                  error.nonHtmlBody = content;
                 }
+              }
 
-                content.body = {};
-                content.body.bytes = data;
+              switch (statusInfo ? statusInfo.type : resp.statusCode) {
+                case "content":
+                  const content = {};
+                  rpcResponse.content = content;
 
-                resolve(rpcResponse);
-                break;
-              case "noContent":
-                const noContent = {};
-                rpcResponse.noContent = noContent;
-                noContent.setShouldResetForm = statusInfo.shouldResetForm;
-                resolve(rpcResponse);
-                break;
-              case "redirect":
-                const redirect = {};
-                rpcResponse.redirect = redirect;
-                redirect.isPermanent = statusInfo.isPermanent;
-                redirect.switchToGet = statusInfo.switchToGet;
-                if ("location" in resp.headers) redirect.location = resp.headers.location;
-                resolve(rpcResponse);
-                break;
-              case "clientError":
-                const clientError = {};
-                rpcResponse.clientError = clientError;
-                clientError.statusCode = statusInfo.clientErrorCode;
+                  content.statusCode = statusInfo.code;
+                  if ("content-encoding" in resp.headers) content.encoding = resp.headers["content-encoding"];
+                  if ("content-language" in resp.headers) content.language = resp.headers["content-language"];
+                  if ("content-type" in resp.headers) content.mimeType = resp.headers["content-type"];
+                  if ("content-disposition" in resp.headers) {
+                    const disposition = resp.headers["content-disposition"];
+                    const parts = disposition.split(";");
+                    if (parts[0].toLowerCase().trim() === "attachment") {
+                      parts.forEach((part) => {
+                        const splitPart = part.split("=");
+                        if (splitPart[0].toLowerCase().trim() === "filename") {
+                          content.disposition = { download: splitPart[1].trim() };
+                        }
+                      });
+                    }
+                  }
 
-                fillInErrorBody(clientError);
-                resolve(rpcResponse);
-                break;
-              case "serverError":
-                const serverError = {};
-                rpcResponse.serverError = serverError;
-                fillInErrorBody(serverError);
-                resolve(rpcResponse);
-                break;
+                  if (resp.headers.etag) {
+                    content.eTag = parseETag(resp.headers.etag);
+                  }
 
-              // TODO(soon): Handle token-expired errors by throwing DISCONNECTED -- this will force
-              //   the client to reload the capability which will refresh the token.
+                  content.body = {};
+                  content.body.bytes = data;
 
-              default: // ???
-                err = new Error("Invalid status code " + resp.statusCode + " received in response.");
-                reject(err);
-                break;
+                  resolve(rpcResponse);
+                  break;
+                case "noContent":
+                  const noContent = {};
+                  rpcResponse.noContent = noContent;
+                  noContent.setShouldResetForm = statusInfo.shouldResetForm;
+                  if (resp.headers.etag) {
+                    noContent.eTag = parseETag(resp.headers.etag);
+                  }
+
+                  resolve(rpcResponse);
+                  break;
+                case "redirect":
+                  const redirect = {};
+                  rpcResponse.redirect = redirect;
+                  redirect.isPermanent = statusInfo.isPermanent;
+                  redirect.switchToGet = statusInfo.switchToGet;
+                  if ("location" in resp.headers) redirect.location = resp.headers.location;
+                  resolve(rpcResponse);
+                  break;
+                case "clientError":
+                  const clientError = {};
+                  rpcResponse.clientError = clientError;
+                  clientError.statusCode = statusInfo.clientErrorCode;
+
+                  fillInErrorBody(clientError);
+                  resolve(rpcResponse);
+                  break;
+                case "serverError":
+                  const serverError = {};
+                  rpcResponse.serverError = serverError;
+                  fillInErrorBody(serverError);
+                  resolve(rpcResponse);
+                  break;
+                case "preconditionFailed":
+                  const preconditionFailed = {};
+                  rpcResponse.preconditionFailed = preconditionFailed;
+                  if (resp.headers.etag) {
+                    preconditionFailed.matchingETag = parseETag(resp.headers.etag);
+                  }
+
+                  resolve(rpcResponse);
+                  break;
+
+                // TODO(soon): Handle token-expired errors by throwing DISCONNECTED -- this will
+                //   force the client to reload the capability which will refresh the token.
+
+                default: // ???
+                  const err = new Error(
+                      "Invalid status code " + resp.statusCode + " received in response.");
+                  reject(err);
+                  break;
+              }
+            } catch (err) {
+              reject(err);
             }
           });
         } catch (err) {

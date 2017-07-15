@@ -1,3 +1,6 @@
+### v0.211 (2017-07-15) [bugfixes]
+- Removed long-obsolete code in sandbox setup which attempted to enable transparent network proxying. The code never really worked and no app ever used it, but it recently started failing for one of our users.
+
 ### v0.210 (2017-06-17) [bugfixes]
 - Powerbox HTTP APIs can now use the `ETag`, `If-Match`, and `If-None-Match` headers, as well as HTTP response codes 304 (not modified) and 412 (precondition failed).
 

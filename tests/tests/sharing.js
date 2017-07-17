@@ -39,7 +39,7 @@ module.exports["Test open direct share link"] = function (browser) {
     .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
     .executeAsync(function (data, done) {
       var grainId = Grains.findOne()._id;
-      var identityId = Meteor.user().loginIdentities[0].id;
+      var identityId = Meteor.user().loginCredentials[0].id;
       Meteor.call("newApiToken", { identityId: identityId },
                   grainId, "petname", { allAccess: null },
                   { user: { identityId: data, title: "user2 title", } },
@@ -113,7 +113,7 @@ module.exports["Test revoked share link"] = function (browser) {
     .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
     .executeAsync(function (done) {
       var grainId = Grains.findOne()._id;
-      var identityId = Meteor.user().loginIdentities[0].id;
+      var identityId = Meteor.user().loginCredentials[0].id;
       Meteor.call("newApiToken", { identityId: identityId },
                   grainId, "petname", { allAccess: null },
                   { webkey: { forSharing: true }, },

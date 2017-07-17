@@ -43,17 +43,22 @@ const collectionOptions = { defineMutationMethods: Meteor.isClient };
 // The users collection is special and can be accessed through `Meteor.users`.
 // See https://docs.meteor.com/#/full/meteor_users.
 //
-// There are two distinct types of entries in the users collection: identities and accounts. An
-// identity contains personal profile information and typically includes some intrinsic method for
-// authenticating as the owner of that information.
+// There are two distinct types of entries in the users collection: credentials and accounts.
 //
-// An account is an owner of app actions, grains, contacts, notifications, and payment info.
-// Each account can have multiple identities linked to it. To log in as an account you must first
-// authenticate as one of its linked identities.
+// An account is an owner of app actions, grains, contacts, notifications, profile info, and
+// payment info. Each account can have multiple credentials linked to it. To log in as an account
+// you must first authenticate as one of its linked credentials.
+//
+// A credential identifies a method for authenticating a user, such as an attached Google or Github
+// account. The reason these exist as separate entries in the collection is to make it easier to
+// reuse Meteor's authentication libraries while allowing multiple credentials per account. This is
+// a huge hack, but it works.
 //
 // Every user contains the following fields:
-//   _id: Unique string ID. For accounts, this is random. For identities, this is the globally
-//        stable SHA-256 ID of this identity, hex-encoded.
+//   _id: Unique string ID. For accounts, this is random. For credentials, this is the globally
+//        stable ID of this credential (based on a SHA-256 hash of the credential description, hex
+//        encoded).
+//   type: "credential" or "account"
 //   createdAt: Date when this entry was added to the collection.
 //   lastActive: Date of the user's most recent interaction with this Sandstorm server.
 //   services: Object containing login data used by Meteor authentication services.
@@ -65,7 +70,7 @@ const collectionOptions = { defineMutationMethods: Meteor.isClient };
 //              link. This field contains the app ID of the app that the user started out demoing.
 //              Unlike the `expires` field, this field is not cleared when the user upgrades from
 //              being a demo user.
-//   suspended: If this exists, this account/identity is supsended. Both accounts and identities
+//   suspended: If this exists, this account/credential is supsended. Both accounts and credentials
 //              can be suspended. After some amount of time, the user will be completely deleted
 //              and removed from the DB.
 //              It is an object with fields:
@@ -75,26 +80,27 @@ const collectionOptions = { defineMutationMethods: Meteor.isClient };
 //                timestamp: Date object. When the suspension occurred.
 //                willDelete: Boolean. If true, this account will be deleted after some time.
 //
-// Identity users additionally contain the following fields:
-//   profile: Object containing the data that will be shared with users and grains that come into
-//            contact with this identity. Includes the following fields:
-//       service: String containing the name of this identity's authentication method.
-//       name: String containing the chosen display name of the identity.
-//       handle: String containing the identity's preferred handle.
-//       picture: _id into the StaticAssets table for the identity's picture. If not present,
-//                an identicon will be used.
-//       pronoun: One of "male", "female", "neutral", or "robot".
+// Credential users additionally contain the following fields:
 //   unverifiedEmail: If present, a string containing an email address specified by the user.
-//   referredBy: ID of the Account that referred this Identity.
+//                    TODO(cleanup): Is this obsolete?
 //
 // Account users additionally contain the following fields:
-//   loginIdentities: Array of identity objects, each of which may include the following fields.
-//       id: The globally-stable SHA-256 ID of this identity, hex-encoded.
-//   nonloginIdentities: Array of identity objects, of the same form as `loginIdentities`. We use
+//   loginCredentials: Array of objects, each containing a field `id` which is the _id of a
+//                    credential user which is authorized to authenticate this account.
+//   nonloginCredentials: Array of objects, of the same form as `loginCredentials`. We use
 //                       a separate array here so that we can use a Mongo index to enforce the
-//                       invariant that an identity only be a login identity for a single account.
+//                       invariant that a credetial only be a login credetial for a single account.
+//   profile: Object containing the data that will be shared with users and grains that come into
+//            contact with this user. Includes the following fields:
+//       name: String containing the chosen display name of the user.
+//       handle: String containing the users's preferred handle.
+//       picture: _id into the StaticAssets table for the users's picture. If not present,
+//                an identicon will be used.
+//       identicon: 32-character hex string used as the seed for the identicon generator, if no
+//                  profile picture is available.
+//       pronoun: One of "male", "female", "neutral", or "robot".
 //   primaryEmail: String containing this account's primary email address. Must be a verified adress
-//                 of one of this account's linked identities. Call SandstormDb.getUserEmails()
+//                 of one of this account's linked credentials. Call SandstormDb.getUserEmails()
 //                 to do this checking automatically.
 //   isAdmin: Boolean indicating whether this account is allowed to access the Sandstorm admin panel.
 //   signupKey: If this is an invited user, then this field contains their signup key.
@@ -115,11 +121,15 @@ const collectionOptions = { defineMutationMethods: Meteor.isClient };
 //   accessRequests: Object containing the following fields; used to limit spam.
 //       count: Number of "request access" emails during sent during the current interval.
 //       resetOn: Date when the count should be reset.
-//   referredByComplete: ID of the Account that referred this Account. If this is set, we
-//                        stop writing new referredBy values onto Identities for this account.
+//   referredBy: ID of the Account that referred this user. Only present if this user themselves
+//       has not get completed a sharing action.
+//   referredByComplete: ID of the Account that referred this user. `referredBy` becomes
+//       `referredByComplete` when this user performs their first sharing action. (For Alice to get
+//       referral credit, she must share with a new user Bob, and Bob must himself share something
+//       (possibly back to Alice, possibly to a third party).)
 //   referredCompleteDate: The Date at which the completed referral occurred.
-//   referredIdentityIds: List of Identity IDs that this Account has referred. This is used for
-//                        reliably determining which Identity's names are safe to display.
+//   referredAccountIds: List of Account IDs that this Account has referred. This is used for
+//                       reliably determining which users's names are safe to display.
 //   experiments: Object where each field is an experiment that the user is in, and each value
 //           is the parameters for that experiment. Typically, the value simply names which
 //           experiment group which the user is in, where "control" is one group. If an experiment
@@ -130,20 +140,15 @@ const collectionOptions = { defineMutationMethods: Meteor.isClient };
 //       firstTimeBillingPrompt: OBSOLETE
 //       freeGrainLimit: Value is "control" or or a number indicating the grain limit that the
 //               user should receive when on the "free" plan, e.g. "Infinity".
-//   stashedOldUser: A complete copy of this user from before the accounts/identities migration.
-//                   TODO(cleanup): Delete this field once we're sure it's safe to do so.
 
 Meteor.users.ensureIndexOnServer("services.google.email", { sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.github.emails.email", { sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.email.email", { unique: 1, sparse: 1 });
-Meteor.users.ensureIndexOnServer("loginIdentities.id", { unique: 1, sparse: 1 });
-Meteor.users.ensureIndexOnServer("nonloginIdentities.id", { sparse: 1 });
+Meteor.users.ensureIndexOnServer("loginCredentials.id", { unique: 1, sparse: 1 });
+Meteor.users.ensureIndexOnServer("nonloginCredentials.id", { sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.google.id", { unique: 1, sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.github.id", { unique: 1, sparse: 1 });
 Meteor.users.ensureIndexOnServer("suspended.willDelete", { sparse: 1 });
-
-// TODO(cleanup): This index is obsolete; delete it.
-Meteor.users.ensureIndexOnServer("identities.id", { unique: 1, sparse: 1 });
 
 Packages = new Mongo.Collection("packages", collectionOptions);
 // Packages which are installed or downloading.
@@ -221,7 +226,9 @@ Grains = new Mongo.Collection("grains", collectionOptions);
 //   appVersion:  Same as Packages.findOne(packageId).manifest.appVersion; denormalized for
 //       searchability.
 //   userId: The _id of the account that owns this grain.
-//   identityId: The identity with which the owning account prefers to open this grain.
+//   identityId: The identity ID by which the grain's owner is identified within this grain. Grains
+//       do not observe global user IDs, but rather grain-local user IDs, generated when each user
+//       first obtains access to the grain.
 //   title:  Human-readable string title, as chosen by the user.
 //   lastUsed:  Date when the grain was last used by a user.
 //   private: If true, then knowledge of `_id` does not suffice to open this grain.
@@ -242,6 +249,7 @@ Grains = new Mongo.Collection("grains", collectionOptions);
 //   publicId:  An id used to publicly identify this grain. Used e.g. to route incoming e-mail and
 //       web publishing. This field is initialized when first requested by the app.
 
+Grains.ensureIndexOnServer("userId");
 Grains.ensureIndexOnServer("cachedViewInfo.matchRequests.tags.id", { sparse: 1 });
 
 RoleAssignments = new Mongo.Collection("roleAssignments", collectionOptions);
@@ -264,7 +272,7 @@ Contacts = new Mongo.Collection("contacts", collectionOptions);
 //   petname: Human-readable label chosen by and only visible to the owner. Uniquely identifies
 //            the contact to the owner.
 //   created: Date when this contact was created.
-//   identityId: The `_id` of the user whose contact info this contains.
+//   accountId: The `_id` of the acount whose contact info this contains.
 
 Sessions = new Mongo.Collection("sessions", collectionOptions);
 // UI sessions open to particular grains.  A new session is created each time a user opens a grain.
@@ -281,7 +289,7 @@ Sessions = new Mongo.Collection("sessions", collectionOptions);
 //   timestamp:  Time of last keep-alive message to this session.  Sessions time out after some
 //       period.
 //   userId:  Account ID of the user who owns this session.
-//   identityId:  Identity ID of the user who owns this session.
+//   identityId:  Identity ID by which the user is known to the grain.
 //   hashedToken: If the session is owned by an anonymous user, the _id of the entry in ApiTokens
 //       that was used to open it. Note that for old-style sharing (i.e. when !grain.private),
 //       anonymous users can get access without an API token and so neither userId nor hashedToken
@@ -306,7 +314,7 @@ Sessions = new Mongo.Collection("sessions", collectionOptions);
 //     requestingSession: Session ID of the session initiating the request.
 //   viewInfo: The UiView.ViewInfo corresponding to the underlying UiSession. This isn't populated
 //       until newSession is called on the UiView.
-//   permissions: The permissions for the current identity on this UiView. This isn't populated
+//   permissions: The permissions for the current user on this UiView. This isn't populated
 //       until newSession is called on the UiView.
 //   hasLoaded: Marked as true by the proxy when the underlying UiSession has responded to its first
 //       request
@@ -384,22 +392,20 @@ ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 // Each contains:
 //   _id:       A SHA-256 hash of the token, base64-encoded.
 //   grainId:   The grain servicing this API. (Not present if the API isn't serviced by a grain.)
-//   identityId: For UiView capabilities, this is the identity for which the view is attenuated.
+//   accountId: For UiView capabilities, this is the account for which the view is attenuated.
 //              That is, the UiView's newSession() method will intersect the requested permissions
-//              with this identity's permissions before forwarding on to the underlying app. If
-//              `identityId` is not present, then no identity attenuation is applied, i.e. this is
-//              a raw UiView as implemented by the app. (The `roleAssignment` field, below, may
-//              still apply. For non-UiView capabilities, `identityId` is never present. Note that
-//              this is NOT the identity against which the `requiredPermissions` parameter of
-//              `SandstormApi.restore()` is checked; that would be `owner.grain.introducerIdentity`.
-//   accountId: For tokens where `identityId` is set, the `_id` (in the Users table) of the account
-//              that created the token.
+//              with this account's permissions before forwarding on to the underlying app. Put
+//              another way, this identifies the user who *created* this ApiToken, i.e. the sharer,
+//              NOT the receiver (which is identified by `owner`). If `accountId` is not present,
+//              then no account attenuation is applied, i.e. this is a raw UiView as implemented by
+//              the app. The `roleAssignment` field, below, may still apply. For non-UiView
+//              capabilities, `accountId` is never present.
 //   roleAssignment: If this API token represents a UiView, this field contains a JSON-encoded
 //              Grain.ViewSharingLink.RoleAssignment representing the permissions it carries. These
-//              permissions will be intersected with those held by `identityId` when the view is
+//              permissions will be intersected with those held by `accountId` when the view is
 //              opened.
 //   forSharing: If true, requests sent to the HTTP API endpoint with this token will be treated as
-//              anonymous rather than as directly associated with `identityId`. This has no effect
+//              anonymous rather than as directly associated with `accountId`. This has no effect
 //              on the permissions granted.
 //   objectId:  If present, this token represents an arbitrary Cap'n Proto capability exported by
 //              the app or its supervisor (whereas without this it strictly represents UiView).
@@ -407,7 +413,7 @@ ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 //              Note that if the SupervisorObjectId contains an AppObjectId, that field is
 //              treated as type AnyPointer, and so encoded as a raw Cap'n Proto message.
 //   frontendRef: If present, this token actually refers to an object implemented by the front-end,
-//              not a particular grain. (`grainId` and `identityId` are not set.) This is an object
+//              not a particular grain. (`grainId` and `accountId` are not set.) This is an object
 //              containing exactly one of the following fields:
 //       notificationHandle: A `Handle` for an ongoing notification, as returned by
 //                           `NotificationTarget.addOngoing`. The value is an `_id` from the
@@ -421,13 +427,13 @@ ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 //                      value is an object containing the fields `id` and `services`. `id` is the
 //                      value returned by `EmailVerifier.getId()` and is used as part of a
 //                      powerbox query for matching verified emails. `services` is a
-//                      list of names of identity providers that are trusted to verify addresses.
-//                      If `services` is omitted or falsy, all configured identity providers are
-//                      trusted. Note that a malicious user could specify invalid names in the
-//                      list; they should be ignored.
+//                      list of names of authentication providers that are trusted to verify
+//                      addresses. If `services` is omitted or falsy, all configured authentication
+//                      providers are trusted. Note that a malicious user could specify invalid
+//                      names in the list; they should be ignored.
 //       verifiedEmail: An VerifiedEmail capability that is implemented by the frontend.
 //                      An object containing `verifierId`, `tabId`, and `address`.
-//       identity: An Identity capability. The field is the identity ID.
+//       identity: An Identity capability. The field is the account ID.
 //       http: An ApiSession capability pointing to an external HTTP service. Object containing:
 //           url: Base URL of the external service.
 //           auth: Authentication mechanism. Object containing one of:
@@ -446,10 +452,9 @@ ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 //   parentToken: If present, then this token represents exactly the capability represented by
 //              the ApiToken with _id = parentToken, except possibly (if it is a UiView) attenuated
 //              by `roleAssignment` (if present). To facilitate permissions computations, if the
-//              capability is a UiView, then `grainId` is set to the backing grain, `identityId`
-//              is set to the identity that shared the view, and `accountId` is set to the account
-//              that shared the view. Neither `objectId` nor `frontendRef` is present when
-//              `parentToken` is present.
+//              capability is a UiView, then `grainId` is set to the backing grain, and `accountId`
+//              is set to the account that shared the view. Neither `objectId` nor `frontendRef`
+//              is present when `parentToken` is present.
 //   parentTokenKey: The actual parent token -- whereas `parentToken` is only the parent token ID
 //              (hash). `parentTokenFull` is encrypted with nonce 0 (see below). This is needed
 //              in particular when the parent contains encrypted fields, since those would need to
@@ -493,7 +498,7 @@ ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 //       grainId :Text;
 //       union {
 //         uiView :group {
-//           identityId :Text;
+//           accountId :Text;
 //           roleAssignment :RoleAssignment;
 //           forSharing :Bool;
 //         }
@@ -529,7 +534,7 @@ ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 //       union {
 //         uiView :group {
 //           grainId :Text;
-//           identityId :Text;
+//           accountId :Text;
 //           roleAssignment :RoleAssignment = (allAccess = ());
 //         }
 //         other :Void;
@@ -572,7 +577,7 @@ ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 //     frontendRef.http.auth.refresh
 
 ApiTokens.ensureIndexOnServer("grainId", { sparse: 1 });
-ApiTokens.ensureIndexOnServer("owner.user.identityId", { sparse: 1 });
+ApiTokens.ensureIndexOnServer("owner.user.accountId", { sparse: 1 });
 ApiTokens.ensureIndexOnServer("frontendRef.emailVerifier.id", { sparse: 1 });
 
 ApiHosts = new Mongo.Collection("apiHosts", collectionOptions);
@@ -614,9 +619,9 @@ Notifications = new Mongo.Collection("notifications", collectionOptions);
 //                 of the event type on the grain's ViewInfo.
 //   count:        The number of times this exact event has repeated. Identical events are
 //                 aggregated by incrementing the count.
-//   initiatingIdentity: Identity ID of the user who initiated this notification.
+//   initiatingAccount: Account ID of the user who initiated this notification.
 //   initiatorAnonymous: True if the initiator is an anonymous user. If neither this nor
-//                 initiatingIdentity is present, the notification is not from a user.
+//                 initiatingAccount is present, the notification is not from a user.
 //   path:         Path inside the grain to which the user should be directed if they click on
 //                 the notification.
 //   ongoing:      If present, this is an ongoing notification, and this field contains an
@@ -638,14 +643,15 @@ Notifications = new Mongo.Collection("notifications", collectionOptions);
 //                 a one-time notification only to Oasis users who existed when the bonus program
 //                 was implemented.
 //   identityChanges: If this boolean field is true, this notification should show a warning about
-//                 upcoming changes to the identity model.
+//                 changes to the identity model described in:
+//                 https://sandstorm.io/news/2017-05-08-refactoring-identities
 
 ActivitySubscriptions = new Mongo.Collection("activitySubscriptions", collectionOptions);
 // Activity events to which a user is subscribed.
 //
 // Each contains:
 //   _id:          random
-//   identityId:   Who is subscribed.
+//   accountId:    Who is subscribed.
 //   grainId:      Grain to which subscription applies.
 //   threadPath:   If present, the subscription is on a specific thread. Otherwise, it is on the
 //                 whole grain.
@@ -657,7 +663,7 @@ ActivitySubscriptions = new Mongo.Collection("activitySubscriptions", collection
 //                 - A user no longer wishes to be implicitly subscribed to threads in a grain on
 //                   which they comment, so they mute the grain.
 
-ActivitySubscriptions.ensureIndexOnServer("identityId");
+ActivitySubscriptions.ensureIndexOnServer("accountId");
 ActivitySubscriptions.ensureIndexOnServer({ "grainId": 1, "threadPath": 1 });
 
 StatsTokens = new Mongo.Collection("statsTokens", collectionOptions);
@@ -728,7 +734,6 @@ AssetUploadTokens = new Mongo.Collection("assetUploadTokens", collectionOptions)
 //   purpose:   Contains one of the following, indicating how the asset is to be used:
 //       profilePicture: Indicates that the upload is a new profile picture. Contains fields:
 //           userId: Account ID of user whose picture shall be replaced.
-//           identityId: Which of the user's identities shall be updated.
 //   expires:   Time when this token will go away if unused.
 
 Plans = new Mongo.Collection("plans", collectionOptions);
@@ -802,7 +807,7 @@ const DesktopNotifications = new Mongo.Collection("desktopNotifications", collec
 //           present, it will have one of the following shapes:
 //       { anonymous: true } if this notification was generated by an anonymous user.  Otherwise:
 //       {
-//         identityId: String  The user's identity ID.
+//         accountId: String   The user's account ID.
 //         name: String        The user's display name.
 //         avatarUrl: String   The URL for the user's profile picture.
 //       },
@@ -831,9 +836,9 @@ if (Meteor.isServer) {
       const db = this.connection.sandstormDb;
       return [
         Meteor.users.find({ _id: this.userId },
-            { fields: { signupKey: 1, isAdmin: 1, expires: 1, storageUsage: 1,
+            { fields: { type: 1, signupKey: 1, isAdmin: 1, expires: 1, storageUsage: 1,
                       plan: 1, planBonus: 1, hasCompletedSignup: 1, experiments: 1,
-                      referredIdentityIds: 1, cachedStorageQuota: 1, suspended: 1, }, }),
+                      referredAccountIds: 1, cachedStorageQuota: 1, suspended: 1, }, }),
         db.collections.plans.find(),
       ];
     } else {
@@ -843,8 +848,8 @@ if (Meteor.isServer) {
 }
 
 const countReferrals = function (user) {
-  const referredIdentityIds = user.referredIdentityIds;
-  return (referredIdentityIds && referredIdentityIds.length || 0);
+  const referredAccountIds = user.referredAccountIds;
+  return (referredAccountIds && referredAccountIds.length || 0);
 };
 
 const calculateReferralBonus = function (user) {
@@ -1127,7 +1132,7 @@ _.extend(SandstormDb.prototype, {
 
     if (!user) return false;  // not signed in
 
-    if (!user.loginIdentities) return false;  // not an account
+    if (user.type != "account") return false;  // not an account
 
     if (user.expires) return false;  // demo user.
 
@@ -1148,7 +1153,7 @@ _.extend(SandstormDb.prototype, {
   isAccountSignedUpOrDemo(user) {
     if (!user) return false;  // not signed in
 
-    if (!user.loginIdentities) return false;  // not an account
+    if (user.type != "account") return false;  // not an account
 
     if (user.expires) return true;  // demo user.
 
@@ -1161,8 +1166,8 @@ _.extend(SandstormDb.prototype, {
     return false;
   },
 
-  isIdentityInOrganization(identity) {
-    if (!identity || !identity.services) {
+  isCredentialInOrganization(credential) {
+    if (!credential || !credential.services) {
       return false;
     }
 
@@ -1173,11 +1178,11 @@ _.extend(SandstormDb.prototype, {
     const emailDomain = orgMembership && orgMembership.emailToken && orgMembership.emailToken.domain;
     const ldapEnabled = orgMembership && orgMembership.ldap && orgMembership.ldap.enabled;
     const samlEnabled = orgMembership && orgMembership.saml && orgMembership.saml.enabled;
-    if (emailEnabled && emailDomain && identity.services.email) {
+    if (emailEnabled && emailDomain && credential.services.email) {
       const domainSuffixes = emailDomain.split(/\s*,\s*/);
       for (let i = 0; i < domainSuffixes.length; i++) {
         const suffix = domainSuffixes[i];
-        const domain = identity.services.email.email.toLowerCase().split("@").pop();
+        const domain = credential.services.email.email.toLowerCase().split("@").pop();
         if (suffix.startsWith("*.")) {
           if (domain.endsWith(suffix.substr(1))) {
             return true;
@@ -1186,12 +1191,12 @@ _.extend(SandstormDb.prototype, {
           return true;
         }
       }
-    } else if (ldapEnabled && identity.services.ldap) {
+    } else if (ldapEnabled && credential.services.ldap) {
       return true;
-    } else if (samlEnabled && identity.services.saml) {
+    } else if (samlEnabled && credential.services.saml) {
       return true;
-    } else if (googleEnabled && googleDomain && identity.services.google && identity.services.google.hd) {
-      if (identity.services.google.hd.toLowerCase() === googleDomain) {
+    } else if (googleEnabled && googleDomain && credential.services.google && credential.services.google.hd) {
+      if (credential.services.google.hd.toLowerCase() === googleDomain) {
         return true;
       }
     }
@@ -1200,9 +1205,9 @@ _.extend(SandstormDb.prototype, {
   },
 
   isUserInOrganization(user) {
-    for (let i = 0; i < user.loginIdentities.length; i++) {
-      let identity = Meteor.users.findOne({ _id: user.loginIdentities[i].id });
-      if (this.isIdentityInOrganization(identity)) {
+    for (let i = 0; i < user.loginCredentials.length; i++) {
+      let credential = Meteor.users.findOne({ _id: user.loginCredentials[i].id });
+      if (this.isCredentialInOrganization(credential)) {
         return true;
       }
     }
@@ -1255,25 +1260,19 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  getIdentity(identityId) {
-    check(identityId, String);
-    const identity = Meteor.users.findOne({ _id: identityId });
-    if (identity) {
-      SandstormDb.fillInProfileDefaults(identity);
-      SandstormDb.fillInIntrinsicName(identity);
-      SandstormDb.fillInPictureUrl(identity);
-      return identity;
-    }
+  getCredential(credentialId) {
+    check(credentialId, String);
+    return Meteor.users.findOne({ _id: credentialId });
   },
 
-  userHasIdentity(userId, identityId) {
+  userHasCredential(userId, credentialId) {
     check(userId, String);
-    check(identityId, String);
+    check(credentialId, String);
 
-    if (userId === identityId) return true;
+    if (userId === credentialId) return true;
 
     const user = Meteor.users.findOne(userId);
-    return SandstormDb.getUserIdentityIds(user).indexOf(identityId) != -1;
+    return SandstormDb.getUserCredentialIds(user).indexOf(credentialId) != -1;
   },
 
   userGrains(userId, options) {
@@ -1305,9 +1304,8 @@ _.extend(SandstormDb.prototype, {
   userApiTokens(userId, trashed) {
     check(userId, Match.OneOf(String, undefined, null));
     check(trashed, Match.OneOf(Boolean, undefined, null));
-    const identityIds = SandstormDb.getUserIdentityIds(this.getUser(userId));
     return this.collections.apiTokens.find({
-      "owner.user.identityId": { $in: identityIds },
+      "owner.user.accountId": userId || "invalid user don't match anything please!",
       trashed: { $exists: !!trashed },
     });
   },
@@ -1514,10 +1512,10 @@ _.extend(SandstormDb.prototype, {
     return config && config.returnAddress || ""; // empty if subscription is not ready.
   },
 
-  getReturnAddressWithDisplayName(identityId) {
-    check(identityId, String);
-    const identity = this.getIdentity(identityId);
-    const displayName = identity.profile.name + " (via " + this.getServerTitle() + ")";
+  getReturnAddressWithDisplayName(userId) {
+    check(userId, String);
+    const user = Meteor.users.findOne(userId);
+    const displayName = user.profile.name + " (via " + this.getServerTitle() + ")";
 
     // First remove any instances of characters that cause trouble for SimpleSmtp. Ideally,
     // we could escape such characters with a backslash, but that does not seem to help here.
@@ -1528,21 +1526,15 @@ _.extend(SandstormDb.prototype, {
     return { name: sanitized, address: this.getReturnAddress() };
   },
 
-  getPrimaryEmail(accountId, identityId) {
+  getPrimaryEmail(accountId) {
     check(accountId, String);
-    check(identityId, String);
 
-    const identity = this.getIdentity(identityId);
-    const senderEmails = SandstormDb.getVerifiedEmails(identity);
-    const senderPrimaryEmail = _.findWhere(senderEmails, { primary: true });
-    const accountPrimaryEmailAddress = this.getUser(accountId).primaryEmail;
-    if (_.findWhere(senderEmails, { email: accountPrimaryEmailAddress })) {
-      return accountPrimaryEmailAddress;
-    } else if (senderPrimaryEmail) {
-      return senderPrimaryEmail.email;
-    } else {
-      return null;
-    }
+    let result = null;
+    SandstormDb.getUserEmails(Meteor.users.findOne(accountId)).forEach(email => {
+      if (email.primary) result = email.email;
+    });
+
+    return result;
   },
 
   incrementDailySentMailCount(accountId) {
@@ -1706,15 +1698,15 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : ""; // empty if subscription is not ready.
   },
 
-  userHasSamlLoginIdentity() {
+  userHasSamlLoginCredential() {
     const user = Meteor.user();
-    if (!user.loginIdentities) {
+    if (!user.loginCredentials) {
       return false;
     }
 
     let hasSaml = false;
-    user.loginIdentities.forEach((identity) => {
-      if (Meteor.users.findOne({ _id: identity.id }).services.saml) {
+    user.loginCredentials.forEach((credential) => {
+      if (Meteor.users.findOne({ _id: credential.id }).services.saml) {
         hasSaml = true;
       }
     });
@@ -1727,16 +1719,16 @@ _.extend(SandstormDb.prototype, {
       grainId: grainId,
       threadPath: threadPath || { $exists: false },
     }, {
-      fields: { identityId: 1, mute: 1, _id: 0 },
+      fields: { accountId: 1, mute: 1, _id: 0 },
     }).fetch();
   },
 
-  subscribeToActivity(identityId, grainId, threadPath) {
-    // Subscribe the given identity to activity events with the given grainId and (optional)
-    // threadPath -- unless the identity has previously muted this grainId/threadPath, in which
+  subscribeToActivity(accountId, grainId, threadPath) {
+    // Subscribe the given user to activity events with the given grainId and (optional)
+    // threadPath -- unless the user has previously muted this grainId/threadPath, in which
     // case do nothing.
 
-    const record = { identityId, grainId };
+    const record = { accountId, grainId };
     if (threadPath) {
       record.threadPath = threadPath;
     }
@@ -1748,11 +1740,11 @@ _.extend(SandstormDb.prototype, {
     this.collections.activitySubscriptions.upsert(record, { $set: record });
   },
 
-  muteActivity(identityId, grainId, threadPath) {
-    // Mute notifications for the given identity originating from the given grainId and
+  muteActivity(accountId, grainId, threadPath) {
+    // Mute notifications for the given user originating from the given grainId and
     // (optional) threadPath.
 
-    const record = { identityId, grainId };
+    const record = { accountId, grainId };
     if (threadPath) {
       record.threadPath = threadPath;
     }
@@ -2055,25 +2047,21 @@ _.extend(SandstormDb.prototype, {
     return quota && user.storageUsage && user.storageUsage >= quota.storage * 1.2 && "outOfStorage";
   },
 
-  suspendIdentity(userId, suspension) {
-    check(userId, String);
+  suspendCredential(credentialId, suspension) {
+    check(credentialId, String);
     check(suspension, {
       timestamp: Date,
       admin: Match.Optional(String),
       voluntary: Match.Optional(Boolean),
     });
 
-    this.collections.users.update({ _id: userId }, { $set: { suspended: suspension } });
-    this.collections.apiTokens.update({ "owner.user.identityId": userId },
-      { $set: { suspended: true } }, { multi: true });
+    this.collections.users.update({ _id: credentialId }, { $set: { suspended: suspension } });
   },
 
-  unsuspendIdentity(userId) {
-    check(userId, String);
+  unsuspendCredential(credentialId) {
+    check(credentialId, String);
 
-    this.collections.users.update({ _id: userId }, { $unset: { suspended: 1 } });
-    this.collections.apiTokens.update({ "owner.user.identityId": userId },
-      { $unset: { suspended: true } }, { multi: true });
+    this.collections.users.update({ _id: credentialId }, { $unset: { suspended: 1 } });
   },
 
   suspendAccount(userId, byAdminUserId, willDelete) {
@@ -2095,28 +2083,32 @@ _.extend(SandstormDb.prototype, {
     this.collections.users.update({ _id: userId }, { $set: { suspended: suspension } });
     this.collections.grains.update({ userId: userId }, { $set: { suspended: true } }, { multi: true });
 
+    this.collections.apiTokens.update({ "owner.user.accountId": userId },
+      { $set: { suspended: true } }, { multi: true });
+
     delete suspension.willDelete;
     // Only mark the parent account for deletion. This makes the query simpler later.
 
-    user.loginIdentities.forEach((identity) => {
-      this.suspendIdentity(identity.id, suspension);
+    user.loginCredentials.forEach((credential) => {
+      this.suspendCredential(credential.id, suspension);
     });
-    user.nonloginIdentities.forEach((identity) => {
+    user.nonloginCredentials.forEach((credential) => {
       if (this.collections.users.find({ $or: [
-        { "loginIdentities.id": identity.id },
-        { "nonloginIdentities.id": identity.id },
+        { "loginCredentials.id": credential.id },
+        { "nonloginCredentials.id": credential.id },
       ], }).count() === 1) {
-        // Only suspend non-login identities that are unique to this account.
-        this.suspendIdentity(identity.id, suspension);
+        // Only suspend non-login credential that are unique to this account.
+        this.suspendCredential(credential.id, suspension);
       }
     });
 
     // Force logout this user
     this.collections.users.update({ _id: userId },
       { $unset: { "services.resume.loginTokens": 1 } });
-    if (user && user.loginIdentities) {
-      user.loginIdentities.forEach(function (identity) {
-        Meteor.users.update({ _id: identity.id }, { $unset: { "services.resume.loginTokens": 1 } });
+    if (user && user.loginCredentials) {
+      user.loginCredentials.forEach(function (credential) {
+        Meteor.users.update({ _id: credential.id },
+            { $unset: { "services.resume.loginTokens": 1 } });
       });
     }
   },
@@ -2128,12 +2120,15 @@ _.extend(SandstormDb.prototype, {
     this.collections.users.update({ _id: userId }, { $unset: { suspended: 1 } });
     this.collections.grains.update({ userId: userId }, { $unset: { suspended: 1 } }, { multi: true });
 
-    user.loginIdentities.forEach((identity) => {
-      this.unsuspendIdentity(identity.id);
+    this.collections.apiTokens.update({ "owner.user.accountId": userId },
+      { $unset: { suspended: true } }, { multi: true });
+
+    user.loginCredentials.forEach((credential) => {
+      this.unsuspendCredential(credential.id);
     });
 
-    user.nonloginIdentities.forEach((identity) => {
-      this.unsuspendIdentity(identity.id);
+    user.nonloginCredentials.forEach((credential) => {
+      this.unsuspendCredential(credential.id);
     });
   },
 
@@ -2437,7 +2432,7 @@ if (Meteor.isServer) {
 
   SandstormDb.prototype.newAssetUpload = function (purpose) {
     check(purpose, Match.OneOf(
-      { profilePicture: { userId: DatabaseId, identityId: DatabaseId } },
+      { profilePicture: { userId: DatabaseId } },
       { loginLogo: {} },
     ));
 
@@ -2532,10 +2527,10 @@ if (Meteor.isServer) {
     return numDeleted;
   };
 
-  SandstormDb.prototype.userGrainTitle = function (grainId, accountId, identityId) {
+  SandstormDb.prototype.userGrainTitle = function (grainId, accountId, obsolete) {
     check(grainId, String);
     check(accountId, Match.OneOf(String, undefined, null));
-    check(identityId, String);
+    check(obsolete, undefined);
 
     const grain = this.getGrain(grainId);
     if (!grain) {
@@ -2546,7 +2541,7 @@ if (Meteor.isServer) {
     if (grain.userId !== accountId) {
       const sharerToken = this.collections.apiTokens.findOne({
         grainId: grainId,
-        "owner.user.identityId": identityId,
+        "owner.user.accountId": accountId,
       }, {
         sort: {
           lastUsed: -1,
@@ -2753,14 +2748,14 @@ if (Meteor.isServer) {
     });
   };
 
-  SandstormDb.prototype.deleteUnusedAccount = function (backend, identityId) {
-    // If there is an *unused* account that has `identityId` as a login identity, deletes it.
+  SandstormDb.prototype.deleteUnusedAccount = function (backend, credentialId) {
+    // If there is an *unused* account that has `credentialId` as a login credential, deletes it.
 
-    check(identityId, String);
-    const account = this.collections.users.findOne({ "loginIdentities.id": identityId });
+    check(credentialId, String);
+    const account = this.collections.users.findOne({ "loginCredentials.id": credentialId });
     if (account &&
-        account.loginIdentities.length == 1 &&
-        account.nonloginIdentities.length == 0 &&
+        account.loginCredentials.length == 1 &&
+        account.nonloginCredentials.length == 0 &&
         !this.collections.grains.findOne({ userId: account._id }) &&
         !this.collections.apiTokens.findOne({ accountId: account._id }) &&
         (!account.plan || account.plan === "free") &&
@@ -2861,15 +2856,65 @@ if (Meteor.isServer) {
 
     this.ready();
   });
+
+  SandstormDb.generateIdentityId = function () {
+    return Crypto.randomBytes(32).toString("hex");
+  };
+
+  SandstormDb.prototype.getOrGenerateIdentityId = function (accountId, grain) {
+    // Determine the identity ID by which the given user is known within the given grain. May
+    // generate a new ID if the user doesn't currently have access to the grain.
+
+    check(accountId, String);
+    check(grain, Match.ObjectIncluding({ _id: String, userId: String, identityId: String }));
+
+    if (accountId == grain.userId) {
+      return grain.identityId;
+    } else {
+      // Check if the user has already been introduced to this grain.
+      const existingToken = this.collections.apiTokens.findOne(
+          { "grainId": grain._id,
+            "owner.user.accountId": accountId,
+            "owner.user.identityId": { $exists: true } },
+          { fields: { "owner.user.identityId": 1 } });
+
+      if (existingToken) {
+        // This user already has a token associated with this grain. Reuse the identity ID.
+        // TODO(someday): It's a bit awkward that if the user deletes all their tokens for a grain,
+        //   we forget their identity ID. This both means that if the user regains access, they'll
+        //   have a new identity in the grain, and it means that we have no way of enumerating all
+        //   identity IDs the grain has ever seen (including forgotten ones), which means we can't
+        //   give the grain owner a way to remap these identities when needed. Perhaps ApiTokens
+        //   should never really be deleted, only hidden?
+        return existingToken.owner.user.identityId;
+      }
+
+      if (!grain.private) {
+        // This grain operates on the old sharing model, where simply knowing the grain ID is
+        // sufficient to open it. We need to assign identity IDs in a consistent way without having
+        // stored them anywhere. Identity IDs used to be based on credential IDs, which at some
+        // point were used to fill in identicon keys in profiles... so use the identicon.
+        const user = Meteor.users.findOne(accountId);
+        if (user && user.profile && user.profile.identicon) {
+          return user.profile.identicon;
+        } else {
+          throw new Meteor.Error(500, "Don't know how to identity user under old sharing model.");
+        }
+      }
+
+      // This user is new to this grain. Give them a freshly-generated identity ID.
+      // TODO(cleanup): We only ever pass the first 16 bytes of the identity ID to the app. Maybe
+      //   we can truncate all identity IDs to 16 chars?
+      return SandstormDb.generateIdentityId();
+    }
+  };
 }
 
 if (Meteor.isServer) {
-  SandstormDb.prototype.deleteIdentity = function (identityId) {
-    check(identityId, String);
+  SandstormDb.prototype.deleteCredential = function (credentialId) {
+    check(credentialId, String);
 
-    this.removeApiTokens({ "owner.user.identityId": identityId });
-    this.collections.contacts.remove({ identityId: identityId });
-    Meteor.users.remove({ _id: identityId });
+    Meteor.users.remove({ _id: credentialId });
   };
 
   SandstormDb.prototype.deleteAccount = function (userId, backend) {
@@ -2878,26 +2923,28 @@ if (Meteor.isServer) {
     const _this = this;
     const user = Meteor.users.findOne({ _id: userId });
     this.deleteGrains({ userId: userId }, backend, "grain");
+    this.removeApiTokens({ "owner.user.accountId": userId });
     this.collections.userActions.remove({ userId: userId });
     this.collections.notifications.remove({ userId: userId });
-    user.loginIdentities.forEach((identity) => {
+    user.loginCredentials.forEach((credential) => {
       if (Meteor.users.find({ $or: [
-        { "loginIdentities.id": identity.id },
-        { "nonloginIdentities.id": identity.id },
+        { "loginCredentials.id": credential.id },
+        { "nonloginCredentials.id": credential.id },
       ], }).count() === 1) {
-        // If this is the only account with the identity, then delete it
-        _this.deleteIdentity(identity.id);
+        // If this is the only account with the credential, then delete it
+        _this.deleteCredential(credential.id);
       }
     });
-    user.nonloginIdentities.forEach((identity) => {
+    user.nonloginCredentials.forEach((credential) => {
       if (Meteor.users.find({ $or: [
-        { "loginIdentities.id": identity.id },
-        { "nonloginIdentities.id": identity.id },
+        { "loginCredentials.id": credential.id },
+        { "nonloginCredentials.id": credential.id },
       ], }).count() === 1) {
-        // If this is the only account with the identity, then delete it
-        _this.deleteIdentity(identity.id);
+        // If this is the only account with the credential, then delete it
+        _this.deleteCredential(credential.id);
       }
     });
+    this.collections.contacts.remove({ accountId: userId });
     this.collections.contacts.remove({ ownerId: userId });
     backend.deleteUser(userId);
     Meteor.users.remove({ _id: userId });
@@ -2907,7 +2954,7 @@ if (Meteor.isServer) {
 Meteor.methods({
   addUserActions(packageId) {
     check(packageId, String);
-    if (!this.userId || !Meteor.user().loginIdentities || !isSignedUpOrDemo()) {
+    if (!this.userId || !Meteor.user().loginCredentials || !isSignedUpOrDemo()) {
       throw new Meteor.Exception(403, "Must be logged in as a non-guest to add app actions.");
     }
 

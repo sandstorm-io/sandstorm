@@ -88,9 +88,8 @@ Meteor.methods({
     return token._id;
   },
 
-  restoreGrain(tokenId, identityId) {
+  restoreGrain(tokenId, obsolete) {
     check(tokenId, String);
-    check(identityId, String);
     const token = FileTokens.findOne(tokenId);
     if (!token || !isSignedUpOrDemo()) {
       throw new Meteor.Error(403, "Unauthorized",
@@ -157,7 +156,8 @@ Meteor.methods({
         appId: grainInfo.appId,
         appVersion: appVersion,
         userId: this.userId,
-        identityId: identityId,
+        // TODO(now): Save identity ID mapping to backup metadata and use it on restore.
+        identityId: SandstormDb.generateIdentityId(),
         title: grainInfo.title,
         private: true,
         size: 0,

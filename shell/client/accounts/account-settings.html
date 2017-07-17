@@ -24,14 +24,9 @@ limitations under the License.
   {{/sandstormTopbarItem}}
 
   <h1>Account</h1>
-  <div class="identities-editor">
+  <div class="account-settings-profile-editor">
 
-    <h3 class="title-bar">Linked identities</h3>
-
-    {{#if affectedByIdentityRefactor}}
-    <p class="alert-identity-refactor">We're changing the way identities work. Your account may be affected.
-        <a href="https://sandstorm.io/news/2017-05-08-refactoring-identities" target="_blank">Learn more &raquo;</a></p>
-    {{/if}}
+    <h3 class="title-bar">My Profile</h3>
 
     {{#with actionCompleted}}
       {{#if success}}
@@ -46,46 +41,45 @@ limitations under the License.
       {{/if}}
     {{/with}}
 
-    <div class="identities-and-editor">
-      <div class="identities-tabs">
+    <section class="profile">
+      {{>_accountProfileEditor setActionCompleted=setActionCompleted
+                               staticHost=../_staticHost}}
+    </section>
+  </div>
 
-        {{#unless isLinkingNewIdentity}}
-        <ul role="tablist" >
-          {{#each identities}}
-          <li role="tab" tabindex="0" aria-controls="profile-tab-{{_id}}" id="profile-tab-header-{{_id}}"
-              aria-selected="{{isIdentitySelected _id}}" data-identity-id="{{_id}}">
-            {{> identityCard .}}
-          </li>
-          {{/each}}
-        </ul>
-        {{/unless}}
+  <div class="linked-credentials">
 
-        <div class="account-buttons">
-          {{#if isLinkingNewIdentity}}
-            <h4>Link new identity:</h4>
-            {{#with linkingNewIdentity=linkingNewIdentityData}}
-              {{> loginButtonsList globalAccountsUi}}
-            {{/with}}
-            <button class="account-button cancel-link-new-identity">Cancel</button>
-          {{else}}
-            <button class="account-button link-new-identity">Link new identity</button>
-            <button class="account-button logout-other-sessions" disabled={{logoutOtherSessionsInFlight}}>
-              Log out all other sessions
-            </button>
-          {{/if}}
-        </div>
-      </div>
+    <h3 class="title-bar">Linked credentials</h3>
 
-      <section class="profile">
-        {{#each identities}}
-        <div id="profile-tab-{{_id}}" aria-labelled-by="profile-tab-header-{{_id}}"
-             role="tabpanel" aria-hidden="{{isIdentityHidden _id}}">
-          {{>_accountProfileEditor identity=. setActionCompleted=setActionCompleted
-                                   staticHost=../_staticHost}}
-         </div>
+    <div class="credentials-tabs">
+
+      {{#unless isLinkingNewCredential}}
+      <ul>
+        {{#each credentials}}
+        <li data-credential-id="{{_id}}">
+          {{> credentialCard .}}
+          {{> credentialManagementButtons credentialManagementButtonsData}}
+        </li>
         {{/each}}
-      </section>
+      </ul>
+      {{/unless}}
+
+      <div class="account-buttons">
+        {{#if isLinkingNewCredential}}
+          <h4>Link new credential:</h4>
+          {{#with linkingNewCredential=linkingNewCredentialData}}
+            {{> loginButtonsList globalAccountsUi}}
+          {{/with}}
+          <button class="account-button cancel-link-new-credential">Cancel</button>
+        {{else}}
+          <button class="account-button logout-other-sessions" disabled={{logoutOtherSessionsInFlight}}>
+            Log out all other sessions
+          </button>
+          <button class="account-button link-new-credential">Link new credential</button>
+        {{/if}}
+      </div>
     </div>
+
   </div>
 
   <h3 class="title-bar">Primary e-mail address for service-related notifications</h3>
@@ -149,7 +143,7 @@ limitations under the License.
         <li>Permanently delete any grains you created</li>
         <li>Revoke all sharing links you created</li>
         <li>Remove you from all users' contact lists</li>
-        <li>Delete all identities owned by your account (except identities also associated with another account).</li>
+        <li>Delete all credentials owned by your account (except credentials also associated with another account).</li>
       </ul>
       <p>
         Please type "delete my account" below to confirm.
@@ -172,7 +166,7 @@ limitations under the License.
 
 <template name="sandstormAccountsFirstSignIn">
   <h1>Confirm your profile</h1>
-  <div class="single-identity-editor">
+  <div class="single-profile-editor">
     {{#if success}}
       {{#focusingSuccessBox}}
         Success: {{success}}
@@ -185,7 +179,7 @@ limitations under the License.
       {{/focusingErrorBox}}
     {{/if}}
 
-    {{>_accountProfileEditor identity=identityToConfirm termsAndPrivacy=termsAndPrivacy
+    {{>_accountProfileEditor termsAndPrivacy=termsAndPrivacy
                              staticHost=_staticHost db=_db setActionCompleted=onActionCompleted}}
   </div>
 </template>
@@ -208,21 +202,20 @@ limitations under the License.
 
 <template name="_accountProfileEditor">
 {{!-- Expected arguments to data context:
-          identity: Object.  Should contain the usual Meteor.user fields (_id, profile, etc.)
 setActionCompleted: (optional) Function.  Callback triggered on profile saved or picture updated.
    termsAndPrivacy: (optional) Object containing Strings termsUrl and/or privacyUrl.
         staticHost: String.  Used to generate avatar URL.
                 db: instance of SandstormDb (optional, but needed for sandstormAccountsFirstSignIn?)
        hideButtons: Boolean (optional, default value is false)
 --}}
-  <div class="identity-editor">
-    <form class="account-profile-editor" data-identity-id="{{identity._id}}">
+  <div class="profile-editor">
+    <form class="account-profile-editor">
       <ul>
         <li class="form-group">
           <label>Profile picture:</label>
           <div class="picture-row">
             <div class="picture-box">
-              <img src="{{identity.profile.pictureUrl}}">
+              <img src="{{profile.pictureUrl}}">
             </div>
             <input type="file" name="picture" style="display:none">
             <div class="form-subtext">
@@ -236,7 +229,7 @@ setActionCompleted: (optional) Function.  Callback triggered on profile saved or
         <li class="form-group">
           <label>
             Full name:
-            <input type="text" name="nameInput" value="{{identity.profile.name}}"
+            <input type="text" name="nameInput" value="{{profile.name}}"
                    placeholder="full name" required>
           </label>
           <span class="form-subtext">Your regular first and last name, as you would like it
@@ -247,7 +240,7 @@ setActionCompleted: (optional) Function.  Callback triggered on profile saved or
         <li class="form-group handle">
           <label>Handle:
             <div class="input-container">
-              <input type="text" name="handle" value="{{identity.profile.handle}}"
+              <input type="text" name="handle" value="{{profile.handle}}"
                      placeholder="handle" pattern="^[a-z_][a-z0-9_]*$"
                      title="Handles must start with a lower-case letter and contain only lower-case letters, digits, and underscores." required>
             </div>
@@ -259,19 +252,7 @@ setActionCompleted: (optional) Function.  Callback triggered on profile saved or
         </li>
 
         <li class="form-group">
-          <label>
-            E-mail:
-          </label>
-          <ul class="verified-email-list">
-            {{#each verifiedEmails}}
-            <li> {{.}} </li>
-            {{/each}}
-          </ul>
-          <span class="form-subtext">{{emailDetails}}</span>
-        </li>
-
-        <li class="form-group">
-          {{#with pronoun=identity.profile.pronoun}}
+          {{#with pronoun=profile.pronoun}}
           <label>
             Preferred pronoun:
             <select name="pronoun">
@@ -312,10 +293,5 @@ setActionCompleted: (optional) Function.  Callback triggered on profile saved or
         {{/unless}}
       </ul>
     </form>
-
-    {{#if hasCompletedSignup}}
-      <hr>
-      {{> identityManagementButtons identityManagementButtonsData}}
-    {{/if}}
   </div>
 </template>

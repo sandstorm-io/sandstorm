@@ -27,7 +27,6 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
       saveLabel: Match.Optional(Match.Any),
       sessionId: String,
       grainId: String,
-      identityId: String,
       onCompleted: Function,
     }));
 
@@ -216,7 +215,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     Meteor.call(
       "fulfillUiViewRequest",
       this._requestInfo.sessionId,
-      this._requestInfo.identityId,
+      null,  // obsolete
       grainId,
       // TODO(cleanup): Petnames on ApiTokens have never really been used as intended, and it's
       //   not clear that they are useful in any case. `ApiTokens.petname` was originally intended
@@ -336,11 +335,10 @@ Template.powerboxRequest.events({
     event.preventDefault();
     const ref = Template.instance().data.get();
     const saveLabel = ref._requestInfo.saveLabel;
-    const identityId = ref._requestInfo.identityId;
     const grainId = ref._requestInfo.grainId;
     const sessionId = ref._requestInfo.sessionId;
     Meteor.call("finishPowerboxRequest", sessionId, event.target.token.value, saveLabel,
-                identityId, grainId, function (err, token) {
+                null /*obsolete*/, grainId, function (err, token) {
         if (err) {
           ref._error.set(err.toString());
         } else {

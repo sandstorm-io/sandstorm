@@ -1,6 +1,6 @@
 <template name="newAdminUserTableRow">
 {{!-- Expects:
-   user: Object representing user with identities
+   user: Object representing user with credentials
 --}}
   <div class="account-row" role="row">
     <div class="account-role" role="gridcell">
@@ -14,24 +14,23 @@
         {{/if}}
       {{/if}}
     </div>
-    <div class="identities" role="gridcell">
-      <ul class="identity-list">
-        {{#each identity in user.identities}}
-          {{#if identity}}
-          <li class="identity">
-            <div class="identity-provider-icon">
-              <span class="provider-icon {{identity.profile.service}}">{{identity.profile.service}}</span>
+    <div class="profile-name" role="gridcell">{{ user.account.profile.name }}</div>
+    <div class="credentials" role="gridcell">
+      <ul class="credential-list">
+        {{#each credential in user.credentials}}
+          {{#if credential}}
+          <li class="credential">
+            <div class="login-provider-icon">
+              <span class="provider-icon {{credential.serviceName}}">{{credential.serviceName}}</span>
             </div>
-            <div class="identity-name">{{ identity.profile.name }}</div>
-            <div class="identity-intrinsic-name">{{ identity.profile.intrinsicName }}</div>
+            <div class="credential-intrinsic-name">{{ credential.intrinsicName }}</div>
           </li>
           {{else}}
-          <li class="identity">
-            <div class="identity-provider-icon">
-              <span class="provider-icon">Unknown identity</span>
+          <li class="credential">
+            <div class="login-provider-icon">
+              <span class="provider-icon">Unknown credential</span>
             </div>
-            <div class="identity-name">unknown name</div>
-            <div class="identity-intrinsic-name">unknown identifier</div>
+            <div class="credential-intrinsic-name">unknown identifier</div>
           </li>
           {{/if}}
         {{/each}}
@@ -60,7 +59,8 @@
       <div class="header-row" role="row">
         {{#with sortOrder=sortOrder}}
         <div class="account-role" role="columnheader"></div>
-        <div class="identities" role="columnheader">Account</div>
+        <div class="profile-name" role="columnheader">Name</div>
+        <div class="credentials" role="columnheader">Credentials</div>
         <div class="created" role="columnheader">
           Created
           {{#if equal sortOrder.key "createdAt"}}
@@ -94,7 +94,7 @@
       </div>
     {{/if}}
 
-    {{!-- for each account, look up the identities --}}
+    {{!-- for each account, look up the credentials --}}
     {{#if ready}}
       {{#each user in sortUsers users }}
         {{> newAdminUserTableRow user=user}}

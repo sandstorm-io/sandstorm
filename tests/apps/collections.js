@@ -65,7 +65,7 @@ module.exports["Test Collections"] = function (browser) {
   browser.executeAsync(function (bobIdentityId, done) {
     // Share Collection A to Bob.
     var grainId = Grains.findOne()._id;
-    Meteor.call("newApiToken", { identityId: Meteor.user().loginIdentities[0].id },
+    Meteor.call("newApiToken", { identityId: Meteor.user().loginCredentials[0].id },
                 grainId, "petname", { allAccess: null },
                 { user: { identityId: bobIdentityId, title: "Collection A", } },
                 function(error, result) {
@@ -170,7 +170,7 @@ module.exports["Test Collections"] = function (browser) {
           .frame(null)
           .executeAsync(function (carolIdentityId, grainIdB, done) {
             // As Bob, share Collection B to Carol.
-            Meteor.call("newApiToken", { identityId: Meteor.user().loginIdentities[0].id },
+            Meteor.call("newApiToken", { identityId: Meteor.user().loginCredentials[0].id },
                 grainIdB, "petname", { allAccess: null },
                 { user: { identityId: carolIdentityId, title: "Collection B", } },
                 function(error, result) {
@@ -250,7 +250,7 @@ module.exports["Test collections anonymous user"] = function (browser) {
   browser = setGrainTitle(browser, "Collection A");
   browser.executeAsync(function (done) {
     var grainId = Grains.findOne()._id;
-    Meteor.call("newApiToken", { identityId: Meteor.user().loginIdentities[0].id },
+    Meteor.call("newApiToken", { identityId: Meteor.user().loginCredentials[0].id },
                 grainId, "petname", { allAccess: null },
                 { webkey: { forSharing: true }, },
                 function(error, result) {

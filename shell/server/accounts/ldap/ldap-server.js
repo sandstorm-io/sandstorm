@@ -8,7 +8,7 @@ Accounts.registerLoginHandler("ldap", function (loginRequest) {
     return undefined;
   }
 
-  if (!Accounts.identityServices.ldap.isEnabled()) {
+  if (!Accounts.loginServices.ldap.isEnabled()) {
     throw new Meteor.Error(403, "LDAP service is disabled.");
   }
 

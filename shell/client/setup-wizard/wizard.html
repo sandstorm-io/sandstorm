@@ -187,8 +187,8 @@
           {{#linkTo route="newAdminRoot" class="admin-settings-button"}}Proceed to admin panel{{/linkTo}}
         </p>
       {{else}}
-        {{#if identityUser}}
-          {{> identityLoginInterstitial "" }}
+        {{#if credentialUser}}
+          {{> credentialLoginInterstitial "" }}
         {{else}}
           <p class="center">
             <button class="make-self-admin">Give yourself admin privileges</button>
@@ -202,7 +202,7 @@
       <p>
         <div class="center">
           {{#if showSignInPanel}}
-            {{#with linkingNewIdentity=notLinkingNewIdentity}}
+            {{#with linkingNewCredential=notLinkingNewIdentity}}
               {{> loginButtonsDialog label="Sign in" accountsUi=freshAccountsUi}}
             {{/with}}
           {{else}}
@@ -508,8 +508,8 @@
     {{/focusingSuccessBox}}
   {{/if}}
 
-{{#if identityUser}}
-  {{> identityLoginInterstitial "" }}
+{{#if credentialUser}}
+  {{> credentialLoginInterstitial "" }}
 {{else}}
   {{#if currentUser}}
     {{#if currentUserFirstLogin}}
@@ -550,7 +550,7 @@
 
       {{!-- The loginButtonsDialog apparently requires this in the parent data context, which seems
             wrong.  It should probably be passed in explicitly instead.  --}}
-      {{#with linkingNewIdentity=notLinkingNewIdentity}}
+      {{#with linkingNewCredential=notLinkingNewIdentity}}
         {{> loginButtonsDialog label="Create account" accountsUi=freshAccountsUi}}
       {{/with}}
     </div>

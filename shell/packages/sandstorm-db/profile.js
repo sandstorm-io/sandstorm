@@ -18,33 +18,34 @@ let makeIdenticon;
 let httpProtocol;
 
 if (Meteor.isServer) {
-  SandstormDb.ensureSubscriberHasIdentity = function (publishHandler, identityId) {
+  SandstormDb.ensureSubscriberHasCredential = function (publishHandler, credentialId) {
     // Helper for publish functions that need to restrict access based on whether the subscriber
-    // has a given identity linked. Automatically stops the subscription if the user loses the
-    // identity. Returns a boolean indicating whether the user initially has the identity.
+    // has a given credential linked. Automatically stops the subscription if the user loses the
+    // credential. Returns a boolean indicating whether the user initially has the credential.
 
     const userId = publishHandler.userId;
-    if (userId === identityId) {
+    if (userId === credentialId) {
       return true;
     } else {
-      const hasIdentityCursor = Meteor.users.find({
+      const hasCredentialCursor = Meteor.users.find({
         $or: [
           {
             _id: userId,
-            "loginIdentities.id": identityId,
+            "loginCredentials.id": credentialId,
           },
           {
             _id: userId,
-            "nonloginIdentities.id": identityId,
+            "nonloginCredentials.id": credentialId,
           },
         ],
       });
-      if (hasIdentityCursor.count() == 0) {
+      if (hasCredentialCursor.count() == 0) {
         publishHandler.stop();
         return false;
       }
 
-      const handle = hasIdentityCursor.observe({ removed: function () { publishHandler.stop(); } });
+      const handle = hasCredentialCursor
+          .observe({ removed: function () { publishHandler.stop(); } });
 
       publishHandler.onStop(function () { handle.stop(); });
 
@@ -52,13 +53,12 @@ if (Meteor.isServer) {
     }
   };
 
-  Meteor.publish("identityProfile", function (identityId) {
-    check(identityId, String);
-    if (!SandstormDb.ensureSubscriberHasIdentity(this, identityId)) return;
+  Meteor.publish("credentialDetails", function (credentialId) {
+    check(credentialId, String);
+    if (!SandstormDb.ensureSubscriberHasCredential(this, credentialId)) return;
 
-    return Meteor.users.find({ _id: identityId },
+    return Meteor.users.find({ _id: credentialId },
       { fields: {
-        profile: 1,
         unverifiedEmail: 1,
         expires: 1,
         createdAt: 1,
@@ -91,7 +91,7 @@ if (Meteor.isServer) {
     });
   }),
 
-  Meteor.publish("accountIdentities", function () {
+  Meteor.publish("accountCredentials", function () {
     // Maybe this should be folded into the "credentials" subscription?
 
     if (!this.userId) return [];
@@ -99,10 +99,11 @@ if (Meteor.isServer) {
     return Meteor.users.find(
       { _id: this.userId },
       { fields: {
+        type: 1,
         profile: 1,
         verifiedEmail: 1,
-        loginIdentities: 1,
-        nonloginIdentities: 1,
+        loginCredentials: 1,
+        nonloginCredentials: 1,
         expires: 1,
         primaryEmail: 1,
       }, });
@@ -119,20 +120,16 @@ if (Meteor.isServer) {
   const identiconCache = {};
 
   makeIdenticon = function (id) {
-    // Given a cryptographic hash as input, generate an identicon. We always use the user's
-    // identity ID as the input hash (the same thing passed to apps as the user ID).
+    // Given a cryptographic hash as input, generate an identicon.
 
-    // Pass to identicon.js exactly the hash that we'd pass to apps as X-Sandstorm-User-Id, so
-    // that apps can themselves use identicon.js to produce consistent identicons. As it turns out
-    // identicon.js doesn't use the second half of the hash even if we provide it, but slice it
-    // anyway to be safe.
+    // identicon.js doesn't use more than 32 digits of the hash even if we provide it, but slice it
+    // anyway to guarantee this, since historically we sliced it for reasons now obsolete.
     const hash = id.slice(0, 32);
 
     if (hash in identiconCache) {
       return identiconCache[hash];
     }
 
-    // Unfortunately, Github's algorithm uses MD5. Whatever, we don't expect these to be secure.
     const data = new Identicon(hash, 512).toString();
     const result = "data:image/svg+xml," + encodeURIComponent(data);
     identiconCache[hash] = result;
@@ -184,99 +181,134 @@ function emailToHandle(email) {
   return filterHandle(base);
 }
 
-SandstormDb.fillInProfileDefaults = function (user) {
-  const profile = user.profile;
-  if (profile.service === "github") {
-    profile.name = profile.name || user.services.github.username || "Name Unknown";
-    profile.handle = profile.handle || filterHandle(user.services.github.username) ||
+SandstormDb.fillInProfileDefaults = function (credential, profile) {
+  // Fill in a user profile based on the data obtained from a linked credential.
+  //
+  // `credential` is the source credential object.
+  // `profile` is the output profile, usually located in the account object.
+  //
+  // This function will only fill in details that aren't already present.
+
+  if (!profile) {
+    throw new Error("missing profile (maybe using old call signature?)");
+  }
+
+  const services = credential.services || {};
+
+  if (services.github) {
+    profile.name = profile.name || services.github.username || "Name Unknown";
+    profile.handle = profile.handle || filterHandle(services.github.username) ||
         filterHandle(profile.name);
-  } else if (profile.service === "google") {
-    profile.name = profile.name || user.services.google.name || "Name Unknown";
-    profile.handle = profile.handle || emailToHandle(user.services.google.email) ||
+  } else if (services.google) {
+    profile.name = profile.name || services.google.name || "Name Unknown";
+    profile.handle = profile.handle || emailToHandle(services.google.email) ||
         filterHandle(profile.name);
-    profile.pronoun = profile.pronoun || GENDERS[user.services.google.gender] || "neutral";
-  } else if (profile.service === "email") {
-    const email = user.services.email.email;
+    profile.pronoun = profile.pronoun || GENDERS[services.google.gender] || "neutral";
+  } else if (services.email) {
+    const email = services.email.email;
     profile.name = profile.name || emailToHandle(email);
     profile.handle = profile.handle || emailToHandle(email);
-  } else if (profile.service === "dev") {
-    const lowerCaseName = user.services.dev.name.split(" ")[0].toLowerCase();
-    profile.name = profile.name || user.services.dev.name;
+  } else if (services.dev) {
+    const lowerCaseName = services.dev.name.split(" ")[0].toLowerCase();
+    profile.name = profile.name || services.dev.name;
     profile.handle = profile.handle || filterHandle(lowerCaseName);
     profile.pronoun = profile.pronoun ||
         (_.contains(["alice", "carol", "eve"], lowerCaseName) ? "female" :
          _.contains(["bob", "dave"], lowerCaseName) ? "male" : "neutral");
-  } else if (profile.service === "demo") {
+  } else if (services.demo) {
     profile.name = profile.name || "Demo User";
     profile.handle = profile.handle || "demo";
-  } else if (profile.service === "ldap") {
+  } else if (services.ldap) {
     const setting = Settings.findOne({ _id: "ldapNameField" });
     const key = setting ? setting.value : "";
-    profile.handle = profile.handle || user.services.ldap.username;
-    profile.name = profile.name || user.services.ldap.rawAttrs[key] || profile.handle;
-  } else if (profile.service === "saml") {
-    profile.handle = profile.handle || emailToHandle(user.services.saml.email);
-    profile.name = profile.name || user.services.saml.displayName || profile.handle;
+    profile.handle = profile.handle || services.ldap.username;
+    profile.name = profile.name || services.ldap.rawAttrs[key] || profile.handle;
+  } else if (services.saml) {
+    profile.handle = profile.handle || emailToHandle(services.saml.email);
+    profile.name = profile.name || services.saml.displayName || profile.handle;
   } else {
-    throw new Error("unrecognized identity service: ", profile.service);
+    throw new Error("unrecognized authentication service: " +
+                    SandstormDb.getServiceName(credential));
   }
 
   profile.pronoun = profile.pronoun || "neutral";
+
+  // Base identicon on primary credential so that it tends to be consistent across servers.
+  profile.identicon = credential._id.slice(0, 32);
 };
 
-SandstormDb.fillInIntrinsicName = function (user) {
-  const profile = user.profile;
-  if (profile.service === "github") {
-    profile.intrinsicName = user.services.github.username;
-  } else if (profile.service === "google") {
-    profile.intrinsicName = user.services.google.name;
-    user.privateIntrinsicName = user.services.google.email;
-  } else if (profile.service === "email") {
-    profile.intrinsicName = user.services.email.email;
-  } else if (profile.service === "dev") {
-    profile.intrinsicName = user.services.dev.name;
-  } else if (profile.service === "demo") {
-    profile.intrinsicName = "demo on " + user.createdAt.toISOString().substring(0, 10);
-  } else if (profile.service === "ldap") {
-    profile.intrinsicName = user.services.ldap.username;
-  } else if (profile.service === "saml") {
-    profile.intrinsicName = user.services.saml.id;
+SandstormDb.getIntrinsicName = function (credential, usePrivate) {
+  const services = credential.services;
+  if (services.github) {
+    return services.github.username;
+  } else if (services.google) {
+    return usePrivate ? services.google.email : services.google.name;
+  } else if (services.email) {
+    return services.email.email;
+  } else if (services.dev) {
+    return services.dev.name;
+  } else if (services.demo) {
+    return "demo on " + credential.createdAt.toISOString().substring(0, 10);
+  } else if (services.ldap) {
+    return services.ldap.username;
+  } else if (services.saml) {
+    return services.saml.id;
   } else {
-    throw new Error("unrecognized identity service: ", profile.service);
+    throw new Error("unrecognized authentication service: " +
+                    SandstormDb.getServiceName(credential));
   }
 };
 
-SandstormDb.fillInLoginId = function (identity) {
-  const service = identity.profile.service;
-  identity.loginId = Accounts.identityServices[service].getLoginId(identity);
+SandstormDb.getServiceName = function (credential) {
+  const keys = Object.keys(credential.services).filter(k => k !== "resume");
+  if (keys.length !== 1) {
+    throw new Error("expected exactly one auth service: " + keys.join(","));
+  }
+  return keys[0];
+}
+
+SandstormDb.getLoginId = function (credential) {
+  return Accounts.loginServices[SandstormDb.getServiceName(credential)].getLoginId(credential);
 };
 
-SandstormDb.getVerifiedEmails = function (identity) {
-  if (identity.services.google && identity.services.google.email &&
-      identity.services.google.verified_email) { // jscs:ignore requireCamelCaseOrUpperCaseIdentifiers
-    return [{ email: identity.services.google.email, primary: true }];
-  } else if (identity.services.email) {
-    return [{ email: identity.services.email.email, primary: true }];
-  } else if (identity.services.github && identity.services.github.emails) {
-    return _.chain(identity.services.github.emails)
+SandstormDb.prototype.getAccountIntrinsicNames = function (account, usePrivate) {
+  const credentialIds = SandstormDb.getUserCredentialIds(account)
+  return Meteor.users.find({ _id: { $in: credentialIds } }).map(credential => {
+    return {
+      service: SandstormDb.getServiceName(credential),
+      name: SandstormDb.getIntrinsicName(credential, usePrivate),
+      // TODO(soon): Add profile link?
+    };
+  });
+};
+
+SandstormDb.getVerifiedEmailsForCredential = function (credential) {
+  const services = credential.services;
+  if (services.google && services.google.email &&
+      services.google.verified_email) { // jscs:ignore requireCamelCaseOrUpperCaseIdentifiers
+    return [{ email: services.google.email, primary: true }];
+  } else if (services.email) {
+    return [{ email: services.email.email, primary: true }];
+  } else if (services.github && services.github.emails) {
+    return _.chain(services.github.emails)
       .filter(function (email) { return email.verified; })
       .map((email) => _.pick(email, "email", "primary"))
       .value();
-  } else if (identity.services.ldap) {
+  } else if (services.ldap) {
     // TODO(cleanup): don't create a new SandstormDb here, make this non-static
-    const email = identity.services.ldap.rawAttrs[new SandstormDb().getLdapEmailField()];
+    const email = services.ldap.rawAttrs[new SandstormDb().getLdapEmailField()];
     if (email) {
       return [{ email: email, primary: true }];
     }
-  } else if (identity.services.saml && identity.services.saml.email) {
-    return [{ email: identity.services.saml.email, primary: true }];
+  } else if (services.saml && services.saml.email) {
+    return [{ email: services.saml.email, primary: true }];
   }
 
   return [];
 };
 
-SandstormDb.prototype.findIdentitiesByEmail = function (email) {
-  // Returns an array of identities which have the given email address as one of their verified
+SandstormDb.prototype.findCredentialsByEmail = function (email) {
+  // Returns an array of credentials which have the given email address as one of their verified
   // addresses.
 
   check(email, String);
@@ -291,31 +323,31 @@ SandstormDb.prototype.findIdentitiesByEmail = function (email) {
     { "services.github.emails.email": email },
     ldapQuery,
     { "services.saml.email": email },
-  ], }).fetch().filter(function (identity) {
+  ], }).fetch().filter(function (credential) {
     // Verify that the email is verified, since our query doesn't technically do that.
-    return !!_.findWhere(SandstormDb.getVerifiedEmails(identity), { email: email });
+    return !!_.findWhere(SandstormDb.getVerifiedEmailsForCredential(credential), { email: email });
   });
 };
 
 SandstormDb.prototype.findAccountsByEmail = function (email) {
-  const identityIds = _.pluck(this.findIdentitiesByEmail(email), "_id");
+  const credentialIds = _.pluck(this.findCredentialsByEmail(email), "_id");
   return Meteor.users.find({ $or: [
-    { "loginIdentities.id": { $in: identityIds } },
-    { "nonloginIdentities.id": { $in: identityIds } },
+    { "loginCredentials.id": { $in: credentialIds } },
+    { "nonloginCredentials.id": { $in: credentialIds } },
   ], }).fetch();
 };
 
 SandstormDb.fillInPictureUrl = function (user) {
   const staticHost = httpProtocol + "//" + makeWildcardHost("static");
   user.profile.pictureUrl = staticAssetUrl(user.profile.picture, staticHost) ||
-    makeIdenticon(user._id);
+    makeIdenticon(user.profile.identicon);
 };
 
-SandstormDb.getUserIdentityIds = function (user) {
-  // Given an account user object, returns an array containing the ID of each identity linked to the
-  // account. Always returns the most recently added login identity first.
-  if (user && user.loginIdentities) {
-    return _.pluck(user.nonloginIdentities.concat(user.loginIdentities), "id").reverse();
+SandstormDb.getUserCredentialIds = function (user) {
+  // Given an account user object, returns an array containing the ID of each credential linked to
+  // the account. Always returns the most recently added login credential first.
+  if (user && user.loginCredentials) {
+    return _.pluck(user.nonloginCredentials.concat(user.loginCredentials), "id").reverse();
   } else {
     return [];
   }
@@ -329,25 +361,25 @@ SandstormDb.getUserEmails = function (user) {
   // At most one entry in the result has `primary = true`.
   //
   // TODO(cleanup): This actually does need to query the database to fetch profile information
-  //   for linked identities, so it probably makes more sense for it to be a non-static method
+  //   for linked credentials, so it probably makes more sense for it to be a non-static method
   //   on SandstormDb.
 
-  const identityIds = SandstormDb.getUserIdentityIds(user);
+  const credentialIds = SandstormDb.getUserCredentialIds(user);
   const verifiedEmails = {};
   const unverifiedEmails = {};
 
-  identityIds.forEach(function (id) {
-    const identity = Meteor.users.findOne({ _id: id });
-    if (identity && identity.services) {
-      SandstormDb.getVerifiedEmails(identity).forEach(function (verifiedEmail) {
+  credentialIds.forEach(function (id) {
+    const credential = Meteor.users.findOne({ _id: id });
+    if (credential && credential.services) {
+      SandstormDb.getVerifiedEmailsForCredential(credential).forEach(function (verifiedEmail) {
         if (verifiedEmail) {
           verifiedEmails[verifiedEmail.email] = true;
         }
       });
     }
 
-    if (identity && identity.unverifiedEmail) {
-      unverifiedEmails[identity.unverifiedEmail] = true;
+    if (credential && credential.unverifiedEmail) {
+      unverifiedEmails[credential.unverifiedEmail] = true;
     }
   });
 
@@ -370,14 +402,14 @@ SandstormDb.getUserEmails = function (user) {
   return result;
 };
 
-SandstormDb.prototype.addContact = function addContact(ownerId, identityId) {
+SandstormDb.prototype.addContact = function addContact(ownerId, contactId) {
   check(ownerId, String);
-  check(identityId, String);
-  const profile = this.getIdentity(identityId).profile;
-  this.collections.contacts.upsert({ ownerId: ownerId, identityId: identityId }, {
+  check(contactId, String);
+  const profile = Meteor.users.findOne(contactId).profile;
+  this.collections.contacts.upsert({ ownerId: ownerId, accountId: contactId }, {
     ownerId: ownerId,
     petname: profile && profile.name,
     created: new Date(),
-    identityId: identityId,
+    accountId: contactId,
   });
 };

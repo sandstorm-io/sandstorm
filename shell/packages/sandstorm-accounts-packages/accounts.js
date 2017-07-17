@@ -28,8 +28,8 @@ if (Meteor.isServer) {
   // google apps for work domain.
 }
 
-Accounts.identityServices = {};
-// A dictionary of identity services. At the moment, this is mainly used for rendering login UI
+Accounts.loginServices = {};
+// A dictionary of login services. At the moment, this is mainly used for rendering login UI
 // components. Each key in the dictionary is the name of the service, e.g. "github", exactly as it
 // would appear in the `Users.profile.service` field in the Sandstorm database. Each value in the
 // dictionary is an object with the following fields:
@@ -37,11 +37,11 @@ Accounts.identityServices = {};
 //   isEnabled: A function of no arguments. Returns a boolean indicating whether this service is
 //              currently configured to be active.
 //
-//   getLoginId: A function that takes an identity record and returns a string that uniquely
-//               identifies that identity with respect to its login service.
+//   getLoginId: A function that takes a credential record and returns a string that uniquely
+//               identifies that credential with respect to its login service.
 //
 //   initiateLogin: A function that takes the result of getLoginId() and initiates login as the
-//                  appropriate identity. Only works on the client side.
+//                  appropriate credential. Only works on the client side.
 //
 //   loginTemplate: An object indicating how to render this service's login UI. Contains the
 //                  following fields:
@@ -51,8 +51,8 @@ Accounts.identityServices = {};
 //       data: An object to pass along to the template when it is rendered. The data context of
 //             the template when it is rendered will contain the following fields:
 //                data: The value of loginTemplate.data.
-//                linkingNewIdentity: A boolean which is true if the template is currently being
-//                                    used to link a new identity, rather than just to log in.
+//                linkingNewCredential: A boolean which is true if the template is currently being
+//                                      used to link a new credential, rather than just to log in.
 //                loginId: Optionally, A login ID to initialize the form.
 
 //

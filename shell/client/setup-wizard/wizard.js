@@ -246,7 +246,7 @@ Template.setupWizardIntro.helpers({
     return instance.showSignInPanel.get();
   },
 
-  identityUser() {
+  credentialUser() {
     const user = Meteor.user();
     return user && user.profile;
   },
@@ -801,7 +801,7 @@ Template.setupWizardLoginUser.helpers({
     return !Meteor.loggingIn() && Meteor.user() && !Meteor.user().hasCompletedSignup;
   },
 
-  identityUser() {
+  credentialUser() {
     const user = Meteor.user();
     return user && user.profile;
   },

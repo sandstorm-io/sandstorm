@@ -219,11 +219,8 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
             Meteor.call("deleteGrain", grainId);
           });
 
-          const identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
           sharedGrainIds.forEach((grainId) => {
-            identityIds.forEach((identityId) => {
-              Meteor.call("forgetGrain", grainId, identityId);
-            });
+            Meteor.call("forgetGrain", grainId);
           });
         },
       },
@@ -434,9 +431,8 @@ Template.sandstormGrainListPage.events({
 
     const myGrains = _.pluck(myGrainsCursor.fetch(), "_id");
 
-    const myIdentityIds = SandstormDb.getUserIdentityIds(Meteor.user());
     const myTokens = instance.data._db.collections.apiTokens.find({
-      "owner.user.identityId": { $in: myIdentityIds },
+      "owner.user.accountId": Meteor.userId(),
       trashed: { $exists: true },
     }).fetch();
 
@@ -463,9 +459,7 @@ Template.sandstormGrainListPage.events({
       });
 
       grainsSharedWithMe.forEach((grainId) => {
-        myIdentityIds.forEach((identityId) => {
-          Meteor.call("forgetGrain", grainId, identityId);
-        });
+        Meteor.call("forgetGrain", grainId);
       });
     }
   },

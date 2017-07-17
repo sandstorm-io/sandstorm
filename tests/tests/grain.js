@@ -495,7 +495,7 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         .execute(function() {
           return globalGrains.getActive().identityId();
         }, [], function (response) {
-          browser.assert.equal(response.value, null);
+          browser.assert.equal(response.value, false);
         })
         .grainFrame()
         .waitForElementPresent('#publish', medium_wait)

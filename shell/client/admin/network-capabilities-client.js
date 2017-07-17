@@ -1,18 +1,30 @@
-const lookupIdentityById = function (identityId) {
-  const identity = Meteor.users.findOne({ _id: identityId });
-  if (identity) {
-    SandstormDb.fillInProfileDefaults(identity);
-    SandstormDb.fillInIntrinsicName(identity);
-    SandstormDb.fillInPictureUrl(identity);
-    return identity;
+function deriveIntroducer(cap) {
+  // For a given ApiToken, determine the account ID of the user who should be attributed for
+  // creating the token.
+
+  if (cap && cap.requirements) {
+    for (let idx = 0; idx < cap.requirements.length; ++idx) {
+      const req = cap.requirements[idx];
+      if (req.permissionsHeld && req.permissionsHeld.accountId) {
+        return req.permissionsHeld.accountId;
+      } else if (req.userIsAdmin) {
+        return req.userIsAdmin;
+      }
+    }
   }
 
-  return undefined;
-};
+  return null;
+}
 
 const capDetails = function (cap) {
-  let introducer = {};
   let ownerInfo = {};
+
+  const introducerAccountId = deriveIntroducer(cap);
+  const introducerAccount = introducerAccountId && Meteor.users.findOne({ _id: introducerAccountId });
+  const introducer = {
+    account: introducerAccount,
+  };
+
   if (cap.owner.grain !== undefined) {
     const grainId = cap.owner.grain.grainId;
     const grain = Grains.findOne(grainId);
@@ -26,46 +38,18 @@ const capDetails = function (cap) {
     const pkg = packageId && globalDb.collections.packages.findOne(packageId);
     const appIcon = pkg && globalDb.iconSrcForPackage(pkg, "grain", globalDb.makeWildcardHost("static"));
 
-    let introducerIdentityId;
-    if (cap && cap.requirements) {
-      for (let idx = 0; idx < cap.requirements.length; ++idx) {
-        const req = cap.requirements[idx];
-        if (req.permissionsHeld && req.permissionsHeld.identityId) {
-          introducerIdentityId = req.permissionsHeld.identityId;
-          break;
-        }
-      }
-    }
-
-    const introducerIdentity = lookupIdentityById(introducerIdentityId);
-    const grainOwnerIdentity = (introducerIdentityId === grain.identityId) ? undefined : lookupIdentityById(grain.identityId);
-
-    introducer = {
-      identity: introducerIdentity,
-    };
+    const grainOwnerAccount = (introducerAccountId === grain.userId) ? undefined
+        : Meteor.users.findOne({ _id: grain.userId });
 
     ownerInfo.grain = {
       _id: grainId,
-      ownerIdentity: grainOwnerIdentity,
+      ownerAccount: grainOwnerAccount,
       title: grainTitle,
       pkg,
       appIcon,
     };
   } else if (cap.owner.webkey !== undefined) {
-    ownerInfo.webkey = {
-    };
-
-    // Attempt (poorly) to divine the granter of this token.  Since we only have an account ID,
-    // we can't properly specify an identity, but we can at least link to that user's account page.
-    const requirements = cap.requirements;
-    if (requirements.length === 1) {
-      const req = requirements[0];
-      if (req.userIsAdmin) {
-        introducer.account = {
-          userId: req.userIsAdmin, // the newAdminUserDetails route requires params like this
-        };
-      }
-    }
+    ownerInfo.webkey = {};
   }
 
   return {
@@ -105,18 +89,13 @@ Template.newAdminNetworkCapabilities.onCreated(function () {
 
     this.subscribe("adminPackages", packageIds);
 
-    const identityIds = [];
+    const accountIds = [];
     apiTokens.forEach((token) => {
-      if (token.requirements) {
-        token.requirements.forEach((req) => {
-          if (req.permissionsHeld && req.permissionsHeld.identityId) {
-            identityIds.push(req.permissionsHeld.identityId);
-          }
-        });
-      }
+      const introducer = deriveIntroducer(token);
+      if (introducer) accountIds.push(introducer);
     });
 
-    this.subscribe("adminIdentities", identityIds);
+    this.subscribe("adminProfiles", accountIds);
   });
 });
 
@@ -149,8 +128,8 @@ Template.newAdminNetworkCapabilities.helpers({
   },
 });
 
-const identityMatchesNeedle = function (needle, identity) {
-  const profile = identity && identity.profile;
+const accountMatchesNeedle = function (needle, account) {
+  const profile = account && account.profile;
   if (profile) {
     if (profile.handle.toLowerCase().indexOf(needle) !== -1) return true;
     if (profile.intrinsicName.toLowerCase().indexOf(needle) !== -1) return true;
@@ -167,11 +146,11 @@ const packageMatchesNeedle = function (needle, pkg) {
 };
 
 const matchesCap = function (needle, cap) {
-  // Check for matching name in the grain owner or the token creator's identity.
+  // Check for matching name in the grain owner or the token creator's profile.
   // Check for matches in cap token ID, grain ID, or app ID, but only as a prefix.
 
-  if (cap.introducer.identity) {
-    if (identityMatchesNeedle(needle, cap.introducer.identity)) return true;
+  if (cap.introducer.account) {
+    if (accountMatchesNeedle(needle, cap.introducer.account)) return true;
   }
 
   if (cap._id.toLowerCase().lastIndexOf(needle, 0) !== -1) return true;
@@ -179,7 +158,7 @@ const matchesCap = function (needle, cap) {
   if (cap.ownerInfo.grain) {
     const grain = cap.ownerInfo.grain;
     if (grain.title.toLowerCase().indexOf(needle) !== -1) return true;
-    if (identityMatchesNeedle(needle, grain.ownerIdentity)) return true;
+    if (accountMatchesNeedle(needle, grain.ownerAccount)) return true;
     if (packageMatchesNeedle(needle, grain.pkg)) return true;
     if (grain._id.toLowerCase().lastIndexOf(needle, 0) !== -1) return true;
     if (grain.pkg.appId.toLowerCase().lastIndexOf(needle, 0) !== -1) return true;

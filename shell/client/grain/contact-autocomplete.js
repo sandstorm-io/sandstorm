@@ -15,7 +15,7 @@ const generateAutoCompleteContacts = function (template) {
       profile: {
         name: currentText,
         service: "email",
-        intrinsicName: "Email address",
+        // intrinsicName: "Email address", // TODO(now): Used to include intrinsicName
       },
       isDefault: true,
     });
@@ -33,8 +33,9 @@ const generateAutoCompleteContacts = function (template) {
   } else {
     results = _.filter(contacts, function (contact) {
       return contact.profile.name.toLowerCase().indexOf(currentText) !== -1 ||
-        contact.profile.handle.toLowerCase().indexOf(currentText) !== -1 ||
-        contact.profile.intrinsicName.toLowerCase().indexOf(currentText) !== -1;
+        contact.profile.handle.toLowerCase().indexOf(currentText) !== -1;
+        // TODO(now): Used to include intrinsicName
+        // contact.profile.intrinsicName.toLowerCase().indexOf(currentText) !== -1;
     });
   }
 
@@ -53,7 +54,8 @@ const selectContact = function (template, highlightedContact, inputBox) {
     if (highlightedContact.profile.service === "email") {
       highlightedContact._id = inputBox.value;
       highlightedContact.profile.name = inputBox.value;
-      highlightedContact.profile.intrinsicName = inputBox.value;
+      // TODO(now): Used to include intrinsicName
+      // highlightedContact.profile.intrinsicName = inputBox.value;
       highlightedContact.profile.pictureUrl = "/email.svg";
     }
   }

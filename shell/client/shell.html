@@ -49,8 +49,8 @@ limitations under the License.
       {{/if}}
     </div>
   {{else}}
-  {{#if identityUser}}
-      {{> identityLoginInterstitial grains=globalGrains}}
+  {{#if credentialUser}}
+      {{> credentialLoginInterstitial grains=globalGrains}}
   {{else}}
   {{#if isAccountSuspended}}
     <div class="suspended-main-content {{#if hideNavbar}}hide-navbar{{else}}{{#if shrinkNavbar}}shrink-navbar{{/if}}{{/if}}">
@@ -115,7 +115,7 @@ limitations under the License.
 
   {{/if}} {{!-- firstLogin --}}
   {{/if}} {{!-- isAccountSuspended --}}
-  {{/if}} {{!-- identityUser --}}
+  {{/if}} {{!-- credentialUser --}}
   {{/with}} {{!-- demoExpired --}}
 
   {{!-- Make sure to always render the main-content div, but only yield if there is no interstitial
@@ -126,7 +126,7 @@ limitations under the License.
    --}}
   <div class="main-content{{#if hideNavbar}} hide-navbar{{else}}{{#if shrinkNavbar}} shrink-navbar{{/if}}{{/if}}{{#if isStandalone}} standalone{{/if}}">
   {{#unless demoExpired}}
-    {{#unless identityUser}}
+    {{#unless credentialUser}}
       {{#unless firstLogin}}
         {{> desktopNotifications "" }}
         {{> yield}}

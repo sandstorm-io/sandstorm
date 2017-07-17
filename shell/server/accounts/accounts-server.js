@@ -26,7 +26,7 @@ const ValidHandle = Match.Where(function (handle) {
 });
 
 Accounts.onCreateUser(function (options, user) {
-  if (user.loginIdentities) {
+  if (user.loginCredentials) {
     // it's an account
     check(user, { _id: String,
                   createdAt: Date,
@@ -37,8 +37,8 @@ Accounts.onCreateUser(function (options, user) {
                   signupEmail: Match.Optional(String),
                   expires: Match.Optional(Date),
                   appDemoId: Match.Optional(String),
-                  loginIdentities: [{ id: String }],
-                  nonloginIdentities: [{ id: String }], });
+                  loginCredentials: [{ id: String }],
+                  nonloginCredentials: [{ id: String }], });
 
     if (globalDb.isReferralEnabled()) {
       user.experiments = user.experiments || {};
@@ -56,7 +56,7 @@ Accounts.onCreateUser(function (options, user) {
   }
 
   if (globalDb.getOrganizationDisallowGuests() &&
-      !globalDb.isIdentityInOrganization(user)) {
+      !globalDb.isCredentialInOrganization(user)) {
     throw new Meteor.Error(400, "User not in organization.");
   }
 
@@ -127,7 +127,7 @@ Accounts.onCreateUser(function (options, user) {
     serviceUserId = user.services.saml.id;
     user.profile.service = "saml";
   } else {
-    throw new Meteor.Error(400, "user does not have a recognized identity provider: " +
+    throw new Meteor.Error(400, "user does not have a recognized login provider: " +
                            JSON.stringify(user));
   }
 
@@ -150,7 +150,7 @@ Accounts.validateLoginAttempt(function (attempt) {
       "of this server if you believe this to be in error.");
   }
 
-  if (user.loginIdentities) {
+  if (user.loginCredentials) {
     // it's an account
     if (db.getOrganizationDisallowGuests() &&
         !db.isUserInOrganization(user)) {
@@ -160,7 +160,7 @@ Accounts.validateLoginAttempt(function (attempt) {
     db.updateUserQuota(user); // This is a no-op if settings aren't enabled
   } else {
     if (db.getOrganizationDisallowGuests() &&
-        !db.isIdentityInOrganization(user)) {
+        !db.isCredentialInOrganization(user)) {
       throw new Meteor.Error(403, "User not in organization.");
     }
   }

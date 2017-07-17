@@ -190,7 +190,7 @@ body>.popup.account>.frame-container {
       @extend %button-secondary;
       width: 100%;
     }
-    ul.dev-identities {
+    ul.dev-credentials {
       text-indent: 0;
       list-style-type: none;
       padding-left: 0;
@@ -467,12 +467,6 @@ body>.main-content>.account {
     font-weight: 400;
   }
 
-  .identities-editor {
-    position: relative;
-    white-space: nowrap;
-    max-width: 660px;
-  }
-
   h2, h3 {
     text-align: left;
     border-bottom: 1px solid #6d6d6d;
@@ -492,28 +486,13 @@ body>.main-content>.account {
     padding: 5px;
   }
 
-  p.alert-identity-refactor {
-    color: red;
-    padding-left: 5px;
+  .linked-credentials {
+    position: relative;
+    white-space: nowrap;
+    max-width: 660px;
   }
 
-  .identities-and-editor {
-    @media #{$not-mobile-only} {
-      width: 660px;
-      flex-direction: row;
-      align-items: flex-start;
-    }
-
-    @media #{$mobile-only} {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    display: flex;
-    justify-content: flex-start;
-  }
-
-  .identities-tabs {
+  .credentials-tabs {
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -529,9 +508,10 @@ body>.main-content>.account {
 
       li {
         list-style-type: none;
-        cursor: pointer;
         background-color: white;
         margin-bottom: 10px;
+        padding: 4px;
+        position: relative;
 
         @media #{$not-mobile-only} {
           margin-right: 7px;
@@ -548,15 +528,29 @@ body>.main-content>.account {
           }
         }
 
-        &:focus {
-          @extend %custom-focus-ring;
+        .credential-card {
+          display: static;
+          height: auto;
+          .login-provider-icon {
+            width: 32px;
+            height: 32px;
+          }
+          .name {
+            line-height: 32px;
+            font-size: 12pt;
+          }
         }
 
-        .make-login {
-          @include unstyled-button();
-        }
-        .make-no-login {
-          @include unstyled-button();
+        .credential-management-controls {
+          div.toggle-login {
+            padding-left: 8px;
+            font-size: 9pt;
+          }
+          button.unlink-credential {
+            position: absolute;
+            right: 14px;
+            top: 8px;
+          }
         }
       }
     }
@@ -569,19 +563,7 @@ body>.main-content>.account {
     }
 
     .account-buttons {
-      @media #{$not-mobile-only} {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        justify-content: flex-start;
-      }
-      @media #{$mobile-only} {
-        order: -1;
-        display: flex;
-        flex-direction: row;
-        align-items: stretch;
-        justify-content: flex-start;
-      }
+      text-align: right;
     }
 
     button.account-button {
@@ -602,10 +584,11 @@ body>.main-content>.account {
 
       margin-bottom: 12px;
 
-      &.link-new-identity {
+      &.link-new-credential {
         @extend .icon-link;
+        @extend %button-primary;
         &::before {
-          font-size: 24px;
+          font-size: 20px;
           @extend .icon;
         }
       }
@@ -1069,7 +1052,7 @@ div.billing {
   h1 {
     text-align: center;
   }
-  .identity-editor {
+  .profile-editor {
     position: static;
     margin: auto;
   }
@@ -1096,14 +1079,14 @@ div.billing {
   }
 }
 
-div.single-identity-editor {
-  max-width: 435px;
+div.single-profile-editor {
+  max-width: 660px;
   margin: auto;
 }
 
-div.identity-editor {
+div.profile-editor {
   @media #{$not-mobile-only} {
-    width: 435px;
+    width: 660px;
   }
 
   background-color: white;
@@ -1121,21 +1104,6 @@ div.identity-editor {
       list-style-type: none;
       margin: 0;
       padding: 0;
-    }
-
-    ul.verified-email-list {
-      >li {
-        // Vertically center each email address within a 30px space.
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: flex-start;
-        min-height: 30px;
-        border-top: 1px solid #dddddd;
-        &:last-child {
-          border-bottom: 1px solid #dddddd;
-        }
-      }
     }
 
     .picture-row {
@@ -1600,7 +1568,7 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
   }
 }
 
-.identity-login-interstitial {
+.credential-login-interstitial {
   z-index: 1;
   background-color: #efefef;
   div.centered-content{
@@ -1608,8 +1576,8 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
     text-align: center;
     width: 400px;
     background-color: white;
-    >.identity-card {
-      border: 1px solid gray;
+    >.credential-card {
+      width: 100%;
     }
     .warning-banner {
       padding: 10px;
@@ -1651,13 +1619,17 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
   }
 }
 
-.identity-card-sign-in {
+.credential-card-sign-in {
   display: flex;
   align-items: center;
   flex-direction: column;
   button.sign-in {
-    @extend %button-base;
-    background-color: white;
+    border: none;
+    border-top: 1px solid #ddd;
+    width: 100%;
+    background-color: transparent;
+    cursor: pointer;
+    text-align: left;
   }
   h4 {
     margin-bottom: 5px;
@@ -1667,21 +1639,18 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
   }
 }
 
-.identity-management-controls {
-  >div {
-    margin-top: 10px;
-  }
-  .login-identities-of-linked-accounts {
+.credential-management-controls {
+  .login-credentials-of-linked-accounts {
     border: 1px solid gray;
     border-radius: 2px;
     padding: 10px;
-    ul.unlinkable-identities {
+    ul.unlinkable-credentials {
       list-style-type: none;
       padding: 0;
       li{
         position: relative;
         padding-bottom: 10px;
-        .identity-card {
+        .credential-card {
           border: 1px solid black;
         }
         button.unlink {
@@ -1702,18 +1671,19 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
     @extend %button-base;
     @extend %button-secondary;
   }
-  button.unlink-identity {
+  button.unlink-credential {
     @extend %button-base;
     @extend %button-secondary;
-    width: 200px;
+    width: 80px;
     height: 30px;
+    padding-left: 30px;
 
     position: relative;
 
     @extend .icon-unlink;
     &::before {
       position: absolute;
-      left: 10px;
+      left: 5px;
       top: 2px;
       font-size: 24px;
       @extend .icon;
@@ -1721,7 +1691,7 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
   }
 }
 
-ul.identity-card-list {
+ul.credential-card-list {
   padding-left: 0;
   li {
     list-style-type: none;
@@ -1731,14 +1701,39 @@ ul.identity-card-list {
       @include unstyled-button();
       border: 1px solid $generic-border-color;
     }
-    &.current-identity>button {
+    &.current-credential>button {
       height: 56px;
       border: 2px solid black;
     }
   }
 }
 
-.identity-card {
+.credential-card {
+  display: inline-block;
+  height: 52px;
+  text-align: left;
+  margin-bottom: 0;
+  color: black;
+  font-family: "Source Sans Pro", sans-serif;
+  background-color: white;
+
+  .login-provider-icon {
+    @extend %login-provider-icon;
+    width: 52px;
+    height: 52px;
+    float: left;
+  }
+
+  .name {
+    line-height: 52px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 14pt;
+  }
+}
+
+.account-card {
   display: inline-block;
   position: relative;
   height: 52px;

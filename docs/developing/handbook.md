@@ -45,7 +45,7 @@ This section explains each brief bullet-point above in more depth.
 Every Sandstorm app provides a service to the person who creates an
 instance of it. It is initially available to the person who started
 the instance. It is only available to people with whom the owner can
-shared the instance. By focusing on enabling personal computing on the
+share the instance. By focusing on enabling personal computing on the
 web, Sandstorm aims to enable people to get creative with small apps
 created for a single purpose, with security provided by the platform.
 

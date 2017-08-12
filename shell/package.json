@@ -13,7 +13,7 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "babel-runtime": "^6.23.0",
+    "babel-runtime": "^6.25.0",
     "bignum": "^0.12.5",
     "heapdump": "^0.3.9",
     "intro.js": "git+https://github.com/sandstorm-io/intro.js.git#8e1c7604f251ec874bf4ae4d7b4f11a14cee697e",

@@ -1,3 +1,6 @@
+### v0.212 (2017-08-12) [bugfixes]
+- Updated dependencies to latest versions (as for every release). No other changes.
+
 ### v0.211 (2017-07-15) [bugfixes]
 - Removed long-obsolete code in sandbox setup which attempted to enable transparent network proxying. The code never really worked and no app ever used it, but it recently started failing for one of our users.
 

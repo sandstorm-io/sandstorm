@@ -423,29 +423,8 @@ Meteor.loginWithCredential = function (accountId, callback) {
       if (error) {
         callback && callback(error);
       } else {
-        if (credential.profile.service !== "demo") {
-          Accounts.setCurrentCredentialId(credential._id);
-        }
-
         callback && callback();
       }
     },
   });
-};
-
-const CURRENT_IDENTITY_KEY = "Accounts.CurrentCredentialId";
-
-Accounts.getCurrentCredentialId = function () {
-  const credentialId = Session.get(CURRENT_IDENTITY_KEY);
-  const credentialIds = SandstormDb.getUserCredentialIds(Meteor.user());
-  if (credentialId && (credentialIds.indexOf(credentialId) != -1)) {
-    return credentialId;
-  } else {
-    return credentialIds[0];
-  }
-};
-
-Accounts.setCurrentCredentialId = function (credentialId) {
-  check(credentialId, String);
-  Session.set(CURRENT_IDENTITY_KEY, credentialId);
 };

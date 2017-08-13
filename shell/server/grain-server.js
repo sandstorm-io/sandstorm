@@ -423,19 +423,19 @@ Meteor.methods({
 
       // TODO(soon): In the HTML version, we should display an identity card.
       const identityNotes = [];
-      globalDb.getAccountIntrinsicNames(account, true).forEach(intrinsic => {
+      globalDb.getAccountIntrinsicNames(Meteor.user(), true).forEach(intrinsic => {
         // TODO(cleanup): Don't switch on service here; extend getAccountIntrinsicNames or
         //   Account.loginServices to cover what we need.
         if (intrinsic.service === "google") {
-          identityNotes.add(intrinsic.name);
+          identityNotes.push(intrinsic.name);
         } else if (intrinsic.service === "github") {
-          identityNotes.add(intrinsic.name + " on GitHub");
+          identityNotes.push(intrinsic.name + " on GitHub");
         } else if (intrinsic.service === "email") {
-          identityNotes.add(intrinsic.name);
+          identityNotes.push(intrinsic.name);
         } else if (intrinsic.service === "ldap") {
-          identityNotes.add(intrinsic.name + " on LDAP");
+          identityNotes.push(intrinsic.name + " on LDAP");
         } else if (intrinsic.service === "saml") {
-          identityNotes.add(intrinsic.name + " on SAML");
+          identityNotes.push(intrinsic.name + " on SAML");
         }
       });
 

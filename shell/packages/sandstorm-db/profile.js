@@ -272,7 +272,13 @@ SandstormDb.getLoginId = function (credential) {
 };
 
 SandstormDb.prototype.getAccountIntrinsicNames = function (account, usePrivate) {
-  const credentialIds = SandstormDb.getUserCredentialIds(account)
+  // Get the user's identity badges, for display to other users. For example, if the user uses
+  // GitHub login, this would be their GitHub username. This is displayed to other users to prove
+  // this user's identity.
+
+  // TODO(someday): Perhaps users should be able to choose which badges are displayed publicly. For
+  //   now, as a heuristic, we choose the credentials which the user has approved for login.
+  const credentialIds = account.loginCredentials.map(cred => cred.id);
   return Meteor.users.find({ _id: { $in: credentialIds } }).map(credential => {
     return {
       service: SandstormDb.getServiceName(credential),

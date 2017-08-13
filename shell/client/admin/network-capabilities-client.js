@@ -21,6 +21,8 @@ const capDetails = function (cap) {
 
   const introducerAccountId = deriveIntroducer(cap);
   const introducerAccount = introducerAccountId && Meteor.users.findOne({ _id: introducerAccountId });
+  SandstormDb.fillInPictureUrl(introducerAccount);
+  introducerAccount.intrinsicNames = globalDb.getAccountIntrinsicNames(introducerAccount);
   const introducer = {
     account: introducerAccount,
   };

@@ -34,8 +34,8 @@ Meteor.publish("contactProfiles", function (showAll) {
       }
 
       if (user) {
-        // TODO(now): Used to include intrinsicName
         const filteredUser = _.pick(user, "_id", "profile");
+        filteredUser.intrinsicNames = db.getAccountIntrinsicNames(user, false);
         _this.added("contactProfiles", user._id, filteredUser);
       }
 

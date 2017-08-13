@@ -1740,46 +1740,15 @@ ul.credential-card-list {
 .account-card {
   display: inline-block;
   position: relative;
-  height: 52px;
+  min-height: 52px;
   width: 218px;
   text-align: left;
   margin-bottom: 0;
   color: black;
   font-family: "Source Sans Pro", sans-serif;
   background-color: white;
-
-  &::before {
-    color: #9E9E9E;
-    position: absolute;
-    left: 50px;
-    top: 30px;
-    font-size: 16px;
-    @extend .icon;
-  }
-
-  &[data-service-name=github] {
-    @extend .icon-github;
-  }
-
-  &[data-service-name=google] {
-    @extend .icon-google;
-  }
-
-  &[data-service-name=dev] {
-    @extend .icon-debug;
-  }
-
-  &[data-service-name=email] {
-    @extend .icon-email;
-  }
-
-  &[data-service-name=ldap] {
-    @extend .icon-ldap;
-  }
-
-  &[data-service-name=saml] {
-    @extend .icon-ldap;
-  }
+  padding-top: 28px;
+  padding-bottom: 4px;
 
   .picture {
     position: absolute;
@@ -1803,11 +1772,39 @@ ul.credential-card-list {
     height:30px;
     font-size: 10pt;
   }
+
   .intrinsic-name {
-    position: absolute;
-    left: 68px;
-    top: 28px;
-    width: 150px;
+    &::before {
+      color: #9E9E9E;
+      font-size: 16px;
+      @extend .icon;
+    }
+
+    &[data-service-name=github] {
+      @extend .icon-github;
+    }
+
+    &[data-service-name=google] {
+      @extend .icon-google;
+    }
+
+    &[data-service-name=dev] {
+      @extend .icon-debug;
+    }
+
+    &[data-service-name=email] {
+      @extend .icon-email;
+    }
+
+    &[data-service-name=ldap] {
+      @extend .icon-ldap;
+    }
+
+    &[data-service-name=saml] {
+      @extend .icon-ldap;
+    }
+
+    margin-left: 55px;
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;

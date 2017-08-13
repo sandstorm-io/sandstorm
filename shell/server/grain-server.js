@@ -131,8 +131,10 @@ Meteor.publish("tokenInfo", function (token, isStandalone) {
             }
           });
 
+          account.intrinsicNames = globalDb.getAccountIntrinsicNames(account, false);
+
           this.added("tokenInfo", token, {
-            accountOwner: _.pick(account, "_id", "profile", "credentials"),
+            accountOwner: _.pick(account, "_id", "profile", "credentials", "intrinsicNames"),
             grainId: grainId,
             grainMetadata: metadata,
           });

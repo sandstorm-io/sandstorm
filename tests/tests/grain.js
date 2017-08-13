@@ -213,10 +213,10 @@ module.exports["Sign in at grain URL"] = function (browser) {
                     .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
                     .execute(function (name) { window.loginDevAccount(name) }, [otherName])
 
-                    // It's unclear whether there should be an identity chooser here.
+                    // It's unclear whether there should be an incognito prompt here.
                     // See https://github.com/sandstorm-io/sandstorm/issues/1076
-                    // .waitForElementVisible("button.pick-identity", medium_wait)
-                    // .click("button.pick-identity")
+                    // .waitForElementVisible("button.reveal-identity-button", medium_wait)
+                    // .click("button.reveal-identity-button")
 
                     .waitForElementNotPresent(".request-access", medium_wait)
                     // The forget grain button only appears once we've logged in.
@@ -344,8 +344,8 @@ module.exports["Test roleless sharing"] = function (browser) {
           secondUserName = result.value;
         })
         .url(response.value)
-        .waitForElementVisible("button.pick-identity", short_wait)
-        .click("button.pick-identity")
+        .waitForElementVisible("button.reveal-identity-button", short_wait)
+        .click("button.reveal-identity-button")
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
         .grainFrame()
@@ -364,8 +364,8 @@ module.exports["Test roleless sharing"] = function (browser) {
             .loginDevAccount()
             .disableGuidedTour()
             .url(response.value)
-            .waitForElementVisible("button.pick-identity", short_wait)
-            .click("button.pick-identity")
+            .waitForElementVisible("button.reveal-identity-button", short_wait)
+            .click("button.reveal-identity-button")
             .waitForElementVisible('.grain-frame', medium_wait)
             .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
             .grainFrame()
@@ -418,8 +418,8 @@ module.exports["Test role sharing"] = function (browser) {
         .loginDevAccount()
         .disableGuidedTour()
         .url(response.value)
-        .waitForElementVisible("button.pick-identity", short_wait)
-        .click("button.pick-identity")
+        .waitForElementVisible("button.reveal-identity-button", short_wait)
+        .click("button.reveal-identity-button")
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedGitWebGrainTitle)
         .grainFrame()
@@ -438,8 +438,8 @@ module.exports["Test role sharing"] = function (browser) {
             .loginDevAccount()
             .disableGuidedTour()
             .url(response.value)
-            .waitForElementVisible("button.pick-identity", short_wait)
-            .click("button.pick-identity")
+            .waitForElementVisible("button.reveal-identity-button", short_wait)
+            .click("button.reveal-identity-button")
             .waitForElementVisible('.grain-frame', medium_wait)
             .assert.containsText('#grainTitle', expectedGitWebGrainTitle)
             .grainFrame()
@@ -457,7 +457,7 @@ module.exports["Test role sharing"] = function (browser) {
     });
 }
 
-module.exports["Test grain identity chooser interstitial"] = function (browser) {
+module.exports["Test grain reveal identity interstitial"] = function (browser) {
   browser
      // Upload app as normal user
     .loginDevAccount()
@@ -473,7 +473,7 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
     .getText('#share-token-text', function(shareLink) {
       browser
         .url(shareLink.value)
-         // Identity picker should not come up on visiting our own link.
+         // Reveal identity option should not come up on visiting our own link.
         .url(shareLink.value)
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
@@ -493,9 +493,9 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
         .execute(function() {
-          return globalGrains.getActive().identityId();
+          return globalGrains.getActive().isIncognito();
         }, [], function (response) {
-          browser.assert.equal(response.value, false);
+          browser.assert.equal(response.value, true);
         })
         .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
@@ -506,8 +506,8 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         .click(".topbar .share > .show-popup")
         .waitForElementVisible('a.open-non-anonymously', short_wait)
         .click("a.open-non-anonymously")
-        .waitForElementVisible("button.pick-identity", short_wait)
-        .click("button.pick-identity")
+        .waitForElementVisible("button.reveal-identity-button", short_wait)
+        .click("button.reveal-identity-button")
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
         .grainFrame()
@@ -515,14 +515,14 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         .assert.containsText('#publish', 'Publish')
         .frame(null)
 
-         // Identity picker should not come up on reloading the page.
+         // Reveal identity option should not come up on reloading the page.
         .url(shareLink.value)
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
         .execute(function() {
-          return globalGrains.getActive().identityId();
+          return globalGrains.getActive().isIncognito();
         }, [], function (response) {
-          browser.assert.equal(!!response.value, true);
+          browser.assert.equal(response.value, false);
         })
         .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
@@ -538,7 +538,7 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         .getText('#share-token-text', function(shareLink) {
           browser
             .url(shareLink.value)
-             // Identity picker should not come up on visiting our own link.
+             // Reveal identity option should not come up on visiting our own link.
             .url(shareLink.value)
             .waitForElementVisible('.grain-frame', medium_wait)
             .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)

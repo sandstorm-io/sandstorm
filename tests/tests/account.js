@@ -27,17 +27,17 @@ var utils = require('../utils'),
 var path = require('path');
 var assetsPath = path.resolve(__dirname, '../assets');
 
-module.exports["Test link identities"] = function (browser) {
+module.exports["Test link credentials"] = function (browser) {
   // Prepend 'A' so that the default handle is valid.
   var devName1 = "A" + crypto.randomBytes(10).toString("hex");
   var devName2 = "A" + crypto.randomBytes(10).toString("hex");
   var devName3 = "A" + crypto.randomBytes(10).toString("hex");
-  var devIdentityId1 = crypto.createHash("sha256").update("dev:" + devName1).digest("hex");
-  var devIdentityId3 = crypto.createHash("sha256").update("dev:" + devName3).digest("hex");
+  var devCredentialId1 = crypto.createHash("sha256").update("dev:" + devName1).digest("hex");
+  var devCredentialId3 = crypto.createHash("sha256").update("dev:" + devName3).digest("hex");
   browser
     .init()
 
-    // Upgrade a demo account to a real account by linking an identity.
+    // Upgrade a demo account to a real account by linking an credential.
     .url(browser.launch_url + "/demo")
     .disableGuidedTour()
     .waitForElementVisible(".demo-startup-modal .start", medium_wait)
@@ -51,128 +51,131 @@ module.exports["Test link identities"] = function (browser) {
     .setValue("input[name=name]", devName1)
     .submitForm(".login-buttons-list form.dev")
     .waitForElementVisible("form.account-profile-editor", short_wait) // confirm profile
+    // Profile defaulted to new credential's name, not "Demo User".
+    .assert.attributeContains("form.account-profile-editor input[name=nameInput]", "value", devName1)
     .submitForm("form.account-profile-editor")
-    .execute(function () { return Accounts.getCurrentIdentityId(); }, [], function (response) {
-      browser.assert.equal(response.value, devIdentityId1)
+    .execute(function () { return Meteor.user().profile.identicon; }, [], function (response) {
+      // The identicon ID is based on the credential ID.
+      browser.assert.equal(response.value, devCredentialId1.slice(0, 32));
     })
     .execute("window.Meteor.logout()")
 
-    // Linking the first identity to a new account should fail.
+    // Linking the first credential to a new account should fail.
     .loginDevAccount(devName2)
     .url(browser.launch_url + "/account")
-    .waitForElementVisible("button.link-new-identity", short_wait)
-    .click("button.link-new-identity")
+    .waitForElementVisible("button.link-new-credential", short_wait)
+    .click("button.link-new-credential")
     .waitForElementVisible(".login-buttons-list button.dev", short_wait)
     .click(".login-buttons-list button.dev")
     .waitForElementVisible("input[name=name]", short_wait)
     .setValue("input[name=name]", devName1)
     .submitForm(".login-buttons-list form.dev")
     .waitForElementPresent(".flash-message.error-message", medium_wait)
-    .assert.containsText(".flash-message.error-message", "Error linking identity")
+    .assert.containsText(".flash-message.error-message", "Error linking credential")
 
-    // Linking a third identity to the second account should succeed.
-    .click("button.link-new-identity")
+    // Linking a third credential to the second account should succeed.
+    .click("button.link-new-credential")
     .waitForElementVisible(".login-buttons-list button.dev", short_wait)
     .click(".login-buttons-list button.dev")
     .waitForElementVisible("input[name=name]", short_wait)
     .setValue("input[name=name]", devName3)
     .submitForm(".login-buttons-list form.dev")
-    .waitForElementVisible(".identities-tabs li[data-identity-id='" + devIdentityId3 + "']",
+    .waitForElementVisible(".credentials-tabs li[data-credential-id='" + devCredentialId3 + "']",
                            medium_wait)
-    .click(".identities-tabs li[data-identity-id='" + devIdentityId3 + "']")
-    .waitForElementPresent("input.toggle-login[data-identity-id='" + devIdentityId3 + "']",
+    .click(".credentials-tabs li[data-credential-id='" + devCredentialId3 + "']")
+    .waitForElementPresent("input.toggle-login[data-credential-id='" + devCredentialId3 + "']",
                            short_wait)
     .assert.elementPresent(
-      "input.toggle-login[data-identity-id='" + devIdentityId3 + "']:checked")
-    // Set the identity to non-login.
-    .click("input.toggle-login[data-identity-id='" + devIdentityId3 + "']")
+      "input.toggle-login[data-credential-id='" + devCredentialId3 + "']:checked")
+    // Set the credential to non-login.
+    .click("input.toggle-login[data-credential-id='" + devCredentialId3 + "']")
     .waitForElementNotPresent(
-      "input.toggle-login[data-identity-id='" + devIdentityId3 + "']:checked", short_wait)
+      "input.toggle-login[data-credential-id='" + devCredentialId3 + "']:checked", short_wait)
     .execute("window.Meteor.logout()")
 
-    // Linking the third identity to the original account should succeed.
+    // Linking the third credential to the original account should succeed.
     //
     // If we try `loginDevAccount(devName1)`, we get stuck on waiting for the applist to appear,
     // because our original user is a demo user without a signup key.
     .execute(function (name) { window.loginDevAccount(name) }, [devName1])
     .waitForElementVisible(".account>button.show-popup", medium_wait)
     .url(browser.launch_url + "/account")
-    .waitForElementVisible("button.link-new-identity", short_wait)
-    .click("button.link-new-identity")
+    .waitForElementVisible("button.link-new-credential", short_wait)
+    .click("button.link-new-credential")
     .waitForElementVisible(".login-buttons-list button.dev", short_wait)
     .click(".login-buttons-list button.dev")
     .waitForElementVisible("input[name=name]", short_wait)
     .setValue("input[name=name]", devName3)
     .submitForm(".login-buttons-list form.dev")
-    .waitForElementVisible(".identities-tabs li[data-identity-id='" + devIdentityId3 + "']",
+    .waitForElementVisible(".credentials-tabs li[data-credential-id='" + devCredentialId3 + "']",
                            medium_wait)
-    .click(".identities-tabs li[data-identity-id='" + devIdentityId3 + "']")
-    // Because it is shared with another account, the identity does not have the ability to login.
+    .click(".credentials-tabs li[data-credential-id='" + devCredentialId3 + "']")
+    // Because it is shared with another account, the credential does not have the ability to login.
     .assert.elementNotPresent(
-      "input.toggle-login[data-identity-id='" + devIdentityId3 + "']:checked")
+      "input.toggle-login[data-credential-id='" + devCredentialId3 + "']:checked")
 
     .end();
 };
 
-module.exports["Test try login with non-login identity"] = function (browser) {
-  var otherIdentityName = crypto.randomBytes(10).toString("hex");
-  var otherIdentityId = crypto.createHash("sha256").update("dev:" + otherIdentityName).digest("hex");
+module.exports["Test try login with non-login credential"] = function (browser) {
+  var otherCredentialName = crypto.randomBytes(10).toString("hex");
+  var otherCredentialId = crypto.createHash("sha256").update("dev:" + otherCredentialName).digest("hex");
   browser
     .loginDevAccount()
     .url(browser.launch_url + "/account")
-    .waitForElementVisible("button.link-new-identity", short_wait)
-    .click("button.link-new-identity")
+    .waitForElementVisible("button.link-new-credential", short_wait)
+    .click("button.link-new-credential")
     .waitForElementVisible(".login-buttons-list button.dev", short_wait)
     .click(".login-buttons-list button.dev")
     .waitForElementVisible("input[name=name]", short_wait)
-    .setValue("input[name=name]", otherIdentityName)
+    .setValue("input[name=name]", otherCredentialName)
     .submitForm(".login-buttons-list form.dev")
-    .waitForElementVisible(".identities-tabs li[data-identity-id='" + otherIdentityId + "']",
+    .waitForElementVisible(".credentials-tabs li[data-credential-id='" + otherCredentialId + "']",
                            medium_wait)
-    .click(".identities-tabs li[data-identity-id='" + otherIdentityId + "']")
-    .waitForElementPresent("input.toggle-login[data-identity-id='" + otherIdentityId + "']",
+    .click(".credentials-tabs li[data-credential-id='" + otherCredentialId + "']")
+    .waitForElementPresent("input.toggle-login[data-credential-id='" + otherCredentialId + "']",
                            short_wait)
     .assert.elementPresent(
-      "input.toggle-login[data-identity-id='" + otherIdentityId + "']:checked")
-    .click("input.toggle-login[data-identity-id='" + otherIdentityId + "']")
+      "input.toggle-login[data-credential-id='" + otherCredentialId + "']:checked")
+    .click("input.toggle-login[data-credential-id='" + otherCredentialId + "']")
     .waitForElementNotPresent(
-      "input.toggle-login[data-identity-id='" + otherIdentityId + "']:checked", short_wait)
+      "input.toggle-login[data-credential-id='" + otherCredentialId + "']:checked", short_wait)
     .execute("window.Meteor.logout()")
 
     .waitForElementVisible(".login-buttons-list button.dev", short_wait)
     .click(".login-buttons-list button.dev")
     .waitForElementVisible("input[name=name]", short_wait)
-    .setValue("input[name=name]", otherIdentityName)
+    .setValue("input[name=name]", otherCredentialName)
     .submitForm(".login-buttons-list form.dev")
-    .waitForElementVisible(".identity-login-interstitial .warning-banner", short_wait)
-    .assert.containsText(".identity-login-interstitial .warning-banner",
-                         "is not a login identity")
+    .waitForElementVisible(".credential-login-interstitial .warning-banner", short_wait)
+    .assert.containsText(".credential-login-interstitial .warning-banner",
+                         "is not a login credential")
     .end();
 }
 
-module.exports["Test link identity from unused account"] = function (browser) {
+module.exports["Test link credential from unused account"] = function (browser) {
   browser
-    .loginDevAccount(null, null, function (firstIdentityName) {
-      var firstIdentityId = crypto.createHash("sha256")
-          .update("dev:" + firstIdentityName).digest("hex");
+    .loginDevAccount(null, null, function (firstCredentialName) {
+      var firstCredentialId = crypto.createHash("sha256")
+          .update("dev:" + firstCredentialName).digest("hex");
       browser
         .execute("window.Meteor.logout()")
         .loginDevAccount()
         .url(browser.launch_url + "/account")
-        .waitForElementVisible("button.link-new-identity", short_wait)
-        .click("button.link-new-identity")
+        .waitForElementVisible("button.link-new-credential", short_wait)
+        .click("button.link-new-credential")
         .waitForElementVisible(".login-buttons-list button.dev", short_wait)
         .click(".login-buttons-list button.dev")
         .waitForElementVisible("input[name=name]", short_wait)
-        .setValue("input[name=name]", firstIdentityName)
+        .setValue("input[name=name]", firstCredentialName)
         .submitForm(".login-buttons-list form.dev")
-        .waitForElementVisible(".identities-tabs li[data-identity-id='" + firstIdentityId + "']",
+        .waitForElementVisible(".credentials-tabs li[data-credential-id='" + firstCredentialId + "']",
                                medium_wait)
-        .click(".identities-tabs li[data-identity-id='" + firstIdentityId + "']")
-        .waitForElementPresent("input.toggle-login[data-identity-id='" + firstIdentityId + "']",
+        .click(".credentials-tabs li[data-credential-id='" + firstCredentialId + "']")
+        .waitForElementPresent("input.toggle-login[data-credential-id='" + firstCredentialId + "']",
                                short_wait)
         .assert.elementPresent(
-          "input.toggle-login[data-identity-id='" + firstIdentityId + "']:checked")
+          "input.toggle-login[data-credential-id='" + firstCredentialId + "']:checked")
         .end()
     });
 }

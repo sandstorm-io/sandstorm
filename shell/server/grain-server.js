@@ -308,6 +308,7 @@ Meteor.methods({
             name: String,
             intrinsicName: Match.Optional(String),
           }),
+          intrinsicNames: [Object]
         },
       ]);
       check(message, String);
@@ -334,8 +335,8 @@ Meteor.methods({
       const fromEmail = globalDb.getReturnAddressWithDisplayName(accountId);
       const replyTo = globalDb.getPrimaryEmail(accountId);
       contacts.forEach(function (contact) {
-        if (contact.isDefault && contact.profile.service === "email") {
-          const emailAddress = contact.profile.intrinsicName;
+        if (contact.isDefault) {
+          const emailAddress = contact.profile.name;
           const result = SandstormPermissions.createNewApiToken(
             globalDb, { accountId: accountId }, grainId,
             "email invitation for " + emailAddress,

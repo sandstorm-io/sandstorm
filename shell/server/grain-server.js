@@ -95,6 +95,7 @@ Meteor.publish("tokenInfo", function (token, isStandalone) {
   }, {
     fields: {
       grainId: 1,
+      accountId: 1,
       owner: 1,
       revoked: 1,
     },

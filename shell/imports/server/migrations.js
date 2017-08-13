@@ -921,7 +921,7 @@ function onePersonaPerAccount(db, backend) {
         identityToAccount[identity.id] = [userInfo];
       } else {
         const list = identityToAccount[identity.id];
-        if (list.length == 1) needSort.add(list);
+        if (list.length == 1) needSort.push(list);
         list.push(userInfo);
       }
     }

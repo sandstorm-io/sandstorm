@@ -1575,6 +1575,7 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
     margin: auto;
     text-align: center;
     width: 400px;
+    max-width: 100%;
     background-color: white;
     >.credential-card {
       width: 100%;
@@ -1623,6 +1624,9 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
   display: flex;
   align-items: center;
   flex-direction: column;
+  width: 400px;
+  max-width: 100%;
+  background-color: white;
   button.sign-in {
     border: none;
     border-top: 1px solid #ddd;

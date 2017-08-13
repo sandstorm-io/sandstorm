@@ -121,10 +121,18 @@ Meteor.publish("tokenInfo", function (token, isStandalone) {
         let account = Meteor.users.findOne({_id: apiToken.owner.user.accountId});
         let metadata = apiToken.owner.user.denormalizedGrainMetadata;
         if (account && metadata) {
-          // TODO(now): We used to SandstormDb.fillInLoginId() on the user record, but why? Is it
-          //   needed?
+          account.credentials =
+              Meteor.users.find({ _id: { $in: account.loginCredentials.map(cred => cred.id) } })
+                  .map(credential => {
+            return {
+              serviceName: SandstormDb.getServiceName(credential),
+              intrinsicName: SandstormDb.getIntrinsicName(credential, true),
+              loginId: SandstormDb.getLoginId(credential)
+            }
+          });
+
           this.added("tokenInfo", token, {
-            accountOwner: _.pick(account, "_id", "profile"),
+            accountOwner: _.pick(account, "_id", "profile", "credentials"),
             grainId: grainId,
             grainMetadata: metadata,
           });

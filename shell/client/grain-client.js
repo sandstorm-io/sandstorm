@@ -588,16 +588,6 @@ Template.grainInMyTrash.events({
   },
 });
 
-Template.wrongUser.helpers({
-  unclickedMessage: function () {
-    if (Meteor.userId()) {
-      return "Click to sign out of your current session and sign in as the above user.";
-    } else {
-      return "Click to sign in.";
-    }
-  },
-});
-
 Template.requestAccess.onCreated(function () {
   this._status = new ReactiveVar({ showButton: true });
   this._grain = this.data.grainView;

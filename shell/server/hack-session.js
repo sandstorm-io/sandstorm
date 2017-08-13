@@ -377,7 +377,7 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
 
     const result = {};
     if (email) {
-      result.address = email;
+      result.address = email.email;
     }
 
     if (user.profile.name) {

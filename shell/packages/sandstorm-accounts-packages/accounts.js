@@ -30,9 +30,9 @@ if (Meteor.isServer) {
 
 Accounts.loginServices = {};
 // A dictionary of login services. At the moment, this is mainly used for rendering login UI
-// components. Each key in the dictionary is the name of the service, e.g. "github", exactly as it
-// would appear in the `Users.profile.service` field in the Sandstorm database. Each value in the
-// dictionary is an object with the following fields:
+// components. Each key in the dictionary is the name of the service, e.g. "github", exactly as
+// returned by SandstormDb.getServiceName(credential). Each value in the dictionary is an object
+// with the following fields:
 //
 //   isEnabled: A function of no arguments. Returns a boolean indicating whether this service is
 //              currently configured to be active.

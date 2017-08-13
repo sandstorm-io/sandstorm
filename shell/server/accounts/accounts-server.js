@@ -102,10 +102,9 @@ Accounts.onCreateUser(function (options, user) {
   if (user.services && user.services.dev) {
     check(user.services.dev, { name: String, isAdmin: Boolean, hasCompletedSignup: Boolean });
     serviceUserId = user.services.dev.name;
-    user.profile.service = "dev";
   } else if ("expires" in user) {
     serviceUserId = user._id;
-    user.profile.service = "demo";
+    user.services = { demo: {} };
   } else if (user.services && user.services.email) {
     check(user.services.email, {
       email: String,
@@ -124,26 +123,21 @@ Accounts.onCreateUser(function (options, user) {
       ],
     });
     serviceUserId = user.services.email.email;
-    user.profile.service = "email";
   } else if (user.services && "google" in user.services) {
     serviceUserId = user.services.google.id;
-    user.profile.service = "google";
   } else if (user.services && "github" in user.services) {
     serviceUserId = user.services.github.id;
-    user.profile.service = "github";
   } else if (user.services && "ldap" in user.services) {
     serviceUserId = user.services.ldap.id;
-    user.profile.service = "ldap";
   } else if (user.services && "saml" in user.services) {
     serviceUserId = user.services.saml.id;
-    user.profile.service = "saml";
   } else {
     throw new Meteor.Error(400, "user does not have a recognized login provider: " +
                            JSON.stringify(user));
   }
 
   user._id = Crypto.createHash("sha256")
-    .update(user.profile.service + ":" + serviceUserId).digest("hex");
+    .update(SandstormDb.getServiceName(user) + ":" + serviceUserId).digest("hex");
 
   return user;
 });

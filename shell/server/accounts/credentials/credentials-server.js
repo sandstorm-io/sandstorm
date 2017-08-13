@@ -95,14 +95,17 @@ const linkCredentialToAccountInternal = function (db, backend, credentialId, acc
                         { $unset: { expires: 1 },
                           $set: { upgradedFromDemo: Date.now() }, });
 
+    // The account's existing profile is just "Demo User". Import the new credential's profile.
+    SandstormDb.fillInProfileDefaults(credentialUser, credentialUser.profile);
+
     // Mark the demo credential as nonlogin. It'd be nicer if the credential started out as nonlogin,
     // but to get that to work we would need to adjust the account creation and first login logic.
     Meteor.users.update({ _id: accountUser._id,
                           "loginCredentials.id": demoCredentialId,
                           "nonloginCredentials.id": { $not: { $eq: demoCredentialId } }, },
                         { $pull: { loginCredentials: { id: demoCredentialId } },
-                          $push: { nonloginCredentials: { id: demoCredentialId } }, });
-
+                          $push: { nonloginCredentials: { id: demoCredentialId } },
+                          $set: { profile: credentialUser.profile } });
   }
 };
 

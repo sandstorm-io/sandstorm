@@ -1120,8 +1120,6 @@ function onePersonaPerAccount(db, backend) {
   });
 }
 
-// TODO(now): Delete demo credentials (including unexpired ones).
-
 function onePersonaPerAccountPostCleanup(db, backend) {
   // Drop obsolete indices.
   db.collections.apiTokens.ensureDroppedIndex({ "owner.user.identityId": 1 });
@@ -1154,6 +1152,10 @@ function onePersonaPerAccountPostCleanup(db, backend) {
       { $unset: { "requirements.permissionsHeld.identityId": 1 } },
       { multi: true });
 }
+
+// TODO(cleanup): Delete profiles from credentials. (Make sure nothing depends on them.)
+// TODO(cleanup): Delete all demo credentials since they aren't really needed anymore. Remove them
+//   from associated account nonloginCredentials.
 
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;

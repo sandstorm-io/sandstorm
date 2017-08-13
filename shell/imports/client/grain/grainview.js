@@ -82,11 +82,9 @@ class GrainView {
       const disallowGuests = globalDb.getOrganizationDisallowGuests();
       if (disallowGuests) {
         // If guests are disallowed, we can skip the interstitial.
-        // TODO(now): Maybe this should be based instead on both the user and the grain owner being
-        //   in the organization, and the "reveal org identities to each other" setting being
+        // TODO(someday): Maybe this should be based instead on both the user and the grain owner
+        //   being in the organization, and the "reveal org identities to each other" setting being
         //   enabled?
-        // TODO(now): On a similar note, should we automatically reveal identity if the user is in
-        //   the grain owner's contacts?
         this.revealIdentity();
       }
     } else {
@@ -475,7 +473,7 @@ class GrainView {
       }
 
       // Don't show interstitial if incognito is not an option.
-      // TODO(now): Maybe don't ever show it if the user and grain owner are both in the org,
+      // TODO(someday): Maybe don't ever show it if the user and grain owner are both in the org,
       //   particuarly if all org identities are revealed to each other...
       if (globalDb.getOrganizationDisallowGuests()) {
         return null;

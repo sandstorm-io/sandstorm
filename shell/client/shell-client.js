@@ -34,9 +34,6 @@ globalSubs = [
 Tracker.autorun(function () {
   const me = Meteor.user();
   if (me) {
-    // TODO(now): Verify that we don't have to explicitly subscribe to the account's profile;
-    //   should already be subscribed implicitly.
-
     if (me.type === "credential") {
       Meteor.subscribe("credentialDetails", me._id);
     }

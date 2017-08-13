@@ -61,6 +61,7 @@ Meteor.methods({
     // TODO(soon): does the grain need to be offline?
 
     const grainInfo = _.pick(grain, "appId", "appVersion", "title");
+    grainInfo.ownerIdentityId = grain.identityId;
 
     FileTokens.insert(token);
     waitPromise(globalBackend.cap().backupGrain(token._id, this.userId, grainId, grainInfo));
@@ -150,14 +151,19 @@ Meteor.methods({
                                ", Old version: " + appVersion);
       }
 
+      console.log(grainInfo);
+
       Grains.insert({
         _id: grainId,
         packageId: packageId,
         appId: grainInfo.appId,
         appVersion: appVersion,
         userId: this.userId,
-        // TODO(now): Save identity ID mapping to backup metadata and use it on restore.
-        identityId: SandstormDb.generateIdentityId(),
+        // For older backups that don't have the owner's identity ID, use the owner's identicon
+        // ID which is based on old-style global identity IDs.
+        identityId: grainInfo.ownerIdentityId ||
+            (Meteor.user().profile || {}).identicon ||
+            SandstormDb.generateIdentityId(),
         title: grainInfo.title,
         private: true,
         size: 0,

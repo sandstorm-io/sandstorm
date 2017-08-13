@@ -134,9 +134,13 @@ const accountMatchesNeedle = function (needle, account) {
   const profile = account && account.profile;
   if (profile) {
     if (profile.handle.toLowerCase().indexOf(needle) !== -1) return true;
-    if (profile.intrinsicName.toLowerCase().indexOf(needle) !== -1) return true;
     if (profile.name.toLowerCase().indexOf(needle) !== -1) return true;
-    if (profile.service.toLowerCase().indexOf(needle) !== -1) return true;
+  }
+
+  const intrinsicNames = (account && account.intrinsicNames) || [];
+  for (let i = 0; i < intrinsicNames.length; i++) {
+    if (intrinsicNames[i].service.toLowerCase().indexOf(needle) !== -1) return true;
+    if (intrinsicNames[i].name.toLowerCase().indexOf(needle) !== -1) return true;
   }
 
   return false;
@@ -144,7 +148,7 @@ const accountMatchesNeedle = function (needle, account) {
 
 const packageMatchesNeedle = function (needle, pkg) {
   const title = pkg && pkg.manifest && pkg.manifest.appTitle && pkg.manifest.appTitle.defaultText;
-  return title.toLowerCase().indexOf(needle) !== -1;
+  return title && title.toLowerCase().indexOf(needle) !== -1;
 };
 
 const matchesCap = function (needle, cap) {
@@ -163,11 +167,11 @@ const matchesCap = function (needle, cap) {
     if (accountMatchesNeedle(needle, grain.ownerAccount)) return true;
     if (packageMatchesNeedle(needle, grain.pkg)) return true;
     if (grain._id.toLowerCase().lastIndexOf(needle, 0) !== -1) return true;
-    if (grain.pkg.appId.toLowerCase().lastIndexOf(needle, 0) !== -1) return true;
+    if (grain.pkg && grain.pkg.appId.toLowerCase().lastIndexOf(needle, 0) !== -1) return true;
   }
 
   if (cap.introducer.account) {
-    if (cap.introducer.account.userId.toLowerCase().indexOf(needle) !== -1) return true;
+    if (cap.introducer.account._id.toLowerCase().indexOf(needle) !== -1) return true;
   }
 
   return false;

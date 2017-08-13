@@ -841,12 +841,20 @@ function notifyIdentityChanges(db, backend) {
   });
 }
 
+Mongo.Collection.prototype.ensureDroppedIndex = function () {
+  try {
+    this._dropIndex.apply(this, arguments);
+  } catch (err) {
+    // ignore (probably, index didn't exist)
+  }
+}
+
 function onePersonaPerAccountPreCleanup(db, backend) {
   // Removes some already-obsolete data from the database before attempting the
   // one-persona-per-account migration.
 
   // Remove long-obsolete index.
-  Meteor.users._dropIndex({ "identities.id": 1 });
+  Meteor.users.ensureDroppedIndex({ "identities.id": 1 });
 
   // Remove `stashedOldUser`, which is long-obsolete.
   Meteor.users.update({ stashedOldUser: { $exists: true } },
@@ -1116,10 +1124,10 @@ function onePersonaPerAccount(db, backend) {
 
 function onePersonaPerAccountPostCleanup(db, backend) {
   // Drop obsolete indices.
-  db.collections.apiTokens._dropIndex({ "owner.user.identityId": 1 });
-  db.collections.activitySubscriptions._dropIndex({ "identityId": 1 });
-  Meteor.users._dropIndex({ "loginIdentities.id": 1 });
-  Meteor.users._dropIndex({ "nonloginIdentities.id": 1 });
+  db.collections.apiTokens.ensureDroppedIndex({ "owner.user.identityId": 1 });
+  db.collections.activitySubscriptions.ensureDroppedIndex({ "identityId": 1 });
+  Meteor.users.ensureDroppedIndex({ "loginIdentities.id": 1 });
+  Meteor.users.ensureDroppedIndex({ "nonloginIdentities.id": 1 });
 
   Meteor.users.update({ type: "account" },
       { $rename: { loginIdentities: "loginCredentials",

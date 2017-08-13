@@ -59,6 +59,7 @@ if (Meteor.isServer) {
 
     return Meteor.users.find({ _id: credentialId },
       { fields: {
+        type: 1,
         unverifiedEmail: 1,
         expires: 1,
         createdAt: 1,
@@ -345,8 +346,15 @@ SandstormDb.prototype.findAccountsByEmail = function (email) {
 
 SandstormDb.fillInPictureUrl = function (user) {
   const staticHost = httpProtocol + "//" + makeWildcardHost("static");
-  user.profile.pictureUrl = staticAssetUrl(user.profile.picture, staticHost) ||
-    makeIdenticon(user.profile.identicon);
+  let url = staticAssetUrl(user.profile.picture, staticHost);
+  if (!url && user.profile && user.profile.identicon) {
+    url = makeIdenticon(user.profile.identicon);
+  }
+  if (!url && user.type === "credential") {
+    url = makeIdenticon(user._id);
+  }
+
+  user.profile.pictureUrl = url;
 };
 
 SandstormDb.getUserCredentialIds = function (user) {

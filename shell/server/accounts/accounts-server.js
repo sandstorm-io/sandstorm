@@ -26,9 +26,16 @@ const ValidHandle = Match.Where(function (handle) {
 });
 
 Accounts.onCreateUser(function (options, user) {
-  if (user.loginCredentials) {
+  if (!user.type) {
+    if (user.loginCredentials) throw new Error("please set user.type");
+
+    user.type = "credential";
+  }
+
+  if (user.type === "account") {
     // it's an account
     check(user, { _id: String,
+                  type: String,
                   createdAt: Date,
                   isAdmin: Match.Optional(Boolean),
                   hasCompletedSignup: Match.Optional(Boolean),
@@ -49,6 +56,10 @@ Accounts.onCreateUser(function (options, user) {
         globalDb.sendReferralProgramNotification(user._id);
       }
     }
+
+    if (!options.profile) throw new Error("missing profile");
+
+    user.profile = options.profile;
 
     globalDb.preinstallAppsForUser(user._id);
 

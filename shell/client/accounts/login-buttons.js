@@ -82,7 +82,7 @@ function isIncognito(grains) {
 
 Template.accountButtons.helpers({
   profileData() {
-    if (Meteor.user() && !Meteor.user().loginCredentials && !Meteor.user().profile) {
+    if (!Meteor.user() || (!Meteor.user().loginCredentials && !Meteor.user().profile)) {
       // Need to wait for resume token to complete login. For some reason, `Meteor.loggingIn()`
       // is still false in this case.
       return { loading: true };

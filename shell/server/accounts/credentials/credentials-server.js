@@ -141,7 +141,7 @@ Meteor.methods({
     // Creates a new account for the currently-logged-in credential.
 
     const user = Meteor.user();
-    if (!(user && user.profile)) {
+    if (user.type !== "credential") {
       throw new Meteor.Error(403, "Must be logged in as a credential in order to create an account.");
     }
 
@@ -156,6 +156,7 @@ Meteor.methods({
     }
 
     const newUser = {
+      type: "account",
       loginCredentials: [{ id: user._id }],
       nonloginCredentials: [],
     };
@@ -176,7 +177,8 @@ Meteor.methods({
       }
     }
 
-    const options = {};
+    SandstormDb.fillInProfileDefaults(user, user.profile);
+    const options = { profile: user.profile };
 
     // This will throw an error if the credential has been added as a login credential to some
     // other account while we were executing the body of this method.

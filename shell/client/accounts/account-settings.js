@@ -71,6 +71,10 @@ Template.sandstormAccountSettings.helpers({
     return _.chain(SandstormDb.getUserCredentialIds(Meteor.user()))
       .map((id) => Meteor.users.findOne({ _id: id }))
       .filter((credential) => !!credential)
+      // Demo credentials don't need to be shown at all anymore.
+      // TODO(cleanup): Remove demo credentials altogether when demo finishes, or maybe never
+      //   create them in the first place. Be sure to wipe the database of past demo credentials.
+      .filter((credential) => !credential.services.demo)
       .map((credential) => {
         credential.intrinsicName = SandstormDb.getIntrinsicName(credential, true);
         credential.serviceName = SandstormDb.getServiceName(credential);

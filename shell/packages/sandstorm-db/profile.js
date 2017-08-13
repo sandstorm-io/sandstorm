@@ -65,6 +65,7 @@ if (Meteor.isServer) {
         createdAt: 1,
 
         "services.dev.name": 1,
+        "services.demo": 1,
 
         "services.google.id": 1,
         "services.google.email": 1,

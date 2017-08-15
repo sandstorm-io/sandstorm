@@ -1,10 +1,10 @@
 <template name="sandstormGrainListPage">
   {{setDocumentTitle}}
-  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar }}Grains{{/sandstormTopbarItem}}
+  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar }}{{_ "grains-title"}}{{/sandstormTopbarItem}}
   <div class="grain-list">
     <h1>
       <div>
-        Grains <button title="What is a grain?" class="question-mark"></button>
+        {{_ "grains-title"}} <button title="What is a grain?" class="question-mark"></button>
       </div>
       <form class="standard-form">
         <div class="button-row">

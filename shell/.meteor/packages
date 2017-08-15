@@ -45,3 +45,4 @@ service-configuration@1.0.11
 github-oauth@1.2.0
 google-oauth@1.2.4
 dynamic-import@0.1.1
+tap:i18n

@@ -23,7 +23,7 @@
           {{else}}
             {{#if notFound}}
               <p class="grain-not-found grain-interstitial">
-                No grain found with ID "{{grainId}}".
+                {{_ "grains.notFound" id="{{grainId}}"}}
               </p>
             {{else}}
                <pre>{{error}}</pre>
@@ -47,10 +47,10 @@
     {{else}}
     {{#if interstitial.chooseIdentity}}
       <div class="grain-interstitial">
-        <p>With which of your identities would you like to open this grain?</p>
+        <p>{{_ "grains.openWithWhichIdentity"}}</p>
         {{> identityPicker identityPickerData}}
         {{#if interstitial.showIncognito}}
-        <button class="incognito-button" data-token="{{token}}">Open in Incognito Mode</button>
+        <button class="incognito-button" data-token="{{token}}">{{_ "grains.openInIncognitoMode"}}</button>
         {{/if}}
       </div>
     {{else}}
@@ -65,16 +65,16 @@
 <template name="grainInMyTrash">
   <div class="grain-interstitial">
     <p>
-      This grain is in your trash. You cannot access it unless you restore it to your main list.
+      {{_ "grains.inTrash"}}
     </p>
-    <button class="restore-from-trash">Restore to main list</button>
+    <button class="restore-from-trash">{{_ "grains.restoreToMainList"}}</button>
   </div>
 </template>
 
 <template name="grainInOwnersTrash">
   <div class="grain-interstitial">
     <p>
-      You can no longer access this grain because its owner has moved it to the trash.
+      {{_ "grains.removedByOwner"}}
     </p>
   </div>
 </template>
@@ -82,7 +82,7 @@
 <template name="grainOwnerSuspended">
   <div class="grain-interstitial">
     <p>
-      You can no longer access this grain because its owner's account has been suspended.
+      {{_ "grains.ownerSuspended"}}
     </p>
   </div>
 </template>
@@ -91,7 +91,7 @@
 <template name="wrongIdentity">
   <div class="grain-interstitial">
     <p>
-      Access through this URL is restricted to the identity:
+      {{_ "grains.restricted"}}
     </p>
     {{> identityCardSignInButton identity=recipient unclickedMessage=unclickedMessage}}
   </div>
@@ -99,33 +99,33 @@
 
 <template name="requestAccess">
   <div class="request-access grain-interstitial">
-  <p>You do not have permission to access this grain.</p>
+  <p>{{_ "grains.permissionDenied"}}</p>
   {{#if currentUser}}
     {{#with status}}
       {{#if showButton}}
-        <button class="request-access" title="Request access">
-          Request Access
+        <button class="request-access" title="{{_ "grains.requestAccessHint"}}">
+          {{_ "grains.requestAccess"}}
         </button>
       {{/if}}
       {{#if chooseIdentity}}
-        <p>Requesting access will reveal your identity to the grain owner.</p>
+        <p>{{_ "grains.warnIdentityRevealing"}}</p>
         <p> {{chooseIdentityText}} </p>
         {{> identityPicker identityPickerData}}
       {{/if}}
       {{#if waiting}}
-         <p>Sending your request...</p>
+        <p>{{_ "grains.sendRequest"}}</p>
       {{/if}}
       {{#if success}}
         <p>
-          Your request has been sent. You will receive an email if your request is approved.
+          {{_ "grains.waitForApproving"}}
         </p>
       {{/if}}
       {{#with error}}
-        <p>Your request failed because: {{.}}</p>
+        <p>{{_ "grains.requestFailed" .}}</p>
       {{/with}}
     {{/with}}
   {{else}}
-    Please sign in to request access.
+    {{_ "grains.signInPlease"}}
   {{/if}}
   </div>
 </template>
@@ -304,7 +304,7 @@
       </table>
     {{/if}}
     {{#unless transitiveShares.grainOwnedShares.empty}}
-      <h5>{{_ "grains-title"}}</h5>
+      <h5>{{_ "grains.title"}}</h5>
       <table class="grains">
         {{#each transitiveShares.grainOwnedShares}}
           <tr>

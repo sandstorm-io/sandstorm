@@ -1,3 +1,21 @@
 {
-  "grains-title": "Grains"
+  "grains": {
+    "title": "Grains",
+    "notFound": "No grain found with ID __id__.",
+    "openWithWhichIdentity": "With which of your identities would you like to open this grains?",
+    "openInIncognitoMode": "Open in Incognito Mode",
+    "inTrash": "This grain is in your trash. You cannot access it unless you restore it to your main list.",
+    "restoreToMainList": "Restore to main list",
+    "removedByOwner": "You can no longer access this grain because its owner has moved it to the trash.",
+    "ownerSuspended": "You can no longer access this grain because its owner's account has been suspended.",
+    "restricted": "Access through this URL is restricted to the identity:",
+    "permissionDenied": "You do not have permission to access this grain.",
+    "requestAccessHint": "Request access",
+    "requestAccess": "Request Access",
+    "warnIdentityRevealing": "Requesting access will reveal your identity to the grain owner.",
+    "sendRequest": "Sending your request...",
+    "waitForApproving": "Your request has been sent. You will receive an email if your request is approved.",
+    "requestFailed": "Your request failed because: %s",
+    "signInPlease": "Please sign in to request access."
+  }
 }

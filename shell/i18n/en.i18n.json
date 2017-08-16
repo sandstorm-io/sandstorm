@@ -58,6 +58,21 @@
       "revoke": "Revoke"
     },
     "shareAccessHint": "Share access to this grain",
-    "shareAccess": "Share access"
+    "shareAccess": "Share access",
+    "whoHasAccessPopup": {
+      "title": "Who has access",
+      "noLoggedInUsers": "No logged-in users have visited your links yet.",
+      "nobody": "You have granted access to nobody.",
+      "addedBy": "added by",
+      "revokeHint": "Revoke",
+      "revoke": "Revoke",
+      "hasCustomPermissions": "[has custom permissions]"
+    }
+  },
+  "people": {
+    "title": "People"
+  },
+  "sharingLinks": {
+    "title": "Sharing Links"
   }
 }

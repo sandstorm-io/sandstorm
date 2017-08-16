@@ -131,11 +131,11 @@
 </template>
 
 <template name="invalidToken">
-   <pre> Invalid token: {{token}} </pre>
+   <pre> {{_ "grains.invalidToken" token}} </pre>
 </template>
 
 <template name="revokedShareLink">
-  <p class="grain-interstitial">Sorry, this link has been revoked.</p>
+  <p class="grain-interstitial">{{_ "grains.linkRevoked"}}</p>
 </template>
 
 <template name="grainTitle">
@@ -145,10 +145,10 @@
         <div class="main-title">{{title}}</div>
         <div class="subtitle">
           {{#with was}}
-            was: {{.}}
+            {{_ "grains.was" .}}
           {{/with}}
           {{#with renamedFrom}}
-            renamed from: {{.}}
+            {{_ "grains.renamedFrom" .}}
           {{/with}}
         </div>
       {{else}}
@@ -158,51 +158,51 @@
   {{/with}}
 </template>
 <template name="grainDeleteButton">
-  <button class="grain-button" title="Move to trash" id="deleteGrain">Move to trash</button>
+  <button class="grain-button" title="{{_ "grains.moveToTrashHint"}}" id="deleteGrain">{{_ "grains.moveToTrash"}}</button>
 </template>
 <template name="grainDebugLogButton">
-  <button class="grain-button" title="Show Debug Log" id="openDebugLog">Log</button>
+  <button class="grain-button" title="{{_ "grains.showLogHint"}}" id="openDebugLog">{{_ "grains.showLog"}}</button>
 </template>
 <template name="grainBackupButton">
-  <button class="grain-button" title="Download Backup" id="backupGrain">Backup</button>
+  <button class="grain-button" title="{{_ "grains.backupHint"}}" id="backupGrain">{{_ "grains.backup"}}</button>
 </template>
 
 <template name="grainBackupPopup">
-  <h4>Download Backup</h4>
+  <h4>{{_ "grains.backupPopup.title"}}</h4>
   {{#if state.showWarning }}
     <p class="warning-intro">
-      Warning! Restoring this backup might not work how you expect it to.
+      {{_ "grains.backupPopup.warning"}}
     </p>
     <p class="warning-body">
       {{ state.showWarning }}
     </p>
   {{/if}}
   {{#if state.processing}}
-    <p> Preparing backup... </p>
+    <p> {{_ "grains.backupPopup.processing"}} </p>
   {{/if}}
   {{#if state.error}}
-    <p class="error">Error: {{ state.error }}</p>
+    <p class="error">{{_ "grains.backupPopup.error" state.error}}</p>
   {{/if}}
 
   <div class="button-row">
-    <button name="cancel" title="cancel">Cancel</button>
+    <button name="cancel" title="{{_ "grains.backupPopup.cancelHint"}}">{{_ "grains.backupPopup.cancel"}}</button>
     {{#if state.processing}}
       <div class="spinner"></div>
     {{/if}}
 
     {{#if state.showWarning}}
-      <button name="confirm" title="download backup">Download backup</button>
+      <button name="confirm" title="{{_ "grains.backupPopup.confirmHint"}}">{{_ "grains.backupPopup.confirm"}}</button>
     {{/if}}
   </div>
 </template>
 
 <template name="grainRestartButton">
-  <button class="grain-button" title="Restart App" id="restartGrain">Restart</button>
+  <button class="grain-button" title="{{_ "grains.restartHint"}}" id="restartGrain">{{_ "grains.restart"}}</button>
 </template>
 
 <template name="grainApiTokenButton">
-  <button class="show-popup" title="Get webkey">
-    Get&nbsp;Webkey
+  <button class="show-popup" title="{{_ "grains.getWebkeyHint"}}">
+    {{{_ "grains.getWebkey"}}}
   </button>
 </template>
 

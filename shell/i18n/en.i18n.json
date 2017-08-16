@@ -16,6 +16,30 @@
     "sendRequest": "Sending your request...",
     "waitForApproving": "Your request has been sent. You will receive an email if your request is approved.",
     "requestFailed": "Your request failed because: %s",
-    "signInPlease": "Please sign in to request access."
+    "signInPlease": "Please sign in to request access.",
+    "invalidToken": "Invalid token: %s",
+    "linkRevoked": "Sorry, this link has been revoked.",
+    "was": "was: %s",
+    "renamedFrom": "renamed from: %s",
+    "moveToTrashHint": "Move to trash",
+    "moveToTrash": "Move to trash",
+    "showLogHint": "Show Debug Log",
+    "showLog": "Log",
+    "backupHint": "Download Backup",
+    "backup": "Backup",
+    "backupPopup": {
+      "title": "Download Backup",
+      "warning": "Warning! Restoring this backup might not work how you expect it to.",
+      "processing": "Preparing backup...",
+      "error": "Error: %s",
+      "cancelHint": "cancel",
+      "cancel": "Cancel",
+      "confirmHint": "download backup",
+      "confirm": "Download backup"
+    },
+    "restartHint": "Restart App",
+    "restart": "Restart",
+    "getWebkeyHint": "Get webkey",
+    "getWebkey": "Get&nbsp;Webkey"
   }
 }

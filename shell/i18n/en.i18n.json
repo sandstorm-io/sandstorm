@@ -67,6 +67,16 @@
       "revokeHint": "Revoke",
       "revoke": "Revoke",
       "hasCustomPermissions": "[has custom permissions]"
+    },
+    "selectRoleHint": "select a role",
+    "emailInviteTab": {
+      "demoModeAlert": "Sharing emails cannot be sent while in demo mode. Create an account to send sharing emails, or get a shareable link instead.",
+      "personalMessagePlaceholder": "Type a personal message (optional)...",
+      "send": "Send",
+      "sending": "Sending...",
+      "success": "Successfully sent.",
+      "reset": "+ Send more invites",
+      "startOver": "<< Start over"
     }
   },
   "people": {

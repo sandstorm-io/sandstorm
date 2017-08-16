@@ -375,7 +375,7 @@
 <template name="selectRole">
   {{#with viewInfo}}
   {{#if roles}}
-  <select class="share-token-role" title="select a role" disabled={{../disabled}}>
+  <select class="share-token-role" title="{{_ "grains.selectRoleHint"}}" disabled={{../disabled}}>
     {{#each roles}}
     <option title={{title.defaultText}}
             data-obsolete={{obsolete}}
@@ -394,8 +394,7 @@
   <form class="email-invite">
     {{#if isDemoUser}}
       <p class="demo-mode-alert">
-        Sharing emails cannot be sent while in demo mode.
-        Create an account to send sharing emails, or get a shareable link instead.
+        {{_ "grains.emailInviteTab.demoModeAlert"}}
       </p>
     {{/if}}
     <p>
@@ -406,7 +405,7 @@
     </p>
     <div>
       <textarea class="personal-message" disabled={{isDemoUser}}
-                placeholder="Type a personal message (optional)..."></textarea>
+                placeholder="{{_ "grains.emailInviteTab.personalMessagePlaceholder"}}"></textarea>
     </div>
     {{#if completionState.clear}}
     <div class="button-container" role="presentation">
@@ -415,21 +414,21 @@
               part of the message to be hidden in the main view. --}}
         <p class="invitation-explanation" title="{{.}}">{{.}}</p>
       {{/with}}
-      <button disabled={{isDemoUser}}>Send</button>
+      <button disabled={{isDemoUser}}>{{_ "grains.emailInviteTab.send"}}</button>
     </div>
     {{/if}}
   </form>
   {{#with completionState}}
     {{#if success}}
-     <p>Successfully sent.</p>
-     <p><button class="reset-invite">+ Send more invites</button></p>
+     <p>{{_ "grains.emailInviteTab.success"}}</p>
+     <p><button class="reset-invite">{{_ "grains.emailInviteTab.reset"}}</button></p>
     {{/if}}
     {{#if pending}}
-      <p>Sending...</p>
+      <p>{{_ "grains.emailInviteTab.sending"}}</p>
     {{/if}}
     {{#if error}}
       <p> {{error}} </p>
-      <p><button class="start-over-invite">&lt;&lt; Start over</button></p>
+      <p><button class="start-over-invite">{{_ "grains.emailInviteTab.startOver"}}</button></p>
     {{/if}}
   {{/with}}
 </template>

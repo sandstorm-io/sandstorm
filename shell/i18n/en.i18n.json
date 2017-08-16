@@ -40,6 +40,24 @@
     "restartHint": "Restart App",
     "restart": "Restart",
     "getWebkeyHint": "Get webkey",
-    "getWebkey": "Get&nbsp;Webkey"
+    "getWebkey": "Get&nbsp;Webkey",
+    "apiTokenPopup": {
+      "title": "Webkeys",
+      "processing": "Generating...",
+      "cancel": "Cancel",
+      "copyForExternalApp": "Copy this webkey and give it to the external app:",
+      "back": "Go back",
+      "description": "A webkey allows you to connect an external app (e.g. a mobile app) to this app.",
+      "labelTitle": "Label:",
+      "labelPlaceholder": "e.g. 'Android app'",
+      "roleTitle": "Role:",
+      "permissionTitle": "all access",
+      "create": "Create",
+      "webkeyListTitle": "Your existing webkeys:",
+      "revokeHint": "Revoke",
+      "revoke": "Revoke"
+    },
+    "shareAccessHint": "Share access to this grain",
+    "shareAccess": "Share access"
   }
 }

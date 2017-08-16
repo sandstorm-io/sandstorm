@@ -207,27 +207,27 @@
 </template>
 
 <template name="grainApiTokenPopup">
-  <h4>Webkeys</h4>
+  <h4>{{_ "grains.apiTokenPopup.title"}}</h4>
   {{#if generatedApiToken}}
     {{#if generatedApiTokenPending}}
-      <p>Generating...</p>
-      <p><button id="resetApiToken">Cancel</button></p>
+      <p>{{_ "grains.apiTokenPopup.processing"}}</p>
+      <p><button id="resetApiToken">{{_ "grains.apiTokenPopup.cancel"}}</button></p>
     {{else}}
-      <p>Copy this webkey and give it to the external app:</p>
+      <p>{{_ "grains.apiTokenPopup.copyForExternalApp"}}</p>
         <a id="apiTokenText" class="copy-me" href="{{generatedApiToken}}">{{generatedApiToken}}</a>
       {{#if currentUser}}
-        <p><button id="resetApiToken">Go back</button></p>
+        <p><button id="resetApiToken">{{_ "grains.apiTokenPopup.back"}}</button></p>
       {{/if}}
     {{/if}}
   {{else}}
-    <p>A webkey allows you to connect an external app (e.g. a mobile app) to this app.</p>
+    <p>{{_ "grains.apiTokenPopup.description"}}</p>
     <p><form class="newApiToken">
-    Label: <input type="text" id="api-token-petname" placeholder="e.g. 'Android app'">
+    {{_ "grains.apiTokenPopup.labelTitle"}} <input type="text" id="api-token-petname" placeholder="{{_ "grains.apiTokenPopup.labelPlaceholder"}}">
     {{#with viewInfo}}
       {{#if roles}}
-        Role:
+        {{_ "grains.apiTokenPopup.roleTitle"}}
         <select id="api-token-role">
-          <option title="has every app permission" selected=true>all access</option>
+          <option title="has every app permission" selected=true>{{_ "grains.apiTokenPopup.permissionTitle"}}</option>
           {{#each roles}}
             <option title={{verbPhrase.defaultText}}
                     data-obsolete={{obsolete}}>
@@ -236,9 +236,9 @@
         </select>
       {{/if}}
     {{/with}}
-    <button>Create</button></form></p>
+    <button>{{_ "grains.apiTokenPopup.create"}}</button></form></p>
     {{#if existingTokens}}
-      <p>Your existing webkeys:</p>
+      <p>{{_ "grains.apiTokenPopup.webkeyListTitle"}}</p>
       <ul>
       {{#each existingTokens}}
         {{#if displayToken}}
@@ -246,7 +246,7 @@
             <span class="token-petname" data-token-id="{{_id}}">
               {{petname}} ({{dateString created}})
             </span>
-            <button class="revoke-token" title="Revoke" data-token-id="{{_id}}">Revoke</button>
+            <button class="revoke-token" title="{{_ "grains.apiTokenPopup.revokeHint"}}" data-token-id="{{_id}}">{{_ "grains.apiTokenPopup.revoke"}}</button>
           </li>
         {{/if}}
       {{/each}}
@@ -256,8 +256,8 @@
 </template>
 
 <template name="grainShareButton">
-  <button class="show-popup" title="Share access to this grain">
-    Share access
+  <button class="show-popup" title="{{_ "grains.shareAccessHint"}}">
+    {{_ "grains.shareAccess"}}
   </button>
 </template>
 

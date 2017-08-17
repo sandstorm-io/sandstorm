@@ -1,5 +1,35 @@
 {
   "error": "Error: %s",
+  "layout": {
+  },
+  "notifications": {
+    "hint": "Notifications",
+    "text": "Notifications"
+  },
+  "notificationsPopup": {
+    "title": "Notifications",
+    "empty": "No notifications..."
+  },
+  "title": {
+    "hint": "title"
+  },
+  "loading": {
+    "title": "Loading...",
+    "text": "Loading..."
+  },
+  "notFound": {
+    "title": "Not Found",
+    "text": "404 Not Found :("
+  },
+  "root": {
+    "title": "Home"
+  },
+  "grainLogContents": {
+    "prefix": "..."
+  },
+  "grainLog": {
+    "title": "Debug log: %s"
+  },
   "grains": {
     "title": "Grains",
     "grainView": {

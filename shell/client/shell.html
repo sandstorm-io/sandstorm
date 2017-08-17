@@ -166,34 +166,34 @@ limitations under the License.
 </template>
 
 <template name="notifications">
-  <button class="show-popup icon icon-notification" title="Notifications">
+  <button class="show-popup icon icon-notification" title="{{_ "notifications.hint"}}">
   {{#if notificationCount}}
     <span class="count">{{notificationCount}}</span>
   {{/if}}
-  Notifications
+  {{_ "notifications.text"}}
   </button>
 </template>
 
 <template name="notificationsPopup">
-  <h4>Notifications</h4>
+  <h4>{{_ "notificationsPopup.title"}}</h4>
   <ul class="notification-list">
     {{#each notifications}}
       <li>
         {{> notificationItem .}}
       </li>
     {{else}}
-    <li>No notifications...</li>
+    <li>{{_ "notificationsPopup.empty"}}</li>
     {{/each}}
   </ul>
 </template>
 
 <template name="title">
-  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar}}{{.}}{{/sandstormTopbarItem}}
+  {{#sandstormTopbarItem name=(_ "title.hint") priority=5 topbar=globalTopbar}}{{.}}{{/sandstormTopbarItem}}
 </template>
 
 <template name="loading">
-  {{>title "Loading..."}}
-  <div class="centered-box">Loading...</div>
+  {{>title (_ "loading.title")}}
+  <div class="centered-box">{{_ "loading.text"}}</div>
 </template>
 
 <template name="loadingNoMessage">
@@ -204,12 +204,12 @@ limitations under the License.
 </template>
 
 <template name="notFound">
-  {{>title "Not Found"}}
-  <div class="centered-box">404 Not Found :(</div>
+  {{>title (_ "notFound.title")}}
+  <div class="centered-box">{{_ "notFound.text"}}</div>
 </template>
 
 <template name="root">
-  {{>title "Home"}}
+  {{>title (_ "root.title")}}
 
   <div id="intro" class="{{#if splashUrl}}has-splash{{/if}}">
     {{> loginButtonsDialog accountsUi=globalAccountsUi}}
@@ -232,11 +232,11 @@ limitations under the License.
 </template>
 
 <template name="grainLogContents">
-  <pre>...{{{logHtml}}}</pre>
+  <pre>{{_ "grainLogContents.prefix"}}{{{logHtml}}}</pre>
 </template>
 
 <template name="grainLog">
-  <div class="grainlog-title">Debug log: {{title}}</div>
+  <div class="grainlog-title">{{_ "grainLog.title" title}}</div>
   <div class="grainlog-contents" aria-live="polite">
     {{> grainLogContents logHtml=html onRenderedHook=maybeScrollToBottom }}
   </div>

@@ -463,11 +463,11 @@
 </template>
 
 <template name="shareWithOthers">
-  <h4 class="share-with-others">Share with others</h4>
+  <h4 class="share-with-others">{{_ "grains.shareWithOthers.title"}}</h4>
   <div class="share-tabs" role="presentation">
     <ul role="tablist">
-      <li id="send-invite-tab-header" tabindex="0" role="tab" aria-controls="send-invite-tab" aria-selected="true"> Send an invite </li>
-      <li id="shareable-link-tab-header" tabindex="-1" role="tab" aria-controls="shareable-link-tab" aria-selected="false"> Get shareable link </li>
+      <li id="send-invite-tab-header" tabindex="0" role="tab" aria-controls="send-invite-tab" aria-selected="true"> {{_ "grains.shareWithOthers.sendInviteTab"}} </li>
+      <li id="shareable-link-tab-header" tabindex="-1" role="tab" aria-controls="shareable-link-tab" aria-selected="false"> {{_ "grains.shareWithOthers.shareableLinkTab"}} </li>
     </ul>
     <div id="send-invite-tab" role="tabpanel" class="tabpanel" aria-labelledby="send-invite-tab-header" aria-hidden="false">
       {{> emailInviteTab viewInfo=grain.viewInfo title=grain.title grainId=grain.grainId }}
@@ -479,7 +479,7 @@
 
   <div class="footer">
     <span class="icon icon-people"></span>
-    <button class="who-has-access">See who has access</button>
+    <button class="who-has-access">{{_ "grains.shareWithOthers.whoHasAccess"}}</button>
   </div>
 </template>
 

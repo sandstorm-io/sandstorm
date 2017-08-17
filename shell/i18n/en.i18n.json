@@ -77,6 +77,12 @@
       "success": "Successfully sent.",
       "reset": "+ Send more invites",
       "startOver": "<< Start over"
+    },
+    "shareWithOthers": {
+      "title": "Share with others",
+      "sendInviteTab": "Send an invite",
+      "shareableLinkTab": "Get shareable link",
+      "whoHasAccess": "See who has access"
     }
   },
   "people": {

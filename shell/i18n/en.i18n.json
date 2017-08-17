@@ -1,4 +1,5 @@
 {
+  "error": "Error: %s",
   "grains": {
     "title": "Grains",
     "notFound": "No grain found with ID __id__.",
@@ -31,7 +32,6 @@
       "title": "Download Backup",
       "warning": "Warning! Restoring this backup might not work how you expect it to.",
       "processing": "Preparing backup...",
-      "error": "Error: %s",
       "cancelHint": "cancel",
       "cancel": "Cancel",
       "confirmHint": "download backup",
@@ -78,6 +78,17 @@
       "reset": "+ Send more invites",
       "startOver": "<< Start over"
     },
+    "shareableLinkTab": {
+      "withRoles": "Anyone with this link:",
+      "withoutRoles": "Anyone with this link can access the grain.",
+      "labelPlaceholder": "Label (optional)",
+      "labelExplanation": "Use a label to remind yourself to whom you sent this unique link.",
+      "create": "Create",
+      "creating": "Generating...",
+      "success": "Copy this link:",
+      "reset": "+ Create another link",
+      "cancel": "Cancel"
+    },
     "shareWithOthers": {
       "title": "Share with others",
       "sendInviteTab": "Send an invite",
@@ -95,6 +106,22 @@
       "openNonAnonymouslyLink": "open this grain non-anonymously",
       "openNonAnonymouslyTail": ".",
       "signIn": "For more sharing options, please sign in."
+    },
+    "grainPowerboxRequest": {
+      "powerboxRequestHint": "Powerbox request",
+      "powerboxRequest": "P"
+    },
+    "grainPowerboxOffer": {
+      "powerboxOfferHint": "Powerbox offer",
+      "powerboxOffer": "P"
+    },
+    "grainPowerboxOfferPopup": {
+      "title": "Powerbox Offer",
+      "dismiss": "Dismiss"
+    },
+    "share": {
+      "grainNotFoundWithId": "No grain found with ID %s. Maybe you need to sign in to a different account?",
+      "signIn": "You must be signed in to grant access to a grain."
     }
   },
   "people": {

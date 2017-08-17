@@ -181,7 +181,7 @@
     <p> {{_ "grains.backupPopup.processing"}} </p>
   {{/if}}
   {{#if state.error}}
-    <p class="error">{{_ "grains.backupPopup.error" state.error}}</p>
+    <p class="error">{{_ "error" state.error}}</p>
   {{/if}}
 
   <div class="button-row">
@@ -437,27 +437,27 @@
   <form class="new-share-token">
     <p>
       <span class="icon icon-people"></span>
-      Anyone with this link{{#if viewInfo.roles}}:{{else}} can access the grain.{{/if}}
+      {{#if viewInfo.roles}}{{_ "grains.shareableLinkTab.withRoles"}}{{else}}{{_ "grains.shareableLinkTab.withoutRoles"}}{{/if}}
       {{> selectRole viewInfo=viewInfo}}
     </p>
-    <input type="text" class="label" placeholder="Label (optional)">
+    <input type="text" class="label" placeholder="{{_ "grains.shareableLinkTab.labelPlaceholder"}}">
     <p class="label-explanation">
-      Use a label to remind yourself to whom you sent this unique link.</p>
+      {{_ "grains.shareableLinkTab.labelExplanation"}}</p>
     {{#if completionState.clear}}
       <div class="button-container">
-        <button>Create</button>
+        <button>{{_ "grains.shareableLinkTab.create"}}</button>
       </div>
     {{/if}}
   </form>
   {{#with completionState}}
     {{#if success}}
-      <p><span class="icon icon-copy"></span> Copy this link:</p>
+      <p><span class="icon icon-copy"></span> {{_ "grains.shareableLinkTab.success"}}</p>
       <a id="share-token-text" class="copy-me" href="{{success.url}}">{{success.url}}</a>
-      <p><button class="reset-share-token">+ Create another link</button></p>
+      <p><button class="reset-share-token">{{_ "grains.shareableLinkTab.reset"}}</button></p>
     {{/if}}
     {{#if pending}}
-      <p>Generating...</p>
-      <p><button class="reset-share-token">Cancel</button></p>
+      <p>{{_ "grains.shareableLinkTab.creating"}}</p>
+      <p><button class="reset-share-token">{{_ "grains.shareableLinkTab.cancel"}}</button></p>
     {{/if}}
   {{/with}}
 </template>
@@ -519,8 +519,8 @@
 </template>
 
 <template name="grainPowerboxRequest">
-  <button class="show-popup" title="Powerbox request">
-    P
+  <button class="show-popup" title="{{_ "grains.grainPowerboxRequest.powerboxRequestHint"}}">
+    {{_ "grains.grainPowerboxRequest.powerboxRequest"}}
   </button>
 </template>
 <template name="grainPowerboxRequestPopup">
@@ -528,21 +528,21 @@
 </template>
 
 <template name="grainPowerboxOffer">
-  <button class="show-popup" title="Powerbox offer">
-    P
+  <button class="show-popup" title="{{_ "grains.grainPowerboxOffer.powerboxOfferHint"}}">
+    {{_ "grains.grainPowerboxOffer.powerboxOffer"}}
   </button>
 </template>
 <template name="grainPowerboxOfferPopup">
-  <h4>Powerbox Offer</h4>
+  <h4>{{_ "grains.grainPowerboxOfferPopup.title"}}</h4>
   {{#if state.webkey}}
   <div>
     <a class="copy-me" href="{{state.webkey}}" id="powerbox-offer-url">{{state.webkey}}</a>
-    <button class="dismiss">Dismiss</button>
+    <button class="dismiss">{{_ "grains.grainPowerboxOfferPopup.dismiss"}}</button>
   </div>
   {{/if}}
   {{#if state.error}}
   <div>
-     Error: {{state.error}}
+     {{_ "error" state.error}}
   </div>
   {{/if}}
 </template>
@@ -593,10 +593,10 @@
 <template name="share">
   {{#if currentUser}}
     {{#with grainNotFound}}
-      No grain found with ID {{.}}. Maybe you need to sign in to a different account?
+      {{_ "grains.share.grainNotFoundWithId" .}}
     {{/with}}
   {{else}}
-    You must be signed in to grant access to a grain.
+    {{_ "grains.share.signIn"}}
   {{/if}}
 </template>
 

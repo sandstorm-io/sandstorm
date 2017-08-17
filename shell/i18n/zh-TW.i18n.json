@@ -1,6 +1,6 @@
 {
   "grains": {
-    "title": "Grains",
+    "title": "沙粒",
     "notFound": "No grain found with ID __id__.",
     "openWithWhichIdentity": "With which of your identities would you like to open this grains?",
     "openInIncognitoMode": "Open in Incognito Mode",
@@ -21,8 +21,8 @@
     "linkRevoked": "Sorry, this link has been revoked.",
     "was": "was: %s",
     "renamedFrom": "renamed from: %s",
-    "moveToTrashHint": "Move to trash",
-    "moveToTrash": "Move to trash",
+    "moveToTrashHint": "移到回收桶",
+    "moveToTrash": "移到回收桶",
     "showLogHint": "Show Debug Log",
     "showLog": "Log",
     "backupHint": "Download Backup",
@@ -43,6 +43,6 @@
     "getWebkey": "Get&nbsp;Webkey"
   },
   "apps": {
-    "title": "Apps"
+    "title": "應用程式"
   }
 }

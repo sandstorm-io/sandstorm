@@ -40,7 +40,50 @@
     "restartHint": "Restart App",
     "restart": "Restart",
     "getWebkeyHint": "Get webkey",
-    "getWebkey": "Get&nbsp;Webkey"
+    "getWebkey": "Get&nbsp;Webkey",
+    "apiTokenPopup": {
+      "title": "Webkeys",
+      "processing": "Generating...",
+      "cancel": "Cancel",
+      "copyForExternalApp": "Copy this webkey and give it to the external app:",
+      "back": "Go back",
+      "description": "A webkey allows you to connect an external app (e.g. a mobile app) to this app.",
+      "labelTitle": "Label:",
+      "labelPlaceholder": "e.g. 'Android app'",
+      "roleTitle": "Role:",
+      "permissionTitle": "all access",
+      "create": "Create",
+      "webkeyListTitle": "Your existing webkeys:",
+      "revokeHint": "Revoke",
+      "revoke": "Revoke"
+    },
+    "shareAccessHint": "Share access to this grain",
+    "shareAccess": "Share access",
+    "whoHasAccessPopup": {
+      "title": "Who has access",
+      "noLoggedInUsers": "No logged-in users have visited your links yet.",
+      "nobody": "You have granted access to nobody.",
+      "addedBy": "added by",
+      "revokeHint": "Revoke",
+      "revoke": "Revoke",
+      "hasCustomPermissions": "[has custom permissions]"
+    },
+    "selectRoleHint": "select a role",
+    "emailInviteTab": {
+      "demoModeAlert": "Sharing emails cannot be sent while in demo mode. Create an account to send sharing emails, or get a shareable link instead.",
+      "personalMessagePlaceholder": "Type a personal message (optional)...",
+      "send": "Send",
+      "sending": "Sending...",
+      "success": "Successfully sent.",
+      "reset": "+ Send more invites",
+      "startOver": "<< Start over"
+    }
+  },
+  "people": {
+    "title": "People"
+  },
+  "sharingLinks": {
+    "title": "Sharing Links"
   },
   "apps": {
     "title": "Apps"

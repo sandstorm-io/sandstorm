@@ -207,27 +207,27 @@
 </template>
 
 <template name="grainApiTokenPopup">
-  <h4>Webkeys</h4>
+  <h4>{{_ "grains.apiTokenPopup.title"}}</h4>
   {{#if generatedApiToken}}
     {{#if generatedApiTokenPending}}
-      <p>Generating...</p>
-      <p><button id="resetApiToken">Cancel</button></p>
+      <p>{{_ "grains.apiTokenPopup.processing"}}</p>
+      <p><button id="resetApiToken">{{_ "grains.apiTokenPopup.cancel"}}</button></p>
     {{else}}
-      <p>Copy this webkey and give it to the external app:</p>
+      <p>{{_ "grains.apiTokenPopup.copyForExternalApp"}}</p>
         <a id="apiTokenText" class="copy-me" href="{{generatedApiToken}}">{{generatedApiToken}}</a>
       {{#if currentUser}}
-        <p><button id="resetApiToken">Go back</button></p>
+        <p><button id="resetApiToken">{{_ "grains.apiTokenPopup.back"}}</button></p>
       {{/if}}
     {{/if}}
   {{else}}
-    <p>A webkey allows you to connect an external app (e.g. a mobile app) to this app.</p>
+    <p>{{_ "grains.apiTokenPopup.description"}}</p>
     <p><form class="newApiToken">
-    Label: <input type="text" id="api-token-petname" placeholder="e.g. 'Android app'">
+    {{_ "grains.apiTokenPopup.labelTitle"}} <input type="text" id="api-token-petname" placeholder="{{_ "grains.apiTokenPopup.labelPlaceholder"}}">
     {{#with viewInfo}}
       {{#if roles}}
-        Role:
+        {{_ "grains.apiTokenPopup.roleTitle"}}
         <select id="api-token-role">
-          <option title="has every app permission" selected=true>all access</option>
+          <option title="has every app permission" selected=true>{{_ "grains.apiTokenPopup.permissionTitle"}}</option>
           {{#each roles}}
             <option title={{verbPhrase.defaultText}}
                     data-obsolete={{obsolete}}>
@@ -236,9 +236,9 @@
         </select>
       {{/if}}
     {{/with}}
-    <button>Create</button></form></p>
+    <button>{{_ "grains.apiTokenPopup.create"}}</button></form></p>
     {{#if existingTokens}}
-      <p>Your existing webkeys:</p>
+      <p>{{_ "grains.apiTokenPopup.webkeyListTitle"}}</p>
       <ul>
       {{#each existingTokens}}
         {{#if displayToken}}
@@ -246,7 +246,7 @@
             <span class="token-petname" data-token-id="{{_id}}">
               {{petname}} ({{dateString created}})
             </span>
-            <button class="revoke-token" title="Revoke" data-token-id="{{_id}}">Revoke</button>
+            <button class="revoke-token" title="{{_ "grains.apiTokenPopup.revokeHint"}}" data-token-id="{{_id}}">{{_ "grains.apiTokenPopup.revoke"}}</button>
           </li>
         {{/if}}
       {{/each}}
@@ -256,8 +256,8 @@
 </template>
 
 <template name="grainShareButton">
-  <button class="show-popup" title="Share access to this grain">
-    Share access
+  <button class="show-popup" title="{{_ "grains.shareAccessHint"}}">
+    {{_ "grains.shareAccess"}}
   </button>
 </template>
 
@@ -266,18 +266,18 @@
 </template>
 
 <template name="whoHasAccessPopup">
-  <h4 class="who-has-access">Who has access</h4>
+  <h4 class="who-has-access">{{_ "grains.whoHasAccessPopup.title"}}</h4>
   {{#if isReady}}
   <div class="tables-container">
-    <h5>People</h5>
+    <h5>{{_ "people.title"}}</h5>
     {{#if transitiveShares.identityOwnedShares.empty}}
       {{#if existingShareTokens}}
-        <p>No logged-in users have visited your links yet.</p>
+        <p>{{_ "grains.whoHasAccessPopup.noLoggedInUsers"}}</p>
       {{else}}
         {{#if transitiveShares.grainOwnedShares.empty}}
-          <p>You have granted access to nobody.</p>
+          <p>{{_ "grains.whoHasAccessPopup.nobody"}}</p>
         {{else}}
-          <p>No logged-in users have visited your links yet.</p>
+          <p>{{_ "grains.whoHasAccessPopup.noLoggedInUsers"}}</p>
         {{/if}}
       {{/if}}
     {{else}}
@@ -285,14 +285,14 @@
         {{#each transitiveShares.identityOwnedShares}}
           <tr>
             <td> {{displayName recipient}} </td>
-            <td> added by
+            <td> {{_ "grains.whoHasAccessPopup.addedBy"}}
               <ul>
                 {{#each dedupedShares}}
                   <li>
                     {{displayName identityId}}
                     {{#if isCurrentIdentity identityId}}
-                      <button class="revoke-access" title="Revoke" data-recipient="{{../recipient}}">
-                        Revoke
+                      <button class="revoke-access" title="{{_ "grains.whoHasAccessPopup.revokeHint"}}" data-recipient="{{../recipient}}">
+                        {{_ "grains.whoHasAccessPopup.revoke"}}
                       </button>
                     {{/if}}
                   </li>
@@ -309,14 +309,14 @@
         {{#each transitiveShares.grainOwnedShares}}
           <tr>
             <td>{{grainTitle recipient}}</td>
-            <td> added by
+            <td> {{_ "grains.whoHasAccessPopup.addedBy"}}
               <ul>
                 {{#each dedupedShares}}
                   <li>
                     {{displayName identityId}}
                     {{#if isCurrentIdentity identityId}}
-                      <button class="revoke-access" title="Revoke" data-recipient="{{../recipient}}">
-                        Revoke
+                      <button class="revoke-access" title="{{_ "grains.whoHasAccessPopup.revokeHint"}}" data-recipient="{{../recipient}}">
+                        {{_ "grains.whoHasAccessPopup.revoke"}}
                       </button>
                     {{/if}}
                   </li>
@@ -329,7 +329,7 @@
     {{/unless}}
 
     {{#if existingShareTokens}}
-      <h5>Sharing Links</h5>
+      <h5>{{_ "sharingLinks.title"}}</h5>
       <table class="shared-links">
       {{!-- Renamed from sharing-links to shared-links due to a common adblock rule
             in https://easylist.adblockplus.org/fanboy-social.txt --}}
@@ -352,7 +352,7 @@
                     {{/each}}
                     {{#if hasCustomRole .}}
                       <option title="custom role" selected=true>
-                        [has custom permissions]
+                        {{_ "grains.whoHasAccessPopup.hasCustomPermissions"}}
                       </option>
                     {{/if}}
                   </select>
@@ -375,7 +375,7 @@
 <template name="selectRole">
   {{#with viewInfo}}
   {{#if roles}}
-  <select class="share-token-role" title="select a role" disabled={{../disabled}}>
+  <select class="share-token-role" title="{{_ "grains.selectRoleHint"}}" disabled={{../disabled}}>
     {{#each roles}}
     <option title={{title.defaultText}}
             data-obsolete={{obsolete}}
@@ -394,8 +394,7 @@
   <form class="email-invite">
     {{#if isDemoUser}}
       <p class="demo-mode-alert">
-        Sharing emails cannot be sent while in demo mode.
-        Create an account to send sharing emails, or get a shareable link instead.
+        {{_ "grains.emailInviteTab.demoModeAlert"}}
       </p>
     {{/if}}
     <p>
@@ -406,7 +405,7 @@
     </p>
     <div>
       <textarea class="personal-message" disabled={{isDemoUser}}
-                placeholder="Type a personal message (optional)..."></textarea>
+                placeholder="{{_ "grains.emailInviteTab.personalMessagePlaceholder"}}"></textarea>
     </div>
     {{#if completionState.clear}}
     <div class="button-container" role="presentation">
@@ -415,21 +414,21 @@
               part of the message to be hidden in the main view. --}}
         <p class="invitation-explanation" title="{{.}}">{{.}}</p>
       {{/with}}
-      <button disabled={{isDemoUser}}>Send</button>
+      <button disabled={{isDemoUser}}>{{_ "grains.emailInviteTab.send"}}</button>
     </div>
     {{/if}}
   </form>
   {{#with completionState}}
     {{#if success}}
-     <p>Successfully sent.</p>
-     <p><button class="reset-invite">+ Send more invites</button></p>
+     <p>{{_ "grains.emailInviteTab.success"}}</p>
+     <p><button class="reset-invite">{{_ "grains.emailInviteTab.reset"}}</button></p>
     {{/if}}
     {{#if pending}}
-      <p>Sending...</p>
+      <p>{{_ "grains.emailInviteTab.sending"}}</p>
     {{/if}}
     {{#if error}}
       <p> {{error}} </p>
-      <p><button class="start-over-invite">&lt;&lt; Start over</button></p>
+      <p><button class="start-over-invite">{{_ "grains.emailInviteTab.startOver"}}</button></p>
     {{/if}}
   {{/with}}
 </template>

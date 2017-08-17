@@ -1,47 +1,75 @@
 {
+  "error": "錯誤：%s",
   "grains": {
     "title": "沙粒",
-    "notFound": "找不到 ID 為 __id__ 的沙粒。",
-    "openWithWhichIdentity": "您要用哪個身分開啟這顆沙粒？",
-    "openInIncognitoMode": "以無痕模式開啟",
-    "inTrash": "這顆沙粒沈在回收桶裡，您要把他撈回主清單才能重新使用。",
-    "restoreToMainList": "撈回主清單",
-    "removedByOwner": "這顆沙粒被擁有者丟進回收桶了，無法使用。",
-    "ownerSuspended": "這顆沙粒的擁有者被停權了，無法使用。",
-    "restricted": "開啟這個 URL 必須有以下身份：",
-    "permissionDenied": "您無權存取此沙粒。",
-    "requestAccessHint": "要求存取權",
-    "requestAccess": "要求存取權",
-    "warnIdentityRevealing": "要求存取權將把您的完整身份告知沙粒擁有者。",
-    "sendRequest": "正在送出您的要求……",
-    "waitForApproving": "要求已送出，若獲核准則會以電子郵件通知您。",
-    "requestFailed": "要求失敗，原因：%s",
-    "signInPlease": "若要要求存取權，請先登入。",
-    "invalidToken": "無效的 token：%s",
-    "linkRevoked": "非常抱歉，這個連結已經被撤銷。",
-    "was": "原標題：%s",
-    "renamedFrom": "原名：%s",
-    "moveToTrashHint": "移到回收桶",
-    "moveToTrash": "移到回收桶",
-    "showLogHint": "顯示除錯記錄",
-    "showLog": "紀錄",
-    "backupHint": "下載備份檔",
-    "backup": "備份",
-    "backupPopup": {
+    "grainView": {
+      "notFoundWithId": "找不到 ID 為 %s 的沙粒。",
+      "openWithWhichIdentity": "您要用哪個身分開啟這顆沙粒？",
+      "openInIncognitoMode": "以無痕模式開啟"
+    },
+    "grainInMyTrash": {
+      "explanation": "這顆沙粒沈在回收桶裡，您要把他撈回主清單才能重新使用。",
+      "restore": "撈回主清單"
+    },
+    "grainInOwnersTrash": {
+      "explanation": "這顆沙粒被擁有者丟進回收桶了，無法使用。"
+    },
+    "grainOwnerSuspended": {
+      "explanation": "這顆沙粒的擁有者被停權了，無法使用。"
+    },
+    "wrongIdentity": {
+      "explanation": "開啟這個 URL 必須有以下身份："
+    },
+    "requestAccess": {
+      "permissionDenied": "您無權存取此沙粒。",
+      "requestAccessHint": "要求存取權",
+      "requestAccess": "要求存取權",
+      "warnIdentityRevealing": "要求存取權將把您的完整身份告知沙粒擁有者。",
+      "sendRequest": "正在送出您的要求……",
+      "waitForApproving": "要求已送出，若獲核准則會以電子郵件通知您。",
+      "requestFailed": "要求失敗，原因：%s",
+      "signInPlease": "若要要求存取權，請先登入。"
+    },
+    "invalidToken": {
+      "invalidToken": "無效的 token：%s"
+    },
+    "revokedShareLink": {
+      "linkRevoked": "非常抱歉，這個連結已經被撤銷。"
+    },
+    "grainTitle": {
+      "was": "原標題：%s",
+      "renamedFrom": "原名：%s"
+    },
+    "grainDeleteButton": {
+      "hint": "移到回收桶",
+      "text": "移到回收桶"
+    },
+    "grainDebugLogButton": {
+      "hint": "顯示除錯記錄",
+      "text": "紀錄"
+    },
+    "grainBackupButton": {
+      "hint": "下載備份檔",
+      "text": "備份"
+    },
+    "grainBackupPopup": {
       "title": "下載備份檔",
       "warning": "注意！復原這個備份檔會發生的事可能和你想的不一樣。",
       "processing": "正在準備備份……",
-      "error": "錯誤：%s",
       "cancelHint": "取消",
       "cancel": "取消",
       "confirmHint": "下載備份檔",
       "confirm": "下載備份檔"
     },
-    "restartHint": "重新啟動應用程式",
-    "restart": "重新啟動",
-    "getWebkeyHint": "取得外網金鑰(webkey)",
-    "getWebkey": "取得外網金鑰(webkey)",
-    "apiTokenPopup": {
+    "grainRestartButton": {
+      "hint": "重新啟動應用程式",
+      "text": "重新啟動"
+    },
+    "grainApiTokenButton": {
+      "hint": "取得外網金鑰(webkey)",
+      "text": "取得外網金鑰(webkey)"
+    },
+    "grainApiTokenPopup": {
       "title": "外網金鑰",
       "processing": "生成中……",
       "cancel": "取消",
@@ -57,8 +85,10 @@
       "revokeHint": "撤銷",
       "revoke": "撤銷"
     },
-    "shareAccessHint": "分享此沙粒給其他人",
-    "shareAccess": "分享",
+    "grainShareButton": {
+      "hint": "分享此沙粒給其他人",
+      "text": "分享"
+    },
     "whoHasAccessPopup": {
       "title": "可存取者",
       "noLoggedInUsers": "未曾有已登入的使用者造訪這個連結過。",

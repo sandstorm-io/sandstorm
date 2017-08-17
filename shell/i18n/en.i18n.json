@@ -2,33 +2,57 @@
   "error": "Error: %s",
   "grains": {
     "title": "Grains",
-    "notFound": "No grain found with ID __id__.",
-    "openWithWhichIdentity": "With which of your identities would you like to open this grains?",
-    "openInIncognitoMode": "Open in Incognito Mode",
-    "inTrash": "This grain is in your trash. You cannot access it unless you restore it to your main list.",
-    "restoreToMainList": "Restore to main list",
-    "removedByOwner": "You can no longer access this grain because its owner has moved it to the trash.",
-    "ownerSuspended": "You can no longer access this grain because its owner's account has been suspended.",
-    "restricted": "Access through this URL is restricted to the identity:",
-    "permissionDenied": "You do not have permission to access this grain.",
-    "requestAccessHint": "Request access",
-    "requestAccess": "Request Access",
-    "warnIdentityRevealing": "Requesting access will reveal your identity to the grain owner.",
-    "sendRequest": "Sending your request...",
-    "waitForApproving": "Your request has been sent. You will receive an email if your request is approved.",
-    "requestFailed": "Your request failed because: %s",
-    "signInPlease": "Please sign in to request access.",
-    "invalidToken": "Invalid token: %s",
-    "linkRevoked": "Sorry, this link has been revoked.",
-    "was": "was: %s",
-    "renamedFrom": "renamed from: %s",
-    "moveToTrashHint": "Move to trash",
-    "moveToTrash": "Move to trash",
-    "showLogHint": "Show Debug Log",
-    "showLog": "Log",
-    "backupHint": "Download Backup",
-    "backup": "Backup",
-    "backupPopup": {
+    "grainView": {
+      "notFoundWithId": "No grain found with ID %s.",
+      "openWithWhichIdentity": "With which of your identities would you like to open this grains?",
+      "openInIncognitoMode": "Open in Incognito Mode"
+    },
+    "grainInMyTrash": {
+      "explanation": "This grain is in your trash. You cannot access it unless you restore it to your main list.",
+      "restore": "Restore to main list"
+    },
+    "grainInOwnersTrash": {
+      "explanation": "You can no longer access this grain because its owner has moved it to the trash."
+    },
+    "grainOwnerSuspended": {
+      "explanation": "You can no longer access this grain because its owner's account has been suspended."
+    },
+    "wrongIdentity": {
+      "explanation": "Access through this URL is restricted to the identity:"
+    },
+    "requestAccess": {
+      "permissionDenied": "You do not have permission to access this grain.",
+      "requestAccessHint": "Request access",
+      "requestAccess": "Request Access",
+      "warnIdentityRevealing": "Requesting access will reveal your identity to the grain owner.",
+      "sendRequest": "Sending your request...",
+      "waitForApproving": "Your request has been sent. You will receive an email if your request is approved.",
+      "requestFailed": "Your request failed because: %s",
+      "signInPlease": "Please sign in to request access."
+    },
+    "invalidToken": {
+      "invalidToken": "Invalid token: %s"
+    },
+    "revokedShareLink": {
+      "linkRevoked": "Sorry, this link has been revoked."
+    },
+    "grainTitle": {
+      "was": "was: %s",
+      "renamedFrom": "renamed from: %s"
+    },
+    "grainDeleteButton": {
+      "hint": "Move to trash",
+      "text": "Move to trash"
+    },
+    "grainDebugLogButton": {
+      "hint": "Show Debug Log",
+      "text": "Log"
+    },
+    "grainBackupButton": {
+      "hint": "Download Backup",
+      "text": "Backup"
+    },
+    "grainBackupPopup": {
       "title": "Download Backup",
       "warning": "Warning! Restoring this backup might not work how you expect it to.",
       "processing": "Preparing backup...",
@@ -37,11 +61,15 @@
       "confirmHint": "download backup",
       "confirm": "Download backup"
     },
-    "restartHint": "Restart App",
-    "restart": "Restart",
-    "getWebkeyHint": "Get webkey",
-    "getWebkey": "Get&nbsp;Webkey",
-    "apiTokenPopup": {
+    "grainRestartButton": {
+      "hint": "Restart App",
+      "text": "Restart"
+    },
+    "grainApiTokenButton": {
+      "hint": "Get webkey",
+      "text": "Get&nbsp;Webkey"
+    },
+    "grainApiTokenPopup": {
       "title": "Webkeys",
       "processing": "Generating...",
       "cancel": "Cancel",
@@ -57,8 +85,10 @@
       "revokeHint": "Revoke",
       "revoke": "Revoke"
     },
-    "shareAccessHint": "Share access to this grain",
-    "shareAccess": "Share access",
+    "grainShareButton": {
+      "hint": "Share access to this grain",
+      "text": "Share access"
+    },
     "whoHasAccessPopup": {
       "title": "Who has access",
       "noLoggedInUsers": "No logged-in users have visited your links yet.",
@@ -68,7 +98,9 @@
       "revoke": "Revoke",
       "hasCustomPermissions": "[has custom permissions]"
     },
-    "selectRoleHint": "select a role",
+    "selectRole": {
+      "hint": "select a role"
+    },
     "emailInviteTab": {
       "demoModeAlert": "Sharing emails cannot be sent while in demo mode. Create an account to send sharing emails, or get a shareable link instead.",
       "personalMessagePlaceholder": "Type a personal message (optional)...",

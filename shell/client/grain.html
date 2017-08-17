@@ -23,7 +23,7 @@
           {{else}}
             {{#if notFound}}
               <p class="grain-not-found grain-interstitial">
-                {{_ "grains.notFound" id="{{grainId}}"}}
+                {{_ "grains.grainView.notFoundWithId" grainId}}
               </p>
             {{else}}
                <pre>{{error}}</pre>
@@ -47,10 +47,10 @@
     {{else}}
     {{#if interstitial.chooseIdentity}}
       <div class="grain-interstitial">
-        <p>{{_ "grains.openWithWhichIdentity"}}</p>
+        <p>{{_ "grains.grainView.openWithWhichIdentity"}}</p>
         {{> identityPicker identityPickerData}}
         {{#if interstitial.showIncognito}}
-        <button class="incognito-button" data-token="{{token}}">{{_ "grains.openInIncognitoMode"}}</button>
+        <button class="incognito-button" data-token="{{token}}">{{_ "grains.grainView.openInIncognitoMode"}}</button>
         {{/if}}
       </div>
     {{else}}
@@ -65,16 +65,16 @@
 <template name="grainInMyTrash">
   <div class="grain-interstitial">
     <p>
-      {{_ "grains.inTrash"}}
+      {{_ "grains.grainInMyTrash.explanation"}}
     </p>
-    <button class="restore-from-trash">{{_ "grains.restoreToMainList"}}</button>
+    <button class="restore-from-trash">{{_ "grains.grainInMyTrash.restore"}}</button>
   </div>
 </template>
 
 <template name="grainInOwnersTrash">
   <div class="grain-interstitial">
     <p>
-      {{_ "grains.removedByOwner"}}
+      {{_ "grains.grainInOwnersTrash.explanation"}}
     </p>
   </div>
 </template>
@@ -82,7 +82,7 @@
 <template name="grainOwnerSuspended">
   <div class="grain-interstitial">
     <p>
-      {{_ "grains.ownerSuspended"}}
+      {{_ "grains.grainOwnerSuspended.explanation"}}
     </p>
   </div>
 </template>
@@ -91,7 +91,7 @@
 <template name="wrongIdentity">
   <div class="grain-interstitial">
     <p>
-      {{_ "grains.restricted"}}
+      {{_ "grains.wrongIdentity.explanation"}}
     </p>
     {{> identityCardSignInButton identity=recipient unclickedMessage=unclickedMessage}}
   </div>
@@ -99,43 +99,43 @@
 
 <template name="requestAccess">
   <div class="request-access grain-interstitial">
-  <p>{{_ "grains.permissionDenied"}}</p>
+  <p>{{_ "grains.requestAccess.permissionDenied"}}</p>
   {{#if currentUser}}
     {{#with status}}
       {{#if showButton}}
-        <button class="request-access" title="{{_ "grains.requestAccessHint"}}">
-          {{_ "grains.requestAccess"}}
+        <button class="request-access" title="{{_ "grains.requestAccess.requestAccessHint"}}">
+          {{_ "grains.requestAccess.requestAccess"}}
         </button>
       {{/if}}
       {{#if chooseIdentity}}
-        <p>{{_ "grains.warnIdentityRevealing"}}</p>
+        <p>{{_ "grains.requestAccess.warnIdentityRevealing"}}</p>
         <p> {{chooseIdentityText}} </p>
         {{> identityPicker identityPickerData}}
       {{/if}}
       {{#if waiting}}
-        <p>{{_ "grains.sendRequest"}}</p>
+        <p>{{_ "grains.requestAccess.sendRequest"}}</p>
       {{/if}}
       {{#if success}}
         <p>
-          {{_ "grains.waitForApproving"}}
+          {{_ "grains.requestAccess.waitForApproving"}}
         </p>
       {{/if}}
       {{#with error}}
-        <p>{{_ "grains.requestFailed" .}}</p>
+        <p>{{_ "grains.requestAccess.requestFailed" .}}</p>
       {{/with}}
     {{/with}}
   {{else}}
-    {{_ "grains.signInPlease"}}
+    {{_ "grains.requestAccess.signInPlease"}}
   {{/if}}
   </div>
 </template>
 
 <template name="invalidToken">
-   <pre> {{_ "grains.invalidToken" token}} </pre>
+   <pre> {{_ "grains.invalidToken.invalidToken" token}} </pre>
 </template>
 
 <template name="revokedShareLink">
-  <p class="grain-interstitial">{{_ "grains.linkRevoked"}}</p>
+  <p class="grain-interstitial">{{_ "grains.revokedShareLink.linkRevoked"}}</p>
 </template>
 
 <template name="grainTitle">
@@ -145,10 +145,10 @@
         <div class="main-title">{{title}}</div>
         <div class="subtitle">
           {{#with was}}
-            {{_ "grains.was" .}}
+            {{_ "grains.grainTitle.was" .}}
           {{/with}}
           {{#with renamedFrom}}
-            {{_ "grains.renamedFrom" .}}
+            {{_ "grains.grainTitle.renamedFrom" .}}
           {{/with}}
         </div>
       {{else}}
@@ -158,76 +158,76 @@
   {{/with}}
 </template>
 <template name="grainDeleteButton">
-  <button class="grain-button" title="{{_ "grains.moveToTrashHint"}}" id="deleteGrain">{{_ "grains.moveToTrash"}}</button>
+  <button class="grain-button" title="{{_ "grains.grainDeleteButton.hint"}}" id="deleteGrain">{{_ "grains.grainDeleteButton.text"}}</button>
 </template>
 <template name="grainDebugLogButton">
-  <button class="grain-button" title="{{_ "grains.showLogHint"}}" id="openDebugLog">{{_ "grains.showLog"}}</button>
+  <button class="grain-button" title="{{_ "grains.grainDebugLogButton.hint"}}" id="openDebugLog">{{_ "grains.grainDebugLogButton.text"}}</button>
 </template>
 <template name="grainBackupButton">
-  <button class="grain-button" title="{{_ "grains.backupHint"}}" id="backupGrain">{{_ "grains.backup"}}</button>
+  <button class="grain-button" title="{{_ "grains.grainBackupButton.hint"}}" id="backupGrain">{{_ "grains.grainBackupButton.text"}}</button>
 </template>
 
 <template name="grainBackupPopup">
-  <h4>{{_ "grains.backupPopup.title"}}</h4>
+  <h4>{{_ "grains.grainBackupPopup.title"}}</h4>
   {{#if state.showWarning }}
     <p class="warning-intro">
-      {{_ "grains.backupPopup.warning"}}
+      {{_ "grains.grainBackupPopup.warning"}}
     </p>
     <p class="warning-body">
       {{ state.showWarning }}
     </p>
   {{/if}}
   {{#if state.processing}}
-    <p> {{_ "grains.backupPopup.processing"}} </p>
+    <p> {{_ "grains.grainBackupPopup.processing"}} </p>
   {{/if}}
   {{#if state.error}}
     <p class="error">{{_ "error" state.error}}</p>
   {{/if}}
 
   <div class="button-row">
-    <button name="cancel" title="{{_ "grains.backupPopup.cancelHint"}}">{{_ "grains.backupPopup.cancel"}}</button>
+    <button name="cancel" title="{{_ "grains.grainBackupPopup.cancelHint"}}">{{_ "grains.grainBackupPopup.cancel"}}</button>
     {{#if state.processing}}
       <div class="spinner"></div>
     {{/if}}
 
     {{#if state.showWarning}}
-      <button name="confirm" title="{{_ "grains.backupPopup.confirmHint"}}">{{_ "grains.backupPopup.confirm"}}</button>
+      <button name="confirm" title="{{_ "grains.grainBackupPopup.confirmHint"}}">{{_ "grains.grainBackupPopup.confirm"}}</button>
     {{/if}}
   </div>
 </template>
 
 <template name="grainRestartButton">
-  <button class="grain-button" title="{{_ "grains.restartHint"}}" id="restartGrain">{{_ "grains.restart"}}</button>
+  <button class="grain-button" title="{{_ "grains.grainRestartButton.hint"}}" id="restartGrain">{{_ "grains.grainRestartButton.text"}}</button>
 </template>
 
 <template name="grainApiTokenButton">
-  <button class="show-popup" title="{{_ "grains.getWebkeyHint"}}">
-    {{{_ "grains.getWebkey"}}}
+  <button class="show-popup" title="{{_ "grains.grainApiTokenButton.hint"}}">
+    {{{_ "grains.grainApiTokenButton.text"}}}
   </button>
 </template>
 
 <template name="grainApiTokenPopup">
-  <h4>{{_ "grains.apiTokenPopup.title"}}</h4>
+  <h4>{{_ "grains.grainApiTokenPopup.title"}}</h4>
   {{#if generatedApiToken}}
     {{#if generatedApiTokenPending}}
-      <p>{{_ "grains.apiTokenPopup.processing"}}</p>
-      <p><button id="resetApiToken">{{_ "grains.apiTokenPopup.cancel"}}</button></p>
+      <p>{{_ "grains.grainApiTokenPopup.processing"}}</p>
+      <p><button id="resetApiToken">{{_ "grains.grainApiTokenPopup.cancel"}}</button></p>
     {{else}}
-      <p>{{_ "grains.apiTokenPopup.copyForExternalApp"}}</p>
+      <p>{{_ "grains.grainApiTokenPopup.copyForExternalApp"}}</p>
         <a id="apiTokenText" class="copy-me" href="{{generatedApiToken}}">{{generatedApiToken}}</a>
       {{#if currentUser}}
-        <p><button id="resetApiToken">{{_ "grains.apiTokenPopup.back"}}</button></p>
+        <p><button id="resetApiToken">{{_ "grains.grainApiTokenPopup.back"}}</button></p>
       {{/if}}
     {{/if}}
   {{else}}
-    <p>{{_ "grains.apiTokenPopup.description"}}</p>
+    <p>{{_ "grains.grainApiTokenPopup.description"}}</p>
     <p><form class="newApiToken">
-    {{_ "grains.apiTokenPopup.labelTitle"}} <input type="text" id="api-token-petname" placeholder="{{_ "grains.apiTokenPopup.labelPlaceholder"}}">
+    {{_ "grains.grainApiTokenPopup.labelTitle"}} <input type="text" id="api-token-petname" placeholder="{{_ "grains.grainApiTokenPopup.labelPlaceholder"}}">
     {{#with viewInfo}}
       {{#if roles}}
-        {{_ "grains.apiTokenPopup.roleTitle"}}
+        {{_ "grains.grainApiTokenPopup.roleTitle"}}
         <select id="api-token-role">
-          <option title="has every app permission" selected=true>{{_ "grains.apiTokenPopup.permissionTitle"}}</option>
+          <option title="has every app permission" selected=true>{{_ "grains.grainApiTokenPopup.permissionTitle"}}</option>
           {{#each roles}}
             <option title={{verbPhrase.defaultText}}
                     data-obsolete={{obsolete}}>
@@ -236,9 +236,9 @@
         </select>
       {{/if}}
     {{/with}}
-    <button>{{_ "grains.apiTokenPopup.create"}}</button></form></p>
+    <button>{{_ "grains.grainApiTokenPopup.create"}}</button></form></p>
     {{#if existingTokens}}
-      <p>{{_ "grains.apiTokenPopup.webkeyListTitle"}}</p>
+      <p>{{_ "grains.grainApiTokenPopup.webkeyListTitle"}}</p>
       <ul>
       {{#each existingTokens}}
         {{#if displayToken}}
@@ -246,7 +246,7 @@
             <span class="token-petname" data-token-id="{{_id}}">
               {{petname}} ({{dateString created}})
             </span>
-            <button class="revoke-token" title="{{_ "grains.apiTokenPopup.revokeHint"}}" data-token-id="{{_id}}">{{_ "grains.apiTokenPopup.revoke"}}</button>
+            <button class="revoke-token" title="{{_ "grains.grainApiTokenPopup.revokeHint"}}" data-token-id="{{_id}}">{{_ "grains.grainApiTokenPopup.revoke"}}</button>
           </li>
         {{/if}}
       {{/each}}
@@ -256,8 +256,8 @@
 </template>
 
 <template name="grainShareButton">
-  <button class="show-popup" title="{{_ "grains.shareAccessHint"}}">
-    {{_ "grains.shareAccess"}}
+  <button class="show-popup" title="{{_ "grains.grainShareButton.hint"}}">
+    {{_ "grains.grainShareButton.text"}}
   </button>
 </template>
 
@@ -375,7 +375,7 @@
 <template name="selectRole">
   {{#with viewInfo}}
   {{#if roles}}
-  <select class="share-token-role" title="{{_ "grains.selectRoleHint"}}" disabled={{../disabled}}>
+  <select class="share-token-role" title="{{_ "grains.selectRole.hint"}}" disabled={{../disabled}}>
     {{#each roles}}
     <option title={{title.defaultText}}
             data-obsolete={{obsolete}}

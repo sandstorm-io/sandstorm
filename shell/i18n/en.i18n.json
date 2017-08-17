@@ -83,6 +83,18 @@
       "sendInviteTab": "Send an invite",
       "shareableLinkTab": "Get shareable link",
       "whoHasAccess": "See who has access"
+    },
+    "grainSharePopup": {
+      "oldSharingModelDescription": "This grain uses the old sharing model. You can share it by copy/pasting the URL from the location bar",
+      "upgradeDescription": "You can upgrade this grain to the new model, but anyone with whom you shared this grain previously will lose access; you will have to share with them again.",
+      "upgradeWarning": "Upgrading cannot be undone.",
+      "upgrade": "upgrade",
+      "openInIncognitoMode": "You are viewing this grain anonymously.",
+      "toShareAccess": "To share access, copy this link:",
+      "openNonAnonymouslyHead": "For more sharing options, you must",
+      "openNonAnonymouslyLink": "open this grain non-anonymously",
+      "openNonAnonymouslyTail": ".",
+      "signIn": "For more sharing options, please sign in."
     }
   },
   "people": {

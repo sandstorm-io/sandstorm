@@ -485,33 +485,31 @@
 
 <template name="grainSharePopup">
   {{#if currentGrain.isOldSharingModel}}
-    <p>This grain uses the old sharing model. You can share it by copy/pasting the URL from the
-       location bar.</p>
+    <p>{{_ "grains.grainSharePopup.oldSharingModelDescription"}}</p>
     {{#if currentGrain.isOwner}}
-      <p>You can upgrade this grain to the new model, but anyone with whom you shared this grain
-         previously will lose access; you will have to share it with them again.</p>
-      <p>Upgrading cannot be undone.</p>
-      <p><button id="privatize-grain">upgrade</button></p>
+      <p>{{_ "grains.grainSharePopup.upgradeDescription"}}</p>
+      <p>{{_ "grains.grainSharePopup.upgradeWarning"}}</p>
+      <p><button id="privatize-grain">{{_ "grains.grainSharePopup.upgrade"}}</button></p>
     {{/if}}
   {{else}}
     {{#if incognito}}
       <p>
-        You are viewing this grain anonymously.
+        {{_ "grains.grainSharePopup.openInIncognitoMode"}}
       </p>
       {{#with currentTokenUrl}}
         <p>
-          To share access, copy this link:
+          {{_ "grains.grainSharePopup.toShareAccess"}}
           <a id="share-token-text" class="copy-me" href="{{.}}">{{.}}</a>
         </p>
       {{/with}}
       <p>
         {{#if currentUser}}
-          For more sharing options, you must
+          {{_ "grains.grainSharePopup.openNonAnonymouslyHead"}}
           <a class="open-non-anonymously" href="{{currentTokenUrl}}">
-            open this grain non-anonymously
-          </a>.
+            {{_ "grains.grainSharePopup.openNonAnonymouslyLink"}}
+          </a>{{_ "grains.grainSharePopup.openNonAnonymouslyTail"}}
         {{else}}
-          For more sharing options, please sign in.
+          {{_ "grains.grainSharePopup.signIn"}}
         {{/if}}
       </p>
     {{else}}

@@ -191,7 +191,7 @@ limitations under the License.
 </template>
 
 <template name="title">
-  {{#sandstormTopbarItem name=(_ "title.hint") priority=5 topbar=globalTopbar}}{{.}}{{/sandstormTopbarItem}}
+  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar}}{{.}}{{/sandstormTopbarItem}}
 </template>
 
 <template name="loading">
@@ -259,30 +259,29 @@ limitations under the License.
 </template>
 
 <template name="signup">
-  {{>title "Claim Invite"}}
+  {{>title (_ "signup.title")}}
 
   <div class="centered-box">
   {{#if alreadySignedUp}}
     {{#if keyIsUsed}}
-      <p>You're all signed up!  Now go <a href="https://apps.sandstorm.io/?host={{origin}}">install
-        some apps</a>.</p>
+      <p>{{{_ "signup.signedUp.keyIsUsedWithOrigin" origin}}}</p>
     {{else}}
-      <p>It looks like you already have an account, so you don't need this signup key.</p>
+      <p>{{_ "signup.signedUp.keyIsNotUsed"}}</p>
     {{/if}}
   {{else}}
     {{#if keyIsValid}}
       {{#if keyIsUsed}}
-        <p>Sorry, this signup key has already been used.</p>
+        <p>{{_ "signup.keyIsUsed"}}</p>
       {{else}}
         {{#if currentUser}}
-          <p>Please wait...</p>
+          <p>{{_ "signup.processing"}}</p>
         {{else}}
-          <p>{{signupDialog}} First, you have to sign in. Click "Sign in" in the upper-right.</p>
+          <p>{{signupDialog}} {{_ "signup.signInGuide"}}</p>
           <div id="sign-in-arrow"></div>
         {{/if}}
       {{/if}}
     {{else}}
-      <p>Sorry, this is not a valid signup key.</p>
+      <p>{{_ "signup.invalidKey"}}</p>
     {{/if}}
   {{/if}}
   </div>

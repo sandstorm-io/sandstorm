@@ -31,9 +31,6 @@
     "title": "Notifications",
     "empty": "No notifications..."
   },
-  "title": {
-    "hint": "title"
-  },
   "loading": {
     "title": "Loading...",
     "text": "Loading..."
@@ -50,6 +47,17 @@
   },
   "grainLog": {
     "title": "Debug log: %s"
+  },
+  "signup": {
+    "title": "Claim Invite",
+    "signedUp": {
+      "keyIsUsedWithOrigin": "You're all signed up!  Now go <a href=\"https://apps.sandstorm.io/?host=%s\">install some apps</a>.",
+      "keyIsNotUsed": "It looks like you already have an account, so you don't need this signup key."
+    },
+    "keyIsUsed": "Sorry, this signup key has already been used.",
+    "processing": "Please wait...",
+    "signInGuide": "First, you have to sign in. Click \"Sign in\" in the upper-right.",
+    "invalidKey": "Sorry, this is not a valid signup key."
   },
   "grains": {
     "title": "Grains",

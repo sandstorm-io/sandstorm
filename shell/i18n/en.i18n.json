@@ -183,8 +183,7 @@
     "share": {
       "grainNotFoundWithId": "No grain found with ID %s. Maybe you need to sign in to a different account?", 
       "signIn": "You must be signed in to grant access to a grain."
-    }, 
-    "selectRoleHint": "__選擇角色"
+    } 
   }, 
   "people": {
     "title": "People"

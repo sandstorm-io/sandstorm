@@ -311,12 +311,12 @@ limitations under the License.
 </template>
 
 <template name="uploadTest">
-  {{>title "Upload test page"}}
+  {{>title (_ "uploadTest.title")}}
 
-  <p>This page is intended for use by the test scripts.</p>
+  <p>{{_ "uploadTest.explanation"}}</p>
 
-  <p>Upload app: <input type="file" id="upload-app"></p>
-  <p>Upload backup: <input type="file" id="upload-backup"></p>
+  <p>{{_ "uploadTest.uploadApp"}} <input type="file" id="upload-app"></p>
+  <p>{{_ "uploadTest.uploadBackup"}} <input type="file" id="upload-backup"></p>
 </template>
 
 <template name="referrals">

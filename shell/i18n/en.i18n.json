@@ -66,6 +66,12 @@
     "status": "%s...",
     "uploadFailed": "Upload failed. Please try again."
   },
+  "uploadTest": {
+    "title": "Upload test page",
+    "explanation": "This page is intended for use by the test scripts.",
+    "uploadApp": "Upload app:",
+    "uploadBackup": "Upload backup:"
+  },
   "grains": {
     "title": "Grains",
     "grainView": {

@@ -1,197 +1,197 @@
 {
-  "error": "Error: %s",
-  "layout": {
-  },
+  "error": "Error: %s", 
+  "layout": {}, 
   "notifications": {
-    "hint": "Notifications",
+    "hint": "Notifications", 
     "text": "Notifications"
-  },
+  }, 
   "notificationsPopup": {
-    "title": "Notifications",
+    "title": "Notifications", 
     "empty": "No notifications..."
-  },
+  }, 
   "title": {
     "hint": "title"
-  },
+  }, 
   "loading": {
-    "title": "Loading...",
+    "title": "Loading...", 
     "text": "Loading..."
-  },
+  }, 
   "notFound": {
-    "title": "Not Found",
+    "title": "Not Found", 
     "text": "404 Not Found :("
-  },
+  }, 
   "root": {
     "title": "Home"
-  },
+  }, 
   "grainLogContents": {
     "prefix": "..."
-  },
+  }, 
   "grainLog": {
     "title": "Debug log: %s"
-  },
+  }, 
   "grains": {
-    "title": "Grains",
+    "title": "Grains", 
     "grainView": {
-      "notFoundWithId": "No grain found with ID %s.",
-      "openWithWhichIdentity": "With which of your identities would you like to open this grains?",
+      "notFoundWithId": "No grain found with ID %s.", 
+      "openWithWhichIdentity": "With which of your identities would you like to open this grains?", 
       "openInIncognitoMode": "Open in Incognito Mode"
-    },
+    }, 
     "grainInMyTrash": {
-      "explanation": "This grain is in your trash. You cannot access it unless you restore it to your main list.",
+      "explanation": "This grain is in your trash. You cannot access it unless you restore it to your main list.", 
       "restore": "Restore to main list"
-    },
+    }, 
     "grainInOwnersTrash": {
       "explanation": "You can no longer access this grain because its owner has moved it to the trash."
-    },
+    }, 
     "grainOwnerSuspended": {
       "explanation": "You can no longer access this grain because its owner's account has been suspended."
-    },
+    }, 
     "wrongIdentity": {
       "explanation": "Access through this URL is restricted to the identity:"
-    },
+    }, 
     "requestAccess": {
-      "permissionDenied": "You do not have permission to access this grain.",
-      "requestAccessHint": "Request access",
-      "requestAccess": "Request Access",
-      "warnIdentityRevealing": "Requesting access will reveal your identity to the grain owner.",
-      "sendRequest": "Sending your request...",
-      "waitForApproving": "Your request has been sent. You will receive an email if your request is approved.",
-      "requestFailed": "Your request failed because: %s",
+      "permissionDenied": "You do not have permission to access this grain.", 
+      "requestAccessHint": "Request access", 
+      "requestAccess": "Request Access", 
+      "warnIdentityRevealing": "Requesting access will reveal your identity to the grain owner.", 
+      "sendRequest": "Sending your request...", 
+      "waitForApproving": "Your request has been sent. You will receive an email if your request is approved.", 
+      "requestFailed": "Your request failed because: %s", 
       "signInPlease": "Please sign in to request access."
-    },
+    }, 
     "invalidToken": {
       "invalidToken": "Invalid token: %s"
-    },
+    }, 
     "revokedShareLink": {
       "linkRevoked": "Sorry, this link has been revoked."
-    },
+    }, 
     "grainTitle": {
-      "was": "was: %s",
+      "was": "was: %s", 
       "renamedFrom": "renamed from: %s"
-    },
+    }, 
     "grainDeleteButton": {
-      "hint": "Move to trash",
+      "hint": "Move to trash", 
       "text": "Move to trash"
-    },
+    }, 
     "grainDebugLogButton": {
-      "hint": "Show Debug Log",
+      "hint": "Show Debug Log", 
       "text": "Log"
-    },
+    }, 
     "grainBackupButton": {
-      "hint": "Download Backup",
+      "hint": "Download Backup", 
       "text": "Backup"
-    },
+    }, 
     "grainBackupPopup": {
-      "title": "Download Backup",
-      "warning": "Warning! Restoring this backup might not work how you expect it to.",
-      "processing": "Preparing backup...",
-      "cancelHint": "cancel",
-      "cancel": "Cancel",
-      "confirmHint": "download backup",
+      "title": "Download Backup", 
+      "warning": "Warning! Restoring this backup might not work how you expect it to.", 
+      "processing": "Preparing backup...", 
+      "cancelHint": "cancel", 
+      "cancel": "Cancel", 
+      "confirmHint": "download backup", 
       "confirm": "Download backup"
-    },
+    }, 
     "grainRestartButton": {
-      "hint": "Restart App",
+      "hint": "Restart App", 
       "text": "Restart"
-    },
+    }, 
     "grainApiTokenButton": {
-      "hint": "Get webkey",
+      "hint": "Get webkey", 
       "text": "Get&nbsp;Webkey"
-    },
+    }, 
     "grainApiTokenPopup": {
-      "title": "Webkeys",
-      "processing": "Generating...",
-      "cancel": "Cancel",
-      "copyForExternalApp": "Copy this webkey and give it to the external app:",
-      "back": "Go back",
-      "description": "A webkey allows you to connect an external app (e.g. a mobile app) to this app.",
-      "labelTitle": "Label:",
-      "labelPlaceholder": "e.g. 'Android app'",
-      "roleTitle": "Role:",
-      "permissionTitle": "all access",
-      "create": "Create",
-      "webkeyListTitle": "Your existing webkeys:",
-      "revokeHint": "Revoke",
+      "title": "Webkeys", 
+      "processing": "Generating...", 
+      "cancel": "Cancel", 
+      "copyForExternalApp": "Copy this webkey and give it to the external app:", 
+      "back": "Go back", 
+      "description": "A webkey allows you to connect an external app (e.g. a mobile app) to this app.", 
+      "labelTitle": "Label:", 
+      "labelPlaceholder": "e.g. 'Android app'", 
+      "roleTitle": "Role:", 
+      "permissionTitle": "all access", 
+      "create": "Create", 
+      "webkeyListTitle": "Your existing webkeys:", 
+      "revokeHint": "Revoke", 
       "revoke": "Revoke"
-    },
+    }, 
     "grainShareButton": {
-      "hint": "Share access to this grain",
+      "hint": "Share access to this grain", 
       "text": "Share access"
-    },
+    }, 
     "whoHasAccessPopup": {
-      "title": "Who has access",
-      "noLoggedInUsers": "No logged-in users have visited your links yet.",
-      "nobody": "You have granted access to nobody.",
-      "addedBy": "added by",
-      "revokeHint": "Revoke",
-      "revoke": "Revoke",
+      "title": "Who has access", 
+      "noLoggedInUsers": "No logged-in users have visited your links yet.", 
+      "nobody": "You have granted access to nobody.", 
+      "addedBy": "added by", 
+      "revokeHint": "Revoke", 
+      "revoke": "Revoke", 
       "hasCustomPermissions": "[has custom permissions]"
-    },
+    }, 
     "selectRole": {
       "hint": "select a role"
-    },
+    }, 
     "emailInviteTab": {
-      "demoModeAlert": "Sharing emails cannot be sent while in demo mode. Create an account to send sharing emails, or get a shareable link instead.",
-      "personalMessagePlaceholder": "Type a personal message (optional)...",
-      "send": "Send",
-      "sending": "Sending...",
-      "success": "Successfully sent.",
-      "reset": "+ Send more invites",
+      "demoModeAlert": "Sharing emails cannot be sent while in demo mode. Create an account to send sharing emails, or get a shareable link instead.", 
+      "personalMessagePlaceholder": "Type a personal message (optional)...", 
+      "send": "Send", 
+      "sending": "Sending...", 
+      "success": "Successfully sent.", 
+      "reset": "+ Send more invites", 
       "startOver": "<< Start over"
-    },
+    }, 
     "shareableLinkTab": {
-      "withRoles": "Anyone with this link:",
-      "withoutRoles": "Anyone with this link can access the grain.",
-      "labelPlaceholder": "Label (optional)",
-      "labelExplanation": "Use a label to remind yourself to whom you sent this unique link.",
-      "create": "Create",
-      "creating": "Generating...",
-      "success": "Copy this link:",
-      "reset": "+ Create another link",
+      "withRoles": "Anyone with this link:", 
+      "withoutRoles": "Anyone with this link can access the grain.", 
+      "labelPlaceholder": "Label (optional)", 
+      "labelExplanation": "Use a label to remind yourself to whom you sent this unique link.", 
+      "create": "Create", 
+      "creating": "Generating...", 
+      "success": "Copy this link:", 
+      "reset": "+ Create another link", 
       "cancel": "Cancel"
-    },
+    }, 
     "shareWithOthers": {
-      "title": "Share with others",
-      "sendInviteTab": "Send an invite",
-      "shareableLinkTab": "Get shareable link",
+      "title": "Share with others", 
+      "sendInviteTab": "Send an invite", 
+      "shareableLinkTab": "Get shareable link", 
       "whoHasAccess": "See who has access"
-    },
+    }, 
     "grainSharePopup": {
-      "oldSharingModelDescription": "This grain uses the old sharing model. You can share it by copy/pasting the URL from the location bar",
-      "upgradeDescription": "You can upgrade this grain to the new model, but anyone with whom you shared this grain previously will lose access; you will have to share with them again.",
-      "upgradeWarning": "Upgrading cannot be undone.",
-      "upgrade": "upgrade",
-      "openInIncognitoMode": "You are viewing this grain anonymously.",
-      "toShareAccess": "To share access, copy this link:",
-      "openNonAnonymouslyHead": "For more sharing options, you must",
-      "openNonAnonymouslyLink": "open this grain non-anonymously",
-      "openNonAnonymouslyTail": ".",
+      "oldSharingModelDescription": "This grain uses the old sharing model. You can share it by copy/pasting the URL from the location bar", 
+      "upgradeDescription": "You can upgrade this grain to the new model, but anyone with whom you shared this grain previously will lose access; you will have to share with them again.", 
+      "upgradeWarning": "Upgrading cannot be undone.", 
+      "upgrade": "upgrade", 
+      "openInIncognitoMode": "You are viewing this grain anonymously.", 
+      "toShareAccess": "To share access, copy this link:", 
+      "openNonAnonymouslyHead": "For more sharing options, you must", 
+      "openNonAnonymouslyLink": "open this grain non-anonymously", 
+      "openNonAnonymouslyTail": ".", 
       "signIn": "For more sharing options, please sign in."
-    },
+    }, 
     "grainPowerboxRequest": {
-      "powerboxRequestHint": "Powerbox request",
+      "powerboxRequestHint": "Powerbox request", 
       "powerboxRequest": "P"
-    },
+    }, 
     "grainPowerboxOffer": {
-      "powerboxOfferHint": "Powerbox offer",
+      "powerboxOfferHint": "Powerbox offer", 
       "powerboxOffer": "P"
-    },
+    }, 
     "grainPowerboxOfferPopup": {
-      "title": "Powerbox Offer",
+      "title": "Powerbox Offer", 
       "dismiss": "Dismiss"
-    },
+    }, 
     "share": {
-      "grainNotFoundWithId": "No grain found with ID %s. Maybe you need to sign in to a different account?",
+      "grainNotFoundWithId": "No grain found with ID %s. Maybe you need to sign in to a different account?", 
       "signIn": "You must be signed in to grant access to a grain."
-    }
-  },
+    }, 
+    "selectRoleHint": "__選擇角色"
+  }, 
   "people": {
     "title": "People"
-  },
+  }, 
   "sharingLinks": {
     "title": "Sharing Links"
-  },
+  }, 
   "apps": {
     "title": "Apps"
   }

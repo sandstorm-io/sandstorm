@@ -59,6 +59,13 @@
     "signInGuide": "First, you have to sign in. Click \"Sign in\" in the upper-right.",
     "invalidKey": "Sorry, this is not a valid signup key."
   },
+  "uploadStatus": {
+    "title": "Uploading...",
+    "uploadFailedWithError": "Upload failed: %s %s",
+    "statusWithProgress": "%s... %s",
+    "status": "%s...",
+    "uploadFailed": "Upload failed. Please try again."
+  },
   "grains": {
     "title": "Grains",
     "grainView": {

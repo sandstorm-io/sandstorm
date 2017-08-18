@@ -288,17 +288,23 @@ limitations under the License.
 </template>
 
 <template name="uploadStatus">
-  {{>title "Uploading..."}}
+  {{>title (_ "uploadStatus.title")}}
 
   <div id="restoreGrain" class="centered-box">
   {{#if error}}
-    <p>Upload failed: {{error.status}} {{error.statusText}}</p>
+    <p>{{_ "uploadStatus.uploadFailedWithError" error.status error.statusText}}</p>
     <pre>{{error.response}}</pre>
   {{else}}
     {{#if status}}
-      <p>{{status}}... {{#if progress}}{{progress}}%{{/if}}</p>
+    <p>
+      {{#if progress}}
+        {{_ "uploadStatus.statusWithProgress" status progress}}
+      {{else}}
+        {{_ "uploadStatus.status" status}}
+      {{/if}}
+    </p>
     {{else}}
-      <p>Upload failed. Please try again.</p>
+      <p>{{_ "uploadStatus.uploadFailed"}}</p>
     {{/if}}
   {{/if}}
   </div>

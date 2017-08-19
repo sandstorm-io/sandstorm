@@ -70,7 +70,6 @@ Currently, Sandstorm supports authentication through E-mail, Google, Github, LDA
 Sandstorm has a framework for authentication which is relatively easy to extend with new types. But, you will want to consider the following:
 
 - As more types are added, the potential for user confusion grows. You may want to implement [de-duplification of credentials](https://github.com/sandstorm-io/sandstorm/tree/master/roadmap/platform/accounts#todofeature-de-duplicating-logins) before adding too many login mechanisms.
-- More generally, you may want to help fix Sandstorm's current problems with [profiles](https://github.com/sandstorm-io/sandstorm/tree/master/roadmap/platform/accounts#profile) being per-credential rather than per-account, as this will get worse when more credential types are introduced.
 - Perhaps the authentication system should be extensible by apps! You may want to implement an API by which a Sandstorm app can offer a new way of authenticating.
 
 ### Improve Notifications

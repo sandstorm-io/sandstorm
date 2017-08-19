@@ -72,6 +72,45 @@
     "uploadApp": "Upload app:",
     "uploadBackup": "Upload backup:"
   },
+  "referrals": {
+    "title": "Referral Program",
+    "header": {
+      "isPaid": {
+        "title": "Get up to <span class=\"reward-amount\">30 GB</span> of free space when your friends share on Oasis!",
+        "explanation": "For each friend that creates a sharing link, we'll reward you with 2 GB."
+      },
+      "isNotPaid": {
+        "title": "Get unlimited grains &amp; up to <span class=\"reward-amount\">2 GB</span> of free space when your friends share on Oasis!",
+        "explanation": "For each friend that creates a sharing link, we'll reward you with 50 MB. You'll also get unlimited grains."
+      }
+    },
+    "howTo": {
+      "title": "Sharing is referring",
+      "explanation": "To get started, open any grain and click Share access.",
+      "getStart": {
+        "step1": "You share a grain with your friend (who isn't already an Oasis user).",
+        "step2": "Your friend signs in.",
+        "step3": "Your friend shares a grain with any other person (including you)."
+      }
+    },
+    "status": {
+      "title": "Your referrals & status",
+      "explanation": "Once you send a sharing link out, people will appear in this list after they sign in.",
+      "pending": {
+        "title": "Still needs to share",
+        "explanation": "Tell these people to make a grain and share it with you. You must actually view the grain they shared with you!"
+      },
+      "success": {
+        "title": "Successful referrals",
+        "explanation": "You've successfully referred these people. Congratulations!"
+      }
+    },
+    "finePrint": {
+      "title": "The fine print",
+      "warningWithAccountLink": "Your referral bonus lasts until 1 year after the referral. The terms of this referral program may change without warning; however, such changes will not affect bonuses you have already received. If you need even more space, <a href=\"%s\">upgrade your account.</a>",
+      "explanation": "Paid subscribers can get up to 30 GB of free storage, 2 GB per person they refer, in addition to the storage from their account level. Free account holders can earn unlimited grains and 50 MB of free storage per person they refer, up to 2 GB total."
+    }
+  },
   "grains": {
     "title": "Grains",
     "grainView": {

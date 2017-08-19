@@ -402,32 +402,28 @@ limitations under the License.
 
 <template name="about">
   {{setDocumentTitle}}
-  {{>title "About Sandstorm"}}
+  {{>title (_ "about.title")}}
 
   <div class="about">
-    <h1>About Sandstorm</h1>
+    <h1>{{_ "about.title"}}</h1>
 
     <section class="intro">
-      <p><a href="https://sandstorm.io">Sandstorm.io</a> is an open source hosting platform for
-        personal/private instances of web apps. Users can upload and install arbitrary software
-        through a simple app-store-like web interface. In addition to better privacy,
-        <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html">
-        this is the only way to make Open Source web apps viable.</a></p>
+      <p>{{{_ "about.intro.explanation"}}}</p>
 
-      <p class="version">Version: {{build}}</p>
+      <p class="version">{{_ "about.intro.version" build}}</p>
       {{#if isUnofficial}}
-        <p class="unofficial"><b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers.</p>
+        <p class="unofficial">{{{_ "about.intro.unofficialWarning"}}}</p>
       {{/if}}
     </section>
 
     <section class="changelog">
-      <h2>Recent changes</h2>
+      <h2>{{_ "about.changelog.title"}}</h2>
 
       {{> changelog ""}}
     </section>
 
     <section class="developers">
-      <h2>Core developers</h2>
+      <h2>{{_ "about.developers.title"}}</h2>
       <ul>
         <li><a href="https://github.com/kentonv">
             <img src="/logos/kenton.png" alt="Kenton Varda">
@@ -455,7 +451,7 @@ limitations under the License.
             Garply</a></li>
       </ul>
     </section><section class="advisors">
-      <h2>Advisors</h2>
+      <h2>{{_ "about.advisors.title"}}</h2>
       <ul>
         <li><a href="https://github.com/swetland">
             <img src="/logos/swetland.png" alt="Brian Swetland">
@@ -476,8 +472,8 @@ limitations under the License.
     </section>
     <br>
     <section class="corporate">
-      <h2>Corporate sponsors</h2>
-      <p>These companies contributed heavily to Sandstorm's <a href="http://igg.me/at/sandstorm">crowdfunding campaign</a>.</p>
+      <h2>{{_ "about.corporate.title"}}</h2>
+      <p>{{{_ "about.corporate.explanation"}}}</p>
       <ul>
         <li><a href="http://draw.io"><img width="92.75" height="121" src="/logos/draw.io-logo.svg">&nbsp;</a></li><li>
         <img src="/logos/humanweb.png">&nbsp;</li><li>
@@ -485,8 +481,8 @@ limitations under the License.
       </ul>
       <div class="strut"></div>
     </section><section class="individual">
-      <h2>Key invididual sponsors</h2>
-      <p>These individuals contributed heavily to Sandstorm's <a href="http://igg.me/at/sandstorm">crowdfunding campaign</a>.</p>
+      <h2>{{_ "about.individual.title"}}</h2>
+      <p>{{{_ "about.individual.explanation"}}}</p>
       <ul>
       <li><a href="http://rogerwagner.com/">
           <img src="/logos/wagner.png">
@@ -498,8 +494,8 @@ limitations under the License.
     </section>
 
     <section class="backers">
-      <h2>Backers</h2>
-      <p>from <a href="http://igg.me/at/sandstorm">our Indiegogo campaign &gt;</a></p>
+      <h2>{{_ "about.backers.title"}}</h2>
+      <p>{{{_ "about.backers.explanation"}}}</p>
       {{#if backers}}
       <ul>
         {{#each backers}}
@@ -508,60 +504,56 @@ limitations under the License.
         <li>&nbsp;</li>
         <li>&nbsp;</li>
         <li>&nbsp;</li>
-        <li class="anonymous">and {{anonCount}} anonymous contributors</li>
+        <li class="anonymous">{{_ "about.backers.anonymous" anonCount}}</li>
       </ul>
       {{else}}
-      <p>loading...</p>
+      <p>{{_ "about.backers.loading"}}</p>
       {{/if}}
     </section>
 
     <section class="dependencies">
-      <h2>Third-party works used</h2>
+      <h2>{{_ "about.dependencies.title"}}</h2>
       <ul>
         <!-- TODO(soon): This list has a lot missing. Review. -->
-        <li><a href="http://nodejs.org/">Node.js</a> (MIT license)</li>
-        <li><a href="https://www.meteor.com/">Meteor web framework</a> (MIT license)</li>
-        <li><a href="https://github.com/jedisct1/libsodium">libsodium</a> (ISC license)</li>
-        <li><a href="https://github.com/seccomp/libseccomp">libseccomp</a> (LGPL license)</li>
+        <li><a href="http://nodejs.org/">Node.js</a> (MIT {{_ "about.dependencies.license"}})</li>
+        <li><a href="https://www.meteor.com/">Meteor web framework</a> (MIT {{_ "about.dependencies.license"}})</li>
+        <li><a href="https://github.com/jedisct1/libsodium">libsodium</a> (ISC {{_ "about.dependencies.license"}})</li>
+        <li><a href="https://github.com/seccomp/libseccomp">libseccomp</a> (LGPL {{_ "about.dependencies.license"}})</li>
         <li><a href="https://www.mongodb.org/">MongoDB</a> (AGPL)</li>
-        <li><a href="https://github.com/EventedMind/iron-router">Iron Router</a> (MIT license)</li>
-        <li><a href="http://underscorejs.org/">Underscore.js</a> (MIT license)</li>
-        <li><a href="http://www.senchalabs.org/connect/">Connect middleware</a> (MIT license)</li>
+        <li><a href="https://github.com/EventedMind/iron-router">Iron Router</a> (MIT {{_ "about.dependencies.license"}})</li>
+        <li><a href="http://underscorejs.org/">Underscore.js</a> (MIT {{_ "about.dependencies.license"}})</li>
+        <li><a href="http://www.senchalabs.org/connect/">Connect middleware</a> (MIT {{_ "about.dependencies.license"}})</li>
         <li><a href="https://www.google.com/fonts/specimen/Source+Sans+Pro">Source Sans Pro font</a> (SIL OFL)</li>
-        <li><a href="https://github.com/joyent/http-parser">Node/nginx HTTP parser library</a> (MIT license)</li>
-        <li><a href="https://github.com/andris9/simplesmtp">Simple SMTP by Andris Reinman</a> (MIT license)</li>
-        <li><a href="https://github.com/justmoon/node-bignum">node-bignum by Stefan Thomas</a> (MIT license)</li>
-        <li><a href="https://github.com/drudru/ansi_up">ansi_up library by Dru Nelson</a> (MIT license)</li>
-        <li><a href="https://github.com/stewartlord/identicon.js">identicon.js by Stewart Lord</a> (BSD license)</li>
-        <li><a href="https://github.com/usablica/intro.js">intro.js by Afshin Mehrabani</a> (MIT license)</li>
-        <li><a href="http://www.xarg.org/2010/03/generate-client-side-png-files-using-javascript/">PNGlib by Robert Eisele</a> (BSD license)</li>
+        <li><a href="https://github.com/joyent/http-parser">Node/nginx HTTP parser library</a> (MIT {{_ "about.dependencies.license"}})</li>
+        <li><a href="https://github.com/andris9/simplesmtp">Simple SMTP by Andris Reinman</a> (MIT {{_ "about.dependencies.license"}})</li>
+        <li><a href="https://github.com/justmoon/node-bignum">node-bignum by Stefan Thomas</a> (MIT {{_ "about.dependencies.license"}})</li>
+        <li><a href="https://github.com/drudru/ansi_up">ansi_up library by Dru Nelson</a> (MIT {{_ "about.dependencies.license"}})</li>
+        <li><a href="https://github.com/stewartlord/identicon.js">identicon.js by Stewart Lord</a> (BSD {{_ "about.dependencies.license"}})</li>
+        <li><a href="https://github.com/usablica/intro.js">intro.js by Afshin Mehrabani</a> (MIT {{_ "about.dependencies.license"}})</li>
+        <li><a href="http://www.xarg.org/2010/03/generate-client-side-png-files-using-javascript/">PNGlib by Robert Eisele</a> (BSD {{_ "about.dependencies.license"}})</li>
         <li><a href="http://libb64.sourceforge.net/">libb64 by Chris Venter</a> (Public Domain)</li>
         <li><a href="http://tukaani.org/xz/">XZ Utils</a> (Public Domain / GPL)</li>
-        <li><a href="http://www.info-zip.org/">Info-ZIP</a> (Info-ZIP license)</li>
-        <li><a href="http://www.gnu.org/software/libc/libc.html">GNU C library</a> (LGPL license)</li>
-        <li><a href="https://gcc.gnu.org/libstdc++/">GNU C++ Library</a> (LGPL license)</li>
+        <li><a href="http://www.info-zip.org/">Info-ZIP</a> (Info-ZIP {{_ "about.dependencies.license"}})</li>
+        <li><a href="http://www.gnu.org/software/libc/libc.html">GNU C library</a> (LGPL {{_ "about.dependencies.license"}})</li>
+        <li><a href="https://gcc.gnu.org/libstdc++/">GNU C++ Library</a> (LGPL {{_ "about.dependencies.license"}})</li>
         <li class="spacer">&nbsp;</li>
         <li class="spacer">&nbsp;</li>
         <li class="spacer">&nbsp;</li>
       </ul>
-      <p>These works are copyright the respective authors and used under the terms of the respective
-        licenses.</p>
+      <p>{{_ "about.dependencies.explanation"}}</p>
     </section>
 
     <section class="copyright">
-      <h2>Copyright</h2>
-      <p>The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and
-         contributors. The implementation is licensed under the Apache License 2.0.</p>
-      <p>"Sandstorm" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc.,
-         and may not be used to advertise derivative works nor commercial services without
-         written consent from Sandstorm Development Group, Inc.</p>
+      <h2>{{_ "about.copyright.title"}}</h2>
+      <p>{{_ "about.copyright.license"}}</p>
+      <p>{{_ "about.copyright.trademark"}}</p>
     </section>
 
     <section class="terms">
       <ul>
-        <li><a href="https://github.com/sandstorm-io/sandstorm/blob/master/LICENSE">License</a></li>
-        {{#with termsUrl}}<li><a href="{{.}}">Terms of service</a></li>{{/with}}
-        {{#with privacyUrl}}<li><a href="{{.}}">Privacy policy</a></li>{{/with}}
+        <li><a href="https://github.com/sandstorm-io/sandstorm/blob/master/LICENSE">{{_ "about.terms.license"}}</a></li>
+        {{#with termsUrl}}<li><a href="{{.}}">{{_ "about.terms.terms"}}</a></li>{{/with}}
+        {{#with privacyUrl}}<li><a href="{{.}}">{{_ "about.terms.privacy"}}</a></li>{{/with}}
       </ul>
     </section>
   </div>

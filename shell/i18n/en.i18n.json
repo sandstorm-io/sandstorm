@@ -111,6 +111,52 @@
       "explanation": "Paid subscribers can get up to 30 GB of free storage, 2 GB per person they refer, in addition to the storage from their account level. Free account holders can earn unlimited grains and 50 MB of free storage per person they refer, up to 2 GB total."
     }
   },
+  "about": {
+    "title": "About Sandstorm",
+    "intro": {
+      "explanation": "<a href=\"https://sandstorm.io\">Sandstorm.io</a> is an open source hosting platform for personal/private instances of web apps. Users can upload and install arbitrary software through a simple app-store-like web interface. In addition to better privacy, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">this is the only way to make Open Source web apps viable.</a>",
+      "version": "Version: %s",
+      "unofficialWarning": "<b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers."
+    },
+    "changelog": {
+      "title": "Recent changes"
+    },
+    "developers": {
+      "title": "Core developers"
+    },
+    "advisors": {
+      "title": "Advisors"
+    },
+    "corporate": {
+      "title": "Corporate sponsors",
+      "explanation": "These companies contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
+    },
+    "individual": {
+      "title": "Key indivisual sponsors",
+      "explanation": "These individuals contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
+    },
+    "backers": {
+      "title": "Backers",
+      "explanation": "from <a href=\"http://igg.me/at/sandstorm\">our Indiegogo campaign &gt;</a>",
+      "anonymous": "and %s anonymous contributors",
+      "loading": "loading..."
+    },
+    "dependencies": {
+      "title": "Third-party works used",
+      "license": "license",
+      "explanation": "These works are copyright the respective authors and used under the terms of the respective licenses."
+    },
+    "copyright": {
+      "title": "Copyright",
+      "license": "The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and contributors. The implementation is licensed under the Apache License 2.0.",
+      "trademark": "\"Sandstorm\" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc., and may not be used to advertise derivative works nor commercial services without written consent from Sandstorm Development Group, Inc."
+    },
+    "terms": {
+      "license": "License",
+      "terms": "Terms of service",
+      "privacy": "Privacy policy"
+    }
+  },
   "grains": {
     "title": "Grains",
     "grainView": {

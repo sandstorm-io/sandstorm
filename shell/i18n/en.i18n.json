@@ -327,6 +327,11 @@
     "dismissButton": {
       "hint": "Ignore the above updates",
       "text": "Dismiss"
+    },
+    "mailingListBonusNotificationItem": {
+      "explanationWithBonus": "Subscribe to our announcement list and get <strong>%s bonus storage</strong> (1-2 emails per month).",
+      "submitButton": "Subscribe",
+      "dismissButton": "No thanks"
     }
   },
   "people": {

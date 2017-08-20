@@ -36,15 +36,14 @@
       <img src="/email.svg">
     </div>
 
-    Subscribe to our announcement list and get <strong>{{renderStorage MAILING_LIST_BONUS}} bonus
-    storage</strong> (1-2 emails per month).
+    {{{_ "notifications.mailingListBonusNotificationItem.explanationWithBonus" (renderStorage MAILING_LIST_BONUS)}}}
 
     <div class="notification-footer">
       <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
       <form class="standard-form">
         <div class="button-row">
-          <button type="submit">Subscribe</button>
-          <button type="button">No thanks</button>
+          <button type="submit">{{_ "notifications.mailingListBonusNotificationItem.submitButton"}}</button>
+          <button type="button">{{_ "notifications.mailingListBonusNotificationItem.dismissButton"}}</button>
         </div>
       </form>
     </div>

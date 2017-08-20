@@ -332,6 +332,12 @@
       "explanationWithBonus": "Subscribe to our announcement list and get <strong>%s bonus storage</strong> (1-2 emails per month).",
       "submitButton": "Subscribe",
       "dismissButton": "No thanks"
+    },
+    "referralNotificationItem": {
+      "paidUser": "Get up to 30 GB bonus with the",
+      "unpaidUser": "Unlimited grains & up to 2 GB bonus with the",
+      "link": "referral program »",
+      "dismissButton": "Dismiss"
     }
   },
   "people": {

@@ -56,19 +56,19 @@
     </div>
 
     {{#if paidUser}}
-      Get up to 30 GB bonus with the
+      {{_ "notifications.referralNotificationItem.paidUser"}}
     {{else}}
-      Unlimited grains &amp; up to 2 GB bonus with the
+      {{_ "notifications.referralNotificationItem.unpaidUser"}}
     {{/if}}
     {{#linkTo route="referrals"}}
-      referral program &raquo;
+      {{_ "notifications.referralNotificationItem.link"}}
     {{/linkTo}}
 
     <div class="notification-footer">
       <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
       <form class="standard-form">
         <div class="button-row">
-          <button type="button">Dismiss</button>
+          <button type="button">{{_ "notifications.referralNotificationItem.dismissButton"}}</button>
         </div>
       </form>
     </div>

@@ -1,160 +1,162 @@
 {
   "error": "Error: %s",
-  "layout": {
-    "demoExpired": {
-      "title": "Demo Expired",
-      "canUpgrade": "Thanks for trying the Sandstorm Demo! Your demo account has expired. If you'd like to continue using Sandstorm and make your data permanent, please sign in.",
-      "cannotUpgrade": "Thanks for trying the Sandstorm Demo! Your demo account has expired.",
-      "signOut": "Sign out"
-    },
-    "adminAlert": {
-      "icon": "!",
-      "title": "Notice from Admin"
-    },
-    "demoModal": {
-      "header": "Sandstorm is a self-hostable web productivity suite.",
-      "withAppDemo": "with apps like %s.",
-      "withoutAppDemo": "with all the apps you need in one place.",
-      "startButton": {
-        "withAppDemo": "Try %s »",
-        "withoutAppDemo": "Start »"
+  "shell": {
+    "layout": {
+      "demoExpired": {
+        "title": "Demo Expired",
+        "canUpgrade": "Thanks for trying the Sandstorm Demo! Your demo account has expired. If you'd like to continue using Sandstorm and make your data permanent, please sign in.",
+        "cannotUpgrade": "Thanks for trying the Sandstorm Demo! Your demo account has expired.",
+        "signOut": "Sign out"
       },
-      "explanation": "<p>Sandstorm makes it easy to run apps on your own server. In addition to improving privacy and control, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\" target=\"_blank\">this brings Open Source apps to a wide audience.</a></p>",
-      "securityOverview": "<p>Sandstorm is also ridiculously secure. If security interests you, check out <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">Sandstorm's security model overview</a>.</p>"
-    }
-  },
-  "notifications": {
-    "hint": "Notifications",
-    "text": "Notifications"
-  },
-  "notificationsPopup": {
-    "title": "Notifications",
-    "empty": "No notifications..."
-  },
-  "loading": {
-    "title": "Loading...",
-    "text": "Loading..."
-  },
-  "notFound": {
-    "title": "Not Found",
-    "text": "404 Not Found :("
-  },
-  "root": {
-    "title": "Home"
-  },
-  "grainLogContents": {
-    "prefix": "..."
-  },
-  "grainLog": {
-    "title": "Debug log: %s"
-  },
-  "signup": {
-    "title": "Claim Invite",
-    "signedUp": {
-      "keyIsUsedWithOrigin": "You're all signed up!  Now go <a href=\"https://apps.sandstorm.io/?host=%s\">install some apps</a>.",
-      "keyIsNotUsed": "It looks like you already have an account, so you don't need this signup key."
-    },
-    "keyIsUsed": "Sorry, this signup key has already been used.",
-    "processing": "Please wait...",
-    "signInGuide": "First, you have to sign in. Click \"Sign in\" in the upper-right.",
-    "invalidKey": "Sorry, this is not a valid signup key."
-  },
-  "uploadStatus": {
-    "title": "Uploading...",
-    "uploadFailedWithError": "Upload failed: %s %s",
-    "statusWithProgress": "%s... %s",
-    "status": "%s...",
-    "uploadFailed": "Upload failed. Please try again."
-  },
-  "uploadTest": {
-    "title": "Upload test page",
-    "explanation": "This page is intended for use by the test scripts.",
-    "uploadApp": "Upload app:",
-    "uploadBackup": "Upload backup:"
-  },
-  "referrals": {
-    "title": "Referral Program",
-    "header": {
-      "isPaid": {
-        "title": "Get up to <span class=\"reward-amount\">30 GB</span> of free space when your friends share on Oasis!",
-        "explanation": "For each friend that creates a sharing link, we'll reward you with 2 GB."
+      "adminAlert": {
+        "icon": "!",
+        "title": "Notice from Admin"
       },
-      "isNotPaid": {
-        "title": "Get unlimited grains &amp; up to <span class=\"reward-amount\">2 GB</span> of free space when your friends share on Oasis!",
-        "explanation": "For each friend that creates a sharing link, we'll reward you with 50 MB. You'll also get unlimited grains."
+      "demoModal": {
+        "header": "Sandstorm is a self-hostable web productivity suite.",
+        "withAppDemo": "with apps like %s.",
+        "withoutAppDemo": "with all the apps you need in one place.",
+        "startButton": {
+          "withAppDemo": "Try %s »",
+          "withoutAppDemo": "Start »"
+        },
+        "explanation": "<p>Sandstorm makes it easy to run apps on your own server. In addition to improving privacy and control, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\" target=\"_blank\">this brings Open Source apps to a wide audience.</a></p>",
+        "securityOverview": "<p>Sandstorm is also ridiculously secure. If security interests you, check out <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">Sandstorm's security model overview</a>.</p>"
       }
     },
-    "howTo": {
-      "title": "Sharing is referring",
-      "explanation": "To get started, open any grain and click Share access.",
-      "getStart": {
-        "step1": "You share a grain with your friend (who isn't already an Oasis user).",
-        "step2": "Your friend signs in.",
-        "step3": "Your friend shares a grain with any other person (including you)."
-      }
+    "notifications": {
+      "hint": "Notifications",
+      "text": "Notifications"
     },
-    "status": {
-      "title": "Your referrals & status",
-      "explanation": "Once you send a sharing link out, people will appear in this list after they sign in.",
-      "pending": {
-        "title": "Still needs to share",
-        "explanation": "Tell these people to make a grain and share it with you. You must actually view the grain they shared with you!"
+    "notificationsPopup": {
+      "title": "Notifications",
+      "empty": "No notifications..."
+    },
+    "loading": {
+      "title": "Loading...",
+      "text": "Loading..."
+    },
+    "notFound": {
+      "title": "Not Found",
+      "text": "404 Not Found :("
+    },
+    "root": {
+      "title": "Home"
+    },
+    "grainLogContents": {
+      "prefix": "..."
+    },
+    "grainLog": {
+      "title": "Debug log: %s"
+    },
+    "signup": {
+      "title": "Claim Invite",
+      "signedUp": {
+        "keyIsUsedWithOrigin": "You're all signed up!  Now go <a href=\"https://apps.sandstorm.io/?host=%s\">install some apps</a>.",
+        "keyIsNotUsed": "It looks like you already have an account, so you don't need this signup key."
       },
-      "success": {
-        "title": "Successful referrals",
-        "explanation": "You've successfully referred these people. Congratulations!"
+      "keyIsUsed": "Sorry, this signup key has already been used.",
+      "processing": "Please wait...",
+      "signInGuide": "First, you have to sign in. Click \"Sign in\" in the upper-right.",
+      "invalidKey": "Sorry, this is not a valid signup key."
+    },
+    "uploadStatus": {
+      "title": "Uploading...",
+      "uploadFailedWithError": "Upload failed: %s %s",
+      "statusWithProgress": "%s... %s",
+      "status": "%s...",
+      "uploadFailed": "Upload failed. Please try again."
+    },
+    "uploadTest": {
+      "title": "Upload test page",
+      "explanation": "This page is intended for use by the test scripts.",
+      "uploadApp": "Upload app:",
+      "uploadBackup": "Upload backup:"
+    },
+    "referrals": {
+      "title": "Referral Program",
+      "header": {
+        "isPaid": {
+          "title": "Get up to <span class=\"reward-amount\">30 GB</span> of free space when your friends share on Oasis!",
+          "explanation": "For each friend that creates a sharing link, we'll reward you with 2 GB."
+        },
+        "isNotPaid": {
+          "title": "Get unlimited grains &amp; up to <span class=\"reward-amount\">2 GB</span> of free space when your friends share on Oasis!",
+          "explanation": "For each friend that creates a sharing link, we'll reward you with 50 MB. You'll also get unlimited grains."
+        }
+      },
+      "howTo": {
+        "title": "Sharing is referring",
+        "explanation": "To get started, open any grain and click Share access.",
+        "getStart": {
+          "step1": "You share a grain with your friend (who isn't already an Oasis user).",
+          "step2": "Your friend signs in.",
+          "step3": "Your friend shares a grain with any other person (including you)."
+        }
+      },
+      "status": {
+        "title": "Your referrals & status",
+        "explanation": "Once you send a sharing link out, people will appear in this list after they sign in.",
+        "pending": {
+          "title": "Still needs to share",
+          "explanation": "Tell these people to make a grain and share it with you. You must actually view the grain they shared with you!"
+        },
+        "success": {
+          "title": "Successful referrals",
+          "explanation": "You've successfully referred these people. Congratulations!"
+        }
+      },
+      "finePrint": {
+        "title": "The fine print",
+        "warningWithAccountLink": "Your referral bonus lasts until 1 year after the referral. The terms of this referral program may change without warning; however, such changes will not affect bonuses you have already received. If you need even more space, <a href=\"%s\">upgrade your account.</a>",
+        "explanation": "Paid subscribers can get up to 30 GB of free storage, 2 GB per person they refer, in addition to the storage from their account level. Free account holders can earn unlimited grains and 50 MB of free storage per person they refer, up to 2 GB total."
       }
     },
-    "finePrint": {
-      "title": "The fine print",
-      "warningWithAccountLink": "Your referral bonus lasts until 1 year after the referral. The terms of this referral program may change without warning; however, such changes will not affect bonuses you have already received. If you need even more space, <a href=\"%s\">upgrade your account.</a>",
-      "explanation": "Paid subscribers can get up to 30 GB of free storage, 2 GB per person they refer, in addition to the storage from their account level. Free account holders can earn unlimited grains and 50 MB of free storage per person they refer, up to 2 GB total."
-    }
-  },
-  "about": {
-    "title": "About Sandstorm",
-    "intro": {
-      "explanation": "<a href=\"https://sandstorm.io\">Sandstorm.io</a> is an open source hosting platform for personal/private instances of web apps. Users can upload and install arbitrary software through a simple app-store-like web interface. In addition to better privacy, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">this is the only way to make Open Source web apps viable.</a>",
-      "version": "Version: %s",
-      "unofficialWarning": "<b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers."
-    },
-    "changelog": {
-      "title": "Recent changes"
-    },
-    "developers": {
-      "title": "Core developers"
-    },
-    "advisors": {
-      "title": "Advisors"
-    },
-    "corporate": {
-      "title": "Corporate sponsors",
-      "explanation": "These companies contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
-    },
-    "individual": {
-      "title": "Key indivisual sponsors",
-      "explanation": "These individuals contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
-    },
-    "backers": {
-      "title": "Backers",
-      "explanation": "from <a href=\"http://igg.me/at/sandstorm\">our Indiegogo campaign &gt;</a>",
-      "anonymous": "and %s anonymous contributors",
-      "loading": "loading..."
-    },
-    "dependencies": {
-      "title": "Third-party works used",
-      "license": "license",
-      "explanation": "These works are copyright the respective authors and used under the terms of the respective licenses."
-    },
-    "copyright": {
-      "title": "Copyright",
-      "license": "The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and contributors. The implementation is licensed under the Apache License 2.0.",
-      "trademark": "\"Sandstorm\" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc., and may not be used to advertise derivative works nor commercial services without written consent from Sandstorm Development Group, Inc."
-    },
-    "terms": {
-      "license": "License",
-      "terms": "Terms of service",
-      "privacy": "Privacy policy"
+    "about": {
+      "title": "About Sandstorm",
+      "intro": {
+        "explanation": "<a href=\"https://sandstorm.io\">Sandstorm.io</a> is an open source hosting platform for personal/private instances of web apps. Users can upload and install arbitrary software through a simple app-store-like web interface. In addition to better privacy, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">this is the only way to make Open Source web apps viable.</a>",
+        "version": "Version: %s",
+        "unofficialWarning": "<b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers."
+      },
+      "changelog": {
+        "title": "Recent changes"
+      },
+      "developers": {
+        "title": "Core developers"
+      },
+      "advisors": {
+        "title": "Advisors"
+      },
+      "corporate": {
+        "title": "Corporate sponsors",
+        "explanation": "These companies contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
+      },
+      "individual": {
+        "title": "Key indivisual sponsors",
+        "explanation": "These individuals contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
+      },
+      "backers": {
+        "title": "Backers",
+        "explanation": "from <a href=\"http://igg.me/at/sandstorm\">our Indiegogo campaign &gt;</a>",
+        "anonymous": "and %s anonymous contributors",
+        "loading": "loading..."
+      },
+      "dependencies": {
+        "title": "Third-party works used",
+        "license": "license",
+        "explanation": "These works are copyright the respective authors and used under the terms of the respective licenses."
+      },
+      "copyright": {
+        "title": "Copyright",
+        "license": "The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and contributors. The implementation is licensed under the Apache License 2.0.",
+        "trademark": "\"Sandstorm\" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc., and may not be used to advertise derivative works nor commercial services without written consent from Sandstorm Development Group, Inc."
+      },
+      "terms": {
+        "license": "License",
+        "terms": "Terms of service",
+        "privacy": "Privacy policy"
+      }
     }
   },
   "grains": {

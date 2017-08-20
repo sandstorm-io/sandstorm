@@ -28,20 +28,20 @@ limitations under the License.
   {{>sandstormTopbar globalTopbar}}
 
   {{#with demoExpired}}
-    {{>title "Demo Expired"}}
+    {{>title (_ "shell.layout.demoExpired.title")}}
 
     <div id="demo-expired" class="demo-expired-main-content {{#if hideNavbar}}hide-navbar{{else}}{{#if shrinkNavbar}}shrink-navbar{{/if}}{{/if}}">
-      <h1>{{_ "layout.demoExpired.title"}}</h1>
+      <h1>{{_ "shell.layout.demoExpired.title"}}</h1>
       {{#if canUpgradeDemo}}
-        <p>{{_ "layout.demoExpired.canUpgrade"}}</p>
+        <p>{{_ "shell.layout.demoExpired.canUpgrade"}}</p>
         <div class="login">
           {{> loginButtonsDialog accountsUi=globalAccountsUi}}
         </div>
       {{else}}
-        <p>{{_ "layout.demoExpired.cannotUpgrade"}}
+        <p>{{_ "shell.layout.demoExpired.cannotUpgrade"}}
           <form class="standard-form">
             <div class="button-row">
-              <button name="logout" type="submit">{{_ "layout.demoExpired.signOut"}}</button>
+              <button name="logout" type="submit">{{_ "shell.layout.demoExpired.signOut"}}</button>
             </div>
           </form>
         </p>
@@ -86,9 +86,9 @@ limitations under the License.
             on this topbar item solely because the whole topbar itself is embedded inside the
             "layout" template. But, we shouldn't be relying on that! Move this to its own
             template... --}}
-        <span id="admin-alert-icon" class="{{className}}">{{_ "layout.adminAlert.icon"}}</span>
+        <span id="admin-alert-icon" class="{{className}}">{{_ "shell.layout.adminAlert.icon"}}</span>
       {{else}}
-        <h4>{{_ "layout.adminAlert.title"}}</h4>
+        <h4>{{_ "shell.layout.adminAlert.title"}}</h4>
         <p>
           {{#if alertUrl}}
             <a href="{{alertUrl}}" class="alert {{className}}">{{text}}</a>
@@ -137,26 +137,26 @@ limitations under the License.
   {{#with demoModal}}
     {{#modalDialogWithBackdrop onDismiss=dismissDemoModal class="demo-startup-modal"}}
       <div class="top">
-          <p class="header">{{_ "layout.demoModal.header"}}</p>
+          <p class="header">{{_ "shell.layout.demoModal.header"}}</p>
           <p class="body">
           {{#if appdemo}}
-            {{_ "layout.demoModal.withAppDemo" appdemo}}
+            {{_ "shell.layout.demoModal.withAppDemo" appdemo}}
           {{else}}
-            {{_ "layout.demoModal.withoutAppDemo"}}
+            {{_ "shell.layout.demoModal.withoutAppDemo"}}
           {{/if}}</p>
 
           <button class="button-primary start">
             {{#if appdemo}}
-              {{_ "layout.demoModal.startButton.withAppDemo" appdemo}}
+              {{_ "shell.layout.demoModal.startButton.withAppDemo" appdemo}}
             {{else}}
-              {{_ "layout.demoModal.startButton.withoutAppDemo"}}
+              {{_ "shell.layout.demoModal.startButton.withoutAppDemo"}}
             {{/if}}
           </button>
 
       </div>
       <div class="bottom">
-        {{{_ "layout.demoModal.explanation"}}}
-        {{{_ "layout.demoModal.securityOverview"}}}
+        {{{_ "shell.layout.demoModal.explanation"}}}
+        {{{_ "shell.layout.demoModal.securityOverview"}}}
       </div>
     {{/modalDialogWithBackdrop}}
   {{/with}}
@@ -169,23 +169,23 @@ limitations under the License.
 </template>
 
 <template name="notifications">
-  <button class="show-popup icon icon-notification" title="{{_ "notifications.hint"}}">
+  <button class="show-popup icon icon-notification" title="{{_ "shell.notifications.hint"}}">
   {{#if notificationCount}}
     <span class="count">{{notificationCount}}</span>
   {{/if}}
-  {{_ "notifications.text"}}
+  {{_ "shell.notifications.text"}}
   </button>
 </template>
 
 <template name="notificationsPopup">
-  <h4>{{_ "notificationsPopup.title"}}</h4>
+  <h4>{{_ "shell.notificationsPopup.title"}}</h4>
   <ul class="notification-list">
     {{#each notifications}}
       <li>
         {{> notificationItem .}}
       </li>
     {{else}}
-    <li>{{_ "notificationsPopup.empty"}}</li>
+    <li>{{_ "shell.notificationsPopup.empty"}}</li>
     {{/each}}
   </ul>
 </template>
@@ -195,8 +195,8 @@ limitations under the License.
 </template>
 
 <template name="loading">
-  {{>title (_ "loading.title")}}
-  <div class="centered-box">{{_ "loading.text"}}</div>
+  {{>title (_ "shell.loading.title")}}
+  <div class="centered-box">{{_ "shell.loading.text"}}</div>
 </template>
 
 <template name="loadingNoMessage">
@@ -207,12 +207,12 @@ limitations under the License.
 </template>
 
 <template name="notFound">
-  {{>title (_ "notFound.title")}}
-  <div class="centered-box">{{_ "notFound.text"}}</div>
+  {{>title (_ "shell.notFound.title")}}
+  <div class="centered-box">{{_ "shell.notFound.text"}}</div>
 </template>
 
 <template name="root">
-  {{>title (_ "root.title")}}
+  {{>title (_ "shell.root.title")}}
 
   <div id="intro" class="{{#if splashUrl}}has-splash{{/if}}">
     {{> loginButtonsDialog accountsUi=globalAccountsUi}}
@@ -235,11 +235,11 @@ limitations under the License.
 </template>
 
 <template name="grainLogContents">
-  <pre>{{_ "grainLogContents.prefix"}}{{{logHtml}}}</pre>
+  <pre>{{_ "shell.grainLogContents.prefix"}}{{{logHtml}}}</pre>
 </template>
 
 <template name="grainLog">
-  <div class="grainlog-title">{{_ "grainLog.title" title}}</div>
+  <div class="grainlog-title">{{_ "shell.grainLog.title" title}}</div>
   <div class="grainlog-contents" aria-live="polite">
     {{> grainLogContents logHtml=html onRenderedHook=maybeScrollToBottom }}
   </div>
@@ -259,98 +259,98 @@ limitations under the License.
 </template>
 
 <template name="signup">
-  {{>title (_ "signup.title")}}
+  {{>title (_ "shell.signup.title")}}
 
   <div class="centered-box">
   {{#if alreadySignedUp}}
     {{#if keyIsUsed}}
-      <p>{{{_ "signup.signedUp.keyIsUsedWithOrigin" origin}}}</p>
+      <p>{{{_ "shell.signup.signedUp.keyIsUsedWithOrigin" origin}}}</p>
     {{else}}
-      <p>{{_ "signup.signedUp.keyIsNotUsed"}}</p>
+      <p>{{_ "shell.signup.signedUp.keyIsNotUsed"}}</p>
     {{/if}}
   {{else}}
     {{#if keyIsValid}}
       {{#if keyIsUsed}}
-        <p>{{_ "signup.keyIsUsed"}}</p>
+        <p>{{_ "shell.signup.keyIsUsed"}}</p>
       {{else}}
         {{#if currentUser}}
-          <p>{{_ "signup.processing"}}</p>
+          <p>{{_ "shell.signup.processing"}}</p>
         {{else}}
-          <p>{{signupDialog}} {{_ "signup.signInGuide"}}</p>
+          <p>{{signupDialog}} {{_ "shell.signup.signInGuide"}}</p>
           <div id="sign-in-arrow"></div>
         {{/if}}
       {{/if}}
     {{else}}
-      <p>{{_ "signup.invalidKey"}}</p>
+      <p>{{_ "shell.signup.invalidKey"}}</p>
     {{/if}}
   {{/if}}
   </div>
 </template>
 
 <template name="uploadStatus">
-  {{>title (_ "uploadStatus.title")}}
+  {{>title (_ "shell.uploadStatus.title")}}
 
   <div id="restoreGrain" class="centered-box">
   {{#if error}}
-    <p>{{_ "uploadStatus.uploadFailedWithError" error.status error.statusText}}</p>
+    <p>{{_ "shell.uploadStatus.uploadFailedWithError" error.status error.statusText}}</p>
     <pre>{{error.response}}</pre>
   {{else}}
     {{#if status}}
     <p>
       {{#if progress}}
-        {{_ "uploadStatus.statusWithProgress" status progress}}
+        {{_ "shell.uploadStatus.statusWithProgress" status progress}}
       {{else}}
-        {{_ "uploadStatus.status" status}}
+        {{_ "shell.uploadStatus.status" status}}
       {{/if}}
     </p>
     {{else}}
-      <p>{{_ "uploadStatus.uploadFailed"}}</p>
+      <p>{{_ "shell.uploadStatus.uploadFailed"}}</p>
     {{/if}}
   {{/if}}
   </div>
 </template>
 
 <template name="uploadTest">
-  {{>title (_ "uploadTest.title")}}
+  {{>title (_ "shell.uploadTest.title")}}
 
-  <p>{{_ "uploadTest.explanation"}}</p>
+  <p>{{_ "shell.uploadTest.explanation"}}</p>
 
-  <p>{{_ "uploadTest.uploadApp"}} <input type="file" id="upload-app"></p>
-  <p>{{_ "uploadTest.uploadBackup"}} <input type="file" id="upload-backup"></p>
+  <p>{{_ "shell.uploadTest.uploadApp"}} <input type="file" id="upload-app"></p>
+  <p>{{_ "shell.uploadTest.uploadBackup"}} <input type="file" id="upload-backup"></p>
 </template>
 
 <template name="referrals">
   {{#if referralsEnabled}}
-  {{>title (_ "referrals.title")}}
+  {{>title (_ "shell.referrals.title")}}
   {{setDocumentTitle}}
   <div class="referrals">
-    <h1>{{_ "referrals.title"}}</h1>
+    <h1>{{_ "shell.referrals.title"}}</h1>
     <header>
       {{#if isPaid}}
-      <h2>{{{_ "referrals.header.isPaid.title"}}}</h2>
+      <h2>{{{_ "shell.referrals.header.isPaid.title"}}}</h2>
       {{else}}
-      <h2>{{{_ "referrals.header.isNotPaid.title"}}}</h2>
+      <h2>{{{_ "shell.referrals.header.isNotPaid.title"}}}</h2>
       {{/if}}
 
       {{#if isPaid}}
-      <p>{{_ "referrals.header.isPaid.explanation"}}</p>
+      <p>{{_ "shell.referrals.header.isPaid.explanation"}}</p>
       {{else}}
-      <p>{{_ "referrals.header.isNotPaid.explanation"}}</p>
+      <p>{{_ "shell.referrals.header.isNotPaid.explanation"}}</p>
       {{/if}}
     </header>
     <section>
-      <h1>{{_ "referrals.howTo.title"}}</h1>
-      <p>{{_ "referrals.howTo.explanation"}}</p>
+      <h1>{{_ "shell.referrals.howTo.title"}}</h1>
+      <p>{{_ "shell.referrals.howTo.explanation"}}</p>
 
       <div class="image-tutorial">
       <ol>
-        <li>{{_ "referrals.howTo.getStart.step1"}}
+        <li>{{_ "shell.referrals.howTo.getStart.step1"}}
           <img src="/referral-graphics/referral-1.svg">
         </li>
-        <li>{{_ "referrals.howTo.getStart.step2"}}
+        <li>{{_ "shell.referrals.howTo.getStart.step2"}}
           <img src="/referral-graphics/referral-2.svg">
         </li>
-        <li>{{_ "referrals.howTo.getStart.step3"}}
+        <li>{{_ "shell.referrals.howTo.getStart.step3"}}
           <img src="/referral-graphics/referral-3.svg">
         </li>
       </ol>
@@ -358,14 +358,14 @@ limitations under the License.
       </div>
 
       {{#if currentUser}}
-      <h2>{{_ "referrals.status.title"}}</h2>
+      <h2>{{_ "shell.referrals.status.title"}}</h2>
 
-      <p>{{_ "referrals.howTo.status.explanation"}}</p>
+      <p>{{_ "shell.referrals.howTo.status.explanation"}}</p>
 
       {{#with notYetCompleteReferralNames}}{{#if this.count}}
-      <h3>{{_ "referrals.status.pending.title"}}</h3>
+      <h3>{{_ "shell.referrals.status.pending.title"}}</h3>
 
-      <p class="gentle-hint">{{_ "referrals.status.pending.explanation"}}</p>
+      <p class="gentle-hint">{{_ "shell.referrals.status.pending.explanation"}}</p>
 
       <ul class="comma-separated-ul">
         {{#each this}}
@@ -376,9 +376,9 @@ limitations under the License.
       {{/if}}{{/with}}
 
       {{#with completeReferralNames}}{{#if this.count}}
-      <h3>{{_ "referrals.satus.success.title"}}</h3>
+      <h3>{{_ "shell.referrals.satus.success.title"}}</h3>
 
-      <p class="gentle-hint">{{_ "referrals.status.success.explanation"}}</p>
+      <p class="gentle-hint">{{_ "shell.referrals.status.success.explanation"}}</p>
 
       <ul class="comma-separated-ul">
         {{#each this}}
@@ -388,11 +388,11 @@ limitations under the License.
 
       {{/if}}{{/with}}
 
-      <h2 class="fine-print">{{_ "referrals.finePrint.title"}}</h2>
+      <h2 class="fine-print">{{_ "shell.referrals.finePrint.title"}}</h2>
 
-      <p>{{{_ "referrals.finePrint.warningWithAccountLink" (pathFor route='account')}}}</p>
+      <p>{{{_ "shell.referrals.finePrint.warningWithAccountLink" (pathFor route='account')}}}</p>
 
-      <p>{{_ "referrals.finePrint.explanation"}}</p>
+      <p>{{_ "shell.referrals.finePrint.explanation"}}</p>
 
       {{/if}}
     </section>
@@ -402,28 +402,28 @@ limitations under the License.
 
 <template name="about">
   {{setDocumentTitle}}
-  {{>title (_ "about.title")}}
+  {{>title (_ "shell.about.title")}}
 
   <div class="about">
-    <h1>{{_ "about.title"}}</h1>
+    <h1>{{_ "shell.about.title"}}</h1>
 
     <section class="intro">
-      <p>{{{_ "about.intro.explanation"}}}</p>
+      <p>{{{_ "shell.about.intro.explanation"}}}</p>
 
-      <p class="version">{{_ "about.intro.version" build}}</p>
+      <p class="version">{{_ "shell.about.intro.version" build}}</p>
       {{#if isUnofficial}}
-        <p class="unofficial">{{{_ "about.intro.unofficialWarning"}}}</p>
+        <p class="unofficial">{{{_ "shell.about.intro.unofficialWarning"}}}</p>
       {{/if}}
     </section>
 
     <section class="changelog">
-      <h2>{{_ "about.changelog.title"}}</h2>
+      <h2>{{_ "shell.about.changelog.title"}}</h2>
 
       {{> changelog ""}}
     </section>
 
     <section class="developers">
-      <h2>{{_ "about.developers.title"}}</h2>
+      <h2>{{_ "shell.about.developers.title"}}</h2>
       <ul>
         <li><a href="https://github.com/kentonv">
             <img src="/logos/kenton.png" alt="Kenton Varda">
@@ -451,7 +451,7 @@ limitations under the License.
             Garply</a></li>
       </ul>
     </section><section class="advisors">
-      <h2>{{_ "about.advisors.title"}}</h2>
+      <h2>{{_ "shell.about.advisors.title"}}</h2>
       <ul>
         <li><a href="https://github.com/swetland">
             <img src="/logos/swetland.png" alt="Brian Swetland">
@@ -472,8 +472,8 @@ limitations under the License.
     </section>
     <br>
     <section class="corporate">
-      <h2>{{_ "about.corporate.title"}}</h2>
-      <p>{{{_ "about.corporate.explanation"}}}</p>
+      <h2>{{_ "shell.about.corporate.title"}}</h2>
+      <p>{{{_ "shell.about.corporate.explanation"}}}</p>
       <ul>
         <li><a href="http://draw.io"><img width="92.75" height="121" src="/logos/draw.io-logo.svg">&nbsp;</a></li><li>
         <img src="/logos/humanweb.png">&nbsp;</li><li>
@@ -481,8 +481,8 @@ limitations under the License.
       </ul>
       <div class="strut"></div>
     </section><section class="individual">
-      <h2>{{_ "about.individual.title"}}</h2>
-      <p>{{{_ "about.individual.explanation"}}}</p>
+      <h2>{{_ "shell.about.individual.title"}}</h2>
+      <p>{{{_ "shell.about.individual.explanation"}}}</p>
       <ul>
       <li><a href="http://rogerwagner.com/">
           <img src="/logos/wagner.png">
@@ -494,8 +494,8 @@ limitations under the License.
     </section>
 
     <section class="backers">
-      <h2>{{_ "about.backers.title"}}</h2>
-      <p>{{{_ "about.backers.explanation"}}}</p>
+      <h2>{{_ "shell.about.backers.title"}}</h2>
+      <p>{{{_ "shell.about.backers.explanation"}}}</p>
       {{#if backers}}
       <ul>
         {{#each backers}}
@@ -504,56 +504,56 @@ limitations under the License.
         <li>&nbsp;</li>
         <li>&nbsp;</li>
         <li>&nbsp;</li>
-        <li class="anonymous">{{_ "about.backers.anonymous" anonCount}}</li>
+        <li class="anonymous">{{_ "shell.about.backers.anonymous" anonCount}}</li>
       </ul>
       {{else}}
-      <p>{{_ "about.backers.loading"}}</p>
+      <p>{{_ "shell.about.backers.loading"}}</p>
       {{/if}}
     </section>
 
     <section class="dependencies">
-      <h2>{{_ "about.dependencies.title"}}</h2>
+      <h2>{{_ "shell.about.dependencies.title"}}</h2>
       <ul>
         <!-- TODO(soon): This list has a lot missing. Review. -->
-        <li><a href="http://nodejs.org/">Node.js</a> (MIT {{_ "about.dependencies.license"}})</li>
-        <li><a href="https://www.meteor.com/">Meteor web framework</a> (MIT {{_ "about.dependencies.license"}})</li>
-        <li><a href="https://github.com/jedisct1/libsodium">libsodium</a> (ISC {{_ "about.dependencies.license"}})</li>
-        <li><a href="https://github.com/seccomp/libseccomp">libseccomp</a> (LGPL {{_ "about.dependencies.license"}})</li>
+        <li><a href="http://nodejs.org/">Node.js</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://www.meteor.com/">Meteor web framework</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://github.com/jedisct1/libsodium">libsodium</a> (ISC {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://github.com/seccomp/libseccomp">libseccomp</a> (LGPL {{_ "shell.about.dependencies.license"}})</li>
         <li><a href="https://www.mongodb.org/">MongoDB</a> (AGPL)</li>
-        <li><a href="https://github.com/EventedMind/iron-router">Iron Router</a> (MIT {{_ "about.dependencies.license"}})</li>
-        <li><a href="http://underscorejs.org/">Underscore.js</a> (MIT {{_ "about.dependencies.license"}})</li>
-        <li><a href="http://www.senchalabs.org/connect/">Connect middleware</a> (MIT {{_ "about.dependencies.license"}})</li>
+        <li><a href="https://github.com/EventedMind/iron-router">Iron Router</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="http://underscorejs.org/">Underscore.js</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="http://www.senchalabs.org/connect/">Connect middleware</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
         <li><a href="https://www.google.com/fonts/specimen/Source+Sans+Pro">Source Sans Pro font</a> (SIL OFL)</li>
-        <li><a href="https://github.com/joyent/http-parser">Node/nginx HTTP parser library</a> (MIT {{_ "about.dependencies.license"}})</li>
-        <li><a href="https://github.com/andris9/simplesmtp">Simple SMTP by Andris Reinman</a> (MIT {{_ "about.dependencies.license"}})</li>
-        <li><a href="https://github.com/justmoon/node-bignum">node-bignum by Stefan Thomas</a> (MIT {{_ "about.dependencies.license"}})</li>
-        <li><a href="https://github.com/drudru/ansi_up">ansi_up library by Dru Nelson</a> (MIT {{_ "about.dependencies.license"}})</li>
-        <li><a href="https://github.com/stewartlord/identicon.js">identicon.js by Stewart Lord</a> (BSD {{_ "about.dependencies.license"}})</li>
-        <li><a href="https://github.com/usablica/intro.js">intro.js by Afshin Mehrabani</a> (MIT {{_ "about.dependencies.license"}})</li>
-        <li><a href="http://www.xarg.org/2010/03/generate-client-side-png-files-using-javascript/">PNGlib by Robert Eisele</a> (BSD {{_ "about.dependencies.license"}})</li>
+        <li><a href="https://github.com/joyent/http-parser">Node/nginx HTTP parser library</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://github.com/andris9/simplesmtp">Simple SMTP by Andris Reinman</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://github.com/justmoon/node-bignum">node-bignum by Stefan Thomas</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://github.com/drudru/ansi_up">ansi_up library by Dru Nelson</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://github.com/stewartlord/identicon.js">identicon.js by Stewart Lord</a> (BSD {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://github.com/usablica/intro.js">intro.js by Afshin Mehrabani</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="http://www.xarg.org/2010/03/generate-client-side-png-files-using-javascript/">PNGlib by Robert Eisele</a> (BSD {{_ "shell.about.dependencies.license"}})</li>
         <li><a href="http://libb64.sourceforge.net/">libb64 by Chris Venter</a> (Public Domain)</li>
         <li><a href="http://tukaani.org/xz/">XZ Utils</a> (Public Domain / GPL)</li>
-        <li><a href="http://www.info-zip.org/">Info-ZIP</a> (Info-ZIP {{_ "about.dependencies.license"}})</li>
-        <li><a href="http://www.gnu.org/software/libc/libc.html">GNU C library</a> (LGPL {{_ "about.dependencies.license"}})</li>
-        <li><a href="https://gcc.gnu.org/libstdc++/">GNU C++ Library</a> (LGPL {{_ "about.dependencies.license"}})</li>
+        <li><a href="http://www.info-zip.org/">Info-ZIP</a> (Info-ZIP {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="http://www.gnu.org/software/libc/libc.html">GNU C library</a> (LGPL {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://gcc.gnu.org/libstdc++/">GNU C++ Library</a> (LGPL {{_ "shell.about.dependencies.license"}})</li>
         <li class="spacer">&nbsp;</li>
         <li class="spacer">&nbsp;</li>
         <li class="spacer">&nbsp;</li>
       </ul>
-      <p>{{_ "about.dependencies.explanation"}}</p>
+      <p>{{_ "shell.about.dependencies.explanation"}}</p>
     </section>
 
     <section class="copyright">
-      <h2>{{_ "about.copyright.title"}}</h2>
-      <p>{{_ "about.copyright.license"}}</p>
-      <p>{{_ "about.copyright.trademark"}}</p>
+      <h2>{{_ "shell.about.copyright.title"}}</h2>
+      <p>{{_ "shell.about.copyright.license"}}</p>
+      <p>{{_ "shell.about.copyright.trademark"}}</p>
     </section>
 
     <section class="terms">
       <ul>
-        <li><a href="https://github.com/sandstorm-io/sandstorm/blob/master/LICENSE">{{_ "about.terms.license"}}</a></li>
-        {{#with termsUrl}}<li><a href="{{.}}">{{_ "about.terms.terms"}}</a></li>{{/with}}
-        {{#with privacyUrl}}<li><a href="{{.}}">{{_ "about.terms.privacy"}}</a></li>{{/with}}
+        <li><a href="https://github.com/sandstorm-io/sandstorm/blob/master/LICENSE">{{_ "shell.about.terms.license"}}</a></li>
+        {{#with termsUrl}}<li><a href="{{.}}">{{_ "shell.about.terms.terms"}}</a></li>{{/with}}
+        {{#with privacyUrl}}<li><a href="{{.}}">{{_ "shell.about.terms.privacy"}}</a></li>{{/with}}
       </ul>
     </section>
   </div>

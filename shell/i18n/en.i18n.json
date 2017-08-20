@@ -315,6 +315,20 @@
       "signIn": "You must be signed in to grant access to a grain."
     }
   },
+  "notifications": {
+    "appUpdatedNotificationItem": {
+      "title": "App updates are available:",
+      "appUpdates": "<strong>__name__</strong>: version __version__ is available"
+    },
+    "submitButton": {
+      "hint": "Update all of the above apps",
+      "text": "Apply updates"
+    },
+    "dismissButton": {
+      "hint": "Ignore the above updates",
+      "text": "Dismiss"
+    }
+  },
   "people": {
     "title": "People"
   },

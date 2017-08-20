@@ -7,12 +7,12 @@
     </div>
 
     <div class="notification-title">
-      App updates are available:
+      {{_ "notifications.appUpdateNotificationItem.title"}}
     </div>
 
     <ul class="app-updates">
     {{#each appUpdatesList}}
-      <li><strong>{{name}}</strong>: version {{marketingVersion}} is available</li>
+      <li>{{{_ "notifications.appUpdateNotificationItem.appUpdates" name=name version=marketingVersion}}}</li>
     {{/each}}
     </ul>
 
@@ -20,8 +20,8 @@
       <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
       <form class="standard-form">
         <div class="button-row">
-          <button type="submit" title="Update all of the above apps">Apply updates</button>
-          <button type="button" name="dismissUpdates" title="Ignore the above updates">Dismiss</button>
+          <button type="submit" title="{{_ "notifications.appUpdateNotificationItem.submitButton.hint"}}">{{_ "notifications.appUpdateNotificationItem.submitButton.text"}}</button>
+          <button type="button" name="dismissUpdates" title="{{_ "notifications.appUpdateNotificationItem.dismissButton.hint"}}">{{_ "notifications.appUpdateNotificationItem.dismissButton.text"}}</button>
         </div>
       </form>
     </div>

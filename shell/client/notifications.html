@@ -98,7 +98,7 @@
     </div>
 
     <div class="notification-title">
-      {{{_ "notifications.backgroundedGrainNotificationItem.titleWithGrainTitle" grainTitle}}}
+      {{{_ "notifications.backgroundedGrainNotificationItem.title" grain=grainTitle}}}
     </div>
 
     {{text.defaultText}}
@@ -137,7 +137,7 @@
     </div>
 
     <div class="notification-title">
-      <strong>{{senderName}}</strong> in <strong>{{grainTitle}}</strong>:
+      {{{_ "notifications.grainActivityNotificationItem.title" sender=senderName grain=grainTitle}}}
     </div>
 
     {{text.defaultText}} {{#if multiple}}x{{count}}{{/if}}
@@ -146,7 +146,7 @@
       <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
       <form class="standard-form">
         <div class="button-row">
-          <button type="button" title="Dismiss this notification">Dismiss</button>
+          <button type="button" title="{{_ "notifications.grainActivityNotificationItem.dismissButton.hint"}}">{{_ "notifications.grainActivityNotificationItem.dismissButton.text"}}</button>
         </div>
       </form>
     </div>

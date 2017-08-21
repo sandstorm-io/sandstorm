@@ -343,7 +343,7 @@
       "explanation": "You can help Sandstorm by sending us some anonymous usage stats. Click here for more info."
     },
     "backgroundedGrainNotificationItem": {
-      "titleWithGrainTitle": "<strong>%s</strong> is backgrounded:",
+      "title": "<strong>__grain__</strong> is backgrounded:",
       "cancelButton": {
         "hint": "Stop the background app",
         "text": "Cancel"
@@ -351,6 +351,13 @@
     },
     "identityChangesNotificationItem": {
       "explanation": "We're changing the way identities work in Sandstorm. Your account may be affected. Click here to learn more."
+    },
+    "grainActivityNotificationItem": {
+      "title": "<strong>__sender__</strong> in <strong>__grain__</strong>:",
+      "dismissButton": {
+        "hint": "Dismiss this notification",
+        "text": "Dismiss"
+      }
     }
   },
   "people": {

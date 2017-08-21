@@ -9,8 +9,8 @@
         "signOut": "__Sign out"
       },
       "adminAlert": {
-        "icon": "__!",
-        "title": "__Notice from Admin"
+        "icon": "!",
+        "title": "管理者送來的訊息"
       },
       "demoModal": {
         "header": "__Sandstorm is a self-hostable web productivity suite.",
@@ -25,47 +25,47 @@
       }
     },
     "notifications": {
-      "hint": "__Notifications",
-      "text": "__Notifications"
+      "hint": "通知",
+      "text": "通知"
     },
     "notificationsPopup": {
-      "title": "__Notifications",
-      "empty": "__No notifications..."
+      "title": "通知",
+      "empty": "沒有通知……"
     },
     "loading": {
-      "title": "__Loading...",
-      "text": "__Loading..."
+      "title": "正在讀取……",
+      "text": "正在讀取……"
     },
     "notFound": {
-      "title": "__Not Found",
-      "text": "__404 Not Found :("
+      "title": "查無此沙",
+      "text": "404 查無此沙 :("
     },
     "root": {
-      "title": "__Home"
+      "title": "首頁"
     },
     "grainLogContents": {
-      "prefix": "__..."
+      "prefix": "……"
     },
     "grainLog": {
-      "title": "__Debug log: %s"
+      "title": "除錯記錄: %s"
     },
     "signup": {
-      "title": "__Claim Invite",
+      "title": "要求邀請",
       "signedUp": {
-        "keyIsUsedWithOrigin": "__You're all signed up!  Now go <a href=\"https://apps.sandstorm.io/?host=%s\">install some apps</a>.",
-        "keyIsNotUsed": "__It looks like you already have an account, so you don't need this signup key."
+        "keyIsUsedWithOrigin": "註冊成功！來去<a href=\"https://apps.sandstorm.io/?host=%s\">下載應用程式吧</a>。",
+        "keyIsNotUsed": "您已經有帳號了，不需要這把註冊金鑰。"
       },
-      "keyIsUsed": "__Sorry, this signup key has already been used.",
-      "processing": "__Please wait...",
-      "signInGuide": "__First, you have to sign in. Click \"Sign in\" in the upper-right.",
-      "invalidKey": "__Sorry, this is not a valid signup key."
+      "keyIsUsed": "抱歉，這把註冊金鑰已經被用掉了。",
+      "processing": "請稍候……",
+      "signInGuide": "您需要先登入。__First, you have to sign in. Click \"Sign in\" in the upper-right.",
+      "invalidKey": "抱歉，這個註冊金鑰無效。"
     },
     "uploadStatus": {
-      "title": "__Uploading...",
-      "uploadFailedWithError": "__Upload failed: %s %s",
+      "title": "正在上傳……",
+      "uploadFailedWithError": "上傳失敗：%s %s",
       "statusWithProgress": "__%s... %s",
       "status": "__%s...",
-      "uploadFailed": "__Upload failed. Please try again."
+      "uploadFailed": "上傳失敗，請重試。"
     },
     "uploadTest": {
       "title": "__Upload test page",
@@ -317,16 +317,16 @@
   },
   "notifications": {
     "appUpdatedNotificationItem": {
-      "title": "__App updates are available:",
-      "appUpdates": "__<strong>__name__</strong>: version __version__ is available"
+      "title": "應用程式有新版本：",
+      "appUpdates": "__<strong>__name__</strong>: 版本 __version__ 已推出"
     },
     "submitButton": {
-      "hint": "__Update all of the above apps",
-      "text": "__Apply updates"
+      "hint": "更新所有上記應用程式",
+      "text": "套用更新"
     },
     "dismissButton": {
-      "hint": "__Ignore the above updates",
-      "text": "__Dismiss"
+      "hint": "略過上記更新",
+      "text": "隱藏"
     },
     "mailingListBonusNotificationItem": {
       "explanationWithBonus": "__Subscribe to our announcement list and get <strong>%s bonus storage</strong> (1-2 emails per month).",

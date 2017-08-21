@@ -370,6 +370,13 @@
     "ipNetworkPowerboxCard": {
       "explanation": "Admin: grant all outgoing network access",
       "encryptedWith": "(encrypted with %s)"
+    },
+    "ipInterfacePowerboxCard": {
+      "explanation": "Admin: grant all incoming network access"
+    },
+    "emailVerifierPowerboxCard": {
+      "verifyWith": "Verify e-mail addresses using %s",
+      "verifyWithAnyService": "Verify e-mail addresses using any login service"
     }
   },
   "people": {

@@ -31,14 +31,14 @@
 </template>
 
 <template name="ipInterfacePowerboxCard">
-  Admin: grant all incoming network access
+  {{_ "powerboxBuiltins.ipInterfacePowerboxCard.explanation"}}
 </template>
 
 <template name="emailVerifierPowerboxCard">
   {{#if option.frontendRef.emailVerifier.services}}
-    Verify e-mail addresses using {{ serviceTitle }}
+    {{_ "powerboxBuiltins.emailVerifierPowerboxCard.verifyWith" serviceTitle}}
   {{else}}
-    Verify e-mail addresses using any login service
+    {{_ "powerboxBuiltins.emailVerifierPowerboxCard.verifyWithAnyService"}}
   {{/if}}
 </template>
 

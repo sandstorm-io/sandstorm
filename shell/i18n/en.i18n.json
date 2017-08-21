@@ -382,6 +382,15 @@
       "explanation": "with permissions:",
       "fullAccess": "Full access",
       "connectButton": "Connect"
+    },
+    "addNewVerifiedEmailPowerboxCard": {
+      "explanation": "Add a new address"
+    },
+    "httpUrlPowerboxCard": {
+      "useUrl": "Use %s"
+    },
+    "httpArbitraryPowerboxCard": {
+      "explanation": "Specify URL..."
     }
   },
   "people": {

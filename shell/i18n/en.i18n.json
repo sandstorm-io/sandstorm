@@ -391,6 +391,17 @@
     },
     "httpArbitraryPowerboxCard": {
       "explanation": "Specify URL..."
+    },
+    "httpArbitraryPowerboxConfiguration": {
+      "explanation": "Enter URL:",
+      "placeholder": "https://example.com",
+      "connectButton": "Connect"
+    },
+    "httpOAuthPowerboxCard": {
+      "useService": "Use %s"
+    },
+    "httpOAuthPowerboxConfiguration": {
+      "requstPermissionsFromService": "Requesting permissions from %s (see popup)."
     }
   },
   "people": {

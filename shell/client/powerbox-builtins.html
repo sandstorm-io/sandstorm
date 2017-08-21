@@ -78,18 +78,18 @@
 
 <template name="httpArbitraryPowerboxConfiguration">
   <form>
-    Enter URL:
-    <input class="url" type="text" placeholder="https://example.com">
+    {{_ "powerboxBuiltins.httpArbitraryPowerboxConfiguration.explanation"}}
+    <input class="url" type="text" placeholder="{{_ "powerboxBuiltins.httpArbitraryPowerboxConfiguration.placeholder"}}">
     <div class="choose-buttons">
-      <button class="connect-button">Connect</button>
+      <button class="connect-button">{{_ "powerboxBuiltins.httpArbitraryPowerboxConfiguration.connectButton"}}</button>
     </div>
   </form>
 </template>
 
 <template name="httpOAuthPowerboxCard">
-  Use {{option.oauthServiceInfo.service}}
+  {{_ "powerboxBuiltins.httpOAuthPowerboxCard.useService" option.oauthServiceInfo.service}}
 </template>
 
 <template name="httpOAuthPowerboxConfiguration">
-  Requesting permissions from {{option.oauthServiceInfo.service}} (see popup).
+  {{_ "powerboxBuiltins.httpOAuthPowerboxConfiguration.requestPermissionsFromService" option.oauthServiceInfo.service}}
 </template>

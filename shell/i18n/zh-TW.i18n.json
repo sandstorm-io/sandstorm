@@ -338,9 +338,7 @@
       "unpaidUser": "__Unlimited grains & up to 2 GB bonus with the",
       "link": "__referral program »",
       "dismissButton": "__Dismiss"
-    },
-    "hint": "__Notifications",
-    "text": "__Notifications"
+    }
   },
   "people": {
     "title": "使用者"
@@ -350,30 +348,5 @@
   },
   "apps": {
     "title": "應用程式"
-  },
-  "layout": {},
-  "notificationsPopup": {
-    "title": "__Notifications",
-    "empty": "__No notifications..."
-  },
-  "title": {
-    "hint": "__title"
-  },
-  "loading": {
-    "title": "__Loading...",
-    "text": "__Loading..."
-  },
-  "notFound": {
-    "title": "__Not Found",
-    "text": "__404 Not Found :("
-  },
-  "root": {
-    "title": "__Home"
-  },
-  "grainLogContents": {
-    "prefix": "__..."
-  },
-  "grainLog": {
-    "title": "__Debug log: %s"
   }
 }

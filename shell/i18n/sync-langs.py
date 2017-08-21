@@ -38,7 +38,10 @@ def main():
     print 'Done.'
 
 def comp_dict(base, comp):
-    result = OrderedDict(comp)
+    if inter_add:
+        result = OrderedDict(comp)
+    else:
+        result = OrderedDict()
     for key, value in base.iteritems():
         if key in comp:
             if type(comp[key]) != type(value):

@@ -377,6 +377,11 @@
     "emailVerifierPowerboxCard": {
       "verifyWith": "Verify e-mail addresses using %s",
       "verifyWithAnyService": "Verify e-mail addresses using any login service"
+    },
+    "identityPowerboxConfiguration": {
+      "explanation": "with permissions:",
+      "fullAccess": "Full access",
+      "connectButton": "Connect"
     }
   },
   "people": {

@@ -52,14 +52,14 @@
 
 <template name="identityPowerboxConfiguration">
   <form>
-    <p>with permissions:</p>
+    <p>{{_ "powerboxBuiltins.identityPowerboxConfiguration.explanation"}}</p>
     {{#each role in sufficientRoles}}
       <label><input type="radio" name="role" value="{{role.index}}">{{role.title.defaultText}} - {{role.verbPhrase.defaultText}}</label>
     {{else}}
-      <label><input type="radio" checked="true" name="role" value="all">Full access</label>
+      <label><input type="radio" checked="true" name="role" value="all">{{_ "powerboxBuiltins.identityPowerboxConfiguration.fullAccess"}}</label>
     {{/each}}
     <div class="choose-buttons">
-      <button class="connect-button">Connect</button>
+      <button class="connect-button">{{_ "powerboxBuiltins.identityPowerboxConfiguration.connectButton"}}</button>
     </div>
   </form>
 </template>

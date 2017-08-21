@@ -1,197 +1,379 @@
 {
-  "error": "錯誤：%s", 
-  "layout": {}, 
-  "notifications": {
-    "hint": "__Notifications", 
-    "text": "__Notifications"
-  }, 
-  "notificationsPopup": {
-    "title": "__Notifications", 
-    "empty": "__No notifications..."
-  }, 
-  "title": {
-    "hint": "__title"
-  }, 
-  "loading": {
-    "title": "__Loading...", 
-    "text": "__Loading..."
-  }, 
-  "notFound": {
-    "title": "__Not Found", 
-    "text": "__404 Not Found :("
-  }, 
-  "root": {
-    "title": "__Home"
-  }, 
-  "grainLogContents": {
-    "prefix": "__..."
-  }, 
-  "grainLog": {
-    "title": "__Debug log: %s"
-  }, 
+  "error": "錯誤：%s",
+  "shell": {
+    "layout": {
+      "demoExpired": {
+        "title": "__Demo Expired",
+        "canUpgrade": "__Thanks for trying the Sandstorm Demo! Your demo account has expired. If you'd like to continue using Sandstorm and make your data permanent, please sign in.",
+        "cannotUpgrade": "__Thanks for trying the Sandstorm Demo! Your demo account has expired.",
+        "signOut": "__Sign out"
+      },
+      "adminAlert": {
+        "icon": "__!",
+        "title": "__Notice from Admin"
+      },
+      "demoModal": {
+        "header": "__Sandstorm is a self-hostable web productivity suite.",
+        "withAppDemo": "__with apps like %s.",
+        "withoutAppDemo": "__with all the apps you need in one place.",
+        "startButton": {
+          "withAppDemo": "__Try %s »",
+          "withoutAppDemo": "__Start »"
+        },
+        "explanation": "__<p>Sandstorm makes it easy to run apps on your own server. In addition to improving privacy and control, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\" target=\"_blank\">this brings Open Source apps to a wide audience.</a></p>",
+        "securityOverview": "__<p>Sandstorm is also ridiculously secure. If security interests you, check out <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">Sandstorm's security model overview</a>.</p>"
+      }
+    },
+    "notifications": {
+      "hint": "__Notifications",
+      "text": "__Notifications"
+    },
+    "notificationsPopup": {
+      "title": "__Notifications",
+      "empty": "__No notifications..."
+    },
+    "loading": {
+      "title": "__Loading...",
+      "text": "__Loading..."
+    },
+    "notFound": {
+      "title": "__Not Found",
+      "text": "__404 Not Found :("
+    },
+    "root": {
+      "title": "__Home"
+    },
+    "grainLogContents": {
+      "prefix": "__..."
+    },
+    "grainLog": {
+      "title": "__Debug log: %s"
+    },
+    "signup": {
+      "title": "__Claim Invite",
+      "signedUp": {
+        "keyIsUsedWithOrigin": "__You're all signed up!  Now go <a href=\"https://apps.sandstorm.io/?host=%s\">install some apps</a>.",
+        "keyIsNotUsed": "__It looks like you already have an account, so you don't need this signup key."
+      },
+      "keyIsUsed": "__Sorry, this signup key has already been used.",
+      "processing": "__Please wait...",
+      "signInGuide": "__First, you have to sign in. Click \"Sign in\" in the upper-right.",
+      "invalidKey": "__Sorry, this is not a valid signup key."
+    },
+    "uploadStatus": {
+      "title": "__Uploading...",
+      "uploadFailedWithError": "__Upload failed: %s %s",
+      "statusWithProgress": "__%s... %s",
+      "status": "__%s...",
+      "uploadFailed": "__Upload failed. Please try again."
+    },
+    "uploadTest": {
+      "title": "__Upload test page",
+      "explanation": "__This page is intended for use by the test scripts.",
+      "uploadApp": "__Upload app:",
+      "uploadBackup": "__Upload backup:"
+    },
+    "referrals": {
+      "title": "__Referral Program",
+      "header": {
+        "isPaid": {
+          "title": "__Get up to <span class=\"reward-amount\">30 GB</span> of free space when your friends share on Oasis!",
+          "explanation": "__For each friend that creates a sharing link, we'll reward you with 2 GB."
+        },
+        "isNotPaid": {
+          "title": "__Get unlimited grains &amp; up to <span class=\"reward-amount\">2 GB</span> of free space when your friends share on Oasis!",
+          "explanation": "__For each friend that creates a sharing link, we'll reward you with 50 MB. You'll also get unlimited grains."
+        }
+      },
+      "howTo": {
+        "title": "__Sharing is referring",
+        "explanation": "__To get started, open any grain and click Share access.",
+        "getStart": {
+          "step1": "__You share a grain with your friend (who isn't already an Oasis user).",
+          "step2": "__Your friend signs in.",
+          "step3": "__Your friend shares a grain with any other person (including you)."
+        }
+      },
+      "status": {
+        "title": "__Your referrals & status",
+        "explanation": "__Once you send a sharing link out, people will appear in this list after they sign in.",
+        "pending": {
+          "title": "__Still needs to share",
+          "explanation": "__Tell these people to make a grain and share it with you. You must actually view the grain they shared with you!"
+        },
+        "success": {
+          "title": "__Successful referrals",
+          "explanation": "__You've successfully referred these people. Congratulations!"
+        }
+      },
+      "finePrint": {
+        "title": "__The fine print",
+        "warningWithAccountLink": "__Your referral bonus lasts until 1 year after the referral. The terms of this referral program may change without warning; however, such changes will not affect bonuses you have already received. If you need even more space, <a href=\"%s\">upgrade your account.</a>",
+        "explanation": "__Paid subscribers can get up to 30 GB of free storage, 2 GB per person they refer, in addition to the storage from their account level. Free account holders can earn unlimited grains and 50 MB of free storage per person they refer, up to 2 GB total."
+      }
+    },
+    "about": {
+      "title": "__About Sandstorm",
+      "intro": {
+        "explanation": "__<a href=\"https://sandstorm.io\">Sandstorm.io</a> is an open source hosting platform for personal/private instances of web apps. Users can upload and install arbitrary software through a simple app-store-like web interface. In addition to better privacy, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">this is the only way to make Open Source web apps viable.</a>",
+        "version": "__Version: %s",
+        "unofficialWarning": "__<b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers."
+      },
+      "changelog": {
+        "title": "__Recent changes"
+      },
+      "developers": {
+        "title": "__Core developers"
+      },
+      "advisors": {
+        "title": "__Advisors"
+      },
+      "corporate": {
+        "title": "__Corporate sponsors",
+        "explanation": "__These companies contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
+      },
+      "individual": {
+        "title": "__Key indivisual sponsors",
+        "explanation": "__These individuals contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
+      },
+      "backers": {
+        "title": "__Backers",
+        "explanation": "__from <a href=\"http://igg.me/at/sandstorm\">our Indiegogo campaign &gt;</a>",
+        "anonymous": "__and %s anonymous contributors",
+        "loading": "__loading..."
+      },
+      "dependencies": {
+        "title": "__Third-party works used",
+        "license": "__license",
+        "explanation": "__These works are copyright the respective authors and used under the terms of the respective licenses."
+      },
+      "copyright": {
+        "title": "__Copyright",
+        "license": "__The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and contributors. The implementation is licensed under the Apache License 2.0.",
+        "trademark": "__\"Sandstorm\" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc., and may not be used to advertise derivative works nor commercial services without written consent from Sandstorm Development Group, Inc."
+      },
+      "terms": {
+        "license": "__License",
+        "terms": "__Terms of service",
+        "privacy": "__Privacy policy"
+      }
+    }
+  },
   "grains": {
-    "title": "沙粒", 
+    "title": "沙粒",
     "grainView": {
-      "notFoundWithId": "找不到 ID 為 %s 的沙粒。", 
-      "openWithWhichIdentity": "您要用哪個身分開啟這顆沙粒？", 
+      "notFoundWithId": "找不到 ID 為 %s 的沙粒。",
+      "openWithWhichIdentity": "您要用哪個身分開啟這顆沙粒？",
       "openInIncognitoMode": "以無痕模式開啟"
-    }, 
+    },
     "grainInMyTrash": {
-      "explanation": "這顆沙粒沈在回收桶裡，您要把他撈回主清單才能重新使用。", 
+      "explanation": "這顆沙粒沈在回收桶裡，您要把他撈回主清單才能重新使用。",
       "restore": "撈回主清單"
-    }, 
+    },
     "grainInOwnersTrash": {
       "explanation": "這顆沙粒被擁有者丟進回收桶了，無法使用。"
-    }, 
+    },
     "grainOwnerSuspended": {
       "explanation": "這顆沙粒的擁有者被停權了，無法使用。"
-    }, 
+    },
     "wrongIdentity": {
       "explanation": "開啟這個 URL 必須有以下身份："
-    }, 
+    },
     "requestAccess": {
-      "permissionDenied": "您無權存取此沙粒。", 
-      "requestAccessHint": "要求存取權", 
-      "requestAccess": "要求存取權", 
-      "warnIdentityRevealing": "要求存取權將把您的完整身份告知沙粒擁有者。", 
-      "sendRequest": "正在送出您的要求……", 
-      "waitForApproving": "要求已送出，若獲核准則會以電子郵件通知您。", 
-      "requestFailed": "要求失敗，原因：%s", 
+      "permissionDenied": "您無權存取此沙粒。",
+      "requestAccessHint": "要求存取權",
+      "requestAccess": "要求存取權",
+      "warnIdentityRevealing": "要求存取權將把您的完整身份告知沙粒擁有者。",
+      "sendRequest": "正在送出您的要求……",
+      "waitForApproving": "要求已送出，若獲核准則會以電子郵件通知您。",
+      "requestFailed": "要求失敗，原因：%s",
       "signInPlease": "若要要求存取權，請先登入。"
-    }, 
+    },
     "invalidToken": {
       "invalidToken": "無效的 token：%s"
-    }, 
+    },
     "revokedShareLink": {
       "linkRevoked": "非常抱歉，這個連結已經被撤銷。"
-    }, 
+    },
     "grainTitle": {
-      "was": "原標題：%s", 
+      "was": "原標題：%s",
       "renamedFrom": "原名：%s"
-    }, 
+    },
     "grainDeleteButton": {
-      "hint": "移到回收桶", 
+      "hint": "移到回收桶",
       "text": "移到回收桶"
-    }, 
+    },
     "grainDebugLogButton": {
-      "hint": "顯示除錯記錄", 
+      "hint": "顯示除錯記錄",
       "text": "紀錄"
-    }, 
+    },
     "grainBackupButton": {
-      "hint": "下載備份檔", 
+      "hint": "下載備份檔",
       "text": "備份"
-    }, 
+    },
     "grainBackupPopup": {
-      "title": "下載備份檔", 
-      "warning": "注意！復原這個備份檔會發生的事可能和你想的不一樣。", 
-      "processing": "正在準備備份……", 
-      "cancelHint": "取消", 
-      "cancel": "取消", 
-      "confirmHint": "下載備份檔", 
+      "title": "下載備份檔",
+      "warning": "注意！復原這個備份檔會發生的事可能和你想的不一樣。",
+      "processing": "正在準備備份……",
+      "cancelHint": "取消",
+      "cancel": "取消",
+      "confirmHint": "下載備份檔",
       "confirm": "下載備份檔"
-    }, 
+    },
     "grainRestartButton": {
-      "hint": "重新啟動應用程式", 
+      "hint": "重新啟動應用程式",
       "text": "重新啟動"
-    }, 
+    },
     "grainApiTokenButton": {
-      "hint": "取得外網金鑰(webkey)", 
+      "hint": "取得外網金鑰(webkey)",
       "text": "取得外網金鑰(webkey)"
-    }, 
+    },
     "grainApiTokenPopup": {
-      "title": "外網金鑰", 
-      "processing": "生成中……", 
-      "cancel": "取消", 
-      "copyForExternalApp": "複製這個金鑰到外部程式中：", 
-      "back": "返回", 
-      "description": "外網金鑰讓您可以把外部程式（比如手機 App 等）連結到這個應用程式。", 
-      "labelTitle": "標籤：", 
-      "labelPlaceholder": "比如「Android app」", 
-      "roleTitle": "角色：", 
-      "permissionTitle": "完整存取", 
-      "create": "建立", 
-      "webkeyListTitle": "現存的外網金鑰：", 
-      "revokeHint": "撤銷", 
+      "title": "外網金鑰",
+      "processing": "生成中……",
+      "cancel": "取消",
+      "copyForExternalApp": "複製這個金鑰到外部程式中：",
+      "back": "返回",
+      "description": "外網金鑰讓您可以把外部程式（比如手機 App 等）連結到這個應用程式。",
+      "labelTitle": "標籤：",
+      "labelPlaceholder": "比如「Android app」",
+      "roleTitle": "角色：",
+      "permissionTitle": "完整存取",
+      "create": "建立",
+      "webkeyListTitle": "現存的外網金鑰：",
+      "revokeHint": "撤銷",
       "revoke": "撤銷"
-    }, 
+    },
     "grainShareButton": {
-      "hint": "分享此沙粒給其他人", 
+      "hint": "分享此沙粒給其他人",
       "text": "分享"
-    }, 
+    },
     "whoHasAccessPopup": {
-      "title": "可存取者", 
-      "noLoggedInUsers": "未曾有已登入的使用者造訪這個連結過。", 
-      "nobody": "您未允許任何人存取。", 
-      "addedBy": "分享人：", 
-      "revokeHint": "撤銷", 
-      "revoke": "撤銷", 
+      "title": "可存取者",
+      "noLoggedInUsers": "未曾有已登入的使用者造訪這個連結過。",
+      "nobody": "您未允許任何人存取。",
+      "addedBy": "分享人：",
+      "revokeHint": "撤銷",
+      "revoke": "撤銷",
       "hasCustomPermissions": "[擁有特殊權限]"
-    }, 
+    },
     "selectRole": {
       "hint": "__select a role"
-    }, 
+    },
     "emailInviteTab": {
-      "demoModeAlert": "Sharing emails cannot be sent while in demo mode. Create an account to send sharing emails, or get a shareable link instead.", 
-      "personalMessagePlaceholder": "（選填）附加個人訊息……", 
-      "send": "送出", 
-      "sending": "正在送出……", 
-      "success": "成功送出。", 
-      "reset": "+ 邀請更多人", 
+      "demoModeAlert": "Sharing emails cannot be sent while in demo mode. Create an account to send sharing emails, or get a shareable link instead.",
+      "personalMessagePlaceholder": "（選填）附加個人訊息……",
+      "send": "送出",
+      "sending": "正在送出……",
+      "success": "成功送出。",
+      "reset": "+ 邀請更多人",
       "startOver": "<< 重新開始"
-    }, 
+    },
     "shareableLinkTab": {
-      "withRoles": "__Anyone with this link:", 
-      "withoutRoles": "__Anyone with this link can access the grain.", 
-      "labelPlaceholder": "__Label (optional)", 
-      "labelExplanation": "__Use a label to remind yourself to whom you sent this unique link.", 
-      "create": "__Create", 
-      "creating": "__Generating...", 
-      "success": "__Copy this link:", 
-      "reset": "__+ Create another link", 
+      "withRoles": "__Anyone with this link:",
+      "withoutRoles": "__Anyone with this link can access the grain.",
+      "labelPlaceholder": "__Label (optional)",
+      "labelExplanation": "__Use a label to remind yourself to whom you sent this unique link.",
+      "create": "__Create",
+      "creating": "__Generating...",
+      "success": "__Copy this link:",
+      "reset": "__+ Create another link",
       "cancel": "__Cancel"
-    }, 
+    },
     "shareWithOthers": {
-      "title": "__Share with others", 
-      "sendInviteTab": "__Send an invite", 
-      "shareableLinkTab": "__Get shareable link", 
+      "title": "__Share with others",
+      "sendInviteTab": "__Send an invite",
+      "shareableLinkTab": "__Get shareable link",
       "whoHasAccess": "__See who has access"
-    }, 
+    },
     "grainSharePopup": {
-      "oldSharingModelDescription": "__This grain uses the old sharing model. You can share it by copy/pasting the URL from the location bar", 
-      "upgradeDescription": "__You can upgrade this grain to the new model, but anyone with whom you shared this grain previously will lose access; you will have to share with them again.", 
-      "upgradeWarning": "__Upgrading cannot be undone.", 
-      "upgrade": "__upgrade", 
-      "openInIncognitoMode": "__You are viewing this grain anonymously.", 
-      "toShareAccess": "__To share access, copy this link:", 
-      "openNonAnonymouslyHead": "__For more sharing options, you must", 
-      "openNonAnonymouslyLink": "__open this grain non-anonymously", 
-      "openNonAnonymouslyTail": "__.", 
+      "oldSharingModelDescription": "__This grain uses the old sharing model. You can share it by copy/pasting the URL from the location bar",
+      "upgradeDescription": "__You can upgrade this grain to the new model, but anyone with whom you shared this grain previously will lose access; you will have to share with them again.",
+      "upgradeWarning": "__Upgrading cannot be undone.",
+      "upgrade": "__upgrade",
+      "openInIncognitoMode": "__You are viewing this grain anonymously.",
+      "toShareAccess": "__To share access, copy this link:",
+      "openNonAnonymouslyHead": "__For more sharing options, you must",
+      "openNonAnonymouslyLink": "__open this grain non-anonymously",
+      "openNonAnonymouslyTail": "__.",
       "signIn": "__For more sharing options, please sign in."
-    }, 
+    },
     "grainPowerboxRequest": {
-      "powerboxRequestHint": "__Powerbox request", 
+      "powerboxRequestHint": "__Powerbox request",
       "powerboxRequest": "__P"
-    }, 
+    },
     "grainPowerboxOffer": {
-      "powerboxOfferHint": "__Powerbox offer", 
+      "powerboxOfferHint": "__Powerbox offer",
       "powerboxOffer": "__P"
-    }, 
+    },
     "grainPowerboxOfferPopup": {
-      "title": "__Powerbox Offer", 
+      "title": "__Powerbox Offer",
       "dismiss": "__Dismiss"
-    }, 
+    },
     "share": {
-      "grainNotFoundWithId": "__No grain found with ID %s. Maybe you need to sign in to a different account?", 
+      "grainNotFoundWithId": "__No grain found with ID %s. Maybe you need to sign in to a different account?",
       "signIn": "__You must be signed in to grant access to a grain."
-    } 
-  }, 
+    }
+  },
+  "notifications": {
+    "appUpdatedNotificationItem": {
+      "title": "__App updates are available:",
+      "appUpdates": "__<strong>__name__</strong>: version __version__ is available"
+    },
+    "submitButton": {
+      "hint": "__Update all of the above apps",
+      "text": "__Apply updates"
+    },
+    "dismissButton": {
+      "hint": "__Ignore the above updates",
+      "text": "__Dismiss"
+    },
+    "mailingListBonusNotificationItem": {
+      "explanationWithBonus": "__Subscribe to our announcement list and get <strong>%s bonus storage</strong> (1-2 emails per month).",
+      "submitButton": "__Subscribe",
+      "dismissButton": "__No thanks"
+    },
+    "referralNotificationItem": {
+      "paidUser": "__Get up to 30 GB bonus with the",
+      "unpaidUser": "__Unlimited grains & up to 2 GB bonus with the",
+      "link": "__referral program »",
+      "dismissButton": "__Dismiss"
+    },
+    "hint": "__Notifications",
+    "text": "__Notifications"
+  },
   "people": {
     "title": "使用者"
-  }, 
+  },
   "sharingLinks": {
     "title": "分享連結"
-  }, 
+  },
   "apps": {
     "title": "應用程式"
+  },
+  "layout": {},
+  "notificationsPopup": {
+    "title": "__Notifications",
+    "empty": "__No notifications..."
+  },
+  "title": {
+    "hint": "__title"
+  },
+  "loading": {
+    "title": "__Loading...",
+    "text": "__Loading..."
+  },
+  "notFound": {
+    "title": "__Not Found",
+    "text": "__404 Not Found :("
+  },
+  "root": {
+    "title": "__Home"
+  },
+  "grainLogContents": {
+    "prefix": "__..."
+  },
+  "grainLog": {
+    "title": "__Debug log: %s"
   }
 }

@@ -6,6 +6,8 @@ import json
 import sys
 from collections import OrderedDict
 
+inter_add = False;
+
 def main():
     if len(sys.argv) is 1:
         print 'Usage: "python sync-langs.py en zh-TW". The first language has higher json order priority. If the first language is en, it can be omitted.'
@@ -27,10 +29,11 @@ def main():
     r2 = align_dict(r1, r2raw)
 
     with open('%s.i18n.json' % second,'w',encoding='utf-8') as out:
-        out.write(json.dumps(r2, indent=2, ensure_ascii=False))
+        out.write(json.dumps(r2, indent=2, ensure_ascii=False, separators=(',', ': ')))
 
-    with open('%s.i18n.json' % first,'w',encoding='utf-8') as out:
-        out.write(json.dumps(r1, indent=2, ensure_ascii=False))
+    if inter_add:
+        with open('%s.i18n.json' % first,'w',encoding='utf-8') as out:
+            out.write(json.dumps(r1, indent=2, ensure_ascii=False, separators=(',', ': ')))
 
     print 'Done.'
 
@@ -48,12 +51,14 @@ def comp_dict(base, comp):
             if type(value) is OrderedDict:
                 result[key] = comp_dict(value, OrderedDict())
             else:
-                result[key] = "__%s" % str(value)
+                result[key] = "__%s" % unicode(value)
     return result
 
 def align_dict(base, target):
     result = OrderedDict()
     for key in base:
+        if not inter_add and not key in target:
+            continue;
         if type(base[key]) is OrderedDict:
             result[key] = align_dict(base[key], target[key])
         else:

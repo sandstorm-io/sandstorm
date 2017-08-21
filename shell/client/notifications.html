@@ -82,8 +82,7 @@
     </div>
 
     {{#if isType "reportStats"}}
-      You can help Sandstorm by sending us some anonymous usage stats.
-      Click here for more info.
+      {{_ "notifications.adminNotificationItem.explanation"}}
     {{/if}}
 
     <div class="notification-footer">
@@ -99,7 +98,7 @@
     </div>
 
     <div class="notification-title">
-      <strong>{{grainTitle}}</strong> is backgrounded:
+      {{{_ "notifications.backgroundedGrainNotificationItem.titleWithGrainTitle" grainTitle}}}
     </div>
 
     {{text.defaultText}}
@@ -108,7 +107,7 @@
       <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
       <form class="standard-form">
         <div class="button-row">
-          <button title="Stop the background app" type="button">Cancel</button>
+          <button title="{{_ "notifications.backgroundedGrainNotificationItem.cancelButton.hint"}}" type="button">{{_ "notifications.backgroundedGrainNotificationItem.cancelButton.text"}}</button>
         </div>
       </form>
     </div>
@@ -122,8 +121,7 @@
       <img src="/sandstorm-gradient-logo.svg">
     </div>
 
-    We're changing the way identities work in Sandstorm. Your account may be affected. Click here
-    to learn more.
+    {{_ "notifications.identityChangesNotificationItem.explanation"}}
 
     <div class="notification-footer">
       <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>

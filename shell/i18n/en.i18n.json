@@ -338,6 +338,19 @@
       "unpaidUser": "Unlimited grains & up to 2 GB bonus with the",
       "link": "referral program »",
       "dismissButton": "Dismiss"
+    },
+    "adminNotificationItem": {
+      "explanation": "You can help Sandstorm by sending us some anonymous usage stats. Click here for more info."
+    },
+    "backgroundedGrainNotificationItem": {
+      "titleWithGrainTitle": "<strong>%s</strong> is backgrounded:",
+      "cancelButton": {
+        "hint": "Stop the background app",
+        "text": "Cancel"
+      }
+    },
+    "identityChangesNotificationItem": {
+      "explanation": "We're changing the way identities work in Sandstorm. Your account may be affected. Click here to learn more."
     }
   },
   "people": {

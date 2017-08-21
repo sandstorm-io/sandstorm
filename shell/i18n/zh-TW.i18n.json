@@ -113,23 +113,23 @@
       }
     },
     "about": {
-      "title": "__About Sandstorm",
+      "title": "關於沙聚雲",
       "intro": {
-        "explanation": "__<a href=\"https://sandstorm.io\">Sandstorm.io</a> is an open source hosting platform for personal/private instances of web apps. Users can upload and install arbitrary software through a simple app-store-like web interface. In addition to better privacy, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">this is the only way to make Open Source web apps viable.</a>",
-        "version": "__Version: %s",
+        "explanation": "__<a href=\"https://sandstorm.io\">沙聚雲(Sandstorm.io)</a>是可以執行私人或個人網路應用程式的開源平台。使用者可以上傳並安裝任何程式，就像手機的應用程式商店一樣。為了保護隱私，<a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">這是唯一公開開源網路應用程式的方式。</a>",
+        "version": "版本：%s",
         "unofficialWarning": "__<b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers."
       },
       "changelog": {
-        "title": "__Recent changes"
+        "title": "最新變更點"
       },
       "developers": {
-        "title": "__Core developers"
+        "title": "核心開發者"
       },
       "advisors": {
-        "title": "__Advisors"
+        "title": "顧問"
       },
       "corporate": {
-        "title": "__Corporate sponsors",
+        "title": "贊助者",
         "explanation": "__These companies contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
       },
       "individual": {
@@ -148,14 +148,14 @@
         "explanation": "__These works are copyright the respective authors and used under the terms of the respective licenses."
       },
       "copyright": {
-        "title": "__Copyright",
+        "title": "著作權",
         "license": "__The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and contributors. The implementation is licensed under the Apache License 2.0.",
         "trademark": "__\"Sandstorm\" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc., and may not be used to advertise derivative works nor commercial services without written consent from Sandstorm Development Group, Inc."
       },
       "terms": {
-        "license": "__License",
-        "terms": "__Terms of service",
-        "privacy": "__Privacy policy"
+        "license": "授權",
+        "terms": "服務條款",
+        "privacy": "隱私權聲明"
       }
     }
   },
@@ -258,7 +258,7 @@
       "hasCustomPermissions": "[擁有特殊權限]"
     },
     "selectRole": {
-      "hint": "__select a role"
+      "hint": "選擇角色"
     },
     "emailInviteTab": {
       "demoModeAlert": "Sharing emails cannot be sent while in demo mode. Create an account to send sharing emails, or get a shareable link instead.",
@@ -270,49 +270,49 @@
       "startOver": "<< 重新開始"
     },
     "shareableLinkTab": {
-      "withRoles": "__Anyone with this link:",
-      "withoutRoles": "__Anyone with this link can access the grain.",
-      "labelPlaceholder": "__Label (optional)",
-      "labelExplanation": "__Use a label to remind yourself to whom you sent this unique link.",
-      "create": "__Create",
-      "creating": "__Generating...",
-      "success": "__Copy this link:",
-      "reset": "__+ Create another link",
-      "cancel": "__Cancel"
+      "withRoles": "任何知道連結的人：",
+      "withoutRoles": "任何知道這個連結的人都能存取此沙粒。",
+      "labelPlaceholder": "標籤（選填）",
+      "labelExplanation": "標籤可用來備註這個連結是創來給誰用的。",
+      "create": "建立",
+      "creating": "正在建立……",
+      "success": "請複製這個連結：",
+      "reset": "+ 建立另一個連結",
+      "cancel": "取消"
     },
     "shareWithOthers": {
-      "title": "__Share with others",
-      "sendInviteTab": "__Send an invite",
-      "shareableLinkTab": "__Get shareable link",
-      "whoHasAccess": "__See who has access"
+      "title": "分享給別人",
+      "sendInviteTab": "寄送邀請",
+      "shareableLinkTab": "取得分享連結",
+      "whoHasAccess": "檢視誰能存取"
     },
     "grainSharePopup": {
       "oldSharingModelDescription": "__This grain uses the old sharing model. You can share it by copy/pasting the URL from the location bar",
       "upgradeDescription": "__You can upgrade this grain to the new model, but anyone with whom you shared this grain previously will lose access; you will have to share with them again.",
       "upgradeWarning": "__Upgrading cannot be undone.",
       "upgrade": "__upgrade",
-      "openInIncognitoMode": "__You are viewing this grain anonymously.",
-      "toShareAccess": "__To share access, copy this link:",
-      "openNonAnonymouslyHead": "__For more sharing options, you must",
-      "openNonAnonymouslyLink": "__open this grain non-anonymously",
-      "openNonAnonymouslyTail": "__.",
+      "openInIncognitoMode": "您正以無痕模式瀏覽此沙粒。",
+      "toShareAccess": "若要進行分享，請複製以下連結：",
+      "openNonAnonymouslyHead": "更多的分享選項",
+      "openNonAnonymouslyLink": "需要登入才能使用",
+      "openNonAnonymouslyTail": "。",
       "signIn": "__For more sharing options, please sign in."
     },
     "grainPowerboxRequest": {
-      "powerboxRequestHint": "__Powerbox request",
-      "powerboxRequest": "__P"
+      "powerboxRequestHint": "Powerbox 要求",
+      "powerboxRequest": "P"
     },
     "grainPowerboxOffer": {
-      "powerboxOfferHint": "__Powerbox offer",
-      "powerboxOffer": "__P"
+      "powerboxOfferHint": "Powerbox 命令",
+      "powerboxOffer": "P"
     },
     "grainPowerboxOfferPopup": {
-      "title": "__Powerbox Offer",
-      "dismiss": "__Dismiss"
+      "title": "Powerbox 命令",
+      "dismiss": "隱藏"
     },
     "share": {
-      "grainNotFoundWithId": "__No grain found with ID %s. Maybe you need to sign in to a different account?",
-      "signIn": "__You must be signed in to grant access to a grain."
+      "grainNotFoundWithId": "找不到 ID 為 %s 的沙粒。也許您需要用別的帳號登入？",
+      "signIn": "您必須登入才能進行分享。"
     }
   },
   "notifications": {

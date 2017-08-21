@@ -360,6 +360,14 @@
       }
     }
   },
+  "powerboxBuiltins": {
+    "uiViewPowerboxConfiguration": {
+      "explanation": "with permissions:",
+      "fullAccess": "Full access",
+      "connectButton": "Connect",
+      "chooseHostedObjectButton": "Browse grain contents »"
+    }
+  },
   "people": {
     "title": "People"
   },

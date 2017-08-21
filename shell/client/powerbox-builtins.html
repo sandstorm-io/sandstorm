@@ -24,9 +24,9 @@
 </template>
 
 <template name="ipNetworkPowerboxCard">
-  Admin: grant all outgoing network access
+  {{_ "powerboxBuiltins.ipNetworkPowerboxCard.explanation"}}
   {{#with encryption}}
-    (encrypted with {{.}})
+    {{_ "powerboxBuiltins.ipNetworkPowerboxCard.encryptedWith" .}}
   {{/with}}
 </template>
 

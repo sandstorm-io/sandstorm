@@ -366,6 +366,10 @@
       "fullAccess": "Full access",
       "connectButton": "Connect",
       "chooseHostedObjectButton": "Browse grain contents »"
+    },
+    "ipNetworkPowerboxCard": {
+      "explanation": "Admin: grant all outgoing network access",
+      "encryptedWith": "(encrypted with %s)"
     }
   },
   "people": {

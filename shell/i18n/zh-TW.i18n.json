@@ -340,68 +340,68 @@
       "dismissButton": "__Dismiss"
     },
     "adminNotificationItem": {
-      "explanation": "__You can help Sandstorm by sending us some anonymous usage stats. Click here for more info."
+      "explanation": "您提供的匿名資料可以幫助我們改善沙聚雲。詳情請點擊此處。"
     },
     "backgroundedGrainNotificationItem": {
-      "title": "__<strong>__grain__</strong> is backgrounded:",
+      "title": "__<strong>__grain__</strong> 正在後台執行：",
       "cancelButton": {
-        "hint": "__Stop the background app",
-        "text": "__Cancel"
+        "hint": "停止後台應用程式",
+        "text": "取消"
       }
     },
     "identityChangesNotificationItem": {
-      "explanation": "__We're changing the way identities work in Sandstorm. Your account may be affected. Click here to learn more."
+      "explanation": "我們正在改變沙聚雲的身份制度，您的帳戶可能會被影響。詳情請點擊此處。"
     },
     "grainActivityNotificationItem": {
-      "title": "__<strong>__sender__</strong> in <strong>__grain__</strong>:",
+      "title": "<strong>__grain__</strong> 的 __<strong>__sender__</strong>：",
       "dismissButton": {
-        "hint": "__Dismiss this notification",
-        "text": "__Dismiss"
+        "hint": "隱藏此通知",
+        "text": "隱藏"
       }
     }
   },
   "powerboxBuiltins": {
     "uiViewPowerboxConfiguration": {
-      "explanation": "__with permissions:",
-      "fullAccess": "__Full access",
-      "connectButton": "__Connect",
-      "chooseHostedObjectButton": "__Browse grain contents »"
+      "explanation": "權限：",
+      "fullAccess": "完整存取",
+      "connectButton": "連線",
+      "chooseHostedObjectButton": "瀏覽沙粒內容 »"
     },
     "ipNetworkPowerboxCard": {
-      "explanation": "__Admin: grant all outgoing network access",
-      "encryptedWith": "__(encrypted with %s)"
+      "explanation": "管理者：授權給所有連出存取",
+      "encryptedWith": "(以 %s 加密)"
     },
     "ipInterfacePowerboxCard": {
-      "explanation": "__Admin: grant all incoming network access"
+      "explanation": "管理者：授權給所有連入存取"
     },
     "emailVerifierPowerboxCard": {
-      "verifyWith": "__Verify e-mail addresses using %s",
-      "verifyWithAnyService": "__Verify e-mail addresses using any login service"
+      "verifyWith": "用 %s 驗證電子郵件信箱",
+      "verifyWithAnyService": "用任何登入服務驗證電子郵件信箱"
     },
     "identityPowerboxConfiguration": {
-      "explanation": "__with permissions:",
-      "fullAccess": "__Full access",
-      "connectButton": "__Connect"
+      "explanation": "權限：",
+      "fullAccess": "完整存取",
+      "connectButton": "連線",
     },
     "addNewVerifiedEmailPowerboxCard": {
-      "explanation": "__Add a new address"
+      "explanation": "新增位址"
     },
     "httpUrlPowerboxCard": {
-      "useUrl": "__Use %s"
+      "useUrl": "使用 %s"
     },
     "httpArbitraryPowerboxCard": {
-      "explanation": "__Specify URL..."
+      "explanation": "輸入網址……"
     },
     "httpArbitraryPowerboxConfiguration": {
-      "explanation": "__Enter URL:",
-      "placeholder": "__https://example.com",
-      "connectButton": "__Connect"
+      "explanation": "輸入網址：",
+      "placeholder": "https://example.com",
+      "connectButton": "連線"
     },
     "httpOAuthPowerboxCard": {
-      "useService": "__Use %s"
+      "useService": "使用 %s"
     },
     "httpOAuthPowerboxConfiguration": {
-      "requstPermissionsFromService": "__Requesting permissions from %s (see popup)."
+      "requstPermissionsFromService": "從 %s 要求權限(請參照彈出視窗)。"
     }
   },
   "people": {

@@ -4,18 +4,18 @@
   <div class="grain-list">
     <h1>
       <div>
-        {{_ "grains.title"}} <button title="What is a grain?" class="question-mark"></button>
+        {{_ "grains.title"}} <button title="{{_ "grains.grainlist.sandstormGrainListPage.introButton.hint"}}" class="question-mark"></button>
       </div>
       <form class="standard-form">
         <div class="button-row">
         {{#if showTrash }}
-          <button type="button" class="show-main-list">View main list</button>
+          <button type="button" class="show-main-list">{{_ "grains.grainlist.sandstormGrainListPage.mainListButton"}}</button>
         {{else}}
-          <button type="button" class="show-trash">View trash ({{trashCount}})</button>
+          <button type="button" class="show-trash">{{_ "grains.grainlist.sandstormGrainListPage.trashButton" trashCount}}</button>
         {{/if}}
 
         {{#if isSignedUpOrDemo}}
-        <button type="button" class="restore-button">Restore backup...
+        <button type="button" class="restore-button">{{_ "grains.grainlist.sandstormGrainListPage.restoreButton"}}
           <input type="file" style="display:none" accept=".zip">
         </button>
         {{/if}}
@@ -29,25 +29,24 @@
       <div class="search-row">
         <label>
           <span title="Search" class="search-icon"></span>
-          <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}">
+          <input class="search-bar" type="text" placeholder="{{_ "grains.grainlist.sandstormGrainListPage.search.placeholder"}}" value="{{ searchText }}">
         </label>
       </div>
 
       {{#if quotaEnabled}}
       <div class="usage-info">
           {{#if grainQuota}}
-            <p class="grain-count">{{ myGrainsCount }} of {{ grainQuota }} grains</p>
+            <p class="grain-count">{{_ "grains.grainlist.sandstormGrainListPage.usageInfo.quota" conut=myGrainsCount quota=grainQuota}}</p>
           {{/if}}
-          <p>{{ myGrainsSize }} of {{ quotaTotal }} used</p>
+          <p>{{_ "grains.grainlist.sandstormGrainListPage.usageInfo.size" size=myGrainsSize total=quotaTotal}}</p>
       </div>
       {{/if}}
     </div>
 
     {{#if showTrash}}
       <p class="trash-explanation">
-        <button class="empty-trash">Empty all trash</button>
-        (Grains will be permanently removed after 30 days in the trash. To keep a grain,
-        restore it to the Main list.)
+        <button class="empty-trash">{{_ "grains.grainlist.sandstormGrainListPage.trash.emptyButton"}}</button>
+        {{_ "grains.grainlist.sandstormGrainListPage.trash.explanation"}}
       </p>
     {{/if}}
 
@@ -58,22 +57,22 @@
       {{#unless grains}}
         <div class="no-grains">
           {{#if searchText}}
-            <p><strong>No matching grains found.</strong></p>
+          <p>{{{_ "grains.grainlist.sandstormGrainListPage.noGrains.notFound"}}}</p>
             {{#if filteredTrashedGrains}}
-              <p>Some grains in your trash match your search.
-               <button class="show-trash">View trash</button>
+              <p>{{_ "grains.grainlist.sandstormGrainListPage.noGrains.inTrash"}}
+               <button class="show-trash">{{_ "grains.grainlist.sandstormGrainListPage.noGrains.trashButton"}}</button>
               </p>
             {{/if}}
           {{else}}
             {{#if showTrash}}
-              <p><strong>Trash is empty.</strong></p>
+              <p>{{{_ "grains.grainlist.sandstormGrainListPage.noGrains.empty"}}}</p>
             {{else}}
-              <p>You don't have any grains yet.
+              <p>{{_ "grains.grainlist.sandstormGrainListPage.noGrains.explanation"}}
                 <a href="{{ pathFor route='apps' }}">
                   {{#if hasApps}}
-                    Select an app and create your first grain.
+                    {{_ "grains.grainlist.sandstormGrainListPage.noGrains.hasApps"}}
                   {{else}}
-                    Install an app to create your first grain.
+                    {{_ "grains.grainlist.sandstormGrainListPage.noGrains.hasNoApp"}}
                   {{/if}}
                 </a>
               </p>

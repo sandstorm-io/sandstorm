@@ -313,6 +313,40 @@
     "share": {
       "grainNotFoundWithId": "No grain found with ID %s. Maybe you need to sign in to a different account?",
       "signIn": "You must be signed in to grant access to a grain."
+    },
+    "grainlist": {
+      "sandstormGrainListPage": {
+        "introButton": {
+          "hint": "What is a grain?"
+        },
+        "mainListButton": "View main list",
+        "trashButton": "View trash (%s)",
+        "restoreButton": "Restore backup...",
+        "search": {
+          "placeholder": "search"
+        },
+        "usageInfo": {
+          "quota": "__count__ of __quota__ grains",
+          "size": "__size__ of __total__ used"
+        },
+        "trash": {
+          "emptyButton": "Empty all trash",
+          "explanation": "(Grains will be permanently removed after 30 days in the trash. To keep a grain, restore it to the Main list.)"
+        },
+        "noGrains": {
+          "notFound": "<strong>No matching grains found.</strong>",
+          "inTrash": "Some grains in your trash match your search.",
+          "trashButton": "View trash",
+          "empty": "<strong>Trash is empty.</strong>",
+          "explanation": "You don't have any grains yet.",
+          "hasApps": "Select an app and create your first grain.",
+          "hasNoApp": "Install an app to create your first grain."
+        }
+      },
+      "sandstormGrainTable": {}
+    },
+    "contactAutocomplete": {
+      "contactInputBox": {}
     }
   },
   "notifications": {

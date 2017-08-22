@@ -338,6 +338,70 @@
       "unpaidUser": "__Unlimited grains & up to 2 GB bonus with the",
       "link": "__referral program »",
       "dismissButton": "__Dismiss"
+    },
+    "adminNotificationItem": {
+      "explanation": "__You can help Sandstorm by sending us some anonymous usage stats. Click here for more info."
+    },
+    "backgroundedGrainNotificationItem": {
+      "title": "__<strong>__grain__</strong> is backgrounded:",
+      "cancelButton": {
+        "hint": "__Stop the background app",
+        "text": "__Cancel"
+      }
+    },
+    "identityChangesNotificationItem": {
+      "explanation": "__We're changing the way identities work in Sandstorm. Your account may be affected. Click here to learn more."
+    },
+    "grainActivityNotificationItem": {
+      "title": "__<strong>__sender__</strong> in <strong>__grain__</strong>:",
+      "dismissButton": {
+        "hint": "__Dismiss this notification",
+        "text": "__Dismiss"
+      }
+    }
+  },
+  "powerboxBuiltins": {
+    "uiViewPowerboxConfiguration": {
+      "explanation": "__with permissions:",
+      "fullAccess": "__Full access",
+      "connectButton": "__Connect",
+      "chooseHostedObjectButton": "__Browse grain contents »"
+    },
+    "ipNetworkPowerboxCard": {
+      "explanation": "__Admin: grant all outgoing network access",
+      "encryptedWith": "__(encrypted with %s)"
+    },
+    "ipInterfacePowerboxCard": {
+      "explanation": "__Admin: grant all incoming network access"
+    },
+    "emailVerifierPowerboxCard": {
+      "verifyWith": "__Verify e-mail addresses using %s",
+      "verifyWithAnyService": "__Verify e-mail addresses using any login service"
+    },
+    "identityPowerboxConfiguration": {
+      "explanation": "__with permissions:",
+      "fullAccess": "__Full access",
+      "connectButton": "__Connect"
+    },
+    "addNewVerifiedEmailPowerboxCard": {
+      "explanation": "__Add a new address"
+    },
+    "httpUrlPowerboxCard": {
+      "useUrl": "__Use %s"
+    },
+    "httpArbitraryPowerboxCard": {
+      "explanation": "__Specify URL..."
+    },
+    "httpArbitraryPowerboxConfiguration": {
+      "explanation": "__Enter URL:",
+      "placeholder": "__https://example.com",
+      "connectButton": "__Connect"
+    },
+    "httpOAuthPowerboxCard": {
+      "useService": "__Use %s"
+    },
+    "httpOAuthPowerboxConfiguration": {
+      "requstPermissionsFromService": "__Requesting permissions from %s (see popup)."
     }
   },
   "people": {

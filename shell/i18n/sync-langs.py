@@ -26,7 +26,7 @@ def main():
 
     r2raw = comp_dict(j1, j2)
     r1 = comp_dict(j2, j1)
-    r2 = align_dict(r1, r2raw)
+    r2 = align_dict(j1, r2raw)
 
     with open('%s.i18n.json' % second,'w',encoding='utf-8') as out:
         out.write(json.dumps(r2, indent=2, ensure_ascii=False, separators=(',', ': ')))
@@ -60,8 +60,6 @@ def comp_dict(base, comp):
 def align_dict(base, target):
     result = OrderedDict()
     for key in base:
-        if not inter_add and not key in target:
-            continue;
         if type(base[key]) is OrderedDict:
             result[key] = align_dict(base[key], target[key])
         else:

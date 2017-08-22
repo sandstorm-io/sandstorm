@@ -404,6 +404,42 @@
       "requstPermissionsFromService": "Requesting permissions from %s (see popup)."
     }
   },
+  "styleguide": {
+    "title": "Sandstorm style guide",
+    "note": "(note: this is a work in progress.)",
+    "copyRules": {
+      "title": "Copy rules",
+      "rule1": "Be terse but clear.  Avoid technical terms where less-technical ones will do.",
+      "rule2": "Capitalize the first letter of the first word of a section heading or button.  Do not capitalize the second word, or anything else, unless referring to a proper noun like Google or GitHub.",
+      "rule3": "Use verbs for text on buttons. The button text should describe what clicking that button will do.",
+      "rule4": "Use nouns for text which is a link.  The link text should indicate what the link will take you to.",
+      "rule5": "Use nouns for basically everything else, too, to communicate the information architecture. Section headings should be nouns which describe the content of the section.  Labels should be nouns which describe the content of the field."
+    },
+    "styleRules": {
+      "title": "Style rules",
+      "rule1": "Stick to a limited color palette.  (TODO: add specific colors)",
+      "rule2": "Use typefaces no smaller than 13px for text content.  Readability is important and not everyone has young eyes.",
+      "rule3": "Make click targets no smaller than 32px square or 26px tall if appreciably wider.  Remember that due to Fitts' Law, larger click targets are easier to interact with."
+    },
+    "forms": {
+      "title": "Forms",
+      "rule1": "Use the <code>standard-form</code> class where appropriate.",
+      "rule2": "The primary action button of a form should be at the bottom right of the form. Secondary buttons should line up to the left of that primary action button.",
+      "rule3": "When providing text input fields, place labels above the input, not side-by-side or inside the field as placeholder text.  Place additional explanation or instructions below the input. Placeholder text should be used for examples, not instructions.",
+      "rule4": "Forms are generally used for transactional interactions, where the user cares about the success or failure of the application.  Avoid optimistic UI in favor of multi-state UI which communicates network activity, success, and failure.  A common pattern is:",
+      "rule4-1": "Have the default state of the form.  Disable a save button until the user makes a change.",
+      "rule4-2": "When the user clicks an action button, start the RPC, and disable the entire form to indicate that the action is underway.",
+      "rule4-3": "When the RPC completes, if the RPC failed, show an error message at the top of the context over which the action applies.  If the RPC succeeded, either indicate a success message (again, at the top of the context over which the action applies) or if this was a modal interaction and the completion of the RPC indicates successful completion of the workflow, dismiss the form with no additional message."
+    },
+    "example": {
+      "title": "An example:",
+      "label": "Email",
+      "placeholder": "alice@example.com",
+      "subtext": "You might want to receive notifications.",
+      "submitButton": "Save",
+      "discardButton": "Discard"
+    }
+  },
   "people": {
     "title": "People"
   },

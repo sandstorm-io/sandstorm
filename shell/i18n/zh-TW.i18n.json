@@ -381,7 +381,7 @@
     "identityPowerboxConfiguration": {
       "explanation": "權限：",
       "fullAccess": "完整存取",
-      "connectButton": "連線",
+      "connectButton": "連線"
     },
     "addNewVerifiedEmailPowerboxCard": {
       "explanation": "新增位址"

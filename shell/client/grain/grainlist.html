@@ -124,7 +124,7 @@
   <form class="standard-form bulk-action-buttons">
     {{#each buttons}}
     <button type="button" class={{buttonClass}} disabled={{disabled mine shared}}
-            title="{{#if disabled mine shared}}To perform bulk actions, you must first select some grains in the list.{{else}}{{text mine shared}}{{/if}}">
+            title="{{#if disabled mine shared}}{{_ "grains.grainlist.sandstormGrainTable.bulkAction.disabledHint"}}{{else}}{{text mine shared}}{{/if}}">
       {{text mine shared}}
     </button>
     {{/each}}
@@ -140,7 +140,7 @@
             </td>
             <td class="td-app-icon"></td>
             <td class="grain-name">
-              Name
+              {{_ "grains.grainlist.sandstormGrainTable.tableHeader.title"}}
               {{#if equal sortOrder.key "title"}}
                 {{#if equal sortOrder.order "ascending"}}
                   ▾
@@ -150,7 +150,7 @@
               {{/if}}
             </td>
             <td class="grain-size">
-              Size
+              {{_ "grains.grainlist.sandstormGrainTable.tableHeader.size"}}
               {{#if equal sortOrder.key "size"}}
                 {{#if equal sortOrder.order "ascending"}}
                   ▾
@@ -160,7 +160,7 @@
               {{/if}}
             </td>
             <td class="last-used">
-              Last activity
+              {{_ "grains.grainlist.sandstormGrainTable.tableHeader.lastUsed"}}
               {{#if equal sortOrder.key "lastUsed"}}
                 {{#if equal sortOrder.order "ascending"}}
                   ▾
@@ -169,10 +169,10 @@
                 {{/if}}
               {{/if}}
             </td>
-            <td class="shared-or-owned">Mine/Shared</td>
+            <td class="shared-or-owned">{{_ "grains.grainlist.sandstormGrainTable.tableHeader.ownership"}}</td>
             {{!-- Collaborators, size TODO
-            <td>Collaborators</td>
-            <td>Size</td>
+            <td>{{_ "grains.grainlist.sandstormGrainTable.tableHeader.collaborators"}}</td>
+            <td>{{_ "grains.grainlist.sandstormGrainTable.tableHeader.size"}}</td>
             --}}
         </tr>
         {{/if}}
@@ -199,21 +199,21 @@
           <td class="grain-name click-to-go">
             <a href="{{ pathFor route='grain' grainId=_id }}">{{title}}</a>
             {{#with was}}
-              (was: {{.}})
+              {{_ "grains.grainlist.sandstormGrainTable.tableBody.was" .}}
             {{/with}}
             {{#with renamedFrom}}
-              (renamed from: {{.}})
+              {{_ "grains.grainlist.sandstormGrainTable.tableBody.renamedFrom" .}}
             {{/with}}
           </td>
           <td class="grain-size click-to-go">{{grainSize}}</td>
           <td class="last-used click-to-go">
             {{#if isNewShare}}
-              Unopened
+              {{_ "grains.grainlist.sandstormGrainTable.tableBody.new"}}
             {{else}}
               {{dateString lastUsed}}
             {{/if}}
           </td>
-          <td class="shared-or-owned click-to-go">{{#if isOwnedByMe }}My grain{{else}}Shared with me{{/if}}</td>
+          <td class="shared-or-owned click-to-go">{{#if isOwnedByMe }}{{_ "grains.grainlist.sandstormGrainTable.tableBody.mine"}}{{else}}{{_ "grains.grainlist.sandstormGrainTable.tableBody.shared"}}{{/if}}</td>
           {{!-- Collaborators, size TODO
           <td>TODO: collaborators</td>
           <td>{{ size }}</td>

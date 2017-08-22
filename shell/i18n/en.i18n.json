@@ -343,7 +343,25 @@
           "hasNoApp": "Install an app to create your first grain."
         }
       },
-      "sandstormGrainTable": {}
+      "sandstormGrainTable": {
+        "bulkAction": {
+          "disabledHint": "To perform bulk actions, you must first select some grains in the list."
+        },
+        "tableHeader": {
+          "title": "Name",
+          "size": "Size",
+          "lastUsed": "Last activity",
+          "ownership": "Mine/Shared",
+          "collaborators": "Collaborators"
+        },
+        "tableBody": {
+          "was": "(was: %s)",
+          "renamedFrom": "(renamed from: %s)",
+          "new": "Unopened",
+          "mine": "My grain",
+          "shared": "Shared with me"
+        }
+      }
     },
     "contactAutocomplete": {
       "contactInputBox": {}

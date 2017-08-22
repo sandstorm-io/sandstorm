@@ -6,7 +6,7 @@
        <div class="picture" style="background-image: url('{{ profile.pictureUrl }}');"></div>{{profile.name}}<span class="closer"></span></li>
     {{/each}}
     </ul>
-    <input type="text" class="emails" placeholder="Enter email addresses or names"
+    <input type="text" class="emails" placeholder="{{_ "grains.grainlist.contactAutocomplete.contactInputBox.placeholder"}}"
            tabindex="0" role="combobox" aria-expanded="true" aria-autocomplete="list"
            aria-owns="{{templateId}}autocomplete-suggestions"
            aria-activedescendant="{{templateId}}contact-selected" autocomplete="off"

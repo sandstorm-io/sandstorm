@@ -361,10 +361,12 @@
           "mine": "My grain",
           "shared": "Shared with me"
         }
+      },
+      "contactAutocomplete": {
+        "contactInputBox": {
+          "placeholder": "Enter email addresses or names"
+        }
       }
-    },
-    "contactAutocomplete": {
-      "contactInputBox": {}
     }
   },
   "notifications": {

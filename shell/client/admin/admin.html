@@ -49,68 +49,67 @@
 <template name="newAdminRoot">
   <h1>
     <ul class="admin-breadcrumbs">
-      <li>Admin</li>
+      <li>{{_ "admin.title"}}</li>
     </ul>
   </h1>
 
   <nav>
     <ul class="nav-sections">
       <li>
-        <h2>Configuration</h2>
+        <h2>{{_ "admin.admin.newAdminRoot.configuration.title"}}</h2>
         <ul class="nav-items">
           {{#adminNavItem routeName="newAdminIdentity"}}
-            <div class="item-name">Identity providers</div>
-            <div class="item-subtext">How users log in.</div>
+            <div class="item-name">{{_ "admin.admin.newAdminRoot.configuration.identity.name"}}</div>
+            <div class="item-subtext">{{_ "admin.admin.newAdminRoot.configuration.identity.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminOrganization"}}
-            <div class="item-name">Organization settings</div>
-            <div class="item-subtext">Smoother onboarding and collaboration for larger teams.</div>
+            <div class="item-name">{{_ "admin.admin.newAdminRoot.configuration.organization.name"}}</div>
+            <div class="item-subtext">{{_ "admin.admin.newAdminRoot.configuration.organization.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminEmailConfig"}}
-            <div class="item-name">Email configuration</div>
-            <div class="item-subtext">How email gets sent to users.</div>
+            <div class="item-name">{{_ "admin.admin.newAdminRoot.configuration.emailConfig.name"}}</div>
+            <div class="item-subtext">{{_ "admin.admin.newAdminRoot.configuration.emailConfig.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminPersonalization"}}
-            <div class="item-name">Personalization</div>
-            <div class="item-subtext">Customize a splash page, terms of service, privacy policy,
-                etc.</div>
+            <div class="item-name">{{_ "admin.admin.newAdminRoot.configuration.personalization.name"}}</div>
+            <div class="item-subtext">{{_ "admin.admin.newAdminRoot.configuration.personalization.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminPreinstalledApps"}}
-            <div class="item-name">Pre-installed apps</div>
-            <div class="item-subtext">Choose apps to pre-install for new users.</div>
+            <div class="item-name">{{_ "admin.admin.newAdminRoot.configuration.preinstalledApps.name"}}</div>
+            <div class="item-subtext">{{_ "admin.admin.newAdminRoot.configuration.preinstalledApps.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminAppSources"}}
-            <div class="item-name">App sources</div>
-            <div class="item-subtext">Where to look for apps and app updates.</div>
+            <div class="item-name">{{_ "admin.admin.newAdminRoot.configuration.appSources.name"}}</div>
+            <div class="item-subtext">{{_ "admin.admin.newAdminRoot.configuration.appSources.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminNetworking"}}
-            <div class="item-name">Networking</div>
-            <div class="item-subtext">Control how the network is accessed.</div>
+            <div class="item-name">{{_ "admin.admin.newAdminRoot.configuration.networking.name"}}</div>
+            <div class="item-subtext">{{_ "admin.admin.newAdminRoot.configuration.networking.subtext"}}</div>
           {{/adminNavItem}}
         </ul>
       </li>
       <li>
-        <h2>Management</h2>
+        <h2>{{_ "admin.admin.newAdminRoot.management.title"}}</h2>
         <ul class="nav-items">
           {{#adminNavItem routeName="newAdminUsers"}}
-            <div class="item-name">Users</div>
-            <div class="item-subtext">Manage all users on this Sandstorm installation.</div>
+            <div class="item-name">{{_ "admin.admin.newAdminRoot.management.users.name"}}</div>
+            <div class="item-subtext">{{_ "admin.admin.newAdminRoot.management.users.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminStatus"}}
-            <div class="item-name">System log</div>
-            <div class="item-subtext">View Sandstorm's debug log.</div>
+            <div class="item-name">{{_ "admin.admin.newAdminRoot.management.status.name"}}</div>
+            <div class="item-subtext">{{_ "admin.admin.newAdminRoot.management.status.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminStats"}}
-            <div class="item-name">Statistics</div>
-            <div class="item-subtext">View usage statistics for this server.</div>
+            <div class="item-name">{{_ "admin.admin.newAdminRoot.management.stats.name"}}</div>
+            <div class="item-subtext">{{_ "admin.admin.newAdminRoot.management.stats.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminMaintenance"}}
-            <div class="item-name">Maintenance message</div>
-            <div class="item-subtext">Communicate potential downtime to users.</div>
+            <div class="item-name">{{_ "admin.admin.newAdminRoot.management.maintenance.name"}}</div>
+            <div class="item-subtext">{{_ "admin.admin.newAdminRoot.management.maintenance.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminNetworkCapabilities"}}
-            <div class="item-name">Network capabilities</div>
-            <div class="item-subtext">Manage direct network access for grains.</div>
+            <div class="item-name">{{_ "admin.admin.newAdminRoot.management.capabilities.name"}}</div>
+            <div class="item-subtext">{{_ "admin.admin.newAdminRoot.management.capabilities.subtext"}}</div>
           {{/adminNavItem}}
         </ul>
       </li>

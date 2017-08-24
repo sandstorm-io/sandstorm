@@ -3,25 +3,25 @@
   "shell": {
     "layout": {
       "demoExpired": {
-        "title": "__Demo Expired",
-        "canUpgrade": "__Thanks for trying the Sandstorm Demo! Your demo account has expired. If you'd like to continue using Sandstorm and make your data permanent, please sign in.",
-        "cannotUpgrade": "__Thanks for trying the Sandstorm Demo! Your demo account has expired.",
-        "signOut": "__Sign out"
+        "title": "Demo Expired",
+        "canUpgrade": "Thanks for trying the Sandstorm Demo! Your demo account has expired. If you'd like to continue using Sandstorm and make your data permanent, please sign in.",
+        "cannotUpgrade": "Thanks for trying the Sandstorm Demo! Your demo account has expired.",
+        "signOut": "Sign out"
       },
       "adminAlert": {
         "icon": "!",
         "title": "管理者送來的訊息"
       },
       "demoModal": {
-        "header": "__Sandstorm is a self-hostable web productivity suite.",
-        "withAppDemo": "__with apps like %s.",
-        "withoutAppDemo": "__with all the apps you need in one place.",
+        "header": "Sandstorm is a self-hostable web productivity suite.",
+        "withAppDemo": "with apps like %s.",
+        "withoutAppDemo": "with all the apps you need in one place.",
         "startButton": {
-          "withAppDemo": "__Try %s »",
-          "withoutAppDemo": "__Start »"
+          "withAppDemo": "Try %s »",
+          "withoutAppDemo": "Start »"
         },
-        "explanation": "__<p>Sandstorm makes it easy to run apps on your own server. In addition to improving privacy and control, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\" target=\"_blank\">this brings Open Source apps to a wide audience.</a></p>",
-        "securityOverview": "__<p>Sandstorm is also ridiculously secure. If security interests you, check out <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">Sandstorm's security model overview</a>.</p>"
+        "explanation": "<p>Sandstorm makes it easy to run apps on your own server. In addition to improving privacy and control, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\" target=\"_blank\">this brings Open Source apps to a wide audience.</a></p>",
+        "securityOverview": "<p>Sandstorm is also ridiculously secure. If security interests you, check out <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">Sandstorm's security model overview</a>.</p>"
       }
     },
     "notifications": {
@@ -68,54 +68,54 @@
       "uploadFailed": "上傳失敗，請重試。"
     },
     "uploadTest": {
-      "title": "__Upload test page",
-      "explanation": "__This page is intended for use by the test scripts.",
-      "uploadApp": "__Upload app:",
-      "uploadBackup": "__Upload backup:"
+      "title": "Upload test page",
+      "explanation": "This page is intended for use by the test scripts.",
+      "uploadApp": "Upload app:",
+      "uploadBackup": "Upload backup:"
     },
     "referrals": {
-      "title": "__Referral Program",
+      "title": "Referral Program",
       "header": {
         "isPaid": {
-          "title": "__Get up to <span class=\"reward-amount\">30 GB</span> of free space when your friends share on Oasis!",
-          "explanation": "__For each friend that creates a sharing link, we'll reward you with 2 GB."
+          "title": "Get up to <span class=\"reward-amount\">30 GB</span> of free space when your friends share on Oasis!",
+          "explanation": "For each friend that creates a sharing link, we'll reward you with 2 GB."
         },
         "isNotPaid": {
-          "title": "__Get unlimited grains &amp; up to <span class=\"reward-amount\">2 GB</span> of free space when your friends share on Oasis!",
-          "explanation": "__For each friend that creates a sharing link, we'll reward you with 50 MB. You'll also get unlimited grains."
+          "title": "Get unlimited grains &amp; up to <span class=\"reward-amount\">2 GB</span> of free space when your friends share on Oasis!",
+          "explanation": "For each friend that creates a sharing link, we'll reward you with 50 MB. You'll also get unlimited grains."
         }
       },
       "howTo": {
-        "title": "__Sharing is referring",
-        "explanation": "__To get started, open any grain and click Share access.",
+        "title": "Sharing is referring",
+        "explanation": "To get started, open any grain and click Share access.",
         "getStart": {
-          "step1": "__You share a grain with your friend (who isn't already an Oasis user).",
-          "step2": "__Your friend signs in.",
-          "step3": "__Your friend shares a grain with any other person (including you)."
+          "step1": "You share a grain with your friend (who isn't already an Oasis user).",
+          "step2": "Your friend signs in.",
+          "step3": "Your friend shares a grain with any other person (including you)."
         }
       },
       "status": {
-        "title": "__Your referrals & status",
-        "explanation": "__Once you send a sharing link out, people will appear in this list after they sign in.",
+        "title": "Your referrals & status",
+        "explanation": "Once you send a sharing link out, people will appear in this list after they sign in.",
         "pending": {
-          "title": "__Still needs to share",
-          "explanation": "__Tell these people to make a grain and share it with you. You must actually view the grain they shared with you!"
+          "title": "Still needs to share",
+          "explanation": "Tell these people to make a grain and share it with you. You must actually view the grain they shared with you!"
         },
         "success": {
-          "title": "__Successful referrals",
-          "explanation": "__You've successfully referred these people. Congratulations!"
+          "title": "Successful referrals",
+          "explanation": "You've successfully referred these people. Congratulations!"
         }
       },
       "finePrint": {
-        "title": "__The fine print",
-        "warningWithAccountLink": "__Your referral bonus lasts until 1 year after the referral. The terms of this referral program may change without warning; however, such changes will not affect bonuses you have already received. If you need even more space, <a href=\"%s\">upgrade your account.</a>",
-        "explanation": "__Paid subscribers can get up to 30 GB of free storage, 2 GB per person they refer, in addition to the storage from their account level. Free account holders can earn unlimited grains and 50 MB of free storage per person they refer, up to 2 GB total."
+        "title": "The fine print",
+        "warningWithAccountLink": "Your referral bonus lasts until 1 year after the referral. The terms of this referral program may change without warning; however, such changes will not affect bonuses you have already received. If you need even more space, <a href=\"%s\">upgrade your account.</a>",
+        "explanation": "Paid subscribers can get up to 30 GB of free storage, 2 GB per person they refer, in addition to the storage from their account level. Free account holders can earn unlimited grains and 50 MB of free storage per person they refer, up to 2 GB total."
       }
     },
     "about": {
       "title": "關於沙聚雲",
       "intro": {
-        "explanation": "__<a href=\"https://sandstorm.io\">沙聚雲(Sandstorm.io)</a>是可以執行私人或個人網路應用程式的開源平台。使用者可以上傳並安裝任何程式，就像手機的應用程式商店一樣。為了保護隱私，<a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">這是唯一公開開源網路應用程式的方式。</a>",
+        "explanation": "<a href=\"https://sandstorm.io\">沙聚雲(Sandstorm.io)</a>是可以執行私人或個人網路應用程式的開源平台。使用者可以上傳並安裝任何程式，就像手機的應用程式商店一樣。為了保護隱私，<a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">這是唯一公開開源網路應用程式的方式。</a>",
         "version": "版本：%s",
         "unofficialWarning": "__<b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers."
       },
@@ -130,27 +130,27 @@
       },
       "corporate": {
         "title": "贊助者",
-        "explanation": "__These companies contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
+        "explanation": "These companies contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
       },
       "individual": {
-        "title": "__Key indivisual sponsors",
-        "explanation": "__These individuals contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
+        "title": "Key indivisual sponsors",
+        "explanation": "These individuals contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
       },
       "backers": {
-        "title": "__Backers",
-        "explanation": "__from <a href=\"http://igg.me/at/sandstorm\">our Indiegogo campaign &gt;</a>",
-        "anonymous": "__and %s anonymous contributors",
-        "loading": "__loading..."
+        "title": "Backers",
+        "explanation": "from <a href=\"http://igg.me/at/sandstorm\">our Indiegogo campaign &gt;</a>",
+        "anonymous": "and %s anonymous contributors",
+        "loading": "loading..."
       },
       "dependencies": {
-        "title": "__Third-party works used",
-        "license": "__license",
-        "explanation": "__These works are copyright the respective authors and used under the terms of the respective licenses."
+        "title": "Third-party works used",
+        "license": "license",
+        "explanation": "These works are copyright the respective authors and used under the terms of the respective licenses."
       },
       "copyright": {
         "title": "著作權",
-        "license": "__The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and contributors. The implementation is licensed under the Apache License 2.0.",
-        "trademark": "__\"Sandstorm\" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc., and may not be used to advertise derivative works nor commercial services without written consent from Sandstorm Development Group, Inc."
+        "license": "The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and contributors. The implementation is licensed under the Apache License 2.0.",
+        "trademark": "\"Sandstorm\" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc., and may not be used to advertise derivative works nor commercial services without written consent from Sandstorm Development Group, Inc."
       },
       "terms": {
         "license": "授權",
@@ -287,16 +287,16 @@
       "whoHasAccess": "檢視誰能存取"
     },
     "grainSharePopup": {
-      "oldSharingModelDescription": "__This grain uses the old sharing model. You can share it by copy/pasting the URL from the location bar",
-      "upgradeDescription": "__You can upgrade this grain to the new model, but anyone with whom you shared this grain previously will lose access; you will have to share with them again.",
-      "upgradeWarning": "__Upgrading cannot be undone.",
-      "upgrade": "__upgrade",
+      "oldSharingModelDescription": "This grain uses the old sharing model. You can share it by copy/pasting the URL from the location bar",
+      "upgradeDescription": "You can upgrade this grain to the new model, but anyone with whom you shared this grain previously will lose access; you will have to share with them again.",
+      "upgradeWarning": "Upgrading cannot be undone.",
+      "upgrade": "upgrade",
       "openInIncognitoMode": "您正以無痕模式瀏覽此沙粒。",
       "toShareAccess": "若要進行分享，請複製以下連結：",
       "openNonAnonymouslyHead": "更多的分享選項",
       "openNonAnonymouslyLink": "需要登入才能使用",
       "openNonAnonymouslyTail": "。",
-      "signIn": "__For more sharing options, please sign in."
+      "signIn": "其他分享選項需要登入才能使用。"
     },
     "grainPowerboxRequest": {
       "powerboxRequestHint": "Powerbox 要求",
@@ -317,54 +317,54 @@
     "grainlist": {
       "sandstormGrainListPage": {
         "introButton": {
-          "hint": "__What is a grain?"
+          "hint": "什麼是沙粒？"
         },
-        "mainListButton": "__View main list",
-        "trashButton": "__View trash (%s)",
-        "restoreButton": "__Restore backup...",
+        "mainListButton": "檢視主列表",
+        "trashButton": "檢視回收桶(%s)",
+        "restoreButton": "復原備份……",
         "search": {
-          "placeholder": "__search"
+          "placeholder": "搜尋 "
         },
         "usageInfo": {
-          "quota": "____count__ of __quota__ grains",
-          "size": "____size__ of __total__ used"
+          "quota": "__quota__ 沙粒中 __count__ 個",
+          "size": "共 __total__，已用 __size__"
         },
         "trash": {
-          "emptyButton": "__Empty all trash",
-          "explanation": "__(Grains will be permanently removed after 30 days in the trash. To keep a grain, restore it to the Main list.)"
+          "emptyButton": "清空所有回收桶",
+          "explanation": "（回收桶內的沙粒會在 30 天後被自動移除。若要保留沙粒，請將其移回主列表。）"
         },
         "noGrains": {
-          "notFound": "__<strong>No matching grains found.</strong>",
-          "inTrash": "__Some grains in your trash match your search.",
-          "trashButton": "__View trash",
-          "empty": "__<strong>Trash is empty.</strong>",
-          "explanation": "__You don't have any grains yet.",
-          "hasApps": "__Select an app and create your first grain.",
-          "hasNoApp": "__Install an app to create your first grain."
+          "notFound": "__<strong>找不到相符的沙粒。</strong>",
+          "inTrash": "回收桶內有沙粒符合您的搜尋。",
+          "trashButton": "檢視回收桶",
+          "empty": "__<strong>回收桶是空的。</strong>",
+          "explanation": "您沒有任何沙粒。",
+          "hasApps": "選擇應用程式來創建您的第一粒沙。",
+          "hasNoApp": "安裝應用程式來創建您的第一粒沙。"
         }
       },
       "sandstormGrainTable": {
         "bulkAction": {
-          "disabledHint": "__To perform bulk actions, you must first select some grains in the list."
+          "disabledHint": "若要進行擴張，您必須先從列表中選擇沙粒。"
         },
         "tableHeader": {
-          "title": "__Name",
-          "size": "__Size",
-          "lastUsed": "__Last activity",
-          "ownership": "__Mine/Shared",
-          "collaborators": "__Collaborators"
+          "title": "沙粒名",
+          "size": "容量",
+          "lastUsed": "最後使用",
+          "ownership": "擁有者",
+          "collaborators": "合作人"
         },
         "tableBody": {
-          "was": "__(was: %s)",
-          "renamedFrom": "__(renamed from: %s)",
-          "new": "__Unopened",
-          "mine": "__My grain",
-          "shared": "__Shared with me"
+          "was": "（原標題：%s）",
+          "renamedFrom": "（原名：%s）",
+          "new": "尚未開啟",
+          "mine": "自己",
+          "shared": "別人分享"
         }
       },
       "contactAutocomplete": {
         "contactInputBox": {
-          "placeholder": "__Enter email addresses or names"
+          "placeholder": "輸入電子郵件信箱或姓名"
         }
       }
     }
@@ -383,15 +383,15 @@
       "text": "隱藏"
     },
     "mailingListBonusNotificationItem": {
-      "explanationWithBonus": "__Subscribe to our announcement list and get <strong>%s bonus storage</strong> (1-2 emails per month).",
-      "submitButton": "__Subscribe",
-      "dismissButton": "__No thanks"
+      "explanationWithBonus": "Subscribe to our announcement list and get <strong>%s bonus storage</strong> (1-2 emails per month).",
+      "submitButton": "Subscribe",
+      "dismissButton": "No thanks"
     },
     "referralNotificationItem": {
-      "paidUser": "__Get up to 30 GB bonus with the",
-      "unpaidUser": "__Unlimited grains & up to 2 GB bonus with the",
-      "link": "__referral program »",
-      "dismissButton": "__Dismiss"
+      "paidUser": "Get up to 30 GB bonus with the",
+      "unpaidUser": "Unlimited grains & up to 2 GB bonus with the",
+      "link": "referral program »",
+      "dismissButton": "Dismiss"
     },
     "adminNotificationItem": {
       "explanation": "您提供的匿名資料可以幫助我們改善沙聚雲。詳情請點擊此處。"
@@ -459,103 +459,103 @@
     }
   },
   "styleguide": {
-    "title": "__Sandstorm style guide",
-    "note": "__(note: this is a work in progress.)",
+    "title": "Sandstorm style guide",
+    "note": "(note: this is a work in progress.)",
     "copyRules": {
-      "title": "__Copy rules",
-      "rule1": "__Be terse but clear.  Avoid technical terms where less-technical ones will do.",
-      "rule2": "__Capitalize the first letter of the first word of a section heading or button.  Do not capitalize the second word, or anything else, unless referring to a proper noun like Google or GitHub.",
-      "rule3": "__Use verbs for text on buttons. The button text should describe what clicking that button will do.",
-      "rule4": "__Use nouns for text which is a link.  The link text should indicate what the link will take you to.",
-      "rule5": "__Use nouns for basically everything else, too, to communicate the information architecture. Section headings should be nouns which describe the content of the section.  Labels should be nouns which describe the content of the field."
+      "title": "Copy rules",
+      "rule1": "Be terse but clear.  Avoid technical terms where less-technical ones will do.",
+      "rule2": "Capitalize the first letter of the first word of a section heading or button.  Do not capitalize the second word, or anything else, unless referring to a proper noun like Google or GitHub.",
+      "rule3": "Use verbs for text on buttons. The button text should describe what clicking that button will do.",
+      "rule4": "Use nouns for text which is a link.  The link text should indicate what the link will take you to.",
+      "rule5": "Use nouns for basically everything else, too, to communicate the information architecture. Section headings should be nouns which describe the content of the section.  Labels should be nouns which describe the content of the field."
     },
     "styleRules": {
-      "title": "__Style rules",
-      "rule1": "__Stick to a limited color palette.  (TODO: add specific colors)",
-      "rule2": "__Use typefaces no smaller than 13px for text content.  Readability is important and not everyone has young eyes.",
-      "rule3": "__Make click targets no smaller than 32px square or 26px tall if appreciably wider.  Remember that due to Fitts' Law, larger click targets are easier to interact with."
+      "title": "Style rules",
+      "rule1": "Stick to a limited color palette.  (TODO: add specific colors)",
+      "rule2": "Use typefaces no smaller than 13px for text content.  Readability is important and not everyone has young eyes.",
+      "rule3": "Make click targets no smaller than 32px square or 26px tall if appreciably wider.  Remember that due to Fitts' Law, larger click targets are easier to interact with."
     },
     "forms": {
-      "title": "__Forms",
-      "rule1": "__Use the <code>standard-form</code> class where appropriate.",
-      "rule2": "__The primary action button of a form should be at the bottom right of the form. Secondary buttons should line up to the left of that primary action button.",
-      "rule3": "__When providing text input fields, place labels above the input, not side-by-side or inside the field as placeholder text.  Place additional explanation or instructions below the input. Placeholder text should be used for examples, not instructions.",
-      "rule4": "__Forms are generally used for transactional interactions, where the user cares about the success or failure of the application.  Avoid optimistic UI in favor of multi-state UI which communicates network activity, success, and failure.  A common pattern is:",
-      "rule4-1": "__Have the default state of the form.  Disable a save button until the user makes a change.",
-      "rule4-2": "__When the user clicks an action button, start the RPC, and disable the entire form to indicate that the action is underway.",
-      "rule4-3": "__When the RPC completes, if the RPC failed, show an error message at the top of the context over which the action applies.  If the RPC succeeded, either indicate a success message (again, at the top of the context over which the action applies) or if this was a modal interaction and the completion of the RPC indicates successful completion of the workflow, dismiss the form with no additional message."
+      "title": "Forms",
+      "rule1": "Use the <code>standard-form</code> class where appropriate.",
+      "rule2": "The primary action button of a form should be at the bottom right of the form. Secondary buttons should line up to the left of that primary action button.",
+      "rule3": "When providing text input fields, place labels above the input, not side-by-side or inside the field as placeholder text.  Place additional explanation or instructions below the input. Placeholder text should be used for examples, not instructions.",
+      "rule4": "Forms are generally used for transactional interactions, where the user cares about the success or failure of the application.  Avoid optimistic UI in favor of multi-state UI which communicates network activity, success, and failure.  A common pattern is:",
+      "rule4-1": "Have the default state of the form.  Disable a save button until the user makes a change.",
+      "rule4-2": "When the user clicks an action button, start the RPC, and disable the entire form to indicate that the action is underway.",
+      "rule4-3": "When the RPC completes, if the RPC failed, show an error message at the top of the context over which the action applies.  If the RPC succeeded, either indicate a success message (again, at the top of the context over which the action applies) or if this was a modal interaction and the completion of the RPC indicates successful completion of the workflow, dismiss the form with no additional message."
     },
     "example": {
-      "title": "__An example:",
-      "label": "__Email",
-      "placeholder": "__alice@example.com",
-      "subtext": "__You might want to receive notifications.",
-      "submitButton": "__Save",
-      "discardButton": "__Discard"
+      "title": "An example:",
+      "label": "Email",
+      "placeholder": "alice@example.com",
+      "subtext": "You might want to receive notifications.",
+      "submitButton": "Save",
+      "discardButton": "Discard"
     }
   },
   "admin": {
-    "title": "__Admin",
+    "title": "管理者",
     "admin": {
       "newAdmin": {
-        "wildcardHostBroken": "__WARNING: This server seems to have its WILDCARD_HOST misconfigured.  Until you fix it, you will not be able to use any apps. You can read <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\"> more info in the Sandstorm docs</a> and in your browser's Javascript console. You'll need to adjust DNS, SSL/TLS certificates, or edit the sandstorm.conf file. If you see no information in the JS console, or wish to test if you have fixed the problem, reload this page to re-run the test. If you're still having problems, <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">please file an issue.</a>",
-        "websocketBroken": "__WARNING: This server seems to be unable to create a WebSocket. Sandstorm may appear to run fine, but many apps will fail to run properly. <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\"> Learn more.</a>  Usually this is caused by a reverse proxy like nginx or Apache that needs to be reconfigured. If you think you are seeing this message in error, please reload this page or <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">file an issue.</a>",
-        "hasSetupToken": "__You are not logged in as an admin, but you do have a setup token. You can either <a href=\"/setup\">visit the setup wizard</a> or <a href=\"/admin/status\">view the system log</a>.",
-        "hasNoSetupToken": "__You are not logged in as an admin. To access the admin panel, log in as an admin user or generate a token from the command line by running `sandstorm admin-token`."
+        "wildcardHostBroken": "警告：本伺服器似乎把 WILDCARD_HOST 設定錯了。在修復此問題前，您無法使用任何應用程式。您可以參照<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\">本篇沙聚雲文件</a>和您瀏覽器的 Javascript 記錄取得更多資訊。您必須調整 DNS、SSL/TLS certificates，或編輯 sandstorm.conf 檔案。如果您想要測試問題是否已修復，請重新整理此頁面。如果您仍然有問題，請<a href=\"https://github.com/sandstorm-io/sandstorm/issues\">在此開一個 issue</a>。",
+        "websocketBroken": "警告：本伺服器似乎無法建立 WebSocket。沙聚雲也許看起來沒有問題，但許多應用程式會無法正常執行。<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\">更多資訊在此。</a>通常這是因為上層的 reverse proxy （比如 nginx 或 Apache）需要被重新設定。如果您認為不是，請重新整理此頁面或<a href=\"https://github.com/sandstorm-io/sandstorm/issues\">在此開一個 issue</a>。",
+        "hasSetupToken": "您並非以管理者身份登入，但您的設置 token 是正確的。您現在可以<a href=\"/setup\">啟動設置精靈</a>或<a href=\"/admin/status\">檢視系統記錄</a>。",
+        "hasNoSetupToken": "您並非以管理者身份登入，無法使用管理面板。請以管理者身份登入，或在主機終端上執行`sandstorm admin-token`來取得管理 token。"
       },
       "newAdminRoot": {
         "configuration": {
-          "title": "__Configuration",
+          "title": "設定",
           "identity": {
-            "name": "__Identity providers",
-            "subtext": "__How users log in."
+            "name": "身份提供者",
+            "subtext": "設定使用者可以如何登入。"
           },
           "organization": {
-            "name": "__Organization settings",
-            "subtext": "__Smoother onboarding and collaboration for larger teams."
+            "name": "組織設定",
+            "subtext": "讓大團隊可以圓滑地上手及進行合作。"
           },
           "emailConfig": {
-            "name": "__Email configuration",
-            "subtext": "__How email gets sent to users."
+            "name": "電子郵件寄送設定",
+            "subtext": "設定沙聚雲如何寄送電子郵件。"
           },
           "personalization": {
-            "name": "__Personalization",
-            "subtext": "__Customize a splash page, terms of service, privacy policy, etc."
+            "name": "個人化",
+            "subtext": "客製獨自的啟動畫面、服務條款、隱私權聲明等等。"
           },
           "preinstalledApps": {
-            "name": "__Pre-installed apps",
-            "subtext": "__Choose apps to pre-install for new users."
+            "name": "預裝應用程式",
+            "subtext": "選擇新使用者可以直接使用的預裝應用程式。"
           },
           "appSources": {
-            "name": "__App sources",
-            "subtext": "__Where to look for apps and app updates."
+            "name": "應用程式來源",
+            "subtext": "取得應用程式和更新的位置。"
           },
           "networking": {
-            "name": "__Networking",
-            "subtext": "__Control how the network is accessed."
+            "name": "網路",
+            "subtext": "控制如何存取網路。"
           }
         },
         "management": {
-          "title": "__Management",
+          "title": "管理",
           "users": {
-            "name": "__Users",
-            "subtext": "__Manage all users on this Sandstorm installation."
+            "name": "使用者",
+            "subtext": "管理此沙聚雲上的使用者。"
           },
           "status": {
-            "name": "__System log",
-            "subtext": "__View Sandstorm's debug log."
+            "name": "系統記錄",
+            "subtext": "檢視沙聚雲的除錯記錄。"
           },
           "stats": {
-            "name": "__Statistics",
-            "subtext": "__View usage statistics for this server."
+            "name": "統計",
+            "subtext": "檢視伺服器上的各種統計數據。"
           },
           "maintenance": {
-            "name": "__Maintenance message",
-            "subtext": "__Communicate potential downtime to users."
+            "name": "維修訊息",
+            "subtext": "告知使用者維修所需時間。"
           },
           "capabilities": {
-            "name": "__Network capabilities",
-            "subtext": "__Manage direct network access for grains."
+            "name": "網路容量",
+            "subtext": "管理沙粒的網路直接存取量。"
           }
         }
       }

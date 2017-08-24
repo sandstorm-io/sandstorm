@@ -560,21 +560,29 @@
         }
       }
     },
-    "appSources": {},
-    "emailConfig": {},
-    "hostingManagement": {},
-    "identityProviders": {},
-    "maintenanceMessage": {},
-    "networkCapabilities": {},
-    "networking": {},
+    "identityProviders": {
+      "newAdminIdentity": {
+        "title": "Identity providers",
+        "explanation": "Choose which services users may use to identify themselves.  Anyone can log in, but only users you invite will be able to install apps or create grains.",
+        "organizationLinkPrefix": "To configure organization membership and settings, see",
+        "organizationLink": "organization settings",
+        "organizationLinkPostfix": "."
+      }
+    },
     "organization": {},
+    "emailConfig": {},
     "personalization": {},
     "preinstalledApps": {},
-    "stats": {},
-    "systemStatus": {},
+    "appSources": {},
+    "networking": {},
     "userAccounts": {},
     "userDetails": {},
-    "userInvite": {}
+    "userInvite": {},
+    "systemStatus": {},
+    "stats": {},
+    "maintenanceMessage": {},
+    "networkCapabilities": {},
+    "hostingManagement": {}
   },
   "people": {
     "title": "People"

@@ -1,17 +1,17 @@
 <template name="newAdminIdentity">
   <h1>
     <ul class="admin-breadcrumbs">
-      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
-      <li>Identity providers</li>
+      <li>{{#linkTo route="newAdminRoot"}}{{_ "admin.title"}}{{/linkTo}}</li>
+      <li>{{_ "admin.identityProviders.newAdminIdentity.title"}}</li>
     </ul>
   </h1>
 
-  <p>Choose which services users may use to identify themselves.  Anyone can log in, but only users you invite will be able to install apps or create grains.</p>
+  <p>{{_ "admin.identityProviders.newAdminIdentity.explanation"}}</p>
   {{>adminIdentityProviderTable idpData=idpData}}
 
   <p>
-  To configure organization membership and settings, see
-  {{#linkTo route="newAdminOrganization"}}organization settings{{/linkTo}}.
+  {{_ "admin.identityProviders.newAdminIdentity.organizationLinkPrefix"}}
+  {{#linkTo route="newAdminOrganization"}}{{_ "admin.identityProviders.newAdminIdentity.organizationLink"}}{{/linkTo}}{{_ "admin.identityProviders.newAdminIdentity.organizationLinkPostfix"}}
   </p>
 </template>
 

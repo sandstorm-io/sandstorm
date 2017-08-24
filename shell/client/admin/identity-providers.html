@@ -1,18 +1,21 @@
 <template name="newAdminIdentity">
+  {{#let txt="admin.identityProviders.newAdminIdentity"}}
   <h1>
     <ul class="admin-breadcrumbs">
       <li>{{#linkTo route="newAdminRoot"}}{{_ "admin.title"}}{{/linkTo}}</li>
-      <li>{{_ "admin.identityProviders.newAdminIdentity.title"}}</li>
+      <li>{{_ (con txt "title")}}</li>
     </ul>
   </h1>
 
-  <p>{{_ "admin.identityProviders.newAdminIdentity.explanation"}}</p>
+  <p>{{_ (con txt "explanation")}}</p>
   {{>adminIdentityProviderTable idpData=idpData}}
 
   <p>
-  {{_ "admin.identityProviders.newAdminIdentity.organizationLinkPrefix"}}
-  {{#linkTo route="newAdminOrganization"}}{{_ "admin.identityProviders.newAdminIdentity.organizationLink"}}{{/linkTo}}{{_ "admin.identityProviders.newAdminIdentity.organizationLinkPostfix"}}
+  {{_ (con txt "organizationLinkPrefix")}}
+  {{! let bindings are not working in linkTo block}}
+  {{#linkTo route="newAdminOrganization"}}{{_ "admin.identityProviders.newAdminIdentity.organizationLink"}}{{/linkTo}}{{_ (con txt "organizationLinkPostfix")}}
   </p>
+  {{/let}}
 </template>
 
 <template name="adminIdentityProviderConfigureEmail">

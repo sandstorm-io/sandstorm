@@ -656,6 +656,10 @@ Template.registerHelper("referralsEnabled", function () {
   return globalDb.isReferralEnabled();
 });
 
+Template.registerHelper("con", function () {
+  return Array.prototype.slice.call(arguments, 0, -1).join('.')
+});
+
 Template.root.helpers({
   storageUsage: function () {
     return Meteor.userId() ? prettySize(Meteor.user().storageUsage || 0) : undefined;

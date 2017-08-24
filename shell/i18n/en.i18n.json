@@ -600,6 +600,23 @@
         "enableButton": "Enable",
         "cancelButton": "Cancel",
         "disableButton": "Disable"
+      },
+      "githubLoginSetupInstructions": {
+        "explanation": "First, you'll need to get a Github Client ID and Client secret. Follow these steps:",
+        "step1": "Visit <a href=\"https://github.com/settings/applications/newi\" target=\"blank\">https://github.com/settings/applications/new</a>",
+        "step2": "Set Homepage URL to: <span class=\"idp-config-url\">%s</span>",
+        "step3": "Set Authorization callback URL to: <span class=\"idp-config-url\">%s_oauth/github</span>"
+      },
+      "adminIdentityProviderConfigureGitHub": {
+        "title": "GitHub login configuration",
+        "formerBaseUrlWarning": "This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to visit <a target=\"_blank\" href=\"https://github.com/settings/developers\">https://github.com/settings/developers</a> and update the Homepage URL and Authorization callback URL for this application to the values below.",
+        "explanation": "Then, copy over your Client ID and Client secret below:",
+        "clientId": "Client ID:",
+        "clientSecret": "Client secret:",
+        "saveButton": "Save",
+        "enableButton": "Enable",
+        "cancelButton": "Cancel",
+        "disableButton": "Disable"
       }
     },
     "organization": {},

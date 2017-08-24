@@ -199,100 +199,94 @@
 
 <template name="adminIdentityProviderConfigureLdap">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
-  <h2>LDAP login configuration</h2>
+  {{#let txt="admin.identityProviders.adminIdentityProviderConfigureLdap"}}
+  <h2>{{_ (con txt "title")}}</h2>
 
   {{#if errorMessage}}
     {{#focusingErrorBox}}
-      Failed to save changes: {{errorMessage}}
+      {{_ (con txt "error") errorMessage}}
     {{/focusingErrorBox}}
   {{/if}}
 
   <form class="setup-idp-form">
     <div class="form-group">
-      <label>LDAP server URL:
+      <label>{{_ (con txt "url.label")}}
         <input type="text" name="ldapUrl" value="{{ldapUrl}}" />
       </label>
       <span class="form-subtext">
-        e.g. <code>ldap://ldap.example.com:389</code>.  Use port 636 for SSL.
+        {{{_ (con txt "url.subtext")}}}
       </span>
     </div>
 
     <div class="form-group">
-      <label>Bind user DN
+      <label>{{_ (con txt "searchBindDn.label")}}
         <input type="text" name="ldapSearchBindDn" value="{{ldapSearchBindDn}}"/>
       </label>
       <span class="form-subtext">
-        The DN to bind as when searching for a user in the tree, e.g.
-        <code>cn=admin,ou=users,dc=example,dc=com</code>.  Optional,
-        but needed if your server doesn't allow unauthenticated searches.
+        {{{_ (con txt "searchBindDn.subtext")}}}
       </span>
     </div>
 
     <div class="form-group">
-      <label>Bind user password
+      <label>{{_ (con txt "searchBindPassword.label")}}
         <input type="password" name="ldapSearchBindPassword" value="{{ldapSearchBindPassword}}"/>
       </label>
       <span class="form-subtext">
-        Optional, needed if specifying bind DN above.
+        {{_ (con txt "searchBindPassword.subtext")}}
       </span>
     </div>
 
     <div class="form-group">
-      <label>Base DN
+      <label>{{_ (con txt "base.label")}}
         <input type="text" name="ldapBase" value="{{ldapBase}}"/>
       </label>
       <span class="form-subtext">
-        The root object under which to search for user account nodes, e.g.
-        <code>ou=users,dc=example,dc=com</code>
+        {{{_ (con txt "base.subtext")}}}
       </span>
     </div>
 
     <div class="form-group">
-      <label>LDAP username attribute
+      <label>{{_ (con txt "searchUsername.label")}}
         <input type="text" name="ldapSearchUsername" value="{{ldapSearchUsername}}"/>
       </label>
       <span class="form-subtext">
-        The LDAP attribute on a user object which represents the user's
-        username (what they will enter in the username field when signing in).
+        {{_ (con txt "searchUsername.subtext")}}
       </span>
     </div>
 
     <div class="form-group">
-      <label>LDAP given name attribute
+      <label>{{_ (con txt "nameField.label")}}
         <input type="text" name="ldapNameField" value="{{ldapNameField}}"/>
       </label>
       <span class="form-subtext">
-        The LDAP attribute on a user object which represents the user's full display name.
+        {{_ (con txt "nameField.subtext")}}
       </span>
     </div>
 
     <div class="form-group">
-      <label>LDAP email attribute
+      <label>{{_ (con txt "emailField.label")}}
         <input type="text" name="ldapEmailField" value="{{ldapEmailField}}"/>
       </label>
       <span class="form-subtext">
-        The LDAP attribute on a user object which represents the user's email address.
+        {{_ (con txt "emailField.subtext")}}
       </span>
     </div>
 
     <div class="form-group">
-      <label>Additional LDAP filter criteria
+      <label>{{_ (con txt "filter.label")}}
         <input type="text" name="ldapFilter" value="{{ldapFilter}}"/>
       </label>
       <span class="form-subtext">
-        An optional LDAP query fragment that will be included in the user
-        search. This is not commonly used. See <a target="_blank" href="http://www.ietf.org/rfc/rfc2254.txt">RFC2254</a>.
+        {{{_ (con txt "filter.subtext")}}}
       </span>
     </div>
 
     <div class="form-group">
-      <label>LDAP CA certificate
-        <textarea name="ldapCaCert" value="{{ldapCaCert}}" placeholder="-----BEGIN CERTIFICATE-----
-MIID...
------END CERTIFICATE-----"></textarea>
+      <label>{{_ (con txt "caCert.label")}}
+        <textarea name="ldapCaCert" value="{{ldapCaCert}}" placeholder="{{_ (con txt "caCert.placeholder")}}"></textarea>
       </label>
       <span class="form-subtext">
-        This is only necessary if your server supports SSL and is using a private CA not in the common trusted set. Note that it does NOT work to enter the LDAP server's own certificate here -- it must be the certificate of a CA which has signed the LDAP server's certificate.
+        {{_ (con txt "caCert.subtext")}}
       </span>
     </div>
 
@@ -301,20 +295,21 @@ MIID...
   <div class="idp-modal-button-row">
     <button class="idp-modal-save" disabled="{{saveDisabled}}">
       {{#if ldapEnabled}}
-      Save
+      {{_ (con txt "saveButton")}}
       {{else}}
-      Enable
+      {{_ (con txt "enableButton")}}
       {{/if}}
     </button>
     <button class="idp-modal-cancel">
-      Cancel
+      {{_ (con txt "cancelButton")}}
     </button>
     {{#if ldapEnabled}}
     <button class="idp-modal-disable">
-      Disable
+      {{_ (con txt "disableButton")}}
     </button>
     {{/if}}
   </div>
+  {{/let}}
 {{/modalDialogWithBackdrop}}
 </template>
 

@@ -617,6 +617,51 @@
         "enableButton": "Enable",
         "cancelButton": "Cancel",
         "disableButton": "Disable"
+      },
+      "adminIdentityProviderConfigureLdap": {
+        "title": "LDAP login configuration",
+        "error": "Failed to save changes: %s",
+        "url": {
+          "label": "LDAP server URL:",
+          "subtext": "e.g. <code>ldap://ldap.example.com:389</code>.  Use port 636 for SSL."
+        },
+        "searchBindDn": {
+          "label": "Bind user DN",
+          "subtext": "The DN to bind as when searching for a user in the tree, e.g. <code>cn=admin,ou=users,dc=example,dc=com</code>.  Optional, but needed if your server doesn't allow unauthenticated searches."
+        },
+        "searchBindPassword": {
+          "label": "Bind user password",
+          "subtext": "Optional, needed if specifying bind DN above."
+        },
+        "base": {
+          "label": "Base DN",
+          "subtext": "The root object under which to search for user account nodes, e.g. <code>ou=users,dc=example,dc=com</code>"
+        },
+        "searchUsername": {
+          "label": "LDAP username attribute",
+          "subtext": "The LDAP attribute on a user object which represents the user's username (what they will enter in the username field when signing in)."
+        },
+        "nameField": {
+          "label": "LDAP given name attribute",
+          "subtext": "The LDAP attribute on a user object which represents the user's full display name."
+        },
+        "emailField": {
+          "label": "LDAP email attribute",
+          "subtext": "The LDAP attribute on a user object which represents the user's email address."
+        },
+        "filter": {
+          "label": "Additional LDAP filter criteria",
+          "subtext": "An optional LDAP query fragment that will be included in the user search. This is not commonly used. See <a target=\"_blank\" href=\"http://www.ietf.org/rfc/rfc2254.txt\">RFC2254</a>."
+        },
+        "caCert": {
+          "label": "LDAP CA certificate",
+          "placeholder": "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----",
+          "subtext": "This is only necessary if your server supports SSL and is using a private CA not in the common trusted set. Note that it does NOT work to enter the LDAP server's own certificate here -- it must be the certificate of a CA which has signed the LDAP server's certificate."
+        },
+        "saveButton": "Save",
+        "enableButton": "Enable",
+        "cancelButton": "Cancel",
+        "disableButton": "Disable"
       }
     },
     "organization": {},

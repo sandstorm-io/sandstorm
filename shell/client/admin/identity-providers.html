@@ -59,55 +59,55 @@
 </template>
 
 <template name="googleLoginSetupInstructions">
+  {{#let txt="admin.identityProviders.googleLoginSetupInstructions"}}
   <p>
+    {{_ (con txt "explanation")}}
     First, you'll need to get a Google Client ID. Follow these steps:
   </p>
   <ol>
-    <li>Visit <a href="https://console.developers.google.com/" target="blank">https://console.developers.google.com/</a></li>
-    <li>"Create Project", if needed. Wait for Google to finish provisioning.</li>
-    <li>On the left sidebar, go to "Credentials" and, on the right, "OAuth consent screen". Make sure to enter an email address and a product name, and save.</li>
-    <li>On the left sidebar, go to "Credentials".  Click the "Create credentials" button, then select "OAuth client ID" as the type.</li>
-    <li>Select "Web application" as your application type.</li>
-    <li>Set Authorized Javascript Origins to: <span class="idp-config-url">{{siteUrlNoSlash}}</span></li>
-    <li>Set Authorized Redirect URI to: <span class="idp-config-url">{{siteUrlNoSlash}}/_oauth/google</span></li>
-    <li>Finish by clicking "Create".</li>
+    <li>{{{_ (con txt "step1")}}}</li>
+    <li>{{_ (con txt "step2")}}</li>
+    <li>{{_ (con txt "step3")}}</li>
+    <li>{{_ (con txt "step4")}}</li>
+    <li>{{_ (con txt "step5")}}</li>
+    <li>{{{_ (con txt "step6") siteUrlNoSlash}}}</li>
+    <li>{{{_ (con txt "step7") siteUrlNoSlash}}}</li>
+    <li>{{_ (con txt "step8")}}</li>
   </ol>
+  {{/let}}
 </template>
 
 <template name="adminIdentityProviderConfigureGoogle">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
+  {{#let txt="admin.identityProviders.adminIdentityProviderConfigureGoogle"}}
   <h2>Google login configuration</h2>
 
   {{#if formerBaseUrl}}
     <p class="flash-message warning-message" tabindex="-1">
-      This server moved from <code>{{ formerBaseUrl }}</code> to <code>{{ siteUrlNoSlash }}</code>.
-      You'll need to visit
-      <a target="_blank" href="https://console.developers.google.com/">https://console.developers.google.com/</a>
-      and update the "Authorized Javascript Origins" and "Authorized Redirect URI" for this Client ID to
-      include the values below.
+      {{{_ (con txt "formerBaseUrlWarning") former=formerBaseUrl current=siteUrlNoSlash}}}
     </p>
   {{/if}}
 
   {{#if errorMessage}}
     {{#focusingErrorBox}}
-      Failed to save changes: {{errorMessage}}
+      {{_ (con txt "error") errorMessage}}
     {{/focusingErrorBox}}
   {{/if}}
 
   <form class="setup-idp-form">
     {{> googleLoginSetupInstructions "" }}
 
-    <p>Then, copy over your Client ID and Client secret below:</p>
+    <p>{{_ (con txt "explanation")}}</p>
 
     <div class="form-group">
       <label>
-        Client ID:
+        {{_ (con txt "clientId")}}
         <input type="text" name="clientId" value="{{clientId}}"/>
       </label>
     </div>
     <div class="form-group">
       <label>
-        Client secret:
+        {{_ (con txt "clientSecret")}}
         <input type="text" name="clientSecret" value="{{clientSecret}}"/>
       </label>
     </div>
@@ -116,20 +116,21 @@
   <div class="idp-modal-button-row">
     <button class="idp-modal-save" disabled="{{saveDisabled}}">
       {{#if googleEnabled}}
-      Save
+      {{_ (con txt "saveButton")}}
       {{else}}
-      Enable
+      {{_ (con txt "enableButton")}}
       {{/if}}
     </button>
     <button class="idp-modal-cancel">
-      Cancel
+      {{_ (con txt "cancelButton")}}
     </button>
     {{#if googleEnabled}}
     <button class="idp-modal-disable">
-      Disable
+      {{_ (con txt "disableButton")}}
     </button>
     {{/if}}
   </div>
+  {{/let}}
 {{/modalDialogWithBackdrop}}
 </template>
 

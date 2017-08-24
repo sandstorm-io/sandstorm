@@ -577,6 +577,29 @@
         "enableButton": "Enable",
         "cancelButton": "Cancel",
         "disableButton": "Disable"
+      },
+      "googleLoginSetupInstructions": {
+        "explanation": "First, you'll need to get a Google Client ID. Follow these steps:",
+        "step1": "Visit <a href=\"https://console.developers.google.com/\" target=\"blank\">https://console.developers.google.com/</a>",
+        "step2": "\"Create Project\", if needed. Wait for Google to finish provisioning.",
+        "step3": "On the left sidebar, go to \"Credentials\" and, on the right, \"OAuth consent screen\". Make sure to enter an email address and a product name, and save.",
+        "step4": "On the left sidebar, go to \"Credentials\".  Click the \"Create credentials\" button, then select \"OAuth client ID\" as the type.",
+        "step5": "Select \"Web application\" as your application type.",
+        "step6": "Set Authorized Javascript Origins to: <span class=\"idp-config-url\">%s</span>",
+        "step7": "Set Authorized Redirect URI to: <span class=\"idp-config-url\">%s/_oauth/google</span>",
+        "step8": "Finish by clicking \"Create\"."
+      },
+      "adminIdentityProviderConfigureGoogle": {
+        "title": "Google login configuration",
+        "formerBaseUrlWarning": "This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to visit <a target=\"_blank\" href=\"https://console.developers.google.com/\">https://console.developers.google.com/</a> and update the \"Authorized Javascript Origins\" and \"Authorized Redirect URI\" for this Client ID to include the values below.",
+        "error": "Failed to save changes: %s",
+        "explanation": "Then, copy over your Client ID and Client secret below:",
+        "clientId": "Client ID:",
+        "clientSecret": "Client secret:",
+        "saveButton": "Save",
+        "enableButton": "Enable",
+        "cancelButton": "Cancel",
+        "disableButton": "Disable"
       }
     },
     "organization": {},

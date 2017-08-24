@@ -756,7 +756,41 @@
         "saveButton": "Save"
       }
     },
-    "emailConfig": {},
+    "emailConfig": {
+      "newAdminEmailConfig": {
+        "title": "Email configuration",
+        "outbound": {
+          "title": "Outbound email",
+          "warning": "<strong>Email is unconfigured.</strong> Email-related features like email login, notifications, sharing by identity, and requesting access will be unavailable until you configure email."
+        },
+        "howItWorks": {
+          "title": "How Sandstorm uses email",
+          "explanation": "Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too. Every app receives a unique email address, so Sandstorm needs to send email from a variety of \"From:\" addresses. Therefore, Gmail SMTP won't work, but there are other free services. See <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">more info in the docs</a>."
+        },
+        "success": "Saved changes.",
+        "error": "Failed to save changes: %s",
+        "address": {
+          "hostname": "SMTP host",
+          "port": "Port",
+          "subtext": "Use port 25 for SMTP (unencrypted or with StartTLS), port 465 for TLS-encrypted SMTPS."
+        },
+        "username": {
+          "label": "Username (optional)"
+        },
+        "password": {
+          "label": "Password (optional)"
+        },
+        "returnAddress": {
+          "label": "Sandstorm server's own email address",
+          "subtext": "Sandstorm will send login emails, notifications of granted access requests, and other emails from this address. It will also use this address in the SMTP envelope."
+        },
+        "submitButton": "Save Configuration",
+        "testButton": "Test",
+        "disableButton": "Disable email"
+      },
+      "emailTestPopup": {},
+      "emailDisablePopup": {}
+    },
     "personalization": {},
     "preinstalledApps": {},
     "appSources": {},

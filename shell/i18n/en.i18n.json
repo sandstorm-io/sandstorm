@@ -662,6 +662,33 @@
         "enableButton": "Enable",
         "cancelButton": "Cancel",
         "disableButton": "Disable"
+      },
+      "adminIdentityProviderConfigureSaml": {
+        "title": "SAML login configuration",
+        "explanation": "Your SAML IDP should be configured to return a persistent nameID. In addition, if you are not using Active Directory, you <strong>must</strong> configure your IDP to provide two extra attributes, <code>email</code> and <code>displayName</code>.",
+        "serviceUrl": "The Service URL of this server is: <code>%s</code>",
+        "logoutUrl": "The Service Logout URL of this server is: <code>%s</code>",
+        "metadataUrlAt": "If your SAML IDP supports reading the service provider metadata from a URL, then you can point it at: <code><a href=\"__href__\" target=\"_blank\">__text__</a></code>",
+        "error": "Failed to save changes: %s",
+        "entryPoint": {
+          "label": "SAML provider entry point URL:",
+          "placeholder": "https://YOUR_SAML_PROVIDER.com/sso/saml"
+        },
+        "logout": {
+          "label": "SAML provider logout URL (optional):",
+          "placeholder": "https://YOUR_SAML_PROVIDER.com/sso/saml/SingleLogoutService"
+        },
+        "publicCert": {
+          "label": "SAML cert for above provider:",
+          "placeholder": "base64 encoded cert (e.g. MIID...8F==)"
+        },
+        "entityId": {
+          "label": "Entity ID:"
+        },
+        "saveButton": "Save",
+        "enableButton": "Enable",
+        "cancelButton": "Cancel",
+        "disableButton": "Disable"
       }
     },
     "organization": {},

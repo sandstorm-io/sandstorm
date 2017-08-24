@@ -315,53 +315,52 @@
 
 <template name="adminIdentityProviderConfigureSaml">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
-  <h2>SAML login configuration</h2>
+  {{#let txt="admin.identityProviders.adminIdentityProviderConfigureSaml"}}
+  <h2>{{_ (con txt "title")}}</h2>
 
   <p>
-    Your SAML IDP should be configured to return a persistent nameID. In addition, if you are not
-    using Active Directory, you <strong>must</strong>
-    configure your IDP to provide two extra attributes, <code>email</code> and <code>displayName</code>.
+    {{{_ (con txt "explanation")}}}
   </p>
 
   <p>
-    The Service URL of this server is: <code>{{ serviceUrl }}</code>
+    {{{_ (con txt "serviceUrl") serviceUrl}}}
   </p>
 
   <p>
-    The Service Logout URL of this server is: <code>{{ logoutUrl }}</code>
+    {{{_ (con txt "logoutUrl") logoutUrl}}}
   </p>
 
   <p>
-    If your SAML IDP supports reading the service provider metadata from a URL, then you can point it at: <code><a href="{{configUrl}}" target="_blank">{{ configUrl }}</a></code>
+    {{{_ (con txt "metadataUrlAt") href=configUrl text=configUrl}}}
   </p>
 
   {{#if errorMessage}}
     {{#focusingErrorBox}}
-      Failed to save changes: {{errorMessage}}
+      {{_ (con txt "error") errorMessage}}
     {{/focusingErrorBox}}
   {{/if}}
 
   <form class="setup-idp-form">
     <div class="form-group">
-      <label>SAML provider entry point URL:
-        <input type="text" name="entryPoint" value="{{samlEntryPoint}}" placeholder="https://YOUR_SAML_PROVIDER.com/sso/saml" />
+      <label>{{_ (con txt "entryPoint.label")}}
+        <input type="text" name="entryPoint" value="{{samlEntryPoint}}" placeholder="{{_ (con txt "entryPoint.placeholder")}}" />
       </label>
     </div>
 
     <div class="form-group">
-      <label>SAML provider logout URL (optional):
-        <input type="text" name="logout" value="{{samlLogout}}" placeholder="https://YOUR_SAML_PROVIDER.com/sso/saml/SingleLogoutService" />
+      <label>{{_ (con txt "logout.label")}}
+        <input type="text" name="logout" value="{{samlLogout}}" placeholder="{{_ (con txt "logout.placeholder")}}" />
       </label>
     </div>
 
     <div class="form-group">
-      <label>SAML cert for above provider:
-        <textarea type="text" name="publicCert" value="{{samlPublicCert}}" placeholder="base64 encoded cert (e.g. MIID...8F==)"></textarea>
+      <label>{{_ (con txt "publicCert.label")}}
+        <textarea type="text" name="publicCert" value="{{samlPublicCert}}" placeholder="{{_ (con txt "publicCert.placeholder")}}"></textarea>
       </label>
     </div>
 
     <div class="form-group">
-      <label>Entity ID:
+      <label>{{_ (con txt "entityId.label")}}
         <input type="text" name="entityId" value="{{samlEntityId}}" placeholder="{{exampleEntityId}}" />
       </label>
     </div>
@@ -370,20 +369,21 @@
   <div class="idp-modal-button-row">
     <button class="idp-modal-save" disabled="{{saveDisabled}}">
       {{#if samlEnabled}}
-      Save
+      {{_ (con txt "saveButton")}}
       {{else}}
-      Enable
+      {{_ (con txt "enableButton")}}
       {{/if}}
     </button>
     <button class="idp-modal-cancel">
-      Cancel
+      {{_ (con txt "cancelButton")}}
     </button>
     {{#if samlEnabled}}
     <button class="idp-modal-disable">
-      Disable
+      {{_ (con txt "disableButton")}}
     </button>
     {{/if}}
   </div>
+  {{/let}}
 {{/modalDialogWithBackdrop}}
 </template>
 

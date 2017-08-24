@@ -313,6 +313,60 @@
     "share": {
       "grainNotFoundWithId": "找不到 ID 為 %s 的沙粒。也許您需要用別的帳號登入？",
       "signIn": "您必須登入才能進行分享。"
+    },
+    "grainlist": {
+      "sandstormGrainListPage": {
+        "introButton": {
+          "hint": "__What is a grain?"
+        },
+        "mainListButton": "__View main list",
+        "trashButton": "__View trash (%s)",
+        "restoreButton": "__Restore backup...",
+        "search": {
+          "placeholder": "__search"
+        },
+        "usageInfo": {
+          "quota": "____count__ of __quota__ grains",
+          "size": "____size__ of __total__ used"
+        },
+        "trash": {
+          "emptyButton": "__Empty all trash",
+          "explanation": "__(Grains will be permanently removed after 30 days in the trash. To keep a grain, restore it to the Main list.)"
+        },
+        "noGrains": {
+          "notFound": "__<strong>No matching grains found.</strong>",
+          "inTrash": "__Some grains in your trash match your search.",
+          "trashButton": "__View trash",
+          "empty": "__<strong>Trash is empty.</strong>",
+          "explanation": "__You don't have any grains yet.",
+          "hasApps": "__Select an app and create your first grain.",
+          "hasNoApp": "__Install an app to create your first grain."
+        }
+      },
+      "sandstormGrainTable": {
+        "bulkAction": {
+          "disabledHint": "__To perform bulk actions, you must first select some grains in the list."
+        },
+        "tableHeader": {
+          "title": "__Name",
+          "size": "__Size",
+          "lastUsed": "__Last activity",
+          "ownership": "__Mine/Shared",
+          "collaborators": "__Collaborators"
+        },
+        "tableBody": {
+          "was": "__(was: %s)",
+          "renamedFrom": "__(renamed from: %s)",
+          "new": "__Unopened",
+          "mine": "__My grain",
+          "shared": "__Shared with me"
+        }
+      },
+      "contactAutocomplete": {
+        "contactInputBox": {
+          "placeholder": "__Enter email addresses or names"
+        }
+      }
     }
   },
   "notifications": {
@@ -403,6 +457,124 @@
     "httpOAuthPowerboxConfiguration": {
       "requstPermissionsFromService": "從 %s 要求權限(請參照彈出視窗)。"
     }
+  },
+  "styleguide": {
+    "title": "__Sandstorm style guide",
+    "note": "__(note: this is a work in progress.)",
+    "copyRules": {
+      "title": "__Copy rules",
+      "rule1": "__Be terse but clear.  Avoid technical terms where less-technical ones will do.",
+      "rule2": "__Capitalize the first letter of the first word of a section heading or button.  Do not capitalize the second word, or anything else, unless referring to a proper noun like Google or GitHub.",
+      "rule3": "__Use verbs for text on buttons. The button text should describe what clicking that button will do.",
+      "rule4": "__Use nouns for text which is a link.  The link text should indicate what the link will take you to.",
+      "rule5": "__Use nouns for basically everything else, too, to communicate the information architecture. Section headings should be nouns which describe the content of the section.  Labels should be nouns which describe the content of the field."
+    },
+    "styleRules": {
+      "title": "__Style rules",
+      "rule1": "__Stick to a limited color palette.  (TODO: add specific colors)",
+      "rule2": "__Use typefaces no smaller than 13px for text content.  Readability is important and not everyone has young eyes.",
+      "rule3": "__Make click targets no smaller than 32px square or 26px tall if appreciably wider.  Remember that due to Fitts' Law, larger click targets are easier to interact with."
+    },
+    "forms": {
+      "title": "__Forms",
+      "rule1": "__Use the <code>standard-form</code> class where appropriate.",
+      "rule2": "__The primary action button of a form should be at the bottom right of the form. Secondary buttons should line up to the left of that primary action button.",
+      "rule3": "__When providing text input fields, place labels above the input, not side-by-side or inside the field as placeholder text.  Place additional explanation or instructions below the input. Placeholder text should be used for examples, not instructions.",
+      "rule4": "__Forms are generally used for transactional interactions, where the user cares about the success or failure of the application.  Avoid optimistic UI in favor of multi-state UI which communicates network activity, success, and failure.  A common pattern is:",
+      "rule4-1": "__Have the default state of the form.  Disable a save button until the user makes a change.",
+      "rule4-2": "__When the user clicks an action button, start the RPC, and disable the entire form to indicate that the action is underway.",
+      "rule4-3": "__When the RPC completes, if the RPC failed, show an error message at the top of the context over which the action applies.  If the RPC succeeded, either indicate a success message (again, at the top of the context over which the action applies) or if this was a modal interaction and the completion of the RPC indicates successful completion of the workflow, dismiss the form with no additional message."
+    },
+    "example": {
+      "title": "__An example:",
+      "label": "__Email",
+      "placeholder": "__alice@example.com",
+      "subtext": "__You might want to receive notifications.",
+      "submitButton": "__Save",
+      "discardButton": "__Discard"
+    }
+  },
+  "admin": {
+    "title": "__Admin",
+    "admin": {
+      "newAdmin": {
+        "wildcardHostBroken": "__WARNING: This server seems to have its WILDCARD_HOST misconfigured.  Until you fix it, you will not be able to use any apps. You can read <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\"> more info in the Sandstorm docs</a> and in your browser's Javascript console. You'll need to adjust DNS, SSL/TLS certificates, or edit the sandstorm.conf file. If you see no information in the JS console, or wish to test if you have fixed the problem, reload this page to re-run the test. If you're still having problems, <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">please file an issue.</a>",
+        "websocketBroken": "__WARNING: This server seems to be unable to create a WebSocket. Sandstorm may appear to run fine, but many apps will fail to run properly. <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\"> Learn more.</a>  Usually this is caused by a reverse proxy like nginx or Apache that needs to be reconfigured. If you think you are seeing this message in error, please reload this page or <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">file an issue.</a>",
+        "hasSetupToken": "__You are not logged in as an admin, but you do have a setup token. You can either <a href=\"/setup\">visit the setup wizard</a> or <a href=\"/admin/status\">view the system log</a>.",
+        "hasNoSetupToken": "__You are not logged in as an admin. To access the admin panel, log in as an admin user or generate a token from the command line by running `sandstorm admin-token`."
+      },
+      "newAdminRoot": {
+        "configuration": {
+          "title": "__Configuration",
+          "identity": {
+            "name": "__Identity providers",
+            "subtext": "__How users log in."
+          },
+          "organization": {
+            "name": "__Organization settings",
+            "subtext": "__Smoother onboarding and collaboration for larger teams."
+          },
+          "emailConfig": {
+            "name": "__Email configuration",
+            "subtext": "__How email gets sent to users."
+          },
+          "personalization": {
+            "name": "__Personalization",
+            "subtext": "__Customize a splash page, terms of service, privacy policy, etc."
+          },
+          "preinstalledApps": {
+            "name": "__Pre-installed apps",
+            "subtext": "__Choose apps to pre-install for new users."
+          },
+          "appSources": {
+            "name": "__App sources",
+            "subtext": "__Where to look for apps and app updates."
+          },
+          "networking": {
+            "name": "__Networking",
+            "subtext": "__Control how the network is accessed."
+          }
+        },
+        "management": {
+          "title": "__Management",
+          "users": {
+            "name": "__Users",
+            "subtext": "__Manage all users on this Sandstorm installation."
+          },
+          "status": {
+            "name": "__System log",
+            "subtext": "__View Sandstorm's debug log."
+          },
+          "stats": {
+            "name": "__Statistics",
+            "subtext": "__View usage statistics for this server."
+          },
+          "maintenance": {
+            "name": "__Maintenance message",
+            "subtext": "__Communicate potential downtime to users."
+          },
+          "capabilities": {
+            "name": "__Network capabilities",
+            "subtext": "__Manage direct network access for grains."
+          }
+        }
+      }
+    },
+    "appSources": {},
+    "emailConfig": {},
+    "hostingManagement": {},
+    "identityProviders": {},
+    "maintenanceMessage": {},
+    "networkCapabilities": {},
+    "networking": {},
+    "organization": {},
+    "personalization": {},
+    "preinstalledApps": {},
+    "stats": {},
+    "systemStatus": {},
+    "userAccounts": {},
+    "userDetails": {},
+    "userInvite": {}
   },
   "people": {
     "title": "使用者"

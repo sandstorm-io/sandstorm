@@ -388,12 +388,13 @@
 </template>
 
 <template name="adminIdentityProviderTable">
+{{#let txt="admin.identityProviders.adminIdentityProviderTable"}}
 {{!-- Expects an empty data context. --}}
 <div class="identity-provider-table" role="grid">
   <div class="idp-table-header" role="rowgroup">
     <div class="idp-header-row" role="row">
-      <span class="idp" role="rowheader">Identity provider</span>
-      <span class="idp-status" role="rowheader">Status</span>
+      <span class="idp" role="rowheader">{{_ (con txt "title")}}</span>
+      <span class="idp-status" role="rowheader">{{_ (con txt "status")}}</span>
     </div>
   </div>
   <div class="idp-table-rows" role="rowgroup">
@@ -409,30 +410,33 @@
   {{/each}}
   </div>
 </div>
+{{/let}}
 </template>
 
 <template name="adminIdentityRow">
+{{#let txt="admin.identityProviders.adminIdentityRow"}}
 <div class="idp-table-row" role="row">
   <span class="idp" role="gridcell">{{idp.label}}</span>
   <span class="idp-status" role="gridcell">
     <span class="left">
     {{#if idp.enabled}}
-      <span class="idp-enabled">Enabled</span>
+      <span class="idp-enabled">{{_ (con txt "enabled")}}</span>
     {{else}}
-      <span class="idp-disabled">Not enabled</span>
+      <span class="idp-disabled">{{_ (con txt "disabled")}}</span>
     {{/if}}
     {{#if idp.resetNote}}
       {{#if idp.resetNote.baseUrlChangedFrom}}
       <span class="base-url-change-note">
-        Disabled due to BASE_URL change <button class="button-link base-url-change-button">reconfigure</button>
+        {{_ (con txt "baseUrlChanged.explanation")}} <button class="button-link base-url-change-button">{{_ (con txt "baseUrlChanged.reconfigureButton")}}</button>
       </span>
       {{/if}}
     {{/if}}
     </span>
 
     <span class="right">
-      <button class="configure-idp" title="Configure {{idp.label}} login">Configure</button>
+      <button class="configure-idp" title="{{_ (con txt "configureButton.hint") idp.label}}">{{_ (con txt "configureButton.text")}}</button>
     </span>
   </span>
 </div>
+{{/let}}
 </template>

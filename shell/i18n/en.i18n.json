@@ -689,6 +689,22 @@
         "enableButton": "Enable",
         "cancelButton": "Cancel",
         "disableButton": "Disable"
+      },
+      "adminIdentityProviderTable": {
+        "title": "Identity provider",
+        "status": "Status"
+      },
+      "adminIdentityRow": {
+        "enabled": "Enabeld",
+        "disabled": "Not enabled",
+        "baseUrlChanged": {
+          "explanation": "Disabled due to BASE_URL change",
+          "reconfigureButton": "reconfigure"
+        },
+        "configureButton": {
+          "hint": "Configure %s login",
+          "text": "Configure"
+        }
       }
     },
     "organization": {},

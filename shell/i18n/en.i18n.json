@@ -567,6 +567,16 @@
         "organizationLinkPrefix": "To configure organization membership and settings, see",
         "organizationLink": "organization settings",
         "organizationLinkPostfix": "."
+      },
+      "adminIdentityProviderConfigureEmail": {
+        "title": "Email login configuration",
+        "error": "Failed to save changes: %s",
+        "warning": "Note: to use email login, you'll need to configure email delivery after this.",
+        "explanation": "Email login has no additional configuration options.",
+        "saveButton": "Save",
+        "enableButton": "Enable",
+        "cancelButton": "Cancel",
+        "disableButton": "Disable"
       }
     },
     "organization": {},

@@ -20,39 +20,41 @@
 
 <template name="adminIdentityProviderConfigureEmail">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
-  <h2>Email login configuration</h2>
+  {{#let txt="admin.identityProviders.adminIdentityProviderConfigureEmail"}}
+  <h2>{{_ (con txt "title")}}</h2>
 
   {{#if errorMessage}}
     {{#focusingErrorBox}}
-      Failed to save changes: {{errorMessage}}
+      {{_ (con txt "error") errorMessage}}
     {{/focusingErrorBox}}
   {{/if}}
 
   <form class="setup-idp-form">
     {{#if emailUnconfigured}}
-      <p class="flash-message warning-message">Note: to use email login, you'll need to configure email delivery after this.</p>
+      <p class="flash-message warning-message">{{_ (con txt "warning")}}</p>
     {{/if}}
 
-    <p>Email login has no additional configuration options.</p>
+    <p>{{_ (con txt "explanation")}}</p>
   </form>
 
   <div class="idp-modal-button-row">
     <button class="idp-modal-save">
       {{#if emailLoginEnabled}}
-      Save
+      {{_ (con txt "saveButton")}}
       {{else}}
-      Enable
+      {{_ (con txt "enableButton")}}
       {{/if}}
     </button>
     <button class="idp-modal-cancel">
-      Cancel
+      {{_ (con txt "cancelButton")}}
     </button>
     {{#if emailLoginEnabled}}
     <button class="idp-modal-disable">
-      Disable
+      {{_ (con txt "disableButton")}}
     </button>
     {{/if}}
   </div>
+  {{/let}}
 {{/modalDialogWithBackdrop}}
 </template>
 

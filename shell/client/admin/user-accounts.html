@@ -52,6 +52,7 @@
 </template>
 
 <template name="newAdminUserTable">
+{{#let txt="admin.userAccounts.newAdminUserTable"}}
 {{!-- Expects:
   showInvite: Boolean.  If true, shows the "invite" row.
        ready: Boolean.  If true, display all the users.  If false, display a loading message.
@@ -62,9 +63,9 @@
       <div class="header-row" role="row">
         {{#with sortOrder=sortOrder}}
         <div class="account-role" role="columnheader"></div>
-        <div class="identities" role="columnheader">Account</div>
+        <div class="identities" role="columnheader">{{_ (con txt "header.identities")}}</div>
         <div class="created" role="columnheader">
-          Created
+          {{_ (con txt "header.created")}}
           {{#if equal sortOrder.key "createdAt"}}
             {{#if equal sortOrder.order "ascending"}}
               ▾
@@ -74,7 +75,7 @@
           {{/if}}
         </div>
         <div class="last-active" role="columnheader">
-          Last Active
+          {{_ (con txt "header.lastActive")}}
           {{#if equal sortOrder.key "lastActive"}}
             {{#if equal sortOrder.order "ascending"}}
               ▾
@@ -83,7 +84,7 @@
             {{/if}}
           {{/if}}
         </div>
-        <div class="actions" role="columnheader">Actions</div>
+        <div class="actions" role="columnheader">{{_ (con txt "header.actions")}}</div>
         {{/with}}
       </div>
     </div>
@@ -92,7 +93,7 @@
     {{#if showInvite}}
       <div class="invite-row" role="row">
         <div class="account-role" role="gridcell"><span class="plus-icon"></span></div>
-        <div class="invite-link" role="gridcell" colspan="4">{{#linkTo route="newAdminUserInvite"}}Invite new user{{/linkTo}}</div>
+        <div class="invite-link" role="gridcell" colspan="4">{{#linkTo route="newAdminUserInvite"}}{{_ "admin.userAccounts.newAdminUserTable.inviteLink"}}{{/linkTo}}</div>
       </div>
     {{/if}}
 
@@ -103,17 +104,18 @@
       {{else}}
         <div class="no-match-row" role="row">
           <div class="no-matches" role="gridcell" colspan=5>
-            No users matched your filter.
+            {{_ (con txt "notFound")}}
           </div>
         </div>
       {{/each}}
     {{else}}
       <div class="loading-row" role="row">
-        <div role="gridcell" colspan="5">Loading users...</div>
+        <div role="gridcell" colspan="5">{{_ (con txt "processing")}}</div>
       </div>
     {{/if}}
     </div>
   </div>
+{{/let}}
 </template>
 
 

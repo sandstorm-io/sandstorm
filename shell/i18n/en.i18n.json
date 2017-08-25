@@ -926,6 +926,17 @@
         "unknownName": "unknown name",
         "unknownIdentifier": "unknown identifier",
         "manageButton": "Manage"
+      },
+      "newAdminUserTable": {
+        "header": {
+          "identities": "Account",
+          "created": "Created",
+          "lastActive": "Last Active",
+          "actions": "Actions"
+        },
+        "inviteLink": "Invite new user",
+        "notFound": "No users matched your filter.",
+        "processing": "Loading users..."
       }
     },
     "userDetails": {},

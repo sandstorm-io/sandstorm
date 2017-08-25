@@ -90,12 +90,13 @@
 </template>
 
 <template name="emailTestPopup">
+{{#let txt="admin.emailConfig.emailTestPopup"}}
 {{!-- Takes three arguments via data context:
        token: String (optional) Setup token to use to authorize a testSend request.
   smtpConfig: Object containing the SMTP config object to provide to testSend.
    onDismiss: Function to call when the Close button is clicked.
 --}}
-<h2>Send a test email</h2>
+<h2>{{_ (con txt "title")}}</h2>
 {{#if hasError}}
   {{#focusingErrorBox}}
     {{message}}
@@ -109,31 +110,33 @@
 <form class="email-test-form">
   <div class="form-group">
     <label>
-      Send test mail to:
+      {{_ (con txt "testAddress.label")}}
       <input class="test-address" type="email" name="test-address" value="{{testAddress}}" required />
     </label>
   </div>
   <div class="button-row">
     <button type="submit" class="send-test-email" {{htmlDisabled}}>
       {{#if isSubmitting}}
-      Sending...
+      {{_ (con txt "pending")}}
       {{else}}
-      Send test email
+      {{_ (con txt "submitButton")}}
       {{/if}}
     </button>
     <button type="button" class="close-dialog">
-      Close
+      {{_ (con txt "closeButton")}}
     </button>
   </div>
 </form>
+{{/let}}
 </template>
 
 <template name="emailDisablePopup">
+{{#let txt="admin.emailConfig.emailDisablePopup"}}
 {{!-- Takes two arguments via data context:
        token: String (optional) Setup token to use to authorize a disableEmail call.
    onDismiss: Function to call when the Close button is clicked or the disableEmail call completes.
 --}}
-<h2>Really disable email?</h2>
+<h2>{{_ (con txt "title")}}</h2>
 {{#if hasError}}
   {{#focusingErrorBox}}
     {{message}}
@@ -141,18 +144,18 @@
 {{/if}}
 
 <p>
-  This will disable all outbound email delivery for this server, including sharing via email, email
-  token login (if enabled), and email notifications to users.
+  {{_ (con txt "explanation")}}
 </p>
 
 <form class="email-disable-form">
   <div class="button-row">
     <button type="button" name="disable-email" class="danger" {{htmlDisabled}}>
-      Disable email
+      {{_ (con txt "disableButton")}}
     </button>
     <button type="button" name="close-dialog">
-      Close
+      {{_ (con txt "closeButton")}}
     </button>
   </div>
 </form>
+{{/let}}
 </template>

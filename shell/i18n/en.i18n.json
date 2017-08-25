@@ -788,8 +788,21 @@
         "testButton": "Test",
         "disableButton": "Disable email"
       },
-      "emailTestPopup": {},
-      "emailDisablePopup": {}
+      "emailTestPopup": {
+        "title": "Send a test email",
+        "testAddress": {
+          "label": "Send test mail to:"
+        },
+        "pending": "Sending...",
+        "submitButton": "Send test email",
+        "closeButton": "Close"
+      },
+      "emailDisablePopup": {
+        "title": "Really disable email?",
+        "explanation": "This will disable all outbound email delivery for this server, including sharing via email, email token login (if enabled), and email notifications to users.",
+        "disableButton": "Disable email",
+        "closeButton": "Close"
+      }
     },
     "personalization": {},
     "preinstalledApps": {},

@@ -562,7 +562,6 @@
     },
     "identityProviders": {
       "newAdminIdentity": {
-        "title": "Identity providers",
         "explanation": "Choose which services users may use to identify themselves.  Anyone can log in, but only users you invite will be able to install apps or create grains.",
         "organizationLinkPrefix": "To configure organization membership and settings, see",
         "organizationLink": "organization settings",
@@ -712,7 +711,6 @@
         "explanation": "Sandstorm allows you to define an organization. You can automatically apply some settings to all members of your organization. Users within the organization will automatically be able to log in, install apps, and create grains."
       },
       "newAdminOrganization": {
-        "title": "Organization settings",
         "success": "Saved changes.",
         "error": "Failed to save changes: %s",
         "membership": {
@@ -758,7 +756,6 @@
     },
     "emailConfig": {
       "newAdminEmailConfig": {
-        "title": "Email configuration",
         "outbound": {
           "title": "Outbound email",
           "warning": "<strong>Email is unconfigured.</strong> Email-related features like email login, notifications, sharing by identity, and requesting access will be unavailable until you configure email."
@@ -806,7 +803,6 @@
     },
     "personalization": {
       "newAdminPersonalization": {
-        "title": "Personalization",
         "serverTitle": {
           "label": "Server title:",
           "subtext": "The name of this server, as used when communicating with users."

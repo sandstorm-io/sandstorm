@@ -804,7 +804,59 @@
         "closeButton": "Close"
       }
     },
-    "personalization": {},
+    "personalization": {
+      "newAdminPersonalization": {
+        "title": "Personalization",
+        "serverTitle": {
+          "label": "Server title:",
+          "subtext": "The name of this server, as used when communicating with users."
+        },
+        "splashUrl": {
+          "label": "Splash URL (experimental):",
+          "subtext": "This web page will be displayed in the background behind the login dialog (the home page when logged out). For security reasons, the page must be hosted within this Sandstorm server's wildcard host (otherwise it will be blocked by <code>Content-Security-Policy</code>). We suggest using a static web publishing app like <a target=\"_blank\" href=\"https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh/?host={{serverUrl}}\">Hacker CMS</a> to host content.<strong>WARNING: This feature is experimental; in particular the style and positioning of the login box is subject to change without notice.</strong> Please let us know if you'd like to see it stabilize."
+        },
+        "signupDialog": {
+          "label": "Signup dialog:",
+          "subtext": "This text will be displayed to users who click on signup links."
+        },
+        "termsOfService": {
+          "label": "Terms of service URL:",
+          "placeholder": "https://example.com/tos",
+          "subtext": "If provided, new users will be required to agree to the linked terms of service."
+        },
+        "privacyPolicy": {
+          "label": "Privacy policy URL:",
+          "placeholder": "https://example.com/privacy",
+          "subtext": "If provided, new users will be required to agree to the linked privacy policy."
+        },
+        "whitelabeling": {
+          "title": "Whitelabeling",
+          "logo": {
+            "label": "Custom logo on sign-in dialog",
+            "resetButton": "Use default",
+            "uploadButton": "Upload logo"
+          },
+          "hideTroubleshooting": {
+            "label": "Hide troubleshooting button"
+          },
+          "hideAbout": {
+            "label": "Hide \"About Sandstorm\" links"
+          },
+          "hideSendFeedback": {
+            "label": "Hide \"Send feedback\" link"
+          },
+          "useServerTitleForHomeText": {
+            "label": "Use server title (above) for home link",
+            "subtext": "If enabled, changes the default label \"Sandstorm\" on the link at the very top left to match whatever you specified for the Server title above."
+          },
+          "customLoginProviderName": {
+            "label": "Custom login button text",
+            "subtext": "Replaces the text \"with LDAP\" and \"with SAML\" on the login page with the specified text."
+          }
+        },
+        "saveButton": "Save"
+      }
+    },
     "preinstalledApps": {},
     "appSources": {},
     "networking": {},

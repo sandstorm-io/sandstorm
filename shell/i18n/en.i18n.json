@@ -853,7 +853,32 @@
         "saveButton": "Save"
       }
     },
-    "preinstalledApps": {},
+    "preinstalledApps": {
+      "newAdminPreinstalledApps": {
+        "explanation": "Apps you configure on this page to be pre-installed will automatically be installed (show under /apps) for new users.",
+        "productivitySuite": {
+          "label": "Productivity Suite",
+          "subtext": "We recommend pre-installing these core apps that are useful to most users."
+        },
+        "systemSuite": {
+          "label": "System apps",
+          "subtext": "We recommend pre-installing these system apps that greatly enhance the abilities of Sandstorm."
+        },
+        "allApps": {
+          "label": "All apps on market",
+          "subtext": "The checked apps below will be installed by default for all new users.",
+          "lessButton": "Show fewer apps",
+          "moreButton": "Show %s more apps"
+        },
+        "saveButton": "Save"
+      },
+      "_appRow": {
+        "download": {
+          "success": "Downloaded",
+          "failed": "Failed"
+        }
+      }
+    },
     "appSources": {},
     "networking": {},
     "userAccounts": {},

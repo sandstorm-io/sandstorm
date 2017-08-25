@@ -908,7 +908,26 @@
         "restoreButton": "Restore defaults"
       }
     },
-    "userAccounts": {},
+    "userAccounts": {
+      "newAdminUserTableRow": {
+        "admin": {
+          "hint": "Admin",
+          "cap": "A"
+        },
+        "user": {
+          "hint": "User",
+          "cap": "U"
+        },
+        "visitor": {
+          "hint": "Visitor",
+          "cap": "V"
+        },
+        "unknownIdentity": "Unknown identity",
+        "unknownName": "unknown name",
+        "unknownIdentifier": "unknown identifier",
+        "manageButton": "Manage"
+      }
+    },
     "userDetails": {},
     "userInvite": {},
     "systemStatus": {},

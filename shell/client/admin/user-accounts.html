@@ -1,16 +1,17 @@
 <template name="newAdminUserTableRow">
+{{#let txt="admin.userAccounts.newAdminUserTableRow"}}
 {{!-- Expects:
    user: Object representing user with identities
 --}}
   <div class="account-row" role="row">
     <div class="account-role" role="gridcell">
       {{#if user.account.isAdmin}}
-        <span class="user-class-admin" title="Admin">A</span>
+        <span class="user-class-admin" title="{{_ (con txt "admin.hint")}}">{{_ (con txt "admin.cap")}}</span>
       {{else}}
         {{#if isSignedUpOrDemo user.account}}
-          <span class="user-class-user" title="User">U</span>
+          <span class="user-class-user" title="{{_ (con txt "user.hint")}}">{{_ (con txt "user.cap")}}</span>
         {{else}}
-          <span class="user-class-visitor" title="Visitor">V</span>
+          <span class="user-class-visitor" title="{{_ (con txt "visitor.hint")}}">{{_ (con txt "visitor.cap")}}</span>
         {{/if}}
       {{/if}}
     </div>
@@ -28,10 +29,10 @@
           {{else}}
           <li class="identity">
             <div class="identity-provider-icon">
-              <span class="provider-icon">Unknown identity</span>
+              <span class="provider-icon">{{_ (con txt "unknownIdentity")}}</span>
             </div>
-            <div class="identity-name">unknown name</div>
-            <div class="identity-intrinsic-name">unknown identifier</div>
+            <div class="identity-name">{{_ (con txt "unknownName")}}</div>
+            <div class="identity-intrinsic-name">{{_ (con txt "unknownIdentifier")}}</div>
           </li>
           {{/if}}
         {{/each}}
@@ -44,9 +45,10 @@
       {{ dateString user.account.lastActive }}
     </div>
     {{#with userId=user.account._id }}
-    <div class="actions" role="gridcell">{{#linkTo route="newAdminUserDetails" data=(wrapUserId userId) class="manage-user-button"}}Manage{{/linkTo}}</div>
+    <div class="actions" role="gridcell">{{#linkTo route="newAdminUserDetails" data=(wrapUserId userId) class="manage-user-button"}}{{_ "admin.userAccounts.newAdminUserTableRow.manageButton"}}{{/linkTo}}</div>
     {{/with}}
   </div>
+{{/let}}
 </template>
 
 <template name="newAdminUserTable">

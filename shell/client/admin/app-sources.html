@@ -1,8 +1,9 @@
 <template name="newAdminAppSources">
+{{#let txt="admin.appSources.newAdminAppSources"}}
   <h1>
     <ul class="admin-breadcrumbs">
-      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
-      <li>App sources</li>
+      <li>{{#linkTo route="newAdminRoot"}}{{_ "admin.title"}}{{/linkTo}}</li>
+      <li>{{_ "admin.admin.newAdminRoot.configuration.appSources.name"}}</li>
     </ul>
   </h1>
 
@@ -19,40 +20,40 @@
   <form class="admin-app-sources">
     <div class="form-group">
       <label>
-        App market URL
+        {{_ (con txt "appMarketUrl.label")}}
         <input type="text" name="appMarketUrl" value="{{appMarketUrl}}" />
       </label>
       <span class="form-subtext">
-        The "Install..." button on the Apps page will link to this URL.
+        {{_ (con txt "appMarketUrl.subtext")}}
       </span>
     </div>
 
     <div class="form-group">
       <label>
         <input type="checkbox" name="enableAppUpdates" checked="{{enableAppUpdates}}" />
-        Enable app update notifications
+        {{_ (con txt "enableAppUpdates.label")}}
       </label>
       <span class="form-subtext">
-        Updates to apps will be automatically downloaded by the Sandstorm server daily and
-        notifications sent to users asking if they want to update their installed apps.
+        {{_ (con txt "enableAppUpdates.subtext")}}
       </span>
     </div>
 
     {{#if enableAppUpdates}}
     <div class="form-group">
       <label>
-        App index URL
+        {{_ (con txt "appIndexUrl.label")}}
         <input type="text" name="appIndexUrl" value="{{appIndexUrl}}" />
       </label>
       <span class="form-subtext">
-        This is the URL that the Sandstorm server will check to learn about app updates.
+        {{_ (con txt "appIndexUrl.subtext")}}
       </span>
     </div>
     {{/if}}
 
     <div class="button-row">
-      <button type="submit" class="save" disabled="{{saveDisabled}}">Save</button>
-      <button type="button" class="restore" disabled="{{restoreDisabled}}">Restore defaults</button>
+      <button type="submit" class="save" disabled="{{saveDisabled}}">{{_ (con txt "saveButton")}}</button>
+      <button type="button" class="restore" disabled="{{restoreDisabled}}">{{_ (con txt "restoreButton")}}</button>
     </div>
   </form>
+{{/let}}
 </template>

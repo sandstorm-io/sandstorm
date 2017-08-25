@@ -879,7 +879,24 @@
         }
       }
     },
-    "appSources": {},
+    "appSources": {
+      "newAdminAppSources": {
+        "appMarketUrl": {
+          "label": "App market URL",
+          "subtext": "The \"Install...\" button on the Apps page will link to this URL."
+        },
+        "enableAppUpdates": {
+          "label": "Enable app update notifications",
+          "subtext": "Updates to apps will be automatically downloaded by the Sandstorm server daily and notifications sent to users asking if they want to update their installed apps."
+        },
+        "appIndexUrl": {
+          "label": "App index URL",
+          "subtext": "This is the URL that the Sandstorm server will check to learn about app updates."
+        },
+        "saveButton": "Save",
+        "restoreButton": "Restore defaults"
+      }
+    },
     "networking": {},
     "userAccounts": {},
     "userDetails": {},

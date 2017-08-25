@@ -897,7 +897,17 @@
         "restoreButton": "Restore defaults"
       }
     },
-    "networking": {},
+    "networking": {
+      "newAdminNetworking": {
+        "title": "Security",
+        "ipBlacklist": {
+          "label": "Server-side request IP blacklist:",
+          "subtext": "Users will be prohibited from making requests to these IP addresses. This includes making a request from an app, downloading an SPK file from a user-provided URL, etc. You may specify one IP address or network (in CIDR notation, e.g. \"127.0.0.0/8\") per line. The default value includes standard local and private network addresses. Note that when an HTTP proxy is in use, this setting may be ignored; the proxy must implement its own blacklist."
+        },
+        "saveButton": "Save",
+        "restoreButton": "Restore defaults"
+      }
+    },
     "userAccounts": {},
     "userDetails": {},
     "userInvite": {},

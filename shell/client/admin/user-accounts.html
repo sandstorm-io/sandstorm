@@ -120,33 +120,34 @@
 
 
 <template name="newAdminUsers">
+{{#let txt="admin.userAccounts.newAdminUsers"}}
   <h1>
     <ul class="admin-breadcrumbs">
-      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
-      <li>Users</li>
+      <li>{{#linkTo route="newAdminRoot"}}{{_ "admin.title"}}{{/linkTo}}</li>
+      <li>{{_ "admin.admin.newAdminRoot.management.users.name"}}</li>
     </ul>
   </h1>
 
   {{#with users=allUsers ready=userSubReady}}
   <div class="admin-user-filters">
     <span class="search-icon"></span>
-    <input class="search-bar" name="search-bar" placeholder="search" />
+    <input class="search-bar" name="search-bar" placeholder="{{_ (con txt "search.placeholder")}}" />
     <div class="filter-user-classes">
       <div class="show-label">
-        Show:
+        {{_ (con txt "filter.explanation")}}
       </div>
       <div class="filter-boxes">
         <label>
           <input type="checkbox" name="show-admins" checked="{{showAdmins}}">
-          <span class="user-class-admin">Admin</span> {{#if ready}}({{adminCount users}}){{/if}}
+          <span class="user-class-admin">{{_ (con txt "filter.admin")}}</span> {{#if ready}}({{adminCount users}}){{/if}}
         </label>
         <label>
           <input type="checkbox" name="show-users" checked="{{showUsers}}">
-          <span class="user-class-user">User</span> {{#if ready}}({{userCount users}}){{/if}}
+          <span class="user-class-user">{{_ (con txt "filter.user")}}</span> {{#if ready}}({{userCount users}}){{/if}}
         </label>
         <label>
           <input type="checkbox" name="show-visitors" checked="{{showVisitors}}">
-          <span class="user-class-visitor">Visitor</span> {{#if ready}}({{visitorCount users}}){{/if}}
+          <span class="user-class-visitor">{{_ (con txt "filter.visitor")}}</span> {{#if ready}}({{visitorCount users}}){{/if}}
         </label>
       </div>
     </div>
@@ -155,4 +156,5 @@
   {{> newAdminUserTable showInvite=isNotSearching users=(filterUsers users) ready=ready }}
 
   {{/with}}
+{{/let}}
 </template>

@@ -937,6 +937,17 @@
         "inviteLink": "Invite new user",
         "notFound": "No users matched your filter.",
         "processing": "Loading users..."
+      },
+      "newAdminUsers": {
+        "search": {
+          "placeholder": "search"
+        },
+        "filter": {
+          "explanation": "Show:",
+          "admin": "Admin",
+          "user": "User",
+          "visitor": "Visitor"
+        }
       }
     },
     "userDetails": {},

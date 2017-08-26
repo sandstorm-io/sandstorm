@@ -56,7 +56,7 @@ module.exports["Test link credentials"] = function (browser) {
     .submitForm("form.account-profile-editor")
     .execute(function () { return Meteor.user().profile.identicon; }, [], function (response) {
       // The identicon ID is based on the credential ID.
-      browser.assert.equal(response.value, devCredentialId1.slice(0, 32));
+      browser.assert.equal(response.value, devCredentialId1);
     })
     .execute("window.Meteor.logout()")
 

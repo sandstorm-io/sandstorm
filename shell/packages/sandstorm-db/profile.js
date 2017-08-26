@@ -236,7 +236,7 @@ SandstormDb.fillInProfileDefaults = function (credential, profile) {
   profile.pronoun = profile.pronoun || "neutral";
 
   // Base identicon on primary credential so that it tends to be consistent across servers.
-  profile.identicon = credential._id.slice(0, 32);
+  profile.identicon = credential._id;
 };
 
 SandstormDb.getIntrinsicName = function (credential, usePrivate) {

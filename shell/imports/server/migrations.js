@@ -1015,7 +1015,7 @@ function onePersonaPerAccount(db, backend) {
         name: "Unknown",
         handle: "unknown",
         pronoun: "neutral",
-        identicon: Crypto.randomBytes(16).toString("hex"),
+        identicon: Crypto.randomBytes(32).toString("hex"),
       };
     }
 

@@ -997,6 +997,14 @@
             "cell": "unknown activity date"
           }
         }
+      },
+      "newAdminUserDetailsIdentityTable": {
+        "header": {
+          "identity": "Identity",
+          "created": "Created",
+          "lastActive": "Last Active",
+          "properties": "Properties"
+        }
       }
     },
     "userInvite": {},

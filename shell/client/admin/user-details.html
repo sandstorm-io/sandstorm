@@ -148,16 +148,17 @@
 </template>
 
 <template name="newAdminUserDetailsIdentityTable">
+{{#let txt="admin.userDetails.newAdminUserDetailsIdentityTable"}}
 {{!-- Expects:
   account: Object
 --}}
   <div class="admin-user-identity-list" role="grid">
     <div class="admin-user-identity-header" role="rowgroup">
       <div class="admin-user-identity-header-row" role="row">
-        <div class="admin-user-identity-header-cell identity" role="columnheader">Identity</div>
-        <div class="admin-user-identity-header-cell created" role="columnheader">Created</div>
-        <div class="admin-user-identity-header-cell last-active" role="columnheader">Last Active</div>
-        <div class="admin-user-identity-header-cell properties" role="columnheader">Properties</div>
+        <div class="admin-user-identity-header-cell identity" role="columnheader">{{_ (con txt "header.identity")}}</div>
+        <div class="admin-user-identity-header-cell created" role="columnheader">{{_ (con txt "header.created")}}</div>
+        <div class="admin-user-identity-header-cell last-active" role="columnheader">{{_ (con txt "header.lastActive")}}</div>
+        <div class="admin-user-identity-header-cell properties" role="columnheader">{{_ (con txt "header.properties")}}</div>
       </div>
     </div>
 
@@ -186,6 +187,7 @@
       {{/each}}
     </div>
   </div>
+{{/let}}
 </template>
 
 <template name="newAdminUserDetails">

@@ -191,10 +191,11 @@
 </template>
 
 <template name="newAdminUserDetails">
+{{#let txt="admin.userDetails.newAdminUserDetails"}}
   <h1>
     <ul class="admin-breadcrumbs">
-      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
-      <li>{{#linkTo route="newAdminUsers"}}Users{{/linkTo}}</li>
+      <li>{{#linkTo route="newAdminRoot"}}{{_ "admin.title"}}{{/linkTo}}</li>
+      <li>{{#linkTo route="newAdminUsers"}}{{_ "admin.admin.newAdminRoot.management.users.name"}}{{/linkTo}}</li>
       <li>{{ guessUserName }}</li>
     </ul>
   </h1>
@@ -216,26 +217,26 @@
 
 
     <h2>
-      Role
+      {{_ (con txt "role.title")}}
     </h2>
 
     <ul class="role-explanations">
       <li class="role-explanation {{#if account.isAdmin}}current-role{{/if}}">
         <span class="role">
           <span class="user-class-label admin">
-            Admin
+            {{_ (con txt "role.admin.label")}}
           </span>
         </span>
         <span class="explanation">
-          Manages all accounts.  Can install apps, create grains, and administer the server.
+          {{_ (con txt "role.admin.explanation")}}
         </span>
         <span class="status-or-actions">
           {{#if (isAdmin account)}}
-            <span class="current-role-label">Current role</span>
+            <span class="current-role-label">{{_ (con txt "role.admin.isAdmin")}}</span>
           {{/if}}
           {{#unless (isAdmin account) }}
             <form class="admin-user-roles-form">
-              <button class="make-admin" type="button" disabled="{{ isSubmitting }}">Promote to admin</button>
+              <button class="make-admin" type="button" disabled="{{ isSubmitting }}">{{_ (con txt "role.admin.isNotAdmin")}}</button>
             </form>
           {{/unless}}
         </span>
@@ -243,23 +244,23 @@
       <li class="role-explanation {{#if (isPreciselyUser account)}}current-role{{/if}}">
         <span class="role">
           <span class="user-class-label user">
-            User
+            {{_ (con txt "role.user.label")}}
           </span>
         </span>
         <span class="explanation">
-          Can install apps and create grains.
+          {{_ (con txt "role.user.explanation")}}
         </span>
         <span class="status-or-actions">
           {{#if (isPreciselyUser account)}}
-            <span class="current-role-label">Current role</span>
+            <span class="current-role-label">{{_ (con txt "role.user.isUser")}}</span>
           {{/if}}
           {{#if (canBeMadeUser account) }}
             <form class="admin-user-roles-form">
               <button class="make-user" type="button" disabled="{{ isSubmitting }}">
                 {{#if (isAdmin account)}}
-                  Demote to user
+                  {{_ (con txt "role.user.isAdmin")}}
                 {{else}}
-                  Promote to user
+                  {{_ "role.user.isNotUser"}}
                 {{/if}}
               </button>
             </form>
@@ -269,46 +270,46 @@
       <li class="role-explanation {{#if (isPreciselyVisitor account)}}current-role{{/if}}">
         <span class="role">
           <span class="user-class-label visitor">
-            Visitor
+            {{_ (con txt "role.visitor.label")}}
           </span>
         </span>
         <span class="explanation">
-          Can use and re-share shared grains, but cannot create grains of their own nor install apps.
+          {{_ (con txt "role.visitor.explanation")}}
         </span>
         <span class="status-or-actions">
           {{#if (isPreciselyVisitor account)}}
-            <span class="current-role-label">Current role</span>
+            <span class="current-role-label">{{_ (con txt "role.visitor.isVisitor")}}</span>
           {{/if}}
           <form class="admin-user-roles-form">
             {{#if (canBeMadeVisitor account) }}
-              <button class="make-visitor" type="button" disabled="{{ isSubmitting }}">Demote to visitor</button>
+              <button class="make-visitor" type="button" disabled="{{ isSubmitting }}">{{_ (con txt "role.visitor.isNotVisitor")}}</button>
             {{/if}}
           </form>
         </span>
       </li>
     </ul>
 
-    <h2>Identities</h2>
+    <h2>{{_ (con txt "identities.title")}}</h2>
     {{> newAdminUserDetailsIdentityTable account=account }}
 
-    <h2>Status</h2>
+    <h2>{{_ (con txt "status.title")}}</h2>
 
     <div style="display: flex; flex-direction: row;">
       {{#if accountDeleting}}
-        Suspended - Pending deletion {{accountDeleting}}
+        {{_ (con txt "status.deleting") accountDeleting}}
       {{else}}{{#if accountSuspended}}
-        Suspended
+        {{_ (con txt "status.suspended")}}
       {{else}}
-        Active
+        {{_ (con txt "status.active")}}
       {{/if}}{{/if}}
     </div>
     <form class="standard-form">
       <div class="button-row">
         {{#if accountSuspended}}
-        <button type="button" name="unsuspend-account">Unsuspend account</button>
+        <button type="button" name="unsuspend-account">{{_ (con txt "status.unsuspendButton")}}</button>
         {{else}}
-        <button type="button" name="suspend-account">Suspend account</button>
-        <button type="button" name="delete-account">Delete account</button>
+        <button type="button" name="suspend-account">{{_ (con txt "status.suspendButton")}}</button>
+        <button type="button" name="delete-account">{{_ (con txt "status.deleteButton")}}</button>
         {{/if}}
       </div>
     </form>
@@ -321,20 +322,20 @@
           {{/focusingErrorBox}}
         {{/if}}
 
-        <h2>Delete {{guessUserName}}</h2>
-        <p>You are about to mark {{guessUserName}}'s account for deletion. Once marked for deletion, this account will be suspended, and admins will have 7 days to cancel the pending deletion by returning to this page and clicking the "Unsuspend Account" button. {{guessUserName}} will <strong>not</strong> be able to stop this suspension/deletion.</p>
-        <p>After 7 days, {{guessUserName}}'s account will be permanently deleted. Deleting this account will:</p>
+        <h2>{{_ (con txt "deletePopup.title") guessUserName}}</h2>
+        <p>{{{_ (con txt "deletePopup.explanation") guessUserName guessUserName}}}</p>
+        <p>{{_ (con txt "deletePopup.detail") guessUserName}}</p>
         <ul>
-          <li>Permanently delete any grains {{guessUserName}} created</li>
-          <li>Revoke all sharing links {{guessUserName}} created</li>
-          <li>Remove {{guessUserName}} from all users' contact lists</li>
-          <li>Delete all identities owned by this account (except identities also associated with another account).</li>
+          <li>{{_ (con txt "deletePopup.detail1") guessUserName}}</li>
+          <li>{{_ (con txt "deletePopup.detail2") guessUserName}}</li>
+          <li>{{_ (con txt "deletePopup.detail3") guessUserName}}</li>
+          <li>{{_ (con txt "deletePopup.detail4")}}</li>
         </ul>
         <form class="standard-form">
           <div class="button-row">
             <button class="danger" type="button"
-             disabled={{disableDelete}} name="delete-account-real">Delete account</button>
-            <button type="button" name="cancel-delete-account">Cancel</button>
+             disabled={{disableDelete}} name="delete-account-real">{{_ (con txt "deletePopup.deleteButton")}}</button>
+            <button type="button" name="cancel-delete-account">{{_ (con txt "deletePopup.cancelButton")}}</button>
           </div>
         </form>
       {{/modalDialogWithBackdrop}}
@@ -348,19 +349,18 @@
           {{/focusingErrorBox}}
         {{/if}}
 
-        <h2>Suspend {{guessUserName}}</h2>
-        <p>Suspending this user account will:</p>
+        <h2>{{_ (con txt "suspendPopup.title") guessUserName}}</h2>
+        <p>{{_ (con txt "suspendPopup.detail")}}</p>
         <ul>
-          <li>Prevent any grains created by {{guessUserName}} from being opened</li>
-          <li>Disable any sharing links created by {{guessUserName}}</li>
-          <li>This also applies to all identities owned by this account (except identities
-              associated with another account)</li>
+          <li>{{_ (con txt "suspendPopup.detail1") guessUserName}}</li>
+          <li>{{_ (con txt "suspendPopup.detail2") guessUserName}}</li>
+          <li>{{_ (con txt "suspendPopup.detail3")}}</li>
         </ul>
         <form class="standard-form">
           <div class="button-row">
             <button class="danger" type="button"
-             disabled={{suspendSubmitting}} name="suspend-account-real">Suspend account</button>
-            <button type="button" name="cancel-suspend-account">Cancel</button>
+             disabled={{suspendSubmitting}} name="suspend-account-real">{{_ (con txt "suspendPopup.suspendButton")}}</button>
+            <button type="button" name="cancel-suspend-account">{{_ (con txt "suspendPopup.cancelButton")}}</button>
           </div>
         </form>
       {{/modalDialogWithBackdrop}}
@@ -368,7 +368,8 @@
 
     {{/with}}
   {{else}}
-    Loading user data...
+    {{_ (con txt "loading")}}
   {{/if}}
 
+{{/let}}
 </template>

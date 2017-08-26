@@ -1005,6 +1005,63 @@
           "lastActive": "Last Active",
           "properties": "Properties"
         }
+      },
+      "newAdminUserDetails": {
+        "role": {
+          "title": "Role",
+          "admin": {
+            "label": "Admin",
+            "explanation": "Manages all accounts.  Can install apps, create grains, and administer the server.",
+            "isAdmin": "Current role",
+            "isNotAdmin": "Promote to admin"
+          },
+          "user": {
+            "label": "User",
+            "explanation": "Can install apps and create grains.",
+            "isUser": "Current role",
+            "isAdmin": "Demote to user",
+            "isNotUser": "Promote to user"
+          },
+          "visitor": {
+            "label": "Visitor",
+            "explanation": "Can use and re-share shared grains, but cannot create grains of their own nor install apps.",
+            "isVisitor": "Current role",
+            "isNotVisitor": "Demote to visitor"
+          }
+        },
+        "identities": {
+          "title": "Identities"
+        },
+        "status": {
+          "title": "Status",
+          "deleting": "Suspended - Pending deletion %s",
+          "suspended": "Suspended",
+          "active": "Active",
+          "unsuspendButton": "Unsuspend account",
+          "suspendButton": "Suspend account",
+          "deleteButton": "Delete account"
+        },
+        "deletePopup": {
+          "title": "Delete %s",
+          "explanation": "You are about to mark %s's account for deletion. Once marked for deletion, this account will be suspended, and admins will have 7 days to cancel the pending deletion by returning to this page and clicking the \"Unsuspend Account\" button. %s will <strong>not</strong> be able to stop this suspension/deletion.",
+          "detail": "After 7 days, %s's account will be permanently deleted. Deleting this account will:",
+          "detail1": "Permanently delete any grains %s created",
+          "detail2": "Revoke all sharing links %s created",
+          "detail3": "Remove %s from all users' contact lists",
+          "detail4": "Delete all identities owned by this account (except identities also associated with another account).",
+          "deleteButton": "Delete account",
+          "cancelButton": "Cancel"
+        },
+        "suspendPopup": {
+          "title": "Suspend %s",
+          "detail": "Suspending this user account will:",
+          "detail1": "Prevent any grains created by %s from being opened",
+          "detail2": "Disable any sharing links created by %s",
+          "detail3": "This also applies to all identities owned by this account (except identities associated with another account)",
+          "suspendButton": "Suspend account",
+          "cancelButton": "Cancel"
+        },
+        "loading": "Loading user data..."
       }
     },
     "userInvite": {},

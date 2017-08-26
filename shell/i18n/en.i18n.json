@@ -950,7 +950,33 @@
         }
       }
     },
-    "userDetails": {},
+    "userDetails": {
+      "newAdminUserDetailsIdentityTableRow": {
+        "profilePicture": {
+          "label": "Profile picture"
+        },
+        "handle": {
+          "hint": "Handle",
+          "label": "@"
+        },
+        "pronouns": {
+          "hint": "Pronouns",
+          "label": "Pronouns"
+        },
+        "emails": {
+          "hint": "Emails",
+          "label": "Emails",
+          "primary": "Primary",
+          "verified": "Verified",
+          "unverified": "Unverified",
+          "notFound": "No known emails."
+        },
+        "properties": {
+          "login": "Can log in",
+          "org": "Org. member"
+        }
+      }
+    },
     "userInvite": {},
     "systemStatus": {},
     "stats": {},

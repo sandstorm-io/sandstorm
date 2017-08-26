@@ -1,4 +1,5 @@
 <template name="newAdminUserDetailsIdentityTableRow">
+{{#let txt="admin.userDetails.newAdminUserDetailsIdentityTableRow"}}
 {{!-- Expects:
          identity: Object
   isLoginIdentity: Boolean
@@ -9,7 +10,7 @@
       <ul class="identity-information">
         <li class="identity-picture-name">
           <div class="identity-profile-picture" style="background-image: url('{{ identity.profile.pictureUrl }}');">
-            Profile picture
+            {{_ (con txt "profilePicture.label")}}
           </div>
           <span class="identity-name">
             {{ identity.profile.name }}
@@ -26,15 +27,15 @@
           </span>
         </li>
         <li class="identity-handle">
-          <div class="identity-handle-decorator" role="presentation" title="Handle">
-            @
+          <div class="identity-handle-decorator" role="presentation" title="{{_ (con txt "handle.hint")}}">
+            {{_ (con txt "handle.label")}}
           </div>
           <code>{{ identity.profile.handle }}</code>
         </li>
         <li class="identity-pronouns">
-          <div class="identity-pronouns-decorator" role="presentation" title="Pronouns">
+          <div class="identity-pronouns-decorator" role="presentation" title="{{_ (con txt "pronouns.hint")}}">
             <span class="identity-pronouns-icon">
-              Pronouns
+              {{_ (con txt "pronouns.label")}}
             </span>
           </div>
           <span class="identity-pronouns-preference">
@@ -42,9 +43,9 @@
           </span>
         </li>
         <li class="identity-emails">
-          <div class="identity-emails-decorator" role="presentation" title="Emails">
+          <div class="identity-emails-decorator" role="presentation" title="{{_ (con txt "emails.hint")}}">
             <span class="identity-emails-icon">
-              Emails
+              {{_ (con txt "emails.label")}}
             </span>
           </div>
           <ul class="identity-emails-list">
@@ -52,18 +53,18 @@
             <li>
               <a href="mailto:{{email.email}}">{{ email.email }}</a>
               {{#if email.primary}}
-                <span class="email-primary">Primary</span>
+                <span class="email-primary">{{_ (con txt "emails.primary")}}</span>
               {{/if}}
 
               {{#if email.verified}}
-                <span class="email-verified">Verified</span>
+                <span class="email-verified">{{_ (con txt "emails.verified")}}</span>
               {{else}}
-                <span class="email-unverified">Unverified</span>
+                <span class="email-unverified">{{_ (con txt "emails.unverified")}}</span>
               {{/if}}
             </li>
           {{else}}
             <li>
-              No known emails.
+              {{_ (con txt "emails.notFound")}}
             </li>
           {{/each}}
           </ul>
@@ -74,13 +75,14 @@
     <div class="admin-user-identity-body-cell last-active" role="gridcell">{{ dateString identity.lastActive }}</div>
     <div class="admin-user-identity-body-cell properties" role="gridcell">
       {{#if isLoginIdentity }}
-        <span class="login-identity">Can log in</span>
+        <span class="login-identity">{{_ (con txt "properties.login")}}</span>
       {{/if}}
       {{#if (isOrganizationMember identity) }}
-        <span class="org-member">Org. member</span>
+        <span class="org-member">properties.org</span>
       {{/if}}
     </div>
   </div>
+{{/let}}
 </template>
 
 <template name="newAdminUserDetailsIdentityMIATableRow">

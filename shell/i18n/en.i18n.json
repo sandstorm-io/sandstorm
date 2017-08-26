@@ -974,6 +974,28 @@
         "properties": {
           "login": "Can log in",
           "org": "Org. member"
+        },
+        "unkonwn": {
+          "profilePicture": {
+            "cell": "(unknown name)"
+          },
+          "service": {
+            "hint": "unknown service",
+            "label": "(unknown service)",
+            "cell": "(unknown name)"
+          },
+          "handle": {
+            "cell": "(unknown handle)"
+          },
+          "pronouns": {
+            "cell": "(unknown pronouns)"
+          },
+          "created": {
+            "cell": "unknown creation date"
+          },
+          "lastActive": {
+            "cell": "unknown activity date"
+          }
         }
       }
     },

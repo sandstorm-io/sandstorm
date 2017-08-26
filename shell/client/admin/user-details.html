@@ -86,6 +86,7 @@
 </template>
 
 <template name="newAdminUserDetailsIdentityMIATableRow">
+{{#let txt="admin.userDetails.newAdminUserDetailsIdentityTableRow"}}
 {{!-- Filler row to deal with the fact that sometimes identities are missing in
       the database. --}}
   <div class="admin-user-identity-body-row" role="row">
@@ -93,56 +94,57 @@
       <ul class="identity-information">
         <li class="identity-picture-name">
           <div class="identity-profile-picture">
-            Profile picture
+            {{_ (con txt "profilePicture.label")}}
           </div>
           <span class="identity-name">
-            (unknown name)
+            {{_ (con txt "unknown.profilePicture.cell")}}
           </span>
         </li>
         <li class="identity-provider">
-          <div class="identity-provider-icon" title="unknown service">
+          <div class="identity-provider-icon" title="{{_ (con txt "unknown.service.hint")}}">
             <span class="provider-icon">
-              (unknown service)
+              {{_ (con txt "unknown.service.label")}}
             </span>
           </div>
           <span class="intrinsic-name">
-            (unknown name)
+            {{_ (con txt "unknown.service.cell")}}
           </span>
         </li>
         <li class="identity-handle">
-          <div class="identity-handle-decorator" role="presentation" title="Handle">
-            @
+          <div class="identity-handle-decorator" role="presentation" title="{{_ (con txt "handle.hint")}}">
+            {{_ (con txt "handle.label")}}
           </div>
-          <code>(unknown handle)</code>
+          <code>{{_ (con txt "unknown.handle.cell")}}</code>
         </li>
         <li class="identity-pronouns">
-          <div class="identity-pronouns-decorator" role="presentation" title="Pronouns">
+          <div class="identity-pronouns-decorator" role="presentation" title="{{_ (con txt "pronouns.hint")}}">
             <span class="identity-pronouns-icon">
-              Pronouns
+              {{_ (con txt "pronouns.label")}}
             </span>
           </div>
           <span class="identity-pronouns-preference">
-            (unknown pronouns)
+            {{_ (con txt "known.pronouns.cell")}}
           </span>
         </li>
         <li class="identity-emails">
-          <div class="identity-emails-decorator" role="presentation" title="Emails">
+          <div class="identity-emails-decorator" role="presentation" title="{{_ (con txt "emails.hint")}}">
             <span class="identity-emails-icon">
-              Emails
+              {{_ (con txt "emails.label")}}
             </span>
           </div>
           <ul class="identity-emails-list">
             <li>
-              No known emails.
+              {{_ (con txt "emails.notFound")}}
             </li>
           </ul>
         </li>
       </ul>
     </div>
-    <div class="admin-user-identity-body-cell created" role="gridcell">unknown creation date</div>
-    <div class="admin-user-identity-body-cell last-active" role="gridcell">unknown activity date</div>
+    <div class="admin-user-identity-body-cell created" role="gridcell">{{_ (con txt "unknown.created.cell")}}</div>
+    <div class="admin-user-identity-body-cell last-active" role="gridcell">{{_ (con txt "unknown.lastActive.cell")}}</div>
     <div class="admin-user-identity-body-cell properties" role="gridcell"></div>
   </div>
+{{/let}}
 </template>
 
 <template name="newAdminUserDetailsIdentityTable">

@@ -1,5 +1,14 @@
 This document explains how to run a Sandstorm server that has no access to the internet ("airgapped" or "offline"). Please note that running such a server requires a bit of work, but it can be done.
 
+## Prerequisites
+
+Before you can run Sandstorm offline, your offline network will need to have a few other things:
+
+1. A DNS server, with a [wildcard DNS entry](wildcard.md) pointing to your Sandstorm server. It is NOT sufficient to edit `/etc/hosts` on your client machines, since you cannot define wildcard entries in this file, although configuring dnsmasq on each client has been reported to work.
+2. An LDAP server or SAML identity provider used to authenticate your users. For example, you could use [Active Directory Federation Services on Windows Server](active-directory.md#windows-server-active-directory), or OpenLDAP on Linux.
+
+How to set up these services is not covered in this document.
+
 ## Installing Sandstorm Offline
 
 By default, Sandstorm's install script downloads the latest release from `sandstorm.io`, but the script can also accept a release tarball as a parameter. To use it offline, you will need to obtain the installer script and a release tarball from the internet and transfer them to your server.
@@ -35,11 +44,11 @@ Now, to update Sandstorm manually, obtain the latest release tarball from `dl.sa
 
 Then, run:
 
-    sudo sandstorm update sandsotrm-<version>.tar.gz
+    sudo sandstorm update sandstorm-<version>.tar.gz
 
 ## Installing Apps
 
-To install an app, you must manually obtain the app's SPK package file, then upload it to your server through its web interface. To obtain an SPK package from the app market, [visit the market](https://apps.sandstorm.io), find the app you want, and click the "Download SPK" button in the upper-right of the app's page. This will download the SPK file.
+To install an app, you must manually obtain the app's SPK package file, then upload it to your server through Sandstorm's web interface. To obtain an SPK package from the app market, [visit the market](https://apps.sandstorm.io), find the app you want, and click the "Download SPK" button in the upper-right of the app's page. This will download the SPK file.
 
 Unfortunately, the file will download with a name that is a long string of letters and numbers and does not end with `.spk`. You will need to rename the file to end with `.spk` before you can upload it to Sandstorm.
 
@@ -49,7 +58,7 @@ Note Sandstorm is designed such that every user has an independent workspace and
 
 ## Updating Apps
 
-Normally, Sandstorm automatically checks the app market for updates, notifies you when an update is available, and lets you install the update with one click. Without internet access, it won't be able to do so.
+Normally, Sandstorm automatically checks sandstorm.io's servers for app updates, notifies you when an update is available, and lets you install the update with one click. Without internet access, it won't be able to do so.
 
 To update an app that you've already installed, download the latest version of the SPK and upload it exactly the same as you did when you first installed it. Sandstorm will recognize that the new SPK is an upgrade and will prompt you to upgrade the app.
 

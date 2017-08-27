@@ -1,54 +1,30 @@
-<template name="newAdminUserDetailsIdentityTableRow">
+<template name="newAdminUserDetailsCredentialTableRow">
 {{!-- Expects:
-         identity: Object
-  isLoginIdentity: Boolean
+       credential: Object
+isLoginCredential: Boolean
      primaryEmail: String.  Account's primary contact address.
 --}}
-  <div class="admin-user-identity-body-row" role="row">
-    <div class="admin-user-identity-body-cell identity" role="gridcell">
-      <ul class="identity-information">
-        <li class="identity-picture-name">
-          <div class="identity-profile-picture" style="background-image: url('{{ identity.profile.pictureUrl }}');">
-            Profile picture
-          </div>
-          <span class="identity-name">
-            {{ identity.profile.name }}
-          </span>
-        </li>
-        <li class="identity-provider">
-          <div class="identity-provider-icon" title="{{identity.profile.service}}">
-            <span class="provider-icon {{identity.profile.service}}">
-              {{identity.profile.service}}
+  <div class="admin-user-credential-body-row" role="row">
+    <div class="admin-user-credential-body-cell credential" role="gridcell">
+      <ul class="credential-information">
+        <li class="credential-provider">
+          <div class="login-provider-icon" title="{{credential.serviceName}}">
+            <span class="provider-icon {{credential.serviceName}}">
+              {{credential.serviceName}}
             </span>
           </div>
           <span class="intrinsic-name">
-            {{ identity.profile.intrinsicName }}
+            {{ credential.intrinsicName }}
           </span>
         </li>
-        <li class="identity-handle">
-          <div class="identity-handle-decorator" role="presentation" title="Handle">
-            @
-          </div>
-          <code>{{ identity.profile.handle }}</code>
-        </li>
-        <li class="identity-pronouns">
-          <div class="identity-pronouns-decorator" role="presentation" title="Pronouns">
-            <span class="identity-pronouns-icon">
-              Pronouns
-            </span>
-          </div>
-          <span class="identity-pronouns-preference">
-            {{ identity.profile.pronoun }}
-          </span>
-        </li>
-        <li class="identity-emails">
-          <div class="identity-emails-decorator" role="presentation" title="Emails">
-            <span class="identity-emails-icon">
+        <li class="credential-emails">
+          <div class="credential-emails-decorator" role="presentation" title="Emails">
+            <span class="credential-emails-icon">
               Emails
             </span>
           </div>
-          <ul class="identity-emails-list">
-          {{#each email in (emailsForIdentity identity primaryEmail) }}
+          <ul class="credential-emails-list">
+          {{#each email in (emailsForCredential credential primaryEmail) }}
             <li>
               <a href="mailto:{{email.email}}">{{ email.email }}</a>
               {{#if email.primary}}
@@ -70,35 +46,27 @@
         </li>
       </ul>
     </div>
-    <div class="admin-user-identity-body-cell created" role="gridcell">{{ dateString identity.createdAt }}</div>
-    <div class="admin-user-identity-body-cell last-active" role="gridcell">{{ dateString identity.lastActive }}</div>
-    <div class="admin-user-identity-body-cell properties" role="gridcell">
-      {{#if isLoginIdentity }}
-        <span class="login-identity">Can log in</span>
+    <div class="admin-user-credential-body-cell created" role="gridcell">{{ dateString credential.createdAt }}</div>
+    <div class="admin-user-credential-body-cell last-active" role="gridcell">{{ dateString credential.lastActive }}</div>
+    <div class="admin-user-credential-body-cell properties" role="gridcell">
+      {{#if isLoginCredential }}
+        <span class="login-credential">Can log in</span>
       {{/if}}
-      {{#if (isOrganizationMember identity) }}
+      {{#if (isOrganizationMember credential) }}
         <span class="org-member">Org. member</span>
       {{/if}}
     </div>
   </div>
 </template>
 
-<template name="newAdminUserDetailsIdentityMIATableRow">
-{{!-- Filler row to deal with the fact that sometimes identities are missing in
+<template name="newAdminUserDetailsCredentialMIATableRow">
+{{!-- Filler row to deal with the fact that sometimes credentials are missing in
       the database. --}}
-  <div class="admin-user-identity-body-row" role="row">
-    <div class="admin-user-identity-body-cell identity" role="gridcell">
-      <ul class="identity-information">
-        <li class="identity-picture-name">
-          <div class="identity-profile-picture">
-            Profile picture
-          </div>
-          <span class="identity-name">
-            (unknown name)
-          </span>
-        </li>
-        <li class="identity-provider">
-          <div class="identity-provider-icon" title="unknown service">
+  <div class="admin-user-credential-body-row" role="row">
+    <div class="admin-user-credential-body-cell credential" role="gridcell">
+      <ul class="credential-information">
+        <li class="credential-provider">
+          <div class="login-provider-icon" title="unknown service">
             <span class="provider-icon">
               (unknown service)
             </span>
@@ -107,29 +75,13 @@
             (unknown name)
           </span>
         </li>
-        <li class="identity-handle">
-          <div class="identity-handle-decorator" role="presentation" title="Handle">
-            @
-          </div>
-          <code>(unknown handle)</code>
-        </li>
-        <li class="identity-pronouns">
-          <div class="identity-pronouns-decorator" role="presentation" title="Pronouns">
-            <span class="identity-pronouns-icon">
-              Pronouns
-            </span>
-          </div>
-          <span class="identity-pronouns-preference">
-            (unknown pronouns)
-          </span>
-        </li>
-        <li class="identity-emails">
-          <div class="identity-emails-decorator" role="presentation" title="Emails">
-            <span class="identity-emails-icon">
+        <li class="credential-emails">
+          <div class="credential-emails-decorator" role="presentation" title="Emails">
+            <span class="credential-emails-icon">
               Emails
             </span>
           </div>
-          <ul class="identity-emails-list">
+          <ul class="credential-emails-list">
             <li>
               No known emails.
             </li>
@@ -137,47 +89,47 @@
         </li>
       </ul>
     </div>
-    <div class="admin-user-identity-body-cell created" role="gridcell">unknown creation date</div>
-    <div class="admin-user-identity-body-cell last-active" role="gridcell">unknown activity date</div>
-    <div class="admin-user-identity-body-cell properties" role="gridcell"></div>
+    <div class="admin-user-credential-body-cell created" role="gridcell">unknown creation date</div>
+    <div class="admin-user-credential-body-cell last-active" role="gridcell">unknown activity date</div>
+    <div class="admin-user-credential-body-cell properties" role="gridcell"></div>
   </div>
 </template>
 
-<template name="newAdminUserDetailsIdentityTable">
+<template name="newAdminUserDetailsCredentialTable">
 {{!-- Expects:
   account: Object
 --}}
-  <div class="admin-user-identity-list" role="grid">
-    <div class="admin-user-identity-header" role="rowgroup">
-      <div class="admin-user-identity-header-row" role="row">
-        <div class="admin-user-identity-header-cell identity" role="columnheader">Identity</div>
-        <div class="admin-user-identity-header-cell created" role="columnheader">Created</div>
-        <div class="admin-user-identity-header-cell last-active" role="columnheader">Last Active</div>
-        <div class="admin-user-identity-header-cell properties" role="columnheader">Properties</div>
+  <div class="admin-user-credential-list" role="grid">
+    <div class="admin-user-credential-header" role="rowgroup">
+      <div class="admin-user-credential-header-row" role="row">
+        <div class="admin-user-credential-header-cell credential" role="columnheader">Credential</div>
+        <div class="admin-user-credential-header-cell created" role="columnheader">Created</div>
+        <div class="admin-user-credential-header-cell last-active" role="columnheader">Last Active</div>
+        <div class="admin-user-credential-header-cell properties" role="columnheader">Properties</div>
       </div>
     </div>
 
-    <div class="admin-user-identity-body" role="rowgroup">
-      {{#each identity in (loginIdentities account) }}
-        {{#if identity}}
-          {{> newAdminUserDetailsIdentityTableRow
-                identity=identity
-                isLoginIdentity=true
+    <div class="admin-user-credential-body" role="rowgroup">
+      {{#each credential in (loginCredentials account) }}
+        {{#if credential}}
+          {{> newAdminUserDetailsCredentialTableRow
+                credential=credential
+                isLoginCredential=true
                 primaryEmail=account.primaryEmail
                 }}
         {{else}}
-          {{> newAdminUserDetailsIdentityMIATableRow "" }}
+          {{> newAdminUserDetailsCredentialMIATableRow "" }}
         {{/if}}
       {{/each}}
-      {{#each identity in (nonloginIdentities account) }}
-        {{#if identity}}
-          {{> newAdminUserDetailsIdentityTableRow
-                identity=identity
-                isLoginIdentity=false
+      {{#each credential in (nonloginCredentials account) }}
+        {{#if credential}}
+          {{> newAdminUserDetailsCredentialTableRow
+                credential=credential
+                isLoginCredential=false
                 primaryEmail=account.primaryEmail
                 }}
         {{else}}
-          {{> newAdminUserDetailsIdentityMIATableRow "" }}
+          {{> newAdminUserDetailsCredentialMIATableRow "" }}
         {{/if}}
       {{/each}}
     </div>
@@ -282,8 +234,37 @@
       </li>
     </ul>
 
-    <h2>Identities</h2>
-    {{> newAdminUserDetailsIdentityTable account=account }}
+    <h2>Profile</h2>
+
+    <ul class="admin-users-profile-information">
+      <li class="profile-picture-name">
+        <div class="profile-picture" style="background-image: url('{{ account.profile.pictureUrl }}');">
+          Profile picture
+        </div>
+        <span class="profile-name">
+          {{ account.profile.name }}
+        </span>
+      </li>
+      <li class="profile-handle">
+        <div class="profile-handle-decorator" role="presentation" title="Handle">
+          @
+        </div>
+        <code>{{ account.profile.handle }}</code>
+      </li>
+      <li class="profile-pronouns">
+        <div class="profile-pronouns-decorator" role="presentation" title="Pronouns">
+          <span class="profile-pronouns-icon">
+            Pronouns
+          </span>
+        </div>
+        <span class="profile-pronouns-preference">
+          {{ account.profile.pronoun }}
+        </span>
+      </li>
+    </ul>
+
+    <h2>Credentials</h2>
+    {{> newAdminUserDetailsCredentialTable account=account }}
 
     <h2>Status</h2>
 
@@ -322,7 +303,7 @@
           <li>Permanently delete any grains {{guessUserName}} created</li>
           <li>Revoke all sharing links {{guessUserName}} created</li>
           <li>Remove {{guessUserName}} from all users' contact lists</li>
-          <li>Delete all identities owned by this account (except identities also associated with another account).</li>
+          <li>Delete all credentials owned by this account (except credentials also associated with another account).</li>
         </ul>
         <form class="standard-form">
           <div class="button-row">
@@ -347,7 +328,7 @@
         <ul>
           <li>Prevent any grains created by {{guessUserName}} from being opened</li>
           <li>Disable any sharing links created by {{guessUserName}}</li>
-          <li>This also applies to all identities owned by this account (except identities
+          <li>This also applies to all credentials owned by this account (except credentials
               associated with another account)</li>
         </ul>
         <form class="standard-form">

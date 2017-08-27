@@ -682,7 +682,7 @@ domain name that **should** be served from this Sandstorm server.
 2. `cat /proc/<pid>/mountinfo` and find the mapping that looks like `/opt/sandstorm/var/sandstorm/grains/<grain-id>/sandbox /var`. This gives you the grain ID.
 3. `sudo sandstorm mongo` to get to the Sandstorm mongo shell.
 4. `db.grains.find({_id: "<grain-id>"})` to get info about the grain. In particular, the `userId` is shown.
-5. `db.users.find({_id: "<user-id>"})` to get the user record. Look for the list of `loginIdentities`, and take the first ID shown.
-6. `db.users.find({_id: "<login-identity-id>"})` to get info about the user identity.
+5. `db.users.find({_id: "<user-id>"})` to get the user record. Look for the list of `loginCredentials`, and take the first ID shown.
+6. `db.users.find({_id: "<login-credential-id>"})` to get info about the user identity.
 
 This should show you the user's profile info including e-mail address, etc.

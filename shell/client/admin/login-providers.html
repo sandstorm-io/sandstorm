@@ -1,13 +1,13 @@
-<template name="newAdminIdentity">
+<template name="newAdminLogin">
   <h1>
     <ul class="admin-breadcrumbs">
       <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
-      <li>Identity providers</li>
+      <li>Login providers</li>
     </ul>
   </h1>
 
   <p>Choose which services users may use to identify themselves.  Anyone can log in, but only users you invite will be able to install apps or create grains.</p>
-  {{>adminIdentityProviderTable idpData=idpData}}
+  {{>adminLoginProviderTable idpData=idpData}}
 
   <p>
   To configure organization membership and settings, see
@@ -15,7 +15,7 @@
   </p>
 </template>
 
-<template name="adminIdentityProviderConfigureEmail">
+<template name="adminLoginProviderConfigureEmail">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
   <h2>Email login configuration</h2>
 
@@ -69,7 +69,7 @@
   </ol>
 </template>
 
-<template name="adminIdentityProviderConfigureGoogle">
+<template name="adminLoginProviderConfigureGoogle">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
   <h2>Google login configuration</h2>
 
@@ -139,7 +139,7 @@
   </ol>
 </template>
 
-<template name="adminIdentityProviderConfigureGitHub">
+<template name="adminLoginProviderConfigureGitHub">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
   <h2>GitHub login configuration</h2>
 
@@ -190,7 +190,7 @@
 {{/modalDialogWithBackdrop}}
 </template>
 
-<template name="adminIdentityProviderConfigureLdap">
+<template name="adminLoginProviderConfigureLdap">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
   <h2>LDAP login configuration</h2>
 
@@ -311,7 +311,7 @@ MIID...
 {{/modalDialogWithBackdrop}}
 </template>
 
-<template name="adminIdentityProviderConfigureSaml">
+<template name="adminLoginProviderConfigureSaml">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
   <h2>SAML login configuration</h2>
 
@@ -385,18 +385,18 @@ MIID...
 {{/modalDialogWithBackdrop}}
 </template>
 
-<template name="adminIdentityProviderTable">
+<template name="adminLoginProviderTable">
 {{!-- Expects an empty data context. --}}
-<div class="identity-provider-table" role="grid">
+<div class="login-provider-table" role="grid">
   <div class="idp-table-header" role="rowgroup">
     <div class="idp-header-row" role="row">
-      <span class="idp" role="rowheader">Identity provider</span>
+      <span class="idp" role="rowheader">Login provider</span>
       <span class="idp-status" role="rowheader">Status</span>
     </div>
   </div>
   <div class="idp-table-rows" role="rowgroup">
   {{#each idp in idpData}}
-    {{> adminIdentityRow idp=idp}}
+    {{> adminLoginRow idp=idp}}
   {{/each}}
   {{#each idp in idpData}}
     {{#if currentPopupIs idp.id}}
@@ -409,7 +409,7 @@ MIID...
 </div>
 </template>
 
-<template name="adminIdentityRow">
+<template name="adminLoginRow">
 <div class="idp-table-row" role="row">
   <span class="idp" role="gridcell">{{idp.label}}</span>
   <span class="idp-status" role="gridcell">

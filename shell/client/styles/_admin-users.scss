@@ -9,7 +9,7 @@
   color: #ffffff;
 }
 
-%identity-property-label {
+%credential-property-label {
   display: inline-block;
   padding: 2px 4px;
   border-radius: 2px;
@@ -71,39 +71,6 @@
 .user-class-visitor {
   @extend %user-class-label;
   background-color: #939393;
-}
-
-%identity-provider-icon {
-  display: inline-flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  .provider-icon {
-    @extend %pseudo-img-tag;
-    display: inline-block;
-    width: 24px;
-    height: 24px;
-    font-size: 0px;
-    overflow: hidden;
-    &.dev {
-      background-image: url('/debug.svg');
-    }
-    &.email {
-      background-image: url('/email.svg');
-    }
-    &.google {
-      background-image: url('/google.svg');
-    }
-    &.github {
-      background-image: url('/github.svg');
-    }
-    &.ldap {
-      background-image: url('/ldap.svg');
-    }
-    &.saml {
-      background-image: url('/ldap.svg');
-    }
-  }
 }
 
 .admin-user-table {
@@ -208,14 +175,25 @@
     }
   }
 
-  div.identities {
+  div.profile-name {
     display: inline-block;
-    flex: 4 1 0;
+    flex: 2 1 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &[role=gridcell] {
+      padding-top: 8px;
+    }
+  }
+
+  div.credentials {
+    display: inline-block;
+    flex: 2 1 0;
     &[role=gridcell] {
       overflow: hidden;
       text-overflow: ellipsis;
 
-      .identity-list {
+      .credential-list {
         margin: 0;
         padding-left: 0;
         padding-right: 0;
@@ -227,7 +205,7 @@
         align-items: stretch; // so the childrens borders will span the whole row
         justify-content: flex-start;
 
-        .identity {
+        .credential {
           display: flex;
           flex-direction: row;
           align-items: flex-start;
@@ -242,21 +220,15 @@
             padding-bottom: 4px;
           }
 
-          .identity-provider-icon {
+          .login-provider-icon {
             align-self: flex-start;
-            @extend %identity-provider-icon;
+            @extend %login-provider-icon;
             width: 32px;
             height: 24px;
           }
 
-          .identity-name {
-            flex: 1 1 40%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-
-          .identity-intrinsic-name {
-            flex: 0 1 40%;
+          .credential-intrinsic-name {
+            flex: 0 1 1;
             padding-left: 4px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -357,107 +329,26 @@
   }
 }
 
-.user-details-name {
-  padding-bottom: 8px;
-  border-bottom: 1px solid #dddddd;
-}
-
-.admin-user-roles-form {
-  display: inline-block;
-
-  .make-admin, .make-user, .make-visitor {
-    @extend %button-base;
-    @extend %button-secondary;
-  }
-}
-
-.admin-user-identity-list {
-  border: 1px solid $default-table-border-color;
-
-  div[role=columnheader] {
+.admin-users-profile-information {
+  background-color: white;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  >li {
+    min-height: 36px;
     display: flex;
     flex-direction: row;
-    align-items: flex-end;
+    align-items: center;
     justify-content: flex-start;
   }
 
-  div[role=columnheader], div[role=gridcell] {
-    padding: 4px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .admin-user-identity-header {
-    .admin-user-identity-header-row {
-      display: flex;
-      flex-direction: row;
-      align-items: stretch;
-      justify-content: flex-start;
-      background-color: $default-table-header-background-color;
-      color: $default-table-header-foreground-color;
-      border-bottom: 1px solid $default-table-header-border-color;
-
-      >div[role=columnheader]:not(:first-child) {
-        border-left: 1px solid $default-table-header-border-color;
-      }
-
-      .admin-user-identity-header-cell {
-        display: inline-block;
-        &.identity {
-          flex: 4 1 0;
-        }
-
-        &.created, &.last-active, &.properties {
-          flex: 1 1 0;
-        }
-      }
-    }
-  }
-
-  .admin-user-identity-body {
-    .admin-user-identity-body-row {
-      display: flex;
-      flex-direction: row;
-      align-items: flex-start;
-      justify-content: flex-start;
-      background-color: $default-table-row-background-color;
-      &:not(:last-child) {
-        border-bottom: 1px solid #dddddd;
-      }
-
-      .admin-user-identity-body-cell {
-        display: inline-block;
-        &.identity {
-          flex: 4 1 0;
-        }
-
-        &.created, &.last-active, &.properties {
-          flex: 1 1 0;
-        }
-      }
-    }
-  }
-
-  .identity-information {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-    >li {
-      min-height: 36px;
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: flex-start;
-    }
-  }
-
-  .identity-picture-name {
+  .profile-picture-name {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
 
-    .identity-profile-picture {
+    .profile-picture {
       @extend %pseudo-img-tag;
       flex: none;
       display: inline-block;
@@ -466,33 +357,14 @@
       font-size: 0px;
     }
 
-    .identity-name {
+    .profile-name {
       flex: 1 1 auto;
       margin-left: 8px;
     }
   }
 
-  .identity-provider {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-
-    .identity-provider-icon {
-      @extend %identity-provider-icon;
-      flex: none;
-      width: 36px;
-      height: 36px;
-    }
-    .intrinsic-name {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-left: 8px;
-    }
-  }
-
-  .identity-handle {
-    .identity-handle-decorator {
+  .profile-handle {
+    .profile-handle-decorator {
       flex: none;
       display: inline-flex;
       flex-direction: row;
@@ -511,8 +383,8 @@
     }
   }
 
-  .identity-pronouns {
-    .identity-pronouns-decorator {
+  .profile-pronouns {
+    .profile-pronouns-decorator {
       flex: none;
       display: inline-flex;
       flex-direction: row;
@@ -520,7 +392,7 @@
       justify-content: center;
       width: 36px;
       height: 36px;
-      .identity-pronouns-icon {
+      .profile-pronouns-icon {
         @extend %pseudo-img-tag;
         width: 24px;
         height: 24px;
@@ -532,14 +404,128 @@
       }
     }
 
-    .identity-pronouns-preference {
+    .profile-pronouns-preference {
+      margin-left: 8px;
+    }
+  }
+}
+
+.user-details-name {
+  padding-bottom: 8px;
+  border-bottom: 1px solid #dddddd;
+}
+
+.admin-user-roles-form {
+  display: inline-block;
+
+  .make-admin, .make-user, .make-visitor {
+    @extend %button-base;
+    @extend %button-secondary;
+  }
+}
+
+.admin-user-credential-list {
+  border: 1px solid $default-table-border-color;
+
+  div[role=columnheader] {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: flex-start;
+  }
+
+  div[role=columnheader], div[role=gridcell] {
+    padding: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .admin-user-credential-header {
+    .admin-user-credential-header-row {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      justify-content: flex-start;
+      background-color: $default-table-header-background-color;
+      color: $default-table-header-foreground-color;
+      border-bottom: 1px solid $default-table-header-border-color;
+
+      >div[role=columnheader]:not(:first-child) {
+        border-left: 1px solid $default-table-header-border-color;
+      }
+
+      .admin-user-credential-header-cell {
+        display: inline-block;
+        &.credential {
+          flex: 4 1 0;
+        }
+
+        &.created, &.last-active, &.properties {
+          flex: 1 1 0;
+        }
+      }
+    }
+  }
+
+  .admin-user-credential-body {
+    .admin-user-credential-body-row {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: flex-start;
+      background-color: $default-table-row-background-color;
+      &:not(:last-child) {
+        border-bottom: 1px solid #dddddd;
+      }
+
+      .admin-user-credential-body-cell {
+        display: inline-block;
+        &.credential {
+          flex: 4 1 0;
+        }
+
+        &.created, &.last-active, &.properties {
+          flex: 1 1 0;
+        }
+      }
+    }
+  }
+
+  .credential-information {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    >li {
+      min-height: 36px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+    }
+  }
+
+  .login-provider {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+
+    .login-provider-icon {
+      @extend %login-provider-icon;
+      flex: none;
+      width: 36px;
+      height: 36px;
+    }
+    .intrinsic-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
       margin-left: 8px;
     }
   }
 
-  .identity-emails {
+  .credential-emails {
     overflow: wrap;
-    .identity-emails-decorator {
+    .credential-emails-decorator {
       // The email list may be multiple lines long, so this decorator is better off sticking to the
       // top of its box.
       align-self: flex-start;
@@ -550,7 +536,7 @@
       justify-content: center;
       width: 36px;
       height: 36px;
-      .identity-emails-icon {
+      .credential-emails-icon {
         @extend %pseudo-img-tag;
         width: 24px;
         height: 24px;
@@ -560,7 +546,7 @@
       }
     }
 
-    .identity-emails-list {
+    .credential-emails-list {
       flex: 1 1 auto;
       list-style-type: none;
       padding-left: 8px;
@@ -573,28 +559,28 @@
     }
   }
 
-  .login-identity {
-    @extend %identity-property-label;
+  .login-credential {
+    @extend %credential-property-label;
     background-color: #dcefdd;
   }
 
   .org-member {
-    @extend %identity-property-label;
+    @extend %credential-property-label;
     background-color: #dbdbdb;
   }
 
   .email-primary {
-    @extend %identity-property-label;
+    @extend %credential-property-label;
     background-color: #e5e1ef;
   }
 
   .email-verified {
-    @extend %identity-property-label;
+    @extend %credential-property-label;
     background-color: #dcefdd;
   }
 
   .email-unverified {
-    @extend %identity-property-label;
+    @extend %credential-property-label;
     background-color: #efdcdd;
   }
 }

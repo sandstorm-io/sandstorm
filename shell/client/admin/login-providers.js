@@ -14,7 +14,7 @@ const idpData = function (configureCallback) {
       label: "E-mail (passwordless)",
       icon: "/email.svg", // Or use identicons
       enabled: emailTokenEnabled,
-      popupTemplate: "adminIdentityProviderConfigureEmail",
+      popupTemplate: "adminLoginProviderConfigureEmail",
       onConfigure() {
         configureCallback("email-token");
       },
@@ -25,7 +25,7 @@ const idpData = function (configureCallback) {
       icon: "/google.svg", // Or use identicons
       enabled: googleEnabled,
       resetNote: !googleEnabled && googleSetting && googleSetting.automaticallyReset,
-      popupTemplate: "adminIdentityProviderConfigureGoogle",
+      popupTemplate: "adminLoginProviderConfigureGoogle",
       onConfigure() {
         configureCallback("google");
       },
@@ -36,7 +36,7 @@ const idpData = function (configureCallback) {
       icon: "/github.svg", // Or use identicons
       enabled: githubEnabled,
       resetNote: !githubEnabled && githubSetting && githubSetting.automaticallyReset,
-      popupTemplate: "adminIdentityProviderConfigureGitHub",
+      popupTemplate: "adminLoginProviderConfigureGitHub",
       onConfigure() {
         configureCallback("github");
       },
@@ -46,7 +46,7 @@ const idpData = function (configureCallback) {
       label: "LDAP",
       icon: "/ldap.svg", // Or use identicons
       enabled: ldapEnabled,
-      popupTemplate: "adminIdentityProviderConfigureLdap",
+      popupTemplate: "adminLoginProviderConfigureLdap",
       onConfigure() {
         configureCallback("ldap");
       },
@@ -56,7 +56,7 @@ const idpData = function (configureCallback) {
       label: "SAML",
       icon: "/ldap.svg", // Or use identicons
       enabled: samlEnabled,
-      popupTemplate: "adminIdentityProviderConfigureSaml",
+      popupTemplate: "adminLoginProviderConfigureSaml",
       onConfigure() {
         configureCallback("saml");
       },
@@ -64,11 +64,11 @@ const idpData = function (configureCallback) {
   ];
 };
 
-Template.adminIdentityProviderTable.onCreated(function () {
+Template.adminLoginProviderTable.onCreated(function () {
   this.currentPopup = new ReactiveVar(undefined);
 });
 
-Template.adminIdentityProviderTable.helpers({
+Template.adminLoginProviderTable.helpers({
   idpData() {
     const instance = Template.instance();
     return idpData((idp) => {
@@ -94,7 +94,7 @@ Template.adminIdentityProviderTable.helpers({
   },
 });
 
-Template.adminIdentityRow.events({
+Template.adminLoginRow.events({
   "click button.base-url-change-button"() {
     const instance = Template.instance();
     instance.data.idp.onConfigure();
@@ -115,17 +115,17 @@ const setAccountSettingCallback = function (err) {
 };
 
 // Email form.
-Template.adminIdentityProviderConfigureEmail.onCreated(function () {
+Template.adminLoginProviderConfigureEmail.onCreated(function () {
   this.errorMessage = new ReactiveVar(undefined);
   this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
 });
 
-Template.adminIdentityProviderConfigureEmail.onRendered(function () {
+Template.adminLoginProviderConfigureEmail.onRendered(function () {
   // Focus the first input when the form is shown.
   this.find("button.idp-modal-save").focus();
 });
 
-Template.adminIdentityProviderConfigureEmail.events({
+Template.adminLoginProviderConfigureEmail.events({
   "click .idp-modal-disable"(evt) {
     const instance = Template.instance();
     const token = Iron.controller().state.get("token");
@@ -146,7 +146,7 @@ Template.adminIdentityProviderConfigureEmail.events({
   },
 });
 
-Template.adminIdentityProviderConfigureEmail.helpers({
+Template.adminLoginProviderConfigureEmail.helpers({
   emailLoginEnabled() {
     return globalDb.getSettingWithFallback("emailToken", false);
   },
@@ -176,7 +176,7 @@ Template.googleLoginSetupInstructions.helpers({
 });
 
 // Google form.
-Template.adminIdentityProviderConfigureGoogle.onCreated(function () {
+Template.adminLoginProviderConfigureGoogle.onCreated(function () {
   const configurations = ServiceConfiguration.configurations;
   const googleConfiguration = configurations.findOne({ service: "google" });
   const clientId = (googleConfiguration && googleConfiguration.clientId) || "";
@@ -189,12 +189,12 @@ Template.adminIdentityProviderConfigureGoogle.onCreated(function () {
   this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
 });
 
-Template.adminIdentityProviderConfigureGoogle.onRendered(function () {
+Template.adminLoginProviderConfigureGoogle.onRendered(function () {
   // Focus the first input when the form is shown.
   this.find("input").focus();
 });
 
-Template.adminIdentityProviderConfigureGoogle.helpers({
+Template.adminLoginProviderConfigureGoogle.helpers({
   formerBaseUrl() {
     const setting = globalDb.collections.settings.findOne("google");
     const googleEnabled = (setting && setting.value) || false;
@@ -229,7 +229,7 @@ Template.adminIdentityProviderConfigureGoogle.helpers({
   },
 });
 
-Template.adminIdentityProviderConfigureGoogle.events({
+Template.adminLoginProviderConfigureGoogle.events({
   "input input[name=clientId]"(evt) {
     const instance = Template.instance();
     instance.clientId.set(evt.currentTarget.value);
@@ -282,7 +282,7 @@ Template.githubLoginSetupInstructions.helpers({
 });
 
 // GitHub form.
-Template.adminIdentityProviderConfigureGitHub.onCreated(function () {
+Template.adminLoginProviderConfigureGitHub.onCreated(function () {
   const configurations = ServiceConfiguration.configurations;
   const githubConfiguration = configurations.findOne({ service: "github" });
   const clientId = (githubConfiguration && githubConfiguration.clientId) || "";
@@ -295,12 +295,12 @@ Template.adminIdentityProviderConfigureGitHub.onCreated(function () {
   this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
 });
 
-Template.adminIdentityProviderConfigureGitHub.onRendered(function () {
+Template.adminLoginProviderConfigureGitHub.onRendered(function () {
   // Focus the first input when the form is shown.
   this.find("input").focus();
 });
 
-Template.adminIdentityProviderConfigureGitHub.helpers({
+Template.adminLoginProviderConfigureGitHub.helpers({
   githubEnabled() {
     return globalDb.getSettingWithFallback("github", false);
   },
@@ -337,7 +337,7 @@ Template.adminIdentityProviderConfigureGitHub.helpers({
   },
 });
 
-Template.adminIdentityProviderConfigureGitHub.events({
+Template.adminLoginProviderConfigureGitHub.events({
   "input input[name=clientId]"(evt) {
     const instance = Template.instance();
     instance.clientId.set(evt.currentTarget.value);
@@ -384,7 +384,7 @@ Template.adminIdentityProviderConfigureGitHub.events({
 });
 
 // LDAP form.
-Template.adminIdentityProviderConfigureLdap.onCreated(function () {
+Template.adminLoginProviderConfigureLdap.onCreated(function () {
   const url = globalDb.getLdapUrl();
   const searchBindDn = globalDb.getLdapSearchBindDn();
   const searchBindPassword = globalDb.getLdapSearchBindPassword();
@@ -409,12 +409,12 @@ Template.adminIdentityProviderConfigureLdap.onCreated(function () {
   this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
 });
 
-Template.adminIdentityProviderConfigureLdap.onRendered(function () {
+Template.adminLoginProviderConfigureLdap.onRendered(function () {
   // Focus the first input when the form is shown.
   this.find("input").focus();
 });
 
-Template.adminIdentityProviderConfigureLdap.helpers({
+Template.adminLoginProviderConfigureLdap.helpers({
   ldapEnabled() {
     return globalDb.getSettingWithFallback("ldap", false);
   },
@@ -485,7 +485,7 @@ Template.adminIdentityProviderConfigureLdap.helpers({
   },
 });
 
-Template.adminIdentityProviderConfigureLdap.events({
+Template.adminLoginProviderConfigureLdap.events({
   "input input[name=ldapUrl]"(evt) {
     const instance = Template.instance();
     instance.ldapUrl.set(evt.currentTarget.value);
@@ -605,7 +605,7 @@ Template.adminIdentityProviderConfigureLdap.events({
 });
 
 // SAML form.
-Template.adminIdentityProviderConfigureSaml.onCreated(function () {
+Template.adminLoginProviderConfigureSaml.onCreated(function () {
   const samlEntryPoint = globalDb.getSamlEntryPoint();
   const samlLogout = globalDb.getSamlLogout();
   const samlPublicCert = globalDb.getSamlPublicCert();
@@ -620,12 +620,12 @@ Template.adminIdentityProviderConfigureSaml.onCreated(function () {
   this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
 });
 
-Template.adminIdentityProviderConfigureSaml.onRendered(function () {
+Template.adminLoginProviderConfigureSaml.onRendered(function () {
   // Focus the first input when the form is shown.
   this.find("input").focus();
 });
 
-Template.adminIdentityProviderConfigureSaml.helpers({
+Template.adminLoginProviderConfigureSaml.helpers({
   samlEnabled() {
     return globalDb.getSettingWithFallback("saml", false);
   },
@@ -678,7 +678,7 @@ Template.adminIdentityProviderConfigureSaml.helpers({
   },
 });
 
-Template.adminIdentityProviderConfigureSaml.events({
+Template.adminLoginProviderConfigureSaml.events({
   "input input[name=entryPoint]"(evt) {
     const instance = Template.instance();
     instance.samlEntryPoint.set(evt.currentTarget.value);

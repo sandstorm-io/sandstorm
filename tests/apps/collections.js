@@ -52,194 +52,205 @@ module.exports["Test Collections"] = function (browser) {
   var devNameAlice = "A" + crypto.randomBytes(10).toString("hex");
   var devNameBob = "A" + crypto.randomBytes(10).toString("hex");
   var devNameCarol = "A" + crypto.randomBytes(10).toString("hex");
-  var devIdentityAlice = crypto.createHash("sha256").update("dev:" + devNameAlice).digest("hex");
-  var devIdentityBob = crypto.createHash("sha256").update("dev:" + devNameBob).digest("hex");
-  var devIdentityCarol = crypto.createHash("sha256").update("dev:" + devNameCarol).digest("hex");
 
-  browser = browser
-    .init()
-    .loginDevAccount(devNameAlice)
-    .installApp(COLLECTIONS_PACKAGE_URL, COLLECTIONS_PACKAGE_ID, COLLECTIONS_APP_ID);
-  browser = setGrainTitle(browser, "Collection A");
+  browser
+    .loginDevAccount(devNameBob)
+    .executeAsync(function (done) {
+      done(Meteor.userId());
+    }, [], function (result) {
+      var bobAccountId = result.value;
+      browser.execute("window.Meteor.logout()")
+        .loginDevAccount(devNameCarol)
+        .executeAsync(function (done) {
+          done(Meteor.userId());
+        }, [], function (result) {
+          var carolAccountId = result.value;
+          browser.execute("window.Meteor.logout()")
+            .init()
+            .loginDevAccount(devNameAlice)
+            .installApp(COLLECTIONS_PACKAGE_URL, COLLECTIONS_PACKAGE_ID, COLLECTIONS_APP_ID);
+          browser = setGrainTitle(browser, "Collection A");
 
-  browser.executeAsync(function (bobIdentityId, done) {
-    // Share Collection A to Bob.
-    var grainId = Grains.findOne()._id;
-    Meteor.call("newApiToken", { identityId: Meteor.user().loginIdentities[0].id },
-                grainId, "petname", { allAccess: null },
-                { user: { identityId: bobIdentityId, title: "Collection A", } },
-                function(error, result) {
-                  done({ error: error, grainId: grainId, });
-                });
-  }, [devIdentityBob], function (result) {
-    var grainIdA = result.value.grainId;
-    browser.assert.equal(!result.value.error, true);
-    browser.newGrain(COLLECTIONS_APP_ID, function (grainIdB) {
-      browser = setGrainTitle(browser, "Collection B");
-
-      browser.newGrain(COLLECTIONS_APP_ID, function (grainIdC) {
-        browser = setGrainTitle(browser, "Collection C");
-
-        browser = browser
-          .url(browser.launch_url + "/grain/" + grainIdA)
-          .grainFrame()
-          .waitForElementVisible("table.grain-list-table>tbody>tr.add-grain>td>button", medium_wait)
-          .click("table.grain-list-table>tbody>tr.add-grain>td>button")
-          .frame(null)
-          .waitForElementVisible(powerboxCardSelector(grainIdB), short_wait)
-          .click(powerboxCardSelector(grainIdB))
-          // Add with 'editor' permissions.
-          .waitForElementVisible(".popup.request .selected-card>form input[value='0']", short_wait)
-          .click(".popup.request .selected-card>form input[value='0']")
-          .click(".popup.request .selected-card>form button.connect-button")
-
-          .grainFrame()
-          .waitForElementVisible("table.grain-list-table>tbody>tr.add-grain>td>button", short_wait)
-          .click("table.grain-list-table>tbody>tr.add-grain>td>button")
-          .frame(null)
-          .waitForElementVisible(powerboxCardSelector(grainIdC), short_wait)
-          .click(powerboxCardSelector(grainIdC))
-          // Add with 'viewer' permissions.
-          .waitForElementVisible(".popup.request .selected-card>form input[value='1']", short_wait)
-          .click(".popup.request .selected-card>form input[value='1']")
-          .click(".popup.request .selected-card>form button.connect-button")
-
-          .grainFrame()
-          .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(3).grain", short_wait)
-          .click("table.grain-list-table>tbody tr:nth-child(3).grain .click-to-go")
-          .frame(null)
-
-          .grainFrame(grainIdC)
-          .waitForElementVisible(".description-row p", short_wait)
-          .assert.containsText(".description-row p", "This is Collection C")
-          .waitForElementVisible(".description-row button.description-button", short_wait)
-          .frame(null)
-
-          .execute("window.Meteor.logout()")
-
-          // Log in as Bob
-          .loginDevAccount(devNameBob)
-          .url(browser.launch_url + "/grain/" + grainIdA)
-          .grainFrame()
-          .waitForElementVisible(".description-row p", short_wait)
-          .assert.containsText(".description-row p", "This is Collection A")
-          .waitForElementVisible(".description-row button.description-button", short_wait)
-
-          .waitForElementVisible("table.grain-list-table>tbody>tr.add-grain>td>button", short_wait)
-          .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(2).grain", short_wait)
-          .assert.containsText("table.grain-list-table>tbody tr:nth-child(2).grain td>button",
-                               "Collection B")
-          .click("table.grain-list-table>tbody tr:nth-child(2).grain .click-to-go")
-          .frame(null)
-
-          .grainFrame(grainIdB)
-          .waitForElementVisible(".description-row p", short_wait)
-          .assert.containsText(".description-row p", "This is Collection B")
-          .waitForElementVisible(".description-row button.description-button", short_wait)
-
-          // As Bob, add collection A to collection B, creating a cycle of references.
-          .waitForElementVisible("table.grain-list-table>tbody>tr.add-grain>td>button", short_wait)
-          .click("table.grain-list-table>tbody>tr.add-grain>td>button")
-          .frame(null)
-          .waitForElementVisible(powerboxCardSelector(grainIdA), short_wait)
-          .click(powerboxCardSelector(grainIdA))
-          // Add with 'viewer' permissions.
-          .waitForElementVisible(".popup.request .selected-card>form input[value='1']", short_wait)
-          .click(".popup.request .selected-card>form input[value='1']")
-          .click(".popup.request .selected-card>form button.connect-button")
-
-          // Navigate back to collection A by clicking on it in collection B.
-          .grainFrame()
-          .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(2).grain", short_wait)
-          .click("table.grain-list-table>tbody tr:nth-child(2).grain .click-to-go")
-          .frame(null)
-
-          .grainFrame(grainIdA)
-          .waitForElementVisible("table.grain-list-table>tbody>tr.add-grain>td>button", short_wait)
-          .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(3).grain", short_wait)
-          .assert.containsText("table.grain-list-table>tbody tr:nth-child(3).grain td>button",
-                               "Collection C")
-          .click("table.grain-list-table>tbody tr:nth-child(3).grain .click-to-go")
-          .frame(null)
-
-          .grainFrame(grainIdC)
-          .waitForElementVisible(".description-row p", short_wait)
-          .assert.containsText(".description-row p", "This is Collection C")
-          .assert.elementNotPresent(".description-row button.description-button")
-
-          .frame(null)
-          .executeAsync(function (carolIdentityId, grainIdB, done) {
-            // As Bob, share Collection B to Carol.
-            Meteor.call("newApiToken", { identityId: Meteor.user().loginIdentities[0].id },
-                grainIdB, "petname", { allAccess: null },
-                { user: { identityId: carolIdentityId, title: "Collection B", } },
-                function(error, result) {
-                  done({ error: error });
-                });
-          }, [devIdentityCarol, grainIdB], function (result) {
+          browser.executeAsync(function (bobAccountId, done) {
+            // Share Collection A to Bob.
+            var grainId = Grains.findOne()._id;
+            Meteor.call("newApiToken", { accountId: Meteor.userId() },
+                        grainId, "petname", { allAccess: null },
+                        { user: { accountId: bobAccountId, title: "Collection A", } },
+                        function(error, result) {
+                          done({ error: error, grainId: grainId, });
+                        });
+          }, [bobAccountId], function (result) {
+            var grainIdA = result.value.grainId;
             browser.assert.equal(!result.value.error, true);
-            browser
-              .execute("window.Meteor.logout()")
+            browser.newGrain(COLLECTIONS_APP_ID, function (grainIdB) {
+              browser = setGrainTitle(browser, "Collection B");
 
-              // Log in as Carol
-              .loginDevAccount(devNameCarol)
-              .url(browser.launch_url + "/grain/" + grainIdB)
-              .grainFrame()
-              .waitForElementVisible(".description-row p", short_wait)
-              .assert.containsText(".description-row p", "This is Collection B")
-              .waitForElementVisible(".description-row button.description-button", short_wait)
+              browser.newGrain(COLLECTIONS_APP_ID, function (grainIdC) {
+                browser = setGrainTitle(browser, "Collection C");
 
-              .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(2).grain",
-                                     short_wait)
-              .assert.containsText("table.grain-list-table>tbody tr:nth-child(2).grain td>button",
-                                   "Collection A")
-              .click("table.grain-list-table>tbody tr:nth-child(2).grain .click-to-go")
+                browser = browser
+                  .url(browser.launch_url + "/grain/" + grainIdA)
+                  .grainFrame()
+                  .waitForElementVisible("table.grain-list-table>tbody>tr.add-grain>td>button", medium_wait)
+                  .click("table.grain-list-table>tbody>tr.add-grain>td>button")
+                  .frame(null)
+                  .waitForElementVisible(powerboxCardSelector(grainIdB), short_wait)
+                  .click(powerboxCardSelector(grainIdB))
+                  // Add with 'editor' permissions.
+                  .waitForElementVisible(".popup.request .selected-card>form input[value='0']", short_wait)
+                  .click(".popup.request .selected-card>form input[value='0']")
+                  .click(".popup.request .selected-card>form button.connect-button")
 
-              .grainFrame(grainIdA)
+                  .grainFrame()
+                  .waitForElementVisible("table.grain-list-table>tbody>tr.add-grain>td>button", short_wait)
+                  .click("table.grain-list-table>tbody>tr.add-grain>td>button")
+                  .frame(null)
+                  .waitForElementVisible(powerboxCardSelector(grainIdC), short_wait)
+                  .click(powerboxCardSelector(grainIdC))
+                  // Add with 'viewer' permissions.
+                  .waitForElementVisible(".popup.request .selected-card>form input[value='1']", short_wait)
+                  .click(".popup.request .selected-card>form input[value='1']")
+                  .click(".popup.request .selected-card>form button.connect-button")
 
-              .waitForElementVisible(".description-row p", short_wait)
-              .assert.containsText(".description-row p", "This is Collection A")
+                  .grainFrame()
+                  .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(3).grain", short_wait)
+                  .click("table.grain-list-table>tbody tr:nth-child(3).grain .click-to-go")
+                  .frame(null)
 
-              // Carol does not have edit permissions.
-              .assert.elementNotPresent(".description-row button.description-button")
-              .frame(null)
+                  .grainFrame(grainIdC)
+                  .waitForElementVisible(".description-row p", short_wait)
+                  .assert.containsText(".description-row p", "This is Collection C")
+                  .waitForElementVisible(".description-row button.description-button", short_wait)
+                  .frame(null)
 
-              .execute("window.Meteor.logout()")
+                  .execute("window.Meteor.logout()")
 
-              // Log back in as Alice
-              .loginDevAccount(devNameAlice)
-              .url(browser.launch_url + "/grain/" + grainIdA)
-              .disableGuidedTour()
-              .grainFrame()
+                  // Log in as Bob
+                  .loginDevAccount(devNameBob)
+                  .url(browser.launch_url + "/grain/" + grainIdA)
+                  .grainFrame()
+                  .waitForElementVisible(".description-row p", short_wait)
+                  .assert.containsText(".description-row p", "This is Collection A")
+                  .waitForElementVisible(".description-row button.description-button", short_wait)
 
-              // Unlink collection B from collection A.
-              .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(3).grain",
-                                     short_wait)
-              .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(2).grain",
-                                     short_wait)
-              .assert.containsText("table.grain-list-table>tbody tr:nth-child(2).grain td>button",
-                                   "Collection B")
-              .click("table.grain-list-table>tbody tr:nth-child(2).grain td>input[type=checkbox]")
-              .waitForElementVisible(".bulk-action-buttons>button[title='unlink selected grains']",
-                                     short_wait)
-              .click(".bulk-action-buttons>button[title='unlink selected grains']")
+                  .waitForElementVisible("table.grain-list-table>tbody>tr.add-grain>td>button", short_wait)
+                  .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(2).grain", short_wait)
+                  .assert.containsText("table.grain-list-table>tbody tr:nth-child(2).grain td>button",
+                                       "Collection B")
+                  .click("table.grain-list-table>tbody tr:nth-child(2).grain .click-to-go")
+                  .frame(null)
 
-              .frame(null)
-              .execute("window.Meteor.logout()")
+                  .grainFrame(grainIdB)
+                  .waitForElementVisible(".description-row p", short_wait)
+                  .assert.containsText(".description-row p", "This is Collection B")
+                  .waitForElementVisible(".description-row button.description-button", short_wait)
 
-              // Log back in as Carol. Check that she can no longer access collection A.
-              .loginDevAccount(devNameCarol)
+                  // As Bob, add collection A to collection B, creating a cycle of references.
+                  .waitForElementVisible("table.grain-list-table>tbody>tr.add-grain>td>button", short_wait)
+                  .click("table.grain-list-table>tbody>tr.add-grain>td>button")
+                  .frame(null)
+                  .waitForElementVisible(powerboxCardSelector(grainIdA), short_wait)
+                  .click(powerboxCardSelector(grainIdA))
+                  // Add with 'viewer' permissions.
+                  .waitForElementVisible(".popup.request .selected-card>form input[value='1']", short_wait)
+                  .click(".popup.request .selected-card>form input[value='1']")
+                  .click(".popup.request .selected-card>form button.connect-button")
 
-              // Add some characters onto the end of the URL because otherwise we trigger
-              // the grain-tab restore logic and tabs open for both Collection A and Collection B.
-              .url(browser.launch_url + "/grain/" + grainIdA + "/#")
+                  // Navigate back to collection A by clicking on it in collection B.
+                  .grainFrame()
+                  .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(2).grain", short_wait)
+                  .click("table.grain-list-table>tbody tr:nth-child(2).grain .click-to-go")
+                  .frame(null)
 
-              .waitForElementVisible(".grain-interstitial.request-access", medium_wait)
-              .end();
+                  .grainFrame(grainIdA)
+                  .waitForElementVisible("table.grain-list-table>tbody>tr.add-grain>td>button", short_wait)
+                  .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(3).grain", short_wait)
+                  .assert.containsText("table.grain-list-table>tbody tr:nth-child(3).grain td>button",
+                                       "Collection C")
+                  .click("table.grain-list-table>tbody tr:nth-child(3).grain .click-to-go")
+                  .frame(null)
+
+                  .grainFrame(grainIdC)
+                  .waitForElementVisible(".description-row p", short_wait)
+                  .assert.containsText(".description-row p", "This is Collection C")
+                  .assert.elementNotPresent(".description-row button.description-button")
+
+                  .frame(null)
+                  .executeAsync(function (carolAccountId, grainIdB, done) {
+                    // As Bob, share Collection B to Carol.
+                    Meteor.call("newApiToken", { accountId: Meteor.userId() },
+                        grainIdB, "petname", { allAccess: null },
+                        { user: { accountId: carolAccountId, title: "Collection B", } },
+                        function(error, result) {
+                          done({ error: error });
+                        });
+                  }, [carolAccountId, grainIdB], function (result) {
+                    browser.assert.equal(!result.value.error, true);
+                    browser
+                      .execute("window.Meteor.logout()")
+
+                      // Log in as Carol
+                      .loginDevAccount(devNameCarol)
+                      .url(browser.launch_url + "/grain/" + grainIdB)
+                      .grainFrame()
+                      .waitForElementVisible(".description-row p", short_wait)
+                      .assert.containsText(".description-row p", "This is Collection B")
+                      .waitForElementVisible(".description-row button.description-button", short_wait)
+
+                      .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(2).grain",
+                                             short_wait)
+                      .assert.containsText("table.grain-list-table>tbody tr:nth-child(2).grain td>button",
+                                           "Collection A")
+                      .click("table.grain-list-table>tbody tr:nth-child(2).grain .click-to-go")
+
+                      .grainFrame(grainIdA)
+
+                      .waitForElementVisible(".description-row p", short_wait)
+                      .assert.containsText(".description-row p", "This is Collection A")
+
+                      // Carol does not have edit permissions.
+                      .assert.elementNotPresent(".description-row button.description-button")
+                      .frame(null)
+
+                      .execute("window.Meteor.logout()")
+
+                      // Log back in as Alice
+                      .loginDevAccount(devNameAlice)
+                      .url(browser.launch_url + "/grain/" + grainIdA)
+                      .disableGuidedTour()
+                      .grainFrame()
+
+                      // Unlink collection B from collection A.
+                      .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(3).grain",
+                                             short_wait)
+                      .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(2).grain",
+                                             short_wait)
+                      .assert.containsText("table.grain-list-table>tbody tr:nth-child(2).grain td>button",
+                                           "Collection B")
+                      .click("table.grain-list-table>tbody tr:nth-child(2).grain td>input[type=checkbox]")
+                      .waitForElementVisible(".bulk-action-buttons>button[title='unlink selected grains']",
+                                             short_wait)
+                      .click(".bulk-action-buttons>button[title='unlink selected grains']")
+
+                      .frame(null)
+                      .execute("window.Meteor.logout()")
+
+                      // Log back in as Carol. Check that she can no longer access collection A.
+                      .loginDevAccount(devNameCarol)
+
+                      // Add some characters onto the end of the URL because otherwise we trigger
+                      // the grain-tab restore logic and tabs open for both Collection A and Collection B.
+                      .url(browser.launch_url + "/grain/" + grainIdA + "/#")
+
+                      .waitForElementVisible(".grain-interstitial.request-access", medium_wait)
+                      .end();
+                  });
+              });
+            });
           });
-      });
+        });
     });
-  });
 };
 
 module.exports["Test collections anonymous user"] = function (browser) {
@@ -250,7 +261,7 @@ module.exports["Test collections anonymous user"] = function (browser) {
   browser = setGrainTitle(browser, "Collection A");
   browser.executeAsync(function (done) {
     var grainId = Grains.findOne()._id;
-    Meteor.call("newApiToken", { identityId: Meteor.user().loginIdentities[0].id },
+    Meteor.call("newApiToken", { accountId: Meteor.userId() },
                 grainId, "petname", { allAccess: null },
                 { webkey: { forSharing: true }, },
                 function(error, result) {
@@ -303,8 +314,8 @@ module.exports["Test collections anonymous user"] = function (browser) {
         .url(function (sharedUrlGrainB) {
           browser.loginDevAccount()
             .url(sharedUrlGrainB.value)
-            .waitForElementVisible(".grain-interstitial button.pick-identity", short_wait)
-            .click(".grain-interstitial button.pick-identity")
+            .waitForElementVisible(".grain-interstitial button.reveal-identity-button", short_wait)
+            .click(".grain-interstitial button.reveal-identity-button")
             .grainFrame(grainIdB)
             .end();
         });

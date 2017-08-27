@@ -19,29 +19,28 @@ Meteor.publish("contactProfiles", function (showAll) {
   const _this = this;
   const userId = this.userId;
 
-  // We maintain a map from identity IDs to live query handles that track profile changes.
-  const contactIdentities = {};
+  // We maintain a map from account IDs to live query handles that track profile changes.
+  const contactAccounts = {};
   const disallowGuests = db.getOrganizationDisallowGuests();
 
-  function addIdentityOfContact(identityId) {
-    if (!(identityId in contactIdentities)) {
-      const user = Meteor.users.findOne({ _id: identityId });
+  function addAccountOfContact(accountId) {
+    if (!(accountId in contactAccounts)) {
+      const user = Meteor.users.findOne({ _id: accountId });
 
       if (disallowGuests && !showAll) {
-        if (!db.isIdentityInOrganization(user)) {
+        if (!db.isUserInOrganization(user)) {
           return;
         }
       }
 
       if (user) {
-        SandstormDb.fillInProfileDefaults(user);
-        SandstormDb.fillInIntrinsicName(user);
         const filteredUser = _.pick(user, "_id", "profile");
+        filteredUser.intrinsicNames = db.getAccountIntrinsicNames(user, false);
         _this.added("contactProfiles", user._id, filteredUser);
       }
 
-      contactIdentities[identityId] =
-        Meteor.users.find({ _id: identityId }, { fields: { profile: 1 } }).observeChanges({
+      contactAccounts[accountId] =
+        Meteor.users.find({ _id: accountId }, { fields: { profile: 1 } }).observeChanges({
           changed: function (id, fields) {
             _this.changed("contactProfiles", id, fields);
           },
@@ -53,18 +52,18 @@ Meteor.publish("contactProfiles", function (showAll) {
 
   const handle = cursor.observe({
     added: function (contact) {
-      addIdentityOfContact(contact.identityId);
+      addAccountOfContact(contact.accountId);
     },
 
     changed: function (contact) {
-      addIdentityOfContact(contact.identityId);
+      addAccountOfContact(contact.accountId);
     },
 
     removed: function (contact) {
-      _this.removed("contactProfiles", contact.identityId);
-      const contactIdentity = contactIdentities[contact.identityId];
-      if (contactIdentity) contactIdentities[contact.identityId].stop();
-      delete contactIdentities[contact.identityId];
+      _this.removed("contactProfiles", contact.accountId);
+      const contactAccount = contactAccounts[contact.accountId];
+      if (contactAccount) contactAccounts[contact.accountId].stop();
+      delete contactAccounts[contact.accountId];
     },
   });
 
@@ -72,30 +71,30 @@ Meteor.publish("contactProfiles", function (showAll) {
 
   if (db.getOrganizationShareContacts() &&
       db.isUserInOrganization(db.collections.users.findOne({ _id: userId }))) {
-    const orgCursor = db.collections.users.find({ profile: { $exists: 1 } });
-    // TODO(perf): make a mongo query that can find all identities in an organization and add
+    const orgCursor = db.collections.users.find({ type: "account" });
+    // TODO(perf): make a mongo query that can find all accounts in an organization and add
     // indices for it. Currently, we do some case insensitive matching which mongo can't
     // handle well.
 
     orgHandle = orgCursor.observe({
       added: function (user) {
-        if (db.isIdentityInOrganization(user) && !db.userHasIdentity(userId, user._id)) {
-          addIdentityOfContact(user._id);
+        if (db.isUserInOrganization(user) && user._id !== userId) {
+          addAccountOfContact(user._id);
         }
       },
 
       changed: function (user) {
-        if (db.isIdentityInOrganization(user) && !db.userHasIdentity(userId, user._id)) {
-          addIdentityOfContact(user._id);
+        if (db.isUserInOrganization(user) && user._id !== userId) {
+          addAccountOfContact(user._id);
         }
       },
 
       removed: function (user) {
-        if (db.isIdentityInOrganization(user) && !db.userHasIdentity(userId, user._id)) {
+        if (db.isUserInOrganization(user) && user._id !== userId) {
           _this.removed("contactProfiles", user._id);
-          const contactIdentity = contactIdentities[contact.identityId];
-          if (contactIdentity) contactIdentities[contact.identityId].stop();
-          delete contactIdentities[user._id];
+          const contactAccount = contactAccounts[contact.accountId];
+          if (contactAccount) contactAccounts[contact.accountId].stop();
+          delete contactAccounts[user._id];
         }
       },
     });
@@ -109,9 +108,9 @@ Meteor.publish("contactProfiles", function (showAll) {
       orgHandle.stop();
     }
 
-    Object.keys(contactIdentities).forEach(function (identityId) {
-      contactIdentities[identityId].stop();
-      delete contactIdentities[identityId];
+    Object.keys(contactAccounts).forEach(function (accountId) {
+      contactAccounts[accountId].stop();
+      delete contactAccounts[accountId];
     });
   });
 });

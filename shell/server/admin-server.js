@@ -56,14 +56,6 @@ Meteor.methods({
     check(serviceName, String);
     check(value, Boolean);
 
-    // TODO(someday): currently this relies on the fact that an account is tied to a single
-    // identity, and thus has only that entry in "services". This will need to be looked at when
-    // multiple login methods/identities are allowed for a single account.
-    if (!value && !tokenIsValid(token) && !tokenIsSetupSession(token) && (serviceName in Meteor.user().services)) {
-      throw new Meteor.Error(403,
-        "You can not disable the login service that your account uses.");
-    }
-
     // Only check configurations for OAuth services.
     const oauthServices = ["google", "github"];
     if (value && (oauthServices.indexOf(serviceName) != -1)) {
@@ -149,13 +141,13 @@ Meteor.methods({
 
     const query = {};
     query["services." + serviceName] = { $exists: true };
-    Meteor.users.find(query).forEach(function (identity) {
-      if (identity.services.resume && identity.services.resume.loginTokens &&
-          identity.services.resume.loginTokens.length > 0) {
-        Meteor.users.update({ _id: identity._id }, { $set: { "services.resume.loginTokens": [] } });
+    Meteor.users.find(query).forEach(function (credential) {
+      if (credential.services.resume && credential.services.resume.loginTokens &&
+          credential.services.resume.loginTokens.length > 0) {
+        Meteor.users.update({ _id: credential._id }, { $set: { "services.resume.loginTokens": [] } });
       }
 
-      Meteor.users.update({ "loginIdentities.id": identity._id },
+      Meteor.users.update({ "loginCredentials.id": credential._id },
                           { $set: { "services.resume.loginTokens": [] } });
     });
   },
@@ -318,7 +310,7 @@ Meteor.methods({
       throw new Meteor.Error(403, "Must be logged in to sign up as admin.");
     }
 
-    if (!Meteor.user().loginIdentities) {
+    if (!Meteor.user().loginCredentials) {
       throw new Meteor.Error(403, "Must be logged into an account to sign up as admin.");
     }
 
@@ -404,34 +396,34 @@ Meteor.publish("allUsers", function (token) {
 Meteor.publish("adminUserDetails", function (userId) {
   if (!authorizedAsAdmin(undefined, this.userId)) return [];
 
-  // Reactive publish of any identities owned by the account with id userId,
+  // Reactive publish of any credentials owned by the account with id userId,
   // as well as that user object itself.
-  const identitySubs = {};
+  const credentialSubs = {};
   const accountId = userId;
 
-  const unrefIdentity = (identityId) => {
-    if (!identitySubs[identityId]) {
-      // should never happen, but if somehow you attempt to unref an identity that we don't have a
+  const unrefCredential = (credentialId) => {
+    if (!credentialSubs[credentialId]) {
+      // should never happen, but if somehow you attempt to unref an credential that we don't have a
       // subscription to, then don't crash
-      console.error("attempted to unref untracked identity id:", identityId);
+      console.error("attempted to unref untracked credential id:", credentialId);
       return;
     }
 
-    const observeHandle = identitySubs[identityId];
-    delete identitySubs[identityId];
+    const observeHandle = credentialSubs[credentialId];
+    delete credentialSubs[credentialId];
     observeHandle.stop();
-    this.removed("users", identityId);
+    this.removed("users", credentialId);
   };
 
-  const refIdentity = (identityId) => {
-    if (identitySubs[identityId]) {
-      // should never happen, but if somehow an account wound up with a duplicate identity ID,
+  const refCredential = (credentialId) => {
+    if (credentialSubs[credentialId]) {
+      // should never happen, but if somehow an account wound up with a duplicate credential ID,
       // avoid leaking a subscription
-      console.error("duplicate identity id:", identityId);
+      console.error("duplicate credential id:", credentialId);
       return;
     }
 
-    const cursor = Meteor.users.find({ _id: identityId });
+    const cursor = Meteor.users.find({ _id: credentialId });
     const observeHandle = cursor.observe({
       added: (doc) => {
         this.added("users", doc._id, doc);
@@ -447,34 +439,34 @@ Meteor.publish("adminUserDetails", function (userId) {
       },
     });
 
-    identitySubs[identityId] = observeHandle;
+    credentialSubs[credentialId] = observeHandle;
   };
 
   const accountCursor = Meteor.users.find({ _id: accountId });
   const accountSubHandle = accountCursor.observe({
     added: (newDoc) => {
-      const newIdentities = SandstormDb.getUserIdentityIds(newDoc);
-      newIdentities.forEach((identityId) => {
-        refIdentity(identityId);
+      const newCredentials = SandstormDb.getUserCredentialIds(newDoc);
+      newCredentials.forEach((credentialId) => {
+        refCredential(credentialId);
       });
 
       this.added("users", newDoc._id, newDoc);
     },
 
     changed: (newDoc, oldDoc) => {
-      const newIdentities = SandstormDb.getUserIdentityIds(newDoc);
-      const oldIdentities = SandstormDb.getUserIdentityIds(oldDoc);
+      const newCredentials = SandstormDb.getUserCredentialIds(newDoc);
+      const oldCredentials = SandstormDb.getUserCredentialIds(oldDoc);
 
       // Those in newDoc - oldDoc, ref.
-      const identitiesAdded = _.difference(newIdentities, oldIdentities);
-      identitiesAdded.forEach((identityId) => {
-        refIdentity(identityId);
+      const credentialsAdded = _.difference(newCredentials, oldCredentials);
+      credentialsAdded.forEach((credentialId) => {
+        refCredential(credentialId);
       });
 
       // Those in oldDoc - newDoc, unref.
-      const identitiesRemoved = _.difference(oldIdentities, newIdentities);
-      identitiesRemoved.forEach((identityId) => {
-        unrefIdentity(identityId);
+      const credentialsRemoved = _.difference(oldCredentials, newCredentials);
+      credentialsRemoved.forEach((credentialId) => {
+        unrefCredential(credentialId);
       });
 
       fillUndefinedForChangedDoc(newDoc, oldDoc);
@@ -484,17 +476,17 @@ Meteor.publish("adminUserDetails", function (userId) {
 
     removed: (oldDoc) => {
       this.removed("users", oldDoc._id);
-      const oldIdentities = SandstormDb.getUserIdentityIds(oldDoc);
-      oldIdentities.forEach((identityId) => {
-        unrefIdentity(identityId);
+      const oldCredentials = SandstormDb.getUserCredentialIds(oldDoc);
+      oldCredentials.forEach((credentialId) => {
+        unrefCredential(credentialId);
       });
     },
   });
 
   this.onStop(() => {
     accountSubHandle.stop();
-    // Also stop all the identity subscriptions.
-    const subs = _.values(identitySubs);
+    // Also stop all the credential subscriptions.
+    const subs = _.values(credentialSubs);
     subs.forEach((sub) => {
       sub.stop();
     });

@@ -131,7 +131,7 @@ A policy specifies negative permissions: permissions bits which are not allowed 
 The "target" of a policy is the user or users who are being prevented from gaining access.
 
 Possible targets include:
-- A particular user, specified by an identity and applying to any account tied to that identity.
+- A particular user account.
 - All users who do not have rights to create grains on the Sandstorm server.
 - All users who are not members of a particular Blackrock organization.
 - Apps (that is, the policy prevents the user from connecting a grain to other grains using powerbox).

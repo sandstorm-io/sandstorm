@@ -169,11 +169,11 @@ Meteor.publish("adminDemoUsers", function () {
     expires: {
       $gt: new Date(),
     },
-    loginIdentities: {
+    loginCredentials: {
       $exists: true,
     },
   }, {
     expires: 1,
-    loginIdentities: 1,
+    loginCredentials: 1,
   });
 });

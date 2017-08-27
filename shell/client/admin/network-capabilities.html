@@ -1,10 +1,10 @@
 <template name="newAdminNetworkCapabilitiesTableCapabilityRow">
 {{!-- expects argument:
   capInfo: Object containing:
-                 introducer: Identity object
+                 introducer: Account object
                  grainTitle: String
                     appIcon: String
-         grainOwnerIdentity: Identity object
+          grainOwnerAccount: Account object
                     created: Date
                     revoked: Boolean
   callbacks: Object containing:
@@ -12,18 +12,14 @@
 --}}
 <div class="capability-row" role="row">
   <div class="grant-by" role="gridcell">
-    {{#if capInfo.introducer.identity}}
-      {{> identityCard capInfo.introducer.identity }}
+    {{#if capInfo.introducer.account}}
+      {{!-- TODO(someday): Link to user account page? E.g.:
+        {{#linkTo route="newAdminUserDetails" data={userId} }}
+      --}}
+
+      {{> accountCard capInfo.introducer.account }}
     {{else}}
-      {{#if capInfo.introducer.account}}
-        {{#linkTo route="newAdminUserDetails" data=capInfo.introducer.account}}
-          {{!-- to access things in previous context from within linkTo, we must reach up two data
-                contexts --}}
-          Admin account {{ ../../capInfo.introducer.account.userId }}
-        {{/linkTo}}
-      {{else}}
-        Unknown granter
-      {{/if}}
+      Unknown granter
     {{/if}}
   </div>
   <div class="grant-to" role="gridcell">
@@ -33,8 +29,8 @@
           <div class="app-icon" style="background-image: url('{{capInfo.ownerInfo.grain.appIcon}}')"></div>
           {{capInfo.ownerInfo.grain.title}}
         </div>
-        {{#if capInfo.ownerInfo.grain.grainOwnerIdentity}}
-          {{> identityCard capInfo.ownerInfo.grain.grainOwnerIdentity }}
+        {{#if capInfo.ownerInfo.grain.grainOwnerAccount}}
+          {{> accountCard capInfo.ownerInfo.grain.grainOwnerAccount }}
         {{/if}}
       </div>
     {{else}}

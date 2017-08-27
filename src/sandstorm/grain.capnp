@@ -612,9 +612,16 @@ interface ViewSharingLink extends(SharingLink) {
 # Backup and Restore
 
 struct GrainInfo {
+  # Format of metadata file stored in grain backups.
+
   appId @0 :Text;
   appVersion @1 :UInt32;
   title @2 :Text;
+
+  ownerIdentityId @3 :Text;
+
+  # TODO(someday): Record the whole sharing / capability graph including all users' identity IDs
+  #   so that they can be restored.
 }
 
 # ========================================================================================

@@ -356,9 +356,11 @@ function getVerifiedEmails(db, userId, verifierId) {
 
   const user = Meteor.users.findOne(userId);
   const emails = {};  // map address -> true, for uniquification
-  Meteor.users.find({ _id: { $in: SandstormDb.getUserIdentityIds(user) } }).forEach(identity => {
-    if (!services || services[identity.profile.service]) {
-      SandstormDb.getVerifiedEmails(identity).forEach(email => { emails[email.email] = true; });
+
+  Meteor.users.find({ _id: { $in: SandstormDb.getUserCredentialIds(user) } }).forEach(credential => {
+    if (!services || services[SandstormDb.getServiceName(credential)]) {
+      SandstormDb.getVerifiedEmailsForCredential(credential)
+          .forEach(email => { emails[email.email] = true; });
     }
   });
 
@@ -383,8 +385,8 @@ Meteor.startup(() => {
       const services = value.services;
       if (services) {
         services.forEach(service => {
-          if (!Accounts.identityServices[service]) {
-            throw new Error("No such identity service: " + service);
+          if (!Accounts.loginServices[service]) {
+            throw new Error("No such login service: " + service);
           }
         });
       }
@@ -407,8 +409,8 @@ Meteor.startup(() => {
         cardTemplate: "emailVerifierPowerboxCard",
       });
 
-      for (const name in Accounts.identityServices) {
-        if (Accounts.identityServices[name].isEnabled()) {
+      for (const name in Accounts.loginServices) {
+        if (Accounts.loginServices[name].isEnabled()) {
           results.push({
             _id: "emailverifier-" + name,
             frontendRef: { emailVerifier: { services: [name] } },

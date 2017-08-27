@@ -50,10 +50,9 @@ const viewInfoPattern = {
 };
 
 class Grain {
-  constructor(db, account, identity, viewInfo, isPublic) {
+  constructor(db, account, viewInfo, isPublic) {
     check(db, SandstormDb);
     check(account, Account);
-    check(identity, Identity);
     check(viewInfo, viewInfoPattern);
     this.viewInfo = viewInfo;
     this.id = Crypto.randomBytes(10).toString("hex");
@@ -63,7 +62,7 @@ class Grain {
       appId: "mock-app-id",
       appVersion: 0,
       userId: account.id,
-      identityId: identity.id,
+      identityId: Crypto.randomBytes(10).toString("hex"),
       title: "mock-grain-title",
       cachedViewInfo: this.viewInfo,
       private: !isPublic,
@@ -73,19 +72,49 @@ class Grain {
 }
 
 class Account {
-  constructor(db, identities, isAdmin) {
+  constructor(db, isAdmin) {
     check(db, SandstormDb);
-    check(identities, [Identity]);
     check(isAdmin, Boolean);
 
-    const identityIds = identities.map((identity) => { return { id: identity.id }; });
-    this.id = Accounts.insertUserDoc(
-      {},
-      { loginIdentities: identityIds, nonloginIdentities: [], isAdmin: isAdmin, });
+    const name = Crypto.randomBytes(10).toString("hex");
+    this.db = db;
 
-    identities.forEach((identity) => {
-      identity.accountId = this.id;
-    });
+    this.id = Accounts.insertUserDoc(
+      { profile: { name: name }, },
+      { type: "account", loginCredentials: [], nonloginCredentials: [], isAdmin: isAdmin, });
+  }
+
+  mayOpenGrain(grain) {
+    check(grain, Grain);
+    return SandstormPermissions.mayOpenGrain(globalDb, { grain: { _id: grain.id,
+                                                                  accountId: this.id, }, });
+  }
+
+  grainPermissions(grain) {
+    check(grain, Grain);
+    return SandstormPermissions.grainPermissions(globalDb,
+                                                 { grain: { _id: grain.id,
+                                                            accountId: this.id, }, },
+                                                 grain.viewInfo).permissions;
+  }
+
+  _shareTo(grainId, owner, roleAssignment, membraneRequirements) {
+    return createNewTokenHelper(this.db, grainId, { accountId: this.id },
+                                owner, roleAssignment, membraneRequirements);
+  }
+
+  shareToAccount(grain, recipient, roleAssignment, membraneRequirements) {
+    check(grain, Grain);
+    check(recipient, Account);
+    return this._shareTo(grain.id, { user: { accountId: recipient.id, title: "share" } },
+                         roleAssignment, membraneRequirements);
+  }
+
+  shareToWebkey(grain, roleAssignment, membraneRequirements) {
+    check(grain, Grain);
+    const result = this._shareTo(grain.id, { webkey: { forSharing: true } },
+                                 roleAssignment, membraneRequirements);
+    return new Webkey(this.db, result.token, result.id, grain);
   }
 }
 
@@ -104,57 +133,6 @@ function createNewTokenHelper(db, grainId, provider, owner, roleAssignment, memb
   }
 
   return result;
-}
-
-class Identity {
-  constructor(db) {
-    const name = Crypto.randomBytes(10).toString("hex");
-    this.db = db;
-    this.id = Accounts.insertUserDoc(
-      { profile: { name: name }, },
-      {
-        services: {
-          dev: {
-            name: name,
-            isAdmin: false,
-            hasCompletedSignup: true,
-          },
-        },
-      });
-  }
-
-  mayOpenGrain(grain) {
-    check(grain, Grain);
-    return SandstormPermissions.mayOpenGrain(globalDb, { grain: { _id: grain.id,
-                                                                  identityId: this.id, }, });
-  }
-
-  grainPermissions(grain) {
-    check(grain, Grain);
-    return SandstormPermissions.grainPermissions(globalDb,
-                                                 { grain: { _id: grain.id,
-                                                            identityId: this.id, }, },
-                                                 grain.viewInfo).permissions;
-  }
-
-  _shareTo(grainId, owner, roleAssignment, membraneRequirements) {
-    return createNewTokenHelper(this.db, grainId, { identityId: this.id, accountId: this.accountId },
-                                owner, roleAssignment, membraneRequirements);
-  }
-
-  shareToIdentity(grain, recipient, roleAssignment, membraneRequirements) {
-    check(grain, Grain);
-    check(recipient, Identity);
-    return this._shareTo(grain.id, { user: { identityId: recipient.id, title: "share" } },
-                         roleAssignment, membraneRequirements);
-  }
-
-  shareToWebkey(grain, roleAssignment, membraneRequirements) {
-    check(grain, Grain);
-    const result = this._shareTo(grain.id, { webkey: { forSharing: true } },
-                                 roleAssignment, membraneRequirements);
-    return new Webkey(this.db, result.token, result.id, grain);
-  }
 }
 
 class Webkey {
@@ -186,9 +164,9 @@ class Webkey {
                                 roleAssignment, membraneRequirements);
   }
 
-  shareToIdentity(recipient, roleAssignment, membraneRequirements) {
-    check(recipient, Identity);
-    return this._shareTo({ user: { identityId: recipient.id, title: "share" } },
+  shareToAccount(recipient, roleAssignment, membraneRequirements) {
+    check(recipient, Account);
+    return this._shareTo({ user: { accountId: recipient.id, title: "share" } },
                          roleAssignment, membraneRequirements);
   }
 
@@ -213,10 +191,9 @@ const commonViewInfo = {
 };
 
 Tinytest.add("permissions: legacy public grain", function (test) {
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const bob = new Identity(globalDb);
-  const grain = new Grain(globalDb, aliceAccount, alice, commonViewInfo, true);
+  const alice = new Account(globalDb, false);
+  const bob = new Account(globalDb, false);
+  const grain = new Grain(globalDb, alice, commonViewInfo, true);
 
   test.isTrue(alice.mayOpenGrain(grain));
   test.isTrue(bob.mayOpenGrain(grain));
@@ -226,7 +203,7 @@ Tinytest.add("permissions: legacy public grain", function (test) {
     SandstormPermissions.mayOpenGrain(globalDb, {
       grain: {
         _id: grain.id,
-        identityId: null,
+        accountId: null,
       },
     })
   );
@@ -237,17 +214,16 @@ Tinytest.add("permissions: legacy public grain", function (test) {
   // anonymous
   test.equal(SandstormPermissions.grainPermissions(globalDb,
                                                    { grain: { _id: grain.id,
-                                                              identityId: null, }, },
+                                                              accountId: null, }, },
                                                    commonViewInfo).permissions,
              [true, false, false]);
 });
 
 Tinytest.add("permissions: only owner may open private non-shared grain", function (test) {
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const bob = new Identity(globalDb);
-  const carol = new Identity(globalDb);
-  const grain = new Grain(globalDb, aliceAccount, alice, {});
+  const alice = new Account(globalDb, false);
+  const bob = new Account(globalDb, false);
+  const carol = new Account(globalDb, false);
+  const grain = new Grain(globalDb, alice, {});
 
   test.isTrue(alice.mayOpenGrain(grain));
   test.isFalse(bob.mayOpenGrain(grain));
@@ -255,17 +231,15 @@ Tinytest.add("permissions: only owner may open private non-shared grain", functi
 });
 
 Tinytest.add("permissions: owner gets all permissions", function (test) {
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const grain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+  const alice = new Account(globalDb, false);
+  const grain = new Grain(globalDb, alice, commonViewInfo);
 
   test.equal(alice.grainPermissions(grain), [true, true, true]);
 });
 
 Tinytest.add("permissions: default role", function (test) {
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const grain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+  const alice = new Account(globalDb, false);
+  const grain = new Grain(globalDb, alice, commonViewInfo);
 
   const webkey = alice.shareToWebkey(grain, { none: null }, []);
 
@@ -274,9 +248,8 @@ Tinytest.add("permissions: default role", function (test) {
 });
 
 Tinytest.add("permissions: parentToken", function (test) {
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const grain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+  const alice = new Account(globalDb, false);
+  const grain = new Grain(globalDb, alice, commonViewInfo);
 
   const parent = alice.shareToWebkey(grain, { allAccess: null });
 
@@ -295,33 +268,30 @@ Tinytest.add("permissions: parentToken", function (test) {
 });
 
 Tinytest.add("permissions: merge user permissions", function (test) {
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const bob = new Identity(globalDb);
-  const grain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+  const alice = new Account(globalDb, false);
+  const bob = new Account(globalDb, false);
+  const grain = new Grain(globalDb, alice, commonViewInfo);
 
   const parent1 = alice.shareToWebkey(grain, { allAccess: null });
-  parent1.shareToIdentity(bob, { roleId: 1 });
+  parent1.shareToAccount(bob, { roleId: 1 });
   const parent2 = alice.shareToWebkey(grain, { allAccess: null });
-  parent2.shareToIdentity(bob, { roleId: 2 });
+  parent2.shareToAccount(bob, { roleId: 2 });
 
   test.isTrue(bob.mayOpenGrain(grain));
   test.equal(bob.grainPermissions(grain), [true, false, true]);
 });
 
 Tinytest.add("permissions: membrane requirements", function (test) {
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const bob = new Identity(globalDb);
-  const bobAccount = new Account(globalDb, [bob], false);
-  const carol = new Identity(globalDb);
-  const aliceGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
-  const bobGrain = new Grain(globalDb, bobAccount, bob, commonViewInfo);
+  const alice = new Account(globalDb, false);
+  const bob = new Account(globalDb, false);
+  const carol = new Account(globalDb, false);
+  const aliceGrain = new Grain(globalDb, alice, commonViewInfo);
+  const bobGrain = new Grain(globalDb, bob, commonViewInfo);
 
   const requirement = {
     permissionsHeld: {
       grainId: bobGrain.id,
-      identityId: carol.id,
+      accountId: carol.id,
       permissions: [true, false, false],
     },
   };
@@ -330,7 +300,7 @@ Tinytest.add("permissions: membrane requirements", function (test) {
 
   test.isFalse(webkey.mayOpenGrain());
 
-  const result = bob.shareToIdentity(bobGrain, carol, { roleId: 1 });
+  const result = bob.shareToAccount(bobGrain, carol, { roleId: 1 });
 
   test.isTrue(carol.mayOpenGrain(bobGrain));
   test.isTrue(webkey.mayOpenGrain());
@@ -342,32 +312,30 @@ Tinytest.add("permissions: membrane requirements", function (test) {
   const requirement1 = {
     permissionsHeld: {
       grainId: bobGrain.id,
-      identityId: alice.id,
+      accountId: alice.id,
       permissions: [true, false, false],
     },
   };
 
-  bob.shareToIdentity(bobGrain, carol, { roleId: 1 }, [requirement1]);
+  bob.shareToAccount(bobGrain, carol, { roleId: 1 }, [requirement1]);
 
   test.isFalse(webkey.mayOpenGrain());
-  bob.shareToIdentity(bobGrain, alice, { roleId: 1 });
+  bob.shareToAccount(bobGrain, alice, { roleId: 1 });
 
   test.isTrue(webkey.mayOpenGrain());
 });
 
 Tinytest.add("permissions: membrane requirements sequence", function (test) {
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const bob = new Identity(globalDb);
-  const bobAccount = new Account(globalDb, [bob], false);
-  const carol = new Identity(globalDb);
-  const aliceGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
-  const bobGrain = new Grain(globalDb, bobAccount, bob, commonViewInfo);
+  const alice = new Account(globalDb, false);
+  const bob = new Account(globalDb, false);
+  const carol = new Account(globalDb, false);
+  const aliceGrain = new Grain(globalDb, alice, commonViewInfo);
+  const bobGrain = new Grain(globalDb, bob, commonViewInfo);
 
   const parentRequirement = {
     permissionsHeld: {
         grainId: bobGrain.id,
-        identityId: carol.id,
+        accountId: carol.id,
         permissions: [true, false, false],
       },
   };
@@ -377,7 +345,7 @@ Tinytest.add("permissions: membrane requirements sequence", function (test) {
   const childRequirement = {
     permissionsHeld: {
         grainId: bobGrain.id,
-        identityId: carol.id,
+        accountId: carol.id,
         permissions: [true, false, true],
       },
   };
@@ -386,11 +354,11 @@ Tinytest.add("permissions: membrane requirements sequence", function (test) {
 
   test.isFalse(child.mayOpenGrain());
 
-  bob.shareToIdentity(bobGrain, carol, { roleId: 1 });
+  bob.shareToAccount(bobGrain, carol, { roleId: 1 });
 
   test.isFalse(child.mayOpenGrain());
 
-  bob.shareToIdentity(bobGrain, carol, { roleId: 2 });
+  bob.shareToAccount(bobGrain, carol, { roleId: 2 });
 
   test.isTrue(child.mayOpenGrain());
 });
@@ -399,32 +367,30 @@ Tinytest.add("permissions: membrane requirements loop", function (test) {
   // Create two tokens with membrane requirements that depend on each other.
   // A naive permissions computation could get into a loop here.
 
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const bob = new Identity(globalDb);
-  const bobAccount = new Account(globalDb, [bob], false);
-  const aliceGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
-  const bobGrain = new Grain(globalDb, bobAccount, bob, commonViewInfo);
+  const alice = new Account(globalDb, false);
+  const bob = new Account(globalDb, false);
+  const aliceGrain = new Grain(globalDb, alice, commonViewInfo);
+  const bobGrain = new Grain(globalDb, bob, commonViewInfo);
 
   const requirement1 = {
     permissionsHeld: {
       grainId: bobGrain.id,
-      identityId: alice.id,
+      accountId: alice.id,
       permissions: [],
     },
   };
 
-  alice.shareToIdentity(aliceGrain, bob, { allAccess: null }, [requirement1]);
+  alice.shareToAccount(aliceGrain, bob, { allAccess: null }, [requirement1]);
 
   const requirement2 = {
     permissionsHeld: {
         grainId: aliceGrain.id,
-        identityId: bob.id,
+        accountId: bob.id,
         permissions: [],
       },
   };
 
-  bob.shareToIdentity(bobGrain, alice, { allAccess: null }, [requirement2]);
+  bob.shareToAccount(bobGrain, alice, { allAccess: null }, [requirement2]);
 
   test.isTrue(alice.mayOpenGrain(aliceGrain));
   test.isFalse(bob.mayOpenGrain(aliceGrain));
@@ -436,17 +402,15 @@ Tinytest.add("permissions: membrane requirements loop", function (test) {
 });
 
 Tinytest.add("permissions: membrane requirements nontrivial normalization", function (test) {
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const bob = new Identity(globalDb);
-  const bobAccount = new Account(globalDb, [bob], false);
-  const carol = new Identity(globalDb);
-  const aliceGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+  const alice = new Account(globalDb, false);
+  const bob = new Account(globalDb, false);
+  const carol = new Account(globalDb, false);
+  const aliceGrain = new Grain(globalDb, alice, commonViewInfo);
 
   const requirement1 = {
     permissionsHeld: {
       grainId: aliceGrain.id,
-      identityId: carol.id,
+      accountId: carol.id,
       permissions: [true, true, true],
     },
   };
@@ -458,88 +422,86 @@ Tinytest.add("permissions: membrane requirements nontrivial normalization", func
   const requirement2 = {
     permissionsHeld: {
         grainId: aliceGrain.id,
-        identityId: bob.id,
+        accountId: bob.id,
         permissions: [true, true, false],
       },
   };
 
-  alice.shareToIdentity(aliceGrain, carol, { roleId: 1 }, [requirement2]);
+  alice.shareToAccount(aliceGrain, carol, { roleId: 1 }, [requirement2]);
   test.isFalse(webkey.mayOpenGrain());
 
   const requirement3 = {
     permissionsHeld: {
         grainId: aliceGrain.id,
-        identityId: bob.id,
+        accountId: bob.id,
         permissions: [true, false, true],
       },
   };
 
-  alice.shareToIdentity(aliceGrain, carol, { roleId: 2 }, [requirement3]);
+  alice.shareToAccount(aliceGrain, carol, { roleId: 2 }, [requirement3]);
   test.isFalse(webkey.mayOpenGrain());
 
   const requirement4 = {
     permissionsHeld: {
         grainId: aliceGrain.id,
-        identityId: bob.id,
+        accountId: bob.id,
         permissions: [true, true, true],
       },
   };
 
-  alice.shareToIdentity(aliceGrain, carol, { roleId: 4 }, [requirement4]);
+  alice.shareToAccount(aliceGrain, carol, { roleId: 4 }, [requirement4]);
   test.isFalse(webkey.mayOpenGrain());
 
-  alice.shareToIdentity(aliceGrain, bob, { roleId: 1 });
+  alice.shareToAccount(aliceGrain, bob, { roleId: 1 });
   test.isFalse(webkey.mayOpenGrain());
 
-  alice.shareToIdentity(aliceGrain, bob, { roleId: 4 });
+  alice.shareToAccount(aliceGrain, bob, { roleId: 4 });
   test.isFalse(webkey.mayOpenGrain());
 
-  alice.shareToIdentity(aliceGrain, bob, { allAccess: null });
+  alice.shareToAccount(aliceGrain, bob, { allAccess: null });
   test.isTrue(webkey.mayOpenGrain());
 });
 
 Tinytest.add("permissions: many membrane requirements", function (test) {
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const bob = new Identity(globalDb);
+  const alice = new Account(globalDb, false);
+  const bob = new Account(globalDb, false);
 
-  const grain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+  const grain = new Grain(globalDb, alice, commonViewInfo);
   const otherGrains = [];
 
   const NUM_OTHER_GRAINS = 30;
 
   for (let idx = 0; idx < NUM_OTHER_GRAINS; ++idx) {
-    const otherGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+    const otherGrain = new Grain(globalDb, alice, commonViewInfo);
     const requirement = {
       permissionsHeld: {
         grainId: otherGrain.id,
-        identityId: bob.id,
+        accountId: bob.id,
         permissions: [],
       },
     };
 
-    alice.shareToIdentity(grain, bob, { allAccess: null }, [requirement]);
+    alice.shareToAccount(grain, bob, { allAccess: null }, [requirement]);
     otherGrains.push(otherGrain);
   }
 
   test.isFalse(bob.mayOpenGrain(grain));
 
-  alice.shareToIdentity(otherGrains[0], bob, { allAccess: null });
+  alice.shareToAccount(otherGrains[0], bob, { allAccess: null });
 
   test.isTrue(bob.mayOpenGrain(grain));
 });
 
 Tinytest.add("permissions: membrane requirements long chain", function (test) {
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const bob = new Identity(globalDb);
+  const alice = new Account(globalDb, false);
+  const bob = new Account(globalDb, false);
 
   const grains = [];
 
   const NUM_GRAINS = 50;
 
   for (let idx = 0; idx < NUM_GRAINS; ++idx) {
-    grains.push(new Grain(globalDb, aliceAccount, alice, commonViewInfo));
+    grains.push(new Grain(globalDb, alice, commonViewInfo));
   }
 
   // Bob's access to grain[i] is dependent on his access to grain[i+1];
@@ -547,16 +509,16 @@ Tinytest.add("permissions: membrane requirements long chain", function (test) {
     const requirement = {
       permissionsHeld: {
         grainId: grains[idx + 1].id,
-        identityId: bob.id,
+        accountId: bob.id,
         permissions: [],
       },
     };
-    alice.shareToIdentity(grains[idx], bob, { allAccess: null }, [requirement]);
+    alice.shareToAccount(grains[idx], bob, { allAccess: null }, [requirement]);
   }
 
   test.isFalse(bob.mayOpenGrain(grains[0]));
 
-  alice.shareToIdentity(grains[grains.length - 1], bob, { allAccess: null });
+  alice.shareToAccount(grains[grains.length - 1], bob, { allAccess: null });
 
   test.isTrue(bob.mayOpenGrain(grains[0]));
   test.equal(bob.grainPermissions(grains[0]), [true, true, true]);
@@ -587,12 +549,11 @@ function createViewInfo(numPermissions) {
 Tinytest.add("permissions: membrane requirements many permissions", function (test) {
   const NUM_PERMISSIONS = 25;
   const viewInfo = createViewInfo(NUM_PERMISSIONS);
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const bob = new Identity(globalDb);
+  const alice = new Account(globalDb, false);
+  const bob = new Account(globalDb, false);
 
-  const grain0 = new Grain(globalDb, aliceAccount, alice, viewInfo);
-  const grain1 = new Grain(globalDb, aliceAccount, alice, viewInfo);
+  const grain0 = new Grain(globalDb, alice, viewInfo);
+  const grain1 = new Grain(globalDb, alice, viewInfo);
 
   const requirementPermissions = [];
   for (let idx = 0; idx < NUM_PERMISSIONS; ++idx) {
@@ -602,15 +563,15 @@ Tinytest.add("permissions: membrane requirements many permissions", function (te
   const requirement = {
     permissionsHeld: {
       grainId: grain1.id,
-      identityId: bob.id,
+      accountId: bob.id,
       permissions: requirementPermissions,
     },
   };
 
-  alice.shareToIdentity(grain0, bob, { allAccess: null }, [requirement]);
+  alice.shareToAccount(grain0, bob, { allAccess: null }, [requirement]);
   test.isFalse(bob.mayOpenGrain(grain0));
   for (let idx = 0; idx < NUM_PERMISSIONS; ++idx) {
-    alice.shareToIdentity(grain1, bob, { roleId: idx });
+    alice.shareToAccount(grain1, bob, { roleId: idx });
   }
 
   test.isTrue(bob.mayOpenGrain(grain0));
@@ -624,12 +585,11 @@ Tinytest.add("permissions: blow up disjunctive normal form", function (test) {
   const NUM_PERMISSIONS = 30;
 
   const viewInfo = createViewInfo(NUM_PERMISSIONS);
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const bob = new Identity(globalDb);
+  const alice = new Account(globalDb, false);
+  const bob = new Account(globalDb, false);
 
-  const grain1 = new Grain(globalDb, aliceAccount, alice, viewInfo);
-  const grain2 = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+  const grain1 = new Grain(globalDb, alice, viewInfo);
+  const grain2 = new Grain(globalDb, alice, commonViewInfo);
   const allPermissions = new Array(NUM_PERMISSIONS);
   for (let idx = 0; idx < NUM_PERMISSIONS; ++idx) {
     allPermissions[idx] = true;
@@ -638,12 +598,12 @@ Tinytest.add("permissions: blow up disjunctive normal form", function (test) {
   const requirement = {
     permissionsHeld: {
       grainId: grain1.id,
-      identityId: bob.id,
+      accountId: bob.id,
       permissions: allPermissions,
     },
   };
 
-  alice.shareToIdentity(grain2, bob, { allAccess: null }, [requirement]);
+  alice.shareToAccount(grain2, bob, { allAccess: null }, [requirement]);
 
   test.isFalse(bob.mayOpenGrain(grain1));
   test.isFalse(bob.mayOpenGrain(grain2));
@@ -653,71 +613,67 @@ Tinytest.add("permissions: blow up disjunctive normal form", function (test) {
   const NUM_OTHER_GRAINS = NUM_PERMISSIONS; // Also equals number of roles.
 
   for (let idx = 0; idx < NUM_OTHER_GRAINS; ++idx) {
-    const otherGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+    const otherGrain = new Grain(globalDb, alice, commonViewInfo);
     const requirement = {
       permissionsHeld: {
         grainId: otherGrain.id,
-        identityId: bob.id,
+        accountId: bob.id,
         permissions: [],
       },
     };
 
-    alice.shareToIdentity(grain1, bob, { roleId: idx }, [requirement]);
+    alice.shareToAccount(grain1, bob, { roleId: idx }, [requirement]);
     otherGrains.push(otherGrain);
   }
 
   test.isFalse(bob.mayOpenGrain(grain1));
   test.isFalse(bob.mayOpenGrain(grain2));
 
-  alice.shareToIdentity(otherGrains[0], bob, { allAccess: null });
+  alice.shareToAccount(otherGrains[0], bob, { allAccess: null });
 
   test.isTrue(bob.mayOpenGrain(grain1));
   test.isFalse(bob.mayOpenGrain(grain2));
 
-  alice.shareToIdentity(otherGrains[otherGrains.length - 1], bob, { allAccess: null });
+  alice.shareToAccount(otherGrains[otherGrains.length - 1], bob, { allAccess: null });
 
   test.isTrue(bob.mayOpenGrain(grain1));
   test.isTrue(bob.mayOpenGrain(grain2));
 });
 
 Tinytest.add("permissions: userIsAdmin requirements", function (test) {
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const bob = new Identity(globalDb);
-  const bobAccount = new Account(globalDb, [bob], false);
-  const carol = new Identity(globalDb);
-  const aliceGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
-  const bobGrain = new Grain(globalDb, bobAccount, bob, commonViewInfo);
+  const alice = new Account(globalDb, false);
+  const bob = new Account(globalDb, false);
+  const carol = new Account(globalDb, false);
+  const aliceGrain = new Grain(globalDb, alice, commonViewInfo);
+  const bobGrain = new Grain(globalDb, bob, commonViewInfo);
 
-  const requirement = { userIsAdmin: aliceAccount.id };
+  const requirement = { userIsAdmin: alice.id };
   const webkey = alice.shareToWebkey(aliceGrain, { allAccess: null }, [requirement]);
 
   test.isFalse(webkey.mayOpenGrain());
   test.isFalse(!!webkey.grainPermissions());
 
-  Meteor.users.update({ _id: aliceAccount.id }, { $set: { isAdmin: true } });
+  Meteor.users.update({ _id: alice.id }, { $set: { isAdmin: true } });
 
   test.isTrue(webkey.mayOpenGrain());
   test.equal(webkey.grainPermissions(), [true, true, true]);
 
-  const childWebkey = webkey.shareToWebkey({ allAccess: null }, [{ userIsAdmin: bobAccount.id }]);
+  const childWebkey = webkey.shareToWebkey({ allAccess: null }, [{ userIsAdmin: bob.id }]);
 
   test.isFalse(childWebkey.mayOpenGrain());
   test.isFalse(!!childWebkey.grainPermissions());
 
-  Meteor.users.update({ _id: bobAccount.id }, { $set: { isAdmin: true } });
+  Meteor.users.update({ _id: bob.id }, { $set: { isAdmin: true } });
 
   test.isTrue(childWebkey.mayOpenGrain());
   test.equal(childWebkey.grainPermissions(), [true, true, true]);
 });
 
 Tinytest.add("permissions: tokenValid requirements", function (test) {
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const bob = new Identity(globalDb);
-  const bobAccount = new Account(globalDb, [bob], false);
-  const aliceGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
-  const bobGrain = new Grain(globalDb, bobAccount, bob, commonViewInfo);
+  const alice = new Account(globalDb, false);
+  const bob = new Account(globalDb, false);
+  const aliceGrain = new Grain(globalDb, alice, commonViewInfo);
+  const bobGrain = new Grain(globalDb, bob, commonViewInfo);
 
   const tokenId = Crypto.randomBytes(20).toString("base64");
   const requirement = { tokenValid: tokenId };
@@ -739,7 +695,7 @@ Tinytest.add("permissions: tokenValid requirements", function (test) {
     parentToken: tokenId,
     requirements: [{
       permissionsHeld: {
-        identityId: bob.id,
+        accountId: bob.id,
         grainId: aliceGrain.id,
         permissions: [],
       },
@@ -753,7 +709,7 @@ Tinytest.add("permissions: tokenValid requirements", function (test) {
   test.isFalse(webkey2.mayOpenGrain());
   test.isFalse(!!webkey2.grainPermissions());
 
-  alice.shareToIdentity(aliceGrain, bob, { allAccess: null });
+  alice.shareToAccount(aliceGrain, bob, { allAccess: null });
 
   test.isTrue(webkey2.mayOpenGrain());
   test.equal(webkey2.grainPermissions(), [true, true, true]);
@@ -765,13 +721,12 @@ Tinytest.add("permissions: tokenValid requirements", function (test) {
 });
 
 Tinytest.add("permissions: collections app basic requirements", function (test) {
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const bob = new Identity(globalDb);
-  const collectionGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
-  const otherGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+  const alice = new Account(globalDb, false);
+  const bob = new Account(globalDb, false);
+  const collectionGrain = new Grain(globalDb, alice, commonViewInfo);
+  const otherGrain = new Grain(globalDb, alice, commonViewInfo);
 
-  alice.shareToIdentity(collectionGrain, bob, { allAccess: null });
+  alice.shareToAccount(collectionGrain, bob, { allAccess: null });
 
   test.isTrue(bob.mayOpenGrain(collectionGrain));
   test.isFalse(bob.mayOpenGrain(otherGrain));
@@ -781,7 +736,7 @@ Tinytest.add("permissions: collections app basic requirements", function (test) 
                                        {
                                         permissionsHeld: {
                                           permissions: [],
-                                          identityId: alice.id,
+                                          accountId: alice.id,
                                           grainId: collectionGrain.id,
                                         },
                                       },
@@ -791,12 +746,12 @@ Tinytest.add("permissions: collections app basic requirements", function (test) 
   test.isTrue(bob.mayOpenGrain(collectionGrain));
   test.isFalse(bob.mayOpenGrain(otherGrain));
 
-  webkey.shareToIdentity(bob, { allAccess: null },
+  webkey.shareToAccount(bob, { allAccess: null },
                          [
                            {
                             permissionsHeld: {
                               permissions: [],
-                              identityId: bob.id,
+                              accountId: bob.id,
                               grainId: collectionGrain.id,
                             },
                           },
@@ -808,16 +763,15 @@ Tinytest.add("permissions: collections app basic requirements", function (test) 
 });
 
 Tinytest.add("permissions: permissionsHeld with tokenId", function (test) {
-  const alice = new Identity(globalDb);
-  const aliceAccount = new Account(globalDb, [alice], false);
-  const bob = new Identity(globalDb);
-  const grain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+  const alice = new Account(globalDb, false);
+  const bob = new Account(globalDb, false);
+  const grain = new Grain(globalDb, alice, commonViewInfo);
 
   const webkey = alice.shareToWebkey(grain, { allAccess: null });
 
   test.isTrue(webkey.mayOpenGrain(grain));
 
-  alice.shareToIdentity(grain, bob, { allAccess: null },
+  alice.shareToAccount(grain, bob, { allAccess: null },
                         [
                           {
                             permissionsHeld: {

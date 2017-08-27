@@ -167,7 +167,7 @@ class PermissionSet {
 }
 
 class RequirementSet {
-  // A conjunction of permissions for identities on grains.
+  // A conjunction of permissions for users on grains.
   //
   // This typically represents a set of `MembraneRequirement`s, as defined in `supervisor.capnp`.
   // These represent conditions under which some connection formed between grains remains valid.
@@ -186,8 +186,8 @@ class RequirementSet {
 
   constructor() {
     this.permissionsHeldRequirements = {};
-    // Map from grain ID to objects of the form { identities, tokens }, where `identities` is a
-    // map from identity ID to PermissionSet and `tokens` is a map from token ID to PermissionSet.
+    // Map from grain ID to objects of the form { users, tokens }, where `users` is a
+    // map from account ID to PermissionSet and `tokens` is a map from token ID to PermissionSet.
     // Represents a set of `permissionsHeld` requirements.
 
     this.userIsAdminRequirements = {};
@@ -222,18 +222,18 @@ class RequirementSet {
         const permissions = new PermissionSet(requirement.permissionsHeld.permissions);
 
         if (!this.permissionsHeldRequirements[grainId]) {
-          this.permissionsHeldRequirements[grainId] = { identities: {}, tokens: {}, };
+          this.permissionsHeldRequirements[grainId] = { users: {}, tokens: {}, };
         }
 
         const grainReqs = this.permissionsHeldRequirements[grainId];
 
-        if (requirement.permissionsHeld.identityId) {
-          const identityId = requirement.permissionsHeld.identityId;
-          if (!grainReqs.identities[identityId]) {
-            grainReqs.identities[identityId] = new PermissionSet([]);
+        if (requirement.permissionsHeld.accountId) {
+          const accountId = requirement.permissionsHeld.accountId;
+          if (!grainReqs.users[accountId]) {
+            grainReqs.users[accountId] = new PermissionSet([]);
           }
 
-          grainReqs.identities[identityId].add(permissions);
+          grainReqs.users[accountId].add(permissions);
         } else if (requirement.permissionsHeld.tokenId) {
           const tokenId = requirement.permissionsHeld.tokenId;
           if (!grainReqs.tokens[tokenId]) {
@@ -273,9 +273,9 @@ class RequirementSet {
     }
 
     for (const grainId in this.permissionsHeldRequirements) {
-      for (const identityId in this.permissionsHeldRequirements[grainId].identities) {
-        const permissionSet = this.permissionsHeldRequirements[grainId].identities[identityId];
-        func({ permissionsHeld: { grainId, identityId, permissionSet }, });
+      for (const accountId in this.permissionsHeldRequirements[grainId].users) {
+        const permissionSet = this.permissionsHeldRequirements[grainId].users[accountId];
+        func({ permissionsHeld: { grainId, accountId, permissionSet }, });
       }
 
       for (const tokenId in this.permissionsHeldRequirements[grainId].tokens) {
@@ -303,7 +303,7 @@ function forEachPermission(permissions, func) {
   }
 }
 
-// A vertex is a principal in the sharing graph. A "vertex ID" is either "i:" + an identity ID,
+// A vertex is a principal in the sharing graph. A "vertex ID" is either "i:" + an account ID,
 // or "t:" + a token ID. In some limited contexts, "o:Owner" is also allowed, signifying the
 // *account* of the grain owner, from which all permissions flow.
 
@@ -312,15 +312,15 @@ const vertexIdOfTokenOwner = function (token) {
 
   let result = "t:" + token._id;  // the bearer of the token
   if (token.owner && token.owner.user) {
-    result = "i:" + token.owner.user.identityId;  // the identity that owns the token
+    result = "i:" + token.owner.user.accountId;  // the user that owns the token
   }
 
   return result;
 };
 
 const vertexIdOfPermissionsHeld = function (held) {
-  if (held.identityId) {
-    return "i:" + held.identityId;
+  if (held.accountId) {
+    return "i:" + held.accountId;
   } else if (held.tokenId) {
     return "t:" + held.tokenId;
   } else {
@@ -468,10 +468,9 @@ class Context {
 
   constructor() {
     this.grains = {};            // Map from grain ID to entry in Grains table.
-    this.userIdentityIds = {};   // Map from account ID to list of linked identity IDs.
     this.adminUsers = {};        // Set of account IDs for admins.
     this.tokensById = {};        // Map from token ID to token.
-    this.tokensByRecipient = {}; // Map from grain ID and identity ID to token array.
+    this.tokensByRecipient = {}; // Map from grain ID and account ID to token array.
 
     this.variables = {};
     // GrainId -> VertexId -> PermissionId -> Variable
@@ -501,7 +500,7 @@ class Context {
   }
 
   reset() {
-    // Resets all state except this.grains, this.userIdentityIds, and this.adminUsers.
+    // Resets all state except this.grains and this.adminUsers.
     this.tokensById = {};
     this.tokensByRecipient = {};
     this.unmetRequirements = new RequirementSet();
@@ -524,11 +523,11 @@ class Context {
         this.tokensByRecipient[token.grainId] = {};
       }
 
-      if (!this.tokensByRecipient[token.grainId][token.owner.user.identityId]) {
-        this.tokensByRecipient[token.grainId][token.owner.user.identityId] = [];
+      if (!this.tokensByRecipient[token.grainId][token.owner.user.accountId]) {
+        this.tokensByRecipient[token.grainId][token.owner.user.accountId] = [];
       }
 
-      this.tokensByRecipient[token.grainId][token.owner.user.identityId].push(token);
+      this.tokensByRecipient[token.grainId][token.owner.user.accountId].push(token);
     }
   }
 
@@ -545,10 +544,6 @@ class Context {
       suspended: { $ne: true },
     }).forEach((grain) => {
       this.grains[grain._id] = grain;
-      if (!this.userIdentityIds[grain.userId]) {
-        this.userIdentityIds[grain.userId] = SandstormDb.getUserIdentityIds(
-          Meteor.users.findOne({ _id: grain.userId }));
-      }
     });
 
     const query = { grainId: { $in: grainIds },
@@ -564,12 +559,12 @@ class Context {
   }
 
   activateOwnerEdges(grainId, edges) {
-    check(edges, [{ identityId: String, role: SandstormDb.prototype.roleAssignmentPattern }]);
+    check(edges, [{ accountId: String, role: SandstormDb.prototype.roleAssignmentPattern }]);
 
     edges.forEach((edge) => {
       const viewInfo = this.grains[grainId].cachedViewInfo || {};
       const permissions = PermissionSet.fromRoleAssignment(edge.role, viewInfo);
-      const vertexId = "i:" + edge.identityId;
+      const vertexId = "i:" + edge.accountId;
       forEachPermission(permissions.array, (permissionId) => {
         this.setToTrueStack.push({
           grainId: grainId,
@@ -642,7 +637,7 @@ class Context {
     const viewInfo = this.grains[grainId].cachedViewInfo || {};
     const tokenPermissions = PermissionSet.fromRoleAssignment(token.roleAssignment, viewInfo);
 
-    const sharerId = token.parentToken ? "t:" + token.parentToken : "i:" + token.identityId;
+    const sharerId = token.parentToken ? "t:" + token.parentToken : "i:" + token.accountId;
     const recipientId = vertexIdOfTokenOwner(token);
 
     const numUnmetRequirements = this.registerInterestInRequirements(tokenId, token.requirements);
@@ -995,7 +990,7 @@ class Context {
         const token = this.tokensById[tokenId];
 
         if (token.grainId && !token.objectId) {
-          let sharerId = token.parentToken ? "t:" + token.parentToken : "i:" + token.identityId;
+          let sharerId = token.parentToken ? "t:" + token.parentToken : "i:" + token.accountId;
           pushVertex(token.grainId, sharerId, current.permissionId);
         } else if (token.parentToken) {
           pushVertex("tokenValid", "t:" + token.parentToken, "canAccess");
@@ -1007,7 +1002,7 @@ class Context {
             token.requirements.forEach((requirement) => {
               if (requirement.permissionsHeld) {
                 const held = requirement.permissionsHeld;
-                const reqVertexId = held.identityId ? "i:" + held.identityId : "t:" + held.tokenId;
+                const reqVertexId = held.accountId ? "i:" + held.accountId : "t:" + held.tokenId;
                 forEachPermission(requirement.permissionsHeld.permissions, (permissionId) => {
                   pushVertex(requirement.permissionsHeld.grainId, reqVertexId, permissionId);
                 });
@@ -1032,10 +1027,10 @@ function computeRelevantTokens(context, grainId, vertexId) {
   //
   // Returns an object with two fields:
   //    tokenIds: list of relevant token IDs.
-  //    ownerEdges: objects of the form { identityId: String, role: RoleAssignment }, representing
-  //                initial pseudo-edges in the graph. `identityId` is typically an identity of
+  //    ownerEdges: objects of the form { accountId: String, role: RoleAssignment }, representing
+  //                initial pseudo-edges in the graph. `accountId` is typically
   //                the grain's owning user, but for the case of a legacy public grain it could
-  //                be any identity.
+  //                be any user.
   //
   // Works by traversing the sharing graph twice: first backwards starting from `vertexId`, then
   // forwards starting from the grain owner using only those tokens touched in the first step.
@@ -1051,7 +1046,6 @@ function computeRelevantTokens(context, grainId, vertexId) {
   const grain = context.grains[grainId];
   if (!grain) return { tokenIds: [], ownerEdges: [] };
   const viewInfo = grain.cachedViewInfo || {};
-  const ownerIdentityIds = context.userIdentityIds[grain.userId];
 
   const vertexStack = []; // Vertex IDs that we need to explore.
   const visitedVertexIds = {}; // Set of vertex IDs that we have already enqueued to get explored.
@@ -1076,7 +1070,7 @@ function computeRelevantTokens(context, grainId, vertexId) {
       // Convert an ApiToken into an edge.
       return {
         token: token,
-        sharerId: token.parentToken ? "t:" + token.parentToken : "i:" + token.identityId,
+        sharerId: token.parentToken ? "t:" + token.parentToken : "i:" + token.accountId,
       };
     }
 
@@ -1090,12 +1084,12 @@ function computeRelevantTokens(context, grainId, vertexId) {
         incomingEdges = [tokenToEdge(token)];
       }
     } else if (vertexId.slice(0, 2) === "i:") {
-      // An identity.
-      const identityId = vertexId.slice(2);
-      if (ownerIdentityIds.indexOf(identityId) >= 0) {
-        // This is one of the owner's identities.
+      // A user.
+      const accountId = vertexId.slice(2);
+      if (accountId === grain.userId) {
+        // This is the owner.
         incomingEdges = [{ sharerId: "o:Owner" }];
-        ownerEdges.push({ identityId: identityId, role: { allAccess: null } });
+        ownerEdges.push({ accountId: accountId, role: { allAccess: null } });
       } else if (!grain.private) {
         // This is a legacy "public" grain, meaning that any user who knows the grain ID receives
         // the grain's default role. If the user doesn't know the grain ID then they are unable
@@ -1108,7 +1102,7 @@ function computeRelevantTokens(context, grainId, vertexId) {
         // but literally no such legacy grain has been created since early 2015 and none will ever
         // be created again, so it's not a huge deal.)
         incomingEdges = [{ sharerId: "o:Owner" }];
-        ownerEdges.push({ identityId: identityId, role: { none: null } });
+        ownerEdges.push({ accountId: accountId, role: { none: null } });
       } else {
         // Not a special case. Gather all tokens where this user is the recipient.
         incomingEdges = ((context.tokensByRecipient[grainId] || {})[vertexId.slice(2)] || [])
@@ -1144,7 +1138,7 @@ function computeRelevantTokens(context, grainId, vertexId) {
   const visitedSharers = {};
 
   const sharerStack = [];
-  ownerIdentityIds.forEach((identityId) => { sharerStack.push("i:" + identityId); });
+  sharerStack.push("i:" + grain.userId);
   while (sharerStack.length > 0) {
     const sharerId = sharerStack.pop();
     for (const tokenId in visitedTokensBySharerId[sharerId]) {
@@ -1170,16 +1164,16 @@ const vertexPattern = Match.OneOf(
   {
     grain: Match.ObjectIncluding({
       _id: String,
-      identityId: Match.OneOf(String, null, undefined),
+      accountId: Match.OneOf(String, null, undefined),
     }),
   },
 );
-// A vertex in the sharing graph is a principal, e.g. a user (identity) or a token. Complicating
+// A vertex in the sharing graph is a principal, e.g. a user or a token. Complicating
 // matters, we may have to traverse sharing graphs for multiple grains in the same computation. A
 // token is specific to one grain, but a user of course can have access to multiple grains, so in
 // the case of a user we represent the vertex as a (user, grain) pair.
 //
-// TODO(cleanup): Perhaps `grain` should be renamed to `user` or `identity`? In the common case
+// TODO(cleanup): Perhaps `grain` should be renamed to `user`? In the common case
 //   where only a single grain's shares need to be considered, it feels weird to think of the
 //   grain ID as being the primary distinguishing feature of the vertex.
 
@@ -1189,7 +1183,7 @@ SandstormPermissions.mayOpenGrain = function (db, vertex) {
 
   check(vertex, vertexPattern);
   const grainId = vertex.token ? vertex.token.grainId : vertex.grain._id;
-  const vertexId = vertex.token ? ("t:" + vertex.token._id) : "i:" + vertex.grain.identityId;
+  const vertexId = vertex.token ? ("t:" + vertex.token._id) : "i:" + vertex.grain.accountId;
   const context = new Context();
   const emptyPermissions = new PermissionSet([]);
   return !!context.tryToProve(grainId, vertexId, emptyPermissions, db);
@@ -1222,7 +1216,7 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
   check(db, SandstormDb);
   check(vertex, vertexPattern);
   const grainId = vertex.token ? vertex.token.grainId : vertex.grain._id;
-  const vertexId = vertex.token ? ("t:" + vertex.token._id) : "i:" + vertex.grain.identityId;
+  const vertexId = vertex.token ? ("t:" + vertex.token._id) : "i:" + vertex.grain.accountId;
 
   let resultPermissions;
   let observeHandle;
@@ -1318,9 +1312,8 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
 
     context.addTokensFromCursor(tokenCursor);
 
-    // TODO(someday): Also account for linking/unlinking of identities and accounts losing admin
-    //   privileges. Currently we do not call `onInvalided()` on such events. We would need to set
-    //   up more cursor observers.
+    // TODO(someday): Also account for accounts losing admin privileges. Currently we do not call
+    //   `onInvalided()` on such events. We would need to set up more cursor observers.
 
     resultPermissions = context.tryToProve(grainId, vertexId, firstPhasePermissions);
 
@@ -1346,7 +1339,7 @@ SandstormPermissions.downstreamTokens = function (db, root) {
   // TODO(someday): Account for membrane requirements in this computation.
 
   check(root, Match.OneOf({ token: Match.ObjectIncluding({ _id: String, grainId: String }) },
-                          { grain: Match.ObjectIncluding({ _id: String, identityId: String }) }));
+                          { grain: Match.ObjectIncluding({ _id: String, accountId: String }) }));
 
   const result = [];
   const tokenStack = [];
@@ -1394,19 +1387,19 @@ SandstormPermissions.downstreamTokens = function (db, root) {
       }
 
       tokensByParent[token.parentToken].push(token);
-    } else if (token.identityId) {
-      if (!tokensBySharer[token.identityId]) {
-        tokensBySharer[token.identityId] = [];
+    } else if (token.accountId) {
+      if (!tokensBySharer[token.accountId]) {
+        tokensBySharer[token.accountId] = [];
       }
 
-      tokensBySharer[token.identityId].push(token);
+      tokensBySharer[token.accountId].push(token);
     }
   });
 
   if (root.token) {
     addChildren(root.token._id);
   } else if (root.grain) {
-    addSharedTokens(root.grain.identityId);
+    addSharedTokens(root.grain.accountId);
   }
 
   while (tokenStack.length > 0) {
@@ -1414,7 +1407,7 @@ SandstormPermissions.downstreamTokens = function (db, root) {
     result.push(token);
     addChildren(token._id);
     if (token.owner && token.owner.user) {
-      addSharedTokens(token.owner.user.identityId);
+      addSharedTokens(token.owner.user.accountId);
     }
   }
 
@@ -1464,7 +1457,7 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
   check(roleAssignment, db.roleAssignmentPattern);
   // Meteor bug #3877: we get null here instead of undefined when we
   // explicitly pass in undefined.
-  check(provider, Match.OneOf({ identityId: String, accountId: String },
+  check(provider, Match.OneOf({ accountId: String, identityId: Match.Optional(String) /*obsolete*/ },
                               { rawParentToken: Match.OneOf(String, Buffer) }));
   check(owner, Match.OneOf({
     webkey: Match.OneOf(null, {
@@ -1473,7 +1466,8 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
     }),
   }, {
     user: {
-      identityId: String,
+      accountId: String,
+      identityId: Match.Optional(String),  // obsolete
       title: String,
       renamed: Match.Optional(Boolean),
       upstreamTitle: Match.Optional(String),
@@ -1483,7 +1477,8 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
     grain: {
       grainId: String,
       saveLabel: LocalizedString,
-      introducerIdentity: String,
+      introducerIdentity: Match.Optional(String),  // obsolete
+      introducerUser: Match.Optional(String),  // obsolete
     },
   }, {
     clientPowerboxRequest: {
@@ -1539,13 +1534,11 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
       parentForSharing = true;
     }
 
-    apiToken.identityId = parentApiToken.identityId;
     apiToken.accountId = parentApiToken.accountId;
 
     apiToken.parentToken = parentToken;
     result.parentApiToken = parentApiToken;
-  } else if (provider.identityId) {
-    apiToken.identityId = provider.identityId;
+  } else if (provider.accountId) {
     apiToken.accountId = provider.accountId;
   }
 
@@ -1558,10 +1551,14 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
       apiToken.expiresIfUnused = new Date(Date.now() + owner.webkey.expiresIfUnusedDuration);
     }
   } else if (owner.user) {
+    // Determine the user's identity ID (their user ID as seen by the grain).
+    const identityId = db.getOrGenerateIdentityId(owner.user.accountId, grain);
+
     const grainInfo = db.getDenormalizedGrainInfo(grainId);
     apiToken.owner = {
       user: {
-        identityId: owner.user.identityId,
+        accountId: owner.user.accountId,
+        identityId: identityId,
         title: owner.user.title,
         denormalizedGrainMetadata: grainInfo,
       },
@@ -1626,18 +1623,19 @@ SandstormPermissions.cleanupClientPowerboxTokens = function (db) {
 };
 
 Meteor.methods({
-  transitiveShares: function (identityId, grainId) {
-    check(identityId, String);
+  transitiveShares: function (obsolete, grainId) {
     check(grainId, String);
     if (this.userId) {
       const db = this.connection.sandstormDb;
       return SandstormPermissions.downstreamTokens(db,
-          { grain: { _id: grainId, identityId: identityId } });
+          { grain: { _id: grainId, accountId: this.userId } });
     }
   },
 
   newApiToken: function (provider, grainId, petname, roleAssignment, owner, unauthenticated) {
-    check(provider, Match.OneOf({ identityId: String }, { rawParentToken: String }));
+    check(provider, Match.OneOf({ identityId: String },  // obsolete
+                                { accountId: String },
+                                { rawParentToken: String }));
     if (!owner.user && !owner.webkey) {
       throw new Meteor.Error(403,
                              "'webkey' and 'user' are the only allowed owners in newApiToken()");
@@ -1646,13 +1644,12 @@ Meteor.methods({
     // other check()s happen in SandstormPermissions.createNewApiToken().
     const db = this.connection.sandstormDb;
     if (provider.identityId) {
-      if (!this.userId || !db.userHasIdentity(this.userId, provider.identityId)) {
-        throw new Meteor.Error(403, "Not an identity of the current user: " + provider.identityId);
-      }
-    }
-
-    if (provider.identityId) {
       provider.accountId = this.userId;
+      delete provider.identityId;
+    } else if (provider.accountId) {
+      if (provider.accountId !== this.userId) {
+        throw new Meteor.Error(403, "Not the current user: " + provider.accountId);
+      }
     }
 
     return SandstormPermissions.createNewApiToken(
@@ -1678,7 +1675,7 @@ Meteor.methods({
       throw new Meteor.Error(404, "No such token found.");
     }
 
-    if (db.userHasIdentity(this.userId, apiToken.identityId)) {
+    if (apiToken.accountId === this.userId) {
       const modifier = { $set: newFields };
       db.collections.apiTokens.update(token, modifier);
     } else {

@@ -11,8 +11,6 @@ cd ~/projects/sandstorm
 virtualenv tmp/docs-virtualenv
 tmp/docs-virtualenv/bin/pip install mkdocs
 tmp/docs-virtualenv/bin/pip install markdown-inline-graphviz
-# Get an unreleased version of mkdocs because we need the readthedocs theme 'Searching...' fix
-tmp/docs-virtualenv/bin/pip install --upgrade git+https://github.com/mkdocs/mkdocs.git#egg=mkdocs
 # Get "dot" so we can render inline dot/graphviz
 sudo apt-get install -y graphviz
 tmp/docs-virtualenv/bin/mkdocs serve
@@ -51,12 +49,12 @@ git clone https://my_repo@alpha-api.sandstorm.io/ tmp/sandstorm-docs
 - Run `generate.sh` to re-generate the docs, then commit them to this git repo.
 
 ```
-PATH=$PATH:$PWD/tmp/docs-virtualenv/bin bash docs/generate.sh -d tmp/sandstorm-docs
+PATH=$PWD/tmp/docs-virtualenv/bin:$PATH bash docs/generate.sh -d tmp/sandstorm-docs
 ```
 
 
 - Run `generate.sh` with the `-p` flag to actually push them to the live site.
 
 ```
-PATH=$PATH:$PWD/tmp/docs-virtualenv/bin bash docs/generate.sh -d tmp/sandstorm-docs -p
+PATH=$PWD/tmp/docs-virtualenv/bin:$PATH bash docs/generate.sh -d tmp/sandstorm-docs -p
 ```

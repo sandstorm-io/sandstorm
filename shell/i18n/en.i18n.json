@@ -1098,7 +1098,14 @@
         "title": "Invite"
       }
     },
-    "systemStatus": {},
+    "systemStatus": {
+      "newAdminLogContents": {
+        "ellipsis": "..."
+      },
+      "newAdminStatus": {
+        "downloadButton": "Download full log"
+      }
+    },
     "stats": {},
     "maintenanceMessage": {},
     "networkCapabilities": {},

@@ -1078,6 +1078,19 @@
     "title": "分享連結"
   },
   "apps": {
-    "title": "應用程式"
+    "title": "應用程式",
+    "appList": {
+      "doneUninstalling": "解除安裝完成",
+      "uninstallButton": "解除安裝",
+      "uploadApp": "上傳應用程式",
+      "mostUsed": "最常使用",
+      "allApps": "所有應用程式",
+      "install": "安裝應用程式",
+      "fromMarket": "從市集下載",
+      "uninstall": "解除安裝",
+      "noMatchApp": "__You have no installed apps with that name. Try <a href=\"__url__\">searching on the app market &raquo;</a>",
+      "unauthorized": "__Unauthorized! :(",
+      "unauthorizedText": "__This is a private Sandstorm server. In order to install apps, you need to be invited by the admin. The admin can invite you from the admin panel."
+    }
   }
 }

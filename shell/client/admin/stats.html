@@ -5,23 +5,26 @@
    --}}
 <table class="stats-users-grains">
   <thead>
+    {{#let txt="admin.stats.header"}}
     <tr>
-      <th rowspan="2">date</th>
-      <th colspan="4">users</th>
-      <th colspan="4">grains</th>
+      <th rowspan="2">{{_ (con txt "date")}}</th>
+      <th colspan="4">{{_ (con txt "users")}}</th>
+      <th colspan="4">{{_ (con txt "grains")}}</th>
     </tr>
     <tr>
-      <th>daily</th>
-      <th>weekly</th>
-      <th>monthly</th>
-      <th>forever</th>
-      <th>daily</th>
-      <th>weekly</th>
-      <th>monthly</th>
-      <th>forever</th>
+      <th>{{_ (con txt "daily")}}</th>
+      <th>{{_ (con txt "weekly")}}</th>
+      <th>{{_ (con txt "monthly")}}</th>
+      <th>{{_ (con txt "forever")}}</th>
+      <th>{{_ (con txt "daily")}}</th>
+      <th>{{_ (con txt "weekly")}}</th>
+      <th>{{_ (con txt "monthly")}}</th>
+      <th>{{_ (con txt "forever")}}</th>
     </tr>
+    {{/let}}
   </thead>
   <tbody>
+  {{#let txt="admin.stats.body"}}
   {{#if ready}}
     {{#each points}}
       <tr>
@@ -37,14 +40,15 @@
       </tr>
     {{else}}
       <tr>
-        <td colspan="9">There are no stats recorded yet.</td>
+        <td colspan="9">{{_ (con txt "notFound")}}</td>
       </tr>
     {{/each}}
   {{else}}
     <tr>
-      <td colspan="9">Loading...</td>
+      <td colspan="9">{{_ (con txt "loading")}}</td>
     </tr>
   {{/if}}
+  {{/let}}
   </tbody>
 </table>
 </template>
@@ -56,28 +60,31 @@
 --}}
 <table class="stats-apps">
   <thead>
+    {{#let txt="admin.stats.header"}}
     <tr>
-      <th rowspan="2">App Name</th>
-      <th colspan="4">owners</th>
-      <th colspan="4">sharedUsers</th>
-      <th colspan="4">grains</th>
+      <th rowspan="2">{{_ (con txt "appName")}}</th>
+      <th colspan="4">{{_ (con txt "owners")}}</th>
+      <th colspan="4">{{_ (con txt "sharedUsers")}}</th>
+      <th colspan="4">{{_ (con txt "grains")}}</th>
     </tr>
     <tr>
-      <th>daily</th>
-      <th>weekly</th>
-      <th>monthly</th>
-      <th>forever</th>
-      <th>daily</th>
-      <th>weekly</th>
-      <th>monthly</th>
-      <th>forever</th>
-      <th>daily</th>
-      <th>weekly</th>
-      <th>monthly</th>
-      <th>forever</th>
+      <th>{{_ (con txt "daily")}}</th>
+      <th>{{_ (con txt "weekly")}}</th>
+      <th>{{_ (con txt "monthly")}}</th>
+      <th>{{_ (con txt "forever")}}</th>
+      <th>{{_ (con txt "daily")}}</th>
+      <th>{{_ (con txt "weekly")}}</th>
+      <th>{{_ (con txt "monthly")}}</th>
+      <th>{{_ (con txt "forever")}}</th>
+      <th>{{_ (con txt "daily")}}</th>
+      <th>{{_ (con txt "weekly")}}</th>
+      <th>{{_ (con txt "monthly")}}</th>
+      <th>{{_ (con txt "forever")}}</th>
     </tr>
+    {{/let}}
   </thead>
   <tbody>
+  {{#let txt="admin.stats.body"}}
   {{#if ready}}
     {{#each apps}}
       <tr>
@@ -97,27 +104,29 @@
       </tr>
     {{else}}
       <tr>
-        <td colspan="13">There are no stats recorded yet.</td>
+        <td colspan="13">{{_ (con txt "notFound")}}</td>
       </tr>
     {{/each}}
   {{else}}
     <tr>
-      <td colspan="13">Loading...</td>
+      <td colspan="13">{{_ (con txt "loading")}}</td>
     </tr>
   {{/if}}
+  {{/let}}
   </tbody>
 </table>
 </template>
 
 <template name="newAdminStats">
+{{#let txt="admin.stats.newAdminStats"}}
   <h1>
     <ul class="admin-breadcrumbs">
-      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
-      <li>Statistics</li>
+      <li>{{#linkTo route="newAdminRoot"}}{{_ "admin.title"}}{{/linkTo}}</li>
+      <li>{{_ "admin.admin.newAdminRoot.management.stats.name"}}</li>
     </ul>
   </h1>
 
-  <h2>Publish anonymously to Sandstorm dev team</h2>
+  <h2>{{_ (con txt "share.title")}}</h2>
 
   {{#if hasSuccess}}
     {{#focusingSuccessBox}}
@@ -134,85 +143,77 @@
   {{#if undecided}}
     <div class="flash-message info-message">
       <p>
-        We'd like to know how many Sandstorm users there are, to make graphs
-        and such.  Is it okay to send the numbers on this page once a day to the
-        Sandstorm team, so that we can add them to the totals?  Any stats you send are
-        anonymous.
+        {{_ (con txt "share.explanation")}}
       </p>
 
       <form class="stats-request">
         <div class="button-row">
           <button type="submit" class="button-primary" name="enable-stats">
-            Send anonymous stats
+            {{_ (con txt "share.enableButton")}}
           </button>
           <button type="button" class="button-link" name="disable-stats">
-            Don't send
+            {{_ (con txt "share.disableButton")}}
           </button>
         </div>
       </form>
     </div>
   {{else}}
     <p>
-      The developers of Sandstorm like to know how many Sandstorm users there are, to make graphs
-      and such.  You can help us by opting in to sharing the numbers on this page once a day to the
-      Sandstorm team, so that we can add them to our totals.
-      Any stats shared are submitted anonymously.
+      {{_ (con txt "share.control.explanation")}}
     </p>
     <p>
-      Anonymous stats reporting to sandstorm.io:
+      {{_ (con txt "share.control.label")}}
       {{#if sendStats}}
-        <span class="stats-enabled">Enabled</span>
+        <span class="stats-enabled">{{_ (con txt "share.control.enabled")}}</span>
       {{else}}
-        <span class="stats-disabled">Disabled</span>
+        <span class="stats-disabled">{{_ (con txt "share.control.disabled")}}</span>
       {{/if}}
       <form class="stats-toggle">
         {{#if sendStats}}
-        <button type="button" class="button-disable" name="disable-stats">Disable</button>
+        <button type="button" class="button-disable" name="disable-stats">{{_ (con txt "share.control.disableButton")}}</button>
         {{else}}
-        <button type="button" class="button-enable" name="enable-stats">Enable</button>
+        <button type="button" class="button-enable" name="enable-stats">{{_ (con txt "share.control.enableButton")}}</button>
         {{/if}}
       </form>
     </p>
   {{/if}}
 
 
-  <h2>Statistics</h2>
-  <h3>View as JSON</h3>
+  <h2>{{_ "admin.admin.newAdminRoot.management.stats.name"}}</h2>
+  <h3>{{_ (con txt "json.title")}}</h3>
   <p>
-    If you want to integrate Sandstorm stats with an internal stats tool, use this secret link to
-    retrieve the tables below as JSON.
-    You can revoke the current link at any time by generating a new link.
+    {{_ (con txt "json.explanation")}}
   </p>
 
   <form class="stats-json">
     <div class="form-group">
       <label>
-        Stats JSON link:
+        {{_ (con txt "json.label")}}
         {{> autoSelectingInput value=statsLink}}
       </label>
     </div>
 
     <div class="button-row">
       <button type="button" name="regenerate-stats-token">
-        Generate new link
+        {{_ (con txt "json.regenerateButton")}}
       </button>
     </div>
   </form>
-  <h3>Users and grains</h3>
+  <h3>{{_ (con txt "userGrains.title")}}</h3>
 
   {{#with current=current}}
-  <p>Right now: {{current.activeUsers}} users, {{current.activeGrains}} grains</p>
+  <p>{{_ (con txt "userGrains.current") users=current.activeUsers grains=current.activeGrains}}</p>
   {{/with}}
   {{#with today=today}}
-  <p>Today: {{today.activeUsers}} users, {{today.activeGrains}} grains</p>
+  <p>{{_ (con txt "userGrains.today") users=today.activeUsers grains=today.activeGrains}}</p>
   {{/with}}
 
   {{> statsUserGrainsTable points=points ready=ready}}
 
-  <h3>Apps</h3>
+  <h3>{{_ (con txt "apps.title")}}</h3>
   <form class="stats-apps-date">
     <label>
-      Select a date:
+      {{_ (con txt "apps.label")}}
       <select class="package-date">
         {{#each appDates }}
           <option value="{{_id}}" selected="{{#if selected}}true{{/if}}">{{day}}</option>
@@ -222,4 +223,5 @@
   </form>
 
   {{> statsAppsTable apps=apps ready=ready}}
+{{/let}}
 </template>

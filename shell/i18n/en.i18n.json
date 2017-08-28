@@ -1106,7 +1106,55 @@
         "downloadButton": "Download full log"
       }
     },
-    "stats": {},
+    "stats": {
+      "header": {
+        "date": "date",
+        "users": "users",
+        "grains": "grains",
+        "appName": "App name",
+        "owners": "owners",
+        "sharedUsers": "sharedUsers",
+        "daily": "daily",
+        "weekly": "weekly",
+        "monthly": "monthly",
+        "forever": "forever"
+      },
+      "body": {
+        "notFound": "There are no stats recorded yet.",
+        "loading": "Loading..."
+      },
+      "newAdminStats": {
+        "share": {
+          "title": "Publish anonymously to Sandstorm dev team",
+          "explanation": "We'd like to know how many Sandstorm users there are, to make graphs and such.  Is it okay to send the numbers on this page once a day to the Sandstorm team, so that we can add them to the totals?  Any stats you send are anonymous.",
+          "enableButton": "Send anonymous stats",
+          "disableButton": "Don't send",
+          "control": {
+            "explanation": "The developers of Sandstorm like to know how many Sandstorm users there are, to make graphs and such.  You can help us by opting in to sharing the numbers on this page once a day to the Sandstorm team, so that we can add them to our totals. Any stats shared are submitted anonymously.",
+            "label": "Anonymous stats reporting to sandstorm.io:",
+            "enabled": "Enabled",
+            "disabled": "Disabled",
+            "disableButton": "Disable",
+            "enableButton": "Enable"
+          }
+        },
+        "json": {
+          "title": "View as JSON",
+          "explanation": "If you want to integrate Sandstorm stats with an internal stats tool, use this secret link to retrieve the tables below as JSON. You can revoke the current link at any time by generating a new link.",
+          "label": "Stats JSON link:",
+          "regenerateButton": "Generate new link"
+        },
+        "userGrains": {
+          "title": "Users and grains",
+          "current": "Right now: __users__ users, __grains__ grains",
+          "today": "Today: __users__ users, __grains__ grains"
+        },
+        "apps": {
+          "title": "Apps",
+          "label": "Select a date:"
+        }
+      }
+    },
     "maintenanceMessage": {},
     "networkCapabilities": {},
     "hostingManagement": {}

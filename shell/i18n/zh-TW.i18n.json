@@ -1080,17 +1080,18 @@
   "apps": {
     "title": "應用程式",
     "appList": {
-      "doneUninstalling": "解除安裝完成",
-      "uninstallButton": "解除安裝",
+      "doneUninstalling": "移除完成",
+      "uninstallButton": "批次移除...",
       "uploadApp": "上傳應用程式",
+      "search": "搜尋名稱",
       "mostUsed": "最常使用",
       "allApps": "所有應用程式",
-      "install": "安裝應用程式",
+      "install": "安裝新程式",
       "fromMarket": "從市集下載",
-      "uninstall": "解除安裝",
-      "noMatchApp": "__You have no installed apps with that name. Try <a href=\"__url__\">searching on the app market &raquo;</a>",
-      "unauthorized": "__Unauthorized! :(",
-      "unauthorizedText": "__This is a private Sandstorm server. In order to install apps, you need to be invited by the admin. The admin can invite you from the admin panel."
+      "uninstall": "移除",
+      "noMatchApp": "找不到名稱含有該字串的應用程式。請<a href=\"__url__\">試試搜尋市集 &raquo;</a>",
+      "unauthorized": "無權限！:(",
+      "unauthorizedText": "只有管理者給予權限的的使用者才能安裝應用程式。若需權限，請聯絡管理者。"
     }
   }
 }

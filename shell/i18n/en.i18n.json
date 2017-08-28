@@ -1078,6 +1078,19 @@
     "title": "Sharing Links"
   },
   "apps": {
-    "title": "Apps"
+    "title": "Apps",
+    "appList": {
+      "doneUninstalling": "Done uninstalling",
+      "uninstallButton": "Uninstall...",
+      "uploadApp": "Upload app...",
+      "mostUsed": "Most used",
+      "allApps": "All apps",
+      "install": "Install...",
+      "fromMarket": "from app market",
+      "uninstall": "Uninstall",
+      "noMatchApp": "You have no installed apps with that name. Try <a href=\"__url__\">searching on the app market &raquo;</a>",
+      "unauthorized": "Unauthorized! :(",
+      "unauthorizedText": "This is a private Sandstorm server. In order to install apps, you need to be invited by the admin. The admin can invite you from the admin panel."
+    }
   }
 }

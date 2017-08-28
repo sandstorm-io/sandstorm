@@ -1,19 +1,19 @@
 <template name="sandstormAppListPage">
   {{setDocumentTitle}}
-  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar }}Apps{{/sandstormTopbarItem}}
+  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar }}{{_ "apps.title"}}{{/sandstormTopbarItem}}
   {{#if isSignedUpOrDemo}}
   <div class="app-list">
     <h1>{{_ "apps.title"}}
       <form class="standard-form">
         <div class="button-row">
           {{#if uninstalling}}
-            <button type="button" class="toggle-uninstall" title="Done uninstalling">Done uninstalling</button>
+            <button type="button" class="toggle-uninstall" title="Done uninstalling">{{_ "apps.appList.doneUninstalling"}}</button>
           {{else}}
             <button type="button" class="toggle-uninstall {{#unless actionsCount}}hide{{/unless}}"
                     title="Uninstall an app"
-            >Uninstall...</button>
+            >{{_ "apps.appList.uninstallButton"}}</button>
           {{/if}}
-          <button type="button" class="upload-button">Upload app...
+          <button type="button" class="upload-button">{{_ "apps.appList.uploadApp"}}
             <input type="file" style="display:none" accept=".spk">
           </button>
         </div>
@@ -29,7 +29,7 @@
 
     {{#if showMostPopular}}
     <div class="popular-container">
-      <h2 class="">Most used</h2>
+      <h2 class="">{{_ "apps.appList.mostUsed"}}</h2>
       {{#each popularApps }}
 
       <a class="app-button {{#if dev}}dev-background {{/if}}" href="/apps/{{appId}}">
@@ -40,13 +40,13 @@
       {{/each}}
     </div>
 
-    <h2 class="all-apps">All apps</h2>
+    <h2 class="all-apps">{{_ "apps.appList.allApps"}}</h2>
     {{/if}}
 
     <a class="app-button install-button {{#if searching}}hide{{/if}}" href="{{appMarketUrl}}">
       <div class="app-icon pseudoapp install-icon"></div>
-      <span class="action-title">Install...</span>
-      <span class="action-text">from app market</span>
+      <span class="action-title">{{_ "apps.appList.install"}}</span>
+      <span class="action-text">{{_ "apps.appList.fromMarket"}}</span>
     </a>
 
     {{!-- data-app-id is only used for testing purposes --}}
@@ -56,7 +56,7 @@
             data-app-id="{{appId}}">
       <div class="app-icon" style="background-image: url('{{ iconSrc }}');"></div>
       <span class="app-title">{{appTitle}}</span>
-      <span class="action-text">Uninstall</span>
+      <span class="action-text">{{_ "apps.appList.uninstall"}}</span>
     </button>
     {{else}}
     <a class="app-button {{#if dev}}dev-background {{/if}}" href="/apps/{{appId}}"
@@ -70,8 +70,7 @@
     {{#if searching}}
     {{#unless apps}}
     <p class="no-matching-app">
-      You have no installed apps with that name. Try
-      <a href="{{appMarketUrl}}">searching on the app market &raquo;</a>
+      {{_ "apps.appList.noMatchApp" url=appMarketUrl}}
     </p>
     {{/unless}}
     {{/if}}
@@ -79,9 +78,8 @@
   {{else}}
     {{#if Template.subscriptionsReady}}
       <div class="not-signed-up">
-        <h1>Unauthorized! :(</h1>
-        <p>This is a private Sandstorm server. In order to install apps, you need to be invited
-          by the admin. The admin can invite you from the admin panel.</p>
+        <h1>{{_ "apps.appList.unauthorized"}}</h1>
+        <p>{{_ "apps.appList.unauthorizedText"}}</p>
       </div>
     {{/if}}
   {{/if}}

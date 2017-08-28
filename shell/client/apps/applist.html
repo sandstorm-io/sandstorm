@@ -23,7 +23,7 @@
     <div class="search-row">
       <label>
         <span class="search-icon" title="Search"></span>
-        <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}" />
+        <input class="search-bar" type="text" placeholder="{{_ "apps.appList.search"}}" value="{{ searchText }}" />
       </label>
     </div>
 
@@ -70,7 +70,7 @@
     {{#if searching}}
     {{#unless apps}}
     <p class="no-matching-app">
-      {{_ "apps.appList.noMatchApp" url=appMarketUrl}}
+      {{{_ "apps.appList.noMatchApp" url=appMarketUrl}}}
     </p>
     {{/unless}}
     {{/if}}

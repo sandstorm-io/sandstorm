@@ -1155,7 +1155,28 @@
         }
       }
     },
-    "maintenanceMessage": {},
+    "maintenanceMessage": {
+      "newAdminMaintenance": {
+        "explanation": "You can set a maintenance message which will be shown to all users in the menu bar, on the top right. This is useful for announcing scheduled maintenance so users can be prepared to tolerate downtime. If the message text is empty, no message will be displayed.",
+        "variables": "You may use the following variables in the \"Message text\" field, which will be automatically substituted with useful values:",
+        "variable1": "<code>$TIME</code> : The time component of \"Maintenance time\", converted to the user's local time (eg. \"1:15:45 PM\")",
+        "variable2": "<code>$DATE</code> : The date component of \"Maintenance time\", converted to the user's local time (eg. \"6/19/2015\")",
+        "variable3": "<code>$IN_COUNTDOWN</code> : An active countdown until \"Maintenance time\" (eg. \"in 3 days\" or \"in 1 minute\"). Displays \"any moment\" at the time specified in \"Maintenance time\" and then disappears after an hour.",
+        "messageText": {
+          "label": "Message text:",
+          "subtext": ""
+        },
+        "maintenanceTime": {
+          "label": "Maintenance time:",
+          "subtext": "The time you intend to start performing maintenance, formatted like \"%s\"."
+        },
+        "url": {
+          "label": "Link URL (optional):",
+          "subtext": "If given, the maintenance message will render as a clickable link to the provided URL."
+        },
+        "saveButton": "Set message"
+      }
+    },
     "networkCapabilities": {},
     "hostingManagement": {}
   },

@@ -578,212 +578,212 @@
         "disableButton": "停用"
       },
       "googleLoginSetupInstructions": {
-        "explanation": "首先，您需要取得 Google Client ID。遵循以下步驟：",
-        "step1": "造訪 <a href=\"https://console.developers.google.com/\" target=\"blank\">https://console.developers.google.com/</a>",
-        "step2": "__\"Create Project\", if needed. Wait for Google to finish provisioning.",
-        "step3": "__On the left sidebar, go to \"Credentials\" and, on the right, \"OAuth consent screen\". Make sure to enter an email address and a product name, and save.",
-        "step4": "__On the left sidebar, go to \"Credentials\".  Click the \"Create credentials\" button, then select \"OAuth client ID\" as the type.",
-        "step5": "__Select \"Web application\" as your application type.",
-        "step6": "__Set Authorized Javascript Origins to: <span class=\"idp-config-url\">%s</span>",
-        "step7": "__Set Authorized Redirect URI to: <span class=\"idp-config-url\">%s/_oauth/google</span>",
-        "step8": "__Finish by clicking \"Create\"."
+        "explanation": "First, you'll need to get a Google Client ID. Follow these steps:",
+        "step1": "Visit <a href=\"https://console.developers.google.com/\" target=\"blank\">https://console.developers.google.com/</a>",
+        "step2": "\"Create Project\", if needed. Wait for Google to finish provisioning.",
+        "step3": "On the left sidebar, go to \"Credentials\" and, on the right, \"OAuth consent screen\". Make sure to enter an email address and a product name, and save.",
+        "step4": "On the left sidebar, go to \"Credentials\".  Click the \"Create credentials\" button, then select \"OAuth client ID\" as the type.",
+        "step5": "Select \"Web application\" as your application type.",
+        "step6": "Set Authorized Javascript Origins to: <span class=\"idp-config-url\">%s</span>",
+        "step7": "Set Authorized Redirect URI to: <span class=\"idp-config-url\">%s/_oauth/google</span>",
+        "step8": "Finish by clicking \"Create\"."
       },
       "adminIdentityProviderConfigureGoogle": {
-        "title": "__Google login configuration",
-        "formerBaseUrlWarning": "__This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to visit <a target=\"_blank\" href=\"https://console.developers.google.com/\">https://console.developers.google.com/</a> and update the \"Authorized Javascript Origins\" and \"Authorized Redirect URI\" for this Client ID to include the values below.",
-        "error": "__Failed to save changes: %s",
-        "explanation": "__Then, copy over your Client ID and Client secret below:",
-        "clientId": "__Client ID:",
-        "clientSecret": "__Client secret:",
-        "saveButton": "__Save",
-        "enableButton": "__Enable",
-        "cancelButton": "__Cancel",
-        "disableButton": "__Disable"
+        "title": "Google login configuration",
+        "formerBaseUrlWarning": "This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to visit <a target=\"_blank\" href=\"https://console.developers.google.com/\">https://console.developers.google.com/</a> and update the \"Authorized Javascript Origins\" and \"Authorized Redirect URI\" for this Client ID to include the values below.",
+        "error": "Failed to save changes: %s",
+        "explanation": "Then, copy over your Client ID and Client secret below:",
+        "clientId": "Client ID:",
+        "clientSecret": "Client secret:",
+        "saveButton": "Save",
+        "enableButton": "Enable",
+        "cancelButton": "Cancel",
+        "disableButton": "Disable"
       },
       "githubLoginSetupInstructions": {
-        "explanation": "__First, you'll need to get a Github Client ID and Client secret. Follow these steps:",
-        "step1": "__Visit <a href=\"https://github.com/settings/applications/newi\" target=\"blank\">https://github.com/settings/applications/new</a>",
-        "step2": "__Set Homepage URL to: <span class=\"idp-config-url\">%s</span>",
-        "step3": "__Set Authorization callback URL to: <span class=\"idp-config-url\">%s_oauth/github</span>"
+        "explanation": "First, you'll need to get a Github Client ID and Client secret. Follow these steps:",
+        "step1": "Visit <a href=\"https://github.com/settings/applications/newi\" target=\"blank\">https://github.com/settings/applications/new</a>",
+        "step2": "Set Homepage URL to: <span class=\"idp-config-url\">%s</span>",
+        "step3": "Set Authorization callback URL to: <span class=\"idp-config-url\">%s_oauth/github</span>"
       },
       "adminIdentityProviderConfigureGitHub": {
-        "title": "__GitHub login configuration",
-        "formerBaseUrlWarning": "__This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to visit <a target=\"_blank\" href=\"https://github.com/settings/developers\">https://github.com/settings/developers</a> and update the Homepage URL and Authorization callback URL for this application to the values below.",
-        "explanation": "__Then, copy over your Client ID and Client secret below:",
-        "clientId": "__Client ID:",
-        "clientSecret": "__Client secret:",
-        "saveButton": "__Save",
-        "enableButton": "__Enable",
-        "cancelButton": "__Cancel",
-        "disableButton": "__Disable"
+        "title": "GitHub login configuration",
+        "formerBaseUrlWarning": "This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to visit <a target=\"_blank\" href=\"https://github.com/settings/developers\">https://github.com/settings/developers</a> and update the Homepage URL and Authorization callback URL for this application to the values below.",
+        "explanation": "Then, copy over your Client ID and Client secret below:",
+        "clientId": "Client ID:",
+        "clientSecret": "Client secret:",
+        "saveButton": "Save",
+        "enableButton": "Enable",
+        "cancelButton": "Cancel",
+        "disableButton": "Disable"
       },
       "adminIdentityProviderConfigureLdap": {
-        "title": "__LDAP login configuration",
-        "error": "__Failed to save changes: %s",
+        "title": "LDAP login configuration",
+        "error": "Failed to save changes: %s",
         "url": {
-          "label": "__LDAP server URL:",
-          "subtext": "__e.g. <code>ldap://ldap.example.com:389</code>.  Use port 636 for SSL."
+          "label": "LDAP server URL:",
+          "subtext": "e.g. <code>ldap://ldap.example.com:389</code>.  Use port 636 for SSL."
         },
         "searchBindDn": {
-          "label": "__Bind user DN",
-          "subtext": "__The DN to bind as when searching for a user in the tree, e.g. <code>cn=admin,ou=users,dc=example,dc=com</code>.  Optional, but needed if your server doesn't allow unauthenticated searches."
+          "label": "Bind user DN",
+          "subtext": "The DN to bind as when searching for a user in the tree, e.g. <code>cn=admin,ou=users,dc=example,dc=com</code>.  Optional, but needed if your server doesn't allow unauthenticated searches."
         },
         "searchBindPassword": {
-          "label": "__Bind user password",
-          "subtext": "__Optional, needed if specifying bind DN above."
+          "label": "Bind user password",
+          "subtext": "Optional, needed if specifying bind DN above."
         },
         "base": {
-          "label": "__Base DN",
-          "subtext": "__The root object under which to search for user account nodes, e.g. <code>ou=users,dc=example,dc=com</code>"
+          "label": "Base DN",
+          "subtext": "The root object under which to search for user account nodes, e.g. <code>ou=users,dc=example,dc=com</code>"
         },
         "searchUsername": {
-          "label": "__LDAP username attribute",
-          "subtext": "__The LDAP attribute on a user object which represents the user's username (what they will enter in the username field when signing in)."
+          "label": "LDAP username attribute",
+          "subtext": "The LDAP attribute on a user object which represents the user's username (what they will enter in the username field when signing in)."
         },
         "nameField": {
-          "label": "__LDAP given name attribute",
-          "subtext": "__The LDAP attribute on a user object which represents the user's full display name."
+          "label": "LDAP given name attribute",
+          "subtext": "The LDAP attribute on a user object which represents the user's full display name."
         },
         "emailField": {
-          "label": "__LDAP email attribute",
-          "subtext": "__The LDAP attribute on a user object which represents the user's email address."
+          "label": "LDAP email attribute",
+          "subtext": "The LDAP attribute on a user object which represents the user's email address."
         },
         "filter": {
-          "label": "__Additional LDAP filter criteria",
-          "subtext": "__An optional LDAP query fragment that will be included in the user search. This is not commonly used. See <a target=\"_blank\" href=\"http://www.ietf.org/rfc/rfc2254.txt\">RFC2254</a>."
+          "label": "Additional LDAP filter criteria",
+          "subtext": "An optional LDAP query fragment that will be included in the user search. This is not commonly used. See <a target=\"_blank\" href=\"http://www.ietf.org/rfc/rfc2254.txt\">RFC2254</a>."
         },
         "caCert": {
-          "label": "__LDAP CA certificate",
-          "placeholder": "__-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----",
-          "subtext": "__This is only necessary if your server supports SSL and is using a private CA not in the common trusted set. Note that it does NOT work to enter the LDAP server's own certificate here -- it must be the certificate of a CA which has signed the LDAP server's certificate."
+          "label": "LDAP CA certificate",
+          "placeholder": "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----",
+          "subtext": "This is only necessary if your server supports SSL and is using a private CA not in the common trusted set. Note that it does NOT work to enter the LDAP server's own certificate here -- it must be the certificate of a CA which has signed the LDAP server's certificate."
         },
-        "saveButton": "__Save",
-        "enableButton": "__Enable",
-        "cancelButton": "__Cancel",
-        "disableButton": "__Disable"
+        "saveButton": "Save",
+        "enableButton": "Enable",
+        "cancelButton": "Cancel",
+        "disableButton": "Disable"
       },
       "adminIdentityProviderConfigureSaml": {
-        "title": "__SAML login configuration",
-        "explanation": "__Your SAML IDP should be configured to return a persistent nameID. In addition, if you are not using Active Directory, you <strong>must</strong> configure your IDP to provide two extra attributes, <code>email</code> and <code>displayName</code>.",
-        "serviceUrl": "__The Service URL of this server is: <code>%s</code>",
-        "logoutUrl": "__The Service Logout URL of this server is: <code>%s</code>",
-        "metadataUrlAt": "__If your SAML IDP supports reading the service provider metadata from a URL, then you can point it at: <code><a href=\"__href__\" target=\"_blank\">__text__</a></code>",
-        "error": "__Failed to save changes: %s",
+        "title": "SAML login configuration",
+        "explanation": "Your SAML IDP should be configured to return a persistent nameID. In addition, if you are not using Active Directory, you <strong>must</strong> configure your IDP to provide two extra attributes, <code>email</code> and <code>displayName</code>.",
+        "serviceUrl": "The Service URL of this server is: <code>%s</code>",
+        "logoutUrl": "The Service Logout URL of this server is: <code>%s</code>",
+        "metadataUrlAt": "If your SAML IDP supports reading the service provider metadata from a URL, then you can point it at: <code><a href=\"__href__\" target=\"_blank\">__text__</a></code>",
+        "error": "Failed to save changes: %s",
         "entryPoint": {
-          "label": "__SAML provider entry point URL:",
-          "placeholder": "__https://YOUR_SAML_PROVIDER.com/sso/saml"
+          "label": "SAML provider entry point URL:",
+          "placeholder": "https://YOUR_SAML_PROVIDER.com/sso/saml"
         },
         "logout": {
-          "label": "__SAML provider logout URL (optional):",
-          "placeholder": "__https://YOUR_SAML_PROVIDER.com/sso/saml/SingleLogoutService"
+          "label": "SAML provider logout URL (optional):",
+          "placeholder": "https://YOUR_SAML_PROVIDER.com/sso/saml/SingleLogoutService"
         },
         "publicCert": {
-          "label": "__SAML cert for above provider:",
-          "placeholder": "__base64 encoded cert (e.g. MIID...8F==)"
+          "label": "SAML cert for above provider:",
+          "placeholder": "base64 encoded cert (e.g. MIID...8F==)"
         },
         "entityId": {
-          "label": "__Entity ID:"
+          "label": "Entity ID:"
         },
-        "saveButton": "__Save",
-        "enableButton": "__Enable",
-        "cancelButton": "__Cancel",
-        "disableButton": "__Disable"
+        "saveButton": "Save",
+        "enableButton": "Enable",
+        "cancelButton": "Cancel",
+        "disableButton": "Disable"
       },
       "adminIdentityProviderTable": {
-        "title": "__Identity provider",
-        "status": "__Status"
+        "title": "身份提供者",
+        "status": "狀態"
       },
       "adminIdentityRow": {
-        "enabled": "__Enabeld",
-        "disabled": "__Not enabled",
+        "enabled": "已啟用",
+        "disabled": "未啟用",
         "baseUrlChanged": {
-          "explanation": "__Disabled due to BASE_URL change",
-          "reconfigureButton": "__reconfigure"
+          "explanation": "因為 BASE_URL 而被停用",
+          "reconfigureButton": "重新設定"
         },
         "configureButton": {
-          "hint": "__Configure %s login",
-          "text": "__Configure"
+          "hint": "設定 %s 登入",
+          "text": "設定"
         }
       }
     },
     "organization": {
       "organizationSettingsBlurb": {
-        "explanation": "__Sandstorm allows you to define an organization. You can automatically apply some settings to all members of your organization. Users within the organization will automatically be able to log in, install apps, and create grains."
+        "explanation": "沙聚雲讓您可以建立組織。__Sandstorm allows you to define an organization. You can automatically apply some settings to all members of your organization. Users within the organization will automatically be able to log in, install apps, and create grains."
       },
       "newAdminOrganization": {
-        "success": "__Saved changes.",
-        "error": "__Failed to save changes: %s",
+        "success": "變更已儲存。",
+        "error": "無法儲存變更：%s",
         "membership": {
-          "title": "__Organization membership",
+          "title": "組織成員",
           "emailToggle": {
-            "label": "__Users authenticated via email address",
-            "subtext": "__Note: disabled because email login is not configured."
+            "label": "自動認證電子郵件信箱",
+            "subtext": "注意：因為電子郵件登入設定未完成，所以無法使用。"
           },
           "emailDomain": {
-            "label": "__Domain:",
-            "subtext": "__Users with an email address at this domain will be members of this server's organization."
+            "label": "網域：",
+            "subtext": "使用上記網域信箱的人會自動認證為組織成員。"
           },
           "gappsToggle": {
-            "label": "__Users authenticated via Google Apps for Work",
-            "subtext": "__Note: disabled because Google login is not configured."
+            "label": "G Suite 使用者認證",
+            "subtext": "注意：因為 Google 登入設定未完成，所以無法使用。"
           },
           "gappsDomain": {
-            "label": "__Domain:",
-            "subtext": "__Users with a Google Apps for Work account under this domain will be members of this server's organization."
+            "label": "網域：",
+            "subtext": "使用上記網域 G Suite 的人會自動認證為組織成員。"
           },
           "ldapToggle": {
-            "label": "__Users authenticated via LDAP",
-            "subtext": "__Note: disabled because LDAP login is not configured."
+            "label": "LDAP 使用者認證",
+            "subtext": "注意：因為 LDAP 登入設定未完成，所以無法使用。"
           },
           "samlToggle": {
-            "label": "__Users authenticated via SAML",
-            "subtext": "__Note: disabled because SAML login is not configured."
+            "label": "SAML 使用者認證",
+            "subtext": "注意：因為 SAML 登入設定未完成，所以無法使用。"
           }
         },
         "settings": {
-          "title": "__Organization settings",
+          "title": "組織設定",
           "disallowGuests": {
-            "label": "__Disallow collaboration with users outside the organization.",
-            "subtext": "__Users will be required to log in as a member of your organization to view sharing links. Guest access will be disabled."
+            "label": "禁止外部訪客進行協作。",
+            "subtext": "只有組織成員可以開啟共享連結。__Users will be required to log in as a member of your organization to view sharing links. Guest access will be disabled."
           },
           "shareContacts": {
-            "label": "__Make all organization users visible to each other",
-            "subtext": "__This setting automatically adds users within the organization to each other's contact list so that they can share grains with each other.  Disable this if you have some users whose identity should stay hidden from other users."
+            "label": "讓所有使用者可以互相看見",
+            "subtext": "讓組織內所有使用者自動互相加進聯絡人清單，以便共享沙粒。若使用者身份應該被隱蔽，請取消此選項。"
           }
         },
-        "saveButton": "__Save"
+        "saveButton": "儲存"
       }
     },
     "emailConfig": {
       "newAdminEmailConfig": {
         "outbound": {
-          "title": "__Outbound email",
-          "warning": "__<strong>Email is unconfigured.</strong> Email-related features like email login, notifications, sharing by identity, and requesting access will be unavailable until you configure email."
+          "title": "外寄郵件",
+          "warning": "<strong>外寄郵件尚未設定完成。</strong>在您設定完成前，和電子郵件有關的功能（比如郵件登入、通知、以身份分享或要求存取）都無法使用。"
         },
         "howItWorks": {
-          "title": "__How Sandstorm uses email",
-          "explanation": "__Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too. Every app receives a unique email address, so Sandstorm needs to send email from a variety of \"From:\" addresses. Therefore, Gmail SMTP won't work, but there are other free services. See <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">more info in the docs</a>."
+          "title": "沙聚雲如何使用電子郵件",
+          "explanation": "沙聚雲寄送通知郵件，並且也允許應用程式寄送。每個應用程式都有一個獨自的電子郵件位址，所以沙聚雲需要能從可變的「來自」位置寄信。所以 Gmail SMTP 不管用，請採用別的免費服務。更多資訊請<a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">參見此處</a>。"
         },
-        "success": "__Saved changes.",
-        "error": "__Failed to save changes: %s",
+        "success": "變更已儲存。",
+        "error": "無法儲存變更：%s",
         "address": {
-          "hostname": "__SMTP host",
-          "port": "__Port",
-          "subtext": "__Use port 25 for SMTP (unencrypted or with StartTLS), port 465 for TLS-encrypted SMTPS."
+          "hostname": "SMTP host",
+          "port": "Port",
+          "subtext": "SMTP（無加密或 StartTLS 加密）用 port 25，TLS-加密 SMTPS 用 port 465。"
         },
         "username": {
-          "label": "__Username (optional)"
+          "label": "使用者名稱（選填）"
         },
         "password": {
-          "label": "__Password (optional)"
+          "label": "密碼（選填）"
         },
         "returnAddress": {
-          "label": "__Sandstorm server's own email address",
-          "subtext": "__Sandstorm will send login emails, notifications of granted access requests, and other emails from this address. It will also use this address in the SMTP envelope."
+          "label": "沙聚雲伺服器自己的收信位址",
+          "subtext": "沙聚雲會用這個位址寄出登入用郵件、要求存取及共享的通知郵件等。此位置也會用在 SMTP envelope。"
         },
-        "submitButton": "__Save Configuration",
-        "testButton": "__Test",
-        "disableButton": "__Disable email"
+        "submitButton": "儲存設定",
+        "testButton": "測試",
+        "disableButton": "停用電子郵件"
       },
       "emailTestPopup": {
         "title": "__Send a test email",
@@ -1061,7 +1061,7 @@
           "suspendButton": "__Suspend account",
           "cancelButton": "__Cancel"
         },
-        "loading": "__Loading user data..."
+        "loading": "正在讀取使用者資料……"
       }
     },
     "userInvite": {},

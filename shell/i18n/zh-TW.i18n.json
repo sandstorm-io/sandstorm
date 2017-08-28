@@ -560,21 +560,516 @@
         }
       }
     },
-    "appSources": {},
-    "emailConfig": {},
-    "hostingManagement": {},
-    "identityProviders": {},
+    "identityProviders": {
+      "newAdminIdentity": {
+        "explanation": "__Choose which services users may use to identify themselves.  Anyone can log in, but only users you invite will be able to install apps or create grains.",
+        "organizationLinkPrefix": "__To configure organization membership and settings, see",
+        "organizationLink": "__organization settings",
+        "organizationLinkPostfix": "__."
+      },
+      "adminIdentityProviderConfigureEmail": {
+        "title": "__Email login configuration",
+        "error": "__Failed to save changes: %s",
+        "warning": "__Note: to use email login, you'll need to configure email delivery after this.",
+        "explanation": "__Email login has no additional configuration options.",
+        "saveButton": "__Save",
+        "enableButton": "__Enable",
+        "cancelButton": "__Cancel",
+        "disableButton": "__Disable"
+      },
+      "googleLoginSetupInstructions": {
+        "explanation": "__First, you'll need to get a Google Client ID. Follow these steps:",
+        "step1": "__Visit <a href=\"https://console.developers.google.com/\" target=\"blank\">https://console.developers.google.com/</a>",
+        "step2": "__\"Create Project\", if needed. Wait for Google to finish provisioning.",
+        "step3": "__On the left sidebar, go to \"Credentials\" and, on the right, \"OAuth consent screen\". Make sure to enter an email address and a product name, and save.",
+        "step4": "__On the left sidebar, go to \"Credentials\".  Click the \"Create credentials\" button, then select \"OAuth client ID\" as the type.",
+        "step5": "__Select \"Web application\" as your application type.",
+        "step6": "__Set Authorized Javascript Origins to: <span class=\"idp-config-url\">%s</span>",
+        "step7": "__Set Authorized Redirect URI to: <span class=\"idp-config-url\">%s/_oauth/google</span>",
+        "step8": "__Finish by clicking \"Create\"."
+      },
+      "adminIdentityProviderConfigureGoogle": {
+        "title": "__Google login configuration",
+        "formerBaseUrlWarning": "__This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to visit <a target=\"_blank\" href=\"https://console.developers.google.com/\">https://console.developers.google.com/</a> and update the \"Authorized Javascript Origins\" and \"Authorized Redirect URI\" for this Client ID to include the values below.",
+        "error": "__Failed to save changes: %s",
+        "explanation": "__Then, copy over your Client ID and Client secret below:",
+        "clientId": "__Client ID:",
+        "clientSecret": "__Client secret:",
+        "saveButton": "__Save",
+        "enableButton": "__Enable",
+        "cancelButton": "__Cancel",
+        "disableButton": "__Disable"
+      },
+      "githubLoginSetupInstructions": {
+        "explanation": "__First, you'll need to get a Github Client ID and Client secret. Follow these steps:",
+        "step1": "__Visit <a href=\"https://github.com/settings/applications/newi\" target=\"blank\">https://github.com/settings/applications/new</a>",
+        "step2": "__Set Homepage URL to: <span class=\"idp-config-url\">%s</span>",
+        "step3": "__Set Authorization callback URL to: <span class=\"idp-config-url\">%s_oauth/github</span>"
+      },
+      "adminIdentityProviderConfigureGitHub": {
+        "title": "__GitHub login configuration",
+        "formerBaseUrlWarning": "__This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to visit <a target=\"_blank\" href=\"https://github.com/settings/developers\">https://github.com/settings/developers</a> and update the Homepage URL and Authorization callback URL for this application to the values below.",
+        "explanation": "__Then, copy over your Client ID and Client secret below:",
+        "clientId": "__Client ID:",
+        "clientSecret": "__Client secret:",
+        "saveButton": "__Save",
+        "enableButton": "__Enable",
+        "cancelButton": "__Cancel",
+        "disableButton": "__Disable"
+      },
+      "adminIdentityProviderConfigureLdap": {
+        "title": "__LDAP login configuration",
+        "error": "__Failed to save changes: %s",
+        "url": {
+          "label": "__LDAP server URL:",
+          "subtext": "__e.g. <code>ldap://ldap.example.com:389</code>.  Use port 636 for SSL."
+        },
+        "searchBindDn": {
+          "label": "__Bind user DN",
+          "subtext": "__The DN to bind as when searching for a user in the tree, e.g. <code>cn=admin,ou=users,dc=example,dc=com</code>.  Optional, but needed if your server doesn't allow unauthenticated searches."
+        },
+        "searchBindPassword": {
+          "label": "__Bind user password",
+          "subtext": "__Optional, needed if specifying bind DN above."
+        },
+        "base": {
+          "label": "__Base DN",
+          "subtext": "__The root object under which to search for user account nodes, e.g. <code>ou=users,dc=example,dc=com</code>"
+        },
+        "searchUsername": {
+          "label": "__LDAP username attribute",
+          "subtext": "__The LDAP attribute on a user object which represents the user's username (what they will enter in the username field when signing in)."
+        },
+        "nameField": {
+          "label": "__LDAP given name attribute",
+          "subtext": "__The LDAP attribute on a user object which represents the user's full display name."
+        },
+        "emailField": {
+          "label": "__LDAP email attribute",
+          "subtext": "__The LDAP attribute on a user object which represents the user's email address."
+        },
+        "filter": {
+          "label": "__Additional LDAP filter criteria",
+          "subtext": "__An optional LDAP query fragment that will be included in the user search. This is not commonly used. See <a target=\"_blank\" href=\"http://www.ietf.org/rfc/rfc2254.txt\">RFC2254</a>."
+        },
+        "caCert": {
+          "label": "__LDAP CA certificate",
+          "placeholder": "__-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----",
+          "subtext": "__This is only necessary if your server supports SSL and is using a private CA not in the common trusted set. Note that it does NOT work to enter the LDAP server's own certificate here -- it must be the certificate of a CA which has signed the LDAP server's certificate."
+        },
+        "saveButton": "__Save",
+        "enableButton": "__Enable",
+        "cancelButton": "__Cancel",
+        "disableButton": "__Disable"
+      },
+      "adminIdentityProviderConfigureSaml": {
+        "title": "__SAML login configuration",
+        "explanation": "__Your SAML IDP should be configured to return a persistent nameID. In addition, if you are not using Active Directory, you <strong>must</strong> configure your IDP to provide two extra attributes, <code>email</code> and <code>displayName</code>.",
+        "serviceUrl": "__The Service URL of this server is: <code>%s</code>",
+        "logoutUrl": "__The Service Logout URL of this server is: <code>%s</code>",
+        "metadataUrlAt": "__If your SAML IDP supports reading the service provider metadata from a URL, then you can point it at: <code><a href=\"__href__\" target=\"_blank\">__text__</a></code>",
+        "error": "__Failed to save changes: %s",
+        "entryPoint": {
+          "label": "__SAML provider entry point URL:",
+          "placeholder": "__https://YOUR_SAML_PROVIDER.com/sso/saml"
+        },
+        "logout": {
+          "label": "__SAML provider logout URL (optional):",
+          "placeholder": "__https://YOUR_SAML_PROVIDER.com/sso/saml/SingleLogoutService"
+        },
+        "publicCert": {
+          "label": "__SAML cert for above provider:",
+          "placeholder": "__base64 encoded cert (e.g. MIID...8F==)"
+        },
+        "entityId": {
+          "label": "__Entity ID:"
+        },
+        "saveButton": "__Save",
+        "enableButton": "__Enable",
+        "cancelButton": "__Cancel",
+        "disableButton": "__Disable"
+      },
+      "adminIdentityProviderTable": {
+        "title": "__Identity provider",
+        "status": "__Status"
+      },
+      "adminIdentityRow": {
+        "enabled": "__Enabeld",
+        "disabled": "__Not enabled",
+        "baseUrlChanged": {
+          "explanation": "__Disabled due to BASE_URL change",
+          "reconfigureButton": "__reconfigure"
+        },
+        "configureButton": {
+          "hint": "__Configure %s login",
+          "text": "__Configure"
+        }
+      }
+    },
+    "organization": {
+      "organizationSettingsBlurb": {
+        "explanation": "__Sandstorm allows you to define an organization. You can automatically apply some settings to all members of your organization. Users within the organization will automatically be able to log in, install apps, and create grains."
+      },
+      "newAdminOrganization": {
+        "success": "__Saved changes.",
+        "error": "__Failed to save changes: %s",
+        "membership": {
+          "title": "__Organization membership",
+          "emailToggle": {
+            "label": "__Users authenticated via email address",
+            "subtext": "__Note: disabled because email login is not configured."
+          },
+          "emailDomain": {
+            "label": "__Domain:",
+            "subtext": "__Users with an email address at this domain will be members of this server's organization."
+          },
+          "gappsToggle": {
+            "label": "__Users authenticated via Google Apps for Work",
+            "subtext": "__Note: disabled because Google login is not configured."
+          },
+          "gappsDomain": {
+            "label": "__Domain:",
+            "subtext": "__Users with a Google Apps for Work account under this domain will be members of this server's organization."
+          },
+          "ldapToggle": {
+            "label": "__Users authenticated via LDAP",
+            "subtext": "__Note: disabled because LDAP login is not configured."
+          },
+          "samlToggle": {
+            "label": "__Users authenticated via SAML",
+            "subtext": "__Note: disabled because SAML login is not configured."
+          }
+        },
+        "settings": {
+          "title": "__Organization settings",
+          "disallowGuests": {
+            "label": "__Disallow collaboration with users outside the organization.",
+            "subtext": "__Users will be required to log in as a member of your organization to view sharing links. Guest access will be disabled."
+          },
+          "shareContacts": {
+            "label": "__Make all organization users visible to each other",
+            "subtext": "__This setting automatically adds users within the organization to each other's contact list so that they can share grains with each other.  Disable this if you have some users whose identity should stay hidden from other users."
+          }
+        },
+        "saveButton": "__Save"
+      }
+    },
+    "emailConfig": {
+      "newAdminEmailConfig": {
+        "outbound": {
+          "title": "__Outbound email",
+          "warning": "__<strong>Email is unconfigured.</strong> Email-related features like email login, notifications, sharing by identity, and requesting access will be unavailable until you configure email."
+        },
+        "howItWorks": {
+          "title": "__How Sandstorm uses email",
+          "explanation": "__Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too. Every app receives a unique email address, so Sandstorm needs to send email from a variety of \"From:\" addresses. Therefore, Gmail SMTP won't work, but there are other free services. See <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">more info in the docs</a>."
+        },
+        "success": "__Saved changes.",
+        "error": "__Failed to save changes: %s",
+        "address": {
+          "hostname": "__SMTP host",
+          "port": "__Port",
+          "subtext": "__Use port 25 for SMTP (unencrypted or with StartTLS), port 465 for TLS-encrypted SMTPS."
+        },
+        "username": {
+          "label": "__Username (optional)"
+        },
+        "password": {
+          "label": "__Password (optional)"
+        },
+        "returnAddress": {
+          "label": "__Sandstorm server's own email address",
+          "subtext": "__Sandstorm will send login emails, notifications of granted access requests, and other emails from this address. It will also use this address in the SMTP envelope."
+        },
+        "submitButton": "__Save Configuration",
+        "testButton": "__Test",
+        "disableButton": "__Disable email"
+      },
+      "emailTestPopup": {
+        "title": "__Send a test email",
+        "testAddress": {
+          "label": "__Send test mail to:"
+        },
+        "pending": "__Sending...",
+        "submitButton": "__Send test email",
+        "closeButton": "__Close"
+      },
+      "emailDisablePopup": {
+        "title": "__Really disable email?",
+        "explanation": "__This will disable all outbound email delivery for this server, including sharing via email, email token login (if enabled), and email notifications to users.",
+        "disableButton": "__Disable email",
+        "closeButton": "__Close"
+      }
+    },
+    "personalization": {
+      "newAdminPersonalization": {
+        "serverTitle": {
+          "label": "__Server title:",
+          "subtext": "__The name of this server, as used when communicating with users."
+        },
+        "splashUrl": {
+          "label": "__Splash URL (experimental):",
+          "subtext": "__This web page will be displayed in the background behind the login dialog (the home page when logged out). For security reasons, the page must be hosted within this Sandstorm server's wildcard host (otherwise it will be blocked by <code>Content-Security-Policy</code>). We suggest using a static web publishing app like <a target=\"_blank\" href=\"https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh/?host={{serverUrl}}\">Hacker CMS</a> to host content.<strong>WARNING: This feature is experimental; in particular the style and positioning of the login box is subject to change without notice.</strong> Please let us know if you'd like to see it stabilize."
+        },
+        "signupDialog": {
+          "label": "__Signup dialog:",
+          "subtext": "__This text will be displayed to users who click on signup links."
+        },
+        "termsOfService": {
+          "label": "__Terms of service URL:",
+          "placeholder": "__https://example.com/tos",
+          "subtext": "__If provided, new users will be required to agree to the linked terms of service."
+        },
+        "privacyPolicy": {
+          "label": "__Privacy policy URL:",
+          "placeholder": "__https://example.com/privacy",
+          "subtext": "__If provided, new users will be required to agree to the linked privacy policy."
+        },
+        "whitelabeling": {
+          "title": "__Whitelabeling",
+          "logo": {
+            "label": "__Custom logo on sign-in dialog",
+            "resetButton": "__Use default",
+            "uploadButton": "__Upload logo"
+          },
+          "hideTroubleshooting": {
+            "label": "__Hide troubleshooting button"
+          },
+          "hideAbout": {
+            "label": "__Hide \"About Sandstorm\" links"
+          },
+          "hideSendFeedback": {
+            "label": "__Hide \"Send feedback\" link"
+          },
+          "useServerTitleForHomeText": {
+            "label": "__Use server title (above) for home link",
+            "subtext": "__If enabled, changes the default label \"Sandstorm\" on the link at the very top left to match whatever you specified for the Server title above."
+          },
+          "customLoginProviderName": {
+            "label": "__Custom login button text",
+            "subtext": "__Replaces the text \"with LDAP\" and \"with SAML\" on the login page with the specified text."
+          }
+        },
+        "saveButton": "__Save"
+      }
+    },
+    "preinstalledApps": {
+      "newAdminPreinstalledApps": {
+        "explanation": "__Apps you configure on this page to be pre-installed will automatically be installed (show under /apps) for new users.",
+        "productivitySuite": {
+          "label": "__Productivity Suite",
+          "subtext": "__We recommend pre-installing these core apps that are useful to most users."
+        },
+        "systemSuite": {
+          "label": "__System apps",
+          "subtext": "__We recommend pre-installing these system apps that greatly enhance the abilities of Sandstorm."
+        },
+        "allApps": {
+          "label": "__All apps on market",
+          "subtext": "__The checked apps below will be installed by default for all new users.",
+          "lessButton": "__Show fewer apps",
+          "moreButton": "__Show %s more apps"
+        },
+        "saveButton": "__Save"
+      },
+      "_appRow": {
+        "download": {
+          "success": "__Downloaded",
+          "failed": "__Failed"
+        }
+      }
+    },
+    "appSources": {
+      "newAdminAppSources": {
+        "appMarketUrl": {
+          "label": "__App market URL",
+          "subtext": "__The \"Install...\" button on the Apps page will link to this URL."
+        },
+        "enableAppUpdates": {
+          "label": "__Enable app update notifications",
+          "subtext": "__Updates to apps will be automatically downloaded by the Sandstorm server daily and notifications sent to users asking if they want to update their installed apps."
+        },
+        "appIndexUrl": {
+          "label": "__App index URL",
+          "subtext": "__This is the URL that the Sandstorm server will check to learn about app updates."
+        },
+        "saveButton": "__Save",
+        "restoreButton": "__Restore defaults"
+      }
+    },
+    "networking": {
+      "newAdminNetworking": {
+        "title": "__Security",
+        "ipBlacklist": {
+          "label": "__Server-side request IP blacklist:",
+          "subtext": "__Users will be prohibited from making requests to these IP addresses. This includes making a request from an app, downloading an SPK file from a user-provided URL, etc. You may specify one IP address or network (in CIDR notation, e.g. \"127.0.0.0/8\") per line. The default value includes standard local and private network addresses. Note that when an HTTP proxy is in use, this setting may be ignored; the proxy must implement its own blacklist."
+        },
+        "saveButton": "__Save",
+        "restoreButton": "__Restore defaults"
+      }
+    },
+    "userAccounts": {
+      "newAdminUserTableRow": {
+        "admin": {
+          "hint": "__Admin",
+          "cap": "__A"
+        },
+        "user": {
+          "hint": "__User",
+          "cap": "__U"
+        },
+        "visitor": {
+          "hint": "__Visitor",
+          "cap": "__V"
+        },
+        "unknownIdentity": "__Unknown identity",
+        "unknownName": "__unknown name",
+        "unknownIdentifier": "__unknown identifier",
+        "manageButton": "__Manage"
+      },
+      "newAdminUserTable": {
+        "header": {
+          "identities": "__Account",
+          "created": "__Created",
+          "lastActive": "__Last Active",
+          "actions": "__Actions"
+        },
+        "inviteLink": "__Invite new user",
+        "notFound": "__No users matched your filter.",
+        "processing": "__Loading users..."
+      },
+      "newAdminUsers": {
+        "search": {
+          "placeholder": "__search"
+        },
+        "filter": {
+          "explanation": "__Show:",
+          "admin": "__Admin",
+          "user": "__User",
+          "visitor": "__Visitor"
+        }
+      }
+    },
+    "userDetails": {
+      "newAdminUserDetailsIdentityTableRow": {
+        "profilePicture": {
+          "label": "__Profile picture"
+        },
+        "handle": {
+          "hint": "__Handle",
+          "label": "__@"
+        },
+        "pronouns": {
+          "hint": "__Pronouns",
+          "label": "__Pronouns"
+        },
+        "emails": {
+          "hint": "__Emails",
+          "label": "__Emails",
+          "primary": "__Primary",
+          "verified": "__Verified",
+          "unverified": "__Unverified",
+          "notFound": "__No known emails."
+        },
+        "properties": {
+          "login": "__Can log in",
+          "org": "__Org. member"
+        },
+        "unkonwn": {
+          "profilePicture": {
+            "cell": "__(unknown name)"
+          },
+          "service": {
+            "hint": "__unknown service",
+            "label": "__(unknown service)",
+            "cell": "__(unknown name)"
+          },
+          "handle": {
+            "cell": "__(unknown handle)"
+          },
+          "pronouns": {
+            "cell": "__(unknown pronouns)"
+          },
+          "created": {
+            "cell": "__unknown creation date"
+          },
+          "lastActive": {
+            "cell": "__unknown activity date"
+          }
+        }
+      },
+      "newAdminUserDetailsIdentityTable": {
+        "header": {
+          "identity": "__Identity",
+          "created": "__Created",
+          "lastActive": "__Last Active",
+          "properties": "__Properties"
+        }
+      },
+      "newAdminUserDetails": {
+        "role": {
+          "title": "__Role",
+          "admin": {
+            "label": "__Admin",
+            "explanation": "__Manages all accounts.  Can install apps, create grains, and administer the server.",
+            "isAdmin": "__Current role",
+            "isNotAdmin": "__Promote to admin"
+          },
+          "user": {
+            "label": "__User",
+            "explanation": "__Can install apps and create grains.",
+            "isUser": "__Current role",
+            "isAdmin": "__Demote to user",
+            "isNotUser": "__Promote to user"
+          },
+          "visitor": {
+            "label": "__Visitor",
+            "explanation": "__Can use and re-share shared grains, but cannot create grains of their own nor install apps.",
+            "isVisitor": "__Current role",
+            "isNotVisitor": "__Demote to visitor"
+          }
+        },
+        "identities": {
+          "title": "__Identities"
+        },
+        "status": {
+          "title": "__Status",
+          "deleting": "__Suspended - Pending deletion %s",
+          "suspended": "__Suspended",
+          "active": "__Active",
+          "unsuspendButton": "__Unsuspend account",
+          "suspendButton": "__Suspend account",
+          "deleteButton": "__Delete account"
+        },
+        "deletePopup": {
+          "title": "__Delete %s",
+          "explanation": "__You are about to mark %s's account for deletion. Once marked for deletion, this account will be suspended, and admins will have 7 days to cancel the pending deletion by returning to this page and clicking the \"Unsuspend Account\" button. %s will <strong>not</strong> be able to stop this suspension/deletion.",
+          "detail": "__After 7 days, %s's account will be permanently deleted. Deleting this account will:",
+          "detail1": "__Permanently delete any grains %s created",
+          "detail2": "__Revoke all sharing links %s created",
+          "detail3": "__Remove %s from all users' contact lists",
+          "detail4": "__Delete all identities owned by this account (except identities also associated with another account).",
+          "deleteButton": "__Delete account",
+          "cancelButton": "__Cancel"
+        },
+        "suspendPopup": {
+          "title": "__Suspend %s",
+          "detail": "__Suspending this user account will:",
+          "detail1": "__Prevent any grains created by %s from being opened",
+          "detail2": "__Disable any sharing links created by %s",
+          "detail3": "__This also applies to all identities owned by this account (except identities associated with another account)",
+          "suspendButton": "__Suspend account",
+          "cancelButton": "__Cancel"
+        },
+        "loading": "__Loading user data..."
+      }
+    },
+    "userInvite": {},
+    "systemStatus": {},
+    "stats": {},
     "maintenanceMessage": {},
     "networkCapabilities": {},
-    "networking": {},
-    "organization": {},
-    "personalization": {},
-    "preinstalledApps": {},
-    "stats": {},
-    "systemStatus": {},
-    "userAccounts": {},
-    "userDetails": {},
-    "userInvite": {}
+    "hostingManagement": {}
   },
   "people": {
     "title": "使用者"

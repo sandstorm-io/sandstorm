@@ -63,8 +63,8 @@
     "uploadStatus": {
       "title": "正在上傳……",
       "uploadFailedWithError": "上傳失敗：%s %s",
-      "statusWithProgress": "__%s... %s",
-      "status": "__%s...",
+      "statusWithProgress": "%s……%s",
+      "status": "%s……",
       "uploadFailed": "上傳失敗，請重試。"
     },
     "uploadTest": {
@@ -117,7 +117,7 @@
       "intro": {
         "explanation": "<a href=\"https://sandstorm.io\">沙聚雲(Sandstorm.io)</a>是可以執行私人或個人網路應用程式的開源平台。使用者可以上傳並安裝任何程式，就像手機的應用程式商店一樣。為了保護隱私，<a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">這是唯一公開開源網路應用程式的方式。</a>",
         "version": "版本：%s",
-        "unofficialWarning": "__<b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers."
+        "unofficialWarning": "<b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers."
       },
       "changelog": {
         "title": "最新變更點"
@@ -562,24 +562,24 @@
     },
     "identityProviders": {
       "newAdminIdentity": {
-        "explanation": "__Choose which services users may use to identify themselves.  Anyone can log in, but only users you invite will be able to install apps or create grains.",
-        "organizationLinkPrefix": "__To configure organization membership and settings, see",
-        "organizationLink": "__organization settings",
-        "organizationLinkPostfix": "__."
+        "explanation": "選擇使用者可以用哪些方法進行身份認證。所有人都能登入，但只有您邀請的使用者可以安裝應用程式或建立沙粒。",
+        "organizationLinkPrefix": "要設定組織內容，請到",
+        "organizationLink": "組織設置",
+        "organizationLinkPostfix": "."
       },
       "adminIdentityProviderConfigureEmail": {
-        "title": "__Email login configuration",
-        "error": "__Failed to save changes: %s",
-        "warning": "__Note: to use email login, you'll need to configure email delivery after this.",
-        "explanation": "__Email login has no additional configuration options.",
-        "saveButton": "__Save",
-        "enableButton": "__Enable",
-        "cancelButton": "__Cancel",
-        "disableButton": "__Disable"
+        "title": "電子郵件登入設定",
+        "error": "無法儲存變更：%s",
+        "warning": "備註：若要使用電子郵件登入，您也需要設定伺服器的電子郵件寄送功能。",
+        "explanation": "電子郵件登入沒有額外的設定選項。",
+        "saveButton": "儲存",
+        "enableButton": "啟用",
+        "cancelButton": "取消",
+        "disableButton": "停用"
       },
       "googleLoginSetupInstructions": {
-        "explanation": "__First, you'll need to get a Google Client ID. Follow these steps:",
-        "step1": "__Visit <a href=\"https://console.developers.google.com/\" target=\"blank\">https://console.developers.google.com/</a>",
+        "explanation": "首先，您需要取得 Google Client ID。遵循以下步驟：",
+        "step1": "造訪 <a href=\"https://console.developers.google.com/\" target=\"blank\">https://console.developers.google.com/</a>",
         "step2": "__\"Create Project\", if needed. Wait for Google to finish provisioning.",
         "step3": "__On the left sidebar, go to \"Credentials\" and, on the right, \"OAuth consent screen\". Make sure to enter an email address and a product name, and save.",
         "step4": "__On the left sidebar, go to \"Credentials\".  Click the \"Create credentials\" button, then select \"OAuth client ID\" as the type.",

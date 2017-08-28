@@ -1177,7 +1177,37 @@
         "saveButton": "Set message"
       }
     },
-    "networkCapabilities": {},
+    "networkCapabilities": {
+      "newAdminNetworkCapabilitiesTableCapabilityRow": {
+        "adminAccount": "Admin account %s",
+        "unknownGranter": "Unknown granter",
+        "anyone": "Anyone with the token",
+        "unknownRecipient": "Unknown recipient",
+        "revoked": "Revoked",
+        "revokeButton": "Revoke"
+      },
+      "newAdminNetworkCapabilitiesTable": {
+        "header": {
+          "grantBy": "Granted by",
+          "grantTo": "Granted to",
+          "grantTime": "Time",
+          "actions": "Actions"
+        },
+        "notFound": "No capabilities found."
+      },
+      "newAdminNetworkCapabilitiesSection": {
+        "filter": {
+          "label": "Showing:",
+          "active": "Active (%s)",
+          "revoked": "Revoked (%s)"
+        }
+      },
+      "newAdminNetworkCapabilities": {
+        "networkCaps": "Outbound network access",
+        "networkCapsTls": "TLS-encrypted outbound network access",
+        "interfaceCaps": "Inbound network access"
+      }
+    },
     "hostingManagement": {}
   },
   "people": {

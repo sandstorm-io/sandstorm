@@ -1064,7 +1064,40 @@
         "loading": "Loading user data..."
       }
     },
-    "userInvite": {},
+    "userInvite": {
+      "newAdminUserInviteLink": {
+        "explanation": "You can invite others to create accounts on your server by giving them an account creation link. People you invite will be granted User permission and be able to install apps and create grains of their own. Alternatively, if you want to share a specific grain with someone, you can do that within the grain's \"Share Access\" menu.",
+        "title": "Create a link",
+        "invite": {
+          "explanation": "This will create an account creation link which you can send to someone.",
+          "createButton": "Create link"
+        }
+      },
+      "newAdminUserInviteEmail": {
+        "title": "Send an email",
+        "emailWarning": {
+          "explanation": "Email has not been configured, so sending invites via email is disabled.",
+          "configureLink": "Configure email"
+        },
+        "explanation": "This will create a link and send it in an email.",
+        "to": {
+          "label": "To:",
+          "placeholder": "alice@email.com\nbob@example.com",
+          "subtext": "Email addresses, one per line."
+        },
+        "subject": {
+          "label": "Subject:"
+        },
+        "body": {
+          "label": "Body:",
+          "subtext": "<code>$KEY</code> will be replaced with the newly-generated link."
+        },
+        "sendButton": "Send invite"
+      },
+      "newAdminUserInvite": {
+        "title": "Invite"
+      }
+    },
     "systemStatus": {},
     "stats": {},
     "maintenanceMessage": {},

@@ -185,7 +185,7 @@
       "requestAccess": "要求存取權",
       "warnIdentityRevealing": "要求存取權將把您的完整身份告知沙粒擁有者。",
       "sendRequest": "正在送出您的要求……",
-      "waitForApproving": "要求已送出，若獲核准則會以電子郵件通知您。",
+      "waitForApproving": "要求已送出，若獲核准則會以電郵通知您。",
       "requestFailed": "要求失敗，原因：%s",
       "signInPlease": "若要要求存取權，請先登入。"
     },
@@ -364,7 +364,7 @@
       },
       "contactAutocomplete": {
         "contactInputBox": {
-          "placeholder": "輸入電子郵件信箱或姓名"
+          "placeholder": "輸入電郵信箱或姓名"
         }
       }
     }
@@ -429,8 +429,8 @@
       "explanation": "管理者：授權給所有連入存取"
     },
     "emailVerifierPowerboxCard": {
-      "verifyWith": "用 %s 驗證電子郵件信箱",
-      "verifyWithAnyService": "用任何登入服務驗證電子郵件信箱"
+      "verifyWith": "用 %s 驗證電郵信箱",
+      "verifyWithAnyService": "用任何登入服務驗證電郵信箱"
     },
     "identityPowerboxConfiguration": {
       "explanation": "權限：",
@@ -515,8 +515,8 @@
             "subtext": "讓大團隊可以圓滑地上手及進行合作。"
           },
           "emailConfig": {
-            "name": "電子郵件寄送設定",
-            "subtext": "設定沙聚雲如何寄送電子郵件。"
+            "name": "電郵寄送設定",
+            "subtext": "設定沙聚雲如何寄送電郵。"
           },
           "personalization": {
             "name": "個人化",
@@ -568,10 +568,10 @@
         "organizationLinkPostfix": "."
       },
       "adminIdentityProviderConfigureEmail": {
-        "title": "電子郵件登入設定",
+        "title": "電郵登入設定",
         "error": "無法儲存變更：%s",
-        "warning": "備註：若要使用電子郵件登入，您也需要設定伺服器的電子郵件寄送功能。",
-        "explanation": "電子郵件登入沒有額外的設定選項。",
+        "warning": "備註：若要使用電郵登入，您也需要設定伺服器的電郵寄送功能。",
+        "explanation": "電郵登入沒有額外的設定選項。",
         "saveButton": "儲存",
         "enableButton": "啟用",
         "cancelButton": "取消",
@@ -716,8 +716,8 @@
         "membership": {
           "title": "組織成員",
           "emailToggle": {
-            "label": "自動認證電子郵件信箱",
-            "subtext": "注意：因為電子郵件登入設定未完成，所以無法使用。"
+            "label": "自動認證電郵信箱",
+            "subtext": "注意：因為電郵登入設定未完成，所以無法使用。"
           },
           "emailDomain": {
             "label": "網域：",
@@ -758,11 +758,11 @@
       "newAdminEmailConfig": {
         "outbound": {
           "title": "外寄郵件",
-          "warning": "<strong>外寄郵件尚未設定完成。</strong>在您設定完成前，和電子郵件有關的功能（比如郵件登入、通知、以身份分享或要求存取）都無法使用。"
+          "warning": "<strong>外寄郵件尚未設定完成。</strong>在您設定完成前，和電郵有關的功能（比如郵件登入、通知、以身份分享或要求存取）都無法使用。"
         },
         "howItWorks": {
-          "title": "沙聚雲如何使用電子郵件",
-          "explanation": "沙聚雲寄送通知郵件，並且也允許應用程式寄送。每個應用程式都有一個獨自的電子郵件位址，所以沙聚雲需要能從可變的「來自」位置寄信。所以 Gmail SMTP 不管用，請採用別的免費服務。更多資訊請<a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">參見此處</a>。"
+          "title": "沙聚雲如何使用電郵",
+          "explanation": "沙聚雲寄送通知郵件，並且也允許應用程式寄送。每個應用程式都有一個獨自的電郵位址，所以沙聚雲需要能從可變的「來自」位置寄信。所以 Gmail SMTP 不管用，請採用別的免費服務。更多資訊請<a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">參見此處</a>。"
         },
         "success": "變更已儲存。",
         "error": "無法儲存變更：%s",
@@ -783,283 +783,283 @@
         },
         "submitButton": "儲存設定",
         "testButton": "測試",
-        "disableButton": "停用電子郵件"
+        "disableButton": "停用電郵"
       },
       "emailTestPopup": {
-        "title": "__Send a test email",
+        "title": "寄送測試郵件",
         "testAddress": {
-          "label": "__Send test mail to:"
+          "label": "寄送測試郵件到："
         },
-        "pending": "__Sending...",
-        "submitButton": "__Send test email",
-        "closeButton": "__Close"
+        "pending": "正在寄送……",
+        "submitButton": "寄送測試郵件",
+        "closeButton": "關閉"
       },
       "emailDisablePopup": {
-        "title": "__Really disable email?",
-        "explanation": "__This will disable all outbound email delivery for this server, including sharing via email, email token login (if enabled), and email notifications to users.",
-        "disableButton": "__Disable email",
-        "closeButton": "__Close"
+        "title": "真的要停用電郵？",
+        "explanation": "將會停用所有本沙聚雲的外寄郵件功能，包括電郵、郵件登入、以及郵件通知。",
+        "disableButton": "停用電郵",
+        "closeButton": "關閉"
       }
     },
     "personalization": {
       "newAdminPersonalization": {
         "serverTitle": {
-          "label": "__Server title:",
-          "subtext": "__The name of this server, as used when communicating with users."
+          "label": "伺服器標題：",
+          "subtext": "本伺服器和使用者溝通時使用的名稱。"
         },
         "splashUrl": {
-          "label": "__Splash URL (experimental):",
-          "subtext": "__This web page will be displayed in the background behind the login dialog (the home page when logged out). For security reasons, the page must be hosted within this Sandstorm server's wildcard host (otherwise it will be blocked by <code>Content-Security-Policy</code>). We suggest using a static web publishing app like <a target=\"_blank\" href=\"https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh/?host={{serverUrl}}\">Hacker CMS</a> to host content.<strong>WARNING: This feature is experimental; in particular the style and positioning of the login box is subject to change without notice.</strong> Please let us know if you'd like to see it stabilize."
+          "label": "Splash URL (experimental):",
+          "subtext": "This web page will be displayed in the background behind the login dialog (the home page when logged out). For security reasons, the page must be hosted within this Sandstorm server's wildcard host (otherwise it will be blocked by <code>Content-Security-Policy</code>). We suggest using a static web publishing app like <a target=\"_blank\" href=\"https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh/?host={{serverUrl}}\">Hacker CMS</a> to host content.<strong>WARNING: This feature is experimental; in particular the style and positioning of the login box is subject to change without notice.</strong> Please let us know if you'd like to see it stabilize."
         },
         "signupDialog": {
-          "label": "__Signup dialog:",
-          "subtext": "__This text will be displayed to users who click on signup links."
+          "label": "註冊對話框：",
+          "subtext": "當點擊註冊連結時顯示的文字。"
         },
         "termsOfService": {
-          "label": "__Terms of service URL:",
-          "placeholder": "__https://example.com/tos",
-          "subtext": "__If provided, new users will be required to agree to the linked terms of service."
+          "label": "服務條款網址：",
+          "placeholder": "https://example.com/tos",
+          "subtext": "若有填寫，新使用者將會被要求同意您提供的服務條款。"
         },
         "privacyPolicy": {
-          "label": "__Privacy policy URL:",
-          "placeholder": "__https://example.com/privacy",
-          "subtext": "__If provided, new users will be required to agree to the linked privacy policy."
+          "label": "隱私權聲明網址：",
+          "placeholder": "https://example.com/privacy",
+          "subtext": "若有填寫，新使用者將會被要求同意您提供的隱私權聲明。"
         },
         "whitelabeling": {
-          "title": "__Whitelabeling",
+          "title": "白標",
           "logo": {
-            "label": "__Custom logo on sign-in dialog",
-            "resetButton": "__Use default",
-            "uploadButton": "__Upload logo"
+            "label": "登入對話框顯示圖案",
+            "resetButton": "使用預設值",
+            "uploadButton": "上傳圖案"
           },
           "hideTroubleshooting": {
-            "label": "__Hide troubleshooting button"
+            "label": "隱藏故障排除按鈕"
           },
           "hideAbout": {
-            "label": "__Hide \"About Sandstorm\" links"
+            "label": "隱藏「關於沙聚雲」連結"
           },
           "hideSendFeedback": {
-            "label": "__Hide \"Send feedback\" link"
+            "label": "隱藏「傳送意見」連結"
           },
           "useServerTitleForHomeText": {
-            "label": "__Use server title (above) for home link",
-            "subtext": "__If enabled, changes the default label \"Sandstorm\" on the link at the very top left to match whatever you specified for the Server title above."
+            "label": "以伺服器標題作為首頁連結",
+            "subtext": "將畫面左上角的「Sandstorm」文字改為伺服器標題。"
           },
           "customLoginProviderName": {
-            "label": "__Custom login button text",
-            "subtext": "__Replaces the text \"with LDAP\" and \"with SAML\" on the login page with the specified text."
+            "label": "自訂登入按鈕文字",
+            "subtext": "將登入畫面的「LDAP 登入」和「SAML 登入」的改成您自訂的文字。"
           }
         },
-        "saveButton": "__Save"
+        "saveButton": "儲存"
       }
     },
     "preinstalledApps": {
       "newAdminPreinstalledApps": {
-        "explanation": "__Apps you configure on this page to be pre-installed will automatically be installed (show under /apps) for new users.",
+        "explanation": "在本頁設定為預裝的應用程式將會自動安裝在所有新使用者的沙聚雲中。",
         "productivitySuite": {
-          "label": "__Productivity Suite",
-          "subtext": "__We recommend pre-installing these core apps that are useful to most users."
+          "label": "生產力套件",
+          "subtext": "大部分使用者都會用到這些核心應用程式。"
         },
         "systemSuite": {
-          "label": "__System apps",
-          "subtext": "__We recommend pre-installing these system apps that greatly enhance the abilities of Sandstorm."
+          "label": "系統程式",
+          "subtext": "預裝這些系統程式可以大幅強化沙聚雲的功能性。"
         },
         "allApps": {
-          "label": "__All apps on market",
-          "subtext": "__The checked apps below will be installed by default for all new users.",
-          "lessButton": "__Show fewer apps",
-          "moreButton": "__Show %s more apps"
+          "label": "市集上的應用程式",
+          "subtext": "沙聚雲會幫新使用者自動安裝所有被勾選的程式。",
+          "lessButton": "收合",
+          "moreButton": "顯示另外 %s 個應用程式"
         },
-        "saveButton": "__Save"
+        "saveButton": "儲存"
       },
       "_appRow": {
         "download": {
-          "success": "__Downloaded",
-          "failed": "__Failed"
+          "success": "已下載",
+          "failed": "失敗"
         }
       }
     },
     "appSources": {
       "newAdminAppSources": {
         "appMarketUrl": {
-          "label": "__App market URL",
-          "subtext": "__The \"Install...\" button on the Apps page will link to this URL."
+          "label": "應用程式市集網址",
+          "subtext": "設定應用程式頁面的「安裝應用程式」按鈕打開的連結。"
         },
         "enableAppUpdates": {
-          "label": "__Enable app update notifications",
-          "subtext": "__Updates to apps will be automatically downloaded by the Sandstorm server daily and notifications sent to users asking if they want to update their installed apps."
+          "label": "啟用程式更新通知",
+          "subtext": "沙聚雲伺服器每天都會下載應用程式的更新檔，並且詢問每個使用者是否要進行更新。"
         },
         "appIndexUrl": {
-          "label": "__App index URL",
-          "subtext": "__This is the URL that the Sandstorm server will check to learn about app updates."
+          "label": "程式索引網址",
+          "subtext": "設定沙聚雲伺服器檢查更新用的網址。"
         },
-        "saveButton": "__Save",
-        "restoreButton": "__Restore defaults"
+        "saveButton": "儲存",
+        "restoreButton": "回復預設值"
       }
     },
     "networking": {
       "newAdminNetworking": {
-        "title": "__Security",
+        "title": "安全性",
         "ipBlacklist": {
-          "label": "__Server-side request IP blacklist:",
-          "subtext": "__Users will be prohibited from making requests to these IP addresses. This includes making a request from an app, downloading an SPK file from a user-provided URL, etc. You may specify one IP address or network (in CIDR notation, e.g. \"127.0.0.0/8\") per line. The default value includes standard local and private network addresses. Note that when an HTTP proxy is in use, this setting may be ignored; the proxy must implement its own blacklist."
+          "label": "伺服器端請求 IP 黑名單：",
+          "subtext": "這些 IP 將無法被使用者請求，包含從應用程式內請求、從使用者指定的網址下載 SPK 檔案等。您每行可以指定一個 IP 或網路（使用 CIDR notation，比如\"127.0.0.0/8\"）。預設值包含標準的本地端及私人網路位址。另外當使用 HTTP 代理時他可能有自己的黑名單設定，所以這項設定可能會被忽略。"
         },
-        "saveButton": "__Save",
-        "restoreButton": "__Restore defaults"
+        "saveButton": "儲存",
+        "restoreButton": "回復預設值"
       }
     },
     "userAccounts": {
       "newAdminUserTableRow": {
         "admin": {
-          "hint": "__Admin",
-          "cap": "__A"
+          "hint": "管理者",
+          "cap": "A"
         },
         "user": {
-          "hint": "__User",
-          "cap": "__U"
+          "hint": "使用者",
+          "cap": "U"
         },
         "visitor": {
-          "hint": "__Visitor",
-          "cap": "__V"
+          "hint": "訪客",
+          "cap": "V"
         },
-        "unknownIdentity": "__Unknown identity",
-        "unknownName": "__unknown name",
-        "unknownIdentifier": "__unknown identifier",
-        "manageButton": "__Manage"
+        "unknownIdentity": "不明身份",
+        "unknownName": "名稱不明",
+        "unknownIdentifier": "不明的識別資訊",
+        "manageButton": "管理"
       },
       "newAdminUserTable": {
         "header": {
-          "identities": "__Account",
-          "created": "__Created",
-          "lastActive": "__Last Active",
-          "actions": "__Actions"
+          "identities": "帳號名",
+          "created": "建立日期",
+          "lastActive": "最近活躍",
+          "actions": "動作"
         },
-        "inviteLink": "__Invite new user",
-        "notFound": "__No users matched your filter.",
-        "processing": "__Loading users..."
+        "inviteLink": "邀請新使用者",
+        "notFound": "沒有使用者符合您的搜尋條件",
+        "processing": "正在讀取使用者資料……"
       },
       "newAdminUsers": {
         "search": {
-          "placeholder": "__search"
+          "placeholder": "搜尋"
         },
         "filter": {
-          "explanation": "__Show:",
-          "admin": "__Admin",
-          "user": "__User",
-          "visitor": "__Visitor"
+          "explanation": "顯示：",
+          "admin": "管理者",
+          "user": "使用者",
+          "visitor": "訪客"
         }
       }
     },
     "userDetails": {
       "newAdminUserDetailsIdentityTableRow": {
         "profilePicture": {
-          "label": "__Profile picture"
+          "label": "個人檔案照片"
         },
         "handle": {
-          "hint": "__Handle",
-          "label": "__@"
+          "hint": "稱呼",
+          "label": "@"
         },
         "pronouns": {
-          "hint": "__Pronouns",
-          "label": "__Pronouns"
+          "hint": "代名詞",
+          "label": "代名詞"
         },
         "emails": {
-          "hint": "__Emails",
-          "label": "__Emails",
-          "primary": "__Primary",
-          "verified": "__Verified",
-          "unverified": "__Unverified",
-          "notFound": "__No known emails."
+          "hint": "電郵信箱",
+          "label": "電郵信箱",
+          "primary": "主要",
+          "verified": "已驗證",
+          "unverified": "尚未驗證",
+          "notFound": "沒有不明電郵。"
         },
         "properties": {
-          "login": "__Can log in",
-          "org": "__Org. member"
+          "login": "可登入",
+          "org": "組織成員"
         },
         "unkonwn": {
           "profilePicture": {
-            "cell": "__(unknown name)"
+            "cell": "（名稱不明)"
           },
           "service": {
-            "hint": "__unknown service",
-            "label": "__(unknown service)",
-            "cell": "__(unknown name)"
+            "hint": "不明服務",
+            "label": "不明服務",
+            "cell": "名稱不明"
           },
           "handle": {
-            "cell": "__(unknown handle)"
+            "cell": "稱呼不明"
           },
           "pronouns": {
-            "cell": "__(unknown pronouns)"
+            "cell": "代名詞不明"
           },
           "created": {
-            "cell": "__unknown creation date"
+            "cell": "建立日期不明"
           },
           "lastActive": {
-            "cell": "__unknown activity date"
+            "cell": "最近活躍不明"
           }
         }
       },
       "newAdminUserDetailsIdentityTable": {
         "header": {
-          "identity": "__Identity",
-          "created": "__Created",
-          "lastActive": "__Last Active",
-          "properties": "__Properties"
+          "identity": "身份",
+          "created": "建立日期",
+          "lastActive": "最近活躍",
+          "properties": "內容"
         }
       },
       "newAdminUserDetails": {
         "role": {
-          "title": "__Role",
+          "title": "角色",
           "admin": {
-            "label": "__Admin",
-            "explanation": "__Manages all accounts.  Can install apps, create grains, and administer the server.",
-            "isAdmin": "__Current role",
-            "isNotAdmin": "__Promote to admin"
+            "label": "管理者",
+            "explanation": "管理所有帳號。可以安裝應用程式，建立沙粒，以及管理伺服器。",
+            "isAdmin": "目前角色",
+            "isNotAdmin": "升級為管理者"
           },
           "user": {
-            "label": "__User",
-            "explanation": "__Can install apps and create grains.",
-            "isUser": "__Current role",
-            "isAdmin": "__Demote to user",
-            "isNotUser": "__Promote to user"
+            "label": "使用者",
+            "explanation": "可以安裝應用程式及建立沙粒。",
+            "isUser": "目前角色",
+            "isAdmin": "降級為使用者",
+            "isNotUser": "升級為使用者"
           },
           "visitor": {
-            "label": "__Visitor",
-            "explanation": "__Can use and re-share shared grains, but cannot create grains of their own nor install apps.",
-            "isVisitor": "__Current role",
-            "isNotVisitor": "__Demote to visitor"
+            "label": "訪客",
+            "explanation": "可以二度分享別人分享的沙粒，可是不能安裝應用程式或建立自己的沙粒。",
+            "isVisitor": "目前角色",
+            "isNotVisitor": "降級為訪客"
           }
         },
         "identities": {
-          "title": "__Identities"
+          "title": "識別資訊"
         },
         "status": {
-          "title": "__Status",
-          "deleting": "__Suspended - Pending deletion %s",
-          "suspended": "__Suspended",
-          "active": "__Active",
-          "unsuspendButton": "__Unsuspend account",
-          "suspendButton": "__Suspend account",
-          "deleteButton": "__Delete account"
+          "title": "狀態",
+          "deleting": "停權 - 即將刪除 %s",
+          "suspended": "停權",
+          "active": "活躍",
+          "unsuspendButton": "解除停權",
+          "suspendButton": "將帳號停權",
+          "deleteButton": "刪除帳號"
         },
         "deletePopup": {
-          "title": "__Delete %s",
-          "explanation": "__You are about to mark %s's account for deletion. Once marked for deletion, this account will be suspended, and admins will have 7 days to cancel the pending deletion by returning to this page and clicking the \"Unsuspend Account\" button. %s will <strong>not</strong> be able to stop this suspension/deletion.",
-          "detail": "__After 7 days, %s's account will be permanently deleted. Deleting this account will:",
-          "detail1": "__Permanently delete any grains %s created",
-          "detail2": "__Revoke all sharing links %s created",
-          "detail3": "__Remove %s from all users' contact lists",
-          "detail4": "__Delete all identities owned by this account (except identities also associated with another account).",
-          "deleteButton": "__Delete account",
-          "cancelButton": "__Cancel"
+          "title": "刪除 %s",
+          "explanation": "您正在刪除 %s 的帳號。被標記為刪除中的帳號會被停權，管理者有七天的時間取消刪除動作。（在本頁點擊「解除停權」按鈕即可）%s <strong>無法</strong>阻止停權和刪除。",
+          "detail": "七天後， %s 的帳號將被永遠刪除。刪除帳號將：",
+          "detail1": "永遠刪除所有 %s 建立的沙粒",
+          "detail2": "撤銷所有 %s 建立的共享連結",
+          "detail3": "將 %s 從所有人的聯絡人名單中移除",
+          "detail4": "刪除所有本帳號的識別資訊（除非該識別資訊亦被別的帳號使用）",
+          "deleteButton": "刪除帳號",
+          "cancelButton": "取消"
         },
         "suspendPopup": {
-          "title": "__Suspend %s",
-          "detail": "__Suspending this user account will:",
-          "detail1": "__Prevent any grains created by %s from being opened",
-          "detail2": "__Disable any sharing links created by %s",
-          "detail3": "__This also applies to all identities owned by this account (except identities associated with another account)",
-          "suspendButton": "__Suspend account",
-          "cancelButton": "__Cancel"
+          "title": "將 %s 停權",
+          "detail": "將這個帳號停權將會：",
+          "detail1": "阻止所有 %s 建立的沙粒被開啟",
+          "detail2": "停用所有 %s 建立的共享連結",
+          "detail3": "本帳號的識別資訊亦等同辦理（除非該識別資訊亦被別的帳號使用）",
+          "suspendButton": "將帳號停權",
+          "cancelButton": "取消"
         },
         "loading": "正在讀取使用者資料……"
       }

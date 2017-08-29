@@ -1064,11 +1064,150 @@
         "loading": "Loading user data..."
       }
     },
-    "userInvite": {},
-    "systemStatus": {},
-    "stats": {},
-    "maintenanceMessage": {},
-    "networkCapabilities": {},
+    "userInvite": {
+      "newAdminUserInviteLink": {
+        "explanation": "You can invite others to create accounts on your server by giving them an account creation link. People you invite will be granted User permission and be able to install apps and create grains of their own. Alternatively, if you want to share a specific grain with someone, you can do that within the grain's \"Share Access\" menu.",
+        "title": "Create a link",
+        "invite": {
+          "explanation": "This will create an account creation link which you can send to someone.",
+          "createButton": "Create link"
+        }
+      },
+      "newAdminUserInviteEmail": {
+        "title": "Send an email",
+        "emailWarning": {
+          "explanation": "Email has not been configured, so sending invites via email is disabled.",
+          "configureLink": "Configure email"
+        },
+        "explanation": "This will create a link and send it in an email.",
+        "to": {
+          "label": "To:",
+          "placeholder": "alice@email.com\nbob@example.com",
+          "subtext": "Email addresses, one per line."
+        },
+        "subject": {
+          "label": "Subject:"
+        },
+        "body": {
+          "label": "Body:",
+          "subtext": "<code>$KEY</code> will be replaced with the newly-generated link."
+        },
+        "sendButton": "Send invite"
+      },
+      "newAdminUserInvite": {
+        "title": "Invite"
+      }
+    },
+    "systemStatus": {
+      "newAdminLogContents": {
+        "ellipsis": "..."
+      },
+      "newAdminStatus": {
+        "downloadButton": "Download full log"
+      }
+    },
+    "stats": {
+      "header": {
+        "date": "date",
+        "users": "users",
+        "grains": "grains",
+        "appName": "App name",
+        "owners": "owners",
+        "sharedUsers": "sharedUsers",
+        "daily": "daily",
+        "weekly": "weekly",
+        "monthly": "monthly",
+        "forever": "forever"
+      },
+      "body": {
+        "notFound": "There are no stats recorded yet.",
+        "loading": "Loading..."
+      },
+      "newAdminStats": {
+        "share": {
+          "title": "Publish anonymously to Sandstorm dev team",
+          "explanation": "We'd like to know how many Sandstorm users there are, to make graphs and such.  Is it okay to send the numbers on this page once a day to the Sandstorm team, so that we can add them to the totals?  Any stats you send are anonymous.",
+          "enableButton": "Send anonymous stats",
+          "disableButton": "Don't send",
+          "control": {
+            "explanation": "The developers of Sandstorm like to know how many Sandstorm users there are, to make graphs and such.  You can help us by opting in to sharing the numbers on this page once a day to the Sandstorm team, so that we can add them to our totals. Any stats shared are submitted anonymously.",
+            "label": "Anonymous stats reporting to sandstorm.io:",
+            "enabled": "Enabled",
+            "disabled": "Disabled",
+            "disableButton": "Disable",
+            "enableButton": "Enable"
+          }
+        },
+        "json": {
+          "title": "View as JSON",
+          "explanation": "If you want to integrate Sandstorm stats with an internal stats tool, use this secret link to retrieve the tables below as JSON. You can revoke the current link at any time by generating a new link.",
+          "label": "Stats JSON link:",
+          "regenerateButton": "Generate new link"
+        },
+        "userGrains": {
+          "title": "Users and grains",
+          "current": "Right now: __users__ users, __grains__ grains",
+          "today": "Today: __users__ users, __grains__ grains"
+        },
+        "apps": {
+          "title": "Apps",
+          "label": "Select a date:"
+        }
+      }
+    },
+    "maintenanceMessage": {
+      "newAdminMaintenance": {
+        "explanation": "You can set a maintenance message which will be shown to all users in the menu bar, on the top right. This is useful for announcing scheduled maintenance so users can be prepared to tolerate downtime. If the message text is empty, no message will be displayed.",
+        "variables": "You may use the following variables in the \"Message text\" field, which will be automatically substituted with useful values:",
+        "variable1": "<code>$TIME</code> : The time component of \"Maintenance time\", converted to the user's local time (eg. \"1:15:45 PM\")",
+        "variable2": "<code>$DATE</code> : The date component of \"Maintenance time\", converted to the user's local time (eg. \"6/19/2015\")",
+        "variable3": "<code>$IN_COUNTDOWN</code> : An active countdown until \"Maintenance time\" (eg. \"in 3 days\" or \"in 1 minute\"). Displays \"any moment\" at the time specified in \"Maintenance time\" and then disappears after an hour.",
+        "messageText": {
+          "label": "Message text:",
+          "subtext": ""
+        },
+        "maintenanceTime": {
+          "label": "Maintenance time:",
+          "subtext": "The time you intend to start performing maintenance, formatted like \"%s\"."
+        },
+        "url": {
+          "label": "Link URL (optional):",
+          "subtext": "If given, the maintenance message will render as a clickable link to the provided URL."
+        },
+        "saveButton": "Set message"
+      }
+    },
+    "networkCapabilities": {
+      "newAdminNetworkCapabilitiesTableCapabilityRow": {
+        "adminAccount": "Admin account %s",
+        "unknownGranter": "Unknown granter",
+        "anyone": "Anyone with the token",
+        "unknownRecipient": "Unknown recipient",
+        "revoked": "Revoked",
+        "revokeButton": "Revoke"
+      },
+      "newAdminNetworkCapabilitiesTable": {
+        "header": {
+          "grantBy": "Granted by",
+          "grantTo": "Granted to",
+          "grantTime": "Time",
+          "actions": "Actions"
+        },
+        "notFound": "No capabilities found."
+      },
+      "newAdminNetworkCapabilitiesSection": {
+        "filter": {
+          "label": "Showing:",
+          "active": "Active (%s)",
+          "revoked": "Revoked (%s)"
+        }
+      },
+      "newAdminNetworkCapabilities": {
+        "networkCaps": "Outbound network access",
+        "networkCapsTls": "TLS-encrypted outbound network access",
+        "interfaceCaps": "Inbound network access"
+      }
+    },
     "hostingManagement": {}
   },
   "people": {

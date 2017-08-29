@@ -1228,6 +1228,57 @@
       "noMatchApp": "You have no installed apps with that name. Try <a href=\"__url__\">searching on the app market &raquo;</a>",
       "unauthorized": "Unauthorized! :(",
       "unauthorizedText": "This is a private Sandstorm server. In order to install apps, you need to be invited by the admin. The admin can invite you from the admin panel."
+    },
+    "install": {
+      "sandstormAppInstallPage": {
+        "title": "Install app",
+        "error": {
+          "title": "Failed to install app",
+          "retryButton": "Try Again"
+        },
+        "stepWait": {
+          "title": "Waiting for write access..."
+        },
+        "stepDownload": {
+          "title": "Downloading...",
+          "cancelButton": "Cancel"
+        },
+        "stepVerify": {
+          "title": "Verifying..."
+        },
+        "stepUnpack": {
+          "title": "Unpacking..."
+        },
+        "stepAnalyze": {
+          "title": "Analyzing..."
+        },
+        "stepConfirm": {
+          "upgrade": {
+            "explanation": "You have an older version of this app installed.  Do you want to upgrade?",
+            "button": "Upgrade %s"
+          },
+          "downgrade": {
+            "explanation": "You already have a newer version of this app installed.  Are you sure you want to revert to this older version?",
+            "button": "Downgrade %s"
+          },
+          "install": {
+            "button": "Install %s"
+          }
+        },
+        "stepRun": {
+          "title": "%s installed",
+          "explanation": "Installation complete.",
+          "appDetailsLink": "Go to %s"
+        },
+        "stepDelete": {
+          "title": "Deleting",
+          "explanation": "Server is currently deleting this app..."
+        },
+        "stepFailed": {
+          "title": "Failed",
+          "explanation": "Installation failed: %s"
+        }
+      }
     }
   }
 }

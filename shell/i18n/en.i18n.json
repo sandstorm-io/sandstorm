@@ -1216,9 +1216,12 @@
   "apps": {
     "title": "Apps",
     "appList": {
+      "uninstallingHint": "Done uninstalling",
       "doneUninstalling": "Done uninstalling",
+      "uninstallHint": "Uninstall an app",
       "uninstallButton": "Uninstall...",
       "uploadApp": "Upload app...",
+      "searchHint": "Search",
       "search": "search",
       "mostUsed": "Most used",
       "allApps": "All apps",
@@ -1279,6 +1282,8 @@
           "explanation": "Installation failed: %s"
         }
       }
+    },
+    "applist": {
     }
   }
 }

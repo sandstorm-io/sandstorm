@@ -7,10 +7,10 @@
       <form class="standard-form">
         <div class="button-row">
           {{#if uninstalling}}
-            <button type="button" class="toggle-uninstall" title="Done uninstalling">{{_ "apps.appList.doneUninstalling"}}</button>
+            <button type="button" class="toggle-uninstall" title="{{_ "apps.appList.uninstallingHint"}}">{{_ "apps.appList.doneUninstalling"}}</button>
           {{else}}
             <button type="button" class="toggle-uninstall {{#unless actionsCount}}hide{{/unless}}"
-                    title="Uninstall an app"
+                    title="{{_ "apps.appList.uninstallHint"}}"
             >{{_ "apps.appList.uninstallButton"}}</button>
           {{/if}}
           <button type="button" class="upload-button">{{_ "apps.appList.uploadApp"}}
@@ -22,7 +22,7 @@
 
     <div class="search-row">
       <label>
-        <span class="search-icon" title="Search"></span>
+        <span class="search-icon" title="{{_ "apps.appList.searchHint"}}"></span>
         <input class="search-bar" type="text" placeholder="{{_ "apps.appList.search"}}" value="{{ searchText }}" />
       </label>
     </div>

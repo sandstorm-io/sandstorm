@@ -1197,9 +1197,12 @@
   "apps": {
     "title": "應用程式",
     "appList": {
+      "uninstallingHint": "移除完成",
       "doneUninstalling": "移除完成",
+      "uninstallHint": "移除應用程式",
       "uninstallButton": "批次移除...",
       "uploadApp": "上傳應用程式",
+      "searchHint": "搜尋名稱",
       "search": "搜尋名稱",
       "mostUsed": "最常使用",
       "allApps": "所有應用程式",

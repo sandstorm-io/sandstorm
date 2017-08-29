@@ -1283,7 +1283,29 @@
         }
       }
     },
-    "applist": {
+    "appDetails": {
+      "sandstormAppDetailsPage": {
+        "newerVersion": {
+          "explanation": "Some of your files were made with a newer version of this app.  They will keep using the newer version, as going backwards could break them."
+        },
+        "olderVersion": {
+          "explanation": "Some of your grains were made with an older version of this app.  Upgrade them?",
+          "upgradeButton": "Upgrade Grains"
+        },
+        "search": {
+          "hint": "Search",
+          "placeholder": "search"
+        },
+        "trash": {
+          "explanation": "Grains will be permanently removed after 30 days in the trash. To keep a grain, restore it to the Main list."
+        },
+        "noGrains": {
+          "notFound": "<strong>No matching grains found.</strong>",
+          "inTrash": "Some grains in your trash match your search.",
+          "trashButton": "View trash"
+        }
+      },
+      "sandstormAppDetails": {}
     }
   }
 }

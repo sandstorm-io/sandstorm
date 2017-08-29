@@ -1305,7 +1305,28 @@
           "trashButton": "View trash"
         }
       },
-      "sandstormAppDetails": {}
+      "sandstormAppDetails": {
+        "websiteLink": "Website",
+        "appMarketLink": "App market",
+        "sourceCodeLink": "Source",
+        "bugReportLink": "Report issue",
+        "mainListButton": "View main list",
+        "trashButton": "View trash",
+        "uninstallButton": "Uninstall",
+        "restoreButton": "Restore grain backup...",
+        "version": {
+          "label": "Version"
+        },
+        "lastUpdate": {
+          "label": "Last Updated",
+          "unknown": "<unknown>"
+        },
+        "publisher": {
+          "label": "Signed by"
+        },
+        "hasFingerprint": "The app publisher has proven using PGP that they control these accounts.",
+        "noFingerprint": "This app has no signature from its creator; its author cannot be verified."
+      }
     }
   }
 }

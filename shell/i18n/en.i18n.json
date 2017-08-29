@@ -505,62 +505,16 @@
       },
       "newAdminRoot": {
         "configuration": {
-          "title": "Configuration",
-          "identity": {
-            "name": "Identity providers",
-            "subtext": "How users log in."
-          },
-          "organization": {
-            "name": "Organization settings",
-            "subtext": "Smoother onboarding and collaboration for larger teams."
-          },
-          "emailConfig": {
-            "name": "Email configuration",
-            "subtext": "How email gets sent to users."
-          },
-          "personalization": {
-            "name": "Personalization",
-            "subtext": "Customize a splash page, terms of service, privacy policy, etc."
-          },
-          "preinstalledApps": {
-            "name": "Pre-installed apps",
-            "subtext": "Choose apps to pre-install for new users."
-          },
-          "appSources": {
-            "name": "App sources",
-            "subtext": "Where to look for apps and app updates."
-          },
-          "networking": {
-            "name": "Networking",
-            "subtext": "Control how the network is accessed."
-          }
+          "title": "Configuration"
         },
         "management": {
-          "title": "Management",
-          "users": {
-            "name": "Users",
-            "subtext": "Manage all users on this Sandstorm installation."
-          },
-          "status": {
-            "name": "System log",
-            "subtext": "View Sandstorm's debug log."
-          },
-          "stats": {
-            "name": "Statistics",
-            "subtext": "View usage statistics for this server."
-          },
-          "maintenance": {
-            "name": "Maintenance message",
-            "subtext": "Communicate potential downtime to users."
-          },
-          "capabilities": {
-            "name": "Network capabilities",
-            "subtext": "Manage direct network access for grains."
-          }
+          "title": "Management"
         }
       }
     },
     "identityProviders": {
+      "name": "Identity providers",
+      "subtext": "How users log in.",
       "newAdminIdentity": {
         "explanation": "Choose which services users may use to identify themselves.  Anyone can log in, but only users you invite will be able to install apps or create grains.",
         "organizationLinkPrefix": "To configure organization membership and settings, see",
@@ -707,6 +661,8 @@
       }
     },
     "organization": {
+      "name": "Organization settings",
+      "subtext": "Smoother onboarding and collaboration for larger teams.",
       "organizationSettingsBlurb": {
         "explanation": "Sandstorm allows you to define an organization. You can automatically apply some settings to all members of your organization. Users within the organization will automatically be able to log in, install apps, and create grains."
       },
@@ -755,6 +711,8 @@
       }
     },
     "emailConfig": {
+      "name": "Email configuration",
+      "subtext": "How email gets sent to users.",
       "newAdminEmailConfig": {
         "outbound": {
           "title": "Outbound email",
@@ -802,6 +760,8 @@
       }
     },
     "personalization": {
+      "name": "Personalization",
+      "subtext": "Customize a splash page, terms of service, privacy policy, etc.",
       "newAdminPersonalization": {
         "serverTitle": {
           "label": "Server title:",
@@ -854,6 +814,8 @@
       }
     },
     "preinstalledApps": {
+      "name": "Pre-installed apps",
+      "subtext": "Choose apps to pre-install for new users.",
       "newAdminPreinstalledApps": {
         "explanation": "Apps you configure on this page to be pre-installed will automatically be installed (show under /apps) for new users.",
         "productivitySuite": {
@@ -880,6 +842,8 @@
       }
     },
     "appSources": {
+      "name": "App sources",
+      "subtext": "Where to look for apps and app updates.",
       "newAdminAppSources": {
         "appMarketUrl": {
           "label": "App market URL",
@@ -898,8 +862,10 @@
       }
     },
     "networking": {
+      "name": "Networking",
+      "altName": "Security",
+      "subtext": "Control how the network is accessed.",
       "newAdminNetworking": {
-        "title": "Security",
         "ipBlacklist": {
           "label": "Server-side request IP blacklist:",
           "subtext": "Users will be prohibited from making requests to these IP addresses. This includes making a request from an app, downloading an SPK file from a user-provided URL, etc. You may specify one IP address or network (in CIDR notation, e.g. \"127.0.0.0/8\") per line. The default value includes standard local and private network addresses. Note that when an HTTP proxy is in use, this setting may be ignored; the proxy must implement its own blacklist."
@@ -907,6 +873,10 @@
         "saveButton": "Save",
         "restoreButton": "Restore defaults"
       }
+    },
+    "users": {
+      "name": "Users",
+      "subtext": "Manage all users on this Sandstorm installation."
     },
     "userAccounts": {
       "newAdminUserTableRow": {
@@ -1099,6 +1069,8 @@
       }
     },
     "systemStatus": {
+      "name": "System log",
+      "subtext": "View Sandstorm's debug log.",
       "newAdminLogContents": {
         "ellipsis": "..."
       },
@@ -1107,6 +1079,8 @@
       }
     },
     "stats": {
+      "name": "Statistics",
+      "subtext": "View usage statistics for this server.",
       "header": {
         "date": "date",
         "users": "users",
@@ -1156,6 +1130,8 @@
       }
     },
     "maintenanceMessage": {
+      "name": "Maintenance message",
+      "subtext": "Communicate potential downtime to users.",
       "newAdminMaintenance": {
         "explanation": "You can set a maintenance message which will be shown to all users in the menu bar, on the top right. This is useful for announcing scheduled maintenance so users can be prepared to tolerate downtime. If the message text is empty, no message will be displayed.",
         "variables": "You may use the following variables in the \"Message text\" field, which will be automatically substituted with useful values:",
@@ -1178,6 +1154,8 @@
       }
     },
     "networkCapabilities": {
+      "name": "Network capabilities",
+      "subtext": "Manage direct network access for grains.",
       "newAdminNetworkCapabilitiesTableCapabilityRow": {
         "adminAccount": "Admin account %s",
         "unknownGranter": "Unknown granter",
@@ -1209,7 +1187,7 @@
       }
     },
     "hostingManagement": {
-      "title": "Hosting management",
+      "name": "Hosting management",
       "newAdminHostingManagement": {
         "explanation": "This feature is experiemental and only works with the LDAP identity provider at the moment. Use with caution.",
         "quotaEnabled": {

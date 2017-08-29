@@ -505,62 +505,16 @@
       },
       "newAdminRoot": {
         "configuration": {
-          "title": "設定",
-          "identity": {
-            "name": "身份提供者",
-            "subtext": "設定使用者可以如何登入。"
-          },
-          "organization": {
-            "name": "組織設定",
-            "subtext": "讓大團隊可以圓滑地上手及進行合作。"
-          },
-          "emailConfig": {
-            "name": "電郵寄送設定",
-            "subtext": "設定沙聚雲如何寄送電郵。"
-          },
-          "personalization": {
-            "name": "個人化",
-            "subtext": "客製獨自的啟動畫面、服務條款、隱私權聲明等等。"
-          },
-          "preinstalledApps": {
-            "name": "預裝應用程式",
-            "subtext": "選擇新使用者可以直接使用的預裝應用程式。"
-          },
-          "appSources": {
-            "name": "應用程式來源",
-            "subtext": "取得應用程式和更新的位置。"
-          },
-          "networking": {
-            "name": "網路",
-            "subtext": "控制如何存取網路。"
-          }
+          "title": "設定"
         },
         "management": {
-          "title": "管理",
-          "users": {
-            "name": "使用者",
-            "subtext": "管理此沙聚雲上的使用者。"
-          },
-          "status": {
-            "name": "系統記錄",
-            "subtext": "檢視沙聚雲的除錯記錄。"
-          },
-          "stats": {
-            "name": "統計",
-            "subtext": "檢視伺服器上的各種統計數據。"
-          },
-          "maintenance": {
-            "name": "維修訊息",
-            "subtext": "告知使用者維修所需時間。"
-          },
-          "capabilities": {
-            "name": "網路容量",
-            "subtext": "管理沙粒的網路直接存取量。"
-          }
+          "title": "管理"
         }
       }
     },
     "identityProviders": {
+      "name": "身份提供者",
+      "subtext": "設定使用者可以如何登入。",
       "newAdminIdentity": {
         "explanation": "選擇使用者可以用哪些方法進行身份認證。所有人都能登入，但只有您邀請的使用者可以安裝應用程式或建立沙粒。",
         "organizationLinkPrefix": "要設定組織內容，請到",
@@ -707,6 +661,8 @@
       }
     },
     "organization": {
+      "name": "組織設定",
+      "subtext": "讓大團隊可以圓滑地上手及進行合作。",
       "organizationSettingsBlurb": {
         "explanation": "沙聚雲讓您可以建立組織。__Sandstorm allows you to define an organization. You can automatically apply some settings to all members of your organization. Users within the organization will automatically be able to log in, install apps, and create grains."
       },
@@ -755,6 +711,8 @@
       }
     },
     "emailConfig": {
+      "name": "電郵寄送設定",
+      "subtext": "設定沙聚雲如何寄送電郵。",
       "newAdminEmailConfig": {
         "outbound": {
           "title": "外寄郵件",
@@ -802,6 +760,8 @@
       }
     },
     "personalization": {
+      "name": "個人化",
+      "subtext": "客製獨自的啟動畫面、服務條款、隱私權聲明等等。",
       "newAdminPersonalization": {
         "serverTitle": {
           "label": "伺服器標題：",
@@ -854,6 +814,8 @@
       }
     },
     "preinstalledApps": {
+      "name": "預裝應用程式",
+      "subtext": "選擇新使用者可以直接使用的預裝應用程式。",
       "newAdminPreinstalledApps": {
         "explanation": "在本頁設定為預裝的應用程式將會自動安裝在所有新使用者的沙聚雲中。",
         "productivitySuite": {
@@ -880,6 +842,8 @@
       }
     },
     "appSources": {
+      "name": "應用程式來源",
+      "subtext": "取得應用程式和更新的位置。",
       "newAdminAppSources": {
         "appMarketUrl": {
           "label": "應用程式市集網址",
@@ -898,8 +862,10 @@
       }
     },
     "networking": {
+      "name": "網路",
+      "altName": "安全性",
+      "subtext": "控制如何存取網路。",
       "newAdminNetworking": {
-        "title": "安全性",
         "ipBlacklist": {
           "label": "伺服器端請求 IP 黑名單：",
           "subtext": "這些 IP 將無法被使用者請求，包含從應用程式內請求、從使用者指定的網址下載 SPK 檔案等。您每行可以指定一個 IP 或網路（使用 CIDR notation，比如\"127.0.0.0/8\"）。預設值包含標準的本地端及私人網路位址。另外當使用 HTTP 代理時他可能有自己的黑名單設定，所以這項設定可能會被忽略。"
@@ -907,6 +873,10 @@
         "saveButton": "儲存",
         "restoreButton": "回復預設值"
       }
+    },
+    "users": {
+      "name": "使用者",
+      "subtext": "管理此沙聚雲上的使用者。"
     },
     "userAccounts": {
       "newAdminUserTableRow": {
@@ -1099,6 +1069,8 @@
       }
     },
     "systemStatus": {
+      "name": "系統記錄",
+      "subtext": "檢視沙聚雲的除錯記錄。",
       "newAdminLogContents": {
         "ellipsis": "……"
       },
@@ -1107,6 +1079,8 @@
       }
     },
     "stats": {
+      "name": "統計",
+      "subtext": "檢視伺服器上的各種統計數據。",
       "header": {
         "date": "日期",
         "users": "使用者",
@@ -1156,6 +1130,8 @@
       }
     },
     "maintenanceMessage": {
+      "name": "維修訊息",
+      "subtext": "告知使用者維修所需時間。",
       "newAdminMaintenance": {
         "explanation": "You can set a maintenance message which will be shown to all users in the menu bar, on the top right. This is useful for announcing scheduled maintenance so users can be prepared to tolerate downtime. If the message text is empty, no message will be displayed.",
         "variables": "You may use the following variables in the \"Message text\" field, which will be automatically substituted with useful values:",
@@ -1178,6 +1154,8 @@
       }
     },
     "networkCapabilities": {
+      "name": "網路容量",
+      "subtext": "管理沙粒的網路直接存取量。",
       "newAdminNetworkCapabilitiesTableCapabilityRow": {
         "adminAccount": "Admin account %s",
         "unknownGranter": "Unknown granter",

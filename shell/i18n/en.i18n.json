@@ -1208,7 +1208,26 @@
         "interfaceCaps": "Inbound network access"
       }
     },
-    "hostingManagement": {}
+    "hostingManagement": {
+      "title": "Hosting management",
+      "newAdminHostingManagement": {
+        "explanation": "This feature is experiemental and only works with the LDAP identity provider at the moment. Use with caution.",
+        "quotaEnabled": {
+          "label": "Enable quota for users",
+          "subtext": "Enable Quota management on this server. This requires both SAML and LDAP to be configured, and email addresses will be used to match between the two."
+        },
+        "quotaLdapAttribute": {
+          "label": "LDAP quota attribute",
+          "subtext": "This is the attribute name that will be looked up from LDAP to determine quota for a user."
+        },
+        "billingPromptUrl": {
+          "label": "Billing prompt url",
+          "subtext": "This is the url that will be used in the billing prompt."
+        },
+        "saveButton": "Save",
+        "restoreButton": "Restore defaults"
+      }
+    }
   },
   "people": {
     "title": "People"

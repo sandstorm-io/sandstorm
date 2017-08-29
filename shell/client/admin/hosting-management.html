@@ -1,13 +1,14 @@
 <template name="newAdminHostingManagement">
+{{#let txt="admin.hostingManagement.newAdminHostingManagement"}}
   <h1>
     <ul class="admin-breadcrumbs">
-      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
-      <li>Hosting management</li>
+      <li>{{#linkTo route="newAdminRoot"}}{{_ "admin.title"}}{{/linkTo}}</li>
+      <li>{{_ "admin.hostingManagement.title"}}</li>
     </ul>
   </h1>
 
   <div class="flash-message warning-message">
-      This feature is experiemental and only works with the LDAP identity provider at the moment. Use with caution.
+      {{_ (con txt "explanation")}}
   </div>
 
   {{#if hasSuccess}}
@@ -24,35 +25,36 @@
     <div class="form-group">
       <label>
         <input type="checkbox" name="quotaEnabled" checked="{{quotaEnabled}}" />
-        Enable quota for users
+        {{_ (con txt "quotaEnabled.label")}}
       </label>
       <span class="form-subtext">
-        Enable Quota management on this server. This requires both SAML and LDAP to be configured, and email addresses will be used to match between the two.
+        {{_ (con txt "quotaEnabled.subtext")}}
       </span>
     </div>
 
     {{#if quotaEnabled}}
     <div class="form-group">
       <label>
-        LDAP quota attribute
+        {{_ (con txt "quotaLdapAttribute.label")}}
         <input type="text" name="quotaLdapAttribute" value="{{quotaLdapAttribute}}" />
       </label>
       <span class="form-subtext">
-        This is the attribute name that will be looked up from LDAP to determine quota for a user.
+        {{_ (con txt "quotaLdapAttribute.subtext")}}
       </span>
       <label>
-        Billing prompt url
+        {{_ (con txt "billingPromptUrl.label")}}
         <input type="text" name="billingPromptUrl" value="{{billingPromptUrl}}" />
       </label>
       <span class="form-subtext">
-        This is the url that will be used in the billing prompt.
+        {{_ (con txt "billingPromptUrl.subtext")}}
       </span>
     </div>
     {{/if}}
 
     <div class="button-row">
-      <button type="submit" class="save" disabled="{{saveDisabled}}">Save</button>
-      <button type="button" class="restore" disabled="{{restoreDisabled}}">Restore defaults</button>
+      <button type="submit" class="save" disabled="{{saveDisabled}}">{{_ (con txt "saveButton")}}</button>
+      <button type="button" class="restore" disabled="{{restoreDisabled}}">{{_ (con txt "restoreButton")}}</button>
     </div>
   </form>
+{{/let}}
 </template>

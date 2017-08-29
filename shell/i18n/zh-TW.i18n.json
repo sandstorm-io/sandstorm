@@ -1066,146 +1066,146 @@
     },
     "userInvite": {
       "newAdminUserInviteLink": {
-        "explanation": "__You can invite others to create accounts on your server by giving them an account creation link. People you invite will be granted User permission and be able to install apps and create grains of their own. Alternatively, if you want to share a specific grain with someone, you can do that within the grain's \"Share Access\" menu.",
-        "title": "__Create a link",
+        "explanation": "您可以建立連結來邀請其他人創建他們的帳號。您邀請的人將直接擁有使用者權限，可以安裝應用程式及建立沙粒。如果您只想要分享一顆沙粒，請使用該沙粒畫面內的「分享存取」選單。",
+        "title": "建立連結",
         "invite": {
-          "explanation": "__This will create an account creation link which you can send to someone.",
-          "createButton": "__Create link"
+          "explanation": "建立可以寄送給別人的帳號創建連結。",
+          "createButton": "建立連結"
         }
       },
       "newAdminUserInviteEmail": {
-        "title": "__Send an email",
+        "title": "寄送電郵",
         "emailWarning": {
-          "explanation": "__Email has not been configured, so sending invites via email is disabled.",
-          "configureLink": "__Configure email"
+          "explanation": "電郵尚未設定完成，故此功能已被停用。",
+          "configureLink": "設定電郵"
         },
-        "explanation": "__This will create a link and send it in an email.",
+        "explanation": "建立連結並以電郵寄出。",
         "to": {
-          "label": "__To:",
-          "placeholder": "__alice@email.com\nbob@example.com",
-          "subtext": "__Email addresses, one per line."
+          "label": "寄給：",
+          "placeholder": "alice@email.com\nbob@example.com",
+          "subtext": "每行輸入一個電郵位址。"
         },
         "subject": {
-          "label": "__Subject:"
+          "label": "標題："
         },
         "body": {
-          "label": "__Body:",
-          "subtext": "__<code>$KEY</code> will be replaced with the newly-generated link."
+          "label": "內容：",
+          "subtext": "<code>$KEY</code> 會被置換成產生出來的連結。"
         },
-        "sendButton": "__Send invite"
+        "sendButton": "寄送邀請"
       },
       "newAdminUserInvite": {
-        "title": "__Invite"
+        "title": "邀請"
       }
     },
     "systemStatus": {
       "newAdminLogContents": {
-        "ellipsis": "__..."
+        "ellipsis": "……"
       },
       "newAdminStatus": {
-        "downloadButton": "__Download full log"
+        "downloadButton": "下載完整記錄"
       }
     },
     "stats": {
       "header": {
-        "date": "__date",
-        "users": "__users",
-        "grains": "__grains",
-        "appName": "__App name",
-        "owners": "__owners",
-        "sharedUsers": "__sharedUsers",
-        "daily": "__daily",
-        "weekly": "__weekly",
-        "monthly": "__monthly",
-        "forever": "__forever"
+        "date": "日期",
+        "users": "使用者",
+        "grains": "沙粒",
+        "appName": "應用程式名",
+        "owners": "擁有者",
+        "sharedUsers": "共享使用者",
+        "daily": "每日",
+        "weekly": "每週",
+        "monthly": "每月",
+        "forever": "所有時間"
       },
       "body": {
-        "notFound": "__There are no stats recorded yet.",
-        "loading": "__Loading..."
+        "notFound": "目前還沒有統計資料。",
+        "loading": "讀取中……"
       },
       "newAdminStats": {
         "share": {
-          "title": "__Publish anonymously to Sandstorm dev team",
-          "explanation": "__We'd like to know how many Sandstorm users there are, to make graphs and such.  Is it okay to send the numbers on this page once a day to the Sandstorm team, so that we can add them to the totals?  Any stats you send are anonymous.",
-          "enableButton": "__Send anonymous stats",
-          "disableButton": "__Don't send",
+          "title": "Publish anonymously to Sandstorm dev team",
+          "explanation": "We'd like to know how many Sandstorm users there are, to make graphs and such.  Is it okay to send the numbers on this page once a day to the Sandstorm team, so that we can add them to the totals?  Any stats you send are anonymous.",
+          "enableButton": "Send anonymous stats",
+          "disableButton": "Don't send",
           "control": {
-            "explanation": "__The developers of Sandstorm like to know how many Sandstorm users there are, to make graphs and such.  You can help us by opting in to sharing the numbers on this page once a day to the Sandstorm team, so that we can add them to our totals. Any stats shared are submitted anonymously.",
-            "label": "__Anonymous stats reporting to sandstorm.io:",
-            "enabled": "__Enabled",
-            "disabled": "__Disabled",
-            "disableButton": "__Disable",
-            "enableButton": "__Enable"
+            "explanation": "The developers of Sandstorm like to know how many Sandstorm users there are, to make graphs and such.  You can help us by opting in to sharing the numbers on this page once a day to the Sandstorm team, so that we can add them to our totals. Any stats shared are submitted anonymously.",
+            "label": "Anonymous stats reporting to sandstorm.io:",
+            "enabled": "Enabled",
+            "disabled": "Disabled",
+            "disableButton": "Disable",
+            "enableButton": "Enable"
           }
         },
         "json": {
-          "title": "__View as JSON",
-          "explanation": "__If you want to integrate Sandstorm stats with an internal stats tool, use this secret link to retrieve the tables below as JSON. You can revoke the current link at any time by generating a new link.",
-          "label": "__Stats JSON link:",
-          "regenerateButton": "__Generate new link"
+          "title": "以 JSON 檢視",
+          "explanation": "If you want to integrate Sandstorm stats with an internal stats tool, use this secret link to retrieve the tables below as JSON. You can revoke the current link at any time by generating a new link.",
+          "label": "統計 JSON 連結：",
+          "regenerateButton": "生成新連結"
         },
         "userGrains": {
-          "title": "__Users and grains",
-          "current": "__Right now: __users__ users, __grains__ grains",
-          "today": "__Today: __users__ users, __grains__ grains"
+          "title": "使用者和沙粒",
+          "current": "現在： __users__ 名使用者， __grains__ 顆沙粒",
+          "today": "今天： __users__ 名使用者， __grains__ 顆沙粒"
         },
         "apps": {
-          "title": "__Apps",
-          "label": "__Select a date:"
+          "title": "應用程式",
+          "label": "選擇日期："
         }
       }
     },
     "maintenanceMessage": {
       "newAdminMaintenance": {
-        "explanation": "__You can set a maintenance message which will be shown to all users in the menu bar, on the top right. This is useful for announcing scheduled maintenance so users can be prepared to tolerate downtime. If the message text is empty, no message will be displayed.",
-        "variables": "__You may use the following variables in the \"Message text\" field, which will be automatically substituted with useful values:",
-        "variable1": "__<code>$TIME</code> : The time component of \"Maintenance time\", converted to the user's local time (eg. \"1:15:45 PM\")",
-        "variable2": "__<code>$DATE</code> : The date component of \"Maintenance time\", converted to the user's local time (eg. \"6/19/2015\")",
-        "variable3": "__<code>$IN_COUNTDOWN</code> : An active countdown until \"Maintenance time\" (eg. \"in 3 days\" or \"in 1 minute\"). Displays \"any moment\" at the time specified in \"Maintenance time\" and then disappears after an hour.",
+        "explanation": "You can set a maintenance message which will be shown to all users in the menu bar, on the top right. This is useful for announcing scheduled maintenance so users can be prepared to tolerate downtime. If the message text is empty, no message will be displayed.",
+        "variables": "You may use the following variables in the \"Message text\" field, which will be automatically substituted with useful values:",
+        "variable1": "<code>$TIME</code> : The time component of \"Maintenance time\", converted to the user's local time (eg. \"1:15:45 PM\")",
+        "variable2": "<code>$DATE</code> : The date component of \"Maintenance time\", converted to the user's local time (eg. \"6/19/2015\")",
+        "variable3": "<code>$IN_COUNTDOWN</code> : An active countdown until \"Maintenance time\" (eg. \"in 3 days\" or \"in 1 minute\"). Displays \"any moment\" at the time specified in \"Maintenance time\" and then disappears after an hour.",
         "messageText": {
-          "label": "__Message text:",
-          "subtext": "__"
+          "label": "Message text:",
+          "subtext": ""
         },
         "maintenanceTime": {
-          "label": "__Maintenance time:",
-          "subtext": "__The time you intend to start performing maintenance, formatted like \"%s\"."
+          "label": "Maintenance time:",
+          "subtext": "The time you intend to start performing maintenance, formatted like \"%s\"."
         },
         "url": {
-          "label": "__Link URL (optional):",
-          "subtext": "__If given, the maintenance message will render as a clickable link to the provided URL."
+          "label": "Link URL (optional):",
+          "subtext": "If given, the maintenance message will render as a clickable link to the provided URL."
         },
-        "saveButton": "__Set message"
+        "saveButton": "Set message"
       }
     },
     "networkCapabilities": {
       "newAdminNetworkCapabilitiesTableCapabilityRow": {
-        "adminAccount": "__Admin account %s",
-        "unknownGranter": "__Unknown granter",
-        "anyone": "__Anyone with the token",
-        "unknownRecipient": "__Unknown recipient",
-        "revoked": "__Revoked",
-        "revokeButton": "__Revoke"
+        "adminAccount": "Admin account %s",
+        "unknownGranter": "Unknown granter",
+        "anyone": "Anyone with the token",
+        "unknownRecipient": "Unknown recipient",
+        "revoked": "已撤銷",
+        "revokeButton": "撤銷"
       },
       "newAdminNetworkCapabilitiesTable": {
         "header": {
-          "grantBy": "__Granted by",
-          "grantTo": "__Granted to",
-          "grantTime": "__Time",
-          "actions": "__Actions"
+          "grantBy": "Granted by",
+          "grantTo": "Granted to",
+          "grantTime": "Time",
+          "actions": "Actions"
         },
-        "notFound": "__No capabilities found."
+        "notFound": "No capabilities found."
       },
       "newAdminNetworkCapabilitiesSection": {
         "filter": {
-          "label": "__Showing:",
-          "active": "__Active (%s)",
-          "revoked": "__Revoked (%s)"
+          "label": "Showing:",
+          "active": "Active (%s)",
+          "revoked": "Revoked (%s)"
         }
       },
       "newAdminNetworkCapabilities": {
-        "networkCaps": "__Outbound network access",
-        "networkCapsTls": "__TLS-encrypted outbound network access",
-        "interfaceCaps": "__Inbound network access"
+        "networkCaps": "Outbound network access",
+        "networkCapsTls": "TLS-encrypted outbound network access",
+        "interfaceCaps": "Inbound network access"
       }
     },
     "hostingManagement": {}

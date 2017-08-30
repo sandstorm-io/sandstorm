@@ -1186,7 +1186,26 @@
         "interfaceCaps": "Inbound network access"
       }
     },
-    "hostingManagement": {}
+    "hostingManagement": {
+      "name": "__Hosting management",
+      "newAdminHostingManagement": {
+        "explanation": "__This feature is experiemental and only works with the LDAP identity provider at the moment. Use with caution.",
+        "quotaEnabled": {
+          "label": "__Enable quota for users",
+          "subtext": "__Enable Quota management on this server. This requires both SAML and LDAP to be configured, and email addresses will be used to match between the two."
+        },
+        "quotaLdapAttribute": {
+          "label": "__LDAP quota attribute",
+          "subtext": "__This is the attribute name that will be looked up from LDAP to determine quota for a user."
+        },
+        "billingPromptUrl": {
+          "label": "__Billing prompt url",
+          "subtext": "__This is the url that will be used in the billing prompt."
+        },
+        "saveButton": "__Save",
+        "restoreButton": "__Restore defaults"
+      }
+    }
   },
   "people": {
     "title": "使用者"
@@ -1212,6 +1231,102 @@
       "noMatchApp": "找不到名稱含有該字串的應用程式。請<a href=\"__url__\">試試搜尋市集 &raquo;</a>",
       "unauthorized": "無權限！:(",
       "unauthorizedText": "只有管理者給予權限的的使用者才能安裝應用程式。若需權限，請聯絡管理者。"
+    },
+    "install": {
+      "sandstormAppInstallPage": {
+        "title": "__Install app",
+        "error": {
+          "title": "__Failed to install app",
+          "retryButton": "__Try Again"
+        },
+        "stepWait": {
+          "title": "__Waiting for write access..."
+        },
+        "stepDownload": {
+          "title": "__Downloading...",
+          "cancelButton": "__Cancel"
+        },
+        "stepVerify": {
+          "title": "__Verifying..."
+        },
+        "stepUnpack": {
+          "title": "__Unpacking..."
+        },
+        "stepAnalyze": {
+          "title": "__Analyzing..."
+        },
+        "stepConfirm": {
+          "upgrade": {
+            "explanation": "__You have an older version of this app installed.  Do you want to upgrade?",
+            "button": "__Upgrade %s"
+          },
+          "downgrade": {
+            "explanation": "__You already have a newer version of this app installed.  Are you sure you want to revert to this older version?",
+            "button": "__Downgrade %s"
+          },
+          "install": {
+            "button": "__Install %s"
+          }
+        },
+        "stepRun": {
+          "title": "__%s installed",
+          "explanation": "__Installation complete.",
+          "appDetailsLink": "__Go to %s"
+        },
+        "stepDelete": {
+          "title": "__Deleting",
+          "explanation": "__Server is currently deleting this app..."
+        },
+        "stepFailed": {
+          "title": "__Failed",
+          "explanation": "__Installation failed: %s"
+        }
+      }
+    },
+    "appDetails": {
+      "sandstormAppDetailsPage": {
+        "newerVersion": {
+          "explanation": "__Some of your files were made with a newer version of this app.  They will keep using the newer version, as going backwards could break them."
+        },
+        "olderVersion": {
+          "explanation": "__Some of your grains were made with an older version of this app.  Upgrade them?",
+          "upgradeButton": "__Upgrade Grains"
+        },
+        "search": {
+          "hint": "__Search",
+          "placeholder": "__search"
+        },
+        "trash": {
+          "explanation": "__Grains will be permanently removed after 30 days in the trash. To keep a grain, restore it to the Main list."
+        },
+        "noGrains": {
+          "notFound": "__<strong>No matching grains found.</strong>",
+          "inTrash": "__Some grains in your trash match your search.",
+          "trashButton": "__View trash"
+        }
+      },
+      "sandstormAppDetails": {
+        "websiteLink": "__Website",
+        "appMarketLink": "__App market",
+        "sourceCodeLink": "__Source",
+        "bugReportLink": "__Report issue",
+        "mainListButton": "__View main list",
+        "trashButton": "__View trash",
+        "uninstallButton": "__Uninstall",
+        "restoreButton": "__Restore grain backup...",
+        "version": {
+          "label": "__Version"
+        },
+        "lastUpdate": {
+          "label": "__Last Updated",
+          "unknown": "__<unknown>"
+        },
+        "publisher": {
+          "label": "__Signed by"
+        },
+        "hasFingerprint": "__The app publisher has proven using PGP that they control these accounts.",
+        "noFingerprint": "__This app has no signature from its creator; its author cannot be verified."
+      }
     }
   }
 }

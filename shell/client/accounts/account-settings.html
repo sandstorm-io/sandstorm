@@ -172,11 +172,12 @@ limitations under the License.
 </template>
 
 <template name="sandstormAccountsFirstSignIn">
-  <h1>Confirm your profile</h1>
+{{#let txt="accounts.accountSettings.sandstormAccountsFirstSignIn"}}
+  <h1>{{_ (con txt "title")}}</h1>
   <div class="single-identity-editor">
     {{#if success}}
       {{#focusingSuccessBox}}
-        Success: {{success}}
+        {{_ (con txt "success") success}}
       {{/focusingSuccessBox}}
     {{/if}}
 
@@ -189,25 +190,29 @@ limitations under the License.
     {{>_accountProfileEditor identity=identityToConfirm termsAndPrivacy=termsAndPrivacy
                              staticHost=_staticHost db=_db setActionCompleted=onActionCompleted}}
   </div>
+{{/let}}
 </template>
 
 <template name="accountSuspended">
+{{#let txt="accounts.accountSettings.accountSuspended"}}
   <h1>
-    This account has been suspended by you.
+    {{_ (con txt "title")}}
   </h1>
 
   <h2>
     {{#if timeUntilDeletion}}
-     This account will be deleted in {{timeUntilDeletion}}. Would you like to cancel deletion and restore this account?
-     {{else}}
-     This account is suspended and all of its grains and shares are disabled. Would you like to restore this account?
-     {{/if}}
+    {{_ (con txt "deletedIn") timeUntilDeletion}}
+    {{else}}
+    {{_ (con txt "suspended")}}
+    {{/if}}
   </h2>
-  <button class="restore-account">Restore account</button>
-  <button class="logout">Logout</button>
+  <button class="restore-account">{{_ (con txt "restoreButton")}}</button>
+  <button class="logout">{{_ (con txt "logoutButton")}}</button>
+{{/let}}
 </template>
 
 <template name="_accountProfileEditor">
+{{#let txt="accounts.accountSettings._accountProfileEditor"}}
 {{!-- Expected arguments to data context:
           identity: Object.  Should contain the usual Meteor.user fields (_id, profile, etc.)
 setActionCompleted: (optional) Function.  Callback triggered on profile saved or picture updated.
@@ -220,48 +225,47 @@ setActionCompleted: (optional) Function.  Callback triggered on profile saved or
     <form class="account-profile-editor" data-identity-id="{{identity._id}}">
       <ul>
         <li class="form-group">
-          <label>Profile picture:</label>
+          <label>{{_ (con txt "picture.label")}}</label>
           <div class="picture-row">
             <div class="picture-box">
               <img src="{{identity.profile.pictureUrl}}">
             </div>
             <input type="file" name="picture" style="display:none">
             <div class="form-subtext">
-              <button type="button" name="upload-picture">Upload new picture</button>
-              <p>This picture will be shown to other users to help identify you.</p>
-              <p>512x512px, 64KiB max.</p>
+              <button type="button" name="upload-picture">{{_ (con txt "picture.uploadButton")}}</button>
+              <p>{{_ (con txt "picture.subtext")}}</p>
+              <p>{{_ (con txt "picture.maxSize")}}</p>
             </div>
           </div>
         </li>
 
         <li class="form-group">
           <label>
-            Full name:
+            {{_ (con txt "fullName.label")}}
             <input type="text" name="nameInput" value="{{identity.profile.name}}"
-                   placeholder="full name" required>
+                   placeholder="{{_ (con txt "fullName.placeholder")}}" required>
           </label>
-          <span class="form-subtext">Your regular first and last name, as you would like it
-            displayed to others. This does not have to be your real name.
+          <span class="form-subtext">
+            {{_ (con txt "fullName.subtext")}}
           </span>
         </li>
 
         <li class="form-group handle">
-          <label>Handle:
+          <label>{{_ (con txt "handle.label")}}
             <div class="input-container">
               <input type="text" name="handle" value="{{identity.profile.handle}}"
-                     placeholder="handle" pattern="^[a-z_][a-z0-9_]*$"
-                     title="Handles must start with a lower-case letter and contain only lower-case letters, digits, and underscores." required>
+                     placeholder="{{_ (con txt "handle.placeholder")}}" pattern="^[a-z_][a-z0-9_]*$"
+                     title="{{_ (con txt "handle.hint")}}" required>
             </div>
           </label>
           <span class="form-subtext">
-            To be displayed in apps that use handles. Your handle must start with a letter and
-            contain only lower-case letters, digits, and underscores.
+            {{_ (con txt "handle.subtext")}}
           </span>
         </li>
 
         <li class="form-group">
           <label>
-            E-mail:
+            {{_ (con txt "emailList.label")}}
           </label>
           <ul class="verified-email-list">
             {{#each verifiedEmails}}
@@ -274,12 +278,12 @@ setActionCompleted: (optional) Function.  Callback triggered on profile saved or
         <li class="form-group">
           {{#with pronoun=identity.profile.pronoun}}
           <label>
-            Preferred pronoun:
+            {{_ (con txt "pronoun.label")}}
             <select name="pronoun">
-              <option value="neutral" selected="{{isNeutral pronoun}}">they (unspecified)</option>
-              <option value="male" selected="{{isMale pronoun}}">he/him (male)</option>
-              <option value="female" selected="{{isFemale pronoun}}">she/her (female)</option>
-              <option value="robot" selected="{{isRobot pronoun}}">it (robot)</option>
+              <option value="neutral" selected="{{isNeutral pronoun}}">{{_ (con txt "pronoun.neutral")}}</option>
+              <option value="male" selected="{{isMale pronoun}}">{{_ (con txt "pronoun.male")}}</option>
+              <option value="female" selected="{{isFemale pronoun}}">{{_ (con txt "pronoun.female")}}</option>
+              <option value="robot" selected="{{isRobot pronoun}}">{{_ (con txt "pronoun.robot")}}</option>
             </select>
           </label>
           {{/with}}
@@ -289,10 +293,10 @@ setActionCompleted: (optional) Function.  Callback triggered on profile saved or
           {{#with termsAndPrivacy}}
             <li class="form-group">
               <label>
-                <input type="checkbox" name="agreedToTerms" required> I have read and agree to the
-                {{#if termsUrl}}<a target="_blank" href="{{termsUrl}}">Terms of Service</a>
-                {{#if privacyUrl}} and {{/if}}{{/if}}{{#if privacyUrl}}
-                <a target="_blank" href="{{privacyUrl}}">Privacy policy</a>{{/if}}.
+                <input type="checkbox" name="agreedToTerms" required>{{_ (con txt "agreedToTerms.agreeTo")}}
+                {{#if termsUrl}}<a target="_blank" href="{{termsUrl}}">{{_ (con txt "agreedToTerms.termsOfServiceLink")}}</a>
+                {{#if privacyUrl}}{{_ (con txt "agreedToTerms.and")}}{{/if}}{{/if}}{{#if privacyUrl}}
+                <a target="_blank" href="{{privacyUrl}}">{{_ (con txt "agreedToTerms.privacyLink")}}</a>{{/if}}.
               </label>
             </li>
           {{/with}}
@@ -304,10 +308,10 @@ setActionCompleted: (optional) Function.  Callback triggered on profile saved or
         {{#unless hideButtons}}
         <li class="button-row">
           <button disabled="{{profileSaved}}" type="submit">
-            {{#if hasCompletedSignup}}Save{{else}}Continue{{/if}}
+            {{#if hasCompletedSignup}}{{_ (con txt "saveButton")}}{{else}}{{_ (con txt "continueButton")}}{{/if}}
           </button>
           {{#unless hasCompletedSignup}}
-          <button class="logout" type="button">Cancel</button>
+          <button class="logout" type="button">{{_ (con txt "cancelButton")}}</button>
           {{/unless}}
         </li>
         {{/unless}}
@@ -319,4 +323,5 @@ setActionCompleted: (optional) Function.  Callback triggered on profile saved or
       {{> identityManagementButtons identityManagementButtonsData}}
     {{/if}}
   </div>
+{{/let}}
 </template>

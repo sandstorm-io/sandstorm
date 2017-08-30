@@ -1373,6 +1373,55 @@
           "deleteButton": "Delete account",
           "cancelButton": "Cancel"
         }
+      },
+      "sandstormAccountsFirstSignIn": {
+        "title": "Confirm your profile",
+        "success": "Success: %s"
+      },
+      "accountSuspended": {
+        "title": "This account has been suspended by you.",
+        "deletedIn": "This account will be deleted in %s. Would you like to cancel deletion and restore this account?",
+        "suspended": "This account is suspended and all of its grains and shares are disabled. Would you like to restore this account?",
+        "restoreButton": "Restore account",
+        "logoutButton": "Logout"
+      },
+      "_accountProfileEditor": {
+        "picture": {
+          "label": "Profile picture:",
+          "uploadButton": "Upload new picture",
+          "subtext": "This picture will be shown to other users to help identify you.",
+          "maxSize": "512x512px, 64KiB max."
+        },
+        "fullName": {
+          "label": "Full name:",
+          "placeholder": "full name",
+          "subtext": "Your regular first and last name, as you would like it displayed to others. This does not have to be your real name."
+        },
+        "handle": {
+          "label": "Handle:",
+          "placeholder": "handle",
+          "hint": "Handles must start with a lower-case letter and contain only lower-case letters, digits, and underscores.",
+          "subtext": "To be displayed in apps that use handles. Your handle must start with a letter and contain only lower-case letters, digits, and underscores."
+        },
+        "emailList": {
+          "label": "E-mail:"
+        },
+        "pronoun": {
+          "label": "Preferred pronoun:",
+          "neutral": "they (unspecified)",
+          "male": "he/him (male)",
+          "female": "she/her (female)",
+          "robot": "it (robot)"
+        },
+        "agreedToTerms": {
+          "agreeTo": " I have read and agree to the",
+          "termsOfServiceLink": "Terms of Service",
+          "and": " and ",
+          "privacyLink": "Privacy policy"
+        },
+        "saveButton": "Save",
+        "continueButton": "Continue",
+        "cancelButton": "Cancel"
       }
     }
   }

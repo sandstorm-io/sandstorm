@@ -1187,23 +1187,23 @@
       }
     },
     "hostingManagement": {
-      "name": "__Hosting management",
+      "name": "Hosting management",
       "newAdminHostingManagement": {
-        "explanation": "__This feature is experiemental and only works with the LDAP identity provider at the moment. Use with caution.",
+        "explanation": "This feature is experiemental and only works with the LDAP identity provider at the moment. Use with caution.",
         "quotaEnabled": {
-          "label": "__Enable quota for users",
-          "subtext": "__Enable Quota management on this server. This requires both SAML and LDAP to be configured, and email addresses will be used to match between the two."
+          "label": "Enable quota for users",
+          "subtext": "Enable Quota management on this server. This requires both SAML and LDAP to be configured, and email addresses will be used to match between the two."
         },
         "quotaLdapAttribute": {
-          "label": "__LDAP quota attribute",
-          "subtext": "__This is the attribute name that will be looked up from LDAP to determine quota for a user."
+          "label": "LDAP quota attribute",
+          "subtext": "This is the attribute name that will be looked up from LDAP to determine quota for a user."
         },
         "billingPromptUrl": {
-          "label": "__Billing prompt url",
-          "subtext": "__This is the url that will be used in the billing prompt."
+          "label": "Billing prompt url",
+          "subtext": "This is the url that will be used in the billing prompt."
         },
-        "saveButton": "__Save",
-        "restoreButton": "__Restore defaults"
+        "saveButton": "Save",
+        "restoreButton": "Restore defaults"
       }
     }
   },
@@ -1234,98 +1234,98 @@
     },
     "install": {
       "sandstormAppInstallPage": {
-        "title": "__Install app",
+        "title": "安裝應用程式",
         "error": {
-          "title": "__Failed to install app",
-          "retryButton": "__Try Again"
+          "title": "無法安裝應用程式",
+          "retryButton": "再試一次"
         },
         "stepWait": {
-          "title": "__Waiting for write access..."
+          "title": "正在等待寫入存取……"
         },
         "stepDownload": {
-          "title": "__Downloading...",
-          "cancelButton": "__Cancel"
+          "title": "正在下載……",
+          "cancelButton": "取消"
         },
         "stepVerify": {
-          "title": "__Verifying..."
+          "title": "正在驗證……"
         },
         "stepUnpack": {
-          "title": "__Unpacking..."
+          "title": "正在拆包……"
         },
         "stepAnalyze": {
-          "title": "__Analyzing..."
+          "title": "正在分析……"
         },
         "stepConfirm": {
           "upgrade": {
-            "explanation": "__You have an older version of this app installed.  Do you want to upgrade?",
-            "button": "__Upgrade %s"
+            "explanation": "您已經有安裝此程式的較舊版本。是否要更新？",
+            "button": "更新 %s"
           },
           "downgrade": {
-            "explanation": "__You already have a newer version of this app installed.  Are you sure you want to revert to this older version?",
-            "button": "__Downgrade %s"
+            "explanation": "您已經有安裝此程式的較新版本。是否要降版？",
+            "button": "降版 %s"
           },
           "install": {
-            "button": "__Install %s"
+            "button": "安裝 %s"
           }
         },
         "stepRun": {
-          "title": "__%s installed",
-          "explanation": "__Installation complete.",
-          "appDetailsLink": "__Go to %s"
+          "title": "已安裝 %s",
+          "explanation": "安裝完成",
+          "appDetailsLink": "開啟 %s"
         },
         "stepDelete": {
-          "title": "__Deleting",
-          "explanation": "__Server is currently deleting this app..."
+          "title": "正在刪除",
+          "explanation": "伺服器正在刪除這個應用程式……"
         },
         "stepFailed": {
-          "title": "__Failed",
-          "explanation": "__Installation failed: %s"
+          "title": "失敗",
+          "explanation": "安裝失敗：%s"
         }
       }
     },
     "appDetails": {
       "sandstormAppDetailsPage": {
         "newerVersion": {
-          "explanation": "__Some of your files were made with a newer version of this app.  They will keep using the newer version, as going backwards could break them."
+          "explanation": "有些檔案是用較新版本的程式建立的。因為回復舊版本可能會破壞資料，這些檔案將會繼續使用新版本程式。"
         },
         "olderVersion": {
-          "explanation": "__Some of your grains were made with an older version of this app.  Upgrade them?",
-          "upgradeButton": "__Upgrade Grains"
+          "explanation": "有些沙粒是舊版本程式建立的。要更新嗎？",
+          "upgradeButton": "更新沙粒"
         },
         "search": {
-          "hint": "__Search",
-          "placeholder": "__search"
+          "hint": "搜尋",
+          "placeholder": "搜尋"
         },
         "trash": {
-          "explanation": "__Grains will be permanently removed after 30 days in the trash. To keep a grain, restore it to the Main list."
+          "explanation": "回收桶裡的沙粒會在 30 天後被永久刪除。若要保留沙粒，請將其移回主列表。"
         },
         "noGrains": {
-          "notFound": "__<strong>No matching grains found.</strong>",
-          "inTrash": "__Some grains in your trash match your search.",
-          "trashButton": "__View trash"
+          "notFound": "<strong>找不到相符的沙粒。</strong>",
+          "inTrash": "有些回收桶裡的沙粒符合您的搜尋。",
+          "trashButton": "檢視回收桶"
         }
       },
       "sandstormAppDetails": {
-        "websiteLink": "__Website",
-        "appMarketLink": "__App market",
-        "sourceCodeLink": "__Source",
-        "bugReportLink": "__Report issue",
-        "mainListButton": "__View main list",
-        "trashButton": "__View trash",
-        "uninstallButton": "__Uninstall",
-        "restoreButton": "__Restore grain backup...",
+        "websiteLink": "網站",
+        "appMarketLink": "應用程式市集",
+        "sourceCodeLink": "原始碼",
+        "bugReportLink": "回報問題",
+        "mainListButton": "檢視主列表",
+        "trashButton": "檢視回收桶",
+        "uninstallButton": "移除",
+        "restoreButton": "回復沙粒備份……",
         "version": {
-          "label": "__Version"
+          "label": "版本"
         },
         "lastUpdate": {
-          "label": "__Last Updated",
-          "unknown": "__<unknown>"
+          "label": "最後更新",
+          "unknown": "未知"
         },
         "publisher": {
-          "label": "__Signed by"
+          "label": "簽名者"
         },
-        "hasFingerprint": "__The app publisher has proven using PGP that they control these accounts.",
-        "noFingerprint": "__This app has no signature from its creator; its author cannot be verified."
+        "hasFingerprint": "本程式的發行者已用 PGP 簽章證明其控制權。",
+        "noFingerprint": "本程式沒有作者的簽章，無法辨認作者。"
       }
     }
   }

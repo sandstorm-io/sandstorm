@@ -1328,5 +1328,52 @@
         "noFingerprint": "This app has no signature from its creator; its author cannot be verified."
       }
     }
+  },
+  "accounts": {
+    "title": "Account settings",
+    "accountSettings": {
+      "sandstormAccountSettings": {
+        "title": "Account",
+        "identities": {
+          "title": "Linked identities",
+          "refactorAlert": "We're changing the way identities work. Your account may be affected. <a href=\"https://sandstorm.io/news/2017-05-08-refactoring-identities\" target=\"_blank\">Learn more &raquo;</a>",
+          "success": "Success: %s",
+          "linkNewIdentity": {
+            "title": "Link new identity:",
+            "cancelButton": "Cancel",
+            "linkButton": "Link new identity",
+            "logoutAllButton": "Log out all other sessions"
+          },
+          "email": {
+            "title": "Primary e-mail address for service-related notifications",
+            "primary": "Primary",
+            "primaryButton": "Set as primary",
+            "notFound": " No verified emails! ",
+            "addNew": "Add new e-mail address"
+          }
+        },
+        "billing": {
+          "title": "Billing"
+        },
+        "deleteAccount": {
+          "title": "Delete account",
+          "button": "Delete your account"
+        },
+        "deletePopup": {
+          "title": "Delete your account",
+          "explanation": "You are about to mark your account for deletion. Once marked for deletion, your account will be suspended, and you will have 7 days to cancel the pending deletion by logging back into your account.",
+          "results": "After 7 days, your account will be permanently deleted. Deleting your account will:",
+          "result1": "Permanently delete any grains you created",
+          "result2": "Revoke all sharing links you created",
+          "result3": "Remove you from all users' contact lists",
+          "result4": "Delete all identities owned by your account (except identities also associated with another account).",
+          "confirm": "Please type \"delete my account\" below to confirm.",
+          "goodbye": "We're sorry to see you go. Feel free to share any feedback you have with the server admin.",
+          "feedbackPlaceholder": "Optional",
+          "deleteButton": "Delete account",
+          "cancelButton": "Cancel"
+        }
+      }
+    }
   }
 }

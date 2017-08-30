@@ -17,26 +17,26 @@ limitations under the License.
 -->
 
 <template name="sandstormAccountSettings">
+{{#let txt="accounts.accountSettings.sandstormAccountSettings"}}
   {{setDocumentTitle}}
 
   {{#sandstormTopbarItem name="title" priority=5 topbar=_topbar}}
-    Account settings
+    {{_ "accounts.title"}}
   {{/sandstormTopbarItem}}
 
-  <h1>Account</h1>
+  <h1>{{_ (con txt "title")}}</h1>
   <div class="identities-editor">
 
-    <h3 class="title-bar">Linked identities</h3>
+    <h3 class="title-bar">{{_ (con txt "identities.title")}}</h3>
 
     {{#if affectedByIdentityRefactor}}
-    <p class="alert-identity-refactor">We're changing the way identities work. Your account may be affected.
-        <a href="https://sandstorm.io/news/2017-05-08-refactoring-identities" target="_blank">Learn more &raquo;</a></p>
+    <p class="alert-identity-refactor">{{{_ (con txt "identities.refactorAlert")}}}</p>
     {{/if}}
 
     {{#with actionCompleted}}
       {{#if success}}
         {{#focusingSuccessBox}}
-          Success: {{success}}
+          {{_ (con txt "identities.success") success}}
         {{/focusingSuccessBox}}
       {{/if}}
       {{#if error}}
@@ -62,15 +62,15 @@ limitations under the License.
 
         <div class="account-buttons">
           {{#if isLinkingNewIdentity}}
-            <h4>Link new identity:</h4>
+            <h4>{{_ (con txt "identities.linkNewIdentity.title")}}</h4>
             {{#with linkingNewIdentity=linkingNewIdentityData}}
               {{> loginButtonsList globalAccountsUi}}
             {{/with}}
-            <button class="account-button cancel-link-new-identity">Cancel</button>
+            <button class="account-button cancel-link-new-identity">{{_ (con txt "identities.linkNewIdentity.cancelButton")}}</button>
           {{else}}
-            <button class="account-button link-new-identity">Link new identity</button>
+            <button class="account-button link-new-identity">{{_ (con txt "identities.linkNewIdentity.linkButton")}}</button>
             <button class="account-button logout-other-sessions" disabled={{logoutOtherSessionsInFlight}}>
-              Log out all other sessions
+              {{_ (con txt "identities.linkNewIdentity.logoutAllButton")}}
             </button>
           {{/if}}
         </div>
@@ -88,7 +88,7 @@ limitations under the License.
     </div>
   </div>
 
-  <h3 class="title-bar">Primary e-mail address for service-related notifications</h3>
+  <h3 class="title-bar">{{_ (con txt "identities.email.title")}}</h3>
   <div class="verified-emails-editor">
     <div class="already-verified">
       {{#if verifiedEmails}}
@@ -97,21 +97,21 @@ limitations under the License.
         <li>
           <span class="email" title="{{email}}">{{email}}</span>
           {{#if primary}}
-          <span class="primary-badge">Primary</span>
+          <span class="primary-badge">{{_ (con txt "identities.email.primary")}}</span>
           {{else}}
           <button class="make-primary" data-email="{{email}}" checked={{primary}}>
-            Set as primary
+            {{_ (con txt "identities.email.primaryButton")}}
           </button>
           {{/if}}
         </li>
         {{/each}}
       </ul>
       {{else}}
-      <p> No verified emails! </p>
+      <p>{{_ (con txt "identities.email.notFound")}}</p>
       {{/if}}
     </div>
     <div class="add-new">
-      Add new e-mail address
+      {{_ (con txt "identities.email.addNew")}}
       {{> emailAuthenticationForm emailLoginFormData}}
       {{> _loginButtonsMessages "" }}
     </div>
@@ -119,7 +119,7 @@ limitations under the License.
 
   {{#if isPaymentsEnabled}}
   <div class="billing">
-  <h2>Billing</h2>
+  <h2>{{_ (con txt "billing.title")}}</h2>
   {{> billingUsage db=db topbar=_topbar}}
   {{> billingSettings db=db}}
   </div>
@@ -127,9 +127,9 @@ limitations under the License.
 
   {{#if showDeleteButton}}
   <div class="danger-zone">
-    <h3>Delete account</h3>
+    <h3>{{_ (con txt "deleteAccount.title")}}</h3>
     <button class="delete-account" disabled={{logoutOtherSessionsInFlight}}>
-      Delete your account
+      {{_ (con txt "deleteAccount.button")}}
     </button>
   </div>
   {{/if}}
@@ -142,32 +142,33 @@ limitations under the License.
         {{/focusingErrorBox}}
       {{/if}}
 
-      <h2>Delete your account</h2>
-      <p>You are about to mark your account for deletion. Once marked for deletion, your account will be suspended, and you will have 7 days to cancel the pending deletion by logging back into your account.</p>
-      <p>After 7 days, your account will be permanently deleted. Deleting your account will:</p>
+      <h2>{{_ (con txt "deletePopup.title")}}</h2>
+      <p>{{_ (con txt "deletePopup.explanation")}}</p>
+      <p>{{_ (con txt "deletePopup.results")}}</p>
       <ul>
-        <li>Permanently delete any grains you created</li>
-        <li>Revoke all sharing links you created</li>
-        <li>Remove you from all users' contact lists</li>
-        <li>Delete all identities owned by your account (except identities also associated with another account).</li>
+        <li>{{_ (con txt "deletePopup.result1")}}</li>
+        <li>{{_ (con txt "deletePopup.result2")}}</li>
+        <li>{{_ (con txt "deletePopup.result3")}}</li>
+        <li>{{_ (con txt "deletePopup.result4")}}</li>
       </ul>
       <p>
-        Please type "delete my account" below to confirm.
+        {{_ (con txt "deletePopup.confirm")}}
       </p>
       <input class="confirm" type="text">
       <p>
-        We're sorry to see you go. Feel free to share any feedback you have with the server admin.
+        {{_ (con txt "deletePopup.goodbye")}}
       </p>
-      <textarea class="feedback" type="text" placeholder="Optional" rows="3"></textarea>
+      <textarea class="feedback" type="text" placeholder="{{_ (con txt "deletePopup.feedbackPlaceholder")}}" rows="3"></textarea>
       <form class="standard-form">
         <div class="button-row">
           <button class="danger delete-account-real" type="button"
-           disabled={{disableDelete}}>Delete account</button>
-          <button type="button" class="cancel-delete-account">Cancel</button>
+           disabled={{disableDelete}}>{{_ (con txt "deletePopup.deleteButton")}}</button>
+          <button type="button" class="cancel-delete-account">{{_ (con txt "deletePopup.cancelButton")}}</button>
         </div>
       </form>
     {{/modalDialogWithBackdrop}}
   {{/if}}
+{{/let}}
 </template>
 
 <template name="sandstormAccountsFirstSignIn">

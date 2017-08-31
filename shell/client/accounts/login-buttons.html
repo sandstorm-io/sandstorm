@@ -32,18 +32,20 @@ licenses, included in the LICENSES directory.
 -->
 
 <template name="loginButtons">
+{{#let txt="accounts.loginButtons.loginButtons"}}
   {{!-- Data context is an instance of AccountsUi. --}}
   {{#if isDemoUser}}
-    <button class="show-popup">Create account ▾</button>
+    <button class="show-popup">{{_ (con txt "createButton")}} ▾</button>
   {{else}}
-    <button class="show-popup">Sign in ▾</button>
+    <button class="show-popup">{{_ (con txt "signInButton")}} ▾</button>
   {{/if}}
+{{/let}}
 </template>
 
 <template name="accountButtons">
   {{#with profileData}}
     {{#if loading}}
-      <button class="show-popup has-picture">Loading...</button>
+      <button class="show-popup has-picture">{{_ "accounts.loginButtons.accountButtons.loading"}}</button>
     {{else}}
       <button class="show-popup has-picture">
         <span class="profile-picture" style="background-image: url('{{pictureUrl}}');"></span>
@@ -72,15 +74,16 @@ licenses, included in the LICENSES directory.
 </template>
 
 <template name="_loginButtonsLoggedInDropdown">
-  <h4>Account</h4>
+{{#let txt="accounts.loginButtons._loginButtonsLoggedInDropdown"}}
+  <h4>{{_ (con txt "title")}}</h4>
 
   <div class="account-buttons-list" role="menu">
     {{#linkTo route="account" role="menuitem"}}
-      Account settings
+      {{_ "accounts.title"}}
     {{/linkTo}}
     {{#if showIdentitySwitcher}}
     <button class="switch-identity">
-      Switch identity {{#if identitySwitcherExpanded}}▴{{else}}▾{{/if}}
+      {{_ (con txt "switchButton")}} {{#if identitySwitcherExpanded}}▴{{else}}▾{{/if}}
     </button>
     {{#if identitySwitcherExpanded}}
     <div class="inline-identity-switcher">
@@ -89,44 +92,47 @@ licenses, included in the LICENSES directory.
     {{/if}}
     {{/if}}
     {{#if isAdmin}}
-      {{#linkTo route="newAdminRoot" role="menuitem"}}Admin panel{{/linkTo}}
+      {{#linkTo route="newAdminRoot" role="menuitem"}}{{_ "admin.admin.newAdmin.title"}}{{/linkTo}}
     {{/if}}
 
     {{#if showSendFeedback}}
-      <a href="mailto:support@sandstorm.io" target="_blank" role="menuitem">Send feedback</a>
+      <a href="mailto:support@sandstorm.io" target="_blank" role="menuitem">{{_ (con txt "sendFeedback")}}</a>
     {{/if}}
 
     {{#if referralsEnabled }}
-      {{#linkTo route="referrals" role="menuitem"}}Referral program{{/linkTo}}
+      {{!-- should be "shell.referrals.title" --}}
+      {{#linkTo route="referrals" role="menuitem"}}{{_ "accounts.loginButtons._loginButtonsLoggedInDropdown.referralProgram"}}{{/linkTo}}
     {{/if}}
     {{#if showAbout}}
-      {{#linkTo route="about" role="menuitem"}}About Sandstorm{{/linkTo}}
+      {{#linkTo route="about" role="menuitem"}}{{_ "shell.about.title"}}{{/linkTo}}
     {{/if}}
 
     <button class="logout" role="menuitem">
-      Sign out
+      {{_ (con txt "signOutButton")}}
     </button>
   </div>
+{{/let}}
 </template>
 
 <template name="_loginButtonsLoggedOutDropdown">
+{{#let txt="accounts.loginButtons._loginButtonsLoggedOutDropdown"}}
   {{#if isDemoUser}}
-    <h4>Create account</h4>
-    <p class="demo-note">Your demo data will be transferred to your new account.</p>
+    <h4>{{_ (con txt "demo.title")}}</h4>
+    <p class="demo-note">{{_ (con txt "demo.explanation")}}</p>
     {{> loginButtonsList . }}
   {{else}}
-    <h4>Sign in</h4>
+    <h4>{{_ (con txt "title")}}</h4>
     {{#if isCurrentRoute 'shared'}}
-      <p class="demo-note">Sign in so that collaborators know who you are.</p>
+      <p class="demo-note">{{_ (con txt "shared.explanation")}}</p>
       {{#if choseLogin}}
         {{> loginButtonsList . }}
       {{else}}
         <div class="login-suggestion" role="menu">
           <button class="login" role="menuitem">
-            Sign in
+            {{_ (con txt "signInButton")}}
           </button>
           <button class="dismiss" role="menuitem">
-            Stay anonymous
+            {{_ (con txt "anonymousButton")}}
           </button>
         </div>
       {{/if}}
@@ -134,6 +140,7 @@ licenses, included in the LICENSES directory.
       {{> loginButtonsList . }}
     {{/if}}
   {{/if}}
+{{/let}}
 </template>
 
 <template name="loginButtonsDialog">
@@ -163,7 +170,7 @@ licenses, included in the LICENSES directory.
     {{/with}}
   {{else}}
     {{#linkTo route="newAdminIdentity" class="troubleshooting"}}
-      configure login
+      {{_ "accounts.loginButtons.loginButtonsList.configure"}}
     {{/linkTo}}
   {{/each}}
 
@@ -171,77 +178,81 @@ licenses, included in the LICENSES directory.
 
   {{#if showTroubleshooting}}
     {{> _loginButtonsSeparator "" }}
-    <a class="troubleshooting" href="https://docs.sandstorm.io/en/latest/administering/faq/" target="_blank">troubleshooting</a>
+    <a class="troubleshooting" href="https://docs.sandstorm.io/en/latest/administering/faq/" target="_blank">{{_ "accounts.loginButtons.loginButtonsList.troubleshooting"}}</a>
   {{/if}}
 
   {{#if showAbout}}
-    {{#linkTo route="about"}}about Sandstorm{{/linkTo}}
+    {{#linkTo route="about"}}{{_ "accounts.loginButtons.loginButtonsList.about"}}{{/linkTo}}
   {{/if}}
   </div>
 </template>
 
 <template name="oauthLoginButton">
   <button class="login oneclick {{data.name}}">
-    with {{data.displayName}}
+    {{_ "accounts.loginButtons.oauthLoginButton.with"}}{{data.displayName}}
   </button>
 </template>
 
 <template name="devLoginForm">
+{{#let txt="accounts.loginButtons.devLoginForm"}}
   {{#if expanded}}
   <form class="dev login expanded">
-    with a Dev account <button type="button" title="unexpand" class="unexpand"> ▴ </button>
+    {{_ (con txt "label")}} <button type="button" title="{{_ (con txt "hint")}}" class="unexpand"> ▴ </button>
     <ul class="dev-identities">
       <li><button type="button" class="login-dev-account" data-name="Alice Dev Admin"
                   data-is-admin="true">
-          Alice (admin)
+          {{_ (con txt "alice")}}
       </button></li>
       <li><button type="button" class="login-dev-account" data-name="Bob Dev User">
-          Bob
+          {{_ (con txt "bob")}}
       </button></li>
       <li><button type="button" class="login-dev-account" data-name="Carol Dev User">
-          Carol
+          {{_ (con txt "carol")}}
       </button></li>
       <li><button type="button" class="login-dev-account" data-name="Dave Dev User">
-          Dave
+          {{_ (con txt "dave")}}
       </button></li>
       <li class="custom-name">
-        <input name="name" type="text" placeholder="Eve" required>
-        <button type="submit">Custom</button>
+        <input name="name" type="text" placeholder="{{_ (con txt "customPlaceholder")}}" required>
+        <button type="submit">{{_ (con txt "customButton")}}</button>
       </li>
     </ul>
   </form>
   {{else}}
   <button class="dev login expand">
-    with a Dev account ▾
+    {{_ (con txt "label")}} ▾
   </button>
   {{/if}}
+{{/let}}
 </template>
 
 <template name="emailLoginForm">
-  {{> emailAuthenticationForm linkingNewIdentity=linkingNewIdentity description="with e-mail"
-                              prompt="email" sendButtonText="send Login Email"
+  {{> emailAuthenticationForm linkingNewIdentity=linkingNewIdentity
+                              description=(_ "accounts.loginButtons.emailLoginForm.description")
+                              prompt="email"
+                              sendButtonText=(_ "accounts.loginButtons.emailLoginForm.sendButtonText")
                               loginId=loginId}}
 </template>
 
 <template name="emailAuthenticationForm">
+{{#let txt="accounts.loginButtons.emailAuthenticationForm"}}
   <form class="email">
     {{description}}
 
     <label class="email {{#if awaitingToken}}hidden{{/if}}">{{prompt}}
-      <span title="Passwordless E-mail Login allows you to log in using an e-mail address. No password is required; instead, every time you log in, we send you a new email confirmation code. You will only need to log in once per device." class="info">i</span>
+      <span title="{{_ (con txt "hint")}}" class="info">{{_ "accounts.loginButtons.icon.info"}}</span>
       <input name="email" type="email" disabled={{disabled}} value={{loginId}}>
     </label>
 
     {{#with awaitingToken}}
-    <p>We've sent a login e-mail to {{.}}. It may take a few moments to show up in your
-      inbox.</p>
+    <p>{{_ (con txt "token.explanation")}}</p>
     <label class="token">
-      Enter your token:
+      {{_ (con txt "token.label")}}
       <input name="token" type="text">
     </label>
     <div class="button-box">
-      <button class="login token">Confirm</button>
-      <button type="reset" class="cancel">Cancel</button>
+      <button class="login token">{{_ (con txt "token.confirmButton")}}</button>
+      <button type="reset" class="cancel">{{_ (con txt "token.cancelButton")}}</button>
     </div>
     {{else}}
     <div class="button-box">
@@ -250,28 +261,31 @@ licenses, included in the LICENSES directory.
     {{/with}}
 
     {{#if disabled}}
-    <p>A server admin must enable email authentication before you can confirm your email.</p>
+    <p>{{_ (con txt "disabled")}}</p>
     {{/if}}
   </form>
+{{/let}}
 </template>
 
 <template name="ldapLoginForm">
+{{#let txt="accounts.loginButtons.ldapLoginForm"}}
   <form class="ldap">
     {{loginProviderLabel}}
 
-    <label class="username">username
-      <span title="This is your LDAP username. It will be the name that you normally use to log in to other internal services at your company." class="info">i</span>
+    <label class="username">{{_ (con txt "username.label")}}
+      <span title="{{_ (con txt "username.hint")}}" class="info">{{_ "accounts.loginButtons.icon.info"}}</span>
       <input name="username" type="text" value="{{loginId}}">
     </label>
 
-    <label class="password">password
-      <span title="This is your LDAP password. It will be the password that you normally use to log in to other internal services at your company." class="info">i</span>
+    <label class="password">{{_ (con txt "password.label")}}
+      <span title="{{_ (con txt "password.hint")}}" class="info">{{_ "accounts.loginButtons.icon.info"}}</span>
       <input name="password" type="password">
     </label>
     <div class="button-box">
-      <button class="login email">Log in</button>
+      <button class="login email">{{_ (con txt "loginButton")}}</button>
     </div>
   </form>
+{{/let}}
 </template>
 
 <template name="samlLoginForm">
@@ -283,7 +297,7 @@ licenses, included in the LICENSES directory.
 <template name="_loginButtonsSeparator">
   <div class="or">
     <span class="hline">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
-    <span class="or-text">or</span>
+    <span class="or-text">{{_ "accounts.loginButtons._loginButtonsSeparator.or"}}</span>
     <span class="hline">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
   </div>
 </template>

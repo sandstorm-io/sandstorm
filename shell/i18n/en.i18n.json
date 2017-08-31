@@ -498,6 +498,7 @@
     "title": "Admin",
     "admin": {
       "newAdmin": {
+        "title": "Admin panel",
         "wildcardHostBroken": "WARNING: This server seems to have its WILDCARD_HOST misconfigured.  Until you fix it, you will not be able to use any apps. You can read <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\"> more info in the Sandstorm docs</a> and in your browser's Javascript console. You'll need to adjust DNS, SSL/TLS certificates, or edit the sandstorm.conf file. If you see no information in the JS console, or wish to test if you have fixed the problem, reload this page to re-run the test. If you're still having problems, <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">please file an issue.</a>",
         "websocketBroken": "WARNING: This server seems to be unable to create a WebSocket. Sandstorm may appear to run fine, but many apps will fail to run properly. <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\"> Learn more.</a>  Usually this is caused by a reverse proxy like nginx or Apache that needs to be reconfigured. If you think you are seeing this message in error, please reload this page or <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">file an issue.</a>",
         "hasSetupToken": "You are not logged in as an admin, but you do have a setup token. You can either <a href=\"/setup\">visit the setup wizard</a> or <a href=\"/admin/status\">view the system log</a>.",
@@ -1422,6 +1423,83 @@
         "saveButton": "Save",
         "continueButton": "Continue",
         "cancelButton": "Cancel"
+      }
+    },
+    "loginButtons": {
+      "icon": {
+        "info": "i"
+      },
+      "loginButtons": {
+        "createButton": "Create account",
+        "signInButton": "Sign in"
+      },
+      "accountButtons": {
+        "loading": "Loading..."
+      },
+      "_loginButtonsLoggedInDropdown": {
+        "title": "Account",
+        "switchButton": "Switch identity",
+        "sendFeedback": "Send feedback",
+        "referralProgram": "Referral program",
+        "signOutButton": "Sign out"
+      },
+      "_loginButtonsLoggedOutDropdown": {
+        "demo": {
+          "title": "Create account",
+          "explanation": "Your demo data will be transferred to your new account."
+        },
+        "title": "Sign in",
+        "shared": {
+          "explanation": "Sign in so that collaborators know who you are."
+        },
+        "signInButton": "Sign in",
+        "anonymousButton": "Stay anonymous"
+      },
+      "oauthLoginButton": {
+        "with": "with "
+      },
+      "devLoginForm": {
+        "label": "with a Dev account",
+        "hint": "unexpand",
+        "alice": "Alice (admin)",
+        "bob": "Bob",
+        "carol": "Carol",
+        "dave": "Dave",
+        "customPlaceholder": "Eve",
+        "customButton": "Custom"
+      },
+      "loginButtonsList": {
+        "configure": "configure login",
+        "troubleshooting": "troubleshooting",
+        "about": "about Sandstorm"
+      },
+      "emailLoginForm": {
+        "description": "with e-mail",
+        "sendButtonText": "send Login Email"
+      },
+      "emailAuthenticationForm": {
+        "hint": "Passwordless E-mail Login allows you to log in using an e-mail address. No password is required; instead, every time you log in, we send you a new email confirmation code. You will only need to log in once per device.",
+        "token": {
+          "explanation": "We've sent a login e-mail to {{.}}. It may take a few moments to show up in your inbox.",
+          "label": "Enter your token:",
+          "confirmButton": "Confirm",
+          "cancelButton": "Cancel"
+        },
+        "disabled": "A server admin must enable email authentication before you can confirm your email."
+      },
+      "ldapLoginForm": {
+        "username": {
+          "label": "username",
+          "hint": "This is your LDAP username. It will be the name that you normally use to log in to other internal services at your company."
+        },
+        "password": {
+          "label": "password",
+          "hint": "This is your LDAP password. It will be the password that you normally use to log in to other internal services at your company."
+        },
+        "loginButton": "Log in"
+      },
+      "_loginButtonsSeparator": {
+        "or": "or"
       }
     }
   }

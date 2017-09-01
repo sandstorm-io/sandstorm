@@ -17,12 +17,13 @@ limitations under the License.
 -->
 
 <template name="identityLoginInterstitial">
+{{#let txt="accounts.identity.identityLoginInterstitial"}}
   {{!--
     Interstitial to display when the user is logged in as an identity, rather than as an account.
   --}}
   <div class="identity-login-interstitial">
     {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar}}
-      Logging in...
+      {{_ "accounts.identity.identityLoginInterstitial.title"}}
     {{/sandstormTopbarItem}}
 
     <div class="centered-content">
@@ -30,66 +31,66 @@ limitations under the License.
       {{!-- separate blocks for each possible state --}}
 
       {{#if state.loading}}
-        <h1>loading...</h1>
+        <h1>{{_ (con txt "loading")}}</h1>
       {{/if}}
 
       {{#if state.creatingAccount}}
-        <h1>creating account...</h1>
-        <button class="logout">Cancel</button>
+        <h1>{{_ (con txt "create")}}</h1>
+        <button class="logout">{{_ (con txt "cancelButton")}}</button>
       {{/if}}
 
       {{#if state.accountCreationFailed}}
-        <h1>Failed to create account.</h1>
+        <h1>{{_ (con txt "createFailed")}}</h1>
         {{#focusingErrorBox}}
           {{state.accountCreationFailed.message}}
         {{/focusingErrorBox}}
-        <button class="logout">Log out</button>
+        <button class="logout">{{_ (con txt "logoutButton")}}</button>
       {{/if}}
 
       {{#if state.loggingInWithIdentity}}
-        <h1>logging in to account...</h1>
-        <button class="logout">Cancel</button>
+        <h1>{{_ (con txt "loginAccount")}}</h1>
+        <button class="logout">{{_ (con txt "cancelButton")}}</button>
       {{/if}}
 
       {{#if state.loginWithIdentityFailed}}
-        <h1>Account login failed</h1>
+        <h1>{{_ (con txt "loginAccountFailed")}}</h1>
         {{#focusingErrorBox}}
           {{state.loginWithIdentityFailed.message}}
         {{/focusingErrorBox}}
-        <button class="logout">Log out</button>
+        <button class="logout">{{_ (con txt "logoutButton")}}</button>
       {{/if}}
 
       {{#if state.loggingInWithToken}}
-        <h1>logging back in to account...</h1>
-        <button class="logout">Cancel</button>
+        <h1>{{_ (con txt "loginToken")}}</h1>
+        <button class="logout">{{_ (con txt "cancelButton")}}</button>
       {{/if}}
 
       {{#if state.loginWithTokenFailed}}
-        <h1>Failed to resume session.</h1>
+        <h1>{{_ (con txt "loginTokenFailed")}}</h1>
         {{#focusingErrorBox}}
           {{state.loginWithTokenFailed.message}}
         {{/focusingErrorBox}}
-        <button class="logout">Log out</button>
+        <button class="logout">{{_ (con txt "logoutButton")}}</button>
       {{/if}}
 
       {{#if state.linkingIdentity}}
-        <h1>linking identity to account...</h1>
-        <button class="logout">Cancel</button>
+        <h1>{{_ (con txt "link")}}</h1>
+        <button class="logout">{{_ (con txt "cancelButton")}}</button>
       {{/if}}
 
       {{#if state.identityIsNotLoginIdentity}}
         {{#with unlinkIdentityState=unlinkIdentityState}}
           {{#if unlinkIdentityState.success}}
             {{#focusingSuccessBox}}
-              Unlinked identity from {{unlinkIdentityState.success.name}}.
+              {{_ (con txt "success") unlinkIdentityState.success.name}}
             {{/focusingSuccessBox}}
           {{/if}}
 
           <br>
-          <p>You have authenticated as this identity</p>
+          <p>{{_ (con txt "explanation")}}</p>
           {{>identityCard currentIdentity}}
-          <p class="warning-banner">but that is not a login identity for any account.</p>
-          <p>The following identities can log in to your identity's accounts:</p>
+          <p class="warning-banner">{{_ (con txt "warning")}}</p>
+          <p>{{_ (con txt "moreIdentities")}}</p>
           <ul>
             {{#each account in nonloginAccounts}}
             <li class="non-login-account">
@@ -101,13 +102,13 @@ limitations under the License.
                 {{/each}}
               </ul>
               <button class="unlink" data-user-id="{{account.accountId}}"
-                      title="Unlink your identity from this account.">
-                unlink
+                      title="{{_ (con txt "unlinkButton.hint")}}">
+                {{_ (con txt "unlinkButton.text")}}
               </button>
             </li>
             {{/each}}
           </ul>
-          <button class="logout">Go back</button>
+          <button class="logout">{{_ (con txt "logoutButton")}}</button>
 
           {{#if modalContext}}
             {{#modalDialogWithBackdrop onDismiss=cancelUnlink}}
@@ -119,17 +120,17 @@ limitations under the License.
 
               {{#with context=modalContext}}
               <p>
-                Are you sure you want to unlink your identity from the account of {{ context.name }}?
+                {{_ (con txt "unlink.explanation") context.name}}
               </p>
               {{/with}}
 
               <form class="standard-form">
                 <div class="button-row">
                   <button class="danger" type="button" name="confirm-unlink" disabled={{unlinkIdentityState.unlinking}}>
-                    Unlink
+                    {{_ (con txt "unlink.unlinkButton")}}
                   </button>
                   <button type="button" name="cancel-unlink">
-                    Cancel
+                    {{_ (con txt "unlink.cancelButton")}}
                   </button>
                 </div>
               </form>
@@ -140,6 +141,7 @@ limitations under the License.
     {{/with}}
     </div>
   </div>
+{{/let}}
 </template>
 
 <template name="identityManagementButtons">

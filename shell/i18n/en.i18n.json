@@ -1501,6 +1501,41 @@
       "_loginButtonsSeparator": {
         "or": "or"
       }
+    },
+    "identity": {
+      "identityLoginInterstitial": {
+        "title": "Logging in...",
+        "loading": "loading...",
+        "logoutButton": "Log out",
+        "cancelButton": "Cancel",
+        "logoutButton": "Go back",
+        "create": "creating account...",
+        "createFailed": "Failed to create account.",
+        "loginAccount": "logging in to account...",
+        "loginAccountFailed": "Account login failed",
+        "loginToken": "logging back in to account...",
+        "loginTokenFailed": "Failed to resume session.",
+        "link": "linking identity to account...",
+        "success": "Unlinked identity from %s",
+        "explanation": "You have authenticated as this identity",
+        "warning": "but that is not a login identity for any account.",
+        "moreIdentities": "The following identities can log in to your identity's accounts:",
+        "unlinkButton": {
+          "hint": "Unlink your identity from this account.",
+          "text": "unlink"
+        },
+        "unlink": {
+          "explanation": "Are you sure you want to unlink your identity from the account of %s?",
+          "unlinkButton": "Unlink",
+          "cancelButton": "Cancel"
+        }
+      },
+      "identityManagementButtons": {
+      },
+      "loginIdentitiesOfLinkedAccounts": {
+      },
+      "identityCardSignInButton": {
+      }
     }
   }
 }

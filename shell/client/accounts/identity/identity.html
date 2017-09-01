@@ -145,47 +145,49 @@ limitations under the License.
 </template>
 
 <template name="identityManagementButtons">
+{{#let txt="accounts.identity.identityManagementButtons"}}
   <div class="identity-management-controls">
     <div class="toggle-login">
       <label title={{disableToggleLogin.why}}>
         <input class="toggle-login" type=checkbox checked={{isLogin}} disabled={{disableToggleLogin}}
                data-identity-id="{{_id}}">
-        Allow this identity to log in to your account.
+        {{_ (con txt "toggleLogin.label")}}
       </label>
     </div>
     {{>loginIdentitiesOfLinkedAccounts _id=_id}}
     <div>
       <button class="unlink-identity" data-identity-id="{{_id}}">
-        Unlink this identity
+        {{_ (con txt "toggleLogin.unlinkButton")}}
       </button>
     </div>
   </div>
+{{/let}}
 </template>
 
 <template name="loginIdentitiesOfLinkedAccounts">
+{{#let txt="accounts.identity.loginIdentitiesOfLinkedAccounts"}}
   {{#if showOtherAccounts}}
   <div class="login-identities-of-linked-accounts">
-    <p>This identity is shared with other accounts.
-       Those accounts have the following login identities:
-    </p>
+    <p>{{_ (con txt "show.explanation")}}</p>
     <ul class="unlinkable-identities">
       {{#each getOtherAccounts}}
       <li>
         {{> identityCard .}}
-        <button class="unlink" data-user-id="{{loginAccountId}}">unlink</button>
+        <button class="unlink" data-user-id="{{loginAccountId}}">{{_ (con txt "show.unlinkButton")}}</button>
       </li>
       {{/each}}
     </ul>
-    <button class="hide-other-accounts">hide other accounts</button>
+    <button class="hide-other-accounts">{{_ (con txt "show.hideButton")}}</button>
   </div>
   {{else}}
   {{#if getOtherAccounts}}
   <div class="login-identities-of-linked-accounts">
-    This identity is shared with at least one other account.
-    <button class="show-other-accounts">show other accounts</button>
+    {{_ (con txt "hide.explanation")}}
+    <button class="show-other-accounts">{{_ (con txt "hide.showButton")}}</button>
   </div>
   {{/if}}
   {{/if}}
+{{/let}}
 </template>
 
 <template name="identityPicker">
@@ -210,13 +212,13 @@ limitations under the License.
 
 <template name="identityCardSignInButton">
   <div class="identity-card-sign-in">
-  <button class="sign-in" title="sign in as {{identity.profile.name}}"
+  <button class="sign-in" title="{{_ "accounts.identity.identityCardSignInButton.hint" identity.profile.name}}"
           disabled={{clicked}}>
     {{> identityCard identity }}
   </button>
   {{#if clicked}}
     {{#with form}}
-      <h4>Sign in</h4>
+      <h4>{{_ "accounts.identity.identityCardSignInButton.title"}}</h4>
        <div class="login-buttons-list light-border">
          {{> Template.dynamic template=name}}
        </div>

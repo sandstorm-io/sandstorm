@@ -1531,10 +1531,25 @@
         }
       },
       "identityManagementButtons": {
+        "toggleLogin": {
+          "label": "Allow this identity to log in to your account.",
+          "unlinkButton": "Unlink this identity"
+        }
       },
       "loginIdentitiesOfLinkedAccounts": {
+        "show": {
+          "explanation": "This identity is shared with other accounts. Those accounts have the following login identities:",
+          "unlinkButton": "unlink",
+          "hideButton": "hide other accounts"
+        },
+        "hide": {
+          "explanation": "This identity is shared with at least one other account.",
+          "showButton": "show other accounts"
+        }
       },
       "identityCardSignInButton": {
+        "hint": "sign in as %s",
+        "title": "Sign in"
       }
     }
   }

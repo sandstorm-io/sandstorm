@@ -41,16 +41,16 @@
 
 <template name="setupWizardProgressBar">
 {{!-- expected arguments:
-   currentStep: String, should be one of ["intro", "identity", "organization", "email", "user", "success"]
+   currentStep: String, should be one of ["intro", "login", "organization", "email", "user", "success"]
 --}}
 <div class="setup-progress">
   <ol class="setup-progress-labels">
-    {{#setupWizardProgressBarItem stepName="identity"
-                                   isCurrentStep=(currentStepIs "identity")
-                                   mayJumpTo=(mayJumpTo "identity")
-                                   route="setupWizardIdentity"
+    {{#setupWizardProgressBarItem stepName="login"
+                                   isCurrentStep=(currentStepIs "login")
+                                   mayJumpTo=(mayJumpTo "login")
+                                   route="setupWizardLogin"
                                    className=itemClassName}}
-      Identity providers
+      Login providers
     {{/setupWizardProgressBarItem}}
 
     {{#setupWizardProgressBarItem stepName="organization"
@@ -89,7 +89,7 @@
     {{/setupWizardProgressBarItem}}
   </ol>
   <div class="setup-progress-bar">
-    <div class="{{#if currentStepAtOrPast "identity"    }}complete{{else}}incomplete{{/if}}"></div>
+    <div class="{{#if currentStepAtOrPast "login"       }}complete{{else}}incomplete{{/if}}"></div>
     <div class="{{#if currentStepAtOrPast "organization"}}complete{{else}}incomplete{{/if}}"></div>
     <div class="{{#if currentStepAtOrPast "email"       }}complete{{else}}incomplete{{/if}}"></div>
     <div class="{{#if currentStepAtOrPast "preinstalled"}}complete{{else}}incomplete{{/if}}"></div>
@@ -153,10 +153,10 @@
     {{#if noIdpEnabled}}
     <p>
       This Sandstorm server has been set up previously, but due to a change in
-      <code>sandstorm.conf</code>, you'll need to configure identity providers again.
+      <code>sandstorm.conf</code>, you'll need to configure login providers again.
     </p>
     <p class="center">
-      {{#linkTo route="setupWizardIdentity" class="setup-button-primary"}}Revisit setup wizard{{/linkTo}}
+      {{#linkTo route="setupWizardLogin" class="setup-button-primary"}}Revisit setup wizard{{/linkTo}}
     </p>
     {{else}}
     <p>
@@ -202,7 +202,7 @@
       <p>
         <div class="center">
           {{#if showSignInPanel}}
-            {{#with linkingNewCredential=notLinkingNewIdentity}}
+            {{#with linkingNewCredential=notLinkingNewCredential}}
               {{> loginButtonsDialog label="Sign in" accountsUi=freshAccountsUi}}
             {{/with}}
           {{else}}
@@ -213,7 +213,7 @@
     {{/if}}
 
     <p class="center">
-      {{#linkTo route="setupWizardIdentity" class="rerun-wizard-button"}}Revisit setup wizard{{/linkTo}}
+      {{#linkTo route="setupWizardLogin" class="rerun-wizard-button"}}Revisit setup wizard{{/linkTo}}
     </p>
     {{/if}}
   {{else}}
@@ -228,22 +228,22 @@
 </div>
 </template>
 
-<template name="setupWizardIdentity">
+<template name="setupWizardLogin">
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Identity providers</h1>
-  {{> setupWizardProgressBar currentStep="identity"}}
+  <h1 class="setup-page-title">Login providers</h1>
+  {{> setupWizardProgressBar currentStep="login"}}
 
   <p>
     To use Sandstorm, you need to create a user account.  Every user account on
-    Sandstorm is backed by an identity provider.  You'll use this identity provider
+    Sandstorm is backed by a login provider.  You'll use this login provider
     to authenticate as the first administrator of this Sandstorm install.
   </p>
 
   <p>
-    Configure the identity provider or providers you wish to enable.
+    Configure the login provider or providers you wish to enable.
   </p>
 
-  {{> adminIdentityProviderTable idpData=idpData }}
+  {{> adminLoginProviderTable idpData=idpData }}
 
   {{#setupWizardButtonRow}}
     <button class="setup-next-button" {{nextHtmlDisabled}}>
@@ -515,7 +515,7 @@
     {{#if currentUserFirstLogin}}
       <div class="center">
         <h2>Confirm your profile</h2>
-        <div class="single-identity-editor">
+        <div class="single-credential-editor">
           {{#with accountProfileEditorData}}
             {{> _accountProfileEditor .}}
           {{/with}}
@@ -550,7 +550,7 @@
 
       {{!-- The loginButtonsDialog apparently requires this in the parent data context, which seems
             wrong.  It should probably be passed in explicitly instead.  --}}
-      {{#with linkingNewCredential=notLinkingNewIdentity}}
+      {{#with linkingNewCredential=notLinkingNewCredential}}
         {{> loginButtonsDialog label="Create account" accountsUi=freshAccountsUi}}
       {{/with}}
     </div>

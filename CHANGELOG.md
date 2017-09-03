@@ -1,3 +1,7 @@
+### v0.214 (2017-09-03) [bugfixes]
+- Fixed setup wizard no longer working after identity changes.
+- Fixed "login providers" button in admin panel not working.
+
 ### v0.213 (2017-09-02)
 - Major revision of Sandstorm's identity model. Users now have only one profile, rather than one for each linked credential. Although most people won't notice the difference, a huge amount of code has changed. Learn more in the blog post: [https://sandstorm.io/news/2017-05-08-refactoring-identities](https://sandstorm.io/news/2017-05-08-refactoring-identities)
 

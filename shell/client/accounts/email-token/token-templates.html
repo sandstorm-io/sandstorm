@@ -1,15 +1,16 @@
 <template name="_emailTokenError">
-  <h2>Invalid authentication code. If it has been more than 15 minutes, the token has expired, otherwise you may have simply mistyped it.</h2>
+  <h2>{{_ "accounts.tokenTemplates._emailTokenError.title"}}</h2>
 </template>
 
 <template name="_emailLinkIdentityError">
   <h2>
-    To confirm your email address, you must be logged in as the account that created this link.
+    {{_ "accounts.tokenTemplates._emailLinkIdentityError.title"}}
   </h2>
   {{error}}
 </template>
 
 <template name="addNewVerifiedEmailPowerboxConfiguration">
+{{#let txt="accounts.tokenTemplates.addNewVerifiedEmailPowerboxConfiguration"}}
   {{#if state.error}}
     {{#focusingErrorBox}}
       {{state.error}}
@@ -18,35 +19,36 @@
 
   {{#if state.enterEmail}}
     <form class="verified-email" name="enter-email">
-      <input type="text" name="email" placeholder="enter email address" value={{email}}>
+      <input type="text" name="email" placeholder="{{_ (con txt "email.placeholder")}}" value={{email}}>
       {{#if alreadyVerified}}
-        <button class="connect-button">Select</button>
+        <button class="connect-button">{{_ (con txt "email.selectButton")}}</button>
       {{else}}
         <button class="connect-button" disabled={{#unless email}}true{{/unless}}>
-          Send confirmation email
+          {{_ (con txt "email.sendButton")}}
         </button>
       {{/if}}
     </form>
   {{/if}}
 
   {{#if state.sendingEmail }}
-    <p>Sending to {{email}}...</p>
+    <p>{{_ (con txt "sendingTo") email}}</p>
   {{/if}}
 
   {{#if state.enterToken }}
     {{#if state.error}}
     <div class="reset-row">
-      <button name="reset" type="button">Try a different address</button>
+      <button name="reset" type="button">{{_ (con txt "resetButton")}}</button>
     </div>
     {{/if}}
     <p>{{enterTokenMessage}}</p>
     <form class="verified-email" name="enter-token">
-      <input type="text" name="token" placeholder="enter your token" value={{token}}>
-      <button class="connect-button" disabled={{#unless token}}true{{/unless}}>Confirm</button>
+      <input type="text" name="token" placeholder="{{_ (con txt "token.placeholder")}}" value={{token}}>
+      <button class="connect-button" disabled={{#unless token}}true{{/unless}}>{{_ (con txt "token.confirmButton")}}</button>
     </form>
   {{/if}}
 
   {{#if state.sendingToken }}
-    <p>Verifying token...</p>
+    <p>{{_ (con txt "verifying")}}</p>
   {{/if}}
+{{/let}}
 </template>

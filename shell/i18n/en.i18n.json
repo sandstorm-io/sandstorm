@@ -1551,6 +1551,28 @@
         "hint": "sign in as %s",
         "title": "Sign in"
       }
+    },
+    "tokenTemplates": {
+      "_emailTokenError": {
+        "title": "Invalid authentication code. If it has been more than 15 minutes, the token has expired, otherwise you may have simply mistyped it."
+      },
+      "_emailLinkIdentityError": {
+        "title": "To confirm your email address, you must be logged in as the account that created this link."
+      },
+      "addNewVerifiedEmailPowerboxConfiguration": {
+        "email": {
+          "placeholder": "enter email address",
+          "selectButton": "Select",
+          "sendButton": "Send confirmation email"
+        },
+        "sendingTo": "Sending to %s",
+        "resetButton": "Try a different address",
+        "token": {
+          "placeholder": "enter your token",
+          "confirmButton": "Confirm"
+        },
+        "verifying": "Verifying token..."
+      }
     }
   }
 }

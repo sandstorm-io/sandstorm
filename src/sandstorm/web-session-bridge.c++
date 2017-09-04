@@ -17,6 +17,7 @@
 #include "web-session-bridge.h"
 #include <kj/debug.h>
 #include <capnp/schema.h>
+#include <sodium/randombytes.h>
 
 namespace sandstorm {
 
@@ -41,6 +42,7 @@ WebSessionBridge::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilde
       hETag(headerTableBuilder.add("ETag")),
       hIfMatch(headerTableBuilder.add("If-Match")),
       hIfNoneMatch(headerTableBuilder.add("If-None-Match")),
+      hSecWebSocketProtocol(headerTableBuilder.add("Sec-WebSocket-Protocol")),
       successCodeTable(KJ_MAP(enumerant,
             capnp::Schema::from<WebSession::Response::SuccessCode>().getEnumerants()) {
         return getHttpStatusAnnotation(enumerant);
@@ -156,10 +158,289 @@ kj::Promise<void> WebSessionBridge::request(
   }
 }
 
+namespace {
+
+class WebSocketPipe final : public kj::AsyncIoStream, public kj::Refcounted,
+                            private kj::TaskSet::ErrorHandler {
+  // Class which adapts a pair of WebSession::WebSocketStreams into an AsyncIoStream which in turn
+  // can be wrapped by a kj::WebSocket using kj::newWebSocket().
+  //
+  // TODO(apibump): Currently WebSocketStream (the Cap'n Proto interface) doesn't understand
+  //   the WebSocket protocol semantics and instead streams raw bytes, leaving it up to Sandstorm
+  //   apps to implement the WebSocket message framing protocol themselves. But KJ *does*
+  //   understand WebSocket, so this is a waste: we're losing the parsing that KJ has done by
+  //   turning things back into bytes. We should update WebSocketStream to pass messages rather
+  //   than bytes, and then get rid of this convoluted class. This will require a change to the
+  //   Sandstorm API, though, with a version bump and a compatibility shim.
+
+public:
+  WebSocketPipe(WebSession::WebSocketStream::Client outgoing)
+      : outgoing(kj::mv(outgoing)),
+        writeTasks(*this) {}
+
+  WebSession::WebSocketStream::Client getIncomingStreamCapability() {
+    return kj::heap<WebSocketStreamImpl>(kj::addRef(*this));
+  }
+
+  // ---------------------------------------------------------------------------
+  // outgoing direction
+
+  void shutdownWrite() override {
+    outgoing = nullptr;
+  }
+
+  kj::Promise<void> write(const void* buffer, size_t size) override {
+    auto req = KJ_REQUIRE_NONNULL(outgoing, "already called shutdownWrite()").sendBytesRequest();
+    req.setMessage(kj::arrayPtr(reinterpret_cast<const byte*>(buffer), size));
+    return writeImpl(size, kj::mv(req));
+  }
+
+  kj::Promise<void> write(kj::ArrayPtr<const kj::ArrayPtr<const byte>> pieces) override {
+    size_t size = 0;
+    for (auto piece: pieces) {
+      size += piece.size();
+    }
+
+    auto req = KJ_REQUIRE_NONNULL(outgoing, "already called shutdownWrite()").sendBytesRequest();
+    auto builder = req.initMessage(size);
+
+    byte* pos = builder.begin();
+    for (auto piece: pieces) {
+      memcpy(pos, piece.begin(), piece.size());
+      pos += piece.size();
+    }
+    KJ_ASSERT(pos == builder.end());
+
+    return writeImpl(size, kj::mv(req));
+  }
+
+private:
+  kj::Promise<void> writeImpl(size_t size, capnp::Request<
+      WebSession::WebSocketStream::SendBytesParams,
+      WebSession::WebSocketStream::SendBytesResults>&& req) {
+    KJ_IF_MAYBE(e, writeError) {
+      return kj::cp(*e);
+    }
+
+    writeTasks.add(req.send().then([this,size](auto&& response) {
+      bytesInFlight -= size;
+      if (bytesInFlight < MAX_IN_FLIGHT) {
+        KJ_IF_MAYBE(f, writeReadyFulfiller) {
+          f->get()->fulfill();
+        }
+      }
+    }));
+    bytesInFlight += size;
+
+    if (bytesInFlight < MAX_IN_FLIGHT) {
+      return kj::READY_NOW;
+    } else {
+      auto paf = kj::newPromiseAndFulfiller<void>();
+      writeReadyFulfiller = kj::mv(paf.fulfiller);
+      return kj::mv(paf.promise);
+    }
+  }
+
+  void taskFailed(kj::Exception&& exception) override {
+    KJ_IF_MAYBE(f, writeReadyFulfiller) {
+      f->get()->reject(kj::mv(exception));
+      writeReadyFulfiller = nullptr;
+    }
+    writeError = kj::mv(exception);
+  }
+
+public:
+  // ---------------------------------------------------------------------------
+  // incoming direction
+
+  kj::Promise<size_t> tryRead(void* buffer, size_t minBytes, size_t maxBytes) override {
+    KJ_SWITCH_ONEOF(current) {
+      KJ_CASE_ONEOF(w, CurrentWrite) {
+        if (maxBytes < w.buffer.size()) {
+          // Entire read satisfied by write, write is still pending.
+          memcpy(buffer, w.buffer.begin(), maxBytes);
+          w.buffer = w.buffer.slice(maxBytes, w.buffer.size());
+          return maxBytes;
+        } else if (minBytes <= w.buffer.size()) {
+          // Read is satisfied by write and consumes entire write.
+          size_t result = w.buffer.size();
+          memcpy(buffer, w.buffer.begin(), result);
+          w.fulfiller->fulfill();
+          current = None();
+          return result;
+        } else {
+          // Read consumes entire write and is not satisfied.
+          size_t alreadyRead = w.buffer.size();
+          memcpy(buffer, w.buffer.begin(), alreadyRead);
+          w.fulfiller->fulfill();
+          auto paf = kj::newPromiseAndFulfiller<size_t>();
+          current = CurrentRead {
+            kj::arrayPtr(reinterpret_cast<byte*>(buffer) + alreadyRead, maxBytes - alreadyRead),
+            minBytes - alreadyRead,
+            alreadyRead,
+            kj::mv(paf.fulfiller)
+          };
+          return kj::mv(paf.promise);
+        }
+      }
+      KJ_CASE_ONEOF(r, CurrentRead) {
+        KJ_FAIL_REQUIRE("can only call read() once at a time");
+      }
+      KJ_CASE_ONEOF(e, Eof) {
+        return size_t(0);
+      }
+      KJ_CASE_ONEOF(n, None) {
+        auto paf = kj::newPromiseAndFulfiller<size_t>();
+        current = CurrentRead {
+          kj::arrayPtr(reinterpret_cast<byte*>(buffer), maxBytes),
+          minBytes,
+          0,
+          kj::mv(paf.fulfiller)
+        };
+        return kj::mv(paf.promise);
+      }
+    }
+    KJ_UNREACHABLE;
+  }
+
+  kj::Promise<void> fulfillRead(kj::ArrayPtr<const byte> data) {
+    KJ_SWITCH_ONEOF(current) {
+      KJ_CASE_ONEOF(w, CurrentWrite) {
+        KJ_FAIL_REQUIRE("can only call write() once at a time");
+      }
+      KJ_CASE_ONEOF(r, CurrentRead) {
+        if (data.size() < r.minBytes) {
+          // Write does not complete the current read.
+          memcpy(r.buffer.begin(), data.begin(), data.size());
+          r.minBytes -= data.size();
+          r.alreadyRead += data.size();
+          r.buffer = r.buffer.slice(data.size(), r.buffer.size());
+          return kj::READY_NOW;
+        } else if (data.size() <= r.buffer.size()) {
+          // Write satisfies the current read, and read satisfies the write.
+          memcpy(r.buffer.begin(), data.begin(), data.size());
+          r.fulfiller->fulfill(r.alreadyRead + data.size());
+          current = None();
+          return kj::READY_NOW;
+        } else {
+          // Write satisfies the read and still has more data leftover to write.
+          size_t amount = r.buffer.size();
+          memcpy(r.buffer.begin(), data.begin(), amount);
+          r.fulfiller->fulfill(amount + r.alreadyRead);
+          auto paf = kj::newPromiseAndFulfiller<void>();
+          current = CurrentWrite { data.slice(amount, data.size()), kj::mv(paf.fulfiller) };
+          return kj::mv(paf.promise);
+        }
+      }
+      KJ_CASE_ONEOF(e, Eof) {
+        KJ_FAIL_REQUIRE("write after EOF");
+      }
+      KJ_CASE_ONEOF(n, None) {
+        auto paf = kj::newPromiseAndFulfiller<void>();
+        current = CurrentWrite { data, kj::mv(paf.fulfiller) };
+        return kj::mv(paf.promise);
+      }
+    }
+    KJ_UNREACHABLE;
+  }
+
+private:
+  // Outgoing direction.
+  static constexpr size_t MAX_IN_FLIGHT = 65536;
+  size_t bytesInFlight = 0;
+  kj::Maybe<kj::Own<kj::PromiseFulfiller<void>>> writeReadyFulfiller;
+  kj::Maybe<kj::Exception> writeError;
+  kj::Maybe<WebSession::WebSocketStream::Client> outgoing;
+  kj::TaskSet writeTasks;
+
+  // Incoming direction.
+  struct CurrentWrite {
+    kj::ArrayPtr<const byte> buffer;
+    kj::Own<kj::PromiseFulfiller<void>> fulfiller;
+  };
+  struct CurrentRead {
+    kj::ArrayPtr<byte> buffer;
+    size_t minBytes;
+    size_t alreadyRead;
+    kj::Own<kj::PromiseFulfiller<size_t>> fulfiller;
+  };
+  struct Eof {};
+  struct None {};
+
+  kj::OneOf<CurrentWrite, CurrentRead, Eof, None> current = None();
+
+  class WebSocketStreamImpl final: public WebSession::WebSocketStream::Server {
+  public:
+    WebSocketStreamImpl(kj::Own<WebSocketPipe> pipe): pipe(kj::mv(pipe)) {}
+
+  protected:
+    kj::Promise<void> sendBytes(SendBytesContext context) override {
+      return pipe->fulfillRead(context.getParams().getMessage());
+    }
+
+  private:
+    kj::Own<WebSocketPipe> pipe;
+  };
+};
+
+class EntropySourceImpl: public kj::EntropySource {
+public:
+  void generate(kj::ArrayPtr<byte> buffer) {
+    randombytes_buf(buffer.begin(), buffer.size());
+  }
+};
+
+}  // namespace
+
 kj::Promise<void> WebSessionBridge::openWebSocket(
-    kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) {
-  // TODO(now): implement
-  KJ_UNIMPLEMENTED("WebSocket WebSession bridge");
+    kj::StringPtr path, const kj::HttpHeaders& headers, WebSocketResponse& response) {
+  KJ_REQUIRE(path.startsWith("/"));
+  path = path.slice(1);
+
+  auto req = session.openWebSocketRequest();
+  req.setPath(path);
+
+  auto streamer = initContext(req.initContext(), headers);
+
+  KJ_IF_MAYBE(proto, headers.get(tables.hSecWebSocketProtocol)) {
+    auto protos = split(*proto, ',');
+    auto listBuilder = req.initProtocol(protos.size());
+    for (auto i: kj::indices(protos)) {
+      listBuilder.set(i, trim(protos[i]));
+    }
+  }
+
+  auto clientStreamPaf = kj::newPromiseAndFulfiller<WebSession::WebSocketStream::Client>();
+  req.setClientStream(kj::mv(clientStreamPaf.promise));
+
+  return req.send()
+      .then([this, &response, clientStreamFulfiller = kj::mv(clientStreamPaf.fulfiller)]
+            (capnp::Response<WebSession::OpenWebSocketResults>&& rpcResponse) mutable {
+    kj::HttpHeaders headers(tables.headerTable);
+
+    auto protos = rpcResponse.getProtocol();
+    if (protos.size() > 0) {
+      headers.set(tables.hSecWebSocketProtocol, kj::strArray(protos, ", "));
+    }
+
+    auto wsToClient = response.acceptWebSocket(headers);
+
+    // Combine the client stream and server stream into an AsyncIoStream.
+    // Wrap that in a WebSocket.
+    // pump
+
+    auto wsPipe = kj::refcounted<WebSocketPipe>(rpcResponse.getServerStream());
+
+    static EntropySourceImpl entropySource;
+
+    clientStreamFulfiller->fulfill(wsPipe->getIncomingStreamCapability());
+    auto wsToServer = kj::newWebSocket(kj::mv(wsPipe), entropySource);
+
+    auto promises = kj::heapArrayBuilder<kj::Promise<void>>(2);
+    promises.add(wsToClient->pumpTo(*wsToServer));
+    promises.add(wsToServer->pumpTo(*wsToClient));
+    return kj::joinPromises(promises.finish()).attach(kj::mv(wsToClient), kj::mv(wsToServer));
+  });
 }
 
 class WebSessionBridge::ByteStreamImpl: public ByteStream::Server {

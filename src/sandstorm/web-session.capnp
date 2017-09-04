@@ -463,7 +463,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     # In the future, this will be replaced with a `sendMessage()` method that sends one WebSocket
     # datagram at a time.
     #
-    # TODO(soon):  Send whole WebSocket datagrams.
+    # TODO(apibump): Send whole WebSocket messages.
   }
 
   struct CachePolicy {

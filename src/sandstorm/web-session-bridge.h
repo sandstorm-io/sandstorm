@@ -45,6 +45,7 @@ public:
     kj::HttpHeaderId hETag;
     kj::HttpHeaderId hIfMatch;
     kj::HttpHeaderId hIfNoneMatch;
+    kj::HttpHeaderId hSecWebSocketProtocol;
 
     kj::Array<HttpStatusDescriptor::Reader> successCodeTable;
     kj::Array<HttpStatusDescriptor::Reader> errorCodeTable;

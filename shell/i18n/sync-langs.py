@@ -54,7 +54,7 @@ def comp_dict(base, comp):
             if type(value) is OrderedDict:
                 result[key] = comp_dict(value, OrderedDict())
             else:
-                result[key] = "__%s" % unicode(value)
+                result[key] = "*_%s" % unicode(value)
     return result
 
 def align_dict(base, target):

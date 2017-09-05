@@ -498,6 +498,7 @@
     "title": "管理者",
     "admin": {
       "newAdmin": {
+        "title": "__Admin panel",
         "wildcardHostBroken": "警告：本伺服器似乎把 WILDCARD_HOST 設定錯了。在修復此問題前，您無法使用任何應用程式。您可以參照<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\">本篇沙聚雲文件</a>和您瀏覽器的 Javascript 記錄取得更多資訊。您必須調整 DNS、SSL/TLS certificates，或編輯 sandstorm.conf 檔案。如果您想要測試問題是否已修復，請重新整理此頁面。如果您仍然有問題，請<a href=\"https://github.com/sandstorm-io/sandstorm/issues\">在此開一個 issue</a>。",
         "websocketBroken": "警告：本伺服器似乎無法建立 WebSocket。沙聚雲也許看起來沒有問題，但許多應用程式會無法正常執行。<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\">更多資訊在此。</a>通常這是因為上層的 reverse proxy （比如 nginx 或 Apache）需要被重新設定。如果您認為不是，請重新整理此頁面或<a href=\"https://github.com/sandstorm-io/sandstorm/issues\">在此開一個 issue</a>。",
         "hasSetupToken": "您並非以管理者身份登入，但您的設置 token 是正確的。您現在可以<a href=\"/setup\">啟動設置精靈</a>或<a href=\"/admin/status\">檢視系統記錄</a>。",
@@ -1326,6 +1327,250 @@
         },
         "hasFingerprint": "本程式的發行者已用 PGP 簽章證明其控制權。",
         "noFingerprint": "本程式沒有作者的簽章，無法辨認作者。"
+      }
+    }
+  },
+  "accounts": {
+    "title": "__Account settings",
+    "accountSettings": {
+      "sandstormAccountSettings": {
+        "title": "__Account",
+        "identities": {
+          "title": "__Linked identities",
+          "refactorAlert": "__We're changing the way identities work. Your account may be affected. <a href=\"https://sandstorm.io/news/2017-05-08-refactoring-identities\" target=\"_blank\">Learn more &raquo;</a>",
+          "success": "__Success: %s",
+          "linkNewIdentity": {
+            "title": "__Link new identity:",
+            "cancelButton": "__Cancel",
+            "linkButton": "__Link new identity",
+            "logoutAllButton": "__Log out all other sessions"
+          },
+          "email": {
+            "title": "__Primary e-mail address for service-related notifications",
+            "primary": "__Primary",
+            "primaryButton": "__Set as primary",
+            "notFound": "__ No verified emails! ",
+            "addNew": "__Add new e-mail address"
+          }
+        },
+        "billing": {
+          "title": "__Billing"
+        },
+        "deleteAccount": {
+          "title": "__Delete account",
+          "button": "__Delete your account"
+        },
+        "deletePopup": {
+          "title": "__Delete your account",
+          "explanation": "__You are about to mark your account for deletion. Once marked for deletion, your account will be suspended, and you will have 7 days to cancel the pending deletion by logging back into your account.",
+          "results": "__After 7 days, your account will be permanently deleted. Deleting your account will:",
+          "result1": "__Permanently delete any grains you created",
+          "result2": "__Revoke all sharing links you created",
+          "result3": "__Remove you from all users' contact lists",
+          "result4": "__Delete all identities owned by your account (except identities also associated with another account).",
+          "confirm": "__Please type \"delete my account\" below to confirm.",
+          "goodbye": "__We're sorry to see you go. Feel free to share any feedback you have with the server admin.",
+          "feedbackPlaceholder": "__Optional",
+          "deleteButton": "__Delete account",
+          "cancelButton": "__Cancel"
+        }
+      },
+      "sandstormAccountsFirstSignIn": {
+        "title": "__Confirm your profile",
+        "success": "__Success: %s"
+      },
+      "accountSuspended": {
+        "title": "__This account has been suspended by you.",
+        "deletedIn": "__This account will be deleted in %s. Would you like to cancel deletion and restore this account?",
+        "suspended": "__This account is suspended and all of its grains and shares are disabled. Would you like to restore this account?",
+        "restoreButton": "__Restore account",
+        "logoutButton": "__Logout"
+      },
+      "_accountProfileEditor": {
+        "picture": {
+          "label": "__Profile picture:",
+          "uploadButton": "__Upload new picture",
+          "subtext": "__This picture will be shown to other users to help identify you.",
+          "maxSize": "__512x512px, 64KiB max."
+        },
+        "fullName": {
+          "label": "__Full name:",
+          "placeholder": "__full name",
+          "subtext": "__Your regular first and last name, as you would like it displayed to others. This does not have to be your real name."
+        },
+        "handle": {
+          "label": "__Handle:",
+          "placeholder": "__handle",
+          "hint": "__Handles must start with a lower-case letter and contain only lower-case letters, digits, and underscores.",
+          "subtext": "__To be displayed in apps that use handles. Your handle must start with a letter and contain only lower-case letters, digits, and underscores."
+        },
+        "emailList": {
+          "label": "__E-mail:"
+        },
+        "pronoun": {
+          "label": "__Preferred pronoun:",
+          "neutral": "__they (unspecified)",
+          "male": "__he/him (male)",
+          "female": "__she/her (female)",
+          "robot": "__it (robot)"
+        },
+        "agreedToTerms": {
+          "agreeTo": "__ I have read and agree to the",
+          "termsOfServiceLink": "__Terms of Service",
+          "and": "__ and ",
+          "privacyLink": "__Privacy policy"
+        },
+        "saveButton": "__Save",
+        "continueButton": "__Continue",
+        "cancelButton": "__Cancel"
+      }
+    },
+    "loginButtons": {
+      "icon": {
+        "info": "__i"
+      },
+      "loginButtons": {
+        "createButton": "__Create account",
+        "signInButton": "__Sign in"
+      },
+      "accountButtons": {
+        "loading": "__Loading..."
+      },
+      "_loginButtonsLoggedInDropdown": {
+        "title": "__Account",
+        "switchButton": "__Switch identity",
+        "sendFeedback": "__Send feedback",
+        "referralProgram": "__Referral program",
+        "signOutButton": "__Sign out"
+      },
+      "_loginButtonsLoggedOutDropdown": {
+        "demo": {
+          "title": "__Create account",
+          "explanation": "__Your demo data will be transferred to your new account."
+        },
+        "title": "__Sign in",
+        "shared": {
+          "explanation": "__Sign in so that collaborators know who you are."
+        },
+        "signInButton": "__Sign in",
+        "anonymousButton": "__Stay anonymous"
+      },
+      "oauthLoginButton": {
+        "with": "__with "
+      },
+      "devLoginForm": {
+        "label": "__with a Dev account",
+        "hint": "__unexpand",
+        "alice": "__Alice (admin)",
+        "bob": "__Bob",
+        "carol": "__Carol",
+        "dave": "__Dave",
+        "customPlaceholder": "__Eve",
+        "customButton": "__Custom"
+      },
+      "loginButtonsList": {
+        "configure": "__configure login",
+        "troubleshooting": "__troubleshooting",
+        "about": "__about Sandstorm"
+      },
+      "emailLoginForm": {
+        "description": "__with e-mail",
+        "sendButtonText": "__send Login Email"
+      },
+      "emailAuthenticationForm": {
+        "hint": "__Passwordless E-mail Login allows you to log in using an e-mail address. No password is required; instead, every time you log in, we send you a new email confirmation code. You will only need to log in once per device.",
+        "token": {
+          "explanation": "__We've sent a login e-mail to {{.}}. It may take a few moments to show up in your inbox.",
+          "label": "__Enter your token:",
+          "confirmButton": "__Confirm",
+          "cancelButton": "__Cancel"
+        },
+        "disabled": "__A server admin must enable email authentication before you can confirm your email."
+      },
+      "ldapLoginForm": {
+        "username": {
+          "label": "__username",
+          "hint": "__This is your LDAP username. It will be the name that you normally use to log in to other internal services at your company."
+        },
+        "password": {
+          "label": "__password",
+          "hint": "__This is your LDAP password. It will be the password that you normally use to log in to other internal services at your company."
+        },
+        "loginButton": "__Log in"
+      },
+      "_loginButtonsSeparator": {
+        "or": "__or"
+      }
+    },
+    "identity": {
+      "identityLoginInterstitial": {
+        "title": "__Logging in...",
+        "loading": "__loading...",
+        "logoutButton": "__Go back",
+        "cancelButton": "__Cancel",
+        "create": "__creating account...",
+        "createFailed": "__Failed to create account.",
+        "loginAccount": "__logging in to account...",
+        "loginAccountFailed": "__Account login failed",
+        "loginToken": "__logging back in to account...",
+        "loginTokenFailed": "__Failed to resume session.",
+        "link": "__linking identity to account...",
+        "success": "__Unlinked identity from %s",
+        "explanation": "__You have authenticated as this identity",
+        "warning": "__but that is not a login identity for any account.",
+        "moreIdentities": "__The following identities can log in to your identity's accounts:",
+        "unlinkButton": {
+          "hint": "__Unlink your identity from this account.",
+          "text": "__unlink"
+        },
+        "unlink": {
+          "explanation": "__Are you sure you want to unlink your identity from the account of %s?",
+          "unlinkButton": "__Unlink",
+          "cancelButton": "__Cancel"
+        }
+      },
+      "identityManagementButtons": {
+        "toggleLogin": {
+          "label": "__Allow this identity to log in to your account.",
+          "unlinkButton": "__Unlink this identity"
+        }
+      },
+      "loginIdentitiesOfLinkedAccounts": {
+        "show": {
+          "explanation": "__This identity is shared with other accounts. Those accounts have the following login identities:",
+          "unlinkButton": "__unlink",
+          "hideButton": "__hide other accounts"
+        },
+        "hide": {
+          "explanation": "__This identity is shared with at least one other account.",
+          "showButton": "__show other accounts"
+        }
+      },
+      "identityCardSignInButton": {
+        "hint": "__sign in as %s",
+        "title": "__Sign in"
+      }
+    },
+    "tokenTemplates": {
+      "_emailTokenError": {
+        "title": "__Invalid authentication code. If it has been more than 15 minutes, the token has expired, otherwise you may have simply mistyped it."
+      },
+      "_emailLinkIdentityError": {
+        "title": "__To confirm your email address, you must be logged in as the account that created this link."
+      },
+      "addNewVerifiedEmailPowerboxConfiguration": {
+        "email": {
+          "placeholder": "__enter email address",
+          "selectButton": "__Select",
+          "sendButton": "__Send confirmation email"
+        },
+        "sendingTo": "__Sending to %s",
+        "resetButton": "__Try a different address",
+        "token": {
+          "placeholder": "__enter your token",
+          "confirmButton": "__Confirm"
+        },
+        "verifying": "__Verifying token..."
       }
     }
   }

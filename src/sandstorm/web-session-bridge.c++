@@ -156,7 +156,7 @@ kj::Promise<void> WebSessionBridge::request(
     // TODO(now): WebDAV methods.
 
     default:
-      return sendError(response, 501, "Not Implemented");
+      return response.sendError(501, "Not Implemented", tables.headerTable);
   }
 }
 
@@ -520,20 +520,6 @@ inline HttpStatusDescriptor::Reader WebSessionBridge::lookupStatus(
   }
 }
 
-kj::Promise<void> WebSessionBridge::sendError(kj::HttpService::Response& response,
-                                              uint statusCode, kj::StringPtr statusText) {
-  kj::HttpHeaders headers(tables.headerTable);
-  return sendError(response, statusCode, statusText, headers);
-}
-
-kj::Promise<void> WebSessionBridge::sendError(kj::HttpService::Response& response,
-                                              uint statusCode, kj::StringPtr statusText,
-                                              kj::HttpHeaders& headers) {
-  auto stream = response.send(statusCode, statusText, headers, statusText.size());
-  auto promise = stream->write(statusText.begin(), statusText.size());
-  return promise.attach(kj::mv(stream));
-}
-
 WebSessionBridge::ContextInitInfo WebSessionBridge::initContext(
     WebSession::Context::Builder context, const kj::HttpHeaders& headers) {
   bool hadIfNoneMatch = false;
@@ -886,7 +872,8 @@ kj::Promise<void> WebSessionBridge::handleResponse(
           out.send(304, "Not Modified", headers);
           return kj::READY_NOW;
         } else {
-          return sendError(out, 412, "Precondition Failed", headers);
+          out.send(412, "Precondition Failed", headers, uint64_t(0));
+          return kj::READY_NOW;
         }
       }
 

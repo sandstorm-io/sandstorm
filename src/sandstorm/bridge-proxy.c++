@@ -123,7 +123,7 @@ public:
       }
     }
 
-    return sendError(response, 404, "Not Found");
+    return response.sendError(404, "Not Found", headerTable);
   }
 
   // TODO(someday): WebSocket
@@ -147,20 +147,6 @@ private:
   };
 
   std::map<kj::StringPtr, TokenInfo> tokenMap;
-
-  kj::Promise<void> sendError(kj::HttpService::Response& response,
-                              uint statusCode, kj::StringPtr statusText) {
-    kj::HttpHeaders headers(headerTable);
-    return sendError(response, statusCode, statusText, headers);
-  }
-
-  kj::Promise<void> sendError(kj::HttpService::Response& response,
-                              uint statusCode, kj::StringPtr statusText,
-                              kj::HttpHeaders& headers) {
-    auto stream = response.send(statusCode, statusText, headers, statusText.size());
-    auto promise = stream->write(statusText.begin(), statusText.size());
-    return promise.attach(kj::mv(stream));
-  }
 
   kj::Own<kj::HttpService> getHttpSession(kj::StringPtr token) {
     auto iter = tokenMap.find(token);

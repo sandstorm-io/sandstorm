@@ -84,10 +84,6 @@ private:
   kj::Promise<void> sendError(kj::HttpService::Response& response,
                               uint statusCode, kj::StringPtr statusText);
 
-  kj::Promise<void> sendError(kj::HttpService::Response& response,
-                              uint statusCode, kj::StringPtr statusText,
-                              kj::HttpHeaders& headers);
-
   struct ContextInitInfo {
     kj::Own<kj::PromiseFulfiller<ByteStream::Client>> streamer;
     bool hadIfNoneMatch = false;

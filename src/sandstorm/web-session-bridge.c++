@@ -18,6 +18,7 @@
 #include <kj/debug.h>
 #include <capnp/schema.h>
 #include <sodium/randombytes.h>
+#include <time.h>
 
 namespace sandstorm {
 
@@ -39,6 +40,7 @@ WebSessionBridge::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilde
       hContentDisposition(headerTableBuilder.add("Content-Disposition")),
       hContentEncoding(headerTableBuilder.add("Content-Encoding")),
       hContentLanguage(headerTableBuilder.add("Content-Language")),
+      hCookie(headerTableBuilder.add("Cookie")),
       hETag(headerTableBuilder.add("ETag")),
       hIfMatch(headerTableBuilder.add("If-Match")),
       hIfNoneMatch(headerTableBuilder.add("If-None-Match")),
@@ -534,12 +536,27 @@ kj::Promise<void> WebSessionBridge::sendError(kj::HttpService::Response& respons
 
 WebSessionBridge::ContextInitInfo WebSessionBridge::initContext(
     WebSession::Context::Builder context, const kj::HttpHeaders& headers) {
-  // TODO(now): Don't ignore cookies if options say not to.
-
   bool hadIfNoneMatch = false;
 
   auto paf = kj::newPromiseAndFulfiller<ByteStream::Client>();
   context.setResponseStream(kj::mv(paf.promise));
+
+  if (options.allowCookies) {
+    KJ_IF_MAYBE(cookiesText, headers.get(tables.hCookie)) {
+      auto cookies = split(*cookiesText, ';');
+      auto listBuilder = context.initCookies(cookies.size());
+      for (auto i: kj::indices(cookies)) {
+        kj::ArrayPtr<const char> cookie = cookies[i];
+        auto cookieBuilder = listBuilder[i];
+        KJ_IF_MAYBE(name, splitFirst(cookie, '=')) {
+          cookieBuilder.setKey(trim(*name));
+          cookieBuilder.setValue(trim(cookie));
+        } else {
+          cookieBuilder.setKey(trim(cookie));
+        }
+      }
+    }
+  }
 
   KJ_IF_MAYBE(accept, headers.get(tables.hAccept)) {
     auto items = split(*accept, ',');
@@ -708,6 +725,80 @@ kj::Promise<void> WebSessionBridge::handleResponse(
     // TODO(someday): cachePolicy (not supported in Sandstorm proper as of this writing)
 
     kj::HttpHeaders headers(tables.headerTable);
+
+    if (options.allowCookies && in.hasSetCookies()) {
+      for (auto cookie: in.getSetCookies()) {
+        kj::Vector<kj::StringPtr> parts;
+        char date[40];
+        kj::String maxAge;
+
+        auto name = cookie.getName();
+        auto value = cookie.getValue();
+        auto path = cookie.getPath();
+
+        if (name.findFirst(';') != nullptr ||
+            name.findFirst(',') != nullptr ||
+            name.findFirst('=') != nullptr ||
+            value.findFirst(';') != nullptr ||
+            value.findFirst(',') != nullptr ||
+            path.findFirst(';') != nullptr ||
+            path.findFirst(',') != nullptr) {
+          // Ignore invalid cookie.
+          continue;
+        }
+
+        if (parts.size() > 0) {
+          parts.add(", ");
+        }
+
+        parts.add(name);
+        parts.add("=");
+        parts.add(value);
+
+        auto expires = cookie.getExpires();
+        switch (expires.which()) {
+          case WebSession::Cookie::Expires::NONE:
+            // nothing
+            break;
+          case WebSession::Cookie::Expires::ABSOLUTE: {
+            parts.add("; Expires=");
+
+            time_t seconds = expires.getAbsolute();
+            struct tm tm;
+            KJ_ASSERT(gmtime_r(&seconds, &tm) == &tm);
+            KJ_ASSERT(strftime(date, sizeof(date), "%a, %d %b %Y %H:%M:%S %z", &tm) > 0);
+
+            parts.add(kj::str(date));
+            break;
+          }
+          case WebSession::Cookie::Expires::RELATIVE:
+            parts.add("; Max-Age=");
+            maxAge = kj::str(expires.getRelative());
+            parts.add(maxAge);
+            break;
+        }
+
+        if (path.size() > 0) {
+          parts.add("; Path=");
+          parts.add(path);
+        }
+
+        if (cookie.getHttpOnly()) {
+          parts.add("; HttpOnly");
+        }
+
+        if (options.isHttps) {
+          parts.add("; Secure");
+        }
+
+        // HACK: Multiple Set-Cookie headers cannot be folded like other headers, as the Set-Cookie
+        //   header spec screwed up and used commas for a different purpose. But if we don't index
+        //   the Set-Cookie header in the HttpTable, and instead add it using a string name, then
+        //   the KJ HTTP library won't automatically fold values.
+        // TODO(cleanup): Handle this in KJ HTTP somehow.
+        headers.add("Set-Cookie", kj::strArray(parts, ""));
+      }
+    }
 
     for (auto addlHeader: in.getAdditionalHeaders()) {
       auto name = addlHeader.getName();

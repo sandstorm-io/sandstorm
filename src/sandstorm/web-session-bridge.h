@@ -42,6 +42,7 @@ public:
     kj::HttpHeaderId hContentDisposition;
     kj::HttpHeaderId hContentEncoding;
     kj::HttpHeaderId hContentLanguage;
+    kj::HttpHeaderId hCookie;
     kj::HttpHeaderId hETag;
     kj::HttpHeaderId hIfMatch;
     kj::HttpHeaderId hIfNoneMatch;
@@ -56,6 +57,9 @@ public:
   struct Options {
     bool allowCookies = false;
     // Should cookies be passed through or dropped on the floor?
+
+    bool isHttps = false;
+    // Will we be serving over HTTPS?
   };
 
   WebSessionBridge(WebSession::Client session, const Tables& tables, Options options);

@@ -191,6 +191,8 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   }
 
   struct Cookie {
+    # Strings here must not contain ';' nor ','. Also, `name` cannot contain '='.
+
     name @0 :Text;
     value @1 :Text;
     expires :union {

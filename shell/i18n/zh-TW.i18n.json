@@ -334,10 +334,10 @@
           "explanation": "（回收桶內的沙粒會在 30 天後被自動移除。若要保留沙粒，請將其移回主列表。）"
         },
         "noGrains": {
-          "notFound": "__<strong>找不到相符的沙粒。</strong>",
+          "notFound": "<strong>找不到相符的沙粒。</strong>",
           "inTrash": "回收桶內有沙粒符合您的搜尋。",
           "trashButton": "檢視回收桶",
-          "empty": "__<strong>回收桶是空的。</strong>",
+          "empty": "<strong>回收桶是空的。</strong>",
           "explanation": "您沒有任何沙粒。",
           "hasApps": "選擇應用程式來創建您的第一粒沙。",
           "hasNoApp": "安裝應用程式來創建您的第一粒沙。"
@@ -372,7 +372,7 @@
   "notifications": {
     "appUpdatedNotificationItem": {
       "title": "應用程式有新版本：",
-      "appUpdates": "__<strong>__name__</strong>: 版本 __version__ 已推出"
+      "appUpdates": "<strong>__name__</strong>: 版本 __version__ 已推出"
     },
     "submitButton": {
       "hint": "更新所有上記應用程式",
@@ -498,7 +498,7 @@
     "title": "管理者",
     "admin": {
       "newAdmin": {
-        "title": "__Admin panel",
+        "title": "管理面板",
         "wildcardHostBroken": "警告：本伺服器似乎把 WILDCARD_HOST 設定錯了。在修復此問題前，您無法使用任何應用程式。您可以參照<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\">本篇沙聚雲文件</a>和您瀏覽器的 Javascript 記錄取得更多資訊。您必須調整 DNS、SSL/TLS certificates，或編輯 sandstorm.conf 檔案。如果您想要測試問題是否已修復，請重新整理此頁面。如果您仍然有問題，請<a href=\"https://github.com/sandstorm-io/sandstorm/issues\">在此開一個 issue</a>。",
         "websocketBroken": "警告：本伺服器似乎無法建立 WebSocket。沙聚雲也許看起來沒有問題，但許多應用程式會無法正常執行。<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\">更多資訊在此。</a>通常這是因為上層的 reverse proxy （比如 nginx 或 Apache）需要被重新設定。如果您認為不是，請重新整理此頁面或<a href=\"https://github.com/sandstorm-io/sandstorm/issues\">在此開一個 issue</a>。",
         "hasSetupToken": "您並非以管理者身份登入，但您的設置 token 是正確的。您現在可以<a href=\"/setup\">啟動設置精靈</a>或<a href=\"/admin/status\">檢視系統記錄</a>。",
@@ -1331,72 +1331,72 @@
     }
   },
   "accounts": {
-    "title": "__Account settings",
+    "title": "帳號設定",
     "accountSettings": {
       "sandstormAccountSettings": {
-        "title": "__Account",
+        "title": "帳號",
         "identities": {
-          "title": "__Linked identities",
-          "refactorAlert": "__We're changing the way identities work. Your account may be affected. <a href=\"https://sandstorm.io/news/2017-05-08-refactoring-identities\" target=\"_blank\">Learn more &raquo;</a>",
-          "success": "__Success: %s",
+          "title": "已連結的識別資訊",
+          "refactorAlert": "我們正在改變識別資訊的運作方式，您的帳號可能會受影響。<a href=\"https://sandstorm.io/news/2017-05-08-refactoring-identities\" target=\"_blank\">詳情 &raquo;</a>",
+          "success": "成功：%s",
           "linkNewIdentity": {
-            "title": "__Link new identity:",
-            "cancelButton": "__Cancel",
-            "linkButton": "__Link new identity",
-            "logoutAllButton": "__Log out all other sessions"
+            "title": "連結新的識別資訊：",
+            "cancelButton": "取消",
+            "linkButton": "連結新識別資訊",
+            "logoutAllButton": "登出所有其他 Session"
           },
           "email": {
-            "title": "__Primary e-mail address for service-related notifications",
-            "primary": "__Primary",
-            "primaryButton": "__Set as primary",
-            "notFound": "__ No verified emails! ",
-            "addNew": "__Add new e-mail address"
+            "title": "服務、通知等使用的主要電郵位址",
+            "primary": "主要",
+            "primaryButton": "設為主要",
+            "notFound": "沒有已驗證的電郵！",
+            "addNew": "新增新的電郵地址"
           }
         },
         "billing": {
-          "title": "__Billing"
+          "title": "帳單"
         },
         "deleteAccount": {
-          "title": "__Delete account",
-          "button": "__Delete your account"
+          "title": "刪除帳號",
+          "button": "刪除您的帳號"
         },
         "deletePopup": {
-          "title": "__Delete your account",
-          "explanation": "__You are about to mark your account for deletion. Once marked for deletion, your account will be suspended, and you will have 7 days to cancel the pending deletion by logging back into your account.",
-          "results": "__After 7 days, your account will be permanently deleted. Deleting your account will:",
-          "result1": "__Permanently delete any grains you created",
-          "result2": "__Revoke all sharing links you created",
-          "result3": "__Remove you from all users' contact lists",
-          "result4": "__Delete all identities owned by your account (except identities also associated with another account).",
-          "confirm": "__Please type \"delete my account\" below to confirm.",
-          "goodbye": "__We're sorry to see you go. Feel free to share any feedback you have with the server admin.",
-          "feedbackPlaceholder": "__Optional",
-          "deleteButton": "__Delete account",
-          "cancelButton": "__Cancel"
+          "title": "刪除您的帳號",
+          "explanation": "您將會把自己的帳號標記為刪除中，被標記為刪除中的帳號會被停權。若要取消刪除，請在七天內重新用您的帳號登入。",
+          "results": "七天後，您的帳號將被永遠刪除。刪除帳號將：",
+          "result1": "永遠刪除所有您建立的沙粒，",
+          "result2": "撤銷所有您建立的共享連結，",
+          "result3": "將您從所有人的聯絡人名單中移除，",
+          "result4": "刪除所有本帳號的識別資訊（除非該識別資訊亦被別的帳號使用）。",
+          "confirm": "請在下方輸入「delete my account」進行刪除。",
+          "goodbye": "我們很遺憾您的離去。伺服器管理者歡迎您的任何意見。",
+          "feedbackPlaceholder": "選填",
+          "deleteButton": "刪除帳號",
+          "cancelButton": "取消"
         }
       },
       "sandstormAccountsFirstSignIn": {
-        "title": "__Confirm your profile",
-        "success": "__Success: %s"
+        "title": "確認您的個人資料",
+        "success": "成功：%s"
       },
       "accountSuspended": {
-        "title": "__This account has been suspended by you.",
-        "deletedIn": "__This account will be deleted in %s. Would you like to cancel deletion and restore this account?",
-        "suspended": "__This account is suspended and all of its grains and shares are disabled. Would you like to restore this account?",
-        "restoreButton": "__Restore account",
-        "logoutButton": "__Logout"
+        "title": "您已將本帳號停權。",
+        "deletedIn": "本帳號將在 %s 內被刪除。您是否要取消刪除？",
+        "suspended": "本帳號已被停權，所有沙粒及共用皆已停用。您是否要解除停權？",
+        "restoreButton": "解除停權",
+        "logoutButton": "登出"
       },
       "_accountProfileEditor": {
         "picture": {
-          "label": "__Profile picture:",
-          "uploadButton": "__Upload new picture",
-          "subtext": "__This picture will be shown to other users to help identify you.",
-          "maxSize": "__512x512px, 64KiB max."
+          "label": "頭像：",
+          "uploadButton": "上傳圖片",
+          "subtext": "此圖片將作為您的頭像，讓別人可以更容易認出您。",
+          "maxSize": "最大 512x512px，64KiB。"
         },
         "fullName": {
-          "label": "__Full name:",
-          "placeholder": "__full name",
-          "subtext": "__Your regular first and last name, as you would like it displayed to others. This does not have to be your real name."
+          "label": "全名：",
+          "placeholder": "全名",
+          "subtext": "您公開給他人看的全名，但並不一定要是真名。"
         },
         "handle": {
           "label": "__Handle:",

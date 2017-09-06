@@ -1,0 +1,1333 @@
+{
+  "error": "错误：%s",
+  "shell": {
+    "layout": {
+      "demoExpired": {
+        "title": "Demo Expired",
+        "canUpgrade": "Thanks for trying the Sandstorm Demo! Your demo account has expired. If you'd like to continue using Sandstorm and make your data permanent, please sign in.",
+        "cannotUpgrade": "Thanks for trying the Sandstorm Demo! Your demo account has expired.",
+        "signOut": "Sign out"
+      },
+      "adminAlert": {
+        "icon": "!",
+        "title": "管理员的信息"
+      },
+      "demoModal": {
+        "header": "Sandstorm is a self-hostable web productivity suite.",
+        "withAppDemo": "with apps like %s.",
+        "withoutAppDemo": "with all the apps you need in one place.",
+        "startButton": {
+          "withAppDemo": "Try %s »",
+          "withoutAppDemo": "Start »"
+        },
+        "explanation": "<p>Sandstorm makes it easy to run apps on your own server. In addition to improving privacy and control, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\" target=\"_blank\">this brings Open Source apps to a wide audience.</a></p>",
+        "securityOverview": "<p>Sandstorm is also ridiculously secure. If security interests you, check out <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">Sandstorm's security model overview</a>.</p>"
+      }
+    },
+    "notifications": {
+      "hint": "通知",
+      "text": "通知"
+    },
+    "notificationsPopup": {
+      "title": "通知",
+      "empty": "没有通知……"
+    },
+    "loading": {
+      "title": "正在读取……",
+      "text": "正在读取……"
+    },
+    "notFound": {
+      "title": "查无此沙",
+      "text": "404 无法找到该沙粒 :("
+    },
+    "root": {
+      "title": "首页"
+    },
+    "grainLogContents": {
+      "prefix": "……"
+    },
+    "grainLog": {
+      "title": "故障排查记录: %s"
+    },
+    "signup": {
+      "title": "申请注册",
+      "signedUp": {
+        "keyIsUsedWithOrigin": "注册成功！请前往<a href=\"https://apps.sandstorm.io/?host=%s\">下载应用程序</a>。",
+        "keyIsNotUsed": "您已经成功注册，不再需要该密钥。"
+      },
+      "keyIsUsed": "抱歉，该注册密钥已被使用。",
+      "processing": "请稍候……",
+      "signInGuide": "请点击右上角“登入”按钮。",
+      "invalidKey": "抱歉，该注册密钥无效。"
+    },
+    "uploadStatus": {
+      "title": "正在上传……",
+      "uploadFailedWithError": "上传失败：%s %s",
+      "statusWithProgress": "%s……%s",
+      "status": "%s……",
+      "uploadFailed": "上传失败，请重试。"
+    },
+    "uploadTest": {
+      "title": "Upload test page",
+      "explanation": "This page is intended for use by the test scripts.",
+      "uploadApp": "Upload app:",
+      "uploadBackup": "Upload backup:"
+    },
+    "referrals": {
+      "title": "Referral Program",
+      "header": {
+        "isPaid": {
+          "title": "Get up to <span class=\"reward-amount\">30 GB</span> of free space when your friends share on Oasis!",
+          "explanation": "For each friend that creates a sharing link, we'll reward you with 2 GB."
+        },
+        "isNotPaid": {
+          "title": "Get unlimited grains &amp; up to <span class=\"reward-amount\">2 GB</span> of free space when your friends share on Oasis!",
+          "explanation": "For each friend that creates a sharing link, we'll reward you with 50 MB. You'll also get unlimited grains."
+        }
+      },
+      "howTo": {
+        "title": "Sharing is referring",
+        "explanation": "To get started, open any grain and click Share access.",
+        "getStart": {
+          "step1": "You share a grain with your friend (who isn't already an Oasis user).",
+          "step2": "Your friend signs in.",
+          "step3": "Your friend shares a grain with any other person (including you)."
+        }
+      },
+      "status": {
+        "title": "Your referrals & status",
+        "explanation": "Once you send a sharing link out, people will appear in this list after they sign in.",
+        "pending": {
+          "title": "Still needs to share",
+          "explanation": "Tell these people to make a grain and share it with you. You must actually view the grain they shared with you!"
+        },
+        "success": {
+          "title": "Successful referrals",
+          "explanation": "You've successfully referred these people. Congratulations!"
+        }
+      },
+      "finePrint": {
+        "title": "The fine print",
+        "warningWithAccountLink": "Your referral bonus lasts until 1 year after the referral. The terms of this referral program may change without warning; however, such changes will not affect bonuses you have already received. If you need even more space, <a href=\"%s\">upgrade your account.</a>",
+        "explanation": "Paid subscribers can get up to 30 GB of free storage, 2 GB per person they refer, in addition to the storage from their account level. Free account holders can earn unlimited grains and 50 MB of free storage per person they refer, up to 2 GB total."
+      }
+    },
+    "about": {
+      "title": "关于沙聚云",
+      "intro": {
+        "explanation": "<a href=\"https://sandstorm.io\">沙聚云(Sandstorm.io)</a>是让用户运行私有网络应用程序的一个开源平台。用户可以上传并安装各种应用，就像手机的应用商店一样。<a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">开源网络应用程序既优雅又正确的打开方式</a>应该是这样。",
+        "version": "版本：%s",
+        "unofficialWarning": "<b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers."
+      },
+      "changelog": {
+        "title": "最近更新"
+      },
+      "developers": {
+        "title": "核心开发者"
+      },
+      "advisors": {
+        "title": "顾问"
+      },
+      "corporate": {
+        "title": "赞助者",
+        "explanation": "These companies contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
+      },
+      "individual": {
+        "title": "Key indivisual sponsors",
+        "explanation": "These individuals contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
+      },
+      "backers": {
+        "title": "Backers",
+        "explanation": "from <a href=\"http://igg.me/at/sandstorm\">our Indiegogo campaign &gt;</a>",
+        "anonymous": "and %s anonymous contributors",
+        "loading": "loading..."
+      },
+      "dependencies": {
+        "title": "Third-party works used",
+        "license": "license",
+        "explanation": "These works are copyright the respective authors and used under the terms of the respective licenses."
+      },
+      "copyright": {
+        "title": "著作权",
+        "license": "The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and contributors. The implementation is licensed under the Apache License 2.0.",
+        "trademark": "\"Sandstorm\" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc., and may not be used to advertise derivative works nor commercial services without written consent from Sandstorm Development Group, Inc."
+      },
+      "terms": {
+        "license": "许可",
+        "terms": "服务条款",
+        "privacy": "隐私声明"
+      }
+    }
+  },
+  "grains": {
+    "title": "沙粒",
+    "grainView": {
+      "notFoundWithId": "找不到 ID 为 %s 的沙粒。",
+      "openWithWhichIdentity": "请问需要使用哪个身分打开这颗沙粒？",
+      "openInIncognitoMode": "以无痕模式打开"
+    },
+    "grainInMyTrash": {
+      "explanation": "这颗沙粒正在回收站中，需要捞回主清单方可重新使用。",
+      "restore": "捞回主清单"
+    },
+    "grainInOwnersTrash": {
+      "explanation": "无法使用这颗沙粒，因其已被丢进回收站。"
+    },
+    "grainOwnerSuspended": {
+      "explanation": "无法使用这颗沙粒，因其拥有者已被停权。"
+    },
+    "wrongIdentity": {
+      "explanation": "开启这个 URL 必须有以下身份："
+    },
+    "requestAccess": {
+      "permissionDenied": "无权存取此沙粒。",
+      "requestAccessHint": "要求存取权",
+      "requestAccess": "要求存取权",
+      "warnIdentityRevealing": "要求存取权的话，需要将您的完整身份向沙粒拥有者明示。",
+      "sendRequest": "正在送出您的要求……",
+      "waitForApproving": "要求已送出，若获核准则会以电子邮件通知您。",
+      "requestFailed": "要求失败，原因：%s",
+      "signInPlease": "若要要求存取权，请先登入。"
+    },
+    "invalidToken": {
+      "invalidToken": "无效的 token：%s"
+    },
+    "revokedShareLink": {
+      "linkRevoked": "非常抱歉，该链接已经被取消。"
+    },
+    "grainTitle": {
+      "was": "原标题：%s",
+      "renamedFrom": "原名：%s"
+    },
+    "grainDeleteButton": {
+      "hint": "移到回收站",
+      "text": "移到回收站"
+    },
+    "grainDebugLogButton": {
+      "hint": "显示除错记录",
+      "text": "纪录"
+    },
+    "grainBackupButton": {
+      "hint": "下载备份",
+      "text": "备份"
+    },
+    "grainBackupPopup": {
+      "title": "下载备份",
+      "warning": "注意！恢复该备份会产生无法预料的后果。",
+      "processing": "正在准备备份……",
+      "cancelHint": "取消",
+      "cancel": "取消",
+      "confirmHint": "下载备份",
+      "confirm": "下载备份"
+    },
+    "grainRestartButton": {
+      "hint": "重新启动应用",
+      "text": "重新启动"
+    },
+    "grainApiTokenButton": {
+      "hint": "取得外网密钥(webkey)",
+      "text": "取得外网密钥(webkey)"
+    },
+    "grainApiTokenPopup": {
+      "title": "外网密钥",
+      "processing": "生成中……",
+      "cancel": "取消",
+      "copyForExternalApp": "将该密钥复制到外部程序：",
+      "back": "返回",
+      "description": "外网密钥可以令外部程序存取此应用的数据。",
+      "labelTitle": "标签：",
+      "labelPlaceholder": "例如「Android app」",
+      "roleTitle": "角色：",
+      "permissionTitle": "完整存取",
+      "create": "建立",
+      "webkeyListTitle": "现有的外网密钥：",
+      "revokeHint": "取消",
+      "revoke": "取消"
+    },
+    "grainShareButton": {
+      "hint": "分享此沙粒",
+      "text": "分享"
+    },
+    "whoHasAccessPopup": {
+      "title": "可存取者",
+      "noLoggedInUsers": "其他用户不曾访问过该链接。",
+      "nobody": "未授予任何人权限。",
+      "addedBy": "分享人：",
+      "revokeHint": "取消",
+      "revoke": "取消",
+      "hasCustomPermissions": "[拥有特殊权限]"
+    },
+    "selectRole": {
+      "hint": "选择角色"
+    },
+    "emailInviteTab": {
+      "demoModeAlert": "Sharing emails cannot be sent while in demo mode. Create an account to send sharing emails, or get a shareable link instead.",
+      "personalMessagePlaceholder": "（选填）附加个人信息……",
+      "send": "发送",
+      "sending": "正在发送……",
+      "success": "成功发送。",
+      "reset": "+ 邀请更多人",
+      "startOver": "<< 重新开始"
+    },
+    "shareableLinkTab": {
+      "withRoles": "任何知道链接的人：",
+      "withoutRoles": "任何知道该链接的人都可存取此沙粒。",
+      "labelPlaceholder": "标签（选填）",
+      "labelExplanation": "标签可备注该链接是为何人创建的。",
+      "create": "创建",
+      "creating": "正在创建……",
+      "success": "请复制这个链接：",
+      "reset": "+ 建立另一个链接",
+      "cancel": "取消"
+    },
+    "shareWithOthers": {
+      "title": "分享给别人",
+      "sendInviteTab": "发送邀请",
+      "shareableLinkTab": "获得可分享的链接",
+      "whoHasAccess": "查阅权限"
+    },
+    "grainSharePopup": {
+      "oldSharingModelDescription": "This grain uses the old sharing model. You can share it by copy/pasting the URL from the location bar",
+      "upgradeDescription": "You can upgrade this grain to the new model, but anyone with whom you shared this grain previously will lose access; you will have to share with them again.",
+      "upgradeWarning": "Upgrading cannot be undone.",
+      "upgrade": "upgrade",
+      "openInIncognitoMode": "您正以无痕模式浏览此沙粒。",
+      "toShareAccess": "请复制以下链接，进行分享：",
+      "openNonAnonymouslyHead": "更多的分享选项",
+      "openNonAnonymouslyLink": "需要登入方可使用",
+      "openNonAnonymouslyTail": "。",
+      "signIn": "其他分享选项需要登入方可使用。"
+    },
+    "grainPowerboxRequest": {
+      "powerboxRequestHint": "Powerbox 要求",
+      "powerboxRequest": "P"
+    },
+    "grainPowerboxOffer": {
+      "powerboxOfferHint": "Powerbox 命令",
+      "powerboxOffer": "P"
+    },
+    "grainPowerboxOfferPopup": {
+      "title": "Powerbox 命令",
+      "dismiss": "隐藏"
+    },
+    "share": {
+      "grainNotFoundWithId": "找不到 ID 为 %s 的沙粒，请尝试以其他账号登入。",
+      "signIn": "必须登入方可分享。"
+    },
+    "grainlist": {
+      "sandstormGrainListPage": {
+        "introButton": {
+          "hint": "什么是沙粒？"
+        },
+        "mainListButton": "查阅主列表",
+        "trashButton": "查阅回收站(%s)",
+        "restoreButton": "恢复备份……",
+        "search": {
+          "placeholder": "搜索"
+        },
+        "usageInfo": {
+          "quota": "__quota__ 沙粒中 __count__ 个",
+          "size": "共 __total__，已用 __size__"
+        },
+        "trash": {
+          "emptyButton": "清空回收站",
+          "explanation": "（回收站内的沙粒会在 30 天后被自动移除。若要保留沙粒，请将其移回主列表。）"
+        },
+        "noGrains": {
+          "notFound": "__<strong>找不到相符的沙粒。</strong>",
+          "inTrash": "回收站内有沙粒符合搜索条件。",
+          "trashButton": "查阅回收站",
+          "empty": "__<strong>回收站是空的。</strong>",
+          "explanation": "您没有任何沙粒。",
+          "hasApps": "选择应用程序来创建您的第一粒沙。",
+          "hasNoApp": "安装应用程序来创建您的第一粒沙。"
+        }
+      },
+      "sandstormGrainTable": {
+        "bulkAction": {
+          "disabledHint": "请从列表中选择沙粒，再进行批量操作。"
+        },
+        "tableHeader": {
+          "title": "沙粒名称",
+          "size": "大小",
+          "lastUsed": "最后操作",
+          "ownership": "拥有者",
+          "collaborators": "合作者"
+        },
+        "tableBody": {
+          "was": "（原标题：%s）",
+          "renamedFrom": "（原名：%s）",
+          "new": "尚未开启",
+          "mine": "自己",
+          "shared": "别人分享"
+        }
+      },
+      "contactAutocomplete": {
+        "contactInputBox": {
+          "placeholder": "输入电邮地址或姓名"
+        }
+      }
+    }
+  },
+  "notifications": {
+    "appUpdatedNotificationItem": {
+      "title": "应用程序有新版本：",
+      "appUpdates": "__<strong>__name__</strong>: 版本 __version__ 已发布"
+    },
+    "submitButton": {
+      "hint": "更新以上所有应用程序",
+      "text": "应用更新"
+    },
+    "dismissButton": {
+      "hint": "忽略以上更新",
+      "text": "隐藏"
+    },
+    "mailingListBonusNotificationItem": {
+      "explanationWithBonus": "Subscribe to our announcement list and get <strong>%s bonus storage</strong> (1-2 emails per month).",
+      "submitButton": "Subscribe",
+      "dismissButton": "No thanks"
+    },
+    "referralNotificationItem": {
+      "paidUser": "Get up to 30 GB bonus with the",
+      "unpaidUser": "Unlimited grains & up to 2 GB bonus with the",
+      "link": "referral program »",
+      "dismissButton": "Dismiss"
+    },
+    "adminNotificationItem": {
+      "explanation": "您提供的匿名资料可以帮助我们改善沙聚云。详情请点击此处。"
+    },
+    "backgroundedGrainNotificationItem": {
+      "title": "__<strong>__grain__</strong> 正在后台执行：",
+      "cancelButton": {
+        "hint": "停止后台应用程序",
+        "text": "取消"
+      }
+    },
+    "identityChangesNotificationItem": {
+      "explanation": "我们正在改变沙聚云的鉴权机制，您的账户可能会被影响。详情请点击此处。"
+    },
+    "grainActivityNotificationItem": {
+      "title": "<strong>__grain__</strong> 的 __<strong>__sender__</strong>：",
+      "dismissButton": {
+        "hint": "隐藏此通知",
+        "text": "隐藏"
+      }
+    }
+  },
+  "powerboxBuiltins": {
+    "uiViewPowerboxConfiguration": {
+      "explanation": "权限：",
+      "fullAccess": "完整存取",
+      "connectButton": "联机",
+      "chooseHostedObjectButton": "浏览沙粒内容 »"
+    },
+    "ipNetworkPowerboxCard": {
+      "explanation": "管理者：允许所有出网连接",
+      "encryptedWith": "(以 %s 加密)"
+    },
+    "ipInterfacePowerboxCard": {
+      "explanation": "管理者：允许所有入网连接"
+    },
+    "emailVerifierPowerboxCard": {
+      "verifyWith": "用 %s 验证电邮地址",
+      "verifyWithAnyService": "无论何种登入方式均验证电邮地址"
+    },
+    "identityPowerboxConfiguration": {
+      "explanation": "权限：",
+      "fullAccess": "完整存取",
+      "connectButton": "联机"
+    },
+    "addNewVerifiedEmailPowerboxCard": {
+      "explanation": "新增地址"
+    },
+    "httpUrlPowerboxCard": {
+      "useUrl": "使用 %s"
+    },
+    "httpArbitraryPowerboxCard": {
+      "explanation": "输入网址……"
+    },
+    "httpArbitraryPowerboxConfiguration": {
+      "explanation": "输入网址：",
+      "placeholder": "https://example.com",
+      "connectButton": "联机"
+    },
+    "httpOAuthPowerboxCard": {
+      "useService": "使用 %s"
+    },
+    "httpOAuthPowerboxConfiguration": {
+      "requstPermissionsFromService": "从 %s 要求权限(请参照弹出窗口)。"
+    }
+  },
+  "styleguide": {
+    "title": "Sandstorm style guide",
+    "note": "(note: this is a work in progress.)",
+    "copyRules": {
+      "title": "Copy rules",
+      "rule1": "Be terse but clear.  Avoid technical terms where less-technical ones will do.",
+      "rule2": "Capitalize the first letter of the first word of a section heading or button.  Do not capitalize the second word, or anything else, unless referring to a proper noun like Google or GitHub.",
+      "rule3": "Use verbs for text on buttons. The button text should describe what clicking that button will do.",
+      "rule4": "Use nouns for text which is a link.  The link text should indicate what the link will take you to.",
+      "rule5": "Use nouns for basically everything else, too, to communicate the information architecture. Section headings should be nouns which describe the content of the section.  Labels should be nouns which describe the content of the field."
+    },
+    "styleRules": {
+      "title": "Style rules",
+      "rule1": "Stick to a limited color palette.  (TODO: add specific colors)",
+      "rule2": "Use typefaces no smaller than 13px for text content.  Readability is important and not everyone has young eyes.",
+      "rule3": "Make click targets no smaller than 32px square or 26px tall if appreciably wider.  Remember that due to Fitts' Law, larger click targets are easier to interact with."
+    },
+    "forms": {
+      "title": "Forms",
+      "rule1": "Use the <code>standard-form</code> class where appropriate.",
+      "rule2": "The primary action button of a form should be at the bottom right of the form. Secondary buttons should line up to the left of that primary action button.",
+      "rule3": "When providing text input fields, place labels above the input, not side-by-side or inside the field as placeholder text.  Place additional explanation or instructions below the input. Placeholder text should be used for examples, not instructions.",
+      "rule4": "Forms are generally used for transactional interactions, where the user cares about the success or failure of the application.  Avoid optimistic UI in favor of multi-state UI which communicates network activity, success, and failure.  A common pattern is:",
+      "rule4-1": "Have the default state of the form.  Disable a save button until the user makes a change.",
+      "rule4-2": "When the user clicks an action button, start the RPC, and disable the entire form to indicate that the action is underway.",
+      "rule4-3": "When the RPC completes, if the RPC failed, show an error message at the top of the context over which the action applies.  If the RPC succeeded, either indicate a success message (again, at the top of the context over which the action applies) or if this was a modal interaction and the completion of the RPC indicates successful completion of the workflow, dismiss the form with no additional message."
+    },
+    "example": {
+      "title": "An example:",
+      "label": "Email",
+      "placeholder": "alice@example.com",
+      "subtext": "You might want to receive notifications.",
+      "submitButton": "Save",
+      "discardButton": "Discard"
+    }
+  },
+  "admin": {
+    "title": "管理员",
+    "admin": {
+      "newAdmin": {
+        "wildcardHostBroken": "警告：本服务器的泛域名设置可能有误。在修复此问题前，您无法使用任何应用程序。请参照<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\">本篇沙聚云文件</a>和您浏览器的 Javascript 记录取得更多信息。您必须调整 DNS、SSL/TLS 证书，或编辑 sandstorm.conf 文件。如果您想要测试问题是否已修复，请重新整理此页面。如果您仍然有问题，请<a href=\"https://github.com/sandstorm-io/sandstorm/issues\">在此提出 issue</a>。",
+        "websocketBroken": "警告：本服务器似乎无法建立 WebSocket。沙聚云也许看起来没有问题，但许多应用程序会无法正常执行。<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\">更多信息在此。</a>通常这是因为上层的 reverse proxy （比如 nginx 或 Apache）需要被重新设定。如果您认为不是，请重新整理此页面或<a href=\"https://github.com/sandstorm-io/sandstorm/issues\">在此开一个 issue</a>。",
+        "hasSetupToken": "您并非以管理者身份登入，但您的设置 token 是正确的。您现在可以<a href=\"/setup\">启动设置精灵</a>或<a href=\"/admin/status\">检视系统记录</a>。",
+        "hasNoSetupToken": "您并非以管理者身份登入，无法使用管理面板。请以管理者身份登入，或在主机终端上执行`sandstorm admin-token`来取得管理 token。"
+      },
+      "newAdminRoot": {
+        "configuration": {
+          "title": "设定",
+        },
+        "management": {
+          "title": "管理",
+        }
+      }
+    },
+    "identityProviders": {
+      "name": "身份提供者",
+      "subtext": "設定使用者可以如何登入。",
+      "newAdminIdentity": {
+        "explanation": "选择使用者可以用哪些方法进行身份认证。所有人都能登入，但只有您邀请的用户可以安装应用程序或建立沙粒。",
+        "organizationLinkPrefix": "要设定组织内容，请到",
+        "organizationLink": "组织设置",
+        "organizationLinkPostfix": "."
+      },
+      "adminIdentityProviderConfigureEmail": {
+        "title": "电子邮件登入设定",
+        "error": "无法储存变更：%s",
+        "warning": "备注：若要使用电子邮件登入，您也需要设定服务器的电子邮件寄送功能。",
+        "explanation": "电子邮件登入没有额外的设定选项。",
+        "saveButton": "储存",
+        "enableButton": "启用",
+        "cancelButton": "取消",
+        "disableButton": "停用"
+      },
+      "googleLoginSetupInstructions": {
+        "explanation": "首先，您需要取得 Google Client ID。遵循以下步骤：",
+        "step1": "造访 <a href=\"https://console.developers.google.com/\" target=\"blank\">https://console.developers.google.com/</a>",
+        "step2": "__\"Create Project\", if needed. Wait for Google to finish provisioning.",
+        "step3": "__On the left sidebar, go to \"Credentials\" and, on the right, \"OAuth consent screen\". Make sure to enter an email address and a product name, and save.",
+        "step4": "__On the left sidebar, go to \"Credentials\".  Click the \"Create credentials\" button, then select \"OAuth client ID\" as the type.",
+        "step5": "__Select \"Web application\" as your application type.",
+        "step6": "__Set Authorized Javascript Origins to: <span class=\"idp-config-url\">%s</span>",
+        "step7": "__Set Authorized Redirect URI to: <span class=\"idp-config-url\">%s/_oauth/google</span>",
+        "step8": "__Finish by clicking \"Create\"."
+      },
+      "adminIdentityProviderConfigureGoogle": {
+        "title": "__Google login configuration",
+        "formerBaseUrlWarning": "__This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to visit <a target=\"_blank\" href=\"https://console.developers.google.com/\">https://console.developers.google.com/</a> and update the \"Authorized Javascript Origins\" and \"Authorized Redirect URI\" for this Client ID to include the values below.",
+        "error": "__Failed to save changes: %s",
+        "explanation": "__Then, copy over your Client ID and Client secret below:",
+        "clientId": "__Client ID:",
+        "clientSecret": "__Client secret:",
+        "saveButton": "__Save",
+        "enableButton": "__Enable",
+        "cancelButton": "__Cancel",
+        "disableButton": "__Disable"
+      },
+      "githubLoginSetupInstructions": {
+        "explanation": "__First, you'll need to get a Github Client ID and Client secret. Follow these steps:",
+        "step1": "__Visit <a href=\"https://github.com/settings/applications/newi\" target=\"blank\">https://github.com/settings/applications/new</a>",
+        "step2": "__Set Homepage URL to: <span class=\"idp-config-url\">%s</span>",
+        "step3": "__Set Authorization callback URL to: <span class=\"idp-config-url\">%s_oauth/github</span>"
+      },
+      "adminIdentityProviderConfigureGitHub": {
+        "title": "__GitHub login configuration",
+        "formerBaseUrlWarning": "__This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to visit <a target=\"_blank\" href=\"https://github.com/settings/developers\">https://github.com/settings/developers</a> and update the Homepage URL and Authorization callback URL for this application to the values below.",
+        "explanation": "__Then, copy over your Client ID and Client secret below:",
+        "clientId": "__Client ID:",
+        "clientSecret": "__Client secret:",
+        "saveButton": "__Save",
+        "enableButton": "__Enable",
+        "cancelButton": "__Cancel",
+        "disableButton": "__Disable"
+      },
+      "adminIdentityProviderConfigureLdap": {
+        "title": "__LDAP login configuration",
+        "error": "__Failed to save changes: %s",
+        "url": {
+          "label": "__LDAP server URL:",
+          "subtext": "__e.g. <code>ldap://ldap.example.com:389</code>.  Use port 636 for SSL."
+        },
+        "searchBindDn": {
+          "label": "__Bind user DN",
+          "subtext": "__The DN to bind as when searching for a user in the tree, e.g. <code>cn=admin,ou=users,dc=example,dc=com</code>.  Optional, but needed if your server doesn't allow unauthenticated searches."
+        },
+        "searchBindPassword": {
+          "label": "__Bind user password",
+          "subtext": "__Optional, needed if specifying bind DN above."
+        },
+        "base": {
+          "label": "__Base DN",
+          "subtext": "__The root object under which to search for user account nodes, e.g. <code>ou=users,dc=example,dc=com</code>"
+        },
+        "searchUsername": {
+          "label": "__LDAP username attribute",
+          "subtext": "__The LDAP attribute on a user object which represents the user's username (what they will enter in the username field when signing in)."
+        },
+        "nameField": {
+          "label": "__LDAP given name attribute",
+          "subtext": "__The LDAP attribute on a user object which represents the user's full display name."
+        },
+        "emailField": {
+          "label": "__LDAP email attribute",
+          "subtext": "__The LDAP attribute on a user object which represents the user's email address."
+        },
+        "filter": {
+          "label": "__Additional LDAP filter criteria",
+          "subtext": "__An optional LDAP query fragment that will be included in the user search. This is not commonly used. See <a target=\"_blank\" href=\"http://www.ietf.org/rfc/rfc2254.txt\">RFC2254</a>."
+        },
+        "caCert": {
+          "label": "__LDAP CA certificate",
+          "placeholder": "__-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----",
+          "subtext": "__This is only necessary if your server supports SSL and is using a private CA not in the common trusted set. Note that it does NOT work to enter the LDAP server's own certificate here -- it must be the certificate of a CA which has signed the LDAP server's certificate."
+        },
+        "saveButton": "__Save",
+        "enableButton": "__Enable",
+        "cancelButton": "__Cancel",
+        "disableButton": "__Disable"
+      },
+      "adminIdentityProviderConfigureSaml": {
+        "title": "__SAML login configuration",
+        "explanation": "__Your SAML IDP should be configured to return a persistent nameID. In addition, if you are not using Active Directory, you <strong>must</strong> configure your IDP to provide two extra attributes, <code>email</code> and <code>displayName</code>.",
+        "serviceUrl": "__The Service URL of this server is: <code>%s</code>",
+        "logoutUrl": "__The Service Logout URL of this server is: <code>%s</code>",
+        "metadataUrlAt": "__If your SAML IDP supports reading the service provider metadata from a URL, then you can point it at: <code><a href=\"__href__\" target=\"_blank\">__text__</a></code>",
+        "error": "__Failed to save changes: %s",
+        "entryPoint": {
+          "label": "__SAML provider entry point URL:",
+          "placeholder": "__https://YOUR_SAML_PROVIDER.com/sso/saml"
+        },
+        "logout": {
+          "label": "__SAML provider logout URL (optional):",
+          "placeholder": "__https://YOUR_SAML_PROVIDER.com/sso/saml/SingleLogoutService"
+        },
+        "publicCert": {
+          "label": "__SAML cert for above provider:",
+          "placeholder": "__base64 encoded cert (e.g. MIID...8F==)"
+        },
+        "entityId": {
+          "label": "__Entity ID:"
+        },
+        "saveButton": "__Save",
+        "enableButton": "__Enable",
+        "cancelButton": "__Cancel",
+        "disableButton": "__Disable"
+      },
+      "adminIdentityProviderTable": {
+        "title": "__Identity provider",
+        "status": "__Status"
+      },
+      "adminIdentityRow": {
+        "enabled": "__Enabeld",
+        "disabled": "__Not enabled",
+        "baseUrlChanged": {
+          "explanation": "__Disabled due to BASE_URL change",
+          "reconfigureButton": "__reconfigure"
+        },
+        "configureButton": {
+          "hint": "__Configure %s login",
+          "text": "__Configure"
+        }
+      }
+    },
+    "organization": {
+      "name": "組織設定",
+      "subtext": "讓大團隊可以圓滑地上手及進行合作。",
+      "organizationSettingsBlurb": {
+        "explanation": "__Sandstorm allows you to define an organization. You can automatically apply some settings to all members of your organization. Users within the organization will automatically be able to log in, install apps, and create grains."
+      },
+      "newAdminOrganization": {
+        "success": "__Saved changes.",
+        "error": "__Failed to save changes: %s",
+        "membership": {
+          "title": "__Organization membership",
+          "emailToggle": {
+            "label": "__Users authenticated via email address",
+            "subtext": "__Note: disabled because email login is not configured."
+          },
+          "emailDomain": {
+            "label": "__Domain:",
+            "subtext": "__Users with an email address at this domain will be members of this server's organization."
+          },
+          "gappsToggle": {
+            "label": "__Users authenticated via Google Apps for Work",
+            "subtext": "__Note: disabled because Google login is not configured."
+          },
+          "gappsDomain": {
+            "label": "__Domain:",
+            "subtext": "__Users with a Google Apps for Work account under this domain will be members of this server's organization."
+          },
+          "ldapToggle": {
+            "label": "__Users authenticated via LDAP",
+            "subtext": "__Note: disabled because LDAP login is not configured."
+          },
+          "samlToggle": {
+            "label": "__Users authenticated via SAML",
+            "subtext": "__Note: disabled because SAML login is not configured."
+          }
+        },
+        "settings": {
+          "title": "__Organization settings",
+          "disallowGuests": {
+            "label": "__Disallow collaboration with users outside the organization.",
+            "subtext": "__Users will be required to log in as a member of your organization to view sharing links. Guest access will be disabled."
+          },
+          "shareContacts": {
+            "label": "__Make all organization users visible to each other",
+            "subtext": "__This setting automatically adds users within the organization to each other's contact list so that they can share grains with each other.  Disable this if you have some users whose identity should stay hidden from other users."
+          }
+        },
+        "saveButton": "__Save"
+      }
+    },
+    "emailConfig": {
+      "name": "電郵寄送設定",
+      "subtext": "設定沙聚雲如何寄送電郵。",
+      "newAdminEmailConfig": {
+        "outbound": {
+          "title": "__Outbound email",
+          "warning": "__<strong>Email is unconfigured.</strong> Email-related features like email login, notifications, sharing by identity, and requesting access will be unavailable until you configure email."
+        },
+        "howItWorks": {
+          "title": "__How Sandstorm uses email",
+          "explanation": "__Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too. Every app receives a unique email address, so Sandstorm needs to send email from a variety of \"From:\" addresses. Therefore, Gmail SMTP won't work, but there are other free services. See <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">more info in the docs</a>."
+        },
+        "success": "__Saved changes.",
+        "error": "__Failed to save changes: %s",
+        "address": {
+          "hostname": "__SMTP host",
+          "port": "__Port",
+          "subtext": "__Use port 25 for SMTP (unencrypted or with StartTLS), port 465 for TLS-encrypted SMTPS."
+        },
+        "username": {
+          "label": "__Username (optional)"
+        },
+        "password": {
+          "label": "__Password (optional)"
+        },
+        "returnAddress": {
+          "label": "__Sandstorm server's own email address",
+          "subtext": "__Sandstorm will send login emails, notifications of granted access requests, and other emails from this address. It will also use this address in the SMTP envelope."
+        },
+        "submitButton": "__Save Configuration",
+        "testButton": "__Test",
+        "disableButton": "__Disable email"
+      },
+      "emailTestPopup": {
+        "title": "__Send a test email",
+        "testAddress": {
+          "label": "__Send test mail to:"
+        },
+        "pending": "__Sending...",
+        "submitButton": "__Send test email",
+        "closeButton": "__Close"
+      },
+      "emailDisablePopup": {
+        "title": "__Really disable email?",
+        "explanation": "__This will disable all outbound email delivery for this server, including sharing via email, email token login (if enabled), and email notifications to users.",
+        "disableButton": "__Disable email",
+        "closeButton": "__Close"
+      }
+    },
+    "personalization": {
+      "name": "個人化",
+      "subtext": "客製獨自的啟動畫面、服務條款、隱私權聲明等等。",
+      "newAdminPersonalization": {
+        "serverTitle": {
+          "label": "__Server title:",
+          "subtext": "__The name of this server, as used when communicating with users."
+        },
+        "splashUrl": {
+          "label": "__Splash URL (experimental):",
+          "subtext": "__This web page will be displayed in the background behind the login dialog (the home page when logged out). For security reasons, the page must be hosted within this Sandstorm server's wildcard host (otherwise it will be blocked by <code>Content-Security-Policy</code>). We suggest using a static web publishing app like <a target=\"_blank\" href=\"https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh/?host={{serverUrl}}\">Hacker CMS</a> to host content.<strong>WARNING: This feature is experimental; in particular the style and positioning of the login box is subject to change without notice.</strong> Please let us know if you'd like to see it stabilize."
+        },
+        "signupDialog": {
+          "label": "__Signup dialog:",
+          "subtext": "__This text will be displayed to users who click on signup links."
+        },
+        "termsOfService": {
+          "label": "__Terms of service URL:",
+          "placeholder": "__https://example.com/tos",
+          "subtext": "__If provided, new users will be required to agree to the linked terms of service."
+        },
+        "privacyPolicy": {
+          "label": "__Privacy policy URL:",
+          "placeholder": "__https://example.com/privacy",
+          "subtext": "__If provided, new users will be required to agree to the linked privacy policy."
+        },
+        "whitelabeling": {
+          "title": "__Whitelabeling",
+          "logo": {
+            "label": "__Custom logo on sign-in dialog",
+            "resetButton": "__Use default",
+            "uploadButton": "__Upload logo"
+          },
+          "hideTroubleshooting": {
+            "label": "__Hide troubleshooting button"
+          },
+          "hideAbout": {
+            "label": "__Hide \"About Sandstorm\" links"
+          },
+          "hideSendFeedback": {
+            "label": "__Hide \"Send feedback\" link"
+          },
+          "useServerTitleForHomeText": {
+            "label": "__Use server title (above) for home link",
+            "subtext": "__If enabled, changes the default label \"Sandstorm\" on the link at the very top left to match whatever you specified for the Server title above."
+          },
+          "customLoginProviderName": {
+            "label": "__Custom login button text",
+            "subtext": "__Replaces the text \"with LDAP\" and \"with SAML\" on the login page with the specified text."
+          }
+        },
+        "saveButton": "__Save"
+      }
+    },
+    "preinstalledApps": {
+      "name": "預裝應用程式",
+      "subtext": "選擇新使用者可以直接使用的預裝應用程式。",
+      "newAdminPreinstalledApps": {
+        "explanation": "__Apps you configure on this page to be pre-installed will automatically be installed (show under /apps) for new users.",
+        "productivitySuite": {
+          "label": "__Productivity Suite",
+          "subtext": "__We recommend pre-installing these core apps that are useful to most users."
+        },
+        "systemSuite": {
+          "label": "__System apps",
+          "subtext": "__We recommend pre-installing these system apps that greatly enhance the abilities of Sandstorm."
+        },
+        "allApps": {
+          "label": "__All apps on market",
+          "subtext": "__The checked apps below will be installed by default for all new users.",
+          "lessButton": "__Show fewer apps",
+          "moreButton": "__Show %s more apps"
+        },
+        "saveButton": "__Save"
+      },
+      "_appRow": {
+        "download": {
+          "success": "__Downloaded",
+          "failed": "__Failed"
+        }
+      }
+    },
+    "appSources": {
+      "name": "應用程式來源",
+      "subtext": "取得應用程式和更新的位置。",
+      "newAdminAppSources": {
+        "appMarketUrl": {
+          "label": "__App market URL",
+          "subtext": "__The \"Install...\" button on the Apps page will link to this URL."
+        },
+        "enableAppUpdates": {
+          "label": "__Enable app update notifications",
+          "subtext": "__Updates to apps will be automatically downloaded by the Sandstorm server daily and notifications sent to users asking if they want to update their installed apps."
+        },
+        "appIndexUrl": {
+          "label": "__App index URL",
+          "subtext": "__This is the URL that the Sandstorm server will check to learn about app updates."
+        },
+        "saveButton": "__Save",
+        "restoreButton": "__Restore defaults"
+      }
+    },
+    "networking": {
+      "name": "網路",
+      "altName": "安全性",
+      "subtext": "控制如何存取網路。",
+      "newAdminNetworking": {
+        "title": "__Security",
+        "ipBlacklist": {
+          "label": "__Server-side request IP blacklist:",
+          "subtext": "__Users will be prohibited from making requests to these IP addresses. This includes making a request from an app, downloading an SPK file from a user-provided URL, etc. You may specify one IP address or network (in CIDR notation, e.g. \"127.0.0.0/8\") per line. The default value includes standard local and private network addresses. Note that when an HTTP proxy is in use, this setting may be ignored; the proxy must implement its own blacklist."
+        },
+        "saveButton": "__Save",
+        "restoreButton": "__Restore defaults"
+      }
+    },
+    "users": {
+      "name": "使用者",
+      "subtext": "管理此沙聚雲上的使用者。"
+    },
+    "userAccounts": {
+      "newAdminUserTableRow": {
+        "admin": {
+          "hint": "__Admin",
+          "cap": "__A"
+        },
+        "user": {
+          "hint": "__User",
+          "cap": "__U"
+        },
+        "visitor": {
+          "hint": "__Visitor",
+          "cap": "__V"
+        },
+        "unknownIdentity": "__Unknown identity",
+        "unknownName": "__unknown name",
+        "unknownIdentifier": "__unknown identifier",
+        "manageButton": "__Manage"
+      },
+      "newAdminUserTable": {
+        "header": {
+          "identities": "__Account",
+          "created": "__Created",
+          "lastActive": "__Last Active",
+          "actions": "__Actions"
+        },
+        "inviteLink": "__Invite new user",
+        "notFound": "__No users matched your filter.",
+        "processing": "__Loading users..."
+      },
+      "newAdminUsers": {
+        "search": {
+          "placeholder": "__search"
+        },
+        "filter": {
+          "explanation": "__Show:",
+          "admin": "__Admin",
+          "user": "__User",
+          "visitor": "__Visitor"
+        }
+      }
+    },
+    "userDetails": {
+      "newAdminUserDetailsIdentityTableRow": {
+        "profilePicture": {
+          "label": "__Profile picture"
+        },
+        "handle": {
+          "hint": "__Handle",
+          "label": "__@"
+        },
+        "pronouns": {
+          "hint": "__Pronouns",
+          "label": "__Pronouns"
+        },
+        "emails": {
+          "hint": "__Emails",
+          "label": "__Emails",
+          "primary": "__Primary",
+          "verified": "__Verified",
+          "unverified": "__Unverified",
+          "notFound": "__No known emails."
+        },
+        "properties": {
+          "login": "__Can log in",
+          "org": "__Org. member"
+        },
+        "unkonwn": {
+          "profilePicture": {
+            "cell": "__(unknown name)"
+          },
+          "service": {
+            "hint": "__unknown service",
+            "label": "__(unknown service)",
+            "cell": "__(unknown name)"
+          },
+          "handle": {
+            "cell": "__(unknown handle)"
+          },
+          "pronouns": {
+            "cell": "__(unknown pronouns)"
+          },
+          "created": {
+            "cell": "__unknown creation date"
+          },
+          "lastActive": {
+            "cell": "__unknown activity date"
+          }
+        }
+      },
+      "newAdminUserDetailsIdentityTable": {
+        "header": {
+          "identity": "__Identity",
+          "created": "__Created",
+          "lastActive": "__Last Active",
+          "properties": "__Properties"
+        }
+      },
+      "newAdminUserDetails": {
+        "role": {
+          "title": "__Role",
+          "admin": {
+            "label": "__Admin",
+            "explanation": "__Manages all accounts.  Can install apps, create grains, and administer the server.",
+            "isAdmin": "__Current role",
+            "isNotAdmin": "__Promote to admin"
+          },
+          "user": {
+            "label": "__User",
+            "explanation": "__Can install apps and create grains.",
+            "isUser": "__Current role",
+            "isAdmin": "__Demote to user",
+            "isNotUser": "__Promote to user"
+          },
+          "visitor": {
+            "label": "__Visitor",
+            "explanation": "__Can use and re-share shared grains, but cannot create grains of their own nor install apps.",
+            "isVisitor": "__Current role",
+            "isNotVisitor": "__Demote to visitor"
+          }
+        },
+        "identities": {
+          "title": "__Identities"
+        },
+        "status": {
+          "title": "狀態",
+          "deleting": "停權 - 即將刪除 %s",
+          "suspended": "停權",
+          "active": "活躍",
+	  "unsuspendButton": "解除停權",
+	  "suspendButton": "將帳號停權",
+	  "deleteButton": "刪除帳號"
+        },
+        "deletePopup": {
+          "title": "刪除 %s",
+          "explanation": "您正在刪除 %s 的帳號。被標記為刪除中的帳號會被停權，管理者有七天的時間取消刪除動作。（在本頁點擊「解除停權」按鈕即可）%s <strong>無法</strong>阻止停權和刪除。",
+          "detail": "七天後， %s 的帳號將被永遠刪除。刪除帳號將：",
+          "detail1": "永遠刪除所有 %s 建立的沙粒",
+          "detail2": "撤銷所有 %s 建立的共享連結",
+          "detail3": "將 %s 從所有人的聯絡人名單中移除",
+          "detail4": "刪除所有本帳號的識別資訊（除非該識別資訊亦被別的帳號使用）",
+          "deleteButton": "刪除帳號",
+          "cancelButton": "取消"
+        },
+        "suspendPopup": {
+          "title": "將 %s 停權",
+          "detail": "將這個帳號停權將會：",
+          "detail1": "阻止所有 %s 建立的沙粒被開啟",
+          "detail2": "停用所有 %s 建立的共享連結",
+          "detail3": "本帳號的識別資訊亦等同辦理（除非該識別資訊亦被別的帳號使用）",
+          "suspendButton": "將帳號停權",
+          "cancelButton": "取消"
+        },
+        "loading": "正在讀取使用者資料……"
+      }
+    },
+    "userInvite": {
+      "newAdminUserInviteLink": {
+        "explanation": "您可以建立連結來邀請其他人創建他們的帳號。您邀請的人將直接擁有使用者權限，可以安裝應用程式及建立沙粒。如果您只想要分享一顆沙粒，請使用該沙粒畫面內的「分享存取」選單。",
+        "title": "建立連結",
+        "invite": {
+          "explanation": "建立可以寄送給別人的帳號創建連結。",
+          "createButton": "建立連結"
+        }
+      },
+      "newAdminUserInviteEmail": {
+        "title": "寄送電郵",
+        "emailWarning": {
+          "explanation": "電郵尚未設定完成，故此功能已被停用。",
+          "configureLink": "設定電郵"
+        },
+        "explanation": "建立連結並以電郵寄出。",
+        "to": {
+          "label": "寄給：",
+          "placeholder": "alice@email.com\nbob@example.com",
+          "subtext": "每行輸入一個電郵位址。"
+        },
+        "subject": {
+          "label": "標題："
+        },
+        "body": {
+          "label": "內容：",
+          "subtext": "<code>$KEY</code> 會被置換成產生出來的連結。"
+        },
+        "sendButton": "寄送邀請"
+      },
+      "newAdminUserInvite": {
+        "title": "邀請"
+      }
+    },
+    "systemStatus": {
+      "name": "系統記錄",
+      "subtext": "檢視沙聚雲的除錯記錄。",
+      "newAdminLogContents": {
+        "ellipsis": "……"
+      },
+      "newAdminStatus": {
+        "downloadButton": "下載完整記錄"
+      }
+    },
+    "stats": {
+      "name": "統計",
+      "subtext": "檢視伺服器上的各種統計數據。",
+      "header": {
+        "date": "日期",
+        "users": "使用者",
+        "grains": "沙粒",
+        "appName": "應用程式名",
+        "owners": "擁有者",
+        "sharedUsers": "共享使用者",
+        "daily": "每日",
+        "weekly": "每週",
+        "monthly": "每月",
+        "forever": "所有時間"
+      },
+      "body": {
+        "notFound": "目前還沒有統計資料。",
+        "loading": "讀取中……"
+      },
+      "newAdminStats": {
+        "share": {
+          "title": "Publish anonymously to Sandstorm dev team",
+          "explanation": "We'd like to know how many Sandstorm users there are, to make graphs and such.  Is it okay to send the numbers on this page once a day to the Sandstorm team, so that we can add them to the totals?  Any stats you send are anonymous.",
+          "enableButton": "Send anonymous stats",
+          "disableButton": "Don't send",
+          "control": {
+            "explanation": "The developers of Sandstorm like to know how many Sandstorm users there are, to make graphs and such.  You can help us by opting in to sharing the numbers on this page once a day to the Sandstorm team, so that we can add them to our totals. Any stats shared are submitted anonymously.",
+            "label": "Anonymous stats reporting to sandstorm.io:",
+            "enabled": "Enabled",
+            "disabled": "Disabled",
+            "disableButton": "Disable",
+            "enableButton": "Enable"
+          }
+        },
+        "json": {
+          "title": "以 JSON 檢視",
+          "explanation": "If you want to integrate Sandstorm stats with an internal stats tool, use this secret link to retrieve the tables below as JSON. You can revoke the current link at any time by generating a new link.",
+          "label": "統計 JSON 連結：",
+          "regenerateButton": "生成新連結"
+        },
+        "userGrains": {
+          "title": "使用者和沙粒",
+          "current": "現在： __users__ 名使用者， __grains__ 顆沙粒",
+          "today": "今天： __users__ 名使用者， __grains__ 顆沙粒"
+        },
+        "apps": {
+          "title": "應用程式",
+          "label": "選擇日期："
+        }
+      }
+    },
+    "maintenanceMessage": {
+      "name": "維修訊息",
+      "subtext": "告知使用者維修所需時間。",
+      "newAdminMaintenance": {
+        "explanation": "You can set a maintenance message which will be shown to all users in the menu bar, on the top right. This is useful for announcing scheduled maintenance so users can be prepared to tolerate downtime. If the message text is empty, no message will be displayed.",
+        "variables": "You may use the following variables in the \"Message text\" field, which will be automatically substituted with useful values:",
+        "variable1": "<code>$TIME</code> : The time component of \"Maintenance time\", converted to the user's local time (eg. \"1:15:45 PM\")",
+        "variable2": "<code>$DATE</code> : The date component of \"Maintenance time\", converted to the user's local time (eg. \"6/19/2015\")",
+        "variable3": "<code>$IN_COUNTDOWN</code> : An active countdown until \"Maintenance time\" (eg. \"in 3 days\" or \"in 1 minute\"). Displays \"any moment\" at the time specified in \"Maintenance time\" and then disappears after an hour.",
+        "messageText": {
+          "label": "Message text:",
+          "subtext": ""
+        },
+        "maintenanceTime": {
+          "label": "Maintenance time:",
+          "subtext": "The time you intend to start performing maintenance, formatted like \"%s\"."
+        },
+        "url": {
+          "label": "Link URL (optional):",
+          "subtext": "If given, the maintenance message will render as a clickable link to the provided URL."
+        },
+        "saveButton": "Set message"
+      }
+    },
+    "networkCapabilities": {
+      "name": "網路容量",
+      "subtext": "管理沙粒的網路直接存取量。",
+      "newAdminNetworkCapabilitiesTableCapabilityRow": {
+        "adminAccount": "Admin account %s",
+        "unknownGranter": "Unknown granter",
+        "anyone": "Anyone with the token",
+        "unknownRecipient": "Unknown recipient",
+        "revoked": "已撤銷",
+        "revokeButton": "撤銷"
+      },
+      "newAdminNetworkCapabilitiesTable": {
+        "header": {
+          "grantBy": "Granted by",
+          "grantTo": "Granted to",
+          "grantTime": "Time",
+          "actions": "Actions"
+        },
+        "notFound": "No capabilities found."
+      },
+      "newAdminNetworkCapabilitiesSection": {
+        "filter": {
+          "label": "Showing:",
+          "active": "Active (%s)",
+          "revoked": "Revoked (%s)"
+        }
+      },
+      "newAdminNetworkCapabilities": {
+        "networkCaps": "Outbound network access",
+        "networkCapsTls": "TLS-encrypted outbound network access",
+        "interfaceCaps": "Inbound network access"
+      }
+    },
+    "hostingManagement": {
+      "name": "Hosting management",
+      "newAdminHostingManagement": {
+        "explanation": "This feature is experiemental and only works with the LDAP identity provider at the moment. Use with caution.",
+        "quotaEnabled": {
+          "label": "Enable quota for users",
+          "subtext": "Enable Quota management on this server. This requires both SAML and LDAP to be configured, and email addresses will be used to match between the two."
+        },
+        "quotaLdapAttribute": {
+          "label": "LDAP quota attribute",
+          "subtext": "This is the attribute name that will be looked up from LDAP to determine quota for a user."
+        },
+        "billingPromptUrl": {
+          "label": "Billing prompt url",
+          "subtext": "This is the url that will be used in the billing prompt."
+        },
+        "saveButton": "Save",
+        "restoreButton": "Restore defaults"
+      }
+    }
+  },
+  "people": {
+    "title": "使用者"
+  },
+  "sharingLinks": {
+    "title": "分享连结"
+  },
+  "apps": {
+    "title": "应用程序",
+    "appList": {
+      "uninstallingHint": "移除完成",
+      "doneUninstalling": "移除完成",
+      "uninstallHint": "移除應用程式",
+      "uninstallButton": "批次移除...",
+      "uploadApp": "上传应用程序",
+      "searchHint": "搜尋名稱",
+      "search": "搜寻名称",
+      "mostUsed": "最常使用",
+      "allApps": "所有应用程序",
+      "install": "安装新程序",
+      "fromMarket": "从市集下载",
+      "uninstall": "移除",
+      "noMatchApp": "找不到名称含有该字符串的应用程序。请<a href=\"__url__\">试试搜寻市集 &raquo;</a>",
+      "unauthorized": "无权限！:(",
+      "unauthorizedText": "只有管理者给予权限的的用户才能安装应用程序。若需权限，请联络管理者。"
+    }
+    "install": {
+      "sandstormAppInstallPage": {
+        "title": "安裝應用程式",
+        "error": {
+          "title": "無法安裝應用程式",
+          "retryButton": "再試一次"
+        },
+        "stepWait": {
+          "title": "正在等待寫入存取……"
+        },
+        "stepDownload": {
+          "title": "正在下載……",
+          "cancelButton": "取消"
+        },
+        "stepVerify": {
+          "title": "正在驗證……"
+        },
+        "stepUnpack": {
+          "title": "正在拆包……"
+        },
+        "stepAnalyze": {
+          "title": "正在分析……"
+        },
+        "stepConfirm": {
+          "upgrade": {
+            "explanation": "您已經有安裝此程式的較舊版本。是否要更新？",
+            "button": "更新 %s"
+          },
+          "downgrade": {
+            "explanation": "您已經有安裝此程式的較新版本。是否要降版？",
+            "button": "降版 %s"
+          },
+          "install": {
+            "button": "安裝 %s"
+          }
+        },
+        "stepRun": {
+          "title": "已安裝 %s",
+          "explanation": "安裝完成",
+          "appDetailsLink": "開啟 %s"
+        },
+        "stepDelete": {
+          "title": "正在刪除",
+          "explanation": "伺服器正在刪除這個應用程式……"
+        },
+        "stepFailed": {
+          "title": "失敗",
+          "explanation": "安裝失敗：%s"
+        }
+      }
+    },
+    "appDetails": {
+      "sandstormAppDetailsPage": {
+        "newerVersion": {
+          "explanation": "有些檔案是用較新版本的程式建立的。因為回復舊版本可能會破壞資料，這些檔案將會繼續使用新版本程式。"
+        },
+        "olderVersion": {
+          "explanation": "有些沙粒是舊版本程式建立的。要更新嗎？",
+          "upgradeButton": "更新沙粒"
+        },
+        "search": {
+          "hint": "搜尋",
+          "placeholder": "搜尋"
+        },
+        "trash": {
+          "explanation": "回收桶裡的沙粒會在 30 天後被永久刪除。若要保留沙粒，請將其移回主列表。"
+        },
+        "noGrains": {
+          "notFound": "<strong>找不到相符的沙粒。</strong>",
+          "inTrash": "有些回收桶裡的沙粒符合您的搜尋。",
+          "trashButton": "檢視回收桶"
+        }
+      },
+      "sandstormAppDetails": {
+        "websiteLink": "網站",
+        "appMarketLink": "應用程式市集",
+        "sourceCodeLink": "原始碼",
+        "bugReportLink": "回報問題",
+        "mainListButton": "檢視主列表",
+        "trashButton": "檢視回收桶",
+        "uninstallButton": "移除",
+        "restoreButton": "回復沙粒備份……",
+        "version": {
+          "label": "版本"
+        },
+        "lastUpdate": {
+          "label": "最後更新",
+          "unknown": "未知"
+        },
+        "publisher": {
+          "label": "簽名者"
+        },
+        "hasFingerprint": "本程式的發行者已用 PGP 簽章證明其控制權。",
+        "noFingerprint": "本程式沒有作者的簽章，無法辨認作者。"
+      }
+    }
+  }
+}

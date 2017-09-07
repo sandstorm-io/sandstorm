@@ -1,6 +1,6 @@
 <template name="setupWizardLoading">
 <div class="setup-page-content">
-  <div class="centered-box">Loading...</div>
+  <div class="centered-box">{{_ "wizard.setupWizardLoading.loading"}}</div>
 </div>
 </template>
 
@@ -50,7 +50,7 @@
                                    mayJumpTo=(mayJumpTo "identity")
                                    route="setupWizardIdentity"
                                    className=itemClassName}}
-      Identity providers
+      {{_ "wizard.setupWizardProgressBar.identityProviders"}}
     {{/setupWizardProgressBarItem}}
 
     {{#setupWizardProgressBarItem stepName="organization"
@@ -58,7 +58,7 @@
                                    mayJumpTo=(mayJumpTo "organization")
                                    route="setupWizardOrganization"
                                    className=itemClassName}}
-      Organization
+      {{_ "wizard.setupWizardProgressBar.organization"}}
     {{/setupWizardProgressBarItem}}
 
     {{#setupWizardProgressBarItem stepName="email"
@@ -67,7 +67,7 @@
                                    route="setupWizardEmailConfig"
                                    className=itemClassName
                                    }}
-      Email
+      {{_ "wizard.setupWizardProgressBar.email"}}
     {{/setupWizardProgressBarItem}}
 
     {{#setupWizardProgressBarItem stepName="preinstalled"
@@ -76,7 +76,7 @@
                                    route="setupWizardPreinstalled"
                                    className=itemClassName
                                    }}
-      Pre-installed apps
+      {{_ "wizard.setupWizardProgressBar.preinstalledApps"}}
     {{/setupWizardProgressBarItem}}
 
     {{#setupWizardProgressBarItem stepName="user"
@@ -85,7 +85,7 @@
                                    route="setupWizardLoginUser"
                                    className=itemClassName
                                    }}
-      Admin account
+      {{_ "wizard.setupWizardProgressBar.adminAccount"}}
     {{/setupWizardProgressBarItem}}
   </ol>
   <div class="setup-progress-bar">
@@ -100,11 +100,12 @@
 </template>
 
 <template name="setupWizardHelpFooter">
+{{#let txt="wizard.setupWizardHelpFooter"}}
 <div class="setup-help-row">
-  <span class="setup-help-label">Need help?</span>
-  <a class="setup-help-link" target="_blank" href="https://docs.sandstorm.io/en/latest/administering/">Documentation</a>
-  <a class="setup-help-link" href="mailto:support@sandstorm.io">Email support</a>
-  <button type="button" name="system-log" class="setup-help-link">System Log</button>
+  <span class="setup-help-label">{{_ (con txt "needHelp")}}</span>
+  <a class="setup-help-link" target="_blank" href="https://docs.sandstorm.io/en/latest/administering/">{{_ (con txt "documentation")}}</a>
+  <a class="setup-help-link" href="mailto:support@sandstorm.io">{{_ (con txt "emailSupport")}}</a>
+  <button type="button" name="system-log" class="setup-help-link">{{_ (con txt "systemLog")}}</button>
   {{!-- TODO(someday): Live Chat link --}}
   {{#if showSystemLog}}
     {{#modalDialogWithBackdrop onDismiss=hideSystemLogCallback}}
@@ -112,6 +113,7 @@
     {{/modalDialogWithBackdrop}}
   {{/if}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardSystemLog">

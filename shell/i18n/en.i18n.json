@@ -1574,5 +1574,23 @@
         "verifying": "Verifying token..."
       }
     }
+  },
+  "wizard": {
+    "setupWizardLoading": {
+      "loading": "Loading..."
+    },
+    "setupWizardProgressBar": {
+      "identityProviders": "Identity providers",
+      "organization": "Organization",
+      "email": "Email",
+      "preinstalledApps": "Pre-installed apps",
+      "adminAccount": "Admin account"
+    },
+    "setupWizardHelpFooter": {
+      "heedHelp": "Need help?",
+      "documentation": "Documentation",
+      "emailSupport": "Email support",
+      "systemLog": "System Log"
+    }
   }
 }

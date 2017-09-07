@@ -505,10 +505,10 @@
       },
       "newAdminRoot": {
         "configuration": {
-          "title": "设定",
+          "title": "设定"
         },
         "management": {
-          "title": "管理",
+          "title": "管理"
         }
       }
     },
@@ -1232,7 +1232,7 @@
       "noMatchApp": "找不到名称含有该字符串的应用程序。请<a href=\"__url__\">试试搜寻市集 &raquo;</a>",
       "unauthorized": "无权限！:(",
       "unauthorizedText": "只有管理者给予权限的的用户才能安装应用程序。若需权限，请联络管理者。"
-    }
+    },
     "install": {
       "sandstormAppInstallPage": {
         "title": "安裝應用程式",

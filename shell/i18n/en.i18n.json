@@ -1591,6 +1591,13 @@
       "documentation": "Documentation",
       "emailSupport": "Email support",
       "systemLog": "System Log"
+    },
+    "setupWizardSystemLog": {
+      "header": {
+        "label": "System log",
+        "downloadButton": "Download log"
+      },
+      "permissionDenied": "You cannot view the system log because you are not logged in as an admin and you do not have a setup token."
     }
   }
 }

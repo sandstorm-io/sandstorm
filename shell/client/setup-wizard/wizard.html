@@ -117,24 +117,25 @@
 </template>
 
 <template name="setupWizardSystemLog">
+{{#let txt="wizard.setupWizardSystemLog"}}
 <div class="setup-system-log">
   {{#if ready}}
     {{#if isUserPermitted}}
       <h2 class="setup-system-log-header">
-        <span class="setup-system-log-header-text">System log</span>
+        <span class="setup-system-log-header-text">{{_ (con txt "header.label")}}</span>
         <form class="standard-form">
-          <button type="button" name="download-full-log">Download log</button>
+          <button type="button" name="download-full-log">{{_ (con txt "header.downloadButton")}}</button>
         </form>
       </h2>
       {{> newAdminLog ""}}
     {{else}}
       <p>
-        You cannot view the system log because you are not logged in as an admin
-        and you do not have a setup token.
+        {{_ (con txt "permissionDenied")}}
       </p>
     {{/if}}
   {{/if}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardLayout">

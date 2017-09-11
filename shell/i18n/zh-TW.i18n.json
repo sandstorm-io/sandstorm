@@ -1573,5 +1573,30 @@
         "verifying": "__Verifying token..."
       }
     }
+  },
+  "wizard": {
+    "setupWizardLoading": {
+      "loading": "*_Loading..."
+    },
+    "setupWizardProgressBar": {
+      "identityProviders": "*_Identity providers",
+      "organization": "*_Organization",
+      "email": "*_Email",
+      "preinstalledApps": "*_Pre-installed apps",
+      "adminAccount": "*_Admin account"
+    },
+    "setupWizardHelpFooter": {
+      "heedHelp": "*_Need help?",
+      "documentation": "*_Documentation",
+      "emailSupport": "*_Email support",
+      "systemLog": "*_System Log"
+    },
+    "setupWizardSystemLog": {
+      "header": {
+        "label": "*_System log",
+        "downloadButton": "*_Download log"
+      },
+      "permissionDenied": "*_You cannot view the system log because you are not logged in as an admin and you do not have a setup token."
+    }
   }
 }

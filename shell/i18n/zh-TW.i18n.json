@@ -1478,9 +1478,9 @@
         "sendButtonText": "寄送登入郵件"
       },
       "emailAuthenticationForm": {
-        "hint": "__Passwordless E-mail Login allows you to log in using an e-mail address. No password is required; instead, every time you log in, we send you a new email confirmation code. You will only need to log in once per device.",
+        "hint": "電郵登入讓您可以不需記憶密碼。相對的，每次您登入的時候都會收到一封記載有認證碼的郵件。您在每一台裝置上只需要登入一次即可。",
         "token": {
-          "explanation": "__We've sent a login e-mail to {{.}}. It may take a few moments to show up in your inbox.",
+          "explanation": "已將登入郵件寄送至 {{.}}，可能需要數分鐘才會送達。",
           "label": "__Enter your token:",
           "confirmButton": "__Confirm",
           "cancelButton": "__Cancel"
@@ -1586,7 +1586,7 @@
       "adminAccount": "*_Admin account"
     },
     "setupWizardHelpFooter": {
-      "needHelp": "*_Need help?",
+      "heedHelp": "*_Need help?",
       "documentation": "*_Documentation",
       "emailSupport": "*_Email support",
       "systemLog": "*_System Log"

@@ -155,7 +155,7 @@
       "terms": {
         "license": "授權",
         "terms": "服務條款",
-        "privacy": "隱私權聲明"
+        "privacy": "隱私權政策"
       }
     }
   },
@@ -762,7 +762,7 @@
     },
     "personalization": {
       "name": "個人化",
-      "subtext": "客製獨自的啟動畫面、服務條款、隱私權聲明等等。",
+      "subtext": "客製獨自的啟動畫面、服務條款、隱私權政策等等。",
       "newAdminPersonalization": {
         "serverTitle": {
           "label": "伺服器標題：",
@@ -782,9 +782,9 @@
           "subtext": "若有填寫，新使用者將會被要求同意您提供的服務條款。"
         },
         "privacyPolicy": {
-          "label": "隱私權聲明網址：",
+          "label": "隱私權政策網址：",
           "placeholder": "https://example.com/privacy",
-          "subtext": "若有填寫，新使用者將會被要求同意您提供的隱私權聲明。"
+          "subtext": "若有填寫，新使用者將會被要求同意您提供的隱私權政策。"
         },
         "whitelabeling": {
           "title": "白標",
@@ -1399,83 +1399,83 @@
           "subtext": "您公開給他人看的全名，但並不一定要是真名。"
         },
         "handle": {
-          "label": "__Handle:",
-          "placeholder": "__handle",
-          "hint": "__Handles must start with a lower-case letter and contain only lower-case letters, digits, and underscores.",
-          "subtext": "__To be displayed in apps that use handles. Your handle must start with a letter and contain only lower-case letters, digits, and underscores."
+          "label": "網名",
+          "placeholder": "網名",
+          "hint": "網名必須以小寫英文字母開頭，並只包含小寫英文字母、數字、以及底線。",
+          "subtext": "有些應用程式會使用網名作為您的公開名稱。網名必須以小寫英文字母開頭，並只包含小寫英文字母、數字、以及底線。"
         },
         "emailList": {
-          "label": "__E-mail:"
+          "label": "電郵："
         },
         "pronoun": {
-          "label": "__Preferred pronoun:",
-          "neutral": "__they (unspecified)",
-          "male": "__he/him (male)",
-          "female": "__she/her (female)",
-          "robot": "__it (robot)"
+          "label": "性別代名詞：",
+          "neutral": "他（不指定）",
+          "male": "他（男性）",
+          "female": "她（女性）",
+          "robot": "它（機器人）"
         },
         "agreedToTerms": {
-          "agreeTo": "__ I have read and agree to the",
-          "termsOfServiceLink": "__Terms of Service",
-          "and": "__ and ",
-          "privacyLink": "__Privacy policy"
+          "agreeTo": "我已經閱讀且同意",
+          "termsOfServiceLink": "服務條款",
+          "and": "以及",
+          "privacyLink": "隱私權政策"
         },
-        "saveButton": "__Save",
-        "continueButton": "__Continue",
-        "cancelButton": "__Cancel"
+        "saveButton": "儲存",
+        "continueButton": "繼續",
+        "cancelButton": "取消"
       }
     },
     "loginButtons": {
       "icon": {
-        "info": "__i"
+        "info": "i"
       },
       "loginButtons": {
-        "createButton": "__Create account",
-        "signInButton": "__Sign in"
+        "createButton": "建立帳號",
+        "signInButton": "登入"
       },
       "accountButtons": {
-        "loading": "__Loading..."
+        "loading": "正在讀取……"
       },
       "_loginButtonsLoggedInDropdown": {
-        "title": "__Account",
-        "switchButton": "__Switch identity",
-        "sendFeedback": "__Send feedback",
-        "referralProgram": "__Referral program",
-        "signOutButton": "__Sign out"
+        "title": "帳號",
+        "switchButton": "切換身份",
+        "sendFeedback": "提供意見",
+        "referralProgram": "推薦計畫",
+        "signOutButton": "登出"
       },
       "_loginButtonsLoggedOutDropdown": {
         "demo": {
-          "title": "__Create account",
-          "explanation": "__Your demo data will be transferred to your new account."
+          "title": "Create account",
+          "explanation": "Your demo data will be transferred to your new account."
         },
-        "title": "__Sign in",
+        "title": "登入",
         "shared": {
-          "explanation": "__Sign in so that collaborators know who you are."
+          "explanation": "您需要登入才能讓夥伴們知道您是誰。"
         },
-        "signInButton": "__Sign in",
-        "anonymousButton": "__Stay anonymous"
+        "signInButton": "登入",
+        "anonymousButton": "維持匿名"
       },
       "oauthLoginButton": {
-        "with": "__with "
+        "with": "以"
       },
       "devLoginForm": {
-        "label": "__with a Dev account",
-        "hint": "__unexpand",
-        "alice": "__Alice (admin)",
-        "bob": "__Bob",
-        "carol": "__Carol",
-        "dave": "__Dave",
-        "customPlaceholder": "__Eve",
-        "customButton": "__Custom"
+        "label": "以管理者帳號",
+        "hint": "收合",
+        "alice": "Alice（管理者）",
+        "bob": "Bob",
+        "carol": "Carol",
+        "dave": "Dave",
+        "customPlaceholder": "Eve",
+        "customButton": "自訂"
       },
       "loginButtonsList": {
-        "configure": "__configure login",
-        "troubleshooting": "__troubleshooting",
-        "about": "__about Sandstorm"
+        "configure": "設定登入",
+        "troubleshooting": "遇到問題嗎？",
+        "about": "關於沙聚雲"
       },
       "emailLoginForm": {
-        "description": "__with e-mail",
-        "sendButtonText": "__send Login Email"
+        "description": "以電子郵件",
+        "sendButtonText": "寄送登入郵件"
       },
       "emailAuthenticationForm": {
         "hint": "__Passwordless E-mail Login allows you to log in using an e-mail address. No password is required; instead, every time you log in, we send you a new email confirmation code. You will only need to log in once per device.",

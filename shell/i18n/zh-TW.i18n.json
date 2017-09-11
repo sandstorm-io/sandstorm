@@ -1586,7 +1586,7 @@
       "adminAccount": "*_Admin account"
     },
     "setupWizardHelpFooter": {
-      "heedHelp": "*_Need help?",
+      "needHelp": "*_Need help?",
       "documentation": "*_Documentation",
       "emailSupport": "*_Email support",
       "systemLog": "*_System Log"

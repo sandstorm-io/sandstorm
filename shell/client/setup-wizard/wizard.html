@@ -149,26 +149,24 @@
 </template>
 
 <template name="setupWizardIntro">
+{{#let txt="wizard.setupWizardIntro"}}
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Welcome to Sandstorm!</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
 
   {{#if initialSetupComplete}}
     {{#if noIdpEnabled}}
     <p>
-      This Sandstorm server has been set up previously, but due to a change in
-      <code>sandstorm.conf</code>, you'll need to configure identity providers again.
+      {{{_ (con txt "noIdpEnabled.explanation")}}}
     </p>
     <p class="center">
-      {{#linkTo route="setupWizardIdentity" class="setup-button-primary"}}Revisit setup wizard{{/linkTo}}
+      {{#linkTo route="setupWizardIdentity" class="setup-button-primary"}}{{_ "wizard.setupWizardIntro.revisitWizardLink"}}{{/linkTo}}
     </p>
     {{else}}
     <p>
-      This Sandstorm server is ready to roll.
-      You can adjust server settings, including which providers are
-      enabled and how Sandstorm sends email.
+      {{_ (con txt "idpEnabled.explanation")}}
 
       {{#unless currentUserIsAdmin}}
-      You can also turn an existing user into an administrator.
+      {{_ (con txt "idpEnabled.turnUserIntoAdmin")}}
       {{/unless}}
     </p>
 
@@ -187,36 +185,36 @@
     {{#if currentUser}}
       {{#if currentUserIsAdmin}}
         <p class="center">
-          {{#linkTo route="newAdminRoot" class="admin-settings-button"}}Proceed to admin panel{{/linkTo}}
+          {{#linkTo route="newAdminRoot" class="admin-settings-button"}}{{_ "wizard.setupWizardIntro.idpEnabled.isAdmin.adminPanelLink"}}{{/linkTo}}
         </p>
       {{else}}
         {{#if identityUser}}
           {{> identityLoginInterstitial "" }}
         {{else}}
           <p class="center">
-            <button class="make-self-admin">Give yourself admin privileges</button>
+            <button class="make-self-admin">{{_ (con txt "idpEnabled.isAdmin.suButton")}}</button>
           </p>
         {{/if}}
       {{/if}}
     {{else}}
       <p>
-        To make an account into an admin account, please sign in:
+        {{_ (con txt "idpEnabled.isNotAdmin.explanation")}}
       </p>
       <p>
         <div class="center">
           {{#if showSignInPanel}}
             {{#with linkingNewIdentity=notLinkingNewIdentity}}
-              {{> loginButtonsDialog label="Sign in" accountsUi=freshAccountsUi}}
+              {{> loginButtonsDialog label=(_ (con txt "idpEnabled.isNotAdmin.signInLabel")) accountsUi=freshAccountsUi}}
             {{/with}}
           {{else}}
-          <button class="sign-in-button">Sign in to become admin</button>
+          <button class="sign-in-button">{{_ (con txt "idpEnabled.isNotAdmin.signInButton")}}</button>
           {{/if}}
         </div>
       </p>
     {{/if}}
 
     <p class="center">
-      {{#linkTo route="setupWizardIdentity" class="rerun-wizard-button"}}Revisit setup wizard{{/linkTo}}
+      {{#linkTo route="setupWizardIdentity" class="rerun-wizard-button"}}{{_ "wizard.setupWizardIntro.revisitWizardLink"}}{{/linkTo}}
     </p>
     {{/if}}
   {{else}}
@@ -225,10 +223,11 @@
     </div>
 
     <button class="setup-sandstorm">
-      Begin Sandstorm Setup
+      {{_ (con txt "setupButton")}}
     </button>
   {{/if}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardIdentity">

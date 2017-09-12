@@ -1586,7 +1586,7 @@
       "adminAccount": "*_Admin account"
     },
     "setupWizardHelpFooter": {
-      "heedHelp": "*_Need help?",
+      "needHelp": "*_Need help?",
       "documentation": "*_Documentation",
       "emailSupport": "*_Email support",
       "systemLog": "*_System Log"
@@ -1597,6 +1597,27 @@
         "downloadButton": "*_Download log"
       },
       "permissionDenied": "*_You cannot view the system log because you are not logged in as an admin and you do not have a setup token."
+    },
+    "setupWizardIntro": {
+      "title": "*_Welcome to Sandstorm!",
+      "revisitWizardLink": "*_Revisit setup wizard",
+      "noIdpEnabled": {
+        "explanation": "*_This Sandstorm server has been set up previously, but due to a change in <code>sandstorm.conf</code>, you'll need to configure identity providers again."
+      },
+      "idpEnabled": {
+        "explanation": "*_This Sandstorm server is ready to roll. You can adjust server settings, including which providers are enabled and how Sandstorm sends email.",
+        "turnUserIntoAdmin": "*_You can also turn an existing user into an administrator.",
+        "isAdmin": {
+          "adminPanelLink": "*_Proceed to admin panel",
+          "suButton": "*_Give yourself admin privileges "
+        },
+        "isNotAdmin": {
+          "explanation": "*_To make an account into an admin account, please sign in:",
+          "signInLabel": "*_Sign in",
+          "signInButton": "*_Sign in to become admin"
+        }
+      },
+      "setupButton": "*_Begin Sandstorm Setup"
     }
   }
 }

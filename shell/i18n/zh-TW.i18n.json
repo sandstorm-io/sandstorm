@@ -1481,143 +1481,143 @@
         "hint": "電郵登入讓您可以不需記憶密碼。相對的，每次您登入的時候都會收到一封記載有認證碼的郵件。您在每一台裝置上只需要登入一次即可。",
         "token": {
           "explanation": "已將登入郵件寄送至 {{.}}，可能需要數分鐘才會送達。",
-          "label": "__Enter your token:",
-          "confirmButton": "__Confirm",
-          "cancelButton": "__Cancel"
+          "label": "輸入認證碼：",
+          "confirmButton": "確定",
+          "cancelButton": "取消"
         },
-        "disabled": "__A server admin must enable email authentication before you can confirm your email."
+        "disabled": "郵件登入功能已被停用。若有需求，請聯絡管理者。"
       },
       "ldapLoginForm": {
         "username": {
-          "label": "__username",
-          "hint": "__This is your LDAP username. It will be the name that you normally use to log in to other internal services at your company."
+          "label": "username",
+          "hint": "This is your LDAP username. It will be the name that you normally use to log in to other internal services at your company."
         },
         "password": {
-          "label": "__password",
-          "hint": "__This is your LDAP password. It will be the password that you normally use to log in to other internal services at your company."
+          "label": "password",
+          "hint": "This is your LDAP password. It will be the password that you normally use to log in to other internal services at your company."
         },
-        "loginButton": "__Log in"
+        "loginButton": "Log in"
       },
       "_loginButtonsSeparator": {
-        "or": "__or"
+        "or": "或"
       }
     },
     "identity": {
       "identityLoginInterstitial": {
-        "title": "__Logging in...",
-        "loading": "__loading...",
-        "logoutButton": "__Go back",
-        "cancelButton": "__Cancel",
-        "create": "__creating account...",
-        "createFailed": "__Failed to create account.",
-        "loginAccount": "__logging in to account...",
-        "loginAccountFailed": "__Account login failed",
-        "loginToken": "__logging back in to account...",
-        "loginTokenFailed": "__Failed to resume session.",
-        "link": "__linking identity to account...",
-        "success": "__Unlinked identity from %s",
-        "explanation": "__You have authenticated as this identity",
-        "warning": "__but that is not a login identity for any account.",
-        "moreIdentities": "__The following identities can log in to your identity's accounts:",
+        "title": "正在登入……",
+        "loading": "正在讀取……",
+        "logoutButton": "返回",
+        "cancelButton": "取消",
+        "create": "正在建立帳號……",
+        "createFailed": "無法建立帳號。",
+        "loginAccount": "正在登入帳號……",
+        "loginAccountFailed": "無法登入帳號。",
+        "loginToken": "正在重新登入帳號……",
+        "loginTokenFailed": "無法回復登入狀況。",
+        "link": "正在連結帳號身份……",
+        "success": "成功從 %s 將身份斷開。",
+        "explanation": "您已經認證了這個身份",
+        "warning": "但這個身份無法拿來登入任何帳號。",
+        "moreIdentities": "以下的身份可以拿來登入您的帳號：",
         "unlinkButton": {
-          "hint": "__Unlink your identity from this account.",
-          "text": "__unlink"
+          "hint": "將您的身份從這個帳號斷開。",
+          "text": "斷開"
         },
         "unlink": {
-          "explanation": "__Are you sure you want to unlink your identity from the account of %s?",
-          "unlinkButton": "__Unlink",
-          "cancelButton": "__Cancel"
+          "explanation": "您是否確定要把您的身份從 %s 的帳號斷開？",
+          "unlinkButton": "斷開",
+          "cancelButton": "取消"
         }
       },
       "identityManagementButtons": {
         "toggleLogin": {
-          "label": "__Allow this identity to log in to your account.",
-          "unlinkButton": "__Unlink this identity"
+          "label": "此身份可以用來登入您的帳號。",
+          "unlinkButton": "斷開此身份"
         }
       },
       "loginIdentitiesOfLinkedAccounts": {
         "show": {
-          "explanation": "__This identity is shared with other accounts. Those accounts have the following login identities:",
-          "unlinkButton": "__unlink",
-          "hideButton": "__hide other accounts"
+          "explanation": "有其他帳號共享此身份，並擁有以下登入身份：",
+          "unlinkButton": "斷開",
+          "hideButton": "隱藏其他帳號"
         },
         "hide": {
-          "explanation": "__This identity is shared with at least one other account.",
-          "showButton": "__show other accounts"
+          "explanation": "有其他帳號共享此身份。",
+          "showButton": "顯示其他帳號"
         }
       },
       "identityCardSignInButton": {
-        "hint": "__sign in as %s",
-        "title": "__Sign in"
+        "hint": "以 %s 登入",
+        "title": "登入"
       }
     },
     "tokenTemplates": {
       "_emailTokenError": {
-        "title": "__Invalid authentication code. If it has been more than 15 minutes, the token has expired, otherwise you may have simply mistyped it."
+        "title": "無效的認證碼。您可能有打錯字，或是已經超過認證碼有效期限的 15 分鐘。"
       },
       "_emailLinkIdentityError": {
-        "title": "__To confirm your email address, you must be logged in as the account that created this link."
+        "title": "若要驗證電郵信箱，您需要用用建立這個連結的帳號登入。"
       },
       "addNewVerifiedEmailPowerboxConfiguration": {
         "email": {
-          "placeholder": "__enter email address",
-          "selectButton": "__Select",
-          "sendButton": "__Send confirmation email"
+          "placeholder": "輸入電郵地址",
+          "selectButton": "選擇",
+          "sendButton": "寄送驗證郵件"
         },
-        "sendingTo": "__Sending to %s",
-        "resetButton": "__Try a different address",
+        "sendingTo": "寄送到 %s",
+        "resetButton": "嘗試別的地址",
         "token": {
-          "placeholder": "__enter your token",
-          "confirmButton": "__Confirm"
+          "placeholder": "輸入您的認證碼",
+          "confirmButton": "確定"
         },
-        "verifying": "__Verifying token..."
+        "verifying": "正在檢驗認證碼……"
       }
     }
   },
   "wizard": {
     "setupWizardLoading": {
-      "loading": "*_Loading..."
+      "loading": "正在讀取……"
     },
     "setupWizardProgressBar": {
-      "identityProviders": "*_Identity providers",
-      "organization": "*_Organization",
-      "email": "*_Email",
-      "preinstalledApps": "*_Pre-installed apps",
-      "adminAccount": "*_Admin account"
+      "identityProviders": "身份提供者,
+      "organization": "組織",
+      "email": "電郵",
+      "preinstalledApps": "預裝應用程式",
+      "adminAccount": "管理者帳號"
     },
     "setupWizardHelpFooter": {
-      "needHelp": "*_Need help?",
-      "documentation": "*_Documentation",
-      "emailSupport": "*_Email support",
-      "systemLog": "*_System Log"
+      "needHelp": "需要幫助嗎？",
+      "documentation": "文件",
+      "emailSupport": "電郵支援",
+      "systemLog": "系統記錄"
     },
     "setupWizardSystemLog": {
       "header": {
-        "label": "*_System log",
-        "downloadButton": "*_Download log"
+        "label": "系統記錄",
+        "downloadButton": "下載記錄"
       },
-      "permissionDenied": "*_You cannot view the system log because you are not logged in as an admin and you do not have a setup token."
+      "permissionDenied": "因為您不是管理者，也沒有設置用 token，所以無法察看系統記錄。"
     },
     "setupWizardIntro": {
-      "title": "*_Welcome to Sandstorm!",
-      "revisitWizardLink": "*_Revisit setup wizard",
+      "title": "歡迎使用沙聚雲！",
+      "revisitWizardLink": "重新開始設定精靈",
       "noIdpEnabled": {
-        "explanation": "*_This Sandstorm server has been set up previously, but due to a change in <code>sandstorm.conf</code>, you'll need to configure identity providers again."
+        "explanation": "這個沙聚雲尚未被設定完成，可是因為 <code>sandstorm.conf</code> 的變更，您需要重新設定身份提供者。"
       },
       "idpEnabled": {
-        "explanation": "*_This Sandstorm server is ready to roll. You can adjust server settings, including which providers are enabled and how Sandstorm sends email.",
-        "turnUserIntoAdmin": "*_You can also turn an existing user into an administrator.",
+        "explanation": "本沙聚雲伺服器已經可以上線。您可以調整伺服器設定，包括使用哪些身份提供者以及沙聚雲如何寄送郵件等。",
+        "turnUserIntoAdmin": "您也可以把現存的使用者提升為管理者。",
         "isAdmin": {
-          "adminPanelLink": "*_Proceed to admin panel",
-          "suButton": "*_Give yourself admin privileges "
+          "adminPanelLink": "前往管理面板",
+          "suButton": "給予自己管理者權限"
         },
         "isNotAdmin": {
-          "explanation": "*_To make an account into an admin account, please sign in:",
-          "signInLabel": "*_Sign in",
-          "signInButton": "*_Sign in to become admin"
+          "explanation": "要建立管理者帳號，請登入：",
+          "signInLabel": "登入",
+          "signInButton": "登入以成為管理者"
         }
       },
-      "setupButton": "*_Begin Sandstorm Setup"
+      "setupButton": "開始設置沙聚雲"
     }
   }
 }

@@ -341,7 +341,8 @@
           "explanation": "You don't have any grains yet.",
           "hasApps": "Select an app and create your first grain.",
           "hasNoApp": "Install an app to create your first grain."
-        }
+        },
+        "moveToTrash": "Move to trash"
       },
       "sandstormGrainTable": {
         "bulkAction": {

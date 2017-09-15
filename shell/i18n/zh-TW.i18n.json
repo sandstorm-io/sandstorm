@@ -341,7 +341,8 @@
           "explanation": "您沒有任何沙粒。",
           "hasApps": "選擇應用程式來創建您的第一粒沙。",
           "hasNoApp": "安裝應用程式來創建您的第一粒沙。"
-        }
+        },
+        "moveToTrash": "移至回收桶"
       },
       "sandstormGrainTable": {
         "bulkAction": {

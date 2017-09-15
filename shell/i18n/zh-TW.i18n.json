@@ -1580,7 +1580,7 @@
       "loading": "正在讀取……"
     },
     "setupWizardProgressBar": {
-      "identityProviders": "身份提供者,
+      "identityProviders": "身份提供者",
       "organization": "組織",
       "email": "電郵",
       "preinstalledApps": "預裝應用程式",
@@ -1619,6 +1619,19 @@
         }
       },
       "setupButton": "開始設置沙聚雲"
+    }
+  },
+  "packages": {
+    "topbar": {
+      "updated": "沙聚雲已有更新 &mdash; 點擊此處重新整理頁面",
+      "apps": "應用程式",
+      "grains": "沙粒",
+      "oasis": "在 Oasis 上使用沙聚雲進行協作：",
+      "createAccount": "建立免費帳號 »",
+      "demoHint": "您的試用帳號資料會被保留。",
+      "selfHostHint": "或是為您自己的團隊安裝沙聚雲（沙聚雲是開源的）:",
+      "signUp": "進行註冊：",
+      "close": "關閉"
     }
   }
 }

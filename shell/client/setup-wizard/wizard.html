@@ -440,12 +440,13 @@
 </template>
 
 <template name="setupWizardPreinstalled">
+{{#let txt="wizard.setupWizardPreinstalled"}}
 <div class="setup-page-content setup-preinstall">
-  <h1 class="setup-page-title">Pre-installed Apps Setup</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
   {{> setupWizardProgressBar currentStep="preinstalled"}}
 
   <p>
-    Please wait while Sandstorm installs the following Productivity Suite apps that are useful for most users. You will be able to configure all pre-installed apps in the Admin Settings panel after setup.
+    {{_ (con txt "explanation")}}
   </p>
   {{#if Template.subscriptionsReady}}
   <div class="productivity-suite" role="grid">
@@ -456,11 +457,11 @@
           <div class="description" role="gridcell">{{shortDescription}}</div>
           <div class="download" role="gridcell">
             {{#if isAppDownloaded}}
-              <i class="download-checkmark"></i>Downloaded
+              <i class="download-checkmark"></i>{{_ (con txt "downloaded")}}
             {{else}}{{#if isAppDownloading}}
               <progress value="{{progressFraction}}"></progress>
             {{else}}{{#if isAppFailed}}
-              <i class="download-x-mark"></i>Failed
+              <i class="download-x-mark"></i>{{_ (con txt "failed")}}
             {{/if}}
             {{/if}}
             {{/if}}
@@ -470,23 +471,24 @@
     </div>
   </div>
   {{else}}
-    <h2>Please wait, loading app index...</h2>
+    <h2>{{_ (con txt "loading")}}</h2>
   {{/if}}
 
   {{#setupWizardButtonRow}}
     <button class="setup-next-button" disabled="{{#unless allowNext}}true{{/unless}}">
-      Next
+      {{_ (con txt "nextButton")}}
     </button>
     {{#if allowSkip}}
     <button class="setup-skip-button">
-      Skip for now
+      {{_ (con txt "skipButton")}}
     </button>
     {{/if}}
     <button class="setup-back-button">
-      Back
+      {{_ (con txt "backButton")}}
     </button>
   {{/setupWizardButtonRow}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardLoginUser">

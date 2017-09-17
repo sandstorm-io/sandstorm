@@ -1696,6 +1696,16 @@
       "skipButton": "Skip for now",
       "testButton": "Test",
       "backButton": "Back"
+    },
+    "setupWizardPreinstalled": {
+      "title": "Pre-installed Apps Setup",
+      "explanation": "Please wait while Sandstorm installs the following Productivity Suite apps that are useful for most users. You will be able to configure all pre-installed apps in the Admin Settings panel after setup.",
+      "downloaded": "Downloaded",
+      "failed": "Failed",
+      "loading": "Please wait, loading app index...",
+      "nextButton": "Next",
+      "skipButton": "Skip for now",
+      "backButton": "Back"
     }
   },
   "packages": {

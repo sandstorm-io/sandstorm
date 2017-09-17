@@ -231,36 +231,37 @@
 </template>
 
 <template name="setupWizardIdentity">
+{{#let txt="wizard.setupWizardIdentity"}}
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Identity providers</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
   {{> setupWizardProgressBar currentStep="identity"}}
 
   <p>
-    To use Sandstorm, you need to create a user account.  Every user account on
-    Sandstorm is backed by an identity provider.  You'll use this identity provider
-    to authenticate as the first administrator of this Sandstorm install.
+    {{_ (con txt "explanation1")}}
   </p>
 
   <p>
-    Configure the identity provider or providers you wish to enable.
+    {{_ (con txt "explanation2")}}
   </p>
 
   {{> adminIdentityProviderTable idpData=idpData }}
 
   {{#setupWizardButtonRow}}
     <button class="setup-next-button" {{nextHtmlDisabled}}>
-      Next
+      {{_ "wizard.setupWizardIdentity.nextButton"}}
     </button>
     <button class="setup-back-button">
-      Back
+      {{_ "wizard.setupWizardIdentity.backButton"}}
     </button>
   {{/setupWizardButtonRow}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardOrganization">
+{{#let txt="wizard.setupWizardOrganization"}}
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Organization settings</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
 
   {{> setupWizardProgressBar currentStep="organization"}}
 
@@ -268,54 +269,54 @@
 
   {{#if errorMessage}}
     {{#focusingErrorBox}}
-      Failed to save changes: {{errorMessage}}
+      {{_ (con txt "error") errorMessage}}
     {{/focusingErrorBox}}
   {{/if}}
 
   <form class="setup-organization-management-form">
-  <h4>Organization membership</h4>
+  <h4>{{_ (con txt "membership.title")}}</h4>
   <div class="org-membership">
     <div class="org-options-group">
-        <label><input type="checkbox" name="email-toggle" checked="{{emailChecked}}" {{emailHtmlDisabled}}>Users authenticated via email address</label>
+        <label><input type="checkbox" name="email-toggle" checked="{{emailChecked}}" {{emailHtmlDisabled}}>{{_ (con txt "membership.emailToggle.label")}}</label>
       {{#if emailDisabled }}
-      <span class="form-subtext">Note: disabled because email login is not configured.</span>
+      <span class="form-subtext">{{_ (con txt "membership.emailToggle.subtext")}}</span>
       {{/if}}
       <div class="form-group">
-        <label>Domain:
+        <label>{{_ (con txt "membership.emailDomain.label")}}
           <input type="text" name="email-domain" value="{{emailDomain}}" {{emailHtmlDisabled}}>
         </label>
         <span class="form-subtext">
-          Users with an email address at this domain will be members of this server's organization.
+          {{_ (con txt "membership.emailDomain.subtext")}}
         </span>
       </div>
     </div>
 
     <div class="org-options-group">
-        <label><input type="checkbox" name="gapps-toggle" checked="{{gappsChecked}}" {{gappsHtmlDisabled}}>Users authenticated via Google Apps for Work</label>
+        <label><input type="checkbox" name="gapps-toggle" checked="{{gappsChecked}}" {{gappsHtmlDisabled}}>{{_ (con txt "membership.gappsToggle.label")}}</label>
       {{#if gappsDisabled }}
-      <span class="form-subtext">Note: disabled because Google login is not configured.</span>
+      <span class="form-subtext">{{_ (con txt "membership.gappsToggle.subtext")}}</span>
       {{/if}}
       <div class="form-group">
-        <label>Domain:
+        <label>{{_ (con txt "membership.gappsDomain.label")}}
           <input type="text" name="gapps-domain" value="{{gappsDomain}}" {{gappsHtmlDisabled}}>
         </label>
         <span class="form-subtext">
-          Users with a Google Apps for Work account under this domain will be members of this server's organization.
+          {{_ (con txt "membership.gappsDomain.subtext")}}
         </span>
       </div>
     </div>
 
     <div class="org-options-group">
-        <label><input type="checkbox" name="ldap-toggle" checked="{{ldapChecked}}" {{ldapHtmlDisabled}}>Users authenticated via LDAP</label>
+        <label><input type="checkbox" name="ldap-toggle" checked="{{ldapChecked}}" {{ldapHtmlDisabled}}>{{_ (con txt "membership.ldapToggle.label")}}</label>
       {{#if ldapDisabled }}
-      <span class="form-subtext">Note: disabled because LDAP login is not configured.</span>
+      <span class="form-subtext">{{_ (con txt "membership.ldapToggle.subtext")}}</span>
       {{/if}}
     </div>
 
     <div class="org-options-group">
-        <label><input type="checkbox" name="saml-toggle" checked="{{samlChecked}}" {{samlHtmlDisabled}}>Users authenticated via SAML</label>
+        <label><input type="checkbox" name="saml-toggle" checked="{{samlChecked}}" {{samlHtmlDisabled}}>{{_ (con txt "membership.samlToggle.label")}}</label>
       {{#if samlDisabled }}
-      <span class="form-subtext">Note: disabled because SAML login is not configured.</span>
+      <span class="form-subtext">{{_ (con txt "membership.samlToggle.subtext")}}</span>
       {{/if}}
     </div>
   </div>
@@ -324,21 +325,19 @@
   <div class="org-settings">
     <div class="org-options-group">
       <label>
-        <input type="checkbox" name="disallow-guests" checked={{disallowGuests}}>Disallow collaboration with users outside the organization.
+        <input type="checkbox" name="disallow-guests" checked={{disallowGuests}}>{{_ (con txt "settings.disallowGuests.label")}}
       </label>
       <span class="form-subtext">
-        Users will be required to log in as a member of your organization to view sharing links. Guest access will be disabled.
+        {{_ (con txt "settings.disallowGuests.subtext")}}
       </span>
     </div>
 
     <div class="org-options-group">
       <label>
-        <input type="checkbox" name="share-contacts" checked="{{shareContacts}}">Make all organization users visible to each other
+        <input type="checkbox" name="share-contacts" checked="{{shareContacts}}">{{_ (con txt "settings.shareContacts.label")}}
       </label>
       <span class="form-subtext">
-        This setting automatically adds users within the organization to each
-        other's contact list so that they can share grains with each other.  Disable
-        this if you have some users whose identity should stay hidden from other users.
+        {{_ (con txt "settings.shareContacts.subtext")}}
       </span>
     </div>
   </div>
@@ -346,13 +345,14 @@
   </form>
   {{#setupWizardButtonRow}}
     <button class="setup-next-button">
-      Save and continue
+      {{_ (con txt "saveButton")}}
     </button>
     <button class="setup-back-button">
-      Back
+      {{_ (con txt "backButton")}}
     </button>
   {{/setupWizardButtonRow}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardEmailConfig">

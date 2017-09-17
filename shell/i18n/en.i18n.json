@@ -1620,6 +1620,57 @@
         }
       },
       "setupButton": "Begin Sandstorm Setup"
+    },
+    "setupWizardIdentity": {
+      "title": "Identity providers",
+      "explanation1": "To use Sandstorm, you need to create a user account.  Every user account on Sandstorm is backed by an identity provider.  You'll use this identity provider to authenticate as the first administrator of this Sandstorm install.",
+      "explanation2": "Configure the identity provider or providers you wish to enable.",
+      "nextButton": "Next",
+      "backButton": "Back"
+    },
+    "setupWizardOrganization": {
+      "title": "Organization settings",
+      "error": "Failed to save change: %s",
+      "membership": {
+        "title": "Organization membership",
+        "emailToggle": {
+          "label": "sers authenticated via email address",
+          "subtext": "Note: disabled because email login is not configured."
+        },
+        "emailDomain": {
+          "label": "Domain:",
+          "subtext": "Users with an email address at this domain will be members of this server's organization."
+        },
+        "gappsToggle": {
+          "label": "Users authenticated via Google Apps for Work",
+          "subtext": "Note: disabled because Google login is not configured."
+        },
+        "gappsDomain": {
+          "label": "Domain:",
+          "subtext": "Users with a Google Apps for Work account under this domain will be members of this server's organization."
+        },
+        "ldapToggle": {
+          "label": "Users authenticated via LDAP",
+          "subtext": "Note: disabled because LDAP login is not configured."
+        },
+        "samlToggle": {
+          "label": "Users authenticated via SAML",
+          "subtext": "Note: disabled because SAML login is not configured."
+        }
+      },
+      "settings": {
+        "title": "Organization settings",
+        "disallowGuests": {
+          "label": "Disallow collaboration with users outside the organization.",
+          "subtext": "Users will be required to log in as a member of your organization to view sharing links. Guest access will be disabled."
+        },
+        "shareContacts": {
+          "label": "Make all organization users visible to each other",
+          "subtext": "This setting automatically adds users within the organization to each other's contact list so that they can share grains with each other.  Disable this if you have some users whose identity should stay hidden from other users."
+        }
+      },
+      "saveButton": "Save and continue",
+      "backButton": "Back"
     }
   },
   "packages": {

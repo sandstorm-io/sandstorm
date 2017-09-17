@@ -248,10 +248,10 @@
 
   {{#setupWizardButtonRow}}
     <button class="setup-next-button" {{nextHtmlDisabled}}>
-      {{_ "wizard.setupWizardIdentity.nextButton"}}
+      {{_ (con txt "nextButton")}}
     </button>
     <button class="setup-back-button">
-      {{_ "wizard.setupWizardIdentity.backButton"}}
+      {{_ (con txt "backButton")}}
     </button>
   {{/setupWizardButtonRow}}
 </div>
@@ -321,7 +321,7 @@
     </div>
   </div>
 
-  <h4>Organization settings</h4>
+  <h4>{{_ (con txt "settings.title")}}</h4>
   <div class="org-settings">
     <div class="org-options-group">
       <label>
@@ -356,26 +356,22 @@
 </template>
 
 <template name="setupWizardEmailConfig">
+{{#let txt="wizard.setupWizardEmailConfig"}}
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Email delivery</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
   {{> setupWizardProgressBar currentStep="email"}}
 
   <p>
-    Sandstorm needs a way to send email.  You can skip this step (unless you're using email login),
-    but email-related features will be unavailable until you configure email in the future.
+    {{_ (con txt "explanation")}}
   </p>
 
   <p>
-    <strong>How Sandstorm uses email:</strong>
-    Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too.
-    Every app receives a unique email address, so Sandstorm needs to send email from a variety of "From:" addresses.
-    Therefore, Gmail SMTP won't work, but there are other free services.
-    See more info in <a target="_blank" href="https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp">the docs</a>.
+    {{{_ (con txt "moreDetail")}}}
   </p>
 
   {{#if errorMessage}}
     {{#focusingErrorBox}}
-      Failed to save changes: {{errorMessage}}
+      {{_ (con txt "error") errorMessage}}
     {{/focusingErrorBox}}
   {{/if}}
 
@@ -383,39 +379,38 @@
     <div class="form-group">
       <div class="host-port">
         <label class="host-box">
-          SMTP host
+          {{_ (con txt "hostPort.host")}}
           <input class="hostname" type="text" name="smtp-hostname" value="{{smtpHostname}}" required />
         </label>
         <label class="port-box">
-          Port
+          {{_ (con txt "hostPort.port")}}
           <input class="port" type="number" name="smtp-port" value="{{smtpPort}}" required />
         </label>
       </div>
-      <div class="form-subtext">Use port 25 for SMTP (unencrypted or with StartTLS), port 465 for TLS-encrypted SMTPS.</div>
+      <div class="form-subtext">{{_ (con txt "hostPort.subtext")}}</div>
     </div>
 
     <div class="form-group">
       <label>
-        Username (optional)
+        {{_ (con txt "username.label")}}
         <input class="username" type="text" name="smtp-username" value="{{smtpUsername}}" />
       </label>
     </div>
 
     <div class="form-group">
       <label>
-        Password (optional)
+        {{_ (con txt "password.label")}}
         <input class="password" type="password" name="smtp-password" value="{{smtpPassword}}" />
       </label>
     </div>
 
     <div class="form-group">
       <label>
-        Sandstorm server's own email address
+        {{_ (con txt "email.label")}}
         <input class="from-address" type="email" name="smtp-return-address" value="{{smtpReturnAddress}}" required />
       </label>
       <div class="form-subtext">
-        Sandstorm will send login emails, notifications of granted access requests, and other emails from this address.
-        It will also use this address in the SMTP envelope.
+        {{_ (con txt "email.subtext")}}
       </div>
     </div>
   </form>
@@ -428,19 +423,20 @@
 
   {{#setupWizardButtonRow}}
     <button class="setup-next-button" {{nextHtmlDisabled}}>
-      Save and continue
+      {{_ (con txt "saveButton")}}
     </button>
     <button class="setup-skip-email" {{skipHtmlDisabled}}>
-      Skip for now
+      {{_ (con txt "skipButton")}}
     </button>
     <button class="setup-test-email-button" {{testHtmlDisabled}}>
-      Test
+      {{_ (con txt "testButton")}}
     </button>
     <button class="setup-back-button">
-      Back
+      {{_ (con txt "backButton")}}
     </button>
   {{/setupWizardButtonRow}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardPreinstalled">

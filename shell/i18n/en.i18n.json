@@ -1671,6 +1671,31 @@
       },
       "saveButton": "Save and continue",
       "backButton": "Back"
+    },
+    "setupWizardEmailConfig": {
+      "title": "Email delivery",
+      "explanation": "Sandstorm needs a way to send email.  You can skip this step (unless you're using email login), but email-related features will be unavailable until you configure email in the future.",
+      "moreDetail": "<strong>How Sandstorm uses email:</strong> Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too. Every app receives a unique email address, so Sandstorm needs to send email from a variety of \"From:\" addresses. Therefore, Gmail SMTP won't work, but there are other free services. See more info in <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">the docs</a>.",
+      "error": "Failed to save changes: %s",
+      "hostPort": {
+        "host": "SMTP host",
+        "port": "Port",
+        "subtext": "Use port 25 for SMTP (unencrypted or with StartTLS), port 465 for TLS-encrypted SMTPS."
+      },
+      "username": {
+        "label": "Username (optional)"
+      },
+      "password": {
+        "label": "Password (optional)"
+      },
+      "email": {
+        "label": "Sandstorm server's own email address",
+        "subtext": "Sandstorm will send login emails, notifications of granted access requests, and other emails from this address. It will also use this address in the SMTP envelope."
+      },
+      "saveButton": "Save and continue",
+      "skipButton": "Skip for now",
+      "testButton": "Test",
+      "backButton": "Back"
     }
   },
   "packages": {

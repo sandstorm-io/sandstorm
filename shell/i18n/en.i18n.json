@@ -1719,6 +1719,15 @@
       "selfHostHint": "Or, install Sandstorm for your team (it's open source):",
       "signUp": "Sign up within:",
       "close": "Close"
+    },
+    "powerbox": {
+      "title": "Powerbox request",
+      "inputToken": "Please input an api token:",
+      "importToken": "Import token",
+      "selected": "Selected:",
+      "selectOne": "Select one:",
+      "noGrain": "No grains can provide the requested interface.",
+      "loading": "Loading..."
     }
   }
 }

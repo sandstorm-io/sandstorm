@@ -492,8 +492,9 @@
 </template>
 
 <template name="setupWizardLoginUser">
+{{#let txt="wizard.setupWizardLoginUser"}}
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Create admin account</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
   {{> setupWizardProgressBar currentStep="user"}}
 
   {{#if errorMessage}}
@@ -514,7 +515,7 @@
   {{#if currentUser}}
     {{#if currentUserFirstLogin}}
       <div class="center">
-        <h2>Confirm your profile</h2>
+        <h2>{{_ (con txt "firstLogin.title")}}</h2>
         <div class="single-identity-editor">
           {{#with accountProfileEditorData}}
             {{> _accountProfileEditor .}}
@@ -527,31 +528,30 @@
       {{/unless}}
     {{else}}
       {{#if currentUserIsAdmin}}
-        <p>Great! Your account has admin privileges.</p>
+        <p>{{_ (con txt "isAdmin")}}</p>
       {{else}}
         {{#if serverHasAdmin}}
           <p>
-            This Sandstorm server already has an admin user, but if you want, you can also make
-            yourself an admin.
+            {{_ (con txt "hasAdmin.explanation")}}
           </p>
           <div class="center">
-            <button class="make-self-admin">Become an admin</button>
+            <button class="make-self-admin">{{_ (con txt "hasAdmin.adminButton")}}</button>
           </div>
         {{else}}
-          <p>Making you an admin on this server...</p>
+          <p>{{_ (con txt "makeYouAnAdmin")}}</p>
           {{redeemSessionForAdmin}}
         {{/if}}
       {{/if}}
     {{/if}}
   {{else}}
-    <p>You can now create an admin account on this Sandstorm server.</p>
+    <p>{{_ (con txt "loggedOut.explanation")}}</p>
     <div class="center">
-      <p>Log in to create your admin account</p>
+      <p>{{_ (con txt "loggedOut.description")}}</p>
 
       {{!-- The loginButtonsDialog apparently requires this in the parent data context, which seems
             wrong.  It should probably be passed in explicitly instead.  --}}
       {{#with linkingNewIdentity=notLinkingNewIdentity}}
-        {{> loginButtonsDialog label="Create account" accountsUi=freshAccountsUi}}
+        {{> loginButtonsDialog label=(_ (con txt "loggedOut.dialogLabel")) accountsUi=freshAccountsUi}}
       {{/with}}
     </div>
   {{/if}}
@@ -559,79 +559,84 @@
 
   {{#setupWizardButtonRow}}
     <button class="setup-next-button" {{nextHtmlDisabled}}>
-      Finish
+      {{_ (con txt "finishButton")}}
     </button>
     <button class="setup-back-button">
-      Back
+      {{_ (con txt "backButton")}}
     </button>
   {{/setupWizardButtonRow}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardSuccess">
+{{#let txt="wizard.setupWizardSuccess"}}
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Ready to roll!</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
 
   {{> setupWizardProgressBar currentStep="success"}}
 
-  <p>Your Sandstorm server is now ready to use.</p>
-  <p>What would you like to do next?</p>
+  <p>{{_ (con txt "serverIsReady")}}</p>
+  <p>{{_ (con txt "whatsNext")}}</p>
 
   <div class="setup-next-steps">
     {{#unless someOrgMembershipEnabled}}
       {{#linkTo route="newAdminUserInvite" class="setup-button-secondary"}}
-        Add users
+        {{_ "wizard.setupWizardSuccess.addUsersLink"}}
       {{/linkTo}}
     {{/unless}}
     {{#linkTo route="newAdminRoot" class="setup-button-secondary"}}
-      Edit other settings
+      {{_ "wizard.setupWizardSuccess.editSettingsLink"}}
     {{/linkTo}}
     {{#linkTo route="apps" class="setup-button-primary"}}
-      Start using Sandstorm
+      {{_ "wizard.setupWizardSuccess.sandstormLink"}}
     {{/linkTo}}
   </div>
 
   {{#setupWizardButtonRow}}
     <button class="setup-back-button">
-      Back
+      {{_ (con txt "backButton")}}
     </button>
   {{/setupWizardButtonRow}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardVerifyToken">
+{{#let txt="wizard.setupWizardVerifyToken"}}
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Verifying token...</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
   {{#if rejected}}
   <p>
-    Sorry, it looks like your setup token has expired.
+    {{_ (con txt "explanation")}}
   </p>
 
   <p>
-    Generate a new one now from the command line by running <code>sandstorm admin-token</code> to
-    access the setup wizard.
+    {{{_ (con txt "howToFix")}}}
   </p>
   {{/if}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardTokenExpired">
+{{#let txt="wizard.setupWizardTokenExpired"}}
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Setup token required</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
   {{#if hasUsers}}
   <p>
-  This server is already set up, so we recommend administering it via the main
-  {{#linkTo route="newAdminRoot"}}administration panel{{/linkTo}}.
+  {{_ (con txt "alreadySetup")}}
+  {{#linkTo route="newAdminRoot"}}{{_ "wizard.setupWizardTokenExpired.adminRootLink"}}{{/linkTo}}.
   </p>
   {{/if}}
 
   <p>
-    To use this server's setup page, you need a valid setup token.
+    {{_ (con txt "explanation")}}
   </p>
 
   <p>
-    Generate a new one now from the command line by running <code>sandstorm admin-token</code> and
-    following the link it outputs.
+    {{{_ (con txt "howToFix")}}}
   </p>
 </div>
+{{/let}}
 </template>

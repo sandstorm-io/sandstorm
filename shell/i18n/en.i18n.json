@@ -1706,6 +1706,46 @@
       "nextButton": "Next",
       "skipButton": "Skip for now",
       "backButton": "Back"
+    },
+    "setupWizardLoginUser": {
+      "title": "Create admin account",
+      "firstLogin": {
+        "title": "Confirm your profile"
+      },
+      "isAdmin": "Great! Your account has admin privileges.",
+      "hasAdmin": {
+        "explanation": "This Sandstorm server already has an admin user, but if you want, you can also make yourself an admin.",
+        "adminButton": "Become an admin"
+      },
+      "makeYouAnAdmin": "Making you an admin on this server...",
+      "loggedOut": {
+        "explanation": "You can now create an admin account on this Sandstorm server.",
+        "description": "Log in to create your admin account",
+        "dialogLabel": "Create account"
+      },
+      "finishButton": "Finish",
+      "backButton": "Back"
+    },
+    "setupWizardSuccess": {
+      "title": "Ready to roll!",
+      "serverIsReady": "Your Sandstorm server is now ready to use.",
+      "whatsNext": "What would you like to do next?",
+      "addUsersLink": "Add users",
+      "editSettingsLink": "Edit other settings",
+      "sandstormLink": "Start using Sandstorm",
+      "backButton": "Back"
+    },
+    "setupWizardVerifyToken": {
+      "title": "Verifying token...",
+      "explanation": "Sorry, it looks like your setup token has expired.",
+      "howToFix": "Generate a new one now from the command line by running <code>sandstorm admin-token</code> to access the setup wizard."
+    },
+    "setupWizardTokenExpired": {
+      "title": "Setup token required",
+      "alreadySetup": "This server is already set up, so we recommend administering it via the main",
+      "adminRootLink": "administration panel",
+      "explanation": "To use this server's setup page, you need a valid setup token.",
+      "howToFix": "Generate a new one now from the command line by running <code>sandstorm admin-token</code> and following the link it outputs."
     }
   },
   "packages": {

@@ -18,11 +18,54 @@ var url = require('url');
 var forge = require('./programs/server/npm/node_modules/node-forge');
 
 function sandstormMain() {
-  global.SANDSTORM_SMTP_LISTEN_HANDLE = { fd: 3 };
-  monkeypatchHttpAndHttps();
+  if (process.env.EXPERIMENTAL_GATEWAY) {
+    global.SANDSTORM_SMTP_LISTEN_HANDLE = { fd: 5 };
+    global.SANDSTORM_BACKEND_HANDLE = { capabilityStreamFd: 4 };
+    monkeypatchHttpForGateway();
+  } else {
+    global.SANDSTORM_SMTP_LISTEN_HANDLE = { fd: 3 };
+    monkeypatchHttpAndHttps();
+  }
 
   // Delegate to Meteor.
   require("./main.js");
+}
+
+function monkeypatchHttpForGateway() {
+  // Monkey-patch the HTTP server module to receive connections over a unix socket on FD 3 instead
+  // of listening the usual way.
+
+  // Node.js has no public API for receiving file descriptors via SCM_RIGHTS on a unix pipe.
+  // However, it does have a *private* API for this, which it uses to implement child_process.
+  // We use the private API here. This could break when we update Node. If so, that's our fault.
+  // But we pin our Node version, so this should be easy to control. Also, this interface hasn't
+  // changed in forever.
+  var Pipe = process.binding('pipe_wrap').Pipe;
+
+  var oldListen = http.Server.prototype.listen;
+  var alreadyListened = false;
+  http.Server.prototype.listen = function (port, host, cb) {
+    if (port === parseInt(process.env.PORT)) {
+      // Attempt to listen on the HTTP port. Override.
+      if (alreadyListened) {
+        throw new Error("can only listen on primary HTTP port once");
+      }
+      alreadyListened = true;
+
+      var pipe = new Pipe(true);
+      var httpServer = this;
+      pipe.open(3);
+      pipe.onread = function (size, buf, handle) {
+        if (handle) {
+          httpServer.emit("connection", new net.Socket({ handle: handle }));
+        }
+      };
+      pipe.readStart();
+    } else {
+      // Don't override.
+      return oldListen.call(this, port, host, cb);
+    }
+  }
 }
 
 function monkeypatchHttpAndHttps() {

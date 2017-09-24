@@ -65,6 +65,7 @@
 #include "spk.h"
 #include "backend.h"
 #include "backup.h"
+#include "gateway.h"
 
 namespace sandstorm {
 
@@ -1175,6 +1176,7 @@ private:
     bool isTesting = false;
     bool allowDevAccounts = false;
     bool hideTroubleshooting = false;
+    bool useExperimentalGateway = false;
     uint smtpListenPort = 30025;
   };
 
@@ -1651,6 +1653,8 @@ private:
         } else {
           KJ_FAIL_REQUIRE("invalid config value SMTP_LISTEN_PORT", value);
         }
+      } else if (key == "EXPERIMENTAL_GATEWAY") {
+        config.useExperimentalGateway = value == "true" || value == "yes";
       }
     }
 
@@ -1677,22 +1681,43 @@ private:
     // frontend. Currently this is only TCP listen ports.
 
   public:
+    enum LinkId {
+      SHELL_HTTP,
+      // Connection over which shell accepts HTTP connections (from the gateway).
+
+      SHELL_BACKEND,
+      // Connection over which shell connects to backend.
+
+      GATEWAY_BACKEND,
+      // Connection over which gateway connects to backend.
+    };
+
     FdBundle(const Config& config,
              std::map<uint, kj::AutoCloseFd> inherited = std::map<uint, kj::AutoCloseFd>())
-        // STDERR + 1 (fd after STDERR) + HTTP ports + SMTP port
-        : minFd(STDERR_FILENO + 1 + config.ports.size() + 1) {
+        : usingGateway(config.useExperimentalGateway), smtpListenPort(config.smtpListenPort),
+          // when not in gateway: STDERR + 1 (fd after STDERR) + HTTP ports + SMTP port
+          // when in gateway: STDERR + 1 (fd after STDERR) + SHELL_HTTP + SHELL_BACKEND + SMTP port
+          minFd(usingGateway ? STDERR_FILENO + 4 : STDERR_FILENO + 1 + config.ports.size() + 1) {
       int targetFd = STDERR_FILENO + 1;
       openPort(config, config.smtpListenPort, targetFd++, inherited);
       for (auto& port: config.ports) {
         openPort(config, port, targetFd++, inherited);
       }
-      KJ_ASSERT(minFd == targetFd);
+
+      if (usingGateway) {
+        links.insert(std::make_pair(SHELL_HTTP, newLink()));
+        links.insert(std::make_pair(SHELL_BACKEND, newLink()));
+        links.insert(std::make_pair(GATEWAY_BACKEND, newLink()));
+      } else {
+        KJ_ASSERT(minFd == targetFd);
+      }
     }
 
     FdBundle(decltype(nullptr)): minFd(0) {};
 
     void closeAll() {
       ports.clear();
+      links.clear();
     }
 
     kj::Array<kj::String> prepareForContinue() {
@@ -1705,9 +1730,42 @@ private:
     }
 
     void prepareInheritedFds() {
-      for (auto& port: ports) {
-        KJ_SYSCALL(dup2(port.second.fd, port.second.targetFd));
+      if (usingGateway) {
+        KJ_SYSCALL(dup2(links[SHELL_HTTP].server, STDERR_FILENO + 1));
+        KJ_SYSCALL(dup2(links[SHELL_BACKEND].client, STDERR_FILENO + 2));
+        KJ_SYSCALL(dup2(ports[smtpListenPort].fd, STDERR_FILENO + 3));
+      } else {
+        for (auto& port: ports) {
+          KJ_SYSCALL(dup2(port.second.fd, port.second.targetFd));
+        }
       }
+    }
+
+    kj::Own<kj::ConnectionReceiver> consume(uint port, kj::LowLevelAsyncIoProvider& provider) {
+      auto iter = ports.find(port);
+      KJ_REQUIRE(iter != ports.end());
+      auto result = provider.wrapListenSocketFd(kj::mv(iter->second.fd),
+          kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC);
+      ports.erase(iter);
+      return result;
+    }
+
+    kj::Own<kj::AsyncCapabilityStream> consumeClient(
+        LinkId id, kj::LowLevelAsyncIoProvider& provider) {
+      auto iter = links.find(id);
+      KJ_REQUIRE(iter != links.end());
+      return provider.wrapUnixSocketFd(kj::mv(iter->second.client),
+          kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC |
+          kj::LowLevelAsyncIoProvider::ALREADY_NONBLOCK);
+    }
+
+    kj::Own<kj::AsyncCapabilityStream> consumeServer(
+        LinkId id, kj::LowLevelAsyncIoProvider& provider) {
+      auto iter = links.find(id);
+      KJ_REQUIRE(iter != links.end());
+      return provider.wrapUnixSocketFd(kj::mv(iter->second.server),
+          kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC |
+          kj::LowLevelAsyncIoProvider::ALREADY_NONBLOCK);
     }
 
   private:
@@ -1716,8 +1774,17 @@ private:
       int targetFd;  // FD number to use when passing to Node.
     };
 
+    bool usingGateway;
+    uint smtpListenPort;
     int minFd;
     std::map<uint, FdInfo> ports;
+
+    struct LinkPair {
+      kj::AutoCloseFd client;
+      kj::AutoCloseFd server;
+    };
+
+    std::map<LinkId, LinkPair> links;
 
     void openPort(const Config& config, uint port, int targetFd,
                   std::map<uint, kj::AutoCloseFd>& inherited) {
@@ -1786,6 +1853,15 @@ private:
         KJ_ASSERT(fd.get() >= minFd);
       }
       return kj::mv(fd);
+    }
+
+    LinkPair newLink() {
+      int fds[2];
+      KJ_SYSCALL(socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0, fds));
+      return LinkPair {
+        ensureMinFd(kj::AutoCloseFd(fds[0])),
+        ensureMinFd(kj::AutoCloseFd(fds[1]))
+      };
     }
   };
 
@@ -1971,6 +2047,13 @@ private:
     pid_t nodePid = startNode(config, fdBundle);
     int64_t nodeStartTime = getTime();
 
+    pid_t gatewayPid = -1;
+    if (config.useExperimentalGateway) {
+      context.warning("** Starting Gateway...");
+      gatewayPid = startGateway(config, fdBundle);
+    }
+    int64_t gatewayStartTime = getTime();
+
     for (;;) {
       // Wait for a signal -- any signal.
       struct signalfd_siginfo siginfo;
@@ -1983,6 +2066,7 @@ private:
 
         // Reap zombies until there are no more.
         bool backendDied = false;
+        bool gatewayDied = false;
         bool mongoDied = false;
         bool nodeDied = false;
         for (;;) {
@@ -1993,6 +2077,8 @@ private:
             break;
           } else if (deadPid == backendPid) {
             backendDied = true;
+          } else if (deadPid == gatewayPid) {
+            gatewayDied = true;
           } else if (deadPid == mongoPid) {
             mongoDied = true;
           } else if (deadPid == nodePid) {
@@ -2009,6 +2095,11 @@ private:
           maybeWaitAfterChildDeath("Back-end", backendStartTime);
           backendPid = startBackend(config, fdBundle);
           backendStartTime = getTime();
+        }
+        if (gatewayDied) {
+          maybeWaitAfterChildDeath("Gateway", gatewayStartTime);
+          gatewayPid = startGateway(config, fdBundle);
+          gatewayStartTime = getTime();
         }
         if (mongoDied) {
           maybeWaitAfterChildDeath("MongoDB", mongoStartTime);
@@ -2209,33 +2300,42 @@ private:
 
     Subprocess process([&]() -> int {
       inPipe = nullptr;
-      fdBundle.closeAll();
 
       // Mainly to cause Cap'n Proto to log exceptions being returned over RPC so we can see the
       // stack traces.
       kj::_::Debug::setLogLevel(kj::LogSeverity::INFO);
 
-      kj::StringPtr socketPath = Backend::SOCKET_PATH;
-      sandstorm::recursivelyCreateParent(socketPath);
-      unlink(socketPath.cStr());
-
       auto io = kj::setupAsyncIo();
       auto& network = io.provider->getNetwork();
-      auto listener = network.parseAddress(kj::str("unix:", socketPath))
-          .wait(io.waitScope)->listen();
 
-      if (runningAsRoot) {
-        // Make socket available to server user.
-        KJ_SYSCALL(chmod(socketPath.cStr(), 0770));
-        KJ_SYSCALL(chown(socketPath.cStr(), 0, config.uids.gid));
+      kj::Own<kj::ConnectionReceiver> listener;
+      if (config.useExperimentalGateway) {
+        auto capStream = fdBundle.consumeServer(FdBundle::SHELL_BACKEND, *io.lowLevelProvider);
+        listener = kj::heap<kj::CapabilityStreamConnectionReceiver>(*capStream)
+            .attach(kj::mv(capStream));
+      } else {
+        kj::StringPtr socketPath = Backend::SOCKET_PATH;
+        sandstorm::recursivelyCreateParent(socketPath);
+        unlink(socketPath.cStr());
 
-        // Also make the socket parent directory available to user.
-        KJ_IF_MAYBE(pos, socketPath.findLast('/')) {
-          kj::String parent = kj::heapString(socketPath.slice(0, *pos));
-          KJ_SYSCALL(chmod(parent.cStr(), 0770));
-          KJ_SYSCALL(chown(parent.cStr(), 0, config.uids.gid));
+        listener = network.parseAddress(kj::str("unix:", socketPath))
+            .wait(io.waitScope)->listen();
+
+        if (runningAsRoot) {
+          // Make socket available to server user.
+          KJ_SYSCALL(chmod(socketPath.cStr(), 0770));
+          KJ_SYSCALL(chown(socketPath.cStr(), 0, config.uids.gid));
+
+          // Also make the socket parent directory available to user.
+          KJ_IF_MAYBE(pos, socketPath.findLast('/')) {
+            kj::String parent = kj::heapString(socketPath.slice(0, *pos));
+            KJ_SYSCALL(chmod(parent.cStr(), 0770));
+            KJ_SYSCALL(chown(parent.cStr(), 0, config.uids.gid));
+          }
         }
       }
+
+      fdBundle.closeAll();
 
       // If we're not running as root, we have to use user namespaces. Otherwise, dynamically
       // check if they're available. If not, we'll need to pass superuser privileges on to the
@@ -2245,7 +2345,7 @@ private:
       if (avoidUserns) sandboxUid = config.uids.uid;
 
       dropPrivs(config.uids, avoidUserns);
-      clearSignalMask();
+      clearSignalMask();  // TODO(soon): Is it bad to do this after setupAsyncIo()?
 
       auto paf = kj::newPromiseAndFulfiller<Backend::Client>();
       TwoPartyServerWithClientBootstrap server(kj::mv(paf.promise));
@@ -2273,6 +2373,63 @@ private:
     return result;
   }
 
+  class EntropySourceImpl: public kj::EntropySource {
+  public:
+    void generate(kj::ArrayPtr<byte> buffer) override {
+      randombytes(buffer.begin(), buffer.size());
+    }
+  };
+
+  pid_t startGateway(const Config& config, FdBundle& fdBundle) {
+    Subprocess process([&]() -> int {
+      // Mainly to cause Cap'n Proto to log exceptions being returned over RPC so we can see the
+      // stack traces.
+      kj::_::Debug::setLogLevel(kj::LogSeverity::INFO);
+
+      dropPrivs(config.uids);
+      clearSignalMask();
+
+      auto io = kj::setupAsyncIo();
+      kj::HttpHeaderTable::Builder headerTableBuilder;
+
+      auto backendConn = fdBundle.consumeClient(FdBundle::GATEWAY_BACKEND, *io.lowLevelProvider);
+      capnp::TwoPartyClient backendClient(*backendConn);
+      auto router = backendClient.bootstrap().castAs<GatewayRouter>();
+
+      auto shellHttpConn = fdBundle.consumeClient(FdBundle::SHELL_HTTP, *io.lowLevelProvider);
+      kj::CapabilityStreamNetworkAddress shellHttpAddr(*io.provider, *shellHttpConn);
+      EntropySourceImpl entropySource;
+      kj::HttpClientSettings clientSettings;
+      clientSettings.entropySource = entropySource;
+      auto shellHttp = kj::newHttpClient(io.provider->getTimer(),
+          headerTableBuilder.getFutureTable(), shellHttpAddr, clientSettings);
+
+      GatewayService service(io.provider->getTimer(), *shellHttp, kj::mv(router),
+                             headerTableBuilder, config.rootUrl, config.wildcardHost);
+
+      auto headerTable = headerTableBuilder.build();
+      kj::HttpServer server(io.provider->getTimer(), *headerTable, service);
+
+      // TODO(now): Handle HTTPS port specially.
+      kj::Promise<void> promises = kj::NEVER_DONE;
+      for (auto port: config.ports) {
+        auto listener = fdBundle.consume(port, *io.lowLevelProvider);
+        auto promise = server.listenHttp(*listener);
+        promises = promises.exclusiveJoin(promise.attach(kj::mv(listener)));
+      }
+
+      // Close anything we didn't consume.
+      fdBundle.closeAll();
+
+      promises.wait(io.waitScope);
+      KJ_UNREACHABLE;
+    });
+
+    pid_t result = process.getPid();
+    process.detach();
+    return result;
+  }
+
   pid_t startNode(const Config& config, FdBundle& fdBundle) {
     Subprocess process([&]() -> int {
       fdBundle.prepareInheritedFds();
@@ -2293,6 +2450,10 @@ private:
             kj::str("mongodb://", authPrefix, "127.0.0.1:", config.mongoPort,
                     "/local", authSuffix).cStr(),
             true));
+      }
+
+      if (config.useExperimentalGateway) {
+        KJ_SYSCALL(setenv("EXPERIMENTAL_GATEWAY", "true", true));
       }
 
       KJ_SYSCALL(setenv("PORT", kj::str(config.ports[0]).cStr(), true));

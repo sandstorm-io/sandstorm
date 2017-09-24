@@ -24,12 +24,18 @@ using Supervisor = import "supervisor.capnp".Supervisor;
 using SandstormCore = import "supervisor.capnp".SandstormCore;
 using GrainInfo = import "grain.capnp".GrainInfo;
 
+using WebSession = import "web-session.capnp".WebSession;
+using ApiSession = import "api-session.capnp".ApiSession;
+
 interface Backend {
   # Interface that thet Sandstorm front-end uses to talk to the "back end", i.e. the container
   # scheduler. While Sandstorm is running, the backend interface is exported as a socket at
   # "/var/sandstorm/socket/backend".
 
   const socketPath :Text = "/var/sandstorm/socket/backend";
+  # TODO(cleanup): When the experimental gateway is enabled, we also use a new approach to
+  #   connecting components using socketpairs instead of paths on-disk, making this constant
+  #   obsolete. Delete it once the gateway is enabled everywhere.
 
   ping @14 ();
   # Just returns. Used to verify that the connection to the back-end is alive and well.
@@ -106,9 +112,85 @@ interface Backend {
   # it is recommended that this not be called often.
 }
 
+interface GatewayRouter {
+  # Interface which the gateway (C++ code which directly handles HTTP and other traffic) uses to
+  # call into Sandstorm's business logic (Node.js process) in order to figure out how to route
+  # things.
+  #
+  # (The Gateway actually conencts to the backend first, which gives it a GatewayRouter as the
+  # bootstrap capability. The backend hooks that capability up to the shell, making sure to update
+  # the routing any time the shell dies and restarts.)
+  #
+  # Note that the gateway also makes direct HTTP/WebSocket and SMTP connections for traffic that
+  # it does not know how to handle directly.
+
+  openUiSession @0 (sessionCookie :Text) -> (session :WebSession);
+  # Given a sandstorm-sid cookie value for a UI session, find the WebSession to handle requests.
+  #
+  # The gateway may cache the session capability, associated with this cookie value, for as long
+  # as it wants. However, session will become disconnected if the grain shuts down or if the user's
+  # privileges are revoked. In that case, the gateway will need to discard the capability and
+  # request a new one.
+
+  openApiSession @1 (apiToken :Text) -> (session :ApiSession);
+  # Given a token from an `Authorization` header, find the ApiSession to handle requests.
+  #
+  # The gateway may cache the session capability, associated with this token, for as long as it
+  # wants. However,  session will become disconnected if the grain shuts down or if the user's
+  # privileges are revoked. In that case, the gateway will need to discard the capability and
+  # request a new one.
+  #
+  # Generally, traffic on an ApiSession will force the grain to stay running. This differs from UI
+  # sessions, where the Sandstorm shell keeps track of which grains are open in tabs and decides
+  # whether their servers need to keep running.
+
+  getStaticAsset @2 (id :Text) -> (content :Data, type :Text, encoding :Text);
+  # Look up the content of a static asset by ID. `type` and `encoding` are the values for the
+  # `Content-Type` and `Content-Encoding` headers, respectively.
+
+  getStaticPublishingHost @3 (publicId :Text) -> (supervisor :Supervisor);
+  # Maps a grain's "public ID" to a grain supervisor, whose getWwwFileHack() method will be used
+  # to host static files.
+
+  routeForeignHostname @4 (hostname :Text) -> (info :ForeignHostnameInfo);
+  # Called when the gateway receives a request for a hostname that doesn't match any of the
+  # expected hostname patterns, to figure out what it is.
+
+  struct ForeignHostnameInfo {
+    union {
+      unknown @0 :Void;
+      # This is not a known host.
+
+      staticPublishing @1 :Text;
+      # It's a static publishing host. Value is the public ID.
+
+      standalone @2 :Void;
+      # It's a standalone host. HTTP requests should be routed directly to Node business logic.
+    }
+
+    ttlSeconds @3 :UInt32;
+    # How long the receiver can safely cache this lookup result.
+  }
+
+  # TODO(someday): We could possibly eliminate the need for any HTTP traffic to Node by serving
+  #   static assets directly from the gateway and by opening the DDP WebSocket over Cap'n Proto.
+  #   However, this might not be a win until Cap'n Proto is implemented in native Javascript on the
+  #   Node side.
+}
+
 interface SandstormCoreFactory {
-  # Interface that the Sandstorm front-end exports to the backend for creating a SandstormCore
-  # for a grain. Eventually, we'll move away from implementing SandstormCore in the front-end and
-  # have it be implemented in the backend. This interface will go away then.
+  # Interface that the Sandstorm front-end exports to the backend in order to expose business
+  # logic hooks.
+  #
+  # TODO(cleanup): Rename to something more appropriate, now that this does more than construct
+  #   SansdtormCores.
+
   getSandstormCore @0 (grainId :Text) -> (core :SandstormCore);
+  # Create a SandstormCore for a grain. Eventually, we'll move away from implementing SandstormCore
+  # in the front-end and have it be implemented in the backend. This method will go away then.
+
+  getGatewayRouter @1 () -> (router :GatewayRouter);
+  # Gets an GatewayRouter implementation. Note that in Blackrock, where multiple instances of the
+  # shell might be running, all GatewayRouters are equivalent, regardless of which shell replica
+  # they came from.
 }

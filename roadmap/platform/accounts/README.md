@@ -44,7 +44,7 @@ The [Powerbox](../powerbox) is inherently tied to accounts in that it implements
 
 ### TODO(feature): Account merging
 
-Two accounts can be merged, combining their capability stores and attached identities. This is useful if a user has previously created two separate accounts under two different identities (say, their Google and Facebook identities) and then realizes they really want them to be the same account. Any time a user attempts to add an identity to their account, but that identity is already attached to some other account, the user will be prompted to merge accounts. Merging requires authenticating as an owning identity on both accounts.
+Two accounts can be merged, combining their capability stores and attached credentials. This is useful if a user has previously created two separate accounts under two different credentials (say, their Google and Facebook credentials) and then realizes they really want them to be the same account. Any time a user attempts to add a credential to their account, but that credential is already attached to some other account, the user will be prompted to merge accounts. Merging requires authenticating as an owning credential on both accounts.
 
 Account merging can be undone, returning any capabilities that were in the respective capabilities stores before the merge to their separate accounts. (This is necessary to recover after an account is hacked and then merged into some other account.)
 
@@ -62,8 +62,6 @@ This data is intended to be useful for representing the user to other users with
 
 It should not be possible to trick a user into revealing their identity to you by having them open a link to a Sandstorm grain. Therefore, Sandstorm implements protections in which users are warned when they are about to reveal their identity to an unfamiliar grain and given the chance to go incognito instead. A user may also choose to go into incognito mode, in which they appear anonymous to the grains they open but still have access to their own account and powerbox.
 
-_TODO(bug): Currently, a user can actually have multiple profiles, one attached to each of their credentials. This was part of an earlier design where we thought that it would be useful to have multiple "identities". In hindsight, this was the wrong design._
-
 ### Contacts
 
 Each account maintains a list of "contacts" -- profiles of other accounts that it has encountered before. For example, if Alice creates a sharing link and sends it to Bob, and Bob opens the sharing link and chooses to reveal his identity, then Bob's profile will be added to Alice's contacts.
@@ -75,8 +73,6 @@ TODO(feature): An app can also `offer()` a profile capability to a user in order
 TODO(feature): When the user encounters another user's profile, e.g. through `offer()`, the powerbox will display the object's profile data along with information about when and where the user has seen this profile before. If the profile's display name or avatar are deceptively similar to a profile the user has seen before, the powerbox will warn them of this, to help detect impostors.
 
 ## Credentials
-
-_TODO(bug): In the codebase currently, credentials are called "identities" and additionally have profile information attached, but this has been proven to be a poor design choice. See the note under "Profile", above._
 
 Each account has one or more "credentials" attached to it.
 
@@ -95,14 +91,6 @@ Credentials serve multiple purposes:
 - TODO(feature): Some credentials connect to external services that offer APIs. The user can use the Powerbox to connect their apps to these external APIs, authenticated through the credential. Sandstorm manages access tokens associated with this, so that apps never see such secrets.
 
 Multiple accounts can share a credential, but in this case the credential cannot be used to log into any of the accounts. Sharing a credential is useful e.g. when multiple people share access to a Twitter brand account.
-
-### Global/Federated Authentication
-
-It is important that credentials be "global", meaning that the same credential can be authenticated across multiple Sandstorm servers. This simplifies Sandstorm's federation features, e.g. allowing grains to be moved between servers while still keeping the same user set.
-
-Because of this requirement, username/password authentication does not fit well into the credential system, because a username/password pair would necessarily be specific to one particular Sandstorm server.
-
-_TODO(bug): Possibly this requirement is unrealistic. It's questionable whether LDAP and SAML authentication can really be considered global. Most companies do not expose LDAP publicly and certainly wouldn't be OK with users typing their passwords into third-party servers with federated authentication. Federated SAML is more workable but there are a lot of different ways that people configure this which probably aren't all mutually compatible. Meanwhile, there is lots of demand for built-in username/password authentication in Sandstorm. Perhaps a better way to solve the problem is to create ways that users can map their identities across Sandstorm servers, and tools allowing the identities associated with a grain to be remapped when the grain is transferred._
 
 ### TODO(feature): De-duplicating logins
 

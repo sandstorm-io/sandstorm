@@ -30,77 +30,82 @@ module.exports["Test open direct share link"] = function (browser) {
   // The first dev user will be automatically created with the call to installApp().
   // We need to prepend 'A' so that the default handle is always valid.
   var devName2 = "A" + crypto.randomBytes(10).toString("hex");
-  var devIdentityId2 = crypto.createHash("sha256").update("dev:" + devName2).digest("hex");
   browser
-    .loginDevAccount()
-    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
-                hackerCmsAppId)
-    .waitForElementVisible("#grainTitle", medium_wait)
-    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
-    .executeAsync(function (data, done) {
-      var grainId = Grains.findOne()._id;
-      var identityId = Meteor.user().loginIdentities[0].id;
-      Meteor.call("newApiToken", { identityId: identityId },
-                  grainId, "petname", { allAccess: null },
-                  { user: { identityId: data, title: "user2 title", } },
-                  function(error, result) {
-                    Meteor.logout();
-                    done({ error: error, result: result, });
-                  });
-    }, [devIdentityId2], function (result) {
-      browser.assert.equal(!result.value.error, true)
-      browser
-
-         // First, try visiting the link while already logged in.
-        .loginDevAccount(devName2)
-        .url(browser.launch_url + "/shared/" + result.value.result.token)
-        .waitForElementVisible("iframe.grain-frame", medium_wait)
-        .waitForElementVisible("#grainTitle", medium_wait)
-        .assert.containsText("#grainTitle", "user2 title")
-        .url(function(grainUrl) {
-          browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
-        })
-        .grainFrame()
-        .waitForElementPresent("#publish", medium_wait)
-        .assert.containsText("#publish", "Publish")
-        .frame(null)
-
-        // Next, try visiting the link while not logged in.
-        .execute("window.Meteor.logout()")
-        .url(browser.launch_url + "/shared/" + result.value.result.token)
-        .waitForElementVisible(".grain-interstitial", short_wait)
-        .assert.containsText(".grain-interstitial",
-                             "Access through this URL is restricted to the identity:")
-        .click(".grain-interstitial button.sign-in")
-        .waitForElementVisible("iframe.grain-frame", medium_wait)
-        .waitForElementVisible("#grainTitle", medium_wait)
-        .assert.containsText("#grainTitle", "user2 title")
-        .url(function(grainUrl) {
-          browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
-        })
-        .grainFrame()
-        .waitForElementPresent("#publish", medium_wait)
-        .assert.containsText("#publish", "Publish")
-        .frame(null)
-
-        // Now try while logged in as a third user.
-        .execute("window.Meteor.logout()")
+    .loginDevAccount(devName2)
+    .executeAsync(function (done) {
+      done(Meteor.userId());
+    }, [], function (result) {
+      var devAccountId2 = result.value;
+      browser.execute("window.Meteor.logout()")
         .loginDevAccount()
-        .url(browser.launch_url + "/shared/" + result.value.result.token)
-        .waitForElementVisible(".grain-interstitial", short_wait)
-        .assert.containsText(".grain-interstitial",
-                             "Access through this URL is restricted to the identity:")
-        .click(".grain-interstitial button.sign-in")
-        .waitForElementVisible("iframe.grain-frame", medium_wait)
+        .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
+                    hackerCmsAppId)
         .waitForElementVisible("#grainTitle", medium_wait)
-        .assert.containsText("#grainTitle", "user2 title")
-        .url(function(grainUrl) {
-          browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
-        })
-        .grainFrame()
-        .waitForElementPresent("#publish", medium_wait)
-        .assert.containsText("#publish", "Publish")
-        .frame(null)
+        .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+        .executeAsync(function (data, done) {
+          var grainId = Grains.findOne()._id;
+          Meteor.call("newApiToken", { accountId: Meteor.userId() },
+                      grainId, "petname", { allAccess: null },
+                      { user: { accountId: data, title: "user2 title", } },
+                      function(error, result) {
+                        Meteor.logout();
+                        done({ error: error, result: result, });
+                      });
+        }, [devAccountId2], function (result) {
+          browser.assert.equal(!result.value.error, true)
+          browser
+
+             // First, try visiting the link while already logged in.
+            .loginDevAccount(devName2)
+            .url(browser.launch_url + "/shared/" + result.value.result.token)
+            .waitForElementVisible("iframe.grain-frame", medium_wait)
+            .waitForElementVisible("#grainTitle", medium_wait)
+            .assert.containsText("#grainTitle", "user2 title")
+            .url(function(grainUrl) {
+              browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
+            })
+            .grainFrame()
+            .waitForElementPresent("#publish", medium_wait)
+            .assert.containsText("#publish", "Publish")
+            .frame(null)
+
+            // Next, try visiting the link while not logged in.
+            .execute("window.Meteor.logout()")
+            .url(browser.launch_url + "/shared/" + result.value.result.token)
+            .waitForElementVisible(".grain-interstitial", short_wait)
+            .assert.containsText(".grain-interstitial",
+                                 "This link was intended for the user:")
+            .click(".grain-interstitial button.sign-in")
+            .waitForElementVisible("iframe.grain-frame", medium_wait)
+            .waitForElementVisible("#grainTitle", medium_wait)
+            .assert.containsText("#grainTitle", "user2 title")
+            .url(function(grainUrl) {
+              browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
+            })
+            .grainFrame()
+            .waitForElementPresent("#publish", medium_wait)
+            .assert.containsText("#publish", "Publish")
+            .frame(null)
+
+            // Now try while logged in as a third user.
+            .execute("window.Meteor.logout()")
+            .loginDevAccount()
+            .url(browser.launch_url + "/shared/" + result.value.result.token)
+            .waitForElementVisible(".grain-interstitial", short_wait)
+            .assert.containsText(".grain-interstitial",
+                                 "This link was intended for the user:")
+            .click(".grain-interstitial button.sign-in")
+            .waitForElementVisible("iframe.grain-frame", medium_wait)
+            .waitForElementVisible("#grainTitle", medium_wait)
+            .assert.containsText("#grainTitle", "user2 title")
+            .url(function(grainUrl) {
+              browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
+            })
+            .grainFrame()
+            .waitForElementPresent("#publish", medium_wait)
+            .assert.containsText("#publish", "Publish")
+            .frame(null)
+        });
     });
 }
 
@@ -113,8 +118,7 @@ module.exports["Test revoked share link"] = function (browser) {
     .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
     .executeAsync(function (done) {
       var grainId = Grains.findOne()._id;
-      var identityId = Meteor.user().loginIdentities[0].id;
-      Meteor.call("newApiToken", { identityId: identityId },
+      Meteor.call("newApiToken", { accountId: Meteor.userId() },
                   grainId, "petname", { allAccess: null },
                   { webkey: { forSharing: true }, },
                   function(error, result) {

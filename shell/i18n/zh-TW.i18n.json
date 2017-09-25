@@ -163,7 +163,7 @@
     "title": "沙粒",
     "grainView": {
       "notFoundWithId": "找不到 ID 為 %s 的沙粒。",
-      "openWithWhichIdentity": "您要用哪個身分開啟這顆沙粒？",
+      "openWithWhichIdentity": "您要對此沙粒出示您的身份，或是保持匿名？",
       "openInIncognitoMode": "以無痕模式開啟"
     },
     "grainInMyTrash": {
@@ -177,7 +177,7 @@
       "explanation": "這顆沙粒的擁有者被停權了，無法使用。"
     },
     "wrongIdentity": {
-      "explanation": "開啟這個 URL 必須有以下身份："
+
     },
     "requestAccess": {
       "permissionDenied": "您無權存取此沙粒。",
@@ -515,7 +515,7 @@
       }
     },
     "identityProviders": {
-      "name": "身份提供者",
+      "name": "登入提供者",
       "subtext": "設定使用者可以如何登入。",
       "newAdminIdentity": {
         "explanation": "選擇使用者可以用哪些方法進行身份認證。所有人都能登入，但只有您邀請的使用者可以安裝應用程式或建立沙粒。",
@@ -646,7 +646,7 @@
         "disableButton": "Disable"
       },
       "adminIdentityProviderTable": {
-        "title": "身份提供者",
+        "title": "登入提供者",
         "status": "狀態"
       },
       "adminIdentityRow": {
@@ -718,7 +718,7 @@
       "newAdminEmailConfig": {
         "outbound": {
           "title": "外寄郵件",
-          "warning": "<strong>外寄郵件尚未設定完成。</strong>在您設定完成前，和電郵有關的功能（比如郵件登入、通知、以身份分享或要求存取）都無法使用。"
+          "warning": "<strong>外寄郵件尚未設定完成。</strong>在您設定完成前，和電郵有關的功能（比如郵件登入、通知、分享邀請或要求存取）都無法使用。"
         },
         "howItWorks": {
           "title": "沙聚雲如何使用電郵",
@@ -894,14 +894,14 @@
           "hint": "訪客",
           "cap": "V"
         },
-        "unknownIdentity": "不明身份",
-        "unknownName": "名稱不明",
-        "unknownIdentifier": "不明的識別資訊",
+        "unknownIdentity": "不明憑證",
+        "unknownIdentifier": "不明的憑證",
         "manageButton": "管理"
       },
       "newAdminUserTable": {
         "header": {
-          "identities": "帳號名",
+          "name": "名稱",
+          "credentials": "憑證",
           "created": "建立日期",
           "lastActive": "最近活躍",
           "actions": "動作"
@@ -928,8 +928,8 @@
           "label": "個人檔案照片"
         },
         "handle": {
-          "hint": "稱呼",
-          "label": "@"
+          "title": "網名",
+          "emails": "電郵"
         },
         "pronouns": {
           "hint": "代名詞",
@@ -972,7 +972,7 @@
       },
       "newAdminUserDetailsIdentityTable": {
         "header": {
-          "identity": "身份",
+          "credential": "憑證",
           "created": "建立日期",
           "lastActive": "最近活躍",
           "properties": "內容"
@@ -1001,9 +1001,6 @@
             "isNotVisitor": "降級為訪客"
           }
         },
-        "identities": {
-          "title": "識別資訊"
-        },
         "status": {
           "title": "狀態",
           "deleting": "停權 - 即將刪除 %s",
@@ -1020,7 +1017,7 @@
           "detail1": "永遠刪除所有 %s 建立的沙粒",
           "detail2": "撤銷所有 %s 建立的共享連結",
           "detail3": "將 %s 從所有人的聯絡人名單中移除",
-          "detail4": "刪除所有本帳號的識別資訊（除非該識別資訊亦被別的帳號使用）",
+          "detail4": "刪除所有本帳號的憑證（除非該憑證亦被別的帳號使用）",
           "deleteButton": "刪除帳號",
           "cancelButton": "取消"
         },
@@ -1029,7 +1026,7 @@
           "detail": "將這個帳號停權將會：",
           "detail1": "阻止所有 %s 建立的沙粒被開啟",
           "detail2": "停用所有 %s 建立的共享連結",
-          "detail3": "本帳號的識別資訊亦等同辦理（除非該識別資訊亦被別的帳號使用）",
+          "detail3": "本帳號的憑證亦等同辦理（除非該憑證亦被別的帳號使用）",
           "suspendButton": "將帳號停權",
           "cancelButton": "取消"
         },
@@ -1191,7 +1188,7 @@
     "hostingManagement": {
       "name": "Hosting management",
       "newAdminHostingManagement": {
-        "explanation": "This feature is experiemental and only works with the LDAP identity provider at the moment. Use with caution.",
+        "explanation": "This feature is experiemental and only works with the LDAP login provider at the moment. Use with caution.",
         "quotaEnabled": {
           "label": "Enable quota for users",
           "subtext": "Enable Quota management on this server. This requires both SAML and LDAP to be configured, and email addresses will be used to match between the two."
@@ -1337,13 +1334,11 @@
       "sandstormAccountSettings": {
         "title": "帳號",
         "identities": {
-          "title": "已連結的識別資訊",
-          "refactorAlert": "我們正在改變識別資訊的運作方式，您的帳號可能會受影響。<a href=\"https://sandstorm.io/news/2017-05-08-refactoring-identities\" target=\"_blank\">詳情 &raquo;</a>",
+
+          "refactorAlert": "我們正在改變憑證的運作方式，您的帳號可能會受影響。<a href=\"https://sandstorm.io/news/2017-05-08-refactoring-identities\" target=\"_blank\">詳情 &raquo;</a>",
           "success": "成功：%s",
           "linkNewIdentity": {
-            "title": "連結新的識別資訊：",
             "cancelButton": "取消",
-            "linkButton": "連結新識別資訊",
             "logoutAllButton": "登出所有其他 Session"
           },
           "email": {
@@ -1368,7 +1363,7 @@
           "result1": "永遠刪除所有您建立的沙粒，",
           "result2": "撤銷所有您建立的共享連結，",
           "result3": "將您從所有人的聯絡人名單中移除，",
-          "result4": "刪除所有本帳號的識別資訊（除非該識別資訊亦被別的帳號使用）。",
+          "result4": "刪除所有本帳號的憑證（除非該憑證亦被別的帳號使用）。",
           "confirm": "請在下方輸入「delete my account」進行刪除。",
           "goodbye": "我們很遺憾您的離去。伺服器管理者歡迎您的任何意見。",
           "feedbackPlaceholder": "選填",
@@ -1439,7 +1434,6 @@
       },
       "_loginButtonsLoggedInDropdown": {
         "title": "帳號",
-        "switchButton": "切換身份",
         "sendFeedback": "提供意見",
         "referralProgram": "推薦計畫",
         "signOutButton": "登出"
@@ -1514,9 +1508,9 @@
         "loginAccount": "正在登入帳號……",
         "loginAccountFailed": "無法登入帳號。",
         "loginToken": "正在重新登入帳號……",
-        "loginTokenFailed": "無法回復登入狀況。",
-        "link": "正在連結帳號身份……",
-        "success": "成功從 %s 將身份斷開。",
+        "loginTokenFailed": "無法復原登入狀況。",
+        "link": "正在連結憑證和帳號……",
+        "success": "成功從 %s 將憑證斷開。",
         "explanation": "您已經認證了這個身份",
         "warning": "但這個身份無法拿來登入任何帳號。",
         "moreIdentities": "以下的身份可以拿來登入您的帳號：",
@@ -1580,7 +1574,7 @@
       "loading": "正在讀取……"
     },
     "setupWizardProgressBar": {
-      "identityProviders": "身份提供者",
+      "identityProviders": "登入提供者",
       "organization": "組織",
       "email": "電郵",
       "preinstalledApps": "預裝應用程式",
@@ -1603,10 +1597,10 @@
       "title": "歡迎使用沙聚雲！",
       "revisitWizardLink": "重新開始設定精靈",
       "noIdpEnabled": {
-        "explanation": "這個沙聚雲尚未被設定完成，可是因為 <code>sandstorm.conf</code> 的變更，您需要重新設定身份提供者。"
+        "explanation": "這個沙聚雲尚未被設定完成，可是因為 <code>sandstorm.conf</code> 的變更，您需要重新設定登入提供者。"
       },
       "idpEnabled": {
-        "explanation": "本沙聚雲伺服器已經可以上線。您可以調整伺服器設定，包括使用哪些身份提供者以及沙聚雲如何寄送郵件等。",
+        "explanation": "本沙聚雲伺服器已經可以上線。您可以調整伺服器設定，包括使用哪些登入提供者以及沙聚雲如何寄送郵件等。",
         "turnUserIntoAdmin": "您也可以把現存的使用者提升為管理者。",
         "isAdmin": {
           "adminPanelLink": "前往管理面板",

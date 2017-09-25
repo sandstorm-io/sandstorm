@@ -20,7 +20,7 @@ Metadata is stored about the users and capabilities the app knows about so that 
 
 _TODO(bug): Currently capabilities are not retained in any way, so they'll all fail to restore after restoring a backup._
 
-_TODO(bug): Currently user IDs are not tracked in any special way in grain backups, but user IDs are designed to be globally consistent, since they are actually identifying credentials which have global identifiers. We'd like to move away from identifying users by their credentials, but this will require a more dynamic mapping of in-app user IDs to actual users, probably similar to the way capabilities are treated._
+_TODO(bug): Currently user IDs are not tracked in any special way in grain backups, so after saving a backup and restoring it, the app will not recognize users of the restored copy as being in any way related to users of the original (except that some apps special-case the owner). To fix this we need to record a table of known users in the grain's metadata, and we need to provide a UI to map these identity IDs to users on restore. The metadata should record hints about the user's identity (e.g., their e-mail address) which can be used to automatically fill in the mapping on restore, but allowing the restorer to fill the mapping manually will be necessary in cases where the grain has transferred to a different server that uses a different login mechanism._
 
 ### TODO(project): Mass backup
 

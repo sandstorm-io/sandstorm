@@ -197,7 +197,7 @@ Template.emailVerifierPowerboxCard.helpers({
   serviceTitle: function () {
     const services = this.option.frontendRef.emailVerifier.services;
     const name = services[0];
-    const service = Accounts.identityServices[name];
+    const service = Accounts.loginServices[name];
     if (service.loginTemplate.name === "oauthLoginButton") {
       return service.loginTemplate.data.displayName;
     } else if (name === "email") {

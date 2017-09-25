@@ -22,26 +22,26 @@ import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/stati
 const StaticAsset = Capnp.importSystem("sandstorm/util.capnp").StaticAsset;
 
 class IdentityImpl extends PersistentImpl {
-  constructor(db, saveTemplate, identityId) {
+  constructor(db, saveTemplate, accountId) {
     super(db, saveTemplate);
-    this.identityId = identityId;
+    this.accountId = accountId;
     this.db = db;
   }
 
   getProfile() {
-    const identity = this.db.getIdentity(this.identityId);
+    const user = Meteor.users.findOne({ _id: this.accountId });
 
     const profile = {
-      displayName: { defaultText: identity.profile.name },
-      preferredHandle: identity.profile.handle,
-      pronouns: identity.profile.pronoun,
+      displayName: { defaultText: user.profile.name },
+      preferredHandle: user.profile.handle,
+      pronouns: user.profile.pronoun,
     };
 
-    if (identity.profile.picture) {
-      profile.picture = new Capnp.Capability(new StaticAssetImpl(identity.profile.picture),
+    if (user.profile.picture) {
+      profile.picture = new Capnp.Capability(new StaticAssetImpl(user.profile.picture),
                                              StaticAsset);
     } else {
-      const hash = this.identityId.slice(0, 32);
+      const hash = user.profile.identicon;
       profile.picture = new Capnp.Capability(new IdenticonStaticAssetImpl(hash, 24),
                                              StaticAsset);
     }
@@ -54,19 +54,19 @@ class IdentityImpl extends PersistentImpl {
 const MembraneRequirement = Match.OneOf(
   { tokenValid: String },
   { permissionsHeld:
-    { identityId: String, grainId: String, permissions: Match.Optional([Boolean]), }, },
+    { accountId: String, grainId: String, permissions: Match.Optional([Boolean]), }, },
   { permissionsHeld:
     { tokenId: String, grainId: String, permissions: Match.Optional([Boolean]), }, },
   { userIsAdmin: String });
 
-makeIdentity = (identityId, requirements) => {
-  const saveTemplate = { frontendRef: { identity: identityId } };
+makeIdentity = (accountId, requirements) => {
+  const saveTemplate = { frontendRef: { identity: accountId } };
   if (requirements) {
     check(requirements, [MembraneRequirement]);
     saveTemplate.requirements = requirements;
   }
 
-  return new Capnp.Capability(new IdentityImpl(globalDb, saveTemplate, identityId),
+  return new Capnp.Capability(new IdentityImpl(globalDb, saveTemplate, accountId),
                               IdentityRpc.PersistentIdentity);
 };
 
@@ -74,8 +74,8 @@ globalFrontendRefRegistry.register({
   frontendRefField: "identity",
   typeId: Identity.typeId,
 
-  restore(db, saveTemplate, identityId) {
-    return new Capnp.Capability(new IdentityImpl(db, saveTemplate, identityId),
+  restore(db, saveTemplate, accountId) {
+    return new Capnp.Capability(new IdentityImpl(db, saveTemplate, accountId),
                                 IdentityRpc.PersistentIdentity);
   },
 
@@ -89,20 +89,18 @@ globalFrontendRefRegistry.register({
     const grain = db.getGrain(session.grainId);
     SandstormPermissions.createNewApiToken(
       db,
-      { identityId: session.identityId,
-        accountId: session.userId,
-      },
+      { accountId: session.userId, },
       session.grainId,
       "petname",
       value.roleAssignment,
-      { user: { identityId: value.id, title: grain.title, }, });
+      { user: { accountId: value.id, title: grain.title, }, });
 
     // TODO(soon): Somehow notify this user that they now have access.
 
     // TODO(perf): This permissions computation happens once here and then once again when the
     //   `permissionsHeld` requirement is checked. Is there a way to avoid the duplicated work?
     const permissions = SandstormPermissions.grainPermissions(
-      db, { grain: { _id: session.grainId, identityId: value.id, }, },
+      db, { grain: { _id: session.grainId, accountId: value.id, }, },
       session.viewInfo ||  {}).permissions;
 
     return {
@@ -121,7 +119,7 @@ globalFrontendRefRegistry.register({
       requirements: [
         {
           permissionsHeld: {
-            identityId: value.id,
+            accountId: value.id,
             grainId: session.grainId,
             permissions: [],
           },
@@ -138,26 +136,27 @@ globalFrontendRefRegistry.register({
       requestedPermissions = Capnp.parse(Identity.PowerboxTag, value).permissions || [];
     }
 
-    const resultForIdentity = function (identity) {
+    const resultForUser = function (user) {
+      SandstormDb.fillInPictureUrl(user);
       return {
-        _id: "frontendref-identity-" + identity._id,
-        frontendRef: { identity: identity._id },
+        _id: "frontendref-identity-" + user._id,
+        frontendRef: { identity: user._id },
         cardTemplate: "identityPowerboxCard",
         configureTemplate: "identityPowerboxConfiguration",
-        profile: identity.profile,
+        profile: user.profile,
         requestedPermissions,
         searchTerms: [
-          identity.profile.name,
-          identity.profile.handle,
-          identity.profile.intrinsicName,
+          user.profile.name,
+          user.profile.handle,
+          // TODO(someday): intrinsicName used to be here
         ],
       };
     };
 
     db.collections.contacts.find({ ownerId: userId }).forEach(contact => {
-      const identity = db.getIdentity(contact.identityId);
-      if (identity) {
-        resultSet[contact.identityId] = resultForIdentity(identity);
+      const user = Meteor.users.findOne({ _id: contact.accountId });
+      if (user) {
+        resultSet[user._id] = resultForUser(user);
       }
     });
 
@@ -165,9 +164,12 @@ globalFrontendRefRegistry.register({
         db.isUserInOrganization(db.collections.users.findOne({ _id: userId }))) {
 
       // TODO(perf): Add some way to efficiently fetch all members in an organization.
-      db.collections.users.find({ profile: { $exists: 1 } }).forEach((user) => {
-        if (db.isIdentityInOrganization(user)) {
-          resultSet[user._id] = resultForIdentity(db.getIdentity(user._id));
+      db.collections.users.find({ type: "credential" }).forEach((credential) => {
+        if (db.isCredentialInOrganization(credential)) {
+          const user = Meteor.users.findOne({ "loginCredentials.id": credential._id });
+          if (user) {
+            resultSet[user._id] = resultForUser(user);
+          }
         }
       });
     }

@@ -9,7 +9,7 @@ const AdminToken = new Mongo.Collection("adminToken"); // see Meteor.publish("ad
 
 const setupSteps = [
   "intro",
-  "identity",
+  "login",
   "organization",
   "email",
   "preinstalled",
@@ -20,7 +20,7 @@ const setupSteps = [
 // Combined with the list of steps above to DRY up the ordering.
 const setupStepRouteMap = {
   intro: "setupWizardIntro",
-  identity: "setupWizardIdentity",
+  login: "setupWizardLogin",
   organization: "setupWizardOrganization",
   email: "setupWizardEmailConfig",
   preinstalled: "setupWizardPreinstalled",
@@ -42,7 +42,7 @@ const setupIsStepCompleted = {
     return true;
   },
 
-  identity() {
+  login() {
     return (
       providerEnabled("emailToken") ||
       providerEnabled("google") ||
@@ -234,7 +234,7 @@ Template.setupWizardIntro.helpers({
   },
 
   noIdpEnabled() {
-    return !setupIsStepCompleted.identity();
+    return !setupIsStepCompleted.login();
   },
 
   currentUserIsAdmin() {
@@ -246,9 +246,9 @@ Template.setupWizardIntro.helpers({
     return instance.showSignInPanel.get();
   },
 
-  identityUser() {
+  credentialUser() {
     const user = Meteor.user();
-    return user && user.profile;
+    return user && user.type === "credential";
   },
 
   errorMessage() {
@@ -261,7 +261,7 @@ Template.setupWizardIntro.helpers({
     return instance.successMessage.get();
   },
 
-  notLinkingNewIdentity() {
+  notLinkingNewCredential() {
     return undefined;
   },
 
@@ -272,7 +272,7 @@ Template.setupWizardIntro.helpers({
 
 Template.setupWizardIntro.events({
   "click .setup-sandstorm"() {
-    Router.go("setupWizardIdentity");
+    Router.go("setupWizardLogin");
   },
 
   "click .make-self-admin"() {
@@ -294,20 +294,20 @@ Template.setupWizardIntro.events({
   },
 });
 
-Template.setupWizardIdentity.helpers({
+Template.setupWizardLogin.helpers({
   nextHtmlDisabled() {
-    const allowProgress = setupIsStepCompleted.identity();
+    const allowProgress = setupIsStepCompleted.login();
     return allowProgress ? "" : "disabled";
   },
 });
 
-Template.setupWizardIdentity.events({
+Template.setupWizardLogin.events({
   "click .setup-next-button"() {
-    Router.go(getRouteAfter("identity"));
+    Router.go(getRouteAfter("login"));
   },
 
   "click .setup-back-button"() {
-    Router.go(getRouteBefore("identity"));
+    Router.go(getRouteBefore("login"));
   },
 });
 
@@ -765,17 +765,8 @@ Template.setupWizardLoginUser.helpers({
 
   accountProfileEditorData() {
     const instance = Template.instance();
-    // copied from packages/sandstorm-accounts-ui/account-settings.js
-    const identityId = SandstormDb.getUserIdentityIds(Meteor.user())[0];
-    const identity = Meteor.users.findOne({ _id: identityId });
-    if (identity) {
-      SandstormDb.fillInProfileDefaults(identity);
-      SandstormDb.fillInIntrinsicName(identity);
-      SandstormDb.fillInPictureUrl(identity);
-    }
 
     return {
-      identity,
       staticHost: window.location.protocol + "//" + makeWildcardHost("static"),
       db: globalDb,
       hideButtons: true,
@@ -801,9 +792,9 @@ Template.setupWizardLoginUser.helpers({
     return !Meteor.loggingIn() && Meteor.user() && !Meteor.user().hasCompletedSignup;
   },
 
-  identityUser() {
+  credentialUser() {
     const user = Meteor.user();
-    return user && user.profile;
+    return user && user.type === "credential";
   },
 
   redeemSessionForAdmin() {
@@ -845,7 +836,7 @@ Template.setupWizardLoginUser.helpers({
     return hasAdmin ? "" : "disabled";
   },
 
-  notLinkingNewIdentity() {
+  notLinkingNewCredential() {
     // This apparently has to exist as a key in the parent data context.
     return undefined;
   },
@@ -958,8 +949,8 @@ Router.map(function () {
     layoutTemplate: "setupWizardLayout",
     controller: setupRoute,
   });
-  this.route("setupWizardIdentity", {
-    path: "/setup/identity",
+  this.route("setupWizardLogin", {
+    path: "/setup/login",
     layoutTemplate: "setupWizardLayout",
     controller: setupRoute,
   });

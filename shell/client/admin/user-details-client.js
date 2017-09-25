@@ -1,15 +1,15 @@
 import { formatFutureTime } from "/imports/dates.js";
 import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants.js";
 
-Template.newAdminUserDetailsIdentityTableRow.helpers({
-  isOrganizationMember(identity) {
-    return globalDb.isIdentityInOrganization(identity);
+Template.newAdminUserDetailsCredentialTableRow.helpers({
+  isOrganizationMember(credential) {
+    return globalDb.isCredentialInOrganization(credential);
   },
 
-  emailsForIdentity(identity, primaryEmail) {
-    if (!identity) return [];
+  emailsForCredential(credential, primaryEmail) {
+    if (!credential) return [];
 
-    const verifiedEmails = SandstormDb.getVerifiedEmails(identity);
+    const verifiedEmails = SandstormDb.getVerifiedEmailsForCredential(credential);
     const verifiedEmailSet = {};
     const emails = [];
     verifiedEmails.forEach((email) => {
@@ -21,11 +21,11 @@ Template.newAdminUserDetailsIdentityTableRow.helpers({
       });
     });
 
-    if (identity.unverifiedEmail && !verifiedEmailSet[identity.unverifiedEmail]) {
+    if (credential.unverifiedEmail && !verifiedEmailSet[credential.unverifiedEmail]) {
       emails.push({
-        email: identity.unverifiedEmail,
+        email: credential.unverifiedEmail,
         verified: false,
-        primary: identity.unverifiedEmail === primaryEmail,
+        primary: credential.unverifiedEmail === primaryEmail,
       });
     }
 
@@ -33,35 +33,35 @@ Template.newAdminUserDetailsIdentityTableRow.helpers({
   },
 });
 
-const lookupIdentityId = (identityId) => {
-  const identity = Meteor.users.findOne({ _id: identityId });
-  if (identity) {
-    // Sometimes, DBs lack the corresponding user identity document.
-    // Defensively avoid dereferencing a possibly-undefined identity.
-    SandstormDb.fillInProfileDefaults(identity);
-    SandstormDb.fillInIntrinsicName(identity);
-    SandstormDb.fillInPictureUrl(identity);
+const lookupCredentialId = (credentialId) => {
+  const credential = Meteor.users.findOne({ _id: credentialId });
+  if (credential) {
+    // Sometimes, DBs lack the corresponding user credential document.
+    // Defensively avoid dereferencing a possibly-undefined credential.
+
+    credential.intrinsicName = SandstormDb.getIntrinsicName(credential, true);
+    credential.serviceName = SandstormDb.getServiceName(credential);
   }
 
-  return identity;
+  return credential;
 };
 
-const lookupIdentity = (identityRef) => {
-  const identityId = identityRef.id;
-  return lookupIdentityId(identityId);
+const lookupCredential = (credentialRef) => {
+  const credentialId = credentialRef.id;
+  return lookupCredentialId(credentialId);
 };
 
-Template.newAdminUserDetailsIdentityTable.helpers({
-  loginIdentities(account) {
-    const identityIds = account.loginIdentities || [];
-    const identities = identityIds.map(lookupIdentity);
-    return identities;
+Template.newAdminUserDetailsCredentialTable.helpers({
+  loginCredentials(account) {
+    const credentialIds = account.loginCredentials || [];
+    const credentials = credentialIds.map(lookupCredential);
+    return credentials;
   },
 
-  nonloginIdentities(account) {
-    const identityIds = account.nonloginIdentities || [];
-    const identities = identityIds.map(lookupIdentity);
-    return identities;
+  nonloginCredentials(account) {
+    const credentialIds = account.nonloginCredentials || [];
+    const credentials = credentialIds.map(lookupCredential);
+    return credentials;
   },
 });
 
@@ -93,7 +93,9 @@ Template.newAdminUserDetails.onCreated(function () {
 
   this.targetAccount = () => {
     const userId = Router.current().params.userId;
-    return Meteor.users.findOne({ _id: userId });
+    const account = Meteor.users.findOne({ _id: userId });
+    if (account) SandstormDb.fillInPictureUrl(account);
+    return account;
   };
 
   this.setUserOptions = (options) => {
@@ -128,13 +130,7 @@ function guessUserName(instance) {
   if (!instance.isReady()) return "loading...";
 
   const account = instance.targetAccount();
-  const identityIds = SandstormDb.getUserIdentityIds(account);
-  if (identityIds.length === 0) {
-    return "<unknown user>";
-  }
-
-  const chosenIdentity = lookupIdentityId(identityIds[identityIds.length - 1]);
-  return chosenIdentity.profile.name || "<unknown name>";
+  return (account.profile && account.profile.name) || "<unknown name>";
 }
 
 Template.newAdminUserDetails.helpers({

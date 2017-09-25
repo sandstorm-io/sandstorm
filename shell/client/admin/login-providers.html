@@ -1,4 +1,4 @@
-<template name="newAdminIdentity">
+<template name="newAdminLogin">
   {{#let txt="admin.identityProviders.newAdminIdentity"}}
   <h1>
     <ul class="admin-breadcrumbs">
@@ -8,7 +8,7 @@
   </h1>
 
   <p>{{_ (con txt "explanation")}}</p>
-  {{>adminIdentityProviderTable idpData=idpData}}
+  {{>adminLoginProviderTable idpData=idpData}}
 
   <p>
   {{_ (con txt "organizationLinkPrefix")}}
@@ -18,7 +18,7 @@
   {{/let}}
 </template>
 
-<template name="adminIdentityProviderConfigureEmail">
+<template name="adminLoginProviderConfigureEmail">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
   {{#let txt="admin.identityProviders.adminIdentityProviderConfigureEmail"}}
   <h2>{{_ (con txt "title")}}</h2>
@@ -77,7 +77,7 @@
   {{/let}}
 </template>
 
-<template name="adminIdentityProviderConfigureGoogle">
+<template name="adminLoginProviderConfigureGoogle">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
   {{#let txt="admin.identityProviders.adminIdentityProviderConfigureGoogle"}}
   <h2>Google login configuration</h2>
@@ -147,7 +147,7 @@
   {{/let}}
 </template>
 
-<template name="adminIdentityProviderConfigureGitHub">
+<template name="adminLoginProviderConfigureGitHub">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
   {{#let txt="admin.identityProviders.adminIdentityProviderConfigureGitHub"}}
   <h2>{{_ (con txt "title")}}</h2>
@@ -197,7 +197,7 @@
 {{/modalDialogWithBackdrop}}
 </template>
 
-<template name="adminIdentityProviderConfigureLdap">
+<template name="adminLoginProviderConfigureLdap">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
   {{#let txt="admin.identityProviders.adminIdentityProviderConfigureLdap"}}
   <h2>{{_ (con txt "title")}}</h2>
@@ -313,7 +313,7 @@
 {{/modalDialogWithBackdrop}}
 </template>
 
-<template name="adminIdentityProviderConfigureSaml">
+<template name="adminLoginProviderConfigureSaml">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
   {{#let txt="admin.identityProviders.adminIdentityProviderConfigureSaml"}}
   <h2>{{_ (con txt "title")}}</h2>
@@ -387,10 +387,10 @@
 {{/modalDialogWithBackdrop}}
 </template>
 
-<template name="adminIdentityProviderTable">
+<template name="adminLoginProviderTable">
 {{#let txt="admin.identityProviders.adminIdentityProviderTable"}}
 {{!-- Expects an empty data context. --}}
-<div class="identity-provider-table" role="grid">
+<div class="login-provider-table" role="grid">
   <div class="idp-table-header" role="rowgroup">
     <div class="idp-header-row" role="row">
       <span class="idp" role="rowheader">{{_ (con txt "title")}}</span>
@@ -399,7 +399,7 @@
   </div>
   <div class="idp-table-rows" role="rowgroup">
   {{#each idp in idpData}}
-    {{> adminIdentityRow idp=idp}}
+    {{> adminLoginRow idp=idp}}
   {{/each}}
   {{#each idp in idpData}}
     {{#if currentPopupIs idp.id}}
@@ -413,7 +413,7 @@
 {{/let}}
 </template>
 
-<template name="adminIdentityRow">
+<template name="adminLoginRow">
 {{#let txt="admin.identityProviders.adminIdentityRow"}}
 <div class="idp-table-row" role="row">
   <span class="idp" role="gridcell">{{idp.label}}</span>

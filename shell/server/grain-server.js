@@ -40,18 +40,16 @@ Meteor.publish("grainTopBar", function (grainId) {
       fields: {
         title: 1,
         userId: 1,
-        identityId: 1,
         private: 1,
       },
     }),
   ];
   if (this.userId) {
-    const myIdentityIds = SandstormDb.getUserIdentityIds(globalDb.getUser(this.userId));
     result.push(ApiTokens.find({
       grainId: grainId,
       $or: [
-        { "owner.user.identityId": { $in: myIdentityIds } },
-        { identityId: { $in: myIdentityIds } },
+        { "owner.user.accountId": this.userId },
+        { accountId: this.userId },
       ],
     }));
   }
@@ -97,7 +95,7 @@ Meteor.publish("tokenInfo", function (token, isStandalone) {
   }, {
     fields: {
       grainId: 1,
-      identityId: 1,
+      accountId: 1,
       owner: 1,
       revoked: 1,
     },
@@ -121,12 +119,23 @@ Meteor.publish("tokenInfo", function (token, isStandalone) {
       this.added("tokenInfo", token, { invalidToken: true });
     } else {
       if (apiToken.owner && apiToken.owner.user) {
-        let identity = globalDb.getIdentity(apiToken.owner.user.identityId);
+        let account = Meteor.users.findOne({_id: apiToken.owner.user.accountId});
         let metadata = apiToken.owner.user.denormalizedGrainMetadata;
-        if (identity && metadata) {
-          SandstormDb.fillInLoginId(identity);
+        if (account && metadata) {
+          account.credentials =
+              Meteor.users.find({ _id: { $in: account.loginCredentials.map(cred => cred.id) } })
+                  .map(credential => {
+            return {
+              serviceName: SandstormDb.getServiceName(credential),
+              intrinsicName: SandstormDb.getIntrinsicName(credential, true),
+              loginId: SandstormDb.getLoginId(credential)
+            }
+          });
+
+          account.intrinsicNames = globalDb.getAccountIntrinsicNames(account, false);
+
           this.added("tokenInfo", token, {
-            identityOwner: _.pick(identity, "_id", "profile", "loginId"),
+            accountOwner: _.pick(account, "_id", "profile", "credentials", "intrinsicNames"),
             grainId: grainId,
             grainMetadata: metadata,
           });
@@ -135,14 +144,12 @@ Meteor.publish("tokenInfo", function (token, isStandalone) {
         }
       } else if (!apiToken.owner || "webkey" in apiToken.owner) {
         if (this.userId && !isStandalone) {
-          const user = Meteor.users.findOne({ _id: this.userId });
-          const identityIds = SandstormDb.getUserIdentityIds(user);
           const childToken = ApiTokens.findOne({
-            "owner.user.identityId": { $in: identityIds },
+            "owner.user.accountId": this.userId,
             parentToken: apiToken._id,
           });
           if (childToken || this.userId === grain.userId ||
-              identityIds.indexOf(apiToken.identityId) >= 0) {
+                            this.userId === apiToken.accountId) {
             this.added("tokenInfo", token, { alreadyRedeemed: true, grainId: apiToken.grainId, });
             this.ready();
             return;
@@ -190,26 +197,20 @@ Meteor.publish("requestingAccess", function (grainId) {
   }
 
   if (grain.userId === this.userId) {
-    this.added("grantedAccessRequests",
-               Random.id(), { grainId: grainId, identityId: grain.identityId });
+    this.added("grantedAccessRequests", Random.id(), { grainId: grainId });
   }
-
-  const identityIds = SandstormDb.getUserIdentityIds(Meteor.users.findOne({ _id: this.userId }));
-  const ownerIdentityIds = SandstormDb.getUserIdentityIds(
-      Meteor.users.findOne({ _id: grain.userId }));
 
   const _this = this;
   const query = ApiTokens.find({
     grainId: grainId,
-    identityId: { $in: ownerIdentityIds },
+    accountId: grain.userId,
     parentToken: { $exists: false },
-    "owner.user.identityId": { $in: identityIds },
+    "owner.user.accountId": this.userId,
     revoked: { $ne: true },
   });
   const handle = query.observe({
     added(apiToken) {
-      _this.added("grantedAccessRequests",
-                  Random.id(), { grainId: grainId, identityId: apiToken.owner.user.identityId });
+      _this.added("grantedAccessRequests", Random.id(), { grainId: grainId });
     },
   });
 
@@ -224,25 +225,9 @@ SandstormDb.periodicCleanup(86400000, () => {
 });
 
 Meteor.methods({
-  updateGrainPreferredIdentity: function (grainId, identityId) {
-    check(grainId, String);
-    check(identityId, String);
-    if (!this.userId) {
-      throw new Meteor.Error(403, "Must be logged in.");
-    }
-
-    const grain = globalDb.getGrain(grainId) || {};
-    if (!grain.userId === this.userId) {
-      throw new Meteor.Error(403, "Grain not owned by current user.");
-    }
-
-    Grains.update({ _id: grainId }, { $set: { identityId: identityId } });
-  },
-
-  updateGrainTitle: function (grainId, newTitle, identityId) {
+  updateGrainTitle: function (grainId, newTitle, obsolete) {
     check(grainId, String);
     check(newTitle, String);
-    check(identityId, String);
     if (this.userId) {
       const grain = Grains.findOne(grainId);
       if (grain) {
@@ -254,14 +239,10 @@ Meteor.methods({
                            { $set: { "owner.user.upstreamTitle": newTitle } },
                            { multi: true });
         } else {
-          if (!globalDb.userHasIdentity(this.userId, identityId)) {
-            throw new Meteor.Error(403, "Current user does not have identity " + identityId);
-          }
-
           const token = ApiTokens.findOne({
             grainId: grainId,
             objectId: { $exists: false },
-            "owner.user.identityId": identityId,
+            "owner.user.accountId": this.userId,
           }, {
             sort: { created: 1 }, // The oldest token is our source of truth for the name.
           });
@@ -271,7 +252,7 @@ Meteor.methods({
               // all.
               ApiTokens.update({
                 grainId: grainId,
-                "owner.user.identityId": identityId,
+                "owner.user.accountId": this.userId,
               }, {
                 $set: { "owner.user.title": newTitle },
                 $unset: { "owner.user.upstreamTitle": 1, "owner.user.renamed": 1 },
@@ -289,7 +270,7 @@ Meteor.methods({
                 modification["owner.user.upstreamTitle"] = token.owner.user.title;
               }
 
-              ApiTokens.update({ grainId: grainId, "owner.user.identityId": identityId },
+              ApiTokens.update({ grainId: grainId, "owner.user.accountId": this.userId },
                                { $set: modification },
                                { multi: true });
             }
@@ -306,7 +287,7 @@ Meteor.methods({
     }
   },
 
-  inviteUsersToGrain: function (_origin, identityId, grainId, title, roleAssignment,
+  inviteUsersToGrain: function (_origin, obsolete, grainId, title, roleAssignment,
                                 contacts, message) {
     if (typeof message === "object") {
       // Older versions of the client passed an object here, but we only care about the `text`
@@ -316,7 +297,6 @@ Meteor.methods({
 
     if (!this.isSimulation) {
       check(_origin, String);
-      check(identityId, String);
       check(grainId, String);
       check(title, String);
       check(roleAssignment, roleAssignmentPattern);
@@ -325,19 +305,16 @@ Meteor.methods({
           _id: String,
           isDefault: Match.Optional(Boolean),
           profile: Match.ObjectIncluding({
-            service: String,
+            service: Match.Optional(String),
             name: String,
-            intrinsicName: String,
+            intrinsicName: Match.Optional(String),
           }),
+          intrinsicNames: [Object]
         },
       ]);
       check(message, String);
       if (!this.userId) {
         throw new Meteor.Error(403, "Must be logged in to share by email.");
-      }
-
-      if (!globalDb.userHasIdentity(this.userId, identityId)) {
-        throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
       }
 
       if (contacts.length === 0) {
@@ -356,13 +333,13 @@ Meteor.methods({
 
       const accountId = this.userId;
       const outerResult = { successes: [], failures: [] };
-      const fromEmail = globalDb.getReturnAddressWithDisplayName(identityId);
-      const replyTo = globalDb.getPrimaryEmail(accountId, identityId);
+      const fromEmail = globalDb.getReturnAddressWithDisplayName(accountId);
+      const replyTo = globalDb.getPrimaryEmail(accountId);
       contacts.forEach(function (contact) {
-        if (contact.isDefault && contact.profile.service === "email") {
-          const emailAddress = contact.profile.intrinsicName;
+        if (contact.isDefault) {
+          const emailAddress = contact.profile.name;
           const result = SandstormPermissions.createNewApiToken(
-            globalDb, { identityId: identityId, accountId: accountId }, grainId,
+            globalDb, { accountId: accountId }, grainId,
             "email invitation for " + emailAddress,
             roleAssignment, { webkey: { forSharing: true } });
           const url = ROOT_URL + "/shared/" + result.token;
@@ -384,49 +361,32 @@ Meteor.methods({
               html: html,
             });
           } catch (e) {
+            console.error(e.stack);
             outerResult.failures.push({ contact: contact, error: e.toString() });
           }
         } else {
           let result = SandstormPermissions.createNewApiToken(
-            globalDb, { identityId: identityId, accountId: accountId }, grainId,
-            "direct invitation to " + contact.profile.intrinsicName,
-            roleAssignment, { user: { identityId: contact._id, title: title } });
+            globalDb, { accountId: accountId }, grainId,
+            "direct invitation to " + contact.profile.name,
+            roleAssignment, { user: { accountId: contact._id, title: title } });
           const url = ROOT_URL + "/shared/" + result.token;
           try {
-            const identity = Meteor.users.findOne({ _id: contact._id });
-            const email = _.findWhere(SandstormDb.getVerifiedEmails(identity),
+            const account = Meteor.users.findOne({ _id: contact._id });
+            const email = _.findWhere(SandstormDb.getUserEmails(account),
                                       { primary: true });
             if (email) {
               const intrinsicName = contact.profile.intrinsicName;
-              let loginNote;
-              if (contact.profile.service === "google") {
-                loginNote = "Google account with address " + email.email;
-              } else if (contact.profile.service === "github") {
-                loginNote = "Github account with username " + intrinsicName;
-              } else if (contact.profile.service === "email") {
-                loginNote = "email address " + intrinsicName;
-              } else if (contact.profile.service === "ldap") {
-                loginNote = "LDAP username " + intrinsicName;
-              } else if (contact.profile.service === "saml") {
-                loginNote = "SAML ID " + intrinsicName;
-              } else {
-                throw new Meteor.Error(500, "Unknown service to email share link.");
-              }
 
               const html = escapedMessage + "<br><br>" +
                   emailLinkWithInlineStyle(url, "Open Shared Grain") +
-                  "<div style='font-size:8pt;font-style:italic;color:gray'>" +
-                  "Note: You will need to log in with your " + loginNote +
-                  " to access this grain.";
+                  "<div style='font-size:8pt;font-style:italic;color:gray'>";
               globalDb.incrementDailySentMailCount(accountId);
               sendEmail({
                 to: email.email,
                 from: fromEmail,
                 replyTo: replyTo,
                 subject: title + " - Invitation to collaborate",
-                text: message + "\n\nFollow this link to open the shared grain:\n\n" + url +
-                  "\n\nNote: You will need to log in with your " + loginNote +
-                  " to access this grain.",
+                text: message + "\n\nFollow this link to open the shared grain:\n\n" + url,
                 html: html,
               });
             } else {
@@ -435,6 +395,7 @@ Meteor.methods({
                 "manually share " + url + " with them.", });
             }
           } catch (e) {
+            console.error(e.stack);
             outerResult.failures.push({ contact: contact, error: e.toString(),
               warning: "Share succeeded, but there was an error emailing the user. Please " +
               "manually share " + url + " with them.", });
@@ -446,17 +407,12 @@ Meteor.methods({
     }
   },
 
-  requestAccess: function (_origin, grainId, identityId) {
+  requestAccess: function (_origin, grainId, obsolete) {
     check(_origin, String);
     check(grainId, String);
-    check(identityId, String);
     if (!this.isSimulation) {
       if (!this.userId) {
         throw new Meteor.Error(403, "Must be logged in to request access.");
-      }
-
-      if (!globalDb.userHasIdentity(this.userId, identityId)) {
-        throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
       }
 
       const grain = Grains.findOne(grainId);
@@ -472,30 +428,36 @@ Meteor.methods({
 
       const emailAddress = email.email;
 
-      const identity = globalDb.getIdentity(identityId);
-      globalDb.addContact(grainOwner._id, identityId);
+      globalDb.addContact(grainOwner._id, this.userId);
 
-      const fromEmail = globalDb.getReturnAddressWithDisplayName(identityId);
-      const replyTo = globalDb.getPrimaryEmail(Meteor.userId(), identityId);
+      const fromEmail = globalDb.getReturnAddressWithDisplayName(this.userId);
+      const replyTo = globalDb.getPrimaryEmail(this.userId);
 
       // TODO(soon): In the HTML version, we should display an identity card.
-      let identityNote = "";
-      if (identity.profile.service === "google") {
-        identityNote = " (" + identity.privateIntrinsicName + ")";
-      } else if (identity.profile.service === "github") {
-        identityNote = " (" + identity.profile.intrinsicName + " on GitHub)";
-      } else if (identity.profile.service === "email") {
-        identityNote = " (" + identity.profile.intrinsicName + ")";
-      } else if (identity.profile.service === "ldap") {
-        identityNote = " (" + identity.profile.intrinsicName + " on LDAP)";
-      } else if (identity.profile.service === "saml") {
-        identityNote = " (" + identity.profile.intrinsicName + " on SAML)";
-      }
+      const identityNotes = [];
+      globalDb.getAccountIntrinsicNames(Meteor.user(), true).forEach(intrinsic => {
+        // TODO(cleanup): Don't switch on service here; extend getAccountIntrinsicNames or
+        //   Account.loginServices to cover what we need.
+        if (intrinsic.service === "google") {
+          identityNotes.push(intrinsic.name);
+        } else if (intrinsic.service === "github") {
+          identityNotes.push(intrinsic.name + " on GitHub");
+        } else if (intrinsic.service === "email") {
+          identityNotes.push(intrinsic.name);
+        } else if (intrinsic.service === "ldap") {
+          identityNotes.push(intrinsic.name + " on LDAP");
+        } else if (intrinsic.service === "saml") {
+          identityNotes.push(intrinsic.name + " on SAML");
+        }
+      });
 
-      const message = identity.profile.name + identityNote +
+      const identityNote = identityNotes.length === 0 ? "" :
+          " (" + identityNotes.join(", ") + ")";
+
+      const message = Meteor.user().profile.name + identityNote +
             " is requesting access to your grain: " + grain.title + ".";
 
-      const url = ROOT_URL + "/share/" + grainId + "/" + identityId;
+      const url = ROOT_URL + "/share/" + grainId + "/" + this.userId;
 
       let html = message + "<br><br>" +
           emailLinkWithInlineStyle(url, "Open Sharing Menu");

@@ -183,7 +183,7 @@ class SandstormBackend {
     return this._backendCap.startGrain(ownerId, grainId, packageId, command, isNew, isDev, mountProc);
   }
 
-  updateLastActive(grainId, userId, identityId) {
+  updateLastActive(grainId, userId, obsolete) {
     // Update the lastActive date on the grain, any relevant API tokens, and the user,
     // and also update the user's storage usage.
 
@@ -202,12 +202,9 @@ class SandstormBackend {
 
     if (userId) {
       Meteor.users.update(userId, { $set: { lastActive: now } });
-    }
 
-    if (identityId) {
-      Meteor.users.update({ _id: identityId }, { $set: { lastActive: now } });
       // Update any API tokens that match this user/grain pairing as well
-      ApiTokens.update({ grainId: grainId, "owner.user.identityId": identityId },
+      ApiTokens.update({ grainId: grainId, "owner.user.accountId": userId },
                        { $set: { lastUsed: now } },
                        { multi: true });
     }
@@ -228,20 +225,25 @@ class SandstormBackend {
     }
   }
 
-  openSessionInternal(grainId, userId, identityId, title, apiToken, cachedSalt, sessionFields) {
+  openSessionInternal(grain, userId, revealIdentity, title, apiToken, cachedSalt, sessionFields) {
+    const grainId = grain._id;
+
     // Start the grain if it is not running. This is an optimization: if we didn't start it here,
     // it would start on the first request to the session host, but we'd like to get started before
     // the round trip.
     const { supervisor, packageSalt } = this.continueGrain(grainId);
 
-    this.updateLastActive(grainId, userId, identityId);
+    this.updateLastActive(grainId, userId);
+
+    const identityId = userId && revealIdentity && this._db.getOrGenerateIdentityId(userId, grain);
 
     cachedSalt = cachedSalt || Random.id(22);
     const sessionId = generateSessionId(grainId, userId, packageSalt, cachedSalt);
     let session = Sessions.findOne({ _id: sessionId });
     if (session) {
       // TODO(someday): also do some more checks for anonymous sessions (sessions without a userId).
-      if ((session.identityId && session.identityId !== identityId) ||
+      if ((session.userId && session.userId !== userId) ||
+          (session.identityId && session.identityId !== identityId) ||
           (session.grainId !== grainId)) {
         const e = new Meteor.Error(500, "Duplicate SessionId");
         console.error(e);
@@ -300,6 +302,7 @@ class SandstormBackend {
         hostId: session.hostId,
         tabId: session.tabId,
         salt: cachedSalt,
+        identityId: identityId,
       },
     };
   }

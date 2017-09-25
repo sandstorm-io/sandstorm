@@ -37,7 +37,7 @@ computeStats = function (since) {
   // during the requested time period.
   const currentlyActiveUsersCount = Meteor.users.find({
     expires: { $exists: false },
-    loginIdentities: { $exists: true },
+    loginCredentials: { $exists: true },
     lastActive: timeConstraint,
   }).count();
 
@@ -105,7 +105,7 @@ computeStats = function (since) {
           grainId: { $in: grainIds },
         },
       },
-      { $group: { _id: "$owner.user.identityId" } },
+      { $group: { _id: "$owner.user.accountId" } },
       {
         $group: {
           _id: "count",

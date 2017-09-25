@@ -23,10 +23,7 @@ const ValidHandle = Match.Where(function (handle) {
 });
 
 Meteor.methods({
-  updateProfile: function (identityId, profile) {
-    // TODO(cleanup): This check also appears in sandstorm-db/users.js.
-    check(identityId, String);
-
+  updateProfile: function (obsolete, profile) {
     check(profile, {
       name: String,
       handle: ValidHandle,
@@ -38,12 +35,7 @@ Meteor.methods({
       throw new Meteor.Error(403, "not logged in");
     }
 
-    const userToUpdate = Meteor.users.findOne({ _id: identityId });
-
-    if (!this.isSimulation &&
-        !this.connection.sandstormDb.userHasIdentity(this.userId, identityId)) {
-      throw new Meteor.Error(403, "identity is not linked to current user: " + identityId);
-    }
+    const userToUpdate = Meteor.user();
 
     const newValues = {
       "profile.name": profile.name,
@@ -66,14 +58,13 @@ Meteor.methods({
     Meteor.users.update(this.userId, { $unset: { hasCompletedSignup: "" } });
   },
 
-  uploadProfilePicture: function (identityId) {
-    check(identityId, String);
-    if (!this.userId || !this.connection.sandstormDb.userHasIdentity(this.userId, identityId)) {
-      throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
+  uploadProfilePicture: function (obsolete) {
+    if (!this.userId) {
+      throw new Meteor.Error(403, "not logged in");
     }
 
     return this.connection.sandstormDb.newAssetUpload({
-      profilePicture: { userId: this.userId, identityId: identityId },
+      profilePicture: { userId: this.userId },
     });
   },
 

@@ -298,9 +298,7 @@ function serveStaticAsset(req, res, hostId) {
         return;
       } else if (purpose.profilePicture) {
         const userId = purpose.profilePicture.userId;
-        const identityId = purpose.profilePicture.identityId;
         check(userId, String);
-        check(identityId, String);
       } else if (purpose.loginLogo) {
         // no additional fields for loginLogo
       } else {
@@ -344,9 +342,9 @@ function serveStaticAsset(req, res, hostId) {
       const assetId = globalDb.addStaticAsset({ mimeType: type }, content);
 
       if (purpose.profilePicture) {
-        const identityId = purpose.profilePicture.identityId;
+        const accountId = purpose.profilePicture.userId;
         const result = Meteor.users.findAndModify({
-          query: { _id: identityId },
+          query: { _id: accountId },
           update: { $set: { "profile.picture": assetId } },
           fields: { "profile.picture": 1 },
         });

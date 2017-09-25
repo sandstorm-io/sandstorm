@@ -39,10 +39,10 @@ ROOT_URL = Url.parse(process.env.ROOT_URL);
 HOSTNAME = ROOT_URL.hostname;
 
 SessionContextImpl = class SessionContextImpl {
-  constructor(grainId, sessionId, identityId, tabId) {
+  constructor(grainId, sessionId, accountId, tabId) {
     this.grainId = grainId;
     this.sessionId = sessionId;
-    this.identityId = identityId;
+    this.accountId = accountId;
     this.tabId = tabId;
   }
 
@@ -64,7 +64,7 @@ SessionContextImpl = class SessionContextImpl {
       // Honor `requiredPermissions`.
       const requirements = [];
       if (session.hashedToken) {
-        // Session is authorized by token. Note that it's important to check this before identityId
+        // Session is authorized by token. Note that it's important to check this before accountId
         // e.g. in the case of standalone domains.
         requirements.push({
           permissionsHeld: {
@@ -74,11 +74,12 @@ SessionContextImpl = class SessionContextImpl {
           },
         });
       } else if (session.identityId) {
-        // Session is authorized by identity.
+        // Session is authorized by identity. (We check session.identityId rather than
+        // session.userId because session.userId is set even for incognito sessions.)
         requirements.push({
           permissionsHeld: {
             permissions: requiredPermissions || [],
-            identityId: session.identityId,
+            accountId: session.userId,
             grainId: this.grainId,
           },
         });
@@ -129,7 +130,7 @@ SessionContextImpl = class SessionContextImpl {
         if (session.identityId) {
           apiTokenOwner = {
             user: {
-              identityId: this.identityId,
+              accountId: this.accountId,
               title: tagValue.title,
             },
           };
@@ -160,7 +161,7 @@ SessionContextImpl = class SessionContextImpl {
       if (session.hashedToken) {
         permissionsHeld.tokenId = session.hashedToken;
       } else if (session.identityId) {
-        permissionsHeld.identityId = session.identityId;
+        permissionsHeld.accountId = session.userId;
       } else {
         throw new Error("Cannot offer to anonymous session that does not have a token.");
       }
@@ -188,9 +189,9 @@ SessionContextImpl = class SessionContextImpl {
           const newApiToken = fetchApiToken(globalDb, sturdyRef.toString());
           let tokenId = newApiToken._id;
           const dupeQuery = _.pick(newApiToken, "grainId", "roleAssignment", "requirements",
-                                   "parentToken", "parentTokenKey", "identityId", "accountId");
+                                   "parentToken", "parentTokenKey", "accountId", "accountId");
           dupeQuery._id = { $ne: newApiToken._id };
-          dupeQuery["owner.user.identityId"] = this.identityId;
+          dupeQuery["owner.user.accountId"] = this.accountId;
           dupeQuery.trashed = { $exists: false };
           dupeQuery.revoked = { $exists: false };
 
@@ -232,24 +233,23 @@ SessionContextImpl = class SessionContextImpl {
 
   activity(event) {
     return inMeteor(() => {
-      logActivity(this.grainId, this.identityId || "anonymous", event);
+      logActivity(this.grainId, this.accountId || "anonymous", event);
     });
   }
 };
 
 Meteor.methods({
-  finishPowerboxRequest(sessionId, webkeyUrl, saveLabel, identityId, grainId) {
+  finishPowerboxRequest(sessionId, webkeyUrl, saveLabel, obsolete, grainId) {
     check(sessionId, String);
     check(webkeyUrl, String);
     check(saveLabel, Match.OneOf(undefined, null, String));
-    check(identityId, String);
     check(grainId, String);
 
     const db = this.connection.sandstormDb;
 
     const userId = Meteor.userId();
-    if (!userId || !db.userHasIdentity(userId, identityId)) {
-      throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
+    if (!userId) {
+      throw new Meteor.Error(403, "Not logged in.");
     }
 
     const parsedWebkey = Url.parse(webkeyUrl.trim());
@@ -279,7 +279,6 @@ Meteor.methods({
     const owner = {
       clientPowerboxRequest: {
         grainId: grainId,
-        introducerIdentity: identityId,
         sessionId: sessionId,
       },
     };
@@ -317,8 +316,8 @@ Meteor.methods({
 });
 
 HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl {
-  constructor(grainId, sessionId, identityId, tabId) {
-    super(grainId, sessionId, identityId, tabId);
+  constructor(grainId, sessionId, accountId, tabId) {
+    super(grainId, sessionId, accountId, tabId);
   }
 
   _getPublicId() {
@@ -370,20 +369,19 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
     //
     // Must be called in a Meteor context.
 
-    const grain = Grains.findOne(this.grainId, { fields: { identityId: 1 } });
+    const grain = Grains.findOne(this.grainId, { fields: { userId: 1 } });
 
-    const identity = globalDb.getIdentity(grain.identityId);
+    const user = Meteor.users.findOne({_id: grain.userId});
 
-    const primaryEmail = _.findWhere(SandstormDb.getVerifiedEmails(identity), { primary: true });
-    const email = (primaryEmail && primaryEmail.email) || identity.unverifiedEmail;
+    const email = _.findWhere(SandstormDb.getUserEmails(user), { primary: true });
 
     const result = {};
     if (email) {
-      result.address = email;
+      result.address = email.email;
     }
 
-    if (identity.profile.name) {
-      result.name = identity.profile.name;
+    if (user.profile.name) {
+      result.name = user.profile.name;
     }
 
     return result;
@@ -522,8 +520,8 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
   }
 };
 
-makeHackSessionContext = (grainId, sessionId, identityId, tabId) => {
-  return new Capnp.Capability(new HackSessionContextImpl(grainId, sessionId, identityId, tabId),
+makeHackSessionContext = (grainId, sessionId, accountId, tabId) => {
+  return new Capnp.Capability(new HackSessionContextImpl(grainId, sessionId, accountId, tabId),
                               HackSessionContext);
 };
 

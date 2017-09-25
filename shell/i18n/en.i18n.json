@@ -163,8 +163,9 @@
     "title": "Grains",
     "grainView": {
       "notFoundWithId": "No grain found with ID %s.",
-      "openWithWhichIdentity": "With which of your identities would you like to open this grains?",
-      "openInIncognitoMode": "Open in Incognito Mode"
+      "openWithWhichIdentity": "Would you like to reveal your identity to this grain, or remain anonymous?",
+      "openInIncognitoMode": "Open in Incognito Mode",
+      "revealMyIdentity": "Reveal my identity"
     },
     "grainInMyTrash": {
       "explanation": "This grain is in your trash. You cannot access it unless you restore it to your main list.",
@@ -177,7 +178,7 @@
       "explanation": "You can no longer access this grain because its owner's account has been suspended."
     },
     "wrongIdentity": {
-      "explanation": "Access through this URL is restricted to the identity:"
+      "explanation": "This link was intended for the user:"
     },
     "requestAccess": {
       "permissionDenied": "You do not have permission to access this grain.",
@@ -515,7 +516,7 @@
       }
     },
     "identityProviders": {
-      "name": "Identity providers",
+      "name": "Login providers",
       "subtext": "How users log in.",
       "newAdminIdentity": {
         "explanation": "Choose which services users may use to identify themselves.  Anyone can log in, but only users you invite will be able to install apps or create grains.",
@@ -646,7 +647,7 @@
         "disableButton": "Disable"
       },
       "adminIdentityProviderTable": {
-        "title": "Identity provider",
+        "title": "Login provider",
         "status": "Status"
       },
       "adminIdentityRow": {
@@ -718,7 +719,7 @@
       "newAdminEmailConfig": {
         "outbound": {
           "title": "Outbound email",
-          "warning": "<strong>Email is unconfigured.</strong> Email-related features like email login, notifications, sharing by identity, and requesting access will be unavailable until you configure email."
+          "warning": "<strong>Email is unconfigured.</strong> Email-related features like email login, notifications, sharing invitations, and requesting access will be unavailable until you configure email."
         },
         "howItWorks": {
           "title": "How Sandstorm uses email",
@@ -894,14 +895,14 @@
           "hint": "Visitor",
           "cap": "V"
         },
-        "unknownIdentity": "Unknown identity",
-        "unknownName": "unknown name",
+        "unknownIdentity": "Unknown credential",
         "unknownIdentifier": "unknown identifier",
         "manageButton": "Manage"
       },
       "newAdminUserTable": {
         "header": {
-          "identities": "Account",
+          "name": "Name",
+          "credentials": "Credentials",
           "created": "Created",
           "lastActive": "Last Active",
           "actions": "Actions"
@@ -928,8 +929,8 @@
           "label": "Profile picture"
         },
         "handle": {
-          "hint": "Handle",
-          "label": "@"
+          "title": "Handle",
+          "emails": "Emails"
         },
         "pronouns": {
           "hint": "Pronouns",
@@ -972,7 +973,7 @@
       },
       "newAdminUserDetailsIdentityTable": {
         "header": {
-          "identity": "Identity",
+          "credential": "Credential",
           "created": "Created",
           "lastActive": "Last Active",
           "properties": "Properties"
@@ -1001,8 +1002,11 @@
             "isNotVisitor": "Demote to visitor"
           }
         },
-        "identities": {
-          "title": "Identities"
+        "credentials": {
+          "title": "Credentials"
+        },
+        "profile": {
+          "title": "Profile"
         },
         "status": {
           "title": "Status",
@@ -1020,7 +1024,7 @@
           "detail1": "Permanently delete any grains %s created",
           "detail2": "Revoke all sharing links %s created",
           "detail3": "Remove %s from all users' contact lists",
-          "detail4": "Delete all identities owned by this account (except identities also associated with another account).",
+          "detail4": "Delete all credentials owned by this account (except credentials also associated with another account).",
           "deleteButton": "Delete account",
           "cancelButton": "Cancel"
         },
@@ -1029,7 +1033,7 @@
           "detail": "Suspending this user account will:",
           "detail1": "Prevent any grains created by %s from being opened",
           "detail2": "Disable any sharing links created by %s",
-          "detail3": "This also applies to all identities owned by this account (except identities associated with another account)",
+          "detail3": "This also applies to all credentials owned by this account (except credentials associated with another account)",
           "suspendButton": "Suspend account",
           "cancelButton": "Cancel"
         },
@@ -1191,7 +1195,7 @@
     "hostingManagement": {
       "name": "Hosting management",
       "newAdminHostingManagement": {
-        "explanation": "This feature is experiemental and only works with the LDAP identity provider at the moment. Use with caution.",
+        "explanation": "This feature is experiemental and only works with the LDAP login provider at the moment. Use with caution.",
         "quotaEnabled": {
           "label": "Enable quota for users",
           "subtext": "Enable Quota management on this server. This requires both SAML and LDAP to be configured, and email addresses will be used to match between the two."
@@ -1337,13 +1341,13 @@
       "sandstormAccountSettings": {
         "title": "Account",
         "identities": {
-          "title": "Linked identities",
-          "refactorAlert": "We're changing the way identities work. Your account may be affected. <a href=\"https://sandstorm.io/news/2017-05-08-refactoring-identities\" target=\"_blank\">Learn more &raquo;</a>",
+          "title": "My Profile",
           "success": "Success: %s",
+          "linkedCredentials": "Linked credentials",
           "linkNewIdentity": {
-            "title": "Link new identity:",
+            "title": "Link new credential:",
             "cancelButton": "Cancel",
-            "linkButton": "Link new identity",
+            "linkButton": "Link new credential",
             "logoutAllButton": "Log out all other sessions"
           },
           "email": {
@@ -1368,7 +1372,7 @@
           "result1": "Permanently delete any grains you created",
           "result2": "Revoke all sharing links you created",
           "result3": "Remove you from all users' contact lists",
-          "result4": "Delete all identities owned by your account (except identities also associated with another account).",
+          "result4": "Delete all credentials owned by your account (except credentials also associated with another account).",
           "confirm": "Please type \"delete my account\" below to confirm.",
           "goodbye": "We're sorry to see you go. Feel free to share any feedback you have with the server admin.",
           "feedbackPlaceholder": "Optional",
@@ -1438,8 +1442,8 @@
         "loading": "Loading..."
       },
       "_loginButtonsLoggedInDropdown": {
+        "revealIdentity": "Reveal identity",
         "title": "Account",
-        "switchButton": "Switch identity",
         "sendFeedback": "Send feedback",
         "referralProgram": "Referral program",
         "signOutButton": "Sign out"
@@ -1509,48 +1513,52 @@
         "loading": "loading...",
         "logoutButton": "Log out",
         "cancelButton": "Cancel",
-        "logoutButton": "Go back",
+        "goBackButton": "Go back",
         "create": "creating account...",
         "createFailed": "Failed to create account.",
         "loginAccount": "logging in to account...",
         "loginAccountFailed": "Account login failed",
         "loginToken": "logging back in to account...",
         "loginTokenFailed": "Failed to resume session.",
-        "link": "linking identity to account...",
-        "success": "Unlinked identity from %s",
-        "explanation": "You have authenticated as this identity",
-        "warning": "but that is not a login identity for any account.",
-        "moreIdentities": "The following identities can log in to your identity's accounts:",
+        "link": "linking credential to account...",
+        "success": "Unlinked credential from %s",
+        "explanation": "You have authenticated as this credential",
+        "warning": "but that is not a login credential for any account.",
+        "moreIdentities": "The following credentials can log in to your credential's accounts:",
         "unlinkButton": {
-          "hint": "Unlink your identity from this account.",
+          "hint": "Unlink your credential from this account.",
           "text": "unlink"
         },
         "unlink": {
-          "explanation": "Are you sure you want to unlink your identity from the account of %s?",
+          "explanation": "Are you sure you want to unlink your credential from the account of %s?",
           "unlinkButton": "Unlink",
           "cancelButton": "Cancel"
         }
       },
       "identityManagementButtons": {
         "toggleLogin": {
-          "label": "Allow this identity to log in to your account.",
-          "unlinkButton": "Unlink this identity"
+          "label": "Allow this credential to log in to your account.",
+          "unlinkButton": "Unlink this credential"
         }
       },
       "loginIdentitiesOfLinkedAccounts": {
         "show": {
-          "explanation": "This identity is shared with other accounts. Those accounts have the following login identities:",
+          "explanation": "This credential is shared with other accounts. Those accounts have the following login credentials:",
           "unlinkButton": "unlink",
           "hideButton": "hide other accounts"
         },
         "hide": {
-          "explanation": "This identity is shared with at least one other account.",
+          "explanation": "This credential is shared with at least one other account.",
           "showButton": "show other accounts"
         }
       },
       "identityCardSignInButton": {
         "hint": "sign in as %s",
         "title": "Sign in"
+      },
+      "accountCardSignInButton": {
+        "reSign": "To sign out of your current account and sign in as this user, choose how to sign in:"
+        "howToSignIn": "Choose how to sign in:"
       }
     },
     "tokenTemplates": {
@@ -1581,7 +1589,7 @@
       "loading": "Loading..."
     },
     "setupWizardProgressBar": {
-      "identityProviders": "Identity providers",
+      "identityProviders": "Login providers",
       "organization": "Organization",
       "email": "Email",
       "preinstalledApps": "Pre-installed apps",
@@ -1604,7 +1612,7 @@
       "title": "Welcome to Sandstorm!",
       "revisitWizardLink": "Revisit setup wizard",
       "noIdpEnabled": {
-        "explanation": "This Sandstorm server has been set up previously, but due to a change in <code>sandstorm.conf</code>, you'll need to configure identity providers again."
+        "explanation": "This Sandstorm server has been set up previously, but due to a change in <code>sandstorm.conf</code>, you'll need to configure login providers again."
       },
       "idpEnabled": {
         "explanation": "This Sandstorm server is ready to roll. You can adjust server settings, including which providers are enabled and how Sandstorm sends email.",
@@ -1622,9 +1630,9 @@
       "setupButton": "Begin Sandstorm Setup"
     },
     "setupWizardIdentity": {
-      "title": "Identity providers",
-      "explanation1": "To use Sandstorm, you need to create a user account.  Every user account on Sandstorm is backed by an identity provider.  You'll use this identity provider to authenticate as the first administrator of this Sandstorm install.",
-      "explanation2": "Configure the identity provider or providers you wish to enable.",
+      "title": "Login providers",
+      "explanation1": "To use Sandstorm, you need to create a user account.  Every user account on Sandstorm is backed by an login provider.  You'll use this login provider to authenticate as the first administrator of this Sandstorm install.",
+      "explanation2": "Configure the login provider or providers you wish to enable.",
       "nextButton": "Next",
       "backButton": "Back"
     },

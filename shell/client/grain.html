@@ -45,13 +45,11 @@
         {{> _grainSpinner ""}}
       {{/if}}
     {{else}}
-    {{#if interstitial.chooseIdentity}}
+    {{#if interstitial}}
       <div class="grain-interstitial">
-        <p>{{_ "grains.grainView.openWithWhichIdentity"}}</p>
-        {{> identityPicker identityPickerData}}
-        {{#if interstitial.showIncognito}}
+         <p>{{_ "grains.grainView.openWithWhichIdentity"}}</p>
+        <button class="reveal-identity-button">{{_ "grains.grainView.revealMyIdentity"}}</button>
         <button class="incognito-button" data-token="{{token}}">{{_ "grains.grainView.openInIncognitoMode"}}</button>
-        {{/if}}
       </div>
     {{else}}
       {{> _grainSpinner ""}}
@@ -88,12 +86,12 @@
 </template>
 
 
-<template name="wrongIdentity">
+<template name="wrongUser">
   <div class="grain-interstitial">
     <p>
       {{_ "grains.wrongIdentity.explanation"}}
     </p>
-    {{> identityCardSignInButton identity=recipient unclickedMessage=unclickedMessage}}
+    {{> accountCardSignInButton account=recipient }}
   </div>
 </template>
 
@@ -106,11 +104,6 @@
         <button class="request-access" title="{{_ "grains.requestAccess.requestAccessHint"}}">
           {{_ "grains.requestAccess.requestAccess"}}
         </button>
-      {{/if}}
-      {{#if chooseIdentity}}
-        <p>{{_ "grains.requestAccess.warnIdentityRevealing"}}</p>
-        <p> {{chooseIdentityText}} </p>
-        {{> identityPicker identityPickerData}}
       {{/if}}
       {{#if waiting}}
         <p>{{_ "grains.requestAccess.sendRequest"}}</p>
@@ -270,7 +263,7 @@
   {{#if isReady}}
   <div class="tables-container">
     <h5>{{_ "people.title"}}</h5>
-    {{#if transitiveShares.identityOwnedShares.empty}}
+    {{#if transitiveShares.accountOwnedShares.empty}}
       {{#if existingShareTokens}}
         <p>{{_ "grains.whoHasAccessPopup.noLoggedInUsers"}}</p>
       {{else}}
@@ -282,15 +275,15 @@
       {{/if}}
     {{else}}
       <table class="people">
-        {{#each transitiveShares.identityOwnedShares}}
+        {{#each transitiveShares.accountOwnedShares}}
           <tr>
             <td> {{displayName recipient}} </td>
             <td> {{_ "grains.whoHasAccessPopup.addedBy"}}
               <ul>
                 {{#each dedupedShares}}
                   <li>
-                    {{displayName identityId}}
-                    {{#if isCurrentIdentity identityId}}
+                    {{displayName accountId}}
+                    {{#if isCurrentAccount accountId}}
                       <button class="revoke-access" title="{{_ "grains.whoHasAccessPopup.revokeHint"}}" data-recipient="{{../recipient}}">
                         {{_ "grains.whoHasAccessPopup.revoke"}}
                       </button>
@@ -313,8 +306,8 @@
               <ul>
                 {{#each dedupedShares}}
                   <li>
-                    {{displayName identityId}}
-                    {{#if isCurrentIdentity identityId}}
+                    {{displayName accountId}}
+                    {{#if isCurrentAccount accountId}}
                       <button class="revoke-access" title="{{_ "grains.whoHasAccessPopup.revokeHint"}}" data-recipient="{{../recipient}}">
                         {{_ "grains.whoHasAccessPopup.revoke"}}
                       </button>
@@ -399,7 +392,7 @@
     {{/if}}
     <p>
     <span class="icon icon-people"></span>
-    {{> contactInputBox contacts=contacts preselectedIdentityId=preselectedIdentityId
+    {{> contactInputBox contacts=contacts preselectedAccountId=preselectedAccountId
          disabled=isDemoUser}}
     {{> selectRole viewInfo=viewInfo disabled=isDemoUser}}
     </p>

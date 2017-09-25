@@ -28,7 +28,7 @@ globalSubs = [
   Meteor.subscribe("userPackages"),
   Meteor.subscribe("devPackages"),
   Meteor.subscribe("credentials"),
-  Meteor.subscribe("accountIdentities"),
+  Meteor.subscribe("accountCredentials"),
 ];
 
 getUserLanguage = function () {
@@ -53,19 +53,19 @@ if (Meteor.isClient) {
 Tracker.autorun(function () {
   const me = Meteor.user();
   if (me) {
-    if (me.profile) {
-      Meteor.subscribe("identityProfile", me._id);
+    if (me.type === "credential") {
+      Meteor.subscribe("credentialDetails", me._id);
     }
 
-    if (me.loginIdentities) {
-      me.loginIdentities.forEach(function (identity) {
-        Meteor.subscribe("identityProfile", identity.id);
+    if (me.loginCredentials) {
+      me.loginCredentials.forEach(function (credential) {
+        Meteor.subscribe("credentialDetails", credential.id);
       });
     }
 
-    if (me.nonloginIdentities) {
-      me.nonloginIdentities.forEach(function (identity) {
-        Meteor.subscribe("identityProfile", identity.id);
+    if (me.nonloginCredentials) {
+      me.nonloginCredentials.forEach(function (credential) {
+        Meteor.subscribe("credentialDetails", credential.id);
       });
     }
   }
@@ -83,7 +83,7 @@ logoutSandstorm = function () {
     }
   };
 
-  if (globalDb.userHasSamlLoginIdentity()) {
+  if (globalDb.userHasSamlLoginCredential()) {
     Meteor.call("generateSamlLogout", function (err, url) {
       Meteor.logout(function () {
         logoutHelper();
@@ -358,17 +358,15 @@ launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex, opti
 
   const title = "Untitled " + appTitle + " " + nounPhrase;
 
-  const identityId = Accounts.getCurrentIdentityId();
-
   // We need to ask the server to start a new grain, then browse to it.
-  Meteor.call("newGrain", packageId, command, title, identityId, function (error, grainId) {
+  Meteor.call("newGrain", packageId, command, title, null, function (error, grainId) {
     if (error) {
       if (error.error === 402) {
         // Sadly this can occur under LDAP quota management when the backend updates its quota
         // while creating the grain.
         showBillingPrompt("outOfStorage", function () {
           // TODO(someday): figure out the actual reason, instead of hard-coding outOfStorage
-          Meteor.call("newGrain", packageId, command, title, identityId,
+          Meteor.call("newGrain", packageId, command, title, null,
           function (error, grainId) {
             if (error) {
               console.error(error);
@@ -575,9 +573,9 @@ Template.layout.helpers({
     return globalGrains;
   },
 
-  identityUser: function () {
+  credentialUser: function () {
     const user = Meteor.user();
-    return user && user.profile;
+    return user && user.type === "credential";
   },
 
   showAccountButtons: function () {
@@ -769,8 +767,7 @@ restoreBackup = function (file) {
     } else {
       startUpload(file, "/uploadBackup/" + token, function (response) {
         Session.set("uploadStatus", "Unpacking");
-        const identityId = Accounts.getCurrentIdentityId();
-        Meteor.call("restoreGrain", token, identityId, function (err, grainId) {
+        Meteor.call("restoreGrain", token, null, function (err, grainId) {
           if (err) {
             console.log(err);
             Session.set("uploadStatus", undefined);
@@ -825,7 +822,7 @@ Router.map(function () {
     path: "/",
     subscriptions: function () {
       this.subscribe("hasUsers").wait();
-      if (!Meteor.loggingIn() && Meteor.user() && Meteor.user().loginIdentities) {
+      if (!Meteor.loggingIn() && Meteor.user() && Meteor.user().loginCredentials) {
         this.subscribe("grainsMenu").wait();
       }
     },
@@ -836,7 +833,7 @@ Router.map(function () {
       }
       // If the user is logged-in, and can create new grains, and
       // has no grains yet, then send them to "new".
-      if (this.ready() && Meteor.userId() && !Meteor.loggingIn() && Meteor.user().loginIdentities) {
+      if (this.ready() && Meteor.userId() && !Meteor.loggingIn() && Meteor.user().loginCredentials) {
         if (globalDb.currentUserGrains().count() === 0 &&
             globalDb.currentUserApiTokens().count() === 0) {
           Router.go("apps", {}, { replaceState: true });

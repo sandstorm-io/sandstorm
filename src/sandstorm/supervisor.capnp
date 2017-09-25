@@ -202,8 +202,8 @@ struct MembraneRequirement {
       # set of permissions on some specified grain.
 
       union {
-        identityId @5 :Text;
-        # The permissions must be held by the identity with this ID.
+        accountId @5 :Text;
+        # The permissions must be held by the user account with this ID.
 
         tokenId @6: Text;
         # The permissions must be held by anyone who bears the token with this ID.
@@ -347,8 +347,14 @@ struct ApiTokenOwner {
       # Owned by a user's identity. If the token represents a UiView, then it will show up in this
       # user's grain list.
 
+      accountId @18 :Text;
+      # The account that is allowed to restore this token.
+
       identityId @10 :Text;
-      # The identity that is allowed to restore this token.
+      # The identity ID used to identify this user to the app, in the context of this grain. The
+      # app does not receive the user's account ID because this could allow unwanted correlation
+      # of users between grains, and becaues grains may transfer between Sandstorm instances where
+      # account IDs may differ.
 
       title @7 :Text;
       # Title as chosen by the user, or as copied from the sharer.

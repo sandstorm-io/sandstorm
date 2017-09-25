@@ -70,7 +70,7 @@ class GrainView {
 
     this._powerboxRequest = new ReactiveVar(undefined);
 
-    this._userIdentityId = new ReactiveVar(undefined);
+    this._userIdentityRevealed = new ReactiveVar(undefined);
     // `false` means incognito; `undefined` means we still need to decide whether to reveal
     // an identity.
 
@@ -81,11 +81,11 @@ class GrainView {
 
       const disallowGuests = globalDb.getOrganizationDisallowGuests();
       if (disallowGuests) {
-        // If guests are disallowed, we can skip the interstitial if there's only 1 identitiy.
-        const user = Meteor.user();
-        if (user && user.loginIdentities.length === 1 && user.nonloginIdentities.length === 0) {
-          this.revealIdentity(user.loginIdentities[0].id);
-        }
+        // If guests are disallowed, we can skip the interstitial.
+        // TODO(someday): Maybe this should be based instead on both the user and the grain owner
+        //   being in the organization, and the "reveal org identities to each other" setting being
+        //   enabled?
+        this.revealIdentity();
       }
     } else {
       this.revealIdentity();
@@ -119,7 +119,7 @@ class GrainView {
       const id = devApp ? devApp._id : "none";
       if (this._devAppId !== id) {
         if (this._status !== "closed") {
-          this.reset(this.identityId());
+          this.reset(!this.isIncognito());
           this.openSession();
         }
       }
@@ -136,7 +136,7 @@ class GrainView {
     return [this._grainId, this._path, this._tokenInfo];
   }
 
-  reset(identityId) {
+  reset(immediatelyRevealIdentity) {
     // TODO(cleanup): This duplicates some code from the GrainView constructor.
 
     this._dep.changed();
@@ -152,9 +152,9 @@ class GrainView {
     this._sessionSub = undefined;
 
     this._status = "closed";
-    this._userIdentityId = new ReactiveVar(undefined);
-    if (identityId) {
-      this.revealIdentity(identityId);
+    this._userIdentityRevealed = new ReactiveVar(undefined);
+    if (immediatelyRevealIdentity) {
+      this.revealIdentity();
     } else if (this._tokenInfo && this._tokenInfo.webkey && !Meteor.userId()) {
       this.doNotRevealIdentity();
     }
@@ -163,61 +163,6 @@ class GrainView {
     this._originalPath = this._path;
     if (!this._grains || this._grains.contains(this)) {
       this._blazeView = Blaze.renderWithData(Template.grainView, this, this._parentElement);
-    }
-  }
-
-  switchIdentity(identityId) {
-    check(identityId, String);
-    const currentIdentityId = this.identityId();
-    const grainId = this.grainId();
-    if (currentIdentityId === identityId) return;
-    const _this = this;
-    if (this._status === "error") {
-      // This case applies when the user switches their identity before clicking on the
-      // "request access" button.
-      this._userIdentityId.set(identityId);
-    } else if (this._token) {
-      // We're currently viewing the grain incognito.
-      _this.reset(identityId);
-      _this.openSession();
-    } else if (this.isOwner()) {
-      Meteor.call("updateGrainPreferredIdentity", grainId, identityId, (err, result) => {
-        if (err) {
-          console.log("error:", err);
-        } else {
-          _this.reset(identityId);
-          _this.openSession();
-        }
-      });
-    } else {
-      if (this._db.collections.apiTokens.findOne({
-        grainId: grainId,
-        "owner.user.identityId": identityId,
-        revoked: { $ne: true },
-      })) {
-        // just do the switch
-        _this.reset(identityId);
-        _this.openSession();
-      } else {
-        // Should we maybe prompt the user first?
-        //  'That identity does not already have access to this grain. Would you like to share access
-        //   from your current identity? Y/ cancel.'
-        Meteor.call("newApiToken",
-            { identityId: currentIdentityId },
-            grainId,
-            "direct share",
-            { allAccess: null },
-            { user: { identityId: identityId, title: _this.title() } },
-            (err, result) => {
-              if (err) {
-                console.log("error:", err);
-              } else {
-                _this.reset(identityId);
-                _this.openSession();
-              }
-            }
-        );
-      }
     }
   }
 
@@ -313,7 +258,7 @@ class GrainView {
       // Case 2.
       const apiToken = this._db.collections.apiTokens.findOne({
         grainId: this._grainId,
-        "owner.user.identityId": this.identityId(),
+        "owner.user.accountId": Meteor.userId(),
       }, {
         sort: { created: 1 },
       });
@@ -348,7 +293,7 @@ class GrainView {
       // Case 2
       const token = this._db.collections.apiTokens.findOne({
         grainId: this._grainId,
-        "owner.user.identityId": this.identityId(),
+        "owner.user.accountId": Meteor.userId(),
       }, {
         sort: { created: 1 },
       });
@@ -440,8 +385,8 @@ class GrainView {
 
   setTitle(newTitle) {
     this._title = newTitle;
-    if (this._userIdentityId.get()) {
-      Meteor.call("updateGrainTitle", this._grainId, newTitle, this._userIdentityId.get());
+    if (this._userIdentityRevealed.get()) {
+      Meteor.call("updateGrainTitle", this._grainId, newTitle);
     }
 
     this._dep.changed();
@@ -474,51 +419,38 @@ class GrainView {
     this._dep.depend();
   }
 
-  revealIdentity(identityId) {
+  revealIdentity() {
     if (!Meteor.user()) {
       return;
     }
 
-    const oldIdentityId = this._userIdentityId.get();
-    const myIdentityIds = SandstormDb.getUserIdentityIds(Meteor.user());
-    let resultIdentityId = Accounts.getCurrentIdentityId();
-    const grain = this._db.getGrain(this._grainId);
-    if (identityId && myIdentityIds.indexOf(identityId) != -1) {
-      resultIdentityId = identityId;
-    } else if (grain && myIdentityIds.indexOf(grain.identityId) != -1) {
-      // If we own the grain, open it as the owning identity.
-      resultIdentityId = grain.identityId;
-    } else {
-      const token = this._db.collections.apiTokens.findOne({
-        grainId: this._grainId,
-        "owner.user.identityId": { $in: myIdentityIds },
-      }, {
-        sort: { lastUsed: -1 },
-      });
-
-      if (token) {
-        resultIdentityId = token.owner.user.identityId;
+    const current = this._userIdentityRevealed.get();
+    if (current !== true) {
+      if (current === false) {
+        this.reset(true);
+        this.openSession();
+      } else {
+        this._userIdentityRevealed.set(true);
+        this._dep.changed();
       }
     }
-
-    this._userIdentityId.set(resultIdentityId);
   }
 
   doNotRevealIdentity() {
-    if (this._userIdentityId.get() !== false) {
-      this._userIdentityId.set(false);
+    const current = this._userIdentityRevealed.get();
+    if (current) {
+      // For this to work you'd somehow have to find a sharing token to open instead.
+      throw new Error("can't un-reveal identity");
+    }
+    if (current !== false) {
+      this._userIdentityRevealed.set(false);
       this._dep.changed();
     }
   }
 
-  identityId() {
+  isIncognito() {
     this._dep.depend();
-    const identityId = this._userIdentityId.get();
-    if (identityId) {
-      return identityId;
-    } else {
-      return null;
-    }
+    return !this._userIdentityRevealed.get();
   }
 
   shouldShowInterstitial() {
@@ -529,8 +461,8 @@ class GrainView {
     }
 
     if (this._tokenInfo.webkey) {
-      // If we have explictly set _userIdentityId, we don't need to show the interstitial.
-      if (this._userIdentityId.get() !== undefined) {
+      // If we have explictly set _userIdentityRevealed, we don't need to show the interstitial.
+      if (this._userIdentityRevealed.get() !== undefined) {
         return null;
       }
 
@@ -540,11 +472,15 @@ class GrainView {
         return null;
       }
 
+      // Don't show interstitial if incognito is not an option.
+      // TODO(someday): Maybe don't ever show it if the user and grain owner are both in the org,
+      //   particuarly if all org identities are revealed to each other...
+      if (globalDb.getOrganizationDisallowGuests()) {
+        return null;
+      }
+
       // Otherwise, we should show it.
-      return {
-        chooseIdentity: {},
-        showIncognito: !globalDb.getOrganizationDisallowGuests(),
-      };
+      return true;
     } else {
       throw new Error("unrecognized tokenInfo: ", this._tokenInfo);
     }
@@ -618,7 +554,7 @@ class GrainView {
         //     Note that apps should not depend on this behavior for security, because a
         //     malicious client can always choose to reuse the session salt anyway.
         Meteor.defer(() => {
-          this.reset(this.identityId());
+          this.reset(!this.isIncognito());
           this.openSession();
         });
       }
@@ -627,16 +563,15 @@ class GrainView {
 
   _openGrainSession() {
     const _this = this;
-    const identityId = _this.identityId();
+    const isIncognito = _this.isIncognito();
 
     const condition = () => {
       // Make sure we don't call openSession before the user is logged in.
-      // Legacy shares don't have an identityId.
-      return !identityId || (Meteor.userId() && !Meteor.loggingIn());
+      return isIncognito || (Meteor.userId() && !Meteor.loggingIn());
     };
 
     onceConditionIsTrue(condition, () => {
-      Meteor.call("openSession", _this._grainId, identityId, _this._sessionSalt, this._options,
+      Meteor.call("openSession", _this._grainId, !isIncognito, _this._sessionSalt, this._options,
                   (error, result) => {
         if (error) {
           console.error("openSession error", error);
@@ -665,12 +600,11 @@ class GrainView {
   _openApiTokenSession() {
     const _this = this;
     const condition = () => {
-      return _this._tokenInfo.webkey && _this._userIdentityId.get() !== undefined;
+      return _this._tokenInfo.webkey && _this._userIdentityRevealed.get() !== undefined;
     };
 
     onceConditionIsTrue(condition, () => {
-      // Note that a null/undefined identityId when the user is logged in implies incognito mode.
-      const identityId = _this.identityId();
+      const isIncognito = _this.isIncognito();
 
       // This is an object for historical reasons.
       const openSessionArg = {
@@ -679,7 +613,7 @@ class GrainView {
 
       const neverRedeem = isStandalone();
       Meteor.call("openSessionFromApiToken",
-        openSessionArg, identityId, _this._sessionSalt,
+        openSessionArg, !isIncognito, _this._sessionSalt,
         neverRedeem, getOrigin(), this._options, (error, result) => {
           if (error) {
             console.error("openSessionFromApiToken error", error);
@@ -767,7 +701,7 @@ class GrainView {
       // Case 2
       const apiToken = this._db.collections.apiTokens.findOne({
         grainId: this._grainId,
-        "owner.user.identityId": this.identityId(),
+        "owner.user.accountId": Meteor.userId(),
       }, {
         sort: { created: 1 },
       });
@@ -883,10 +817,9 @@ class GrainView {
     } else if (grain && Meteor.userId() === grain.userId) {
       return !!grain.trashed;
     } else {
-      const myIdentityIds = SandstormDb.getUserIdentityIds(Meteor.user());
       return !!this._db.collections.apiTokens.findOne({
         grainId: this._grainId,
-        "owner.user.identityId": { $in: myIdentityIds },
+        "owner.user.accountId": Meteor.userId(),
         trashed: { $exists: true },
       });
     }
@@ -898,10 +831,12 @@ class GrainView {
         _id: this._grainId,
         ownerSeenAllActivity: { $ne: true },
       }).count() > 0;
+    } else if (this._isUsingAnonymously()) {
+      return false;
     } else {
       return this._db.collections.apiTokens.find({
         grainId: this._grainId,
-        "owner.user.identityId": this.identityId(),
+        "owner.user.accountId": Meteor.userId(),
         "owner.user.seenAllActivity": { $ne: true },
       }).count() > 0;
     }
@@ -911,7 +846,7 @@ class GrainView {
     if (this.isOwner()) {
       Meteor.call("markActivityReadByOwner", this._grainId);
     } else {
-      Meteor.call("markActivityRead", this._grainId, this.identityId());
+      Meteor.call("markActivityRead", this._grainId);
     }
   }
 

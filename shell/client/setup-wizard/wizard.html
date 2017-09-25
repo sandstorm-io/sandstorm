@@ -41,14 +41,14 @@
 
 <template name="setupWizardProgressBar">
 {{!-- expected arguments:
-   currentStep: String, should be one of ["intro", "identity", "organization", "email", "user", "success"]
+   currentStep: String, should be one of ["intro", "login", "organization", "email", "user", "success"]
 --}}
 <div class="setup-progress">
   <ol class="setup-progress-labels">
-    {{#setupWizardProgressBarItem stepName="identity"
-                                   isCurrentStep=(currentStepIs "identity")
-                                   mayJumpTo=(mayJumpTo "identity")
-                                   route="setupWizardIdentity"
+    {{#setupWizardProgressBarItem stepName="login"
+                                   isCurrentStep=(currentStepIs "login")
+                                   mayJumpTo=(mayJumpTo "login")
+                                   route="setupWizardLogin"
                                    className=itemClassName}}
       {{_ "wizard.setupWizardProgressBar.identityProviders"}}
     {{/setupWizardProgressBarItem}}
@@ -89,7 +89,7 @@
     {{/setupWizardProgressBarItem}}
   </ol>
   <div class="setup-progress-bar">
-    <div class="{{#if currentStepAtOrPast "identity"    }}complete{{else}}incomplete{{/if}}"></div>
+    <div class="{{#if currentStepAtOrPast "login"       }}complete{{else}}incomplete{{/if}}"></div>
     <div class="{{#if currentStepAtOrPast "organization"}}complete{{else}}incomplete{{/if}}"></div>
     <div class="{{#if currentStepAtOrPast "email"       }}complete{{else}}incomplete{{/if}}"></div>
     <div class="{{#if currentStepAtOrPast "preinstalled"}}complete{{else}}incomplete{{/if}}"></div>
@@ -188,8 +188,8 @@
           {{#linkTo route="newAdminRoot" class="admin-settings-button"}}{{_ "wizard.setupWizardIntro.idpEnabled.isAdmin.adminPanelLink"}}{{/linkTo}}
         </p>
       {{else}}
-        {{#if identityUser}}
-          {{> identityLoginInterstitial "" }}
+        {{#if credentialUser}}
+          {{> credentialLoginInterstitial "" }}
         {{else}}
           <p class="center">
             <button class="make-self-admin">{{_ (con txt "idpEnabled.isAdmin.suButton")}}</button>
@@ -203,7 +203,7 @@
       <p>
         <div class="center">
           {{#if showSignInPanel}}
-            {{#with linkingNewIdentity=notLinkingNewIdentity}}
+            {{#with linkingNewCredential=notLinkingNewCredential}}
               {{> loginButtonsDialog label=(_ (con txt "idpEnabled.isNotAdmin.signInLabel")) accountsUi=freshAccountsUi}}
             {{/with}}
           {{else}}
@@ -214,7 +214,7 @@
     {{/if}}
 
     <p class="center">
-      {{#linkTo route="setupWizardIdentity" class="rerun-wizard-button"}}{{_ "wizard.setupWizardIntro.revisitWizardLink"}}{{/linkTo}}
+      {{#linkTo route="setupWizardLogin" class="rerun-wizard-button"}}{{_ "wizard.setupWizardIntro.revisitWizardLink"}}{{/linkTo}}
     </p>
     {{/if}}
   {{else}}
@@ -230,11 +230,11 @@
 {{/let}}
 </template>
 
-<template name="setupWizardIdentity">
+<template name="setupWizardLogin">
 {{#let txt="wizard.setupWizardIdentity"}}
 <div class="setup-page-content">
   <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
-  {{> setupWizardProgressBar currentStep="identity"}}
+  {{> setupWizardProgressBar currentStep="login"}}
 
   <p>
     {{_ (con txt "explanation1")}}
@@ -244,7 +244,7 @@
     {{_ (con txt "explanation2")}}
   </p>
 
-  {{> adminIdentityProviderTable idpData=idpData }}
+  {{> adminLoginProviderTable idpData=idpData }}
 
   {{#setupWizardButtonRow}}
     <button class="setup-next-button" {{nextHtmlDisabled}}>
@@ -509,14 +509,14 @@
     {{/focusingSuccessBox}}
   {{/if}}
 
-{{#if identityUser}}
-  {{> identityLoginInterstitial "" }}
+{{#if credentialUser}}
+  {{> credentialLoginInterstitial "" }}
 {{else}}
   {{#if currentUser}}
     {{#if currentUserFirstLogin}}
       <div class="center">
         <h2>{{_ (con txt "firstLogin.title")}}</h2>
-        <div class="single-identity-editor">
+        <div class="single-credential-editor">
           {{#with accountProfileEditorData}}
             {{> _accountProfileEditor .}}
           {{/with}}
@@ -550,7 +550,7 @@
 
       {{!-- The loginButtonsDialog apparently requires this in the parent data context, which seems
             wrong.  It should probably be passed in explicitly instead.  --}}
-      {{#with linkingNewIdentity=notLinkingNewIdentity}}
+      {{#with linkingNewCredential=notLinkingNewCredential}}
         {{> loginButtonsDialog label=(_ (con txt "loggedOut.dialogLabel")) accountsUi=freshAccountsUi}}
       {{/with}}
     </div>

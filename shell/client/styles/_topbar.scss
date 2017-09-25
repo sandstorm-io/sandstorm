@@ -1100,7 +1100,7 @@ body>.popup {
       }
       >ul.autocomplete-suggestions {
         position: absolute;
-        width: 350px;
+        width: 328px;
         display: block;
         background: white;
         z-index: 1;
@@ -1122,9 +1122,13 @@ body>.popup {
           }
           &:hover {
             background-color: #999;
-            * {
-              background-color: #999;
+            .account-card {
+              background-color: inherit;
             }
+          }
+
+          .account-card {
+            width: 100%;
           }
         }
       }

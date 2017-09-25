@@ -1,55 +1,31 @@
-<template name="newAdminUserDetailsIdentityTableRow">
+<template name="newAdminUserDetailsCredentialTableRow">
 {{#let txt="admin.userDetails.newAdminUserDetailsIdentityTableRow"}}
 {{!-- Expects:
-         identity: Object
-  isLoginIdentity: Boolean
+       credential: Object
+isLoginCredential: Boolean
      primaryEmail: String.  Account's primary contact address.
 --}}
-  <div class="admin-user-identity-body-row" role="row">
-    <div class="admin-user-identity-body-cell identity" role="gridcell">
-      <ul class="identity-information">
-        <li class="identity-picture-name">
-          <div class="identity-profile-picture" style="background-image: url('{{ identity.profile.pictureUrl }}');">
-            {{_ (con txt "profilePicture.label")}}
-          </div>
-          <span class="identity-name">
-            {{ identity.profile.name }}
-          </span>
-        </li>
-        <li class="identity-provider">
-          <div class="identity-provider-icon" title="{{identity.profile.service}}">
-            <span class="provider-icon {{identity.profile.service}}">
-              {{identity.profile.service}}
+  <div class="admin-user-credential-body-row" role="row">
+    <div class="admin-user-credential-body-cell credential" role="gridcell">
+      <ul class="credential-information">
+        <li class="credential-provider">
+          <div class="login-provider-icon" title="{{credential.serviceName}}">
+            <span class="provider-icon {{credential.serviceName}}">
+              {{credential.serviceName}}
             </span>
           </div>
           <span class="intrinsic-name">
-            {{ identity.profile.intrinsicName }}
+            {{ credential.intrinsicName }}
           </span>
         </li>
-        <li class="identity-handle">
-          <div class="identity-handle-decorator" role="presentation" title="{{_ (con txt "handle.hint")}}">
-            {{_ (con txt "handle.label")}}
-          </div>
-          <code>{{ identity.profile.handle }}</code>
-        </li>
-        <li class="identity-pronouns">
-          <div class="identity-pronouns-decorator" role="presentation" title="{{_ (con txt "pronouns.hint")}}">
-            <span class="identity-pronouns-icon">
-              {{_ (con txt "pronouns.label")}}
-            </span>
-          </div>
-          <span class="identity-pronouns-preference">
-            {{ identity.profile.pronoun }}
-          </span>
-        </li>
-        <li class="identity-emails">
-          <div class="identity-emails-decorator" role="presentation" title="{{_ (con txt "emails.hint")}}">
-            <span class="identity-emails-icon">
+        <li class="credential-emails">
+          <div class="credential-emails-decorator" role="presentation" title="{{_ (con txt "handle.emails")}}">
+            <span class="credential-emails-icon">
               {{_ (con txt "emails.label")}}
             </span>
           </div>
-          <ul class="identity-emails-list">
-          {{#each email in (emailsForIdentity identity primaryEmail) }}
+          <ul class="credential-emails-list">
+          {{#each email in (emailsForCredential credential primaryEmail) }}
             <li>
               <a href="mailto:{{email.email}}">{{ email.email }}</a>
               {{#if email.primary}}
@@ -71,13 +47,13 @@
         </li>
       </ul>
     </div>
-    <div class="admin-user-identity-body-cell created" role="gridcell">{{ dateString identity.createdAt }}</div>
-    <div class="admin-user-identity-body-cell last-active" role="gridcell">{{ dateString identity.lastActive }}</div>
-    <div class="admin-user-identity-body-cell properties" role="gridcell">
-      {{#if isLoginIdentity }}
-        <span class="login-identity">{{_ (con txt "properties.login")}}</span>
+    <div class="admin-user-credential-body-cell created" role="gridcell">{{ dateString credential.createdAt }}</div>
+    <div class="admin-user-credential-body-cell last-active" role="gridcell">{{ dateString credential.lastActive }}</div>
+    <div class="admin-user-credential-body-cell properties" role="gridcell">
+      {{#if isLoginCredential }}
+        <span class="login-credential">{{_ (con txt "properties.login")}}</span>
       {{/if}}
-      {{#if (isOrganizationMember identity) }}
+      {{#if (isOrganizationMember credential) }}
         <span class="org-member">properties.org</span>
       {{/if}}
     </div>
@@ -85,23 +61,15 @@
 {{/let}}
 </template>
 
-<template name="newAdminUserDetailsIdentityMIATableRow">
+<template name="newAdminUserDetailsCredentialMIATableRow">
 {{#let txt="admin.userDetails.newAdminUserDetailsIdentityTableRow"}}
-{{!-- Filler row to deal with the fact that sometimes identities are missing in
+{{!-- Filler row to deal with the fact that sometimes credentials are missing in
       the database. --}}
-  <div class="admin-user-identity-body-row" role="row">
-    <div class="admin-user-identity-body-cell identity" role="gridcell">
-      <ul class="identity-information">
-        <li class="identity-picture-name">
-          <div class="identity-profile-picture">
-            {{_ (con txt "profilePicture.label")}}
-          </div>
-          <span class="identity-name">
-            {{_ (con txt "unknown.profilePicture.cell")}}
-          </span>
-        </li>
-        <li class="identity-provider">
-          <div class="identity-provider-icon" title="{{_ (con txt "unknown.service.hint")}}">
+  <div class="admin-user-credential-body-row" role="row">
+    <div class="admin-user-credential-body-cell credential" role="gridcell">
+      <ul class="credential-information">
+        <li class="credential-provider">
+          <div class="login-provider-icon" title="unknown service">
             <span class="provider-icon">
               {{_ (con txt "unknown.service.label")}}
             </span>
@@ -110,29 +78,13 @@
             {{_ (con txt "unknown.service.cell")}}
           </span>
         </li>
-        <li class="identity-handle">
-          <div class="identity-handle-decorator" role="presentation" title="{{_ (con txt "handle.hint")}}">
-            {{_ (con txt "handle.label")}}
-          </div>
-          <code>{{_ (con txt "unknown.handle.cell")}}</code>
-        </li>
-        <li class="identity-pronouns">
-          <div class="identity-pronouns-decorator" role="presentation" title="{{_ (con txt "pronouns.hint")}}">
-            <span class="identity-pronouns-icon">
-              {{_ (con txt "pronouns.label")}}
-            </span>
-          </div>
-          <span class="identity-pronouns-preference">
-            {{_ (con txt "known.pronouns.cell")}}
-          </span>
-        </li>
-        <li class="identity-emails">
-          <div class="identity-emails-decorator" role="presentation" title="{{_ (con txt "emails.hint")}}">
-            <span class="identity-emails-icon">
+        <li class="credential-emails">
+          <div class="credential-emails-decorator" role="presentation" title="Emails">
+            <span class="credential-emails-icon">
               {{_ (con txt "emails.label")}}
             </span>
           </div>
-          <ul class="identity-emails-list">
+          <ul class="credential-emails-list">
             <li>
               {{_ (con txt "emails.notFound")}}
             </li>
@@ -140,49 +92,49 @@
         </li>
       </ul>
     </div>
-    <div class="admin-user-identity-body-cell created" role="gridcell">{{_ (con txt "unknown.created.cell")}}</div>
-    <div class="admin-user-identity-body-cell last-active" role="gridcell">{{_ (con txt "unknown.lastActive.cell")}}</div>
-    <div class="admin-user-identity-body-cell properties" role="gridcell"></div>
+    <div class="admin-user-credential-body-cell created" role="gridcell">{{_ (con txt "unknown.created.cell")}}</div>
+    <div class="admin-user-credential-body-cell last-active" role="gridcell">{{_ (con txt "unknown.lastActive.cell")}}</div>
+    <div class="admin-user-credential-body-cell properties" role="gridcell"></div>
   </div>
 {{/let}}
 </template>
 
-<template name="newAdminUserDetailsIdentityTable">
+<template name="newAdminUserDetailsCredentialTable">
 {{#let txt="admin.userDetails.newAdminUserDetailsIdentityTable"}}
 {{!-- Expects:
   account: Object
 --}}
-  <div class="admin-user-identity-list" role="grid">
-    <div class="admin-user-identity-header" role="rowgroup">
-      <div class="admin-user-identity-header-row" role="row">
-        <div class="admin-user-identity-header-cell identity" role="columnheader">{{_ (con txt "header.identity")}}</div>
-        <div class="admin-user-identity-header-cell created" role="columnheader">{{_ (con txt "header.created")}}</div>
-        <div class="admin-user-identity-header-cell last-active" role="columnheader">{{_ (con txt "header.lastActive")}}</div>
-        <div class="admin-user-identity-header-cell properties" role="columnheader">{{_ (con txt "header.properties")}}</div>
+  <div class="admin-user-credential-list" role="grid">
+    <div class="admin-user-credential-header" role="rowgroup">
+      <div class="admin-user-credential-header-row" role="row">
+        <div class="admin-user-credential-header-cell credential" role="columnheader">{{_ (con txt "header.credential")}}</div>
+        <div class="admin-user-credential-header-cell created" role="columnheader">{{_ (con txt "header.created")}}</div>
+        <div class="admin-user-credential-header-cell last-active" role="columnheader">{{_ (con txt "header.lastActive")}}</div>
+        <div class="admin-user-credential-header-cell properties" role="columnheader">{{_ (con txt "header.properties")}}</div>
       </div>
     </div>
 
-    <div class="admin-user-identity-body" role="rowgroup">
-      {{#each identity in (loginIdentities account) }}
-        {{#if identity}}
-          {{> newAdminUserDetailsIdentityTableRow
-                identity=identity
-                isLoginIdentity=true
+    <div class="admin-user-credential-body" role="rowgroup">
+      {{#each credential in (loginCredentials account) }}
+        {{#if credential}}
+          {{> newAdminUserDetailsCredentialTableRow
+                credential=credential
+                isLoginCredential=true
                 primaryEmail=account.primaryEmail
                 }}
         {{else}}
-          {{> newAdminUserDetailsIdentityMIATableRow "" }}
+          {{> newAdminUserDetailsCredentialMIATableRow "" }}
         {{/if}}
       {{/each}}
-      {{#each identity in (nonloginIdentities account) }}
-        {{#if identity}}
-          {{> newAdminUserDetailsIdentityTableRow
-                identity=identity
-                isLoginIdentity=false
+      {{#each credential in (nonloginCredentials account) }}
+        {{#if credential}}
+          {{> newAdminUserDetailsCredentialTableRow
+                credential=credential
+                isLoginCredential=false
                 primaryEmail=account.primaryEmail
                 }}
         {{else}}
-          {{> newAdminUserDetailsIdentityMIATableRow "" }}
+          {{> newAdminUserDetailsCredentialMIATableRow "" }}
         {{/if}}
       {{/each}}
     </div>
@@ -289,8 +241,37 @@
       </li>
     </ul>
 
-    <h2>{{_ (con txt "identities.title")}}</h2>
-    {{> newAdminUserDetailsIdentityTable account=account }}
+    <h2>{{_ (con txt "profile.title")}}</h2>
+
+    <ul class="admin-users-profile-information">
+      <li class="profile-picture-name">
+        <div class="profile-picture" style="background-image: url('{{ account.profile.pictureUrl }}');">
+          {{_ (con txt "profilePicture.label")}}
+        </div>
+        <span class="profile-name">
+          {{ account.profile.name }}
+        </span>
+      </li>
+      <li class="profile-handle">
+        <div class="profile-handle-decorator" role="presentation" title="{{_ (con txt "handle.title")}">
+          @
+        </div>
+        <code>{{ account.profile.handle }}</code>
+      </li>
+      <li class="profile-pronouns">
+        <div class="profile-pronouns-decorator" role="presentation" title="{{_ (con txt "pronouns.label")}">
+          <span class="profile-pronouns-icon">
+            {{_ (con txt "pronouns.hint")}
+          </span>
+        </div>
+        <span class="profile-pronouns-preference">
+          {{ account.profile.pronoun }}
+        </span>
+      </li>
+    </ul>
+
+    <h2>{{_ (con txt "credentials.title")}}</h2>
+    {{> newAdminUserDetailsCredentialTable account=account }}
 
     <h2>{{_ (con txt "status.title")}}</h2>
 

@@ -119,7 +119,7 @@ button.revoke-token, button.revoke-access {
 }
 
 .main-content, .first-sign-in-main-content, .demo-expired-main-content,
-.identity-login-interstitial, .suspended-main-content {
+.credential-login-interstitial, .suspended-main-content {
   margin: 0;
   padding: 0;
   position: fixed;
@@ -209,12 +209,23 @@ button.revoke-token, button.revoke-access {
   align-items: center;
   flex-direction: column;
   background-color: $default-content-background-color;
-  button.request-access, button.incognito-button, button.restore-from-trash {
+  button.request-access, button.reveal-identity-button, button.restore-from-trash {
     @extend %button-base;
     @extend %button-primary;
     font-weight: 600;
     padding: 8px;
     line-height: 1.33;
+    width: 200px;
+    margin-bottom: 1em;
+  }
+  button.incognito-button {
+    @extend %button-base;
+    @extend %button-secondary;
+    font-weight: 600;
+    padding: 8px;
+    line-height: 1.33;
+    width: 200px;
+    margin-bottom: 1em;
   }
 }
 

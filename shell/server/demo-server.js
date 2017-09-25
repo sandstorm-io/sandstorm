@@ -50,8 +50,8 @@ function cleanupExpiredUsers() {
   // Delete expired demo accounts and all their grains.
 
   const now = new Date(Date.now() - DEMO_GRACE_MS);
-  Meteor.users.find({ expires: { $lt: now }, loginIdentities: { $exists: true } },
-      { fields: { _id: 1, loginIdentities: 1, lastActive: 1, appDemoId: 1, experiments: 1 } })
+  Meteor.users.find({ expires: { $lt: now }, loginCredentials: { $exists: true } },
+      { fields: { _id: 1, loginCredentials: 1, lastActive: 1, appDemoId: 1, experiments: 1 } })
               .forEach(function (user) {
     console.log("delete demo user: " + user._id);
     globalDb.deleteAccount(user._id, globalBackend);
@@ -73,13 +73,13 @@ function cleanupExpiredUsers() {
     DeleteStats.insert(record);
   });
 
-  // All demo identities should have been deleted as part of deleting the demo users, but just in
+  // All demo credentials should have been deleted as part of deleting the demo users, but just in
   // case, check for them too.
-  Meteor.users.find({ expires: { $lt: now }, loginIdentities: { $exists: false } },
+  Meteor.users.find({ expires: { $lt: now }, loginCredentials: { $exists: false } },
                     { fields: { _id: 1 } })
               .forEach(function (user) {
-    console.log("delete demo identity: " + user._id);
-    globalDb.deleteIdentity(user._id);
+    console.log("delete demo credential: " + user._id);
+    globalDb.deleteCredential(user._id);
   });
 }
 

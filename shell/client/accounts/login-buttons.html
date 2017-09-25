@@ -81,15 +81,10 @@ licenses, included in the LICENSES directory.
     {{#linkTo route="account" role="menuitem"}}
       {{_ "accounts.title"}}
     {{/linkTo}}
-    {{#if showIdentitySwitcher}}
-    <button class="switch-identity">
-      {{_ (con txt "switchButton")}} {{#if identitySwitcherExpanded}}▴{{else}}▾{{/if}}
-    </button>
-    {{#if identitySwitcherExpanded}}
-    <div class="inline-identity-switcher">
-      {{> identityPicker identitySwitcherData}}
-    </div>
-    {{/if}}
+    {{#if isInApp}}
+      {{#if isIncognito}}
+        <button class="leave-incognito">{{_ (con txt "revealIdentity")}}</button>
+      {{/if}}
     {{/if}}
     {{#if isAdmin}}
       {{#linkTo route="newAdminRoot" role="menuitem"}}{{_ "admin.admin.newAdmin.title"}}{{/linkTo}}
@@ -165,11 +160,11 @@ licenses, included in the LICENSES directory.
 <template name="loginButtonsList">
   <div class="login-buttons-list">
   {{#each services}}
-    {{#with data=loginTemplate.data linkingNewIdentity=linkingNewIdentity}}
+    {{#with data=loginTemplate.data linkingNewCredential=linkingNewCredential}}
       {{> Template.dynamic template=../loginTemplate.name }}
     {{/with}}
   {{else}}
-    {{#linkTo route="newAdminIdentity" class="troubleshooting"}}
+    {{#linkTo route="newAdminLogin" class="troubleshooting"}}
       {{_ "accounts.loginButtons.loginButtonsList.configure"}}
     {{/linkTo}}
   {{/each}}
@@ -198,7 +193,7 @@ licenses, included in the LICENSES directory.
   {{#if expanded}}
   <form class="dev login expanded">
     {{_ (con txt "label")}} <button type="button" title="{{_ (con txt "hint")}}" class="unexpand"> ▴ </button>
-    <ul class="dev-identities">
+    <ul class="dev-credentials">
       <li><button type="button" class="login-dev-account" data-name="Alice Dev Admin"
                   data-is-admin="true">
           {{_ (con txt "alice")}}
@@ -227,10 +222,8 @@ licenses, included in the LICENSES directory.
 </template>
 
 <template name="emailLoginForm">
-  {{> emailAuthenticationForm linkingNewIdentity=linkingNewIdentity
-                              description=(_ "accounts.loginButtons.emailLoginForm.description")
-                              prompt="email"
-                              sendButtonText=(_ "accounts.loginButtons.emailLoginForm.sendButtonText")
+  {{> emailAuthenticationForm linkingNewCredential=linkingNewCredential description="(_ "accounts.loginButtons.emailLoginForm.description")"
+                              prompt="email" sendButtonText="(_ "accounts.loginButtons.emailLoginForm.sendButtonText")"
                               loginId=loginId}}
 </template>
 

@@ -40,11 +40,10 @@ const PARSED_ROOT_URL = Url.parse(process.env.ROOT_URL);
 const PROTOCOL = PARSED_ROOT_URL.protocol;
 const PORT = PARSED_ROOT_URL.port;
 
-const storeReferralProgramInfoApiTokenCreated = (db, accountId, identityId, apiTokenAccountId) => {
+const storeReferralProgramInfoApiTokenCreated = (db, accountId, apiTokenAccountId) => {
   // From the Referral program's perspective, if Bob's Account has no referredByComplete, then we
-  // update Bob's Identity to say it's referredBy Alice's Account (which is apiTokenAccountId).
+  // update Bob's Account to say it's referredBy Alice's Account (which is apiTokenAccountId).
   check(accountId, String);
-  check(identityId, String);
   check(apiTokenAccountId, String);
 
   // Bail out early if referrals aren't enabled
@@ -54,7 +53,6 @@ const storeReferralProgramInfoApiTokenCreated = (db, accountId, identityId, apiT
 
   const aliceAccountId = apiTokenAccountId;
   const bobAccountId = accountId;
-  const bobIdentityId = identityId;
 
   if (Meteor.users.find({
     _id: bobAccountId,
@@ -63,9 +61,9 @@ const storeReferralProgramInfoApiTokenCreated = (db, accountId, identityId, apiT
     return;
   }
 
-  // Only actually update Bob's Identity ID if there is no referredBy.
+  // Only actually update Bob's Account ID if there is no referredBy.
   Meteor.users.update(
-    { _id: bobIdentityId, referredBy: { $exists: false } },
+    { _id: bobAccountId, referredBy: { $exists: false } },
     { $set: { referredBy: aliceAccountId } });
 };
 
@@ -74,12 +72,15 @@ function referralProgramLogSharingTokenUse(db, bobAccountId) {
   // to this grain!  This means that the user who created this apiToken knows how to use the 'share
   // access' interface. Let's call them Bob.
   //
-  // If Bob's Account.referredByComplete is not yet set, then look at Bob's Identities and take the
-  // first referredBy we find -- let's call that Alice.
+  // If Bob himself was referred by Alice, then Alice is now eligible for referral credit, as Bob
+  // has proven he knows how to share.
+  //
+  // If Bob's Account.referredByComplete is not yet set, then look at Bob's referredBy -- let's
+  // call that Alice.
   //
   // We copy Alice's account ID to Bob's Account.referredByComplete, and then update Alice's
-  // referredIdentityIds to point at Bob's Identity, and then remove the referredBy from Bob's
-  // Identity since it has become redundant.
+  // referredAccountIds to point at Bob's Account, and then remove the referredBy from Bob's
+  // Account since it has become redundant.
   //
   // Implementation note: this does mean that Alice can get referral credit for Bob by sharing a
   // link with Bob, even if Bob already had an account.
@@ -89,44 +90,38 @@ function referralProgramLogSharingTokenUse(db, bobAccountId) {
     return;
   }
 
-  // Bail out if Bob has a referredByComplete.
-  if (Meteor.users.find({ _id: bobAccountId, referredByComplete: { $exists: true } }).count() > 0) {
+  const bobAccount = Meteor.users.findOne({ _id: bobAccountId });
+
+  // Bail out if Bob is already a complete referral.
+  if (bobAccount.referredByComplete) {
     return;
   }
 
-  // Look for a referredBy on any of Bob's identities.
-  const bobIdentityIds = SandstormDb.getUserIdentityIds(Meteor.users.findOne({ _id: bobAccountId }));
-  const bobIdentityWithReferredBy = Meteor.users.findOne({
-    _id: { $in: bobIdentityIds },
-    referredBy: { $exists: true },
-  });
-
-  if (!bobIdentityWithReferredBy) {
+  // Bail out if Bob wasn't referred by anyone.
+  if (!bobAccount.referredBy) {
     return;
   }
 
-  const aliceAccountId = bobIdentityWithReferredBy.referredBy;
+  const aliceAccountId = bobAccount.referredBy;
 
   // Store Bob's Account.referralCompletedBy.
   const now = new Date();
   Meteor.users.update({
     _id: bobAccountId,
+    referredBy: { $exists: true },
     referredByComplete: { $exists: false },
   }, {
+    $rename: {
+      referredBy: "referredByComplete",
+    },
     $set: {
-      referredByComplete: bobIdentityWithReferredBy.referredBy,
       referredCompleteDate: now,
     },
   });
 
-  // Update Alice's Account.referredIdentityIds.
+  // Update Alice's Account.referredAccountIds.
   Meteor.users.update({ _id: aliceAccountId }, {
-    $push: { referredIdentityIds: bobIdentityWithReferredBy._id },
-  });
-
-  // Remove now-redundant Bob identity referredBy.
-  Meteor.users.update({ _id: bobIdentityWithReferredBy._id }, {
-    $unset: { referredBy: true },
+    $push: { referredAccountIds: bobAccountId },
   });
 }
 
@@ -208,20 +203,15 @@ function parsePowerboxDescriptorList(list) {
 }
 
 Meteor.methods({
-  newGrain(packageId, command, title, identityId) {
+  newGrain(packageId, command, title, obsolete) {
     // Create and start a new grain.
 
     check(packageId, String);
     check(command, Object);  // Manifest.Command from package.capnp.
     check(title, String);
-    check(identityId, String);
 
     if (!this.userId) {
       throw new Meteor.Error(403, "Unauthorized", "Must be logged in to create grains.");
-    }
-
-    if (!globalDb.userHasIdentity(this.userId, identityId)) {
-      throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
     }
 
     if (!isSignedUpOrDemo()) {
@@ -257,7 +247,7 @@ Meteor.methods({
       appId: appId,
       appVersion: manifest.appVersion,
       userId: this.userId,
-      identityId: identityId,
+      identityId: SandstormDb.generateIdentityId(),
       title: title,
       private: true,
       size: 0,
@@ -265,18 +255,18 @@ Meteor.methods({
 
     globalBackend.startGrainInternal(packageId, grainId, this.userId, command, true,
                                      isDev, mountProc);
-    globalBackend.updateLastActive(grainId, this.userId, identityId);
+    globalBackend.updateLastActive(grainId, this.userId);
     return grainId;
   },
 
-  openSession(grainId, identityId, cachedSalt, options) {
+  openSession(grainId, revealIdentity, cachedSalt, options) {
     // Open a new UI session on an existing grain.  Starts the grain if it is not already
     // running.
 
     options = options || {};
 
     check(grainId, String);
-    check(identityId, Match.OneOf(undefined, null, String));
+    revealIdentity = !!revealIdentity;
     check(cachedSalt, Match.OneOf(undefined, null, String));
     check(options, {
       powerboxRequest: Match.Optional({
@@ -285,9 +275,7 @@ Meteor.methods({
       }),
     });
 
-    if (this.userId && identityId && !globalDb.userHasIdentity(this.userId, identityId)) {
-      throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
-    }
+    const accountId = revealIdentity ? this.userId : null;
 
     const grain = Grains.findOne({ _id: grainId });
     if (!grain) {
@@ -302,7 +290,7 @@ Meteor.methods({
     const db = this.connection.sandstormDb;
     check(cachedSalt, Match.OneOf(undefined, null, String));
     if (!SandstormPermissions.mayOpenGrain(db,
-                                           { grain: { _id: grainId, identityId: identityId } })) {
+                                           { grain: { _id: grainId, accountId: accountId } })) {
       throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }
 
@@ -314,12 +302,11 @@ Meteor.methods({
       };
     }
 
-    const opened = globalBackend.openSessionInternal(grainId, this.userId, identityId,
+    const opened = globalBackend.openSessionInternal(grain, this.userId, revealIdentity,
                                                      null, null, cachedSalt, sessionFields);
     const result = opened.methodResult;
-    const proxy = new Proxy(grain, result.sessionId,
-                            result.hostId, result.tabId, identityId, false, null,
-                            opened.supervisor);
+    const proxy = new Proxy(grain, result.sessionId, result.hostId, result.tabId, accountId,
+                            result.identityId, false, null, opened.supervisor);
 
     if (sessionFields.powerboxRequest) {
       proxy.powerboxRequest = sessionFields.powerboxRequest;
@@ -329,7 +316,7 @@ Meteor.methods({
     return result;
   },
 
-  openSessionFromApiToken(params, identityId, cachedSalt, neverRedeem, parentOrigin, options) {
+  openSessionFromApiToken(params, revealIdentity, cachedSalt, neverRedeem, parentOrigin, options) {
     // Given an API token, either opens a new WebSession to the underlying grain or returns a
     // path to which the client should redirect in order to open such a session.
     //
@@ -344,7 +331,7 @@ Meteor.methods({
       token: String,
       incognito: Match.Optional(Boolean),  // obsolete, ignored
     });
-    check(identityId, Match.OneOf(undefined, null, String));
+    revealIdentity = !!revealIdentity;
     check(cachedSalt, Match.OneOf(undefined, null, String));
     check(neverRedeem, Boolean);
     check(parentOrigin, String);
@@ -355,17 +342,15 @@ Meteor.methods({
       }),
     });
 
-    if (this.userId && identityId && !globalDb.userHasIdentity(this.userId, identityId)) {
-      throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
-    }
+    const accountId = revealIdentity ? this.userId : null;
 
-    if (!identityId && globalDb.getOrganizationDisallowGuests()) {
+    if (!accountId && globalDb.getOrganizationDisallowGuests()) {
       throw new Meteor.Error("guestDisallowed", "This Sandstorm server does not allow " +
         "guests or anonymous users");
     }
 
     const token = params.token;
-    const incognito = !identityId;
+    const incognito = !accountId;
     const hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
     const apiToken = ApiTokens.findOne(hashedToken);
     validateWebkey(apiToken);
@@ -382,10 +367,10 @@ Meteor.methods({
     if (grain.userId === apiToken.accountId) {
       title = grain.title;
     } else {
-      const sharerToken = apiToken.identityId &&
+      const sharerToken = apiToken.accountId &&
           ApiTokens.findOne({
             grainId: apiToken.grainId,
-            "owner.user.identityId": apiToken.identityId,
+            "owner.user.accountId": apiToken.accountId,
           }, {
             sort: {
               lastUsed: -1,
@@ -399,16 +384,16 @@ Meteor.methods({
     }
 
     if (this.userId && !incognito && !neverRedeem) {
-      if (identityId != apiToken.identityId && identityId != grain.identityId &&
-          !ApiTokens.findOne({ "owner.user.identityId": identityId, parentToken: hashedToken })) {
-        const owner = { user: { identityId: identityId, title: title } };
+      if (accountId != apiToken.accountId && accountId != grain.userId &&
+          !ApiTokens.findOne({ "owner.user.accountId": accountId, parentToken: hashedToken })) {
+        const owner = { user: { accountId: accountId, title: title } };
 
-        // Create a new API token for the identity redeeming this token.
+        // Create a new API token for the account redeeming this token.
         const result = SandstormPermissions.createNewApiToken(
           globalDb, { rawParentToken: token }, apiToken.grainId,
           apiToken.petname || "redeemed webkey",
           { allAccess: null }, owner);
-        globalDb.addContact(apiToken.accountId, identityId);
+        globalDb.addContact(apiToken.accountId, accountId);
 
         // If the parent API token is forSharing and it has an accountId, then the logged-in user (call
         // them Bob) is about to access a grain owned by someone (call them Alice) and save a reference
@@ -418,7 +403,7 @@ Meteor.methods({
           const parentApiToken = result.parentApiToken;
           if (parentApiToken.forSharing && parentApiToken.accountId) {
             storeReferralProgramInfoApiTokenCreated(
-              globalDb, this.userId, owner.user.identityId, parentApiToken.accountId);
+              globalDb, this.userId, parentApiToken.accountId);
           }
         }
       }
@@ -445,13 +430,12 @@ Meteor.methods({
       //
       // The identity ID passed here IS revealed to the app, but for incognito mode it is always
       // null/undefined.
-      const opened = globalBackend.openSessionInternal(apiToken.grainId, this.userId,
-        identityId, title, apiToken, cachedSalt, sessionFields);
+      const opened = globalBackend.openSessionInternal(grain, this.userId, revealIdentity,
+          title, apiToken, cachedSalt, sessionFields);
 
       const result = opened.methodResult;
-      const proxy = new Proxy(grain, result.sessionId,
-                              result.hostId, result.tabId, identityId, false, parentOrigin,
-                              opened.supervisor);
+      const proxy = new Proxy(grain, result.sessionId, result.hostId, result.tabId, accountId,
+                              result.identityId, false, parentOrigin, opened.supervisor);
       proxy.apiToken = apiToken;
       if (sessionFields.powerboxRequest) {
         proxy.powerboxRequest = sessionFields.powerboxRequest;
@@ -489,7 +473,7 @@ Meteor.methods({
         }
 
         waitPromise(supervisor.keepAlive());
-        globalBackend.updateLastActive(grainId, this.userId, session.identityId);
+        globalBackend.updateLastActive(grainId, this.userId);
       } catch (err) {
         // Ignore disconnects, which imply that the grain shut down already. It'll start back up on
         // the next request, so whatever.
@@ -658,7 +642,7 @@ const getProxyForHostId = (hostId, isAlreadyOpened) => {
         // Note that we don't need to call mayOpenGrain() because the existence of a session
         // implies this check was already performed.
 
-        const proxy = new Proxy(grain, session._id, hostId, session.tabId,
+        const proxy = new Proxy(grain, session._id, hostId, session.tabId, session.userId,
                                 session.identityId, false);
         if (apiToken) proxy.apiToken = apiToken;
 
@@ -782,7 +766,7 @@ Meteor.startup(() => {
   Grains.find().observe({
     changed(newGrain, oldGrain) {
       if (oldGrain.private != newGrain.private) {
-        Sessions.remove({ grainId: oldGrain._id, identityId: { $ne: oldGrain.identityId } });
+        Sessions.remove({ grainId: oldGrain._id, userId: { $ne: oldGrain.userId } });
         ApiTokens.find({ grainId: oldGrain._id }).forEach((apiToken) => {
           apiSessionProxies.removeProxiesOfToken(apiToken._id);
         });
@@ -911,11 +895,13 @@ getProxyForApiToken = (token, request) => {
           throw new Error("API tokens created with arbitrary userInfo no longer supported");
         } else {
           let identityId = null;
-          if (tokenInfo.identityId && !tokenInfo.forSharing) {
-            identityId = tokenInfo.identityId;
+          let accountId = null;
+          if (tokenInfo.accountId && !tokenInfo.forSharing) {
+            accountId = tokenInfo.accountId;
+            identityId = globalDb.getOrGenerateIdentityId(tokenInfo.accountId, grain);
           }
 
-          proxy = new Proxy(grain, null, null, tabId, identityId, true);
+          proxy = new Proxy(grain, null, null, tabId, accountId, identityId, true);
           proxy.apiToken = tokenInfo;
           proxy.apiSessionParams = serializedParams;
         }
@@ -1258,10 +1244,12 @@ tryProxyRequest = (hostId, req, res) => {
 //
 
 class Proxy {
-  constructor(grain, sessionId, hostId, tabId, identityId, isApi, parentOrigin, supervisor) {
+  constructor(grain, sessionId, hostId, tabId, accountId, identityId,
+              isApi, parentOrigin, supervisor) {
     // `grain` is an entry in the `Grains` collection.
     this.grainId = grain._id;
     this.ownerId = grain.userId;
+    this.accountId = accountId;
     this.identityId = identityId;
     this.supervisor = supervisor;  // note: optional parameter; we can reconnect
     this.sessionId = sessionId;
@@ -1285,32 +1273,28 @@ class Proxy {
       if (hostId) throw new Error("API proxy sholudn't have hostId");
     }
 
-    if (this.identityId) {
-      const identity = globalDb.getIdentity(this.identityId);
-      if (!identity) {
-        throw new Error("identity not found: " + this.identityId);
+    if (this.accountId) {
+      const user = Meteor.users.findOne({ _id: this.accountId });
+      if (!user) {
+        throw new Error("user not found: " + this.accountId);
       }
+
+      SandstormDb.fillInPictureUrl(user);
 
       // The identity cap becomes invalid if the user no longer has access to the grain.
       const idCapRequirement = {
-        permissionsHeld: { identityId: identity._id, grainId: this.grainId },
+        permissionsHeld: { accountId: user._id, grainId: this.grainId },
       };
 
       this.userInfo = {
-        displayName: { defaultText: identity.profile.name },
-        preferredHandle: identity.profile.handle,
-        identityId: new Buffer(identity._id, "hex"),
-        identity: makeIdentity(identity._id, [idCapRequirement]),
+        displayName: { defaultText: user.profile.name },
+        preferredHandle: user.profile.handle,
+        identityId: new Buffer(this.identityId, "hex"),
+        identity: makeIdentity(user._id, [idCapRequirement]),
+        pictureUrl: user.profile.pictureUrl,
       };
-      if (identity.profile.pictureUrl) {
-        this.userInfo.pictureUrl = identity.profile.pictureUrl;
-      } else {
-        this.userInfo.pictureUrl =
-            PROTOCOL + "//" + makeWildcardHost("static") + "/identicon/" +
-            this.identityId.slice(0, 32) + "?s=128";
-      }
 
-      if (identity.profile.pronoun) this.userInfo.pronouns = identity.profile.pronoun;
+      if (user.profile.pronoun) this.userInfo.pronouns = user.profile.pronoun;
     } else {
       this.userInfo = {
         displayName: { defaultText: "Anonymous User" },
@@ -1438,7 +1422,7 @@ class Proxy {
           : ["en-US", "en"],
     });
     return this.uiView.newSession(userInfo,
-         makeHackSessionContext(this.grainId, this.sessionId, this.identityId, this.tabId),
+         makeHackSessionContext(this.grainId, this.sessionId, this.accountId, this.tabId),
          WebSession.typeId, params, new Buffer(this.tabId, "hex")).session;
   }
 
@@ -1452,7 +1436,7 @@ class Proxy {
     // calling newSession with an ApiSession._id.
     // Eventually we'll remove this logic once we're sure apps have updated.
     return this.uiView.newSession(userInfo,
-         makeHackSessionContext(this.grainId, this.sessionId, this.identityId, this.tabId),
+         makeHackSessionContext(this.grainId, this.sessionId, this.accountId, this.tabId),
          ApiSession.typeId, serializedParams, new Buffer(this.tabId, "hex"))
         .then((session) => {
           return session.session;
@@ -1472,7 +1456,7 @@ class Proxy {
           : ["en-US", "en"],
     });
     return this.uiView.newRequestSession(userInfo,
-         makeHackSessionContext(this.grainId, this.sessionId, this.identityId, this.tabId),
+         makeHackSessionContext(this.grainId, this.sessionId, this.accountId, this.tabId),
          WebSession.typeId, params, this.powerboxRequest.descriptors,
          new Buffer(this.tabId, "hex")).session;
   }
@@ -1484,8 +1468,8 @@ class Proxy {
       if (this.apiToken) {
         vertex = { token: this.apiToken };
       } else {
-        // (this.identityId might be null; this is fine)
-        vertex = { grain: { _id: this.grainId, identityId: this.identityId } };
+        // (this.accountId might be null; this is fine)
+        vertex = { grain: { _id: this.grainId, accountId: this.accountId } };
       }
 
       let onInvalidated = () => {

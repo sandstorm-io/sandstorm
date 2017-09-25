@@ -59,5 +59,6 @@ pages:
     - "Self-signed SSL": "administering/self-signed.md"
     - "Organizational Features": "administering/for-work.md"
     - "Active Directory integration": "administering/active-directory.md"
+    - "Running Sandstorm offline": "administering/offline.md"
     - "Frequently asked questions": "administering/faq.md"
     - "Running a Sandstorm hosting provider": "administering/hosting-provider.md"

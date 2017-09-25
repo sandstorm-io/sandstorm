@@ -163,7 +163,7 @@
     "title": "沙粒",
     "grainView": {
       "notFoundWithId": "找不到 ID 为 %s 的沙粒。",
-      "openWithWhichIdentity": "请问需要使用哪个身分打开这颗沙粒？",
+
       "openInIncognitoMode": "以无痕模式打开"
     },
     "grainInMyTrash": {
@@ -177,7 +177,7 @@
       "explanation": "无法使用这颗沙粒，因其拥有者已被停权。"
     },
     "wrongIdentity": {
-      "explanation": "开启这个 URL 必须有以下身份："
+
     },
     "requestAccess": {
       "permissionDenied": "无权存取此沙粒。",
@@ -715,8 +715,7 @@
       "subtext": "設定沙聚雲如何寄送電郵。",
       "newAdminEmailConfig": {
         "outbound": {
-          "title": "__Outbound email",
-          "warning": "__<strong>Email is unconfigured.</strong> Email-related features like email login, notifications, sharing by identity, and requesting access will be unavailable until you configure email."
+          "title": "__Outbound email"
         },
         "howItWorks": {
           "title": "__How Sandstorm uses email",
@@ -900,7 +899,6 @@
       },
       "newAdminUserTable": {
         "header": {
-          "identities": "__Account",
           "created": "__Created",
           "lastActive": "__Last Active",
           "actions": "__Actions"
@@ -927,8 +925,7 @@
           "label": "__Profile picture"
         },
         "handle": {
-          "hint": "__Handle",
-          "label": "__@"
+
         },
         "pronouns": {
           "hint": "__Pronouns",
@@ -971,7 +968,6 @@
       },
       "newAdminUserDetailsIdentityTable": {
         "header": {
-          "identity": "__Identity",
           "created": "__Created",
           "lastActive": "__Last Active",
           "properties": "__Properties"

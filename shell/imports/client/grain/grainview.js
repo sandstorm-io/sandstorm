@@ -360,7 +360,8 @@ class GrainView {
 
   origin() {
     this._dep.depend();
-    return this._hostId && (window.location.protocol + "//" + makeWildcardHost(this._hostId));
+    return this._hostId &&
+        (window.location.protocol + "//" + makeWildcardHost("ui-" + this._hostId));
   }
 
   viewInfo() {

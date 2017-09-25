@@ -582,6 +582,12 @@ const getProxyForHostId = (hostId, isAlreadyOpened) => {
   // front-end was restarted.
   check(hostId, String);
 
+  // Allow, but do not require, the prefix "ui-". The new gateway will require this prefix. The
+  // reason we make it optional for now is because we don't want existing open sessions to break
+  // during a Sandstorm update, so we have to let the old client keep using the old hostname
+  // format temporarily.
+  if (hostId.startsWith("ui-")) hostId = hostId.slice(3);
+
   return Promise.resolve(undefined).then(() => {
     const proxy = proxiesByHostId[hostId];
     if (proxy) {

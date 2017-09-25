@@ -484,25 +484,14 @@ public:
                   .build();
             },
             "Stop the sandstorm server.")
-        .addSubCommand("start-fe",
-            [this]() {
-              return kj::MainBuilder(context, VERSION,
-                    "Starts the Sandstorm front-end after it has previously been stopped using "
-                    "the `stop-fe` command.")
-                  .callAfterParsing(KJ_BIND_METHOD(*this, startFe))
-                  .build();
-            },
-            "Undo previous stop-fe.")
         .addSubCommand("stop-fe",
             [this]() {
               return kj::MainBuilder(context, VERSION,
-                    "Stops the Sandstorm front-end, but leaves Mongo running. Useful when you "
-                    "want to run the front-end in dev mode in front of the existing database "
-                    "and grains.")
+                    "Obsolete; use dev-shell to do shell development.")
                   .callAfterParsing(KJ_BIND_METHOD(*this, stopFe))
                   .build();
             },
-            "Stop the sandstorm front-end.")
+            "Obsolete; use dev-shell.")
         .addSubCommand("status",
             [this]() {
               return kj::MainBuilder(context, VERSION,
@@ -570,6 +559,17 @@ public:
                   .build();
             },
             "For internal use only.")
+        .addSubCommand("dev-shell",
+            [this]() {
+              return kj::MainBuilder(context, VERSION,
+                      "Runs the Sandstorm shell in development mode. For use in developing "
+                      "Sandstorm itself. Must be run from the `shell` subdirectory of the "
+                      "Sandstorm source code.")
+                  .expectZeroOrMoreArgs("<meteor-arg>", KJ_BIND_METHOD(*this, addMeteorArg))
+                  .callAfterParsing(KJ_BIND_METHOD(*this, devShell))
+                  .build();
+            },
+            "For developing Sandstorm itself.")
         .addSubCommand("admin-token",
             [this]() {
               return kj::MainBuilder(context, VERSION,
@@ -839,36 +839,8 @@ public:
     }
   }
 
-  kj::MainBuilder::Validity startFe() {
-    return startStopFe(1);
-  }
-
   kj::MainBuilder::Validity stopFe() {
-    return startStopFe(0);
-  }
-
-  kj::MainBuilder::Validity startStopFe(int value) {
-    changeToInstallDir();
-
-    kj::AutoCloseFd pidfile = nullptr;
-    KJ_IF_MAYBE(pf, openPidfile()) {
-      pidfile = kj::mv(*pf);
-    } else {
-      context.exitInfo("Sandstorm is not running.");
-    }
-
-    pid_t pid;
-    KJ_IF_MAYBE(p, getRunningPid(pidfile)) {
-      pid = *p;
-    } else {
-      context.exitInfo("Sandstorm is not running.");
-    }
-
-    union sigval sigval;
-    memset(&sigval, 0, sizeof(sigval));
-    sigval.sival_int = value;
-    KJ_SYSCALL(sigqueue(pid, SIGINT, sigval));
-    context.exitInfo(value == 0 ? "Requested front-end shutdown." : "Requested front-end start.");
+    return "stop-fe is obsolete; use dev-shell to do shell development";
   }
 
   kj::MainBuilder::Validity status() {
@@ -1131,6 +1103,7 @@ public:
     }
 
     changeToInstallDir();
+    checkDevAccess();
 
     // Verify that Sandstorm is running.
     if (getRunningPid() == nullptr) {
@@ -1150,6 +1123,102 @@ public:
     return true;
   }
 
+  kj::MainBuilder::Validity addMeteorArg(kj::StringPtr arg) {
+    meteorArgs.add(arg);
+    return true;
+  }
+
+  kj::MainBuilder::Validity devShell() {
+    if (access("meteor-bundle-main.js", F_OK) < 0 ||
+        access("shell", F_OK) < 0 ||
+        access("find-meteor-dev-bundle.sh", F_OK) < 0) {
+      return "please run this from the root of your Sandstorm source tree";
+    }
+
+    auto meteorToolsPath = findMeteorToolsPath();
+
+    // Remember the current directory so we can switch back to it later.
+    auto originalDir = raiiOpen(".", O_RDONLY | O_PATH | O_DIRECTORY | O_CLOEXEC);
+
+    changeToInstallDir();
+    checkDevAccess();
+
+    auto config = readConfig();
+    auto installDir = kj::str(getInstallDir(), "/..");
+    setupShellEnvironment(config, installDir);
+    auto meteorSettings = makeMeteorSettings(config, "\"[local dev shell]\"",
+                                             kj::StringPtr(installDir));
+
+    // Verify that Sandstorm is running.
+    if (getRunningPid() == nullptr) {
+      context.exitError("Sandstorm is not running.");
+    }
+
+    // Connect to the devmode socket. The server daemon listens on this socket for commands.
+    // See `runDevDaemon()`.
+    auto sock = connectToDevDaemon();
+
+    // Switch back to the original directory before we mess with file descriptors.
+    KJ_SYSCALL(fchdir(originalDir));
+    originalDir = nullptr;
+
+    // Hack: Move this socket out of the way and make it non-close-on-exec. We want the socket to
+    //   be closed when Meteor shuts down, so we'll just leave it in this high-numbered slot. We
+    //   need to make sure it has a nice, high number so that we can dup2() the shell-inherited
+    //   FDs into their designated slots below.
+    int sockFd;
+    KJ_SYSCALL(sockFd = fcntl(sock, F_DUPFD, 64));
+    sock = kj::AutoCloseFd(sockFd);
+
+    // Send the command code.
+    kj::FdOutputStream(sock.get()).write(&DEVMODE_COMMAND_SHELL, 1);
+
+    // Read how many FDs to expect.
+    kj::byte count;
+    kj::FdInputStream(sock.get()).read(&count, 1);
+
+    // Expect to receive that many FDs and move them to their inherited slots.
+    // Hack: Meteor's intermediate process appears to replace FD 3. So, we place our FDs way up
+    //   at 65+.
+    for (auto i: kj::zeroTo(count)) {
+      auto fd = receiveFd(sock);
+      int target = 65 + i;
+      if (fd.get() == target) {
+        KJ_SYSCALL(ioctl(fd.release(), FIONCLEX));
+      } else {
+        KJ_SYSCALL(dup2(fd, target));
+      }
+    }
+
+    // Meteor annoyingly wants the settings to be in a file, so we create an unnamed temporary
+    // file and open it with /proc/self/fd.
+    {
+      auto settingsFd = raiiOpen(".", O_TMPFILE | O_RDWR | O_CLOEXEC, 0600);
+      kj::FdOutputStream(settingsFd.get()).write(meteorSettings.begin(), meteorSettings.size());
+      KJ_SYSCALL(dup2(settingsFd, 63));    // See HACKs above.
+    }
+
+    auto nodePath = kj::str(meteorToolsPath, "/dev_bundle/bin/node");
+    auto mainScriptPath = kj::str(meteorToolsPath, "/tools/index.js");
+    auto portArg = kj::str("--port=", config.bindIp, ":", config.ports[0]);
+
+    kj::Vector<const char*> argv;
+    argv.add(nodePath.cStr());
+    argv.add("--expose-gc");
+    argv.add("meteor-bundle-main.js");
+    argv.add(mainScriptPath.cStr());
+    argv.add(portArg.cStr());
+    argv.add("--settings");
+    argv.add("/proc/self/fd/63");
+    for (auto& arg: meteorArgs) {
+      argv.add(arg.cStr());
+    }
+    argv.add(nullptr);
+
+    execv(nodePath.cStr(), const_cast<char**>(argv.begin()));
+    KJ_FAIL_SYSCALL("exec(node)", errno);
+  }
+
 private:
   kj::ProcessContext& context;
 
@@ -1159,6 +1228,9 @@ private:
   kj::AutoCloseFd inheritedPidfile;
   std::map<uint, kj::AutoCloseFd> inheritedTcpPorts;
   // Pidfile and TCP ports inherited by "continue" command.
+
+  kj::Vector<kj::StringPtr> meteorArgs;
+  // For dev-shell command.
 
   struct Config {
     kj::Maybe<uint> httpsPort;
@@ -1210,6 +1282,18 @@ private:
         KJ_FAIL_REQUIRE(
             "Sandstorm was not run with appropriate privileges; rerun as root or the user for "
             "which it was installed.");
+      } else {
+        KJ_FAIL_SYSCALL("access", errno);
+      }
+    }
+  }
+
+  void checkDevAccess() {
+    KJ_ASSERT(changedDir);
+    if (access("../var/sandstorm/socket/devmode", W_OK) == -1) {
+      if (errno == EACCES) {
+        KJ_FAIL_REQUIRE(
+            "You must be in the 'sandstorm' group to get dev access to this server.");
       } else {
         KJ_FAIL_SYSCALL("access", errno);
       }
@@ -1741,6 +1825,25 @@ private:
       }
     }
 
+    kj::Array<kj::AutoCloseFd> consumeShellInherited() {
+      // Get the FDs that the shell normally inherits.
+      if (usingGateway) {
+        auto builder = kj::heapArrayBuilder<kj::AutoCloseFd>(3);
+        builder.add(kj::mv(links[SHELL_HTTP].server));
+        builder.add(kj::mv(links[SHELL_BACKEND].client));
+        builder.add(kj::mv(ports[smtpListenPort].fd));
+        return builder.finish();
+      } else {
+        auto result = kj::heapArray<kj::AutoCloseFd>(ports.size());
+        for (auto& port: ports) {
+          uint index = port.second.targetFd - STDERR_FILENO - 1;
+          KJ_ASSERT(index < result.size());
+          result[index] = kj::mv(port.second.fd);
+        }
+        return result;
+      }
+    }
+
     kj::Own<kj::ConnectionReceiver> consume(uint port, kj::LowLevelAsyncIoProvider& provider) {
       auto iter = ports.find(port);
       KJ_REQUIRE(iter != ports.end());
@@ -1956,22 +2059,6 @@ private:
           context.exitError("** Server monitor died. Aborting.");
           KJ_UNREACHABLE;
         }
-      } else if (siginfo.ssi_signo == SIGINT) {
-        // Frontend startup or shutdown request, used with run-dev.
-
-        if (!siginfo.ssi_int) {
-          // We have to close all the listen ports otherwise run-dev won't be able to open them
-          // for itself. Note that we never re-open them here in the parent process, meaning that
-          // if you stop-fe and then start-fe and then do an update, you won't get a zero-downtime
-          // update. This only affects developers so whatever.
-          fdBundle.closeAll();
-        }
-
-        // Pass along to server monitor.
-        union sigval sigval;
-        memset(&sigval, 0, sizeof(sigval));
-        sigval.sival_int = siginfo.ssi_int;
-        KJ_SYSCALL(sigqueue(sandstormPid, SIGINT, sigval));
       } else {
         // Kill updater if it is running.
         if (updaterPid != 0) {
@@ -2026,6 +2113,7 @@ private:
     // use FUSE), so we don't run it if we aren't root.
     pid_t devDaemonPid;
     if (runningAsRoot) {
+      pid_t serverMonitorPid = getpid();
       KJ_SYSCALL(devDaemonPid = fork());
       if (devDaemonPid == 0) {
         // Ugh, undo the setup we *just* did. Note that we can't just fork the dev daemon earlier
@@ -2035,8 +2123,9 @@ private:
         if (signal(SIGALRM, SIG_DFL) == SIG_ERR) {
           KJ_FAIL_SYSCALL("signal(SIGALRM, SIG_DFL)", errno);
         }
+        auto shellInherited = fdBundle.consumeShellInherited();
         fdBundle.closeAll();
-        runDevDaemon(config);
+        runDevDaemon(config, kj::mv(shellInherited), serverMonitorPid);
         KJ_UNREACHABLE;
       }
     } else {
@@ -2123,8 +2212,7 @@ private:
         if (siginfo.ssi_int) {
           // Requested startup of front-end after previous shutdown.
           if (nodePid == 0) {
-            context.warning("** Starting front-end by admin request");
-            fdBundle = FdBundle(config);  // re-open FDs
+            context.warning("** Starting front-end after dev-shell disconnected");
             nodePid = startNode(config, fdBundle);
             nodeStartTime = getTime();
           } else {
@@ -2132,12 +2220,12 @@ private:
           }
         } else {
           // Requested shutdown of the front-end but not the back-end.
-          context.warning("** Shutting down front-end by admin request");
+          context.warning("** Shutting down front-end for dev-shell");
           killChild("Front-end", nodePid);
           nodePid = 0;
 
-          // We have to close the FD bundle otherwise run-dev won't work.
-          fdBundle.closeAll();
+          // Let the sender know that shutdown has completed.
+          KJ_SYSCALL(kill(siginfo.ssi_pid, SIGUSR1));
         }
       } else {
         // SIGTERM or something.
@@ -2437,65 +2525,7 @@ private:
       dropPrivs(config.uids);
       clearSignalMask();
 
-      kj::String authPrefix;
-      kj::StringPtr authSuffix;
-      if (access("/var/mongo/passwd", F_OK) == 0) {
-        // Read the password.
-        auto password = trim(readAll(raiiOpen("/var/mongo/passwd", O_RDONLY)));
-        authPrefix = kj::str("sandstorm:", password, "@");
-        authSuffix = "?authSource=admin";
-
-        // Oplog is only configured if we have a password.
-        KJ_SYSCALL(setenv("MONGO_OPLOG_URL",
-            kj::str("mongodb://", authPrefix, "127.0.0.1:", config.mongoPort,
-                    "/local", authSuffix).cStr(),
-            true));
-      }
-
-      if (config.useExperimentalGateway) {
-        KJ_SYSCALL(setenv("EXPERIMENTAL_GATEWAY", "true", true));
-      }
-
-      KJ_SYSCALL(setenv("PORT", kj::str(config.ports[0]).cStr(), true));
-      KJ_SYSCALL(setenv("PORTS", kj::strArray(config.ports, ",").cStr(), true));
-      KJ_IF_MAYBE(httpsPort, config.httpsPort) {
-        KJ_SYSCALL(setenv("HTTPS_PORT", kj::str(*httpsPort).cStr(), true));
-      }
-
-      KJ_SYSCALL(setenv("MONGO_URL",
-          kj::str("mongodb://", authPrefix, "127.0.0.1:", config.mongoPort,
-                  "/meteor", authSuffix).cStr(),
-          true));
-      KJ_SYSCALL(setenv("BIND_IP", config.bindIp.cStr(), true));
-      if (config.mailUrl != nullptr) {
-        KJ_SYSCALL(setenv("MAIL_URL", config.mailUrl.cStr(), true));
-      }
-      if (config.rootUrl == nullptr) {
-        kj::StringPtr scheme;
-        uint defaultPort;
-
-        if (config.httpsPort == nullptr) {
-          scheme = "http://";
-          defaultPort = 80;
-        } else {
-          scheme = "https://";
-          defaultPort = 443;
-        }
-        if (config.ports[0] == defaultPort) {
-          KJ_SYSCALL(setenv("ROOT_URL", kj::str(scheme, config.bindIp).cStr(), true));
-        } else {
-          KJ_SYSCALL(setenv("ROOT_URL",
-              kj::str(scheme, config.bindIp, ":", config.ports[0]).cStr(), true));
-        }
-      } else {
-        KJ_SYSCALL(setenv("ROOT_URL", config.rootUrl.cStr(), true));
-      }
-      if (config.wildcardHost != nullptr) {
-        KJ_SYSCALL(setenv("WILDCARD_HOST", config.wildcardHost.cStr(), true));
-      }
-      if (config.ddpUrl != nullptr) {
-        KJ_SYSCALL(setenv("DDP_DEFAULT_CONNECTION_URL", config.ddpUrl.cStr(), true));
-      }
+      setupShellEnvironment(config);
 
       kj::String buildstamp;
       if (SANDSTORM_BUILD == 0) {
@@ -2504,18 +2534,7 @@ private:
         buildstamp = kj::str(SANDSTORM_BUILD);
       }
 
-      kj::String settingsString = kj::str(
-          "{\"public\":{\"build\":", buildstamp,
-          ", \"allowDemoAccounts\":", config.allowDemoAccounts ? "true" : "false",
-          ", \"allowDevAccounts\":", config.allowDevAccounts ? "true" : "false",
-          ", \"isTesting\":", config.isTesting ? "true" : "false",
-          ", \"hideTroubleshooting\":", config.hideTroubleshooting ? "true" : "false",
-          ", \"wildcardHost\":\"", config.wildcardHost, "\"");
-      if (config.sandcatsHostname.size() > 0) {
-          settingsString = kj::str(settingsString,
-            ", \"sandcatsHostname\":\"", config.sandcatsHostname, "\"");
-      }
-      settingsString = kj::str(settingsString, "}}");
+      kj::String settingsString = makeMeteorSettings(config, buildstamp);
       KJ_SYSCALL(setenv("METEOR_SETTINGS", settingsString.cStr(), true));
       KJ_SYSCALL(execl("/bin/node", "/bin/node", "sandstorm-main.js", EXEC_END_ARGS));
       KJ_UNREACHABLE;
@@ -2524,6 +2543,89 @@ private:
     pid_t result = process.getPid();
     process.detach();
     return result;
+  }
+
+  void setupShellEnvironment(const Config& config, kj::StringPtr sandstormHome = nullptr) {
+    kj::String authPrefix;
+    kj::StringPtr authSuffix;
+    auto passwordFile = kj::str(sandstormHome, "/var/mongo/passwd");
+    if (access(passwordFile.cStr(), F_OK) == 0) {
+      // Read the password.
+      auto password = trim(readAll(raiiOpen(passwordFile, O_RDONLY)));
+      authPrefix = kj::str("sandstorm:", password, "@");
+      authSuffix = "?authSource=admin";
+
+      // Oplog is only configured if we have a password.
+      KJ_SYSCALL(setenv("MONGO_OPLOG_URL",
+          kj::str("mongodb://", authPrefix, "127.0.0.1:", config.mongoPort,
+                  "/local", authSuffix).cStr(),
+          true));
+    }
+
+    if (config.useExperimentalGateway) {
+      KJ_SYSCALL(setenv("EXPERIMENTAL_GATEWAY", "true", true));
+    }
+
+    KJ_SYSCALL(setenv("PORT", kj::str(config.ports[0]).cStr(), true));
+    KJ_SYSCALL(setenv("PORTS", kj::strArray(config.ports, ",").cStr(), true));
+    KJ_IF_MAYBE(httpsPort, config.httpsPort) {
+      KJ_SYSCALL(setenv("HTTPS_PORT", kj::str(*httpsPort).cStr(), true));
+    }
+
+    KJ_SYSCALL(setenv("MONGO_URL",
+        kj::str("mongodb://", authPrefix, "127.0.0.1:", config.mongoPort,
+                "/meteor", authSuffix).cStr(),
+        true));
+    KJ_SYSCALL(setenv("BIND_IP", config.bindIp.cStr(), true));
+    if (config.mailUrl != nullptr) {
+      KJ_SYSCALL(setenv("MAIL_URL", config.mailUrl.cStr(), true));
+    }
+    if (config.rootUrl == nullptr) {
+      kj::StringPtr scheme;
+      uint defaultPort;
+
+      if (config.httpsPort == nullptr) {
+        scheme = "http://";
+        defaultPort = 80;
+      } else {
+        scheme = "https://";
+        defaultPort = 443;
+      }
+      if (config.ports[0] == defaultPort) {
+        KJ_SYSCALL(setenv("ROOT_URL", kj::str(scheme, config.bindIp).cStr(), true));
+      } else {
+        KJ_SYSCALL(setenv("ROOT_URL",
+            kj::str(scheme, config.bindIp, ":", config.ports[0]).cStr(), true));
+      }
+    } else {
+      KJ_SYSCALL(setenv("ROOT_URL", config.rootUrl.cStr(), true));
+    }
+    if (config.wildcardHost != nullptr) {
+      KJ_SYSCALL(setenv("WILDCARD_HOST", config.wildcardHost.cStr(), true));
+    }
+    if (config.ddpUrl != nullptr) {
+      KJ_SYSCALL(setenv("DDP_DEFAULT_CONNECTION_URL", config.ddpUrl.cStr(), true));
+    }
+  }
+
+  kj::String makeMeteorSettings(const Config& config, kj::StringPtr buildstamp,
+                                kj::Maybe<kj::StringPtr> home = nullptr) {
+    return kj::str(
+        "{\"public\":"
+          "{ \"build\":", buildstamp,
+          ", \"allowDemoAccounts\":", config.allowDemoAccounts ? "true" : "false",
+          ", \"allowDevAccounts\":", config.allowDevAccounts ? "true" : "false",
+          ", \"isTesting\":", config.isTesting ? "true" : "false",
+          ", \"hideTroubleshooting\":", config.hideTroubleshooting ? "true" : "false",
+          ", \"wildcardHost\":\"", config.wildcardHost, "\"",
+          config.sandcatsHostname.size() > 0
+              ? kj::str(", \"sandcatsHostname\":\"", config.sandcatsHostname, "\"")
+              : kj::String(nullptr),
+        "}",
+        home.map([](kj::StringPtr path) {
+          return kj::str(", \"home\": \"", path, "\"");
+        }).orDefault(kj::String(nullptr)),
+        "}");
   }
 
   void maybeWaitAfterChildDeath(kj::StringPtr title, int64_t startTime) {
@@ -2867,7 +2969,8 @@ private:
     return kj::mv(sock);
   }
 
-  [[noreturn]] void runDevDaemon(const Config& config) {
+  [[noreturn]] void runDevDaemon(const Config& config, kj::Array<kj::AutoCloseFd> shellInherited,
+                                 pid_t serverMonitorPid) {
     clearDevPackages(config);
 
     // Make sure socket directory exists (since the installer doesn't create it).
@@ -2915,7 +3018,7 @@ private:
 
       if (fork() == 0) {
         sock = nullptr;
-        runDevSession(config, kj::mv(connFd));
+        runDevSession(config, kj::mv(connFd), kj::mv(shellInherited), serverMonitorPid);
         KJ_UNREACHABLE;
       }
     }
@@ -2924,14 +3027,70 @@ private:
   static constexpr kj::byte DEVMODE_COMMAND_CONNECT = 1;
   // Command code sent by `sandstorm dev` command, which is invoked by `spk dev`.
 
-  [[noreturn]] void runDevSession(const Config& config, kj::AutoCloseFd internalFd) {
+  static constexpr kj::byte DEVMODE_COMMAND_SHELL = 2;
+  // Command code sent by `sandstorm dev-shell` command to hook in a development version of the
+  // shell.
+
+  [[noreturn]] void runDevSession(const Config& config,
+      kj::AutoCloseFd internalFd, kj::Array<kj::AutoCloseFd> shellInherited,
+      pid_t serverMonitorPid) {
     auto exception = kj::runCatchingExceptions([&]() {
       // When someone connects, we expect them to pass us a one-byte command code.
       kj::byte commandCode;
       kj::FdInputStream((int)internalFd).read(&commandCode, 1);
 
+      if (commandCode == DEVMODE_COMMAND_SHELL) {
+        context.warning("** Accepted new shell dev session connection...");
+
+        // The client is requesting to run a dev-mode shell. They want us to send them the file
+        // descriptors that would normally be inherited by the shell.
+
+        // First make sure the shell is not running. Send the magic signal to the server monitor
+        // to request this, and wait for the response signal SIGUSR1.
+
+        // Block SIGUSR1 to avoid race condition.
+        sigset_t sigmask;
+        KJ_SYSCALL(sigemptyset(&sigmask));
+        KJ_SYSCALL(sigaddset(&sigmask, SIGUSR1));
+        KJ_SYSCALL(sigprocmask(SIG_BLOCK, &sigmask, nullptr));
+
+        // Send signal to server monitor to request shell shutdown.
+        union sigval sigval;
+        memset(&sigval, 0, sizeof(sigval));
+        sigval.sival_int = 0;  // indicates stop
+        KJ_SYSCALL(sigqueue(serverMonitorPid, SIGINT, sigval));
+
+        // Wait for response.
+        int signo;
+        KJ_SYSCALL(sigwait(&sigmask, &signo));
+        KJ_ASSERT(signo == SIGUSR1);
+
+        // Write the number of FDs we're going to send first.
+        kj::byte count = shellInherited.size();
+        kj::FdOutputStream(internalFd.get()).write(&count, 1);
+        for (auto& fd: shellInherited) {
+          sendFd(internalFd, fd.get());
+        }
+        shellInherited = nullptr;
+
+        // Wait for close.
+        char junk;
+        size_t n = kj::FdInputStream(internalFd.get()).tryRead(&junk, 1, 1);
+        if (n > 0) {
+          KJ_LOG(ERROR, "dev-shell client sent unexpected data");
+        }
+
+        // Send signal to server monitor to request shell startup.
+        sigval.sival_int = 1;  // indicates start
+        KJ_SYSCALL(sigqueue(serverMonitorPid, SIGINT, sigval));
+
+        return;
+      }
+
       KJ_REQUIRE(commandCode == DEVMODE_COMMAND_CONNECT);
       context.warning("** Accepted new dev session connection...");
+
+      shellInherited = nullptr;
 
       // OK, we're accepting a new dev mode connection. `internalFd` is the socket opened by
       // the `sandstorm dev` command, implemented elsewhere in this file. All it does is pass
@@ -3191,9 +3350,31 @@ private:
       return true;
     }
   }
+
+  // ---------------------------------------------------------------------------
+
+  kj::String findMeteorToolsPath() {
+    Subprocess::Options options("find-meteor-dev-bundle.sh");
+    options.searchPath = false;
+
+    int pipeFds[2];
+    KJ_SYSCALL(pipe2(pipeFds, O_CLOEXEC));
+    kj::AutoCloseFd readEnd(pipeFds[0]);
+    kj::AutoCloseFd writeEnd(pipeFds[1]);
+    options.stdout = writeEnd.get();
+
+    Subprocess subprocess(kj::mv(options));
+    writeEnd = nullptr;
+    auto result = trim(readAll(readEnd));
+    subprocess.waitForSuccess();
+
+    KJ_ASSERT(result.endsWith("/dev_bundle"), result);
+    return kj::str(result.slice(0, result.size() - strlen("/dev_bundle")));
+  }
 };
 
 constexpr kj::byte RunBundleMain::DEVMODE_COMMAND_CONNECT;
+constexpr kj::byte RunBundleMain::DEVMODE_COMMAND_SHELL;
 
 }  // namespace sandstorm
 

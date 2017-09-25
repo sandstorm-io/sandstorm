@@ -142,8 +142,9 @@ BASIC_AUTH_USER_AGENTS_REGEX = new RegExp("^(" + BASIC_AUTH_USER_AGENTS.join("|"
 const SESSION_PROXY_TIMEOUT = 60000;
 
 const sandstormCoreFactory = makeSandstormCoreFactory(globalDb);
-const backendAddress = global.SANDSTORM_BACKEND_HANDLE ||
-    ("unix:" + (SANDSTORM_ALTHOME || "") + Backend.socketPath);
+const backendAddress = process.env.SANDSTORM_BACKEND_HANDLE
+    ? { capabilityStreamFd: parseInt(process.env.SANDSTORM_BACKEND_HANDLE) }
+    : ("unix:" + (SANDSTORM_ALTHOME || "") + Backend.socketPath);
 let sandstormBackendConnection = Capnp.connect(backendAddress, sandstormCoreFactory);
 let sandstormBackend = sandstormBackendConnection.restore(null, Backend);
 

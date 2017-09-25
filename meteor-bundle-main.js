@@ -14,21 +14,38 @@ var https = require('https');
 var net = require('net');
 var url = require('url');
 
+var isDevShellMode = process.argv.length > 2;
+
+var firstInheritedFd = isDevShellMode ? 65 : 3;
+
 // Use the "node-forge" package from npm
-var forge = require('./programs/server/npm/node_modules/node-forge');
+var forge = isDevShellMode
+    ? require('./shell/node_modules/node-forge')
+    : require('./programs/server/npm/node_modules/node-forge');
 
 function sandstormMain() {
   if (process.env.EXPERIMENTAL_GATEWAY) {
-    global.SANDSTORM_SMTP_LISTEN_HANDLE = { fd: 5 };
-    global.SANDSTORM_BACKEND_HANDLE = { capabilityStreamFd: 4 };
+    process.env.SANDSTORM_SMTP_LISTEN_HANDLE = (firstInheritedFd + 2).toString();
+    process.env.SANDSTORM_BACKEND_HANDLE = (firstInheritedFd + 1).toString();
     monkeypatchHttpForGateway();
   } else {
-    global.SANDSTORM_SMTP_LISTEN_HANDLE = { fd: 3 };
+    process.env.SANDSTORM_SMTP_LISTEN_HANDLE = firstInheritedFd.toString();
     monkeypatchHttpAndHttps();
   }
 
-  // Delegate to Meteor.
-  require("./main.js");
+  if (isDevShellMode) {
+    // Cut ourselves out of argv.
+    process.argv = [process.argv[0]].concat(process.argv.slice(2));
+
+    // Change to the shell directory, which Meteor expects.
+    process.chdir("shell");
+
+    // Delegate to Meteor dev tool.
+    require(process.argv[1]);
+  } else {
+    // Delegate to Meteor runtime.
+    require("./main.js");
+  }
 }
 
 function monkeypatchHttpForGateway() {
@@ -45,7 +62,7 @@ function monkeypatchHttpForGateway() {
   var oldListen = http.Server.prototype.listen;
   var alreadyListened = false;
   http.Server.prototype.listen = function (port, host, cb) {
-    if (port === parseInt(process.env.PORT)) {
+    if (port.toString() === process.env.PORT) {
       // Attempt to listen on the HTTP port. Override.
       if (alreadyListened) {
         throw new Error("can only listen on primary HTTP port once");
@@ -54,13 +71,14 @@ function monkeypatchHttpForGateway() {
 
       var pipe = new Pipe(true);
       var httpServer = this;
-      pipe.open(3);
+      pipe.open(firstInheritedFd);
       pipe.onread = function (size, buf, handle) {
         if (handle) {
           httpServer.emit("connection", new net.Socket({ handle: handle }));
         }
       };
       pipe.readStart();
+      cb();
     } else {
       // Don't override.
       return oldListen.call(this, port, host, cb);
@@ -80,7 +98,7 @@ function monkeypatchHttpAndHttps() {
     if (typeof port == 'object' && port.fd) {
       return oldListen.call(this, port, host, cb);
     }
-    return oldListen.call(this, {fd: 4}, cb);
+    return oldListen.call(this, {fd: firstInheritedFd + 1}, cb);
   }
 
   // 2. If we are in HTTPS mode, monkey-patch HTTP in a large way:
@@ -483,7 +501,7 @@ function monkeypatchHttpAndHttps() {
         var listenIfKey = function() {
           var shouldListen = !! sandcatsState.key;
           if (shouldListen) {
-            oldListen.call(server, {fd: 4}, cb);
+            oldListen.call(server, {fd: firstInheritedFd + 1}, cb);
           }
           return shouldListen;
         };

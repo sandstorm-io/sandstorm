@@ -1557,7 +1557,7 @@
         "title": "Sign in"
       },
       "accountCardSignInButton": {
-        "reSign": "To sign out of your current account and sign in as this user, choose how to sign in:"
+        "reSign": "To sign out of your current account and sign in as this user, choose how to sign in:",
         "howToSignIn": "Choose how to sign in:"
       }
     },

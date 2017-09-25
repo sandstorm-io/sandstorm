@@ -517,6 +517,9 @@
     },
     "identityProviders": {
       "name": "登入提供者",
+      "providers": {
+        "emailPassLess": "電子郵件（無密碼登入）"
+      },
       "subtext": "設定使用者可以如何登入。",
       "newAdminIdentity": {
         "explanation": "選擇使用者可以用哪些方法進行身份認證。所有人都能登入，但只有您邀請的使用者可以安裝應用程式或建立沙粒。",

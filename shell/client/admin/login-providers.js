@@ -11,7 +11,7 @@ const idpData = function (configureCallback) {
   return [
     {
       id: "email-token",
-      label: "E-mail (passwordless)",
+      label: TAPi18n.__("admin.identityProviders.providers.emailPassLess"),
       icon: "/email.svg", // Or use identicons
       enabled: emailTokenEnabled,
       popupTemplate: "adminLoginProviderConfigureEmail",

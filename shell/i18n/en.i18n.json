@@ -517,6 +517,9 @@
     },
     "identityProviders": {
       "name": "Login providers",
+      "providers": {
+        "emailPassLess": "E-mail (passwordless)"
+      },
       "subtext": "How users log in.",
       "newAdminIdentity": {
         "explanation": "Choose which services users may use to identify themselves.  Anyone can log in, but only users you invite will be able to install apps or create grains.",

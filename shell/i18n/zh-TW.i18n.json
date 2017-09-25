@@ -164,7 +164,8 @@
     "grainView": {
       "notFoundWithId": "找不到 ID 為 %s 的沙粒。",
       "openWithWhichIdentity": "您要對此沙粒出示您的身份，或是保持匿名？",
-      "openInIncognitoMode": "以無痕模式開啟"
+      "openInIncognitoMode": "以無痕模式開啟",
+      "revealMyIdentity": "*_Reveal my identity"
     },
     "grainInMyTrash": {
       "explanation": "這顆沙粒沈在回收桶裡，您要把他撈回主清單才能重新使用。",
@@ -177,7 +178,7 @@
       "explanation": "這顆沙粒的擁有者被停權了，無法使用。"
     },
     "wrongIdentity": {
-
+      "explanation": "*_This link was intended for the user:"
     },
     "requestAccess": {
       "permissionDenied": "您無權存取此沙粒。",
@@ -1001,6 +1002,12 @@
             "isNotVisitor": "降級為訪客"
           }
         },
+        "credentials": {
+          "title": "*_Credentials"
+        },
+        "profile": {
+          "title": "*_Profile"
+        },
         "status": {
           "title": "狀態",
           "deleting": "停權 - 即將刪除 %s",
@@ -1334,11 +1341,13 @@
       "sandstormAccountSettings": {
         "title": "帳號",
         "identities": {
-
-          "refactorAlert": "我們正在改變憑證的運作方式，您的帳號可能會受影響。<a href=\"https://sandstorm.io/news/2017-05-08-refactoring-identities\" target=\"_blank\">詳情 &raquo;</a>",
+          "title": "*_My Profile",
           "success": "成功：%s",
+          "linkedCredentials": "*_Linked credentials",
           "linkNewIdentity": {
+            "title": "*_Link new credential:",
             "cancelButton": "取消",
+            "linkButton": "*_Link new credential",
             "logoutAllButton": "登出所有其他 Session"
           },
           "email": {
@@ -1433,6 +1442,7 @@
         "loading": "正在讀取……"
       },
       "_loginButtonsLoggedInDropdown": {
+        "revealIdentity": "*_Reveal identity",
         "title": "帳號",
         "sendFeedback": "提供意見",
         "referralProgram": "推薦計畫",
@@ -1503,6 +1513,7 @@
         "loading": "正在讀取……",
         "logoutButton": "返回",
         "cancelButton": "取消",
+        "goBackButton": "*_Go back",
         "create": "正在建立帳號……",
         "createFailed": "無法建立帳號。",
         "loginAccount": "正在登入帳號……",
@@ -1544,6 +1555,10 @@
       "identityCardSignInButton": {
         "hint": "以 %s 登入",
         "title": "登入"
+      },
+      "accountCardSignInButton": {
+        "reSign": "*_To sign out of your current account and sign in as this user, choose how to sign in:",
+        "howToSignIn": "*_Choose how to sign in:"
       }
     },
     "tokenTemplates": {
@@ -1613,6 +1628,132 @@
         }
       },
       "setupButton": "開始設置沙聚雲"
+    },
+    "setupWizardIdentity": {
+      "title": "*_Login providers",
+      "explanation1": "*_To use Sandstorm, you need to create a user account.  Every user account on Sandstorm is backed by an login provider.  You'll use this login provider to authenticate as the first administrator of this Sandstorm install.",
+      "explanation2": "*_Configure the login provider or providers you wish to enable.",
+      "nextButton": "*_Next",
+      "backButton": "*_Back"
+    },
+    "setupWizardOrganization": {
+      "title": "*_Organization settings",
+      "error": "*_Failed to save change: %s",
+      "membership": {
+        "title": "*_Organization membership",
+        "emailToggle": {
+          "label": "*_sers authenticated via email address",
+          "subtext": "*_Note: disabled because email login is not configured."
+        },
+        "emailDomain": {
+          "label": "*_Domain:",
+          "subtext": "*_Users with an email address at this domain will be members of this server's organization."
+        },
+        "gappsToggle": {
+          "label": "*_Users authenticated via Google Apps for Work",
+          "subtext": "*_Note: disabled because Google login is not configured."
+        },
+        "gappsDomain": {
+          "label": "*_Domain:",
+          "subtext": "*_Users with a Google Apps for Work account under this domain will be members of this server's organization."
+        },
+        "ldapToggle": {
+          "label": "*_Users authenticated via LDAP",
+          "subtext": "*_Note: disabled because LDAP login is not configured."
+        },
+        "samlToggle": {
+          "label": "*_Users authenticated via SAML",
+          "subtext": "*_Note: disabled because SAML login is not configured."
+        }
+      },
+      "settings": {
+        "title": "*_Organization settings",
+        "disallowGuests": {
+          "label": "*_Disallow collaboration with users outside the organization.",
+          "subtext": "*_Users will be required to log in as a member of your organization to view sharing links. Guest access will be disabled."
+        },
+        "shareContacts": {
+          "label": "*_Make all organization users visible to each other",
+          "subtext": "*_This setting automatically adds users within the organization to each other's contact list so that they can share grains with each other.  Disable this if you have some users whose identity should stay hidden from other users."
+        }
+      },
+      "saveButton": "*_Save and continue",
+      "backButton": "*_Back"
+    },
+    "setupWizardEmailConfig": {
+      "title": "*_Email delivery",
+      "explanation": "*_Sandstorm needs a way to send email.  You can skip this step (unless you're using email login), but email-related features will be unavailable until you configure email in the future.",
+      "moreDetail": "*_<strong>How Sandstorm uses email:</strong> Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too. Every app receives a unique email address, so Sandstorm needs to send email from a variety of \"From:\" addresses. Therefore, Gmail SMTP won't work, but there are other free services. See more info in <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">the docs</a>.",
+      "error": "*_Failed to save changes: %s",
+      "hostPort": {
+        "host": "*_SMTP host",
+        "port": "*_Port",
+        "subtext": "*_Use port 25 for SMTP (unencrypted or with StartTLS), port 465 for TLS-encrypted SMTPS."
+      },
+      "username": {
+        "label": "*_Username (optional)"
+      },
+      "password": {
+        "label": "*_Password (optional)"
+      },
+      "email": {
+        "label": "*_Sandstorm server's own email address",
+        "subtext": "*_Sandstorm will send login emails, notifications of granted access requests, and other emails from this address. It will also use this address in the SMTP envelope."
+      },
+      "saveButton": "*_Save and continue",
+      "skipButton": "*_Skip for now",
+      "testButton": "*_Test",
+      "backButton": "*_Back"
+    },
+    "setupWizardPreinstalled": {
+      "title": "*_Pre-installed Apps Setup",
+      "explanation": "*_Please wait while Sandstorm installs the following Productivity Suite apps that are useful for most users. You will be able to configure all pre-installed apps in the Admin Settings panel after setup.",
+      "downloaded": "*_Downloaded",
+      "failed": "*_Failed",
+      "loading": "*_Please wait, loading app index...",
+      "nextButton": "*_Next",
+      "skipButton": "*_Skip for now",
+      "backButton": "*_Back"
+    },
+    "setupWizardLoginUser": {
+      "title": "*_Create admin account",
+      "firstLogin": {
+        "title": "*_Confirm your profile"
+      },
+      "isAdmin": "*_Great! Your account has admin privileges.",
+      "hasAdmin": {
+        "explanation": "*_This Sandstorm server already has an admin user, but if you want, you can also make yourself an admin.",
+        "adminButton": "*_Become an admin"
+      },
+      "makeYouAnAdmin": "*_Making you an admin on this server...",
+      "loggedOut": {
+        "explanation": "*_You can now create an admin account on this Sandstorm server.",
+        "description": "*_Log in to create your admin account",
+        "dialogLabel": "*_Create account"
+      },
+      "finishButton": "*_Finish",
+      "backButton": "*_Back"
+    },
+    "setupWizardSuccess": {
+      "title": "*_Ready to roll!",
+      "serverIsReady": "*_Your Sandstorm server is now ready to use.",
+      "whatsNext": "*_What would you like to do next?",
+      "addUsersLink": "*_Add users",
+      "editSettingsLink": "*_Edit other settings",
+      "sandstormLink": "*_Start using Sandstorm",
+      "backButton": "*_Back"
+    },
+    "setupWizardVerifyToken": {
+      "title": "*_Verifying token...",
+      "explanation": "*_Sorry, it looks like your setup token has expired.",
+      "howToFix": "*_Generate a new one now from the command line by running <code>sandstorm admin-token</code> to access the setup wizard."
+    },
+    "setupWizardTokenExpired": {
+      "title": "*_Setup token required",
+      "alreadySetup": "*_This server is already set up, so we recommend administering it via the main",
+      "adminRootLink": "*_administration panel",
+      "explanation": "*_To use this server's setup page, you need a valid setup token.",
+      "howToFix": "*_Generate a new one now from the command line by running <code>sandstorm admin-token</code> and following the link it outputs."
     }
   },
   "packages": {
@@ -1626,6 +1767,15 @@
       "selfHostHint": "或是為您自己的團隊安裝沙聚雲（沙聚雲是開源的）:",
       "signUp": "進行註冊：",
       "close": "關閉"
+    },
+    "powerbox": {
+      "title": "*_Powerbox request",
+      "inputToken": "*_Please input an api token:",
+      "importToken": "*_Import token",
+      "selected": "*_Selected:",
+      "selectOne": "*_Select one:",
+      "noGrain": "*_No grains can provide the requested interface.",
+      "loading": "*_Loading..."
     }
   }
 }

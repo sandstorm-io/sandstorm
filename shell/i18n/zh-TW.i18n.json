@@ -667,7 +667,7 @@
       "name": "組織設定",
       "subtext": "讓大團隊可以圓滑地上手及進行合作。",
       "organizationSettingsBlurb": {
-        "explanation": "沙聚雲讓您可以建立組織。__Sandstorm allows you to define an organization. You can automatically apply some settings to all members of your organization. Users within the organization will automatically be able to log in, install apps, and create grains."
+        "explanation": "沙聚雲讓您可以建立組織。您可以將設定自動套用在所有組織成員身上。所有組織成員都可以登入、安裝應用程式、以及建立沙粒。"
       },
       "newAdminOrganization": {
         "success": "變更已儲存。",
@@ -728,8 +728,8 @@
         "success": "變更已儲存。",
         "error": "無法儲存變更：%s",
         "address": {
-          "hostname": "SMTP host",
-          "port": "Port",
+          "hostname": "SMTP 主機位址",
+          "port": "連接埠",
           "subtext": "SMTP（無加密或 StartTLS 加密）用 port 25，TLS-加密 SMTPS 用 port 465。"
         },
         "username": {
@@ -1686,7 +1686,7 @@
       "moreDetail": "<strong>沙聚雲使用電郵的方法：</strong>沙聚雲寄送通知郵件，並且也允許應用程式寄送。每個應用程式都有一個獨自的電郵位址，所以沙聚雲需要能從可變的「來自」位置寄信。所以 Gmail SMTP 不管用，請採用別的免費服務。更多資訊請<a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">參見此處</a>。",
       "error": "無法儲存變更：%s",
       "hostPort": {
-        "host": "SMTP 位址",
+        "host": "SMTP 主機位址",
         "port": "連接埠",
         "subtext": "SMTP（未加密或使用 StartTLS）使用 25 埠，TLS 加密 SMTPS 使用 465 埠。"
       },

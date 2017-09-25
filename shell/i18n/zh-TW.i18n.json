@@ -165,7 +165,7 @@
       "notFoundWithId": "找不到 ID 為 %s 的沙粒。",
       "openWithWhichIdentity": "您要對此沙粒出示您的身份，或是保持匿名？",
       "openInIncognitoMode": "以無痕模式開啟",
-      "revealMyIdentity": "*_Reveal my identity"
+      "revealMyIdentity": "出示身份"
     },
     "grainInMyTrash": {
       "explanation": "這顆沙粒沈在回收桶裡，您要把他撈回主清單才能重新使用。",
@@ -178,7 +178,7 @@
       "explanation": "這顆沙粒的擁有者被停權了，無法使用。"
     },
     "wrongIdentity": {
-      "explanation": "*_This link was intended for the user:"
+      "explanation": "本連結為以下使用者專用："
     },
     "requestAccess": {
       "permissionDenied": "您無權存取此沙粒。",
@@ -1003,10 +1003,10 @@
           }
         },
         "credentials": {
-          "title": "*_Credentials"
+          "title": "憑證"
         },
         "profile": {
-          "title": "*_Profile"
+          "title": "個人資料"
         },
         "status": {
           "title": "狀態",
@@ -1341,13 +1341,13 @@
       "sandstormAccountSettings": {
         "title": "帳號",
         "identities": {
-          "title": "*_My Profile",
+          "title": "*我的資料",
           "success": "成功：%s",
-          "linkedCredentials": "*_Linked credentials",
+          "linkedCredentials": "已連結的憑證",
           "linkNewIdentity": {
-            "title": "*_Link new credential:",
+            "title": "連結新憑證：",
             "cancelButton": "取消",
-            "linkButton": "*_Link new credential",
+            "linkButton": "連結新憑證",
             "logoutAllButton": "登出所有其他 Session"
           },
           "email": {
@@ -1442,7 +1442,7 @@
         "loading": "正在讀取……"
       },
       "_loginButtonsLoggedInDropdown": {
-        "revealIdentity": "*_Reveal identity",
+        "revealIdentity": "出示身份",
         "title": "帳號",
         "sendFeedback": "提供意見",
         "referralProgram": "推薦計畫",
@@ -1513,7 +1513,7 @@
         "loading": "正在讀取……",
         "logoutButton": "返回",
         "cancelButton": "取消",
-        "goBackButton": "*_Go back",
+        "goBackButton": "返回",
         "create": "正在建立帳號……",
         "createFailed": "無法建立帳號。",
         "loginAccount": "正在登入帳號……",
@@ -1538,7 +1538,7 @@
       "identityManagementButtons": {
         "toggleLogin": {
           "label": "此身份可以用來登入您的帳號。",
-          "unlinkButton": "斷開此身份"
+          "unlinkButton": "斷開"
         }
       },
       "loginIdentitiesOfLinkedAccounts": {
@@ -1557,8 +1557,8 @@
         "title": "登入"
       },
       "accountCardSignInButton": {
-        "reSign": "*_To sign out of your current account and sign in as this user, choose how to sign in:",
-        "howToSignIn": "*_Choose how to sign in:"
+        "reSign": "要登出並改用其他帳號登入，請選擇登入方式：",
+        "howToSignIn": "選擇登入方式："
       }
     },
     "tokenTemplates": {
@@ -1630,130 +1630,130 @@
       "setupButton": "開始設置沙聚雲"
     },
     "setupWizardIdentity": {
-      "title": "*_Login providers",
-      "explanation1": "*_To use Sandstorm, you need to create a user account.  Every user account on Sandstorm is backed by an login provider.  You'll use this login provider to authenticate as the first administrator of this Sandstorm install.",
-      "explanation2": "*_Configure the login provider or providers you wish to enable.",
-      "nextButton": "*_Next",
-      "backButton": "*_Back"
+      "title": "登入提供者",
+      "explanation1": "您需要建立帳號才能使用沙聚雲。所有沙聚雲帳號皆有綁定登入提供者。您將會使用該提供者給予的登入資訊認證為本伺服器的首位管理者。",
+      "explanation2": "設定您想要使用的登入提供者。",
+      "nextButton": "下一步",
+      "backButton": "上一步"
     },
     "setupWizardOrganization": {
-      "title": "*_Organization settings",
-      "error": "*_Failed to save change: %s",
+      "title": "組織設定",
+      "error": "無法儲存變更：%s",
       "membership": {
-        "title": "*_Organization membership",
+        "title": "組織成員",
         "emailToggle": {
-          "label": "*_sers authenticated via email address",
-          "subtext": "*_Note: disabled because email login is not configured."
+          "label": "以電郵信箱認證的使用者",
+          "subtext": "因為電郵登入尚未設定，故無法使用。"
         },
         "emailDomain": {
-          "label": "*_Domain:",
-          "subtext": "*_Users with an email address at this domain will be members of this server's organization."
+          "label": "網域：",
+          "subtext": "使用此網域電郵註冊的使用者將自動提升權限為組織成員（使用者）。"
         },
         "gappsToggle": {
-          "label": "*_Users authenticated via Google Apps for Work",
-          "subtext": "*_Note: disabled because Google login is not configured."
+          "label": "以 G Suite 認證的使用者",
+          "subtext": "因為 Google 登入尚未設定，故無法使用。"
         },
         "gappsDomain": {
-          "label": "*_Domain:",
-          "subtext": "*_Users with a Google Apps for Work account under this domain will be members of this server's organization."
+          "label": "網域：",
+          "subtext": "使用此網域 G Suite 註冊的使用者將自動提升權限為組織成員（使用者）。"
         },
         "ldapToggle": {
-          "label": "*_Users authenticated via LDAP",
-          "subtext": "*_Note: disabled because LDAP login is not configured."
+          "label": "以 LDAP 認證的使用者",
+          "subtext": "因為 LDAP 登入尚未設定，故無法使用。"
         },
         "samlToggle": {
-          "label": "*_Users authenticated via SAML",
-          "subtext": "*_Note: disabled because SAML login is not configured."
+          "label": "以 SAML 認證的使用者",
+          "subtext": "因為 SAML 登入尚未設定，故無法使用。"
         }
       },
       "settings": {
-        "title": "*_Organization settings",
+        "title": "組織設定",
         "disallowGuests": {
-          "label": "*_Disallow collaboration with users outside the organization.",
-          "subtext": "*_Users will be required to log in as a member of your organization to view sharing links. Guest access will be disabled."
+          "label": "禁止組織成員以外的使用者進行協作。",
+          "subtext": "只有以組織成員身份登入的使用者可以打開您的共享連結。訪客存取將被停用。"
         },
         "shareContacts": {
-          "label": "*_Make all organization users visible to each other",
-          "subtext": "*_This setting automatically adds users within the organization to each other's contact list so that they can share grains with each other.  Disable this if you have some users whose identity should stay hidden from other users."
+          "label": "讓所有組織成員能夠看見彼此",
+          "subtext": "此功能會讓組織成員自動把其他組織成員都加入聯絡人清單，以便共享沙粒。若您有使用者需要隱藏身份，請停用本功能。"
         }
       },
-      "saveButton": "*_Save and continue",
-      "backButton": "*_Back"
+      "saveButton": "儲存並繼續",
+      "backButton": "上一步"
     },
     "setupWizardEmailConfig": {
-      "title": "*_Email delivery",
-      "explanation": "*_Sandstorm needs a way to send email.  You can skip this step (unless you're using email login), but email-related features will be unavailable until you configure email in the future.",
-      "moreDetail": "*_<strong>How Sandstorm uses email:</strong> Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too. Every app receives a unique email address, so Sandstorm needs to send email from a variety of \"From:\" addresses. Therefore, Gmail SMTP won't work, but there are other free services. See more info in <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">the docs</a>.",
-      "error": "*_Failed to save changes: %s",
+      "title": "電郵寄送",
+      "explanation": "沙聚雲需要知道如何寄送電郵。除非您使用電郵登入，否則可以跳過此步驟。若您跳過此步驟，直到您設定完成為止電郵相關的功能皆無法使用。",
+      "moreDetail": "<strong>沙聚雲使用電郵的方法：</strong>沙聚雲寄送通知郵件，並且也允許應用程式寄送。每個應用程式都有一個獨自的電郵位址，所以沙聚雲需要能從可變的「來自」位置寄信。所以 Gmail SMTP 不管用，請採用別的免費服務。更多資訊請<a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">參見此處</a>。",
+      "error": "無法儲存變更：%s",
       "hostPort": {
-        "host": "*_SMTP host",
-        "port": "*_Port",
-        "subtext": "*_Use port 25 for SMTP (unencrypted or with StartTLS), port 465 for TLS-encrypted SMTPS."
+        "host": "SMTP 位址",
+        "port": "連接埠",
+        "subtext": "SMTP（未加密或使用 StartTLS）使用 25 埠，TLS 加密 SMTPS 使用 465 埠。"
       },
       "username": {
-        "label": "*_Username (optional)"
+        "label": "使用者名聲（選填）"
       },
       "password": {
-        "label": "*_Password (optional)"
+        "label": "密碼（選填）"
       },
       "email": {
-        "label": "*_Sandstorm server's own email address",
-        "subtext": "*_Sandstorm will send login emails, notifications of granted access requests, and other emails from this address. It will also use this address in the SMTP envelope."
+        "label": "沙聚雲伺服器本身的電郵位址",
+        "subtext": "沙聚雲會用這個位址來寄送登入郵件或授予存取請求的通知等郵件。在 SMTP envelope 中也會使用此位址。"
       },
-      "saveButton": "*_Save and continue",
-      "skipButton": "*_Skip for now",
-      "testButton": "*_Test",
-      "backButton": "*_Back"
+      "saveButton": "儲存並繼續",
+      "skipButton": "現在不要",
+      "testButton": "測試",
+      "backButton": "上一步"
     },
     "setupWizardPreinstalled": {
-      "title": "*_Pre-installed Apps Setup",
-      "explanation": "*_Please wait while Sandstorm installs the following Productivity Suite apps that are useful for most users. You will be able to configure all pre-installed apps in the Admin Settings panel after setup.",
-      "downloaded": "*_Downloaded",
-      "failed": "*_Failed",
-      "loading": "*_Please wait, loading app index...",
-      "nextButton": "*_Next",
-      "skipButton": "*_Skip for now",
-      "backButton": "*_Back"
+      "title": "預裝應用程式設定",
+      "explanation": "請稍等，沙聚雲正在安裝下列應用程式（生產力套件，對大部分使用者都有用）。在初期設定結束後，您可以在管理者介面設定要預裝哪些應用程式。",
+      "downloaded": "已下載",
+      "failed": "失敗",
+      "loading": "正在讀取應用程式索引，請稍候……",
+      "nextButton": "下一步",
+      "skipButton": "現在不要",
+      "backButton": "上一步"
     },
     "setupWizardLoginUser": {
-      "title": "*_Create admin account",
+      "title": "建立管理者帳號",
       "firstLogin": {
-        "title": "*_Confirm your profile"
+        "title": "確認您的個人資料"
       },
-      "isAdmin": "*_Great! Your account has admin privileges.",
+      "isAdmin": "太棒了！您的帳號現已擁有管理者權限。",
       "hasAdmin": {
-        "explanation": "*_This Sandstorm server already has an admin user, but if you want, you can also make yourself an admin.",
-        "adminButton": "*_Become an admin"
+        "explanation": "本沙聚雲伺服器已有管理者，但若您有需要還是可以將自己設定為管理者。",
+        "adminButton": "成為管理者"
       },
-      "makeYouAnAdmin": "*_Making you an admin on this server...",
+      "makeYouAnAdmin": "正在將您設定為本伺服器的管理者……",
       "loggedOut": {
-        "explanation": "*_You can now create an admin account on this Sandstorm server.",
-        "description": "*_Log in to create your admin account",
-        "dialogLabel": "*_Create account"
+        "explanation": "您現在可以建立本伺服器的管理者帳號了。",
+        "description": "登入並建立您的管理者帳號",
+        "dialogLabel": "建立帳號"
       },
-      "finishButton": "*_Finish",
-      "backButton": "*_Back"
+      "finishButton": "完成",
+      "backButton": "上一步"
     },
     "setupWizardSuccess": {
-      "title": "*_Ready to roll!",
-      "serverIsReady": "*_Your Sandstorm server is now ready to use.",
-      "whatsNext": "*_What would you like to do next?",
-      "addUsersLink": "*_Add users",
-      "editSettingsLink": "*_Edit other settings",
-      "sandstormLink": "*_Start using Sandstorm",
-      "backButton": "*_Back"
+      "title": "大功告成！",
+      "serverIsReady": "您的沙聚雲伺服器現在可供使用。",
+      "whatsNext": "您皆下來想做什麼呢？",
+      "addUsersLink": "新增使用者",
+      "editSettingsLink": "編輯其他設定",
+      "sandstormLink": "開始使用沙聚雲",
+      "backButton": "上一步"
     },
     "setupWizardVerifyToken": {
-      "title": "*_Verifying token...",
-      "explanation": "*_Sorry, it looks like your setup token has expired.",
-      "howToFix": "*_Generate a new one now from the command line by running <code>sandstorm admin-token</code> to access the setup wizard."
+      "title": "正在檢查驗證碼……",
+      "explanation": "抱歉，您的設置用驗證碼過期了。",
+      "howToFix": "請在伺服器的命令列執行 <code>sandstorm admin-token</code> 來產生新的驗證碼進行設置。"
     },
     "setupWizardTokenExpired": {
-      "title": "*_Setup token required",
-      "alreadySetup": "*_This server is already set up, so we recommend administering it via the main",
-      "adminRootLink": "*_administration panel",
-      "explanation": "*_To use this server's setup page, you need a valid setup token.",
-      "howToFix": "*_Generate a new one now from the command line by running <code>sandstorm admin-token</code> and following the link it outputs."
+      "title": "需要設置驗證碼",
+      "alreadySetup": "本伺服器已經設置完成，建議您從管理者介面",
+      "adminRootLink": "來進行設定。",
+      "explanation": "要使用本伺服器的設置頁面，您需要產生新的設置驗證碼。",
+      "howToFix": "請在伺服器的命令列執行 <code>sandstorm admin-token</code> 並遵循顯示步驟處理。"
     }
   },
   "packages": {
@@ -1769,13 +1769,13 @@
       "close": "關閉"
     },
     "powerbox": {
-      "title": "*_Powerbox request",
-      "inputToken": "*_Please input an api token:",
-      "importToken": "*_Import token",
-      "selected": "*_Selected:",
-      "selectOne": "*_Select one:",
-      "noGrain": "*_No grains can provide the requested interface.",
-      "loading": "*_Loading..."
+      "title": "Powerbox 請求",
+      "inputToken": "請輸入 api token：",
+      "importToken": "匯入 token",
+      "selected": "已選定：",
+      "selectOne": "選擇一項：",
+      "noGrain": "沒有沙粒可以提供符合請求的介面。",
+      "loading": "正在讀取……"
     }
   }
 }

@@ -222,9 +222,11 @@ licenses, included in the LICENSES directory.
 </template>
 
 <template name="emailLoginForm">
-  {{> emailAuthenticationForm linkingNewCredential=linkingNewCredential description="(_ "accounts.loginButtons.emailLoginForm.description")"
-                              prompt="email" sendButtonText="(_ "accounts.loginButtons.emailLoginForm.sendButtonText")"
-                              loginId=loginId}}
+  {{> emailAuthenticationForm linkingNewCredential=linkingNewCredential
+      description=(_ "accounts.loginButtons.emailLoginForm.description")
+      prompt="email" 
+      sendButtonText=(_ "accounts.loginButtons.emailLoginForm.sendButtonText")
+      loginId=loginId}}
 </template>
 
 <template name="emailAuthenticationForm">

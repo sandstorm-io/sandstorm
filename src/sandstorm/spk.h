@@ -19,6 +19,7 @@
 
 #include "abstract-main.h"
 #include <fcntl.h>
+#include <sys/types.h>
 #include <sandstorm/package.capnp.h>
 
 namespace sandstorm {

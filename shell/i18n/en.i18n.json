@@ -1239,7 +1239,9 @@
       "uninstall": "Uninstall",
       "noMatchApp": "You have no installed apps with that name. Try <a href=\"__url__\">searching on the app market &raquo;</a>",
       "unauthorized": "Unauthorized! :(",
-      "unauthorizedText": "This is a private Sandstorm server. In order to install apps, you need to be invited by the admin. The admin can invite you from the admin panel."
+      "unauthorizedText": "This is a private Sandstorm server. In order to install apps, you need to be invited by the admin. The admin can invite you from the admin panel.",
+      "intro": "<strong>Welcome!</strong><br>Create documents, chat rooms, blogs, and more.<br><br>Get started by installing an app.",
+      "doneButton": "Got it"
     },
     "install": {
       "sandstormAppInstallPage": {

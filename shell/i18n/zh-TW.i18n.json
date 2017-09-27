@@ -1239,7 +1239,9 @@
       "uninstall": "移除",
       "noMatchApp": "找不到名稱含有該字串的應用程式。請<a href=\"__url__\">試試搜尋市集 &raquo;</a>",
       "unauthorized": "無權限！:(",
-      "unauthorizedText": "只有管理者給予權限的的使用者才能安裝應用程式。若需權限，請聯絡管理者。"
+      "unauthorizedText": "只有管理者給予權限的的使用者才能安裝應用程式。若需權限，請聯絡管理者。",
+      "intro": "<strong>歡迎！</strong><br>新增文件、聊天室、部落格……。<br><br>從安裝新程式開始。",
+      "doneButton": "瞭解"
     },
     "install": {
       "sandstormAppInstallPage": {

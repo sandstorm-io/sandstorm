@@ -150,6 +150,8 @@ let sandstormBackend = sandstormBackendConnection.restore(null, Backend);
 
 // TODO(cleanup): This initilization belongs with the rest of our package initialization in
 //   db-deprecated.js. We can't put it there now because we need to contruct sandstormCoreFactory first.
+// TODO(now): Do not connect until migrations are complete, otherwise gateway can start messing with
+//   stuff too early!
 globalBackend = new SandstormBackend(globalDb, sandstormBackend);
 Meteor.onConnection((connection) => {
   connection.sandstormBackend = globalBackend;
@@ -577,6 +579,45 @@ const gcSessions = () => {
 
 SandstormDb.periodicCleanup(TIMEOUT_MS, gcSessions);
 
+function getProxyForSession(session) {
+  let apiToken;
+  if (session.hashedToken) {
+    apiToken = ApiTokens.findOne({ _id: session.hashedToken });
+    // We don't have to fully validate the API token here because if it changed the session
+    // would have been deleted.
+    if (!apiToken) {
+      throw new Meteor.Error(410, "ApiToken has been deleted");
+    }
+  }
+
+  const grain = Grains.findOne(session.grainId);
+  if (!grain) {
+    // Grain was deleted, I guess.
+    throw new Meteor.Error(410, "Resource has been deleted");
+  }
+
+  // Note that we don't need to call mayOpenGrain() because the existence of a session
+  // implies this check was already performed.
+
+  const proxy = new Proxy(grain, session._id, session.hostId, session.tabId, session.userId,
+                          session.identityId, false);
+  if (apiToken) proxy.apiToken = apiToken;
+
+  if (session.powerboxRequest) {
+    proxy.powerboxRequest = session.powerboxRequest;
+  }
+
+  // Only add the proxy to the table if it was not concurrently deleted (which could happen
+  // e.g. if the user's access was revoked).
+  if (session.hostId in proxiesByHostId) {
+    proxiesByHostId[session.hostId] = proxy;
+  } else {
+    throw new Meteor.Error(403, "Session was concurrently closed.");
+  }
+
+  return proxy;
+}
+
 const getProxyForHostId = (hostId, isAlreadyOpened) => {
   // Get the Proxy corresponding to the given grain session host, possibly (re)creating it if it
   // doesn't already exist. The first request on the session host will always create a new proxy.
@@ -630,46 +671,55 @@ const getProxyForHostId = (hostId, isAlreadyOpened) => {
           }
         }
 
-        let apiToken;
-        if (session.hashedToken) {
-          apiToken = ApiTokens.findOne({ _id: session.hashedToken });
-          // We don't have to fully validate the API token here because if it changed the session
-          // would have been deleted.
-          if (!apiToken) {
-            throw new Meteor.Error(410, "ApiToken has been deleted");
-          }
-        }
-
-        const grain = Grains.findOne(session.grainId);
-        if (!grain) {
-          // Grain was deleted, I guess.
-          throw new Meteor.Error(410, "Resource has been deleted");
-        }
-
-        // Note that we don't need to call mayOpenGrain() because the existence of a session
-        // implies this check was already performed.
-
-        const proxy = new Proxy(grain, session._id, hostId, session.tabId, session.userId,
-                                session.identityId, false);
-        if (apiToken) proxy.apiToken = apiToken;
-
-        if (session.powerboxRequest) {
-          proxy.powerboxRequest = session.powerboxRequest;
-        }
-
-        // Only add the proxy to the table if it was not concurrently deleted (which could happen
-        // e.g. if the user's access was revoked).
-        if (hostId in proxiesByHostId) {
-          proxiesByHostId[hostId] = proxy;
-        } else {
-          throw new Meteor.Error(403, "Session was concurrently closed.");
-        }
-
-        return proxy;
+        return getProxyForSession(session);
       });
     }
   });
 };
+
+getWebSessionForSessionId = (sessionId, params) => {
+  return inMeteor(() => {
+    const session = Sessions.findOne({ _id: sessionId });
+    if (!session) {
+      if (isAlreadyOpened) {
+        let observer;
+        return new Promise((resolve, reject) => {
+          const task = Meteor.setTimeout(() => {
+            reject(new Error("Requested session that no longer exists, and " +
+                "timed out waiting for client to restore it. This can happen if you have " +
+                "opened an app's content in a new window and then closed it in the " +
+                "UI. If you see this error *inside* the Sandstorm UI, please report a " +
+                "bug and describe the circumstances of the error."));
+          }, SESSION_PROXY_TIMEOUT);
+          observer = Sessions.find({ _id: sessionId }).observe({
+            added() {
+              Meteor.clearTimeout(task);
+              resolve(getWebSessionSessionId(sessionId));
+            },
+          });
+        }).then((v) => {
+          observer.stop();
+          return v;
+        }, (e) => {
+          observer.stop();
+          throw e;
+        });
+      } else {
+        // Does not appear to be a valid session host.
+        return undefined;
+      }
+    }
+
+    const proxy = getProxyForSession(session);
+
+    // TODO(now): Temporary hack to make spinner go away. Need an API to do this right.
+    proxy.setHasLoaded();
+
+    // TODO(now): TODO(security): Apply MembraneRequirement to revoke capability when permissions
+    //   change.
+    return proxy.getSessionForParams(params);
+  });
+}
 
 // =======================================================================================
 // API tokens
@@ -1418,28 +1468,20 @@ class Proxy {
     }
   }
 
-  _callNewWebSession(request, userInfo) {
-    const params = Capnp.serialize(WebSession.Params, {
-      basePath: PROTOCOL + "//" + request.headers.host,
-      userAgent: "user-agent" in request.headers
-          ? request.headers["user-agent"]
-          : "UnknownAgent/0.0",
-      acceptableLanguages: "accept-language" in request.headers
-          ? request.headers["accept-language"].split(",").map((s) => { return s.trim(); })
-          : ["en-US", "en"],
-    });
+  _callNewWebSession(params, userInfo) {
+    params = Capnp.serialize(WebSession.Params, params);
     return this.uiView.newSession(userInfo,
          makeHackSessionContext(this.grainId, this.sessionId, this.accountId, this.tabId),
          WebSession.typeId, params, new Buffer(this.tabId, "hex")).session;
   }
 
-  _callNewApiSession(request, userInfo) {
+  _callNewApiSession(params, userInfo) {
     const serializedParams = this.apiSessionParams;
     if (!serializedParams) {
       throw new Meteor.Error(500, "Should have already computed apiSessionParams.");
     }
 
-    // TODO(someday): We are currently falling back to WebSession if we get any kind of error upon
+    // TODO(apibump): We are currently falling back to WebSession if we get any kind of error upon
     // calling newSession with an ApiSession._id.
     // Eventually we'll remove this logic once we're sure apps have updated.
     return this.uiView.newSession(userInfo,
@@ -1448,27 +1490,19 @@ class Proxy {
         .then((session) => {
           return session.session;
         }, (err) => {
-          return this._callNewWebSession(request, userInfo);
+          return this._callNewWebSession(params, userInfo);
         });
   }
 
-  _callNewRequestSession(request, userInfo) {
-    const params = Capnp.serialize(WebSession.Params, {
-      basePath: PROTOCOL + "//" + request.headers.host,
-      userAgent: "user-agent" in request.headers
-          ? request.headers["user-agent"]
-          : "UnknownAgent/0.0",
-      acceptableLanguages: "accept-language" in request.headers
-          ? request.headers["accept-language"].split(",").map((s) => { return s.trim(); })
-          : ["en-US", "en"],
-    });
+  _callNewRequestSession(params, userInfo) {
+    params = Capnp.serialize(WebSession.Params, params);
     return this.uiView.newRequestSession(userInfo,
          makeHackSessionContext(this.grainId, this.sessionId, this.accountId, this.tabId),
          WebSession.typeId, params, this.powerboxRequest.descriptors,
          new Buffer(this.tabId, "hex")).session;
   }
 
-  _callNewSession(request, viewInfo) {
+  _callNewSession(webSessionParams, viewInfo) {
     const userInfo = _.clone(this.userInfo);
     const promise = inMeteor(() => {
       let vertex;
@@ -1531,16 +1565,29 @@ class Proxy {
       userInfo.deprecatedPermissionsBlob = buf;
 
       if (this.isApi) {
-        return this._callNewApiSession(request, userInfo);
+        return this._callNewApiSession(webSessionParams, userInfo);
       } else if (this.powerboxRequest) {
-        return this._callNewRequestSession(request, userInfo);
+        return this._callNewRequestSession(webSessionParams, userInfo);
       } else {
-        return this._callNewWebSession(request, userInfo);
+        return this._callNewWebSession(webSessionParams, userInfo);
       }
     });
   }
 
   getSession(request) {
+    const params = {
+      basePath: PROTOCOL + "//" + request.headers.host,
+      userAgent: "user-agent" in request.headers
+          ? request.headers["user-agent"]
+          : "UnknownAgent/0.0",
+      acceptableLanguages: "accept-language" in request.headers
+          ? request.headers["accept-language"].split(",").map((s) => { return s.trim(); })
+          : ["en-US", "en"],
+    };
+    return this.getSessionForParams(webSessionParams);
+  }
+
+  getSessionForParams(webSessionParams) {
     if (!this.session) {
       this.getConnection();  // make sure we're connected
       const promise = this.uiView.getViewInfo().then((viewInfo) => {
@@ -1549,7 +1596,7 @@ class Proxy {
           const cachedViewInfo = _.omit(viewInfo, "appTitle", "grainIcon");
           Grains.update(this.grainId, { $set: { cachedViewInfo: cachedViewInfo } });
         }).then(() => {
-          return this._callNewSession(request, viewInfo);
+          return this._callNewSession(webSessionParams, viewInfo);
         });
       }, (error) => {
         if (error.kjType === "failed" || error.kjType === "unimplemented") {
@@ -1557,7 +1604,7 @@ class Proxy {
           // TODO(apibump): Don't treat 'failed' as 'unimplemented'. Unfortunately, old apps built
           //   with old versions of Cap'n Proto don't throw 'unimplemented' exceptions, so we have
           //   to accept 'failed' here at least until the next API bump.
-          return this._callNewSession(request, {});
+          return this._callNewSession(webSessionParams, {});
         } else {
           return Promise.reject(error);
         }

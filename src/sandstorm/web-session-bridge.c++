@@ -84,7 +84,7 @@ kj::Promise<void> WebSessionBridge::request(
       KJ_IF_MAYBE(length, requestBody.tryGetLength()) {
         if (*length < MAX_NONSTREAMING_LENGTH) {
           return requestBody.readAllBytes()
-              .then([this,KJ_MVCAP(session),path,&headers,&response]
+              .then([this,path,&headers,&response]
                     (kj::Array<byte>&& data) mutable {
             auto req = session.postRequest();
             req.setPath(path);
@@ -110,7 +110,7 @@ kj::Promise<void> WebSessionBridge::request(
       KJ_IF_MAYBE(length, requestBody.tryGetLength()) {
         if (*length < MAX_NONSTREAMING_LENGTH) {
           return requestBody.readAllBytes()
-              .then([this,KJ_MVCAP(session),path,&headers,&response]
+              .then([this,path,&headers,&response]
                     (kj::Array<byte>&& data) mutable {
             auto req = session.putRequest();
             req.setPath(path);
@@ -141,7 +141,7 @@ kj::Promise<void> WebSessionBridge::request(
 
     case kj::HttpMethod::PATCH: {
       return requestBody.readAllBytes()
-          .then([this,KJ_MVCAP(session),path,&headers,&response]
+          .then([this,path,&headers,&response]
                 (kj::Array<byte>&& data) mutable {
         auto req = session.patchRequest();
         req.setPath(path);
@@ -377,11 +377,17 @@ private:
 
   protected:
     kj::Promise<void> sendBytes(SendBytesContext context) override {
-      return pipe->fulfillRead(context.getParams().getMessage());
+      // Some apps will call sendBytes() multiple times concurrently, so we need to queue.
+      auto fork = queue.then([this,context]() mutable {
+        return pipe->fulfillRead(context.getParams().getMessage());
+      }).fork();
+      queue = fork.addBranch();
+      return fork.addBranch();
     }
 
   private:
     kj::Own<WebSocketPipe> pipe;
+    kj::Promise<void> queue = kj::READY_NOW;
   };
 };
 
@@ -389,6 +395,21 @@ class EntropySourceImpl: public kj::EntropySource {
 public:
   void generate(kj::ArrayPtr<byte> buffer) {
     randombytes_buf(buffer.begin(), buffer.size());
+  }
+};
+
+class NoStreamingByteStream: public ByteStream::Server {
+public:
+  kj::Promise<void> write(WriteContext context) override {
+    KJ_FAIL_REQUIRE("streamed response not expected");
+  }
+
+  kj::Promise<void> done(DoneContext context) override {
+    KJ_FAIL_REQUIRE("streamed response not expected");
+  }
+
+  kj::Promise<void> expectSize(ExpectSizeContext context) override {
+    KJ_FAIL_REQUIRE("streamed response not expected");
   }
 };
 
@@ -404,6 +425,12 @@ kj::Promise<void> WebSessionBridge::openWebSocket(
 
   auto streamer = initContext(req.initContext(), headers);
 
+  // We never use the response stream for WebSockets, so fulfill it to a stream that throws on all
+  // calls.
+  // (We don't fulfill the stream itself to an exception because this implies something went
+  // wrong, but nothing did.)
+  streamer.streamer->fulfill(kj::heap<NoStreamingByteStream>());
+
   KJ_IF_MAYBE(proto, headers.get(tables.hSecWebSocketProtocol)) {
     auto protos = split(*proto, ',');
     auto listBuilder = req.initProtocol(protos.size());
@@ -415,8 +442,10 @@ kj::Promise<void> WebSessionBridge::openWebSocket(
   auto clientStreamPaf = kj::newPromiseAndFulfiller<WebSession::WebSocketStream::Client>();
   req.setClientStream(kj::mv(clientStreamPaf.promise));
 
+  auto& clientStreamFulfillerRef = *clientStreamPaf.fulfiller;
+
   return req.send()
-      .then([this, &response, clientStreamFulfiller = kj::mv(clientStreamPaf.fulfiller)]
+      .then([this, &response, &clientStreamFulfillerRef]
             (capnp::Response<WebSession::OpenWebSocketResults>&& rpcResponse) mutable {
     kj::HttpHeaders headers(tables.headerTable);
 
@@ -435,14 +464,17 @@ kj::Promise<void> WebSessionBridge::openWebSocket(
 
     static EntropySourceImpl entropySource;
 
-    clientStreamFulfiller->fulfill(wsPipe->getIncomingStreamCapability());
+    clientStreamFulfillerRef.fulfill(wsPipe->getIncomingStreamCapability());
     auto wsToServer = kj::newWebSocket(kj::mv(wsPipe), entropySource);
 
     auto promises = kj::heapArrayBuilder<kj::Promise<void>>(2);
     promises.add(wsToClient->pumpTo(*wsToServer));
     promises.add(wsToServer->pumpTo(*wsToClient));
     return kj::joinPromises(promises.finish()).attach(kj::mv(wsToClient), kj::mv(wsToServer));
-  });
+  }, [&clientStreamFulfillerRef](kj::Exception&& e) -> kj::Promise<void> {
+    clientStreamFulfillerRef.reject(kj::cp(e));
+    return kj::mv(e);
+  }).attach(kj::mv(clientStreamPaf.fulfiller));
 }
 
 class WebSessionBridge::ByteStreamImpl: public ByteStream::Server {
@@ -461,15 +493,22 @@ public:
   }
 
   kj::Promise<void> write(WriteContext context) override {
-    auto& stream = ensureStarted(nullptr);
-    auto data = context.getParams().getData();
-    return stream.write(data.begin(), data.size());
+    auto fork = queue.then([this,context]() mutable {
+      auto& stream = ensureStarted(nullptr);
+      auto data = context.getParams().getData();
+      return stream.write(data.begin(), data.size());
+    }).fork();
+    queue = fork.addBranch();
+    return fork.addBranch();
   }
 
   kj::Promise<void> done(DoneContext context) override {
-    state.init<Done>();
-    doneFulfiller->fulfill();
-    return kj::READY_NOW;
+    auto fork = queue.then([this]() {
+      state.init<Done>();
+      doneFulfiller->fulfill();
+    }).fork();
+    queue = fork.addBranch();
+    return fork.addBranch();
   }
 
   kj::Promise<void> expectSize(ExpectSizeContext context) override {
@@ -493,6 +532,7 @@ private:
 
   kj::OneOf<NotStarted, Started, Done> state;
   kj::Own<kj::PromiseFulfiller<void>> doneFulfiller;
+  kj::Promise<void> queue = kj::READY_NOW;
 
   kj::AsyncOutputStream& ensureStarted(kj::Maybe<uint64_t> size) {
     if (state.is<NotStarted>()) {
@@ -792,6 +832,12 @@ kj::Promise<void> WebSessionBridge::handleResponse(
         headers.add(name, addlHeader.getValue());
       }
     }
+
+    // If we complete this function without calling fulfill() to connect the stream, then this is
+    // not a streaming response. Fulfill the stream to something whose methods throw exceptions.
+    // (We don't fulfill the stream itself to an exception because this implies something went
+    // wrong, but nothing did.)
+    KJ_DEFER(contextInitInfo.streamer->fulfill(kj::heap<NoStreamingByteStream>()));
 
     switch (in.which()) {
       case WebSession::Response::CONTENT: {

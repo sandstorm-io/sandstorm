@@ -2397,10 +2397,14 @@ private:
       auto& network = io.provider->getNetwork();
 
       kj::Own<kj::ConnectionReceiver> listener;
+      kj::Own<kj::ConnectionReceiver> gatewayListener;
       if (config.useExperimentalGateway) {
         auto capStream = fdBundle.consumeServer(FdBundle::SHELL_BACKEND, *io.lowLevelProvider);
         listener = kj::heap<kj::CapabilityStreamConnectionReceiver>(*capStream)
             .attach(kj::mv(capStream));
+        auto capStream2 = fdBundle.consumeServer(FdBundle::GATEWAY_BACKEND, *io.lowLevelProvider);
+        gatewayListener = kj::heap<kj::CapabilityStreamConnectionReceiver>(*capStream2)
+            .attach(kj::mv(capStream2));
       } else {
         kj::StringPtr socketPath = Backend::SOCKET_PATH;
         sandstorm::recursivelyCreateParent(socketPath);
@@ -2440,16 +2444,32 @@ private:
       paf.fulfiller->fulfill(kj::heap<BackendImpl>(*io.lowLevelProvider, network,
         server.getBootstrap().castAs<SandstormCoreFactory>(), sandboxUid));
 
+      kj::Own<capnp::TwoPartyServer> gatewayServer;
+      if (config.useExperimentalGateway) {
+        gatewayServer = kj::heap<capnp::TwoPartyServer>(kj::refcounted<CapRedirector>([&]() {
+          // TODO(now): Probably it should be the Gateway that reconnects on disconnect so that
+          //   if the backend bounces the gateway doesn't end up broken? We'll need to use a
+          //   bootstrap callback here to make sure we re-fetch the router each time the gateway
+          //   connects.
+          return server.getBootstrap().castAs<SandstormCoreFactory>()
+              .getGatewayRouterRequest().send().getRouter();
+        }));
+      }
+
       // Signal readiness.
       write(outPipe, "ready", 5);
       outPipe = nullptr;
 
-      server.listen(kj::mv(listener))
-            // Rotate logs, keeping 1-2MB worth. We do this in the backend process mainly because
-            // it is the only asynchronous process in run-bundle.c++.
-            .exclusiveJoin(rotateLog(io.provider->getTimer(),
-                                     STDERR_FILENO, "/var/log/sandstorm.log", 1u << 20))
-            .wait(io.waitScope);
+      auto promise = server.listen(kj::mv(listener));
+      if (config.useExperimentalGateway) {
+        promise = promise.exclusiveJoin(gatewayServer->listen(*gatewayListener));
+      }
+
+      // Rotate logs, keeping 1-2MB worth. We do this in the backend process mainly because
+      // it is the only asynchronous process in run-bundle.c++.
+      promise.exclusiveJoin(rotateLog(io.provider->getTimer(),
+                                      STDERR_FILENO, "/var/log/sandstorm.log", 1u << 20))
+             .wait(io.waitScope);
       KJ_UNREACHABLE;
     });
 
@@ -2480,7 +2500,10 @@ private:
       auto io = kj::setupAsyncIo();
       kj::HttpHeaderTable::Builder headerTableBuilder;
 
-      auto backendConn = fdBundle.consumeClient(FdBundle::GATEWAY_BACKEND, *io.lowLevelProvider);
+      auto backendCapStream = fdBundle.consumeClient(
+          FdBundle::GATEWAY_BACKEND, *io.lowLevelProvider);
+      kj::CapabilityStreamNetworkAddress backendAddr(*io.provider, *backendCapStream);
+      auto backendConn = backendAddr.connect().wait(io.waitScope);
       capnp::TwoPartyClient backendClient(*backendConn);
       auto router = backendClient.bootstrap().castAs<GatewayRouter>();
 

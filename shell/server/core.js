@@ -602,6 +602,10 @@ class SandstormCoreFactoryImpl {
   getSandstormCore(grainId) {
     return { core: makeSandstormCore(this.db, grainId) };
   }
+
+  getGatewayRouter() {
+    return { router: makeGatewayRouter() };
+  }
 }
 
 makeSandstormCoreFactory = (db) => {

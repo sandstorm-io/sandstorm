@@ -20,6 +20,8 @@
 #include <kj/compat/http.h>
 #include <sandstorm/backend.capnp.h>
 #include <kj/compat/url.h>
+#include <map>
+#include "web-session-bridge.h"
 
 namespace sandstorm {
 
@@ -46,8 +48,22 @@ private:
   kj::String wildcardHostPrefix;
   kj::String wildcardHostSuffix;
   kj::HttpHeaderId hAccessControlAllowOrigin;
+  kj::HttpHeaderId hAcceptLanguage;
+  kj::HttpHeaderId hCookie;
+  kj::HttpHeaderId hLocation;
+  kj::HttpHeaderId hUserAgent;
+
+  struct UiHostEntry {
+    kj::String sessionId;
+    kj::TimePoint lastUsed;
+    kj::Own<WebSessionBridge> bridge;
+  };
+
+  WebSessionBridge::Tables bridgeTables;
+  std::map<kj::StringPtr, UiHostEntry> uiHosts;
 
   kj::Maybe<kj::String> matchWildcardHost(const kj::HttpHeaders& headers);
+  kj::Maybe<kj::Own<kj::HttpService>> getUiBridge(kj::HttpHeaders& headers);
 };
 
 }  // namespace sandstorm

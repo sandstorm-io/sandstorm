@@ -17,6 +17,7 @@
 #include "gateway.h"
 #include <kj/compat/url.h>
 #include <kj/debug.h>
+#include "util.h"
 
 namespace sandstorm {
 
@@ -27,7 +28,12 @@ GatewayService::GatewayService(
     : timer(timer), shellHttp(kj::newHttpService(shellHttp)), router(kj::mv(router)),
       headerTable(headerTableBuilder.getFutureTable()),
       baseUrl(kj::Url::parse(baseUrl, kj::Url::HTTP_PROXY_REQUEST)),
-      hAccessControlAllowOrigin(headerTableBuilder.add("Access-Control-Allow-Origin")) {
+      hAccessControlAllowOrigin(headerTableBuilder.add("Access-Control-Allow-Origin")),
+      hAcceptLanguage(headerTableBuilder.add("Accept-Language")),
+      hCookie(headerTableBuilder.add("Cookie")),
+      hLocation(headerTableBuilder.add("Location")),
+      hUserAgent(headerTableBuilder.add("User-Agent")),
+      bridgeTables(headerTableBuilder) {
   size_t starPos = KJ_REQUIRE_NONNULL(
       wildcardHost.findFirst('*'), "WILDCARD_HOST must contain an astrisk");
 
@@ -58,7 +64,30 @@ kj::Promise<void> GatewayService::request(
         return response.sendError(400, "Bad Request", headerTable);
       }
     } else if (hostId->startsWith("ui-")) {
-      // TODO(now): Handle UI hosts.
+      if (url.startsWith("/_sandstorm-init?")) {
+        auto parsed = kj::Url::parse(url, kj::Url::HTTP_REQUEST);
+        KJ_REQUIRE(parsed.query.size() == 2);
+        KJ_REQUIRE(parsed.query[0].name == "sessionid");
+        KJ_REQUIRE(parsed.query[1].name == "path");
+        KJ_REQUIRE(parsed.query[1].value.startsWith("/"));
+
+        kj::HttpHeaders responseHeaders(headerTable);
+        // We avoid registering a header ID for Set-Cookie. See comments in web-session-bridge.c++.
+        responseHeaders.add("Set-Cookie", kj::str("sandstorm-sid=", parsed.query[0].value));
+        responseHeaders.set(hLocation, parsed.query[1].value);
+
+        response.send(303, "See Other", responseHeaders, uint64_t(0));
+        return kj::READY_NOW;
+      }
+
+      auto headersCopy = kj::heap(headers.cloneShallow());
+      KJ_IF_MAYBE(bridge, getUiBridge(*headersCopy)) {
+        auto promise = bridge->get()->request(method, url, *headersCopy, requestBody, response);
+        return promise.attach(kj::mv(bridge), kj::mv(headersCopy));
+      } else {
+        // TODO(now): Write an error message mentioning lack of cookies.
+        return response.sendError(403, "Unauthorized", headerTable);
+      }
     } else {
       // TODO(soon): Handle "public ID" hosts. Before we can start handling these, we must
       //   transition to UI hosts being prefixed with "ui-".
@@ -77,7 +106,14 @@ kj::Promise<void> GatewayService::openWebSocket(
     if (hostId->startsWith("api-")) {
       // TODO(soon): API hosts.
     } else if (hostId->startsWith("ui-")) {
-      // TODO(now): Handle UI hosts.
+      auto headersCopy = kj::heap(headers.cloneShallow());
+      KJ_IF_MAYBE(bridge, getUiBridge(*headersCopy)) {
+        auto promise = bridge->get()->openWebSocket(url, *headersCopy, response);
+        return promise.attach(kj::mv(bridge), kj::mv(headersCopy));
+      } else {
+        // TODO(now): Write an error message mentioning lack of cookies.
+        return response.sendError(403, "Unauthorized", headerTable);
+      }
     }
   }
 
@@ -97,6 +133,71 @@ kj::Maybe<kj::String> GatewayService::matchWildcardHost(const kj::HttpHeaders& h
   } else {
     return nullptr;
   }
+}
+
+kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders& headers) {
+  kj::Vector<kj::String> forwardedCookies;
+  kj::String sessionId;
+
+  KJ_IF_MAYBE(cookiesText, headers.get(hCookie)) {
+    auto cookies = split(*cookiesText, ';');
+    for (auto& cookie: cookies) {
+      auto trimmed = trim(cookie);
+      if (trimmed.startsWith("sandstorm-sid=")) {
+        sessionId = kj::str(trimmed.slice(strlen("sandstorm-sid=")));
+      } else {
+        forwardedCookies.add(kj::mv(trimmed));
+      }
+    }
+  }
+
+  if (sessionId == nullptr) {
+    return nullptr;
+  }
+
+  if (forwardedCookies.empty()) {
+    headers.unset(hCookie);
+  } else {
+    headers.set(hCookie, kj::strArray(forwardedCookies, "; "));
+  }
+
+  auto iter = uiHosts.find(sessionId);
+  if (iter == uiHosts.end()) {
+    auto req = router.openUiSessionRequest();
+    req.setSessionCookie(sessionId);
+    auto params = req.initParams();
+
+    params.setBasePath(kj::str(baseUrl.scheme, "://",
+        KJ_ASSERT_NONNULL(headers.get(kj::HttpHeaderId::HOST))));
+    params.setUserAgent(headers.get(hUserAgent).orDefault("UnknownAgent/0.0"));
+
+    KJ_IF_MAYBE(languages, headers.get(hAcceptLanguage)) {
+      auto langs = KJ_MAP(lang, split(*languages, ',')) { return trim(lang); };
+      params.setAcceptableLanguages(KJ_MAP(l, langs) -> capnp::Text::Reader { return l; });
+    } else {
+      params.setAcceptableLanguages({"en-US", "en"});
+    }
+
+    WebSessionBridge::Options options;
+    options.allowCookies = true;
+    options.isHttps = baseUrl.scheme == "https";
+
+    kj::StringPtr key = sessionId;
+    UiHostEntry entry {
+      kj::mv(sessionId),
+      timer.now(),
+      kj::refcounted<WebSessionBridge>(req.send().getSession(), bridgeTables, options)
+    };
+    auto insertResult = uiHosts.insert(std::make_pair(key, kj::mv(entry)));
+    KJ_ASSERT(insertResult.second);
+    iter = insertResult.first;
+
+    // TODO(now): expire entries
+  } else {
+    iter->second.lastUsed = timer.now();
+  }
+
+  return kj::addRef(*iter->second.bridge);
 }
 
 }  // namespace sandstorm

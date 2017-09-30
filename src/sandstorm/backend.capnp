@@ -124,7 +124,7 @@ interface GatewayRouter {
   # Note that the gateway also makes direct HTTP/WebSocket and SMTP connections for traffic that
   # it does not know how to handle directly.
 
-  openUiSession @0 (sessionCookie :Text) -> (session :WebSession);
+  openUiSession @0 (sessionCookie :Text, params :WebSession.Params) -> (session :WebSession);
   # Given a sandstorm-sid cookie value for a UI session, find the WebSession to handle requests.
   #
   # The gateway may cache the session capability, associated with this cookie value, for as long

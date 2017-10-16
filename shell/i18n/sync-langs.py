@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# This script synchronizes TAPi18n string jsons from en into other languages.
+# The target language json file (ex. zh-TW.i18n.json) will have the same keys as source language,
+# and untranslated strings will be copied with a prefix *_
+# You can do this anytime source language is updated, the script will keep translated strings.
+
 from io import open
 import json
 import sys

@@ -1,3 +1,6 @@
+### v0.215 (2017-09-30) [bugfixes]
+- Updated dependencies to latest versions (as for every release). No other changes.
+
 ### v0.214 (2017-09-03) [bugfixes]
 - Fixed setup wizard no longer working after identity changes.
 - Fixed "login providers" button in admin panel not working.

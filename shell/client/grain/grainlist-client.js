@@ -247,7 +247,7 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
         buttonClass: "move-to-trash",
 
         text: function () {
-          return "Move to trash";
+          return TAPi18n.__('grains.grainlist.sandstormGrainListPage.moveToTrash');
         },
 
         disabled: function (numMineSelected, numSharedSelected) {

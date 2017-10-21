@@ -28,21 +28,20 @@ limitations under the License.
   {{>sandstormTopbar globalTopbar}}
 
   {{#with demoExpired}}
-    {{>title "Demo Expired"}}
+    {{>title (_ "shell.layout.demoExpired.title")}}
 
     <div id="demo-expired" class="demo-expired-main-content {{#if hideNavbar}}hide-navbar{{else}}{{#if shrinkNavbar}}shrink-navbar{{/if}}{{/if}}">
-      <h1>Demo Expired</h1>
+      <h1>{{_ "shell.layout.demoExpired.title"}}</h1>
       {{#if canUpgradeDemo}}
-        <p>Thanks for trying the Sandstorm Demo! Your demo account has expired. If
-          you'd like to continue using Sandstorm and make your data permanent, please sign in.</p>
+        <p>{{_ "shell.layout.demoExpired.canUpgrade"}}</p>
         <div class="login">
           {{> loginButtonsDialog accountsUi=globalAccountsUi}}
         </div>
       {{else}}
-        <p>Thanks for trying the Sandstorm Demo! Your demo account has expired.
+        <p>{{_ "shell.layout.demoExpired.cannotUpgrade"}}
           <form class="standard-form">
             <div class="button-row">
-              <button name="logout" type="submit">Sign out</button>
+              <button name="logout" type="submit">{{_ "shell.layout.demoExpired.signOut"}}</button>
             </div>
           </form>
         </p>
@@ -87,9 +86,9 @@ limitations under the License.
             on this topbar item solely because the whole topbar itself is embedded inside the
             "layout" template. But, we shouldn't be relying on that! Move this to its own
             template... --}}
-        <span id="admin-alert-icon" class="{{className}}">!</span>
+        <span id="admin-alert-icon" class="{{className}}">{{_ "shell.layout.adminAlert.icon"}}</span>
       {{else}}
-        <h4>Notice from Admin</h4>
+        <h4>{{_ "shell.layout.adminAlert.title"}}</h4>
         <p>
           {{#if alertUrl}}
             <a href="{{alertUrl}}" class="alert {{className}}">{{text}}</a>
@@ -138,22 +137,26 @@ limitations under the License.
   {{#with demoModal}}
     {{#modalDialogWithBackdrop onDismiss=dismissDemoModal class="demo-startup-modal"}}
       <div class="top">
-          <p class="header">Sandstorm is a self-hostable web productivity suite.</p>
+          <p class="header">{{_ "shell.layout.demoModal.header"}}</p>
           <p class="body">
           {{#if appdemo}}
-            with apps like {{appdemo}}.
+            {{_ "shell.layout.demoModal.withAppDemo" appdemo}}
           {{else}}
-            with all the apps you need in one place.
+            {{_ "shell.layout.demoModal.withoutAppDemo"}}
           {{/if}}</p>
 
           <button class="button-primary start">
-            {{#if appdemo}}Try {{appdemo}}{{else}}Start{{/if}} &raquo;
+            {{#if appdemo}}
+              {{_ "shell.layout.demoModal.startButton.withAppDemo" appdemo}}
+            {{else}}
+              {{_ "shell.layout.demoModal.startButton.withoutAppDemo"}}
+            {{/if}}
           </button>
 
       </div>
       <div class="bottom">
-        <p>Sandstorm makes it easy to run apps on your own server. In addition to improving privacy and control, <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html" target="_blank">this brings Open Source apps to a wide audience.</a></p>
-        <p>Sandstorm is also ridiculously secure. If security interests you, check out <a href="https://docs.sandstorm.io/en/latest/developing/security-practices/" target="_blank">Sandstorm's security model overview</a>.</p>
+        {{{_ "shell.layout.demoModal.explanation"}}}
+        {{{_ "shell.layout.demoModal.securityOverview"}}}
       </div>
     {{/modalDialogWithBackdrop}}
   {{/with}}
@@ -166,23 +169,23 @@ limitations under the License.
 </template>
 
 <template name="notifications">
-  <button class="show-popup icon icon-notification" title="Notifications">
+  <button class="show-popup icon icon-notification" title="{{_ "shell.notifications.hint"}}">
   {{#if notificationCount}}
     <span class="count">{{notificationCount}}</span>
   {{/if}}
-  Notifications
+  {{_ "shell.notifications.text"}}
   </button>
 </template>
 
 <template name="notificationsPopup">
-  <h4>Notifications</h4>
+  <h4>{{_ "shell.notificationsPopup.title"}}</h4>
   <ul class="notification-list">
     {{#each notifications}}
       <li>
         {{> notificationItem .}}
       </li>
     {{else}}
-    <li>No notifications...</li>
+    <li>{{_ "shell.notificationsPopup.empty"}}</li>
     {{/each}}
   </ul>
 </template>
@@ -192,8 +195,8 @@ limitations under the License.
 </template>
 
 <template name="loading">
-  {{>title "Loading..."}}
-  <div class="centered-box">Loading...</div>
+  {{>title (_ "shell.loading.title")}}
+  <div class="centered-box">{{_ "shell.loading.text"}}</div>
 </template>
 
 <template name="loadingNoMessage">
@@ -204,12 +207,12 @@ limitations under the License.
 </template>
 
 <template name="notFound">
-  {{>title "Not Found"}}
-  <div class="centered-box">404 Not Found :(</div>
+  {{>title (_ "shell.notFound.title")}}
+  <div class="centered-box">{{_ "shell.notFound.text"}}</div>
 </template>
 
 <template name="root">
-  {{>title "Home"}}
+  {{>title (_ "shell.root.title")}}
 
   <div id="intro" class="{{#if splashUrl}}has-splash{{/if}}">
     {{> loginButtonsDialog accountsUi=globalAccountsUi}}
@@ -232,11 +235,11 @@ limitations under the License.
 </template>
 
 <template name="grainLogContents">
-  <pre>...{{{logHtml}}}</pre>
+  <pre>{{_ "shell.grainLogContents.prefix"}}{{{logHtml}}}</pre>
 </template>
 
 <template name="grainLog">
-  <div class="grainlog-title">Debug log: {{title}}</div>
+  <div class="grainlog-title">{{_ "shell.grainLog.title" title}}</div>
   <div class="grainlog-contents" aria-live="polite">
     {{> grainLogContents logHtml=html onRenderedHook=maybeScrollToBottom }}
   </div>
@@ -256,99 +259,98 @@ limitations under the License.
 </template>
 
 <template name="signup">
-  {{>title "Claim Invite"}}
+  {{>title (_ "shell.signup.title")}}
 
   <div class="centered-box">
   {{#if alreadySignedUp}}
     {{#if keyIsUsed}}
-      <p>You're all signed up!  Now go <a href="https://apps.sandstorm.io/?host={{origin}}">install
-        some apps</a>.</p>
+      <p>{{{_ "shell.signup.signedUp.keyIsUsedWithOrigin" origin}}}</p>
     {{else}}
-      <p>It looks like you already have an account, so you don't need this signup key.</p>
+      <p>{{_ "shell.signup.signedUp.keyIsNotUsed"}}</p>
     {{/if}}
   {{else}}
     {{#if keyIsValid}}
       {{#if keyIsUsed}}
-        <p>Sorry, this signup key has already been used.</p>
+        <p>{{_ "shell.signup.keyIsUsed"}}</p>
       {{else}}
         {{#if currentUser}}
-          <p>Please wait...</p>
+          <p>{{_ "shell.signup.processing"}}</p>
         {{else}}
-          <p>{{signupDialog}} First, you have to sign in. Click "Sign in" in the upper-right.</p>
+          <p>{{signupDialog}} {{_ "shell.signup.signInGuide"}}</p>
           <div id="sign-in-arrow"></div>
         {{/if}}
       {{/if}}
     {{else}}
-      <p>Sorry, this is not a valid signup key.</p>
+      <p>{{_ "shell.signup.invalidKey"}}</p>
     {{/if}}
   {{/if}}
   </div>
 </template>
 
 <template name="uploadStatus">
-  {{>title "Uploading..."}}
+  {{>title (_ "shell.uploadStatus.title")}}
 
   <div id="restoreGrain" class="centered-box">
   {{#if error}}
-    <p>Upload failed: {{error.status}} {{error.statusText}}</p>
+    <p>{{_ "shell.uploadStatus.uploadFailedWithError" error.status error.statusText}}</p>
     <pre>{{error.response}}</pre>
   {{else}}
     {{#if status}}
-      <p>{{status}}... {{#if progress}}{{progress}}%{{/if}}</p>
+    <p>
+      {{#if progress}}
+        {{_ "shell.uploadStatus.statusWithProgress" status progress}}
+      {{else}}
+        {{_ "shell.uploadStatus.status" status}}
+      {{/if}}
+    </p>
     {{else}}
-      <p>Upload failed. Please try again.</p>
+      <p>{{_ "shell.uploadStatus.uploadFailed"}}</p>
     {{/if}}
   {{/if}}
   </div>
 </template>
 
 <template name="uploadTest">
-  {{>title "Upload test page"}}
+  {{>title (_ "shell.uploadTest.title")}}
 
-  <p>This page is intended for use by the test scripts.</p>
+  <p>{{_ "shell.uploadTest.explanation"}}</p>
 
-  <p>Upload app: <input type="file" id="upload-app"></p>
-  <p>Upload backup: <input type="file" id="upload-backup"></p>
+  <p>{{_ "shell.uploadTest.uploadApp"}} <input type="file" id="upload-app"></p>
+  <p>{{_ "shell.uploadTest.uploadBackup"}} <input type="file" id="upload-backup"></p>
 </template>
 
 <template name="referrals">
   {{#if referralsEnabled}}
-  {{>title "Referral Program"}}
+  {{>title (_ "shell.referrals.title")}}
   {{setDocumentTitle}}
   <div class="referrals">
-    <h1>Referral Program</h1>
+    <h1>{{_ "shell.referrals.title"}}</h1>
     <header>
       {{#if isPaid}}
-      <h2>Get up to <span class="reward-amount">30 GB</span> of free space when your friends share on Oasis!</h2>
+      <h2>{{{_ "shell.referrals.header.isPaid.title"}}}</h2>
       {{else}}
-      <h2>Get unlimited grains &amp; up to <span class="reward-amount">2 GB</span> of free space when
-        your friends share on Oasis!</h2>
+      <h2>{{{_ "shell.referrals.header.isNotPaid.title"}}}</h2>
       {{/if}}
 
       {{#if isPaid}}
-      <p>
-        For each friend that creates a sharing link, we'll reward you with 2 GB.
-      </p>
+      <p>{{_ "shell.referrals.header.isPaid.explanation"}}</p>
       {{else}}
-      <p>
-        For each friend that creates a sharing link, we'll reward you with 50 MB.
-        You'll also get unlimited grains.
-      </p>
+      <p>{{_ "shell.referrals.header.isNotPaid.explanation"}}</p>
       {{/if}}
     </header>
     <section>
-      <h1>Sharing is referring</h1>
-      <p>To get started, open any grain and click Share access.</p>
+      <h1>{{_ "shell.referrals.howTo.title"}}</h1>
+      <p>{{_ "shell.referrals.howTo.explanation"}}</p>
 
       <div class="image-tutorial">
       <ol>
-        <li>You share a grain with your friend (who isn't already an Oasis user).
+        <li>{{_ "shell.referrals.howTo.getStart.step1"}}
           <img src="/referral-graphics/referral-1.svg">
         </li>
-        <li>Your friend signs in.
+        <li>{{_ "shell.referrals.howTo.getStart.step2"}}
           <img src="/referral-graphics/referral-2.svg">
         </li>
-        <li>Your friend shares a grain with any other person (including you).
+        <li>{{_ "shell.referrals.howTo.getStart.step3"}}
           <img src="/referral-graphics/referral-3.svg">
         </li>
       </ol>
@@ -356,16 +358,14 @@ limitations under the License.
       </div>
 
       {{#if currentUser}}
-      <h2>Your referrals &amp; status</h2>
+      <h2>{{_ "shell.referrals.status.title"}}</h2>
 
-      <p>Once you send a sharing link out, people will appear in this list
-        after they sign in.</p>
+      <p>{{_ "shell.referrals.howTo.status.explanation"}}</p>
 
       {{#with notYetCompleteReferralNames}}{{#if this.count}}
-      <h3>Still needs to share</h3>
+      <h3>{{_ "shell.referrals.status.pending.title"}}</h3>
 
-      <p class="gentle-hint">Tell these people to make a grain and share it with you. You
-        must actually view the grain they shared with you!</p>
+      <p class="gentle-hint">{{_ "shell.referrals.status.pending.explanation"}}</p>
 
       <ul class="comma-separated-ul">
         {{#each this}}
@@ -376,9 +376,9 @@ limitations under the License.
       {{/if}}{{/with}}
 
       {{#with completeReferralNames}}{{#if this.count}}
-      <h3>Successful referrals</h3>
+      <h3>{{_ "shell.referrals.satus.success.title"}}</h3>
 
-      <p class="gentle-hint">You've successfully referred these people. Congratulations!</p>
+      <p class="gentle-hint">{{_ "shell.referrals.status.success.explanation"}}</p>
 
       <ul class="comma-separated-ul">
         {{#each this}}
@@ -388,21 +388,11 @@ limitations under the License.
 
       {{/if}}{{/with}}
 
-      <h2 class="fine-print">The fine print</h2>
+      <h2 class="fine-print">{{_ "shell.referrals.finePrint.title"}}</h2>
 
-      <p>Your referral bonus lasts until 1 year after the
-          referral. The terms of this referral program may
-          change without warning; however, such changes will not affect
-          bonuses you have already received. If you need even more
-          space, <a href="{{pathFor route='account'}}">upgrade your
-          account.</a>
-      </p>
+      <p>{{{_ "shell.referrals.finePrint.warningWithAccountLink" (pathFor route='account')}}}</p>
 
-      <p>Paid subscribers can get up to 30 GB of free storage, 2 GB per
-        person they refer, in addition to the storage from their
-        account level. Free account holders can earn unlimited grains
-        and 50 MB of free storage per person they refer, up to 2 GB
-        total.</p>
+      <p>{{_ "shell.referrals.finePrint.explanation"}}</p>
 
       {{/if}}
     </section>
@@ -412,32 +402,28 @@ limitations under the License.
 
 <template name="about">
   {{setDocumentTitle}}
-  {{>title "About Sandstorm"}}
+  {{>title (_ "shell.about.title")}}
 
   <div class="about">
-    <h1>About Sandstorm</h1>
+    <h1>{{_ "shell.about.title"}}</h1>
 
     <section class="intro">
-      <p><a href="https://sandstorm.io">Sandstorm.io</a> is an open source hosting platform for
-        personal/private instances of web apps. Users can upload and install arbitrary software
-        through a simple app-store-like web interface. In addition to better privacy,
-        <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html">
-        this is the only way to make Open Source web apps viable.</a></p>
+      <p>{{{_ "shell.about.intro.explanation"}}}</p>
 
-      <p class="version">Version: {{build}}</p>
+      <p class="version">{{_ "shell.about.intro.version" build}}</p>
       {{#if isUnofficial}}
-        <p class="unofficial"><b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers.</p>
+        <p class="unofficial">{{{_ "shell.about.intro.unofficialWarning"}}}</p>
       {{/if}}
     </section>
 
     <section class="changelog">
-      <h2>Recent changes</h2>
+      <h2>{{_ "shell.about.changelog.title"}}</h2>
 
       {{> changelog ""}}
     </section>
 
     <section class="developers">
-      <h2>Core developers</h2>
+      <h2>{{_ "shell.about.developers.title"}}</h2>
       <ul>
         <li><a href="https://github.com/kentonv">
             <img src="/logos/kenton.png" alt="Kenton Varda">
@@ -465,7 +451,7 @@ limitations under the License.
             Garply</a></li>
       </ul>
     </section><section class="advisors">
-      <h2>Advisors</h2>
+      <h2>{{_ "shell.about.advisors.title"}}</h2>
       <ul>
         <li><a href="https://github.com/swetland">
             <img src="/logos/swetland.png" alt="Brian Swetland">
@@ -486,8 +472,8 @@ limitations under the License.
     </section>
     <br>
     <section class="corporate">
-      <h2>Corporate sponsors</h2>
-      <p>These companies contributed heavily to Sandstorm's <a href="http://igg.me/at/sandstorm">crowdfunding campaign</a>.</p>
+      <h2>{{_ "shell.about.corporate.title"}}</h2>
+      <p>{{{_ "shell.about.corporate.explanation"}}}</p>
       <ul>
         <li><a href="http://draw.io"><img width="92.75" height="121" src="/logos/draw.io-logo.svg">&nbsp;</a></li><li>
         <img src="/logos/humanweb.png">&nbsp;</li><li>
@@ -495,8 +481,8 @@ limitations under the License.
       </ul>
       <div class="strut"></div>
     </section><section class="individual">
-      <h2>Key invididual sponsors</h2>
-      <p>These individuals contributed heavily to Sandstorm's <a href="http://igg.me/at/sandstorm">crowdfunding campaign</a>.</p>
+      <h2>{{_ "shell.about.individual.title"}}</h2>
+      <p>{{{_ "shell.about.individual.explanation"}}}</p>
       <ul>
       <li><a href="http://rogerwagner.com/">
           <img src="/logos/wagner.png">
@@ -508,8 +494,8 @@ limitations under the License.
     </section>
 
     <section class="backers">
-      <h2>Backers</h2>
-      <p>from <a href="http://igg.me/at/sandstorm">our Indiegogo campaign &gt;</a></p>
+      <h2>{{_ "shell.about.backers.title"}}</h2>
+      <p>{{{_ "shell.about.backers.explanation"}}}</p>
       {{#if backers}}
       <ul>
         {{#each backers}}
@@ -518,60 +504,56 @@ limitations under the License.
         <li>&nbsp;</li>
         <li>&nbsp;</li>
         <li>&nbsp;</li>
-        <li class="anonymous">and {{anonCount}} anonymous contributors</li>
+        <li class="anonymous">{{_ "shell.about.backers.anonymous" anonCount}}</li>
       </ul>
       {{else}}
-      <p>loading...</p>
+      <p>{{_ "shell.about.backers.loading"}}</p>
       {{/if}}
     </section>
 
     <section class="dependencies">
-      <h2>Third-party works used</h2>
+      <h2>{{_ "shell.about.dependencies.title"}}</h2>
       <ul>
         <!-- TODO(soon): This list has a lot missing. Review. -->
-        <li><a href="http://nodejs.org/">Node.js</a> (MIT license)</li>
-        <li><a href="https://www.meteor.com/">Meteor web framework</a> (MIT license)</li>
-        <li><a href="https://github.com/jedisct1/libsodium">libsodium</a> (ISC license)</li>
-        <li><a href="https://github.com/seccomp/libseccomp">libseccomp</a> (LGPL license)</li>
+        <li><a href="http://nodejs.org/">Node.js</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://www.meteor.com/">Meteor web framework</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://github.com/jedisct1/libsodium">libsodium</a> (ISC {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://github.com/seccomp/libseccomp">libseccomp</a> (LGPL {{_ "shell.about.dependencies.license"}})</li>
         <li><a href="https://www.mongodb.org/">MongoDB</a> (AGPL)</li>
-        <li><a href="https://github.com/EventedMind/iron-router">Iron Router</a> (MIT license)</li>
-        <li><a href="http://underscorejs.org/">Underscore.js</a> (MIT license)</li>
-        <li><a href="http://www.senchalabs.org/connect/">Connect middleware</a> (MIT license)</li>
+        <li><a href="https://github.com/EventedMind/iron-router">Iron Router</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="http://underscorejs.org/">Underscore.js</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="http://www.senchalabs.org/connect/">Connect middleware</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
         <li><a href="https://www.google.com/fonts/specimen/Source+Sans+Pro">Source Sans Pro font</a> (SIL OFL)</li>
-        <li><a href="https://github.com/joyent/http-parser">Node/nginx HTTP parser library</a> (MIT license)</li>
-        <li><a href="https://github.com/andris9/simplesmtp">Simple SMTP by Andris Reinman</a> (MIT license)</li>
-        <li><a href="https://github.com/justmoon/node-bignum">node-bignum by Stefan Thomas</a> (MIT license)</li>
-        <li><a href="https://github.com/drudru/ansi_up">ansi_up library by Dru Nelson</a> (MIT license)</li>
-        <li><a href="https://github.com/stewartlord/identicon.js">identicon.js by Stewart Lord</a> (BSD license)</li>
-        <li><a href="https://github.com/usablica/intro.js">intro.js by Afshin Mehrabani</a> (MIT license)</li>
-        <li><a href="http://www.xarg.org/2010/03/generate-client-side-png-files-using-javascript/">PNGlib by Robert Eisele</a> (BSD license)</li>
+        <li><a href="https://github.com/joyent/http-parser">Node/nginx HTTP parser library</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://github.com/andris9/simplesmtp">Simple SMTP by Andris Reinman</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://github.com/justmoon/node-bignum">node-bignum by Stefan Thomas</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://github.com/drudru/ansi_up">ansi_up library by Dru Nelson</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://github.com/stewartlord/identicon.js">identicon.js by Stewart Lord</a> (BSD {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://github.com/usablica/intro.js">intro.js by Afshin Mehrabani</a> (MIT {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="http://www.xarg.org/2010/03/generate-client-side-png-files-using-javascript/">PNGlib by Robert Eisele</a> (BSD {{_ "shell.about.dependencies.license"}})</li>
         <li><a href="http://libb64.sourceforge.net/">libb64 by Chris Venter</a> (Public Domain)</li>
         <li><a href="http://tukaani.org/xz/">XZ Utils</a> (Public Domain / GPL)</li>
-        <li><a href="http://www.info-zip.org/">Info-ZIP</a> (Info-ZIP license)</li>
-        <li><a href="http://www.gnu.org/software/libc/libc.html">GNU C library</a> (LGPL license)</li>
-        <li><a href="https://gcc.gnu.org/libstdc++/">GNU C++ Library</a> (LGPL license)</li>
+        <li><a href="http://www.info-zip.org/">Info-ZIP</a> (Info-ZIP {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="http://www.gnu.org/software/libc/libc.html">GNU C library</a> (LGPL {{_ "shell.about.dependencies.license"}})</li>
+        <li><a href="https://gcc.gnu.org/libstdc++/">GNU C++ Library</a> (LGPL {{_ "shell.about.dependencies.license"}})</li>
         <li class="spacer">&nbsp;</li>
         <li class="spacer">&nbsp;</li>
         <li class="spacer">&nbsp;</li>
       </ul>
-      <p>These works are copyright the respective authors and used under the terms of the respective
-        licenses.</p>
+      <p>{{_ "shell.about.dependencies.explanation"}}</p>
     </section>
 
     <section class="copyright">
-      <h2>Copyright</h2>
-      <p>The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and
-         contributors. The implementation is licensed under the Apache License 2.0.</p>
-      <p>"Sandstorm" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc.,
-         and may not be used to advertise derivative works nor commercial services without
-         written consent from Sandstorm Development Group, Inc.</p>
+      <h2>{{_ "shell.about.copyright.title"}}</h2>
+      <p>{{_ "shell.about.copyright.license"}}</p>
+      <p>{{_ "shell.about.copyright.trademark"}}</p>
     </section>
 
     <section class="terms">
       <ul>
-        <li><a href="https://github.com/sandstorm-io/sandstorm/blob/master/LICENSE">License</a></li>
-        {{#with termsUrl}}<li><a href="{{.}}">Terms of service</a></li>{{/with}}
-        {{#with privacyUrl}}<li><a href="{{.}}">Privacy policy</a></li>{{/with}}
+        <li><a href="https://github.com/sandstorm-io/sandstorm/blob/master/LICENSE">{{_ "shell.about.terms.license"}}</a></li>
+        {{#with termsUrl}}<li><a href="{{.}}">{{_ "shell.about.terms.terms"}}</a></li>{{/with}}
+        {{#with privacyUrl}}<li><a href="{{.}}">{{_ "shell.about.terms.privacy"}}</a></li>{{/with}}
       </ul>
     </section>
   </div>

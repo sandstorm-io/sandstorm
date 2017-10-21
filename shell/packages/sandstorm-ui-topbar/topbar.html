@@ -17,9 +17,10 @@ limitations under the License.
 -->
 
 <template name="sandstormTopbar">
+  {{#let txt="packages.topbar"}}
   {{#if isUpdateBlocked}}
     <button class="topbar-update">
-      Sandstorm has been updated &mdash; Click here to reload
+      {{_ (con txt "updated")}}
     </button>
   {{/if}}
   <ul class="topbar{{#if _menuExpanded.get}} expanded{{/if}}{{#if isCurrentRoute "standalone"}} standalone{{/if}}">
@@ -34,8 +35,8 @@ limitations under the License.
     </ul>
     <ul class="navbar {{#if hideNavbar}}hide-desktop{{else}}{{#if shrinkNavbar}}shrink-desktop{{/if}}{{/if}}">
       {{#if currentUser}}
-      <li class="navitem-create-grain {{#if isCurrentRoute 'apps'}}current{{/if}}"><a href="{{pathFor route='apps'}}">Apps</a></li>
-      <li class="navitem-open-grain {{#if isCurrentRoute 'grains'}}current{{/if}}"><a href="{{pathFor route='grains'}}"><span>Grains</span></a></li>
+      <li class="navitem-create-grain {{#if isCurrentRoute 'apps'}}current{{/if}}"><a href="{{pathFor route='apps'}}">{{_ (con txt "apps")}}</a></li>
+      <li class="navitem-open-grain {{#if isCurrentRoute 'grains'}}current{{/if}}"><a href="{{pathFor route='grains'}}"><span>{{_ (con txt "grains")}}</span></a></li>
       {{/if}}
 
       <li class="navbar-shrink-item">
@@ -60,13 +61,13 @@ limitations under the License.
       {{#with accountExpires}}
       <li class="navitem-demo-notice">
         <div class="demo-notice">
-          <p>Start collaborating with others by using Sandstorm on Oasis:
-            <button class="button-primary sign-in">Create free account »</button>
-            <span class="subtext">Your demo data will be transferred.</span>
+          <p>{{_ (con txt "oasis")}}
+            <button class="button primary sign-in">{{_ (con txt "createAccount")}}</button>
+            <span class="subtext">{{_ (con txt "demoHint")}}</span>
           </p>
 
           <p class="self-host">
-            Or, install Sandstorm for your team (it's open source):
+            {{_ (con txt "selfHostHint")}}
             <a class="get-sandstorm-button" href="https://sandstorm.io/get?utm_source=demo&amp;utm_campaign=2016-11&amp;utm_medium=oasis" target="_blank">
               Get Sandstorm »
             </a>
@@ -76,7 +77,7 @@ limitations under the License.
 
       <li class="navitem-demo-timer">
         <div class="demo-timer">
-          <p>Sign up within:
+          <p>{{_ (con txt "signUp")}}
             <span class="countdown {{#if urgent}}urgent{{/if}}">{{countdown}}</span>
           </p>
         </div>
@@ -98,7 +99,7 @@ limitations under the License.
       {{#if onlyPopup}}
         <div class="frame-container centered">
           <div class="frame">
-            <button class="close-popup">Close</button>
+            <button class="close-popup">{{_ (con txt "close")}}</button>
             {{>popupTemplate data.get}}
           </div>
         </div>
@@ -114,6 +115,7 @@ limitations under the License.
       {{/if}}
     </div>
   {{/with}}
+  {{/let}}
 </template>
 
 <template name="sandstormTopbarItem">

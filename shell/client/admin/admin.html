@@ -14,31 +14,18 @@
 </template>
 
 <template name="newAdmin">
-  {{>title "Admin panel"}}
+  {{>title (_ "admin.admin.newAdmin.title")}}
   {{setDocumentTitle}}
 
   {{#if wildcardHostSeemsBroken}}
   <div class="flash-message warning-message">
-    WARNING: This server seems to have its WILDCARD_HOST misconfigured.  Until you fix it, you will
-    not be able to use any apps. You can read <a target="_blank"
-    href="https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine">
-    more info in the Sandstorm docs</a> and in your browser's Javascript console. You'll need to
-    adjust DNS, SSL/TLS certificates, or edit the sandstorm.conf file. If you see no information in
-    the JS console, or wish to test if you have fixed the problem, reload this page to re-run the
-    test. If you're still having
-    problems, <a href="https://github.com/sandstorm-io/sandstorm/issues">please file an issue.</a>
+    {{{_ "admin.admin.newAdmin.wildcardHostBroken"}}}
   </div>
   {{/if}}
 
   {{#if websocketSeemsBroken}}
   <div class="flash-message warning-message">
-    WARNING: This server seems to be unable to create a WebSocket. Sandstorm may appear to run fine,
-    but many apps will fail to run properly.
-    <a target="_blank"
-       href="https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload">
-      Learn more.</a>  Usually this is caused by a reverse proxy like nginx or Apache that needs to
-      be reconfigured. If you think you are seeing this message in error, please reload this page or
-    <a href="https://github.com/sandstorm-io/sandstorm/issues">file an issue.</a>
+    {{{_ "admin.admin.newAdmin.websocketBroken"}}}
   </div>
   {{/if}}
 
@@ -48,14 +35,11 @@
     {{else}}
       {{#if hasSetupToken}}
         <p>
-          You are not logged in as an admin, but you do have a setup token. You can either
-          <a href="/setup">visit the setup wizard</a> or
-          <a href="/admin/status">view the system log</a>.
+          {{{_ "admin.admin.newAdmin.hasSetupToken"}}}
         </p>
       {{else}}
         <p>
-          You are not logged in as an admin. To access the admin panel, log in as an admin user or
-          generate a token from the command line by running `sandstorm admin-token`.
+          {{_ "admin.admin.newAdmin.hasNoSetupToken"}}
         </p>
       {{/if}}
     {{/if}}
@@ -65,68 +49,67 @@
 <template name="newAdminRoot">
   <h1>
     <ul class="admin-breadcrumbs">
-      <li>Admin</li>
+      <li>{{_ "admin.title"}}</li>
     </ul>
   </h1>
 
   <nav>
     <ul class="nav-sections">
       <li>
-        <h2>Configuration</h2>
+        <h2>{{_ "admin.admin.newAdminRoot.configuration.title"}}</h2>
         <ul class="nav-items">
           {{#adminNavItem routeName="newAdminLogin"}}
-            <div class="item-name">Login providers</div>
-            <div class="item-subtext">How users log in.</div>
+            <div class="item-name">{{_ "admin.identityProviders.name"}}</div>
+            <div class="item-subtext">{{_ "admin.identityProviders.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminOrganization"}}
-            <div class="item-name">Organization settings</div>
-            <div class="item-subtext">Smoother onboarding and collaboration for larger teams.</div>
+            <div class="item-name">{{_ "admin.organization.name"}}</div>
+            <div class="item-subtext">{{_ "admin.organization.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminEmailConfig"}}
-            <div class="item-name">Email configuration</div>
-            <div class="item-subtext">How email gets sent to users.</div>
+            <div class="item-name">{{_ "admin.emailConfig.name"}}</div>
+            <div class="item-subtext">{{_ "admin.emailConfig.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminPersonalization"}}
-            <div class="item-name">Personalization</div>
-            <div class="item-subtext">Customize a splash page, terms of service, privacy policy,
-                etc.</div>
+            <div class="item-name">{{_ "admin.personalization.name"}}</div>
+            <div class="item-subtext">{{_ "admin.personalization.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminPreinstalledApps"}}
-            <div class="item-name">Pre-installed apps</div>
-            <div class="item-subtext">Choose apps to pre-install for new users.</div>
+            <div class="item-name">{{_ "admin.preinstalledApps.name"}}</div>
+            <div class="item-subtext">{{_ "admin.preinstalledApps.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminAppSources"}}
-            <div class="item-name">App sources</div>
-            <div class="item-subtext">Where to look for apps and app updates.</div>
+            <div class="item-name">{{_ "admin.appSources.name"}}</div>
+            <div class="item-subtext">{{_ "admin.appSources.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminNetworking"}}
-            <div class="item-name">Networking</div>
-            <div class="item-subtext">Control how the network is accessed.</div>
+            <div class="item-name">{{_ "admin.networking.name"}}</div>
+            <div class="item-subtext">{{_ "admin.networking.subtext"}}</div>
           {{/adminNavItem}}
         </ul>
       </li>
       <li>
-        <h2>Management</h2>
+        <h2>{{_ "admin.admin.newAdminRoot.management.title"}}</h2>
         <ul class="nav-items">
           {{#adminNavItem routeName="newAdminUsers"}}
-            <div class="item-name">Users</div>
-            <div class="item-subtext">Manage all users on this Sandstorm installation.</div>
+            <div class="item-name">{{_ "admin.users.name"}}</div>
+            <div class="item-subtext">{{_ "admin.users.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminStatus"}}
-            <div class="item-name">System log</div>
-            <div class="item-subtext">View Sandstorm's debug log.</div>
+            <div class="item-name">{{_ "admin.systemStatus.name"}}</div>
+            <div class="item-subtext">{{_ "admin.systemStatus.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminStats"}}
-            <div class="item-name">Statistics</div>
-            <div class="item-subtext">View usage statistics for this server.</div>
+            <div class="item-name">{{_ "admin.stats.name"}}</div>
+            <div class="item-subtext">{{_ "admin.stats.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminMaintenance"}}
-            <div class="item-name">Maintenance message</div>
-            <div class="item-subtext">Communicate potential downtime to users.</div>
+            <div class="item-name">{{_ "admin.maintenanceMessage.name"}}</div>
+            <div class="item-subtext">{{_ "admin.maintenanceMessage.subtext"}}</div>
           {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminNetworkCapabilities"}}
-            <div class="item-name">Network capabilities</div>
-            <div class="item-subtext">Manage direct network access for grains.</div>
+            <div class="item-name">{{_ "admin.networkCapabilities.name"}}</div>
+            <div class="item-subtext">{{_ "admin.networkCapabilities.subtext"}}</div>
           {{/adminNavItem}}
         </ul>
       </li>

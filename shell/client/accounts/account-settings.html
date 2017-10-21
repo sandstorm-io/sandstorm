@@ -17,21 +17,22 @@ limitations under the License.
 -->
 
 <template name="sandstormAccountSettings">
+{{#let txt="accounts.accountSettings.sandstormAccountSettings"}}
   {{setDocumentTitle}}
 
   {{#sandstormTopbarItem name="title" priority=5 topbar=_topbar}}
-    Account settings
+    {{_ "accounts.title"}}
   {{/sandstormTopbarItem}}
 
-  <h1>Account</h1>
+  <h1>{{_ (con txt "title")}}</h1>
   <div class="account-settings-profile-editor">
 
-    <h3 class="title-bar">My Profile</h3>
+    <h3 class="title-bar">{{_ (con txt "identities.title")}}</h3>
 
     {{#with actionCompleted}}
       {{#if success}}
         {{#focusingSuccessBox}}
-          Success: {{success}}
+          {{_ (con txt "identities.success") success}}
         {{/focusingSuccessBox}}
       {{/if}}
       {{#if error}}
@@ -49,7 +50,7 @@ limitations under the License.
 
   <div class="linked-credentials">
 
-    <h3 class="title-bar">Linked credentials</h3>
+    <h3 class="title-bar">{{_ (con txt "identities.linkedCredentials")}}</h3>
 
     <div class="credentials-tabs">
 
@@ -66,23 +67,23 @@ limitations under the License.
 
       <div class="account-buttons">
         {{#if isLinkingNewCredential}}
-          <h4>Link new credential:</h4>
+          <h4>{{_ (con txt "identities.linkNewIdentity.title")}}</h4>
           {{#with linkingNewCredential=linkingNewCredentialData}}
             {{> loginButtonsList globalAccountsUi}}
           {{/with}}
-          <button class="account-button cancel-link-new-credential">Cancel</button>
+          <button class="account-button cancel-link-new-credential">{{_ (con txt "identities.linkNewIdentity.cancelButton")}}</button>
         {{else}}
           <button class="account-button logout-other-sessions" disabled={{logoutOtherSessionsInFlight}}>
-            Log out all other sessions
+            {{_ (con txt "identities.linkNewIdentity.logoutAllButton")}}
           </button>
-          <button class="account-button link-new-credential">Link new credential</button>
+          <button class="account-button link-new-credential">{{_ (con txt "identities.linkNewIdentity.linkButton")}}</button>
         {{/if}}
       </div>
     </div>
 
   </div>
 
-  <h3 class="title-bar">Primary e-mail address for service-related notifications</h3>
+  <h3 class="title-bar">{{_ (con txt "identities.email.title")}}</h3>
   <div class="verified-emails-editor">
     <div class="already-verified">
       {{#if verifiedEmails}}
@@ -91,21 +92,21 @@ limitations under the License.
         <li>
           <span class="email" title="{{email}}">{{email}}</span>
           {{#if primary}}
-          <span class="primary-badge">Primary</span>
+          <span class="primary-badge">{{_ (con txt "identities.email.primary")}}</span>
           {{else}}
           <button class="make-primary" data-email="{{email}}" checked={{primary}}>
-            Set as primary
+            {{_ (con txt "identities.email.primaryButton")}}
           </button>
           {{/if}}
         </li>
         {{/each}}
       </ul>
       {{else}}
-      <p> No verified emails! </p>
+      <p>{{_ (con txt "identities.email.notFound")}}</p>
       {{/if}}
     </div>
     <div class="add-new">
-      Add new e-mail address
+      {{_ (con txt "identities.email.addNew")}}
       {{> emailAuthenticationForm emailLoginFormData}}
       {{> _loginButtonsMessages "" }}
     </div>
@@ -113,7 +114,7 @@ limitations under the License.
 
   {{#if isPaymentsEnabled}}
   <div class="billing">
-  <h2>Billing</h2>
+  <h2>{{_ (con txt "billing.title")}}</h2>
   {{> billingUsage db=db topbar=_topbar}}
   {{> billingSettings db=db}}
   </div>
@@ -121,9 +122,9 @@ limitations under the License.
 
   {{#if showDeleteButton}}
   <div class="danger-zone">
-    <h3>Delete account</h3>
+    <h3>{{_ (con txt "deleteAccount.title")}}</h3>
     <button class="delete-account" disabled={{logoutOtherSessionsInFlight}}>
-      Delete your account
+      {{_ (con txt "deleteAccount.button")}}
     </button>
   </div>
   {{/if}}
@@ -136,40 +137,42 @@ limitations under the License.
         {{/focusingErrorBox}}
       {{/if}}
 
-      <h2>Delete your account</h2>
-      <p>You are about to mark your account for deletion. Once marked for deletion, your account will be suspended, and you will have 7 days to cancel the pending deletion by logging back into your account.</p>
-      <p>After 7 days, your account will be permanently deleted. Deleting your account will:</p>
+      <h2>{{_ (con txt "deletePopup.title")}}</h2>
+      <p>{{_ (con txt "deletePopup.explanation")}}</p>
+      <p>{{_ (con txt "deletePopup.results")}}</p>
       <ul>
-        <li>Permanently delete any grains you created</li>
-        <li>Revoke all sharing links you created</li>
-        <li>Remove you from all users' contact lists</li>
-        <li>Delete all credentials owned by your account (except credentials also associated with another account).</li>
+        <li>{{_ (con txt "deletePopup.result1")}}</li>
+        <li>{{_ (con txt "deletePopup.result2")}}</li>
+        <li>{{_ (con txt "deletePopup.result3")}}</li>
+        <li>{{_ (con txt "deletePopup.result4")}}</li>
       </ul>
       <p>
-        Please type "delete my account" below to confirm.
+        {{_ (con txt "deletePopup.confirm")}}
       </p>
       <input class="confirm" type="text">
       <p>
-        We're sorry to see you go. Feel free to share any feedback you have with the server admin.
+        {{_ (con txt "deletePopup.goodbye")}}
       </p>
-      <textarea class="feedback" type="text" placeholder="Optional" rows="3"></textarea>
+      <textarea class="feedback" type="text" placeholder="{{_ (con txt "deletePopup.feedbackPlaceholder")}}" rows="3"></textarea>
       <form class="standard-form">
         <div class="button-row">
           <button class="danger delete-account-real" type="button"
-           disabled={{disableDelete}}>Delete account</button>
-          <button type="button" class="cancel-delete-account">Cancel</button>
+           disabled={{disableDelete}}>{{_ (con txt "deletePopup.deleteButton")}}</button>
+          <button type="button" class="cancel-delete-account">{{_ (con txt "deletePopup.cancelButton")}}</button>
         </div>
       </form>
     {{/modalDialogWithBackdrop}}
   {{/if}}
+{{/let}}
 </template>
 
 <template name="sandstormAccountsFirstSignIn">
-  <h1>Confirm your profile</h1>
+{{#let txt="accounts.accountSettings.sandstormAccountsFirstSignIn"}}
+  <h1>{{_ (con txt "title")}}</h1>
   <div class="single-profile-editor">
     {{#if success}}
       {{#focusingSuccessBox}}
-        Success: {{success}}
+        {{_ (con txt "success") success}}
       {{/focusingSuccessBox}}
     {{/if}}
 
@@ -182,25 +185,29 @@ limitations under the License.
     {{>_accountProfileEditor termsAndPrivacy=termsAndPrivacy
                              staticHost=_staticHost db=_db setActionCompleted=onActionCompleted}}
   </div>
+{{/let}}
 </template>
 
 <template name="accountSuspended">
+{{#let txt="accounts.accountSettings.accountSuspended"}}
   <h1>
-    This account has been suspended by you.
+    {{_ (con txt "title")}}
   </h1>
 
   <h2>
     {{#if timeUntilDeletion}}
-     This account will be deleted in {{timeUntilDeletion}}. Would you like to cancel deletion and restore this account?
-     {{else}}
-     This account is suspended and all of its grains and shares are disabled. Would you like to restore this account?
-     {{/if}}
+    {{_ (con txt "deletedIn") timeUntilDeletion}}
+    {{else}}
+    {{_ (con txt "suspended")}}
+    {{/if}}
   </h2>
-  <button class="restore-account">Restore account</button>
-  <button class="logout">Logout</button>
+  <button class="restore-account">{{_ (con txt "restoreButton")}}</button>
+  <button class="logout">{{_ (con txt "logoutButton")}}</button>
+{{/let}}
 </template>
 
 <template name="_accountProfileEditor">
+{{#let txt="accounts.accountSettings._accountProfileEditor"}}
 {{!-- Expected arguments to data context:
 setActionCompleted: (optional) Function.  Callback triggered on profile saved or picture updated.
    termsAndPrivacy: (optional) Object containing Strings termsUrl and/or privacyUrl.
@@ -212,54 +219,53 @@ setActionCompleted: (optional) Function.  Callback triggered on profile saved or
     <form class="account-profile-editor">
       <ul>
         <li class="form-group">
-          <label>Profile picture:</label>
+          <label>{{_ (con txt "picture.label")}}</label>
           <div class="picture-row">
             <div class="picture-box">
               <img src="{{profile.pictureUrl}}">
             </div>
             <input type="file" name="picture" style="display:none">
             <div class="form-subtext">
-              <button type="button" name="upload-picture">Upload new picture</button>
-              <p>This picture will be shown to other users to help identify you.</p>
-              <p>512x512px, 64KiB max.</p>
+              <button type="button" name="upload-picture">{{_ (con txt "picture.uploadButton")}}</button>
+              <p>{{_ (con txt "picture.subtext")}}</p>
+              <p>{{_ (con txt "picture.maxSize")}}</p>
             </div>
           </div>
         </li>
 
         <li class="form-group">
           <label>
-            Full name:
+            {{_ (con txt "fullName.label")}}
             <input type="text" name="nameInput" value="{{profile.name}}"
-                   placeholder="full name" required>
+                   placeholder="{{_ (con txt "fullName.placeholder")}}" required>
           </label>
-          <span class="form-subtext">Your regular first and last name, as you would like it
-            displayed to others. This does not have to be your real name.
+          <span class="form-subtext">
+            {{_ (con txt "fullName.subtext")}}
           </span>
         </li>
 
         <li class="form-group handle">
-          <label>Handle:
+          <label>{{_ (con txt "handle.label")}}
             <div class="input-container">
               <input type="text" name="handle" value="{{profile.handle}}"
-                     placeholder="handle" pattern="^[a-z_][a-z0-9_]*$"
-                     title="Handles must start with a lower-case letter and contain only lower-case letters, digits, and underscores." required>
+                     placeholder="{{_ (con txt "handle.placeholder")}}" pattern="^[a-z_][a-z0-9_]*$"
+                     title="{{_ (con txt "handle.hint")}}" required>
             </div>
           </label>
           <span class="form-subtext">
-            To be displayed in apps that use handles. Your handle must start with a letter and
-            contain only lower-case letters, digits, and underscores.
+            {{_ (con txt "handle.subtext")}}
           </span>
         </li>
 
         <li class="form-group">
           {{#with pronoun=profile.pronoun}}
           <label>
-            Preferred pronoun:
+            {{_ (con txt "pronoun.label")}}
             <select name="pronoun">
-              <option value="neutral" selected="{{isNeutral pronoun}}">they (unspecified)</option>
-              <option value="male" selected="{{isMale pronoun}}">he/him (male)</option>
-              <option value="female" selected="{{isFemale pronoun}}">she/her (female)</option>
-              <option value="robot" selected="{{isRobot pronoun}}">it (robot)</option>
+              <option value="neutral" selected="{{isNeutral pronoun}}">{{_ (con txt "pronoun.neutral")}}</option>
+              <option value="male" selected="{{isMale pronoun}}">{{_ (con txt "pronoun.male")}}</option>
+              <option value="female" selected="{{isFemale pronoun}}">{{_ (con txt "pronoun.female")}}</option>
+              <option value="robot" selected="{{isRobot pronoun}}">{{_ (con txt "pronoun.robot")}}</option>
             </select>
           </label>
           {{/with}}
@@ -269,10 +275,10 @@ setActionCompleted: (optional) Function.  Callback triggered on profile saved or
           {{#with termsAndPrivacy}}
             <li class="form-group">
               <label>
-                <input type="checkbox" name="agreedToTerms" required> I have read and agree to the
-                {{#if termsUrl}}<a target="_blank" href="{{termsUrl}}">Terms of Service</a>
-                {{#if privacyUrl}} and {{/if}}{{/if}}{{#if privacyUrl}}
-                <a target="_blank" href="{{privacyUrl}}">Privacy policy</a>{{/if}}.
+                <input type="checkbox" name="agreedToTerms" required>{{_ (con txt "agreedToTerms.agreeTo")}}
+                {{#if termsUrl}}<a target="_blank" href="{{termsUrl}}">{{_ (con txt "agreedToTerms.termsOfServiceLink")}}</a>
+                {{#if privacyUrl}}{{_ (con txt "agreedToTerms.and")}}{{/if}}{{/if}}{{#if privacyUrl}}
+                <a target="_blank" href="{{privacyUrl}}">{{_ (con txt "agreedToTerms.privacyLink")}}</a>{{/if}}.
               </label>
             </li>
           {{/with}}
@@ -284,14 +290,15 @@ setActionCompleted: (optional) Function.  Callback triggered on profile saved or
         {{#unless hideButtons}}
         <li class="button-row">
           <button disabled="{{profileSaved}}" type="submit">
-            {{#if hasCompletedSignup}}Save{{else}}Continue{{/if}}
+            {{#if hasCompletedSignup}}{{_ (con txt "saveButton")}}{{else}}{{_ (con txt "continueButton")}}{{/if}}
           </button>
           {{#unless hasCompletedSignup}}
-          <button class="logout" type="button">Cancel</button>
+          <button class="logout" type="button">{{_ (con txt "cancelButton")}}</button>
           {{/unless}}
         </li>
         {{/unless}}
       </ul>
     </form>
   </div>
+{{/let}}
 </template>

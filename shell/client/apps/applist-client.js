@@ -271,7 +271,7 @@ Template.sandstormAppListPage.onRendered(() => {
       steps: [
         {
           element: document.querySelector(".install-icon"),
-          intro: "<strong>Welcome!</strong><br>Create documents, chat rooms, blogs, and more.<br><br>Get started by installing an app.",
+          intro: TAPi18n.__("apps.appList.intro"),
         },
       ],
       tooltipPosition: "auto",
@@ -281,7 +281,7 @@ Template.sandstormAppListPage.onRendered(() => {
       exitOnOverlayClick: true,
       overlayOpacity: 0,
       showBullets: false,
-      doneLabel: "Got it",
+      doneLabel: TAPi18n.__("apps.appList.doneButton"),
     };
 
     if (window.innerWidth < 500) {

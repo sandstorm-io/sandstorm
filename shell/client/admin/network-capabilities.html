@@ -1,4 +1,5 @@
 <template name="newAdminNetworkCapabilitiesTableCapabilityRow">
+{{#let txt="admin.networkCapabilities.newAdminNetworkCapabilitiesTableCapabilityRow"}}
 {{!-- expects argument:
   capInfo: Object containing:
                  introducer: Account object
@@ -19,7 +20,7 @@
 
       {{> accountCard capInfo.introducer.account }}
     {{else}}
-      Unknown granter
+      {{_ (con txt "unknownGranter")}}
     {{/if}}
   </div>
   <div class="grant-to" role="gridcell">
@@ -35,38 +36,40 @@
       </div>
     {{else}}
       {{#if capInfo.ownerInfo.webkey}}
-        Anyone with the token
+        {{_ (con txt "anyone")}}
       {{else}}
-        Unknown recipient
+        {{_ (con txt "unknownRecipient")}}
       {{/if}}
     {{/if}}
   </div>
   <div class="grant-time" role="gridcell">{{dateString capInfo.created}}</div>
   <div class="actions" role="gridcell">
     {{#if capInfo.revoked}}
-      Revoked
+      {{_ (con txt "revoked")}}
     {{else}}
     <form class="standard-form">
       <button type="button">
-        Revoke
+        {{_ (con txt "revokeButton")}}
       </button>
     </form>
     {{/if}}
   </div>
 </div>
+{{/let}}
 </template>
 
 <template name="newAdminNetworkCapabilitiesTable">
+{{#let txt="admin.networkCapabilities.newAdminNetworkCapabilitiesTable"}}
 {{!-- Takes arguments:
   caps: cursor with list of Object like those returned by capDetails
 --}}
 <div class="admin-caps-table" role="grid">
   <div class="thead" role="rowgroup">
     <div class="header-row" role="row">
-      <div class="grant-by" role="columnheader">Granted by</div>
-      <div class="grant-to" role="columnheader">Granted to</div>
-      <div class="grant-time" role="columnheader">Time</div>
-      <div class="actions" role="columnheader">Actions</div>
+      <div class="grant-by" role="columnheader">{{_ (con txt "header.grantBy")}}</div>
+      <div class="grant-to" role="columnheader">{{_ (con txt "header.grantTo")}}</div>
+      <div class="grant-time" role="columnheader">{{_ (con txt "header.grantTime")}}</div>
+      <div class="actions" role="columnheader">{{_ (con txt "header.actions")}}</div>
     </div>
   </div>
   <div class="tbody" role="rowgroup">
@@ -74,14 +77,16 @@
       {{>newAdminNetworkCapabilitiesTableCapabilityRow capInfo=cap callbacks=callbacks }}
     {{else}}
     <div class="none-row" role="row">
-      <div role="gridcell" colspan="4">No capabilities found.</div>
+      <div role="gridcell" colspan="4">{{_ (con txt "notFound")}}</div>
     </div>
     {{/each}}
   </div>
 </div>
+{{/let}}
 </template>
 
 <template name="newAdminNetworkCapabilitiesSection">
+{{#let txt="admin.networkCapabilities.newAdminNetworkCapabilitiesSection"}}
 {{!-- Takes arguments:
   caps: Cursor of a list of ApiTokens.
 --}}
@@ -104,19 +109,19 @@
     <input type="text" name="search-string" value="{{ filterString }}"/>
   </div>
   <div class="filter-checkboxes">
-    <div class="filter-checkboxes-label">Showing:</div>
+    <div class="filter-checkboxes-label">{{_ (con txt "filter.label")}}</div>
     <ul>
       <li>
         <label>
           <input type="checkbox" name="active" checked="{{ activeChecked }}" />
-          Active ({{ activeCount caps }})
+          {{_ (con txt "filter.active") (activeCount caps)}}
         </label>
       </li>
 
       <li>
         <label>
           <input type="checkbox" name="revoked" checked="{{ revokedChecked }}" />
-          Revoked ({{ revokedCount caps }})
+          {{_ (con txt "filter.revoked") (revokedCount caps)}}
         </label>
       </li>
     </ul>
@@ -124,24 +129,27 @@
 </div>
 
 {{> newAdminNetworkCapabilitiesTable caps=(filterCaps caps) callbacks=callbacks }}
+{{/let}}
 </template>
 
 
 <template name="newAdminNetworkCapabilities">
+{{#let txt="admin.networkCapabilities.newAdminNetworkCapabilities"}}
 <h1>
   <ul class="admin-breadcrumbs">
-    <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
-    <li>Network capabilities</li>
+    <li>{{#linkTo route="newAdminRoot"}}{{_ "admin.title"}}{{/linkTo}}</li>
+    <li>{{_ "admin.networkCapabilities.name"}}</li>
   </ul>
 </h1>
 
-<h2>Outbound network access</h2>
+<h2>{{_ (con txt "networkCaps")}}</h2>
 {{>newAdminNetworkCapabilitiesSection caps=ipNetworkCaps}}
 
-<h2>TLS-encrypted outbound network access</h2>
+<h2>{{_ (con txt "networkCapsTls")}}</h2>
 {{>newAdminNetworkCapabilitiesSection caps=ipNetworkCapsTls}}
 
-<h2>Inbound network access</h2>
+<h2>{{_ (con txt "interfaceCaps")}}</h2>
 {{>newAdminNetworkCapabilitiesSection caps=ipInterfaceCaps}}
 
+{{/let}}
 </template>

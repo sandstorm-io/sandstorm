@@ -1,9 +1,10 @@
 <template name="powerboxRequest">
-  <h4>Powerbox request</h4>
+  {{#let txt="packages.powerbox"}}
+  <h4>{{_ (con txt "title")}}</h4>
   {{#if showWebkeyInput}}
     <form id="powerbox-request-form">
-      <label>Please input an api token: </label><input name="token" type="text" id="powerbox-request-input"><br>
-      <button class="submit">Import token</button>
+      <label>{{_ (con txt "inputToken")}} </label><input name="token" type="text" id="powerbox-request-input"><br>
+      <button class="submit">{{_ (con txt "importToken")}}</button>
     </form>
     {{#if webkeyError}}
     <div class="error">{{webkeyError}}</div>
@@ -16,7 +17,7 @@
     {{/if}}
 
     {{#with selectedProvider}}
-      <h4>Selected:</h4>
+      <h4>{{_ (con txt "selected")}}</h4>
       <div class="selected-card">
         <div class="powerbox-card" data-card-id="{{ option._id }}"
              style="background-image: url('{{ iconSrc }}');">
@@ -26,7 +27,7 @@
       </div>
     {{else}}
       {{#if Template.subscriptionsReady}}
-        <h4>Select one:</h4>
+        <h4>{{_ (con txt "selectOne")}}</h4>
         <div class="search-row">
           <label>
             <span title="Search" class="search-icon"></span>
@@ -42,12 +43,13 @@
             </button>
           </li>
         {{else}}
-          <p>No grains can provide the requested interface.</p>
+          <p>{{_ (con txt "noGrain")}}</p>
         {{/each}}
         </ul>
       {{else}}
-        <p>Loading...</p>
+        <p>{{_ (con txt "loading")}}</p>
       {{/if}}
     {{/with}}
   {{/if}}
+  {{/let}}
 </template>

@@ -1,8 +1,9 @@
 <template name="newAdminPersonalization">
+{{#let txt="admin.personalization.newAdminPersonalization"}}
   <h1>
     <ul class="admin-breadcrumbs">
-      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
-      <li>Personalization</li>
+      <li>{{#linkTo route="newAdminRoot"}}{{_ "admin.title"}}{{/linkTo}}</li>
+      <li>{{_ "admin.personalization.name"}}</li>
     </ul>
   </h1>
 
@@ -21,75 +22,63 @@
   <form class="admin-personalization-form">
     <div class="form-group">
       <label>
-        Server title:
+        {{_ (con txt "serverTitle.label")}}
         <input type="text" name="server-title" value="{{serverTitle}}" disabled="{{formDisabled}}"/>
       </label>
       <span class="form-subtext">
-        The name of this server, as used when communicating with users.
+        {{_ (con txt "serverTitle.subtetx")}}
       </span>
     </div>
 
     <div class="form-group">
       <label>
-        Splash URL (experimental):
+        {{_ (con txt "splashUrl.label")}}
         <input type="text" name="splash-url" value="{{splashUrl}}"
                placeholder="{{exampleSplashUrl}}" disabled="{{formDisabled}}"/>
       </label>
       <span class="form-subtext">
-        This web page will be displayed in the background behind the login dialog (the home page
-        when logged out). For security reasons, the page must be hosted within this Sandstorm
-        server's wildcard host (otherwise it will be blocked by <code>Content-Security-Policy</code>). We
-        suggest using a static web publishing app like
-        <a target="_blank" href="https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh/?host={{serverUrl}}">
-          Hacker CMS
-        </a>
-        to host the content.
-        <strong>
-          WARNING: This feature is experimental; in particular the style and positioning of
-          the login box is subject to change without notice.
-        </strong>
-        Please let us know if you'd like to see it stabilize.
+        {{{_ (con txt "splashUrl.subtext")}}}
       </span>
     </div>
 
     <div class="form-group">
       <label>
-        Signup dialog:
+        {{_ (con txt "signupDialog.label")}}
         <input type="text" name="signup-dialog" value="{{signupDialog}}"
                disabled="{{formDisabled}}"/>
       </label>
       <span class="form-subtext">
-        This text will be displayed to users who click on signup links.
+        {{_ (con txt "signupDialog.subtext")}}
       </span>
     </div>
 
     <div class="form-group">
       <label>
-        Terms of service URL:
+        {{_ (con txt "termsOfService.label")}}
         <input type="text" name="terms-of-service" value="{{termsOfServiceUrl}}"
-               placeholder="https://example.com/tos" disabled="{{formDisabled}}"/>
+               placeholder="{{_ (con txt "termsOfService.placeholder")}}" disabled="{{formDisabled}}"/>
       </label>
       <span class="form-subtext">
-        If provided, new users will be required to agree to the linked terms of service.
+        {{_ (con txt "termsOfService.subtext")}}
       </span>
     </div>
 
     <div class="form-group">
       <label>
-        Privacy policy URL:
+        {{_ (con txt "privacyPolicy.label")}}
         <input type="text" name="privacy-policy" value="{{privacyPolicyUrl}}"
-               placeholder="https://example.com/privacy" disabled="{{formDisabled}}"/>
+               placeholder="{{_ (con txt "privacyPolicy.placeholder")}}" disabled="{{formDisabled}}"/>
       </label>
       <span class="form-subtext">
-        If provided, new users will be required to agree to the linked privacy policy.
+        {{_ (con txt "privacyPolicy.subtext")}}
       </span>
     </div>
 
-    <h2>Whitelabeling</h2>
+    <h2>{{_ (con txt "whitelabeling.title")}}</h2>
 
     <div class="form-group">
       <label>
-        Custom logo on sign-in dialog
+        {{_ (con txt "whitelabeling.logo.label")}}
       </label>
       {{#if logoError}}
         {{#focusingErrorBox}}
@@ -102,8 +91,8 @@
       {{else}}
         <!-- show default -->
       {{/if}}
-      <button type="button" name="reset-logo" disabled={{logoResetDisabled}}>Use default</button>
-      <button type="button" name="upload-logo">Upload logo</button>
+      <button type="button" name="reset-logo" disabled={{logoResetDisabled}}>{{_ (con txt "whitelabeling.logo.resetButton")}}</button>
+      <button type="button" name="upload-logo">{{_ (con txt "whitelabeling.logo.uploadButton")}}</button>
       <input type="file" name="upload-file" style="display:none;" />
     </div>
 
@@ -115,7 +104,7 @@
           checked="{{hideTroubleshootingChecked}}"
           disabled="{{formDisabled}}"
         />
-        Hide troubleshooting button
+        {{_ (con txt "whitelabeling.hideTroubleshooting.label")}}
       </label>
     </div>
 
@@ -127,7 +116,7 @@
           checked="{{hideAboutChecked}}"
           disabled="{{formDisabled}}"
         />
-        Hide "About Sandstorm" links
+        {{_ (con txt "whitelabeling.hideAbout.label")}}
       </label>
     </div>
 
@@ -139,7 +128,7 @@
           checked="{{hideSendFeedbackChecked}}"
           disabled="{{formDisabled}}"
         />
-        Hide "Send feedback" link
+        {{_ (con txt "whitelabeling.hideSendFeedback.label")}}
       </label>
     </div>
 
@@ -151,17 +140,16 @@
           checked="{{useServerTitleForHomeTextChecked}}"
           disabled="{{formDisabled}}"
         />
-        Use server title (above) for home link
+        {{_ (con txt "whitelabeling.useServerTitleForHomeText.label")}}
       </label>
       <span class="form-subtext">
-        If enabled, changes the default label "Sandstorm" on the link at the very top left to match
-        whatever you specified for the Server title above.
+        {{_ (con txt "whitelabeling.useServerTitleForHomeText.subtext")}}
       </span>
     </div>
 
     <div class="form-group">
       <label>
-        Custom login button text
+        {{_ (con txt "whitelabeling.customLoginProviderName.label")}}
         <input
           type="text"
           name="custom-login-provider-name"
@@ -170,13 +158,13 @@
         />
       </label>
       <span class="form-subtext">
-        Replaces the text "with LDAP" and "with SAML" on the login page with
-        the specified text.
+        {{_ (con txt "whitelabeling.customLoginProviderName.subtext")}}
       </span>
     </div>
 
     <div class="button-row">
-      <button type="submit" disabled="{{formDisabled}}">Save</button>
+      <button type="submit" disabled="{{formDisabled}}">{{_ (con txt "saveButton")}}</button>
     </div>
   </form>
+{{/let}}
 </template>

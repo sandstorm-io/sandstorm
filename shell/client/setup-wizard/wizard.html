@@ -1,6 +1,6 @@
 <template name="setupWizardLoading">
 <div class="setup-page-content">
-  <div class="centered-box">Loading...</div>
+  <div class="centered-box">{{_ "wizard.setupWizardLoading.loading"}}</div>
 </div>
 </template>
 
@@ -50,7 +50,7 @@
                                    mayJumpTo=(mayJumpTo "login")
                                    route="setupWizardLogin"
                                    className=itemClassName}}
-      Login providers
+      {{_ "wizard.setupWizardProgressBar.identityProviders"}}
     {{/setupWizardProgressBarItem}}
 
     {{#setupWizardProgressBarItem stepName="organization"
@@ -58,7 +58,7 @@
                                    mayJumpTo=(mayJumpTo "organization")
                                    route="setupWizardOrganization"
                                    className=itemClassName}}
-      Organization
+      {{_ "wizard.setupWizardProgressBar.organization"}}
     {{/setupWizardProgressBarItem}}
 
     {{#setupWizardProgressBarItem stepName="email"
@@ -67,7 +67,7 @@
                                    route="setupWizardEmailConfig"
                                    className=itemClassName
                                    }}
-      Email
+      {{_ "wizard.setupWizardProgressBar.email"}}
     {{/setupWizardProgressBarItem}}
 
     {{#setupWizardProgressBarItem stepName="preinstalled"
@@ -76,7 +76,7 @@
                                    route="setupWizardPreinstalled"
                                    className=itemClassName
                                    }}
-      Pre-installed apps
+      {{_ "wizard.setupWizardProgressBar.preinstalledApps"}}
     {{/setupWizardProgressBarItem}}
 
     {{#setupWizardProgressBarItem stepName="user"
@@ -85,7 +85,7 @@
                                    route="setupWizardLoginUser"
                                    className=itemClassName
                                    }}
-      Admin account
+      {{_ "wizard.setupWizardProgressBar.adminAccount"}}
     {{/setupWizardProgressBarItem}}
   </ol>
   <div class="setup-progress-bar">
@@ -100,11 +100,12 @@
 </template>
 
 <template name="setupWizardHelpFooter">
+{{#let txt="wizard.setupWizardHelpFooter"}}
 <div class="setup-help-row">
-  <span class="setup-help-label">Need help?</span>
-  <a class="setup-help-link" target="_blank" href="https://docs.sandstorm.io/en/latest/administering/">Documentation</a>
-  <a class="setup-help-link" href="mailto:support@sandstorm.io">Email support</a>
-  <button type="button" name="system-log" class="setup-help-link">System Log</button>
+  <span class="setup-help-label">{{_ (con txt "needHelp")}}</span>
+  <a class="setup-help-link" target="_blank" href="https://docs.sandstorm.io/en/latest/administering/">{{_ (con txt "documentation")}}</a>
+  <a class="setup-help-link" href="mailto:support@sandstorm.io">{{_ (con txt "emailSupport")}}</a>
+  <button type="button" name="system-log" class="setup-help-link">{{_ (con txt "systemLog")}}</button>
   {{!-- TODO(someday): Live Chat link --}}
   {{#if showSystemLog}}
     {{#modalDialogWithBackdrop onDismiss=hideSystemLogCallback}}
@@ -112,27 +113,29 @@
     {{/modalDialogWithBackdrop}}
   {{/if}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardSystemLog">
+{{#let txt="wizard.setupWizardSystemLog"}}
 <div class="setup-system-log">
   {{#if ready}}
     {{#if isUserPermitted}}
       <h2 class="setup-system-log-header">
-        <span class="setup-system-log-header-text">System log</span>
+        <span class="setup-system-log-header-text">{{_ (con txt "header.label")}}</span>
         <form class="standard-form">
-          <button type="button" name="download-full-log">Download log</button>
+          <button type="button" name="download-full-log">{{_ (con txt "header.downloadButton")}}</button>
         </form>
       </h2>
       {{> newAdminLog ""}}
     {{else}}
       <p>
-        You cannot view the system log because you are not logged in as an admin
-        and you do not have a setup token.
+        {{_ (con txt "permissionDenied")}}
       </p>
     {{/if}}
   {{/if}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardLayout">
@@ -146,26 +149,24 @@
 </template>
 
 <template name="setupWizardIntro">
+{{#let txt="wizard.setupWizardIntro"}}
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Welcome to Sandstorm!</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
 
   {{#if initialSetupComplete}}
     {{#if noIdpEnabled}}
     <p>
-      This Sandstorm server has been set up previously, but due to a change in
-      <code>sandstorm.conf</code>, you'll need to configure login providers again.
+      {{{_ (con txt "noIdpEnabled.explanation")}}}
     </p>
     <p class="center">
-      {{#linkTo route="setupWizardLogin" class="setup-button-primary"}}Revisit setup wizard{{/linkTo}}
+      {{#linkTo route="setupWizardIdentity" class="setup-button-primary"}}{{_ "wizard.setupWizardIntro.revisitWizardLink"}}{{/linkTo}}
     </p>
     {{else}}
     <p>
-      This Sandstorm server is ready to roll.
-      You can adjust server settings, including which providers are
-      enabled and how Sandstorm sends email.
+      {{_ (con txt "idpEnabled.explanation")}}
 
       {{#unless currentUserIsAdmin}}
-      You can also turn an existing user into an administrator.
+      {{_ (con txt "idpEnabled.turnUserIntoAdmin")}}
       {{/unless}}
     </p>
 
@@ -184,36 +185,36 @@
     {{#if currentUser}}
       {{#if currentUserIsAdmin}}
         <p class="center">
-          {{#linkTo route="newAdminRoot" class="admin-settings-button"}}Proceed to admin panel{{/linkTo}}
+          {{#linkTo route="newAdminRoot" class="admin-settings-button"}}{{_ "wizard.setupWizardIntro.idpEnabled.isAdmin.adminPanelLink"}}{{/linkTo}}
         </p>
       {{else}}
         {{#if credentialUser}}
           {{> credentialLoginInterstitial "" }}
         {{else}}
           <p class="center">
-            <button class="make-self-admin">Give yourself admin privileges</button>
+            <button class="make-self-admin">{{_ (con txt "idpEnabled.isAdmin.suButton")}}</button>
           </p>
         {{/if}}
       {{/if}}
     {{else}}
       <p>
-        To make an account into an admin account, please sign in:
+        {{_ (con txt "idpEnabled.isNotAdmin.explanation")}}
       </p>
       <p>
         <div class="center">
           {{#if showSignInPanel}}
             {{#with linkingNewCredential=notLinkingNewCredential}}
-              {{> loginButtonsDialog label="Sign in" accountsUi=freshAccountsUi}}
+              {{> loginButtonsDialog label=(_ (con txt "idpEnabled.isNotAdmin.signInLabel")) accountsUi=freshAccountsUi}}
             {{/with}}
           {{else}}
-          <button class="sign-in-button">Sign in to become admin</button>
+          <button class="sign-in-button">{{_ (con txt "idpEnabled.isNotAdmin.signInButton")}}</button>
           {{/if}}
         </div>
       </p>
     {{/if}}
 
     <p class="center">
-      {{#linkTo route="setupWizardLogin" class="rerun-wizard-button"}}Revisit setup wizard{{/linkTo}}
+      {{#linkTo route="setupWizardLogin" class="rerun-wizard-button"}}{{_ "wizard.setupWizardIntro.revisitWizardLink"}}{{/linkTo}}
     </p>
     {{/if}}
   {{else}}
@@ -222,43 +223,45 @@
     </div>
 
     <button class="setup-sandstorm">
-      Begin Sandstorm Setup
+      {{_ (con txt "setupButton")}}
     </button>
   {{/if}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardLogin">
+{{#let txt="wizard.setupWizardIdentity"}}
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Login providers</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
   {{> setupWizardProgressBar currentStep="login"}}
 
   <p>
-    To use Sandstorm, you need to create a user account.  Every user account on
-    Sandstorm is backed by a login provider.  You'll use this login provider
-    to authenticate as the first administrator of this Sandstorm install.
+    {{_ (con txt "explanation1")}}
   </p>
 
   <p>
-    Configure the login provider or providers you wish to enable.
+    {{_ (con txt "explanation2")}}
   </p>
 
   {{> adminLoginProviderTable idpData=idpData }}
 
   {{#setupWizardButtonRow}}
     <button class="setup-next-button" {{nextHtmlDisabled}}>
-      Next
+      {{_ (con txt "nextButton")}}
     </button>
     <button class="setup-back-button">
-      Back
+      {{_ (con txt "backButton")}}
     </button>
   {{/setupWizardButtonRow}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardOrganization">
+{{#let txt="wizard.setupWizardOrganization"}}
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Organization settings</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
 
   {{> setupWizardProgressBar currentStep="organization"}}
 
@@ -266,77 +269,75 @@
 
   {{#if errorMessage}}
     {{#focusingErrorBox}}
-      Failed to save changes: {{errorMessage}}
+      {{_ (con txt "error") errorMessage}}
     {{/focusingErrorBox}}
   {{/if}}
 
   <form class="setup-organization-management-form">
-  <h4>Organization membership</h4>
+  <h4>{{_ (con txt "membership.title")}}</h4>
   <div class="org-membership">
     <div class="org-options-group">
-        <label><input type="checkbox" name="email-toggle" checked="{{emailChecked}}" {{emailHtmlDisabled}}>Users authenticated via email address</label>
+        <label><input type="checkbox" name="email-toggle" checked="{{emailChecked}}" {{emailHtmlDisabled}}>{{_ (con txt "membership.emailToggle.label")}}</label>
       {{#if emailDisabled }}
-      <span class="form-subtext">Note: disabled because email login is not configured.</span>
+      <span class="form-subtext">{{_ (con txt "membership.emailToggle.subtext")}}</span>
       {{/if}}
       <div class="form-group">
-        <label>Domain:
+        <label>{{_ (con txt "membership.emailDomain.label")}}
           <input type="text" name="email-domain" value="{{emailDomain}}" {{emailHtmlDisabled}}>
         </label>
         <span class="form-subtext">
-          Users with an email address at this domain will be members of this server's organization.
+          {{_ (con txt "membership.emailDomain.subtext")}}
         </span>
       </div>
     </div>
 
     <div class="org-options-group">
-        <label><input type="checkbox" name="gapps-toggle" checked="{{gappsChecked}}" {{gappsHtmlDisabled}}>Users authenticated via Google Apps for Work</label>
+        <label><input type="checkbox" name="gapps-toggle" checked="{{gappsChecked}}" {{gappsHtmlDisabled}}>{{_ (con txt "membership.gappsToggle.label")}}</label>
       {{#if gappsDisabled }}
-      <span class="form-subtext">Note: disabled because Google login is not configured.</span>
+      <span class="form-subtext">{{_ (con txt "membership.gappsToggle.subtext")}}</span>
       {{/if}}
       <div class="form-group">
-        <label>Domain:
+        <label>{{_ (con txt "membership.gappsDomain.label")}}
           <input type="text" name="gapps-domain" value="{{gappsDomain}}" {{gappsHtmlDisabled}}>
         </label>
         <span class="form-subtext">
-          Users with a Google Apps for Work account under this domain will be members of this server's organization.
+          {{_ (con txt "membership.gappsDomain.subtext")}}
         </span>
       </div>
     </div>
 
     <div class="org-options-group">
-        <label><input type="checkbox" name="ldap-toggle" checked="{{ldapChecked}}" {{ldapHtmlDisabled}}>Users authenticated via LDAP</label>
+        <label><input type="checkbox" name="ldap-toggle" checked="{{ldapChecked}}" {{ldapHtmlDisabled}}>{{_ (con txt "membership.ldapToggle.label")}}</label>
       {{#if ldapDisabled }}
-      <span class="form-subtext">Note: disabled because LDAP login is not configured.</span>
+      <span class="form-subtext">{{_ (con txt "membership.ldapToggle.subtext")}}</span>
       {{/if}}
     </div>
 
     <div class="org-options-group">
-        <label><input type="checkbox" name="saml-toggle" checked="{{samlChecked}}" {{samlHtmlDisabled}}>Users authenticated via SAML</label>
+        <label><input type="checkbox" name="saml-toggle" checked="{{samlChecked}}" {{samlHtmlDisabled}}>{{_ (con txt "membership.samlToggle.label")}}</label>
       {{#if samlDisabled }}
-      <span class="form-subtext">Note: disabled because SAML login is not configured.</span>
+      <span class="form-subtext">{{_ (con txt "membership.samlToggle.subtext")}}</span>
       {{/if}}
     </div>
   </div>
 
-  <h4>Organization settings</h4>
+  <h4>{{_ (con txt "settings.title")}}</h4>
   <div class="org-settings">
     <div class="org-options-group">
       <label>
-        <input type="checkbox" name="disallow-guests" checked={{disallowGuests}}>Disallow collaboration with users outside the organization.
+        <input type="checkbox" name="disallow-guests" checked={{disallowGuests}}>{{_ (con txt "settings.disallowGuests.label")}}
       </label>
       <span class="form-subtext">
-        Users will be required to log in as a member of your organization to view sharing links. Guest access will be disabled.
+        {{_ (con txt "settings.disallowGuests.subtext")}}
       </span>
     </div>
 
     <div class="org-options-group">
       <label>
-        <input type="checkbox" name="share-contacts" checked="{{shareContacts}}">Make all organization users visible to each other
+        <input type="checkbox" name="share-contacts" checked="{{shareContacts}}">{{_ (con txt "settings.shareContacts.label")}}
       </label>
       <span class="form-subtext">
-        This setting automatically adds users within the organization to each
-        other's contact list so that they can share grains with each other.  Disable
-        this if you have some users whose identity should stay hidden from other users.
+        {{_ (con txt "settings.shareContacts.subtext")}}
       </span>
     </div>
   </div>
@@ -344,36 +345,33 @@
   </form>
   {{#setupWizardButtonRow}}
     <button class="setup-next-button">
-      Save and continue
+      {{_ (con txt "saveButton")}}
     </button>
     <button class="setup-back-button">
-      Back
+      {{_ (con txt "backButton")}}
     </button>
   {{/setupWizardButtonRow}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardEmailConfig">
+{{#let txt="wizard.setupWizardEmailConfig"}}
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Email delivery</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
   {{> setupWizardProgressBar currentStep="email"}}
 
   <p>
-    Sandstorm needs a way to send email.  You can skip this step (unless you're using email login),
-    but email-related features will be unavailable until you configure email in the future.
+    {{_ (con txt "explanation")}}
   </p>
 
   <p>
-    <strong>How Sandstorm uses email:</strong>
-    Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too.
-    Every app receives a unique email address, so Sandstorm needs to send email from a variety of "From:" addresses.
-    Therefore, Gmail SMTP won't work, but there are other free services.
-    See more info in <a target="_blank" href="https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp">the docs</a>.
+    {{{_ (con txt "moreDetail")}}}
   </p>
 
   {{#if errorMessage}}
     {{#focusingErrorBox}}
-      Failed to save changes: {{errorMessage}}
+      {{_ (con txt "error") errorMessage}}
     {{/focusingErrorBox}}
   {{/if}}
 
@@ -381,39 +379,38 @@
     <div class="form-group">
       <div class="host-port">
         <label class="host-box">
-          SMTP host
+          {{_ (con txt "hostPort.host")}}
           <input class="hostname" type="text" name="smtp-hostname" value="{{smtpHostname}}" required />
         </label>
         <label class="port-box">
-          Port
+          {{_ (con txt "hostPort.port")}}
           <input class="port" type="number" name="smtp-port" value="{{smtpPort}}" required />
         </label>
       </div>
-      <div class="form-subtext">Use port 25 for SMTP (unencrypted or with StartTLS), port 465 for TLS-encrypted SMTPS.</div>
+      <div class="form-subtext">{{_ (con txt "hostPort.subtext")}}</div>
     </div>
 
     <div class="form-group">
       <label>
-        Username (optional)
+        {{_ (con txt "username.label")}}
         <input class="username" type="text" name="smtp-username" value="{{smtpUsername}}" />
       </label>
     </div>
 
     <div class="form-group">
       <label>
-        Password (optional)
+        {{_ (con txt "password.label")}}
         <input class="password" type="password" name="smtp-password" value="{{smtpPassword}}" />
       </label>
     </div>
 
     <div class="form-group">
       <label>
-        Sandstorm server's own email address
+        {{_ (con txt "email.label")}}
         <input class="from-address" type="email" name="smtp-return-address" value="{{smtpReturnAddress}}" required />
       </label>
       <div class="form-subtext">
-        Sandstorm will send login emails, notifications of granted access requests, and other emails from this address.
-        It will also use this address in the SMTP envelope.
+        {{_ (con txt "email.subtext")}}
       </div>
     </div>
   </form>
@@ -426,28 +423,30 @@
 
   {{#setupWizardButtonRow}}
     <button class="setup-next-button" {{nextHtmlDisabled}}>
-      Save and continue
+      {{_ (con txt "saveButton")}}
     </button>
     <button class="setup-skip-email" {{skipHtmlDisabled}}>
-      Skip for now
+      {{_ (con txt "skipButton")}}
     </button>
     <button class="setup-test-email-button" {{testHtmlDisabled}}>
-      Test
+      {{_ (con txt "testButton")}}
     </button>
     <button class="setup-back-button">
-      Back
+      {{_ (con txt "backButton")}}
     </button>
   {{/setupWizardButtonRow}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardPreinstalled">
+{{#let txt="wizard.setupWizardPreinstalled"}}
 <div class="setup-page-content setup-preinstall">
-  <h1 class="setup-page-title">Pre-installed Apps Setup</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
   {{> setupWizardProgressBar currentStep="preinstalled"}}
 
   <p>
-    Please wait while Sandstorm installs the following Productivity Suite apps that are useful for most users. You will be able to configure all pre-installed apps in the Admin Settings panel after setup.
+    {{_ (con txt "explanation")}}
   </p>
   {{#if Template.subscriptionsReady}}
   <div class="productivity-suite" role="grid">
@@ -458,11 +457,11 @@
           <div class="description" role="gridcell">{{shortDescription}}</div>
           <div class="download" role="gridcell">
             {{#if isAppDownloaded}}
-              <i class="download-checkmark"></i>Downloaded
+              <i class="download-checkmark"></i>{{_ (con txt "downloaded")}}
             {{else}}{{#if isAppDownloading}}
               <progress value="{{progressFraction}}"></progress>
             {{else}}{{#if isAppFailed}}
-              <i class="download-x-mark"></i>Failed
+              <i class="download-x-mark"></i>{{_ (con txt "failed")}}
             {{/if}}
             {{/if}}
             {{/if}}
@@ -472,28 +471,30 @@
     </div>
   </div>
   {{else}}
-    <h2>Please wait, loading app index...</h2>
+    <h2>{{_ (con txt "loading")}}</h2>
   {{/if}}
 
   {{#setupWizardButtonRow}}
     <button class="setup-next-button" disabled="{{#unless allowNext}}true{{/unless}}">
-      Next
+      {{_ (con txt "nextButton")}}
     </button>
     {{#if allowSkip}}
     <button class="setup-skip-button">
-      Skip for now
+      {{_ (con txt "skipButton")}}
     </button>
     {{/if}}
     <button class="setup-back-button">
-      Back
+      {{_ (con txt "backButton")}}
     </button>
   {{/setupWizardButtonRow}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardLoginUser">
+{{#let txt="wizard.setupWizardLoginUser"}}
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Create admin account</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
   {{> setupWizardProgressBar currentStep="user"}}
 
   {{#if errorMessage}}
@@ -514,7 +515,7 @@
   {{#if currentUser}}
     {{#if currentUserFirstLogin}}
       <div class="center">
-        <h2>Confirm your profile</h2>
+        <h2>{{_ (con txt "firstLogin.title")}}</h2>
         <div class="single-credential-editor">
           {{#with accountProfileEditorData}}
             {{> _accountProfileEditor .}}
@@ -527,31 +528,30 @@
       {{/unless}}
     {{else}}
       {{#if currentUserIsAdmin}}
-        <p>Great! Your account has admin privileges.</p>
+        <p>{{_ (con txt "isAdmin")}}</p>
       {{else}}
         {{#if serverHasAdmin}}
           <p>
-            This Sandstorm server already has an admin user, but if you want, you can also make
-            yourself an admin.
+            {{_ (con txt "hasAdmin.explanation")}}
           </p>
           <div class="center">
-            <button class="make-self-admin">Become an admin</button>
+            <button class="make-self-admin">{{_ (con txt "hasAdmin.adminButton")}}</button>
           </div>
         {{else}}
-          <p>Making you an admin on this server...</p>
+          <p>{{_ (con txt "makeYouAnAdmin")}}</p>
           {{redeemSessionForAdmin}}
         {{/if}}
       {{/if}}
     {{/if}}
   {{else}}
-    <p>You can now create an admin account on this Sandstorm server.</p>
+    <p>{{_ (con txt "loggedOut.explanation")}}</p>
     <div class="center">
-      <p>Log in to create your admin account</p>
+      <p>{{_ (con txt "loggedOut.description")}}</p>
 
       {{!-- The loginButtonsDialog apparently requires this in the parent data context, which seems
             wrong.  It should probably be passed in explicitly instead.  --}}
       {{#with linkingNewCredential=notLinkingNewCredential}}
-        {{> loginButtonsDialog label="Create account" accountsUi=freshAccountsUi}}
+        {{> loginButtonsDialog label=(_ (con txt "loggedOut.dialogLabel")) accountsUi=freshAccountsUi}}
       {{/with}}
     </div>
   {{/if}}
@@ -559,79 +559,84 @@
 
   {{#setupWizardButtonRow}}
     <button class="setup-next-button" {{nextHtmlDisabled}}>
-      Finish
+      {{_ (con txt "finishButton")}}
     </button>
     <button class="setup-back-button">
-      Back
+      {{_ (con txt "backButton")}}
     </button>
   {{/setupWizardButtonRow}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardSuccess">
+{{#let txt="wizard.setupWizardSuccess"}}
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Ready to roll!</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
 
   {{> setupWizardProgressBar currentStep="success"}}
 
-  <p>Your Sandstorm server is now ready to use.</p>
-  <p>What would you like to do next?</p>
+  <p>{{_ (con txt "serverIsReady")}}</p>
+  <p>{{_ (con txt "whatsNext")}}</p>
 
   <div class="setup-next-steps">
     {{#unless someOrgMembershipEnabled}}
       {{#linkTo route="newAdminUserInvite" class="setup-button-secondary"}}
-        Add users
+        {{_ "wizard.setupWizardSuccess.addUsersLink"}}
       {{/linkTo}}
     {{/unless}}
     {{#linkTo route="newAdminRoot" class="setup-button-secondary"}}
-      Edit other settings
+      {{_ "wizard.setupWizardSuccess.editSettingsLink"}}
     {{/linkTo}}
     {{#linkTo route="apps" class="setup-button-primary"}}
-      Start using Sandstorm
+      {{_ "wizard.setupWizardSuccess.sandstormLink"}}
     {{/linkTo}}
   </div>
 
   {{#setupWizardButtonRow}}
     <button class="setup-back-button">
-      Back
+      {{_ (con txt "backButton")}}
     </button>
   {{/setupWizardButtonRow}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardVerifyToken">
+{{#let txt="wizard.setupWizardVerifyToken"}}
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Verifying token...</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
   {{#if rejected}}
   <p>
-    Sorry, it looks like your setup token has expired.
+    {{_ (con txt "explanation")}}
   </p>
 
   <p>
-    Generate a new one now from the command line by running <code>sandstorm admin-token</code> to
-    access the setup wizard.
+    {{{_ (con txt "howToFix")}}}
   </p>
   {{/if}}
 </div>
+{{/let}}
 </template>
 
 <template name="setupWizardTokenExpired">
+{{#let txt="wizard.setupWizardTokenExpired"}}
 <div class="setup-page-content">
-  <h1 class="setup-page-title">Setup token required</h1>
+  <h1 class="setup-page-title">{{_ (con txt "title")}}</h1>
   {{#if hasUsers}}
   <p>
-  This server is already set up, so we recommend administering it via the main
-  {{#linkTo route="newAdminRoot"}}administration panel{{/linkTo}}.
+  {{_ (con txt "alreadySetup")}}
+  {{#linkTo route="newAdminRoot"}}{{_ "wizard.setupWizardTokenExpired.adminRootLink"}}{{/linkTo}}.
   </p>
   {{/if}}
 
   <p>
-    To use this server's setup page, you need a valid setup token.
+    {{_ (con txt "explanation")}}
   </p>
 
   <p>
-    Generate a new one now from the command line by running <code>sandstorm admin-token</code> and
-    following the link it outputs.
+    {{{_ (con txt "howToFix")}}}
   </p>
 </div>
+{{/let}}
 </template>

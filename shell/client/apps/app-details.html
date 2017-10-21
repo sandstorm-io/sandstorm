@@ -1,4 +1,5 @@
 <template name="sandstormAppDetailsPage">
+{{#let txt="apps.appDetails.sandstormAppDetailsPage"}}
   {{setDocumentTitle}}
   {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar }}{{appTitle}}{{/sandstormTopbarItem}}
   {{#if newGrainIsLoading}}
@@ -22,30 +23,27 @@
 
     {{#if hasNewerVersion}}
     <div class="newer-version">
-      <p>Some of your files were made with a
-        newer version of this app.  They will keep
-        using the newer version, as going backwards could break them.</p>
+      <p>{{_ (con txt "newerVersion.explanation")}}</p>
     </div>
     {{/if}}
 
     {{#if hasOlderVersion}}
     <div class="older-version">
-      <p>Some of your grains were made with an older version of this app.  Upgrade them?</p>
-      <p><button class="upgradeGrains">Upgrade Grains</button></p>
+      <p>{{_ (con txt "olderVersion.explanation")}}</p>
+      <p><button class="upgradeGrains">{{_ (con txt "olderVersion.upgradeButton")}}</button></p>
     </div>
     {{/if}}
 
     <div class="search-row">
       <label>
-        <span class="search-icon" title="Search"></span>
-        <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}" />
+        <span class="search-icon" title="{{_ (con txt "search.hint")}}"></span>
+        <input class="search-bar" type="text" placeholder="{{_ (con txt "search.placeholder")}}" value="{{ searchText }}" />
       </label>
     </div>
 
     {{#if viewingTrash}}
       <p class="trash-explanation">
-        Grains will be permanently removed after 30 days in the trash. To keep a grain,
-        restore it to the Main list.
+        {{_ (con txt "trash.explanation")}}
       </p>
     {{/if}}
 
@@ -56,10 +54,10 @@
       {{#unless grains}}
         {{#if isFiltering}}
           <div class="no-grains">
-            <p><strong>No matching grains found.</strong></p>
+            <p>{{{_ (con txt "noGrains.notFound")}}}</p>
             {{#if filteredTrashedGrains}}
-              <p>Some grains in your trash match your search.
-               <button class="toggle-show-trash">View trash</button>
+              <p>{{_ (con txt "noGrains.inTrash")}}
+               <button class="toggle-show-trash">{{_ (con txt "noGrains.trashButton")}}</button>
               </p>
             {{/if}}
           </div>
@@ -68,9 +66,11 @@
     {{/let}}
   </div>
   {{/if}}
+{{/let}}
 </template>
 
 <template name="sandstormAppDetails">
+{{#let txt="apps.appDetails.sandstormAppDetails"}}
   {{!-- Arguments to this template are:
        showPublisherDetails: Boolean.  Show Keybase/PGP infomation.
        showToggleTrash: Boolean. Show the 'view trash' / 'view main list' button.
@@ -86,42 +86,42 @@
     <div class="app-details-box">
       <h1 class="app-title">{{appTitle}}</h1>
       <ul class="app-links">
-        {{#if website}}<li role="presentation"><a class="website-link" target="_blank" href="{{website}}">Website</a></li>{{/if}}
-        <li role="presentation"><a class="app-market-link" target="_blank" href="https://apps.sandstorm.io/app/{{appId}}">App market</a></li>
-        {{#if codeUrl}}<li role="presentation"><a class="source-code-link" target="_blank" href="{{codeUrl}}">Source</a></li>{{/if}}
-        {{#if bugReportLink}}<li role="presentation"><a class="bug-report-link" target="_blank" href="{{bugReportLink}}">Report issue</a></li>{{/if}}
+        {{#if website}}<li role="presentation"><a class="website-link" target="_blank" href="{{website}}">{{_ (con txt "websiteLink")}}</a></li>{{/if}}
+        <li role="presentation"><a class="app-market-link" target="_blank" href="https://apps.sandstorm.io/app/{{appId}}">{{_ (con txt "appMarketLink")}}</a></li>
+        {{#if codeUrl}}<li role="presentation"><a class="source-code-link" target="_blank" href="{{codeUrl}}">{{_ (con txt "sourceCodeLink")}}</a></li>{{/if}}
+        {{#if bugReportLink}}<li role="presentation"><a class="bug-report-link" target="_blank" href="{{bugReportLink}}">{{_ (con txt "bugReportLink")}}</a></li>{{/if}}
       </ul>
       <div class="info-row">
         {{#if showToggleTrash}}
           <button class="toggle-show-trash">
-            {{#if viewingTrash}}View main list{{else}}View trash{{/if}}
+            {{#if viewingTrash}}{{_ (con txt "mainListButton")}}{{else}}{{_ (con txt "trashButton")}}{{/if}}
           </button>
         {{/if}}
 
         {{#if showUninstall}}
-        <button class="uninstall-button">Uninstall</button>
+        <button class="uninstall-button">{{_ (con txt "uninstallButton")}}</button>
         {{/if}}
         {{#if showRestoreGrainBackup}}
-        <button class="restore-button">Restore grain backup...
+        <button class="restore-button">{{_ (con txt "restoreButton")}}
           <input type="file" style="display:none" accept=".zip">
         </button>
         {{/if}}
         <ul class="package-info">
           <li class="version">
-            <span class="label">Version</span>
+            <span class="label">{{_ (con txt "version.label")}}</span>
             <span class="content">{{marketingVersion}}</span>
           </li>
           <li class="last-update">
-            <span class="label">Last Updated</span>
+            <span class="label">{{_ (con txt "lastUpdate.label")}}</span>
             {{#if lastUpdated}}
             <span class="content">{{dateString lastUpdated}}</span>
             {{else}}
-            <span class="content">&lt;unknown&gt;</span>
+            <span class="content">{{_ (con txt "lastUpdate.unknown")}}</span>
             {{/if}}
           </li>
           {{#if authorPgpFingerprint}}
           <li class="publisher">
-            <span class="name">Signed by</span>
+            <span class="name">{{_ (con txt "publisher.label")}}</span>
             <button class="show-authorship-button{{#if showPublisherDetails}} expanded{{/if}}">{{publisherDisplayName}} <span class="expanded-icon"></span></button>
           </li>
           {{/if}}
@@ -129,7 +129,7 @@
       </div>
       <div class="publisher-details {{#unless showPublisherDetails}}hide{{/unless}}">
         {{#if authorPgpFingerprint}}
-        <p class="has-fingerprint">The app publisher has proven using PGP that they control these accounts.</p>
+        <p class="has-fingerprint">{{_ (con txt "hasFingerprint")}}</p>
         <ul class="publisher-proofs">
           {{#each publisherProofs}}
           <li class="publisher-proof">
@@ -148,9 +148,10 @@
           {{/each}}
         </ul>
         {{else}}
-        <p class="no-fingerprint">This app has no signature from its creator; its author cannot be verified.</p>
+        <p class="no-fingerprint">{{_ (con txt "noFingerprint")}}</p>
         {{/if}}
       </div>
     </div>
   </div>
+{{/let}}
 </template>

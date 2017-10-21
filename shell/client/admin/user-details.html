@@ -1,4 +1,5 @@
 <template name="newAdminUserDetailsCredentialTableRow">
+{{#let txt="admin.userDetails.newAdminUserDetailsIdentityTableRow"}}
 {{!-- Expects:
        credential: Object
 isLoginCredential: Boolean
@@ -18,9 +19,9 @@ isLoginCredential: Boolean
           </span>
         </li>
         <li class="credential-emails">
-          <div class="credential-emails-decorator" role="presentation" title="Emails">
+          <div class="credential-emails-decorator" role="presentation" title="{{_ (con txt "handle.emails")}}">
             <span class="credential-emails-icon">
-              Emails
+              {{_ (con txt "emails.label")}}
             </span>
           </div>
           <ul class="credential-emails-list">
@@ -28,18 +29,18 @@ isLoginCredential: Boolean
             <li>
               <a href="mailto:{{email.email}}">{{ email.email }}</a>
               {{#if email.primary}}
-                <span class="email-primary">Primary</span>
+                <span class="email-primary">{{_ (con txt "emails.primary")}}</span>
               {{/if}}
 
               {{#if email.verified}}
-                <span class="email-verified">Verified</span>
+                <span class="email-verified">{{_ (con txt "emails.verified")}}</span>
               {{else}}
-                <span class="email-unverified">Unverified</span>
+                <span class="email-unverified">{{_ (con txt "emails.unverified")}}</span>
               {{/if}}
             </li>
           {{else}}
             <li>
-              No known emails.
+              {{_ (con txt "emails.notFound")}}
             </li>
           {{/each}}
           </ul>
@@ -50,16 +51,18 @@ isLoginCredential: Boolean
     <div class="admin-user-credential-body-cell last-active" role="gridcell">{{ dateString credential.lastActive }}</div>
     <div class="admin-user-credential-body-cell properties" role="gridcell">
       {{#if isLoginCredential }}
-        <span class="login-credential">Can log in</span>
+        <span class="login-credential">{{_ (con txt "properties.login")}}</span>
       {{/if}}
       {{#if (isOrganizationMember credential) }}
-        <span class="org-member">Org. member</span>
+        <span class="org-member">properties.org</span>
       {{/if}}
     </div>
   </div>
+{{/let}}
 </template>
 
 <template name="newAdminUserDetailsCredentialMIATableRow">
+{{#let txt="admin.userDetails.newAdminUserDetailsIdentityTableRow"}}
 {{!-- Filler row to deal with the fact that sometimes credentials are missing in
       the database. --}}
   <div class="admin-user-credential-body-row" role="row">
@@ -68,44 +71,46 @@ isLoginCredential: Boolean
         <li class="credential-provider">
           <div class="login-provider-icon" title="unknown service">
             <span class="provider-icon">
-              (unknown service)
+              {{_ (con txt "unknown.service.label")}}
             </span>
           </div>
           <span class="intrinsic-name">
-            (unknown name)
+            {{_ (con txt "unknown.service.cell")}}
           </span>
         </li>
         <li class="credential-emails">
           <div class="credential-emails-decorator" role="presentation" title="Emails">
             <span class="credential-emails-icon">
-              Emails
+              {{_ (con txt "emails.label")}}
             </span>
           </div>
           <ul class="credential-emails-list">
             <li>
-              No known emails.
+              {{_ (con txt "emails.notFound")}}
             </li>
           </ul>
         </li>
       </ul>
     </div>
-    <div class="admin-user-credential-body-cell created" role="gridcell">unknown creation date</div>
-    <div class="admin-user-credential-body-cell last-active" role="gridcell">unknown activity date</div>
+    <div class="admin-user-credential-body-cell created" role="gridcell">{{_ (con txt "unknown.created.cell")}}</div>
+    <div class="admin-user-credential-body-cell last-active" role="gridcell">{{_ (con txt "unknown.lastActive.cell")}}</div>
     <div class="admin-user-credential-body-cell properties" role="gridcell"></div>
   </div>
+{{/let}}
 </template>
 
 <template name="newAdminUserDetailsCredentialTable">
+{{#let txt="admin.userDetails.newAdminUserDetailsIdentityTable"}}
 {{!-- Expects:
   account: Object
 --}}
   <div class="admin-user-credential-list" role="grid">
     <div class="admin-user-credential-header" role="rowgroup">
       <div class="admin-user-credential-header-row" role="row">
-        <div class="admin-user-credential-header-cell credential" role="columnheader">Credential</div>
-        <div class="admin-user-credential-header-cell created" role="columnheader">Created</div>
-        <div class="admin-user-credential-header-cell last-active" role="columnheader">Last Active</div>
-        <div class="admin-user-credential-header-cell properties" role="columnheader">Properties</div>
+        <div class="admin-user-credential-header-cell credential" role="columnheader">{{_ (con txt "header.credential")}}</div>
+        <div class="admin-user-credential-header-cell created" role="columnheader">{{_ (con txt "header.created")}}</div>
+        <div class="admin-user-credential-header-cell last-active" role="columnheader">{{_ (con txt "header.lastActive")}}</div>
+        <div class="admin-user-credential-header-cell properties" role="columnheader">{{_ (con txt "header.properties")}}</div>
       </div>
     </div>
 
@@ -134,13 +139,15 @@ isLoginCredential: Boolean
       {{/each}}
     </div>
   </div>
+{{/let}}
 </template>
 
 <template name="newAdminUserDetails">
+{{#let txt="admin.userDetails.newAdminUserDetails"}}
   <h1>
     <ul class="admin-breadcrumbs">
-      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
-      <li>{{#linkTo route="newAdminUsers"}}Users{{/linkTo}}</li>
+      <li>{{#linkTo route="newAdminRoot"}}{{_ "admin.title"}}{{/linkTo}}</li>
+      <li>{{#linkTo route="newAdminUsers"}}{{_ "admin.users.name"}}{{/linkTo}}</li>
       <li>{{ guessUserName }}</li>
     </ul>
   </h1>
@@ -162,26 +169,26 @@ isLoginCredential: Boolean
 
 
     <h2>
-      Role
+      {{_ (con txt "role.title")}}
     </h2>
 
     <ul class="role-explanations">
       <li class="role-explanation {{#if account.isAdmin}}current-role{{/if}}">
         <span class="role">
           <span class="user-class-label admin">
-            Admin
+            {{_ (con txt "role.admin.label")}}
           </span>
         </span>
         <span class="explanation">
-          Manages all accounts.  Can install apps, create grains, and administer the server.
+          {{_ (con txt "role.admin.explanation")}}
         </span>
         <span class="status-or-actions">
           {{#if (isAdmin account)}}
-            <span class="current-role-label">Current role</span>
+            <span class="current-role-label">{{_ (con txt "role.admin.isAdmin")}}</span>
           {{/if}}
           {{#unless (isAdmin account) }}
             <form class="admin-user-roles-form">
-              <button class="make-admin" type="button" disabled="{{ isSubmitting }}">Promote to admin</button>
+              <button class="make-admin" type="button" disabled="{{ isSubmitting }}">{{_ (con txt "role.admin.isNotAdmin")}}</button>
             </form>
           {{/unless}}
         </span>
@@ -189,23 +196,23 @@ isLoginCredential: Boolean
       <li class="role-explanation {{#if (isPreciselyUser account)}}current-role{{/if}}">
         <span class="role">
           <span class="user-class-label user">
-            User
+            {{_ (con txt "role.user.label")}}
           </span>
         </span>
         <span class="explanation">
-          Can install apps and create grains.
+          {{_ (con txt "role.user.explanation")}}
         </span>
         <span class="status-or-actions">
           {{#if (isPreciselyUser account)}}
-            <span class="current-role-label">Current role</span>
+            <span class="current-role-label">{{_ (con txt "role.user.isUser")}}</span>
           {{/if}}
           {{#if (canBeMadeUser account) }}
             <form class="admin-user-roles-form">
               <button class="make-user" type="button" disabled="{{ isSubmitting }}">
                 {{#if (isAdmin account)}}
-                  Demote to user
+                  {{_ (con txt "role.user.isAdmin")}}
                 {{else}}
-                  Promote to user
+                  {{_ "role.user.isNotUser"}}
                 {{/if}}
               </button>
             </form>
@@ -215,46 +222,46 @@ isLoginCredential: Boolean
       <li class="role-explanation {{#if (isPreciselyVisitor account)}}current-role{{/if}}">
         <span class="role">
           <span class="user-class-label visitor">
-            Visitor
+            {{_ (con txt "role.visitor.label")}}
           </span>
         </span>
         <span class="explanation">
-          Can use and re-share shared grains, but cannot create grains of their own nor install apps.
+          {{_ (con txt "role.visitor.explanation")}}
         </span>
         <span class="status-or-actions">
           {{#if (isPreciselyVisitor account)}}
-            <span class="current-role-label">Current role</span>
+            <span class="current-role-label">{{_ (con txt "role.visitor.isVisitor")}}</span>
           {{/if}}
           <form class="admin-user-roles-form">
             {{#if (canBeMadeVisitor account) }}
-              <button class="make-visitor" type="button" disabled="{{ isSubmitting }}">Demote to visitor</button>
+              <button class="make-visitor" type="button" disabled="{{ isSubmitting }}">{{_ (con txt "role.visitor.isNotVisitor")}}</button>
             {{/if}}
           </form>
         </span>
       </li>
     </ul>
 
-    <h2>Profile</h2>
+    <h2>{{_ (con txt "profile.title")}}</h2>
 
     <ul class="admin-users-profile-information">
       <li class="profile-picture-name">
         <div class="profile-picture" style="background-image: url('{{ account.profile.pictureUrl }}');">
-          Profile picture
+          {{_ (con txt "profilePicture.label")}}
         </div>
         <span class="profile-name">
           {{ account.profile.name }}
         </span>
       </li>
       <li class="profile-handle">
-        <div class="profile-handle-decorator" role="presentation" title="Handle">
+        <div class="profile-handle-decorator" role="presentation" title="{{_ (con txt "handle.title")}}">
           @
         </div>
         <code>{{ account.profile.handle }}</code>
       </li>
       <li class="profile-pronouns">
-        <div class="profile-pronouns-decorator" role="presentation" title="Pronouns">
+        <div class="profile-pronouns-decorator" role="presentation" title="{{_ (con txt "pronouns.label")}}">
           <span class="profile-pronouns-icon">
-            Pronouns
+            {{_ (con txt "pronouns.hint")}}
           </span>
         </div>
         <span class="profile-pronouns-preference">
@@ -263,27 +270,27 @@ isLoginCredential: Boolean
       </li>
     </ul>
 
-    <h2>Credentials</h2>
+    <h2>{{_ (con txt "credentials.title")}}</h2>
     {{> newAdminUserDetailsCredentialTable account=account }}
 
-    <h2>Status</h2>
+    <h2>{{_ (con txt "status.title")}}</h2>
 
     <div style="display: flex; flex-direction: row;">
       {{#if accountDeleting}}
-        Suspended - Pending deletion {{accountDeleting}}
+        {{_ (con txt "status.deleting") accountDeleting}}
       {{else}}{{#if accountSuspended}}
-        Suspended
+        {{_ (con txt "status.suspended")}}
       {{else}}
-        Active
+        {{_ (con txt "status.active")}}
       {{/if}}{{/if}}
     </div>
     <form class="standard-form">
       <div class="button-row">
         {{#if accountSuspended}}
-        <button type="button" name="unsuspend-account">Unsuspend account</button>
+        <button type="button" name="unsuspend-account">{{_ (con txt "status.unsuspendButton")}}</button>
         {{else}}
-        <button type="button" name="suspend-account">Suspend account</button>
-        <button type="button" name="delete-account">Delete account</button>
+        <button type="button" name="suspend-account">{{_ (con txt "status.suspendButton")}}</button>
+        <button type="button" name="delete-account">{{_ (con txt "status.deleteButton")}}</button>
         {{/if}}
       </div>
     </form>
@@ -296,20 +303,20 @@ isLoginCredential: Boolean
           {{/focusingErrorBox}}
         {{/if}}
 
-        <h2>Delete {{guessUserName}}</h2>
-        <p>You are about to mark {{guessUserName}}'s account for deletion. Once marked for deletion, this account will be suspended, and admins will have 7 days to cancel the pending deletion by returning to this page and clicking the "Unsuspend Account" button. {{guessUserName}} will <strong>not</strong> be able to stop this suspension/deletion.</p>
-        <p>After 7 days, {{guessUserName}}'s account will be permanently deleted. Deleting this account will:</p>
+        <h2>{{_ (con txt "deletePopup.title") guessUserName}}</h2>
+        <p>{{{_ (con txt "deletePopup.explanation") guessUserName guessUserName}}}</p>
+        <p>{{_ (con txt "deletePopup.detail") guessUserName}}</p>
         <ul>
-          <li>Permanently delete any grains {{guessUserName}} created</li>
-          <li>Revoke all sharing links {{guessUserName}} created</li>
-          <li>Remove {{guessUserName}} from all users' contact lists</li>
-          <li>Delete all credentials owned by this account (except credentials also associated with another account).</li>
+          <li>{{_ (con txt "deletePopup.detail1") guessUserName}}</li>
+          <li>{{_ (con txt "deletePopup.detail2") guessUserName}}</li>
+          <li>{{_ (con txt "deletePopup.detail3") guessUserName}}</li>
+          <li>{{_ (con txt "deletePopup.detail4")}}</li>
         </ul>
         <form class="standard-form">
           <div class="button-row">
             <button class="danger" type="button"
-             disabled={{disableDelete}} name="delete-account-real">Delete account</button>
-            <button type="button" name="cancel-delete-account">Cancel</button>
+             disabled={{disableDelete}} name="delete-account-real">{{_ (con txt "deletePopup.deleteButton")}}</button>
+            <button type="button" name="cancel-delete-account">{{_ (con txt "deletePopup.cancelButton")}}</button>
           </div>
         </form>
       {{/modalDialogWithBackdrop}}
@@ -323,19 +330,18 @@ isLoginCredential: Boolean
           {{/focusingErrorBox}}
         {{/if}}
 
-        <h2>Suspend {{guessUserName}}</h2>
-        <p>Suspending this user account will:</p>
+        <h2>{{_ (con txt "suspendPopup.title") guessUserName}}</h2>
+        <p>{{_ (con txt "suspendPopup.detail")}}</p>
         <ul>
-          <li>Prevent any grains created by {{guessUserName}} from being opened</li>
-          <li>Disable any sharing links created by {{guessUserName}}</li>
-          <li>This also applies to all credentials owned by this account (except credentials
-              associated with another account)</li>
+          <li>{{_ (con txt "suspendPopup.detail1") guessUserName}}</li>
+          <li>{{_ (con txt "suspendPopup.detail2") guessUserName}}</li>
+          <li>{{_ (con txt "suspendPopup.detail3")}}</li>
         </ul>
         <form class="standard-form">
           <div class="button-row">
             <button class="danger" type="button"
-             disabled={{suspendSubmitting}} name="suspend-account-real">Suspend account</button>
-            <button type="button" name="cancel-suspend-account">Cancel</button>
+             disabled={{suspendSubmitting}} name="suspend-account-real">{{_ (con txt "suspendPopup.suspendButton")}}</button>
+            <button type="button" name="cancel-suspend-account">{{_ (con txt "suspendPopup.cancelButton")}}</button>
           </div>
         </form>
       {{/modalDialogWithBackdrop}}
@@ -343,7 +349,8 @@ isLoginCredential: Boolean
 
     {{/with}}
   {{else}}
-    Loading user data...
+    {{_ (con txt "loading")}}
   {{/if}}
 
+{{/let}}
 </template>

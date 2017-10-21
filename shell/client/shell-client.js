@@ -31,6 +31,24 @@ globalSubs = [
   Meteor.subscribe("accountCredentials"),
 ];
 
+getUserLanguage = function () {
+  return navigator.language;
+};
+
+if (Meteor.isClient) {
+  Meteor.startup(function () {
+    Session.set("showLoadingIndicator", true);
+    TAPi18n.setLanguage(getUserLanguage())
+      .done(function () {
+        Session.set("showLoadingIndicator", false);
+      })
+      .fail(function (errorMessage) {
+        // Handle the situation
+        console.log(errorMessage);
+      });
+  });
+}
+
 Tracker.autorun(function () {
   const me = Meteor.user();
   if (me) {
@@ -633,6 +651,10 @@ Template.registerHelper("quotaEnabled", function () {
 
 Template.registerHelper("referralsEnabled", function () {
   return globalDb.isReferralEnabled();
+});
+
+Template.registerHelper("con", function () {
+  return Array.prototype.slice.call(arguments, 0, -1).join('.')
 });
 
 Template.root.helpers({

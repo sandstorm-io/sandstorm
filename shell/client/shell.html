@@ -173,6 +173,12 @@ limitations under the License.
   {{#if notificationCount}}
     <span class="count">{{notificationCount}}</span>
   {{/if}}
+  {{!-- HACK: If we don't have whitespace before the string "Notifications", the 'N' will be
+      visible next to the bell. This used to not be a problem before i18n, because there was
+      whitespace in the literal text, but now it's a template expansion and blaze slurps the
+      whitespace.
+      TODO(cleanup): Why on Earth is this text visible in the fist place? --}}
+  <span> </span>
   {{_ "shell.notifications.text"}}
   </button>
 </template>

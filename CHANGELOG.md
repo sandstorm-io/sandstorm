@@ -1,3 +1,6 @@
+### v0.216 (2017-10-21)
+- The Sandstorm UI has been internationalized. Currently, most of the UI has been translated to Traditional Chinese, and some parts also have Simplified Chinese translations. Other languages will come in the future. ([Want to help?](https://github.com/sandstorm-io/sandstorm/blob/master/CONTRIBUTING.md#internationalization-i18n)) You can change your language in your browser settings (Sandstorm will pick up the preference from your browser).
+
 ### v0.215 (2017-09-30) [bugfixes]
 - Updated dependencies to latest versions (as for every release). No other changes.
 

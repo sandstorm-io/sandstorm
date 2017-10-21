@@ -34,7 +34,7 @@ function monkeypatchHttpAndHttps() {
   var oldListen = http.Server.prototype.listen;
   http.Server.prototype.listen = function (port, host, cb) {
     // Overridable by passing e.g. {fd: 5} as port.
-    if (typeof port == 'object') {
+    if (typeof port == 'object' && port.fd) {
       return oldListen.call(this, port, host, cb);
     }
     return oldListen.call(this, {fd: 4}, cb);

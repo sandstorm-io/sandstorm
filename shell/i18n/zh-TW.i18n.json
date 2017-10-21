@@ -372,17 +372,17 @@
     }
   },
   "notifications": {
-    "appUpdatedNotificationItem": {
+    "appUpdateNotificationItem": {
       "title": "應用程式有新版本：",
-      "appUpdates": "<strong>__name__</strong>: 版本 __version__ 已推出"
-    },
-    "submitButton": {
-      "hint": "更新所有上記應用程式",
-      "text": "套用更新"
-    },
-    "dismissButton": {
-      "hint": "略過上記更新",
-      "text": "隱藏"
+      "appUpdates": "<strong>__name__</strong>: 版本 __version__ 已推出",
+      "submitButton": {
+        "hint": "更新所有上記應用程式",
+        "text": "套用更新"
+      },
+      "dismissButton": {
+        "hint": "略過上記更新",
+        "text": "隱藏"
+      }
     },
     "mailingListBonusNotificationItem": {
       "explanationWithBonus": "Subscribe to our announcement list and get <strong>%s bonus storage</strong> (1-2 emails per month).",

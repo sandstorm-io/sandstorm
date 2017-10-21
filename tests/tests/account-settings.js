@@ -54,7 +54,7 @@ module.exports["Test profile changes"] = function (browser) {
       var instance    = Blaze
                           .getView(document.querySelector(
                             'button[name=upload-picture]'))
-                          .templateInstance();
+                          .parentView.templateInstance();
       Meteor.call("uploadProfilePicture", (err, result) => {
         if (err) {
           instance._setActionCompleted({ error: "Upload rejected: " + err.message });

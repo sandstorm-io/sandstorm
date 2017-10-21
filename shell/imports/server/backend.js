@@ -17,7 +17,6 @@
 import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
 import { inMeteor, promiseToFuture, waitPromise } from "/imports/server/async-helpers.js";
 
-const Capnp = Npm.require("capnp");
 const Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
 const Crypto = Npm.require("crypto");
 

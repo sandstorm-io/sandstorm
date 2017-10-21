@@ -19,7 +19,6 @@ const Http = Npm.require("http");
 const Https = Npm.require("https");
 const Net = Npm.require("net");
 const Dgram = Npm.require("dgram");
-const Capnp = Npm.require("capnp");
 import { hashSturdyRef, checkRequirements, fetchApiToken } from "/imports/server/persistent.js";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { ssrfSafeLookup } from "/imports/server/networking.js";

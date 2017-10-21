@@ -84,6 +84,7 @@ retry@1.0.9
 routepolicy@1.0.12
 sandstorm-accounts-packages@0.1.0
 sandstorm-autoupdate-apps@0.1.0
+sandstorm-capnp@0.1.0
 sandstorm-db@0.1.0
 sandstorm-identicons@0.1.0
 sandstorm-permissions@0.1.0

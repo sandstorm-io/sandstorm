@@ -23,7 +23,6 @@ const Fs = Npm.require("fs");
 const Dns = Npm.require("dns");
 const Future = Npm.require("fibers/future");
 const Http = Npm.require("http");
-const Capnp = Npm.require("capnp");
 const ByteStream = Capnp.importSystem("sandstorm/util.capnp").ByteStream;
 
 const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;

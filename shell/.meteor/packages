@@ -29,6 +29,7 @@ routepolicy@1.0.12
 reactive-var@1.0.11
 reactive-dict@1.1.9
 sandstorm-autoupdate-apps
+sandstorm-capnp
 sandstorm-db
 sandstorm-identicons
 sandstorm-permissions

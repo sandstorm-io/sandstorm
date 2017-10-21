@@ -18,7 +18,6 @@ import { waitPromise } from "/imports/server/async-helpers.js";
 
 const ChildProcess = Npm.require("child_process");
 const Future = Npm.require("fibers/future");
-const Capnp = Npm.require("capnp");
 
 const GrainInfo = Capnp.importSystem("sandstorm/grain.capnp").GrainInfo;
 

@@ -17,7 +17,6 @@
 import { inMeteor } from "/imports/server/async-helpers.js";
 
 const Crypto = Npm.require("crypto");
-const Capnp = Npm.require("capnp");
 
 const privateDb = Symbol("PersistentImpl.db");
 const privateTemplate = Symbol("PersistentImpl.template");

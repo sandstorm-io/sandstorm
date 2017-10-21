@@ -14,7 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const Capnp = Npm.require("capnp");
 const IdentityRpc = Capnp.importSystem("sandstorm/identity-impl.capnp");
 const Identity = Capnp.importSystem("sandstorm/identity.capnp").Identity;
 import { PersistentImpl } from "/imports/server/persistent.js";

@@ -15,7 +15,6 @@
 // limitations under the License.
 
 const Crypto = Npm.require("crypto");
-const Capnp = Npm.require("capnp");
 const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");
 

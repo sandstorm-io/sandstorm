@@ -20,7 +20,6 @@ import { REQUEST_HEADER_WHITELIST, RESPONSE_HEADER_WHITELIST }
     from "/imports/server/header-whitelist.js";
 
 const Future = Npm.require("fibers/future");
-const Capnp = Npm.require("capnp");
 const Url = Npm.require("url");
 const Http = Npm.require("http");
 const Https = Npm.require("https");

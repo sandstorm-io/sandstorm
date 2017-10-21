@@ -22,7 +22,6 @@ import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants.js";
 import { onInMeteor } from "/imports/server/async-helpers.js";
 import { monkeyPatchHttp } from "/imports/server/networking.js";
 let url = require("url");
-const Capnp = require("capnp");
 
 globalFrontendRefRegistry = new FrontendRefRegistry();
 

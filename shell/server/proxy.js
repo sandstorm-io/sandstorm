@@ -25,7 +25,6 @@ const ChildProcess = Npm.require("child_process");
 const Fs = Npm.require("fs");
 const Path = Npm.require("path");
 const Url = Npm.require("url");
-const Capnp = Npm.require("capnp");
 const Net = Npm.require("net");
 
 const ByteStream = Capnp.importSystem("sandstorm/util.capnp").ByteStream;

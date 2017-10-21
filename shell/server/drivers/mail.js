@@ -24,7 +24,6 @@ import { inMeteor } from "/imports/server/async-helpers.js";
 
 const Crypto = Npm.require("crypto");
 const Future = Npm.require("fibers/future");
-const Capnp = Npm.require("capnp");
 
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 const EmailImpl = Capnp.importSystem("sandstorm/email-impl.capnp");

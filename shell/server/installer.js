@@ -25,8 +25,6 @@ import { ssrfSafeLookupOrProxy } from "/imports/server/networking.js";
 
 const Request = HTTPInternals.NpmModules.request.module;
 
-const Capnp = Npm.require("capnp");
-
 const Manifest = Capnp.importSystem("sandstorm/package.capnp").Manifest;
 
 let installers;  // set to {} on main replica

@@ -511,7 +511,7 @@ const handleNonMeteorRequestDirectly = (req, res, next) => {
 //
 // Alternate ports are bound to FD #5 and higher.
 const getNumberOfAlternatePorts = function () {
-  const numPorts = process.env.PORT.split(",").length;
+  const numPorts = process.env.PORTS.split(",").length;
   const numAlternatePorts = numPorts - 1;
   return numAlternatePorts;
 };

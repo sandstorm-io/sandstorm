@@ -2295,7 +2295,8 @@ private:
             true));
       }
 
-      KJ_SYSCALL(setenv("PORT", kj::strArray(config.ports, ",").cStr(), true));
+      KJ_SYSCALL(setenv("PORT", kj::str(config.ports[0]).cStr(), true));
+      KJ_SYSCALL(setenv("PORTS", kj::strArray(config.ports, ",").cStr(), true));
       KJ_IF_MAYBE(httpsPort, config.httpsPort) {
         KJ_SYSCALL(setenv("HTTPS_PORT", kj::str(*httpsPort).cStr(), true));
       }

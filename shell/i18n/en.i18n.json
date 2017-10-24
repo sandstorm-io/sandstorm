@@ -775,7 +775,7 @@
         },
         "splashUrl": {
           "label": "Splash URL (experimental):",
-          "subtext": "This web page will be displayed in the background behind the login dialog (the home page when logged out). For security reasons, the page must be hosted within this Sandstorm server's wildcard host (otherwise it will be blocked by <code>Content-Security-Policy</code>). We suggest using a static web publishing app like <a target=\"_blank\" href=\"https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh/?host={{serverUrl}}\">Hacker CMS</a> to host content.<strong>WARNING: This feature is experimental; in particular the style and positioning of the login box is subject to change without notice.</strong> Please let us know if you'd like to see it stabilize."
+          "subtext": "This web page will be displayed in the background behind the login dialog (the home page when logged out). For security reasons, the page must be hosted within this Sandstorm server's wildcard host (otherwise it will be blocked by <code>Content-Security-Policy</code>). We suggest using a static web publishing app like <a target=\"_blank\" href=\"https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh/?host=%s\">Hacker CMS</a> to host content.<strong>WARNING: This feature is experimental; in particular the style and positioning of the login box is subject to change without notice.</strong> Please let us know if you'd like to see it stabilize."
         },
         "signupDialog": {
           "label": "Signup dialog:",
@@ -1490,7 +1490,7 @@
       "emailAuthenticationForm": {
         "hint": "Passwordless E-mail Login allows you to log in using an e-mail address. No password is required; instead, every time you log in, we send you a new email confirmation code. You will only need to log in once per device.",
         "token": {
-          "explanation": "We've sent a login e-mail to {{.}}. It may take a few moments to show up in your inbox.",
+          "explanation": "We've sent a login e-mail to %s. It may take a few moments to show up in your inbox.",
           "label": "Enter your token:",
           "confirmButton": "Confirm",
           "cancelButton": "Cancel"

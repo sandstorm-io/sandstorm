@@ -71,6 +71,7 @@ export DDP_DEFAULT_CONNECTION_URL
 export MONGO_URL="mongodb://sandstorm:$MONGO_PASSWD@127.0.0.1:$MONGO_PORT/meteor?authSource=admin"
 export MONGO_OPLOG_URL="mongodb://sandstorm:$MONGO_PASSWD@127.0.0.1:$MONGO_PORT/local?authSource=admin"
 export ROOT_URL=$BASE_URL
+export PORTS=$PORT
 
 SETTINGS=$(mktemp)
 

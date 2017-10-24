@@ -240,7 +240,7 @@ licenses, included in the LICENSES directory.
     </label>
 
     {{#with awaitingToken}}
-    <p>{{_ (con txt "token.explanation")}}</p>
+    <p>{{_ (con txt "token.explanation") .}}</p>
     <label class="token">
       {{_ (con txt "token.label")}}
       <input name="token" type="text">

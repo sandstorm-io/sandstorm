@@ -1647,7 +1647,7 @@
       "membership": {
         "title": "Organization membership",
         "emailToggle": {
-          "label": "sers authenticated via email address",
+          "label": "Users authenticated via email address",
           "subtext": "Note: disabled because email login is not configured."
         },
         "emailDomain": {

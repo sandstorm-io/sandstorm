@@ -31,14 +31,27 @@ globalSubs = [
   Meteor.subscribe("accountCredentials"),
 ];
 
-getUserLanguage = function () {
-  return navigator.language;
-};
-
 if (Meteor.isClient) {
   Meteor.startup(function () {
     Session.set("showLoadingIndicator", true);
-    TAPi18n.setLanguage(getUserLanguage())
+
+    const langMap = TAPi18n.getLanguages();
+    let bestLang = null;
+
+    if (navigator.languages) {
+      navigator.languages.forEach(lang => {
+        if (!bestLang && (lang in langMap)) {
+          bestLang = lang;
+        }
+      });
+    } else {
+      bestLang = navigator.language || navigator.userLanguage ||
+                 navigator.browserLanguage || navigator.systemLanguage;
+    }
+
+    if (!bestLang) bestLang = "en";
+
+    TAPi18n.setLanguage(bestLang)
       .done(function () {
         Session.set("showLoadingIndicator", false);
       })

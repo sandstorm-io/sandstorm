@@ -1,3 +1,6 @@
+### v0.218 (2017-10-28) [bugfixes]
+- Fixed memory leak in Cap'n Proto which could cause Sandstorm backend process memory usage to grow gradually until the system runs out of memory. We believe the memory leak has been present since either v0.214 or v0.215.
+
 ### v0.217 (2017-10-22) [bugfixes]
 - Fixed Sandcats servers not starting up correctly with an error about PORT being invalid.
 

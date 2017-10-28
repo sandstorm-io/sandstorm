@@ -117,7 +117,7 @@
       "intro": {
         "explanation": "<a href=\"https://sandstorm.io\">Sandstorm.io</a> is een open source hosting platform voor persoonlijke/privé instanties van web apps. Gebruikers kunnen software uploaden en installeren via een simpele app-store achtige interface. Naast betere privacy <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">is dit de enige manier om Open Source web apps haalbaar te maken.</a>",
         "version": "Versie: %s",
-        "unofficialWarning": "<b>WAARSCHUWING:</b> deze server draait een onofficiële build van Sandstorm die aanpassingen kan bevatten die niet zijn gecontroleerd door de ontwikkelaars."
+        "unofficialWarning": "<strong>WAARSCHUWING:</strong> deze server draait een onofficiële build van Sandstorm die aanpassingen kan bevatten die niet zijn gecontroleerd door de ontwikkelaars."
       },
       "changelog": {
         "title": "Recente aanpassingen"

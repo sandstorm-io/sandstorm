@@ -117,7 +117,7 @@
       "intro": {
         "explanation": "<a href=\"https://sandstorm.io\">沙聚雲(Sandstorm.io)</a>是可以執行私人或個人網路應用程式的開源平台。使用者可以上傳並安裝任何程式，就像手機的應用程式商店一樣。為了保護隱私，<a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">這是唯一公開開源網路應用程式的方式。</a>",
         "version": "版本：%s",
-        "unofficialWarning": "<b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers."
+        "unofficialWarning": "<strong>WARNING:</strong> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers."
       },
       "changelog": {
         "title": "最新變更點"

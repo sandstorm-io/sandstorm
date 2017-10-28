@@ -117,7 +117,7 @@
       "intro": {
         "explanation": "<a href=\"https://sandstorm.io\">沙聚云(Sandstorm.io)</a>是让用户运行私有网络应用程序的一个开源平台。用户可以上传并安装各种应用，就像手机的应用商店一样。<a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">开源网络应用程序既优雅又正确的打开方式</a>应该是这样。",
         "version": "版本：%s",
-        "unofficialWarning": "<b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers."
+        "unofficialWarning": "<strong>WARNING:</strong> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers."
       },
       "changelog": {
         "title": "最近更新"

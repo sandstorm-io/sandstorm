@@ -1,4 +1,6 @@
-### v0.218 (2017-10-28) [bugfixes]
+### v0.218 (2017-10-28)
+- Added Dutch translation by Michel van der Burg.
+- Improved language selection to consider the user's whole prioritized list of languages rather than just the top language. This also makes language selection through the Chrome browser settings work, instead of using the system UI language.
 - Fixed memory leak in Cap'n Proto which could cause Sandstorm backend process memory usage to grow gradually until the system runs out of memory. We believe the memory leak has been present since either v0.214 or v0.215.
 
 ### v0.217 (2017-10-22) [bugfixes]

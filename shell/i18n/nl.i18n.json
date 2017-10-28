@@ -1,0 +1,1787 @@
+{
+  "error": "Fout: %s",
+  "shell": {
+    "layout": {
+      "demoExpired": {
+        "title": "Demo verlopen",
+	"canUpgrade": "Bedankt voor het uitproberen van de Sandstorm Demo! Uw demo accaunt is verlopen. Als u Sandstorm wilt blijven gebruiken en uw data permanent op wilt slaan, log dan alstublieft in.",
+        "cannotUpgrade": "Bedankt voor het uitproberen van de Sandstorm Demo! Uw demo accaunt is verlopen.",
+        "signOut": "Uitloggen"
+      },
+      "adminAlert": {
+        "icon": "!",
+        "title": "Bericht van de administrator"
+      },
+      "demoModal": {
+        "header": "Sandstorm is en zelf hostbare online werkomgeving.",
+        "withAppDemo": "met apps zoals %s.",
+        "withoutAppDemo": "Met alle apps die u nodig heeft op een plaats.",
+        "startButton": {
+          "withAppDemo": "Probeer %s »",
+          "withoutAppDemo": "Start »"
+        },
+        "explanation": "<p>Sandstorm maakt het makkelijk om apps op uw eigen server te draaien. Naast het verbeteren van privacy en controle, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\" target=\"_blank\">brengt dit Open Source apps naar een groter publiek.</a></p>",
+        "securityOverview": "<p>Sandstorm is daarnaast ook belachelijk veilig. Als u beveiliging interessant vindt, kijk dan eens naar<a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">een overzicht van Sandstorm's beveiligingsmodel.</a>.</p>"
+      }
+    },
+    "notifications": {
+      "hint": "Meldingen",
+      "text": "Meldingen"
+    },
+    "notificationsPopup": {
+      "title": "Meldingen",
+      "empty": "Geen meldingen..."
+    },
+    "loading": {
+      "title": "Laden...",
+      "text": "Laden..."
+    },
+    "notFound": {
+      "title": "Niet gevonden",
+      "text": "404 Niet gevonden :("
+    },
+    "root": {
+      "title": "Home"
+    },
+    "grainLogContents": {
+      "prefix": "..."
+    },
+    "grainLog": {
+      "title": "Debug log: %s"
+    },
+    "signup": {
+      "title": "Uitnodiging opeisen",
+      "signedUp": {
+        "keyIsUsedWithOrigin": "U bent helemaal ingeschreven!  <a href=\"https://apps.sandstorm.io/?host=%s\">Installeer wat apps</a>.",
+        "keyIsNotUsed": "Het ziet ernaar uit dat u al een account heeft, dus u heeft deze inschrijvingscode niet nodig."
+      },
+      "keyIsUsed": "Sorry, deze inschrijvingscode is al gebruikt.",
+      "processing": "Een ogenblik geduld alstublieft...",
+      "signInGuide": "U moet eerst nog inloggen. Klik rechtsbovenin op \"Inloggen\".",
+      "invalidKey": "Sorry, dit is niet een geldige inscrhijvingscode."
+    },
+    "uploadStatus": {
+      "title": "Uploaden...",
+      "uploadFailedWithError": "Upload mislukt: %s %s",
+      "statusWithProgress": "%s... %s",
+      "status": "%s...",
+      "uploadFailed": "Upload mislukt. Probeer het alstublieft opnieuw."
+    },
+    "uploadTest": {
+      "title": "Upload test pagina",
+      "explanation": "Deze pagina is bedoeld voor gebruik door de test scripts.",
+      "uploadApp": "Upload app:",
+      "uploadBackup": "Upload backup:"
+    },
+    "referrals": {
+      "title": "Verwijzingsprogramma",
+      "header": {
+        "isPaid": {
+          "title": "Krijg tot wel <span class=\"reward-amount\">30 GB</span> aan gratis opslagruimte wanneer uw vrienden delen op Oasis!",
+          "explanation": "Voor elke vriend die een deellink aanmaakt krijgt u 2 GB"
+        },
+        "isNotPaid": {
+          "title": "Krijg een onbeperkte hoeveelheid korrels &amp; tot wel <span class=\"reward-amount\">2 GB</span> aan gratis opslagruimte wanneer uw vrienden delen op Oasis!",
+          "explanation": "Voor elke vriend die een deellink aanmaakt krijgt u 50 MB en daarnaast een onbeperkte hoeveelheid korrels."
+        }
+      },
+      "howTo": {
+        "title": "Delen is verwijzen",
+        "explanation": "Om te beginnen, open een korrel en klik op Toegang delen.",
+        "getStart": {
+          "step1": "U deelt een korrel met een vriend (die nog geen Oasis gebruiker is).",
+          "step2": "Uw vriend logt in.",
+          "step3": "Uw vriend deelt een korrel met een ander (waaronder uzelf)."
+        }
+      },
+      "status": {
+        "title": "Uw verwijzingen & status",
+        "explanation": "Wanneer u een deel link verzend verschijnen mensen hieronder wanneer ze inloggen.",
+        "pending": {
+          "title": "Moet nog delen.",
+          "explanation": "Vertel deze mensen om een korrel aan te maken en die met u te delen. U moet de korrel ook bekijken!"
+        },
+        "success": {
+          "title": "Succesvolle verwijzingen",
+          "explanation": "U heeft deze mensen met succes verwezen, gefeliciteerd!"
+        }
+      },
+      "finePrint": {
+        "title": "De kleine lettertjes",
+        "warningWithAccountLink": "Uw verwijzingsbonus is voor 1 jaar na de verwijzing geldig. De voorwaarden van dit verwijzingsprogramma kunnen veranderen zonder waarschuwing, bonussen die u al heeft ontvangen worden daar niet door beïnvloed. Als u nog meer ruimte nodig heeft, <a href=\"%s\">upgrade dan uw account.</a>",
+        "explanation": "Betaalde abonnees kunnen tot 30 GB gratis opslagruimte krijgen, 2 GB per persoon die ze verwijzen, naast de hoeveelheid opslag van hun account niveau. Eigenaren van gratis accounts kunnen een onbeperkte hoeveelheid korrels en 50MB opslagruimte per persoon die ze verwijzen verdienen, tot in totaal 2GB."
+      }
+    },
+    "about": {
+      "title": "Over Sandstorm",
+      "intro": {
+        "explanation": "<a href=\"https://sandstorm.io\">Sandstorm.io</a> is een open source hosting platform voor persoonlijke/privé instanties van web apps. Gebruikers kunnen software uploaden en installeren via een simpele app-store achtige interface. Naast betere privacy <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">is dit de enige manier om Open Source web apps haalbaar te maken.</a>",
+        "version": "Versie: %s",
+        "unofficialWarning": "<b>WAARSCHUWING:</b> deze server draait een onofficiële build van Sandstorm die aanpassingen kan bevatten die niet zijn gecontroleerd door de ontwikkelaars."
+      },
+      "changelog": {
+        "title": "Recente aanpassingen"
+      },
+      "developers": {
+        "title": "Hoofdontwikkelaars"
+      },
+      "advisors": {
+        "title": "Adviseurs"
+      },
+      "corporate": {
+        "title": "Zakelijke sponsors",
+        "explanation": "Deze bedrijven hebben veel bijgedragen aan Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaigne</a>."
+      },
+      "individual": {
+        "title": "Belangrijke individuele sponsors",
+        "explanation": "Deze mensen hebben een grote bijdrage geleverd aan Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaigne</a>."
+      },
+      "backers": {
+        "title": "Backers",
+        "explanation": "van <a href=\"http://igg.me/at/sandstorm\">onze Indiegogo campaigne &gt;</a>",
+        "anonymous": "en %s anonieme bijdragers",
+        "loading": "Laden..."
+      },
+      "dependencies": {
+        "title": "Gebruikte werken van derde partijen",
+        "license": "licentie",
+        "explanation": "Deze werken zijn eigendom van de respectieve auters en worden gebruikt onder de voorwaarden van hun respectieve licenties"
+      },
+      "copyright": {
+        "title": "Copyright",
+        "license": "De Sandstorm implementatie is copyright van Sandstorm Development Group, Inc. en bijdragers. De implementatie is uitgebracht onder de Apache License versie 2.0",
+        "trademark": "\"Sandstorm\" en het Sandstorm logo zijn trademarks van Sandstorm Development Group, Inc., en mogen niet gebruikt worden voor het adverteren van afgeleide werken of commerciële diensten zonder geschreven toestemming van Sandstorm Development Group, Inc."
+      },
+      "terms": {
+        "license": "Licentie",
+        "terms": "Gebruiksvoorwaarden",
+        "privacy": "Privacy beleid"
+      }
+    }
+  },
+  "grains": {
+    "title": "Korrels",
+    "grainView": {
+      "notFoundWithId": "Geen korrels gevonden met ID %s.",
+      "openWithWhichIdentity": "Wilt u uw identiteit openbaren aan deze korrel of anoniem blijven?",
+      "openInIncognitoMode": "Open in Incognito Mode",
+      "revealMyIdentity": "Maak mijn identiteit bekend"
+    },
+    "grainInMyTrash": {
+      "explanation": "Deze korrel zit in uw vuilnisbak. U kunt er geen toegang tot krijgen tenzij u deze hersteld naar uw hoofdlijst",
+      "restore": "Herstellen naar hoofdlijst"
+    },
+    "grainInOwnersTrash": {
+      "explanation": "U kunt geen toegang meer krijgen tot deze korrel omdat de eigenaar het naar de vuilnisbak heeft verplaatst."
+    },
+    "grainOwnerSuspended": {
+      "explanation": "U kunt geen toegang meer krijgen tot deze korrel omdat het account van de eigenaar is geschorst."
+    },
+    "wrongIdentity": {
+      "explanation": "Deze link was bedoeld voor de gebruiker: "
+    },
+    "requestAccess": {
+      "permissionDenied": "U heeft geen toestemming om toegang te krijgen tot deze korrel",
+      "requestAccessHint": "Toegang aanvragen",
+      "requestAccess": "Toegang aanvragen",
+      "warnIdentityRevealing": "Toegang aanvragen maakt uw identiteit bekend aan de eigenaar van deze korrel.",
+      "sendRequest": "Uw aanvraag verzenden...",
+      "waitForApproving": "Uw aanvraag is verzonden, u zult een email ontvangen als uw aanvraag wordt goedgekeurd.",
+      "requestFailed": "Uw aanvraag is mislukt omdat: %s",
+      "signInPlease": "Log alstublieft in om toegang aan te vragen"
+    },
+    "invalidToken": {
+      "invalidToken": "Ongeldig kenteken: %s"
+    },
+    "revokedShareLink": {
+      "linkRevoked": "Sorry, deze link is ingetrokken."
+    },
+    "grainTitle": {
+      "was": "was: %s",
+      "renamedFrom": "hernoemd van: %s"
+    },
+    "grainDeleteButton": {
+      "hint": "Verplaatsen naar vuilnisbak",
+      "text": "Verplaatsen naar vuilnisbak"
+    },
+    "grainDebugLogButton": {
+      "hint": "Laat debug log zien",
+      "text": "Log"
+    },
+    "grainBackupButton": {
+      "hint": "Download Backup",
+      "text": "Backup"
+    },
+    "grainBackupPopup": {
+      "title": "Download Backup",
+      "warning": "Waarschuwing! Het herstellen van deze backup werkt misschien niet op de manier hoe u verwacht.",
+      "processing": "Backup voorbereiden...",
+      "cancelHint": "annuleren",
+      "cancel": "Annuleren",
+      "confirmHint": "download backup",
+      "confirm": "Download backup"
+    },
+    "grainRestartButton": {
+      "hint": "Herstart App",
+      "text": "Herstart"
+    },
+    "grainApiTokenButton": {
+      "hint": "Websleutel opvragen",
+      "text": "Websleutel&nbsp;opvragen"
+    },
+    "grainApiTokenPopup": {
+      "title": "Websleutels",
+      "processing": "Genereren...",
+      "cancel": "Annuleren",
+      "copyForExternalApp": "Kopieer deze websleutel en geeft het aan de externe app:",
+      "back": "Ga terug",
+      "description": "Een websleutel stelt u in staat om een externe app (bijvoorbeeld een mobile app) te verbinden met deze app",
+      "labelTitle": "Label:",
+      "labelPlaceholder": "b.v. 'Android app'",
+      "roleTitle": "Rol:",
+      "permissionTitle": "volledige toegang",
+      "create": "Aanmaken",
+      "webkeyListTitle": "Uw bestaande websleutels:",
+      "revokeHint": "Intrekken",
+      "revoke": "Intrekken"
+    },
+    "grainShareButton": {
+      "hint": "Toegang tot deze korrel delen",
+      "text": "Toegang delen"
+    },
+    "whoHasAccessPopup": {
+      "title": "Wie heeft er toegang",
+      "noLoggedInUsers": "Er zijn nog geen ingelogde gebruikers die uw links hebben bezocht.",
+      "nobody": "U heeft aan niemand toegang verleend.",
+      "addedBy": "toegevoegd door",
+      "revokeHint": "Intrekken",
+      "revoke": "Intrekken",
+      "hasCustomPermissions": "[heeft aangepaste rechten]"
+    },
+    "selectRole": {
+      "hint": "selecteer een rol"
+    },
+    "emailInviteTab": {
+      "demoModeAlert": "Deel emails kunnen niet worden verzonden in demo mode. Maak een account aan om deel emails te versturen, of maak een deellink aan.",
+      "personalMessagePlaceholder": "Type een persoonlijk bericht (optioneel)...",
+      "send": "Versturen",
+      "sending": "Versturen...",
+      "success": "Succesvol verstuurd.",
+      "reset": "Stuur meer uitnodigingen",
+      "startOver": "<< Begin opnieuw"
+    },
+    "shareableLinkTab": {
+      "withRoles": "Iedereen met deze link:",
+      "withoutRoles": "Iedereen met deze link heeft toegang tot deze korrel",
+      "labelPlaceholder": "Label (optioneel)",
+      "labelExplanation": "Gebruik een label om uzelf te herinneren naar wie u deze unieke link hebt verstuurd.",
+      "create": "Aanmaken",
+      "creating": "Genereren...",
+      "success": "Kopieer deze link",
+      "reset": "Maak een andere link aan",
+      "cancel": "Annuleren"
+    },
+    "shareWithOthers": {
+      "title": "Deel met anderen",
+      "sendInviteTab": "Stuur een uitnodiging",
+      "shareableLinkTab": "Maak een deellink",
+      "whoHasAccess": "Zie in wie toegang heeft"
+    },
+    "grainSharePopup": {
+      "oldSharingModelDescription": "Deze korrel maakt gebruik van het oude deel model. U kunt het delen door de URL uit de locatiebalk te kopieren en plakken.",
+      "upgradeDescription": "U kunt deze korrel upgraden naar het nieuwe model, maar de mensen met wie u deze korrel eerder heeft gedeeld zullen hun toegang verliezen; u zult de korrel opnieuw met hen moeten delen.",
+      "upgradeWarning": "Upgraden kan niet ongedaan worden gemaakt.",
+      "upgrade": "upgrade",
+      "openInIncognitoMode": "U kijkt anoniem naar deze korrel",
+      "toShareAccess": "Kopieer deze link om toegang te delen:",
+      "openNonAnonymouslyHead": "Voor meer deel opties moet u",
+      "openNonAnonymouslyLink": "deze korrel niet-anoniem openen",
+      "openNonAnonymouslyTail": ".",
+      "signIn": "Voor meer deel opties, log alstublieft in."
+    },
+    "grainPowerboxRequest": {
+      "powerboxRequestHint": "Powerbox aanvraag",
+      "powerboxRequest": "P"
+    },
+    "grainPowerboxOffer": {
+      "powerboxOfferHint": "Powerbox aanbod",
+      "powerboxOffer": "P"
+    },
+    "grainPowerboxOfferPopup": {
+      "title": "Powerbox Aanbod",
+      "dismiss": "Sluiten"
+    },
+    "share": {
+      "grainNotFoundWithId": "Geen korrel gevonden met ID %s. Misschien moet u met een ander account inloggen?",
+      "signIn": "U moet ingelogd zijn om toegang te verlenen tot deze korrel"
+    },
+    "grainlist": {
+      "sandstormGrainListPage": {
+        "introButton": {
+          "hint": "Wat is een korrel?"
+        },
+        "mainListButton": "Bekijk hoofdlist",
+        "trashButton": "Bekijk vuilnisbak (%s)",
+        "restoreButton": "Backup herstellen...",
+        "search": {
+          "placeholder": "zoeken"
+        },
+        "usageInfo": {
+          "quota": "__count__ van __quota__ korrels",
+          "size": "__size__ van __total__ gebruikt"
+        },
+        "trash": {
+          "emptyButton": "Vuilnisbak leegmaken",
+          "explanation": "(Korrels worden na 30 dagen permanent verwijdert uit de vuilnisbak. Herstel een korrel naar de Hoofdlijst om deze te behouden.)"
+        },
+        "noGrains": {
+          "notFound": "<strong>Geen overeenkomende korrels gevonden.</strong>",
+          "inTrash": "Sommige korrels in uw vuilnisbak komen overeen met uw zoekopdracht.",
+          "trashButton": "Vuilnisbak bekijken",
+          "empty": "<strong>Vuilnisbak is leeg.</strong>",
+          "explanation": "U heeft nog geen korrels.",
+          "hasApps": "Selecteer een app en maak uw eerste korrel aan.",
+          "hasNoApp": "Installeer een app om uw eerste korrel aan te maken."
+        },
+        "moveToTrash": "Verplaats naar vuilnisbak"
+      },
+      "sandstormGrainTable": {
+        "bulkAction": {
+          "disabledHint": "Om bulkacties te verrichten moet u eerst een aantal korrels in de lijst selecteren."
+        },
+        "tableHeader": {
+          "title": "Naam",
+          "size": "Grootte",
+          "lastUsed": "Laatste activiteit",
+          "ownership": "Van mij/Gedeeld",
+          "collaborators": "Bijdragers"
+        },
+        "tableBody": {
+          "was": "(was: %s)",
+          "renamedFrom": "(hernoemd van: %s)",
+          "new": "Ongeopend",
+          "mine": "Mijn korrel",
+          "shared": "Met mij gedeeld"
+        }
+      },
+      "contactAutocomplete": {
+        "contactInputBox": {
+          "placeholder": "Voer email adressen of namen in"
+        }
+      }
+    }
+  },
+  "notifications": {
+    "appUpdateNotificationItem": {
+      "title": "App updates zijn beschikbaar",
+      "appUpdates": "<strong>__name__</strong>: versie __version__ is beschikbaar",
+      "submitButton": {
+        "hint": "Update alle bovenstaande apps",
+        "text": "Updates toepassen"
+      },
+      "dismissButton": {
+        "hint": "Negeer de bovenstaande updates",
+        "text": "Sluiten"
+      }
+    },
+    "mailingListBonusNotificationItem": {
+      "explanationWithBonus": "Abbonneer op onze nieuwsbrief en krijg <strong>%s bonus opslagruimte</strong> (1 tot 2 emails per maand).",
+      "submitButton": "Abboneren",
+      "dismissButton": "Nee bedankt"
+    },
+    "referralNotificationItem": {
+      "paidUser": "Krijg tot wel 30 GB extra met het",
+      "unpaidUser": "Onbeperkte korrels & tot 2 GB extra met het",
+      "link": "verwijzingsprogramma »",
+      "dismissButton": "Sluiten"
+    },
+    "adminNotificationItem": {
+      "explanation": "U kunt Sandstorm helpen door ons een aantal gebruikstatistieken te versturen. Klik hier voor meer informatie."
+    },
+    "backgroundedGrainNotificationItem": {
+      "title": "<strong>__grain__</strong> draait in de achtergrond:",
+      "cancelButton": {
+        "hint": "Stop de app in de achtergrond",
+        "text": "Annuleren"
+      }
+    },
+    "identityChangesNotificationItem": {
+      "explanation": "We zijn de manier waarop identiteiten in Sandstorm werken. Uw account zou hier door beïnvloed kunnen zijn. klik hier voor meer informatie."
+    },
+    "grainActivityNotificationItem": {
+      "title": "<strong>__sender__</strong> in <strong>__grain__</strong>:",
+      "dismissButton": {
+        "hint": "Sluit deze melding",
+        "text": "Sluiten"
+      }
+    }
+  },
+  "powerboxBuiltins": {
+    "uiViewPowerboxConfiguration": {
+      "explanation": "met rechten:",
+      "fullAccess": "Volledige toegang",
+      "connectButton": "Verbinden",
+      "chooseHostedObjectButton": "Verken korrel inhoud »"
+    },
+    "ipNetworkPowerboxCard": {
+      "explanation": "Admin: sta al het uitgaande netwerkverkeer toe",
+      "encryptedWith": "(versleuteld met %s)"
+    },
+    "ipInterfacePowerboxCard": {
+      "explanation": "Admin: sta al het binnenkomende netwerkverkeer toe"
+    },
+    "emailVerifierPowerboxCard": {
+      "verifyWith": "Verifieer e-mail adressen door middel van %s",
+      "verifyWithAnyService": "Verifieer e-mail adressen door middel van elke login service"
+    },
+    "identityPowerboxConfiguration": {
+      "explanation": "met rechten:",
+      "fullAccess": "Volledige toegang",
+      "connectButton": "Verbinden"
+    },
+    "addNewVerifiedEmailPowerboxCard": {
+      "explanation": "Voeg een nieuw adres toe"
+    },
+    "httpUrlPowerboxCard": {
+      "useUrl": "Gebruik %s"
+    },
+    "httpArbitraryPowerboxCard": {
+      "explanation": "Specificeer URL..."
+    },
+    "httpArbitraryPowerboxConfiguration": {
+      "explanation": "Voer URL in:",
+      "placeholder": "https://example.com",
+      "connectButton": "Verbinden"
+    },
+    "httpOAuthPowerboxCard": {
+      "useService": "Gebruik %s"
+    },
+    "httpOAuthPowerboxConfiguration": {
+      "requstPermissionsFromService": "Rechten aanvragen van %s (zie popup)."
+    }
+  },
+  "styleguide": {
+    "title": "Sandstorm style guide",
+    "note": "(note: this is a work in progress.)",
+    "copyRules": {
+      "title": "Copy rules",
+      "rule1": "Be terse but clear.  Avoid technical terms where less-technical ones will do.",
+      "rule2": "Capitalize the first letter of the first word of a section heading or button.  Do not capitalize the second word, or anything else, unless referring to a proper noun like Google or GitHub.",
+      "rule3": "Use verbs for text on buttons. The button text should describe what clicking that button will do.",
+      "rule4": "Use nouns for text which is a link.  The link text should indicate what the link will take you to.",
+      "rule5": "Use nouns for basically everything else, too, to communicate the information architecture. Section headings should be nouns which describe the content of the section.  Labels should be nouns which describe the content of the field."
+    },
+    "styleRules": {
+      "title": "Style rules",
+      "rule1": "Stick to a limited color palette.  (TODO: add specific colors)",
+      "rule2": "Use typefaces no smaller than 13px for text content.  Readability is important and not everyone has young eyes.",
+      "rule3": "Make click targets no smaller than 32px square or 26px tall if appreciably wider.  Remember that due to Fitts' Law, larger click targets are easier to interact with."
+    },
+    "forms": {
+      "title": "Forms",
+      "rule1": "Use the <code>standard-form</code> class where appropriate.",
+      "rule2": "The primary action button of a form should be at the bottom right of the form. Secondary buttons should line up to the left of that primary action button.",
+      "rule3": "When providing text input fields, place labels above the input, not side-by-side or inside the field as placeholder text.  Place additional explanation or instructions below the input. Placeholder text should be used for examples, not instructions.",
+      "rule4": "Forms are generally used for transactional interactions, where the user cares about the success or failure of the application.  Avoid optimistic UI in favor of multi-state UI which communicates network activity, success, and failure.  A common pattern is:",
+      "rule4-1": "Have the default state of the form.  Disable a save button until the user makes a change.",
+      "rule4-2": "When the user clicks an action button, start the RPC, and disable the entire form to indicate that the action is underway.",
+      "rule4-3": "When the RPC completes, if the RPC failed, show an error message at the top of the context over which the action applies.  If the RPC succeeded, either indicate a success message (again, at the top of the context over which the action applies) or if this was a modal interaction and the completion of the RPC indicates successful completion of the workflow, dismiss the form with no additional message."
+    },
+    "example": {
+      "title": "An example:",
+      "label": "Email",
+      "placeholder": "alice@example.com",
+      "subtext": "You might want to receive notifications.",
+      "submitButton": "Save",
+      "discardButton": "Discard"
+    }
+  },
+  "admin": {
+    "title": "Admin",
+    "admin": {
+      "newAdmin": {
+        "title": "Admin panel",
+        "wildcardHostBroken": "WAARSCHUWING: het lijkt erop dat de WILDCARD_HOST van deze server niet goed is ingesteld. Totdat u dit probleem oplost kunt u geen gebruik maken van apps. U kunt meer informatie lezen in <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\"> de Sandstorm documentatie</a> en in de JavaScript console van uw browser. U moet DNS en SSL/TLS certificaten aanpassen, of het sandstorm.conf bestand bewerken. Als u geen informatie in de JS console kunt zien of wilt testen of u het probleem hebt opgelost, herlaad dan deze pagina om de test opnieuw uit te voeren. als u nogsteeds problemen heeft <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">open dan alstublieft een issue..</a>",
+        "websocketBroken": "WAARSCHUWING: deze server lijkt niet in staat te zijn om een WebSocket aan te maken. Sandstorm zal lijken te werken zonder problemen, maar veel apps zullen niet goed worden uitgevoerd. <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\">Meer informatie.</a> Meestal wordt dit veroorzaakt door een reverse proxy zoals nginx of Apache die opnieuw geconfigureerd moet worden. Als u denkt dat dit een fout is, herlaad dan deze pagina of <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">open een issue.</a>",
+        "hasSetupToken": "U bent niet ingelogd als een administrator, maar u heeft wel een setup token. U kunt <a href=\"/setup\">de setup wizard bezoeken</a> of <a href=\"/admin/status\">de systeemlog bekijken</a>.",
+        "hasNoSetupToken": "U bent niet ingelogd als een administrator. Log in als een administrator om het administrator panel te bezoeken of genereer een token vanaf de opdrachtregel door `sandstorm admin-token` uit te voeren."
+      },
+      "newAdminRoot": {
+        "configuration": {
+          "title": "Configuratie"
+        },
+        "management": {
+          "title": "Beheer"
+        }
+      }
+    },
+    "identityProviders": {
+      "name": "Inlogproviders",
+      "providers": {
+        "emailPassLess": "E-mail (wachtwoordloos)"
+      },
+      "subtext": "Hoe gebruikers inloggen.",
+      "newAdminIdentity": {
+        "explanation": "Kies welke diensten gebruikers mogen gebruiken om zich te identificeren. Iedereen kan inloggen, maar alleen de gebruikers die u uitnodigt kunnen apps installeren of korrels aanmaken.",
+        "organizationLinkPrefix": "Om organisatie lidmaatschap en instellingen te configureren, bekijk",
+        "organizationLink": "organisatie instellingen",
+        "organizationLinkPostfix": "."
+      },
+      "adminIdentityProviderConfigureEmail": {
+        "title": "Email login configuratie",
+        "error": "Opslaan van veranderingen mislukt: %s",
+        "warning": "Opmerking: om gebruik te maken van email login moet u hierna email bezorging configureren.",
+        "explanation": "Email login heeft erder geen configuratie opties.",
+        "saveButton": "Opslaan",
+        "enableButton": "Inschakelen",
+        "cancelButton": "Annuleren",
+        "disableButton": "Uitschakelen"
+      },
+      "googleLoginSetupInstructions": {
+        "explanation": "Als eerste heeft u een Google Client ID nodig. Volg de volgende stappen:",
+        "step1": "Ga naar <a href=\"https://console.developers.google.com/\" target=\"blank\">https://console.developers.google.com/</a>",
+        "step2": "Klik op \"Project maken\", wacht tot Google klaar is met provisioning indien nodig.",
+        "step3": "In de linker zijbalk, ga naar \"Inloggegevens\" en aan de rechter kant \"OAuth toestemmingsscherm\". Voer een email adres en productnaam in en klik op opslaan.",
+        "step4": "Ga in de linker zijbalk naar \"Inloggegevens\". Klik op de \"Inloggegevens maken\" knop, en kies dan voor \"Client-ID OAuth\" als het type.",
+        "step5": "Selecteer \"Webapp\" als het applicatie type.",
+        "step6": "Stel Geautoriseerde JavaScript bronnen in op: <span class=\"idp-config-url\">%s</span>",
+        "step7": "Stel Geautoriseerde omleidings-URI's in op: <span class=\"idp-config-url\">%s/_oauth/google</span>",
+        "step8": "Rond af door te klikken op \"Maken\"."
+      },
+      "adminIdentityProviderConfigureGoogle": {
+        "title": "Google login configuratie",
+        "formerBaseUrlWarning": "Deze server is verplaatst van <code>__former__</code> naar <code>__current__</code>. U zult <a target=\"_blank\" href=\"https://console.developers.google.com/\">https://console.developers.google.com/</a> moeten bezoeken en \"Authorized Javascript Origins\" en \"Authorized Redirect URI\" voor deze Client ID bij moeten werken om de waarden hieronder te bevatten.",
+        "error": "Opslaan van veranderingen mislukt: %s",
+        "explanation": "Kopieer daarna uw Client ID en Client secret naar hieronder:",
+        "clientId": "Client ID:",
+        "clientSecret": "Client secret:",
+        "saveButton": "Opslaan",
+        "enableButton": "Inschakelen",
+        "cancelButton": "Annuleren",
+        "disableButton": "Uitschakelen"
+      },
+      "githubLoginSetupInstructions": {
+        "explanation": "Eerst heeft u een Github Client ID en Client secret nodig, volg deze stappen:",
+        "step1": "Ga naar <a href=\"https://github.com/settings/applications/new\" target=\"blank\">https://github.com/settings/applications/new</a>",
+        "step2": "Stel Homepage URL in op: <span class=\"idp-config-url\">%s</span>",
+        "step3": "Stel Authorization callback URL in op: <span class=\"idp-config-url\">%s_oauth/github</span>"
+      },
+      "adminIdentityProviderConfigureGitHub": {
+        "title": "GitHub login configuratie",
+        "formerBaseUrlWarning": "Deze server is verplaatst van <code>__former__</code> naar <code>__current__</code>. U zult moeten gaan naar <a target=\"_blank\" href=\"https://github.com/settings/developers\">https://github.com/settings/developers</a> en de Homepage URL en Authorization callback URL voor deze applicatie bijwerken naar de waardes hieronder.",
+        "explanation": "Kopieer daarna uw Client ID en Client secret hieronder",
+        "clientId": "Client ID:",
+        "clientSecret": "Client secret:",
+        "saveButton": "Opslaan",
+        "enableButton": "Inschakelen",
+        "cancelButton": "Annuleren",
+        "disableButton": "Uitschakelen"
+      },
+      "adminIdentityProviderConfigureLdap": {
+        "title": "LDAP login configuratie",
+        "error": "Opslaan van veranderingen mislukt: %s",
+        "url": {
+          "label": "LDAP server URL:",
+          "subtext": "bv. <code>ldap://ldap.example.com:389</code>.  Gebruik poort 636 voor SSL."
+        },
+        "searchBindDn": {
+          "label": "Bind user DN",
+          "subtext": "De DN om aan te binden tijdens het zoeken naar een gebruiker, b.v. <code>cn=admin,ou=users,dc=example,dc=com</code>.  Optioneel, maar nodig wanneer uw server geen ongeautoriseerde zoekopdrachten toestaat."
+        },
+        "searchBindPassword": {
+          "label": "Bind user wachtwoord",
+          "subtext": "Optioneel, nodig voor het specificeren van de bind DN zoals hierboven."
+        },
+        "base": {
+          "label": "Base DN",
+          "subtext": "Het hoofd object om onder te zoeken naar gebruikersaccount nodes, bv. <code>ou=users,dc=example,dc=com</code>"
+        },
+        "searchUsername": {
+          "label": "LDAP gebruikersnaam attribuut",
+          "subtext": "Het LDAP attribuut op een gebruikersobject dat de gebruikersnaam representeert (wet gebruikers invullen als gebruikersnaam tijdens het inloggen)."
+        },
+        "nameField": {
+          "label": "LDAP gegeven naam attribuut",
+          "subtext": "Het LDAP attribuut op een gebruikersobject dat de volledige schermnaam van een gebruiker representeert."
+        },
+        "emailField": {
+          "label": "LDAP email attribuut",
+          "subtext": "Het LDAP attribuut op een gebruikersobject dat het email adres representeert."
+        },
+        "filter": {
+          "label": "Aanvullende LDAP filter criteria",
+          "subtext": "Een optioneel LDAP query fragment dat mee wordt gestuurd tijdens het zoeken naar gebruikers. Dit wordt niet vaak gebruikt. Zie <a target=\"_blank\" href=\"http://www.ietf.org/rfc/rfc2254.txt\">RFC2254</a>."
+        },
+        "caCert": {
+          "label": "LDAP CA certificaat",
+          "placeholder": "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----",
+          "subtext": "Dit is alleen maar nodig als uw server SSL ondersteund en gebruik maakt van een prive CA die zich niet in de gemeenschappelijke vertrouwde set bevindt. Het werkt NIET om hier het certificaat van de LDAP server zelf in te voeren -- het moet een certificaat zijn van een CA die het certificaat van de LDAP server heeft ondertekend."
+        },
+        "saveButton": "Opslaan",
+        "enableButton": "Inschakelen",
+        "cancelButton": "Annuleren",
+        "disableButton": "Uitschakelen"
+      },
+      "adminIdentityProviderConfigureSaml": {
+        "title": "SAML login configuratie",
+        "explanation": "Uw SAML IDP moet geconfigureerd zijn om een persistente nameID terug te geven. Als u daarnaast geen gebruik makt van Active Directory <strong>moet</strong> u uw IDP configureren om twee extra attributen te voorzien, <code>email</code> en <code>displayName</code>",
+        "serviceUrl": "De Service URL van deze server is: <code>%s</code>",
+        "logoutUrl": "De Service Logout URL van deze server is: <code>%s</code>",
+        "metadataUrlAt": "Als uw SAML IDP in staat is om service provider metadata uit te lezen van een URL, dan kunt u deze wijzen naar: <code><a href=\"__href__\" target=\"_blank\">__text__</a></code>",
+        "error": "Opslaan van veranderingen mislukt: %s",
+        "entryPoint": {
+          "label": "SAML provider entry point URL:",
+          "placeholder": "https://YOUR_SAML_PROVIDER.com/sso/saml"
+        },
+        "logout": {
+          "label": "SAML provider logout URL (optioneel):",
+          "placeholder": "https://YOUR_SAML_PROVIDER.com/sso/saml/SingleLogoutService"
+        },
+        "publicCert": {
+          "label": "SAML certificaat de bovenstaande provider:",
+          "placeholder": "base64 gecodeerd certificaat (bv. MIID...8F==)"
+        },
+        "entityId": {
+          "label": "Entity ID:"
+        },
+        "saveButton": "Opslaan",
+        "enableButton": "Inschakelen",
+        "cancelButton": "Annuleren",
+        "disableButton": "Uitschakelen"
+      },
+      "adminIdentityProviderTable": {
+        "title": "Login provider",
+        "status": "Status"
+      },
+      "adminIdentityRow": {
+        "enabled": "Ingeschakeld",
+        "disabled": "Niet ingeschakeld",
+        "baseUrlChanged": {
+          "explanation": "Uitgeschakeld vanwege BASE_URL verandering",
+          "reconfigureButton": "herconfigureren"
+        },
+        "configureButton": {
+          "hint": "Configureer %s login",
+          "text": "Configureer"
+        }
+      }
+    },
+    "organization": {
+      "name": "Organisatie instellingen",
+      "subtext": "Snellere onboarding en samenwerking voor grote teams.",
+      "organizationSettingsBlurb": {
+        "explanation": "Sandstorm maakt het mogelijk om een organisatie te definiëren. U kunt automatisch dezelfde regels voor alle leden van uw organisatie instellen. Gebruikers in de organisatie kunnen automatisch inloggen, apps installeren en korrels aanmaken."
+      },
+      "newAdminOrganization": {
+        "success": "Veranderingen opgeslagen.",
+        "error": "Veranderingen opslaan mislukt: %s",
+        "membership": {
+          "title": "Organisatie lidmaatschap",
+          "emailToggle": {
+            "label": "Gebruikers geverifieerd met email adres.",
+            "subtext": "Opmerking: uitgeschakeld omdat email login niet is geconfigureerd."
+          },
+          "emailDomain": {
+            "label": "Domein:",
+            "subtext": "Gebruikers met een email adres op dit domein zullen lid zijn van deze servers organisatie."
+          },
+          "gappsToggle": {
+            "label": "Gebruikers geverifieerd via Google Apps voor Werk",
+            "subtext": "Opmerking: uitgeschakeld omdat Google login niet is geconfigureerd."
+          },
+          "gappsDomain": {
+            "label": "Domein:",
+            "subtext": "Gebruikers met een Google Apps voor Werk account onder dit domein zullen lid zijn van deze servers organisatie."
+          },
+          "ldapToggle": {
+            "label": "Gebruikers geverifieerd via LDAP",
+            "subtext": "Opmerking: uitgeschakeld omdat LDAP login niet is geconfigureerd."
+          },
+          "samlToggle": {
+            "label": "Gebruikers geverifieerd via SAML",
+            "subtext": "Opmerking: uitgeschakeld omdat SAML login niet is geconfigureerd."
+          }
+        },
+        "settings": {
+          "title": "Organisatie instellingen",
+          "disallowGuests": {
+            "label": "Verbied samenwerking met gebruikers buiten de organisatie.",
+            "subtext": "Gebruikers zullen in moeten loggen als een gebruiker van uw organisatie om deel links te bekijken. Gast toegang wordt uitgeschakeld."
+          },
+          "shareContacts": {
+            "label": "Maak alle organisaties zichtbaar voor elkaar.",
+            "subtext": "Deze instelling voegt gebruikers binnen een organisatie automatisch toe aan elkaars contactenlijst zodat ze korrels met elkaar kunnen delen. Schakel dit uit als u gebruikers heeft waarvan de entiteit verborgen moet blijven voor anderen."
+          }
+        },
+        "saveButton": "Opslaan"
+      }
+    },
+    "emailConfig": {
+      "name": "Email configuratie",
+      "subtext": "Hoe email wordt verzonden naar gebruikers.",
+      "newAdminEmailConfig": {
+        "outbound": {
+          "title": "Uitgaande email",
+          "warning": "<strong>Email is niet geconfigureerd</strong> Email-gerelateerde functionaliteit zoals emal login, meldingen, deel uitnodiging en het aanvragen van toegang zullen niet beschikbaar blijven totdat u email configureert."
+        },
+        "howItWorks": {
+          "title": "Hoe Sandstorm email gebruikt",
+          "explanation": "Sandstorm en Sandstorm apps kunnen email notificaties verzenden. Elke app kriijgt een uniek email adres, dus Sandstorm moet email kunnen verzenden van meerdere \"Van:\" adressen. Gmail SMTP zal daarom niet werken, maar er zijn andere gratis diensten beschikbaar. Bekijk voor meer informatie <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">de documentatie</a>."
+        },
+        "success": "Veranderingen opgeslagen.",
+        "error": "Veranderingen opslaan mislukt: %s",
+        "address": {
+          "hostname": "SMTP host",
+          "port": "Poort",
+          "subtext": "Gebruik poort 25 voor SMTP (on-versleuteld of met StartTLS), port 465 voor met TLS versleutelde SMTPS."
+        },
+        "username": {
+          "label": "Gebruikersnaam (optioneel)"
+        },
+        "password": {
+          "label": "Wachtwoord (optioneel)"
+        },
+        "returnAddress": {
+          "label": "Email adres van de Sandstorm server",
+          "subtext": "Sandstorm zal login emails, notificatie van goedgekeurde toegangsverzoeken en andere emails vanaf dit adres versturen. Dit adres wordt ook gebruikt in de SMTP envelop."
+        },
+        "submitButton": "Configuratie opslaan",
+        "testButton": "Testen",
+        "disableButton": "Email uitschakelen"
+      },
+      "emailTestPopup": {
+        "title": "Stuur een test email",
+        "testAddress": {
+          "label": "Stuur test mail naar:"
+        },
+        "pending": "Versturen...",
+        "submitButton": "Verstuur test email",
+        "closeButton": "Sluiten"
+      },
+      "emailDisablePopup": {
+        "title": "Email echt uitschakelen?",
+        "explanation": "Dit zal alle bezorging van uitgaande mail voor deze server uitschakelen, inclusief delen via email, email login (indien ingeschakeld) en email notificaties naar gebruikers.",
+        "disableButton": "Email uitschakelen",
+        "closeButton": "Sluiten"
+      }
+    },
+    "personalization": {
+      "name": "Personalisatie",
+      "subtext": "Stel een splash pagina in, servicevoorwaarden, privacybeleid, etc.",
+      "newAdminPersonalization": {
+        "serverTitle": {
+          "label": "Server titel:",
+          "subtext": "De naam van deze server, zoals gebruikt tijdens het communiceren met gebruikers."
+        },
+        "splashUrl": {
+          "label": "Splash URL (experimenteel):",
+          "subtext": "Deze pagina wordt achter het login dialoogvenster weergegeven (de homepagina wanneer u niet bent ingelogd). Om veiligheidsredenen moet deze pagina binnen de Sandstorm servers wildcard host worden gehost, anders wordt de pagina geblokkeerd door <code>Content-Security-Policy</code>). We suggereren een statische web publising app zoals <a target=\"_blank\" href=\"https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh/?host=%s\">Hacker CMS</a> om de inhoud te hosten.<strong>WAARSCHUWING: deze functie is experimenteel, de stijl en positionering van het login scherm kunnen veranderen zonder kennisgeving.</strong> Laat het ons alstublieft weten als u het graag gestabiliseerd zou willen hebben."
+        },
+        "signupDialog": {
+          "label": "Aanmeldingsdialoog:",
+          "subtext": "Deze tekst wordt weergegeven aan gebruikers die op aanmeldingslinks klikken."
+        },
+        "termsOfService": {
+          "label": "Servicevoorwaarden URL:",
+          "placeholder": "https://example.com/tos",
+          "subtext": "Indien ingevuld worden nieuwe gebruikers verplicht om akkoord te gaan met de gelinkte servicevoorwaarden."
+        },
+        "privacyPolicy": {
+          "label": "Privacybeleid URL:",
+          "placeholder": "https://example.com/privacy",
+          "subtext": "Indien ingevuld worden nieuwe gebruikers verplicht om akkoord te gaan met het gelinkte privacybeleid."
+        },
+        "whitelabeling": {
+          "title": "Whitelabeling",
+          "logo": {
+            "label": "Aangepast logo op het inlogdialoog",
+            "resetButton": "Standaard gebruiken",
+            "uploadButton": "Logo uploaden"
+          },
+          "hideTroubleshooting": {
+            "label": "Verberg probleemoplossing knop"
+          },
+          "hideAbout": {
+            "label": "Verberg \"Over Sandstorm\" links"
+          },
+          "hideSendFeedback": {
+            "label": "Verberg \"Stuur feedback\" link"
+          },
+          "useServerTitleForHomeText": {
+            "label": "Gebruik server titel (hierboven) voor home link",
+            "subtext": "Vervang het standaard \"Sandstorm\" label op de link helemaal linksbovenin met wat u hierboven als Server titel heeft opgegeven."
+          },
+          "customLoginProviderName": {
+            "label": "Aangepaste tekst op de inlog knop",
+            "subtext": "Vervangt de tekst \"met LDAP\" en \"met SAML\" op de inlogpagina met de opgegeven tekst."
+          }
+        },
+        "saveButton": "Opslaan"
+      }
+    },
+    "preinstalledApps": {
+      "name": "Vooraf geïnstalleerde apps",
+      "subtext": "Kies apps om voor gebruikers te voorinstalleren.",
+      "newAdminPreinstalledApps": {
+        "explanation": "Apps die up op deze pagina configureert om vooraf te installeren worden automatisch geïnstalleerd (onder /apps geplaatst) voor nieuwe gebruikers.",
+        "productivitySuite": {
+          "label": "Productiviteit",
+          "subtext": "We raden het aan om deze kern apps te installeren die voor de meeste gebruikers nuttig zijn."
+        },
+        "systemSuite": {
+          "label": "Systeem apps",
+          "subtext": "We raden het aan om deze apps te installeren die de mogelijkheden van Sandstorm veel uitbreiden."
+        },
+        "allApps": {
+          "label": "Alle apps op de markt",
+          "subtext": "De aangevinkte apps hieronder worden standaard geïnstalleerd voor alle nieuwe gebruikers.",
+          "lessButton": "Laat minder apps zien",
+          "moreButton": "Laat %s meer apps zien"
+        },
+        "saveButton": "Opslaan"
+      },
+      "_appRow": {
+        "download": {
+          "success": "Gedownload",
+          "failed": "Mislukt"
+        }
+      }
+    },
+    "appSources": {
+      "name": "App bronnen",
+      "subtext": "Waar te zoeken naar apps and updates.",
+      "newAdminAppSources": {
+        "appMarketUrl": {
+          "label": "App markt URL",
+          "subtext": "De \"Install...\" knop op de Apps pagina zal naar deze URL linken."
+        },
+        "enableAppUpdates": {
+          "label": "Schakel app update notificaties in",
+          "subtext": "Updates voor apps zullen dagelijks door de Sandstorm server worden gedownload en notificaties worden gestuurd naar de gebruikers met de vraag of ze hun geïnstalleerde apps willen updaten."
+        },
+        "appIndexUrl": {
+          "label": "App index URL",
+          "subtext": "Dit is de URL die de Sandstorm server zal controleren om te leren over app updates."
+        },
+        "saveButton": "Opslaan",
+        "restoreButton": "Standaardinstellingen herstellen"
+      }
+    },
+    "networking": {
+      "name": "Netwerk",
+      "altName": "Beveiliging",
+      "subtext": "Beheer hoe er toegang wordt verkregen tot het netwerk.",
+      "newAdminNetworking": {
+        "ipBlacklist": {
+          "label": "Server-side request IP blacklist:",
+          "subtext": "Gebruikers worden verboden om aanvragen naar deze IP adressen te doen. Hieronder valt het maken van een aavraag vanuit een app, het downloaden van een SPK van door de gebruiker opgegeven URL, etc. U kunt een IP adres of netwerk (In CIDR notatie, bv. \"127.0.0.0/8\" per regel. De standaardwaarden bevatten locale en privé netwerkadressen. Onthoud dat deze instelling genegeerd kan worden wanneer er gebruik wordt gemaakt van een proxy, de proxy moet zijn eigen blacklist implementeren."
+        },
+        "saveButton": "Opslaan",
+        "restoreButton": "Standaardinstellingen herstellen"
+      }
+    },
+    "users": {
+      "name": "Gebruikers",
+      "subtext": "Beheer alle gebruikers op deze Sandstorm installatie."
+    },
+    "userAccounts": {
+      "newAdminUserTableRow": {
+        "admin": {
+          "hint": "Administrator",
+          "cap": "A"
+        },
+        "user": {
+          "hint": "Gebruiker",
+          "cap": "G"
+        },
+        "visitor": {
+          "hint": "Bezoeker",
+          "cap": "B"
+        },
+        "unknownIdentity": "Onbekende credential",
+        "unknownIdentifier": "onbekende identifier",
+        "manageButton": "Beheren"
+      },
+      "newAdminUserTable": {
+        "header": {
+          "name": "Naam",
+          "credentials": "Credentials",
+          "created": "Aangemaakt",
+          "lastActive": "Laatst actief",
+          "actions": "Acties"
+        },
+        "inviteLink": "Nieuwe gebruiker uitnodigen",
+        "notFound": "Er kwamen geen gebruikers overeen met uw filter.",
+        "processing": "Gebruikers laden..."
+      },
+      "newAdminUsers": {
+        "search": {
+          "placeholder": "zoeken"
+        },
+        "filter": {
+          "explanation": "Laat zien:",
+          "admin": "Administrator",
+          "user": "Gebruiker",
+          "visitor": "Bezoeker"
+        }
+      }
+    },
+    "userDetails": {
+      "newAdminUserDetailsIdentityTableRow": {
+        "profilePicture": {
+          "label": "Profielafbeelding"
+        },
+        "handle": {
+          "title": "Handle",
+          "emails": "E-mails"
+        },
+        "pronouns": {
+          "hint": "Voornaamwoord",
+          "label": "Voornaamwoord"
+        },
+        "emails": {
+          "hint": "E-mails",
+          "label": "E-mails",
+          "primary": "Primair",
+          "verified": "Geverifieerd",
+          "unverified": "On-geverifieerd",
+          "notFound": "Geen bekende e-mails"
+        },
+        "properties": {
+          "login": "Kan inloggen",
+          "org": "Org. lid"
+        },
+        "unkonwn": {
+          "profilePicture": {
+            "cell": "(onbekende naam)"
+          },
+          "service": {
+            "hint": "onbekende dienst",
+            "label": "(onbekende dienst)",
+            "cell": "(onbekende naam)"
+          },
+          "handle": {
+            "cell": "(onbekende handle)"
+          },
+          "pronouns": {
+            "cell": "(onbekende voornaamwoorden)"
+          },
+          "created": {
+            "cell": "onbekende aanmaakdatum"
+          },
+          "lastActive": {
+            "cell": "onbekende activiteit datum"
+          }
+        }
+      },
+      "newAdminUserDetailsIdentityTable": {
+        "header": {
+          "credential": "Credential",
+          "created": "Aangemaakt",
+          "lastActive": "Laatst actief",
+          "properties": "Eigenschappen"
+        }
+      },
+      "newAdminUserDetails": {
+        "role": {
+          "title": "Rol",
+          "admin": {
+            "label": "Administrator",
+            "explanation": "Beheert alle accounts. Kan apps installeren, kan korrels aanmaken en de server beheren.",
+            "isAdmin": "Huidige rol",
+            "isNotAdmin": "Promoveren naar administrator"
+          },
+          "user": {
+            "label": "Gebruiker",
+            "explanation": "Kan apps installeren en korrels aanmaken.",
+            "isUser": "Huidige rol",
+            "isAdmin": "Demoveren naar gebruiker",
+            "isNotUser": "Promoveren naar gebruiker"
+          },
+          "visitor": {
+            "label": "Bezoeker",
+            "explanation": "Kan gedeelde korrels bekijken en verder delen, maar kan niet zelf korrels aanmaken of apps installeren.",
+            "isVisitor": "Huidige rol",
+            "isNotVisitor": "Demoveren naar bezoeker"
+          }
+        },
+        "credentials": {
+          "title": "Credentials"
+        },
+        "profile": {
+          "title": "Profiel"
+        },
+        "status": {
+          "title": "Status",
+          "deleting": "Geschorst - In afwachting van verwijdering %s",
+          "suspended": "Geschorst",
+          "active": "Actief",
+          "unsuspendButton": "Schorsing ongedaan maken",
+          "suspendButton": "Account schorsen",
+          "deleteButton": "Account verwijderen"
+        },
+        "deletePopup": {
+          "title": "Verwijder %s",
+          "explanation": "U staat op het punt om %s's account te markeren voor verwijdering. Eenmaal gemarkeerd wordt dit account geschorst, en admininstrators zullen 7 dagen hebben om de geplande verwijdering te stoppen door terug te keren naar deze pagina en te klikken op \"Schorsing ongedaan maken\". %s kan zelf <strong>niet</strong> de schorsing / verwijdering ongedaan maken.",
+          "detail": "Na 7 dagen wordt %s's account permanent verwijderd. Het verwijderen van dit account zal:",
+          "detail1": "Permanent korrels verwijderen aangemaakt door %s",
+          "detail2": "Alle deellinks intrekken die %s heeft aangemaakt",
+          "detail3": "%s verwijderen uit alle gebruikers contactenlijsten",
+          "detail4": "Alle credentials die eigendom zijn van dit account verwijderen (behalve credentials die ook geassocieerd zijn met een ander account).",
+          "deleteButton": "Account verwijderen",
+          "cancelButton": "Annuleren"
+        },
+        "suspendPopup": {
+          "title": "Schors %s",
+          "detail": "Het schorsen van dit gebruikersaccount zal ervoor zorgen dat:",
+          "detail1": "Korrels aangemaakt door %s niet kunnen worden geopend",
+          "detail2": "Deellinks aangemaakt door %s uitschakelen",
+          "detail3": "Dit geldt ook voor alle credentials die eigendom zijn van diet account (behalve credentials die ook geassocieerd zijn met een ander account)",
+          "suspendButton": "Account schorsen",
+          "cancelButton": "Annuleren"
+        },
+        "loading": "Gebruikersdata laden..."
+      }
+    },
+    "userInvite": {
+      "newAdminUserInviteLink": {
+        "explanation": "U kunt anderen uitnodigen om accounts aan te maken op uw server door hen een account aanmaaklink te geven. Mensen die u uitnodigt krijgen Gebruiker permissie en kunnen apps installeren en zelf korrels aanmaken. Als u alleen een specifieke korrel met iemand wilt delen kunt u dat doen via de korrels \"Toegang Delen\" menu.",
+        "title": "Maak een link",
+        "invite": {
+          "explanation": "Dit zal een account aanmaaklink aanmaken die u naar iemand kunt versturen.",
+          "createButton": "Link aanmaken"
+        }
+      },
+      "newAdminUserInviteEmail": {
+        "title": "Stuur een email",
+        "emailWarning": {
+          "explanation": "Email is niet geconfigureerd, het versturen van uitnodiging via email is daarom uitgeschakeld.",
+          "configureLink": "Email configureren"
+        },
+        "explanation": "Dit zal een link aanmaken en het versturen in een email.",
+        "to": {
+          "label": "Naar:",
+          "placeholder": "alice@email.com\nbob@example.com",
+          "subtext": "Email adressen, een per regel."
+        },
+        "subject": {
+          "label": "Onderwerp:"
+        },
+        "body": {
+          "label": "Body:",
+          "subtext": "<code>$KEY</code> zal worden vervangen door de gegenereerde link."
+        },
+        "sendButton": "Stuur uitnodiging"
+      },
+      "newAdminUserInvite": {
+        "title": "Uitnodigen"
+      }
+    },
+    "systemStatus": {
+      "name": "Systeem log",
+      "subtext": "Bekijk Sandstorms debug log",
+      "newAdminLogContents": {
+        "ellipsis": "..."
+      },
+      "newAdminStatus": {
+        "downloadButton": "Volledige log downloaden"
+      }
+    },
+    "stats": {
+      "name": "Statistieken",
+      "subtext": "Gebruiksstatistieken voor deze server bekijken.",
+      "subtext": "Gebruiksstatistieken voor deze server bekijken.",
+      "header": {
+        "date": "datum",
+        "users": "gebruikers",
+        "grains": "korrels",
+        "appName": "App naam",
+        "owners": "eigenaren",
+        "sharedUsers": "sharedUsers",
+        "daily": "dagelijks",
+        "weekly": "wekelijks",
+        "monthly": "maandelijks",
+        "forever": "voor altijd"
+      },
+      "body": {
+        "notFound": "Er zijn nog geen statistieken opgenomen.",
+        "loading": "Laden..."
+      },
+      "newAdminStats": {
+        "share": {
+          "title": "Anoniem publiceren naar het Sandstorm dev team",
+          "explanation": "We zouden graag willen weten hoeveel Sandstorm gebruikers er zijn om grafieken en dergelijken maken. Is het goed om de gegevens op deze pagina een keer per dag naar het Sandstorm team te sturen zodat we ze bij de totalen kunnen optellen? Statistieken die u verzend zijn anoniem.",
+          "enableButton": "Verstuur anonieme statistieken",
+          "disableButton": "Niet versturen",
+          "control": {
+            "explanation": "De ontwikkelaars van Sandstorm zouden graag willen weten hoeveel Sandstorm gebruikers er zijn om grafieken te maken en dergelijke.  U kunt helpen door te kiezen voor het versturen van de gegevens op deze pagina een kker per dag naar het Sandstorm team te versturen zodat we deze aan onze totalen kunnen toevoegen. Statistieken die worden gedeeld zijn allemaal anoniem.",
+            "label": "Anonieme statistieken rapportage naar sandstorm.io:",
+            "enabled": "Ingeschakeld",
+            "disabled": "Uitgeschakeld",
+            "disableButton": "Uitschakelen",
+            "enableButton": "Inschakelen"
+          }
+        },
+        "json": {
+          "title": "Als JSON bekijken",
+          "explanation": "Als u Sandstorm statistieken met een intern gereedschap wilt integreren dan kunt u deze geheime link gebruiken om de onderstaande tabellen als JSON op te vragen. U kunt deze link op elk moment intrekken door een nieuwe link aan te maken.",
+          "label": "Statistieken JSON link:",
+          "regenerateButton": "Nieuwe link genereren"
+        },
+        "userGrains": {
+          "title": "Gebruikers en korrels",
+          "current": "Op dit moment: __users__ gebruikers, __grains__ korrels",
+          "today": "Vandaag: __users__ gebruikers, __grains__ korrels"
+        },
+        "apps": {
+          "title": "Apps",
+          "label": "Selecteer een datum:"
+        }
+      }
+    },
+    "maintenanceMessage": {
+      "name": "Onderhoudsboodschap",
+      "subtext": "Laat mogelijke uitvaltijd weten aan gebruikers.",
+      "newAdminMaintenance": {
+        "explanation": "U kunt een onderhoudsboodschap instelling die aan alle gebruikers in de menubalk rechtsbovenin wordt getoond. Dit is nuttig voor het aankondigen van gepland onderhoud zodat gebruikers voorberijd kunnen zijn op eventuele uitvaltijd. Als de bericht tekst leeg is wordt er geen bericht getoond.",
+        "variables": "U kunt de volgende variabelen gebruiken in het \"Bericht tekst\" veld, deze worden automatisch vervangen door nuttige waarden:",
+        "variable1": "<code>$TIME</code> : Het tijd onderdeel van \"Onderhoudtijd\", omgezet naar de gebruikers lokale tijd (bv. \"1:15:45 PM\")",
+        "variable2": "<code>$DATE</code> : Het datum onderdeel \"Onderhoudtijd\", omgezet naar de gebruikers lokale tijd (bv. \"6/19/2015\")",
+        "variable3": "<code>$IN_COUNTDOWN</code> : Een aftelling tot \"Onderhoudtijd\" (bv. \"over 3 dagen\" of \"over 1 minuut\"). Laat \"any moment\" zien op de tijd opgegeven in  \"Onderhoudtijd\" en verdwijnt na een uur.",
+        "messageText": {
+          "label": "Berichttekst:",
+          "subtext": ""
+        },
+        "maintenanceTime": {
+          "label": "Onderhoudtijd:",
+          "subtext": "De tijd waarop u van plan bent om onderhoud te plegen, opgemaakt als \"%s\"."
+        },
+        "url": {
+          "label": "Link URL (optioneel):",
+          "subtext": "Indien ingesteld wordt het onderhoudbericht weergegeven als een klikbare link naar de opgegeven URL."
+        },
+        "saveButton": "Bericht instellen"
+      }
+    },
+    "networkCapabilities": {
+      "name": "Netwerk mogelijkheden",
+      "subtext": "Directe netwerktoegang voor korrels beheren.",
+      "newAdminNetworkCapabilitiesTableCapabilityRow": {
+        "adminAccount": "Administrator account %s",
+        "unknownGranter": "Onbekende toestemming gever",
+        "anyone": "Iedereen met het token",
+        "unknownRecipient": "Onbekende ontvanger",
+        "revoked": "Ingetrokken",
+        "revokeButton": "Intrekken"
+      },
+      "newAdminNetworkCapabilitiesTable": {
+        "header": {
+          "grantBy": "Toestemming gegeven door",
+          "grantTo": "Toestemming gegeven aan",
+          "grantTime": "Tijd",
+          "actions": "Acties"
+        },
+        "notFound": "Geen mogelijkheden gevonden."
+      },
+      "newAdminNetworkCapabilitiesSection": {
+        "filter": {
+          "label": "Weergeven:",
+          "active": "Actieve (%s)",
+          "revoked": "Ingetrokken (%s)"
+        }
+      },
+      "newAdminNetworkCapabilities": {
+        "networkCaps": "Uitgaande netwerktoegang",
+        "networkCapsTls": "TLS-versleutelde uitgaande netwerktoegang",
+        "interfaceCaps": "Ingaande netwerktoegang"
+      }
+    },
+    "hostingManagement": {
+      "name": "Hosting management",
+      "newAdminHostingManagement": {
+        "explanation": "Deze functie is experimenteel en werkt op dit moment alleen met de LDAP login provider. Gebruik dit voorzichtig.",
+        "quotaEnabled": {
+          "label": "Quota instellen voor gebruikers",
+          "subtext": "Quota beheer inschakelen op deze server. Hiervoor moeten SAML en LDAP zijn geconfigureerd, en email adressen worden gebruikt om te matchen tussen de twee."
+        },
+        "quotaLdapAttribute": {
+          "label": "LDAP quota attribuut",
+          "subtext": "Dit is de attribuutnaam die wordt opgezocht van LDAP om de gebruikersquota vast te stellen."
+        },
+        "billingPromptUrl": {
+          "label": "Facturatie venster URL",
+          "subtext": "Dit is de URL de wordt gebruikt in het facturatie venster."
+        },
+        "saveButton": "Opslaan",
+        "restoreButton": "Standaardinstellingen herstellen"
+      }
+    }
+  },
+  "people": {
+    "title": "Mensen"
+  },
+  "sharingLinks": {
+    "title": "Deellinks"
+  },
+  "apps": {
+    "title": "Apps",
+    "appList": {
+      "uninstallingHint": "Klaar met verwijderen",
+      "doneUninstalling": "Klaar met verwijderen",
+      "uninstallHint": "Verwijder een app",
+      "uninstallButton": "Verwijderen...",
+      "uploadApp": "Upload app...",
+      "searchHint": "Zoeken",
+      "search": "zoeken",
+      "mostUsed": "Meest gebruikt",
+      "allApps": "Alle apps",
+      "install": "Installeren...",
+      "fromMarket": "vanaf de app markt",
+      "uninstall": "Verwijderen",
+      "noMatchApp": "U heeft geen geïnstalleerde apps met die naam. Probeer <a href=\"__url__\">te zoeken &raquo;</a>",
+      "unauthorized": "Niet geautoriseerd! :(",
+      "unauthorizedText": "Dit is een privé Sandstorm server. Om apps te installeren moet u zijn uitgenodigd door een administrator. De administrator kan u uitnodigen vanuit het admin panel.",
+      "intro": "<strong>Welkom!</strong><br>Maak documenten, chatrooms, blogs en meer.<br><br>Begin door een app te installeren.",
+      "doneButton": "Begrepen"
+    },
+    "install": {
+      "sandstormAppInstallPage": {
+        "title": "Installeer app",
+        "error": {
+          "title": "App installeren mislukt",
+          "retryButton": "Opnieuw proberen"
+        },
+        "stepWait": {
+          "title": "Wachten op schrijftoegang..."
+        },
+        "stepDownload": {
+          "title": "Downloaden...",
+          "cancelButton": "Annuleren"
+        },
+        "stepVerify": {
+          "title": "Verifiëren..."
+        },
+        "stepUnpack": {
+          "title": "Uitpakken..."
+        },
+        "stepAnalyze": {
+          "title": "Analyseren..."
+        },
+        "stepConfirm": {
+          "upgrade": {
+            "explanation": "U heeft een oudere versie van deze app geïnstalleerd. Wilt u upgraden?",
+            "button": "Upgrade %s"
+          },
+          "downgrade": {
+            "explanation": "U heeft al een nieuwere versie van deze app geïnstalleerd.  Wete u zeker dat u terug wilt gaan naar deze oudere versie?",
+            "button": "Downgrade %s"
+          },
+          "install": {
+            "button": "Installeer %s"
+          }
+        },
+        "stepRun": {
+          "title": "%s geïnstalleerd",
+          "explanation": "Installatie voltooid.",
+          "appDetailsLink": "Ga naar %s"
+        },
+        "stepDelete": {
+          "title": "Verwijderen",
+          "explanation": "Server is bezig met het verwijderen van deze app..."
+        },
+        "stepFailed": {
+          "title": "Mislukt",
+          "explanation": "Installatie mislukt: %s"
+        }
+      }
+    },
+    "appDetails": {
+      "sandstormAppDetailsPage": {
+        "newerVersion": {
+          "explanation": "Sommige van uw bestanden zijn aangemaakt met een nieuwere versie van deze app. Deze zullen de nieuwere versie blijven gebruiken aangezien achteruit gaan ze kapot zou kunnen maken."
+        },
+        "olderVersion": {
+          "explanation": "Sommige van uw korrels zijn gemaakt met een oudere versie van deze app.  Wilt u deze upgraden?",
+          "upgradeButton": "Upgrade Korrels"
+        },
+        "search": {
+          "hint": "Zoeken",
+          "placeholder": "zoeken"
+        },
+        "trash": {
+          "explanation": "Korrels worden permanent verwijdern da 30 dagen in de vuilnisbak. Om een korrel te behouden, herstel deze naar de Hoofdlijst."
+        },
+        "noGrains": {
+          "notFound": "<strong>Geen overeenkomende korrels gevonden.</strong>",
+          "inTrash": "Er zijn korrels in uw vuilnisbak die overeenkomen met uw zoekopdracht.",
+          "trashButton": "Vuilnis bekijken"
+        }
+      },
+      "sandstormAppDetails": {
+        "websiteLink": "Website",
+        "appMarketLink": "App markt",
+        "sourceCodeLink": "Bron",
+        "bugReportLink": "Probleem melden",
+        "mainListButton": "Hoofdlijst bekijken",
+        "trashButton": "Vuilnisbak bekijken",
+        "uninstallButton": "Verwijderen",
+        "restoreButton": "Korrel backup herstellen...",
+        "version": {
+          "label": "Versie"
+        },
+        "lastUpdate": {
+          "label": "Laatst bijgewerkt",
+          "unknown": "<onbekend>"
+        },
+        "publisher": {
+          "label": "Ondertekend door"
+        },
+        "hasFingerprint": "De uitgever van deze app heeft met PGP bewezen dat ze deze accounts beheren.",
+        "noFingerprint": "Deze app heeft geen handtekening van de maker; de auteur ervan kan niet worden geverifieerd."
+      }
+    }
+  },
+  "accounts": {
+    "title": "Account instellingen",
+    "accountSettings": {
+      "sandstormAccountSettings": {
+        "title": "Account",
+        "identities": {
+          "title": "Mijn profiel",
+          "success": "Succes: %s",
+          "linkedCredentials": "Gelinkte credentials",
+          "linkNewIdentity": {
+            "title": "Nieuwe credential linken:",
+            "cancelButton": "Annuleren",
+            "linkButton": "Nieuwe credential linken",
+            "logoutAllButton": "Alle andere sessies uitloggen"
+          },
+          "email": {
+            "title": "Primair email adres voor dienstgerelateerde notificaties",
+            "primary": "Primair",
+            "primaryButton": "Stel in als primair",
+            "notFound": "Geen geverifieerde emails! ",
+            "addNew": "Nieuw email adres toevoegen"
+          }
+        },
+        "billing": {
+          "title": "Facturering"
+        },
+        "deleteAccount": {
+          "title": "Verwijder account",
+          "button": "Verwijder uw account"
+        },
+        "deletePopup": {
+          "title": "Verwijder uw account",
+          "explanation": "U staat op het punt om uw account te markeren voor verwijdering. Eenmaal gemarkeerd wordt uw account geschorst, en u krijgt 7 dagen om de geplande verwijdering te annuleren door op uw account in te loggen.",
+          "results": "Na 7 dagen wordt uw account permanent verwijderd. Dit zal:",
+          "result1": "Permanent korrels verwijderen die door u zijn aangemaakt",
+          "result2": "Alle deellinks die u heeft gemaakt intrekken",
+          "result3": "U verwijderen van alle gebruikers contactenlijsten",
+          "result4": "Alle credentials die eigendom zijn van uw account verwijderen (behalve credentials die geassocieerd zijn met een ander account).",
+          "confirm": "Type alstublieft \"delete my account\" hieronder om te bevestigen.",
+          "goodbye": "We vinden het jammer om u te zien gaan. Voel u vrij om feedback die u heeft te delen met de server administrator.",
+          "feedbackPlaceholder": "Optioneel",
+          "deleteButton": "Account verwijderen",
+          "cancelButton": "Annuleren"
+        }
+      },
+      "sandstormAccountsFirstSignIn": {
+        "title": "Bevestig uw profiel",
+        "success": "Succes: %s"
+      },
+      "accountSuspended": {
+        "title": "Dit account is door u geschorst.",
+        "deletedIn": "Dit account wordt verwijderd over %s. Wilt u verwijdering annuleren en uw dit account herstellen?",
+        "suspended": "Dit account is geschorst en alle korrels en alle delingen zijn uitgeschakeld. Wilt u dit account herstellen?",
+        "restoreButton": "Account herstellen",
+        "logoutButton": "Uitloggen"
+      },
+      "_accountProfileEditor": {
+        "picture": {
+          "label": "Profielafbeelding:",
+          "uploadButton": "Nieuwe afbeelding uploaden",
+          "subtext": "Deze afbeelding wordt aan andere gebruikers getoond om hen te helpen u te herkennen.",
+          "maxSize": "512x512px, maximaal 64KiB."
+        },
+        "fullName": {
+          "label": "Volledige naam:",
+          "placeholder": "volledige naam",
+          "subtext": "Uw gewone voor en achter naam zoals u deze graag wilt hebben weergegeven aan andere gebruikers. Dit hoeft niet uw echte naam te zijn."
+        },
+        "handle": {
+          "label": "Handle:",
+          "placeholder": "handle",
+          "hint": "Handles moeten beginnen met een kleine letter en mogen alleen kleine letters, getallen en lage streepjes bevatten.",
+          "subtext": "Om weer te geven in apps die gebruik maken van handles. Uw handle moet beginnen met een letter en mag alleeen kleine letters, getallen en lage streepjes bevatten."
+        },
+        "emailList": {
+          "label": "E-mail:"
+        },
+        "pronoun": {
+          "label": "Voorkeurvoornaamwoord:",
+          "neutral": "hen (ongespecificeerd)",
+          "male": "hij/hem (mannelijk)",
+          "female": "zij/haar (vrouwelijk)",
+          "robot": "het (robot)"
+        },
+        "agreedToTerms": {
+          "agreeTo": " Ik heb gelezen en ben akkoord gegaan met de ",
+          "termsOfServiceLink": "Servicevoorwaarden",
+          "and": " en het ",
+          "privacyLink": "Privacybeleid"
+        },
+        "saveButton": "Opslaan",
+        "continueButton": "Doorgaan",
+        "cancelButton": "Annuleren"
+      }
+    },
+    "loginButtons": {
+      "icon": {
+        "info": "i"
+      },
+      "loginButtons": {
+        "createButton": "Account maken",
+        "signInButton": "Aanmelden"
+      },
+      "accountButtons": {
+        "loading": "Laden..."
+      },
+      "_loginButtonsLoggedInDropdown": {
+        "revealIdentity": "Identiteit openbaren",
+        "title": "Account",
+        "sendFeedback": "Feedback versturen",
+        "referralProgram": "Verwijzingsprogramma",
+        "signOutButton": "Afmelden"
+      },
+      "_loginButtonsLoggedOutDropdown": {
+        "demo": {
+          "title": "Account maken",
+          "explanation": "Uw demo data wordt overgebracht naar uw nieuwe account."
+        },
+        "title": "Aanmelden",
+        "shared": {
+          "explanation": "Log in zodat andere mensen weten wie u bent."
+        },
+        "signInButton": "Aanmelden",
+        "anonymousButton": "Anoniem blijven"
+      },
+      "oauthLoginButton": {
+        "with": "met "
+      },
+      "devLoginForm": {
+        "label": "met een Dev account",
+        "hint": "verkleinen",
+        "alice": "Alice (administrator)",
+        "bob": "Bob",
+        "carol": "Carol",
+        "dave": "Dave",
+        "customPlaceholder": "Eve",
+        "customButton": "Aangepast"
+      },
+      "loginButtonsList": {
+        "configure": "login configureren",
+        "troubleshooting": "probleemoplossing",
+        "about": "over Sandstorm"
+      },
+      "emailLoginForm": {
+        "description": "met e-mail",
+        "sendButtonText": "verstuur Inlog Email"
+      },
+      "emailAuthenticationForm": {
+        "hint": "Wachtwoordloze E-mail login stelt u in staat om in te loggen met een e-mail adres. Een wachtwoord is niet nodig; in plaats daarvan sturen we u een nieuwe email bevestigingscode elke keer wanneer u inlogt. Per apparaat hoeft u maar een keer in te loggen.",
+        "token": {
+          "explanation": "We hebben een inlog e-mail verstuurd naar %s. Het kan even duren voordat deze verschijnt in uw inbox.",
+          "label": "Voer uw token in:",
+          "confirmButton": "Bevestigen",
+          "cancelButton": "Annuleren"
+        },
+        "disabled": "Een server administrator moet email authenticatie inschakelen voordat u uw email kan bevestigen."
+      },
+      "ldapLoginForm": {
+        "username": {
+          "label": "gebruikersnaam",
+          "hint": "Dit is uw LDAP gebruikersnaam. Het is dezelfde naam die u normaal gebruikt op in te loggen op andere interne diensten bij uw bedrijf."
+        },
+        "password": {
+          "label": "wachtwoord",
+          "hint": "Dit is uw LDAP wachtwoord. Het is hetzelfde wachtwoord dat u normaal gebruikt voor het inloggen op interne diensten bij uw bedrijf."
+        },
+        "loginButton": "Inloggen"
+      },
+      "_loginButtonsSeparator": {
+        "or": "of"
+      }
+    },
+    "identity": {
+      "identityLoginInterstitial": {
+        "title": "Inloggen",
+        "loading": "Laden...",
+        "logoutButton": "Uitloggen",
+        "cancelButton": "Annuleren",
+        "goBackButton": "Ga terug",
+        "create": "account aanmaken...",
+        "createFailed": "Account aanmaken mislukt.",
+        "loginAccount": "Inloggen op account...",
+        "loginAccountFailed": "Account login mislukt.",
+        "loginToken": "Opnieuw inloggen op een account...",
+        "loginTokenFailed": "Sessie herstellen mislukt.",
+        "link": "credential aan account vastmaken...",
+        "success": "Credential losgemaakt van %s",
+        "explanation": "U bent geverifieerd als deze credential",
+        "warning": "maar dat is niet een login credential voor een account.",
+        "moreIdentities": "De volgende credentials kunnen gebruikt worden om in te loggen up uw credentials account:",
+        "unlinkButton": {
+          "hint": "Maak uw credential van dit account los.",
+          "text": "losmaken"
+        },
+        "unlink": {
+          "explanation": "Weet u zeker dat u uw credential van dit account wilt losmaken?",
+          "unlinkButton": "Losmaken",
+          "cancelButton": "Annuleren"
+        }
+      },
+      "identityManagementButtons": {
+        "toggleLogin": {
+          "label": "Stel deze credential in staat om in te loggen op uw account.",
+          "unlinkButton": "Losmaken"
+        }
+      },
+      "loginIdentitiesOfLinkedAccounts": {
+        "show": {
+          "explanation": "Deze credential is gedeeld met andere accounts. Die account hebben de volgende login credentials:",
+          "unlinkButton": "losmaken",
+          "hideButton": "verberg andere accounts"
+        },
+        "hide": {
+          "explanation": "Deze credential is gedeeld met tenminste een ander account.",
+          "showButton": "laat andere accounts zien"
+        }
+      },
+      "identityCardSignInButton": {
+        "hint": "log in als %s",
+        "title": "Log in"
+      },
+      "accountCardSignInButton": {
+        "reSign": "Om uit te loggen van uw andere account en in te loggen als deze gebruiker, kies hoe u wilt inloggen:",
+        "howToSignIn": "Kies hoe u wilt inloggen:"
+      }
+    },
+    "tokenTemplates": {
+      "_emailTokenError": {
+        "title": "Ongeldige verificatie code. Als er meer dan 15 minuten zijn verstreken dan is het token verlopen, anders heeft u misschien een typefout gemaakt."
+      },
+      "_emailLinkIdentityError": {
+        "title": "Om uw email adres te bevestigen moet u zijn ingelogd als het account dat deze link heeft aangemaakt."
+      },
+      "addNewVerifiedEmailPowerboxConfiguration": {
+        "email": {
+          "placeholder": "voer email adres in",
+          "selectButton": "Selecteer",
+          "sendButton": "Stuur bevestigingsmail"
+        },
+        "sendingTo": "Versturen naar %s",
+        "resetButton": "Probeer een ander adres",
+        "token": {
+          "placeholder": "voer uw token in",
+          "confirmButton": "Bevestigen"
+        },
+        "verifying": "Token verifiëren..."
+      }
+    }
+  },
+  "wizard": {
+    "setupWizardLoading": {
+      "loading": "Laden..."
+    },
+    "setupWizardProgressBar": {
+      "identityProviders": "Login providers",
+      "organization": "Organisatie",
+      "email": "Email",
+      "preinstalledApps": "Vooraf geïnstalleerde apps",
+      "adminAccount": "Administrator account"
+    },
+    "setupWizardHelpFooter": {
+      "needHelp": "Hulp nodig?",
+      "documentation": "Documentatie",
+      "emailSupport": "Email ondersteuning",
+      "systemLog": "Systeem Log"
+    },
+    "setupWizardSystemLog": {
+      "header": {
+        "label": "Systeem log",
+        "downloadButton": "Log Downloaden"
+      },
+      "permissionDenied": "U kunt de systeem log niet bekijken omdat u niet bent ingelogd als een administrator en u heeft geen setup token."
+    },
+    "setupWizardIntro": {
+      "title": "Welkom bij Sandstorm!",
+      "revisitWizardLink": "Installatiewizard opnieuw bezoeken",
+      "noIdpEnabled": {
+        "explanation": "Deze Sandstorm server is al eerder opgezet, maar vanwege een verandering in <code>sandstorm.conf</code> moet u opnieuw inlog providers instellen."
+      },
+      "idpEnabled": {
+        "explanation": "Deze server is klaar voor gebruik. U kunt serverinstellingen aanpassen waaronder welke providers zijn ingeschakeld en de manier waarop Sandstorm email verstuurd.",
+        "turnUserIntoAdmin": "U kunt ook een bestaande gebruiker in een administrator.",
+        "isAdmin": {
+          "adminPanelLink": "Doorgaan naar administrator panel.",
+          "suButton": "Geef uzelf administrator privileges."
+        },
+        "isNotAdmin": {
+          "explanation": "Om een account te veronderen in een administrator account, log alstublieft in:",
+          "signInLabel": "Aanmelden",
+          "signInButton": "Meld u aan om een administrator te worden"
+        }
+      },
+      "setupButton": "Begin Sandstorm Setup"
+    },
+    "setupWizardIdentity": {
+      "title": "Inlog providers",
+      "explanation1": "Om gebruik te maken van Sandstorm moet u een gebruikersaccount aanmaken. Elk gebruikersaccount op Sandstorm wordt gesteund door een inlogprovider.  U zult deze inlogprovider moeten gebruiken om als de eerste administrator van deze Sandstorm installatie geverifieerd te worden.",
+      "explanation2": "Configureerde de inlogprovider of providers die u wilt inschakelen.",
+      "nextButton": "Volgende",
+      "backButton": "Terug"
+    },
+    "setupWizardOrganization": {
+      "title": "Organisatie instellingen",
+      "error": "Opslaan van veranderingen mislukt: %s",
+      "membership": {
+        "title": "Organisatie lidmaatschap",
+        "emailToggle": {
+          "label": "geverifieerde gebruikers via email adres",
+          "subtext": "Opmerking: uitgeschakeld omdat email login niet is geconfigureerd."
+        },
+        "emailDomain": {
+          "label": "Domein:",
+          "subtext": "Gebruikers met een email adres op dit domein zullen lid zijn van deze servers organisatie."
+        },
+        "gappsToggle": {
+          "label": "Gebruikers geverifieerd via Google Apps for Work",
+          "subtext": "Opmerking: uitgeschakeld omdat Google login niet is geconfigureerd."
+        },
+        "gappsDomain": {
+          "label": "Domein:",
+          "subtext": "Gebruikers met een Google Apps for Work account onder dit domein zullen lid zijn van deze servers organiasatie."
+        },
+        "ldapToggle": {
+          "label": "Gebruikers geverifieerd via LDAP",
+          "subtext": "Opmerking: uitgeschakeld omdat LDAP login niet is geconfigureerd."
+        },
+        "samlToggle": {
+          "label": "Gebruikers geverifieerd via SAML",
+          "subtext": "Opmerking: uitgeschakeld omdat SAML login niet is geconfigureerd."
+        }
+      },
+      "settings": {
+        "title": "Organization instellingen",
+        "disallowGuests": {
+          "label": "Verbied samenwerking met gebruikers buiten de organisatie.",
+          "subtext": "Gebruikers worden verplicht om in te loggen als lid van uw organisatie om deellinks te bekijken. Gast toegang zal worden uitgeschakeld."
+        },
+        "shareContacts": {
+          "label": "Maak alle organisatie gebruikers zichtbaar voor elkaar",
+          "subtext": "Deze instelling voegt gebruikers binnen een organisatie automatisch toe aan elkaars contactenlijst zodat ze korrels met elkaar kunnen delen. Schakel dit uit als u gebruikers heeft wiens identiteit verborgen moet blijven voor anderen."
+        }
+      },
+      "saveButton": "Save and continue",
+      "backButton": "Back"
+    },
+    "setupWizardEmailConfig": {
+      "title": "Email bezorging",
+      "explanation": "Sandstorm heeft een manier nodig om email te verzenden.  U kunt deze stap overslaan (tenzij u gebruik maakt van email login), maar email gerelateerde functionaliteit zal niet beschikbaar zijn totdat u email in de toekomst configureerd.",
+      "moreDetail": "<strong>Hoe Sandstorm email gebruikt:</strong> Sandstorm en Sandstorm apps kunnen email notificaties verzenden. Elke app kriijgt een uniek email adres, dus Sandstorm moet email kunnen verzenden van meerdere \"Van:\" adressen. Gmail SMTP zal daarom niet werken, maar er zijn andere gratis diensten beschikbaar. Bekijk voor meer informatie <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">de documentatie</a>.",
+      "error": "Opslaan van veranderingen mislukt: %s",
+      "hostPort": {
+        "host": "SMTP host",
+        "port": "Poort",
+        "subtext": "Gebruik poort 25 voor SMTP (on-versleuteld of met StartTLS), port 465 voor met TLS versleutelde SMTPS."
+      },
+      "username": {
+        "label": "Gebruikersnaam (optioneel)"
+      },
+      "password": {
+        "label": "Wachtwoord (optioneel)"
+      },
+      "email": {
+        "label": "Email adres van de Sandstorm server",
+        "subtext": "Sandstorm zal login emails, notificatie van goedgekeurde toegangsverzoeken en andere emails vanaf dit adres versturen. Dit adres wordt ook gebruikt in de SMTP envelop."
+      },
+      "saveButton": "Opslaan en doorgaan",
+      "skipButton": "Overslaan voor nu",
+      "testButton": "Test",
+      "backButton": "Terug"
+    },
+    "setupWizardPreinstalled": {
+      "title": "Vooraf geïnstalleerde apps setup",
+      "explanation": "Wacht alstublieft terwijl Sandstorm de volgende Productiviteitssuite apps installeert die nuttig zijn voor de meeste gebruikers. U kunt alle vooraf geïnstalleerde apps configureren in het Administrator panel na de installatie.",
+      "downloaded": "Gedownload",
+      "failed": "Mislukt",
+      "loading": "Een ogenblik geduld alstublieft, app index laden...",
+      "nextButton": "Volgende",
+      "skipButton": "Overslaan voor nu",
+      "backButton": "Terug"
+    },
+    "setupWizardLoginUser": {
+      "title": "Administrator account aanmaken",
+      "firstLogin": {
+        "title": "Bevestig uw profiel"
+      },
+      "isAdmin": "Goed! Uw account heeft beheerdersrechten.",
+      "hasAdmin": {
+        "explanation": "Deze Sandstorm server heeft al een administrator gebruiker, maar als u wilt kunt u ook uzelf een administrator maken.",
+        "adminButton": "Word een administrator"
+      },
+      "makeYouAnAdmin": "Bezig met u een administrator maken op deze server...",
+      "loggedOut": {
+        "explanation": "U kunt nu een administratoraccount aanmaken op deze Sandstorm server.",
+        "description": "Log in om uw administratoraccount aan te maken",
+        "dialogLabel": "Account aanmaken"
+      },
+      "finishButton": "Voltooien",
+      "backButton": "Terug"
+    },
+    "setupWizardSuccess": {
+      "title": "Klaar voor gebruik!",
+      "serverIsReady": "Uw Sandstorm server is nu klaar voor gebruik.",
+      "whatsNext": "Wat wilt u als volgende doen?",
+      "addUsersLink": "Gebruikers toevoegen",
+      "editSettingsLink": "Andere instellingen bewerken",
+      "sandstormLink": "Sandstorm gaan gebruiken",
+      "backButton": "Terug"
+    },
+    "setupWizardVerifyToken": {
+      "title": "Token verifiëren...",
+      "explanation": "Sorry, het lijkt dat uw setup token is verlopen.",
+      "howToFix": "Genereer een nieuwe vanaf de opdrachtregel door <code>sandstorm admin-token</code> uit te voeren om toegang te krijgen tot de installatiewizard."
+    },
+    "setupWizardTokenExpired": {
+      "title": "Setup token benodigd",
+      "alreadySetup": "Deze server is al ingesteld, we raden het dus aan om deze te beheren via het hoofd",
+      "adminRootLink": "administratie panel",
+      "explanation": "Om deze servers setup pagina te gebruiken heeft u een geldig setup token nodig.",
+      "howToFix": "Genereer een nieuwe vanaf de opdrachtregel door <code>sandstorm admin-token</code> uit te voeren en de link te volgen die het uitgeeft."
+    }
+  },
+  "packages": {
+    "topbar": {
+      "updated": "Sandstorm is bijgewerkt - Klik hier om te herladen",
+      "apps": "Apps",
+      "grains": "Korrels",
+      "oasis": "Begin met anderen samen te werken door Sandstorm op Oasis te gebruiken:",
+      "createAccount": "Maak een gratis account aan »",
+      "demoHint": "Uw demo data zal worden overgebracht.",
+      "selfHostHint": "Of installeer Sandstorm voor uw team (het is open source):",
+      "signUp": "Meld hierbinnen aan:",
+      "close": "Sluiten"
+    },
+    "powerbox": {
+      "title": "Powerbox aanvraag",
+      "inputToken": "Voer alstublieft een api token in:",
+      "importToken": "Importeer token",
+      "selected": "Geselecteerd:",
+      "selectOne": "Selecteer er een:",
+      "noGrain": "Er zijn geen korrels die de gevraagde interface kunnen leveren.",
+      "loading": "Laden..."
+    }
+  }
+}

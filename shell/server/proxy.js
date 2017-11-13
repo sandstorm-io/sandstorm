@@ -637,6 +637,8 @@ const getProxyForHostId = (hostId, isAlreadyOpened) => {
       return proxy;
     } else {
       // Set table entry to null for now so that we can detect if it is concurrently deleted.
+      // TODO(security): Does this concurrent deletion detection work in the case of multiple
+      //   frontends?
       proxiesByHostId[hostId] = null;
 
       return inMeteor(() => {
@@ -710,7 +712,14 @@ getWebSessionForSessionId = (sessionId, params) => {
       }
     }
 
-    const proxy = getProxyForSession(session);
+    let proxy = proxiesByHostId[session.hostId];
+    if (!proxy) {
+      // Set table entry to null for now so that we can detect if it is concurrently deleted.
+      // TODO(security): Does this concurrent deletion detection work in the case of multiple
+      //   frontends?
+      proxiesByHostId[session.hostId] = null;
+      proxy = getProxyForSession(session);
+    }
 
     // TODO(now): Temporary hack to make spinner go away. Need an API to do this right.
     proxy.setHasLoaded();

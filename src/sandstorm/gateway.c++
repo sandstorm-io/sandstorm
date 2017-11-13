@@ -91,6 +91,8 @@ kj::Promise<void> GatewayService::request(
     }
   }
 
+  // TODO(perf): Serve Meteor static assets directly, *unless* the server is in dev mode.
+
   // Fall back to shell.
   return shellHttp->request(method, url, headers, requestBody, response);
 }

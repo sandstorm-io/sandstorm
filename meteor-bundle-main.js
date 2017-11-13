@@ -62,7 +62,8 @@ function monkeypatchHttpForGateway() {
   var oldListen = http.Server.prototype.listen;
   var alreadyListened = false;
   http.Server.prototype.listen = function (port, host, cb) {
-    if (port.toString() === process.env.PORT) {
+    if (port.toString() === process.env.PORT ||
+        (typeof port === "object" && port.port && port.port.toString() === process.env.PORT)) {
       // Attempt to listen on the HTTP port. Override.
       if (alreadyListened) {
         throw new Error("can only listen on primary HTTP port once");
@@ -78,7 +79,7 @@ function monkeypatchHttpForGateway() {
         }
       };
       pipe.readStart();
-      cb();
+      (cb || host)();
     } else {
       // Don't override.
       return oldListen.call(this, port, host, cb);

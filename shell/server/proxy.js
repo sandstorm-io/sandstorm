@@ -1575,7 +1575,7 @@ class Proxy {
   }
 
   getSession(request) {
-    const params = {
+    const webSessionParams = {
       basePath: PROTOCOL + "//" + request.headers.host,
       userAgent: "user-agent" in request.headers
           ? request.headers["user-agent"]

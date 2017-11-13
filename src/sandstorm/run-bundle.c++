@@ -2516,8 +2516,9 @@ private:
       auto shellHttp = kj::newHttpClient(io.provider->getTimer(),
           headerTableBuilder.getFutureTable(), shellHttpAddr, clientSettings);
 
+      GatewayService::Tables gatewayTables(headerTableBuilder);
       GatewayService service(io.provider->getTimer(), *shellHttp, kj::mv(router),
-                             headerTableBuilder, config.rootUrl, config.wildcardHost);
+                             gatewayTables, config.rootUrl, config.wildcardHost);
 
       auto headerTable = headerTableBuilder.build();
       kj::HttpServer server(io.provider->getTimer(), *headerTable, service);

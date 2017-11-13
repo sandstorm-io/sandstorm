@@ -27,9 +27,29 @@ namespace sandstorm {
 
 class GatewayService: public kj::HttpService {
 public:
+  class Tables {
+    // Tables that many instances of GatewayService might share. Create this object at startup
+    // time and pass it to the constructor of each GatewayService.
+
+  public:
+    Tables(kj::HttpHeaderTable::Builder& headerTableBuilder);
+
+  private:
+    friend class GatewayService;
+
+    const kj::HttpHeaderTable& headerTable;
+
+    kj::HttpHeaderId hAccessControlAllowOrigin;
+    kj::HttpHeaderId hAcceptLanguage;
+    kj::HttpHeaderId hCookie;
+    kj::HttpHeaderId hLocation;
+    kj::HttpHeaderId hUserAgent;
+
+    WebSessionBridge::Tables bridgeTables;
+  };
+
   GatewayService(kj::Timer& timer, kj::HttpClient& shellHttp, GatewayRouter::Client router,
-                 kj::HttpHeaderTable::Builder& headerTableBuilder,
-                 kj::StringPtr baseUrl, kj::StringPtr wildcardHost);
+                 Tables& tables, kj::StringPtr baseUrl, kj::StringPtr wildcardHost);
 
   kj::Promise<void> request(
       kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
@@ -42,16 +62,11 @@ private:
   kj::Timer& timer;
   kj::Own<kj::HttpService> shellHttp;
   GatewayRouter::Client router;
-  kj::HttpHeaderTable& headerTable;
+  Tables& tables;
 
   kj::Url baseUrl;
   kj::String wildcardHostPrefix;
   kj::String wildcardHostSuffix;
-  kj::HttpHeaderId hAccessControlAllowOrigin;
-  kj::HttpHeaderId hAcceptLanguage;
-  kj::HttpHeaderId hCookie;
-  kj::HttpHeaderId hLocation;
-  kj::HttpHeaderId hUserAgent;
 
   struct UiHostEntry {
     kj::String sessionId;
@@ -59,7 +74,6 @@ private:
     kj::Own<WebSessionBridge> bridge;
   };
 
-  WebSessionBridge::Tables bridgeTables;
   std::map<kj::StringPtr, UiHostEntry> uiHosts;
 
   kj::Maybe<kj::String> matchWildcardHost(const kj::HttpHeaders& headers);

@@ -21,22 +21,23 @@
 
 namespace sandstorm {
 
-GatewayService::GatewayService(
-    kj::Timer& timer, kj::HttpClient& shellHttp, GatewayRouter::Client router,
-    kj::HttpHeaderTable::Builder& headerTableBuilder,
-    kj::StringPtr baseUrl, kj::StringPtr wildcardHost)
-    : timer(timer), shellHttp(kj::newHttpService(shellHttp)), router(kj::mv(router)),
-      headerTable(headerTableBuilder.getFutureTable()),
-      baseUrl(kj::Url::parse(baseUrl, kj::Url::HTTP_PROXY_REQUEST)),
+GatewayService::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilder)
+    : headerTable(headerTableBuilder.getFutureTable()),
       hAccessControlAllowOrigin(headerTableBuilder.add("Access-Control-Allow-Origin")),
       hAcceptLanguage(headerTableBuilder.add("Accept-Language")),
       hCookie(headerTableBuilder.add("Cookie")),
       hLocation(headerTableBuilder.add("Location")),
       hUserAgent(headerTableBuilder.add("User-Agent")),
-      bridgeTables(headerTableBuilder) {
+      bridgeTables(headerTableBuilder) {}
+
+GatewayService::GatewayService(
+    kj::Timer& timer, kj::HttpClient& shellHttp, GatewayRouter::Client router,
+    Tables& tables, kj::StringPtr baseUrl, kj::StringPtr wildcardHost)
+    : timer(timer), shellHttp(kj::newHttpService(shellHttp)), router(kj::mv(router)),
+      tables(tables), baseUrl(kj::Url::parse(baseUrl, kj::Url::HTTP_PROXY_REQUEST)),
+      wildcardHost(wildcardHost) {
   size_t starPos = KJ_REQUIRE_NONNULL(
       wildcardHost.findFirst('*'), "WILDCARD_HOST must contain an astrisk");
-
   wildcardHostPrefix = kj::str(wildcardHost.slice(0, starPos));
   wildcardHostSuffix = kj::str(wildcardHost.slice(starPos + 1));
 }
@@ -53,15 +54,15 @@ kj::Promise<void> GatewayService::request(
       // TODO(soon): API hosts.
     } else if (hostId->startsWith("selftest-")) {
       if (method == kj::HttpMethod::GET && url == "/") {
-        kj::HttpHeaders responseHeaders(headerTable);
+        kj::HttpHeaders responseHeaders(tables.headerTable);
         responseHeaders.set(kj::HttpHeaderId::CONTENT_TYPE, "text/plain");
-        responseHeaders.set(hAccessControlAllowOrigin, "*");
+        responseHeaders.set(tables.hAccessControlAllowOrigin, "*");
         kj::StringPtr content = "Self-test OK.";
         auto stream = response.send(200, "OK", responseHeaders, content.size());
         auto promise = stream->write(content.begin(), content.size());
         return promise.attach(kj::mv(stream));
       } else {
-        return response.sendError(400, "Bad Request", headerTable);
+        return response.sendError(400, "Bad Request", tables.headerTable);
       }
     } else if (hostId->startsWith("ui-")) {
       if (url.startsWith("/_sandstorm-init?")) {
@@ -71,10 +72,10 @@ kj::Promise<void> GatewayService::request(
         KJ_REQUIRE(parsed.query[1].name == "path");
         KJ_REQUIRE(parsed.query[1].value.startsWith("/"));
 
-        kj::HttpHeaders responseHeaders(headerTable);
+        kj::HttpHeaders responseHeaders(tables.headerTable);
         // We avoid registering a header ID for Set-Cookie. See comments in web-session-bridge.c++.
         responseHeaders.add("Set-Cookie", kj::str("sandstorm-sid=", parsed.query[0].value));
-        responseHeaders.set(hLocation, parsed.query[1].value);
+        responseHeaders.set(tables.hLocation, parsed.query[1].value);
 
         response.send(303, "See Other", responseHeaders, uint64_t(0));
         return kj::READY_NOW;
@@ -86,7 +87,7 @@ kj::Promise<void> GatewayService::request(
         return promise.attach(kj::mv(bridge), kj::mv(headersCopy));
       } else {
         // TODO(now): Write an error message mentioning lack of cookies.
-        return response.sendError(403, "Unauthorized", headerTable);
+        return response.sendError(403, "Unauthorized", tables.headerTable);
       }
     } else {
       // TODO(soon): Handle "public ID" hosts. Before we can start handling these, we must
@@ -112,7 +113,7 @@ kj::Promise<void> GatewayService::openWebSocket(
         return promise.attach(kj::mv(bridge), kj::mv(headersCopy));
       } else {
         // TODO(now): Write an error message mentioning lack of cookies.
-        return response.sendError(403, "Unauthorized", headerTable);
+        return response.sendError(403, "Unauthorized", tables.headerTable);
       }
     }
   }
@@ -139,7 +140,7 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
   kj::Vector<kj::String> forwardedCookies;
   kj::String sessionId;
 
-  KJ_IF_MAYBE(cookiesText, headers.get(hCookie)) {
+  KJ_IF_MAYBE(cookiesText, headers.get(tables.hCookie)) {
     auto cookies = split(*cookiesText, ';');
     for (auto& cookie: cookies) {
       auto trimmed = trim(cookie);
@@ -156,9 +157,9 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
   }
 
   if (forwardedCookies.empty()) {
-    headers.unset(hCookie);
+    headers.unset(tables.hCookie);
   } else {
-    headers.set(hCookie, kj::strArray(forwardedCookies, "; "));
+    headers.set(tables.hCookie, kj::strArray(forwardedCookies, "; "));
   }
 
   auto iter = uiHosts.find(sessionId);
@@ -169,9 +170,9 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
 
     params.setBasePath(kj::str(baseUrl.scheme, "://",
         KJ_ASSERT_NONNULL(headers.get(kj::HttpHeaderId::HOST))));
-    params.setUserAgent(headers.get(hUserAgent).orDefault("UnknownAgent/0.0"));
+    params.setUserAgent(headers.get(tables.hUserAgent).orDefault("UnknownAgent/0.0"));
 
-    KJ_IF_MAYBE(languages, headers.get(hAcceptLanguage)) {
+    KJ_IF_MAYBE(languages, headers.get(tables.hAcceptLanguage)) {
       auto langs = KJ_MAP(lang, split(*languages, ',')) { return trim(lang); };
       params.setAcceptableLanguages(KJ_MAP(l, langs) -> capnp::Text::Reader { return l; });
     } else {
@@ -186,7 +187,7 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
     UiHostEntry entry {
       kj::mv(sessionId),
       timer.now(),
-      kj::refcounted<WebSessionBridge>(req.send().getSession(), bridgeTables, options)
+      kj::refcounted<WebSessionBridge>(req.send().getSession(), tables.bridgeTables, options)
     };
     auto insertResult = uiHosts.insert(std::make_pair(key, kj::mv(entry)));
     KJ_ASSERT(insertResult.second);

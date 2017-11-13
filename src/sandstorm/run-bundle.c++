@@ -2230,6 +2230,7 @@ private:
       } else {
         // SIGTERM or something.
         context.warning("** Shutting down due to signal");
+        killChild("Gateway", gatewayPid);
         killChild("Front-end", nodePid);
         killChild("MongoDB", mongoPid);
         killChild("Back-end", backendPid);

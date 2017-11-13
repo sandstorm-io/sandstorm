@@ -14,7 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const Capnp = Npm.require("capnp");
 const GatewayRouter = Capnp.importSystem("sandstorm/backend.capnp").GatewayRouter;
 
 class GatewayRouterImpl {

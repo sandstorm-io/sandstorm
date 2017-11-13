@@ -756,7 +756,7 @@ kj::Promise<void> WebSessionBridge::handleResponse(
       for (auto cookie: in.getSetCookies()) {
         kj::Vector<kj::StringPtr> parts;
         char date[40];
-        kj::String maxAge;
+        kj::Vector<kj::String> ownParts;
 
         auto name = cookie.getName();
         auto value = cookie.getValue();
@@ -794,14 +794,18 @@ kj::Promise<void> WebSessionBridge::handleResponse(
             KJ_ASSERT(gmtime_r(&seconds, &tm) == &tm);
             KJ_ASSERT(strftime(date, sizeof(date), "%a, %d %b %Y %H:%M:%S %z", &tm) > 0);
 
-            parts.add(kj::str(date));
+            auto dateStr = kj::str(date);
+            parts.add(dateStr);
+            ownParts.add(kj::mv(dateStr));
             break;
           }
-          case WebSession::Cookie::Expires::RELATIVE:
+          case WebSession::Cookie::Expires::RELATIVE: {
             parts.add("; Max-Age=");
-            maxAge = kj::str(expires.getRelative());
+            auto maxAge = kj::str(expires.getRelative());
             parts.add(maxAge);
+            ownParts.add(kj::mv(maxAge));
             break;
+          }
         }
 
         if (path.size() > 0) {

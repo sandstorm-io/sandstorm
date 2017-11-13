@@ -25,6 +25,19 @@
 
 namespace sandstorm {
 
+class WildcardMatcher {
+public:
+  WildcardMatcher() = default;
+  WildcardMatcher(kj::StringPtr wildcardHost);
+
+  kj::Maybe<kj::String> match(const kj::HttpHeaders& headers);
+  kj::Maybe<kj::String> match(kj::StringPtr host);
+
+private:
+  kj::String prefix;
+  kj::String suffix;
+};
+
 class GatewayService: public kj::HttpService {
 public:
   class Tables {
@@ -65,8 +78,7 @@ private:
   Tables& tables;
 
   kj::Url baseUrl;
-  kj::String wildcardHostPrefix;
-  kj::String wildcardHostSuffix;
+  WildcardMatcher wildcardHost;
 
   struct UiHostEntry {
     kj::String sessionId;
@@ -76,7 +88,6 @@ private:
 
   std::map<kj::StringPtr, UiHostEntry> uiHosts;
 
-  kj::Maybe<kj::String> matchWildcardHost(const kj::HttpHeaders& headers);
   kj::Maybe<kj::Own<kj::HttpService>> getUiBridge(kj::HttpHeaders& headers);
 };
 

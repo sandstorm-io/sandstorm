@@ -36,16 +36,12 @@ GatewayService::GatewayService(
     : timer(timer), shellHttp(kj::newHttpService(shellHttp)), router(kj::mv(router)),
       tables(tables), baseUrl(kj::Url::parse(baseUrl, kj::Url::HTTP_PROXY_REQUEST)),
       wildcardHost(wildcardHost) {
-  size_t starPos = KJ_REQUIRE_NONNULL(
-      wildcardHost.findFirst('*'), "WILDCARD_HOST must contain an astrisk");
-  wildcardHostPrefix = kj::str(wildcardHost.slice(0, starPos));
-  wildcardHostSuffix = kj::str(wildcardHost.slice(starPos + 1));
 }
 
 kj::Promise<void> GatewayService::request(
     kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
     kj::AsyncInputStream& requestBody, Response& response) {
-  KJ_IF_MAYBE(hostId, matchWildcardHost(headers)) {
+  KJ_IF_MAYBE(hostId, wildcardHost.match(headers)) {
     // TODO(now): Redirect HTTP -> HTTPS when needed. Requires X-Forwarded-Proto?
 
     if (*hostId == "static") {
@@ -101,7 +97,7 @@ kj::Promise<void> GatewayService::request(
 
 kj::Promise<void> GatewayService::openWebSocket(
     kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) {
-  KJ_IF_MAYBE(hostId, matchWildcardHost(headers)) {
+  KJ_IF_MAYBE(hostId, wildcardHost.match(headers)) {
     // TODO(now): Redirect HTTP -> HTTPS when needed. Requires X-Forwarded-Proto?
 
     if (hostId->startsWith("api-")) {
@@ -122,15 +118,26 @@ kj::Promise<void> GatewayService::openWebSocket(
   return shellHttp->openWebSocket(url, headers, response);
 }
 
-kj::Maybe<kj::String> GatewayService::matchWildcardHost(const kj::HttpHeaders& headers) {
+WildcardMatcher::WildcardMatcher(kj::StringPtr wildcardHost) {
+  size_t starPos = KJ_REQUIRE_NONNULL(
+      wildcardHost.findFirst('*'), "WILDCARD_HOST must contain an astrisk");
+
+  prefix = kj::str(wildcardHost.slice(0, starPos));
+  suffix = kj::str(wildcardHost.slice(starPos + 1));
+}
+
+kj::Maybe<kj::String> WildcardMatcher::match(const kj::HttpHeaders& headers) {
   KJ_IF_MAYBE(host, headers.get(kj::HttpHeaderId::HOST)) {
-    if (host->size() > wildcardHostPrefix.size() + wildcardHostSuffix.size() &&
-        host->startsWith(wildcardHostPrefix) && host->endsWith(wildcardHostSuffix)) {
-      return kj::str(host->slice(
-          wildcardHostPrefix.size(), host->size() - wildcardHostSuffix.size()));
-    } else {
-      return nullptr;
-    }
+    return match(*host);
+  } else {
+    return nullptr;
+  }
+}
+
+kj::Maybe<kj::String> WildcardMatcher::match(kj::StringPtr host) {
+  if (host.size() > prefix.size() + suffix.size() &&
+      host.startsWith(prefix) && host.endsWith(suffix)) {
+    return kj::str(host.slice(prefix.size(), host.size() - suffix.size()));
   } else {
     return nullptr;
   }

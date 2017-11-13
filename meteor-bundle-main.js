@@ -70,16 +70,22 @@ function monkeypatchHttpForGateway() {
       }
       alreadyListened = true;
 
-      var pipe = new Pipe(true);
-      var httpServer = this;
-      pipe.open(firstInheritedFd);
-      pipe.onread = function (size, buf, handle) {
-        if (handle) {
-          httpServer.emit("connection", new net.Socket({ handle: handle }));
-        }
-      };
-      pipe.readStart();
-      (cb || host)();
+      if (process.env.EXPERIMENTAL_GATEWAY === "local") {
+        // Gateway running locally, connecting over unix socketpair via SCM_RIGHTS transfer.
+        var pipe = new Pipe(true);
+        var httpServer = this;
+        pipe.open(firstInheritedFd);
+        pipe.onread = function (size, buf, handle) {
+          if (handle) {
+            httpServer.emit("connection", new net.Socket({ handle: handle }));
+          }
+        };
+        pipe.readStart();
+        (cb || host)();
+      } else {
+        // Gateway running remotely, connecting over a regular socket.
+        oldListen.call(this, { fd: firstInheritedFd }, cb || host);
+      }
     } else {
       // Don't override.
       return oldListen.call(this, port, host, cb);

@@ -2587,7 +2587,7 @@ private:
     }
 
     if (config.useExperimentalGateway) {
-      KJ_SYSCALL(setenv("EXPERIMENTAL_GATEWAY", "true", true));
+      KJ_SYSCALL(setenv("EXPERIMENTAL_GATEWAY", "local", true));
     }
 
     KJ_SYSCALL(setenv("PORT", kj::str(config.ports[0]).cStr(), true));

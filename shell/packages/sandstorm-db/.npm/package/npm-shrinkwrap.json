@@ -1,9 +1,10 @@
 {
+  "lockfileVersion": 1,
   "dependencies": {
     "content-type": {
       "version": "1.0.1",
       "resolved": "https://registry.npmjs.org/content-type/-/content-type-1.0.1.tgz",
-      "from": "content-type@1.0.1"
+      "integrity": "sha1-oZ0iRzJ9wDgFDOYit6FU7FnF5gA="
     }
   }
 }

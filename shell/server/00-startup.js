@@ -28,6 +28,11 @@ process.on('unhandledRejection', (reason, p) => {
   console.error("Unhandled exception in Promise: ", reason);
 });
 
+process.on('uncaughtException', (err) => {
+  // OMG Node, don't abort just because a client disconnected unexpectedly.
+  console.error("Unhandled exception: ", err);
+});
+
 globalFrontendRefRegistry = new FrontendRefRegistry();
 
 SandstormPowerbox.registerUiViewQueryHandler(globalFrontendRefRegistry);

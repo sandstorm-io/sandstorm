@@ -466,7 +466,7 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
         requestMethod = Https.request;
       }
 
-      req = requestMethod(options, (resp) => {
+      let req = requestMethod(options, (resp) => {
         try {
           const buffers = [];
           const statusInfo = responseCodes[resp.statusCode];

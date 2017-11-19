@@ -23,6 +23,11 @@ import { onInMeteor } from "/imports/server/async-helpers.js";
 import { monkeyPatchHttp } from "/imports/server/networking.js";
 let url = require("url");
 
+process.on('unhandledRejection', (reason, p) => {
+  // Please Node, do not crash when a promise rejection isn't caught, thanks.
+  console.error("Unhandled exception in Promise: ", reason);
+});
+
 globalFrontendRefRegistry = new FrontendRefRegistry();
 
 SandstormPowerbox.registerUiViewQueryHandler(globalFrontendRefRegistry);

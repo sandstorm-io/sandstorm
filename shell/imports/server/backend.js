@@ -191,6 +191,9 @@ class SandstormBackend {
     if (this._db.isQuotaEnabled() && !storageUsageUnimplemented) {
       ownerId = Grains.findOne(grainId).userId;
       storagePromise = this._backendCap.getUserStorageUsage(ownerId);
+
+      // Squelch Node.js's "unhandled rejection" warning. We handle errors for real later on.
+      storagePromise.catch(err => {});
     }
 
     const now = new Date();

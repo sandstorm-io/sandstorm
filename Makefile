@@ -228,7 +228,7 @@ clobber-deps:
 	    cd ../..;)
 	@cd deps/node-capnp && \
 	    echo "fetching node-capnp..." && \
-	    git fetch $(REMOTE_node-capnp) node4 && \
+	    git fetch $(REMOTE_node-capnp) node8 && \
 	    git reset --hard FETCH_HEAD && \
 	    cd ../../
 	@cd deps/libsodium && \

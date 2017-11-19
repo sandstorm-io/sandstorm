@@ -1,3 +1,7 @@
+### v0.219 (2017-11-18)
+- Updated Meteor to version 1.6, a new major release.
+- Updated Node.js to version 8 (from 4).
+
 ### v0.218 (2017-10-28)
 - Added Dutch translation by Michel van der Burg.
 - Improved language selection to consider the user's whole prioritized list of languages rather than just the top language. This also makes language selection through the Chrome browser settings work, instead of using the system UI language.

@@ -2103,7 +2103,7 @@ class Proxy {
         const idx = this.streamingRequestCounter;
         this.streamingRequestCounter += 1;
         this.streamingRequests[idx] = request;
-        destructor = () => { delete this.streamingRequests[idx]; };
+        const destructor = () => { delete this.streamingRequests[idx]; };
 
         request.on("end", () => {
           if (!uploadStreamError) requestStream.done().catch(reportUploadStreamError);

@@ -1,3 +1,7 @@
+### v0.220 (2017-11-19)
+- Worked around Node 8 apparently aborting the process whenever a client has a network error (uh, wat?).
+- Fixed error on some large file uploads: `ReferenceError: destructor is not defined`
+
 ### v0.219 (2017-11-18)
 - Updated Meteor to version 1.6, a new major release.
 - Updated Node.js to version 8 (from 4).

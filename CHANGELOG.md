@@ -1,5 +1,5 @@
 ### v0.220 (2017-11-19)
-- Worked around Node 8 apparently aborting the process whenever a client has a network error (uh, wat?).
+- Worked around Node 8 getting much stricter about exception handling and aborting the process all the time.
 - Fixed error on some large file uploads: `ReferenceError: destructor is not defined`
 
 ### v0.219 (2017-11-18)

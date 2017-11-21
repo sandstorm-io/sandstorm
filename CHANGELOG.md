@@ -1,3 +1,6 @@
+### v0.221 (2017-11-20)
+- Fixed bug that broke TinyTinyRSS.
+
 ### v0.220 (2017-11-19)
 - Worked around Node 8 getting much stricter about exception handling and aborting the process all the time.
 - Fixed error on some large file uploads: `ReferenceError: destructor is not defined`

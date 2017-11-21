@@ -426,7 +426,7 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
         options.headers = { host: safe.host };
         options.servername = safe.host.split(":")[0];
 
-        req = requestMethod(options, (resp) => {
+        const req = requestMethod(options, (resp) => {
           const buffers = [];
           let err;
 

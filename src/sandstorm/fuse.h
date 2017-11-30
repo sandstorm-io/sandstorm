@@ -21,6 +21,7 @@
 #include <kj/io.h>
 #include <kj/function.h>
 #include <kj/refcount.h>
+#include <kj/async.h>
 
 namespace kj { class UnixEventPort; }
 

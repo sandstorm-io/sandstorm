@@ -556,7 +556,7 @@
       },
       "githubLoginSetupInstructions": {
         "explanation": "__First, you'll need to get a Github Client ID and Client secret. Follow these steps:",
-        "step1": "__Visit <a href=\"https://github.com/settings/applications/newi\" target=\"blank\">https://github.com/settings/applications/new</a>",
+        "step1": "__Visit <a href=\"https://github.com/settings/applications/new\" target=\"blank\">https://github.com/settings/applications/new</a>",
         "step2": "__Set Homepage URL to: <span class=\"idp-config-url\">%s</span>",
         "step3": "__Set Authorization callback URL to: <span class=\"idp-config-url\">%s_oauth/github</span>"
       },

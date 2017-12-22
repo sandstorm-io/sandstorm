@@ -1,7 +1,11 @@
-### v0.221 (2017-11-20)
+### v0.222 (2017-12-22) [bugfixes]
+- Updated dependencies.
+- Added "ui-" prefix to UI (in-iframe) hostnames, so that they can be reliably distinguished from static publishing hosts. This is in preparation for a networking overhaul in the next release.
+
+### v0.221 (2017-11-20) [bugfixes]
 - Fixed bug that broke TinyTinyRSS.
 
-### v0.220 (2017-11-19)
+### v0.220 (2017-11-19) [bugfixes]
 - Worked around Node 8 getting much stricter about exception handling and aborting the process all the time.
 - Fixed error on some large file uploads: `ReferenceError: destructor is not defined`
 

@@ -867,7 +867,7 @@ Template.setupWizardLoginUser.events({
     if (isFirstLogin) {
       // If your profile is unconfirmed, attempt to save it.
       const form = instance.find("form");
-      const profileEditorInstance = Blaze.getView(form).templateInstance();
+      const profileEditorInstance = Blaze.getView(form).parentView.templateInstance();
       profileEditorInstance.submitProfileForm(form, () => {
         Router.go(getRouteAfter("user"));
       });

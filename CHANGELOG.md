@@ -1,3 +1,6 @@
+### v0.223 (2017-12-22) [bugfixes]
+- Fixed "finish" button at end of setup wizard not working.
+
 ### v0.222 (2017-12-22) [bugfixes]
 - Updated dependencies.
 - Added "ui-" prefix to UI (in-iframe) hostnames, so that they can be reliably distinguished from static publishing hosts. This is in preparation for a networking overhaul in the next release.

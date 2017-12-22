@@ -1372,9 +1372,9 @@ __EOF__
     fi
 
     if [ ! -e "$BUILD_DIR/buildstamp" ] || \
-       [ $(stat -c %Y "$BUILD_DIR/buildstamp") -lt $(( $(date +%s) - 30*24*60*60 )) ]; then
+       [ $(stat -c %Y "$BUILD_DIR/buildstamp") -lt $(( $(date +%s) - 120*24*60*60 )) ]; then
       rm -rf "$BUILD_DIR"
-      fail "E_PKG_STALE" "The downloaded package seems to be more than a month old. Please verify that your" \
+      fail "E_PKG_STALE" "The downloaded package seems to be more than 120 days old. Please verify that your" \
            "computer's clock is correct and try again. It could also be that an attacker is" \
            "trying to trick you into installing an old version. Please contact" \
            "security@sandstorm.io if the problem persists."

@@ -1,0 +1,1786 @@
+{
+  "error": "Virhe: %s",
+  "shell": {
+    "layout": {
+      "demoExpired": {
+        "title": "Demo vanhentunut",
+        "canUpgrade": "Kiitos kun kokelit Sandstorm Demoa! Demo tilisi on vanhentunut. Jos haluat jatkaa Sandstormin käyttämästä ja pitää tietosi tallessa, ole hyvä ja kirjaudu sisään.",
+        "cannotUpgrade": "Kiitos kun kokelit Sandstorm Demoa! Demo tilisi on vanhentunut.",
+        "signOut": "Kirjaudu ulos"
+      },
+      "adminAlert": {
+        "icon": "!",
+        "title": "Viesti adminilta"
+      },
+      "demoModal": {
+        "header": "Sandstorm on web-tuottavuusohjelmisto jonka voi asentaa omalle palvelimelle.",
+        "withAppDemo": "ohjelmien kuten %s kanssa.",
+        "withoutAppDemo": "kaikki tarvitsemasi ohjelmat samassa paikassa.",
+        "startButton": {
+          "withAppDemo": "Kokeile %s »",
+          "withoutAppDemo": "Käynnistä »"
+        },
+        "explanation": "<p>Sandstorm tekee helpoksi ajaa ohjelmia omalla palvelimellasi. Sen lisäksi että tämä lisää tietosuojaa ja hallintaa, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\" target=\"_blank\">tämä tuo Avoimen Lähdekoodin ohjelmat laajemmalle yleisölle.</a></p>",
+        "securityOverview": "<p>Sandstorm on myös älyttömän turvallinen. Jos tietoturva kiinnostaa sinua, katso <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">Sandstorm tietoturvamallin yleiskatsaus</a>.</p>"
+      }
+    },
+    "notifications": {
+      "hint": "Ilmoitukset",
+      "text": "Ilmoitukset"
+    },
+    "notificationsPopup": {
+      "title": "Ilmoitukset",
+      "empty": "Ei ilmoituksia..."
+    },
+    "loading": {
+      "title": "Ladataan...",
+      "text": "Ladataan..."
+    },
+    "notFound": {
+      "title": "Ei löytynyt",
+      "text": "404 Ei löytynyt :("
+    },
+    "root": {
+      "title": "Koti"
+    },
+    "grainLogContents": {
+      "prefix": "..."
+    },
+    "grainLog": {
+      "title": "Debuggaus loki: %s"
+    },
+    "signup": {
+      "title": "Lunasta kutsu",
+      "signedUp": {
+        "keyIsUsedWithOrigin": "Olet täysin rekisteröitynyt!  Nyt mene <a href=\"https://apps.sandstorm.io/?host=%s\">asentamaan joitakin ohjelmia</a>.",
+        "keyIsNotUsed": "Näyttää siltä että sinulla on jo tili, joten et tarvitse rekisteröitymisavainta."
+      },
+      "keyIsUsed": "Sori, tämä rekisteröitymisavain on jo käytetty.",
+      "processing": "Odota hetki...",
+      "signInGuide": "Ensin, sinun täytyy kirjautua sisään. Klikkaa \"Kirjaudu sisään\" oikeassa yläkulmassa.",
+      "invalidKey": "Sori, tämä ei ole kelvollinen rekisteröitymisavain."
+    },
+    "uploadStatus": {
+      "title": "Ladataan tiedostoa palvelimelle...",
+      "uploadFailedWithError": "Tiedoston lataaminen palvelimelle epäonnistui: %s %s",
+      "statusWithProgress": "%s... %s",
+      "status": "%s...",
+      "uploadFailed": "Tiedoston lataaminen palvelimelle epäonnistui. Ole hyvä ja yritä uudelleen."
+    },
+    "uploadTest": {
+      "title": "Lataus palvelimelle testisivu",
+      "explanation": "Tämä sivu on tarkoitettu käytettäväksi vain teksti skripteistä.",
+      "uploadApp": "Lataa palvelimelle ohjelma:",
+      "uploadBackup": "Lataa palvelimelle varmuuskopio:"
+    },
+    "referrals": {
+      "title": "Suositusohjelma",
+      "header": {
+        "isPaid": {
+          "title": "Saa jopa <span class=\"reward-amount\">30 GB</span> ilmaista tilaa kun ystäväsi jakavat paikassa Oasis!",
+          "explanation": "Jokaista ystävää kohti joka luo jakamis linkin, palkitsemme sinut 2 GB:llä."
+        },
+        "isNotPaid": {
+          "title": "Saa rajattomasti jyviä &amp; jopa <span class=\"reward-amount\">2 GB</span> vapaata tilaa kun ystäväsi jakavat Oasiksessa!",
+          "explanation": "Jokaista ystävää kohti joka luo jakamis linkin, palkitsemme sinut 50 MB:llä. Saat myös rajattomasti jyviä."
+        }
+      },
+      "howTo": {
+        "title": "Jakaminen on suosittelemista",
+        "explanation": "Päästäksesi alkuun, avaa mikä tahansa jyvä ja klikkaa Jaa pääsy.",
+        "getStart": {
+          "step1": "Jaat jyvän ystävällesi (joka ei ole vielä Oasis käyttäjä).",
+          "step2": "Ystäväsi kirjautuu sisään.",
+          "step3": "Ystäväsi jakaa jyvän kenen tahansa toisen henkilön kanssa (sinut mukaanlukien)."
+        }
+      },
+      "status": {
+        "title": "Suosittelusi & tilanne",
+        "explanation": "Kun olet lähettänyt jakamis linkin, ihmiset ilmestyvät tähän listaan kirjautumisensa jälkeen.",
+        "pending": {
+          "title": "Yhä tarvitsee jakaa",
+          "explanation": "Kerro näille ihmisille että tekevät jyvän ja jakavat sen kanssasi. Sinun täytyy itse asiassa mennä katsomaan jyvää jonka he ovat jakaneet kanssasi!"
+        },
+        "success": {
+          "title": "Onnistuneet suositukset",
+          "explanation": "Olet onnistuneesti suositellut näille ihmisille. Onneksi olkoon!"
+        }
+      },
+      "finePrint": {
+        "title": "Pieni präntti",
+        "warningWithAccountLink": "Suositus bonuksesi kestää 1 vuoden suosittelun jälkeen. Tämän suositusohjelman säännöt saattavat muuttua ilman varoitusta; kuitenkin, sellaiset muutokset eivät muuta bonuksia jotka olet jo vastaanottanut. Jos tarvitset vielä enemmän tilaa, <a href=\"%s\">päivitä tilisi.</a>",
+        "explanation": "Maksavat tilaajat voivat saada jopa 30 GB vapaata tilaa, 2 GB jokaista henkilöä kohden joille he suosittelevat, sen lisäksi mitä heidän tilitasonsa jo tarjoaa. Ilmaisen tilin omistajat voivat ansaita rajattomasti jyvää ja 50 MB ilmaista tilaa per henkilö joille he suosittelevat, jopa 2 GB yhteensä."
+      }
+    },
+    "about": {
+      "title": "Tietoja Sandstormista",
+      "intro": {
+        "explanation": "<a href=\"https://sandstorm.io\">Sandstorm.io</a> on avoimen lähdekoodin hostaus-alusta henkilökohtaisille/yksityisille verkko-ohjelmille. Käyttäjät voivat ladata palvelimelle ja asentaa mitä tahansa ohjelmia helpon app-store-tyylisen web-käyttöliittymän kautta. Paremman tietosuojan lisäksi, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">tämä on ainoa tapa tehdä Avoimen Lähdekoodin web-ohjelmat elinkelpoiseksi.</a>",
+        "version": "Versio: %s",
+        "unofficialWarning": "<strong>VAROITUS:</strong> Tämä palvelin käyttää Sandstormin epävirallista versiota joka voi sisältää muutoksia joita kehittäjät eivät ole tarkastaneet."
+      },
+      "changelog": {
+        "title": "Viimeaikaiset muutokset"
+      },
+      "developers": {
+        "title": "Ydinkehittäjät"
+      },
+      "advisors": {
+        "title": "Neuvonantajat"
+      },
+      "corporate": {
+        "title": "Yritys sponsorit",
+        "explanation": "Nämä yritykset ovat osallistuneet voimakkaasti Sandstormin <a href=\"http://igg.me/at/sandstorm\">joukkorahoitus kampanjaan</a>."
+      },
+      "individual": {
+        "title": "Avain yksityishenkilö sponsorit",
+        "explanation": "Nämä yksityshenkilöt ovat osallistuneet voimakkaasti Sandstormin <a href=\"http://igg.me/at/sandstorm\">joukkorahoitus kampanjaan</a>."
+      },
+      "backers": {
+        "title": "Tukijat",
+        "explanation": "lähtöisin <a href=\"http://igg.me/at/sandstorm\">Indiegogo kampanjastamme &gt;</a>",
+        "anonymous": "ja %s anonyymilta osallistujalta",
+        "loading": "ladataan..."
+      },
+      "dependencies": {
+        "title": "Käytetyt kolmannen osapuolen teokset",
+        "license": "lisenssi",
+        "explanation": "Näiden teosten tekijänoikeudet ovat tekijöillä itsellään ja niitä käytetään niiden lisenssien mukaisesti."
+      },
+      "copyright": {
+        "title": "Tekijänoikeus",
+        "license": "Sandstormin toteutuksen tekijänoikeus on Sandstorm Development Group, Inc.:illä ja osallistujilla. Toteutuksen lisenssinä on Apache License 2.0.",
+        "trademark": "\"Sandstorm\" ja Sandstorm logo ovat Sandstorm Development Group, Inc. tavaramerkkejä, ja niitä ei voi käyttää mainostamaan johdettuja teoksia tai kaupallisia palveluja ilman kirjallista lupaa Sandstorm Development Group, Inc.:ltä."
+      },
+      "terms": {
+        "license": "Lisenssi",
+        "terms": "Käyttöehdot",
+        "privacy": "Tietosuojakäytäntö"
+      }
+    }
+  },
+  "grains": {
+    "title": "Jyvät",
+    "grainView": {
+      "notFoundWithId": "Ei löytynyt tiedostojyviä jolla on ID %s.",
+      "openWithWhichIdentity": "Haluatko paljastaa identiteettisi tälle jyvälle, vai säilyä anonyyminä?",
+      "openInIncognitoMode": "Avaa yksityisessä tilassa",
+      "revealMyIdentity": "Paljasta identiteettini"
+    },
+    "grainInMyTrash": {
+      "explanation": "Tämä jyvä on roskiksessasi. Et voi käyttää sitä ennenkuin palautat sen päälistallesi.",
+      "restore": "Palauta päälistalle"
+    },
+    "grainInOwnersTrash": {
+      "explanation": "Et voi enää käyttää tätä jyvää koska sen omistaja on siirtänyt sen roskikseen."
+    },
+    "grainOwnerSuspended": {
+      "explanation": "Et voi enää käyttää tätä jyvää koska sen omistajan tili on jäädytetty."
+    },
+    "wrongIdentity": {
+      "explanation": "Tämä linkki oli tarkoitettu käyttäjälle:"
+    },
+    "requestAccess": {
+      "permissionDenied": "Sinulla ei ole lupaa käyttää tätä jyvää.",
+      "requestAccessHint": "Pyydä käyttöoikeutta",
+      "requestAccess": "Pyydä käyttöoikeutta",
+      "warnIdentityRevealing": "Käyttöoikeuden pyytäminen paljastaa identiteettisi jyvän omistajalle.",
+      "sendRequest": "Lähetetään pyyntösi...",
+      "waitForApproving": "Pyyntösi on lähetetty. Saat sähköpostia jos pyyntösi hyväksytään.",
+      "requestFailed": "Pyyntösi epäonnistui koska: %s",
+      "signInPlease": "Kirjaudu sisään pyytääksesi käyttöoikeutta."
+    },
+    "invalidToken": {
+      "invalidToken": "Virheellinen webavain: %s"
+    },
+    "revokedShareLink": {
+      "linkRevoked": "Sori, tämä linkki on peruttu."
+    },
+    "grainTitle": {
+      "was": "oli: %s",
+      "renamedFrom": "nimetty lähteestä: %s"
+    },
+    "grainDeleteButton": {
+      "hint": "Siirrä roskikseen",
+      "text": "Siirrä roskiikseen"
+    },
+    "grainDebugLogButton": {
+      "hint": "Näytä Debuggaus Loki",
+      "text": "Loki"
+    },
+    "grainBackupButton": {
+      "hint": "Lataa varmuuskopio",
+      "text": "Varmuuskopio"
+    },
+    "grainBackupPopup": {
+      "title": "Lataa varmuuskopio",
+      "warning": "Varoitus! Tämän varmuuskopion palauttaminen ei välttämättä toimi kuten olettaisit.",
+      "processing": "Valmistellaan varmuuskopiota...",
+      "cancelHint": "peruuta",
+      "cancel": "Peruuta",
+      "confirmHint": "lataa varmuuskopio",
+      "confirm": "Lataa varmuuskopio"
+    },
+    "grainRestartButton": {
+      "hint": "Käynnistä ohjelma uudelleen",
+      "text": "Käynnistä uudelleen"
+    },
+    "grainApiTokenButton": {
+      "hint": "Tee webavain",
+      "text": "Tee&nbsp;Webavain"
+    },
+    "grainApiTokenPopup": {
+      "title": "Webavain",
+      "processing": "Luodaan...",
+      "cancel": "Peruuta",
+      "copyForExternalApp": "Kopioi tämä webavain ulkoiseen ohjelmaan:",
+      "back": "Takaisin",
+      "description": "Webavain sallii sinun yhdistää ulkoisen ohjelman (kuten kännykkäohjelman) tähän ohjelmaan.",
+      "labelTitle": "Nimilappu:",
+      "labelPlaceholder": "esim. 'Android ohjelma'",
+      "roleTitle": "Oikeudet:",
+      "permissionTitle": "pääsy kaikkeen",
+      "create": "Luo",
+      "webkeyListTitle": "Olemassaolevat webavaimet:",
+      "revokeHint": "Peruuta",
+      "revoke": "Peruuta"
+    },
+    "grainShareButton": {
+      "hint": "Jaa pääsy tähän jyvään",
+      "text": "Jaa pääsy"
+    },
+    "whoHasAccessPopup": {
+      "title": "Kenellä on pääsy",
+      "noLoggedInUsers": "Kukaan sisäänkirjautunut käyttäjä ei ole vieraillut linkeissäsi vielä.",
+      "nobody": "Et ole sallinut pääsyä kenellekkään.",
+      "addedBy": "lisännyt",
+      "revokeHint": "Peruuta",
+      "revoke": "Peruuta",
+      "hasCustomPermissions": "[mukautetuilla luvilla]"
+    },
+    "selectRole": {
+      "hint": "valitse rooli"
+    },
+    "emailInviteTab": {
+      "demoModeAlert": "Jakamis sähköposteja ei voi lähettää demo tilassa. Luo tili lähettääksesi jakamis sähköposteja, tai hanki jaettava linkki sen sijaan.",
+      "personalMessagePlaceholder": "Kirjoita henkilökohtainen viesti (valinnainen)...",
+      "send": "Lähetä",
+      "sending": "Lähetetään...",
+      "success": "Lähetetty onnistuneesti.",
+      "reset": "+ Lähetä lisää kutsuja",
+      "startOver": "<< Aloita uudelleen"
+    },
+    "shareableLinkTab": {
+      "withRoles": "Kuka tahansa jolla on tämä linkki:",
+      "withoutRoles": "Kuka tahansa jolla on tämä linkki voi päästä tähän jyvään.",
+      "labelPlaceholder": "Nimilappu (valinnainen)",
+      "labelExplanation": "Käytä nimeä muistuttamaan itseäsi siitä kenelle lähetit tämän ainutkertaisen linkin.",
+      "create": "Luo",
+      "creating": "Luodaan...",
+      "success": "Kopioi tämä linkki:",
+      "reset": "+ Luo toinen linkki",
+      "cancel": "Peruuta"
+    },
+    "shareWithOthers": {
+      "title": "Jaa muiden kanssa",
+      "sendInviteTab": "Lähetä kutsu",
+      "shareableLinkTab": "Hanki jaettava linkki",
+      "whoHasAccess": "Katso kenellä on pääsy"
+    },
+    "grainSharePopup": {
+      "oldSharingModelDescription": "Tämä jyvä käyttää vanhaa jakotapaa. Voit jakaa sen kopiomalla/liittämällä URLin osoitekentästä",
+      "upgradeDescription": "Voit päivittää tämän jyvän uuteen malliin, mutta kuka tahansa jolle jaoit pääsyn aiemmin menettää pääsyn; sinun tulee jakaa heille uudelleen.",
+      "upgradeWarning": "Päivittämistä ei voi perua.",
+      "upgrade": "päivitä",
+      "openInIncognitoMode": "Katsot tätä jyvää anonyyminä.",
+      "toShareAccess": "Jakaaksesi pääsyn, kopioi tämä linkki:",
+      "openNonAnonymouslyHead": "Saadaksesi lisää jakamis vaihtoehtoja, sinun täytyy",
+      "openNonAnonymouslyLink": "avata tämä jyvä ei-anonyymisti",
+      "openNonAnonymouslyTail": ".",
+      "signIn": "Saadaksesi lisää jakamis vaihtoehtoja, ole hyvä ja kirjaudu sisään."
+    },
+    "grainPowerboxRequest": {
+      "powerboxRequestHint": "Powerbox pyyntö",
+      "powerboxRequest": "P"
+    },
+    "grainPowerboxOffer": {
+      "powerboxOfferHint": "Powerbox tarjous",
+      "powerboxOffer": "P"
+    },
+    "grainPowerboxOfferPopup": {
+      "title": "Powerbox tarjous",
+      "dismiss": "Hylkää"
+    },
+    "share": {
+      "grainNotFoundWithId": "Yhtään jyvää ei löytynyt jolla on ID %s. Ehkä sinun täytyy kirjautua sisään käyttäen eri tiliä?",
+      "signIn": "Sinun täytyy olla kirjautuneena sisään salliaksesi pääsy jyvään."
+    },
+    "grainlist": {
+      "sandstormGrainListPage": {
+        "introButton": {
+          "hint": "Mikä on jyvä?"
+        },
+        "mainListButton": "Näytä päälista",
+        "trashButton": "Näytä roskakori (%s)",
+        "restoreButton": "Palauta varmuuskopio...",
+        "search": {
+          "placeholder": "etsi"
+        },
+        "usageInfo": {
+          "quota": "__count__ / __quota__ jyvää",
+          "size": "__size__ / __total__ käytetty"
+        },
+        "trash": {
+          "emptyButton": "Tyhjennä roskakori",
+          "explanation": "(Solut poistetaan lopullisesti kun ne ovat olleet 30 päivää roskakorissa. Pitääksesi jyvän, palauta se päälistaan.)"
+        },
+        "noGrains": {
+          "notFound": "<strong>Ei löytynyt täsmääviä tiedostojyviä.</strong>",
+          "inTrash": "Jotkin roskakorissa olevat tiedostot täsmäävät etsintääsi.",
+          "trashButton": "Näytä roskakori",
+          "empty": "<strong>Roskakori on tyhjä.</strong>",
+          "explanation": "Sinulla ei ole yhtään jyvää vielä.",
+          "hasApps": "Valitse ohjelma ja luo ensimmäinen jyväsi.",
+          "hasNoApp": "Asenna ohjelma luodaksesi ensimmäinen jyväsi."
+        },
+        "moveToTrash": "Siirrä roskakoriin"
+      },
+      "sandstormGrainTable": {
+        "bulkAction": {
+          "disabledHint": "Suorittaaksesi joukkotoimintoja, sinun täytyy ensin valita muutamia tiedostojyviä listalta."
+        },
+        "tableHeader": {
+          "title": "Nimi",
+          "size": "Koko",
+          "lastUsed": "Viimeinen toiminta",
+          "ownership": "Minun/Jaettu",
+          "collaborators": "Osallistujat"
+        },
+        "tableBody": {
+          "was": "(oli: %s)",
+          "renamedFrom": "(nimetty lähteestä: %s)",
+          "new": "Avaamaton",
+          "mine": "Jyväni",
+          "shared": "Jaettu kanssani"
+        }
+      },
+      "contactAutocomplete": {
+        "contactInputBox": {
+          "placeholder": "Kirjoita sähköposti osoitteet tai nimet"
+        }
+      }
+    }
+  },
+  "notifications": {
+    "appUpdateNotificationItem": {
+      "title": "Ohjelmapäivityksiä on saatavilla:",
+      "appUpdates": "<strong>__name__</strong>: versio __version__ on saatavilla",
+      "submitButton": {
+        "hint": "Päivitä kaikki yllä mainitut ohjelmat",
+        "text": "Asenna päivitykset"
+      },
+      "dismissButton": {
+        "hint": "Jätä huomiotta yllä mainitut päivitykset",
+        "text": "Hylkää"
+      }
+    },
+    "mailingListBonusNotificationItem": {
+      "explanationWithBonus": "Liity tiedotuslistallemme ja saa <strong>%s bonus tallennustilaa</strong> (1-2 sähköpostia per kuukausi).",
+      "submitButton": "Liity",
+      "dismissButton": "Ei kiitos"
+    },
+    "referralNotificationItem": {
+      "paidUser": "Saa jopa 30 GB asti bonuksia mukana",
+      "unpaidUser": "Rajattomasti tiedostojyviä & jopa 2 GB asti bonuksia",
+      "link": "suositus ohjelmalla »",
+      "dismissButton": "Hylkää"
+    },
+    "adminNotificationItem": {
+      "explanation": "Voit auttaa Sandstormia lähettämällä meille joitakin anonyymejäkäyttötilastoja. Klikkaa tästä saadaksesi lisätietoja."
+    },
+    "backgroundedGrainNotificationItem": {
+      "title": "<strong>__grain__</strong> on siirretty taustalle:",
+      "cancelButton": {
+        "hint": "Pysäytä taustaohjelma",
+        "text": "Peruuta"
+      }
+    },
+    "identityChangesNotificationItem": {
+      "explanation": "Olemme vaihtamassa tapaa miten identiteetit toimivat Sandstormissa. Tämä voi vaikuttaa tiliisi. Klikkaa tästä saadaksesi lisätietoja."
+    },
+    "grainActivityNotificationItem": {
+      "title": "<strong>__sender__</strong> jyvältä <strong>__grain__</strong>:",
+      "dismissButton": {
+        "hint": "Hylkää tämä ilmoitus",
+        "text": "Hylkää"
+      }
+    }
+  },
+  "powerboxBuiltins": {
+    "uiViewPowerboxConfiguration": {
+      "explanation": "oikeuksilla:",
+      "fullAccess": "Täydet oikeudet",
+      "connectButton": "Yhdistä",
+      "chooseHostedObjectButton": "Selaa jyvän sisältöä »"
+    },
+    "ipNetworkPowerboxCard": {
+      "explanation": "Admin: salli kaikki ulosmenevä verkkoliikenne",
+      "encryptedWith": "(kryptaustapa %s)"
+    },
+    "ipInterfacePowerboxCard": {
+      "explanation": "Admin: salli kaikki tuleva verkkoliikenne"
+    },
+    "emailVerifierPowerboxCard": {
+      "verifyWith": "Varmista sähköpostiosoite käyttäen %s",
+      "verifyWithAnyService": "Varmista sähköpostiosoite käyttäen mitä tahansa kirjautumis palvelua"
+    },
+    "identityPowerboxConfiguration": {
+      "explanation": "oikeuksilla:",
+      "fullAccess": "Täydet oikeudet",
+      "connectButton": "Yhdistä"
+    },
+    "addNewVerifiedEmailPowerboxCard": {
+      "explanation": "Lisää uusi osoite"
+    },
+    "httpUrlPowerboxCard": {
+      "useUrl": "Käytä %s"
+    },
+    "httpArbitraryPowerboxCard": {
+      "explanation": "Määritä URL..."
+    },
+    "httpArbitraryPowerboxConfiguration": {
+      "explanation": "Kirjoita URL:",
+      "placeholder": "https://example.com",
+      "connectButton": "Yhdistä"
+    },
+    "httpOAuthPowerboxCard": {
+      "useService": "Käytä %s"
+    },
+    "httpOAuthPowerboxConfiguration": {
+      "requstPermissionsFromService": "Pyydetää oikeuksia käyttäjältä %s (katso ponnahdusikkuna)."
+    }
+  },
+  "styleguide": {
+    "title": "Sandstorm tyyliopas",
+    "note": "(huom: tämä on työn alla.)",
+    "copyRules": {
+      "title": "Kopiointi säännöt",
+      "rule1": "Kirjoita lyhyesti mutta selkeästi.  Vältä teknisiä termejä silloin kuin vähemmän tekniset termit riittää.",
+      "rule2": "Kirjoita otsikon tai painikkeen ensimmäisen sanan ensimmäinen kirjain isolla.  Älä kirjoita isolla toista sanaa, tai mitään muuta, ellet viittaa substantiiviin kuten Google tai GitHub.",
+      "rule3": "Käytä verbejä painikkeiden tekstinä. Painikkeen tekstin tulisi kuvata sitä mitä painiketta painaessa tapahtuu.",
+      "rule4": "Käytä substantiiveja linkkien teksteissä.  Linkki tekstin tulisi kertoa minne linkki vie sinut.",
+      "rule5": "Käytä substantiiveja yleisesti myös kaikkeen muuhun, tiedottaaksesi tieto arkkitehtuurista. Kappaleiden otsikkojen tulisi olla substantiiveja jotka kuvaavat kappaleen sisältöä.  Nimilappujen tulisi olla substantiiveja jotka kuvaavat kentän sisältöä."
+    },
+    "styleRules": {
+      "title": "Tyylisäännöt",
+      "rule1": "Käytä rajoitettua väripalettia.  (TODO: lisää määritetyt värit)",
+      "rule2": "Käytä tekstin kokona pienimmillään 13px tekstin sisältöön.  Luettavuus on tärkeää ja kaikilla ei ole nuoret silmät.",
+      "rule3": "Tee klikkaus kohteista pienimmillään 32px neliö tai 26px korkea jos huomattavasti leveämpi.  Muista että Fittsin lain mukaan, suurempia klikkaus kohteita on helpompi käyttää."
+    },
+    "forms": {
+      "title": "Lomakkeet",
+      "rule1": "Käytä <code>standard-form</code> class:ia tarvittaessa.",
+      "rule2": "Lomakkeen päätoiminto painike tulisi olla lomakkeen oikeassa alakulmassa. Toisarvoiset painikkeet tulisi olla samalla tasolla vasemmalle päin päätoiminto painikkeesta.",
+      "rule3": "Kun tarjotaan tekstinsyöttö kenttiä, sijoita nimilaput syöttökenttien yläpuolelle, ei vierekkäin tai tekstikentän sisään vihjetekstinä.   Sijoita lisäselitys tai ohjeet syöttökentän alle. Syöttökentän tekstiä tulisi käyttää esimerkeissä, ei ohjeissa.",
+      "rule4": "Lomakkeita käytetään yleensä tietojen siirtoon, jolloin käyttäjä välittää siitä että onnistuiko tietojen syöttäminen ohjelmaan vai ei.  Vältä optimistista käyttöliittymää, suosi sen sijaan suori monivaiheista käyttöliittymää joka kertoo verkkoaktiviteetista, onnistumisista, ja epäonnistumisista.  Yleinen malli on:",
+      "rule4-1": "Lomakkeella tulee olla oletus tila.  Poista käytöstä tallennus painike kunnes käyttäjä tekee muutoksen.",
+      "rule4-2": "Kun käyttäjä klikkaa toiminto painiketta, käynnistä RPC, ja ota pois käytöstä koko lomake jotta näkyy että toiminto on meneillään.",
+      "rule4-3": "Kun RPC valmistuu, jos RPC epäonnistui, näytä virheviesti sen sisällön yläpuolella jota virhe koskee.  Jos RPC onnistui, joko näytä onnistumis viesti (jälleen, sen sisällön yläpuolella jota toiminto koskee) tai jos tämä oli modaalinen vuorovaikutus ja RPC:n onnistuminen merkitsee koko kaikkien työnkulku vaiheiden onnistumista, hylkää lomake ilman lisäviestejä."
+    },
+    "example": {
+      "title": "Esimerkki:",
+      "label": "Sähköposti",
+      "placeholder": "alice@example.com",
+      "subtext": "Haluat mahdollisesti vastaanottaa ilmoituksia.",
+      "submitButton": "Tallenna",
+      "discardButton": "Hylkää"
+    }
+  },
+  "admin": {
+    "title": "Admin",
+    "admin": {
+      "newAdmin": {
+        "title": "Hallintapaneeli",
+        "wildcardHostBroken": "VAROITUS: Tällä palvelimella näyttää olevan WILDCARD_HOST väärät asetukset.  Ennenkuin korjaat sen, et pysty käyttämään mitään ohjelmia. Voit lukea tästä <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\"> enemmän tietoja Sandstorm ohjeista</a> ja selaimesi Javascript konsolista. Sinun tarvitsee säätää DNS, SSL/TLS sertifikaatteja, tai muokata sandstorm.conf tiedostoa. Jos et näe mitään tietoja JS konsolissa, tai haluat testata jos olet jo korjannut ongelman, lataa tämä sivu uudelleen ajaaksesi testin uudelleen. Jos sinulla on yhä ongelmia, <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">ole hyvä ja avaa issue.</a>",
+        "websocketBroken": "VAROITUS: Tämä palvelin ei näytä pystyvän luomaan WebSockettia. Sandstorm voi näyttää toimivan hyvin, mutta monet ohjelmat eivät toimi kunnolla. <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\"> Lue lisää.</a>  Tavallisesti tämä johtuu reverse proxystä kuten nginx tai Apache jonka asetukset pitää määrittää uudelleen. Jos arvelet näkeväsi tämän viestin virheellisesti, ole hyvä ja lataa tämä sivu uudelleen tai <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">avaa issue.</a>",
+        "hasSetupToken": "Et ole kirjautunut sisään adminina, mutta sinulla on asetus token. Voit joko <a href=\"/setup\">käyttää ohjattua asennustoimintoa</a> tai <a href=\"/admin/status\">katsoa järjestelmän lokeja</a>.",
+        "hasNoSetupToken": "Et ole kirjautunut sisäänn adminina. Käyttääksesi hallintapaneelia, kirjaudu sisään admin käyttäjänä tai luo token komentorivillä komennolla `sandstorm admin-token`."
+      },
+      "newAdminRoot": {
+        "configuration": {
+          "title": "Asetukset"
+        },
+        "management": {
+          "title": "Hallinto"
+        }
+      }
+    },
+    "identityProviders": {
+      "name": "Kirjautumistavat",
+      "providers": {
+        "emailPassLess": "Sähköposti (salasanaton)"
+      },
+      "subtext": "Miten käyttäjät kirjautuvat sisään.",
+      "newAdminIdentity": {
+        "explanation": "Valitse mitä palveluita käyttäjät voivat käyttää todentaakseen identiteettinsä.  Kuka tahansa voi kirjautua sisään, mutta vain käyttäjät jotka kutsut voivat asentaa ohjelmia tai luoda tiedostojyviä.",
+        "organizationLinkPrefix": "Määrittääksesi organisaation jäsenyyden ja asetukset, katso",
+        "organizationLink": "organisaation asetukset",
+        "organizationLinkPostfix": "."
+      },
+      "adminIdentityProviderConfigureEmail": {
+        "title": "Sähköposti kirjautumisen asetukset",
+        "error": "Muutosten tallentaminen epäonnistui: %s",
+        "warning": "Huom: käyttääksesi sähköposti kirjautumista, sinun tarvitsee määritellä sähköpostin lähetys tämän jälkeen.",
+        "explanation": "Sähköposti kirjautumisella ei ole muita lisäasetuksia.",
+        "saveButton": "Tallenna",
+        "enableButton": "Ota käyttöön",
+        "cancelButton": "Peruuta",
+        "disableButton": "Poista käytöstä"
+      },
+      "googleLoginSetupInstructions": {
+        "explanation": "Ensin, sinun tulee hankkia Google Client ID. Seuraa näitä vaiheita:",
+        "step1": "Vieraile <a href=\"https://console.developers.google.com/\" target=\"blank\">https://console.developers.google.com/</a>",
+        "step2": "\"Create Project\", tarvittaessa. Odota että Google saa sen valmiiksi.",
+        "step3": "Vasemmassa sivupalkissa, mene \"Credentials\" ja, oikealla, \"OAuth consent screen\". Varmista että kirjoitat sähköpostiosoitteen ja product namen, ja klikkaa save.",
+        "step4": "Vasemmassa sivupalkissa, mene \"Credentials\" kohtaan.  Klikkaa \"Create credentials\" painiketta, sitten valitse \"OAuth client ID\" tyypiksi.",
+        "step5": "Valitse \"Web application\" application tyypiksi.",
+        "step6": "Aseta Authorized Javascript Origins: <span class=\"idp-config-url\">%s</span>",
+        "step7": "Aseta Authorized Redirect URI: <span class=\"idp-config-url\">%s/_oauth/google</span>",
+        "step8": "Päätä tämä vaihe klikkaamalla \"Create\"."
+      },
+      "adminIdentityProviderConfigureGoogle": {
+        "title": "Google kirjautuminen asetukset",
+        "formerBaseUrlWarning": "Tämä palvelin on siirtynyt lähteestä <code>__former__</code> kohteeseen <code>__current__</code>. Sinun tarvitsee vierailla <a target=\"_blank\" href=\"https://console.developers.google.com/\">https://console.developers.google.com/</a> ja päivittää \"Authorized Javascript Origins\" ja \"Authorized Redirect URI\" tälle Client ID:lle sisältämään allaolevat arvot.",
+        "error": "Muutosten tallentaminen epäonnistui: %s",
+        "explanation": "Sitten, kopioi Client ID and Client secret tähän alle:",
+        "clientId": "Client ID:",
+        "clientSecret": "Client secret:",
+        "saveButton": "Tallenna",
+        "enableButton": "Ota käyttöön",
+        "cancelButton": "Peruuta",
+        "disableButton": "Poista käytöstä"
+      },
+      "githubLoginSetupInstructions": {
+        "explanation": "Ensin, sinun tulee hankkia Github Client ID ja Client secret. Seuraa näytä vaiheita:",
+        "step1": "Vieraile <a href=\"https://github.com/settings/applications/new\" target=\"blank\">https://github.com/settings/applications/new</a>",
+        "step2": "Aseta Homepage URL: <span class=\"idp-config-url\">%s</span>",
+        "step3": "Aseta Authorization callback URL: <span class=\"idp-config-url\">%s_oauth/github</span>"
+      },
+      "adminIdentityProviderConfigureGitHub": {
+        "title": "GitHub kirjautuminen asetukset",
+        "formerBaseUrlWarning": "Tämä palvelin on siirtynyt lähteestä <code>__former__</code> kohteeseen <code>__current__</code>. Sinun tarvitsee vierailla <a target=\"_blank\" href=\"https://github.com/settings/developers\">https://github.com/settings/developers</a> ja päivittää Homepage URL ja Authorization callback URL tälle ohjelmalle allaolevien arvojen mukaisesti.",
+        "explanation": "Sitten, kopioi Client ID ja Client secret tähän alle:",
+        "clientId": "Client ID:",
+        "clientSecret": "Client secret:",
+        "saveButton": "Tallenna",
+        "enableButton": "Ota käyttöön",
+        "cancelButton": "Peruuta",
+        "disableButton": "Poista käytöstä"
+      },
+      "adminIdentityProviderConfigureLdap": {
+        "title": "LDAP kirjautuminen asetukset",
+        "error": "Muutosten tallentaminen epäonnistui: %s",
+        "url": {
+          "label": "LDAP palvelin URL:",
+          "subtext": "esim. <code>ldap://ldap.example.com:389</code>.  Käytä porttia 636 SSL:lle."
+        },
+        "searchBindDn": {
+          "label": "Bind käyttäjän DN",
+          "subtext": "DN johon sidotaan kun etsitään käyttäjää puusta, esim. <code>cn=admin,ou=users,dc=example,dc=com</code>.  Valinnainen, mutta tarvitaan jos palvelimesi ei salli etsimistä ilman autentikointia."
+        },
+        "searchBindPassword": {
+          "label": "Bind käyttäjän salasana",
+          "subtext": "Valinnainen, mutta tarvitaan määrittäessä bind DN yllä."
+        },
+        "base": {
+          "label": "Base DN",
+          "subtext": "Juuri objekti jota etsitään käyttäjätili nodeissa, esim. <code>ou=users,dc=example,dc=com</code>"
+        },
+        "searchUsername": {
+          "label": "LDAP käyttäjänimen attribuutit",
+          "subtext": "LDAP attribuutit käyttäjä objektille jotka edustaa käyttäjän käyttäjänimeä (jonka he kirjoittavat käyttäjänimi kenttään kirjautuessaan sisään)."
+        },
+        "nameField": {
+          "label": "LDAP annettu nimi attribuutti",
+          "subtext": "LDAP attribuutti käyttäjä objektille joka edustaa käyttäjän koko näytettävää nimeä."
+        },
+        "emailField": {
+          "label": "LDAP sähköposti attribuutti",
+          "subtext": "LDAP attribuutti käyttäjä objektille joka edustaa käyttäjän sähköposti osoitetta."
+        },
+        "filter": {
+          "label": "Lisä LDAP suodatin kriteeri",
+          "subtext": "Valinnainen LDAP haun osa joka lisätään käyttäjä hakuun. Tätä ei yleensä käytetä. Katso <a target=\"_blank\" href=\"http://www.ietf.org/rfc/rfc2254.txt\">RFC2254</a>."
+        },
+        "caCert": {
+          "label": "LDAP CA sertifikaatti",
+          "placeholder": "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----",
+          "subtext": "Tämä on tarpeellinen vain jos palvelimesi tukee SSL:ää ja käyttää yksityistä CA:ta joka ei ole yleisesti luotettujen joukossa. Huomioi että tämä EI toimi niin että lisäät LDAP palvelimesi oman sertifikaatin tähän -- sen täytyy olla CA sertifikaatti joka on allekirjoitettu LDAP palvelimen sertifikaatilla."
+        },
+        "saveButton": "Tallenna",
+        "enableButton": "Ota käyttöön",
+        "cancelButton": "Peruuta",
+        "disableButton": "Poista käytöstä"
+      },
+      "adminIdentityProviderConfigureSaml": {
+        "title": "SAML kirjautumis asetukset",
+        "explanation": "Sinun SAML IDP tulisi olla määritetty palauttamaan samana säilyvä nameID. Lisäksi, jos ei käytä Active Directorya, sinun <strong>täytyy</strong> asettaa IDP:si tarjoamaan kaksi lisämäärettä, <code>email</code> ja <code>displayName</code>.",
+        "serviceUrl": "Service URL tälle palvelimelle on: <code>%s</code>",
+        "logoutUrl": "Service Logout URL tälle palvelimelle on: <code>%s</code>",
+        "metadataUrlAt": "Jos sinun SAML IDP tukee palveluntarjoajan metadatan lukemista URLista, sitten voit laittaa sen osoittamaan kohteeseen: <code><a href=\"__href__\" target=\"_blank\">__text__</a></code>",
+        "error": "Muutosten tallentaminen epäonnistui: %s",
+        "entryPoint": {
+          "label": "SAML tarjoajan entry point URL:",
+          "placeholder": "https://YOUR_SAML_PROVIDER.com/sso/saml"
+        },
+        "logout": {
+          "label": "SAML tarjoajan logout URL (valinnainen):",
+          "placeholder": "https://YOUR_SAML_PROVIDER.com/sso/saml/SingleLogoutService"
+        },
+        "publicCert": {
+          "label": "SAML sertifikaatti ylläolevalle tarjoajalle:",
+          "placeholder": "base64 encoded cert (e.g. MIID...8F==)"
+        },
+        "entityId": {
+          "label": "Entity ID:"
+        },
+        "saveButton": "Tallenna",
+        "enableButton": "Ota käyttöön",
+        "cancelButton": "Peruuta",
+        "disableButton": "Poista käytöstäDisable"
+      },
+      "adminIdentityProviderTable": {
+        "title": "Kirjautumistavat",
+        "status": "Tilanne"
+      },
+      "adminIdentityRow": {
+        "enabled": "Käytössä",
+        "disabled": "Ei käytössä",
+        "baseUrlChanged": {
+          "explanation": "Poistettu käytöstä BASE_URL muutoksen takia",
+          "reconfigureButton": "määritä uudelleen"
+        },
+        "configureButton": {
+          "hint": "Määritä %s kirjautuminen",
+          "text": "Määritä"
+        }
+      }
+    },
+    "organization": {
+      "name": "Organisaation asetukset",
+      "subtext": "Kevennä käyttöönottoa ja yhteistyötä laajemmissa tiimeissä.",
+      "organizationSettingsBlurb": {
+        "explanation": "Sandstorm mahdollistaa organisaation määrittelemisen. Voit automaattisesti ottaa käyttöön joitakin asetuksia kaikille organisaation käyttäjille. Organisaation käyttäjät voivat automaattisesti kirjautua sisään, asentaa ohjelmia, ja luoda tiedostojyviä."
+      },
+      "newAdminOrganization": {
+        "success": "Tallenna muutokset.",
+        "error": "Muutosten tallentaminen epäonnistui: %s",
+        "membership": {
+          "title": "Organisaation jäsenyys",
+          "emailToggle": {
+            "label": "Käyttäjät tunnistautuvat sähköposti osoitteella",
+            "subtext": "Huom: poistettu käytöstä koska sähköposti kirjautumisen asetuksia ei ole määritelty."
+          },
+          "emailDomain": {
+            "label": "Domain:",
+            "subtext": "Käyttäjät joiden sähköpostiosoitteena on tämä domain tulevat olemaan tämän palvelimen organisaation jäseniä."
+          },
+          "gappsToggle": {
+            "label": "Käyttäjät jotka tunnistautuvat G Suiten kautta",
+            "subtext": "Huom: poistettu käytöstä koska Google kirjautuminen ei ole määriteltynä."
+          },
+          "gappsDomain": {
+            "label": "Domain:",
+            "subtext": "Käyttäjät joilla on G Suite tili tällä domainilla tulevat olemaan tämän palvelimen organisaation jäseniä."
+          },
+          "ldapToggle": {
+            "label": "Käyttäjät tunnistautuvat LDAPin kautta",
+            "subtext": "Huom: poistettu käytöstä koska LDAP kirjautumista ei ole määriteltynä."
+          },
+          "samlToggle": {
+            "label": "Käyttäjät tunnistautuvat SAMLin kautta",
+            "subtext": "Huom: poistettu käytöstä koska SAML kirjautumista ei ole määriteltynä."
+          }
+        },
+        "settings": {
+          "title": "Organisaation asetukset",
+          "disallowGuests": {
+            "label": "Estä yhteistyö organisaation ulkopuolisten käyttäjien kanssa.",
+            "subtext": "Käyttäjiltä vaaditaan kirjautuminen jäsenenä että jaettujen linkkien katsominen on mahdollista. Vieraiden pääsy poistetaan käytöstä."
+          },
+          "shareContacts": {
+            "label": "Tee kaikki organisaation käyttäjät näkyviksi toisilleen",
+            "subtext": "Tämä asetus automaattisesti lisää käyttäjät organisaation sisällä toistensa yhteystieto listoihin jotta he voivat jakaa tiedostojyviä toistensa kanssa.  Poista tämä käytöstä jos sinulla on joitakin käyttäjiä joiden identiteetti tulisi pysyä piilotettuna toisilta käyttäjiltä."
+          }
+        },
+        "saveButton": "Tallenna"
+      }
+    },
+    "emailConfig": {
+      "name": "Sähköposti asetukset",
+      "subtext": "Miten sähköposti lähetetään käyttäjille.",
+      "newAdminEmailConfig": {
+        "outbound": {
+          "title": "Ulospäin menevä sähköposti",
+          "warning": "<strong>Sähköpostia ei ole määritetty.</strong> Sähköpostiin liittyvät oiminnot kuten sähköposti kirjautuminen, ilmoitukset, jakamis kutsut, ja pääsyoikeuden pyytäminen eivät ole käytössä ennekuin määrität sähköpostiasetukset."
+        },
+        "howItWorks": {
+          "title": "Kuinka Sandstorm käyttää sähköpostia",
+          "explanation": "Sandstorm lähettää sähköposti ilmoituksia, ja Sandstorm ohjelmat voivat myös lähettää sähköposti ilmoituksia. Jokainen ohjelma saa oman eri sähköpostiosoitteensa, joten Sandstormin täytyy pystyä lähettämään sähköpostia eri \"Lähettäjä:\" osoitteista. Tämän takia Gmail SMTP ei toimi, mutta on muita ilmaisia palveluita. Katso <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">saadaksesi lisäohjeita</a>."
+        },
+        "success": "Tiedot tallennettu.",
+        "error": "Tietojen tallentaminen epäonnistui: %s",
+        "address": {
+          "hostname": "SMTP isäntä",
+          "port": "Portti",
+          "subtext": "Käytä porttia 25 SMTP:lle (salaamaton tai StartTLS), tai porttia 465 TLS-salatulle SMTPS:lle."
+        },
+        "username": {
+          "label": "Käyttäjänimi (valinnainen)"
+        },
+        "password": {
+          "label": "Salasana (valinnainen)"
+        },
+        "returnAddress": {
+          "label": "Sandstorm palvelimen oma sähköposti osoite",
+          "subtext": "Sandstorm lähettää kirjautumis sähköposteja, ilmoituksia sallituista pääsypyynnöistä, ja muita sähköposteja tästä osoitteesta. Se myös käyttää tätä osoittetta SMTP envelope:ssa."
+        },
+        "submitButton": "Tallenna asetukset",
+        "testButton": "Testaa",
+        "disableButton": "Poista käytöstä sähköposti"
+      },
+      "emailTestPopup": {
+        "title": "Lähetä testi sähköposti",
+        "testAddress": {
+          "label": "Lähetä testi sähköposti osoitteeseen:"
+        },
+        "pending": "Lähetetään...",
+        "submitButton": "Lähetä testi sähköposti",
+        "closeButton": "Sulje"
+      },
+      "emailDisablePopup": {
+        "title": "Haluatko varmasti poistaa sähköpostin käytöstä?",
+        "explanation": "Tämä poistaa käytöstä kaiken tältä palvelimelta ulosmenevän sähköpostin, mukaanlukien jakamisen sähköpostin kautta, sähköposti token kirjautuminen (jos käytössä), ja sähköposti ilmoitukset käyttäjille.",
+        "disableButton": "Poista käytöstä sähköposti",
+        "closeButton": "Sulje"
+      }
+    },
+    "personalization": {
+      "name": "Yksilöinti",
+      "subtext": "Muokkaa splash sivua, käyttöehtoja, tietosuoja käytäntöä, jne.",
+      "newAdminPersonalization": {
+        "serverTitle": {
+          "label": "Palvelimen otsikko:",
+          "subtext": "Tämän palvelimen nimi, jota käytetään viestinnässä käyttäjille."
+        },
+        "splashUrl": {
+          "label": "Splash URL (kokeellinen):",
+          "subtext": "Tämä nettisivu näytetään kirjautumis lomakkeen taustalla (kotisivulla kun ollaan kirjautuneena ulos). Tietoturvasyistä, tämä sivu tulee hostata jollakin tämän Sandstorm pavelimen wildcard hostilla (muutoin sen estää <code>Content-Security-Policy</code>). Suosittelemme käyttämään staattista web julkaisu ohjelmaa kuten <a target=\"_blank\" href=\"https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh/?host=%s\">Hacker CMS</a> sisällön hostaamiseen.<strong>VAROITUS: Tämä ominaisuus on kokeellinen; erityisesti kirjautumis laatikon tyyli ja sijainti voi muuttua ilman varoitusta.</strong> Ole hyvä ja kerro meille jos haluaisit nähdä tämän vakautuvan."
+        },
+        "signupDialog": {
+          "label": "Rekisteröitymis lomake:",
+          "subtext": "Tämä teksti näytetään käyttäjille jotka klikkaavat rekisteröitymis linkkejä."
+        },
+        "termsOfService": {
+          "label": "Käyttöehdot URL:",
+          "placeholder": "https://example.com/tos",
+          "subtext": "Jos annettu, uusien käyttäjien vaaditaan hyväksymään linkitetyt käyttöehdot."
+        },
+        "privacyPolicy": {
+          "label": "Tietosuoja käytäntö URL:",
+          "placeholder": "https://example.com/privacy",
+          "subtext": "Jos annettu, uusien käyttäjien vaaditaan hyväksymään linkitetty tietosuoja käytäntö."
+        },
+        "whitelabeling": {
+          "title": "Valkea nimilappu",
+          "logo": {
+            "label": "Yksilöllinen logo kirjautumis lomakkeessa",
+            "resetButton": "Käytä oletusta",
+            "uploadButton": "Lataa logo palvelimelle"
+          },
+          "hideTroubleshooting": {
+            "label": "Piilota vianmääritys painike"
+          },
+          "hideAbout": {
+            "label": "Piilota \"Tietoja Sandstormista\" linkit"
+          },
+          "hideSendFeedback": {
+            "label": "Piilota \"Lähetä palautetta\" linkki"
+          },
+          "useServerTitleForHomeText": {
+            "label": "Läytä palvelin otsikkoa (yllä) koti linkkinä",
+            "subtext": "Jos käytössä, muuttaa oletus nimilapun \"Sandstorm\" vasemmassa yläkulmassa vastaamaan mitä tahansa määritit Palvelin otsikko kohdassa yllä."
+          },
+          "customLoginProviderName": {
+            "label": "Yksilöllinen kirjautumis painike teksti",
+            "subtext": "Korvaa tekstin \"with LDAP\" ja \"with SAML\" kirjautumis sivulla määrittämälläsi tekstillä."
+          }
+        },
+        "saveButton": "Tallenna"
+      }
+    },
+    "preinstalledApps": {
+      "name": "Valmiiksi asennetut ohjelmat",
+      "subtext": "Valitse ohjelmat jotka asennetaan valmiiksi uusille käyttäjille.",
+      "newAdminPreinstalledApps": {
+        "explanation": "Ohjelmat jotka määrität tällä sivulla asennettavaksi valmiiksi, asennetaan automaattisesti (näkyvät kohdassa /apps) uusille käyttäjille.",
+        "productivitySuite": {
+          "label": "Tuottavuusohjelmisto",
+          "subtext": "Suosittelemme asennettavaksi valmiiksi nämä perusohjelmat jotka ovat hyödyllisiä useimmille käyttäjille."
+        },
+        "systemSuite": {
+          "label": "Järjestelmä ohjelmat",
+          "subtext": "Suosittelemme asennettavaksi valmiiksi nämä järjestelmä ohjelmat jotka suuresti parantavat Sandstormin kykyjä."
+        },
+        "allApps": {
+          "label": "Kaikki ohjelmat kaupassa",
+          "subtext": "Kaikki ruksatut ohjelmat alla asennetaan oletuksena kaikille uusille käyttäjille.",
+          "lessButton": "Näytä vähemmän ohjelmia",
+          "moreButton": "Näytä %s enemmän ohjelmia"
+        },
+        "saveButton": "Tallenna"
+      },
+      "_appRow": {
+        "download": {
+          "success": "Ladattu",
+          "failed": "Epäonnistui"
+        }
+      }
+    },
+    "appSources": {
+      "name": "Ohjelmalähteet",
+      "subtext": "Mistä etsiä ohjelmia ja ohjelmapäivityksiä.",
+      "newAdminAppSources": {
+        "appMarketUrl": {
+          "label": "Ohjelmakauppa URL",
+          "subtext": "\"Asenna...\" painike ohjelmissa linkittää tähän URLiin."
+        },
+        "enableAppUpdates": {
+          "label": "Ota käyttöön ohjelmapäivitys ilmoitukset",
+          "subtext": "Sandstorm palvelin lataa päivitykset ohjelmiin automaattisesti ja lähettää ilmoitukset käyttäjille kysyen haluavatko he päivittää asennetut ohjelmansa."
+        },
+        "appIndexUrl": {
+          "label": "Ohjelmalista URL",
+          "subtext": "Tämä on URL jonka Sandstorm palvelin tarkistaa että onko uusia ohjelmistopäivityksiä."
+        },
+        "saveButton": "Tallenna",
+        "restoreButton": "Palauta oletukset"
+      }
+    },
+    "networking": {
+      "name": "Verkko",
+      "altName": "Tietoturva",
+      "subtext": "Hallitse verkon käyttöä.",
+      "newAdminNetworking": {
+        "ipBlacklist": {
+          "label": "Palvelinpuolen pyyntöjen IP mustalista:",
+          "subtext": "Käyttäjiltä estetään tehdä pyyntöjä näihin IP osoitteisiin. Tämä sisältää pyyntöjen tekemisen ohjelmista, SPK tiedoston lataamisen käyttäjän määrittämästä URLista, jne. Voit määrittää yhden IP osoitteen tai verkon (CIDR muodossa, esim. \"127.0.0.0/8\") per rivi. Oletusarvo sisältää vakiona paikallisen ja yksityisen verkon osoitteet. Huomioi että kun HTTP proxy on käytössä, tämä asetus voi jäädä huomiotta; proxyssä itsessään täytyy olla oma mustalistansa."
+        },
+        "saveButton": "Tallenna",
+        "restoreButton": "Palauta oletukset"
+      }
+    },
+    "users": {
+      "name": "Käyttäjät",
+      "subtext": "Hallitse tämän Sandstorm asennuksen kaikkia käyttäjiä."
+    },
+    "userAccounts": {
+      "newAdminUserTableRow": {
+        "admin": {
+          "hint": "Admin",
+          "cap": "A"
+        },
+        "user": {
+          "hint": "Käyttäjä",
+          "cap": "U"
+        },
+        "visitor": {
+          "hint": "Vierailija",
+          "cap": "V"
+        },
+        "unknownIdentity": "Tunteman tili",
+        "unknownIdentifier": "tuntematon tunniste",
+        "manageButton": "Hallitse"
+      },
+      "newAdminUserTable": {
+        "header": {
+          "name": "Nimi",
+          "credentials": "Tilitiedot",
+          "created": "Luotu",
+          "lastActive": "Viimeksi aktiivinen",
+          "actions": "Toimet"
+        },
+        "inviteLink": "Kutsu uusi käyttäjä",
+        "notFound": "Mikään käyttäjä ei täsmännyt suodattimeesi.",
+        "processing": "Ladataan käyttäjiä..."
+      },
+      "newAdminUsers": {
+        "search": {
+          "placeholder": "etsi"
+        },
+        "filter": {
+          "explanation": "Näytä:",
+          "admin": "Admin",
+          "user": "Käyttäjä",
+          "visitor": "Vierailija"
+        }
+      }
+    },
+    "userDetails": {
+      "newAdminUserDetailsIdentityTableRow": {
+        "profilePicture": {
+          "label": "Profiilikuva"
+        },
+        "handle": {
+          "title": "Nimimerkki",
+          "emails": "Sähköpostit"
+        },
+        "pronouns": {
+          "hint": "Etunimi",
+          "label": "Etunimi"
+        },
+        "emails": {
+          "hint": "Sähköpostit",
+          "label": "Sähköpostit",
+          "primary": "Ensisijainen",
+          "verified": "Varmistettu",
+          "unverified": "Ei varmistettu",
+          "notFound": "Ei tunnettuja sähköposteja."
+        },
+        "properties": {
+          "login": "Voi kirjautua sisään",
+          "org": "Org. jäsen"
+        },
+        "unkonwn": {
+          "profilePicture": {
+            "cell": "(tuntematon nimi)"
+          },
+          "service": {
+            "hint": "tuntematon palvelu",
+            "label": "(tuntematon palvelu)",
+            "cell": "(tuntematon nimi)"
+          },
+          "handle": {
+            "cell": "(tuntematon nimimerkki)"
+          },
+          "pronouns": {
+            "cell": "(tuntematon etunimi)"
+          },
+          "created": {
+            "cell": "tuntematon luontipäivä"
+          },
+          "lastActive": {
+            "cell": "tuntematon aktiviteettipäivä"
+          }
+        }
+      },
+      "newAdminUserDetailsIdentityTable": {
+        "header": {
+          "credential": "Oikeus",
+          "created": "Luotu",
+          "lastActive": "Viimeksi aktiivinen",
+          "properties": "Ominaisuudet"
+        }
+      },
+      "newAdminUserDetails": {
+        "role": {
+          "title": "Rooli",
+          "admin": {
+            "label": "Admin",
+            "explanation": "Hallitsee kaikkia tilejä.  Voi asentaa ohjelmia, luoda tiedostojyviä, ja hallita palvelinta.",
+            "isAdmin": "Nykyinen rooli",
+            "isNotAdmin": "Ylennä adminiksi"
+          },
+          "user": {
+            "label": "Käyttäjä",
+            "explanation": "Voi asentaa ohjelmia ja luoda tiedostojyviä.",
+            "isUser": "Nykyinen rooli",
+            "isAdmin": "Alenna käyttäjäsi",
+            "isNotUser": "Ylennä käyttäjäksi"
+          },
+          "visitor": {
+            "label": "Vierailija",
+            "explanation": "Voi käyttää ja jakaa uudelleen jaettuja tiedostojyviä, mutta ei voi luoda tiedostojyviä itse eikä asentaa ohjelmia.",
+            "isVisitor": "Nykyinen rooli",
+            "isNotVisitor": "Alenna vierailijaksi"
+          }
+        },
+        "credentials": {
+          "title": "Kirjautumistavat"
+        },
+        "profile": {
+          "title": "Profiili"
+        },
+        "status": {
+          "title": "Tilanne",
+          "deleting": "Jäädytetty - Vireillä oleva poistaminen %s",
+          "suspended": "Jäädytetty",
+          "active": "Aktiivinen",
+          "unsuspendButton": "Ota jäädytetty tili käyttöön",
+          "suspendButton": "Jäädytä tili",
+          "deleteButton": "Poista tili"
+        },
+        "deletePopup": {
+          "title": "Poista %s",
+          "explanation": "Olet merkkaamassa %s'n tilin poistettavaksi. Kun poistettavaksi merkkaaminen on tehty, tämä tili jäädytetään, ja admineilla on 7 päivää peruuttaa poistaminen palaamalla tälle sivulle ja klikkaamalla \"Ota jäädytetty tili käyttöön\" painiketta. Käyttäjällä %s <strong>ei</strong> ole mahdollisuutta pysäyttää tätä jäädyttämistä/poistamista.",
+          "detail": "7 päivän jälkeen, %s'n tili poistetaan lopullisesti. Tämän tilin poistaminen aiheuttaa:",
+          "detail1": "Lopullisesti kaikkien %s luomien tiedostojyvien poiston",
+          "detail2": "Kaikkien %s luomien linkkijakojen poiston",
+          "detail3": "Poistaa tilin %s kaikkien käyttäjien yhteystieto listoista",
+          "detail4": "Poistaa kaikki oikeudet jotka tämä tili omisti (paitsi oikeudet jotka liittyy toiseen tiliin).",
+          "deleteButton": "Poista tili",
+          "cancelButton": "Peruuta"
+        },
+        "suspendPopup": {
+          "title": "Jäädytä %s",
+          "detail": "Tämän käyttäjän jäädyttäminen aiheuttaa:",
+          "detail1": "Estää kaikkien %s luomien tiedostojyvien avaamisen",
+          "detail2": "Poistaa kaikki %s luomat jakamislinkit",
+          "detail3": "Tämä myös koskee kaikkia oikeuksia jotka tämä tili omisti (paitsi oikeudet jotka liittyy toiseen tiliin)",
+          "suspendButton": "Jäädytä tili",
+          "cancelButton": "Peruuta"
+        },
+        "loading": "Ladataan käyttäjän tietoja..."
+      }
+    },
+    "userInvite": {
+      "newAdminUserInviteLink": {
+        "explanation": "Voit kutsua muita luomaan tilejä palvelimellasi antamalla heille tilin luomis linkit. Kutsumillesi ihmisille myönnetään käyttäjäoikeus ja he pystyvät asentamaan ohjelmia ja luomaan tiedostojyviä itse. Vaihtoehtoisesti, jos haluat jakaa jonkin jyvän jonkun kanssa, voit tehdä sen jyvän \"Jaa pääsy\" valikosta.",
+        "title": "Luo linkki",
+        "invite": {
+          "explanation": "Tämä luo tilin luomis linkin jonka voit lähettää jollekin.",
+          "createButton": "Luo linkki"
+        }
+      },
+      "newAdminUserInviteEmail": {
+        "title": "Lähetä sähköposti",
+        "emailWarning": {
+          "explanation": "Sähköpostia ei ole määritetty, joten kutsujen lähettäminen sähköpostin kautta on poistettu käytöstä.",
+          "configureLink": "Määritä sähköposti"
+        },
+        "explanation": "Tämä luo linkin ja lähettää sen sähköpostissa.",
+        "to": {
+          "label": "Vastaanottaja:",
+          "placeholder": "alice@email.com\nbob@example.com",
+          "subtext": "Sähköposti osoitteet, yksi per rivi."
+        },
+        "subject": {
+          "label": "Aihe:"
+        },
+        "body": {
+          "label": "Viesti:",
+          "subtext": "<code>$KEY</code> korvataan äskettäin luodulla linkillä."
+        },
+        "sendButton": "Lähetä kutsu"
+      },
+      "newAdminUserInvite": {
+        "title": "Kutsu"
+      }
+    },
+    "systemStatus": {
+      "name": "Järjestestelmä loki",
+      "subtext": "Mäytä Sandstormin debuggaus loki.",
+      "newAdminLogContents": {
+        "ellipsis": "..."
+      },
+      "newAdminStatus": {
+        "downloadButton": "Lataa koko loki"
+      }
+    },
+    "stats": {
+      "name": "Tilastot",
+      "subtext": "Näytä käyttötilastot tälle palvelimelle.",
+      "header": {
+        "date": "pvm",
+        "users": "käyttäjät",
+        "grains": "jyvät",
+        "appName": "Ohjelman nimi",
+        "owners": "omistajat",
+        "sharedUsers": "jaetutKäyttäjät",
+        "daily": "päivittäin",
+        "weekly": "viikoittain",
+        "monthly": "kuukausittain",
+        "forever": "ikuisesti"
+      },
+      "body": {
+        "notFound": "Tilastoja ei ole vielä tallennettu.",
+        "loading": "Ladataan..."
+      },
+      "newAdminStats": {
+        "share": {
+          "title": "Jaa anonyymisti Sandstorm ohjelmointi tiimille",
+          "explanation": "Haluaisimme tietää kuinkan monta Sandstorm käyttäjää on olemassa, tehdäksemme kaavioita jne.  Onko OK lähettää tämän sivun numerot kerran päivässä Sandstorm tiimille, jotta voimme lisätä ne kokonaismääriin?  Kaikki tilastot ovat anonyymejä.",
+          "enableButton": "Lähetä anonyymejä tilastoja",
+          "disableButton": "Älä lähetä",
+          "control": {
+            "explanation": "Sandstormin ohjelmoijat haluaisivat tietää miten monta Sandstorm käyttäjää on olemassa, tehdäksemme kaavioita jne.  Voit auttaa meitä valisemalla tämän sivun numeroiden jakamisen kerran päivässä Sandstorm tiimille, jotta voimme lisätä ne kokonaismääriin. Kaikki tilastot lähetetään anonyymisti.",
+            "label": "Anonyymi tilastojen jakaminen sandstorm.io:lle:",
+            "enabled": "Käytössä",
+            "disabled": "Ei käytössä",
+            "disableButton": "Poista käytöstä",
+            "enableButton": "Ota käyttöön"
+          }
+        },
+        "json": {
+          "title": "Näytä JSON muodossa",
+          "explanation": "Jos haluat integroida Sandstorm tilastot sisäisen tilasto työkalun kanssa, käytä tätä salaista linkkiä hakeaksesi allaolevat taulukot JSON muodossa. Voit poistaa nykyisen linkin käytöstä milloin tahansa luomalla uuden linkin.",
+          "label": "Tilastot JSON linkki:",
+          "regenerateButton": "Luo uusi linkki"
+        },
+        "userGrains": {
+          "title": "Käyttäjät ja jyvät",
+          "current": "Juuri nyt: __users__ käyttäjää, __grains__ jyvää",
+          "today": "Tänään: __users__ käyttäjää, __grains__ jyvää"
+        },
+        "apps": {
+          "title": "Ohjelmat",
+          "label": "Valitse päivä:"
+        }
+      }
+    },
+    "maintenanceMessage": {
+      "name": "Huoltoilmoitus",
+      "subtext": "Viestitä mahdollinen downtime käyttäjille.",
+      "newAdminMaintenance": {
+        "explanation": "Voit asettaa huoltoilmoituksen joka näytetään kaikille käyttäjille valikkopalkissa, oikeassa yläkulmassa. Tämä on hyödyllistä ilmoittaessa määräaikaishuollosta jolloin käyttäjät voivat varautua downtimeen. Jos viesti on tyhjä, viestiä ei näytetä.",
+        "variables": "Sinun tulee käyttää seuraavia muuttujia \"Viesti teksti\" kentässä, jotka automaattisesti korvataan hyödyllisillä arvoilla:",
+        "variable1": "<code>$TIME</code> : Aika osa \"Huoltoaika\" kohdasta, muutettuna käyttäjän paikalliseen aikaan (esim. \"1:15:45 PM\")",
+        "variable2": "<code>$DATE</code> : Päivä osa \"Huoltoaika\" kohdasta, muutettuna käyttäjän paikalliseen aikaan  (esim. \"6/19/2015\")",
+        "variable3": "<code>$IN_COUNTDOWN</code> : Aktiivinen lähtölaskenta kunnes \"Huoltoaika\" alkaa (esim. \"in 3 days\" or \"in 1 minute\"). Näyttää \"any moment\" määrättynä aikana \"Huoltoaika\" ajanjaksoa ja poistuu näkyvistä tunnin päästä.",
+        "messageText": {
+          "label": "Viesti teksti:",
+          "subtext": ""
+        },
+        "maintenanceTime": {
+          "label": "Huoltoaika:",
+          "subtext": "Aika jolloin aion aloittaa huoltotoimenpiteet, muotoiltuna kuten \"%s\"."
+        },
+        "url": {
+          "label": "Linkki URL (valinnainen):",
+          "subtext": "Jos annettu, huoltoviesti näytetään klikattavana linkkinä tähän URLiin."
+        },
+        "saveButton": "Aseta viesti"
+      }
+    },
+    "networkCapabilities": {
+      "name": "Verkko-oikeudet",
+      "subtext": "Hallitse suoraa verkkopääsyä jyviin.",
+      "newAdminNetworkCapabilitiesTableCapabilityRow": {
+        "adminAccount": "Admin tili %s",
+        "unknownGranter": "Tuntematon sallija",
+        "anyone": "Kuka tahansa jolla on token",
+        "unknownRecipient": "Tuntematon vastaanottaja",
+        "revoked": "Peruttu",
+        "revokeButton": "Peruuta"
+      },
+      "newAdminNetworkCapabilitiesTable": {
+        "header": {
+          "grantBy": "Oikeuden myöntänyt",
+          "grantTo": "Myönnetty käyttäjälle",
+          "grantTime": "Aika",
+          "actions": "Toimet"
+        },
+        "notFound": "Oikeuksia ei löytynyt."
+      },
+      "newAdminNetworkCapabilitiesSection": {
+        "filter": {
+          "label": "Näytetään:",
+          "active": "Aktiivinen (%s)",
+          "revoked": "Peruttu (%s)"
+        }
+      },
+      "newAdminNetworkCapabilities": {
+        "networkCaps": "Ulospäin suuntautuva verkkopääsy",
+        "networkCapsTls": "TLS-suojattu ulospäin suuntautuva verkkopääsy",
+        "interfaceCaps": "Sisäänpäin tuleva verkkopääsy"
+      }
+    },
+    "hostingManagement": {
+      "name": "Hostaus hallinta",
+      "newAdminHostingManagement": {
+        "explanation": "Tämä ominaisuus on kokeellinen ja toimii vain LDAP kirjautumistavalla tällä hetkellä. Käytä varoen.",
+        "quotaEnabled": {
+          "label": "Ota käyttöön quota käyttäjille",
+          "subtext": "Ottaa käyttöön Quota hallinnan tälle palvelimelle. Tämä vaatii että sekä SAML että LDAP on määriteltynä, ja sähköposti osoitteita käytetään täsmäämään näiden kahden välillä."
+        },
+        "quotaLdapAttribute": {
+          "label": "LDAP quota attribuutti",
+          "subtext": "Tämän atribuutin nimellä katsotaan LDAPista mikä on käyttäjän quota."
+        },
+        "billingPromptUrl": {
+          "label": "Laskutusviesti url",
+          "subtext": "Tämä on url jota käytetään laskutusviestissä."
+        },
+        "saveButton": "Tallenna",
+        "restoreButton": "Palauta oletukset"
+      }
+    }
+  },
+  "people": {
+    "title": "Ihmiset"
+  },
+  "sharingLinks": {
+    "title": "Linkkien jakaminen"
+  },
+  "apps": {
+    "title": "Ohjelmat",
+    "appList": {
+      "uninstallingHint": "Tehty ohjelman poisto",
+      "doneUninstalling": "Tehty ohjelman poisto",
+      "uninstallHint": "Poista ohjelma",
+      "uninstallButton": "Poista ohjelma...",
+      "uploadApp": "Lataa ohjelma palvelimelle...",
+      "searchHint": "Etsi",
+      "search": "etsi",
+      "mostUsed": "Käytetyin",
+      "allApps": "Kaikki ohjelmat",
+      "install": "Asenna...",
+      "fromMarket": "ohjelmakaupasta",
+      "uninstall": "Poista ohjelma",
+      "noMatchApp": "Et ole asentanut tämän nimistä ohjelmaa. Kokeile <a href=\"__url__\">etsiä ohjelmakaupasta &raquo;</a>",
+      "unauthorized": "Ei pääsyä! :(",
+      "unauthorizedText": "Tämä on yksityinen Sandstorm palvelin. Asentaaksesi ohjelmia, adminin täytyy kutsua sinut. Admin voi kutsua sinut hallintapaneelista.",
+      "intro": "<strong>Tervetuloa!</strong><br>Luo asiakirjoja, chatti huoneita, blogeja, ja enemmän.<br><br>Aloita asentamalla ohjelma.",
+      "doneButton": "Selvä"
+    },
+    "install": {
+      "sandstormAppInstallPage": {
+        "title": "Asenna ohjelma",
+        "error": {
+          "title": "Ohjelman asennus epäonnistui",
+          "retryButton": "Yritä uudelleen"
+        },
+        "stepWait": {
+          "title": "Odotetaan kirjoitusoikeutta..."
+        },
+        "stepDownload": {
+          "title": "Ladataan...",
+          "cancelButton": "Peruuta"
+        },
+        "stepVerify": {
+          "title": "Tarkistetaan..."
+        },
+        "stepUnpack": {
+          "title": "Puretaan..."
+        },
+        "stepAnalyze": {
+          "title": "Analysoidaan..."
+        },
+        "stepConfirm": {
+          "upgrade": {
+            "explanation": "Sinulla on vanhempi versio tästä ohjelmasta asennettuna.  Haluatko päivittää?",
+            "button": "Päivitä %s"
+          },
+          "downgrade": {
+            "explanation": "Sinulla on jo uudempi versio tästä ohjelmasta asennetuna. Oletko varma että haluat palata tähän vanhaan versioon?",
+            "button": "Palaa versioon %s"
+          },
+          "install": {
+            "button": "Asenna %s"
+          }
+        },
+        "stepRun": {
+          "title": "%s asennettu",
+          "explanation": "Asennus valmis.",
+          "appDetailsLink": "Mene kohteeseen %s"
+        },
+        "stepDelete": {
+          "title": "Poistetaan",
+          "explanation": "Palvelin on tällä hetkellä poistamassa tätä ohjelmaa..."
+        },
+        "stepFailed": {
+          "title": "Epäonnistui",
+          "explanation": "Asennus epäonnistui: %s"
+        }
+      }
+    },
+    "appDetails": {
+      "sandstormAppDetailsPage": {
+        "newerVersion": {
+          "explanation": "Joitakin tiedostoistasi on tehty tämän ohjelman uudemmalla versiolla.  Ne tulevat käyttämään uudempaa versiota, koska palaaminen takaisin voisi rikkoa ne."
+        },
+        "olderVersion": {
+          "explanation": "Joitakin jyvistäsi on tehty tämän ohjelman vanhemmalla versiolla.  Päivitä ne?",
+          "upgradeButton": "Päivitä jyvät"
+        },
+        "search": {
+          "hint": "Etsi",
+          "placeholder": "etsi"
+        },
+        "trash": {
+          "explanation": "Jyvät poistetaan lopullisesti kun ne ovat olleet 30 päivää roskakorissa. Pitääksesi jyvän, palauta se päälistaan."
+        },
+        "noGrains": {
+          "notFound": "<strong>Täsmääviä jyviä ei löytynyt.</strong>",
+          "inTrash": "Jotkin jyvät roskakorissasi täsmäävät hakuusi.",
+          "trashButton": "Näytä roskakori"
+        }
+      },
+      "sandstormAppDetails": {
+        "websiteLink": "Kotisivu",
+        "appMarketLink": "Ohjelmakauppa",
+        "sourceCodeLink": "Lähde",
+        "bugReportLink": "Raportoi issue",
+        "mainListButton": "Näytä päälista",
+        "trashButton": "Näytä roskakori",
+        "uninstallButton": "Poista ohjelma",
+        "restoreButton": "Palauta jyvän varmuuskopio...",
+        "version": {
+          "label": "Versio"
+        },
+        "lastUpdate": {
+          "label": "Viimeksi päivitetty",
+          "unknown": "<tuntematon>"
+        },
+        "publisher": {
+          "label": "Allekirjoittanut"
+        },
+        "hasFingerprint": "Ohjelman julkaisija on todistanut käyttäen PGP:tä että he hallitsevat näitä tilejä.",
+        "noFingerprint": "Tällä ohjelmalla ei ole tekijän allekirjoitusta; sen tekijää ei voida varmistaa."
+      }
+    }
+  },
+  "accounts": {
+    "title": "Tiliasetukset",
+    "accountSettings": {
+      "sandstormAccountSettings": {
+        "title": "Tili",
+        "identities": {
+          "title": "Profiilini",
+          "success": "Onnistui: %s",
+          "linkedCredentials": "Linkitetyt kirjautumistavat",
+          "linkNewIdentity": {
+            "title": "Linkitä uusi tili:",
+            "cancelButton": "Peruuta",
+            "linkButton": "Linkitä uusi käyttäjätieto",
+            "logoutAllButton": "Kirjaudu ulos kaikista muista istunnoista"
+          },
+          "email": {
+            "title": "Ensisijainen sähköpostiosoite palveluun liittyville ilmoituksille",
+            "primary": "Ensisijainen",
+            "primaryButton": "Aseta ensisijaiseksi",
+            "notFound": " Ei varmistettuja sähköposteja! ",
+            "addNew": "Lisää uusi sähköpostiosoite"
+          }
+        },
+        "billing": {
+          "title": "Laskutus"
+        },
+        "deleteAccount": {
+          "title": "Poista tili",
+          "button": "Poista tilisi"
+        },
+        "deletePopup": {
+          "title": "Poista tilisi",
+          "explanation": "Olet merkkaamassa tiliäsi poistettavaksi. Kun olet kerran merkannut tilisi poistettavaksi, tilisi jäädytetään, ja sinulla on 7 päivää aikaa peruuttaa poistaminen kirjautumalla takaisin tiliisi.",
+          "results": "7 päivän jälkeen tilisi poistetaan lopullisesti. Tilin poistamisesta seuraa:",
+          "result1": "Poistetaan lopullisesti kaikki luomasi jyvät",
+          "result2": "Poistetaan kaikki jaetut linkit jotka olet luonut",
+          "result3": "Poistetaan sinut kaikkien käyttäjien yhteystieto listoista",
+          "result4": "Poistetaan kaikki oikeudet joita tililläsi on (paitsi oikeudet jota liittyy toiseen tiliin).",
+          "confirm": "Ole hyvä ja kirjoita \"delete my account\" alle varmistaaksesi tämän.",
+          "goodbye": "Olemme pahoillamme kun lähdet. Voit vapaasti kertoa mitä tahansa palautetta palvelimen adminille.",
+          "feedbackPlaceholder": "Valinnainen",
+          "deleteButton": "Poista tili",
+          "cancelButton": "Peruuta"
+        }
+      },
+      "sandstormAccountsFirstSignIn": {
+        "title": "Varmista profiilisi",
+        "success": "Onnistui: %s"
+      },
+      "accountSuspended": {
+        "title": "Olet jäädyttänyt tämän tilin.",
+        "deletedIn": "Tämä tili poistetaan %s. Haluaisitko peruuttaa poistamisen ja palauttaa tilisi?",
+        "suspended": "Tämä tili on jäädytetty ja kaikki sen jyvät ja jaot on poistettu käytöstä. Haluatko palauttaa tämän tilin?",
+        "restoreButton": "Palauta tili",
+        "logoutButton": "Kirjaudu ulos"
+      },
+      "_accountProfileEditor": {
+        "picture": {
+          "label": "Profiili kuva:",
+          "uploadButton": "Lataa uusi kuva palvelimelle",
+          "subtext": "Tämä kuva näytetään muille käyttäjille jotta he paremmin tunnistaisivat sinut.",
+          "maxSize": "512x512px, 64KiB maksimi."
+        },
+        "fullName": {
+          "label": "Koko nimi:",
+          "placeholder": "koko nimi",
+          "subtext": "Sinun tavallinen etu ja sukunimi, kuten haluaisit muiden sen näkevän. Tämän ei tarvitse olla oikea nimesi."
+        },
+        "handle": {
+          "label": "Nimimerkki:",
+          "placeholder": "nimimerkki",
+          "hint": "Nimimerkin täytyy alkaa pienellä kirjaimella ja sisältää vain pieniä kirjaimia, numeroita, ja alaviivoja.",
+          "subtext": "Näytettäväksi ohjelmissa jotka käyttävät nimimerkkejä. Nimimerkkisi täytyy alkaa kirjaimella ja sisältää vain pieniä kirjaimia, numeroita, ja alaviivoja."
+        },
+        "emailList": {
+          "label": "Sähköposti:"
+        },
+        "pronoun": {
+          "label": "Haluttu etuliite:",
+          "neutral": "ne (määrittämätön)",
+          "male": "hän (mies)",
+          "female": "hän (nainen)",
+          "robot": "se (robotti)"
+        },
+        "agreedToTerms": {
+          "agreeTo": " Olen lukenut ja hyväksyn nämä:",
+          "termsOfServiceLink": "Käyttöehdot",
+          "and": " ja ",
+          "privacyLink": "Tietosuojakäytäntö"
+        },
+        "saveButton": "Tallenna",
+        "continueButton": "Jatka",
+        "cancelButton": "Peruuta"
+      }
+    },
+    "loginButtons": {
+      "icon": {
+        "info": "i"
+      },
+      "loginButtons": {
+        "createButton": "Luo tili",
+        "signInButton": "Kirjaudu sisään"
+      },
+      "accountButtons": {
+        "loading": "Ladataan..."
+      },
+      "_loginButtonsLoggedInDropdown": {
+        "revealIdentity": "Paljasta identiteetti",
+        "title": "Tili",
+        "sendFeedback": "Lähetä palautetta",
+        "referralProgram": "Suositusohjelma",
+        "signOutButton": "Kirjaudu ulos"
+      },
+      "_loginButtonsLoggedOutDropdown": {
+        "demo": {
+          "title": "Luo tili",
+          "explanation": "Demo tietosi siirretään uudelle tilillesi."
+        },
+        "title": "Kirjaudu sisään",
+        "shared": {
+          "explanation": "Kirjaudu sisään jotta osallistujat tietävät kuka olet."
+        },
+        "signInButton": "Kirjaudu sisään",
+        "anonymousButton": "Pysy anonyyminä"
+      },
+      "oauthLoginButton": {
+        "with": "käyttäen "
+      },
+      "devLoginForm": {
+        "label": "Dev tilillä",
+        "hint": "vähennä",
+        "alice": "Alice (admin)",
+        "bob": "Bob",
+        "carol": "Carol",
+        "dave": "Dave",
+        "customPlaceholder": "Eve",
+        "customButton": "Mukautettu"
+      },
+      "loginButtonsList": {
+        "configure": "määritä kirjautuminen",
+        "troubleshooting": "vianmääritys",
+        "about": "Tietoja Sandstormista"
+      },
+      "emailLoginForm": {
+        "description": "sähköpostilla",
+        "sendButtonText": "lähetä kirjautumissähköposti"
+      },
+      "emailAuthenticationForm": {
+        "hint": "Salasanaton sähköpostikirjautuminen mahdollistaa kirjautumisen sähköpostiosoitteellasi. Salasanaa ei tarvita; sen sijaan, aina kun olet kirjaudut, lähetämme sinulle uuden varmistuskoodin. Sinun tarvitsee kirjautua vain kerran per laite.",
+        "token": {
+          "explanation": "Olemme lähettäneet kirjautumissähköpostin osoitteeseen %s. Siinä voi mennä hetki ennenkuin se ilmestyy saapuneisiin sähköposteihisi.",
+          "label": "Kirjoita varmistuskoodi:",
+          "confirmButton": "Varmista",
+          "cancelButton": "Peruuta"
+        },
+        "disabled": "Palvelimen adminin täytyy ottaa käyttöön sähköpostikirjautuminen ennenkuin voit varmistaa sähköpostisi."
+      },
+      "ldapLoginForm": {
+        "username": {
+          "label": "käyttäjänimi",
+          "hint": "Tämä on LDAP käyttäjänimesi. Se on sama jota käytät normaalisti kirjautuessasi sisäisiin palveluihin yrityksessäsi."
+        },
+        "password": {
+          "label": "salasana",
+          "hint": "Tämä on LDAP salasanasi. Se on sama jota käytät normaalisti kirjautuessasi sisäisiin palveluihin yrityksessäsi."
+        },
+        "loginButton": "Kirjaudu sisään"
+      },
+      "_loginButtonsSeparator": {
+        "or": "tai"
+      }
+    },
+    "identity": {
+      "identityLoginInterstitial": {
+        "title": "Kirjaudutaan sisään...",
+        "loading": "ladataan...",
+        "logoutButton": "Kirjaudu ulos",
+        "cancelButton": "Peruuta",
+        "goBackButton": "Takaisin",
+        "create": "luodaan tiliä...",
+        "createFailed": "Tilin luominen epäonnistui.",
+        "loginAccount": "kirjaudutaan tilille...",
+        "loginAccountFailed": "Tilille kirjautuminen epäonnistui",
+        "loginToken": "kirjaudutaan takaisin tilille...",
+        "loginTokenFailed": "Istunnon jatkaminen epäonnistui.",
+        "link": "linkitetään valtuutustapa tähän tiliin...",
+        "success": "Poistettu valtuutustavan linkitys lähteestä %s",
+        "explanation": "Olet todentanut identiteettisi tällä valtuutustavalla",
+        "warning": "mutta se ei ole kirjautumisvaltuutustapa millekään tilille.",
+        "moreIdentities": "Seuraavilla valtuutustavoilla voit kirjautua valtuutetuille tileillesi:",
+        "unlinkButton": {
+          "hint": "Poista valtuutustavan linkitys tältä tililtä.",
+          "text": "poista linkitys"
+        },
+        "unlink": {
+          "explanation": "Oletko varma että haluat poistaa linkityksen valtuutustapaan tililtä %s?",
+          "unlinkButton": "Poista linkitys",
+          "cancelButton": "Peruuta"
+        }
+      },
+      "identityManagementButtons": {
+        "toggleLogin": {
+          "label": "Salli tämän kirjautumistavan kirjautua tilillesi.",
+          "unlinkButton": "Poista linkitys"
+        }
+      },
+      "loginIdentitiesOfLinkedAccounts": {
+        "show": {
+          "explanation": "Tämä kirjautumistapa on jaettu muiden tilien kanssa. Niillä tileillä on seuraavat kirjautumistavat:",
+          "unlinkButton": "poista linkitys",
+          "hideButton": "piilota muut tilit"
+        },
+        "hide": {
+          "explanation": "Tämä kirjautumistapa on jaettu ainakin yhden muun tilin kanssa.",
+          "showButton": "näytä muut tilit"
+        }
+      },
+      "identityCardSignInButton": {
+        "hint": "kirjaudu käyttäjänä %s",
+        "title": "Kirjaudu sisään"
+      },
+      "accountCardSignInButton": {
+        "reSign": "Kirjautuaksesi ulos nykyisesti tilistäsi ja kirjautuaksesi sisään tänä käyttäjänä, valitse miten kirjaudut sisään:",
+        "howToSignIn": "Valitse miten kirjaudut sisään:"
+      }
+    },
+    "tokenTemplates": {
+      "_emailTokenError": {
+        "title": "Virheellinen kirjautumiskoodi. Jos on kulunut enemmän kuin 15 minutes, kirjautumiskoodi on vanhentunut, muussa tapauksessa ehkä vaan kirjoitit sen väärin."
+      },
+      "_emailLinkIdentityError": {
+        "title": "Varmistaaksesi sähköpostiosoitteesi, sinun tulee kirjautua sisään tilille jota käytit tätä linkkiä luodessasi."
+      },
+      "addNewVerifiedEmailPowerboxConfiguration": {
+        "email": {
+          "placeholder": "kirjoita sähköpostiosoite",
+          "selectButton": "Valitse",
+          "sendButton": "Lähetä varmistussähköposti"
+        },
+        "sendingTo": "Lähetetään osoitteeseen %s",
+        "resetButton": "Kokeile toista osoitetta",
+        "token": {
+          "placeholder": "kirjoita kirjautumiskoodisi",
+          "confirmButton": "Varmista"
+        },
+        "verifying": "Tarkistetaan kirjautumiskoodia..."
+      }
+    }
+  },
+  "wizard": {
+    "setupWizardLoading": {
+      "loading": "Ladataan..."
+    },
+    "setupWizardProgressBar": {
+      "identityProviders": "Kirjautumistavat",
+      "organization": "Organisaatio",
+      "email": "Sähköposti",
+      "preinstalledApps": "Valmiiksi asennetut ohjelmat",
+      "adminAccount": "Admin tili"
+    },
+    "setupWizardHelpFooter": {
+      "needHelp": "Tarvitsetko apua?",
+      "documentation": "Ohjeet",
+      "emailSupport": "Sähköpostituki",
+      "systemLog": "Järjestelmän loki"
+    },
+    "setupWizardSystemLog": {
+      "header": {
+        "label": "Järjestelmän loki",
+        "downloadButton": "Lataa loki"
+      },
+      "permissionDenied": "Et voi katsoa järjestelmän lokeja koska et ole kirjoautunut adminina ja sinulla ei ole asennus kirjautumiskoodia."
+    },
+    "setupWizardIntro": {
+      "title": "Tervetuloa Sandstormiin!",
+      "revisitWizardLink": "Tee ohjattu asennus uudelleen",
+      "noIdpEnabled": {
+        "explanation": "Tämä Sandstorm palvelin on asennettu aiemmin, mutta koska on tapahtunut muutoksia <code>sandstorm.conf</code> tiedostossa, sinun täytyy määrittää kirjautumistavat uudelleen."
+      },
+      "idpEnabled": {
+        "explanation": "Tämä Sandstorm palvelin on valmis toimintaan. Voit muokata palvelimen asetuksia, mukaanlukien kirjautumistapoja ja miten Sandstorm lähettää sähköpostia.",
+        "turnUserIntoAdmin": "Voit myös muuttaa olemassaolevan käyttäjän adminiksi.",
+        "isAdmin": {
+          "adminPanelLink": "Jatka hallintapaneeliin",
+          "suButton": "Anna itsellesi admin oikeudet "
+        },
+        "isNotAdmin": {
+          "explanation": "Tehdäksesi tilistä admin tili, ole hyvä ja kirjaudu sisään:",
+          "signInLabel": "Kirjaudu sisään",
+          "signInButton": "Kirjaudu sisään tullaksesi adminiksi"
+        }
+      },
+      "setupButton": "Aloita Sandstorm asennus"
+    },
+    "setupWizardIdentity": {
+      "title": "Kirjautumistavat",
+      "explanation1": "Käyttääksesi Sandstormia, sinun täytyy luoda käyttäjätili.  Jokaisen käyttäjätilin takana Sandstormissa on kirjautumistapa.  Käytät tätä kirjautumistapaa tullaksesi ensimmäiseksi tämän Sandstorm asennuksen adminiksi.",
+      "explanation2": "Määritä kirjautumistapa tai tavat jotka haluat ottaa käyttöön.",
+      "nextButton": "Seuraava",
+      "backButton": "edellinen"
+    },
+    "setupWizardOrganization": {
+      "title": "Organisaatio asetukset",
+      "error": "Muutoksen tallentaminen epäonnistui: %s",
+      "membership": {
+        "title": "Organisaation jäsenyys",
+        "emailToggle": {
+          "label": "Sähköpostiosoitteen kautta kirjautuneet käyttäjät",
+          "subtext": "Huom: poistettu käytöstä koska sähköpostikirjautumista ei ole määritelty."
+        },
+        "emailDomain": {
+          "label": "Domain:",
+          "subtext": "Käyttäjät joilla on tämän domainin sähköpostiosoite tulevat olemaan tämän palvelimen organisaation jäseniä."
+        },
+        "gappsToggle": {
+          "label": "G Suiten kautta kirjautuneet käyttäjät",
+          "subtext": "Huom: poistettu käytöstä koska Google kirjautumista ei ole määritelty."
+        },
+        "gappsDomain": {
+          "label": "Domain:",
+          "subtext": "G Suiten kautta kirjautuneet tämän domainin käyttäjät tulevat olemaan tämän palvelimen organisaation jäseniä."
+        },
+        "ldapToggle": {
+          "label": "LDAPin kautta kirjautuneet käyttäjät",
+          "subtext": "Huom: poistettu käytöstä koska LDAP kirjautumista ei ole määritelty."
+        },
+        "samlToggle": {
+          "label": "SAMLin kautta kirjautuneet käyttäjät",
+          "subtext": "Huom: poistettu käytöstä koska SAML kirjautumista ei ole määritelty."
+        }
+      },
+      "settings": {
+        "title": "Organisaation asetukset",
+        "disallowGuests": {
+          "label": "Estä yhteistyö organisaation ulkopuolisten käyttäjien kanssa.",
+          "subtext": "Käyttäjiltä vaaditaan kirjautuminen jäsenenä että jaettujen linkkien katsominen on mahdollista. Vieraiden pääsy poistetaan käytöstä."
+        },
+        "shareContacts": {
+          "label": "Tee kaikki organisaation käyttäjät näkyviksi toisilleen",
+          "subtext": "Tämä asetus automaattisesti lisää käyttäjät organisaation sisällä toistensa yhteystieto listoihin jotta he voivat jakaa jyviä toistensa kanssa.  Poista tämä käytöstä jos sinulla on joitakin käyttäjiä joiden identiteetti tulisi pysyä piilotettuna toisilta käyttäjiltä."
+        }
+      },
+      "saveButton": "Tallenna ja jatka",
+      "backButton": "Takaisin"
+    },
+    "setupWizardEmailConfig": {
+      "title": "Sähköpostin lähetys",
+      "explanation": "Sandstorm tarvitsee tavan lähettää sähköpostia. Voit ohittaa tämän vaiheen (paitsi jos käytät sähköpostikirjautumista), mutta sähköpostiin liittyvät ominaisuudet eivät ole käytössä kunnes määrität sähköpostin joskus tulevaisuudessa.",
+      "moreDetail": "<strong>Kuinka Sandstorm käyttää sähköpostia:</strong> Sandstorm lähettää sähköposti ilmoituksia, ja Sandstorm ohjelmat voivat myös lähettää sähköposti ilmoituksia. Jokainen ohjelma saa oman eri sähköpostiosoitteensa, joten Sandstormin täytyy pystyä lähettämään sähköpostia eri \"Lähettäjä:\" osoitteista. Tämän takia Gmail SMTP ei toimi, mutta on muita ilmaisia palveluita. Katso <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">saadaksesi lisäohjeita</a>",
+      "error": "Muutosten tallentaminen epäonnistui: %s",
+      "hostPort": {
+        "host": "SMTP isäntä",
+        "port": "Portti",
+        "subtext": "Käytä porttia 25 SMTP:lle (salaamaton tai StartTLS), tai porttia 465 TLS-salatulle SMTPS:lle."
+      },
+      "username": {
+        "label": "Käyttäjänimie (valinnainen)"
+      },
+      "password": {
+        "label": "Salasana (valinnainen)"
+      },
+      "email": {
+        "label": "Sandstorm palvelimen oma sähköposti osoite",
+        "subtext": "Sandstorm lähettää kirjautumis sähköposteja, ilmoituksia sallituista pääsypyynnöistä, ja muita sähköposteja tästä osoitteesta. Se myös käyttää tätä osoittetta SMTP envelope:ssa."
+      },
+      "saveButton": "Tallenna ja jatka",
+      "skipButton": "Ohita tällä kertaa",
+      "testButton": "Testaa",
+      "backButton": "Takaisin"
+    },
+    "setupWizardPreinstalled": {
+      "title": "Valmiiksi asennetut ohjelmat asennus",
+      "explanation": "Odota kun Sandstorm asentaa seuraavat tuottavuusohjelmisto ohjelmat jotka ovat hyödyllisiä useimmille käyttäjille. Voit määrittää kaikki valmiiksi asennettavat ohjelmat Hallintapaneelissa asennuksen jälkeen",
+      "downloaded": "Ladattu",
+      "failed": "Epäonnistui",
+      "loading": "Odota, ladataa ohjelmalistaa...",
+      "nextButton": "Seuraava",
+      "skipButton": "Ohita tällä kertaa",
+      "backButton": "Takaisin"
+    },
+    "setupWizardLoginUser": {
+      "title": "Luo admin tili",
+      "firstLogin": {
+        "title": "Varmista profiilisi"
+      },
+      "isAdmin": "Hienoa! Tililläsi on admin oikeudet",
+      "hasAdmin": {
+        "explanation": "Tällä Sandstorm palvelimella on jo admin käyttäjä, mutta jos haluat, voit tehdä myös itsestäsi adminin.",
+        "adminButton": "Tule adminiksi"
+      },
+      "makeYouAnAdmin": "Tehdään sinusta admin tälle palvelimelle...",
+      "loggedOut": {
+        "explanation": "Voit nyt luoda admin käyttäjän tälle Sandstorm palvelimelle.",
+        "description": "Kirjaudu sisään luodaksesi admin tilin",
+        "dialogLabel": "Luo tili"
+      },
+      "finishButton": "Valmis",
+      "backButton": "Takaisin"
+    },
+    "setupWizardSuccess": {
+      "title": "Valmis toimintaan!",
+      "serverIsReady": "Sandstorm palvelimesi on nyt valmis käyttöön.",
+      "whatsNext": "Mitä haluaisit tehdä seuraavaksi?",
+      "addUsersLink": "Lisää käyttäjiä",
+      "editSettingsLink": "Muokkaa muita asetuksia",
+      "sandstormLink": "Aloita käyttämään Sandstormia",
+      "backButton": "Takaisin"
+    },
+    "setupWizardVerifyToken": {
+      "title": "Tarkistetaan token...",
+      "explanation": "Sori, näyttää siltä että asennus token on vanhentunut.",
+      "howToFix": "Luo uusi nyt komentorivillä komennolla <code>sandstorm admin-token</code> päästäksesi ohjattuun asennukseen."
+    },
+    "setupWizardTokenExpired": {
+      "title": "Asennus token vaaditaan",
+      "alreadySetup": "Tämä palvelin on jo asennettu, joten suosittelemme ylläpitämään sitä",
+      "adminRootLink": "hallintapaneelissa",
+      "explanation": "Käyttääksesi tämän palvelimen asennus sivua, tarvitset To use this server's setup page, you need a voimassa olevan asennus tokenin.",
+      "howToFix": "Luo uusi nyt komentorivillä komennolla <code>sandstorm admin-token</code> ja seuraamalla sen tuottamaa linkkiä."
+    }
+  },
+  "packages": {
+    "topbar": {
+      "updated": "Sandstorm on päivitetty — Klikkaa tästä ladataksesi sivun uudelleen",
+      "apps": "Ohjelmat",
+      "grains": "Jyvät",
+      "oasis": "Aloita yhteistyö muiden kanssa Sandstormia paikassa Oasis:",
+      "createAccount": "Luo ilmainen tili »",
+      "demoHint": "Demo tilisi tiedot siirretään.",
+      "selfHostHint": "Tai, asenna Sandstorm tiimillesi (se on avointa lähdekoodia):",
+      "signUp": "Kirjaudu käyttämällä:",
+      "close": "Sulje"
+    },
+    "powerbox": {
+      "title": "Powerbox pyyntörequest",
+      "inputToken": "Syöttö api token:",
+      "importToken": "Tuonti token",
+      "selected": "Valittu:",
+      "selectOne": "Valitse yksi:",
+      "noGrain": "Mikään jyvä ei tarjoa pyydettyä rajapintaa.",
+      "loading": "Ladataan..."
+    }
+  }
+}

@@ -10,7 +10,7 @@
       },
       "adminAlert": {
         "icon": "!",
-        "title": "Notification de l'Administrateur"
+        "title": "Notification de l'administrateur"
       },
       "demoModal": {
         "header": "Sandstorm est une suite auto-hébergeable d'outils web de productivité.",
@@ -30,21 +30,21 @@
     },
     "notificationsPopup": {
       "title": "Notifications",
-      "empty": "Pas de notifications..."
+      "empty": "Pas de notifications…"
     },
     "loading": {
-      "title": "Chargement...",
-      "text": "Chargement..."
+      "title": "Chargement…",
+      "text": "Chargement…"
     },
     "notFound": {
       "title": "Non trouvé",
-      "text": "Erreur 404 Non trouvé :("
+      "text": "Erreur 404 - Non trouvé :("
     },
     "root": {
       "title": "Accueil"
     },
     "grainLogContents": {
-      "prefix": "..."
+      "prefix": "…"
     },
     "grainLog": {
       "title": "Journaux de débogage : %s"
@@ -52,19 +52,19 @@
     "signup": {
       "title": "Accepter l'invitation",
       "signedUp": {
-        "keyIsUsedWithOrigin": "Vous êtes maintenant enregistré !  Allez donc <a href=\"https://apps.sandstorm.io/?host=%s\">installer quelques apps</a>.",
+        "keyIsUsedWithOrigin": "Vous êtes maintenant enregistré !  Installez donc <a href=\"https://apps.sandstorm.io/?host=%s\">quelques applications</a>.",
         "keyIsNotUsed": "On dirait que vous avez déjà un compte, vous n'avez donc pas besoin de cette clé d'enregistrement."
       },
       "keyIsUsed": "Désolé, cette clé d'enregistrement a déjà été utilisée.",
-      "processing": "Veuillez patienter...",
+      "processing": "Veuillez patienter…",
       "signInGuide": "Il vous faut d'abord vous connecter. Cliquez sur \"Se connecter\" dans le coin en haut à gauche.",
       "invalidKey": "Désolée, cette clé d'enregistrement n'est pas valide."
     },
     "uploadStatus": {
-      "title": "Téléchargement en cours...",
+      "title": "Téléchargement en cours…",
       "uploadFailedWithError": "Le téléchargement a échoué : %s %s",
-      "statusWithProgress": "%s... %s",
-      "status": "%s...",
+      "statusWithProgress": "%s… %s",
+      "status": "%s…",
       "uploadFailed": "Le téléchargement a échoué, merci de réessayer."
     },
     "uploadTest": {
@@ -108,7 +108,7 @@
         }
       },
       "finePrint": {
-        "title": "The fine print",
+        "title": "Les trucs en petits caractères",
         "warningWithAccountLink": "Votre avantage de parrainage dure pendant 1 an à partir de la date du parrainage. Les conditions de ce programme de parrainage peuvent changer sans préavis ; cependant cela n'affectera pas les avantages dont vous bénéficiez déjà. Si vous avez besoin de plus d'espace, <a href=\"%s\">passez à l'offre supérieure</a> !",
         "explanation": "Les personnes ayant souscrit à une offre payante peuvent bénéficier de jusqu'à 30 Go de stockage gratuit, 2 Go par personne parrainée en plus du stockage déjà inclus dans leur offre. Les utilisateurs de comptes gratuits peuvent obtenir des grains illimités ainsi que 50 Mo d'espace de stockage gratuit par personne qu'ils parrainent, avec un total de 2 Go au maximum."
       }
@@ -141,7 +141,7 @@
         "title": "Soutiens",
         "explanation": "de <a href=\"http://igg.me/at/sandstorm\">notre campagne Indiegogo &gt;</a>",
         "anonymous": "et %s de contributeurs anonymes",
-        "loading": "chargement ..."
+        "loading": "chargement…"
       },
       "dependencies": {
         "title": "Ressources tierces utilisées",
@@ -165,12 +165,12 @@
     "grainView": {
       "notFoundWithId": "Aucun grain trouvé avec l'identifiant %s.",
       "openWithWhichIdentity": "Choisissez vous de montrer votre identité pour ce grain ou de rester anonyme ?",
-      "openInIncognitoMode": "Ouvrir en mode incognito",
-      "revealMyIdentity": "Indiquer mon identité"
+      "openInIncognitoMode": "Ouvrir anonymement",
+      "revealMyIdentity": "Montrer mon identité"
     },
     "grainInMyTrash": {
-      "explanation": "Ce grain est dans votre corbeille. Vous ne pourrez y accéder qu'après l'avoir remis dans votre liste principale des grains.",
-      "restore": "Restaurer le grain"
+      "explanation": "Ce grain est dans votre corbeille. Vous ne pourrez y accéder qu'après l'avoir remis dans votre liste principale de grains.",
+      "restore": "Restaurer ce grain"
     },
     "grainInOwnersTrash": {
       "explanation": "Vous ne pouvez plus accéder à ce grain car son propriétaire l'a mis dans la corbeille."
@@ -179,15 +179,15 @@
       "explanation": "Vous ne pouvez plus accéder à ce grain car le compte de son propriétaire a été suspendu."
     },
     "wrongIdentity": {
-      "explanation": "Ce lien était destiné à l'utilisateur :"
+      "explanation": "Ce lien était destiné à l'utilisateur : %s."
     },
     "requestAccess": {
       "permissionDenied": "Vous n'avez pas l'autorisation d'accéder à ce grain.",
       "requestAccessHint": "Demande d'accès",
       "requestAccess": "Demande d'accès",
       "warnIdentityRevealing": "La demande d'accès révélera votre identité au propriétaire du grain.",
-      "sendRequest": "Envoyer votre demande...",
-      "waitForApproving": "Votre demande a été envoyée. Vous recevrez un mail si votre demande est acceptée.",
+      "sendRequest": "Envoyer votre demande…",
+      "waitForApproving": "Votre demande a été envoyée. Vous recevrez un courriel si votre demande est acceptée.",
       "requestFailed": "Votre demande a échouée car  : %s",
       "signInPlease": "Veuillez vous connecter pour demander un accès."
     },
@@ -198,12 +198,12 @@
       "linkRevoked": "Désolé, ce lien a été révoqué."
     },
     "grainTitle": {
-      "was": "était : %s",
-      "renamedFrom": "renommé à partir de : %s"
+      "was": "(était : %s)",
+      "renamedFrom": "(renommé de : %s)"
     },
     "grainDeleteButton": {
-      "hint": "Déplacé dans la corbeille",
-      "text": "Déplacé dans la corbeille"
+      "hint": "Déplacer dans la corbeille",
+      "text": "Déplacer dans la corbeille"
     },
     "grainDebugLogButton": {
       "hint": "Montrer les journaux de débogage",
@@ -216,10 +216,10 @@
     "grainBackupPopup": {
       "title": "Téléchargement de la sauvegarde",
       "warning": "Attention ! La restauration de cette sauvegarde peut ne pas fonctionner comme vous l'espérez.",
-      "processing": "Préparation de la sauvegarde ...",
-      "cancelHint": "annuler",
+      "processing": "Préparation de la sauvegarde…",
+      "cancelHint": "Annuler",
       "cancel": "Annuler",
-      "confirmHint": "téléchargement de la sauvegarde",
+      "confirmHint": "Téléchargement de la sauvegarde",
       "confirm": "Téléchargement de la sauvegarde"
     },
     "grainRestartButton": {
@@ -228,11 +228,11 @@
     },
     "grainApiTokenButton": {
       "hint": "Obtenir une clé web",
-      "text": "Obtenir&nbsp;une&nbsp;clé&nbsp;web"
+      "text": "Obtenir une clé web"
     },
     "grainApiTokenPopup": {
       "title": "Clés web",
-      "processing": "Génération ...",
+      "processing": "Génération…",
       "cancel": "Annuler",
       "copyForExternalApp": "Copiez cette clé web et passez-la à une application externe :",
       "back": "Retour",
@@ -240,9 +240,9 @@
       "labelTitle": "Label :",
       "labelPlaceholder": "ex. 'Application Android'",
       "roleTitle": "Rôle :",
-      "permissionTitle": "accès total",
+      "permissionTitle": "Accès total",
       "create": "Créer",
-      "webkeyListTitle": "Votre clé web actuelle :",
+      "webkeyListTitle": "Vos clé web actuelles :",
       "revokeHint": "Révoquer",
       "revoke": "Révoquer"
     },
@@ -252,21 +252,21 @@
     },
     "whoHasAccessPopup": {
       "title": "Qui a accès ?",
-      "noLoggedInUsers": "Aucun utilisateur connecté n' a encore visité vos liens.",
+      "noLoggedInUsers": "Aucun utilisateur connecté n'a encore visité vos liens.",
       "nobody": "Vous n'avez accordé l'accès à personne.",
-      "addedBy": "ajouté par ",
+      "addedBy": "Ajouté par ",
       "revokeHint": "Révoquer",
       "revoke": "Révoquer",
       "hasCustomPermissions": "[a des droits personnalisés]"
     },
     "selectRole": {
-      "hint": "sélectionner un rôle"
+      "hint": "Sélectionner un rôle"
     },
     "emailInviteTab": {
-      "demoModeAlert": "Le partage d'e-mails n'est pas possible en mode démo. Créez un compte pour envoyer des courriels de partage ou donnez un lien partagé à la place.",
-      "personalMessagePlaceholder": "Entrer un message personnel (optionnel) ...",
+      "demoModeAlert": "Le partage de courriels n'est pas possible en mode démo. Créez un compte pour envoyer des courriels de partage ou donnez un lien partagé à la place.",
+      "personalMessagePlaceholder": "Entrer un message personnel (optionnel)…",
       "send": "Envoyer",
-      "sending": "En cours d'envoi...",
+      "sending": "En cours d'envoi…",
       "success": "Envoyé avec succès.",
       "reset": "+ Envoyer plus d'invitations",
       "startOver": "<< Recommencer à zéro"
@@ -277,7 +277,7 @@
       "labelPlaceholder": "Label (optionnel)",
       "labelExplanation": "Utilisez un label pour vous rappeler à qui vous avez envoyé ce lien unique.",
       "create": "Créer",
-      "creating": "Génération ...",
+      "creating": "Génération…",
       "success": "Copiez ce lien :",
       "reset": "+ Créer un autre lien",
       "cancel": "Annuler"
@@ -313,7 +313,7 @@
       "dismiss": "Rejeter"
     },
     "share": {
-      "grainNotFoundWithId": "Aucun grain trouvé avec identifiant %s. Peut-être devez-vous vous connecter avec un autre compte ?",
+      "grainNotFoundWithId": "Aucun grain trouvé avec l'identifiant %s. Peut-être devez-vous vous connecter avec un autre compte ?",
       "signIn": "Vous devez être identifié pour accorder l'accès à un grain."
     },
     "grainlist": {
@@ -323,13 +323,13 @@
         },
         "mainListButton": "Voir la liste principale",
         "trashButton": "Voir la corbeille (%s)",
-        "restoreButton": "Restaurer une sauvegarde ...",
+        "restoreButton": "Restaurer une sauvegarde…",
         "search": {
-          "placeholder": "rechercher"
+          "placeholder": "rechercher…"
         },
         "usageInfo": {
-          "quota": "__count__ of __quota__ grains",
-          "size": "__size__ of __total__ used"
+          "quota": "__count__ sur __quota__ grains",
+          "size": "__size__ sur __total__ utilisés"
         },
         "trash": {
           "emptyButton": "Vider complètement la corbeille",
@@ -367,7 +367,7 @@
       },
       "contactAutocomplete": {
         "contactInputBox": {
-          "placeholder": "Entrez des adresses mail ou des noms"
+          "placeholder": "Entrez des adresses électroniques ou des noms"
         }
       }
     }
@@ -386,7 +386,7 @@
       }
     },
     "mailingListBonusNotificationItem": {
-      "explanationWithBonus": "Abonnez-vous à notre liste de diffusion et obtenez <strong>%s  de stockage supplémentaire </strong> (1-2 e-mails par mois).",
+      "explanationWithBonus": "Abonnez-vous à notre liste de diffusion et obtenez <strong>%s  de stockage supplémentaire </strong> (1-2 courriels par mois).",
       "submitButton": "S'abonner",
       "dismissButton": "Non merci"
     },
@@ -432,8 +432,8 @@
       "explanation": "Administrateur : accorder tous les accès via le réseau entrant"
     },
     "emailVerifierPowerboxCard": {
-      "verifyWith": "Vérifier les adresses mail en utilisant %s",
-      "verifyWithAnyService": "Vérifier les adresses e-mail en utilisant n'importe quel service de connexion"
+      "verifyWith": "Vérifier les adresses électroniques en utilisant %s",
+      "verifyWithAnyService": "Vérifier les adresses électroniques en utilisant n'importe quel service de connexion"
     },
     "identityPowerboxConfiguration": {
       "explanation": "avec les permissions :",
@@ -441,13 +441,13 @@
       "connectButton": "Connecter"
     },
     "addNewVerifiedEmailPowerboxCard": {
-      "explanation": "Ajouter une nouvelle adresse mail"
+      "explanation": "Ajouter une nouvelle adresse électroniques"
     },
     "httpUrlPowerboxCard": {
       "useUrl": "Utiliser %s"
     },
     "httpArbitraryPowerboxCard": {
-      "explanation": "Indiquez l'URL..."
+      "explanation": "Indiquez l'URL."
     },
     "httpArbitraryPowerboxConfiguration": {
       "explanation": "Entrez l'URL:",
@@ -483,10 +483,10 @@
       "rule1": "Si possible, utilisez la classe <code>standard-form</code>.",
       "rule2": "Le bouton de validation d'un formulaire doit se trouver en bas à droite. Les boutons secondaires doivent être alignés à gauche de ce bouton d'action.",
       "rule3": "Lorsque vous définissez des champs de saisie de texte, placez les étiquettes au-dessus de la zone de saisie, et non à côté ou à l'intérieur du champ comme texte générique.  Placez des explications ou des instructions supplémentaires en dessous. Un texte générique peut être utilisé à titre d'exemple, et non comme instruction.",
-      "rule4": "Les formulaires sont habituellement utilisés pour interagir avec les usagers qui se soucis alors du résultat de leurs actions sur l'application.  Évitez une interface optimiste en faveur d'une interface multi-états qui communique l'activité, le succès et l'échec du réseau.  Un schéma courant est :",
+      "rule4": "Les formulaires sont habituellement utilisés pour interagir avec les usagers qui se soucient alors du résultat de leurs actions sur l'application.  Évitez une interface optimiste en faveur d'une interface multi-états qui communique l'activité, le succès et l'échec du réseau.  Un schéma courant est :",
       "rule4-1": "Définir l'état par défaut du formulaire.  Désactiver un bouton de sauvegarde jusqu' à ce que l'utilisateur effectue une modification.",
       "rule4-2": "Lorsque l'utilisateur clique sur un bouton d'action, lancez la connexion RPC et désactivez le formulaire pour indiquer que l'action est en cours.",
-      "rule4-3": "Lorsque la connexion RPC est terminé, si elle a échoué, affichez un message d'erreur en haut du contexte sur lequel l'action s'applique.  Si la connexion RPC a réussi, affichez un message de réussite (encore une fois, au niveau du contexte dasn lequel l'action s'applique) ou s'il s'agit d'une interaction modale et que l'achèvement de la connexion RPC indique que le workflow a réussi, rejetez le formulaire sans message supplémentaire."
+      "rule4-3": "Lorsque la connexion RPC est terminé, si elle a échoué, affichez un message d'erreur en haut du contexte sur lequel l'action s'applique.  Si la connexion RPC a réussi, affichez un message de réussite (encore une fois, au niveau du contexte dasn lequel l'action s'applique) ou s'il s'agit d'une interaction modale et que l'achèvement de la connexion RPC indique que le travail a réussi, ignorez le formulaire sans message supplémentaire."
     },
     "example": {
       "title": "Un exemple:",
@@ -494,7 +494,7 @@
       "placeholder": "alice@example.com",
       "subtext": "Vous voudrez peut-être recevoir des notifications.",
       "submitButton": "Sauver",
-      "discardButton": "Rejeter"
+      "discardButton": "Ignorer"
     }
   },
   "admin": {
@@ -502,37 +502,37 @@
     "admin": {
       "newAdmin": {
         "title": "Panneau d'administration",
-        "wildcardHostBroken": "ATTENTION : Ce serveur semble avoir le paramètre WILDCARD_HOST mal configuré.  Tant que vous ne l'aurez pas fixé, vous ne pourrez utiliser aucune application. Vous pouvez lire <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\"> plsu d'info dans la documentation de Sandstorm</a> et consulter la console Javascript de votre navigateur. Vous devrez préciser les certificats DNS, SSL/TLS ou modifier le fichier sandstorm.conf. Si vous ne voyez aucune information dans la console javascript ou si vous souhaitez tester lorsque vous avez corrigé le problème, rechargez cette page pour relancer le test. Si vous avez encore des problèmes, <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">merci de faire remonter votre problème à la communauté.</a>",
-        "websocketBroken": "ATTENTION : Ce serveur semble dans l'incapacité de créer un socket web. Sandstorm peut sembler fonctionner correctement, mais beaucoup d'applications dysfonctionneront.<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\"> En savoir plus.</a>  Habituellement, cela est causé par un proxy inverse comme nginx ou Apache qui doit être reconfiguré. Si vous pensez que vous voyez ce message par erreur, rechargez cette page ou envoyez  <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">un message d'erreur..</a>",
+        "wildcardHostBroken": "ATTENTION : Ce serveur semble avoir le paramètre WILDCARD_HOST mal configuré.  Tant que vous ne l'aurez pas fixé, vous ne pourrez utiliser aucune application. Vous pouvez lire <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\"> plus d'info dans la documentation de Sandstorm</a> et consulter la console Javascript de votre navigateur. Vous devrez préciser les certificats DNS, SSL/TLS ou modifier le fichier sandstorm.conf. Si vous ne voyez aucune information dans la console javascript ou si vous souhaitez tester lorsque vous avez corrigé le problème, rechargez cette page pour relancer le test. Si vous avez encore des problèmes, <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">merci de faire remonter votre problème à la communauté.</a>",
+        "websocketBroken": "ATTENTION : Ce serveur semble dans l'incapacité de créer un socket web. Sandstorm peut sembler fonctionner correctement, mais beaucoup d'applications dysfonctionneront.<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\"> En savoir plus.</a>  Habituellement, cela est causé par un proxy inverse comme nginx ou Apache qui doit être reconfiguré. Si vous pensez que vous voyez ce message par erreur, rechargez cette page ou envoyez  <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">un message d'erreur.</a>",
         "hasSetupToken": "Vous n'êtes pas connecté en tant qu'administrateur, mais vous avez une clé de configuration. Vous pouvez soit <a href=\"/setup\">lancer l'assistant de configuration</a> ou <a href=\"/admin/status\">consultez le journal du système.</a>.",
-        "hasNoSetupToken": "Vous n'êtes pas connecté en tant qu'administrateur. Pour accéder au panneau d'administration, connectez-vous en tant qu'administrateur ou générez un jeton depuis la ligne de commande en exécutant `sandstorm admin-token`.."
+        "hasNoSetupToken": "Vous n'êtes pas connecté en tant qu'administrateur. Pour accéder au panneau d'administration, connectez-vous en tant qu'administrateur ou générez un jeton depuis la ligne de commande en exécutant `sandstorm admin-token`."
       },
       "newAdminRoot": {
         "configuration": {
           "title": "Configuration"
         },
         "management": {
-          "title": "Management"
+          "title": "Administration"
         }
       }
     },
     "identityProviders": {
       "name": "Fournisseurs de connexion",
       "providers": {
-        "emailPassLess": "E-mail (sans mot de passe)"
+        "emailPassLess": "Courriel (sans mot de passe)"
       },
       "subtext": "Comment se connecter.",
       "newAdminIdentity": {
-        "explanation": "Choisissez les services que les utilisateurs peuvent utiliser pour s'identifier.  N'importe qui peut se connecter, mais seuls les utilisateurs que vous invitez pourront installer des applications ou créer des grains..",
+        "explanation": "Choisissez les services que les utilisateurs peuvent utiliser pour s'identifier. N'importe qui peut se connecter, mais seuls les utilisateurs que vous invitez pourront installer des applications ou créer des grains…",
         "organizationLinkPrefix": "Pour configurer la description et les paramètres de l'organisation, consultez ",
         "organizationLink": "les paramètres de l’organisation",
         "organizationLinkPostfix": "."
       },
       "adminIdentityProviderConfigureEmail": {
-        "title": "Configuration de connexion par e-mail",
+        "title": "Configuration d'authentification par courriel",
         "error": "Échec à sauvegarder les changement : %s",
-        "warning": "Note : pour utiliser la connexion par e-mail, vous devrez configurer l'envoi du courrier électronique après cette étape.",
-        "explanation": "Le connexion par e-mail n' a pas d'autres options de configuration.",
+        "warning": "Note : pour utiliser l'authentification par courriel, vous devrez configurer l'envoi du courrier électronique après cette étape.",
+        "explanation": "L'authentification par courriel n' a pas d'autres options de configuration.",
         "saveButton": "Sauver",
         "enableButton": "Activer",
         "cancelButton": "Annuler",
@@ -542,7 +542,7 @@
         "explanation": "Pour commencer, vous devez obtenir un identifiant client Google. Suivez ces étapes :",
         "step1": "Visitez <a href=\"https://console.developers.google.com/\" target=\"blank\">https://console.developers.google.com/</a>",
         "step2": "\"Créer un projet\" si besoin. Attendez que Google termine le chargement.",
-        "step3": "Dans la barre latérale gauche, cliquez sur \"Identifiants\" puis, sur la droite \"Écran d’autorisation OAuth\". Veillez à saisir une adresse e-mail et un nom de produit, puis sauvegardez.",
+        "step3": "Dans la barre latérale gauche, cliquez sur \"Identifiants\" puis, sur la droite \"Écran d’autorisation OAuth\". Veillez à saisir une adresse électronique et un nom de produit, puis sauvegardez.",
         "step4": "Dans la barre latérale gauche, cliquez à nouveau sur \"Identifiants\". Cliquez sur le bouton \"Créer des identifiants\", puis sélectionnez \"ID client OAuth\" comme type.",
         "step5": "Sélectionnez ensuite \"Application Web application\" comme type de votre application.",
         "step6": "Définissez les origines Javascript autorisées sur : <span class=\"idp-config-url\">%s</span>",
@@ -552,8 +552,8 @@
       "adminIdentityProviderConfigureGoogle": {
         "title": "Configuration de l'authentification via Google",
         "formerBaseUrlWarning": "Ce serveur a été déplacé de <code>__former__</code> à <code>__current__</code>. Vous devrez visiter <a target=\"_blank\" href=\"https://console.developers.google.com/\">https://console.developers.google.com/</a> et mettre à jour les \"Origines javascript autorisés\" et les \"URI de redirection autorisées\" pour ce ID client pour compléter les valeurs ci-dessous.",
-        "error": "L'enregistrer les changements a échoué : %s",
-        "explanation": "Ensuite, copiez votre code client et le secret client ci-dessous :",
+        "error": "L'enregistrement des changements a échoué : %s",
+        "explanation": "Ensuite, copiez votre identifiant et code secret client ci-dessous :",
         "clientId": "ID client :",
         "clientSecret": "Code secret du client :",
         "saveButton": "Enregistrer",
@@ -570,9 +570,9 @@
       "adminIdentityProviderConfigureGitHub": {
         "title": "Configuration de l'identification via GitHub",
         "formerBaseUrlWarning": "Ce serveur a été déplacé de <code>__former__</code> à <code>__current__</code>. Vous devrez visiter <a target=\"_blank\" href=\"https://github.com/settings/developers\">https://github.com/settings/developers</a> et mettre à jour la \"Homepage URL\" et l'\"Authorization callback URL\" pour cette application en complétant les champs suivants.",
-        "explanation": "Ensuite, copiez votre \"Client ID\" et votre \"Client secret\" ci-dessous :",
-        "clientId": "Client ID :",
-        "clientSecret": "Client secret :",
+        "explanation": "Ensuite, copiez votre identifiant et code secret client ci-dessous :",
+        "clientId": "ID Client :",
+        "clientSecret": "Code secret du client :",
         "saveButton": "Enregistrer",
         "enableButton": "Activer",
         "cancelButton": "Annuler",
@@ -607,7 +607,7 @@
         },
         "emailField": {
           "label": "Attribut LDAP email",
-          "subtext": "L'attribut LDAP sur un objet utilisateur qui représente l'adresse email de l'utilisateur."
+          "subtext": "L'attribut LDAP sur un objet utilisateur qui représente l'adresse électronique de l'utilisateur."
         },
         "filter": {
           "label": "Critères de filtrage LDAP supplémentaires",
@@ -639,11 +639,11 @@
           "placeholder": "https://YOUR_SAML_PROVIDER.com/sso/saml/SingleLogoutService"
         },
         "publicCert": {
-          "label": "SAML cert for above provider:",
-          "placeholder": "base64 encoded cert (e.g. MIID...8F==)"
+          "label": "Certificat pour le fournisseur SAML ci-dessus:",
+          "placeholder": "Certificat encodé en base64 (e.g. MIID...8F==)"
         },
         "entityId": {
-          "label": "Entity ID:"
+          "label": "ID de l'entité:"
         },
         "saveButton": "Enregistrer",
         "enableButton": "Activer",
@@ -679,16 +679,16 @@
         "membership": {
           "title": "Membres de l'organisation",
           "emailToggle": {
-            "label": "Authentification d'utilisateurs via un e-mail",
-            "subtext": "Note : désactivée car l'envoi du courrier électronique n'est pas configuré."
+            "label": "Authentification d'utilisateurs via un courriel",
+            "subtext": "Note : désactivée car l'authentification via courriel n'est pas configurée."
           },
           "emailDomain": {
             "label": "Domaine :",
-            "subtext": "Les utilisateurs ayant un e-mail dans ce domaine seront membres de l'organisation de ce serveur."
+            "subtext": "Les utilisateurs ayant une adresse électronique dans ce domaine seront membres de l'organisation de ce serveur."
           },
           "gappsToggle": {
             "label": "Authentification d'utilisateurs via Google Apps for Work",
-            "subtext": "Note : désactivée car le l'authentification via Google n'est pas configurée."
+            "subtext": "Note : désactivée car l'authentification via Google n'est pas configurée."
           },
           "gappsDomain": {
             "label": "Domaine :",
@@ -704,9 +704,9 @@
           }
         },
         "settings": {
-          "title": "Paramètres de l'organization",
+          "title": "Paramètres de l'organisation",
           "disallowGuests": {
-            "label": "Refuser la collaboration avec des utilisateurs extérieurs à l'organisation..",
+            "label": "Refuser la collaboration avec des utilisateurs extérieurs à l'organisation.",
             "subtext": "Les utilisateurs devront se connecter en tant que membre de votre organisation pour visualiser les liens de partage. L'accès des invités sera désactivé."
           },
           "shareContacts": {
@@ -718,16 +718,16 @@
       }
     },
     "emailConfig": {
-      "name": "Configuration de l'e-mail",
+      "name": "Configuration du courriel",
       "subtext": "Comment le courrier est envoyé aux utilisateurs.",
       "newAdminEmailConfig": {
         "outbound": {
-          "title": "Email sortant",
+          "title": "Courriel sortant",
           "warning": "<strong>Courriel non configuré.</strong> Les fonctionnalités liées au courrier électronique, telles que l'ouverture de session, les notifications, le partage des invitations et la demande d'accès, ne seront pas disponibles tant que vous n'aurez pas configuré l'envoi de courrier électronique."
         },
         "howItWorks": {
           "title": "Comment Sandstorm utilise le courrier électronique ?",
-          "explanation": "Sandstorm envoie des notifications par courrier électronique, et les applications Sandstorm peuvent également le faire. Chaque application reçoit une adresse e-mail unique, Sandstorm peut donc envoyer un e-mail à partir d'une variété d'adresses \"De : \". Par contre. le SMTP de Gmail ne fonctionnera pas, mais il existe d'autres services gratuits. Consultez <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">la documentation pour en savoir plus</a>."
+          "explanation": "Sandstorm envoie des notifications par courrier électronique, et les applications Sandstorm peuvent également le faire. Chaque application reçoit une adresse électronique unique, Sandstorm peut donc envoyer un courriel à partir d'une variété d'adresses \"De : \". Par contre. le SMTP de Gmail ne fonctionnera pas, mais il existe d'autres services gratuits. Consultez <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">la documentation pour en savoir plus</a>."
         },
         "success": "Changements enregistrés.",
         "error": "Échec de l'enregistrement des changements : %s",
@@ -743,26 +743,26 @@
           "label": "Mot de passe (optionnel)"
         },
         "returnAddress": {
-          "label": "Adresse email propre au serveur Sandstorm",
-          "subtext": "Sandstorm enverra des e-mails de connexion, des notifications de demandes d'accès autorisées et d'autres e-mails à partir de cette adresse. Il utilisera également cette adresse dans l'enveloppe SMTP pour les envois."
+          "label": "Adresse électronique propre au serveur Sandstorm",
+          "subtext": "Sandstorm enverra des courriels de connexion, des notifications de demandes d'accès autorisées et d'autres courriels à partir de cette adresse. Il utilisera également cette adresse dans l'enveloppe SMTP pour les envois."
         },
         "submitButton": "Enregistrer la configuration",
         "testButton": "Test",
-        "disableButton": "Désactiver le mail"
+        "disableButton": "Désactiver l'adresse"
       },
       "emailTestPopup": {
-        "title": "Envoyer un e-mail de test",
+        "title": "Envoyer un courriel de test",
         "testAddress": {
-          "label": "Destinataire du test mail :"
+          "label": "Destinataire du test d'envoi :"
         },
-        "pending": "Envoi...",
-        "submitButton": "Envoyer l'e-mail de test",
+        "pending": "Envoi…",
+        "submitButton": "Envoyer le message de test",
         "closeButton": "Fermer"
       },
       "emailDisablePopup": {
-        "title": "Vraiment désactiver le mail ?",
-        "explanation": "Ceci désactivera toutes les livraisons des e-mails sortants pour ce serveur, y compris le partage, la connexion par jeton (si activé) et les notifications aux utilisateurs.",
-        "disableButton": "Désactiver le mail",
+        "title": "Vraiment désactiver le courrier électronique ?",
+        "explanation": "Ceci désactivera toutes les livraisons des courriels sortants pour ce serveur, y compris le partage, la connexion par jeton (si activé) et les notifications aux utilisateurs.",
+        "disableButton": "Désactiver le courrier électronique",
         "closeButton": "Fermer"
       }
     },
@@ -853,19 +853,19 @@
       "subtext": "Où chercher les applications et leurs mises à jour.",
       "newAdminAppSources": {
         "appMarketUrl": {
-          "label": "URL du dépôt des applicationsL",
-          "subtext": "Le bouton \"Installer...\" sur la page des application pointera vers cette URL."
+          "label": "URL du dépôt des applications",
+          "subtext": "Le bouton \"Installer…\" sur la page des application pointera vers cette URL."
         },
         "enableAppUpdates": {
-          "label": "Enable app update notifications",
-          "subtext": "Updates to apps will be automatically downloaded by the Sandstorm server daily and notifications sent to users asking if they want to update their installed apps."
+          "label": "Activer les notifications de mise à jour des applications",
+          "subtext": "Les mises à jours des applications seront automatiquement téléchargées journellement par le serveur Sandstorm et des notifications seront envoyées aux utilisateurs, demandant s'ils veulent mettre à jour leurs applications installées."
         },
         "appIndexUrl": {
-          "label": "App index URL",
-          "subtext": "This is the URL that the Sandstorm server will check to learn about app updates."
+          "label": "URL de l'index des applications",
+          "subtext": "C'est cette adresse que le serveur Sandstorm va utiliser pour s'informer des mises à jour des applications."
         },
         "saveButton": "Enregistrer",
-        "restoreButton": "Restaurer les valeurs par default"
+        "restoreButton": "Restaurer les valeurs par défaut"
       }
     },
     "networking": {
@@ -875,7 +875,7 @@
       "newAdminNetworking": {
         "ipBlacklist": {
           "label": "La liste noire d'IP gérée côté serveur :",
-          "subtext": "Il sera interdit aux utilisateurs de faire des demandes vers ces adresses IP. Vous pouvez spécifier une adresse IP ou un réseau (dans la notation CIDR),, par exemple \"127.0.0.0/8\") par ligne. La valeur par défaut comprend les adresses réseau locales et privées standard. Notez que lorsqu'un proxy HTTP est utilisé, ce paramètre peut être ignoré ; le proxy peut possèder sa propre liste noire."
+          "subtext": "Il sera interdit aux utilisateurs de faire des requêtes vers ces adresses IP. Vous pouvez spécifier une adresse IP ou un réseau (dans la notation CIDR, par exemple \"127.0.0.0/8\") par ligne. La valeur par défaut comprend les adresses réseau locales et privées standard. Notez que lorsqu'un proxy HTTP est utilisé, ce paramètre peut être ignoré ; le proxy peut posséder sa propre liste noire."
         },
         "saveButton": "Enregistrer",
         "restoreButton": "Restaurer les valeurs par default"
@@ -899,7 +899,7 @@
           "hint": "Visiteur",
           "cap": "V"
         },
-        "unknownIdentity": "Identifiant inconnu",
+        "unknownIdentity": "Identifiants inconnu",
         "unknownIdentifier": "identifiant inconnu",
         "manageButton": "Gérer"
       },
@@ -913,7 +913,7 @@
         },
         "inviteLink": "Inviter un nouvel utilisateur ",
         "notFound": "Aucun utilisateur ne répond à votre filtre.",
-        "processing": "Chargement des utilisateurs..."
+        "processing": "Chargement des utilisateurs…"
       },
       "newAdminUsers": {
         "search": {
@@ -930,23 +930,23 @@
     "userDetails": {
       "newAdminUserDetailsIdentityTableRow": {
         "profilePicture": {
-          "label": "Photo du profil"
+          "label": "Photo de profil"
         },
         "handle": {
           "title": "Pseudo",
-          "emails": "E-mails"
+          "emails": "Courriels"
         },
         "pronouns": {
           "hint": "Pronoms",
           "label": "Pronoms"
         },
         "emails": {
-          "hint": "Emails",
-          "label": "Emails",
+          "hint": "Courriels",
+          "label": "Courriels",
           "primary": "Primaire",
           "verified": "Vérifié",
           "unverified": "Non vérifié",
-          "notFound": "Aucun e-mail indiqué."
+          "notFound": "Aucun courriel indiqué."
         },
         "properties": {
           "login": "Connexion possible",
@@ -977,7 +977,7 @@
       },
       "newAdminUserDetailsIdentityTable": {
         "header": {
-          "credential": "Identifiant",
+          "credential": "Identifiants",
           "created": "Créé",
           "lastActive": "Dernière activité",
           "properties": "Propriétés"
@@ -1023,7 +1023,7 @@
         },
         "deletePopup": {
           "title": "Supprimer %s",
-          "explanation": "Vous avez cocher le compte de %s pour suppression. Dès lors, ce compte sera suspendu, et les administrateurs auront 7 jours pour annuler la suppression en attente en revenant à cette page et en cliquant sur le bouton \"Réactiver le compte\". %s ne pourra  <strong>pas</strong> arrêter le processus de suspension / suppression.",
+          "explanation": "Vous avez cocher le compte de %s pour suppression. Dès lors, ce compte sera suspendu, et les administrateurs auront 7 jours pour annuler la suppression en attente en revenant à cette page et en cliquant sur le bouton \"Réactiver le compte\". %s ne pourra <strong>pas</strong> arrêter le processus de suspension / suppression.",
           "detail": "Après 7 jours, le compte de %s sera supprimé définitivement. La suppression de ce compte entrainera :",
           "detail1": "la suppression définitive des grains créés par %s,",
           "detail2": "la révocation de tous les liens de partage créé par %s,",
@@ -1041,7 +1041,7 @@
           "suspendButton": "Suspendre le compte",
           "cancelButton": "Annuler"
         },
-        "loading": "Chargement des données utilisateur..."
+        "loading": "Chargement des données utilisateur…"
       }
     },
     "userInvite": {
@@ -1054,23 +1054,23 @@
         }
       },
       "newAdminUserInviteEmail": {
-        "title": "Envoyer un e-mail",
+        "title": "Envoyer un courriel",
         "emailWarning": {
           "explanation": "Le courriel n'a pas été configuré, donc l'envoi d'invitations par courriel est désactivé.",
-          "configureLink": "Configurer l'envoi d'e-mails"
+          "configureLink": "Configurer l'envoi de courriel"
         },
-        "explanation": "Ceci créera un lien et l'enverra dans un e-mail.",
+        "explanation": "Ceci créera un lien et l'enverra dans un courriel.",
         "to": {
           "label": "À :",
           "placeholder": "alice@email.com\nbob@example.com",
-          "subtext": "Adresses mail, une par ligne."
+          "subtext": "Adresses électroniques, une par ligne."
         },
         "subject": {
           "label": "Sujet :"
         },
         "body": {
           "label": "Corps du message :",
-          "subtext": "<code>$KEY</code> sera remplacé par le lien nouvellement créé.."
+          "subtext": "<code>$KEY</code> sera remplacé par le lien nouvellement créé."
         },
         "sendButton": "Envoyer une invitation"
       },
@@ -1082,7 +1082,7 @@
       "name": "Journal du système",
       "subtext": "Afficher le journal des débogages de Sandstorm.",
       "newAdminLogContents": {
-        "ellipsis": "..."
+        "ellipsis": "…"
       },
       "newAdminStatus": {
         "downloadButton": "Télécharger le journal complet"
@@ -1097,7 +1097,7 @@
         "grains": "grains",
         "appName": "Application",
         "owners": "propriétaires",
-        "sharedUsers": "usagers partagés",
+        "sharedUsers": "utilisateurs partagés",
         "daily": "par jour",
         "weekly": "par semaine",
         "monthly": "mensuellement",
@@ -1105,16 +1105,16 @@
       },
       "body": {
         "notFound": "Il n' y a pas encore de statistiques enregistrées.",
-        "loading": "Chargement..."
+        "loading": "Chargement…"
       },
       "newAdminStats": {
         "share": {
           "title": "Envoyer des données anonymisées à l'équipe de développement de  Sandstorm",
-          "explanation": "Nous aimerions savoir combien il y a d'utilisateurs de Sandstorm, pour faire des graphiques et d'autres traitements.  Est-il possible d'envoyer les données à partir de cette page une fois par jour à l'équipe de Sandstorm, afin de pouvoir les ajouter aux résultats globaux ?  Toutes les statistiques que vous envoyez sont anonymisées.",
+          "explanation": "Nous aimerions savoir combien il y a d'utilisateurs de Sandstorm, pour faire des graphiques et d'autres traitements. Est-il possible d'envoyer les données à partir de cette page une fois par jour à l'équipe de Sandstorm, afin de pouvoir les ajouter aux résultats globaux ? Toutes les statistiques que vous envoyez sont anonymisées.",
           "enableButton": "Envoyer les stats anonymisées",
           "disableButton": "Ne pas envoyer",
           "control": {
-            "explanation": "Les développeurs de Sandstorm apprécient de connaître le nombre d'utilisateurs, faire des graphiques et autres.  Vous pouvez les aider en choisissant ici de partager les données une fois par jour avec l'équipe de Sandstorm, afin de contribuer aux résultats. Toutes les statistiques partagées sont transmises anonymisées.",
+            "explanation": "Les développeurs de Sandstorm apprécient de connaître le nombre d'utilisateurs, faire des graphiques et autres. Vous pouvez les aider en choisissant ici de partager les données une fois par jour avec l'équipe de Sandstorm, afin de contribuer aux résultats. Toutes les statistiques partagées sont transmises anonymisées.",
             "label": "Statistiques anonymisées envoyées à sandstorm.io :",
             "enabled": "Activé",
             "disabled": "Désactivé",
@@ -1130,8 +1130,8 @@
         },
         "userGrains": {
           "title": "Utilisateurs et grains",
-          "current": "Maintenant : __utilisateurs__ utilisateurs, __grains__ grains",
-          "today": "Aujourd'hui : __utilisateurs__ utilisateurs, __grains__ grains"
+          "current": "Maintenant : __users__ utilisateurs, __grains__ grains",
+          "today": "Aujourd'hui : __users__ utilisateurs, __grains__ grains"
         },
         "apps": {
           "title": "Applications",
@@ -1145,16 +1145,16 @@
       "newAdminMaintenance": {
         "explanation": "Vous pouvez définir un message de maintenance qui sera affiché à tous les utilisateurs dans la barre de menu, en haut à droite. Ceci est utile pour annoncer la maintenance programmée afin que les utilisateurs puissent être prévenu des temps d'arrêt. Si le message est vide, aucun message ne sera affiché.",
         "variables": "Vous pouvez utiliser les variables suivantes dans le champ \"Texte du message\", qui seront automatiquement remplacées par des valeurs correspondantes :",
-        "variable1": "<code>$TIME</code> : La partie horaire de la \"date de maintenance\", convertie en à l'heure locale de l'utilisateur (par exemple. \"1:15:45 PM\")",
-        "variable2": "<code>$DATE</code> : The partie calendaire de la \"date de maintenance\", convertie en à date locale de l'utilisateur  (par exemple \"6/19/2015\")",
-        "variable3": "<code>$IN_COUNTDOWN</code> : Un décompte actif jusqu' à la \"date de maintenance\" (par exemple \"dans 3 jours\" ou \"dans 1 minute\"). Displays \"any moment\" at the time specified in \"Maintenance time\" and then disappears after an hour.",
+        "variable1": "<code>$TIME</code> : La partie horaire de la \"date de maintenance\", convertie en à l'heure locale de l'utilisateur (par exemple. \"13:15:45\")",
+        "variable2": "<code>$DATE</code> : La partie calendaire de la \"date de maintenance\", convertie en à date locale de l'utilisateur  (par exemple \"06/19/2015\")",
+        "variable3": "<code>$IN_COUNTDOWN</code> : Un décompte actif jusqu' à la \"date de maintenance\" (par exemple \"dans 3 jours\" ou \"dans 1 minute\"). Affiche \"C'est pour bientôt\" au moment spécifié dans \"Date de maintenance\" et disparait après une heure.",
         "messageText": {
           "label": "Texte du message :",
           "subtext": ""
         },
         "maintenanceTime": {
           "label": "Date de maintenance :",
-          "subtext": "Le moment où vous avez l'intention de commencer la maintenance, formaté comme suit \"%s\"."
+          "subtext": "Le moment où vous avez l'intention de commencer la maintenance, formaté comme il suit : \"%s\"."
         },
         "url": {
           "label": "Adresse URL (optionnelle) :",
@@ -1185,7 +1185,7 @@
       },
       "newAdminNetworkCapabilitiesSection": {
         "filter": {
-          "label": "Montré :",
+          "label": "Montré : ",
           "active": "Activé (%s)",
           "revoked": "Révoqué (%s)"
         }
@@ -1197,20 +1197,20 @@
       }
     },
     "hostingManagement": {
-      "name": "Hosting management",
+      "name": "Administration de l'hébergement",
       "newAdminHostingManagement": {
-        "explanation": "Cette fonctionnalité est expérimentale et ne fonctionne actuellement qu'avec le fournisseur d'accès LDAP. Utiliser avec précaution.",
+        "explanation": "Cette fonctionnalité est expérimentale et ne fonctionne actuellement qu'avec le fournisseur d'accès LDAP. A utiliser avec précaution.",
         "quotaEnabled": {
           "label": "Activer les quotas utilisateurs",
-          "subtext": "Activez la gestion des quotas sur ce serveur. Pour cela, SAML et LDAP doivent être configurés, les adresses e-mail seront utilisées pour faire correspondre les deux."
+          "subtext": "Activez la gestion des quotas sur ce serveur. Pour cela, SAML et LDAP doivent être configurés, les adresses électroniques seront utilisées pour faire correspondre les deux."
         },
         "quotaLdapAttribute": {
           "label": "Attribut de quota LDAP",
           "subtext": "C'est le nom de l'attribut qui sera recherché dans LDAP pour déterminer le quota d'un utilisateur."
         },
         "billingPromptUrl": {
-          "label": "Demande de facturationl",
-          "subtext": "C'est l'url qui sera utilisée dans la demande de facturationt."
+          "label": "URL de demande de facturation",
+          "subtext": "C'est l'url qui sera utilisée dans la demande de facturation."
         },
         "saveButton": "Enregistrer",
         "restoreButton": "Restaurer les valeurs par défaut"
@@ -1229,19 +1229,19 @@
       "uninstallingHint": "Désinstallation terminée",
       "doneUninstalling": "Désinstallation terminée",
       "uninstallHint": "Désinstaller une application",
-      "uninstallButton": "Désinstallation...",
-      "uploadApp": "Téléchargement de l'application...",
+      "uninstallButton": "Désinstallation…",
+      "uploadApp": "Téléchargement de l'application…",
       "searchHint": "Recherche",
       "search": "recherche",
       "mostUsed": "Most used",
       "allApps": "Toutes les applications",
-      "install": "Installation...",
+      "install": "Installation…",
       "fromMarket": "depuis le dépôt des applications",
       "uninstall": "Désinstaller",
       "noMatchApp": "Vous n'avez pas d'applications installées sous ce nom. Essayez <a href=\"__url__\">recherche sur le dépôt des applications &raquo; </a>",
       "unauthorized": "Non autorisé ! :(",
       "unauthorizedText": "C'est un serveur Sandstorm privé. Pour installer des applications, vous devez être invité par l'administrateur. Il peut vous inviter depuis le panneau d'administration.",
-      "intro": "<strong>Bienvenue !</strong><br>Créez des documents, des salons de chat, des blogs, etc..<br><br>Commencez par installer une application.",
+      "intro": "<strong>Bienvenue !</strong><br>Créez des documents, des salons de chat, des blogs, etc.<br><br>Commencez par installer une application.",
       "doneButton": "Got it"
     },
     "install": {
@@ -1252,20 +1252,20 @@
           "retryButton": "Essayer à nouveau"
         },
         "stepWait": {
-          "title": "En attente d'accès en écriture..."
+          "title": "En attente d'accès en écriture…"
         },
         "stepDownload": {
-          "title": "Téléchargement...",
+          "title": "Téléchargement…",
           "cancelButton": "Annuler"
         },
         "stepVerify": {
-          "title": "Vérification..."
+          "title": "Vérification…"
         },
         "stepUnpack": {
-          "title": "Dépaquetage..."
+          "title": "Dépaquetage…"
         },
         "stepAnalyze": {
-          "title": "Analyse..."
+          "title": "Analyse…"
         },
         "stepConfirm": {
           "upgrade": {
@@ -1287,7 +1287,7 @@
         },
         "stepDelete": {
           "title": "Suppression",
-          "explanation": "Le serveur supprime actuellement cette application..."
+          "explanation": "Le serveur supprime actuellement cette application…"
         },
         "stepFailed": {
           "title": "Failed",
@@ -1298,10 +1298,10 @@
     "appDetails": {
       "sandstormAppDetailsPage": {
         "newerVersion": {
-          "explanation": "Certains de vos fichiers ont été créés avec une version plus récente de cette application.  Ils continueront à utiliser la version la plus récente, car revenir en arrière pourrait les casser."
+          "explanation": "Certains de vos fichiers ont été créés avec une version plus récente de cette application. Ils continueront à utiliser la version la plus récente, car revenir en arrière pourrait les casser."
         },
         "olderVersion": {
-          "explanation": "Certains de vos grains ont été créé à partir d'une version  ancienne de cette application.  Les mettre à jour ?",
+          "explanation": "Certains de vos grains ont été créé à partir d'une version  ancienne de cette application. Les mettre à jour ?",
           "upgradeButton": "Mise à jour des grains"
         },
         "search": {
@@ -1319,13 +1319,13 @@
       },
       "sandstormAppDetails": {
         "websiteLink": "Site web",
-        "appMarketLink": "Dépot des applications",
+        "appMarketLink": "Dépôt des applications",
         "sourceCodeLink": "Code source",
         "bugReportLink": "Signaler un problème",
         "mainListButton": "Afficher la liste principale",
         "trashButton": "Voir la corbeille",
         "uninstallButton": "Désinstaller",
-        "restoreButton": "Restauration de la sauvegarde du grain ...",
+        "restoreButton": "Restauration de la sauvegarde du grain…",
         "version": {
           "label": "Version"
         },
@@ -1336,13 +1336,13 @@
         "publisher": {
           "label": "Signé par"
         },
-        "hasFingerprint": "L'éditeur de l'application a prouvé  en utilisant PGP qu'il contrôle ce compte.",
-        "noFingerprint": "Cette application n'a possède pas de signature de son créateur, celui-ci ne peut pas être confirmé."
+        "hasFingerprint": "L'éditeur de l'application a prouvé en utilisant PGP qu'il contrôle ce compte.",
+        "noFingerprint": "Cette application ne possède pas de signature de son créateur, celui-ci ne peut pas être confirmé."
       }
     }
   },
   "accounts": {
-    "title": "Account settings",
+    "title": "Paramètres de compte",
     "accountSettings": {
       "sandstormAccountSettings": {
         "title": "Compte",
@@ -1357,11 +1357,11 @@
             "logoutAllButton": "Déconnectez-vous de toutes les autres sessions"
           },
           "email": {
-            "title": "Adresse e-mail primaire pour les notifications liées aux services",
+            "title": "Courriel primaire pour les notifications liées aux services",
             "primary": "Primaire",
             "primaryButton": "Définir comme primaire",
-            "notFound": " Aucun e-mail vérifié ! ",
-            "addNew": "Ajouter une nouvelle adresse e-mail"
+            "notFound": " Aucun courriel vérifié ! ",
+            "addNew": "Ajouter un nouveau courriel"
           }
         },
         "billing": {
@@ -1399,7 +1399,7 @@
       },
       "_accountProfileEditor": {
         "picture": {
-          "label": "Photo du profil :",
+          "label": "Photo de profil :",
           "uploadButton": "Télécharger une nouvelle photo.",
           "subtext": "Cette photo sera utilisée pour vous identifier auprès des autres utilisateurs.",
           "maxSize": "512x512px, 64KiB max."
@@ -1412,11 +1412,11 @@
         "handle": {
           "label": "Pseudo :",
           "placeholder": "pseudo",
-          "hint": "Les pseudos doivent commencer par une lettre minuscule et ne doivent contenir que des lettres minuscules, des chiffres et des underscores (traits de soulignement).",
+          "hint": "Les pseudos doivent commencer par une lettre minuscule et ne doivent contenir que des lettres minuscules, des chiffres et des underscores (caractères de soulignement).",
           "subtext": "À afficher dans les applications qui utilisent des pseudos. Votre pseudo doit commencer par une lettre et ne doit contenir que des lettres minuscules, des chiffres et des caractères de soulignement."
         },
         "emailList": {
-          "label": "E-mail:"
+          "label": "Courriel:"
         },
         "pronoun": {
           "label": "Pronom préféré :",
@@ -1426,7 +1426,7 @@
           "robot": "on (robot)"
         },
         "agreedToTerms": {
-          "agreeTo": " J'ai lu et j'accepte les ",
+          "agreeTo": " J'ai lu et j'accepte les",
           "termsOfServiceLink": "conditions d'utilisation",
           "and": " et les ",
           "privacyLink": "modalités de protection de la vie privée"
@@ -1445,7 +1445,7 @@
         "signInButton": "Se connecter"
       },
       "accountButtons": {
-        "loading": "Chargement..."
+        "loading": "Chargement…"
       },
       "_loginButtonsLoggedInDropdown": {
         "revealIdentity": "Révéler votre identité",
@@ -1457,7 +1457,7 @@
       "_loginButtonsLoggedOutDropdown": {
         "demo": {
           "title": "Créer un compte",
-          "explanation": "Les données de votre compte de démonstration seront transférées sur votre nouveau compte.."
+          "explanation": "Les données de votre compte de démonstration seront transférées sur votre nouveau compte."
         },
         "title": "Sign in",
         "shared": {
@@ -1485,18 +1485,18 @@
         "about": "à-propos de Sandstorm"
       },
       "emailLoginForm": {
-        "description": "avec un e-mail",
-        "sendButtonText": "envoyer un e-mail de connexion"
+        "description": "avec un courriel",
+        "sendButtonText": "envoyer un courriel de connexion"
       },
       "emailAuthenticationForm": {
-        "hint": "Ce type de connexion vous permet de vous connecter en utilisant une adresse e-mail et sans mot de passe. Aucun mot de passe n'est requis ; au lieu de cela, chaque fois que vous ouvrez une session, nous vous envoyons un nouveau code de confirmation par courriel. Vous n'aurez besoin de vous connecter qu'une seule fois par appareil.",
+        "hint": "Ce type de connexion vous permet de vous connecter en utilisant une adresse électronique et sans mot de passe. Aucun mot de passe n'est requis ; au lieu de cela, chaque fois que vous ouvrez une session, nous vous envoyons un nouveau code de confirmation par courriel. Vous n'aurez besoin de vous connecter qu'une seule fois par appareil.",
         "token": {
-          "explanation": "Un e-mail de connexion a été envoyé à %s. Cela peut prendre quelques instants avant qu'il n'aparaisse dans votre boîte de réception.",
+          "explanation": "Un courriel de connexion a été envoyé à %s. Cela peut prendre quelques instants avant qu'il n’apparaisse dans votre boîte de réception.",
           "label": "Entrez votre jeton :",
           "confirmButton": "Confirmer",
           "cancelButton": "Annuler"
         },
-        "disabled": "Un administrateur du serveur doit activer l'authentification e-mail avant que vous puissiez confirmer votre e-mail."
+        "disabled": "Un administrateur du serveur doit activer l'authentification par courriel avant que vous puissiez confirmer votre adresse."
       },
       "ldapLoginForm": {
         "username": {
@@ -1515,18 +1515,18 @@
     },
     "identity": {
       "identityLoginInterstitial": {
-        "title": "Ouverture de session...",
-        "loading": "chargement...",
+        "title": "Ouverture de session…",
+        "loading": "chargement…",
         "logoutButton": "Se déconnecter",
         "cancelButton": "Annuler",
         "goBackButton": "Retour",
-        "create": "création de compte...",
+        "create": "création de compte…",
         "createFailed": "Impossible de créer un compte.",
-        "loginAccount": "connexion au compte...",
+        "loginAccount": "connexion au comptei…",
         "loginAccountFailed": "Echec de le connexion au compte",
-        "loginToken": "reconnexion au compte..",
+        "loginToken": "reconnexion au compte…",
         "loginTokenFailed": "La session ne s'est pas relancée.",
-        "link": "liaison d'un accréditation à un compte...",
+        "link": "liaison d'un accréditation à un compte…",
         "success": "Dissocier l'accréditation de %s",
         "explanation": "Vous vous êtes authentifié avec votre accréditation",
         "warning": "mais ce n'est pas un identifiant de connexion pour n'importe quel compte.",
@@ -1572,13 +1572,13 @@
         "title": "Code d'authentification invalide. Au-delà de 15 minutes, le jeton a expiré, sinon vous l'avez peut-être simplement mal tapé."
       },
       "_emailLinkIdentityError": {
-        "title": "Pour confirmer votre adresse mail, vous devez être identifié comme le compte qui a créé ce lien."
+        "title": "Pour confirmer votre adresse électronique, vous devez être identifié comme le compte qui a créé ce lien."
       },
       "addNewVerifiedEmailPowerboxConfiguration": {
         "email": {
-          "placeholder": "entrez l'adresse mail",
+          "placeholder": "entrez l'adresse électronique",
           "selectButton": "Sélectionner",
-          "sendButton": "Envoyer un e-mail de confirmation"
+          "sendButton": "Envoyer un courriel de confirmation"
         },
         "sendingTo": "Envoi à %s",
         "resetButton": "Essayer une adresse différente",
@@ -1586,25 +1586,25 @@
           "placeholder": "entrez votre jeton",
           "confirmButton": "Confirmer"
         },
-        "verifying": "Vérification du jeton..."
+        "verifying": "Vérification du jeton…"
       }
     }
   },
   "wizard": {
     "setupWizardLoading": {
-      "loading": "Chargement en cours..."
+      "loading": "Chargement en cours…"
     },
     "setupWizardProgressBar": {
       "identityProviders": "Fournisseurs de connexion",
       "organization": "Organisation",
-      "email": "E-mail",
+      "email": "Courriel",
       "preinstalledApps": "Applications pré-installées",
       "adminAccount": "Compte administrateur"
     },
     "setupWizardHelpFooter": {
       "needHelp": "Besoin d'aide ?",
       "documentation": "Documentation",
-      "emailSupport": "Support par e-mail",
+      "emailSupport": "Support par courriel",
       "systemLog": "Journal du système"
     },
     "setupWizardSystemLog": {
@@ -1618,10 +1618,10 @@
       "title": "Bienvenue sur Sandstorm !",
       "revisitWizardLink": "Reprendre l'assistant de configuration",
       "noIdpEnabled": {
-        "explanation": "Ce serveur Sandstorm a été configuré précédemment, mais en raison d'un changement dans <code>sandstorm. conf</code>, vous devrez configurer à nouveau les fournisseurs de connexion.."
+        "explanation": "Ce serveur Sandstorm a été configuré précédemment, mais en raison d'un changement dans <code>sandstorm.conf</code>, vous devrez configurer à nouveau les fournisseurs de connexion."
       },
       "idpEnabled": {
-        "explanation": "Ce serveur Sandstorm est prêt à fonctionner. Vous pouvez régler les paramètres du serveur, y compris les fournisseurs de connexion disponibles et la façon d'envoyer les e-mails.",
+        "explanation": "Ce serveur Sandstorm est prêt à fonctionner. Vous pouvez régler les paramètres du serveur, y compris les fournisseurs de connexion disponibles et la façon d'envoyer les courriels.",
         "turnUserIntoAdmin": "Vous pouvez aussi passer administrateur un utilisateur existant.",
         "isAdmin": {
           "adminPanelLink": "Accéder à l’administration",
@@ -1637,10 +1637,10 @@
     },
     "setupWizardIdentity": {
       "title": "Fournisseurs de connexion",
-      "explanation1": "Pour utiliser Sandstorm, vous devez créer un compte utilisateur.  Chaque compte utilisateur sur Sandstorm est géré par un fournisseur d'accès.  Vous utiliserez ce fournisseur d'accès pour vous authentifier en tant que premier administrateur de cette installation Sandstorm.",
+      "explanation1": "Pour utiliser Sandstorm, vous devez créer un compte utilisateur. Chaque compte utilisateur sur Sandstorm est géré par un fournisseur d'accès. Vous utiliserez ce fournisseur d'accès pour vous authentifier en tant que premier administrateur de cette installation Sandstorm.",
       "explanation2": "Configurez un ou plusieurs fournisseurs de connexion que vous souhaitez activer.",
       "nextButton": "Suivant",
-      "backButton": "Précédant"
+      "backButton": "Précédent"
     },
     "setupWizardOrganization": {
       "title": "Paramètre de l'organisation",
@@ -1648,16 +1648,16 @@
       "membership": {
         "title": "Membres de l'organisation",
         "emailToggle": {
-          "label": "Utilisateurs authentifiés par leur adresse mail",
-          "subtext": "Note : désactivé car la connexion par e-mail n'est pas configurée."
+          "label": "Utilisateurs authentifiés par leur adresse électronique",
+          "subtext": "Note : désactivé car l'authentification par courriel n'est pas configurée."
         },
         "emailDomain": {
           "label": "Domaine :",
-          "subtext": "Les utilisateurs ayant une adresse mail dans ce domaine seront membres de l'organisation de ce serveur."
+          "subtext": "Les utilisateurs ayant une adresse électronique dans ce domaine seront membres de l'organisation de ce serveur."
         },
         "gappsToggle": {
           "label": "Utilisateurs authentifiés par Google Apps for Work",
-          "subtext": "Note : désactivé car la connexion via Google n'est pas configurée."
+          "subtext": "Note : désactivé car l'authentification via Google n'est pas configurée."
         },
         "gappsDomain": {
           "label": "Domaine :",
@@ -1676,11 +1676,11 @@
         "title": "Paramètres de l'organiation",
         "disallowGuests": {
           "label": "Désactiver la collaboration avec des utilisateurs extérieurs à l'organisation.",
-          "subtext": "Les utilisateurs devront se connecter en tant que membres de votre organisation pour bénéficier des liens de partage. L'accès des invités sera désactivé.."
+          "subtext": "Les utilisateurs devront se connecter en tant que membres de votre organisation pour bénéficier des liens de partage. L'accès des invités sera désactivé."
         },
         "shareContacts": {
           "label": "Rendre tous les utilisateurs de l'organisation visibles entre-eux",
-          "subtext": "Ce réglage ajoute automatiquement les utilisateurs à la liste des contacts de l'organisation afin qu'ils puissent partager les grains entre eux. Désactivez cette option si vous des utilisateurs souhaitent que leur identité reste invisible."
+          "subtext": "Ce réglage ajoute automatiquement les utilisateurs à la liste des contacts de l'organisation afin qu'ils puissent partager les grains entre eux. Désactivez cette option si des utilisateurs souhaitent que leur identité reste invisible."
         }
       },
       "saveButton": "Sauver et continuer",
@@ -1688,13 +1688,13 @@
     },
     "setupWizardEmailConfig": {
       "title": "Livraison des courriels",
-      "explanation": "Sandstorm a besoin d'un moyen d'envoyer des courriels.  Vous pouvez sauter cette étape (à moins que vous utilisiez une connexion par mail), mais les fonctionnalités liées au courrier électronique seront indisponibles tant que vous n'aurez pas configuré cette partie.",
-      "moreDetail": "<strong>Comment Sandstorm utilise le courrier électronique ?</strong> Sandstorm envoie des notifications par mails, et les applications Sandstorm peuvent également envoyer des notifications par mails. Une adresse mail unique est attribuées à chaque application, donc Sandstorm a besoin d'envoyer des mails à partir de plusieurs adressess, avec différents \"From:\". En conséquence, le SMTP de Gmail SMTP ne fonctionnera pas mais il existe bien d'autres services gratuits. Pour en savoir plus, consultez <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">la documentation</a>.",
-      "error": "Failed to save changes: %s",
+      "explanation": "Sandstorm a besoin d'un moyen pour envoyer des courriels. Vous pouvez sauter cette étape (à moins que vous utilisiez une connexion par courriel), mais les fonctionnalités liées au courrier électronique seront indisponibles tant que vous n'aurez pas configuré cette partie.",
+      "moreDetail": "<strong>Comment Sandstorm utilise le courrier électronique ?</strong> Sandstorm envoie des notifications par courrier électronique, et les applications Sandstorm peuvent également le faire. Chaque application reçoit une adresse électronique unique, Sandstorm peut donc envoyer un courriel à partir d'une variété d'adresses \"De : \". Par contre. le SMTP de Gmail ne fonctionnera pas, mais il existe d'autres services gratuits. Consultez <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">la documentation pour en savoir plus</a>.",
+      "error": "Échec de l'enregistrement des changements : %s",
       "hostPort": {
         "host": "Hôte SMTP",
         "port": "Port",
-        "subtext": "Utiliser le port 25 pour SMTP (non crypté ou avec StartTLS), port 465 pour TLS-crypté SMTPS."
+        "subtext": "Utiliser le port 25 pour SMTP (non crypté ou avec StartTLS), port 465 pour le chiffrage TLS SMTPS."
       },
       "username": {
         "label": "Identifiant (optionnel)"
@@ -1703,7 +1703,7 @@
         "label": "Mot de passe (optionnel)"
       },
       "email": {
-        "label": "Adresse mail propre au serveur Sandstorm",
+        "label": "Adresse électronique propre au serveur Sandstorm",
         "subtext": "Sandstorm enverra des courriels lors des connexions, des notifications de d'autorisation d'accès et d'autres courriels à partir de cette adresse. Il utilisera également cette adresse dans l'enveloppe SMTP."
       },
       "saveButton": "Sauver et continuer",
@@ -1713,10 +1713,10 @@
     },
     "setupWizardPreinstalled": {
       "title": "Applications pré-installées",
-      "explanation": "Veuillez patienter pendant que Sandstorm installe les applications suivantes qui sont utiles pour la plupart des utilisateurs. Vous pourrez configurer toutes les applications préinstallées dans les Paramètres d'administration après l'installation..",
+      "explanation": "Veuillez patienter pendant que Sandstorm installe les applications suivantes qui sont utiles pour la plupart des utilisateurs. Vous pourrez configurer toutes les applications préinstallées dans les Paramètres d'administration après l'installation.",
       "downloaded": "Téléchargé",
       "failed": "En échec",
-      "loading": "Patience, téléchargement de la liste des apps...",
+      "loading": "Patience, téléchargement de la liste des apps…",
       "nextButton": "Suivant",
       "skipButton": "Passer ou l'instant",
       "backButton": "Retour"
@@ -1728,10 +1728,10 @@
       },
       "isAdmin": "Génial ! Votre compte dispose des privilèges d'administrateur.",
       "hasAdmin": {
-        "explanation": "Ce serveur Sandstorm dispose déjà d'un administrateur, cependant si vous le souhaitez, vous pouvez vous aussi vous rendre administrateur.",
+        "explanation": "Ce serveur Sandstorm dispose déjà d'un administrateur, cependant si vous le souhaitez, vous pouvez vous aussi devenir administrateur.",
         "adminButton": "Devenir administrateur"
       },
-      "makeYouAnAdmin": "Vous rendre administrateur sur ce serveur...",
+      "makeYouAnAdmin": "Vous rendre administrateur sur ce serveur.",
       "loggedOut": {
         "explanation": "Vous pouvez maintenant créer un compte administrateur sur ce serveur Sandstorm.",
         "description": "Connectez-vous pour créer votre compte administrateur",
@@ -1741,7 +1741,7 @@
       "backButton": "Retourner"
     },
     "setupWizardSuccess": {
-      "title": "Ready to roll!",
+      "title": "Prêt à y aller !",
       "serverIsReady": "Votre serveur Sandstorm est maintenant prêt à être utilisé.",
       "whatsNext": "Qu'aimeriez-vous faire ensuite ?",
       "addUsersLink": "Ajouter des utilisateurs",
@@ -1750,21 +1750,21 @@
       "backButton": "Retourner"
     },
     "setupWizardVerifyToken": {
-      "title": "Verifying token...",
+      "title": "Verifying token…",
       "explanation": "Désolé, il semble que votre jeton de configuration ait expiré.",
       "howToFix": "Générer en un nouveau maintenant en ligne de commande en exécutant <code>sandstorm admin-token</code> pour retrouver l'assistant de configuration."
     },
     "setupWizardTokenExpired": {
       "title": "Jeton de configuration requis",
-      "alreadySetup": "Ce serveur est déjà configuré, nous vous recommandons donc de l'administrer via le ",
+      "alreadySetup": "Ce serveur est déjà configuré, nous vous recommandons donc de l'administrer via ",
       "adminRootLink": "l'interface d'administration",
       "explanation": "Pour utiliser l’interface de configuration de ce serveur, vous avez besoin d'un jeton valide.",
-      "howToFix": "Générer en un nouveau maintenant en ligne de commande en exécutant <code>sandstorm admin-token</code> et en suivant le lien donné en résultat."
+      "howToFix": "Générez-en un nouveau maintenant en ligne de commande en exécutant <code>sandstorm admin-token</code> et en suivant le lien donné en résultat."
     }
   },
   "packages": {
     "topbar": {
-      "updated": "Sandstorm a été mis à jour — Cliquer pour recharger",
+      "updated": "Sandstorm a été mis à jour — Cliquez pour recharger",
       "apps": "Apps",
       "grains": "Grains",
       "oasis": "Commencer à collaborer avec d'autres en utilisant Sandstorm sur Oasis :",
@@ -1775,13 +1775,13 @@
       "close": "Fermer"
     },
     "powerbox": {
-      "title": "Demander un boitier de liaison",
+      "title": "Demander un boîtier de liaison",
       "inputToken": "Veuillez entrer un jeton d'api :",
-      "importToken": "Importartion du jeton",
+      "importToken": "Importation du jeton",
       "selected": "Sélectionné :",
       "selectOne": "Sélectionner un :",
       "noGrain": "Aucun grain ne peut répondre à la demande.",
-      "loading": "Chargement ..."
+      "loading": "Chargement…"
     }
   }
 }

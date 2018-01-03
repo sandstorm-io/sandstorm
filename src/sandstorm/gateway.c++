@@ -173,9 +173,8 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
 
   auto iter = uiHosts.find(sessionId);
   if (iter == uiHosts.end()) {
-    auto req = router.openUiSessionRequest();
-    req.setSessionCookie(sessionId);
-    auto params = req.initParams();
+    capnp::MallocMessageBuilder requestMessage(128);
+    auto params = requestMessage.getRoot<WebSession::Params>();
 
     params.setBasePath(kj::str(baseUrl.scheme, "://",
         KJ_ASSERT_NONNULL(headers.get(kj::HttpHeaderId::HOST))));
@@ -188,15 +187,32 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
       params.setAcceptableLanguages({"en-US", "en"});
     }
 
+    auto ownParams = newOwnCapnp(params.asReader());
+
     WebSessionBridge::Options options;
     options.allowCookies = true;
     options.isHttps = baseUrl.scheme == "https";
 
     kj::StringPtr key = sessionId;
+
+    // Use a CapRedirector to re-establish the session on disconenct.
+    //
+    // TODO(perf): This forces excessive copying of RPC requests and responses. We should add a
+    //   ClientHook-based library to Cap'n Proto implementing the CapRedirector pattern more
+    //   efficiently.
+    capnp::Capability::Client sessionRedirector = kj::heap<CapRedirector>(
+        [router = this->router,KJ_MVCAP(ownParams),KJ_MVCAP(sessionId)]() mutable
+        -> capnp::Capability::Client {
+      auto req = router.openUiSessionRequest();
+      req.setSessionCookie(sessionId);
+      req.setParams(ownParams);
+      return req.send().getSession();
+    });
+
     UiHostEntry entry {
-      kj::mv(sessionId),
       timer.now(),
-      kj::refcounted<WebSessionBridge>(req.send().getSession(), tables.bridgeTables, options)
+      kj::refcounted<WebSessionBridge>(sessionRedirector.castAs<WebSession>(),
+                                       tables.bridgeTables, options)
     };
     auto insertResult = uiHosts.insert(std::make_pair(key, kj::mv(entry)));
     KJ_ASSERT(insertResult.second);

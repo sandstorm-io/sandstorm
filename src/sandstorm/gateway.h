@@ -81,7 +81,6 @@ private:
   WildcardMatcher wildcardHost;
 
   struct UiHostEntry {
-    kj::String sessionId;
     kj::TimePoint lastUsed;
     kj::Own<WebSessionBridge> bridge;
   };

@@ -441,10 +441,29 @@ const makeSaveTemplateForChild = function (db, parentToken, requirements, parent
 
   if (requirements) {
     // Append additional requirements requested by caller.
+    requirements = requirements.filter(req => {
+      // Filter out redundant requirement that the parent token is valid.
+      return req.tokenValid !== saveTemplate.parentToken;
+    });
+
     saveTemplate.requirements = (saveTemplate.requirements || []).concat(requirements);
   }
 
   return saveTemplate;
+};
+
+class DummyObserver {
+  constructor() {
+    this.isClosed = false;
+  }
+
+  close() {
+    this.isClosed = true;
+    if (this.revoker) {
+      this.revoker.close();
+      this.revoker = undefined;
+    }
+  }
 };
 
 restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenInfo,
@@ -525,12 +544,29 @@ restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenI
       token.objectId.appRef = new Buffer(token.objectId.appRef);
     }
 
+    // TODO(security): Actually observe requirements. For now, we only arrange to drop the revoker
+    //   when the observer is dropped.
+    const observer = new DummyObserver();
+
     // Ensure the grain is running, then restore the capability.
-    return waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
+    const wrapped = waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
       // Note that in this case it is the supervisor's job to implement SystemPersistent, so we
       // don't generate a saveTemplate here.
-      return supervisor.restore(token.objectId, requirements, new Buffer(originalToken, "utf8"));
+      // TODO(now): A save() call on this object itself will create a child token,
+      //   which implicitly requires the parent token is still valid, making the corresponding
+      //   requirement redundant. However, it's important that a save() call on a capability
+      //   obtained *through* this one does in fact have that requirement. So we'll have to remove
+      //   the requirement inside save().
+      return supervisor.restore(token.objectId, [], new Buffer(originalToken, "utf8"))
+          .cap.castAs(SystemPersistent).addRequirements(requirements, observer);
     }));
+
+    if (observer.isClosed) {
+      wrapped.revoker.close();
+    } else {
+      observer.revoker = wrapped.revoker;
+    }
+    return { cap: wrapped.cap };
   } else {
     // Construct a template ApiToken for use if the restored capability is save()d later.
     const saveTemplate = makeSaveTemplateForChild(db, originalToken, requirements, originalTokenInfo);

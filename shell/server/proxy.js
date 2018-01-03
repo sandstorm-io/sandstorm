@@ -32,6 +32,7 @@ const ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
 const WebSession = Capnp.importSystem("sandstorm/web-session.capnp").WebSession;
 const HackSession = Capnp.importSystem("sandstorm/hack-session.capnp");
 const Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
+const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;
 const Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
 const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 
@@ -680,53 +681,101 @@ const getProxyForHostId = (hostId, isAlreadyOpened) => {
 };
 
 getWebSessionForSessionId = (sessionId, params) => {
-  return inMeteor(() => {
-    const session = Sessions.findOne({ _id: sessionId });
-    if (!session) {
-      if (isAlreadyOpened) {
-        let observer;
-        return new Promise((resolve, reject) => {
-          const task = Meteor.setTimeout(() => {
-            reject(new Error("Requested session that no longer exists, and " +
-                "timed out waiting for client to restore it. This can happen if you have " +
-                "opened an app's content in a new window and then closed it in the " +
-                "UI. If you see this error *inside* the Sandstorm UI, please report a " +
-                "bug and describe the circumstances of the error."));
-          }, SESSION_PROXY_TIMEOUT);
-          observer = Sessions.find({ _id: sessionId }).observe({
-            added() {
-              Meteor.clearTimeout(task);
-              resolve(getWebSessionSessionId(sessionId));
-            },
-          });
-        }).then((v) => {
+  return new Promise((resolve, reject) => {
+    inMeteor(() => {
+      let observer = null;
+
+      // Due to race conditions, the session may not exist yet when we receive a request to open it.
+      // We'll block for a limited time waiting for it.
+      //
+      // TODO(someday): One problem with this is that after access has been revoked, requests will
+      //   hang instead of return an error, because revocation is accomplished by deleting the
+      //   session record. Can/should we do better? The UI will remove the iframe on revocation
+      //   anyhow, so maybe it's fine.
+      const task = Meteor.setTimeout(() => {
+        reject(new Error("Requested session that no longer exists, and " +
+            "timed out waiting for client to restore it. This can happen if you have " +
+            "opened an app's content in a new window and then closed it in the " +
+            "UI. If you see this error *inside* the Sandstorm UI, please report a " +
+            "bug and describe the circumstances of the error."));
+        observer.stop();
+      }, SESSION_PROXY_TIMEOUT);
+
+      // We need to know both when this session appears and when it disappears.
+      let revoker = null;
+      let revoked = false;
+      let hasAdded = false;
+      observer = Sessions.find({ _id: sessionId }).observe({
+        added(session) {
+          // Session now exists.
+          if (hasAdded) return;
+          hasAdded = true;
+
+          try {
+            Meteor.clearTimeout(task);
+
+            let proxy = proxiesByHostId[session.hostId];
+            if (!proxy) {
+              // Set table entry to null for now so that we can detect if it is concurrently
+              // deleted.
+              // TODO(security): Does this concurrent deletion detection work in the case of
+              //   multiple frontends?
+              proxiesByHostId[session.hostId] = null;
+              proxy = getProxyForSession(session);
+            }
+
+            // TODO(now): Temporary hack to make spinner go away. Need an API to do this right.
+            proxy.setHasLoaded();
+
+            let rawSession = proxy.getSessionForParams(params);
+            let persistent = rawSession.castAs(SystemPersistent);
+
+            const observerCap = {
+              close() {
+                observer.stop();
+                if (revoker) {
+                  revoker.close();
+                  revoker = null;
+                }
+                revoked = true;
+              }
+            };
+
+            // TODO(security): List the user's permissions as a requirement here. Currently nothing
+            //   obtained through a WebSession can be saved anyway, so this is not relevant.
+            let addReqsResult = persistent.addRequirements([], observerCap);
+
+            if (revoked) {
+              addReqsResult.revoker.close();
+            } else {
+              revoker = addReqsResult.revoker;
+            }
+
+            resolve(addReqsResult.cap.castAs(WebSession));
+            rawSession.close();
+            persistent.close();
+            addReqsResult.cap.close();
+          } catch (err) {
+            try { observer.stop(); } catch (e) {}
+            if (revoker) {
+              try { revoker.close(); } catch (e) {}
+              revoker = null;
+            }
+            revoked = true;
+            reject(err);
+          }
+        },
+        removed() {
+          // Session was revoked.
           observer.stop();
-          return v;
-        }, (e) => {
-          observer.stop();
-          throw e;
-        });
-      } else {
-        // Does not appear to be a valid session host.
-        return undefined;
-      }
-    }
-
-    let proxy = proxiesByHostId[session.hostId];
-    if (!proxy) {
-      // Set table entry to null for now so that we can detect if it is concurrently deleted.
-      // TODO(security): Does this concurrent deletion detection work in the case of multiple
-      //   frontends?
-      proxiesByHostId[session.hostId] = null;
-      proxy = getProxyForSession(session);
-    }
-
-    // TODO(now): Temporary hack to make spinner go away. Need an API to do this right.
-    proxy.setHasLoaded();
-
-    // TODO(now): TODO(security): Apply MembraneRequirement to revoke capability when permissions
-    //   change.
-    return proxy.getSessionForParams(params);
+          revoked = true;
+          if (revoker) {
+            revoker.close();
+            revoker = null;
+          }
+        }
+      });
+    }).catch(reject);
   });
 }
 

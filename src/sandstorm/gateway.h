@@ -64,6 +64,9 @@ public:
   GatewayService(kj::Timer& timer, kj::HttpClient& shellHttp, GatewayRouter::Client router,
                  Tables& tables, kj::StringPtr baseUrl, kj::StringPtr wildcardHost);
 
+  kj::Promise<void> cleanupLoop();
+  // Must run this to purge expired capabilities.
+
   kj::Promise<void> request(
       kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
       kj::AsyncInputStream& requestBody, Response& response) override;
@@ -86,6 +89,8 @@ private:
   };
 
   std::map<kj::StringPtr, UiHostEntry> uiHosts;
+
+  bool isPurging = false;
 
   kj::Maybe<kj::Own<kj::HttpService>> getUiBridge(kj::HttpHeaders& headers);
 };

@@ -35,12 +35,33 @@ GatewayService::GatewayService(
     Tables& tables, kj::StringPtr baseUrl, kj::StringPtr wildcardHost)
     : timer(timer), shellHttp(kj::newHttpService(shellHttp)), router(kj::mv(router)),
       tables(tables), baseUrl(kj::Url::parse(baseUrl, kj::Url::HTTP_PROXY_REQUEST)),
-      wildcardHost(wildcardHost) {
+      wildcardHost(wildcardHost) {}
+
+kj::Promise<void> GatewayService::cleanupLoop() {
+  static constexpr auto PURGE_PERIOD = 2 * kj::MINUTES;
+
+  isPurging = true;
+  return timer.afterDelay(PURGE_PERIOD).then([this]() {
+    auto now = timer.now();
+    auto iter = uiHosts.begin();
+    while (iter != uiHosts.end()) {
+      auto next = iter;
+      ++next;
+
+      if (now - iter->second.lastUsed >= PURGE_PERIOD) {
+        uiHosts.erase(iter);
+      }
+      iter = next;
+    }
+    return cleanupLoop();
+  });
 }
 
 kj::Promise<void> GatewayService::request(
     kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
     kj::AsyncInputStream& requestBody, Response& response) {
+  KJ_ASSERT(isPurging, "forgot to call cleanupLoop()");
+
   KJ_IF_MAYBE(hostId, wildcardHost.match(headers)) {
     // TODO(now): Redirect HTTP -> HTTPS when needed. Requires X-Forwarded-Proto?
 

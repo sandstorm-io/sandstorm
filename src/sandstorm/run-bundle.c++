@@ -2524,7 +2524,7 @@ private:
       kj::HttpServer server(io.provider->getTimer(), *headerTable, service);
 
       // TODO(now): Handle HTTPS port specially.
-      kj::Promise<void> promises = kj::NEVER_DONE;
+      kj::Promise<void> promises = service.cleanupLoop();
       for (auto port: config.ports) {
         auto listener = fdBundle.consume(port, *io.lowLevelProvider);
         auto promise = server.listenHttp(*listener);

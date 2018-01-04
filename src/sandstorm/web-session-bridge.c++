@@ -57,8 +57,10 @@ WebSessionBridge::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilde
       responseHeaderWhitelist(*WebSession::Response::HEADER_WHITELIST) {}
 
 WebSessionBridge::WebSessionBridge(
-    WebSession::Client session, const Tables& tables, Options options)
+    WebSession::Client session, kj::Maybe<Handle::Client> loadingIndicator,
+    const Tables& tables, Options options)
     : session(kj::mv(session)),
+      loadingIndicator(kj::mv(loadingIndicator)),
       tables(tables),
       options(options) {}
 
@@ -749,6 +751,8 @@ kj::Promise<void> WebSessionBridge::handleResponse(
   return promise.then([this,KJ_MVCAP(contextInitInfo),&out](
       capnp::Response<WebSession::Response>&& in) mutable -> kj::Promise<void> {
     // TODO(someday): cachePolicy (not supported in Sandstorm proper as of this writing)
+
+    loadingIndicator = nullptr;
 
     kj::HttpHeaders headers(tables.headerTable);
 

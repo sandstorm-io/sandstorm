@@ -124,13 +124,18 @@ interface GatewayRouter {
   # Note that the gateway also makes direct HTTP/WebSocket and SMTP connections for traffic that
   # it does not know how to handle directly.
 
-  openUiSession @0 (sessionCookie :Text, params :WebSession.Params) -> (session :WebSession);
+  openUiSession @0 (sessionCookie :Text, params :WebSession.Params)
+                -> (session :WebSession, loadingIndicator :Util.Handle);
   # Given a sandstorm-sid cookie value for a UI session, find the WebSession to handle requests.
   #
   # The gateway may cache the session capability, associated with this cookie value, for as long
   # as it wants. However, session will become disconnected if the grain shuts down or if the user's
   # privileges are revoked. In that case, the gateway will need to discard the capability and
   # request a new one.
+  #
+  # While `loadingIndicator` is held, the user will see a loading indicator on their screen. Drop
+  # this capability when the first HTTP response is received from the app to make the loading
+  # indicator go away.
 
   openApiSession @1 (apiToken :Text) -> (session :ApiSession);
   # Given a token from an `Authorization` header, find the ApiSession to handle requests.

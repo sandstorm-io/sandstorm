@@ -724,9 +724,6 @@ getWebSessionForSessionId = (sessionId, params) => {
               proxy = getProxyForSession(session);
             }
 
-            // TODO(now): Temporary hack to make spinner go away. Need an API to do this right.
-            proxy.setHasLoaded();
-
             let rawSession = proxy.getSessionForParams(params);
             let persistent = rawSession.castAs(SystemPersistent);
 
@@ -751,7 +748,14 @@ getWebSessionForSessionId = (sessionId, params) => {
               revoker = addReqsResult.revoker;
             }
 
-            resolve(addReqsResult.cap.castAs(WebSession));
+            resolve({
+              session: addReqsResult.cap.castAs(WebSession),
+              loadingIndicator: {
+                close() {
+                  proxy.setHasLoaded();
+                }
+              }
+            });
             rawSession.close();
             persistent.close();
             addReqsResult.cap.close();

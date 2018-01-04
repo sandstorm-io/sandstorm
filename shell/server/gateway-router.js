@@ -18,9 +18,7 @@ const GatewayRouter = Capnp.importSystem("sandstorm/backend.capnp").GatewayRoute
 
 class GatewayRouterImpl {
   openUiSession(sessionCookie, params) {
-    return getWebSessionForSessionId(sessionCookie, params).then(session => {
-      return { session };
-    })
+    return getWebSessionForSessionId(sessionCookie, params);
   }
 }
 

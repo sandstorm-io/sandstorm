@@ -163,7 +163,8 @@ private:
 
       TokenInfo info {
         kj::heapString(token),
-        kj::refcounted<WebSessionBridge>(cap, webSessionBridgeTables, WebSessionBridge::Options())
+        kj::refcounted<WebSessionBridge>(cap, nullptr,
+            webSessionBridgeTables, WebSessionBridge::Options())
       };
       auto result = kj::addRef(*info.service);
       kj::StringPtr key = info.key;

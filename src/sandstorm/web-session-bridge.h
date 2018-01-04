@@ -62,7 +62,8 @@ public:
     // Will we be serving over HTTPS?
   };
 
-  WebSessionBridge(WebSession::Client session, const Tables& tables, Options options);
+  WebSessionBridge(WebSession::Client session, kj::Maybe<Handle::Client> loadingIndicator,
+                   const Tables& tables, Options options);
 
   kj::Promise<void> request(
       kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
@@ -73,6 +74,7 @@ public:
 
 private:
   WebSession::Client session;
+  kj::Maybe<Handle::Client> loadingIndicator;
   const Tables& tables;
   Options options;
 

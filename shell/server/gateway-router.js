@@ -15,10 +15,46 @@
 // limitations under the License.
 
 const GatewayRouter = Capnp.importSystem("sandstorm/backend.capnp").GatewayRouter;
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+
+currentTlsKeysCallback = null;
 
 class GatewayRouterImpl {
   openUiSession(sessionCookie, params) {
     return getWebSessionForSessionId(sessionCookie, params);
+  }
+
+  subscribeTlsKeys(callback) {
+    currentTlsKeysCallback = callback;
+
+    return new Promise((resolve, reject) => {
+      inMeteor(() => {
+        function setKeys(key, certChain) {
+          callback.setKeys(key, certChain).catch(err => {
+            if (err.kjType === "disconnected") {
+              // Client will reconnect.
+              observer.stop();
+              if (currentTlsKeysCallback == callback) {
+                currentTlsKeysCallback = null;
+              }
+            } else {
+              console.error("registering new TLS keys failed", err);
+            }
+          });
+        }
+
+        const observer = globalDb.collections.settings.find({_id: "tlsKeys"})
+            .observe({
+          added(keys) {
+            setKeys(keys.value.key, keys.value.certChain);
+          },
+
+          changed(keys) {
+            setKeys(keys.value.key, keys.value.certChain);
+          }
+        });
+      });
+    });
   }
 }
 

@@ -361,6 +361,21 @@ Meteor.methods({
 
     this.connection.sandstormDb.setPreinstalledApps(appAndPackageIds);
   },
+
+  setTlsKeys: function (keys) {
+    checkAuth();
+    check(keys, {
+      key: String,
+      certChain: String
+    });
+
+    if (currentTlsKeysCallback) {
+      // Validate by calling setKeys() directly.
+      currentTlsKeysCallback.setKeys(keys.key, keys.certChain).await();
+    }
+
+    Settings.upsert({ _id: "tlsKeys" }, { $set: { value: keys } });
+  },
 });
 
 const authorizedAsAdmin = function (token, userId) {

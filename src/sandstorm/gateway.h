@@ -21,6 +21,7 @@
 #include <sandstorm/backend.capnp.h>
 #include <kj/compat/url.h>
 #include <map>
+#include <kj/compat/tls.h>
 #include "web-session-bridge.h"
 
 namespace sandstorm {
@@ -93,6 +94,55 @@ private:
   bool isPurging = false;
 
   kj::Maybe<kj::Own<kj::HttpService>> getUiBridge(kj::HttpHeaders& headers);
+};
+
+class GatewayTlsManager: private kj::TaskSet::ErrorHandler {
+  // Manages TLS keys and connections.
+
+public:
+  GatewayTlsManager(kj::HttpServer& server, kj::Maybe<kj::StringPtr> privateKeyPassword)
+      : GatewayTlsManager(server, privateKeyPassword, kj::newPromiseAndFulfiller<void>()) {}
+  // Password, if provided, must remain valid while GatewayTlsManager exists.
+
+  kj::Promise<void> listenHttps(kj::ConnectionReceiver& port);
+  // Given a raw network port, listen for connections, perform TLS handshakes, and serve HTTP over
+  // the TLS conenction.
+  //
+  // No connections will be accepted until setKeys() has been called at least once.
+
+  void setKeys(kj::StringPtr key, kj::StringPtr certChain);
+
+  kj::Promise<void> subscribeKeys(GatewayRouter::Client gatewayRouter);
+
+private:
+  struct RefcountedTlsContext: public kj::Refcounted {
+    kj::TlsContext tls;
+
+    template <typename... Params>
+    RefcountedTlsContext(Params&&... params)
+        : tls(kj::fwd<Params>(params)...) {}
+  };
+
+  kj::HttpServer& server;
+  kj::Maybe<kj::StringPtr> privateKeyPassword;
+
+  kj::Own<RefcountedTlsContext> currentTls;
+  // Not valid until setKeys() has been called.
+
+  kj::ForkedPromise<void> ready;
+  kj::Own<kj::PromiseFulfiller<void>> readyFulfiller;
+  // Fulfilled first time setKeys() is called.
+
+  kj::TaskSet tasks;
+
+  GatewayTlsManager(kj::HttpServer& server, kj::Maybe<kj::StringPtr> privateKeyPassword,
+                    kj::PromiseFulfillerPair<void> readyPaf);
+
+  kj::Promise<void> listenLoop(kj::ConnectionReceiver& port);
+
+  void taskFailed(kj::Exception&& exception) override;
+
+  class TlsKeyCallbackImpl;
 };
 
 }  // namespace sandstorm

@@ -22,6 +22,7 @@ CFLAGS=-O2 -Wall
 CXXFLAGS=$(CFLAGS)
 BUILD=0
 PARALLEL=$(shell nproc)
+LIBS=
 
 # You generally should not modify this.
 # TODO(cleanup): -fPIC is unfortunate since most of our code is static binaries
@@ -33,9 +34,9 @@ METEOR_DEV_BUNDLE=$(shell ./find-meteor-dev-bundle.sh)
 NODEJS=$(METEOR_DEV_BUNDLE)/bin/node
 NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
 WARNINGS=-Wall -Wextra -Wglobal-constructors -Wno-sign-compare -Wno-unused-parameter
-CXXFLAGS2=-std=c++1y $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -pthread -fPIC -I$(NODE_HEADERS)
+CXXFLAGS2=-std=c++1y $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -DKJ_HAS_OPENSSL -pthread -fPIC -I$(NODE_HEADERS)
 CFLAGS2=$(CFLAGS) -pthread -fPIC
-LIBS=-pthread
+LIBS2=$(LIBS) deps/boringssl/build/ssl/libssl.a deps/boringssl/build/crypto/libcrypto.a -pthread
 
 define color
   printf '\033[0;34m==== $1 ====\033[0m\n'
@@ -132,7 +133,7 @@ IMAGES= \
 all: sandstorm-$(BUILD).tar.xz
 
 clean: ci-clean
-	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/client/changelog.html shell/packages/*/.build* shell/packages/*/.npm/package/node_modules *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff
+	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/client/changelog.html shell/packages/*/.build* shell/packages/*/.npm/package/node_modules *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff deps/boringssl/build
 	test -e deps/node && cd deps/node && make clean
 	@(if test -d deps && test ! -h deps; then printf "\033[0;33mTo update dependencies, use: make update-deps\033[0m\n"; fi)
 
@@ -171,10 +172,11 @@ REMOTE_libseccomp=https://github.com/seccomp/libseccomp
 REMOTE_libsodium=https://github.com/jedisct1/libsodium.git
 REMOTE_node-capnp=https://github.com/kentonv/node-capnp.git
 REMOTE_node=https://github.com/sandstorm-io/node
+REMOTE_boringssl=https://boringssl.googlesource.com/boringssl
 
 deps: tmp/.deps
 
-tmp/.deps: deps/capnproto deps/ekam deps/libseccomp deps/libsodium deps/node-capnp deps/node
+tmp/.deps: | deps/capnproto deps/ekam deps/libseccomp deps/libsodium deps/node-capnp deps/node deps/boringssl
 	@mkdir -p tmp
 	@touch tmp/.deps
 
@@ -210,9 +212,14 @@ deps/node:
 	@mkdir -p deps
 	git clone $(REMOTE_node) deps/node
 
+deps/boringssl:
+	@$(call color,downloading boringssl)
+	@mkdir -p deps
+	git clone $(REMOTE_boringssl) deps/boringssl
+
 update-deps:
 	@$(call color,updating all dependencies)
-	@$(foreach DEP,capnproto ekam libseccomp libsodium node-capnp node, \
+	@$(foreach DEP,capnproto ekam libseccomp libsodium node-capnp node boringssl, \
 	    cd deps/$(DEP) && \
 	    echo "pulling $(DEP)..." && \
 	    git pull $(REMOTE_$(DEP)) `git symbolic-ref --short HEAD` && \
@@ -220,7 +227,7 @@ update-deps:
 
 clobber-deps:
 	@$(call color,forcibly updating all dependencies)
-	@$(foreach DEP,capnproto ekam libseccomp, \
+	@$(foreach DEP,capnproto ekam libseccomp boringssl, \
 	    cd deps/$(DEP) && \
 	    echo "fetching $(DEP)..." && \
 	    git fetch $(REMOTE_$(DEP)) master && \
@@ -242,6 +249,15 @@ clobber-deps:
 	    git reset --hard FETCH_HEAD && \
 	    cd ../../
 
+# ====================================================================
+# build BoringSSL
+
+deps/boringssl/build/Makefile: | deps/boringssl
+	@mkdir -p deps/boringssl/build
+	cd deps/boringssl/build && cmake ..
+
+deps/boringssl/build/ssl/libssl.a: deps/boringssl/build/Makefile
+	cd deps/boringssl/build && make -j$(PARALLEL)
 
 # ====================================================================
 # Ekam bootstrap and C++ binaries
@@ -253,16 +269,16 @@ tmp/ekam-bin: tmp/.deps
 	    (cd deps/ekam && $(MAKE) bin/ekam-bootstrap && \
 	     cd ../.. && ln -s ../deps/ekam/bin/ekam-bootstrap tmp/ekam-bin)
 
-tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps
+tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps deps/boringssl/build/ssl/libssl.a
 	@$(call color,building sandstorm with ekam)
 	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS2)" CXXFLAGS="$(CXXFLAGS2)" \
-	    LIBS="$(LIBS)" NODEJS=$(NODEJS) tmp/ekam-bin -j$(PARALLEL) || \
+	    LIBS="$(LIBS2)" NODEJS=$(NODEJS) tmp/ekam-bin -j$(PARALLEL) || \
 	    ($(call color,build failed. You might need to: make update-deps) && false)
 	@touch tmp/.ekam-run
 
-continuous:
+continuous: tmp/.deps deps/boringssl/build/ssl/libssl.a
 	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS2)" CXXFLAGS="$(CXXFLAGS2)" \
-	    LIBS="$(LIBS)" NODEJS=$(NODEJS) ekam -j$(PARALLEL) -c -n :41315 || \
+	    LIBS="$(LIBS2)" NODEJS=$(NODEJS) ekam -j$(PARALLEL) -c -n :41315 || \
 	    ($(call color,You probably need to install ekam and put it on your path; see github.com/sandstorm-io/ekam) && false)
 
 # ====================================================================

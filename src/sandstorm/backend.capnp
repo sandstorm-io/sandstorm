@@ -177,6 +177,21 @@ interface GatewayRouter {
     # How long the receiver can safely cache this lookup result.
   }
 
+  subscribeTlsKeys @5 (callback :TlsKeyCallback);
+  # Retrieves the current TLS key and certificate and subscribes to future changes to these.
+  #
+  # This method does not return unless disconnected.
+
+  interface TlsKeyCallback {
+    setKeys @0 (key :Text, certChain :Text);
+    # Sets the current TLS key and certificate, which will be used for all incoming connections
+    # until setKeys() is called again.
+    #
+    # If PRIVATE_KEY_PASSWORD is set in sandstorm.conf, then `key` is expected to be encrypted with
+    # that password. This provides a little bit of additional security in that the password is
+    # never revealed to the shell process nor to Mongo.
+  }
+
   # TODO(someday): We could possibly eliminate the need for any HTTP traffic to Node by serving
   #   static assets directly from the gateway and by opening the DDP WebSocket over Cap'n Proto.
   #   However, this might not be a win until Cap'n Proto is implemented in native Javascript on the

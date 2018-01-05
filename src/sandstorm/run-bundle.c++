@@ -1250,6 +1250,7 @@ private:
     bool hideTroubleshooting = false;
     bool useExperimentalGateway = false;
     uint smtpListenPort = 30025;
+    kj::Maybe<kj::String> privateKeyPassword = nullptr;
   };
 
   kj::String updateFile;
@@ -1739,6 +1740,8 @@ private:
         }
       } else if (key == "EXPERIMENTAL_GATEWAY") {
         config.useExperimentalGateway = value == "true" || value == "yes";
+      } else if (key == "PRIVATE_KEY_PASSWORD") {
+        config.privateKeyPassword = kj::mv(value);
       }
     }
 
@@ -2517,17 +2520,29 @@ private:
           headerTableBuilder.getFutureTable(), shellHttpAddr, clientSettings);
 
       GatewayService::Tables gatewayTables(headerTableBuilder);
-      GatewayService service(io.provider->getTimer(), *shellHttp, kj::mv(router),
+      GatewayService service(io.provider->getTimer(), *shellHttp, kj::cp(router),
                              gatewayTables, config.rootUrl, config.wildcardHost);
 
       auto headerTable = headerTableBuilder.build();
       kj::HttpServer server(io.provider->getTimer(), *headerTable, service);
 
-      // TODO(now): Handle HTTPS port specially.
-      kj::Promise<void> promises = service.cleanupLoop();
+      GatewayTlsManager tlsManager(server, config.privateKeyPassword
+          .map([](const kj::String& str) -> kj::StringPtr { return str; }));
+
+      kj::Promise<void> promises = service.cleanupLoop()
+          .exclusiveJoin(tlsManager.subscribeKeys(kj::mv(router)))
+          .exclusiveJoin(backendClient.onDisconnect().then([]() {
+            // We aren't set up to reconnect when the backend process dies, so abort instead (the
+            // server monitor will then restart the gateway).
+            KJ_FAIL_REQUIRE("backend died; gateway aborting too");
+          }));
       for (auto port: config.ports) {
         auto listener = fdBundle.consume(port, *io.lowLevelProvider);
-        auto promise = server.listenHttp(*listener);
+        bool isHttps = false;
+        KJ_IF_MAYBE(p, config.httpsPort) {
+          isHttps = port == *p;
+        }
+        auto promise = isHttps ? tlsManager.listenHttps(*listener) : server.listenHttp(*listener);
         promises = promises.exclusiveJoin(promise.attach(kj::mv(listener)));
       }
 

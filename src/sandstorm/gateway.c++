@@ -255,4 +255,82 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
   return kj::addRef(*iter->second.bridge);
 }
 
+// =======================================================================================
+
+GatewayTlsManager::GatewayTlsManager(
+    kj::HttpServer& server, kj::Maybe<kj::StringPtr> privateKeyPassword,
+    kj::PromiseFulfillerPair<void> readyPaf)
+    : server(server),
+      privateKeyPassword(privateKeyPassword),
+      ready(readyPaf.promise.fork()),
+      readyFulfiller(kj::mv(readyPaf.fulfiller)),
+      tasks(*this) {}
+
+kj::Promise<void> GatewayTlsManager::listenHttps(kj::ConnectionReceiver& port) {
+  return ready.addBranch().then([this, &port]() {
+    return listenLoop(port);
+  });
+}
+
+void GatewayTlsManager::setKeys(kj::StringPtr key, kj::StringPtr certChain) {
+  kj::TlsKeypair keypair {
+    kj::TlsPrivateKey(key, privateKeyPassword),
+    kj::TlsCertificate(certChain)
+  };
+
+  kj::TlsContext::Options options;
+  options.useSystemTrustStore = false;
+  options.defaultKeypair = keypair;
+
+  currentTls = kj::refcounted<RefcountedTlsContext>(options);
+  readyFulfiller->fulfill();
+}
+
+class GatewayTlsManager::TlsKeyCallbackImpl: public GatewayRouter::TlsKeyCallback::Server {
+public:
+  TlsKeyCallbackImpl(GatewayTlsManager& parent): parent(parent) {}
+
+protected:
+  kj::Promise<void> setKeys(SetKeysContext context) override {
+    auto params = context.getParams();
+    parent.setKeys(params.getKey(), params.getCertChain());
+    return kj::READY_NOW;
+  }
+
+private:
+  GatewayTlsManager& parent;
+};
+
+kj::Promise<void> GatewayTlsManager::subscribeKeys(GatewayRouter::Client gatewayRouter) {
+  auto req = gatewayRouter.subscribeTlsKeysRequest();
+  req.setCallback(kj::heap<TlsKeyCallbackImpl>(*this));
+  return req.send().then([](auto) -> kj::Promise<void> {
+    KJ_FAIL_REQUIRE("subscribeTlsKeys() shouldn't return");
+  }, [this, gatewayRouter = kj::mv(gatewayRouter)]
+      (kj::Exception&& exception) mutable -> kj::Promise<void> {
+    if (exception.getType() == kj::Exception::Type::DISCONNECTED) {
+      return subscribeKeys(kj::mv(gatewayRouter));
+    } else {
+      return kj::mv(exception);
+    }
+  });
+}
+
+kj::Promise<void> GatewayTlsManager::listenLoop(kj::ConnectionReceiver& port) {
+  return port.accept().then([this, &port](kj::Own<kj::AsyncIoStream>&& stream) {
+    auto tls = kj::addRef(*currentTls);
+    tasks.add(tls->tls.wrapServer(kj::mv(stream))
+        .then([this](kj::Own<kj::AsyncIoStream>&& encrypted) {
+      return server.listenHttp(kj::mv(encrypted));
+    }).attach(kj::mv(tls)));
+    return listenLoop(port);
+  });
+}
+
+void GatewayTlsManager::taskFailed(kj::Exception&& exception) {
+  if (exception.getType() != kj::Exception::Type::DISCONNECTED) {
+    KJ_LOG(ERROR, exception);
+  }
+}
+
 }  // namespace sandstorm

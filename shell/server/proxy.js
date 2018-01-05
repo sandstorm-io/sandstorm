@@ -151,8 +151,6 @@ let sandstormBackend = sandstormBackendConnection.restore(null, Backend);
 
 // TODO(cleanup): This initilization belongs with the rest of our package initialization in
 //   db-deprecated.js. We can't put it there now because we need to contruct sandstormCoreFactory first.
-// TODO(now): Do not connect until migrations are complete, otherwise gateway can start messing with
-//   stuff too early!
 globalBackend = new SandstormBackend(globalDb, sandstormBackend);
 Meteor.onConnection((connection) => {
   connection.sandstormBackend = globalBackend;

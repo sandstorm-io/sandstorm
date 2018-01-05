@@ -2451,10 +2451,6 @@ private:
       kj::Own<capnp::TwoPartyServer> gatewayServer;
       if (config.useExperimentalGateway) {
         gatewayServer = kj::heap<capnp::TwoPartyServer>(kj::refcounted<CapRedirector>([&]() {
-          // TODO(now): Probably it should be the Gateway that reconnects on disconnect so that
-          //   if the backend bounces the gateway doesn't end up broken? We'll need to use a
-          //   bootstrap callback here to make sure we re-fetch the router each time the gateway
-          //   connects.
           return server.getBootstrap().castAs<SandstormCoreFactory>()
               .getGatewayRouterRequest().send().getRouter();
         }));

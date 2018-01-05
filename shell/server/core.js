@@ -552,11 +552,6 @@ restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenI
     const wrapped = waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
       // Note that in this case it is the supervisor's job to implement SystemPersistent, so we
       // don't generate a saveTemplate here.
-      // TODO(now): A save() call on this object itself will create a child token,
-      //   which implicitly requires the parent token is still valid, making the corresponding
-      //   requirement redundant. However, it's important that a save() call on a capability
-      //   obtained *through* this one does in fact have that requirement. So we'll have to remove
-      //   the requirement inside save().
       return supervisor.restore(token.objectId, [], new Buffer(originalToken, "utf8"))
           .cap.castAs(SystemPersistent).addRequirements(requirements, observer);
     }));
@@ -640,6 +635,8 @@ class SandstormCoreFactoryImpl {
   }
 
   getGatewayRouter() {
+    // TODO(now): Do not allow gateway to connect until startup has completed (especially
+    //   migrations).
     return { router: makeGatewayRouter() };
   }
 }

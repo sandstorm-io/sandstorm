@@ -246,8 +246,6 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
     auto insertResult = uiHosts.insert(std::make_pair(key, kj::mv(entry)));
     KJ_ASSERT(insertResult.second);
     iter = insertResult.first;
-
-    // TODO(now): expire entries
   } else {
     iter->second.lastUsed = timer.now();
   }

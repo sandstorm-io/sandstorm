@@ -51,7 +51,16 @@ class GatewayRouterImpl {
 
           changed(keys) {
             setKeys(keys.value.key, keys.value.certChain);
-          }
+          },
+
+          // Since we never call resolve() or reject(), V8 will happily garbage-collect all the
+          // .then() continuations. But, that will cause the call to prematurely fail out as the
+          // C++ PromiseFulfiller for its completion will be destroyed. We can prevent this by
+          // creating a false reference to the resolver. Of course, a smarter GC could still
+          // collect it... hope that doesn't happen.
+          //
+          // GC is terrible.
+          dontGcMe: resolve
         });
       });
     });

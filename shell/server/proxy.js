@@ -699,9 +699,19 @@ getWebSessionForSessionId = (sessionId, params) => {
         observer.stop();
       }, SESSION_PROXY_TIMEOUT);
 
+      let revokers = [];
+      function revoke() {
+        if (observer) {
+          observer.stop();
+        }
+
+        if (revokers) {
+          revokers.forEach(revoker => revoker.close());
+          revokers = null;
+        }
+      }
+
       // We need to know both when this session appears and when it disappears.
-      let revoker = null;
-      let revoked = false;
       let hasAdded = false;
       observer = Sessions.find({ _id: sessionId }).observe({
         added(session) {
@@ -727,56 +737,48 @@ getWebSessionForSessionId = (sessionId, params) => {
 
             const observerCap = {
               close() {
-                observer.stop();
-                if (revoker) {
-                  revoker.close();
-                  revoker = null;
+                inMeteor(revoke);
+              },
+
+              dropWhenRevoked(handle) {
+                if (revokers) {
+                  revokers.push(handle);
+                } else {
+                  handle.close();
                 }
-                revoked = true;
               }
             };
 
-            // TODO(security): List the user's permissions as a requirement here. Currently nothing
-            //   obtained through a WebSession can be saved anyway, so this is not relevant.
-            let addReqsResult = persistent.addRequirements([], observerCap);
-
-            if (revoked) {
-              addReqsResult.revoker.close();
-            } else {
-              revoker = addReqsResult.revoker;
-            }
+            // TODO(security): List the user's permissions as a requirement here, in case save()
+            //   is called. Currently nothing obtained through a WebSession can be saved anyway, so
+            //   this is not relevant.
+            let cap = persistent.addRequirements([], observerCap).cap;
 
             resolve({
-              session: addReqsResult.cap.castAs(WebSession),
+              session: cap.castAs(WebSession),
               loadingIndicator: {
                 close() {
                   proxy.setHasLoaded();
                 }
               }
             });
+
             rawSession.close();
             persistent.close();
-            addReqsResult.cap.close();
+            cap.close();
           } catch (err) {
-            try { observer.stop(); } catch (e) {}
-            if (revoker) {
-              try { revoker.close(); } catch (e) {}
-              revoker = null;
-            }
-            revoked = true;
+            try { revoke(); } catch (e) {}
             reject(err);
           }
         },
-        removed() {
-          // Session was revoked.
-          observer.stop();
-          revoked = true;
-          if (revoker) {
-            revoker.close();
-            revoker = null;
-          }
-        }
+
+        removed: revoke
       });
+
+      if (!revokers) {
+        // Oops, revocation happened synchronously before observe() returned. Ugh.
+        observer.stop();
+      }
     }).catch(reject);
   });
 }
@@ -1635,44 +1637,53 @@ class Proxy {
   }
 
   getSession(request) {
-    const webSessionParams = {
-      basePath: PROTOCOL + "//" + request.headers.host,
-      userAgent: "user-agent" in request.headers
-          ? request.headers["user-agent"]
-          : "UnknownAgent/0.0",
-      acceptableLanguages: "accept-language" in request.headers
-          ? request.headers["accept-language"].split(",").map((s) => { return s.trim(); })
-          : ["en-US", "en"],
-    };
-    return this.getSessionForParams(webSessionParams);
-  }
-
-  getSessionForParams(webSessionParams) {
     if (!this.session) {
-      this.getConnection();  // make sure we're connected
-      const promise = this.uiView.getViewInfo().then((viewInfo) => {
-        return inMeteor(() => {
-          // For now, we don't allow grains to set `appTitle` or `grainIcon`.
-          const cachedViewInfo = _.omit(viewInfo, "appTitle", "grainIcon");
-          Grains.update(this.grainId, { $set: { cachedViewInfo: cachedViewInfo } });
-        }).then(() => {
-          return this._callNewSession(webSessionParams, viewInfo);
-        });
-      }, (error) => {
-        if (error.kjType === "failed" || error.kjType === "unimplemented") {
-          // Method not implemented.
-          // TODO(apibump): Don't treat 'failed' as 'unimplemented'. Unfortunately, old apps built
-          //   with old versions of Cap'n Proto don't throw 'unimplemented' exceptions, so we have
-          //   to accept 'failed' here at least until the next API bump.
-          return this._callNewSession(webSessionParams, {});
-        } else {
-          return Promise.reject(error);
-        }
-      });
-      this.session = new Capnp.Capability(promise, WebSession);
+      const webSessionParams = {
+        basePath: PROTOCOL + "//" + request.headers.host,
+        userAgent: "user-agent" in request.headers
+            ? request.headers["user-agent"]
+            : "UnknownAgent/0.0",
+        acceptableLanguages: "accept-language" in request.headers
+            ? request.headers["accept-language"].split(",").map((s) => { return s.trim(); })
+            : ["en-US", "en"],
+      };
+
+      this.session = this.getSessionForParams(webSessionParams);
     }
 
     return this.session;
+  }
+
+  getSessionForParams(webSessionParams) {
+    const promise = this.getSessionForParamsLoop(webSessionParams, 0);
+    return new Capnp.Capability(promise, WebSession);
+  }
+
+  getSessionForParamsLoop(webSessionParams, retryCount) {
+    this.getConnection();  // make sure we're connected
+    return this.uiView.getViewInfo().then((viewInfo) => {
+      return inMeteor(() => {
+        // For now, we don't allow grains to set `appTitle` or `grainIcon`.
+        const cachedViewInfo = _.omit(viewInfo, "appTitle", "grainIcon");
+        Grains.update(this.grainId, { $set: { cachedViewInfo: cachedViewInfo } });
+      }).then(() => {
+        return this._callNewSession(webSessionParams, viewInfo);
+      });
+    }, (error) => {
+      if (error.kjType === "failed" || error.kjType === "unimplemented") {
+        // Method not implemented.
+        // TODO(apibump): Don't treat 'failed' as 'unimplemented'. Unfortunately, old apps built
+        //   with old versions of Cap'n Proto don't throw 'unimplemented' exceptions, so we have
+        //   to accept 'failed' here at least until the next API bump.
+        return this._callNewSession(webSessionParams, {});
+      } else {
+        return Promise.reject(error);
+      }
+    }).catch(error => {
+      return this.maybeRetryAfterError(error, retryCount).then(() => {
+        return this.getSessionForParamsLoop(webSessionParams, retryCount + 1);
+      });
+    });
   }
 
   keepAlive() {

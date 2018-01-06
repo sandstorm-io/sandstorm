@@ -488,6 +488,13 @@ public:
     state.init<NotStarted>(NotStarted { status, kj::mv(headers), kj::mv(inResponse), response });
   }
 
+  ~ByteStreamImpl() noexcept(false) {
+    if (doneFulfiller->isWaiting()) {
+      doneFulfiller->reject(KJ_EXCEPTION(FAILED,
+          "app did not finish writing HTTP response stream"));
+    }
+  }
+
   kj::Promise<void> whenDone() {
     auto paf = kj::newPromiseAndFulfiller<void>();
     doneFulfiller = kj::mv(paf.fulfiller);
@@ -506,6 +513,7 @@ public:
 
   kj::Promise<void> done(DoneContext context) override {
     auto fork = queue.then([this]() {
+      ensureStarted(uint64_t(0));
       state.init<Done>();
       doneFulfiller->fulfill();
     }).fork();

@@ -454,14 +454,21 @@ const makeSaveTemplateForChild = function (db, parentToken, requirements, parent
 
 class DummyObserver {
   constructor() {
-    this.isClosed = false;
+    this.revokers = [];
   }
 
   close() {
-    this.isClosed = true;
-    if (this.revoker) {
-      this.revoker.close();
-      this.revoker = undefined;
+    if (this.revokers) {
+      this.revokers.forEach(revoker => revoker.close());
+      this.revokers = null;
+    }
+  }
+
+  dropWhenRevoked(revoker) {
+    if (this.revokers) {
+      this.revokers.push(revoker);
+    } else {
+      revoker.close();
     }
   }
 };
@@ -549,19 +556,14 @@ restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenI
     const observer = new DummyObserver();
 
     // Ensure the grain is running, then restore the capability.
-    const wrapped = waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
+    const cap = waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
       // Note that in this case it is the supervisor's job to implement SystemPersistent, so we
       // don't generate a saveTemplate here.
       return supervisor.restore(token.objectId, [], new Buffer(originalToken, "utf8"))
-          .cap.castAs(SystemPersistent).addRequirements(requirements, observer);
+          .cap.castAs(SystemPersistent).addRequirements(requirements, observer).cap;
     }));
 
-    if (observer.isClosed) {
-      wrapped.revoker.close();
-    } else {
-      observer.revoker = wrapped.revoker;
-    }
-    return { cap: wrapped.cap };
+    return { cap };
   } else {
     // Construct a template ApiToken for use if the restored capability is save()d later.
     const saveTemplate = makeSaveTemplateForChild(db, originalToken, requirements, originalTokenInfo);

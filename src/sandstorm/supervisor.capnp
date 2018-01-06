@@ -211,22 +211,29 @@ interface SystemPersistent extends(Persistent(Data, ApiTokenOwner)) {
   # The token itself is arbitrary random bytes, not ASCII text (this differs from API tokens
   # created for the purpose of HTTP APIs).
 
-  addRequirements @0 (requirements :List(MembraneRequirement), observer :Util.Handle)
-                  -> (cap :SystemPersistent, revoker :Util.Handle);
+  interface RevocationObserver {
+    dropWhenRevoked @0 (handle :Util.Handle);
+    # Holds on to `handle` until revocation occurs, then drops it.
+  }
+
+  addRequirements @0 (requirements :List(MembraneRequirement), observer :RevocationObserver)
+                  -> (cap :SystemPersistent);
   # Returns a new version of this same capability with the given requirements added to the
   # conditions under which the capability may be revoked. Usually, the caller then calls `save()`
   # on the new capability.
   #
-  # When the returned `revoker` is dropped, the returned `cap` will become disconnected. The caller
-  # is expected to drop `revoker` if and when it can no longer guarantee that `requirements` are
-  # held. This then forces the capability to become disconnected.
-  #
-  # Meanwhile, the returned `cap` will hold on to `observer` until `cap` or `revoker` is dropped.
-  # Usually, `observer` is an object that takes care of watching for `requirements` to no longer
-  # be met, and then drops `revoker` at that time.
+  # `observer` is an object that watches for the requirements to become invalid. When that happens,
+  # it drops any handles registered with it. `observer` itself should be held by `cap`, such that
+  # dropping `cap` causes `observer` to be dropped transitively (this allows the observer to stop
+  # observing when no longer needed).
   #
   # This call is actually supported on *all* capabilities that are proxied through the supervisor,
   # not just persistent ones.
+  #
+  # TODO(someday): This method should be supported by all capabilities within the Sansdtorm realm,
+  #   by having every endpoint implement the appropriate membrane. SystemPersistent should probably
+  #   be renamed and split from `Persistent` -- the inheritance heirarchy can be adjusted without
+  #   breaking compatibility.
 }
 
 interface PersistentHandle extends(SystemPersistent, Util.Handle) {}

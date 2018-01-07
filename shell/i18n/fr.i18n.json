@@ -242,7 +242,7 @@
       "roleTitle": "Rôle :",
       "permissionTitle": "Accès total",
       "create": "Créer",
-      "webkeyListTitle": "Vos clé web actuelles :",
+      "webkeyListTitle": "Vos clés web actuelles :",
       "revokeHint": "Révoquer",
       "revoke": "Révoquer"
     },
@@ -252,7 +252,7 @@
     },
     "whoHasAccessPopup": {
       "title": "Qui a accès ?",
-      "noLoggedInUsers": "Aucun utilisateur connecté n'a encore visité vos liens.",
+      "noLoggedInUsers": "Aucun utilisateur connecté n'a encore utilisé vos liens de partage.",
       "nobody": "Vous n'avez accordé l'accès à personne.",
       "addedBy": "Ajouté par ",
       "revokeHint": "Révoquer",
@@ -284,8 +284,8 @@
     },
     "shareWithOthers": {
       "title": "Partager avec d'autres",
-      "sendInviteTab": "Envoyer une invitation",
-      "shareableLinkTab": "Obtenir un lien de partage",
+      "sendInviteTab": "Inviter par mail",
+      "shareableLinkTab": "Copier un lien",
       "whoHasAccess": "Voir qui a accès"
     },
     "grainSharePopup": {
@@ -565,7 +565,7 @@
         "explanation": "Tout d'abord, vous devez obtenir une identification et un code secret de client Github. Suivez les étapes suivantes :",
         "step1": "Visitez <a href=\"https://github.com/settings/applications/new\" target=\"blank\">https://github.com/settings/applications/new</a>",
         "step2": "Mettre \"Homepage URL\" à : <span class=\"idp-config-url\">%s</span>",
-        "step3": "Mattre \"Authorization callback URL\" à : <span class=\"idp-config-url\">%s_oauth/github</span>"
+        "step3": "Mettre \"Authorization callback URL\" à : <span class=\"idp-config-url\">%s_oauth/github</span>"
       },
       "adminIdentityProviderConfigureGitHub": {
         "title": "Configuration de l'identification via GitHub",
@@ -616,7 +616,7 @@
         "caCert": {
           "label": "Certificat LDAP CA",
           "placeholder": "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----",
-          "subtext": "Ceci n'est seulement nécessaire que si votre serveur prend en charge SSL et utilise un certificat CA  et pas dans le paramétrage fiable habituel. Notez qu'il ne fonctionne PAS pour entrer ici le certificat propre au serveur LDAP -- ce doit être le certificat d'un CA qui a signé le certificat du serveur LDAP."
+          "subtext": "Ceci n'est seulement nécessaire que si votre serveur prend en charge SSL et utilise un certificat CA ; ce qui n'est pas le paramétrage fiable habituel. Notez qu'il ne fonctionne PAS pour entrer ici le certificat propre au serveur LDAP -- ce doit être le certificat d'un CA qui a signé le certificat du serveur LDAP."
         },
         "saveButton": "Enregistrer",
         "enableButton": "Activer",
@@ -1342,7 +1342,7 @@
     }
   },
   "accounts": {
-    "title": "Paramètres de compte",
+    "title": "Paramètres du compte",
     "accountSettings": {
       "sandstormAccountSettings": {
         "title": "Compte",
@@ -1459,7 +1459,7 @@
           "title": "Créer un compte",
           "explanation": "Les données de votre compte de démonstration seront transférées sur votre nouveau compte."
         },
-        "title": "Sign in",
+        "title": "Se connecter",
         "shared": {
           "explanation": "Identifiez-vous pour que les collaborateurs vous connaissent."
         },
@@ -1470,14 +1470,14 @@
         "with": "avec "
       },
       "devLoginForm": {
-        "label": "avec un compte de Dev",
+        "label": "avec un alias de Dev",
         "hint": "inexploité",
         "alice": "Alice (admin)",
         "bob": "Bob",
         "carol": "Carol",
         "dave": "Dave",
         "customPlaceholder": "Eve",
-        "customButton": "Personnalisation"
+        "customButton": "via ce nom"
       },
       "loginButtonsList": {
         "configure": "configurer l'accès",

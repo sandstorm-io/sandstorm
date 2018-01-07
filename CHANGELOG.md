@@ -1,4 +1,4 @@
-### v0.224 (2018-1-6)
+### v0.224 (2018-01-06)
 - Added Finnish translation contributed by Lauri Ojansivu.
 - Added French translation contributed by Thierry Pasquier.
 - Fixed a memory leak in node-capnp (affecting Sandstorm's shell process).

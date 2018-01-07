@@ -57,7 +57,7 @@
       },
       "keyIsUsed": "Désolé, cette clé d'enregistrement a déjà été utilisée.",
       "processing": "Veuillez patienter…",
-      "signInGuide": "Il vous faut d'abord vous connecter. Cliquez sur \"Se connecter\" dans le coin en haut à gauche.",
+      "signInGuide": "Il vous faut d'abord vous connecter. Cliquez sur « Se connecter » dans le coin en haut à gauche.",
       "invalidKey": "Désolée, cette clé d'enregistrement n'est pas valide."
     },
     "uploadStatus": {
@@ -88,7 +88,7 @@
       },
       "howTo": {
         "title": "Partager, c'est parrainer",
-        "explanation": "Pour commencer, ouvrez un grain et cliquez sur \"Partager le grain\".",
+        "explanation": "Pour commencer, ouvrez un grain et cliquez sur « Partager le grain ».",
         "getStart": {
           "step1": "Partagez un grain avec un ami (qui n'utilise pas encore Oasis).",
           "step2": "Votre ami se connecte.",
@@ -151,7 +151,7 @@
       "copyright": {
         "title": "Propriété intellectuelle",
         "license": "L'implémentation de Sandstorm est protégée par les droits d'auteur de Sandstorm Development Group, Inc. et des contributeurs. Cette implémentation est couverte par la licence Apache License 2.0.",
-        "trademark": "La marque \"Sandstorm\" et le logo Sandstorm sont des marques commerciales de Sandstorm Development Group, Inc. et ne peuvent être utilisées pour présenter des travaux dérivés ou des services commerciaux sans le consentement écrit de Sandstorm Development Group, Inc."
+        "trademark": "La marque « Sandstorm » et le logo Sandstorm sont des marques commerciales de Sandstorm Development Group, Inc. et ne peuvent être utilisées pour présenter des travaux dérivés ou des services commerciaux sans le consentement écrit de Sandstorm Development Group, Inc."
       },
       "terms": {
         "license": "Licence",
@@ -541,17 +541,17 @@
       "googleLoginSetupInstructions": {
         "explanation": "Pour commencer, vous devez obtenir un identifiant client Google. Suivez ces étapes :",
         "step1": "Visitez <a href=\"https://console.developers.google.com/\" target=\"blank\">https://console.developers.google.com/</a>",
-        "step2": "\"Créer un projet\" si besoin. Attendez que Google termine le chargement.",
-        "step3": "Dans la barre latérale gauche, cliquez sur \"Identifiants\" puis, sur la droite \"Écran d’autorisation OAuth\". Veillez à saisir une adresse électronique et un nom de produit, puis sauvegardez.",
-        "step4": "Dans la barre latérale gauche, cliquez à nouveau sur \"Identifiants\". Cliquez sur le bouton \"Créer des identifiants\", puis sélectionnez \"ID client OAuth\" comme type.",
-        "step5": "Sélectionnez ensuite \"Application Web application\" comme type de votre application.",
+        "step2": "« Créer un projet » si besoin. Attendez que Google termine le chargement.",
+        "step3": "Dans la barre latérale gauche, cliquez sur « Identifiants » puis, sur la droite « Écran d’autorisation OAuth ». Veillez à saisir une adresse électronique et un nom de produit, puis sauvegardez.",
+        "step4": "Dans la barre latérale gauche, cliquez à nouveau sur « Identifiants ». Cliquez sur le bouton « Créer des identifiants », puis sélectionnez « ID client OAuth » comme type.",
+        "step5": "Sélectionnez ensuite « Application Web application » comme type de votre application.",
         "step6": "Définissez les origines Javascript autorisées sur : <span class=\"idp-config-url\">%s</span>",
         "step7": "Définissez l'URI de redirection sur : <span class=\"idp-config-url\">%s/_oauth/google</span>",
-        "step8": "Terminez en cliquant sur \"Créer\"."
+        "step8": "Terminez en cliquant sur « Créer »."
       },
       "adminIdentityProviderConfigureGoogle": {
         "title": "Configuration de l'authentification via Google",
-        "formerBaseUrlWarning": "Ce serveur a été déplacé de <code>__former__</code> à <code>__current__</code>. Vous devrez visiter <a target=\"_blank\" href=\"https://console.developers.google.com/\">https://console.developers.google.com/</a> et mettre à jour les \"Origines javascript autorisés\" et les \"URI de redirection autorisées\" pour ce ID client pour compléter les valeurs ci-dessous.",
+        "formerBaseUrlWarning": "Ce serveur a été déplacé de <code>__former__</code> à <code>__current__</code>. Vous devrez visiter <a target=\"_blank\" href=\"https://console.developers.google.com/\">https://console.developers.google.com/</a> et mettre à jour les « Origines javascript autorisés » et les « URI de redirection autorisées » pour ce ID client pour compléter les valeurs ci-dessous.",
         "error": "L'enregistrement des changements a échoué : %s",
         "explanation": "Ensuite, copiez votre identifiant et code secret client ci-dessous :",
         "clientId": "ID client :",
@@ -564,12 +564,12 @@
       "githubLoginSetupInstructions": {
         "explanation": "Tout d'abord, vous devez obtenir une identification et un code secret de client Github. Suivez les étapes suivantes :",
         "step1": "Visitez <a href=\"https://github.com/settings/applications/new\" target=\"blank\">https://github.com/settings/applications/new</a>",
-        "step2": "Mettre \"Homepage URL\" à : <span class=\"idp-config-url\">%s</span>",
-        "step3": "Mettre \"Authorization callback URL\" à : <span class=\"idp-config-url\">%s_oauth/github</span>"
+        "step2": "Mettre « Homepage URL » à : <span class=\"idp-config-url\">%s</span>",
+        "step3": "Mettre « Authorization callback URL » à : <span class=\"idp-config-url\">%s_oauth/github</span>"
       },
       "adminIdentityProviderConfigureGitHub": {
         "title": "Configuration de l'identification via GitHub",
-        "formerBaseUrlWarning": "Ce serveur a été déplacé de <code>__former__</code> à <code>__current__</code>. Vous devrez visiter <a target=\"_blank\" href=\"https://github.com/settings/developers\">https://github.com/settings/developers</a> et mettre à jour la \"Homepage URL\" et l'\"Authorization callback URL\" pour cette application en complétant les champs suivants.",
+        "formerBaseUrlWarning": "Ce serveur a été déplacé de <code>__former__</code> à <code>__current__</code>. Vous devrez visiter <a target=\"_blank\" href=\"https://github.com/settings/developers\">https://github.com/settings/developers</a> et mettre à jour la « Homepage URL » et l'« Authorization callback URL » pour cette application en complétant les champs suivants.",
         "explanation": "Ensuite, copiez votre identifiant et code secret client ci-dessous :",
         "clientId": "ID Client :",
         "clientSecret": "Code secret du client :",
@@ -727,7 +727,7 @@
         },
         "howItWorks": {
           "title": "Comment Sandstorm utilise le courrier électronique ?",
-          "explanation": "Sandstorm envoie des notifications par courrier électronique, et les applications Sandstorm peuvent également le faire. Chaque application reçoit une adresse électronique unique, Sandstorm peut donc envoyer un courriel à partir d'une variété d'adresses \"De : \". Par contre. le SMTP de Gmail ne fonctionnera pas, mais il existe d'autres services gratuits. Consultez <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">la documentation pour en savoir plus</a>."
+          "explanation": "Sandstorm envoie des notifications par courrier électronique, et les applications Sandstorm peuvent également le faire. Chaque application reçoit une adresse électronique unique, Sandstorm peut donc envoyer un courriel à partir d'une variété d'adresses « De : ». Par contre. le SMTP de Gmail ne fonctionnera pas, mais il existe d'autres services gratuits. Consultez <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">la documentation pour en savoir plus</a>."
         },
         "success": "Changements enregistrés.",
         "error": "Échec de l'enregistrement des changements : %s",
@@ -803,18 +803,18 @@
             "label": "Masquer le bouton de dépannage"
           },
           "hideAbout": {
-            "label": "Masquer le lien \"À propos de Sandstorm\""
+            "label": "Masquer le lien « À propos de Sandstorm »"
           },
           "hideSendFeedback": {
-            "label": "Masquer le lien \"Envoyer un retour\" link"
+            "label": "Masquer le lien « Envoyer un retour » link"
           },
           "useServerTitleForHomeText": {
             "label": "Utiliser le titre du serveur (ci-dessus) pour le lien de retour à l'accueil",
-            "subtext": "Si activé, change le libellé par défaut, \"Sandstorm\", du lien en haut à gauche pour correspondre à ce que vous avez spécifié ci-dessus comme titre pour le serveur."
+            "subtext": "Si activé, change le libellé par défaut, « Sandstorm », du lien en haut à gauche pour correspondre à ce que vous avez spécifié ci-dessus comme titre pour le serveur."
           },
           "customLoginProviderName": {
             "label": "Personnalisation du texte du bouton de connexion",
-            "subtext": "Remplacer le texte \"avec LDAP\" ou \"avec SAML\" dans la page d'identification avec le texte indiqué."
+            "subtext": "Remplacer le texte « avec LDAP » ou « avec SAML » dans la page d'identification avec le texte indiqué."
           }
         },
         "saveButton": "Enregistrer"
@@ -854,7 +854,7 @@
       "newAdminAppSources": {
         "appMarketUrl": {
           "label": "URL du dépôt des applications",
-          "subtext": "Le bouton \"Installer…\" sur la page des application pointera vers cette URL."
+          "subtext": "Le bouton « Installer… » sur la page des application pointera vers cette URL."
         },
         "enableAppUpdates": {
           "label": "Activer les notifications de mise à jour des applications",
@@ -875,7 +875,7 @@
       "newAdminNetworking": {
         "ipBlacklist": {
           "label": "La liste noire d'IP gérée côté serveur :",
-          "subtext": "Il sera interdit aux utilisateurs de faire des requêtes vers ces adresses IP. Vous pouvez spécifier une adresse IP ou un réseau (dans la notation CIDR, par exemple \"127.0.0.0/8\") par ligne. La valeur par défaut comprend les adresses réseau locales et privées standard. Notez que lorsqu'un proxy HTTP est utilisé, ce paramètre peut être ignoré ; le proxy peut posséder sa propre liste noire."
+          "subtext": "Il sera interdit aux utilisateurs de faire des requêtes vers ces adresses IP. Vous pouvez spécifier une adresse IP ou un réseau (dans la notation CIDR, par exemple « 127.0.0.0/8 ») par ligne. La valeur par défaut comprend les adresses réseau locales et privées standards. Notez que lorsqu'un proxy HTTP est utilisé, ce paramètre peut être ignoré ; le proxy peut posséder sa propre liste noire."
         },
         "saveButton": "Enregistrer",
         "restoreButton": "Restaurer les valeurs par default"
@@ -1023,7 +1023,7 @@
         },
         "deletePopup": {
           "title": "Supprimer %s",
-          "explanation": "Vous avez cocher le compte de %s pour suppression. Dès lors, ce compte sera suspendu, et les administrateurs auront 7 jours pour annuler la suppression en attente en revenant à cette page et en cliquant sur le bouton \"Réactiver le compte\". %s ne pourra <strong>pas</strong> arrêter le processus de suspension / suppression.",
+          "explanation": "Vous avez cocher le compte de %s pour suppression. Dès lors, ce compte sera suspendu, et les administrateurs auront 7 jours pour annuler la suppression en attente en revenant à cette page et en cliquant sur le bouton « Réactiver le compte ». %s ne pourra <strong>pas</strong> arrêter le processus de suspension / suppression.",
           "detail": "Après 7 jours, le compte de %s sera supprimé définitivement. La suppression de ce compte entrainera :",
           "detail1": "la suppression définitive des grains créés par %s,",
           "detail2": "la révocation de tous les liens de partage créé par %s,",
@@ -1046,7 +1046,7 @@
     },
     "userInvite": {
       "newAdminUserInviteLink": {
-        "explanation": "Vous pouvez inviter d'autres personnes à créer des comptes sur votre serveur en leur donnant un lien de création de compte. Les personnes que vous invitez recevront les autorisations de l'utilisateur et pourront installer des applications et créer leurs propres grains. Alternativement, si vous voulez partager un grain spécifique avec quelqu'un, vous pouvez le faire dans le menu \"Partager l'accès\".",
+        "explanation": "Vous pouvez inviter d'autres personnes à créer des comptes sur votre serveur en leur donnant un lien de création de compte. Les personnes que vous invitez recevront les autorisations de l'utilisateur et pourront installer des applications et créer leurs propres grains. Alternativement, si vous voulez partager un grain spécifique avec quelqu'un, vous pouvez le faire dans le menu « Partager l'accès ».",
         "title": "Créer un lien",
         "invite": {
           "explanation": "Ceci créera un lien de création de compte que vous pourrez envoyer à quelqu'un.",
@@ -1144,17 +1144,17 @@
       "subtext": "Communiquer aux utilisateurs le temps d'arrêt prévu.",
       "newAdminMaintenance": {
         "explanation": "Vous pouvez définir un message de maintenance qui sera affiché à tous les utilisateurs dans la barre de menu, en haut à droite. Ceci est utile pour annoncer la maintenance programmée afin que les utilisateurs puissent être prévenu des temps d'arrêt. Si le message est vide, aucun message ne sera affiché.",
-        "variables": "Vous pouvez utiliser les variables suivantes dans le champ \"Texte du message\", qui seront automatiquement remplacées par des valeurs correspondantes :",
-        "variable1": "<code>$TIME</code> : La partie horaire de la \"date de maintenance\", convertie en à l'heure locale de l'utilisateur (par exemple. \"13:15:45\")",
-        "variable2": "<code>$DATE</code> : La partie calendaire de la \"date de maintenance\", convertie en à date locale de l'utilisateur  (par exemple \"06/19/2015\")",
-        "variable3": "<code>$IN_COUNTDOWN</code> : Un décompte actif jusqu' à la \"date de maintenance\" (par exemple \"dans 3 jours\" ou \"dans 1 minute\"). Affiche \"C'est pour bientôt\" au moment spécifié dans \"Date de maintenance\" et disparait après une heure.",
+        "variables": "Vous pouvez utiliser les variables suivantes dans le champ « Texte du message », qui seront automatiquement remplacées par des valeurs correspondantes :",
+        "variable1": "<code>$TIME</code> : La partie horaire de la « date de maintenance », convertie en à l'heure locale de l'utilisateur (par exemple. « 13:15:45 »)",
+        "variable2": "<code>$DATE</code> : La partie calendaire de la « date de maintenance », convertie en à date locale de l'utilisateur  (par exemple « 06/19/2015 »)",
+        "variable3": "<code>$IN_COUNTDOWN</code> : Un décompte actif jusqu' à la « date de maintenance » (par exemple « dans 3 jours » ou « dans 1 minute »). Affiche « C'est pour bientôt » au moment spécifié dans « Date de maintenance » et disparait après une heure.",
         "messageText": {
           "label": "Texte du message :",
           "subtext": ""
         },
         "maintenanceTime": {
           "label": "Date de maintenance :",
-          "subtext": "Le moment où vous avez l'intention de commencer la maintenance, formaté comme il suit : \"%s\"."
+          "subtext": "Le moment où vous avez l'intention de commencer la maintenance, date au format suivant : %s."
         },
         "url": {
           "label": "Adresse URL (optionnelle) :",
@@ -1236,7 +1236,7 @@
       "mostUsed": "Most used",
       "allApps": "Toutes les applications",
       "install": "Installation…",
-      "fromMarket": "depuis le dépôt des applications",
+      "fromMarket": "depuis le dépôt",
       "uninstall": "Désinstaller",
       "noMatchApp": "Vous n'avez pas d'applications installées sous ce nom. Essayez <a href=\"__url__\">recherche sur le dépôt des applications &raquo; </a>",
       "unauthorized": "Non autorisé ! :(",
@@ -1379,7 +1379,7 @@
           "result2": "la révocation de tous les liens de partage que vous avez créés",
           "result3": "la suppression de toutes les listes de contacts des utilisateurs,",
           "result4": "la suppression de toutes les informations d'identification appartenant à votre compte (à l'exception des informations d'identification associées à un autre compte).",
-          "confirm": "Veuillez cliquer sur \"Supprimer mon compte\" ci-dessous pour confirmer.",
+          "confirm": "Veuillez cliquer sur « Supprimer mon compte » ci-dessous pour confirmer.",
           "goodbye": "Désolé de vous voir partir. N'hésitez pas à partager vos commentaires avec l'administrateur du serveur.",
           "feedbackPlaceholder": "Optionnel",
           "deleteButton": "Supprimer ce compte",
@@ -1689,7 +1689,7 @@
     "setupWizardEmailConfig": {
       "title": "Livraison des courriels",
       "explanation": "Sandstorm a besoin d'un moyen pour envoyer des courriels. Vous pouvez sauter cette étape (à moins que vous utilisiez une connexion par courriel), mais les fonctionnalités liées au courrier électronique seront indisponibles tant que vous n'aurez pas configuré cette partie.",
-      "moreDetail": "<strong>Comment Sandstorm utilise le courrier électronique ?</strong> Sandstorm envoie des notifications par courrier électronique, et les applications Sandstorm peuvent également le faire. Chaque application reçoit une adresse électronique unique, Sandstorm peut donc envoyer un courriel à partir d'une variété d'adresses \"De : \". Par contre. le SMTP de Gmail ne fonctionnera pas, mais il existe d'autres services gratuits. Consultez <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">la documentation pour en savoir plus</a>.",
+      "moreDetail": "<strong>Comment Sandstorm utilise le courrier électronique ?</strong> Sandstorm envoie des notifications par courrier électronique, et les applications Sandstorm peuvent également le faire. Chaque application reçoit une adresse électronique unique, Sandstorm peut donc envoyer un courriel à partir d'une variété d'adresses « De : ». Par contre. le SMTP de Gmail ne fonctionnera pas, mais il existe d'autres services gratuits. Consultez <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">la documentation pour en savoir plus</a>.",
       "error": "Échec de l'enregistrement des changements : %s",
       "hostPort": {
         "host": "Hôte SMTP",

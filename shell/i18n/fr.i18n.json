@@ -1420,10 +1420,10 @@
         },
         "pronoun": {
           "label": "Pronom préféré :",
-          "neutral": "on (indéterminé)",
+          "neutral": "on (indéfini)",
           "male": "il/le (homme)",
           "female": "elle/la (femme)",
-          "robot": "on (robot)"
+          "robot": "autre (robot)"
         },
         "agreedToTerms": {
           "agreeTo": " J'ai lu et j'accepte les",
@@ -1713,8 +1713,8 @@
     },
     "setupWizardPreinstalled": {
       "title": "Applications pré-installées",
-      "explanation": "Veuillez patienter pendant que Sandstorm installe les applications suivantes qui sont utiles pour la plupart des utilisateurs. Vous pourrez configurer toutes les applications préinstallées dans les Paramètres d'administration après l'installation.",
-      "downloaded": "Téléchargé",
+      "explanation": "Veuillez patienter pendant que Sandstorm installe les applications suivantes qui sont utiles pour la plupart des utilisateurs. Vous pourrez configurer toutes les applications pré-installées dans les « Paramètres d'administration » après l'installation.",
+      "downloaded": "Téléchargée",
       "failed": "En échec",
       "loading": "Patience, téléchargement de la liste des apps…",
       "nextButton": "Suivant",

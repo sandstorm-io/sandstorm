@@ -471,7 +471,7 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
 
         req.setTimeout(15000, () => {
           req.abort();
-          err = new Error("Request timed out.");
+          let err = new Error("Request timed out.");
           err.nature = "localBug";
           err.durability = "overloaded";
           reject(err);

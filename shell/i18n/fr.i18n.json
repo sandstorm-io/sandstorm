@@ -779,7 +779,7 @@
           "subtext": "Cette page Web s'affichera en arrière-plan derrière la boîte de dialogue de connexion (la page d'accueil lorsque vous êtes déconnecté). Pour des raisons de sécurité, la page doit être hébergée dans un sous-domaine du serveur Sandstorm lui même (sinon, il sera bloqué par <code>la politique de sécurité des contenus</code>). Nous suggérons d'utiliser une application de publication web statique comme <a target=\"_blank\" href=\"https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh/?host=%s\">Hacker CMS</a>  pour héberger ces contenus. <strong>AVERTISSEMENT : Cette fonctionnalité est expérimentale ; style et positionnement de la boîte de connexion peuvent notamment êtres modifiés sans préavis. </strong> Veuillez nous faire savoir si vous souhaitez qu'elle se stabilise."
         },
         "signupDialog": {
-          "label": "Ecran d'inscription :",
+          "label": "Écran d'inscription :",
           "subtext": "Cet texte sera proposé aux utilisateurs qui cliquent sur le lien d'inscription."
         },
         "termsOfService": {
@@ -1124,13 +1124,13 @@
         },
         "json": {
           "title": "Afficher au format JSON",
-          "explanation": "Si vous voulez utiliser les statistiques de Sandstorm avec un outil spécifique, utilisez ce lien secret pour récupérer les tableaux ci-dessous sous la forme de JSON. Vous pouvez révoquer le lien courant à tout moment en créant un nouveau lien.",
+          "explanation": "Si vous voulez utiliser les statistiques de Sandstorm avec un outil spécifique, utilisez ce lien secret pour récupérer les tableaux ci-dessous au format JSON. Vous pouvez révoquer le lien courant à tout moment en créant un nouveau lien.",
           "label": "Lien des stats JSON :",
           "regenerateButton": "Générer un nouveau lien"
         },
         "userGrains": {
           "title": "Utilisateurs et grains",
-          "current": "Maintenant : __users__ utilisateurs, __grains__ grains",
+          "current": "Actuellement : __users__ utilisateurs, __grains__ grains",
           "today": "Aujourd'hui : __users__ utilisateurs, __grains__ grains"
         },
         "apps": {
@@ -1402,7 +1402,7 @@
           "label": "Photo de profil :",
           "uploadButton": "Télécharger une nouvelle photo.",
           "subtext": "Cette photo sera utilisée pour vous identifier auprès des autres utilisateurs.",
-          "maxSize": "512x512px, 64KiB max."
+          "maxSize": "512px x 512px, 64 KiB max."
         },
         "fullName": {
           "label": "Nom complet:",
@@ -1476,7 +1476,7 @@
         "bob": "Bob",
         "carol": "Carol",
         "dave": "Dave",
-        "customPlaceholder": "Eve",
+        "customPlaceholder": "Ève",
         "customButton": "via ce nom"
       },
       "loginButtonsList": {
@@ -1486,7 +1486,7 @@
       },
       "emailLoginForm": {
         "description": "avec un courriel",
-        "sendButtonText": "envoyer un courriel de connexion"
+        "sendButtonText": "avoir un jeton de connexion"
       },
       "emailAuthenticationForm": {
         "hint": "Ce type de connexion vous permet de vous connecter en utilisant une adresse électronique et sans mot de passe. Aucun mot de passe n'est requis ; au lieu de cela, chaque fois que vous ouvrez une session, nous vous envoyons un nouveau code de confirmation par courriel. Vous n'aurez besoin de vous connecter qu'une seule fois par appareil.",
@@ -1522,7 +1522,7 @@
         "goBackButton": "Retour",
         "create": "création de compte…",
         "createFailed": "Impossible de créer un compte.",
-        "loginAccount": "connexion au comptei…",
+        "loginAccount": "connexion au compte…",
         "loginAccountFailed": "Echec de le connexion au compte",
         "loginToken": "reconnexion au compte…",
         "loginTokenFailed": "La session ne s'est pas relancée.",
@@ -1714,7 +1714,7 @@
     "setupWizardPreinstalled": {
       "title": "Applications pré-installées",
       "explanation": "Veuillez patienter pendant que Sandstorm installe les applications suivantes qui sont utiles pour la plupart des utilisateurs. Vous pourrez configurer toutes les applications pré-installées dans les « Paramètres d'administration » après l'installation.",
-      "downloaded": "Téléchargée",
+      "downloaded": "Téléchargé",
       "failed": "En échec",
       "loading": "Patience, téléchargement de la liste des apps…",
       "nextButton": "Suivant",

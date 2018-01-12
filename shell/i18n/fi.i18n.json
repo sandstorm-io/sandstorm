@@ -162,7 +162,7 @@
   "grains": {
     "title": "Jyvät",
     "grainView": {
-      "notFoundWithId": "Ei löytynyt tiedostojyviä jolla on ID %s.",
+      "notFoundWithId": "Ei löytynyt jyviä jolla on ID %s.",
       "openWithWhichIdentity": "Haluatko paljastaa identiteettisi tälle jyvälle, vai säilyä anonyyminä?",
       "openInIncognitoMode": "Avaa yksityisessä tilassa",
       "revealMyIdentity": "Paljasta identiteettini"
@@ -335,7 +335,7 @@
           "explanation": "(Solut poistetaan lopullisesti kun ne ovat olleet 30 päivää roskakorissa. Pitääksesi jyvän, palauta se päälistaan.)"
         },
         "noGrains": {
-          "notFound": "<strong>Ei löytynyt täsmääviä tiedostojyviä.</strong>",
+          "notFound": "<strong>Ei löytynyt täsmääviä jyviä.</strong>",
           "inTrash": "Jotkin roskakorissa olevat tiedostot täsmäävät etsintääsi.",
           "trashButton": "Näytä roskakori",
           "empty": "<strong>Roskakori on tyhjä.</strong>",
@@ -347,7 +347,7 @@
       },
       "sandstormGrainTable": {
         "bulkAction": {
-          "disabledHint": "Suorittaaksesi joukkotoimintoja, sinun täytyy ensin valita muutamia tiedostojyviä listalta."
+          "disabledHint": "Suorittaaksesi joukkotoimintoja, sinun täytyy ensin valita muutamia jyviä listalta."
         },
         "tableHeader": {
           "title": "Nimi",
@@ -391,7 +391,7 @@
     },
     "referralNotificationItem": {
       "paidUser": "Saa jopa 30 GB asti bonuksia mukana",
-      "unpaidUser": "Rajattomasti tiedostojyviä & jopa 2 GB asti bonuksia",
+      "unpaidUser": "Rajattomasti jyviä & jopa 2 GB asti bonuksia",
       "link": "suositus ohjelmalla »",
       "dismissButton": "Hylkää"
     },
@@ -522,7 +522,7 @@
       },
       "subtext": "Miten käyttäjät kirjautuvat sisään.",
       "newAdminIdentity": {
-        "explanation": "Valitse mitä palveluita käyttäjät voivat käyttää todentaakseen identiteettinsä.  Kuka tahansa voi kirjautua sisään, mutta vain käyttäjät jotka kutsut voivat asentaa ohjelmia tai luoda tiedostojyviä.",
+        "explanation": "Valitse mitä palveluita käyttäjät voivat käyttää todentaakseen identiteettinsä.  Kuka tahansa voi kirjautua sisään, mutta vain käyttäjät jotka kutsut voivat asentaa ohjelmia tai luoda jyviä.",
         "organizationLinkPrefix": "Määrittääksesi organisaation jäsenyyden ja asetukset, katso",
         "organizationLink": "organisaation asetukset",
         "organizationLinkPostfix": "."
@@ -670,7 +670,7 @@
       "name": "Organisaation asetukset",
       "subtext": "Kevennä käyttöönottoa ja yhteistyötä laajemmissa tiimeissä.",
       "organizationSettingsBlurb": {
-        "explanation": "Sandstorm mahdollistaa organisaation määrittelemisen. Voit automaattisesti ottaa käyttöön joitakin asetuksia kaikille organisaation käyttäjille. Organisaation käyttäjät voivat automaattisesti kirjautua sisään, asentaa ohjelmia, ja luoda tiedostojyviä."
+        "explanation": "Sandstorm mahdollistaa organisaation määrittelemisen. Voit automaattisesti ottaa käyttöön joitakin asetuksia kaikille organisaation käyttäjille. Organisaation käyttäjät voivat automaattisesti kirjautua sisään, asentaa ohjelmia, ja luoda jyviä."
       },
       "newAdminOrganization": {
         "success": "Tallenna muutokset.",
@@ -710,14 +710,14 @@
           },
           "shareContacts": {
             "label": "Tee kaikki organisaation käyttäjät näkyviksi toisilleen",
-            "subtext": "Tämä asetus automaattisesti lisää käyttäjät organisaation sisällä toistensa yhteystieto listoihin jotta he voivat jakaa tiedostojyviä toistensa kanssa.  Poista tämä käytöstä jos sinulla on joitakin käyttäjiä joiden identiteetti tulisi pysyä piilotettuna toisilta käyttäjiltä."
+            "subtext": "Tämä asetus automaattisesti lisää käyttäjät organisaation sisällä toistensa yhteystieto listoihin jotta he voivat jakaa jyviä toistensa kanssa.  Poista tämä käytöstä jos sinulla on joitakin käyttäjiä joiden identiteetti tulisi pysyä piilotettuna toisilta käyttäjiltä."
           }
         },
         "saveButton": "Tallenna"
       }
     },
     "emailConfig": {
-      "name": "Sähköposti asetukset",
+      "name": "Sähköpostiasetukset",
       "subtext": "Miten sähköposti lähetetään käyttäjille.",
       "newAdminEmailConfig": {
         "outbound": {
@@ -868,8 +868,8 @@
       }
     },
     "networking": {
-      "name": "Verkko",
-      "altName": "Tietoturva",
+      "name": "Verkkorajoitukset",
+      "altName": "Verkkorajoitukset",
       "subtext": "Hallitse verkon käyttöä.",
       "newAdminNetworking": {
         "ipBlacklist": {
@@ -987,20 +987,20 @@
           "title": "Rooli",
           "admin": {
             "label": "Admin",
-            "explanation": "Hallitsee kaikkia tilejä.  Voi asentaa ohjelmia, luoda tiedostojyviä, ja hallita palvelinta.",
+            "explanation": "Hallitsee kaikkia tilejä.  Voi asentaa ohjelmia, luoda jyviä, ja hallita palvelinta.",
             "isAdmin": "Nykyinen rooli",
             "isNotAdmin": "Ylennä adminiksi"
           },
           "user": {
             "label": "Käyttäjä",
-            "explanation": "Voi asentaa ohjelmia ja luoda tiedostojyviä.",
+            "explanation": "Voi asentaa ohjelmia ja luoda jyviä.",
             "isUser": "Nykyinen rooli",
             "isAdmin": "Alenna käyttäjäsi",
             "isNotUser": "Ylennä käyttäjäksi"
           },
           "visitor": {
             "label": "Vierailija",
-            "explanation": "Voi käyttää ja jakaa uudelleen jaettuja tiedostojyviä, mutta ei voi luoda tiedostojyviä itse eikä asentaa ohjelmia.",
+            "explanation": "Voi käyttää ja jakaa uudelleen jaettuja jyviä, mutta ei voi luoda jyviä itse eikä asentaa ohjelmia.",
             "isVisitor": "Nykyinen rooli",
             "isNotVisitor": "Alenna vierailijaksi"
           }
@@ -1024,7 +1024,7 @@
           "title": "Poista %s",
           "explanation": "Olet merkkaamassa %s'n tilin poistettavaksi. Kun poistettavaksi merkkaaminen on tehty, tämä tili jäädytetään, ja admineilla on 7 päivää peruuttaa poistaminen palaamalla tälle sivulle ja klikkaamalla \"Ota jäädytetty tili käyttöön\" painiketta. Käyttäjällä %s <strong>ei</strong> ole mahdollisuutta pysäyttää tätä jäädyttämistä/poistamista.",
           "detail": "7 päivän jälkeen, %s'n tili poistetaan lopullisesti. Tämän tilin poistaminen aiheuttaa:",
-          "detail1": "Lopullisesti kaikkien %s luomien tiedostojyvien poiston",
+          "detail1": "Lopullisesti kaikkien %s luomien jyvien poiston",
           "detail2": "Kaikkien %s luomien linkkijakojen poiston",
           "detail3": "Poistaa tilin %s kaikkien käyttäjien yhteystieto listoista",
           "detail4": "Poistaa kaikki oikeudet jotka tämä tili omisti (paitsi oikeudet jotka liittyy toiseen tiliin).",
@@ -1034,7 +1034,7 @@
         "suspendPopup": {
           "title": "Jäädytä %s",
           "detail": "Tämän käyttäjän jäädyttäminen aiheuttaa:",
-          "detail1": "Estää kaikkien %s luomien tiedostojyvien avaamisen",
+          "detail1": "Estää kaikkien %s luomien jyvien avaamisen",
           "detail2": "Poistaa kaikki %s luomat jakamislinkit",
           "detail3": "Tämä myös koskee kaikkia oikeuksia jotka tämä tili omisti (paitsi oikeudet jotka liittyy toiseen tiliin)",
           "suspendButton": "Jäädytä tili",
@@ -1045,7 +1045,7 @@
     },
     "userInvite": {
       "newAdminUserInviteLink": {
-        "explanation": "Voit kutsua muita luomaan tilejä palvelimellasi antamalla heille tilin luomis linkit. Kutsumillesi ihmisille myönnetään käyttäjäoikeus ja he pystyvät asentamaan ohjelmia ja luomaan tiedostojyviä itse. Vaihtoehtoisesti, jos haluat jakaa jonkin jyvän jonkun kanssa, voit tehdä sen jyvän \"Jaa pääsy\" valikosta.",
+        "explanation": "Voit kutsua muita luomaan tilejä palvelimellasi antamalla heille tilin luomis linkit. Kutsumillesi ihmisille myönnetään käyttäjäoikeus ja he pystyvät asentamaan ohjelmia ja luomaan jyviä itse. Vaihtoehtoisesti, jos haluat jakaa jonkin jyvän jonkun kanssa, voit tehdä sen jyvän \"Jaa pääsy\" valikosta.",
         "title": "Luo linkki",
         "invite": {
           "explanation": "Tämä luo tilin luomis linkin jonka voit lähettää jollekin.",
@@ -1406,7 +1406,7 @@
         "fullName": {
           "label": "Koko nimi:",
           "placeholder": "koko nimi",
-          "subtext": "Sinun tavallinen etu ja sukunimi, kuten haluaisit muiden sen näkevän. Tämän ei tarvitse olla oikea nimesi."
+          "subtext": "Etu ja sukunimi, kuten haluaisit muiden sen näkevän. Tämän ei tarvitse olla oikea nimesi."
         },
         "handle": {
           "label": "Nimimerkki:",
@@ -1418,11 +1418,11 @@
           "label": "Sähköposti:"
         },
         "pronoun": {
-          "label": "Haluttu etuliite:",
-          "neutral": "ne (määrittämätön)",
-          "male": "hän (mies)",
-          "female": "hän (nainen)",
-          "robot": "se (robotti)"
+          "label": "Haluttu persoonapronomini:",
+          "neutral": "they (ne, määrittämätön)",
+          "male": "he (mies)",
+          "female": "she (nainen)",
+          "robot": "it (robotti)"
         },
         "agreedToTerms": {
           "agreeTo": " Olen lukenut ja hyväksyn nämä:",
@@ -1604,7 +1604,7 @@
       "needHelp": "Tarvitsetko apua?",
       "documentation": "Ohjeet",
       "emailSupport": "Sähköpostituki",
-      "systemLog": "Järjestelmän loki"
+      "systemLog": "Järjestelmäloki"
     },
     "setupWizardSystemLog": {
       "header": {

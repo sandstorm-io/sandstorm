@@ -1,6 +1,6 @@
 ### v0.224 (2018-01-06)
 - Added Finnish translation contributed by Lauri Ojansivu.
-- Added French translation contributed by Thierry Pasquier.
+- Added French translation contributed by Benoit Renault and Thierry Pasquier.
 - Fixed a memory leak in node-capnp (affecting Sandstorm's shell process).
 - Oasis: Updated production servers to Debian Stretch in order to get mitigation for Meltdown attack.
 

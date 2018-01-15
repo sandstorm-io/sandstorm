@@ -87,12 +87,18 @@ kj::Promise<void> GatewayService::request(
         KJ_REQUIRE(parsed.query.size() == 2);
         KJ_REQUIRE(parsed.query[0].name == "sessionid");
         KJ_REQUIRE(parsed.query[1].name == "path");
-        KJ_REQUIRE(parsed.query[1].value.startsWith("/"));
+
+        // TODO(cleanup): Powerbox requests seem to send a path that doesn't necessarily start
+        //   with '/'. Why? Dunno. Fix.
+        auto path = kj::mv(parsed.query[1].value);
+        if (!path.startsWith("/")) {
+          path = kj::str('/', path);
+        }
 
         kj::HttpHeaders responseHeaders(tables.headerTable);
         // We avoid registering a header ID for Set-Cookie. See comments in web-session-bridge.c++.
         responseHeaders.add("Set-Cookie", kj::str("sandstorm-sid=", parsed.query[0].value));
-        responseHeaders.set(tables.hLocation, parsed.query[1].value);
+        responseHeaders.set(tables.hLocation, kj::mv(path));
 
         response.send(303, "See Other", responseHeaders, uint64_t(0));
         return kj::READY_NOW;

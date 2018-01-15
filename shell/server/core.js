@@ -559,9 +559,12 @@ restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenI
     const cap = waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
       // Note that in this case it is the supervisor's job to implement SystemPersistent, so we
       // don't generate a saveTemplate here.
-      return supervisor.restore(token.objectId, [], new Buffer(originalToken, "utf8"))
-          .cap.castAs(SystemPersistent).addRequirements(requirements, observer).cap;
-    }));
+      let promise = supervisor.restore(token.objectId, [], new Buffer(originalToken, "utf8"));
+      if (requirements.length > 0) {
+        promise = promise.cap.castAs(SystemPersistent).addRequirements(requirements, observer);
+      }
+      return promise;
+    })).cap;
 
     return { cap };
   } else {

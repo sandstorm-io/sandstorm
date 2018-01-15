@@ -1555,16 +1555,24 @@ public:
     kj::Vector<capnp::List<MembraneRequirement>::Reader> parts;
 
     auto ptr = this;
+    bool empty = true;
     for (;;) {
       KJ_IF_MAYBE(c, ptr->childInfo) {
-        parts.add(c->requirements);
+        if (c->requirements.size() > 0) {
+          empty = false;
+          parts.add(c->requirements);
+        }
         ptr = c->parent;
       } else {
         break;
       }
     }
 
-    return orphanage.newOrphanConcat(parts.asPtr());
+    if (empty) {
+      return {};
+    } else {
+      return orphanage.newOrphanConcat(parts.asPtr());
+    }
   }
 
   kj::Own<RequirementsMembranePolicy> addRequirements(
@@ -2116,6 +2124,7 @@ public:
             kj::addRef(*rootMembranePolicy), params.getParentToken(), sandstormCore);
 
         context.getResults().setCap(capnp::membrane(kj::mv(cap), kj::mv(policy)));
+        return kj::READY_NOW;
       }
       default:
         KJ_FAIL_REQUIRE("Unknown objectId type");

@@ -72,6 +72,11 @@ public:
   kj::Promise<void> openWebSocket(
       kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) override;
 
+  static ByteStream::Client makeHttpResponseStream(
+      uint statusCode, kj::StringPtr statusText,
+      kj::HttpHeaders&& headers,
+      kj::HttpService::Response& response);
+
 private:
   WebSession::Client session;
   kj::Maybe<Handle::Client> loadingIndicator;

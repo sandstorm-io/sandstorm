@@ -481,17 +481,18 @@ kj::Promise<void> WebSessionBridge::openWebSocket(
 
 class WebSessionBridge::ByteStreamImpl: public ByteStream::Server {
 public:
-  ByteStreamImpl(HttpStatusDescriptor::Reader status,
+  ByteStreamImpl(uint statusCode, kj::StringPtr statusText,
                  kj::HttpHeaders&& headers,
-                 capnp::Response<WebSession::Response>&& inResponse,
                  kj::HttpService::Response& response) {
-    state.init<NotStarted>(NotStarted { status, kj::mv(headers), kj::mv(inResponse), response });
+    state.init<NotStarted>(NotStarted { statusCode, statusText, kj::mv(headers), response });
   }
 
   ~ByteStreamImpl() noexcept(false) {
-    if (doneFulfiller->isWaiting()) {
-      doneFulfiller->reject(KJ_EXCEPTION(FAILED,
-          "app did not finish writing HTTP response stream"));
+    KJ_IF_MAYBE(df, doneFulfiller) {
+      if (df->get()->isWaiting()) {
+        df->get()->reject(KJ_EXCEPTION(FAILED,
+            "app did not finish writing HTTP response stream"));
+      }
     }
   }
 
@@ -515,7 +516,9 @@ public:
     auto fork = queue.then([this]() {
       ensureStarted(uint64_t(0));
       state.init<Done>();
-      doneFulfiller->fulfill();
+      KJ_IF_MAYBE(df, doneFulfiller) {
+        df->get()->fulfill();
+      };
     }).fork();
     queue = fork.addBranch();
     return fork.addBranch();
@@ -528,9 +531,9 @@ public:
 
 private:
   struct NotStarted {
-    HttpStatusDescriptor::Reader status;
+    uint statusCode;
+    kj::StringPtr statusText;
     kj::HttpHeaders headers;
-    capnp::Response<WebSession::Response> inResponse;
     kj::HttpService::Response& response;
   };
 
@@ -541,13 +544,13 @@ private:
   struct Done {};
 
   kj::OneOf<NotStarted, Started, Done> state;
-  kj::Own<kj::PromiseFulfiller<void>> doneFulfiller;
+  kj::Maybe<kj::Own<kj::PromiseFulfiller<void>>> doneFulfiller;
   kj::Promise<void> queue = kj::READY_NOW;
 
   kj::AsyncOutputStream& ensureStarted(kj::Maybe<uint64_t> size) {
     if (state.is<NotStarted>()) {
       auto& ns = state.get<NotStarted>();
-      auto stream = ns.response.send(ns.status.getId(), ns.status.getTitle(), ns.headers, size);
+      auto stream = ns.response.send(ns.statusCode, ns.statusText, ns.headers, size);
       kj::AsyncOutputStream& ref = *stream;
       state.init<Started>(Started { kj::mv(stream) });
       return ref;
@@ -557,6 +560,13 @@ private:
     }
   }
 };
+
+ByteStream::Client WebSessionBridge::makeHttpResponseStream(
+    uint statusCode, kj::StringPtr statusText,
+    kj::HttpHeaders&& headers,
+    kj::HttpService::Response& response) {
+  return kj::heap<ByteStreamImpl>(statusCode, statusText, kj::mv(headers), response);
+}
 
 template <typename T>
 inline HttpStatusDescriptor::Reader WebSessionBridge::lookupStatus(
@@ -898,7 +908,7 @@ kj::Promise<void> WebSessionBridge::handleResponse(
           case WebSession::Response::Content::Body::STREAM: {
             auto handle = body.getStream();
             auto outStream = kj::heap<ByteStreamImpl>(
-                status, kj::mv(headers), kj::mv(in), out);
+                status.getId(), status.getTitle(), kj::mv(headers), out);
             auto promise = outStream->whenDone();
             contextInitInfo.streamer->fulfill(kj::mv(outStream));
             return promise.attach(kj::mv(handle));

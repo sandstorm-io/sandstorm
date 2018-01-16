@@ -2139,7 +2139,7 @@ private:
     pid_t nodePid = startNode(config, fdBundle);
     int64_t nodeStartTime = getTime();
 
-    pid_t gatewayPid = -1;
+    pid_t gatewayPid = 0;
     if (config.useExperimentalGateway) {
       context.warning("** Starting Gateway...");
       gatewayPid = startGateway(config, fdBundle);

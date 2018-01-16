@@ -55,6 +55,7 @@ public:
 
     kj::HttpHeaderId hAccessControlAllowOrigin;
     kj::HttpHeaderId hAcceptLanguage;
+    kj::HttpHeaderId hCacheControl;
     kj::HttpHeaderId hCookie;
     kj::HttpHeaderId hLocation;
     kj::HttpHeaderId hUserAgent;
@@ -91,9 +92,25 @@ private:
 
   std::map<kj::StringPtr, UiHostEntry> uiHosts;
 
+  struct StaticPublisherEntry {
+    kj::String id;
+    uint generation;
+    kj::TimePoint lastUsed;
+    Supervisor::Client supervisor;
+
+    StaticPublisherEntry(const StaticPublisherEntry&) = delete;
+    StaticPublisherEntry(StaticPublisherEntry&&) = default;
+  };
+
+  std::map<kj::StringPtr, StaticPublisherEntry> staticPublishers;
+
   bool isPurging = false;
 
   kj::Maybe<kj::Own<kj::HttpService>> getUiBridge(kj::HttpHeaders& headers);
+
+  kj::Promise<void> getStaticPublished(
+      kj::StringPtr publicId, kj::StringPtr path, const kj::HttpHeaders& headers,
+      kj::HttpService::Response& response, uint retryCount = 0);
 };
 
 class GatewayTlsManager: private kj::TaskSet::ErrorHandler {

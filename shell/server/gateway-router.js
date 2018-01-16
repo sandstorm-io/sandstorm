@@ -65,6 +65,19 @@ class GatewayRouterImpl {
       });
     });
   }
+
+  getStaticPublishingHost(publicId) {
+    return inMeteor(() => {
+      const grain = Grains.findOne({ publicId: publicId }, { fields: { _id: 1 } });
+      if (grain) {
+        return globalBackend.useGrain(grain._id, supervisor => {
+          return supervisor.keepAlive().then(() => { return { supervisor }; });
+        });
+      } else {
+        throw new Meteor.Error(404, "No such grain for public ID: " + publicId);
+      }
+    });
+  }
 }
 
 makeGatewayRouter = function () {

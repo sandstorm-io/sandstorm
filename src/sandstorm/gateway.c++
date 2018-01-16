@@ -17,14 +17,41 @@
 #include "gateway.h"
 #include <kj/compat/url.h>
 #include <kj/debug.h>
+#include <kj/encoding.h>
+#include <sandstorm/mime.capnp.h>
 #include "util.h"
 
 namespace sandstorm {
+
+static std::map<kj::StringPtr, kj::StringPtr> makeExtensionMap() {
+  std::map<kj::StringPtr, kj::StringPtr> result;
+  for (auto item: *MIME_TYPE_INFO_TABLE) {
+    auto name = item.getName();
+    for (auto ext: item.getExtensions()) {
+      // It appears the list contains extensions prefixed with '*' to indicate that this mime type
+      // can be associated with the extension but is not the preferred mime type for that
+      // extension. So, we should only pay attention to the mapping that doesn't start with '*'.
+      // (For some extensions, there are multiple '*' mappings, so if we don't filter them, we'll
+      // fail the assert here...)
+      if (!ext.startsWith("*")) {
+        KJ_ASSERT(result.insert(std::make_pair(ext, name)).second, ext);
+      }
+    }
+  }
+
+  return result;
+}
+
+static const std::map<kj::StringPtr, kj::StringPtr>& extensionMap() {
+  static const auto result = makeExtensionMap();
+  return result;
+}
 
 GatewayService::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilder)
     : headerTable(headerTableBuilder.getFutureTable()),
       hAccessControlAllowOrigin(headerTableBuilder.add("Access-Control-Allow-Origin")),
       hAcceptLanguage(headerTableBuilder.add("Accept-Language")),
+      hCacheControl(headerTableBuilder.add("Cache-Control")),
       hCookie(headerTableBuilder.add("Cookie")),
       hLocation(headerTableBuilder.add("Location")),
       hUserAgent(headerTableBuilder.add("User-Agent")),
@@ -37,22 +64,28 @@ GatewayService::GatewayService(
       tables(tables), baseUrl(kj::Url::parse(baseUrl, kj::Url::HTTP_PROXY_REQUEST)),
       wildcardHost(wildcardHost) {}
 
+template <typename Key, typename Value>
+static void removeExpired(std::map<Key, Value>& m, kj::TimePoint now, kj::Duration period) {
+  auto iter = m.begin();
+  while (iter != m.end()) {
+    auto next = iter;
+    ++next;
+
+    if (now - iter->second.lastUsed >= period) {
+      m.erase(iter);
+    }
+    iter = next;
+  }
+}
+
 kj::Promise<void> GatewayService::cleanupLoop() {
   static constexpr auto PURGE_PERIOD = 2 * kj::MINUTES;
 
   isPurging = true;
   return timer.afterDelay(PURGE_PERIOD).then([this]() {
     auto now = timer.now();
-    auto iter = uiHosts.begin();
-    while (iter != uiHosts.end()) {
-      auto next = iter;
-      ++next;
-
-      if (now - iter->second.lastUsed >= PURGE_PERIOD) {
-        uiHosts.erase(iter);
-      }
-      iter = next;
-    }
+    removeExpired(uiHosts, now, PURGE_PERIOD);
+    removeExpired(staticPublishers, now, PURGE_PERIOD);
     return cleanupLoop();
   });
 }
@@ -112,9 +145,12 @@ kj::Promise<void> GatewayService::request(
         // TODO(now): Write an error message mentioning lack of cookies.
         return response.sendError(403, "Unauthorized", tables.headerTable);
       }
+    } else if (hostId->size() == 20) {
+      // Handle "public ID"
+      auto promise = getStaticPublished(*hostId, url, headers, response);
+      return promise.attach(kj::mv(*hostId));
     } else {
-      // TODO(soon): Handle "public ID" hosts. Before we can start handling these, we must
-      //   transition to UI hosts being prefixed with "ui-".
+      // TODO(soon): Treat as custom domain, look up sandstorm-www txt record...
     }
   }
 
@@ -257,6 +293,140 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
   }
 
   return kj::addRef(*iter->second.bridge);
+}
+
+kj::Promise<void> GatewayService::getStaticPublished(
+    kj::StringPtr publicId, kj::StringPtr path, const kj::HttpHeaders& headers,
+    kj::HttpService::Response& response, uint retryCount) {
+  static uint generationCounter = 0;
+
+  auto iter = staticPublishers.find(publicId);
+
+  if (iter == staticPublishers.end()) {
+    auto req = router.getStaticPublishingHostRequest();
+    req.setPublicId(publicId);
+
+    StaticPublisherEntry entry {
+      kj::str(publicId),
+      generationCounter++,
+      timer.now(),
+      req.send().getSupervisor()
+    };
+
+    kj::StringPtr key = entry.id;
+
+    auto result = staticPublishers.insert(std::make_pair(key, kj::mv(entry)));
+    KJ_ASSERT(result.second);
+    iter = result.first;
+  } else {
+    iter->second.lastUsed = timer.now();
+  }
+
+  kj::String ownPath;
+
+  // Strip query.
+  KJ_IF_MAYBE(pos, path.findLast('?')) {
+    ownPath = kj::str(path.slice(0, *pos));
+    path = ownPath;
+  }
+
+  // If a directory, open "index.html".
+  if (path.endsWith("/")) {
+    ownPath = kj::str(path, "index.html");
+    path = ownPath;
+  }
+
+  // Strip leading "/".
+  KJ_ASSERT(path.startsWith("/"));
+  path = path.slice(1);
+
+  // URI-decode the rest. Note that this allows filenames to contain spaces and question marks.
+  ownPath = kj::decodeUriComponent(path);
+  path = ownPath;
+
+  kj::HttpHeaders responseHeaders(tables.headerTable);
+
+  // Infer MIME type from content.
+  KJ_IF_MAYBE(dotpos, path.findLast('.')) {
+    auto& exts = extensionMap();
+    auto iter = exts.find(path.slice(*dotpos + 1));
+    if (iter != exts.end()) {
+      kj::StringPtr type = iter->second;
+      if (type.startsWith("text/") ||
+          type == "application/json" ||
+          type == "application/xml" ||
+          type.endsWith("+json") ||
+          type.endsWith("+xml")) {
+        // Probably text.
+        responseHeaders.set(kj::HttpHeaderId::CONTENT_TYPE, kj::str(type, "; charset=UTF-8"));
+      } else {
+        responseHeaders.set(kj::HttpHeaderId::CONTENT_TYPE, type);
+      }
+    } else {
+      responseHeaders.set(kj::HttpHeaderId::CONTENT_TYPE, "application/octet-stream");
+    }
+  }
+
+  responseHeaders.set(tables.hCacheControl, "public, max-age=30");
+
+  if (path == "apps/index.json" ||
+      (path.size() == 62 && path.startsWith("apps/") && path.endsWith(".json")) ||
+      path == "experimental/index.json" ||
+      (path.size() == 70 && path.startsWith("experimental/") && path.endsWith(".json"))) {
+    // TODO(cleanup): Extra special terrible hack: The app index needs to serve these JSON files
+    //   cross-origin. We could almost just make all web sites allow cross-origin since generally
+    //   web publishing is meant to publish public content. There is one case where this is
+    //   problematic, though: sites behind a firewall. Those sites could potentially be read
+    //   by outside sites if CORS is enabled on them. Some day we should make it so apps can
+    //   explicitly opt-in to allowing cross-origin queries but that day is not today.
+    responseHeaders.set(tables.hAccessControlAllowOrigin, "*");
+  }
+
+  // TODO(perf): Automatically gzip text content? (Check Accept-Encoding header first.)
+
+  auto req = iter->second.supervisor.getWwwFileHackRequest();
+  req.setPath(path);
+  req.setStream(WebSessionBridge::makeHttpResponseStream(
+      200, "OK", kj::mv(responseHeaders), response));
+
+  uint oldGeneration = iter->second.generation;
+
+  return req.send()
+      .then([this,&response,path](capnp::Response<Supervisor::GetWwwFileHackResults>&& result)
+          -> kj::Promise<void> {
+    switch (result.getStatus()) {
+      case Supervisor::WwwFileStatus::FILE:
+        // Done already.
+        return kj::READY_NOW;
+      case Supervisor::WwwFileStatus::DIRECTORY: {
+        kj::HttpHeaders headers(tables.headerTable);
+        auto newPath = kj::str(path, '/');
+        auto body = kj::str("redirect: ", newPath);
+        headers.set(kj::HttpHeaderId::CONTENT_TYPE, "text/plain; charset=UTF-8");
+        headers.set(kj::HttpHeaderId::LOCATION, kj::mv(newPath));
+        headers.set(tables.hCacheControl, "public, max-age=30");
+        auto stream = response.send(303, "See Other", headers, uint64_t(0));
+        auto promise = stream->write(body.begin(), body.size());
+        return promise.attach(kj::mv(body));
+      }
+      case Supervisor::WwwFileStatus::NOT_FOUND:
+        return response.sendError(404, "Not Found", tables.headerTable);
+    }
+
+    KJ_UNREACHABLE;
+  }).attach(kj::mv(ownPath))
+      .catch_([this,publicId,path,&headers,&response,retryCount,oldGeneration](kj::Exception&& e)
+              -> kj::Promise<void> {
+    if (e.getType() == kj::Exception::Type::DISCONNECTED && retryCount < 2) {
+      auto iter = staticPublishers.find(publicId);
+      if (iter != staticPublishers.end() && iter->second.generation == oldGeneration) {
+        staticPublishers.erase(iter);
+      }
+      return getStaticPublished(publicId, path, headers, response, retryCount + 1);
+    } else {
+      return kj::mv(e);
+    }
+  });
 }
 
 // =======================================================================================

@@ -64,7 +64,8 @@ public:
   };
 
   GatewayService(kj::Timer& timer, kj::HttpClient& shellHttp, GatewayRouter::Client router,
-                 Tables& tables, kj::StringPtr baseUrl, kj::StringPtr wildcardHost);
+                 Tables& tables, kj::StringPtr baseUrl, kj::StringPtr wildcardHost,
+                 kj::Maybe<kj::StringPtr> termsPublicId);
 
   kj::Promise<void> cleanupLoop();
   // Must run this to purge expired capabilities.
@@ -84,6 +85,7 @@ private:
 
   kj::Url baseUrl;
   WildcardMatcher wildcardHost;
+  kj::Maybe<kj::StringPtr> termsPublicId;
 
   struct UiHostEntry {
     kj::TimePoint lastUsed;

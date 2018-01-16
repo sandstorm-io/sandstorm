@@ -59,10 +59,11 @@ GatewayService::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilder)
 
 GatewayService::GatewayService(
     kj::Timer& timer, kj::HttpClient& shellHttp, GatewayRouter::Client router,
-    Tables& tables, kj::StringPtr baseUrl, kj::StringPtr wildcardHost)
+    Tables& tables, kj::StringPtr baseUrl, kj::StringPtr wildcardHost,
+    kj::Maybe<kj::StringPtr> termsPublicId)
     : timer(timer), shellHttp(kj::newHttpService(shellHttp)), router(kj::mv(router)),
       tables(tables), baseUrl(kj::Url::parse(baseUrl, kj::Url::HTTP_PROXY_REQUEST)),
-      wildcardHost(wildcardHost) {}
+      wildcardHost(wildcardHost), termsPublicId(termsPublicId) {}
 
 template <typename Key, typename Value>
 static void removeExpired(std::map<Key, Value>& m, kj::TimePoint now, kj::Duration period) {
@@ -151,6 +152,26 @@ kj::Promise<void> GatewayService::request(
       return promise.attach(kj::mv(*hostId));
     } else {
       // TODO(soon): Treat as custom domain, look up sandstorm-www txt record...
+    }
+  } else KJ_IF_MAYBE(host, headers.get(kj::HttpHeaderId::HOST)) {
+    if (*host == baseUrl.host) {
+      KJ_IF_MAYBE(tpi, termsPublicId) {
+        auto parsedUrl = kj::Url::parse(url, kj::Url::HTTP_REQUEST);
+        if (parsedUrl.path.size() > 0 &&
+            (parsedUrl.path[0] == "terms" || parsedUrl.path[0] == "privacy")) {
+          // Request for /terms or /privacy, and we've configured a special public ID for that.
+          // (This is a backwards-compatibility hack mainly for Sandstorm Oasis, where an nginx
+          // proxy used to map these paths to static assets, but we want to replace nginx entirely
+          // with the gateway.)
+          kj::String ownUrl;
+          if (parsedUrl.path.size() == 1 && !parsedUrl.hasTrailingSlash) {
+            // Extra special hack: Fake a ".html" extension for MIME type sniffing.
+            ownUrl = kj::str("/", parsedUrl.path[0], ".html");
+            url = ownUrl;
+          }
+          return getStaticPublished(*tpi, url, headers, response);
+        }
+      }
     }
   }
 
@@ -447,6 +468,8 @@ kj::Promise<void> GatewayTlsManager::listenHttps(kj::ConnectionReceiver& port) {
 }
 
 void GatewayTlsManager::setKeys(kj::StringPtr key, kj::StringPtr certChain) {
+  KJ_LOG(INFO, "Loading TLS key into Gateway");
+
   kj::TlsKeypair keypair {
     kj::TlsPrivateKey(key, privateKeyPassword),
     kj::TlsCertificate(certChain)

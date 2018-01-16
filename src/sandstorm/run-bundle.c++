@@ -1251,6 +1251,7 @@ private:
     bool useExperimentalGateway = false;
     uint smtpListenPort = 30025;
     kj::Maybe<kj::String> privateKeyPassword = nullptr;
+    kj::Maybe<kj::String> termsPublicId = nullptr;
   };
 
   kj::String updateFile;
@@ -1742,6 +1743,8 @@ private:
         config.useExperimentalGateway = value == "true" || value == "yes";
       } else if (key == "PRIVATE_KEY_PASSWORD") {
         config.privateKeyPassword = kj::mv(value);
+      } else if (key == "TERMS_PAGE_PUBLIC_ID") {
+        config.termsPublicId = kj::mv(value);
       }
     }
 
@@ -2517,7 +2520,9 @@ private:
 
       GatewayService::Tables gatewayTables(headerTableBuilder);
       GatewayService service(io.provider->getTimer(), *shellHttp, kj::cp(router),
-                             gatewayTables, config.rootUrl, config.wildcardHost);
+                             gatewayTables, config.rootUrl, config.wildcardHost,
+                             config.termsPublicId.map(
+                                 [](const kj::String& str) -> kj::StringPtr { return str; }));
 
       auto headerTable = headerTableBuilder.build();
       kj::HttpServer server(io.provider->getTimer(), *headerTable, service);

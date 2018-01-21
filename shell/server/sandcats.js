@@ -196,6 +196,15 @@ Sandcats.storeNewKeyAndCsr = (hostname, basePath) => {
   };
 };
 
+function storeSandcatsCertToDb() {
+  globalDb.collections.settings.upsert({_id: "tlsKeys"}, { $set: {
+    value: {
+      key: sandcats.state.key,
+      certChain: [ sandcats.state.cert, sandcats.state.ca ].join("\n")
+    }
+  }});
+}
+
 Sandcats.renewHttpsCertificateIfNeeded = () => {
   const renewHttpsCertificate = () => {
     const hostname = Url.parse(process.env.ROOT_URL).hostname;
@@ -246,6 +255,11 @@ Sandcats.renewHttpsCertificateIfNeeded = () => {
           } else {
             // Call the sandcats rekeying function.
             global.sandcats.rekey();
+
+            if (process.env.EXPERIMENTAL_GATEWAY) {
+              storeSandcatsCertToDb();
+            }
+
             // That's that.
             console.log("Successfully renewed HTTPS certificate into",
                         filenames.responseFilename);
@@ -275,6 +289,14 @@ Sandcats.renewHttpsCertificateIfNeeded = () => {
 };
 
 Sandcats.initializeSandcats = () => {
+  if (process.env.EXPERIMENTAL_GATEWAY) {
+    // In gateway mode, the startup code doesn't automatically initialize sandcats, so call rekey()
+    // now to make that happen.
+    global.sandcats.rekey();
+
+    storeSandcatsCertToDb();
+  }
+
   const i = HOSTNAME.lastIndexOf(SANDCATS_HOSTNAME);
   if (i < 0) {
     console.error("SANDCATS_BASE_DOMAIN is configured but your HOSTNAME doesn't appear to contain it:",

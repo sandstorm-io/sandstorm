@@ -16,6 +16,7 @@
 
 Sandcats = {};
 
+import { inMeteor } from "/imports/server/async-helpers.js";
 import { pki, asn1 } from "node-forge";
 const querystring = Npm.require("querystring");
 const https = Npm.require("https");
@@ -257,7 +258,7 @@ Sandcats.renewHttpsCertificateIfNeeded = () => {
             global.sandcats.rekey();
 
             if (process.env.EXPERIMENTAL_GATEWAY) {
-              storeSandcatsCertToDb();
+              inMeteor(storeSandcatsCertToDb);
             }
 
             // That's that.
@@ -284,7 +285,16 @@ Sandcats.renewHttpsCertificateIfNeeded = () => {
 
   if (global.sandcats.shouldGetAnotherCertificate()) {
     console.log("renewHttpsCertificateIfNeeded: Happily choosing to renew certificate.");
-    return renewHttpsCertificate();
+    renewHttpsCertificate();
+  }
+
+  if (process.env.EXPERIMENTAL_GATEWAY &&
+      (global.sandcats.state.nextRekeyTime !== null) &&
+      (Date.now() >= global.sandcats.state.nextRekeyTime)) {
+    // In gateway mode, we need to check periodically if it's time to swap certificates and then
+    // do it.
+    global.sandcats.rekey();
+    inMeteor(storeSandcatsCertToDb);
   }
 };
 

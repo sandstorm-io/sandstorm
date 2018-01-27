@@ -97,6 +97,7 @@ function monkeypatchHttpForGateway() {
   //   non-optional, refactoring this code is tricky because it's hard to test. For now we let it
   //   be and just give the main shell code the minimal hook it needs to invoke this code as
   //   necessary.
+  initSandcats();
 }
 
 function monkeypatchHttpAndHttps() {

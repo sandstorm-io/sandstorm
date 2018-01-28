@@ -212,7 +212,7 @@ isLoginCredential: Boolean
                 {{#if (isAdmin account)}}
                   {{_ (con txt "role.user.isAdmin")}}
                 {{else}}
-                  {{_ "role.user.isNotUser"}}
+                  {{_ (con txt "role.user.isNotUser")}}
                 {{/if}}
               </button>
             </form>

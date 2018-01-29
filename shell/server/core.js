@@ -630,6 +630,10 @@ function dropInternal(db, sturdyRef, ownerPattern) {
   }
 }
 
+const startupCompleted = new Promise((resolve, reject) => {
+  Meteor.startup(resolve);
+});
+
 class SandstormCoreFactoryImpl {
   constructor(db) {
     this.db = db;
@@ -640,9 +644,9 @@ class SandstormCoreFactoryImpl {
   }
 
   getGatewayRouter() {
-    // TODO(now): Do not allow gateway to connect until startup has completed (especially
-    //   migrations).
-    return { router: makeGatewayRouter() };
+    return startupCompleted.then(() => {
+      return { router: makeGatewayRouter() };
+    });
   }
 }
 

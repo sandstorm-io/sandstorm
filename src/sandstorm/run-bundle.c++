@@ -2537,7 +2537,10 @@ private:
             // server monitor will then restart the gateway).
             KJ_FAIL_REQUIRE("backend died; gateway aborting too");
           }));
-      for (auto port: config.ports) {
+
+      // Listen on main port.
+      if (config.ports.size() > 0) {
+        auto port = config.ports[0];
         auto listener = fdBundle.consume(port, *io.lowLevelProvider);
         bool isHttps = false;
         KJ_IF_MAYBE(p, config.httpsPort) {
@@ -2545,6 +2548,21 @@ private:
         }
         auto promise = isHttps ? tlsManager.listenHttps(*listener) : server.listenHttp(*listener);
         promises = promises.exclusiveJoin(promise.attach(kj::mv(listener)));
+      }
+
+      if (config.ports.size() > 1) {
+        // Listen on other ports.
+        auto altPortService = kj::heap<AltPortService>(
+            service, *headerTable, config.rootUrl, config.wildcardHost);
+        auto altPortServer = kj::heap<kj::HttpServer>(
+            io.provider->getTimer(), *headerTable, *altPortService);
+        altPortServer = altPortServer.attach(kj::mv(altPortService));
+        for (auto port: config.ports.slice(1, config.ports.size())) {
+          auto listener = fdBundle.consume(port, *io.lowLevelProvider);
+          auto promise = altPortServer->listenHttp(*listener);
+          promises = promises.exclusiveJoin(promise.attach(kj::mv(listener)));
+        }
+        promises = promises.attach(kj::mv(altPortServer));
       }
 
       // Close anything we didn't consume.

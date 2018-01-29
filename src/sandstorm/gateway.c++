@@ -229,6 +229,10 @@ kj::Maybe<kj::String> WildcardMatcher::match(kj::StringPtr host) {
   }
 }
 
+kj::String WildcardMatcher::makeHost(kj::StringPtr hostId) {
+  return kj::str(prefix, hostId, suffix);
+}
+
 kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders& headers) {
   kj::Vector<kj::String> forwardedCookies;
   kj::String sessionId;
@@ -528,6 +532,76 @@ void GatewayTlsManager::taskFailed(kj::Exception&& exception) {
   if (exception.getType() != kj::Exception::Type::DISCONNECTED) {
     KJ_LOG(ERROR, exception);
   }
+}
+
+// =======================================================================================
+
+AltPortService::AltPortService(kj::HttpService& inner, kj::HttpHeaderTable& headerTable,
+                               kj::StringPtr baseUrlParam, kj::StringPtr wildcardHost)
+    : inner(inner), headerTable(headerTable),
+      baseUrl(kj::Url::parse(baseUrlParam)),
+      baseHostWithoutPort(stripPort(baseUrl.host)),
+      wildcardHost(kj::str(wildcardHost)),
+      wildcardHostWithoutPort(stripPort(wildcardHost)) {}
+
+kj::Promise<void> AltPortService::request(
+    kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
+    kj::AsyncInputStream& requestBody, Response& response) {
+  if (maybeRedirect(url, headers, response)) {
+    return kj::READY_NOW;
+  } else {
+    return inner.request(method, url, headers, requestBody, response);
+  }
+}
+
+kj::Promise<void> AltPortService::openWebSocket(
+    kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) {
+  if (maybeRedirect(url, headers, response)) {
+    return kj::READY_NOW;
+  } else {
+    return inner.openWebSocket(url, headers, response);
+  }
+}
+
+kj::String AltPortService::stripPort(kj::StringPtr hostport) {
+  for (const char* ptr = hostport.end(); ptr != hostport.begin(); --ptr) {
+    if (ptr[-1] == ':' && *ptr != '\0') {
+      // Saw port!
+      return kj::str(kj::arrayPtr(hostport.begin(), ptr - 1));
+    }
+
+    if (ptr[-1] < '0' || '9' < ptr[-1]) {
+      // Not a digit, can't be part of port.
+      break;
+    }
+  }
+
+  // Did not find a port; just return the whole thing.
+  return kj::str(hostport);
+}
+
+bool AltPortService::maybeRedirect(kj::StringPtr url, const kj::HttpHeaders& headers,
+                                   Response& response) {
+  KJ_IF_MAYBE(host, headers.get(kj::HttpHeaderId::HOST)) {
+    auto stripped = stripPort(*host);
+    if (stripped == baseHostWithoutPort) {
+      KJ_ASSERT(url.startsWith("/"));
+      kj::HttpHeaders responseHeaders(headerTable);
+      responseHeaders.set(kj::HttpHeaderId::LOCATION,
+          kj::str(baseUrl.scheme, "://", baseUrl.host, url));
+      response.send(301, "Moved Permanently", responseHeaders, uint64_t(0));
+      return true;
+    } else KJ_IF_MAYBE(hostId, wildcardHostWithoutPort.match(stripped)) {
+      KJ_ASSERT(url.startsWith("/"));
+      kj::HttpHeaders responseHeaders(headerTable);
+      responseHeaders.set(kj::HttpHeaderId::LOCATION,
+          kj::str(baseUrl.scheme, "://", wildcardHost.makeHost(*hostId), url));
+      response.send(301, "Moved Permanently", responseHeaders, uint64_t(0));
+      return true;
+    }
+  }
+
+  return false;
 }
 
 }  // namespace sandstorm

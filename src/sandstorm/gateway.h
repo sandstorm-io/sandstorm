@@ -34,6 +34,8 @@ public:
   kj::Maybe<kj::String> match(const kj::HttpHeaders& headers);
   kj::Maybe<kj::String> match(kj::StringPtr host);
 
+  kj::String makeHost(kj::StringPtr hostId);
+
 private:
   kj::String prefix;
   kj::String suffix;
@@ -162,6 +164,34 @@ private:
   void taskFailed(kj::Exception&& exception) override;
 
   class TlsKeyCallbackImpl;
+};
+
+class AltPortService: public kj::HttpService {
+  // Wrapper that should be exported on ports other than the main port. This will redirect
+  // clients to the main port where appropriate.
+
+public:
+  AltPortService(kj::HttpService& inner, kj::HttpHeaderTable& headerTable,
+                 kj::StringPtr baseUrl, kj::StringPtr wildcardHost);
+
+  kj::Promise<void> request(
+      kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
+      kj::AsyncInputStream& requestBody, Response& response) override;
+
+  kj::Promise<void> openWebSocket(
+      kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) override;
+
+private:
+  kj::HttpService& inner;
+  kj::HttpHeaderTable& headerTable;
+  kj::Url baseUrl;
+  kj::String baseHostWithoutPort;
+  WildcardMatcher wildcardHost;
+  WildcardMatcher wildcardHostWithoutPort;
+
+  static kj::String stripPort(kj::StringPtr hostport);
+
+  bool maybeRedirect(kj::StringPtr url, const kj::HttpHeaders& headers, Response& response);
 };
 
 }  // namespace sandstorm

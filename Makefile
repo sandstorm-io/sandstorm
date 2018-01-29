@@ -254,7 +254,7 @@ clobber-deps:
 
 deps/boringssl/build/Makefile: | deps/boringssl
 	@mkdir -p deps/boringssl/build
-	cd deps/boringssl/build && cmake ..
+	cd deps/boringssl/build && cmake .. -DCMAKE_BUILD_TYPE=Release
 
 deps/boringssl/build/ssl/libssl.a: deps/boringssl/build/Makefile
 	cd deps/boringssl/build && make -j$(PARALLEL)

@@ -1090,7 +1090,6 @@
     "stats": {
       "name": "Statistieken",
       "subtext": "Gebruiksstatistieken voor deze server bekijken.",
-      "subtext": "Gebruiksstatistieken voor deze server bekijken.",
       "header": {
         "date": "datum",
         "users": "gebruikers",

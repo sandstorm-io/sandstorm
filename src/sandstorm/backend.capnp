@@ -187,6 +187,9 @@ interface GatewayRouter {
     # Sets the current TLS key and certificate, which will be used for all incoming connections
     # until setKeys() is called again.
     #
+    # If `key` and `certChain` are null, the shell is informing the gateway that no TLS keys are
+    # configured at all.
+    #
     # If PRIVATE_KEY_PASSWORD is set in sandstorm.conf, then `key` is expected to be encrypted with
     # that password. This provides a little bit of additional security in that the password is
     # never revealed to the shell process nor to Mongo.

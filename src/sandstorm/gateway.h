@@ -121,8 +121,10 @@ class GatewayTlsManager: private kj::TaskSet::ErrorHandler {
   // Manages TLS keys and connections.
 
 public:
-  GatewayTlsManager(kj::HttpServer& server, kj::Maybe<kj::StringPtr> privateKeyPassword)
-      : GatewayTlsManager(server, privateKeyPassword, kj::newPromiseAndFulfiller<void>()) {}
+  GatewayTlsManager(kj::HttpServer& server, kj::NetworkAddress& smtpServer,
+                    kj::Maybe<kj::StringPtr> privateKeyPassword)
+      : GatewayTlsManager(server, smtpServer, privateKeyPassword,
+                          kj::newPromiseAndFulfiller<void>()) {}
   // Password, if provided, must remain valid while GatewayTlsManager exists.
 
   kj::Promise<void> listenHttps(kj::ConnectionReceiver& port);
@@ -131,7 +133,11 @@ public:
   //
   // No connections will be accepted until setKeys() has been called at least once.
 
+  kj::Promise<void> listenSmtp(kj::ConnectionReceiver& port);
+  kj::Promise<void> listenSmtps(kj::ConnectionReceiver& port);
+
   void setKeys(kj::StringPtr key, kj::StringPtr certChain);
+  void unsetKeys();
 
   kj::Promise<void> subscribeKeys(GatewayRouter::Client gatewayRouter);
 
@@ -145,9 +151,10 @@ private:
   };
 
   kj::HttpServer& server;
+  kj::NetworkAddress& smtpServer;
   kj::Maybe<kj::StringPtr> privateKeyPassword;
 
-  kj::Own<RefcountedTlsContext> currentTls;
+  kj::Maybe<kj::Own<RefcountedTlsContext>> currentTls;
   // Not valid until setKeys() has been called.
 
   kj::ForkedPromise<void> ready;
@@ -156,10 +163,13 @@ private:
 
   kj::TaskSet tasks;
 
-  GatewayTlsManager(kj::HttpServer& server, kj::Maybe<kj::StringPtr> privateKeyPassword,
+  GatewayTlsManager(kj::HttpServer& server, kj::NetworkAddress& smtpServer,
+                    kj::Maybe<kj::StringPtr> privateKeyPassword,
                     kj::PromiseFulfillerPair<void> readyPaf);
 
   kj::Promise<void> listenLoop(kj::ConnectionReceiver& port);
+  kj::Promise<void> listenSmtpLoop(kj::ConnectionReceiver& port);
+  kj::Promise<void> listenSmtpsLoop(kj::ConnectionReceiver& port);
 
   void taskFailed(kj::Exception&& exception) override;
 

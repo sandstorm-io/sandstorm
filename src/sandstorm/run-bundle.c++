@@ -1775,6 +1775,9 @@ private:
       SHELL_HTTP,
       // Connection over which shell accepts HTTP connections (from the gateway).
 
+      SHELL_SMTP,
+      // Connection over which shell accepts SMTP connections (from the gateway).
+
       SHELL_BACKEND,
       // Connection over which shell connects to backend.
 
@@ -1784,9 +1787,9 @@ private:
 
     FdBundle(const Config& config,
              std::map<uint, kj::AutoCloseFd> inherited = std::map<uint, kj::AutoCloseFd>())
-        : usingGateway(config.useExperimentalGateway), smtpListenPort(config.smtpListenPort),
+        : usingGateway(config.useExperimentalGateway),
           // when not in gateway: STDERR + 1 (fd after STDERR) + HTTP ports + SMTP port
-          // when in gateway: STDERR + 1 (fd after STDERR) + SHELL_HTTP + SHELL_BACKEND + SMTP port
+          // when in gateway: STDERR + 1 (fd after STDERR) + SHELL_HTTP + SHELL_BACKEND + SHELL_SMTP
           minFd(usingGateway ? STDERR_FILENO + 4 : STDERR_FILENO + 1 + config.ports.size() + 1) {
       int targetFd = STDERR_FILENO + 1;
       openPort(config, config.smtpListenPort, targetFd++, inherited);
@@ -1796,6 +1799,7 @@ private:
 
       if (usingGateway) {
         links.insert(std::make_pair(SHELL_HTTP, newLink()));
+        links.insert(std::make_pair(SHELL_SMTP, newLink()));
         links.insert(std::make_pair(SHELL_BACKEND, newLink()));
         links.insert(std::make_pair(GATEWAY_BACKEND, newLink()));
       } else {
@@ -1823,7 +1827,7 @@ private:
       if (usingGateway) {
         KJ_SYSCALL(dup2(links[SHELL_HTTP].server, STDERR_FILENO + 1));
         KJ_SYSCALL(dup2(links[SHELL_BACKEND].client, STDERR_FILENO + 2));
-        KJ_SYSCALL(dup2(ports[smtpListenPort].fd, STDERR_FILENO + 3));
+        KJ_SYSCALL(dup2(links[SHELL_SMTP].server, STDERR_FILENO + 3));
       } else {
         for (auto& port: ports) {
           KJ_SYSCALL(dup2(port.second.fd, port.second.targetFd));
@@ -1837,7 +1841,7 @@ private:
         auto builder = kj::heapArrayBuilder<kj::AutoCloseFd>(3);
         builder.add(kj::mv(links[SHELL_HTTP].server));
         builder.add(kj::mv(links[SHELL_BACKEND].client));
-        builder.add(kj::mv(ports[smtpListenPort].fd));
+        builder.add(kj::mv(links[SHELL_SMTP].server));
         return builder.finish();
       } else {
         auto result = kj::heapArray<kj::AutoCloseFd>(ports.size());
@@ -1884,7 +1888,6 @@ private:
     };
 
     bool usingGateway;
-    uint smtpListenPort;
     int minFd;
     std::map<uint, FdInfo> ports;
 
@@ -2527,7 +2530,10 @@ private:
       auto headerTable = headerTableBuilder.build();
       kj::HttpServer server(io.provider->getTimer(), *headerTable, service);
 
-      GatewayTlsManager tlsManager(server, config.privateKeyPassword
+      auto shellSmptConn = fdBundle.consumeClient(FdBundle::SHELL_SMTP, *io.lowLevelProvider);
+      kj::CapabilityStreamNetworkAddress shellSmtpAddr(*io.provider, *shellSmptConn);
+
+      GatewayTlsManager tlsManager(server, shellSmtpAddr, config.privateKeyPassword
           .map([](const kj::String& str) -> kj::StringPtr { return str; }));
 
       kj::Promise<void> promises = service.cleanupLoop()
@@ -2563,6 +2569,14 @@ private:
           promises = promises.exclusiveJoin(promise.attach(kj::mv(listener)));
         }
         promises = promises.attach(kj::mv(altPortServer));
+      }
+
+      // Listen on SMTP port.
+      {
+        auto port = config.smtpListenPort;
+        auto listener = fdBundle.consume(port, *io.lowLevelProvider);
+        auto promise = tlsManager.listenSmtp(*listener);
+        promises = promises.exclusiveJoin(promise.attach(kj::mv(listener)));
       }
 
       // Close anything we didn't consume.

@@ -189,7 +189,15 @@ Meteor.startup(function () {
     },
   });
 
-  server.listen({ fd: parseInt(process.env.SANDSTORM_SMTP_LISTEN_HANDLE) });
+  if (process.env.EXPERIMENTAL_GATEWAY === "local") {
+    // Gateway running locally, connecting over unix socketpair via SCM_RIGHTS transfer.
+    global.sandstormListenCapabilityStream(
+        parseInt(process.env.SANDSTORM_SMTP_LISTEN_HANDLE), socket => {
+      server.connect(socket);
+    });
+  } else {
+    server.listen({ fd: parseInt(process.env.SANDSTORM_SMTP_LISTEN_HANDLE) });
+  }
 });
 
 hackSendEmail = (session, email) => {

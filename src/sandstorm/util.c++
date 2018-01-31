@@ -188,6 +188,14 @@ kj::Promise<void> pump(kj::InputStream& input, ByteStream::Client stream) {
   });
 }
 
+kj::Promise<void> pumpDuplex(kj::Own<kj::AsyncIoStream> client,
+                             kj::Own<kj::AsyncIoStream> server) {
+  auto promise = client->pumpTo(*server)
+      .then([](size_t) -> kj::Promise<void> { return kj::NEVER_DONE; })
+      .exclusiveJoin(server->pumpTo(*client).ignoreResult());
+  return promise.attach(kj::mv(client), kj::mv(server));
+}
+
 kj::ArrayPtr<const char> trimArray(kj::ArrayPtr<const char> slice) {
   while (slice.size() > 0 && isspace(slice[0])) {
     slice = slice.slice(1, slice.size());

@@ -43,14 +43,21 @@ class GatewayRouterImpl {
           });
         }
 
+        let anyAdded = false;
+
         const observer = globalDb.collections.settings.find({_id: "tlsKeys"})
             .observe({
           added(keys) {
             setKeys(keys.value.key, keys.value.certChain);
+            anyAdded = true;
           },
 
           changed(keys) {
             setKeys(keys.value.key, keys.value.certChain);
+          },
+
+          removed() {
+            setKeys(null, null);
           },
 
           // Since we never call resolve() or reject(), V8 will happily garbage-collect all the
@@ -62,6 +69,11 @@ class GatewayRouterImpl {
           // GC is terrible.
           dontGcMe: resolve
         });
+
+        if (!anyAdded) {
+          // Inform gateway that there are no keys.
+          setKeys(null, null);
+        }
       });
     });
   }

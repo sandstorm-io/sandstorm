@@ -20,6 +20,7 @@
 #include <kj/encoding.h>
 #include <sandstorm/mime.capnp.h>
 #include "util.h"
+#include "smtp-proxy.h"
 
 namespace sandstorm {
 
@@ -457,9 +458,10 @@ kj::Promise<void> GatewayService::getStaticPublished(
 // =======================================================================================
 
 GatewayTlsManager::GatewayTlsManager(
-    kj::HttpServer& server, kj::Maybe<kj::StringPtr> privateKeyPassword,
-    kj::PromiseFulfillerPair<void> readyPaf)
+    kj::HttpServer& server, kj::NetworkAddress& smtpServer,
+    kj::Maybe<kj::StringPtr> privateKeyPassword, kj::PromiseFulfillerPair<void> readyPaf)
     : server(server),
+      smtpServer(smtpServer),
       privateKeyPassword(privateKeyPassword),
       ready(readyPaf.promise.fork()),
       readyFulfiller(kj::mv(readyPaf.fulfiller)),
@@ -468,6 +470,18 @@ GatewayTlsManager::GatewayTlsManager(
 kj::Promise<void> GatewayTlsManager::listenHttps(kj::ConnectionReceiver& port) {
   return ready.addBranch().then([this, &port]() {
     return listenLoop(port);
+  });
+}
+
+kj::Promise<void> GatewayTlsManager::listenSmtp(kj::ConnectionReceiver& port) {
+  return ready.addBranch().then([this, &port]() {
+    return listenSmtpLoop(port);
+  });
+}
+
+kj::Promise<void> GatewayTlsManager::listenSmtps(kj::ConnectionReceiver& port) {
+  return ready.addBranch().then([this, &port]() {
+    return listenSmtpsLoop(port);
   });
 }
 
@@ -487,6 +501,11 @@ void GatewayTlsManager::setKeys(kj::StringPtr key, kj::StringPtr certChain) {
   readyFulfiller->fulfill();
 }
 
+void GatewayTlsManager::unsetKeys() {
+  currentTls = nullptr;
+  readyFulfiller->fulfill();
+}
+
 class GatewayTlsManager::TlsKeyCallbackImpl: public GatewayRouter::TlsKeyCallback::Server {
 public:
   TlsKeyCallbackImpl(GatewayTlsManager& parent): parent(parent) {}
@@ -494,7 +513,11 @@ public:
 protected:
   kj::Promise<void> setKeys(SetKeysContext context) override {
     auto params = context.getParams();
-    parent.setKeys(params.getKey(), params.getCertChain());
+    if (params.hasKey()) {
+      parent.setKeys(params.getKey(), params.getCertChain());
+    } else {
+      parent.unsetKeys();
+    }
     return kj::READY_NOW;
   }
 
@@ -519,12 +542,52 @@ kj::Promise<void> GatewayTlsManager::subscribeKeys(GatewayRouter::Client gateway
 
 kj::Promise<void> GatewayTlsManager::listenLoop(kj::ConnectionReceiver& port) {
   return port.accept().then([this, &port](kj::Own<kj::AsyncIoStream>&& stream) {
-    auto tls = kj::addRef(*currentTls);
-    tasks.add(tls->tls.wrapServer(kj::mv(stream))
-        .then([this](kj::Own<kj::AsyncIoStream>&& encrypted) {
-      return server.listenHttp(kj::mv(encrypted));
-    }).attach(kj::mv(tls)));
+    KJ_IF_MAYBE(t, currentTls) {
+      auto tls = kj::addRef(**t);
+      tasks.add(tls->tls.wrapServer(kj::mv(stream))
+          .then([this](kj::Own<kj::AsyncIoStream>&& encrypted) {
+        return server.listenHttp(kj::mv(encrypted));
+      }).attach(kj::mv(tls)));
+    } else {
+      KJ_LOG(ERROR, "refused HTTPS connection because no TLS keys are configured");
+    }
     return listenLoop(port);
+  });
+}
+
+kj::Promise<void> GatewayTlsManager::listenSmtpLoop(kj::ConnectionReceiver& port) {
+  return port.accept().then([this, &port](kj::Own<kj::AsyncIoStream>&& stream) {
+    KJ_IF_MAYBE(t, currentTls) {
+      auto tls = kj::addRef(**t);
+      tasks.add(proxySmtp(tls->tls, kj::mv(stream), smtpServer).attach(kj::mv(tls)));
+    } else {
+      // No keys configured. Accept SMTP without STARTTLS support.
+      return smtpServer.connect()
+          .then([stream=kj::mv(stream)](kj::Own<kj::AsyncIoStream>&& server) mutable {
+        return pumpDuplex(kj::mv(stream), kj::mv(server));
+      });
+    }
+    return listenSmtpLoop(port);
+  });
+}
+
+kj::Promise<void> GatewayTlsManager::listenSmtpsLoop(kj::ConnectionReceiver& port) {
+  return port.accept().then([this, &port](kj::Own<kj::AsyncIoStream>&& stream) {
+    KJ_IF_MAYBE(t, currentTls) {
+      auto tls = kj::addRef(**t);
+      auto& tlsRef = tls->tls;
+      tasks.add(tls->tls.wrapServer(kj::mv(stream))
+          .then([this,&tlsRef](kj::Own<kj::AsyncIoStream>&& encrypted) {
+        return smtpServer.connect()
+            .then([this,&tlsRef,encrypted=kj::mv(encrypted)]
+                  (kj::Own<kj::AsyncIoStream>&& server) mutable {
+          return pumpDuplex(kj::mv(encrypted), kj::mv(server));
+        });
+      }).attach(kj::mv(tls)));
+    } else {
+      KJ_LOG(ERROR, "refused SMTPS connection because no TLS keys are configured");
+    }
+    return listenSmtpsLoop(port);
   });
 }
 

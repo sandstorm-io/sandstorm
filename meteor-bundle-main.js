@@ -52,12 +52,25 @@ function monkeypatchHttpForGateway() {
   // Monkey-patch the HTTP server module to receive connections over a unix socket on FD 3 instead
   // of listening the usual way.
 
-  // Node.js has no public API for receiving file descriptors via SCM_RIGHTS on a unix pipe.
-  // However, it does have a *private* API for this, which it uses to implement child_process.
-  // We use the private API here. This could break when we update Node. If so, that's our fault.
-  // But we pin our Node version, so this should be easy to control. Also, this interface hasn't
-  // changed in forever.
-  var Pipe = process.binding('pipe_wrap').Pipe;
+  if (process.env.EXPERIMENTAL_GATEWAY === "local") {
+    // Node.js has no public API for receiving file descriptors via SCM_RIGHTS on a unix pipe.
+    // However, it does have a *private* API for this, which it uses to implement child_process.
+    // We use the private API here. This could break when we update Node. If so, that's our fault.
+    // But we pin our Node version, so this should be easy to control. Also, this interface hasn't
+    // changed in forever.
+    var Pipe = process.binding('pipe_wrap').Pipe;
+
+    global.sandstormListenCapabilityStream = function (fd, cb) {
+      var pipe = new Pipe(true);
+      pipe.open(fd);
+      pipe.onread = function (size, buf, handle) {
+        if (handle) {
+          cb(new net.Socket({ handle: handle }));
+        }
+      };
+      pipe.readStart();
+    }
+  }
 
   var oldListen = http.Server.prototype.listen;
   var alreadyListened = false;
@@ -72,15 +85,9 @@ function monkeypatchHttpForGateway() {
 
       if (process.env.EXPERIMENTAL_GATEWAY === "local") {
         // Gateway running locally, connecting over unix socketpair via SCM_RIGHTS transfer.
-        var pipe = new Pipe(true);
-        var httpServer = this;
-        pipe.open(firstInheritedFd);
-        pipe.onread = function (size, buf, handle) {
-          if (handle) {
-            httpServer.emit("connection", new net.Socket({ handle: handle }));
-          }
-        };
-        pipe.readStart();
+        global.sandstormListenCapabilityStream(firstInheritedFd, socket => {
+          this.emit("connection", socket);
+        });
         (cb || host)();
       } else {
         // Gateway running remotely, connecting over a regular socket.

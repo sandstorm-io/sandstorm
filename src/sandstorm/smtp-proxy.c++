@@ -120,6 +120,10 @@ private:
   // lines to 1000 characters (aka 998 characters plus CRLF).
 };
 
+bool startsWithCaseInsensitive(kj::StringPtr text, kj::StringPtr prefix) {
+  return strncasecmp(text.begin(), prefix.begin(), prefix.size()) == 0;
+}
+
 class SmtpProxySession {
 public:
   SmtpProxySession(kj::TlsContext& tls, kj::Own<kj::AsyncIoStream> client,
@@ -146,11 +150,11 @@ private:
   kj::Promise<void> waitClient() {
     return client->readLine()
         .then([this](kj::String line) {
-      if (line.startsWith("EHLO")) {
+      if (startsWithCaseInsensitive(line, "EHLO")) {
         auto promise = server->write(line.begin(), line.size());
         return promise.attach(kj::mv(line))
             .then([this]() { return waitServerEhlo(); });
-      } else if (line.startsWith("STARTTLS")) {
+      } else if (startsWithCaseInsensitive(line, "STARTTLS")) {
         // Yay security!
         return tls.wrapServer(kj::mv(client))
             .then([this](kj::Own<kj::AsyncIoStream> tlsClient) {

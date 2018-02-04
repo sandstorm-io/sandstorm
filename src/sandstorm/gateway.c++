@@ -562,10 +562,10 @@ kj::Promise<void> GatewayTlsManager::listenSmtpLoop(kj::ConnectionReceiver& port
       tasks.add(proxySmtp(tls->tls, kj::mv(stream), smtpServer).attach(kj::mv(tls)));
     } else {
       // No keys configured. Accept SMTP without STARTTLS support.
-      return smtpServer.connect()
+      tasks.add(smtpServer.connect()
           .then([stream=kj::mv(stream)](kj::Own<kj::AsyncIoStream>&& server) mutable {
         return pumpDuplex(kj::mv(stream), kj::mv(server));
-      });
+      }));
     }
     return listenSmtpLoop(port);
   });

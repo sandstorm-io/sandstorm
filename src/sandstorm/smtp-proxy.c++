@@ -156,8 +156,11 @@ private:
             .then([this]() { return waitServerEhlo(); });
       } else if (startsWithCaseInsensitive(line, "STARTTLS")) {
         // Yay security!
-        return tls.wrapServer(kj::mv(client))
+        constexpr kj::StringPtr REPLY = "220 Thank you for being secure\r\n"_kj;
+        return client->write(REPLY.begin(), REPLY.size())
+            .then([this]() { return tls.wrapServer(kj::mv(client)); })
             .then([this](kj::Own<kj::AsyncIoStream> tlsClient) {
+          // TODO(someday): In theory we should actually start an all-new connection here.
           return pumpDuplex(kj::mv(tlsClient), kj::mv(server));
         });
       } else {

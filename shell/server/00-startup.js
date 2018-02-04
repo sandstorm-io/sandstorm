@@ -128,60 +128,6 @@ if ("replicaNumber" in Meteor.settings) {
 import Fiber from "fibers";
 Fiber.poolSize = 1e9;
 
-// Special debugging enabled on Blackrock only.
-if ("replicaNumber" in Meteor.settings) {
-  console.warn("Fiber bomb defense enabled.");
-
-  // TEMPORARY: Monitor the number of fibers created and kill the process any time it goes over
-  //   2000. Unfortunately, due to the aforementioned linked list in ThreadDataTable, the process
-  //   will become unreasonably slow once the list gets this big. It's better to kill the process
-  //   so that it restarts fresh rather than to let the Sandstorm server become unresponsive.
-  // TODO(soon): Remove this when the bug is fixed.
-  setInterval(() => {
-    if (Fiber.fibersCreated > 2000) {
-      console.error(
-          "Process has allocated more than 2000 concurrent fibers. Due to " +
-          "https://bugs.chromium.org/p/v8/issues/detail?id=5338 it will become extremely slow " +
-          "unless we restart it. ABORTING");
-      process.abort();
-    }
-  }, 5000);
-
-  // Let's also log some stack traces when fiber count gets high so we can find out what's
-  // happening.
-  const TOO_MANY_FIBERS = 1000;       // Start sampling when we have more than this many fibers.
-  const FIBER_SAMPLING_PERIOD = 100;  // Sample one stack per this many fibers created.
-
-  let sampleCounter = 0;
-  function sampleStackIfTooManyFibers() {
-    if (Fiber.fibersCreated > TOO_MANY_FIBERS && sampleCounter++ % FIBER_SAMPLING_PERIOD == 0) {
-      const stack = new Error().stack;
-      console.warn("There are too many fibers!", stack);
-    }
-  }
-
-  // Sample calls to inMeteor().
-  onInMeteor(sampleStackIfTooManyFibers);
-
-  // Also take samples from various Meteor infrastructure that schedules fibers.
-  function addFiberSampling(prototype, functionName) {
-    const old = prototype[functionName];
-    prototype[functionName] = function () {
-      sampleStackIfTooManyFibers();
-      return old.apply(this, arguments);
-    };
-  }
-
-  addFiberSampling(Meteor._SynchronousQueue.prototype, "runTask");
-  addFiberSampling(Meteor._SynchronousQueue.prototype, "queueTask");
-  addFiberSampling(Meteor, "bindEnvironment");
-}
-
-if ("replicaNumber" in Meteor.settings) {
-  // On Blackrock, dump debug info about local capability counts every minute.
-  Meteor.setInterval(Capnp.dumpLocalCapTypeCounts, 60000);
-}
-
 OAuth._checkRedirectUrlOrigin = function (redirectUrl) {
   // Mostly copied from meteor/packages/oauth/oauth_server.js
   // We override this method in order to support login from stand-alone grain domains.

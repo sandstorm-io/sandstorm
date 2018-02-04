@@ -908,7 +908,7 @@ kj::Promise<void> WebSessionBridge::handleResponse(
           case WebSession::Response::Content::Body::STREAM: {
             auto handle = body.getStream();
             auto outStream = kj::heap<ByteStreamImpl>(
-                status.getId(), status.getTitle(), kj::mv(headers), out);
+                status.getId(), status.getTitle(), headers.clone(), out);
             auto promise = outStream->whenDone();
             contextInitInfo.streamer->fulfill(kj::mv(outStream));
             return promise.attach(kj::mv(handle));

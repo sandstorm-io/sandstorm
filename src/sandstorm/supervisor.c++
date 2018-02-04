@@ -1537,8 +1537,8 @@ public:
     KJ_IF_MAYBE(c, childInfo) {
       auto req = kj::mv(external).castAs<SystemPersistent>()
           .addRequirementsRequest();
-      // TODO(now): Also merge requirements from exportPolicy.
-      // TODO(now): We actually have to make several addRequirements() calls to send across all
+      // TODO(soon): Also merge requirements from exportPolicy.
+      // TODO(soon): We actually have to make several addRequirements() calls to send across all
       //   the observers for our parents, ugh.
       req.adoptRequirements(kj::downcast<RequirementsMembranePolicy>(importPolicy)
           .collectRequirements(capnp::Orphanage::getForMessageContaining(

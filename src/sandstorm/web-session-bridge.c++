@@ -319,8 +319,6 @@ kj::Promise<void> WebSessionBridge::request(
       });
     }
 
-    // TODO(now): WebDAV methods.
-
     default:
       return response.sendError(501, "Not Implemented", tables.headerTable);
   }

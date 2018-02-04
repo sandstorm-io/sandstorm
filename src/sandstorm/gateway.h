@@ -110,6 +110,9 @@ private:
 
   bool isPurging = false;
 
+  kj::Promise<void> sendError(
+      uint statusCode, kj::StringPtr statusText, Response& response, kj::StringPtr message);
+
   kj::Maybe<kj::Own<kj::HttpService>> getUiBridge(kj::HttpHeaders& headers);
 
   kj::Promise<void> getStaticPublished(

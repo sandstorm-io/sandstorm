@@ -98,8 +98,6 @@ kj::Promise<void> GatewayService::request(
   KJ_ASSERT(isPurging, "forgot to call cleanupLoop()");
 
   KJ_IF_MAYBE(hostId, wildcardHost.match(headers)) {
-    // TODO(now): Redirect HTTP -> HTTPS when needed. Requires X-Forwarded-Proto?
-
     if (*hostId == "static") {
       // TODO(soon): Static asset hosting.
     } else if (hostId->startsWith("api-")) {
@@ -144,8 +142,10 @@ kj::Promise<void> GatewayService::request(
         auto promise = bridge->get()->request(method, url, *headersCopy, requestBody, response);
         return promise.attach(kj::mv(bridge), kj::mv(headersCopy));
       } else {
-        // TODO(now): Write an error message mentioning lack of cookies.
-        return response.sendError(403, "Unauthorized", tables.headerTable);
+        return sendError(403, "Unauthorized", response,
+            "Unauthorized due to missing cookie. Please make sure cookies\n"
+            "are enabled, and that no settings or extensions are blocking\n"
+            "cookies in iframes.\n"_kj);
       }
     } else if (hostId->size() == 20) {
       // Handle "public ID"
@@ -185,8 +185,6 @@ kj::Promise<void> GatewayService::request(
 kj::Promise<void> GatewayService::openWebSocket(
     kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) {
   KJ_IF_MAYBE(hostId, wildcardHost.match(headers)) {
-    // TODO(now): Redirect HTTP -> HTTPS when needed. Requires X-Forwarded-Proto?
-
     if (hostId->startsWith("api-")) {
       // TODO(soon): API hosts.
     } else if (hostId->startsWith("ui-")) {
@@ -195,14 +193,25 @@ kj::Promise<void> GatewayService::openWebSocket(
         auto promise = bridge->get()->openWebSocket(url, *headersCopy, response);
         return promise.attach(kj::mv(bridge), kj::mv(headersCopy));
       } else {
-        // TODO(now): Write an error message mentioning lack of cookies.
-        return response.sendError(403, "Unauthorized", tables.headerTable);
+        return sendError(403, "Unauthorized", response,
+            "Unauthorized due to missing cookie. Please make sure cookies\n"
+            "are enabled, and that no settings or extensions are blocking\n"
+            "cookies in iframes.\n"_kj);
       }
     }
   }
 
   // Fall back to shell.
   return shellHttp->openWebSocket(url, headers, response);
+}
+
+kj::Promise<void> GatewayService::sendError(
+    uint statusCode, kj::StringPtr statusText, Response& response, kj::StringPtr message) {
+  kj::HttpHeaders respHeaders(tables.headerTable);
+  respHeaders.set(kj::HttpHeaderId::CONTENT_TYPE, "text/plain; charset=UTF-8");
+  auto stream = response.send(403, "Unauthorized", respHeaders, message.size());
+  auto promise = stream->write(message.begin(), message.size());
+  return promise.attach(kj::mv(stream));
 }
 
 WildcardMatcher::WildcardMatcher(kj::StringPtr wildcardHost) {

@@ -385,7 +385,9 @@ const authorizedAsAdmin = function (token, userId) {
 
 Meteor.publish("admin", function (token) {
   if (!authorizedAsAdmin(token, this.userId)) return [];
-  return Settings.find();
+
+  // Admin is allowed to see all settings... but we redact the TLS key out of caution.
+  return Settings.find({ _id: { $ne: "tlsKeys" } });
 });
 
 Meteor.publish("adminServiceConfiguration", function (token) {

@@ -1,3 +1,8 @@
+### v0.225 (2018-02-03)
+- The front-end HTTP proxy has been rewritten from JavaScript (in Node.js) to C++. The new code path should be faster and more memory-efficient. In this release, it is only enabled if you add `EXPERIMENTAL_GATEWAY=true` to your `/opt/sandstorm/sandstorm.conf`. In a future release, this will become the default and the old implementation will be removed. The new implementation is turned on for Sandstorm Oasis by default.
+- Improved Finnish and French translations.
+- Various i18n templating bugfixes.
+
 ### v0.224 (2018-01-06)
 - Added Finnish translation contributed by Lauri Ojansivu.
 - Added French translation contributed by Benoit Renault and Thierry Pasquier.

@@ -19,6 +19,8 @@
 #include <capnp/schema.h>
 #include <sodium/randombytes.h>
 #include <time.h>
+#include <kj/compat/url.h>
+#include <kj/compat/gzip.h>
 
 namespace sandstorm {
 
@@ -33,8 +35,11 @@ static HttpStatusDescriptor::Reader getHttpStatusAnnotation(
                  enumerant.getProto().getName());
 }
 
+static inline ByteStream::Client newNoStreamingByteStream();
+
 WebSessionBridge::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilder)
     : headerTable(headerTableBuilder.getFutureTable()),
+      hAccessControlExposeHeaders(headerTableBuilder.add("Access-Control-Expose-Headers")),
       hAccept(headerTableBuilder.add("Accept")),
       hAcceptEncoding(headerTableBuilder.add("Accept-Encoding")),
       hContentDisposition(headerTableBuilder.add("Content-Disposition")),
@@ -45,6 +50,13 @@ WebSessionBridge::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilde
       hIfMatch(headerTableBuilder.add("If-Match")),
       hIfNoneMatch(headerTableBuilder.add("If-None-Match")),
       hSecWebSocketProtocol(headerTableBuilder.add("Sec-WebSocket-Protocol")),
+
+      hDav(headerTableBuilder.add("DAV")),
+      hDepth(headerTableBuilder.add("Depth")),
+      hDestination(headerTableBuilder.add("Destination")),
+      hLockToken(headerTableBuilder.add("Lock-Token")),
+      hOverwrite(headerTableBuilder.add("Overwrite")),
+
       successCodeTable(KJ_MAP(enumerant,
             capnp::Schema::from<WebSession::Response::SuccessCode>().getEnumerants()) {
         return getHttpStatusAnnotation(enumerant);
@@ -155,10 +167,222 @@ kj::Promise<void> WebSessionBridge::request(
       });
     }
 
+    case kj::HttpMethod::COPY: {
+      auto req = session.copyRequest();
+      req.setPath(path);
+      req.setDestination(davDestination(headers));
+      req.setNoOverwrite(davNoOverwrite(headers));
+      req.setShallow(davShallow(headers));
+      auto streamer = initContext(req.initContext(), headers);
+      return handleResponse(req.send(), kj::mv(streamer), response);
+    }
+
+    case kj::HttpMethod::LOCK: {
+      return davXmlContent(headers, requestBody, response)
+          .then([this,path,&headers,&response](kj::Maybe<kj::String> body) -> kj::Promise<void> {
+        KJ_IF_MAYBE(b, body) {
+          auto req = session.lockRequest();
+          req.setPath(path);
+          req.setXmlContent(*b);
+          req.setShallow(davShallow(headers));
+          auto streamer = initContext(req.initContext(), headers);
+          return handleResponse(req.send(), kj::mv(streamer), response);
+        } else {
+          return kj::READY_NOW;
+        }
+      });
+    }
+
+    case kj::HttpMethod::MKCOL: {
+      return requestBody.readAllBytes()
+          .then([this,path,&headers,&response](kj::Array<byte> data) {
+        auto req = session.mkcolRequest();
+        req.setPath(path);
+        auto content = req.initContent();
+        content.setContent(data);
+        initContent(content, headers);
+        auto streamer = initContext(req.initContext(), headers);
+        return handleResponse(req.send(), kj::mv(streamer), response);
+      });
+    }
+
+    case kj::HttpMethod::MOVE: {
+      auto req = session.moveRequest();
+      req.setPath(path);
+      req.setDestination(davDestination(headers));
+      req.setNoOverwrite(davNoOverwrite(headers));
+      auto streamer = initContext(req.initContext(), headers);
+      return handleResponse(req.send(), kj::mv(streamer), response);
+    }
+
+    case kj::HttpMethod::PROPFIND: {
+      return davXmlContent(headers, requestBody, response)
+          .then([this,path,&headers,&response](kj::Maybe<kj::String> body) -> kj::Promise<void> {
+        KJ_IF_MAYBE(b, body) {
+          auto req = session.propfindRequest();
+          req.setPath(path);
+          req.setXmlContent(*b);
+          req.setDepth(davPropfindDepth(headers));
+          auto streamer = initContext(req.initContext(), headers);
+          return handleResponse(req.send(), kj::mv(streamer), response);
+        } else {
+          return kj::READY_NOW;
+        }
+      });
+    }
+
+    case kj::HttpMethod::PROPPATCH: {
+      return davXmlContent(headers, requestBody, response)
+          .then([this,path,&headers,&response](kj::Maybe<kj::String> body) -> kj::Promise<void> {
+        KJ_IF_MAYBE(b, body) {
+          auto req = session.proppatchRequest();
+          req.setPath(path);
+          req.setXmlContent(*b);
+          auto streamer = initContext(req.initContext(), headers);
+          return handleResponse(req.send(), kj::mv(streamer), response);
+        } else {
+          return kj::READY_NOW;
+        }
+      });
+    }
+
+    case kj::HttpMethod::UNLOCK: {
+      auto req = session.unlockRequest();
+      req.setPath(path);
+      KJ_IF_MAYBE(token, headers.get(tables.hLockToken)) {
+        req.setLockToken(*token);
+      }
+      auto streamer = initContext(req.initContext(), headers);
+      return handleResponse(req.send(), kj::mv(streamer), response);
+    }
+
+    case kj::HttpMethod::ACL: {
+      return davXmlContent(headers, requestBody, response)
+          .then([this,path,&headers,&response](kj::Maybe<kj::String> body) -> kj::Promise<void> {
+        KJ_IF_MAYBE(b, body) {
+          auto req = session.aclRequest();
+          req.setPath(path);
+          req.setXmlContent(*b);
+          auto streamer = initContext(req.initContext(), headers);
+          return handleResponse(req.send(), kj::mv(streamer), response);
+        } else {
+          return kj::READY_NOW;
+        }
+      });
+    }
+
+    case kj::HttpMethod::REPORT: {
+      return requestBody.readAllBytes()
+          .then([this,path,&headers,&response](kj::Array<byte> data) {
+        auto req = session.reportRequest();
+        req.setPath(path);
+        auto content = req.initContent();
+        content.setContent(data);
+        initContent(content, headers);
+        auto streamer = initContext(req.initContext(), headers);
+        return handleResponse(req.send(), kj::mv(streamer), response);
+      });
+    }
+
+    case kj::HttpMethod::OPTIONS: {
+      auto req = session.optionsRequest();
+      req.setPath(path);
+      auto streamer = initContext(req.initContext(), headers);
+      // TODO(cleanup): Refactor initContext() so that we can avoid creating a stream here.
+      streamer.streamer->fulfill(newNoStreamingByteStream());
+      return req.send()
+          .then([this,&response](capnp::Response<WebSession::Options> options) mutable {
+        kj::HttpHeaders respHeaders(tables.headerTable);
+        kj::Vector<kj::StringPtr> dav;
+        if (options.getDavClass1()) dav.add("1");
+        if (options.getDavClass2()) dav.add("2");
+        if (options.getDavClass3()) dav.add("3");
+        for (auto ext: options.getDavExtensions()) {
+          // TODO(soon): Validate extension names?
+          dav.add(ext);
+        }
+
+        if (!dav.empty()) {
+          respHeaders.set(tables.hDav, kj::strArray(dav, ", "));
+          respHeaders.set(tables.hAccessControlExposeHeaders, "DAV");
+        }
+
+        response.send(200, "OK", respHeaders, uint64_t(0));
+      }, [this,&response](kj::Exception&& e) {
+        if (e.getType() == kj::Exception::Type::UNIMPLEMENTED) {
+          // Nothing to say.
+          kj::HttpHeaders respHeaders(tables.headerTable);
+          response.send(200, "OK", respHeaders, uint64_t(0));
+        } else {
+          kj::throwRecoverableException(kj::mv(e));
+        }
+      });
+    }
+
     // TODO(now): WebDAV methods.
 
     default:
       return response.sendError(501, "Not Implemented", tables.headerTable);
+  }
+}
+
+kj::String WebSessionBridge::davDestination(const kj::HttpHeaders& headers) {
+  auto dest = KJ_REQUIRE_NONNULL(headers.get(tables.hDestination), "missing destination");
+
+  // We allow host-relative URLs even though the spec doesn't. If an absolute URL is given then we
+  // must verify that the host matches.
+  if (!dest.startsWith("/")) {
+    // Absolute URL.
+    auto url = kj::Url::parse(dest);
+
+    auto host = KJ_ASSERT_NONNULL(headers.get(kj::HttpHeaderId::HOST));
+    KJ_REQUIRE(url.host == host, "DAV 'Destination' header must point to same host");
+
+    dest = url.toString(kj::Url::HTTP_REQUEST);
+  }
+
+  // Remove leading '/'.
+  return kj::str(dest.slice(1));
+}
+
+bool WebSessionBridge::davNoOverwrite(const kj::HttpHeaders& headers) {
+  auto str = headers.get(tables.hOverwrite).orDefault("t");
+  return str == "f" || str == "F";
+}
+
+bool WebSessionBridge::davShallow(const kj::HttpHeaders& headers) {
+  return headers.get(tables.hDepth).orDefault("1") == "0";
+}
+
+WebSession::PropfindDepth WebSessionBridge::davPropfindDepth(const kj::HttpHeaders& headers) {
+  auto depth = headers.get(tables.hDepth).orDefault("2");
+  return depth == "0" ? WebSession::PropfindDepth::ZERO
+       : depth == "1" ? WebSession::PropfindDepth::ONE
+                      : WebSession::PropfindDepth::INFINITY_;
+}
+
+kj::Promise<kj::Maybe<kj::String>> WebSessionBridge::davXmlContent(
+    const kj::HttpHeaders& headers, kj::AsyncInputStream& body, Response& response) {
+  auto type = headers.get(kj::HttpHeaderId::CONTENT_TYPE)
+      .orDefault("application/xml; charset=UTF-8");
+
+  auto pos = type.findFirst('/').orDefault(0);
+  if (type.slice(pos) != "/xml" && !type.slice(pos).startsWith("/xml;")) {
+    // Wrong type.
+    return response.sendError(415, "Unsupported media type.", tables.headerTable)
+        .then([]() -> kj::Maybe<kj::String> { return nullptr; });
+  }
+
+  KJ_IF_MAYBE(enc, headers.get(tables.hContentEncoding)) {
+    KJ_REQUIRE(*enc == "gzip", "unknown Content-Encoding", *enc);
+
+    auto zstream = kj::heap<kj::GzipAsyncInputStream>(body);
+    auto promise = zstream->readAllText();
+    return promise.attach(kj::mv(zstream))
+        .then([](kj::String str) -> kj::Maybe<kj::String> { return kj::mv(str); });
+  } else {
+    return body.readAllText()
+        .then([](kj::String str) -> kj::Maybe<kj::String> { return kj::mv(str); });
   }
 }
 
@@ -416,6 +640,10 @@ public:
 };
 
 }  // namespace
+
+static inline ByteStream::Client newNoStreamingByteStream() {
+  return kj::heap<NoStreamingByteStream>();
+}
 
 kj::Promise<void> WebSessionBridge::openWebSocket(
     kj::StringPtr path, const kj::HttpHeaders& headers, WebSocketResponse& response) {
@@ -1038,7 +1266,7 @@ void WebSessionBridge::setETag(kj::HttpHeaders& headers, WebSession::ETag::Reade
 }
 
 kj::String WebSessionBridge::escape(kj::StringPtr value) {
-  kj::Vector<char> chars(value.size());
+  kj::Vector<char> chars(value.size() + 1);
 
   for (char c: value) {
     switch (c) {
@@ -1051,6 +1279,8 @@ kj::String WebSessionBridge::escape(kj::StringPtr value) {
     }
     chars.add(c);
   }
+
+  chars.add('\0');
 
   return kj::String(chars.releaseAsArray());
 }

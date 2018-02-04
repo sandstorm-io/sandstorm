@@ -37,6 +37,7 @@ public:
 
     const kj::HttpHeaderTable& headerTable;
 
+    kj::HttpHeaderId hAccessControlExposeHeaders;
     kj::HttpHeaderId hAccept;
     kj::HttpHeaderId hAcceptEncoding;
     kj::HttpHeaderId hContentDisposition;
@@ -47,6 +48,13 @@ public:
     kj::HttpHeaderId hIfMatch;
     kj::HttpHeaderId hIfNoneMatch;
     kj::HttpHeaderId hSecWebSocketProtocol;
+
+    kj::HttpHeaderId hDav;
+    kj::HttpHeaderId hDepth;
+    kj::HttpHeaderId hDestination;
+    kj::HttpHeaderId hLockToken;
+    kj::HttpHeaderId hOverwrite;
+    // WebDAV
 
     kj::Array<HttpStatusDescriptor::Reader> successCodeTable;
     kj::Array<HttpStatusDescriptor::Reader> errorCodeTable;
@@ -90,6 +98,13 @@ private:
 
   kj::Promise<void> sendError(kj::HttpService::Response& response,
                               uint statusCode, kj::StringPtr statusText);
+
+  kj::String davDestination(const kj::HttpHeaders& headers);
+  bool davNoOverwrite(const kj::HttpHeaders& headers);
+  bool davShallow(const kj::HttpHeaders& headers);
+  WebSession::PropfindDepth davPropfindDepth(const kj::HttpHeaders& headers);
+  kj::Promise<kj::Maybe<kj::String>> davXmlContent(
+      const kj::HttpHeaders& headers, kj::AsyncInputStream& body, Response& response);
 
   struct ContextInitInfo {
     kj::Own<kj::PromiseFulfiller<ByteStream::Client>> streamer;

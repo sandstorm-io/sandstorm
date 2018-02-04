@@ -34,9 +34,9 @@ METEOR_DEV_BUNDLE=$(shell ./find-meteor-dev-bundle.sh)
 NODEJS=$(METEOR_DEV_BUNDLE)/bin/node
 NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
 WARNINGS=-Wall -Wextra -Wglobal-constructors -Wno-sign-compare -Wno-unused-parameter
-CXXFLAGS2=-std=c++1y $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -DKJ_HAS_OPENSSL -pthread -fPIC -I$(NODE_HEADERS)
+CXXFLAGS2=-std=c++1y $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -DKJ_HAS_OPENSSL -DKJ_HAS_ZLIB -pthread -fPIC -I$(NODE_HEADERS)
 CFLAGS2=$(CFLAGS) -pthread -fPIC
-LIBS2=$(LIBS) deps/boringssl/build/ssl/libssl.a deps/boringssl/build/crypto/libcrypto.a -pthread
+LIBS2=$(LIBS) deps/boringssl/build/ssl/libssl.a deps/boringssl/build/crypto/libcrypto.a -lz -pthread
 
 define color
   printf '\033[0;34m==== $1 ====\033[0m\n'

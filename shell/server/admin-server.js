@@ -361,6 +361,21 @@ Meteor.methods({
 
     this.connection.sandstormDb.setPreinstalledApps(appAndPackageIds);
   },
+
+  setTlsKeys: function (keys) {
+    checkAuth();
+    check(keys, {
+      key: String,
+      certChain: String
+    });
+
+    if (currentTlsKeysCallback) {
+      // Validate by calling setKeys() directly.
+      currentTlsKeysCallback.setKeys(keys.key, keys.certChain).await();
+    }
+
+    Settings.upsert({ _id: "tlsKeys" }, { $set: { value: keys } });
+  },
 });
 
 const authorizedAsAdmin = function (token, userId) {
@@ -370,7 +385,9 @@ const authorizedAsAdmin = function (token, userId) {
 
 Meteor.publish("admin", function (token) {
   if (!authorizedAsAdmin(token, this.userId)) return [];
-  return Settings.find();
+
+  // Admin is allowed to see all settings... but we redact the TLS key out of caution.
+  return Settings.find({ _id: { $ne: "tlsKeys" } });
 });
 
 Meteor.publish("adminServiceConfiguration", function (token) {

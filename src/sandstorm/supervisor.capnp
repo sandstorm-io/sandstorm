@@ -55,20 +55,14 @@ interface Supervisor {
   # OBSOLETE: We used to pull the grain size from the supervisor. Now the supervisor pushes the
   #   size through SandstormCore.
 
-  restore @5 (ref :SupervisorObjectId, requirements :List(MembraneRequirement), parentToken :Data)
+  restore @5 (ref :SupervisorObjectId, obsolete :List(MembraneRequirement), parentToken :Data)
           -> (cap :Capability);
   # Wraps `MainView.restore()`. Can also restore capabilities hosted by the supervisor.
   #
-  # `requirements` lists any conditions which, if they become untrue, should cause the capability --
-  # and any future capabilities which pass through it -- to be revoked. The supervisor creates a
-  # membrane around the returned capability which will be revoked if any of these requirements
-  # fail. Additionally, the membrane will ensure that any capabilities save()d after passing
-  # through this membrane have these requirements applied as well.
-  #
-  # (Typically, `requirements` is empty or contains one entry: a `permissionsHeld` requirement
-  # against the grain that is restoring the capability (in order to implement the
-  # `requiredPermissions` argument of SandstormCore.restore()). `requirements` should NOT contain
-  # a requirement that `parentToken` be valid; this is implied.)
+  # `obsolete` will always be an empty list. (Sandstorm will call `addRequirements()` immediately
+  # after restore() if needed. Passing the list to restore() was removed because the supervisor
+  # has no way of observing whether the requirements are still valid. `addRequirements()` provides
+  # a mechanism for this.)
   #
   # `parentToken` is the API token restored to get this capability. The receiver will want to keep
   # this in memory in order to pass to `SandstormCore.makeChildToken()` later, if the live
@@ -154,28 +148,10 @@ interface SandstormCore {
   # Get the notification target to use for notifications relating to the grain itself, e.g.
   # presence of wake locks.
 
-  checkRequirements @4 (requirements :List(MembraneRequirement))
-                    -> (observer :RequirementObserver);
-  # Verifies that all the requirements in the list are met, throwing an exception if one or more
-  # are not met.
-
-  interface RequirementObserver {
-    observe @0 ();
-    # Does not return as long as the requirements remains met. If at some point a requirement is
-    # broken, throws an exception. When implementing a membrane based on this, after an exception
-    # is thrown, the membrane should begin throwing the same exception from all methods called
-    # through it.
-    #
-    # The caller may cancel this call via normal Cap'n Proto cancellation. (The callee must
-    # implement cancellation correctly.)
-    #
-    # Note that the callee may choose to pessimistically throw a DISCONNECTED exception if the
-    # requirements *might* have changed (but might not have). This will naturally force the
-    # application to re-restore() all capabilities which will lead to a full requirement check
-    # being performed. Thus, the implementation of RequirementObserver need not actually remember
-    # the exact requirement list, but only enough information to detect when they _might_ have
-    # been broken.
-  }
+  obsoleteCheckRequirements @4 ();
+  # OBSOLETE: This was never implemented, and wouldn't have worked correctly as specified.
+  #   (It involved an RPC that hangs until something happens, which implicitly requires the ability
+  #   for the server to receive call cancellations, which doesn't exist in node-capnp.)
 
   backgroundActivity @7 (event :Activity.ActivityEvent);
   # Implements SandstormApi.backgroundActivity().
@@ -235,10 +211,29 @@ interface SystemPersistent extends(Persistent(Data, ApiTokenOwner)) {
   # The token itself is arbitrary random bytes, not ASCII text (this differs from API tokens
   # created for the purpose of HTTP APIs).
 
-  addRequirements @0 (requirements :List(MembraneRequirement)) -> (cap :SystemPersistent);
+  interface RevocationObserver {
+    dropWhenRevoked @0 (handle :Util.Handle);
+    # Holds on to `handle` until revocation occurs, then drops it.
+  }
+
+  addRequirements @0 (requirements :List(MembraneRequirement), observer :RevocationObserver)
+                  -> (cap :SystemPersistent);
   # Returns a new version of this same capability with the given requirements added to the
   # conditions under which the capability may be revoked. Usually, the caller then calls `save()`
   # on the new capability.
+  #
+  # `observer` is an object that watches for the requirements to become invalid. When that happens,
+  # it drops any handles registered with it. `observer` itself should be held by `cap`, such that
+  # dropping `cap` causes `observer` to be dropped transitively (this allows the observer to stop
+  # observing when no longer needed).
+  #
+  # This call is actually supported on *all* capabilities that are proxied through the supervisor,
+  # not just persistent ones.
+  #
+  # TODO(someday): This method should be supported by all capabilities within the Sansdtorm realm,
+  #   by having every endpoint implement the appropriate membrane. SystemPersistent should probably
+  #   be renamed and split from `Persistent` -- the inheritance heirarchy can be adjusted without
+  #   breaking compatibility.
 }
 
 interface PersistentHandle extends(SystemPersistent, Util.Handle) {}

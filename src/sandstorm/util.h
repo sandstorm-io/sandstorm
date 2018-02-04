@@ -109,6 +109,9 @@ kj::Promise<void> pump(kj::AsyncInputStream& input, ByteStream::Client stream);
 kj::Promise<void> pump(kj::InputStream& input, ByteStream::Client stream);
 // Read from `input`, write to `output`, until EOF.
 
+kj::Promise<void> pumpDuplex(kj::Own<kj::AsyncIoStream> client, kj::Own<kj::AsyncIoStream> server);
+// Pump streams in both directions until the server disconnects or either party throws.
+
 class StructyMessage {
   // Helper for constructing a message to be passed to the kernel composed of a bunch of structs
   // back-to-back.

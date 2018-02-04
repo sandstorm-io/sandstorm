@@ -1211,7 +1211,7 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
   // `onInvalidated` is an optional callback. If provided, it will be called when the result
   // has been invalidated. If `onValidated` is provided, the result of `grainPermissions` will
   // have a `observeHandle` field, containing an object with a `stop()` method that must be
-  // called once the computation becomes so longer relevant.
+  // called once the computation becomes no longer relevant.
 
   check(db, SandstormDb);
   check(vertex, vertexPattern);

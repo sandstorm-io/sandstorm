@@ -671,7 +671,9 @@ Meteor.startup(() => {
     });
   });
 
-  listenOnAlternatePorts();
+  if (!process.env.EXPERIMENTAL_GATEWAY) {
+    listenOnAlternatePorts();
+  }
 });
 
 const errorTxtMapping = {};

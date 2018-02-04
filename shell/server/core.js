@@ -441,10 +441,36 @@ const makeSaveTemplateForChild = function (db, parentToken, requirements, parent
 
   if (requirements) {
     // Append additional requirements requested by caller.
+    requirements = requirements.filter(req => {
+      // Filter out redundant requirement that the parent token is valid.
+      return req.tokenValid !== saveTemplate.parentToken;
+    });
+
     saveTemplate.requirements = (saveTemplate.requirements || []).concat(requirements);
   }
 
   return saveTemplate;
+};
+
+class DummyObserver {
+  constructor() {
+    this.revokers = [];
+  }
+
+  close() {
+    if (this.revokers) {
+      this.revokers.forEach(revoker => revoker.close());
+      this.revokers = null;
+    }
+  }
+
+  dropWhenRevoked(revoker) {
+    if (this.revokers) {
+      this.revokers.push(revoker);
+    } else {
+      revoker.close();
+    }
+  }
 };
 
 restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenInfo,
@@ -525,12 +551,22 @@ restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenI
       token.objectId.appRef = new Buffer(token.objectId.appRef);
     }
 
+    // TODO(security): Actually observe requirements. For now, we only arrange to drop the revoker
+    //   when the observer is dropped.
+    const observer = new DummyObserver();
+
     // Ensure the grain is running, then restore the capability.
-    return waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
+    const cap = waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
       // Note that in this case it is the supervisor's job to implement SystemPersistent, so we
       // don't generate a saveTemplate here.
-      return supervisor.restore(token.objectId, requirements, new Buffer(originalToken, "utf8"));
-    }));
+      let promise = supervisor.restore(token.objectId, [], new Buffer(originalToken, "utf8"));
+      if (requirements.length > 0) {
+        promise = promise.cap.castAs(SystemPersistent).addRequirements(requirements, observer);
+      }
+      return promise;
+    })).cap;
+
+    return { cap };
   } else {
     // Construct a template ApiToken for use if the restored capability is save()d later.
     const saveTemplate = makeSaveTemplateForChild(db, originalToken, requirements, originalTokenInfo);
@@ -594,6 +630,10 @@ function dropInternal(db, sturdyRef, ownerPattern) {
   }
 }
 
+const startupCompleted = new Promise((resolve, reject) => {
+  Meteor.startup(resolve);
+});
+
 class SandstormCoreFactoryImpl {
   constructor(db) {
     this.db = db;
@@ -601,6 +641,12 @@ class SandstormCoreFactoryImpl {
 
   getSandstormCore(grainId) {
     return { core: makeSandstormCore(this.db, grainId) };
+  }
+
+  getGatewayRouter() {
+    return startupCompleted.then(() => {
+      return { router: makeGatewayRouter() };
+    });
   }
 }
 

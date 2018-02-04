@@ -16,6 +16,7 @@
 
 Sandcats = {};
 
+import { inMeteor } from "/imports/server/async-helpers.js";
 import { pki, asn1 } from "node-forge";
 const querystring = Npm.require("querystring");
 const https = Npm.require("https");
@@ -196,6 +197,15 @@ Sandcats.storeNewKeyAndCsr = (hostname, basePath) => {
   };
 };
 
+function storeSandcatsCertToDb() {
+  globalDb.collections.settings.upsert({_id: "tlsKeys"}, { $set: {
+    value: {
+      key: sandcats.state.key,
+      certChain: [ sandcats.state.cert, sandcats.state.ca ].join("\n")
+    }
+  }});
+}
+
 Sandcats.renewHttpsCertificateIfNeeded = () => {
   const renewHttpsCertificate = () => {
     const hostname = Url.parse(process.env.ROOT_URL).hostname;
@@ -246,6 +256,11 @@ Sandcats.renewHttpsCertificateIfNeeded = () => {
           } else {
             // Call the sandcats rekeying function.
             global.sandcats.rekey();
+
+            if (process.env.EXPERIMENTAL_GATEWAY) {
+              inMeteor(storeSandcatsCertToDb);
+            }
+
             // That's that.
             console.log("Successfully renewed HTTPS certificate into",
                         filenames.responseFilename);
@@ -270,11 +285,28 @@ Sandcats.renewHttpsCertificateIfNeeded = () => {
 
   if (global.sandcats.shouldGetAnotherCertificate()) {
     console.log("renewHttpsCertificateIfNeeded: Happily choosing to renew certificate.");
-    return renewHttpsCertificate();
+    renewHttpsCertificate();
+  }
+
+  if (process.env.EXPERIMENTAL_GATEWAY &&
+      (global.sandcats.state.nextRekeyTime !== null) &&
+      (Date.now() >= global.sandcats.state.nextRekeyTime)) {
+    // In gateway mode, we need to check periodically if it's time to swap certificates and then
+    // do it.
+    global.sandcats.rekey();
+    inMeteor(storeSandcatsCertToDb);
   }
 };
 
 Sandcats.initializeSandcats = () => {
+  if (process.env.EXPERIMENTAL_GATEWAY) {
+    // In gateway mode, the startup code doesn't automatically initialize sandcats, so call rekey()
+    // now to make that happen.
+    global.sandcats.rekey();
+
+    storeSandcatsCertToDb();
+  }
+
   const i = HOSTNAME.lastIndexOf(SANDCATS_HOSTNAME);
   if (i < 0) {
     console.error("SANDCATS_BASE_DOMAIN is configured but your HOSTNAME doesn't appear to contain it:",

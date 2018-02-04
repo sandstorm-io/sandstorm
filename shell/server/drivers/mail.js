@@ -189,13 +189,14 @@ Meteor.startup(function () {
     },
   });
 
-  if (global.SANDSTORM_SMTP_LISTEN_HANDLE) {
-    server.listen(global.SANDSTORM_SMTP_LISTEN_HANDLE);
+  if (process.env.EXPERIMENTAL_GATEWAY === "local") {
+    // Gateway running locally, connecting over unix socketpair via SCM_RIGHTS transfer.
+    global.sandstormListenCapabilityStream(
+        parseInt(process.env.SANDSTORM_SMTP_LISTEN_HANDLE), socket => {
+      server.connect(socket);
+    });
   } else {
-    // We must be running `run-dev.sh`.
-    const BIND_IP = process.env.BIND_IP || "127.0.0.1";
-    const SMTP_LISTEN_PORT = Meteor.settings.public.smtpListenPort || 30025;
-    server.listen(SMTP_LISTEN_PORT, BIND_IP);
+    server.listen({ fd: parseInt(process.env.SANDSTORM_SMTP_LISTEN_HANDLE) });
   }
 });
 

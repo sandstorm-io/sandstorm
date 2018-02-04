@@ -520,6 +520,7 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
 };
 
 makeHackSessionContext = (grainId, sessionId, accountId, tabId) => {
+  // TODO(security): Ensure that the session context is revoked if the session is revoked.
   return new Capnp.Capability(new HackSessionContextImpl(grainId, sessionId, accountId, tabId),
                               HackSessionContext);
 };

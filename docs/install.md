@@ -185,17 +185,11 @@ have to manually do:
 ### Hacking on the shell
 
 You can run the shell (front-end) in dev mode so that you can modify it without rebuilding the
-whole bundle for every change. Just do:
+whole bundle for every change. From the root of the repository, just do:
 
-    cd shell
-    sudo service sandstorm stop-fe
-    ./run-dev.sh
+    sandstorm dev-shell
 
 Now connect to your local server like you normally would.
-
-Later, when you are done hacking, you may want to restart the installed front-end:
-
-    sudo service sandstorm start-fe
 
 ### Hacking on the C++
 

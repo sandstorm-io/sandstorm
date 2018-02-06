@@ -138,6 +138,7 @@ Please install the following:
 * `strace`
 * `curl`
 * `python`
+* `cmake`
 * discount (markdown parser)
 * [Clang compiler](http://clang.llvm.org/) version 3.4 or better
 * [Meteor](http://meteor.com)

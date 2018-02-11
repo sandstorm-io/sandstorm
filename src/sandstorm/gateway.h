@@ -179,6 +179,26 @@ private:
   class TlsKeyCallbackImpl;
 };
 
+class RealIpService: public kj::HttpService {
+  // Wrapper that should be instantiated for each connection to capture IP address in X-Real-IP.
+
+public:
+  RealIpService(kj::HttpService& inner, kj::HttpHeaderId hXRealIp, kj::AsyncIoStream& connection);
+
+  kj::Promise<void> request(
+      kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
+      kj::AsyncInputStream& requestBody, Response& response) override;
+
+  kj::Promise<void> openWebSocket(
+      kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) override;
+
+private:
+  kj::HttpService& inner;
+  kj::HttpHeaderId hXRealIp;
+  kj::Maybe<kj::String> address;
+  bool trustClient = false;
+};
+
 class AltPortService: public kj::HttpService {
   // Wrapper that should be exported on ports other than the main port. This will redirect
   // clients to the main port where appropriate.

@@ -21,6 +21,8 @@
 #include <sandstorm/mime.capnp.h>
 #include "util.h"
 #include "smtp-proxy.h"
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 namespace sandstorm {
 
@@ -603,6 +605,89 @@ kj::Promise<void> GatewayTlsManager::listenSmtpsLoop(kj::ConnectionReceiver& por
 void GatewayTlsManager::taskFailed(kj::Exception&& exception) {
   if (exception.getType() != kj::Exception::Type::DISCONNECTED) {
     KJ_LOG(ERROR, exception);
+  }
+}
+
+// =======================================================================================
+
+RealIpService::RealIpService(kj::HttpService& inner,
+                             kj::HttpHeaderId hXRealIp,
+                             kj::AsyncIoStream& connection)
+    : inner(inner), hXRealIp(hXRealIp) {
+  struct sockaddr_storage addr;
+  memset(&addr, 0, sizeof(addr));
+  uint len = sizeof(addr);
+  connection.getpeername(reinterpret_cast<struct sockaddr*>(&addr), &len);
+
+  if (addr.ss_family == AF_INET || addr.ss_family == AF_INET6) {
+    // We trust the client to provide their own X-Real-IP if the client's address is a private
+    // network address, since this likely means the client is a reverse proxy like nginx. Also,
+    // client IP addresses are only really used for analytics, so there's not much damage that can
+    // be done by spoofing, and a private network address is not useful for analytics anyhow.
+    void* innerAddr = nullptr;
+    if (addr.ss_family == AF_INET) {
+      uint8_t addr4[4];
+      auto sinAddr = &reinterpret_cast<struct sockaddr_in*>(&addr)->sin_addr;
+      innerAddr = sinAddr;
+      memcpy(addr4, &sinAddr->s_addr, 4);
+      trustClient = addr4[0] == 127 || addr4[0] == 10
+                 || (addr4[0] == 192 && addr4[1] == 168)
+                 || (addr4[0] == 169 && addr4[1] == 254)
+                 || (addr4[0] == 172 && addr4[1] >= 16 && addr4[1] < 32);
+    } else if (addr.ss_family == AF_INET6) {
+      auto sin6Addr = &reinterpret_cast<struct sockaddr_in6*>(&addr)->sin6_addr;
+      innerAddr = sin6Addr;
+      uint8_t* addr6 = sin6Addr->s6_addr;
+      static constexpr uint8_t LOCAL6[16] = {0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,1};
+      trustClient = addr6[0] == 0xfc || addr6[0] == 0xfd
+                 || (addr6[0] == 0xfe && (addr6[1] & 0xc0) == 0x80)
+                 || memcmp(addr6, LOCAL6, 16) == 0;
+    }
+
+    KJ_ASSERT(innerAddr != nullptr);
+
+    char buffer[INET6_ADDRSTRLEN];
+    inet_ntop(addr.ss_family, innerAddr, buffer, sizeof(buffer));
+    address = kj::str(buffer);
+  } else {
+    trustClient = addr.ss_family == AF_UNIX;
+  }
+}
+
+kj::Promise<void> RealIpService::request(
+    kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
+    kj::AsyncInputStream& requestBody, Response& response) {
+  if (trustClient && (address == nullptr || headers.get(hXRealIp) != nullptr)) {
+    // Nothing to change, because we trust the client, and either the client provided an X-Real-IP,
+    // or we don't have any other value to use anyway.
+    return inner.request(method, url, headers, requestBody, response);
+  } else {
+    auto copy = kj::heap<kj::HttpHeaders>(headers.clone());
+    KJ_IF_MAYBE(a, address) {
+      copy->set(hXRealIp, *a);
+    } else {
+      copy->unset(hXRealIp);
+    }
+    auto promise = inner.request(method, url, *copy, requestBody, response);
+    return promise.attach(kj::mv(copy));
+  }
+}
+
+kj::Promise<void> RealIpService::openWebSocket(
+    kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) {
+  if (trustClient && (address == nullptr || headers.get(hXRealIp) != nullptr)) {
+    // Nothing to change, because we trust the client, and either the client provided an X-Real-IP,
+    // or we don't have any other value to use anyway.
+    return inner.openWebSocket(url, headers, response);
+  } else {
+    auto copy = kj::heap<kj::HttpHeaders>(headers.clone());
+    KJ_IF_MAYBE(a, address) {
+      copy->set(hXRealIp, *a);
+    } else {
+      copy->unset(hXRealIp);
+    }
+    auto promise = inner.openWebSocket(url, *copy, response);
+    return promise.attach(kj::mv(copy));
   }
 }
 

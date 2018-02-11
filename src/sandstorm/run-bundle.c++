@@ -2527,8 +2527,12 @@ private:
                              config.termsPublicId.map(
                                  [](const kj::String& str) -> kj::StringPtr { return str; }));
 
+      kj::HttpHeaderId hXRealIp = headerTableBuilder.add("X-Real-Ip");
+
       auto headerTable = headerTableBuilder.build();
-      kj::HttpServer server(io.provider->getTimer(), *headerTable, service);
+      kj::HttpServer server(io.provider->getTimer(), *headerTable, [&](kj::AsyncIoStream& conn) {
+        return kj::heap<RealIpService>(service, hXRealIp, conn);
+      });
 
       auto shellSmptConn = fdBundle.consumeClient(FdBundle::SHELL_SMTP, *io.lowLevelProvider);
       kj::CapabilityStreamNetworkAddress shellSmtpAddr(*io.provider, *shellSmptConn);

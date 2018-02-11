@@ -335,6 +335,8 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
 kj::Promise<void> GatewayService::getStaticPublished(
     kj::StringPtr publicId, kj::StringPtr path, const kj::HttpHeaders& headers,
     kj::HttpService::Response& response, uint retryCount) {
+  kj::StringPtr originalPath = path;
+
   static uint generationCounter = 0;
 
   auto iter = staticPublishers.find(publicId);
@@ -452,14 +454,14 @@ kj::Promise<void> GatewayService::getStaticPublished(
 
     KJ_UNREACHABLE;
   }).attach(kj::mv(ownPath))
-      .catch_([this,publicId,path,&headers,&response,retryCount,oldGeneration](kj::Exception&& e)
-              -> kj::Promise<void> {
+      .catch_([this,publicId,originalPath,&headers,&response,retryCount,oldGeneration]
+              (kj::Exception&& e) -> kj::Promise<void> {
     if (e.getType() == kj::Exception::Type::DISCONNECTED && retryCount < 2) {
       auto iter = staticPublishers.find(publicId);
       if (iter != staticPublishers.end() && iter->second.generation == oldGeneration) {
         staticPublishers.erase(iter);
       }
-      return getStaticPublished(publicId, path, headers, response, retryCount + 1);
+      return getStaticPublished(publicId, originalPath, headers, response, retryCount + 1);
     } else {
       return kj::mv(e);
     }

@@ -425,8 +425,9 @@ kj::Promise<void> GatewayService::getStaticPublished(
 
   auto req = iter->second.supervisor.getWwwFileHackRequest();
   req.setPath(path);
-  req.setStream(WebSessionBridge::makeHttpResponseStream(
-      200, "OK", kj::mv(responseHeaders), response));
+  auto streamAndAborter = WebSessionBridge::makeHttpResponseStream(
+      200, "OK", kj::mv(responseHeaders), response);
+  req.setStream(kj::mv(streamAndAborter.stream));
 
   uint oldGeneration = iter->second.generation;
 
@@ -453,7 +454,7 @@ kj::Promise<void> GatewayService::getStaticPublished(
     }
 
     KJ_UNREACHABLE;
-  }).attach(kj::mv(ownPath))
+  }).attach(kj::mv(ownPath), kj::mv(streamAndAborter.aborter))
       .catch_([this,publicId,originalPath,&headers,&response,retryCount,oldGeneration]
               (kj::Exception&& e) -> kj::Promise<void> {
     if (e.getType() == kj::Exception::Type::DISCONNECTED && retryCount < 2) {

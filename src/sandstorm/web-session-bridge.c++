@@ -714,12 +714,20 @@ public:
   }
 
   ~ByteStreamImpl() noexcept(false) {
+    KJ_IF_MAYBE(a, aborter) {
+      a->obj = nullptr;
+    }
+
     KJ_IF_MAYBE(df, doneFulfiller) {
       if (df->get()->isWaiting()) {
         df->get()->reject(KJ_EXCEPTION(FAILED,
             "app did not finish writing HTTP response stream"));
       }
     }
+  }
+
+  kj::Own<void> makeAborter() {
+    return kj::heap<Aborter>(*this);
   }
 
   kj::Promise<void> whenDone() {
@@ -769,9 +777,26 @@ private:
 
   struct Done {};
 
+  class Aborter: public kj::Refcounted {
+  public:
+    Aborter(ByteStreamImpl& obj): obj(obj) {
+      KJ_REQUIRE(obj.aborter == nullptr);
+      obj.aborter = *this;
+    }
+    ~Aborter() noexcept(false) {
+      KJ_IF_MAYBE(o, obj) {
+        o->aborter = nullptr;
+        o->abort();
+      }
+    }
+
+    kj::Maybe<ByteStreamImpl&> obj;
+  };
+
   kj::OneOf<NotStarted, Started, Done> state;
   kj::Maybe<kj::Own<kj::PromiseFulfiller<void>>> doneFulfiller;
   kj::Promise<void> queue = kj::READY_NOW;
+  kj::Maybe<Aborter&> aborter;
 
   kj::AsyncOutputStream& ensureStarted(kj::Maybe<uint64_t> size) {
     if (state.is<NotStarted>()) {
@@ -785,13 +810,25 @@ private:
       return *state.get<Started>().output;
     }
   }
+
+  void abort() {
+    if (!state.is<Done>()) {
+      queue = KJ_EXCEPTION(DISCONNECTED, "HTTP response aborted");
+      state.init<Done>();
+      KJ_IF_MAYBE(df, doneFulfiller) {
+        df->get()->reject(KJ_EXCEPTION(FAILED, "ByteStreamImpl aborted"));
+      }
+    }
+  }
 };
 
-ByteStream::Client WebSessionBridge::makeHttpResponseStream(
+WebSessionBridge::StreamAborterPair WebSessionBridge::makeHttpResponseStream(
     uint statusCode, kj::StringPtr statusText,
     kj::HttpHeaders&& headers,
     kj::HttpService::Response& response) {
-  return kj::heap<ByteStreamImpl>(statusCode, statusText, kj::mv(headers), response);
+  auto result = kj::heap<ByteStreamImpl>(statusCode, statusText, kj::mv(headers), response);
+  auto aborter = result->makeAborter();
+  return { kj::mv(result), kj::mv(aborter) };
 }
 
 template <typename T>
@@ -1135,9 +1172,10 @@ kj::Promise<void> WebSessionBridge::handleResponse(
             auto handle = body.getStream();
             auto outStream = kj::heap<ByteStreamImpl>(
                 status.getId(), status.getTitle(), headers.clone(), out);
+            auto aborter = outStream->makeAborter();
             auto promise = outStream->whenDone();
             contextInitInfo.streamer->fulfill(kj::mv(outStream));
-            return promise.attach(kj::mv(handle));
+            return promise.attach(kj::mv(handle), kj::mv(aborter));
           }
         }
 

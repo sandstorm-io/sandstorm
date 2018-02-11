@@ -80,7 +80,16 @@ public:
   kj::Promise<void> openWebSocket(
       kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) override;
 
-  static ByteStream::Client makeHttpResponseStream(
+  struct StreamAborterPair {
+    ByteStream::Client stream;
+
+    kj::Own<void> aborter;
+    // Drop this ref to disconnect the stream (if it still exists) from the underlying HTTP
+    // request/response. This is necessary to prevent dangling references if the stream cap is
+    // still held when the HTTP request ends (or is canceled).
+  };
+
+  static StreamAborterPair makeHttpResponseStream(
       uint statusCode, kj::StringPtr statusText,
       kj::HttpHeaders&& headers,
       kj::HttpService::Response& response);

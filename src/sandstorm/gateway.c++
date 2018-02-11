@@ -142,7 +142,7 @@ kj::Promise<void> GatewayService::request(
       auto headersCopy = kj::heap(headers.cloneShallow());
       KJ_IF_MAYBE(bridge, getUiBridge(*headersCopy)) {
         auto promise = bridge->get()->request(method, url, *headersCopy, requestBody, response);
-        return promise.attach(kj::mv(bridge), kj::mv(headersCopy));
+        return promise.attach(kj::mv(*bridge), kj::mv(headersCopy));
       } else {
         return sendError(403, "Unauthorized", response,
             "Unauthorized due to missing cookie. Please make sure cookies\n"

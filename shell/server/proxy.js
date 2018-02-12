@@ -501,7 +501,7 @@ Meteor.methods({
   },
 });
 
-const validateWebkey = (apiToken, refreshedExpiration) => {
+validateWebkey = (apiToken, refreshedExpiration) => {
   // Validates that `apiToken` is a valid UiView webkey, throwing an exception if it is not. If
   // `refreshedExpiration` is set and if the token has an `expiresIfUnused` field, then the
   // `expiresIfUnused` field is reset to `refreshedExpiration`.

@@ -54,10 +54,18 @@ GatewayService::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilder)
     : headerTable(headerTableBuilder.getFutureTable()),
       hAccessControlAllowOrigin(headerTableBuilder.add("Access-Control-Allow-Origin")),
       hAcceptLanguage(headerTableBuilder.add("Accept-Language")),
+      hAuthorization(headerTableBuilder.add("Authorization")),
       hCacheControl(headerTableBuilder.add("Cache-Control")),
+      hContentType(headerTableBuilder.add("Content-Type")),
+      hContentLanguage(headerTableBuilder.add("Content-Language")),
+      hContentEncoding(headerTableBuilder.add("Content-Encoding")),
       hCookie(headerTableBuilder.add("Cookie")),
+      hDav(headerTableBuilder.add("Dav")),
       hLocation(headerTableBuilder.add("Location")),
       hUserAgent(headerTableBuilder.add("User-Agent")),
+      hWwwAuthenticate(headerTableBuilder.add("WWW-Authenticate")),
+      hXRealIp(headerTableBuilder.add("X-Real-IP")),
+      hXSandstormPassthrough(headerTableBuilder.add("X-Sandstorm-Passthrough")),
       bridgeTables(headerTableBuilder) {}
 
 GatewayService::GatewayService(
@@ -66,7 +74,7 @@ GatewayService::GatewayService(
     kj::Maybe<kj::StringPtr> termsPublicId)
     : timer(timer), shellHttp(kj::newHttpService(shellHttp)), router(kj::mv(router)),
       tables(tables), baseUrl(kj::Url::parse(baseUrl, kj::Url::HTTP_PROXY_REQUEST)),
-      wildcardHost(wildcardHost), termsPublicId(termsPublicId) {}
+      wildcardHost(wildcardHost), termsPublicId(termsPublicId), tasks(*this) {}
 
 template <typename Key, typename Value>
 static void removeExpired(std::map<Key, Value>& m, kj::TimePoint now, kj::Duration period) {
@@ -89,10 +97,18 @@ kj::Promise<void> GatewayService::cleanupLoop() {
   return timer.afterDelay(PURGE_PERIOD).then([this]() {
     auto now = timer.now();
     removeExpired(uiHosts, now, PURGE_PERIOD);
+    removeExpired(apiHosts, now, PURGE_PERIOD);
     removeExpired(staticPublishers, now, PURGE_PERIOD);
     return cleanupLoop();
   });
 }
+
+static constexpr kj::StringPtr MISSING_AUTHORIZATION_MESSAGE =
+    "Missing or invalid authorization header.\n"
+    "\n"
+    "This address serves APIs, which allow external apps (such as a phone app) to\n"
+    "access data on your Sandstorm server. This address is not meant to be opened\n"
+    "in a regular browser.\n"_kj;
 
 kj::Promise<void> GatewayService::request(
     kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
@@ -102,8 +118,73 @@ kj::Promise<void> GatewayService::request(
   KJ_IF_MAYBE(hostId, wildcardHost.match(headers)) {
     if (*hostId == "static") {
       // TODO(soon): Static asset hosting.
+    } else if (*hostId == "api") {
+      KJ_IF_MAYBE(token, getAuthToken(headers, false)) {
+        auto bridge = getApiBridge(*token, headers);
+        auto promise = bridge->request(method, url, headers, requestBody, response);
+        return promise.attach(kj::mv(bridge));
+      } else {
+        return sendError(403, "Forbidden", response, MISSING_AUTHORIZATION_MESSAGE);
+      }
     } else if (hostId->startsWith("api-")) {
-      // TODO(soon): API hosts.
+      KJ_IF_MAYBE(token, getAuthToken(headers, true)) {
+        // API session.
+        auto bridge = getApiBridge(*token, headers);
+        auto promise = bridge->request(method, url, headers, requestBody, response);
+        return promise.attach(kj::mv(bridge));
+      } else {
+        // Unauthenticated API host.
+        if (method == kj::HttpMethod::GET || method == kj::HttpMethod::HEAD) {
+          auto req = router.getApiHostResourceRequest();
+          req.setHostId(hostId->slice(4));
+          req.setPath(url);
+          return req.send().then(
+              [this,&response](capnp::Response<GatewayRouter::GetApiHostResourceResults> result) {
+            kj::HttpHeaders respHeaders(tables.headerTable);
+
+            if (result.hasResource()) {
+              auto resource = result.getResource();
+              if (resource.hasType()) {
+                respHeaders.set(tables.hContentType, resource.getType());
+              }
+              if (resource.hasLanguage()) {
+                respHeaders.set(tables.hContentLanguage, resource.getLanguage());
+              }
+              if (resource.hasEncoding()) {
+                respHeaders.set(tables.hContentEncoding, resource.getEncoding());
+              }
+
+              auto body = resource.getBody();
+              auto stream = response.send(200, "OK", respHeaders, body.size());
+              auto promise = stream->write(body.begin(), body.size());
+              return promise.attach(kj::mv(stream), kj::mv(result));
+            } else {
+              respHeaders.set(tables.hContentType, "text/plain");
+              respHeaders.set(tables.hWwwAuthenticate, "Basic realm='Sandstorm API'");
+
+              auto stream = response.send(
+                  401, "Unauthorized", respHeaders, MISSING_AUTHORIZATION_MESSAGE.size());
+              auto promise = stream->write(MISSING_AUTHORIZATION_MESSAGE.begin(),
+                                           MISSING_AUTHORIZATION_MESSAGE.size());
+              return promise.attach(kj::mv(stream));
+            }
+          });
+        } else if (method == kj::HttpMethod::OPTIONS) {
+          auto req = router.getApiHostOptionsRequest();
+          req.setHostId(hostId->slice(4));
+          return req.send().then(
+              [this,&response](capnp::Response<GatewayRouter::GetApiHostOptionsResults> result) {
+            kj::HttpHeaders respHeaders(tables.headerTable);
+            if (result.hasDav()) {
+              respHeaders.set(tables.hDav, kj::strArray(result.getDav(), ", "));
+            }
+            response.send(200, "OK", respHeaders, uint64_t(0));
+          });
+        } else {
+          // Anything else requires authentication.
+          return response.sendError(403, "Unauthorized", tables.headerTable);
+        }
+      }
     } else if (hostId->startsWith("selftest-")) {
       if (method == kj::HttpMethod::GET && url == "/") {
         kj::HttpHeaders responseHeaders(tables.headerTable);
@@ -303,7 +384,7 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
     //   ClientHook-based library to Cap'n Proto implementing the CapRedirector pattern more
     //   efficiently.
     capnp::Capability::Client sessionRedirector = kj::heap<CapRedirector>(
-        [router = this->router,KJ_MVCAP(ownParams),KJ_MVCAP(sessionId),
+        [this,router = this->router,KJ_MVCAP(ownParams),KJ_MVCAP(sessionId),
          loadingFulfiller = kj::mv(loadingPaf.fulfiller)]() mutable
         -> capnp::Capability::Client {
       auto req = router.openUiSessionRequest();
@@ -313,7 +394,12 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
       if (loadingFulfiller->isWaiting()) {
         loadingFulfiller->fulfill(sent.getLoadingIndicator());
       }
-      return sent.getSession();
+      auto result = sent.getSession();
+      tasks.add(sent.then([](auto) {}, [this,key = kj::str(sessionId)](kj::Exception&& e) {
+        // On error, invalidate the cached session immediately.
+        uiHosts.erase(key);
+      }));
+      return result;
     });
 
     UiHostEntry entry {
@@ -323,6 +409,120 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
                                        tables.bridgeTables, options)
     };
     auto insertResult = uiHosts.insert(std::make_pair(key, kj::mv(entry)));
+    KJ_ASSERT(insertResult.second);
+    iter = insertResult.first;
+  } else {
+    iter->second.lastUsed = timer.now();
+  }
+
+  return kj::addRef(*iter->second.bridge);
+}
+
+kj::Maybe<kj::String> GatewayService::getAuthToken(
+    const kj::HttpHeaders& headers, bool allowBasicAuth) {
+  KJ_IF_MAYBE(auth, headers.get(tables.hAuthorization)) {
+    if (strncasecmp(auth->cStr(), "bearer ", 7) == 0) {
+      return kj::str(auth->slice(7));
+    } else if (allowBasicAuth && strncasecmp(auth->cStr(), "basic ", 6) == 0) {
+      auto decoded = kj::str(kj::decodeBase64(auth->slice(6)).asChars());
+      KJ_IF_MAYBE(colonPos, decoded.findFirst(':')) {
+        auto result = trim(decoded.slice(*colonPos + 1));
+        // git likes to send a username with an empty password on the first try. We have to treat
+        // this as a missing token and return 401 to convince it to send the password.
+        if (result != nullptr) {
+          return kj::mv(result);
+        }
+      }
+    }
+  }
+
+  return nullptr;
+}
+
+kj::Own<kj::HttpService> GatewayService::getApiBridge(
+    kj::StringPtr token, const kj::HttpHeaders& headers) {
+  kj::StringPtr ip = nullptr;
+  KJ_IF_MAYBE(passthrough, headers.get(tables.hXSandstormPassthrough)) {
+    bool allowAddress = false;
+    for (auto part: split(*passthrough, ',')) {
+      if (trim(part) == "address") {
+        allowAddress = true;
+      }
+    }
+
+    if (allowAddress) {
+      ip = headers.get(tables.hXRealIp).orDefault(nullptr);
+    }
+  }
+
+  auto ownKey = kj::str(ip, '/', token);
+  token = ownKey.slice(ip.size() + 1);
+
+  auto iter = apiHosts.find(ownKey);
+  if (iter == apiHosts.end()) {
+    capnp::MallocMessageBuilder requestMessage(128);
+    auto params = requestMessage.getRoot<ApiSession::Params>();
+
+    if (ip != nullptr) {
+      if (ip.findFirst(':') != nullptr) {
+        // Must be IPv6
+        struct in6_addr addr6;
+        if (inet_pton(AF_INET6, ip.cStr(), &addr6) > 0) {
+          auto addr = params.initRemoteAddress();
+          byte* b = addr6.s6_addr;
+          addr.setUpper64((uint64_t(b[ 0]) << 56) | (uint64_t(b[ 1]) << 48)
+                        | (uint64_t(b[ 2]) << 40) | (uint64_t(b[ 3]) << 32)
+                        | (uint64_t(b[ 4]) << 24) | (uint64_t(b[ 5]) << 16)
+                        | (uint64_t(b[ 6]) <<  8) | (uint64_t(b[ 7])      ));
+          addr.setLower64((uint64_t(b[ 8]) << 56) | (uint64_t(b[ 9]) << 48)
+                        | (uint64_t(b[10]) << 40) | (uint64_t(b[11]) << 32)
+                        | (uint64_t(b[12]) << 24) | (uint64_t(b[13]) << 16)
+                        | (uint64_t(b[14]) <<  8) | (uint64_t(b[15])      ));
+        }
+      } else {
+        // Probably IPv4.
+        struct in_addr addr4;
+        if (inet_pton(AF_INET, ip.cStr(), &addr4) > 0) {
+          params.initRemoteAddress()
+              .setLower64(0x0000ffff00000000 | ntohl(addr4.s_addr));
+        }
+      }
+    }
+
+    auto ownParams = newOwnCapnp(params.asReader());
+
+    WebSessionBridge::Options options;
+    options.allowCookies = false;
+    options.isHttps = baseUrl.scheme == "https";
+
+    kj::StringPtr key = ownKey;
+
+    // Use a CapRedirector to re-establish the session on disconenct.
+    //
+    // TODO(perf): This forces excessive copying of RPC requests and responses. We should add a
+    //   ClientHook-based library to Cap'n Proto implementing the CapRedirector pattern more
+    //   efficiently.
+    capnp::Capability::Client sessionRedirector = kj::heap<CapRedirector>(
+        [this,router = this->router,KJ_MVCAP(ownParams),KJ_MVCAP(ownKey),token]() mutable
+        -> capnp::Capability::Client {
+      auto req = router.openApiSessionRequest();
+      req.setApiToken(token);
+      req.setParams(ownParams);
+      auto sent = req.send();
+      auto result = sent.getSession();
+      tasks.add(sent.then([](auto) {}, [this,key = kj::str(ownKey)](kj::Exception&& e) {
+        // On error, invalidate the cached session immediately.
+        apiHosts.erase(key);
+      }));
+      return result;
+    });
+
+    ApiHostEntry entry {
+      timer.now(),
+      kj::refcounted<WebSessionBridge>(sessionRedirector.castAs<WebSession>(), nullptr,
+                                       tables.bridgeTables, options)
+    };
+    auto insertResult = apiHosts.insert(std::make_pair(key, kj::mv(entry)));
     KJ_ASSERT(insertResult.second);
     iter = insertResult.first;
   } else {
@@ -467,6 +667,10 @@ kj::Promise<void> GatewayService::getStaticPublished(
       return kj::mv(e);
     }
   });
+}
+
+void GatewayService::taskFailed(kj::Exception&& exception) {
+  KJ_LOG(ERROR, exception);
 }
 
 // =======================================================================================

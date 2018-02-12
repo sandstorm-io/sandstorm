@@ -41,7 +41,7 @@ private:
   kj::String suffix;
 };
 
-class GatewayService: public kj::HttpService {
+class GatewayService: public kj::HttpService, private kj::TaskSet::ErrorHandler {
 public:
   class Tables {
     // Tables that many instances of GatewayService might share. Create this object at startup
@@ -57,10 +57,18 @@ public:
 
     kj::HttpHeaderId hAccessControlAllowOrigin;
     kj::HttpHeaderId hAcceptLanguage;
+    kj::HttpHeaderId hAuthorization;
     kj::HttpHeaderId hCacheControl;
+    kj::HttpHeaderId hContentType;
+    kj::HttpHeaderId hContentLanguage;
+    kj::HttpHeaderId hContentEncoding;
     kj::HttpHeaderId hCookie;
+    kj::HttpHeaderId hDav;
     kj::HttpHeaderId hLocation;
     kj::HttpHeaderId hUserAgent;
+    kj::HttpHeaderId hWwwAuthenticate;
+    kj::HttpHeaderId hXRealIp;
+    kj::HttpHeaderId hXSandstormPassthrough;
 
     WebSessionBridge::Tables bridgeTables;
   };
@@ -96,6 +104,13 @@ private:
 
   std::map<kj::StringPtr, UiHostEntry> uiHosts;
 
+  struct ApiHostEntry {
+    kj::TimePoint lastUsed;
+    kj::Own<WebSessionBridge> bridge;
+  };
+
+  std::map<kj::StringPtr, ApiHostEntry> apiHosts;
+
   struct StaticPublisherEntry {
     kj::String id;
     uint generation;
@@ -110,14 +125,20 @@ private:
 
   bool isPurging = false;
 
+  kj::TaskSet tasks;
+
   kj::Promise<void> sendError(
       uint statusCode, kj::StringPtr statusText, Response& response, kj::StringPtr message);
 
   kj::Maybe<kj::Own<kj::HttpService>> getUiBridge(kj::HttpHeaders& headers);
+  kj::Maybe<kj::String> getAuthToken(const kj::HttpHeaders& headers, bool allowBasicAuth);
+  kj::Own<kj::HttpService> getApiBridge(kj::StringPtr token, const kj::HttpHeaders& headers);
 
   kj::Promise<void> getStaticPublished(
       kj::StringPtr publicId, kj::StringPtr path, const kj::HttpHeaders& headers,
       kj::HttpService::Response& response, uint retryCount = 0);
+
+  void taskFailed(kj::Exception&& exception) override;
 };
 
 class GatewayTlsManager: private kj::TaskSet::ErrorHandler {

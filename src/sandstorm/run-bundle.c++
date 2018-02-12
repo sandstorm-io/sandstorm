@@ -143,6 +143,46 @@ static bool fileHasLine(kj::StringPtr filename, kj::StringPtr expectedLine) {
 }
 
 // =======================================================================================
+// Process name setting.
+//
+// TODO(cleanup): Move this somewhere more reusable, maybe in KJ?
+
+namespace {
+
+// HACK: We grab the global argv pointer at startup so that we can overwrite argv[0] to set the
+//   process name.
+kj::ArrayPtr<char> globalArgv;
+__attribute__((constructor)) void stuff(int argc, char **argv) {
+  globalArgv = kj::arrayPtr(argv[0], argv[argc - 1] + strlen(argv[argc - 1]));
+}
+
+}  // namespace
+
+static void setProcessName(kj::StringPtr topSuffix, kj::StringPtr psSuffix) {
+  // Set process name as seen in "top". We only have 15 bytes to work with here (16 with NUL).
+  char oldname[16];
+  prctl(PR_GET_NAME, oldname);
+  char* slashPos = strchr(oldname, '/');
+  if (slashPos != nullptr) *slashPos = '\0';
+  prctl(PR_SET_NAME, kj::str(oldname, '/', topSuffix).cStr());
+
+  // Set process name as seen in "ps". This is weird because we have to overwrite the argv
+  // buffer, and we can only really be sure that the buffer is large enough to hold the args
+  // passed to the original process. Here we try to overwrite argv[1] through the end of the
+  // buffer with the suffix, but if we don't have enough space we cut it short or don't make
+  // any change. Note that args in the argv buffer are separated by NUL bytes.
+  size_t argv1Pos = strlen(globalArgv.begin()) + 1;
+  if (argv1Pos < globalArgv.size()) {
+    memcpy(globalArgv.begin() + argv1Pos, psSuffix.begin(),
+           kj::min(psSuffix.size(), globalArgv.size() - argv1Pos));
+  }
+  if (argv1Pos + psSuffix.size() < globalArgv.size()) {
+    memset(globalArgv.begin() + argv1Pos + psSuffix.size(), 0,
+           globalArgv.size() - argv1Pos - psSuffix.size());
+  }
+}
+
+// =======================================================================================
 
 struct KernelVersion {
   uint major;
@@ -1981,6 +2021,8 @@ private:
     // Run the update monitor process.  This process runs two subprocesses:  the sandstorm server
     // and the auto-updater.
 
+    setProcessName("top", "(top-level)");
+
     if (runningAsRoot) {
       // Fix permissions on pidfile. We do this here rather than back where we opened it because
       // a previous version failed to do this and we want it fixed immediately on upgrade.
@@ -2094,6 +2136,8 @@ private:
 
   [[noreturn]] void runServerMonitor(const Config& config, FdBundle& fdBundle) {
     // Run the server monitor, which runs node and mongo and deals with them dying.
+
+    setProcessName("montr", "(server monitor)");
 
     enterChroot(true);
 
@@ -2397,6 +2441,8 @@ private:
     kj::AutoCloseFd outPipe(pipeFds[1]);
 
     Subprocess process([&]() -> int {
+      setProcessName("bcknd", "(back-end)");
+
       inPipe = nullptr;
 
       // Mainly to cause Cap'n Proto to log exceptions being returned over RPC so we can see the
@@ -2496,6 +2542,8 @@ private:
 
   pid_t startGateway(const Config& config, FdBundle& fdBundle) {
     Subprocess process([&]() -> int {
+      setProcessName("gtway", "(gateway)");
+
       // Mainly to cause Cap'n Proto to log exceptions being returned over RPC so we can see the
       // stack traces.
       kj::_::Debug::setLogLevel(kj::LogSeverity::INFO);
@@ -2905,6 +2953,8 @@ private:
   }
 
   [[noreturn]] void doUpdateLoop(kj::StringPtr channel, bool isRetry, const Config& config) {
+    setProcessName("updat", "(updater)");
+
     // This is the updater process.  Run in a loop.
     auto log = raiiOpen("../var/log/updater.log", O_WRONLY | O_APPEND | O_CREAT);
     KJ_SYSCALL(dup2(log, STDOUT_FILENO));
@@ -3048,6 +3098,8 @@ private:
 
   [[noreturn]] void runDevDaemon(const Config& config, kj::Array<kj::AutoCloseFd> shellInherited,
                                  pid_t serverMonitorPid) {
+    setProcessName("devd", "(dev daemon)");
+
     clearDevPackages(config);
 
     // Make sure socket directory exists (since the installer doesn't create it).
@@ -3111,6 +3163,8 @@ private:
   [[noreturn]] void runDevSession(const Config& config,
       kj::AutoCloseFd internalFd, kj::Array<kj::AutoCloseFd> shellInherited,
       pid_t serverMonitorPid) {
+    setProcessName("devs", "(dev session)");
+
     auto exception = kj::runCatchingExceptions([&]() {
       // When someone connects, we expect them to pass us a one-byte command code.
       kj::byte commandCode;

@@ -105,7 +105,7 @@ function validateWebkey(apiToken, refreshedExpiration) {
   }
 };
 
-function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, observer) {
+function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId, observer) {
   if (!accountId && globalDb.getOrganizationDisallowGuests()) {
     throw new Meteor.Error("no-guests", "server doesn't allow guest access");
   }
@@ -196,6 +196,17 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, observer) 
     throw new Meteor.Error("access-denied", "access denied");
   }
 
+  if (sessionId) {
+    Sessions.update({
+      _id: sessionId,
+    }, {
+      $set: {
+        viewInfo: viewInfo || {},
+        permissions: permissionsResult.permissions,
+      },
+    });
+  }
+
   userInfo.permissions = permissionsResult.permissions;
   userInfo.deprecatedPermissionsBlob = boolListToBuffer(permissionsResult.permissions);
 
@@ -249,7 +260,7 @@ class GatewayRouterImpl {
       }
 
       const { uiView, userInfo } = getUiViewAndUserInfo(
-          session.grainId, vertex, actingAccountId, session.identityId, observer);
+          session.grainId, vertex, actingAccountId, session.identityId, sessionId, observer);
 
       const serializedParams = Capnp.serialize(WebSession.Params, params);
 
@@ -331,7 +342,7 @@ class GatewayRouterImpl {
       const actingAccountId = tokenInfo.forSharing ? null : tokenInfo.accountId;
 
       const { uiView, userInfo } = getUiViewAndUserInfo(
-          grainId, { token: tokenInfo }, actingAccountId, null, observer);
+          grainId, { token: tokenInfo }, actingAccountId, null, null, observer);
 
       const serializedParams = Capnp.serialize(ApiSession.Params, params);
 

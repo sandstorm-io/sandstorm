@@ -742,7 +742,7 @@ kj::Promise<void> GatewayService::handleForeignHostname(kj::StringPtr host,
     auto info = response.getInfo();
     ForeignHostnameEntry entry(kj::mv(id), info, now, info.getTtlSeconds() * kj::SECONDS);
     kj::StringPtr key = entry.id;
-    auto insertResult = foreignHostnames.insert(std::make_pair(key, kj::mv(entry)));
+    auto insertResult = foreignHostnames.try_emplace(key, kj::mv(entry));
     if (!insertResult.second) {
       entry.id = kj::mv(insertResult.first->second.id);
       insertResult.first->second = kj::mv(entry);

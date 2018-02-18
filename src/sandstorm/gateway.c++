@@ -50,6 +50,26 @@ static const std::map<kj::StringPtr, kj::StringPtr>& extensionMap() {
   return result;
 }
 
+static kj::String stripPort(kj::StringPtr hostport) {
+  // We can't just search for a colon because of ipv6 literal addresses. We can only carefully
+  // remove digits and then a : from the end.
+
+  for (const char* ptr = hostport.end(); ptr != hostport.begin(); --ptr) {
+    if (ptr[-1] == ':' && *ptr != '\0') {
+      // Saw port!
+      return kj::str(kj::arrayPtr(hostport.begin(), ptr - 1));
+    }
+
+    if (ptr[-1] < '0' || '9' < ptr[-1]) {
+      // Not a digit, can't be part of port.
+      break;
+    }
+  }
+
+  // Did not find a port; just return the whole thing.
+  return kj::str(hostport);
+}
+
 GatewayService::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilder)
     : headerTable(headerTableBuilder.getFutureTable()),
       hAccessControlAllowOrigin(headerTableBuilder.add("Access-Control-Allow-Origin")),
@@ -679,15 +699,7 @@ kj::Promise<void> GatewayService::getStaticPublished(
 kj::Promise<void> GatewayService::handleForeignHostname(kj::StringPtr host,
     kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
     kj::AsyncInputStream& requestBody, Response& response) {
-  // Strip off port, if any.
-  const char* pos = host.end();
-  while (pos > host.begin() && '0' <= pos[-1] && pos[-1] <= '9') --pos;
-  kj::String hostname;
-  if (pos > host.begin() && pos < host.end() && pos[-1] == ':') {
-    hostname = kj::str(kj::arrayPtr(host.begin(), pos - 1));
-  } else {
-    hostname = kj::str(host);
-  }
+  auto hostname = stripPort(host);
 
   auto handleEntry = [this,method,url,&headers,&requestBody,&response,alreadyDone=false]
                      (ForeignHostnameEntry& entry) mutable -> kj::Promise<void> {
@@ -1009,23 +1021,6 @@ kj::Promise<void> AltPortService::request(
   } else {
     return inner.request(method, url, headers, requestBody, response);
   }
-}
-
-kj::String AltPortService::stripPort(kj::StringPtr hostport) {
-  for (const char* ptr = hostport.end(); ptr != hostport.begin(); --ptr) {
-    if (ptr[-1] == ':' && *ptr != '\0') {
-      // Saw port!
-      return kj::str(kj::arrayPtr(hostport.begin(), ptr - 1));
-    }
-
-    if (ptr[-1] < '0' || '9' < ptr[-1]) {
-      // Not a digit, can't be part of port.
-      break;
-    }
-  }
-
-  // Did not find a port; just return the whole thing.
-  return kj::str(hostport);
 }
 
 bool AltPortService::maybeRedirect(kj::StringPtr url, const kj::HttpHeaders& headers,

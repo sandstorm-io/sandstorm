@@ -261,8 +261,6 @@ private:
   WildcardMatcher wildcardHost;
   WildcardMatcher wildcardHostWithoutPort;
 
-  static kj::String stripPort(kj::StringPtr hostport);
-
   bool maybeRedirect(kj::StringPtr url, const kj::HttpHeaders& headers, Response& response);
 };
 

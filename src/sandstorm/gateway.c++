@@ -146,6 +146,29 @@ static constexpr kj::StringPtr MISSING_AUTHORIZATION_MESSAGE =
     "access data on your Sandstorm server. This address is not meant to be opened\n"
     "in a regular browser.\n"_kj;
 
+bool isAllowedBasicAuthUserAgent(kj::StringPtr ua) {
+  // The "api" wildcard host (with no ID) can be used to access grain APIs, with routing being
+  // based entirely on the token given in the Authorization header. However, because this endpoint
+  // is shared by many grains, it is critical that a grain cannot serve HTML that is rendered by
+  // the client. No browser sends "Authorization: Bearer <token>" when fetching HTML for rendering,
+  // so this is fine so far. But we could like to allow API clients that insist on HTTP Basic Auth
+  // rather than bearer tokens. But it's possible to convince a browser to use basic auth. So, we
+  // can only allow basic auth if we're sure the client is not a browser. To that end, we check for
+  // some known-good user agents.
+  //
+  // Eventually, we decided this wasn't scalable, and introduced API endpoints with unique IDs for
+  // each grain. There, we can permit basic auth for all clients. We maintain this list for
+  // backwards-compatibility only; it should never change.
+
+  return ua.startsWith("git/")
+      || ua.startsWith("GitHub-Hookshot/")
+      || ua.startsWith("mirall/")
+      || strstr(ua.cStr(), " mirall/") != nullptr
+      || ua.startsWith("Mozilla/5.0 (iOS) ownCloud-iOS/")
+      || ua.startsWith("Mozilla/5.0 (Android) ownCloud-android/")
+      || ua.startsWith("litmus/");
+}
+
 kj::Promise<void> GatewayService::request(
     kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
     kj::AsyncInputStream& requestBody, Response& response) {
@@ -163,7 +186,8 @@ kj::Promise<void> GatewayService::request(
       // Specific hosts handled by shell.
       return shellHttp->request(method, url, headers, requestBody, response);
     } else if (*hostId == "api") {
-      KJ_IF_MAYBE(token, getAuthToken(headers, false)) {
+      KJ_IF_MAYBE(token, getAuthToken(headers,
+          isAllowedBasicAuthUserAgent(headers.get(tables.hUserAgent).orDefault("")))) {
         auto bridge = getApiBridge(*token, headers);
         auto promise = bridge->request(method, url, headers, requestBody, response);
         return promise.attach(kj::mv(bridge));
@@ -521,6 +545,18 @@ kj::Own<kj::HttpService> GatewayService::getApiBridge(
     WebSessionBridge::Options options;
     options.allowCookies = false;
     options.isHttps = baseUrl.scheme == "https";
+
+    // We need to make sure caches know that different bearer tokens get totally different
+    // results.
+    options.vary = "Authorization"_kj;
+
+    // APIs can be called from any origin. Because we ignore cookies, there is no security
+    // problem.
+    options.accessControlAllowOrigin = "*"_kj;
+
+    // Add a Content-Security-Policy as a backup in case someone finds a way to load this
+    // resource in a browser context. This policy should thoroughly neuter it.
+    options.contentSecurityPolicy = "default-src 'none'; sandbox"_kj;
 
     kj::StringPtr key = ownKey;
 

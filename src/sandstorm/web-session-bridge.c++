@@ -39,17 +39,20 @@ static inline ByteStream::Client newNoStreamingByteStream();
 
 WebSessionBridge::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilder)
     : headerTable(headerTableBuilder.getFutureTable()),
+      hAccessControlAllowOrigin(headerTableBuilder.add("Access-Control-Allow-Origin")),
       hAccessControlExposeHeaders(headerTableBuilder.add("Access-Control-Expose-Headers")),
       hAccept(headerTableBuilder.add("Accept")),
       hAcceptEncoding(headerTableBuilder.add("Accept-Encoding")),
       hContentDisposition(headerTableBuilder.add("Content-Disposition")),
       hContentEncoding(headerTableBuilder.add("Content-Encoding")),
       hContentLanguage(headerTableBuilder.add("Content-Language")),
+      hContentSecurityPolicy(headerTableBuilder.add("Content-Security-Policy")),
       hCookie(headerTableBuilder.add("Cookie")),
       hETag(headerTableBuilder.add("ETag")),
       hIfMatch(headerTableBuilder.add("If-Match")),
       hIfNoneMatch(headerTableBuilder.add("If-None-Match")),
       hSecWebSocketProtocol(headerTableBuilder.add("Sec-WebSocket-Protocol")),
+      hVary(headerTableBuilder.add("Vary")),
 
       hDav(headerTableBuilder.add("DAV")),
       hDepth(headerTableBuilder.add("Depth")),
@@ -1163,6 +1166,16 @@ kj::Promise<void> WebSessionBridge::handleResponse(
         // TODO(cleanup): Handle this in KJ HTTP somehow.
         headers.add("Set-Cookie", kj::strArray(parts, ""));
       }
+    }
+
+    KJ_IF_MAYBE(v, options.vary) {
+      headers.set(tables.hVary, *v);
+    }
+    KJ_IF_MAYBE(acao, options.accessControlAllowOrigin) {
+      headers.set(tables.hAccessControlAllowOrigin, *acao);
+    }
+    KJ_IF_MAYBE(csp, options.contentSecurityPolicy) {
+      headers.set(tables.hContentSecurityPolicy, *csp);
     }
 
     for (auto addlHeader: in.getAdditionalHeaders()) {

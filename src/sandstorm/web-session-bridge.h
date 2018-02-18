@@ -37,17 +37,20 @@ public:
 
     const kj::HttpHeaderTable& headerTable;
 
+    kj::HttpHeaderId hAccessControlAllowOrigin;
     kj::HttpHeaderId hAccessControlExposeHeaders;
     kj::HttpHeaderId hAccept;
     kj::HttpHeaderId hAcceptEncoding;
     kj::HttpHeaderId hContentDisposition;
     kj::HttpHeaderId hContentEncoding;
     kj::HttpHeaderId hContentLanguage;
+    kj::HttpHeaderId hContentSecurityPolicy;
     kj::HttpHeaderId hCookie;
     kj::HttpHeaderId hETag;
     kj::HttpHeaderId hIfMatch;
     kj::HttpHeaderId hIfNoneMatch;
     kj::HttpHeaderId hSecWebSocketProtocol;
+    kj::HttpHeaderId hVary;
 
     kj::HttpHeaderId hDav;
     kj::HttpHeaderId hDepth;
@@ -68,6 +71,11 @@ public:
 
     bool isHttps = false;
     // Will we be serving over HTTPS?
+
+    kj::Maybe<kj::StringPtr> vary;
+    kj::Maybe<kj::StringPtr> accessControlAllowOrigin;
+    kj::Maybe<kj::StringPtr> contentSecurityPolicy;
+    // Headers to set on every response.
   };
 
   WebSessionBridge(WebSession::Client session, kj::Maybe<Handle::Client> loadingIndicator,

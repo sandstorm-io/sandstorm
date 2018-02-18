@@ -119,7 +119,8 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, observer) 
   } else if (grain.suspended) {
     throw new Meteor.Error("grain-owner-suspended", "grain owner has been suspended");
   }
-  // TODO(now): Observe the grain lookup to see if it becomes trashed or suspended.
+  // TODO(now): Observe the grain lookup to see if it becomes trashed or suspended, or if it
+  //   switches from old to new sharing model.
 
   let userInfo = null;
   if (accountId) {
@@ -689,6 +690,13 @@ function createSession(db, userId, sessionId, options) {
 
   return session;
 }
+
+// Kill off sessions idle for >~3 minutes.
+const TIMEOUT_MS = 180000;
+SandstormDb.periodicCleanup(TIMEOUT_MS, () => {
+  const now = new Date().getTime();
+  Sessions.remove({ timestamp: { $lt: (now - TIMEOUT_MS) } });
+});
 
 function bumpSession(sessionId) {
   const session = Sessions.findOne(sessionId);

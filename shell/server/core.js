@@ -19,10 +19,12 @@ import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/stati
 const Crypto = Npm.require("crypto");
 import { PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements,
          fetchApiToken, insertApiToken } from "/imports/server/persistent.js";
+import { SandstormBackend } from "/imports/server/backend.js";
 
 const PersistentHandle = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentHandle;
 const SandstormCore = Capnp.importSystem("sandstorm/supervisor.capnp").SandstormCore;
 const SandstormCoreFactory = Capnp.importSystem("sandstorm/backend.capnp").SandstormCoreFactory;
+const Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
 const PersistentOngoingNotification = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentOngoingNotification;
 const PersistentUiView = Capnp.importSystem("sandstorm/persistentuiview.capnp").PersistentUiView;
 const StaticAsset = Capnp.importSystem("sandstorm/util.capnp").StaticAsset;
@@ -650,9 +652,21 @@ class SandstormCoreFactoryImpl {
   }
 }
 
-makeSandstormCoreFactory = (db) => {
+function makeSandstormCoreFactory(db) {
   return new Capnp.Capability(new SandstormCoreFactoryImpl(db), SandstormCoreFactory);
 };
+
+// Start up the backend.
+const sandstormCoreFactory = makeSandstormCoreFactory(globalDb);
+const backendAddress = { capabilityStreamFd: parseInt(process.env.SANDSTORM_BACKEND_HANDLE) };
+let sandstormBackendConnection = Capnp.connect(backendAddress, sandstormCoreFactory);
+let sandstormBackend = sandstormBackendConnection.restore(null, Backend);
+
+globalBackend = new SandstormBackend(globalDb, sandstormBackend);
+globalBackend._backendConnection = sandstormBackendConnection;  // ... don't GC this, please.
+Meteor.onConnection((connection) => {
+  connection.sandstormBackend = globalBackend;
+});
 
 unwrapFrontendCap = (cap, type, callback) => {
   // Expect that `cap` is a Cap'n Proto capability implemented by the frontend as a frontendRef

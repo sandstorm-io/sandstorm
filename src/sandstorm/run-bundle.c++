@@ -1288,7 +1288,7 @@ private:
     bool isTesting = false;
     bool allowDevAccounts = false;
     bool hideTroubleshooting = false;
-    bool useExperimentalGateway = false;
+    bool useExperimentalGateway = true;
     uint smtpListenPort = 30025;
     kj::Maybe<kj::String> privateKeyPassword = nullptr;
     kj::Maybe<kj::String> termsPublicId = nullptr;

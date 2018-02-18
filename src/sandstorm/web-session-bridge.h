@@ -37,8 +37,13 @@ public:
 
     const kj::HttpHeaderTable& headerTable;
 
+    kj::HttpHeaderId hAccessControlAllowHeaders;
+    kj::HttpHeaderId hAccessControlAllowMethods;
     kj::HttpHeaderId hAccessControlAllowOrigin;
     kj::HttpHeaderId hAccessControlExposeHeaders;
+    kj::HttpHeaderId hAccessControlMaxAge;
+    kj::HttpHeaderId hAccessControlRequestHeaders;
+    kj::HttpHeaderId hAccessControlRequestMethod;
     kj::HttpHeaderId hAccept;
     kj::HttpHeaderId hAcceptEncoding;
     kj::HttpHeaderId hContentDisposition;
@@ -73,15 +78,15 @@ public:
     bool isHttps = false;
     // Will we be serving over HTTPS?
 
-    kj::Maybe<kj::StringPtr> vary;
-    kj::Maybe<kj::StringPtr> accessControlAllowOrigin;
-    kj::Maybe<kj::StringPtr> contentSecurityPolicy;
-    kj::Maybe<kj::StringPtr> xFrameOptions;
-    // Headers to set on every response.
+    bool isApi = false;
+    // If true, set Access-Control-Allow-Origin and the like as appropriate for an API endpoint.
   };
 
   WebSessionBridge(WebSession::Client session, kj::Maybe<Handle::Client> loadingIndicator,
                    const Tables& tables, Options options);
+
+  void restrictParentFrame(kj::StringPtr parent, kj::StringPtr self);
+  // Return headers that prevents any origin except the designated one from framing us.
 
   kj::Promise<void> request(
       kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
@@ -96,9 +101,6 @@ public:
     // still held when the HTTP request ends (or is canceled).
   };
 
-  Options& optionsRef() { return options; }
-  // HORRIBLE HACK for handling parentOrigin for UI sessions... :(
-
   static StreamAborterPair makeHttpResponseStream(
       uint statusCode, kj::StringPtr statusText,
       kj::HttpHeaders&& headers,
@@ -110,6 +112,12 @@ private:
   const Tables& tables;
   Options options;
 
+  struct FrameRestriction {
+    kj::String parent;
+    kj::String self;
+  };
+  kj::Maybe<FrameRestriction> frameRestriction;
+
   template <typename T>
   inline HttpStatusDescriptor::Reader lookupStatus(
       kj::ArrayPtr<const HttpStatusDescriptor::Reader> table,
@@ -117,6 +125,8 @@ private:
 
   kj::Promise<void> sendError(kj::HttpService::Response& response,
                               uint statusCode, kj::StringPtr statusText);
+
+  void addStandardOptions(const kj::HttpHeaders& reqHeaders, kj::HttpHeaders& respHeaders);
 
   kj::String davDestination(const kj::HttpHeaders& headers);
   bool davNoOverwrite(const kj::HttpHeaders& headers);

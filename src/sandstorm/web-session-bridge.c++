@@ -39,8 +39,13 @@ static inline ByteStream::Client newNoStreamingByteStream();
 
 WebSessionBridge::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilder)
     : headerTable(headerTableBuilder.getFutureTable()),
+      hAccessControlAllowHeaders(headerTableBuilder.add("Access-Control-Allow-Headers")),
+      hAccessControlAllowMethods(headerTableBuilder.add("Access-Control-Allow-Methods")),
       hAccessControlAllowOrigin(headerTableBuilder.add("Access-Control-Allow-Origin")),
       hAccessControlExposeHeaders(headerTableBuilder.add("Access-Control-Expose-Headers")),
+      hAccessControlMaxAge(headerTableBuilder.add("Access-Control-Max-Age")),
+      hAccessControlRequestHeaders(headerTableBuilder.add("Access-Control-Request-Headers")),
+      hAccessControlRequestMethod(headerTableBuilder.add("Access-Control-Request-Method")),
       hAccept(headerTableBuilder.add("Accept")),
       hAcceptEncoding(headerTableBuilder.add("Accept-Encoding")),
       hContentDisposition(headerTableBuilder.add("Content-Disposition")),
@@ -79,6 +84,16 @@ WebSessionBridge::WebSessionBridge(
       loadingIndicator(kj::mv(loadingIndicator)),
       tables(tables),
       options(options) {}
+
+void WebSessionBridge::restrictParentFrame(kj::StringPtr parent, kj::StringPtr self) {
+  KJ_REQUIRE(!options.isApi, "can't apply frame restriction to API endpoint");
+  KJ_IF_MAYBE(fr, frameRestriction) {
+    KJ_REQUIRE(parent == fr->parent, "frame restriction on UI session changed");
+    KJ_REQUIRE(self == fr->self, "frame restriction on UI session changed");
+  } else {
+    frameRestriction = FrameRestriction { kj::str(parent), kj::str(self) };
+  }
+}
 
 kj::Promise<void> WebSessionBridge::request(
     kj::HttpMethod method, kj::StringPtr path, const kj::HttpHeaders& headers,
@@ -345,7 +360,7 @@ kj::Promise<void> WebSessionBridge::request(
       // TODO(cleanup): Refactor initContext() so that we can avoid creating a stream here.
       streamer.streamer->fulfill(newNoStreamingByteStream());
       return req.send()
-          .then([this,&response](capnp::Response<WebSession::Options> options) mutable {
+          .then([this,&headers,&response](capnp::Response<WebSession::Options> options) mutable {
         kj::HttpHeaders respHeaders(tables.headerTable);
         kj::Vector<kj::StringPtr> dav;
         if (options.getDavClass1()) dav.add("1");
@@ -361,11 +376,14 @@ kj::Promise<void> WebSessionBridge::request(
           respHeaders.set(tables.hAccessControlExposeHeaders, "DAV");
         }
 
+        addStandardOptions(headers, respHeaders);
+
         response.send(200, "OK", respHeaders, uint64_t(0));
-      }, [this,&response](kj::Exception&& e) {
+      }, [this,&headers,&response](kj::Exception&& e) {
         if (e.getType() == kj::Exception::Type::UNIMPLEMENTED) {
           // Nothing to say.
           kj::HttpHeaders respHeaders(tables.headerTable);
+          addStandardOptions(headers, respHeaders);
           response.send(200, "OK", respHeaders, uint64_t(0));
         } else {
           kj::throwRecoverableException(kj::mv(e));
@@ -375,6 +393,27 @@ kj::Promise<void> WebSessionBridge::request(
 
     default:
       return response.sendError(501, "Not Implemented", tables.headerTable);
+  }
+}
+
+void WebSessionBridge::addStandardOptions(
+    const kj::HttpHeaders& reqHeaders, kj::HttpHeaders& respHeaders) {
+  if (options.isApi) {
+    // Try to convince browsers that it's really totally OK to send cross-origin requests to API
+    // endpoints.
+    respHeaders.set(tables.hAccessControlAllowOrigin, "*");
+    respHeaders.set(tables.hAccessControlMaxAge, "3600");
+
+    KJ_IF_MAYBE(h, reqHeaders.get(tables.hAccessControlRequestHeaders)) {
+      respHeaders.set(tables.hAccessControlAllowHeaders, *h);
+    }
+
+    constexpr kj::StringPtr standardMethods = "GET, HEAD, POST, PUT, PATCH, DELETE"_kj;
+    KJ_IF_MAYBE(m, reqHeaders.get(tables.hAccessControlRequestMethod)) {
+      respHeaders.set(tables.hAccessControlAllowMethods, kj::str(standardMethods, ", ", *m));
+    } else {
+      respHeaders.set(tables.hAccessControlAllowMethods, standardMethods);
+    }
   }
 }
 
@@ -1169,24 +1208,40 @@ kj::Promise<void> WebSessionBridge::handleResponse(
       }
     }
 
-    KJ_IF_MAYBE(v, options.vary) {
-      headers.set(tables.hVary, *v);
-    }
-    KJ_IF_MAYBE(acao, options.accessControlAllowOrigin) {
-      headers.set(tables.hAccessControlAllowOrigin, *acao);
-    }
-    KJ_IF_MAYBE(csp, options.contentSecurityPolicy) {
-      headers.set(tables.hContentSecurityPolicy, *csp);
-    }
-    KJ_IF_MAYBE(xfo, options.xFrameOptions) {
-      headers.set(tables.hXFrameOptions, *xfo);
+    KJ_IF_MAYBE(fr, frameRestriction) {
+      KJ_ASSERT(!options.isApi);
+      headers.set(tables.hContentSecurityPolicy,
+          kj::str("frame-ancestors ", fr->parent, " ", fr->self));
+      headers.set(tables.hXFrameOptions, kj::str("ALLOW-FROM ", fr->parent));
     }
 
-    for (auto addlHeader: in.getAdditionalHeaders()) {
+    auto addlHeaders = in.getAdditionalHeaders();
+    kj::Vector<kj::StringPtr> exposedHeaders(addlHeaders.size() + 1);
+    // The only non-CORS-safelisted headers that we use on responses and want to expose
+    // cross-origin are ETag and app-specific whitelisted headers.
+    exposedHeaders.add("ETag");
+    for (auto addlHeader: addlHeaders) {
       auto name = addlHeader.getName();
       if (tables.responseHeaderWhitelist.matches(name)) {
         headers.add(name, addlHeader.getValue());
+        exposedHeaders.add(name);
       }
+    }
+
+    if (options.isApi) {
+      // We need to make sure caches know that different bearer tokens get totally different
+      // results.
+      headers.set(tables.hVary, "Authorization");
+
+      // APIs can be called from any origin. Because we ignore cookies, there is no security
+      // problem.
+      headers.set(tables.hAccessControlAllowOrigin, "*");
+
+      // Add a Content-Security-Policy as a backup in case someone finds a way to load this
+      // resource in a browser context. This policy should thoroughly neuter it.
+      headers.set(tables.hContentSecurityPolicy, "default-src 'none'; sandbox");
+
+      headers.set(tables.hAccessControlExposeHeaders, kj::strArray(exposedHeaders, ", "));
     }
 
     // If we complete this function without calling fulfill() to connect the stream, then this is

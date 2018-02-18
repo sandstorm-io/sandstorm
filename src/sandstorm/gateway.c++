@@ -465,27 +465,18 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
         loadingFulfiller->fulfill(sent.getLoadingIndicator());
       }
       auto result = sent.getSession();
-      kj::String keyCopy = kj::str(sessionId);
-      kj::StringPtr keyCopyRef = keyCopy;
-      tasks.add(sent.then([this,keyCopyRef,KJ_MVCAP(basePath)]
-                          (capnp::Response<GatewayRouter::OpenUiSessionResults>&& response) {
-        auto iter = uiHosts.find(keyCopyRef);
-        if (iter != uiHosts.end()) {
-          auto& options = iter->second.bridge->optionsRef();
-          if (options.contentSecurityPolicy == nullptr) {
-            auto parentOrigin = response.getParentOrigin();
-            auto csp = kj::str("frame-ancestors ", parentOrigin, " ", basePath);
-            auto xfo = kj::str("ALLOW-FROM ", parentOrigin);
-            options.contentSecurityPolicy = kj::StringPtr(csp);
-            options.xFrameOptions = kj::StringPtr(xfo);
-            iter->second.bridge = iter->second.bridge.attach(kj::mv(csp), kj::mv(xfo));
-          }
-        }
-      }, [this,keyCopyRef](kj::Exception&& e) {
+      return sent.then([this,&sessionId,&basePath]
+                       (capnp::Response<GatewayRouter::OpenUiSessionResults>&& response)
+                       -> capnp::Capability::Client {
+        auto iter = uiHosts.find(sessionId);
+        KJ_ASSERT(iter != uiHosts.end());
+        iter->second.bridge->restrictParentFrame(response.getParentOrigin(), basePath);
+        return response.getSession();
+      }, [this,&sessionId](kj::Exception&& e) -> capnp::Capability::Client {
         // On error, invalidate the cached session immediately.
-        uiHosts.erase(keyCopyRef);
-      }).attach(kj::mv(keyCopy)));
-      return result;
+        uiHosts.erase(sessionId);
+        kj::throwFatalException(kj::mv(e));
+      });
     });
 
     UiHostEntry entry {
@@ -580,18 +571,7 @@ kj::Own<kj::HttpService> GatewayService::getApiBridge(
     WebSessionBridge::Options options;
     options.allowCookies = false;
     options.isHttps = baseUrl.scheme == "https";
-
-    // We need to make sure caches know that different bearer tokens get totally different
-    // results.
-    options.vary = "Authorization"_kj;
-
-    // APIs can be called from any origin. Because we ignore cookies, there is no security
-    // problem.
-    options.accessControlAllowOrigin = "*"_kj;
-
-    // Add a Content-Security-Policy as a backup in case someone finds a way to load this
-    // resource in a browser context. This policy should thoroughly neuter it.
-    options.contentSecurityPolicy = "default-src 'none'; sandbox"_kj;
+    options.isApi = true;
 
     kj::StringPtr key = ownKey;
 

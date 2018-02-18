@@ -598,7 +598,10 @@ Template.requestAccess.onCreated(function () {
     this.subscribe("requestingAccess", grainId);
     const granted = GrantedAccessRequests.findOne({ grainId: grainId });
     if (granted && !this._grain.token()) {
-      this._grain.reset(false);
+      // Access was granted to this user explicitly. Hence the user's identity is already known.
+      // Also, the user only has access by virtue of their identity. So, we can and must reveal
+      // identity immediately (`true` parameter here).
+      this._grain.reset(true);
       this._grain.openSession();
     }
   });

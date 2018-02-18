@@ -139,11 +139,8 @@ kj::Promise<void> GatewayService::request(
   }
 
   KJ_IF_MAYBE(hostId, wildcardHost.match(host)) {
-    if (*hostId == "ddp") {
-      // DDP host. Fall back to shell.
-      return shellHttp->request(method, url, headers, requestBody, response);
-    } else if (*hostId == "static") {
-      // TODO(soon): Static asset hosting. Fall back to shell for now.
+    if (*hostId == "ddp" || *hostId == "static" || *hostId == "payments") {
+      // Specific hosts handled by shell.
       return shellHttp->request(method, url, headers, requestBody, response);
     } else if (*hostId == "api") {
       KJ_IF_MAYBE(token, getAuthToken(headers, false)) {

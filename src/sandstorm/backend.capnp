@@ -125,7 +125,7 @@ interface GatewayRouter {
   # it does not know how to handle directly.
 
   openUiSession @0 (sessionCookie :Text, params :WebSession.Params)
-                -> (session :WebSession, loadingIndicator :Util.Handle);
+                -> (session :WebSession, loadingIndicator :Util.Handle, parentOrigin :Text);
   # Given a sandstorm-sid cookie value for a UI session, find the WebSession to handle requests.
   #
   # The gateway may cache the session capability, associated with this cookie value, for as long
@@ -136,6 +136,9 @@ interface GatewayRouter {
   # While `loadingIndicator` is held, the user will see a loading indicator on their screen. Drop
   # this capability when the first HTTP response is received from the app to make the loading
   # indicator go away.
+  #
+  # `parentOrigin` is the origin permitted to frame this UI session. E.g. Content-Security-Policy
+  # frame-ancestors should be used to block clickjacking.
 
   openApiSession @1 (apiToken :Text, params :ApiSession.Params) -> (session :ApiSession);
   # Given a token from an `Authorization` header, find the ApiSession to handle requests.

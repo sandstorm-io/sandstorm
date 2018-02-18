@@ -53,6 +53,7 @@ WebSessionBridge::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilde
       hIfNoneMatch(headerTableBuilder.add("If-None-Match")),
       hSecWebSocketProtocol(headerTableBuilder.add("Sec-WebSocket-Protocol")),
       hVary(headerTableBuilder.add("Vary")),
+      hXFrameOptions(headerTableBuilder.add("X-Frame-Options")),
 
       hDav(headerTableBuilder.add("DAV")),
       hDepth(headerTableBuilder.add("Depth")),
@@ -1176,6 +1177,9 @@ kj::Promise<void> WebSessionBridge::handleResponse(
     }
     KJ_IF_MAYBE(csp, options.contentSecurityPolicy) {
       headers.set(tables.hContentSecurityPolicy, *csp);
+    }
+    KJ_IF_MAYBE(xfo, options.xFrameOptions) {
+      headers.set(tables.hXFrameOptions, *xfo);
     }
 
     for (auto addlHeader: in.getAdditionalHeaders()) {

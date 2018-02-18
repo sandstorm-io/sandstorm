@@ -296,7 +296,8 @@ class GatewayRouterImpl {
             }
             hasLoaded = true;
           }
-        }
+        },
+        parentOrigin: session.parentOrigin || process.env.ROOT_URL
       };
     }).catch(err => {
       observer.invalidate();
@@ -638,6 +639,10 @@ function createSession(db, userId, sessionId, options) {
     hasLoaded: false,
   };
 
+  if (options.parentOrigin) {
+    session.parentOrigin = options.parentOrigin;
+  }
+
   let grain = null;
   if (token) {
     session.hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
@@ -714,10 +719,12 @@ Meteor.publish("sessions", function (sessionId, options) {
       requestingSession: String,
     }),
 
-    revealIdentity: Match.Optional(Boolean)
+    revealIdentity: Match.Optional(Boolean),
     // Note: You can hide identity when opening a grain by grain ID (no token) in the old sharing
     //   model. Conversely, you can reveal identity without redeeming a sharing token with
     //   standalone grains.
+
+    parentOrigin: Match.Optional(String)
   }));
 
   const db = this.connection.sandstormDb;
@@ -867,6 +874,7 @@ if (process.env.EXPERIMENTAL_GATEWAY) {
       });
       options.revealIdentity = !!revealIdentity;
       options.token = params.token;
+      if (parentOrigin) options.parentOrigin = parentOrigin;
 
       const token = params.token;
 

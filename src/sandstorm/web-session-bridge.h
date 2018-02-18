@@ -51,6 +51,7 @@ public:
     kj::HttpHeaderId hIfNoneMatch;
     kj::HttpHeaderId hSecWebSocketProtocol;
     kj::HttpHeaderId hVary;
+    kj::HttpHeaderId hXFrameOptions;
 
     kj::HttpHeaderId hDav;
     kj::HttpHeaderId hDepth;
@@ -75,6 +76,7 @@ public:
     kj::Maybe<kj::StringPtr> vary;
     kj::Maybe<kj::StringPtr> accessControlAllowOrigin;
     kj::Maybe<kj::StringPtr> contentSecurityPolicy;
+    kj::Maybe<kj::StringPtr> xFrameOptions;
     // Headers to set on every response.
   };
 
@@ -93,6 +95,9 @@ public:
     // request/response. This is necessary to prevent dangling references if the stream cap is
     // still held when the HTTP request ends (or is canceled).
   };
+
+  Options& optionsRef() { return options; }
+  // HORRIBLE HACK for handling parentOrigin for UI sessions... :(
 
   static StreamAborterPair makeHttpResponseStream(
       uint statusCode, kj::StringPtr statusText,

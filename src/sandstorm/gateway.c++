@@ -408,8 +408,9 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
     capnp::MallocMessageBuilder requestMessage(128);
     auto params = requestMessage.getRoot<WebSession::Params>();
 
-    params.setBasePath(kj::str(baseUrl.scheme, "://",
-        KJ_ASSERT_NONNULL(headers.get(kj::HttpHeaderId::HOST))));
+    auto basePath = kj::str(baseUrl.scheme, "://",
+        KJ_ASSERT_NONNULL(headers.get(kj::HttpHeaderId::HOST)));
+    params.setBasePath(basePath);
     params.setUserAgent(headers.get(tables.hUserAgent).orDefault("UnknownAgent/0.0"));
 
     KJ_IF_MAYBE(languages, headers.get(tables.hAcceptLanguage)) {
@@ -435,7 +436,7 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
     //   ClientHook-based library to Cap'n Proto implementing the CapRedirector pattern more
     //   efficiently.
     capnp::Capability::Client sessionRedirector = kj::heap<CapRedirector>(
-        [this,router = this->router,KJ_MVCAP(ownParams),KJ_MVCAP(sessionId),
+        [this,router = this->router,KJ_MVCAP(ownParams),KJ_MVCAP(sessionId),KJ_MVCAP(basePath),
          loadingFulfiller = kj::mv(loadingPaf.fulfiller)]() mutable
         -> capnp::Capability::Client {
       auto req = router.openUiSessionRequest();
@@ -446,10 +447,26 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
         loadingFulfiller->fulfill(sent.getLoadingIndicator());
       }
       auto result = sent.getSession();
-      tasks.add(sent.then([](auto) {}, [this,key = kj::str(sessionId)](kj::Exception&& e) {
+      kj::String keyCopy = kj::str(sessionId);
+      kj::StringPtr keyCopyRef = keyCopy;
+      tasks.add(sent.then([this,keyCopyRef,KJ_MVCAP(basePath)]
+                          (capnp::Response<GatewayRouter::OpenUiSessionResults>&& response) {
+        auto iter = uiHosts.find(keyCopyRef);
+        if (iter != uiHosts.end()) {
+          auto& options = iter->second.bridge->optionsRef();
+          if (options.contentSecurityPolicy == nullptr) {
+            auto parentOrigin = response.getParentOrigin();
+            auto csp = kj::str("frame-ancestors ", parentOrigin, " ", basePath);
+            auto xfo = kj::str("ALLOW-FROM ", parentOrigin);
+            options.contentSecurityPolicy = kj::StringPtr(csp);
+            options.xFrameOptions = kj::StringPtr(xfo);
+            iter->second.bridge = iter->second.bridge.attach(kj::mv(csp), kj::mv(xfo));
+          }
+        }
+      }, [this,keyCopyRef](kj::Exception&& e) {
         // On error, invalidate the cached session immediately.
-        uiHosts.erase(key);
-      }));
+        uiHosts.erase(keyCopyRef);
+      }).attach(kj::mv(keyCopy)));
       return result;
     });
 

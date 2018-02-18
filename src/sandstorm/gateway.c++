@@ -96,9 +96,25 @@ kj::Promise<void> GatewayService::cleanupLoop() {
   isPurging = true;
   return timer.afterDelay(PURGE_PERIOD).then([this]() {
     auto now = timer.now();
+
+    // TODO(perf): If we were more clever we could make these O(number of expired entries) rather
+    //   than O(number of entries), but I doubt it matters.
     removeExpired(uiHosts, now, PURGE_PERIOD);
     removeExpired(apiHosts, now, PURGE_PERIOD);
     removeExpired(staticPublishers, now, PURGE_PERIOD);
+
+    {
+      auto iter = foreignHostnames.begin();
+      while (iter != foreignHostnames.end()) {
+        auto next = iter;
+        ++next;
+        if (iter->second.expires <= now) {
+          foreignHostnames.erase(iter);
+        }
+        iter = next;
+      }
+    }
+
     return cleanupLoop();
   });
 }
@@ -115,9 +131,17 @@ kj::Promise<void> GatewayService::request(
     kj::AsyncInputStream& requestBody, Response& response) {
   KJ_ASSERT(isPurging, "forgot to call cleanupLoop()");
 
-  KJ_IF_MAYBE(hostId, wildcardHost.match(headers)) {
+  kj::StringPtr host;
+  KJ_IF_MAYBE(h, headers.get(kj::HttpHeaderId::HOST)) {
+    host = *h;
+  } else {
+    return sendError(400, "Bad Request", response, "missing Host header");
+  }
+
+  KJ_IF_MAYBE(hostId, wildcardHost.match(host)) {
     if (*hostId == "static") {
-      // TODO(soon): Static asset hosting.
+      // TODO(soon): Static asset hosting. Fall back to shell for now.
+      return shellHttp->request(method, url, headers, requestBody, response);
     } else if (*hostId == "api") {
       KJ_IF_MAYBE(token, getAuthToken(headers, false)) {
         auto bridge = getApiBridge(*token, headers);
@@ -223,6 +247,7 @@ kj::Promise<void> GatewayService::request(
       // TODO(now): TODO(security): Port over CSRF defense from old proxy.
       // TODO(now): TODO(security): Port over clickjacking defense (CSP frame-ancestors) from old
       //     proxy.
+      // TODO(now): Support standalone grains in both of the above!
 
       auto headersCopy = kj::heap(headers.cloneShallow());
       KJ_IF_MAYBE(bridge, getUiBridge(*headersCopy)) {
@@ -239,35 +264,35 @@ kj::Promise<void> GatewayService::request(
       auto promise = getStaticPublished(*hostId, url, headers, response);
       return promise.attach(kj::mv(*hostId));
     } else {
-      // TODO(soon): Treat as custom domain, look up sandstorm-www txt record...
-      // TODO(now): Handle standalone host.
+      return handleForeignHostname(host, method, url, headers, requestBody, response);
     }
-  } else KJ_IF_MAYBE(host, headers.get(kj::HttpHeaderId::HOST)) {
-    if (*host == baseUrl.host) {
-      KJ_IF_MAYBE(tpi, termsPublicId) {
-        auto parsedUrl = kj::Url::parse(url, kj::Url::HTTP_REQUEST);
-        if (parsedUrl.path.size() > 0 &&
-            (parsedUrl.path[0] == "terms" || parsedUrl.path[0] == "privacy")) {
-          // Request for /terms or /privacy, and we've configured a special public ID for that.
-          // (This is a backwards-compatibility hack mainly for Sandstorm Oasis, where an nginx
-          // proxy used to map these paths to static assets, but we want to replace nginx entirely
-          // with the gateway.)
-          kj::String ownUrl;
-          if (parsedUrl.path.size() == 1 && !parsedUrl.hasTrailingSlash) {
-            // Extra special hack: Fake a ".html" extension for MIME type sniffing.
-            ownUrl = kj::str("/", parsedUrl.path[0], ".html");
-            url = ownUrl;
-          }
-          return getStaticPublished(*tpi, url, headers, response);
+  } else if (host == baseUrl.host) {
+    KJ_IF_MAYBE(tpi, termsPublicId) {
+      auto parsedUrl = kj::Url::parse(url, kj::Url::HTTP_REQUEST);
+      if (parsedUrl.path.size() > 0 &&
+          (parsedUrl.path[0] == "terms" || parsedUrl.path[0] == "privacy")) {
+        // Request for /terms or /privacy, and we've configured a special public ID for that.
+        // (This is a backwards-compatibility hack mainly for Sandstorm Oasis, where an nginx
+        // proxy used to map these paths to static assets, but we want to replace nginx entirely
+        // with the gateway.)
+        kj::String ownUrl;
+        if (parsedUrl.path.size() == 1 && !parsedUrl.hasTrailingSlash) {
+          // Extra special hack: Fake a ".html" extension for MIME type sniffing.
+          ownUrl = kj::str("/", parsedUrl.path[0], ".html");
+          url = ownUrl;
         }
+        return getStaticPublished(*tpi, url, headers, response);
       }
     }
+
+    // TODO(perf): Serve Meteor static assets directly, *unless* the server is in dev mode.
+
+    // Fall back to shell.
+    return shellHttp->request(method, url, headers, requestBody, response);
+  } else {
+    // Neither our base URL nor our wildcard URL. It's a foreign hostname.
+    return handleForeignHostname(host, method, url, headers, requestBody, response);
   }
-
-  // TODO(perf): Serve Meteor static assets directly, *unless* the server is in dev mode.
-
-  // Fall back to shell.
-  return shellHttp->request(method, url, headers, requestBody, response);
 }
 
 kj::Promise<void> GatewayService::openWebSocket(
@@ -672,6 +697,110 @@ kj::Promise<void> GatewayService::getStaticPublished(
       return kj::mv(e);
     }
   });
+}
+
+kj::Promise<void> GatewayService::handleForeignHostname(kj::StringPtr host,
+    kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
+    kj::AsyncInputStream& requestBody, Response& response) {
+  // Strip off port, if any.
+  const char* pos = host.end();
+  while (pos > host.begin() && '0' <= pos[-1] && pos[-1] <= '9') --pos;
+  kj::String hostname;
+  if (pos > host.begin() && pos < host.end() && pos[-1] == ':') {
+    hostname = kj::str(kj::arrayPtr(host.begin(), pos - 1));
+  } else {
+    hostname = kj::str(host);
+  }
+
+  auto handleEntry = [this,method,url,&headers,&requestBody,&response,alreadyDone=false]
+                     (ForeignHostnameEntry& entry) mutable -> kj::Promise<void> {
+    if (alreadyDone) return kj::READY_NOW;
+
+    switch (entry.info.which()) {
+      case GatewayRouter::ForeignHostnameInfo::UNKNOWN: {
+        auto message = unknownForeignHostnameError(entry.id);
+        kj::HttpHeaders headers(tables.headerTable);
+        headers.set(kj::HttpHeaderId::CONTENT_TYPE, "text/html; charset=UTF-8");
+        auto stream = response.send(404, "Not Found", headers, message.size());
+        auto promise = stream->write(message.begin(), message.size());
+        return promise.attach(kj::mv(stream), kj::mv(message));
+      }
+
+      case GatewayRouter::ForeignHostnameInfo::STATIC_PUBLISHING:
+        return getStaticPublished(entry.info.getStaticPublishing(), url, headers, response);
+
+      case GatewayRouter::ForeignHostnameInfo::STANDALONE:
+        // Serve Meteor shell app on standalone host.
+        return shellHttp->request(method, url, headers, requestBody, response);
+    }
+    KJ_UNREACHABLE;
+  };
+
+  kj::Maybe<kj::Promise<void>> alreadyHandled;
+
+  auto iter = foreignHostnames.find(hostname);
+  auto now = timer.now();
+  if (iter != foreignHostnames.end()) {
+    if (iter->second.expires > now) {
+      // We can use this entry.
+      if (iter->second.refreshAfter > now || iter->second.currentlyRefreshing) {
+        // Refresh not needed yet.
+        return handleEntry(iter->second);
+      } else {
+        // We can use this entry but we need to initiate a refresh, too.
+        alreadyHandled = handleEntry(iter->second);
+        iter->second.currentlyRefreshing = true;
+      }
+    }
+  }
+
+  auto req = router.routeForeignHostnameRequest();
+  req.setHostname(hostname);
+  auto promise = req.send()
+      .then([this,id=kj::str(hostname),now,handleEntry]
+            (capnp::Response<GatewayRouter::RouteForeignHostnameResults>&& response) mutable {
+    auto info = response.getInfo();
+    ForeignHostnameEntry entry(kj::mv(id), info, now, info.getTtlSeconds() * kj::SECONDS);
+    kj::StringPtr key = entry.id;
+    auto insertResult = foreignHostnames.insert(std::make_pair(key, kj::mv(entry)));
+    if (!insertResult.second) {
+      entry.id = kj::mv(insertResult.first->second.id);
+      insertResult.first->second = kj::mv(entry);
+    }
+    return handleEntry(insertResult.first->second);
+  });
+
+  KJ_IF_MAYBE(ah, alreadyHandled) {
+    tasks.add(kj::mv(promise));
+    return kj::mv(*ah);
+  } else {
+    return kj::mv(promise);
+  }
+}
+
+kj::String GatewayService::unknownForeignHostnameError(kj::StringPtr host) {
+  return kj::str(
+      "<style type=\"text/css\">h2, h3, p { max-width: 600px; }</style>"
+      "<h2>Sandstorm static publishing needs further configuration (or wrong URL)</h2>\n"
+      "<p>If you were trying to configure static publishing for a blog or website, powered "
+      "by a Sandstorm app hosted at this server, you either have not added DNS TXT records "
+      "correctly, or the DNS cache has not updated yet (may take a while, like 5 minutes to one "
+      "hour).</p>\n"
+      "<p>To visit this Sandstorm server's main interface, go to: <a href='", baseUrl, "'>",
+      baseUrl, "</a></p>\n"
+      "<h3>DNS details</h3>\n"
+      "<p>No TXT records were found for the host: <code>sandstorm-www.", host, "</code></p>\n"
+      "<p>If you have the <tt>dig</tt> tool, you can run this command to learn more:</p>\n"
+      "<p><code>dig -t TXT sandstorm-www.", host, "</code></p>\n"
+      "<h3>Changing the server URL, or troubleshooting OAuth login</h3>\n"
+      "<p>If you are the server admin and want to use this address as the main interface, "
+      "edit /opt/sandstorm/sandstorm.conf, modify the BASE_URL setting, and restart "
+      "Sandstorm.</p>\n"
+      "<p>If you got here after trying to log in via OAuth (e.g. through GitHub or Google), "
+      "the problem is probably that the OAuth callback URL was set wrong. You need to "
+      "update it through the respective login provider's management console. The "
+      "easiest way to do that is to run <code>sudo sandstorm admin-token</code>, then "
+      "reconfigure the OAuth provider.</p>\n");
 }
 
 void GatewayService::taskFailed(kj::Exception&& exception) {

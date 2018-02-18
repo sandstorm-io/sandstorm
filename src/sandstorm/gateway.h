@@ -123,6 +123,27 @@ private:
 
   std::map<kj::StringPtr, StaticPublisherEntry> staticPublishers;
 
+  struct ForeignHostnameEntry: public kj::Refcounted {
+    kj::String id;
+    OwnCapnp<GatewayRouter::ForeignHostnameInfo> info;
+    kj::TimePoint refreshAfter;
+    kj::TimePoint expires;
+    bool currentlyRefreshing;
+
+    ForeignHostnameEntry(kj::String id, GatewayRouter::ForeignHostnameInfo::Reader info,
+                         kj::TimePoint now, kj::Duration ttl)
+        : id(kj::mv(id)), info(newOwnCapnp(info)),
+          refreshAfter(now + ttl / 2), expires(now + ttl),
+          currentlyRefreshing(false) {}
+
+    ForeignHostnameEntry(const ForeignHostnameEntry&) = delete;
+    ForeignHostnameEntry(ForeignHostnameEntry&&) = default;
+    ForeignHostnameEntry& operator=(const ForeignHostnameEntry&) = delete;
+    ForeignHostnameEntry& operator=(ForeignHostnameEntry&&) = default;
+  };
+
+  std::map<kj::StringPtr, ForeignHostnameEntry> foreignHostnames;
+
   bool isPurging = false;
 
   kj::TaskSet tasks;
@@ -137,6 +158,12 @@ private:
   kj::Promise<void> getStaticPublished(
       kj::StringPtr publicId, kj::StringPtr path, const kj::HttpHeaders& headers,
       kj::HttpService::Response& response, uint retryCount = 0);
+
+  kj::Promise<void> handleForeignHostname(kj::StringPtr host,
+      kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
+      kj::AsyncInputStream& requestBody, Response& response);
+
+  kj::String unknownForeignHostnameError(kj::StringPtr host);
 
   void taskFailed(kj::Exception&& exception) override;
 };

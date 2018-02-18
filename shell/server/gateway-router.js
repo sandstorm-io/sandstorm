@@ -22,8 +22,10 @@ const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 const Crypto = Npm.require("crypto");
+const Dns = Npm.require("dns");
 
 const SESSION_PROXY_TIMEOUT = 60000;
+const DNS_CACHE_TTL_SECONDS = 30;
 
 currentTlsKeysCallback = null;
 
@@ -461,6 +463,33 @@ class GatewayRouterImpl {
       } else {
         throw new Meteor.Error(404, "No such grain for public ID: " + publicId);
       }
+    });
+  }
+
+  routeForeignHostname(hostname) {
+    return inMeteor(() => {
+      if (globalDb.hostIsStandalone(hostname)) {
+        return { info: { standalone: null, ttlSeconds: DNS_CACHE_TTL_SECONDS } };
+      }
+
+      return new Promise((resolve, reject) => {
+        Dns.resolveTxt("sandstorm-www." + hostname, (err, records) => {
+          if (err) {
+            if (err.code == Dns.NOTFOUND || err.code == Dns.NODATA) {
+              resolve({ info: { unknown: null } });
+            } else {
+              reject(err);
+            }
+          } else if (records.length !== 1) {
+            reject(new Error('Host "sandstorm-www.' + hostname +
+                '" must have exactly one TXT record.'));
+          } else {
+            resolve({
+              info: { staticPublishing: records[0].join(""), ttlSeconds: DNS_CACHE_TTL_SECONDS }
+            });
+          }
+        });
+      });
     });
   }
 }

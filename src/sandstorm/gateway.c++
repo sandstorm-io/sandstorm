@@ -220,6 +220,10 @@ kj::Promise<void> GatewayService::request(
         return kj::READY_NOW;
       }
 
+      // TODO(now): TODO(security): Port over CSRF defense from old proxy.
+      // TODO(now): TODO(security): Port over clickjacking defense (CSP frame-ancestors) from old
+      //     proxy.
+
       auto headersCopy = kj::heap(headers.cloneShallow());
       KJ_IF_MAYBE(bridge, getUiBridge(*headersCopy)) {
         auto promise = bridge->get()->request(method, url, *headersCopy, requestBody, response);
@@ -236,6 +240,7 @@ kj::Promise<void> GatewayService::request(
       return promise.attach(kj::mv(*hostId));
     } else {
       // TODO(soon): Treat as custom domain, look up sandstorm-www txt record...
+      // TODO(now): Handle standalone host.
     }
   } else KJ_IF_MAYBE(host, headers.get(kj::HttpHeaderId::HOST)) {
     if (*host == baseUrl.host) {

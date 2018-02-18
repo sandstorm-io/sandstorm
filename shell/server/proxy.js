@@ -204,63 +204,7 @@ function parsePowerboxDescriptorList(list) {
                   { packed: true }));
 }
 
-Meteor.methods({
-  newGrain(packageId, command, title, obsolete) {
-    // Create and start a new grain.
-
-    check(packageId, String);
-    check(command, Object);  // Manifest.Command from package.capnp.
-    check(title, String);
-
-    if (!this.userId) {
-      throw new Meteor.Error(403, "Unauthorized", "Must be logged in to create grains.");
-    }
-
-    if (!isSignedUpOrDemo()) {
-      throw new Meteor.Error(403, "Unauthorized",
-                             "Only invited users or demo users can create grains.");
-    }
-
-    if (isUserOverQuota(Meteor.user())) {
-      throw new Meteor.Error(402,
-          "You are out of storage space. Please delete some things and try again.");
-    }
-
-    let pkg = Packages.findOne(packageId);
-    let isDev = false;
-    let mountProc = false;
-    if (!pkg) {
-      // Maybe they wanted a dev package.  Check there too.
-      pkg = DevPackages.findOne(packageId);
-      isDev = true;
-      mountProc = pkg.mountProc;
-    }
-
-    if (!pkg) {
-      throw new Meteor.Error(404, "Not Found", "No such package is installed.");
-    }
-
-    const appId = pkg.appId;
-    const manifest = pkg.manifest;
-    const grainId = Random.id(22);  // 128 bits of entropy
-    Grains.insert({
-      _id: grainId,
-      packageId: packageId,
-      appId: appId,
-      appVersion: manifest.appVersion,
-      userId: this.userId,
-      identityId: SandstormDb.generateIdentityId(),
-      title: title,
-      private: true,
-      size: 0,
-    });
-
-    globalBackend.startGrainInternal(packageId, grainId, this.userId, command, true,
-                                     isDev, mountProc);
-    globalBackend.updateLastActive(grainId, this.userId);
-    return grainId;
-  },
-
+if (!process.env.EXPERIMENTAL_GATEWAY) Meteor.methods({
   openSession(grainId, revealIdentity, cachedSalt, options) {
     // Open a new UI session on an existing grain.  Starts the grain if it is not already
     // running.
@@ -489,19 +433,9 @@ Meteor.methods({
       return false;
     }
   },
-
-  shutdownGrain(grainId) {
-    check(grainId, String);
-    const grain = Grains.findOne(grainId);
-    if (!grain || !this.userId || grain.userId !== this.userId) {
-      throw new Meteor.Error(403, "Unauthorized", "User is not the owner of this grain");
-    }
-
-    waitPromise(globalBackend.shutdownGrain(grainId, grain.userId, true));
-  },
 });
 
-validateWebkey = (apiToken, refreshedExpiration) => {
+function validateWebkey(apiToken, refreshedExpiration) {
   // Validates that `apiToken` is a valid UiView webkey, throwing an exception if it is not. If
   // `refreshedExpiration` is set and if the token has an `expiresIfUnused` field, then the
   // `expiresIfUnused` field is reset to `refreshedExpiration`.

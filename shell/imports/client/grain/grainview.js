@@ -527,6 +527,14 @@ class GrainView {
           _this._fulfilledInfo = (session.powerboxView || {}).fulfill;
         }
 
+        if (session.denied) {
+          _this._status = "error";
+          _this._error = new Meteor.Error(session.denied, "error: " + session.denied);
+        } else {
+          _this._status = "opened";
+          _this._error = undefined;
+        }
+
         _this._dep.changed();
       },
 
@@ -572,6 +580,7 @@ class GrainView {
     };
 
     onceConditionIsTrue(condition, () => {
+      // TODO(now): Don't call openSession; just use a subscription.
       Meteor.call("openSession", _this._grainId, !isIncognito, _this._sessionSalt, this._options,
                   (error, result) => {
         if (error) {
@@ -613,6 +622,7 @@ class GrainView {
       };
 
       const neverRedeem = isStandalone();
+      // TODO(now): Don't call openSession; just use a subscription.
       Meteor.call("openSessionFromApiToken",
         openSessionArg, !isIncognito, _this._sessionSalt,
         neverRedeem, getOrigin(), this._options, (error, result) => {

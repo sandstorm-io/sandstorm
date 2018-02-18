@@ -98,18 +98,6 @@ Meteor.publish("grainsMenu", function () {
   }
 });
 
-Meteor.publish("sessions", function (sessionId) {
-  // sessionId itself should be secret enough, but they are also not meant to be shared, so as
-  // a backup we only publish the session to its owner. Note that `userId` can be null if the
-  // user is not logged in or is using incognito mode.
-  check(sessionId, String);
-
-  // We exclude powerboxRequest because the client already has the descriptor list in packed
-  // format, and the parsed format can be kind of large.
-  return Sessions.find({ _id: sessionId, $or: [{ userId: this.userId }, { userId: null }] },
-      { fields: { powerboxRequest: 0 } });
-});
-
 Meteor.publish("devPackages", function () {
   return DevPackages.find();
 });

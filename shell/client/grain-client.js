@@ -59,14 +59,15 @@ const showConnectionGraph = function () {
 };
 
 const mapGrainStateToTemplateData = function (grainState) {
+  // TODO(now): Change error() to return a bare message code, and make sure to handle all codes.
   const error = grainState.error();
   const templateData = {
     grainId: grainState.grainId(),
     active: grainState.isActive(),
     title: grainState.title(),
     error: error && error.message,
-    unauthorized: error && (error.error == 403),
-    notFound: error && (error.error == 404),
+    unauthorized: error && (error.error == 403 || error.error == "access-denied"),
+    notFound: error && (error.error == 404 || error.error == "no-such-grain"),
     inMyTrash: grainState.isInMyTrash(),
     inOwnersTrash: error && (error.error === "grain-is-in-trash"),
     grainOwnerSuspended: error && (error.error === "grain-owner-suspended"),

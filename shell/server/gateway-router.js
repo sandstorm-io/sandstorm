@@ -599,7 +599,7 @@ const Hex256 = Match.Where(function(str){
   return /^[0-9a-f]{64}$/.test(str);
 });
 
-function getSharersTitle(grain, tokenInfo) {
+function getSharersTitle(db, grain, tokenInfo) {
   if (grain && grain.userId === tokenInfo.accountId) {
     return grain.title;
   } else {
@@ -656,7 +656,7 @@ function createSession(db, userId, sessionId, options) {
     session.grainId = grainId = tokenInfo.grainId;
     grain = Grains.findOne(grainId);
 
-    session.sharersTitle = getSharersTitle(grain, tokenInfo);
+    session.sharersTitle = getSharersTitle(db, grain, tokenInfo);
 
     // Apply referral program.
     if (tokenInfo.accountId) {
@@ -779,7 +779,7 @@ Meteor.methods({
     if (this.userId != apiToken.accountId && this.userId != grain.userId &&
         !db.collections.apiTokens.findOne(
             { "owner.user.accountId": this.userId, parentToken: hashedToken })) {
-      const title = getSharersTitle(grain, apiToken);
+      const title = getSharersTitle(db, grain, apiToken);
       const owner = { user: { accountId: this.userId, title: title } };
 
       // Create a new API token for the account redeeming this token.

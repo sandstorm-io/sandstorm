@@ -139,7 +139,10 @@ kj::Promise<void> GatewayService::request(
   }
 
   KJ_IF_MAYBE(hostId, wildcardHost.match(host)) {
-    if (*hostId == "static") {
+    if (*hostId == "ddp") {
+      // DDP host. Fall back to shell.
+      return shellHttp->request(method, url, headers, requestBody, response);
+    } else if (*hostId == "static") {
       // TODO(soon): Static asset hosting. Fall back to shell for now.
       return shellHttp->request(method, url, headers, requestBody, response);
     } else if (*hostId == "api") {
@@ -293,29 +296,6 @@ kj::Promise<void> GatewayService::request(
     // Neither our base URL nor our wildcard URL. It's a foreign hostname.
     return handleForeignHostname(host, method, url, headers, requestBody, response);
   }
-}
-
-kj::Promise<void> GatewayService::openWebSocket(
-    kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) {
-  KJ_IF_MAYBE(hostId, wildcardHost.match(headers)) {
-    if (hostId->startsWith("api-")) {
-      // TODO(soon): API hosts.
-    } else if (hostId->startsWith("ui-")) {
-      auto headersCopy = kj::heap(headers.cloneShallow());
-      KJ_IF_MAYBE(bridge, getUiBridge(*headersCopy)) {
-        auto promise = bridge->get()->openWebSocket(url, *headersCopy, response);
-        return promise.attach(kj::mv(bridge), kj::mv(headersCopy));
-      } else {
-        return sendError(403, "Unauthorized", response,
-            "Unauthorized due to missing cookie. Please make sure cookies\n"
-            "are enabled, and that no settings or extensions are blocking\n"
-            "cookies in iframes.\n"_kj);
-      }
-    }
-  }
-
-  // Fall back to shell.
-  return shellHttp->openWebSocket(url, headers, response);
 }
 
 kj::Promise<void> GatewayService::sendError(
@@ -1014,24 +994,6 @@ kj::Promise<void> RealIpService::request(
   }
 }
 
-kj::Promise<void> RealIpService::openWebSocket(
-    kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) {
-  if (trustClient && (address == nullptr || headers.get(hXRealIp) != nullptr)) {
-    // Nothing to change, because we trust the client, and either the client provided an X-Real-IP,
-    // or we don't have any other value to use anyway.
-    return inner.openWebSocket(url, headers, response);
-  } else {
-    auto copy = kj::heap<kj::HttpHeaders>(headers.clone());
-    KJ_IF_MAYBE(a, address) {
-      copy->set(hXRealIp, *a);
-    } else {
-      copy->unset(hXRealIp);
-    }
-    auto promise = inner.openWebSocket(url, *copy, response);
-    return promise.attach(kj::mv(copy));
-  }
-}
-
 // =======================================================================================
 
 AltPortService::AltPortService(kj::HttpService& inner, kj::HttpHeaderTable& headerTable,
@@ -1049,15 +1011,6 @@ kj::Promise<void> AltPortService::request(
     return kj::READY_NOW;
   } else {
     return inner.request(method, url, headers, requestBody, response);
-  }
-}
-
-kj::Promise<void> AltPortService::openWebSocket(
-    kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) {
-  if (maybeRedirect(url, headers, response)) {
-    return kj::READY_NOW;
-  } else {
-    return inner.openWebSocket(url, headers, response);
   }
 }
 

@@ -79,6 +79,10 @@ WebSessionBridge::WebSessionBridge(
 kj::Promise<void> WebSessionBridge::request(
     kj::HttpMethod method, kj::StringPtr path, const kj::HttpHeaders& headers,
     kj::AsyncInputStream& requestBody, Response& response) {
+  if (method == kj::HttpMethod::GET && headers.isWebSocket()) {
+    return openWebSocket(path, headers, response);
+  }
+
   KJ_REQUIRE(path.startsWith("/"));
   path = path.slice(1);
 
@@ -690,7 +694,7 @@ static inline ByteStream::Client newNoStreamingByteStream() {
 }
 
 kj::Promise<void> WebSessionBridge::openWebSocket(
-    kj::StringPtr path, const kj::HttpHeaders& headers, WebSocketResponse& response) {
+    kj::StringPtr path, const kj::HttpHeaders& headers, Response& response) {
   KJ_REQUIRE(path.startsWith("/"));
   path = path.slice(1);
 

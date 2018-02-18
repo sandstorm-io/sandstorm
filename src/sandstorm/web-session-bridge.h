@@ -77,9 +77,6 @@ public:
       kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
       kj::AsyncInputStream& requestBody, Response& response) override;
 
-  kj::Promise<void> openWebSocket(
-      kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) override;
-
   struct StreamAborterPair {
     ByteStream::Client stream;
 
@@ -114,6 +111,9 @@ private:
   WebSession::PropfindDepth davPropfindDepth(const kj::HttpHeaders& headers);
   kj::Promise<kj::Maybe<kj::String>> davXmlContent(
       const kj::HttpHeaders& headers, kj::AsyncInputStream& body, Response& response);
+
+  kj::Promise<void> openWebSocket(
+      kj::StringPtr url, const kj::HttpHeaders& headers, Response& response);
 
   struct ContextInitInfo {
     kj::Own<kj::PromiseFulfiller<ByteStream::Client>> streamer;

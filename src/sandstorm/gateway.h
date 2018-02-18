@@ -84,9 +84,6 @@ public:
       kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
       kj::AsyncInputStream& requestBody, Response& response) override;
 
-  kj::Promise<void> openWebSocket(
-      kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) override;
-
 private:
   kj::Timer& timer;
   kj::Own<kj::HttpService> shellHttp;
@@ -237,9 +234,6 @@ public:
       kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
       kj::AsyncInputStream& requestBody, Response& response) override;
 
-  kj::Promise<void> openWebSocket(
-      kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) override;
-
 private:
   kj::HttpService& inner;
   kj::HttpHeaderId hXRealIp;
@@ -258,9 +252,6 @@ public:
   kj::Promise<void> request(
       kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
       kj::AsyncInputStream& requestBody, Response& response) override;
-
-  kj::Promise<void> openWebSocket(
-      kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) override;
 
 private:
   kj::HttpService& inner;

@@ -623,7 +623,7 @@ public:
   kj::Promise<void> fulfillRead(kj::ArrayPtr<const byte> data) {
     KJ_SWITCH_ONEOF(current) {
       KJ_CASE_ONEOF(w, CurrentWrite) {
-        KJ_FAIL_REQUIRE("can only call write() once at a time");
+        KJ_FAIL_REQUIRE("can only call fulfillRead() once at a time");
       }
       KJ_CASE_ONEOF(r, CurrentRead) {
         if (data.size() < r.minBytes) {
@@ -661,6 +661,24 @@ public:
     KJ_UNREACHABLE;
   }
 
+  void fulfillReadEof() {
+    KJ_SWITCH_ONEOF(current) {
+      KJ_CASE_ONEOF(w, CurrentWrite) {
+        KJ_LOG(ERROR, "can only call fulfillRead() once at a time");
+      }
+      KJ_CASE_ONEOF(r, CurrentRead) {
+        r.fulfiller->fulfill(kj::cp(r.alreadyRead));
+        current = Eof();
+      }
+      KJ_CASE_ONEOF(e, Eof) {
+        KJ_LOG(ERROR, "double EOF");
+      }
+      KJ_CASE_ONEOF(n, None) {
+        current = Eof();
+      }
+    }
+  }
+
 private:
   // Outgoing direction.
   static constexpr size_t MAX_IN_FLIGHT = 65536;
@@ -689,6 +707,12 @@ private:
   class WebSocketStreamImpl final: public WebSession::WebSocketStream::Server {
   public:
     WebSocketStreamImpl(kj::Own<WebSocketPipe> pipe): pipe(kj::mv(pipe)) {}
+
+    ~WebSocketStreamImpl() noexcept(false) {
+      // Note that we know that `queue` is empty because Cap'n Proto wouldn't drop the cap if the
+      // sendBytes() method were still executing.
+      pipe->fulfillReadEof();
+    }
 
   protected:
     kj::Promise<void> sendBytes(SendBytesContext context) override {

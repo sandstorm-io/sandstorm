@@ -56,6 +56,7 @@ public:
     const kj::HttpHeaderTable& headerTable;
 
     kj::HttpHeaderId hAccessControlAllowOrigin;
+    kj::HttpHeaderId hAccessControlExposeHeaders;
     kj::HttpHeaderId hAcceptLanguage;
     kj::HttpHeaderId hAuthorization;
     kj::HttpHeaderId hCacheControl;
@@ -70,6 +71,7 @@ public:
     kj::HttpHeaderId hWwwAuthenticate;
     kj::HttpHeaderId hXRealIp;
     kj::HttpHeaderId hXSandstormPassthrough;
+    kj::HttpHeaderId hXSandstormTokenKeepalive;
 
     WebSessionBridge::Tables bridgeTables;
   };
@@ -150,7 +152,11 @@ private:
       uint statusCode, kj::StringPtr statusText, Response& response, kj::StringPtr message);
 
   kj::Maybe<kj::Own<kj::HttpService>> getUiBridge(kj::HttpHeaders& headers);
+
   kj::Maybe<kj::String> getAuthToken(const kj::HttpHeaders& headers, bool allowBasicAuth);
+  kj::Promise<void> handleApiRequest(kj::StringPtr token,
+      kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
+      kj::AsyncInputStream& requestBody, Response& response);
   kj::Own<kj::HttpService> getApiBridge(kj::StringPtr token, const kj::HttpHeaders& headers);
 
   kj::Promise<void> getStaticPublished(

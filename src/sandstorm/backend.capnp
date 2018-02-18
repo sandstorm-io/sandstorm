@@ -152,6 +152,9 @@ interface GatewayRouter {
   # sessions, where the Sandstorm shell keeps track of which grains are open in tabs and decides
   # whether their servers need to keep running.
 
+  keepaliveApiToken @8 (apiToken :Text, durationMs :UInt32);
+  # Bumps the timer on a self-destructing API token.
+
   getApiHostResource @7 (hostId :Text, path :Text)
       -> (resource :StaticResource);
   # Get info to respond to a  GET request on an API host, without need for a token. If `resource`

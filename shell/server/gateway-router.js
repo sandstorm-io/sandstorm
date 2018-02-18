@@ -377,6 +377,14 @@ class GatewayRouterImpl {
     });
   }
 
+  keepaliveApiToken(apiToken, durationMs) {
+    return inMeteor(() => {
+      const hashedToken = Crypto.createHash("sha256").update(apiToken).digest("base64");
+      const tokenInfo = ApiTokens.findOne(hashedToken);
+      validateWebkey(tokenInfo, Date.now() + durationMs);
+    });
+  }
+
   getApiHostResource(hostId, path) {
     return inMeteor(() => {
       const host = globalDb.collections.apiHosts.findOne(hostId);
@@ -395,9 +403,7 @@ class GatewayRouterImpl {
   getApiHostOptions(hostId) {
     return inMeteor(() => {
       const host = globalDb.collections.apiHosts.findOne(hostId);
-      if (!host) throw new Error("no such API host");
-
-      return host.options || {};
+      return (host && host.options) || {};
     });
   }
 

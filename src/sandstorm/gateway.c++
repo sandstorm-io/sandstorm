@@ -73,6 +73,7 @@ static kj::String stripPort(kj::StringPtr hostport) {
 GatewayService::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilder)
     : headerTable(headerTableBuilder.getFutureTable()),
       hAccessControlAllowOrigin(headerTableBuilder.add("Access-Control-Allow-Origin")),
+      hAccessControlExposeHeaders(headerTableBuilder.add("Access-Control-Expose-Headers")),
       hAcceptLanguage(headerTableBuilder.add("Accept-Language")),
       hAuthorization(headerTableBuilder.add("Authorization")),
       hCacheControl(headerTableBuilder.add("Cache-Control")),
@@ -87,6 +88,7 @@ GatewayService::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilder)
       hWwwAuthenticate(headerTableBuilder.add("WWW-Authenticate")),
       hXRealIp(headerTableBuilder.add("X-Real-IP")),
       hXSandstormPassthrough(headerTableBuilder.add("X-Sandstorm-Passthrough")),
+      hXSandstormTokenKeepalive(headerTableBuilder.add("X-Sandstorm-Token-Keepalive")),
       bridgeTables(headerTableBuilder) {}
 
 GatewayService::GatewayService(
@@ -189,18 +191,18 @@ kj::Promise<void> GatewayService::request(
     } else if (*hostId == "api") {
       KJ_IF_MAYBE(token, getAuthToken(headers,
           isAllowedBasicAuthUserAgent(headers.get(tables.hUserAgent).orDefault("")))) {
-        auto bridge = getApiBridge(*token, headers);
-        auto promise = bridge->request(method, url, headers, requestBody, response);
-        return promise.attach(kj::mv(bridge));
+        return handleApiRequest(*token, method, url, headers, requestBody, response);
+      } else if (method == kj::HttpMethod::OPTIONS) {
+        kj::HttpHeaders respHeaders(tables.headerTable);
+        WebSessionBridge::addStandardApiOptions(tables.bridgeTables, headers, respHeaders);
+        response.send(200, "OK", respHeaders, uint64_t(0));
       } else {
         return sendError(403, "Forbidden", response, MISSING_AUTHORIZATION_MESSAGE);
       }
     } else if (hostId->startsWith("api-")) {
       KJ_IF_MAYBE(token, getAuthToken(headers, true)) {
         // API session.
-        auto bridge = getApiBridge(*token, headers);
-        auto promise = bridge->request(method, url, headers, requestBody, response);
-        return promise.attach(kj::mv(bridge));
+        return handleApiRequest(*token, method, url, headers, requestBody, response);
       } else {
         // Unauthenticated API host.
         if (method == kj::HttpMethod::GET || method == kj::HttpMethod::HEAD) {
@@ -241,11 +243,13 @@ kj::Promise<void> GatewayService::request(
         } else if (method == kj::HttpMethod::OPTIONS) {
           auto req = router.getApiHostOptionsRequest();
           req.setHostId(hostId->slice(4));
-          return req.send().then(
-              [this,&response](capnp::Response<GatewayRouter::GetApiHostOptionsResults> result) {
+          return req.send().then([this,&headers,&response]
+                (capnp::Response<GatewayRouter::GetApiHostOptionsResults> result) {
             kj::HttpHeaders respHeaders(tables.headerTable);
+            WebSessionBridge::addStandardApiOptions(tables.bridgeTables, headers, respHeaders);
             if (result.hasDav()) {
               respHeaders.set(tables.hDav, kj::strArray(result.getDav(), ", "));
+              respHeaders.set(tables.hAccessControlExposeHeaders, "DAV");
             }
             response.send(200, "OK", respHeaders, uint64_t(0));
           });
@@ -514,6 +518,26 @@ kj::Maybe<kj::String> GatewayService::getAuthToken(
   }
 
   return nullptr;
+}
+
+kj::Promise<void> GatewayService::handleApiRequest(kj::StringPtr token,
+    kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
+    kj::AsyncInputStream& requestBody, Response& response) {
+  KJ_IF_MAYBE(ka, headers.get(tables.hXSandstormTokenKeepalive)) {
+    // Oh, it's a keepalive request.
+    auto req = router.keepaliveApiTokenRequest();
+    req.setApiToken(token);
+    req.setDurationMs(ka->parseAs<uint64_t>());
+    return req.send().then([this,&response](auto) {
+      kj::HttpHeaders respHeaders(tables.headerTable);
+      // TODO(cleanup): Should be 204 no content, but offer-template.html expects a 200.
+      response.send(200, "OK", respHeaders, uint64_t(0));
+    });
+  } else {
+    auto bridge = getApiBridge(token, headers);
+    auto promise = bridge->request(method, url, headers, requestBody, response);
+    return promise.attach(kj::mv(bridge));
+  }
 }
 
 kj::Own<kj::HttpService> GatewayService::getApiBridge(

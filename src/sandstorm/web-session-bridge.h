@@ -106,6 +106,10 @@ public:
       kj::HttpHeaders&& headers,
       kj::HttpService::Response& response);
 
+  static void addStandardApiOptions(
+      const Tables& tables, const kj::HttpHeaders& reqHeaders, kj::HttpHeaders& respHeaders);
+  // Add standard headers to the response for an OPTIONS request to an API host.
+
 private:
   WebSession::Client session;
   kj::Maybe<Handle::Client> loadingIndicator;

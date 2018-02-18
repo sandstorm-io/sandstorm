@@ -376,14 +376,14 @@ kj::Promise<void> WebSessionBridge::request(
           respHeaders.set(tables.hAccessControlExposeHeaders, "DAV");
         }
 
-        addStandardOptions(headers, respHeaders);
+        if (this->options.isApi) addStandardApiOptions(tables, headers, respHeaders);
 
         response.send(200, "OK", respHeaders, uint64_t(0));
       }, [this,&headers,&response](kj::Exception&& e) {
         if (e.getType() == kj::Exception::Type::UNIMPLEMENTED) {
           // Nothing to say.
           kj::HttpHeaders respHeaders(tables.headerTable);
-          addStandardOptions(headers, respHeaders);
+          if (options.isApi) addStandardApiOptions(tables, headers, respHeaders);
           response.send(200, "OK", respHeaders, uint64_t(0));
         } else {
           kj::throwRecoverableException(kj::mv(e));
@@ -396,24 +396,22 @@ kj::Promise<void> WebSessionBridge::request(
   }
 }
 
-void WebSessionBridge::addStandardOptions(
-    const kj::HttpHeaders& reqHeaders, kj::HttpHeaders& respHeaders) {
-  if (options.isApi) {
-    // Try to convince browsers that it's really totally OK to send cross-origin requests to API
-    // endpoints.
-    respHeaders.set(tables.hAccessControlAllowOrigin, "*");
-    respHeaders.set(tables.hAccessControlMaxAge, "3600");
+void WebSessionBridge::addStandardApiOptions(
+    const Tables& tables, const kj::HttpHeaders& reqHeaders, kj::HttpHeaders& respHeaders) {
+  // Try to convince browsers that it's really totally OK to send cross-origin requests to API
+  // endpoints.
+  respHeaders.set(tables.hAccessControlAllowOrigin, "*");
+  respHeaders.set(tables.hAccessControlMaxAge, "3600");
 
-    KJ_IF_MAYBE(h, reqHeaders.get(tables.hAccessControlRequestHeaders)) {
-      respHeaders.set(tables.hAccessControlAllowHeaders, *h);
-    }
+  KJ_IF_MAYBE(h, reqHeaders.get(tables.hAccessControlRequestHeaders)) {
+    respHeaders.set(tables.hAccessControlAllowHeaders, *h);
+  }
 
-    constexpr kj::StringPtr standardMethods = "GET, HEAD, POST, PUT, PATCH, DELETE"_kj;
-    KJ_IF_MAYBE(m, reqHeaders.get(tables.hAccessControlRequestMethod)) {
-      respHeaders.set(tables.hAccessControlAllowMethods, kj::str(standardMethods, ", ", *m));
-    } else {
-      respHeaders.set(tables.hAccessControlAllowMethods, standardMethods);
-    }
+  constexpr kj::StringPtr standardMethods = "GET, HEAD, POST, PUT, PATCH, DELETE"_kj;
+  KJ_IF_MAYBE(m, reqHeaders.get(tables.hAccessControlRequestMethod)) {
+    respHeaders.set(tables.hAccessControlAllowMethods, kj::str(standardMethods, ", ", *m));
+  } else {
+    respHeaders.set(tables.hAccessControlAllowMethods, standardMethods);
   }
 }
 

@@ -65,6 +65,7 @@ public:
     kj::HttpHeaderId hCookie;
     kj::HttpHeaderId hDav;
     kj::HttpHeaderId hLocation;
+    kj::HttpHeaderId hOrigin;
     kj::HttpHeaderId hUserAgent;
     kj::HttpHeaderId hWwwAuthenticate;
     kj::HttpHeaderId hXRealIp;

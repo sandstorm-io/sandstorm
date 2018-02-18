@@ -82,6 +82,7 @@ GatewayService::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilder)
       hCookie(headerTableBuilder.add("Cookie")),
       hDav(headerTableBuilder.add("Dav")),
       hLocation(headerTableBuilder.add("Location")),
+      hOrigin(headerTableBuilder.add("Origin")),
       hUserAgent(headerTableBuilder.add("User-Agent")),
       hWwwAuthenticate(headerTableBuilder.add("WWW-Authenticate")),
       hXRealIp(headerTableBuilder.add("X-Real-IP")),
@@ -288,10 +289,27 @@ kj::Promise<void> GatewayService::request(
         return kj::READY_NOW;
       }
 
-      // TODO(now): TODO(security): Port over CSRF defense from old proxy.
-      // TODO(now): TODO(security): Port over clickjacking defense (CSP frame-ancestors) from old
-      //     proxy.
-      // TODO(now): Support standalone grains in both of the above!
+      // Chrome and Safari (and hopefully others at some point) always send an Origin header on
+      // cross-origin non-GET requests. Such requests directed to a UI host could only be CSRF
+      // attacks. So, block them.
+      KJ_IF_MAYBE(o, headers.get(tables.hOrigin)) {
+        auto expected = kj::str(baseUrl.scheme, "://", host);
+        if (*o != expected) {
+          // Looks like an attack!
+          if (*o == "null") {
+            // TODO(security): Alas, it turns out we have apps that have:
+            //   <meta name="referrer" content="no-referrer">
+            // and Chrome sends "Origin: null" in these cases. :( These apps need to switch to:
+            //   <meta name="referrer" content="same-origin">
+            // It's important that we don't break apps, so we will accept null origins for now,
+            // which of course completely defeats any CSRF protection.
+            //
+            // The affected apps appear to be limited to Etherpad and Gogs.
+          } else {
+            return sendError(403, "Unauthorized", response, "CSRF not allowed");
+          }
+        }
+      }
 
       auto headersCopy = kj::heap(headers.cloneShallow());
       KJ_IF_MAYBE(bridge, getUiBridge(*headersCopy)) {

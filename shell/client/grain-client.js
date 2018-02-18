@@ -664,7 +664,8 @@ Template.grain.helpers({
 
   hasAccess: function () {
     const grain = globalGrains.getActive();
-    return grain && !!Sessions.findOne(grain.sessionId());
+    const error = grain && grain.error();
+    return grain && !!Sessions.findOne(grain.sessionId()) && !grain.error();
   },
 
   isOwner: function () {

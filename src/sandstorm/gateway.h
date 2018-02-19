@@ -41,7 +41,7 @@ private:
   kj::String suffix;
 };
 
-class GatewayService: public kj::HttpService {
+class GatewayService: public kj::HttpService, private kj::TaskSet::ErrorHandler {
 public:
   class Tables {
     // Tables that many instances of GatewayService might share. Create this object at startup
@@ -56,11 +56,22 @@ public:
     const kj::HttpHeaderTable& headerTable;
 
     kj::HttpHeaderId hAccessControlAllowOrigin;
+    kj::HttpHeaderId hAccessControlExposeHeaders;
     kj::HttpHeaderId hAcceptLanguage;
+    kj::HttpHeaderId hAuthorization;
     kj::HttpHeaderId hCacheControl;
+    kj::HttpHeaderId hContentType;
+    kj::HttpHeaderId hContentLanguage;
+    kj::HttpHeaderId hContentEncoding;
     kj::HttpHeaderId hCookie;
+    kj::HttpHeaderId hDav;
     kj::HttpHeaderId hLocation;
+    kj::HttpHeaderId hOrigin;
     kj::HttpHeaderId hUserAgent;
+    kj::HttpHeaderId hWwwAuthenticate;
+    kj::HttpHeaderId hXRealIp;
+    kj::HttpHeaderId hXSandstormPassthrough;
+    kj::HttpHeaderId hXSandstormTokenKeepalive;
 
     WebSessionBridge::Tables bridgeTables;
   };
@@ -75,9 +86,6 @@ public:
   kj::Promise<void> request(
       kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
       kj::AsyncInputStream& requestBody, Response& response) override;
-
-  kj::Promise<void> openWebSocket(
-      kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) override;
 
 private:
   kj::Timer& timer;
@@ -96,6 +104,13 @@ private:
 
   std::map<kj::StringPtr, UiHostEntry> uiHosts;
 
+  struct ApiHostEntry {
+    kj::TimePoint lastUsed;
+    kj::Own<WebSessionBridge> bridge;
+  };
+
+  std::map<kj::StringPtr, ApiHostEntry> apiHosts;
+
   struct StaticPublisherEntry {
     kj::String id;
     uint generation;
@@ -108,16 +123,53 @@ private:
 
   std::map<kj::StringPtr, StaticPublisherEntry> staticPublishers;
 
+  struct ForeignHostnameEntry: public kj::Refcounted {
+    kj::String id;
+    OwnCapnp<GatewayRouter::ForeignHostnameInfo> info;
+    kj::TimePoint refreshAfter;
+    kj::TimePoint expires;
+    bool currentlyRefreshing;
+
+    ForeignHostnameEntry(kj::String id, GatewayRouter::ForeignHostnameInfo::Reader info,
+                         kj::TimePoint now, kj::Duration ttl)
+        : id(kj::mv(id)), info(newOwnCapnp(info)),
+          refreshAfter(now + ttl / 2), expires(now + ttl),
+          currentlyRefreshing(false) {}
+
+    ForeignHostnameEntry(const ForeignHostnameEntry&) = delete;
+    ForeignHostnameEntry(ForeignHostnameEntry&&) = default;
+    ForeignHostnameEntry& operator=(const ForeignHostnameEntry&) = delete;
+    ForeignHostnameEntry& operator=(ForeignHostnameEntry&&) = default;
+  };
+
+  std::map<kj::StringPtr, ForeignHostnameEntry> foreignHostnames;
+
   bool isPurging = false;
+
+  kj::TaskSet tasks;
 
   kj::Promise<void> sendError(
       uint statusCode, kj::StringPtr statusText, Response& response, kj::StringPtr message);
 
   kj::Maybe<kj::Own<kj::HttpService>> getUiBridge(kj::HttpHeaders& headers);
 
+  kj::Maybe<kj::String> getAuthToken(const kj::HttpHeaders& headers, bool allowBasicAuth);
+  kj::Promise<void> handleApiRequest(kj::StringPtr token,
+      kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
+      kj::AsyncInputStream& requestBody, Response& response);
+  kj::Own<kj::HttpService> getApiBridge(kj::StringPtr token, const kj::HttpHeaders& headers);
+
   kj::Promise<void> getStaticPublished(
       kj::StringPtr publicId, kj::StringPtr path, const kj::HttpHeaders& headers,
       kj::HttpService::Response& response, uint retryCount = 0);
+
+  kj::Promise<void> handleForeignHostname(kj::StringPtr host,
+      kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
+      kj::AsyncInputStream& requestBody, Response& response);
+
+  kj::String unknownForeignHostnameError(kj::StringPtr host);
+
+  void taskFailed(kj::Exception&& exception) override;
 };
 
 class GatewayTlsManager: private kj::TaskSet::ErrorHandler {
@@ -189,9 +241,6 @@ public:
       kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
       kj::AsyncInputStream& requestBody, Response& response) override;
 
-  kj::Promise<void> openWebSocket(
-      kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) override;
-
 private:
   kj::HttpService& inner;
   kj::HttpHeaderId hXRealIp;
@@ -211,9 +260,6 @@ public:
       kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
       kj::AsyncInputStream& requestBody, Response& response) override;
 
-  kj::Promise<void> openWebSocket(
-      kj::StringPtr url, const kj::HttpHeaders& headers, WebSocketResponse& response) override;
-
 private:
   kj::HttpService& inner;
   kj::HttpHeaderTable& headerTable;
@@ -221,8 +267,6 @@ private:
   kj::String baseHostWithoutPort;
   WildcardMatcher wildcardHost;
   WildcardMatcher wildcardHostWithoutPort;
-
-  static kj::String stripPort(kj::StringPtr hostport);
 
   bool maybeRedirect(kj::StringPtr url, const kj::HttpHeaders& headers, Response& response);
 };

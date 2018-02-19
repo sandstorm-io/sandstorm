@@ -257,9 +257,7 @@ Sandcats.renewHttpsCertificateIfNeeded = () => {
             // Call the sandcats rekeying function.
             global.sandcats.rekey();
 
-            if (process.env.EXPERIMENTAL_GATEWAY) {
-              inMeteor(storeSandcatsCertToDb);
-            }
+            inMeteor(storeSandcatsCertToDb);
 
             // That's that.
             console.log("Successfully renewed HTTPS certificate into",
@@ -288,8 +286,7 @@ Sandcats.renewHttpsCertificateIfNeeded = () => {
     renewHttpsCertificate();
   }
 
-  if (process.env.EXPERIMENTAL_GATEWAY &&
-      (global.sandcats.state.nextRekeyTime !== null) &&
+  if ((global.sandcats.state.nextRekeyTime !== null) &&
       (Date.now() >= global.sandcats.state.nextRekeyTime)) {
     // In gateway mode, we need to check periodically if it's time to swap certificates and then
     // do it.
@@ -299,13 +296,10 @@ Sandcats.renewHttpsCertificateIfNeeded = () => {
 };
 
 Sandcats.initializeSandcats = () => {
-  if (process.env.EXPERIMENTAL_GATEWAY) {
-    // In gateway mode, the startup code doesn't automatically initialize sandcats, so call rekey()
-    // now to make that happen.
-    global.sandcats.rekey();
-
-    storeSandcatsCertToDb();
-  }
+  // The startup code doesn't automatically initialize sandcats, so call rekey() now to make that
+  // happen.
+  global.sandcats.rekey();
+  storeSandcatsCertToDb();
 
   const i = HOSTNAME.lastIndexOf(SANDCATS_HOSTNAME);
   if (i < 0) {

@@ -143,6 +143,46 @@ static bool fileHasLine(kj::StringPtr filename, kj::StringPtr expectedLine) {
 }
 
 // =======================================================================================
+// Process name setting.
+//
+// TODO(cleanup): Move this somewhere more reusable, maybe in KJ?
+
+namespace {
+
+// HACK: We grab the global argv pointer at startup so that we can overwrite argv[0] to set the
+//   process name.
+kj::ArrayPtr<char> globalArgv;
+__attribute__((constructor)) void stuff(int argc, char **argv) {
+  globalArgv = kj::arrayPtr(argv[0], argv[argc - 1] + strlen(argv[argc - 1]));
+}
+
+}  // namespace
+
+static void setProcessName(kj::StringPtr topSuffix, kj::StringPtr psSuffix) {
+  // Set process name as seen in "top". We only have 15 bytes to work with here (16 with NUL).
+  char oldname[16];
+  prctl(PR_GET_NAME, oldname);
+  char* slashPos = strchr(oldname, '/');
+  if (slashPos != nullptr) *slashPos = '\0';
+  prctl(PR_SET_NAME, kj::str(oldname, '/', topSuffix).cStr());
+
+  // Set process name as seen in "ps". This is weird because we have to overwrite the argv
+  // buffer, and we can only really be sure that the buffer is large enough to hold the args
+  // passed to the original process. Here we try to overwrite argv[1] through the end of the
+  // buffer with the suffix, but if we don't have enough space we cut it short or don't make
+  // any change. Note that args in the argv buffer are separated by NUL bytes.
+  size_t argv1Pos = strlen(globalArgv.begin()) + 1;
+  if (argv1Pos < globalArgv.size()) {
+    memcpy(globalArgv.begin() + argv1Pos, psSuffix.begin(),
+           kj::min(psSuffix.size(), globalArgv.size() - argv1Pos));
+  }
+  if (argv1Pos + psSuffix.size() < globalArgv.size()) {
+    memset(globalArgv.begin() + argv1Pos + psSuffix.size(), 0,
+           globalArgv.size() - argv1Pos - psSuffix.size());
+  }
+}
+
+// =======================================================================================
 
 struct KernelVersion {
   uint major;
@@ -1248,7 +1288,6 @@ private:
     bool isTesting = false;
     bool allowDevAccounts = false;
     bool hideTroubleshooting = false;
-    bool useExperimentalGateway = false;
     uint smtpListenPort = 30025;
     kj::Maybe<kj::String> privateKeyPassword = nullptr;
     kj::Maybe<kj::String> termsPublicId = nullptr;
@@ -1740,7 +1779,10 @@ private:
           KJ_FAIL_REQUIRE("invalid config value SMTP_LISTEN_PORT", value);
         }
       } else if (key == "EXPERIMENTAL_GATEWAY") {
-        config.useExperimentalGateway = value == "true" || value == "yes";
+        if (value != "true" && value != "yes") {
+          KJ_LOG(WARNING, "Gateway is no longer experimental. Disabling EXPERIMENTAL_GATEWAY is "
+                          "no longer supported.");
+        }
       } else if (key == "PRIVATE_KEY_PASSWORD") {
         config.privateKeyPassword = kj::mv(value);
       } else if (key == "TERMS_PAGE_PUBLIC_ID") {
@@ -1787,24 +1829,18 @@ private:
 
     FdBundle(const Config& config,
              std::map<uint, kj::AutoCloseFd> inherited = std::map<uint, kj::AutoCloseFd>())
-        : usingGateway(config.useExperimentalGateway),
-          // when not in gateway: STDERR + 1 (fd after STDERR) + HTTP ports + SMTP port
-          // when in gateway: STDERR + 1 (fd after STDERR) + SHELL_HTTP + SHELL_BACKEND + SHELL_SMTP
-          minFd(usingGateway ? STDERR_FILENO + 4 : STDERR_FILENO + 1 + config.ports.size() + 1) {
+        : // STDERR + 1 (fd after STDERR) + SHELL_HTTP + SHELL_BACKEND + SHELL_SMTP
+          minFd(STDERR_FILENO + 4) {
       int targetFd = STDERR_FILENO + 1;
       openPort(config, config.smtpListenPort, targetFd++, inherited);
       for (auto& port: config.ports) {
         openPort(config, port, targetFd++, inherited);
       }
 
-      if (usingGateway) {
-        links.insert(std::make_pair(SHELL_HTTP, newLink()));
-        links.insert(std::make_pair(SHELL_SMTP, newLink()));
-        links.insert(std::make_pair(SHELL_BACKEND, newLink()));
-        links.insert(std::make_pair(GATEWAY_BACKEND, newLink()));
-      } else {
-        KJ_ASSERT(minFd == targetFd);
-      }
+      links.insert(std::make_pair(SHELL_HTTP, newLink()));
+      links.insert(std::make_pair(SHELL_SMTP, newLink()));
+      links.insert(std::make_pair(SHELL_BACKEND, newLink()));
+      links.insert(std::make_pair(GATEWAY_BACKEND, newLink()));
     }
 
     FdBundle(decltype(nullptr)): minFd(0) {};
@@ -1824,34 +1860,18 @@ private:
     }
 
     void prepareInheritedFds() {
-      if (usingGateway) {
-        KJ_SYSCALL(dup2(links[SHELL_HTTP].server, STDERR_FILENO + 1));
-        KJ_SYSCALL(dup2(links[SHELL_BACKEND].client, STDERR_FILENO + 2));
-        KJ_SYSCALL(dup2(links[SHELL_SMTP].server, STDERR_FILENO + 3));
-      } else {
-        for (auto& port: ports) {
-          KJ_SYSCALL(dup2(port.second.fd, port.second.targetFd));
-        }
-      }
+      KJ_SYSCALL(dup2(links[SHELL_HTTP].server, STDERR_FILENO + 1));
+      KJ_SYSCALL(dup2(links[SHELL_BACKEND].client, STDERR_FILENO + 2));
+      KJ_SYSCALL(dup2(links[SHELL_SMTP].server, STDERR_FILENO + 3));
     }
 
     kj::Array<kj::AutoCloseFd> consumeShellInherited() {
       // Get the FDs that the shell normally inherits.
-      if (usingGateway) {
-        auto builder = kj::heapArrayBuilder<kj::AutoCloseFd>(3);
-        builder.add(kj::mv(links[SHELL_HTTP].server));
-        builder.add(kj::mv(links[SHELL_BACKEND].client));
-        builder.add(kj::mv(links[SHELL_SMTP].server));
-        return builder.finish();
-      } else {
-        auto result = kj::heapArray<kj::AutoCloseFd>(ports.size());
-        for (auto& port: ports) {
-          uint index = port.second.targetFd - STDERR_FILENO - 1;
-          KJ_ASSERT(index < result.size());
-          result[index] = kj::mv(port.second.fd);
-        }
-        return result;
-      }
+      auto builder = kj::heapArrayBuilder<kj::AutoCloseFd>(3);
+      builder.add(kj::mv(links[SHELL_HTTP].server));
+      builder.add(kj::mv(links[SHELL_BACKEND].client));
+      builder.add(kj::mv(links[SHELL_SMTP].server));
+      return builder.finish();
     }
 
     kj::Own<kj::ConnectionReceiver> consume(uint port, kj::LowLevelAsyncIoProvider& provider) {
@@ -1887,7 +1907,6 @@ private:
       int targetFd;  // FD number to use when passing to Node.
     };
 
-    bool usingGateway;
     int minFd;
     std::map<uint, FdInfo> ports;
 
@@ -1980,6 +1999,8 @@ private:
   [[noreturn]] void runUpdateMonitor(const Config& config, FdBundle& fdBundle, int pidfile) {
     // Run the update monitor process.  This process runs two subprocesses:  the sandstorm server
     // and the auto-updater.
+
+    setProcessName("top", "(top-level)");
 
     if (runningAsRoot) {
       // Fix permissions on pidfile. We do this here rather than back where we opened it because
@@ -2095,6 +2116,8 @@ private:
   [[noreturn]] void runServerMonitor(const Config& config, FdBundle& fdBundle) {
     // Run the server monitor, which runs node and mongo and deals with them dying.
 
+    setProcessName("montr", "(server monitor)");
+
     enterChroot(true);
 
     // For later use when killing children with timeout.
@@ -2146,10 +2169,8 @@ private:
     int64_t nodeStartTime = getTime();
 
     pid_t gatewayPid = 0;
-    if (config.useExperimentalGateway) {
-      context.warning("** Starting Gateway...");
-      gatewayPid = startGateway(config, fdBundle);
-    }
+    context.warning("** Starting Gateway...");
+    gatewayPid = startGateway(config, fdBundle);
     int64_t gatewayStartTime = getTime();
 
     for (;;) {
@@ -2397,6 +2418,8 @@ private:
     kj::AutoCloseFd outPipe(pipeFds[1]);
 
     Subprocess process([&]() -> int {
+      setProcessName("bcknd", "(back-end)");
+
       inPipe = nullptr;
 
       // Mainly to cause Cap'n Proto to log exceptions being returned over RPC so we can see the
@@ -2406,36 +2429,12 @@ private:
       auto io = kj::setupAsyncIo();
       auto& network = io.provider->getNetwork();
 
-      kj::Own<kj::ConnectionReceiver> listener;
-      kj::Own<kj::ConnectionReceiver> gatewayListener;
-      if (config.useExperimentalGateway) {
-        auto capStream = fdBundle.consumeServer(FdBundle::SHELL_BACKEND, *io.lowLevelProvider);
-        listener = kj::heap<kj::CapabilityStreamConnectionReceiver>(*capStream)
-            .attach(kj::mv(capStream));
-        auto capStream2 = fdBundle.consumeServer(FdBundle::GATEWAY_BACKEND, *io.lowLevelProvider);
-        gatewayListener = kj::heap<kj::CapabilityStreamConnectionReceiver>(*capStream2)
-            .attach(kj::mv(capStream2));
-      } else {
-        kj::StringPtr socketPath = Backend::SOCKET_PATH;
-        sandstorm::recursivelyCreateParent(socketPath);
-        unlink(socketPath.cStr());
-
-        listener = network.parseAddress(kj::str("unix:", socketPath))
-            .wait(io.waitScope)->listen();
-
-        if (runningAsRoot) {
-          // Make socket available to server user.
-          KJ_SYSCALL(chmod(socketPath.cStr(), 0770));
-          KJ_SYSCALL(chown(socketPath.cStr(), 0, config.uids.gid));
-
-          // Also make the socket parent directory available to user.
-          KJ_IF_MAYBE(pos, socketPath.findLast('/')) {
-            kj::String parent = kj::heapString(socketPath.slice(0, *pos));
-            KJ_SYSCALL(chmod(parent.cStr(), 0770));
-            KJ_SYSCALL(chown(parent.cStr(), 0, config.uids.gid));
-          }
-        }
-      }
+      auto capStream = fdBundle.consumeServer(FdBundle::SHELL_BACKEND, *io.lowLevelProvider);
+      auto listener = kj::heap<kj::CapabilityStreamConnectionReceiver>(*capStream)
+          .attach(kj::mv(capStream));
+      auto capStream2 = fdBundle.consumeServer(FdBundle::GATEWAY_BACKEND, *io.lowLevelProvider);
+      auto gatewayListener = kj::heap<kj::CapabilityStreamConnectionReceiver>(*capStream2)
+          .attach(kj::mv(capStream2));
 
       fdBundle.closeAll();
 
@@ -2454,28 +2453,22 @@ private:
       paf.fulfiller->fulfill(kj::heap<BackendImpl>(*io.lowLevelProvider, network,
         server.getBootstrap().castAs<SandstormCoreFactory>(), sandboxUid));
 
-      kj::Own<capnp::TwoPartyServer> gatewayServer;
-      if (config.useExperimentalGateway) {
-        gatewayServer = kj::heap<capnp::TwoPartyServer>(kj::refcounted<CapRedirector>([&]() {
-          return server.getBootstrap().castAs<SandstormCoreFactory>()
-              .getGatewayRouterRequest().send().getRouter();
-        }));
-      }
+      auto gatewayServer = kj::heap<capnp::TwoPartyServer>(kj::refcounted<CapRedirector>([&]() {
+        return server.getBootstrap().castAs<SandstormCoreFactory>()
+            .getGatewayRouterRequest().send().getRouter();
+      }));
 
       // Signal readiness.
       write(outPipe, "ready", 5);
       outPipe = nullptr;
 
-      auto promise = server.listen(kj::mv(listener));
-      if (config.useExperimentalGateway) {
-        promise = promise.exclusiveJoin(gatewayServer->listen(*gatewayListener));
-      }
-
-      // Rotate logs, keeping 1-2MB worth. We do this in the backend process mainly because
-      // it is the only asynchronous process in run-bundle.c++.
-      promise.exclusiveJoin(rotateLog(io.provider->getTimer(),
+      server.listen(kj::mv(listener))
+          .exclusiveJoin(gatewayServer->listen(*gatewayListener))
+          // Rotate logs, keeping 1-2MB worth. We do this in the backend process mainly because
+          // it is the only asynchronous process in run-bundle.c++.
+          .exclusiveJoin(rotateLog(io.provider->getTimer(),
                                       STDERR_FILENO, "/var/log/sandstorm.log", 1u << 20))
-             .wait(io.waitScope);
+          .wait(io.waitScope);
       KJ_UNREACHABLE;
     });
 
@@ -2496,6 +2489,8 @@ private:
 
   pid_t startGateway(const Config& config, FdBundle& fdBundle) {
     Subprocess process([&]() -> int {
+      setProcessName("gtway", "(gateway)");
+
       // Mainly to cause Cap'n Proto to log exceptions being returned over RPC so we can see the
       // stack traces.
       kj::_::Debug::setLogLevel(kj::LogSeverity::INFO);
@@ -2639,13 +2634,11 @@ private:
           true));
     }
 
-    if (config.useExperimentalGateway) {
-      KJ_SYSCALL(setenv("EXPERIMENTAL_GATEWAY", "local", true));
-    }
+    KJ_SYSCALL(setenv("HTTP_GATEWAY", "local", true));
 
     KJ_SYSCALL(setenv("PORT", kj::str(config.ports[0]).cStr(), true));
-    KJ_SYSCALL(setenv("PORTS", kj::strArray(config.ports, ",").cStr(), true));
     KJ_IF_MAYBE(httpsPort, config.httpsPort) {
+      // TODO(cleanup): At this point, all this does is tell Sandcats to refresh certs.
       KJ_SYSCALL(setenv("HTTPS_PORT", kj::str(*httpsPort).cStr(), true));
     }
 
@@ -2905,6 +2898,8 @@ private:
   }
 
   [[noreturn]] void doUpdateLoop(kj::StringPtr channel, bool isRetry, const Config& config) {
+    setProcessName("updat", "(updater)");
+
     // This is the updater process.  Run in a loop.
     auto log = raiiOpen("../var/log/updater.log", O_WRONLY | O_APPEND | O_CREAT);
     KJ_SYSCALL(dup2(log, STDOUT_FILENO));
@@ -3048,6 +3043,8 @@ private:
 
   [[noreturn]] void runDevDaemon(const Config& config, kj::Array<kj::AutoCloseFd> shellInherited,
                                  pid_t serverMonitorPid) {
+    setProcessName("devd", "(dev daemon)");
+
     clearDevPackages(config);
 
     // Make sure socket directory exists (since the installer doesn't create it).
@@ -3111,6 +3108,8 @@ private:
   [[noreturn]] void runDevSession(const Config& config,
       kj::AutoCloseFd internalFd, kj::Array<kj::AutoCloseFd> shellInherited,
       pid_t serverMonitorPid) {
+    setProcessName("devs", "(dev session)");
+
     auto exception = kj::runCatchingExceptions([&]() {
       // When someone connects, we expect them to pass us a one-byte command code.
       kj::byte commandCode;

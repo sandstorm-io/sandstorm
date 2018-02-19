@@ -125,7 +125,7 @@ interface GatewayRouter {
   # it does not know how to handle directly.
 
   openUiSession @0 (sessionCookie :Text, params :WebSession.Params)
-                -> (session :WebSession, loadingIndicator :Util.Handle);
+                -> (session :WebSession, loadingIndicator :Util.Handle, parentOrigin :Text);
   # Given a sandstorm-sid cookie value for a UI session, find the WebSession to handle requests.
   #
   # The gateway may cache the session capability, associated with this cookie value, for as long
@@ -136,8 +136,11 @@ interface GatewayRouter {
   # While `loadingIndicator` is held, the user will see a loading indicator on their screen. Drop
   # this capability when the first HTTP response is received from the app to make the loading
   # indicator go away.
+  #
+  # `parentOrigin` is the origin permitted to frame this UI session. E.g. Content-Security-Policy
+  # frame-ancestors should be used to block clickjacking.
 
-  openApiSession @1 (apiToken :Text) -> (session :ApiSession);
+  openApiSession @1 (apiToken :Text, params :ApiSession.Params) -> (session :ApiSession);
   # Given a token from an `Authorization` header, find the ApiSession to handle requests.
   #
   # The gateway may cache the session capability, associated with this token, for as long as it
@@ -148,6 +151,24 @@ interface GatewayRouter {
   # Generally, traffic on an ApiSession will force the grain to stay running. This differs from UI
   # sessions, where the Sandstorm shell keeps track of which grains are open in tabs and decides
   # whether their servers need to keep running.
+
+  keepaliveApiToken @8 (apiToken :Text, durationMs :UInt32);
+  # Bumps the timer on a self-destructing API token.
+
+  getApiHostResource @7 (hostId :Text, path :Text)
+      -> (resource :StaticResource);
+  # Get info to respond to a  GET request on an API host, without need for a token. If `resource`
+  # is null, then a 401 should be returned instead to induce authentication.
+
+  struct StaticResource {
+    type @0 :Text;
+    language @1 :Text;
+    encoding @2 :Text;
+    body @3 :Data;
+  }
+
+  getApiHostOptions @6 (hostId :Text) -> (dav :List(Text));
+  # Get info to respond to an OPTIONS request on an API host, without need for a token.
 
   getStaticAsset @2 (id :Text) -> (content :Data, type :Text, encoding :Text);
   # Look up the content of a static asset by ID. `type` and `encoding` are the values for the

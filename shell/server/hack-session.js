@@ -47,6 +47,8 @@ SessionContextImpl = class SessionContextImpl {
 
   claimRequest(sturdyRef, requiredPermissions) {
     return inMeteor(() => {
+      if (!this.sessionId) throw new Error("API sessions can't use powerbox");
+
       const token = fetchApiToken(globalDb, sturdyRef,
         { "owner.clientPowerboxRequest.sessionId": this.sessionId });
 
@@ -99,6 +101,7 @@ SessionContextImpl = class SessionContextImpl {
 
   _offerOrFulfill(isFulfill, cap, requiredPermissions, descriptor, displayInfo) {
     return inMeteor(() => {
+      if (!this.sessionId) throw new Error("API sessions can't use powerbox");
 
       const session = Sessions.findOne({ _id: this.sessionId });
 

@@ -59,14 +59,15 @@ const showConnectionGraph = function () {
 };
 
 const mapGrainStateToTemplateData = function (grainState) {
+  // TODO(now): Change error() to return a bare message code, and make sure to handle all codes.
   const error = grainState.error();
   const templateData = {
     grainId: grainState.grainId(),
     active: grainState.isActive(),
     title: grainState.title(),
     error: error && error.message,
-    unauthorized: error && (error.error == 403),
-    notFound: error && (error.error == 404),
+    unauthorized: error && (error.error == 403 || error.error == "access-denied"),
+    notFound: error && (error.error == 404 || error.error == "no-such-grain"),
     inMyTrash: grainState.isInMyTrash(),
     inOwnersTrash: error && (error.error === "grain-is-in-trash"),
     grainOwnerSuspended: error && (error.error === "grain-owner-suspended"),
@@ -598,7 +599,10 @@ Template.requestAccess.onCreated(function () {
     this.subscribe("requestingAccess", grainId);
     const granted = GrantedAccessRequests.findOne({ grainId: grainId });
     if (granted && !this._grain.token()) {
-      this._grain.reset(false);
+      // Access was granted to this user explicitly. Hence the user's identity is already known.
+      // Also, the user only has access by virtue of their identity. So, we can and must reveal
+      // identity immediately (`true` parameter here).
+      this._grain.reset(true);
       this._grain.openSession();
     }
   });
@@ -660,7 +664,8 @@ Template.grain.helpers({
 
   hasAccess: function () {
     const grain = globalGrains.getActive();
-    return grain && !!Sessions.findOne(grain.sessionId());
+    const error = grain && grain.error();
+    return grain && !!Sessions.findOne(grain.sessionId()) && !grain.error();
   },
 
   isOwner: function () {
@@ -1394,16 +1399,6 @@ Meteor.setInterval(function () {
     console.log("Sandstorm is trying to reconnect...");
     Meteor.reconnect();
   }
-
-  grains.forEach(function (grain) {
-    if (grain.sessionId()) {
-      // TODO(soon):  Investigate what happens in background tabs.  Maybe arrange to re-open the
-      //   app if it dies while in the background.
-      Meteor.call("keepSessionAlive", grain.sessionId(), function (error, result) {
-        // Sessions will automatically resume if possible, otherwise they will refresh.
-      });
-    }
-  });
 }, 60000);
 
 const memoizedNewApiToken = {};

@@ -39,17 +39,26 @@ static inline ByteStream::Client newNoStreamingByteStream();
 
 WebSessionBridge::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilder)
     : headerTable(headerTableBuilder.getFutureTable()),
+      hAccessControlAllowHeaders(headerTableBuilder.add("Access-Control-Allow-Headers")),
+      hAccessControlAllowMethods(headerTableBuilder.add("Access-Control-Allow-Methods")),
+      hAccessControlAllowOrigin(headerTableBuilder.add("Access-Control-Allow-Origin")),
       hAccessControlExposeHeaders(headerTableBuilder.add("Access-Control-Expose-Headers")),
+      hAccessControlMaxAge(headerTableBuilder.add("Access-Control-Max-Age")),
+      hAccessControlRequestHeaders(headerTableBuilder.add("Access-Control-Request-Headers")),
+      hAccessControlRequestMethod(headerTableBuilder.add("Access-Control-Request-Method")),
       hAccept(headerTableBuilder.add("Accept")),
       hAcceptEncoding(headerTableBuilder.add("Accept-Encoding")),
       hContentDisposition(headerTableBuilder.add("Content-Disposition")),
       hContentEncoding(headerTableBuilder.add("Content-Encoding")),
       hContentLanguage(headerTableBuilder.add("Content-Language")),
+      hContentSecurityPolicy(headerTableBuilder.add("Content-Security-Policy")),
       hCookie(headerTableBuilder.add("Cookie")),
       hETag(headerTableBuilder.add("ETag")),
       hIfMatch(headerTableBuilder.add("If-Match")),
       hIfNoneMatch(headerTableBuilder.add("If-None-Match")),
       hSecWebSocketProtocol(headerTableBuilder.add("Sec-WebSocket-Protocol")),
+      hVary(headerTableBuilder.add("Vary")),
+      hXFrameOptions(headerTableBuilder.add("X-Frame-Options")),
 
       hDav(headerTableBuilder.add("DAV")),
       hDepth(headerTableBuilder.add("Depth")),
@@ -76,9 +85,23 @@ WebSessionBridge::WebSessionBridge(
       tables(tables),
       options(options) {}
 
+void WebSessionBridge::restrictParentFrame(kj::StringPtr parent, kj::StringPtr self) {
+  KJ_REQUIRE(!options.isApi, "can't apply frame restriction to API endpoint");
+  KJ_IF_MAYBE(fr, frameRestriction) {
+    KJ_REQUIRE(parent == fr->parent, "frame restriction on UI session changed");
+    KJ_REQUIRE(self == fr->self, "frame restriction on UI session changed");
+  } else {
+    frameRestriction = FrameRestriction { kj::str(parent), kj::str(self) };
+  }
+}
+
 kj::Promise<void> WebSessionBridge::request(
     kj::HttpMethod method, kj::StringPtr path, const kj::HttpHeaders& headers,
     kj::AsyncInputStream& requestBody, Response& response) {
+  if (method == kj::HttpMethod::GET && headers.isWebSocket()) {
+    return openWebSocket(path, headers, response);
+  }
+
   KJ_REQUIRE(path.startsWith("/"));
   path = path.slice(1);
 
@@ -337,7 +360,7 @@ kj::Promise<void> WebSessionBridge::request(
       // TODO(cleanup): Refactor initContext() so that we can avoid creating a stream here.
       streamer.streamer->fulfill(newNoStreamingByteStream());
       return req.send()
-          .then([this,&response](capnp::Response<WebSession::Options> options) mutable {
+          .then([this,&headers,&response](capnp::Response<WebSession::Options> options) mutable {
         kj::HttpHeaders respHeaders(tables.headerTable);
         kj::Vector<kj::StringPtr> dav;
         if (options.getDavClass1()) dav.add("1");
@@ -353,11 +376,14 @@ kj::Promise<void> WebSessionBridge::request(
           respHeaders.set(tables.hAccessControlExposeHeaders, "DAV");
         }
 
+        if (this->options.isApi) addStandardApiOptions(tables, headers, respHeaders);
+
         response.send(200, "OK", respHeaders, uint64_t(0));
-      }, [this,&response](kj::Exception&& e) {
+      }, [this,&headers,&response](kj::Exception&& e) {
         if (e.getType() == kj::Exception::Type::UNIMPLEMENTED) {
           // Nothing to say.
           kj::HttpHeaders respHeaders(tables.headerTable);
+          if (options.isApi) addStandardApiOptions(tables, headers, respHeaders);
           response.send(200, "OK", respHeaders, uint64_t(0));
         } else {
           kj::throwRecoverableException(kj::mv(e));
@@ -367,6 +393,25 @@ kj::Promise<void> WebSessionBridge::request(
 
     default:
       return response.sendError(501, "Not Implemented", tables.headerTable);
+  }
+}
+
+void WebSessionBridge::addStandardApiOptions(
+    const Tables& tables, const kj::HttpHeaders& reqHeaders, kj::HttpHeaders& respHeaders) {
+  // Try to convince browsers that it's really totally OK to send cross-origin requests to API
+  // endpoints.
+  respHeaders.set(tables.hAccessControlAllowOrigin, "*");
+  respHeaders.set(tables.hAccessControlMaxAge, "3600");
+
+  KJ_IF_MAYBE(h, reqHeaders.get(tables.hAccessControlRequestHeaders)) {
+    respHeaders.set(tables.hAccessControlAllowHeaders, *h);
+  }
+
+  constexpr kj::StringPtr standardMethods = "GET, HEAD, POST, PUT, PATCH, DELETE"_kj;
+  KJ_IF_MAYBE(m, reqHeaders.get(tables.hAccessControlRequestMethod)) {
+    respHeaders.set(tables.hAccessControlAllowMethods, kj::str(standardMethods, ", ", *m));
+  } else {
+    respHeaders.set(tables.hAccessControlAllowMethods, standardMethods);
   }
 }
 
@@ -578,7 +623,7 @@ public:
   kj::Promise<void> fulfillRead(kj::ArrayPtr<const byte> data) {
     KJ_SWITCH_ONEOF(current) {
       KJ_CASE_ONEOF(w, CurrentWrite) {
-        KJ_FAIL_REQUIRE("can only call write() once at a time");
+        KJ_FAIL_REQUIRE("can only call fulfillRead() once at a time");
       }
       KJ_CASE_ONEOF(r, CurrentRead) {
         if (data.size() < r.minBytes) {
@@ -616,6 +661,24 @@ public:
     KJ_UNREACHABLE;
   }
 
+  void fulfillReadEof() {
+    KJ_SWITCH_ONEOF(current) {
+      KJ_CASE_ONEOF(w, CurrentWrite) {
+        KJ_LOG(ERROR, "can only call fulfillRead() once at a time");
+      }
+      KJ_CASE_ONEOF(r, CurrentRead) {
+        r.fulfiller->fulfill(kj::cp(r.alreadyRead));
+        current = Eof();
+      }
+      KJ_CASE_ONEOF(e, Eof) {
+        KJ_LOG(ERROR, "double EOF");
+      }
+      KJ_CASE_ONEOF(n, None) {
+        current = Eof();
+      }
+    }
+  }
+
 private:
   // Outgoing direction.
   static constexpr size_t MAX_IN_FLIGHT = 65536;
@@ -644,6 +707,12 @@ private:
   class WebSocketStreamImpl final: public WebSession::WebSocketStream::Server {
   public:
     WebSocketStreamImpl(kj::Own<WebSocketPipe> pipe): pipe(kj::mv(pipe)) {}
+
+    ~WebSocketStreamImpl() noexcept(false) {
+      // Note that we know that `queue` is empty because Cap'n Proto wouldn't drop the cap if the
+      // sendBytes() method were still executing.
+      pipe->fulfillReadEof();
+    }
 
   protected:
     kj::Promise<void> sendBytes(SendBytesContext context) override {
@@ -690,7 +759,7 @@ static inline ByteStream::Client newNoStreamingByteStream() {
 }
 
 kj::Promise<void> WebSessionBridge::openWebSocket(
-    kj::StringPtr path, const kj::HttpHeaders& headers, WebSocketResponse& response) {
+    kj::StringPtr path, const kj::HttpHeaders& headers, Response& response) {
   KJ_REQUIRE(path.startsWith("/"));
   path = path.slice(1);
 
@@ -1161,11 +1230,40 @@ kj::Promise<void> WebSessionBridge::handleResponse(
       }
     }
 
-    for (auto addlHeader: in.getAdditionalHeaders()) {
+    KJ_IF_MAYBE(fr, frameRestriction) {
+      KJ_ASSERT(!options.isApi);
+      headers.set(tables.hContentSecurityPolicy,
+          kj::str("frame-ancestors ", fr->parent, " ", fr->self));
+      headers.set(tables.hXFrameOptions, kj::str("ALLOW-FROM ", fr->parent));
+    }
+
+    auto addlHeaders = in.getAdditionalHeaders();
+    kj::Vector<kj::StringPtr> exposedHeaders(addlHeaders.size() + 1);
+    // The only non-CORS-safelisted headers that we use on responses and want to expose
+    // cross-origin are ETag and app-specific whitelisted headers.
+    exposedHeaders.add("ETag");
+    for (auto addlHeader: addlHeaders) {
       auto name = addlHeader.getName();
       if (tables.responseHeaderWhitelist.matches(name)) {
         headers.add(name, addlHeader.getValue());
+        exposedHeaders.add(name);
       }
+    }
+
+    if (options.isApi) {
+      // We need to make sure caches know that different bearer tokens get totally different
+      // results.
+      headers.set(tables.hVary, "Authorization");
+
+      // APIs can be called from any origin. Because we ignore cookies, there is no security
+      // problem.
+      headers.set(tables.hAccessControlAllowOrigin, "*");
+
+      // Add a Content-Security-Policy as a backup in case someone finds a way to load this
+      // resource in a browser context. This policy should thoroughly neuter it.
+      headers.set(tables.hContentSecurityPolicy, "default-src 'none'; sandbox");
+
+      headers.set(tables.hAccessControlExposeHeaders, kj::strArray(exposedHeaders, ", "));
     }
 
     // If we complete this function without calling fulfill() to connect the stream, then this is

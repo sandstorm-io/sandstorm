@@ -16,6 +16,7 @@
 
 const Crypto = Npm.require("crypto");
 import { send as sendEmail } from "/imports/server/email.js";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 
 const ROOT_URL = process.env.ROOT_URL;
 
@@ -25,6 +26,28 @@ const emailLinkWithInlineStyle = function (url, text) {
    "border-radius:4px;text-align:center;background:#762F87;color:white'>" +
    text + "</a>";
 };
+
+// Force-shutdown dev apps whenever their packages change.
+Meteor.startup(() => {
+  const shutdownApp = (appId) => {
+    Grains.find({ appId: appId }).forEach((grain) => {
+      waitPromise(globalBackend.shutdownGrain(grain._id, grain.userId));
+    });
+  };
+
+  DevPackages.find().observe({
+    removed(devPackage) { shutdownApp(devPackage.appId); },
+
+    changed(newDevPackage, oldDevPackage) {
+      shutdownApp(oldDevPackage.appId);
+      if (oldDevPackage.appId !== newDevPackage.appId) {
+        shutdownApp(newDevPackage.appId);
+      }
+    },
+
+    added(devPackage) { shutdownApp(devPackage.appId); },
+  });
+});
 
 Meteor.publish("grainTopBar", function (grainId) {
   check(grainId, String);
@@ -217,6 +240,54 @@ Meteor.publish("requestingAccess", function (grainId) {
   this.onStop(() => handle.stop());
 });
 
+Meteor.publish("grainLog", function (grainId) {
+  check(grainId, String);
+  let id = 0;
+  const grain = Grains.findOne(grainId);
+  if (!grain || !this.userId || grain.userId !== this.userId) {
+    this.added("grainLog", id++, { text: "Only the grain owner can view the debug log." });
+    this.ready();
+    return;
+  }
+
+  let connected = false;
+  const _this = this;
+
+  const receiver = {
+    write(data) {
+      connected = true;
+      _this.added("grainLog", id++, { text: data.toString("utf8") });
+    },
+
+    close() {
+      if (connected) {
+        _this.added("grainLog", id++, {
+          text: "*** lost connection to grain (probably because it shut down) ***",
+        });
+      }
+    },
+  };
+
+  try {
+    const handle = waitPromise(globalBackend.useGrain(grainId, (supervisor) => {
+      return supervisor.watchLog(8192, receiver);
+    })).handle;
+    connected = true;
+    this.onStop(() => {
+      handle.close();
+    });
+  } catch (err) {
+    if (!connected) {
+      this.added("grainLog", id++, {
+        text: "*** couldn't connect to grain (" + err + ") ***",
+      });
+    }
+  }
+
+  // Notify ready.
+  this.ready();
+});
+
 const GRAIN_DELETION_MS = 1000 * 60 * 60 * 24 * 30; // thirty days
 SandstormDb.periodicCleanup(86400000, () => {
   const trashExpiration = new Date(Date.now() - GRAIN_DELETION_MS);
@@ -225,6 +296,72 @@ SandstormDb.periodicCleanup(86400000, () => {
 });
 
 Meteor.methods({
+  newGrain(packageId, command, title, obsolete) {
+    // Create and start a new grain.
+
+    check(packageId, String);
+    check(command, Object);  // Manifest.Command from package.capnp.
+    check(title, String);
+
+    if (!this.userId) {
+      throw new Meteor.Error(403, "Unauthorized", "Must be logged in to create grains.");
+    }
+
+    if (!isSignedUpOrDemo()) {
+      throw new Meteor.Error(403, "Unauthorized",
+                             "Only invited users or demo users can create grains.");
+    }
+
+    if (isUserOverQuota(Meteor.user())) {
+      throw new Meteor.Error(402,
+          "You are out of storage space. Please delete some things and try again.");
+    }
+
+    let pkg = Packages.findOne(packageId);
+    let isDev = false;
+    let mountProc = false;
+    if (!pkg) {
+      // Maybe they wanted a dev package.  Check there too.
+      pkg = DevPackages.findOne(packageId);
+      isDev = true;
+      mountProc = pkg && pkg.mountProc;
+    }
+
+    if (!pkg) {
+      throw new Meteor.Error(404, "Not Found", "No such package is installed.");
+    }
+
+    const appId = pkg.appId;
+    const manifest = pkg.manifest;
+    const grainId = Random.id(22);  // 128 bits of entropy
+    Grains.insert({
+      _id: grainId,
+      packageId: packageId,
+      appId: appId,
+      appVersion: manifest.appVersion,
+      userId: this.userId,
+      identityId: SandstormDb.generateIdentityId(),
+      title: title,
+      private: true,
+      size: 0,
+    });
+
+    globalBackend.startGrainInternal(packageId, grainId, this.userId, command, true,
+                                     isDev, mountProc);
+
+    return grainId;
+  },
+
+  shutdownGrain(grainId) {
+    check(grainId, String);
+    const grain = Grains.findOne(grainId);
+    if (!grain || !this.userId || grain.userId !== this.userId) {
+      throw new Meteor.Error(403, "Unauthorized", "User is not the owner of this grain");
+    }
+
+    waitPromise(globalBackend.shutdownGrain(grainId, grain.userId, true));
+  },
+
   updateGrainTitle: function (grainId, newTitle, obsolete) {
     check(grainId, String);
     check(newTitle, String);

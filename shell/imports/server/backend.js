@@ -22,20 +22,6 @@ const Crypto = Npm.require("crypto");
 
 let storageUsageUnimplemented = false;
 
-function generateSessionId(grainId, userId, packageSalt, clientSalt) {
-  const sessionParts = [grainId, clientSalt];
-  if (userId) {
-    sessionParts.push(userId);
-  }
-
-  if (packageSalt) {
-    sessionParts.push(packageSalt);
-  }
-
-  const sessionInput = sessionParts.join(":");
-  return Crypto.createHash("sha256").update(sessionInput).digest("hex");
-}
-
 const shouldRestartGrain = (error, retryCount) => {
   // Given an error thrown by an RPC call to a grain, return whether or not it makes sense to try
   // to restart the grain and retry. `retryCount` is the number of times that the request has
@@ -225,88 +211,6 @@ class SandstormBackend {
         }
       }
     }
-  }
-
-  openSessionInternal(grain, userId, revealIdentity, title, apiToken, cachedSalt, sessionFields) {
-    const grainId = grain._id;
-
-    // Start the grain if it is not running. This is an optimization: if we didn't start it here,
-    // it would start on the first request to the session host, but we'd like to get started before
-    // the round trip.
-    const { supervisor, packageSalt } = this.continueGrain(grainId);
-
-    this.updateLastActive(grainId, userId);
-
-    const identityId = userId && revealIdentity && this._db.getOrGenerateIdentityId(userId, grain);
-
-    cachedSalt = cachedSalt || Random.id(22);
-    const sessionId = generateSessionId(grainId, userId, packageSalt, cachedSalt);
-    let session = Sessions.findOne({ _id: sessionId });
-    if (session) {
-      // TODO(someday): also do some more checks for anonymous sessions (sessions without a userId).
-      if ((session.userId && session.userId !== userId) ||
-          (session.identityId && session.identityId !== identityId) ||
-          (session.grainId !== grainId)) {
-        const e = new Meteor.Error(500, "Duplicate SessionId");
-        console.error(e);
-        throw e;
-      } else {
-        return {
-          supervisor: supervisor,
-          methodResult: {
-            sessionId: session._id,
-            title: title,
-            grainId: grainId,
-            hostId: session.hostId,
-            tabId: session.tabId,
-            salt: cachedSalt,
-          },
-        };
-      }
-    }
-
-    // TODO(someday): Allow caller to specify the parent session from which to inherit the tab ID, or
-    //   something.
-
-    session = {
-      _id: sessionId,
-      grainId: grainId,
-      hostId: Crypto.createHash("sha256").update(sessionId).digest("hex").slice(0, 32),
-      tabId: Crypto.createHash("sha256").update("tab:").update(sessionId).digest("hex").slice(0, 32),
-      timestamp: new Date().getTime(),
-      hasLoaded: false,
-    };
-
-    if (userId) {
-      session.userId = userId;
-    }
-
-    if (identityId) {
-      session.identityId = identityId;
-    }
-
-    if (apiToken) {
-      session.hashedToken = apiToken._id;
-    }
-
-    if (sessionFields) {
-      _.extend(session, sessionFields);
-    }
-
-    Sessions.insert(session);
-
-    return {
-      supervisor: supervisor,
-      methodResult: {
-        sessionId: session._id,
-        title: title,
-        grainId: grainId,
-        hostId: session.hostId,
-        tabId: session.tabId,
-        salt: cachedSalt,
-        identityId: identityId,
-      },
-    };
   }
 };
 

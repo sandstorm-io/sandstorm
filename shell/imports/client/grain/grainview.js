@@ -145,7 +145,6 @@ class GrainView {
     this._error = undefined;
     this._hostId = undefined;
     this._sessionId = null;
-    this._sessionSalt = null;
     this._permissions = undefined;
 
     this._sessionObserver = undefined;
@@ -502,9 +501,16 @@ class GrainView {
               { replaceState: true });
   }
 
-  _addSessionObserver(sessionId) {
+  _addSessionObserver(params) {
+    if (!this._sessionId) {
+      // Generate a new session ID, which is also the cookie value used to authenticate access to
+      // the session host.
+      this._sessionId = Random.hexString(64);
+    }
+
     const _this = this;
-    _this._sessionSub = Meteor.subscribe("sessions", sessionId);
+    const sessionId = this._sessionId;
+    _this._sessionSub = Meteor.subscribe("sessions", sessionId, params);
     _this._sessionObserver = Sessions.find({ _id: sessionId }).observe({
       removed(session) {
         _this._sessionSub.stop();
@@ -539,6 +545,21 @@ class GrainView {
       },
 
       added(session) {
+        if (session.denied) {
+          _this._status = "error";
+          _this._error = new Meteor.Error(session.denied, "error: " + session.denied);
+          return;
+        }
+
+        _this._status = "opened";
+        _this._error = undefined;
+
+        _this._grainId = session.grainId;
+        _this._hostId = session.hostId;
+        if (session.sharersTitle) {
+          _this._title = session.sharersTitle;
+        }
+
         _this._viewInfo = session.viewInfo || _this._viewInfo;
         _this._updatePermissions(session.permissions);
         _this._status = "opened";
@@ -580,30 +601,11 @@ class GrainView {
     };
 
     onceConditionIsTrue(condition, () => {
-      // TODO(now): Don't call openSession; just use a subscription.
-      Meteor.call("openSession", _this._grainId, !isIncognito, _this._sessionSalt, this._options,
-                  (error, result) => {
-        if (error) {
-          console.error("openSession error", error);
-          _this._error = error;
-          _this._status = "error";
-          _this._dep.changed();
-        } else {
-          // result is an object containing sessionId, initial title, and grainId.
-          if (result.title) {
-            _this._title = result.title;
-          }
-
-          _this._grainId = result.grainId;
-          _this._sessionId = result.sessionId;
-          _this._hostId = result.hostId;
-          _this._sessionSalt = result.salt;
-
-          _this._addSessionObserver(result.sessionId);
-
-          _this._dep.changed();
-        }
-      });
+      _this._addSessionObserver(_.extend({
+        grainId: _this._grainId,
+        revealIdentity: !isIncognito,
+        parentOrigin: getOrigin()
+      }, this._options));
     });
   }
 
@@ -615,40 +617,30 @@ class GrainView {
 
     onceConditionIsTrue(condition, () => {
       const isIncognito = _this.isIncognito();
-
-      // This is an object for historical reasons.
-      const openSessionArg = {
-        token: _this._token,
-      };
-
       const neverRedeem = isStandalone();
-      // TODO(now): Don't call openSession; just use a subscription.
-      Meteor.call("openSessionFromApiToken",
-        openSessionArg, !isIncognito, _this._sessionSalt,
-        neverRedeem, getOrigin(), this._options, (error, result) => {
+
+      if (isIncognito || neverRedeem) {
+        // We don't intend to redeem the token, so just open a token-based session.
+        _this._addSessionObserver(_.extend({
+          token: _this._token,
+          revealIdentity: !isIncognito,
+          parentOrigin: getOrigin()
+        }, this._options));
+      } else {
+        // Redeem the token and redirect to grain URL.
+        Meteor.call("redeemSharingToken", _this._token, (error, result) => {
           if (error) {
-            console.error("openSessionFromApiToken error", error);
+            console.error("redeemSharingToken error", error);
             _this._error = error;
             _this._status = "error";
             _this._dep.changed();
-          } else if (result.redirectToGrain) {
-            _this._grainId = result.redirectToGrain;
-            _this._dep.changed();
-
-            return _this._redirectFromShareLink();
           } else {
-            // We are viewing this via just the /shared/ link, either as an anonymous user on in our
-            // incognito mode (since we'd otherwise have redeemed the token and been redirected).
-            _this._title = result.title;
             _this._grainId = result.grainId;
-            _this._sessionId = result.sessionId;
-            _this._hostId = result.hostId;
-            _this._sessionSalt = result.salt;
-            _this._addSessionObserver(result.sessionId);
             _this._dep.changed();
+            _this._redirectFromShareLink();
           }
-        }
-      );
+        });
+      }
     });
   }
 

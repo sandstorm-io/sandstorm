@@ -1399,16 +1399,6 @@ Meteor.setInterval(function () {
     console.log("Sandstorm is trying to reconnect...");
     Meteor.reconnect();
   }
-
-  grains.forEach(function (grain) {
-    if (grain.sessionId()) {
-      // TODO(soon):  Investigate what happens in background tabs.  Maybe arrange to re-open the
-      //   app if it dies while in the background.
-      Meteor.call("keepSessionAlive", grain.sessionId(), function (error, result) {
-        // Sessions will automatically resume if possible, otherwise they will refresh.
-      });
-    }
-  });
 }, 60000);
 
 const memoizedNewApiToken = {};

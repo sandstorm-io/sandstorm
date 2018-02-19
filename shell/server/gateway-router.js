@@ -762,7 +762,13 @@ Meteor.publish("sessions", function (sessionId, options) {
   if (query.count() == 0) {
     if (options) {
       // This subscription is intended to create the session.
-      createSession(db, this.userId, sessionId, options);
+      try {
+        createSession(db, this.userId, sessionId, options);
+      } catch (err) {
+        this.added("sessions", sessionId, {
+          denied: (err instanceof Meteor.Error) ? err.error : "internal-error"
+        });
+      }
     }
   } else {
     bumpSession(sessionId);

@@ -1473,6 +1473,9 @@ public:
 
   kj::Maybe<capnp::Capability::Client> inboundCall(
       uint64_t interfaceId, uint16_t methodId, capnp::Capability::Client target) override {
+    // Don't shut down as long as we're receiving inbound calls.
+    sandstorm::keepAlive = true;
+
     if (interfaceId == capnp::typeId<capnp::Persistent<>>() ||
         interfaceId == capnp::typeId<SystemPersistent>()) {
       return newIncomingSaveHandler(kj::mv(target).castAs<AppPersistent<>>(),

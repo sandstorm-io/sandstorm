@@ -2429,14 +2429,11 @@ private:
       auto io = kj::setupAsyncIo();
       auto& network = io.provider->getNetwork();
 
-      kj::Own<kj::ConnectionReceiver> listener;
-      kj::Own<kj::ConnectionReceiver> gatewayListener;
-
       auto capStream = fdBundle.consumeServer(FdBundle::SHELL_BACKEND, *io.lowLevelProvider);
-      listener = kj::heap<kj::CapabilityStreamConnectionReceiver>(*capStream)
+      auto listener = kj::heap<kj::CapabilityStreamConnectionReceiver>(*capStream)
           .attach(kj::mv(capStream));
       auto capStream2 = fdBundle.consumeServer(FdBundle::GATEWAY_BACKEND, *io.lowLevelProvider);
-      gatewayListener = kj::heap<kj::CapabilityStreamConnectionReceiver>(*capStream2)
+      auto gatewayListener = kj::heap<kj::CapabilityStreamConnectionReceiver>(*capStream2)
           .attach(kj::mv(capStream2));
 
       fdBundle.closeAll();

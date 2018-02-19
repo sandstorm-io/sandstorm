@@ -24,14 +24,9 @@ var forge = isDevShellMode
     : require('./programs/server/npm/node_modules/node-forge');
 
 function sandstormMain() {
-  if (process.env.EXPERIMENTAL_GATEWAY) {
-    process.env.SANDSTORM_SMTP_LISTEN_HANDLE = (firstInheritedFd + 2).toString();
-    process.env.SANDSTORM_BACKEND_HANDLE = (firstInheritedFd + 1).toString();
-    monkeypatchHttpForGateway();
-  } else {
-    process.env.SANDSTORM_SMTP_LISTEN_HANDLE = firstInheritedFd.toString();
-    monkeypatchHttpAndHttps();
-  }
+  process.env.SANDSTORM_SMTP_LISTEN_HANDLE = (firstInheritedFd + 2).toString();
+  process.env.SANDSTORM_BACKEND_HANDLE = (firstInheritedFd + 1).toString();
+  monkeypatchHttpForGateway();
 
   if (isDevShellMode) {
     // Cut ourselves out of argv.
@@ -52,7 +47,7 @@ function monkeypatchHttpForGateway() {
   // Monkey-patch the HTTP server module to receive connections over a unix socket on FD 3 instead
   // of listening the usual way.
 
-  if (process.env.EXPERIMENTAL_GATEWAY === "local") {
+  if (process.env.HTTP_GATEWAY === "local") {
     // Node.js has no public API for receiving file descriptors via SCM_RIGHTS on a unix pipe.
     // However, it does have a *private* API for this, which it uses to implement child_process.
     // We use the private API here. This could break when we update Node. If so, that's our fault.
@@ -83,7 +78,7 @@ function monkeypatchHttpForGateway() {
       }
       alreadyListened = true;
 
-      if (process.env.EXPERIMENTAL_GATEWAY === "local") {
+      if (process.env.HTTP_GATEWAY === "local") {
         // Gateway running locally, connecting over unix socketpair via SCM_RIGHTS transfer.
         global.sandstormListenCapabilityStream(firstInheritedFd, socket => {
           this.emit("connection", socket);
@@ -105,143 +100,6 @@ function monkeypatchHttpForGateway() {
   //   be and just give the main shell code the minimal hook it needs to invoke this code as
   //   necessary.
   initSandcats();
-}
-
-function monkeypatchHttpAndHttps() {
-  // Two very different monkey-patchings here.
-  //
-  // 1. Monkey-patch HTTP in the smallest way -- if someone calls
-  // listen() but doesn't provide an FD, assume they are Meteor and
-  // they want to bind to FD #4.
-  var oldListen = http.Server.prototype.listen;
-  http.Server.prototype.listen = function (port, host, cb) {
-    // Overridable by passing e.g. {fd: 5} as port.
-    if (typeof port == 'object' && port.fd) {
-      return oldListen.call(this, port, host, cb);
-    }
-    return oldListen.call(this, {fd: firstInheritedFd + 1}, cb);
-  }
-
-  // 2. If we are in HTTPS mode, monkey-patch HTTP in a large way:
-  // return a HTTPS server, not a HTTP server, so that Meteor gets a
-  // HTTPS server on FD #4 without Meteor being aware of the
-  // complexity.
-
-  // Stash the original function in createServerForSandstorm(), since
-  // in pre-meteor.js we sometimes need to bind HTTP sockets.
-  http.createServerForSandstorm = http.createServer;
-  var fakeHttpCreateServer = function(requestListener) {
-    if (process.env.HTTPS_PORT) {
-      // Great! FD #4 will speak HTTPS.
-      //
-      // NOTE: This assumes that the user will only set HTTPS_PORT if
-      // there are valid certificates for us to use. This could be a
-      // problem if BASE_URL is https but we aren't ready.
-
-      initSandcats();
-
-      // Set up initial keys. We do this directly, skipping the
-      // rekey() machinery, since rekey() wants to restart the process
-      // sometimes, and we never want that on initial startup.
-      global.sandcats.state = getCurrentSandcatsKeyAndNextRekeyTime();
-
-      // Configure options for httpsServer.createServer().
-      var httpsOptions = getNonSniKey();
-
-      // Set default ciphers & tell HTTPS clients we really like our ciphers.
-      //
-      // This ciphers list is from the nginx configuration for
-      // oasis.sandstorm.io.
-      var ciphers = ("ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA");
-      var honorCipherOrder = true;
-
-      httpsOptions.ciphers = ciphers;
-      httpsOptions.honorCipherOrder = honorCipherOrder;
-
-      // The SNICallback option is a function that nodejs will call on
-      // every inbound request with the inbound hostname. We get to
-      // return an object of ca & key & cert to use.
-      //
-      // This gives us an opportunity to fetch the latest key
-      // information from the filesystem, allowing for smooth,
-      // zero-downtime, https service re-keying. Note that the
-      // automatic re-keying only works for clients that support the
-      // HTTPS feature called Server Name Indication. Per
-      // http://caniuse.com/#feat=sni SNI is very popular.
-      httpsOptions.SNICallback = function(servername, callback) {
-        try {
-          var certAtStart = global.sandcats.state.cert;
-
-          var jsTimeNow = new Date().getTime();
-
-          if ((global.sandcats.state.nextRekeyTime !== null) &&
-              (jsTimeNow >= global.sandcats.state.nextRekeyTime)) {
-            console.log("Since", jsTimeNow, "is greater than", global.sandcats.state.nextRekeyTime,
-                        "doing a https re-key.");
-            global.sandcats.rekey();
-
-            if (certAtStart == global.sandcats.state.cert) {
-              console.log("Re-keying resulted in the same certificate. Strange.");
-            } else {
-              console.log("Re-keying resulting in a new certificate. Good.");
-            }
-          }
-
-          callback(null, crypto.createCredentials({
-            ciphers: ciphers,
-            honorCipherOrder: honorCipherOrder,
-            ca: global.sandcats.state.ca,
-            key: global.sandcats.state.key,
-            cert: global.sandcats.state.cert
-          }).context);
-        } catch (err) {
-          callback(err);
-        }
-      };
-      var httpsServer = https.createServer(httpsOptions, requestListener);
-
-      // Meteor calls httpServer.setTimeout() to set a default socket
-      // timeout. Since the method is not available on the nodejs
-      // v0.10.x https server object, we ignore it entirely for now.
-      //
-      // TODO(security): Run slowloris against this to make sure it is
-      // safe to ignore.
-      //
-      // Note that upon actually receiving a connection, Meteor
-      // adjusts the timeouts, so setTimeout only the socket before
-      // the HTTP message got parsed.
-      httpsServer.setTimeout = function() {};
-
-      // When Meteor calls .listen() we bind to FD #4 and speak HTTPS.
-      var oldListen = https.Server.prototype.listen;
-      httpsServer.listen = function (port, host, cb) {
-        var server = this;
-        // If we have a key ready, then we listen
-        // immediately. Otherwise retry loop.
-        var listenIfKey = function() {
-          var shouldListen = !! global.sandcats.state.key;
-          if (shouldListen) {
-            oldListen.call(server, {fd: firstInheritedFd + 1}, cb);
-          }
-          return shouldListen;
-        };
-        var attemptToListen = function() {
-          if (! listenIfKey()) {
-            console.log("No key, so can't listen for HTTPS yet. Will retry in three seconds.");
-            setTimeout(attemptToListen, 3000);
-          }
-        }
-        attemptToListen();
-      }
-      return httpsServer;
-    } else {
-      // Call http.createServerForSandstorm(), knowing that .listen()
-      // has been monkey-patched separately.
-      return http.createServerForSandstorm(requestListener);
-    }
-  }
-
-  http.createServer = fakeHttpCreateServer;
 }
 
 // =======================================================================================

@@ -52,7 +52,7 @@ if (!Meteor.settings.replicaNumber) {  // only first replica
   });
 }
 
-if (process.env.EXPERIMENTAL_GATEWAY === "local" &&
+if (process.env.HTTP_GATEWAY === "local" &&
     !global.sandstormListenCapabilityStream) {
   // TODO(cleanup): This is supposed to come from meteor-bundle-main.js but that doesn't actually
   //   run in dev-mode servers.
@@ -207,7 +207,7 @@ Meteor.startup(function () {
     },
   });
 
-  if (process.env.EXPERIMENTAL_GATEWAY === "local") {
+  if (process.env.HTTP_GATEWAY === "local") {
     // Gateway running locally, connecting over unix socketpair via SCM_RIGHTS transfer.
     global.sandstormListenCapabilityStream(
         parseInt(process.env.SANDSTORM_SMTP_LISTEN_HANDLE), socket => {

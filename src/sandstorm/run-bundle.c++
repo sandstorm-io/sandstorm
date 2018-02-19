@@ -1288,7 +1288,6 @@ private:
     bool isTesting = false;
     bool allowDevAccounts = false;
     bool hideTroubleshooting = false;
-    bool useExperimentalGateway = true;
     uint smtpListenPort = 30025;
     kj::Maybe<kj::String> privateKeyPassword = nullptr;
     kj::Maybe<kj::String> termsPublicId = nullptr;
@@ -1780,7 +1779,10 @@ private:
           KJ_FAIL_REQUIRE("invalid config value SMTP_LISTEN_PORT", value);
         }
       } else if (key == "EXPERIMENTAL_GATEWAY") {
-        config.useExperimentalGateway = value == "true" || value == "yes";
+        if (value != "true" && value != "yes") {
+          KJ_LOG(WARNING, "Gateway is no longer experimental. Disabling EXPERIMENTAL_GATEWAY is "
+                          "no longer supported.");
+        }
       } else if (key == "PRIVATE_KEY_PASSWORD") {
         config.privateKeyPassword = kj::mv(value);
       } else if (key == "TERMS_PAGE_PUBLIC_ID") {
@@ -1827,24 +1829,18 @@ private:
 
     FdBundle(const Config& config,
              std::map<uint, kj::AutoCloseFd> inherited = std::map<uint, kj::AutoCloseFd>())
-        : usingGateway(config.useExperimentalGateway),
-          // when not in gateway: STDERR + 1 (fd after STDERR) + HTTP ports + SMTP port
-          // when in gateway: STDERR + 1 (fd after STDERR) + SHELL_HTTP + SHELL_BACKEND + SHELL_SMTP
-          minFd(usingGateway ? STDERR_FILENO + 4 : STDERR_FILENO + 1 + config.ports.size() + 1) {
+        : // STDERR + 1 (fd after STDERR) + SHELL_HTTP + SHELL_BACKEND + SHELL_SMTP
+          minFd(STDERR_FILENO + 4) {
       int targetFd = STDERR_FILENO + 1;
       openPort(config, config.smtpListenPort, targetFd++, inherited);
       for (auto& port: config.ports) {
         openPort(config, port, targetFd++, inherited);
       }
 
-      if (usingGateway) {
-        links.insert(std::make_pair(SHELL_HTTP, newLink()));
-        links.insert(std::make_pair(SHELL_SMTP, newLink()));
-        links.insert(std::make_pair(SHELL_BACKEND, newLink()));
-        links.insert(std::make_pair(GATEWAY_BACKEND, newLink()));
-      } else {
-        KJ_ASSERT(minFd == targetFd);
-      }
+      links.insert(std::make_pair(SHELL_HTTP, newLink()));
+      links.insert(std::make_pair(SHELL_SMTP, newLink()));
+      links.insert(std::make_pair(SHELL_BACKEND, newLink()));
+      links.insert(std::make_pair(GATEWAY_BACKEND, newLink()));
     }
 
     FdBundle(decltype(nullptr)): minFd(0) {};
@@ -1864,34 +1860,18 @@ private:
     }
 
     void prepareInheritedFds() {
-      if (usingGateway) {
-        KJ_SYSCALL(dup2(links[SHELL_HTTP].server, STDERR_FILENO + 1));
-        KJ_SYSCALL(dup2(links[SHELL_BACKEND].client, STDERR_FILENO + 2));
-        KJ_SYSCALL(dup2(links[SHELL_SMTP].server, STDERR_FILENO + 3));
-      } else {
-        for (auto& port: ports) {
-          KJ_SYSCALL(dup2(port.second.fd, port.second.targetFd));
-        }
-      }
+      KJ_SYSCALL(dup2(links[SHELL_HTTP].server, STDERR_FILENO + 1));
+      KJ_SYSCALL(dup2(links[SHELL_BACKEND].client, STDERR_FILENO + 2));
+      KJ_SYSCALL(dup2(links[SHELL_SMTP].server, STDERR_FILENO + 3));
     }
 
     kj::Array<kj::AutoCloseFd> consumeShellInherited() {
       // Get the FDs that the shell normally inherits.
-      if (usingGateway) {
-        auto builder = kj::heapArrayBuilder<kj::AutoCloseFd>(3);
-        builder.add(kj::mv(links[SHELL_HTTP].server));
-        builder.add(kj::mv(links[SHELL_BACKEND].client));
-        builder.add(kj::mv(links[SHELL_SMTP].server));
-        return builder.finish();
-      } else {
-        auto result = kj::heapArray<kj::AutoCloseFd>(ports.size());
-        for (auto& port: ports) {
-          uint index = port.second.targetFd - STDERR_FILENO - 1;
-          KJ_ASSERT(index < result.size());
-          result[index] = kj::mv(port.second.fd);
-        }
-        return result;
-      }
+      auto builder = kj::heapArrayBuilder<kj::AutoCloseFd>(3);
+      builder.add(kj::mv(links[SHELL_HTTP].server));
+      builder.add(kj::mv(links[SHELL_BACKEND].client));
+      builder.add(kj::mv(links[SHELL_SMTP].server));
+      return builder.finish();
     }
 
     kj::Own<kj::ConnectionReceiver> consume(uint port, kj::LowLevelAsyncIoProvider& provider) {
@@ -1927,7 +1907,6 @@ private:
       int targetFd;  // FD number to use when passing to Node.
     };
 
-    bool usingGateway;
     int minFd;
     std::map<uint, FdInfo> ports;
 
@@ -2190,10 +2169,8 @@ private:
     int64_t nodeStartTime = getTime();
 
     pid_t gatewayPid = 0;
-    if (config.useExperimentalGateway) {
-      context.warning("** Starting Gateway...");
-      gatewayPid = startGateway(config, fdBundle);
-    }
+    context.warning("** Starting Gateway...");
+    gatewayPid = startGateway(config, fdBundle);
     int64_t gatewayStartTime = getTime();
 
     for (;;) {
@@ -2454,34 +2431,13 @@ private:
 
       kj::Own<kj::ConnectionReceiver> listener;
       kj::Own<kj::ConnectionReceiver> gatewayListener;
-      if (config.useExperimentalGateway) {
-        auto capStream = fdBundle.consumeServer(FdBundle::SHELL_BACKEND, *io.lowLevelProvider);
-        listener = kj::heap<kj::CapabilityStreamConnectionReceiver>(*capStream)
-            .attach(kj::mv(capStream));
-        auto capStream2 = fdBundle.consumeServer(FdBundle::GATEWAY_BACKEND, *io.lowLevelProvider);
-        gatewayListener = kj::heap<kj::CapabilityStreamConnectionReceiver>(*capStream2)
-            .attach(kj::mv(capStream2));
-      } else {
-        kj::StringPtr socketPath = Backend::SOCKET_PATH;
-        sandstorm::recursivelyCreateParent(socketPath);
-        unlink(socketPath.cStr());
 
-        listener = network.parseAddress(kj::str("unix:", socketPath))
-            .wait(io.waitScope)->listen();
-
-        if (runningAsRoot) {
-          // Make socket available to server user.
-          KJ_SYSCALL(chmod(socketPath.cStr(), 0770));
-          KJ_SYSCALL(chown(socketPath.cStr(), 0, config.uids.gid));
-
-          // Also make the socket parent directory available to user.
-          KJ_IF_MAYBE(pos, socketPath.findLast('/')) {
-            kj::String parent = kj::heapString(socketPath.slice(0, *pos));
-            KJ_SYSCALL(chmod(parent.cStr(), 0770));
-            KJ_SYSCALL(chown(parent.cStr(), 0, config.uids.gid));
-          }
-        }
-      }
+      auto capStream = fdBundle.consumeServer(FdBundle::SHELL_BACKEND, *io.lowLevelProvider);
+      listener = kj::heap<kj::CapabilityStreamConnectionReceiver>(*capStream)
+          .attach(kj::mv(capStream));
+      auto capStream2 = fdBundle.consumeServer(FdBundle::GATEWAY_BACKEND, *io.lowLevelProvider);
+      gatewayListener = kj::heap<kj::CapabilityStreamConnectionReceiver>(*capStream2)
+          .attach(kj::mv(capStream2));
 
       fdBundle.closeAll();
 
@@ -2500,28 +2456,22 @@ private:
       paf.fulfiller->fulfill(kj::heap<BackendImpl>(*io.lowLevelProvider, network,
         server.getBootstrap().castAs<SandstormCoreFactory>(), sandboxUid));
 
-      kj::Own<capnp::TwoPartyServer> gatewayServer;
-      if (config.useExperimentalGateway) {
-        gatewayServer = kj::heap<capnp::TwoPartyServer>(kj::refcounted<CapRedirector>([&]() {
-          return server.getBootstrap().castAs<SandstormCoreFactory>()
-              .getGatewayRouterRequest().send().getRouter();
-        }));
-      }
+      auto gatewayServer = kj::heap<capnp::TwoPartyServer>(kj::refcounted<CapRedirector>([&]() {
+        return server.getBootstrap().castAs<SandstormCoreFactory>()
+            .getGatewayRouterRequest().send().getRouter();
+      }));
 
       // Signal readiness.
       write(outPipe, "ready", 5);
       outPipe = nullptr;
 
-      auto promise = server.listen(kj::mv(listener));
-      if (config.useExperimentalGateway) {
-        promise = promise.exclusiveJoin(gatewayServer->listen(*gatewayListener));
-      }
-
-      // Rotate logs, keeping 1-2MB worth. We do this in the backend process mainly because
-      // it is the only asynchronous process in run-bundle.c++.
-      promise.exclusiveJoin(rotateLog(io.provider->getTimer(),
+      server.listen(kj::mv(listener))
+          .exclusiveJoin(gatewayServer->listen(*gatewayListener))
+          // Rotate logs, keeping 1-2MB worth. We do this in the backend process mainly because
+          // it is the only asynchronous process in run-bundle.c++.
+          .exclusiveJoin(rotateLog(io.provider->getTimer(),
                                       STDERR_FILENO, "/var/log/sandstorm.log", 1u << 20))
-             .wait(io.waitScope);
+          .wait(io.waitScope);
       KJ_UNREACHABLE;
     });
 
@@ -2687,13 +2637,11 @@ private:
           true));
     }
 
-    if (config.useExperimentalGateway) {
-      KJ_SYSCALL(setenv("EXPERIMENTAL_GATEWAY", "local", true));
-    }
+    KJ_SYSCALL(setenv("HTTP_GATEWAY", "local", true));
 
     KJ_SYSCALL(setenv("PORT", kj::str(config.ports[0]).cStr(), true));
-    KJ_SYSCALL(setenv("PORTS", kj::strArray(config.ports, ",").cStr(), true));
     KJ_IF_MAYBE(httpsPort, config.httpsPort) {
+      // TODO(cleanup): At this point, all this does is tell Sandcats to refresh certs.
       KJ_SYSCALL(setenv("HTTPS_PORT", kj::str(*httpsPort).cStr(), true));
     }
 

@@ -824,122 +824,120 @@ Meteor.methods({
 });
 
 // =======================================================================================
-// Backwards-compatibility with clients started before the cut-over. This is only needed to
+// Backwards-compatibility with clients started before proxy.js was deleted. This is only needed to
 // cover one update; once all clients click to refresh, we can delete this.
 //
 // TODO(cleanup): Delete in next version.
 
-if (process.env.EXPERIMENTAL_GATEWAY) {
-  function generateSessionId(grainId, userId, packageSalt, clientSalt) {
-    const sessionParts = [grainId, clientSalt];
-    if (userId) {
-      sessionParts.push(userId);
-    }
-
-    if (packageSalt) {
-      sessionParts.push(packageSalt);
-    }
-
-    const sessionInput = sessionParts.join(":");
-    return Crypto.createHash("sha256").update(sessionInput).digest("hex");
+function generateSessionId(grainId, userId, packageSalt, clientSalt) {
+  const sessionParts = [grainId, clientSalt];
+  if (userId) {
+    sessionParts.push(userId);
   }
 
-  Meteor.methods({
-    openSession(grainId, revealIdentity, cachedSalt, options) {
-      check(grainId, String);
-      check(cachedSalt, Match.OneOf(undefined, null, String));
-      options = options || {};
-      check(options, {
-        powerboxRequest: Match.Optional({
-          descriptors: [String],
-          requestingSession: String,
-        }),
-      });
-      options.revealIdentity = !!revealIdentity;
-      options.grainId = grainId;
+  if (packageSalt) {
+    sessionParts.push(packageSalt);
+  }
 
-      cachedSalt = cachedSalt || Random.id(22);
-      const grain = Grains.findOne(grainId);
-      const packageSalt = grain && grain.packageSalt;
-      const sessionId = generateSessionId(grainId, this.userId, packageSalt, cachedSalt);
-
-      let session = Sessions.findOne(sessionId);
-      if (!session) {
-        session = createSession(globalDb, this.userId, sessionId, options);
-      }
-
-      return {
-        sessionId: session._id,
-        title: null,
-        grainId: grainId,
-        hostId: session.hostId,
-        tabId: session.tabId,
-        salt: cachedSalt,
-      };
-    },
-
-    openSessionFromApiToken(params, revealIdentity, cachedSalt, neverRedeem, parentOrigin, options) {
-      neverRedeem = neverRedeem || false;
-      parentOrigin = parentOrigin || process.env.ROOT_URL;
-      options = options || {};
-
-      check(params, {
-        token: String,
-        incognito: Match.Optional(Boolean),  // obsolete, ignored
-      });
-      revealIdentity = !!revealIdentity;
-      check(cachedSalt, Match.OneOf(undefined, null, String));
-      check(neverRedeem, Boolean);
-      check(parentOrigin, String);
-      check(options, {
-        powerboxRequest: Match.Optional({
-          descriptors: [String],
-          requestingSession: String,
-        }),
-      });
-      options.revealIdentity = !!revealIdentity;
-      options.token = params.token;
-      if (parentOrigin) options.parentOrigin = parentOrigin;
-
-      const token = params.token;
-
-      if (this.userId && revealIdentity && !neverRedeem) {
-        const grainId = Meteor.call("redeemSharingToken", token).grainId;
-        return { redirectToGrain: grainId };
-      }
-
-      const hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
-      const apiToken = ApiTokens.findOne(hashedToken);
-      if (!apiToken) throw new Error("no such token");
-
-      cachedSalt = cachedSalt || Random.id(22);
-      const grainId = apiToken.grainId;
-      const grain = Grains.findOne(grainId);
-      const packageSalt = grain && grain.packageSalt;
-      const sessionId = generateSessionId(grainId, this.userId, packageSalt, cachedSalt);
-
-      let session = Sessions.findOne(sessionId);
-      if (!session) {
-        session = createSession(globalDb, this.userId, sessionId, options);
-      }
-
-      return {
-        sessionId: session._id,
-        title: session.sharersTitle,
-        grainId: grainId,
-        hostId: session.hostId,
-        tabId: session.tabId,
-        salt: cachedSalt,
-      };
-    },
-
-    keepSessionAlive(sessionId) {
-      check(sessionId, String);
-
-      // If the session is gone, let the client know they need to call openSession() again.
-      // (We don't need to bumpSession() from here because we now do that in the session
-      // subscription.)
-      return Sessions.find({ _id: sessionId }).count() > 0;
-    }
-  });
+  const sessionInput = sessionParts.join(":");
+  return Crypto.createHash("sha256").update(sessionInput).digest("hex");
 }
+
+Meteor.methods({
+  openSession(grainId, revealIdentity, cachedSalt, options) {
+    check(grainId, String);
+    check(cachedSalt, Match.OneOf(undefined, null, String));
+    options = options || {};
+    check(options, {
+      powerboxRequest: Match.Optional({
+        descriptors: [String],
+        requestingSession: String,
+      }),
+    });
+    options.revealIdentity = !!revealIdentity;
+    options.grainId = grainId;
+
+    cachedSalt = cachedSalt || Random.id(22);
+    const grain = Grains.findOne(grainId);
+    const packageSalt = grain && grain.packageSalt;
+    const sessionId = generateSessionId(grainId, this.userId, packageSalt, cachedSalt);
+
+    let session = Sessions.findOne(sessionId);
+    if (!session) {
+      session = createSession(globalDb, this.userId, sessionId, options);
+    }
+
+    return {
+      sessionId: session._id,
+      title: null,
+      grainId: grainId,
+      hostId: session.hostId,
+      tabId: session.tabId,
+      salt: cachedSalt,
+    };
+  },
+
+  openSessionFromApiToken(params, revealIdentity, cachedSalt, neverRedeem, parentOrigin, options) {
+    neverRedeem = neverRedeem || false;
+    parentOrigin = parentOrigin || process.env.ROOT_URL;
+    options = options || {};
+
+    check(params, {
+      token: String,
+      incognito: Match.Optional(Boolean),  // obsolete, ignored
+    });
+    revealIdentity = !!revealIdentity;
+    check(cachedSalt, Match.OneOf(undefined, null, String));
+    check(neverRedeem, Boolean);
+    check(parentOrigin, String);
+    check(options, {
+      powerboxRequest: Match.Optional({
+        descriptors: [String],
+        requestingSession: String,
+      }),
+    });
+    options.revealIdentity = !!revealIdentity;
+    options.token = params.token;
+    if (parentOrigin) options.parentOrigin = parentOrigin;
+
+    const token = params.token;
+
+    if (this.userId && revealIdentity && !neverRedeem) {
+      const grainId = Meteor.call("redeemSharingToken", token).grainId;
+      return { redirectToGrain: grainId };
+    }
+
+    const hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
+    const apiToken = ApiTokens.findOne(hashedToken);
+    if (!apiToken) throw new Error("no such token");
+
+    cachedSalt = cachedSalt || Random.id(22);
+    const grainId = apiToken.grainId;
+    const grain = Grains.findOne(grainId);
+    const packageSalt = grain && grain.packageSalt;
+    const sessionId = generateSessionId(grainId, this.userId, packageSalt, cachedSalt);
+
+    let session = Sessions.findOne(sessionId);
+    if (!session) {
+      session = createSession(globalDb, this.userId, sessionId, options);
+    }
+
+    return {
+      sessionId: session._id,
+      title: session.sharersTitle,
+      grainId: grainId,
+      hostId: session.hostId,
+      tabId: session.tabId,
+      salt: cachedSalt,
+    };
+  },
+
+  keepSessionAlive(sessionId) {
+    check(sessionId, String);
+
+    // If the session is gone, let the client know they need to call openSession() again.
+    // (We don't need to bumpSession() from here because we now do that in the session
+    // subscription.)
+    return Sessions.find({ _id: sessionId }).count() > 0;
+  }
+});

@@ -138,6 +138,8 @@ Please install the following:
 * `strace`
 * `curl`
 * `python`
+* `zlib1g-dev`
+* `golang-go`
 * `cmake`
 * discount (markdown parser)
 * [Clang compiler](http://clang.llvm.org/) version 3.4 or better
@@ -146,7 +148,8 @@ Please install the following:
 On Debian or Ubuntu, you should be able to get all these with:
 
     sudo apt-get install build-essential libcap-dev xz-utils zip \
-        unzip strace curl clang discount git python
+        unzip strace curl clang discount git python zlib1g-dev \
+        golang-go
     curl https://install.meteor.com/ | sh
 
 ### Get the source code

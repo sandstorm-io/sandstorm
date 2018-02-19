@@ -286,7 +286,9 @@ kj::Promise<void> GatewayService::request(
 
         kj::HttpHeaders responseHeaders(tables.headerTable);
         // We avoid registering a header ID for Set-Cookie. See comments in web-session-bridge.c++.
-        responseHeaders.add("Set-Cookie", kj::str("sandstorm-sid=", parsed.query[0].value));
+        responseHeaders.add("Set-Cookie", kj::str(
+            "sandstorm-sid=", parsed.query[0].value, "; HttpOnly",
+            baseUrl.scheme == "https" ? "; Secure" : ""));
         responseHeaders.set(tables.hLocation, kj::mv(path));
 
         response.send(303, "See Other", responseHeaders, uint64_t(0));

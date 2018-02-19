@@ -128,15 +128,17 @@ IMAGES= \
 # Meta rules
 
 .SUFFIXES:
-.PHONY: all install clean ci-clean continuous shell-env fast deps bootstrap-ekam update-deps clobber-deps test installer-test app-index-dev
+.PHONY: all install clean clean-deps ci-clean continuous shell-env fast deps bootstrap-ekam update-deps test installer-test app-index-dev
 
 all: sandstorm-$(BUILD).tar.xz
 
-# TODO(cleanup): Re-add deps/boringssl/build to clean list once build issues with symlinks are fixed.
 clean: ci-clean
 	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/client/changelog.html shell/packages/*/.build* shell/packages/*/.npm/package/node_modules *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff icons/package-lock.json tests/package-lock.json
-	test -e deps/node && cd deps/node && make clean
-	@(if test -d deps && test ! -h deps; then printf "\033[0;33mTo update dependencies, use: make update-deps\033[0m\n"; fi)
+	@# Note: capnproto, libseccomp, and node-capnp are integrated into the common build.
+	cd deps/ekam && make clean
+	rm -rf deps/libsodium/build
+	cd deps/node && make clean
+	rm -rf deps/boringssl/build
 
 ci-clean:
 	@# Clean only the stuff that we want to clean between CI builds.
@@ -165,99 +167,48 @@ stylecheck:
 # ====================================================================
 # Dependencies
 
+DEPS=capnproto ekam libseccomp libsodium node-capnp node boringssl
+
 # We list remotes so that if projects move hosts, we can pull from their new
 # canonical location.
-REMOTE_capnproto=https://github.com/sandstorm-io/capnproto.git
-REMOTE_ekam=https://github.com/sandstorm-io/ekam.git
-REMOTE_libseccomp=https://github.com/seccomp/libseccomp
-REMOTE_libsodium=https://github.com/jedisct1/libsodium.git
-REMOTE_node-capnp=https://github.com/kentonv/node-capnp.git
-REMOTE_node=https://github.com/sandstorm-io/node
-REMOTE_boringssl=https://boringssl.googlesource.com/boringssl
+REMOTE_capnproto=https://github.com/sandstorm-io/capnproto.git master
+REMOTE_ekam=https://github.com/sandstorm-io/ekam.git master
+REMOTE_libseccomp=https://github.com/seccomp/libseccomp master
+REMOTE_libsodium=https://github.com/jedisct1/libsodium.git stable
+REMOTE_node-capnp=https://github.com/kentonv/node-capnp.git node8
+REMOTE_node=https://github.com/sandstorm-io/node sandstorm
+REMOTE_boringssl=https://boringssl.googlesource.com/boringssl master
+
+deps/capnproto/.git:
+	@# Probably user forgot to checkout submodules. Do it for them.
+	@$(call color,"fetching submodules")
+	git submodule update --init --recursive
 
 deps: tmp/.deps
 
-tmp/.deps: | deps/capnproto deps/ekam deps/libseccomp deps/libsodium deps/node-capnp deps/node deps/boringssl
+tmp/.deps: | deps/capnproto/.git
 	@mkdir -p tmp
 	@touch tmp/.deps
 
-deps/capnproto:
-	@$(call color,downloading capnproto)
-	@mkdir -p deps
-	git clone $(REMOTE_capnproto) deps/capnproto
-
-deps/ekam:
-	@$(call color,downloading ekam)
-	@mkdir -p deps
-	git clone $(REMOTE_ekam) deps/ekam
-	@ln -s .. deps/ekam/deps
-
-deps/libseccomp:
-	@$(call color,downloading libseccomp)
-	@mkdir -p deps
-	git clone $(REMOTE_libseccomp) deps/libseccomp
-
-deps/libsodium:
-	@$(call color,downloading libsodium)
-	@mkdir -p deps
-	git clone $(REMOTE_libsodium) deps/libsodium
-	@cd deps/libsodium && git checkout stable
-
-deps/node-capnp:
-	@$(call color,downloading node-capnp)
-	@mkdir -p deps
-	git clone $(REMOTE_node-capnp) deps/node-capnp
-
-deps/node:
-	@$(call color,downloading node)
-	@mkdir -p deps
-	git clone $(REMOTE_node) deps/node
-
-deps/boringssl:
-	@$(call color,downloading boringssl)
-	@mkdir -p deps
-	git clone $(REMOTE_boringssl) deps/boringssl
-
 update-deps:
 	@$(call color,updating all dependencies)
-	@$(foreach DEP,capnproto ekam libseccomp libsodium node-capnp node boringssl, \
+	@$(foreach DEP,$(DEPS), \
 	    cd deps/$(DEP) && \
 	    echo "pulling $(DEP)..." && \
-	    git pull $(REMOTE_$(DEP)) `git symbolic-ref --short HEAD` && \
+	    git fetch $(REMOTE_$(DEP)) && \
+	    git rebase FETCH_HEAD && \
 	    cd ../..;)
-
-clobber-deps:
-	@$(call color,forcibly updating all dependencies)
-	@$(foreach DEP,capnproto ekam libseccomp boringssl, \
-	    cd deps/$(DEP) && \
-	    echo "fetching $(DEP)..." && \
-	    git fetch $(REMOTE_$(DEP)) master && \
-	    git reset --hard FETCH_HEAD && \
-	    cd ../..;)
-	@cd deps/node-capnp && \
-	    echo "fetching node-capnp..." && \
-	    git fetch $(REMOTE_node-capnp) node8 && \
-	    git reset --hard FETCH_HEAD && \
-	    cd ../../
-	@cd deps/libsodium && \
-	    echo "fetching libsodium..." && \
-	    git fetch $(REMOTE_libsodium) stable && \
-	    git reset --hard FETCH_HEAD && \
-	    cd ../../
-	@cd deps/node && \
-	    echo "fetching node..." && \
-	    git fetch $(REMOTE_node) sandstorm && \
-	    git reset --hard FETCH_HEAD && \
-	    cd ../../
 
 # ====================================================================
 # build BoringSSL
 
-deps/boringssl/build/Makefile: | deps/boringssl
+deps/boringssl/build/Makefile: | tmp/.deps
+	@$(call color,configuring BoringSSL)
 	@mkdir -p deps/boringssl/build
 	cd deps/boringssl/build && cmake .. -DCMAKE_BUILD_TYPE=Release
 
 deps/boringssl/build/ssl/libssl.a: deps/boringssl/build/Makefile
+	@$(call color,building BoringSSL)
 	cd deps/boringssl/build && make -j$(PARALLEL)
 
 # ====================================================================
@@ -273,8 +224,7 @@ tmp/ekam-bin: tmp/.deps
 tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps deps/boringssl/build/ssl/libssl.a
 	@$(call color,building sandstorm with ekam)
 	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS2)" CXXFLAGS="$(CXXFLAGS2)" \
-	    LIBS="$(LIBS2)" NODEJS=$(NODEJS) tmp/ekam-bin -j$(PARALLEL) || \
-	    ($(call color,build failed. You might need to: make update-deps) && false)
+	    LIBS="$(LIBS2)" NODEJS=$(NODEJS) tmp/ekam-bin -j$(PARALLEL)
 	@touch tmp/.ekam-run
 
 continuous: tmp/.deps deps/boringssl/build/ssl/libssl.a
@@ -290,6 +240,7 @@ shell-env: tmp/.shell-env
 # Note that we need Ekam to build node_modules before we can run Meteor, hence
 # the dependency on tmp/.ekam-run.
 tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html shell/client/styles/_icons.scss shell/package.json shell/npm-shrinkwrap.json
+	@$(call color,configuring meteor frontend)
 	@mkdir -p tmp
 	@mkdir -p node_modules/capnp
 	@bash -O extglob -c 'cp src/capnp/!(*test*).capnp node_modules/capnp'
@@ -374,7 +325,7 @@ shell/public/%-m.svg: icons/%.svg
 	@sed -e 's/#111111/#000000/g' < $< > $@
 
 shell-build: shell/imports/* shell/imports/*/* shell/client/* shell/server/* shell/shared/* shell/public/* shell/packages/* shell/packages/*/* shell/i18n/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
-	@$(call color,meteor frontend)
+	@$(call color,building meteor frontend)
 	@test -z "$$(find -L shell/* -type l)" || (echo "error: broken symlinks in shell: $$(find -L shell/* -type l)" >&2 && exit 1)
 	@OLD=`pwd` && cd shell && meteor build --directory "$$OLD/shell-build"
 

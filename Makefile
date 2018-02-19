@@ -36,7 +36,7 @@ NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
 WARNINGS=-Wall -Wextra -Wglobal-constructors -Wno-sign-compare -Wno-unused-parameter
 CXXFLAGS2=-std=c++1z $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -DKJ_HAS_OPENSSL -DKJ_HAS_ZLIB -pthread -fPIC -I$(NODE_HEADERS)
 CFLAGS2=$(CFLAGS) -pthread -fPIC
-LIBS2=$(LIBS) deps/boringssl/build/ssl/libssl.a deps/boringssl/build/crypto/libcrypto.a -lz -pthread
+LIBS2=$(LIBS) deps/libsodium/build/src/libsodium/.libs/libsodium.a deps/boringssl/build/ssl/libssl.a deps/boringssl/build/crypto/libcrypto.a -lz -pthread
 
 define color
   printf '\033[0;34m==== $1 ====\033[0m\n'
@@ -205,11 +205,23 @@ update-deps:
 deps/boringssl/build/Makefile: | tmp/.deps
 	@$(call color,configuring BoringSSL)
 	@mkdir -p deps/boringssl/build
-	cd deps/boringssl/build && cmake .. -DCMAKE_BUILD_TYPE=Release
+	cd deps/boringssl/build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$(CC)" -DCMAKE_CXX_COMPILER="$(CXX)" -DCMAKE_C_FLAGS="-fPIE" -DCMAKE_CXX_FLAGS="-fPIE" ..
 
 deps/boringssl/build/ssl/libssl.a: deps/boringssl/build/Makefile
 	@$(call color,building BoringSSL)
 	cd deps/boringssl/build && make -j$(PARALLEL)
+
+# ====================================================================
+# build libsodium
+
+deps/libsodium/build/Makefile: | tmp/.deps
+	@$(call color,configuring libsodium)
+	@mkdir -p deps/libsodium/build
+	cd deps/libsodium/build && ../configure --disable-shared CC="$(CC)"
+
+deps/libsodium/build/src/libsodium/.libs/libsodium.a: deps/libsodium/build/Makefile
+	@$(call color,building libsodium)
+	cd deps/libsodium/build && make -j$(PARALLEL)
 
 # ====================================================================
 # Ekam bootstrap and C++ binaries
@@ -221,13 +233,13 @@ tmp/ekam-bin: tmp/.deps
 	    (cd deps/ekam && $(MAKE) bin/ekam-bootstrap && \
 	     cd ../.. && ln -s ../deps/ekam/bin/ekam-bootstrap tmp/ekam-bin)
 
-tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps deps/boringssl/build/ssl/libssl.a
+tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps deps/boringssl/build/ssl/libssl.a deps/libsodium/build/src/libsodium/.libs/libsodium.a
 	@$(call color,building sandstorm with ekam)
 	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS2)" CXXFLAGS="$(CXXFLAGS2)" \
 	    LIBS="$(LIBS2)" NODEJS=$(NODEJS) tmp/ekam-bin -j$(PARALLEL)
 	@touch tmp/.ekam-run
 
-continuous: tmp/.deps deps/boringssl/build/ssl/libssl.a
+continuous: tmp/.deps deps/boringssl/build/ssl/libssl.a deps/libsodium/build/src/libsodium/.libs/libsodium.a
 	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS2)" CXXFLAGS="$(CXXFLAGS2)" \
 	    LIBS="$(LIBS2)" NODEJS=$(NODEJS) ekam -j$(PARALLEL) -c -n :41315 || \
 	    ($(call color,You probably need to install ekam and put it on your path; see github.com/sandstorm-io/ekam) && false)

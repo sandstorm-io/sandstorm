@@ -1,0 +1,28 @@
+<template name="stripeAddPaymentSourcePowerboxOption">
+  Add new card
+</template>
+
+<template name="stripeAddPaymentSourcePowerboxConfiguration">
+  <div style="min-width: 200px;"></div>  {{!-- so that window doesn't look stupid --}}
+  <iframe class="mobile-iframe-hack fullscreen"
+          src="{{paymentsUrl}}/checkout#{{checkoutData}}"></iframe>
+</template>
+
+<template name="stripePaymentSourcePowerboxOption">
+  {{#with option.stripeSourceInfo}}
+    {{brand}}: ***{{last4}} exp. {{exp_month}}/{{exp_year}}
+  {{/with}}
+</template>
+
+<template name="stripePaymentAcceptorPowerboxOption">
+  Admin: accept payments through the server's Stripe account
+</template>
+
+<template name="stripePaymentAcceptorPowerboxConfiguration">
+  <form class="stripe-payment-acceptor-configuration">
+    <label>Invoice sender name: <input name="acceptorTitle" value="{{serverTitle}}"></label>
+    <label>Invoice return address: <input name="returnAddress" value="{{returnAddress}}"></label>
+    <label>Invoice settings URL: <input name="settingsUrl"></label>
+    <button>Create</button>
+  </form>
+</template>

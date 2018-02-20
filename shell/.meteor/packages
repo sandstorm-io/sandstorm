@@ -35,6 +35,7 @@ sandstorm-identicons
 sandstorm-permissions
 sandstorm-ui-topbar
 sandstorm-ui-powerbox
+blackrock-payments
 fourseven:scss
 sha@1.0.9
 standard-minifier-css@1.3.5

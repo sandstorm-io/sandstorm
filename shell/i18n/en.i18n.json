@@ -1769,7 +1769,7 @@
       "oasis": "Start collaborating with others by using Sandstorm on Oasis:",
       "createAccount": "Create free account »",
       "demoHint": "Your demo data will be transferred.",
-      "selfHostHint": "Or, install Sandstorm for your team (it's open source):",
+      "selfHostHint": "Or, run Sandstorm on your own server (it's open source):",
       "signUp": "Sign up within:",
       "close": "Close"
     },

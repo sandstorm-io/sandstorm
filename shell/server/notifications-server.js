@@ -241,7 +241,7 @@ Meteor.methods({
       isUnread: true,
     });
 
-    if (global.BlackrockPayments) {
+    if (Meteor.settings.public.stripePublicKey) {
       Notifications.insert({
         userId: this.userId,
         mailingListBonus: true,

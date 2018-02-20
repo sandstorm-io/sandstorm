@@ -37,7 +37,7 @@ globalFrontendRefRegistry = new FrontendRefRegistry();
 
 SandstormPowerbox.registerUiViewQueryHandler(globalFrontendRefRegistry);
 
-if (global.BlackrockPayments && BlackrockPayments.registerPaymentsApi) {
+if (Meteor.settings.public.stripePublicKey && BlackrockPayments.registerPaymentsApi) {
   // TODO(cleanup): Meteor.startup() needed because unwrapFrontendCap is not defined yet when this
   //   first runs. Move it into an import.
   Meteor.startup(() => {
@@ -63,7 +63,7 @@ SandstormDb.periodicCleanup(60 * 60 * 1000, () => {
 SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
   SandstormAutoupdateApps.updateAppIndex(globalDb);
 });
-const deleteAccount = global.BlackrockPayments && global.BlackrockPayments.deleteAccount;
+const deleteAccount = Meteor.settings.public.stripePublicKey && BlackrockPayments.deleteAccount;
 SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
   globalDb.deletePendingAccounts(ACCOUNT_DELETION_SUSPENSION_TIME, globalBackend,
     deleteAccount);

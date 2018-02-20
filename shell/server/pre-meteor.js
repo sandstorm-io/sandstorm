@@ -277,8 +277,7 @@ Meteor.startup(() => {
 
   // Construct the middleware chain for requests to non-DDP, non-shell hosts.
   const nonMeteorRequestHandler = connect();
-  // BlackrockPayments is only defined in the Blackrock build of Sandstorm.
-  if (global.BlackrockPayments) { // Have to check with global, because it could be undefined.
+  if (Meteor.settings.public.stripePublicKey) {
     nonMeteorRequestHandler.use(BlackrockPayments.makeConnectHandler(globalDb));
   }
 

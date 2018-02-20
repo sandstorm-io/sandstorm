@@ -91,7 +91,7 @@ Meteor.methods({
 
     const db = this.connection.sandstormDb;
 
-    if (global.BlackrockPayments) {
+    if (Meteor.settings.public.stripePublicKey) {
       BlackrockPayments.suspendAccount(db, userId);
     }
 
@@ -113,7 +113,7 @@ Meteor.methods({
         "Please ask your admin to do it for you.");
     }
 
-    if (global.BlackrockPayments) {
+    if (Meteor.settings.public.stripePublicKey) {
       BlackrockPayments.suspendAccount(db, Meteor.userId());
     }
 

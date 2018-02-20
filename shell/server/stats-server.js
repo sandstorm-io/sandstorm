@@ -192,9 +192,8 @@ function recordStats() {
     plans: planStats,
   };
   record.computeTime = Date.now() - now;
-  if (global.BlackrockPayments && global.BlackrockPayments.getTotalCharges) {
-    // This only exists under Blackrock
-    record.totalCharges = global.BlackrockPayments.getTotalCharges();
+  if (Meteor.settings.public.stripePublicKey && BlackrockPayments.getTotalCharges) {
+    record.totalCharges = BlackrockPayments.getTotalCharges();
   }
 
   ActivityStats.insert(record);

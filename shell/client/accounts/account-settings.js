@@ -55,12 +55,7 @@ Template.sandstormAccountSettings.helpers({
   },
 
   isPaymentsEnabled: function () {
-    try {
-      BlackrockPayments; // This checks that BlackrockPayments is defined.
-      return true;
-    } catch (e) {
-      return false;
-    }
+    return !!Meteor.settings.public.stripePublicKey;
   },
 
   setDocumentTitle: function () {
@@ -192,12 +187,7 @@ Template._accountProfileEditor.helpers({
   },
 
   isPaymentsEnabled: function () {
-    try {
-      BlackrockPayments; // This checks that BlackrockPayments is defined.
-      return true;
-    } catch (e) {
-      return false;
-    }
+    return !!Meteor.settings.public.stripePublicKey;
   },
 
   isNeutral(pronoun) {
@@ -366,15 +356,11 @@ const submitProfileForm = function (form, cb) {
     }
   });
 
-  // Stop here unless payments module is loaded.
-  try {
-    BlackrockPayments;
-  } catch (e) {
-    return;
+  // Stop here unless payments are enabled.
+  if (Meteor.settings.public.stripePublicKey) {
+    // Pass off to payments module.
+    BlackrockPayments.processOptins(form);
   }
-
-  // Pass off to payments module.
-  BlackrockPayments.processOptins(form);
 };
 
 Template.accountSuspended.helpers({

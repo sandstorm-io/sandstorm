@@ -213,7 +213,7 @@ Template.mailingListBonusNotificationItem.helpers({
   },
 
   MAILING_LIST_BONUS() {
-    if (window.BlackrockPayments) {
+    if (Meteor.settings.public.stripePublicKey) {
       return BlackrockPayments.MAILING_LIST_BONUS || 0;
     } else {
       return 0;

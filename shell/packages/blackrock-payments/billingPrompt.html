@@ -1,0 +1,348 @@
+<!--
+Sandstorm Blackrock
+Copyright (c) 2015-2016 Sandstorm Development Group, Inc.
+All Rights Reserved
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<template name="billingPrompt">
+  {{!--
+    Prompts the user to choose a plan, and a credit card with which to pay for it. Once the user
+    has chosen something, their quota is updated.
+
+    Data inputs:
+    - reason:
+        "voluntary": The user clicked a "sign up" button or is upgrading a plan. Optionally,
+          `previousPlan` is also passed in.
+        "outOfStorage": User ran out of storage.
+        "outOfCompute": User ran out of compute units.
+        "outOfGrains": Demo mode may limit the number of grains created.
+        "customApp": User wants to install a custom app.
+    - onComplete: Function to call on completion. The parameter is a boolean: true if the user
+        successfully chose a new plan (in which case the action prompting billing should continue)
+        or false if they dismissed the popup without choosing anything (in which case the action
+        should be canceled).
+
+    This will be included at the top level HTML like:
+
+      {{#if billingPromptReason}}
+        {{>billingPrompt reason=billingPromptReason onComplete=onBillingPromptDone
+                         topbar=globalTopbar db=globalDb accountsUi=globalAccountsUi}}
+      {{/if}}
+
+    (In this example, `billingPromptReason` is probably some session variable.)
+  --}}
+
+  {{> sandstormTopbarItem name="billing-prompt" topbar=topbar
+                          onlyPopup=true popupTemplate="_billingPromptPopup"
+                          onDismiss=onDismiss}}
+</template>
+
+<template name="_billingPromptPopup">
+  {{#if isComplete}}
+    <h2>Success!</h2>
+    <p class="success-note">
+      {{#with myPlanEnds}}
+        You've canceled your subscription. It will end on <strong>{{.}}</strong>.
+      {{else}}{{#if oldPlanEnds}}
+        You've restored your canceled subscription to <strong>{{planTitle myPlan}}</strong>.
+      {{else}}
+        You've changed your plan from <strong>{{oldPlan}}</strong> to <strong>{{planTitle myPlan}}</strong>.
+      {{/if}}
+      {{/with}}
+    </p>
+    <button class="continue">Continue</button>
+  {{else}}
+
+  {{#if isDemoUser}}
+    {{#if customApp}}
+      <h2>Want more?</h2>
+
+      <p class="custom-app">Demo users can only install <a href="https://apps.sandstorm.io/?host={{origin}}" target="_blank">apps from Sandstorm.io</a>.
+        If you'd like to upload custom apps, please sign in.</p>
+    {{else}}
+      <h2>Want more?</h2>
+
+      <p>You've reached the limits for a demo account.
+        If you'd like to continue using Sandstorm and
+        make your data permanent, please sign in.</p>
+
+    {{/if}}
+    <div class="login">
+      {{> loginButtonsDialog accountsUi=accountsUi}}
+    </div>
+
+    <p class="alternatives">
+      {{#unless customApp}}<a href="/demo-restart">Clear data and start over »</a><br>{{/unless}}
+      <a href="https://sandstorm.io/install/">Install your own server »</a><br>
+      (Sandstorm is Open Source!)
+    </p>
+  {{else}}
+    {{#if involuntary}}
+      {{#if customApp}}
+        <h2>Want to upload your own apps?</h2>
+
+        <p class="wider">Free-plan users can only install <a href="https://apps.sandstorm.io/?host={{origin}}" target="_blank">apps from Sandstorm.io</a>.
+          If you'd like to upload custom apps, please upgrade your plan.</p>
+      {{else}}
+        <h2>Looks like you've run out of
+          {{#if outOfGrains}}grains.{{/if}}
+          {{#if outOfStorage}}storage.{{/if}}
+          {{#if outOfCompute}}compute.{{/if}}
+        </h2>
+        <p>Don't worry, you can upgrade your plan.</p>
+      {{/if}}
+    {{else}}
+      <h2>Choose a new plan</h2>
+    {{/if}}
+
+    {{>_billingPromptBody reason=reason onComplete=onCompleteWrapper
+                          topbar=topbar db=db accountsUi=accountsUi}}
+  {{/if}}
+  {{/if}}
+</template>
+
+<template name="billingPromptFirstTime">
+  <div class="first-time-billing-prompt">
+    {{#if planChosen}}
+      <h2>Success!</h2>
+      <p class="success-note">You've selected <strong>{{planTitle myPlan}}</strong>.</p>
+      <button class="continue">Continue</button>
+    {{else}}
+      <h2>Choose a Plan</h2>
+
+      <p>Welcome! Choose a plan to start creating.</p>
+
+      {{>_billingPromptBody onComplete=onCompleteNoop topbar=topbar db=db accountsUi=accountsUi}}
+    {{/if}}
+  </div>
+</template>
+
+<template name="_billingPromptBody">
+  <div class="subscriptions">
+    {{#each plans}}
+      <div class="subscription {{_id}} {{#if isCurrent}}selected{{/if}} {{#if isSelecting}}selecting{{/if}} {{#if isFullscreen}}iframe-active{{/if}}">
+        {{#if isShowingIframe}}
+          <iframe class="mobile-iframe-hack {{#if isFullscreen}}fullscreen{{/if}}" src="{{paymentsUrl}}/checkout#{{checkoutData}}"></iframe>
+        {{/if}}
+
+        <p>{{#if isCurrent}}Current Plan{{else}}&nbsp;{{/if}}</p>
+        <table>
+          <tr><td>{{planTitle .}}</td></tr>
+          <tr><td>
+            {{#if price}}
+              <p>${{renderDollars price}}</p>
+              <p>/ month</p>
+            {{else}}
+              <p>FREE</p>
+              <p>&nbsp;</p>
+            {{/if}}
+          </td></tr>
+          <tr><td>
+            <p>{{renderStorage storage}}</p>
+            <p>Storage</p>
+          </td></tr>
+          <tr><td>
+            <p>{{renderQuantity grains}}</p>
+            <p># of Grains</p>
+          </td></tr>
+          <tr><td>
+            <button>
+              {{#if isCurrent}}
+                Keep Plan
+              {{else}}
+                {{#if isUpgrade}}
+                  Upgrade
+                {{else}}
+                  {{#if isDowngrade}}
+                    Downgrade
+                  {{else}}
+                    Choose Plan
+                  {{/if}}
+                {{/if}}
+              {{/if}}
+            </button>
+          </td></tr>
+        </table>
+      </div>
+    {{/each}}
+  </div>
+
+  <div class="faq">
+    <h3>F. A. Q.</h3>
+
+    <div class="answers">
+      <div class="answer">
+        <h4>All about grains</h4>
+
+        <p>A grain is a document, chat room, mail box, notebook, blog, or anything else you create. A 5-grain limit applies to accounts on the Free plan.</p>
+
+        <h4>Resource limits</h4>
+
+        <p>Sandstorm apps only use RAM while you are using them. Sandstorm uses compute units as a
+          measurement of sustained RAM usage over a month. Basic and Power User plans come with 600
+          compute units, which is more than most users need. Free plans come with 20 compute units.
+          <a href="https://blog.sandstorm.io/news/2015-01-14-compute-units.html" target="_blank">
+          Learn more about compute units »</a></p>
+      </div>
+      <div class="answer">
+        {{#if planChosen}}
+          <h4>What if I'm not ready to upgrade?</h4>
+
+          <p>If you run out of space, you'll need to permanently delete one of your existing grains
+            before you can create a new one. <a href="/grain">Go to your grain list »</a> to move grains
+            to the <a href="/grain#trash">trash</a>, where you can permanently delete them. Or, since
+            Sandstorm is Open Source you can
+            <a href="https://sandstorm.io/install/" target="_blank">install your own server »</a></p>
+        {{else}}
+          <h4>Which plan should I choose?</h4>
+
+          <p>If you're not sure which plan to choose, start with the free plan. You can always
+            upgrade later. Also remember than Sandstorm is Open Source, so you can
+            <a href="https://sandstorm.io/install/" target="_blank">install your own server »</a></p>
+        {{/if}}
+      </div>
+    </div>
+
+    <div class="contact-button-wrapper">
+      <a class="button" href="mailto:support@sandstorm.io" target="_blank">Contact Support</a>
+    </div>
+  </div>
+</template>
+
+<template name="billingUsage">
+  {{#if Template.subscriptionsReady}}
+  <div class="usage">
+    <h3>My Plan</h3>
+    {{#with plan=myPlan quota=myQuota used=myUsage referralBonus=myReferralBonus
+            metadataBonus=myMetadataBonus mailingListBonus=myMailingListBonus}}{{#if plan}}
+      <table>
+        <tr>
+          <td>Current Plan:</td>
+          <td class="current-plan">
+            <span class="plan-name">{{planTitle plan}}</span>
+            {{#with myPlanEnds}}
+              <span class="plan-ends">(canceled; ends {{.}})</span>
+            {{/with}}
+            <button class="change-plan">Change plan</button>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2"><h4>Usage (based on current plan):</h4></td>
+        </tr>
+        <tr>
+          <td>Compute Units</td>
+          <td>
+            <div class="progress-bar">
+              <div style="width: {{renderPercent used.compute quota.compute}}%"></div>
+            </div>
+            <div class="used">not tracked yet (beta)</div>
+            <div class="total"><span class="amount">{{renderCu quota.compute}}</span> total</div>
+          </td>
+        </tr>
+        <tr>
+          <td>Storage</td>
+          <td>
+            <div class="progress-bar">
+              <div style="width: {{renderPercent used.storage quota.storage}}%"></div>
+            </div>
+            <div class="used"><span class="amount">{{renderStoragePrecise used.storage}}</span> used</div>
+            <div class="total"><span class="amount">{{renderStorage quota.storage}}</span> total</div>
+          </td>
+        </tr>
+        <tr>
+          <td>Grains</td>
+          <td>
+            <span class="grain-count"><span class="used">{{renderQuantity used.grains}}</span> out of <span class="total">{{renderQuantity quota.grains}}</span></span>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2"><hr></td>
+        </tr>
+        {{#if hasAnyBonus}}
+        <tr class="bonus">
+          <td>Includes bonuses:</td>
+          <td>
+            {{#if referralBonus.storage}}
+              <p class="bonus">
+                <a href="/referrals">Referral bonus</a>: {{renderStorage referralBonus.storage}}
+                  {{#if referralBonus.grains}}
+                    and {{renderQuantity referralBonus.grains}} grains
+                  {{/if}}
+              </p>
+            {{/if}}
+            {{#if metadataBonus.storage}}
+              <p class="bonus">
+                Gift from admin: {{renderStorage metadataBonus.storage}}
+                  {{#if metadataBonus.grains}}
+                    and {{renderQuantity metadataBonus.grains}} grains
+                  {{/if}}
+              </p>
+            {{/if}}
+            {{#if mailingListBonus.storage}}
+              <p class="bonus">
+                Mailing list: {{renderStorage mailingListBonus.storage}}
+                <button class="unsubscribe">Unsubscribe</button>
+              </p>
+            {{/if}}
+          </td>
+        </tr>
+        {{/if}}
+      </table>
+
+      <h4 class="free-stuff-section-header">Get free storage{{#unless isPaid}} &amp; unlimited grains{{/unless}}:</h4>
+      {{#unless mailingListBonus.storage}}
+      <div class="free-stuff">
+        <p>Get <strong>{{renderStorage MAILING_LIST_BONUS}} bonus storage</strong> by subscribing
+          to announcements (1-2 emails per month):</p>
+        <button class="subscribe">Subscribe</button>
+      </div>
+      {{/unless}}
+      <div class="free-stuff">
+        {{#if isPaid}}
+        <p>Get up to <span class="reward-amount">30 GB</span> of free space when your friends share on Oasis!</p>
+        {{else}}
+        <p>Get up to <span class="reward-amount">2 GB bonus storage</span> and <span class="reward-amount">unlimited grains</span> by sharing with your friends on Oasis!</p>
+        {{/if}}
+        <a href="{{pathFor 'referrals'}}" class="like-a-button">Learn more</a>
+      </div>
+    {{/if}}{{/with}}
+  </div>
+
+  {{#if showPrompt}}
+    {{>billingPrompt reason="voluntary" topbar=topbar db=db onComplete=promptClosed}}
+  {{/if}}
+  {{/if}}
+</template>
+
+<template name="billingOptins">
+  {{#if Template.subscriptionsReady}}
+    {{#if isSubscribed}}
+      <li class="alreadySubscribed">
+        It looks like you are subscribed to our announcement list, so we'll give you
+        <strong>{{renderStorage MAILING_LIST_BONUS}} bonus storage</strong>.
+      </li>
+    {{else}}
+      <li class="mailingListOptin">
+        <label>
+          <input type="checkbox" name="subscribeToList"> Subscribe to announcements for
+            <strong>{{renderStorage MAILING_LIST_BONUS}} bonus storage</strong>.
+        </label>
+        <span class="details">
+          1-2 e-mails per month.<br>Your current storage: {{renderStorage myQuota.storage}}
+        </span>
+      </li>
+    {{/if}}
+  {{/if}}
+</template>

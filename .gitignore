@@ -1,6 +1,5 @@
 bin
 tmp
-deps
 node_modules
 shell/client/changelog.html
 shell/client/styles/_icons.scss

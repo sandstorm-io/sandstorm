@@ -654,7 +654,7 @@
         "status": "Status"
       },
       "adminIdentityRow": {
-        "enabled": "Enabeld",
+        "enabled": "Enabled",
         "disabled": "Not enabled",
         "baseUrlChanged": {
           "explanation": "Disabled due to BASE_URL change",

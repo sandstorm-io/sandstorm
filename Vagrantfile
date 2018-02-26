@@ -6,7 +6,7 @@ VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # We base ourselves off a Debian fork of the official Debian jessie64 base box.
-  config.vm.box = "sandstorm/debian-jessie64"
+  config.vm.box = "debian/contrib-stretch64"
 
   # We forward port 6080, the Sandstorm web port, so that developers can
   # visit their sandstorm app from their browser as local.sandstorm.io:6080
@@ -26,6 +26,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     cd /vagrant
     echo localhost > /etc/hostname
     hostname localhost
+    sudo apt-get install -y curl
     sudo OVERRIDE_DEFAULT_SERVER_USER=vagrant ./install.sh -d -e > /dev/null
     sudo sed --in-place='' --expression='s/^BIND_IP=.*/BIND_IP=0.0.0.0/' /opt/sandstorm/sandstorm.conf
     sudo service sandstorm restart

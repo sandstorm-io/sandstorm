@@ -40,8 +40,19 @@ if (Meteor.isClient) {
 
     if (navigator.languages) {
       navigator.languages.forEach(lang => {
-        if (!bestLang && (lang in langMap)) {
+        if (bestLang != null) {
+          return;
+        }
+        if (langMap.indexOf(lang) >= 0) {
           bestLang = lang;
+          return;
+        }
+        if (lang.indexOf('-') > 0) {
+          var prefix = lang.split('-')[0];
+          if (langMap.indexOf(prefix) >= 0) {
+            bestLang = lang;
+            return;
+          }
         }
       });
     } else {

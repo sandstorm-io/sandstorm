@@ -142,7 +142,7 @@ Please install the following:
 * `golang-go`
 * `cmake`
 * discount (markdown parser)
-* [Clang compiler](http://clang.llvm.org/) version 3.4 or better
+* [Clang compiler](http://clang.llvm.org/) version 6 or better
 * [Meteor](http://meteor.com)
 
 On Debian or Ubuntu, you should be able to get all these with:
@@ -151,6 +151,9 @@ On Debian or Ubuntu, you should be able to get all these with:
         unzip strace curl clang discount git python zlib1g-dev \
         golang-go
     curl https://install.meteor.com/ | sh
+
+You may need to do some extra work to get Clang 6, Debian and
+Ubuntu derivatives can use https://apt.llvm.org/
 
 ### Get the source code
 

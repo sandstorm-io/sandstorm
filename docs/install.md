@@ -145,15 +145,20 @@ Please install the following:
 * [Clang compiler](http://clang.llvm.org/) version 6 or better
 * [Meteor](http://meteor.com)
 
-On Debian or Ubuntu, you should be able to get all these with:
+Debian 10 and Ubuntu 18.04 are planned to have Clang 6 available
+in the default software package repositories. Until then,
+you can configure your Debian or Ubuntu installation to
+obtain the the software packages from the information on
+https://apt.llvm.org/
+
+On Debian or Ubuntu, you should be able to get all the remaining
+dependencies other than Clang 6 with:
 
     sudo apt-get install build-essential libcap-dev xz-utils zip \
-        unzip strace curl clang discount git python zlib1g-dev \
+        unzip strace curl discount git python zlib1g-dev \
         golang-go
     curl https://install.meteor.com/ | sh
 
-You may need to do some extra work to get Clang 6, Debian and
-Ubuntu derivatives can use https://apt.llvm.org/
 
 ### Get the source code
 

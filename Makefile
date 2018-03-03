@@ -16,8 +16,8 @@
 
 # You may override the following vars on the command line to suit
 # your config.
-CC=clang-6.0
-CXX=clang++-6.0
+CC=clang-5.0
+CXX=clang++-5.0
 CFLAGS=-O2 -Wall
 CXXFLAGS=$(CFLAGS)
 BUILD=0

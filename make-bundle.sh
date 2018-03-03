@@ -94,7 +94,7 @@ NODE_BUILD_ROOT=/var/tmp/sandstorm-node-build-dir
 echo "Building node out-of-tree"
 rm -rf "$NODE_BUILD_ROOT"
 mkdir -p "$NODE_BUILD_ROOT"
-cp -a deps/node "$NODE_BUILD_ROOT"
+cp -a $(readlink -f deps/node) "$NODE_BUILD_ROOT"
 pushd "$NODE_BUILD_ROOT/node"
 # The rebuild here is fast if nothing has changed.
 ./configure --partly-static

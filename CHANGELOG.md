@@ -1,3 +1,7 @@
+### v0.226 (2018-03-03)
+- The new HTTP Gateway is now on by default. This is a major change to the lower levels of Sandstorm which should improve CPU and memory usace considerably. Learn more here: https://sandstorm.io/news/2018-02-19-http-rewrite-and-more
+- Tweaked language selection heuristic.
+
 ### v0.225 (2018-02-03)
 - The front-end HTTP proxy has been rewritten from JavaScript (in Node.js) to C++. The new code path should be faster and more memory-efficient. In this release, it is only enabled if you add `EXPERIMENTAL_GATEWAY=true` to your `/opt/sandstorm/sandstorm.conf`. In a future release, this will become the default and the old implementation will be removed. The new implementation is turned on for Sandstorm Oasis by default.
 - Improved Finnish and French translations.

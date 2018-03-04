@@ -533,6 +533,7 @@ kj::Promise<void> GatewayService::handleApiRequest(kj::StringPtr token,
     req.setDurationMs(ka->parseAs<uint64_t>());
     return req.send().then([this,&response](auto) {
       kj::HttpHeaders respHeaders(tables.headerTable);
+      respHeaders.set(tables.hAccessControlAllowOrigin, "*");
       // TODO(cleanup): Should be 204 no content, but offer-template.html expects a 200.
       response.send(200, "OK", respHeaders, uint64_t(0));
     });

@@ -1,3 +1,8 @@
+### v0.228 (2018-03-04) [bugfixes]
+- Fixed Tiny Tiny RSS mobile app no longer being able to connect to servers.
+- Fixed problem where in mobile app configuration for various apps, after one minute the URL and password would be replaced with an error message.
+- Fixed some error log spam.
+
 ### v0.227 (2018-03-03) [bugfixes]
 - Fixed obscure crash.
 - Fixed bogus error message when opening a revoked API token.

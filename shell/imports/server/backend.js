@@ -175,7 +175,9 @@ class SandstormBackend {
     let storagePromise = undefined;
     let ownerId = undefined;
     if (this._db.isQuotaEnabled() && !storageUsageUnimplemented) {
-      ownerId = Grains.findOne(grainId).userId;
+      let grain = Grains.findOne(grainId);
+      if (!grain) return;  // must have been deleted
+      ownerId = grain.userId;
       storagePromise = this._backendCap.getUserStorageUsage(ownerId);
 
       // Squelch Node.js's "unhandled rejection" warning. We handle errors for real later on.

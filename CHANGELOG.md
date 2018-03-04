@@ -1,3 +1,7 @@
+### v0.227 (2018-03-03) [bugfixes]
+- Fixed obscure crash.
+- Fixed bogus error message when opening a revoked API token.
+
 ### v0.226 (2018-03-03)
 - The new HTTP Gateway is now on by default. This is a major change to the lower levels of Sandstorm which should improve CPU and memory usage considerably. Learn more here: https://sandstorm.io/news/2018-02-19-http-rewrite-and-more
 - Tweaked language selection heuristic.

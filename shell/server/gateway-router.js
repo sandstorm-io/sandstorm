@@ -429,7 +429,7 @@ class GatewayRouterImpl {
     }).catch(err => {
       observer.invalidate();
       if ((err instanceof Meteor.Error) && (typeof err.error === "string")) {
-        Sessions.update({ _id: sessionId }, { $set: { denied: err.error } });
+        // TODO(someday): Produce an appropriate HTTP error code.
       } else {
         console.error(err.stack);
       }

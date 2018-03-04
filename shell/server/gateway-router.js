@@ -441,7 +441,7 @@ class GatewayRouterImpl {
     return inMeteor(() => {
       const hashedToken = Crypto.createHash("sha256").update(apiToken).digest("base64");
       const tokenInfo = ApiTokens.findOne(hashedToken);
-      validateWebkey(tokenInfo, Date.now() + durationMs);
+      validateWebkey(tokenInfo, new Date(Date.now() + durationMs));
     });
   }
 

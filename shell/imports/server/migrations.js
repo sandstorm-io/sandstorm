@@ -1157,6 +1157,12 @@ function onePersonaPerAccountPostCleanup(db, backend) {
 // TODO(cleanup): Delete all demo credentials since they aren't really needed anymore. Remove them
 //   from associated account nonloginCredentials.
 
+function cleanupBadExpiresIfUnused(db, backend) {
+  // A bug in version 0.226 / 0.227 would set expiresIfUnused to a number instead of a Date. Just
+  // delete all such tokens since they are probably expired by now.
+  db.collections.apiTokens.remove({expiresIfUnused: {$type: 1}});
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -1198,6 +1204,7 @@ const MIGRATIONS = [
   onePersonaPerAccountPreCleanup,
   onePersonaPerAccount,
   onePersonaPerAccountPostCleanup,
+  cleanupBadExpiresIfUnused,
 ];
 
 const NEW_SERVER_STARTUP = [

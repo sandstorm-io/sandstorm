@@ -196,6 +196,7 @@ kj::Promise<void> GatewayService::request(
         kj::HttpHeaders respHeaders(tables.headerTable);
         WebSessionBridge::addStandardApiOptions(tables.bridgeTables, headers, respHeaders);
         response.send(200, "OK", respHeaders, uint64_t(0));
+        return kj::READY_NOW;
       } else {
         return sendError(403, "Forbidden", response, MISSING_AUTHORIZATION_MESSAGE);
       }

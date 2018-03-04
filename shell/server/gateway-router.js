@@ -402,15 +402,15 @@ class GatewayRouterImpl {
            ApiSession.typeId, serializedParams, new Buffer(tabId, "hex")).await().session;
       } catch (err) {
         // If the app doesn't explicitly support ApiSession, fall back to WebSession for
-        // backwards compatibility.
+        // backwards compatibility. Some really old apps require a parseable basePath, so we supply
+        // them with a fake one.
         //
         // TODO(apibump): Move this fallback into the compat layer and remove it from here.
-        //
-        // TODO(now): The old code filled in WebSession.Params based on the API request. Do we need
-        //   to extend ApiSession.Params to include the same info for compat? Try testing all the
-        //   apps that matter...
+        const serializedWebParams = Capnp.serialize(WebSession.Params, {
+          basePath: "https://sandbox"
+        });
         rawSession = uiView.newSession(userInfo, sessionContext,
-             WebSession.typeId, null, new Buffer(tabId, "hex")).session;
+             WebSession.typeId, serializedWebParams, new Buffer(tabId, "hex")).session;
       }
 
       // TODO(security): List the token's validity as a requirement here, in case save()

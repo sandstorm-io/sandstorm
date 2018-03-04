@@ -29,6 +29,51 @@ const DNS_CACHE_TTL_SECONDS = 30;
 
 currentTlsKeysCallback = null;
 
+// If this is Blackrock and we started up within one hour of a scheduled maintenance, we want to
+// stagger startup of grains in order to give the back-end time to warm up.
+const processStartTime = Date.now();
+const maintenanceTime = globalDb.getSetting("adminAlertTime");
+const useStagedStartup =
+    ("replicaNumber" in Meteor.settings) &&  // is Blackrock?
+    maintenanceTime &&
+    maintenanceTime.getTime() <= processStartTime &&
+    maintenanceTime.getTime() + 3600000 > processStartTime;
+
+const WARMUP_TIME = 600000;    // 10 minutes
+const WARMUP_MULTIPLE = 1024;  // Start out accepting 1/1024 of requests, warm exponentially
+const WARMUP_RATE = Math.log(WARMUP_MULTIPLE) / WARMUP_TIME;
+
+if (useStagedStartup) {
+  console.log("*** starting up during maintenance window; applying slow warm-up");
+
+  // Automatically clear maintenance message after warmup time.
+  Meteor.setTimeout(() => {
+    console.log("*** warm-up complete");
+    globalDb.collections.settings.upsert({ _id: "adminAlertTime" }, { value: null });
+  }, WARMUP_TIME);
+}
+
+function awaitRateLimit(type, hexId, userId) {
+  if (!useStagedStartup) return;
+  let now = Date.now() - processStartTime;
+  if (now > 256000 || now < 0) return;
+
+  if (userId && (Meteor.users.findOne(userId) || {}).isAdmin) return;
+
+  // Calculate fraction at which this grain should start.
+  let threshold = parseInt(hexId.slice(-4), 16) % WARMUP_MULTIPLE;
+
+  // Find time when e^rt > threshold
+  let startTime = Math.floor(Math.log(threshold) / WARMUP_RATE);
+
+  let waitTime = startTime - now;
+  if (!waitTime || waitTime < 0) return;
+
+  console.log(`${type} ${hexId}: warmup wait ${waitTime} ms`);
+  new Promise(resolve => setTimeout(resolve, waitTime)).await();
+  console.log(`${type} ${hexId}: warmup wait done`);
+}
+
 class PermissionsObserver {
   constructor() {
     this.invalidatedPromise = new Promise((resolve, reject) => {
@@ -246,6 +291,8 @@ class GatewayRouterImpl {
         observer.whenRevoked(() => Meteor.clearTimeout(task));
       }).await();
 
+      awaitRateLimit("UI", sessionId, session.userId);
+
       // If the session has no identityId, then it's an incognito session. It may still have a
       // userId, but that should be ignored.
       const actingAccountId = session.identityId ? session.userId : null;
@@ -337,6 +384,8 @@ class GatewayRouterImpl {
             tokenInfo.expires.getTime() - Date.now());
         observer.whenRevoked(() => clearTimeout(timer));
       }
+
+      awaitRateLimit("API", tabId, !tokenInfo.forSharing && tokenInfo.accountId);
 
       const grainId = tokenInfo.grainId;
       const actingAccountId = tokenInfo.forSharing ? null : tokenInfo.accountId;
@@ -476,6 +525,7 @@ class GatewayRouterImpl {
     return inMeteor(() => {
       const grain = Grains.findOne({ publicId: publicId }, { fields: { _id: 1 } });
       if (grain) {
+        awaitRateLimit("WWW", publicId, grain.userId);
         return globalBackend.useGrain(grain._id, supervisor => {
           return supervisor.keepAlive().then(() => { return { supervisor }; });
         });

@@ -153,7 +153,8 @@ private:
 
   kj::Maybe<kj::Own<kj::HttpService>> getUiBridge(kj::HttpHeaders& headers);
 
-  kj::Maybe<kj::String> getAuthToken(const kj::HttpHeaders& headers, bool allowBasicAuth);
+  kj::Maybe<kj::String> getAuthToken(
+      const kj::HttpHeaders& headers, kj::StringPtr& path, bool isDedicatedHost);
   kj::Promise<void> handleApiRequest(kj::StringPtr token,
       kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
       kj::AsyncInputStream& requestBody, Response& response);

@@ -212,7 +212,7 @@ kj::Promise<void> GatewayService::request(
       // Specific hosts handled by shell.
       return shellHttp->request(method, url, headers, requestBody, response);
     } else if (*hostId == "api") {
-      KJ_IF_MAYBE(token, getAuthToken(headers,
+      KJ_IF_MAYBE(token, getAuthToken(headers, url,
           isAllowedBasicAuthUserAgent(headers.get(tables.hUserAgent).orDefault("")))) {
         return handleApiRequest(*token, method, url, headers, requestBody, response);
       } else if (method == kj::HttpMethod::OPTIONS) {
@@ -224,7 +224,7 @@ kj::Promise<void> GatewayService::request(
         return sendError(403, "Forbidden", response, MISSING_AUTHORIZATION_MESSAGE);
       }
     } else if (hostId->startsWith("api-")) {
-      KJ_IF_MAYBE(token, getAuthToken(headers, true)) {
+      KJ_IF_MAYBE(token, getAuthToken(headers, url, true)) {
         // API session.
         return handleApiRequest(*token, method, url, headers, requestBody, response);
       } else {
@@ -503,11 +503,11 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
 }
 
 kj::Maybe<kj::String> GatewayService::getAuthToken(
-    const kj::HttpHeaders& headers, bool allowBasicAuth) {
+    const kj::HttpHeaders& headers, kj::StringPtr& path, bool isDedicatedHost) {
   KJ_IF_MAYBE(auth, headers.get(tables.hAuthorization)) {
     if (strncasecmp(auth->cStr(), "bearer ", 7) == 0) {
       return kj::str(auth->slice(7));
-    } else if (allowBasicAuth && strncasecmp(auth->cStr(), "basic ", 6) == 0) {
+    } else if (isDedicatedHost && strncasecmp(auth->cStr(), "basic ", 6) == 0) {
       auto decoded = kj::str(kj::decodeBase64(auth->slice(6)).asChars());
       KJ_IF_MAYBE(colonPos, decoded.findFirst(':')) {
         auto result = trim(decoded.slice(*colonPos + 1));
@@ -517,6 +517,18 @@ kj::Maybe<kj::String> GatewayService::getAuthToken(
           return kj::mv(result);
         }
       }
+    }
+  }
+
+  constexpr kj::StringPtr TOKEN_PATH_PREFIX = "/.sandstorm-token/"_kj;
+  if (isDedicatedHost && path.startsWith(TOKEN_PATH_PREFIX)) {
+    kj::StringPtr rest = path.slice(TOKEN_PATH_PREFIX.size());
+    KJ_IF_MAYBE(slashPos, rest.findFirst('/')) {
+      path = rest.slice(*slashPos);
+      return kj::str(rest.slice(0, *slashPos));
+    } else {
+      path = "/"_kj;
+      return kj::str(rest);
     }
   }
 

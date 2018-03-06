@@ -184,7 +184,30 @@ kj::Promise<void> GatewayService::request(
     return sendError(400, "Bad Request", response, "missing Host header");
   }
 
-  KJ_IF_MAYBE(hostId, wildcardHost.match(host)) {
+  if (host == baseUrl.host) {
+    KJ_IF_MAYBE(tpi, termsPublicId) {
+      auto parsedUrl = kj::Url::parse(url, kj::Url::HTTP_REQUEST);
+      if (parsedUrl.path.size() > 0 &&
+          (parsedUrl.path[0] == "terms" || parsedUrl.path[0] == "privacy")) {
+        // Request for /terms or /privacy, and we've configured a special public ID for that.
+        // (This is a backwards-compatibility hack mainly for Sandstorm Oasis, where an nginx
+        // proxy used to map these paths to static assets, but we want to replace nginx entirely
+        // with the gateway.)
+        kj::String ownUrl;
+        if (parsedUrl.path.size() == 1 && !parsedUrl.hasTrailingSlash) {
+          // Extra special hack: Fake a ".html" extension for MIME type sniffing.
+          ownUrl = kj::str("/", parsedUrl.path[0], ".html");
+          url = ownUrl;
+        }
+        return getStaticPublished(*tpi, url, headers, response);
+      }
+    }
+
+    // TODO(perf): Serve Meteor static assets directly, *unless* the server is in dev mode.
+
+    // Fall back to shell.
+    return shellHttp->request(method, url, headers, requestBody, response);
+  } else KJ_IF_MAYBE(hostId, wildcardHost.match(host)) {
     if (*hostId == "ddp" || *hostId == "static" || *hostId == "payments") {
       // Specific hosts handled by shell.
       return shellHttp->request(method, url, headers, requestBody, response);
@@ -335,29 +358,6 @@ kj::Promise<void> GatewayService::request(
     } else {
       return handleForeignHostname(host, method, url, headers, requestBody, response);
     }
-  } else if (host == baseUrl.host) {
-    KJ_IF_MAYBE(tpi, termsPublicId) {
-      auto parsedUrl = kj::Url::parse(url, kj::Url::HTTP_REQUEST);
-      if (parsedUrl.path.size() > 0 &&
-          (parsedUrl.path[0] == "terms" || parsedUrl.path[0] == "privacy")) {
-        // Request for /terms or /privacy, and we've configured a special public ID for that.
-        // (This is a backwards-compatibility hack mainly for Sandstorm Oasis, where an nginx
-        // proxy used to map these paths to static assets, but we want to replace nginx entirely
-        // with the gateway.)
-        kj::String ownUrl;
-        if (parsedUrl.path.size() == 1 && !parsedUrl.hasTrailingSlash) {
-          // Extra special hack: Fake a ".html" extension for MIME type sniffing.
-          ownUrl = kj::str("/", parsedUrl.path[0], ".html");
-          url = ownUrl;
-        }
-        return getStaticPublished(*tpi, url, headers, response);
-      }
-    }
-
-    // TODO(perf): Serve Meteor static assets directly, *unless* the server is in dev mode.
-
-    // Fall back to shell.
-    return shellHttp->request(method, url, headers, requestBody, response);
   } else {
     // Neither our base URL nor our wildcard URL. It's a foreign hostname.
     return handleForeignHostname(host, method, url, headers, requestBody, response);

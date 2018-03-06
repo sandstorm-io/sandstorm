@@ -1,3 +1,7 @@
+### v0.229 (2018-03-05) [bugfixes]
+- Fixed Rocket.Chat mobile app, which relies on the ability to authenticate WebSockets on the API endpoint by placing the authorization token in the URL.
+- Fixed broken server when `BASE_URL` overlaps with `WILDCARD_HOST`.
+
 ### v0.228 (2018-03-04) [bugfixes]
 - Fixed Tiny Tiny RSS mobile app no longer being able to connect to servers.
 - Fixed problem where in mobile app configuration for various apps, after one minute the URL and password would be replaced with an error message.

@@ -184,6 +184,12 @@ Some quick facts on how that works:
   local.sandstorm.io instead of `localhost` because all subdomains of local.sandstorm.io also point
   at the localhost IP address. You can read more about [wildcard DNS.](../administering/wildcard.md)
 
+- Note that sometimes DNS in routers and firewalls such as dnsmasq in DD-WRT can block the
+local.sandstorm.io name resolution to `127.0.0.1`.  In that case, for the machine developing
+Sandstorm please switch your DNS from using your router or firewall as a DNS server to using
+a public DNS service like Google's DNS (`8.8.8.8`, `8.8.4.4`) or OpenDNS (`208.67.222.222`,
+`208.67.220.220`), or adjust your DNS server to permit the `127.0.0.1` mapping.
+
 - Sandstorm uses port 6080 by default.
 
 Take a moment now to sign in by clicking on **Sign in** in the top-right corner.

@@ -87,6 +87,12 @@ company behind Sandstorm) maintains `local.sandstorm.io` as a wildcard domain wh
 same as `localhost`. This allows you to run Sandstorm for development without needing to own a
 domain name or configure wildcard DNS for a subdomain.
 
+Note that sometimes DNS in routers and firewalls such as dnsmasq in DD-WRT can block the
+local.sandstorm.io name resolution to `127.0.0.1`.  In that case, for the machine developing
+Sandstorm please switch your DNS from using your router or firewall as a DNS server to using
+a public DNS service like Google's DNS (`8.8.8.8`, `8.8.4.4`) or OpenDNS (`208.67.222.222`,
+`208.67.220.220`), or adjust your DNS server to permit the `127.0.0.1` mapping.
+
 Within the `sandcats.io` DNS service, each domain is also a wildcard domain. This allows a
 self-hosted Sandstorm domain to operate correctly.
 

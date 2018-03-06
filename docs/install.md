@@ -333,6 +333,12 @@ In this configuration, Vagrant/VirtualBox manage TCP port forwarding, and Sandst
 http://local.sandstorm.io:6080/ by default. `local.sandstorm.io` is a DNS alias for localhost,
 indicating that the service is only visible on the computer where you ran Vagrant.
 
+Note that sometimes DNS in routers and firewalls such as dnsmasq in DD-WRT can block the
+local.sandstorm.io name resolution to `127.0.0.1`.  In that case, for the machine developing
+Sandstorm please switch your DNS from using your router or firewall as a DNS server to using
+a public DNS service like Google's DNS (`8.8.8.8`, `8.8.4.4`) or OpenDNS (`208.67.222.222`,
+`208.67.220.220`), or adjust your DNS server to permit the `127.0.0.1` mapping.
+
 We do recommend that you run Sandstorm on a native Linux system, but we understand that this isn't
 always an option. If you need further help making Sandstorm work with Vagrant or within
 virtualization generally, please email support@sandstorm.io.

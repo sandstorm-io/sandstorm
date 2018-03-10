@@ -46,7 +46,7 @@ if (Meteor.isClient) {
           } else if (lang.indexOf('-') > 0) {
             var prefix = lang.split('-')[0];
             if (prefix in langMap) {
-              bestLang = lang;
+              bestLang = prefix;
             }
           }
         }

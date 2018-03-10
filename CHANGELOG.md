@@ -1,3 +1,9 @@
+### v0.230 (2018-03-10) [bugfixes]
+- Fixed language detection no longer working.
+- Fixed bug preventing Thunderbird from syncing from Radicale, and prevented older versions of the Mercurial client from pushing to Mercurial.
+- Fixed bug where large downloads from a grain (including streaming audio from Groove Basin) would get cut off after 90-180 seconds if the user wasn't otherwise interacting with the grain.
+- Updated Meteor to 1.6.1.
+
 ### v0.229 (2018-03-05) [bugfixes]
 - Fixed Rocket.Chat mobile app, which relies on the ability to authenticate WebSockets on the API endpoint by placing the authorization token in the URL.
 - Fixed broken server when `BASE_URL` overlaps with `WILDCARD_HOST`.

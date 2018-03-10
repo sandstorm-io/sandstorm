@@ -18,8 +18,8 @@
 
 $import "/capnp/c++.capnp".namespace("blackrock");
 
-using import "/sandstorm/util.capnp".LocalizedText;
-using import "/sandstorm/supervisor.capnp".SystemPersistent;
+using import "util.capnp".LocalizedText;
+using import "supervisor.capnp".SystemPersistent;
 
 interface PaymentSource {
   # A payment source, like a credit card. Powerbox-request one of these in order to prompt the

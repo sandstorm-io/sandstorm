@@ -148,6 +148,7 @@ private:
 
   kj::TaskSet tasks;
 
+  kj::Promise<void> send401Unauthorized(Response& response);
   kj::Promise<void> sendError(
       uint statusCode, kj::StringPtr statusText, Response& response, kj::StringPtr message);
 

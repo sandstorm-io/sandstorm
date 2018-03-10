@@ -235,9 +235,8 @@ kj::Promise<void> GatewayService::request(
           req.setPath(url);
           return req.send().then(
               [this,&response](capnp::Response<GatewayRouter::GetApiHostResourceResults> result) {
-            kj::HttpHeaders respHeaders(tables.headerTable);
-
             if (result.hasResource()) {
+              kj::HttpHeaders respHeaders(tables.headerTable);
               auto resource = result.getResource();
               if (resource.hasType()) {
                 respHeaders.set(tables.hContentType, resource.getType());
@@ -254,14 +253,7 @@ kj::Promise<void> GatewayService::request(
               auto promise = stream->write(body.begin(), body.size());
               return promise.attach(kj::mv(stream), kj::mv(result));
             } else {
-              respHeaders.set(tables.hContentType, "text/plain");
-              respHeaders.set(tables.hWwwAuthenticate, "Basic realm='Sandstorm API'");
-
-              auto stream = response.send(
-                  401, "Unauthorized", respHeaders, MISSING_AUTHORIZATION_MESSAGE.size());
-              auto promise = stream->write(MISSING_AUTHORIZATION_MESSAGE.begin(),
-                                           MISSING_AUTHORIZATION_MESSAGE.size());
-              return promise.attach(kj::mv(stream));
+              return send401Unauthorized(response);
             }
           });
         } else if (method == kj::HttpMethod::OPTIONS) {
@@ -279,7 +271,7 @@ kj::Promise<void> GatewayService::request(
           });
         } else {
           // Anything else requires authentication.
-          return response.sendError(403, "Unauthorized", tables.headerTable);
+          return send401Unauthorized(response);
         }
       }
     } else if (hostId->startsWith("selftest-")) {
@@ -362,6 +354,18 @@ kj::Promise<void> GatewayService::request(
     // Neither our base URL nor our wildcard URL. It's a foreign hostname.
     return handleForeignHostname(host, method, url, headers, requestBody, response);
   }
+}
+
+kj::Promise<void> GatewayService::send401Unauthorized(Response& response) {
+  kj::HttpHeaders respHeaders(tables.headerTable);
+  respHeaders.set(tables.hContentType, "text/plain");
+  respHeaders.set(tables.hWwwAuthenticate, "Basic realm='Sandstorm API'");
+
+  auto stream = response.send(
+      401, "Unauthorized", respHeaders, MISSING_AUTHORIZATION_MESSAGE.size());
+  auto promise = stream->write(MISSING_AUTHORIZATION_MESSAGE.begin(),
+                               MISSING_AUTHORIZATION_MESSAGE.size());
+  return promise.attach(kj::mv(stream));
 }
 
 kj::Promise<void> GatewayService::sendError(

@@ -2594,7 +2594,8 @@ public:
 
       // Export an HTTP proxy which the app can use to make HTTP API requests.
       kj::HttpHeaderTable::Builder headerTableBuilder;
-      auto bridgeProxy = newBridgeProxy(api, sandstormHttpBridge, config, headerTableBuilder);
+      auto bridgeProxy = newBridgeProxy(ioContext.provider->getTimer(),
+          api, sandstormHttpBridge, config, headerTableBuilder);
       auto headerTable = headerTableBuilder.build();
 
       // No need for request timeouts on this proxy. We trust the app.

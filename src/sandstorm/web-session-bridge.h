@@ -82,7 +82,8 @@ public:
     // If true, set Access-Control-Allow-Origin and the like as appropriate for an API endpoint.
   };
 
-  WebSessionBridge(WebSession::Client session, kj::Maybe<Handle::Client> loadingIndicator,
+  WebSessionBridge(kj::Timer& timer, WebSession::Client session,
+                   kj::Maybe<Handle::Client> loadingIndicator,
                    const Tables& tables, Options options);
 
   void restrictParentFrame(kj::StringPtr parent, kj::StringPtr self);
@@ -111,6 +112,7 @@ public:
   // Add standard headers to the response for an OPTIONS request to an API host.
 
 private:
+  kj::Timer& timer;
   WebSession::Client session;
   kj::Maybe<Handle::Client> loadingIndicator;
   const Tables& tables;

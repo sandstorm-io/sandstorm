@@ -492,7 +492,7 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
 
     UiHostEntry entry {
       timer.now(),
-      kj::refcounted<WebSessionBridge>(sessionRedirector.castAs<WebSession>(),
+      kj::refcounted<WebSessionBridge>(timer, sessionRedirector.castAs<WebSession>(),
                                        Handle::Client(kj::mv(loadingPaf.promise)),
                                        tables.bridgeTables, options)
     };
@@ -641,7 +641,7 @@ kj::Own<kj::HttpService> GatewayService::getApiBridge(
 
     ApiHostEntry entry {
       timer.now(),
-      kj::refcounted<WebSessionBridge>(sessionRedirector.castAs<WebSession>(), nullptr,
+      kj::refcounted<WebSessionBridge>(timer, sessionRedirector.castAs<WebSession>(), nullptr,
                                        tables.bridgeTables, options)
     };
     auto insertResult = apiHosts.insert(std::make_pair(key, kj::mv(entry)));

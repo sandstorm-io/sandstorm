@@ -35,6 +35,27 @@ static HttpStatusDescriptor::Reader getHttpStatusAnnotation(
                  enumerant.getProto().getName());
 }
 
+static kj::Promise<void> pingEveryMinute(kj::Timer& timer, Handle::Client handle) {
+  return timer.afterDelay(1 * kj::MINUTES).then([&timer, KJ_MVCAP(handle)]() mutable {
+    auto promise = handle.pingRequest().send().then([](auto) {
+      // Apparently the server actually implements ping(). Neat. Nothing to do here, though.
+    }, [](kj::Exception&& e) {
+      // ping() threw. This may be expected, depending on the exception type.
+      if (e.getType() == kj::Exception::Type::DISCONNECTED) {
+        // Capability is disconnected. Rethrow the exception to terminate the loop.
+        kj::throwFatalException(kj::mv(e));
+      } else {
+        // Any other exception is interpreted as indicating that the capability is still connected.
+        // We could specifically look for UNIMPLEMENTED exceptions, but some very old apps were
+        // built before the UNIMPLEMENTED exception type was added to Cap'n Proto.
+      }
+    });
+    return promise.then([&timer, KJ_MVCAP(handle)]() mutable {
+      return pingEveryMinute(timer, kj::mv(handle));
+    });
+  });
+}
+
 static inline ByteStream::Client newNoStreamingByteStream();
 
 WebSessionBridge::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilder)
@@ -78,9 +99,10 @@ WebSessionBridge::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilde
       responseHeaderWhitelist(*WebSession::Response::HEADER_WHITELIST) {}
 
 WebSessionBridge::WebSessionBridge(
-    WebSession::Client session, kj::Maybe<Handle::Client> loadingIndicator,
+    kj::Timer& timer, WebSession::Client session, kj::Maybe<Handle::Client> loadingIndicator,
     const Tables& tables, Options options)
-    : session(kj::mv(session)),
+    : timer(timer),
+      session(kj::mv(session)),
       loadingIndicator(kj::mv(loadingIndicator)),
       tables(tables),
       options(options) {}
@@ -1319,7 +1341,8 @@ kj::Promise<void> WebSessionBridge::handleResponse(
             auto aborter = outStream->makeAborter();
             auto promise = outStream->whenDone();
             contextInitInfo.streamer->fulfill(kj::mv(outStream));
-            return promise.attach(kj::mv(handle), kj::mv(aborter));
+            return promise.exclusiveJoin(pingEveryMinute(timer, kj::mv(handle)))
+                .attach(kj::mv(aborter));
           }
         }
 

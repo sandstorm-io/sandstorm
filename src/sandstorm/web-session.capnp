@@ -316,6 +316,9 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
           stream @6 :Util.Handle;
           # Indicates that the content will be streamed to the `responseStream` offered in the
           # call's `Context`. The caller may cancel the stream by dropping the Handle.
+          #
+          # Note that to prevent a grain from being shut down in the middle of a large download,
+          # it is necessary to call ping() on this handle every 60 seconds.
         }
 
         disposition :union {

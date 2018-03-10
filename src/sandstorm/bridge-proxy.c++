@@ -37,11 +37,13 @@ kj::Maybe<kj::StringPtr> removePrefix(kj::StringPtr prefix, kj::StringPtr str) {
 
 class BridgeProxy final: public kj::HttpService {
 public:
-  BridgeProxy(SandstormApi<BridgeObjectId>::Client sandstormApi,
+  BridgeProxy(kj::Timer& timer,
+              SandstormApi<BridgeObjectId>::Client sandstormApi,
               SandstormHttpBridge::Client bridge,
               spk::BridgeConfig::Reader config,
               kj::HttpHeaderTable::Builder& headerTableBuilder)
-      : sandstormApi(kj::mv(sandstormApi)),
+      : timer(timer),
+        sandstormApi(kj::mv(sandstormApi)),
         bridge(kj::mv(bridge)),
         config(config),
         hAuthorization(headerTableBuilder.add("Authorization")),
@@ -129,6 +131,7 @@ public:
   // TODO(someday): WebSocket
 
 private:
+  kj::Timer& timer;
   SandstormApi<BridgeObjectId>::Client sandstormApi;
   SandstormHttpBridge::Client bridge;
   spk::BridgeConfig::Reader config;
@@ -163,7 +166,7 @@ private:
 
       TokenInfo info {
         kj::heapString(token),
-        kj::refcounted<WebSessionBridge>(cap, nullptr,
+        kj::refcounted<WebSessionBridge>(timer, cap, nullptr,
             webSessionBridgeTables, WebSessionBridge::Options())
       };
       auto result = kj::addRef(*info.service);
@@ -202,11 +205,12 @@ private:
 }  // namespace
 
 kj::Own<kj::HttpService> newBridgeProxy(
+    kj::Timer& timer,
     SandstormApi<BridgeObjectId>::Client sandstormApi,
     SandstormHttpBridge::Client bridge,
     spk::BridgeConfig::Reader config,
     kj::HttpHeaderTable::Builder& requestHeaders) {
-  return kj::heap<BridgeProxy>(kj::mv(sandstormApi), kj::mv(bridge), config, requestHeaders);
+  return kj::heap<BridgeProxy>(timer, kj::mv(sandstormApi), kj::mv(bridge), config, requestHeaders);
 }
 
 } // namespace sandstorm

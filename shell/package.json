@@ -16,6 +16,7 @@
     "@babel/runtime": "^7.0.0-beta.40",
     "babel-runtime": "^6.26.0",
     "bignum": "^0.12.5",
+    "body-parser": "^1.18.2",
     "heapdump": "^0.3.9",
     "intro.js": "git+https://github.com/sandstorm-io/intro.js.git#8e1c7604f251ec874bf4ae4d7b4f11a14cee697e",
     "ldapjs": "^1.0.1",

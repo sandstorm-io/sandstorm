@@ -125,7 +125,7 @@ Meteor.startup(function () {
             cc: mail.cc || [],
             bcc: mail.bcc || [],
             replyTo: (mail.replyTo && mail.replyTo[0]) || {},
-            messageId: mail.headers["message-id"] || Meteor.uuid() + "@" + HOSTNAME,
+            messageId: mail.headers["message-id"] || Random.id() + "@" + HOSTNAME,
             references: mail.references || [],
             inReplyTo: mail.inReplyTo || [],
             subject: mail.subject || "",

@@ -16,8 +16,8 @@
 
 # You may override the following vars on the command line to suit
 # your config.
-CC=clang-5.0
-CXX=clang++-5.0
+CC=$(shell pwd)/deps/llvm-build/Release+Asserts/bin/clang
+CXX=$(shell pwd)/deps/llvm-build/Release+Asserts/bin/clang++
 CFLAGS=-O2 -Wall
 CXXFLAGS=$(CFLAGS)
 BUILD=0
@@ -167,7 +167,7 @@ stylecheck:
 # ====================================================================
 # Dependencies
 
-DEPS=capnproto ekam libseccomp libsodium node-capnp node boringssl
+DEPS=capnproto ekam libseccomp libsodium node-capnp node boringssl clang
 
 # We list remotes so that if projects move hosts, we can pull from their new
 # canonical location.
@@ -178,6 +178,7 @@ REMOTE_libsodium=https://github.com/jedisct1/libsodium.git stable
 REMOTE_node-capnp=https://github.com/kentonv/node-capnp.git node8
 REMOTE_node=https://github.com/sandstorm-io/node sandstorm
 REMOTE_boringssl=https://boringssl.googlesource.com/boringssl master
+REMOTE_clang=https://chromium.googlesource.com/chromium/src/tools/clang.git master
 
 deps/capnproto/.git:
 	@# Probably user forgot to checkout submodules. Do it for them.
@@ -200,9 +201,26 @@ update-deps:
 	    cd ../..;)
 
 # ====================================================================
+# Get Clang
+#
+# We use the prebuilt Clang binaries from the Chromium project. We do this because I've observed
+# Sandstorm contributors have a very hard time installing up-to-date versions of Clang on typcial
+# Linux distros. Ubuntu and Debian ship with outdated versions of Clang, which means people have
+# to install Clang from the LLVM apt repo. However, people struggle to set that up, and the repo
+# has been known to randomly break from time to time. OTOH, the Chromium project maintains a very
+# up-to-date version of Clang which is used to build Chrome, conveniently maintained as a git repo
+# (which we can pin to a commit) containing a nice script that will download precompiled binaries.
+
+deps/llvm-build: | tmp/.deps
+	@$(call color,downloading Clang binaries from Chromium project)
+	@deps/clang/scripts/update.py
+	@mv third_party/llvm-build deps
+	@rmdir third_party
+
+# ====================================================================
 # build BoringSSL
 
-deps/boringssl/build/Makefile: | tmp/.deps
+deps/boringssl/build/Makefile: | tmp/.deps deps/llvm-build
 	@$(call color,configuring BoringSSL)
 	@mkdir -p deps/boringssl/build
 	cd deps/boringssl/build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$(CC)" -DCMAKE_CXX_COMPILER="$(CXX)" -DCMAKE_C_FLAGS="-fPIE" -DCMAKE_CXX_FLAGS="-fPIE" ..
@@ -214,7 +232,7 @@ deps/boringssl/build/ssl/libssl.a: deps/boringssl/build/Makefile
 # ====================================================================
 # build libsodium
 
-deps/libsodium/build/Makefile: | tmp/.deps
+deps/libsodium/build/Makefile: | tmp/.deps deps/llvm-build
 	@$(call color,configuring libsodium)
 	@mkdir -p deps/libsodium/build
 	cd deps/libsodium/build && ../configure --disable-shared CC="$(CC)"
@@ -233,13 +251,13 @@ tmp/ekam-bin: tmp/.deps
 	    (cd deps/ekam && $(MAKE) bin/ekam-bootstrap && \
 	     cd ../.. && ln -s ../deps/ekam/bin/ekam-bootstrap tmp/ekam-bin)
 
-tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps deps/boringssl/build/ssl/libssl.a deps/libsodium/build/src/libsodium/.libs/libsodium.a
+tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps deps/boringssl/build/ssl/libssl.a deps/libsodium/build/src/libsodium/.libs/libsodium.a | deps/llvm-build
 	@$(call color,building sandstorm with ekam)
 	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS2)" CXXFLAGS="$(CXXFLAGS2)" \
 	    LIBS="$(LIBS2)" NODEJS=$(NODEJS) tmp/ekam-bin -j$(PARALLEL)
 	@touch tmp/.ekam-run
 
-continuous: tmp/.deps deps/boringssl/build/ssl/libssl.a deps/libsodium/build/src/libsodium/.libs/libsodium.a
+continuous: tmp/.deps deps/boringssl/build/ssl/libssl.a deps/libsodium/build/src/libsodium/.libs/libsodium.a | deps/llvm-build
 	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS2)" CXXFLAGS="$(CXXFLAGS2)" \
 	    LIBS="$(LIBS2)" NODEJS=$(NODEJS) ekam -j$(PARALLEL) -c -n :41315 || \
 	    ($(call color,You probably need to install ekam and put it on your path; see github.com/sandstorm-io/ekam) && false)

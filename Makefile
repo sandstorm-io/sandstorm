@@ -16,8 +16,8 @@
 
 # You may override the following vars on the command line to suit
 # your config.
-CC=clang-5.0
-CXX=clang++-5.0
+CC=deps/llvm-build/Release+Asserts/bin/clang
+CXX=deps/llvm-build/Release+Asserts/bin/clang++
 CFLAGS=-O2 -Wall
 CXXFLAGS=$(CFLAGS)
 BUILD=0
@@ -167,7 +167,7 @@ stylecheck:
 # ====================================================================
 # Dependencies
 
-DEPS=capnproto ekam libseccomp libsodium node-capnp node boringssl
+DEPS=capnproto ekam libseccomp libsodium node-capnp node boringssl clang
 
 # We list remotes so that if projects move hosts, we can pull from their new
 # canonical location.
@@ -178,6 +178,7 @@ REMOTE_libsodium=https://github.com/jedisct1/libsodium.git stable
 REMOTE_node-capnp=https://github.com/kentonv/node-capnp.git node8
 REMOTE_node=https://github.com/sandstorm-io/node sandstorm
 REMOTE_boringssl=https://boringssl.googlesource.com/boringssl master
+REMOTE_clang=https://chromium.googlesource.com/chromium/src/tools/clang.git master
 
 deps/capnproto/.git:
 	@# Probably user forgot to checkout submodules. Do it for them.
@@ -198,6 +199,23 @@ update-deps:
 	    git fetch $(REMOTE_$(DEP)) && \
 	    git rebase FETCH_HEAD && \
 	    cd ../..;)
+
+# ====================================================================
+# Get Clang
+#
+# We use the prebuilt Clang binaries from the Chromium project. We do this because I've observed
+# Sandstorm contributors have a very hard time installing up-to-date versions of Clang on typcial
+# Linux distros. Ubuntu and Debian ship with outdated versions of Clang, which means people have
+# to install Clang from the LLVM apt repo. However, people struggle to set that up, and the repo
+# has been known to randomly break from time to time. OTOH, the Chromium project maintains a very
+# up-to-date version of Clang which is used to build Chrome, conveniently maintained as a git repo
+# (which we can pin to a commit) containing a nice script that will download precompiled binaries.
+
+deps/llvm-build: | tmp/.deps
+	@$(call color,downloading Clang binaries from Chromium project)
+	@deps/clang/scripts/update.py
+	@mv third_party/llvm-build deps
+	@rmdir third_party
 
 # ====================================================================
 # build BoringSSL

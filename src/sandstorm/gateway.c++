@@ -212,14 +212,17 @@ kj::Promise<void> GatewayService::request(
       // Specific hosts handled by shell.
       return shellHttp->request(method, url, headers, requestBody, response);
     } else if (*hostId == "api") {
-      KJ_IF_MAYBE(token, getAuthToken(headers, url,
-          isAllowedBasicAuthUserAgent(headers.get(tables.hUserAgent).orDefault("")))) {
+      bool allowBasicAuth =
+          isAllowedBasicAuthUserAgent(headers.get(tables.hUserAgent).orDefault(""));
+      KJ_IF_MAYBE(token, getAuthToken(headers, url, allowBasicAuth)) {
         return handleApiRequest(*token, method, url, headers, requestBody, response);
       } else if (method == kj::HttpMethod::OPTIONS) {
         kj::HttpHeaders respHeaders(tables.headerTable);
         WebSessionBridge::addStandardApiOptions(tables.bridgeTables, headers, respHeaders);
         response.send(200, "OK", respHeaders, uint64_t(0));
         return kj::READY_NOW;
+      } else if (allowBasicAuth) {
+        return send401Unauthorized(response);
       } else {
         return sendError(403, "Forbidden", response, MISSING_AUTHORIZATION_MESSAGE);
       }

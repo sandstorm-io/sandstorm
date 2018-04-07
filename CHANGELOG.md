@@ -1,3 +1,8 @@
+### v0.231 (2018-04-07) [bugfixes]
+- Fixed grain last-used time sometimes not updating. (Specifically, it would only update after being open for a full minute.)
+- Fixed old, deprecated shared-host API endpoint not returning a 401 status to initiate basic auth. It has been years since Sandstorm generated API tokens using this endpoint, though.
+- Updated dependencies.
+
 ### v0.230 (2018-03-10) [bugfixes]
 - Fixed language detection no longer working.
 - Fixed bug preventing Thunderbird from syncing from Radicale, and prevented older versions of the Mercurial client from pushing to Mercurial.

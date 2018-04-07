@@ -56,10 +56,10 @@ if (process.env.HTTP_GATEWAY === "local" &&
     !global.sandstormListenCapabilityStream) {
   // TODO(cleanup): This is supposed to come from meteor-bundle-main.js but that doesn't actually
   //   run in dev-mode servers.
-  var Pipe = process.binding('pipe_wrap').Pipe;
+  const { Pipe, constants: PipeConstants } = process.binding('pipe_wrap');
 
   global.sandstormListenCapabilityStream = function (fd, cb) {
-    var pipe = new Pipe(true);
+    var pipe = new Pipe(PipeConstants.IPC);
     pipe.open(fd);
     pipe.onread = function (size, buf, handle) {
       if (handle) {

@@ -53,10 +53,11 @@ function monkeypatchHttpForGateway() {
     // We use the private API here. This could break when we update Node. If so, that's our fault.
     // But we pin our Node version, so this should be easy to control. Also, this interface hasn't
     // changed in forever.
-    var Pipe = process.binding('pipe_wrap').Pipe;
+    const { Pipe, constants: PipeConstants } = process.binding('pipe_wrap');
 
     global.sandstormListenCapabilityStream = function (fd, cb) {
-      var pipe = new Pipe(true);
+      console.log("hi");
+      var pipe = new Pipe(PipeConstants.IPC);
       pipe.open(fd);
       pipe.onread = function (size, buf, handle) {
         if (handle) {
@@ -64,6 +65,7 @@ function monkeypatchHttpForGateway() {
         }
       };
       pipe.readStart();
+      console.log("ho");
     }
   }
 

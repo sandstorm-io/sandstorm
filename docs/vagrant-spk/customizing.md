@@ -139,7 +139,7 @@ See [packaging tutorial](packaging-tutorial.md) for details.
 
 ### Default setup
 
-Repo: https://github.com/paulproteus/php-app-to-package-for-sandstorm
+Repo: [https://github.com/paulproteus/php-app-to-package-for-sandstorm](https://github.com/paulproteus/php-app-to-package-for-sandstorm)
 
 This example shows how to setup a php + mysql app.
 
@@ -152,11 +152,11 @@ dependencies.
 
 `launcher.sh` creates a folder structure in `/var` for MySQL, nginx, and
 php5-fpm, creates MySQL tables, then launches the three daemons, checking that
-`mysqld` and `php5-fpm` are ready to accept requests before launching `nginx`,
+`mysqld` and `php7.0-fpm` are ready to accept requests before launching `nginx`,
 which will listen for requests on port 8000.
 
 ### Paperwork (php, mysql, composer, npm)
-Repo: https://github.com/JamborJan/paperwork
+Repo: [https://github.com/JamborJan/paperwork](https://github.com/JamborJan/paperwork)
 
 [`setup.sh`](https://github.com/JamborJan/paperwork/blob/master/.sandstorm/setup.sh)
 installs PHP, nginx, nodejs, and npm.  Additionally, it installs some

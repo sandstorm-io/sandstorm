@@ -153,7 +153,7 @@ On Debian or Ubuntu, you should be able to get all these with:
 
 On Fedora 27 you should be able to get them with (as root):
 
-   dnf install make libcap-devel libstdc++-devel libstdc++-static \
+    dnf install make libcap-devel libstdc++-devel libstdc++-static \
        glibc-headers glibc-static glibc-locale-source xz zip \
        unzip strace curl discount git python2 zlib-devel \
        golang cmake

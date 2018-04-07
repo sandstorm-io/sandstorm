@@ -241,6 +241,8 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId,
     throw new Meteor.Error("access-denied", "access denied");
   }
 
+  globalBackend.updateLastActive(grainId, accountId);
+
   if (sessionId) {
     Sessions.update({
       _id: sessionId,

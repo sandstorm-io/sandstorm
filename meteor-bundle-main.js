@@ -56,7 +56,6 @@ function monkeypatchHttpForGateway() {
     const { Pipe, constants: PipeConstants } = process.binding('pipe_wrap');
 
     global.sandstormListenCapabilityStream = function (fd, cb) {
-      console.log("hi");
       var pipe = new Pipe(PipeConstants.IPC);
       pipe.open(fd);
       pipe.onread = function (size, buf, handle) {
@@ -65,7 +64,6 @@ function monkeypatchHttpForGateway() {
         }
       };
       pipe.readStart();
-      console.log("ho");
     }
   }
 

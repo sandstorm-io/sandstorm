@@ -18,7 +18,7 @@
 # your config.
 CC=$(shell pwd)/deps/llvm-build/Release+Asserts/bin/clang
 CXX=$(shell pwd)/deps/llvm-build/Release+Asserts/bin/clang++
-CFLAGS=-O2 -Wall
+CFLAGS=-O2 -Wall -g
 CXXFLAGS=$(CFLAGS)
 BUILD=0
 PARALLEL=$(shell nproc)
@@ -34,9 +34,9 @@ METEOR_DEV_BUNDLE=$(shell ./find-meteor-dev-bundle.sh)
 NODEJS=$(METEOR_DEV_BUNDLE)/bin/node
 NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
 WARNINGS=-Wall -Wextra -Wglobal-constructors -Wno-sign-compare -Wno-unused-parameter
-CXXFLAGS2=-std=c++1z $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -DKJ_HAS_OPENSSL -DKJ_HAS_ZLIB -pthread -fPIC -I$(NODE_HEADERS)
+CXXFLAGS2=-std=c++1z $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -DKJ_HAS_OPENSSL -DKJ_HAS_ZLIB -DKJ_HAS_LIBDL -pthread -fPIC -I$(NODE_HEADERS)
 CFLAGS2=$(CFLAGS) -pthread -fPIC
-LIBS2=$(LIBS) deps/libsodium/build/src/libsodium/.libs/libsodium.a deps/boringssl/build/ssl/libssl.a deps/boringssl/build/crypto/libcrypto.a -lz -pthread
+LIBS2=$(LIBS) deps/libsodium/build/src/libsodium/.libs/libsodium.a deps/boringssl/build/ssl/libssl.a deps/boringssl/build/crypto/libcrypto.a -lz -ldl -pthread
 
 define color
   printf '\033[0;34m==== $1 ====\033[0m\n'

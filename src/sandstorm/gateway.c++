@@ -199,7 +199,8 @@ kj::Promise<void> GatewayService::request(
           ownUrl = kj::str("/", parsedUrl.path[0], ".html");
           url = ownUrl;
         }
-        return getStaticPublished(*tpi, url, headers, response);
+        auto promise = getStaticPublished(*tpi, url, headers, response);
+        return promise.attach(kj::mv(ownUrl));
       }
     }
 
@@ -693,7 +694,7 @@ kj::Promise<void> GatewayService::getStaticPublished(
   kj::String ownPath;
 
   // Strip query.
-  KJ_IF_MAYBE(pos, path.findLast('?')) {
+  KJ_IF_MAYBE(pos, path.findFirst('?')) {
     ownPath = kj::str(path.slice(0, *pos));
     path = ownPath;
   }
@@ -705,7 +706,7 @@ kj::Promise<void> GatewayService::getStaticPublished(
   }
 
   // Strip leading "/".
-  KJ_ASSERT(path.startsWith("/"));
+  KJ_ASSERT(path.startsWith("/"), path);
   path = path.slice(1);
 
   // URI-decode the rest. Note that this allows filenames to contain spaces and question marks.

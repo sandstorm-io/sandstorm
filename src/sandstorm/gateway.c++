@@ -488,7 +488,11 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
         return response.getSession();
       }, [this,&sessionId](kj::Exception&& e) -> capnp::Capability::Client {
         // On error, invalidate the cached session immediately.
-        uiHosts.erase(sessionId);
+        // Catch: We can't actually do uiHosts.erase(sessionId) here because it might delete the
+        //   current promise, leading to a crash. Add it to tasks instead.
+        tasks.add(kj::evalLater([this, sessionId = kj::str(sessionId)]() {
+          uiHosts.erase(sessionId);
+        }));
         kj::throwFatalException(kj::mv(e));
       });
     });

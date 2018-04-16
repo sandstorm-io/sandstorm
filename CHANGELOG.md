@@ -1,3 +1,8 @@
+### v0.232 (2018-04-15) [bugfixes]
+- Applied Node patch to fix upstream problem causing segfaults for Meteor apps.
+- Fixed crash in Gateway due to accidentally destroying a running promise.
+- Removed accidental debug logging code introduced in 0.231 that printed "hi" and "ho" to the logs.
+
 ### v0.231 (2018-04-07) [bugfixes]
 - Fixed grain last-used time sometimes not updating. (Specifically, it would only update after being open for a full minute.)
 - Fixed old, deprecated shared-host API endpoint not returning a 401 status to initiate basic auth. It has been years since Sandstorm generated API tokens using this endpoint, though.

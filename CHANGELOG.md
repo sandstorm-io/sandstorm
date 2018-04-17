@@ -1,3 +1,6 @@
+### v0.233 (2018-04-17) [bugfixes]
+- Fixed gateway crash affecting some heavy users of static publishing.
+
 ### v0.232 (2018-04-15) [bugfixes]
 - Applied Node patch to fix upstream problem causing segfaults for Meteor apps.
 - Fixed crash in Gateway due to accidentally destroying a running promise.

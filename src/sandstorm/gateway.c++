@@ -807,6 +807,7 @@ kj::Promise<void> GatewayService::handleForeignHostname(kj::StringPtr host,
   auto handleEntry = [this,method,url,&headers,&requestBody,&response,alreadyDone=false]
                      (ForeignHostnameEntry& entry) mutable -> kj::Promise<void> {
     if (alreadyDone) return kj::READY_NOW;
+    alreadyDone = true;
 
     switch (entry.info.which()) {
       case GatewayRouter::ForeignHostnameInfo::UNKNOWN: {

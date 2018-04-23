@@ -144,7 +144,7 @@ we're working on tidying up the scripts to minimize the noise.
 Eventually, you will see this mesage:
 
 ```bash
-==> default: Processing triggers for php5-fpm (5.6.9+dfsg-0+deb8u1) ...
+==> default: Vanilla Debian box. See https://app.vagrantup.com/debian for help and bug reports
 ```
 
 and get your shell back. At this point, you can continue to the next step.

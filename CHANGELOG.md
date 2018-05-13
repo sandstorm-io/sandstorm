@@ -1,3 +1,6 @@
+### v0.234 (2018-05-12) [bugfixes]
+- Updated dependencies. (No other changes.)
+
 ### v0.233 (2018-04-17) [bugfixes]
 - Fixed gateway crash affecting some heavy users of static publishing.
 

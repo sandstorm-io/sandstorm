@@ -5,10 +5,6 @@
 This tutorial will show you how to make a
 [Sandstorm.io](https://sandstorm.io) package from a Meteor app.
 
-**Compatibility note:** Sandstorm's Meteor tooling is currently compatible with Meteor 1.3.5.1
-and earlier. If your app uses Meteor 1.4, you may need to wait until September 2016 for an
-updated `vagrant-spk` that is compatible with Meteor 1.4.
-
 Creating the package will take about five minutes of focused time,
 interspersed with the downloading of various components, which can
 take up to half an hour.

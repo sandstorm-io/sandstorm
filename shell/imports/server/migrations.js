@@ -601,7 +601,7 @@ const setUpstreamTitles = function (db, backend) {
   const grainIds = aggregateApiTokens([
     { $match: { "owner.user": { $exists: true }, grainId: { $exists: true } } },
     { $group: { _id: "$grainId" } },
-  ]).map(grain => grain._id);
+  ]).toArray().await().map(grain => grain._id);
 
   let count = 0;
   db.collections.grains.find({ _id: { $in: grainIds } }, { fields: { title: 1 } }).forEach((grain) => {

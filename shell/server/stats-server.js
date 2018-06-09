@@ -26,7 +26,8 @@ if (Mongo.Collection.prototype.aggregate) {
 Mongo.Collection.prototype.aggregate = function () {
   // Meteor doesn't wrapp Mongo's aggregate() method.
   const raw = this.rawCollection();
-  return Meteor.wrapAsync(raw.aggregate, raw).apply(raw, arguments);
+  return Meteor.wrapAsync(raw.aggregate, raw).apply(raw, arguments)
+      .toArray().await();
 };
 
 computeStats = function (since) {

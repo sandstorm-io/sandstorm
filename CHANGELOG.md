@@ -1,3 +1,7 @@
+### v0.235 (2018-06-09) [bugfixes]
+- Updated dependencies.
+- Due to Meteor 1.7 update, Sandstorm shell now serves different JavaScript to modern vs. "legacy" browsers, with the modern JS being leaner and faster.
+
 ### v0.234 (2018-05-12) [bugfixes]
 - Updated dependencies. (No other changes.)
 

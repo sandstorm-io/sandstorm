@@ -770,7 +770,7 @@ kj::Promise<void> GatewayService::getStaticPublished(
         return kj::READY_NOW;
       case Supervisor::WwwFileStatus::DIRECTORY: {
         kj::HttpHeaders headers(tables.headerTable);
-        auto newPath = kj::str(path, '/');
+        auto newPath = kj::str('/', path, '/');
         auto body = kj::str("redirect: ", newPath);
         headers.set(kj::HttpHeaderId::CONTENT_TYPE, "text/plain; charset=UTF-8");
         headers.set(kj::HttpHeaderId::LOCATION, kj::mv(newPath));

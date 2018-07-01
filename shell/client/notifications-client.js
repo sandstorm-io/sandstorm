@@ -312,7 +312,7 @@ Template.grainActivityNotificationItem.events({
 Meteor.startup(function () {
   Meteor.subscribe("notifications");
 
-  Meteor.autorun(function () {
+  Tracker.autorun(function () {
     Meteor.subscribe("notificationGrains",
       Notifications.find().map(function (row) {
         return row._id;

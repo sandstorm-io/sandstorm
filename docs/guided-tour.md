@@ -73,7 +73,7 @@ If you want to create presentations, consider installing [Hacker Slides](https:/
 
 If you want to organize tasks with a kanban board, consider installing [Wekan](https://apps.sandstorm.io/app/m86q05rdvj14yvn78ghaxynqz7u2svw6rnttptxx49g1785cdv1h).
 
-Each document is an _instance_of that app, with Sandstorm isolating each one from each other.
+Each document is an _instance_ of that app, with Sandstorm isolating each one from each other.
 
 ### Sharing
 

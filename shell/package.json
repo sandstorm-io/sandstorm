@@ -13,7 +13,7 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "@babel/runtime": "^7.0.0-beta.51",
+    "@babel/runtime": "^7.0.0-beta.54",
     "babel-runtime": "^6.26.0",
     "bignum": "^0.12.5",
     "body-parser": "^1.18.3",

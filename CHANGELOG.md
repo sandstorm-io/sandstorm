@@ -1,3 +1,6 @@
+### v0.237 (2018-07-28) [bugfixes]
+- Updated dependencies. (No other changes.)
+
 ### v0.236 (2018-06-30) [bugfixes]
 - Updated dependencies.
 - Fixed static web hosting redirects when the URL is a directory. The redirect is supposed to add '/', but previously it would sometimes redirect to a completely wrong path for directories more than one level deep.

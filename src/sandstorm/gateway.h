@@ -123,7 +123,7 @@ private:
 
   std::map<kj::StringPtr, StaticPublisherEntry> staticPublishers;
 
-  struct ForeignHostnameEntry: public kj::Refcounted {
+  struct ForeignHostnameEntry {
     kj::String id;
     OwnCapnp<GatewayRouter::ForeignHostnameInfo> info;
     kj::TimePoint refreshAfter;

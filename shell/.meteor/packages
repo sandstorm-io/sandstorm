@@ -46,5 +46,5 @@ oauth@1.2.3
 service-configuration@1.0.11
 github-oauth@1.2.0
 google-oauth@1.2.5
-dynamic-import@0.4.0
+dynamic-import@0.4.2
 tap:i18n

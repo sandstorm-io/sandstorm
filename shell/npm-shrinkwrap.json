@@ -5,10 +5,11 @@
   "requires": true,
   "dependencies": {
     "@babel/runtime": {
-      "version": "7.0.0-rc.3",
-      "resolved": "https://registry.npmjs.org/@babel/runtime/-/runtime-7.0.0-rc.3.tgz",
-      "integrity": "sha512-42EpQ16pvwSPhN5cmsrxG+txi4A4TY64AaDbbKxnJPyL0WT8AQNMpVilNTfghBXLQ2QvSbL3VtiWE/CzbtoyzQ==",
+      "version": "7.0.0-beta.55",
+      "resolved": "https://registry.npmjs.org/@babel/runtime/-/runtime-7.0.0-beta.55.tgz",
+      "integrity": "sha1-C8M6paasCwEvN+JbnmqqLkiakWs=",
       "requires": {
+        "core-js": "^2.5.7",
         "regenerator-runtime": "^0.12.0"
       },
       "dependencies": {

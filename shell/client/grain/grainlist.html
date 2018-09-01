@@ -2,6 +2,12 @@
   {{setDocumentTitle}}
   {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar }}{{_ "grains.title"}}{{/sandstormTopbarItem}}
   <div class="grain-list">
+    {{#if freePlanGoingAway}}
+      <div class="free-plan-going-away">
+        Starting October 14, 2018, the Free plan will no longer allow creating grains, only accessing grains shared by others. Pre-existing data will remain available for download. <a href="https://sandstorm.io/news/2018-08-27-discontinuing-free-plan" target="_blank">Learn more »</a>
+      </div>
+    {{/if}}
+
     <h1>
       <div>
         {{_ "grains.title"}} <button title="{{_ "grains.grainlist.sandstormGrainListPage.introButton.hint"}}" class="question-mark"></button>

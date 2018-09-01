@@ -340,6 +340,7 @@ var helpers = {
   outOfStorage: function () { return this.reason === "outOfStorage"; },
   outOfCompute: function () { return this.reason === "outOfCompute"; },
   customApp: function () { return this.reason === "customApp"; },
+  noGrainsAllowed: function () { return this.db.getUserQuota(Meteor.user()).grains === 0; },
   origin: function () { return document.location.protocol + "//" + document.location.host; },
   isDemoUser: function () {
     return this.db.isDemoUser();
@@ -422,6 +423,9 @@ var helpers = {
     return this.price && !this.isCurrent && data.count() === 0;
   },
   MAILING_LIST_BONUS: MAILING_LIST_BONUS,
+  freePlanGone: function () {
+    return (this.db || Template.parentData().db).getPlan("free").grains === 0;
+  }
 };
 
 Template._billingPromptBody.helpers(helpers);

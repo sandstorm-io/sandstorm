@@ -365,6 +365,7 @@ class GatewayRouterImpl {
       if ((err instanceof Meteor.Error) && (typeof err.error === "string")) {
         Sessions.update({ _id: sessionId }, { $set: { denied: err.error } });
       } else {
+        Sessions.update({ _id: sessionId }, { $set: { hasLoaded: true } });
         console.error(err.stack);
       }
       throw err;

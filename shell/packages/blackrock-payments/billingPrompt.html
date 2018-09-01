@@ -96,12 +96,16 @@ limitations under the License.
         <p class="wider">Free-plan users can only install <a href="https://apps.sandstorm.io/?host={{origin}}" target="_blank">apps from Sandstorm.io</a>.
           If you'd like to upload custom apps, please upgrade your plan.</p>
       {{else}}
-        <h2>Looks like you've run out of
-          {{#if outOfGrains}}grains.{{/if}}
-          {{#if outOfStorage}}storage.{{/if}}
-          {{#if outOfCompute}}compute.{{/if}}
-        </h2>
-        <p>Don't worry, you can upgrade your plan.</p>
+        {{#if noGrainsAllowed}}
+          <h2>To create grains, upgrade to a paid plan.</h2>
+        {{else}}
+          <h2>Looks like you've run out of
+            {{#if outOfGrains}}grains.{{/if}}
+            {{#if outOfStorage}}storage.{{/if}}
+            {{#if outOfCompute}}compute.{{/if}}
+          </h2>
+          <p>Don't worry, you can upgrade your plan.</p>
+        {{/if}}
       {{/if}}
     {{else}}
       <h2>Choose a new plan</h2>
@@ -150,12 +154,21 @@ limitations under the License.
             {{/if}}
           </td></tr>
           <tr><td>
-            <p>{{renderStorage storage}}</p>
+            <p>{{renderStorage storage}}
+              {{#unless freePlanGone}}{{#unless price}}*{{/unless}}{{/unless}}</p>
             <p>Storage</p>
           </td></tr>
           <tr><td>
-            <p>{{renderQuantity grains}}</p>
-            <p># of Grains</p>
+            {{#if freePlanGone}}
+              {{#if grains}}
+                <p class="no-free">Create your own grains.</p>
+              {{else}}
+                <p class="no-free">Collaborate on other users' grains.</p>
+              {{/if}}
+            {{else}}
+              <p>{{renderQuantity grains}} {{#unless price}}*{{/unless}}</p>
+              <p># of Grains</p>
+            {{/if}}
           </td></tr>
           <tr><td>
             <button>
@@ -178,6 +191,10 @@ limitations under the License.
       </div>
     {{/each}}
   </div>
+  
+  {{#unless freePlanGone}}
+    <p class="discontinue-free">* Starting October 14, 2018, the Free plan will no longer allow creating grains, only accessing grains shared by others. Pre-existing data will remain available for download. <a href="https://sandstorm.io/news/2018-08-27-discontinuing-free-plan" target="_blank">Learn more »</a></p>
+  {{/unless}}
 
   <div class="faq">
     <h3>F. A. Q.</h3>
@@ -186,13 +203,13 @@ limitations under the License.
       <div class="answer">
         <h4>All about grains</h4>
 
-        <p>A grain is a document, chat room, mail box, notebook, blog, or anything else you create. A 5-grain limit applies to accounts on the Free plan.</p>
+        <p>A grain is a document, chat room, mail box, notebook, blog, or anything else you create.</p>
 
         <h4>Resource limits</h4>
 
         <p>Sandstorm apps only use RAM while you are using them. Sandstorm uses compute units as a
-          measurement of sustained RAM usage over a month. Basic and Power User plans come with 600
-          compute units, which is more than most users need. Free plans come with 20 compute units.
+          measurement of sustained RAM usage over a month. Paid plans come with 600 compute units,
+          which is more than most users need.
           <a href="https://blog.sandstorm.io/news/2015-01-14-compute-units.html" target="_blank">
           Learn more about compute units »</a></p>
       </div>
@@ -301,7 +318,8 @@ limitations under the License.
         {{/if}}
       </table>
 
-      <h4 class="free-stuff-section-header">Get free storage{{#unless isPaid}} &amp; unlimited grains{{/unless}}:</h4>
+      {{#if isPaid}}
+      <h4 class="free-stuff-section-header">Get free storage:</h4>
       {{#unless mailingListBonus.storage}}
       <div class="free-stuff">
         <p>Get <strong>{{renderStorage MAILING_LIST_BONUS}} bonus storage</strong> by subscribing
@@ -310,13 +328,10 @@ limitations under the License.
       </div>
       {{/unless}}
       <div class="free-stuff">
-        {{#if isPaid}}
         <p>Get up to <span class="reward-amount">30 GB</span> of free space when your friends share on Oasis!</p>
-        {{else}}
-        <p>Get up to <span class="reward-amount">2 GB bonus storage</span> and <span class="reward-amount">unlimited grains</span> by sharing with your friends on Oasis!</p>
-        {{/if}}
         <a href="{{pathFor 'referrals'}}" class="like-a-button">Learn more</a>
       </div>
+      {{/if}}
     {{/if}}{{/with}}
   </div>
 
@@ -327,6 +342,8 @@ limitations under the License.
 </template>
 
 <template name="billingOptins">
+{{!-- Since free plan cannot create grains anymore, we should'nt offer 1GB of storage for opting
+      into the mailing list... Also we don't really use the mailing list anymore anyway.
   {{#if Template.subscriptionsReady}}
     {{#if isSubscribed}}
       <li class="alreadySubscribed">
@@ -345,4 +362,5 @@ limitations under the License.
       </li>
     {{/if}}
   {{/if}}
+--}}
 </template>

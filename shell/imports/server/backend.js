@@ -142,7 +142,7 @@ class SandstormBackend {
     // user) and `supervisor` (the supervisor capability).
 
     if (isUserExcessivelyOverQuota(Meteor.users.findOne(ownerId))) {
-      throw new Meteor.Error(402,
+      throw new Meteor.Error("quota-exhausted",
                              ("Cannot start grain because owner's storage is exhausted.\n" +
                               "Please ask them to upgrade."));
     }

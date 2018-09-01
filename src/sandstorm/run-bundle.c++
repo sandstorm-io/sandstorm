@@ -1291,6 +1291,8 @@ private:
     uint smtpListenPort = 30025;
     kj::Maybe<kj::String> privateKeyPassword = nullptr;
     kj::Maybe<kj::String> termsPublicId = nullptr;
+    kj::Maybe<kj::String> stripeKey = nullptr;
+    kj::Maybe<kj::String> stripePublicKey = nullptr;
   };
 
   kj::String updateFile;
@@ -1787,6 +1789,10 @@ private:
         config.privateKeyPassword = kj::mv(value);
       } else if (key == "TERMS_PAGE_PUBLIC_ID") {
         config.termsPublicId = kj::mv(value);
+      } else if (key == "STRIPE_SECRET_KEY") {
+        config.stripeKey = kj::mv(value);
+      } else if (key == "STRIPE_PUBLIC_KEY") {
+        config.stripePublicKey = kj::mv(value);
       }
     }
 
@@ -2691,9 +2697,15 @@ private:
           config.sandcatsHostname.size() > 0
               ? kj::str(", \"sandcatsHostname\":\"", config.sandcatsHostname, "\"")
               : kj::String(nullptr),
+          config.stripePublicKey.map([](const kj::String& pk) {
+            return kj::str(", \"stripePublicKey\":\"", pk, "\", \"quotaEnabled\": true");
+          }).orDefault(kj::String(nullptr)),
         "}",
         home.map([](kj::StringPtr path) {
           return kj::str(", \"home\": \"", path, "\"");
+        }).orDefault(kj::String(nullptr)),
+        config.stripeKey.map([](const kj::String& sk) {
+          return kj::str(", \"stripeKey\":\"", sk, "\"");
         }).orDefault(kj::String(nullptr)),
         "}");
   }

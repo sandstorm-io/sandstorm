@@ -1376,7 +1376,7 @@ _.extend(SandstormDb.prototype, {
       throw new Error("no such plan: " + id);
     }
 
-    if (plan._id === "free") {
+    if (plan._id === "free" && plan.grains > 0) {
       user = user || Meteor.user();
       if (user && user.experiments &&
           typeof user.experiments.freeGrainLimit === "number") {
@@ -1393,7 +1393,7 @@ _.extend(SandstormDb.prototype, {
         typeof user.experiments.freeGrainLimit === "number") {
       return this.collections.plans.find({}, { sort: { price: 1 } })
           .map(plan => {
-        if (plan._id === "free") {
+        if (plan._id === "free" && plan.grains > 0) {
           plan.grains = user.experiments.freeGrainLimit;
         }
 
@@ -1413,8 +1413,14 @@ _.extend(SandstormDb.prototype, {
     // This function is called from the server and from the client, similar to getMyPlan().
     //
     // The parameter may be omitted in which case the current user is assumed.
+    
+    user = user || Meteor.user();
+    if (this.collections.plans.findOne(user.plan).grains === 0) {
+      // Free plan disabled, no referral bonuses.
+      return {grains: 0, storage: 0};
+    }
 
-    return calculateReferralBonus(user || Meteor.user());
+    return calculateReferralBonus(user);
   },
 
   getMyUsage(user) {
@@ -2007,10 +2013,13 @@ _.extend(SandstormDb.prototype, {
   getUserQuota(user) {
     if (this.isQuotaLdapEnabled()) {
       return this.quotaManager.updateUserQuota(this, user);
+    } else if (user.expires) {
+      // HACK: Hard-coded demo user quota now that free plan doesn't allow creating grains...
+      return { storage: 200000000, grains: 5, compute: 72000000000 }
     } else {
       const plan = this.getPlan(user.plan || "free", user);
-      const referralBonus = calculateReferralBonus(user);
-      const bonus = user.planBonus || {};
+      const referralBonus = plan.grains > 0 ? calculateReferralBonus(user) : {storage: 0, grains: 0};
+      const bonus = plan.grains > 0 ? user.planBonus || {} : {};
       const userQuota = {
         storage: plan.storage + referralBonus.storage + (bonus.storage || 0),
         grains: plan.grains + referralBonus.grains + (bonus.grains || 0),

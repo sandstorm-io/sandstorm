@@ -26,7 +26,13 @@
                 {{_ "grains.grainView.notFoundWithId" grainId}}
               </p>
             {{else}}
-               <pre>{{error}}</pre>
+              {{#if quotaExhausted}}
+                <p class="grain-quota-exhausted grain-interstitial">
+                  {{_ "grains.grainView.quotaExhausted"}}
+                </p>
+              {{else}}
+                <pre>{{error}}</pre>
+              {{/if}}
             {{/if}}
           {{/if}}
         {{/if}}{{/if}}

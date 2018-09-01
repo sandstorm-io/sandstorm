@@ -163,6 +163,7 @@
     "title": "Grains",
     "grainView": {
       "notFoundWithId": "No grain found with ID %s.",
+      "quotaExhausted": "Cannot start grain because owner's quota is exhausted. If this is your grain, please upgrade your subscription plan to continue.",
       "openWithWhichIdentity": "Would you like to reveal your identity to this grain, or remain anonymous?",
       "openInIncognitoMode": "Open in Incognito Mode",
       "revealMyIdentity": "Reveal my identity"

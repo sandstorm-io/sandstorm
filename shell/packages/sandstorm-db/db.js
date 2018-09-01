@@ -2645,15 +2645,7 @@ if (Meteor.isServer) {
   };
 
   SandstormDb.prototype.sendReferralProgramNotification = function (userId) {
-    this.collections.notifications.upsert({
-      userId: userId,
-      referral: true,
-    }, {
-      userId: userId,
-      referral: true,
-      timestamp: new Date(),
-      isUnread: true,
-    });
+    // obsolete
   };
 
   SandstormDb.prototype.upgradeGrains =  function (appId, version, packageId, backend) {

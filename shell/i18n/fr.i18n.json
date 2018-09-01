@@ -110,7 +110,7 @@
       "finePrint": {
         "title": "Les trucs en petits caractères",
         "warningWithAccountLink": "Votre avantage de parrainage dure pendant 1 an à partir de la date du parrainage. Les conditions de ce programme de parrainage peuvent changer sans préavis ; cependant cela n'affectera pas les avantages dont vous bénéficiez déjà. Si vous avez besoin de plus d'espace, <a href=\"%s\">passez à l'offre supérieure</a> !",
-        "explanation": "Les personnes ayant souscrit à une offre payante peuvent bénéficier de jusqu'à 30 Go de stockage gratuit, 2 Go par personne parrainée en plus du stockage déjà inclus dans leur offre. Les utilisateurs de comptes gratuits peuvent obtenir des grains illimités ainsi que 50 Mo d'espace de stockage gratuit par personne qu'ils parrainent, avec un total de 2 Go au maximum."
+        "explanation": "Les personnes ayant souscrit à une offre payante peuvent bénéficier de jusqu'à 30 Go de stockage gratuit, 2 Go par personne parrainée en plus du stockage déjà inclus dans leur offre."
       }
     },
     "about": {

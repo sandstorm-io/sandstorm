@@ -109,7 +109,7 @@
       "finePrint": {
         "title": "The fine print",
         "warningWithAccountLink": "Your referral bonus lasts until 1 year after the referral. The terms of this referral program may change without warning; however, such changes will not affect bonuses you have already received. If you need even more space, <a href=\"%s\">upgrade your account.</a>",
-        "explanation": "Paid subscribers can get up to 30 GB of free storage, 2 GB per person they refer, in addition to the storage from their account level. Free account holders can earn unlimited grains and 50 MB of free storage per person they refer, up to 2 GB total."
+        "explanation": "Paid subscribers can get up to 30 GB of free storage, 2 GB per person they refer, in addition to the storage from their account level. Free account holders are not eligible for a referral bonus."
       }
     },
     "about": {

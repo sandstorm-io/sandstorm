@@ -109,7 +109,7 @@
       "finePrint": {
         "title": "De kleine lettertjes",
         "warningWithAccountLink": "Uw verwijzingsbonus is voor 1 jaar na de verwijzing geldig. De voorwaarden van dit verwijzingsprogramma kunnen veranderen zonder waarschuwing, bonussen die u al heeft ontvangen worden daar niet door beïnvloed. Als u nog meer ruimte nodig heeft, <a href=\"%s\">upgrade dan uw account.</a>",
-        "explanation": "Betaalde abonnees kunnen tot 30 GB gratis opslagruimte krijgen, 2 GB per persoon die ze verwijzen, naast de hoeveelheid opslag van hun account niveau. Eigenaren van gratis accounts kunnen een onbeperkte hoeveelheid korrels en 50MB opslagruimte per persoon die ze verwijzen verdienen, tot in totaal 2GB."
+        "explanation": "Betaalde abonnees kunnen tot 30 GB gratis opslagruimte krijgen, 2 GB per persoon die ze verwijzen, naast de hoeveelheid opslag van hun account niveau."
       }
     },
     "about": {

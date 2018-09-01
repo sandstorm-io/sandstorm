@@ -1163,6 +1163,15 @@ function cleanupBadExpiresIfUnused(db, backend) {
   db.collections.apiTokens.remove({expiresIfUnused: {$type: 1}});
 }
 
+function deleteReferralNotifications(db, backend) {
+  // Oasis is discontinuing the free plan. Notifications about the referral program are confusing
+  // for free users since it will soon be meaningless. Remove those notifications.
+  db.collections.notifications.remove({referral: {$exists: true}});
+
+  // Similarly for the mailing list bonus, though that notification is quite old in any case.
+  db.collections.notifications.remove({mailingListBonus: {$exists: true}});
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -1205,6 +1214,7 @@ const MIGRATIONS = [
   onePersonaPerAccount,
   onePersonaPerAccountPostCleanup,
   cleanupBadExpiresIfUnused,
+  deleteReferralNotifications,
 ];
 
 const NEW_SERVER_STARTUP = [

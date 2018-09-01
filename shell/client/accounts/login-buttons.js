@@ -193,6 +193,10 @@ Template._loginButtonsLoggedInDropdown.helpers({
   showAbout() {
     return !globalDb.isHideAboutEnabled();
   },
+
+  showReferrals() {
+    return (Meteor.user().plan || "free") !== "free";
+  },
 });
 
 Template._loginButtonsLoggedInDropdown.events({

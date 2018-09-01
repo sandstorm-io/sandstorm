@@ -95,8 +95,10 @@ licenses, included in the LICENSES directory.
     {{/if}}
 
     {{#if referralsEnabled }}
-      {{!-- should be "shell.referrals.title" --}}
-      {{#linkTo route="referrals" role="menuitem"}}{{_ "accounts.loginButtons._loginButtonsLoggedInDropdown.referralProgram"}}{{/linkTo}}
+      {{#if showReferrals}}
+        {{!-- should be "shell.referrals.title" --}}
+        {{#linkTo route="referrals" role="menuitem"}}{{_ "accounts.loginButtons._loginButtonsLoggedInDropdown.referralProgram"}}{{/linkTo}}
+      {{/if}}
     {{/if}}
     {{#if showAbout}}
       {{#linkTo route="about" role="menuitem"}}{{_ "shell.about.title"}}{{/linkTo}}

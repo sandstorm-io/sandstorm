@@ -109,7 +109,7 @@
       "finePrint": {
         "title": "Pieni präntti",
         "warningWithAccountLink": "Suositus bonuksesi kestää 1 vuoden suosittelun jälkeen. Tämän suositusohjelman säännöt saattavat muuttua ilman varoitusta; kuitenkin, sellaiset muutokset eivät muuta bonuksia jotka olet jo vastaanottanut. Jos tarvitset vielä enemmän tilaa, <a href=\"%s\">päivitä tilisi.</a>",
-        "explanation": "Maksavat tilaajat voivat saada jopa 30 GB vapaata tilaa, 2 GB jokaista henkilöä kohden joille he suosittelevat, sen lisäksi mitä heidän tilitasonsa jo tarjoaa. Ilmaisen tilin omistajat voivat ansaita rajattomasti jyvää ja 50 MB ilmaista tilaa per henkilö joille he suosittelevat, jopa 2 GB yhteensä."
+        "explanation": "Maksavat tilaajat voivat saada jopa 30 GB vapaata tilaa, 2 GB jokaista henkilöä kohden joille he suosittelevat, sen lisäksi mitä heidän tilitasonsa jo tarjoaa."
       }
     },
     "about": {

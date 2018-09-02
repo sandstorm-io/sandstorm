@@ -681,7 +681,8 @@ Template.registerHelper("con", function () {
 Template.registerHelper("freePlanGoingAway", function () {
   return Meteor.settings.public.stripePublicKey &&
       (Meteor.user().plan || "free") === "free" &&
-      globalDb.getMyPlan().grains > 0;
+      globalDb.getMyPlan().grains > 0 &&
+      !globalDb.isDemoUser();
 });
 
 Template.root.helpers({

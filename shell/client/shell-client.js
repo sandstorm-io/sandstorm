@@ -242,6 +242,18 @@ const showBillingPrompt = function (reason, next) {
   });
 };
 
+// TEMPORARY HACK for free plan going away.
+Template.sandstormAppListPage.events({
+  "click .upgrade-plan-now": function (event, tmpl) {
+    showBillingPrompt("voluntary");
+  }
+});
+Template.sandstormGrainListPage.events({
+  "click .upgrade-plan-now": function (event, tmpl) {
+    showBillingPrompt("voluntary");
+  }
+});
+
 const ifQuotaAvailable = function (next) {
   const reason = isUserOverQuota(Meteor.user());
   if (reason) {
@@ -381,7 +393,7 @@ launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex, opti
   // We need to ask the server to start a new grain, then browse to it.
   Meteor.call("newGrain", packageId, command, title, null, function (error, grainId) {
     if (error) {
-      if (error.error === 402) {
+      if (error.error === 402 || error.error === "quota-exhausted") {
         // Sadly this can occur under LDAP quota management when the backend updates its quota
         // while creating the grain.
         showBillingPrompt("outOfStorage", function () {

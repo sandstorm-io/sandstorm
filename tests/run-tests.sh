@@ -28,6 +28,8 @@ test -e assets/ssjekyll5.spk || curl https://sandstorm.io/apps/ssjekyll5.spk > a
 test -e assets/ssjekyll6.spk || curl https://sandstorm.io/apps/ssjekyll6.spk > assets/ssjekyll6.spk
 test -e assets/ssjekyll7.spk || curl https://sandstorm.io/apps/ssjekyll7.spk > assets/ssjekyll7.spk
 
+NIGHTWATCH_PARAMS=()
+
 if [ ! -z "${TESTCASE:-}" ]; then
   # This is awkward because the test case name usually has spaces, but we need
   # to pass it as a single argument on the command-line. So, we concoct a bash
@@ -44,14 +46,14 @@ fi
 if [[ -z "${LAUNCH_URL:-}" ]]; then
   if [[ -z "${SKIP_UNITTESTS:-}" ]]; then
     ../shell/test-packages.sh -f
-    nightwatch -e unittests "${NIGHTWATCH_PARAMS[@]:-}"
+    nightwatch -e unittests "${NIGHTWATCH_PARAMS[@]}"
   fi
-  nightwatch -e default "${NIGHTWATCH_PARAMS[@]:-}"
+  nightwatch -e default "${NIGHTWATCH_PARAMS[@]}"
 else
   sed "s|.*launch_url.*|\"launch_url\" : \"$LAUNCH_URL\",|g" nightwatch.json > nightwatch.tmp.json
   if [[ -z "${SKIP_UNITTESTS:-}" ]]; then
     ../shell/test-packages.sh -f
-    nightwatch -e unittests -c ./nightwatch.tmp.json "${NIGHTWATCH_PARAMS[@]:-}"
+    nightwatch -e unittests -c ./nightwatch.tmp.json "${NIGHTWATCH_PARAMS[@]}"
   fi
-  nightwatch -e default -c ./nightwatch.tmp.json "${NIGHTWATCH_PARAMS[@]:-}"
+  nightwatch -e default -c ./nightwatch.tmp.json "${NIGHTWATCH_PARAMS[@]}"
 fi

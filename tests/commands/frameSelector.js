@@ -22,24 +22,9 @@ var utils = require("../utils"),
     long_wait = utils.long_wait,
     very_long_wait = utils.very_long_wait;
 
-exports.command = function(grainId) {
-  // Focuses on the iframe for `grainId`. If `grainId` is null, uses the currently-active grain.
-
-  var self = this
-      .frame(null)
-      .waitForElementPresent("iframe.grain-frame", short_wait);
-
-  if (grainId) {
-    return self.waitForElementVisible("#grain-frame-" + grainId, medium_wait)
-      .frameSelector("#grain-frame-" + grainId);
-  } else {
-    return self.execute(function () {
-      return window.globalGrains.getActive().grainId();
-    }, [], function (result) {
-      var grainId = result.value;
-      self
-        .waitForElementVisible("#grain-frame-" + grainId, short_wait)
-        .frameSelector("#grain-frame-" + grainId)
-    });
-  }
+exports.command = function(selector) {
+  var self = this;
+  return self.element("css selector", selector, function(result) {
+    self.frame(result.value);
+  });
 };

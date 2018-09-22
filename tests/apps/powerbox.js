@@ -121,7 +121,7 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
         .click(".popup.offer .frame button.dismiss")
         .grainFrame()
         .click("#request-failing-requirements")
-        .frame()
+        .frame(null)
         .waitForElementVisible("#powerbox-request-input", short_wait)
         .setValue("#powerbox-request-input", result.value)
         .click("#powerbox-request-form button")
@@ -162,7 +162,7 @@ module.exports["Test Powerbox embedded request flow"] = function (browser) {
         .waitForElementVisible(cardSelector, medium_wait)
         .click(cardSelector)
         .waitForElementVisible(".powerbox-iframe-mount iframe", short_wait)
-        .frame("powerbox-grain-frame-" + grainId)
+        .frameSelector(".powerbox-iframe-mount iframe")
         .waitForElementVisible("#cap-text", medium_wait)
         .setValue("#cap-text", "foo bar baz")
         .click("#do-fulfill")
@@ -197,7 +197,7 @@ module.exports["Test Powerbox query"] = function (browser) {
                 .grainFrame(grainId)
                 .waitForElementPresent(buttonId, medium_wait)
                 .click(buttonId)
-                .frameParent()
+                .frame(null)
                 .waitForElementVisible(".popup ul.candidate-cards", short_wait);
 
             for (var id in expectedMatches) {
@@ -208,6 +208,8 @@ module.exports["Test Powerbox query"] = function (browser) {
                 browser.assert.elementNotPresent(cardSelector);
               }
             }
+
+            browser.click("button.close-popup");
           }
 
           tryQuery("#do-powerbox-request", {[grainId]: true, [otherGrainId]: false});

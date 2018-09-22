@@ -94,9 +94,10 @@ module.exports["Test powerbox request contact"] = function (browser) {
                     .assert.containsText("form.test-identity div.result", bobName)
 
                     // Now trash the grain as Bob.
-                    .frame()
+                    .frame(null)
                     .execute("window.Meteor.logout()")
                     .loginDevAccount(bobName)
+                    .disableGuidedTour()
                     .url(browser.launch_url + "/grain")
                     .waitForElementVisible(".grain-list-table .select-all-grains>input", short_wait)
                     .click(".grain-list-table .select-all-grains>input")

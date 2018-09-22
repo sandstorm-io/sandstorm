@@ -1579,9 +1579,9 @@ __EOF__
 
   # Mark as executable, and enable on boot.
   chmod +x /etc/init.d/sandstorm
-  if [ "$(which update-rc.d)" != "" ] then
+  if [ "$(which update-rc.d)" != "" ]; then
     update-rc.d sandstorm defaults
-  elif [ "$(which rc-update)" != "" ] then
+  elif [ "$(which rc-update)" != "" ]; then
     rc-update add sandstorm
   else
     echo "WARNING: I couldn't figure out how to make the Sandstorm init script active on" >&2

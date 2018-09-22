@@ -251,6 +251,7 @@ kj::Promise<void> GatewayService::request(
               if (resource.hasEncoding()) {
                 respHeaders.set(tables.hContentEncoding, resource.getEncoding());
               }
+              respHeaders.set(tables.hAccessControlAllowOrigin, "*");
 
               auto body = resource.getBody();
               auto stream = response.send(200, "OK", respHeaders, body.size());

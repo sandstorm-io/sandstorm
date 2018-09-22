@@ -1,3 +1,7 @@
+### v0.239 (2018-09-22)
+- Updated dependencies.
+- Prepared Oasis payments code for [upcoming change to discontinue free plan](https://sandstorm.io/news/2018-08-27-discontinuing-free-plan). (Does not affect self-hosted servers.)
+
 ### v0.238 (2018-08-25) [bugfixes]
 - Updated dependencies. (No other changes.)
 

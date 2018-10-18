@@ -155,7 +155,7 @@ limitations under the License.
           </td></tr>
           <tr><td>
             <p>{{renderStorage storage}}
-              {{#unless freePlanGone}}{{#unless price}}*{{/unless}}{{/unless}}</p>
+              {{#unless price}}*{{/unless}}</p>
             <p>Storage</p>
           </td></tr>
           <tr><td>
@@ -192,9 +192,11 @@ limitations under the License.
     {{/each}}
   </div>
   
-  {{#unless freePlanGone}}
-    <p class="discontinue-free">* Starting October 14, 2018, the Free plan will no longer allow creating grains, only accessing grains shared by others. Pre-existing data will remain available for download. <a href="https://sandstorm.io/news/2018-08-27-discontinuing-free-plan" target="_blank">Learn more »</a></p>
-  {{/unless}}
+  {{#if freePlanGone}}
+    <p class="discontinue-free">* Starting October 17, 2018, the Free plan no longer allows creating grains, only accessing grains shared by others. Pre-existing data remains available for download. <a href="https://sandstorm.io/news/2018-08-27-discontinuing-free-plan" target="_blank">Learn more »</a></p>
+  {{else}}
+    <p class="discontinue-free">* Starting October 17, 2018, the Free plan will no longer allow creating grains, only accessing grains shared by others. Pre-existing data will remain available for download. <a href="https://sandstorm.io/news/2018-08-27-discontinuing-free-plan" target="_blank">Learn more »</a></p>
+  {{/if}}
 
   <div class="faq">
     <h3>F. A. Q.</h3>

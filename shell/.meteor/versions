@@ -76,7 +76,7 @@ mongo-decimal@0.1.0
 mongo-dev-server@1.1.0
 mongo-id@1.0.7
 npm-mongo@3.1.1
-oauth@1.2.4
+oauth@1.2.3
 oauth2@1.2.1
 observe-sequence@1.0.16
 ordered-dict@1.1.0

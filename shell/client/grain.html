@@ -29,6 +29,10 @@
               {{#if quotaExhausted}}
                 <p class="grain-quota-exhausted grain-interstitial">
                   {{_ "grains.grainView.quotaExhausted"}}
+                  {{#if paymentsEnabled}}
+                    <br>
+                    <a target="_blank" href="https://sandstorm.io/news/2018-10-18-how-to-download-oasis-data">If the owner was on the free plan, this could be because Oasis's free plan was discontinued on October 17, 2018. Please click here for more details.</a>
+                  {{/if}}
                 </p>
               {{else}}
                 <pre>{{error}}</pre>

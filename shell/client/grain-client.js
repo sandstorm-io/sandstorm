@@ -69,6 +69,7 @@ const mapGrainStateToTemplateData = function (grainState) {
     unauthorized: error && (error.error == 403 || error.error == "access-denied"),
     notFound: error && (error.error == 404 || error.error == "no-such-grain"),
     quotaExhausted: error && (error.error == 402 || error.error == "quota-exhausted"),
+    paymentsEnabled: !!Meteor.settings.public.stripePublicKey,
     inMyTrash: grainState.isInMyTrash(),
     inOwnersTrash: error && (error.error === "grain-is-in-trash"),
     grainOwnerSuspended: error && (error.error === "grain-owner-suspended"),

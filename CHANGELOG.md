@@ -1,5 +1,8 @@
+### v0.241 (2018-11-19) [bugfixes]
+- Updated dependencies. (No other changes.)
+
 ### v0.240 (2018-10-20) [bugfixes]
-- Updtaed dependencies.
+- Updated dependencies.
 - Added some clarification messages to Oasis UI regarding the [recent discontinuation of the free plan](https://sandstorm.io/news/2018-08-27-discontinuing-free-plan).
 
 ### v0.239 (2018-09-22)

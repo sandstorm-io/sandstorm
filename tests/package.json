@@ -19,7 +19,7 @@
     "jszip": "^2.5.0",
     "mailcomposer": "^0.2.12",
     "mailparser": "0.5.1",
-    "selenium-standalone": "^6.15.3",
+    "selenium-standalone": "^6.15.4",
     "simplesmtp": "0.3.35",
     "spacejam": "1.2.2",
     "underscore": "^1.9.1"

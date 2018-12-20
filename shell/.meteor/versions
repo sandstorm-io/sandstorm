@@ -61,7 +61,7 @@ jquery@1.11.11
 livedata@1.0.18
 localstorage@1.2.0
 logging@1.1.20
-mdg:validation-error@0.2.0
+mdg:validation-error@0.5.1
 meteor@1.9.2
 meteor-base@1.4.0
 meteorspark:util@0.2.0

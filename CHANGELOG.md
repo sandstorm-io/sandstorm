@@ -1,3 +1,6 @@
+### v0.242 (2018-12-20) [bugfixes]
+- Updated dependencies. (No other changes.)
+
 ### v0.241 (2018-11-19) [bugfixes]
 - Updated dependencies. (No other changes.)
 

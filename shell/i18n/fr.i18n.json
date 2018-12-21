@@ -1379,7 +1379,7 @@
           "result2": "la révocation de tous les liens de partage que vous avez créés",
           "result3": "la suppression de toutes les listes de contacts des utilisateurs,",
           "result4": "la suppression de toutes les informations d'identification appartenant à votre compte (à l'exception des informations d'identification associées à un autre compte).",
-          "confirm": "Veuillez cliquer sur « Supprimer mon compte » ci-dessous pour confirmer.",
+          "confirm": "Veuillez cliquer sur « delete my account » ci-dessous pour confirmer.",
           "goodbye": "Désolé de vous voir partir. N'hésitez pas à partager vos commentaires avec l'administrateur du serveur.",
           "feedbackPlaceholder": "Optionnel",
           "deleteButton": "Supprimer ce compte",

@@ -4,7 +4,7 @@
 # but you can also edit it by hand.
 
 # ES6 support.
-ecmascript@0.12.3
+ecmascript@0.12.4
 ecmascript-collections
 
 # Formerly standard-app-packages, which was deprecated in favor of meteor-platform,

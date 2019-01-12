@@ -27,6 +27,8 @@ METEOR_DEV_BUNDLE=$("$THIS_DIR/../find-meteor-dev-bundle.sh")
 NODEJS="$METEOR_DEV_BUNDLE/bin/node"
 NPM="$METEOR_DEV_BUNDLE/bin/npm"
 
+export PATH="$METEOR_DEV_BUNDLE/bin:$PATH"
+
 cleanExit () {
   rc=$1
 

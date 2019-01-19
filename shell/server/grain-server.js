@@ -446,7 +446,12 @@ Meteor.methods({
             name: String,
             intrinsicName: Match.Optional(String),
           }),
-          intrinsicNames: [Object]
+
+          // We have reports in the wild of intristicNames somehow not being set sometimes
+          // when inviting a raw e-mail address. I can't tell how this could possibly
+          // happen in the client-side code, but we don't actually care about this field
+          // so... fine.
+          intrinsicNames: Match.Optional([Object])
         },
       ]);
       check(message, String);

@@ -553,6 +553,10 @@ public:
     return writeImpl(size, kj::mv(req));
   }
 
+  kj::Promise<void> whenWriteDisconnected() override {
+    return kj::NEVER_DONE;
+  }
+
 private:
   kj::Promise<void> writeImpl(size_t size, capnp::Request<
       WebSession::WebSocketStream::SendBytesParams,

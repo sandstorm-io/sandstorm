@@ -921,6 +921,9 @@ public:
   void shutdownWrite() override {
     return stream->shutdownWrite();
   }
+  kj::Promise<void> whenWriteDisconnected() override {
+    return stream->whenWriteDisconnected();
+  }
 
 private:
   kj::Own<kj::AsyncIoStream> stream;

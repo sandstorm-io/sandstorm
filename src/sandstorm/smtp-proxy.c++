@@ -102,6 +102,9 @@ public:
       kj::AsyncInputStream& input, uint64_t amount = kj::maxValue) override {
     return inner->tryPumpFrom(input, amount);
   }
+  kj::Promise<void> whenWriteDisconnected() override {
+    return inner->whenWriteDisconnected();
+  }
   void shutdownWrite() override {
     return inner->shutdownWrite();
   }

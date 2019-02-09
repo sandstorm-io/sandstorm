@@ -1409,13 +1409,12 @@
       "resolved": "http://registry.npmjs.org/xml-crypto/-/xml-crypto-0.0.20.tgz",
       "integrity": "sha1-Q9jVNETUaFON4ygg2qJHveXt3HU=",
       "requires": {
-        "xmldom": "git+https://github.com/yaronn/xmldom.git#68768a6a31f55b0737d7beb88807bc80146b2651",
         "xpath.js": ">=0.0.3"
       },
       "dependencies": {
         "xmldom": {
           "version": "git+https://github.com/yaronn/xmldom.git#68768a6a31f55b0737d7beb88807bc80146b2651",
-          "from": "git+https://github.com/yaronn/xmldom.git"
+          "from": "git+https://github.com/yaronn/xmldom.git#68768a6a31f55b0737d7beb88807bc80146b2651"
         }
       }
     },

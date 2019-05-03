@@ -50,8 +50,8 @@ read more about [wildcard DNS for Sandstorm.](wildcard.md)
 Obtain or generate a key and TLS certificate with `example.com` and `*.example.com` in
 subjectAltName. You can do that by [buying a wildcard HTTPS
 certificate](https://google.com/search?q=cheap+wildcard+ssl), following our [self-signed certificate
-authority instructions](self-signed.md), or using [CloudFlare Origin CA's free wildcard
-certificates.](https://blog.cloudflare.com/cloudflare-ca-encryption-origin/)
+authority instructions](self-signed.md), using [CloudFlare Origin CA's free wildcard
+certificates.](https://blog.cloudflare.com/cloudflare-ca-encryption-origin/) or using [certbot to issue a free Let's Encrypt wildcart certificate](https://certbot.eff.org/faq/#does-let-s-encrypt-issue-wildcard-certificates)
 
 If you are using nginx, place the following certificate data in the following paths on your system.
 

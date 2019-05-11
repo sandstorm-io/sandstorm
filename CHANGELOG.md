@@ -1,3 +1,6 @@
+### v0.247 (2019-05-11) [bugfixes]
+- Updated dependencies. (No other changes.)
+
 ### v0.246 (2019-04-13) [bugfixes]
 - Updated dependencies. (No other changes.)
 

@@ -23,6 +23,7 @@ CXXFLAGS=$(CFLAGS)
 BUILD=0
 PARALLEL=$(shell nproc)
 LIBS=
+EKAM=ekam
 
 # You generally should not modify this.
 # TODO(cleanup): -fPIC is unfortunate since most of our code is static binaries
@@ -259,7 +260,7 @@ tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps deps/boringssl/build/ssl/l
 
 continuous: tmp/.deps deps/boringssl/build/ssl/libssl.a deps/libsodium/build/src/libsodium/.libs/libsodium.a | deps/llvm-build
 	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS2)" CXXFLAGS="$(CXXFLAGS2)" \
-	    LIBS="$(LIBS2)" NODEJS=$(NODEJS) ekam -j$(PARALLEL) -c -n :41315 || \
+	    LIBS="$(LIBS2)" NODEJS=$(NODEJS) $(EKAM) -j$(PARALLEL) -c -n :41315 || \
 	    ($(call color,You probably need to install ekam and put it on your path; see github.com/sandstorm-io/ekam) && false)
 
 # ====================================================================

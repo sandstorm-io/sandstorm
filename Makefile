@@ -138,7 +138,6 @@ clean: ci-clean
 	@# Note: capnproto, libseccomp, and node-capnp are integrated into the common build.
 	cd deps/ekam && make clean
 	rm -rf deps/libsodium/build
-	cd deps/node && make clean
 	rm -rf deps/boringssl/build
 
 ci-clean:

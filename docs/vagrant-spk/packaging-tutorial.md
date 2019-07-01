@@ -180,7 +180,7 @@ Some quick facts on how that works:
 - Sandstorm is running within a Linux system created with the help of vagrant-spk,
   vagrant, and VirtualBox.
 
-- local.sandstorm.io is a DNS alias that points to the same IP address as `localhost`.  We use
+- local.sandstorm.io is a [DNS](https://hosting.review/web-hosting-glossary/#9) alias that points to the same IP address as `localhost`.  We use
   local.sandstorm.io instead of `localhost` because all subdomains of local.sandstorm.io also point
   at the localhost IP address. You can read more about [wildcard DNS.](../administering/wildcard.md)
 

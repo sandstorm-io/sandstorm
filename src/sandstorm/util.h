@@ -447,7 +447,7 @@ public:
 
   void setDisconnected(uint oldIteration);
 
-  kj::Promise<void> dispatchCall(
+  DispatchCallResult dispatchCall(
       uint64_t interfaceId, uint16_t methodId,
       capnp::CallContext<capnp::AnyPointer, capnp::AnyPointer> context) override;
 

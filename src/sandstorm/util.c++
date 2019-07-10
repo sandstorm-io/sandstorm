@@ -760,7 +760,7 @@ kj::Promise<int> SubprocessSet::waitForExitOrSignal(Subprocess& subprocess) {
   waitMap->pids.insert(std::make_pair(subprocess.getPid(),
       WaitMap::ProcInfo { kj::mv(paf.fulfiller), &subprocess }));
   subprocess.subprocessSet = *this;
-  return paf.promise.then([&subprocess](int status) {
+  return paf.promise.then([](int status) {
     return status;
   });
 }

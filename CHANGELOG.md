@@ -1,3 +1,6 @@
+### v0.249 (2019-07-10) [bugfixes]
+- Updated dependencies. (No other changes.)
+
 ### v0.248 (2019-06-09) [bugfixes]
 - Updated dependencies. (No other changes.)
 

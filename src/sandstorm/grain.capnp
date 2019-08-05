@@ -620,8 +620,36 @@ struct GrainInfo {
 
   ownerIdentityId @3 :Text;
 
-  # TODO(someday): Record the whole sharing / capability graph including all users' identity IDs
-  #   so that they can be restored.
+  users @4 :List(User);
+  # Record of users with who had accessed this grain. This can be used to ensure that if a restored
+  # grain is shared with the same users, they receive the same identities, rather than appearing
+  # to be new people.
+
+  struct User {
+    identityId @0 :Text;
+    # Identity ID of this user within the app.
+
+    credentialIds @1 :List(Text);
+    # The user's login credential IDs. If a user with a matching credential visits the restored
+    # grain, they will regain the same identity. Credential IDs are consistent across differnt
+    # Sandstorm servers (as long as the same authentication mechanisms are used), so this can allow
+    # identities to be restored even on a new server.
+    #
+    # Non-login credentials are not included because those credentials could be shared by multiple
+    # users. However, non-login credentials could be used for matching when restoring identities
+    # later.
+
+    profile @2 :Identity.Profile;
+    # User's profile. Could be useful to allow the human owner of the restored grain to manually
+    # remap identities.
+  }
+
+  originalGrainId @5 :Text;
+  # The grain's original ID. With admin approval, grains could be allowed to receive the same IDs
+  # when restored on a new server.
+
+  # TODO(someday): Record the whole sharing / capability graph? This gets complicated since grains
+  #   may have been shared via other grains, etc.
 }
 
 # ========================================================================================

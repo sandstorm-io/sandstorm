@@ -242,6 +242,10 @@ Grains = new Mongo.Collection("grains", collectionOptions);
 //   ownerSeenAllActivity: True if the owner has viewed the grain since the last activity event
 //       occurred. See also ApiTokenOwner.user.seenAllActivity.
 //   size: On-disk size of the grain in bytes.
+//   oldUsers: Record of users who once held ApiTokens to this grain but no longer do. This exists
+//       to allow those users to regain their original identity IDs if they receive access again.
+//       The field is a list of GrainInfo.User objects as defined in grain.capnp. `oldUsers` may
+//       be large, so queries should avoid querying it when not needed.
 //
 // The following fields *might* also exist. These are temporary hacks used to implement e-mail and
 // web publishing functionality without powerbox support; they will be replaced once the powerbox
@@ -1301,7 +1305,7 @@ _.extend(SandstormDb.prototype, {
       query.trashed = { $exists: false };
     }
 
-    return this.collections.grains.find(query);
+    return this.collections.grains.find(query, {fields: {oldUsers: 0}});
   },
 
   currentUserGrains(options) {
@@ -1310,7 +1314,7 @@ _.extend(SandstormDb.prototype, {
 
   getGrain(grainId) {
     check(grainId, String);
-    return this.collections.grains.findOne(grainId);
+    return this.collections.grains.findOne(grainId, {fields: {oldUsers: 0}});
   },
 
   userApiTokens(userId, trashed) {
@@ -1413,7 +1417,7 @@ _.extend(SandstormDb.prototype, {
     // This function is called from the server and from the client, similar to getMyPlan().
     //
     // The parameter may be omitted in which case the current user is assumed.
-    
+
     user = user || Meteor.user();
     if (this.collections.plans.findOne(user.plan).grains === 0) {
       // Free plan disabled, no referral bonuses.
@@ -2509,7 +2513,7 @@ if (Meteor.isServer) {
     check(type, Match.OneOf("grain", "demoGrain"));
 
     let numDeleted = 0;
-    this.collections.grains.find(query).forEach((grain) => {
+    this.collections.grains.find(query, {fields: {oldUsers: 0}}).forEach((grain) => {
       const user = Meteor.users.findOne(grain.userId);
 
       waitPromise(backend.deleteGrain(grain._id, grain.userId));
@@ -2660,7 +2664,7 @@ if (Meteor.isServer) {
       packageId: { $ne: packageId },
     };
 
-    this.collections.grains.find(selector).forEach(function (grain) {
+    this.collections.grains.find(selector, {fields: {oldUsers: 0}}).forEach(function (grain) {
       backend.shutdownGrain(grain._id, grain.userId);
     });
 
@@ -2769,7 +2773,7 @@ if (Meteor.isServer) {
     if (account &&
         account.loginCredentials.length == 1 &&
         account.nonloginCredentials.length == 0 &&
-        !this.collections.grains.findOne({ userId: account._id }) &&
+        !this.collections.grains.findOne({ userId: account._id }, {fields: {}}) &&
         !this.collections.apiTokens.findOne({ accountId: account._id }) &&
         (!account.plan || account.plan === "free") &&
         !(account.payments && account.payments.id) &&

@@ -90,7 +90,7 @@ Meteor.publish("grainsMenu", function () {
 
     return [
       UserActions.find({ userId: this.userId }),
-      Grains.find({ userId: this.userId }),
+      Grains.find({ userId: this.userId }, {fields: {oldUsers: 0}}),
       ApiTokens.find({ "owner.user.accountId": this.userId }),
     ];
   } else {

@@ -1,3 +1,7 @@
+### v0.250 (2019-08-10)
+- Fixed multiple problems where a user who has access to a grain might unexpectedly be assigned an all-new identity within the grain, especially after backup/restore. This should make it more practical to move shared grains between servers using backup/restore. [See the pull request for a complete explanation.](https://github.com/sandstorm-io/sandstorm/pull/3148)
+- Updated dependencies.
+
 ### v0.249 (2019-07-10) [bugfixes]
 - Updated dependencies. (No other changes.)
 

@@ -291,7 +291,7 @@ Meteor.publish("grainLog", function (grainId) {
 const GRAIN_DELETION_MS = 1000 * 60 * 60 * 24 * 30; // thirty days
 SandstormDb.periodicCleanup(86400000, () => {
   const trashExpiration = new Date(Date.now() - GRAIN_DELETION_MS);
-  globalDb.removeApiTokens({ trashed: { $lt: trashExpiration } });
+  globalDb.removeApiTokens({ trashed: { $lt: trashExpiration } }, true);
   globalDb.deleteGrains({ trashed: { $lt: trashExpiration } }, globalBackend, "grain");
 });
 

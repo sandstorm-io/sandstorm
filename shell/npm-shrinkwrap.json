@@ -5,9 +5,9 @@
   "requires": true,
   "dependencies": {
     "@babel/runtime": {
-      "version": "7.5.4",
-      "resolved": "https://registry.npmjs.org/@babel/runtime/-/runtime-7.5.4.tgz",
-      "integrity": "sha512-Na84uwyImZZc3FKf4aUF1tysApzwf3p2yuFBIyBfbzT5glzKTdvYI4KVW4kcgjrzoGUjC7w3YyCHcJKaRxsr2Q==",
+      "version": "7.5.5",
+      "resolved": "https://registry.npmjs.org/@babel/runtime/-/runtime-7.5.5.tgz",
+      "integrity": "sha512-28QvEGyQyNkB0/m2B4FU7IEZGK2NUrcMtT6BZEFALTguLk+AUT6ofsHtPk5QyjAdUkpMJ+/Em+quwz4HOt30AQ==",
       "requires": {
         "regenerator-runtime": "^0.13.2"
       }
@@ -893,9 +893,9 @@
       }
     },
     "regenerator-runtime": {
-      "version": "0.13.2",
-      "resolved": "https://registry.npmjs.org/regenerator-runtime/-/regenerator-runtime-0.13.2.tgz",
-      "integrity": "sha512-S/TQAZJO+D3m9xeN1WTI8dLKBBiRgXBlTJvbWjCThHWZj9EvHK70Ff50/tYj2J/fvBY6JtFVwRuazHN2E7M9BA=="
+      "version": "0.13.3",
+      "resolved": "https://registry.npmjs.org/regenerator-runtime/-/regenerator-runtime-0.13.3.tgz",
+      "integrity": "sha512-naKIZz2GQ8JWh///G7L3X6LaQUAMp2lvb1rvwwsURe/VXwD6VMfr+/1NuNw3ag8v2kY1aQ/go5SNn79O9JU7yw=="
     },
     "safe-buffer": {
       "version": "5.1.2",

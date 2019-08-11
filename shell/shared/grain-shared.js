@@ -147,7 +147,7 @@ Meteor.methods({
     if (this.isSimulation) {
       ApiTokens.remove(query);
     } else {
-      globalDb.removeApiTokens(query);
+      globalDb.removeApiTokens(query, true);
     }
   },
 });

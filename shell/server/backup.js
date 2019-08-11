@@ -61,6 +61,28 @@ Meteor.methods({
 
     const grainInfo = _.pick(grain, "appId", "appVersion", "title");
     grainInfo.ownerIdentityId = grain.identityId;
+    grainInfo.users = grain.oldUsers || [];
+
+    let users = {};
+    globalDb.collections.apiTokens.find({grainId, "owner.user.identityId": {$exists: true}})
+        .forEach((token) => {
+      let user = token.owner.user;
+      users[user.accountId] = user.identityId;
+    });
+
+    Meteor.users.find({_id: {$in: [...Object.keys(users)]}}).forEach(account => {
+      let credentialIds = _.pluck(account.loginCredentials, "id");
+
+      grainInfo.users.push({
+        identityId: users[account._id],
+        credentialIds,
+        profile: {
+          displayName: { defaultText: account.profile.name },
+          preferredHandle: account.profile.handle,
+          pronouns: account.profile.pronoun,
+        }
+      });
+    });
 
     FileTokens.insert(token);
     waitPromise(globalBackend.cap().backupGrain(token._id, this.userId, grainId, grainInfo));
@@ -150,8 +172,6 @@ Meteor.methods({
                                ", Old version: " + appVersion);
       }
 
-      console.log(grainInfo);
-
       Grains.insert({
         _id: grainId,
         packageId: packageId,
@@ -166,6 +186,7 @@ Meteor.methods({
         title: grainInfo.title,
         private: true,
         size: 0,
+        oldUsers: grainInfo.users || [],
       });
     } finally {
       cleanupToken(tokenId);

@@ -242,6 +242,10 @@ Grains = new Mongo.Collection("grains", collectionOptions);
 //   ownerSeenAllActivity: True if the owner has viewed the grain since the last activity event
 //       occurred. See also ApiTokenOwner.user.seenAllActivity.
 //   size: On-disk size of the grain in bytes.
+//   oldUsers: Record of users who once held ApiTokens to this grain but no longer do. This exists
+//       to allow those users to regain their original identity IDs if they receive access again.
+//       The field is a list of GrainInfo.User objects as defined in grain.capnp. `oldUsers` may
+//       be large, so queries should avoid querying it when not needed.
 //
 // The following fields *might* also exist. These are temporary hacks used to implement e-mail and
 // web publishing functionality without powerbox support; they will be replaced once the powerbox
@@ -1232,8 +1236,15 @@ if (Meteor.isServer) {
   SandstormDb.prototype.getWildcardOrigin = getWildcardOrigin;
 
   const Crypto = Npm.require("crypto");
-  SandstormDb.prototype.removeApiTokens = function (query) {
+  SandstormDb.prototype.removeApiTokens = function (query, saveOldUsers) {
     // Remove all API tokens matching the query, making sure to clean up ApiHosts as well.
+    //
+    // If saveOldUsers is true, then for each deleted ApiToken that defines an identity ID on a
+    // grain, the grain's oldUsers table will be updated to remember what that identity ID once
+    // pointed to.
+
+    let grains = {};
+    let oldAccountIds = new Set();
 
     this.collections.apiTokens.find(query).forEach((token) => {
       // Clean up ApiHosts for webkey tokens.
@@ -1242,12 +1253,54 @@ if (Meteor.isServer) {
         this.collections.apiHosts.remove({ hash2: hash2 });
       }
 
+      if (saveOldUsers && token.grainId && token.owner && token.owner.user) {
+        let user = token.owner.user;
+        let grainUsers = grains[token.grainId];
+        if (!grainUsers) {
+          grainUsers = grains[token.grainId] = {};
+        }
+        grainUsers[user.identityId] = user.accountId;
+
+        oldAccountIds.add(user.accountId);
+      }
+
       // TODO(soon): Drop remote OAuth tokens for frontendRef.http. Unfortunately the way to do
       //   this is different for every service. :( Also we may need to clarify with the "bearer"
       //   type whether or not the token is "owned" by us...
     });
 
     this.collections.apiTokens.remove(query);
+
+    if (saveOldUsers) {
+      // Collect user info for all accounts.
+      let oldUserInfos = {};
+      Meteor.users.find({_id: {$in: [...oldAccountIds]}}).forEach(account => {
+        let credentialIds = _.pluck(account.loginCredentials, "id");
+
+        oldUserInfos[account._id] = {
+          credentialIds,
+          profile: {
+            displayName: { defaultText: account.profile.name },
+            preferredHandle: account.profile.handle,
+            pronouns: account.profile.pronoun,
+          }
+        };
+      });
+
+      // Add to each grain.
+      for (let [grainId, identities] of Object.entries(grains)) {
+        let oldUsersToInsert = [];
+        for (let [identityId, accountId] of Object.entries(identities)) {
+          let userInfo = oldUserInfos[accountId];
+          if (userInfo) {
+            oldUsersToInsert.push(Object.assign({identityId}, userInfo));
+          }
+        }
+        this.collections.grains.update({_id: grainId}, {
+          $push: { oldUsers: { $each: oldUsersToInsert } }
+        });
+      }
+    }
   };
 }
 
@@ -1301,7 +1354,7 @@ _.extend(SandstormDb.prototype, {
       query.trashed = { $exists: false };
     }
 
-    return this.collections.grains.find(query);
+    return this.collections.grains.find(query, {fields: {oldUsers: 0}});
   },
 
   currentUserGrains(options) {
@@ -1310,7 +1363,7 @@ _.extend(SandstormDb.prototype, {
 
   getGrain(grainId) {
     check(grainId, String);
-    return this.collections.grains.findOne(grainId);
+    return this.collections.grains.findOne(grainId, {fields: {oldUsers: 0}});
   },
 
   userApiTokens(userId, trashed) {
@@ -1413,7 +1466,7 @@ _.extend(SandstormDb.prototype, {
     // This function is called from the server and from the client, similar to getMyPlan().
     //
     // The parameter may be omitted in which case the current user is assumed.
-    
+
     user = user || Meteor.user();
     if (this.collections.plans.findOne(user.plan).grains === 0) {
       // Free plan disabled, no referral bonuses.
@@ -2509,7 +2562,7 @@ if (Meteor.isServer) {
     check(type, Match.OneOf("grain", "demoGrain"));
 
     let numDeleted = 0;
-    this.collections.grains.find(query).forEach((grain) => {
+    this.collections.grains.find(query, {fields: {oldUsers: 0}}).forEach((grain) => {
       const user = Meteor.users.findOne(grain.userId);
 
       waitPromise(backend.deleteGrain(grain._id, grain.userId));
@@ -2660,7 +2713,7 @@ if (Meteor.isServer) {
       packageId: { $ne: packageId },
     };
 
-    this.collections.grains.find(selector).forEach(function (grain) {
+    this.collections.grains.find(selector, {fields: {oldUsers: 0}}).forEach(function (grain) {
       backend.shutdownGrain(grain._id, grain.userId);
     });
 
@@ -2769,7 +2822,7 @@ if (Meteor.isServer) {
     if (account &&
         account.loginCredentials.length == 1 &&
         account.nonloginCredentials.length == 0 &&
-        !this.collections.grains.findOne({ userId: account._id }) &&
+        !this.collections.grains.findOne({ userId: account._id }, {fields: {}}) &&
         !this.collections.apiTokens.findOne({ accountId: account._id }) &&
         (!account.plan || account.plan === "free") &&
         !(account.payments && account.payments.id) &&
@@ -2902,12 +2955,29 @@ if (Meteor.isServer) {
         return existingToken.owner.user.identityId;
       }
 
+      const user = Meteor.users.findOne(accountId);
+
+      // Check if the user is listed on the grain's oldUsers list. Since `grain` doesn't
+      // necessarily contain the list we need to do another query.
+      const credentialIds = SandstormDb.getUserCredentialIds(user);
+      const grainWithOldUser = this.collections.grains.findOne(
+          {_id: grain._id, "oldUsers.credentialIds": {$in: credentialIds}},
+          { fields: { "oldUsers.$": 1 } })
+      if (grainWithOldUser) {
+        const restoredIdentityId = grainWithOldUser.oldUsers[0].identityId;
+        // Verify that this identity ID is not already in use.
+        const existingToken = this.collections.apiTokens.findOne(
+            { "grainId": grain._id, "owner.user.identityId": restoredIdentityId });
+        if (!existingToken) {
+          return restoredIdentityId;
+        }
+      }
+
       if (!grain.private) {
         // This grain operates on the old sharing model, where simply knowing the grain ID is
         // sufficient to open it. We need to assign identity IDs in a consistent way without having
         // stored them anywhere. Identity IDs used to be based on credential IDs, which at some
         // point were used to fill in identicon keys in profiles... so use the identicon.
-        const user = Meteor.users.findOne(accountId);
         if (user && user.profile && user.profile.identicon) {
           return user.profile.identicon;
         } else {

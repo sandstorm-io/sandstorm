@@ -30,7 +30,7 @@ const emailLinkWithInlineStyle = function (url, text) {
 // Force-shutdown dev apps whenever their packages change.
 Meteor.startup(() => {
   const shutdownApp = (appId) => {
-    Grains.find({ appId: appId }).forEach((grain) => {
+    Grains.find({ appId: appId }, {fields: {oldUsers: 0}}).forEach((grain) => {
       waitPromise(globalBackend.shutdownGrain(grain._id, grain.userId));
     });
   };
@@ -243,7 +243,7 @@ Meteor.publish("requestingAccess", function (grainId) {
 Meteor.publish("grainLog", function (grainId) {
   check(grainId, String);
   let id = 0;
-  const grain = Grains.findOne(grainId);
+  const grain = Grains.findOne(grainId, {fields: {oldUsers: 0}});
   if (!grain || !this.userId || grain.userId !== this.userId) {
     this.added("grainLog", id++, { text: "Only the grain owner can view the debug log." });
     this.ready();
@@ -291,7 +291,7 @@ Meteor.publish("grainLog", function (grainId) {
 const GRAIN_DELETION_MS = 1000 * 60 * 60 * 24 * 30; // thirty days
 SandstormDb.periodicCleanup(86400000, () => {
   const trashExpiration = new Date(Date.now() - GRAIN_DELETION_MS);
-  globalDb.removeApiTokens({ trashed: { $lt: trashExpiration } });
+  globalDb.removeApiTokens({ trashed: { $lt: trashExpiration } }, true);
   globalDb.deleteGrains({ trashed: { $lt: trashExpiration } }, globalBackend, "grain");
 });
 
@@ -354,7 +354,7 @@ Meteor.methods({
 
   shutdownGrain(grainId) {
     check(grainId, String);
-    const grain = Grains.findOne(grainId);
+    const grain = Grains.findOne(grainId, {fields: {oldUsers: 0}});
     if (!grain || !this.userId || grain.userId !== this.userId) {
       throw new Meteor.Error(403, "Unauthorized", "User is not the owner of this grain");
     }
@@ -366,7 +366,7 @@ Meteor.methods({
     check(grainId, String);
     check(newTitle, String);
     if (this.userId) {
-      const grain = Grains.findOne(grainId);
+      const grain = Grains.findOne(grainId, {fields: {oldUsers: 0}});
       if (grain) {
         if (grain.userId === this.userId) {
           Grains.update({ _id: grainId, userId: this.userId }, { $set: { title: newTitle } });
@@ -557,7 +557,7 @@ Meteor.methods({
         throw new Meteor.Error(403, "Must be logged in to request access.");
       }
 
-      const grain = Grains.findOne(grainId);
+      const grain = Grains.findOne(grainId, {fields: {oldUsers: 0}});
       if (!grain) {
         throw new Meteor.Error(404, "No such grain");
       }

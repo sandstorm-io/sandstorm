@@ -1542,6 +1542,8 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
     apiToken.accountId = provider.accountId;
   }
 
+  let oldUserIdentityToRemove = null;
+
   if (owner.webkey) {
     // Non-null webkey is a special case not covered in ApiTokenOwner.
     // TODO(cleanup): Maybe ApiTokenOwner.webkey should be extended with these fields?
@@ -1553,6 +1555,7 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
   } else if (owner.user) {
     // Determine the user's identity ID (their user ID as seen by the grain).
     const identityId = db.getOrGenerateIdentityId(owner.user.accountId, grain);
+    oldUserIdentityToRemove = identityId;
 
     const grainInfo = db.getDenormalizedGrainInfo(grainId);
     apiToken.owner = {
@@ -1594,6 +1597,12 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
   }
 
   db.collections.apiTokens.insert(apiToken);
+
+  if (oldUserIdentityToRemove) {
+    // Remove the oldUsers entry that is no longer relevant.
+    db.collections.grains.update({_id: grainId},
+        {$pull: { oldUsers: { identityId: oldUserIdentityToRemove } } });
+  }
 
   result.id = apiToken._id;
   result.token = token;

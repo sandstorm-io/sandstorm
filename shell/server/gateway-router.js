@@ -167,6 +167,13 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId,
   // TODO(now): Observe the grain lookup to see if it becomes trashed or suspended, or if it
   //   switches from old to new sharing model.
 
+  let pkg = Packages.findOne(grain.packageId);
+  if (!pkg || pkg.status !== "ready") {
+    let err = new Meteor.Error("missing-package", "grain's package is not installed");
+    err.missingPackageId = grain.packageId;
+    throw err;
+  }
+
   let userInfo = null;
   if (accountId) {
     // If accountId is non-null, we're revealing identity. But if we didn't compute the identity ID
@@ -363,7 +370,11 @@ class GatewayRouterImpl {
     }).catch(err => {
       observer.invalidate();
       if ((err instanceof Meteor.Error) && (typeof err.error === "string")) {
-        Sessions.update({ _id: sessionId }, { $set: { denied: err.error } });
+        let fields = { denied: err.error };
+        if (err.missingPackageId) {
+          fields.missingPackageId = err.missingPackageId;
+        }
+        Sessions.update({ _id: sessionId }, { $set: fields });
       } else {
         Sessions.update({ _id: sessionId }, { $set: { hasLoaded: true } });
         console.error(err.stack);

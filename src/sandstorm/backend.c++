@@ -329,7 +329,14 @@ public:
                                    backend.sandboxUid)) {}
   ~PackageUploadStreamImpl() noexcept(false) {
     if (access(tmpdir.cStr(), F_OK) >= 0) {
-      recursivelyDelete(tmpdir);
+      KJ_IF_MAYBE(e, kj::runCatchingExceptions([&]() {
+        recursivelyDelete(tmpdir);
+      })) {
+        // Somehow, this sometimes throws with ENOENT, but I don't understand why. We really don't
+        // want to throw out of this destructor, though, because it seems to cause state confusion
+        // in the RPC layer.
+        KJ_LOG(ERROR, *e);
+      }
     }
   }
 

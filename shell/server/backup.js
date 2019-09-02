@@ -87,7 +87,7 @@ createGrainBackup = (userId, grainId, async) => {
 
   FileTokens.insert(token);
 
-  let promise = globalBackend.cap().backupGrain(token._id, this.userId, grainId, grainInfo);
+  let promise = globalBackend.cap().backupGrain(token._id, userId, grainId, grainInfo);
 
   if (async) {
     promise.then(() => {

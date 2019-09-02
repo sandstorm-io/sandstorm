@@ -1,3 +1,7 @@
+### v0.251 (2019-09-02)
+- Added functionality to allow mass transferring of grains between servers. Click the "Mass transfer..." button above the grains list to initiate a transfer.
+- Updated dependencies.
+
 ### v0.250 (2019-08-10)
 - Fixed multiple problems where a user who has access to a grain might unexpectedly be assigned an all-new identity within the grain, especially after backup/restore. This should make it more practical to move shared grains between servers using backup/restore. [See the pull request for a complete explanation.](https://github.com/sandstorm-io/sandstorm/pull/3148)
 - Updated dependencies.

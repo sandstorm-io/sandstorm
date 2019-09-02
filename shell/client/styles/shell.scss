@@ -462,6 +462,9 @@ div.popup h2 {
 // Setup wizard styles
 @import "_setup-wizard.scss";
 
+// Mass transfers styles.
+@import "_transfers.scss";
+
 body>.popup.admin-alert>.frame>p {
   display: block;
   margin: 16px;

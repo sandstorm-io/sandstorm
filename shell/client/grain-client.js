@@ -69,6 +69,7 @@ const mapGrainStateToTemplateData = function (grainState) {
     unauthorized: error && (error.error == 403 || error.error == "access-denied"),
     notFound: error && (error.error == 404 || error.error == "no-such-grain"),
     quotaExhausted: error && (error.error == 402 || error.error == "quota-exhausted"),
+    missingPackage: error && (error.error == "missing-package"),
     paymentsEnabled: !!Meteor.settings.public.stripePublicKey,
     inMyTrash: grainState.isInMyTrash(),
     inOwnersTrash: error && (error.error === "grain-is-in-trash"),
@@ -647,6 +648,14 @@ Template.grainView.helpers({
     // Prefix to add to the iframe id, for testing purposes.
     return this.isPowerbox ? "powerbox-" : "";
   },
+
+  appIndexUrl() {
+    return globalDb.getSetting("appIndexUrl");
+  },
+
+  packageId() {
+    return globalDb.getGrain(this.grainId).packageId;
+  }
 });
 
 Template.grainView.events({

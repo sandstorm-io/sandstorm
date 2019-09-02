@@ -1,0 +1,82 @@
+.transfers {
+  padding: 32px;
+
+  h1 {
+    font-weight: normal;
+    margin-top: 0;
+    //padding-top: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid $default-rule-color;
+  }
+
+  h2 {
+    font-size: 24px;
+    font-weight: normal;
+  }
+
+  div.card {
+    background-color: white;
+    padding: 0 16px;
+    overflow: hidden;
+  }
+
+  button.cancel, button.deny {
+    @extend %button-base;
+    @extend %button-danger;
+  }
+
+  button.accept, button.continue, button.start, button.finish {
+    @extend %button-base;
+    @extend %button-primary;
+  }
+
+  button.pause, button.clear-errors {
+    @extend %button-base;
+    @extend %button-secondary;
+  }
+
+  input[name="destination"] {
+    width: 200px;
+  }
+
+  .grain-list {
+    @extend %grain-table;
+
+    .td-state {
+      width: 32px;
+      text-align: center;
+    }
+
+    .state-error {
+      width: 32px;
+      height: 24px;
+      @extend .icon-close;
+      &::before {
+        font-size: 20px;
+        @extend .icon;
+      }
+
+      color: #a00;
+    }
+
+    .state-done {
+      width: 32px;
+      height: 24px;
+      @extend .icon-check;
+      &::before {
+        font-size: 20px;
+        @extend .icon;
+      }
+
+      color: #0a0;
+    }
+
+    .state-downloading {
+      width: 32px;
+      height: 24px;
+      @extend %pseudo-img-tag;
+      background-image: url("/spinner_96.gif");
+      background-position-x: center;
+    }
+  }
+}

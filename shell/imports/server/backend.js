@@ -116,7 +116,7 @@ class SandstormBackend {
       mountProc = pkg.mountProc;
     } else {
       pkg = Packages.findOne(grain.packageId);
-      if (!pkg) {
+      if (!pkg || pkg.status !== "ready") {
         throw new Meteor.Error(500, "Grain's package not installed",
                                "Package ID: " + grain.packageId);
       }

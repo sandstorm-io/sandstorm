@@ -171,8 +171,13 @@ bool BackupMain::run(kj::StringPtr grainDir) {
 
   // Bind in the grain's `log`. When restoring, we discard the log.
   if (!restore) {
-    KJ_SYSCALL(mknod("/tmp/tmp/log", S_IFREG | 0666, 0));
-    bind(kj::str(grainDir, "/log"), "/tmp/tmp/log", MS_RDONLY | MS_NOEXEC | MS_NOSUID | MS_NODEV);
+    auto logfile = kj::str(grainDir, "/log");
+    // (The logfile might not exist if this grain has not been opened since being restored from
+    // some other backup.)
+    if (access(logfile.cStr(), F_OK) == 0) {
+      KJ_SYSCALL(mknod("/tmp/tmp/log", S_IFREG | 0666, 0));
+      bind(logfile, "/tmp/tmp/log", MS_RDONLY | MS_NOEXEC | MS_NOSUID | MS_NODEV);
+    }
   }
 
   // Bind in the file.

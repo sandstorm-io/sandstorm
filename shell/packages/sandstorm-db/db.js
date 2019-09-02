@@ -844,6 +844,43 @@ const StandaloneDomains = new Mongo.Collection("standaloneDomains", collectionOp
 //   _id: String. The domain name to use.
 //   token: String. _id of a sharing token (it must be a webkey).
 
+IncomingTransfers = new Mongo.Collection("incomingTransfers", collectionOptions);
+// Contains records of grains scheduled to be transferred to this server.
+//
+// Each contains:
+//   _id: random
+//   userId: Same as account ID receiving the transfer.
+//   source: URL (protocol + host + port only) of remote Sandstorm server.
+//   token: Transfer token.
+//   grainId: Grain ID on remote server.
+//   appId: Grains app ID.
+//   appVersion: Grain app version.
+//   packageId: Grain package ID.
+//   title: Grain title.
+//   size: Grain size.
+//   lastUsed: Grain last used time, as an integer.
+//   selected: Boolean indicating whether the user has selected this grain for download.
+//   downloading: Boolean, set true to cause a background process to begin downloading this grain.
+//       Not set at all when not downloading. Server should only download one grain per user at a
+//       time.
+//   localGrainId: If present, downloading has completed and this is the resulting local grain ID.
+//   error: If present, string describing an error that caused the transfer to fail.
+//   remoteFileToken: Remote FileTokens ID, once it is known.
+//   localFileToken: Local FileTokens ID, once download has completed.
+
+IncomingTransfers.ensureIndexOnServer("userId", { sparse: 1 });
+IncomingTransfers.ensureIndexOnServer("downloading", { sparse: 1 });
+
+OutgoingTransfers = new Mongo.Collection("outgoingTransfers", collectionOptions);
+// Contains records of authorized outgoing mass grain transfers.
+//
+// Each contains:
+//   _id: Hash of transfer token.
+//   userId: Account ID of user whose grains are being transferred.
+//   destination: URL (protocol://host) of the destination Sandstorm server.
+
+OutgoingTransfers.ensureIndexOnServer("userId", { sparse: 1 });
+
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
     // Data needed for isSignedUp() and isAdmin() to work.
@@ -1092,6 +1129,8 @@ SandstormDb = function (quotaManager) {
     setupSession: SetupSession,
     desktopNotifications: DesktopNotifications,
     standaloneDomains: StandaloneDomains,
+    incomingTransfers: IncomingTransfers,
+    outgoingTransfers: OutgoingTransfers,
   };
 };
 
@@ -2878,9 +2917,6 @@ if (Meteor.isServer) {
         const pkg = db.getPackage(packageId);
         if (pkg) {
           this.added("packages", packageId, pkg);
-        } else {
-          console.error(
-              "shouldn't happen: missing package referenced by user's stuff:", packageId);
         }
       }
     };

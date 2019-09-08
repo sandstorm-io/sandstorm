@@ -169,9 +169,12 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId,
 
   let pkg = Packages.findOne(grain.packageId);
   if (!pkg || pkg.status !== "ready") {
-    let err = new Meteor.Error("missing-package", "grain's package is not installed");
-    err.missingPackageId = grain.packageId;
-    throw err;
+    let devapp = DevPackages.findOne({appId: grain.appId});
+    if (!devapp) {
+      let err = new Meteor.Error("missing-package", "grain's package is not installed");
+      err.missingPackageId = grain.packageId;
+      throw err;
+    }
   }
 
   let userInfo = null;

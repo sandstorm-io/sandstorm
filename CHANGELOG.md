@@ -1,3 +1,6 @@
+### v0.252 (2019-09-08)
+- Fixed bug introduced in 0.251 causing development apps registered via `spk dev` to report "This grain's app package is not installed".
+
 ### v0.251 (2019-09-02)
 - Added functionality to allow mass transferring of grains between servers. Click the "Mass transfer..." button above the grains list to initiate a transfer.
 - Updated dependencies.

@@ -1,3 +1,7 @@
+### v0.253 (2019-09-28)
+- Oasis: Added warnings to the UI and invoice e-mails regarding the upcoming shutdown of Oasis.
+- Updated dependencies.
+
 ### v0.252 (2019-09-08)
 - Fixed bug introduced in 0.251 causing development apps registered via `spk dev` to report "This grain's app package is not installed".
 

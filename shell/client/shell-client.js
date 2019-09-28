@@ -697,6 +697,10 @@ Template.registerHelper("freePlanGoingAway", function () {
       !globalDb.isDemoUser();
 });
 
+Template.registerHelper("oasisShuttingDown", function () {
+  return globalDb.getServerTitle() == "Sandstorm Oasis";
+});
+
 Template.root.helpers({
   storageUsage: function () {
     return Meteor.userId() ? prettySize(Meteor.user().storageUsage || 0) : undefined;

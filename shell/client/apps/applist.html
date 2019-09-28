@@ -10,6 +10,14 @@
       </div>
     {{/if}}
 
+    {{#if oasisShuttingDown}}
+      <div class="oasis-shutting-down">
+        Sandstorm Oasis will shut down on December 31, 2019. Consider <a href="/transfers">transfering</a>
+        your data to a self-hosted server.
+        <a href="https://sandstorm.io/news/2019-09-15-shutting-down-oasis" target="_blank">Learn more »</a>
+      </div>
+    {{/if}}
+
     <h1>{{_ "apps.title"}}
       <form class="standard-form">
         <div class="button-row">

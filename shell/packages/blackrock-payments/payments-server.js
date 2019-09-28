@@ -223,9 +223,25 @@ sendInvoice = (db, user, invoice, config) => {
     totalTitle += " (credit applied)";
   }
 
-  const mailSubject = "Invoice from " + config.acceptorTitle;
+  let mailSubject = "Invoice from " + config.acceptorTitle;
+
+  let textWarning = "";
+  let htmlWarning = "";
+  if (config.acceptorTitle == "Sandstorm Oasis") {
+    textWarning = "ACTION REQUIRED: Sandstorm Oasis will shut down on December 31, 2019.\n" +
+                  "We recommend transferring your data to a self-hosted server.\n" +
+                  "More information: https://sandstorm.io/news/2019-09-15-shutting-down-oasis\n\n";
+    htmlWarning = "<p><span style=\"color: red; font-weight: bold\">ACTION REQUIRED:</span> " +
+                  "Sandstorm Oasis will shut down on December 31, 2019. " +
+                  "We recommend transferring your data to a self-hosted server. " +
+                  "More information: <a href=\"https://sandstorm.io/news/2019-09-15-shutting-down-oasis\">" +
+                  "https://sandstorm.io/news/2019-09-15-shutting-down-oasis</a></p>";
+    mailSubject = "ACTION REQUIRED: Sandstorm Oasis will shut down on December 31st, 2019"
+  }
+
   const priceColStyle = "text-align: right; white-space: nowrap;";
   const mailText =
+      textWarning +
       "You have a new invoice from " + config.acceptorTitle + ":\n" +
       "\n" +
       invoice.items.map(item => {
@@ -241,6 +257,7 @@ sendInvoice = (db, user, invoice, config) => {
       "\n" +
       "Thank you!\n";
   const mailHtml =
+      htmlWarning +
       '<h2>You have a new invoice from '+config.acceptorTitle+':</h2>\n' +
       '<table style="width: 100%">\n' +
       invoice.items.map(item => {

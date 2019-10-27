@@ -1,3 +1,6 @@
+### v0.254 (2019-10-27) [bugfixes]
+- Updated dependencies. (No other changes.)
+
 ### v0.253 (2019-09-28)
 - Oasis: Added warnings to the UI and invoice e-mails regarding the upcoming shutdown of Oasis.
 - Updated dependencies.

@@ -26,9 +26,16 @@ const ValidHandle = Match.Where(function (handle) {
 });
 
 Accounts.onCreateUser(function (options, user) {
-  if (user.loginIdentities) {
+  if (!user.type) {
+    if (user.loginCredentials) throw new Error("please set user.type");
+
+    user.type = "credential";
+  }
+
+  if (user.type === "account") {
     // it's an account
     check(user, { _id: String,
+                  type: String,
                   createdAt: Date,
                   isAdmin: Match.Optional(Boolean),
                   hasCompletedSignup: Match.Optional(Boolean),
@@ -37,8 +44,8 @@ Accounts.onCreateUser(function (options, user) {
                   signupEmail: Match.Optional(String),
                   expires: Match.Optional(Date),
                   appDemoId: Match.Optional(String),
-                  loginIdentities: [{ id: String }],
-                  nonloginIdentities: [{ id: String }], });
+                  loginCredentials: [{ id: String }],
+                  nonloginCredentials: [{ id: String }], });
 
     if (globalDb.isReferralEnabled()) {
       user.experiments = user.experiments || {};
@@ -50,13 +57,17 @@ Accounts.onCreateUser(function (options, user) {
       }
     }
 
+    if (!options.profile) throw new Error("missing profile");
+
+    user.profile = options.profile;
+
     globalDb.preinstallAppsForUser(user._id);
 
     return user;
   }
 
   if (globalDb.getOrganizationDisallowGuests() &&
-      !globalDb.isIdentityInOrganization(user)) {
+      !globalDb.isCredentialInOrganization(user)) {
     throw new Meteor.Error(400, "User not in organization.");
   }
 
@@ -91,10 +102,9 @@ Accounts.onCreateUser(function (options, user) {
   if (user.services && user.services.dev) {
     check(user.services.dev, { name: String, isAdmin: Boolean, hasCompletedSignup: Boolean });
     serviceUserId = user.services.dev.name;
-    user.profile.service = "dev";
   } else if ("expires" in user) {
     serviceUserId = user._id;
-    user.profile.service = "demo";
+    user.services = { demo: {} };
   } else if (user.services && user.services.email) {
     check(user.services.email, {
       email: String,
@@ -113,26 +123,21 @@ Accounts.onCreateUser(function (options, user) {
       ],
     });
     serviceUserId = user.services.email.email;
-    user.profile.service = "email";
   } else if (user.services && "google" in user.services) {
     serviceUserId = user.services.google.id;
-    user.profile.service = "google";
   } else if (user.services && "github" in user.services) {
     serviceUserId = user.services.github.id;
-    user.profile.service = "github";
   } else if (user.services && "ldap" in user.services) {
     serviceUserId = user.services.ldap.id;
-    user.profile.service = "ldap";
   } else if (user.services && "saml" in user.services) {
     serviceUserId = user.services.saml.id;
-    user.profile.service = "saml";
   } else {
-    throw new Meteor.Error(400, "user does not have a recognized identity provider: " +
+    throw new Meteor.Error(400, "user does not have a recognized login provider: " +
                            JSON.stringify(user));
   }
 
   user._id = Crypto.createHash("sha256")
-    .update(user.profile.service + ":" + serviceUserId).digest("hex");
+    .update(SandstormDb.getServiceName(user) + ":" + serviceUserId).digest("hex");
 
   return user;
 });
@@ -150,7 +155,7 @@ Accounts.validateLoginAttempt(function (attempt) {
       "of this server if you believe this to be in error.");
   }
 
-  if (user.loginIdentities) {
+  if (user.loginCredentials) {
     // it's an account
     if (db.getOrganizationDisallowGuests() &&
         !db.isUserInOrganization(user)) {
@@ -160,7 +165,7 @@ Accounts.validateLoginAttempt(function (attempt) {
     db.updateUserQuota(user); // This is a no-op if settings aren't enabled
   } else {
     if (db.getOrganizationDisallowGuests() &&
-        !db.isIdentityInOrganization(user)) {
+        !db.isCredentialInOrganization(user)) {
       throw new Meteor.Error(403, "User not in organization.");
     }
   }

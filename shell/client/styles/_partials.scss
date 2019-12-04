@@ -254,3 +254,36 @@
     }
   }
 }
+
+%login-provider-icon {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  .provider-icon {
+    @extend %pseudo-img-tag;
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    font-size: 0px;
+    overflow: hidden;
+    &.dev {
+      background-image: url('/debug.svg');
+    }
+    &.email {
+      background-image: url('/email.svg');
+    }
+    &.google {
+      background-image: url('/google.svg');
+    }
+    &.github {
+      background-image: url('/github.svg');
+    }
+    &.ldap {
+      background-image: url('/ldap.svg');
+    }
+    &.saml {
+      background-image: url('/ldap.svg');
+    }
+  }
+}

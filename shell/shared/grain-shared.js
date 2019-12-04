@@ -28,15 +28,14 @@ Meteor.methods({
                   { $set: { "ownerSeenAllActivity": true } });
   },
 
-  markActivityRead: function (grainId, identityId) {
+  markActivityRead: function (grainId, obsolete) {
     check(grainId, String);
-    check(identityId, String);
 
-    if (!this.userId || !globalDb.userHasIdentity(this.userId, identityId)) {
-      throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
+    if (!this.userId) {
+      throw new Meteor.Error(403, "Not logged in.");
     }
 
-    ApiTokens.update({ "grainId": grainId, "owner.user.identityId": identityId },
+    ApiTokens.update({ "grainId": grainId, "owner.user.accountId": Meteor.userId() },
                      { $set: { "owner.user.seenAllActivity": true } }, { multi: true });
   },
 
@@ -50,10 +49,8 @@ Meteor.methods({
                     { $set: { trashed: new Date() } },
                     { multi: true });
 
-      const identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
-
       ApiTokens.update({ grainId: { $in: grainIds },
-                        "owner.user.identityId": { $in: identityIds },
+                        "owner.user.accountId": Meteor.userId(),
                         trashed: { $exists: false }, },
                        { $set: { "trashed": new Date() } },
                        { multi: true });
@@ -86,10 +83,8 @@ Meteor.methods({
                     { $unset: { trashed: 1 } },
                     { multi: true });
 
-      const identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
-
       ApiTokens.update({ grainId: { $in: grainIds },
-                        "owner.user.identityId": { $in: identityIds },
+                        "owner.user.accountId": Meteor.userId(),
                         "trashed": { $exists: true }, },
                        { $unset: { "trashed": 1 } },
                        { multi: true });
@@ -120,13 +115,9 @@ Meteor.methods({
       // there should be no confusion. Indeed, it would be more confusing *not* to remove these
       // tokens, because then the grain could still show up in the trash bin as a "shared with me"
       // grain after the owner clicks "delete permanently".
-      //
-      // Note that these tokens may be visible to other accounts if there are identities shared
-      // between the accounts; by only removing 'trashed' tokens, we minimize confusion in that
-      // case too.
       const apiTokensQuery = {
         grainId: grainId,
-        "owner.user.identityId": { $in: SandstormDb.getUserIdentityIds(Meteor.user()) },
+        "owner.user.accountId": Meteor.userId(),
         "trashed": { $exists: true },
       };
 
@@ -140,28 +131,23 @@ Meteor.methods({
     }
   },
 
-  forgetGrain: function (grainId, identityId) {
+  forgetGrain: function (grainId, obsolete) {
     check(grainId, String);
-    check(identityId, String);
 
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to forget a grain.");
     }
 
-    if (!globalDb.userHasIdentity(this.userId, identityId)) {
-      throw new Meteor.Error(403, "Current user does not have the identity " + identityId);
-    }
-
     const query = {
       grainId: grainId,
-      "owner.user.identityId": identityId,
+      "owner.user.accountId": this.userId,
       "trashed": { $exists: true },
     };
 
     if (this.isSimulation) {
       ApiTokens.remove(query);
     } else {
-      globalDb.removeApiTokens(query);
+      globalDb.removeApiTokens(query, true);
     }
   },
 });

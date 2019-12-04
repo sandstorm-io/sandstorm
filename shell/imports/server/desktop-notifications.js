@@ -24,7 +24,7 @@ const createAppActivityDesktopNotification = (options) => {
       user: Match.OneOf(
         undefined,
         {
-          identityId: String,
+          accountId: String,
           name: String,
           avatarUrl: String,
         },

@@ -16,12 +16,14 @@
 
 # You may override the following vars on the command line to suit
 # your config.
-CC=clang
-CXX=clang++
-CFLAGS=-O2 -Wall
+CC=$(shell pwd)/deps/llvm-build/Release+Asserts/bin/clang
+CXX=$(shell pwd)/deps/llvm-build/Release+Asserts/bin/clang++
+CFLAGS=-O2 -Wall -g
 CXXFLAGS=$(CFLAGS)
 BUILD=0
 PARALLEL=$(shell nproc)
+LIBS=
+EKAM=ekam
 
 # You generally should not modify this.
 # TODO(cleanup): -fPIC is unfortunate since most of our code is static binaries
@@ -33,9 +35,9 @@ METEOR_DEV_BUNDLE=$(shell ./find-meteor-dev-bundle.sh)
 NODEJS=$(METEOR_DEV_BUNDLE)/bin/node
 NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
 WARNINGS=-Wall -Wextra -Wglobal-constructors -Wno-sign-compare -Wno-unused-parameter
-CXXFLAGS2=-std=c++1y $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -pthread -fPIC -I$(NODE_HEADERS)
+CXXFLAGS2=-std=c++1z $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -DKJ_HAS_OPENSSL -DKJ_HAS_ZLIB -DKJ_HAS_LIBDL -pthread -fPIC -I$(NODE_HEADERS)
 CFLAGS2=$(CFLAGS) -pthread -fPIC
-LIBS=-pthread
+LIBS2=$(LIBS) deps/libsodium/build/src/libsodium/.libs/libsodium.a deps/boringssl/build/ssl/libssl.a deps/boringssl/build/crypto/libcrypto.a -lz -ldl -pthread
 
 define color
   printf '\033[0;34m==== $1 ====\033[0m\n'
@@ -127,14 +129,16 @@ IMAGES= \
 # Meta rules
 
 .SUFFIXES:
-.PHONY: all install clean ci-clean continuous shell-env fast deps bootstrap-ekam update-deps clobber-deps test installer-test app-index-dev
+.PHONY: all install clean clean-deps ci-clean continuous shell-env fast deps bootstrap-ekam update-deps test installer-test app-index-dev
 
 all: sandstorm-$(BUILD).tar.xz
 
 clean: ci-clean
-	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/client/changelog.html shell/packages/*/.build* shell/packages/*/.npm/package/node_modules *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff
-	test -e deps/node && cd deps/node && make clean
-	@(if test -d deps && test ! -h deps; then printf "\033[0;33mTo update dependencies, use: make update-deps\033[0m\n"; fi)
+	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/client/changelog.html shell/packages/*/.build* shell/packages/*/.npm/package/node_modules *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff icons/package-lock.json tests/package-lock.json deps/llvm-build
+	@# Note: capnproto, libseccomp, and node-capnp are integrated into the common build.
+	cd deps/ekam && make clean
+	rm -rf deps/libsodium/build
+	rm -rf deps/boringssl/build
 
 ci-clean:
 	@# Clean only the stuff that we want to clean between CI builds.
@@ -163,85 +167,79 @@ stylecheck:
 # ====================================================================
 # Dependencies
 
+DEPS=capnproto ekam libseccomp libsodium node-capnp node boringssl clang
+
 # We list remotes so that if projects move hosts, we can pull from their new
 # canonical location.
-REMOTE_capnproto=https://github.com/sandstorm-io/capnproto.git
-REMOTE_ekam=https://github.com/sandstorm-io/ekam.git
-REMOTE_libseccomp=https://github.com/seccomp/libseccomp
-REMOTE_libsodium=https://github.com/jedisct1/libsodium.git
-REMOTE_node-capnp=https://github.com/kentonv/node-capnp.git
-REMOTE_node=https://github.com/sandstorm-io/node
+REMOTE_capnproto=https://github.com/sandstorm-io/capnproto.git master
+REMOTE_ekam=https://github.com/sandstorm-io/ekam.git master
+REMOTE_libseccomp=https://github.com/seccomp/libseccomp master
+REMOTE_libsodium=https://github.com/jedisct1/libsodium.git stable
+REMOTE_node-capnp=https://github.com/kentonv/node-capnp.git node8
+REMOTE_node=https://github.com/sandstorm-io/node sandstorm
+REMOTE_boringssl=https://boringssl.googlesource.com/boringssl master
+REMOTE_clang=https://chromium.googlesource.com/chromium/src/tools/clang.git master
+
+deps/capnproto/.git:
+	@# Probably user forgot to checkout submodules. Do it for them.
+	@$(call color,"fetching submodules")
+	git submodule update --init --recursive
 
 deps: tmp/.deps
 
-tmp/.deps: deps/capnproto deps/ekam deps/libseccomp deps/libsodium deps/node-capnp deps/node
+tmp/.deps: | deps/capnproto/.git
 	@mkdir -p tmp
 	@touch tmp/.deps
 
-deps/capnproto:
-	@$(call color,downloading capnproto)
-	@mkdir -p deps
-	git clone $(REMOTE_capnproto) deps/capnproto
-
-deps/ekam:
-	@$(call color,downloading ekam)
-	@mkdir -p deps
-	git clone $(REMOTE_ekam) deps/ekam
-	@ln -s .. deps/ekam/deps
-
-deps/libseccomp:
-	@$(call color,downloading libseccomp)
-	@mkdir -p deps
-	git clone $(REMOTE_libseccomp) deps/libseccomp
-
-deps/libsodium:
-	@$(call color,downloading libsodium)
-	@mkdir -p deps
-	git clone $(REMOTE_libsodium) deps/libsodium
-	@cd deps/libsodium && git checkout stable
-
-deps/node-capnp:
-	@$(call color,downloading node-capnp)
-	@mkdir -p deps
-	git clone $(REMOTE_node-capnp) deps/node-capnp
-
-deps/node:
-	@$(call color,downloading node)
-	@mkdir -p deps
-	git clone $(REMOTE_node) deps/node
-
 update-deps:
 	@$(call color,updating all dependencies)
-	@$(foreach DEP,capnproto ekam libseccomp libsodium node-capnp node, \
+	@$(foreach DEP,$(DEPS), \
 	    cd deps/$(DEP) && \
 	    echo "pulling $(DEP)..." && \
-	    git pull $(REMOTE_$(DEP)) `git symbolic-ref --short HEAD` && \
+	    git fetch $(REMOTE_$(DEP)) && \
+	    git rebase FETCH_HEAD && \
 	    cd ../..;)
 
-clobber-deps:
-	@$(call color,forcibly updating all dependencies)
-	@$(foreach DEP,capnproto ekam libseccomp, \
-	    cd deps/$(DEP) && \
-	    echo "fetching $(DEP)..." && \
-	    git fetch $(REMOTE_$(DEP)) master && \
-	    git reset --hard FETCH_HEAD && \
-	    cd ../..;)
-	@cd deps/node-capnp && \
-	    echo "fetching node-capnp..." && \
-	    git fetch $(REMOTE_node-capnp) node4 && \
-	    git reset --hard FETCH_HEAD && \
-	    cd ../../
-	@cd deps/libsodium && \
-	    echo "fetching libsodium..." && \
-	    git fetch $(REMOTE_libsodium) stable && \
-	    git reset --hard FETCH_HEAD && \
-	    cd ../../
-	@cd deps/node && \
-	    echo "fetching node..." && \
-	    git fetch $(REMOTE_node) sandstorm && \
-	    git reset --hard FETCH_HEAD && \
-	    cd ../../
+# ====================================================================
+# Get Clang
+#
+# We use the prebuilt Clang binaries from the Chromium project. We do this because I've observed
+# Sandstorm contributors have a very hard time installing up-to-date versions of Clang on typcial
+# Linux distros. Ubuntu and Debian ship with outdated versions of Clang, which means people have
+# to install Clang from the LLVM apt repo. However, people struggle to set that up, and the repo
+# has been known to randomly break from time to time. OTOH, the Chromium project maintains a very
+# up-to-date version of Clang which is used to build Chrome, conveniently maintained as a git repo
+# (which we can pin to a commit) containing a nice script that will download precompiled binaries.
 
+deps/llvm-build: | tmp/.deps
+	@$(call color,downloading Clang binaries from Chromium project)
+	@deps/clang/scripts/update.py
+	@mv third_party/llvm-build deps
+	@rmdir third_party
+
+# ====================================================================
+# build BoringSSL
+
+deps/boringssl/build/Makefile: | tmp/.deps deps/llvm-build
+	@$(call color,configuring BoringSSL)
+	@mkdir -p deps/boringssl/build
+	cd deps/boringssl/build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="$(CC)" -DCMAKE_CXX_COMPILER="$(CXX)" -DCMAKE_C_FLAGS="-fPIE" -DCMAKE_CXX_FLAGS="-fPIE" ..
+
+deps/boringssl/build/ssl/libssl.a: deps/boringssl/build/Makefile
+	@$(call color,building BoringSSL)
+	cd deps/boringssl/build && make -j$(PARALLEL)
+
+# ====================================================================
+# build libsodium
+
+deps/libsodium/build/Makefile: | tmp/.deps deps/llvm-build
+	@$(call color,configuring libsodium)
+	@mkdir -p deps/libsodium/build
+	cd deps/libsodium/build && ../configure --disable-shared CC="$(CC)"
+
+deps/libsodium/build/src/libsodium/.libs/libsodium.a: deps/libsodium/build/Makefile
+	@$(call color,building libsodium)
+	cd deps/libsodium/build && make -j$(PARALLEL)
 
 # ====================================================================
 # Ekam bootstrap and C++ binaries
@@ -253,16 +251,15 @@ tmp/ekam-bin: tmp/.deps
 	    (cd deps/ekam && $(MAKE) bin/ekam-bootstrap && \
 	     cd ../.. && ln -s ../deps/ekam/bin/ekam-bootstrap tmp/ekam-bin)
 
-tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps
+tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps deps/boringssl/build/ssl/libssl.a deps/libsodium/build/src/libsodium/.libs/libsodium.a | deps/llvm-build
 	@$(call color,building sandstorm with ekam)
 	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS2)" CXXFLAGS="$(CXXFLAGS2)" \
-	    LIBS="$(LIBS)" NODEJS=$(NODEJS) tmp/ekam-bin -j$(PARALLEL) || \
-	    ($(call color,build failed. You might need to: make update-deps) && false)
+	    LIBS="$(LIBS2)" NODEJS=$(NODEJS) tmp/ekam-bin -j$(PARALLEL)
 	@touch tmp/.ekam-run
 
-continuous:
+continuous: tmp/.deps deps/boringssl/build/ssl/libssl.a deps/libsodium/build/src/libsodium/.libs/libsodium.a | deps/llvm-build
 	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS2)" CXXFLAGS="$(CXXFLAGS2)" \
-	    LIBS="$(LIBS)" NODEJS=$(NODEJS) ekam -j$(PARALLEL) -c -n :41315 || \
+	    LIBS="$(LIBS2)" NODEJS=$(NODEJS) $(EKAM) -j$(PARALLEL) -c -n :41315 || \
 	    ($(call color,You probably need to install ekam and put it on your path; see github.com/sandstorm-io/ekam) && false)
 
 # ====================================================================
@@ -273,6 +270,7 @@ shell-env: tmp/.shell-env
 # Note that we need Ekam to build node_modules before we can run Meteor, hence
 # the dependency on tmp/.ekam-run.
 tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html shell/client/styles/_icons.scss shell/package.json shell/npm-shrinkwrap.json
+	@$(call color,configuring meteor frontend)
 	@mkdir -p tmp
 	@mkdir -p node_modules/capnp
 	@bash -O extglob -c 'cp src/capnp/!(*test*).capnp node_modules/capnp'
@@ -356,8 +354,8 @@ shell/public/%-m.svg: icons/%.svg
 	@# Make completely black.
 	@sed -e 's/#111111/#000000/g' < $< > $@
 
-shell-build: shell/imports/* shell/imports/*/* shell/client/* shell/server/* shell/shared/* shell/public/* shell/packages/* shell/packages/*/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
-	@$(call color,meteor frontend)
+shell-build: shell/imports/* shell/imports/*/* shell/client/* shell/server/* shell/shared/* shell/public/* shell/packages/* shell/packages/*/* shell/i18n/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
+	@$(call color,building meteor frontend)
 	@test -z "$$(find -L shell/* -type l)" || (echo "error: broken symlinks in shell: $$(find -L shell/* -type l)" >&2 && exit 1)
 	@OLD=`pwd` && cd shell && meteor build --directory "$$OLD/shell-build"
 

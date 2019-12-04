@@ -122,8 +122,8 @@ Router.map(function () {
     path: "/admin",
     controller: newAdminRoute,
   });
-  this.route("newAdminIdentity", {
-    path: "/admin/identity",
+  this.route("newAdminLogin", {
+    path: "/admin/login",
     controller: newAdminRoute,
   });
   this.route("newAdminEmailConfig", {

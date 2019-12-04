@@ -24,7 +24,7 @@ function serviceEnabled(name) {
   return setting && !!setting.value;
 }
 
-Accounts.identityServices.github = {
+Accounts.loginServices.github = {
   isEnabled: function () {
     return serviceEnabled("github");
   },
@@ -45,12 +45,12 @@ Accounts.identityServices.github = {
       method: "loginWithGithub",
       name: "github",
       displayName: "GitHub",
-      linkingNewIdentity: false,
+      linkingNewCredential: false,
     },
   },
 };
 
-Accounts.identityServices.google = {
+Accounts.loginServices.google = {
   isEnabled: function () {
     return serviceEnabled("google");
   },
@@ -71,12 +71,12 @@ Accounts.identityServices.google = {
       method: "loginWithGoogle",
       name: "google",
       displayName: "Google",
-      linkingNewIdentity: false,
+      linkingNewCredential: false,
     },
   },
 };
 
-Accounts.identityServices.email = {
+Accounts.loginServices.email = {
   isEnabled: function () {
     return serviceEnabled("emailToken");
   },
@@ -95,7 +95,7 @@ Accounts.identityServices.email = {
   },
 };
 
-Accounts.identityServices.ldap = {
+Accounts.loginServices.ldap = {
   isEnabled: function () {
     return serviceEnabled("ldap");
   },
@@ -114,7 +114,7 @@ Accounts.identityServices.ldap = {
   },
 };
 
-Accounts.identityServices.saml = {
+Accounts.loginServices.saml = {
   isEnabled: function () {
     return serviceEnabled("saml");
   },
@@ -134,7 +134,7 @@ Accounts.identityServices.saml = {
   },
 };
 
-Accounts.identityServices.demo = {
+Accounts.loginServices.demo = {
   isEnabled: function () {
     return false; // You can never authenticate as a demo user.
   },

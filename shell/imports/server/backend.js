@@ -17,25 +17,10 @@
 import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
 import { inMeteor, promiseToFuture, waitPromise } from "/imports/server/async-helpers.js";
 
-const Capnp = Npm.require("capnp");
 const Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
 const Crypto = Npm.require("crypto");
 
 let storageUsageUnimplemented = false;
-
-function generateSessionId(grainId, userId, packageSalt, clientSalt) {
-  const sessionParts = [grainId, clientSalt];
-  if (userId) {
-    sessionParts.push(userId);
-  }
-
-  if (packageSalt) {
-    sessionParts.push(packageSalt);
-  }
-
-  const sessionInput = sessionParts.join(":");
-  return Crypto.createHash("sha256").update(sessionInput).digest("hex");
-}
 
 const shouldRestartGrain = (error, retryCount) => {
   // Given an error thrown by an RPC call to a grain, return whether or not it makes sense to try
@@ -115,6 +100,10 @@ class SandstormBackend {
       throw new Meteor.Error(404, "Grain Not Found", "Grain ID: " + grainId);
     }
 
+    if (grain.trashed) {
+      throw new Meteor.Error(403, "Grain is in the trash bin", "Grain ID: " + grainId);
+    }
+
     // If a DevPackage with the same app ID is currently active, we let it override the installed
     // package, so that the grain runs using the dev app.
     const devPackage = DevPackages.findOne({ appId: grain.appId });
@@ -127,7 +116,7 @@ class SandstormBackend {
       mountProc = pkg.mountProc;
     } else {
       pkg = Packages.findOne(grain.packageId);
-      if (!pkg) {
+      if (!pkg || pkg.status !== "ready") {
         throw new Meteor.Error(500, "Grain's package not installed",
                                "Package ID: " + grain.packageId);
       }
@@ -153,7 +142,7 @@ class SandstormBackend {
     // user) and `supervisor` (the supervisor capability).
 
     if (isUserExcessivelyOverQuota(Meteor.users.findOne(ownerId))) {
-      throw new Meteor.Error(402,
+      throw new Meteor.Error("quota-exhausted",
                              ("Cannot start grain because owner's storage is exhausted.\n" +
                               "Please ask them to upgrade."));
     }
@@ -179,15 +168,20 @@ class SandstormBackend {
     return this._backendCap.startGrain(ownerId, grainId, packageId, command, isNew, isDev, mountProc);
   }
 
-  updateLastActive(grainId, userId, identityId) {
+  updateLastActive(grainId, userId, obsolete) {
     // Update the lastActive date on the grain, any relevant API tokens, and the user,
     // and also update the user's storage usage.
 
     let storagePromise = undefined;
     let ownerId = undefined;
     if (this._db.isQuotaEnabled() && !storageUsageUnimplemented) {
-      ownerId = Grains.findOne(grainId).userId;
+      let grain = Grains.findOne(grainId);
+      if (!grain) return;  // must have been deleted
+      ownerId = grain.userId;
       storagePromise = this._backendCap.getUserStorageUsage(ownerId);
+
+      // Squelch Node.js's "unhandled rejection" warning. We handle errors for real later on.
+      storagePromise.catch(err => {});
     }
 
     const now = new Date();
@@ -198,12 +192,9 @@ class SandstormBackend {
 
     if (userId) {
       Meteor.users.update(userId, { $set: { lastActive: now } });
-    }
 
-    if (identityId) {
-      Meteor.users.update({ _id: identityId }, { $set: { lastActive: now } });
       // Update any API tokens that match this user/grain pairing as well
-      ApiTokens.update({ grainId: grainId, "owner.user.identityId": identityId },
+      ApiTokens.update({ grainId: grainId, "owner.user.accountId": userId },
                        { $set: { lastUsed: now } },
                        { multi: true });
     }
@@ -222,82 +213,6 @@ class SandstormBackend {
         }
       }
     }
-  }
-
-  openSessionInternal(grainId, userId, identityId, title, apiToken, cachedSalt, sessionFields) {
-    // Start the grain if it is not running. This is an optimization: if we didn't start it here,
-    // it would start on the first request to the session host, but we'd like to get started before
-    // the round trip.
-    const { supervisor, packageSalt } = this.continueGrain(grainId);
-
-    this.updateLastActive(grainId, userId, identityId);
-
-    cachedSalt = cachedSalt || Random.id(22);
-    const sessionId = generateSessionId(grainId, userId, packageSalt, cachedSalt);
-    let session = Sessions.findOne({ _id: sessionId });
-    if (session) {
-      // TODO(someday): also do some more checks for anonymous sessions (sessions without a userId).
-      if ((session.identityId && session.identityId !== identityId) ||
-          (session.grainId !== grainId)) {
-        const e = new Meteor.Error(500, "Duplicate SessionId");
-        console.error(e);
-        throw e;
-      } else {
-        return {
-          supervisor: supervisor,
-          methodResult: {
-            sessionId: session._id,
-            title: title,
-            grainId: grainId,
-            hostId: session.hostId,
-            tabId: session.tabId,
-            salt: cachedSalt,
-          },
-        };
-      }
-    }
-
-    // TODO(someday): Allow caller to specify the parent session from which to inherit the tab ID, or
-    //   something.
-
-    session = {
-      _id: sessionId,
-      grainId: grainId,
-      hostId: Crypto.createHash("sha256").update(sessionId).digest("hex").slice(0, 32),
-      tabId: Crypto.createHash("sha256").update("tab:").update(sessionId).digest("hex").slice(0, 32),
-      timestamp: new Date().getTime(),
-      hasLoaded: false,
-    };
-
-    if (userId) {
-      session.userId = userId;
-    }
-
-    if (identityId) {
-      session.identityId = identityId;
-    }
-
-    if (apiToken) {
-      session.hashedToken = apiToken._id;
-    }
-
-    if (sessionFields) {
-      _.extend(session, sessionFields);
-    }
-
-    Sessions.insert(session);
-
-    return {
-      supervisor: supervisor,
-      methodResult: {
-        sessionId: session._id,
-        title: title,
-        grainId: grainId,
-        hostId: session.hostId,
-        tabId: session.tabId,
-        salt: cachedSalt,
-      },
-    };
   }
 };
 

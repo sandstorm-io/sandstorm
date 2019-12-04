@@ -1,8 +1,9 @@
 <template name="newAdminNetworking">
+{{#let txt="admin.networking.newAdminNetworking"}}
   <h1>
     <ul class="admin-breadcrumbs">
-      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
-      <li>Security</li>
+      <li>{{#linkTo route="newAdminRoot"}}{{_ "admin.title"}}{{/linkTo}}</li>
+      <li>{{_ "admin.networking.altName"}}</li>
     </ul>
   </h1>
 
@@ -20,18 +21,19 @@
   <form class="admin-networking">
     <div class="form-group">
       <label>
-        Server-side request IP blacklist:
+        {{_ (con txt "ipBlacklist.label")}}
         <textarea class="ip-blacklist" value="{{ ipBlacklist }}"></textarea>
       </label>
-      <span class="form-subtext">Users will be prohibited from making requests to these IP addresses. This includes making a request from an app, downloading an SPK file from a user-provided URL, etc. You may specify one IP address or network (in CIDR notation, e.g. "127.0.0.0/8") per line. The default value includes standard local and private network addresses. Note that when an HTTP proxy is in use, this setting may be ignored; the proxy must implement its own blacklist.</span>
+      <span class="form-subtext">{{_ (con txt "ipBlacklist.subtext")}}</span>
     </div>
 
     {{!-- TODO(someday): Allow whitelisting certain IPs or hosts? --}}
     {{!-- TODO(someday): Configure HTTP proxy here. --}}
 
     <div class="button-row">
-      <button type="submit" class="save" disabled="{{saveDisabled}}">Save</button>
-      <button type="button" class="restore" disabled="{{restoreDisabled}}">Restore defaults</button>
+      <button type="submit" class="save" disabled="{{saveDisabled}}">{{_ (con txt "saveButton")}}</button>
+      <button type="button" class="restore" disabled="{{restoreDisabled}}">{{_ (con txt "restoreButton")}}</button>
     </div>
   </form>
+{{/let}}
 </template>

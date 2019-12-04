@@ -23,6 +23,7 @@
 #include <kj/io.h>
 #include <capnp/rpc-twoparty.h>
 #include <capnp/rpc.capnp.h>
+#include <capnp/membrane.h>
 #include <unistd.h>
 #include <netinet/in.h> // needs to be included before sys/capability.h
 #include <sys/stat.h>
@@ -663,8 +664,6 @@ kj::MainBuilder::Validity SupervisorMain::addCommandArg(kj::StringPtr arg) {
 // =====================================================================================
 
 kj::MainBuilder::Validity SupervisorMain::run() {
-  isIpTablesAvailable = checkIfIpTablesLoaded();
-
   setupSupervisor();
 
   // Exits if another supervisor is still running in this sandbox.
@@ -933,8 +932,10 @@ void SupervisorMain::unshareOuter() {
   }
 
   // To really unshare the mount namespace, we also have to make sure all mounts are private.
-  // The parameters here were derived by strace'ing `mount --make-rprivate /`.  AFAICT the flags
-  // are undocumented.  :(
+  // See the "SHARED SUBTREES" section of mount_namespaces(7) and the section "Changing the
+  // propagation type of an existing mount" in mount(2). Cliffsnotes version: MS_PRIVATE sets
+  // the "target" argument (in this case "/") to private, and MS_REC applies this recursively.
+  // All other arguments are ignored.
   KJ_SYSCALL(mount("none", "/", nullptr, MS_REC | MS_PRIVATE, nullptr));
 
   // Set a dummy host / domain so the grain can't see the real one.  (unshare(CLONE_NEWUTS) means
@@ -1248,252 +1249,6 @@ void SupervisorMain::unshareNetwork() {
     ifr.ifr_ifru.ifru_flags = IFF_LOOPBACK | IFF_UP | IFF_RUNNING;
     KJ_SYSCALL(ioctl(fd, SIOCSIFFLAGS, &ifr));
   }
-
-  // Check if iptables module is available, skip the rest if not.
-  if (!isIpTablesAvailable) {
-    // TODO(soon): Put a runtime warning here, so that people can notice if this code won't work.
-    return;
-  }
-
-  // Create a fake network interface "dummy0" of type "dummy". We need this only so that we can
-  // route packets to it which we can in turn filter with iptables.
-  {
-    int netlink;
-    KJ_SYSCALL(netlink = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE));
-    KJ_DEFER(close(netlink));
-
-    socklen_t bufsize = 32768;
-    KJ_SYSCALL(setsockopt(netlink, SOL_SOCKET, SO_SNDBUF, &bufsize, sizeof(bufsize)));
-    bufsize = 1048576;
-    KJ_SYSCALL(setsockopt(netlink, SOL_SOCKET, SO_RCVBUF, &bufsize, sizeof(bufsize)));
-
-    StructyMessage message(4);
-
-    auto header = message.add<struct nlmsghdr>();
-
-    header->nlmsg_type = RTM_NEWLINK;
-    header->nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK | NLM_F_CREATE | NLM_F_EXCL;
-
-    message.add<struct ifinfomsg>();  // leave zero'd
-
-    auto ifnameAttr = message.add<struct rtattr>();
-    ifnameAttr->rta_len = sizeof(struct rtattr) + sizeof("dummy0");
-    ifnameAttr->rta_type = IFLA_IFNAME;
-    message.addString("dummy0");
-
-    auto portAttr = message.add<struct rtattr>();
-    portAttr->rta_type = IFLA_LINKINFO;
-
-    // We're cargo-culting a bit here. IFLA_LINKINFO is not documented but it looks kind of
-    // like an rtattr. For some reason the string value is not NUL-terminated, though.
-    auto typeAttr = message.add<struct rtattr>();
-    typeAttr->rta_type = IFLA_INFO_KIND;  // Looks like it might be the right constant?
-    typeAttr->rta_len = sizeof(struct rtattr) + strlen("dummy");
-    message.addBytes("dummy", strlen("dummy"));
-
-    portAttr->rta_len = offsetBetween(portAttr, message.end());
-
-    header->nlmsg_len = offsetBetween(header, message.end());
-
-    struct msghdr socketMsg;
-    memset(&socketMsg, 0, sizeof(socketMsg));
-
-    struct sockaddr_nl netlinkAddr;
-    memset(&netlinkAddr, 0, sizeof(netlinkAddr));
-    netlinkAddr.nl_family = AF_NETLINK;
-    socketMsg.msg_name = &netlinkAddr;
-    socketMsg.msg_namelen = sizeof(netlinkAddr);
-
-    struct iovec iov;
-    iov.iov_base = message.begin();
-    iov.iov_len = message.size();
-    socketMsg.msg_iov = &iov;
-    socketMsg.msg_iovlen = 1;
-
-    KJ_SYSCALL(sendmsg(netlink, &socketMsg, 0));
-
-    struct {
-      struct nlmsghdr header;
-      struct nlmsgerr error;
-      char buffer[512];
-    } result;
-    iov.iov_base = &result;
-    iov.iov_len = sizeof(result);
-
-    KJ_SYSCALL(recvmsg(netlink, &socketMsg, 0));
-
-    KJ_ASSERT(result.header.nlmsg_type == NLMSG_ERROR);
-    KJ_ASSERT(result.header.nlmsg_seq == 0);
-    if (result.error.error != 0) {
-      KJ_FAIL_SYSCALL("netlink(ip link add dummy0 type dummy)", -result.error.error);
-    }
-  }
-
-  // Bring up dummy0.
-  {
-    // Set the address of "dummy0".
-    struct ifreq ifr;
-    memset(&ifr, 0, sizeof(ifr));
-    strcpy(ifr.ifr_ifrn.ifrn_name, "dummy0");
-    struct sockaddr_in* addr = reinterpret_cast<struct sockaddr_in*>(&ifr.ifr_ifru.ifru_addr);
-    addr->sin_family = AF_INET;
-    addr->sin_addr.s_addr = htonl(0xc0a8fa02);  // 192.168.250.2
-    KJ_SYSCALL(ioctl(fd, SIOCSIFADDR, &ifr));
-
-    // Set flags to enable "dummy0".
-    memset(&ifr.ifr_ifru, 0, sizeof(ifr.ifr_ifru));
-    ifr.ifr_ifru.ifru_flags = IFF_UP | IFF_RUNNING;
-    KJ_SYSCALL(ioctl(fd, SIOCSIFFLAGS, &ifr));
-  }
-
-  // Route external addresses through the "dummy0" interface, so that our iptables trick works.
-  {
-    struct rtentry route;
-    memset(&route, 0, sizeof(route));
-    route.rt_flags = RTF_UP | RTF_GATEWAY;
-    route.rt_dst.sa_family = AF_INET;
-    route.rt_gateway.sa_family = AF_INET;
-    reinterpret_cast<struct sockaddr_in*>(&route.rt_gateway)->sin_addr.s_addr =
-        htonl(0xc0a8fa01);  // 192.168.250.1; any address in 192.168.250.x would work here
-
-    KJ_SYSCALL(ioctl(fd, SIOCADDRT, &route));
-  }
-
-  // Set up iptables to redirect all non-local traffic to 127.0.0.1:23136.
-  //
-  // This should be equivalent-ish to:
-  //   iptables -t nat -A OUTPUT -p tcp -j DNAT --to 127.0.0.1:23136
-  //   iptables -t nat -A OUTPUT -p udp -j DNAT --to 127.0.0.1:23136
-  {
-    // Get the existing iptables info, needed in order to properly fill out the update request.
-    struct ipt_getinfo info;
-    memset(&info, 0, sizeof(info));
-    strcpy(info.name, "nat");
-    socklen_t optsize = sizeof(info);
-    KJ_SYSCALL(getsockopt(fd, IPPROTO_IP, IPT_SO_GET_INFO, &info, &optsize));
-
-    // Linux kernel interfaces like to be designed as a packed list of structs of varying types,
-    // kind of like SBE but uglier. Ugh.
-    StructyMessage message;
-
-    // Create a replace message.
-    auto replace = message.add<struct ipt_replace>();
-    strcpy(replace->name, "nat");
-    replace->valid_hooks = info.valid_hooks;
-
-    // The kernel insists that we give it a place to write out the counters on the existing
-    // table entries. Of course, they should all be zero, and we don't care either way. But we
-    // have to give it space.
-    struct xt_counters oldCounters[info.num_entries];
-    memset(oldCounters, 0, sizeof(oldCounters));
-    replace->num_counters = info.num_entries;
-    replace->counters = oldCounters;
-
-    // Create an entry which accepts all packets destined for 127.0.0.0/8.
-    ++replace->num_entries;
-    auto acceptLocal = message.add<struct ipt_entry>();
-    acceptLocal->ip.dst.s_addr = htonl(0x7F000000);   // ip   127.0.0.0
-    acceptLocal->ip.dmsk.s_addr = htonl(0xFF000000);  // mask 255.0.0.0
-    auto acceptLocalTarget = message.add<struct ipt_entry_target>();
-    *message.add<int>() = -1 - NF_ACCEPT;
-    acceptLocalTarget->u.target_size = offsetBetween(acceptLocalTarget, message.end());
-    acceptLocal->target_offset = offsetBetween(acceptLocal, acceptLocalTarget);
-    acceptLocal->next_offset = offsetBetween(acceptLocal, message.end());
-
-    // Create an entry which forwards all TCP packets to a local port.
-    ++replace->num_entries;
-    auto dnatTcp = message.add<struct ipt_entry>();
-    dnatTcp->ip.proto = IPPROTO_TCP;
-    auto dnatTcpTarget = message.add<struct ipt_entry_target>();
-    auto dnatTcpRange = message.add<struct nf_nat_ipv4_multi_range_compat>();
-    dnatTcpRange->rangesize = 1;
-    dnatTcpRange->range[0].flags = NF_NAT_RANGE_PROTO_SPECIFIED | NF_NAT_RANGE_MAP_IPS;
-    dnatTcpRange->range[0].min_ip = htonl(0x7F000001);  // 127.0.0.1
-    dnatTcpRange->range[0].max_ip = htonl(0x7F000001);  // 127.0.0.1
-    dnatTcpRange->range[0].min.tcp.port = htons(23136);
-    dnatTcpRange->range[0].max.tcp.port = htons(23136);
-    dnatTcpTarget->u.user.target_size = offsetBetween(dnatTcpTarget, message.end());
-    strcpy(dnatTcpTarget->u.user.name, "DNAT");
-    dnatTcp->target_offset = offsetBetween(dnatTcp, dnatTcpTarget);
-    dnatTcp->next_offset = offsetBetween(dnatTcp, message.end());
-
-    // Create an entry which forwards all UDP packets to a local port.
-    ++replace->num_entries;
-    auto dnatUdp = message.add<struct ipt_entry>();
-    dnatUdp->ip.proto = IPPROTO_UDP;
-    auto dnatUdpTarget = message.add<struct ipt_entry_target>();
-    auto dnatUdpRange = message.add<struct nf_nat_ipv4_multi_range_compat>();
-    dnatUdpRange->rangesize = 1;
-    dnatUdpRange->range[0].flags = NF_NAT_RANGE_PROTO_SPECIFIED | NF_NAT_RANGE_MAP_IPS;
-    dnatUdpRange->range[0].min_ip = htonl(0x7F000001);  // 127.0.0.1
-    dnatUdpRange->range[0].max_ip = htonl(0x7F000001);  // 127.0.0.1
-    dnatUdpRange->range[0].min.udp.port = htons(23136);
-    dnatUdpRange->range[0].max.udp.port = htons(23136);
-    dnatUdpTarget->u.user.target_size = offsetBetween(dnatUdpTarget, message.end());
-    strcpy(dnatUdpTarget->u.user.name, "DNAT");
-    dnatUdp->target_offset = offsetBetween(dnatUdp, dnatUdpTarget);
-    dnatUdp->next_offset = offsetBetween(dnatUdp, message.end());
-
-    // Create an entry which accepts everything.
-    ++replace->num_entries;
-    auto acceptAll = message.add<struct ipt_entry>();
-    auto acceptAllTarget = message.add<struct ipt_entry_target>();
-    *message.add<int>() = -1 - NF_ACCEPT;
-    acceptAllTarget->u.target_size = offsetBetween(acceptAllTarget, message.end());
-    acceptAll->target_offset = offsetBetween(acceptAll, acceptAllTarget);
-    acceptAll->next_offset = offsetBetween(acceptAll, message.end());
-
-    // Cap it off with an error entry.
-    ++replace->num_entries;
-    auto error = message.add<struct ipt_entry>();
-    auto errorTarget = message.add<struct xt_error_target>();
-    errorTarget->target.u.user.target_size = offsetBetween(errorTarget, message.end());
-    strcpy(errorTarget->target.u.user.name, "ERROR");
-    strcpy(errorTarget->errorname, "ERROR");
-    error->target_offset = offsetBetween(error, errorTarget);
-    error->next_offset = offsetBetween(error, message.end());
-
-    replace->hook_entry[NF_INET_PRE_ROUTING] = offsetBetween(replace->entries, acceptAll);
-    replace->hook_entry[NF_INET_LOCAL_IN] = offsetBetween(replace->entries, acceptAll);
-    replace->hook_entry[NF_INET_FORWARD] = offsetBetween(replace->entries, acceptAll);
-    replace->hook_entry[NF_INET_LOCAL_OUT] = offsetBetween(replace->entries, acceptLocal);
-    replace->hook_entry[NF_INET_POST_ROUTING] = offsetBetween(replace->entries, acceptAll);
-
-    replace->underflow[NF_INET_PRE_ROUTING] = offsetBetween(replace->entries, acceptAll);
-    replace->underflow[NF_INET_LOCAL_IN] = offsetBetween(replace->entries, acceptAll);
-    replace->underflow[NF_INET_FORWARD] = offsetBetween(replace->entries, acceptAll);
-    replace->underflow[NF_INET_LOCAL_OUT] = offsetBetween(replace->entries, acceptAll);
-    replace->underflow[NF_INET_POST_ROUTING] = offsetBetween(replace->entries, acceptAll);
-
-    replace->size = offsetBetween(replace->entries, message.end());
-
-    KJ_SYSCALL(setsockopt(fd, IPPROTO_IP, IPT_SO_SET_REPLACE, message.begin(), message.size()));
-  }
-}
-
-bool SupervisorMain::checkIfIpTablesLoaded() {
-  // Detect if the iptables kernel module is available. Must be called before entering the
-  // sandbox since this requires /proc.
-  //
-  // TODO(soon): This check is wrong because iptables could be compiled directly into the kernel
-  //   rather than as a module. Indeed, /proc/modules is reported to be sometimes absent in the
-  //   wild, perhaps when the kernel is compiled without module support. For now we'll assume
-  //   iptables is unavailable in that case.
-
-  KJ_IF_MAYBE(procModules, raiiOpenIfExists("/proc/modules", O_RDONLY)) {
-    kj::FdInputStream rawIn(kj::mv(*procModules));
-    kj::BufferedInputStreamWrapper bufferedIn(rawIn);
-
-    for (;;) {
-      KJ_IF_MAYBE(line, readLine(bufferedIn)) {
-        if (line->startsWith("ip_tables ")) return true;
-      } else {
-        break;
-      }
-    }
-  }
-
-  return false;
 }
 
 void SupervisorMain::maybeFinishMountingProc() {
@@ -1672,86 +1427,341 @@ void SupervisorMain::DefaultSystemConnector::checkIfAlreadyRunning() const {
   KJ_UNREACHABLE;
 };
 
-class SaveWrapper : public SystemPersistent::Server {
-  // A capability which forwards all calls to some target, except for `save`.
+// -----------------------------------------------------------------------------
+// Persistence and requirements management
+
+class RequirementsMembranePolicy;
+class ChildTokenMembranePolicy;
+
+SystemPersistent::Client newIncomingSaveHandler(AppPersistent<>::Client&& cap,
+                                                kj::Own<RequirementsMembranePolicy> membrane,
+                                                SandstormCore::Client sandstormCore);
+
+class RevokerImpl final: public Handle::Server {
+public:
+  explicit RevokerImpl(kj::Own<kj::PromiseFulfiller<void>> fulfiller)
+      : fulfiller(kj::mv(fulfiller)) {}
+  ~RevokerImpl() noexcept(false) {
+    fulfiller->reject(KJ_EXCEPTION(DISCONNECTED, "capability has been revoked"));
+  }
+
+private:
+  kj::Own<kj::PromiseFulfiller<void>> fulfiller;
+};
+
+class RequirementsMembranePolicy final: public capnp::MembranePolicy, public kj::Refcounted {
+  // A MembranePolicy that revokes when some MembraneRequirements are no longer held.
 
 public:
-  SaveWrapper(AppPersistent<>::Client&& cap, capnp::List<MembraneRequirement>::Reader _requirements,
-              capnp::Data::Reader parentToken, SandstormCore::Client sandstormCore)
-      : cap(kj::mv(cap)), parentToken(kj::heapArray<const byte>(parentToken)),
-        sandstormCore(kj::mv(sandstormCore)) {
-    builder.setRoot(kj::mv(_requirements));
-    requirements = builder.getRoot<capnp::List<MembraneRequirement>>().asReader();
+  explicit RequirementsMembranePolicy(SandstormCore::Client sandstormCore)
+      : sandstormCore(kj::mv(sandstormCore)) {}
+  // Create root policy, which only needs to translate save/restore calls.
+
+  RequirementsMembranePolicy(
+      SandstormCore::Client sandstormCore,
+      capnp::List<MembraneRequirement>::Reader requirements,
+      kj::Promise<void> revoked,
+      SystemPersistent::RevocationObserver::Client observer,
+      kj::Own<RequirementsMembranePolicy> parent)
+      : sandstormCore(kj::mv(sandstormCore)),
+        childInfo(ChildInfo {
+          newOwnCapnp(requirements),
+          parent->mergeRevoked(kj::mv(revoked)).fork(),
+          kj::mv(observer),
+          kj::mv(parent)
+        }) {}
+
+  kj::Maybe<capnp::Capability::Client> inboundCall(
+      uint64_t interfaceId, uint16_t methodId, capnp::Capability::Client target) override {
+    // Don't shut down as long as we're receiving inbound calls.
+    sandstorm::keepAlive = true;
+
+    if (interfaceId == capnp::typeId<capnp::Persistent<>>() ||
+        interfaceId == capnp::typeId<SystemPersistent>()) {
+      return newIncomingSaveHandler(kj::mv(target).castAs<AppPersistent<>>(),
+                                    kj::addRef(*this), sandstormCore);
+    } else if (interfaceId == capnp::typeId<AppPersistent<>>()) {
+      KJ_UNIMPLEMENTED("can't call AppPersistent.save() from outside grain");
+    } else if (interfaceId == capnp::typeId<MainView<>>()) {
+      KJ_UNIMPLEMENTED("MainView methods are private to the supervisor");
+    } else {
+      return nullptr;
+    }
+  }
+  kj::Maybe<capnp::Capability::Client> outboundCall(
+      uint64_t interfaceId, uint16_t methodId, capnp::Capability::Client target) override {
+    if (interfaceId == capnp::typeId<AppPersistent<>>()) {
+      // Treat as unimplemented to give apps a convenient way to attempt an internal save before
+      // falling back to an external save.
+      KJ_UNIMPLEMENTED("can't call AppPersistent.save() on capabilities from outside the grain");
+    } else if (interfaceId == capnp::typeId<capnp::Persistent<>>() ||
+               interfaceId == capnp::typeId<SystemPersistent>()) {
+      KJ_FAIL_REQUIRE("Cannot directly call save() on capabilities outside the grain. "
+        "Use SandstormApi.save() instead.");
+    } else {
+      return nullptr;
+    }
+  }
+  kj::Own<MembranePolicy> addRef() override {
+    return kj::addRef(*this);
+  }
+  kj::Maybe<kj::Promise<void>> onRevoked() override {
+    KJ_IF_MAYBE(c, childInfo) {
+      return c->revoked.addBranch();
+    } else {
+      return nullptr;
+    }
   }
 
-  kj::Promise<void> dispatchCall(
-      uint64_t interfaceId, uint16_t methodId,
-      capnp::CallContext<capnp::AnyPointer, capnp::AnyPointer> context) override {
-    if (interfaceId == capnp::typeId<capnp::Persistent<>>()) {
-      return capnp::Persistent< capnp::Data,
-        sandstorm::ApiTokenOwner>::Server::dispatchCallInternal(methodId, context);
-    } else if (interfaceId == capnp::typeId<SystemPersistent>()) {
-      return SystemPersistent::Server::dispatchCallInternal(methodId, context);
+  MembranePolicy& rootPolicy() override {
+    KJ_IF_MAYBE(c, childInfo) {
+      return c->parent->rootPolicy();
+    } else {
+      return *this;
+    }
+  }
+
+  capnp::Capability::Client importInternal(capnp::Capability::Client internal,
+      capnp::MembranePolicy& exportPolicy, capnp::MembranePolicy& importPolicy) override {
+    // If a capability originally from this app is returned to it, we drop all membrane
+    // requirements, so that the app gets its original object back.
+    //
+    // TODO(security): Is this really a good idea? Maybe apps should opt-in to dropping
+    //   requirements on re-import? We could create a loopback membrane here.
+    return kj::mv(internal);
+  }
+
+  capnp::Capability::Client exportExternal(capnp::Capability::Client external,
+      capnp::MembranePolicy& importPolicy, capnp::MembranePolicy& exportPolicy) override {
+    // A capability came in and is going back out. Maybe we're passing it to a third-party grain.
+    // We'd like for this grain not to have to proxy all requests, so we'll ask the host grain
+    // to enforce the membrane requirements from here on out.
+
+    KJ_IF_MAYBE(c, childInfo) {
+      auto req = kj::mv(external).castAs<SystemPersistent>()
+          .addRequirementsRequest();
+      // TODO(soon): Also merge requirements from exportPolicy.
+      // TODO(soon): We actually have to make several addRequirements() calls to send across all
+      //   the observers for our parents, ugh.
+      req.adoptRequirements(kj::downcast<RequirementsMembranePolicy>(importPolicy)
+          .collectRequirements(capnp::Orphanage::getForMessageContaining(
+              SystemPersistent::AddRequirementsParams::Builder(req))));
+      req.setObserver(c->observer);
+      return req.send().getCap();
+    } else {
+      // We weren't enforcing any requirements anyway.
+      return kj::mv(external);
+    }
+  }
+
+  capnp::Orphan<capnp::List<MembraneRequirement>> collectRequirements(capnp::Orphanage orphanage) {
+    kj::Vector<capnp::List<MembraneRequirement>::Reader> parts;
+
+    auto ptr = this;
+    bool empty = true;
+    for (;;) {
+      KJ_IF_MAYBE(c, ptr->childInfo) {
+        if (c->requirements.size() > 0) {
+          empty = false;
+          parts.add(c->requirements);
+        }
+        ptr = c->parent;
+      } else {
+        break;
+      }
     }
 
-    capnp::AnyPointer::Reader params = context.getParams();
-    auto req = cap.typelessRequest(interfaceId, methodId, params.targetSize());
-    req.set(params);
-    return context.tailCall(kj::mv(req));
+    if (empty) {
+      return {};
+    } else {
+      return orphanage.newOrphanConcat(parts.asPtr());
+    }
   }
 
+  kj::Own<RequirementsMembranePolicy> addRequirements(
+      SystemPersistent::AddRequirementsParams::Reader params) {
+    auto paf = kj::newPromiseAndFulfiller<void>();
+    auto observer = params.getObserver();
+    auto req = observer.dropWhenRevokedRequest();
+    req.setHandle(kj::heap<RevokerImpl>(kj::mv(paf.fulfiller)));
+    auto revoked = req.send().ignoreResult()
+        .then([]() -> kj::Promise<void> { return kj::NEVER_DONE; })
+        .exclusiveJoin(kj::mv(paf.promise));
+
+    return kj::refcounted<RequirementsMembranePolicy>(
+        sandstormCore, params.getRequirements(),
+        kj::mv(revoked), kj::mv(observer), kj::addRef(*this));
+  }
+
+private:
+  SandstormCore::Client sandstormCore;
+
+  struct ChildInfo {
+    OwnCapnp<capnp::List<MembraneRequirement>> requirements;
+    kj::ForkedPromise<void> revoked;
+    SystemPersistent::RevocationObserver::Client observer;
+    kj::Own<RequirementsMembranePolicy> parent;
+  };
+
+  kj::Maybe<ChildInfo> childInfo;
+
+  kj::Promise<void> mergeRevoked(kj::Promise<void>&& promise) {
+    KJ_IF_MAYBE(c, childInfo) {
+      return promise.exclusiveJoin(c->revoked.addBranch());
+    } else {
+      return kj::mv(promise);
+    }
+  }
+};
+
+class ChildTokenMembranePolicy final: public capnp::MembranePolicy, public kj::Refcounted {
+  // A special MembranePolicy to handle the case of an internal capability that was created by
+  // restore(). If save() is called directly on this capability, it should create a child token.
+  // But if any other capabilities are obtained through it, then regular membrane requirements
+  // logic applies.
+
+public:
+  ChildTokenMembranePolicy(kj::Own<RequirementsMembranePolicy> policy,
+                           capnp::Data::Reader token,
+                           SandstormCore::Client sandstormCore)
+      : policy(kj::mv(policy)),
+        token(kj::heapArray<const byte>(token)),
+        sandstormCore(kj::mv(sandstormCore)) {}
+
+  class SaveHandler final: public SystemPersistent::Server {
+  public:
+    SaveHandler(capnp::Capability::Client cap, kj::Own<ChildTokenMembranePolicy> membrane)
+        : cap(kj::mv(cap)), membrane(kj::mv(membrane)) {}
+
+    kj::Promise<void> save(SaveContext context) override {
+      // Save by creating a child token.
+      auto owner = context.getParams().getSealFor();
+      auto req = membrane->sandstormCore.makeChildTokenRequest();
+      req.setParent(membrane->token);
+      req.setOwner(owner);
+      req.adoptRequirements(membrane->policy->collectRequirements(
+          capnp::Orphanage::getForMessageContaining(
+              SandstormCore::MakeChildTokenParams::Builder(req))));
+      return req.send().then([context](auto args) mutable -> void {
+        context.getResults().setSturdyRef(args.getToken());
+      });
+    }
+
+    kj::Promise<void> addRequirements(AddRequirementsContext context) override {
+      auto child = kj::heap<ChildTokenMembranePolicy>(
+          membrane->policy->addRequirements(context.getParams()),
+          membrane->token, membrane->sandstormCore);
+      context.releaseParams();
+      auto results = context.getResults();
+      results.setCap(capnp::membrane(cap, kj::mv(child)).castAs<SystemPersistent>());
+      return kj::READY_NOW;
+    }
+
+  private:
+    capnp::Capability::Client cap;
+    kj::Own<ChildTokenMembranePolicy> membrane;
+  };
+
+  kj::Maybe<capnp::Capability::Client> inboundCall(
+      uint64_t interfaceId, uint16_t methodId, capnp::Capability::Client target) override {
+    if (interfaceId == capnp::typeId<capnp::Persistent<>>() ||
+        interfaceId == capnp::typeId<SystemPersistent>()) {
+      return capnp::Persistent<capnp::Data, ApiTokenOwner>::Client(
+          kj::heap<SaveHandler>(kj::mv(target), kj::addRef(*this)));
+    }
+
+    return policy->inboundCall(interfaceId, methodId, kj::mv(target));
+  }
+  kj::Maybe<capnp::Capability::Client> outboundCall(
+      uint64_t interfaceId, uint16_t methodId, capnp::Capability::Client target) override {
+    return policy->outboundCall(interfaceId, methodId, kj::mv(target));
+  }
+  kj::Own<MembranePolicy> addRef() override {
+    return kj::addRef(*this);
+  }
+  kj::Maybe<kj::Promise<void>> onRevoked() override {
+    return policy->onRevoked();
+  }
+  MembranePolicy& rootPolicy() override {
+    return policy->rootPolicy();
+  }
+
+  capnp::Capability::Client importExternal(capnp::Capability::Client external) override {
+    // Revert to regular policy.
+    return policy->importExternal(kj::mv(external));
+  }
+  capnp::Capability::Client exportInternal(capnp::Capability::Client internal) override {
+    // Revert to regular policy.
+    return policy->exportInternal(kj::mv(internal));
+  }
+
+  capnp::Capability::Client importInternal(capnp::Capability::Client internal,
+      capnp::MembranePolicy& exportPolicy, capnp::MembranePolicy& importPolicy) override {
+    // Only be called on root policy.
+    KJ_UNREACHABLE;
+  }
+
+  capnp::Capability::Client exportExternal(capnp::Capability::Client external,
+      capnp::MembranePolicy& importPolicy, capnp::MembranePolicy& exportPolicy) override {
+    // Only be called on root policy.
+    KJ_UNREACHABLE;
+  }
+
+private:
+  kj::Own<RequirementsMembranePolicy> policy;
+  kj::Array<const byte> token;
+  SandstormCore::Client sandstormCore;
+};
+
+class IncomingSaveHandler final: public SystemPersistent::Server {
+  // When a save() call is intercepted by the MembranePolicy, it is redirected to this wrapper.
+
+public:
+  IncomingSaveHandler(AppPersistent<>::Client&& cap,
+                      kj::Own<RequirementsMembranePolicy> membrane,
+                      SandstormCore::Client sandstormCore)
+      : cap(kj::mv(cap)),
+        membrane(kj::mv(membrane)),
+        sandstormCore(kj::mv(sandstormCore)) {}
+
   kj::Promise<void> save(SaveContext context) override {
-    auto owner = context.getParams().getSealFor();
-    auto req = sandstormCore.makeChildTokenRequest();
-    req.setParent(parentToken);
-    req.setOwner(owner);
-    req.setRequirements(requirements);
-    return req.send().then([context](auto args) mutable -> void {
-      context.getResults().setSturdyRef(args.getToken());
+    return cap.saveRequest().send()
+        .then([this,context](capnp::Response<AppPersistent<>::SaveResults> response) mutable {
+      auto owner = context.getParams().getSealFor();
+      auto req = sandstormCore.makeTokenRequest();
+      req.initRef().setAppRef(response.getObjectId());
+      req.setOwner(owner);
+      req.adoptRequirements(membrane->collectRequirements(
+          capnp::Orphanage::getForMessageContaining(
+              SandstormCore::MakeTokenParams::Builder(req))));
+      // TODO(someday): Do something with response.getLabel()?
+      return req.send().then([context](auto args) mutable -> void {
+        context.getResults().setSturdyRef(args.getToken());
+      });
     });
   }
 
   kj::Promise<void> addRequirements(AddRequirementsContext context) override {
+    auto child = membrane->addRequirements(context.getParams());
+    context.releaseParams();
+    auto results = context.getResults();
+    results.setCap(capnp::membrane(cap, kj::mv(child)).castAs<SystemPersistent>());
     return kj::READY_NOW;
   }
 
 private:
   AppPersistent<>::Client cap;
-  kj::Array<const kj::byte> parentToken;
-  capnp::MallocMessageBuilder builder;
-  capnp::List<MembraneRequirement>::Reader requirements;
+  kj::Own<RequirementsMembranePolicy> membrane;
   SandstormCore::Client sandstormCore;
 };
 
-typedef capnp::RealmGateway<capnp::Data, capnp::AnyPointer, ApiTokenOwner,
-                            capnp::AnyPointer> SupervisorRealmGateway;
+SystemPersistent::Client newIncomingSaveHandler(AppPersistent<>::Client&& cap,
+                                                kj::Own<RequirementsMembranePolicy> membrane,
+                                                SandstormCore::Client sandstormCore) {
+  return kj::heap<IncomingSaveHandler>(kj::mv(cap), kj::mv(membrane), kj::mv(sandstormCore));
+}
 
-class SupervisorRealmGatewayImpl final: public SupervisorRealmGateway::Server {
-public:
-  explicit SupervisorRealmGatewayImpl(SandstormCore::Client& sandstormCore)
-    : sandstormCore(sandstormCore) {}
-
-  kj::Promise<void> import(ImportContext context) override {
-    auto cap = context.getParams().getCap().castAs<AppPersistent<>>();
-    auto owner = context.getParams().getParams().getSealFor();
-    return cap.saveRequest().send().then([this, owner, context](auto response) mutable {
-      auto req = sandstormCore.makeTokenRequest();
-      req.getRef().setAppRef(response.getObjectId());
-      req.setOwner(owner);
-      // TODO(someday): Set requirements. This will require membranes to work properly.
-      return req.send().then([context](auto response) mutable -> void {
-        context.getResults().setSturdyRef(response.getToken());
-      });
-     });
-  }
-
-  kj::Promise<void> export_(ExportContext context) override {
-    KJ_FAIL_REQUIRE("Cannot directly call save() on capabilities outside the grain. "
-      "Use SandstormApi.save() instead.");
-  }
-private:
-  SandstormCore::Client sandstormCore;
-};
+// -----------------------------------------------------------------------------
 
 static void decrementWakelock() {
   --sandstorm::wakelockCount;
@@ -2030,15 +2040,18 @@ private:
 class SupervisorMain::SupervisorImpl final: public Supervisor::Server {
 public:
   inline SupervisorImpl(kj::UnixEventPort& eventPort, MainView<>::Client&& mainView,
+                        kj::Own<RequirementsMembranePolicy> rootMembranePolicy,
                         WakelockSet& wakelockSet, kj::AutoCloseFd startAppEvent,
                         SandstormCore::Client sandstormCore, kj::Own<CapRedirector> coreRedirector)
       : eventPort(eventPort), mainView(kj::mv(mainView)),
-        wakelockSet(wakelockSet), sandstormCore(sandstormCore),
+        rootMembranePolicy(kj::mv(rootMembranePolicy)),
+        wakelockSet(wakelockSet), sandstormCore(kj::mv(sandstormCore)),
         coreRedirector(kj::mv(coreRedirector)), startAppEvent(kj::mv(startAppEvent)) {}
 
   kj::Promise<void> getMainView(GetMainViewContext context) override {
     ensureStarted();
-    context.getResults(capnp::MessageSize {4, 1}).setView(mainView);
+    context.getResults(capnp::MessageSize {4, 1})
+        .setView(capnp::membrane(mainView, kj::addRef(*rootMembranePolicy)));
     return kj::READY_NOW;
   }
 
@@ -2119,10 +2132,13 @@ public:
       case SupervisorObjectId<>::APP_REF: {
         auto req = mainView.restoreRequest();
         req.setObjectId(objectId.getAppRef());
-        return req.send().then([this, params, context](auto args) mutable -> void {
-          context.getResults().setCap(kj::heap<SaveWrapper>(
-            args.getCap().template castAs<AppPersistent<>>(), params.getRequirements(), params.getParentToken(), sandstormCore));
-        });
+        auto cap = req.send().getCap();
+
+        auto policy = kj::refcounted<ChildTokenMembranePolicy>(
+            kj::addRef(*rootMembranePolicy), params.getParentToken(), sandstormCore);
+
+        context.getResults().setCap(capnp::membrane(kj::mv(cap), kj::mv(policy)));
+        return kj::READY_NOW;
       }
       default:
         KJ_FAIL_REQUIRE("Unknown objectId type");
@@ -2191,7 +2207,8 @@ public:
 
 private:
   kj::UnixEventPort& eventPort;
-  MainView<>::Client mainView;
+  MainView<>::Client mainView;  // INTERNAL TO rootMembranePolicy; use carefully
+  kj::Own<RequirementsMembranePolicy> rootMembranePolicy;
   WakelockSet& wakelockSet;
   SandstormCore::Client sandstormCore;
   kj::Own<CapRedirector> coreRedirector;
@@ -2372,7 +2389,6 @@ kj::Promise<void> SupervisorMain::DefaultSystemConnector::run(
   auto coreRedirector = kj::refcounted<CapRedirector>();
   SandstormCore::Client coreCap = static_cast<capnp::Capability::Client>(
     kj::addRef(*coreRedirector)).castAs<SandstormCore>();
-  SupervisorRealmGateway::Client gateway = kj::heap<SupervisorRealmGatewayImpl>(coreCap);
 
   // Compute grain size and watch for changes.
   DiskUsageWatcher diskWatcher(ioContext.unixEventPort, ioContext.provider->getTimer(), coreCap);
@@ -2384,8 +2400,11 @@ kj::Promise<void> SupervisorMain::DefaultSystemConnector::run(
       kj::LowLevelAsyncIoProvider::TAKE_OWNERSHIP);
   capnp::TwoPartyVatNetwork appNetwork(*appConnection, capnp::rpc::twoparty::Side::SERVER);
   WakelockSet wakelockSet(grainId, coreCap);
-  auto server = capnp::makeRpcServer(appNetwork, kj::heap<SandstormApiImpl>(wakelockSet, grainId,
-      coreCap), kj::mv(gateway));
+
+  SandstormApi<>::Client api = kj::heap<SandstormApiImpl>(wakelockSet, grainId, coreCap);
+  auto rootMembranePolicy = kj::refcounted<RequirementsMembranePolicy>(coreCap);
+  api = capnp::reverseMembrane(kj::mv(api), rootMembranePolicy->addRef());
+  auto server = capnp::makeRpcServer(appNetwork, kj::mv(api));
 
   // Limit outstanding calls from the app to 1MiW (8MiB) in order to prevent an errant or malicious
   // app from consuming excessive RAM elsewhere in the system.
@@ -2402,8 +2421,8 @@ kj::Promise<void> SupervisorMain::DefaultSystemConnector::run(
   //   want to wrap the UiView and cache session objects.  Perhaps we could do this by making
   //   them persistable, though it's unclear how that would work with SessionContext.
   Supervisor::Client mainCap = kj::heap<SupervisorImpl>(
-      ioContext.unixEventPort, kj::mv(app), wakelockSet, kj::mv(startEventFd),
-      coreCap, kj::addRef(*coreRedirector));
+      ioContext.unixEventPort, kj::mv(app), kj::mv(rootMembranePolicy),
+      wakelockSet, kj::mv(startEventFd), coreCap, kj::addRef(*coreRedirector));
 
   auto acceptTask = systemConnector->run(ioContext, kj::mv(mainCap), kj::mv(coreRedirector));
 

@@ -16,6 +16,7 @@
 
 #include "id-to-text.h"
 #include "util.h"
+#include <kj/encoding.h>
 
 namespace sandstorm {
 
@@ -188,7 +189,7 @@ kj::String packageIdString(spk::PackageId::Reader packageId) {
 
 kj::String packageIdString(kj::ArrayPtr<const kj::byte> packageId) {
   KJ_ASSERT(packageId.size() == PACKAGE_ID_BYTE_SIZE);
-  return hexEncode(packageId);
+  return kj::encodeHex(packageId);
 }
 
 bool tryParsePackageId(kj::StringPtr in, spk::PackageId::Builder out) {

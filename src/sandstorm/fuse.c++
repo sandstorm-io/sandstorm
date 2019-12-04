@@ -35,6 +35,7 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <sys/socket.h>
+#include <sys/sysmacros.h>
 
 namespace sandstorm {
 

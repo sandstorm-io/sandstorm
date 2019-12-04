@@ -59,14 +59,18 @@ const showConnectionGraph = function () {
 };
 
 const mapGrainStateToTemplateData = function (grainState) {
+  // TODO(now): Change error() to return a bare message code, and make sure to handle all codes.
   const error = grainState.error();
   const templateData = {
     grainId: grainState.grainId(),
     active: grainState.isActive(),
     title: grainState.title(),
     error: error && error.message,
-    unauthorized: error && (error.error == 403),
-    notFound: error && (error.error == 404),
+    unauthorized: error && (error.error == 403 || error.error == "access-denied"),
+    notFound: error && (error.error == 404 || error.error == "no-such-grain"),
+    quotaExhausted: error && (error.error == 402 || error.error == "quota-exhausted"),
+    missingPackage: error && (error.error == "missing-package"),
+    paymentsEnabled: !!Meteor.settings.public.stripePublicKey,
     inMyTrash: grainState.isInMyTrash(),
     inOwnersTrash: error && (error.error === "grain-is-in-trash"),
     grainOwnerSuspended: error && (error.error === "grain-owner-suspended"),
@@ -116,23 +120,6 @@ Tracker.autorun(function () {
       });
     }
   }
-});
-
-Template.layout.events({
-  "click .incognito-button": function (event) {
-    console.log(event);
-    const grains = globalGrains.getAll();
-    const token = event.currentTarget.getAttribute("data-token");
-    if (token) {
-      grains.forEach(function (grain) {
-        if (grain.token() == token) {
-          grain.doNotRevealIdentity();
-        }
-      });
-    } else {
-      console.error("Interstitial prompt answered, but no token present?");
-    }
-  },
 });
 
 Template.grainTitle.events({
@@ -292,7 +279,7 @@ Template.grainApiTokenPopup.events({
       assignment = { roleId: roleList.selectedIndex - 1 };
     }
 
-    Meteor.call("newApiToken", { identityId: activeGrain.identityId() }, grainId,
+    Meteor.call("newApiToken", { accountId: Meteor.userId() }, grainId,
                 document.getElementById("api-token-petname").value,
                 assignment, { webkey: { forSharing: false } },
                 function (error, result) {
@@ -470,7 +457,7 @@ Template.shareableLinkTab.events({
     }
 
     instance.completionState.set({ pending: true });
-    Meteor.call("newApiToken", { identityId: currentGrain.identityId() }, grainId,
+    Meteor.call("newApiToken", { accountId: Meteor.userId() }, grainId,
                 event.target.getElementsByClassName("label")[0].value,
                 assignment, { webkey: { forSharing: true } },
                 function (error, result) {
@@ -575,7 +562,7 @@ Template.grainPowerboxOfferPopup.events({
 
 Template.grainSharePopup.helpers({
   incognito: function () {
-    return !globalGrains.getActive().identityId();
+    return globalGrains.getActive().isIncognito();
   },
 
   currentTokenUrl: function () {
@@ -598,20 +585,10 @@ Template.grainInMyTrash.events({
       if (err) {
         console.error(err.stack);
       } else {
-        grain.reset(grain.identityId());
+        grain.reset(!grain.isIncognito());
         grain.openSession();
       }
     });
-  },
-});
-
-Template.wrongIdentity.helpers({
-  unclickedMessage: function () {
-    if (Meteor.userId()) {
-      return "Click to sign out of your current session and sign in as the above identity.";
-    } else {
-      return "Click to sign in.";
-    }
   },
 });
 
@@ -625,7 +602,10 @@ Template.requestAccess.onCreated(function () {
     this.subscribe("requestingAccess", grainId);
     const granted = GrantedAccessRequests.findOne({ grainId: grainId });
     if (granted && !this._grain.token()) {
-      this._grain.reset(granted.identityId);
+      // Access was granted to this user explicitly. Hence the user's identity is already known.
+      // Also, the user only has access by virtue of their identity. So, we can and must reveal
+      // identity immediately (`true` parameter here).
+      this._grain.reset(true);
       this._grain.openSession();
     }
   });
@@ -633,7 +613,16 @@ Template.requestAccess.onCreated(function () {
 
 Template.requestAccess.events({
   "click button.request-access": function (event, instance) {
-    instance._status.set({ chooseIdentity: true });
+    let grainId = instance._grain.grainId();
+    Meteor.call("requestAccess", getOrigin(), grainId, function (error, result) {
+      if (error) {
+        instance._status.set({ error: error });
+      } else {
+        instance._status.set({ success: true });
+      }
+    });
+
+    instance._status.set({ waiting: true });
   },
 });
 
@@ -641,60 +630,11 @@ Template.requestAccess.helpers({
   status: function () {
     return Template.instance()._status.get();
   },
-
-  chooseIdentityText: function () {
-    if (SandstormDb.getUserIdentityIds(Meteor.user()).length > 1) {
-      return "Please select an identity with which to request access.";
-    } else {
-      return "To confirm, please click on your identity below.";
-    }
-  },
-
-  identityPickerData: function () {
-    const identities = SandstormDb.getUserIdentityIds(Meteor.user())
-          .map(id => globalDb.getIdentity(id));
-    const instance = Template.instance();
-    function onPicked(identityId) {
-      let grainId = instance._grain.grainId();
-      Meteor.call("requestAccess", getOrigin(), grainId, identityId, function (error, result) {
-        if (error) {
-          instance._status.set({ error: error });
-        } else {
-          instance._status.set({ success: true });
-        }
-      });
-
-      instance._status.set({ waiting: true });
-    }
-
-    return {
-      identities: identities,
-      onPicked: onPicked,
-    };
-  },
 });
 
 Template.grainView.helpers({
   unpackedGrainState: function () {
     return mapGrainStateToTemplateData(this);
-  },
-
-  identityPickerData: function () {
-    const identities = SandstormDb.getUserIdentityIds(Meteor.user()).map(function (id) {
-      const identity = Meteor.users.findOne({ _id: id });
-      if (identity) {
-        SandstormDb.fillInProfileDefaults(identity);
-        SandstormDb.fillInIntrinsicName(identity);
-        SandstormDb.fillInPictureUrl(identity);
-        return identity;
-      }
-    });
-
-    const grain = globalGrains.getActive();
-    return {
-      identities: identities,
-      onPicked: function (identityId) { grain.revealIdentity(identityId); },
-    };
   },
 
   closeSignInOverlay() {
@@ -708,6 +648,24 @@ Template.grainView.helpers({
     // Prefix to add to the iframe id, for testing purposes.
     return this.isPowerbox ? "powerbox-" : "";
   },
+
+  appIndexUrl() {
+    return globalDb.getSetting("appIndexUrl");
+  },
+
+  packageId() {
+    return globalDb.getGrain(this.grainId).packageId;
+  }
+});
+
+Template.grainView.events({
+  "click .reveal-identity-button": function (event, instance) {
+    this.grainView.revealIdentity();
+  },
+
+  "click .incognito-button": function (event, instance) {
+    this.grainView.doNotRevealIdentity();
+  },
 });
 
 Template.grain.helpers({
@@ -717,7 +675,8 @@ Template.grain.helpers({
 
   hasAccess: function () {
     const grain = globalGrains.getActive();
-    return grain && !!Sessions.findOne(grain.sessionId());
+    const error = grain && grain.error();
+    return grain && !!Sessions.findOne(grain.sessionId()) && !grain.error();
   },
 
   isOwner: function () {
@@ -748,6 +707,8 @@ Template.grain.helpers({
   },
 
   displayTrashButton: function () {
+    if (!Meteor.userId()) return false;
+
     const grainview = globalGrains.getActive();
     if (!grainview) return false;
     const grainId = grainview.grainId();
@@ -759,10 +720,9 @@ Template.grain.helpers({
 
     if (grain) return true;
 
-    const myIdentityIds = SandstormDb.getUserIdentityIds(Meteor.user());
     return !!ApiTokens.findOne({
       grainId: grainId,
-      "owner.user.identityId": { $in: myIdentityIds },
+      "owner.user.accountId": Meteor.userId(),
       trashed: { $exists: false },
     });
   },
@@ -813,10 +773,12 @@ Template.grainApiTokenPopup.helpers({
   },
 
   existingTokens: function () {
+    if (!Meteor.userId()) return null;
+
     const current = globalGrains.getActive();
     return current && ApiTokens.find({
       grainId: current.grainId(),
-      identityId: current.identityId(),
+      accountId: Meteor.userId(),
       forSharing: { $ne: true },
       $or: [
         { owner: { webkey: null } },
@@ -872,28 +834,27 @@ Template.whoHasAccessPopup.onCreated(function () {
   const _this = this;
   this.subscribe("contactProfiles", true);
   const currentGrain = globalGrains.getActive();
-  _this.identityId = currentGrain.identityId();
   _this.grainId = currentGrain.grainId();
   _this.transitiveShares = new ReactiveVar(null);
   _this.downstreamTokensById = new ReactiveVar({});
   _this.isReady = new ReactiveVar(false);
   this.resetTransitiveShares = function () {
-    Meteor.call("transitiveShares", _this.identityId, _this.grainId,
+    Meteor.call("transitiveShares", null, _this.grainId,
                 function (error, downstream) {
       if (error) {
         console.error(error.stack);
         _this.isReady.set(true);
       } else {
         const downstreamTokensById = {};
-        const sharesByIdentityRecipient = {};
+        const sharesByAccountRecipient = {};
         const sharesByGrainRecipient = {};
         downstream.forEach(function (token) {
           downstreamTokensById[token._id] = token;
           let mapToUpdate;
           let recipient;
-          if (Match.test(token.owner, { user: Match.ObjectIncluding({ identityId: String }) })) {
-            mapToUpdate = sharesByIdentityRecipient;
-            recipient = token.owner.user.identityId;
+          if (Match.test(token.owner, { user: Match.ObjectIncluding({ accountId: String }) })) {
+            mapToUpdate = sharesByAccountRecipient;
+            recipient = token.owner.user.accountId;
           } else if (Match.test(token.owner,
                                 { grain: Match.ObjectIncluding({ grainId: String }) })) {
             mapToUpdate = sharesByGrainRecipient;
@@ -911,15 +872,15 @@ Template.whoHasAccessPopup.onCreated(function () {
 
             mapToUpdate[recipient].allShares.push(token);
             const dedupedShares = mapToUpdate[recipient].dedupedShares;
-            if (!dedupedShares.some((share) => share.identityId === token.identityId)) {
+            if (!dedupedShares.some((share) => share.accountId === token.accountId)) {
               dedupedShares.push(token);
             }
           }
         });
 
-        let identityOwnedShares = _.values(sharesByIdentityRecipient);
-        if (identityOwnedShares.length == 0) {
-          identityOwnedShares = { empty: true };
+        let accountOwnedShares = _.values(sharesByAccountRecipient);
+        if (accountOwnedShares.length == 0) {
+          accountOwnedShares = { empty: true };
         }
 
         let grainOwnedShares = _.values(sharesByGrainRecipient);
@@ -927,7 +888,7 @@ Template.whoHasAccessPopup.onCreated(function () {
           grainOwnedShares = { empty: true };
         }
 
-        _this.transitiveShares.set({ identityOwnedShares, grainOwnedShares, });
+        _this.transitiveShares.set({ accountOwnedShares, grainOwnedShares, });
         _this.downstreamTokensById.set(downstreamTokensById);
 
         _this.isReady.set(true);
@@ -965,24 +926,23 @@ Template.whoHasAccessPopup.events({
   "click table.people button.revoke-access": function (event, instance) {
     const recipient = event.currentTarget.getAttribute("data-recipient");
     const transitiveShares = instance.transitiveShares.get();
-    const identityOwnedShares = transitiveShares.identityOwnedShares;
+    const accountOwnedShares = transitiveShares.accountOwnedShares;
     const tokensById = instance.downstreamTokensById.get();
-    const recipientShares = _.findWhere(identityOwnedShares, { recipient: recipient });
-    const currentIdentityId = globalGrains.getActive().identityId();
-    const recipientTokens = _.where(recipientShares.allShares, { identityId: currentIdentityId });
+    const recipientShares = _.findWhere(accountOwnedShares, { recipient: recipient });
+    const recipientTokens = _.where(recipientShares.allShares, { accountId: Meteor.userId() });
 
     // Two cases:
     // 1. All of the tokens are direct shares. Easy. Just revoke them.
     // 2. Some of the links are child tokens. For each, we walk up the chain of parents to the
-    //    root. Then we walk downwards to see whether any other identities would be immediately
+    //    root. Then we walk downwards to see whether any other accounts would be immediately
     //    affected by revoking those roots. We then collect that data and display it in a
     //    confirmation dialog.
 
     let directTokens = [];
-    // Direct shares from the current identity to the recipient.
+    // Direct shares from the current account to the recipient.
 
     let rootTokens = [];
-    // Roots of chains of child tokens starting at the current identity and leading to the
+    // Roots of chains of child tokens starting at the current account and leading to the
     // recipient.
 
     recipientTokens.forEach((token) => {
@@ -1013,15 +973,15 @@ Template.whoHasAccessPopup.events({
         }
       }
 
-      const otherAffectedIdentities = {};
+      const otherAffectedAccounts = {};
       const affectedGrains = {};
       const tokenStack = rootTokens.slice(0);
       while (tokenStack.length > 0) {
         let current = tokenStack.pop();
         if (Match.test(current.owner,
-                       { user: Match.ObjectIncluding({ identityId: String }) })) {
-          if (current.owner.user.identityId != recipient) {
-            otherAffectedIdentities[current.owner.user.identityId] = true;
+                       { user: Match.ObjectIncluding({ accountId: String }) })) {
+          if (current.owner.user.accountId != recipient) {
+            otherAffectedAccounts[current.owner.user.accountId] = true;
           }
         } else {
           if (Match.test(current.owner,
@@ -1038,8 +998,8 @@ Template.whoHasAccessPopup.events({
         }
       }
 
-      const recipientIdentity = ContactProfiles.findOne({ _id: recipient });
-      const recipientName = (recipientIdentity && recipientIdentity.profile.name) ||
+      const recipientAccount = ContactProfiles.findOne({ _id: recipient });
+      const recipientName = (recipientAccount && recipientAccount.profile.name) ||
           "Unknown User";
       const singular = rootTokens.length == 1;
 
@@ -1053,10 +1013,10 @@ Template.whoHasAccessPopup.events({
 
       let othersNote = "(No signed-in user other than " + recipientName + " has opened " +
           (singular ? "this link" : "these links") + " yet.)";
-      if (Object.keys(otherAffectedIdentities).length > 0) {
-        const othersNames = Object.keys(otherAffectedIdentities)
-            .map(identityId => ContactProfiles.findOne({ _id: identityId }))
-            .map(identity => (identity && identity.profile.name) || "Unknown User")
+      if (Object.keys(otherAffectedAccounts).length > 0) {
+        const othersNames = Object.keys(otherAffectedAccounts)
+            .map(accountId => ContactProfiles.findOne({ _id: accountId }))
+            .map(account => (account && account.profile.name) || "Unknown User")
             .join(", ");
         othersNote = (singular ? "This link has" : "These links have") +
           " also been opened by:\n\n    " + othersNames;
@@ -1093,8 +1053,7 @@ Template.whoHasAccessPopup.events({
     const grainOwnedShares = transitiveShares.grainOwnedShares;
     const tokensById = instance.downstreamTokensById.get();
     const recipientShares = _.findWhere(grainOwnedShares, { recipient: recipient });
-    const currentIdentityId = globalGrains.getActive().identityId();
-    const recipientTokens = _.where(recipientShares.allShares, { identityId: currentIdentityId });
+    const recipientTokens = _.where(recipientShares.allShares, { accountId: Meteor.userId() });
 
     recipientTokens.forEach((token) => {
       Meteor.call("updateApiToken", token._id, { revoked: true });
@@ -1135,7 +1094,7 @@ Template.whoHasAccessPopup.helpers({
     if (Meteor.userId()) {
       return ApiTokens.find({
         grainId: Template.instance().grainId,
-        identityId: Template.instance().identityId,
+        accountId: Meteor.userId(),
         forSharing: true,
         $or: [
           { owner: { webkey: null } },
@@ -1145,10 +1104,8 @@ Template.whoHasAccessPopup.helpers({
     }
   },
 
-  isCurrentIdentity: function () {
-    if (this.identityId === globalGrains.getActive().identityId()) {
-      return true;
-    }
+  isCurrentAccount: function (accountId) {
+    return accountId === Meteor.userId();
   },
 
   getPetname: function () {
@@ -1159,17 +1116,16 @@ Template.whoHasAccessPopup.helpers({
     }
   },
 
-  displayName: function (identityId) {
-    let identity = ContactProfiles.findOne({ _id: identityId });
-    if (!identity) {
-      identity = Meteor.users.findOne({ _id: identityId });
-      if (identity) SandstormDb.fillInProfileDefaults(identity);
+  displayName: function (accountId) {
+    let account = ContactProfiles.findOne({ _id: accountId });
+    if (!account) {
+      account = Meteor.users.findOne({ _id: accountId });
     }
 
-    if (identity) {
-      return identity.profile.name;
+    if (account) {
+      return account.profile.name;
     } else {
-      return "Unknown User (" + identityId.slice(0, 16) + ")";
+      return "Unknown User (" + accountId + ")";
     }
   },
 
@@ -1281,13 +1237,12 @@ Template.emailInviteTab.helpers({
     return Template.instance().contacts;
   },
 
-  preselectedIdentityId: function () {
+  preselectedAccountId: function () {
     return Session.get("share-grain-" + Template.instance().grain.grainId());
   },
 
   invitationExplanation: function () {
-    const primaryEmail = globalDb.getPrimaryEmail(Meteor.userId(),
-                                                  globalGrains.getActive().identityId());
+    const primaryEmail = globalDb.getPrimaryEmail(Meteor.userId());
     if (primaryEmail) {
       return "Invitation will be from " + primaryEmail;
     } else {
@@ -1348,7 +1303,7 @@ Template.emailInviteTab.events({
       }
     }
 
-    Meteor.call("inviteUsersToGrain", getOrigin(), currentGrain.identityId(),
+    Meteor.call("inviteUsersToGrain", getOrigin(), null,
                 grainId, title, assignment, contacts, message, function (error, result) {
       if (error) {
         instance.completionState.set({ error: error.toString() });
@@ -1455,16 +1410,6 @@ Meteor.setInterval(function () {
     console.log("Sandstorm is trying to reconnect...");
     Meteor.reconnect();
   }
-
-  grains.forEach(function (grain) {
-    if (grain.sessionId()) {
-      // TODO(soon):  Investigate what happens in background tabs.  Maybe arrange to re-open the
-      //   app if it dies while in the background.
-      Meteor.call("keepSessionAlive", grain.sessionId(), function (error, result) {
-        // Sessions will automatically resume if possible, otherwise they will refresh.
-      });
-    }
-  });
 }, 60000);
 
 const memoizedNewApiToken = {};
@@ -1593,7 +1538,7 @@ Meteor.startup(function () {
       if (Router.current().route.getName() === "shared") {
         provider = { rawParentToken: Router.current().params.token };
       } else {
-        provider = { identityId: senderGrain.identityId() };
+        provider = { accountId: Meteor.userId() };
       }
 
       const owner = {
@@ -1695,7 +1640,6 @@ Meteor.startup(function () {
 
         sessionId: senderGrain.sessionId(),
         grainId: senderGrain.grainId(),
-        identityId: senderGrain.identityId(),
         // Attach grain context to the request.
 
         onCompleted: function () { globalTopbar.closePopup(); },
@@ -1827,7 +1771,7 @@ Router.map(function () {
 
     onBeforeAction: function () {
       // Don't do anything for non-account users.
-      if (Meteor.userId() && !Meteor.user().loginIdentities) return;
+      if (Meteor.userId() && !Meteor.user().loginCredentials) return;
 
       // Only run the hook once.
       if (this.state.get("beforeActionHookRan")) return this.next();
@@ -1903,7 +1847,7 @@ Router.map(function () {
 
     onBeforeAction: function () {
       // Don't do anything for non-account users.
-      if (Meteor.userId() && !Meteor.user().loginIdentities) return;
+      if (Meteor.userId() && !Meteor.user().loginCredentials) return;
 
       // Only run the hook once.
       if (this.state.get("beforeActionHookRan")) return this.next();
@@ -1921,20 +1865,24 @@ Router.map(function () {
           this.state.set("invalidToken", true);
         } else if (tokenInfo.revoked) {
           this.state.set("revoked", true);
-        } else if (tokenInfo.identityOwner) {
+        } else if (tokenInfo.accountOwner) {
           if (tokenInfo.grainId && Meteor.userId() &&
-              globalDb.userHasIdentity(Meteor.userId(), tokenInfo.identityOwner._id)) {
+              Meteor.userId() == tokenInfo.accountOwner._id) {
             Router.go("/grain/" + tokenInfo.grainId + path, {}, { replaceState: true });
           } else {
-            SandstormDb.fillInPictureUrl(tokenInfo.identityOwner);
-            this.state.set("identityOwner", tokenInfo);
+            SandstormDb.fillInPictureUrl(tokenInfo.accountOwner);
+            this.state.set("accountOwner", tokenInfo);
           }
         } else if (tokenInfo.alreadyRedeemed) {
           Router.go("/grain/" + tokenInfo.grainId + path, {}, { replaceState: true });
         } else if (tokenInfo.grainId) {
           const grainId = tokenInfo.grainId;
-          const identityChosenByLogin = this.state.get("identity-chosen-by-login");
-          this.state.set("identity-chosen-by-login", undefined);
+
+          // TODO(cleanup): We actually don't care which credential was chosen. This is just a hack
+          //   to avoid showing the incognito prompt if the user just logged in for the explicit
+          //   purpose of opening this grain.
+          const credentialChosenByLogin = this.state.get("credential-chosen-by-login");
+          this.state.set("credential-chosen-by-login", undefined);
 
           const openView = function openView() {
             // If the grain is already open in a tab, switch to that tab. We have to re-check this
@@ -1953,8 +1901,8 @@ Router.map(function () {
               grainToOpen.openSession();
               globalGrains.setActive(grainId);
 
-              if (identityChosenByLogin) {
-                grainToOpen.revealIdentity(identityChosenByLogin);
+              if (credentialChosenByLogin) {
+                grainToOpen.revealIdentity();
               }
 
               if (!Meteor.userId() && globalGrains.getAll().length <= 1) {
@@ -1978,11 +1926,11 @@ Router.map(function () {
         this.render("invalidToken", { data: { token: this.params.token } });
       } else if (this.state.get("revoked")) {
         this.render("revokedShareLink");
-      } else if (this.state.get("identityOwner")) {
-        const tokenInfo = this.state.get("identityOwner");
-        this.render("wrongIdentity",
+      } else if (this.state.get("accountOwner")) {
+        const tokenInfo = this.state.get("accountOwner");
+        this.render("wrongUser",
                     { data: {
-                      recipient: tokenInfo.identityOwner,
+                      recipient: tokenInfo.accountOwner,
                       login: tokenInfo.login,
                     }, });
       } else {
@@ -1993,7 +1941,7 @@ Router.map(function () {
     onStop: function () {
       this.state.set("beforeActionHookRan", false);
       this.state.set("invalidToken", undefined);
-      this.state.set("identityOwner", undefined);
+      this.state.set("accountOwner", undefined);
       globalGrains.setAllInactive();
     },
   });
@@ -2045,7 +1993,7 @@ Router.map(function () {
   });
 
   this.route("share", {
-    path: "/share/:grainId/:identityId",
+    path: "/share/:grainId/:accountId",
     template: "share",
     waitOn: function () {
       return Meteor.subscribe("grainTopBar", this.params.grainId);
@@ -2054,12 +2002,12 @@ Router.map(function () {
     data: function () {
       let userId = Meteor.userId();
       let grainId = this.params.grainId;
-      let identityId = this.params.identityId;
+      let accountId = this.params.accountId;
       let grain = Grains.findOne({ _id: grainId });
       if (!grain) {
         return { grainNotFound: grainId };
       } else {
-        Session.set("share-grain-" + grainId, identityId);
+        Session.set("share-grain-" + grainId, accountId);
         Router.go("/grain/" + grainId);
       }
     },
@@ -2095,7 +2043,7 @@ Meteor.startup(function () {
 
       onBeforeAction: function () {
         // Don't do anything for non-account users.
-        if (Meteor.userId() && !Meteor.user().loginIdentities) return;
+        if (Meteor.userId() && !Meteor.user().loginCredentials) return;
 
         // Only run the hook once.
         if (this.state.get("beforeActionHookRan")) return this.next();
@@ -2114,7 +2062,7 @@ Meteor.startup(function () {
             this.state.set("invalidToken", true);
           } else if (tokenInfo.revoked) {
             this.state.set("revoked", true);
-          } else if (tokenInfo.identityOwner) {
+          } else if (tokenInfo.accountOwner) {
             this.state.set("invalidToken", true);
           } else if (tokenInfo.alreadyRedeemed) {
             console.error("token was already redeemed, but that shouldn't be possible.");
@@ -2137,7 +2085,11 @@ Meteor.startup(function () {
                 const grainToOpen = globalGrains.addNewGrainView(grainId, path, tokenInfo,
                                                                  mainContentElement);
                 if (Meteor.user()) {
-                  grainToOpen.revealIdentity(Meteor.user().loginIdentities[0]);
+                  // For standalone hosts, if the user logged in at all, they must necessarily have
+                  // logged into this grain, since there is only one grain. So we can always reveal
+                  // identity -- if the user doesn't want to reveal identity, they shouldn't log
+                  // into the host.
+                  grainToOpen.revealIdentity();
                 }
 
                 grainToOpen.openSession();
@@ -2159,11 +2111,11 @@ Meteor.startup(function () {
           this.render("invalidToken", { data: { token: this.params.token } });
         } else if (this.state.get("revoked")) {
           this.render("revokedShareLink");
-        } else if (this.state.get("identityOwner")) {
-          const tokenInfo = this.state.get("identityOwner");
-          this.render("wrongIdentity",
+        } else if (this.state.get("accountOwner")) {
+          const tokenInfo = this.state.get("accountOwner");
+          this.render("wrongUser",
                       { data: {
-                        recipient: tokenInfo.identityOwner,
+                        recipient: tokenInfo.accountOwner,
                         login: tokenInfo.login,
                       }, });
         } else {
@@ -2174,7 +2126,7 @@ Meteor.startup(function () {
       onStop: function () {
         this.state.set("beforeActionHookRan", false);
         this.state.set("invalidToken", undefined);
-        this.state.set("identityOwner", undefined);
+        this.state.set("accountOwner", undefined);
         globalGrains.setAllInactive();
       },
     });

@@ -135,8 +135,7 @@ Template.newAdminUserInviteEmail.events({
     evt.stopPropagation();
     const instance = Template.instance();
     const origin = getOrigin();
-    const identityId = Accounts.getCurrentIdentityId();
-    const from = globalDb.getReturnAddressWithDisplayName(identityId);
+    const from = globalDb.getReturnAddressWithDisplayName(Meteor.userId());
     const list = instance.toAddresses.get();
     const subject = instance.subject.get();
     const message = instance.messageBody.get();

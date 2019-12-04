@@ -1579,7 +1579,15 @@ __EOF__
 
   # Mark as executable, and enable on boot.
   chmod +x /etc/init.d/sandstorm
-  update-rc.d sandstorm defaults
+  if [ "$(which update-rc.d)" != "" ]; then
+    update-rc.d sandstorm defaults
+  elif [ "$(which rc-update)" != "" ]; then
+    rc-update add sandstorm
+  else
+    echo "WARNING: I couldn't figure out how to make the Sandstorm init script active on" >&2
+    echo "  your system; neither update-rc.d nor rc-update commands seem to exist. Sandstorm" >&2
+    echo "  will not start automatically at boot until you mark its init script active." >&2
+  fi
 
   # Start it right now.
   service sandstorm start

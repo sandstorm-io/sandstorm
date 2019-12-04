@@ -7,16 +7,16 @@
     <div class="powerbox-iframe-mount">{{ setupIframe }}</div>
   {{else}}
     <form>
-      <p>with permissions:</p>
+      <p>{{_ "powerboxBuiltins.uiViewPowerboxConfiguration.explanation"}}</p>
       {{#each role in viewInfo.roles}}
         <label><input type="radio" name="role" value="{{role.index}}">{{role.title.defaultText}} - {{role.verbPhrase.defaultText}}</label>
       {{else}}
-        <label><input type="radio" checked="true" name="role" value="all">Full access</label>
+        <label><input type="radio" checked="true" name="role" value="all">{{_ "powerboxBuiltins.uiViewPowerboxConfiguration.fullAccess"}}</label>
       {{/each}}
       <div class="choose-buttons">
-        <button class="connect-button">Connect</button>
+        <button class="connect-button">{{_ "powerboxBuiltins.uiViewPowerboxConfiguration.connectButton"}}</button>
         {{#if option.hostedObject}}
-          <button class="choose-hosted-object">Browse grain contents &raquo;</button>
+          <button class="choose-hosted-object">{{_ "powerboxBuiltins.uiViewPowerboxConfiguration.chooseHostedObjectButton"}}</button>
         {{/if}}
       </div>
     </form>
@@ -24,21 +24,21 @@
 </template>
 
 <template name="ipNetworkPowerboxCard">
-  Admin: grant all outgoing network access
+  {{_ "powerboxBuiltins.ipNetworkPowerboxCard.explanation"}}
   {{#with encryption}}
-    (encrypted with {{.}})
+    {{_ "powerboxBuiltins.ipNetworkPowerboxCard.encryptedWith" .}}
   {{/with}}
 </template>
 
 <template name="ipInterfacePowerboxCard">
-  Admin: grant all incoming network access
+  {{_ "powerboxBuiltins.ipInterfacePowerboxCard.explanation"}}
 </template>
 
 <template name="emailVerifierPowerboxCard">
   {{#if option.frontendRef.emailVerifier.services}}
-    Verify e-mail addresses using {{ serviceTitle }}
+    {{_ "powerboxBuiltins.emailVerifierPowerboxCard.verifyWith" serviceTitle}}
   {{else}}
-    Verify e-mail addresses using any login service
+    {{_ "powerboxBuiltins.emailVerifierPowerboxCard.verifyWithAnyService"}}
   {{/if}}
 </template>
 
@@ -52,44 +52,44 @@
 
 <template name="identityPowerboxConfiguration">
   <form>
-    <p>with permissions:</p>
+    <p>{{_ "powerboxBuiltins.identityPowerboxConfiguration.explanation"}}</p>
     {{#each role in sufficientRoles}}
       <label><input type="radio" name="role" value="{{role.index}}">{{role.title.defaultText}} - {{role.verbPhrase.defaultText}}</label>
     {{else}}
-      <label><input type="radio" checked="true" name="role" value="all">Full access</label>
+      <label><input type="radio" checked="true" name="role" value="all">{{_ "powerboxBuiltins.identityPowerboxConfiguration.fullAccess"}}</label>
     {{/each}}
     <div class="choose-buttons">
-      <button class="connect-button">Connect</button>
+      <button class="connect-button">{{_ "powerboxBuiltins.identityPowerboxConfiguration.connectButton"}}</button>
     </div>
   </form>
 </template>
 
 <template name="addNewVerifiedEmailPowerboxCard">
-  Add a new address
+  {{_ "powerboxBuiltins.addNewVerifiedEmailPowerboxCard.explanation"}}
 </template>
 
 <template name="httpUrlPowerboxCard">
-  Use {{option.frontendRef.http.url}}
+  {{_ "powerboxBuiltins.httpUrlPowerboxCard.useUrl" option.frontendRef.http.url}}
 </template>
 
 <template name="httpArbitraryPowerboxCard">
-  Specify URL...
+  {{_ "powerboxBuiltins.httpArbitraryPowerboxCard.explanation"}}
 </template>
 
 <template name="httpArbitraryPowerboxConfiguration">
   <form>
-    Enter URL:
-    <input class="url" type="text" placeholder="https://example.com">
+    {{_ "powerboxBuiltins.httpArbitraryPowerboxConfiguration.explanation"}}
+    <input class="url" type="text" placeholder="{{_ "powerboxBuiltins.httpArbitraryPowerboxConfiguration.placeholder"}}">
     <div class="choose-buttons">
-      <button class="connect-button">Connect</button>
+      <button class="connect-button">{{_ "powerboxBuiltins.httpArbitraryPowerboxConfiguration.connectButton"}}</button>
     </div>
   </form>
 </template>
 
 <template name="httpOAuthPowerboxCard">
-  Use {{option.oauthServiceInfo.service}}
+  {{_ "powerboxBuiltins.httpOAuthPowerboxCard.useService" option.oauthServiceInfo.service}}
 </template>
 
 <template name="httpOAuthPowerboxConfiguration">
-  Requesting permissions from {{option.oauthServiceInfo.service}} (see popup).
+  {{_ "powerboxBuiltins.httpOAuthPowerboxConfiguration.requestPermissionsFromService" option.oauthServiceInfo.service}}
 </template>

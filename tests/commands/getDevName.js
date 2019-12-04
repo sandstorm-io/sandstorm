@@ -26,6 +26,6 @@ var utils = require('../utils'),
 
 exports.command = function(callback) {
     return this.execute(function () {
-      return globalDb.getIdentity(Meteor.user().loginIdentities[0].id).profile.intrinsicName;
+      return Meteor.user().profile.name;
     }, [], callback);
 };

@@ -1,5 +1,5 @@
 <template name="newAdminLogContents">
-  <pre>...{{{logHtml}}}</pre>
+  <pre>{{_ "admin.systemStatus.newAdminLogContents.ellipsis"}}{{{logHtml}}}</pre>
 </template>
 
 <template name="newAdminLog">
@@ -11,16 +11,16 @@
 <template name="newAdminStatus">
   <h1>
     <ul class="admin-breadcrumbs">
-      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
-      <li>System log</li>
+      <li>{{#linkTo route="newAdminRoot"}}{{_ "admin.title"}}{{/linkTo}}</li>
+      <li>{{_ "admin.systemStatus.name"}}</li>
     </ul>
   </h1>
 
   <h2 class="system-log-header">
-    <span>System log</span>
+    <span>{{_ "admin.systemStatus.name"}}</span>
     <form>
       <button type="button" name="download-full-log">
-        Download full log
+        {{_ "admin.systemStatus.newAdminStatus.downloadButton"}}
       </button>
     </form>
   </h2>

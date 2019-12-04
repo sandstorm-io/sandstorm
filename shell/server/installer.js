@@ -25,8 +25,6 @@ import { ssrfSafeLookupOrProxy } from "/imports/server/networking.js";
 
 const Request = HTTPInternals.NpmModules.request.module;
 
-const Capnp = Npm.require("capnp");
-
 const Manifest = Capnp.importSystem("sandstorm/package.capnp").Manifest;
 
 let installers;  // set to {} on main replica
@@ -324,6 +322,10 @@ AppInstaller = class AppInstaller {
             });
 
       request.on("response", this.wrapCallback((response) => {
+        if (response.statusCode != 200) {
+          throw new Error("Package download returned error: " + response.statusCode);
+        }
+
         if ("content-length" in response.headers) {
           bytesExpected = parseInt(response.headers["content-length"]);
         }
@@ -385,6 +387,9 @@ AppInstaller = class AppInstaller {
           // an older package is going on.
           globalDb.setPreinstallAppAsReady(_this.appId, _this.packageId);
         }
+
+        // Reset any sessions that were blocked by this package ID missing.
+        globalDb.collections.sessions.remove({missingPackageId: _this.packageId});
       });
     }).then(() => {
       delete installers[_this.packageId];

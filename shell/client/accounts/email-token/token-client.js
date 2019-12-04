@@ -52,14 +52,14 @@ Router.route("/_emailLogin/:_email/:_token", function () {
   name: "_emailLogin",
 });
 
-Router.route("/_emailLinkIdentity/:_email/:_token/:_accountId", function () {
+Router.route("/_emailLinkCredential/:_email/:_token/:_accountId", function () {
   this.render("Loading");
   if (this.state.get("error")) {
-    this.render("_emailLinkIdentityError", { data: { error: this.state.get("error") } });
+    this.render("_emailLinkCredentialError", { data: { error: this.state.get("error") } });
   } else {
     if (Meteor.userId() === this.params._accountId) {
       const allowLogin = this.params.query.allowLogin === "true";
-      Meteor.call("linkEmailIdentityToAccount",
+      Meteor.call("linkEmailCredentialToAccount",
                   this.params._email, this.params._token, allowLogin, (err, resumePath) => {
                     if (err) {
                       this.state.set("error", err.toString());
@@ -69,12 +69,12 @@ Router.route("/_emailLinkIdentity/:_email/:_token/:_accountId", function () {
                     }
                   });
     } else {
-      this.render("_emailLinkIdentityError");
+      this.render("_emailLinkCredentialError");
     }
   }
 }, {
   // See above.
-  name: "_emailLinkIdentity",
+  name: "_emailLinkCredential",
 });
 
 Template.addNewVerifiedEmailPowerboxConfiguration.onCreated(function () {
@@ -86,10 +86,10 @@ Template.addNewVerifiedEmailPowerboxConfiguration.onCreated(function () {
   const _this = this;
   this.autorun(() => {
     const result = [];
-    SandstormDb.getUserIdentityIds(Meteor.user()).forEach((identityId) => {
-      let identity = Meteor.users.findOne({ _id: identityId });
-      if (identity && identity.services.email) {
-        result.push(identity.services.email.email);
+    SandstormDb.getUserCredentialIds(Meteor.user()).forEach((credentialId) => {
+      let credential = Meteor.users.findOne({ _id: credentialId });
+      if (credential && credential.services.email) {
+        result.push(credential.services.email.email);
       }
     });
     _this.verifiedEmails.set(result);
@@ -181,7 +181,7 @@ Template.addNewVerifiedEmailPowerboxConfiguration.events({
     const token = form.token.value;
     const email = instance.email.get();
     instance.state.set({ sendingToken: true });
-    Meteor.call("linkEmailIdentityToAccount", email, token, false, function (err, result) {
+    Meteor.call("linkEmailCredentialToAccount", email, token, false, function (err, result) {
       if (err && err.error !== "alreadyLinked") {
         instance.state.set({ enterToken: true, error: err.reason || "Unknown error", });
       }

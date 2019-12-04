@@ -26,9 +26,8 @@ THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 METEOR_DEV_BUNDLE=$("$THIS_DIR/../find-meteor-dev-bundle.sh")
 NODEJS="$METEOR_DEV_BUNDLE/bin/node"
 NPM="$METEOR_DEV_BUNDLE/bin/npm"
-SELENIUM_JAR="selenium-server-standalone-2.53.0.jar"
-SELENIUM_JAR_SHA256="67b88cbfd3b130de6ff3770948f56cc485fd1abb5b7a769397d9050a59b1e036"
-SELENIUM_DOWNLOAD_URL="https://selenium-release.storage.googleapis.com/2.53/$SELENIUM_JAR"
+
+export PATH="$METEOR_DEV_BUNDLE/bin:$PATH"
 
 cleanExit () {
   rc=$1
@@ -52,24 +51,10 @@ cleanExit () {
     # Send SIGINT to the selenium-server child of the backgrounded xvfb-run, so
     # it will exit cleanly and the Xvfb process will also be cleaned up.
     # We don't actually know that PID, so we find it with pgrep.
-    kill $(pgrep --parent $XVFB_PID java)
+    kill $(pgrep --parent $XVFB_PID node)
     wait $XVFB_PID
   fi
   exit $rc
-}
-
-cacheSeleniumJar() {
-  if [[ ! -e ./$SELENIUM_JAR ]] ; then
-    DOWNLOAD=$(mktemp selenium-download.XXXXXX)
-    curl -o $DOWNLOAD $SELENIUM_DOWNLOAD_URL
-    DOWNLOAD_SHASUM=$(sha256sum $DOWNLOAD | cut -f 1 -d ' ')
-    if [[ "$DOWNLOAD_SHASUM" = "$SELENIUM_JAR_SHA256" ]] ; then
-      mv $DOWNLOAD ./$SELENIUM_JAR
-    else
-      echo "Selenium jar download didn't match expected checksum.  Discarding."
-      exit 1
-    fi
-  fi
 }
 
 checkInstalled() {
@@ -117,13 +102,13 @@ cd "$THIS_DIR"
 checkInstalled firefox firefox
 
 "$NPM" install
+node_modules/.bin/selenium-standalone install
 
 if [ "$RUN_SELENIUM" != "false" ] ; then
   checkInstalled java default-jre-headless
   checkInstalled xvfb-run Xvfb
   checkInstalled pgrep procps
-  cacheSeleniumJar
-  xvfb-run --server-args="-screen 0, 1280x1024x24" java -jar ./$SELENIUM_JAR &
+  xvfb-run --server-args="-screen 0, 1280x1024x24" node_modules/.bin/selenium-standalone start &
   XVFB_PID=$!
 fi
 

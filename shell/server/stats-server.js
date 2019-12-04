@@ -26,7 +26,8 @@ if (Mongo.Collection.prototype.aggregate) {
 Mongo.Collection.prototype.aggregate = function () {
   // Meteor doesn't wrapp Mongo's aggregate() method.
   const raw = this.rawCollection();
-  return Meteor.wrapAsync(raw.aggregate, raw).apply(raw, arguments);
+  return Meteor.wrapAsync(raw.aggregate, raw).apply(raw, arguments)
+      .toArray().await();
 };
 
 computeStats = function (since) {
@@ -37,7 +38,7 @@ computeStats = function (since) {
   // during the requested time period.
   const currentlyActiveUsersCount = Meteor.users.find({
     expires: { $exists: false },
-    loginIdentities: { $exists: true },
+    loginCredentials: { $exists: true },
     lastActive: timeConstraint,
   }).count();
 
@@ -105,7 +106,7 @@ computeStats = function (since) {
           grainId: { $in: grainIds },
         },
       },
-      { $group: { _id: "$owner.user.identityId" } },
+      { $group: { _id: "$owner.user.accountId" } },
       {
         $group: {
           _id: "count",
@@ -192,9 +193,8 @@ function recordStats() {
     plans: planStats,
   };
   record.computeTime = Date.now() - now;
-  if (global.BlackrockPayments && global.BlackrockPayments.getTotalCharges) {
-    // This only exists under Blackrock
-    record.totalCharges = global.BlackrockPayments.getTotalCharges();
+  if (Meteor.settings.public.stripePublicKey && BlackrockPayments.getTotalCharges) {
+    record.totalCharges = BlackrockPayments.getTotalCharges();
   }
 
   ActivityStats.insert(record);

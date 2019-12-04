@@ -17,20 +17,19 @@
 import { waitPromise } from "/imports/server/async-helpers.js";
 import { createAppActivityDesktopNotification } from "/imports/server/desktop-notifications.js";
 
-const Capnp = Npm.require("capnp");
 const SupervisorCapnp = Capnp.importSystem("sandstorm/supervisor.capnp");
 const SystemPersistent = SupervisorCapnp.SystemPersistent;
 
-logActivity = function (grainId, identityIdOrAnonymous, event) {
-  // identityIdOrAnonymous is the string "anonymous" for an anonymous user, or is null for a
+logActivity = function (grainId, accountIdOrAnonymous, event) {
+  // accountIdOrAnonymous is the string "anonymous" for an anonymous user, or is null for a
   // non-user-initiated ("background") activity.
 
   check(grainId, String);
-  check(identityIdOrAnonymous, Match.Maybe(String));
+  check(accountIdOrAnonymous, Match.Maybe(String));
   // `event` is always an ActivityEvent parsed from Cap'n Proto but that's too complicated to check
   // here.
 
-  const identityId = identityIdOrAnonymous === "anonymous" ? null : identityIdOrAnonymous;
+  const accountId = accountIdOrAnonymous === "anonymous" ? null : accountIdOrAnonymous;
 
   // TODO(perf): A cached copy of the grain from when the session opened would be fine to use
   //   here, rather than looking it up every time.
@@ -49,7 +48,7 @@ logActivity = function (grainId, identityIdOrAnonymous, event) {
   if (!eventType.suppressUnread) {
     // Clear the "seenAllActivity" bit for all users except the acting user.
     // TODO(perf): Consider throttling? Or should that be the app's responsibility?
-    if (identityId != grain.identityId) {
+    if (accountId != grain.userId) {
       Grains.update(grainId, { $unset: { ownerSeenAllActivity: true } });
     }
 
@@ -57,18 +56,18 @@ logActivity = function (grainId, identityIdOrAnonymous, event) {
     ApiTokens.update({
       "grainId": grainId,
       "owner.user.seenAllActivity": true,
-      "owner.user.identityId": { $ne: identityId },
+      "owner.user.accountId": { $ne: accountId },
     }, { $unset: { "owner.user.seenAllActivity": true } }, { multi: true });
   }
 
-  if (identityId) {
+  if (accountId) {
     // Apply auto-subscriptions.
     if (eventType.autoSubscribeToGrain) {
-      globalDb.subscribeToActivity(identityId, grainId);
+      globalDb.subscribeToActivity(accountId, grainId);
     }
 
     if (event.thread && eventType.autoSubscribeToThread) {
-      globalDb.subscribeToActivity(identityId, grainId, event.thread.path || "");
+      globalDb.subscribeToActivity(accountId, grainId, event.thread.path || "");
     }
   }
 
@@ -77,23 +76,23 @@ logActivity = function (grainId, identityIdOrAnonymous, event) {
   const addRecipient = recipient => {
     // Mutes take priority over subscriptions.
     if (recipient.mute) {
-      notifyMap[recipient.identityId] = false;
+      notifyMap[recipient.accountId] = false;
     } else {
-      if (!(recipient.identityId in notifyMap)) {
-        notifyMap[recipient.identityId] = true;
+      if (!(recipient.accountId in notifyMap)) {
+        notifyMap[recipient.accountId] = true;
       }
     }
   };
 
-  if (identityId) {
+  if (accountId) {
     // Don't notify self.
-    addRecipient({ identityId: identityId, mute: true });
+    addRecipient({ accountId: accountId, mute: true });
   }
 
   // Notify subscribers, if desired.
   if (eventType.notifySubscribers) {
     // The grain owner is implicitly subscribed.
-    addRecipient({ identityId: grain.identityId });
+    addRecipient({ accountId: grain.userId });
 
     // Add everyone subscribed to the grain.
     globalDb.getActivitySubscriptions(grainId).forEach(addRecipient);
@@ -110,7 +109,7 @@ logActivity = function (grainId, identityIdOrAnonymous, event) {
     event.users.forEach(user => {
       if (user.identity && (user.mentioned || user.subscribed)) {
         promises.push(unwrapFrontendCap(user.identity, "identity", targetId => {
-          addRecipient({ identityId: targetId });
+          addRecipient({ accountId: targetId });
         }));
       }
     });
@@ -119,9 +118,9 @@ logActivity = function (grainId, identityIdOrAnonymous, event) {
 
   // Make a list of everyone to notify.
   const notify = [];
-  for (const identityId in notifyMap) {
-    if (notifyMap[identityId]) {
-      notify.push(identityId);
+  for (const accountId in notifyMap) {
+    if (notifyMap[accountId]) {
+      notify.push(accountId);
     }
   }
 
@@ -141,9 +140,9 @@ logActivity = function (grainId, identityIdOrAnonymous, event) {
       notification.threadPath = event.thread.path || "";
     }
 
-    if (identityId) {
-      notification.initiatingIdentity = identityId;
-    } else if (identityIdOrAnonymous) {
+    if (accountId) {
+      notification.initiatingAccount = accountId;
+    } else if (accountIdOrAnonymous) {
       notification.initiatorAnonymous = true;
     }
 
@@ -159,61 +158,56 @@ logActivity = function (grainId, identityIdOrAnonymous, event) {
       actionText: eventType.verbPhrase,
     };
 
-    if (identityId) {
-      // Look up icon urls for the responsible identity and the app
-      const identity = Meteor.users.findOne({ _id: identityId });
-      if (!identity) {
-        throw new Error("no such identity");
+    if (accountId) {
+      // Look up icon urls for the responsible user and the app
+      const account = Meteor.users.findOne({ _id: accountId });
+      if (!account) {
+        throw new Error("no such user");
       }
 
-      SandstormDb.fillInProfileDefaults(identity);
-      SandstormDb.fillInPictureUrl(identity);
+      SandstormDb.fillInPictureUrl(account);
 
       appActivity.user = {
-        identityId: identity._id,
-        name: identity.profile.name,
-        avatarUrl: identity.profile.pictureUrl || "",
+        accountId: account._id,
+        name: account.profile.name,
+        avatarUrl: account.profile.pictureUrl || "",
       };
-    } else if (identityIdOrAnonymous) {
+    } else if (accountIdOrAnonymous) {
       appActivity.user = { anonymous: true };
     }
 
     notify.forEach(targetId => {
-      // Notify all accounts connected with this identity.
-      Meteor.users.find({ $or: [
-        { "loginIdentities.id": targetId },
-        { "nonloginIdentities.id": targetId },
-      ], }).forEach((account) => {
-        // We need to know the ID of the inserted/updated document so we can embed it in the
-        // desktop notification to bind them.
-        const idIfInserted = Random.id(17);
-        const result = Notifications.findAndModify({
-          query: _.extend({ userId: account._id }, notification),
-          update: {
-            $set: update,
-            $inc: { count: 1 },
-            $setOnInsert: {
-              _id: idIfInserted,
-            },
+      // Notify the account.
+
+      // We need to know the ID of the inserted/updated document so we can embed it in the
+      // desktop notification to bind them.
+      const idIfInserted = Random.id(17);
+      const result = Notifications.findAndModify({
+        query: _.extend({ userId: targetId }, notification),
+        update: {
+          $set: update,
+          $inc: { count: 1 },
+          $setOnInsert: {
+            _id: idIfInserted,
           },
-          upsert: true,
-        });
-
-        if (!result.ok) {
-          console.error("Couldn't create notification!", result.lastErrorObject);
-          return;
-        }
-
-        const notificationId = result.value._id || idIfInserted;
-
-        const desktopNotification = {
-          userId: account._id,
-          notificationId,
-          appActivity,
-        };
-
-        createAppActivityDesktopNotification(desktopNotification);
+        },
+        upsert: true,
       });
+
+      if (!result.ok) {
+        console.error("Couldn't create notification!", result.lastErrorObject);
+        return;
+      }
+
+      const notificationId = result.value._id || idIfInserted;
+
+      const desktopNotification = {
+        userId: targetId,
+        notificationId,
+        appActivity,
+      };
+
+      createAppActivityDesktopNotification(desktopNotification);
     });
   }
 };
@@ -240,7 +234,14 @@ Meteor.methods({
       isUnread: true,
     });
 
-    if (global.BlackrockPayments) {
+    Notifications.insert({
+      userId: this.userId,
+      identityChanges: true,
+      timestamp: new Date(),
+      isUnread: true,
+    });
+
+    if (Meteor.settings.public.stripePublicKey) {
       Notifications.insert({
         userId: this.userId,
         mailingListBonus: true,
@@ -263,18 +264,18 @@ Meteor.publish("notificationGrains", function (notificationIds) {
     _id: { $in: notificationIds },
     userId: this.userId,
   }, {
-    fields: { grainId: 1, initiatingIdentity: 1 },
+    fields: { grainId: 1, initiatingAccount: 1 },
   });
 
   const grainIds = notifications.map(function (row) {
     return row.grainId;
   }).filter(x => x);
 
-  const identities = notifications.map(function (row) {
-    return row.initiatingIdentity;
+  const accounts = notifications.map(function (row) {
+    return row.initiatingAccount;
   }).filter(x => x);
 
   return [
-    Meteor.users.find({ _id: { $in: identities } }, { fields: { profile: 1 } }),
+    Meteor.users.find({ _id: { $in: accounts } }, { fields: { type: 1, profile: 1 } }),
   ];
 });

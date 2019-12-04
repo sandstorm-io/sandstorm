@@ -1,3 +1,186 @@
+### v0.255 (2019-11-23) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.254 (2019-10-27) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.253 (2019-09-28)
+- Oasis: Added warnings to the UI and invoice e-mails regarding the upcoming shutdown of Oasis.
+- Updated dependencies.
+
+### v0.252 (2019-09-08)
+- Fixed bug introduced in 0.251 causing development apps registered via `spk dev` to report "This grain's app package is not installed".
+
+### v0.251 (2019-09-02)
+- Added functionality to allow mass transferring of grains between servers. Click the "Mass transfer..." button above the grains list to initiate a transfer.
+- Updated dependencies.
+
+### v0.250 (2019-08-10)
+- Fixed multiple problems where a user who has access to a grain might unexpectedly be assigned an all-new identity within the grain, especially after backup/restore. This should make it more practical to move shared grains between servers using backup/restore. [See the pull request for a complete explanation.](https://github.com/sandstorm-io/sandstorm/pull/3148)
+- Updated dependencies.
+
+### v0.249 (2019-07-10) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.248 (2019-06-09) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.247 (2019-05-11) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.246 (2019-04-13) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.245 (2019-03-16) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.244 (2019-02-09) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.243 (2019-01-12) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.242 (2018-12-20) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.241 (2018-11-19) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.240 (2018-10-20) [bugfixes]
+- Updated dependencies.
+- Added some clarification messages to Oasis UI regarding the [recent discontinuation of the free plan](https://sandstorm.io/news/2018-08-27-discontinuing-free-plan).
+
+### v0.239 (2018-09-22)
+- Updated dependencies.
+- Prepared Oasis payments code for [upcoming change to discontinue free plan](https://sandstorm.io/news/2018-08-27-discontinuing-free-plan). (Does not affect self-hosted servers.)
+
+### v0.238 (2018-08-25) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.237 (2018-07-28) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.236 (2018-06-30) [bugfixes]
+- Updated dependencies.
+- Fixed static web hosting redirects when the URL is a directory. The redirect is supposed to add '/', but previously it would sometimes redirect to a completely wrong path for directories more than one level deep.
+- Fixed language detection no longer working, due to Meteor 1.7 randomly removing a function call.
+
+### v0.235 (2018-06-09) [bugfixes]
+- Updated dependencies.
+- Due to Meteor 1.7 update, Sandstorm shell now serves different JavaScript to modern vs. "legacy" browsers, with the modern JS being leaner and faster.
+
+### v0.234 (2018-05-12) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.233 (2018-04-17) [bugfixes]
+- Fixed gateway crash affecting some heavy users of static publishing.
+
+### v0.232 (2018-04-15) [bugfixes]
+- Applied Node patch to fix upstream problem causing segfaults for Meteor apps.
+- Fixed crash in Gateway due to accidentally destroying a running promise.
+- Removed accidental debug logging code introduced in 0.231 that printed "hi" and "ho" to the logs.
+
+### v0.231 (2018-04-07) [bugfixes]
+- Fixed grain last-used time sometimes not updating. (Specifically, it would only update after being open for a full minute.)
+- Fixed old, deprecated shared-host API endpoint not returning a 401 status to initiate basic auth. It has been years since Sandstorm generated API tokens using this endpoint, though.
+- Updated dependencies.
+
+### v0.230 (2018-03-10) [bugfixes]
+- Fixed language detection no longer working.
+- Fixed bug preventing Thunderbird from syncing from Radicale, and prevented older versions of the Mercurial client from pushing to Mercurial.
+- Fixed bug where large downloads from a grain (including streaming audio from Groove Basin) would get cut off after 90-180 seconds if the user wasn't otherwise interacting with the grain.
+- Updated Meteor to 1.6.1.
+
+### v0.229 (2018-03-05) [bugfixes]
+- Fixed Rocket.Chat mobile app, which relies on the ability to authenticate WebSockets on the API endpoint by placing the authorization token in the URL.
+- Fixed broken server when `BASE_URL` overlaps with `WILDCARD_HOST`.
+
+### v0.228 (2018-03-04) [bugfixes]
+- Fixed Tiny Tiny RSS mobile app no longer being able to connect to servers.
+- Fixed problem where in mobile app configuration for various apps, after one minute the URL and password would be replaced with an error message.
+- Fixed some error log spam.
+
+### v0.227 (2018-03-03) [bugfixes]
+- Fixed obscure crash.
+- Fixed bogus error message when opening a revoked API token.
+
+### v0.226 (2018-03-03)
+- The new HTTP Gateway is now on by default. This is a major change to the lower levels of Sandstorm which should improve CPU and memory usage considerably. Learn more here: https://sandstorm.io/news/2018-02-19-http-rewrite-and-more
+- Tweaked language selection heuristic.
+
+### v0.225 (2018-02-03)
+- The front-end HTTP proxy has been rewritten from JavaScript (in Node.js) to C++. The new code path should be faster and more memory-efficient. In this release, it is only enabled if you add `EXPERIMENTAL_GATEWAY=true` to your `/opt/sandstorm/sandstorm.conf`. In a future release, this will become the default and the old implementation will be removed. The new implementation is turned on for Sandstorm Oasis by default.
+- Improved Finnish and French translations.
+- Various i18n templating bugfixes.
+
+### v0.224 (2018-01-06)
+- Added Finnish translation contributed by Lauri Ojansivu.
+- Added French translation contributed by Benoit Renault and Thierry Pasquier.
+- Fixed a memory leak in node-capnp (affecting Sandstorm's shell process).
+- Oasis: Updated production servers to Debian Stretch in order to get mitigation for Meltdown attack.
+
+### v0.223 (2017-12-22) [bugfixes]
+- Fixed "finish" button at end of setup wizard not working.
+
+### v0.222 (2017-12-22) [bugfixes]
+- Updated dependencies.
+- Added "ui-" prefix to UI (in-iframe) hostnames, so that they can be reliably distinguished from static publishing hosts. This is in preparation for a networking overhaul in the next release.
+
+### v0.221 (2017-11-20) [bugfixes]
+- Fixed bug that broke TinyTinyRSS.
+
+### v0.220 (2017-11-19) [bugfixes]
+- Worked around Node 8 getting much stricter about exception handling and aborting the process all the time.
+- Fixed error on some large file uploads: `ReferenceError: destructor is not defined`
+
+### v0.219 (2017-11-18)
+- Updated Meteor to version 1.6, a new major release.
+- Updated Node.js to version 8 (from 4).
+
+### v0.218 (2017-10-28)
+- Added Dutch translation by Michel van der Burg.
+- Improved language selection to consider the user's whole prioritized list of languages rather than just the top language. This also makes language selection through the Chrome browser settings work, instead of using the system UI language.
+- Fixed memory leak in Cap'n Proto which could cause Sandstorm backend process memory usage to grow gradually until the system runs out of memory. We believe the memory leak has been present since either v0.214 or v0.215.
+
+### v0.217 (2017-10-22) [bugfixes]
+- Fixed Sandcats servers not starting up correctly with an error about PORT being invalid.
+
+### v0.216 (2017-10-21)
+- The Sandstorm UI has been internationalized. Currently, most of the UI has been translated to Traditional Chinese, and some parts also have Simplified Chinese translations. Other languages will come in the future. ([Want to help?](https://github.com/sandstorm-io/sandstorm/blob/master/CONTRIBUTING.md#internationalization-i18n)) You can change your language in your browser settings (Sandstorm will pick up the preference from your browser).
+
+### v0.215 (2017-09-30) [bugfixes]
+- Updated dependencies to latest versions (as for every release). No other changes.
+
+### v0.214 (2017-09-03) [bugfixes]
+- Fixed setup wizard no longer working after identity changes.
+- Fixed "login providers" button in admin panel not working.
+
+### v0.213 (2017-09-02)
+- Major revision of Sandstorm's identity model. Users now have only one profile, rather than one for each linked credential. Although most people won't notice the difference, a huge amount of code has changed. Learn more in the blog post: [https://sandstorm.io/news/2017-05-08-refactoring-identities](https://sandstorm.io/news/2017-05-08-refactoring-identities)
+
+### v0.212 (2017-08-12) [bugfixes]
+- Updated dependencies to latest versions (as for every release). No other changes.
+
+### v0.211 (2017-07-15) [bugfixes]
+- Removed long-obsolete code in sandbox setup which attempted to enable transparent network proxying. The code never really worked and no app ever used it, but it recently started failing for one of our users.
+
+### v0.210 (2017-06-17) [bugfixes]
+- Powerbox HTTP APIs can now use the `ETag`, `If-Match`, and `If-None-Match` headers, as well as HTTP response codes 304 (not modified) and 412 (precondition failed).
+
+### v0.209 (2017-06-10) [bugfixes]
+- Powerbox HTTP APIs can now send and receive headers prefixed with `X-Sandstorm-App-` and other "whitelisted" headers.
+- sandstorm-http-bridge now sets the environment variable `no_proxy=localhost,127.0.01` in order to avoid breaking apps that make localhost/loopback requests. Such apps may have been broken by the earlier introduction of `http_proxy` in version 0.200 (but would only be affected if the package was rebuilt since then).
+- Updated Meteor to 1.5.
+
+### v0.208 (2017-05-20) [bugfixes]
+- Sent a one-time bell menu notification and added a note on the account settings page notifying affected users of [our upcoming changes to the identity system](https://sandstorm.io/news/2017-05-08-refactoring-identities).
+
+### v0.207 (2017-04-29) [bugfixes]
+- Improved handling of powerbox HTTP APIs, including correctly returning HTTP error bodies.
+- The contact chooser powerbox (e.g. as used by Wekan when adding people to a board or a card) now respects the "Make all organization users visible to each other" setting.
+- Fixed some server-side memory leaks, which might fix the occasional-100%-CPU bug.
+- Fixed bug where trashed grains could be started by trying to use capabilities they serve.
+
 ### v0.206 (2017-04-09) [bugfixes]
 - Worked around MacOS Safari bug breaking WebSockets.
 - Oasis: Removed experiment that caused 50% of users to see a plan-chooser prompt immediately upon creating their account. All users will now default to the free plan without having to choose it explicitly. (Showing the plan chooser did not appear to make any more people choose a paid plan.)

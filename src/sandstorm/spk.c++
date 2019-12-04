@@ -19,6 +19,7 @@
 #include "spk.h"
 #include <kj/debug.h>
 #include <kj/io.h>
+#include <kj/encoding.h>
 #include <capnp/serialize.h>
 #include <capnp/serialize-packed.h>
 #include <capnp/compat/json.h>
@@ -86,7 +87,7 @@ public:
     } else {
       auto call = output.initCall();
       call.setFunction("Base64");
-      call.initParams(1)[0].setString(base64Encode(input, false));
+      call.initParams(1)[0].setString(kj::encodeBase64(input, false));
     }
   }
 
@@ -1308,10 +1309,10 @@ private:
   }
 
   kj::String getHttpBridgeExe() {
-    KJ_IF_MAYBE(slashPos, exePath.findLast('/')) {
-      return kj::str(exePath.slice(0, *slashPos), "/bin/sandstorm-http-bridge");
+    KJ_IF_MAYBE(h, installHome) {
+      return kj::str(*h, "/bin/sandstorm-http-bridge");
     } else {
-      return kj::heapString("/bin/sandstorm-http-bridge");
+      KJ_FAIL_ASSERT("don't know where to find sandstorm-http-bridge");
     }
   }
 

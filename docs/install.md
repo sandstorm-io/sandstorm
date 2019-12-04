@@ -138,15 +138,33 @@ Please install the following:
 * `strace`
 * `curl`
 * `python`
+* `zlib1g-dev`
+* `golang-go`
+* `cmake`
 * discount (markdown parser)
-* [Clang compiler](http://clang.llvm.org/) version 3.4 or better
 * [Meteor](http://meteor.com)
 
 On Debian or Ubuntu, you should be able to get all these with:
 
     sudo apt-get install build-essential libcap-dev xz-utils zip \
-        unzip strace curl clang discount git python
+        unzip strace curl discount git python zlib1g-dev \
+        golang-go cmake
     curl https://install.meteor.com/ | sh
+
+On Fedora 27 you should be able to get them with (as root):
+
+    dnf install make libcap-devel libstdc++-devel libstdc++-static \
+       glibc-headers glibc-static glibc-locale-source xz zip \
+       unzip strace curl discount git python2 zlib-devel \
+       golang cmake
+    curl https://install.meteor.com/ | sh
+
+If you have trouble getting the build to work on your distro, we recommend trying in a virtual
+machine running the latest stable Debian release. This is easy to set up using Vagrant, like:
+
+    vagrant init debian/contrib-stretch64
+    vagrant up
+    vagrant ssh
 
 ### Get the source code
 
@@ -184,17 +202,11 @@ have to manually do:
 ### Hacking on the shell
 
 You can run the shell (front-end) in dev mode so that you can modify it without rebuilding the
-whole bundle for every change. Just do:
+whole bundle for every change. From the root of the repository, just do:
 
-    cd shell
-    sudo service sandstorm stop-fe
-    ./run-dev.sh
+    sandstorm dev-shell
 
 Now connect to your local server like you normally would.
-
-Later, when you are done hacking, you may want to restart the installed front-end:
-
-    sudo service sandstorm start-fe
 
 ### Hacking on the C++
 

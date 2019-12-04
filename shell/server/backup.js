@@ -14,11 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { waitPromise } from "/imports/server/async-helpers.js";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 
 const ChildProcess = Npm.require("child_process");
 const Future = Npm.require("fibers/future");
-const Capnp = Npm.require("capnp");
 
 const GrainInfo = Capnp.importSystem("sandstorm/grain.capnp").GrainInfo;
 
@@ -42,30 +41,172 @@ Meteor.startup(() => {
   });
 });
 
-Meteor.methods({
-  backupGrain(grainId) {
-    check(grainId, String);
-    const grain = Grains.findOne(grainId);
-    if (!grain || !this.userId || grain.userId !== this.userId) {
-      throw new Meteor.Error(403, "Unauthorized", "User is not the owner of this grain");
+createGrainBackup = (userId, grainId, async) => {
+  check(grainId, String);
+  const grain = Grains.findOne(grainId);
+  if (!grain || !userId || grain.userId !== userId) {
+    throw new Meteor.Error(403, "Unauthorized", "User is not the owner of this grain");
+  }
+
+  const token = {
+    _id: Random.id(),
+    timestamp: new Date(),
+    name: grain.title,
+  };
+
+  // TODO(soon): does the grain need to be offline?
+
+  const grainInfo = _.pick(grain, "appId", "appVersion", "title");
+  grainInfo.ownerIdentityId = grain.identityId;
+  grainInfo.users = grain.oldUsers || [];
+
+  let users = {};
+  globalDb.collections.apiTokens.find({grainId, "owner.user.identityId": {$exists: true}})
+      .forEach((token) => {
+    let user = token.owner.user;
+    users[user.accountId] = user.identityId;
+  });
+
+  Meteor.users.find({_id: {$in: [...Object.keys(users)]}}).forEach(account => {
+    let credentialIds = _.pluck(account.loginCredentials, "id");
+
+    grainInfo.users.push({
+      identityId: users[account._id],
+      credentialIds,
+      profile: {
+        displayName: { defaultText: account.profile.name },
+        preferredHandle: account.profile.handle,
+        pronouns: account.profile.pronoun,
+      }
+    });
+  });
+
+  if (async) {
+    token.async = true;
+  }
+
+  FileTokens.insert(token);
+
+  let promise = globalBackend.cap().backupGrain(token._id, userId, grainId, grainInfo);
+
+  if (async) {
+    promise.then(() => {
+      return inMeteor(() => {
+        FileTokens.update({_id: token._id}, {$unset: {async: 1}});
+      });
+    }, err => {
+      return inMeteor(() => {
+        FileTokens.update({_id: token._id}, {$unset: {async: 1}, $set: {error: err.message}});
+      });
+    });
+  } else {
+    waitPromise(promise);
+  }
+
+  return token._id;
+};
+
+createBackupToken = () => {
+  const token = {
+    _id: Random.id(),
+    timestamp: new Date(),
+  };
+
+  FileTokens.insert(token);
+
+  return token._id;
+};
+
+restoreGrainBackup = (tokenId, user, transferInfo) => {
+  check(tokenId, String);
+  const token = FileTokens.findOne(tokenId);
+  if (!token) {
+    throw new Meteor.Error(403, "Token was not found");
+  }
+
+  if (isUserOverQuota(user)) {
+    throw new Meteor.Error(402,
+        "You are out of storage space. Please delete some things and try again.");
+  }
+
+  const grainId = Random.id(22);
+
+  try {
+    const grainInfo = waitPromise(globalBackend.cap().restoreGrain(
+        tokenId, user._id, grainId).catch((err) => {
+          console.error("Unzip failure:", err.message);
+          throw new Meteor.Error(500, "Invalid backup file.");
+        })).info;
+    if (!grainInfo.appId) {
+      globalBackend.deleteGrain(grainId, user._id);
+      throw new Meteor.Error(500, "Metadata object for uploaded grain has no AppId");
     }
 
+    const action = UserActions.findOne({ appId: grainInfo.appId, userId: user._id });
+
+    // Create variables we'll use for later Mongo query.
+    let packageId;
+    let appVersion;
+
+    // DevPackages are system-wide, so we do not check the user ID.
+    const devPackage = DevPackages.findOne({ appId: grainInfo.appId });
+    if (devPackage) {
+      // If the dev app package exists, it should override the user action.
+      packageId = devPackage.packageId;
+      appVersion = devPackage.manifest.appVersion;
+    } else if (action) {
+      // The app is installed, so we can continue restoring this
+      // grain.
+      packageId = action.packageId;
+      appVersion = action.appVersion;
+    } else if (transferInfo && transferInfo.appId == grainInfo.appId) {
+      packageId = transferInfo.packageId;
+      appVersion = transferInfo.appVersion;
+    } else {
+      // If the package isn't installed at all, bail out.
+      globalBackend.deleteGrain(grainId, user._id);
+      throw new Meteor.Error(500,
+                              "App id for uploaded grain not installed",
+                              "App Id: " + grainInfo.appId);
+    }
+
+    if (appVersion < grainInfo.appVersion) {
+      globalBackend.deleteGrain(grainId, this.userId);
+      throw new Meteor.Error(500,
+                              "App version for uploaded grain is newer than any " +
+                              "installed version. You need to upgrade your app first",
+                              "New version: " + grainInfo.appVersion +
+                              ", Old version: " + appVersion);
+    }
+
+    Grains.insert({
+      _id: grainId,
+      packageId: packageId,
+      appId: grainInfo.appId,
+      appVersion: appVersion,
+      userId: user._id,
+      // For older backups that don't have the owner's identity ID, use the owner's identicon
+      // ID which is based on old-style global identity IDs.
+      identityId: grainInfo.ownerIdentityId ||
+          (user.profile || {}).identicon ||
+          SandstormDb.generateIdentityId(),
+      title: grainInfo.title,
+      private: true,
+      size: transferInfo ? transferInfo.size : 0,
+      lastUsed: transferInfo ? (transferInfo.lastUsed && new Date(transferInfo.lastUsed)) : new Date(),
+      oldUsers: grainInfo.users || [],
+    });
+  } finally {
+    cleanupToken(tokenId);
+  }
+
+  return grainId;
+};
+
+Meteor.methods({
+  backupGrain(grainId) {
     this.unblock();
-
-    const token = {
-      _id: Random.id(),
-      timestamp: new Date(),
-      name: grain.title,
-    };
-
-    // TODO(soon): does the grain need to be offline?
-
-    const grainInfo = _.pick(grain, "appId", "appVersion", "title");
-
-    FileTokens.insert(token);
-    waitPromise(globalBackend.cap().backupGrain(token._id, this.userId, grainId, grainInfo));
-
-    return token._id;
+    return createGrainBackup(this.userId, grainId);
   },
 
   newRestoreToken() {
@@ -78,165 +219,121 @@ Meteor.methods({
           "You are out of storage space. Please delete some things and try again.");
     }
 
-    const token = {
-      _id: Random.id(),
-      timestamp: new Date(),
-    };
-
-    FileTokens.insert(token);
-
-    return token._id;
+    return createBackupToken();
   },
 
-  restoreGrain(tokenId, identityId) {
-    check(tokenId, String);
-    check(identityId, String);
-    const token = FileTokens.findOne(tokenId);
-    if (!token || !isSignedUpOrDemo()) {
-      throw new Meteor.Error(403, "Unauthorized",
-          "Token was not found, or user cannot create grains");
+  restoreGrain(tokenId, obsolete) {
+    if (!isSignedUpOrDemo()) {
+      throw new Meteor.Error(403, "User cannot create grains");
     }
-
-    if (isUserOverQuota(Meteor.user())) {
-      throw new Meteor.Error(402,
-          "You are out of storage space. Please delete some things and try again.");
-    }
-
     this.unblock();
-
-    const grainId = Random.id(22);
-
-    try {
-      const grainInfo = waitPromise(globalBackend.cap().restoreGrain(
-          tokenId, this.userId, grainId).catch((err) => {
-            console.error("Unzip failure:", err.message);
-            throw new Meteor.Error(500, "Invalid backup file.");
-          })).info;
-      if (!grainInfo.appId) {
-        globalBackend.deleteGrain(grainId, this.userId);
-        throw new Meteor.Error(500, "Metadata object for uploaded grain has no AppId");
-      }
-
-      const action = UserActions.findOne({ appId: grainInfo.appId, userId: this.userId });
-
-      // Create variables we'll use for later Mongo query.
-      let packageId;
-      let appVersion;
-
-      // DevPackages are system-wide, so we do not check the user ID.
-      const devPackage = DevPackages.findOne({ appId: grainInfo.appId });
-      if (devPackage) {
-        // If the dev app package exists, it should override the user action.
-        packageId = devPackage.packageId;
-        appVersion = devPackage.manifest.appVersion;
-      } else if (action) {
-        // The app is installed, so we can continue restoring this
-        // grain.
-        packageId = action.packageId;
-        appVersion = action.appVersion;
-      } else {
-        // If the package isn't installed at all, bail out.
-        globalBackend.deleteGrain(grainId, this.userId);
-        throw new Meteor.Error(500,
-                               "App id for uploaded grain not installed",
-                               "App Id: " + grainInfo.appId);
-      }
-
-      if (appVersion < grainInfo.appVersion) {
-        globalBackend.deleteGrain(grainId, this.userId);
-        throw new Meteor.Error(500,
-                               "App version for uploaded grain is newer than any " +
-                               "installed version. You need to upgrade your app first",
-                               "New version: " + grainInfo.appVersion +
-                               ", Old version: " + appVersion);
-      }
-
-      Grains.insert({
-        _id: grainId,
-        packageId: packageId,
-        appId: grainInfo.appId,
-        appVersion: appVersion,
-        userId: this.userId,
-        identityId: identityId,
-        title: grainInfo.title,
-        private: true,
-        size: 0,
-      });
-    } finally {
-      cleanupToken(tokenId);
-    }
-
-    return grainId;
+    return restoreGrainBackup(tokenId, Meteor.user());
   },
 });
+
+downloadGrainBackup = (tokenId, response, retryCount = 0) => {
+  const token = FileTokens.findOne(tokenId);
+  if (!token) {
+    response.writeHead(404, { "Content-Type": "text/plain" });
+    return response.end("File does not exist");
+  }
+
+  if (token.error) {
+    response.writeHead(500, { "Content-Type": "text/plain", "Cache-Control": "private" });
+    return response.end(token.error);
+  }
+
+  if (token.async) {
+    if (retryCount == 10) {
+      response.writeHead(425, { "Content-Type": "text/plain", "Cache-Control": "private" });
+      return response.end("Try again.");
+    }
+    waitPromise(new Promise(resolve => setTimeout(resolve, 1000)));
+    return downloadGrainBackup(tokenId, response, retryCount + 1);
+  }
+
+  let started = false;
+  const encodedFilename = encodeURIComponent(token.name || "backup") + ".zip";
+  let sawEnd = false;
+
+  const stream = {
+    expectSize(size) {
+      if (!started) {
+        started = true;
+        response.writeHead(200, {
+          "Content-Length": size,
+          "Content-Type": "application/zip",
+          "Cache-Control": "private",
+          "Content-Disposition": "attachment;filename*=utf-8''" + encodedFilename,
+        });
+      }
+    },
+
+    write(data) {
+      if (!started) {
+        started = true;
+        response.writeHead(200, {
+          "Content-Type": "application/zip",
+          "Cache-Control": "private",
+          "Content-Disposition": "attachment;filename*=utf-8''" + encodedFilename,
+        });
+      }
+
+      response.write(data);
+    },
+
+    done(data) {
+      if (!started) {
+        started = true;
+        response.writeHead(200, {
+          "Content-Length": 0,
+          "Content-Type": "application/zip",
+          "Cache-Control": "private",
+          "Content-Disposition": "attachment;filename*=utf-8''" + encodedFilename,
+        });
+      }
+
+      sawEnd = true;
+      response.end();
+    },
+  };
+
+  waitPromise(globalBackend.cap().downloadBackup(tokenId, stream));
+
+  if (!sawEnd) {
+    console.error("backend failed to call done() when downloading backup");
+    if (!started) {
+      throw new Meteor.Error(500, "backend failed to produce data");
+    }
+
+    response.end();
+  }
+
+  cleanupToken(tokenId);
+}
+
+storeGrainBackup = (tokenId, inputStream) => {
+  const stream = globalBackend.cap().uploadBackup(tokenId).stream;
+
+  waitPromise(new Promise((resolve, reject) => {
+    inputStream.on("data", (data) => {
+      stream.write(data);
+    });
+    inputStream.on("end", () => {
+      resolve(stream.done());
+    });
+    inputStream.on("error", (err) => {
+      stream.close();
+    });
+  }));
+}
 
 Router.map(function () {
   this.route("downloadBackup", {
     where: "server",
     path: "/downloadBackup/:tokenId",
     action() {
-      const token = FileTokens.findOne(this.params.tokenId);
-      const response = this.response;
-      if (!token) {
-        response.writeHead(404, { "Content-Type": "text/plain" });
-        return response.end("File does not exist");
-      }
-
-      let started = false;
-      const encodedFilename = encodeURIComponent(token.name || "backup") + ".zip";
-      let sawEnd = false;
-
-      const stream = {
-        expectSize(size) {
-          if (!started) {
-            started = true;
-            response.writeHead(200, {
-              "Content-Length": size,
-              "Content-Type": "application/zip",
-              "Content-Disposition": "attachment;filename*=utf-8''" + encodedFilename,
-            });
-          }
-        },
-
-        write(data) {
-          if (!started) {
-            started = true;
-            response.writeHead(200, {
-              "Content-Type": "application/zip",
-              "Content-Disposition": "attachment;filename*=utf-8''" + encodedFilename,
-            });
-          }
-
-          response.write(data);
-        },
-
-        done(data) {
-          if (!started) {
-            started = true;
-            response.writeHead(200, {
-              "Content-Length": 0,
-              "Content-Type": "application/zip",
-              "Content-Disposition": "attachment;filename*=utf-8''" + encodedFilename,
-            });
-          }
-
-          sawEnd = true;
-          response.end();
-        },
-      };
-
-      waitPromise(globalBackend.cap().downloadBackup(this.params.tokenId, stream));
-
-      if (!sawEnd) {
-        console.error("backend failed to call done() when downloading backup");
-        if (!started) {
-          throw new Meteor.Error(500, "backend failed to produce data");
-        }
-
-        response.end();
-      }
-
-      cleanupToken(this.params.tokenId);
+      downloadGrainBackup(this.params.tokenId, this.response);
     },
   });
 
@@ -256,21 +353,8 @@ Router.map(function () {
           return;
         }
 
-        const request = this.request;
         try {
-          const stream = globalBackend.cap().uploadBackup(this.params.token).stream;
-
-          waitPromise(new Promise((resolve, reject) => {
-            request.on("data", (data) => {
-              stream.write(data);
-            });
-            request.on("end", () => {
-              resolve(stream.done());
-            });
-            request.on("error", (err) => {
-              stream.close();
-            });
-          }));
+          storeGrainBackup(this.params.token, this.request);
 
           this.response.writeHead(204, {
             "Access-Control-Allow-Origin": "*",

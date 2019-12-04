@@ -222,7 +222,7 @@ LDAP.prototype.updateUserQuota = function (db, user) {
   if (!setting || !setting.value) return fallback;
 
   // TODO(someday): don't just assume the first login identity is the primary identity?
-  const email = db.getPrimaryEmail(user._id, user.loginIdentities[0].id);
+  const email = db.getPrimaryEmail(user._id, user.loginCredentials[0].id);
   if (!email) return fallback;
 
   let ldapUser;

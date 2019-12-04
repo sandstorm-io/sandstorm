@@ -41,7 +41,7 @@ Meteor.methods({
           "Demo users cannot accept invite keys. Please sign in as a real user.");
     }
 
-    if (!user.loginIdentities) {
+    if (!user.loginCredentials) {
       // Don't consume signup key as identity user.
       return;
     }

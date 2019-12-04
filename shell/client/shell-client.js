@@ -28,25 +28,63 @@ globalSubs = [
   Meteor.subscribe("userPackages"),
   Meteor.subscribe("devPackages"),
   Meteor.subscribe("credentials"),
-  Meteor.subscribe("accountIdentities"),
+  Meteor.subscribe("accountCredentials"),
 ];
+
+if (Meteor.isClient) {
+  Meteor.startup(function () {
+    Session.set("showLoadingIndicator", true);
+
+    const langMap = TAPi18n.getLanguages();
+    let bestLang = null;
+
+    if (navigator.languages) {
+      navigator.languages.forEach(lang => {
+        if (!bestLang) {
+          if (lang in langMap) {
+            bestLang = lang;
+          } else if (lang.indexOf('-') > 0) {
+            var prefix = lang.split('-')[0];
+            if (prefix in langMap) {
+              bestLang = prefix;
+            }
+          }
+        }
+      });
+    } else {
+      bestLang = navigator.language || navigator.userLanguage ||
+                 navigator.browserLanguage || navigator.systemLanguage;
+    }
+
+    if (!bestLang) bestLang = "en";
+
+    TAPi18n.setLanguage(bestLang)
+      .done(function () {
+        Session.set("showLoadingIndicator", false);
+      })
+      .fail(function (errorMessage) {
+        // Handle the situation
+        console.log(errorMessage);
+      });
+  });
+}
 
 Tracker.autorun(function () {
   const me = Meteor.user();
   if (me) {
-    if (me.profile) {
-      Meteor.subscribe("identityProfile", me._id);
+    if (me.type === "credential") {
+      Meteor.subscribe("credentialDetails", me._id);
     }
 
-    if (me.loginIdentities) {
-      me.loginIdentities.forEach(function (identity) {
-        Meteor.subscribe("identityProfile", identity.id);
+    if (me.loginCredentials) {
+      me.loginCredentials.forEach(function (credential) {
+        Meteor.subscribe("credentialDetails", credential.id);
       });
     }
 
-    if (me.nonloginIdentities) {
-      me.nonloginIdentities.forEach(function (identity) {
-        Meteor.subscribe("identityProfile", identity.id);
+    if (me.nonloginCredentials) {
+      me.nonloginCredentials.forEach(function (credential) {
+        Meteor.subscribe("credentialDetails", credential.id);
       });
     }
   }
@@ -64,7 +102,7 @@ logoutSandstorm = function () {
     }
   };
 
-  if (globalDb.userHasSamlLoginIdentity()) {
+  if (globalDb.userHasSamlLoginCredential()) {
     Meteor.call("generateSamlLogout", function (err, url) {
       Meteor.logout(function () {
         logoutHelper();
@@ -184,10 +222,11 @@ const showBillingPrompt = function (reason, next) {
     db: globalDb,
     topbar: globalTopbar,
     accountsUi: globalAccountsUi,
-    billingPromptTemplate: window.BlackrockPayments ? "billingPrompt" : "billingPromptLocal",
+    billingPromptTemplate: Meteor.settings.public.stripePublicKey
+                              ? "billingPrompt" : "billingPromptLocal",
     onComplete: function () {
       billingPromptState.set(null);
-      if (!window.BlackrockPayments) {
+      if (!Meteor.settings.public.stripePublicKey) {
         Meteor.call("updateQuota", function (err) {
           if (err) {
             console.error(err);
@@ -202,6 +241,18 @@ const showBillingPrompt = function (reason, next) {
     },
   });
 };
+
+// TEMPORARY HACK for free plan going away.
+Template.sandstormAppListPage.events({
+  "click .upgrade-plan-now": function (event, tmpl) {
+    showBillingPrompt("voluntary");
+  }
+});
+Template.sandstormGrainListPage.events({
+  "click .upgrade-plan-now": function (event, tmpl) {
+    showBillingPrompt("voluntary");
+  }
+});
 
 const ifQuotaAvailable = function (next) {
   const reason = isUserOverQuota(Meteor.user());
@@ -219,7 +270,7 @@ const ifQuotaAvailable = function (next) {
 
 const ifPlanAllowsCustomApps = function (next) {
   if (globalDb.isDemoUser() || globalDb.isUninvitedFreeUser()) {
-    if (window.BlackrockPayments) {
+    if (Meteor.settings.public.stripePublicKey) {
       showBillingPrompt("customApp", function () {
         // If the user successfully chose a plan, continue the operation.
         if (!globalDb.isDemoUser() && !globalDb.isUninvitedFreeUser()) {
@@ -339,17 +390,15 @@ launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex, opti
 
   const title = "Untitled " + appTitle + " " + nounPhrase;
 
-  const identityId = Accounts.getCurrentIdentityId();
-
   // We need to ask the server to start a new grain, then browse to it.
-  Meteor.call("newGrain", packageId, command, title, identityId, function (error, grainId) {
+  Meteor.call("newGrain", packageId, command, title, null, function (error, grainId) {
     if (error) {
-      if (error.error === 402) {
+      if (error.error === 402 || error.error === "quota-exhausted") {
         // Sadly this can occur under LDAP quota management when the backend updates its quota
         // while creating the grain.
         showBillingPrompt("outOfStorage", function () {
           // TODO(someday): figure out the actual reason, instead of hard-coding outOfStorage
-          Meteor.call("newGrain", packageId, command, title, identityId,
+          Meteor.call("newGrain", packageId, command, title, null,
           function (error, grainId) {
             if (error) {
               console.error(error);
@@ -556,9 +605,9 @@ Template.layout.helpers({
     return globalGrains;
   },
 
-  identityUser: function () {
+  credentialUser: function () {
     const user = Meteor.user();
-    return user && user.profile;
+    return user && user.type === "credential";
   },
 
   showAccountButtons: function () {
@@ -637,6 +686,21 @@ Template.registerHelper("referralsEnabled", function () {
   return globalDb.isReferralEnabled();
 });
 
+Template.registerHelper("con", function () {
+  return Array.prototype.slice.call(arguments, 0, -1).join('.')
+});
+
+Template.registerHelper("freePlanGoingAway", function () {
+  return Meteor.settings.public.stripePublicKey &&
+      (Meteor.user().plan || "free") === "free" &&
+      globalDb.getMyPlan().grains > 0 &&
+      !globalDb.isDemoUser();
+});
+
+Template.registerHelper("oasisShuttingDown", function () {
+  return globalDb.getServerTitle() == "Sandstorm Oasis";
+});
+
 Template.root.helpers({
   storageUsage: function () {
     return Meteor.userId() ? prettySize(Meteor.user().storageUsage || 0) : undefined;
@@ -648,7 +712,7 @@ Template.root.helpers({
   },
 
   overQuota: function () {
-    return !window.BlackrockPayments && isUserOverQuota(Meteor.user());
+    return !Meteor.settings.public.stripePublicKey && isUserOverQuota(Meteor.user());
   },
 });
 
@@ -746,8 +810,7 @@ restoreBackup = function (file) {
     } else {
       startUpload(file, "/uploadBackup/" + token, function (response) {
         Session.set("uploadStatus", "Unpacking");
-        const identityId = Accounts.getCurrentIdentityId();
-        Meteor.call("restoreGrain", token, identityId, function (err, grainId) {
+        Meteor.call("restoreGrain", token, null, function (err, grainId) {
           if (err) {
             console.log(err);
             Session.set("uploadStatus", undefined);
@@ -802,7 +865,7 @@ Router.map(function () {
     path: "/",
     subscriptions: function () {
       this.subscribe("hasUsers").wait();
-      if (!Meteor.loggingIn() && Meteor.user() && Meteor.user().loginIdentities) {
+      if (!Meteor.loggingIn() && Meteor.user() && Meteor.user().loginCredentials) {
         this.subscribe("grainsMenu").wait();
       }
     },
@@ -813,7 +876,7 @@ Router.map(function () {
       }
       // If the user is logged-in, and can create new grains, and
       // has no grains yet, then send them to "new".
-      if (this.ready() && Meteor.userId() && !Meteor.loggingIn() && Meteor.user().loginIdentities) {
+      if (this.ready() && Meteor.userId() && !Meteor.loggingIn() && Meteor.user().loginCredentials) {
         if (globalDb.currentUserGrains().count() === 0 &&
             globalDb.currentUserApiTokens().count() === 0) {
           Router.go("apps", {}, { replaceState: true });

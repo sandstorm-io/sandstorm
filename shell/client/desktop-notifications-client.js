@@ -87,11 +87,10 @@ const showActivityDesktopNotification = (notif) => {
     // We are the canonical title of this grain.
     grainTitle = grain.title;
   } else {
-    // Not our grain.  One of our identities must have an ApiToken for this grain.
-    const identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
+    // Not our grain.  Our account must have an ApiToken for this grain.
     const apiToken = globalDb.collections.apiTokens.findOne({
       grainId,
-      "owner.user.identityId": { $in: identityIds },
+      "owner.user.accountId": Meteor.userId(),
     }, {
       sort: { created: 1 },
     });

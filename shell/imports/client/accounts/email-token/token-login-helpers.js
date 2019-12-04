@@ -50,7 +50,7 @@ const loginWithEmailToken = function (email, token, callback) {
  * @summary Create a new token for a given email.
  * @locus Client
  * @param {String} email The user's email address.
- * @param {Boolean} linkingNewIdentity True if this is an attempt to link a new identity; false otherwise.
+ * @param {Boolean} linkingNewCredential True if this is an attempt to link a new identity; false otherwise.
  * @param {String} resumePath If the user logs in by opening the link from the email, redirect them to this path on successful login.
  * @param {Function} [callback] Client only, optional callback. Called with no arguments on success, or with a single `Error` argument on failure.
  */

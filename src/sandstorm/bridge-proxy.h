@@ -25,6 +25,7 @@
 namespace sandstorm {
 
 kj::Own<kj::HttpService> newBridgeProxy(
+    kj::Timer& timer,
     SandstormApi<BridgeObjectId>::Client sandstormApi,
     SandstormHttpBridge::Client bridge,
     spk::BridgeConfig::Reader config,

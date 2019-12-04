@@ -50,7 +50,7 @@ If you did not request this deletion, please contact the server administrator im
 
   if (byAdminUserId) {
     const initiatingAdmin = db.getUser(byAdminUserId);
-    const adminName = db.getIdentity(initiatingAdmin.loginIdentities[0].id).profile.name;
+    const adminName = initiatingAdmin.profile.name;
     emailOptions.text = `${adminName} has requested that the Sandstorm account held by ${deleteUserString} on ${db.getServerTitle()} be deleted. The account has been suspended and will be fully deleted in seven days. To cancel the deletion, go to: ${process.env.ROOT_URL}/admin/users/${deletedUser._id}`;
   } else {
     emailOptions.text = `${deleteUserString} has requested that their account be deleted on ${db.getServerTitle()}. The account has been suspended and will be fully deleted in seven days. To cancel the deletion, go to: ${process.env.ROOT_URL}/admin/users/${deletedUser._id}`;
@@ -91,7 +91,7 @@ Meteor.methods({
 
     const db = this.connection.sandstormDb;
 
-    if (global.BlackrockPayments) {
+    if (Meteor.settings.public.stripePublicKey) {
       BlackrockPayments.suspendAccount(db, userId);
     }
 
@@ -113,7 +113,7 @@ Meteor.methods({
         "Please ask your admin to do it for you.");
     }
 
-    if (global.BlackrockPayments) {
+    if (Meteor.settings.public.stripePublicKey) {
       BlackrockPayments.suspendAccount(db, Meteor.userId());
     }
 

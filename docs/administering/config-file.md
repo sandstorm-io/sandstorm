@@ -103,6 +103,26 @@ Example:
 MONGO_PORT=6081
 ```
 
+### BASE_URL
+
+The URL you expect people to type into their browser address bar to reach your sandstorm server, like `https://alpha.sandstorm.io` or `http://local.sandstorm.io:6080`. It should include protocol (http:// or https://), host, and port (if non-default), but no path. Note that if you have a reverse proxy in front of your web site, BASE_URL points at the proxy, not directly at the Sandstorm server -- again, it's the URL people type into the address bar, not necessarily the physical address of the Sandstorm server itself.
+
+Example:
+
+```
+BASE_URL=http://sandstorm.example.com:6080
+```
+
+### WILDCARD_HOST
+
+This specifies a pattern of addresses all of which also end up at your Sandstorm server. Unlike BASE_URL, WILDCARD_HOST should not include a protocol, only hostname and optionally port. The hostname must have a * somewhere in it. If this * is replaced by any alphanumeric string, and the value is prefixed with the same protocol used in BASE_URL, the result should be a URL which, if entered in the browser, would resolve to your Sandstorm server. So, for example, `alpha-*.sandstorm.io` is the WILDCARD_HOST for Sandstorm Alpha, while `*.oasis.sandstorm.io` is the WILDCARD_HOST for Oasis, and `*.local.sandstorm.io:6080` might be the WILDCARD_HOST for a local server. Notice that you can put the * anywhere you want in the URL, but most DNS servers only support a leading *. in a wildcard entry.
+
+Example:
+
+```
+WILDCARD_HOST=*.sandstorm.example.com:6080
+```
+
 ### UPDATE_CHANNEL
 
 The path within `install.sandstorm.io` that Sandstorm automatically checks for downloads. The term

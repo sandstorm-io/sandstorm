@@ -61,8 +61,8 @@ module.exports["Test grain trash"] = function (browser) {
           browser
             .disableGuidedTour()
             .url(tokenResponse.value)
-            .waitForElementVisible("button.pick-identity", short_wait)
-            .click("button.pick-identity")
+            .waitForElementVisible("button.reveal-identity-button", short_wait)
+            .click("button.reveal-identity-button")
             .waitForElementVisible('.grain-frame', medium_wait)
             .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
             .grainFrame()
@@ -155,67 +155,73 @@ module.exports["Test topbar trash button"] = function (browser) {
   // We need to prepend 'A' so that the default handle is always valid.
   var devName1 = "A" + crypto.randomBytes(10).toString("hex");
   var devName2 = "A" + crypto.randomBytes(10).toString("hex");
-  var devIdentityId1 = crypto.createHash("sha256").update("dev:" + devName1).digest("hex");
-  var devIdentityId2 = crypto.createHash("sha256").update("dev:" + devName2).digest("hex");
 
   browser
-    .loginDevAccount(devName1)
-    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
-                hackerCmsAppId)
-    .waitForElementVisible("#grainTitle", medium_wait)
-    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .loginDevAccount(devName2)
+    .executeAsync(function (done) {
+      done(Meteor.userId());
+    }, [], function (result) {
+      var devAccountId2 = result.value;
+      browser.execute("window.Meteor.logout()")
+      browser
+        .loginDevAccount(devName1)
+        .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
+                    hackerCmsAppId)
+        .waitForElementVisible("#grainTitle", medium_wait)
+        .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
 
-    .url(function (urlResponse) {
-      var grainUrl = urlResponse.value;
-      var grainId = grainUrl.split("/").pop();
-      var grainCheckboxSelector =
-          ".grain-list td.select-grain input[data-grainid='" + grainId + "']";
-      browser.executeAsync(function (grainId, devIdentityId1, devIdentityId2, done) {
-        Meteor.call("newApiToken", { identityId: devIdentityId1 },
-                    grainId, "petname", { allAccess: null },
-                    { user: { identityId: devIdentityId2, title: "title 1", } },
-                    function(error, result) {
-                      Meteor.logout();
-                      done({ error: error, result: result, });
-                    });
-      }, [grainId, devIdentityId1, devIdentityId2], function (result) {
-        browser.assert.equal(!result.value.error, true)
-        browser
-          .loginDevAccount(devName2)
-          .url(browser.launch_url + "/shared/" + result.value.result.token)
-          .waitForElementVisible('.grain-frame', medium_wait)
-          .waitForElementVisible("#deleteGrain", medium_wait)
-          .click("#deleteGrain")
-          .acceptAlert()
-          .waitForElementVisible("button.show-trash", medium_wait)
-          .click("button.show-trash")
-          .waitForElementVisible(grainCheckboxSelector, medium_wait)
-          .url(grainUrl)
-          .waitForElementVisible(".grain-interstitial", short_wait)
-          .assert.containsText(".grain-interstitial>p", "This grain is in your trash.")
-          .assert.elementNotPresent("#deleteGrain")
-
-          .execute("window.Meteor.logout()")
-
-          .loginDevAccount(devName1)
-          .executeAsync(function (grainId, devIdentityId1, devIdentityId2, done) {
-            Meteor.call("newApiToken", { identityId: devIdentityId1 },
+        .url(function (urlResponse) {
+          var grainUrl = urlResponse.value;
+          var grainId = grainUrl.split("/").pop();
+          var grainCheckboxSelector =
+              ".grain-list td.select-grain input[data-grainid='" + grainId + "']";
+          browser.executeAsync(function (grainId, devAccountId2, done) {
+            Meteor.call("newApiToken", { accountId: Meteor.userId() },
                         grainId, "petname", { allAccess: null },
-                        { user: { identityId: devIdentityId2, title: "title 2", } },
+                        { user: { accountId: devAccountId2, title: "title 1", } },
                         function(error, result) {
                           Meteor.logout();
                           done({ error: error, result: result, });
                         });
-          }, [grainId, devIdentityId1, devIdentityId2], function (result) {
-            browser.assert.equal(!result.value.error, true)
+          }, [grainId, devAccountId2], function (result) {
+            browser.assert.equal(!result.value.error, true);
             browser
               .loginDevAccount(devName2)
               .url(browser.launch_url + "/shared/" + result.value.result.token)
               .waitForElementVisible('.grain-frame', medium_wait)
-              .waitForElementVisible("#grainTitle", medium_wait)
-              .waitForElementVisible("#deleteGrain", short_wait)
-              .end();
+              .waitForElementVisible("#deleteGrain", medium_wait)
+              .click("#deleteGrain")
+              .acceptAlert()
+              .waitForElementVisible("button.show-trash", medium_wait)
+              .click("button.show-trash")
+              .waitForElementVisible(grainCheckboxSelector, medium_wait)
+              .url(grainUrl)
+              .waitForElementVisible(".grain-interstitial", short_wait)
+              .assert.containsText(".grain-interstitial>p", "This grain is in your trash.")
+              .assert.elementNotPresent("#deleteGrain")
+
+              .execute("window.Meteor.logout()")
+
+              .loginDevAccount(devName1)
+              .executeAsync(function (grainId, devAccountId2, done) {
+                Meteor.call("newApiToken", { accountId: Meteor.userId() },
+                            grainId, "petname", { allAccess: null },
+                            { user: { accountId: devAccountId2, title: "title 2", } },
+                            function(error, result) {
+                              Meteor.logout();
+                              done({ error: error, result: result, });
+                            });
+              }, [grainId, devAccountId2], function (result) {
+                browser.assert.equal(!result.value.error, true)
+                browser
+                  .loginDevAccount(devName2)
+                  .url(browser.launch_url + "/shared/" + result.value.result.token)
+                  .waitForElementVisible('.grain-frame', medium_wait)
+                  .waitForElementVisible("#grainTitle", medium_wait)
+                  .waitForElementVisible("#deleteGrain", short_wait)
+                  .end();
+              });
           });
-      });
+        });
     });
 }

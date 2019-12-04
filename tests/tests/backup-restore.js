@@ -66,6 +66,15 @@ function setProfile(browser, profile, callback) {
 }
 
 function configureAutoDownload(browser, done) {
+  browser.options.desiredCapabilities['chromeOptions'] = {
+    prefs: {
+      download: {
+        prompt_for_download: false,
+        default_directory: downloadsPath
+      }
+    }
+  }
+
   var autoDownloadProfile = new FirefoxProfile();
   autoDownloadProfile.setPreference('browser.download.folderList', 2);
   autoDownloadProfile.setPreference('browser.download.dir', downloadsPath);
@@ -115,7 +124,7 @@ module.exports["Test backup and restore"] = function(browser) {
       watcherPromise = new Promise(function(resolve, reject) {
         var watcher = fs.watch(downloadsPath, {persistent: false, recursive: false},
                                function (event, filename) {
-          if (event === 'change' && filename) {
+          if (event === 'change' && filename && filename.endsWith(".zip")) {
             var fullpath = path.join(downloadsPath, filename);
             var stat = fs.statSync(fullpath);
             watcher.close();

@@ -392,9 +392,10 @@ const populateContactsFromApiTokens = function (db, backend) {
     accountId: { $exists: 1 },
   }).forEach(function (token) {
     const identityId = token.owner.user.identityId;
-    const identity = db.getIdentity(identityId);
+    const identity = Meteor.users.findOne({_id: identityId});
     if (identity) {
       const profile = identity.profile;
+      SandstormDb.fillInProfileDefaults(identity, profile);
       db.collections.contacts.upsert({ ownerId: token.accountId, identityId: identityId }, {
         ownerId: token.accountId,
         petname: profile && profile.name,
@@ -600,7 +601,7 @@ const setUpstreamTitles = function (db, backend) {
   const grainIds = aggregateApiTokens([
     { $match: { "owner.user": { $exists: true }, grainId: { $exists: true } } },
     { $group: { _id: "$grainId" } },
-  ]).map(grain => grain._id);
+  ]).toArray().await().map(grain => grain._id);
 
   let count = 0;
   db.collections.grains.find({ _id: { $in: grainIds } }, { fields: { title: 1 } }).forEach((grain) => {
@@ -787,6 +788,390 @@ function setIpBlacklist(db, backend) {
   }
 }
 
+function getUserIdentityIds(user) {
+  // Formerly SandstormDb.getUserIdentityIds(), from before the identity refactor.
+
+  if (user && user.loginIdentities) {
+    return _.pluck(user.nonloginIdentities.concat(user.loginIdentities), "id").reverse();
+  } else {
+    return [];
+  }
+}
+
+function notifyIdentityChanges(db, backend) {
+  // Notify users who might be affected by the identity model changes.
+  //
+  // Two types of users are affected:
+  // - Users who have multiple identities with differing names.
+  // - Users who have identities that are shared with other users.
+  //
+  // However, the second group seems like it must be a subset of the first group. So we only check
+  // for the first.
+
+  const names = {};
+  Meteor.users.find({ "profile.name": { $exists: true } }, { fields: { "profile.name": 1 } })
+      .forEach(user => {
+    names[user._id] = user.profile.name;
+  });
+
+  Meteor.users.find({ loginIdentities: { $exists: true } },
+                    { fields: { loginIdentities: 1, nonloginIdentities: 1 } }).forEach(user => {
+    let previousName = null;
+    let needsNotification = false;
+    getUserIdentityIds(user).forEach(identityId => {
+      const name = names[identityId];
+      if (!name || (previousName && previousName !== name)) {
+        needsNotification = true;
+      }
+
+      previousName = name;
+    });
+
+    if (needsNotification) {
+      db.collections.notifications.upsert({
+        userId: user._id,
+        identityChanges: true,
+      }, {
+        userId: user._id,
+        identityChanges: true,
+        timestamp: new Date(),
+        isUnread: true,
+      });
+    }
+  });
+}
+
+Mongo.Collection.prototype.ensureDroppedIndex = function () {
+  try {
+    this._dropIndex.apply(this, arguments);
+  } catch (err) {
+    // ignore (probably, index didn't exist)
+  }
+}
+
+function onePersonaPerAccountPreCleanup(db, backend) {
+  // Removes some already-obsolete data from the database before attempting the
+  // one-persona-per-account migration.
+
+  // Remove long-obsolete index.
+  Meteor.users.ensureDroppedIndex({ "identities.id": 1 });
+
+  // Remove `stashedOldUser`, which is long-obsolete.
+  Meteor.users.update({ stashedOldUser: { $exists: true } },
+                      { $unset: { stashedOldUser: 1 } },
+                      { multi: true });
+
+  // Remove ApiTokens which have an identityId but not an accountId. These tokens could only exist
+  // if they were created in between `splitUserIdsIntoAccountIdsAndIdentityIds` and
+  // `splitAccountUsersAndIdentityUsers` (late 2015), and if, during that time, the user who
+  // created the ApiToken was deleted (which, at the time, was only possible for demo users, or
+  // through direct database manipulation). These tokens are all invalid and couldn't possibly have
+  // been used since the user was deleted.
+  db.collections.apiTokens.remove({ identityId: { $exists: true }, accountId: { $exists: false } });
+
+  // Remove ApiTokens that have the obsolete owner.grain.introducerIdentity field as these tokens
+  // are not allowed to be restored anyway.
+  db.collections.apiTokens.remove({ "owner.grain.introducerIdentity": { $exists: true } });
+
+  // Make sure all demo credentials have a "services.demo" entry, to be consistent with all other
+  // service types.
+  Meteor.users.update({ "profile.service": "demo" },
+                      { $set: { "services.demo": {} } },
+                      { multi: true });
+
+}
+
+function forEachProgress(title, cursor, func) {
+  console.log(title);
+
+  const total = cursor.count();
+  let count = 0;
+
+  cursor.forEach(doc => {
+    func(doc);
+    if (++count % 100 == 0) console.log("   ", count, "/", total);
+  });
+}
+
+function onePersonaPerAccount(db, backend) {
+  // THIS IS A MAJOR CHANGE: https://sandstorm.io/news/2017-05-08-refactoring-identities
+
+  console.log("** Migrating to new identity model! **");
+  console.log("see: https://sandstorm.io/news/2017-05-08-refactoring-identities");
+
+  console.log("tagging accounts...");
+  Meteor.users.update({ type: { $exists: false }, loginIdentities: { $exists: true } },
+                      { $set: { type: "account" } },
+                      { multi: true });
+
+  console.log("tagging credentials...");
+  Meteor.users.update({ type: { $exists: false }, profile: { $exists: true } },
+                      { $set: { type: "credential" } },
+                      { multi: true });
+
+  // Map each identity ID to the list of connected accounts.
+  console.log("building identity map...");
+  const identityToAccount = {};
+  const needSort = [];
+  Meteor.users.find({ type: "account" }).forEach(user => {
+    const userInfo = { id: user._id, lastActive: user.lastActive || user.createdAt };
+
+    function handleIdentity(identity) {
+      if (!identityToAccount[identity.id]) {
+        identityToAccount[identity.id] = [userInfo];
+      } else {
+        const list = identityToAccount[identity.id];
+        if (list.length == 1) needSort.push(list);
+        list.push(userInfo);
+      }
+    }
+    user.loginIdentities.forEach(handleIdentity);
+    user.nonloginIdentities.forEach(handleIdentity);
+  });
+
+  // For identities attached to multiple accounts, we want the most-recently-active account to sort
+  // first. In cases where we need to replace an identity with exactly one account, we'll use that
+  // first option.
+  needSort.forEach(item => {
+    item.sort((a, b) => {
+      if (a.lastActive > b.lastActive) {
+        return -1;
+      } else if (a.lastActive < b.lastActive) {
+        return 1;
+      } else {
+        return 0;
+      }
+    });
+  });
+
+  function accountForIdentity(identityId) {
+    const ids = identityToAccount[identityId];
+    if (ids) {
+      return ids[0].id;
+    } else {
+      console.error("no such identity:", identityId);
+      return "invalid-" + identityId;
+    }
+  }
+
+  function accountListForIdentity(identityId) {
+    const ids = identityToAccount[identityId];
+    if (ids) {
+      return ids.map(i => i.id);
+    } else {
+      console.error("no such identity:", identityId);
+      return ["invalid-" + identityId];
+    }
+  }
+
+  forEachProgress("migrating users...",
+      Meteor.users.find({ type: "account" }),
+      user => {
+    // Fetch all the user's login identities.
+    const identities = Meteor.users.find(
+        { _id: { $in: user.loginIdentities.map(identity => identity.id) },
+          profile: { $exists: true } }).fetch();
+
+    // Fill out the profiles for each identity.
+    identities.forEach(identity => {
+      SandstormDb.fillInProfileDefaults(identity, identity.profile);
+    });
+
+    // Find the best profile among them.
+    let profile;
+    if (identities.length == 0) {
+      // no profiles???
+      profile = null;
+    } else if (identities.length == 1) {
+      profile = identities[0].profile;
+    } else {
+      // Multi-identity user. Try to find the "best" identity.
+
+      let maxScore = -1;
+
+      identities.forEach(identity => {
+        // Count total grains using this identity.
+        let score =
+            db.collections.grains.find({ userId: user._id, identityId: identity._id }).count() +
+            db.collections.apiTokens.find({ "owner.user.identityId": identity._id }).count();
+
+        // Avoid choosing demo user, unless they've really used it a lot.
+        if (identity.profile.name !== "Demo User") {
+          score += 10;
+        }
+
+        if (score > maxScore) {
+          profile = identity.profile;
+          maxScore = score;
+        }
+      });
+    }
+
+    if (profile) {
+      delete profile.service;
+    } else {
+      console.warn("no suitable profile found for user account:", user._id);
+      profile = {
+        name: "Unknown",
+        handle: "unknown",
+        pronoun: "neutral",
+        identicon: Crypto.randomBytes(32).toString("hex"),
+      };
+    }
+
+    const mod = { profile };
+
+    // Also figure out referrals.
+    const referrers = Meteor.users.find(
+        { _id: { $in: getUserIdentityIds(user) }, referredBy: { $exists: true } },
+        { fields: { referredBy: 1 } })
+        .map(id => id.referredBy);
+    if (referrers.length > 0) {
+      mod.referredBy = referrers[0];
+    }
+
+    if (user.referredIdentityIds) {
+      mod.referredAccountIds = user.referredIdentityIds.map(accountForIdentity);
+    }
+
+    Meteor.users.update({ _id: user._id }, { $set: mod });
+  });
+
+  forEachProgress("migrating ApiTokens...",
+      db.collections.apiTokens.find({ "owner.user.identityId": { $exists: true } }),
+      token => {
+    const accounts = accountListForIdentity(token.owner.user.identityId);
+
+    db.collections.apiTokens.update({ _id: token._id },
+        { $set: { "owner.user.accountId": accounts[0] } });
+
+    if (accounts.length > 1 && token.grainId && token.accountId) {
+      // Shared to an identity that has multiple accounts. We need to denormalize the share to
+      // target each account individually.
+      //
+      // Note: A token with owner.user.identityId is always a UiView share token and so always has
+      //   accountId and grainId. There are zero counterexamples in Oasis. But if a counterexample
+      //   existed, the code below might compound the confusion, so we skip it.
+
+      delete token._id;
+      accounts.slice(1).forEach(account => {
+        // For idempotency purposes, don't insert if a similar token already exists.
+        if (!db.collections.apiTokens.findOne({
+              grainId: token.grainId,
+              accountId: token.accountId,
+              "owner.user.accountId": account
+            })) {
+          token.owner.user.accountId = account;
+          db.collections.apiTokens.insert(token);
+        }
+      });
+    }
+  });
+
+  forEachProgress("migrating membrane requirements...",
+      db.collections.apiTokens.find({ "requirements.permissionsHeld.identityId": { $exists: true } }),
+      token => {
+    token.requirements.forEach(requirement => {
+      if (requirement.permissionsHeld && requirement.permissionsHeld.identityId) {
+        requirement.permissionsHeld.accountId =
+            accountForIdentity(requirement.permissionsHeld.identityId);
+      }
+    });
+
+    db.collections.apiTokens.update({ _id: token._id },
+        { $set: { requirements: token.requirements } });
+  });
+
+  forEachProgress("migrating identity capabilities...",
+      db.collections.apiTokens.find({ "frontendRef.identity": { $exists: true } }),
+      token => {
+    db.collections.apiTokens.update({ _id: token._id },
+        { $set: { "frontendRef.identity": accountForIdentity(token.frontendRef.identity) } });
+  });
+
+  forEachProgress("migrating contacts...",
+      db.collections.contacts.find(),
+      contact => {
+    db.collections.contacts.update({ _id: contact._id },
+        { $set: { accountId: accountForIdentity(contact.identityId) } });
+  });
+
+  forEachProgress("migrating notifications...",
+      db.collections.notifications.find({ initiatingIdentity: { $exists: true } }),
+      notification => {
+    db.collections.notifications.update({ _id: notification._id },
+        { $set: { initiatingAccount: accountForIdentity(notification.initiatingIdentity) } });
+  });
+
+  forEachProgress("migrating desktop notifications...",
+      db.collections.desktopNotifications.find(
+          { "appActivity.user.identityId": { $exists: true } }),
+      notification => {
+    db.collections.desktopNotifications.update({ _id: notification._id },
+        { $set: { "appActivity.user.accountId":
+              accountForIdentity(notification.appActivity.user.identityId) } });
+  });
+
+  forEachProgress("migrating subscriptions...",
+      db.collections.activitySubscriptions.find({ identityId: { $exists: true } }),
+      subscription => {
+    db.collections.activitySubscriptions.update({ _id: subscription._id },
+        { $set: { accountId: accountForIdentity(subscription.identityId) } });
+  });
+}
+
+function onePersonaPerAccountPostCleanup(db, backend) {
+  // Drop obsolete indices.
+  db.collections.apiTokens.ensureDroppedIndex({ "owner.user.identityId": 1 });
+  db.collections.activitySubscriptions.ensureDroppedIndex({ "identityId": 1 });
+  Meteor.users.ensureDroppedIndex({ "loginIdentities.id": 1 });
+  Meteor.users.ensureDroppedIndex({ "nonloginIdentities.id": 1 });
+
+  Meteor.users.update({ type: "account" },
+      { $rename: { loginIdentities: "loginCredentials",
+                   nonloginIdentities: "nonloginCredentials" },
+        $unset: { referredIdentityIds: 1 } },
+      { multi: true });
+
+  // Note that we intentionally don't unset profiles from credentials for now, as this is a place
+  // where we could legitimately be losing data since only of the user's identity profiles gets
+  // promoted to their account. We could remove them in a later pass, once we're sure we no longer
+  // need that data. (Also unclear if Meteor's accounts system will get confused if profiles
+  // disappear...) (Also SansdtormDb.fillInIntrinsicName() is specific to credentials and still
+  // reads the profile a bit...)
+
+  db.collections.notifications.update({},
+      { $unset: { initiatingIdentity: 1 }},
+      { multi: true });
+
+  db.collections.apiTokens.update({ identityId: { $exists: true } },
+      { $unset: { identityId: 1 } },
+      { multi: true });
+
+  db.collections.apiTokens.update({ "requirements.permissionsHeld.identityId": { $exists: true } },
+      { $unset: { "requirements.permissionsHeld.identityId": 1 } },
+      { multi: true });
+}
+
+// TODO(cleanup): Delete profiles from credentials. (Make sure nothing depends on them.)
+// TODO(cleanup): Delete all demo credentials since they aren't really needed anymore. Remove them
+//   from associated account nonloginCredentials.
+
+function cleanupBadExpiresIfUnused(db, backend) {
+  // A bug in version 0.226 / 0.227 would set expiresIfUnused to a number instead of a Date. Just
+  // delete all such tokens since they are probably expired by now.
+  db.collections.apiTokens.remove({expiresIfUnused: {$type: 1}});
+}
+
+function deleteReferralNotifications(db, backend) {
+  // Oasis is discontinuing the free plan. Notifications about the referral program are confusing
+  // for free users since it will soon be meaningless. Remove those notifications.
+  db.collections.notifications.remove({referral: {$exists: true}});
+
+  // Similarly for the mailing list bonus, though that notification is quite old in any case.
+  db.collections.notifications.remove({mailingListBonus: {$exists: true}});
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -824,6 +1209,12 @@ const MIGRATIONS = [
   addMembraneRequirementsToIdentities,
   addEncryptionToFrontendRefIpNetwork,
   setIpBlacklist,
+  notifyIdentityChanges,
+  onePersonaPerAccountPreCleanup,
+  onePersonaPerAccount,
+  onePersonaPerAccountPostCleanup,
+  cleanupBadExpiresIfUnused,
+  deleteReferralNotifications,
 ];
 
 const NEW_SERVER_STARTUP = [

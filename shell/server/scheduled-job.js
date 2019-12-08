@@ -14,7 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const Capnp = Npm.require("capnp");
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 const Runnable = Capnp.importSystem("sandstorm/util.capnp").Runnable;
 const ScheduledJobRpc = Capnp.importSystem("sandstorm/scheduled-job-impl.capnp");

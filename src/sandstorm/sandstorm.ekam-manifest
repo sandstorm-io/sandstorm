@@ -19,5 +19,4 @@ powerbox.capnp node_modules/sandstorm/powerbox.capnp
 activity.capnp node_modules/sandstorm/activity.capnp
 identity.capnp node_modules/sandstorm/identity.capnp
 identity-impl.capnp node_modules/sandstorm/identity-impl.capnp
-scheduled-job-impl.capnp node_modules/sandstorm/scheduled-job-impl.capnp
 payments.capnp node_modules/sandstorm/payments.capnp

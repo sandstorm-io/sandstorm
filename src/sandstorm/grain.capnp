@@ -180,10 +180,10 @@ struct ScheduledJob {
     oneShot :group {
     # Run the job eactly once. Currently Unimplemented.
 
-      when @0 :Util.DateInNs;
+      when @2 :Util.DateInNs;
       # The time at which the job should be run.
 
-      slack @1 :Util.DurationInNs;
+      slack @3 :Util.DurationInNs;
       # In order to improve resource utilization, Sandstorm prefers imprecise
       # scheduling -- this allows it to choose a time of low activity to invoke
       # the callback. The `slack` field tells Sandstorm how much freedom it
@@ -198,7 +198,7 @@ struct ScheduledJob {
       # before the target time, then countdown the remaining time in-process.
     }
 
-    periodic @2 :SchedulingPeriod;
+    periodic @4 :SchedulingPeriod;
     # Run the job on a regular interval.
     #
     # In order to improve resource utilization, Sandstorm prefers imprecise

@@ -127,66 +127,88 @@ interface SandstormApi(AppObjectId) {
   # future transition to a model where identity IDs are not globally stable and each grain has a
   # separate (possibly incompatible) map from identity ID to account ID.
 
-  scheduleAt @11 (when :Util.DateInNs, callback :Util.Runnable, slack :Util.DurationInNs = 0)
-              -> (job :ScheduledJob);
-  # (currently unimplemented)
+  schedule @11 ScheduledJob;
+  # Schedule a callback to be executed in the future.
   #
-  # Schedule a callback to be called at a specific time.
+  # The job may be scheduled to execute once at a specific time, or periodically. See
+  # `ScheduledJob` for more information.
   #
-  # Returns a persistable ScheduledJob handle that allows cancellation of the job.
+  # When this method returns, the job will have been scheduled.
+}
+
+struct ScheduledJob {
+  # A job to be scheduled by `SandstormApi.schedule()`.
+
+  name @0 :Util.LocalizedText;
+  # A name for the job. This will be used to describe the job to the user.
+
+  callback @1 :Callback;
+  # A callback to actually execute when it is time to run the job.
   #
-  # To activate the job, you must call confirm() on the returned `job` capability shortly after
-  # receiving it. Otherwise the job will remain inactive and may be automatically canceled.
+  # In addition to implmenting the `Callback` interface below, this must also
+  # implement `AppPersistent`. When a request to schedule the job is made, Sandstorm
+  # will `save()` the callback, and then later `restore()` it when it is time to
+  # run the job. See `AppPersistent` for more details on how this works.
   #
-  # In order to improve resource utilization, Sandstorm prefers imprecise scheduling -- this allows
-  # it to choose a time of low activity to invoke the callback. The parameter `slack` tells
-  # Sandstorm how much freedom it has -- it may schedule the task any time between `when` and
-  # `when + slack`. A value of zero for `slack` is special: it is equivalent to 1/8th of the
-  # difference between now and `when` -- this sets the window adaptively, such that the further
-  # in the future the event is scheduled, the more slack it has. You must explicitly set a non-zero
-  # value if you need better precision. Additionally, the value must be greater than
-  # `minimumSchedulingSlack`, or an exception will be thrown. If you need better precision than
-  # this, you should schedule a callback for slightly before the target time, then countdown the
-  # remaining time in-process.
+  # Note that, in some circumstances, the app may need to save some information
+  # locally to recognize the task. There is a possibility that between scheduling
+  # the job and actually saving the information, The app may be killed, the server
+  # may crash, or some other failure may occur that prevents the app from saving
+  # the information. We recommend dealing with this in one of the following ways:
+  #
+  # - Where possible, save all needed information in the `objectId` returned
+  #   by `AppPersistent.save()`; this avoids the race condition entirely.
+  # - In your implementation of `MainView.restore()`, be sure to correctly
+  #   handle attempts to restore unrecognized capabilities, by rasing an
+  #   exception with `type = failed`. This will cause Sandstorm to cancel
+  #   and delete the job.
   #
   # When the callback is called, Sandstorm will avoid killing the grain until the callback returns.
   # If the callback throws a "disconnected" exception, or if Sandstorm is forced to kill the
   # grain for some reason, the callback will be retried. After a limited number of failed retries,
   # Sandstorm may alert the owner to a problem and stop retrying.
 
-  schedulePeriodic @12 (period :SchedulingPeriod, callback :Util.Runnable)
-                    -> (job :ScheduledJob);
-  # Schedules a callback to be called on a regular interval.
-  #
-  # Returns a persistable ScheduledJob handle that allows cancellation of the job.
-  #
-  # To activate the job, you must call confirm() on the returned `job` capability shortly after
-  # receiving it. Otherwise the job will remain inactive and may be automatically canceled.
-  #
-  # In order to improve resource utilization, Sandstorm prefers imprecise scheduling -- this allows
-  # it to choose a time of low activity to invoke the callback. Therefore, Sandstorm guarantees
-  # that the callback will be called once per scheduling period, but does not make any guarantees
-  # about exactly when in that period the call will occur. If you need more precise scheduling,
-  # you will need to use `scheduleAt()`.
-  #
-  # When the callback is called, Sandstorm will avoid killing the grain until the callback returns.
-  # If the callback throws a "disconnected" exception, or if Sandstorm is forced to kill the
-  # grain for some reason, the callback will be retried. After a limited number of failed retries,
-  # Sandstorm may alert the owner to a problem and stop retrying (but will call the callback again
-  # on the next scheduling period).
-}
+  interface Callback {
+    run @0 () -> (cancelFutureRuns :Bool = false);
+    # Run the job. If the return value has `cancelFutureRuns = true` and this is a periodic job,
+    # the job will be cancelled and will not be run again.
+  }
 
-interface ScheduledJob @0xa34f0cfe24c69d74 {
-  # A handle to a job that has been scheduled by scheduleAt() or schedulePeriodic(). The
-  # job is not active until confirm() is called. This two-step activation handshake gives the
-  # grain a chance to save the ScheduledJob before activation, thus avoiding situations where
-  # a crash causes the job to be active but uncancellable.
+  schedule :union {
+  # The actual scheudule of the job.
 
-  confirm @0 ();
-  # Activates the job. This method only has an effect the first time it is called.
+    oneShot :group {
+    # Run the job eactly once. Currently Unimplemented.
 
-  cancel @1 ();
-  # Cancels the job. This method only has an effect the first time it is called.
+      when @0 :Util.DateInNs;
+      # The time at which the job should be run.
+
+      slack @1 :Util.DurationInNs;
+      # In order to improve resource utilization, Sandstorm prefers imprecise
+      # scheduling -- this allows it to choose a time of low activity to invoke
+      # the callback. The `slack` field tells Sandstorm how much freedom it
+      # has -- it may schedule the task any time between `when` and `when +
+      # slack`. A value of zero for `slack` is special: it is equivalent to
+      # 1/8th of the difference between now and `when` -- this sets the window
+      # adaptively, such that the further in the future the event is scheduled,
+      # the more slack it has. You must explicitly set a non-zero value if you
+      # need better precision. Additionally, the value must be greater than
+      # `minimumSchedulingSlack`, or an exception will be thrown. If you need
+      # better precision than this, you should schedule a callback for slightly
+      # before the target time, then countdown the remaining time in-process.
+    }
+
+    periodic @2 :SchedulingPeriod;
+    # Run the job on a regular interval.
+    #
+    # In order to improve resource utilization, Sandstorm prefers imprecise
+    # scheduling -- this allows it to choose a time of low activity to
+    # invoke the callback. Therefore, Sandstorm guarantees that the callback
+    # will be called once per scheduling period, but does not make any guarantees
+    # about exactly when in that period the call will occur. If you need more
+    # precise scheduling, you will need to use `oneShot`, and schedule the next
+    # occurance from the callback itself, before returning.
+  }
 }
 
 const minimumSchedulingSlack :Util.DurationInNs = 60000000000;

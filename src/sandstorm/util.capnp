@@ -75,10 +75,6 @@ interface Handle {
   # incoming calls at least every 60 seconds, so you may want to ping() it to keep it alive.
 }
 
-interface Runnable @0xc31c857a87ffddc0 {
-  run @0 ();
-}
-
 interface ByteStream {
   # Represents a destination for a stream of bytes. The bytes are ordered, but boundaries between
   # messages are not semantically important.

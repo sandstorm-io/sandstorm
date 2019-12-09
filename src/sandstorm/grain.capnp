@@ -145,7 +145,7 @@ struct ScheduledJob {
   callback @1 :Callback;
   # A callback to actually execute when it is time to run the job.
   #
-  # In addition to implmenting the `Callback` interface below, this must also
+  # In addition to implementing the `Callback` interface below, this must also
   # implement `AppPersistent`. When a request to schedule the job is made, Sandstorm
   # will `save()` the callback, and then later `restore()` it when it is time to
   # run the job. See `AppPersistent` for more details on how this works.
@@ -159,7 +159,7 @@ struct ScheduledJob {
   # - Where possible, save all needed information in the `objectId` returned
   #   by `AppPersistent.save()`; this avoids the race condition entirely.
   # - In your implementation of `MainView.restore()`, be sure to correctly
-  #   handle attempts to restore unrecognized capabilities, by rasing an
+  #   handle attempts to restore unrecognized capabilities, by raising an
   #   exception with `type = failed`. This will cause Sandstorm to cancel
   #   and delete the job.
   #
@@ -175,10 +175,10 @@ struct ScheduledJob {
   }
 
   schedule :union {
-  # The actual scheudule of the job.
+  # The actual schedule of the job.
 
     oneShot :group {
-    # Run the job eactly once. Currently Unimplemented.
+    # Run the job exactly once. Currently Unimplemented.
 
       when @2 :Util.DateInNs;
       # The time at which the job should be run.

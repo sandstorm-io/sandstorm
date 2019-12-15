@@ -53,9 +53,9 @@ SandstormDb.periodicCleanup(20 * 60 * 1000, () => {
       }
     }
 
-    const token = fetchApiToken(db, job.runnable);
+    const token = fetchApiToken(db, job.callback);
     if (!token) {
-      throw new Error("could not find ApiToken for runnable", job.runnable);
+      throw new Error("could not find ApiToken for callback", job.callback);
     }
 
     let intervalHandle;
@@ -63,7 +63,7 @@ SandstormDb.periodicCleanup(20 * 60 * 1000, () => {
     promises.push(Promise.resolve().then(() => {
       // TODO/FIXME(zenhack): If restoring fails, delete the job.
       let callback = restoreInternal(db, job.callback, { frontend: null }, [], token).cap;
-      callback = runnable.castAs(ScheduledJob.Callback);
+      callback = callback.castAs(ScheduledJob.Callback);
 
       intervalHandle = Meteor.setInterval(() => {
         globalBackend.useGrain(job.grainId, (supervisor) => {
@@ -72,7 +72,7 @@ SandstormDb.periodicCleanup(20 * 60 * 1000, () => {
         db.updateScheduledJobKeepAlive(job._id);
       }, KEEP_ALIVE_INTERVAL_MILLIS);
 
-      return runnable.run();
+      return callback.run();
     }).then((cancelFutureRuns) => {
       db.recordScheduledJobRan(job);
       if(cancelFutureRuns) {

@@ -119,7 +119,6 @@ SandstormDb.prototype.getReadyScheduledJobs = function (staleKeepAlive) {
 
   const now = new Date();
   return this.collections.scheduledJobs.find({
-    unconfirmed: { $exists: false },
     nextPeriodStart: { $lt: now },
     $or: [{ lastKeepAlive: { $exists: false } },
           { lastKeepAlive: { $lt: staleKeepAlive } },

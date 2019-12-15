@@ -45,7 +45,7 @@ SandstormDb.prototype.addPeriodicScheduledJob = function (grainId, name, callbac
     created: new Date(),
     grainId,
     name,
-    callable,
+    callback,
     period,
     nextPeriodStart,
   });

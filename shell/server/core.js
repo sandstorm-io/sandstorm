@@ -166,9 +166,16 @@ class SandstormCoreImpl {
     });
   }
 
-  schedule(name, callback, schedule) {
-    if(schedule.periodic !== undefined) {
-      return schedulePeriodic(this.db, this.grainId, name, callback, schedule.periodic)
+  schedule(scheduledJob) {
+    const {name, callback, schedule} = scheduledJob;
+    if(scheduledJob.schedule.periodic !== undefined) {
+      return schedulePeriodic(
+        this.db,
+        this.grainId,
+        name,
+        callback,
+        schedule.periodic
+      )
     }
 
     // FIXME(zenhack): figure out how to throw a proper capnp unimplemented exception

@@ -19,9 +19,9 @@ const ScheduledJob = Capnp.importSystem("sandstorm/grain.capnp").ScheduledJob;
 const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;
 import { PersistentImpl, fetchApiToken } from "/imports/server/persistent.js";
 
-schedulePeriodic = (db, grain, name, callback, period) => {
+schedulePeriodic = (db, grainId, name, callback, period) => {
   const promise = callback.castAs(SystemPersistent).save({ frontend: null }).then((result) => {
-    db.addScheduledJob(
+    db.addPeriodicScheduledJob(
       grainId,
       name,
       result.sturdyRef.toString("utf8"),

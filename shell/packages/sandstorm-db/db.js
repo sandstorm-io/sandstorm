@@ -853,11 +853,10 @@ const ScheduledJobs = new Mongo.Collection("scheduledJobs", collectionOptions);
 // Each contains:
 //   _id:            Unique string ID.
 //   grainId:        String ID of the grain that scheduled the job.
-//   runnable:       String sturdyref of the runnable to restore and invoke.
+//   name:           JSON-encoded LocalizedText for the human-readable name for this job.
+//                   This is pulled from `ScheduledJob.name`.
+//   callback:       String sturdyref of the callback to restore and invoke.
 //   created:        Date when the job was added to this collection.
-//   unconfirmed:    Optional Boolean. If true, then `confirm()` has not yet been called on the
-//                   job. If `confirm()` is not called within ten minutes of creation, then the job
-//                   may get canceled automatically.
 //   period:         The scheduling period, if this is a periodic job. One of: "annually", "monthly",
 //                   "daily", or "hourly".
 //   nextPeriodStart: Date when the next scheduling period starts. The scheduler will attempt to run

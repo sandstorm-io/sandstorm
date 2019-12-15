@@ -15,64 +15,20 @@
 // limitations under the License.
 
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
-const Runnable = Capnp.importSystem("sandstorm/util.capnp").Runnable;
-const ScheduledJobRpc = Capnp.importSystem("sandstorm/scheduled-job-impl.capnp");
 const ScheduledJob = Capnp.importSystem("sandstorm/grain.capnp").ScheduledJob;
 const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;
 import { PersistentImpl, fetchApiToken } from "/imports/server/persistent.js";
 
-class ScheduledJobImpl extends PersistentImpl {
-  constructor(db, saveTemplate, scheduledJobId) {
-    super(db, saveTemplate);
-    this.scheduledJobId = scheduledJobId;
-    this.db = db;
-  }
-
-  confirm() {
-    return inMeteor(() => {
-      this.db.confirmScheduledJob(this.scheduledJobId);
-    });
-  }
-
-  cancel() {
-    return inMeteor(() => {
-      this.db.deleteScheduledJob(this.scheduledJobId);
-    });
-  }
-};
-
-makeScheduledJob = (db, grainId, period, callback) => {
+schedulePeriodic = (db, grain, name, callback, period) => {
   const promise = callback.castAs(SystemPersistent).save({ frontend: null }).then((result) => {
-    const jobId = db.addScheduledJob(grainId, result.sturdyRef.toString("utf8"), period);
-    const saveTemplate = { frontendRef: { scheduledJob: { id: jobId } } };
-    return new Capnp.Capability(
-      new ScheduledJobImpl(db, saveTemplate, jobId),
-      ScheduledJobRpc.PersistentScheduledJob);
+    db.addScheduledJob(
+      grainId,
+      name,
+      result.sturdyRef.toString("utf8"),
+      period
+    );
   });
-
-  return new Capnp.Capability(
-    promise,
-    ScheduledJobRpc.PersistentScheduledJob);
-};
-
-globalFrontendRefRegistry.register({
-  frontendRefField: "scheduledJob",
-  typeId: ScheduledJob.typeId,
-
-  restore(db, saveTemplate, value) {
-    return new Capnp.Capability(
-      new ScheduledJobImpl(db, saveTemplate, value.id),
-      ScheduledJobRpc.PersistentScheduledJob);
-  },
-
-  validate(db, session, value) {
-    throw new Error("not allowed to make a powerbox request for a ScheduledJob");
-  },
-
-  query(db, userId, value) {
-    return [];
-  },
-});
+}
 
 const KEEP_ALIVE_INTERVAL_MILLIS = 60 * 1000;
 const MAX_DISCONNECTED_RETRIES = 5;
@@ -105,8 +61,9 @@ SandstormDb.periodicCleanup(20 * 60 * 1000, () => {
     let intervalHandle;
 
     promises.push(Promise.resolve().then(() => {
-      let runnable = restoreInternal(db, job.runnable, { frontend: null }, [], token).cap;
-      runnable = runnable.castAs(Runnable);
+      // TODO/FIXME(zenhack): If restoring fails, delete the job.
+      let callback = restoreInternal(db, job.callback, { frontend: null }, [], token).cap;
+      callback = runnable.castAs(ScheduledJob.Callback);
 
       intervalHandle = Meteor.setInterval(() => {
         globalBackend.useGrain(job.grainId, (supervisor) => {
@@ -116,8 +73,11 @@ SandstormDb.periodicCleanup(20 * 60 * 1000, () => {
       }, KEEP_ALIVE_INTERVAL_MILLIS);
 
       return runnable.run();
-    }).then(() => {
+    }).then((cancelFutureRuns) => {
       db.recordScheduledJobRan(job);
+      if(cancelFutureRuns) {
+        db.deleteScheduledJob(job._id);
+      }
     }, (e) => {
       if (e.kjType === "disconnected") {
         db.scheduledJobIncrementRetries(job._id);
@@ -139,8 +99,4 @@ SandstormDb.periodicCleanup(20 * 60 * 1000, () => {
   });
 
   waitPromise(Promise.all(promises));
-});
-
-SandstormDb.periodicCleanup(25 * 60 * 1000, () => {
-  globalDb.deleteUnconfirmedScheduledJobs();
 });

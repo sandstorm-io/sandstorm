@@ -166,8 +166,14 @@ class SandstormCoreImpl {
     });
   }
 
-  schedulePeriodic(period, callback) {
-    return { job: makeScheduledJob(this.db, this.grainId, period, callback) };
+  schedule(name, callback, schedule) {
+    if(schedule.periodic !== undefined) {
+      return schedulePeriodic(this.db, this.grainId, name, callback, schedule.periodic)
+    }
+
+    // FIXME(zenhack): figure out how to throw a proper capnp unimplemented exception
+    // with node-capnp.
+    throw new Error("Unimplemented");
   }
 }
 

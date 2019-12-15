@@ -24,9 +24,10 @@ const PERIOD_MILLIS = {
   hourly:  1000 * 60 * 60,
 };
 
-SandstormDb.prototype.addScheduledJob = function (grainId, runnable, period) {
+SandstormDb.prototype.addPeriodicScheduledJob = function (grainId, name, callback, period) {
   check(grainId, String);
-  check(runnable, String);
+  // FIXME(zenhack): check that name is a LocalizedText (how?)
+  check(callback, String);
   check(period, Match.OneOf("yearly", "monthly", "weekly", "daily", "hourly"));
 
   if (this.collections.scheduledJobs.find({ grainId }).count() > 50) {
@@ -43,18 +44,11 @@ SandstormDb.prototype.addScheduledJob = function (grainId, runnable, period) {
   return this.collections.scheduledJobs.insert({
     created: new Date(),
     grainId,
-    unconfirmed: true,
-    runnable,
+    name,
+    callable,
     period,
     nextPeriodStart,
   });
-};
-
-SandstormDb.prototype.confirmScheduledJob = function (id) {
-  check(id, String);
-  this.collections.scheduledJobs.update(
-    { _id: id },
-    { $unset: { unconfirmed: true } });
 };
 
 SandstormDb.prototype.deleteScheduledJob = function (jobId) {
@@ -63,17 +57,6 @@ SandstormDb.prototype.deleteScheduledJob = function (jobId) {
   this.collections.scheduledJobs.remove({ _id: jobId });
   const tokenId = Crypto.createHash("sha256").update(job.runnable).digest("base64");
   this.removeApiTokens({ _id: tokenId });
-};
-
-SandstormDb.prototype.deleteUnconfirmedScheduledJobs = function () {
-  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-  const jobs = this.collections.scheduledJobs.find(
-    { unconfirmed: true, created: { $lt: tenMinutesAgo }, },
-    { _id: 1 });
-
-  jobs.forEach((job) => {
-    this.deleteScheduledJob(job._id);
-  });
 };
 
 SandstormDb.prototype.updateScheduledJobKeepAlive = function (id) {

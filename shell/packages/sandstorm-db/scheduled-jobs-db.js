@@ -55,7 +55,7 @@ SandstormDb.prototype.deleteScheduledJob = function (jobId) {
   check(jobId, String);
   const job = this.collections.scheduledJobs.findOne({ _id: jobId });
   this.collections.scheduledJobs.remove({ _id: jobId });
-  const tokenId = Crypto.createHash("sha256").update(job.runnable).digest("base64");
+  const tokenId = Crypto.createHash("sha256").update(job.callback).digest("base64");
   this.removeApiTokens({ _id: tokenId });
 };
 

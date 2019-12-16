@@ -158,10 +158,10 @@ struct ScheduledJob {
   #
   # - Where possible, save all needed information in the `objectId` returned
   #   by `AppPersistent.save()`; this avoids the race condition entirely.
-  # - In your implementation of `MainView.restore()`, be sure to correctly
-  #   handle attempts to restore unrecognized capabilities, by raising an
-  #   exception with `type = failed`. This will cause Sandstorm to cancel
-  #   and delete the job.
+  # - Otherwise, in your implementation of `MainView.restore()`, if you are asked
+  #   to restore a callback you don't recognize, return a dummy callback that does
+  #   nothing, and returns `cancelFutureRuns = true`. This will cause Sandstorm to
+  #   cancel and delete the unknown job.
   #
   # When the callback is called, Sandstorm will avoid killing the grain until the callback returns.
   # If the callback throws a "disconnected" exception, or if Sandstorm is forced to kill the

@@ -61,7 +61,6 @@ SandstormDb.periodicCleanup(20 * 60 * 1000, () => {
     let intervalHandle;
 
     promises.push(Promise.resolve().then(() => {
-      // TODO/FIXME(zenhack): If restoring fails, delete the job.
       let callback = restoreInternal(db, job.callback, { frontend: null }, [], token).cap;
       callback = callback.castAs(ScheduledJob.Callback);
 

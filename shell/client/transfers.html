@@ -1,6 +1,6 @@
 <template name="transfers">
   <div class="transfers">
-    <h1>Transfers</h1>
+    <h1>{{_ "grains.grainlist.sandstormGrainListPage.transfers"}}</h1>
 
     {{#if showLogin}}
       <div class="login">
@@ -10,29 +10,29 @@
 
     {{#with blockedInitiate}}
       <div class="flash-message error-message">
-        It looks like you're trying to initiate a new transfer from {{source}}, but you already
-        have a transfer in progress. Please complete or cancel the existing transfer to continue.
+        {{_ "grains.grainlist.sandstormGrainListPage.blockedInitiateBeforeSource"}}
+        {{source}}{{_ "grains.grainlist.sandstormGrainListPage.blockedInitiateAfterSource"}}
       </div>
     {{/with}}
 
     {{#with incoming}}
 
-      <h2>Incoming transfer active</h2>
+      <h2>{{_ "grains.grainlist.sandstormGrainListPage.incomingTransferActive"}}</h2>
 
       <p>
         {{#unless isAllDone}}
-          <button class="cancel">Cancel {{#if isAnyDone}}Remaining{{/if}} Transfer</button>
+          <button class="cancel">{{_ "grains.grainlist.sandstormGrainListPage.cancel"}} {{#if isAnyDone}}{{_ "grains.grainlist.sandstormGrainListPage.remaining"}}{{/if}} {{_ "grains.grainlist.sandstormGrainListPage.transfer"}}</button>
         {{/unless}}
         {{#if isAnyErrored}}
-          <button class="clear-errors">Retry Errors</button>
+          <button class="clear-errors">{{_ "grains.grainlist.sandstormGrainListPage.retryErrors"}}</button>
         {{/if}}
 
         {{#if isAnyDownloading}}
-          <button class="pause">Pause Transfer</button>
+          <button class="pause">{{_ "grains.grainlist.sandstormGrainListPage.pauseTransfer"}}</button>
         {{else}}{{#if isAnyReady}}
-          <button class="start">{{#if isAnyStarted}}Continue Transfer{{else}}Start Transfer{{/if}}</button>
+          <button class="start">{{#if isAnyStarted}}{{_ "grains.grainlist.sandstormGrainListPage.continueTransfer"}}{{else}}{{_ "grains.grainlist.sandstormGrainListPage.startTransfer"}{{/if}}</button>
         {{else}}{{#if isAllDone}}
-          <button class="finish">Close Transfer</button>
+          <button class="finish">{{_ "grains.grainlist.sandstormGrainListPage.closeTransfer"}}</button>
         {{/if}}
         {{/if}}
         {{/if}}</p>
@@ -104,47 +104,37 @@
 
     {{else}}
     {{#with outgoing}}
-      <h2>Outgoing transfer active</h2>
+      <h2>{{_ "grains.grainlist.sandstormGrainListPage.outgoingTransferActive"}}</h2>
 
-      <p>You are currently transferring grains to: <a href="{{destination}}" target="_blank">{{destination}}</a></p>
-      <p>Manage your transfer at: <a href="{{destination}}/transfers" target="_blank">{{destination}}/transfers</a></p>
-      <p>In order to start a new transfer (incoming or outgoing), you must cancel the existing one.</p>
-      <p><button class="cancel">Cancel Transfer</button></p>
+      <p>{{_ "grains.grainlist.sandstormGrainListPage.currentlyTransferring"}} <a href="{{destination}}" target="_blank">{{destination}}</a></p>
+      <p>{{_ "grains.grainlist.sandstormGrainListPage.manageAt"}} <a href="{{destination}}/transfers" target="_blank">{{destination}}/transfers</a></p>
+      <p>{{_ "grains.grainlist.sandstormGrainListPage.inOrder"}}</p>
+      <p><button class="cancel">{{_ "grains.grainlist.sandstormGrainListPage.cancelTransfer"}}</button></p>
 
     {{else}}
     {{#with initiate}}
-      <h2>Initiate Inbound Transfer</h2>
+      <h2>{{_ "grains.grainlist.sandstormGrainListPage.initiateInboundTransfer"}}</h2>
 
-      <p>The Sandstorm server at <strong>{{source}}</strong> wants to transfer grains to this server.</p>
+      <p>{{_ "grains.grainlist.sandstormGrainListPage.theSandstormServerAt"}} <strong>{{source}}</strong> {{_ "grains.grainlist.sandstormGrainListPage.wantsToTransfer"}}</p>
       {{#if isInsecure source}}
         <div class="flash-message warning-message">
-          WARNING: The source server does not support HTTPS. Data will be transferred without encryption.
+          {{_ "grains.grainlist.sandstormGrainListPage.insecureSource"}}
         </div>
       {{/if}}
-      <p><button class="deny">Deny</button> <button class="continue">Fetch grain list &raquo;</button></p>
+      <p><button class="deny">{{_ "grains.grainlist.sandstormGrainListPage.deny"}}</button> <button class="continue">{{_ "grains.grainlist.sandstormGrainListPage.fetchGrainList"}} &raquo;</button></p>
 
     {{else}}
-      <p>No transfers are currently in progress.</p>
-      <h2>Initiate Outbound Transfer</h2>
+      <p>{{_ "grains.grainlist.sandstormGrainListPage.noTransfersInProgress"}}</p>
+      <h2>{{_ "grains.grainlist.sandstormGrainListPage.initiateOutboundTransfer"}}</h2>
       <form class="initiate">
-        <p>Transfer all my grains to:<br>
+        <p>{{_ "grains.grainlist.sandstormGrainListPage.transferAllMyGrainsTo"}}<br>
           <input type="text" name="destination" placeholder="https://example.sandcats.io">
-          <button type="submit">Initiate Transfer</button></p>
+          <button type="submit">{{_ "grains.grainlist.sandstormGrainListPage.initiateTransfer"}}</button></p>
       </form>
-      <h2>What does this do?</h2>
-      <p>You can use this function to transfer all of your grains to a new Sandstorm server.
-        This automates the process of saving a backup of each grain on this server, then restoring
-        each backup on the server you specify.</p>
-      <p>When you initiate the transfer above, you will be redirected to the destination server
-        where you will be prompted to sign in. You will then be given the option to choose which
-        grains to transfer, and then finally you will initiate the transfer. The transfer will
-        continue in the background; you can log off.</p>
-      <p>In order for a transfer to work, the <i>destination</i> server must be able to reach the
-        <i>source</i> server directly over the internet. However, the reverse is not necessary.
-        Thus, you can perform a mass trasfer that transfers grains from a server on the public
-        internet (like Sandstorm Oasis) to a server on a private internal network, but not vice
-        versa. If the <i>source</i> server supports HTTPS, then the transfer will take place over
-        HTTPS, regardless of the destination server's protocol.</p>
+      <h2>{{_ "grains.grainlist.sandstormGrainListPage.whatDoesThisDo"}}</h2>
+      <p>{{_ "grains.grainlist.sandstormGrainListPage.whatCan"}}</p>
+      <p>{{_ "grains.grainlist.sandstormGrainListPage.whatWhen"}}</p>
+      <p>{{_ "grains.grainlist.sandstormGrainListPage.whatOrder"}}</p>
     {{/with}}
     {{/with}}
     {{/with}}

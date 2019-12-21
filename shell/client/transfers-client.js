@@ -164,8 +164,8 @@ Template.transfers.events({
     }
 
     if (!confirm(
-        "WARNING: You are giving " + destination + " permission to download all your " +
-        "grains from this server. Are you sure?")) {
+      TAPi18n.__("grains.grainlist.sandstormGrainListPage.warningGiving") + " " +
+      destination + TAPi18n.__("grains.grainlist.sandstormGrainListPage.warningGiving"))) {
       return;
     }
 
@@ -203,7 +203,7 @@ Template.transfers.events({
     evt.preventDefault();
     Meteor.call("acceptTransfer", this.source, this.token, (err) => {
       if (err) {
-        alert("Error accepting transfer: " + err.message);
+        alert(TAPi18n.__("grains.grainlist.sandstormGrainListPage.errorAcceptingTransfer") + err.message);
         return;
       }
       Router.go("transfers");

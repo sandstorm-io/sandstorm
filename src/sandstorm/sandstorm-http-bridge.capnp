@@ -41,3 +41,45 @@ interface SandstormHttpBridge {
   # If BridgeConfig.saveIdentityCaps is true for this app, adds the given identity to the
   # grain's database, allowing it to be fetched later with `getSavedIdentity()`.
 }
+
+interface AppHooks {
+  # When connecting to the bridge's domain socket at /tmp/sandstorm-api, the
+  # application may supply this as a bootstrap interface. If the app chooses
+  # to do so, it should also set `bridgeConfig.expectAppHooks = true` in the
+  # package's PackageDefinition.
+
+  getViewInfo @0 () -> :Grain.UiView.ViewInfo;
+  # Like Grain.UiView.GetViewInfo. If AppHooks is supplied, the bridge will
+  # delegate UiView.GetViewInfo to this method. If it raises unimplemented,
+  # the bridge will fall back to reading the viewInfo from the bridgeConfig.
+
+  restore @0 (objectId :BridgeObjectId) -> (cap :Capability);
+  # Like Grain.MainView.restore, but the objectId is wrapped to work
+  # with the bridge; see the comments for `BridgeObjectId`.
+
+  drop @1 (objectId :BridgeObjectId);
+  # Like Grain.MainView.restore, but the objectId is wrapped to work
+  # with the bridge; see the comments for `BridgeObjectId`.
+}
+
+struct BridgeObjectId {
+  # The object ID format used by sandstorm-http-bridge.
+  #
+  # When using sandstorm-http-bridge, objects provided by the application which
+  # implement `AppPersistent.save` should return a value of this type,
+  # with the union set to `application`.
+
+  union {
+    application @0 :AnyPointer;
+    # The object ID is in a format understood by the application, not by http-bridge.
+    # When objects supplied by the app (as opposed to the bridge itself) implement
+    # Grain.AppPersistent, save() should always use this variant, and store their
+    # own data in the pointer.
+
+    bridge @1 :AnyPointer;
+    # The object ID is in a format understood by sandstorm-http-bridge. The bridge
+    # will use this to manage persistent objects it implements itself (for example,
+    # HTTP apis), but applications should not set this variant on objects they
+    # create, and the bridge will never pass this to `AppHooks.restore` or `drop`.
+  }
+}

@@ -178,9 +178,9 @@ class SandstormCoreImpl {
       )
     }
 
-    // FIXME(zenhack): figure out how to throw a proper capnp unimplemented exception
-    // with node-capnp.
-    throw new Error("Unimplemented");
+    const err = new Error("Unimplemented schedule type");
+    err.kjType = 'unimplemented';
+    throw err;
   }
 }
 

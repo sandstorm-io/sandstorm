@@ -19,6 +19,9 @@ const ScheduledJob = Capnp.importSystem("sandstorm/grain.capnp").ScheduledJob;
 const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;
 import { PersistentImpl, fetchApiToken } from "/imports/server/persistent.js";
 
+const MINIMUM_SCHEDULING_SLACK_NANO = Capnp.importSystem("sandstorm/grain.capnp").minimumSchedulingSlack;
+const MINIMUM_SCHEDULING_SLACK_MILLIS = MINIMUM_SCHEDULING_SLACK_NANO / 1e6;
+
 scheduleOneShot = (db, grainId, name, callback, when, slack) => {
   const promise = callback.castAs(SystemPersistent).save({ frontend: null }).then((result) => {
     db.addOneShotScheduledJob(
@@ -45,7 +48,7 @@ schedulePeriodic = (db, grainId, name, callback, period) => {
 const KEEP_ALIVE_INTERVAL_MILLIS = 60 * 1000;
 const MAX_DISCONNECTED_RETRIES = 5;
 
-SandstormDb.periodicCleanup(20 * 60 * 1000, () => {
+SandstormDb.periodicCleanup(MINIMUM_SCHEDULING_SLACK_MILLIS, () => {
   const db = globalDb;
   const staleKeepAlive = new Date(Date.now() - 3 * KEEP_ALIVE_INTERVAL_MILLIS);
   const jobs = db.getReadyScheduledJobs(staleKeepAlive);

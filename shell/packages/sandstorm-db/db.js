@@ -2424,8 +2424,8 @@ if (Meteor.isServer) {
     check(intervalMs, Number);
     check(callback, Function);
 
-    if (intervalMs < 120000) {
-      throw new Error("less than 2-minute cleanup interval seems too fast; " +
+    if (intervalMs < 45000) {
+      throw new Error("less than 45-second cleanup interval seems too fast; " +
                       "are you using the right units?");
     }
 

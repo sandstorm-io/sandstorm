@@ -24,11 +24,13 @@ const PERIOD_MILLIS = {
   hourly:  1000 * 60 * 60,
 };
 
+const LEGAL_PERIODS = Object.getOwnPropertyNames(PERIOD_MILLIS);
+
 SandstormDb.prototype.addPeriodicScheduledJob = function (grainId, name, callback, period) {
   check(grainId, String);
   // FIXME(zenhack): check that name is a LocalizedText (how?)
   check(callback, String);
-  check(period, Match.OneOf("yearly", "monthly", "weekly", "daily", "hourly"));
+  check(period, Match.OneOf(...LEGAL_PERIODS));
 
   if (this.collections.scheduledJobs.find({ grainId }).count() > 50) {
     throw new Error("grain already has the maximum allowed number of jobs");
@@ -70,7 +72,7 @@ SandstormDb.prototype.updateScheduledJobKeepAlive = function (id) {
 SandstormDb.prototype.recordScheduledJobRan = function (job, maybeError) {
   check(job, Match.ObjectIncluding({
     _id: String,
-    period: Match.OneOf("yearly", "monthly", "weekly", "daily", "hourly"),
+    period: Match.OneOf(...LEGAL_PERIODS),
     nextPeriodStart: Date,
   }));
 

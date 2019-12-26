@@ -19,6 +19,18 @@ const ScheduledJob = Capnp.importSystem("sandstorm/grain.capnp").ScheduledJob;
 const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;
 import { PersistentImpl, fetchApiToken } from "/imports/server/persistent.js";
 
+scheduleOneShot = (db, grainId, name, callback, when, slack) => {
+  const promise = callback.castAs(SystemPersistent).save({ frontend: null }).then((result) => {
+    db.addOneShotScheduledJob(
+      grainId,
+      name,
+      result.sturdyRef.toString("utf8"),
+      when,
+      slack,
+    );
+  })
+}
+
 schedulePeriodic = (db, grainId, name, callback, period) => {
   const promise = callback.castAs(SystemPersistent).save({ frontend: null }).then((result) => {
     db.addPeriodicScheduledJob(
@@ -73,10 +85,13 @@ SandstormDb.periodicCleanup(20 * 60 * 1000, () => {
 
       return callback.run();
     }).then((cancelFutureRuns) => {
-      db.recordScheduledJobRan(job);
-      if(cancelFutureRuns) {
+      if(cancelFutureRuns || job.period === undefined) {
+        // Either the job explicitly told us to cancel it (cancelFutureRuns),
+        // or it was one-shot job (period is undefined). Remove the job:
         db.deleteScheduledJob(job._id);
+        return;
       }
+      db.recordScheduledJobRan(job);
     }, (e) => {
       if (e.kjType === "disconnected") {
         db.scheduledJobIncrementRetries(job._id);

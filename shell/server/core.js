@@ -176,11 +176,21 @@ class SandstormCoreImpl {
         callback,
         schedule.periodic
       )
+    } else if(schedule.oneShot !== undefined) {
+      const {when, slack} = schedule.oneShot;
+      return scheduleOneShot(
+        this.db,
+        this.grainId,
+        name,
+        callback,
+        when,
+        slack,
+      )
+    } else {
+      const err = new Error("Unimplemented schedule type");
+      err.kjType = 'unimplemented';
+      throw err;
     }
-
-    const err = new Error("Unimplemented schedule type");
-    err.kjType = 'unimplemented';
-    throw err;
   }
 }
 

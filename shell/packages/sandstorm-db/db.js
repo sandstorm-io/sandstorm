@@ -858,7 +858,7 @@ const ScheduledJobs = new Mongo.Collection("scheduledJobs", collectionOptions);
 //   callback:       String sturdyref of the callback to restore and invoke.
 //   created:        Date when the job was added to this collection.
 //   period:         The scheduling period, if this is a periodic job. One of: "annually", "monthly",
-//                   "daily", or "hourly".
+//                   "daily", or "hourly". This will be undefined if this is a one-shot job.
 //   nextPeriodStart: Date when the next scheduling period starts. The scheduler will attempt to run
 //                   the callback once this Date has come to pass.
 //   lastKeepAlive:  Date when the scheduler most recently sent a keepalive method call to

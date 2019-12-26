@@ -16,6 +16,8 @@
 
 const Crypto = Npm.require("crypto");
 
+const MINIMUM_SCHEDULING_SLACK_NANO = Capnp.importSystem("sandstorm/grain.capnp").minimumSchedulingSlack;
+
 const PERIOD_MILLIS = {
   yearly:  1000 * 60 * 60 * 24 * 365,
   monthly: 1000 * 60 * 60 * 24 * 30,
@@ -26,15 +28,56 @@ const PERIOD_MILLIS = {
 
 const LEGAL_PERIODS = Object.getOwnPropertyNames(PERIOD_MILLIS);
 
+SandstormDb.prototype.requireSpareScheduledJobs = function (grainId) {
+  if (this.collections.scheduledJobs.find({ grainId }).count() > 50) {
+    throw new Error("grain already has the maximum allowed number of jobs");
+  }
+}
+
+SandstormDb.prototype.addOneShotScheduledJob = function(grainId, name, callback, when, slack) {
+  check(grainId, String);
+  // FIXME(zenhack): check that name is a LocalizedText (how?)
+  check(when, String);
+  check(slack, String);
+  check(callback, String);
+  this.requireSpareScheduledJobs();
+
+  const whenNano = parseInt(when);
+  let slackNano = parseInt(slack);
+
+  const nowMillis = Date.now();
+  const nowNano = nowMillis * 1e6;
+  if(whenNano < nowNano) {
+    throw new Error("Can't schedule a job for a time in the past.");
+  }
+  // For details on the why of this computation, see the comments in
+  // grain.capnp for ScheduledJob:
+  if(slackNano === 0) {
+    slackNano = (whenNano - nowNano) / 8;
+  }
+  slackNano = Math.max(slackNano, MINIMUM_SCHEDULING_SLACK_NANO);
+
+  // pick a random time in the allowed interval:
+  const scheduledTimeNano = whenNano + Math.random() * slackNano;
+
+  const scheduledTimeMillis = scheduledTimeNano / 1e6;
+  const nextPeriodStart = new Date(scheduledTimeMillis);
+
+  this.collections.scheduledJobs.insert({
+    created: new Date(),
+    grainId,
+    name,
+    callback,
+    nextPeriodStart,
+  });
+}
+
 SandstormDb.prototype.addPeriodicScheduledJob = function (grainId, name, callback, period) {
   check(grainId, String);
   // FIXME(zenhack): check that name is a LocalizedText (how?)
   check(callback, String);
   check(period, Match.OneOf(...LEGAL_PERIODS));
-
-  if (this.collections.scheduledJobs.find({ grainId }).count() > 50) {
-    throw new Error("grain already has the maximum allowed number of jobs");
-  }
+  this.requireSpareScheduledJobs();
 
   // Randomize the initial start time by adding up to half of the scheduling period.
   // This should help to spread out jobs throughout the available scheduling time, even

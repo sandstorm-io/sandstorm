@@ -217,6 +217,7 @@ const minimumSchedulingSlack :Util.DurationInNs = 60000000000;
 enum SchedulingPeriod {
   annually @3;
   monthly @2;
+  weekly @4;
   daily @1;
   hourly @0;
 }

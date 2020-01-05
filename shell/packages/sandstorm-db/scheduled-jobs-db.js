@@ -35,11 +35,15 @@ SandstormDb.prototype.requireSpareScheduledJobs = function (grainId) {
 }
 
 SandstormDb.prototype.addOneShotScheduledJob = function(grainId, name, callback, when, slack) {
+  // Strictly speaking, we don't need to check these since they came from
+  // a capnp call (and thus were unmarshalled by trusted code), but we may
+  // as well since it's easy. We skip `name` though, since there's not a handy
+  // way to validate a LocalizedText.
   check(grainId, String);
-  // FIXME(zenhack): check that name is a LocalizedText (how?)
   check(when, String);
   check(slack, String);
   check(callback, String);
+
   this.requireSpareScheduledJobs();
 
   const whenNano = parseInt(when);

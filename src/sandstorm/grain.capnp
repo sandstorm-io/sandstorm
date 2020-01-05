@@ -211,8 +211,8 @@ struct ScheduledJob {
   }
 }
 
-const minimumSchedulingSlack :Util.DurationInNs = 60000000000;
-# 60 seconds: The minimum value allowable for the `slack` parameter passed to `scheduleAt()`.
+const minimumSchedulingSlack :Util.DurationInNs = 300000000000;
+# 5 minutes: The minimum value allowable for the `slack` parameter passed to `scheduleAt()`.
 
 enum SchedulingPeriod {
   annually @3;

@@ -2015,7 +2015,7 @@ public:
     // There aren't any actually results to copy over, but we do want
     // to wait for the SandstormCore to return before we do, so the
     // app doesn't prematurely think the scheduling is complete.
-    return req.send().then([](auto) -> void {});
+    return req.send().ignoreResult();
   }
 
 private:

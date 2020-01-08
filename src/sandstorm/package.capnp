@@ -230,7 +230,7 @@ struct BridgeConfig {
   # capability so that it can be fetched later using `SandstormHttpBridge.getSavedIdentity`. You
   # will probably want to enable this if your app supports notifications.
 
-  expectAppHooks @3 :Bool;
+  expectAppHooks @4 :Bool;
   # Set this to true if you are using sandstorm-http-bridge and want to do any of
   # the following:
   #

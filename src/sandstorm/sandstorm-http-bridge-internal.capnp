@@ -31,8 +31,8 @@ struct BridgeObjectId {
   # contents and the app can trust that the ID passed from Sandstorm is authentic. Hence, we can
   # put all the metadata we need directly in this structure and let Sandstorm store it.
   #
-  # Note the BridgeObjectId defined in `sandstorm-http-bridge.capnp` is wire compatible
-  # with this, but exposes less information to apps.
+  # Note the AppHooks.BridgeObjectId defined in `sandstorm-http-bridge.capnp` is wire
+  # compatible with this, but exposes less information to apps.
 
   union {
     application @0 :AnyPointer;

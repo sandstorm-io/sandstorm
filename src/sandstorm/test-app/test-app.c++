@@ -46,7 +46,7 @@ public:
 
   kj::Promise<void> save(SaveContext context) override {
     auto results = context.getResults();
-    results.setObjectId(text);
+    results.initObjectId().setText(text);
     results.initLabel().setDefaultText("some label");
     return kj::READY_NOW;
   }
@@ -127,7 +127,7 @@ private:
 
 // =======================================================================================
 
-class UiViewImpl final: public sandstorm::MainView<capnp::Text>::Server {
+class UiViewImpl final: public sandstorm::MainView<ObjectId>::Server {
 public:
   kj::Promise<void> getViewInfo(GetViewInfoContext context) override {
     auto viewInfo = context.initResults();
@@ -168,8 +168,17 @@ public:
   }
 
   kj::Promise<void> restore(RestoreContext context) override {
-    context.getResults().setCap(kj::heap<TestPowerboxCapImpl>(
-        kj::str(context.getParams().getObjectId())));
+    auto objId = context.getParams().getObjectId();
+    switch(objId.which()) {
+      case ObjectId::TEXT:
+        context.getResults().setCap(kj::heap<TestPowerboxCapImpl>(
+            kj::str(objId.getText())
+        ));
+        break;
+      case ObjectId::NEXT:
+      default:
+        KJ_UNIMPLEMENTED("Unsupported ObjectID type. This shouldn't happen!");
+    }
     return kj::READY_NOW;
   }
 };

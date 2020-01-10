@@ -9,7 +9,14 @@ using Spk = import "/sandstorm/package.capnp";
 const testAppHtml :Data = embed "test-app.html";
 const testPowerboxHtml :Data = embed "test-powerbox.html";
 
-interface TestPowerboxCap @0xdf9518c9479ddfcb extends(Grain.AppPersistent(Text)) {
+struct ObjectId {
+  union {
+    text @0 :Text;
+    next @1 :Void;
+  }
+}
+
+interface TestPowerboxCap @0xdf9518c9479ddfcb extends(Grain.AppPersistent(ObjectId)) {
   struct PowerboxTag {
     i @0 :UInt32;
     s @1 :Text;

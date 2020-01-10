@@ -19,6 +19,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#include <iostream>
+
 #include <kj/main.h>
 #include <kj/debug.h>
 #include <kj/io.h>
@@ -37,6 +39,32 @@ namespace {
 
 typedef unsigned int uint;
 typedef unsigned char byte;
+
+class ScheduledJobCallbackImpl final: public PersistentCallback::Server {
+public:
+
+  // Create a one-shot job
+  ScheduledJobCallbackImpl(uint32_t refNumber, bool shouldCancel)
+    : refNumber(refNumber), shouldCancel(shouldCancel) {}
+
+  kj::Promise<void> save(SaveContext context) override {
+    auto results = context.getResults();
+    auto sb = results.initObjectId().initScheduledCallback();
+    sb.setShouldCancel(shouldCancel);
+    sb.setRefNumber(refNumber);
+    results.initLabel().setDefaultText("some label");
+    return kj::READY_NOW;
+  }
+
+  kj::Promise<void> run(RunContext context) override {
+    std::cout << "Running job #" << refNumber << std::endl;
+    context.getResults().setCancelFutureRuns(shouldCancel);
+    return kj::READY_NOW;
+  }
+private:
+  uint32_t refNumber;
+  bool shouldCancel;
+};
 
 // =======================================================================================
 
@@ -175,7 +203,16 @@ public:
             kj::str(objId.getText())
         ));
         break;
-      case ObjectId::NEXT:
+      case ObjectId::SCHEDULED_CALLBACK:
+        {
+          auto sc = objId.getScheduledCallback();
+          context.getResults().setCap(kj::heap<ScheduledJobCallbackImpl>(
+            ScheduledJobCallbackImpl(
+                sc.getRefNumber(),
+                sc.getShouldCancel()
+          )));
+          break;
+        }
       default:
         KJ_UNIMPLEMENTED("Unsupported ObjectID type. This shouldn't happen!");
     }
@@ -204,8 +241,8 @@ public:
 
     // The `CLIENT` side of a `capnp::TwoPartyVatNetwork` does not serve its bootstrap capability
     // until it has initiated a request for the bootstrap capability of the `SERVER` side.
-    // Therefore, we need to restore the supervisor's `SandstormApi` capability, even if we are not
-    // going to use it.
+  // Therefore, we need to restore the supervisor's `SandstormApi` capability, even if we are not
+  // going to use it.
     {
       capnp::MallocMessageBuilder message;
       auto vatId = message.getRoot<capnp::rpc::twoparty::VatId>();

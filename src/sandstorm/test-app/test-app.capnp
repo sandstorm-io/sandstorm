@@ -12,7 +12,10 @@ const testPowerboxHtml :Data = embed "test-powerbox.html";
 struct ObjectId {
   union {
     text @0 :Text;
-    next @1 :Void;
+    scheduledCallback :group {
+      shouldCancel @1 :Bool;
+      refNumber @2 :UInt32;
+    }
   }
 }
 
@@ -24,6 +27,8 @@ interface TestPowerboxCap @0xdf9518c9479ddfcb extends(Grain.AppPersistent(Object
 
   read @0 () -> (text: Text);
 }
+
+interface PersistentCallback extends(Grain.ScheduledJob.Callback, Grain.AppPersistent(ObjectId)) {}
 
 # Constants used to generate powerbox queries in test-app.html.
 #

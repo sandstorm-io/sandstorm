@@ -87,7 +87,7 @@ SandstormDb.periodicCleanup(MINIMUM_SCHEDULING_SLACK_MILLIS, () => {
       }, KEEP_ALIVE_INTERVAL_MILLIS);
 
       return callback.run();
-    }).then((cancelFutureRuns) => {
+    }).then(({cancelFutureRuns}) => {
       if(cancelFutureRuns || job.period === undefined) {
         // Either the job explicitly told us to cancel it (cancelFutureRuns),
         // or it was one-shot job (period is undefined). Remove the job:

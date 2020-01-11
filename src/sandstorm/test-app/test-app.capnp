@@ -14,7 +14,7 @@ struct ObjectId {
     text @0 :Text;
     scheduledCallback :group {
       shouldCancel @1 :Bool;
-      refNumber @2 :UInt32;
+      refStr @2 :Text;
     }
   }
 }

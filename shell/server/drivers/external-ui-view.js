@@ -64,7 +64,7 @@ function getOAuthServiceInfo(url) {
       service: "google",
       endpoint: "https://www.googleapis.com/oauth2/v4/token",
     };
-  } else if (url.startsWith("https://api.github.com/users")) {
+  } else if (url.startsWith("https://api.github.com/")) {
     return {
       service: "github",
       endpoint: "https://github.com/login/oauth/access_token",

@@ -399,14 +399,16 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
         options.headers["user-agent"] = "sandstorm app";
       }
 
-      if (this.fromHackSession) {
-        // According to the specification of `WebSession`, `path` should not contain a
-        // leading slash, and therefore we need to prepend "/". However, for a long time
-        // this implementation did not in fact prepend a "/". Since some apps might rely on
-        // that behavior, we only prepend "/" if the path does not start with "/".
-        //
-        // TODO(soon): Once apps have updated, prepend "/" unconditionally.
-        options.path = path.startsWith("/") ? path : "/" + path;
+      // In theory, we should always prepend a slash to the path ourselves because,
+      // according to the specification of `WebSession`, `path` should not contain
+      // one, but in practice we need to be a little more flexible, for two reasons:
+      //
+      // 1. For a long time the `HackSession` implementation did not in fact
+      //    prepend a "/", so some apps may rely on that behavior.
+      // 2. If the session's path is at the root of a domain, it will have the
+      //    path set as "/" already, so we should not add another one.
+      if (this.path === "/" || path.startsWith("/")) {
+        options.path = this.path + path;
       } else {
         options.path = this.path + "/" + path;
       }

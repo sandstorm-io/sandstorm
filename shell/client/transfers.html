@@ -1,6 +1,6 @@
 <template name="transfers">
   <div class="transfers">
-    <h1>{{_ "grains.grainlist.sandstormGrainListPage.transfers"}}</h1>
+    <h1>{{_ "grains.grainlist.sandstormGrainListPage.transfers.transfers"}}</h1>
 
     {{#if showLogin}}
       <div class="login">
@@ -10,29 +10,29 @@
 
     {{#with blockedInitiate}}
       <div class="flash-message error-message">
-        {{_ "grains.grainlist.sandstormGrainListPage.blockedInitiateBeforeSource"}}
-        {{source}}{{_ "grains.grainlist.sandstormGrainListPage.blockedInitiateAfterSource"}}
+        {{_ "grains.grainlist.sandstormGrainListPage.transfers.blockedInitiateBeforeSource"}}
+        {{source}}{{_ "grains.grainlist.sandstormGrainListPage.transfers.blockedInitiateAfterSource"}}
       </div>
     {{/with}}
 
     {{#with incoming}}
 
-      <h2>{{_ "grains.grainlist.sandstormGrainListPage.incomingTransferActive"}}</h2>
+      <h2>{{_ "grains.grainlist.sandstormGrainListPage.transfers.incomingTransferActive"}}</h2>
 
       <p>
         {{#unless isAllDone}}
-          <button class="cancel">{{_ "grains.grainlist.sandstormGrainListPage.cancel"}} {{#if isAnyDone}}{{_ "grains.grainlist.sandstormGrainListPage.remaining"}}{{/if}} {{_ "grains.grainlist.sandstormGrainListPage.transfer"}}</button>
+          <button class="cancel">{{_ "grains.grainlist.sandstormGrainListPage.transfers.cancel"}} {{#if isAnyDone}}{{_ "grains.grainlist.sandstormGrainListPage.transfers.remaining"}}{{/if}} {{_ "grains.grainlist.sandstormGrainListPage.transfers.transfer"}}</button>
         {{/unless}}
         {{#if isAnyErrored}}
-          <button class="clear-errors">{{_ "grains.grainlist.sandstormGrainListPage.retryErrors"}}</button>
+          <button class="clear-errors">{{_ "grains.grainlist.sandstormGrainListPage.transfers.retryErrors"}}</button>
         {{/if}}
 
         {{#if isAnyDownloading}}
-          <button class="pause">{{_ "grains.grainlist.sandstormGrainListPage.pauseTransfer"}}</button>
+          <button class="pause">{{_ "grains.grainlist.sandstormGrainListPage.transfers.pauseTransfer"}}</button>
         {{else}}{{#if isAnyReady}}
-          <button class="start">{{#if isAnyStarted}}{{_ "grains.grainlist.sandstormGrainListPage.continueTransfer"}}{{else}}{{_ "grains.grainlist.sandstormGrainListPage.startTransfer"}}{{/if}}</button>
+          <button class="start">{{#if isAnyStarted}}{{_ "grains.grainlist.sandstormGrainListPage.transfers.continueTransfer"}}{{else}}{{_ "grains.grainlist.sandstormGrainListPage.transfers.startTransfer"}}{{/if}}</button>
         {{else}}{{#if isAllDone}}
-          <button class="finish">{{_ "grains.grainlist.sandstormGrainListPage.closeTransfer"}}</button>
+          <button class="finish">{{_ "grains.grainlist.sandstormGrainListPage.transfers.closeTransfer"}}</button>
         {{/if}}
         {{/if}}
         {{/if}}</p>
@@ -104,44 +104,37 @@
 
     {{else}}
     {{#with outgoing}}
-      <h2>{{_ "grains.grainlist.sandstormGrainListPage.outgoingTransferActive"}}</h2>
+      <h2>{{_ "grains.grainlist.sandstormGrainListPage.transfers.outgoingTransferActive"}}</h2>
 
-      <p>{{_ "grains.grainlist.sandstormGrainListPage.currentlyTransferring"}} <a href="{{destination}}" target="_blank">{{destination}}</a></p>
-      <p>{{_ "grains.grainlist.sandstormGrainListPage.manageAt"}} <a href="{{destination}}/transfers" target="_blank">{{destination}}/transfers</a></p>
-      <p>{{_ "grains.grainlist.sandstormGrainListPage.inOrder"}}</p>
-      <p><button class="cancel">{{_ "grains.grainlist.sandstormGrainListPage.cancelTransfer"}}</button></p>
+      <p>{{_ "grains.grainlist.sandstormGrainListPage.transfers.currentlyTransferring"}} <a href="{{destination}}" target="_blank">{{destination}}</a></p>
+      <p>{{_ "grains.grainlist.sandstormGrainListPage.transfers.manageAt"}} <a href="{{destination}}/transfers" target="_blank">{{destination}}/transfers</a></p>
+      <p>{{_ "grains.grainlist.sandstormGrainListPage.transfers.inOrder"}}</p>
+      <p><button class="cancel">{{_ "grains.grainlist.sandstormGrainListPage.transfers.cancelTransfer"}}</button></p>
 
     {{else}}
     {{#with initiate}}
-      <h2>{{_ "grains.grainlist.sandstormGrainListPage.initiateInboundTransfer"}}</h2>
+      <h2>{{_ "grains.grainlist.sandstormGrainListPage.transfers.initiateInboundTransfer"}}</h2>
 
-      <p>{{_ "grains.grainlist.sandstormGrainListPage.theSandstormServerAt"}} <strong>{{source}}</strong> {{_ "grains.grainlist.sandstormGrainListPage.wantsToTransfer"}}</p>
+      <p>{{_ "grains.grainlist.sandstormGrainListPage.transfers.theSandstormServerAt"}} <strong>{{source}}</strong> {{_ "grains.grainlist.sandstormGrainListPage.transfers.wantsToTransfer"}}</p>
       {{#if isInsecure source}}
         <div class="flash-message warning-message">
-          {{_ "grains.grainlist.sandstormGrainListPage.insecureSource"}}
+          {{_ "grains.grainlist.sandstormGrainListPage.transfers.insecureSource"}}
         </div>
       {{/if}}
-      <p><button class="deny">{{_ "grains.grainlist.sandstormGrainListPage.deny"}}</button> <button class="continue">{{_ "grains.grainlist.sandstormGrainListPage.fetchGrainList"}} &raquo;</button></p>
+      <p><button class="deny">{{_ "grains.grainlist.sandstormGrainListPage.transfers.deny"}}</button> <button class="continue">{{_ "grains.grainlist.sandstormGrainListPage.transfers.fetchGrainList"}} &raquo;</button></p>
 
     {{else}}
-      <p>{{_ "grains.grainlist.sandstormGrainListPage.noTransfersInProgress"}}</p>
-      <h2>{{_ "grains.grainlist.sandstormGrainListPage.initiateOutboundTransfer"}}</h2>
+      <p>{{_ "grains.grainlist.sandstormGrainListPage.transfers.noTransfersInProgress"}}</p>
+      <h2>{{_ "grains.grainlist.sandstormGrainListPage.transfers.initiateOutboundTransfer"}}</h2>
       <form class="initiate">
-        <p>{{_ "grains.grainlist.sandstormGrainListPage.transferAllMyGrainsTo"}}<br>
+        <p>{{_ "grains.grainlist.sandstormGrainListPage.transfers.transferAllMyGrainsTo"}}<br>
           <input type="text" name="destination" placeholder="https://example.sandcats.io">
-          <button type="submit">{{_ "grains.grainlist.sandstormGrainListPage.initiateTransfer"}}</button></p>
+          <button type="submit">{{_ "grains.grainlist.sandstormGrainListPage.transfers.initiateTransfer"}}</button></p>
       </form>
-      <h2>{{_ "grains.grainlist.sandstormGrainListPage.whatDoesThisDo"}}</h2>
-      <p>{{_ "grains.grainlist.sandstormGrainListPage.whatCan"}}</p>
-      <p>{{_ "grains.grainlist.sandstormGrainListPage.whatWhen"}}</p>
-      <p>{{_ "grains.grainlist.sandstormGrainListPage.whatOrder"}}
-         <i>{{_ "grains.grainlist.sandstormGrainListPage.destination"}}</i>
-            {{_ "grains.grainlist.sandstormGrainListPage.whatMustReachSourceServer"}}
-         <i>{{_ "grains.grainlist.sandstormGrainListPage.source"}}</i>
-            {{_ "grains.grainlist.sandstormGrainListPage.whatDirectlyIfTheSourceServer"}}
-         <i>{{_ "grains.grainlist.sandstormGrainListPage.source"}}</i>
-            {{_ "grains.grainlist.sandstormGrainListPage.whatHTTPS"}}
-      </p>
+      <h2>{{_ "grains.grainlist.sandstormGrainListPage.transfers.whatDoesThisDo"}}</h2>
+      <p>{{_ "grains.grainlist.sandstormGrainListPage.transfers.whatCan"}}</p>
+      <p>{{_ "grains.grainlist.sandstormGrainListPage.transfers.whatWhen"}}</p>
+      <p>{{_ "grains.grainlist.sandstormGrainListPage.transfers.whatOrder"}}</p>
     {{/with}}
     {{/with}}
     {{/with}}

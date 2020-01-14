@@ -164,8 +164,7 @@ Template.transfers.events({
     }
 
     if (!confirm(
-      TAPi18n.__("grains.grainlist.sandstormGrainListPage.warningGiving") + " " +
-      destination + TAPi18n.__("grains.grainlist.sandstormGrainListPage.warningGiving"))) {
+      TAPi18n.__("grains.grainlist.sandstormGrainListPage.warningGiving") + " " + destination + " " + TAPi18n.__("grains.grainlist.sandstormGrainListPage.warningPermission"))) {
       return;
     }
 

@@ -48,7 +48,7 @@ schedulePeriodic = (db, grainId, name, callback, period) => {
 const KEEP_ALIVE_INTERVAL_MILLIS = 60 * 1000;
 const MAX_DISCONNECTED_RETRIES = 5;
 
-SandstormDb.periodicCleanup(MINIMUM_SCHEDULING_SLACK_MILLIS, () => {
+const runDueJobs = () => {
   const db = globalDb;
   const staleKeepAlive = new Date(Date.now() - 3 * KEEP_ALIVE_INTERVAL_MILLIS);
   const jobs = db.getReadyScheduledJobs(staleKeepAlive);
@@ -116,4 +116,6 @@ SandstormDb.periodicCleanup(MINIMUM_SCHEDULING_SLACK_MILLIS, () => {
   });
 
   waitPromise(Promise.all(promises));
-});
+}
+
+SandstormDb.periodicCleanup(MINIMUM_SCHEDULING_SLACK_MILLIS, runDueJobs);

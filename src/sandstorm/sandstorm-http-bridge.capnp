@@ -81,7 +81,7 @@ interface AppHooks (AppObjectId) {
       # The object ID is in a format understood by sandstorm-http-bridge. The bridge
       # will use this to manage persistent objects it implements itself (for example,
       # HTTP apis), but applications should not set this variant on objects they
-      # create, and the bridge will never pass this to `AppHooks.restore` or `drop`.
+      # create.
     }
   }
 }

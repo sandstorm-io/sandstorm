@@ -52,8 +52,8 @@ interface AppHooks (AppObjectId) {
   # objects exported by the app that implement Grain.AppPersistent.
 
   getViewInfo @0 () -> Grain.UiView.ViewInfo;
-  # Like Grain.UiView.GetViewInfo. If AppHooks is supplied, the bridge will
-  # delegate UiView.GetViewInfo to this method. If it raises unimplemented,
+  # Like Grain.UiView.getViewInfo. If AppHooks is supplied, the bridge will
+  # delegate UiView.getViewInfo to this method. If it raises unimplemented,
   # the bridge will fall back to reading the viewInfo from the bridgeConfig.
 
   restore @1 (objectId :AppObjectId) -> (cap :Capability);

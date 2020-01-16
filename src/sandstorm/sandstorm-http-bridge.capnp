@@ -47,6 +47,9 @@ interface AppHooks (AppObjectId) {
   # application may supply this as a bootstrap interface. If the app chooses
   # to do so, it should also set `bridgeConfig.expectAppHooks = true` in the
   # package's PackageDefinition.
+  #
+  # The `AppObjectId` type parameter should be the same as that for any
+  # objects exported by the app that implement Grain.AppPersistent.
 
   getViewInfo @0 () -> Grain.UiView.ViewInfo;
   # Like Grain.UiView.GetViewInfo. If AppHooks is supplied, the bridge will
@@ -54,34 +57,11 @@ interface AppHooks (AppObjectId) {
   # the bridge will fall back to reading the viewInfo from the bridgeConfig.
 
   restore @1 (objectId :AppObjectId) -> (cap :Capability);
-  # Like Grain.MainView.restore. If an app implements AppHooks.restore, any
-  # capabilities it provides which implement AppPersistent should return
-  # a value of type BridgeObjectId (below), with the `application` variant
-  # set to the value that should be passed to AppHooks.restore/drop.
+  # Like Grain.MainView.restore. The bridge will use this to delegate restoring
+  # any objects provided by the app, rather than the bridge itself. Such objects
+  # must implement `Grain.AppPersistent.save` per the comments there and in
+  # Grain.MainView.
 
   drop @2 (objectId :AppObjectId);
   # Like Grain.MainView.drop. See the comments for restore.
-
-  struct BridgeObjectId {
-    # The object ID format used by sandstorm-http-bridge.
-    #
-    # When using sandstorm-http-bridge, objects provided by the application which
-    # implement `AppPersistent.save` should return a value of this type,
-    # with the union set to `application`. The argument to that union will be
-    # passed to AppHooks.restore/drop.
-
-    union {
-      application @0 :AppObjectId;
-      # The object ID is in a format understood by the application, not by http-bridge.
-      # When objects supplied by the app (as opposed to the bridge itself) implement
-      # Grain.AppPersistent, save() should always use this variant, and store their
-      # own data in the pointer.
-
-      bridge @1 :AnyPointer;
-      # The object ID is in a format understood by sandstorm-http-bridge. The bridge
-      # will use this to manage persistent objects it implements itself (for example,
-      # HTTP apis), but applications should not set this variant on objects they
-      # create.
-    }
-  }
 }

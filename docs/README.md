@@ -9,8 +9,8 @@ Run the following.
 ```
 cd ~/projects/sandstorm
 virtualenv tmp/docs-virtualenv
-tmp/docs-virtualenv/bin/pip install mkdocs
-tmp/docs-virtualenv/bin/pip install markdown-inline-graphviz
+tmp/docs-virtualenv/bin/pip install mkdocs==1.0.4
+tmp/docs-virtualenv/bin/pip install markdown-inline-graphviz==1.0
 # Get "dot" so we can render inline dot/graphviz
 sudo apt-get install -y graphviz
 tmp/docs-virtualenv/bin/mkdocs serve

@@ -163,10 +163,10 @@ SandstormDb.prototype.scheduledJobIncrementRetries = function (id) {
     });
 };
 
-SandstormDb.prototype.getReadyScheduledJobs = function (staleKeepAlive) {
+SandstormDb.prototype.getReadyScheduledJobs = function (nowMillis, staleKeepAlive) {
   check(staleKeepAlive, Date);
 
-  const now = new Date();
+  const now = new Date(nowMillis);
   return this.collections.scheduledJobs.find({
     nextPeriodStart: { $lt: now },
     $or: [{ lastKeepAlive: { $exists: false } },

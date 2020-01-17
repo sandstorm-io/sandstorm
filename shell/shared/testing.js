@@ -14,14 +14,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { runDueJobs } from '/server/scheduled-job.js'
-
 const isTesting = Meteor.settings && Meteor.settings.public &&
                   Meteor.settings.public.isTesting;
 
 // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
 if (isTesting) {
   if (Meteor.isServer) {
+    import { runDueJobs } from '/server/scheduled-job.js';
+
     function clearUser(id) {
       UserActions.remove({ userId: id });
       globalDb.removeApiTokens({ userId: id });
@@ -35,15 +35,9 @@ if (isTesting) {
 
     Meteor.methods({
       advanceTimeMillis(diffMillis) {
-        const oldDateCtor = Date;
-        const mockDateCtor = function(millis) {
-          oldDateCtor.bind(this)(millis + diffMillis);
-        }
-        mockDateCtor.prototype = oldDateCtor.prototype;
-        mockDateCtor.now = function() {
-          oldDateCtor.now() + diffMillis;
-        };
-        runDueJobs();
+        const oldNow = Date.now;
+        Date.now = () => oldNow() + diffMillis
+        runDueJobs(Date.now());
       },
 
       createMockGithubUser: function () {

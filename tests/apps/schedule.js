@@ -20,8 +20,25 @@ const { short_wait } = require('../utils');
 
 module.exports = {};
 
-function commonSetup(browser, selector) {
-  return browser
+// The tests in this file all follow a similar form, implemented by this function:
+//
+// 1. Schedule the job, by clicking on a given button in the test app.
+// 2. Wait until the job is due to run (really, call advanceTimeMillis()).
+// 3. Check the debug log to verify that the job ran.
+// 4. Wait some more.
+// 5. Check if it ran again.
+//
+// The parameter is an object with properties:
+//
+// - browser: the browser context
+// - refStr: the refStr identifying which job type to schedule (hourly, oneshot...).
+// - firstWaitDuration: how long the first wait should be (the second is always an
+//   hour).
+// - shouldRepeat: whether we should expect the task to run a second time. The test
+//   passes only if the observed behavior agrees with this.
+function common({browser, refStr, firstWaitDuration, shouldRepeat}) {
+  const selector = "#do-schedule-" + refStr;
+  let chain = browser
     .init()
     .loginDevAccount()
     .uploadTestApp()
@@ -32,82 +49,53 @@ function commonSetup(browser, selector) {
     .grainFrame()
     .waitForElementPresent(selector, short_wait)
     .click(selector)
-}
-
-function switchToLog(chain) {
-  return chain.windowHandles(function (windows) {
-    chain
-      .switchWindow(windows.value[1])
-      .waitForElementVisible(".grainlog-contents > pre", short_wait)
-  })
+    .frameParent()
+    .execute(
+      'Meteor.call("advanceTimeMillis", ' + firstWaitDuration.toString() + ');'
+    )
+    .pause(short_wait)
+    .windowHandles(windows => browser.switchWindow(windows.value[1]))
+    .waitForElementVisible(".grainlog-contents > pre", short_wait)
+    .assert.containsText(".grainlog-contents > pre", "Running job " + refStr)
+    .windowHandles(windows => browser.switchWindow(windows.value[0]))
+    .frameParent()
+    .execute(function() {
+      Meteor.call('advanceTimeMillis', 60 * 60 * 1000);
+    })
+    .pause(short_wait)
+    .windowHandles(windows => browser.switchWindow(windows.value[1]))
+    .expect.element(".grainlog-contents > pre").text
+  if(!shouldRepeat) {
+    chain = chain.not
+  }
+  chain.contain(
+    "Running job " + refStr + "\nRunning job " + refStr
+  )
 }
 
 module.exports["Test periodic tasks"] = function(browser) {
-  let chain = commonSetup(browser, "#do-schedule-hourly")
-    .frameParent()
-    .execute(function() {
-      console.log(Meteor.call('advanceTimeMillis', 60 * 60 * 1000))
-    })
-  switchToLog(chain)
-    .pause(short_wait)
-    // Make sure the job ran once:
-    .assert.containsText(".grainlog-contents > pre", "Running job hourly")
-    .windowHandles(windows => chain.switchWindow(windows.value[0]))
-    .frameParent()
-    .execute(function() {
-      Meteor.call('advanceTimeMillis', 60 * 60 * 1000);
-    })
-    .pause(short_wait)
-    .windowHandles(windows => chain.switchWindow(windows.value[1]))
-    // Make sure it ran again:
-    .assert.containsText(
-      ".grainlog-contents > pre",
-      "Running job hourly\nRunning job hourly",
-    )
+  common({
+    browser,
+    refStr: 'hourly',
+    firstWaitDuration: 60 * 60 * 1000,
+    shouldRepeat: true,
+  })
 }
 
 module.exports["Test canceling tasks"] = function(browser) {
-  let chain = commonSetup(browser, "#do-schedule-hourly-cancel")
-    .frameParent()
-    .execute(function() {
-      Meteor.call('advanceTimeMillis', 60 * 60 * 1000);
-    })
-  switchToLog(chain)
-    .pause(short_wait)
-    // Make sure the job ran once:
-    .assert.containsText(".grainlog-contents > pre", "Running job hourly-cancel")
-    .windowHandles(windows => chain.switchWindow(windows.value[0]))
-    .frameParent()
-    .execute(function() {
-      Meteor.call('advanceTimeMillis', 60 * 60 * 1000);
-    })
-    .windowHandles(windows => chain.switchWindow(windows.value[1]))
-    .pause(short_wait)
-    // Make sure it didn't run a second time.
-    .expect.element(".grainlog-contents > pre").text
-    .to.not.contain("Running job hourly-cancel\nRunning job hourly-cancel")
+  common({
+    browser,
+    refStr: 'hourly-cancel',
+    firstWaitDuration: 60 * 60 * 1000,
+    shouldRepeat: false,
+  })
 }
 
 module.exports["Test one-shot tasks"] = function(browser) {
-  let chain = commonSetup(browser, "#do-schedule-oneshot")
-    .pause(short_wait)
-    .frameParent()
-    .execute(function() {
-      Meteor.call('advanceTimeMillis', 5 * 60 * 1000);
-    })
-  switchToLog(browser)
-    .pause(short_wait)
-    // Make sure the job ran once:
-    .assert.containsText(".grainlog-contents > pre", "Running job oneshot")
-    .windowHandles(windows => chain.switchWindow(windows.value[0]))
-    .frameParent()
-    .execute(function () {
-      Meteor.call('advanceTimeMillis', 60 * 60 * 1000);
-    })
-    .windowHandles(windows => chain.switchWindow(windows.value[1]))
-    .pause(short_wait)
-    // Make sure it doesn't run a second time.
-    .expect.element(".grainlog-contents > pre").text
-    .to.not.contain("Running job oneshot\nRunning job oneshot")
+  common({
+    browser,
+    refStr: 'oneshot',
+    firstWaitDuration: 5 * 60 * 1000,
+    shouldRepeat: false,
+  })
 }
-

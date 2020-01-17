@@ -34,10 +34,8 @@ if (isTesting) {
     }
 
     Meteor.methods({
-      advanceTimeMillis(diffMillis) {
-        const oldNow = Date.now;
-        Date.now = () => oldNow() + diffMillis
-        runDueJobs(Date.now());
+      runDueJobsAt(whenMillis) {
+        runDueJobs(new Date(whenMillis))
       },
 
       createMockGithubUser: function () {

@@ -23,7 +23,7 @@ module.exports = {};
 // The tests in this file all follow a similar form, implemented by this function:
 //
 // 1. Schedule the job, by clicking on a given button in the test app.
-// 2. Wait until the job is due to run (really, call advanceTimeMillis()).
+// 2. Wait until the job is due to run (really, call runDueJobsAt()).
 // 3. Check the debug log to verify that the job ran.
 // 4. Wait some more.
 // 5. Check if it ran again.
@@ -38,6 +38,9 @@ module.exports = {};
 //   passes only if the observed behavior agrees with this.
 function common({browser, refStr, firstWaitDuration, shouldRepeat}) {
   const selector = "#do-schedule-" + refStr;
+  const now = Date.now();
+  const firstCheck = now + firstWaitDuration;
+  const secondCheck = firstCheck + (60 * 60 * 1000); // 1 hr
   let chain = browser
     .init()
     .loginDevAccount()
@@ -50,18 +53,14 @@ function common({browser, refStr, firstWaitDuration, shouldRepeat}) {
     .waitForElementPresent(selector, short_wait)
     .click(selector)
     .frameParent()
-    .execute(
-      'Meteor.call("advanceTimeMillis", ' + firstWaitDuration.toString() + ');'
-    )
+    .execute('Meteor.call("runDueJobsAt", ' + firstCheck.toString() + ');')
     .pause(short_wait)
     .windowHandles(windows => browser.switchWindow(windows.value[1]))
     .waitForElementVisible(".grainlog-contents > pre", short_wait)
     .assert.containsText(".grainlog-contents > pre", "Running job " + refStr)
     .windowHandles(windows => browser.switchWindow(windows.value[0]))
     .frameParent()
-    .execute(function() {
-      Meteor.call('advanceTimeMillis', 60 * 60 * 1000);
-    })
+    .execute('Meteor.call("runDueJobsAt", ' + secondCheck.toString() + ');')
     .pause(short_wait)
     .windowHandles(windows => browser.switchWindow(windows.value[1]))
     .expect.element(".grainlog-contents > pre").text

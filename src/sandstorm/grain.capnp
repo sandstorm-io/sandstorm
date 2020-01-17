@@ -178,7 +178,7 @@ struct ScheduledJob {
   # The actual schedule of the job.
 
     oneShot :group {
-    # Run the job exactly once. Currently Unimplemented.
+    # Run the job exactly once.
 
       when @2 :Util.DateInNs;
       # The time at which the job should be run.

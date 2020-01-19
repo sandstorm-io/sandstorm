@@ -1992,6 +1992,32 @@ public:
     });
   }
 
+  kj::Promise<void> schedule(ScheduleContext context) override {
+    auto params = context.getParams();
+    auto req = sandstormCore.scheduleRequest(params.totalSize());
+    req.setName(params.getName());
+    req.setCallback(params.getCallback());
+    auto sched = params.getSchedule();
+    switch(sched.which()) {
+      case ScheduledJob::Schedule::ONE_SHOT: {
+          auto reqOneShot = req.getSchedule().getOneShot();
+          auto argOneShot = sched.getOneShot();
+          reqOneShot.setWhen(argOneShot.getWhen());
+          reqOneShot.setSlack(argOneShot.getSlack());
+          break;
+        }
+      case ScheduledJob::Schedule::PERIODIC:
+        req.getSchedule().setPeriodic(sched.getPeriodic());
+        break;
+      default:
+        KJ_UNIMPLEMENTED("Unknown schedule type.");
+    }
+    // There aren't any actually results to copy over, but we do want
+    // to wait for the SandstormCore to return before we do, so the
+    // app doesn't prematurely think the scheduling is complete.
+    return req.send().ignoreResult();
+  }
+
 private:
   void dropHandle(kj::ArrayPtr<byte> sturdyRef) {
     auto req = sandstormCore.dropRequest();

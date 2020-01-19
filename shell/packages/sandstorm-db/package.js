@@ -24,11 +24,12 @@ Npm.depends({ "content-type": "1.0.1" });
 Package.onUse(function (api) {
   api.use("ecmascript");
   api.use(["mongo", "random", "check", "underscore"], ["client", "server"]);
-  api.use(["accounts-base", "fongandrew:find-and-modify", "http"], ["server"]);
+  api.use(["accounts-base", "fongandrew:find-and-modify", "http", "sandstorm-capnp"], ["server"]);
   api.use(["sha"], ["client"]);
   api.use("sandstorm-identicons", ["client", "server"]);
 
   api.addFiles(["db.js", "profile.js"]);
+  api.addFiles(["scheduled-jobs-db.js"], "server");
   api.export("SandstormDb");
 });
 

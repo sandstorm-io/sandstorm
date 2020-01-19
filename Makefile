@@ -167,7 +167,7 @@ stylecheck:
 # ====================================================================
 # Dependencies
 
-DEPS=capnproto ekam libseccomp libsodium node-capnp node boringssl clang
+DEPS=capnproto ekam libseccomp libsodium node-capnp boringssl clang
 
 # We list remotes so that if projects move hosts, we can pull from their new
 # canonical location.
@@ -176,7 +176,6 @@ REMOTE_ekam=https://github.com/sandstorm-io/ekam.git master
 REMOTE_libseccomp=https://github.com/seccomp/libseccomp master
 REMOTE_libsodium=https://github.com/jedisct1/libsodium.git stable
 REMOTE_node-capnp=https://github.com/kentonv/node-capnp.git node8
-REMOTE_node=https://github.com/sandstorm-io/node sandstorm
 REMOTE_boringssl=https://boringssl.googlesource.com/boringssl master
 REMOTE_clang=https://chromium.googlesource.com/chromium/src/tools/clang.git master
 

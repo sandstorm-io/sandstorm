@@ -1,3 +1,7 @@
+### v0.257 (2020-01-19)
+- New feature: Apps can now schedule background tasks. Thanks to Ian "zenhack" Denhardt for completing this feature (originally started by David Renshaw).
+- Improved code that matches HTTP API powerbox requests against known OAuth APIs, especially GitHub (credit again to Ian Denhardt).
+
 ### v0.256 (2019-12-25) [bugfixes]
 - Updated dependencies. (No other changes.)
 

@@ -421,7 +421,7 @@ meteor-spk-0.3.2/meteor-spk:
 	@curl https://dl.sandstorm.io/meteor-spk-0.3.2.tar.xz | tar Jxf -
 
 tests/assets/meteor-testapp.spk: meteor-testapp meteor-spk-0.3.2/meteor-spk meteor-testapp/client/* meteor-testapp/server/* meteor-testapp/.meteor/*
-	@PATH="$$PWD/bin:$$PATH" && cd meteor-testapp && ../meteor-spk-0.3.2/meteor-spk pack -I../src ../tests/assets/meteor-testapp.spk
+	@PATH="$$PWD/bin:$$PATH" && cd meteor-testapp && ../meteor-spk-0.3.2/meteor-spk pack -kmeteor-testapp.key -I../src ../tests/assets/meteor-testapp.spk
 
 meteor-testapp-clean:
 	rm -rf tests/assets/meteor-testapp.spk meteor-spk-0.3.2 meteor-testapp/.meteor-spk

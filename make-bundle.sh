@@ -82,31 +82,6 @@ done
 
 METEOR_DEV_BUNDLE=$(./find-meteor-dev-bundle.sh)
 
-# Build patched nodejs from source.  Our patches significantly improve performance in the
-# presence of many fibers.  See https://github.com/sandstorm-io/sandstorm/pull/2484 and
-# https://github.com/sandstorm-io/node/tree/std-unordered-map-for-thread-data
-#
-# We build node out of tree because Jenkins wants to run builds in folders with spaces, and GNU make
-# makes dealing with spaces in implicit rules exceedingly difficult.  So we build in a fixed path in
-# /var/tmp.  If we were to vary the path, we would lose the ability to cache the build artifacts,
-# which is also rather undesirable.
-NODE_BUILD_ROOT=/var/tmp/sandstorm-node-build-dir
-echo "Building node out-of-tree"
-rm -rf "$NODE_BUILD_ROOT"
-mkdir -p "$NODE_BUILD_ROOT"
-cp -a deps/node "$NODE_BUILD_ROOT"
-pushd "$NODE_BUILD_ROOT/node"
-# The rebuild here is fast if nothing has changed.
-./configure --partly-static
-make -j$(nproc)
-popd
-# Avoid making changes that would update the mtime of deps/node, which make would interpret
-# as needing to rebuild all the C++ (and everything after it in the build flow) again.
-# Instead, just modify the contents of deps/node/out.
-mkdir -p deps/node/out
-rm -rf deps/node/out/*
-mv "$NODE_BUILD_ROOT/node/out"/* deps/node/out/
-
 # Start with the meteor bundle.
 cp -r shell-build/bundle bundle
 rm -f bundle/README
@@ -115,16 +90,16 @@ cp meteor-bundle-main.js bundle/sandstorm-main.js
 # Meteor wants us to do `npm install` in the bundle to prepare it.
 # The fibers package builds native extensions, choosing the target v8 version based on
 # the version of `/usr/bin/env node`. We need to make it does not pick up the wrong binary,
-# so we place our custom node first on `PATH`.  Additional native extensions require node-pre-gyp,
+# so we place Meteor's node first on `PATH`.  Additional native extensions require node-pre-gyp,
 # which lives in the .bin folder of the dev bundle's node_modules.
 (cd bundle/programs/server && \
- PATH=$PWD/deps/node/out/Release:$METEOR_DEV_BUNDLE/lib/node_modules/.bin:$METEOR_DEV_BUNDLE/bin:$PATH "$METEOR_DEV_BUNDLE/bin/npm" install)
+ PATH=$METEOR_DEV_BUNDLE/lib/node_modules/.bin:$METEOR_DEV_BUNDLE/bin:$PATH "$METEOR_DEV_BUNDLE/bin/npm" install)
 
 # Copy over key binaries.
 mkdir -p bundle/bin
 cp bin/sandstorm-http-bridge bundle/bin/sandstorm-http-bridge
 cp bin/sandstorm bundle/sandstorm
-cp deps/node/out/Release/node bundle/bin
+cp $METEOR_DEV_BUNDLE/bin/node bundle/bin
 
 # We used to pull mongodb out of the meteor dev bundle, but we need to figure out how to safely
 # upgrade some databases created with very old mongo versions, so we're shipping mongo 2.6 for
@@ -157,6 +132,13 @@ fi
 tar xf $OLD_BUNDLE_PATH --transform=s/^${OLD_BUNDLE_BASE}/bundle/ $OLD_MONGO_FILES
 
 cp $(which zip unzip xz gpg) bundle/bin
+
+# 'node-fibers' depends on a package (detect-libc) that uses various heuristics
+# to work out what libc implementation & version it was linked against. The more
+# reliable ones use these commands, so we include them to increase the chances
+# of success. Notably, without these detecting the correct libc fails if the
+# bundle was built on current Archlinux (as of Jan. 2020).
+cp $(which ldd getconf) bundle/bin
 
 # Older installs might be symlinking /usr/local/bin/spk to
 # /opt/sandstorm/latest/bin/spk, while newer installs link it to

@@ -158,7 +158,7 @@ Template.sandstormAppDetails.helpers({
     // TODO(someday): allow app manifests to include an explicit bug report link.
     // If the source code link is a github URL, then append /issues to it and use that.
     const codeUrl = codeUrlForPackage(pkg);
-    if (codeUrl && codeUrl.lastIndexOf("https://github.com/", 0) === 0) {
+    if (codeUrl && (codeUrl.lastIndexOf("https://github.com/", 0) === 0 || codeUrl.lastIndexOf("https://gitlab.com/", 0) === 0 || codeUrl.lastIndexOf("https://bitbucket.org/", 0) === 0)) {
       return codeUrl + "/issues";
     }
     // Otherwise, provide a mailto: to the package's contact email if available.

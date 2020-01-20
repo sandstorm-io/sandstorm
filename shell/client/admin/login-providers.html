@@ -1,0 +1,441 @@
+<template name="newAdminLogin">
+  {{#let txt="admin.identityProviders.newAdminIdentity"}}
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{#linkTo route="newAdminRoot"}}{{_ "admin.title"}}{{/linkTo}}</li>
+      <li>{{_ "admin.identityProviders.name"}}</li>
+    </ul>
+  </h1>
+
+  <p>{{_ (con txt "explanation")}}</p>
+  {{>adminLoginProviderTable idpData=idpData}}
+
+  <p>
+  {{_ (con txt "organizationLinkPrefix")}}
+  {{! let bindings are not working in linkTo block}}
+  {{#linkTo route="newAdminOrganization"}}{{_ "admin.identityProviders.newAdminIdentity.organizationLink"}}{{/linkTo}}{{_ (con txt "organizationLinkPostfix")}}
+  </p>
+  {{/let}}
+</template>
+
+<template name="adminLoginProviderConfigureEmail">
+{{#modalDialogWithBackdrop onDismiss=onDismiss}}
+  {{#let txt="admin.identityProviders.adminIdentityProviderConfigureEmail"}}
+  <h2>{{_ (con txt "title")}}</h2>
+
+  {{#if errorMessage}}
+    {{#focusingErrorBox}}
+      {{_ (con txt "error") errorMessage}}
+    {{/focusingErrorBox}}
+  {{/if}}
+
+  <form class="setup-idp-form">
+    {{#if emailUnconfigured}}
+      <p class="flash-message warning-message">{{_ (con txt "warning")}}</p>
+    {{/if}}
+
+    <p>{{_ (con txt "explanation")}}</p>
+  </form>
+
+  <div class="idp-modal-button-row">
+    <button class="idp-modal-save">
+      {{#if emailLoginEnabled}}
+      {{_ (con txt "saveButton")}}
+      {{else}}
+      {{_ (con txt "enableButton")}}
+      {{/if}}
+    </button>
+    <button class="idp-modal-cancel">
+      {{_ (con txt "cancelButton")}}
+    </button>
+    {{#if emailLoginEnabled}}
+    <button class="idp-modal-disable">
+      {{_ (con txt "disableButton")}}
+    </button>
+    {{/if}}
+  </div>
+  {{/let}}
+{{/modalDialogWithBackdrop}}
+</template>
+
+<template name="googleLoginSetupInstructions">
+  {{#let txt="admin.identityProviders.googleLoginSetupInstructions"}}
+  <p>
+    {{_ (con txt "explanation")}}
+  </p>
+  <ol>
+    <li>{{{_ (con txt "step1")}}}</li>
+    <li>{{_ (con txt "step2")}}</li>
+    <li>{{_ (con txt "step3")}}</li>
+    <li>{{_ (con txt "step4")}}</li>
+    <li>{{_ (con txt "step5")}}</li>
+    <li>{{{_ (con txt "step6") siteUrlNoSlash}}}</li>
+    <li>{{{_ (con txt "step7") siteUrlNoSlash}}}</li>
+    <li>{{_ (con txt "step8")}}</li>
+  </ol>
+  {{/let}}
+</template>
+
+<template name="adminLoginProviderConfigureGoogle">
+{{#modalDialogWithBackdrop onDismiss=onDismiss}}
+  {{#let txt="admin.identityProviders.adminIdentityProviderConfigureGoogle"}}
+  <h2>{{_ (con txt "title")}}</h2>
+
+  {{#if formerBaseUrl}}
+    <p class="flash-message warning-message" tabindex="-1">
+      {{{_ (con txt "formerBaseUrlWarning") former=formerBaseUrl current=siteUrlNoSlash}}}
+    </p>
+  {{/if}}
+
+  {{#if errorMessage}}
+    {{#focusingErrorBox}}
+      {{_ (con txt "error") errorMessage}}
+    {{/focusingErrorBox}}
+  {{/if}}
+
+  <form class="setup-idp-form">
+    {{> googleLoginSetupInstructions "" }}
+
+    <p>{{_ (con txt "explanation")}}</p>
+
+    <div class="form-group">
+      <label>
+        {{_ (con txt "clientId")}}
+        <input type="text" name="clientId" value="{{clientId}}"/>
+      </label>
+    </div>
+    <div class="form-group">
+      <label>
+        {{_ (con txt "clientSecret")}}
+        <input type="text" name="clientSecret" value="{{clientSecret}}"/>
+      </label>
+    </div>
+  </form>
+
+  <div class="idp-modal-button-row">
+    <button class="idp-modal-save" disabled="{{saveDisabled}}">
+      {{#if googleEnabled}}
+      {{_ (con txt "saveButton")}}
+      {{else}}
+      {{_ (con txt "enableButton")}}
+      {{/if}}
+    </button>
+    <button class="idp-modal-cancel">
+      {{_ (con txt "cancelButton")}}
+    </button>
+    {{#if googleEnabled}}
+    <button class="idp-modal-disable">
+      {{_ (con txt "disableButton")}}
+    </button>
+    {{/if}}
+  </div>
+  {{/let}}
+{{/modalDialogWithBackdrop}}
+</template>
+
+<template name="githubLoginSetupInstructions">
+  {{#let txt="admin.identityProviders.githubLoginSetupInstructions"}}
+  <p>
+    {{_ (con txt "explanation")}}
+  </p>
+  <ol>
+    <li>{{{_ (con txt "step1")}}}</li>
+    <li>{{{_ (con txt "step2") siteUrl}}}</li>
+    <li>{{{_ (con txt "step3") siteUrl}}}</li>
+  </ol>
+  {{/let}}
+</template>
+
+<template name="adminLoginProviderConfigureGitHub">
+{{#modalDialogWithBackdrop onDismiss=onDismiss}}
+  {{#let txt="admin.identityProviders.adminIdentityProviderConfigureGitHub"}}
+  <h2>{{_ (con txt "title")}}</h2>
+
+  {{#if formerBaseUrl}}
+    <p class="flash-message warning-message" tabindex="-1">
+      {{{_ (con txt "formerBaseUrlWarning") former=formerBaseUrl current=siteUrl}}}
+    </p>
+  {{/if}}
+
+  <form class="setup-idp-form">
+    {{> githubLoginSetupInstructions "" }}
+
+    <p>{{_ (con txt "explanation")}}</p>
+    <div class="form-group">
+      <label>
+        {{_ (con txt "clientId")}}
+        <input type="text" name="clientId" value="{{clientId}}"/>
+      </label>
+    </div>
+    <div class="form-group">
+      <label>
+        {{_ (con txt "clientSecret")}}
+        <input type="text" name="clientSecret" value="{{clientSecret}}"/>
+      </label>
+    </div>
+  </form>
+
+  <div class="idp-modal-button-row">
+    <button class="idp-modal-save" disabled="{{saveDisabled}}">
+      {{#if githubEnabled}}
+      {{_ (con txt "saveButton")}}
+      {{else}}
+      {{_ (con txt "enableButton")}}
+      {{/if}}
+    </button>
+    <button class="idp-modal-cancel">
+      {{_ (con txt "cancelButton")}}
+    </button>
+    {{#if githubEnabled}}
+    <button class="idp-modal-disable">
+      {{_ (con txt "disableButton")}}
+    </button>
+    {{/if}}
+  </div>
+  {{/let}}
+{{/modalDialogWithBackdrop}}
+</template>
+
+<template name="adminLoginProviderConfigureLdap">
+{{#modalDialogWithBackdrop onDismiss=onDismiss}}
+  {{#let txt="admin.identityProviders.adminIdentityProviderConfigureLdap"}}
+  <h2>{{_ (con txt "title")}}</h2>
+
+  {{#if errorMessage}}
+    {{#focusingErrorBox}}
+      {{_ (con txt "error") errorMessage}}
+    {{/focusingErrorBox}}
+  {{/if}}
+
+  <form class="setup-idp-form">
+    <div class="form-group">
+      <label>{{_ (con txt "url.label")}}
+        <input type="text" name="ldapUrl" value="{{ldapUrl}}" />
+      </label>
+      <span class="form-subtext">
+        {{{_ (con txt "url.subtext")}}}
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>{{_ (con txt "searchBindDn.label")}}
+        <input type="text" name="ldapSearchBindDn" value="{{ldapSearchBindDn}}"/>
+      </label>
+      <span class="form-subtext">
+        {{{_ (con txt "searchBindDn.subtext")}}}
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>{{_ (con txt "searchBindPassword.label")}}
+        <input type="password" name="ldapSearchBindPassword" value="{{ldapSearchBindPassword}}"/>
+      </label>
+      <span class="form-subtext">
+        {{_ (con txt "searchBindPassword.subtext")}}
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>{{_ (con txt "base.label")}}
+        <input type="text" name="ldapBase" value="{{ldapBase}}"/>
+      </label>
+      <span class="form-subtext">
+        {{{_ (con txt "base.subtext")}}}
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>{{_ (con txt "searchUsername.label")}}
+        <input type="text" name="ldapSearchUsername" value="{{ldapSearchUsername}}"/>
+      </label>
+      <span class="form-subtext">
+        {{_ (con txt "searchUsername.subtext")}}
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>{{_ (con txt "nameField.label")}}
+        <input type="text" name="ldapNameField" value="{{ldapNameField}}"/>
+      </label>
+      <span class="form-subtext">
+        {{_ (con txt "nameField.subtext")}}
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>{{_ (con txt "emailField.label")}}
+        <input type="text" name="ldapEmailField" value="{{ldapEmailField}}"/>
+      </label>
+      <span class="form-subtext">
+        {{_ (con txt "emailField.subtext")}}
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>{{_ (con txt "filter.label")}}
+        <input type="text" name="ldapFilter" value="{{ldapFilter}}"/>
+      </label>
+      <span class="form-subtext">
+        {{{_ (con txt "filter.subtext")}}}
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>{{_ (con txt "caCert.label")}}
+        <textarea name="ldapCaCert" value="{{ldapCaCert}}" placeholder="{{_ (con txt "caCert.placeholder")}}"></textarea>
+      </label>
+      <span class="form-subtext">
+        {{_ (con txt "caCert.subtext")}}
+      </span>
+    </div>
+
+  </form>
+
+  <div class="idp-modal-button-row">
+    <button class="idp-modal-save" disabled="{{saveDisabled}}">
+      {{#if ldapEnabled}}
+      {{_ (con txt "saveButton")}}
+      {{else}}
+      {{_ (con txt "enableButton")}}
+      {{/if}}
+    </button>
+    <button class="idp-modal-cancel">
+      {{_ (con txt "cancelButton")}}
+    </button>
+    {{#if ldapEnabled}}
+    <button class="idp-modal-disable">
+      {{_ (con txt "disableButton")}}
+    </button>
+    {{/if}}
+  </div>
+  {{/let}}
+{{/modalDialogWithBackdrop}}
+</template>
+
+<template name="adminLoginProviderConfigureSaml">
+{{#modalDialogWithBackdrop onDismiss=onDismiss}}
+  {{#let txt="admin.identityProviders.adminIdentityProviderConfigureSaml"}}
+  <h2>{{_ (con txt "title")}}</h2>
+
+  <p>
+    {{{_ (con txt "explanation")}}}
+  </p>
+
+  <p>
+    {{{_ (con txt "serviceUrl") serviceUrl}}}
+  </p>
+
+  <p>
+    {{{_ (con txt "logoutUrl") logoutUrl}}}
+  </p>
+
+  <p>
+    {{{_ (con txt "metadataUrlAt") href=configUrl text=configUrl}}}
+  </p>
+
+  {{#if errorMessage}}
+    {{#focusingErrorBox}}
+      {{_ (con txt "error") errorMessage}}
+    {{/focusingErrorBox}}
+  {{/if}}
+
+  <form class="setup-idp-form">
+    <div class="form-group">
+      <label>{{_ (con txt "entryPoint.label")}}
+        <input type="text" name="entryPoint" value="{{samlEntryPoint}}" placeholder="{{_ (con txt "entryPoint.placeholder")}}" />
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label>{{_ (con txt "logout.label")}}
+        <input type="text" name="logout" value="{{samlLogout}}" placeholder="{{_ (con txt "logout.placeholder")}}" />
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label>{{_ (con txt "publicCert.label")}}
+        <textarea type="text" name="publicCert" value="{{samlPublicCert}}" placeholder="{{_ (con txt "publicCert.placeholder")}}"></textarea>
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label>{{_ (con txt "entityId.label")}}
+        <input type="text" name="entityId" value="{{samlEntityId}}" placeholder="{{exampleEntityId}}" />
+      </label>
+    </div>
+  </form>
+
+  <div class="idp-modal-button-row">
+    <button class="idp-modal-save" disabled="{{saveDisabled}}">
+      {{#if samlEnabled}}
+      {{_ (con txt "saveButton")}}
+      {{else}}
+      {{_ (con txt "enableButton")}}
+      {{/if}}
+    </button>
+    <button class="idp-modal-cancel">
+      {{_ (con txt "cancelButton")}}
+    </button>
+    {{#if samlEnabled}}
+    <button class="idp-modal-disable">
+      {{_ (con txt "disableButton")}}
+    </button>
+    {{/if}}
+  </div>
+  {{/let}}
+{{/modalDialogWithBackdrop}}
+</template>
+
+<template name="adminLoginProviderTable">
+{{#let txt="admin.identityProviders.adminIdentityProviderTable"}}
+{{!-- Expects an empty data context. --}}
+<div class="login-provider-table" role="grid">
+  <div class="idp-table-header" role="rowgroup">
+    <div class="idp-header-row" role="row">
+      <span class="idp" role="rowheader">{{_ (con txt "title")}}</span>
+      <span class="idp-status" role="rowheader">{{_ (con txt "status")}}</span>
+    </div>
+  </div>
+  <div class="idp-table-rows" role="rowgroup">
+  {{#each idp in idpData}}
+    {{> adminLoginRow idp=idp}}
+  {{/each}}
+  {{#each idp in idpData}}
+    {{#if currentPopupIs idp.id}}
+      <div >
+        {{> Template.dynamic template=idp.popupTemplate data=popupData}}
+      </div>
+    {{/if}}
+  {{/each}}
+  </div>
+</div>
+{{/let}}
+</template>
+
+<template name="adminLoginRow">
+{{#let txt="admin.identityProviders.adminIdentityRow"}}
+<div class="idp-table-row" role="row">
+  <span class="idp" role="gridcell">{{idp.label}}</span>
+  <span class="idp-status" role="gridcell">
+    <span class="left">
+    {{#if idp.enabled}}
+      <span class="idp-enabled">{{_ (con txt "enabled")}}</span>
+    {{else}}
+      <span class="idp-disabled">{{_ (con txt "disabled")}}</span>
+    {{/if}}
+    {{#if idp.resetNote}}
+      {{#if idp.resetNote.baseUrlChangedFrom}}
+      <span class="base-url-change-note">
+        {{_ (con txt "baseUrlChanged.explanation")}} <button class="button-link base-url-change-button">{{_ (con txt "baseUrlChanged.reconfigureButton")}}</button>
+      </span>
+      {{/if}}
+    {{/if}}
+    </span>
+
+    <span class="right">
+      <button class="configure-idp" title="{{_ (con txt "configureButton.hint") idp.label}}">{{_ (con txt "configureButton.text")}}</button>
+    </span>
+  </span>
+</div>
+{{/let}}
+</template>

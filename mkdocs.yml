@@ -1,13 +1,15 @@
 site_name: Docs
-theme_dir: 'docs/sandstorm_readthedocs_modified_theme'
-theme: 'readthedocs'
+
+theme:
+    name: 'readthedocs'
+    custom_dir: 'docs/sandstorm_readthedocs_modified_theme'
 repo_url: https://github.com/sandstorm-io/sandstorm
 edit_uri: edit/master/docs/
 markdown_extensions:
-    - inline_graphviz
+    - mdx_inline_graphviz
 extra_css:
     - "extra.css"
-pages:
+nav:
 - "Home": "index.md"
 - Using:
     - "Overview": "using.md"
@@ -59,5 +61,6 @@ pages:
     - "Self-signed SSL": "administering/self-signed.md"
     - "Organizational Features": "administering/for-work.md"
     - "Active Directory integration": "administering/active-directory.md"
+    - "Running Sandstorm offline": "administering/offline.md"
     - "Frequently asked questions": "administering/faq.md"
     - "Running a Sandstorm hosting provider": "administering/hosting-provider.md"

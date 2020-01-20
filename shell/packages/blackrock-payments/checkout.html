@@ -1,0 +1,60 @@
+<html>
+  <head>
+    <title>Sandstorm Plans</title>
+    <meta charset="utf-8">
+    <script src="https://checkout.stripe.com/checkout.js"></script>
+  </head>
+  <body style="cursor: pointer; margin: 0px;">
+    <div style="height: 100%; width: 100%;"></div>
+    <script>
+      (function () {
+        // Work around inconsistent window.location.hash between Firefox (pre-v41, apparently) and
+        // other borwsers.
+        var location = window.location.toString();
+        var hashPos = location.indexOf("#");
+        if (hashPos < 0) throw new Error("missing hash");
+        var hash = location.slice(hashPos + 1);
+        var data = JSON.parse(decodeURIComponent(hash));
+
+        var done = false;
+
+        var handler = StripeCheckout.configure({
+          key: '$STRIPE_KEY',
+          image: '/sandstorm-purplecircle.png',
+          zipCode: true,
+          token: function(token) {
+            if (!done) {
+              window.parent.postMessage({id: data.id, token: token, plan: data.planName}, "*");
+              done = true;
+            }
+          },
+          closed: function() {
+            if (!done) {
+              window.parent.postMessage({id: data.id, error: "closed early"}, "*");
+              done = true;
+            }
+          }
+        });
+
+        if (data.openNow) {
+          delete data.openNow;
+          handler.open(data);
+        } else {
+          // Wait for instructions.
+          window.addEventListener("message", function (ev) {
+            if (ev && ev.data && ev.data.openDialog) {
+              window.parent.postMessage({id: data.id, showPrompt: true, plan: data.planName}, "*");
+              handler.open(data);
+            }
+          }, false);
+
+          document.querySelector("div").addEventListener("click", function () {
+            // TODO(soon): show user error if invalid plan specified
+            window.parent.postMessage({id: data.id, showPrompt: true, plan: data.planName}, "*");
+            handler.open(data);
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -15,7 +15,6 @@
 // limitations under the License.
 
 const Crypto = Npm.require("crypto");
-const Capnp = Npm.require("capnp");
 const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");
 
@@ -71,25 +70,23 @@ Meteor.methods({
     return { sturdyRef, descriptor };
   },
 
-  fulfillUiViewRequest(sessionId, identityId, grainId, petname, roleAssignment, ownerGrainId) {
+  fulfillUiViewRequest(sessionId, obsolete1, grainId, petname, roleAssignment, ownerGrainId) {
     const db = this.connection.sandstormDb;
     check(sessionId, String);
-    check(identityId, String);
     check(grainId, String);
     check(roleAssignment, db.roleAssignmentPattern);
     check(petname, String);
     check(ownerGrainId, String);
 
-    if (!this.userId || !db.userHasIdentity(this.userId, identityId)) {
-      throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
+    if (!this.userId) {
+      throw new Meteor.Error(403, "Must be logged in");
     }
 
     const provider = {
-      identityId,
       accountId: this.userId,
     };
 
-    const title = db.userGrainTitle(grainId, this.userId, identityId);
+    const title = db.userGrainTitle(grainId, this.userId);
 
     const descriptor = encodePowerboxDescriptor({
       tags: [

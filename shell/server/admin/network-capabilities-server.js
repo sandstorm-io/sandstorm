@@ -15,7 +15,6 @@ Meteor.publish("adminGrains", function (grainIds) {
     },
   }, {
     fields: {
-      identityId: 1,
       title: 1,
       packageId: 1,
     },
@@ -40,16 +39,16 @@ Meteor.publish("adminPackages", function (packageIds) {
   });
 });
 
-Meteor.publish("adminIdentities", function (identityIds) {
-  // If the caller is an admin, publishes the identity Users listed by ID in identityIds.
+Meteor.publish("adminProfiles", function (userIds) {
+  // If the caller is an admin, publishes the Users listed by ID in userIds.
   // Otherwise, does nothing.
   if (!isAdminById(this.userId)) return [];
-  check(identityIds, [String]);
+  check(userIds, [String]);
 
   const db = this.connection.sandstormDb;
   return db.collections.users.find({
     _id: {
-      $in: identityIds,
+      $in: userIds,
     },
-  });
+  }, { fields: { profile: 1 } });
 });

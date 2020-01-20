@@ -24,7 +24,6 @@ import { inMeteor } from "/imports/server/async-helpers.js";
 
 const Crypto = Npm.require("crypto");
 const Future = Npm.require("fibers/future");
-const Capnp = Npm.require("capnp");
 
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 const EmailImpl = Capnp.importSystem("sandstorm/email-impl.capnp");
@@ -51,6 +50,24 @@ if (!Meteor.settings.replicaNumber) {  // only first replica
                         { $unset: { dailySentMailCount: "" } },
                         { multi: true });
   });
+}
+
+if (process.env.HTTP_GATEWAY === "local" &&
+    !global.sandstormListenCapabilityStream) {
+  // TODO(cleanup): This is supposed to come from meteor-bundle-main.js but that doesn't actually
+  //   run in dev-mode servers.
+  const { Pipe, constants: PipeConstants } = process.binding('pipe_wrap');
+
+  global.sandstormListenCapabilityStream = function (fd, cb) {
+    var pipe = new Pipe(PipeConstants.IPC);
+    pipe.open(fd);
+    pipe.onread = function (size, buf, handle) {
+      if (handle) {
+        cb(new net.Socket({ handle: handle }));
+      }
+    };
+    pipe.readStart();
+  }
 }
 
 Meteor.startup(function () {
@@ -108,7 +125,7 @@ Meteor.startup(function () {
             cc: mail.cc || [],
             bcc: mail.bcc || [],
             replyTo: (mail.replyTo && mail.replyTo[0]) || {},
-            messageId: mail.headers["message-id"] || Meteor.uuid() + "@" + HOSTNAME,
+            messageId: mail.headers["message-id"] || Random.id() + "@" + HOSTNAME,
             references: mail.references || [],
             inReplyTo: mail.inReplyTo || [],
             subject: mail.subject || "",
@@ -190,13 +207,14 @@ Meteor.startup(function () {
     },
   });
 
-  if (global.SANDSTORM_SMTP_LISTEN_HANDLE) {
-    server.listen(global.SANDSTORM_SMTP_LISTEN_HANDLE);
+  if (process.env.HTTP_GATEWAY === "local") {
+    // Gateway running locally, connecting over unix socketpair via SCM_RIGHTS transfer.
+    global.sandstormListenCapabilityStream(
+        parseInt(process.env.SANDSTORM_SMTP_LISTEN_HANDLE), socket => {
+      server.connect(socket);
+    });
   } else {
-    // We must be running `run-dev.sh`.
-    const BIND_IP = process.env.BIND_IP || "127.0.0.1";
-    const SMTP_LISTEN_PORT = Meteor.settings.public.smtpListenPort || 30025;
-    server.listen(SMTP_LISTEN_PORT, BIND_IP);
+    server.listen({ fd: parseInt(process.env.SANDSTORM_SMTP_LISTEN_HANDLE) });
   }
 });
 
@@ -356,9 +374,11 @@ function getVerifiedEmails(db, userId, verifierId) {
 
   const user = Meteor.users.findOne(userId);
   const emails = {};  // map address -> true, for uniquification
-  Meteor.users.find({ _id: { $in: SandstormDb.getUserIdentityIds(user) } }).forEach(identity => {
-    if (!services || services[identity.profile.service]) {
-      SandstormDb.getVerifiedEmails(identity).forEach(email => { emails[email.email] = true; });
+
+  Meteor.users.find({ _id: { $in: SandstormDb.getUserCredentialIds(user) } }).forEach(credential => {
+    if (!services || services[SandstormDb.getServiceName(credential)]) {
+      SandstormDb.getVerifiedEmailsForCredential(credential)
+          .forEach(email => { emails[email.email] = true; });
     }
   });
 
@@ -383,8 +403,8 @@ Meteor.startup(() => {
       const services = value.services;
       if (services) {
         services.forEach(service => {
-          if (!Accounts.identityServices[service]) {
-            throw new Error("No such identity service: " + service);
+          if (!Accounts.loginServices[service]) {
+            throw new Error("No such login service: " + service);
           }
         });
       }
@@ -407,8 +427,8 @@ Meteor.startup(() => {
         cardTemplate: "emailVerifierPowerboxCard",
       });
 
-      for (const name in Accounts.identityServices) {
-        if (Accounts.identityServices[name].isEnabled()) {
+      for (const name in Accounts.loginServices) {
+        if (Accounts.loginServices[name].isEnabled()) {
           results.push({
             _id: "emailverifier-" + name,
             frontendRef: { emailVerifier: { services: [name] } },

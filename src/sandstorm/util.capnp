@@ -64,6 +64,15 @@ interface Handle {
   # persistent handles must be designed to account for this, probably by giving the owning user
   # a way to inspect incoming references and remove them manually. Sandstorm automatically provides
   # such an interface for all apps it hosts.
+
+  ping @0 ();
+  # Checks if the handle is still connected. Call this and check for a DISCONNECTED exception to
+  # see if the handle has been disconnected. Servers usually do not implement this method, so any
+  # other exception type should be considered to indicate that the handle is still live.
+  #
+  # This is particularly important when holding a handle to a Sandstorm grain where the handle
+  # represents some sort of long-running operation. The grain will shut down if it doesn't receive
+  # incoming calls at least every 60 seconds, so you may want to ping() it to keep it alive.
 }
 
 interface ByteStream {

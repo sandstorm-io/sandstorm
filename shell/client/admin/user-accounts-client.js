@@ -1,31 +1,31 @@
 const matchesUser = function (searchKey, user) {
   // We match a user if we can find the searchKey in one of the following fields:
   //   * Account ID
-  //   * In any of the user's identities:
-  //     * identity ID
+  //   * name (display name)
+  //   * handle
+  //   * In any of the user's credentials:
+  //     * credential ID
   //     * intrinsicName
-  //     * name (display name)
-  //     * handle
   //     * service
-  //     * in any of the identity's verified email addresses
+  //     * in any of the credential's verified email addresses
 
   if (user.account._id.indexOf(searchKey) !== -1) return true;
 
-  for (let i = 0; i < user.identities.length; i++) {
-    const identity = user.identities[i];
-    if (!identity) continue; // Sometimes we have identity IDs but no identity object. :(
+  if (user.account.profile.name.toLowerCase().indexOf(searchKey) !== -1) return true;
 
-    if (identity._id.indexOf(searchKey) !== -1) return true;
+  if (user.account.profile.handle.toLowerCase().indexOf(searchKey) !== -1) return true;
 
-    if (identity.profile.intrinsicName.toLowerCase().indexOf(searchKey) !== -1) return true;
+  for (let i = 0; i < user.credentials.length; i++) {
+    const credential = user.credentials[i];
+    if (!credential) continue; // Sometimes we have credential IDs but no credential object. :(
 
-    if (identity.profile.name.toLowerCase().indexOf(searchKey) !== -1) return true;
+    if (credential._id.indexOf(searchKey) !== -1) return true;
 
-    if (identity.profile.handle.toLowerCase().indexOf(searchKey) !== -1) return true;
+    if (credential.intrinsicName.toLowerCase().indexOf(searchKey) !== -1) return true;
 
-    if (identity.profile.service.toLowerCase().indexOf(searchKey) !== -1) return true;
+    if (SandstormDb.getServiceName(credential).toLowerCase().indexOf(searchKey) !== -1) return true;
 
-    const verifiedEmails = SandstormDb.getVerifiedEmails(identity);
+    const verifiedEmails = SandstormDb.getVerifiedEmailsForCredential(credential);
     for (let j = 0; j < verifiedEmails.lenfth; j++) {
       const email = verifiedEmails[j];
       if (email.toLowerCase().indexOf(searchKey) !== -1) return true;
@@ -97,10 +97,10 @@ Template.newAdminUserTable.helpers({
       return _.sortBy(users, (user) => {
         // If the account has a lastActive time, use that.
         if (user.account.lastActive) return multiplier * user.account.lastActive;
-        // If not, check any of the identities for a lastActive time.
-        for (let i = 0; i < user.identities.length; i++) {
-          const identity = user.identities[i];
-          if (identity.lastActive) return multiplier * identity.lastActive;
+        // If not, check any of the credentials for a lastActive time.
+        for (let i = 0; i < user.credentials.length; i++) {
+          const credential = user.credentials[i];
+          if (credential.lastActive) return multiplier * credential.lastActive;
         }
 
         return 0;
@@ -174,27 +174,29 @@ Template.newAdminUsers.onCreated(function () {
     if (!this.usersSub.ready()) return [];
 
     const accounts = Meteor.users.find({
-      loginIdentities: { $exists: 1 },
+      loginCredentials: { $exists: 1 },
     });
 
     const users = accounts.map((account) => {
-      const identityIds = SandstormDb.getUserIdentityIds(account);
-      // Identity IDs are given in creation order.
-      const identities = identityIds.map((identityId) => {
-        const identity = Meteor.users.findOne({ _id: identityId });
-        if (identity) {
+      SandstormDb.fillInPictureUrl(account);
+      const credentialIds = SandstormDb.getUserCredentialIds(account);
+      // Credential IDs are given in creation order.
+      const credentials = credentialIds.map((credentialId) => {
+        const credential = Meteor.users.findOne({ _id: credentialId });
+        if (credential) {
           // For some reason, various servers (including alpha) appear to have accounts that
-          // reference identities which do not exist in the database.
-          SandstormDb.fillInProfileDefaults(identity);
-          SandstormDb.fillInIntrinsicName(identity);
+          // reference credentials which do not exist in the database.
+
+          credential.intrinsicName = SandstormDb.getIntrinsicName(credential, true);
+          credential.serviceName = SandstormDb.getServiceName(credential);
         }
 
-        return identity;
+        return credential;
       });
       return {
         _id: account._id,
         account,
-        identities,
+        credentials,
       };
     });
 

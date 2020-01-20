@@ -67,8 +67,8 @@ Template.notificationsPopup.helpers({
     Meteor.call("readAllNotifications");
     return Notifications.find({ userId: Meteor.userId() }, { sort: { timestamp: -1 } })
         .map(function (row) {
-      if (row.initiatingIdentity) {
-        const sender = Meteor.users.findOne({ _id: row.initiatingIdentity });
+      if (row.initiatingAccount) {
+        const sender = Meteor.users.findOne({ _id: row.initiatingAccount });
         if (sender && sender.profile) {
           row.senderName = sender.profile.name;
           SandstormDb.fillInPictureUrl(sender);
@@ -106,10 +106,9 @@ Template.notificationsPopup.helpers({
           }
         } else {
           // We have an ApiToken for this grain.
-          const identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
           const apiToken = ApiTokens.findOne({
             grainId: row.grainId,
-            "owner.user.identityId": { $in: identityIds },
+            "owner.user.accountId": Meteor.userId(),
             "owner.user.denormalizedGrainMetadata": { $exists: true },
           }, {
             sort: { created: 1 },
@@ -214,7 +213,7 @@ Template.mailingListBonusNotificationItem.helpers({
   },
 
   MAILING_LIST_BONUS() {
-    if (window.BlackrockPayments) {
+    if (Meteor.settings.public.stripePublicKey) {
       return BlackrockPayments.MAILING_LIST_BONUS || 0;
     } else {
       return 0;
@@ -313,7 +312,7 @@ Template.grainActivityNotificationItem.events({
 Meteor.startup(function () {
   Meteor.subscribe("notifications");
 
-  Meteor.autorun(function () {
+  Tracker.autorun(function () {
     Meteor.subscribe("notificationGrains",
       Notifications.find().map(function (row) {
         return row._id;

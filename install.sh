@@ -74,6 +74,15 @@ fail() {
   fi
   error "$@"
   echo "" >&2
+
+  if [ "$error_code" = E_CURL_MISSING ] ; then
+    # There's no point in asking the user if they want to report an issue, since
+    # (1) there isn't one, they just need to install curl, and (2) doing so will
+    # fail anyway, since we use curl to send the report. We've already displayed
+    # the error, so just exit now.
+    exit 1
+  fi
+
   # Users can export REPORT=no to avoid the error-reporting behavior, if they need to.
   if [ "${REPORT:-yes}" = "yes" ] ; then
     if USE_DEFAULTS=no prompt-yesno "Hmm, installation failed. Would it be OK to send an anonymous error report to the sandstorm.io team so we know something is wrong?
@@ -1579,7 +1588,15 @@ __EOF__
 
   # Mark as executable, and enable on boot.
   chmod +x /etc/init.d/sandstorm
-  update-rc.d sandstorm defaults
+  if [ "$(which update-rc.d)" != "" ]; then
+    update-rc.d sandstorm defaults
+  elif [ "$(which rc-update)" != "" ]; then
+    rc-update add sandstorm
+  else
+    echo "WARNING: I couldn't figure out how to make the Sandstorm init script active on" >&2
+    echo "  your system; neither update-rc.d nor rc-update commands seem to exist. Sandstorm" >&2
+    echo "  will not start automatically at boot until you mark its init script active." >&2
+  fi
 
   # Start it right now.
   service sandstorm start

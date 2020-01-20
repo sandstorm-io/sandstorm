@@ -20,7 +20,6 @@ const Future = Npm.require("fibers/future");
 const Net = Npm.require("net");
 const Tls = Npm.require("tls");
 const Dgram = Npm.require("dgram");
-const Capnp = Npm.require("capnp");
 
 const IpRpc = Capnp.importSystem("sandstorm/ip.capnp");
 

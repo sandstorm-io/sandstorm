@@ -1,23 +1,25 @@
 <template name="sandstormAppInstallPage">
+{{#let txt="apps.install.sandstormAppInstallPage"}}
   {{setDocumentTitle}}
-  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar}}Install app{{/sandstormTopbarItem}}
+  {{!-- the let binding is also gone in the sandstormTopbarItem block --}}
+  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar}}{{_ "apps.install.sandstormAppInstallPage.title"}}{{/sandstormTopbarItem}}
 {{#if ready}}
   {{#if error }}
     <div class="install">
-      <h1>Failed to install app</h1>
+      <h1>{{_ (con txt "error.title")}}</h1>
       <pre>{{error}}</pre>
-      <button id="retry">Try Again</button>
+      <button id="retry">{{_ (con txt "error.retryButton")}}</button>
     </div>
   {{else}}
     <div class="install">
     {{#if isCurrentStep "wait"}}
       <div id="step-wait">
-        <h1>Waiting for write access...</h1>
+        <h1>{{_ (con txt "stepWait.title")}}</h1>
       </div>
     {{/if}}
     {{#if isCurrentStep "download"}}
       <div id="step-download">
-        <h1>Downloading...</h1>
+        <h1>{{_ (con txt "stepDownload.title")}}</h1>
         <p class="centered">
           {{#if hasFractionalProgress}}
           <progress class="progress" value="{{progressFraction}}">{{progressText}}</progress>
@@ -25,22 +27,22 @@
           <span class="progress">{{progressText}}</span>
           {{/if}}
         </p>
-        <p><button id="cancelDownload">Cancel</button></p>
+        <p><button id="cancelDownload">{{_ (con txt "stepDownload.cancelButton")}}</button></p>
       </div>
     {{/if}}
     {{#if isCurrentStep "verify"}}
       <div id="step-verify">
-        <h1>Verifying...</h1>
+        <h1>{{_ (con txt "stepVerify.title")}}</h1>
       </div>
     {{/if}}
     {{#if isCurrentStep "unpack"}}
       <div id="step-unpack">
-        <h1>Unpacking...</h1>
+        <h1>{{_ (con txt "stepUnpack.title")}}</h1>
       </div>
     {{/if}}
     {{#if isCurrentStep "analyze"}}
       <div id="step-analyze">
-        <h1>Analyzing...</h1>
+        <h1>{{_ (con txt "stepAnalyze.title")}}</h1>
       </div>
     {{/if}}
     {{#if isCurrentStep "confirm"}}
@@ -57,15 +59,14 @@
         }}
         <div class="confirm-form">
           {{#if hasOlderVersion}}
-            <p>You have an older version of this app installed.  Do you want to upgrade?</p>
-            <p><button id="confirmInstall">Upgrade {{ appTitle }}</button></p>
+            <p>{{_ (con txt "stepConfirm.upgrade.explanation")}}</p>
+            <p><button id="confirmInstall">{{_ (con txt "stepConfirm.upgrade.button") appTitle}}</button></p>
           {{else}}
             {{#if hasNewerVersion}}
-              <p>You already have a newer version of this app installed.  Are
-                you sure you want to revert to this older version?</p>
-              <p><button id="confirmInstall">Downgrade {{ appTitle }}</button></p>
+              <p>{{_ (con txt "stepConfirm.downgrade.explanation")}}</p>
+              <p><button id="confirmInstall">{{_ (con txt "stepConfirm.downgrade.button") appTitle}}</button></p>
             {{else}}
-              <p><button id="confirmInstall">Install {{ appTitle }}</button></p>
+              <p><button id="confirmInstall">{{_ (con txt "stepConfirm.install.button") appTitle}}</button></p>
             {{/if}}
           {{/if}}
         </div>
@@ -75,26 +76,27 @@
       {{!-- Note that this step should never really be shown -- you should be redirected to the app
             page in this scenario automatically. --}}
       <div id="step-run">
-        <h1>{{ appTitle }} installed</h1>
+        <h1>{{_ (con txt "stepRun.title") appTitle}}</h1>
         <div class="done-notice">
-          <p>Installation complete.</p>
-          <p><a href="{{pathFor 'appDetails' appId=appId}}">Go to {{appTitle}}</a></p>
+          <p>{{_ (con txt "stepRun.explanation")}}</p>
+          <p><a href="{{pathFor 'appDetails' appId=appId}}">{{_ (con txt "stepRun.appDetailsLink") appTitle}}</a></p>
         </div>
       </div>
     {{/if}}
     {{#if isCurrentStep "delete"}}
       <div id="step-delete">
-        <h1>Deleting...</h1>
-        <p>Server is currently deleting this app...</p>
+        <h1>{{_ (con txt "stepDelete.title")}}</h1>
+        <p>{{_ (con txt "stepDelete.explanation")}}</p>
       </div>
     {{/if}}
     {{#if isCurrentStep "failed"}}
       <div id="step-failed">
-        <h1>Failed</h1>
-        <p>Installation failed: {{error}}</p>
+        <h1>{{_ (con txt "stepFailed.title")}}</h1>
+        <p>{{_ (con txt "stepFailed.explanation") error}}</p>
       </div>
     {{/if}}
     </div>
   {{/if}}
 {{/if}}
+{{/let}}
 </template>

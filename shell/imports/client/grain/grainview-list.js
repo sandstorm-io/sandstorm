@@ -85,8 +85,8 @@ GrainViewList = class GrainViewList {
         if (isStandalone()) {
           const activeGrain = globalGrains.getActive();
           if (activeGrain) {
-            activeGrain.reset(Meteor.user() && Meteor.user().loginIdentities &&
-              Meteor.user().loginIdentities[0]);
+            activeGrain.reset(Meteor.user() && Meteor.user().loginCredentials &&
+              Meteor.user().loginCredentials[0]);
             activeGrain.openSession();
           }
         } else {
@@ -223,7 +223,7 @@ GrainViewList = class GrainViewList {
     }
 
     const ready = () => {
-      if (Meteor.loggingIn() || Accounts.isLinkingNewIdentity()) return false;
+      if (Meteor.loggingIn() || Accounts.isLinkingNewCredential()) return false;
 
       // The list auto-clears when Meteor.userId() changes. Make sure that we wait until the dust
       // has settled.

@@ -88,27 +88,14 @@ Meteor.publish("grainsMenu", function () {
       });
     }
 
-    const identityIds = SandstormDb.getUserIdentityIds(globalDb.getUser(this.userId));
     return [
       UserActions.find({ userId: this.userId }),
-      Grains.find({ userId: this.userId }),
-      ApiTokens.find({ "owner.user.identityId": { $in: identityIds } }),
+      Grains.find({ userId: this.userId }, {fields: {oldUsers: 0}}),
+      ApiTokens.find({ "owner.user.accountId": this.userId }),
     ];
   } else {
     return [];
   }
-});
-
-Meteor.publish("sessions", function (sessionId) {
-  // sessionId itself should be secret enough, but they are also not meant to be shared, so as
-  // a backup we only publish the session to its owner. Note that `userId` can be null if the
-  // user is not logged in or is using incognito mode.
-  check(sessionId, String);
-
-  // We exclude powerboxRequest because the client already has the descriptor list in packed
-  // format, and the parsed format can be kind of large.
-  return Sessions.find({ _id: sessionId, $or: [{ userId: this.userId }, { userId: null }] },
-      { fields: { powerboxRequest: 0 } });
 });
 
 Meteor.publish("devPackages", function () {
@@ -142,8 +129,8 @@ Meteor.publish("referralInfoPseudo", function () {
   // This publishes a pseudo-collection called referralInfo whose documents have the following
   // form:
   //
-  // - id: (String) same as the User._id of an identity this user has referred
-  // - name: (String) the profile.name from that identity
+  // - id: (String) same as the User._id of an account this user has referred
+  // - name: (String) the profile.name from that account
   // - completed: (Boolean) if this referral is complete
 
   //  If the user is not logged in, then we have no referralInfo.
@@ -157,8 +144,10 @@ Meteor.publish("referralInfoPseudo", function () {
   // the (2) completed: true case.
 
   // Case 1. Publish information about not-yet-complete referrals.
-  const notCompletedReferralIdentitiesCursor = Meteor.users.find({
+  const notCompletedReferralAccountsCursor = Meteor.users.find({
     referredBy: this.userId,
+    referredByComplete: { $exists: false },
+    type: "account",
     "profile.name": { $exists: true },
   }, {
     fields: {
@@ -167,7 +156,7 @@ Meteor.publish("referralInfoPseudo", function () {
       "profile.name": 1,
     },
   });
-  const notCompletedReferralIdentitiesHandle = notCompletedReferralIdentitiesCursor.observeChanges({
+  const notCompletedReferralAccountsHandle = notCompletedReferralAccountsCursor.observeChanges({
     // The added function gets called with the id of Bob when Alice refers Bob.
     added: (id, fields) => {
       this.added("referralInfo", id, { name: fields.profile.name, completed: false });
@@ -185,37 +174,37 @@ Meteor.publish("referralInfoPseudo", function () {
 
   // Case 2. Handle completed referrals.
   //
-  // - Do a query for the current list of completed identities.
+  // - Do a query for the current list of completed accounts.
   //
-  // - Every time we see a new such identity, we create a query that watches that one identity in
+  // - Every time we see a new such account, we create a query that watches that one account in
   //   case its profile.name changes.
   //
-  // - Also watch the first query, since the list of completed identities might change.
-  const handleForProfileNameByIdentityId = {};
-  const stopWatchingAllIdentities = () => {
-    Object.keys(handleForProfileNameByIdentityId).forEach((identityId) => {
-      stopWatchingIdentity(identityId);
+  // - Also watch the first query, since the list of completed accounts might change.
+  const handleForProfileNameByAccountId = {};
+  const stopWatchingAllAccounts = () => {
+    Object.keys(handleForProfileNameByAccountId).forEach((accountId) => {
+      stopWatchingAccount(accountId);
     });
   };
 
-  const stopWatchingIdentity = (identityId) => {
-    const handleForProfileName = handleForProfileNameByIdentityId[identityId];
+  const stopWatchingAccount = (accountId) => {
+    const handleForProfileName = handleForProfileNameByAccountId[accountId];
     if (handleForProfileName) {
-      this.removed("referralInfo", identityId);
+      this.removed("referralInfo", accountId);
       handleForProfileName.stop();
       // delete is safe because we iterate across `Object.keys()` which returns a copy.
-      delete handleForProfileNameByIdentityId[identityId];
+      delete handleForProfileNameByAccountId[accountId];
     }
   };
 
-  const watchIdentityAndPublishReferralSuccess = (identityId) => {
-    let handleForProfileName = handleForProfileNameByIdentityId[identityId];
+  const watchAccountAndPublishReferralSuccess = (accountId) => {
+    let handleForProfileName = handleForProfileNameByAccountId[accountId];
     if (handleForProfileName) {
       return;
     }
 
     handleForProfileName = Meteor.users.find({
-      _id: identityId,
+      _id: accountId,
     }, {
       fields: {
         "profile.name": 1,
@@ -230,69 +219,69 @@ Meteor.publish("referralInfoPseudo", function () {
       },
 
       removed: (id) => {
-        stopWatchingIdentity(id);
+        stopWatchingAccount(id);
       },
     });
 
-    handleForProfileNameByIdentityId[identityId] = handleForProfileName;
+    handleForProfileNameByAccountId[accountId] = handleForProfileName;
   };
 
-  const completedIdentityIdsHandle = Meteor.users.find({
+  const completedAccountIdsHandle = Meteor.users.find({
     _id: this.userId,
-    referredIdentityIds: { $exists: true },
+    referredAccountIds: { $exists: true },
   }, {
     fields: {
-      referredIdentityIds: true,
+      referredAccountIds: true,
     },
   }).observeChanges({
     // `added` gets called when a user gets their first completed referral.
     added: (id, fields) => {
-      for (let i = 0; i < fields.referredIdentityIds.length; i++) {
+      for (let i = 0; i < fields.referredAccountIds.length; i++) {
         // Unconditionally mark these as successful referrals and start watching.
-        watchIdentityAndPublishReferralSuccess(
-          fields.referredIdentityIds[i]);
+        watchAccountAndPublishReferralSuccess(
+          fields.referredAccountIds[i]);
       }
     },
-    // `changed` gets called when a user adds/removes referredIdentityIds, usually when a
+    // `changed` gets called when a user adds/removes referredAccountIds, usually when a
     // referral becomes complete.
     changed: (id, fields) => {
       // Two major tasks.
       //
-      // 1. Look for identityIds to unsubscribe from & send removed notices to the client.
+      // 1. Look for accountIds to unsubscribe from & send removed notices to the client.
       //
-      // 2. Look for identityIds to subscribe to.
+      // 2. Look for accountIds to subscribe to.
 
       // Task 1. Unsubscribe where needed.
-      const referredIdentityIdsAsObject = {};
-      fields.referredIdentityIds.forEach((i) => { referredIdentityIdsAsObject[i] = true; });
+      const referredAccountIdsAsObject = {};
+      fields.referredAccountIds.forEach((i) => { referredAccountIdsAsObject[i] = true; });
 
-      Object.keys(handleForProfileNameByIdentityId).forEach((identityId) => {
-        // If the handle doesn't show up in the new list of referredIdentityIds, then remove
+      Object.keys(handleForProfileNameByAccountId).forEach((accountId) => {
+        // If the handle doesn't show up in the new list of referredAccountIds, then remove
         // info from the client & stop it on the server & make it null.
-        const handleForProfileName = handleForProfileNameByIdentityId[identityId];
-        if (referredIdentityIdsAsObject.hasOwnProperty(identityId)) {
-          stopWatchingIdentity(identityId);
+        const handleForProfileName = handleForProfileNameByAccountId[accountId];
+        if (referredAccountIdsAsObject.hasOwnProperty(accountId)) {
+          stopWatchingAccount(accountId);
         }
       });
 
       // Task 2. Subscribe where needed.
-      for (let i = 0; i < fields.referredIdentityIds.length; i++) {
+      for (let i = 0; i < fields.referredAccountIds.length; i++) {
         // The watch... function will avoid double-creating subscriptions, so this is safe.
-        watchIdentityAndPublishReferralSuccess(fields.referredIdentityIds[i]);
+        watchAccountAndPublishReferralSuccess(fields.referredAccountIds[i]);
       }
     },
-    // `removed` gets called when a User suddenly has no referredIdentityIds.
+    // `removed` gets called when a User suddenly has no referredAccountIds.
     removed: () => {
       // Remove all data from client; stop all handles.
-      stopWatchingAllIdentities();
+      stopWatchingAllAccounts();
     },
   });
 
   // With cases 1 and 2 handled, register a cleanup function, then declare victory.
   this.onStop(() => {
-    stopWatchingAllIdentities();
-    notCompletedReferralIdentitiesHandle.stop();
-    completedIdentityIdsHandle.stop();
+    stopWatchingAllAccounts();
+    notCompletedReferralAccountsHandle.stop();
+    completedAccountIdsHandle.stop();
   });
 
   this.ready();

@@ -55,12 +55,11 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
       })
     })
     .execute(function () {
-      var devIdentity = Accounts.getCurrentIdentityId();
       var instance    = Blaze
                           .getView(document.querySelector(
                             'button[name=upload-picture]'))
-                          .templateInstance();
-      Meteor.call("uploadProfilePicture", devIdentity, (err, result) => {
+                          .parentView.templateInstance();
+      Meteor.call("uploadProfilePicture", (err, result) => {
         if (err) {
           instance._setActionCompleted({ error: "Upload rejected: " + err.message });
         } else {

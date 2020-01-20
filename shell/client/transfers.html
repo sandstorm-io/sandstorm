@@ -1,0 +1,153 @@
+<template name="transfers">
+  <div class="transfers">
+    <h1>Transfers</h1>
+
+    {{#if showLogin}}
+      <div class="login">
+        {{> loginButtonsDialog accountsUi=globalAccountsUi}}
+      </div>
+    {{else}}
+
+    {{#with blockedInitiate}}
+      <div class="flash-message error-message">
+        It looks like you're trying to initiate a new transfer from {{source}}, but you already
+        have a transfer in progress. Please complete or cancel the existing transfer to continue.
+      </div>
+    {{/with}}
+
+    {{#with incoming}}
+
+      <h2>Incoming transfer active</h2>
+
+      <p>
+        {{#unless isAllDone}}
+          <button class="cancel">Cancel {{#if isAnyDone}}Remaining{{/if}} Transfer</button>
+        {{/unless}}
+        {{#if isAnyErrored}}
+          <button class="clear-errors">Retry Errors</button>
+        {{/if}}
+
+        {{#if isAnyDownloading}}
+          <button class="pause">Pause Transfer</button>
+        {{else}}{{#if isAnyReady}}
+          <button class="start">{{#if isAnyStarted}}Continue Transfer{{else}}Start Transfer{{/if}}</button>
+        {{else}}{{#if isAllDone}}
+          <button class="finish">Close Transfer</button>
+        {{/if}}
+        {{/if}}
+        {{/if}}</p>
+
+      <table class="grain-list">
+        <thead>
+          <tr>
+            <td class="select-all-grains">
+              <input title={{selectAllTitle}} type="checkbox" checked={{selectAllChecked}}>
+            </td>
+            <td class="td-state"></td>
+            <td class="td-app-icon"></td>
+            <td class="grain-name">
+              {{_ "grains.grainlist.sandstormGrainTable.tableHeader.title"}}
+            </td>
+            <td class="grain-size">
+              {{_ "grains.grainlist.sandstormGrainTable.tableHeader.size"}}
+            </td>
+            <td class="last-used">
+              {{_ "grains.grainlist.sandstormGrainTable.tableHeader.lastUsed"}}
+            </td>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each grains}}
+          <tr>
+            <td class="select-grain">
+              <input type="checkbox" checked={{selected}}>
+            </td>
+            <td class="td-state">
+              {{#if downloading}}
+                <div class="state-downloading" title="Transferring..."></div>
+              {{else}}
+              {{#if error}}
+                <div class="state-error" title="{{error}}"></div>
+              {{else}}
+              {{#if localGrainId}}
+                <div class="state-done" title="Done"></div>
+              {{/if}}
+              {{/if}}
+              {{/if}}
+            </td>
+            <td class="td-app-icon">
+              {{#with appInfo}}
+                <div class="app-icon" title="{{appTitle}}"
+                    style="background-image: url('{{ iconSrc }}');">
+                </div>
+              {{else}}
+                <div class="app-icon" title="Unknown App">
+                  ?
+                </div>
+              {{/with}}
+            </td>
+            <td class="grain-name">
+              <a href="{{grainSourceUrl}}" target="_blank">{{title}}</a>
+            </td>
+            <td class="grain-size">{{grainSize}}</td>
+            <td class="last-used">
+              {{#if isNewShare}}
+                {{_ "grains.grainlist.sandstormGrainTable.tableBody.new"}}
+              {{else}}
+                {{dateString lastUsed}}
+              {{/if}}
+            </td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+
+    {{else}}
+    {{#with outgoing}}
+      <h2>Outgoing transfer active</h2>
+
+      <p>You are currently transferring grains to: <a href="{{destination}}" target="_blank">{{destination}}</a></p>
+      <p>Manage your transfer at: <a href="{{destination}}/transfers" target="_blank">{{destination}}/transfers</a></p>
+      <p>In order to start a new transfer (incoming or outgoing), you must cancel the existing one.</p>
+      <p><button class="cancel">Cancel Transfer</button></p>
+
+    {{else}}
+    {{#with initiate}}
+      <h2>Initiate Inbound Transfer</h2>
+
+      <p>The Sandstorm server at <strong>{{source}}</strong> wants to transfer grains to this server.</p>
+      {{#if isInsecure source}}
+        <div class="flash-message warning-message">
+          WARNING: The source server does not support HTTPS. Data will be transferred without encryption.
+        </div>
+      {{/if}}
+      <p><button class="deny">Deny</button> <button class="continue">Fetch grain list &raquo;</button></p>
+
+    {{else}}
+      <p>No transfers are currently in progress.</p>
+      <h2>Initiate Outbound Transfer</h2>
+      <form class="initiate">
+        <p>Transfer all my grains to:<br>
+          <input type="text" name="destination" placeholder="https://example.sandcats.io">
+          <button type="submit">Initiate Transfer</button></p>
+      </form>
+      <h2>What does this do?</h2>
+      <p>You can use this function to transfer all of your grains to a new Sandstorm server.
+        This automates the process of saving a backup of each grain on this server, then restoring
+        each backup on the server you specify.</p>
+      <p>When you initiate the transfer above, you will be redirected to the destination server
+        where you will be prompted to sign in. You will then be given the option to choose which
+        grains to transfer, and then finally you will initiate the transfer. The transfer will
+        continue in the background; you can log off.</p>
+      <p>In order for a transfer to work, the <i>destination</i> server must be able to reach the
+        <i>source</i> server directly over the internet. However, the reverse is not necessary.
+        Thus, you can perform a mass trasfer that transfers grains from a server on the public
+        internet (like Sandstorm Oasis) to a server on a private internal network, but not vice
+        versa. If the <i>source</i> server supports HTTPS, then the transfer will take place over
+        HTTPS, regardless of the destination server's protocol.</p>
+    {{/with}}
+    {{/with}}
+    {{/with}}
+    {{/if}}
+  </div>
+</template>

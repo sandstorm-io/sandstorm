@@ -1,11 +1,9 @@
 <template name="newAdminUserInviteLink">
+{{#let txt="admin.userInvite.newAdminUserInviteLink"}}
 
-  <p>You can invite others to create accounts on your server by giving them an account creation
-    link. People you invite will be granted User permission and be able to install apps and create
-    grains of their own. Alternatively, if you want to share a specific grain with someone, you can
-    do that within the grain's "Share Access" menu.</p>
+  <p>{{_ (con txt "explanation")}}</p>
 
-  <h2>Create a link</h2>
+  <h2>{{_ (con txt "title")}}</h2>
 
   {{#if hasSuccess}}
     {{#focusingSuccessBox}}
@@ -19,23 +17,25 @@
     {{/focusingErrorBox}}
   {{/if}}
 
-  <p>This will create an account creation link which you can send to someone.</p>
+  <p>{{_ (con txt "invite.explanation")}}</p>
   <form class="admin-invite-button-form">
-    <button type="submit">Create link</button>
+    <button type="submit">{{_ (con txt "invite.createButton")}}</button>
     {{#if generatedLink}}
       {{> autoSelectingInput value=generatedLink }}
     {{/if}}
   </form>
+{{/let}}
 </template>
 
 <template name="newAdminUserInviteEmail">
-  <h2>Send an email</h2>
+{{#let txt="admin.userInvite.newAdminUserInviteEmail"}}
+  <h2>{{_ (con txt "title")}}</h2>
 
   {{#unless emailConfigured }}
     <p class="flash-message warning-message">
-      Email has not been configured, so sending invites via email is disabled.
+      {{_ (con txt "emailWarning.explanation")}}
       {{#linkTo route="newAdminEmailConfig"}}
-        Configure email
+        {{_ "admin.userInvite.newAdminUserInviteEmail.emailWarning.configureLink"}}
       {{/linkTo}}
     </p>
   {{/unless}}
@@ -52,46 +52,46 @@
     {{/focusingErrorBox}}
   {{/if}}
 
-  <p>This will create a link and send it in an email.</p>
+  <p>{{_ (con txt "explanation")}}</p>
 
   <form class="admin-invite-email-form" disabled="{{emailFormDisabled}}">
     <div class="form-group">
       <label>
-        To:
+        {{_ (con txt "to.label")}}
         <textarea class="to-addresses" name="to-addresses" value="{{ toAddresses }}"
-            disabled="{{emailFormDisabled}}" required placeholder="alice@example.com
-bob@example.com"></textarea>
+            disabled="{{emailFormDisabled}}" required placeholder="{{_ (con txt "to.placeholder")}}"></textarea>
       </label>
-      <span class="form-subtext">Email addresses, one per line.</span>
+      <span class="form-subtext">{{_ (con txt "to.subtext")}}</span>
     </div>
 
     <div class="form-group">
       <label>
-        Subject:
+        {{_ (con txt "subject.label")}}
         <input type="text" name="subject" value="{{ subject }}" disabled="{{emailFormDisabled}}" required />
       </label>
     </div>
 
     <div class="form-group">
       <label>
-        Body:
+        {{_ (con txt "body.label")}}
         <textarea name="message-body" value="{{ messageBody }}" disabled="{{emailFormDisabled}}" required></textarea>
       </label>
-      <span class="form-subtext"><code>$KEY</code> will be replaced with the newly-generated link.</span>
+      <span class="form-subtext">{{{_ (con txt "body.subtext")}}}</span>
     </div>
 
     <div class="button-row">
-      <button type="submit" disabled="{{sendButtonDisabled}}">Send invite</button>
+      <button type="submit" disabled="{{sendButtonDisabled}}">{{_ (con txt "sendButton")}}</button>
     </div>
   </form>
+{{/let}}
 </template>
 
 <template name="newAdminUserInvite">
   <h1>
     <ul class="admin-breadcrumbs">
-      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
-      <li>{{#linkTo route="newAdminUsers"}}Users{{/linkTo}}</li>
-      <li>Invite</li>
+      <li>{{#linkTo route="newAdminRoot"}}{{_ "admin.title"}}{{/linkTo}}</li>
+      <li>{{#linkTo route="newAdminUsers"}}{{_ "admin.users.name"}}{{/linkTo}}</li>
+      <li>{{_ "admin.userInvite.newAdminUserInvite.title"}}</li>
     </ul>
   </h1>
 

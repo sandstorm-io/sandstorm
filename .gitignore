@@ -1,6 +1,5 @@
 bin
 tmp
-deps
 node_modules
 meteor-spk-0.3.2
 .meteor-spk
@@ -81,3 +80,4 @@ tests/tmp-sandstorm
 app-index.spk
 app-index-sandstorm-files.list
 test-app.spk
+deps/llvm-build

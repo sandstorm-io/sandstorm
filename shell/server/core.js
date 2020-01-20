@@ -16,14 +16,15 @@
 
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset.js";
-const Capnp = Npm.require("capnp");
 const Crypto = Npm.require("crypto");
 import { PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements,
          fetchApiToken, insertApiToken } from "/imports/server/persistent.js";
+import { SandstormBackend } from "/imports/server/backend.js";
 
 const PersistentHandle = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentHandle;
 const SandstormCore = Capnp.importSystem("sandstorm/supervisor.capnp").SandstormCore;
 const SandstormCoreFactory = Capnp.importSystem("sandstorm/backend.capnp").SandstormCoreFactory;
+const Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
 const PersistentOngoingNotification = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentOngoingNotification;
 const PersistentUiView = Capnp.importSystem("sandstorm/persistentuiview.capnp").PersistentUiView;
 const StaticAsset = Capnp.importSystem("sandstorm/util.capnp").StaticAsset;
@@ -42,11 +43,6 @@ class SandstormCoreImpl {
           { "owner.grain.grainId": this.grainId });
       if (!token) {
         throw new Error("no such token");
-      }
-
-      if (token.owner.grain.introducerIdentity) {
-        throw new Error("Cannot restore grain-owned sturdyref that contains the obsolete " +
-                        "introducerIdentity field. Please request a new capability.");
       }
 
       return restoreInternal(this.db, sturdyRef,
@@ -160,9 +156,41 @@ class SandstormCoreImpl {
   }
 
   getIdentityId(identity) {
-    return unwrapFrontendCap(identity, "identity", (identityId) => {
+    return unwrapFrontendCap(identity, "identity", (accountId) => {
+      const grain = this.db.getGrain(this.grainId);
+      if (!grain) {
+        throw new Error("Grain not found.");
+      }
+      const identityId = this.db.getOrGenerateIdentityId(accountId, grain);
       return { id: new Buffer(identityId, "hex") };
     });
+  }
+
+  schedule(scheduledJob) {
+    const {name, callback, schedule} = scheduledJob;
+    if(scheduledJob.schedule.periodic !== undefined) {
+      return schedulePeriodic(
+        this.db,
+        this.grainId,
+        name,
+        callback,
+        schedule.periodic
+      )
+    } else if(schedule.oneShot !== undefined) {
+      const {when, slack} = schedule.oneShot;
+      return scheduleOneShot(
+        this.db,
+        this.grainId,
+        name,
+        callback,
+        when,
+        slack,
+      )
+    } else {
+      const err = new Error("Unimplemented schedule type");
+      err.kjType = 'unimplemented';
+      throw err;
+    }
   }
 }
 
@@ -421,9 +449,9 @@ const makeSaveTemplateForChild = function (db, parentToken, requirements, parent
     delete saveTemplate.owner;
     delete saveTemplate.created;
   } else {
-    if (parentTokenInfo.identityId) {
+    if (parentTokenInfo.accountId) {
       // A UiView token. Need to denormalize some fields from the parent.
-      saveTemplate = _.pick(parentTokenInfo, "grainId", "identityId", "accountId");
+      saveTemplate = _.pick(parentTokenInfo, "grainId", "accountId");
 
       // By default, a save()d copy should have the same permissions, so set an allAccess role
       // assignment.
@@ -442,10 +470,36 @@ const makeSaveTemplateForChild = function (db, parentToken, requirements, parent
 
   if (requirements) {
     // Append additional requirements requested by caller.
+    requirements = requirements.filter(req => {
+      // Filter out redundant requirement that the parent token is valid.
+      return req.tokenValid !== saveTemplate.parentToken;
+    });
+
     saveTemplate.requirements = (saveTemplate.requirements || []).concat(requirements);
   }
 
   return saveTemplate;
+};
+
+class DummyObserver {
+  constructor() {
+    this.revokers = [];
+  }
+
+  close() {
+    if (this.revokers) {
+      this.revokers.forEach(revoker => revoker.close());
+      this.revokers = null;
+    }
+  }
+
+  dropWhenRevoked(revoker) {
+    if (this.revokers) {
+      this.revokers.push(revoker);
+    } else {
+      revoker.close();
+    }
+  }
 };
 
 restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenInfo,
@@ -526,12 +580,22 @@ restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenI
       token.objectId.appRef = new Buffer(token.objectId.appRef);
     }
 
+    // TODO(security): Actually observe requirements. For now, we only arrange to drop the revoker
+    //   when the observer is dropped.
+    const observer = new DummyObserver();
+
     // Ensure the grain is running, then restore the capability.
-    return waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
+    const cap = waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
       // Note that in this case it is the supervisor's job to implement SystemPersistent, so we
       // don't generate a saveTemplate here.
-      return supervisor.restore(token.objectId, requirements, new Buffer(originalToken, "utf8"));
-    }));
+      let promise = supervisor.restore(token.objectId, [], new Buffer(originalToken, "utf8"));
+      if (requirements.length > 0) {
+        promise = promise.cap.castAs(SystemPersistent).addRequirements(requirements, observer);
+      }
+      return promise;
+    })).cap;
+
+    return { cap };
   } else {
     // Construct a template ApiToken for use if the restored capability is save()d later.
     const saveTemplate = makeSaveTemplateForChild(db, originalToken, requirements, originalTokenInfo);
@@ -595,6 +659,10 @@ function dropInternal(db, sturdyRef, ownerPattern) {
   }
 }
 
+const startupCompleted = new Promise((resolve, reject) => {
+  Meteor.startup(resolve);
+});
+
 class SandstormCoreFactoryImpl {
   constructor(db) {
     this.db = db;
@@ -603,11 +671,29 @@ class SandstormCoreFactoryImpl {
   getSandstormCore(grainId) {
     return { core: makeSandstormCore(this.db, grainId) };
   }
+
+  getGatewayRouter() {
+    return startupCompleted.then(() => {
+      return { router: makeGatewayRouter() };
+    });
+  }
 }
 
-makeSandstormCoreFactory = (db) => {
+function makeSandstormCoreFactory(db) {
   return new Capnp.Capability(new SandstormCoreFactoryImpl(db), SandstormCoreFactory);
 };
+
+// Start up the backend.
+const sandstormCoreFactory = makeSandstormCoreFactory(globalDb);
+const backendAddress = { capabilityStreamFd: parseInt(process.env.SANDSTORM_BACKEND_HANDLE) };
+let sandstormBackendConnection = Capnp.connect(backendAddress, sandstormCoreFactory);
+let sandstormBackend = sandstormBackendConnection.restore(null, Backend);
+
+globalBackend = new SandstormBackend(globalDb, sandstormBackend);
+globalBackend._backendConnection = sandstormBackendConnection;  // ... don't GC this, please.
+Meteor.onConnection((connection) => {
+  connection.sandstormBackend = globalBackend;
+});
 
 unwrapFrontendCap = (cap, type, callback) => {
   // Expect that `cap` is a Cap'n Proto capability implemented by the frontend as a frontendRef

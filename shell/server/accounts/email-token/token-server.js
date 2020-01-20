@@ -113,8 +113,8 @@ Accounts.registerLoginHandler("email", function (options) {
     return undefined; // don't handle
   }
 
-  if (!Accounts.identityServices.email.isEnabled()) {
-    throw new Meteor.Error(403, "Email identity service is disabled.");
+  if (!Accounts.loginServices.email.isEnabled()) {
+    throw new Meteor.Error(403, "Email login service is disabled.");
   }
 
   options = options.email;
@@ -167,7 +167,7 @@ Accounts.registerLoginHandler("email", function (options) {
 
 const makeTokenUrl = function (email, token, options) {
   if (options.linking) {
-    return options.rootUrl + "/_emailLinkIdentity/" + encodeURIComponent(email) + "/" +
+    return options.rootUrl + "/_emailLinkCredential/" + encodeURIComponent(email) + "/" +
       encodeURIComponent(token) + "/" + Meteor.userId() +
       "?allowLogin=" + options.linking.allowLogin;
   } else {
@@ -289,36 +289,37 @@ Meteor.methods({
       rootUrl: String,
     });
 
-    if (!Accounts.identityServices.email.isEnabled()) {
-      throw new Meteor.Error(403, "Email identity service is disabled.");
+    if (!Accounts.loginServices.email.isEnabled()) {
+      throw new Meteor.Error(403, "Email login service is disabled.");
     }
     // Create user. result contains id and token.
     const user = createAndEmailTokenForUser(this.connection.sandstormDb, email, options);
   },
 
-  linkEmailIdentityToAccount: function (email, token, allowLogin) {
-    // Links the email identity with address `email` and login token `token` to the current account.
+  linkEmailCredentialToAccount: function (email, token, allowLogin) {
+    // Links the email credential with address `email` and login token `token` to the current
+    // account.
     check(email, String);
     check(token, String);
     check(allowLogin, Boolean);
     const account = Meteor.user();
-    if (!account || !account.loginIdentities) {
-      throw new Meteor.Error(403, "Must be logged in to an account to link an email identity.");
+    if (!account || !account.loginCredentials) {
+      throw new Meteor.Error(403, "Must be logged in to an account to link an email credential.");
     }
 
-    const identity = Meteor.users.findOne({ "services.email.email": email },
-                                          { fields: { "services.email": 1 } });
-    if (!identity) {
+    const credential = Meteor.users.findOne({ "services.email.email": email },
+                                            { fields: { "services.email": 1 } });
+    if (!credential) {
       throw new Meteor.Error(403, "Invalid authentication code.");
     }
 
-    const maybeToken = consumeToken(identity, token.trim());
+    const maybeToken = consumeToken(credential, token.trim());
     if (!maybeToken) {
       throw new Meteor.Error(403, "Invalid authentication code.");
     }
 
-    Accounts.linkIdentityToAccount(this.connection.sandstormDb, this.connection.sandstormBackend,
-                                   identity._id, account._id, allowLogin);
+    Accounts.linkCredentialToAccount(this.connection.sandstormDb, this.connection.sandstormBackend,
+                                     credential._id, account._id, allowLogin);
 
     // Return the resume path, if we have one.
     const resumePath = tryUnbox(maybeToken.secureBox, token);

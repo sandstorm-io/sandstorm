@@ -7,12 +7,12 @@
     </div>
 
     <div class="notification-title">
-      App updates are available:
+      {{_ "notifications.appUpdateNotificationItem.title"}}
     </div>
 
     <ul class="app-updates">
     {{#each appUpdatesList}}
-      <li><strong>{{name}}</strong>: version {{marketingVersion}} is available</li>
+      <li>{{{_ "notifications.appUpdateNotificationItem.appUpdates" name=name version=marketingVersion}}}</li>
     {{/each}}
     </ul>
 
@@ -20,8 +20,8 @@
       <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
       <form class="standard-form">
         <div class="button-row">
-          <button type="submit" title="Update all of the above apps">Apply updates</button>
-          <button type="button" name="dismissUpdates" title="Ignore the above updates">Dismiss</button>
+          <button type="submit" title="{{_ "notifications.appUpdateNotificationItem.submitButton.hint"}}">{{_ "notifications.appUpdateNotificationItem.submitButton.text"}}</button>
+          <button type="button" name="dismissUpdates" title="{{_ "notifications.appUpdateNotificationItem.dismissButton.hint"}}">{{_ "notifications.appUpdateNotificationItem.dismissButton.text"}}</button>
         </div>
       </form>
     </div>
@@ -36,15 +36,14 @@
       <img src="/email.svg">
     </div>
 
-    Subscribe to our announcement list and get <strong>{{renderStorage MAILING_LIST_BONUS}} bonus
-    storage</strong> (1-2 emails per month).
+    {{{_ "notifications.mailingListBonusNotificationItem.explanationWithBonus" (renderStorage MAILING_LIST_BONUS)}}}
 
     <div class="notification-footer">
       <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
       <form class="standard-form">
         <div class="button-row">
-          <button type="submit">Subscribe</button>
-          <button type="button">No thanks</button>
+          <button type="submit">{{_ "notifications.mailingListBonusNotificationItem.submitButton"}}</button>
+          <button type="button">{{_ "notifications.mailingListBonusNotificationItem.dismissButton"}}</button>
         </div>
       </form>
     </div>
@@ -57,19 +56,19 @@
     </div>
 
     {{#if paidUser}}
-      Get up to 30 GB bonus with the
+      {{_ "notifications.referralNotificationItem.paidUser"}}
     {{else}}
-      Unlimited grains &amp; up to 2 GB bonus with the
+      {{_ "notifications.referralNotificationItem.unpaidUser"}}
     {{/if}}
     {{#linkTo route="referrals"}}
-      referral program &raquo;
+      {{_ "notifications.referralNotificationItem.link"}}
     {{/linkTo}}
 
     <div class="notification-footer">
       <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
       <form class="standard-form">
         <div class="button-row">
-          <button type="button">Dismiss</button>
+          <button type="button">{{_ "notifications.referralNotificationItem.dismissButton"}}</button>
         </div>
       </form>
     </div>
@@ -83,8 +82,7 @@
     </div>
 
     {{#if isType "reportStats"}}
-      You can help Sandstorm by sending us some anonymous usage stats.
-      Click here for more info.
+      {{_ "notifications.adminNotificationItem.explanation"}}
     {{/if}}
 
     <div class="notification-footer">
@@ -100,7 +98,7 @@
     </div>
 
     <div class="notification-title">
-      <strong>{{grainTitle}}</strong> is backgrounded:
+      {{{_ "notifications.backgroundedGrainNotificationItem.title" grain=grainTitle}}}
     </div>
 
     {{text.defaultText}}
@@ -109,7 +107,7 @@
       <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
       <form class="standard-form">
         <div class="button-row">
-          <button title="Stop the background app" type="button">Cancel</button>
+          <button title="{{_ "notifications.backgroundedGrainNotificationItem.cancelButton.hint"}}" type="button">{{_ "notifications.backgroundedGrainNotificationItem.cancelButton.text"}}</button>
         </div>
       </form>
     </div>
@@ -123,8 +121,7 @@
       <img src="/sandstorm-gradient-logo.svg">
     </div>
 
-    We're changing the way identities work in Sandstorm. Your account may be affected. Click here
-    to learn more.
+    {{_ "notifications.identityChangesNotificationItem.explanation"}}
 
     <div class="notification-footer">
       <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
@@ -140,7 +137,7 @@
     </div>
 
     <div class="notification-title">
-      <strong>{{senderName}}</strong> in <strong>{{grainTitle}}</strong>:
+      {{{_ "notifications.grainActivityNotificationItem.title" sender=senderName grain=grainTitle}}}
     </div>
 
     {{text.defaultText}} {{#if multiple}}x{{count}}{{/if}}
@@ -149,7 +146,7 @@
       <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
       <form class="standard-form">
         <div class="button-row">
-          <button type="button" title="Dismiss this notification">Dismiss</button>
+          <button type="button" title="{{_ "notifications.grainActivityNotificationItem.dismissButton.hint"}}">{{_ "notifications.grainActivityNotificationItem.dismissButton.text"}}</button>
         </div>
       </form>
     </div>

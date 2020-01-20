@@ -3,14 +3,11 @@ import zlib from "zlib";
 import { SAML } from "/imports/server/accounts/saml-utils.js";
 
 const Fiber = Npm.require("fibers");
+const BodyParser = Npm.require("body-parser");
 
 if (!Accounts.saml) {
   Accounts.saml = {};
 }
-
-// We need to use connect. Let's make sure we're using the same version as Meteor's WebApp module
-// uses. Fortunately, they let us extract it.
-const connect = WebAppInternals.NpmModules.connect.module;
 
 RoutePolicy.declare("/_saml/", "network");
 
@@ -31,7 +28,7 @@ Accounts.registerLoginHandler(function (loginRequest) {
     return undefined;
   }
 
-  if (!Accounts.identityServices.saml.isEnabled()) {
+  if (!Accounts.loginServices.saml.isEnabled()) {
     throw new Meteor.Error(403, "SAML service is disabled.");
   }
 
@@ -109,7 +106,7 @@ const middleware = function (req, res, next) {
       return;
     }
 
-    if (!Accounts.identityServices.saml.isEnabled()) {
+    if (!Accounts.loginServices.saml.isEnabled()) {
       next();
       return;
     }
@@ -168,7 +165,7 @@ const middleware = function (req, res, next) {
 };
 
 // Listen to incoming OAuth http requests
-WebApp.connectHandlers.use(connect.urlencoded()).use(function (req, res, next) {
+WebApp.connectHandlers.use(BodyParser.urlencoded()).use(function (req, res, next) {
   // Need to create a Fiber since we're using synchronous http calls and nothing
   // else is wrapping this in a fiber automatically
   Fiber(function () {
@@ -184,19 +181,19 @@ Meteor.methods({
     }
 
     const _saml = new SAML(service);
-    let identity;
-    Meteor.user().loginIdentities.forEach((_identity) => {
-      const currIdentity = Meteor.users.findOne({ _id: _identity.id, });
-      if (currIdentity.services.saml) {
-        identity = currIdentity;
+    let credential;
+    Meteor.user().loginCredentials.forEach((_credential) => {
+      const currCredential = Meteor.users.findOne({ _id: _credential.id, });
+      if (currCredential.services.saml) {
+        credential = currCredential;
       }
     });
-    // TODO(someday): handle user having more than one SAML identity
+    // TODO(someday): handle user having more than one SAML credential
 
     return Meteor.wrapAsync(_saml.getLogoutUrl.bind(_saml))({
       user: {
-        nameID: identity.services.saml.id,
-        nameIDFormat: identity.services.saml.nameIDFormat ||
+        nameID: credential.services.saml.id,
+        nameIDFormat: credential.services.saml.nameIDFormat ||
           "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent",
       },
     });
@@ -224,16 +221,16 @@ Meteor.methods({
         }
 
         check(nameId, String);
-        const identity = db.collections.users.findOne({ "services.saml.id": nameId, },
+        const credential = db.collections.users.findOne({ "services.saml.id": nameId, },
           { fields: { _id: 1, }, });
-        if (!identity) {
-          return new Meteor.Error(400, "No identity found matching SAML nameID.");
+        if (!credential) {
+          return new Meteor.Error(400, "No credential found matching SAML nameID.");
         }
 
-        const user = db.collections.users.findOne({ "loginIdentities.id": identity._id, },
+        const user = db.collections.users.findOne({ "loginCredentials.id": credential._id, },
           { fields: { _id: 1, }, });
         if (!user) {
-          return new Meteor.Error(403, "No user found for expected SAML identity.");
+          return new Meteor.Error(403, "No user found for expected SAML credential.");
         }
 
         if (user._id !== userId) {

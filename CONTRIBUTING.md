@@ -28,17 +28,17 @@ The easiest way to help Sandstorm is to write and/or package apps! See [the deve
 
 ### Internationalization (i18n)
 
-We need someone to internationalize the Sandstorm interface so that it can be translated into multiple languages.
+We need help translating the Sandstorm interface into multiple languages.
 
-The first step of this project will probably involve integrating Sandstorm with the tap-i18n framework (a localization framework for apps that use Meteor and Blaze). You will need to systematically go through our HTML templates and replace English-language text with calls to the i18n framework and message codes, which reference into the localization table. Once a localization table exists, we volunteers can translate it into many languages. This much should be straightforward and should get us 90% of the way there.
+The easiest way to help is to write translation tables for your language. Check out the [shell/i18n](https://github.com/sandstorm-io/sandstorm/tree/master/shell/i18n) directory to see existing tables. To add support for your language, start by copying en.i18n.json, then go through and change each piece of text to your own language. Check out the [Dutch translation](https://github.com/sandstorm-io/sandstorm/pull/2999) for an example. Don't forget to check with [the sandstorm-dev mailing list](https://groups.google.com/group/sandstorm-dev) before you start, to see if anyone else is already working on the same language.
 
-As part of this project, we will want to add UI to the account settings page through which users can set their language. If the user sets a language, it should override the `Accept-Language` HTTP header both for the Sandstorm interface and for apps.
+As a more advanced project, we also need help improving our i18n framework.
 
-As a longer-term project, we would like to create a localization framework for apps. Apps can already localize themselves based on the `Accept-Language` header, and some have done so. However, there are some issues we'd like to improve on:
-
-1. In many places, apps communicate strings to Sandstorm, using the `LocalizedText` Cap'n Proto struct defined in `util.capnp`. This struct is possibly not as well-designed as it should be. Currently, the vast majority of apps use only the `defaultText` field, specifying English-language text. We should extend this struct to support some sort of message code framework and make Sandstorm support it.
-
-2. We should consider creating a framework by which apps can be translated by volunteers without coordinating with the app developer. One way this could work is that each app could define a set of message codes and could define English-language text for those message codes, but translation tables could be distributed separately from the app itself. Sandstorm could maintain a service which allows people to contribute translations for any app and then redistributes those translations automatically to all Sandstorm servers, without the app author needing to be involved.
+* Our codebase still contains some inlined text in various places that needs to be hooked for translation.
+* We want to add UI to the account settings page through which users can set their language. If the user sets a language, it should override the `Accept-Language` HTTP header both for the Sandstorm interface and for apps.
+* As a longer-term project, we would like to create a localization framework for apps. Apps can already localize themselves based on the `Accept-Language` header, and some have done so. However, there are some issues we'd like to improve on:
+    * In many places, apps communicate strings to Sandstorm, using the `LocalizedText` Cap'n Proto struct defined in `util.capnp`. This struct is possibly not as well-designed as it should be. Currently, the vast majority of apps use only the `defaultText` field, specifying English-language text. We should extend this struct to support some sort of message code framework and make Sandstorm support it.
+    * We should consider creating a framework by which apps can be translated by volunteers without coordinating with the app developer. One way this could work is that each app could define a set of message codes and could define English-language text for those message codes, but translation tables could be distributed separately from the app itself. Sandstorm could maintain a service which allows people to contribute translations for any app and then redistributes those translations automatically to all Sandstorm servers, without the app author needing to be involved.
 
 ### Better Tests
 
@@ -70,7 +70,6 @@ Currently, Sandstorm supports authentication through E-mail, Google, Github, LDA
 Sandstorm has a framework for authentication which is relatively easy to extend with new types. But, you will want to consider the following:
 
 - As more types are added, the potential for user confusion grows. You may want to implement [de-duplification of credentials](https://github.com/sandstorm-io/sandstorm/tree/master/roadmap/platform/accounts#todofeature-de-duplicating-logins) before adding too many login mechanisms.
-- More generally, you may want to help fix Sandstorm's current problems with [profiles](https://github.com/sandstorm-io/sandstorm/tree/master/roadmap/platform/accounts#profile) being per-credential rather than per-account, as this will get worse when more credential types are introduced.
 - Perhaps the authentication system should be extensible by apps! You may want to implement an API by which a Sandstorm app can offer a new way of authenticating.
 
 ### Improve Notifications

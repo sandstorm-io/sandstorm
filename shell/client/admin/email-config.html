@@ -1,84 +1,77 @@
 <template name="newAdminEmailConfig">
+{{#let txt="admin.emailConfig.newAdminEmailConfig"}}
   <h1>
     <ul class="admin-breadcrumbs">
-      <li>{{#linkTo route="newAdminRoot"}}Admin{{/linkTo}}</li>
-      <li>Email configuration</li>
+      <li>{{#linkTo route="newAdminRoot"}}{{_ "admin.title"}}{{/linkTo}}</li>
+      <li>{{_ "admin.emailConfig.name"}}</li>
     </ul>
   </h1>
 
-  <h2>Outbound email</h2>
+  <h2>{{_ (con txt "outbound.title")}}</h2>
 
   {{#if emailUnconfigured}}
   <div class="flash-message warning-message">
     <p>
-      <strong>Email is unconfigured.</strong>
-      Email-related features like email login, notifications, sharing by identity, and requesting
-      access will be unavailable until you configure email.
+      {{{_ (con txt "outbound.warning")}}}
     </p>
   </div>
   {{/if}}
 
   <h3>
-    How Sandstorm uses email
+    {{_ (con txt "howItWorks.title")}}
   </h3>
   <p>
-    Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too. Every
-    app receives a unique email address, so Sandstorm needs to send email from a variety of "From:"
-    addresses. Therefore, Gmail SMTP won't work, but there are other free services. See
-    <a href="https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp">
-      more info in the docs
-    </a>.
+    {{{_ (con txt "howItWorks.explanation")}}}
   </p>
 
-  {{#if hasSuccess}}<p class="flash-message success-message">Saved changes.</p>{{/if}}
-  {{#if hasError}}<p class="flash-message error-message">Failed to save changes: {{errorMessage}}</p>{{/if}}
+  {{#if hasSuccess}}<p class="flash-message success-message">{{_ (con txt "success")}}</p>{{/if}}
+  {{#if hasError}}<p class="flash-message error-message">{{_ (con txt "error") errorMessage}}</p>{{/if}}
 
   <form class="email-form">
     <div class="form-group">
       <div class="host-port">
         <label class="host-box">
-          SMTP host
+          {{_ (con txt "address.hostname")}}
           <input class="hostname" type="text" name="hostname" value="{{hostname}}" required />
         </label>
         <label class="port-box">
-          Port
+          {{_ (con txt "address.port")}}
           <input class="port" type="number" name="port" value="{{port}}" required />
         </label>
       </div>
       <span class="form-subtext">
-        Use port 25 for SMTP (unencrypted or with StartTLS), port 465 for TLS-encrypted SMTPS.
+        {{_ (con txt "address.subtext")}}
       </span>
     </div>
 
     <div class="form-group">
       <label>
-        Username (optional)
+        {{_ (con txt "username.label")}}
         <input class="username" type="text" name="username" value="{{username}}" />
       </label>
     </div>
 
     <div class="form-group">
       <label>
-        Password (optional)
+        {{_ (con txt "password.label")}}
         <input class="password" type="password" name="password" value="{{password}}" />
       </label>
     </div>
 
     <div class="form-group">
       <label>
-        Sandstorm server's own email address
+        {{_ (con txt "returnAddress.label")}}
         <input class="from-address" type="email" name="return-address" value="{{returnAddress}}" required />
       </label>
       <span class="form-subtext">
-        Sandstorm will send login emails, notifications of granted access requests, and other
-        emails from this address. It will also use this address in the SMTP envelope.
+        {{_ (con txt "returnAddress.subtext")}}
       </span>
     </div>
 
     <div class="button-row">
-      <button class="submit" type="submit" disabled={{saveDisabled}}>Save Configuration</button>
-      <button class="test" type="button" disabled={{testDisabled}}>Test</button>
-      <button class="disable" type="button" disabled={{disableDisabled}}>Disable email</button>
+      <button class="submit" type="submit" disabled={{saveDisabled}}>{{_ (con txt "submitButton")}}</button>
+      <button class="test" type="button" disabled={{testDisabled}}>{{_ (con txt "testButton")}}</button>
+      <button class="disable" type="button" disabled={{disableDisabled}}>{{_ (con txt "disableButton")}}</button>
     </div>
   </form>
 
@@ -93,15 +86,17 @@
       {{> emailDisablePopup onDismiss=closeConfirmDisableEmailPopupCallback}}
     {{/modalDialogWithBackdrop}}
   {{/if}}
+{{/let}}
 </template>
 
 <template name="emailTestPopup">
+{{#let txt="admin.emailConfig.emailTestPopup"}}
 {{!-- Takes three arguments via data context:
        token: String (optional) Setup token to use to authorize a testSend request.
   smtpConfig: Object containing the SMTP config object to provide to testSend.
    onDismiss: Function to call when the Close button is clicked.
 --}}
-<h2>Send a test email</h2>
+<h2>{{_ (con txt "title")}}</h2>
 {{#if hasError}}
   {{#focusingErrorBox}}
     {{message}}
@@ -115,31 +110,33 @@
 <form class="email-test-form">
   <div class="form-group">
     <label>
-      Send test mail to:
+      {{_ (con txt "testAddress.label")}}
       <input class="test-address" type="email" name="test-address" value="{{testAddress}}" required />
     </label>
   </div>
   <div class="button-row">
     <button type="submit" class="send-test-email" {{htmlDisabled}}>
       {{#if isSubmitting}}
-      Sending...
+      {{_ (con txt "pending")}}
       {{else}}
-      Send test email
+      {{_ (con txt "submitButton")}}
       {{/if}}
     </button>
     <button type="button" class="close-dialog">
-      Close
+      {{_ (con txt "closeButton")}}
     </button>
   </div>
 </form>
+{{/let}}
 </template>
 
 <template name="emailDisablePopup">
+{{#let txt="admin.emailConfig.emailDisablePopup"}}
 {{!-- Takes two arguments via data context:
        token: String (optional) Setup token to use to authorize a disableEmail call.
    onDismiss: Function to call when the Close button is clicked or the disableEmail call completes.
 --}}
-<h2>Really disable email?</h2>
+<h2>{{_ (con txt "title")}}</h2>
 {{#if hasError}}
   {{#focusingErrorBox}}
     {{message}}
@@ -147,18 +144,18 @@
 {{/if}}
 
 <p>
-  This will disable all outbound email delivery for this server, including sharing via email, email
-  token login (if enabled), and email notifications to users.
+  {{_ (con txt "explanation")}}
 </p>
 
 <form class="email-disable-form">
   <div class="button-row">
     <button type="button" name="disable-email" class="danger" {{htmlDisabled}}>
-      Disable email
+      {{_ (con txt "disableButton")}}
     </button>
     <button type="button" name="close-dialog">
-      Close
+      {{_ (con txt "closeButton")}}
     </button>
   </div>
 </form>
+{{/let}}
 </template>

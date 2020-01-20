@@ -34,12 +34,6 @@ module.exports["Test powerbox request contact"] = function (browser) {
   // We need to prepend 'A' so that the default handle is always valid.
   var aliceName = "A" + crypto.randomBytes(10).toString("hex");
   var bobName = "A" + crypto.randomBytes(10).toString("hex");
-  var aliceIdentityId = crypto.createHash("sha256").update("dev:" + aliceName).digest("hex");
-  var bobIdentityId = crypto.createHash("sha256").update("dev:" + bobName).digest("hex");
-
-  var powerboxCardSelector =
-      ".popup.request .candidate-cards .powerbox-card button[data-card-id=frontendref-identity-" +
-      bobIdentityId + "]";
 
   browser
     .loginDevAccount(aliceName)
@@ -50,73 +44,81 @@ module.exports["Test powerbox request contact"] = function (browser) {
     .waitForElementVisible('.grain-frame', short_wait)
 
     // First we need to make sure that Bob is in Alice's contacts
-    .executeAsync(function (aliceIdentityId, bobIdentityId, done) {
+    .executeAsync(function (done) {
       var grainId = Grains.findOne()._id;
-      Meteor.call("newApiToken", { identityId: aliceIdentityId },
+      Meteor.call("newApiToken", { accountId: Meteor.userId() },
                   grainId, "petname", { allAccess: null },
                   { webkey: { forSharing: true }, },
                   function(error, result) {
                     Meteor.logout();
                     done({ error: error, result: result, });
                     });
-      }, [aliceIdentityId, bobIdentityId], function (result) {
+      }, [], function (result) {
         browser.assert.equal(!result.value.error, true)
         browser
           .loginDevAccount(bobName)
           .url(browser.launch_url + "/shared/" + result.value.result.token)
-          .waitForElementVisible("button.pick-identity", short_wait)
-          .click("button.pick-identity")
+          .waitForElementVisible("button.reveal-identity-button", short_wait)
+          .click("button.reveal-identity-button")
           .waitForElementVisible('.grain-frame', medium_wait)
-          .execute("window.Meteor.logout()")
+          .executeAsync(function (done) {
+            done(Meteor.userId());
+          }, [], function (result) {
+            var bobAccountId = result.value;
+            var powerboxCardSelector =
+                ".popup.request .candidate-cards .powerbox-card " +
+                "button[data-card-id=frontendref-identity-" + bobAccountId + "]";
+            browser.execute("window.Meteor.logout()")
+              // OK, now create a new grain and share it to Bob through the powerbox.
+              .loginDevAccount(aliceName)
+              .disableGuidedTour(function () {
+                browser.newGrain(APP_ID, function(grainId) {
+                  browser
+                    .waitForElementVisible("#grainTitle", short_wait)
+                    .assert.containsText("#grainTitle", "Untitled Test App test page")
+                    .grainFrame()
+                    .waitForElementVisible("#powerbox-request-identity", short_wait)
+                    .click("#powerbox-request-identity")
+                    .frameParent()
+                    .waitForElementVisible(powerboxCardSelector, short_wait)
+                    .click(powerboxCardSelector)
 
-          // OK, now create a new grain and share it to Bob through the powerbox.
-          .loginDevAccount(aliceName)
-          .disableGuidedTour(function () {
-            browser.newGrain(APP_ID, function(grainId) {
-              browser
-                .waitForElementVisible("#grainTitle", short_wait)
-                .assert.containsText("#grainTitle", "Untitled Test App test page")
-                .grainFrame()
-                .waitForElementVisible("#powerbox-request-identity", short_wait)
-                .click("#powerbox-request-identity")
-                .frameParent()
-                .waitForElementVisible(powerboxCardSelector, short_wait)
-                .click(powerboxCardSelector)
+                    .waitForElementVisible(".popup.request .selected-card>form button.connect-button",
+                                           short_wait)
+                    .click(".popup.request .selected-card>form button.connect-button")
+                    .grainFrame()
+                    .waitForElementVisible("span.token", short_wait)
+                    .waitForElementVisible("form.test-identity button", short_wait)
+                    .click("form.test-identity button")
+                    .waitForElementVisible("form.test-identity div.result", short_wait)
+                    .assert.containsText("form.test-identity div.result", bobName)
 
-                .waitForElementVisible(".popup.request .selected-card>form button.connect-button",
-                                       short_wait)
-                .click(".popup.request .selected-card>form button.connect-button")
-                .grainFrame()
-                .waitForElementVisible("span.token", short_wait)
-                .waitForElementVisible("form.test-identity button", short_wait)
-                .click("form.test-identity button")
-                .waitForElementVisible("form.test-identity div.result", short_wait)
-                .assert.containsText("form.test-identity div.result", bobName)
+                    // Now trash the grain as Bob.
+                    .frame(null)
+                    .execute("window.Meteor.logout()")
+                    .loginDevAccount(bobName)
+                    .disableGuidedTour()
+                    .url(browser.launch_url + "/grain")
+                    .waitForElementVisible(".grain-list-table .select-all-grains>input", short_wait)
+                    .click(".grain-list-table .select-all-grains>input")
+                    .click(".bulk-action-buttons button.move-to-trash")
 
-                // Now trash the grain as Bob.
-                .frame()
-                .execute("window.Meteor.logout()")
-                .loginDevAccount(bobName)
-                .url(browser.launch_url + "/grain")
-                .waitForElementVisible(".grain-list-table .select-all-grains>input", short_wait)
-                .click(".grain-list-table .select-all-grains>input")
-                .click(".bulk-action-buttons button.move-to-trash")
-
-                // Now check that the grain can no longer restore the Identity capability.
-                .execute("window.Meteor.logout()")
-                .loginDevAccount(aliceName)
-                .url(browser.launch_url + "/grain/" + grainId)
-                .waitForElementVisible("#grainTitle", short_wait)
-                .assert.containsText("#grainTitle", "Untitled Test App test page")
-                .grainFrame()
-                .waitForElementVisible("span.token", short_wait)
-                .waitForElementVisible("form.test-identity button", short_wait)
-                .click("form.test-identity button")
-                .waitForElementVisible("form.test-identity div.result", short_wait)
-                .assert.containsText("form.test-identity div.result",
-                                     "failed to fetch profile")
-                .end()
-            });
+                    // Now check that the grain can no longer restore the Identity capability.
+                    .execute("window.Meteor.logout()")
+                    .loginDevAccount(aliceName)
+                    .url(browser.launch_url + "/grain/" + grainId)
+                    .waitForElementVisible("#grainTitle", short_wait)
+                    .assert.containsText("#grainTitle", "Untitled Test App test page")
+                    .grainFrame()
+                    .waitForElementVisible("span.token", short_wait)
+                    .waitForElementVisible("form.test-identity button", short_wait)
+                    .click("form.test-identity button")
+                    .waitForElementVisible("form.test-identity div.result", short_wait)
+                    .assert.containsText("form.test-identity div.result",
+                                         "failed to fetch profile")
+                    .end()
+                });
+              });
           });
       });
 };

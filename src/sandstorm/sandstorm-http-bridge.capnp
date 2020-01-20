@@ -41,3 +41,27 @@ interface SandstormHttpBridge {
   # If BridgeConfig.saveIdentityCaps is true for this app, adds the given identity to the
   # grain's database, allowing it to be fetched later with `getSavedIdentity()`.
 }
+
+interface AppHooks (AppObjectId) {
+  # When connecting to the bridge's domain socket at /tmp/sandstorm-api, the
+  # application may supply this as a bootstrap interface. If the app chooses
+  # to do so, it should also set `bridgeConfig.expectAppHooks = true` in the
+  # package's PackageDefinition.
+  #
+  # The `AppObjectId` type parameter should be the same as that for any
+  # objects exported by the app that implement Grain.AppPersistent.
+
+  getViewInfo @0 () -> Grain.UiView.ViewInfo;
+  # Like Grain.UiView.getViewInfo. If AppHooks is supplied, the bridge will
+  # delegate UiView.getViewInfo to this method. If it raises unimplemented,
+  # the bridge will fall back to reading the viewInfo from the bridgeConfig.
+
+  restore @1 (objectId :AppObjectId) -> (cap :Capability);
+  # Like Grain.MainView.restore. The bridge will use this to delegate restoring
+  # any objects provided by the app, rather than the bridge itself. Such objects
+  # must implement `Grain.AppPersistent.save` per the comments there and in
+  # Grain.MainView.
+
+  drop @2 (objectId :AppObjectId);
+  # Like Grain.MainView.drop. See the comments for restore.
+}

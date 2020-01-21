@@ -425,4 +425,4 @@ tests/assets/meteor-testapp.spk: meteor-testapp meteor-spk-$(METEOR_SPK_VERSION)
 	@PATH="$$PWD/bin:$$PATH" && cd meteor-testapp && ../meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk pack -kmeteor-testapp.key -I../src ../tests/assets/meteor-testapp.spk
 
 meteor-testapp-clean:
-	rm -rf tests/assets/meteor-testapp.spk meteor-spk-$(METEOR_SPK_VERSION) meteor-testapp/.meteor-spk
+	rm -rf tests/assets/meteor-testapp.spk meteor-testapp/.meteor-spk

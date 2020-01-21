@@ -32,6 +32,7 @@ EKAM=ekam
 #   just accept it? Perhaps it's for the best since we probably should build
 #   position-independent executables for security reasons?
 METEOR_DEV_BUNDLE=$(shell ./find-meteor-dev-bundle.sh)
+METEOR_SPK_VERSION=0.4.1
 NODEJS=$(METEOR_DEV_BUNDLE)/bin/node
 NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
 WARNINGS=-Wall -Wextra -Wglobal-constructors -Wno-sign-compare -Wno-unused-parameter
@@ -416,12 +417,12 @@ test-app-dev: tmp/.ekam-run
 # ====================================================================
 # meteor-testapp.spk
 
-meteor-spk-0.3.2/meteor-spk:
+meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk:
 	@$(call color,downloading meteor-spk)
-	@curl https://dl.sandstorm.io/meteor-spk-0.3.2.tar.xz | tar Jxf -
+	@curl https://dl.sandstorm.io/meteor-spk-$(METEOR_SPK_VERSION).tar.xz | tar Jxf -
 
-tests/assets/meteor-testapp.spk: meteor-testapp meteor-spk-0.3.2/meteor-spk meteor-testapp/client/* meteor-testapp/server/* meteor-testapp/.meteor/*
-	@PATH="$$PWD/bin:$$PATH" && cd meteor-testapp && ../meteor-spk-0.3.2/meteor-spk pack -kmeteor-testapp.key -I../src ../tests/assets/meteor-testapp.spk
+tests/assets/meteor-testapp.spk: meteor-testapp meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk meteor-testapp/client/* meteor-testapp/server/* meteor-testapp/.meteor/*
+	@PATH="$$PWD/bin:$$PATH" && cd meteor-testapp && ../meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk pack -kmeteor-testapp.key -I../src ../tests/assets/meteor-testapp.spk
 
 meteor-testapp-clean:
-	rm -rf tests/assets/meteor-testapp.spk meteor-spk-0.3.2 meteor-testapp/.meteor-spk
+	rm -rf tests/assets/meteor-testapp.spk meteor-spk-$(METEOR_SPK_VERSION) meteor-testapp/.meteor-spk

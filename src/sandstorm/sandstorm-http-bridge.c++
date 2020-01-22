@@ -26,6 +26,7 @@
 #include <kj/async-unix.h>
 #include <kj/io.h>
 #include <kj/encoding.h>
+#include <capnp/membrane.h>
 #include <capnp/rpc-twoparty.h>
 #include <capnp/rpc.capnp.h>
 #include <capnp/schema.h>
@@ -834,6 +835,36 @@ private:
 
     memcpy(builder.initValue(result.size()).begin(), result.begin(), result.size());
   }
+};
+
+class AppPersistentWrapper final: public AppPersistent<BridgeObjectId>::Server {
+public:
+  AppPersistentWrapper(kj::Own<AppPersistent<>::Client>&& wrapped)
+    : wrapped(kj::mv(wrapped))
+  {}
+
+  kj::Promise<void> save(SaveContext context) override {
+    return wrapped->saveRequest().send().then([&context](auto resp) -> kj::Promise<void> {
+        auto results = context.initResults();
+        results.setLabel(resp.getLabel());
+        results.initObjectId().initApplication().set(resp.getObjectId());
+        return kj::READY_NOW;
+    });
+  }
+private:
+  kj::Own<AppPersistent<>::Client> wrapped;
+};
+
+class SaveMembranePolicy final: public capnp::MembranePolicy {
+public:
+  kj::Maybe<capnp::Capability::Client> inboundCall(
+      uint64_t interfaceId, uint16_t methodId, capnp::Capability::Client target) override {
+    if(interfaceId == capnp::typeId<AppPersistent<>>()) {
+      return AppPersistentWrapper(kj::heap(target.castAs<AppPersistent<>>()))
+    }
+    return nullptr;
+  }
+private:
 };
 
 class WebSocketPump final: public WebSession::WebSocketStream::Server,

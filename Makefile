@@ -130,7 +130,7 @@ IMAGES= \
 # Meta rules
 
 .SUFFIXES:
-.PHONY: all install clean clean-deps ci-clean continuous shell-env fast deps bootstrap-ekam update-deps test installer-test app-index-dev meteor-testapp-clean
+.PHONY: all install clean clean-deps ci-clean continuous shell-env fast deps bootstrap-ekam update-deps test installer-test app-index-dev
 
 all: sandstorm-$(BUILD).tar.xz
 
@@ -141,9 +141,10 @@ clean: ci-clean
 	rm -rf deps/libsodium/build
 	rm -rf deps/boringssl/build
 
-ci-clean: meteor-testapp-clean
+ci-clean:
 	@# Clean only the stuff that we want to clean between CI builds.
 	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz
+	rm -rf tests/assets/meteor-testapp.spk meteor-testapp/.meteor-spk
 
 install: sandstorm-$(BUILD)-fast.tar.xz install.sh
 	@$(call color,install)
@@ -423,6 +424,3 @@ meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk:
 
 tests/assets/meteor-testapp.spk: meteor-testapp meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk meteor-testapp/client/* meteor-testapp/server/* meteor-testapp/.meteor/*
 	@PATH="$$PWD/bin:$$PATH" && cd meteor-testapp && ../meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk pack -kmeteor-testapp.key -I../src ../tests/assets/meteor-testapp.spk
-
-meteor-testapp-clean:
-	rm -rf tests/assets/meteor-testapp.spk meteor-testapp/.meteor-spk

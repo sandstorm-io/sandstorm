@@ -110,7 +110,20 @@ const appIdReplacementList :List(AppIdReplacement) = [
   # See also [this discussion](https://github.com/wekan/wekan/issues/640) about the future
   # governance of Wekan.
 
-# ---- end Wekan entry ----
+  # ---- end Wekan entry ----
+
+  # ---- Gitweb entry ----
+
+  (original = "6va4cjamc21j0znf5h5rrgnv0rpyvh1vaxurkrgknefvj0x63ash",
+   replacement = "g1k27td96hm9fjnkn20jw5apkphhcd5wrcccdve9fuvykfz68650"),
+  # The original key is held by David Renshaw. Adam Bliss generated this replacement
+  # key in order to publish the update posted [here](https://github.com/dwrensha/gitweb-sandstorm/pull/9),
+  # after failing to contact David over the course of many weeks.
+  #
+  # See also [this discussion](https://github.com/sandstorm-io/sandstorm/pull/3187) about the future
+  # governance of Gitweb.
+
+  # ---- end Gitweb entry ----
 
   # Add your entry here!
 ];

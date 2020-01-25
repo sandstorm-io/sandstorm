@@ -1654,6 +1654,16 @@ Meteor.startup(function () {
       senderGrain.setPowerboxRequest(requestContext);
       // Note that we don't do openPopup() here because the template will be redrawn to create the
       // powerbox popup with startOpen=true.
+    } else if(event.data.getGrainTitle) {
+      check(event.data.getGrainTitle, Object)
+      check(event.data.subscribe, Match.Optional(Boolean))
+      event.source.postMessage({
+        rpcId: event.data.rpcId,
+        grainTitle: senderGrain.title(),
+      }, event.origin)
+      if(event.data.subscribe) {
+        // TODO: set up a hook to send the grain updates of the title.
+      }
     } else {
       console.log("postMessage from app not understood: ", event.data);
       console.log(event);

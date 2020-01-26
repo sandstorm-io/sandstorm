@@ -31,13 +31,17 @@ EKAM=ekam
 #   needs to include all the Cap'n Proto code. Do we double-compile or do we
 #   just accept it? Perhaps it's for the best since we probably should build
 #   position-independent executables for security reasons?
+# NOTE: Emperically -DKJ_STD_COMPAT appears to be necessary on recent ditros
+#   (as of Jan 2020), notably Debian Sid, Fedora 30 and Archlinux. We're not
+#   entirely sure what changed, but this seems like a backwards incompatibility
+#   in libstdc++. See also issue #3171.
 METEOR_DEV_BUNDLE=$(shell ./find-meteor-dev-bundle.sh)
 METEOR_SPK_VERSION=0.4.1
 NODEJS=$(METEOR_DEV_BUNDLE)/bin/node
 NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
 WARNINGS=-Wall -Wextra -Wglobal-constructors -Wno-sign-compare -Wno-unused-parameter
-CXXFLAGS2=-std=c++1z $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -DKJ_HAS_OPENSSL -DKJ_HAS_ZLIB -DKJ_HAS_LIBDL -pthread -fPIC -I$(NODE_HEADERS)
-CFLAGS2=$(CFLAGS) -pthread -fPIC
+CXXFLAGS2=-std=c++1z $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -DKJ_HAS_OPENSSL -DKJ_HAS_ZLIB -DKJ_HAS_LIBDL -pthread -fPIC -I$(NODE_HEADERS) -DKJ_STD_COMPAT
+CFLAGS2=$(CFLAGS) -pthread -fPIC -DKJ_STD_COMPAT
 LIBS2=$(LIBS) deps/libsodium/build/src/libsodium/.libs/libsodium.a deps/boringssl/build/ssl/libssl.a deps/boringssl/build/crypto/libcrypto.a -lz -ldl -pthread
 
 define color

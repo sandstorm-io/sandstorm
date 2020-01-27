@@ -27,7 +27,7 @@ To package an app for Sandstorm with `vagrant-spk`, you will need to follow thes
 * Install `vagrant-spk`, so that it is on your $PATH.
 * Install Vagrant on your system.
 * Run `vagrant-spk setupvm lemp` within the app's main source tree, to create template files that will be used by the packaging process.  'lemp' here refers to a particular software stack (linux/nginx/mysql/php) that should be run in the package; we may add support for other stacks in the future.
-* Run `vagrant-spk up` from the same folder to launch the VM, install a developer-mode Sandstorm instance, and install and configure nginx/php/mysql for the app.
+* Run `vagrant-spk vm up` from the same folder to launch the VM, install a developer-mode Sandstorm instance, and install and configure nginx/php/mysql for the app.
 * Run `vagrant-spk init` to create a `sandstorm-pkgdef.capnp` file describing the app.  Modify it to correct things like e.g. app name and action text.
 * Get your app ready for the Sandstorm sandbox. This will mean ensuring the app runs properly at all.
 * Run `vagrant-spk dev` to verify if the app runs within Sandstorm. If not, loop back to "Get your app ready".

@@ -2259,16 +2259,28 @@ public:
                       BridgeContext& bridgeContext,
                       spk::BridgeConfig::Reader config,
                       kj::Promise<void>&& connectPromise,
-                      kj::Maybe<kj::Own<kj::Promise<AppHooks<>::Client>>>&& appHooks)
+                      kj::Maybe<kj::Promise<AppHooks<>::Client>&> appHooks)
       : serverAddress(serverAddress),
         bridgeContext(bridgeContext),
         config(config),
         connectPromise(connectPromise.fork()),
-        appHooks(kj::mv(appHooks)) {}
+        appHooks(appHooks) {}
 
   kj::Promise<void> getViewInfo(GetViewInfoContext context) override {
     KJ_IF_MAYBE(promise, appHooks) {
-      KJ_UNIMPLEMENTED("TODO(zenhack): delegate to promise.");
+      return promise->then([this, &context](auto appHooks) -> kj::Promise<void> {
+        return appHooks.getViewInfoRequest().send()
+          .then([&context](auto results) -> kj::Promise<void> {
+            context.setResults(results);
+            return kj::READY_NOW;
+          }, [this, &context](kj::Exception&& e) -> kj::Promise<void> {
+            if(e.getType() == kj::Exception::Type::UNIMPLEMENTED) {
+              return _getViewInfo(context);
+            } else {
+              throw kj::mv(e);
+            }
+          });
+      });
     } else {
       return _getViewInfo(context);
     }
@@ -2459,7 +2471,7 @@ private:
   // TODO(security): It might be useful to make these sessionIds more random, to reduce the chance
   //   that an app will mix them up.
 
-  kj::Maybe<kj::Own<kj::Promise<AppHooks<>::Client>>> appHooks;
+  kj::Maybe<kj::Promise<AppHooks<>::Client>&> appHooks;
 };
 
 class SandstormHttpBridgeMain {

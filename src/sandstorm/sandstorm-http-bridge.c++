@@ -2258,13 +2258,23 @@ public:
   explicit UiViewImpl(kj::NetworkAddress& serverAddress,
                       BridgeContext& bridgeContext,
                       spk::BridgeConfig::Reader config,
-                      kj::Promise<void>&& connectPromise)
+                      kj::Promise<void>&& connectPromise,
+                      kj::Maybe<kj::Own<kj::Promise<AppHooks<>::Client>>>&& appHooks)
       : serverAddress(serverAddress),
         bridgeContext(bridgeContext),
         config(config),
-        connectPromise(connectPromise.fork()) {}
+        connectPromise(connectPromise.fork()),
+        appHooks(kj::mv(appHooks)) {}
 
   kj::Promise<void> getViewInfo(GetViewInfoContext context) override {
+    KJ_IF_MAYBE(promise, appHooks) {
+      KJ_UNIMPLEMENTED("TODO(zenhack): delegate to promise.");
+    } else {
+      return _getViewInfo(context);
+    }
+  }
+
+  kj::Promise<void> _getViewInfo(GetViewInfoContext context) {
     context.setResults(config.getViewInfo());
 
     // Copy in powerbox API descriptors.
@@ -2372,7 +2382,7 @@ public:
     auto objectId = context.getParams().getObjectId();
 
     if (objectId.isApplication()) {
-      KJ_UNIMPLEMENTED("application-defined object IDs not implemented");
+      KJ_UNIMPLEMENTED("TODO(zenhack): pass this on to the application via appHooks.");
     }
 
     KJ_REQUIRE(objectId.isHttpApi(), "unrecognized object ID type");
@@ -2383,8 +2393,14 @@ public:
   }
 
   kj::Promise<void> drop(DropContext context) override {
-    // We ignore drops, because our ObjectId format is too ambiguous for it to be useful.
-    return kj::READY_NOW;
+    auto objectId = context.getParams().getObjectId();
+    if (objectId.isApplication()) {
+      KJ_UNIMPLEMENTED("TODO(zenhack): pass this on to the application via appHooks.");
+    } else {
+      // We ignore drops for our own capabilities, because our ObjectId format
+      // is too ambiguous for it to be useful.
+      return kj::READY_NOW;
+    }
   }
 
 private:
@@ -2442,6 +2458,8 @@ private:
   // SessionIds are assigned sequentially.
   // TODO(security): It might be useful to make these sessionIds more random, to reduce the chance
   //   that an app will mix them up.
+
+  kj::Maybe<kj::Own<kj::Promise<AppHooks<>::Client>>> appHooks;
 };
 
 class SandstormHttpBridgeMain {
@@ -2620,7 +2638,12 @@ public:
       capnp::TwoPartyVatNetwork network(*stream, capnp::rpc::twoparty::Side::CLIENT);
       auto rpcSystem = capnp::makeRpcServer(
         network,
-        kj::heap<UiViewImpl>(*address, bridgeContext, config, kj::mv(connectPromise)));
+        kj::heap<UiViewImpl>(
+          *address,
+          bridgeContext,
+          config,
+          kj::mv(connectPromise),
+          nullptr));
 
       // Get the SandstormApi by restoring a null SturdyRef.
       capnp::MallocMessageBuilder message;

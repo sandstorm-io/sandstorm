@@ -837,14 +837,17 @@ private:
   }
 };
 
+// A wrapper around app-provided objects that implement AppPersistent. We intercept
+// calls to AppPersistent.save() via a membrane, and then handle them with this class,
+// which wraps the apps' returned objectId value in a BridgeObjectId.
 class AppPersistentWrapper final: public AppPersistent<BridgeObjectId>::Server {
 public:
-  AppPersistentWrapper(kj::Own<AppPersistent<>::Client>&& wrapped)
-    : wrapped(kj::mv(wrapped))
+  AppPersistentWrapper(AppPersistent<>::Client wrapped)
+    : wrapped(wrapped)
   {}
 
   kj::Promise<void> save(SaveContext context) override {
-    return wrapped->saveRequest().send().then([&context](auto resp) -> kj::Promise<void> {
+    return wrapped.saveRequest().send().then([&context](auto resp) -> kj::Promise<void> {
         auto results = context.initResults();
         results.setLabel(resp.getLabel());
         results.initObjectId().initApplication().set(resp.getObjectId());
@@ -852,17 +855,30 @@ public:
     });
   }
 private:
-  kj::Own<AppPersistent<>::Client> wrapped;
+  AppPersistent<>::Client wrapped;
 };
 
-class SaveMembranePolicy final: public capnp::MembranePolicy {
+// Membrane policy, used to intercept calls to AppPersistent.save() on objects
+// provided by the application.
+class SaveMembranePolicy final: public capnp::MembranePolicy, public kj::Refcounted {
 public:
   kj::Maybe<capnp::Capability::Client> inboundCall(
       uint64_t interfaceId, uint16_t methodId, capnp::Capability::Client target) override {
     if(interfaceId == capnp::typeId<AppPersistent<>>()) {
-      return AppPersistentWrapper(kj::heap(target.castAs<AppPersistent<>>()))
+      return AppPersistent<BridgeObjectId>::Client(kj::heap(
+        AppPersistentWrapper(target.castAs<AppPersistent<>>())
+      ));
     }
     return nullptr;
+  }
+
+  kj::Maybe<capnp::Capability::Client> outboundCall(
+      uint64_t interfaceId, uint16_t methodId, capnp::Capability::Client target) override {
+    return inboundCall(interfaceId, methodId, target);
+  }
+
+  kj::Own<capnp::MembranePolicy> addRef() override {
+    return kj::addRef(*this);
   }
 private:
 };
@@ -2438,7 +2454,8 @@ class SandstormHttpBridgeMain {
 public:
   SandstormHttpBridgeMain(kj::ProcessContext& context)
       : context(context),
-        ioContext(kj::setupAsyncIo()) {
+        ioContext(kj::setupAsyncIo()),
+        appMembranePolicy(SaveMembranePolicy()) {
     kj::UnixEventPort::captureSignal(SIGCHLD);
   }
 
@@ -2485,7 +2502,9 @@ public:
                                kj::TaskSet& taskSet) {
     return serverPort.accept().then(
         [&, KJ_MVCAP(bridge)](kj::Own<kj::AsyncIoStream>&& connection) mutable {
-      auto connectionState = kj::heap<AcceptedConnection>(bridge, kj::mv(connection));
+      auto connectionState = kj::heap<AcceptedConnection>(
+          capnp::membrane(bridge, appMembranePolicy.addRef()),
+          kj::mv(connection));
       auto promise = connectionState->network.onDisconnect();
       taskSet.add(promise.attach(kj::mv(connectionState)));
       return acceptLoop(serverPort, kj::mv(bridge), taskSet);
@@ -2656,6 +2675,7 @@ private:
   kj::AsyncIoContext ioContext;
   kj::Own<kj::NetworkAddress> address;
   kj::Vector<kj::String> command;
+  SaveMembranePolicy appMembranePolicy;
 
   kj::Promise<int> onChildExit(pid_t pid) {
     int status;

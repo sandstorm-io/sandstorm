@@ -2394,7 +2394,21 @@ public:
     auto objectId = context.getParams().getObjectId();
 
     if (objectId.isApplication()) {
-      KJ_UNIMPLEMENTED("TODO(zenhack): pass this on to the application via appHooks.");
+      KJ_IF_MAYBE(promise, appHooks) {
+        return promise->then([&context, &objectId](auto appHooks) -> kj::Promise<void> {
+            auto req = appHooks.restoreRequest();
+            req.setObjectId(objectId.getApplication());
+            return req.send().then([&context](auto results) -> kj::Promise<void> {
+                context.getResults().setCap(results.getCap());
+                return kj::READY_NOW;
+            });
+        });
+      } else {
+        KJ_FAIL_ASSERT(
+            "restore() got an objectId with type = application, but "
+            "expectAppHooks is false."
+            );
+      }
     }
 
     KJ_REQUIRE(objectId.isHttpApi(), "unrecognized object ID type");
@@ -2406,12 +2420,22 @@ public:
 
   kj::Promise<void> drop(DropContext context) override {
     auto objectId = context.getParams().getObjectId();
-    if (objectId.isApplication()) {
-      KJ_UNIMPLEMENTED("TODO(zenhack): pass this on to the application via appHooks.");
-    } else {
+    if (!objectId.isApplication()) {
       // We ignore drops for our own capabilities, because our ObjectId format
       // is too ambiguous for it to be useful.
       return kj::READY_NOW;
+    }
+    KJ_IF_MAYBE(promise, appHooks) {
+      return promise->then([&objectId](auto appHooks) -> kj::Promise<void> {
+          auto req = appHooks.dropRequest();
+          req.setObjectId(objectId.getApplication());
+          return req.send().ignoreResult();
+      });
+    } else {
+      KJ_FAIL_ASSERT(
+          "drop() got an objectId with type = application, but "
+          "expectAppHooks is false."
+          );
     }
   }
 

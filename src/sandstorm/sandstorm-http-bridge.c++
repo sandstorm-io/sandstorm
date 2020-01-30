@@ -2485,7 +2485,8 @@ public:
   SandstormHttpBridgeMain(kj::ProcessContext& context)
       : context(context),
         ioContext(kj::setupAsyncIo()),
-        appMembranePolicy(SaveMembranePolicy()) {
+        appMembranePolicy(SaveMembranePolicy()),
+        appHooksFulfiller(nullptr) {
     kj::UnixEventPort::captureSignal(SIGCHLD);
   }
 
@@ -2535,6 +2536,17 @@ public:
       auto connectionState = kj::heap<AcceptedConnection>(
           capnp::membrane(bridge, appMembranePolicy.addRef()),
           kj::mv(connection));
+
+      KJ_IF_MAYBE(fulfiller, appHooksFulfiller) {
+        capnp::MallocMessageBuilder message;
+        auto vatId = message.initRoot<capnp::rpc::twoparty::VatId>();
+        vatId.setSide(capnp::rpc::twoparty::Side::SERVER);
+        fulfiller->fulfill(
+          connectionState->rpcSystem.bootstrap(vatId).castAs<AppHooks<>>()
+        );
+        fulfiller = nullptr;
+      }
+
       auto promise = connectionState->network.onDisconnect();
       taskSet.add(promise.attach(kj::mv(connectionState)));
       return acceptLoop(serverPort, kj::mv(bridge), taskSet);
@@ -2645,6 +2657,14 @@ public:
       auto apiPaf = kj::newPromiseAndFulfiller<SandstormApi<BridgeObjectId>::Client>();
       BridgeContext bridgeContext(kj::mv(apiPaf.promise), config);
 
+      kj::Maybe<kj::Promise<AppHooks<>::Client>&> appHooksPromise = nullptr;
+
+      if(config.getExpectAppHooks()) {
+        auto paf = kj::newPromiseAndFulfiller<AppHooks<>::Client>();
+        appHooksPromise = paf.promise;
+        appHooksFulfiller = paf.fulfiller;
+      }
+
       // Set up the Supervisor API socket.
       auto stream = ioContext.lowLevelProvider->wrapSocketFd(3);
       capnp::TwoPartyVatNetwork network(*stream, capnp::rpc::twoparty::Side::CLIENT);
@@ -2655,7 +2675,7 @@ public:
           bridgeContext,
           config,
           kj::mv(connectPromise),
-          nullptr));
+          appHooksPromise));
 
       // Get the SandstormApi by restoring a null SturdyRef.
       capnp::MallocMessageBuilder message;
@@ -2711,6 +2731,7 @@ private:
   kj::Own<kj::NetworkAddress> address;
   kj::Vector<kj::String> command;
   SaveMembranePolicy appMembranePolicy;
+  kj::Maybe<kj::PromiseFulfiller<AppHooks<>::Client>&> appHooksFulfiller;
 
   kj::Promise<int> onChildExit(pid_t pid) {
     int status;

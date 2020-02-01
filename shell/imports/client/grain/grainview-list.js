@@ -27,7 +27,7 @@ GrainViewList = class GrainViewList {
 
     // Meteor has a nice package for detecting if localStorage is available, but it's internal.
     // We use it anyway. If it goes away, this will throw an exception at startup which will should
-    // be really obvious and well fix it.
+    // be really obvious and we'll fix it.
     const key = "openGrains-" + SHA256(window.location.toString());
     const old = Meteor._localStorage.getItem(key);
     if (old && !isStandalone()) {

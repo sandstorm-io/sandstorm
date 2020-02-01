@@ -1,3 +1,7 @@
+### v0.259 (2020-02-01)
+- Disabled ability to upgrade demo accounts to full accounts on private servers, so that we can change the Sandstorm demo over to run on Alpha.
+- This version will be skipped by auto-update since this update is only needed on Sandstorm Alpha.
+
 ### v0.258 (2020-02-01)
 - Updated demo sidebar language to reflect Oasis shutdown.
 - This version will be skipped by auto-update since this update is only needed on Sandstorm Alpha.

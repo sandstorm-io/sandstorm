@@ -14,6 +14,8 @@
 
 set -euo pipefail
 
+GIT_OPTS="${GIT_OPTS:-}"
+
 # Borrow some I/O functions from install.sh.
 error() {
   if [ $# != 0 ]; then
@@ -32,21 +34,48 @@ fail() {
 
 # Main code for this script.
 
+my_git() {
+  GIT="git $GIT_OPTS"
+  $GIT "$@"
+}
+
 assert_dependencies() {
+  if [ "${DO_SETUP}" == "yes" ] ; then
+    if ! (which dot && which virtualenv); then
+      sudo apt-get install -y git virtualenv graphviz
+    fi
+    if [ ! -e "$OUTPUT_DIR/.git" ] ; then
+      my_git clone --branch gw-pages --depth 1 "$SANDSTORM_DOC_URL" "$OUTPUT_DIR"
+    fi
+    if [ ! -x "tmp/docs-virtualenv/bin/mkdocs" ] ; then
+      mkdir -p tmp
+      virtualenv tmp/docs-virtualenv
+      tmp/docs-virtualenv/bin/pip install mkdocs==1.0.4 markdown-inline-graphviz==1.0
+    fi
+    export PATH=$PWD/tmp/docs-virtualenv/bin:$PATH
+  fi
   which mkdocs >/dev/null || fail "You must install mkdocs before using this script."
 }
 
 handle_args() {
   # Set default value.
   PUSH_AFTER_GENERATE="no"
-
-  while getopts "d:p" opt; do
+  DO_SETUP="no"
+  while getopts "d:ps" opt; do
     case $opt in
       d)
         OUTPUT_DIR="$OPTARG"
         ;;
       p)
         PUSH_AFTER_GENERATE="yes"
+        ;;
+      s)
+        if [ -z "${SANDSTORM_DOC_URL:-}" ] ; then
+          fail "To use -s, you must set the SANDSTORM_DOC_URL environment variable to the path of the docweb repo. Example: https://user:pw@host/"
+        fi
+        DO_SETUP="yes"
+        GIT_OPTS="${GIT_OPTS:-} -c user.name=Autodeploy"
+        GIT_OPTS="${GIT_OPTS:-} -c user.email=nobody@example.com"
         ;;
       *)
         usage
@@ -67,8 +96,9 @@ usage() {
   echo "Generate (and optionally push to git) documentation for Sandstorm." >&2
   echo "" >&2
   echo "usage: $0 [-d directoryname] [-p]" >&2
-  echo 'If -d and argument is specified, generate the docs to that directory. Else, use a directory with random name.'
+  echo 'If -d and argument is specified, generate the docs to that directory. Else, use a directory with random name.' >&2
   echo 'If -p is specified, run "git push" from that directory once generation is complete.' >&2
+  echo "If -s is specified, setup all dependencies, including cloning the doc repo from \$SANDSTORM_DOC_URL." >&2
   exit 1
 }
 
@@ -95,11 +125,11 @@ git_push_if_desired() {
   fi
 
   pushd "$OUTPUT_DIR" > /dev/null
-  git rm --ignore-unmatch --cached 'en/latest/*'
-  git add en/latest
-  git add index.html
-  git commit -m "Autocommit on $(date -R)"
-  git push
+  my_git rm --ignore-unmatch --cached 'en/latest/*'
+  my_git add en/latest
+  my_git add index.html
+  my_git commit -m "Autocommit on $(date -R)"
+  my_git push
   popd > /dev/null
 }
 
@@ -113,8 +143,8 @@ add_redirect_hacks() {
   generate_redirect_to "https://docs.sandstorm.io/en/latest/using/security-practices/" > "$OUTPUT_DIR/en/latest/developing/security-practices/index.html"
 }
 
-assert_dependencies
 handle_args "$@"
+assert_dependencies
 create_index_page
 run_mkdocs_build
 add_redirect_hacks

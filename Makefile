@@ -36,7 +36,7 @@ EKAM=ekam
 #   entirely sure what changed, but this seems like a backwards incompatibility
 #   in libstdc++. See also issue #3171.
 METEOR_DEV_BUNDLE=$(shell ./find-meteor-dev-bundle.sh)
-METEOR_SPK_VERSION=0.4.1
+METEOR_SPK_VERSION=0.3.2
 NODEJS=$(METEOR_DEV_BUNDLE)/bin/node
 NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
 WARNINGS=-Wall -Wextra -Wglobal-constructors -Wno-sign-compare -Wno-unused-parameter

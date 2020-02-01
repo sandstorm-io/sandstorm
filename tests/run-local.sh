@@ -19,7 +19,9 @@
 set -euo pipefail
 
 XVFB_PID=""
+SELENIUM_PID=""
 RUN_SELENIUM="${RUN_SELENIUM:-true}"
+SHOW_BROWSER="${SHOW_BROWSER:-false}"
 BUNDLE_PATH=""
 SANDSTORM_TESTAPP_PATH=""
 THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
@@ -53,6 +55,9 @@ cleanExit () {
     # We don't actually know that PID, so we find it with pgrep.
     kill $(pgrep --parent $XVFB_PID node)
     wait $XVFB_PID
+  elif [ -n "$SELENIUM_PID" ] ; then
+    kill $SELENIUM_PID
+    wait $SELENIUM_PID
   fi
   exit $rc
 }
@@ -108,8 +113,13 @@ if [ "$RUN_SELENIUM" != "false" ] ; then
   checkInstalled java default-jre-headless
   checkInstalled xvfb-run Xvfb
   checkInstalled pgrep procps
-  xvfb-run --server-args="-screen 0, 1280x1024x24" node_modules/.bin/selenium-standalone start &
-  XVFB_PID=$!
+  if [ "$SHOW_BROWSER" != "false" ] ; then
+    node_modules/.bin/selenium-standalone start &
+    SELENIUM_PID=$!
+  else
+    xvfb-run --server-args="-screen 0, 1280x1024x24" node_modules/.bin/selenium-standalone start &
+    XVFB_PID=$!
+  fi
 fi
 
 export SANDSTORM_DIR=$THIS_DIR/tmp-sandstorm

@@ -1,3 +1,7 @@
+### v0.258 (2020-02-01)
+- Updated demo sidebar language to reflect Oasis shutdown.
+- This version will be skipped by auto-update since this update is only needed on Sandstorm Alpha.
+
 ### v0.257 (2020-01-19)
 - New feature: Apps can now schedule background tasks. Thanks to Ian "zenhack" Denhardt for completing this feature (originally started by David Renshaw).
 - Improved code that matches HTTP API powerbox requests against known OAuth APIs, especially GitHub (credit again to Ian Denhardt).

@@ -1537,8 +1537,9 @@ configure_systemd_init_system() {
   cat > /etc/systemd/system/$SYSTEMD_UNIT << __EOF__
 [Unit]
 Description=Sandstorm server
-After=local-fs.target remote-fs.target network.target
-Requires=local-fs.target remote-fs.target network.target
+After=local-fs.target remote-fs.target network-online.target
+Requires=local-fs.target remote-fs.target
+Wants=network-online.target
 
 [Service]
 Type=forking

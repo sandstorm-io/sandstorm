@@ -36,7 +36,6 @@ nav:
     - "Exporting HTTP APIs": "developing/http-apis.md"
     - "Connecting grains to each other & Sandstorm via powerbox": "developing/powerbox.md"
     - "Email from apps": "developing/email-from-apps.md"
-    - "vagrant-spk design document": "vagrant-spk/design.md"
     - "Troubleshooting": "developing/troubleshooting.md"
 - Developing on raw Sandstorm:
     - "Raw packaging guide": "developing/raw-packaging-guide.md"

@@ -440,4 +440,4 @@ tests/assets/meteor-testapp.spk: \
 		meteor-testapp/server/* \
 		meteor-testapp/.meteor/* \
 		meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk.deps/.sandstorm-schema
-	@PATH="$$PWD/bin:$$PATH" && cd meteor-testapp && ../meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk pack -kmeteor-testapp.key -I../src ../tests/assets/meteor-testapp.spk
+	@cd meteor-testapp && PATH="$$PWD/bin:$$PATH" ../meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk pack -kmeteor-testapp.key -I../src ../tests/assets/meteor-testapp.spk

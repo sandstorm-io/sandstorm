@@ -426,5 +426,18 @@ meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk:
 	@$(call color,downloading meteor-spk)
 	@curl https://dl.sandstorm.io/meteor-spk-$(METEOR_SPK_VERSION).tar.xz | tar Jxf -
 
-tests/assets/meteor-testapp.spk: meteor-testapp meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk meteor-testapp/client/* meteor-testapp/server/* meteor-testapp/.meteor/*
+meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk.deps/.sandstorm-schema: meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk $(wildcard src/sandstorm/*.capnp)
+	@# HACK: Overwrite the sandstorm schema in the meteor-spk deps directory with
+	@# the ones from our development tree. This way we can use the schema we're hacking
+	@# on without having to first publish an update to meteor-spk for each change.
+	@$(call color,updating meteor-spk schema)
+	@cp src/sandstorm/*.capnp meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk.deps/node_modules/sandstorm/
+	@touch $@
+
+tests/assets/meteor-testapp.spk: \
+		meteor-testapp meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk \
+		meteor-testapp/client/* \
+		meteor-testapp/server/* \
+		meteor-testapp/.meteor/* \
+		meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk.deps/.sandstorm-schema
 	@PATH="$$PWD/bin:$$PATH" && cd meteor-testapp && ../meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk pack -kmeteor-testapp.key -I../src ../tests/assets/meteor-testapp.spk

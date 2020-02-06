@@ -26,7 +26,7 @@ page](https://sandstorm.io/developer).
 - **Language support**: [Platform stacks for Meteor, Python, PHP, Node.js](vagrant-spk/platform-stacks.md) | [Other](vagrant-spk/platform-stacks.md#diy-platform-stack)
 - **Code & service dependencies**: [Code dependencies](vagrant-spk/code-dependencies.md) | [MySQL](vagrant-spk/services.md#mysql) | [Other databases & services](vagrant-spk/services.md#other-services)
 - **Troubleshooting**: [Package troubleshooting](developing/troubleshooting.md)
-- **vagrant-spk in depth**: [Installation](vagrant-spk/installation.md) | [Customizing & understanding vagrant-spk](vagrant-spk/customizing.md) | [Initial design document](vagrant-spk/design.md)
+- **vagrant-spk in depth**: [Installation](vagrant-spk/installation.md) | [Customizing & understanding vagrant-spk](vagrant-spk/customizing.md)
 
 <!--
 

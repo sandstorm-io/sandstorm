@@ -13,7 +13,7 @@
 * Packages are cryptographically signed.  Packages signed with the same key represent versions of the same app, and are thus allowed to replace older versions -- although the user must still confirm these upgrades.
 
 To read more about how Sandstorm works from an system administrator's perspective, see the
-[Sandstorm administrator's guide.](../admin/guide.md)
+[Sandstorm administrator's guide.](../administering/guide.md)
 
 ## HTTP Communication Overview
 

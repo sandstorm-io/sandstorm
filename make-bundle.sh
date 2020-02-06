@@ -133,6 +133,13 @@ tar xf $OLD_BUNDLE_PATH --transform=s/^${OLD_BUNDLE_BASE}/bundle/ $OLD_MONGO_FIL
 
 cp $(which zip unzip xz gpg) bundle/bin
 
+# 'node-fibers' depends on a package (detect-libc) that uses various heuristics
+# to work out what libc implementation & version it was linked against. The more
+# reliable ones use these commands, so we include them to increase the chances
+# of success. Notably, without these detecting the correct libc fails if the
+# bundle was built on current Archlinux (as of Jan. 2020).
+cp $(which ldd getconf) bundle/bin
+
 # Older installs might be symlinking /usr/local/bin/spk to
 # /opt/sandstorm/latest/bin/spk, while newer installs link it to
 # /opt/sandstorm/sandstorm. We should keep creating the old symlink to avoid

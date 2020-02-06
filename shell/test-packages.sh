@@ -59,5 +59,9 @@ export PYTHONPATH=$("$SCRIPT_DIR/../find-meteor-dev-bundle.sh")/lib/node_modules
 # To test interactively through a browser:
 #meteor test-packages --settings $SETTINGS ./packages/sandstorm-permissions
 
+# Terrible hack: Make capnp.node available to tests running under spacejam.
+rm -f /tmp/node_modules
+ln -s "$(dirname "$PWD")/node_modules" /tmp/node_modules
+
 # To test on the command line:
 exec spacejam test-packages --settings $SETTINGS ./packages/sandstorm-permissions

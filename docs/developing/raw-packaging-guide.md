@@ -83,7 +83,7 @@ This command temporarily registers your app with your locally-installed Sandstor
 
 While in dev mode, make sure to test _all_ of the features of your app. Sandstorm is watching what your app does and is making a list of all of your app's runtime dependencies, so it can make a package out of them. If you don't test a feature in dev mode, it might not work in production.
 
-Your app's console (debug) output can be viewed by clicking the wrench icon in the top bar.
+Your app's console (debug) output can be viewed by clicking the console icon in the top bar.
 
 If something is not working and your own debug logs aren't helping, you may also want to check the Sandstorm server's main logs in:
 

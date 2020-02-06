@@ -31,12 +31,17 @@ EKAM=ekam
 #   needs to include all the Cap'n Proto code. Do we double-compile or do we
 #   just accept it? Perhaps it's for the best since we probably should build
 #   position-independent executables for security reasons?
+# NOTE: Emperically -DKJ_STD_COMPAT appears to be necessary on recent ditros
+#   (as of Jan 2020), notably Debian Sid, Fedora 30 and Archlinux. We're not
+#   entirely sure what changed, but this seems like a backwards incompatibility
+#   in libstdc++. See also issue #3171.
 METEOR_DEV_BUNDLE=$(shell ./find-meteor-dev-bundle.sh)
+METEOR_SPK_VERSION=0.3.2
 NODEJS=$(METEOR_DEV_BUNDLE)/bin/node
 NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
 WARNINGS=-Wall -Wextra -Wglobal-constructors -Wno-sign-compare -Wno-unused-parameter
-CXXFLAGS2=-std=c++1z $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -DKJ_HAS_OPENSSL -DKJ_HAS_ZLIB -DKJ_HAS_LIBDL -pthread -fPIC -I$(NODE_HEADERS)
-CFLAGS2=$(CFLAGS) -pthread -fPIC
+CXXFLAGS2=-std=c++1z $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -DKJ_HAS_OPENSSL -DKJ_HAS_ZLIB -DKJ_HAS_LIBDL -pthread -fPIC -I$(NODE_HEADERS) -DKJ_STD_COMPAT
+CFLAGS2=$(CFLAGS) -pthread -fPIC -DKJ_STD_COMPAT
 LIBS2=$(LIBS) deps/libsodium/build/src/libsodium/.libs/libsodium.a deps/boringssl/build/ssl/libssl.a deps/boringssl/build/crypto/libcrypto.a -lz -ldl -pthread
 
 define color
@@ -134,7 +139,7 @@ IMAGES= \
 all: sandstorm-$(BUILD).tar.xz
 
 clean: ci-clean
-	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/client/changelog.html shell/packages/*/.build* shell/packages/*/.npm/package/node_modules *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff icons/package-lock.json tests/package-lock.json deps/llvm-build
+	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/client/changelog.html shell/packages/*/.build* shell/packages/*/.npm/package/node_modules *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff icons/package-lock.json tests/package-lock.json deps/llvm-build meteor-testapp/node_modules
 	@# Note: capnproto, libseccomp, and node-capnp are integrated into the common build.
 	cd deps/ekam && make clean
 	rm -rf deps/libsodium/build
@@ -143,6 +148,7 @@ clean: ci-clean
 ci-clean:
 	@# Clean only the stuff that we want to clean between CI builds.
 	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz
+	rm -rf tests/assets/meteor-testapp.spk meteor-testapp/.meteor-spk
 
 install: sandstorm-$(BUILD)-fast.tar.xz install.sh
 	@$(call color,install)
@@ -154,7 +160,7 @@ update: sandstorm-$(BUILD)-fast.tar.xz
 
 fast: sandstorm-$(BUILD)-fast.tar.xz
 
-test: sandstorm-$(BUILD)-fast.tar.xz test-app.spk
+test: sandstorm-$(BUILD)-fast.tar.xz test-app.spk tests/assets/meteor-testapp.spk
 	tests/run-local.sh sandstorm-$(BUILD)-fast.tar.xz test-app.spk
 
 installer-test:
@@ -167,7 +173,7 @@ stylecheck:
 # ====================================================================
 # Dependencies
 
-DEPS=capnproto ekam libseccomp libsodium node-capnp node boringssl clang
+DEPS=capnproto ekam libseccomp libsodium node-capnp boringssl clang
 
 # We list remotes so that if projects move hosts, we can pull from their new
 # canonical location.
@@ -176,7 +182,6 @@ REMOTE_ekam=https://github.com/sandstorm-io/ekam.git master
 REMOTE_libseccomp=https://github.com/seccomp/libseccomp master
 REMOTE_libsodium=https://github.com/jedisct1/libsodium.git stable
 REMOTE_node-capnp=https://github.com/kentonv/node-capnp.git node8
-REMOTE_node=https://github.com/sandstorm-io/node sandstorm
 REMOTE_boringssl=https://boringssl.googlesource.com/boringssl master
 REMOTE_clang=https://chromium.googlesource.com/chromium/src/tools/clang.git master
 
@@ -413,3 +418,13 @@ test-app-dev: tmp/.ekam-run
 	@cp src/sandstorm/test-app/test-app.capnp tmp/sandstorm/test-app/test-app.capnp
 	@cp src/sandstorm/test-app/*.html tmp/sandstorm/test-app
 	spk dev -Isrc -Itmp -ptmp/sandstorm/test-app/test-app.capnp:pkgdef
+
+# ====================================================================
+# meteor-testapp.spk
+
+meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk:
+	@$(call color,downloading meteor-spk)
+	@curl https://dl.sandstorm.io/meteor-spk-$(METEOR_SPK_VERSION).tar.xz | tar Jxf -
+
+tests/assets/meteor-testapp.spk: meteor-testapp meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk meteor-testapp/client/* meteor-testapp/server/* meteor-testapp/.meteor/*
+	@PATH="$$PWD/bin:$$PATH" && cd meteor-testapp && ../meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk pack -kmeteor-testapp.key -I../src ../tests/assets/meteor-testapp.spk

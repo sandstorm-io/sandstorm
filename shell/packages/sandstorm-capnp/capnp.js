@@ -32,7 +32,7 @@ for (;;) {
   }
 
   if (pathParts.length == 0) {
-    throw new Error("Can't find capnp.node.");
+    throw new Error("Can't find capnp.node, starting from: " + process.cwd());
   }
 
   pathParts.pop();

@@ -5,7 +5,7 @@
 The goal of `vagrant-spk` is to be an easy-to-install tool that runs on
 Windows, Mac, and Linux that lets people create Sandstorm packages
 without mucking with their main operating system. It works properly
-on Mac, GNU/Linux, and Windows systems.
+on Mac, GNU/Linux, and Windows systems. Its VM uses Debian 9 (Stretch).
 
 ## What the files are for
 `vagrant-spk` will create a `.sandstorm/` folder in your repo and set up some

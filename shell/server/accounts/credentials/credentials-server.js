@@ -34,6 +34,10 @@ const linkCredentialToAccountInternal = function (db, backend, credentialId, acc
     throw new Meteor.Error(400, "Cannot link a credential to another credential.");
   }
 
+  if (accountUser.expires && !Meteor.settings.public.allowUninvited) {
+    throw new Meteor.Error(403, "Sorry, this server does not allow demo users to upgrade to full accounts.");
+  }
+
   if (!!_.findWhere(accountUser.loginCredentials, { id: credentialId }) ||
       !!_.findWhere(accountUser.nonloginCredentials, { id: credentialId })) {
     throw new Meteor.Error("alreadyLinked",

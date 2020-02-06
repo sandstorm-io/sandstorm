@@ -465,6 +465,8 @@ ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 //                   want to encrypt the full URL since this would make it hard to show a
 //                   meaningful audit UI, but maybe we could figure out a way to extract the key
 //                   part and encrypt it separately?
+//       scheduledJob:
+//           id: _id in the ScheduledJobs table
 //   parentToken: If present, then this token represents exactly the capability represented by
 //              the ApiToken with _id = parentToken, except possibly (if it is a UiView) attenuated
 //              by `roleAssignment` (if present). To facilitate permissions computations, if the
@@ -844,6 +846,33 @@ const StandaloneDomains = new Mongo.Collection("standaloneDomains", collectionOp
 //   _id: String. The domain name to use.
 //   token: String. _id of a sharing token (it must be a webkey).
 
+const ScheduledJobs = new Mongo.Collection("scheduledJobs", collectionOptions);
+// Tasks scheduled through the `SandstormApi.schedulePeriodic()` and `SandstormApi.scheduleAt()`
+// methods.
+//
+// Each contains:
+//   _id:            Unique string ID.
+//   grainId:        String ID of the grain that scheduled the job.
+//   name:           JSON-encoded LocalizedText for the human-readable name for this job.
+//                   This is pulled from `ScheduledJob.name`.
+//   callback:       String sturdyref of the callback to restore and invoke.
+//   created:        Date when the job was added to this collection.
+//   period:         The scheduling period, if this is a periodic job. One of: "annually", "monthly",
+//                   "daily", or "hourly". This will be undefined if this is a one-shot job.
+//   nextPeriodStart: Date when the next scheduling period starts. The scheduler will attempt to run
+//                   the callback once this Date has come to pass.
+//   lastKeepAlive:  Date when the scheduler most recently sent a keepalive method call to
+//                   the grain responsible for the job. Only present if either the job is currently
+//                   running or the job was prematurely disconnected while running. These two cases
+//                   can be disambiguated by how recent the keepalive was.
+//   retries:        If present, the number of times in the current scheduling period that the job
+//                   has thrown a "disconnected" exception before completing.
+//   previousError:  If present, an object containing data about the most recent error thrown
+//                   while attempting to run the job. Contains the following fields:
+//     finished:     Date when the error was thrown.
+//     type:         The "kjType" of the error. One of "failed", "disconnected", "overloaded", or
+//                   "unimplemented".
+//     message:      A string message associated with the error.
 IncomingTransfers = new Mongo.Collection("incomingTransfers", collectionOptions);
 // Contains records of grains scheduled to be transferred to this server.
 //
@@ -1129,6 +1158,7 @@ SandstormDb = function (quotaManager) {
     setupSession: SetupSession,
     desktopNotifications: DesktopNotifications,
     standaloneDomains: StandaloneDomains,
+    scheduledJobs: ScheduledJobs,
     incomingTransfers: IncomingTransfers,
     outgoingTransfers: OutgoingTransfers,
   };
@@ -2630,6 +2660,10 @@ if (Meteor.isServer) {
 
         this.collections.deleteStats.insert(record);
       }
+
+      this.collections.scheduledJobs.find({ grainId: grain._id }).forEach((job) => {
+        this.deleteScheduledJob(job._id);
+      });
 
       this.deleteUnusedPackages(grain.appId);
 

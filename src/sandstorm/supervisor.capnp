@@ -163,6 +163,9 @@ interface SandstormCore {
 
   getIdentityId @9 (identity :Identity.Identity) -> (id :Data);
   # Gets the ID of the identity, as it would appear in UserInfo.identityId.
+
+  schedule @10 Grain.ScheduledJob;
+  # Same meaning as `Grain.SandstormApi.schedule()`.
 }
 
 struct MembraneRequirement {

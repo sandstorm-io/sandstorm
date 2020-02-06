@@ -41,6 +41,14 @@ You can also run all test cases in a file:
 
     TESTCASE="tests/grain.js" make test
 
+## Displaying the browser's UI during tests
+
+By default the tests run against a mock X server, so the browser windows
+are not displayed. However, it can be helpful to display the browser
+windows when debugging. You can do this by setting `SHOW_BROWSER=true`:
+
+    SHOW_BROWSER=true make test
+
 ## How to dump the DOM for debugging
 
 Stick this in the test:

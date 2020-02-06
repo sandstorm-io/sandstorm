@@ -58,13 +58,16 @@ ExternalUiView = class ExternalUiView {
 function getOAuthServiceInfo(url) {
   // TODO(soon): Define a table somewhere (probably in a .capnp file) mapping API hosts to OAuth
   //   metadata.
-  if (url.startsWith("https://apidata.googleusercontent.com/") ||
-      url.startsWith("https://www.googleapis.com/")) {
+  const matchesBase = (base) => {
+    return url === base || url.startsWith(base + '/');
+  }
+  if (matchesBase("https://apidata.googleusercontent.com") ||
+      matchesBase("https://www.googleapis.com")) {
     return {
       service: "google",
       endpoint: "https://www.googleapis.com/oauth2/v4/token",
     };
-  } else if (url.startsWith("https://api.github.com/users")) {
+  } else if (matchesBase("https://api.github.com")) {
     return {
       service: "github",
       endpoint: "https://github.com/login/oauth/access_token",

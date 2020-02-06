@@ -1,5 +1,5 @@
 This directory started out as a snapshot from the github.com/mkdocs/mkdocs
-repository on 2016-01-29.
+repository at version 1.0.4, commit 592e085.
 
 It has the following changes:
 

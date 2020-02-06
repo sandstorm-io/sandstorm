@@ -1,6 +1,8 @@
 bin
 tmp
 node_modules
+meteor-spk-*
+.meteor-spk
 shell/client/changelog.html
 shell/client/styles/_icons.scss
 shell/sandstorm-shell.config

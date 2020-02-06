@@ -165,6 +165,33 @@ class SandstormCoreImpl {
       return { id: new Buffer(identityId, "hex") };
     });
   }
+
+  schedule(scheduledJob) {
+    const {name, callback, schedule} = scheduledJob;
+    if(scheduledJob.schedule.periodic !== undefined) {
+      return schedulePeriodic(
+        this.db,
+        this.grainId,
+        name,
+        callback,
+        schedule.periodic
+      )
+    } else if(schedule.oneShot !== undefined) {
+      const {when, slack} = schedule.oneShot;
+      return scheduleOneShot(
+        this.db,
+        this.grainId,
+        name,
+        callback,
+        when,
+        slack,
+      )
+    } else {
+      const err = new Error("Unimplemented schedule type");
+      err.kjType = 'unimplemented';
+      throw err;
+    }
+  }
 }
 
 const makeSandstormCore = (db, grainId) => {

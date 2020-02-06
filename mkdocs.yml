@@ -1,13 +1,15 @@
 site_name: Docs
-theme_dir: 'docs/sandstorm_readthedocs_modified_theme'
-theme: 'readthedocs'
+
+theme:
+    name: 'readthedocs'
+    custom_dir: 'docs/sandstorm_readthedocs_modified_theme'
 repo_url: https://github.com/sandstorm-io/sandstorm
 edit_uri: edit/master/docs/
 markdown_extensions:
-    - inline_graphviz
+    - mdx_inline_graphviz
 extra_css:
     - "extra.css"
-pages:
+nav:
 - "Home": "index.md"
 - Using:
     - "Overview": "using.md"
@@ -34,7 +36,6 @@ pages:
     - "Exporting HTTP APIs": "developing/http-apis.md"
     - "Connecting grains to each other & Sandstorm via powerbox": "developing/powerbox.md"
     - "Email from apps": "developing/email-from-apps.md"
-    - "vagrant-spk design document": "vagrant-spk/design.md"
     - "Troubleshooting": "developing/troubleshooting.md"
 - Developing on raw Sandstorm:
     - "Raw packaging guide": "developing/raw-packaging-guide.md"

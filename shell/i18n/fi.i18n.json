@@ -1807,8 +1807,6 @@
       "oasis": "Aloita yhteistyö muiden kanssa Sandstormia paikassa Oasis:",
       "createAccount": "Luo ilmainen tili »",
       "demoHint": "Demo tilisi tiedot siirretään.",
-      "selfHostHint": "Tai, asenna Sandstorm tiimillesi (se on avointa lähdekoodia):",
-      "signUp": "Kirjaudu käyttämällä:",
       "close": "Sulje"
     },
     "powerbox": {

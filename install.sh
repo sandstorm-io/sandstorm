@@ -74,6 +74,15 @@ fail() {
   fi
   error "$@"
   echo "" >&2
+
+  if [ "$error_code" = E_CURL_MISSING ] ; then
+    # There's no point in asking the user if they want to report an issue, since
+    # (1) there isn't one, they just need to install curl, and (2) doing so will
+    # fail anyway, since we use curl to send the report. We've already displayed
+    # the error, so just exit now.
+    exit 1
+  fi
+
   # Users can export REPORT=no to avoid the error-reporting behavior, if they need to.
   if [ "${REPORT:-yes}" = "yes" ] ; then
     if USE_DEFAULTS=no prompt-yesno "Hmm, installation failed. Would it be OK to send an anonymous error report to the sandstorm.io team so we know something is wrong?
@@ -1528,8 +1537,9 @@ configure_systemd_init_system() {
   cat > /etc/systemd/system/$SYSTEMD_UNIT << __EOF__
 [Unit]
 Description=Sandstorm server
-After=local-fs.target remote-fs.target network.target
-Requires=local-fs.target remote-fs.target network.target
+After=local-fs.target remote-fs.target network-online.target
+Requires=local-fs.target remote-fs.target
+Wants=network-online.target
 
 [Service]
 Type=forking

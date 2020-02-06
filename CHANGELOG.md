@@ -1,3 +1,15 @@
+### v0.259 (2020-02-01)
+- Disabled ability to upgrade demo accounts to full accounts on private servers, so that we can change the Sandstorm demo over to run on Alpha.
+- This version will be skipped by auto-update since this update is only needed on Sandstorm Alpha.
+
+### v0.258 (2020-02-01)
+- Updated demo sidebar language to reflect Oasis shutdown.
+- This version will be skipped by auto-update since this update is only needed on Sandstorm Alpha.
+
+### v0.257 (2020-01-19)
+- New feature: Apps can now schedule background tasks. Thanks to Ian "zenhack" Denhardt for completing this feature (originally started by David Renshaw).
+- Improved code that matches HTTP API powerbox requests against known OAuth APIs, especially GitHub (credit again to Ian Denhardt).
+
 ### v0.256 (2019-12-25) [bugfixes]
 - Updated dependencies. (No other changes.)
 

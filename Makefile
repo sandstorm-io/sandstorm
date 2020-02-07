@@ -37,6 +37,7 @@ EKAM=ekam
 #   in libstdc++. See also issue #3171.
 METEOR_DEV_BUNDLE=$(shell ./find-meteor-dev-bundle.sh)
 METEOR_SPK_VERSION=0.3.2
+METEOR_SPK=$(PWD)/meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk
 NODEJS=$(METEOR_DEV_BUNDLE)/bin/node
 NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
 WARNINGS=-Wall -Wextra -Wglobal-constructors -Wno-sign-compare -Wno-unused-parameter
@@ -422,16 +423,22 @@ test-app-dev: tmp/.ekam-run
 # ====================================================================
 # meteor-testapp.spk
 
-meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk:
+$(METEOR_SPK):
 	@$(call color,downloading meteor-spk)
 	@curl https://dl.sandstorm.io/meteor-spk-$(METEOR_SPK_VERSION).tar.xz | tar Jxf -
 
-meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk.deps/.sandstorm-schema: meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk $(wildcard src/sandstorm/*.capnp)
-	@# HACK: Overwrite the sandstorm schema in the meteor-spk deps directory with
-	@# the ones from our development tree. This way we can use the schema we're hacking
-	@# on without having to first publish an update to meteor-spk for each change.
+meteor-testapp-dev: tmp/.meteor-testapp-sandstorm-schema
+	cd meteor-testapp && PATH="$(PWD)/bin:$(PATH)" \
+		$(METEOR_SPK) dev -I../src -I../tmp -s /opt/sandstorm
+
+tmp/.meteor-testapp-sandstorm-schema: $(METEOR_SPK) $(wildcard src/sandstorm/*.capnp)
+	@# Copy the sandstorm schema from our development tree into meteor-spk bundle.
+	@# This way we can use the schema we're hacking on without having to first
+	@# publish an update to meteor-spk for each change.
 	@$(call color,updating meteor-spk schema)
-	@cp src/sandstorm/*.capnp meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk.deps/node_modules/sandstorm/
+	[ -d meteor-testapp/.meteor-spk/bundle/sandstorm ] || \
+		mkdir -p meteor-testapp/.meteor-spk/bundle/sandstorm
+	cp src/sandstorm/*.capnp meteor-testapp/.meteor-spk/bundle/sandstorm/
 	@touch $@
 
 tests/assets/meteor-testapp.spk: \

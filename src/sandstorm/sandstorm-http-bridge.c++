@@ -847,7 +847,7 @@ public:
   {}
 
   kj::Promise<void> save(SaveContext context) override {
-    return wrapped.saveRequest().send().then([&context](auto resp) -> kj::Promise<void> {
+    return wrapped.saveRequest().send().then([context](auto resp) mutable -> kj::Promise<void> {
         auto results = context.initResults();
         results.setLabel(resp.getLabel());
         results.initObjectId().initApplication().set(resp.getObjectId());
@@ -2268,12 +2268,12 @@ public:
 
   kj::Promise<void> getViewInfo(GetViewInfoContext context) override {
     KJ_IF_MAYBE(promise, appHooks) {
-      return promise->then([this, &context](auto appHooks) -> kj::Promise<void> {
+      return promise->then([this, context](auto appHooks) -> kj::Promise<void> {
         return appHooks.getViewInfoRequest().send()
-          .then([&context](auto results) -> kj::Promise<void> {
+          .then([context](auto results) mutable -> kj::Promise<void> {
             context.setResults(results);
             return kj::READY_NOW;
-          }, [this, &context](kj::Exception&& e) -> kj::Promise<void> {
+          }, [this, context](kj::Exception&& e) -> kj::Promise<void> {
             if(e.getType() == kj::Exception::Type::UNIMPLEMENTED) {
               return _getViewInfo(context);
             } else {
@@ -2395,11 +2395,11 @@ public:
 
     if (objectId.isApplication()) {
       KJ_IF_MAYBE(promise, appHooks) {
-        return promise->then([&context, &objectId](auto appHooks) -> kj::Promise<void> {
+        return promise->then([context, objectId](auto appHooks) -> kj::Promise<void> {
             auto req = appHooks.restoreRequest();
             req.setObjectId(objectId.getApplication());
-            return req.send().then([&context](auto results) -> kj::Promise<void> {
-                context.getResults().setCap(results.getCap());
+            return req.send().then([context](auto results) mutable -> kj::Promise<void> {
+                context.initResults().setCap(results.getCap());
                 return kj::READY_NOW;
             });
         });

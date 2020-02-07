@@ -1,0 +1,77 @@
+name: build_and_test
+
+on: [push, pull_request]
+
+env:
+  BUILD: 9999
+  CCACHE_DIR: ${{ github.workspace }}/.ccache"
+  # TODO: remove this. See https://github.com/sandstorm-io/sandstorm/issues/3188
+  SKIP_UNITTESTS: 1
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: install dependencies
+        run: |
+            export DEBIAN_FRONTEND=noninteractive
+            echo "The build of boringssl requires golang."
+            echo "The github runner seems to have some version of golang already; installing golang-go breaks."
+            which go || sudo apt-get install golang-go
+
+            sudo apt-get install -y build-essential libcap-dev xz-utils zip unzip strace curl discount git python zlib1g-dev cmake ccache
+      - name: install meteor
+        run: |
+            curl https://install.meteor.com/ | sh
+      - name: cache ccache files
+        uses: actions/cache@v1.1.0
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ github.run_number }}
+          restore-keys: ccache-
+      - name: print and zero ccache stats
+        run: |
+            mkdir -p "$CCACHE_DIR"
+            ccache -s
+            ccache -z
+      - name: make fast
+        run: |
+            set -x
+            export CCACHE_COMPRESS="true"
+            export CCACHE_COMPRESSLEVEL="6"
+            export CCACHE_MAXSIZE="1G"
+            #     export CCACHE_DEBUG=1
+            export CCACHE_SLOPPINESS="time_macros"
+            export PATH=/usr/lib/ccache:$CLANGDIR:$PATH
+
+            make BUILD=${{ env.BUILD }} \
+              CC="$(which clang)" \
+              CXX="$(which clang++)" \
+              fast
+      - name: print ccache stats
+        run: |
+            ccache -s
+      #      # for debugging ccache misses
+      #      find . -iname *ccache* | tar -czf ccache-debug.tar.gz -T /dev/stdin
+      #- name: upload ccache debug tarball
+      #  uses: actions/upload-artifact@v1
+      #  with:
+      #    name: ccache-debug.tar.gz
+      #    path: ccache-debug.tar.gz
+      - name: upload sandstorm tarball
+        uses: actions/upload-artifact@v1
+        with:
+          name: sandstorm-${{ env.BUILD }}-fast.tar.xz
+          path: sandstorm-${{ env.BUILD }}-fast.tar.xz
+      - name: test
+        run: |
+          set -o pipefail
+          # Currently these tests never pass.
+          # TODO: When they are fixed, remove the || true
+          (make BUILD=${{ env.BUILD }} test |& tee testlog.txt; echo "Result: $?") || true
+      - name: upload test log
+        if: always()
+        uses: actions/upload-artifact@v1
+        with:
+          name: testlog.txt
+          path: testlog.txt

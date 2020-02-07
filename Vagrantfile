@@ -59,7 +59,7 @@ EOF
     # powershell may not be available on Windows XP and Vista, so wrap this in a rescue block
     begin
       cpus = `powershell -Command "(Get-WmiObject Win32_Processor -Property NumberOfLogicalProcessors | Select-Object -Property NumberOfLogicalProcessors | Measure-Object NumberOfLogicalProcessors -Sum).Sum"`.to_i
-      total_kB_ram = `powershell -Command "Get-CimInstance -class cim_physicalmemory | % {$_.Capacity}"`.to_i / 1024
+      total_kB_ram = `powershell -Command "[math]::Round((Get-WmiObject -Class Win32_ComputerSystem).TotalPhysicalMemory)"`.to_i / 1024
     rescue
     end
   end

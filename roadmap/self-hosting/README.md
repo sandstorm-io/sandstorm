@@ -6,16 +6,14 @@ This section describes features we'll build specifically to improve Sandstorm's 
 
 _TODO(feature): Below describes an install flow where configuration is done in a web page, resulting in the generation of a custom installer script which takes no input. However, in practice what we have today is a single installer script for everyone which interactively prompts the user._
 
-The installation process for Sandstorm begins on the web, and is an interactive process which eventually ends up with the user having a working Sandstorm account, either on their own server or on Sandstorm Oasis (our managed hosting). A new user should be able to go through the install flow without consulting any outside documentation; anything they need to know should be communicated as part of the flow.
+The installation process for Sandstorm begins on the web, and is an interactive process which eventually ends up with the user having a working Sandstorm instance, either on their own hardware or on a VPS. A new user should be able to go through the install flow without consulting any outside documentation; anything they need to know should be communicated as part of the flow.
 
 Users may be directed to install Sandstorm from a variety of sources:
 - From the Sandstorm front page or other Sandstorm advertisement.
 - From an app page in the app store. In this case the user is interested in a specific app, and our install flow will keep track of this so that they can be prompted to install that app once Sandstorm is ready.
 - From the developer documentation, in which case the flow should direct the user to set up a localhost server in dev mode accessed via `local.sandstorm.io`. (In this case we skip suggesting managed hosting or sandcats.io, as they are inappropriate for development.)
 
-The first step of the install flow is to ask whether the user would prefer self-hosting or managed hosting. If they choose managed, they are directed to the [managed hosting](../managed-hosting) signup process.
-
-If the user chooses self-hosting, they are then asked whether they'd prefer manual setup or sandcats.io, with a brief explanation of what's involved in manual setup. If they choose sandcats.io, we walk them through setting up an account (or signing in with their existing one). If they choose manual install, we prompt them for various information needed for manual setup, such as what their hostname will be, and we try to verify that these settings seem to work (e.g. doing DNS lookup).
+First, they should be asked whether they'd prefer manual setup or sandcats.io, with a brief explanation of what's involved in manual setup. If they choose sandcats.io, we walk them through setting up an account (or signing in with their existing one). If they choose manual install, we prompt them for various information needed for manual setup, such as what their hostname will be, and we try to verify that these settings seem to work (e.g. doing DNS lookup).
 
 At the end of the process, we offer the user a single command to run on their machine, along the lines of:
 
@@ -42,6 +40,10 @@ Post-install, configuration options can be modified by the administrator within 
 - The URL of the main Sandstorm UI. (`BASE_URL`) Changing this also resets the OAuth configuration, since OAuth identity providers require that you specify the callback URL when creating the client key.
 - The IP address and port to which the server binds. (`BIND_IP` and `PORT`)
 
+### TODO(feature) Docker
+
+The install flow should also offfer users the ability to download a completed Docker image of sandstorm, which will make for easy deployment on servers.
+
 ### Integrity
 
 The install script is PGP signed using Sandstorm's release keys, which can be verified through web-of-trust. The user must manually verify the installer script against the signature if they desire this verification. Instructions can be found in the docs.
@@ -66,6 +68,8 @@ Following Chrome's lead, the user may choose an update "channel":
 Every update has a build number, and updates are only allowed to increase the number. The build number divided by 1000 (rounded down) is the "branch number" -- each time a new release branch is cut, the dev branch's build number is immediately increased to the next 1000. For humans, we often represent this number as `<branch number>.<build number % 1000>`, e.g. "0.60" for build 60 or "3.12" for build 3012. (Hopefully, we'll never have more than 1000 builds between releases!)
 
 A new release branch starts out "beta" but is marked "stable" at such a point as we feel it has proven itself in the wild.
+
+Admins should be able to change their update settings if they wish from the graphical user interface, without a fresh install.
 
 ### Integrity
 

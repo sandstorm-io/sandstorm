@@ -21,7 +21,7 @@ const makeCallback = (objectId) => {
 }
 
 const appHooks = {
-  restore: function({objectId}) {
+  restore({objectId}) {
     console.log("restoring: ", objectId)
     return { cap: makeCallback(objectId) }
   },

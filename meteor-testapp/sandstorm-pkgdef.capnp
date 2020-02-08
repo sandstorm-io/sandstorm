@@ -138,12 +138,25 @@ const pkgdef :Spk.PackageDefinition = (
     # The following directories will be copied into your package.
     searchPath = [
       (
-        # For the capnp sources. Ideally we'd only include those, but it's
-        # not clear to me(zenhack) how to do that cleanly.
+        # For the capnp sources. Ideally we'd only include the .capnp
+        # files themselves; this will pull in a bunch of c++ source and
+        # header files as well, plus a few other things. But I(zenhack)
+        # am unsure how to go about excluding those cleanly.
         sourcePath = "../src",
         packagePath = "usr/include",
       ),
-      ( sourcePath = ".meteor-spk/deps" ),
+      (
+        sourcePath = "capnp",
+        packagePath = "usr/include",
+      ),
+      (
+        sourcePath = ".meteor-spk/deps",
+        hidePaths = ["node_modules/sandstorm"],
+        # meteor-spk will install it's own bundled capnp
+        # schema in the above directory, but we want to use the ones from
+        # our own development tree (included via the above). Hide these
+        # so they don't conflict.
+      ),
       ( sourcePath = ".meteor-spk/bundle" )
     ]
   ),

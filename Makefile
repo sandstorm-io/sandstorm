@@ -427,24 +427,13 @@ $(METEOR_SPK):
 	@$(call color,downloading meteor-spk)
 	@curl https://dl.sandstorm.io/meteor-spk-$(METEOR_SPK_VERSION).tar.xz | tar Jxf -
 
-meteor-testapp-dev: tmp/.meteor-testapp-sandstorm-schema
+meteor-testapp-dev:
 	cd meteor-testapp && PATH="$(PWD)/bin:$(PATH)" \
 		$(METEOR_SPK) dev -I../src -I../tmp -s /opt/sandstorm
-
-tmp/.meteor-testapp-sandstorm-schema: $(METEOR_SPK) $(wildcard src/sandstorm/*.capnp)
-	@# Copy the sandstorm schema from our development tree into meteor-spk bundle.
-	@# This way we can use the schema we're hacking on without having to first
-	@# publish an update to meteor-spk for each change.
-	@$(call color,updating meteor-spk schema)
-	[ -d meteor-testapp/.meteor-spk/bundle/sandstorm ] || \
-		mkdir -p meteor-testapp/.meteor-spk/bundle/sandstorm
-	cp src/sandstorm/*.capnp meteor-testapp/.meteor-spk/bundle/sandstorm/
-	@touch $@
 
 tests/assets/meteor-testapp.spk: \
 		meteor-testapp meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk \
 		meteor-testapp/client/* \
 		meteor-testapp/server/* \
-		meteor-testapp/.meteor/* \
-		meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk.deps/.sandstorm-schema
+		meteor-testapp/.meteor/*
 	@cd meteor-testapp && PATH="$$PWD/bin:$$PATH" ../meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk pack -kmeteor-testapp.key -I../src ../tests/assets/meteor-testapp.spk

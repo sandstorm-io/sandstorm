@@ -2259,16 +2259,20 @@ public:
                       BridgeContext& bridgeContext,
                       spk::BridgeConfig::Reader config,
                       kj::Promise<void>&& connectPromise,
-                      kj::Maybe<kj::Own<kj::Promise<AppHooks<>::Client>>> appHooks)
+                      kj::Maybe<kj::Own<kj::Promise<AppHooks<>::Client>>> appHooksPromise)
       : serverAddress(serverAddress),
         bridgeContext(bridgeContext),
         config(config),
         connectPromise(connectPromise.fork()),
-        appHooks(kj::mv(appHooks)) {}
+        appHooks(nullptr) {
+          KJ_IF_MAYBE(promise, appHooksPromise) {
+            appHooks = kj::heap((*promise)->fork());
+          }
+        }
 
   kj::Promise<void> getViewInfo(GetViewInfoContext context) override {
     KJ_IF_MAYBE(promise, appHooks) {
-      return (*promise)->then([this, context](auto appHooks) -> kj::Promise<void> {
+      return (*promise)->addBranch().then([this, context](auto appHooks) -> kj::Promise<void> {
         return appHooks.getViewInfoRequest().send()
           .then([context](auto results) mutable -> kj::Promise<void> {
             context.setResults(results);
@@ -2395,7 +2399,7 @@ public:
 
     if (objectId.isApplication()) {
       KJ_IF_MAYBE(promise, appHooks) {
-        return (*promise)->then([context, objectId](auto appHooks) -> kj::Promise<void> {
+        return (*promise)->addBranch().then([context, objectId](auto appHooks) -> kj::Promise<void> {
             auto req = appHooks.restoreRequest();
             req.setObjectId(objectId.getApplication());
             return req.send().then([context](auto results) mutable -> kj::Promise<void> {
@@ -2426,7 +2430,7 @@ public:
       return kj::READY_NOW;
     }
     KJ_IF_MAYBE(promise, appHooks) {
-      return (*promise)->then([objectId](auto appHooks) -> kj::Promise<void> {
+      return (*promise)->addBranch().then([objectId](auto appHooks) -> kj::Promise<void> {
           auto req = appHooks.dropRequest();
           req.setObjectId(objectId.getApplication());
           return req.send().ignoreResult();
@@ -2495,7 +2499,7 @@ private:
   // TODO(security): It might be useful to make these sessionIds more random, to reduce the chance
   //   that an app will mix them up.
 
-  kj::Maybe<kj::Own<kj::Promise<AppHooks<>::Client>>> appHooks;
+  kj::Maybe<kj::Own<kj::ForkedPromise<AppHooks<>::Client>>> appHooks;
 };
 
 class SandstormHttpBridgeMain {

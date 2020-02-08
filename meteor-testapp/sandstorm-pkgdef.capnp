@@ -176,7 +176,7 @@ const pkgdef :Spk.PackageDefinition = (
     # https://docs.sandstorm.io/en/latest/developing/auth/
     # and advanced details in the "BridgeConfig" section of
     # https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/package.capnp
-    #expectAppHooks = true,
+    expectAppHooks = true,
 
     viewInfo = (
       # For details on the viewInfo field, consult "ViewInfo" in

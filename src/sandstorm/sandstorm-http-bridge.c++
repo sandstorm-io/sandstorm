@@ -2259,16 +2259,16 @@ public:
                       BridgeContext& bridgeContext,
                       spk::BridgeConfig::Reader config,
                       kj::Promise<void>&& connectPromise,
-                      kj::Maybe<kj::Promise<AppHooks<>::Client>&> appHooks)
+                      kj::Maybe<kj::Own<kj::Promise<AppHooks<>::Client>>> appHooks)
       : serverAddress(serverAddress),
         bridgeContext(bridgeContext),
         config(config),
         connectPromise(connectPromise.fork()),
-        appHooks(appHooks) {}
+        appHooks(kj::mv(appHooks)) {}
 
   kj::Promise<void> getViewInfo(GetViewInfoContext context) override {
     KJ_IF_MAYBE(promise, appHooks) {
-      return promise->then([this, context](auto appHooks) -> kj::Promise<void> {
+      return (*promise)->then([this, context](auto appHooks) -> kj::Promise<void> {
         return appHooks.getViewInfoRequest().send()
           .then([context](auto results) mutable -> kj::Promise<void> {
             context.setResults(results);
@@ -2395,7 +2395,7 @@ public:
 
     if (objectId.isApplication()) {
       KJ_IF_MAYBE(promise, appHooks) {
-        return promise->then([context, objectId](auto appHooks) -> kj::Promise<void> {
+        return (*promise)->then([context, objectId](auto appHooks) -> kj::Promise<void> {
             auto req = appHooks.restoreRequest();
             req.setObjectId(objectId.getApplication());
             return req.send().then([context](auto results) mutable -> kj::Promise<void> {
@@ -2426,7 +2426,7 @@ public:
       return kj::READY_NOW;
     }
     KJ_IF_MAYBE(promise, appHooks) {
-      return promise->then([&objectId](auto appHooks) -> kj::Promise<void> {
+      return (*promise)->then([objectId](auto appHooks) -> kj::Promise<void> {
           auto req = appHooks.dropRequest();
           req.setObjectId(objectId.getApplication());
           return req.send().ignoreResult();
@@ -2495,7 +2495,7 @@ private:
   // TODO(security): It might be useful to make these sessionIds more random, to reduce the chance
   //   that an app will mix them up.
 
-  kj::Maybe<kj::Promise<AppHooks<>::Client>&> appHooks;
+  kj::Maybe<kj::Own<kj::Promise<AppHooks<>::Client>>> appHooks;
 };
 
 class SandstormHttpBridgeMain {
@@ -2565,7 +2565,7 @@ public:
         capnp::MallocMessageBuilder message;
         auto vatId = message.initRoot<capnp::rpc::twoparty::VatId>();
         vatId.setSide(capnp::rpc::twoparty::Side::SERVER);
-        fulfiller->fulfill(
+        (*fulfiller)->fulfill(
           connectionState->rpcSystem.bootstrap(vatId).castAs<AppHooks<>>()
         );
         fulfiller = nullptr;
@@ -2681,12 +2681,12 @@ public:
       auto apiPaf = kj::newPromiseAndFulfiller<SandstormApi<BridgeObjectId>::Client>();
       BridgeContext bridgeContext(kj::mv(apiPaf.promise), config);
 
-      kj::Maybe<kj::Promise<AppHooks<>::Client>&> appHooksPromise = nullptr;
+      kj::Maybe<kj::Own<kj::Promise<AppHooks<>::Client>>> appHooksPromise = nullptr;
 
       if(config.getExpectAppHooks()) {
         auto paf = kj::newPromiseAndFulfiller<AppHooks<>::Client>();
-        appHooksPromise = paf.promise;
-        appHooksFulfiller = paf.fulfiller;
+        appHooksPromise = kj::heap<kj::Promise<AppHooks<>::Client>>(kj::mv(paf.promise));
+        appHooksFulfiller = kj::mv(paf.fulfiller);
       }
 
       // Set up the Supervisor API socket.
@@ -2699,7 +2699,7 @@ public:
           bridgeContext,
           config,
           kj::mv(connectPromise),
-          appHooksPromise));
+          kj::mv(appHooksPromise)));
 
       // Get the SandstormApi by restoring a null SturdyRef.
       capnp::MallocMessageBuilder message;
@@ -2755,7 +2755,7 @@ private:
   kj::Own<kj::NetworkAddress> address;
   kj::Vector<kj::String> command;
   SaveMembranePolicy appMembranePolicy;
-  kj::Maybe<kj::PromiseFulfiller<AppHooks<>::Client>&> appHooksFulfiller;
+  kj::Maybe<kj::Own<kj::PromiseFulfiller<AppHooks<>::Client>>> appHooksFulfiller;
 
   kj::Promise<int> onChildExit(pid_t pid) {
     int status;

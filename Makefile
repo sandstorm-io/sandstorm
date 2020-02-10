@@ -432,8 +432,10 @@ meteor-testapp-dev:
 		$(METEOR_SPK) dev -I../src -I../tmp -s /opt/sandstorm
 
 tests/assets/meteor-testapp.spk: \
-		meteor-testapp meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk \
+		meteor-testapp \
+		$(METEOR_SPK) \
 		meteor-testapp/client/* \
 		meteor-testapp/server/* \
 		meteor-testapp/.meteor/*
-	@cd meteor-testapp && PATH="$$PWD/bin:$$PATH" ../meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk pack -kmeteor-testapp.key -I../src ../tests/assets/meteor-testapp.spk
+	@cd meteor-testapp && PATH="$(PWD)/bin:$(PATH)" \
+		$(METEOR_SPK) pack -kmeteor-testapp.key -I../src -I../tmp ../tests/assets/meteor-testapp.spk

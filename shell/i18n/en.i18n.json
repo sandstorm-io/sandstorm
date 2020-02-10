@@ -364,8 +364,8 @@
           "manageAt": "Manage your transfer at:",
           "inOrder": "In order to start a new transfer (incoming or outgoing), you must cancel the existing one.",
           "cancelTransfer": "Cancel Transfer",
-          "initiateInboundTransfer": "Initiate Inbound Tranfer",
-          "initiateOutboundTransfer": "Initiate Outbound Tranfer",
+          "initiateInboundTransfer": "Initiate Inbound Transfer",
+          "initiateOutboundTransfer": "Initiate Outbound Transfer",
           "theSandstormServerAt": "The Sandstorm server at",
           "wantsToTransfer": "wants to transfer grains to this server.",
           "insecureSource": "WARNING: The source server does not support HTTPS. Data will be transferred without encryption.",
@@ -377,7 +377,7 @@
           "whatDoesThisDo": "What does this do?",
           "whatCan": "You can use this function to transfer all of your grains to a new Sandstorm server. This automates the process of saving a backup of each grain on this server, then restoring each backup on the server you specify.",
           "whatWhen": "When you initiate the transfer above, you will be redirected to the destination server where you will be prompted to sign in. You will then be given the option to choose which grains to transfer, and then finally you will initiate the transfer. The transfer will continue in the background; you can log off.",
-          "whatOrder": "In order for a transfer to work, the destination server must be able to reach the source server directly over the internet. However, the reverse is not necessary. Thus, you can perform a mass trasfer that transfers grains from a server on the public internet (like Sandstorm Oasis) to a server on a private internal network, but not vice versa. If the source server supports HTTPS, then the transfer will take place over HTTPS, regardless of the destination server's protocol.",
+          "whatOrder": "In order for a transfer to work, the destination server must be able to reach the source server directly over the internet. However, the reverse is not necessary. Thus, you can perform a mass transfer that transfers grains from a server on the public internet (like Sandstorm Oasis) to a server on a private internal network, but not vice versa. If the source server supports HTTPS, then the transfer will take place over HTTPS, regardless of the destination server's protocol.",
           "warningGiving": "WARNING: You are giving %s permission to download all your grains from this server. Are you sure?",
           "errorAcceptingTransfer": "Error accepting transfer:"
         }

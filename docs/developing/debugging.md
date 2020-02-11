@@ -26,9 +26,6 @@ Before using this procedure, you should know the following.
   commands you run in the shell will result in new files being accessed, and users don't need these
   debugging commands.
 
-- **You need version v0.164 or higher of vagrant-spk,** in which the
-  command was introduced. It was released during May 2016.
-
 - **Command-line interface subject to change:** Changes may be necessary in the future to take
   advantage of changes in Sandstorm, or to make the tool easier to integrate into automation.
 

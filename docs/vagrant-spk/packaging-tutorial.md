@@ -231,7 +231,7 @@ Change it to the following.
 ```
 
 Second, we will customize the text that Sandstorm users see when they want to create a new grain of
-the app. To do this, find the line containing:
+the app. This "noun" is a description of a single instance of your app. A text editor might use "document" here, or a file sync app might use "folder". Our sample app will create a "showcase", so to do this, find the line containing:
 
 ```bash
       ( nounPhrase = (defaultText = "instance"),

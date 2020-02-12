@@ -2279,18 +2279,18 @@ public:
             return kj::READY_NOW;
           }, [this, context](kj::Exception&& e) -> kj::Promise<void> {
             if(e.getType() == kj::Exception::Type::UNIMPLEMENTED) {
-              return _getViewInfo(context);
+              return getViewInfoFromConfig(context);
             } else {
               throw kj::mv(e);
             }
           });
       });
     } else {
-      return _getViewInfo(context);
+      return getViewInfoFromConfig(context);
     }
   }
 
-  kj::Promise<void> _getViewInfo(GetViewInfoContext context) {
+  kj::Promise<void> getViewInfoFromConfig(GetViewInfoContext context) {
     context.setResults(config.getViewInfo());
 
     // Copy in powerbox API descriptors.

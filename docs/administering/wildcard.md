@@ -147,7 +147,7 @@ Multiple reasons:
   protects against potential security problems in Etherpad which may
   have allowed a user with access to one document to improperly obtain
   access to other documents -- Etherpad has in fact had several such
-  bugs in the last few months, but none of them affected Etherpad on
+  bugs in the past, but none of them affected Etherpad on
   Sandstorm.
 
 ### Why a new hostname for every session, rather than for every document?

@@ -80,6 +80,8 @@ sample](https://github.com/Azeirah/brainstorm/blob/ca01c7d2b0ae7f0480b93d7e37e19
 and [per-page-load code
 sample](https://github.com/paulproteus/semantic-mediawiki-sandstorm/blob/445151c033a85da5e586d1a401abea8179b599b2/resources/src/startup.js#L64).
 
+## Using the grain's title in your app
+
 If you wish to make use of the grain's title inside your app, you
 can obtain this information by making a postMessage request:
 

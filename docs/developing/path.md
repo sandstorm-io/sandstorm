@@ -80,8 +80,8 @@ sample](https://github.com/Azeirah/brainstorm/blob/ca01c7d2b0ae7f0480b93d7e37e19
 and [per-page-load code
 sample](https://github.com/paulproteus/semantic-mediawiki-sandstorm/blob/445151c033a85da5e586d1a401abea8179b599b2/resources/src/startup.js#L64).
 
-If you wish to incorporate the grain's title into the page's title, you
-can obtain this information by making a postMessage request.
+If you wish to make use of the grain's title inside your app, you
+can obtain this information by making a postMessage request:
 
 ```js
 var getGrainTitleRpcId = 0;
@@ -93,7 +93,7 @@ window.addEventListener('message', function(event) {
     return;
   }
   if(event.data.rpcId === getGrainTtileRpcId) {
-    // Set the page title here.
+    console.log("The grain's title is: ", event.data.grainTitle);
   }
 })
 

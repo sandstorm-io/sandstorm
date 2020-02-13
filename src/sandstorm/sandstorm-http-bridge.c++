@@ -2568,7 +2568,7 @@ public:
       KJ_IF_MAYBE(fulfiller, appHooksFulfiller) {
         capnp::MallocMessageBuilder message;
         auto vatId = message.initRoot<capnp::rpc::twoparty::VatId>();
-        vatId.setSide(capnp::rpc::twoparty::Side::SERVER);
+        vatId.setSide(capnp::rpc::twoparty::Side::CLIENT);
         (*fulfiller)->fulfill(
           connectionState->rpcSystem.bootstrap(vatId).castAs<AppHooks<>>()
         );

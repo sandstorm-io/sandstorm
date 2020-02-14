@@ -54,7 +54,7 @@ For a Meteor app, keep the following in mind:
 * Run `vagrant-spk setupvm meteor`
 * Run `vagrant-spk vm up`. Note this will print _lots_ of red text; sorry about that, then abruptly end.
 * Run `vagrant-spk init` and edit `.sandstorm/sandstorm-pkgdef.capnp`
-* Run `vagrant-spk dev` and make sure the app works OK at http://local.sandstorm.io:6080/
+* Run `vagrant-spk dev` and make sure the app works OK at http://local.sandstorm.io:6090/
 * Run `vagrant-spk pack ~/projects/meteor-package.spk` and you have a package file!
 
 **Troubleshooting**

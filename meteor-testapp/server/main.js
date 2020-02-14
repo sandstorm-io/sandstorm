@@ -36,11 +36,11 @@ const bridge = conn.restore(null, SandstormHttpBridge);
 
 Meteor.startup(() => {
   Meteor.methods({
-    schedule(job) {
+    schedule(objectId) {
       bridge.getSandstormApi().api.schedule(
-        job.name,
-        makeCallback(job.objectId),
-        job.schedule,
+        { defaultText: 'test job' },
+        makeCallback(objectId),
+        { periodic: 'hourly' }
       );
     }
   })

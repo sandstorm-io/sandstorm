@@ -55,11 +55,7 @@ module.exports['Test saving and restoring capabilities via AppHooks'] = function
   .waitForElementVisible('.grain-frame', medium_wait)
   .grainFrame()
   .execute(function() {
-    Meteor.call('schedule', {
-      name: { defaultText: 'test job' },
-      schedule: { periodic: 'hourly' },
-      objectId: 'someObjectId',
-    })
+    Meteor.call('schedule', 'someObjectId')
   })
   .frameParent()
   .pause(short_wait)

@@ -2419,7 +2419,7 @@ public:
             });
         });
       } else {
-        KJ_FAIL_ASSERT(
+        KJ_FAIL_REQUIRE(
             "restore() got an objectId with type = application, but "
             "expectAppHooks is false."
             );
@@ -2447,7 +2447,7 @@ public:
           return req.send().ignoreResult();
       });
     } else {
-      KJ_FAIL_ASSERT(
+      KJ_FAIL_REQUIRE(
           "drop() got an objectId with type = application, but "
           "expectAppHooks is false."
           );

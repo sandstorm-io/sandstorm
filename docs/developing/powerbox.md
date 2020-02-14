@@ -355,7 +355,10 @@ that:
    - If the header's value is `request`, then you are in a request session. You should display
      a UI for picking which resource to provide, and use the methods described in
      `sandstorm-http-bridge.capnp` to fetch info about the powerbox request and fulfill it.
-   - If the value is `offer`, this is an offer session. TODO: talk more about offer sessions.
+   - If the value is `offer`, this is an offer session; your app is being offered a capability by
+     another app, based on the information in your view info's `matchOffers` field. You can
+     display a UI to decide what to do with it, and use the bridge's methods to access the
+     capability itself.
 
 ### Raw Cap'n Proto APIs
 

@@ -874,7 +874,18 @@ public:
 
   kj::Maybe<capnp::Capability::Client> outboundCall(
       uint64_t interfaceId, uint16_t methodId, capnp::Capability::Client target) override {
-    return inboundCall(interfaceId, methodId, target);
+    if(interfaceId == capnp::typeId<AppPersistent<>>()) {
+      // In principle we should do some kind of wrapping/unwrapping to make this
+      // work transparently, including for cases where a call goes into and back out
+      // of the membrane for some reason, but:
+      //
+      // - That seems like a lot of extra logic to handle a case that should basically
+      //   never happen.
+      // - If the app is making outbound calls to AppPersistent, something very strange
+      //   is going on; perhaps it is good policy to block this anyway.
+      KJ_FAIL_REQUIRE("Unexpected outgoing call to method of AppPersistent.");
+    }
+    return nullptr;
   }
 
   kj::Own<capnp::MembranePolicy> addRef() override {

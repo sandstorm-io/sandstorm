@@ -2562,7 +2562,7 @@ public:
     return serverPort.accept().then(
         [&, KJ_MVCAP(bridge)](kj::Own<kj::AsyncIoStream>&& connection) mutable {
       auto connectionState = kj::heap<AcceptedConnection>(
-          capnp::membrane(bridge, appMembranePolicy.addRef()),
+          capnp::reverseMembrane(bridge, appMembranePolicy.addRef()),
           kj::mv(connection));
 
       KJ_IF_MAYBE(fulfiller, appHooksFulfiller) {
@@ -2570,7 +2570,10 @@ public:
         auto vatId = message.initRoot<capnp::rpc::twoparty::VatId>();
         vatId.setSide(capnp::rpc::twoparty::Side::CLIENT);
         (*fulfiller)->fulfill(
-          connectionState->rpcSystem.bootstrap(vatId).castAs<AppHooks<>>()
+          capnp::membrane(
+            connectionState->rpcSystem.bootstrap(vatId),
+            appMembranePolicy.addRef()
+          ).castAs<AppHooks<>>()
         );
         fulfiller = nullptr;
       }

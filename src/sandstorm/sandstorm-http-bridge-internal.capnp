@@ -58,3 +58,9 @@ struct BridgeObjectId {
 interface BridgeHttpSession extends(ApiSession, AppPersistent(BridgeObjectId)) {}
 
 const bridgeRequestSessionHtml :Text = embed "sandstorm-http-bridge-request.html";
+
+enum SessionType {
+  normal @0;
+  request @1;
+  offer @2;
+}

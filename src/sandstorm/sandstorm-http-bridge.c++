@@ -1353,7 +1353,8 @@ public:
                  kj::String&& basePath, kj::String&& userAgent, kj::String&& acceptLanguages,
                  kj::String&& rootPath, kj::String&& permissions,
                  kj::Maybe<kj::String> remoteAddress,
-                 kj::Maybe<OwnCapnp<BridgeObjectId::HttpApi>>&& apiInfo)
+                 kj::Maybe<OwnCapnp<BridgeObjectId::HttpApi>>&& apiInfo,
+                 SessionType sessionType)
       : serverAddr(serverAddr),
         sessionContext(kj::mv(sessionContext)),
         bridgeContext(bridgeContext),
@@ -1369,7 +1370,8 @@ public:
         acceptLanguages(kj::mv(acceptLanguages)),
         rootPath(kj::mv(rootPath)),
         remoteAddress(kj::mv(remoteAddress)),
-        apiInfo(kj::mv(apiInfo)) {
+        apiInfo(kj::mv(apiInfo)),
+        sessionType(sessionType) {
     if (userInfo.hasIdentityId()) {
       userId = textIdentityId(userInfo.getIdentityId());
     }
@@ -1636,6 +1638,7 @@ private:
   spk::BridgeConfig::Reader config;
   kj::Maybe<kj::String> remoteAddress;
   kj::Maybe<OwnCapnp<BridgeObjectId::HttpApi>> apiInfo;
+  SessionType sessionType;
 
   kj::String makeHeaders(kj::StringPtr method, kj::StringPtr path,
                          WebSession::Context::Reader context,
@@ -1696,6 +1699,13 @@ private:
         lines.add(kj::str("X-Sandstorm-User-Pronouns: ",
             enumerants[pronounValue].getProto().getName()));
       }
+    }
+    {
+      capnp::EnumSchema schema = capnp::Schema::from<SessionType>();
+      uint typeValue = static_cast<uint>(sessionType);
+      auto enumerants = schema.getEnumerants();
+      lines.add(kj::str("X-Sandstorm-Session-Type: ",
+            enumerants[typeValue].getProto().getName()));
     }
     lines.add(kj::str("X-Sandstorm-Permissions: ", permissions));
     if (basePath.size() > 0) {
@@ -1937,7 +1947,8 @@ WebSession::Client newPowerboxApiSession(
                                    nullptr, nullptr, nullptr,
                                    kj::str(httpApi.getPath(), '/'),
                                    bridgeContext.formatPermissions(httpApi.getPermissions()),
-                                   nullptr, kj::mv(httpApi)));
+                                   nullptr, kj::mv(httpApi),
+                                   SessionType::NORMAL));
     });
   });
 }
@@ -2346,7 +2357,8 @@ public:
                                  kj::strArray(sessionParams.getAcceptableLanguages(), ","),
                                  kj::heapString("/"),
                                  bridgeContext.formatPermissions(userPermissions),
-                                 nullptr, nullptr);
+                                 nullptr, nullptr,
+                                 SessionType::NORMAL);
 
       context.getResults(capnp::MessageSize {2, 1}).setSession(
         connectPromise.addBranch().then([KJ_MVCAP(session)]() mutable {
@@ -2367,7 +2379,8 @@ public:
                                  kj::heapString(""), kj::heapString(""), kj::heapString(""),
                                  kj::heapString(config.getApiPath()),
                                  bridgeContext.formatPermissions(userPermissions),
-                                 kj::mv(addr), nullptr);
+                                 kj::mv(addr), nullptr,
+                                 SessionType::NORMAL);
 
       context.getResults(capnp::MessageSize {2, 1}).setSession(
         connectPromise.addBranch().then([KJ_MVCAP(session)]() mutable {

@@ -270,9 +270,10 @@ an HTTP api, then the definitive reference for the powerbox's interfaces is the 
 schema files where they are defined. The main relevant schemas are
 [powerbox.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/powerbox.capnp)
 and [grain.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/grain.capnp).
-If you are using the bridge, you will also want to read and
-[sandstorm-http-bridge.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/sandstorm-http-bridge.capnp), which allows bridge apps to access the resources otherwise accessed via
-the interfaces in `grain.capnp`.
+If you are using the bridge, you will also want to read about the interfaces in
+[sandstorm-http-bridge.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/sandstorm-http-bridge.capnp),
+which allow bridge apps to access the resources otherwise accessed via the interfaces in
+`grain.capnp`.
 
 In order to exchange your claim token for a capability, you'll need to invoke
 `SessionContext.claimRequest()` on the session context associated with the session where the
@@ -295,7 +296,7 @@ whether you are exporting an HTTP API or some other Cap'n Proto interface.
 ### Using sandstorm-http-bridge
 
 If you use sandstorm-http-bridge, then you can export HTTP APIs (which implement
-the Cap'n Proto `ApiSession`) using the bridge's, special handling, allowing you to use
+the Cap'n Proto `ApiSession`) using the bridge's special handling, allowing you to use
 a regular web server just like with the web UI for your app. You can declare APIs that
 you export in your `sandstorm-pkgdef.capnp` file, in the `bridgeConfig` section, by
 specifying a list of `powerboxApis`. Example:

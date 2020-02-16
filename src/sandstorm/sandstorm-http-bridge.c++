@@ -1172,14 +1172,28 @@ public:
     }
   }
 
-  std::map<kj::StringPtr, SessionContext::Client&> sessions;
-  // TODO(cleanup): Make this private with appropriate accessor methods.
+  kj::Maybe<SessionContext::Client&> findSession(const kj::StringPtr& id) {
+    auto iter = sessions.find(id);
+    if(iter != sessions.end()) {
+      return nullptr;
+    }
+    return iter->second;
+  }
+
+  void eraseSession(const kj::StringPtr& id) {
+    sessions.erase(id);
+  }
+
+  void insertSession(const kj::StringPtr& id, SessionContext::Client& session) {
+    sessions.insert({kj::StringPtr(id), session});
+  }
 
 private:
   SandstormApi<BridgeObjectId>::Client apiCap;
   spk::BridgeConfig::Reader config;
   kj::AutoCloseFd identitiesDir;
   kj::AutoCloseFd trashDir;
+  std::map<kj::StringPtr, SessionContext::Client&> sessions;
 
   struct IdentityRecord {
     IdentityRecord(const IdentityRecord& other) = delete;
@@ -1316,13 +1330,13 @@ public:
       userId = textIdentityId(userInfo.getIdentityId());
     }
     if (this->sessionId != nullptr) {
-      bridgeContext.sessions.insert({kj::StringPtr(this->sessionId), this->sessionContext});
+      bridgeContext.insertSession(kj::StringPtr(this->sessionId), this->sessionContext);
     }
   }
 
   ~WebSessionImpl() noexcept(false) {
     if (this->sessionId != nullptr) {
-      bridgeContext.sessions.erase(kj::StringPtr(sessionId));
+      bridgeContext.eraseSession(kj::StringPtr(sessionId));
     }
   }
 
@@ -2179,9 +2193,11 @@ public:
 
   kj::Promise<void> getSessionContext(GetSessionContextContext context) override {
     auto id = context.getParams().getId();
-    auto iter = bridgeContext.sessions.find(id);
-    KJ_ASSERT(iter != bridgeContext.sessions.end(), "Session ID not found", id);
-    context.getResults().setContext(iter->second);
+    KJ_IF_MAYBE(value, bridgeContext.findSession(id)) {
+      context.getResults().setContext(*value);
+    } else {
+      KJ_FAIL_ASSERT("Session ID not found", id);
+    }
     return kj::READY_NOW;
   }
 

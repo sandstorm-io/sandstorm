@@ -1277,8 +1277,8 @@ public:
       const kj::StringPtr& id,
       capnp::List<PowerboxDescriptor>::Reader descriptor) {
 
-    kj::Own<capnp::MallocMessageBuilder> message;
-    auto results = message->getRoot<SandstormHttpBridge::GetSessionRequestResults>();
+    auto message = kj::heap<capnp::MallocMessageBuilder>();
+    auto results = message->initRoot<SandstormHttpBridge::GetSessionRequestResults>();
     results.setRequestInfo(descriptor);
 
     requests.insert({kj::StringPtr(id), kj::mv(message)});
@@ -1289,8 +1289,8 @@ public:
       capnp::Capability::Client&& offer,
       PowerboxDescriptor::Reader descriptor) {
 
-    kj::Own<capnp::MallocMessageBuilder> message;
-    auto results = message->getRoot<SandstormHttpBridge::GetSessionOfferResults>();
+    auto message = kj::heap<capnp::MallocMessageBuilder>();
+    auto results = message->initRoot<SandstormHttpBridge::GetSessionOfferResults>();
     results.setOffer(offer);
     results.setDescriptor(descriptor);
 

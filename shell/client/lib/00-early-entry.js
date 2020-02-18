@@ -30,6 +30,9 @@
 // crashlanded everything in /imports/.  Eventually, there will be a single file
 // under client/ that imports everything in the order Meteor would have.
 //
+// Eventually, we'll also move packages in here, above the app's primary
+// implementation, since packages are loaded first
+//
 // For more information on Meteor's load order, see
 // https://guide.meteor.com/structure.html#load-order
 
@@ -71,3 +74,55 @@ import "../../imports/client/powerbox-builtins.html";
 import "../../imports/client/shell.html";
 import "../../imports/client/styleguide.html";
 import "../../imports/client/transfers.html";
+
+// Things that came from client/lib.
+import "../../imports/client/globals.js";
+
+// Everything else that came from client/
+import "../../imports/client/accounts/credentials/credentials-client.js";
+import "../../imports/client/accounts/email-token/token-client.js";
+import "../../imports/client/accounts/saml/saml-client-pt2.js";
+import "../../imports/client/accounts/account-settings.js";
+import "../../imports/client/accounts/accounts-testing.js";
+import "../../imports/client/accounts/login-buttons.js";
+import "../../imports/client/accounts/login-buttons-session.js";
+import "../../imports/client/admin/admin-new-client.js";
+import "../../imports/client/admin/app-sources-client.js";
+import "../../imports/client/admin/email-config-client.js";
+import "../../imports/client/admin/hosting-management-client.js";
+import "../../imports/client/admin/login-providers.js";
+import "../../imports/client/admin/maintenance-message-client.js";
+import "../../imports/client/admin/network-capabilities-client.js";
+import "../../imports/client/admin/networking-client.js";
+import "../../imports/client/admin/organization-client.js";
+import "../../imports/client/admin/personalization-client.js";
+import "../../imports/client/admin/preinstalled-apps-client.js";
+import "../../imports/client/admin/stats-client.js";
+import "../../imports/client/admin/system-status-client.js";
+import "../../imports/client/admin/user-accounts-client.js";
+import "../../imports/client/admin/user-details-client.js";
+import "../../imports/client/admin/user-invite-client.js";
+import "../../imports/client/apps/app-details-client.js";
+import "../../imports/client/apps/applist-client.js";
+import "../../imports/client/apps/install-client.js";
+import "../../imports/client/billing/billingPromptLocal-client.js";
+import "../../imports/client/grain/contact-autocomplete.js";
+import "../../imports/client/grain/grainlist-client.js";
+import "../../imports/client/setup-wizard/wizard.js";
+import "../../imports/client/vendor/ansi-up.js";
+import "../../imports/client/widgets/widgets-client.js";
+import "../../imports/client/00-startup.js";
+import "../../imports/client/admin-client.js";
+import "../../imports/client/demo-client.js";
+import "../../imports/client/desktop-notifications-client.js";
+import "../../imports/client/dev-accounts-client.js";
+import "../../imports/client/grain-client.js";
+import "../../imports/client/install-client.js";
+import "../../imports/client/notifications-client.js";
+import "../../imports/client/powerbox-builtins.js";
+import "../../imports/client/shell-client.js";
+import "../../imports/client/signup-client.js";
+import "../../imports/client/styleguide.js";
+import "../../imports/client/transfers-client.js";
+
+// TODO: everything from shared/

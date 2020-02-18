@@ -36,8 +36,22 @@
 // For more information on Meteor's load order, see
 // https://guide.meteor.com/structure.html#load-order
 
-// Load all the templates first thing.
 import { Template } from "meteor/templating";
+
+// Load packages that the sandstorm shell depends on before sandstorm itself.
+
+// blackrock-payments
+import "../../imports/blackrock-payments/constants.js";
+import "../../imports/blackrock-payments/client/billingSettings.html";
+import "../../imports/blackrock-payments/client/billingPrompt.html";
+import "../../imports/blackrock-payments/client/payments-api.html";
+import "../../imports/blackrock-payments/client/billingSettings.js";
+import "../../imports/blackrock-payments/client/billingPrompt.js";
+import "../../imports/blackrock-payments/client/payments-client.js";
+import "../../imports/blackrock-payments/client/payments-api-client.js";
+
+// Load sandstorm shell.
+// Templates come first.
 import "../../imports/client/accounts/credentials/credentials.html";
 import "../../imports/client/accounts/email-token/token-templates.html";
 import "../../imports/client/accounts/account-settings.html";

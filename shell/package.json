@@ -25,6 +25,7 @@
     "nodemailer": "^2.7.2",
     "nodemailer-smtp-pool": "^2.8.3",
     "smtp-server": "^1.17.0",
+    "stripe": "^3.6.0",
     "xml-crypto": "0.0.20",
     "xml2js": "^0.2.8",
     "xmlbuilder": "^8.2.2",

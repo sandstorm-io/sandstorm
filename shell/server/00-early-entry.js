@@ -36,6 +36,14 @@
 // For more information on Meteor's load order, see
 // https://guide.meteor.com/structure.html#load-order
 
+// Import packages that sandstorm depends on.
+
+// blackrock-payments.  Depends on sandstorm-db and sandstorm-capnp.
+import "../imports/blackrock-payments/constants.js";
+import "../imports/blackrock-payments/server/payments-server.js";
+import "../imports/blackrock-payments/server/payments-api-server.js";
+
+
 // Import everything from server/ in the order that Meteor would have.
 import "../imports/server/accounts/credentials/credentials-server.js";
 import "../imports/server/accounts/email-token/token-server.js";

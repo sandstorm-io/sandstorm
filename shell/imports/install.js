@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-isSafeDemoAppUrl = function isSafeDemoAppUrl(url) {
+function isSafeDemoAppUrl(url) {
   // For demo accounts, we allow using a bare hash with no URL (which will never upload a new app)
   // and we allow specifying a sandstorm.io URL.
   return !url ||
@@ -23,3 +23,5 @@ isSafeDemoAppUrl = function isSafeDemoAppUrl(url) {
       url.lastIndexOf("https://alpha-j7uny7u376jnimcsx34c.sandstorm.io/", 0) === 0 ||
       url.lastIndexOf("https://app-index.sandstorm.io/", 0) === 0;
 };
+
+export { isSafeDemoAppUrl };

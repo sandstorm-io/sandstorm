@@ -125,4 +125,7 @@ import "../../imports/client/signup-client.js";
 import "../../imports/client/styleguide.js";
 import "../../imports/client/transfers-client.js";
 
-// TODO: everything from shared/
+import "../../imports/shared/admin.js";
+import "../../imports/shared/dev-accounts.js";
+import "../../imports/shared/grain-shared.js";
+import "../../imports/shared/testing.js";

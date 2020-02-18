@@ -77,3 +77,8 @@ import "../imports/server/standalone-server.js";
 import "../imports/server/startup.js";
 import "../imports/server/stats-server.js";
 import "../imports/server/transfers-server.js";
+
+import "../imports/shared/admin.js";
+import "../imports/shared/dev-accounts.js";
+import "../imports/shared/grain-shared.js";
+import "../imports/shared/testing.js";

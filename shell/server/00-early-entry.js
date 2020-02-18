@@ -38,6 +38,9 @@
 
 // Import packages that sandstorm depends on.
 
+// sandstorm-ui-powerbox.  Depends on sandstorm-capnp
+import "../imports/sandstorm-ui-powerbox/powerbox-server.js";
+
 // blackrock-payments.  Depends on sandstorm-db and sandstorm-capnp.
 import "../imports/blackrock-payments/constants.js";
 import "../imports/blackrock-payments/server/payments-server.js";

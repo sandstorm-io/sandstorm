@@ -1243,21 +1243,17 @@ public:
     return findInMap(sessions, id);
   }
 
-  kj::Maybe<SandstormHttpBridge::GetSessionOfferResults::Reader> findOffer(const kj::StringPtr& id) {
-    KJ_IF_MAYBE(message, findInMap(offers, id)) {
-      SandstormHttpBridge::GetSessionOfferResults::Reader ret =
-        (*message)->getRoot<SandstormHttpBridge::GetSessionOfferResults>();
-      return ret;
+  kj::Maybe<SandstormHttpBridge::GetSessionOfferResults::Reader&> findOffer(const kj::StringPtr& id) {
+    KJ_IF_MAYBE(ret, findInMap(offers, id)) {
+      return ret->get();
     } else {
       return nullptr;
     }
   }
 
-  kj::Maybe<SandstormHttpBridge::GetSessionRequestResults::Reader> findRequest(const kj::StringPtr& id) {
-    KJ_IF_MAYBE(message, findInMap(requests, id)) {
-      SandstormHttpBridge::GetSessionRequestResults::Reader ret =
-        (*message)->getRoot<SandstormHttpBridge::GetSessionRequestResults>();
-      return ret;
+  kj::Maybe<SandstormHttpBridge::GetSessionRequestResults::Reader&> findRequest(const kj::StringPtr& id) {
+    KJ_IF_MAYBE(ret, findInMap(requests, id)) {
+      return ret->get();
     } else {
       return nullptr;
     }
@@ -1277,11 +1273,13 @@ public:
       const kj::StringPtr& id,
       capnp::List<PowerboxDescriptor>::Reader descriptor) {
 
-    auto message = kj::heap<capnp::MallocMessageBuilder>();
-    auto results = message->initRoot<SandstormHttpBridge::GetSessionRequestResults>();
+    auto results =
+      capnp::MallocMessageBuilder()
+      .initRoot<SandstormHttpBridge::GetSessionRequestResults>();
+
     results.setRequestInfo(descriptor);
 
-    requests.insert({kj::StringPtr(id), kj::mv(message)});
+    requests.insert({kj::StringPtr(id), capnp::clone(results.asReader())});
   }
 
   void insertOffer(
@@ -1289,12 +1287,14 @@ public:
       capnp::Capability::Client&& offer,
       PowerboxDescriptor::Reader descriptor) {
 
-    auto message = kj::heap<capnp::MallocMessageBuilder>();
-    auto results = message->initRoot<SandstormHttpBridge::GetSessionOfferResults>();
+    auto results =
+      capnp::MallocMessageBuilder()
+      .initRoot<SandstormHttpBridge::GetSessionOfferResults>();
+
     results.setOffer(offer);
     results.setDescriptor(descriptor);
 
-    offers.insert({kj::StringPtr(id), kj::mv(message)});
+    offers.insert({kj::StringPtr(id), capnp::clone(results.asReader())});
   }
 
 private:
@@ -1303,13 +1303,8 @@ private:
   kj::AutoCloseFd identitiesDir;
   kj::AutoCloseFd trashDir;
   std::map<kj::StringPtr, SessionContext::Client&> sessions;
-
-  // Contains SandstormHttpBridge::GetSessionRequestResults. TODO(zenhack): figure
-  // out if there's a way to make this typed:
-  std::map<kj::StringPtr, kj::Own<capnp::MallocMessageBuilder>> requests;
-
-  // Contains SandstormHttpBridge::GetSessionOfferResults.
-  std::map<kj::StringPtr, kj::Own<capnp::MallocMessageBuilder>> offers;
+  std::map<kj::StringPtr, kj::Own<SandstormHttpBridge::GetSessionRequestResults::Reader>> requests;
+  std::map<kj::StringPtr, kj::Own<SandstormHttpBridge::GetSessionOfferResults::Reader>> offers;
 
   struct IdentityRecord {
     IdentityRecord(const IdentityRecord& other) = delete;

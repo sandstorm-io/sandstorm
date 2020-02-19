@@ -38,6 +38,9 @@
 
 // Import packages that sandstorm depends on.
 
+// sandstorm-autoupdate-apps.  Depends on sandstorm-db.
+import "../imports/sandstorm-autoupdate-apps/autoupdate-apps.js";
+
 // sandstorm-accounts-packages
 import "../imports/sandstorm-accounts-packages/accounts.js";
 

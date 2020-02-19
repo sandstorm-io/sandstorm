@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO(cleanup): These tests are no longer run in any automated fashion.
+// Figure out a new strategy for making sure we run tests.
+
 const Crypto = Npm.require("crypto");
 
 const globalDb = new SandstormDb();
@@ -127,4 +130,3 @@ Tinytest.add("test update notifications", function (test) {
   test.equal(appUpdate.name, "Mock App");
   test.equal(appUpdate.marketingVersion, "0.2");
 });
-

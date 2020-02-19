@@ -710,8 +710,8 @@
                 "explanation": "Sandstorm allows you to define an organization. You can automatically apply some settings to all members of your organization. Users within the organization will automatically be able to log in, install apps, and create grains."
             },
             "newAdminOrganization": {
-                "success": "Saved changes.",
-                "error": "Failed to save changes: %s",
+                "success": "已保存设置。",
+                "error": "以下设置保存失败: %s",
                 "membership": {
                     "title": "Organization membership",
                     "emailToggle": {
@@ -740,7 +740,7 @@
                     }
                 },
                 "settings": {
-                    "title": "Organization settings",
+                    "title": "组织设置",
                     "disallowGuests": {
                         "label": "Disallow collaboration with users outside the organization.",
                         "subtext": "Users will be required to log in as a member of your organization to view sharing links. Guest access will be disabled."
@@ -750,7 +750,7 @@
                         "subtext": "This setting automatically adds users within the organization to each other's contact list so that they can share grains with each other.  Disable this if you have some users whose identity should stay hidden from other users."
                     }
                 },
-                "saveButton": "Save"
+                "saveButton": "保存"
             }
         },
         "emailConfig": {
@@ -758,48 +758,48 @@
             "subtext": "设置沙聚云如何发送邮件。",
             "newAdminEmailConfig": {
                 "outbound": {
-                    "title": "Outbound email",
-                    "warning": "<strong>Email is unconfigured.</strong> Email-related features like email login, notifications, sharing invitations, and requesting access will be unavailable until you configure email."
+                    "title": "出站电子邮件",
+                    "warning": "<strong>电子邮件尚未设置。</strong>除非配置好它，否则邮件登录、通知、分享链接和请求访问权限等等和邮件相关的特性都无法使用。"
                 },
                 "howItWorks": {
-                    "title": "How Sandstorm uses email",
-                    "explanation": "Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too. Every app receives a unique email address, so Sandstorm needs to send email from a variety of \"From:\" addresses. Therefore, Gmail SMTP won't work, but there are other free services. See <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">more info in the docs</a>."
+                    "title": "沙聚云使用电子邮件的方式",
+                    "explanation": "沙聚云可以发送电子邮件，而沙聚云里面的应用程序也可以发送邮件。每一款应用程序都有一个独一无二的地址，所以沙聚云需要通过不同的「发件人」地址发送邮件。因此，Gmail 是不可用的，但是有其它免费的服务可以做到。更多详见<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">文档</a>"
                 },
-                "success": "Saved changes.",
-                "error": "Failed to save changes: %s",
+                "success": "已保存设置.",
+                "error": "以下设置保存更改失败: %s",
                 "address": {
-                    "hostname": "SMTP host",
-                    "port": "Port",
-                    "subtext": "Use port 25 for SMTP (unencrypted or with StartTLS), port 465 for TLS-encrypted SMTPS."
+                    "hostname": "SMTP 主机",
+                    "port": "端口",
+                    "subtext": "SMTP 使用 25 端口（未加密或使用 StartTLS），通过 TLS 加密则使用 SMTPS 的 465 端口。"
                 },
                 "username": {
-                    "label": "Username (optional)"
+                    "label": "用户名 (可选)"
                 },
                 "password": {
-                    "label": "Password (optional)"
+                    "label": "密码 (可选)"
                 },
                 "returnAddress": {
-                    "label": "Sandstorm server's own email address",
-                    "subtext": "Sandstorm will send login emails, notifications of granted access requests, and other emails from this address. It will also use this address in the SMTP envelope."
+                    "label": "沙聚云服务器的电子邮件地址",
+                    "subtext": "沙聚云会用该地址发送登录邮件，请求权限提醒等其它邮件。它还将在 SMTP 中使用该地址。"
                 },
-                "submitButton": "Save Configuration",
-                "testButton": "Test",
-                "disableButton": "Disable email"
+                "submitButton": "保存设置",
+                "testButton": "测试",
+                "disableButton": "禁用邮件"
             },
             "emailTestPopup": {
-                "title": "Send a test email",
+                "title": "发送测试邮件",
                 "testAddress": {
-                    "label": "Send test mail to:"
+                    "label": "发送测试邮件给："
                 },
-                "pending": "Sending...",
-                "submitButton": "Send test email",
-                "closeButton": "Close"
+                "pending": "发送中...",
+                "submitButton": "发送测试邮件",
+                "closeButton": "关闭"
             },
             "emailDisablePopup": {
-                "title": "Really disable email?",
-                "explanation": "This will disable all outbound email delivery for this server, including sharing via email, email token login (if enabled), and email notifications to users.",
-                "disableButton": "Disable email",
-                "closeButton": "Close"
+                "title": "真的要禁用电子邮件吗？",
+                "explanation": "这将禁止所有发送电子邮件的功能，包括通过邮件分享，邮件码登录（如果启用了）和对用户的邮件提醒。",
+                "disableButton": "禁用电子邮件",
+                "closeButton": "关闭"
             }
         },
         "personalization": {
@@ -807,8 +807,8 @@
             "subtext": "定制自己的启动画面、服务条款、隐私条款等等。",
             "newAdminPersonalization": {
                 "serverTitle": {
-                    "label": "Server title:",
-                    "subtext": "The name of this server, as used when communicating with users."
+                    "label": "服务器名称:",
+                    "subtext": "服务器的名称，在与用户们通讯时会用到。"
                 },
                 "splashUrl": {
                     "label": "Splash URL (experimental):",
@@ -819,68 +819,68 @@
                     "subtext": "This text will be displayed to users who click on signup links."
                 },
                 "termsOfService": {
-                    "label": "Terms of service URL:",
+                    "label": "服务条款地址:",
                     "placeholder": "https://example.com/tos",
-                    "subtext": "If provided, new users will be required to agree to the linked terms of service."
+                    "subtext": "如果提供，新用户将被要求同意该服务条款。"
                 },
                 "privacyPolicy": {
-                    "label": "Privacy policy URL:",
+                    "label": "隐私条款地址:",
                     "placeholder": "https://example.com/privacy",
-                    "subtext": "If provided, new users will be required to agree to the linked privacy policy."
+                    "subtext": "如果提供，新用户将被要求同意该隐私条款。"
                 },
                 "whitelabeling": {
                     "title": "Whitelabeling",
                     "logo": {
-                        "label": "Custom logo on sign-in dialog",
-                        "resetButton": "Use default",
-                        "uploadButton": "Upload logo"
+                        "label": "自定义登录页面的 logo",
+                        "resetButton": "使用默认",
+                        "uploadButton": "上传 logo"
                     },
                     "hideTroubleshooting": {
-                        "label": "Hide troubleshooting button"
+                        "label": "隐藏故障排除按钮"
                     },
                     "hideAbout": {
-                        "label": "Hide \"About Sandstorm\" links"
+                        "label": "隐藏\"关于沙聚云\""
                     },
                     "hideSendFeedback": {
-                        "label": "Hide \"Send feedback\" link"
+                        "label": "隐藏\"发送反馈\""
                     },
                     "useServerTitleForHomeText": {
                         "label": "Use server title (above) for home link",
                         "subtext": "If enabled, changes the default label \"Sandstorm\" on the link at the very top left to match whatever you specified for the Server title above."
                     },
                     "customLoginProviderName": {
-                        "label": "Custom login button text",
+                        "label": "自定义登录按钮文字",
                         "subtext": "Replaces the text \"with LDAP\" and \"with SAML\" on the login page with the specified text."
                     }
                 },
-                "saveButton": "Save"
+                "saveButton": "保存"
             }
         },
         "preinstalledApps": {
             "name": "预装应用程序",
             "subtext": "选择新用户可以直接使用的预装应用程序。",
             "newAdminPreinstalledApps": {
-                "explanation": "Apps you configure on this page to be pre-installed will automatically be installed (show under /apps) for new users.",
+                "explanation": "在这个页面设置的预装应用程序将会自动展示给新用户（在 /apps 里）。",
                 "productivitySuite": {
-                    "label": "Productivity Suite",
-                    "subtext": "We recommend pre-installing these core apps that are useful to most users."
+                    "label": "Productivity Suite生产力套装",
+                    "subtext": "我们推荐预装这些核心应用，这些对大部分用户都很实用。"
                 },
                 "systemSuite": {
-                    "label": "System apps",
-                    "subtext": "We recommend pre-installing these system apps that greatly enhance the abilities of Sandstorm."
+                    "label": "系统应用",
+                    "subtext": "我们推荐预装这些系统应用，这些增强了沙聚云的能力。"
                 },
                 "allApps": {
-                    "label": "All apps on market",
-                    "subtext": "The checked apps below will be installed by default for all new users.",
-                    "lessButton": "Show fewer apps",
-                    "moreButton": "Show %s more apps"
+                    "label": "市场上的所有应用",
+                    "subtext": "这些的应用默认将会对所有用户提供。",
+                    "lessButton": "显示更少应用",
+                    "moreButton": "显示 %s 更多应用"
                 },
-                "saveButton": "Save"
+                "saveButton": "保存"
             },
             "_appRow": {
                 "download": {
-                    "success": "Downloaded",
-                    "failed": "Failed"
+                    "success": "已下载",
+                    "failed": "失败"
                 }
             }
         },
@@ -889,19 +889,19 @@
             "subtext": "获取应用程序及更新的地方。",
             "newAdminAppSources": {
                 "appMarketUrl": {
-                    "label": "App market URL",
-                    "subtext": "The \"Install...\" button on the Apps page will link to this URL."
+                    "label": "应用程序市场地址",
+                    "subtext": "市场上的\"安装...\"按钮会重定向到这里。"
                 },
                 "enableAppUpdates": {
-                    "label": "Enable app update notifications",
-                    "subtext": "Updates to apps will be automatically downloaded by the Sandstorm server daily and notifications sent to users asking if they want to update their installed apps."
+                    "label": "开启应用升级提醒",
+                    "subtext": "该应用程序的最新版本将会自动被沙聚云下载，并且会发送升级提示给每一名用户，以便他们自行决定是否要更新应用程序。"
                 },
                 "appIndexUrl": {
-                    "label": "App index URL",
-                    "subtext": "This is the URL that the Sandstorm server will check to learn about app updates."
+                    "label": "应用程序源地址",
+                    "subtext": "这个是沙聚云服务器检查该应用程序更新的地址。"
                 },
-                "saveButton": "Save",
-                "restoreButton": "Restore defaults"
+                "saveButton": "保存",
+                "restoreButton": "恢复默认设置"
             }
         },
         "networking": {
@@ -910,11 +910,11 @@
             "subtext": "控制如何使用网络。",
             "newAdminNetworking": {
                 "ipBlacklist": {
-                    "label": "Server-side request IP blacklist:",
+                    "label": "服务器端请求 IP 黑名单:",
                     "subtext": "Users will be prohibited from making requests to these IP addresses. This includes making a request from an app, downloading an SPK file from a user-provided URL, etc. You may specify one IP address or network (in CIDR notation, e.g. \"127.0.0.0/8\") per line. The default value includes standard local and private network addresses. Note that when an HTTP proxy is in use, this setting may be ignored; the proxy must implement its own blacklist."
                 },
-                "saveButton": "Save",
-                "restoreButton": "Restore defaults"
+                "saveButton": "保存",
+                "restoreButton": "恢复默认设置"
             }
         },
         "users": {
@@ -924,65 +924,65 @@
         "userAccounts": {
             "newAdminUserTableRow": {
                 "admin": {
-                    "hint": "Admin",
+                    "hint": "管理员",
                     "cap": "A"
                 },
                 "user": {
-                    "hint": "User",
+                    "hint": "用户",
                     "cap": "U"
                 },
                 "visitor": {
-                    "hint": "Visitor",
+                    "hint": "访客",
                     "cap": "V"
                 },
-                "unknownIdentity": "Unknown credential",
+                "unknownIdentity": "未知识别资料",
                 "unknownIdentifier": "unknown identifier",
-                "manageButton": "Manage"
+                "manageButton": "管理"
             },
             "newAdminUserTable": {
                 "header": {
-                    "name": "Name",
-                    "credentials": "Credentials",
-                    "created": "Created",
-                    "lastActive": "Last Active",
-                    "actions": "Actions"
+                    "name": "名称",
+                    "credentials": "识别资料",
+                    "created": "创建时间",
+                    "lastActive": "最后活跃时间",
+                    "actions": "动作"
                 },
-                "inviteLink": "Invite new user",
-                "notFound": "No users matched your filter.",
-                "processing": "Loading users..."
+                "inviteLink": "邀请新用户",
+                "notFound": "没有用户满足当前筛选。",
+                "processing": "加载用户中..."
             },
             "newAdminUsers": {
                 "search": {
-                    "placeholder": "search"
+                    "placeholder": "搜索"
                 },
                 "filter": {
-                    "explanation": "Show:",
-                    "admin": "Admin",
-                    "user": "User",
-                    "visitor": "Visitor"
+                    "explanation": "显示:",
+                    "admin": "管理员",
+                    "user": "用户",
+                    "visitor": "访客"
                 }
             }
         },
         "userDetails": {
             "newAdminUserDetailsIdentityTableRow": {
                 "profilePicture": {
-                    "label": "Profile picture"
+                    "label": "用户头像"
                 },
                 "handle": {
-                    "title": "Handle",
-                    "emails": "Emails"
+                    "title": "用户名",
+                    "emails": "电子邮件地址"
                 },
                 "pronouns": {
                     "hint": "Pronouns",
                     "label": "Pronouns"
                 },
                 "emails": {
-                    "hint": "Emails",
-                    "label": "Emails",
-                    "primary": "Primary",
-                    "verified": "Verified",
-                    "unverified": "Unverified",
-                    "notFound": "No known emails."
+                    "hint": "电子邮件地址",
+                    "label": "电子邮件地址",
+                    "primary": "主要",
+                    "verified": "已认证",
+                    "unverified": "未认证",
+                    "notFound": "无已知电子邮件地址。"
                 },
                 "properties": {
                     "login": "Can log in",
@@ -1021,32 +1021,32 @@
             },
             "newAdminUserDetails": {
                 "role": {
-                    "title": "Role",
+                    "title": "角色",
                     "admin": {
-                        "label": "Admin",
-                        "explanation": "Manages all accounts.  Can install apps, create grains, and administer the server.",
-                        "isAdmin": "Current role",
-                        "isNotAdmin": "Promote to admin"
+                        "label": "管理员",
+                        "explanation": "管理所有用户。可以安装应用程序，创建沙粒，并且管理整个服务器。",
+                        "isAdmin": "当前角色",
+                        "isNotAdmin": "提升至管理"
                     },
                     "user": {
-                        "label": "User",
-                        "explanation": "Can install apps and create grains.",
-                        "isUser": "Current role",
-                        "isAdmin": "Demote to user",
-                        "isNotUser": "Promote to user"
+                        "label": "用户",
+                        "explanation": "可以安装应用程序和创建沙粒。",
+                        "isUser": "当前角色",
+                        "isAdmin": "降级至用户",
+                        "isNotUser": "升级至用户"
                     },
                     "visitor": {
-                        "label": "Visitor",
-                        "explanation": "Can use and re-share shared grains, but cannot create grains of their own nor install apps.",
-                        "isVisitor": "Current role",
-                        "isNotVisitor": "Demote to visitor"
+                        "label": "访客",
+                        "explanation": "可以使用和再分享已分享的沙粒，但既不可以创建沙粒，也不可以安装应用程序。",
+                        "isVisitor": "当前角色",
+                        "isNotVisitor": "降级至访客"
                     }
                 },
                 "credentials": {
-                    "title": "Credentials"
+                    "title": "识别资料"
                 },
                 "profile": {
-                    "title": "Profile"
+                    "title": "个人资料"
                 },
                 "status": {
                     "title": "状态",
@@ -1185,18 +1185,18 @@
                 "variable2": "<code>$DATE</code> : The date component of \"Maintenance time\", converted to the user's local time (eg. \"6/19/2015\")",
                 "variable3": "<code>$IN_COUNTDOWN</code> : An active countdown until \"Maintenance time\" (eg. \"in 3 days\" or \"in 1 minute\"). Displays \"any moment\" at the time specified in \"Maintenance time\" and then disappears after an hour.",
                 "messageText": {
-                    "label": "Message text:",
+                    "label": "消息内容:",
                     "subtext": ""
                 },
                 "maintenanceTime": {
-                    "label": "Maintenance time:",
-                    "subtext": "The time you intend to start performing maintenance, formatted like \"%s\"."
+                    "label": "维护时间:",
+                    "subtext": "你开始维护的时间，需要格式化成 \"%s\"."
                 },
                 "url": {
-                    "label": "Link URL (optional):",
-                    "subtext": "If given, the maintenance message will render as a clickable link to the provided URL."
+                    "label": "链接地址 (可选):",
+                    "subtext": "如果填写了，那么点击该维护消息时将会转跳至您填写的链接。"
                 },
-                "saveButton": "Set message"
+                "saveButton": "设置消息"
             }
         },
         "networkCapabilities": {
@@ -1237,7 +1237,7 @@
             "newAdminHostingManagement": {
                 "explanation": "This feature is experiemental and only works with the LDAP identity provider at the moment. Use with caution.",
                 "quotaEnabled": {
-                    "label": "Enable quota for users",
+                    "label": "给每个用户设置限额",
                     "subtext": "Enable Quota management on this server. This requires both SAML and LDAP to be configured, and email addresses will be used to match between the two."
                 },
                 "quotaLdapAttribute": {
@@ -1248,8 +1248,8 @@
                     "label": "Billing prompt url",
                     "subtext": "This is the url that will be used in the billing prompt."
                 },
-                "saveButton": "Save",
-                "restoreButton": "Restore defaults"
+                "saveButton": "保存",
+                "restoreButton": "恢复默认设置"
             }
         }
     },
@@ -1378,94 +1378,94 @@
         }
     },
     "accounts": {
-        "title": "Account settings",
+        "title": "帐号设置",
         "accountSettings": {
             "sandstormAccountSettings": {
-                "title": "Account",
+                "title": "帐号",
                 "identities": {
-                    "title": "My Profile",
-                    "success": "Success: %s",
+                    "title": "我的个人资料",
+                    "success": "成功: %s",
                     "linkedCredentials": "Linked credentials",
                     "linkNewIdentity": {
                         "title": "Link new credential:",
-                        "cancelButton": "Cancel",
+                        "cancelButton": "取消",
                         "linkButton": "Link new credential",
-                        "logoutAllButton": "Log out all other sessions"
+                        "logoutAllButton": "销毁其它所有会话"
                     },
                     "email": {
-                        "title": "Primary e-mail address for service-related notifications",
-                        "primary": "Primary",
-                        "primaryButton": "Set as primary",
-                        "notFound": " No verified emails! ",
-                        "addNew": "Add new e-mail address"
+                        "title": "主要电子邮件是为了接收服务相关的消息。",
+                        "primary": "主要",
+                        "primaryButton": "设置为主要",
+                        "notFound": "没有已验证的电子邮件地址！",
+                        "addNew": "添加新的电子邮件地址"
                     }
                 },
                 "billing": {
-                    "title": "Billing"
+                    "title": "账单"
                 },
                 "deleteAccount": {
-                    "title": "Delete account",
-                    "button": "Delete your account"
+                    "title": "删除帐号",
+                    "button": "删除你的帐号"
                 },
                 "deletePopup": {
-                    "title": "Delete your account",
-                    "explanation": "You are about to mark your account for deletion. Once marked for deletion, your account will be suspended, and you will have 7 days to cancel the pending deletion by logging back into your account.",
-                    "results": "After 7 days, your account will be permanently deleted. Deleting your account will:",
-                    "result1": "Permanently delete any grains you created",
-                    "result2": "Revoke all sharing links you created",
-                    "result3": "Remove you from all users' contact lists",
-                    "result4": "Delete all credentials owned by your account (except credentials also associated with another account).",
-                    "confirm": "Please type \"delete my account\" below to confirm.",
-                    "goodbye": "We're sorry to see you go. Feel free to share any feedback you have with the server admin.",
-                    "feedbackPlaceholder": "Optional",
-                    "deleteButton": "Delete account",
-                    "cancelButton": "Cancel"
+                    "title": "删除你的帐号",
+                    "explanation": "你正在标记你的帐号为「待删除」。一旦被标记为「待删除」，你的帐号会被终止，并且你有七天的时间登录你的帐号来取消这个操作。",
+                    "results": "七天后，你的帐号將被永久刪除。删除帐号将：",
+                    "result1": "永远刪除所有你建立的沙粒",
+                    "result2": "撤销所有你建立的共享链接",
+                    "result3": "将你从所有人的联系人名单中删除",
+                    "result4": "刪除你帐号所有的识别资料（除非该识别资料亦被別的帐号使用）",
+                    "confirm": "请在下方输入 \"delete my account\" 来确认这个操作。",
+                    "goodbye": "对于您的离开我们深表歉意。有任何想说的不要忘记与服务器管理员反馈哦。",
+                    "feedbackPlaceholder": "可选",
+                    "deleteButton": "是，我要删除帐号",
+                    "cancelButton": "不，我不要了"
                 }
             },
             "sandstormAccountsFirstSignIn": {
-                "title": "Confirm your profile",
-                "success": "Success: %s"
+                "title": "确认你的个人资料",
+                "success": "成功: %s"
             },
             "accountSuspended": {
-                "title": "This account has been suspended by you.",
-                "deletedIn": "This account will be deleted in %s. Would you like to cancel deletion and restore this account?",
-                "suspended": "This account is suspended and all of its grains and shares are disabled. Would you like to restore this account?",
-                "restoreButton": "Restore account",
-                "logoutButton": "Logout"
+                "title": "这个帐号被你自己终止了！",
+                "deletedIn": "还有 %s 天，这个帐号就要被删除了。你希望取消这个操作并恢复帐号吗？",
+                "suspended": "这个帐号已经被终止，所有的沙粒和分享都被禁用。你希望恢复帐号吗？",
+                "restoreButton": "再给我一个机会",
+                "logoutButton": "我意已决"
             },
             "_accountProfileEditor": {
                 "picture": {
-                    "label": "Profile picture:",
-                    "uploadButton": "Upload new picture",
-                    "subtext": "This picture will be shown to other users to help identify you.",
-                    "maxSize": "512x512px, 64KiB max."
+                    "label": "个人资料头像:",
+                    "uploadButton": "上传新图片",
+                    "subtext": "这个照片可以方便让其他人认出你。",
+                    "maxSize": "最多 512x512 像素, 最大 64KiB。"
                 },
                 "fullName": {
-                    "label": "Full name:",
-                    "placeholder": "full name",
-                    "subtext": "Your regular first and last name, as you would like it displayed to others. This does not have to be your real name."
+                    "label": "全名:",
+                    "placeholder": "全名",
+                    "subtext": "你的姓和名。这个会被展示给他人，但不一定要填真名。"
                 },
                 "handle": {
-                    "label": "Handle:",
-                    "placeholder": "handle",
-                    "hint": "Handles must start with a lower-case letter and contain only lower-case letters, digits, and underscores.",
-                    "subtext": "To be displayed in apps that use handles. Your handle must start with a letter and contain only lower-case letters, digits, and underscores."
+                    "label": "用户名:",
+                    "placeholder": "用户名",
+                    "hint": "用户名必须以小写英文字母开头，并且只能包含小写英文字母、数字和下划线。",
+                    "subtext": "有些应用程序使用这个。你的用户名必须以小写英文字母开头，并且只能包含小写英文字母、数字和下划线。"
                 },
                 "emailList": {
-                    "label": "E-mail:"
+                    "label": "电子邮件地址:"
                 },
                 "pronoun": {
-                    "label": "Preferred pronoun:",
-                    "neutral": "they (unspecified)",
-                    "male": "he/him (male)",
-                    "female": "she/her (female)",
-                    "robot": "it (robot)"
+                    "label": "性别代词偏好:",
+                    "neutral": "这个人 (未指定)",
+                    "male": "他 (男性)",
+                    "female": "她 (女性)",
+                    "robot": "它 (机器人)"
                 },
                 "agreedToTerms": {
-                    "agreeTo": " I have read and agree to the",
-                    "termsOfServiceLink": "Terms of Service",
-                    "and": " and ",
-                    "privacyLink": "Privacy policy"
+                    "agreeTo": "我已经阅读并同意",
+                    "termsOfServiceLink": "服务条款",
+                    "and": " 和 ",
+                    "privacyLink": "隐私条款"
                 },
                 "saveButton": "Save",
                 "continueButton": "Continue",
@@ -1477,347 +1477,347 @@
                 "info": "i"
             },
             "loginButtons": {
-                "createButton": "Create account",
-                "signInButton": "Sign in"
+                "createButton": "创建帐号",
+                "signInButton": "登录"
             },
             "accountButtons": {
-                "loading": "Loading..."
+                "loading": "加载中.."
             },
             "_loginButtonsLoggedInDropdown": {
-                "revealIdentity": "Reveal identity",
-                "title": "Account",
-                "sendFeedback": "Send feedback",
-                "referralProgram": "Referral program",
-                "signOutButton": "Sign out"
+                "revealIdentity": "显示真实身份",
+                "title": "帐号",
+                "sendFeedback": "发送反馈",
+                "referralProgram": "推广计划",
+                "signOutButton": "登出"
             },
             "_loginButtonsLoggedOutDropdown": {
                 "demo": {
-                    "title": "Create account",
-                    "explanation": "Your demo data will be transferred to your new account."
+                    "title": "创建帐号",
+                    "explanation": "你在演示版中的数据会被无缝传输至新帐号上。"
                 },
-                "title": "Sign in",
+                "title": "登录",
                 "shared": {
-                    "explanation": "Sign in so that collaborators know who you are."
+                    "explanation": "登录后可以让协作者们知道你是谁。"
                 },
-                "signInButton": "Sign in",
-                "anonymousButton": "Stay anonymous"
+                "signInButton": "登录",
+                "anonymousButton": "保持匿名"
             },
             "oauthLoginButton": {
-                "with": "with "
+                "with": "使用 "
             },
             "devLoginForm": {
-                "label": "with a Dev account",
+                "label": "使用开发者帐号",
                 "hint": "unexpand",
                 "alice": "Alice (admin)",
                 "bob": "Bob",
                 "carol": "Carol",
                 "dave": "Dave",
                 "customPlaceholder": "Eve",
-                "customButton": "Custom"
+                "customButton": "自定义"
             },
             "loginButtonsList": {
-                "configure": "configure login",
-                "troubleshooting": "troubleshooting",
-                "about": "about Sandstorm"
+                "configure": "登录设置",
+                "troubleshooting": "故障排除",
+                "about": "关于沙聚云"
             },
             "emailLoginForm": {
-                "description": "with e-mail",
-                "sendButtonText": "send Login Email"
+                "description": "使用电子邮件",
+                "sendButtonText": "发送登录邮件"
             },
             "emailAuthenticationForm": {
-                "hint": "Passwordless E-mail Login allows you to log in using an e-mail address. No password is required; instead, every time you log in, we send you a new email confirmation code. You will only need to log in once per device.",
+                "hint": "无密码登录只需要你的电子邮件地址来登录。每次登录，我们向你发送一封邮件，并用里面的代码来取代密码。你在一台设备上只需要登录一次。",
                 "token": {
-                    "explanation": "We've sent a login e-mail to %s. It may take a few moments to show up in your inbox.",
-                    "label": "Enter your token:",
-                    "confirmButton": "Confirm",
-                    "cancelButton": "Cancel"
+                    "explanation": "我们向 %s 发送了登录邮件。可能需要数分钟才能在收件箱内看到。",
+                    "label": "输入代码：",
+                    "confirmButton": "确认",
+                    "cancelButton": "取消"
                 },
                 "disabled": "A server admin must enable email authentication before you can confirm your email."
             },
             "ldapLoginForm": {
                 "username": {
-                    "label": "username",
+                    "label": "用户名",
                     "hint": "This is your LDAP username. It will be the name that you normally use to log in to other internal services at your company."
                 },
                 "password": {
-                    "label": "password",
+                    "label": "密码",
                     "hint": "This is your LDAP password. It will be the password that you normally use to log in to other internal services at your company."
                 },
-                "loginButton": "Log in"
+                "loginButton": "登录"
             },
             "_loginButtonsSeparator": {
-                "or": "or"
+                "or": "或"
             }
         },
         "identity": {
             "identityLoginInterstitial": {
-                "title": "Logging in...",
-                "loading": "loading...",
-                "logoutButton": "Log out",
-                "cancelButton": "Cancel",
-                "goBackButton": "Go back",
-                "create": "creating account...",
-                "createFailed": "Failed to create account.",
-                "loginAccount": "logging in to account...",
-                "loginAccountFailed": "Account login failed",
-                "loginToken": "logging back in to account...",
-                "loginTokenFailed": "Failed to resume session.",
-                "link": "linking credential to account...",
-                "success": "Unlinked credential from %s",
-                "explanation": "You have authenticated as this credential",
-                "warning": "but that is not a login credential for any account.",
-                "moreIdentities": "The following credentials can log in to your credential's accounts:",
+                "title": "登录中...",
+                "loading": "加载中...",
+                "logoutButton": "登出",
+                "cancelButton": "取消",
+                "goBackButton": "赴会",
+                "create": "创建帐号中...",
+                "createFailed": "创建帐号失败！",
+                "loginAccount": "登录中..",
+                "loginAccountFailed": "帐号登录失败。",
+                "loginToken": "重新登录至帐号中...",
+                "loginTokenFailed": "不能继续当前会话。",
+                "link": "连接识别资料到帐号中...",
+                "success": "已取消该识别帐号与帐号 %s 的连接",
+                "explanation": "你已经被识别为该识别资料",
+                "warning": "但所有帐号都与这个识别资料无关连。",
+                "moreIdentities": "以下识别资料能登录进您的帐号:",
                 "unlinkButton": {
-                    "hint": "Unlink your credential from this account.",
-                    "text": "unlink"
+                    "hint": "取消该识别资料与帐号之间的连接。",
+                    "text": "取消连接"
                 },
                 "unlink": {
-                    "explanation": "Are you sure you want to unlink your credential from the account of %s?",
-                    "unlinkButton": "Unlink",
-                    "cancelButton": "Cancel"
+                    "explanation": "你确定想取消该识别资料与帐号 %s 之间的连接？",
+                    "unlinkButton": "是的，取消连接",
+                    "cancelButton": "让我再想想"
                 }
             },
             "identityManagementButtons": {
                 "toggleLogin": {
-                    "label": "Allow this credential to log in to your account.",
-                    "unlinkButton": "Unlink"
+                    "label": "允许以这个识别资料登录你的帐号。",
+                    "unlinkButton": "取消连接"
                 }
             },
             "loginIdentitiesOfLinkedAccounts": {
                 "show": {
-                    "explanation": "This credential is shared with other accounts. Those accounts have the following login credentials:",
-                    "unlinkButton": "unlink",
-                    "hideButton": "hide other accounts"
+                    "explanation": "这个识别资料正与其它帐号共享。这些帐号分别有这些识别资料：",
+                    "unlinkButton": "取消连接",
+                    "hideButton": "隐藏其它帐号"
                 },
                 "hide": {
-                    "explanation": "This credential is shared with at least one other account.",
-                    "showButton": "show other accounts"
+                    "explanation": "这个识别资料至少与另外一个帐号共享。",
+                    "showButton": "显示其它帐号"
                 }
             },
             "identityCardSignInButton": {
-                "hint": "sign in as %s",
-                "title": "Sign in"
+                "hint": "以 %s 登录",
+                "title": "登录"
             },
             "accountCardSignInButton": {
-                "reSign": "To sign out of your current account and sign in as this user, choose how to sign in:",
-                "howToSignIn": "Choose how to sign in:"
+                "reSign": "为了登出当前用户并切换另一用户，请选择如何登录:",
+                "howToSignIn": "选择如何登录:"
             }
         },
         "tokenTemplates": {
             "_emailTokenError": {
-                "title": "Invalid authentication code. If it has been more than 15 minutes, the token has expired, otherwise you may have simply mistyped it."
+                "title": "认证码不对哦，除非 15 分钟过去导致它过期了，否则你输入错啦！"
             },
             "_emailLinkIdentityError": {
-                "title": "To confirm your email address, you must be logged in as the account that created this link."
+                "title": "为了确认邮件地址，你必须登录进创建了该链接的帐号。"
             },
             "addNewVerifiedEmailPowerboxConfiguration": {
                 "email": {
-                    "placeholder": "enter email address",
-                    "selectButton": "Select",
-                    "sendButton": "Send confirmation email"
+                    "placeholder": "输入邮件地址",
+                    "selectButton": "选择",
+                    "sendButton": "发送确认邮件"
                 },
-                "sendingTo": "Sending to %s",
-                "resetButton": "Try a different address",
+                "sendingTo": "发送至 %s",
+                "resetButton": "发送至另一地址",
                 "token": {
-                    "placeholder": "enter your token",
-                    "confirmButton": "Confirm"
+                    "placeholder": "输入你的代码",
+                    "confirmButton": "确认"
                 },
-                "verifying": "Verifying token..."
+                "verifying": "验证代码中..."
             }
         }
     },
     "wizard": {
         "setupWizardLoading": {
-            "loading": "Loading..."
+            "loading": "加载中..."
         },
         "setupWizardProgressBar": {
-            "identityProviders": "Login providers",
-            "organization": "Organization",
-            "email": "Email",
-            "preinstalledApps": "Pre-installed apps",
-            "adminAccount": "Admin account"
+            "identityProviders": "登录提供程序",
+            "organization": "组织",
+            "email": "电子邮件",
+            "preinstalledApps": "预装应用",
+            "adminAccount": "管理员帐号"
         },
         "setupWizardHelpFooter": {
-            "needHelp": "Need help?",
-            "documentation": "Documentation",
-            "emailSupport": "Email support",
-            "systemLog": "System Log"
+            "needHelp": "需要帮助？",
+            "documentation": "文档",
+            "emailSupport": "邮件支持",
+            "systemLog": "系统日志"
         },
         "setupWizardSystemLog": {
             "header": {
-                "label": "System log",
-                "downloadButton": "Download log"
+                "label": "系统日志",
+                "downloadButton": "下载日志"
             },
-            "permissionDenied": "You cannot view the system log because you are not logged in as an admin and you do not have a setup token."
+            "permissionDenied": "你不能查看系统日志，这是因为你没有以管理员登录或者没有安装口令。"
         },
         "setupWizardIntro": {
-            "title": "Welcome to Sandstorm!",
-            "revisitWizardLink": "Revisit setup wizard",
+            "title": "欢迎来到沙聚云！",
+            "revisitWizardLink": "重新访问设置向导",
             "noIdpEnabled": {
-                "explanation": "This Sandstorm server has been set up previously, but due to a change in <code>sandstorm.conf</code>, you'll need to configure login providers again."
+                "explanation": "该沙聚云实例已经设置完成，但是因为在 <code>sandstorm.conf</code> 里有更改，所以您需要重新设置登录提供程序。"
             },
             "idpEnabled": {
-                "explanation": "This Sandstorm server is ready to roll. You can adjust server settings, including which providers are enabled and how Sandstorm sends email.",
-                "turnUserIntoAdmin": "You can also turn an existing user into an administrator.",
+                "explanation": "该沙聚云实例可以正式接待用户了！你现在可以调整服务器设置，包括启用哪些服务商和邮件的发送。",
+                "turnUserIntoAdmin": "你亦可以将现有用户提升为管理员。",
                 "isAdmin": {
-                    "adminPanelLink": "Proceed to admin panel",
-                    "suButton": "Give yourself admin privileges "
+                    "adminPanelLink": "进入管理员控制台",
+                    "suButton": "提升自己为管理员"
                 },
                 "isNotAdmin": {
-                    "explanation": "To make an account into an admin account, please sign in:",
-                    "signInLabel": "Sign in",
-                    "signInButton": "Sign in to become admin"
+                    "explanation": "欲将用户提升为管理员，请登录:",
+                    "signInLabel": "登录",
+                    "signInButton": "登录来成为管理员"
                 }
             },
-            "setupButton": "Begin Sandstorm Setup"
+            "setupButton": "开始安装沙聚云"
         },
         "setupWizardIdentity": {
-            "title": "Login providers",
-            "explanation1": "To use Sandstorm, you need to create a user account.  Every user account on Sandstorm is backed by an login provider.  You'll use this login provider to authenticate as the first administrator of this Sandstorm install.",
-            "explanation2": "Configure the login provider or providers you wish to enable.",
-            "nextButton": "Next",
-            "backButton": "Back"
+            "title": "登录提供程序设置",
+            "explanation1": "你需要创建一个用户帐户来使用沙聚云。每一个沙聚云上的用户帐户都是基于登录提供程序的，你会用它来身份验证为管理员。",
+            "explanation2": "设置登录提供程序，或只开启你想要的。",
+            "nextButton": "下一步",
+            "backButton": "上一步"
         },
         "setupWizardOrganization": {
-            "title": "Organization settings",
-            "error": "Failed to save change: %s",
+            "title": "组织设置",
+            "error": "该项保存失败: %s",
             "membership": {
-                "title": "Organization membership",
+                "title": "组织成员",
                 "emailToggle": {
-                    "label": "Users authenticated via email address",
-                    "subtext": "Note: disabled because email login is not configured."
+                    "label": "用户通过电子邮件地址验证",
+                    "subtext": "注：已禁用，因为通过电子邮件登录未被配置。"
                 },
                 "emailDomain": {
-                    "label": "Domain:",
-                    "subtext": "Users with an email address at this domain will be members of this server's organization."
+                    "label": "域名:",
+                    "subtext": "用户使用该域名的电子邮件地址注册时会成为该服务器的组织成员。"
                 },
                 "gappsToggle": {
-                    "label": "Users authenticated via Google Apps for Work",
-                    "subtext": "Note: disabled because Google login is not configured."
+                    "label": "用户通过 Google Apps for Work 验证",
+                    "subtext": "注：已禁用，因为通过 Google 登录未被配置。"
                 },
                 "gappsDomain": {
-                    "label": "Domain:",
-                    "subtext": "Users with a Google Apps for Work account under this domain will be members of this server's organization."
+                    "label": "域名:",
+                    "subtext": "拥有该域名 Google Apps for Work 的用户注册时会成为该服务器的组织成员。"
                 },
                 "ldapToggle": {
-                    "label": "Users authenticated via LDAP",
-                    "subtext": "Note: disabled because LDAP login is not configured."
+                    "label": "用户通过 LDAP 验证",
+                    "subtext": "注：已禁用，因为通过 LDAP 未被配置。"
                 },
                 "samlToggle": {
-                    "label": "Users authenticated via SAML",
-                    "subtext": "Note: disabled because SAML login is not configured."
+                    "label": "用户通过 SAML 验证",
+                    "subtext": "注：已禁用，因为通过 SAML 未被配置。"
                 }
             },
             "settings": {
-                "title": "Organization settings",
+                "title": "组织设计",
                 "disallowGuests": {
-                    "label": "Disallow collaboration with users outside the organization.",
-                    "subtext": "Users will be required to log in as a member of your organization to view sharing links. Guest access will be disabled."
+                    "label": "禁止与组织外部的用户进行协作。",
+                    "subtext": "用户将被要求以您组织的成员身份登录才能查看共享的链接。访客访问将被禁用。"
                 },
                 "shareContacts": {
-                    "label": "Make all organization users visible to each other",
-                    "subtext": "This setting automatically adds users within the organization to each other's contact list so that they can share grains with each other.  Disable this if you have some users whose identity should stay hidden from other users."
+                    "label": "使所有组织用户彼此可见。",
+                    "subtext": "此设置会自动将组织内的用户添加到彼此的联系人列表中，以便他们可以彼此共享沙粒。如果您的组织中有一些用户需要对其他人隐藏，请禁用此功能。"
                 }
             },
-            "saveButton": "Save and continue",
-            "backButton": "Back"
+            "saveButton": "保存并继续",
+            "backButton": "返回"
         },
         "setupWizardEmailConfig": {
-            "title": "Email delivery",
-            "explanation": "Sandstorm needs a way to send email.  You can skip this step (unless you're using email login), but email-related features will be unavailable until you configure email in the future.",
-            "moreDetail": "<strong>How Sandstorm uses email:</strong> Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too. Every app receives a unique email address, so Sandstorm needs to send email from a variety of \"From:\" addresses. Therefore, Gmail SMTP won't work, but there are other free services. See more info in <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">the docs</a>.",
-            "error": "Failed to save changes: %s",
+            "title": "邮件发送设置",
+            "explanation": "沙聚云需要一个方式来发送邮件。你现在可以跳过这步（除非你在使用邮件登录），但是邮件类功能除非日后设置它，否则会不可用。",
+            "moreDetail": "<strong>沙聚云使用电子邮件的方式：</strong> 沙聚云可以发送电子邮件，而沙聚云里面的应用程序也可以发送邮件。每一款应用程序都有一个独一无二的地址，所以沙聚云需要通过不同的「发件人」地址发送邮件。因此，Gmail 是不可用的，但是有其它免费的服务可以做到。更多详见<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">文档</a>。",
+            "error": "以下设置保存更改失败: %s",
             "hostPort": {
-                "host": "SMTP host",
-                "port": "Port",
-                "subtext": "Use port 25 for SMTP (unencrypted or with StartTLS), port 465 for TLS-encrypted SMTPS."
+                "host": "SMTP 主机",
+                "port": "端口",
+                "subtext": "SMTP 使用 25 端口（未加密或使用 StartTLS），通过 TLS 加密则使用 SMTPS 的 465 端口。"
             },
             "username": {
-                "label": "Username (optional)"
+                "label": "用户名 (可选)"
             },
             "password": {
-                "label": "Password (optional)"
+                "label": "密码 (可选)"
             },
             "email": {
-                "label": "Sandstorm server's own email address",
-                "subtext": "Sandstorm will send login emails, notifications of granted access requests, and other emails from this address. It will also use this address in the SMTP envelope."
+                "label": "沙聚云服务器的电子邮件地址",
+                "subtext": "沙聚云会用该地址发送登录邮件，请求权限提醒等其它邮件。它还将在 SMTP 中使用该地址。"
             },
-            "saveButton": "Save and continue",
-            "skipButton": "Skip for now",
-            "testButton": "Test",
-            "backButton": "Back"
+            "saveButton": "保存并继续",
+            "skipButton": "先跳过这个",
+            "testButton": "测试",
+            "backButton": "返回"
         },
         "setupWizardPreinstalled": {
-            "title": "Pre-installed Apps Setup",
-            "explanation": "Please wait while Sandstorm installs the following Productivity Suite apps that are useful for most users. You will be able to configure all pre-installed apps in the Admin Settings panel after setup.",
-            "downloaded": "Downloaded",
-            "failed": "Failed",
-            "loading": "Please wait, loading app index...",
-            "nextButton": "Next",
-            "skipButton": "Skip for now",
-            "backButton": "Back"
+            "title": "预装应用程序设置",
+            "explanation": "在沙聚云安装大家都能使用的生产力套装时，请等待。你可以在安装向导结束后在管理员设置内设置预装应用。",
+            "downloaded": "已下载",
+            "failed": "下载失败",
+            "loading": "请等待，加载应用程序列表...",
+            "nextButton": "下一步",
+            "skipButton": "先跳过这个",
+            "backButton": "返回"
         },
         "setupWizardLoginUser": {
-            "title": "Create admin account",
+            "title": "创建管理员帐号",
             "firstLogin": {
-                "title": "Confirm your profile"
+                "title": "确认您的个人资料"
             },
-            "isAdmin": "Great! Your account has admin privileges.",
+            "isAdmin": "真棒！您的帐号现在拥有管理员权限了。",
             "hasAdmin": {
-                "explanation": "This Sandstorm server already has an admin user, but if you want, you can also make yourself an admin.",
-                "adminButton": "Become an admin"
+                "explanation": "该沙聚云服务器已经有一名管理员了。但是您想的话，您也可以将自己提升为管理员。",
+                "adminButton": "成为管理员"
             },
-            "makeYouAnAdmin": "Making you an admin on this server...",
+            "makeYouAnAdmin": "正在将您提升为管理员...",
             "loggedOut": {
-                "explanation": "You can now create an admin account on this Sandstorm server.",
-                "description": "Log in to create your admin account",
-                "dialogLabel": "Create account"
+                "explanation": "你现在可以在该沙聚云服务器上创建一个管理员帐号。",
+                "description": "登录来创建你的管理员帐号",
+                "dialogLabel": "创建帐号"
             },
-            "finishButton": "Finish",
-            "backButton": "Back"
+            "finishButton": "完成",
+            "backButton": "返回"
         },
         "setupWizardSuccess": {
-            "title": "Ready to roll!",
-            "serverIsReady": "Your Sandstorm server is now ready to use.",
-            "whatsNext": "What would you like to do next?",
-            "addUsersLink": "Add users",
-            "editSettingsLink": "Edit other settings",
-            "sandstormLink": "Start using Sandstorm",
-            "backButton": "Back"
+            "title": "准备就绪！",
+            "serverIsReady": "您的沙聚云服务器可以使用了。",
+            "whatsNext": "下一步，想做点啥？",
+            "addUsersLink": "添加用户",
+            "editSettingsLink": "编辑其它设置",
+            "sandstormLink": "开始使用沙聚云",
+            "backButton": "返回"
         },
         "setupWizardVerifyToken": {
-            "title": "Verifying token...",
-            "explanation": "Sorry, it looks like your setup token has expired.",
-            "howToFix": "Generate a new one now from the command line by running <code>sandstorm admin-token</code> to access the setup wizard."
+            "title": "验证口令中...",
+            "explanation": "对不起，看起来安装口令失效了。",
+            "howToFix": "通过在命令行输入 <code>sandstorm admin-token</code> 来生成一个新口令以访问设置向导吧。"
         },
         "setupWizardTokenExpired": {
-            "title": "Setup token required",
-            "alreadySetup": "This server is already set up, so we recommend administering it via the main",
-            "adminRootLink": "administration panel",
-            "explanation": "To use this server's setup page, you need a valid setup token.",
-            "howToFix": "Generate a new one now from the command line by running <code>sandstorm admin-token</code> and following the link it outputs."
+            "title": "需要安装口令",
+            "alreadySetup": "服务器已经设置好了，欲管理的话我们推荐通过",
+            "adminRootLink": "管理员面板",
+            "explanation": "如想使用服务器的设置向导，你需要一个正确的安装口令。",
+            "howToFix": "在命令行输入 <code>sandstorm admin-token</code> 并按照提示做吧。"
         }
     },
     "packages": {
         "topbar": {
-            "updated": "Sandstorm has been updated — Click here to reload",
-            "apps": "Apps",
-            "grains": "Grains",
-            "oasis": "Start collaborating with others by using Sandstorm on Oasis:",
-            "createAccount": "Create free account »",
-            "demoHint": "Your demo data will be transferred.",
-            "selfHostHint": "This is a limited-time demo. If you want to use Sandstorm for real, install it on your own server (it's open source):",
-            "signUp": "Demo time remaining:",
-            "close": "Close"
+            "updated": "沙聚云被更新啦 - 点此重载",
+            "apps": "应用程序",
+            "grains": "沙粒",
+            "oasis": "开始与其它人在 Oasis 上的沙聚云协作吧：",
+            "createAccount": "创建一个免费帐户 »",
+            "demoHint": "你的演示版帐号内数据会被传输。",
+            "selfHostHint": "这是一个限时演示版。如果你希望作为日常使用，可以在自己的服务器上安装（这是开源的）：",
+            "signUp": "演示版剩余时间：",
+            "close": "关闭"
         },
         "powerbox": {
-            "title": "Powerbox request",
-            "inputToken": "Please input an api token:",
-            "importToken": "Import token",
-            "selected": "Selected:",
-            "selectOne": "Select one:",
-            "noGrain": "No grains can provide the requested interface.",
-            "loading": "Loading..."
+            "title": "Powerbox 请求",
+            "inputToken": "请输入 API 口令:",
+            "importToken": "导入口令",
+            "selected": "已选中:",
+            "selectOne": "选择一项:",
+            "noGrain": "没有沙粒能提供请求的界面。",
+            "loading": "加载中..."
         }
     }
 }

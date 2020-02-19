@@ -1,3 +1,10 @@
+### v0.260 (2020-02-15)
+- Updated dependencies.
+- Internationalized "mass transfers" page, and translated to Finnish. Thanks to Laurie "xet7" Ojansivu for this change.
+- Tweaked systemd unit file (only affects new installs).
+- Typo fixes.
+- Many documentation improvements (on [docs.sandstorm.io](https://docs.sandstorm.io)).
+
 ### v0.259 (2020-02-01)
 - Disabled ability to upgrade demo accounts to full accounts on private servers, so that we can change the Sandstorm demo over to run on Alpha.
 - This version will be skipped by auto-update since this update is only needed on Sandstorm Alpha.

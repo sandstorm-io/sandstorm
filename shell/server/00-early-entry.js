@@ -38,6 +38,9 @@
 
 // Import packages that sandstorm depends on.
 
+// sandstorm-permissions.  Depends on sandstorm-db.
+import "../imports/sandstorm-permissions/permissions.js";
+
 // sandstorm-autoupdate-apps.  Depends on sandstorm-db.
 import "../imports/sandstorm-autoupdate-apps/autoupdate-apps.js";
 

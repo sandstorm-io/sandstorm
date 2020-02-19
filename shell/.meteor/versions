@@ -91,7 +91,6 @@ routepolicy@1.1.0
 sandstorm-capnp@0.1.0
 sandstorm-db@0.1.0
 sandstorm-identicons@0.1.0
-sandstorm-permissions@0.1.0
 service-configuration@1.0.11
 session@1.2.0
 sha@1.0.9

@@ -32,7 +32,6 @@ reactive-dict@1.3.0
 sandstorm-capnp
 sandstorm-db
 sandstorm-identicons
-sandstorm-permissions
 fourseven:scss
 sha@1.0.9
 standard-minifier-css@1.5.3

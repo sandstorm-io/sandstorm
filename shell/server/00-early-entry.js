@@ -38,6 +38,9 @@
 
 // Import packages that sandstorm depends on.
 
+// sandstorm-accounts-packages
+import "../imports/sandstorm-accounts-packages/accounts.js";
+
 // sandstorm-ui-powerbox.  Depends on sandstorm-capnp
 import "../imports/sandstorm-ui-powerbox/powerbox-server.js";
 

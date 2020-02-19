@@ -21,7 +21,8 @@ reload@1.3.0
 random@1.1.0
 
 iron:router
-sandstorm-accounts-packages
+accounts-base
+accounts-oauth
 http@1.4.2
 browser-policy@1.1.0
 routepolicy@1.1.0

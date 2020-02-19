@@ -40,6 +40,9 @@ import { Template } from "meteor/templating";
 
 // Load packages that the sandstorm shell depends on before sandstorm itself.
 
+// sandstorm-accounts-packages
+import "../../imports/sandstorm-accounts-packages/accounts.js";
+
 // sandstorm-ui-topbar.  Depends on sandstorm-identicons.
 import "../../imports/sandstorm-ui-topbar/topbar.html";
 import "../../imports/sandstorm-ui-topbar/topbar.js";

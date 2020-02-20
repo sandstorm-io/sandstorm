@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
+import { iconSrcForPackage, identiconForApp } from "/imports/sandstorm-identicons/helpers.js";
 
 // Test if localStorage is usable.
 // We can't use Meteor._localStorage for this because we need to be able to enumerate the elements
@@ -81,7 +82,7 @@ const showActivityDesktopNotification = (notif) => {
     const pkg = globalDb.collections.devPackages.findOne({ appId: grain.appId }) ||
                 globalDb.collections.packages.findOne({ _id: grain.packageId });
     if (pkg) {
-      appIcon = Identicon.iconSrcForPackage(pkg, "notification", staticPrefix);
+      appIcon = iconSrcForPackage(pkg, "notification", staticPrefix);
     }
 
     // We are the canonical title of this grain.
@@ -101,7 +102,7 @@ const showActivityDesktopNotification = (notif) => {
       if (meta && meta.icon && meta.icon.assetId) {
         appIcon = staticPrefix + "/" + meta.icon.assetId;
       } else {
-        appIcon = Identicon.identiconForApp((meta && meta.appId) || "00000000000000000000000000000000");
+        appIcon = identiconForApp((meta && meta.appId) || "00000000000000000000000000000000");
       }
 
       const titleObj = computeTitleFromTokenOwnerUser(tokenOwnerUser);

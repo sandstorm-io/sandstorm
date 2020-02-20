@@ -38,14 +38,10 @@
 
 // Import packages that sandstorm depends on.
 
-// sandstorm-identicons.
-import "../imports/sandstorm-identicons/identicon.js";
-import "../imports/sandstorm-identicons/helpers.js";
-
 // sandstorm-capnp.
 import "../imports/server/capnp.js";
 
-// sandstorm-db.  Depends on sandstorm-capnp and sandstorm-identicons.
+// sandstorm-db.  Depends on sandstorm-capnp.
 import "../imports/sandstorm-db/db.js";
 import "../imports/sandstorm-db/profile.js";
 import "../imports/sandstorm-db/scheduled-jobs-db.js";

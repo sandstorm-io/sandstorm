@@ -1,3 +1,5 @@
+import { iconSrcForPackage } from "/imports/sandstorm-identicons/helpers.js";
+
 const latestPackageForAppId = function (db, appId) {
   // Dev apps mask current package version.
   const devPackage = db.collections.devPackages.findOne({ appId: appId });
@@ -125,7 +127,7 @@ Template.sandstormAppDetails.helpers({
   appIconSrc: function () {
     const ref = Template.instance().data;
     const pkg = ref.pkg;
-    return pkg && Identicon.iconSrcForPackage(pkg, "appGrid", window.location.protocol + "//" + ref.staticHost);
+    return pkg && iconSrcForPackage(pkg, "appGrid", window.location.protocol + "//" + ref.staticHost);
   },
 
   appId: function () {

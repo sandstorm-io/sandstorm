@@ -1,4 +1,5 @@
 import { introJs } from "intro.js";
+import { identiconForApp } from "/imports/sandstorm-identicons/helpers.js";
 
 SandstormGrainListPage = {};
 
@@ -41,7 +42,7 @@ SandstormGrainListPage.mapApiTokensToTemplateObject = function (apiTokens, stati
     // TODO(someday): use source sets and the dpi2x value
     const iconSrc = (grainInfo && grainInfo.icon && grainInfo.icon.assetId) ?
         (window.location.protocol + "//" + staticAssetHost + "/" + grainInfo.icon.assetId) :
-        Identicon.identiconForApp((grainInfo && grainInfo.appId) || "00000000000000000000000000000000");
+        identiconForApp((grainInfo && grainInfo.appId) || "00000000000000000000000000000000");
     const result = {
       _id: grainId,
       title: ownerData.title,

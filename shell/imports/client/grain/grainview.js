@@ -17,6 +17,7 @@
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
 import { isStandalone } from "/imports/client/standalone.js";
 import { GrainViewList } from "/imports/client/grain/grainview-list.js";
+import { identiconForApp, iconSrcForPackage } from "/imports/sandstorm-identicons/helpers.js";
 
 let counter = 0;
 
@@ -680,7 +681,7 @@ class GrainView {
 
   _fallbackIdenticon() {
     // identifier is SHA1('');
-    return Identicon.identiconForApp("da39a3ee5e6b4b0d3255bfef95601890afd80709", "grain");
+    return identiconForApp("da39a3ee5e6b4b0d3255bfef95601890afd80709", "grain");
   }
 
   _urlForAsset(assetId) {
@@ -699,7 +700,7 @@ class GrainView {
       if (grain) {
         const pkg = this._db.collections.devPackages.findOne({ appId: grain.appId }) ||
                   this._db.collections.packages.findOne({ _id: grain.packageId });
-        if (pkg) return Identicon.iconSrcForPackage(pkg, "grain", window.location.protocol + "//" + makeWildcardHost("static"));
+        if (pkg) return iconSrcForPackage(pkg, "grain", window.location.protocol + "//" + makeWildcardHost("static"));
       }
     } else if (!this._isUsingAnonymously()) {
       // Case 2
@@ -713,7 +714,7 @@ class GrainView {
       if (apiToken) {
         const meta = apiToken.owner.user.denormalizedGrainMetadata;
         if (meta && meta.icon && meta.icon.assetId) return this._urlForAsset(meta.icon.assetId);
-        if (meta && meta.appId) return Identicon.identiconForApp(meta.appId, "grain");
+        if (meta && meta.appId) return identiconForApp(meta.appId, "grain");
       }
     } else {
       // Case 3
@@ -721,7 +722,7 @@ class GrainView {
       if (tokenInfo && tokenInfo.grainMetadata) {
         const meta = tokenInfo.grainMetadata;
         if (meta.icon) return this._urlForAsset(meta.icon.assetId);
-        if (meta.appId) return Identicon.identiconForApp(meta.appId, "grain");
+        if (meta.appId) return identiconForApp(meta.appId, "grain");
       }
     }
 

@@ -11,7 +11,7 @@
 // Trivially modified for Meteor context by Kenton Varda.
 // Later modified to produce an SVG rather than a PNG.
 
-Identicon = class Identicon {
+class Identicon {
   constructor(hash, size, margin) {
     this.hash   = hash;
     this.size   = size   || 64;
@@ -82,20 +82,4 @@ Identicon = class Identicon {
   }
 };
 
-if (Meteor.isServer) {
-  // Because identicons are so simple, we can save a lot of bandwidth by applying compression
-  // before sending them from the server to the client. The PNG format has built-in support for
-  // lossless compression, but indenticon.js does not take advantage of it. We could work around
-  // that fact by roundtripping the PNGs through a more complete library like pngjs, or we could
-  // just apply gzip on top of the suboptimal PNG. We opt for the latter approach.
-  const Zlib = Npm.require("zlib");
-  const gzipSync = Meteor.wrapAsync(Zlib.gzip, Zlib);
-
-  Identicon.prototype.asAsset = function () {
-    return {
-      mimeType: "image/svg+xml",
-      content: gzipSync(new Buffer(this.render())),
-      encoding: "gzip",
-    };
-  };
-}
+export default Identicon;

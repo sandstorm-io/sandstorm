@@ -20,6 +20,7 @@ const Crypto = Npm.require("crypto");
 import { PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements,
          fetchApiToken, insertApiToken } from "/imports/server/persistent.js";
 import { SandstormBackend } from "/imports/server/backend.js";
+import { hashAppIdForIdenticon } from "/imports/sandstorm-identicons/helpers.js";
 
 const PersistentHandle = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentHandle;
 const SandstormCore = Capnp.importSystem("sandstorm/supervisor.capnp").SandstormCore;
@@ -251,7 +252,7 @@ class PersistentUiViewImpl extends PersistentImpl {
           viewInfo.grainIcon = new Capnp.Capability(new StaticAssetImpl(grainIcon.assetId),
                                                     StaticAsset);
         } else {
-          const hash = Identicon.hashAppIdForIdenticon(pkg.appId);
+          const hash = hashAppIdForIdenticon(pkg.appId);
           viewInfo.grainIcon = new Capnp.Capability(new IdenticonStaticAssetImpl(hash, 24),
                                                     StaticAsset);
         }

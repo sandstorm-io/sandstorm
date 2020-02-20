@@ -38,11 +38,7 @@
 
 // Load packages that the sandstorm shell depends on before sandstorm itself.
 
-// sandstorm-identicons.
-import "../imports/sandstorm-identicons/identicon.js";
-import "../imports/sandstorm-identicons/helpers.js";
-
-// sandstorm-db.  Depends on sandstorm-identicons.
+// sandstorm-db.
 import "../imports/sandstorm-db/db.js";
 import "../imports/sandstorm-db/profile.js";
 

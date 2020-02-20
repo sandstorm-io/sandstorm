@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
+import { iconSrcForPackage, iconSrcForDenormalizedGrainMetadata } from "/imports/sandstorm-identicons/helpers.js";
 
 testNotifications = () => {
   // Run on console to create some dummy notifications for the purpose of seeing what they look
@@ -96,11 +97,11 @@ Template.notificationsPopup.helpers({
           if (grain.packageId) {
             const pkg = Packages.findOne(grain.packageId);
             if (pkg) {
-              row.grainIcon = Identicon.iconSrcForPackage(pkg, usage, staticPrefix);
+              row.grainIcon = iconSrcForPackage(pkg, usage, staticPrefix);
             } else {
               const devPackage = DevPackages.findOne({ appId: grain.appId });
               if (devPackage) {
-                row.grainIcon = Identicon.iconSrcForPackage(devPackage, usage, staticPrefix);
+                row.grainIcon = iconSrcForPackage(devPackage, usage, staticPrefix);
               }
             }
           }
@@ -117,7 +118,7 @@ Template.notificationsPopup.helpers({
           if (apiToken) {
             const tokenOwnerUser = apiToken.owner.user;
             const meta = tokenOwnerUser.denormalizedGrainMetadata;
-            row.grainIcon = Identicon.iconSrcForDenormalizedGrainMetadata(meta, usage, staticPrefix);
+            row.grainIcon = iconSrcForDenormalizedGrainMetadata(meta, usage, staticPrefix);
 
             const titleObj = computeTitleFromTokenOwnerUser(tokenOwnerUser);
             row.grainTitle = titleObj.title;

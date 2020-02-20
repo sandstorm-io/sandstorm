@@ -16,6 +16,8 @@
 
 // This file defines the database schema.
 
+import { iconSrcForPackage } from "/imports/sandstorm-identicons/helpers.js";
+
 // Useful for debugging: Set the env variable LOG_MONGO_QUERIES to have the server write every
 // query it makes, so you can see if it's doing queries too often, etc.
 if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
@@ -1457,7 +1459,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   iconSrcForPackage(pkg, usage) {
-    return Identicon.iconSrcForPackage(pkg, usage, httpProtocol + "//" + this.makeWildcardHost("static"));
+    return iconSrcForPackage(pkg, usage, httpProtocol + "//" + this.makeWildcardHost("static"));
   },
 
   getDenormalizedGrainInfo(grainId) {

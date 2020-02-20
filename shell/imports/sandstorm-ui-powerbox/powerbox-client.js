@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { identiconForApp } from "/imports/sandstorm-identicons/helpers.js";
+
 const PowerboxOptions = new Mongo.Collection("powerboxOptions");
 
 SandstormPowerboxRequest = class SandstormPowerboxRequest {
@@ -186,7 +188,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
             (grainInfo && grainInfo.appTitle && grainInfo.appTitle.defaultText) || "",
         iconSrc: (grainInfo && grainInfo.icon && grainInfo.icon.assetId) ?
             (window.location.protocol + "//" + staticAssetHost + "/" + grainInfo.icon.assetId) :
-            Identicon.identiconForApp(
+            identiconForApp(
                 (grainInfo && grainInfo.appId) || "00000000000000000000000000000000"),
         lastUsed: apiToken.lastUsed || apiToken.created,
         apiTokenId: apiToken._id,

@@ -18,6 +18,7 @@
 // including routing of requests to proxies and handling of static web publishing.
 
 import { inMeteor } from "/imports/server/async-helpers.js";
+import ServerIdenticon from "/imports/sandstorm-identicons/identicon-server.js";
 const Url = Npm.require("url");
 const Fs = Npm.require("fs");
 const Dns = Npm.require("dns");
@@ -92,7 +93,7 @@ function serveStaticAsset(req, res, hostId) {
       let asset;
       if (pathname.startsWith("identicon/")) {
         const size = parseInt((url.query || {}).s);
-        asset = new Identicon(pathname.slice("identicon/".length), size).asAsset();
+        asset = new ServerIdenticon(pathname.slice("identicon/".length), size).asAsset();
       } else if (pathname.indexOf("/") == -1) {
         asset = globalDb.getStaticAsset(pathname);
       }

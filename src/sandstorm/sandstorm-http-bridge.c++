@@ -1121,7 +1121,7 @@ private:
 template<class T>
 kj::Maybe<T&> findInMap(std::map<kj::StringPtr, T>& map, const kj::StringPtr& id) {
   auto iter = map.find(id);
-  if(iter != map.end()) {
+  if(iter == map.end()) {
     return nullptr;
   }
   return iter->second;

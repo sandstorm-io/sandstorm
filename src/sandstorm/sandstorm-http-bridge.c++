@@ -1266,7 +1266,7 @@ public:
   }
 
   void insertSession(const kj::StringPtr& id, SessionContext::Client& session) {
-    sessions.insert({kj::StringPtr(id), session});
+    sessions.insert({kj::str(id), session});
   }
 
   void insertRequest(
@@ -1294,7 +1294,7 @@ public:
     results.setOffer(offer);
     results.setDescriptor(descriptor);
 
-    offers.insert({kj::StringPtr(id), capnp::clone(results.asReader())});
+    offers.insert({kj::str(id), capnp::clone(results.asReader())});
   }
 
 private:

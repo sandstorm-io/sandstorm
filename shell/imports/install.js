@@ -1,5 +1,5 @@
 // Sandstorm - Personal Cloud Sandbox
-// Copyright (c) 2015 Sandstorm Development Group, Inc. and contributors
+// Copyright (c) 2014 Sandstorm Development Group, Inc. and contributors
 // All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,16 +14,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-Package.describe({
-  summary: "Sandstorm UI Powerbox",
-  version: "0.1.0",
-});
+function isSafeDemoAppUrl(url) {
+  // For demo accounts, we allow using a bare hash with no URL (which will never upload a new app)
+  // and we allow specifying a sandstorm.io URL.
+  return !url ||
+      url.lastIndexOf("http://sandstorm.io/", 0) === 0 ||
+      url.lastIndexOf("https://sandstorm.io/", 0) === 0 ||
+      url.lastIndexOf("https://alpha-j7uny7u376jnimcsx34c.sandstorm.io/", 0) === 0 ||
+      url.lastIndexOf("https://app-index.sandstorm.io/", 0) === 0;
+};
 
-Package.onUse(function (api) {
-  api.use(["ecmascript", "check", "reactive-var", "templating", "tracker", "underscore", "sandstorm-db", "sandstorm-ui-topbar", "mongo"], "client");
-  api.use(["ecmascript", "check", "sandstorm-capnp"], "server");
-  api.addFiles(["powerbox.html", "powerbox-client.js"], "client");
-  api.addFiles(["powerbox-server.js"], "server");
-  api.export("SandstormPowerboxRequest", "client");
-  api.export("SandstormPowerbox", "server");
-});
+export { isSafeDemoAppUrl };

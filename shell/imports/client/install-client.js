@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { allowDemo } from "/imports/demo.js";
+import { isSafeDemoAppUrl } from "/imports/install.js";
 
 Router.map(function () {
   this.route("install", {

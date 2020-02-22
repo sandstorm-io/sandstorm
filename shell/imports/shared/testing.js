@@ -20,7 +20,7 @@ const isTesting = Meteor.settings && Meteor.settings.public &&
 // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
 if (isTesting) {
   if (Meteor.isServer) {
-    import { runDueJobs } from '/server/scheduled-job.js';
+    import { runDueJobs } from '/imports/server/scheduled-job.js';
 
     function clearUser(id) {
       UserActions.remove({ userId: id });

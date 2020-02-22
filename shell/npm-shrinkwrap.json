@@ -5,9 +5,9 @@
   "requires": true,
   "dependencies": {
     "@babel/runtime": {
-      "version": "7.8.3",
-      "resolved": "https://registry.npmjs.org/@babel/runtime/-/runtime-7.8.3.tgz",
-      "integrity": "sha512-fVHx1rzEmwB130VTkLnxR+HmxcTjGzH12LYQcFFoBwakMd3aOMD4OsRN7tGG/UOYE2ektgFrS8uACAoRk1CY0w==",
+      "version": "7.8.4",
+      "resolved": "https://registry.npmjs.org/@babel/runtime/-/runtime-7.8.4.tgz",
+      "integrity": "sha512-neAp3zt80trRVBI1x0azq6c57aNBqYZH8KhMm3TaB7wEI5Q4A2SHfBHE8w9gOhI/lrqxtEbXZgQIrHP+wvSGwQ==",
       "requires": {
         "regenerator-runtime": "^0.13.2"
       }
@@ -75,6 +75,11 @@
         "file-uri-to-path": "1.0.0"
       }
     },
+    "bluebird": {
+      "version": "2.11.0",
+      "resolved": "https://registry.npmjs.org/bluebird/-/bluebird-2.11.0.tgz",
+      "integrity": "sha1-U0uQM8AiyVecVro7Plpcqvu2UOE="
+    },
     "body-parser": {
       "version": "1.19.0",
       "resolved": "https://registry.npmjs.org/body-parser/-/body-parser-1.19.0.tgz",
@@ -90,6 +95,13 @@
         "qs": "6.7.0",
         "raw-body": "2.4.0",
         "type-is": "~1.6.17"
+      },
+      "dependencies": {
+        "content-type": {
+          "version": "1.0.4",
+          "resolved": "https://registry.npmjs.org/content-type/-/content-type-1.0.4.tgz",
+          "integrity": "sha512-hIP3EEPs8tB9AT1L+NUqtwOAps4mk2Zob89MWXMHjHWg9milF/j4osnnQLXBCBFBk/tvIG/tUc9mOUJiPBhPXA=="
+        }
       }
     },
     "brace-expansion": {
@@ -139,9 +151,9 @@
       "optional": true
     },
     "content-type": {
-      "version": "1.0.4",
-      "resolved": "https://registry.npmjs.org/content-type/-/content-type-1.0.4.tgz",
-      "integrity": "sha512-hIP3EEPs8tB9AT1L+NUqtwOAps4mk2Zob89MWXMHjHWg9milF/j4osnnQLXBCBFBk/tvIG/tUc9mOUJiPBhPXA=="
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/content-type/-/content-type-1.0.1.tgz",
+      "integrity": "sha1-oZ0iRzJ9wDgFDOYit6FU7FnF5gA="
     },
     "core-js": {
       "version": "2.6.11",
@@ -358,6 +370,11 @@
       "version": "1.1.0",
       "resolved": "https://registry.npmjs.org/libqp/-/libqp-1.1.0.tgz",
       "integrity": "sha1-9ebgatdLeU+1tbZpiL9yjvHe2+g="
+    },
+    "lodash": {
+      "version": "3.10.1",
+      "resolved": "https://registry.npmjs.org/lodash/-/lodash-3.10.1.tgz",
+      "integrity": "sha1-W/Rejkm6QYnhfUgnid/RW9FAt7Y="
     },
     "mailcomposer": {
       "version": "4.0.1",
@@ -670,6 +687,23 @@
       "version": "1.5.0",
       "resolved": "https://registry.npmjs.org/statuses/-/statuses-1.5.0.tgz",
       "integrity": "sha1-Fhx9rBd2Wf2YEfQ3cfqZOBR4Yow="
+    },
+    "stripe": {
+      "version": "3.6.0",
+      "resolved": "https://registry.npmjs.org/stripe/-/stripe-3.6.0.tgz",
+      "integrity": "sha1-HKB/pf8Xn6wbBUONq3K0CVcS+AA=",
+      "requires": {
+        "bluebird": "^2.9.6",
+        "lodash": "^3.1.0",
+        "qs": "^2.4.1"
+      },
+      "dependencies": {
+        "qs": {
+          "version": "2.4.2",
+          "resolved": "https://registry.npmjs.org/qs/-/qs-2.4.2.tgz",
+          "integrity": "sha1-9854jld33wtQENp/fE5zujJHD1o="
+        }
+      }
     },
     "toidentifier": {
       "version": "1.0.0",

@@ -139,7 +139,7 @@ IMAGES= \
 all: sandstorm-$(BUILD).tar.xz
 
 clean: ci-clean
-	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/client/changelog.html shell/packages/*/.build* shell/packages/*/.npm/package/node_modules *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff icons/package-lock.json tests/package-lock.json deps/llvm-build meteor-testapp/node_modules
+	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/imports/client/changelog.html *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff icons/package-lock.json tests/package-lock.json deps/llvm-build meteor-testapp/node_modules
 	@# Note: capnproto, libseccomp, and node-capnp are integrated into the common build.
 	cd deps/ekam && make clean
 	rm -rf deps/libsodium/build
@@ -274,7 +274,7 @@ shell-env: tmp/.shell-env
 
 # Note that we need Ekam to build node_modules before we can run Meteor, hence
 # the dependency on tmp/.ekam-run.
-tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html shell/client/styles/_icons.scss shell/package.json shell/npm-shrinkwrap.json
+tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/imports/client/changelog.html shell/client/styles/_icons.scss shell/package.json shell/npm-shrinkwrap.json
 	@$(call color,configuring meteor frontend)
 	@mkdir -p tmp
 	@mkdir -p node_modules/capnp
@@ -288,12 +288,12 @@ icons/node_modules: icons/package.json
 shell/client/styles/_icons.scss: icons/node_modules icons/*svg icons/Gruntfile.js
 	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH ./node_modules/.bin/grunt
 
-shell/client/changelog.html: CHANGELOG.md
+shell/imports/client/changelog.html: CHANGELOG.md
 	@mkdir -p tmp
 	@echo '<template name="changelog">' > tmp/changelog.html
 	@markdown CHANGELOG.md >> tmp/changelog.html
 	@echo '</template>' >> tmp/changelog.html
-	@cp tmp/changelog.html shell/client/changelog.html
+	@cp tmp/changelog.html shell/imports/client/changelog.html
 
 shell/public/close-FFFFFF.svg: icons/close.svg
 	@$(call color,custom color $<)
@@ -359,7 +359,7 @@ shell/public/%-m.svg: icons/%.svg
 	@# Make completely black.
 	@sed -e 's/#111111/#000000/g' < $< > $@
 
-shell-build: shell/imports/* shell/imports/*/* shell/client/* shell/server/* shell/shared/* shell/public/* shell/packages/* shell/packages/*/* shell/i18n/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
+shell-build: shell/imports/* shell/imports/*/* shell/imports/*/*/* shell/imports/*/*/*/* shell/client/main.js shell/server/main.js shell/public/* shell/i18n/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
 	@$(call color,building meteor frontend)
 	@test -z "$$(find -L shell/* -type l)" || (echo "error: broken symlinks in shell: $$(find -L shell/* -type l)" >&2 && exit 1)
 	@OLD=`pwd` && cd shell && meteor build --directory "$$OLD/shell-build"

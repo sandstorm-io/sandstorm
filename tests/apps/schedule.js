@@ -70,6 +70,12 @@ function common({browser, refStr, firstWaitDuration, shouldRepeat}) {
   chain.contain(
     "Running job " + refStr + "\nRunning job " + refStr
   )
+  // Close the grain log, and switch back to to the main window, to avoid
+  // confusing future tests:
+  browser.windowHandles(windows => {
+    browser.closeWindow()
+    browser.switchWindow(windows.value[0])
+  })
 }
 
 module.exports["Test periodic tasks"] = function(browser) {

@@ -3,7 +3,6 @@ name: build_and_test
 on: [push, pull_request]
 
 env:
-  BUILD: 9999
   CCACHE_DIR: ${{ github.workspace }}/.ccache"
   # TODO: remove this. See https://github.com/sandstorm-io/sandstorm/issues/3188
   SKIP_UNITTESTS: 1
@@ -58,11 +57,11 @@ jobs:
       #  with:
       #    name: ccache-debug.tar.gz
       #    path: ccache-debug.tar.gz
-      - name: upload sandstorm tarball
-        uses: actions/upload-artifact@v1
-        with:
-          name: sandstorm-${{ env.BUILD }}-fast.tar.xz
-          path: sandstorm-${{ env.BUILD }}-fast.tar.xz
+      #- name: upload sandstorm tarball
+      #  uses: actions/upload-artifact@v1
+      #  with:
+      #    name: sandstorm-${{ env.BUILD }}-fast.tar.xz
+      #    path: sandstorm-${{ env.BUILD }}-fast.tar.xz
       - name: test
         run: |
           set -o pipefail

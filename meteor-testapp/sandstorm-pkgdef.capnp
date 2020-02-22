@@ -137,7 +137,26 @@ const pkgdef :Spk.PackageDefinition = (
   sourceMap = (
     # The following directories will be copied into your package.
     searchPath = [
-      ( sourcePath = ".meteor-spk/deps" ),
+      (
+        # For the capnp sources. Ideally we'd only include the .capnp
+        # files themselves; this will pull in a bunch of c++ source and
+        # header files as well, plus a few other things. But I(zenhack)
+        # am unsure how to go about excluding those cleanly.
+        sourcePath = "../src",
+        packagePath = "usr/include",
+      ),
+      (
+        sourcePath = "capnp",
+        packagePath = "usr/include",
+      ),
+      (
+        sourcePath = ".meteor-spk/deps",
+        hidePaths = ["node_modules/sandstorm"],
+        # meteor-spk will install it's own bundled capnp
+        # schema in the above directory, but we want to use the ones from
+        # our own development tree (included via the above). Hide these
+        # so they don't conflict.
+      ),
       ( sourcePath = ".meteor-spk/bundle" )
     ]
   ),
@@ -148,74 +167,76 @@ const pkgdef :Spk.PackageDefinition = (
   # the app opens while running in dev mode. To see what that looks like,
   # run `spk init` without the -A option.)
 
-  #bridgeConfig = (
-  #  # Used for integrating permissions and roles into the Sandstorm shell
-  #  # and for sandstorm-http-bridge to pass to your app.
-  #  # Uncomment this block and adjust the permissions and roles to make
-  #  # sense for your app.
-  #  # For more information, see high-level documentation at
-  #  # https://docs.sandstorm.io/en/latest/developing/auth/
-  #  # and advanced details in the "BridgeConfig" section of
-  #  # https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/package.capnp
-  #  viewInfo = (
-  #    # For details on the viewInfo field, consult "ViewInfo" in
-  #    # https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/grain.capnp
-  #
-  #    permissions = [
-  #    # Permissions which a user may or may not possess.  A user's current
-  #    # permissions are passed to the app as a comma-separated list of `name`
-  #    # fields in the X-Sandstorm-Permissions header with each request.
-  #    #
-  #    # IMPORTANT: only ever append to this list!  Reordering or removing fields
-  #    # will change behavior and permissions for existing grains!  To deprecate a
-  #    # permission, or for more information, see "PermissionDef" in
-  #    # https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/grain.capnp
-  #      (
-  #        name = "editor",
-  #        # Name of the permission, used as an identifier for the permission in cases where string
-  #        # names are preferred.  Used in sandstorm-http-bridge's X-Sandstorm-Permissions HTTP header.
-  #
-  #        title = (defaultText = "editor"),
-  #        # Display name of the permission, e.g. to display in a checklist of permissions
-  #        # that may be assigned when sharing.
-  #
-  #        description = (defaultText = "grants ability to modify data"),
-  #        # Prose describing what this role means, suitable for a tool tip or similar help text.
-  #      ),
-  #    ],
-  #    roles = [
-  #      # Roles are logical collections of permissions.  For instance, your app may have
-  #      # a "viewer" role and an "editor" role
-  #      (
-  #        title = (defaultText = "editor"),
-  #        # Name of the role.  Shown in the Sandstorm UI to indicate which users have which roles.
-  #
-  #        permissions  = [true],
-  #        # An array indicating which permissions this role carries.
-  #        # It should be the same length as the permissions array in
-  #        # viewInfo, and the order of the lists must match.
-  #
-  #        verbPhrase = (defaultText = "can make changes to the document"),
-  #        # Brief explanatory text to show in the sharing UI indicating
-  #        # what a user assigned this role will be able to do with the grain.
-  #
-  #        description = (defaultText = "editors may view all site data and change settings."),
-  #        # Prose describing what this role means, suitable for a tool tip or similar help text.
-  #      ),
-  #      (
-  #        title = (defaultText = "viewer"),
-  #        permissions  = [false],
-  #        verbPhrase = (defaultText = "can view the document"),
-  #        description = (defaultText = "viewers may view what other users have written."),
-  #      ),
-  #    ],
-  #  ),
-  #  #apiPath = "/api",
-  #  # Apps can export an API to the world.  The API is to be used primarily by Javascript
-  #  # code and native apps, so it can't serve out regular HTML to browsers.  If a request
-  #  # comes in to your app's API, sandstorm-http-bridge will prefix the request's path with
-  #  # this string, if specified.
-  #),
+  bridgeConfig = (
+    # Used for integrating permissions and roles into the Sandstorm shell
+    # and for sandstorm-http-bridge to pass to your app.
+    # Uncomment this block and adjust the permissions and roles to make
+    # sense for your app.
+    # For more information, see high-level documentation at
+    # https://docs.sandstorm.io/en/latest/developing/auth/
+    # and advanced details in the "BridgeConfig" section of
+    # https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/package.capnp
+    expectAppHooks = true,
+
+    viewInfo = (
+      # For details on the viewInfo field, consult "ViewInfo" in
+      # https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/grain.capnp
+
+      permissions = [
+      # Permissions which a user may or may not possess.  A user's current
+      # permissions are passed to the app as a comma-separated list of `name`
+      # fields in the X-Sandstorm-Permissions header with each request.
+      #
+      # IMPORTANT: only ever append to this list!  Reordering or removing fields
+      # will change behavior and permissions for existing grains!  To deprecate a
+      # permission, or for more information, see "PermissionDef" in
+      # https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/grain.capnp
+        (
+          name = "editor",
+          # Name of the permission, used as an identifier for the permission in cases where string
+          # names are preferred.  Used in sandstorm-http-bridge's X-Sandstorm-Permissions HTTP header.
+
+          title = (defaultText = "editor"),
+          # Display name of the permission, e.g. to display in a checklist of permissions
+          # that may be assigned when sharing.
+
+          description = (defaultText = "grants ability to modify data"),
+          # Prose describing what this role means, suitable for a tool tip or similar help text.
+        ),
+      ],
+      roles = [
+        # Roles are logical collections of permissions.  For instance, your app may have
+        # a "viewer" role and an "editor" role
+        (
+          title = (defaultText = "editor"),
+          # Name of the role.  Shown in the Sandstorm UI to indicate which users have which roles.
+
+          permissions  = [true],
+          # An array indicating which permissions this role carries.
+          # It should be the same length as the permissions array in
+          # viewInfo, and the order of the lists must match.
+
+          verbPhrase = (defaultText = "can make changes to the document"),
+          # Brief explanatory text to show in the sharing UI indicating
+          # what a user assigned this role will be able to do with the grain.
+
+          description = (defaultText = "editors may view all site data and change settings."),
+          # Prose describing what this role means, suitable for a tool tip or similar help text.
+        ),
+        (
+          title = (defaultText = "viewer"),
+          permissions  = [false],
+          verbPhrase = (defaultText = "can view the document"),
+          description = (defaultText = "viewers may view what other users have written."),
+        ),
+      ],
+    ),
+    #apiPath = "/api",
+    # Apps can export an API to the world.  The API is to be used primarily by Javascript
+    # code and native apps, so it can't serve out regular HTML to browsers.  If a request
+    # comes in to your app's API, sandstorm-http-bridge will prefix the request's path with
+    # this string, if specified.
+  ),
 );
 
 const myCommand :Spk.Manifest.Command = (

@@ -26,6 +26,7 @@
 #include <kj/async-unix.h>
 #include <kj/io.h>
 #include <kj/encoding.h>
+#include <capnp/membrane.h>
 #include <capnp/rpc-twoparty.h>
 #include <capnp/rpc.capnp.h>
 #include <capnp/schema.h>
@@ -834,6 +835,63 @@ private:
 
     memcpy(builder.initValue(result.size()).begin(), result.begin(), result.size());
   }
+};
+
+// A wrapper around app-provided objects that implement AppPersistent. We intercept
+// calls to AppPersistent.save() via a membrane, and then handle them with this class,
+// which wraps the apps' returned objectId value in a BridgeObjectId.
+class AppPersistentWrapper final: public AppPersistent<BridgeObjectId>::Server {
+public:
+  AppPersistentWrapper(AppPersistent<>::Client wrapped)
+    : wrapped(wrapped)
+  {}
+
+  kj::Promise<void> save(SaveContext context) override {
+    return wrapped.saveRequest().send().then([context](auto resp) mutable -> kj::Promise<void> {
+        auto results = context.initResults();
+        results.setLabel(resp.getLabel());
+        results.initObjectId().initApplication().set(resp.getObjectId());
+        return kj::READY_NOW;
+    });
+  }
+private:
+  AppPersistent<>::Client wrapped;
+};
+
+// Membrane policy, used to intercept calls to AppPersistent.save() on objects
+// provided by the application.
+class SaveMembranePolicy final: public capnp::MembranePolicy, public kj::Refcounted {
+public:
+  kj::Maybe<capnp::Capability::Client> inboundCall(
+      uint64_t interfaceId, uint16_t methodId, capnp::Capability::Client target) override {
+    if(interfaceId == capnp::typeId<AppPersistent<>>()) {
+      return AppPersistent<BridgeObjectId>::Client(kj::heap(
+        AppPersistentWrapper(target.castAs<AppPersistent<>>())
+      ));
+    }
+    return nullptr;
+  }
+
+  kj::Maybe<capnp::Capability::Client> outboundCall(
+      uint64_t interfaceId, uint16_t methodId, capnp::Capability::Client target) override {
+    if(interfaceId == capnp::typeId<AppPersistent<>>()) {
+      // In principle we should do some kind of wrapping/unwrapping to make this
+      // work transparently, including for cases where a call goes into and back out
+      // of the membrane for some reason, but:
+      //
+      // - That seems like a lot of extra logic to handle a case that should basically
+      //   never happen.
+      // - If the app is making outbound calls to AppPersistent, something very strange
+      //   is going on; perhaps it is good policy to block this anyway.
+      KJ_FAIL_REQUIRE("Unexpected outgoing call to method of AppPersistent.");
+    }
+    return nullptr;
+  }
+
+  kj::Own<capnp::MembranePolicy> addRef() override {
+    return kj::addRef(*this);
+  }
+private:
 };
 
 class WebSocketPump final: public WebSession::WebSocketStream::Server,
@@ -2211,13 +2269,39 @@ public:
   explicit UiViewImpl(kj::NetworkAddress& serverAddress,
                       BridgeContext& bridgeContext,
                       spk::BridgeConfig::Reader config,
-                      kj::Promise<void>&& connectPromise)
+                      kj::Promise<void>&& connectPromise,
+                      kj::Maybe<kj::Own<kj::Promise<AppHooks<>::Client>>> appHooksPromise)
       : serverAddress(serverAddress),
         bridgeContext(bridgeContext),
         config(config),
-        connectPromise(connectPromise.fork()) {}
+        connectPromise(connectPromise.fork()),
+        appHooks(nullptr) {
+          KJ_IF_MAYBE(promise, appHooksPromise) {
+            appHooks = kj::heap((*promise)->fork());
+          }
+        }
 
   kj::Promise<void> getViewInfo(GetViewInfoContext context) override {
+    KJ_IF_MAYBE(promise, appHooks) {
+      return (*promise)->addBranch().then([this, context](auto appHooks) -> kj::Promise<void> {
+        return appHooks.getViewInfoRequest().send()
+          .then([context](auto results) mutable -> kj::Promise<void> {
+            context.setResults(results);
+            return kj::READY_NOW;
+          }, [this, context](kj::Exception&& e) -> kj::Promise<void> {
+            if(e.getType() == kj::Exception::Type::UNIMPLEMENTED) {
+              return getViewInfoFromConfig(context);
+            } else {
+              throw kj::mv(e);
+            }
+          });
+      });
+    } else {
+      return getViewInfoFromConfig(context);
+    }
+  }
+
+  kj::Promise<void> getViewInfoFromConfig(GetViewInfoContext context) {
     context.setResults(config.getViewInfo());
 
     // Copy in powerbox API descriptors.
@@ -2325,7 +2409,21 @@ public:
     auto objectId = context.getParams().getObjectId();
 
     if (objectId.isApplication()) {
-      KJ_UNIMPLEMENTED("application-defined object IDs not implemented");
+      KJ_IF_MAYBE(promise, appHooks) {
+        return (*promise)->addBranch().then([context, objectId](auto appHooks) -> kj::Promise<void> {
+            auto req = appHooks.restoreRequest();
+            req.setObjectId(objectId.getApplication());
+            return req.send().then([context](auto results) mutable -> kj::Promise<void> {
+                context.initResults().setCap(results.getCap());
+                return kj::READY_NOW;
+            });
+        });
+      } else {
+        KJ_FAIL_REQUIRE(
+            "restore() got an objectId with type = application, but "
+            "expectAppHooks is false."
+            );
+      }
     }
 
     KJ_REQUIRE(objectId.isHttpApi(), "unrecognized object ID type");
@@ -2336,8 +2434,24 @@ public:
   }
 
   kj::Promise<void> drop(DropContext context) override {
-    // We ignore drops, because our ObjectId format is too ambiguous for it to be useful.
-    return kj::READY_NOW;
+    auto objectId = context.getParams().getObjectId();
+    if (!objectId.isApplication()) {
+      // We ignore drops for our own capabilities, because our ObjectId format
+      // is too ambiguous for it to be useful.
+      return kj::READY_NOW;
+    }
+    KJ_IF_MAYBE(promise, appHooks) {
+      return (*promise)->addBranch().then([objectId](auto appHooks) -> kj::Promise<void> {
+          auto req = appHooks.dropRequest();
+          req.setObjectId(objectId.getApplication());
+          return req.send().ignoreResult();
+      });
+    } else {
+      KJ_FAIL_REQUIRE(
+          "drop() got an objectId with type = application, but "
+          "expectAppHooks is false."
+          );
+    }
   }
 
 private:
@@ -2395,6 +2509,8 @@ private:
   // SessionIds are assigned sequentially.
   // TODO(security): It might be useful to make these sessionIds more random, to reduce the chance
   //   that an app will mix them up.
+
+  kj::Maybe<kj::Own<kj::ForkedPromise<AppHooks<>::Client>>> appHooks;
 };
 
 class SandstormHttpBridgeMain {
@@ -2407,7 +2523,9 @@ class SandstormHttpBridgeMain {
 public:
   SandstormHttpBridgeMain(kj::ProcessContext& context)
       : context(context),
-        ioContext(kj::setupAsyncIo()) {
+        ioContext(kj::setupAsyncIo()),
+        appMembranePolicy(SaveMembranePolicy()),
+        appHooksFulfiller(nullptr) {
     kj::UnixEventPort::captureSignal(SIGCHLD);
   }
 
@@ -2454,7 +2572,23 @@ public:
                                kj::TaskSet& taskSet) {
     return serverPort.accept().then(
         [&, KJ_MVCAP(bridge)](kj::Own<kj::AsyncIoStream>&& connection) mutable {
-      auto connectionState = kj::heap<AcceptedConnection>(bridge, kj::mv(connection));
+      auto connectionState = kj::heap<AcceptedConnection>(
+          capnp::reverseMembrane(bridge, appMembranePolicy.addRef()),
+          kj::mv(connection));
+
+      KJ_IF_MAYBE(fulfiller, appHooksFulfiller) {
+        capnp::MallocMessageBuilder message;
+        auto vatId = message.initRoot<capnp::rpc::twoparty::VatId>();
+        vatId.setSide(capnp::rpc::twoparty::Side::CLIENT);
+        (*fulfiller)->fulfill(
+          capnp::membrane(
+            connectionState->rpcSystem.bootstrap(vatId),
+            appMembranePolicy.addRef()
+          ).castAs<AppHooks<>>()
+        );
+        fulfiller = nullptr;
+      }
+
       auto promise = connectionState->network.onDisconnect();
       taskSet.add(promise.attach(kj::mv(connectionState)));
       return acceptLoop(serverPort, kj::mv(bridge), taskSet);
@@ -2565,12 +2699,25 @@ public:
       auto apiPaf = kj::newPromiseAndFulfiller<SandstormApi<BridgeObjectId>::Client>();
       BridgeContext bridgeContext(kj::mv(apiPaf.promise), config);
 
+      kj::Maybe<kj::Own<kj::Promise<AppHooks<>::Client>>> appHooksPromise = nullptr;
+
+      if(config.getExpectAppHooks()) {
+        auto paf = kj::newPromiseAndFulfiller<AppHooks<>::Client>();
+        appHooksPromise = kj::heap<kj::Promise<AppHooks<>::Client>>(kj::mv(paf.promise));
+        appHooksFulfiller = kj::mv(paf.fulfiller);
+      }
+
       // Set up the Supervisor API socket.
       auto stream = ioContext.lowLevelProvider->wrapSocketFd(3);
       capnp::TwoPartyVatNetwork network(*stream, capnp::rpc::twoparty::Side::CLIENT);
       auto rpcSystem = capnp::makeRpcServer(
         network,
-        kj::heap<UiViewImpl>(*address, bridgeContext, config, kj::mv(connectPromise)));
+        kj::heap<UiViewImpl>(
+          *address,
+          bridgeContext,
+          config,
+          kj::mv(connectPromise),
+          kj::mv(appHooksPromise)));
 
       // Get the SandstormApi by restoring a null SturdyRef.
       capnp::MallocMessageBuilder message;
@@ -2625,6 +2772,8 @@ private:
   kj::AsyncIoContext ioContext;
   kj::Own<kj::NetworkAddress> address;
   kj::Vector<kj::String> command;
+  SaveMembranePolicy appMembranePolicy;
+  kj::Maybe<kj::Own<kj::PromiseFulfiller<AppHooks<>::Client>>> appHooksFulfiller;
 
   kj::Promise<int> onChildExit(pid_t pid) {
     int status;

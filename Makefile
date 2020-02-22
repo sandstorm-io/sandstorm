@@ -37,6 +37,7 @@ EKAM=ekam
 #   in libstdc++. See also issue #3171.
 METEOR_DEV_BUNDLE=$(shell ./find-meteor-dev-bundle.sh)
 METEOR_SPK_VERSION=0.3.2
+METEOR_SPK=$(PWD)/meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk
 NODEJS=$(METEOR_DEV_BUNDLE)/bin/node
 NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
 WARNINGS=-Wall -Wextra -Wglobal-constructors -Wno-sign-compare -Wno-unused-parameter
@@ -422,9 +423,19 @@ test-app-dev: tmp/.ekam-run
 # ====================================================================
 # meteor-testapp.spk
 
-meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk:
+$(METEOR_SPK):
 	@$(call color,downloading meteor-spk)
 	@curl https://dl.sandstorm.io/meteor-spk-$(METEOR_SPK_VERSION).tar.xz | tar Jxf -
 
-tests/assets/meteor-testapp.spk: meteor-testapp meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk meteor-testapp/client/* meteor-testapp/server/* meteor-testapp/.meteor/*
-	@PATH="$$PWD/bin:$$PATH" && cd meteor-testapp && ../meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk pack -kmeteor-testapp.key -I../src ../tests/assets/meteor-testapp.spk
+meteor-testapp-dev:
+	cd meteor-testapp && PATH="$(PWD)/bin:$(PATH)" \
+		$(METEOR_SPK) dev -I../src -I../tmp -s /opt/sandstorm
+
+tests/assets/meteor-testapp.spk: \
+		meteor-testapp \
+		$(METEOR_SPK) \
+		meteor-testapp/client/* \
+		meteor-testapp/server/* \
+		meteor-testapp/.meteor/*
+	@cd meteor-testapp && PATH="$(PWD)/bin:$(PATH)" \
+		$(METEOR_SPK) pack -kmeteor-testapp.key -I../src -I../tmp ../tests/assets/meteor-testapp.spk

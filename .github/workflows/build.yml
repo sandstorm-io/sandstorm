@@ -43,7 +43,7 @@ jobs:
             export CCACHE_SLOPPINESS="time_macros"
             export PATH=/usr/lib/ccache:$CLANGDIR:$PATH
 
-            make BUILD=${{ env.BUILD }} \
+            make \
               CC="$(which clang)" \
               CXX="$(which clang++)" \
               fast

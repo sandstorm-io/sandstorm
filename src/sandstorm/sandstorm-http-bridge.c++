@@ -1239,21 +1239,17 @@ public:
     }
   }
 
-  kj::Maybe<SessionContext::Client&> findSession(const kj::StringPtr& id) {
-    return findInMap(sessions, id);
-  }
-
-  kj::Maybe<SandstormHttpBridge::GetSessionOfferResults::Reader&> findOffer(const kj::StringPtr& id) {
-    KJ_IF_MAYBE(ret, findInMap(offers, id)) {
-      return ret->get();
+  kj::Maybe<SessionContext::Client&> findSessionContext(const kj::StringPtr& id) {
+    KJ_IF_MAYBE(record, findInMap(sessions, id)) {
+      return record->sessionCtx;
     } else {
       return nullptr;
     }
   }
 
-  kj::Maybe<SandstormHttpBridge::GetSessionRequestResults::Reader&> findRequest(const kj::StringPtr& id) {
-    KJ_IF_MAYBE(ret, findInMap(requests, id)) {
-      return ret->get();
+  kj::Maybe<kj::Own<SessionInfo::Reader>&> findSessionInfo(const kj::StringPtr& id) {
+    KJ_IF_MAYBE(record, findInMap(sessions, id)) {
+      return record->sessionInfo;
     } else {
       return nullptr;
     }
@@ -1261,37 +1257,13 @@ public:
 
   void eraseSession(const kj::StringPtr& id) {
     sessions.erase(id);
-    offers.erase(id);
-    requests.erase(id);
   }
 
-  void insertSession(const kj::StringPtr& id, SessionContext::Client& session) {
-    sessions.insert({kj::StringPtr(id), session});
-  }
-
-  void insertRequest(
-      const kj::StringPtr& id,
-      capnp::List<PowerboxDescriptor>::Reader descriptor) {
-
-    auto msg = capnp::MallocMessageBuilder();
-    auto results = msg.initRoot<SandstormHttpBridge::GetSessionRequestResults>();
-    results.setRequestInfo(descriptor);
-
-    requests.insert({kj::StringPtr(id), capnp::clone(results.asReader())});
-  }
-
-  void insertOffer(
-      const kj::StringPtr& id,
-      capnp::Capability::Client&& offer,
-      PowerboxDescriptor::Reader descriptor) {
-
-    auto msg = capnp::MallocMessageBuilder();
-    auto results = msg.initRoot<SandstormHttpBridge::GetSessionOfferResults>();
-
-    results.setOffer(offer);
-    results.setDescriptor(descriptor);
-
-    offers.insert({kj::StringPtr(id), capnp::clone(results.asReader())});
+  void insertSession(const kj::StringPtr& id, SessionContext::Client& session, kj::Own<SessionInfo::Reader>& sessionInfo) {
+    sessions.insert({
+      kj::StringPtr(id),
+      SessionRecord {session, sessionInfo}
+    });
   }
 
 private:
@@ -1300,17 +1272,14 @@ private:
   kj::AutoCloseFd identitiesDir;
   kj::AutoCloseFd trashDir;
 
-  // These maps store information relating to active sessions. `sessions` always has an entry
-  // for any active session that is handled by the app. `requests` and `offers` will only
-  // have an entry for request and offer sessions, respectively.
-  //
-  // In all cases the keys are owned by the session object, which is responsible for deleting
-  // the session from these maps (via eraseSession) on cleanup. For `sessions`, the value
-  // is also owned by the session. For `requests` and `offers`, the value is owned by the map
-  // itself.
-  std::map<kj::StringPtr, SessionContext::Client&> sessions;
-  std::map<kj::StringPtr, kj::Own<SandstormHttpBridge::GetSessionRequestResults::Reader>> requests;
-  std::map<kj::StringPtr, kj::Own<SandstormHttpBridge::GetSessionOfferResults::Reader>> offers;
+  struct SessionRecord {
+    SessionRecord(const SessionRecord& other) = delete;
+    SessionRecord(SessionRecord&& other) = default;
+
+    SessionContext::Client& sessionCtx;
+    kj::Own<SessionInfo::Reader>& sessionInfo;
+  };
+  std::map<kj::StringPtr, SessionRecord> sessions;
 
   struct IdentityRecord {
     IdentityRecord(const IdentityRecord& other) = delete;
@@ -1444,32 +1413,15 @@ public:
         rootPath(kj::mv(rootPath)),
         remoteAddress(kj::mv(remoteAddress)),
         apiInfo(kj::mv(apiInfo)),
-        sessionType(sessionInfo.which()) {
+        sessionInfo(capnp::clone(sessionInfo)) {
     if (userInfo.hasIdentityId()) {
       userId = textIdentityId(userInfo.getIdentityId());
     }
     if (this->sessionId != nullptr) {
-      bridgeContext.insertSession(kj::StringPtr(this->sessionId), this->sessionContext);
-      switch(sessionInfo.which()) {
-        case SessionInfo::NORMAL:
-          break;
-        case SessionInfo::REQUEST:
-          bridgeContext.insertRequest(
-              kj::StringPtr(this->sessionId),
-              sessionInfo.getRequest().getRequestInfo());
-          break;
-        case SessionInfo::OFFER:
-          {
-            auto offerInfo = sessionInfo.getOffer();
-            bridgeContext.insertOffer(
-                kj::StringPtr(this->sessionId),
-                offerInfo.getOffer(),
-                offerInfo.getDescriptor());
-          }
-          break;
-        default:
-          KJ_FAIL_ASSERT("Unknown session type.");
-      }
+      bridgeContext.insertSession(
+          kj::StringPtr(this->sessionId),
+          this->sessionContext,
+          this->sessionInfo);
     }
   }
 
@@ -1731,7 +1683,7 @@ private:
   spk::BridgeConfig::Reader config;
   kj::Maybe<kj::String> remoteAddress;
   kj::Maybe<OwnCapnp<BridgeObjectId::HttpApi>> apiInfo;
-  SessionInfo::Which sessionType;
+  kj::Own<SessionInfo::Reader> sessionInfo;
 
   kj::String makeHeaders(kj::StringPtr method, kj::StringPtr path,
                          WebSession::Context::Reader context,
@@ -1800,7 +1752,7 @@ private:
       auto setHeader = [&](const char *value) {
         lines.add(kj::str("X-Sandstorm-Session-Type: ", value));
       };
-      switch(sessionType) {
+      switch(sessionInfo->which()) {
         case SessionInfo::Which::NORMAL:
           setHeader("normal");
           break;
@@ -2359,7 +2311,7 @@ public:
 
   kj::Promise<void> getSessionContext(GetSessionContextContext context) override {
     auto id = context.getParams().getId();
-    KJ_IF_MAYBE(value, bridgeContext.findSession(id)) {
+    KJ_IF_MAYBE(value, bridgeContext.findSessionContext(id)) {
       context.getResults().setContext(*value);
     } else {
       KJ_FAIL_ASSERT("Session ID not found", id);
@@ -2369,20 +2321,39 @@ public:
 
   kj::Promise<void> getSessionOffer(GetSessionOfferContext context) override {
     auto id = context.getParams().getId();
-    KJ_IF_MAYBE(value, bridgeContext.findOffer(id)) {
-      context.setResults(*value);
+    KJ_IF_MAYBE(sessionInfo, bridgeContext.findSessionInfo(id)) {
+      switch((*sessionInfo)->which()) {
+        case SessionInfo::OFFER:
+          {
+            auto offerInfo = (*sessionInfo)->getOffer();
+            auto results = context.initResults();
+            results.setOffer(offerInfo.getOffer());
+            results.setDescriptor(offerInfo.getDescriptor());
+          }
+          break;
+        default:
+          KJ_FAIL_ASSERT("Session ID ", id, " is not an offer session.");
+      }
     } else {
-      KJ_FAIL_ASSERT("Session ID not found; maybe this isn't an offer session?");
+      KJ_FAIL_ASSERT("Session ID ", id, " not found");
     }
     return kj::READY_NOW;
   }
 
   kj::Promise<void> getSessionRequest(GetSessionRequestContext context) override {
     auto id = context.getParams().getId();
-    KJ_IF_MAYBE(value, bridgeContext.findRequest(id)) {
-      context.setResults(*value);
+    KJ_IF_MAYBE(sessionInfo, bridgeContext.findSessionInfo(id)) {
+      switch((*sessionInfo)->which()) {
+        case SessionInfo::REQUEST:
+          context
+            .initResults()
+            .setRequestInfo((*sessionInfo)->getRequest().getRequestInfo());
+          break;
+        default:
+          KJ_FAIL_ASSERT("Session ID ", id, " is not a request session.");
+      }
     } else {
-      KJ_FAIL_ASSERT("Session ID not found; maybe this isn't a request session?");
+      KJ_FAIL_ASSERT("Session ID ", id, " not found");
     }
     return kj::READY_NOW;
   }

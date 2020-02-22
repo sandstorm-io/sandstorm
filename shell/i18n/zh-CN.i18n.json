@@ -4,7 +4,7 @@
         "layout": {
             "demoExpired": {
                 "title": "演示版过期",
-                "canUpgrade": "感谢您试用 Sandstorm 演示版！您的演示帐号已过期。如果您想继续使用 Sandstrom 并且让您的数据被永久保留，请登录。",
+                "canUpgrade": "感谢您试用 Sandstorm 演示版！您的演示帐号已过期。如果您想继续使用 Sandstorm 并且让您的数据被永久保留，请登录。",
                 "cannotUpgrade": "感谢您试用 Sandstorm 演示版！您的演示帐号已过期。",
                 "signOut": "登出"
             },

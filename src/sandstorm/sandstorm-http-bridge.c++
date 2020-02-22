@@ -1247,7 +1247,7 @@ public:
     }
   }
 
-  kj::Maybe<kj::Own<SessionInfo::Reader>&> findSessionInfo(const kj::StringPtr& id) {
+  kj::Maybe<SessionInfo::Reader> findSessionInfo(const kj::StringPtr& id) {
     KJ_IF_MAYBE(record, findInMap(sessions, id)) {
       return record->sessionInfo;
     } else {
@@ -1259,7 +1259,7 @@ public:
     sessions.erase(id);
   }
 
-  void insertSession(const kj::StringPtr& id, SessionContext::Client& session, kj::Own<SessionInfo::Reader>& sessionInfo) {
+  void insertSession(const kj::StringPtr& id, SessionContext::Client& session, SessionInfo::Reader sessionInfo) {
     sessions.insert({
       kj::StringPtr(id),
       SessionRecord {session, sessionInfo}
@@ -1277,7 +1277,7 @@ private:
     SessionRecord(SessionRecord&& other) = default;
 
     SessionContext::Client& sessionCtx;
-    kj::Own<SessionInfo::Reader>& sessionInfo;
+    SessionInfo::Reader sessionInfo;
   };
   std::map<kj::StringPtr, SessionRecord> sessions;
 
@@ -1421,7 +1421,7 @@ public:
       bridgeContext.insertSession(
           kj::StringPtr(this->sessionId),
           this->sessionContext,
-          this->sessionInfo);
+          *this->sessionInfo);
     }
   }
 
@@ -2322,10 +2322,10 @@ public:
   kj::Promise<void> getSessionOffer(GetSessionOfferContext context) override {
     auto id = context.getParams().getId();
     KJ_IF_MAYBE(sessionInfo, bridgeContext.findSessionInfo(id)) {
-      switch((*sessionInfo)->which()) {
+      switch(sessionInfo->which()) {
         case SessionInfo::OFFER:
           {
-            auto offerInfo = (*sessionInfo)->getOffer();
+            auto offerInfo = sessionInfo->getOffer();
             auto results = context.initResults();
             results.setOffer(offerInfo.getOffer());
             results.setDescriptor(offerInfo.getDescriptor());
@@ -2343,11 +2343,11 @@ public:
   kj::Promise<void> getSessionRequest(GetSessionRequestContext context) override {
     auto id = context.getParams().getId();
     KJ_IF_MAYBE(sessionInfo, bridgeContext.findSessionInfo(id)) {
-      switch((*sessionInfo)->which()) {
+      switch(sessionInfo->which()) {
         case SessionInfo::REQUEST:
           context
             .initResults()
-            .setRequestInfo((*sessionInfo)->getRequest().getRequestInfo());
+            .setRequestInfo(sessionInfo->getRequest().getRequestInfo());
           break;
         default:
           KJ_FAIL_ASSERT("Session ID ", id, " is not a request session.");

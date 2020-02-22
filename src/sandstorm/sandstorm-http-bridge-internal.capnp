@@ -23,6 +23,7 @@ using Identity = import "identity.capnp";
 using WebSession = import "web-session.capnp".WebSession;
 using ApiSession = import "api-session.capnp".ApiSession;
 using AppPersistent = import "grain.capnp".AppPersistent;
+using Powerbox = import "powerbox.capnp";
 
 struct BridgeObjectId {
   # The object ID format used by sandstorm-http-bridge.
@@ -58,3 +59,16 @@ struct BridgeObjectId {
 interface BridgeHttpSession extends(ApiSession, AppPersistent(BridgeObjectId)) {}
 
 const bridgeRequestSessionHtml :Text = embed "sandstorm-http-bridge-request.html";
+
+struct SessionInfo {
+  union {
+    normal @0 :Void;
+    request :group {
+      requestInfo @1 :List(Powerbox.PowerboxDescriptor);
+    }
+    offer :group {
+      offer @2 :Capability;
+      descriptor @3 :Powerbox.PowerboxDescriptor;
+    }
+  }
+}

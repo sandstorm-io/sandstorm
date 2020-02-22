@@ -14,6 +14,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/pwa-service-worker.js')
+  })
+}
+
 import "/imports/db-deprecated.js";
 import AccountsUi from "/imports/client/accounts/accounts-ui.js";
 import { GrainViewList } from "/imports/client/grain/grainview-list.js";

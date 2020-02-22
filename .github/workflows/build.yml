@@ -67,7 +67,7 @@ jobs:
           set -o pipefail
           # Currently these tests never pass.
           # TODO: When they are fixed, remove the || true
-          (make BUILD=${{ env.BUILD }} test |& tee testlog.txt; echo "Result: $?") || true
+          (make test |& tee testlog.txt; echo "Result: $?") || true
       - name: upload test log
         if: always()
         uses: actions/upload-artifact@v1

@@ -20,7 +20,6 @@
 // that server and then redirect incoming requests to it over standard HTTP on
 // the loopback network interface.
 
-#include <iostream>
 #include <kj/main.h>
 #include <kj/debug.h>
 #include <kj/async-io.h>

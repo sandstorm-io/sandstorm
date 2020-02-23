@@ -2,8 +2,8 @@ import Url from "url";
 import zlib from "zlib";
 import { SAML } from "/imports/server/accounts/saml-utils.js";
 
-const Fiber = Npm.require("fibers");
-const BodyParser = Npm.require("body-parser");
+import Fiber from "fibers";
+import BodyParser from "body-parser";
 
 if (!Accounts.saml) {
   Accounts.saml = {};

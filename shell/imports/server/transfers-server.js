@@ -14,10 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const URL = Npm.require("url").URL;
-const Crypto = Npm.require("crypto");
-const NodeHttp = Npm.require("http");
-const NodeHttps = Npm.require("https");
+import { URL } from "url";
+import Crypto from "crypto";
+import NodeHttp from "http";
+import NodeHttps from "https";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 
 function isValidServerUrl(str) {

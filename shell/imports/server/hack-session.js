@@ -14,11 +14,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const Crypto = Npm.require("crypto");
-const Http = Npm.require("http");
-const Https = Npm.require("https");
-const Net = Npm.require("net");
-const Dgram = Npm.require("dgram");
+import Crypto from "crypto";
+import Http from "http";
+import Https from "https";
+import Net from "net";
+import Dgram from "dgram";
+import Url from "url";
 import { hashSturdyRef, checkRequirements, fetchApiToken } from "/imports/server/persistent.js";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { ssrfSafeLookup } from "/imports/server/networking.js";
@@ -32,7 +33,6 @@ const EmailSendPort = EmailRpc.EmailSendPort;
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");
 const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 
-const Url = Npm.require("url");
 
 ROOT_URL = Url.parse(process.env.ROOT_URL);
 HOSTNAME = ROOT_URL.hostname;

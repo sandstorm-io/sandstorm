@@ -14,9 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Crypto from "crypto";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset.js";
-const Crypto = Npm.require("crypto");
 import { PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements,
          fetchApiToken, insertApiToken } from "/imports/server/persistent.js";
 import { SandstormBackend } from "/imports/server/backend.js";

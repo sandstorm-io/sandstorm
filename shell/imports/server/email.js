@@ -1,8 +1,7 @@
 import { Meteor } from "meteor/meteor";
 import nodemailer from "nodemailer";
 import smtpPool from "nodemailer-smtp-pool";
-
-const Future = Npm.require("fibers/future");
+import Future from "fibers/future";
 
 const getSmtpConfig = function () {
   const config = Settings.findOne({ _id: "smtpConfig" });

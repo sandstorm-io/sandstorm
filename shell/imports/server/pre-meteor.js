@@ -19,11 +19,11 @@
 
 import { inMeteor } from "/imports/server/async-helpers.js";
 import ServerIdenticon from "/imports/sandstorm-identicons/identicon-server.js";
-const Url = Npm.require("url");
-const Fs = Npm.require("fs");
-const Dns = Npm.require("dns");
-const Future = Npm.require("fibers/future");
-const Http = Npm.require("http");
+import Url from "url";
+import Fs from "fs";
+import Dns from "dns";
+import Future from "fibers/future";
+import Http from "http";
 const ByteStream = Capnp.importSystem("sandstorm/util.capnp").ByteStream;
 
 const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;

@@ -14,11 +14,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Crypto from "crypto";
 import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
 import { inMeteor, promiseToFuture, waitPromise } from "/imports/server/async-helpers.js";
 
 const Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
-const Crypto = Npm.require("crypto");
 
 let storageUsageUnimplemented = false;
 

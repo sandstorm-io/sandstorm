@@ -18,11 +18,11 @@ Sandcats = {};
 
 import { inMeteor } from "/imports/server/async-helpers.js";
 import { pki, asn1 } from "node-forge";
-const querystring = Npm.require("querystring");
-const https = Npm.require("https");
-const fs = Npm.require("fs");
-const dgram = Npm.require("dgram");
-const Url = Npm.require("url");
+import querystring from "querystring";
+import https from "https";
+import fs from "fs";
+import dgram from "dgram";
+import Url from "url";
 
 import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
 

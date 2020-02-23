@@ -11,9 +11,9 @@ import { userPictureUrl, fetchPicture } from "/imports/server/accounts/picture.j
 import { waitPromise } from "/imports/server/async-helpers.js";
 import { PRIVATE_IPV4_ADDRESSES, PRIVATE_IPV6_ADDRESSES } from "/imports/constants.js";
 
-const Future = Npm.require("fibers/future");
-const Url = Npm.require("url");
-const Crypto = Npm.require("crypto");
+import Future from "fibers/future";
+import Url from "url";
+import Crypto from "crypto";
 
 const updateLoginStyleToRedirect = function (db, backend) {
   const configurations = Package["service-configuration"].ServiceConfiguration.configurations;

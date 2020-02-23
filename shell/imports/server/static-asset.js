@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const Url = Npm.require("url");
+import Url from "url";
 const StaticAsset = Capnp.importSystem("sandstorm/grain.capnp").StaticAsset;
 
 const PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;

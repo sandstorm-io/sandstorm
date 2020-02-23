@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Crypto from 'crypto';
+import Crypto from "crypto";
 
 Meteor.methods({
   createDevAccount: function (displayName, isAdmin, profile, unverifiedEmail) {

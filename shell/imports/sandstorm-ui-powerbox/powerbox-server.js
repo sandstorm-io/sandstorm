@@ -14,9 +14,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Crypto from "crypto";
+import Future from "fibers/future";
+
 import { waitPromise } from '../server/async-helpers.js';
 
-const Crypto = Npm.require("crypto");
 const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");
 

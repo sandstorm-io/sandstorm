@@ -20,7 +20,7 @@
 // We used to use Npm.require() for this, but Meteor disabled the "search up the tree" behavior
 // in: https://github.com/meteor/meteor/pull/9095
 
-const fs = Npm.require("fs");
+import fs from "fs";
 const pathParts = process.cwd().split("/");
 
 for (;;) {

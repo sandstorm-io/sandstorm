@@ -19,10 +19,10 @@ import { ssrfSafeLookup } from "/imports/server/networking.js";
 import { REQUEST_HEADER_WHITELIST, RESPONSE_HEADER_WHITELIST }
     from "/imports/server/header-whitelist.js";
 
-const Future = Npm.require("fibers/future");
-const Url = Npm.require("url");
-const Http = Npm.require("http");
-const Https = Npm.require("https");
+import Future from "fibers/future";
+import Url from "url";
+import Http from "http";
+import Https from "https";
 const ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
 const PersistentApiSession =
     Capnp.importSystem("sandstorm/api-session-impl.capnp").PersistentApiSession;

@@ -14,7 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import "/imports/db-deprecated.js";
 import { FrontendRefRegistry } from "/imports/server/frontend-ref.js";
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { migrateToLatest } from "/imports/server/migrations.js";

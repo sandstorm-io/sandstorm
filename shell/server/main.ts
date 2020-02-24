@@ -77,6 +77,7 @@ import "../imports/server/admin/system-status-server.js";
 import "../imports/server/drivers/external-ui-view.js";
 import "../imports/server/drivers/ip.js";
 import "../imports/server/drivers/mail.js";
+import "../imports/db-deprecated.js";
 import "../imports/server/00-startup.js";
 import "../imports/server/account-suspension.js";
 import "../imports/server/admin-server.js";

@@ -138,6 +138,7 @@ import "../imports/client/grain/grainlist-client.js";
 import "../imports/client/setup-wizard/wizard.js";
 import "../imports/client/vendor/ansi-up.js";
 import "../imports/client/widgets/widgets-client.js";
+import "../imports/db-deprecated.js";
 import "../imports/client/00-startup.js";
 import "../imports/client/admin-client.js";
 import "../imports/client/demo-client.js";

@@ -20,6 +20,7 @@ import Future from "fibers/future";
 import Net from "net";
 import Tls from "tls";
 import Dgram from "dgram";
+import Capnp from "/imports/server/capnp.js";
 
 const IpRpc = Capnp.importSystem("sandstorm/ip.capnp");
 

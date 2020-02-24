@@ -24,6 +24,7 @@ import Fs from "fs";
 import Dns from "dns";
 import Future from "fibers/future";
 import Http from "http";
+import Capnp from "/imports/server/capnp.js";
 const ByteStream = Capnp.importSystem("sandstorm/util.capnp").ByteStream;
 
 const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;

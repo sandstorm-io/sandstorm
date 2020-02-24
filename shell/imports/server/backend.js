@@ -17,6 +17,7 @@
 import Crypto from "crypto";
 import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
 import { inMeteor, promiseToFuture, waitPromise } from "/imports/server/async-helpers.js";
+import Capnp from "/imports/server/capnp.js";
 
 const Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
 

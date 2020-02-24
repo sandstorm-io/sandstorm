@@ -23,6 +23,7 @@ import Future from "fibers/future";
 import Url from "url";
 import Http from "http";
 import Https from "https";
+import Capnp from "/imports/server/capnp.js";
 const ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
 const PersistentApiSession =
     Capnp.importSystem("sandstorm/api-session-impl.capnp").PersistentApiSession;

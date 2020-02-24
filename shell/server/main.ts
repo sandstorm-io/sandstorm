@@ -38,10 +38,7 @@
 
 // Import packages that sandstorm depends on.
 
-// sandstorm-capnp.
-import "../imports/server/capnp.js";
-
-// sandstorm-db.  Depends on sandstorm-capnp.
+// sandstorm-db.
 import "../imports/sandstorm-db/db.js";
 import "../imports/sandstorm-db/profile.js";
 import "../imports/sandstorm-db/scheduled-jobs-db.js";
@@ -55,10 +52,10 @@ import "../imports/sandstorm-autoupdate-apps/autoupdate-apps.js";
 // sandstorm-accounts-packages
 import "../imports/sandstorm-accounts-packages/accounts.js";
 
-// sandstorm-ui-powerbox.  Depends on sandstorm-capnp
+// sandstorm-ui-powerbox.
 import "../imports/sandstorm-ui-powerbox/powerbox-server.js";
 
-// blackrock-payments.  Depends on sandstorm-db and sandstorm-capnp.
+// blackrock-payments.  Depends on sandstorm-db
 import "../imports/blackrock-payments/constants.js";
 import "../imports/blackrock-payments/server/payments-server.js";
 import "../imports/blackrock-payments/server/payments-api-server.js";

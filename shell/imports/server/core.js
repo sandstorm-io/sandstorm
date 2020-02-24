@@ -21,6 +21,7 @@ import { PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements,
          fetchApiToken, insertApiToken } from "/imports/server/persistent.js";
 import { SandstormBackend } from "/imports/server/backend.js";
 import { hashAppIdForIdenticon } from "/imports/sandstorm-identicons/helpers.js";
+import Capnp from "/imports/server/capnp.js";
 
 const PersistentHandle = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentHandle;
 const SandstormCore = Capnp.importSystem("sandstorm/supervisor.capnp").SandstormCore;

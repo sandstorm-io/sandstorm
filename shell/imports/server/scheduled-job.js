@@ -15,9 +15,11 @@
 // limitations under the License.
 
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { PersistentImpl, fetchApiToken } from "/imports/server/persistent.js";
+import Capnp from "/imports/server/capnp.js";
+
 const ScheduledJob = Capnp.importSystem("sandstorm/grain.capnp").ScheduledJob;
 const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;
-import { PersistentImpl, fetchApiToken } from "/imports/server/persistent.js";
 
 const MINIMUM_SCHEDULING_SLACK_NANO = Capnp.importSystem("sandstorm/grain.capnp").minimumSchedulingSlack;
 const MINIMUM_SCHEDULING_SLACK_MILLIS = MINIMUM_SCHEDULING_SLACK_NANO / 1e6;

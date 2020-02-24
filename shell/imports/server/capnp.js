@@ -21,19 +21,23 @@
 // in: https://github.com/meteor/meteor/pull/9095
 
 import fs from "fs";
+
 const pathParts = process.cwd().split("/");
 
+let Capnp;
 for (;;) {
-  var path = pathParts.join("/");
+  const path = pathParts.join("/");
 
-  if (fs.existsSync(path + "/node_modules/capnp.node")) {
-    Capnp = Npm.require(path + "/node_modules/capnp.js");
+  if (fs.existsSync(`${path}/node_modules/capnp.node`)) {
+    Capnp = Npm.require(`${path}/node_modules/capnp.js`);
     break;
   }
 
-  if (pathParts.length == 0) {
-    throw new Error("Can't find capnp.node, starting from: " + process.cwd());
+  if (pathParts.length === 0) {
+    throw new Error(`Can't find capnp.node, starting from: ${process.cwd()}`);
   }
 
   pathParts.pop();
 }
+
+export default Capnp;

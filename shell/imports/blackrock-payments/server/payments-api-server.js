@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import Crypto from "crypto";
+import Capnp from "/imports/server/capnp.js";
 const PaymentsRpc = Capnp.importSystem("sandstorm/payments.capnp");
 
 function wrapAsyncAsPromise(obj, func) {

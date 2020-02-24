@@ -16,6 +16,7 @@
 
 import Crypto from "crypto";
 import Future from "fibers/future";
+import Capnp from "/imports/server/capnp.js";
 
 import { waitPromise } from '../server/async-helpers.js';
 

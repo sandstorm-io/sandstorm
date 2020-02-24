@@ -14,9 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { inMeteor } from "/imports/server/async-helpers.js";
-
 import Crypto from "crypto";
+import { inMeteor } from "/imports/server/async-helpers.js";
+import Capnp from "/imports/server/capnp.js";
 
 const privateDb = Symbol("PersistentImpl.db");
 const privateTemplate = Symbol("PersistentImpl.template");

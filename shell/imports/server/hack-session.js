@@ -23,6 +23,7 @@ import Url from "url";
 import { hashSturdyRef, checkRequirements, fetchApiToken } from "/imports/server/persistent.js";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { ssrfSafeLookup } from "/imports/server/networking.js";
+import Capnp from "/imports/server/capnp.js";
 
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 const HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;

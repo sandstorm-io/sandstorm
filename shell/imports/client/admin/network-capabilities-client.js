@@ -1,3 +1,7 @@
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
+
 function deriveIntroducer(cap) {
   // For a given ApiToken, determine the account ID of the user who should be attributed for
   // creating the token.

@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { send } from "/imports/server/email.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 function sendDeletionEmails(db, deletedUserId, byAdminUserId, feedback) {
   const deletedUser = db.getUser(deletedUserId);

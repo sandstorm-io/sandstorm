@@ -16,6 +16,7 @@
 
 import Crypto from "crypto";
 import Capnp from "/imports/server/capnp.js";
+import { SandstormDb } from "./db.js";
 
 const MINIMUM_SCHEDULING_SLACK_NANO = Capnp.importSystem("sandstorm/grain.capnp").minimumSchedulingSlack;
 

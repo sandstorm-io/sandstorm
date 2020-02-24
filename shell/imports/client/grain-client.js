@@ -16,12 +16,17 @@
 
 // This file implements /grain, i.e. the main view into an app.
 
+import { Meteor } from "meteor/meteor";
+import { Mongo } from "meteor/mongo";
+import { Match, check } from "meteor/check";
+import { Template } from "meteor/templating";
 import { introJs } from "intro.js";
 
 import downloadFile from "/imports/client/download-file.js";
 import { ContactProfiles } from "/imports/client/contacts.js";
 import { isStandalone } from "/imports/client/standalone.js";
 import { GrainView } from "/imports/client/grain/grainview.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 // Pseudo-collections.
 TokenInfo = new Mongo.Collection("tokenInfo");

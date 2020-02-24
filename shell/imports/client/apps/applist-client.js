@@ -1,4 +1,5 @@
 import { introJs } from "intro.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 SandstormAppList = function (db, quotaEnforcer) {
   this._filter = new ReactiveVar("");

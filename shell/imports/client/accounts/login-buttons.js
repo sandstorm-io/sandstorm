@@ -19,6 +19,9 @@
 // licenses, included in the LICENSES directory.
 // ====================================================================
 
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
+import { Template } from "meteor/templating";
 import {
   loginWithEmailToken,
   createAndEmailTokenForUser,
@@ -27,6 +30,7 @@ import { GrainViewList } from '/imports/client/grain/grainview-list.js';
 import { loginWithLDAP } from "/imports/client/accounts/ldap/ldap-client.js";
 import { loginWithSaml } from "/imports/client/accounts/saml/saml-client.js";
 import AccountsUi from "/imports/client/accounts/accounts-ui.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 // for convenience
 const loginButtonsSession = Accounts._loginButtonsSession;

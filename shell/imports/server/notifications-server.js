@@ -17,6 +17,7 @@
 import { waitPromise } from "/imports/server/async-helpers.js";
 import { createAppActivityDesktopNotification } from "/imports/server/desktop-notifications.js";
 import Capnp from "/imports/server/capnp.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 const SupervisorCapnp = Capnp.importSystem("sandstorm/supervisor.capnp");
 const SystemPersistent = SupervisorCapnp.SystemPersistent;

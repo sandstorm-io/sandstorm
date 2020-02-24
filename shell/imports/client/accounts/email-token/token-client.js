@@ -14,10 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
 import {
   loginWithEmailToken,
   createAndEmailTokenForUser,
 } from "/imports/client/accounts/email-token/token-login-helpers.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 // Email token login routes.
 Router.route("/_emailLogin/:_email/:_token", function () {

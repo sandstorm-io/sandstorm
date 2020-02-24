@@ -10,6 +10,7 @@ import { Match } from "meteor/check";
 import { userPictureUrl, fetchPicture } from "/imports/server/accounts/picture.js";
 import { waitPromise } from "/imports/server/async-helpers.js";
 import { PRIVATE_IPV4_ADDRESSES, PRIVATE_IPV6_ADDRESSES } from "/imports/constants.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 import Future from "fibers/future";
 import Url from "url";

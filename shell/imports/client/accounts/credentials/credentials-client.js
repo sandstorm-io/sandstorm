@@ -14,6 +14,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Mongo } from "meteor/mongo";
+import { check } from "meteor/check";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
+
 const LoginCredentialsOfLinkedAccounts = new Mongo.Collection("loginCredentialsOfLinkedAccounts");
 // Pseudocollection populated by the `accountsOfCredential(sourceCredentialId)` subscription. Contains
 // information about all login credentials for all accounts that have the "source credential" linked.

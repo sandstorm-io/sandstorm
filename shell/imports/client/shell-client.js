@@ -17,9 +17,12 @@
 // This file implements the common shell components such as the top bar.
 // It also covers the root page.
 
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
 import getBuildInfo from "/imports/client/build-info.js";
 import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";
 import { isStandalone } from "/imports/client/standalone.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 // Subscribe to basic grain information first and foremost, since
 // without it we might e.g. redirect to the wrong place on login.

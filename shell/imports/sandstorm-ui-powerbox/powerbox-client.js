@@ -14,7 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Mongo } from "meteor/mongo";
+import { Template } from "meteor/templating";
 import { identiconForApp } from "/imports/sandstorm-identicons/helpers.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 const PowerboxOptions = new Mongo.Collection("powerboxOptions");
 

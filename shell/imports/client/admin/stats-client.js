@@ -1,3 +1,8 @@
+import { Meteor } from "meteor/meteor";
+import { Mongo } from "meteor/mongo";
+import { Template } from "meteor/templating";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
+
 // Pseudo-collection defined via publish.
 const RealTimeStats = new Mongo.Collection("realTimeStats");
 

@@ -1,6 +1,7 @@
 import Url from "url";
 import zlib from "zlib";
 import { SAML } from "/imports/server/accounts/saml-utils.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 import Fiber from "fibers";
 import BodyParser from "body-parser";

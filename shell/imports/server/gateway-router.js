@@ -18,6 +18,7 @@ import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import Crypto from "crypto";
 import Dns from "dns";
 import Capnp from "/imports/server/capnp.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 const GatewayRouter = Capnp.importSystem("sandstorm/backend.capnp").GatewayRouter;
 const ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;

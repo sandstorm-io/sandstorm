@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { Template } from "meteor/templating";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 var messageListener = function (showPrompt, template, event) {
   if (event.origin !== window.location.protocol + "//" + makeWildcardHost("payments")) {

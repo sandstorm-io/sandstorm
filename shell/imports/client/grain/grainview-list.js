@@ -16,6 +16,7 @@
 
 import { GrainView, onceConditionIsTrue } from "./grainview.js";
 import { isStandalone } from "/imports/client/standalone.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 class GrainViewList {
   constructor(db) {

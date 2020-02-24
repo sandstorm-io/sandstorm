@@ -1,4 +1,7 @@
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
 import { iconSrcForPackage } from "/imports/sandstorm-identicons/helpers.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 const latestPackageForAppId = function (db, appId) {
   // Dev apps mask current package version.

@@ -19,6 +19,7 @@ import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import ChildProcess from "child_process";
 import Future from "fibers/future";
 import Capnp from "/imports/server/capnp.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 const GrainInfo = Capnp.importSystem("sandstorm/grain.capnp").GrainInfo;
 

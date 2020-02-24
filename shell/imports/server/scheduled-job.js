@@ -17,6 +17,7 @@
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { PersistentImpl, fetchApiToken } from "/imports/server/persistent.js";
 import Capnp from "/imports/server/capnp.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 const ScheduledJob = Capnp.importSystem("sandstorm/grain.capnp").ScheduledJob;
 const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;

@@ -46,7 +46,7 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
     // Make input field visible in order to manipulate it in Firefox
     .execute(function () {
         document.querySelector("input[name=picture]")
-                .setAttribute("style", ""); 
+                .setAttribute("style", "");
       }, [])
     .perform(function (client, done) {
       client.setValue("input[name=picture]", newPicPath, function(){
@@ -66,11 +66,11 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
           instance._uploadToken = result;
           instance.doUploadIfReady();
         }
-      });      
+      });
     }, [])
     .waitForElementVisible('p.flash-message.success-message', medium_wait)
     .assert.containsText('p.flash-message.success-message', 'Success: picture updated')
-    
+
 
     // Change name, handle, and pronoun
     .waitForElementVisible("input[name=nameInput]", short_wait)
@@ -88,24 +88,8 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
     })
 
 
-    // Navigate to apps page, upload meteor-testapp.spk, create new instance
-    .click('a[href="/apps"]')
-    .waitForElementVisible('.upload-button', short_wait)
-    .execute(function () {
-      document.querySelector("input[type=file]")
-              .setAttribute("style", ""); 
-      }, [])
-    .perform(function (client, done) {
-      client.setValue("input[type=file]", testappPath, () => {
-        done();
-      })
-    })
-    .execute(function () {
-      const testappFile = document.querySelector("input[type=file]").files[0];
-      uploadApp(testappFile);
-    }, [])
-    .waitForElementVisible('#confirmInstall', long_wait)
-    .click('#confirmInstall')
+    // upload meteor-testapp.spk, create new instance
+    .uploadMeteorTestApp()
     .waitForElementVisible('button.action', medium_wait)
     .click('button.action')
 
@@ -119,7 +103,7 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
     .assert.containsText('#picture', 'sandstorm.io')
     .assert.containsText('#preferredHandle', devName2.toLowerCase())
     .assert.containsText('#pronouns', 'robot')
-    
+
 
     .execute("window.Meteor.logout()")
     .end();

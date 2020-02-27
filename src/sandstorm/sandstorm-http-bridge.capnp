@@ -21,6 +21,7 @@
 $import "/capnp/c++.capnp".namespace("sandstorm");
 using Grain = import "grain.capnp";
 using Identity = import "identity.capnp";
+using Powerbox = import "powerbox.capnp";
 
 interface SandstormHttpBridge {
   # Bootstrap interface provided to the app on a Unix domain socket at /tmp/sandstorm-api.
@@ -31,6 +32,16 @@ interface SandstormHttpBridge {
   getSessionContext @1 (id :Text) -> (context :Grain.SessionContext);
   # Get the SessionContext corresponding to a UiSession. The appropriate `id` value can be read
   # from the X-Sandstorm-Session-Id header inserted by sandstorm-http-bridge.
+
+  getSessionRequest @4 (id :Text) -> (requestInfo :List(Powerbox.PowerboxDescriptor));
+  # Get the requestInfo for a powerbox request session. The `id` parameter is the same as for
+  # `getSessionContext`. This is only valid if the current session actually is a request
+  # session. If it is, the `X-Sandstorm-Session-Type` header will be set to 'request'.
+
+  getSessionOffer @5 (id :Text) -> (offer :Capability, descriptor :Powerbox.PowerboxDescriptor);
+  # Get the offer information for a powerbox offer session. The `id` parameter is the same as
+  # for `getSessionContext`. This is only valid if the current session actually is an offer
+  # session. If it is, the `X-Sandstorm-Session-Type` header will be set to 'offer'.
 
   getSavedIdentity @2 (identityId :Text) -> (identity :Identity.Identity);
   # If BridgeConfig.saveIdentityCaps is true for this app, then you can call this method to fetch

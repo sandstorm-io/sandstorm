@@ -81,3 +81,4 @@ app-index.spk
 app-index-sandstorm-files.list
 test-app.spk
 deps/llvm-build
+site

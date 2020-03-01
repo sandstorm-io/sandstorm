@@ -3,7 +3,6 @@ name: build_and_test
 on: [push, pull_request]
 
 env:
-  BUILD: 9999
   CCACHE_DIR: ${{ github.workspace }}/.ccache"
   # TODO: remove this. See https://github.com/sandstorm-io/sandstorm/issues/3188
   SKIP_UNITTESTS: 1
@@ -44,7 +43,7 @@ jobs:
             export CCACHE_SLOPPINESS="time_macros"
             export PATH=/usr/lib/ccache:$CLANGDIR:$PATH
 
-            make BUILD=${{ env.BUILD }} \
+            make \
               CC="$(which clang)" \
               CXX="$(which clang++)" \
               fast
@@ -58,17 +57,17 @@ jobs:
       #  with:
       #    name: ccache-debug.tar.gz
       #    path: ccache-debug.tar.gz
-      - name: upload sandstorm tarball
-        uses: actions/upload-artifact@v1
-        with:
-          name: sandstorm-${{ env.BUILD }}-fast.tar.xz
-          path: sandstorm-${{ env.BUILD }}-fast.tar.xz
+      #- name: upload sandstorm tarball
+      #  uses: actions/upload-artifact@v1
+      #  with:
+      #    name: sandstorm-0-fast.tar.xz
+      #    path: sandstorm-0-fast.tar.xz
       - name: test
         run: |
           set -o pipefail
           # Currently these tests never pass.
           # TODO: When they are fixed, remove the || true
-          (make BUILD=${{ env.BUILD }} test |& tee testlog.txt; echo "Result: $?") || true
+          (make test |& tee testlog.txt; echo "Result: $?") || true
       - name: upload test log
         if: always()
         uses: actions/upload-artifact@v1

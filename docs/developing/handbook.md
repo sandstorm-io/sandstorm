@@ -31,11 +31,6 @@ authoritative source of technical documentation. Within each section,
 we typically link to more detailed documentation. Those detailed
 documents provide further context on how stable each API is.
 
-# Change history
-
-* 2015-02-08: Some clarifications, particularly around access control.
-* 2015-02-06: Initial version.
-
 # A great Sandstorm app
 
 This section explains each brief bullet-point above in more depth.
@@ -397,9 +392,8 @@ Thanks for reading this far!
 Sandstorm is continuously evolving, and we are continuously developing
 it, so some of these details may change. We hope this has been a useful
 overview of the platform and helps you understand the platform's
-goals. We're always eager for feedback; email us at
-community@sandstorm.io. This handbook is very abbreviated; consider
-following the links in each section for more detail.
+goals. This handbook is very abbreviated; consider following the links
+in each section for more detail.
 
 To dig into the design of Sandstorm, read through the [Cap'n Proto
 protocols that govern how it
@@ -417,7 +411,3 @@ conveniently and safely. For example, it is OK to disable some
 features if the app still would be valuable to Sandstorm users. It's
 also OK to create a "monolithic" port if you believe it would be
 useful.
-
-Please check out our [Getting Involved
-page](https://github.com/sandstorm-io/sandstorm/wiki/Get-Involved), or
-send us an email at community@sandstorm.io!

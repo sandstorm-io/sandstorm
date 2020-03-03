@@ -25,7 +25,7 @@ Sandstorm requires WebSockets support; to enable that, make sure to pay attentio
 `RewriteRule` stanzas in the example configuration.
 
 If you use a non-nginx, non-Apache2 reverse proxy, we'd love for you to
-[email us](mailto:community@sandstorm.io) so we can publish example configuration files.
+contribute a pull request with example configuration files.
 
 ### HTTPS or not: you choose
 

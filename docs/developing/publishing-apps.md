@@ -88,9 +88,7 @@ optional but highly recommended.
 
 ### Sign up with [Keybase.io](https://keybase.io)
 
-Currently, Keybase is invite-only. If you need an invite, you can
-contact [community@sandstorm.io](mailto:community@sandstorm.io). You
-should connect some of your public identites with your Keybase
+You should connect some of your public identities with your Keybase
 account, like Twitter and GitHub.
 
 Sandstorm app authors are verified using a PGP key linked to

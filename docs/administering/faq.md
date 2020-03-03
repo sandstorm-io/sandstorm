@@ -424,7 +424,7 @@ to address the issue.
   the Sandstorm MongoDB instance, note that grain data is safely stored separately, so any grain data
   would not be affected.
 
-To get further help, please email support@sandstorm.io. Please include the most recent 100 lines
+To get further help, please [open an issue on GitHub](https://github.com/sandstorm-io/sandstorm/issues/new). Please include the most recent 100 lines
 from the MongoDB log file, if you can.
 
 ## Installing and running without root privileges
@@ -450,8 +450,7 @@ namespaces. If you use the userns-based sandbox, please be sure to keep up to da
 updates.
 
 - **People who don't know how to change a Linux kernel.** If you are a customer of a hosting
-  provider, please ask your hosting provider to read this page. They are also welcome to email the
-  Sandstorm team at [support@sandstorm.io.](mailto:support@sandstorm.io)
+  provider, please ask your hosting provider to read this page.
 
 - **Arch Linux users.** We suggest starting Sandstorm as root instead to avoid the dependency on
   user namespaces. In [#36969](https://bugs.archlinux.org/task/36969), the Arch Linux kernel
@@ -599,8 +598,8 @@ computer, we can suggest the following, though we haven't personally tried them.
   $130 at the time of writing.
 
 We are focusing on x86-64 because we only have so much time in the day. If you're a volunteer and
-interested in tackling the ARM/multi-architecture situation, then please email us at
-community@sandstorm.io.
+interested in tackling the ARM/multi-architecture situation, then please speak up on the
+[related issue](https://github.com/sandstorm-io/sandstorm/issues/2083).
 
 There are a few obstacles we'd need to overcome for Sandstorm to provide a good experience
 on ARM.

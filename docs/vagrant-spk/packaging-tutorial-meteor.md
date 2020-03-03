@@ -20,7 +20,7 @@ This tutorial assumes:
 
 **Windows users, please note**: This tutorial should work for you, but
 you might need to use slightly different commands to do things like
-create directories. Contact community@sandstorm.io if you need help.
+create directories.
 
 ## Overview of Sandstorm packages
 

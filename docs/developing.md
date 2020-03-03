@@ -46,7 +46,7 @@ The Sandstorm ecosystem is full of people who want to promote your app, give you
 it.
 
 - **Free services from Sandstorm core team**: [Free Oasis service for app authors](https://sandstorm.io/news/2016-02-05-app-author-publicity-oasis)
-- **Getting help**: [Community feedback and Q&A](https://groups.google.com/d/forum/sandstorm-dev) | [Real-time IRC chat on freenode](https://kiwiirc.com/client/irc.freenode.net/?channel=#sandstorm) | [Watch presentations on the Sandstorm YouTube channel](https://www.youtube.com/channel/UC8xKZRW86Fa9W00uAppBXXg) | [Email the core team](mailto:community@sandstorm.io)
+- **Getting help**: [Community feedback and Q&A](https://groups.google.com/d/forum/sandstorm-dev) | [Real-time IRC chat on freenode](https://kiwiirc.com/client/irc.freenode.net/?channel=#sandstorm) | [Watch presentations on the Sandstorm YouTube channel](https://www.youtube.com/channel/UC8xKZRW86Fa9W00uAppBXXg)
 - **Publicity**: [Free icon design for your app](https://sandstorm.io/news/2015-11-10-icons-spks-for-everyone) | [Give a meetup/conference talk about your app](https://sandstorm.io/news/2015-12-17-community-talks) | [Public demo service for all Sandstorm apps](https://sandstorm.io/news/2015-02-06-app-demo) | [General publicity help](https://sandstorm.io/news/2016-02-05-app-author-publicity-oasis)
 - **Read more**: [All community resources](https://sandstorm.io/community)
 

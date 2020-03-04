@@ -137,7 +137,7 @@ Implementation notes for LDAP that may apply to your site:
   objects match the username. In this case, you probably need to add a custom **LDAP Search
   Filter** under "Additional LDAP filter criteria. Your search filter should typically take the form
   of `(&(something))` so that it is AND'd against the default Sandstorm LDAP query used when a user
-  is logging in. Contact us at support@sandstorm.io if you need help.
+  is logging in.
 
 - Some LDAP servers require authentication before permitting a search. In that case, you will need
   to configure an **Bind user DN** and **Bind user password**, a user and password for the search

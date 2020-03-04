@@ -15,14 +15,14 @@ security benefit, the Sandstorm software never sees the user's passwords. This r
 support for SAML 2.0.
 
 This document provides textual advice as well as a great deal of screenshots to allow you to proceed
-with confidence. If you have questions, please email support@sandstorm.io. We want to help you
+with confidence. If you have questions, please [open an issue on GitHub](https://github.com/sandstorm-io/sandstorm/issues/new). We want to help you
 successfully set up Sandstorm!
 
 Note that you can also set up Sandstorm to integrate with Active Directory using LDAP bind to
 authenticate users. We recommend Active Directory Federation Services or Microsoft Azure AD Single
 Sign-On instead. Both of these products use SAML for authentication. If you must use LDAP bind for
 authentication instead, see the general [documentation about
-LDAP](for-work.md#authentication-provider-ldap) or email support@sandstorm.io.
+LDAP](for-work.md#authentication-provider-ldap).
 
 ## Windows Azure Active Directory
 

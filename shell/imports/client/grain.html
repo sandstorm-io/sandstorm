@@ -8,50 +8,39 @@
     {{#if error}}
       {{#if inMyTrash}}
         {{> grainInMyTrash . }}
-      {{else}}
-        {{#if inOwnersTrash}}
-          {{> grainInOwnersTrash ""}}
-        {{else}}{{#if grainOwnerSuspended}}
-          {{> grainOwnerSuspended ""}}
+      {{else if inOwnersTrash}}
+        {{> grainInOwnersTrash ""}}
+      {{else if grainOwnerSuspended}}
+        {{> grainOwnerSuspended ""}}
+      {{else if unauthorized}}
+        {{#if token}}
+          {{> revokedShareLink ""}}
         {{else}}
-          {{#if unauthorized}}
-            {{#if token}}
-              {{> revokedShareLink ""}}
-            {{else}}
-              {{> requestAccess . }}
-            {{/if}}
-          {{else}}
-            {{#if notFound}}
-              <p class="grain-not-found grain-interstitial">
-                {{_ "grains.grainView.notFoundWithId" grainId}}
-              </p>
-            {{else}}
-              {{#if quotaExhausted}}
-                <p class="grain-quota-exhausted grain-interstitial">
-                  {{_ "grains.grainView.quotaExhausted"}}
-                  {{#if paymentsEnabled}}
-                    <br>
-                    <a target="_blank" href="https://sandstorm.io/news/2018-10-18-how-to-download-oasis-data">If the owner was on the free plan, this could be because Oasis's free plan was discontinued on October 17, 2018. Please click here for more details.</a>
-                  {{/if}}
-                </p>
-              {{else}}
-                {{#if missingPackage}}
-                  <p class="grain-interstitial">
-                    This grain's app package is not installed, or the installed version is too old.
-                    {{#if appIndexUrl}}
-                      <a href="/install/{{packageId}}?url={{appIndexUrl}}/packages/{{packageId}}">Install it &raquo;</a>
-                    {{/if}}
-                  </p>
-                {{else}}
-                  <pre>{{error}}</pre>
-                {{/if}}
-              {{/if}}
-            {{/if}}
+          {{> requestAccess . }}
+        {{/if}}
+      {{else if notFound}}
+        <p class="grain-not-found grain-interstitial">
+          {{_ "grains.grainView.notFoundWithId" grainId}}
+        </p>
+      {{else if quotaExhausted}}
+        <p class="grain-quota-exhausted grain-interstitial">
+          {{_ "grains.grainView.quotaExhausted"}}
+          {{#if paymentsEnabled}}
+            <br>
+            <a target="_blank" href="https://sandstorm.io/news/2018-10-18-how-to-download-oasis-data">If the owner was on the free plan, this could be because Oasis's free plan was discontinued on October 17, 2018. Please click here for more details.</a>
           {{/if}}
-        {{/if}}{{/if}}
+        </p>
+      {{else if missingPackage}}
+        <p class="grain-interstitial">
+          This grain's app package is not installed, or the installed version is too old.
+          {{#if appIndexUrl}}
+            <a href="/install/{{packageId}}?url={{appIndexUrl}}/packages/{{packageId}}">Install it &raquo;</a>
+          {{/if}}
+        </p>
+      {{else}}
+        <pre>{{error}}</pre>
       {{/if}}
-    {{else}}
-    {{#if appOrigin}}
+    {{else if appOrigin}}
       {{!-- Selenium requires iframes to have an id in order to select them. `id` is only
             used for testing purposes. --}}
       <iframe data-grainid="{{grainId}}" id="{{idPrefix}}grain-frame-{{grainId}}" class="grain-frame" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{originalPath}}"></iframe>
@@ -63,8 +52,7 @@
       {{#if hasNotLoaded}}
         {{> _grainSpinner ""}}
       {{/if}}
-    {{else}}
-    {{#if interstitial}}
+    {{else if interstitial}}
       <div class="grain-interstitial">
          <p>{{_ "grains.grainView.openWithWhichIdentity"}}</p>
         <button class="reveal-identity-button">{{_ "grains.grainView.revealMyIdentity"}}</button>
@@ -72,8 +60,6 @@
       </div>
     {{else}}
       {{> _grainSpinner ""}}
-    {{/if}}
-    {{/if}}
     {{/if}}
     </div>
   {{/with}}

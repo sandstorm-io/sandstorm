@@ -19,6 +19,10 @@
 import { Meteor } from "meteor/meteor";
 import { Mongo } from "meteor/mongo";
 import { Match, check } from "meteor/check";
+import { _ } from "meteor/underscore";
+import { Random } from "meteor/random";
+import { SHA256 } from "meteor/sha";
+import { HTTP } from "meteor/http";
 import { iconSrcForPackage } from "/imports/sandstorm-identicons/helpers.js";
 
 // Useful for debugging: Set the env variable LOG_MONGO_QUERIES to have the server write every
@@ -953,7 +957,7 @@ const calculateReferralBonus = function (user) {
   // Authorization note: Only call this if accountId is the current user!
   const isPaid = (user.plan && user.plan !== "free");
 
-  successfulReferralsCount = countReferrals(user);
+  const successfulReferralsCount = countReferrals(user);
   if (isPaid) {
     const maxPaidStorageBonus = 30 * 1e9;
     return { grains: 0,
@@ -1093,27 +1097,6 @@ function apiHostIdForToken(token) {
 
 function makeApiHost(token) {
   return makeWildcardHost(apiHostIdForToken(token));
-}
-
-if (Meteor.isServer) {
-  const Url = Npm.require("url");
-  getWildcardOrigin = function () {
-    // The wildcard URL can be something like "foo-*-bar.example.com", but sometimes when we're
-    // trying to specify a pattern matching hostnames (say, a Content-Security-Policy directive),
-    // an astrisk is only allowed as the first character and must be followed by a period. So we need
-    // "*.example.com" instead -- which matches more than we actually want, but is the best we can
-    // really do. We also add the protocol to the front (again, that's what CSP wants).
-
-    // TODO(cleanup): `protocol` is computed in other files, like proxy.js. Put it somewhere common.
-    const protocol = Url.parse(process.env.ROOT_URL).protocol;
-
-    const dotPos = wildcardHost[1].indexOf(".");
-    if (dotPos < 0) {
-      return protocol + "//*";
-    } else {
-      return protocol + "//*" + wildcardHost[1].slice(dotPos);
-    }
-  };
 }
 
 function SandstormDb(quotaManager) {
@@ -1307,9 +1290,27 @@ _.extend(SandstormDb.prototype, {
 });
 
 if (Meteor.isServer) {
-  SandstormDb.prototype.getWildcardOrigin = getWildcardOrigin;
-
   const Crypto = Npm.require("crypto");
+  const Url = Npm.require("url");
+
+  SandstormDb.prototype.getWildcardOrigin = function () {
+    // The wildcard URL can be something like "foo-*-bar.example.com", but sometimes when we're
+    // trying to specify a pattern matching hostnames (say, a Content-Security-Policy directive),
+    // an astrisk is only allowed as the first character and must be followed by a period. So we need
+    // "*.example.com" instead -- which matches more than we actually want, but is the best we can
+    // really do. We also add the protocol to the front (again, that's what CSP wants).
+
+    // TODO(cleanup): `protocol` is computed in other files, like proxy.js. Put it somewhere common.
+    const protocol = Url.parse(process.env.ROOT_URL).protocol;
+
+    const dotPos = wildcardHost[1].indexOf(".");
+    if (dotPos < 0) {
+      return protocol + "//*";
+    } else {
+      return protocol + "//*" + wildcardHost[1].slice(dotPos);
+    }
+  };
+
   SandstormDb.prototype.removeApiTokens = function (query, saveOldUsers) {
     // Remove all API tokens matching the query, making sure to clean up ApiHosts as well.
     //
@@ -2314,7 +2315,7 @@ function appNameFromPackage(packageObj) {
   const manifest = packageObj.manifest;
   if (!manifest) return packageObj.appId || packageObj._id || "unknown";
   const action = manifest.actions[0];
-  appName = (manifest.appTitle && manifest.appTitle.defaultText) ||
+  const appName = (manifest.appTitle && manifest.appTitle.defaultText) ||
     appNameFromActionName(action.title.defaultText);
   return appName;
 }
@@ -2522,13 +2523,13 @@ if (Meteor.isServer) {
     check(id, String);
 
     const result = this.collections.staticAssets.findAndModify({
-      query: { hash: hash },
+      query: { _id: id },
       update: { $inc: { refcount: 1 } },
       fields: { _id: 1, content: 1, mimeType: 1 },
     });
 
     if (!result.ok) {
-      throw new Error(`Couldn't increment refcount of asset with hash ${hash}`);
+      throw new Error(`Couldn't increment refcount of asset with hash ${id}`);
     }
 
     const existing = result.value;
@@ -2581,7 +2582,7 @@ if (Meteor.isServer) {
   SandstormDb.prototype.newAssetUpload = function (purpose) {
     check(purpose, Match.OneOf(
       { profilePicture: { userId: DatabaseId } },
-      { loginLogo: {} },
+      { loginLogo: {} }
     ));
 
     return this.collections.assetUploadTokens.insert({

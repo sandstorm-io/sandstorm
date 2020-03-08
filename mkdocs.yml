@@ -3,6 +3,7 @@ site_name: Docs
 theme:
     name: 'readthedocs'
     custom_dir: 'docs/sandstorm_readthedocs_modified_theme'
+    navigation_depth: 4
 repo_url: https://github.com/sandstorm-io/sandstorm
 edit_uri: edit/master/docs/
 markdown_extensions:

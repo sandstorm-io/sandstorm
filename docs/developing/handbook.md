@@ -1,4 +1,4 @@
-# App Developer Handbook
+# What makes a good Sandstorm app?
 
 This document provides a conceptual overview of Sandstorm along with a
 style guide for Sandstorm package maintainers.

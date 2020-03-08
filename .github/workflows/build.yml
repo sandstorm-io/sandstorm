@@ -1,7 +1,5 @@
 name: build_and_test
-
-on: [push, pull_request]
-
+on: [push]
 env:
   CCACHE_DIR: ${{ github.workspace }}/.ccache"
   # TODO: remove this. See https://github.com/sandstorm-io/sandstorm/issues/3188

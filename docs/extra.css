@@ -1,3 +1,13 @@
+.wy-nav-side {
+  width: 310px;
+  padding-bottom: 1em;
+}
+
+.wy-side-scroll {
+  height: 94%;
+  width: 310px;
+}
+
 .wy-side-nav-search {
   background-color: #723086;
 }

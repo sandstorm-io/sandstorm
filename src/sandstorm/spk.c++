@@ -59,6 +59,7 @@
 #include "util.h"
 #include "id-to-text.h"
 #include "appid-replacements.h"
+#include "config.h"
 
 namespace sandstorm {
 
@@ -2097,7 +2098,11 @@ private:
       if (connection == nullptr) {
         context.warning("App mounted. Ctrl+C to disconnect.");
       } else {
-        context.warning("App is now available from Sandstorm server. Ctrl+C to disconnect.");
+        Config config = readConfig("/opt/sandstorm/sandstorm.conf", false);
+        context.warning(kj::str(
+              "App is now available from Sandstorm server at:\n\n",
+              "    ", config.rootUrl,
+              "\n\nCtrl+C to disconnect."));
       }
 
       bindFuse(eventPort, fuseFd, kj::mv(rootNode), options)

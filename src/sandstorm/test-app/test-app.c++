@@ -23,6 +23,10 @@
 #include <map>
 
 #include <sys/time.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include <kj/main.h>
 #include <kj/debug.h>
@@ -93,6 +97,39 @@ private:
 
 // =======================================================================================
 
+void testSystemApi() {
+  // Test that some syscalls & platform APIs work as expected. Print a success
+  // message to the console so the test suite can verify this.
+
+  std::cout << "Testing System APIs" << std::endl;
+
+  auto result = kj::runCatchingExceptions([]() {
+    // Test use of /dev/shm:
+    const char *obj_name = "/some-shm-obj";
+    int shm_fd;
+    KJ_SYSCALL(shm_fd = shm_open(obj_name, O_RDWR|O_CREAT, 0700));
+    KJ_DEFER(KJ_SYSCALL(shm_unlink(obj_name)));
+
+    // Make sure the mapping actually works:
+    int *mapped = (int *)mmap(
+      nullptr, sizeof(int), PROT_READ|PROT_WRITE, MAP_SHARED, shm_fd, 0
+    );
+    KJ_ASSERT(mapped != MAP_FAILED, "mmap() failed");
+    KJ_ASSERT(close(shm_fd) == 0, "Closing shm_fd failed");
+    KJ_SYSCALL(munmap(mapped, sizeof(int)));
+  });
+
+  KJ_IF_MAYBE(exception, result) {
+    auto msg = kj::str(*exception);
+    std::cout << msg.cStr() << std::endl;
+    throw(*exception);
+  }
+
+  std::cout << "testSystemApi() passed." << std::endl;
+}
+
+// =======================================================================================
+
 class WebSessionImpl final: public sandstorm::WebSession::Server {
 public:
   WebSessionImpl(sandstorm::UserInfo::Reader userInfo,
@@ -148,6 +185,9 @@ public:
         httpResponse.setMimeType("text/plain");
         httpResponse.getBody().setBytes(response.getText().asBytes());
       });
+    } else if(path == "test-system-api") {
+      testSystemApi();
+      return kj::READY_NOW;
     } else if(path == "schedule") {
       context.getResults().initNoContent();
       // Put the extra headers in a map, so we can easily look for specific ones:

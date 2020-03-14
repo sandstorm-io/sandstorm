@@ -3,8 +3,8 @@
   "description": "Fonts for sandstorm.",
   "version": "0.1.0",
   "devDependencies": {
-    "grunt": "0.4.5",
-    "grunt-cli": "^0.1.13",
-    "grunt-webfont": "0.4.8"
+    "grunt": "^1.0.4",
+    "grunt-cli": "^1.3.2",
+    "grunt-webfont": "^1.7.2"
   }
 }

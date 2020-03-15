@@ -303,8 +303,8 @@ function paymentFailed(db, user, customerId, config, userMod) {
   const data = Meteor.wrapAsync(
       stripe.customers.retrieve.bind(stripe.customers))(customerId);
   if (data.subscriptions && data.subscriptions.data.length > 0) {
-    Meteor.wrapAsync(stripe.customers.cancelSubscription.bind(stripe.customers))(
-        customerId, data.subscriptions.data[0].id);
+    Meteor.wrapAsync(stripe.subscriptions.del.bind(stripe.subscriptions))(
+        data.subscriptions.data[0].id);
   }
 }
 
@@ -557,10 +557,9 @@ function cancelSubscription(userId, customerId) {
       // Already canceled.
       return { subscriptionEnds: new Date(current.current_period_end * 1000) };
     } else {
-      const info = Meteor.wrapAsync(stripe.customers.cancelSubscription.bind(stripe.customers))(
-        customerId,
+      const info = Meteor.wrapAsync(stripe.subscriptions.update.bind(stripe.subscriptions))(
         data.subscriptions.data[0].id,
-        { at_period_end: true },
+        { cancel_at_period_end: true },
       );
 
       const ends = new Date(info.current_period_end * 1000);
@@ -621,7 +620,7 @@ var methods = {
 
     id = findOriginalSourceId(id, customerId);
 
-    Meteor.wrapAsync(stripe.customers.deleteCard.bind(stripe.customers))(
+    Meteor.wrapAsync(stripe.customers.deleteSource.bind(stripe.customers))(
       customerId,
       id
     );
@@ -705,15 +704,13 @@ var methods = {
 
         try {
           if (data.subscriptions && data.subscriptions.data.length > 0) {
-            Meteor.wrapAsync(stripe.customers.updateSubscription.bind(stripe.customers))(
-              customerId,
-              data.subscriptions.data[0].id,
-              {plan: newPlan}
+            let itemId = data.subscriptions.data[0].items.data[0].id;
+            Meteor.wrapAsync(stripe.subscriptions.update.bind(stripe.subscriptions))(
+              data.subscriptions.data[0].id, { items: [{id: itemId, plan: newPlan}] }
             );
           } else {
-            Meteor.wrapAsync(stripe.customers.createSubscription.bind(stripe.customers))(
-              customerId,
-              {plan: newPlan}
+            Meteor.wrapAsync(stripe.subscriptions.create.bind(stripe.subscriptions))(
+              { customer: customerId, items: [{plan: newPlan}] }
             );
           }
         } catch (err) {
@@ -755,10 +752,10 @@ var methods = {
       customerId = payments.id;
       sanitizedSource = methods.addCardForUser.bind(this)(token, email);
     }
-    Meteor.wrapAsync(stripe.customers.createSubscription.bind(stripe.customers))(
-      customerId,
-      {plan: plan}
+    Meteor.wrapAsync(stripe.subscriptions.create.bind(stripe.subscriptions))(
+      { customer: customerId, items: [{plan: newPlan}] }
     );
+
     Meteor.users.update({_id: this.userId}, {$set: { plan: plan }});
     return sanitizedSource;
   },

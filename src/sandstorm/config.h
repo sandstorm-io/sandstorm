@@ -40,6 +40,6 @@ struct Config {
 // out to id(1).  If false, we ignore SERVER_USER.
 Config readConfig(const char *path, bool parseUids);
 
-};
+}; // namespace sandstorm
 
 #endif

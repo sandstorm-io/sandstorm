@@ -279,4 +279,4 @@ Config readConfig(const char *path, bool parseUids) {
   return config;
 }
 
-};
+}; // namespace sandstorm

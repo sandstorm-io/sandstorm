@@ -1,3 +1,10 @@
+### v0.260 (2020-03-15)
+- Updated dependencies, including Meteor to 1.9.3 and Node.js to 12.16.1 (both major updates).
+- New "AppHooks" feature in sandstorm-http-bridge allows bridge-based apps to get access to more low-level Cap'n Proto APIs. Contributed by Ian "@zenhack" Denhardt.
+- Fixed a bug in `spk dev` that often made Go-based servers crash when accessing disk files. (This problem only occurred in dev mode.)
+- Updated Dutch (thanks @FreekDankelman) and Simplied Chinese translation (thanks @misaka00251).
+- Significant internal refactoring.
+
 ### v0.260 (2020-02-15)
 - Updated dependencies.
 - Internationalized "mass transfers" page, and translated to Finnish. Thanks to Laurie "xet7" Ojansivu for this change.

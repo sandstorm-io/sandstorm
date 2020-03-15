@@ -12,6 +12,11 @@
         "regenerator-runtime": "^0.13.4"
       }
     },
+    "@types/node": {
+      "version": "13.9.1",
+      "resolved": "https://registry.npmjs.org/@types/node/-/node-13.9.1.tgz",
+      "integrity": "sha512-E6M6N0blf/jiZx8Q3nb0vNaswQeEyn0XlupO+xN6DtJ6r6IT4nXrTry7zhIfYvFCl3/8Cu6WIysmUBKiqV0bqQ=="
+    },
     "addressparser": {
       "version": "1.0.1",
       "resolved": "https://registry.npmjs.org/addressparser/-/addressparser-1.0.1.tgz",
@@ -74,11 +79,6 @@
       "requires": {
         "file-uri-to-path": "1.0.0"
       }
-    },
-    "bluebird": {
-      "version": "2.11.0",
-      "resolved": "https://registry.npmjs.org/bluebird/-/bluebird-2.11.0.tgz",
-      "integrity": "sha1-U0uQM8AiyVecVro7Plpcqvu2UOE="
     },
     "body-parser": {
       "version": "1.19.0",
@@ -370,11 +370,6 @@
       "version": "1.1.0",
       "resolved": "https://registry.npmjs.org/libqp/-/libqp-1.1.0.tgz",
       "integrity": "sha1-9ebgatdLeU+1tbZpiL9yjvHe2+g="
-    },
-    "lodash": {
-      "version": "3.10.1",
-      "resolved": "https://registry.npmjs.org/lodash/-/lodash-3.10.1.tgz",
-      "integrity": "sha1-W/Rejkm6QYnhfUgnid/RW9FAt7Y="
     },
     "mailcomposer": {
       "version": "4.0.1",
@@ -689,20 +684,12 @@
       "integrity": "sha1-Fhx9rBd2Wf2YEfQ3cfqZOBR4Yow="
     },
     "stripe": {
-      "version": "3.9.0",
-      "resolved": "https://registry.npmjs.org/stripe/-/stripe-3.9.0.tgz",
-      "integrity": "sha1-J04asohyw6+q36c8iktnXWCl5+Q=",
+      "version": "8.32.0",
+      "resolved": "https://registry.npmjs.org/stripe/-/stripe-8.32.0.tgz",
+      "integrity": "sha512-38saMK54VCgVZO9vn1kZFRZQH1+S4Y09e9vdbilNXHuVPD6S66ISiDpnaKLDjrl8QxKWCmNjDWnarJQSxETYGA==",
       "requires": {
-        "bluebird": "^2.9.6",
-        "lodash": "^3.1.0",
-        "qs": "^2.4.1"
-      },
-      "dependencies": {
-        "qs": {
-          "version": "2.4.2",
-          "resolved": "https://registry.npmjs.org/qs/-/qs-2.4.2.tgz",
-          "integrity": "sha1-9854jld33wtQENp/fE5zujJHD1o="
-        }
+        "@types/node": ">=8.1.0",
+        "qs": "^6.6.0"
       }
     },
     "toidentifier": {

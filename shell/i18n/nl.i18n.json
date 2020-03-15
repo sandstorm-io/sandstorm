@@ -81,17 +81,17 @@
           "explanation": "Voor elke vriend die een deellink aanmaakt krijgt u 2 GB"
         },
         "isNotPaid": {
-          "title": "Krijg een onbeperkte hoeveelheid korrels &amp; tot wel <span class=\"reward-amount\">2 GB</span> aan gratis opslagruimte wanneer uw vrienden delen op Oasis!",
-          "explanation": "Voor elke vriend die een deellink aanmaakt krijgt u 50 MB en daarnaast een onbeperkte hoeveelheid korrels."
+          "title": "Krijg een onbeperkte hoeveelheid grains &amp; tot wel <span class=\"reward-amount\">2 GB</span> aan gratis opslagruimte wanneer uw vrienden delen op Oasis!",
+          "explanation": "Voor elke vriend die een deellink aanmaakt krijgt u 50 MB en daarnaast een onbeperkte hoeveelheid grains."
         }
       },
       "howTo": {
         "title": "Delen is verwijzen",
-        "explanation": "Om te beginnen, open een korrel en klik op Toegang delen.",
+        "explanation": "Om te beginnen, open een grain en klik op Toegang delen.",
         "getStart": {
-          "step1": "U deelt een korrel met een vriend (die nog geen Oasis gebruiker is).",
+          "step1": "U deelt een grain met een vriend (die nog geen Oasis gebruiker is).",
           "step2": "Uw vriend logt in.",
-          "step3": "Uw vriend deelt een korrel met een ander (waaronder uzelf)."
+          "step3": "Uw vriend deelt een grain met een ander (waaronder uzelf)."
         }
       },
       "status": {
@@ -99,7 +99,7 @@
         "explanation": "Wanneer u een deel link verzend verschijnen mensen hieronder wanneer ze inloggen.",
         "pending": {
           "title": "Moet nog delen.",
-          "explanation": "Vertel deze mensen om een korrel aan te maken en die met u te delen. U moet de korrel ook bekijken!"
+          "explanation": "Vertel deze mensen om een grain aan te maken en die met u te delen. U moet de grain ook bekijken!"
         },
         "success": {
           "title": "Succesvolle verwijzingen",
@@ -160,31 +160,31 @@
     }
   },
   "grains": {
-    "title": "Korrels",
+    "title": "Grains",
     "grainView": {
-      "notFoundWithId": "Geen korrels gevonden met ID %s.",
-      "openWithWhichIdentity": "Wilt u uw identiteit openbaren aan deze korrel of anoniem blijven?",
+      "notFoundWithId": "Geen grains gevonden met ID %s.",
+      "openWithWhichIdentity": "Wilt u uw identiteit bekendmaken aan de grain of anoniem blijven?",
       "openInIncognitoMode": "Open in Incognito Mode",
       "revealMyIdentity": "Maak mijn identiteit bekend"
     },
     "grainInMyTrash": {
-      "explanation": "Deze korrel zit in uw vuilnisbak. U kunt er geen toegang tot krijgen tenzij u deze hersteld naar uw hoofdlijst",
+      "explanation": "Deze grain zit in uw vuilnisbak. U kunt er geen toegang tot krijgen tenzij u deze hersteld naar uw hoofdlijst",
       "restore": "Herstellen naar hoofdlijst"
     },
     "grainInOwnersTrash": {
-      "explanation": "U kunt geen toegang meer krijgen tot deze korrel omdat de eigenaar het naar de vuilnisbak heeft verplaatst."
+      "explanation": "U kunt geen toegang meer krijgen tot deze grain omdat de eigenaar het naar de vuilnisbak heeft verplaatst."
     },
     "grainOwnerSuspended": {
-      "explanation": "U kunt geen toegang meer krijgen tot deze korrel omdat het account van de eigenaar is geschorst."
+      "explanation": "U kunt geen toegang meer krijgen tot deze grain omdat het account van de eigenaar is geschorst."
     },
     "wrongIdentity": {
       "explanation": "Deze link was bedoeld voor de gebruiker: "
     },
     "requestAccess": {
-      "permissionDenied": "U heeft geen toestemming om toegang te krijgen tot deze korrel",
+      "permissionDenied": "U heeft geen toestemming om toegang te krijgen tot deze grain",
       "requestAccessHint": "Toegang aanvragen",
       "requestAccess": "Toegang aanvragen",
-      "warnIdentityRevealing": "Toegang aanvragen maakt uw identiteit bekend aan de eigenaar van deze korrel.",
+      "warnIdentityRevealing": "Toegang aanvragen maakt uw identiteit bekend aan de eigenaar van deze grain.",
       "sendRequest": "Uw aanvraag verzenden...",
       "waitForApproving": "Uw aanvraag is verzonden, u zult een email ontvangen als uw aanvraag wordt goedgekeurd.",
       "requestFailed": "Uw aanvraag is mislukt omdat: %s",
@@ -246,7 +246,7 @@
       "revoke": "Intrekken"
     },
     "grainShareButton": {
-      "hint": "Toegang tot deze korrel delen",
+      "hint": "Toegang tot deze grain delen",
       "text": "Toegang delen"
     },
     "whoHasAccessPopup": {
@@ -272,7 +272,7 @@
     },
     "shareableLinkTab": {
       "withRoles": "Iedereen met deze link:",
-      "withoutRoles": "Iedereen met deze link heeft toegang tot deze korrel",
+      "withoutRoles": "Iedereen met deze link heeft toegang tot deze grain",
       "labelPlaceholder": "Label (optioneel)",
       "labelExplanation": "Gebruik een label om uzelf te herinneren naar wie u deze unieke link hebt verstuurd.",
       "create": "Aanmaken",
@@ -288,14 +288,14 @@
       "whoHasAccess": "Zie in wie toegang heeft"
     },
     "grainSharePopup": {
-      "oldSharingModelDescription": "Deze korrel maakt gebruik van het oude deel model. U kunt het delen door de URL uit de locatiebalk te kopieren en plakken.",
-      "upgradeDescription": "U kunt deze korrel upgraden naar het nieuwe model, maar de mensen met wie u deze korrel eerder heeft gedeeld zullen hun toegang verliezen; u zult de korrel opnieuw met hen moeten delen.",
+      "oldSharingModelDescription": "Deze grain maakt gebruik van het oude deel model. U kunt het delen door de URL uit de locatiebalk te kopieren en plakken.",
+      "upgradeDescription": "U kunt deze grain upgraden naar het nieuwe model, maar de mensen met wie u deze grain eerder heeft gedeeld zullen hun toegang verliezen; u zult de korrel opnieuw met hen moeten delen.",
       "upgradeWarning": "Upgraden kan niet ongedaan worden gemaakt.",
       "upgrade": "upgrade",
-      "openInIncognitoMode": "U kijkt anoniem naar deze korrel",
+      "openInIncognitoMode": "U kijkt anoniem naar deze grain",
       "toShareAccess": "Kopieer deze link om toegang te delen:",
       "openNonAnonymouslyHead": "Voor meer deel opties moet u",
-      "openNonAnonymouslyLink": "deze korrel niet-anoniem openen",
+      "openNonAnonymouslyLink": "deze grain niet-anoniem openen",
       "openNonAnonymouslyTail": ".",
       "signIn": "Voor meer deel opties, log alstublieft in."
     },
@@ -312,13 +312,13 @@
       "dismiss": "Sluiten"
     },
     "share": {
-      "grainNotFoundWithId": "Geen korrel gevonden met ID %s. Misschien moet u met een ander account inloggen?",
-      "signIn": "U moet ingelogd zijn om toegang te verlenen tot deze korrel"
+      "grainNotFoundWithId": "Geen grain gevonden met ID %s. Misschien moet u met een ander account inloggen?",
+      "signIn": "U moet ingelogd zijn om toegang te verlenen tot deze grain"
     },
     "grainlist": {
       "sandstormGrainListPage": {
         "introButton": {
-          "hint": "Wat is een korrel?"
+          "hint": "Wat is een grain?"
         },
         "mainListButton": "Bekijk hoofdlist",
         "trashButton": "Bekijk vuilnisbak (%s)",
@@ -327,27 +327,63 @@
           "placeholder": "zoeken"
         },
         "usageInfo": {
-          "quota": "__count__ van __quota__ korrels",
+          "quota": "__count__ van __quota__ grain",
           "size": "__size__ van __total__ gebruikt"
         },
         "trash": {
           "emptyButton": "Vuilnisbak leegmaken",
-          "explanation": "(Korrels worden na 30 dagen permanent verwijdert uit de vuilnisbak. Herstel een korrel naar de Hoofdlijst om deze te behouden.)"
+          "explanation": "(Grain worden na 30 dagen permanent verwijdert uit de vuilnisbak. Herstel een grain naar de Hoofdlijst om deze te behouden.)"
         },
         "noGrains": {
-          "notFound": "<strong>Geen overeenkomende korrels gevonden.</strong>",
-          "inTrash": "Sommige korrels in uw vuilnisbak komen overeen met uw zoekopdracht.",
+          "notFound": "<strong>Geen overeenkomende grains gevonden.</strong>",
+          "inTrash": "Sommige grains in uw vuilnisbak komen overeen met uw zoekopdracht.",
           "trashButton": "Vuilnisbak bekijken",
           "empty": "<strong>Vuilnisbak is leeg.</strong>",
-          "explanation": "U heeft nog geen korrels.",
-          "hasApps": "Selecteer een app en maak uw eerste korrel aan.",
-          "hasNoApp": "Installeer een app om uw eerste korrel aan te maken."
+          "explanation": "U heeft nog geen grains.",
+          "hasApps": "Selecteer een app en maak uw eerste grain aan.",
+          "hasNoApp": "Installeer een app om uw eerste grain aan te maken."
         },
-        "moveToTrash": "Verplaats naar vuilnisbak"
+
+	      "transfers": {
+          "massTransfer": "Grote overdracht...",
+          "transfers": "Overdracht",
+          "transfer": "Overdracht",
+          "blockedInitiateBeforeSource": "Het lijkt erop dat u probeert een nieuw overdracht form te creëren",
+          "blockedInitiateAfterSource": ", er is al een overdracht bezig. Maak de huidige overdracht af of annuleer de huidige overdracht om verder te gaan.",
+          "incomingTransferActive": "Inkomende overdracht actief",
+          "cancel": "Annuleren",
+          "remaining": "Overig",
+          "retryErrors": "Probeer Errors Opnieuw",
+          "pauseTransfer": "Pauseer Overdracht",
+          "continueTransfer": "Hervat Overdracht",
+          "startTransfer": "Start Overdracht",
+          "closeTransfer": "Eindig Overdracht",
+          "outgoingTransferActive": "Uitgaande Overdracht actief",
+          "currentlyTransferring": "U bent op dit moment grans aan het overdragen aan:",
+          "manageAt": "Beheer uw overdracht bij:",
+          "inOrder": "Om een nieuwe overdracht te starten (in- of uitgaande), moet u de huidige overdrachten annuleren",
+          "cancelTransfer": "Annuleer Overdracht",
+          "initiateInboundTransfer": "Start inkomende Overdracht",
+          "initiateOutboundTransfer": "Start Uitgaande Overdracht",
+          "theSandstormServerAt": "De Sandstorm server bij",
+          "wantsToTransfer": "Wil grains overdracht naar deze server.",
+          "insecureSource": "WAARSCHUWING: De bron server ondersteunt geen HTTPS. Data wordt zonder encryptie verstuurd.",
+          "deny": "Geweigerd",
+          "fetchGrainList": "Haal grain lijst op",
+          "noTransfersInProgress": "Op dit moment zijn er geen overdrachten aan de gang.",
+          "transferAllMyGrainsTo": "Draag al mijn grains over naar:",
+          "initiateTransfer": "Start Overdracht",
+          "whatDoesThisDo": "Wat doet dit?",
+          "whatCan": "U kunt deze functie gebruiken om al uw grain naar een nieuwe Sandstrom server te verplaatsen. Dit automatiseert het proces om een backup the maken van elke grain op deze server, vervolgens herstelt elke backup op de server die u specificeert.",
+          "whatWhen": "Wanneer u de bovenstaande overdracht start, zal u doorgestuurd worden naar de <strong>destination</strong> server waar u dient in te loggen. U krijgt dan de keuze welke grains over te dragen en vervolgens kunt u de overdracht starten. De overdracht zal op de achtergrond doorgaan; u kunt uitloggen.",
+          "whatOrder": "Om een overdracht te laten werken, de <strong>destination</strong> server moet in staat zijn om de <strong>source</strong> server te bereiken over direct internet. Echter, het ongedaan maken is niet noodzakelijk. Dus, u kunt de grote overdracht die grains van de publieke internet server (zoals Sandstorm Oasis) naar een server op een intern privé netwerk, maar niet vice versa. Als de <strong>source</strong> server HTTPS ondersteunt, dan zal de overdracht over HTTPS plaats vinden, ongeacht de <strong>destination</strong> servers protocol.",
+          "warningGiving": "WAARSCHUWING: U geeft %s toestemming om alle grains van deze server te downloaden. Weet u het zeker?",
+          "errorAcceptingTransfer": "Error overdracht aanvaarden:"
+        }
       },
       "sandstormGrainTable": {
         "bulkAction": {
-          "disabledHint": "Om bulkacties te verrichten moet u eerst een aantal korrels in de lijst selecteren."
+          "disabledHint": "Om bulkacties te verrichten moet u eerst een aantal grains in de lijst selecteren."
         },
         "tableHeader": {
           "title": "Naam",
@@ -360,7 +396,7 @@
           "was": "(was: %s)",
           "renamedFrom": "(hernoemd van: %s)",
           "new": "Ongeopend",
-          "mine": "Mijn korrel",
+          "mine": "Mijn grain",
           "shared": "Met mij gedeeld"
         }
       },
@@ -391,7 +427,7 @@
     },
     "referralNotificationItem": {
       "paidUser": "Krijg tot wel 30 GB extra met het",
-      "unpaidUser": "Onbeperkte korrels & tot 2 GB extra met het",
+      "unpaidUser": "Onbeperkte grains & tot 2 GB extra met het",
       "link": "verwijzingsprogramma »",
       "dismissButton": "Sluiten"
     },
@@ -421,7 +457,7 @@
       "explanation": "met rechten:",
       "fullAccess": "Volledige toegang",
       "connectButton": "Verbinden",
-      "chooseHostedObjectButton": "Verken korrel inhoud »"
+      "chooseHostedObjectButton": "Verken grain inhoud »"
     },
     "ipNetworkPowerboxCard": {
       "explanation": "Admin: sta al het uitgaande netwerkverkeer toe",
@@ -987,20 +1023,20 @@
           "title": "Rol",
           "admin": {
             "label": "Administrator",
-            "explanation": "Beheert alle accounts. Kan apps installeren, kan korrels aanmaken en de server beheren.",
+            "explanation": "Beheert alle accounts. Kan apps installeren, kan grains aanmaken en de server beheren.",
             "isAdmin": "Huidige rol",
             "isNotAdmin": "Promoveren naar administrator"
           },
           "user": {
             "label": "Gebruiker",
-            "explanation": "Kan apps installeren en korrels aanmaken.",
+            "explanation": "Kan apps installeren en grains aanmaken.",
             "isUser": "Huidige rol",
             "isAdmin": "Demoveren naar gebruiker",
             "isNotUser": "Promoveren naar gebruiker"
           },
           "visitor": {
             "label": "Bezoeker",
-            "explanation": "Kan gedeelde korrels bekijken en verder delen, maar kan niet zelf korrels aanmaken of apps installeren.",
+            "explanation": "Kan gedeelde grains bekijken en verder delen, maar kan niet zelf grains aanmaken of apps installeren.",
             "isVisitor": "Huidige rol",
             "isNotVisitor": "Demoveren naar bezoeker"
           }
@@ -1024,7 +1060,7 @@
           "title": "Verwijder %s",
           "explanation": "U staat op het punt om %s's account te markeren voor verwijdering. Eenmaal gemarkeerd wordt dit account geschorst, en admininstrators zullen 7 dagen hebben om de geplande verwijdering te stoppen door terug te keren naar deze pagina en te klikken op \"Schorsing ongedaan maken\". %s kan zelf <strong>niet</strong> de schorsing / verwijdering ongedaan maken.",
           "detail": "Na 7 dagen wordt %s's account permanent verwijderd. Het verwijderen van dit account zal:",
-          "detail1": "Permanent korrels verwijderen aangemaakt door %s",
+          "detail1": "Permanent grains verwijderen aangemaakt door %s",
           "detail2": "Alle deellinks intrekken die %s heeft aangemaakt",
           "detail3": "%s verwijderen uit alle gebruikers contactenlijsten",
           "detail4": "Alle credentials die eigendom zijn van dit account verwijderen (behalve credentials die ook geassocieerd zijn met een ander account).",
@@ -1034,7 +1070,7 @@
         "suspendPopup": {
           "title": "Schors %s",
           "detail": "Het schorsen van dit gebruikersaccount zal ervoor zorgen dat:",
-          "detail1": "Korrels aangemaakt door %s niet kunnen worden geopend",
+          "detail1": "Grains aangemaakt door %s niet kunnen worden geopend",
           "detail2": "Deellinks aangemaakt door %s uitschakelen",
           "detail3": "Dit geldt ook voor alle credentials die eigendom zijn van diet account (behalve credentials die ook geassocieerd zijn met een ander account)",
           "suspendButton": "Account schorsen",
@@ -1093,7 +1129,7 @@
       "header": {
         "date": "datum",
         "users": "gebruikers",
-        "grains": "korrels",
+        "grains": "Grains",
         "appName": "App naam",
         "owners": "eigenaren",
         "sharedUsers": "sharedUsers",
@@ -1128,9 +1164,9 @@
           "regenerateButton": "Nieuwe link genereren"
         },
         "userGrains": {
-          "title": "Gebruikers en korrels",
-          "current": "Op dit moment: __users__ gebruikers, __grains__ korrels",
-          "today": "Vandaag: __users__ gebruikers, __grains__ korrels"
+          "title": "Gebruikers en grains",
+          "current": "Op dit moment: __users__ gebruikers, __grains__ grains",
+          "today": "Vandaag: __users__ gebruikers, __grains__ grains"
         },
         "apps": {
           "title": "Apps",
@@ -1164,7 +1200,7 @@
     },
     "networkCapabilities": {
       "name": "Netwerk mogelijkheden",
-      "subtext": "Directe netwerktoegang voor korrels beheren.",
+      "subtext": "Directe netwerktoegang voor grains beheren.",
       "newAdminNetworkCapabilitiesTableCapabilityRow": {
         "adminAccount": "Administrator account %s",
         "unknownGranter": "Onbekende toestemming gever",
@@ -1300,19 +1336,19 @@
           "explanation": "Sommige van uw bestanden zijn aangemaakt met een nieuwere versie van deze app. Deze zullen de nieuwere versie blijven gebruiken aangezien achteruit gaan ze kapot zou kunnen maken."
         },
         "olderVersion": {
-          "explanation": "Sommige van uw korrels zijn gemaakt met een oudere versie van deze app.  Wilt u deze upgraden?",
-          "upgradeButton": "Upgrade Korrels"
+          "explanation": "Sommige van uw grains zijn gemaakt met een oudere versie van deze app.  Wilt u deze upgraden?",
+          "upgradeButton": "Upgrade grains"
         },
         "search": {
           "hint": "Zoeken",
           "placeholder": "zoeken"
         },
         "trash": {
-          "explanation": "Korrels worden permanent verwijdern da 30 dagen in de vuilnisbak. Om een korrel te behouden, herstel deze naar de Hoofdlijst."
+          "explanation": "Grains worden permanent verwijdern da 30 dagen in de vuilnisbak. Om een grain te behouden, herstel deze naar de Hoofdlijst."
         },
         "noGrains": {
-          "notFound": "<strong>Geen overeenkomende korrels gevonden.</strong>",
-          "inTrash": "Er zijn korrels in uw vuilnisbak die overeenkomen met uw zoekopdracht.",
+          "notFound": "<strong>Geen overeenkomende grains gevonden.</strong>",
+          "inTrash": "Er zijn grains in uw vuilnisbak die overeenkomen met uw zoekopdracht.",
           "trashButton": "Vuilnis bekijken"
         }
       },
@@ -1324,7 +1360,7 @@
         "mainListButton": "Hoofdlijst bekijken",
         "trashButton": "Vuilnisbak bekijken",
         "uninstallButton": "Verwijderen",
-        "restoreButton": "Korrel backup herstellen...",
+        "restoreButton": "Grain backup herstellen...",
         "version": {
           "label": "Versie"
         },
@@ -1374,7 +1410,7 @@
           "title": "Verwijder uw account",
           "explanation": "U staat op het punt om uw account te markeren voor verwijdering. Eenmaal gemarkeerd wordt uw account geschorst, en u krijgt 7 dagen om de geplande verwijdering te annuleren door op uw account in te loggen.",
           "results": "Na 7 dagen wordt uw account permanent verwijderd. Dit zal:",
-          "result1": "Permanent korrels verwijderen die door u zijn aangemaakt",
+          "result1": "Permanent Grains verwijderen die door u zijn aangemaakt",
           "result2": "Alle deellinks die u heeft gemaakt intrekken",
           "result3": "U verwijderen van alle gebruikers contactenlijsten",
           "result4": "Alle credentials die eigendom zijn van uw account verwijderen (behalve credentials die geassocieerd zijn met een ander account).",
@@ -1392,7 +1428,7 @@
       "accountSuspended": {
         "title": "Dit account is door u geschorst.",
         "deletedIn": "Dit account wordt verwijderd over %s. Wilt u verwijdering annuleren en uw dit account herstellen?",
-        "suspended": "Dit account is geschorst en alle korrels en alle delingen zijn uitgeschakeld. Wilt u dit account herstellen?",
+        "suspended": "Dit account is geschorst en alle grains en alle delingen zijn uitgeschakeld. Wilt u dit account herstellen?",
         "restoreButton": "Account herstellen",
         "logoutButton": "Uitloggen"
       },
@@ -1679,7 +1715,7 @@
         },
         "shareContacts": {
           "label": "Maak alle organisatie gebruikers zichtbaar voor elkaar",
-          "subtext": "Deze instelling voegt gebruikers binnen een organisatie automatisch toe aan elkaars contactenlijst zodat ze korrels met elkaar kunnen delen. Schakel dit uit als u gebruikers heeft wiens identiteit verborgen moet blijven voor anderen."
+          "subtext": "Deze instelling voegt gebruikers binnen een organisatie automatisch toe aan elkaars contactenlijst zodat ze grain met elkaar kunnen delen. Schakel dit uit als u gebruikers heeft wiens identiteit verborgen moet blijven voor anderen."
         }
       },
       "saveButton": "Save and continue",
@@ -1765,7 +1801,7 @@
     "topbar": {
       "updated": "Sandstorm is bijgewerkt - Klik hier om te herladen",
       "apps": "Apps",
-      "grains": "Korrels",
+      "grains": "Grains",
       "oasis": "Begin met anderen samen te werken door Sandstorm op Oasis te gebruiken:",
       "createAccount": "Maak een gratis account aan »",
       "demoHint": "Uw demo data zal worden overgebracht.",
@@ -1777,7 +1813,7 @@
       "importToken": "Importeer token",
       "selected": "Geselecteerd:",
       "selectOne": "Selecteer er een:",
-      "noGrain": "Er zijn geen korrels die de gevraagde interface kunnen leveren.",
+      "noGrain": "Er zijn geen grains die de gevraagde interface kunnen leveren.",
       "loading": "Laden..."
     }
   }

@@ -283,11 +283,17 @@ tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/imports/client/changelog.html shel
 	@cd shell/ && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install
 	@touch tmp/.shell-env
 
+# grunt-webfont 0.4.8 does not work on Node 12. The latest version of grunt-webfont, OTOH, produces
+# a broken font file (all icons invisible and zero-width). For now we stick with the old version
+# and run it using Meteor 1.8.2's node which is old enough to run it. This means you have to
+# install Meteor 1.8.2 in addition to the latest version in order to build Sandstorm. :(
+METEOR_DEV_BUNDLE_ICONS=$(shell ./find-meteor-dev-bundle.sh METEOR@1.8.2)
+
 icons/node_modules: icons/package.json
-	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install
+	cd icons && PATH=$(METEOR_DEV_BUNDLE_ICONS)/bin:$$PATH $(METEOR_DEV_BUNDLE_ICONS)/bin/npm install
 
 shell/client/styles/_icons.scss: icons/node_modules icons/*svg icons/Gruntfile.js
-	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH ./node_modules/.bin/grunt
+	cd icons && PATH=$(METEOR_DEV_BUNDLE_ICONS)/bin:$$PATH ./node_modules/.bin/grunt
 
 shell/imports/client/changelog.html: CHANGELOG.md
 	@mkdir -p tmp

@@ -58,9 +58,11 @@ function monkeypatchHttpForGateway() {
     global.sandstormListenCapabilityStream = function (fd, cb) {
       var pipe = new Pipe(PipeConstants.IPC);
       pipe.open(fd);
-      pipe.onread = function (size, buf, handle) {
+      pipe.onread = function (buf) {
+        let handle = pipe.pendingHandle;
         if (handle) {
-          cb(new net.Socket({ handle: handle }));
+          pipe.pendingHandle = null;
+          cb(new net.Socket({ handle: handle, readable: true, writable: true }));
         }
       };
       pipe.readStart();

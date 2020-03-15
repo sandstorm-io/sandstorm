@@ -1245,6 +1245,9 @@ public:
     kj::Vector<const char*> argv;
     argv.add(nodePath.cStr());
     argv.add("--expose-gc");
+    // --no-wasm-code-gc to work around https://github.com/nodejs/node/issues/29767
+    // Meteor did this too: https://github.com/meteor/meteor/commit/c37bab64a4750eafbc6483ee82f67e6ff6221029
+    argv.add("--no-wasm-code-gc");
     argv.add("meteor-bundle-main.js");
     argv.add(mainScriptPath.cStr());
     argv.add(portArg.cStr());
@@ -2614,7 +2617,10 @@ private:
 
       kj::String settingsString = makeMeteorSettings(config, buildstamp);
       KJ_SYSCALL(setenv("METEOR_SETTINGS", settingsString.cStr(), true));
-      KJ_SYSCALL(execl("/bin/node", "/bin/node", "sandstorm-main.js", EXEC_END_ARGS));
+      // --no-wasm-code-gc to work around https://github.com/nodejs/node/issues/29767
+      // Meteor did this too: https://github.com/meteor/meteor/commit/c37bab64a4750eafbc6483ee82f67e6ff6221029
+      KJ_SYSCALL(execl("/bin/node", "/bin/node", "--no-wasm-code-gc",
+                       "sandstorm-main.js", EXEC_END_ARGS));
       KJ_UNREACHABLE;
     });
 

@@ -29,13 +29,7 @@ using ApiSession = import "api-session.capnp".ApiSession;
 
 interface Backend {
   # Interface that thet Sandstorm front-end uses to talk to the "back end", i.e. the container
-  # scheduler. While Sandstorm is running, the backend interface is exported as a socket at
-  # "/var/sandstorm/socket/backend".
-
-  const socketPath :Text = "/var/sandstorm/socket/backend";
-  # TODO(cleanup): When the experimental gateway is enabled, we also use a new approach to
-  #   connecting components using socketpairs instead of paths on-disk, making this constant
-  #   obsolete. Delete it once the gateway is enabled everywhere.
+  # scheduler.
 
   ping @14 ();
   # Just returns. Used to verify that the connection to the back-end is alive and well.

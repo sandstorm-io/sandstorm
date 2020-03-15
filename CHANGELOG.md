@@ -1,4 +1,4 @@
-### v0.260 (2020-03-15)
+### v0.261 (2020-03-15)
 - Updated dependencies, including Meteor to 1.9.3 and Node.js to 12.16.1 (both major updates).
 - New "AppHooks" feature in sandstorm-http-bridge allows bridge-based apps to get access to more low-level Cap'n Proto APIs. Contributed by Ian "@zenhack" Denhardt.
 - Fixed a bug in `spk dev` that often made Go-based servers crash when accessing disk files. (This problem only occurred in dev mode.)

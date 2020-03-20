@@ -17,7 +17,7 @@
 import { GrainView, onceConditionIsTrue } from "./grainview.js";
 import { isStandalone } from "/imports/client/standalone.js";
 
-GrainViewList = class GrainViewList {
+class GrainViewList {
   constructor(db) {
     check(db, SandstormDb);
     this._db = db;

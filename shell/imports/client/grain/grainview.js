@@ -16,6 +16,7 @@
 
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
 import { isStandalone } from "/imports/client/standalone.js";
+import { GrainViewList } from "/imports/client/grain/grainview-list.js";
 
 let counter = 0;
 
@@ -859,7 +860,7 @@ class GrainView {
   }
 };
 
-onceConditionIsTrue = (condition, continuation) => {
+const onceConditionIsTrue = (condition, continuation) => {
   Tracker.nonreactive(() => {
     Tracker.autorun((handle) => {
       if (!condition()) {

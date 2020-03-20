@@ -65,6 +65,8 @@ jobs:
       #  with:
       #    name: sandstorm-0-fast.tar.xz
       #    path: sandstorm-0-fast.tar.xz
+      - name: lint
+        run: make lint
       - name: test
         run: |
           set -o pipefail

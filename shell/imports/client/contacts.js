@@ -19,7 +19,7 @@ const transform = function (contact) {
   return contact;
 };
 
-ContactProfiles = new Mongo.Collection("contactProfiles", { transform: transform });
+const ContactProfiles = new Mongo.Collection("contactProfiles", { transform: transform });
 // A psuedo-collection used to store the results of joining Contacts with identity profiles.
 //
 // Each contains:

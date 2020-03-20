@@ -184,7 +184,7 @@ Sandcats.storeNewKeyAndCsr = (hostname, basePath) => {
   const withWildcard = "*." + hostname;
   const keyAndCsr = generateKeyAndCsr(withWildcard);
   fs.writeFileSync(keyFilename, keyAndCsr.privateKeyAsPem,
-                   { mode: 0400 });
+                   { mode: 0o400 });
   fs.writeFileSync(csrFilename, keyAndCsr.csrAsPem);
   console.log("storeNewKeyAndCsr successfully saved key and certificate request to",
               keyFilename, "and", csrFilename, "respectively of length",

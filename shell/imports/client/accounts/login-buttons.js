@@ -23,6 +23,7 @@ import {
   loginWithEmailToken,
   createAndEmailTokenForUser,
 } from "/imports/client/accounts/email-token/token-login-helpers.js";
+import { GrainViewList } from '/imports/client/grain/grainview-list.js';
 import { loginWithLDAP } from "/imports/client/accounts/ldap/ldap-client.js";
 import { loginWithSaml } from "/imports/client/accounts/saml/saml-client.js";
 import AccountsUi from "/imports/client/accounts/accounts-ui.js";

@@ -21,9 +21,8 @@ $import "/capnp/c++.capnp".namespace("sandstorm");
 using Util = import "util.capnp";
 
 interface Controller {
-  # Bootstrap interface offered by sandstorm on the control socket.
-  # This is used by some commands to control a running sandstorm
-  # server.
+  # Bootstrap interface offered by sandstorm on the control socket,
+  # which is used to control a running sandstorm server.
   #
   # This interface is not currently implemented. For now the commands
   # referenced below use the `devmode` socket, and speak an ad-hoc
@@ -39,16 +38,18 @@ interface Controller {
   # Path to the control socket, relative to the sandstorm install (normaly
   # /opt/sandstorm).
 
-  devShell @0 () -> (shellFds :List(FileDescriptor), cancel :Util.Handle);
-  # Stop the running sandstorm shell process, and get a list of file
-  # descriptors that the shell should inherit on startup.
+  devShell @0 () -> (shellFds :List(FileDescriptor), handle :Util.Handle);
+  # Stop the running sandstorm shell process, and get a list of
+  # sandstorm-specific file descriptors that the shell should inherit on
+  # startup. The FD numbers these should be assigned depend on how the shell
+  # is being invoked.
   #
   # This is used by `sandstorm dev-shell`; the returned file descriptors
   # will be passed to an instance of the shell launched from the developer's
   # source tree, rather than from the installed sandstorm root.
   #
   # - `shellFds` is a list of file descriptors that the shell should inherit.
-  # - When `cancel` is dropped, the dev shell will be disconnected and
+  # - When `handle` is dropped, the dev shell will be disconnected and
   #   Sandstorm will restart the normal shell process.
 
   dev @1 (appId :Text) -> (fuseFd :FileDescriptor, session :DevSession);

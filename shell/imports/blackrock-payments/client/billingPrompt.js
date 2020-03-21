@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Template } from "meteor/templating";
+
 var idCounter = 0;
 
 var messageListener = function (template, event) {

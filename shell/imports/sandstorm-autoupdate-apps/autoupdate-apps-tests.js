@@ -17,7 +17,7 @@
 // TODO(cleanup): These tests are no longer run in any automated fashion.
 // Figure out a new strategy for making sure we run tests.
 
-const Crypto = Npm.require("crypto");
+import Crypto from "crypto";
 
 const globalDb = new SandstormDb();
 // TODO(cleanup): Use a lightweight fake (minimongo-based?) database here and construct a clean

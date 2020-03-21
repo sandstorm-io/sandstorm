@@ -36,7 +36,7 @@
 // For more information on Meteor's load order, see
 // https://guide.meteor.com/structure.html#load-order
 
-import { Template } from "meteor/templating";
+import 'meteor/templating';
 
 // Load packages that the sandstorm shell depends on before sandstorm itself.
 

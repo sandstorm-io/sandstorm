@@ -38,7 +38,7 @@ interface Controller {
   # Path to the control socket, relative to the sandstorm install (normaly
   # /opt/sandstorm).
 
-  devShell @0 () -> (shellFds :List(FileDescriptor), handle :Util.Handle);
+  devShell @0 () -> (shellFds :ShellFDs, handle :Util.Handle);
   # Stop the running sandstorm shell process, and get a list of
   # sandstorm-specific file descriptors that the shell should inherit on
   # startup. The FD numbers these should be assigned depend on how the shell
@@ -61,6 +61,20 @@ interface Controller {
   #   a fuse filesystem supplying the contents of the app package.
   # - `session` is used to control the active dev session. Drop the session
   #   to deactivate dev mode for the app.
+}
+
+struct ShellFDs {
+  # Set of file descriptors that should be inherited by the shell on startup.
+  # See `Controller.devShell`
+
+  acceptHttp @0 :FileDescriptor;
+  # File descriptor on which to accept HTTP connections.
+
+  acceptSmtp @1 :FileDescriptor;
+  # File descriptor on which to accept SMTP connections.
+
+  connectBackend @2 :FileDescriptor;
+  # File descriptor with which to connect to the backend.
 }
 
 interface DevSession {

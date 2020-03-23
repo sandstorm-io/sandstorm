@@ -4,7 +4,8 @@
   "description": "Sandstorm's user interface",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint ."
   },
   "author": "",
   "repository": {
@@ -31,5 +32,9 @@
     "xml2js": "^0.2.8",
     "xmlbuilder": "^8.2.2",
     "xmldom": "^0.1.27"
+  },
+  "devDependencies": {
+    "babel-eslint": "^10.1.0",
+    "eslint": "^6.8.0"
   }
 }

@@ -1,0 +1,11 @@
+---
+parser: "babel-eslint"
+parserOptions:
+  ecmaVersion: 2020
+  sourceType: "module"
+
+  # There are a few places where we do if(Meteor.isServer) { import ... }.
+  # Ideally we'd refactor so this was unneccesary, but for now the import
+  # *has* to be conditional, so tell eslint to allow this:
+  allowImportExportEverywhere: true
+reportUnusedDisableDirectives: true

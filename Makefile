@@ -135,7 +135,7 @@ IMAGES= \
 # Meta rules
 
 .SUFFIXES:
-.PHONY: all install clean clean-deps ci-clean continuous shell-env fast deps bootstrap-ekam update-deps test installer-test app-index-dev
+.PHONY: all install clean clean-deps ci-clean continuous shell-env fast deps bootstrap-ekam update-deps test installer-test app-index-dev lint
 
 all: sandstorm-$(BUILD).tar.xz
 
@@ -163,6 +163,8 @@ fast: sandstorm-$(BUILD)-fast.tar.xz
 
 test: sandstorm-$(BUILD)-fast.tar.xz test-app.spk tests/assets/meteor-testapp.spk
 	tests/run-local.sh sandstorm-$(BUILD)-fast.tar.xz test-app.spk
+lint: shell-env
+	cd shell && meteor npm run lint
 
 installer-test:
 	(cd installer-tests && bash prepare-for-tests.sh && PYTHONUNBUFFERED=yes TERM=xterm SLOW_TEXT_TIMEOUT=120 ~/.local/bin/stodgy-tester --plugin stodgy_tester.plugins.sandstorm_installer_tests --on-vm-start=uninstall_sandstorm --rsync)

@@ -15,7 +15,7 @@
 // limitations under the License.
 
 const PaymentsRpc = Capnp.importSystem("sandstorm/payments.capnp");
-const Crypto = Npm.require("crypto");
+import Crypto from 'crypto';
 
 function wrapAsyncAsPromise(obj, func) {
   if (typeof func === "string") {

@@ -21,7 +21,6 @@
     "mailparser": "0.5.1",
     "selenium-standalone": "^6.15.4",
     "simplesmtp": "0.3.35",
-    "spacejam": "1.2.2",
     "underscore": "^1.9.1"
   }
 }

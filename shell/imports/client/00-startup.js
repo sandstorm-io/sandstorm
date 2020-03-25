@@ -20,7 +20,6 @@ if ('serviceWorker' in navigator) {
   })
 }
 
-import "/imports/db-deprecated.js";
 import AccountsUi from "/imports/client/accounts/accounts-ui.js";
 import { GrainViewList } from "/imports/client/grain/grainview-list.js";
 

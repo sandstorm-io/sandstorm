@@ -18,11 +18,13 @@
 // including routing of requests to proxies and handling of static web publishing.
 
 import { inMeteor } from "/imports/server/async-helpers.js";
-const Url = Npm.require("url");
-const Fs = Npm.require("fs");
-const Dns = Npm.require("dns");
-const Future = Npm.require("fibers/future");
-const Http = Npm.require("http");
+import ServerIdenticon from "/imports/sandstorm-identicons/identicon-server.js";
+import Url from "url";
+import Fs from "fs";
+import Dns from "dns";
+import Future from "fibers/future";
+import Http from "http";
+import Capnp from "/imports/server/capnp.js";
 const ByteStream = Capnp.importSystem("sandstorm/util.capnp").ByteStream;
 
 const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
@@ -92,7 +94,7 @@ function serveStaticAsset(req, res, hostId) {
       let asset;
       if (pathname.startsWith("identicon/")) {
         const size = parseInt((url.query || {}).s);
-        asset = new Identicon(pathname.slice("identicon/".length), size).asAsset();
+        asset = new ServerIdenticon(pathname.slice("identicon/".length), size).asAsset();
       } else if (pathname.indexOf("/") == -1) {
         asset = globalDb.getStaticAsset(pathname);
       }

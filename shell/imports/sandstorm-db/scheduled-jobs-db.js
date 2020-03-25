@@ -14,7 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Crypto from 'crypto';
+import Crypto from "crypto";
+import Capnp from "/imports/server/capnp.js";
+import { SandstormDb } from "./db.js";
 
 const MINIMUM_SCHEDULING_SLACK_NANO = Capnp.importSystem("sandstorm/grain.capnp").minimumSchedulingSlack;
 

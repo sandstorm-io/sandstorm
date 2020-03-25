@@ -1,6 +1,5 @@
 import { Meteor } from "meteor/meteor";
-
-const Future = Npm.require("fibers/future");
+import Future from "fibers/future";
 
 let inMeteorListener = undefined;
 const onInMeteor = (callback) => {

@@ -14,9 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const Crypto = Npm.require("crypto");
+import Crypto from "crypto";
 import { send as sendEmail } from "/imports/server/email.js";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 const ROOT_URL = process.env.ROOT_URL;
 

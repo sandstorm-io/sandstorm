@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
+
 function isValidServerUrl(str) {
   let url;
   try {

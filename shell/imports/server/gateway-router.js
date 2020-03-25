@@ -14,15 +14,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import Crypto from "crypto";
+import Dns from "dns";
+import Capnp from "/imports/server/capnp.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
+
 const GatewayRouter = Capnp.importSystem("sandstorm/backend.capnp").GatewayRouter;
 const ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
 const WebSession = Capnp.importSystem("sandstorm/web-session.capnp").WebSession;
 const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;
 const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
-
-import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
-const Crypto = Npm.require("crypto");
-const Dns = Npm.require("dns");
 
 const SESSION_PROXY_TIMEOUT = 60000;
 const DNS_CACHE_TTL_SECONDS = 30;

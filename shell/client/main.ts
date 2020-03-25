@@ -38,11 +38,7 @@
 
 // Load packages that the sandstorm shell depends on before sandstorm itself.
 
-// sandstorm-identicons.
-import "../imports/sandstorm-identicons/identicon.js";
-import "../imports/sandstorm-identicons/helpers.js";
-
-// sandstorm-db.  Depends on sandstorm-identicons.
+// sandstorm-db.
 import "../imports/sandstorm-db/db.js";
 import "../imports/sandstorm-db/profile.js";
 
@@ -142,6 +138,7 @@ import "../imports/client/grain/grainlist-client.js";
 import "../imports/client/setup-wizard/wizard.js";
 import "../imports/client/vendor/ansi-up.js";
 import "../imports/client/widgets/widgets-client.js";
+import "../imports/db-deprecated.js";
 import "../imports/client/00-startup.js";
 import "../imports/client/admin-client.js";
 import "../imports/client/demo-client.js";

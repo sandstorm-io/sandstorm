@@ -22,12 +22,16 @@
 //       mailingList: Boolean, true if user is subscribed to mailing list.
 //       metadata: A structure like plan.bonus but representing bonuses from Stripe metadata.
 
-var Crypto = Npm.require("crypto");
-var Url = Npm.require('url');
-var ROOT_URL = process.env.ROOT_URL;
-var HOSTNAME = Url.parse(ROOT_URL).hostname;
+import Crypto from "crypto";
+import Url from 'url';
+import StripeModule from "stripe";
 
-stripe = Npm.require("stripe")(Meteor.settings.stripeKey);
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
+
+const ROOT_URL = process.env.ROOT_URL;
+const HOSTNAME = Url.parse(ROOT_URL).hostname;
+
+stripe = StripeModule(Meteor.settings.stripeKey);
 
 BlackrockPayments = {};
 

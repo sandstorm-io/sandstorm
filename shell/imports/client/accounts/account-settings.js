@@ -14,9 +14,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
 import { formatFutureTime } from "/imports/dates.js";
 import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants.js";
 import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 Template.sandstormAccountSettings.onCreated(function () {
   this.autorun(() => {

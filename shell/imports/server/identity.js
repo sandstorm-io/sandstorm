@@ -14,10 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const IdentityRpc = Capnp.importSystem("sandstorm/identity-impl.capnp");
-const Identity = Capnp.importSystem("sandstorm/identity.capnp").Identity;
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset.js";
+import Capnp from "/imports/server/capnp.js";
+
+const IdentityRpc = Capnp.importSystem("sandstorm/identity-impl.capnp");
+const Identity = Capnp.importSystem("sandstorm/identity.capnp").Identity;
 const StaticAsset = Capnp.importSystem("sandstorm/util.capnp").StaticAsset;
 
 class IdentityImpl extends PersistentImpl {

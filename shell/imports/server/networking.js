@@ -14,11 +14,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { SPECIAL_IPV4_ADDRESSES, SPECIAL_IPV6_ADDRESSES } from "/imports/constants.js";
+import { Meteor } from "meteor/meteor";
+import Dns from "dns";
+import Ip from "ip";
+import Url from "url";
 
-const Dns = Npm.require("dns");
-const Ip = Npm.require("ip");
-const Url = Npm.require("url");
+import { SPECIAL_IPV4_ADDRESSES, SPECIAL_IPV6_ADDRESSES } from "/imports/constants.js";
 
 const lookupInFiber = Meteor.wrapAsync(Dns.lookup, Dns);
 

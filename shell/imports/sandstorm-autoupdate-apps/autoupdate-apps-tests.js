@@ -18,6 +18,7 @@
 // Figure out a new strategy for making sure we run tests.
 
 import Crypto from "crypto";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 const globalDb = new SandstormDb();
 // TODO(cleanup): Use a lightweight fake (minimongo-based?) database here and construct a clean

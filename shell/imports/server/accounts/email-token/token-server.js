@@ -1,8 +1,8 @@
 import crypto from "crypto";
+import Url from "url";
 
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { send as sendEmail } from "/imports/server/email.js";
-
-const Url = Npm.require("url");
 
 const V1_ROUNDS = 4096; // Selected to take ~5msec at creation time (2016) on a developer's laptop.
 const V1_KEYSIZE = 32; // 256 bits / 8 bits/byte = 32 bytes

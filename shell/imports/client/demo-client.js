@@ -14,7 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
 import { allowDemo } from "/imports/demo.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 Meteor.loginWithDemo = function (options, callback) {
   Router.go("demo");

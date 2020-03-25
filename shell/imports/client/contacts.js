@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Mongo } from "meteor/mongo";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
+
 const transform = function (contact) {
   SandstormDb.fillInPictureUrl(contact);
   return contact;

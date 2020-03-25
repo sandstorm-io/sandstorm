@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Capnp from "/imports/server/capnp.js";
 const WebSession = Capnp.importSystem("sandstorm/web-session.capnp").WebSession;
 
 class HeaderWhitelist {

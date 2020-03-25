@@ -16,9 +16,10 @@
 
 import { Accounts } from "meteor/accounts-base";
 import { fetchPicture, userPictureUrl } from "/imports/server/accounts/picture.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
-const Crypto = Npm.require("crypto");
-const Future = Npm.require("fibers/future");
+import Crypto from "crypto";
+import Future from "fibers/future";
 
 const ValidHandle = Match.Where(function (handle) {
   check(handle, String);

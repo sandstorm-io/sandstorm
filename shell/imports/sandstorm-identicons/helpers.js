@@ -1,9 +1,11 @@
+import Identicon from "./identicon.js";
+
 const VALID_USAGES = ["appGrid", "grain", "notification"];
-const checkUsage = function (usage) {
+function checkUsage(usage) {
   if (VALID_USAGES.indexOf(usage) === -1) throw new Error("Invalid icon usage.");
 };
 
-const iconFromManifest = function (manifest, usage) {
+function iconFromManifest(manifest, usage) {
   // TODO: select by usage location, rather than assuming appGrid
   const icons = manifest && manifest.metadata && manifest.metadata.icons ?
       manifest.metadata.icons : undefined;
@@ -18,7 +20,7 @@ const iconFromManifest = function (manifest, usage) {
   return undefined;
 };
 
-Identicon.hashAppIdForIdenticon = function (id) {
+function hashAppIdForIdenticon(id) {
   // "Hash" an app ID to a 32-digit hex string for the purpose of
   // producing an identicon. Since app IDs are already high-
   // entropy base32 strings, we simply turn each of the first
@@ -39,7 +41,7 @@ Identicon.hashAppIdForIdenticon = function (id) {
 // Keep a static global cache of all app identicons produced in this way.
 // If memory usage is excessive, we can revisit this decision.
 const cachedIdenticons = {};
-const cachedIdenticon = function (hashedAppId, size) {
+function cachedIdenticon(hashedAppId, size) {
   const cacheKey = hashedAppId + "-" + size;
   if (!cachedIdenticons[cacheKey]) {
     const data = new Identicon(hashedAppId, size).toString();
@@ -49,12 +51,12 @@ const cachedIdenticon = function (hashedAppId, size) {
   return cachedIdenticons[cacheKey];
 };
 
-const identiconForApp = function (appId, usage) {
+function identiconForApp(appId, usage) {
   const size = (usage === "appGrid" ? 128 : 24);
-  return cachedIdenticon(Identicon.hashAppIdForIdenticon(appId), size);
+  return cachedIdenticon(hashAppIdForIdenticon(appId), size);
 };
 
-const bytesToBase64 = function (bytes) {
+function bytesToBase64(bytes) {
   const arr = new Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) {
     arr[i] = String.fromCharCode(bytes[i]);
@@ -64,7 +66,7 @@ const bytesToBase64 = function (bytes) {
   return result;
 };
 
-const iconSrcFor = function (appId, iconObj, staticPrefix, usage) {
+function iconSrcFor(appId, iconObj, staticPrefix, usage) {
   if (iconObj === undefined || iconObj === null) {
     // Return a identicon src based on hashing appId instead.
     // (We hash the appID even though it's already a hash because it's not hex)
@@ -99,11 +101,7 @@ const iconSrcFor = function (appId, iconObj, staticPrefix, usage) {
   return identiconForApp(appId, usage);
 };
 
-Identicon.identiconForApp = function (appId, usage) {
-  return identiconForApp(appId, usage);
-};
-
-Identicon.iconSrcForPackage = function (pkg, usage, staticPrefix) {
+function iconSrcForPackage(pkg, usage, staticPrefix) {
   // Works for regular packages and dev packages.
 
   checkUsage(usage);
@@ -111,6 +109,13 @@ Identicon.iconSrcForPackage = function (pkg, usage, staticPrefix) {
   return iconSrcFor(pkg.appId, iconObj, staticPrefix, usage);
 };
 
-Identicon.iconSrcForDenormalizedGrainMetadata = function (metadata, usage, staticPrefix) {
+function iconSrcForDenormalizedGrainMetadata(metadata, usage, staticPrefix) {
   return iconSrcFor(metadata.appId, metadata.icon, staticPrefix, usage);
+};
+
+export {
+    hashAppIdForIdenticon,
+    identiconForApp,
+    iconSrcForPackage,
+    iconSrcForDenormalizedGrainMetadata,
 };

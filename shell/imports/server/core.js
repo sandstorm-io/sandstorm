@@ -14,12 +14,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Crypto from "crypto";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset.js";
-const Crypto = Npm.require("crypto");
 import { PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements,
          fetchApiToken, insertApiToken } from "/imports/server/persistent.js";
 import { SandstormBackend } from "/imports/server/backend.js";
+import { hashAppIdForIdenticon } from "/imports/sandstorm-identicons/helpers.js";
+import Capnp from "/imports/server/capnp.js";
 
 const PersistentHandle = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentHandle;
 const SandstormCore = Capnp.importSystem("sandstorm/supervisor.capnp").SandstormCore;
@@ -251,7 +253,7 @@ class PersistentUiViewImpl extends PersistentImpl {
           viewInfo.grainIcon = new Capnp.Capability(new StaticAssetImpl(grainIcon.assetId),
                                                     StaticAsset);
         } else {
-          const hash = Identicon.hashAppIdForIdenticon(pkg.appId);
+          const hash = hashAppIdForIdenticon(pkg.appId);
           viewInfo.grainIcon = new Capnp.Capability(new IdenticonStaticAssetImpl(hash, 24),
                                                     StaticAsset);
         }

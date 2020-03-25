@@ -16,6 +16,15 @@
 
 // This file defines the database schema.
 
+import { Meteor } from "meteor/meteor";
+import { Mongo } from "meteor/mongo";
+import { Match, check } from "meteor/check";
+import { _ } from "meteor/underscore";
+import { Random } from "meteor/random";
+import { SHA256 } from "meteor/sha";
+import { HTTP } from "meteor/http";
+import { iconSrcForPackage } from "/imports/sandstorm-identicons/helpers.js";
+
 // Useful for debugging: Set the env variable LOG_MONGO_QUERIES to have the server write every
 // query it makes, so you can see if it's doing queries too often, etc.
 if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
@@ -150,7 +159,7 @@ Meteor.users.ensureIndexOnServer("services.google.id", { unique: 1, sparse: 1 })
 Meteor.users.ensureIndexOnServer("services.github.id", { unique: 1, sparse: 1 });
 Meteor.users.ensureIndexOnServer("suspended.willDelete", { sparse: 1 });
 
-Packages = new Mongo.Collection("packages", collectionOptions);
+const Packages = new Mongo.Collection("packages", collectionOptions);
 // Packages which are installed or downloading.
 //
 // Each contains:
@@ -172,7 +181,7 @@ Packages = new Mongo.Collection("packages", collectionOptions);
 //   authorPgpKeyFingerprint: Verified PGP key fingerprint (SHA-1, hex, all-caps) of the app
 //     packager.
 
-DevPackages = new Mongo.Collection("devpackages", collectionOptions);
+const DevPackages = new Mongo.Collection("devpackages", collectionOptions);
 // List of packages currently made available via the dev tools running on the local machine.
 // This is normally empty; the only time it is non-empty is when a developer is using the spk tool
 // on the local machine to publish an under-development app to this server. That should only ever
@@ -194,7 +203,7 @@ DevPackages = new Mongo.Collection("devpackages", collectionOptions);
 //   manifest:  The app's manifest, as with Packages.manifest.
 //   mountProc: True if the supervisor should mount /proc.
 
-UserActions = new Mongo.Collection("userActions", collectionOptions);
+const UserActions = new Mongo.Collection("userActions", collectionOptions);
 // List of actions that each user has installed which create new grains.  Each app may install
 // some number of actions (usually, one).
 //
@@ -213,7 +222,7 @@ UserActions = new Mongo.Collection("userActions", collectionOptions);
 //   nounPhrase: JSON-encoded LocalizedText describing what is created when this action is run.
 //   command:  Manifest.Command to run this action (see package.capnp).
 
-Grains = new Mongo.Collection("grains", collectionOptions);
+const Grains = new Mongo.Collection("grains", collectionOptions);
 // Grains belonging to users.
 //
 // Each contains:
@@ -256,12 +265,12 @@ Grains = new Mongo.Collection("grains", collectionOptions);
 Grains.ensureIndexOnServer("userId");
 Grains.ensureIndexOnServer("cachedViewInfo.matchRequests.tags.id", { sparse: 1 });
 
-RoleAssignments = new Mongo.Collection("roleAssignments", collectionOptions);
+const RoleAssignments = new Mongo.Collection("roleAssignments", collectionOptions);
 // *OBSOLETE* Before `user` was a variant of ApiTokenOwner, this collection was used to store edges
 // in the permissions sharing graph. This functionality has been subsumed by the ApiTokens
 // collection.
 
-Contacts = new Mongo.Collection("contacts", collectionOptions);
+const Contacts = new Mongo.Collection("contacts", collectionOptions);
 // Edges in the social graph.
 //
 // If Alice has Bob as a contact, then she is allowed to see Bob's profile information and Bob
@@ -278,7 +287,7 @@ Contacts = new Mongo.Collection("contacts", collectionOptions);
 //   created: Date when this contact was created.
 //   accountId: The `_id` of the acount whose contact info this contains.
 
-Sessions = new Mongo.Collection("sessions", collectionOptions);
+const Sessions = new Mongo.Collection("sessions", collectionOptions);
 // UI sessions open to particular grains.  A new session is created each time a user opens a grain.
 //
 // The existence of a Session does NOT prove that the user has permission to access the grain. A
@@ -335,7 +344,7 @@ Sessions = new Mongo.Collection("sessions", collectionOptions);
 //       to enforce security; its purpose is only to assist in showing a helpful error message in
 //       the case that the user's access has been blocked by other means.
 
-SignupKeys = new Mongo.Collection("signupKeys", collectionOptions);
+const SignupKeys = new Mongo.Collection("signupKeys", collectionOptions);
 // Invite keys which may be used by users to get access to Sandstorm.
 //
 // Each contains:
@@ -344,7 +353,7 @@ SignupKeys = new Mongo.Collection("signupKeys", collectionOptions);
 //   note:  Text note assigned when creating key, to keep track of e.g. whom the key was for.
 //   email: If this key was sent as an email invite, the email address to which it was sent.
 
-ActivityStats = new Mongo.Collection("activityStats", collectionOptions);
+const ActivityStats = new Mongo.Collection("activityStats", collectionOptions);
 // Contains usage statistics taken on a regular interval. Each entry is a data point.
 //
 // Each contains:
@@ -368,7 +377,7 @@ ActivityStats = new Mongo.Collection("activityStats", collectionOptions);
 //       demoed: Number of demo grains created and expired.
 //       appDemoUsers: Number of app demos initiated with this app.
 
-DeleteStats = new Mongo.Collection("deleteStats", collectionOptions);
+const DeleteStats = new Mongo.Collection("deleteStats", collectionOptions);
 // Contains records of objects that were deleted, for stat-keeping purposes.
 //
 // Each contains:
@@ -378,7 +387,7 @@ DeleteStats = new Mongo.Collection("deleteStats", collectionOptions);
 //     arrived to demo. For others, undefined.
 //   experiments: The experiments the user (or owner of the grain) was in. See user.experiments.
 
-FileTokens = new Mongo.Collection("fileTokens", collectionOptions);
+const FileTokens = new Mongo.Collection("fileTokens", collectionOptions);
 // Tokens corresponding to backup files that are currently stored on the server. A user receives
 // a token when they create a backup file (either by uploading it, or by backing up one of their
 // grains) and may use the token to read the file (either to download it, or to restore a new
@@ -389,14 +398,14 @@ FileTokens = new Mongo.Collection("fileTokens", collectionOptions);
 //   name:      Suggested filename.
 //   timestamp: File creation time. Used to figure out when the token and file should be wiped.
 
-SpkTokens = new Mongo.Collection("spkTokens", collectionOptions);
+const SpkTokens = new Mongo.Collection("spkTokens", collectionOptions);
 // A lot like FileTokens, but for SPK uploads.
 //
 // Each contains:
 //   _id:       The unguessable token string.
 //   timestamp: Creation time. Used to figure out when the token should be wiped.
 
-ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
+const ApiTokens = new Mongo.Collection("apiTokens", collectionOptions);
 // Access tokens for APIs exported by apps.
 //
 // Originally API tokens were only used by external users through the HTTP API endpoint. However,
@@ -598,7 +607,7 @@ ApiTokens.ensureIndexOnServer("grainId", { sparse: 1 });
 ApiTokens.ensureIndexOnServer("owner.user.accountId", { sparse: 1 });
 ApiTokens.ensureIndexOnServer("frontendRef.emailVerifier.id", { sparse: 1 });
 
-ApiHosts = new Mongo.Collection("apiHosts", collectionOptions);
+const ApiHosts = new Mongo.Collection("apiHosts", collectionOptions);
 // Allows defining some limited static behavior for an API host when accessed unauthenticated. This
 // mainly exists to allow backwards-compatibility with client applications that expect to be able
 // to probe an API host without authentication to determine capabilities such as DAV protocols
@@ -623,7 +632,7 @@ ApiHosts = new Mongo.Collection("apiHosts", collectionOptions);
 //     encoding:   Content-Encoding.
 //     body:       Entity-body as a string or buffer.
 
-Notifications = new Mongo.Collection("notifications", collectionOptions);
+const Notifications = new Mongo.Collection("notifications", collectionOptions);
 // Notifications for a user.
 //
 // Each contains:
@@ -664,7 +673,7 @@ Notifications = new Mongo.Collection("notifications", collectionOptions);
 //                 changes to the identity model described in:
 //                 https://sandstorm.io/news/2017-05-08-refactoring-identities
 
-ActivitySubscriptions = new Mongo.Collection("activitySubscriptions", collectionOptions);
+const ActivitySubscriptions = new Mongo.Collection("activitySubscriptions", collectionOptions);
 // Activity events to which a user is subscribed.
 //
 // Each contains:
@@ -684,7 +693,7 @@ ActivitySubscriptions = new Mongo.Collection("activitySubscriptions", collection
 ActivitySubscriptions.ensureIndexOnServer("accountId");
 ActivitySubscriptions.ensureIndexOnServer({ "grainId": 1, "threadPath": 1 });
 
-StatsTokens = new Mongo.Collection("statsTokens", collectionOptions);
+const StatsTokens = new Mongo.Collection("statsTokens", collectionOptions);
 // Access tokens for the Stats collection
 //
 // These tokens are used for accessing the ActivityStats collection remotely
@@ -693,7 +702,7 @@ StatsTokens = new Mongo.Collection("statsTokens", collectionOptions);
 // Each contains:
 //   _id:       The token. At least 128 bits entropy (Random.id(22)).
 
-Misc = new Mongo.Collection("misc", collectionOptions);
+const Misc = new Mongo.Collection("misc", collectionOptions);
 // Miscellaneous configuration and other settings
 //
 // This table is currently only used for persisting BASE_URL from one session to the next,
@@ -703,7 +712,7 @@ Misc = new Mongo.Collection("misc", collectionOptions);
 //   _id:       The name of the setting. eg. "BASE_URL"
 //   value:     The value of the setting.
 
-Settings = new Mongo.Collection("settings", collectionOptions);
+const Settings = new Mongo.Collection("settings", collectionOptions);
 // Settings for this Sandstorm instance go here. They are configured through the adminSettings
 // route. This collection differs from misc in that any admin user can update it through the admin
 // interface.
@@ -723,13 +732,13 @@ Settings = new Mongo.Collection("settings", collectionOptions);
 //
 //   potentially other fields that are unique to the setting
 
-Migrations = new Mongo.Collection("migrations", collectionOptions);
+const Migrations = new Mongo.Collection("migrations", collectionOptions);
 // This table tracks which migrations we have applied to this instance.
 // It contains a single entry:
 //   _id:       "migrations_applied"
 //   value:     The number of migrations this instance has successfully completed.
 
-StaticAssets = new Mongo.Collection("staticAssets", collectionOptions);
+const StaticAssets = new Mongo.Collection("staticAssets", collectionOptions);
 // Collection of static assets served up from the Sandstorm server's "static" host. We only
 // support relatively small assets: under 1MB each.
 //
@@ -743,7 +752,7 @@ StaticAssets = new Mongo.Collection("staticAssets", collectionOptions);
 //       have transactions, this needs to bias towards over-counting; a backup GC could be used
 //       to catch leaked assets, although it's probably not a big deal in practice.
 
-AssetUploadTokens = new Mongo.Collection("assetUploadTokens", collectionOptions);
+const AssetUploadTokens = new Mongo.Collection("assetUploadTokens", collectionOptions);
 // Collection of tokens representing a single-use permission to upload an asset, such as a new
 // profile picture.
 //
@@ -754,7 +763,7 @@ AssetUploadTokens = new Mongo.Collection("assetUploadTokens", collectionOptions)
 //           userId: Account ID of user whose picture shall be replaced.
 //   expires:   Time when this token will go away if unused.
 
-Plans = new Mongo.Collection("plans", collectionOptions);
+const Plans = new Mongo.Collection("plans", collectionOptions);
 // Subscription plans, which determine quota.
 //
 // Each contains:
@@ -768,14 +777,14 @@ Plans = new Mongo.Collection("plans", collectionOptions);
 //       allowed to switch away.
 //   title: Title from display purposes. If missing, default to capitalizing _id.
 
-AppIndex = new Mongo.Collection("appIndex", collectionOptions);
+const AppIndex = new Mongo.Collection("appIndex", collectionOptions);
 // A mirror of the data from the App Market index
 //
 // Each contains:
 //   _id: the appId of the app
 //  The rest of the fields are defined in src/sandstorm/app-index/app-index.capnp:AppIndexForMarket
 
-KeybaseProfiles = new Mongo.Collection("keybaseProfiles", collectionOptions);
+const KeybaseProfiles = new Mongo.Collection("keybaseProfiles", collectionOptions);
 // Cache of Keybase profile information. The profile for a user is re-fetched every time a package
 // by that user is installed, as well as if the keybase profile is requested and not already
 // present for some reason.
@@ -795,12 +804,12 @@ KeybaseProfiles = new Mongo.Collection("keybaseProfiles", collectionOptions);
 //     WARNING: Currently verification is NOT IMPLEMENTED, so all proofs will be "unverified"
 //       for now and we just trust Keybase.
 
-FeatureKey = new Mongo.Collection("featureKey", collectionOptions);
+const FeatureKey = new Mongo.Collection("featureKey", collectionOptions);
 // OBSOLETE: This was used to implement the Sandstorm for Work paywall, which has been removed.
 //   Collection object still defined because it could have old data in it, for servers that used
 //   to have a feature key.
 
-SetupSession = new Mongo.Collection("setupSession", collectionOptions);
+const SetupSession = new Mongo.Collection("setupSession", collectionOptions);
 // Responsible for storing information about setup sessions.  Contains a single document with three
 // keys:
 //
@@ -873,7 +882,7 @@ const ScheduledJobs = new Mongo.Collection("scheduledJobs", collectionOptions);
 //     type:         The "kjType" of the error. One of "failed", "disconnected", "overloaded", or
 //                   "unimplemented".
 //     message:      A string message associated with the error.
-IncomingTransfers = new Mongo.Collection("incomingTransfers", collectionOptions);
+const IncomingTransfers = new Mongo.Collection("incomingTransfers", collectionOptions);
 // Contains records of grains scheduled to be transferred to this server.
 //
 // Each contains:
@@ -900,7 +909,7 @@ IncomingTransfers = new Mongo.Collection("incomingTransfers", collectionOptions)
 IncomingTransfers.ensureIndexOnServer("userId", { sparse: 1 });
 IncomingTransfers.ensureIndexOnServer("downloading", { sparse: 1 });
 
-OutgoingTransfers = new Mongo.Collection("outgoingTransfers", collectionOptions);
+const OutgoingTransfers = new Mongo.Collection("outgoingTransfers", collectionOptions);
 // Contains records of authorized outgoing mass grain transfers.
 //
 // Each contains:
@@ -948,7 +957,7 @@ const calculateReferralBonus = function (user) {
   // Authorization note: Only call this if accountId is the current user!
   const isPaid = (user.plan && user.plan !== "free");
 
-  successfulReferralsCount = countReferrals(user);
+  const successfulReferralsCount = countReferrals(user);
   if (isPaid) {
     const maxPaidStorageBonus = 30 * 1e9;
     return { grains: 0,
@@ -972,7 +981,7 @@ const calculateReferralBonus = function (user) {
   }
 };
 
-isAdmin = function () {
+function isAdmin() {
   // Returns true if the user is the administrator.
 
   const user = Meteor.user();
@@ -981,9 +990,9 @@ isAdmin = function () {
   } else {
     return false;
   }
-};
+}
 
-isAdminById = function (id) {
+function isAdminById(id) {
   // Returns true if the user's id is the administrator.
 
   const user = Meteor.users.findOne({ _id: id }, { fields: { isAdmin: 1 } });
@@ -992,9 +1001,9 @@ isAdminById = function (id) {
   } else {
     return false;
   }
-};
+}
 
-findAdminUserForToken = function (token) {
+function findAdminUserForToken(token) {
   if (!token.requirements) {
     return;
   }
@@ -1012,7 +1021,7 @@ findAdminUserForToken = function (token) {
   }
 
   return requirements[0].userIsAdmin;
-};
+}
 
 const wildcardHost = Meteor.settings.public.wildcardHost.toLowerCase().split("*");
 
@@ -1020,7 +1029,7 @@ if (wildcardHost.length != 2) {
   throw new Error("Wildcard host must contain exactly one asterisk.");
 }
 
-matchWildcardHost = function (host) {
+function matchWildcardHost(host) {
   // See if the hostname is a member of our wildcard. If so, extract the ID.
 
   // We remove everything after the first ":" character so that our
@@ -1039,24 +1048,24 @@ matchWildcardHost = function (host) {
   }
 
   return null;
-};
+}
 
-makeWildcardHost = function (id) {
+function makeWildcardHost(id) {
   return wildcardHost[0] + id + wildcardHost[1];
-};
+}
 
-const isApiHostId = function (hostId) {
+function isApiHostId(hostId) {
   if (hostId) {
     const split = hostId.split("-");
     if (split[0] === "api") return split[1] || "*";
   }
 
   return false;
-};
+}
 
-const isTokenSpecificHostId = function (hostId) {
+function isTokenSpecificHostId(hostId) {
   return hostId.lastIndexOf("api-", 0) === 0;
-};
+}
 
 let apiHostIdHashForToken;
 if (Meteor.isServer) {
@@ -1082,36 +1091,15 @@ if (Meteor.isServer) {
   };
 }
 
-const apiHostIdForToken = function (token) {
+function apiHostIdForToken(token) {
   return "api-" + apiHostIdHashForToken(token);
-};
-
-const makeApiHost = function (token) {
-  return makeWildcardHost(apiHostIdForToken(token));
-};
-
-if (Meteor.isServer) {
-  const Url = Npm.require("url");
-  getWildcardOrigin = function () {
-    // The wildcard URL can be something like "foo-*-bar.example.com", but sometimes when we're
-    // trying to specify a pattern matching hostnames (say, a Content-Security-Policy directive),
-    // an astrisk is only allowed as the first character and must be followed by a period. So we need
-    // "*.example.com" instead -- which matches more than we actually want, but is the best we can
-    // really do. We also add the protocol to the front (again, that's what CSP wants).
-
-    // TODO(cleanup): `protocol` is computed in other files, like proxy.js. Put it somewhere common.
-    const protocol = Url.parse(process.env.ROOT_URL).protocol;
-
-    const dotPos = wildcardHost[1].indexOf(".");
-    if (dotPos < 0) {
-      return protocol + "//*";
-    } else {
-      return protocol + "//*" + wildcardHost[1].slice(dotPos);
-    }
-  };
 }
 
-SandstormDb = function (quotaManager) {
+function makeApiHost(token) {
+  return makeWildcardHost(apiHostIdForToken(token));
+}
+
+function SandstormDb(quotaManager) {
   // quotaManager is an object with the following method:
   //   updateUserQuota: It is provided two arguments
   //     db: This SandstormDb object
@@ -1302,9 +1290,27 @@ _.extend(SandstormDb.prototype, {
 });
 
 if (Meteor.isServer) {
-  SandstormDb.prototype.getWildcardOrigin = getWildcardOrigin;
-
   const Crypto = Npm.require("crypto");
+  const Url = Npm.require("url");
+
+  SandstormDb.prototype.getWildcardOrigin = function () {
+    // The wildcard URL can be something like "foo-*-bar.example.com", but sometimes when we're
+    // trying to specify a pattern matching hostnames (say, a Content-Security-Policy directive),
+    // an astrisk is only allowed as the first character and must be followed by a period. So we need
+    // "*.example.com" instead -- which matches more than we actually want, but is the best we can
+    // really do. We also add the protocol to the front (again, that's what CSP wants).
+
+    // TODO(cleanup): `protocol` is computed in other files, like proxy.js. Put it somewhere common.
+    const protocol = Url.parse(process.env.ROOT_URL).protocol;
+
+    const dotPos = wildcardHost[1].indexOf(".");
+    if (dotPos < 0) {
+      return protocol + "//*";
+    } else {
+      return protocol + "//*" + wildcardHost[1].slice(dotPos);
+    }
+  };
+
   SandstormDb.prototype.removeApiTokens = function (query, saveOldUsers) {
     // Remove all API tokens matching the query, making sure to clean up ApiHosts as well.
     //
@@ -1457,7 +1463,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   iconSrcForPackage(pkg, usage) {
-    return Identicon.iconSrcForPackage(pkg, usage, httpProtocol + "//" + this.makeWildcardHost("static"));
+    return iconSrcForPackage(pkg, usage, httpProtocol + "//" + this.makeWildcardHost("static"));
   },
 
   getDenormalizedGrainInfo(grainId) {
@@ -2303,18 +2309,18 @@ SandstormDb.escapeMongoKey = (key) => {
   return key.replace(".", "\uFF0E").replace("$", "\uFF04");
 };
 
-const appNameFromPackage = function (packageObj) {
+function appNameFromPackage(packageObj) {
   // This function takes a Package object from Mongo and returns an
   // app title.
   const manifest = packageObj.manifest;
   if (!manifest) return packageObj.appId || packageObj._id || "unknown";
   const action = manifest.actions[0];
-  appName = (manifest.appTitle && manifest.appTitle.defaultText) ||
+  const appName = (manifest.appTitle && manifest.appTitle.defaultText) ||
     appNameFromActionName(action.title.defaultText);
   return appName;
-};
+}
 
-const appNameFromActionName = function (name) {
+function appNameFromActionName(name) {
   // Hack: Historically we only had action titles, like "New Etherpad Document", not app
   //   titles. But for this UI we want app titles. As a transitionary measure, try to
   //   derive the app title from the action title.
@@ -2337,15 +2343,15 @@ const appNameFromActionName = function (name) {
   }
 
   return name;
-};
+}
 
-const appShortDescriptionFromPackage = function (pkg) {
+function appShortDescriptionFromPackage(pkg) {
   return pkg && pkg.manifest && pkg.manifest.metadata &&
          pkg.manifest.metadata.shortDescription &&
          pkg.manifest.metadata.shortDescription.defaultText;
-};
+}
 
-const nounPhraseForActionAndAppTitle = function (action, appTitle) {
+function nounPhraseForActionAndAppTitle(action, appTitle) {
   // A hack to deal with legacy apps not including fields in their manifests.
   // I look forward to the day I can remove most of this code.
   // Attempt to figure out the appropriate noun that this action will create.
@@ -2376,15 +2382,15 @@ const nounPhraseForActionAndAppTitle = function (action, appTitle) {
   } else {
     return "grain";
   }
-};
+}
 
 // Static methods on SandstormDb that don't need an instance.
 // Largely things that deal with backwards-compatibility.
 _.extend(SandstormDb, {
-  appNameFromActionName: appNameFromActionName,
-  appNameFromPackage: appNameFromPackage,
-  appShortDescriptionFromPackage: appShortDescriptionFromPackage,
-  nounPhraseForActionAndAppTitle: nounPhraseForActionAndAppTitle,
+  appNameFromActionName,
+  appNameFromPackage,
+  appShortDescriptionFromPackage,
+  nounPhraseForActionAndAppTitle,
 });
 
 if (Meteor.isServer) {
@@ -2517,13 +2523,13 @@ if (Meteor.isServer) {
     check(id, String);
 
     const result = this.collections.staticAssets.findAndModify({
-      query: { hash: hash },
+      query: { _id: id },
       update: { $inc: { refcount: 1 } },
       fields: { _id: 1, content: 1, mimeType: 1 },
     });
 
     if (!result.ok) {
-      throw new Error(`Couldn't increment refcount of asset with hash ${hash}`);
+      throw new Error(`Couldn't increment refcount of asset with hash ${id}`);
     }
 
     const existing = result.value;
@@ -2576,7 +2582,7 @@ if (Meteor.isServer) {
   SandstormDb.prototype.newAssetUpload = function (purpose) {
     check(purpose, Match.OneOf(
       { profilePicture: { userId: DatabaseId } },
-      { loginLogo: {} },
+      { loginLogo: {} }
     ));
 
     return this.collections.assetUploadTokens.insert({
@@ -3143,3 +3149,5 @@ Meteor.methods({
     }
   },
 });
+
+export { SandstormDb };

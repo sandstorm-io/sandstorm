@@ -1,3 +1,6 @@
+import { Meteor } from "meteor/meteor";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
+
 if (Meteor.isClient) {
   Meteor.loginWithGoogle = function (options, callback) {
     // support a callback without options

@@ -14,6 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
+
 Template.stripePaymentAcceptorPowerboxConfiguration.events({
   "submit form"(event) {
     event.preventDefault();

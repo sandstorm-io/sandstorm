@@ -1,4 +1,4 @@
-const Future = Npm.require("fibers/future");
+import Future from "fibers/future";
 import ldapjs from "ldapjs";
 
 // At a minimum, set up LDAP_DEFAULTS.url and .dn according to

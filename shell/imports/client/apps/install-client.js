@@ -1,3 +1,7 @@
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
+
 const INSTALL_STEPS = ["download", "verify", "unpack", "analyze", "ready", "failed", "delete"];
 const checkStep = function (step) {
   if (INSTALL_STEPS.indexOf(step) === -1) throw new Error("Invalid step " + step + ".");

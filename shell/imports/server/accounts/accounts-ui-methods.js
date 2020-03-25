@@ -17,6 +17,8 @@
 // This file contains method definitions which are available on both client and server (on the
 // client for prediction purposes, on the server for actual execution).
 
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
+
 const ValidHandle = Match.Where(function (handle) {
   check(handle, String);
   return !!handle.match(/^[a-z_][a-z0-9_]*$/);

@@ -16,10 +16,11 @@
 
 import Bignum from "bignum";
 import { PersistentImpl } from "/imports/server/persistent.js";
-const Future = Npm.require("fibers/future");
-const Net = Npm.require("net");
-const Tls = Npm.require("tls");
-const Dgram = Npm.require("dgram");
+import Future from "fibers/future";
+import Net from "net";
+import Tls from "tls";
+import Dgram from "dgram";
+import Capnp from "/imports/server/capnp.js";
 
 const IpRpc = Capnp.importSystem("sandstorm/ip.capnp");
 

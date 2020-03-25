@@ -17,21 +17,22 @@
 import { SMTPServer } from "smtp-server";
 import { MailParser } from "mailparser";
 
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { rawSend } from "/imports/server/email.js";
 import { shouldRestartGrain } from "/imports/server/backend.js";
 import { inMeteor } from "/imports/server/async-helpers.js";
 
-const Crypto = Npm.require("crypto");
-const Future = Npm.require("fibers/future");
+import Crypto from "crypto";
+import Future from "fibers/future";
+import Url from "url";
+import Capnp from "/imports/server/capnp.js";
 
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 const EmailImpl = Capnp.importSystem("sandstorm/email-impl.capnp");
 const HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;
 const Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
 const EmailSendPort = EmailRpc.EmailSendPort;
-
-const Url = Npm.require("url");
 
 const ROOT_URL = Url.parse(process.env.ROOT_URL);
 const HOSTNAME = ROOT_URL.hostname;

@@ -38,14 +38,7 @@
 
 // Import packages that sandstorm depends on.
 
-// sandstorm-identicons.
-import "../imports/sandstorm-identicons/identicon.js";
-import "../imports/sandstorm-identicons/helpers.js";
-
-// sandstorm-capnp.
-import "../imports/server/capnp.js";
-
-// sandstorm-db.  Depends on sandstorm-capnp and sandstorm-identicons.
+// sandstorm-db.
 import "../imports/sandstorm-db/db.js";
 import "../imports/sandstorm-db/profile.js";
 import "../imports/sandstorm-db/scheduled-jobs-db.js";
@@ -59,10 +52,10 @@ import "../imports/sandstorm-autoupdate-apps/autoupdate-apps.js";
 // sandstorm-accounts-packages
 import "../imports/sandstorm-accounts-packages/accounts.js";
 
-// sandstorm-ui-powerbox.  Depends on sandstorm-capnp
+// sandstorm-ui-powerbox.
 import "../imports/sandstorm-ui-powerbox/powerbox-server.js";
 
-// blackrock-payments.  Depends on sandstorm-db and sandstorm-capnp.
+// blackrock-payments.  Depends on sandstorm-db
 import "../imports/blackrock-payments/constants.js";
 import "../imports/blackrock-payments/server/payments-server.js";
 import "../imports/blackrock-payments/server/payments-api-server.js";
@@ -84,6 +77,7 @@ import "../imports/server/admin/system-status-server.js";
 import "../imports/server/drivers/external-ui-view.js";
 import "../imports/server/drivers/ip.js";
 import "../imports/server/drivers/mail.js";
+import "../imports/db-deprecated.js";
 import "../imports/server/00-startup.js";
 import "../imports/server/account-suspension.js";
 import "../imports/server/admin-server.js";

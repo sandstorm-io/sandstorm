@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Identicon from "/imports/sandstorm-identicons/identicon.js";
+import { SandstormDb } from "./db.js";
+
 let makeIdenticon;
 let httpProtocol;
 

@@ -23,6 +23,9 @@
 //   the `globalDb` global should NOT go with it; the package should expect a SandstormDb to be
 //   passed in, thus allowing mocking the database for unit tests.
 
+import { Meteor } from "meteor/meteor";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
+
 let quotaManager;
 if (Meteor.isServer) {
   import { LDAP } from "/imports/server/accounts/ldap.js";
@@ -43,6 +46,7 @@ if (Meteor.isServer) {
   };
 }
 
+// TODO(cleanup) explicitly export all of these
 globalDb = new SandstormDb(quotaManager);
 
 Packages = globalDb.collections.packages;

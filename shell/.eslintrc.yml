@@ -9,7 +9,16 @@ parserOptions:
   # *has* to be conditional, so tell eslint to allow this:
   allowImportExportEverywhere: true
 reportUnusedDisableDirectives: true
+extends: "eslint:recommended"
 rules:
-  no-extra-semi: ["error"]
-  no-self-assign: ["error"]
-  no-prototype-builtins: ["error"]
+  # These are implied by eslint:recommended, but we havent' gotten around to
+  # fixing them yet:
+  no-undef: ["off"]
+  no-unused-vars: ["off"]
+  no-empty: ["off"]
+  no-inner-declarations: ["off"]
+  no-extra-boolean-cast: ["off"]
+  no-constant-condition: ["off"]
+  no-useless-escape: ["off"]
+  no-case-declarations: ["off"]
+  no-unexpected-multiline: ["off"]

@@ -17,4 +17,3 @@ rules:
   no-unused-vars: ["off"]
   no-empty: ["off"]
   no-inner-declarations: ["off"]
-  no-useless-escape: ["off"]

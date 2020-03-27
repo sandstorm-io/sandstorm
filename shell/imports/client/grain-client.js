@@ -1292,7 +1292,7 @@ Template.emailInviteTab.events({
     const emails = instance.find("input.emails");
     const emailsValue = emails.value;
     if (emailsValue) {
-      if (emailsValue.match(/.+\@.+\..+/)) {
+      if (emailsValue.match(/.+@.+\..+/)) {
         contacts.push({
           _id: emailsValue,
           profile: {
@@ -1598,8 +1598,8 @@ Meteor.startup(function () {
         // grainTitleSlug is the grain title with url-unsafe characters replaced
         let grainTitleSlug = grainTitle.toLowerCase().trim();
         grainTitleSlug = grainTitleSlug.replace(/\s+/g, "-")
-                                       .replace(/[^\w\-]+/g, "")
-                                       .replace(/\-\-+/g, "-")
+                                       .replace(/[^\w-]+/g, "")
+                                       .replace(/--+/g, "-")
                                        .replace(/^-+/, "")
                                        .replace(/-+$/, "");
         const renderedTemplate = template.replace(/\$API_TOKEN/g, tokenId)

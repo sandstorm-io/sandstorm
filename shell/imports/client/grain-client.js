@@ -242,6 +242,10 @@ Template.grainRestartButton.events({
         for (let i = 0; i < frames.length; i++) {
           const frame = frames[i];
           if (frame.dataset.grainid == grainId) {
+            // Re-assign frame.src; this causes the browser to refresh the
+            // iframe's contents.
+            //
+            // eslint-disable-next-line no-self-assign
             frame.src = frame.src;
           }
         }

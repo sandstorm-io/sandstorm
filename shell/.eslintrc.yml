@@ -18,4 +18,3 @@ rules:
   no-empty: ["off"]
   no-inner-declarations: ["off"]
   no-useless-escape: ["off"]
-  no-unexpected-multiline: ["off"]

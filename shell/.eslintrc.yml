@@ -17,6 +17,5 @@ rules:
   no-unused-vars: ["off"]
   no-empty: ["off"]
   no-inner-declarations: ["off"]
-  no-extra-boolean-cast: ["off"]
   no-useless-escape: ["off"]
   no-unexpected-multiline: ["off"]

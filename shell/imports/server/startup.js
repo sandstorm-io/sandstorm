@@ -37,7 +37,7 @@ Meteor.startup(() => {
     if (resetOAuth) {
       console.log("resetting oauth");
       Settings.find({ _id: { $in: ["google", "github"] } }).forEach((setting) => {
-        if (!!setting.value) {
+        if (setting.value) {
           Settings.update({ _id: setting._id },
                           { $set: { value: false,
                                     automaticallyReset: { baseUrlChangedFrom: baseUrlRow.value }, }, });

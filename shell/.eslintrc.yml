@@ -12,3 +12,4 @@ reportUnusedDisableDirectives: true
 rules:
   no-extra-semi: ["error"]
   no-self-assign: ["error"]
+  no-prototype-builtins: ["error"]

@@ -1657,12 +1657,16 @@ Meteor.startup(function () {
     } else if(event.data.getGrainTitle) {
       check(event.data.getGrainTitle, Object)
       check(event.data.subscribe, Match.Optional(Boolean))
-      event.source.postMessage({
-        rpcId: event.data.rpcId,
-        grainTitle: senderGrain.ownerTitle(),
-      }, event.origin)
+      const reply = function() {
+        event.source.postMessage({
+          rpcId: event.data.rpcId,
+          grainTitle: senderGrain.ownerTitle(),
+        }, event.origin);
+      };
       if(event.data.subscribe) {
-        // TODO: set up a hook to send the grain updates of the title.
+        Tracker.autorun(reply);
+      } else {
+        reply();
       }
     } else {
       console.log("postMessage from app not understood: ", event.data);

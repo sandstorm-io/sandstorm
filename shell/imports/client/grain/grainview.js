@@ -242,6 +242,15 @@ class GrainView {
     return this.fullTitle().title;
   }
 
+  ownerTitle() {
+    const fullTitle = this.fullTitle();
+    if(fullTitle.renamedFrom === undefined) {
+      return fullTitle.title;
+    } else {
+      return fullTitle.renamedFrom;
+    }
+  }
+
   signinOverlay() {
     this._dep.depend();
     return this._signinOverlay;

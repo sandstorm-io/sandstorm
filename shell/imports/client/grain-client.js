@@ -1659,7 +1659,7 @@ Meteor.startup(function () {
       check(event.data.subscribe, Match.Optional(Boolean))
       event.source.postMessage({
         rpcId: event.data.rpcId,
-        grainTitle: senderGrain.title(),
+        grainTitle: senderGrain.ownerTitle(),
       }, event.origin)
       if(event.data.subscribe) {
         // TODO: set up a hook to send the grain updates of the title.

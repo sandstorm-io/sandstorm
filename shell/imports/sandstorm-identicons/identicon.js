@@ -80,6 +80,6 @@ class Identicon {
   toString() {
     return this.render();
   }
-};
+}
 
 export default Identicon;

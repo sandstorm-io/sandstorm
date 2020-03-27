@@ -862,7 +862,7 @@ class GrainView {
     return this._db.collections.notifications.find(
         { grainId: this._grainId, ongoing: { $exists: false } }).count();
   }
-};
+}
 
 const onceConditionIsTrue = (condition, continuation) => {
   Tracker.nonreactive(() => {

@@ -39,7 +39,7 @@ class HeaderWhitelist {
       if (header.startsWith(this._prefixes[i])) {
         return true;
       }
-    };
+    }
 
     return false;
   }

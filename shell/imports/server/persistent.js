@@ -89,7 +89,7 @@ class PersistentImpl {
 
 function hashSturdyRef(sturdyRef) {
   return Crypto.createHash("sha256").update(sturdyRef).digest("base64");
-};
+}
 
 function generateSturdyRef() {
   return Random.secret();
@@ -245,7 +245,7 @@ function checkRequirements(db, requirements) {
       throw new Meteor.Error(403, "Unknown requirement type.");
     }
   });
-};
+}
 
 export {
   PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements,

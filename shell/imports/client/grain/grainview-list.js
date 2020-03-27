@@ -268,7 +268,7 @@ class GrainViewList {
       this._grains.set(newGrains);
     }
   }
-};
+}
 
 export { GrainViewList };
 

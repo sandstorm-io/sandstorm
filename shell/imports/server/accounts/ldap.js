@@ -26,7 +26,7 @@ LDAP_DEFAULTS = {
 function LDAP() {
   // Set options
   this.options = _.clone(LDAP_DEFAULTS);
-};
+}
 
 /**
  * Attempt to bind (authenticate) ldap

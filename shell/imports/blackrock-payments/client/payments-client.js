@@ -32,7 +32,7 @@ updateStripeData = function (cb) {
         sources = data.sources;
         for (var i = 0; i < sources.length; i++) {
           StripeCards.upsert({_id: sources[i].id}, sources[i]);
-        };
+        }
       }
       if (cb) {
         cb();

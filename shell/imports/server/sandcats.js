@@ -327,4 +327,4 @@ Sandcats.initializeSandcats = () => {
 
 if (SANDCATS_HOSTNAME) {
   Meteor.startup(Sandcats.initializeSandcats);
-};
+}

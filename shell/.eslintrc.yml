@@ -9,3 +9,5 @@ parserOptions:
   # *has* to be conditional, so tell eslint to allow this:
   allowImportExportEverywhere: true
 reportUnusedDisableDirectives: true
+rules:
+  no-extra-semi: ["error"]

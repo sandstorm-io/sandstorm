@@ -33,6 +33,6 @@ function formatFutureTime(diff) {
 
   // We're within a second of the countdown, or past it.
   return "any moment";
-};
+}
 
 export { formatFutureTime };

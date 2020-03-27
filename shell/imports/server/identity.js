@@ -50,7 +50,7 @@ class IdentityImpl extends PersistentImpl {
 
     return { profile: profile };
   }
-};
+}
 
 // TODO(cleanup): Find a better home for this.
 const MembraneRequirement = Match.OneOf(

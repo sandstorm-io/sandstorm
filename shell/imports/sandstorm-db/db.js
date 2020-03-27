@@ -1150,7 +1150,7 @@ function SandstormDb(quotaManager) {
     incomingTransfers: IncomingTransfers,
     outgoingTransfers: OutgoingTransfers,
   };
-};
+}
 
 // TODO(cleanup): These methods should not be defined freestanding and should use collection
 //   objects created in SandstormDb's constructor rather than globals.

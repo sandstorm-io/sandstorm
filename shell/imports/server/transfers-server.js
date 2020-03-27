@@ -489,7 +489,7 @@ class Downloader {
       }
     }
   }
-};
+}
 
 if (!Meteor.settings.replicaNumber) {
   Meteor.startup(() => {

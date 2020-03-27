@@ -3,7 +3,7 @@ import Identicon from "./identicon.js";
 const VALID_USAGES = ["appGrid", "grain", "notification"];
 function checkUsage(usage) {
   if (VALID_USAGES.indexOf(usage) === -1) throw new Error("Invalid icon usage.");
-};
+}
 
 function iconFromManifest(manifest, usage) {
   // TODO: select by usage location, rather than assuming appGrid
@@ -18,7 +18,7 @@ function iconFromManifest(manifest, usage) {
   }
 
   return undefined;
-};
+}
 
 function hashAppIdForIdenticon(id) {
   // "Hash" an app ID to a 32-digit hex string for the purpose of
@@ -36,7 +36,7 @@ function hashAppIdForIdenticon(id) {
   }
 
   return result.join("");
-};
+}
 
 // Keep a static global cache of all app identicons produced in this way.
 // If memory usage is excessive, we can revisit this decision.
@@ -49,12 +49,12 @@ function cachedIdenticon(hashedAppId, size) {
   }
 
   return cachedIdenticons[cacheKey];
-};
+}
 
 function identiconForApp(appId, usage) {
   const size = (usage === "appGrid" ? 128 : 24);
   return cachedIdenticon(hashAppIdForIdenticon(appId), size);
-};
+}
 
 function bytesToBase64(bytes) {
   const arr = new Array(bytes.length);
@@ -64,7 +64,7 @@ function bytesToBase64(bytes) {
   // Note that btoa is not available in IE9.  We may want to polyfill this.
   const result = btoa(arr.join(""));
   return result;
-};
+}
 
 function iconSrcFor(appId, iconObj, staticPrefix, usage) {
   if (iconObj === undefined || iconObj === null) {
@@ -99,7 +99,7 @@ function iconSrcFor(appId, iconObj, staticPrefix, usage) {
   }
   // We should never reach here, but do something sensible anyway
   return identiconForApp(appId, usage);
-};
+}
 
 function iconSrcForPackage(pkg, usage, staticPrefix) {
   // Works for regular packages and dev packages.
@@ -107,11 +107,11 @@ function iconSrcForPackage(pkg, usage, staticPrefix) {
   checkUsage(usage);
   const iconObj = iconFromManifest(pkg.manifest, usage);
   return iconSrcFor(pkg.appId, iconObj, staticPrefix, usage);
-};
+}
 
 function iconSrcForDenormalizedGrainMetadata(metadata, usage, staticPrefix) {
   return iconSrcFor(metadata.appId, metadata.icon, staticPrefix, usage);
-};
+}
 
 export {
     hashAppIdForIdenticon,

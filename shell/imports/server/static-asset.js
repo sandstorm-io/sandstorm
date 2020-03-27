@@ -30,7 +30,7 @@ class StaticAssetImpl {
   getUrl() {
     return { protocol: this._protocol, hostPath: this._hostPath, };
   }
-};
+}
 
 class IdenticonStaticAssetImpl {
   constructor(hash, size) {
@@ -43,6 +43,6 @@ class IdenticonStaticAssetImpl {
   getUrl() {
     return { protocol: this._protocol, hostPath: this._hostPath, };
   }
-};
+}
 
 export { StaticAssetImpl, IdenticonStaticAssetImpl };

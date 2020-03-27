@@ -502,7 +502,7 @@ class DummyObserver {
       revoker.close();
     }
   }
-};
+}
 
 restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenInfo,
                    currentTokenId, currentTokenKey) => {
@@ -683,7 +683,7 @@ class SandstormCoreFactoryImpl {
 
 function makeSandstormCoreFactory(db) {
   return new Capnp.Capability(new SandstormCoreFactoryImpl(db), SandstormCoreFactory);
-};
+}
 
 // Start up the backend.
 const sandstormCoreFactory = makeSandstormCoreFactory(globalDb);

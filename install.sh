@@ -1174,13 +1174,28 @@ create_server_user_if_needed() {
 
   # OK! Let's proceed.
   #
-  # useradd comes from the passwd package, whereas adduser is a Debian-specific utility
-  # <https://packages.debian.org/adduser>, so we prefer useradd here. Per the man page for useradd,
-  # USERGROUPS_ENAB in /etc/login.defs controls if useradd will automatically create a group for
-  # this user (the new group would have the same name as the new user). On systems such as OpenSuSE
-  # where that flag is set to false by default, or on systems where the administrator has personally
-  # tuned that flag, we need to provide --user-group to useradd so that it creates the group.
-  useradd --system --user-group "$SERVER_USER"
+  # To create the server user, we first try `useradd`, which is widely available on most
+  # distros. If that isn't available, it's likely we're running on a busybox based system.
+  # busybox provides an `adduser` command, so if the busybox binary exists we try that
+  # instead.
+  #
+  # Note that debian provides an `adduser` command as well, but its usage is different.
+  # useradd is available on debian anyway, so we'll end up using that.
+  if which useradd >/dev/null; then
+    # Per the man page for useradd, USERGROUPS_ENAB in /etc/login.defs controls if useradd
+    # will automatically create a group for this user (the new group would have the same
+    # name as the new user). On systems such as OpenSuSE where that flag is set to false
+    # by default, or on systems where the administrator has personally tuned that flag,
+    # we need to provide --user-group to useradd so that it creates the group.
+    useradd --system --user-group "$SERVER_USER"
+  elif which busybox >/dev/null; then
+    # With busybox we need to separately create the user's group.
+    addgroup -S "$SERVER_USER"
+    adduser -S -G "$SERVER_USER" "$SERVER_USER"
+  else
+    fail "E_NO_USERADD" \
+      "Couldn't find a command with which to add a user (either useradd or busybox)."
+  fi
 
   echo "Note: Sandstorm's storage will only be accessible to the group '$SERVER_USER'."
 

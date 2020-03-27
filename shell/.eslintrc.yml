@@ -18,6 +18,5 @@ rules:
   no-empty: ["off"]
   no-inner-declarations: ["off"]
   no-extra-boolean-cast: ["off"]
-  no-constant-condition: ["off"]
   no-useless-escape: ["off"]
   no-unexpected-multiline: ["off"]

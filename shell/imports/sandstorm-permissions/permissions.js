@@ -865,7 +865,7 @@ class Context {
       } else if (req.tokenValid) {
         // Active the token and all of its transitive parents.
         let currentTokenId = req.tokenValid;
-        while (true) {
+        for(;;) {
           let currentToken = this.tokensById[currentTokenId];
           if (!currentToken && db) {
             currentToken = db.collections.apiTokens.findOne({
@@ -932,7 +932,7 @@ class Context {
     }
 
     this.activateRelevantTokens(grainId, vertexId);
-    while (true) {
+    for(;;) {
       const result = this.runForwardChaining(grainId, vertexId, permissionSet);
       if (result && permissionSet.isSubsetOf(result)) {
         return result;

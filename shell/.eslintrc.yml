@@ -20,5 +20,4 @@ rules:
   no-extra-boolean-cast: ["off"]
   no-constant-condition: ["off"]
   no-useless-escape: ["off"]
-  no-case-declarations: ["off"]
   no-unexpected-multiline: ["off"]

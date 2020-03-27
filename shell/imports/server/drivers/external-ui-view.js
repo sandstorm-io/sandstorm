@@ -511,7 +511,7 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
               }
 
               switch (statusInfo ? statusInfo.type : resp.statusCode) {
-                case "content":
+                case "content": {
                   const content = {};
                   rpcResponse.content = content;
 
@@ -541,7 +541,8 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
 
                   resolve(rpcResponse);
                   break;
-                case "noContent":
+                }
+                case "noContent": {
                   const noContent = {};
                   rpcResponse.noContent = noContent;
                   noContent.setShouldResetForm = statusInfo.shouldResetForm;
@@ -551,7 +552,8 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
 
                   resolve(rpcResponse);
                   break;
-                case "redirect":
+                }
+                case "redirect": {
                   const redirect = {};
                   rpcResponse.redirect = redirect;
                   redirect.isPermanent = statusInfo.isPermanent;
@@ -559,7 +561,8 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
                   if ("location" in resp.headers) redirect.location = resp.headers.location;
                   resolve(rpcResponse);
                   break;
-                case "clientError":
+                }
+                case "clientError": {
                   const clientError = {};
                   rpcResponse.clientError = clientError;
                   clientError.statusCode = statusInfo.clientErrorCode;
@@ -567,13 +570,15 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
                   fillInErrorBody(clientError);
                   resolve(rpcResponse);
                   break;
-                case "serverError":
+                }
+                case "serverError": {
                   const serverError = {};
                   rpcResponse.serverError = serverError;
                   fillInErrorBody(serverError);
                   resolve(rpcResponse);
                   break;
-                case "preconditionFailed":
+                }
+                case "preconditionFailed": {
                   const preconditionFailed = {};
                   rpcResponse.preconditionFailed = preconditionFailed;
                   if (resp.headers.etag) {
@@ -586,11 +591,14 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
                 // TODO(soon): Handle token-expired errors by throwing DISCONNECTED -- this will
                 //   force the client to reload the capability which will refresh the token.
 
-                default: // ???
+                }
+                default: {
+                  // ???
                   const err = new Error(
                       "Invalid status code " + resp.statusCode + " received in response.");
                   reject(err);
                   break;
+                }
               }
             } catch (err) {
               reject(err);

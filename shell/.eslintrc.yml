@@ -11,7 +11,7 @@ parserOptions:
 reportUnusedDisableDirectives: true
 extends: "eslint:recommended"
 rules:
-  # These are implied by eslint:recommended, but we havent' gotten around to
+  # These are implied by eslint:recommended, but we haven't gotten around to
   # fixing them yet:
   no-undef: ["off"]
   no-unused-vars: ["off"]

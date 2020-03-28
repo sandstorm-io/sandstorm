@@ -125,7 +125,7 @@ Template.sandstormAccountSettings.helpers({
           const input = instance.find("input[name='email']");
           if (input) {
             input.value = "";
-          };
+          }
 
           instance._actionCompleted.set({ success: "credential added" });
         },

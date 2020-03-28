@@ -94,7 +94,7 @@ class PermissionsObserver {
   whenRevoked(callback) {
     this.invalidatedPromise.then(callback);
   }
-};
+}
 
 function boolListToBuffer(bools) {
   const numBytes = Math.ceil(bools.length / 8);
@@ -150,7 +150,7 @@ function validateWebkey(apiToken, refreshedExpiration) {
   if (apiToken.objectId || apiToken.frontendRef) {
     throw new Meteor.Error(403, "ApiToken refers to a non-webview Capability.");
   }
-};
+}
 
 function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId, observer) {
   if (!accountId && globalDb.getOrganizationDisallowGuests()) {
@@ -614,7 +614,7 @@ function storeReferralProgramInfoApiTokenCreated(db, accountId, apiTokenAccountI
   Meteor.users.update(
     { _id: bobAccountId, referredBy: { $exists: false } },
     { $set: { referredBy: aliceAccountId } });
-};
+}
 
 function referralProgramLogSharingTokenUse(db, bobAccountId) {
   // Hooray! The sharing token is valid! Someone (let's call them Charlie) is going to get a UiView

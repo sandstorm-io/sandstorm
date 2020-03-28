@@ -120,7 +120,7 @@ class IpInterfaceImpl extends PersistentImpl {
       });
     });
   }
-};
+}
 
 // TODO(cleanup): Meteor.startup() needed because 00-startup.js runs *after* code in subdirectories
 //   (ugh).
@@ -254,7 +254,7 @@ class IpNetworkImpl extends PersistentImpl {
   getRemoteHostByName(address) {
     return { host: new IpRemoteHostImpl(address, this.tls) };
   }
-};
+}
 
 // TODO(cleanup): Meteor.startup() needed because 00-startup.js runs *after* code in subdirectories
 //   (ugh).
@@ -332,7 +332,7 @@ class IpRemoteHostImpl {
 
     return { port: new UdpPortImpl(this.address, portNum) };
   }
-};
+}
 
 TcpPortImpl = class TcpPortImpl {
   constructor(address, portNum, tls) {

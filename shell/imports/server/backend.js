@@ -215,6 +215,6 @@ class SandstormBackend {
       }
     }
   }
-};
+}
 
 export { SandstormBackend, shouldRestartGrain };

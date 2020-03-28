@@ -344,7 +344,7 @@ class EmailVerifierImpl extends PersistentImpl {
       return verification.address;
     });
   }
-};
+}
 
 class VerifiedEmailImpl extends PersistentImpl {
   constructor(db, saveTemplate) {
@@ -436,7 +436,7 @@ Meteor.startup(() => {
             cardTemplate: "emailVerifierPowerboxCard",
           });
         }
-      };
+      }
 
       return results;
     },

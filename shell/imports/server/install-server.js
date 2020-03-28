@@ -162,7 +162,7 @@ Router.map(function () {
           });
           this.response.write("Unpacking SPK failed; is it valid?");
           this.response.end();
-        };
+        }
       } else if (this.request.method == "OPTIONS") {
         // Allow cross-origin posts to upload so that uploads can occur on the DDP host
         // rather than the main host. In theory we could have Access-Control-Allow-Origin specify

@@ -193,8 +193,9 @@ function sendEmail(db, user, mailSubject, mailText, mailHtml, config) {
   if (email) {
     email = email.email;
   } else {
-    email = Meteor.wrapAsync(stripe.customers.retrieve.bind(stripe.customers))
-        (user.payments.id).email;
+    email = Meteor.wrapAsync(stripe.customers.retrieve.bind(stripe.customers))(
+      user.payments.id
+    ).email;
   }
 
   if (email) {
@@ -896,8 +897,9 @@ function getStripeBonus(user, paymentsBonuses) {
   var bonus = {};
 
   if (user.payments && user.payments.id) {
-    var customer = Meteor.wrapAsync(stripe.customers.retrieve.bind(stripe.customers))
-        (user.payments.id);
+    var customer = Meteor.wrapAsync(stripe.customers.retrieve.bind(stripe.customers))(
+      user.payments.id
+    );
 
     var meta = customer.metadata;
     if (meta) {

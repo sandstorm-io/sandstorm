@@ -14,6 +14,11 @@ var https = require('https');
 var net = require('net');
 var url = require('url');
 
+// fix ssl for some sites on node v8.x
+// TODO(abliss): remove this after upgrading node to v10.x
+// see https://github.com/nodejs/node/issues/16196#issuecomment-393091912
+require("tls").DEFAULT_ECDH_CURVE = "auto";
+
 var isDevShellMode = process.argv.length > 2;
 
 var firstInheritedFd = isDevShellMode ? 65 : 3;

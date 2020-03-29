@@ -1,0 +1,11 @@
+{
+  "name": "acme-dns-01-sandcats",
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=12.0"
+  },
+  "dependencies": {
+    "acme-dns-01-test": "^3.3.2",
+    "querystring": "^0.2.0"
+  }
+}

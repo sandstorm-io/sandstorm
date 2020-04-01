@@ -1202,6 +1202,7 @@
     "networkCapabilities": {
       "name": "Network capabilities",
       "subtext": "Manage direct network access for grains.",
+      "explanation": "This page displays network capabilities granted to grains. By default, grains have very limited network access. A grain can request full network access while it is being used. Only an admin can approve the request, which grants a \"network capability\" to the grain.",
       "newAdminNetworkCapabilitiesTableCapabilityRow": {
         "adminAccount": "Admin account %s",
         "unknownGranter": "Unknown granter",

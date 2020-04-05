@@ -12,6 +12,13 @@
   background-color: #723086;
 }
 
+.wy-side-nav-search input[type="text"] {
+	width: 100%;
+	border-radius: 4px;
+	padding: 6px 12px;
+	border-color: #2472a4;
+}
+
 .wy-side-nav-search>.home-and-project {
     display: flex;
     text-align: left;

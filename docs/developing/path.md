@@ -80,6 +80,37 @@ sample](https://github.com/Azeirah/brainstorm/blob/ca01c7d2b0ae7f0480b93d7e37e19
 and [per-page-load code
 sample](https://github.com/paulproteus/semantic-mediawiki-sandstorm/blob/445151c033a85da5e586d1a401abea8179b599b2/resources/src/startup.js#L64).
 
+## Using the grain's title in your app
+
+If you wish to make use of the grain's title inside your app, you
+can obtain this information by making a postMessage request:
+
+```js
+var getGrainTitleRpcId = 0;
+
+// Sandstorm will reply via postMessage, so we need to set up a handler:
+window.addEventListener('message', function(event) {
+  if(event.source !== window.parent) {
+    // SECURITY: ignore messages not from the parent.
+    return;
+  }
+  if(event.data.rpcId === getGrainTtileRpcId) {
+    console.log("The grain's title is: ", event.data.grainTitle);
+  }
+})
+
+// Now make the request:
+window.postMessage({
+  getGrainTitle: {},
+  rpcId: getGrainTitleRpcId,
+  // If subscribe is true, sandstorm will push future updates to the
+  // grain's title. If it is false or absent, the app will not be
+  // notified of updates.
+  subscribe: true,
+}, '*')
+```
+
+
 ## Helping the user share access
 
 If your app wants to **create a link to itself that anyone can use**, you can

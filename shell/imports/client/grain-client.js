@@ -1658,6 +1658,20 @@ Meteor.startup(function () {
       senderGrain.setPowerboxRequest(requestContext);
       // Note that we don't do openPopup() here because the template will be redrawn to create the
       // powerbox popup with startOpen=true.
+    } else if(event.data.getGrainTitle) {
+      check(event.data.getGrainTitle, Object)
+      check(event.data.subscribe, Match.Optional(Boolean))
+      const reply = function() {
+        event.source.postMessage({
+          rpcId: event.data.rpcId,
+          grainTitle: senderGrain.ownerTitle(),
+        }, event.origin);
+      };
+      if(event.data.subscribe) {
+        Tracker.autorun(reply);
+      } else {
+        reply();
+      }
     } else {
       console.log("postMessage from app not understood: ", event.data);
       console.log(event);

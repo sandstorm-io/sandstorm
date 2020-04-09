@@ -1,4 +1,12 @@
 ---
+env:
+  # Assume standard globals. TODO: Ideally we'd only allow
+  # `node` from server/ and only allow `browser` from client,
+  # but I(zenhack) am not sure how to get eslint to use different
+  # options per subtree:
+  browser: true
+  node: true
+  es6: true
 parser: "babel-eslint"
 parserOptions:
   ecmaVersion: 2020

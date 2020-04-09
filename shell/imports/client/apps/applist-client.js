@@ -1,5 +1,9 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
+import { ReactiveVar } from "meteor/reactive-var";
+import { Router } from "meteor/iron:router";
+import { _ } from "meteor/underscore";
+
 import { introJs } from "intro.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 

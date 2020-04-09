@@ -16,6 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
+import { _ } from "meteor/underscore";
 
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";

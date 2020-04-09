@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
+import { Router } from "meteor/iron:router";
 
 import { allowDemo } from "/imports/demo.js";
 import { isSafeDemoAppUrl } from "/imports/install.js";

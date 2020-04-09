@@ -18,6 +18,7 @@ Sandcats = {};
 
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
+import { Random } from "meteor/random";
 
 import { inMeteor } from "/imports/server/async-helpers.js";
 import { pki, asn1 } from "node-forge";

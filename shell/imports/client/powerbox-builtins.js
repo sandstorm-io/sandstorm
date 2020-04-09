@@ -16,6 +16,9 @@
 
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
+import { ReactiveVar } from "meteor/reactive-var";
+import { _ } from "meteor/underscore";
+import { Accounts } from "meteor/accounts-base";
 
 const prepareViewInfoForDisplay = function (viewInfo) {
   const result = _.clone(viewInfo || {});

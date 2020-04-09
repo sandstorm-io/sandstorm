@@ -15,6 +15,8 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
+import { Tracker } from "meteor/tracker";
+import { Router } from "meteor/iron:router";
 
 Meteor.subscribe("publicAdminSettings");
 

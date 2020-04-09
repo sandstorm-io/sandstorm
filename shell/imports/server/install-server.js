@@ -16,6 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
+import { Random } from "meteor/random";
 
 import { allowDemo } from "/imports/demo.js";
 import { isSafeDemoAppUrl } from "/imports/install.js"

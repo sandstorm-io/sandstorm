@@ -16,6 +16,8 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
+import { _ } from "meteor/underscore";
+import { Random } from "meteor/random";
 
 import { waitPromise } from "/imports/server/async-helpers.js";
 import { createAppActivityDesktopNotification } from "/imports/server/desktop-notifications.js";

@@ -1,6 +1,6 @@
 import { Meteor } from "meteor/meteor";
 import { Accounts } from "meteor/accounts-base";
-import { check } from "meteor/check";
+import { Match, check } from "meteor/check";
 
 /**
  * @summary Log the user in with a one-time-use token.

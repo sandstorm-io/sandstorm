@@ -1,6 +1,10 @@
 
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
+import { ReactiveVar } from "meteor/reactive-var";
+import { ReactiveDict } from "meteor/reactive-dict";
+import { Router } from "meteor/iron:router";
+import { _ } from "meteor/underscore";
 
 import { introJs } from "intro.js";
 import { identiconForApp } from "/imports/sandstorm-identicons/helpers.js";

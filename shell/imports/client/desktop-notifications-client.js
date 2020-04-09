@@ -16,6 +16,8 @@
 
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
+import { Random } from "meteor/random";
+import { Router } from "meteor/iron:router";
 
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
 import { iconSrcForPackage, identiconForApp } from "/imports/sandstorm-identicons/helpers.js";

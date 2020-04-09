@@ -1,5 +1,7 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
+import { Tracker } from "meteor/tracker";
+import { ReactiveVar } from "meteor/reactive-var";
 
 import { globalDb } from "/imports/db-deprecated.js";
 

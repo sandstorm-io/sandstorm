@@ -18,7 +18,13 @@
 // It also covers the root page.
 
 import { Meteor } from "meteor/meteor";
+import { Mongo } from "meteor/mongo";
 import { Template } from "meteor/templating";
+import { Tracker } from "meteor/tracker";
+import { ReactiveVar } from "meteor/reactive-var";
+import { Accounts } from "meteor/accounts-base";
+import { Router } from "meteor/iron:router";
+
 import getBuildInfo from "/imports/client/build-info.js";
 import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";
 import { isStandalone } from "/imports/client/standalone.js";

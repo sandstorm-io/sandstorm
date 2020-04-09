@@ -23,6 +23,8 @@ import Url from "url";
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
+import { _ } from "meteor/underscore";
+import { Random } from "meteor/random";
 
 import { hashSturdyRef, checkRequirements, fetchApiToken } from "/imports/server/persistent.js";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";

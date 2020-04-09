@@ -15,6 +15,9 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
+import { Tracker } from "meteor/tracker";
+import { Router } from "meteor/iron:router";
+
 import { allowDemo } from "/imports/demo.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 

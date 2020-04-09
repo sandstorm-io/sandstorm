@@ -20,6 +20,12 @@ import { Meteor } from "meteor/meteor";
 import { Mongo } from "meteor/mongo";
 import { Match, check } from "meteor/check";
 import { Template } from "meteor/templating";
+import { Tracker } from "meteor/tracker";
+import { ReactiveVar } from "meteor/reactive-var";
+import { Router } from "meteor/iron:router";
+import { _ } from "meteor/underscore";
+import { $ } from "meteor/jquery";
+
 import { introJs } from "intro.js";
 
 import downloadFile from "/imports/client/download-file.js";

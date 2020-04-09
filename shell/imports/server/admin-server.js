@@ -16,6 +16,10 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
+import { _ } from "meteor/underscore";
+import { Accounts } from "meteor/accounts-base";
+import { Random } from "meteor/random";
+
 import Fs from "fs";
 import Crypto from "crypto";
 import Heapdump from "heapdump";

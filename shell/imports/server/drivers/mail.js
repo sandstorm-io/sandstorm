@@ -16,6 +16,9 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
+import { _ } from "meteor/underscore";
+import { Random } from "meteor/random";
+import { Accounts } from "meteor/accounts-base";
 
 import { SMTPServer } from "smtp-server";
 import { MailParser } from "mailparser";

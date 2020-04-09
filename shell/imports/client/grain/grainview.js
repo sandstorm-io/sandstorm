@@ -17,6 +17,12 @@
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
 import { Template } from "meteor/templating";
+import { Tracker } from "meteor/tracker";
+import { ReactiveVar } from "meteor/reactive-var";
+import { Random } from "meteor/random";
+import { Router } from "meteor/iron:router";
+import { _ } from "meteor/underscore";
+
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
 import { isStandalone } from "/imports/client/standalone.js";
 import { GrainViewList } from "/imports/client/grain/grainview-list.js";

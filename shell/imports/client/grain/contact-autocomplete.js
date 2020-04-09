@@ -1,5 +1,9 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
+import { ReactiveVar } from "meteor/reactive-var";
+import { Random } from "meteor/random";
+import { _ } from "meteor/underscore";
+
 import { ContactProfiles } from "/imports/client/contacts.js";
 
 const generateAutoCompleteContacts = function (template) {

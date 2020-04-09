@@ -1,5 +1,7 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
+import { ReactiveVar } from "meteor/reactive-var";
+import { Router } from "meteor/iron:router";
 
 import { globalDb } from "/imports/db-deprecated.js";
 

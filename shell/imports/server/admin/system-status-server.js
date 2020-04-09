@@ -1,6 +1,8 @@
 import { Meteor } from "meteor/meteor";
 import { Router } from "meteor/iron:router";
 import { Random } from "meteor/random";
+import { _ } from "meteor/underscore";
+
 import Crypto from "crypto";
 import Fs from "fs";
 import { checkAuth } from "/imports/server/auth.js";

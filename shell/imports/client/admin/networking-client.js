@@ -16,6 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
+import { ReactiveVar } from "meteor/reactive-var";
 
 import { PRIVATE_IPV4_ADDRESSES, PRIVATE_IPV6_ADDRESSES } from "/imports/constants.js";
 import { globalDb } from "/imports/db-deprecated.js";

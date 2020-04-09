@@ -14,6 +14,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
+import { Accounts } from "meteor/accounts-base";
+import { _ } from "meteor/underscore";
+
 import Identicon from "/imports/sandstorm-identicons/identicon.js";
 import { SandstormDb } from "./db.js";
 import { Settings } from "/imports/db-deprecated.js";

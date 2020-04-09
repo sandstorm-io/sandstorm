@@ -1,4 +1,6 @@
 import { Meteor } from "meteor/meteor";
+import { Accounts } from "meteor/accounts-base";
+
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 if (Meteor.isClient) {

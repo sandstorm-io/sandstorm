@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import Crypto from "crypto";
+import { Match, check } from "meteor/check";
 import Capnp from "/imports/server/capnp.js";
 import { SandstormDb } from "./db.js";
 

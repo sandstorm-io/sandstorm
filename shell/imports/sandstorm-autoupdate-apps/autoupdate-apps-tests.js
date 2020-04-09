@@ -18,6 +18,10 @@
 // Figure out a new strategy for making sure we run tests.
 
 import Crypto from "crypto";
+
+import { Meteor } from "meteor/meteor";
+import { Accounts } from "meteor/accounts-base";
+
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 const globalDb = new SandstormDb();

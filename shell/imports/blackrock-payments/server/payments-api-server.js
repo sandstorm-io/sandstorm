@@ -15,6 +15,8 @@
 // limitations under the License.
 
 import Crypto from "crypto";
+import { Meteor } from "meteor/meteor";
+
 import Capnp from "/imports/server/capnp.js";
 const PaymentsRpc = Capnp.importSystem("sandstorm/payments.capnp");
 

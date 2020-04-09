@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
+
 SandstormAutoupdateApps = {};
 
 SandstormAutoupdateApps.updateAppIndex = function (db) {

@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import Crypto from "crypto";
+import { Meteor } from "meteor/meteor";
 import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
 import { inMeteor, promiseToFuture, waitPromise } from "/imports/server/async-helpers.js";
 import Capnp from "/imports/server/capnp.js";

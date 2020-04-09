@@ -1,3 +1,5 @@
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
 import { DEFAULT_SIGNUP_DIALOG } from "/imports/client/personalization.js";
 import { globalDb } from "/imports/db-deprecated.js";
 

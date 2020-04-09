@@ -1,3 +1,5 @@
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
 import { introJs } from "intro.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 

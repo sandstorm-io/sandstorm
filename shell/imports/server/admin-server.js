@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
+import { Match, check } from "meteor/check";
 import Fs from "fs";
 import Crypto from "crypto";
 import Heapdump from "heapdump";

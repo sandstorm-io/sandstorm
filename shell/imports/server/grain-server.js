@@ -15,6 +15,10 @@
 // limitations under the License.
 
 import Crypto from "crypto";
+
+import { Meteor } from "meteor/meteor";
+import { Match, check } from "meteor/check";
+
 import { send as sendEmail } from "/imports/server/email.js";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";

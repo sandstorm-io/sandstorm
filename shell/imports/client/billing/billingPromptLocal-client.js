@@ -1,3 +1,4 @@
+import { Template } from "meteor/templating";
 import { globalDb } from "/imports/db-deprecated.js";
 
 Template.billingPromptLocal.helpers({

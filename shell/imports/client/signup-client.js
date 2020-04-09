@@ -16,6 +16,8 @@
 
 // This file covers the client side of the invite key workflow.
 
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
 import { DEFAULT_SIGNUP_DIALOG } from "/imports/client/personalization.js";
 
 Template.signup.helpers({

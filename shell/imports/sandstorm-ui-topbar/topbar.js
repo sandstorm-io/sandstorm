@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Template } from "meteor/templating";
+
 let reloadBlockingCount = 0;
 const blockedReload = new ReactiveVar(null);
 let explicitlyUnblocked = false;

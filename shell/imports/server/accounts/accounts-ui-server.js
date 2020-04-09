@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
+import { Meteor } from "meteor/meteor";
+
 // Meteor permits users to modify their own profile by default, for some reason.
 Meteor.users.deny({
   insert: function () { return true; },

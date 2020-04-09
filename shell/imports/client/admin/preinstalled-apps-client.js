@@ -1,3 +1,5 @@
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
 import { globalDb } from "/imports/db-deprecated.js";
 
 const APP_LIMIT = 10;

@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
+
 import { PRIVATE_IPV4_ADDRESSES, PRIVATE_IPV6_ADDRESSES } from "/imports/constants.js";
 import { globalDb } from "/imports/db-deprecated.js";
 

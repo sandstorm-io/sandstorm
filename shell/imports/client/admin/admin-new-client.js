@@ -1,3 +1,5 @@
+import { Template } from "meteor/templating";
+
 import { globalDb } from "/imports/db-deprecated";
 
 Template.newAdmin.helpers({

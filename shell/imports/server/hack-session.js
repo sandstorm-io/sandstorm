@@ -20,6 +20,10 @@ import Https from "https";
 import Net from "net";
 import Dgram from "dgram";
 import Url from "url";
+
+import { Meteor } from "meteor/meteor";
+import { Match, check } from "meteor/check";
+
 import { hashSturdyRef, checkRequirements, fetchApiToken } from "/imports/server/persistent.js";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { ssrfSafeLookup } from "/imports/server/networking.js";

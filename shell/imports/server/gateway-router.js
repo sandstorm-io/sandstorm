@@ -17,6 +17,10 @@
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import Crypto from "crypto";
 import Dns from "dns";
+
+import { Meteor } from "meteor/meteor";
+import { Match, check } from "meteor/check";
+
 import Capnp from "/imports/server/capnp.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";

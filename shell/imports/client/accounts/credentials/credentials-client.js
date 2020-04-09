@@ -17,6 +17,7 @@
 import { Meteor } from "meteor/meteor";
 import { Mongo } from "meteor/mongo";
 import { check } from "meteor/check";
+import { Template } from "meteor/templating";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 const LoginCredentialsOfLinkedAccounts = new Mongo.Collection("loginCredentialsOfLinkedAccounts");

@@ -1,4 +1,6 @@
 /* global Settings */
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
 import { globalDb } from "/imports/db-deprecated.js";
 
 const idpData = function (configureCallback) {

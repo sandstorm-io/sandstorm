@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
+
 const prepareViewInfoForDisplay = function (viewInfo) {
   const result = _.clone(viewInfo || {});
   if (result.permissions) indexElements(result.permissions);

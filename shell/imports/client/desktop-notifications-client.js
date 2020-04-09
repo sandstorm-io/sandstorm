@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
+
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
 import { iconSrcForPackage, identiconForApp } from "/imports/sandstorm-identicons/helpers.js";
 import { globalDb } from "/imports/db-deprecated.js";

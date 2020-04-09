@@ -1,6 +1,9 @@
 import crypto from "crypto";
 import Url from "url";
 
+import { Meteor } from "meteor/meteor";
+import { Match, check } from "meteor/check";
+
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
 import { send as sendEmail } from "/imports/server/email.js";

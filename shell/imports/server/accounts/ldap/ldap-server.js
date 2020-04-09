@@ -1,5 +1,8 @@
 import { LDAP } from "/imports/server/accounts/ldap.js";
 
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
+
 // Register login handler with Meteor
 Accounts.registerLoginHandler("ldap", function (loginRequest) {
   // If 'ldap' isn't set in loginRequest object,

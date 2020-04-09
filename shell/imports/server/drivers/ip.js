@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Match, check } from "meteor/check";
+
 import Bignum from "bignum";
 import { PersistentImpl } from "/imports/server/persistent.js";
 import Future from "fibers/future";

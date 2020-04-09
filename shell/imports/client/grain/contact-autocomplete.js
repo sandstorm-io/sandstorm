@@ -1,3 +1,5 @@
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
 import { ContactProfiles } from "/imports/client/contacts.js";
 
 const generateAutoCompleteContacts = function (template) {

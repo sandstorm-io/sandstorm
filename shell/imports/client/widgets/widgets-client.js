@@ -1,3 +1,5 @@
+import { Template } from "meteor/templating";
+
 Template.modalDialogWithBackdrop.onCreated(function () {
   // This keypress event listener which closes the dialog when Escape is pressed should be scoped to
   // the browser window, not this template.

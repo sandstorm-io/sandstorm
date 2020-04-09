@@ -1,3 +1,6 @@
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
+
 import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";
 import AccountsUi from "/imports/client/accounts/accounts-ui.js";
 import downloadFile from "/imports/client/download-file.js";

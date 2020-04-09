@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { PersistentImpl, fetchApiToken } from "/imports/server/persistent.js";
 import Capnp from "/imports/server/capnp.js";

@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Match, check } from "meteor/check";
 import { Accounts } from "meteor/accounts-base";
 import { fetchPicture, userPictureUrl } from "/imports/server/accounts/picture.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";

@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
+
 import { globalDb } from "/imports/db-deprecated.js";
 
 Meteor.publish("standaloneDomain", function (domain) {

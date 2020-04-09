@@ -20,6 +20,8 @@ import Crypto from "crypto";
 import ChildProcess from "child_process";
 import Url from "url";
 
+import { Meteor } from "meteor/meteor";
+
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { ssrfSafeLookupOrProxy } from "/imports/server/networking.js";
 import { globalDb } from "/imports/db-deprecated.js";

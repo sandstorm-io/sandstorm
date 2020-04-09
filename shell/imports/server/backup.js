@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
+
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 
 import ChildProcess from "child_process";

@@ -7,6 +7,8 @@ import xmlCrypto from "xml-crypto";
 import xmldom from "xmldom";
 import zlib from "zlib";
 
+import { Meteor } from "meteor/meteor";
+
 const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 
 const SAML = function (options) {

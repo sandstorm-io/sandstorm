@@ -1,3 +1,5 @@
+import { globalDb } from "/imports/db-deprecated.js";
+
 Template.newAdminOrganization.onCreated(function () {
   const emailChecked = globalDb.getOrganizationEmailEnabled() || false;
   const gappsChecked = globalDb.getOrganizationGoogleEnabled() || false;

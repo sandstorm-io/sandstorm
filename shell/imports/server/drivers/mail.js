@@ -18,6 +18,7 @@ import { SMTPServer } from "smtp-server";
 import { MailParser } from "mailparser";
 
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { rawSend } from "/imports/server/email.js";
 import { shouldRestartGrain } from "/imports/server/backend.js";

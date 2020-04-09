@@ -46,9 +46,9 @@ if (Meteor.isServer) {
   };
 }
 
-// TODO(cleanup) explicitly export all of these
-globalDb = new SandstormDb(quotaManager);
+export const globalDb = new SandstormDb(quotaManager);
 
+// TODO(cleanup) explicitly export all of these
 Packages = globalDb.collections.packages;
 DevPackages = globalDb.collections.devPackages;
 UserActions = globalDb.collections.userActions;

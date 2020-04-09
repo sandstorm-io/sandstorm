@@ -1,3 +1,5 @@
+import { globalDb } from "/imports/db-deprecated";
+
 Template.newAdmin.helpers({
   setDocumentTitle: function () {
     document.title = "Admin panel · " + globalDb.getServerTitle();

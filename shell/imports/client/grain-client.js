@@ -27,6 +27,7 @@ import { ContactProfiles } from "/imports/client/contacts.js";
 import { isStandalone } from "/imports/client/standalone.js";
 import { GrainView } from "/imports/client/grain/grainview.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 // Pseudo-collections.
 TokenInfo = new Mongo.Collection("tokenInfo");

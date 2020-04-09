@@ -1,6 +1,7 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { SandstormDb } from "/imports/sandstorm-db/db.js"
+import { globalDb } from "/imports/db-deprecated.js";
 
 const matchesUser = function (searchKey, user) {
   // We match a user if we can find the searchKey in one of the following fields:

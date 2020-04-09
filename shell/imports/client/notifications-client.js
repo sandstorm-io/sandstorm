@@ -19,6 +19,7 @@ import { Template } from "meteor/templating";
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
 import { iconSrcForPackage, iconSrcForDenormalizedGrainMetadata } from "/imports/sandstorm-identicons/helpers.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 testNotifications = () => {
   // Run on console to create some dummy notifications for the purpose of seeing what they look

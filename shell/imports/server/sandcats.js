@@ -25,6 +25,7 @@ import dgram from "dgram";
 import Url from "url";
 
 import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 const SANDCATS_HOSTNAME = (Meteor.settings && Meteor.settings.public &&
                            Meteor.settings.public.sandcatsHostname);

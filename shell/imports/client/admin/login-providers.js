@@ -1,4 +1,5 @@
 /* global Settings */
+import { globalDb } from "/imports/db-deprecated.js";
 
 const idpData = function (configureCallback) {
   const emailTokenEnabled = globalDb.getSettingWithFallback("emailToken", false);

@@ -1,4 +1,5 @@
 import { DEFAULT_SIGNUP_DIALOG } from "/imports/client/personalization.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 Template.newAdminPersonalization.onCreated(function () {
   this.serverTitle = new ReactiveVar(globalDb.getSettingWithFallback("serverTitle", ""));

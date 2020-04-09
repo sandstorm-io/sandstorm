@@ -1,4 +1,4 @@
-/* globals globalDb */
+import { globalDb } from '/imports/db-deprecated.js';
 
 Template.newAdminEmailConfig.onCreated(function () {
   const c = globalDb.getSmtpConfig();

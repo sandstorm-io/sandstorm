@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset.js";
 import Capnp from "/imports/server/capnp.js";

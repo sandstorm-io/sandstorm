@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 import { FrontendRefRegistry } from "/imports/server/frontend-ref.js";
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { migrateToLatest } from "/imports/server/migrations.js";

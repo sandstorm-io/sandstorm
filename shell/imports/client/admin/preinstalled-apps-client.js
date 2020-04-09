@@ -1,3 +1,5 @@
+import { globalDb } from "/imports/db-deprecated.js";
+
 const APP_LIMIT = 10;
 
 Template.newAdminPreinstalledApps.onCreated(function () {

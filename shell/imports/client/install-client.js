@@ -16,6 +16,7 @@
 
 import { allowDemo } from "/imports/demo.js";
 import { isSafeDemoAppUrl } from "/imports/install.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 Router.map(function () {
   this.route("install", {

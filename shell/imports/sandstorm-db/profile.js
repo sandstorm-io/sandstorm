@@ -16,6 +16,7 @@
 
 import Identicon from "/imports/sandstorm-identicons/identicon.js";
 import { SandstormDb } from "./db.js";
+import { Settings } from "/imports/db-deprecated.js";
 
 let makeIdenticon;
 let httpProtocol;

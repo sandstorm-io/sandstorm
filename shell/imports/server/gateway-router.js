@@ -19,6 +19,7 @@ import Crypto from "crypto";
 import Dns from "dns";
 import Capnp from "/imports/server/capnp.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 const GatewayRouter = Capnp.importSystem("sandstorm/backend.capnp").GatewayRouter;
 const ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;

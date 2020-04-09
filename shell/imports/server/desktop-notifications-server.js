@@ -16,6 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 SandstormDb.periodicCleanup(120000, () => {
   // Remove old desktop notfications regularly.

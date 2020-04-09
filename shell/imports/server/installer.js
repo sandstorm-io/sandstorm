@@ -22,6 +22,7 @@ import Url from "url";
 
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { ssrfSafeLookupOrProxy } from "/imports/server/networking.js";
+import { globalDb } from "/imports/db-deprecated.js";
 import Capnp from "/imports/server/capnp.js";
 
 const Request = HTTPInternals.NpmModules.request.module;

@@ -1,3 +1,5 @@
+import { globalDb } from "/imports/db-deprecated.js";
+
 Template.newAdminMaintenance.onCreated(function () {
   const messageText = globalDb.getSettingWithFallback("adminAlert", "");
   const maintenanceTime = globalDb.getSettingWithFallback("adminAlertTime", "");

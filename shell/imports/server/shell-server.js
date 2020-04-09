@@ -34,6 +34,7 @@
 //   user, so maybe it's not a big deal...
 
 import { inMeteor } from "/imports/server/async-helpers.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 BrowserPolicy.framing.disallow();  // Disallow framing of the UI.
 Meteor.startup(() => {

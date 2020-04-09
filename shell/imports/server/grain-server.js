@@ -18,6 +18,7 @@ import Crypto from "crypto";
 import { send as sendEmail } from "/imports/server/email.js";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 const ROOT_URL = process.env.ROOT_URL;
 

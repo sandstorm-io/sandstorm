@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { allowDemo } from "/imports/demo.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

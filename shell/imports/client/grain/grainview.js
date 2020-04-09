@@ -21,6 +21,7 @@ import { isStandalone } from "/imports/client/standalone.js";
 import { GrainViewList } from "/imports/client/grain/grainview-list.js";
 import { identiconForApp, iconSrcForPackage } from "/imports/sandstorm-identicons/helpers.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 let counter = 0;
 

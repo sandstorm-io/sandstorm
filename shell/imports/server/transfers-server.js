@@ -19,6 +19,7 @@ import Crypto from "crypto";
 import NodeHttp from "http";
 import NodeHttps from "https";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 function isValidServerUrl(str) {
   let url;

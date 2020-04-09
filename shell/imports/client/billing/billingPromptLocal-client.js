@@ -1,3 +1,5 @@
+import { globalDb } from "/imports/db-deprecated.js";
+
 Template.billingPromptLocal.helpers({
   onDismiss: function () {
     return () => {

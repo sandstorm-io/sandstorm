@@ -259,7 +259,7 @@ Meteor.publish("referralInfoPseudo", function () {
         // If the handle doesn't show up in the new list of referredAccountIds, then remove
         // info from the client & stop it on the server & make it null.
         const handleForProfileName = handleForProfileNameByAccountId[accountId];
-        if (Object.prototype.hasOwnProperty.call(referredAccountIdsAsObject, accountId)) {
+        if (referredAccountIdsAsObject.hasOwnProperty(accountId)) {
           stopWatchingAccount(accountId);
         }
       });

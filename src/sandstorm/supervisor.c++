@@ -954,6 +954,12 @@ void SupervisorMain::makeCharDeviceNode(
   KJ_SYSCALL(mount(kj::str("/dev/", realName).cStr(), dst.cStr(), nullptr, MS_BIND, nullptr));
 }
 
+void mountTmpFs(const char *name, const char *dest) {
+    KJ_SYSCALL(mount(name, dest, "tmpfs",
+                     MS_NOSUID | MS_NODEV,
+                     "size=16m,nr_inodes=4k,mode=770"));
+}
+
 void SupervisorMain::setupFilesystem() {
   // The root of our mount namespace will be the app package itself.  We optionally create
   // tmp, dev, and var.  tmp is an ordinary tmpfs.  dev is a read-only tmpfs that contains
@@ -986,8 +992,7 @@ void SupervisorMain::setupFilesystem() {
     // 2) When we exit, the mount namespace disappears and the tmpfs is thus automatically
     //    unmounted.  No need for careful cleanup, and no need to implement a risky recursive
     //    delete.
-    KJ_SYSCALL(mount("sandstorm-tmp", "tmp", "tmpfs", MS_NOSUID,
-                     "size=16m,nr_inodes=4k,mode=770"));
+    mountTmpFs("sandstorm-tmp", "tmp");
   }
   if (access("dev", F_OK) == 0) {
     KJ_SYSCALL(mount("sandstorm-dev", "dev", "tmpfs",
@@ -997,6 +1002,18 @@ void SupervisorMain::setupFilesystem() {
     makeCharDeviceNode("zero", "zero", 1, 5);
     makeCharDeviceNode("random", "urandom", 1, 9);
     makeCharDeviceNode("urandom", "urandom", 1, 9);
+
+    // Create /dev/shm so shm_open() and friends work. Note that even though /dev
+    // is already a tmpfs, we need to mount a separate tmpfs for /dev/shm, because
+    // the former will be read-only.
+    //
+    // TODO: it might be nice to have /dev/shm and /tmp share the same partition,
+    // so we don't have to strictly separate their storage capacity. We could mount
+    // a single tmpfs somewhere invisible, create subdirectories, and then bind-mount
+    // them to their final destinations.
+    KJ_SYSCALL(mkdir("dev/shm", 0700));
+    mountTmpFs("sandstorm-shm", "dev/shm");
+
     KJ_SYSCALL(mount("dev", "dev", nullptr,
                      MS_REMOUNT | MS_BIND | MS_NOEXEC | MS_NOSUID | MS_NODEV | MS_RDONLY,
                      nullptr));

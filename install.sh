@@ -1176,8 +1176,8 @@ create_server_user_if_needed() {
   #
   # To create the server user, we first try `useradd`, which is widely available on most
   # distros. If that isn't available, it's likely we're running on a busybox based system.
-  # busybox provides an `adduser` command, so if the busybox binary exists we try that
-  # instead.
+  # busybox provides an `adduser` applet, so if that command links to the busybox binary
+  # we it instead.
   #
   # Note that debian provides an `adduser` command as well, but its usage is different.
   # useradd is available on debian anyway, so we'll end up using that.
@@ -1188,7 +1188,7 @@ create_server_user_if_needed() {
     # by default, or on systems where the administrator has personally tuned that flag,
     # we need to provide --user-group to useradd so that it creates the group.
     useradd --system --user-group "$SERVER_USER"
-  elif which busybox >/dev/null; then
+  elif [ "$(basename $(readlink $(which adduser)))" = busybox ]; then
     # With busybox we need to separately create the user's group.
     addgroup -S "$SERVER_USER"
     adduser -S -G "$SERVER_USER" "$SERVER_USER"

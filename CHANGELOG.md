@@ -1,3 +1,11 @@
+### v0.262 (2020-04-11)
+- Updated dependencies, including Meteor to 1.10.1.
+- `shm_open()` and friends can now be used in Sandstorm app sandboxes (because `/dev/shm` is now created as a temporary directory). Thanks @zenhack.
+- `spk dev` now displays the server's URL for convenience. Thanks @zenhack.
+- Sandstorm now publishes a `robots.txt` blocking all robots. Thanks @zenhack.
+- Lots of internal refactoring by @zenhack and @zarvox.
+- A new postMessage-based endpoint allows a grain to get its own title. Thanks @zenhack.
+
 ### v0.261 (2020-03-15)
 - Updated dependencies, including Meteor to 1.9.3 and Node.js to 12.16.1 (both major updates).
 - New "AppHooks" feature in sandstorm-http-bridge allows bridge-based apps to get access to more low-level Cap'n Proto APIs. Contributed by Ian "@zenhack" Denhardt.

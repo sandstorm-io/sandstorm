@@ -44,7 +44,8 @@ LDAP.prototype.ldapCheck = function (db, options) {
 
   options = options || {};
 
-  const hasOwnProperty = Object.prototype.hasOwnProperty.call
+  let hasOwnProperty = Object.prototype.hasOwnProperty;
+  hasOwnProperty = hasOwnProperty.call.bind(hasOwnProperty);
 
   if ((hasOwnProperty(options, "username") && hasOwnProperty(options, "ldapPass")) ||
       hasOwnProperty(options, "searchUsername")) {

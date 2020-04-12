@@ -16,6 +16,9 @@
 
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
+import { Accounts } from "meteor/accounts-base";
+import { _ } from "meteor/underscore";
+
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { SandstormBackend } from "/imports/server/backend.js";
 

@@ -16,6 +16,8 @@
 
 // This file is for various startup code that doesn't fit neatly anywhere else
 
+import { Meteor } from "meteor/meteor";
+
 const ROOT_URL = process.env.ROOT_URL;
 
 Meteor.startup(() => {

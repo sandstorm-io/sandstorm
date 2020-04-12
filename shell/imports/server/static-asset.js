@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import Url from "url";
+import { Match, check } from "meteor/check";
 import Capnp from "/imports/server/capnp.js";
 const StaticAsset = Capnp.importSystem("sandstorm/grain.capnp").StaticAsset;
 

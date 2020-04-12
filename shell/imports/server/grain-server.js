@@ -15,9 +15,16 @@
 // limitations under the License.
 
 import Crypto from "crypto";
+
+import { Meteor } from "meteor/meteor";
+import { Match, check } from "meteor/check";
+import { _ } from "meteor/underscore";
+import { Random } from "meteor/random";
+
 import { send as sendEmail } from "/imports/server/email.js";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 const ROOT_URL = process.env.ROOT_URL;
 

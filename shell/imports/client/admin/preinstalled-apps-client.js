@@ -1,3 +1,11 @@
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
+import { Tracker } from "meteor/tracker";
+import { ReactiveVar } from "meteor/reactive-var";
+import { _ } from "meteor/underscore";
+
+import { globalDb } from "/imports/db-deprecated.js";
+
 const APP_LIMIT = 10;
 
 Template.newAdminPreinstalledApps.onCreated(function () {

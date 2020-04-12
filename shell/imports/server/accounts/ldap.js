@@ -1,6 +1,9 @@
 import Future from "fibers/future";
 import ldapjs from "ldapjs";
 
+import { Meteor } from "meteor/meteor";
+import { _ } from "meteor/underscore";
+
 // At a minimum, set up LDAP_DEFAULTS.url and .dn according to
 // your needs. url should appear as 'ldap://your.url.here'
 // dn should appear in normal ldap format of comma separated attribute=value

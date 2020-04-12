@@ -15,7 +15,11 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
+import { Router } from "meteor/iron:router";
+
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 function isValidServerUrl(str) {
   let url;

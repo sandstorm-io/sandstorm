@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { _ } from "meteor/underscore";
+
 Meteor.publish("contactProfiles", function (showAll) {
   const db = this.connection.sandstormDb;
   const _this = this;

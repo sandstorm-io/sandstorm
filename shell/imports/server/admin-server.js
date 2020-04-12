@@ -15,6 +15,11 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
+import { Match, check } from "meteor/check";
+import { _ } from "meteor/underscore";
+import { Accounts } from "meteor/accounts-base";
+import { Random } from "meteor/random";
+
 import Fs from "fs";
 import Crypto from "crypto";
 import Heapdump from "heapdump";
@@ -23,6 +28,7 @@ import { clearAdminToken, checkAuth, tokenIsValid, tokenIsSetupSession } from "/
 import { send as sendEmail } from "/imports/server/email.js";
 import { fillUndefinedForChangedDoc } from "/imports/server/observe-helpers.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 const publicAdminSettings = [
   "google", "github", "ldap", "saml", "emailToken", "splashUrl", "signupDialog",

@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { globalDb } from "/imports/db-deprecated.js";
+
 const isTesting = Meteor.settings && Meteor.settings.public &&
                   Meteor.settings.public.isTesting;
 

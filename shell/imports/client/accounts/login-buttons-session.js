@@ -29,6 +29,9 @@
 // licenses, included in the LICENSES directory.
 // ====================================================================
 
+import { Accounts } from "meteor/accounts-base";
+import { _ } from "meteor/underscore";
+
 const VALID_KEYS = [
   "dropdownVisible",
   "inSignupFlow",

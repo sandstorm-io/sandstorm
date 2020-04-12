@@ -19,6 +19,9 @@
 // getLoginId is only used on server
 // initiateLogin and loginTemplate are only used on client
 
+import { Meteor } from "meteor/meteor";
+import { Accounts } from "meteor/accounts-base";
+
 function serviceEnabled(name) {
   const setting = Settings.findOne({ _id: name });
   return setting && !!setting.value;

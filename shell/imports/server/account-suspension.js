@@ -14,6 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
+import { _ } from "meteor/underscore";
+
 import { send } from "/imports/server/email.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 

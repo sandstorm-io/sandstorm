@@ -14,10 +14,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Match, check } from "meteor/check";
+import { _ } from "meteor/underscore";
+
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { ssrfSafeLookup } from "/imports/server/networking.js";
 import { REQUEST_HEADER_WHITELIST, RESPONSE_HEADER_WHITELIST }
     from "/imports/server/header-whitelist.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 import Future from "fibers/future";
 import Url from "url";

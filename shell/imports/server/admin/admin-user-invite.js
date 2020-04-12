@@ -1,3 +1,5 @@
+import { Meteor } from "meteor/meteor";
+
 Meteor.publish("allInviteTokens", function () {
   const db = this.connection.sandstormDb;
   if (!db.isAdminById(this.userId)) {

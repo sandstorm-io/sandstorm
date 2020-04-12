@@ -17,6 +17,9 @@
 // This file covers creation and consumption of invite keys (i.e. to invite people to become
 // users of the Sandstorm server).
 
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
+
 Meteor.publish("signupKey", function (key) {
   check(key, String);
   return SignupKeys.find(key);

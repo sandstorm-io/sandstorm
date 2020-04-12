@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Mongo } from "meteor/mongo";
+
 StripeCustomerData = new Mongo.Collection(null);  // see getStripeData for where this is produced
 StripeCards = new Mongo.Collection(null);
 

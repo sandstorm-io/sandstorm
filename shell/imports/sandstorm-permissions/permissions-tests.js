@@ -18,6 +18,8 @@
 // Figure out a new strategy for making sure we run tests.
 
 import Crypto from "crypto";
+import { Meteor } from "meteor/meteor";
+import { Match, check } from "meteor/check";
 
 const globalDb = new SandstormDb();
 // TODO(cleanup): Use a lightweight fake (minimongo-based?) database here and construct a clean

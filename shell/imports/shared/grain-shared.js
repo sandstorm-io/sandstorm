@@ -14,6 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
+import { globalDb } from "/imports/db-deprecated.js";
+
 Meteor.methods({
   // Methods defined in this file have meaningful latency compensation (client-side prediction)
   // potential.

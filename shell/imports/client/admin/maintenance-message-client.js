@@ -1,3 +1,9 @@
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
+import { ReactiveVar } from "meteor/reactive-var";
+
+import { globalDb } from "/imports/db-deprecated.js";
+
 Template.newAdminMaintenance.onCreated(function () {
   const messageText = globalDb.getSettingWithFallback("adminAlert", "");
   const maintenanceTime = globalDb.getSettingWithFallback("adminAlertTime", "");

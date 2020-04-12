@@ -14,6 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Tracker } from "meteor/tracker";
+import { Router } from "meteor/iron:router";
+
 Meteor.subscribe("publicAdminSettings");
 
 const newAdminRoute = RouteController.extend({

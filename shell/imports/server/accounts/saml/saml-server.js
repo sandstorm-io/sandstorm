@@ -1,5 +1,11 @@
 import Url from "url";
 import zlib from "zlib";
+
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
+import { _ } from "meteor/underscore";
+import { Accounts } from "meteor/accounts-base";
+
 import { SAML } from "/imports/server/accounts/saml-utils.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 

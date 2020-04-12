@@ -14,8 +14,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
+import { Random } from "meteor/random";
+import { Router } from "meteor/iron:router";
+
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
 import { iconSrcForPackage, identiconForApp } from "/imports/sandstorm-identicons/helpers.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 // Test if localStorage is usable.
 // We can't use Meteor._localStorage for this because we need to be able to enumerate the elements

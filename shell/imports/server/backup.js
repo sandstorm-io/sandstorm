@@ -14,12 +14,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
+import { _ } from "meteor/underscore";
+import { Random } from "meteor/random";
+import { Router } from "meteor/iron:router";
+
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 
 import ChildProcess from "child_process";
 import Future from "fibers/future";
 import Capnp from "/imports/server/capnp.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 const GrainInfo = Capnp.importSystem("sandstorm/grain.capnp").GrainInfo;
 

@@ -16,6 +16,10 @@
 
 Sandcats = {};
 
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
+import { Random } from "meteor/random";
+
 import { inMeteor } from "/imports/server/async-helpers.js";
 import { pki, asn1 } from "node-forge";
 import querystring from "querystring";
@@ -25,6 +29,7 @@ import dgram from "dgram";
 import Url from "url";
 
 import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 const SANDCATS_HOSTNAME = (Meteor.settings && Meteor.settings.public &&
                            Meteor.settings.public.sandcatsHostname);

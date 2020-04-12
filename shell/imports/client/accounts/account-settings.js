@@ -15,7 +15,11 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
 import { Template } from "meteor/templating";
+import { ReactiveVar } from "meteor/reactive-var";
+import { _ } from "meteor/underscore";
+
 import { formatFutureTime } from "/imports/dates.js";
 import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants.js";
 import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";

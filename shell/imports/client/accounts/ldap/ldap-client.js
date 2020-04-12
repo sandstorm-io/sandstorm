@@ -1,3 +1,6 @@
+import { Match, check } from "meteor/check";
+import { Accounts } from "meteor/accounts-base";
+
 const loginWithLDAP = function (user, password, callback) {
   check(user, String);
   check(password, String);

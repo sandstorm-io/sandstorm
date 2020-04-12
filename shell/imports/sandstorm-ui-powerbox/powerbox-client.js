@@ -14,8 +14,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Match, check } from "meteor/check";
+import { Random } from "meteor/random";
 import { Mongo } from "meteor/mongo";
 import { Template } from "meteor/templating";
+import { ReactiveVar } from "meteor/reactive-var";
+import { _ } from "meteor/underscore";
+
 import { identiconForApp } from "/imports/sandstorm-identicons/helpers.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 

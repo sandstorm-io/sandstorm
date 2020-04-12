@@ -18,7 +18,13 @@ import { URL } from "url";
 import Crypto from "crypto";
 import NodeHttp from "http";
 import NodeHttps from "https";
+
+import { Meteor } from "meteor/meteor";
+import { Match, check } from "meteor/check";
+import { Router } from "meteor/iron:router";
+
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 function isValidServerUrl(str) {
   let url;

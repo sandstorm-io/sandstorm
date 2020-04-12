@@ -17,7 +17,11 @@
 // This file implements logic that we place in front of our main Meteor application,
 // including routing of requests to proxies and handling of static web publishing.
 
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
+
 import { inMeteor } from "/imports/server/async-helpers.js";
+import { globalDb } from "/imports/db-deprecated.js";
 import ServerIdenticon from "/imports/sandstorm-identicons/identicon-server.js";
 import Url from "url";
 import Fs from "fs";

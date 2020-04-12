@@ -1,3 +1,8 @@
+import { Template } from "meteor/templating";
+import { Router } from "meteor/iron:router";
+
+import { globalDb } from "/imports/db-deprecated";
+
 Template.newAdmin.helpers({
   setDocumentTitle: function () {
     document.title = "Admin panel · " + globalDb.getServerTitle();

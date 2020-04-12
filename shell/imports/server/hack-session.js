@@ -20,11 +20,18 @@ import Https from "https";
 import Net from "net";
 import Dgram from "dgram";
 import Url from "url";
+
+import { Meteor } from "meteor/meteor";
+import { Match, check } from "meteor/check";
+import { _ } from "meteor/underscore";
+import { Random } from "meteor/random";
+
 import { hashSturdyRef, checkRequirements, fetchApiToken } from "/imports/server/persistent.js";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { ssrfSafeLookup } from "/imports/server/networking.js";
 import Capnp from "/imports/server/capnp.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 const HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;

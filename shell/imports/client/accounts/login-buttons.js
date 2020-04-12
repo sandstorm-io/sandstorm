@@ -22,6 +22,10 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 import { Template } from "meteor/templating";
+import { ReactiveVar } from "meteor/reactive-var";
+import { Accounts } from "meteor/accounts-base";
+import { _ } from "meteor/underscore";
+
 import {
   loginWithEmailToken,
   createAndEmailTokenForUser,
@@ -31,6 +35,7 @@ import { loginWithLDAP } from "/imports/client/accounts/ldap/ldap-client.js";
 import { loginWithSaml } from "/imports/client/accounts/saml/saml-client.js";
 import AccountsUi from "/imports/client/accounts/accounts-ui.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 // for convenience
 const loginButtonsSession = Accounts._loginButtonsSession;

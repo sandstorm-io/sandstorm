@@ -14,10 +14,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Match, check } from "meteor/check";
+import { _ } from "meteor/underscore";
+import { Random } from "meteor/random";
+
 import { waitPromise } from "/imports/server/async-helpers.js";
 import { createAppActivityDesktopNotification } from "/imports/server/desktop-notifications.js";
 import Capnp from "/imports/server/capnp.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 const SupervisorCapnp = Capnp.importSystem("sandstorm/supervisor.capnp");
 const SystemPersistent = SupervisorCapnp.SystemPersistent;

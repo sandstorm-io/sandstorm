@@ -14,7 +14,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Mongo } from "meteor/mongo";
+import { _ } from "meteor/underscore";
+import { Random } from "meteor/random";
+import { Router } from "meteor/iron:router";
+
 import { allowDemo } from "/imports/demo.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

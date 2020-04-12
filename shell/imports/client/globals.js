@@ -17,6 +17,9 @@
 // This file provides some helper functions that are used in multiple places
 // by client-side code.
 
+import { Tracker } from "meteor/tracker";
+import { ReactiveVar } from "meteor/reactive-var";
+
 getOrigin = function () {
   return document.location.protocol + "//" + document.location.host;
 };

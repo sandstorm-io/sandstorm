@@ -15,6 +15,9 @@
 // limitations under the License.
 
 import Crypto from "crypto";
+import { Meteor } from "meteor/meteor";
+import { Match, check }  from "meteor/check";
+import { Accounts } from "meteor/accounts-base";
 
 Meteor.methods({
   createDevAccount: function (displayName, isAdmin, profile, unverifiedEmail) {

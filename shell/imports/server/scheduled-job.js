@@ -14,10 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { PersistentImpl, fetchApiToken } from "/imports/server/persistent.js";
 import Capnp from "/imports/server/capnp.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 const ScheduledJob = Capnp.importSystem("sandstorm/grain.capnp").ScheduledJob;
 const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;

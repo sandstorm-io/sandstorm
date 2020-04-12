@@ -1,3 +1,7 @@
+import { Meteor } from "meteor/meteor";
+import { Random } from "meteor/random";
+import { Accounts } from "meteor/accounts-base";
+
 const initiateLogin = function (options, callback, dimensions) {
   // default dimensions that worked well for facebook and google
   const popup = openCenteredPopup(

@@ -26,7 +26,14 @@ import Crypto from "crypto";
 import Url from 'url';
 import StripeModule from "stripe";
 
+import { Meteor } from "meteor/meteor";
+import { Mongo } from "meteor/mongo";
+import { check } from "meteor/check";
+import { Random } from "meteor/random";
+import { _ } from "meteor/underscore";
+
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 const ROOT_URL = process.env.ROOT_URL;
 const HOSTNAME = Url.parse(ROOT_URL).hostname;

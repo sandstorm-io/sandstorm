@@ -5,6 +5,7 @@
 // idempotent and safe to accidentally run multiple times.
 
 import { Meteor } from "meteor/meteor";
+import { Mongo } from "meteor/mongo";
 import { _ } from "meteor/underscore";
 import { Match } from "meteor/check";
 import { userPictureUrl, fetchPicture } from "/imports/server/accounts/picture.js";

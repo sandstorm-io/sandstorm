@@ -14,6 +14,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
+import { _ } from "meteor/underscore";
+import { Random } from "meteor/random";
+
 import Crypto from "crypto";
 import { inMeteor } from "/imports/server/async-helpers.js";
 import Capnp from "/imports/server/capnp.js";

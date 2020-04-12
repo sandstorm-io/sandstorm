@@ -1,3 +1,9 @@
+import { Meteor } from "meteor/meteor";
+import { Template } from "meteor/templating";
+import { ReactiveVar } from "meteor/reactive-var";
+
+import { globalDb } from "/imports/db-deprecated.js";
+
 const DEFAULT_QUOTA_ENABLED = false;
 const DEFAULT_QUOTA_LDAP_ATTRIBUTE = "quota";
 const DEFAULT_BILLING_PROMPT_URL = "";

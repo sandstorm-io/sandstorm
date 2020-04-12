@@ -1,3 +1,6 @@
+import { Meteor } from "meteor/meteor";
+import { Router } from "meteor/iron:router";
+
 import { loginWithSaml } from "/imports/client/accounts/saml/saml-client.js";
 
 // Reexported for use in shared/admin.js.  We should probably break that up into

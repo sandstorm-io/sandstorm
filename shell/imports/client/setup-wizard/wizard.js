@@ -1,6 +1,15 @@
+import { Meteor } from "meteor/meteor";
+import { Mongo } from "meteor/mongo";
+import { Template } from "meteor/templating";
+import { Tracker } from "meteor/tracker";
+import { ReactiveVar } from "meteor/reactive-var";
+import { _ } from "meteor/underscore";
+import { Router } from "meteor/iron:router";
+
 import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";
 import AccountsUi from "/imports/client/accounts/accounts-ui.js";
 import downloadFile from "/imports/client/download-file.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 // Pseudocollection telling the client if there's an admin user yet.
 HasAdmin = new Mongo.Collection("hasAdmin");

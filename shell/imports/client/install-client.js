@@ -14,8 +14,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Router } from "meteor/iron:router";
+
 import { allowDemo } from "/imports/demo.js";
 import { isSafeDemoAppUrl } from "/imports/install.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 Router.map(function () {
   this.route("install", {

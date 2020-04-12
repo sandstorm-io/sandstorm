@@ -6,8 +6,10 @@ import nodemailer from "nodemailer";
 import smtpPool from "nodemailer-smtp-pool";
 import Future from "fibers/future";
 
+import { globalDb } from "/imports/db-deprecated.js";
+
 const getSmtpConfig = function () {
-  const config = Settings.findOne({ _id: "smtpConfig" });
+  const config = globalDb.collections.settings.findOne({ _id: "smtpConfig" });
   return config && config.value;
 };
 
@@ -47,7 +49,7 @@ let pool;
 let configured = false;
 
 Meteor.startup(function () {
-  Settings.find({ _id: "smtpConfig" }).observeChanges({
+  globalDb.collections.settings.find({ _id: "smtpConfig" }).observeChanges({
     removed: function () {
       configured = false;
     },

@@ -25,6 +25,7 @@ import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Accounts } from "meteor/accounts-base";
 import { _ } from "meteor/underscore";
+import { Router } from "meteor/iron:router";
 
 import {
   loginWithEmailToken,

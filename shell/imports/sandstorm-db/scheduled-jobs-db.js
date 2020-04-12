@@ -160,7 +160,7 @@ SandstormDb.prototype.scheduledJobIncrementRetries = function (id) {
   check(id, String);
 
   this.collections.scheduledJobs.update(
-    { _id: job._id },
+    { _id: id },
     { $inc: { retries: 1 },
       $unset: { lastKeepAlive: true },
     });

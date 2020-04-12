@@ -35,7 +35,7 @@ const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
 
 function cleanupToken(tokenId) {
   check(tokenId, String);
-  FileTokens.remove({ _id: tokenId });
+  globalDb.collections.fileTokens.remove({ _id: tokenId });
   waitPromise(globalBackend.cap().deleteBackup(tokenId));
 }
 
@@ -44,7 +44,7 @@ Meteor.startup(() => {
   SandstormDb.periodicCleanup(TOKEN_CLEANUP_TIMER, () => {
     const queryDate = new Date(Date.now() - TOKEN_CLEANUP_TIMER);
 
-    FileTokens.find({ timestamp: { $lt: queryDate } }).forEach((token) => {
+    globalDb.collections.fileTokens.find({ timestamp: { $lt: queryDate } }).forEach((token) => {
       cleanupToken(token._id);
     });
   });
@@ -52,7 +52,7 @@ Meteor.startup(() => {
 
 createGrainBackup = (userId, grainId, async) => {
   check(grainId, String);
-  const grain = Grains.findOne(grainId);
+  const grain = globalDb.collections.grains.findOne(grainId);
   if (!grain || !userId || grain.userId !== userId) {
     throw new Meteor.Error(403, "Unauthorized", "User is not the owner of this grain");
   }
@@ -94,18 +94,18 @@ createGrainBackup = (userId, grainId, async) => {
     token.async = true;
   }
 
-  FileTokens.insert(token);
+  globalDb.collections.fileTokens.insert(token);
 
   let promise = globalBackend.cap().backupGrain(token._id, userId, grainId, grainInfo);
 
   if (async) {
     promise.then(() => {
       return inMeteor(() => {
-        FileTokens.update({_id: token._id}, {$unset: {async: 1}});
+        globalDb.collections.fileTokens.update({_id: token._id}, {$unset: {async: 1}});
       });
     }, err => {
       return inMeteor(() => {
-        FileTokens.update({_id: token._id}, {$unset: {async: 1}, $set: {error: err.message}});
+        globalDb.collections.fileTokens.update({_id: token._id}, {$unset: {async: 1}, $set: {error: err.message}});
       });
     });
   } else {
@@ -121,14 +121,14 @@ createBackupToken = () => {
     timestamp: new Date(),
   };
 
-  FileTokens.insert(token);
+  globalDb.collections.fileTokens.insert(token);
 
   return token._id;
 };
 
 restoreGrainBackup = (tokenId, user, transferInfo) => {
   check(tokenId, String);
-  const token = FileTokens.findOne(tokenId);
+  const token = globalDb.collections.fileTokens.findOne(tokenId);
   if (!token) {
     throw new Meteor.Error(403, "Token was not found");
   }
@@ -151,14 +151,14 @@ restoreGrainBackup = (tokenId, user, transferInfo) => {
       throw new Meteor.Error(500, "Metadata object for uploaded grain has no AppId");
     }
 
-    const action = UserActions.findOne({ appId: grainInfo.appId, userId: user._id });
+    const action = globalDb.collections.userActions.findOne({ appId: grainInfo.appId, userId: user._id });
 
     // Create variables we'll use for later Mongo query.
     let packageId;
     let appVersion;
 
     // DevPackages are system-wide, so we do not check the user ID.
-    const devPackage = DevPackages.findOne({ appId: grainInfo.appId });
+    const devPackage = globalDb.collections.devPackages.findOne({ appId: grainInfo.appId });
     if (devPackage) {
       // If the dev app package exists, it should override the user action.
       packageId = devPackage.packageId;
@@ -188,7 +188,7 @@ restoreGrainBackup = (tokenId, user, transferInfo) => {
                               ", Old version: " + appVersion);
     }
 
-    Grains.insert({
+    globalDb.collections.grains.insert({
       _id: grainId,
       packageId: packageId,
       appId: grainInfo.appId,
@@ -241,7 +241,7 @@ Meteor.methods({
 });
 
 downloadGrainBackup = (tokenId, response, retryCount = 0) => {
-  const token = FileTokens.findOne(tokenId);
+  const token = globalDb.collections.fileTokens.findOne(tokenId);
   if (!token) {
     response.writeHead(404, { "Content-Type": "text/plain" });
     return response.end("File does not exist");
@@ -351,7 +351,7 @@ Router.map(function () {
     path: "/uploadBackup/:token",
     action() {
       if (this.request.method === "POST") {
-        const token = FileTokens.findOne(this.params.token);
+        const token = globalDb.collections.fileTokens.findOne(this.params.token);
         if (!this.params.token || !token) {
           this.response.writeHead(403, {
             "Content-Type": "text/plain",

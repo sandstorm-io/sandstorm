@@ -16,6 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
+import { Accounts } from "meteor/accounts-base";
 
 import { waitPromise } from "/imports/server/async-helpers.js";
 import { allowDemo } from "/imports/demo.js";
@@ -75,7 +76,7 @@ function cleanupExpiredUsers() {
       record.experiments = user.experiments;
     }
 
-    DeleteStats.insert(record);
+    globalDb.collections.deleteStats.insert(record);
   });
 
   // All demo credentials should have been deleted as part of deleting the demo users, but just in
@@ -144,7 +145,7 @@ if (allowDemo) {
       if (userId) {
         return [
           packageCursor,
-          UserActions.find({ userId: userId, appId: appId }),
+          globalDb.collections.userActions.find({ userId: userId, appId: appId }),
         ];
       }
 
@@ -155,7 +156,7 @@ if (allowDemo) {
     // that package isn't installed, store the version number so we can filter on it later.
     let packageQuery = {};
     if (appIndexData) {
-      let appIndexPackageQuery = Packages.find({ _id: appIndexData.packageId });
+      let appIndexPackageQuery = globalDb.collections.packages.find({ _id: appIndexData.packageId });
       if (appIndexPackageQuery.count() > 0) {
         return packageCursorAndMaybeUserActions(this.userId, appId, appIndexPackageQuery);
       }
@@ -169,7 +170,7 @@ if (allowDemo) {
     // If the specific package from the app index isn't installed, or the app isn't there at all, do
     // our best.
     packageQuery.appId = appId;
-    const packageCursor = Packages.find(
+    const packageCursor = globalDb.collections.packages.find(
       packageQuery,
       { sort: { "manifest.appVersion": -1 },
         limit: 1,

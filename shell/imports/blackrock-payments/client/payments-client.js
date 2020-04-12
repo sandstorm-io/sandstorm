@@ -56,8 +56,6 @@ BlackrockPayments.processOptins = function (form) {
   }
 };
 
-BlackrockPayments.MAILING_LIST_BONUS = MAILING_LIST_BONUS;
-
 // Client-side method simulations.
 Meteor.methods({
   unsubscribeMailingList: function () {

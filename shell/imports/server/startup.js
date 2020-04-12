@@ -17,16 +17,17 @@
 // This file is for various startup code that doesn't fit neatly anywhere else
 
 import { Meteor } from "meteor/meteor";
+import { globalDb } from "/imports/db-deprecated.js";
 
 const ROOT_URL = process.env.ROOT_URL;
 
 Meteor.startup(() => {
-  let baseUrlRow = Misc.findOne({ _id: "BASE_URL" });
+  let baseUrlRow = globalDb.collections.misc.findOne({ _id: "BASE_URL" });
 
   if (!baseUrlRow) {
     // Fill data with current value in the case this is a first run
     baseUrlRow = { _id: "BASE_URL", value: ROOT_URL };
-    Misc.insert(baseUrlRow);
+    globalDb.collections.misc.insert(baseUrlRow);
   } else if (baseUrlRow.value !== ROOT_URL) {
     // If the only thing that happened is some trailing slashes got removed, then don't reset OAuth
     // providers.
@@ -38,9 +39,9 @@ Meteor.startup(() => {
 
     if (resetOAuth) {
       console.log("resetting oauth");
-      Settings.find({ _id: { $in: ["google", "github"] } }).forEach((setting) => {
+      globalDb.collections.settings.find({ _id: { $in: ["google", "github"] } }).forEach((setting) => {
         if (setting.value) {
-          Settings.update({ _id: setting._id },
+          globalDb.collections.settings.update({ _id: setting._id },
                           { $set: { value: false,
                                     automaticallyReset: { baseUrlChangedFrom: baseUrlRow.value }, }, });
         }
@@ -48,6 +49,6 @@ Meteor.startup(() => {
     }
 
     baseUrlRow = { _id: "BASE_URL", value: ROOT_URL };
-    Misc.update({ _id: "BASE_URL" }, { $set: { value: ROOT_URL } });
+    globalDb.collections.misc.update({ _id: "BASE_URL" }, { $set: { value: ROOT_URL } });
   }
 });

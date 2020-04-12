@@ -21,7 +21,10 @@ import { Mongo } from "meteor/mongo";
 import { Match, check } from "meteor/check";
 import { Template } from "meteor/templating";
 import { Tracker } from "meteor/tracker";
+import { Session } from "meteor/session";
+import { Random } from "meteor/random";
 import { ReactiveVar } from "meteor/reactive-var";
+import { SHA256 } from "meteor/sha";
 import { Router } from "meteor/iron:router";
 import { _ } from "meteor/underscore";
 import { $ } from "meteor/jquery";
@@ -194,7 +197,7 @@ Template.grainBackupPopup.onCreated(function () {
     });
   };
 
-  const grain = Grains.findOne({ _id: this._grainId });
+  const grain = globalDb.collections.grains.findOne({ _id: this._grainId });
 
   if (grain.appId === "s3u2xgmqwznz2n3apf30sm3gw1d85y029enw5pymx734cnk5n78h") {
     // HACK: Display a warning if this is a Collections grain.
@@ -513,8 +516,8 @@ Template.grainShareButton.onRendered(() => {
   const activeGrain = globalGrains.getActive();
   let unsafeCurrentAppTitle = (activeGrain && activeGrain.appTitle()) || "";
 
-  const currentPkgId = Grains.findOne({ _id: activeGrain.grainId() }).packageId;
-  const possibleUserActions = UserActions.find({ packageId: currentPkgId }).fetch();
+  const currentPkgId = globalDb.collections.grains.findOne({ _id: activeGrain.grainId() }).packageId;
+  const possibleUserActions = globalDb.collections.userActions.find({ packageId: currentPkgId }).fetch();
   let unsafeCurrentNounPhrase = "grain";
   // Frequently there is only 1 UserAction per package. If there is more than 1, then we go with
   // the default of "grain".
@@ -728,7 +731,7 @@ Template.grain.helpers({
     const grainview = globalGrains.getActive();
     if (!grainview) return false;
     const grainId = grainview.grainId();
-    const grain = Grains.findOne({
+    const grain = globalDb.collections.grains.findOne({
       _id: grainId,
       userId: Meteor.userId(),
       trashed: { $exists: false },
@@ -736,7 +739,7 @@ Template.grain.helpers({
 
     if (grain) return true;
 
-    return !!ApiTokens.findOne({
+    return !!globalDb.collections.apiTokens.findOne({
       grainId: grainId,
       "owner.user.accountId": Meteor.userId(),
       trashed: { $exists: false },
@@ -792,7 +795,7 @@ Template.grainApiTokenPopup.helpers({
     if (!Meteor.userId()) return null;
 
     const current = globalGrains.getActive();
-    return current && ApiTokens.find({
+    return current && globalDb.collections.apiTokens.find({
       grainId: current.grainId(),
       accountId: Meteor.userId(),
       forSharing: { $ne: true },
@@ -822,13 +825,13 @@ Template.grainApiTokenPopup.helpers({
 
 const getGrainTitle = function (grainId) {
   let title = "(Unknown grain)";
-  const grain = Grains.findOne({ _id: grainId });
+  const grain = globalDb.collections.grains.findOne({ _id: grainId });
   if (grain && grain.title) {
     title = grain.title;
   }
 
   if (!grain || grain.userId !== Meteor.userId()) {
-    const sharerToken = ApiTokens.findOne(
+    const sharerToken = globalDb.collections.apiTokens.findOne(
       { grainId: grainId, },
       { sort: { lastUsed: -1 } }
     );
@@ -1108,7 +1111,7 @@ function isEmptyPermissionSet(permissionSet) {
 Template.whoHasAccessPopup.helpers({
   existingShareTokens: function () {
     if (Meteor.userId()) {
-      return ApiTokens.find({
+      return globalDb.collections.apiTokens.find({
         grainId: Template.instance().grainId,
         accountId: Meteor.userId(),
         forSharing: true,
@@ -1371,7 +1374,7 @@ Template.grainPowerboxOfferPopup.onCreated(function () {
 
   if (offer && offer.uiView && offer.uiView.tokenId) {
     // If this is an offer of a UiView, immediately dismiss the popup and open the grain.
-    const apiToken = ApiTokens.findOne(offer.uiView.tokenId);
+    const apiToken = globalDb.collections.apiTokens.findOne(offer.uiView.tokenId);
     if (apiToken && apiToken.grainId) {
       Meteor.call("finishPowerboxOffer", sessionId, (err) => {
         if (err) {
@@ -1511,7 +1514,7 @@ Meteor.startup(function () {
           rpcId: String,
           template: String,
           petname: Match.Optional(String),
-          roleAssignment: Match.Optional(roleAssignmentPattern),
+          roleAssignment: Match.Optional(globalDb.roleAssignmentPattern),
           forSharing: Match.Optional(Boolean),
           clipboardButton: Match.Optional(Match.OneOf(undefined, null, "left", "right")),
           unauthenticated: Match.Optional(Object),
@@ -1630,7 +1633,7 @@ Meteor.startup(function () {
         // Send message to event.source with URL containing id2
         // TODO(someday): Send back the tabId that requests to this token will use? Could be
         //   useful.
-        templateLink = window.location.origin + "/offer-template.html#" + id2;
+        const templateLink = window.location.origin + "/offer-template.html#" + id2;
         event.source.postMessage({ rpcId: rpcId, uri: templateLink }, event.origin);
       }, (error) => {
         event.source.postMessage({ rpcId: rpcId, error: error.toString() }, event.origin);
@@ -1989,7 +1992,7 @@ Router.map(function () {
 
     data: function () {
       if (this.ready()) {
-        const grain = Grains.findOne(this.params.grainId);
+        const grain = globalDb.collections.grains.findOne(this.params.grainId);
         return {
           title: grain ? grain.title : "(deleted grain)",
           // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
@@ -2033,7 +2036,7 @@ Router.map(function () {
       let userId = Meteor.userId();
       let grainId = this.params.grainId;
       let accountId = this.params.accountId;
-      let grain = Grains.findOne({ _id: grainId });
+      let grain = globalDb.collections.grains.findOne({ _id: grainId });
       if (!grain) {
         return { grainNotFound: grainId };
       } else {

@@ -14,8 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-Sandcats = {};
-
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 import { Random } from "meteor/random";
@@ -34,6 +32,8 @@ import { globalDb } from "/imports/db-deprecated.js";
 const SANDCATS_HOSTNAME = (Meteor.settings && Meteor.settings.public &&
                            Meteor.settings.public.sandcatsHostname);
 const SANDCATS_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandcats";
+
+const Sandcats = {};
 
 // Figure out what IP address to send Sandcats requests from. For machines with multiple IPs, it
 // is important to use the IP to which we're binding. However, some people set BIND_IP to 127.0.0.1
@@ -67,7 +67,7 @@ const pingUdp = () => {
   const socket = dgram.createSocket("udp4");
   const secret = Random.secret(16);
 
-  message = new Buffer(SANDCATS_NAME + " " + secret);
+  const message = new Buffer(SANDCATS_NAME + " " + secret);
   socket.on("message", (buf) => {
     if (buf.toString() === secret) {
       updateSandcatsIp();

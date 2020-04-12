@@ -17,6 +17,8 @@
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
 import { Template } from "meteor/templating";
+import { Blaze } from "meteor/blaze";
+import { Reload } from "meteor/reload";
 import { Tracker } from "meteor/tracker";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Router } from "meteor/iron:router";

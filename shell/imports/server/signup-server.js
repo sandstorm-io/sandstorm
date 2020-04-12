@@ -19,10 +19,11 @@
 
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
+import { globalDb } from "/imports/db-deprecated.js";
 
 Meteor.publish("signupKey", function (key) {
   check(key, String);
-  return SignupKeys.find(key);
+  return globalDb.collections.signupKeys.find(key);
 });
 
 Meteor.methods({
@@ -49,7 +50,7 @@ Meteor.methods({
       return;
     }
 
-    const keyInfo = SignupKeys.findOne(key);
+    const keyInfo = globalDb.collections.signupKeys.findOne(key);
     if (!keyInfo || keyInfo.used) {
       throw new Meteor.Error(403, "Invalid key or already used.");
     }
@@ -60,7 +61,7 @@ Meteor.methods({
       // probably now have two payment accounts. Mark this invite as used but also add a special
       // flag so we can find it later and cancel the dupe payment account. Record who tried to
       // use it so that we can transfer credits over if needed.
-      SignupKeys.update(key, { $set: { used: true, rejectedBy: this.userId } });
+      globalDb.collections.signupKeys.update(key, { $set: { used: true, rejectedBy: this.userId } });
       return;
     }
 
@@ -85,6 +86,6 @@ Meteor.methods({
     }
 
     Meteor.users.update(this.userId, { $set: userFields });
-    SignupKeys.update(key, { $set: { used: true } });
+    globalDb.collections.signupKeys.update(key, { $set: { used: true } });
   },
 });

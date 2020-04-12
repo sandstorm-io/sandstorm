@@ -37,7 +37,7 @@ Mongo.Collection.prototype.aggregate = function () {
       .toArray().await();
 };
 
-computeStats = function (since) {
+function computeStats(since) {
   // We'll need this for a variety of queries.
   const timeConstraint = { $gt: since };
 
@@ -51,23 +51,23 @@ computeStats = function (since) {
 
   // This calculates the number of grains that have been used during
   // the requested time period.
-  const activeGrainsCount = Grains.find({ lastUsed: timeConstraint }).count();
+  const activeGrainsCount = globalDb.collections.grains.find({ lastUsed: timeConstraint }).count();
 
   // If Meteor.settings.allowDemoAccounts is true, DeleteStats
   // contains records of type `user` and `appDemoUser`, indicating
   // the number of those types of accounts that were created and
   // then auto-expired through the demo mode's auto-account-expiry.
-  const deletedDemoUsersCount =  DeleteStats.find(
+  const deletedDemoUsersCount = globalDb.collections.deleteStats.find(
     { type: "demoUser", lastActive: timeConstraint }).count();
-  const deletedAppDemoUsersCount = DeleteStats.find(
+  const deletedAppDemoUsersCount = globalDb.collections.deleteStats.find(
     { type: "appDemoUser", lastActive: timeConstraint }).count();
 
   // Similarly, if the demo is enabled, we auto-delete grains; we store that
   // fact in DeleteStats with type: "grain".
-  const deletedGrainsCount = DeleteStats.find(
+  const deletedGrainsCount = globalDb.collections.deleteStats.find(
     { type: "grain", lastActive: timeConstraint }).count();
 
-  let apps = Grains.aggregate([
+  let apps = globalDb.collections.grains.aggregate([
     { $match: { lastUsed: timeConstraint } },
     {
       $group: {
@@ -97,7 +97,7 @@ computeStats = function (since) {
     //   revealed to the user.
     const app = apps[appId];
     delete app._id;
-    const grains = Grains.find({
+    const grains = globalDb.collections.grains.find({
       lastUsed: timeConstraint,
       appId: appId,
     }, {
@@ -105,7 +105,7 @@ computeStats = function (since) {
     }).fetch();
     const grainIds = _.pluck(grains, "_id");
 
-    const counts = ApiTokens.aggregate([
+    const counts = globalDb.collections.apiTokens.aggregate([
       {
         $match: {
           "owner.user": { $exists: true },
@@ -132,7 +132,7 @@ computeStats = function (since) {
   }
 
   // Count per-app appdemo users and deleted grains.
-  DeleteStats.aggregate([
+  globalDb.collections.deleteStats.aggregate([
     {
       $match: {
         lastActive: timeConstraint,
@@ -170,7 +170,7 @@ computeStats = function (since) {
     activeGrains: (activeGrainsCount + deletedGrainsCount),
     apps: apps,
   };
-};
+}
 
 function recordStats() {
   const postStats = function (record) {
@@ -204,8 +204,8 @@ function recordStats() {
     record.totalCharges = BlackrockPayments.getTotalCharges();
   }
 
-  ActivityStats.insert(record);
-  const age = ActivityStats.find().count();
+  globalDb.collections.activityStats.insert(record);
+  const age = globalDb.collections.activityStats.find().count();
   // The stats page which the user agreed we can send actually displays the whole history
   // of the server, but we're only sending stats from the last day. Let's also throw in the
   // length of said history. This is still strictly less information than what the user said
@@ -213,12 +213,12 @@ function recordStats() {
   record.serverAge = age;
 
   if (age > 3) {
-    const reportSetting = Settings.findOne({ _id: "reportStats" });
+    const reportSetting = globalDb.collections.settings.findOne({ _id: "reportStats" });
 
     if (!reportSetting) {
       // Setting not set yet, send out notifications and set it to false
       globalDb.sendAdminNotification("reportStats", "/admin/stats");
-      Settings.insert({ _id: "reportStats", value: "unset" });
+      globalDb.collections.settings.insert({ _id: "reportStats", value: "unset" });
     } else if (reportSetting.value === true) {
       postStats(record);
     }
@@ -237,9 +237,9 @@ if (!Meteor.settings.replicaNumber) {
   }, DAY_MS - (Date.now() - 10 * 60 * 60 * 1000) % DAY_MS);
 
   Meteor.startup(function () {
-    if (StatsTokens.find().count() === 0) {
-      StatsTokens.remove({});
-      StatsTokens.insert({ _id: Random.id(22) });
+    if (globalDb.collections.statsTokens.find().count() === 0) {
+      globalDb.collections.statsTokens.remove({});
+      globalDb.collections.statsTokens.insert({ _id: Random.id(22) });
     }
   });
 }
@@ -250,8 +250,8 @@ Meteor.methods({
       throw new Meteor.Error(403, "Unauthorized", "User must be admin");
     }
 
-    StatsTokens.remove({});
-    const token = StatsTokens.insert({ _id: Random.id(22) });
+    globalDb.collections.statsTokens.remove({});
+    const token = globalDb.collections.statsTokens.insert({ _id: Random.id(22) });
     return token._id;
   },
 });
@@ -261,7 +261,7 @@ Router.map(function () {
     where: "server",
     path: "/fetchStats/:tokenId",
     action: function () {
-      const token = StatsTokens.findOne({ _id: this.params.tokenId });
+      const token = globalDb.collections.statsTokens.findOne({ _id: this.params.tokenId });
 
       if (!token) {
         this.response.writeHead(404, {
@@ -272,7 +272,7 @@ Router.map(function () {
       }
 
       try {
-        const stats = ActivityStats.find().fetch();
+        const stats = globalDb.collections.activityStats.find().fetch();
         const statsString = JSON.stringify(stats);
 
         this.response.writeHead(200, {
@@ -291,3 +291,5 @@ Router.map(function () {
     },
   });
 });
+
+export { computeStats };

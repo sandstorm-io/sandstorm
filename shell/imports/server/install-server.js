@@ -17,12 +17,14 @@
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
 import { Random } from "meteor/random";
+import { Router } from "meteor/iron:router";
 
 import { allowDemo } from "/imports/demo.js";
 import { isSafeDemoAppUrl } from "/imports/install.js"
-import { promiseToFuture } from "/imports/server/async-helpers.js";
+import { promiseToFuture, waitPromise } from "/imports/server/async-helpers.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
+import { cancelDownload } from "/imports/server/installer.js";
 
 const TOKEN_CLEANUP_MINUTES = 120;  // Give enough time for large uploads on slow connections.
 const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
@@ -99,7 +101,7 @@ Meteor.methods({
           "This Sandstorm server requires you to get an invite before installing apps.");
     }
 
-    const pkg = Packages.findOne(packageId);
+    const pkg = globalDb.collections.packages.findOne(packageId);
 
     if (!pkg || pkg.status !== "ready") {
       if (!this.userId || isDemoUser() || globalDb.isUninvitedFreeUser()) {

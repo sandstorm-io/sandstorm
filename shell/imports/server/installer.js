@@ -58,27 +58,27 @@ const deletePackageInternal = (pkg) => {
   installers[packageId] = "uninstalling";
 
   try {
-    const action = UserActions.findOne({ packageId: packageId });
-    const grain = Grains.findOne({ packageId: packageId });
+    const action = globalDb.collections.userActions.findOne({ packageId: packageId });
+    const grain = globalDb.collections.grains.findOne({ packageId: packageId });
     const notificationQuery = {};
     notificationQuery["appUpdates." + pkg.appId + ".packageId"] = packageId;
-    if (!grain && !action && !Notifications.findOne(notificationQuery)
+    if (!grain && !action && !globalDb.collections.notifications.findOne(notificationQuery)
         && !globalDb.getAppIdForPreinstalledPackage(packageId)) {
-      Packages.update({
+      globalDb.collections.packages.update({
         _id: packageId,
       }, {
         $set: { status: "delete" },
         $unset: { shouldCleanup: "" },
       });
       waitPromise(globalBackend.cap().deletePackage(packageId));
-      Packages.remove(packageId);
+      globalDb.collections.packages.remove(packageId);
 
       // Clean up assets (icon, etc).
       getAllManifestAssets(pkg.manifest).forEach((assetId) => {
         globalDb.unrefStaticAsset(assetId);
       });
     } else {
-      Packages.update({ _id: packageId }, { $unset: { shouldCleanup: "" } });
+      globalDb.collections.packages.update({ _id: packageId }, { $unset: { shouldCleanup: "" } });
     }
 
     delete installers[packageId];
@@ -100,9 +100,9 @@ const startInstallInternal = (pkg) => {
   installer.start();
 };
 
-cancelDownload = (packageId) => {
-  Packages.remove({ _id: packageId, status: "download" });
-};
+function cancelDownload(packageId) {
+  globalDb.collections.packages.remove({ _id: packageId, status: "download" });
+}
 
 const cancelDownloadInternal = (pkg) => {
   verifyIsMainReplica();
@@ -123,16 +123,16 @@ if (!Meteor.settings.replicaNumber) {
 
   Meteor.startup(() => {
     // Restart any deletions that were killed while in-progress.
-    Packages.find({ status: "delete" }).forEach(deletePackageInternal);
+    globalDb.collections.packages.find({ status: "delete" }).forEach(deletePackageInternal);
 
     // Watch for new installation requests and fulfill them.
-    Packages.find({ status: { $in: ["download", "verify", "unpack", "analyze"] } }).observe({
+    globalDb.collections.packages.find({ status: { $in: ["download", "verify", "unpack", "analyze"] } }).observe({
       added: startInstallInternal,
       removed: cancelDownloadInternal,
     });
 
     // Watch for new cleanup requests and fulfill them.
-    Packages.find({ status: "ready", shouldCleanup: true }).observe({
+    globalDb.collections.packages.find({ status: "ready", shouldCleanup: true }).observe({
       added: deletePackageInternal,
     });
   });
@@ -179,7 +179,7 @@ doClientUpload = (stream) => {
   });
 };
 
-AppInstaller = class AppInstaller {
+class AppInstaller {
   constructor(packageId, url, appId, isAutoUpdated) {
     verifyIsMainReplica();
 
@@ -214,7 +214,7 @@ AppInstaller = class AppInstaller {
       return inMeteor(() => {
         if (manifest) extractManifestAssets(manifest);
 
-        Packages.update(_this.packageId, {
+        globalDb.collections.packages.update(_this.packageId, {
           $set: {
             status: _this.status,
             progress: _this.progress,
@@ -401,9 +401,9 @@ AppInstaller = class AppInstaller {
       delete installers[_this.packageId];
     });
   }
-};
+}
 
-extractManifestAssets = (manifest) => {
+function extractManifestAssets(manifest) {
   const metadata = manifest.metadata;
   if (!metadata) return;
 
@@ -484,9 +484,9 @@ extractManifestAssets = (manifest) => {
 
   // We might allow the user to view the changelog.
   if (metadata.changeLog) metadata.changeLog = handleLocalizedText(metadata.changeLog);
-};
+}
 
-getAllManifestAssets = (manifest) => {
+function getAllManifestAssets(manifest) {
   // Returns a list of all asset IDs in the given manifest.
 
   const metadata = manifest.metadata;
@@ -508,7 +508,7 @@ getAllManifestAssets = (manifest) => {
 
   const handleLocalizedText = (text) => {
     if (text.defaultTextAssetId) {
-      result.push(defaultTextAssetId);
+      result.push(text.defaultTextAssetId);
     }
 
     if (text.localizations) {
@@ -531,4 +531,6 @@ getAllManifestAssets = (manifest) => {
   if (metadata.changeLog) handleLocalizedText(metadata.changeLog);
 
   return result;
-};
+}
+
+export { cancelDownload };

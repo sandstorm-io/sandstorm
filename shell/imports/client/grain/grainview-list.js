@@ -20,6 +20,7 @@ import { Tracker } from "meteor/tracker";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Router } from "meteor/iron:router";
 import { Accounts } from "meteor/accounts-base";
+import { SHA256 } from "meteor/sha";
 
 import { GrainView, onceConditionIsTrue } from "./grainview.js";
 import { isStandalone } from "/imports/client/standalone.js";

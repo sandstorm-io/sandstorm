@@ -30,6 +30,7 @@
 // ====================================================================
 
 import { Accounts } from "meteor/accounts-base";
+import { Session } from "meteor/session";
 import { _ } from "meteor/underscore";
 
 const VALID_KEYS = [

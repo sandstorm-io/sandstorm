@@ -5,6 +5,7 @@ import { ReactiveVar } from "meteor/reactive-var";
 import { _ } from "meteor/underscore";
 
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 // Pseudo-collection defined via publish.
 const RealTimeStats = new Mongo.Collection("realTimeStats");
@@ -15,7 +16,7 @@ Template.newAdminStats.onCreated(function () {
 
   this.currentPackageDate = new ReactiveVar(null);
   this.autorun(() => {
-    const stat = ActivityStats.findOne({}, { sort: { timestamp: -1 } });
+    const stat = globalDb.collections.activityStats.findOne({}, { sort: { timestamp: -1 } });
     if (stat) {
       this.currentPackageDate.set(stat._id);
     }
@@ -59,17 +60,17 @@ Template.newAdminStats.helpers({
   },
 
   undecided() {
-    const setting = Settings.findOne({ _id: "reportStats" });
+    const setting = globalDb.collections.settings.findOne({ _id: "reportStats" });
     return setting && setting.value === "unset";
   },
 
   sendStats() {
-    const setting = Settings.findOne({ _id: "reportStats" });
+    const setting = globalDb.collections.settings.findOne({ _id: "reportStats" });
     return setting && setting.value;
   },
 
   statsLink() {
-    const tokenObj = StatsTokens.findOne();
+    const tokenObj = globalDb.collections.statsTokens.findOne();
     const token = tokenObj && tokenObj._id;
     return token && (getOrigin() + "/fetchStats/" + token);
   },
@@ -85,7 +86,7 @@ Template.newAdminStats.helpers({
   points() {
     const instance = Template.instance();
     if (!instance.ready()) return [];
-    return ActivityStats.find({}, { sort: { timestamp: -1 } }).map((point) => {
+    return globalDb.collections.activityStats.find({}, { sort: { timestamp: -1 } }).map((point) => {
       return _.extend({
         // Report date of midpoint of sample period.
         day: new Date(point.timestamp.getTime() - 12 * 60 * 60 * 1000).toLocaleDateString(),
@@ -95,7 +96,7 @@ Template.newAdminStats.helpers({
 
   appDates() {
     const instance = Template.instance();
-    return ActivityStats.find({}, { sort: { timestamp: -1 }, fields: { timestamp: 1 } })
+    return globalDb.collections.activityStats.find({}, { sort: { timestamp: -1 }, fields: { timestamp: 1 } })
         .map(function (point) {
       return _.extend({
         // Report date of midpoint of sample period.
@@ -109,7 +110,7 @@ Template.newAdminStats.helpers({
     const instance = Template.instance();
     if (!instance.ready()) return;
 
-    const stats = ActivityStats.findOne({ _id: instance.currentPackageDate.get() });
+    const stats = globalDb.collections.activityStats.findOne({ _id: instance.currentPackageDate.get() });
     if (!stats) {
       return;
     }
@@ -137,7 +138,7 @@ Template.newAdminStats.helpers({
       .map(function (packObj, appId) {
         packObj.appId = appId;
         // Find the newest version of this app.
-        const p = Packages.findOne({
+        const p = globalDb.collections.packages.findOne({
           appId: appId,
           manifest: { $exists: true },
         }, {

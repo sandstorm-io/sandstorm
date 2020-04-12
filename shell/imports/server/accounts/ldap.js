@@ -8,7 +8,7 @@ import { _ } from "meteor/underscore";
 // your needs. url should appear as 'ldap://your.url.here'
 // dn should appear in normal ldap format of comma separated attribute=value
 // e.g. 'uid=someuser,cn=users,dc=somevalue'
-LDAP_DEFAULTS = {
+const LDAP_DEFAULTS = {
   url: false,
   port: "389",
   dn: false,

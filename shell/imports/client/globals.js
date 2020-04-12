@@ -19,6 +19,7 @@
 
 import { Tracker } from "meteor/tracker";
 import { ReactiveVar } from "meteor/reactive-var";
+import { Router } from "meteor/iron:router";
 
 getOrigin = function () {
   return document.location.protocol + "//" + document.location.host;

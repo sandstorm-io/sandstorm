@@ -17,6 +17,7 @@
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
 import { Template } from "meteor/templating";
+import { Blaze } from "meteor/blaze";
 import { Tracker } from "meteor/tracker";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Random } from "meteor/random";
@@ -372,7 +373,7 @@ class GrainView {
       return true;
     }
 
-    const session = Sessions.findOne({ _id: this._sessionId });
+    const session = globalDb.collections.sessions.findOne({ _id: this._sessionId });
     // TODO(soon): this is a hack to cache hasLoaded. Consider moving it to an autorun.
     this._hasLoaded = session && session.hasLoaded;
 
@@ -533,7 +534,7 @@ class GrainView {
     const _this = this;
     const sessionId = this._sessionId;
     _this._sessionSub = Meteor.subscribe("sessions", sessionId, params);
-    _this._sessionObserver = Sessions.find({ _id: sessionId }).observe({
+    _this._sessionObserver = globalDb.collections.sessions.find({ _id: sessionId }).observe({
       removed(session) {
         _this._sessionSub.stop();
         _this._sessionSub = undefined;
@@ -796,7 +797,7 @@ class GrainView {
 
   showPowerboxOffer() {
     this._dep.depend();
-    const session = Sessions.findOne({
+    const session = globalDb.collections.sessions.findOne({
       _id: this._sessionId,
     }, {
       fields: {
@@ -809,7 +810,7 @@ class GrainView {
   powerboxOfferData() {
     this._dep.depend();
     const sessionId = this._sessionId;
-    const session = Sessions.findOne({
+    const session = globalDb.collections.sessions.findOne({
       _id: sessionId,
     }, {
       fields: {

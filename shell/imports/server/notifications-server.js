@@ -41,7 +41,7 @@ logActivity = function (grainId, accountIdOrAnonymous, event) {
 
   // TODO(perf): A cached copy of the grain from when the session opened would be fine to use
   //   here, rather than looking it up every time.
-  grain = Grains.findOne(grainId);
+  const grain = globalDb.collections.grains.findOne(grainId);
   if (!grain) {
     // Shouldn't be possible since activity events come from the grain.
     throw new Error("no such grain");
@@ -57,11 +57,11 @@ logActivity = function (grainId, accountIdOrAnonymous, event) {
     // Clear the "seenAllActivity" bit for all users except the acting user.
     // TODO(perf): Consider throttling? Or should that be the app's responsibility?
     if (accountId != grain.userId) {
-      Grains.update(grainId, { $unset: { ownerSeenAllActivity: true } });
+      globalDb.collections.grains.update(grainId, { $unset: { ownerSeenAllActivity: true } });
     }
 
     // Also clear on ApiTokens.
-    ApiTokens.update({
+    globalDb.collections.apiTokens.update({
       "grainId": grainId,
       "owner.user.seenAllActivity": true,
       "owner.user.accountId": { $ne: accountId },
@@ -190,7 +190,7 @@ logActivity = function (grainId, accountIdOrAnonymous, event) {
       // We need to know the ID of the inserted/updated document so we can embed it in the
       // desktop notification to bind them.
       const idIfInserted = Random.id(17);
-      const result = Notifications.findAndModify({
+      const result = globalDb.collections.notifications.findAndModify({
         query: _.extend({ userId: targetId }, notification),
         update: {
           $set: update,
@@ -225,7 +225,7 @@ Meteor.methods({
     // Deliver a test notification of each non-grain-initiated type to the user.
     if (!this.userId) return;
 
-    Notifications.insert({
+    globalDb.collections.notifications.insert({
       admin: {
         action: "/admin/stats",
         type: "reportStats",
@@ -235,14 +235,14 @@ Meteor.methods({
       isUnread: true,
     });
 
-    Notifications.insert({
+    globalDb.collections.notifications.insert({
       userId: this.userId,
       referral: true,
       timestamp: new Date(),
       isUnread: true,
     });
 
-    Notifications.insert({
+    globalDb.collections.notifications.insert({
       userId: this.userId,
       identityChanges: true,
       timestamp: new Date(),
@@ -250,7 +250,7 @@ Meteor.methods({
     });
 
     if (Meteor.settings.public.stripePublicKey) {
-      Notifications.insert({
+      globalDb.collections.notifications.insert({
         userId: this.userId,
         mailingListBonus: true,
         timestamp: new Date(),
@@ -261,14 +261,14 @@ Meteor.methods({
 });
 
 Meteor.publish("notifications", function () {
-  return Notifications.find({ userId: this.userId });
+  return globalDb.collections.notifications.find({ userId: this.userId });
 });
 
 Meteor.publish("notificationGrains", function (notificationIds) {
   // Since publishes can't be reactive, we leave it to the client to subscribe to both
   // "notifications" and "notificationGrains" reactively.
   check(notificationIds, [String]);
-  const notifications =  Notifications.find({
+  const notifications =  globalDb.collections.notifications.find({
     _id: { $in: notificationIds },
     userId: this.userId,
   }, {

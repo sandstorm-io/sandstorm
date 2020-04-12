@@ -18,6 +18,7 @@ import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
+import { Session } from "meteor/session";
 import { _ } from "meteor/underscore";
 
 import { formatFutureTime } from "/imports/dates.js";
@@ -184,7 +185,8 @@ Template.sandstormAccountSettings.helpers({
   },
 });
 
-GENDERS = { male: "male", female: "female", neutral: "neutral", robot: "robot" };
+// TODO: dedupe with sandstorm-db/profile.js
+const GENDERS = { male: "male", female: "female", neutral: "neutral", robot: "robot" };
 
 Template._accountProfileEditor.helpers({
   profile: function () {

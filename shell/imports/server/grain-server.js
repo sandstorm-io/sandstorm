@@ -38,12 +38,12 @@ const emailLinkWithInlineStyle = function (url, text) {
 // Force-shutdown dev apps whenever their packages change.
 Meteor.startup(() => {
   const shutdownApp = (appId) => {
-    Grains.find({ appId: appId }, {fields: {oldUsers: 0}}).forEach((grain) => {
+    globalDb.collections.grains.find({ appId: appId }, {fields: {oldUsers: 0}}).forEach((grain) => {
       waitPromise(globalBackend.shutdownGrain(grain._id, grain.userId));
     });
   };
 
-  DevPackages.find().observe({
+  globalDb.collections.devPackages.find().observe({
     removed(devPackage) { shutdownApp(devPackage.appId); },
 
     changed(newDevPackage, oldDevPackage) {
@@ -61,7 +61,7 @@ Meteor.publish("grainTopBar", function (grainId) {
   check(grainId, String);
 
   const result = [
-    Grains.find({
+    globalDb.collections.grains.find({
       _id: grainId,
       $or: [
         { userId: this.userId },
@@ -76,7 +76,7 @@ Meteor.publish("grainTopBar", function (grainId) {
     }),
   ];
   if (this.userId) {
-    result.push(ApiTokens.find({
+    result.push(globalDb.collections.apiTokens.find({
       grainId: grainId,
       $or: [
         { "owner.user.accountId": this.userId },
@@ -97,7 +97,7 @@ Meteor.publish("packageByGrainId", function (grainId) {
   const publishThis = [];
   // We need to publish the packageId so that client-side code can
   // find the right package.
-  const thisGrainCursor = Grains.find({
+  const thisGrainCursor = globalDb.collections.grains.find({
     _id: grainId,
     userId: this.userId,
   }, {
@@ -107,7 +107,7 @@ Meteor.publish("packageByGrainId", function (grainId) {
 
   if (thisGrainCursor.count()) {
     const thisGrain = thisGrainCursor.fetch()[0];
-    const thisPackageCursor = Packages.find({ _id: thisGrain.packageId });
+    const thisPackageCursor = globalDb.collections.packages.find({ _id: thisGrain.packageId });
     publishThis.push(thisPackageCursor);
   }
 
@@ -121,7 +121,7 @@ Meteor.publish("tokenInfo", function (token, isStandalone) {
   check(token, String);
 
   const hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
-  const apiToken = ApiTokens.findOne({
+  const apiToken = globalDb.collections.apiTokens.findOne({
     _id: hashedToken,
   }, {
     fields: {
@@ -137,7 +137,7 @@ Meteor.publish("tokenInfo", function (token, isStandalone) {
     this.added("tokenInfo", token, { revoked: true });
   } else {
     const grainId = apiToken.grainId;
-    const grain = Grains.findOne({
+    const grain = globalDb.collections.grains.findOne({
       _id: grainId,
     }, {
       fields: {
@@ -175,7 +175,7 @@ Meteor.publish("tokenInfo", function (token, isStandalone) {
         }
       } else if (!apiToken.owner || "webkey" in apiToken.owner) {
         if (this.userId && !isStandalone) {
-          const childToken = ApiTokens.findOne({
+          const childToken = globalDb.collections.apiTokens.findOne({
             "owner.user.accountId": this.userId,
             parentToken: apiToken._id,
           });
@@ -187,7 +187,7 @@ Meteor.publish("tokenInfo", function (token, isStandalone) {
           }
         }
 
-        let pkg = Packages.findOne({ _id: grain.packageId }, { fields: { manifest: 1 } });
+        let pkg = globalDb.collections.packages.findOne({ _id: grain.packageId }, { fields: { manifest: 1 } });
         let appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: "" };
         let appIcon = undefined;
         if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
@@ -232,7 +232,7 @@ Meteor.publish("requestingAccess", function (grainId) {
   }
 
   const _this = this;
-  const query = ApiTokens.find({
+  const query = globalDb.collections.apiTokens.find({
     grainId: grainId,
     accountId: grain.userId,
     parentToken: { $exists: false },
@@ -251,7 +251,7 @@ Meteor.publish("requestingAccess", function (grainId) {
 Meteor.publish("grainLog", function (grainId) {
   check(grainId, String);
   let id = 0;
-  const grain = Grains.findOne(grainId, {fields: {oldUsers: 0}});
+  const grain = globalDb.collections.grains.findOne(grainId, {fields: {oldUsers: 0}});
   if (!grain || !this.userId || grain.userId !== this.userId) {
     this.added("grainLog", id++, { text: "Only the grain owner can view the debug log." });
     this.ready();
@@ -325,12 +325,12 @@ Meteor.methods({
           "You are out of storage space. Please delete some things and try again.");
     }
 
-    let pkg = Packages.findOne(packageId);
+    let pkg = globalDb.collections.packages.findOne(packageId);
     let isDev = false;
     let mountProc = false;
     if (!pkg) {
       // Maybe they wanted a dev package.  Check there too.
-      pkg = DevPackages.findOne(packageId);
+      pkg = globalDb.collections.devPackages.findOne(packageId);
       isDev = true;
       mountProc = pkg && pkg.mountProc;
     }
@@ -342,7 +342,7 @@ Meteor.methods({
     const appId = pkg.appId;
     const manifest = pkg.manifest;
     const grainId = Random.id(22);  // 128 bits of entropy
-    Grains.insert({
+    globalDb.collections.grains.insert({
       _id: grainId,
       packageId: packageId,
       appId: appId,
@@ -362,7 +362,7 @@ Meteor.methods({
 
   shutdownGrain(grainId) {
     check(grainId, String);
-    const grain = Grains.findOne(grainId, {fields: {oldUsers: 0}});
+    const grain = globalDb.collections.grains.findOne(grainId, {fields: {oldUsers: 0}});
     if (!grain || !this.userId || grain.userId !== this.userId) {
       throw new Meteor.Error(403, "Unauthorized", "User is not the owner of this grain");
     }
@@ -374,17 +374,17 @@ Meteor.methods({
     check(grainId, String);
     check(newTitle, String);
     if (this.userId) {
-      const grain = Grains.findOne(grainId, {fields: {oldUsers: 0}});
+      const grain = globalDb.collections.grains.findOne(grainId, {fields: {oldUsers: 0}});
       if (grain) {
         if (grain.userId === this.userId) {
-          Grains.update({ _id: grainId, userId: this.userId }, { $set: { title: newTitle } });
+          globalDb.collections.grains.update({ _id: grainId, userId: this.userId }, { $set: { title: newTitle } });
 
           // Denormalize new title out to all sharing tokens.
-          ApiTokens.update({ grainId: grainId, "owner.user": { $exists: true } },
+          globalDb.collections.apiTokens.update({ grainId: grainId, "owner.user": { $exists: true } },
                            { $set: { "owner.user.upstreamTitle": newTitle } },
                            { multi: true });
         } else {
-          const token = ApiTokens.findOne({
+          const token = globalDb.collections.apiTokens.findOne({
             grainId: grainId,
             objectId: { $exists: false },
             "owner.user.accountId": this.userId,
@@ -395,7 +395,7 @@ Meteor.methods({
             if (token.owner.user.upstreamTitle === newTitle) {
               // User renamed grain to match upstream title. Act like they never renamed it at
               // all.
-              ApiTokens.update({
+              globalDb.collections.apiTokens.update({
                 grainId: grainId,
                 "owner.user.accountId": this.userId,
               }, {
@@ -415,7 +415,7 @@ Meteor.methods({
                 modification["owner.user.upstreamTitle"] = token.owner.user.title;
               }
 
-              ApiTokens.update({ grainId: grainId, "owner.user.accountId": this.userId },
+              globalDb.collections.apiTokens.update({ grainId: grainId, "owner.user.accountId": this.userId },
                                { $set: modification },
                                { multi: true });
             }
@@ -428,7 +428,7 @@ Meteor.methods({
   privatizeGrain: function (grainId) {
     check(grainId, String);
     if (this.userId) {
-      Grains.update({ _id: grainId, userId: this.userId }, { $set: { private: true } });
+      globalDb.collections.grains.update({ _id: grainId, userId: this.userId }, { $set: { private: true } });
     }
   },
 
@@ -444,7 +444,7 @@ Meteor.methods({
       check(_origin, String);
       check(grainId, String);
       check(title, String);
-      check(roleAssignment, roleAssignmentPattern);
+      check(roleAssignment, globalDb.roleAssignmentPattern);
       check(contacts, [
         {
           _id: String,
@@ -565,7 +565,7 @@ Meteor.methods({
         throw new Meteor.Error(403, "Must be logged in to request access.");
       }
 
-      const grain = Grains.findOne(grainId, {fields: {oldUsers: 0}});
+      const grain = globalDb.collections.grains.findOne(grainId, {fields: {oldUsers: 0}});
       if (!grain) {
         throw new Meteor.Error(404, "No such grain");
       }

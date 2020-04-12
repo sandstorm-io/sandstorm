@@ -71,7 +71,7 @@ function parseCidr(cidr) {
   }
 }
 
-SPECIAL_FILTERS = SPECIAL_IPV4_ADDRESSES.concat(SPECIAL_IPV6_ADDRESSES).map(parseCidr);
+const SPECIAL_FILTERS = SPECIAL_IPV4_ADDRESSES.concat(SPECIAL_IPV6_ADDRESSES).map(parseCidr);
 
 function ssrfSafeLookup(db, url) {
   // Given an HTTP/HTTPS URL, look up the hostname, verify it doesn't point to a blacklisted IP,

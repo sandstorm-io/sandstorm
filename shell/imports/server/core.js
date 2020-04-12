@@ -241,7 +241,7 @@ class PersistentUiViewImpl extends PersistentImpl {
       }
 
       let pkg = this._db.getPackage(grain.packageId) ||
-        DevPackages.findOne({ appId: grain.appId }) ||
+        globalDb.collections.devPackages.findOne({ appId: grain.appId }) ||
         {};
 
       const manifest = pkg.manifest || {};
@@ -723,7 +723,7 @@ unwrapFrontendCap = (cap, type, callback) => {
       let tokenInfo = fetchApiToken(globalDb, saveResult.sturdyRef.toString("utf8"));
 
       // Delete the token now since it's not needed.
-      ApiTokens.remove(tokenInfo._id);
+      globalDb.collections.apiTokens.remove(tokenInfo._id);
 
       for (;;) {
         if (!tokenInfo) throw new Error("missing token?");
@@ -733,7 +733,7 @@ unwrapFrontendCap = (cap, type, callback) => {
         } else {
           // Hmm, parentTokenKey doesn't exist or is still encrypted. We can't decrypt the parent
           // but we can still fetch it in encrypted format.
-          tokenInfo = ApiTokens.findOne(tokenInfo.parentToken);
+          tokenInfo = globalDb.collections.apiTokens.findOne(tokenInfo.parentToken);
         }
       }
 

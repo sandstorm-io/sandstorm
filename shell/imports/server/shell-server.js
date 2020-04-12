@@ -34,6 +34,7 @@
 //   user, so maybe it's not a big deal...
 
 import { Meteor } from "meteor/meteor";
+import { BrowserPolicy } from "meteor/browser-policy";
 
 import { inMeteor } from "/imports/server/async-helpers.js";
 import { globalDb } from "/imports/db-deprecated.js";
@@ -82,7 +83,7 @@ Meteor.publish("grainsMenu", function () {
         if (err.kjType === "unimplemented") {
           // Compute based on sum of grain sizes instead.
           let total = 0;
-          Grains.find({ userId: userId }, { fields: { size: 1 } })
+          globalDb.collections.grains.find({ userId: userId }, { fields: { size: 1 } })
               .forEach(grain => total += (grain.size || 0));
           Meteor.users.update(userId, { $set: { storageUsage: total } });
         } else {
@@ -92,9 +93,9 @@ Meteor.publish("grainsMenu", function () {
     }
 
     return [
-      UserActions.find({ userId: this.userId }),
-      Grains.find({ userId: this.userId }, {fields: {oldUsers: 0}}),
-      ApiTokens.find({ "owner.user.accountId": this.userId }),
+      globalDb.collections.userActions.find({ userId: this.userId }),
+      globalDb.collections.grains.find({ userId: this.userId }, {fields: {oldUsers: 0}}),
+      globalDb.collections.apiTokens.find({ "owner.user.accountId": this.userId }),
     ];
   } else {
     return [];
@@ -102,7 +103,7 @@ Meteor.publish("grainsMenu", function () {
 });
 
 Meteor.publish("devPackages", function () {
-  return DevPackages.find();
+  return globalDb.collections.devPackages.find();
 });
 
 Meteor.publish("hasUsers", function () {

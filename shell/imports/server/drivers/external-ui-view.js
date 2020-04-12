@@ -18,6 +18,7 @@ import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
 import { _ } from "meteor/underscore";
 
+import { inMeteor } from "/imports/server/async-helpers.js";
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { ssrfSafeLookup } from "/imports/server/networking.js";
 import { REQUEST_HEADER_WHITELIST, RESPONSE_HEADER_WHITELIST }
@@ -335,7 +336,7 @@ function parseETag(input) {
   }
 }
 
-ExternalWebSession = class ExternalWebSession extends PersistentImpl {
+class ExternalWebSession extends PersistentImpl {
   constructor(url, options, db, saveTemplate) {
     super(db, saveTemplate);
 
@@ -620,7 +621,7 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
 
       req.setTimeout(15000, () => {
         req.abort();
-        err = new Error("Request timed out.");
+        const err = new Error("Request timed out.");
         err.kjType = "overloaded";
         reject(err);
       });
@@ -632,4 +633,4 @@ ExternalWebSession = class ExternalWebSession extends PersistentImpl {
       }
     });
   }
-};
+}

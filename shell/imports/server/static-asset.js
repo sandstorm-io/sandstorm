@@ -17,6 +17,8 @@
 import Url from "url";
 import { Match, check } from "meteor/check";
 import Capnp from "/imports/server/capnp.js";
+import { globalDb } from "/imports/db-deprecated.js";
+
 const StaticAsset = Capnp.importSystem("sandstorm/grain.capnp").StaticAsset;
 
 const PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;
@@ -25,7 +27,7 @@ class StaticAssetImpl {
   constructor(assetId) {
     check(assetId, String);
     this._protocol = PROTOCOL.slice(0, -1);
-    this._hostPath = makeWildcardHost("static") + "/" + assetId;
+    this._hostPath = globalDb.makeWildcardHost("static") + "/" + assetId;
   }
 
   getUrl() {
@@ -38,7 +40,7 @@ class IdenticonStaticAssetImpl {
     check(hash, String);
     check(size, Match.Integer);
     this._protocol = PROTOCOL.slice(0, -1);
-    this._hostPath =  makeWildcardHost("static") + "/identicon/" + hash + "?s=" + size;
+    this._hostPath =  globalDb.makeWildcardHost("static") + "/identicon/" + hash + "?s=" + size;
   }
 
   getUrl() {

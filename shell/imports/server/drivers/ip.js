@@ -27,7 +27,7 @@ import Capnp from "/imports/server/capnp.js";
 
 const IpRpc = Capnp.importSystem("sandstorm/ip.capnp");
 
-ByteStreamConnection = class ByteStreamConnection{
+class ByteStreamConnection {
   constructor(connection) {
     this.connection = connection;
   }
@@ -42,7 +42,7 @@ ByteStreamConnection = class ByteStreamConnection{
 
   // expectSize not implemented
   // expectSize(size) { }
-};
+}
 
 class IpInterfaceImpl extends PersistentImpl {
   constructor(db, saveTemplate) {
@@ -167,7 +167,7 @@ Meteor.startup(() => {
   });
 });
 
-BoundUdpPortImpl = class BoundUdpPortImpl {
+class BoundUdpPortImpl {
   constructor(server, address, port) {
     this.server = server;
     this.address = address;
@@ -180,7 +180,7 @@ BoundUdpPortImpl = class BoundUdpPortImpl {
     // their raw physical address/port, and using that here
     this.server.send(message, 0, message.length, this.port, this.address);
   }
-};
+}
 
 const bits16 = Bignum(1).shiftLeft(16).sub(1);
 const bits32 = Bignum(1).shiftLeft(32).sub(1);
@@ -337,7 +337,7 @@ class IpRemoteHostImpl {
   }
 }
 
-TcpPortImpl = class TcpPortImpl {
+class TcpPortImpl {
   constructor(address, portNum, tls) {
     this.address = address;
     this.port = portNum;
@@ -376,13 +376,13 @@ TcpPortImpl = class TcpPortImpl {
       });
     });
   }
-};
+}
 
 const errorWrite = (data) => {
   throw new Error("error occurred in connection");
 };
 
-UdpPortImpl = class UdpPortImpl {
+class UdpPortImpl {
   constructor(address, portNum) {
     this.address = address;
     this.port = portNum;
@@ -412,5 +412,5 @@ UdpPortImpl = class UdpPortImpl {
 
     // TODO(someday): use callback to catch errors and do something with them
   }
-};
+}
 

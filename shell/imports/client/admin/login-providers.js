@@ -2,6 +2,7 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
+import { TAPi18n } from "meteor/tap:i18n";
 
 import { globalDb } from "/imports/db-deprecated.js";
 

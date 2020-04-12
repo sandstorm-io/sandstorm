@@ -1,11 +1,14 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
+import { Session } from "meteor/session";
 import { Router } from "meteor/iron:router";
 import { _ } from "meteor/underscore";
+import { TAPi18n } from "meteor/tap:i18n";
 
 import { introJs } from "intro.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 SandstormAppList = function (db, quotaEnforcer) {
   this._filter = new ReactiveVar("");
@@ -170,7 +173,7 @@ Template.sandstormAppListPage.helpers({
   },
 
   appMarketUrl: function () {
-    const appMarket = Settings.findOne({ _id: "appMarketUrl" });
+    const appMarket = globalDb.collections.settings.findOne({ _id: "appMarketUrl" });
     if (!appMarket) {
       return "#";
     }

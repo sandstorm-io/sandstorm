@@ -28,7 +28,7 @@ function hashAppIdForIdenticon(id) {
 
   if (!id) return "00000000000000000000000000000000";
 
-  result = [];
+  const result = [];
   const digits16 = "0123456789abcdef";
   const digits32 = "0123456789acdefghjkmnpqrstuvwxyz";
   for (let i = 0; i < 32; i++) {

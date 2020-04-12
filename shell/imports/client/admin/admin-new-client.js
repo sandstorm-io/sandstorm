@@ -1,5 +1,6 @@
 import { Template } from "meteor/templating";
 import { Router } from "meteor/iron:router";
+import { Session } from "meteor/session";
 
 import { globalDb } from "/imports/db-deprecated";
 

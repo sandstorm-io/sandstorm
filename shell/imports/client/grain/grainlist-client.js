@@ -3,8 +3,10 @@ import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { ReactiveDict } from "meteor/reactive-dict";
+import { Session } from "meteor/session";
 import { Router } from "meteor/iron:router";
 import { _ } from "meteor/underscore";
+import { TAPi18n } from "meteor/tap:i18n";
 
 import { introJs } from "intro.js";
 import { identiconForApp } from "/imports/sandstorm-identicons/helpers.js";

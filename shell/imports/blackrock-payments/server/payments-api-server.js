@@ -16,6 +16,7 @@
 
 import Crypto from "crypto";
 import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
 
 import Capnp from "/imports/server/capnp.js";
 const PaymentsRpc = Capnp.importSystem("sandstorm/payments.capnp");
@@ -251,7 +252,7 @@ BlackrockPayments.registerPaymentsApi =
         if (user) {
           sendInvoice(this._db, user, this._invoice, this._config);
         } else {
-          console.error("Stripe charge didn't match any user: " + chrage.id);
+          console.error("Stripe charge didn't match any user: " + charge.id);
         }
       }, err => {
         // The error could be because the charge was already captured, but the only indication

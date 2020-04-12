@@ -37,7 +37,7 @@ const capDetails = function (cap) {
 
   if (cap.owner.grain !== undefined) {
     const grainId = cap.owner.grain.grainId;
-    const grain = Grains.findOne(grainId);
+    const grain = globalDb.collections.grains.findOne(grainId);
     if (!grain) {
       // Grain was deleted.  Don't show anything.
       return undefined;
@@ -75,7 +75,7 @@ Template.newAdminNetworkCapabilities.onCreated(function () {
   this.adminApiTokensSub = this.subscribe("adminApiTokens", undefined);
 
   this.autorun(() => {
-    const apiTokens = ApiTokens.find({
+    const apiTokens = globalDb.collections.apiTokens.find({
       $and: [
         {
           $or: [
@@ -91,7 +91,7 @@ Template.newAdminNetworkCapabilities.onCreated(function () {
     const grainIds = apiTokens.map(token => token.owner.grain.grainId);
     this.subscribe("adminGrains", grainIds);
 
-    const packageIds = Grains.find({
+    const packageIds = globalDb.collections.grains.find({
       _id: {
         $in: grainIds,
       },
@@ -111,7 +111,7 @@ Template.newAdminNetworkCapabilities.onCreated(function () {
 
 Template.newAdminNetworkCapabilities.helpers({
   ipNetworkCaps() {
-    return ApiTokens.find({
+    return globalDb.collections.apiTokens.find({
       "frontendRef.ipNetwork": { $exists: true },
       $or: [
         { "frontendRef.ipNetwork.encryption": { $exists: false } },
@@ -123,7 +123,7 @@ Template.newAdminNetworkCapabilities.helpers({
   },
 
   ipNetworkCapsTls() {
-    return ApiTokens.find({
+    return globalDb.collections.apiTokens.find({
       "frontendRef.ipNetwork.encryption.tls": { $exists: true },
       "owner.clientPowerboxRequest": { $exists: false },
     }).map(capDetails)
@@ -131,7 +131,7 @@ Template.newAdminNetworkCapabilities.helpers({
   },
 
   ipInterfaceCaps() {
-    return ApiTokens.find({
+    return globalDb.collections.apiTokens.find({
       "frontendRef.ipInterface": { $exists: true },
     }).map(capDetails)
       .filter((item) => !!item);

@@ -20,6 +20,7 @@ import { ReactiveVar } from "meteor/reactive-var";
 import { _ } from "meteor/underscore";
 
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { MAILING_LIST_BONUS } from "/imports/blackrock-payments/constants.js";
 
 var idCounter = 0;
 

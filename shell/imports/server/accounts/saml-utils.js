@@ -229,7 +229,7 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
         return callback(new Error("Missing SAML assertion"), null, false, xml);
       }
 
-      profile = {};
+      const profile = {};
 
       if (response.$ && response.$.InResponseTo) {
         profile.inResponseToId = response.$.InResponseTo;

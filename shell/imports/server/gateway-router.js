@@ -147,10 +147,10 @@ function validateWebkey(apiToken, refreshedExpiration) {
     if (apiToken.expiresIfUnused.getTime() <= Date.now()) {
       throw new Meteor.Error(403, "Authorization token expired");
     } else if (refreshedExpiration) {
-      ApiTokens.update(apiToken._id, { $set: { expiresIfUnused: refreshedExpiration } });
+      globalDb.collections.apiTokens.update(apiToken._id, { $set: { expiresIfUnused: refreshedExpiration } });
     } else {
       // It's getting used now, so clear the expiresIfUnused field.
-      ApiTokens.update(apiToken._id, { $set: { expiresIfUnused: null } });
+      globalDb.collections.apiTokens.update(apiToken._id, { $set: { expiresIfUnused: null } });
     }
   }
 
@@ -165,7 +165,7 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId,
   }
   // TODO(now): Observe the "no-guests" policy and revoke if it is turned on.
 
-  const grain = Grains.findOne(grainId);
+  const grain = globalDb.collections.grains.findOne(grainId);
   if (!grain) {
     throw new Meteor.Error("no-such-grain", "grain has been deleted");
   } else if (grain.trashed) {
@@ -176,9 +176,9 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId,
   // TODO(now): Observe the grain lookup to see if it becomes trashed or suspended, or if it
   //   switches from old to new sharing model.
 
-  let pkg = Packages.findOne(grain.packageId);
+  let pkg = globalDb.collections.packages.findOne(grain.packageId);
   if (!pkg || pkg.status !== "ready") {
-    let devapp = DevPackages.findOne({appId: grain.appId});
+    let devapp = globalDb.collections.devPackages.findOne({appId: grain.appId});
     if (!devapp) {
       let err = new Meteor.Error("missing-package", "grain's package is not installed");
       err.missingPackageId = grain.packageId;
@@ -245,7 +245,7 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId,
 
   if (viewInfo) {
     const cachedViewInfo = _.omit(viewInfo, "appTitle", "grainIcon");
-    Grains.update(grainId, { $set: { cachedViewInfo: cachedViewInfo } });
+    globalDb.collections.grains.update(grainId, { $set: { cachedViewInfo: cachedViewInfo } });
   }
 
   const permissionsResult = SandstormPermissions.grainPermissions(
@@ -263,7 +263,7 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId,
   globalBackend.updateLastActive(grainId, accountId);
 
   if (sessionId) {
-    Sessions.update({
+    globalDb.collections.sessions.update({
       _id: sessionId,
     }, {
       $set: {
@@ -285,7 +285,7 @@ class GatewayRouterImpl {
     return inMeteor(() => {
       // We need to know both when this session appears and when it disappears.
       const session = new Promise((resolve, reject) => {
-        const sessionObserver = Sessions.find({ _id: sessionId }).observe({
+        const sessionObserver = globalDb.collections.sessions.find({ _id: sessionId }).observe({
           added(session) {
             resolve(session);
           },
@@ -320,7 +320,7 @@ class GatewayRouterImpl {
 
       let vertex;
       if (session.hashedToken) {
-        const tokenInfo = ApiTokens.findOne(session.hashedToken);
+        const tokenInfo = globalDb.collections.apiTokens.findOne(session.hashedToken);
         validateWebkey(tokenInfo);
         vertex = { token: { _id: session.hashedToken, grainId: session.grainId } };
       } else {
@@ -362,7 +362,7 @@ class GatewayRouterImpl {
       if (session.denied) {
         // Apparently access was denied in the past, but this time it succeded, so remove the error
         // message.
-        Sessions.update({ _id: sessionId }, { $unset: { denied: "" } });
+        globalDb.collections.sessions.update({ _id: sessionId }, { $unset: { denied: "" } });
       }
 
       return {
@@ -371,7 +371,7 @@ class GatewayRouterImpl {
           close() {
             if (!hasLoaded) {
               inMeteor(() => {
-                Sessions.update({ _id: sessionId }, { $set: { hasLoaded: true } });
+                globalDb.collections.sessions.update({ _id: sessionId }, { $set: { hasLoaded: true } });
               });
             }
             hasLoaded = true;
@@ -386,9 +386,9 @@ class GatewayRouterImpl {
         if (err.missingPackageId) {
           fields.missingPackageId = err.missingPackageId;
         }
-        Sessions.update({ _id: sessionId }, { $set: fields });
+        globalDb.collections.sessions.update({ _id: sessionId }, { $set: fields });
       } else {
-        Sessions.update({ _id: sessionId }, { $set: { hasLoaded: true } });
+        globalDb.collections.sessions.update({ _id: sessionId }, { $set: { hasLoaded: true } });
         console.error(err.stack);
       }
       throw err;
@@ -402,7 +402,7 @@ class GatewayRouterImpl {
       const tabId = Crypto.createHash("sha256").update("tab:").update(hashedToken)
           .digest("hex").slice(0, 32);
 
-      const tokenInfo = ApiTokens.findOne(hashedToken);
+      const tokenInfo = globalDb.collections.apiTokens.findOne(hashedToken);
       validateWebkey(tokenInfo);
 
       if (tokenInfo.expires) {
@@ -466,7 +466,7 @@ class GatewayRouterImpl {
   keepaliveApiToken(apiToken, durationMs) {
     return inMeteor(() => {
       const hashedToken = Crypto.createHash("sha256").update(apiToken).digest("base64");
-      const tokenInfo = ApiTokens.findOne(hashedToken);
+      const tokenInfo = globalDb.collections.apiTokens.findOne(hashedToken);
       validateWebkey(tokenInfo, new Date(Date.now() + durationMs));
     });
   }
@@ -549,7 +549,7 @@ class GatewayRouterImpl {
 
   getStaticPublishingHost(publicId) {
     return inMeteor(() => {
-      const grain = Grains.findOne({ publicId: publicId }, { fields: { _id: 1 } });
+      const grain = globalDb.collections.grains.findOne({ publicId: publicId }, { fields: { _id: 1 } });
       if (grain) {
         awaitRateLimit("WWW", publicId, grain.userId);
         return globalBackend.useGrain(grain._id, supervisor => {
@@ -747,7 +747,7 @@ function createSession(db, userId, sessionId, options) {
     }
 
     session.grainId = grainId = tokenInfo.grainId;
-    grain = Grains.findOne(grainId);
+    grain = globalDb.collections.grains.findOne(grainId);
 
     session.sharersTitle = getSharersTitle(db, grain, tokenInfo);
 
@@ -761,7 +761,7 @@ function createSession(db, userId, sessionId, options) {
     // TODO(cleanup): Can we stop setting userId on the session if we're not revealing identity?
     session.userId = userId;
     if (options.revealIdentity) {
-      grain = grain || Grains.findOne(grainId);
+      grain = grain || globalDb.collections.grains.findOne(grainId);
       if (grain) {
         session.identityId = db.getOrGenerateIdentityId(userId, grain);
       } else {
@@ -779,7 +779,7 @@ function createSession(db, userId, sessionId, options) {
     };
   }
 
-  Sessions.insert(session);
+  globalDb.collections.sessions.insert(session);
 
   return session;
 }
@@ -788,11 +788,11 @@ function createSession(db, userId, sessionId, options) {
 const TIMEOUT_MS = 180000;
 SandstormDb.periodicCleanup(TIMEOUT_MS, () => {
   const now = new Date().getTime();
-  Sessions.remove({ timestamp: { $lt: (now - TIMEOUT_MS) } });
+  globalDb.collections.sessions.remove({ timestamp: { $lt: (now - TIMEOUT_MS) } });
 });
 
 function bumpSession(sessionId) {
-  const session = Sessions.findOne(sessionId);
+  const session = globalDb.collections.sessions.findOne(sessionId);
   if (session) {
     globalDb.collections.sessions.update({ _id: sessionId },
         { $set: { timestamp: new Date().getTime() } });
@@ -940,11 +940,11 @@ Meteor.methods({
     options.grainId = grainId;
 
     cachedSalt = cachedSalt || Random.id(22);
-    const grain = Grains.findOne(grainId);
+    const grain = globalDb.collections.grains.findOne(grainId);
     const packageSalt = grain && grain.packageSalt;
     const sessionId = generateSessionId(grainId, this.userId, packageSalt, cachedSalt);
 
-    let session = Sessions.findOne(sessionId);
+    let session = globalDb.collections.sessions.findOne(sessionId);
     if (!session) {
       session = createSession(globalDb, this.userId, sessionId, options);
     }
@@ -990,16 +990,16 @@ Meteor.methods({
     }
 
     const hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
-    const apiToken = ApiTokens.findOne(hashedToken);
+    const apiToken = globalDb.collections.apiTokens.findOne(hashedToken);
     if (!apiToken) throw new Error("no such token");
 
     cachedSalt = cachedSalt || Random.id(22);
     const grainId = apiToken.grainId;
-    const grain = Grains.findOne(grainId);
+    const grain = globalDb.collections.grains.findOne(grainId);
     const packageSalt = grain && grain.packageSalt;
     const sessionId = generateSessionId(grainId, this.userId, packageSalt, cachedSalt);
 
-    let session = Sessions.findOne(sessionId);
+    let session = globalDb.collections.sessions.findOne(sessionId);
     if (!session) {
       session = createSession(globalDb, this.userId, sessionId, options);
     }
@@ -1020,6 +1020,6 @@ Meteor.methods({
     // If the session is gone, let the client know they need to call openSession() again.
     // (We don't need to bumpSession() from here because we now do that in the session
     // subscription.)
-    return Sessions.find({ _id: sessionId }).count() > 0;
+    return globalDb.collections.sessions.find({ _id: sessionId }).count() > 0;
   }
 });

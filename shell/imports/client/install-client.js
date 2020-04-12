@@ -41,7 +41,7 @@ Router.map(function () {
       const packageUrl = this.params.query && this.params.query.url;
       const handle = new SandstormAppInstall(packageId, packageUrl, globalDb);
 
-      const pkg = Packages.findOne(packageId);
+      const pkg = globalDb.collections.packages.findOne(packageId);
       if (!Meteor.userId()) {
         if (allowDemo && isSafeDemoAppUrl(packageUrl)) {
           if (pkg && pkg.status === "ready") {

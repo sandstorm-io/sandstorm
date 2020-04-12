@@ -28,8 +28,8 @@ Meteor.methods({
     check(grainId, String);
     check(this.userId, String);
 
-    Grains.update({ _id: grainId, userId: this.userId },
-                  { $set: { "ownerSeenAllActivity": true } });
+    globalDb.collections.grains.update({ _id: grainId, userId: this.userId },
+                                       { $set: { "ownerSeenAllActivity": true } });
   },
 
   markActivityRead: function (grainId, obsolete) {
@@ -39,34 +39,34 @@ Meteor.methods({
       throw new Meteor.Error(403, "Not logged in.");
     }
 
-    ApiTokens.update({ "grainId": grainId, "owner.user.accountId": Meteor.userId() },
-                     { $set: { "owner.user.seenAllActivity": true } }, { multi: true });
+    globalDb.collections.apiTokens.update({ "grainId": grainId, "owner.user.accountId": Meteor.userId() },
+                                          { $set: { "owner.user.seenAllActivity": true } }, { multi: true });
   },
 
   moveGrainsToTrash: function (grainIds) {
     check(grainIds, [String]);
 
     if (this.userId) {
-      Grains.update({ userId: { $eq: this.userId },
+      globalDb.collections.grains.update({ userId: { $eq: this.userId },
                       _id: { $in: grainIds },
                       trashed: { $exists: false }, },
                     { $set: { trashed: new Date() } },
                     { multi: true });
 
-      ApiTokens.update({ grainId: { $in: grainIds },
+      globalDb.collections.apiTokens.update({ grainId: { $in: grainIds },
                         "owner.user.accountId": Meteor.userId(),
                         trashed: { $exists: false }, },
                        { $set: { "trashed": new Date() } },
                        { multi: true });
 
       if (!this.isSimulation) {
-        const grainsOwned = Grains.find({
+        const grainsOwned = globalDb.collections.grains.find({
           userId: { $eq: this.userId },
           _id: { $in: grainIds },
         }, { fields: { _id: 1, }, });
 
         grainsOwned.forEach((grain) => {
-          Sessions.remove({ grainId: grain._id, });
+          globalDb.collections.sessions.remove({ grainId: grain._id, });
           try {
             this.connection.sandstormBackend.shutdownGrain(grain._id, this.userId).await();
           } catch (err) {
@@ -81,13 +81,13 @@ Meteor.methods({
     check(grainIds, [String]);
 
     if (this.userId) {
-      Grains.update({ userId: { $eq: this.userId },
+      globalDb.collections.grains.update({ userId: { $eq: this.userId },
                       _id: { $in: grainIds },
                       trashed: { $exists: true }, },
                     { $unset: { trashed: 1 } },
                     { multi: true });
 
-      ApiTokens.update({ grainId: { $in: grainIds },
+      globalDb.collections.apiTokens.update({ grainId: { $in: grainIds },
                         "owner.user.accountId": Meteor.userId(),
                         "trashed": { $exists: true }, },
                        { $unset: { "trashed": 1 } },
@@ -107,7 +107,7 @@ Meteor.methods({
 
       let numDeleted = 0;
       if (this.isSimulation) {
-        numDeleted = Grains.remove(grainsQuery);
+        numDeleted = globalDb.collections.grains.remove(grainsQuery);
       } else {
         numDeleted = globalDb.deleteGrains(grainsQuery, globalBackend,
                                            isDemoUser() ? "demoGrain" : "grain");
@@ -127,7 +127,7 @@ Meteor.methods({
 
       if (numDeleted > 0) {
         if (this.isSimulation) {
-          ApiTokens.remove(apiTokensQuery);
+          globalDb.collections.apiTokens.remove(apiTokensQuery);
         } else {
           globalDb.removeApiTokens(apiTokensQuery);
         }
@@ -149,7 +149,7 @@ Meteor.methods({
     };
 
     if (this.isSimulation) {
-      ApiTokens.remove(query);
+      globalDb.collections.apiTokens.remove(query);
     } else {
       globalDb.removeApiTokens(query, true);
     }

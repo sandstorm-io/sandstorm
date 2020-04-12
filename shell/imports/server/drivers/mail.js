@@ -160,7 +160,7 @@ Meteor.startup(function () {
             const tryDeliver = (retryCount) => {
               let grainId;
               return inMeteor(() => {
-                const grain = Grains.findOne({ publicId: publicId }, { fields: {} });
+                const grain = globalDb.collections.grains.findOne({ publicId: publicId }, { fields: {} });
                 if (grain) {
                   grainId = grain._id;
                   return globalBackend.continueGrain(grainId, retryCount > 0);
@@ -311,7 +311,7 @@ hackSendEmail = (session, email) => {
       options.attachments = attachments;
     }
 
-    const grain = Grains.findOne(session.grainId);
+    const grain = globalDb.collections.grains.findOne(session.grainId);
     if (!grain) throw new Error("Grain does not exist.");
     globalDb.incrementDailySentMailCount(grain.userId);
 

@@ -43,10 +43,10 @@ const Grain = Capnp.importSystem("sandstorm/grain.capnp");
 const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 
 
-ROOT_URL = Url.parse(process.env.ROOT_URL);
-HOSTNAME = ROOT_URL.hostname;
+const ROOT_URL = Url.parse(process.env.ROOT_URL);
+const HOSTNAME = ROOT_URL.hostname;
 
-SessionContextImpl = class SessionContextImpl {
+class SessionContextImpl {
   constructor(grainId, sessionId, accountId, tabId) {
     this.grainId = grainId;
     this.sessionId = sessionId;
@@ -65,7 +65,7 @@ SessionContextImpl = class SessionContextImpl {
         throw new Error("no such token");
       }
 
-      const session = Sessions.findOne({ _id: this.sessionId });
+      const session = globalDb.collections.sessions.findOne({ _id: this.sessionId });
 
       if (!session) {
         throw new Error("no such session");
@@ -112,7 +112,7 @@ SessionContextImpl = class SessionContextImpl {
     return inMeteor(() => {
       if (!this.sessionId) throw new Error("API sessions can't use powerbox");
 
-      const session = Sessions.findOne({ _id: this.sessionId });
+      const session = globalDb.collections.sessions.findOne({ _id: this.sessionId });
 
       if (!session.identityId && !session.hashedToken) {
         throw new Error("Session has neither an identityId nor a hashedToken.");
@@ -183,7 +183,7 @@ SessionContextImpl = class SessionContextImpl {
 
       const save = castedCap.save(apiTokenOwner);
       const sturdyRef = waitPromise(save).sturdyRef;
-      ApiTokens.update({ _id: hashSturdyRef(sturdyRef) }, { $push: { requirements: requirement } });
+      globalDb.collections.apiTokens.update({ _id: hashSturdyRef(sturdyRef) }, { $push: { requirements: requirement } });
 
       let powerboxView;
       if (isFulfill) {
@@ -206,7 +206,7 @@ SessionContextImpl = class SessionContextImpl {
           dupeQuery.trashed = { $exists: false };
           dupeQuery.revoked = { $exists: false };
 
-          const dupeToken = ApiTokens.findOne(dupeQuery);
+          const dupeToken = globalDb.collections.apiTokens.findOne(dupeQuery);
           if (dupeToken) {
             globalDb.removeApiTokens({ _id: tokenId });
             tokenId = dupeToken._id;
@@ -224,7 +224,7 @@ SessionContextImpl = class SessionContextImpl {
         };
       }
 
-      Sessions.update({ _id: this.sessionId },
+      globalDb.collections.sessions.update({ _id: this.sessionId },
         {
           $set: {
             powerboxView: powerboxView,
@@ -247,7 +247,7 @@ SessionContextImpl = class SessionContextImpl {
       logActivity(this.grainId, this.accountId || "anonymous", event);
     });
   }
-};
+}
 
 Meteor.methods({
   finishPowerboxRequest(sessionId, webkeyUrl, saveLabel, obsolete, grainId) {
@@ -307,7 +307,7 @@ Meteor.methods({
   finishPowerboxOffer(sessionId) {
     check(sessionId, String);
 
-    Sessions.update({ _id: sessionId }, { $unset: { powerboxView: null } });
+    globalDb.collections.sessions.update({ _id: sessionId }, { $unset: { powerboxView: null } });
   },
 
   getViewInfoForApiToken(apiTokenId) {
@@ -326,7 +326,7 @@ Meteor.methods({
   },
 });
 
-HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl {
+class HackSessionContextImpl extends SessionContextImpl {
   constructor(grainId, sessionId, accountId, tabId) {
     super(grainId, sessionId, accountId, tabId);
   }
@@ -338,7 +338,7 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
 
     while (!this.publicId) {
       // We haven't looked up the public ID yet.
-      const grain = Grains.findOne(this.grainId, { fields: { publicId: 1 } });
+      const grain = globalDb.collections.grains.findOne(this.grainId, { fields: { publicId: 1 } });
       if (!grain) throw new Error("Grain does not exist.");
 
       if (grain.publicId) {
@@ -347,7 +347,7 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
         // The grain doesn't have a public ID yet. Generate one.
         const candidate = generateRandomHostname(20);
 
-        if (Grains.findOne({ publicId: candidate })) {
+        if (globalDb.collections.grains.findOne({ publicId: candidate })) {
           // This should never ever happen.
           console.error("CRITICAL PROBLEM: Public ID collision. " +
                         "CSPRNG is bad or has insufficient entropy.");
@@ -356,7 +356,7 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
 
         // Carefully perform an update that becomes a no-op if anyone else has assigned a public ID
         // simultaneously.
-        if (Grains.update({ _id: this.grainId, publicId: { $exists: false } },
+        if (globalDb.collections.grains.update({ _id: this.grainId, publicId: { $exists: false } },
                           { $set: { publicId: candidate } }) > 0) {
           // We won the race.
           this.publicId = candidate;
@@ -380,7 +380,7 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
     //
     // Must be called in a Meteor context.
 
-    const grain = Grains.findOne(this.grainId, { fields: { userId: 1 } });
+    const grain = globalDb.collections.grains.findOne(this.grainId, { fields: { userId: 1 } });
 
     const user = Meteor.users.findOne({_id: grain.userId});
 
@@ -410,7 +410,7 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
       result.hostname = HOSTNAME;
       result.autoUrl = ROOT_URL.protocol + "//" + makeWildcardHost(result.publicId);
 
-      const grain = Grains.findOne(this.grainId, { fields: { userId: 1 } });
+      const grain = globalDb.collections.grains.findOne(this.grainId, { fields: { userId: 1 } });
       result.isDemoUser = Meteor.users.findOne(grain.userId).expires ? true : false;
 
       return result;
@@ -429,7 +429,7 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
         if (safe.url.indexOf("https://") === 0) {
           requestMethod = Https.request;
         } else if (safe.url.indexOf("http://") !== 0) {
-          err = new Error("Protocol not recognized.");
+          const err = new Error("Protocol not recognized.");
           err.nature = "precondition";
           reject(err);
         }
@@ -483,7 +483,7 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
 
         req.setTimeout(15000, () => {
           req.abort();
-          let err = new Error("Request timed out.");
+          const err = new Error("Request timed out.");
           err.nature = "localBug";
           err.durability = "overloaded";
           reject(err);
@@ -529,7 +529,7 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
       return { view: new ExternalUiView(url) };
     }
   }
-};
+}
 
 makeHackSessionContext = (grainId, sessionId, accountId, tabId) => {
   // TODO(security): Ensure that the session context is revoked if the session is revoked.

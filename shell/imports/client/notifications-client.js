@@ -23,6 +23,7 @@ import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js
 import { iconSrcForPackage, iconSrcForDenormalizedGrainMetadata } from "/imports/sandstorm-identicons/helpers.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
+import { MAILING_LIST_BONUS } from "/imports/blackrock-payments/constants.js";
 
 testNotifications = () => {
   // Run on console to create some dummy notifications for the purpose of seeing what they look
@@ -57,7 +58,7 @@ Tracker.autorun(function () {
 
   if (!browserTabHidden.get()) {
     const path = removeTrailingSlash(currentPath.get());
-    Notifications.find().forEach((notification) => {
+    globalDb.collections.notifications.find().forEach((notification) => {
       if (!notification.ongoing) {
         const npath = getNotificationPath(notification);
         if (npath) {
@@ -73,7 +74,7 @@ Tracker.autorun(function () {
 Template.notificationsPopup.helpers({
   notifications: function () {
     Meteor.call("readAllNotifications");
-    return Notifications.find({ userId: Meteor.userId() }, { sort: { timestamp: -1 } })
+    return globalDb.collections.notifications.find({ userId: Meteor.userId() }, { sort: { timestamp: -1 } })
         .map(function (row) {
       if (row.initiatingAccount) {
         const sender = Meteor.users.findOne({ _id: row.initiatingAccount });
@@ -89,7 +90,7 @@ Template.notificationsPopup.helpers({
 
       if (row.grainId) {
         const usage = row.senderIcon ? "grain" : "appGrid";
-        const grain = Grains.findOne({ _id: row.grainId });
+        const grain = globalDb.collections.grains.findOne({ _id: row.grainId });
         const staticPrefix = window.location.protocol + "//" + globalDb.makeWildcardHost("static");
         if (grain) {
           // We own this grain.
@@ -102,11 +103,11 @@ Template.notificationsPopup.helpers({
           //   prefer the app icon, which is designed to be bigger.
 
           if (grain.packageId) {
-            const pkg = Packages.findOne(grain.packageId);
+            const pkg = globalDb.collections.packages.findOne(grain.packageId);
             if (pkg) {
               row.grainIcon = iconSrcForPackage(pkg, usage, staticPrefix);
             } else {
-              const devPackage = DevPackages.findOne({ appId: grain.appId });
+              const devPackage = globalDb.collections.devPackages.findOne({ appId: grain.appId });
               if (devPackage) {
                 row.grainIcon = iconSrcForPackage(devPackage, usage, staticPrefix);
               }
@@ -114,7 +115,7 @@ Template.notificationsPopup.helpers({
           }
         } else {
           // We have an ApiToken for this grain.
-          const apiToken = ApiTokens.findOne({
+          const apiToken = globalDb.collections.apiTokens.findOne({
             grainId: row.grainId,
             "owner.user.accountId": Meteor.userId(),
             "owner.user.denormalizedGrainMetadata": { $exists: true },
@@ -140,7 +141,7 @@ Template.notificationsPopup.helpers({
 
 Template.notifications.helpers({
   notificationCount: function () {
-    return Notifications.find({ userId: Meteor.userId(), isUnread: true }).count();
+    return globalDb.collections.notifications.find({ userId: Meteor.userId(), isUnread: true }).count();
   },
 });
 
@@ -222,7 +223,7 @@ Template.mailingListBonusNotificationItem.helpers({
 
   MAILING_LIST_BONUS() {
     if (Meteor.settings.public.stripePublicKey) {
-      return BlackrockPayments.MAILING_LIST_BONUS || 0;
+      return MAILING_LIST_BONUS || 0;
     } else {
       return 0;
     }
@@ -322,7 +323,7 @@ Meteor.startup(function () {
 
   Tracker.autorun(function () {
     Meteor.subscribe("notificationGrains",
-      Notifications.find().map(function (row) {
+      globalDb.collections.notifications.find().map(function (row) {
         return row._id;
       })
     );
@@ -332,6 +333,6 @@ Meteor.startup(function () {
 Meteor.methods({
   dismissNotification(notificationId) {
     // Client-side simulation of dismissNotification.
-    Notifications.remove({ _id: notificationId });
+    globalDb.collections.notifications.remove({ _id: notificationId });
   },
 });

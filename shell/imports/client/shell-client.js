@@ -23,7 +23,9 @@ import { Template } from "meteor/templating";
 import { Tracker } from "meteor/tracker";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Accounts } from "meteor/accounts-base";
+import { Session } from "meteor/session";
 import { Router } from "meteor/iron:router";
+import { TAPi18n } from "meteor/tap:i18n";
 
 import getBuildInfo from "/imports/client/build-info.js";
 import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";
@@ -212,9 +214,9 @@ const determineAppName = function (grainId) {
 
   // Try our hardest to find the package's name, falling back on the default if needed.
   if (grainId) {
-    const grain = Grains.findOne({ _id: grainId });
+    const grain = globalDb.collections.grains.findOne({ _id: grainId });
     if (grain && grain.packageId) {
-      const thisPackage = Packages.findOne({ _id: grain.packageId });
+      const thisPackage = globalDb.collections.packages.findOne({ _id: grain.packageId });
       if (thisPackage) {
         params = SandstormDb.appNameFromPackage(thisPackage);
       }
@@ -355,7 +357,7 @@ prettySize = function (size) {
 
 // export: used in shared/demo.js
 launchAndEnterGrainByPackageId = function (packageId, options) {
-  const action = UserActions.findOne({ packageId: packageId });
+  const action = globalDb.collections.userActions.findOne({ packageId: packageId });
   if (!action) {
     alert("Somehow, you seem to have attempted to launch a package you have not installed.");
     return;
@@ -373,7 +375,7 @@ launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex, opti
   let appTitle;
   let nounPhrase;
   if (devPackageId) {
-    const devPackage = DevPackages.findOne(devPackageId);
+    const devPackage = globalDb.collections.devPackages.findOne(devPackageId);
     if (!devPackage) {
       console.error("no such dev package: ", devPackageId);
       return;
@@ -385,14 +387,14 @@ launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex, opti
     appTitle = SandstormDb.appNameFromPackage(devPackage);
     nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(devAction, appTitle);
   } else {
-    const action = UserActions.findOne(actionId);
+    const action = globalDb.collections.userActions.findOne(actionId);
     if (!action) {
       console.error("no such action:", actionId);
       return;
     }
 
     packageId = action.packageId;
-    const pkg = Packages.findOne(packageId);
+    const pkg = globalDb.collections.packages.findOne(packageId);
     command = action.command;
     appTitle = SandstormDb.appNameFromPackage(pkg);
     nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(action, appTitle);
@@ -524,7 +526,7 @@ Template.layout.helpers({
 
   adminAlertIsTooLarge: function () {
     Template.instance().resizeTracker.depend();
-    const setting = Settings.findOne({ _id: "adminAlert" });
+    const setting = globalDb.collections.settings.findOne({ _id: "adminAlert" });
     if (!setting || !setting.value) {
       return false;
     }
@@ -535,17 +537,17 @@ Template.layout.helpers({
   },
 
   adminAlert: function () {
-    const setting = Settings.findOne({ _id: "adminAlert" });
+    const setting = globalDb.collections.settings.findOne({ _id: "adminAlert" });
     if (!setting || !setting.value) {
       return null;
     }
 
     let text = setting.value;
 
-    const alertTimeSetting = Settings.findOne({ _id: "adminAlertTime" });
+    const alertTimeSetting = globalDb.collections.settings.findOne({ _id: "adminAlertTime" });
     const alertTime = alertTimeSetting && alertTimeSetting.value;
 
-    const alertUrlSetting = Settings.findOne({ _id: "adminAlertUrl" });
+    const alertUrlSetting = globalDb.collections.settings.findOne({ _id: "adminAlertUrl" });
     let alertUrl = alertUrlSetting ? alertUrlSetting.value.trim() : null;
     if (!alertUrl) alertUrl = null;
 
@@ -902,7 +904,7 @@ Router.map(function () {
 
       return {
         build: getBuildInfo().build,
-        splashUrl: (Settings.findOne("splashUrl") || {}).value,
+        splashUrl: (globalDb.collections.settings.findOne("splashUrl") || {}).value,
       };
     },
   });

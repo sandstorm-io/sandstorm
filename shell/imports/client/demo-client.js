@@ -15,11 +15,14 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
+import { Session } from "meteor/session";
 import { Tracker } from "meteor/tracker";
 import { Router } from "meteor/iron:router";
+import { Accounts } from "meteor/accounts-base";
 
 import { allowDemo } from "/imports/demo.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 Meteor.loginWithDemo = function (options, callback) {
   Router.go("demo");
@@ -112,7 +115,7 @@ Router.map(function () {
         if (!splashShown) {
           // find the newest (highest version, so "first" when sorting by
           // inverse order) matching package.
-          const thisPackage = Packages.findOne({
+          const thisPackage = globalDb.collections.packages.findOne({
             appId: this.params.appId,
           }, {
             sort: { "manifest.appVersion": -1 },
@@ -153,13 +156,13 @@ Router.map(function () {
           // First, find the package ID, since that is what
           // addUserActions takes. Choose the package ID with
           // highest version number.
-          const packageId = Packages.findOne(
+          const packageId = globalDb.collections.packages.findOne(
             { appId: appId },
             { sort: { "manifest.appVersion": -1 } }
           )._id;
 
           // 3. Install this app for the user, if needed.
-          if (UserActions.find({ appId: appId, userId: Meteor.userId() }).count() == 0) {
+          if (globalDb.collections.userActions.find({ appId: appId, userId: Meteor.userId() }).count() == 0) {
             Meteor.call("addUserActions", packageId);
           }
 

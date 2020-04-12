@@ -16,6 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
+import { Session } from "meteor/session";
 
 import { globalDb } from "/imports/db-deprecated.js";
 
@@ -29,6 +30,7 @@ import AccountsUi from "/imports/client/accounts/accounts-ui.js";
 import { GrainViewList } from "/imports/client/grain/grainview-list.js";
 
 Session.setDefault("shrink-navbar", false);
+// window.globalGrains is used by test code and must remain exported.
 globalGrains = new GrainViewList(globalDb);
 
 // If Meteor._localStorage disappears, we'll have to write our own localStorage wrapper, I guess.

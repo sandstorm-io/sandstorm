@@ -14,4 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-MAILING_LIST_BONUS = 1e9;   // 1GB bonus for subscribing to mailing list.
+const MAILING_LIST_BONUS = 1e9;   // 1GB bonus for subscribing to mailing list.
+
+export { MAILING_LIST_BONUS };

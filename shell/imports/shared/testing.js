@@ -26,13 +26,13 @@ if (isTesting) {
     import { runDueJobs } from '/imports/server/scheduled-job.js';
 
     function clearUser(id) {
-      UserActions.remove({ userId: id });
+      globalDb.collections.userActions.remove({ userId: id });
       globalDb.removeApiTokens({ userId: id });
-      Grains.find({ userId: id }).forEach(function (grain) {
+      globalDb.collections.grains.find({ userId: id }).forEach(function (grain) {
         globalBackend.deleteGrain(grain._id);
       });
 
-      Grains.remove({ userId: id });
+      globalDb.collections.grains.remove({ userId: id });
       Meteor.users.remove({ _id: id });
     }
 

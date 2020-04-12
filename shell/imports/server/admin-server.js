@@ -29,6 +29,7 @@ import { send as sendEmail } from "/imports/server/email.js";
 import { fillUndefinedForChangedDoc } from "/imports/server/observe-helpers.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
+import { computeStats } from "/imports/server/stats-server.js";
 
 const publicAdminSettings = [
   "google", "github", "ldap", "saml", "emailToken", "splashUrl", "signupDialog",
@@ -78,9 +79,9 @@ Meteor.methods({
       }
     }
 
-    Settings.upsert({ _id: serviceName }, { $set: { value: value } });
+    globalDb.collections.settings.upsert({ _id: serviceName }, { $set: { value: value } });
     if (value) {
-      Settings.update({ _id: serviceName }, { $unset: { automaticallyReset: 1 } });
+      globalDb.collections.settings.update({ _id: serviceName }, { $unset: { automaticallyReset: 1 } });
     }
   },
 
@@ -88,7 +89,7 @@ Meteor.methods({
     checkAuth(token);
     check(config, smtpConfigShape);
 
-    Settings.upsert({ _id: "smtpConfig" }, { $set: { value: config } });
+    globalDb.collections.settings.upsert({ _id: "smtpConfig" }, { $set: { value: config } });
   },
 
   disableEmail: function (token) {
@@ -103,7 +104,7 @@ Meteor.methods({
     check(name, String);
     check(value, Match.OneOf(null, String, Date, Boolean));
 
-    Settings.upsert({ _id: name }, { $set: { value: value } });
+    globalDb.collections.settings.upsert({ _id: name }, { $set: { value: value } });
   },
 
   saveOrganizationSettings(token, params) {
@@ -217,7 +218,7 @@ Meteor.methods({
     const key = Random.id();
     const content = { _id: key, used: false, note: note };
     if (typeof quota === "number") content.quota = quota;
-    SignupKeys.insert(content);
+    globalDb.collections.signupKeys.insert(content);
     return key;
   },
 
@@ -252,7 +253,7 @@ Meteor.methods({
           definitelySent: false,
         };
         if (typeof quota === "number") content.quota = quota;
-        SignupKeys.insert(content);
+        globalDb.collections.signupKeys.insert(content);
         sendEmail({
           to: email,
           from: from,
@@ -260,7 +261,7 @@ Meteor.methods({
           subject: subject,
           text: message.replace(/\$KEY/g, origin + "/signup/" + key),
         });
-        SignupKeys.update(key, { $set: { definitelySent: true } });
+        globalDb.collections.signupKeys.update(key, { $set: { definitelySent: true } });
       }
     }
 
@@ -273,9 +274,9 @@ Meteor.methods({
     check(value, Boolean);
 
     if (value) {
-      ApiTokens.update({ _id: capId }, { $set: { revoked: true } });
+      globalDb.collections.apiTokens.update({ _id: capId }, { $set: { revoked: true } });
     } else {
-      ApiTokens.update({ _id: capId }, { $set: { revoked: false } });
+      globalDb.collections.apiTokens.update({ _id: capId }, { $set: { revoked: false } });
     }
   },
 
@@ -293,7 +294,7 @@ Meteor.methods({
     for (const i in items) {
       const modifier = (typeof quota === "number") ? { $set: { quota: quota } }
                                                  : { $unset: { quota: "" } };
-      let n = SignupKeys.update({ email: items[i] }, modifier, { multi: true });
+      let n = globalDb.collections.signupKeys.update({ email: items[i] }, modifier, { multi: true });
       n += Meteor.users.update({ signupEmail: items[i] }, modifier, { multi: true });
 
       if (n < 1) invalid.push(items[i]);
@@ -381,7 +382,7 @@ Meteor.methods({
       currentTlsKeysCallback.setKeys(keys.key, keys.certChain).await();
     }
 
-    Settings.upsert({ _id: "tlsKeys" }, { $set: { value: keys } });
+    globalDb.collections.settings.upsert({ _id: "tlsKeys" }, { $set: { value: keys } });
   },
 });
 
@@ -394,7 +395,7 @@ Meteor.publish("admin", function (token) {
   if (!authorizedAsAdmin(token, this.userId)) return [];
 
   // Admin is allowed to see all settings... but we redact the TLS key out of caution.
-  return Settings.find({ _id: { $ne: "tlsKeys" } });
+  return globalDb.collections.settings.find({ _id: { $ne: "tlsKeys" } });
 });
 
 Meteor.publish("adminServiceConfiguration", function (token) {
@@ -403,7 +404,7 @@ Meteor.publish("adminServiceConfiguration", function (token) {
 });
 
 Meteor.publish("publicAdminSettings", function () {
-  return Settings.find({ _id: { $in: publicAdminSettings } });
+  return globalDb.collections.settings.find({ _id: { $in: publicAdminSettings } });
 });
 
 Meteor.publish("adminToken", function (token) {
@@ -523,17 +524,17 @@ Meteor.publish("adminUserDetails", function (userId) {
 
 Meteor.publish("activityStats", function (token) {
   if (!authorizedAsAdmin(token, this.userId)) return [];
-  return ActivityStats.find();
+  return globalDb.collections.activityStats.find();
 });
 
 Meteor.publish("statsTokens", function (token) {
   if (!authorizedAsAdmin(token, this.userId)) return [];
-  return StatsTokens.find();
+  return globalDb.collections.statsTokens.find();
 });
 
 Meteor.publish("allPackages", function (token) {
   if (!authorizedAsAdmin(token, this.userId)) return [];
-  return Packages.find({ manifest: { $exists: true } },
+  return globalDb.collections.packages.find({ manifest: { $exists: true } },
       { fields: { appId: 1, "manifest.appVersion": 1,
       "manifest.actions": 1, "manifest.appTitle": 1, progress: 1, status: 1, }, });
 });
@@ -545,7 +546,7 @@ Meteor.publish("realTimeStats", function (token) {
   this.added("realTimeStats", "now", computeStats(new Date(Date.now() - 5 * 60 * 1000)));
 
   // Since last sample.
-  const lastSample = ActivityStats.findOne({}, { sort: { timestamp: -1 } });
+  const lastSample = globalDb.collections.activityStats.findOne({}, { sort: { timestamp: -1 } });
   const lastSampleTime = lastSample ? lastSample.timestamp : new Date(0);
   this.added("realTimeStats", "today", computeStats(lastSampleTime));
 
@@ -620,7 +621,7 @@ Meteor.publish("adminLog", function (token) {
 
 Meteor.publish("adminApiTokens", function (token) {
   if (!authorizedAsAdmin(token, this.userId)) return [];
-  return ApiTokens.find({
+  return globalDb.collections.apiTokens.find({
     $or: [
       { "frontendRef.ipNetwork": { $exists: true } },
       { "frontendRef.ipInterface": { $exists: true } },
@@ -666,7 +667,7 @@ Meteor.publish("appIndexAdmin", function (token) {
 });
 
 function observeOauthService(name) {
-  Settings.find({ _id: name, value: true }).observe({
+  globalDb.collections.settings.find({ _id: name, value: true }).observe({
     added: function () {
       // Tell the oauth library it should accept login attempts from this service.
       Accounts.oauth.registerService(name);

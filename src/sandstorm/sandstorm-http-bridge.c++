@@ -2734,7 +2734,7 @@ public:
   SandstormHttpBridgeMain(kj::ProcessContext& context)
       : context(context),
         ioContext(kj::setupAsyncIo()),
-        appMembranePolicy(SaveMembranePolicy()),
+        appMembranePolicy(kj::refcounted<SaveMembranePolicy>()),
         appHooksFulfiller(nullptr) {
     kj::UnixEventPort::captureSignal(SIGCHLD);
   }
@@ -2783,7 +2783,7 @@ public:
     return serverPort.accept().then(
         [&, KJ_MVCAP(bridge)](kj::Own<kj::AsyncIoStream>&& connection) mutable {
       auto connectionState = kj::heap<AcceptedConnection>(
-          capnp::reverseMembrane(bridge, appMembranePolicy.addRef()),
+          capnp::reverseMembrane(bridge, appMembranePolicy->addRef()),
           kj::mv(connection));
 
       KJ_IF_MAYBE(fulfiller, appHooksFulfiller) {
@@ -2793,7 +2793,7 @@ public:
         (*fulfiller)->fulfill(
           capnp::membrane(
             connectionState->rpcSystem.bootstrap(vatId),
-            appMembranePolicy.addRef()
+            appMembranePolicy->addRef()
           ).castAs<AppHooks<>>()
         );
         fulfiller = nullptr;
@@ -2982,7 +2982,7 @@ private:
   kj::AsyncIoContext ioContext;
   kj::Own<kj::NetworkAddress> address;
   kj::Vector<kj::String> command;
-  SaveMembranePolicy appMembranePolicy;
+  kj::Own<SaveMembranePolicy> appMembranePolicy;
   kj::Maybe<kj::Own<kj::PromiseFulfiller<AppHooks<>::Client>>> appHooksFulfiller;
 
   kj::Promise<int> onChildExit(pid_t pid) {

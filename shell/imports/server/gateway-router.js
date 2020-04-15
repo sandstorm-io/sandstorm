@@ -27,6 +27,8 @@ import Capnp from "/imports/server/capnp.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
 
+import { makeHackSessionContext } from "/imports/server/hack-session.js";
+
 const GatewayRouter = Capnp.importSystem("sandstorm/backend.capnp").GatewayRouter;
 const ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
 const WebSession = Capnp.importSystem("sandstorm/web-session.capnp").WebSession;

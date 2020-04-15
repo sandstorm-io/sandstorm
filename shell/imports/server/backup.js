@@ -50,7 +50,7 @@ Meteor.startup(() => {
   });
 });
 
-createGrainBackup = (userId, grainId, async) => {
+export const createGrainBackup = (userId, grainId, async) => {
   check(grainId, String);
   const grain = globalDb.collections.grains.findOne(grainId);
   if (!grain || !userId || grain.userId !== userId) {

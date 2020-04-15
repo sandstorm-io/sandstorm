@@ -115,7 +115,7 @@ export const createGrainBackup = (userId, grainId, async) => {
   return token._id;
 };
 
-createBackupToken = () => {
+export const createBackupToken = () => {
   const token = {
     _id: Random.id(),
     timestamp: new Date(),
@@ -126,7 +126,7 @@ createBackupToken = () => {
   return token._id;
 };
 
-restoreGrainBackup = (tokenId, user, transferInfo) => {
+export const restoreGrainBackup = (tokenId, user, transferInfo) => {
   check(tokenId, String);
   const token = globalDb.collections.fileTokens.findOne(tokenId);
   if (!token) {
@@ -321,7 +321,7 @@ downloadGrainBackup = (tokenId, response, retryCount = 0) => {
   cleanupToken(tokenId);
 }
 
-storeGrainBackup = (tokenId, inputStream) => {
+export const storeGrainBackup = (tokenId, inputStream) => {
   const stream = globalBackend.cap().uploadBackup(tokenId).stream;
 
   waitPromise(new Promise((resolve, reject) => {

@@ -25,7 +25,8 @@ import { Router } from "meteor/iron:router";
 
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
 import { globalDb } from "/imports/db-deprecated.js";
-import { createGrainBackup } from "/imports/server/backup.js";
+import { createGrainBackup, createBackupToken, restoreGrainBackup, storeGrainBackup }
+  from "/imports/server/backup.js";
 
 function isValidServerUrl(str) {
   let url;

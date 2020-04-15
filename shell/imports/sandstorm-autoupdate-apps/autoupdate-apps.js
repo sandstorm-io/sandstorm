@@ -17,7 +17,7 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 
-SandstormAutoupdateApps = {};
+export const SandstormAutoupdateApps = {};
 
 SandstormAutoupdateApps.updateAppIndex = function (db) {
   db.updateAppIndex();

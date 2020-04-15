@@ -24,6 +24,7 @@ import { migrateToLatest } from "/imports/server/migrations.js";
 import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants.js";
 import { onInMeteor } from "/imports/server/async-helpers.js";
 import { monkeyPatchHttp } from "/imports/server/networking.js";
+import { SandstormAutoUpdateApps } from "/imports/sandstorm-autoupdate-apps/autoupdate-apps.js";
 let url = require("url");
 
 process.on('unhandledRejection', (reason, p) => {

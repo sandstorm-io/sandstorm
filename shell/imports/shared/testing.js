@@ -16,6 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { globalDb } from "/imports/db-deprecated.js";
+import { SandstormAutoUpdateApps } from "/imports/sandstorm-autoupdate-apps/autoupdate-apps.js";
 
 const isTesting = Meteor.settings && Meteor.settings.public &&
                   Meteor.settings.public.isTesting;

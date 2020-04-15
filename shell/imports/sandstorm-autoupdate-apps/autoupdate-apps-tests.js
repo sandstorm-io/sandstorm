@@ -23,6 +23,7 @@ import { Meteor } from "meteor/meteor";
 import { Accounts } from "meteor/accounts-base";
 
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { SandstormAutoUpdateApps } from "/imports/sandstorm-autoupdate-apps/autoupdate-apps.js";
 
 const globalDb = new SandstormDb();
 // TODO(cleanup): Use a lightweight fake (minimongo-based?) database here and construct a clean

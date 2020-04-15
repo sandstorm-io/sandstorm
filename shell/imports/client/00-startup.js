@@ -19,6 +19,7 @@ import { Template } from "meteor/templating";
 import { Session } from "meteor/session";
 
 import { globalDb } from "/imports/db-deprecated.js";
+import { SandstormTopbar } from "/imports/sandstorm-ui-topbar/topbar.js";
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {

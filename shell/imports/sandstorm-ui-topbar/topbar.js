@@ -333,7 +333,7 @@ Template.sandstormTopbarItem.onDestroyed(function () {
 // =======================================================================================
 // Public interface
 
-SandstormTopbar = function (db, expandedVar, grainsVar, shrinkNavbarVar) {
+export const SandstormTopbar = function (db, expandedVar, grainsVar, shrinkNavbarVar) {
   // `expandedVar` is an optional object that behaves like a `ReactiveVar` and will be used to
   // track which popup is currently open. (The caller may wish to back this with a Session
   // variable.)

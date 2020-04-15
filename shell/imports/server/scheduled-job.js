@@ -28,7 +28,7 @@ const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").System
 const MINIMUM_SCHEDULING_SLACK_NANO = Capnp.importSystem("sandstorm/grain.capnp").minimumSchedulingSlack;
 const MINIMUM_SCHEDULING_SLACK_MILLIS = MINIMUM_SCHEDULING_SLACK_NANO / 1e6;
 
-scheduleOneShot = (db, grainId, name, callback, when, slack) => {
+export const scheduleOneShot = (db, grainId, name, callback, when, slack) => {
   callback.castAs(SystemPersistent).save({ frontend: null }).then((result) => {
     db.addOneShotScheduledJob(
       grainId,
@@ -40,7 +40,7 @@ scheduleOneShot = (db, grainId, name, callback, when, slack) => {
   })
 }
 
-schedulePeriodic = (db, grainId, name, callback, period) => {
+export const schedulePeriodic = (db, grainId, name, callback, period) => {
   callback.castAs(SystemPersistent).save({ frontend: null }).then((result) => {
     db.addPeriodicScheduledJob(
       grainId,

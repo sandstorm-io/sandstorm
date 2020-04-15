@@ -19,6 +19,7 @@ import { Random } from "meteor/random";
 import { Session } from "meteor/session";
 import { Tracker } from "meteor/tracker";
 import { Router } from "meteor/iron:router";
+import { HTTP } from "meteor/http";
 
 Meteor.subscribe("publicAdminSettings");
 

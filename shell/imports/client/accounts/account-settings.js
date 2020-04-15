@@ -19,6 +19,7 @@ import { check } from "meteor/check";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Session } from "meteor/session";
+import { HTTP } from "meteor/http";
 import { _ } from "meteor/underscore";
 
 import { formatFutureTime } from "/imports/dates.js";

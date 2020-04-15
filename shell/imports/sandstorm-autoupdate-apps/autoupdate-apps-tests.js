@@ -21,6 +21,7 @@ import Crypto from "crypto";
 
 import { Meteor } from "meteor/meteor";
 import { Accounts } from "meteor/accounts-base";
+import { HTTP } from "meteor/http";
 
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { SandstormAutoUpdateApps } from "/imports/sandstorm-autoupdate-apps/autoupdate-apps.js";

@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
+import { HTTP } from "meteor/http";
 
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";

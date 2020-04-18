@@ -15,7 +15,9 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@babel/runtime": "^7.8.7",
+    "@root/acme": "^3.0.9",
     "@types/meteor": "^1.4.42",
+    "acme-dns-01-sandcats": "file:../acme-dns-01-sandcats",
     "babel-runtime": "^6.26.0",
     "bignum": "^0.13.0",
     "body-parser": "^1.19.0",

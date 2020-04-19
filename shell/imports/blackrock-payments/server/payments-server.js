@@ -30,6 +30,7 @@ import { Meteor } from "meteor/meteor";
 import { Mongo } from "meteor/mongo";
 import { check } from "meteor/check";
 import { Random } from "meteor/random";
+import { HTTP } from "meteor/http";
 import { _ } from "meteor/underscore";
 
 import { SandstormDb } from "/imports/sandstorm-db/db.js";

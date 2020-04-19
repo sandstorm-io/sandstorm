@@ -16,6 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
+import { HTTP } from "meteor/http";
 import { _ } from "meteor/underscore";
 
 import { inMeteor } from "/imports/server/async-helpers.js";

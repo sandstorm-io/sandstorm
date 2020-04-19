@@ -1,6 +1,7 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
+import { HTTP } from "meteor/http";
 
 import { DEFAULT_SIGNUP_DIALOG } from "/imports/client/personalization.js";
 import { globalDb } from "/imports/db-deprecated.js";

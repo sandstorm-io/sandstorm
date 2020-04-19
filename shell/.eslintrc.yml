@@ -21,7 +21,7 @@ extends: "eslint:recommended"
 rules:
   # These are implied by eslint:recommended, but we haven't gotten around to
   # fixing them yet:
-  no-undef: ["off"]
+  no-undef: ["warn"]
   no-unused-vars: ["off"]
   no-empty: ["off"]
   no-inner-declarations: ["off"]

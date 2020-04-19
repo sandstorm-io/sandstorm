@@ -19,6 +19,7 @@ import { Mongo } from "meteor/mongo";
 import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 import { Router } from "meteor/iron:router";
+import { HTTP } from "meteor/http";
 
 import { allowDemo } from "/imports/demo.js";
 import { globalDb } from "/imports/db-deprecated.js";

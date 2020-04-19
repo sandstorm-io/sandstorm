@@ -79,3 +79,9 @@ jobs:
         with:
           name: testlog.txt
           path: testlog.txt
+      - name: upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v1
+        with:
+          name: screenshots
+          path: tests/screenshots

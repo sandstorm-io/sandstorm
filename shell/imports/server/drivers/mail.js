@@ -29,9 +29,11 @@ import { PersistentImpl } from "/imports/server/persistent.js";
 import { rawSend } from "/imports/server/email.js";
 import { shouldRestartGrain } from "/imports/server/backend.js";
 import { inMeteor } from "/imports/server/async-helpers.js";
+import { makeHackSessionContext } from "/imports/server/hack-session.js";
 
 import Crypto from "crypto";
 import Future from "fibers/future";
+import Net from "net";
 import Url from "url";
 import Capnp from "/imports/server/capnp.js";
 
@@ -71,7 +73,7 @@ if (process.env.HTTP_GATEWAY === "local" &&
     pipe.open(fd);
     pipe.onread = function (size, buf, handle) {
       if (handle) {
-        cb(new net.Socket({ handle: handle }));
+        cb(new Net.Socket({ handle: handle }));
       }
     };
     pipe.readStart();

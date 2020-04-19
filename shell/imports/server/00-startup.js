@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
+import { HTTP } from "meteor/http";
 
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
@@ -24,6 +25,7 @@ import { migrateToLatest } from "/imports/server/migrations.js";
 import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants.js";
 import { onInMeteor } from "/imports/server/async-helpers.js";
 import { monkeyPatchHttp } from "/imports/server/networking.js";
+import { SandstormAutoupdateApps } from "/imports/sandstorm-autoupdate-apps/autoupdate-apps.js";
 let url = require("url");
 
 process.on('unhandledRejection', (reason, p) => {

@@ -26,6 +26,7 @@ import { Accounts } from "meteor/accounts-base";
 import { Session } from "meteor/session";
 import { Router } from "meteor/iron:router";
 import { TAPi18n } from "meteor/tap:i18n";
+import { HTTP } from "meteor/http";
 
 import getBuildInfo from "/imports/client/build-info.js";
 import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";

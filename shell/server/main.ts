@@ -80,6 +80,7 @@ import "../imports/server/drivers/mail.js";
 import "../imports/db-deprecated.js";
 import "../imports/server/00-startup.js";
 import "../imports/server/account-suspension.js";
+import "../imports/server/acme.js";
 import "../imports/server/admin-server.js";
 import "../imports/server/backup.js";
 import "../imports/server/contacts-server.js";

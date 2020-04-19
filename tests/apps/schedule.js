@@ -53,6 +53,7 @@ function common({browser, refStr, firstWaitDuration, shouldRepeat}) {
     .waitForElementPresent(selector, short_wait)
     .click(selector)
     .frameParent()
+    .pause(short_wait)
     .execute('Meteor.call("runDueJobsAt", ' + firstCheck.toString() + ');')
     .pause(short_wait)
     .windowHandles(windows => browser.switchWindow(windows.value[1]))

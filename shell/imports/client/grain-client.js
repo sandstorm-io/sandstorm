@@ -37,6 +37,7 @@ import { isStandalone } from "/imports/client/standalone.js";
 import { GrainView } from "/imports/client/grain/grainview.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
+import { SandstormPowerboxRequest } from "/imports/sandstorm-ui-powerbox/powerbox-client.js";
 
 // Pseudo-collections.
 TokenInfo = new Mongo.Collection("tokenInfo");

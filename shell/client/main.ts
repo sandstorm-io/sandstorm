@@ -51,7 +51,6 @@ import "../imports/sandstorm-ui-topbar/topbar.js";
 
 // sandstorm-ui-powerbox.  Depends on sandstorm-db and sandstorm-ui-topbar
 import "../imports/sandstorm-ui-powerbox/powerbox.html";
-import "../imports/sandstorm-ui-powerbox/powerbox-client.js";
 
 // blackrock-payments
 import "../imports/blackrock-payments/constants.js";

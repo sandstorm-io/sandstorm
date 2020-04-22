@@ -27,7 +27,7 @@ import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 const PowerboxOptions = new Mongo.Collection("powerboxOptions");
 
-SandstormPowerboxRequest = class SandstormPowerboxRequest {
+export class SandstormPowerboxRequest {
   constructor(db, requestInfo, GrainView) {
     check(requestInfo, Match.ObjectIncluding({
       source: Match.Any,
@@ -245,7 +245,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
       }
     );
   }
-};
+}
 
 const matchesCard = function (needle, grainInfo, searchTerms) {
   if (grainInfo) {

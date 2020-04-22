@@ -245,7 +245,7 @@ export class SandstormPowerboxRequest {
       }
     );
   }
-};
+}
 
 const matchesCard = function (needle, grainInfo, searchTerms) {
   if (grainInfo) {

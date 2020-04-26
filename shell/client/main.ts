@@ -155,4 +155,5 @@ import "../imports/client/transfers-client.js";
 import "../imports/shared/admin.js";
 import "../imports/shared/dev-accounts.js";
 import "../imports/shared/grain-shared.js";
-import "../imports/shared/testing.js";
+
+import "../imports/client/testing.js";

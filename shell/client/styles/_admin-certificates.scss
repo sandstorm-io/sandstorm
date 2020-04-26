@@ -1,0 +1,22 @@
+.admin-certificates {
+  textarea {
+    display: block;
+    min-height: 150px;
+    width: 100%;
+    font-family: monospace;
+  }
+
+  td {
+    padding-bottom: 1em;
+
+    &:nth-child(1) {
+      padding-right: 2em;
+      min-width: 140px;
+      vertical-align: top;
+    }
+
+    p {
+      margin-top: 0;
+    }
+  }
+}

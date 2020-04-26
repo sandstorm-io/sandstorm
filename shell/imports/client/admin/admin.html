@@ -58,6 +58,10 @@
       <li>
         <h2>{{_ "admin.admin.newAdminRoot.configuration.title"}}</h2>
         <ul class="nav-items">
+          {{#adminNavItem routeName="newAdminCertificates"}}
+            <div class="item-name">{{_ "admin.certificates.name"}}</div>
+            <div class="item-subtext">{{_ "admin.certificates.subtext"}}</div>
+          {{/adminNavItem}}
           {{#adminNavItem routeName="newAdminLogin"}}
             <div class="item-name">{{_ "admin.identityProviders.name"}}</div>
             <div class="item-subtext">{{_ "admin.identityProviders.subtext"}}</div>

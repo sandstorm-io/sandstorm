@@ -30,6 +30,8 @@ import { fillUndefinedForChangedDoc } from "/imports/server/observe-helpers.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
 import { computeStats } from "/imports/server/stats-server.js";
+import { HTTP } from "meteor/http";
+import { createAcmeAccount, renewCertificateNow } from "/imports/server/acme.js";
 
 const publicAdminSettings = [
   "google", "github", "ldap", "saml", "emailToken", "splashUrl", "signupDialog",
@@ -370,8 +372,8 @@ Meteor.methods({
     this.connection.sandstormDb.setPreinstalledApps(appAndPackageIds);
   },
 
-  setTlsKeys: function (keys) {
-    checkAuth();
+  setTlsKeys: function (token, keys) {
+    checkAuth(token);
     check(keys, {
       key: String,
       certChain: String
@@ -384,6 +386,73 @@ Meteor.methods({
 
     globalDb.collections.settings.upsert({ _id: "tlsKeys" }, { $set: { value: keys } });
   },
+
+  forgetAcmeAccount: function (token) {
+    checkAuth(token);
+    globalDb.collections.settings.remove({ _id: "acmeAccount" });
+  },
+
+  forgetAcmeChallenge: function (token) {
+    checkAuth(token);
+    globalDb.collections.settings.remove({ _id: "acmeChallenge" });
+  },
+
+  fetchAcmeDirectory: function (token, url) {
+    checkAuth(token);
+    check(url, String);
+    let response = HTTP.get(url);
+
+    if (response.statusCode != 200) {
+      throw new Meteor.Error("bad_acme_directory",
+          "Directory service responded with status code: " + response.statusCode);
+    }
+    if (!response.data) {
+      throw new Meteor.Error("bad_acme_directory",
+          "Directory service didn't return JSON.");
+    }
+
+    return response.data;
+  },
+
+  createAcmeAccount: function (token, directory, email, agreeToTerms) {
+    checkAuth(token);
+    check(directory, String);
+    check(email, String);
+    check(agreeToTerms, Boolean);
+
+    try {
+      createAcmeAccount(directory, email, agreeToTerms);
+    } catch (err) {
+      throw new Meteor.Error("couldnt_create_acme_account", err.message);
+    }
+  },
+
+  setAcmeChallenge: function (token, module, options) {
+    checkAuth(token);
+    check(module, ModuleName);
+    check(options, Object);
+
+    options = SandstormDb.escapeMongoObject(options);
+
+    globalDb.collections.settings.upsert({_id: "acmeChallenge"},
+        {$set: { value: { module, options } }});
+  },
+
+  renewCertificateNow: function (token) {
+    checkAuth(token);
+    this.unblock();
+
+    try {
+      renewCertificateNow();
+    } catch (err) {
+      throw new Meteor.Error("couldnt_renew_cert", err.message);
+    }
+  }
+});
+
+let ModuleName = Match.Where(name => {
+  check(name, String);
+  return !!name.match(/^[a-zA-Z0-9_-]*$/);
 });
 
 const authorizedAsAdmin = function (token, userId) {

@@ -33,6 +33,9 @@ import URL from "url";
 //                                 key: {<jwk>}}}
 // * {_id: "acmeChallenge", value: {module: "whatever", options: {...}}}
 //   The module name will be prefixed with "acme-dns-01-" and imported.
+// * {_id: "tlsStatus", value: {expires: Date, renewAt: Date, currentlyRenewing: Boolean}}
+//   A fake setting that is directly managed by this file in order to report the current status.
+//   TODO(cleanup): Implement a proper pseudo-collection.
 
 const SECONDS = 1000;
 const HOURS = 3600 * SECONDS;
@@ -81,6 +84,8 @@ export function createAcmeAccount(directory, email, agreeToTerms) {
   }});
 }
 
+let currentlyRenewing = false;
+
 export function renewCertificateNow() {
   let accountInfo = globalDb.getSetting("acmeAccount");
   if (!accountInfo) {
@@ -93,6 +98,24 @@ export function renewCertificateNow() {
     console.log("Can't renew certificate because ACME challenge is not configured.");
     return false;
   }
+
+  if (currentlyRenewing) {
+    console.log("Tried to initiate certificate renewal when another renewal is already running. " +
+        "If you must cancel the existing renewal process, please restart Sandstorm.");
+    return false;
+  }
+
+  currentlyRenewing = true;
+  try {
+    globalDb.collections.settings.upsert({_id: "tlsStatus"}, {$set: {"value.currentlyRenewing": true}});
+    renewCertificateNowImpl(accountInfo, challengeOpts)
+  } finally {
+    currentlyRenewing = false;
+    globalDb.collections.settings.upsert({_id: "tlsStatus"}, {$set: {"value.currentlyRenewing": false}});
+  }
+}
+
+function renewCertificateNowImpl(accountInfo, challengeOpts) {
   let challenge = Npm.require("acme-dns-01-" + challengeOpts.module)
       .create(challengeOpts.options);
 
@@ -140,6 +163,8 @@ export function renewCertificateNow() {
     }
   }});
 
+  console.log("Certificate was successfully renewed!");
+
   return true;
 }
 
@@ -178,6 +203,9 @@ function renewCertificateWhenNeeded(certChain) {
   // just re-run the whole timeout computation then.
   let timeout = Math.min(7 * DAYS, targetTime - now);
 
+  globalDb.collections.settings.upsert({_id: "tlsStatus"},
+      {$set: {"value.expires": validity.notAfter, "value.renewAt": new Date(targetTime)}});
+
   if (now > targetTime) {
     console.log("TLS certificate is near expiration; renewing now.");
     try {
@@ -210,6 +238,8 @@ function renewCertificateWhenNeeded(certChain) {
 // needed.
 if (!Meteor.settings.replicaNumber) {
   Meteor.startup(() => {
+    globalDb.collections.settings.remove({_id: "tlsStatus"});
+
     // We don't want this to block startup, so put it in a zero-time setTimeout().
     Meteor.setTimeout(() => {
       globalDb.collections.settings.find({_id: "tlsKeys"}).observe({

@@ -161,6 +161,10 @@ Router.map(function () {
     path: "/admin/networking",
     controller: newAdminRoute,
   });
+  this.route("newAdminCertificates", {
+    path: "/admin/certificates",
+    controller: newAdminRoute,
+  });
   this.route("newAdminMaintenance", {
     path: "/admin/maintenance",
     controller: newAdminRoute,

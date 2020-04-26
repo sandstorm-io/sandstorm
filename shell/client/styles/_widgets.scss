@@ -9,6 +9,11 @@
   @extend %button-secondary;
 }
 
+.button-danger {
+  @extend %button-base;
+  @extend %button-danger;
+}
+
 .button-link {
   background: none;
   border: none;

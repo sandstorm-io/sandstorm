@@ -68,7 +68,23 @@ Template.newAdminCertificates.helpers({
   },
 
   acmeChallenge() {
-    return globalDb.getSetting("acmeChallenge");
+    if (window.location.hostname.endsWith(".sandcats.io")) {
+      return { module: "sandcats" };
+    } else {
+      return globalDb.getSetting("acmeChallenge");
+    }
+  },
+
+  providerName() {
+    if (this.module == "sandcats") {
+      return "Sandcats.io";
+    } else {
+      return DNS_PROVIDERS[this.module];
+    }
+  },
+
+  isSandcats() {
+    return this.module == "sandcats";
   },
 
   modal() {

@@ -11,6 +11,13 @@ class Challenge {
     this.hostname = options.hostname;
     this.bindIp = options.bindIp;
     this.isTest = options.isTest;
+
+    // Set `propagationDelay` for ACME.js.
+    //
+    // The DNS entries should be immediately available... unless it happens that someone had just
+    // queried them before they were modified, in which case they could be cached for 60-90
+    // seconds, but that's unusual and we don't want to wait that long every time we issue a cert.
+    this.propagationDelay = 0;
   }
 
   async init({request}) {

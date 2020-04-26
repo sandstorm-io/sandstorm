@@ -48,8 +48,10 @@
     <h3>DNS provider:</h3>
     {{#with acmeChallenge}}
       <table>
-        <tr><td>Configured provider:</td><td>{{module}}</td></tr>
-        <tr><td></td><td><button class="forget-dns button-danger">Forget DNS provider</button></td></tr>
+        <tr><td>Configured provider:</td><td>{{providerName}}</td></tr>
+        {{#unless isSandcats}}
+          <tr><td></td><td><button class="forget-dns button-danger">Forget DNS provider</button></td></tr>
+        {{/unless}}
       </table>
     {{else}}
       <p>No DNS API configured. To renew certificates, Sandstorm needs access to your DNS provider

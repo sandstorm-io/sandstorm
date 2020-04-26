@@ -99,6 +99,16 @@ const pingUdp = () => {
   }
 };
 
+export function getSandcatsAcmeOptions() {
+  // Get options for acme-dns-01-sandcats challenge module.
+  return {
+    hostname: SANDCATS_NAME,
+    key: fs.readFileSync(SANDCATS_VARDIR + "/id_rsa"),
+    cert: fs.readFileSync(SANDCATS_VARDIR + "/id_rsa.pub"),
+    bindIp: BIND_IP
+  };
+}
+
 const performSandcatsRequest = (path, hostname, postData, errorCallback, responseCallback) => {
   const options = {
     hostname: hostname,
@@ -203,6 +213,11 @@ Sandcats.storeNewKeyAndCsr = (hostname, basePath) => {
 };
 
 function storeSandcatsCertToDb() {
+  if (globalDb.getSetting("acmeAccount")) {
+    // ACME has been enabled, don't overwrite the ACME-fetched key!
+    return;
+  }
+
   globalDb.collections.settings.upsert({_id: "tlsKeys"}, { $set: {
     value: {
       key: sandcats.state.key,
@@ -212,6 +227,16 @@ function storeSandcatsCertToDb() {
 }
 
 Sandcats.renewHttpsCertificateIfNeeded = () => {
+  if (globalDb.getSetting("acmeAccount")) {
+    // ACME has been enabled, skip old Sandcats certificate flow!
+    return;
+  }
+  if (!global.sandcats) {
+    // global.sandcats may be missing when using `sandstorm dev-shell`. Skip certificate renewal in
+    // that case.
+    return;
+  }
+
   const renewHttpsCertificate = () => {
     const hostname = Url.parse(process.env.ROOT_URL).hostname;
     const basePath = "/var/sandcats/https/" + (hostname);
@@ -301,10 +326,14 @@ Sandcats.renewHttpsCertificateIfNeeded = () => {
 };
 
 Sandcats.initializeSandcats = () => {
-  // The startup code doesn't automatically initialize sandcats, so call rekey() now to make that
-  // happen.
-  global.sandcats.rekey();
-  storeSandcatsCertToDb();
+  // global.sandcats may be missing when using `sandstorm dev-shell`. Don't bother refreshing keys
+  // from disk in that case.
+  if (global.sandcats) {
+    // The startup code doesn't automatically initialize sandcats, so call rekey() now to make that
+    // happen.
+    global.sandcats.rekey();
+    storeSandcatsCertToDb();
+  }
 
   const i = HOSTNAME.lastIndexOf(SANDCATS_HOSTNAME);
   if (i < 0) {

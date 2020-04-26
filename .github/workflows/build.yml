@@ -4,8 +4,6 @@ on: [push, pull_request]
 
 env:
   CCACHE_DIR: ${{ github.workspace }}/.ccache"
-  # TODO: remove this. See https://github.com/sandstorm-io/sandstorm/issues/3188
-  SKIP_UNITTESTS: 1
 jobs:
   build_and_test:
     runs-on: ubuntu-latest

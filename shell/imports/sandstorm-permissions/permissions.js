@@ -22,7 +22,7 @@ import { _ } from "meteor/underscore";
 
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
-SandstormPermissions = {};
+export const SandstormPermissions = {};
 
 class PermissionSet {
   // A wrapper around an array of booleans representing a set of permissions like "read" or

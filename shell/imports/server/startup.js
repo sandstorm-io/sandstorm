@@ -18,6 +18,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { globalDb } from "/imports/db-deprecated.js";
+import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions.js";
 
 const ROOT_URL = process.env.ROOT_URL;
 

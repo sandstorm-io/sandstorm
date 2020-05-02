@@ -29,7 +29,16 @@ exports.command = function(url, packageId, appId, dontStartGrain, callback) {
   var ret = browser
     .init()
     .url(this.launch_url + "/install/" + packageId + "?url=" + url)
-    .waitForElementVisible("#step-confirm", very_long_wait)
+    .waitForElementVisible("#step-confirm", very_long_wait);
+
+  if (!dontStartGrain) {
+    ret = ret
+      // The introjs overlay often doesn't destroy itself fast enough and intercepts
+      // clicks that we don't want it to intercept. So we manually disable it here.
+      .disableGuidedTour();
+  }
+
+  ret = ret
     .click("#confirmInstall")
     .url(this.launch_url + "/apps")
     .waitForElementVisible(".app-list", medium_wait)
@@ -37,9 +46,6 @@ exports.command = function(url, packageId, appId, dontStartGrain, callback) {
 
   if (!dontStartGrain) {
     ret = ret
-      // The introjs overlay often doesn't destroy itself fast enough and intercepts
-      // clicks that we don't want it to intercept. So we manually disable it here.
-      .disableGuidedTour()
       .click(appSelector(appId))
       .waitForElementVisible(actionSelector, short_wait)
       .click(actionSelector)

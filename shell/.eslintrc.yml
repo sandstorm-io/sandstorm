@@ -25,4 +25,3 @@ rules:
   no-unused-vars: ["off"]
   no-empty: ["off"]
   no-inner-declarations: ["off"]
-  no-prototype-builtins: ["off"]

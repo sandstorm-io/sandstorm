@@ -290,7 +290,7 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
       const conditions = _this.getElement(assertion[0], "Conditions")[0];
       if (conditions) {
         for (const key in conditions) {
-          if (conditions.hasOwnProperty(key)) {
+          if (Object.prototype.hasOwnProperty.call(conditions, key)) {
             const value = conditions[key];
             if (key === "$") {
               const nowMs = Date.now();

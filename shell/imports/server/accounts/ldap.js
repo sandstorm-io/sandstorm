@@ -47,8 +47,11 @@ LDAP.prototype.ldapCheck = function (db, options) {
 
   options = options || {};
 
-  if ((options.hasOwnProperty("username") && options.hasOwnProperty("ldapPass")) ||
-      options.hasOwnProperty("searchUsername")) {
+  let hasOwnProperty = Object.prototype.hasOwnProperty;
+  hasOwnProperty = hasOwnProperty.call.bind(hasOwnProperty);
+
+  if ((hasOwnProperty(options, "username") && hasOwnProperty(options, "ldapPass")) ||
+      hasOwnProperty(options, "searchUsername")) {
     _this.options.base = db.getLdapBase();
     _this.options.url = db.getLdapUrl();
     _this.options.searchBeforeBind = {};
@@ -97,7 +100,7 @@ LDAP.prototype.ldapCheck = function (db, options) {
     let username = options.username;
     let domain = _this.options.defaultDomain;
 
-    if (!options.hasOwnProperty("searchUsername")) {
+    if (!hasOwnProperty(options, "searchUsername")) {
       // Slide @xyz.whatever from username if it was passed in
       // and replace it with the domain specified in defaults
       let emailSliceIndex = options.username.indexOf("@");
@@ -168,7 +171,7 @@ LDAP.prototype.ldapCheck = function (db, options) {
 
         retObject.searchResults = _.omit(entry.object, "userPassword");
 
-        if (options.hasOwnProperty("searchUsername")) {
+        if (hasOwnProperty(options, "searchUsername")) {
           // This was only a search, return immediately
           resolved = true;
           ldapAsyncFut.return(retObject);

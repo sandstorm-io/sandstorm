@@ -22,6 +22,7 @@ import { Random } from "meteor/random";
 import Crypto from "crypto";
 import { inMeteor } from "/imports/server/async-helpers.js";
 import Capnp from "/imports/server/capnp.js";
+import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions.js";
 
 const privateDb = Symbol("PersistentImpl.db");
 const privateTemplate = Symbol("PersistentImpl.template");

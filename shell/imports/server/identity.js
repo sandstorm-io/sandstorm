@@ -20,6 +20,7 @@ import { _ } from "meteor/underscore";
 
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
+import { SandstormPermissions }  from "/imports/sandstorm-permissions/permissions.js";
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset.js";
 import Capnp from "/imports/server/capnp.js";

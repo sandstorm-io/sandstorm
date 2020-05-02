@@ -1,3 +1,8 @@
+### v0.263 (2020-05-02)
+- Added support for built-in TLS (aka SSL) certificate management through Let's Encrypt! This works with any domain, as long as you use one of the supported DNS providers (Sandcats.io, Cloudflare, Digital Ocean, DNSimple, Duck DNS, GoDaddy, Gandi, Namecheap, Name.com, AWS Route 53, or Vultr). Support for Let's Encrypt and all these providers was made possible via [the ACME.js library](https://git.rootprojects.org/root/acme.js) by AJ ONeal / Root.
+- Added a UI to manage TLS certificates, including the ability to manually upload them.
+- Dependency updates, refactorings, and minor bugfixes.
+
 ### v0.262 (2020-04-11)
 - Updated dependencies, including Meteor to 1.10.1.
 - `shm_open()` and friends can now be used in Sandstorm app sandboxes (because `/dev/shm` is now created as a temporary directory). Thanks @zenhack.

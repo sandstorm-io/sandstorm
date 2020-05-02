@@ -131,6 +131,9 @@ function renewCertificateNowImpl(accountInfo, challengeOpts) {
 
   // Compute domains list.
   let baseHost = URL.parse(process.env.ROOT_URL).hostname;
+  // URL.parse(globalDb.getWildcardOrigin()) doesn't work because `*` is not a valid character in
+  // hostnames so the parser ends up parsing the hostname as a path component instead. We'll have
+  // to split manually.
   let wildcard = globalDb.getWildcardOrigin().split("://")[1].split(":")[0];
   let domains = [baseHost, wildcard];
 

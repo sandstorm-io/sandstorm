@@ -30,7 +30,7 @@ namespace kj {
 
 namespace sandstorm {
 
-class BackendImpl: public Backend::Server, private kj::TaskSet::ErrorHandler {
+class BackendImpl final: public Backend::Server, private kj::TaskSet::ErrorHandler {
 public:
   BackendImpl(kj::LowLevelAsyncIoProvider& ioProvider, kj::Network& network,
               SandstormCoreFactory::Client&& sandstormCoreFactory,

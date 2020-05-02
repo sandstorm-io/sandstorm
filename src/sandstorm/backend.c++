@@ -163,7 +163,7 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
 
   // When both of those are done, connect to the address.
   auto finalPromise = promise
-      .then([this,KJ_MVCAP(addressPromise)](size_t n) mutable {
+      .then([KJ_MVCAP(addressPromise)](size_t n) mutable {
     return kj::mv(addressPromise);
   }).then([](kj::Own<kj::NetworkAddress>&& address) {
     return address->connect();
@@ -281,7 +281,7 @@ kj::Promise<void> BackendImpl::deleteGrain(DeleteGrainContext context) {
   kj::Promise<void> shutdownPromise = nullptr;
   if (iter != supervisors.end()) {
     shutdownPromise = iter->second.promise.addBranch()
-        .then([context](Supervisor::Client client) mutable {
+        .then([](Supervisor::Client client) mutable {
       return client.shutdownRequest().send().ignoreResult();
     }).then([]() -> kj::Promise<void> {
       return KJ_EXCEPTION(FAILED, "expected shutdown() to throw disconnected exception");
@@ -313,7 +313,7 @@ kj::Promise<void> BackendImpl::deleteUser(DeleteUserContext context) {
 
 // =======================================================================================
 
-class BackendImpl::PackageUploadStreamImpl: public Backend::PackageUploadStream::Server {
+class BackendImpl::PackageUploadStreamImpl final: public Backend::PackageUploadStream::Server {
 public:
   PackageUploadStreamImpl(BackendImpl& backend, Pipe inPipe = Pipe::make(),
                           Pipe outPipe = Pipe::make())
@@ -353,7 +353,7 @@ protected:
   }
 
   kj::Promise<void> done(DoneContext context) override {
-    auto forked = writeQueue.then([this,context]() mutable {
+    auto forked = writeQueue.then([this]() mutable {
       KJ_REQUIRE(inputWriteEnd != nullptr, "called done() multiple times");
       inputWriteEnd = nullptr;
       inputWriteFd = nullptr;
@@ -563,7 +563,7 @@ kj::Promise<void> BackendImpl::restoreGrain(RestoreGrainContext context) {
   });
 }
 
-class BackendImpl::FileUploadStream: public ByteStream::Server {
+class BackendImpl::FileUploadStream final: public ByteStream::Server {
 public:
   FileUploadStream(kj::String finalPath)
       : tmpPath(kj::str(finalPath, ".uploading")),

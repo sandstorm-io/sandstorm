@@ -1917,7 +1917,7 @@ public:
     auto grainOwner = req.getSealFor().initGrain();
     grainOwner.setGrainId(grainId);
     grainOwner.setSaveLabel(args.getLabel());
-    return req.send().then([this, context](auto args) mutable -> void {
+    return req.send().then([context](auto args) mutable -> void {
       context.getResults().setToken(args.getSturdyRef());
     });
   }
@@ -2257,7 +2257,7 @@ private:
     }
   }
 
-  class LogWatcher: public Handle::Server, private kj::TaskSet::ErrorHandler {
+  class LogWatcher final: public Handle::Server, private kj::TaskSet::ErrorHandler {
   public:
     explicit LogWatcher(kj::UnixEventPort& eventPort, kj::StringPtr logPath,
                         kj::AutoCloseFd logFileParam, ByteStream::Client stream)

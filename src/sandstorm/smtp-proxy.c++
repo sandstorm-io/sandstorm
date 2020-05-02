@@ -20,7 +20,7 @@ namespace sandstorm {
 
 namespace {
 
-class AsyncLineReader: public kj::AsyncIoStream {
+class AsyncLineReader final: public kj::AsyncIoStream {
 public:
   AsyncLineReader(kj::Own<kj::AsyncIoStream> inner): inner(kj::mv(inner)) {}
 

@@ -156,7 +156,7 @@ const HeaderWhitelist REQUEST_HEADER_WHITELIST(*WebSession::Context::HEADER_WHIT
 const HeaderWhitelist RESPONSE_HEADER_WHITELIST(*WebSession::Response::HEADER_WHITELIST);
 #pragma clang diagnostic pop
 
-class HttpParser: public sandstorm::Handle::Server,
+class HttpParser final: public sandstorm::Handle::Server,
                   private http_parser,
                   private kj::TaskSet::ErrorHandler {
 public:
@@ -1622,7 +1622,7 @@ public:
     context.releaseParams();
 
     return serverAddr.connect().then(
-        [this, KJ_MVCAP(httpRequest), KJ_MVCAP(clientStream), responseStream, context]
+        [KJ_MVCAP(httpRequest), KJ_MVCAP(clientStream), responseStream, context]
         (kj::Own<kj::AsyncIoStream>&& stream) mutable {
       kj::ArrayPtr<const byte> httpRequestRef = httpRequest;
       auto& streamRef = *stream;
@@ -1941,7 +1941,7 @@ private:
     });
   }
 
-  class IgnoreStream: public ByteStream::Server {
+  class IgnoreStream final: public ByteStream::Server {
   protected:
     kj::Promise<void> write(WriteContext context) override { return kj::READY_NOW; }
     kj::Promise<void> done(DoneContext context) override { return kj::READY_NOW; }
@@ -2297,7 +2297,7 @@ private:
   kj::ArrayPtr<const char> suffix;
 };
 
-class SandstormHttpBridgeImpl: public SandstormHttpBridge::Server {
+class SandstormHttpBridgeImpl final: public SandstormHttpBridge::Server {
 public:
   explicit SandstormHttpBridgeImpl(SandstormApi<BridgeObjectId>::Client&& apiCap,
                                    BridgeContext& bridgeContext)
@@ -2809,7 +2809,7 @@ public:
                                 kj::Timer& timer,
                                 bool loggedSlowStartupMessage,
                                 int numTriesSoFar) {
-    return address->connect().then([this, loggedSlowStartupMessage](auto x) -> void {
+    return address->connect().then([loggedSlowStartupMessage](auto x) -> void {
       if (loggedSlowStartupMessage) {
         KJ_LOG(WARNING, "App successfully started listening for TCP connections!");
       }

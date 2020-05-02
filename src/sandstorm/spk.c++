@@ -157,7 +157,7 @@ private:
   bool committed = false;
 };
 
-class SpkTool: public AbstractMain {
+class SpkTool final: public AbstractMain {
   // Main class for the Sandstorm spk tool.
 
 public:

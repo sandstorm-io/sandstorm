@@ -140,7 +140,7 @@ kj::Promise<void> WebSessionBridge::request(
     }
 
     case kj::HttpMethod::POST: {
-      auto doNonStreaming = [this,method,path,&headers,&requestBody,&response]() {
+      auto doNonStreaming = [this,path,&headers,&requestBody,&response]() {
         return requestBody.readAllBytes()
             .then([this,path,&headers,&response]
                   (kj::Array<byte>&& data) mutable {
@@ -170,11 +170,11 @@ kj::Promise<void> WebSessionBridge::request(
       //   case of old apps which don't support streaming. That fallback should move into the
       //   compat layer, then we can avoid the round-trip here.
       return req.send()
-          .then([this,&headers,&requestBody,&response,KJ_MVCAP(streamer)]
+          .then([this,&requestBody,&response,KJ_MVCAP(streamer)]
                 (capnp::Response<WebSession::PostStreamingResults> result) mutable {
         return handleStreamingRequestResponse(
             result.getStream(), requestBody, kj::mv(streamer), response);
-      }, [this,KJ_MVCAP(doNonStreaming)](kj::Exception&& e) -> kj::Promise<void> {
+      }, [KJ_MVCAP(doNonStreaming)](kj::Exception&& e) -> kj::Promise<void> {
         // Unfortunately, some apps are so old that they don't know about UNIMPLEMENTED exceptions,
         // so we have to check the description.
         if (e.getType() == kj::Exception::Type::UNIMPLEMENTED ||
@@ -189,7 +189,7 @@ kj::Promise<void> WebSessionBridge::request(
     }
 
     case kj::HttpMethod::PUT: {
-      auto doNonStreaming = [this,method,path,&headers,&requestBody,&response]() {
+      auto doNonStreaming = [this,path,&headers,&requestBody,&response]() {
         return requestBody.readAllBytes()
             .then([this,path,&headers,&response]
                   (kj::Array<byte>&& data) mutable {
@@ -219,11 +219,11 @@ kj::Promise<void> WebSessionBridge::request(
       //   case of old apps which don't support streaming. That fallback should move into the
       //   compat layer, then we can avoid the round-trip here.
       return req.send()
-          .then([this,&headers,&requestBody,&response,KJ_MVCAP(streamer)]
+          .then([this,&requestBody,&response,KJ_MVCAP(streamer)]
                 (capnp::Response<WebSession::PutStreamingResults> result) mutable {
         return handleStreamingRequestResponse(
             result.getStream(), requestBody, kj::mv(streamer), response);
-      }, [this,KJ_MVCAP(doNonStreaming)](kj::Exception&& e) -> kj::Promise<void> {
+      }, [KJ_MVCAP(doNonStreaming)](kj::Exception&& e) -> kj::Promise<void> {
         // Unfortunately, some apps are so old that they don't know about UNIMPLEMENTED exceptions,
         // so we have to check the description.
         if (e.getType() == kj::Exception::Type::UNIMPLEMENTED ||
@@ -763,7 +763,7 @@ public:
   }
 };
 
-class NoStreamingByteStream: public ByteStream::Server {
+class NoStreamingByteStream final: public ByteStream::Server {
 public:
   kj::Promise<void> write(WriteContext context) override {
     KJ_FAIL_REQUIRE("streamed response not expected");
@@ -846,7 +846,7 @@ kj::Promise<void> WebSessionBridge::openWebSocket(
   }).attach(kj::mv(clientStreamPaf.fulfiller));
 }
 
-class WebSessionBridge::ByteStreamImpl: public ByteStream::Server {
+class WebSessionBridge::ByteStreamImpl final: public ByteStream::Server {
 public:
   ByteStreamImpl(uint statusCode, kj::StringPtr statusText,
                  kj::HttpHeaders&& headers,

@@ -917,6 +917,12 @@
         "restoreButton": "Restore defaults"
       }
     },
+    "certificates": {
+      "name": "SSL/TLS Certificates",
+      "subtext": "Configure certificates manually or using Let's Encrypt.",
+      "newAdminCertificates": {
+      }
+    },
     "users": {
       "name": "Users",
       "subtext": "Manage all users on this Sandstorm installation."

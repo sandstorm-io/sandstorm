@@ -2309,6 +2309,22 @@ SandstormDb.escapeMongoKey = (key) => {
   return key.replace(".", "\uFF0E").replace("$", "\uFF04");
 };
 
+SandstormDb.escapeMongoObject = (obj) => {
+  if (obj && (typeof obj == "object")) {
+    if (obj instanceof Array) {
+      return obj.map(e => SandstormDb.escapeMongoObject(e));
+    } else {
+      let result = {};
+      for (let key in obj) {
+        result[SandstormDb.escapeMongoKey(key)] = SandstormDb.escapeMongoObject(obj[key]);
+      }
+      return result;
+    }
+  } else {
+    return obj;
+  }
+};
+
 function appNameFromPackage(packageObj) {
   // This function takes a Package object from Mongo and returns an
   // app title.

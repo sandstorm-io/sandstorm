@@ -233,7 +233,7 @@ private:
   class TlsKeyCallbackImpl;
 };
 
-class RealIpService: public kj::HttpService {
+class RealIpService final: public kj::HttpService {
   // Wrapper that should be instantiated for each connection to capture IP address in X-Real-IP.
 
 public:
@@ -250,7 +250,7 @@ private:
   bool trustClient = false;
 };
 
-class AltPortService: public kj::HttpService {
+class AltPortService final: public kj::HttpService {
   // Wrapper that should be exported on ports other than the main port. This will redirect
   // clients to the main port where appropriate.
 

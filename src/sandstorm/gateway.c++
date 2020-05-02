@@ -952,7 +952,7 @@ void GatewayTlsManager::unsetKeys() {
   readyFulfiller->fulfill();
 }
 
-class GatewayTlsManager::TlsKeyCallbackImpl: public GatewayRouter::TlsKeyCallback::Server {
+class GatewayTlsManager::TlsKeyCallbackImpl final: public GatewayRouter::TlsKeyCallback::Server {
 public:
   TlsKeyCallbackImpl(GatewayTlsManager& parent): parent(parent) {}
 
@@ -1021,11 +1021,10 @@ kj::Promise<void> GatewayTlsManager::listenSmtpsLoop(kj::ConnectionReceiver& por
   return port.accept().then([this, &port](kj::Own<kj::AsyncIoStream>&& stream) {
     KJ_IF_MAYBE(t, currentTls) {
       auto tls = kj::addRef(**t);
-      auto& tlsRef = tls->tls;
       tasks.add(tls->tls.wrapServer(kj::mv(stream))
-          .then([this,&tlsRef](kj::Own<kj::AsyncIoStream>&& encrypted) {
+          .then([this](kj::Own<kj::AsyncIoStream>&& encrypted) {
         return smtpServer.connect()
-            .then([this,&tlsRef,encrypted=kj::mv(encrypted)]
+            .then([encrypted=kj::mv(encrypted)]
                   (kj::Own<kj::AsyncIoStream>&& server) mutable {
           return pumpDuplex(kj::mv(encrypted), kj::mv(server));
         });

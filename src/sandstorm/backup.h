@@ -23,7 +23,7 @@
 
 namespace sandstorm {
 
-class BackupMain: public AbstractMain {
+class BackupMain final: public AbstractMain {
   // The main class for the "backup" command, which creates or restores a grain backup.
 public:
   BackupMain(kj::ProcessContext& context);

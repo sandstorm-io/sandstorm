@@ -2311,11 +2311,15 @@ SandstormDb.escapeMongoKey = (key) => {
 
 SandstormDb.escapeMongoObject = (obj) => {
   if (obj && (typeof obj == "object")) {
-    let result = {};
-    for (let key in obj) {
-      result[SandstormDb.escapeMongoKey(key)] = obj[key];
+    if (obj instanceof Array) {
+      return obj.map(e => SandstormDb.escapeMongoObject(e));
+    } else {
+      let result = {};
+      for (let key in obj) {
+        result[SandstormDb.escapeMongoKey(key)] = SandstormDb.escapeMongoObject(obj[key]);
+      }
+      return result;
     }
-    return result;
   } else {
     return obj;
   }

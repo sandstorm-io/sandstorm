@@ -645,7 +645,7 @@ kj::Own<kj::HttpService> GatewayService::getApiBridge(
         // On error, invalidate the cached session immediately.
         apiHosts.erase(key);
       }));
-      return result;
+      return kj::mv(result);
     });
 
     ApiHostEntry entry {

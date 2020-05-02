@@ -272,9 +272,9 @@
       "integrity": "sha512-CjHWEMECc2/UxOZh0kpiz3lEyX2Px3rQS9HzD20lxMvx571ivOBQKeLnqEjxUY0BMgp6WJWo/pQLRBwMW5v4WQ=="
     },
     "acme-dns-01-cloudflare": {
-      "version": "1.2.0",
-      "resolved": "https://registry.npmjs.org/acme-dns-01-cloudflare/-/acme-dns-01-cloudflare-1.2.0.tgz",
-      "integrity": "sha512-YeuO/Jg5ArFr0IUlmF/TnuitRExpRENJqXpc5vjLr0Vm/NFuvWyv3XzXF3R3xDriRgk2ccUeTEIQZIUdlX6DWQ==",
+      "version": "1.2.1",
+      "resolved": "https://registry.npmjs.org/acme-dns-01-cloudflare/-/acme-dns-01-cloudflare-1.2.1.tgz",
+      "integrity": "sha512-97qySVXazF73mbBhEKFc9tHox3bTRKbkM2j/jDV3XEA8uDYBXZY4CCWRwq13XzhDn5GHzd/hVpQ0Ss28wCPrNw==",
       "requires": {
         "cloudflare": "^2.7.0"
       }

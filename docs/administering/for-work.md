@@ -142,6 +142,10 @@ Implementation notes for LDAP that may apply to your site:
 - Some LDAP servers require authentication before permitting a search. In that case, you will need
   to configure an **Bind user DN** and **Bind user password**, a user and password for the search
   user.
+  
+- In Active Directory, the `uid` field is generally not set. In a typical Active Directory setup,
+  set the **LDAP username attribute** to either `sAMAccountName` for username-only (e.g. bob) or
+  `userPrincipalName` for user-at-domain (e.g. bob@example.com) format login.
 
 - Typically LDAP servers use the `cn` field to store the name of the person who is successfully
   logging in. `cn` is short for common name. If your LDAP server is configured differently, please

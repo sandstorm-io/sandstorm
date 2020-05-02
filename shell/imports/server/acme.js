@@ -62,10 +62,22 @@ function createAcmeClient(directory) {
     }
   });
 
-  waitPromise(acme.init(directory));
+  if (directory) {
+    waitPromise(acme.init(directory));
+  }
 
   return acme;
 }
+
+// By default ACME.js phones home to their servers to track e-mail addresses of maintainers in
+// order to send security notices. We have already registered security+acme@sandstorm.io as a
+// maintainer, so doing it again is redundant, and we don't want everyone's Sandstorm servers
+// pinging an unexpected third party. So, we monkey-patch the library to remove this call.
+import Maintainers from "@root/acme/maintainers.js";
+if (!Maintainers.init) {
+  throw new Error("code to monkey-patch ACME.js needs update");
+}
+Maintainers.init = (me) => {};
 
 export function createAcmeAccount(directory, email, agreeToTerms) {
   let accountKeypair = waitPromise(Keypairs.generate({ kty: 'EC', format: 'jwk' }));

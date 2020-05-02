@@ -526,7 +526,7 @@ kj::String Indexer::getReviewQueueJson() {
 
 // =======================================================================================
 
-class Indexer::UploadStreamImpl: public AppIndex::UploadStream::Server {
+class Indexer::UploadStreamImpl final: public AppIndex::UploadStream::Server {
 public:
   UploadStreamImpl()
       : spkFile("/var/tmp") {}

@@ -4,14 +4,14 @@
 # but you can also edit it by hand.
 
 # ES6 support.
-ecmascript@0.14.2
+ecmascript@0.14.3
 ecmascript-collections
 
 # Formerly standard-app-packages, which was deprecated in favor of meteor-platform,
 # which was deprecated in favor of splitting things out separately
 meteor-base@1.4.0
 underscore@1.0.10
-mongo@1.9.0
+mongo@1.10.0
 blaze-html-templates@1.0.4
 jquery@1.11.10
 session@1.2.0
@@ -40,7 +40,7 @@ oauth@1.3.0
 service-configuration@1.0.11
 github-oauth@1.2.3
 google-oauth@1.3.0
-dynamic-import@0.5.1
+dynamic-import@0.5.2
 tap:i18n
-typescript@3.7.5
+typescript@3.7.6
 meteortesting:mocha

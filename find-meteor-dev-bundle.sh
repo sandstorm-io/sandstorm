@@ -43,7 +43,7 @@ METEOR_RELEASE=${1:-$(<.meteor/release)}
 CACHE_FILE="../tmp/$METEOR_RELEASE.location"
 
 mkdir -p ../tmp
-if [ -e "$CACHE_FILE" ]; then
+if [ -s "$CACHE_FILE" ]; then
   cat "$CACHE_FILE"
   exit
 fi

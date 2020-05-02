@@ -1,7 +1,7 @@
 {
   "name": "Sandstorm",
   "short_name": "Sandstorm",
-  "descritpion": "Self-host web-based productivity apps easily and securely.",
+  "description": "Self-host web-based productivity apps easily and securely.",
   "icons": [
     {
       "src": "icon32.png",

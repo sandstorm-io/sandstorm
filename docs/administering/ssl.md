@@ -21,10 +21,9 @@ You have a few options.
 
 To share port 443 with other services on the same machine:
 
-- You [can install `sniproxy` to share port
-  443](sniproxy.md) between your
-  existing server and Sandstorm so that Sandstorm can manage (and autorenew) its own certificates.
-  This allows you to combine an **existing web server on port 443** with free sandcats.io HTTPS.
+- You [can install `sniproxy` to share port 443](sniproxy.md) between your existing server and Sandstorm so that
+  Sandstorm can manage (and autorenew) its own certificates. This allows you to combine an **existing
+  web server on port 443** with free sandcats.io HTTPS.
   
 - You [can follow this guide](https://juanjoalvarez.net/es/detail/2017/jan/12/how-set-sandstorm-behind-reverse-proxy-keeping-you/)
   that explains how to use a [cron script](https://github.com/juanjux/sandstorm-sandcats-cert-installer) 

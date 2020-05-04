@@ -21,6 +21,8 @@ import { _ } from "meteor/underscore";
 
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { MAILING_LIST_BONUS } from "/imports/blackrock-payments/constants.js";
+import { StripeCards, StripeCustomerData }
+  from "/imports/blackrock-payments/client/payments-client.js";
 
 var idCounter = 0;
 

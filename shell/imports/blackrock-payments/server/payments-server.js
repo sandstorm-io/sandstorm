@@ -40,7 +40,7 @@ import { MAILING_LIST_BONUS } from "/imports/blackrock-payments/constants.js";
 const ROOT_URL = process.env.ROOT_URL;
 const HOSTNAME = Url.parse(ROOT_URL).hostname;
 
-stripe = StripeModule(Meteor.settings.stripeKey);
+export const stripe = StripeModule(Meteor.settings.stripeKey);
 
 BlackrockPayments = {};
 

@@ -17,8 +17,8 @@
 import { Meteor } from "meteor/meteor";
 import { Mongo } from "meteor/mongo";
 
-StripeCustomerData = new Mongo.Collection(null);  // see getStripeData for where this is produced
-StripeCards = new Mongo.Collection(null);
+export const StripeCustomerData = new Mongo.Collection(null);  // see getStripeData for where this is produced
+export const StripeCards = new Mongo.Collection(null);
 
 updateStripeData = function (cb) {
   Meteor.call("getStripeData", function (err, data) {

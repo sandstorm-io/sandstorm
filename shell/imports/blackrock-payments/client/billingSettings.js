@@ -21,6 +21,9 @@ import { _ } from "meteor/underscore";
 
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
+import { StripeCards, StripeCustomerData }
+  from "/imports/blackrock-payments/client/payments-client.js";
+
 var messageListener = function (showPrompt, template, event) {
   if (event.origin !== window.location.protocol + "//" + makeWildcardHost("payments")) {
     return;

@@ -18,6 +18,8 @@ import Crypto from "crypto";
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 
+import { stripe } from "/imports/blackrock-payments/server/payments-server.js";
+
 import Capnp from "/imports/server/capnp.js";
 const PaymentsRpc = Capnp.importSystem("sandstorm/payments.capnp");
 

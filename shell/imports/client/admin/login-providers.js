@@ -3,7 +3,6 @@ import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { TAPi18n } from "meteor/tap:i18n";
-import { Iron } from "meteor/iron:router";
 
 import { globalDb } from "/imports/db-deprecated.js";
 

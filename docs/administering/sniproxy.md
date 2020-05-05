@@ -8,7 +8,7 @@ The purpose of this tutorial is to set up sniproxy so it's possible to use Sands
 
 The main reason is to allow users to connect with your Sandstorm instance in the standard HTTPS port (443) and keep using that port also for any other web apps.
 
-This action is going to change the BASE_URL of Sandstorm, presumably, so you'll trigger the erasing of OAuth configuration. To fix that, you will need to follow the "How do I log in, if there's a problem with logging in via the web?" section of [the FAQ](faq.md).
+This action is going to change the BASE_URL of Sandstorm, presumably, so you'll end up erasing the OAuth configuration. To fix that, you will need to follow the "How do I log in, if there's a problem with logging in via the web?" section of [the FAQ](faq.md).
 
 This document assumes the server is running Debian or one of its derivatives (e.g. Ubuntu). If your server is not, you might need to adjust some steps. Note that there will be some downtime in this process so you might want to do it when your server is not very busy.
 
@@ -33,15 +33,11 @@ cd sniproxy
 sudo dpkg -i ../sniproxy_*_*.deb
 ```
 
-## Setting it up
+## Setting up sniproxy
 
 We'll be using sniproxy to listen on the standard HTTPS port (443) and allow it to decide where to send the request based on the hostname being requested. If it's a Sandstorm domain (ends in `.sandcats.io`) it will forward the request to Sandstorm on port 6443. In any other case it'll forward the request to the web server you already had, which we will switch from listening on port 443 to port 7443.
 
-The ports for Sandstorm and the web server are arbitrary; you can choose ones that work for you in case you have a collision with another service you're running. It should work as long as you're consistent in replacing the ports in the web server, Sandstorm and sniproxy configuration files.
-
-## Setting up sniproxy
-
-We'll set sniproxy to forward Sandstorm domains to the Sandstorm instance and to send any other request to the web server. We'll disable the HTTP proxy feature in sniproxy as there is no need for the HTTP requests to go through it.
+The ports for Sandstorm and the web server are arbitrary; you can choose ones that work for you in case you have a collision with another service you're running. It should work as long as you're consistent in replacing the ports in the web server, Sandstorm and sniproxy configuration files. We'll also disable the HTTP proxy feature in sniproxy as there is no need for the HTTP requests to go through it.
 
 ### Configuration
 
@@ -51,7 +47,7 @@ You will need to edit the sniproxy configuration file by running something like:
 sudo nano /etc/sniproxy.conf
 ```
 
-/etc/sniproxy.conf contents:
+Here is the example configuration for `/etc/sniproxy.conf`:
 
 ```
 # sniproxy.conf
@@ -93,13 +89,13 @@ sudo update-rc.d sniproxy enable
 
 Enabling TLS support on Sandstorm is out of the scope of this tutorial. If you don’t have it set up yet, head to [the HTTPS guide](ssl.md).
 
-We need to change Sandstorm's configuration so that it listens on the port that sniproxy is forwarding the requests to (9687 in these examples). We make sure BASE_URL and WILDCARD_HOST use URLs on port 443. Since that is the standard port for HTTPS, we don't need :443 at the end. We also adjust the BIND_IP. We'll assume you have ```example.sandcats.io``` as your Sandstorm address in the configuration example; you can change the example to use a different domain if you need to.
+We need to change Sandstorm's configuration so that it listens on the port that sniproxy is forwarding the requests to (6443, in this example). We make sure BASE_URL and WILDCARD_HOST use URLs on port 443. Since that is the standard port for HTTPS, we don't need :443 at the end. We also adjust the BIND_IP. We'll assume you have `example.sandcats.io` as your Sandstorm address in the configuration example; you will replace this with your own Sandcats hostname.
 
 ```bash
 sudo nano /opt/sandstorm/sandstorm.conf
 ```
 
-Relevant contents of ```/opt/sandstorm/sandstorm.conf```:
+Relevant contents of `/opt/sandstorm/sandstorm.conf`:
 
 ```
 # Bind localhost to avoid anyone connecting directly to Sandstorm

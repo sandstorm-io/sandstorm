@@ -1,3 +1,6 @@
+### v0.264 (2020-05-05)
+- Fixed breakage in login providers admin panel and setup wizard caused by recent refactoring.
+
 ### v0.263 (2020-05-02)
 - Added support for built-in TLS (aka SSL) certificate management through Let's Encrypt! This works with any domain, as long as you use one of the supported DNS providers (Sandcats.io, Cloudflare, Digital Ocean, DNSimple, Duck DNS, GoDaddy, Gandi, Namecheap, Name.com, AWS Route 53, or Vultr). Support for Let's Encrypt and all these providers was made possible via [the ACME.js library](https://git.rootprojects.org/root/acme.js) by AJ ONeal / Root.
 - Added a UI to manage TLS certificates, including the ability to manually upload them.

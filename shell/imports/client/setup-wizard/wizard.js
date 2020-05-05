@@ -5,6 +5,7 @@ import { Tracker } from "meteor/tracker";
 import { ReactiveVar } from "meteor/reactive-var";
 import { _ } from "meteor/underscore";
 import { Router } from "meteor/iron:router";
+import { Iron } from "meteor/iron:core";
 
 import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";
 import AccountsUi from "/imports/client/accounts/accounts-ui.js";

@@ -21,6 +21,7 @@ import { _ } from "meteor/underscore";
 
 import Identicon from "/imports/sandstorm-identicons/identicon.js";
 import { SandstormDb } from "./db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 let makeIdenticon;
 let httpProtocol;

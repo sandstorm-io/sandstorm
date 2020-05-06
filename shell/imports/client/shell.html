@@ -210,8 +210,6 @@ limitations under the License.
 </template>
 
 <template name="root">
-  {{>title (_ "shell.root.title")}}
-
   <div id="intro" class="{{#if splashUrl}}has-splash{{/if}}">
     {{> loginButtonsDialog accountsUi=globalAccountsUi}}
     {{#if splashUrl}}

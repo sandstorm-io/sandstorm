@@ -40,9 +40,6 @@
             "title": "查无此沙",
             "text": "无法找到该沙粒 :("
         },
-        "root": {
-            "title": ""
-        },
         "grainLogContents": {
             "prefix": "……"
         },

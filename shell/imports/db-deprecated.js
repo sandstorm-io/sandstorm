@@ -63,7 +63,6 @@ ApiTokens = globalDb.collections.apiTokens;
 Notifications = globalDb.collections.notifications;
 StatsTokens = globalDb.collections.statsTokens;
 Misc = globalDb.collections.misc;
-Settings = globalDb.collections.settings;
 
 currentUserGrains = globalDb.currentUserGrains.bind(globalDb);
 isDemoUser = globalDb.isDemoUser.bind(globalDb);

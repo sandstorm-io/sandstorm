@@ -21,7 +21,7 @@ import { _ } from "meteor/underscore";
 
 import Identicon from "/imports/sandstorm-identicons/identicon.js";
 import { SandstormDb } from "./db.js";
-import { Settings } from "/imports/db-deprecated.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 let makeIdenticon;
 let httpProtocol;
@@ -230,7 +230,7 @@ SandstormDb.fillInProfileDefaults = function (credential, profile) {
     profile.name = profile.name || "Demo User";
     profile.handle = profile.handle || "demo";
   } else if (services.ldap) {
-    const setting = Settings.findOne({ _id: "ldapNameField" });
+    const setting = globalDb.collections.settings.findOne({ _id: "ldapNameField" });
     const key = setting ? setting.value : "";
     profile.handle = profile.handle || services.ldap.username;
     profile.name = profile.name || services.ldap.rawAttrs[key] || profile.handle;

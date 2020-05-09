@@ -1,3 +1,7 @@
+### v0.265 (2020-05-09)
+- Fixed regression preventing first-time LDAP logins.
+- Dependency updates, refactorings, and minor bugfixes.
+
 ### v0.264 (2020-05-05)
 - Fixed breakage in login providers admin panel and setup wizard caused by recent refactoring.
 

@@ -369,7 +369,7 @@ embedded into the Powerbox UI and displayed when your app is chosen.
 
 To advertise that your app implements a powerbox API, the `ViewInfo` returned by your
 `UiView.getViewInfo()` must fill in the `matchRequests` field to indicate what queries it should
-match. If a powerbox query matches one of the descirptors you specify, your grain will be displayed
+match. If a powerbox query matches one of the descriptors you specify, your grain will be displayed
 as an option in the powerbox UI. See `UiView.ViewInfo` in
 [grain.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/grain.capnp).
 

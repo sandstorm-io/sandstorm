@@ -393,7 +393,7 @@ interface UiView @0xdbb4d798ea67e2e7 {
   # in implementing an `EmailVerifier` that cannot be MITM'd. NOTE: `tabId` should NOT be presumed
   # to be a secret, although no two tabs in all of time will have the same `tabId`.
   #
-  # For API requests, `tabId` uniquely identifies the token, as so can be used to correlate
+  # For API requests, `tabId` uniquely identifies the token, and so can be used to correlate
   # multiple requests from the same client.
 
   newRequestSession @2 (userInfo :Identity.UserInfo, context :SessionContext,

@@ -40,9 +40,6 @@
       "title": "Not Found",
       "text": "404 Not Found :("
     },
-    "root": {
-      "title": "Home"
-    },
     "grainLogContents": {
       "prefix": "..."
     },

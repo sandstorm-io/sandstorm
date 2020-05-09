@@ -851,7 +851,8 @@ full_server_install() {
       ACCEPTED_FULL_SERVER_INSTALL=no
     fi
 
-    if [ "yes" = "$SHOW_MESSAGE_ABOUT_NEEDING_PORTS_OPEN" ] ; then
+    if [ "yes" = "$ACCEPTED_FULL_SERVER_INSTALL" ] &&
+      [ "yes" = "$SHOW_MESSAGE_ABOUT_NEEDING_PORTS_OPEN" ] ; then
       echo ""
       echo "NOTE: It looks like your system already has some other web server installed"
       echo "      (port 80 and/or 443 are taken), so Sandstorm cannot act as your main"
@@ -894,6 +895,7 @@ full_server_install() {
       echo "The automatic setup script needs root in order to:"
       echo "* Create a separate user to run Sandstorm as, and"
       echo "* Set up Sandstorm to start on system boot."
+      echo ""
       fail "E_DECLINED_AUTO_SETUP_DETAILS" "For a customized install, please re-run install.sh, and choose option (2) "\
            "to do a development install."
     fi

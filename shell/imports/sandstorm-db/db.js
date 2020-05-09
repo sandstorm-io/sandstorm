@@ -2410,6 +2410,8 @@ _.extend(SandstormDb, {
 });
 
 if (Meteor.isServer) {
+  import { waitPromise } from "/imports/server/async-helpers.js";
+
   const Crypto = Npm.require("crypto");
   const ContentType = Npm.require("content-type");
   const Zlib = Npm.require("zlib");
@@ -2633,18 +2635,6 @@ if (Meteor.isServer) {
 
   SandstormDb.prototype.cleanupExpiredAssetUploads = function () {
     this.collections.assetUploadTokens.remove({ expires: { $lt: Date.now() } });
-  };
-
-  // TODO(cleanup): lift this out of the package so it can share with the ones in async-helpers.js
-  const Future = Npm.require("fibers/future");
-  const promiseToFuture = (promise) => {
-    const result = new Future();
-    promise.then(result.return.bind(result), result.throw.bind(result));
-    return result;
-  };
-
-  const waitPromise = (promise) => {
-    return promiseToFuture(promise).wait();
   };
 
   SandstormDb.prototype.deleteGrains = function (query, backend, type) {

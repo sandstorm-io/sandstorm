@@ -63,6 +63,7 @@ nav:
         - "Free sandcats.io HTTPS": "administering/sandcats-https.md"
         - "Self-signed SSL": "administering/self-signed.md"
         - "Reverse Proxy": "administering/reverse-proxy.md"
+        - "Sharing the HTTPS Port": "administering/sniproxy.md"
         - "Email": "administering/email.md"
         - "Running Sandstorm offline": "administering/offline.md"
     - "Reference docs for sandstorm.conf": "administering/config-file.md"

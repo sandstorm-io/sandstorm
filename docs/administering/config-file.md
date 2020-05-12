@@ -51,10 +51,10 @@ typically a static publishing website, then serve a normal response.
 
 ### HTTPS_PORT
 
-A port number for Sandstorm to bind on and listen for HTTPS. Note that Sandstorm's built-in HTTPS
-assumes you are using the sandcats service, so that it can automatically renew a wildcard
-certificate for you. On a default install, if port 443 was available and the user chose to use
-sandcats, this is 443. If this config option is missing, Sandstorm's built-in HTTPS server is
+A port number for Sandstorm to bind on and listen for HTTPS. On a default install, if port 443
+was available and the user chose to use Sandcats, this is 443. However, this may be set for any
+Sandstorm-managed TLS configuration, including automated renewals of certificates with Let's Encrypt
+with a supported DNS provider. If this config option is missing, Sandstorm's built-in HTTPS server is
 disabled.
 
 If Sandstorm is started as root, Sandstorm binds to this port as root, allowing it to use

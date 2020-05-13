@@ -180,12 +180,14 @@ Config readConfig(const char *path, bool parseUids) {
     auto key = trim(line.slice(0, equalsPos));
     auto value = trim(line.slice(equalsPos + 1));
 
-    if (key == "SERVER_USER" && parseUids) {
-      KJ_IF_MAYBE(u, getUserIds(value)) {
-        config.uids = kj::mv(*u);
-        KJ_REQUIRE(config.uids.uid != 0, "Sandstorm cannot run as root.");
-      } else {
-        KJ_FAIL_REQUIRE("invalid config value SERVER_USER", value);
+    if (key == "SERVER_USER") {
+      if(parseUids) {
+        KJ_IF_MAYBE(u, getUserIds(value)) {
+          config.uids = kj::mv(*u);
+          KJ_REQUIRE(config.uids.uid != 0, "Sandstorm cannot run as root.");
+        } else {
+          KJ_FAIL_REQUIRE("invalid config value SERVER_USER", value);
+        }
       }
     } else if (key == "HTTPS_PORT") {
       KJ_IF_MAYBE(p, parseUInt(value, 10)) {
@@ -262,6 +264,8 @@ Config readConfig(const char *path, bool parseUids) {
       config.stripeKey = kj::mv(value);
     } else if (key == "STRIPE_PUBLIC_KEY") {
       config.stripePublicKey = kj::mv(value);
+    } else {
+      KJ_LOG(WARNING, "Ignoring unrecognized config option", key);
     }
   }
 

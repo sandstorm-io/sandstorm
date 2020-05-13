@@ -178,19 +178,20 @@ ALLOW_DEV_ACCOUNTS=false
 **Used rarely.** A boolean (true/false or yes/no) that adjusts internal settings for Sandstorm's
 integration test suite.
 
-### HIDE_TROUBLESHOOTING
-
-**Used rarely.** A boolean (true/false or yes/no) that hides the "Troubleshooting" link on
-the login areas within Sandstorm.
-
-### WILDCARD_PARENT_URL
-
-**Deprecated.** Historic alternative to WILDCARD_HOST.
-
 ### DDP_DEFAULT_CONNECTION_URL
 
 **Used rarely.** Alternate URL for Meteor DDP. Useful in the unusual case that you use a CDN for
 your BASE_URL.
+
+### HIDE_TROUBLESHOOTING
+
+**Deprecated.** A boolean (true/false or yes/no) that hides the "Troubleshooting" link on
+the login areas within Sandstorm. Works at present, but may be removed in the future. Use the
+Personalization section of the admin panel to configure this and other related options.
+
+### WILDCARD_PARENT_URL
+
+**Deprecated.** Historic alternative to WILDCARD_HOST.
 
 ### MAIL_URL
 

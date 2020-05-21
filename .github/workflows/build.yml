@@ -64,7 +64,14 @@ jobs:
       #    name: sandstorm-0-fast.tar.xz
       #    path: sandstorm-0-fast.tar.xz
       - name: lint
-        run: make lint
+        run: |
+          # In addition to making sure the linting step doesn't flag any errors,
+          # we also want to make sure the number of warnings doesn't increase.
+          # We check for equality; if the number decreases, great! But then update
+          # the constant below.
+          make lint | tee lint.log
+          num_problems=$(cat lint.log | grep ' problems (0 errors, ' | awk '{print $2}')
+          [ "$num_problems" = 857 ]
       - name: test
         run: |
           set -o pipefail

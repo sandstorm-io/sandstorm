@@ -24,7 +24,6 @@ import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
 
 import Crypto from "crypto";
-import Future from "fibers/future";
 
 const ValidHandle = Match.Where(function (handle) {
   check(handle, String);

@@ -26,7 +26,6 @@ import { REQUEST_HEADER_WHITELIST, RESPONSE_HEADER_WHITELIST }
     from "/imports/server/header-whitelist.js";
 import { globalDb } from "/imports/db-deprecated.js";
 
-import Future from "fibers/future";
 import Url from "url";
 import Http from "http";
 import Https from "https";

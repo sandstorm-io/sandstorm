@@ -22,7 +22,7 @@ import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 
 import { send as sendEmail } from "/imports/server/email.js";
-import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { waitPromise } from "/imports/server/async-helpers.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
 import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions.js";

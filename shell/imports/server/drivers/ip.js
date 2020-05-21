@@ -19,7 +19,6 @@ import { Match, check } from "meteor/check";
 
 import Bignum from "bignum";
 import { PersistentImpl } from "/imports/server/persistent.js";
-import Future from "fibers/future";
 import Net from "net";
 import Tls from "tls";
 import Dgram from "dgram";

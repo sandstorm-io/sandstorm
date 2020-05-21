@@ -24,12 +24,7 @@ import { inMeteor } from "/imports/server/async-helpers.js";
 import { globalDb } from "/imports/db-deprecated.js";
 import ServerIdenticon from "/imports/sandstorm-identicons/identicon-server.js";
 import Url from "url";
-import Fs from "fs";
-import Dns from "dns";
 import Future from "fibers/future";
-import Http from "http";
-import Capnp from "/imports/server/capnp.js";
-const ByteStream = Capnp.importSystem("sandstorm/util.capnp").ByteStream;
 
 const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 const DDP_HOSTNAME = process.env.DDP_DEFAULT_CONNECTION_URL &&
@@ -74,7 +69,7 @@ function checkMagic(buf, magic) {
   return true;
 }
 
-function serveStaticAsset(req, res, hostId) {
+function serveStaticAsset(req, res) {
   inMeteor(() => {
     if (req.method === "GET") {
       const assetCspHeader = "default-src 'none'; style-src 'unsafe-inline'; sandbox";

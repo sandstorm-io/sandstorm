@@ -14,11 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Crypto from "crypto";
 import Http from "http";
 import Https from "https";
-import Net from "net";
-import Dgram from "dgram";
 import Url from "url";
 
 import { Meteor } from "meteor/meteor";
@@ -33,12 +30,8 @@ import Capnp from "/imports/server/capnp.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
 
-const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 const HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;
-const Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
 const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;
-const IpRpc = Capnp.importSystem("sandstorm/ip.capnp");
-const EmailSendPort = EmailRpc.EmailSendPort;
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");
 const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 

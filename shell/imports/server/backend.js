@@ -15,7 +15,7 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
-import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.ts";
 import Capnp from "/imports/server/capnp.js";
 import { globalDb } from "/imports/db-deprecated.js";
 

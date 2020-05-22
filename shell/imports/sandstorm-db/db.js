@@ -2410,7 +2410,7 @@ _.extend(SandstormDb, {
 });
 
 if (Meteor.isServer) {
-  import { waitPromise } from "/imports/server/async-helpers.js";
+  import { waitPromise } from "/imports/server/async-helpers.ts";
 
   const Crypto = Npm.require("crypto");
   const ContentType = Npm.require("content-type");

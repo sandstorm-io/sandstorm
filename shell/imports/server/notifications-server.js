@@ -19,7 +19,7 @@ import { Match, check } from "meteor/check";
 import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 
-import { waitPromise } from "/imports/server/async-helpers.js";
+import { waitPromise } from "/imports/server/async-helpers.ts";
 import { createAppActivityDesktopNotification } from "/imports/server/desktop-notifications.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";

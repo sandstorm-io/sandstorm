@@ -24,7 +24,7 @@ import { FrontendRefRegistry } from "/imports/server/frontend-ref.js";
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { migrateToLatest } from "/imports/server/migrations.js";
 import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants.js";
-import { onInMeteor } from "/imports/server/async-helpers.js";
+import { onInMeteor } from "/imports/server/async-helpers.ts";
 import { monkeyPatchHttp } from "/imports/server/networking.js";
 import { SandstormAutoupdateApps } from "/imports/sandstorm-autoupdate-apps/autoupdate-apps.js";
 let url = require("url");

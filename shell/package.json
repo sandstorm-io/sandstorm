@@ -19,6 +19,7 @@
     "@root/csr": "^0.8.1",
     "@root/keypairs": "^0.9.0",
     "@root/pem": "^1.0.4",
+    "@types/fibers": "^3.1.0",
     "@types/meteor": "^1.4.45",
     "acme-dns-01-cloudflare": "^1.2.1",
     "acme-dns-01-digitalocean": "^3.0.1",

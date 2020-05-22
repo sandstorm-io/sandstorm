@@ -20,7 +20,7 @@ import { Meteor } from "meteor/meteor";
 import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 
-import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.ts";
 import { ssrfSafeLookupOrProxy } from "/imports/server/networking.js";
 import { globalDb } from "/imports/db-deprecated.js";
 

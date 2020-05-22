@@ -24,7 +24,7 @@ import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 
 import { hashSturdyRef, checkRequirements, fetchApiToken } from "/imports/server/persistent.js";
-import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.ts";
 import { ssrfSafeLookup } from "/imports/server/networking.js";
 import Capnp from "/imports/server/capnp.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";

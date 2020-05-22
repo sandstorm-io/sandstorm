@@ -28,7 +28,7 @@ import { globalDb } from "/imports/db-deprecated.js";
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { rawSend } from "/imports/server/email.js";
 import { shouldRestartGrain } from "/imports/server/backend.js";
-import { inMeteor } from "/imports/server/async-helpers.js";
+import { inMeteor } from "/imports/server/async-helpers.ts";
 import { makeHackSessionContext } from "/imports/server/hack-session.js";
 
 import Crypto from "crypto";

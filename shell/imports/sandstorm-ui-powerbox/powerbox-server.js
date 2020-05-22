@@ -21,7 +21,7 @@ import { _ } from "meteor/underscore";
 import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions.js";
 import Capnp from "/imports/server/capnp.js";
 
-import { waitPromise } from '../server/async-helpers.js';
+import { waitPromise } from '../server/async-helpers.ts';
 
 const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");

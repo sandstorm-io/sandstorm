@@ -19,7 +19,7 @@ import { check } from "meteor/check";
 import { Accounts } from "meteor/accounts-base";
 import { _ } from "meteor/underscore";
 
-import Identicon from "/imports/sandstorm-identicons/identicon.js";
+import Identicon from "/imports/sandstorm-identicons/identicon.ts";
 import { SandstormDb } from "./db.js";
 import { globalDb } from "/imports/db-deprecated.js";
 

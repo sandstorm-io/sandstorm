@@ -1,4 +1,4 @@
-import Identicon from "./identicon.js";
+import Identicon from "./identicon.ts";
 
 const VALID_USAGES = ["appGrid", "grain", "notification"];
 function checkUsage(usage) {

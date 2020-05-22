@@ -9,8 +9,6 @@ import zlib from "zlib";
 
 import { Meteor } from "meteor/meteor";
 
-const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
-
 const SAML = function (options) {
   this.options = this.initialize(options);
 };

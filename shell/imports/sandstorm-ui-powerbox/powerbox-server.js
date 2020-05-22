@@ -14,9 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Crypto from "crypto";
-import Future from "fibers/future";
-
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 import { _ } from "meteor/underscore";
@@ -24,7 +21,7 @@ import { _ } from "meteor/underscore";
 import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions.js";
 import Capnp from "/imports/server/capnp.js";
 
-import { waitPromise } from '../server/async-helpers.js';
+import { waitPromise } from '../server/async-helpers.ts';
 
 const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");

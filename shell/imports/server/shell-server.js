@@ -36,7 +36,7 @@
 import { Meteor } from "meteor/meteor";
 import { BrowserPolicy } from "meteor/browser-policy";
 
-import { inMeteor } from "/imports/server/async-helpers.js";
+import { inMeteor } from "/imports/server/async-helpers.ts";
 import { globalDb } from "/imports/db-deprecated.js";
 
 BrowserPolicy.framing.disallow();  // Disallow framing of the UI.

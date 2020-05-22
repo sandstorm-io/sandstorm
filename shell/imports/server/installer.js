@@ -14,24 +14,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Fs from "fs";
-import Path from "path";
 import Crypto from "crypto";
-import ChildProcess from "child_process";
-import Url from "url";
 
 import { Meteor } from "meteor/meteor";
 import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 
-import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.ts";
 import { ssrfSafeLookupOrProxy } from "/imports/server/networking.js";
 import { globalDb } from "/imports/db-deprecated.js";
-import Capnp from "/imports/server/capnp.js";
 
 const Request = HTTPInternals.NpmModules.request.module;
-
-const Manifest = Capnp.importSystem("sandstorm/package.capnp").Manifest;
 
 let installers;  // set to {} on main replica
 // To protect against race conditions, we require that each row in the Packages

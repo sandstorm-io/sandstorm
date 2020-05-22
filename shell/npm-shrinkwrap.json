@@ -228,6 +228,11 @@
         "@types/node": "*"
       }
     },
+    "@types/fibers": {
+      "version": "3.1.0",
+      "resolved": "https://registry.npmjs.org/@types/fibers/-/fibers-3.1.0.tgz",
+      "integrity": "sha512-1o3I9xtk2PZFxwaLCC6gTaBfBZ5rvw/DSZZPK89fwuwO6LNrzSbC6rEs1xI0bQ3fCRWmO+uNJQQeD2J56oTMDg=="
+    },
     "@types/meteor": {
       "version": "1.4.45",
       "resolved": "https://registry.npmjs.org/@types/meteor/-/meteor-1.4.45.tgz",

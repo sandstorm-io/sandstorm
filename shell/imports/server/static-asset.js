@@ -16,10 +16,7 @@
 
 import Url from "url";
 import { Match, check } from "meteor/check";
-import Capnp from "/imports/server/capnp.js";
 import { globalDb } from "/imports/db-deprecated.js";
-
-const StaticAsset = Capnp.importSystem("sandstorm/grain.capnp").StaticAsset;
 
 const PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;
 

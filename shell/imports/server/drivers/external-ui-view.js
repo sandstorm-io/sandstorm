@@ -19,14 +19,13 @@ import { Match, check } from "meteor/check";
 import { HTTP } from "meteor/http";
 import { _ } from "meteor/underscore";
 
-import { inMeteor } from "/imports/server/async-helpers.js";
+import { inMeteor } from "/imports/server/async-helpers.ts";
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { ssrfSafeLookup } from "/imports/server/networking.js";
 import { REQUEST_HEADER_WHITELIST, RESPONSE_HEADER_WHITELIST }
     from "/imports/server/header-whitelist.js";
 import { globalDb } from "/imports/db-deprecated.js";
 
-import Future from "fibers/future";
 import Url from "url";
 import Http from "http";
 import Https from "https";

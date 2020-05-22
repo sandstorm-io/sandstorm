@@ -1,17 +1,18 @@
 import { Meteor } from "meteor/meteor";
 import Future from "fibers/future";
 
-let inMeteorListener = undefined;
-const onInMeteor = (callback) => {
+let inMeteorListener: (() => void) | undefined = undefined;
+
+function onInMeteor(callback: (() => void)) {
   inMeteorListener = callback;
-};
+}
 
 // Meteor context <-> Async Node.js context adapters
-const inMeteorInternal = Meteor.bindEnvironment((callback) => {
+const inMeteorInternal = Meteor.bindEnvironment((callback: () => void) => {
   callback();
 });
 
-const inMeteor = (callback) => {
+function inMeteor<T>(callback: () => T): Promise<T> {
   if (inMeteorListener) {
     inMeteorListener();
   }
@@ -26,16 +27,16 @@ const inMeteor = (callback) => {
       }
     });
   });
-};
+}
 
-const promiseToFuture = (promise) => {
-  const result = new Future();
+function promiseToFuture<T>(promise: Promise<T>): Future<T> {
+  const result = new Future<T>();
   promise.then(result.return.bind(result), result.throw.bind(result));
   return result;
-};
+}
 
-const waitPromise = (promise) => {
+function waitPromise<T>(promise: Promise<T>): T {
   return promiseToFuture(promise).wait();
-};
+}
 
 export { inMeteor, promiseToFuture, waitPromise, onInMeteor };

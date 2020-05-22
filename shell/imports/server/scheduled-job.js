@@ -16,8 +16,8 @@
 
 import { Meteor } from "meteor/meteor";
 
-import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
-import { PersistentImpl, fetchApiToken } from "/imports/server/persistent.js";
+import { waitPromise } from "/imports/server/async-helpers.ts";
+import { fetchApiToken } from "/imports/server/persistent.js";
 import Capnp from "/imports/server/capnp.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";

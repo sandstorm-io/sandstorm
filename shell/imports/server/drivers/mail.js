@@ -28,27 +28,22 @@ import { globalDb } from "/imports/db-deprecated.js";
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { rawSend } from "/imports/server/email.js";
 import { shouldRestartGrain } from "/imports/server/backend.js";
-import { inMeteor } from "/imports/server/async-helpers.js";
+import { inMeteor } from "/imports/server/async-helpers.ts";
 import { makeHackSessionContext } from "/imports/server/hack-session.js";
 
 import Crypto from "crypto";
-import Future from "fibers/future";
 import Net from "net";
 import Url from "url";
 import Capnp from "/imports/server/capnp.js";
 
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 const EmailImpl = Capnp.importSystem("sandstorm/email-impl.capnp");
-const HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;
-const Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
 const EmailSendPort = EmailRpc.EmailSendPort;
 
 const ROOT_URL = Url.parse(process.env.ROOT_URL);
 const HOSTNAME = ROOT_URL.hostname;
 
 const RECIPIENT_LIMIT = 20;
-
-const CLIENT_TIMEOUT = 15000; // 15s
 
 // Every day, reset all per-user sent counts to zero.
 // TODO(cleanup): Consider a more granular approach. For example, each user could have a timer

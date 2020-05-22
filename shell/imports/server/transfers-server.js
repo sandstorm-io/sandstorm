@@ -24,7 +24,7 @@ import { Match, check } from "meteor/check";
 import { Router } from "meteor/iron:router";
 import { HTTP } from "meteor/http";
 
-import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.ts";
 import { globalDb } from "/imports/db-deprecated.js";
 import { createGrainBackup, createBackupToken, restoreGrainBackup, storeGrainBackup }
   from "/imports/server/backup.js";

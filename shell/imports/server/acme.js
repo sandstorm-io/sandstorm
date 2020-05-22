@@ -15,7 +15,7 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
-import { inMeteor, waitPromise } from "/imports/server/async-helpers.js";
+import { waitPromise } from "/imports/server/async-helpers.ts";
 import ACME from "@root/acme";
 import CSR from "@root/csr";
 import PEM from "@root/pem";

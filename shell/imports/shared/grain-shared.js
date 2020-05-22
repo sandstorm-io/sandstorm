@@ -32,7 +32,7 @@ Meteor.methods({
                                        { $set: { "ownerSeenAllActivity": true } });
   },
 
-  markActivityRead: function (grainId, obsolete) {
+  markActivityRead: function (grainId) {
     check(grainId, String);
 
     if (!this.userId) {
@@ -135,7 +135,7 @@ Meteor.methods({
     }
   },
 
-  forgetGrain: function (grainId, obsolete) {
+  forgetGrain: function (grainId) {
     check(grainId, String);
 
     if (!this.userId) {

@@ -9,10 +9,15 @@
  */
 
 // Trivially modified for Meteor context by Kenton Varda.
-// Later modified to produce an SVG rather than a PNG.
+// Later modified to produce an SVG rather than a PNG, and
+// to convert it to type script.
 
 class Identicon {
-  constructor(hash, size, margin) {
+  private hash: string;
+  private size: number;
+  private margin: number;
+
+  constructor(hash: string, size?: number, margin?: number) {
     this.hash   = hash;
     this.size   = size   || 64;
     this.margin = margin || .08;
@@ -24,7 +29,7 @@ class Identicon {
     const margin  = size * this.margin;
     const cell    = (size - (margin * 2)) / 5;
 
-    const rects = [];
+    const rects: string[] = [];
 
     // foreground is last 7 chars as hue at 50% saturation, 70% brightness
     const rgb     = this.hsl2rgb(parseInt(hash.substr(-7), 16) / 0xfffffff, .5, .7);
@@ -54,14 +59,14 @@ class Identicon {
             ${rects.join("\n")}</g> </svg>`;
   }
 
-  rectangle(x, y, w, h, rectangles) {
+  rectangle(x: number, y: number, w: number, h: number, rectangles: string[]) {
     rectangles.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}"/>`);
   }
 
   // adapted from: https://gist.github.com/aemkei/1325937
-  hsl2rgb(h, s, b) {
+  hsl2rgb(h: number, s: number, b: number) {
     h *= 6;
-    s = [
+    const sat = [
       b += s *= b < .5 ? b : 1 - b,
       b - h % 1 * s * 2,
       b -= s *= 2,
@@ -71,9 +76,9 @@ class Identicon {
     ];
 
     return [
-      Math.floor(s[~~h    % 6] * 256),  // red
-      Math.floor(s[(h | 16) % 6] * 256),  // green
-      Math.floor(s[(h | 8)  % 6] * 256),  // blue
+      Math.floor(sat[~~h    % 6] * 256),  // red
+      Math.floor(sat[(h | 16) % 6] * 256),  // green
+      Math.floor(sat[(h | 8)  % 6] * 256),  // blue
     ];
   }
 

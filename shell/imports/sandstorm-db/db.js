@@ -981,28 +981,6 @@ const calculateReferralBonus = function (user) {
   }
 };
 
-function isAdmin() {
-  // Returns true if the user is the administrator.
-
-  const user = Meteor.user();
-  if (user && user.isAdmin) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-function isAdminById(id) {
-  // Returns true if the user's id is the administrator.
-
-  const user = Meteor.users.findOne({ _id: id }, { fields: { isAdmin: 1 } });
-  if (user && user.isAdmin) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
 function findAdminUserForToken(token) {
   if (!token.requirements) {
     return;
@@ -1152,22 +1130,29 @@ class SandstormDb {
       outgoingTransfers: OutgoingTransfers,
     };
   }
-}
 
-// TODO(cleanup): These methods should not be defined freestanding and should use collection
-//   objects created in SandstormDb's constructor rather than globals.
+  isAdmin() {
+    // Returns true if the user is the administrator.
 
-_.extend(SandstormDb.prototype, {
-  isAdmin: isAdmin,
-  isAdminById: isAdminById,
-  findAdminUserForToken: findAdminUserForToken,
-  matchWildcardHost: matchWildcardHost,
-  makeWildcardHost: makeWildcardHost,
-  isApiHostId: isApiHostId,
-  isTokenSpecificHostId: isTokenSpecificHostId,
-  apiHostIdHashForToken: apiHostIdHashForToken,
-  apiHostIdForToken: apiHostIdForToken,
-  makeApiHost: makeApiHost,
+    const user = Meteor.user();
+    if (user && user.isAdmin) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  isAdminById(id) {
+    // Returns true if the user's id is the administrator.
+
+    const user = Meteor.users.findOne({ _id: id }, { fields: { isAdmin: 1 } });
+    if (user && user.isAdmin) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   allowDevAccounts() {
     const setting = this.collections.settings.findOne({ _id: "devAccounts" });
     if (setting) {
@@ -1176,15 +1161,7 @@ _.extend(SandstormDb.prototype, {
       return Meteor.settings && Meteor.settings.public &&
              Meteor.settings.public.allowDevAccounts;
     }
-  },
-
-  roleAssignmentPattern: {
-    none: Match.Optional(null),
-    allAccess: Match.Optional(null),
-    roleId: Match.Optional(Match.Integer),
-    addPermissions: Match.Optional([Boolean]),
-    removePermissions: Match.Optional([Boolean]),
-  },
+  }
 
   isDemoUser() {
     // Returns true if this is a demo user.
@@ -1195,12 +1172,12 @@ _.extend(SandstormDb.prototype, {
     } else {
       return false;
     }
-  },
+  }
 
   isSignedUp() {
     const user = Meteor.user();
     return this.isAccountSignedUp(user);
-  },
+  }
 
   isAccountSignedUp(user) {
     // Returns true if the user has presented an invite key.
@@ -1218,12 +1195,12 @@ _.extend(SandstormDb.prototype, {
     if (this.isUserInOrganization(user)) return true;
 
     return false;
-  },
+  }
 
   isSignedUpOrDemo() {
     const user = Meteor.user();
     return this.isAccountSignedUpOrDemo(user);
-  },
+  }
 
   isAccountSignedUpOrDemo(user) {
     if (!user) return false;  // not signed in
@@ -1239,7 +1216,7 @@ _.extend(SandstormDb.prototype, {
     if (this.isUserInOrganization(user)) return true;
 
     return false;
-  },
+  }
 
   isCredentialInOrganization(credential) {
     if (!credential || !credential.services) {
@@ -1277,7 +1254,7 @@ _.extend(SandstormDb.prototype, {
     }
 
     return false;
-  },
+  }
 
   isUserInOrganization(user) {
     for (let i = 0; i < user.loginCredentials.length; i++) {
@@ -1288,6 +1265,28 @@ _.extend(SandstormDb.prototype, {
     }
 
     return false;
+  }
+}
+
+// TODO(cleanup): These methods should not be defined freestanding and should use collection
+//   objects created in SandstormDb's constructor rather than globals.
+
+_.extend(SandstormDb.prototype, {
+  findAdminUserForToken: findAdminUserForToken,
+  matchWildcardHost: matchWildcardHost,
+  makeWildcardHost: makeWildcardHost,
+  isApiHostId: isApiHostId,
+  isTokenSpecificHostId: isTokenSpecificHostId,
+  apiHostIdHashForToken: apiHostIdHashForToken,
+  apiHostIdForToken: apiHostIdForToken,
+  makeApiHost: makeApiHost,
+
+  roleAssignmentPattern: {
+    none: Match.Optional(null),
+    allAccess: Match.Optional(null),
+    roleId: Match.Optional(Match.Integer),
+    addPermissions: Match.Optional([Boolean]),
+    removePermissions: Match.Optional([Boolean]),
   },
 });
 

@@ -1099,57 +1099,59 @@ function makeApiHost(token) {
   return makeWildcardHost(apiHostIdForToken(token));
 }
 
-function SandstormDb(quotaManager) {
-  // quotaManager is an object with the following method:
-  //   updateUserQuota: It is provided two arguments
-  //     db: This SandstormDb object
-  //     user: A collections.users account object
-  //   and returns a quota object:
-  //     storage: A number (can be Infinity)
-  //     compute: A number (can be Infinity)
-  //     grains: A number (can be Infinity)
+class SandstormDb {
+  constructor(quotaManager) {
+    // quotaManager is an object with the following method:
+    //   updateUserQuota: It is provided two arguments
+    //     db: This SandstormDb object
+    //     user: A collections.users account object
+    //   and returns a quota object:
+    //     storage: A number (can be Infinity)
+    //     compute: A number (can be Infinity)
+    //     grains: A number (can be Infinity)
 
-  this.quotaManager = quotaManager;
-  this.collections = {
-    // Direct access to underlying collections. DEPRECATED, but better than accessing the top-level
-    // collection globals directly.
-    //
-    // TODO(cleanup): Over time, we will provide methods covering each supported query and remove
-    //   direct access to the collections.
-    users: Meteor.users,
+    this.quotaManager = quotaManager;
+    this.collections = {
+      // Direct access to underlying collections. DEPRECATED, but better than accessing the top-level
+      // collection globals directly.
+      //
+      // TODO(cleanup): Over time, we will provide methods covering each supported query and remove
+      //   direct access to the collections.
+      users: Meteor.users,
 
-    packages: Packages,
-    devPackages: DevPackages,
-    userActions: UserActions,
-    grains: Grains,
-    roleAssignments: RoleAssignments, // Deprecated, only used by the migration that eliminated it.
-    contacts: Contacts,
-    sessions: Sessions,
-    signupKeys: SignupKeys,
-    activityStats: ActivityStats,
-    deleteStats: DeleteStats,
-    fileTokens: FileTokens,
-    spkTokens: SpkTokens,
-    apiTokens: ApiTokens,
-    apiHosts: ApiHosts,
-    notifications: Notifications,
-    activitySubscriptions: ActivitySubscriptions,
-    statsTokens: StatsTokens,
-    misc: Misc,
-    settings: Settings,
-    migrations: Migrations,
-    staticAssets: StaticAssets,
-    assetUploadTokens: AssetUploadTokens,
-    plans: Plans,
-    appIndex: AppIndex,
-    keybaseProfiles: KeybaseProfiles,
-    setupSession: SetupSession,
-    desktopNotifications: DesktopNotifications,
-    standaloneDomains: StandaloneDomains,
-    scheduledJobs: ScheduledJobs,
-    incomingTransfers: IncomingTransfers,
-    outgoingTransfers: OutgoingTransfers,
-  };
+      packages: Packages,
+      devPackages: DevPackages,
+      userActions: UserActions,
+      grains: Grains,
+      roleAssignments: RoleAssignments, // Deprecated, only used by the migration that eliminated it.
+      contacts: Contacts,
+      sessions: Sessions,
+      signupKeys: SignupKeys,
+      activityStats: ActivityStats,
+      deleteStats: DeleteStats,
+      fileTokens: FileTokens,
+      spkTokens: SpkTokens,
+      apiTokens: ApiTokens,
+      apiHosts: ApiHosts,
+      notifications: Notifications,
+      activitySubscriptions: ActivitySubscriptions,
+      statsTokens: StatsTokens,
+      misc: Misc,
+      settings: Settings,
+      migrations: Migrations,
+      staticAssets: StaticAssets,
+      assetUploadTokens: AssetUploadTokens,
+      plans: Plans,
+      appIndex: AppIndex,
+      keybaseProfiles: KeybaseProfiles,
+      setupSession: SetupSession,
+      desktopNotifications: DesktopNotifications,
+      standaloneDomains: StandaloneDomains,
+      scheduledJobs: ScheduledJobs,
+      incomingTransfers: IncomingTransfers,
+      outgoingTransfers: OutgoingTransfers,
+    };
+  }
 }
 
 // TODO(cleanup): These methods should not be defined freestanding and should use collection

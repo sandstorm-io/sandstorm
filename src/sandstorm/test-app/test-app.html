@@ -106,7 +106,15 @@ function postScheduledJob(options) {
     "method": "post",
     data: '',
     headers: headers,
-  })
+  }).then(function(response) {
+    const status = response.status
+    addText(
+      "sched-response",
+      "Success: " + (status >= 200 && status < 300).toString(),
+    )
+  }).catch(function(e) {
+    addText("sched-error", e.toString())
+  });
 }
 
 function addText(id, text) {

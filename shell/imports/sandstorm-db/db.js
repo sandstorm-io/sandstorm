@@ -981,28 +981,6 @@ const calculateReferralBonus = function (user) {
   }
 };
 
-function isAdmin() {
-  // Returns true if the user is the administrator.
-
-  const user = Meteor.user();
-  if (user && user.isAdmin) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-function isAdminById(id) {
-  // Returns true if the user's id is the administrator.
-
-  const user = Meteor.users.findOne({ _id: id }, { fields: { isAdmin: 1 } });
-  if (user && user.isAdmin) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
 function findAdminUserForToken(token) {
   if (!token.requirements) {
     return;
@@ -1099,73 +1077,82 @@ function makeApiHost(token) {
   return makeWildcardHost(apiHostIdForToken(token));
 }
 
-function SandstormDb(quotaManager) {
-  // quotaManager is an object with the following method:
-  //   updateUserQuota: It is provided two arguments
-  //     db: This SandstormDb object
-  //     user: A collections.users account object
-  //   and returns a quota object:
-  //     storage: A number (can be Infinity)
-  //     compute: A number (can be Infinity)
-  //     grains: A number (can be Infinity)
+class SandstormDb {
+  constructor(quotaManager) {
+    // quotaManager is an object with the following method:
+    //   updateUserQuota: It is provided two arguments
+    //     db: This SandstormDb object
+    //     user: A collections.users account object
+    //   and returns a quota object:
+    //     storage: A number (can be Infinity)
+    //     compute: A number (can be Infinity)
+    //     grains: A number (can be Infinity)
 
-  this.quotaManager = quotaManager;
-  this.collections = {
-    // Direct access to underlying collections. DEPRECATED, but better than accessing the top-level
-    // collection globals directly.
-    //
-    // TODO(cleanup): Over time, we will provide methods covering each supported query and remove
-    //   direct access to the collections.
-    users: Meteor.users,
+    this.quotaManager = quotaManager;
+    this.collections = {
+      // Direct access to underlying collections. DEPRECATED, but better than accessing the top-level
+      // collection globals directly.
+      //
+      // TODO(cleanup): Over time, we will provide methods covering each supported query and remove
+      //   direct access to the collections.
+      users: Meteor.users,
 
-    packages: Packages,
-    devPackages: DevPackages,
-    userActions: UserActions,
-    grains: Grains,
-    roleAssignments: RoleAssignments, // Deprecated, only used by the migration that eliminated it.
-    contacts: Contacts,
-    sessions: Sessions,
-    signupKeys: SignupKeys,
-    activityStats: ActivityStats,
-    deleteStats: DeleteStats,
-    fileTokens: FileTokens,
-    spkTokens: SpkTokens,
-    apiTokens: ApiTokens,
-    apiHosts: ApiHosts,
-    notifications: Notifications,
-    activitySubscriptions: ActivitySubscriptions,
-    statsTokens: StatsTokens,
-    misc: Misc,
-    settings: Settings,
-    migrations: Migrations,
-    staticAssets: StaticAssets,
-    assetUploadTokens: AssetUploadTokens,
-    plans: Plans,
-    appIndex: AppIndex,
-    keybaseProfiles: KeybaseProfiles,
-    setupSession: SetupSession,
-    desktopNotifications: DesktopNotifications,
-    standaloneDomains: StandaloneDomains,
-    scheduledJobs: ScheduledJobs,
-    incomingTransfers: IncomingTransfers,
-    outgoingTransfers: OutgoingTransfers,
-  };
-}
+      packages: Packages,
+      devPackages: DevPackages,
+      userActions: UserActions,
+      grains: Grains,
+      roleAssignments: RoleAssignments, // Deprecated, only used by the migration that eliminated it.
+      contacts: Contacts,
+      sessions: Sessions,
+      signupKeys: SignupKeys,
+      activityStats: ActivityStats,
+      deleteStats: DeleteStats,
+      fileTokens: FileTokens,
+      spkTokens: SpkTokens,
+      apiTokens: ApiTokens,
+      apiHosts: ApiHosts,
+      notifications: Notifications,
+      activitySubscriptions: ActivitySubscriptions,
+      statsTokens: StatsTokens,
+      misc: Misc,
+      settings: Settings,
+      migrations: Migrations,
+      staticAssets: StaticAssets,
+      assetUploadTokens: AssetUploadTokens,
+      plans: Plans,
+      appIndex: AppIndex,
+      keybaseProfiles: KeybaseProfiles,
+      setupSession: SetupSession,
+      desktopNotifications: DesktopNotifications,
+      standaloneDomains: StandaloneDomains,
+      scheduledJobs: ScheduledJobs,
+      incomingTransfers: IncomingTransfers,
+      outgoingTransfers: OutgoingTransfers,
+    };
+  }
 
-// TODO(cleanup): These methods should not be defined freestanding and should use collection
-//   objects created in SandstormDb's constructor rather than globals.
+  isAdmin() {
+    // Returns true if the user is the administrator.
 
-_.extend(SandstormDb.prototype, {
-  isAdmin: isAdmin,
-  isAdminById: isAdminById,
-  findAdminUserForToken: findAdminUserForToken,
-  matchWildcardHost: matchWildcardHost,
-  makeWildcardHost: makeWildcardHost,
-  isApiHostId: isApiHostId,
-  isTokenSpecificHostId: isTokenSpecificHostId,
-  apiHostIdHashForToken: apiHostIdHashForToken,
-  apiHostIdForToken: apiHostIdForToken,
-  makeApiHost: makeApiHost,
+    const user = Meteor.user();
+    if (user && user.isAdmin) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  isAdminById(id) {
+    // Returns true if the user's id is the administrator.
+
+    const user = Meteor.users.findOne({ _id: id }, { fields: { isAdmin: 1 } });
+    if (user && user.isAdmin) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   allowDevAccounts() {
     const setting = this.collections.settings.findOne({ _id: "devAccounts" });
     if (setting) {
@@ -1174,15 +1161,7 @@ _.extend(SandstormDb.prototype, {
       return Meteor.settings && Meteor.settings.public &&
              Meteor.settings.public.allowDevAccounts;
     }
-  },
-
-  roleAssignmentPattern: {
-    none: Match.Optional(null),
-    allAccess: Match.Optional(null),
-    roleId: Match.Optional(Match.Integer),
-    addPermissions: Match.Optional([Boolean]),
-    removePermissions: Match.Optional([Boolean]),
-  },
+  }
 
   isDemoUser() {
     // Returns true if this is a demo user.
@@ -1193,12 +1172,12 @@ _.extend(SandstormDb.prototype, {
     } else {
       return false;
     }
-  },
+  }
 
   isSignedUp() {
     const user = Meteor.user();
     return this.isAccountSignedUp(user);
-  },
+  }
 
   isAccountSignedUp(user) {
     // Returns true if the user has presented an invite key.
@@ -1216,12 +1195,12 @@ _.extend(SandstormDb.prototype, {
     if (this.isUserInOrganization(user)) return true;
 
     return false;
-  },
+  }
 
   isSignedUpOrDemo() {
     const user = Meteor.user();
     return this.isAccountSignedUpOrDemo(user);
-  },
+  }
 
   isAccountSignedUpOrDemo(user) {
     if (!user) return false;  // not signed in
@@ -1237,7 +1216,7 @@ _.extend(SandstormDb.prototype, {
     if (this.isUserInOrganization(user)) return true;
 
     return false;
-  },
+  }
 
   isCredentialInOrganization(credential) {
     if (!credential || !credential.services) {
@@ -1275,7 +1254,7 @@ _.extend(SandstormDb.prototype, {
     }
 
     return false;
-  },
+  }
 
   isUserInOrganization(user) {
     for (let i = 0; i < user.loginCredentials.length; i++) {
@@ -1286,6 +1265,28 @@ _.extend(SandstormDb.prototype, {
     }
 
     return false;
+  }
+}
+
+// TODO(cleanup): These methods should not be defined freestanding and should use collection
+//   objects created in SandstormDb's constructor rather than globals.
+
+_.extend(SandstormDb.prototype, {
+  findAdminUserForToken: findAdminUserForToken,
+  matchWildcardHost: matchWildcardHost,
+  makeWildcardHost: makeWildcardHost,
+  isApiHostId: isApiHostId,
+  isTokenSpecificHostId: isTokenSpecificHostId,
+  apiHostIdHashForToken: apiHostIdHashForToken,
+  apiHostIdForToken: apiHostIdForToken,
+  makeApiHost: makeApiHost,
+
+  roleAssignmentPattern: {
+    none: Match.Optional(null),
+    allAccess: Match.Optional(null),
+    roleId: Match.Optional(Match.Integer),
+    addPermissions: Match.Optional([Boolean]),
+    removePermissions: Match.Optional([Boolean]),
   },
 });
 

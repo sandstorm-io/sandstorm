@@ -71,7 +71,7 @@ jobs:
           # the constant below.
           make lint | tee lint.log
           num_problems=$(cat lint.log | grep ' problems (0 errors, ' | awk '{print $2}')
-          [ "$num_problems" = 857 ]
+          [ "$num_problems" = 856 ]
       - name: test
         run: |
           set -o pipefail

@@ -1217,6 +1217,7 @@ const MIGRATIONS = [
   onePersonaPerAccountPostCleanup,
   cleanupBadExpiresIfUnused,
   deleteReferralNotifications,
+  removeFeatureKeys,
 ];
 
 const NEW_SERVER_STARTUP = [

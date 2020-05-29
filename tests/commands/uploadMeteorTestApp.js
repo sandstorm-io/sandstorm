@@ -20,7 +20,7 @@ const testappPath = require('path').resolve(__dirname + "/../assets/meteor-testa
 
 exports.command = function() {
   return this
-    .url('/apps')
+    .url(this.launch_url + '/apps')
     .waitForElementVisible('.upload-button', short_wait)
     .perform(function (client, done) {
       client.setValue("input[type=file]", testappPath, () => {

@@ -344,7 +344,7 @@ function startOneTransfer(db, userId) {
 
 function revokeTransferTokens(db, userId) {
   let revokeMap = {};
-  db.collections.incomingTransfers.find({userId: this.userId}).forEach(transfer => {
+  db.collections.incomingTransfers.find({userId}).forEach(transfer => {
     revokeMap[transfer.token] = transfer.source;
   });
 

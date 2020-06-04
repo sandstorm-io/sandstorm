@@ -404,14 +404,14 @@ launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex, opti
   const title = "Untitled " + appTitle + " " + nounPhrase;
 
   // We need to ask the server to start a new grain, then browse to it.
-  Meteor.call("newGrain", packageId, command, title, null, function (error, grainId) {
+  Meteor.call("newGrain", packageId, command, title, function (error, grainId) {
     if (error) {
       if (error.error === 402 || error.error === "quota-exhausted") {
         // Sadly this can occur under LDAP quota management when the backend updates its quota
         // while creating the grain.
         showBillingPrompt("outOfStorage", function () {
           // TODO(someday): figure out the actual reason, instead of hard-coding outOfStorage
-          Meteor.call("newGrain", packageId, command, title, null,
+          Meteor.call("newGrain", packageId, command, title,
           function (error, grainId) {
             if (error) {
               console.error(error);

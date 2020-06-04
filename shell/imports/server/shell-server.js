@@ -115,7 +115,7 @@ Meteor.publish("hasUsers", function () {
     this.added("hasUsers", "hasUsers", { hasUsers: true });
   } else {
     let handle = cursor.observeChanges({
-      added: (id) => {
+      added: (_id) => {
         this.added("hasUsers", "hasUsers", { hasUsers: true });
         handle.stop();
         handle = null;

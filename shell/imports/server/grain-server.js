@@ -305,7 +305,7 @@ SandstormDb.periodicCleanup(86400000, () => {
 });
 
 Meteor.methods({
-  newGrain(packageId, command, title, obsolete) {
+  newGrain(packageId, command, title) {
     // Create and start a new grain.
 
     check(packageId, String);

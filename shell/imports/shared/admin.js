@@ -37,7 +37,7 @@ Accounts.loginServices.github = {
     return identity.services.github.username;
   },
 
-  initiateLogin: function (loginId) {
+  initiateLogin: function (_loginId) {
     Meteor.loginWithGithub();
     return { oneClick: true };
   },
@@ -89,7 +89,7 @@ Accounts.loginServices.email = {
     return identity.services.email.email;
   },
 
-  initiateLogin: function (loginId) {
+  initiateLogin: function (_loginId) {
     return { form: true };
   },
 
@@ -108,7 +108,7 @@ Accounts.loginServices.ldap = {
     return identity.services.ldap.username;
   },
 
-  initiateLogin: function (loginId) {
+  initiateLogin: function (_loginId) {
     return { form: true };
   },
 
@@ -127,7 +127,7 @@ Accounts.loginServices.saml = {
     return identity.services.saml.id;
   },
 
-  initiateLogin: function (loginId) {
+  initiateLogin: function (_loginId) {
     Meteor.loginWithSaml();
     return { oneClick: true };
   },
@@ -147,7 +147,7 @@ Accounts.loginServices.demo = {
     return identity._id;
   },
 
-  initiateLogin: function (loginId) {
+  initiateLogin: function (_loginId) {
     return { demoCannotLogin: true };
   },
 

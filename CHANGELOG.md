@@ -1,3 +1,7 @@
+### v0.266 (2020-06-06)
+- Sandcats domains using SSL will automatically migrate to Let's Encrypt over the next two weeks.
+- Dependency updates, refactorings, and minor bugfixes.
+
 ### v0.265 (2020-05-09)
 - Fixed regression preventing first-time LDAP logins.
 - Dependency updates, refactorings, and minor bugfixes.

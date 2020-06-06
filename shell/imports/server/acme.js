@@ -24,7 +24,8 @@ import { pki, asn1 } from "node-forge";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
 import URL from "url";
-import { getSandcatsAcmeOptions } from "/imports/server/sandcats.js";
+import { getSandcatsAcmeOptions, getSandcatsName } from "/imports/server/sandcats.js";
+import Crypto from "crypto";
 
 // Relevant settings in database `Settings` table:
 // * {_id: "tlsKeys", value: {key: "<PEM>", certChain: "<PEM>"}}
@@ -222,11 +223,14 @@ function renewCertificateWhenNeeded(certChain) {
   let validity = pki.certificateFromPem(certChain).validity;
   let now = Date.now();
 
-  // Calculate the point in time that is 75% through the validity period, though if the validity
-  // period is more than 90 days, clamp it to the last 90 days.
+  // Calculate the point in time that is 2/3 through the validity period, though if the validity
+  // period is more than 90 days, clamp it to the last 90 days. This is largely based on Let's
+  // Encrypt's recommendation to renew their certificates every 60 days, even though the cert is
+  // valid for 90 days. Note that Let's Encrypt will send a reminder e-mail if the certificate
+  // hasn't been renewed after 70 days; we'd like to avoid that.
   let end = validity.notAfter.getTime();
   let start = Math.max(validity.notBefore.getTime(), end - 90 * DAYS);
-  let targetTime = start + 0.75 * (end - start);
+  let targetTime = Math.floor(start + (end - start) * 2 / 3);
 
   // A timeout of more than 2^31 will break setTimeout(), so clamp to a max of 7 days, and we'll
   // just re-run the whole timeout computation then.
@@ -263,6 +267,35 @@ function renewCertificateWhenNeeded(certChain) {
   }
 }
 
+function computeLetsEncryptSwitchDate(hostname) {
+  // Compute a time in the future which will be no more than 2^31 milliseconds from now (so we can
+  // use setTimeout() safely).
+
+  // Hash the hostname, and parse the first 32 bits as an integer.
+  let offset =
+      parseInt(Crypto.createHash("sha256").update(hostname).digest("hex").slice(0, 8), 16);
+  // Divide by 4 so it's less than 2^30.
+  offset = Math.floor(offset / 4);
+  // Add that to the rollout start date, which is in the very near future as of this writing.
+  let ROLLOUT_START = new Date('2020-06-10');
+  return new Date(ROLLOUT_START.getTime() + offset);
+}
+
+function switchSandcatsToLetsEncrypt(sandcatsName) {
+  // Check again that no one has created an account in the meantime.
+  if (!globalDb.getSetting("acmeAccount")) {
+    console.log("Automatically creating Let's Encrypt account. Sandcats certificates will be " +
+        "fetched from Let's Encrypt from now on.");
+
+    // As of this writing, mail sent to anything+letsencrypt@sandcats.io gets logged to a place
+    // only Kenton can see, but in the future we may make hostname[+anything]@sandcats.io forward
+    // to the owner of the hostname using their e-mail address on file. We'd need to implement some
+    // sort of e-mail verification before doing that, though.
+    createAcmeAccount("https://acme-v02.api.letsencrypt.org/directory",
+        sandcatsName + "+letsencrypt@sandcats.io", true);
+  }
+}
+
 // On replica 0, subscribe to updates to the `tlsKeys` setting and renew the certificate when
 // needed.
 if (!Meteor.settings.replicaNumber) {
@@ -277,5 +310,27 @@ if (!Meteor.settings.replicaNumber) {
         removed(setting) { renewCertificateWhenNeeded(null); },
       });
     }, 0);
+
+    let sandcatsName = getSandcatsName();
+    if (sandcatsName && !globalDb.getSetting("acmeAccount")) {
+      // We're using old sandcats cert flow. Arrange to migrate to Let's Encrypt.
+      let timeout = computeLetsEncryptSwitchDate(sandcatsName).getTime() - Date.now();
+      if (timeout <= 0) {
+        // We were supposed to have switched already. Switch at a random time in the next day.
+        timeout = Math.floor(Math.random() * DAYS) + 1;
+      }
+
+      if (timeout >= Math.pow(2, 31)) {
+        // Yikes, setTimeout() will do the wrong thing if we set this.
+        console.log("Error calculating Let's Encrypt auto-migration!", timeout);
+      } else {
+        console.log("Planning to migrate to Let's Encrypt automatically at:",
+            new Date(Date.now() + timeout));
+
+        Meteor.setTimeout(() => {
+          switchSandcatsToLetsEncrypt(sandcatsName);
+        }, timeout);
+      }
+    }
   });
 }

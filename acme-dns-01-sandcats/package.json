@@ -1,6 +1,5 @@
 {
   "name": "acme-dns-01-sandcats",
-  "type": "module",
   "version": "0.1.0",
   "engines": {
     "node": ">=12.0"

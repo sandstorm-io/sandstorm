@@ -293,6 +293,11 @@ function switchSandcatsToLetsEncrypt(sandcatsName) {
     // sort of e-mail verification before doing that, though.
     createAcmeAccount("https://acme-v02.api.letsencrypt.org/directory",
         sandcatsName + "+letsencrypt@sandcats.io", true);
+
+    let tlsKeys = globalDb.getSetting("tlsKeys");
+    if (tlsKeys && tlsKeys.certChain) {
+      renewCertificateWhenNeeded(tlsKeys.certChain);
+    }
   }
 }
 

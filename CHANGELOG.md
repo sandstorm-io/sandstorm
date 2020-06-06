@@ -1,3 +1,6 @@
+### v0.267 (2020-06-06)
+- Fix possible problem where Let's Encrypt auto-migration would not actually renew the certificate until Sandstorm was restarted.
+
 ### v0.266 (2020-06-06)
 - Sandcats domains using SSL will automatically migrate to Let's Encrypt over the next two weeks.
 - Dependency updates, refactorings, and minor bugfixes.

@@ -222,11 +222,14 @@ function renewCertificateWhenNeeded(certChain) {
   let validity = pki.certificateFromPem(certChain).validity;
   let now = Date.now();
 
-  // Calculate the point in time that is 75% through the validity period, though if the validity
-  // period is more than 90 days, clamp it to the last 90 days.
+  // Calculate the point in time that is 2/3 through the validity period, though if the validity
+  // period is more than 90 days, clamp it to the last 90 days. This is largely based on Let's
+  // Encrypt's recommendation to renew their certificates every 60 days, even though the cert is
+  // valid for 90 days. Note that Let's Encrypt will send a reminder e-mail if the certificate
+  // hasn't been renewed after 70 days; we'd like to avoid that.
   let end = validity.notAfter.getTime();
   let start = Math.max(validity.notBefore.getTime(), end - 90 * DAYS);
-  let targetTime = start + 0.75 * (end - start);
+  let targetTime = Math.floor(start + (end - start) * 2 / 3);
 
   // A timeout of more than 2^31 will break setTimeout(), so clamp to a max of 7 days, and we'll
   // just re-run the whole timeout computation then.

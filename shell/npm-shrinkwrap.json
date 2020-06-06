@@ -78,9 +78,9 @@
       "dev": true
     },
     "@babel/runtime": {
-      "version": "7.9.6",
-      "resolved": "https://registry.npmjs.org/@babel/runtime/-/runtime-7.9.6.tgz",
-      "integrity": "sha512-64AF1xY3OAkFHqOb9s4jpgk1Mm5vDZ4L3acHvAml+53nO1XbXLuDodsVpO4OIUsmemlUHMxNdYMNJmsvOwLrvQ==",
+      "version": "7.10.2",
+      "resolved": "https://registry.npmjs.org/@babel/runtime/-/runtime-7.10.2.tgz",
+      "integrity": "sha512-6sF3uQw2ivImfVIl62RZ7MXhO2tap69WeWK57vAaimT6AZbE4FbqjdEJIN1UqoD6wI6B+1n9UiagafH1sxjOtg==",
       "requires": {
         "regenerator-runtime": "^0.13.4"
       }
@@ -234,9 +234,9 @@
       "integrity": "sha512-1o3I9xtk2PZFxwaLCC6gTaBfBZ5rvw/DSZZPK89fwuwO6LNrzSbC6rEs1xI0bQ3fCRWmO+uNJQQeD2J56oTMDg=="
     },
     "@types/meteor": {
-      "version": "1.4.45",
-      "resolved": "https://registry.npmjs.org/@types/meteor/-/meteor-1.4.45.tgz",
-      "integrity": "sha512-HcRnfag2AzsCKwdjSuyQFJCzCStbf3QR3cXU+fDJ35On4KU5qxDKxuDXzMcXCV1XLoHsC3LSxhp/nRGWfovl1g==",
+      "version": "1.4.47",
+      "resolved": "https://registry.npmjs.org/@types/meteor/-/meteor-1.4.47.tgz",
+      "integrity": "sha512-5mz66LiwsrHv7cK+B4kH0mEeVf7yCMgZJidhOsnc+DLiqG4nU/cHLcUASXpXp6wnT5WijHkxvMVcEH6fupa1DQ==",
       "requires": {
         "@types/connect": "*",
         "@types/mongodb": "*",
@@ -245,18 +245,18 @@
       }
     },
     "@types/mongodb": {
-      "version": "3.5.14",
-      "resolved": "https://registry.npmjs.org/@types/mongodb/-/mongodb-3.5.14.tgz",
-      "integrity": "sha512-6SBBf4/pFTPu+Xmio6A4JPv/zXbsS/h7d3SdhaXRfTdE8pPNKUfOG3Tn7O0sjcu7Nz0syorSiQE6CMcoQD15TQ==",
+      "version": "3.5.20",
+      "resolved": "https://registry.npmjs.org/@types/mongodb/-/mongodb-3.5.20.tgz",
+      "integrity": "sha512-BN0wJn670DkivxiP7ZW0InX4qBtX01qITaucD+3A+sTgPQo4XUYay0Y+sGM4MJ9OyKDRlb3RQuVAlyeWzl/NoA==",
       "requires": {
         "@types/bson": "*",
         "@types/node": "*"
       }
     },
     "@types/node": {
-      "version": "13.13.4",
-      "resolved": "https://registry.npmjs.org/@types/node/-/node-13.13.4.tgz",
-      "integrity": "sha512-x26ur3dSXgv5AwKS0lNfbjpCakGIduWU1DU91Zz58ONRWrIKGunmZBNv4P7N+e27sJkiGDsw/3fT4AtsqQBrBA=="
+      "version": "14.0.11",
+      "resolved": "https://registry.npmjs.org/@types/node/-/node-14.0.11.tgz",
+      "integrity": "sha512-lCvvI24L21ZVeIiyIUHZ5Oflv1hhHQ5E1S25IRlKIXaRkVgmXpJMI3wUJkmym2bTbCe+WoIibQnMVAU3FguaOg=="
     },
     "@types/prop-types": {
       "version": "15.7.3",
@@ -264,23 +264,23 @@
       "integrity": "sha512-KfRL3PuHmqQLOG+2tGpRO26Ctg+Cq1E01D2DMriKEATHgWLfeNDmq9e29Q9WIky0dQ3NPkd1mzYH8Lm936Z9qw=="
     },
     "@types/react": {
-      "version": "16.9.34",
-      "resolved": "https://registry.npmjs.org/@types/react/-/react-16.9.34.tgz",
-      "integrity": "sha512-8AJlYMOfPe1KGLKyHpflCg5z46n0b5DbRfqDksxBLBTUpB75ypDBAO9eCUcjNwE6LCUslwTz00yyG/X9gaVtow==",
+      "version": "16.9.35",
+      "resolved": "https://registry.npmjs.org/@types/react/-/react-16.9.35.tgz",
+      "integrity": "sha512-q0n0SsWcGc8nDqH2GJfWQWUOmZSJhXV64CjVN5SvcNti3TdEaA3AH0D8DwNmMdzjMAC/78tB8nAZIlV8yTz+zQ==",
       "requires": {
         "@types/prop-types": "*",
         "csstype": "^2.2.0"
       }
     },
     "@types/underscore": {
-      "version": "1.9.4",
-      "resolved": "https://registry.npmjs.org/@types/underscore/-/underscore-1.9.4.tgz",
-      "integrity": "sha512-CjHWEMECc2/UxOZh0kpiz3lEyX2Px3rQS9HzD20lxMvx571ivOBQKeLnqEjxUY0BMgp6WJWo/pQLRBwMW5v4WQ=="
+      "version": "1.10.0",
+      "resolved": "https://registry.npmjs.org/@types/underscore/-/underscore-1.10.0.tgz",
+      "integrity": "sha512-ZAbqul7QAKpM2h1PFGa5ETN27ulmqtj0QviYHasw9LffvXZvVHuraOx/FOsIPPDNGZN0Qo1nASxxSfMYOtSoCw=="
     },
     "acme-dns-01-cloudflare": {
-      "version": "1.2.1",
-      "resolved": "https://registry.npmjs.org/acme-dns-01-cloudflare/-/acme-dns-01-cloudflare-1.2.1.tgz",
-      "integrity": "sha512-97qySVXazF73mbBhEKFc9tHox3bTRKbkM2j/jDV3XEA8uDYBXZY4CCWRwq13XzhDn5GHzd/hVpQ0Ss28wCPrNw==",
+      "version": "1.2.2",
+      "resolved": "https://registry.npmjs.org/acme-dns-01-cloudflare/-/acme-dns-01-cloudflare-1.2.2.tgz",
+      "integrity": "sha512-D9sfeTuAOfLkJLxxn/mp1OQLZbXAiPSwrMAjGuR45D/nzAPGUDx6fknfcqMEG8tLmgE0994MlG59hZrNzUUJ2Q==",
       "requires": {
         "cloudflare": "^2.7.0"
       }
@@ -2128,9 +2128,9 @@
       "dev": true
     },
     "stripe": {
-      "version": "8.50.0",
-      "resolved": "https://registry.npmjs.org/stripe/-/stripe-8.50.0.tgz",
-      "integrity": "sha512-ZuqJJxh/Doe6Yhapa4zXuS+XRAnD1mxdXERR96uGSU6kO53Byam515COGYTOtWEP2d0SI5fVMXe2AXGgMBlPlw==",
+      "version": "8.60.0",
+      "resolved": "https://registry.npmjs.org/stripe/-/stripe-8.60.0.tgz",
+      "integrity": "sha512-FmM0Cy1YLW8Nk3dzWg83tDKROPAJwS2f+Xeezyq15JRUSOUqaSoj1FguBY460GWpzzQcqSXUXkQozYcLU1UtAg==",
       "requires": {
         "@types/node": ">=8.1.0",
         "qs": "^6.6.0"

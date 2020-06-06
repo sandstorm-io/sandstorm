@@ -362,3 +362,11 @@ Sandcats.initializeSandcats = () => {
 if (SANDCATS_HOSTNAME) {
   Meteor.startup(Sandcats.initializeSandcats);
 }
+
+export function getSandcatsName() {
+  if (SANDCATS_HOSTNAME && HOSTNAME.endsWith("." + SANDCATS_HOSTNAME)) {
+    return HOSTNAME.slice(0, -SANDCATS_HOSTNAME.length - 1);
+  } else {
+    return null;
+  }
+}

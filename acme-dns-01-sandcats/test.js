@@ -1,11 +1,10 @@
 'use strict';
 
-import * as sandcatsChallenge from "./index.js";
-import fs from "fs";
-import tester from "acme-dns-01-test";
-import { setServers } from "dns";
+const sandcatsChallenge = require("./index.js");
+const fs = require("fs");
+const tester = require("acme-dns-01-test");
 
-setServers(["104.197.28.173"])
+require("dns").setServers(["104.197.28.173"]);
 
 async function run() {
   let challenger = sandcatsChallenge.create({

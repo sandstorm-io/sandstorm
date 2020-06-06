@@ -1,8 +1,8 @@
 'use strict';
 
-import https from "https";
-import querystring from "querystring";
-import dns from "dns";
+const https = require("https");
+const querystring = require("querystring");
+const dns = require("dns");
 
 class Challenge {
   constructor(options) {
@@ -125,6 +125,8 @@ class Challenge {
   }
 };
 
-export function create(options) {
-  return new Challenge(options);
-}
+module.exports = {
+  create(options) {
+    return new Challenge(options);
+  }
+};

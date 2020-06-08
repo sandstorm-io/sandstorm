@@ -1,9 +1,8 @@
 ## Sandstorm and HTTPS
 
-Sandstorm can now terminate TLS connections for most conventional configurations you may wish to employ.
-This includes automatic certificate renewal of certificates, if you utilize a supported DNS provider, as well
-as the ability to manually upload your own certificates, either self-signed or from a well-trusted certificate
-vendor.
+Sandstorm can terminate TLS connections for most conventional configurations you may wish to employ. This
+includes automatic certificate renewal of certificates if you use a supported DNS provider, as well as the
+ability to manually upload your own certificates, either self-signed or from a well-trusted certificate vendor.
 
 ### How to get HTTPS on your Sandstorm install
 
@@ -11,10 +10,22 @@ If you are using a hostname like `example.sandcats.io`, then you likely already 
 hostname. [This page](sandcats-https.md) provides help and advice for enabling and troubleshooting HTTPS for
 Sandcats-based installs.
 
-If you utilize a supported DNS provider (Sandcats.io, Cloudflare, Digital Ocean, DNSimple, Duck DNS, GoDaddy,
-Gandi, Namecheap, Name.com, AWS Route 53, or Vultr), you can create an ACME account from "SSL/TLS Certificates"
-admin panel to enable automatic certificate renewal. By default, this uses Let's Encrypt, however, you can use
-any ACME service here.
+If you use a supported DNS provider, you can create an ACME account from "SSL/TLS Certificates" admin panel
+to enable automatic certificate renewal. By default, this uses Let's Encrypt, however, you can use any ACME
+service here.
+
+Sandstorm supports automatic renewal with the following DNS providers:
+- Sandcats.io
+- Cloudflare
+- Digital Ocean
+- DNSimple
+- Duck DNS
+- GoDaddy
+- Gandi
+- Namecheap
+- Name.com
+- Route 53 (AWS)
+- Vultr
 
 If your certificate provider does not support ACME, and/or your DNS provider is not supported currently by
 Sandstorm, you can manually upload your certificate.

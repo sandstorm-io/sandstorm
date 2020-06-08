@@ -261,7 +261,7 @@ tmp/ekam-bin: tmp/.deps
 	    (cd deps/ekam && $(MAKE) bin/ekam-bootstrap && \
 	     cd ../.. && ln -s ../deps/ekam/bin/ekam-bootstrap tmp/ekam-bin)
 
-tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps deps/boringssl/build/ssl/libssl.a deps/libsodium/build/src/libsodium/.libs/libsodium.a | deps/llvm-build
+tmp/.ekam-run: $(NODEJS) tmp/ekam-bin src/sandstorm/* tmp/.deps deps/boringssl/build/ssl/libssl.a deps/libsodium/build/src/libsodium/.libs/libsodium.a | deps/llvm-build
 	@$(call color,building sandstorm with ekam)
 	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS2)" CXXFLAGS="$(CXXFLAGS2)" \
 	    LIBS="$(LIBS2)" NODEJS=$(NODEJS) tmp/ekam-bin -j$(PARALLEL)

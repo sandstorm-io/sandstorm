@@ -117,7 +117,7 @@ logActivity = function (grainId, accountIdOrAnonymous, event) {
         }));
       }
     });
-    waitPromise(Promise.all(promises).then(junk => undefined));
+    waitPromise(Promise.all(promises));
   }
 
   // Make a list of everyone to notify.

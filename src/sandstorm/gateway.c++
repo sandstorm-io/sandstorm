@@ -883,6 +883,10 @@ kj::String GatewayService::unknownForeignHostnameError(kj::StringPtr host) {
       "<p>To visit this Sandstorm server's main interface, go to: <a href='", baseUrl, "'>",
       baseUrl, "</a></p>\n"
 
+      "<p>If you are the server admin and want to use this address as the main interface, "
+      "edit /opt/sandstorm/sandstorm.conf, modify the BASE_URL setting, and restart "
+      "Sandstorm.</p>\n"
+
       "<h2>If you got here after trying to log in via OAuth (e.g. through GitHub or Google)</h2>"
 
       "<p>If you got here after trying to log in via OAuth (e.g. through GitHub or Google), "
@@ -903,12 +907,6 @@ kj::String GatewayService::unknownForeignHostnameError(kj::StringPtr host) {
       "<p>No TXT records were found for the host: <code>sandstorm-www.", host, "</code></p>\n"
       "<p>If you have the <tt>dig</tt> tool, you can run this command to learn more:</p>\n"
       "<p><code>dig -t TXT sandstorm-www.", host, "</code></p>\n"
-
-      "<h2>Changing the server URL, or troubleshooting OAuth login</h2>\n"
-
-      "<p>If you are the server admin and want to use this address as the main interface, "
-      "edit /opt/sandstorm/sandstorm.conf, modify the BASE_URL setting, and restart "
-      "Sandstorm.</p>\n"
       );
 }
 

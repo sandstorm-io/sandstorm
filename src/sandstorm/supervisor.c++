@@ -57,6 +57,7 @@
 #include <linux/rtnetlink.h>
 #include <sys/eventfd.h>
 #include <sys/resource.h>
+#include <sandstorm/cgroup2.h>
 
 // We need to define these constants before libseccomp has a chance to inject bogus
 // values for them. See https://github.com/seccomp/libseccomp/issues/27
@@ -751,6 +752,15 @@ kj::String SupervisorMain::realPath(kj::StringPtr path) {
 // =====================================================================================
 
 void SupervisorMain::setupSupervisor() {
+  {
+    // Put ourselves in a cgroup:
+    auto pid = getpid();
+    auto cgroupName = kj::str("grain-", grainId);
+    Cgroup("/run/cgroup2")
+      .getOrMakeChild(cgroupName)
+      .addPid(pid);
+  }
+
   // Enable no_new_privs so that once we drop privileges we can never regain them through e.g.
   // execing a suid-root binary.  Sandboxed apps should not need that.
   KJ_SYSCALL(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0));

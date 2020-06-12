@@ -20,6 +20,10 @@ namespace sandstorm {
       // Open a cgroup that is a child of this one, creating it if it does not
       // exist.
 
+      void removeChild(kj::StringPtr path);
+      // Delete a child of this cgroup. The child must not contain any
+      // processes.
+
       void addPid(pid_t pid);
       // Add the given process to the cgroup.
     private:

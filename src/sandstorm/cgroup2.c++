@@ -26,6 +26,10 @@ namespace sandstorm {
     return Cgroup(raiiOpenAt(dirfd.get(), path, O_DIRECTORY|O_CLOEXEC));
   }
 
+  void Cgroup::removeChild(kj::StringPtr path) {
+    KJ_SYSCALL(unlinkat(dirfd.get(), path.cStr(), AT_REMOVEDIR));
+  }
+
   void Cgroup::addPid(pid_t pid) {
     auto procsfd = raiiOpenAt(dirfd.get(), "cgroup.procs", O_WRONLY);
     auto pidStr = kj::str(pid);

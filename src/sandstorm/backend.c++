@@ -175,12 +175,10 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
     return address->connect();
   }).then([this,KJ_MVCAP(stdoutPipe),KJ_MVCAP(process),grainId = kj::heapString(grainId)]
           (kj::Own<kj::AsyncIoStream>&& connection) mutable {
-    {
-      auto cgroupName = kj::str("grain-", grainId);
-      cgroup
-        .getOrMakeChild(cgroupName)
-        .addPid(process.getPid());
-    }
+
+    cgroup
+      .getOrMakeChild(grainId)
+      .addPid(process.getPid());
 
     // Connected. Create the RunningGrain and fulfill promises.
     auto ignorePromise = ignoreAll(*stdoutPipe);
@@ -242,8 +240,7 @@ BackendImpl::RunningGrain::RunningGrain(
 
 BackendImpl::RunningGrain::~RunningGrain() noexcept(false) {
   backend.supervisors.erase(grainId);
-  auto cgroupName = kj::str("grain-", grainId);
-  backend.cgroup.removeChild(cgroupName);
+  backend.cgroup.removeChild(grainId);
 }
 
 kj::Promise<void> BackendImpl::ping(PingContext context) {

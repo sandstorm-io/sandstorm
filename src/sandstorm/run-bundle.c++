@@ -2180,7 +2180,10 @@ private:
       TwoPartyServerWithClientBootstrap server(kj::mv(paf.promise));
       paf.fulfiller->fulfill(kj::heap<BackendImpl>(*io.lowLevelProvider, network,
         server.getBootstrap().castAs<SandstormCoreFactory>(),
-        Cgroup("/run/cgroup2"),
+        // Collect all of the grains' cgroups into a single
+        // container, so they can't collectively starve sandstorm
+        // itself.
+        Cgroup("/run/cgroup2").getOrMakeChild("grains"),
         sandboxUid));
 
       auto gatewayServer = kj::heap<capnp::TwoPartyServer>(kj::refcounted<CapRedirector>([&]() {

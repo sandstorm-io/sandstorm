@@ -760,7 +760,7 @@ public:
     const Config config = readConfig();
 
     // We'll run under the chroot.
-    enterChroot(config.uids, false);
+    enterChroot(nullptr, false);
 
     // Don't run as root.
     dropPrivs(config.uids);
@@ -1280,7 +1280,7 @@ private:
     }
   }
 
-  void enterChroot(const UserIds& uids, bool inPidNamespace) {
+  void enterChroot(kj::Maybe<const UserIds&> maybeUids, bool inPidNamespace) {
     KJ_REQUIRE(changedDir);
 
     // Verify ownership is intact.
@@ -1375,13 +1375,20 @@ private:
     // Mount the cgroup2 filesystem at run/cgroup2:
     KJ_SYSCALL(mkdir("run/cgroup2", 0700));
     KJ_SYSCALL(mount("none", "run/cgroup2", "cgroup2", MS_NOSUID | MS_NOEXEC, ""));
-    // Give our unprivileged selves access to manage the cgroup.
-    // See the 'Delegation' section of 'Documentation/admin-guide/cgroup-v2.txt'
-    // in the Linux kernel source tree:
-    KJ_SYSCALL(chown("run/cgroup2", uids.uid, uids.gid));
-    KJ_SYSCALL(chown("run/cgroup2/cgroup.procs", uids.uid, uids.gid));
-    KJ_SYSCALL(chown("run/cgroup2/cgroup.threads", uids.uid, uids.gid));
-    KJ_SYSCALL(chown("run/cgroup2/cgroup.subtree_control", uids.uid, uids.gid));
+    KJ_IF_MAYBE(uids, maybeUids) {
+      // Give our unprivileged selves access to manage the cgroup.
+      // See the 'Delegation' section of 'Documentation/admin-guide/cgroup-v2.txt'
+      // in the Linux kernel source tree.
+      //
+      // We only do this if we were given uids to work with; we don't need to do
+      // this if the sandbox is already set up, so commands that expect
+      // an already running sandstorm will pass us nullptr to indicate that
+      // we don't need to do this.
+      KJ_SYSCALL(chown("run/cgroup2", uids->uid, uids->gid));
+      KJ_SYSCALL(chown("run/cgroup2/cgroup.procs", uids->uid, uids->gid));
+      KJ_SYSCALL(chown("run/cgroup2/cgroup.threads", uids->uid, uids->gid));
+      KJ_SYSCALL(chown("run/cgroup2/cgroup.subtree_control", uids->uid, uids->gid));
+    }
 
     // OK, change our root directory.
     KJ_SYSCALL(syscall(SYS_pivot_root, ".", "tmp"));

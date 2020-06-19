@@ -1280,7 +1280,7 @@ private:
     }
   }
 
-  void enterChroot(kj::Maybe<const UserIds&> maybeUids, bool inPidNamespace) {
+  void enterChroot(kj::Maybe<const UserIds&> chownCgroupsTo, bool inPidNamespace) {
     KJ_REQUIRE(changedDir);
 
     // Verify ownership is intact.
@@ -1375,7 +1375,8 @@ private:
     // Mount the cgroup2 filesystem at run/cgroup2:
     KJ_SYSCALL(mkdir("run/cgroup2", 0700));
     KJ_SYSCALL(mount("none", "run/cgroup2", "cgroup2", MS_NOSUID | MS_NOEXEC, ""));
-    KJ_IF_MAYBE(uids, maybeUids) {
+    KJ_IF_MAYBE(uids, chownCgroupsTo) {
+      KJ_LOG(ERROR, uids->uid, uids->gid);
       // Give our unprivileged selves access to manage the cgroup.
       // See the 'Delegation' section of 'Documentation/admin-guide/cgroup-v2.txt'
       // in the Linux kernel source tree.
@@ -1384,10 +1385,16 @@ private:
       // this if the sandbox is already set up, so commands that expect
       // an already running sandstorm will pass us nullptr to indicate that
       // we don't need to do this.
-      KJ_SYSCALL(chown("run/cgroup2", uids->uid, uids->gid));
-      KJ_SYSCALL(chown("run/cgroup2/cgroup.procs", uids->uid, uids->gid));
-      KJ_SYSCALL(chown("run/cgroup2/cgroup.threads", uids->uid, uids->gid));
-      KJ_SYSCALL(chown("run/cgroup2/cgroup.subtree_control", uids->uid, uids->gid));
+      //
+      // Additionally, we *can't* do this if we weren't started as root, so in
+      // that case we just skip it. Other parts of the system are built to
+      // handle the case where this isn't available gracefully.
+      if(runningAsRoot) {
+        KJ_SYSCALL(chown("run/cgroup2", uids->uid, uids->gid));
+        KJ_SYSCALL(chown("run/cgroup2/cgroup.procs", uids->uid, uids->gid));
+        KJ_SYSCALL(chown("run/cgroup2/cgroup.threads", uids->uid, uids->gid));
+        KJ_SYSCALL(chown("run/cgroup2/cgroup.subtree_control", uids->uid, uids->gid));
+      }
     }
 
     // OK, change our root directory.
@@ -2185,12 +2192,18 @@ private:
 
       auto paf = kj::newPromiseAndFulfiller<Backend::Client>();
       TwoPartyServerWithClientBootstrap server(kj::mv(paf.promise));
+
+      // Collect all of the grains' cgroups into a single
+      // container, so they can't collectively starve sandstorm
+      // itself.
+      kj::Maybe<Cgroup> grainsCgroup;
+      kj::runCatchingExceptions([&grainsCgroup]() {
+        grainsCgroup = Cgroup("/run/cgroup2").getOrMakeChild("grains");
+      });
+
       paf.fulfiller->fulfill(kj::heap<BackendImpl>(*io.lowLevelProvider, network,
         server.getBootstrap().castAs<SandstormCoreFactory>(),
-        // Collect all of the grains' cgroups into a single
-        // container, so they can't collectively starve sandstorm
-        // itself.
-        Cgroup("/run/cgroup2").getOrMakeChild("grains"),
+        kj::mv(grainsCgroup),
         sandboxUid));
 
       auto gatewayServer = kj::heap<capnp::TwoPartyServer>(kj::refcounted<CapRedirector>([&]() {

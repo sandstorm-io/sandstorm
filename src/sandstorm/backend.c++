@@ -50,7 +50,7 @@ static void tryRecursivelyDelete(kj::StringPtr path) {
 
 BackendImpl::BackendImpl(kj::LowLevelAsyncIoProvider& ioProvider, kj::Network& network,
   SandstormCoreFactory::Client&& sandstormCoreFactory,
-  Cgroup&& cgroup,
+  kj::Maybe<Cgroup>&& cgroup,
   kj::Maybe<uid_t> sandboxUid)
     : ioProvider(ioProvider), network(network), coreFactory(kj::mv(sandstormCoreFactory)),
       sandboxUid(sandboxUid),
@@ -176,9 +176,10 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
   }).then([this,KJ_MVCAP(stdoutPipe),KJ_MVCAP(process),grainId = kj::heapString(grainId)]
           (kj::Own<kj::AsyncIoStream>&& connection) mutable {
 
-    cgroup
-      .getOrMakeChild(grainId)
-      .addPid(process.getPid());
+    KJ_IF_MAYBE(cg, cgroup) {
+      cg->getOrMakeChild(grainId)
+          .addPid(process.getPid());
+    }
 
     // Connected. Create the RunningGrain and fulfill promises.
     auto ignorePromise = ignoreAll(*stdoutPipe);
@@ -240,7 +241,9 @@ BackendImpl::RunningGrain::RunningGrain(
 
 BackendImpl::RunningGrain::~RunningGrain() noexcept(false) {
   backend.supervisors.erase(grainId);
-  backend.cgroup.removeChild(grainId);
+  KJ_IF_MAYBE(cg, backend.cgroup) {
+    cg->removeChild(grainId);
+  }
 }
 
 kj::Promise<void> BackendImpl::ping(PingContext context) {

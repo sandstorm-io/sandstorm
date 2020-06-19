@@ -35,7 +35,7 @@ class BackendImpl final: public Backend::Server, private kj::TaskSet::ErrorHandl
 public:
   BackendImpl(kj::LowLevelAsyncIoProvider& ioProvider, kj::Network& network,
               SandstormCoreFactory::Client&& sandstormCoreFactory,
-	      Cgroup&& cgroup,
+	      kj::Maybe<Cgroup>&& cgroup,
               kj::Maybe<uid_t> sandboxUid);
 
 protected:
@@ -61,7 +61,7 @@ private:
   SandstormCoreFactory::Client coreFactory;
   kj::Maybe<uid_t> sandboxUid;   // if not using user namespaces
   kj::TaskSet tasks;
-  Cgroup cgroup;
+  kj::Maybe<Cgroup> cgroup;
 
   class RunningGrain {
   public:

@@ -2134,7 +2134,7 @@ public:
         auto req = params.getStream().writeRequest();
         auto data = req.initData(backlog1);
         in.read(data.begin(), backlog1);
-        firstWrite = req.send().ignoreResult();
+        firstWrite = req.send();
       }
     }
 
@@ -2325,7 +2325,7 @@ private:
         }
         req.adoptData(kj::mv(orphan));
 
-        tasks.add(req.send().ignoreResult());
+        tasks.add(req.send());
 
         if (done) break;
       }

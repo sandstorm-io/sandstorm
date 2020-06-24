@@ -558,14 +558,13 @@ public:
   }
 
 private:
-  kj::Promise<void> writeImpl(size_t size, capnp::Request<
-      WebSession::WebSocketStream::SendBytesParams,
-      WebSession::WebSocketStream::SendBytesResults>&& req) {
+  kj::Promise<void> writeImpl(size_t size,
+      capnp::StreamingRequest<WebSession::WebSocketStream::SendBytesParams>&& req) {
     KJ_IF_MAYBE(e, writeError) {
       return kj::cp(*e);
     }
 
-    writeTasks.add(req.send().then([this,size](auto&& response) {
+    writeTasks.add(req.send().then([this,size]() {
       bytesInFlight -= size;
       if (bytesInFlight < MAX_IN_FLIGHT) {
         KJ_IF_MAYBE(f, writeReadyFulfiller) {

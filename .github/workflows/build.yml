@@ -58,11 +58,12 @@ jobs:
       #  with:
       #    name: ccache-debug.tar.gz
       #    path: ccache-debug.tar.gz
-      #- name: upload sandstorm tarball
-      #  uses: actions/upload-artifact@v1
-      #  with:
-      #    name: sandstorm-0-fast.tar.xz
-      #    path: sandstorm-0-fast.tar.xz
+      - name: upload sandstorm tarball
+        if: always()
+        uses: actions/upload-artifact@v1
+        with:
+          name: sandstorm-0-fast.tar.xz
+          path: sandstorm-0-fast.tar.xz
       - name: lint
         run: |
           # In addition to making sure the linting step doesn't flag any errors,

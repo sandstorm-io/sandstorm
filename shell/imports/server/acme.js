@@ -148,7 +148,10 @@ function renewCertificateNowImpl(accountInfo, challengeOpts) {
   // hostnames so the parser ends up parsing the hostname as a path component instead. We'll have
   // to split manually.
   let wildcard = globalDb.getWildcardOrigin().split("://")[1].split(":")[0];
-  let domains = [baseHost, wildcard];
+  let domains = [wildcard];
+  if(!globalDb.matchWildcardHost(baseHost)) {
+    domains.push(baseHost)
+  }
 
   // Generate private key.
   let tlsKeypair = waitPromise(Keypairs.generate({ kty: "RSA", format: "jwk" }));

@@ -174,34 +174,42 @@ Template.grainDebugLogButton.events({
   },
 });
 
-Template.grainCloneButton.events({
-  "click button": function(_event) {
-    const oldGrain = globalGrains.getActive();
-    Meteor.call("backupGrain", oldGrain.grainId(), (err, token) => {
+Template.grainClonePopup.onCreated(function() {
+  const oldGrain = globalGrains.getActive();
+  const state = new ReactiveVar({});
+  this._state = state;
+  const data = this.data;
+
+  const setError = (stage, err) => {
+    console.error("Error during grain clone stage ", stage, ": ", err);
+    state.set({error: "Copying the grain failed: " + err.toString()});
+  }
+
+  Meteor.call("backupGrain", oldGrain.grainId(), (err, token) => {
+    if(err !== undefined) {
+      setError("backup", err);
+      return;
+    }
+    Meteor.call("restoreGrain", token, (err, newGrainId) => {
       if(err !== undefined) {
-        console.error("Backing up grain: ", err);
+        setError("restore", err);
         return;
       }
-      console.log("token: ", token)
-      Meteor.call("restoreGrain", token, (err, newGrainId) => {
-        console.log("newGrainId: ", newGrainId);
-        if(err !== undefined) {
-          console.error("Restoring grain: ", err);
-          return;
-        }
-        const mainContentElement = document.querySelector("body>.main-content");
-        const newGrain = globalGrains.addNewGrainView(newGrainId, "/", undefined,
-                                                      mainContentElement);
-        const newTitle = TAPi18n.__(
-          "grains.grainCloneButton.copyTitle",
-          { sprintf: [oldGrain.title()] },
-        );
-        newGrain.setTitle(newTitle);
-        newGrain.openSession();
-        globalGrains.setActive(newGrainId);
-      });
+      const mainContentElement = document.querySelector("body>.main-content");
+      const newGrain = globalGrains.addNewGrainView(newGrainId, "/", undefined,
+                                                    mainContentElement);
+      const newTitle = TAPi18n.__(
+        "grains.grainCloneButton.copyTitle",
+        { sprintf: [oldGrain.title()] },
+      );
+      newGrain.setTitle(newTitle);
+      newGrain.openSession();
+      globalGrains.setActive(newGrainId);
+
+      // Close the topbar popup:
+      data.reset();
     });
-  }
+  });
 });
 
 Template.grainBackupPopup.onCreated(function () {

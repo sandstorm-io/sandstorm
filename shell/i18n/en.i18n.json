@@ -210,11 +210,6 @@
       "hint": "Download Backup",
       "text": "Backup"
     },
-    "grainCloneButton": {
-      "hint": "Clone Grain",
-      "text": "Clone",
-      "copyTitle": "Copy of %s"
-    },
     "grainBackupPopup": {
       "title": "Download Backup",
       "warning": "Warning! Restoring this backup might not work how you expect it to.",
@@ -223,6 +218,15 @@
       "cancel": "Cancel",
       "confirmHint": "download backup",
       "confirm": "Download backup"
+    },
+    "grainCloneButton": {
+      "hint": "Clone Grain",
+      "text": "Clone",
+      "copyTitle": "Copy of %s"
+    },
+    "grainClonePopup": {
+      "title": "Clone Grain",
+      "processing": "Cloning Grain..."
     },
     "grainRestartButton": {
       "hint": "Restart App",

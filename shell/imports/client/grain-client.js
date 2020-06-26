@@ -26,6 +26,7 @@ import { Random } from "meteor/random";
 import { ReactiveVar } from "meteor/reactive-var";
 import { SHA256 } from "meteor/sha";
 import { Router } from "meteor/iron:router";
+import { TAPi18n } from "meteor/tap:i18n";
 import { _ } from "meteor/underscore";
 import { $ } from "meteor/jquery";
 

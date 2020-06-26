@@ -174,6 +174,33 @@ Template.grainDebugLogButton.events({
   },
 });
 
+Template.grainCloneButton.events({
+  "click button": function(_event) {
+    const oldGrain = globalGrains.getActive();
+    Meteor.call("backupGrain", oldGrain.grainId(), (err, token) => {
+      if(err !== undefined) {
+        console.error("Backing up grain: ", err);
+        return;
+      }
+      console.log("token: ", token)
+      Meteor.call("restoreGrain", token, (err, newGrainId) => {
+        console.log("newGrainId: ", newGrainId);
+        if(err !== undefined) {
+          console.error("Restoring grain: ", err);
+          return;
+        }
+        const mainContentElement = document.querySelector("body>.main-content");
+        const newGrain = globalGrains.addNewGrainView(newGrainId, "/", undefined,
+                                                      mainContentElement);
+        // TODO: i18n
+        newGrain.setTitle("Copy of " + oldGrain.title());
+        newGrain.openSession();
+        globalGrains.setActive(newGrainId);
+      });
+    });
+  }
+});
+
 Template.grainBackupPopup.onCreated(function () {
   const activeGrain = globalGrains.getActive();
   this._grainId = activeGrain.grainId();

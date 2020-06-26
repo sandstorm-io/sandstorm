@@ -210,6 +210,10 @@
       "hint": "Download Backup",
       "text": "Backup"
     },
+    "grainCloneButton": {
+      "hint": "Clone Grain",
+      "text": "Clone"
+    },
     "grainBackupPopup": {
       "title": "Download Backup",
       "warning": "Warning! Restoring this backup might not work how you expect it to.",

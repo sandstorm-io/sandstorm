@@ -212,7 +212,8 @@
     },
     "grainCloneButton": {
       "hint": "Clone Grain",
-      "text": "Clone"
+      "text": "Clone",
+      "copyTitle": "Copy of %s"
     },
     "grainBackupPopup": {
       "title": "Download Backup",

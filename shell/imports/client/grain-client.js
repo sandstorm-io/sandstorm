@@ -192,8 +192,11 @@ Template.grainCloneButton.events({
         const mainContentElement = document.querySelector("body>.main-content");
         const newGrain = globalGrains.addNewGrainView(newGrainId, "/", undefined,
                                                       mainContentElement);
-        // TODO: i18n
-        newGrain.setTitle("Copy of " + oldGrain.title());
+        const newTitle = TAPi18n.__(
+          "grains.grainCloneButton.copyTitle",
+          { sprintf: [oldGrain.title()] },
+        );
+        newGrain.setTitle(newTitle);
         newGrain.openSession();
         globalGrains.setActive(newGrainId);
       });

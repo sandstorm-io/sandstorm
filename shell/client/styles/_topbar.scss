@@ -88,7 +88,6 @@ body>.topbar {
     //background-color: #eee;
     //color: black;
     transition: height 0.2s;
-    overflow: hidden;
 
     &.expanded {
       height: 100%;
@@ -96,6 +95,7 @@ body>.topbar {
       // We avoid placing a z-index on the topbar when not expanded, lest modal dialogs
       // that don't live at the same depth in the DOM be made unable to cover the topbar.
       z-index: 100;
+      overflow-y: auto;
     }
   }
 
@@ -273,6 +273,8 @@ body>.topbar {
         color: $topbar-foreground-color;
         padding-left: 56px;
         font-size: 120%;
+        position: fixed;
+        z-index: 1;
       }
 
       >div.editable {
@@ -428,6 +430,7 @@ body>.topbar {
         width: 48px;
         height: 49px;
         background-color: $topbar-background-color; // needed to cover an overflowing title
+        z-index: 3; /* above the title and rest of menu */
       }
 
       >button.show-popup {
@@ -582,6 +585,7 @@ body>.topbar {
       width: $navbar-width-desktop;
       background-color: #303030;
       color: #606060;
+      overflow-y: auto;
       li {
         display: block;
         position: relative;
@@ -838,6 +842,12 @@ body>.topbar {
     &.urgent {
       color: #f00;
     }
+  }
+}
+
+body>.topbar .share {
+  @media #{$mobile} {
+    margin-top: 48px;
   }
 }
 

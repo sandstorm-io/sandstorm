@@ -493,7 +493,7 @@ class HackSessionContextImpl extends SessionContextImpl {
     }).bind(this));
   }
 
-  obsoleteGenerateApiToken(petname, userInfo, expires) {
+  obsoleteGenerateApiToken(_petname, _userInfo, _expires) {
     throw new Error("generateApiToken() has been removed. Use offer templates instead.");
   }
 
@@ -501,7 +501,7 @@ class HackSessionContextImpl extends SessionContextImpl {
     throw new Error("listApiTokens() has been removed. Use offer templates instead.");
   }
 
-  obsoleteRevokeApiToken(tokenId) {
+  obsoleteRevokeApiToken(_tokenId) {
     throw new Error("revokeApiToken() has been removed. Use offer templates instead.");
   }
 

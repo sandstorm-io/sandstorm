@@ -351,7 +351,7 @@ function revokeTransferTokens(db, userId) {
   for (let token in revokeMap) {
     HTTP.del(revokeMap[token] + "/transfers/cancel", {
       headers: {"Authorization": "Bearer " + token}
-    }, (err, response) => {
+    }, (err, _response) => {
       if (err) {
         // Don't really care...
         console.error("Error revoking transfer token:", err);

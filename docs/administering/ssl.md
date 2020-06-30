@@ -47,8 +47,7 @@ To share port 443 with other services on the same machine:
   
 - You [can follow this guide](https://web.archive.org/web/20190922195059/https://juanjoalvarez.net/es/detail/2017/jan/12/how-set-sandstorm-behind-reverse-proxy-keeping-you/)
   that explains how to use a [cron script](https://github.com/Michael-S/sandstorm_certs_extract_cron)
-  to extract the certificates from your (sandcats.io enabled) Sandstorm installation. Please note that the
+  to extract the certificates from your Sandstorm-managed TLS Sandstorm installation. Please note that the
   guide itself references an older cron script that does not work with Sandstorm versions newer than
   June 2020. The extracted certificates will be a format where your reverse proxy can use them so it can
-  serve Sandstorm by HTTPS, keeping your sandcats.io domain and free auto-renewable certificates, along
-  with any other services on your server.
+  serve Sandstorm by HTTPS along with any other services on your server.

@@ -36,6 +36,10 @@ class ByteStreamConnection {
   }
 
   write(data) {
+    // TODO: try to apply some backpressure? Node docs say that write()
+    // always succeeds and just buffers the data if needed, so we could
+    // end up burning a bunch of memory if the sender is sending too
+    // fast.
     this.connection.write(data);
   }
 

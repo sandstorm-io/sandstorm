@@ -42,7 +42,7 @@ If you run `install.sh -h`, you will see a message like:
 usage: ./install.sh [-d] [-e] [-u] [<bundle>]
 If <bundle> is provided, it must be the name of a Sandstorm bundle file,
 like 'sandstorm-123.tar.xz', which will be installed. Otherwise, the script
-downloads a bundle from the internet via HTTP.
+downloads a bundle from the internet via HTTPS.
 
 If -d is specified, the auto-installs with defaults suitable for app development.
 If -e is specified, default to listening on an external interface, not merely loopback.

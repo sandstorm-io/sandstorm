@@ -45,10 +45,10 @@ To share port 443 with other services on the same machine:
   Sandstorm can manage (and autorenew) its own certificates. This allows you to combine an **existing
   web server on port 443** with Sandstorm.
 
-- You [can follow this guide](https://web.archive.org/web/20190922195059/https://juanjoalvarez.net/es/detail/2017/jan/12/how-set-sandstorm-behind-reverse-proxy-keeping-you/)
+- You [can follow this guide](https://juanjoalvarez.net/es/detail/2017/jan/12/how-set-sandstorm-behind-reverse-proxy-keeping-you/)
   that explains how to use a cron script to extract the certificates from your installation with
-  Sandstorm-managed TLS. Please note that the guide itself references an older cron script that
-  does not work with Sandstorm versions newer than June 2020, but there is an updated script
-  [here](https://github.com/Michael-S/sandstorm_certs_extract_cron). The extracted certificates
-  will be formatted so your reverse proxy can use them to serve Sandstorm by HTTPS
-  along with any other services on your server.
+  Sandstorm-managed TLS. Please note that the version of the script used in the guide before June 2020 
+  did not work with new Sandstorm versions so if you already did that but your site
+  stopped working use the [updated script](https://github.com/Michael-S/sandstorm_certs_extract_cron). The extracted
+  certificates will be used by your reverse proxy to server Sandstorm by HTTPS along with any other services
+  on your server.

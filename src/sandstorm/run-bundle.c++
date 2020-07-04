@@ -1370,7 +1370,8 @@ private:
     // in, copy its contents to /etc/resolv.conf.host-initial so we can use that if needed.
     backupResolvConf();
 
-    // Mount the cgroup2 filesystem at run/cgroup2:
+    // Best effort attempt to set up cgroup2. Depending on system configuration
+    // this may not be possible; if not we continue without cgroup support.
     KJ_SYSCALL_HANDLE_ERRORS(unshare(CLONE_NEWCGROUP)) {
       case EINVAL:
         // Might happen on very old kernels before CLONE_NEWCGROUP was defined.
@@ -1379,26 +1380,34 @@ private:
         KJ_FAIL_SYSCALL("unshare(CLONE_NEWCGROUP)", error);
     } else {
       KJ_SYSCALL(mkdir("run/cgroup2", 0700));
-      KJ_SYSCALL(mount("none", "run/cgroup2", "cgroup2", MS_NOSUID | MS_NOEXEC, ""));
-      KJ_IF_MAYBE(uids, chownCgroupsTo) {
-        KJ_LOG(ERROR, uids->uid, uids->gid);
-        // Give our unprivileged selves access to manage the cgroup.
-        // See the 'Delegation' section of 'Documentation/admin-guide/cgroup-v2.txt'
-        // in the Linux kernel source tree.
-        //
-        // We only do this if we were given uids to work with; we don't need to do
-        // this if the sandbox is already set up, so commands that expect
-        // an already running sandstorm will pass us nullptr to indicate that
-        // we don't need to do this.
-        //
-        // Additionally, we *can't* do this if we weren't started as root, so in
-        // that case we just skip it. Other parts of the system are built to
-        // handle the case where this isn't available gracefully.
-        if(runningAsRoot) {
-          KJ_SYSCALL(chown("run/cgroup2", uids->uid, uids->gid));
-          KJ_SYSCALL(chown("run/cgroup2/cgroup.procs", uids->uid, uids->gid));
-          KJ_SYSCALL(chown("run/cgroup2/cgroup.threads", uids->uid, uids->gid));
-          KJ_SYSCALL(chown("run/cgroup2/cgroup.subtree_control", uids->uid, uids->gid));
+      KJ_SYSCALL_HANDLE_ERRORS(mount("none", "run/cgroup2", "cgroup2", MS_NOSUID | MS_NOEXEC, "")) {
+        default:
+          // This could fail if the kernel is new enough to support cgroup namespaces, but
+          // wasn't actually built with cgroup support (CONFIG_CGORUPS) enabled; in this case
+          // unshare() silently ignores the relevant flag, so we'd get an error here.
+          //
+          // Get rid of the mount point, so attempts to open it later will fail:
+          KJ_SYSCALL(rmdir("run/cgroup2"));
+      } else {
+        KJ_IF_MAYBE(uids, chownCgroupsTo) {
+          // Give our unprivileged selves access to manage the cgroup.
+          // See the 'Delegation' section of 'Documentation/admin-guide/cgroup-v2.txt'
+          // in the Linux kernel source tree.
+          //
+          // We only do this if we were given uids to work with; we don't need to do
+          // this if the sandbox is already set up, so commands that expect
+          // an already running sandstorm will pass us nullptr to indicate that
+          // we don't need to do this.
+          //
+          // Additionally, we *can't* do this if we weren't started as root, so in
+          // that case we just skip it. Other parts of the system are built to
+          // handle the case where this isn't available gracefully.
+          if(runningAsRoot) {
+            KJ_SYSCALL(chown("run/cgroup2", uids->uid, uids->gid));
+            KJ_SYSCALL(chown("run/cgroup2/cgroup.procs", uids->uid, uids->gid));
+            KJ_SYSCALL(chown("run/cgroup2/cgroup.threads", uids->uid, uids->gid));
+            KJ_SYSCALL(chown("run/cgroup2/cgroup.subtree_control", uids->uid, uids->gid));
+          }
         }
       }
     }

@@ -216,6 +216,12 @@ interface GatewayRouter {
   #   Node side.
 }
 
+interface ShellCli {
+  createAcmeAccount @0 (directory :Text, email :Text, agreeToTerms :Bool);
+  setAcmeChallenge @1 (module :Text, options :Text);
+  renewCertificateNow @2 ();
+}
+
 interface SandstormCoreFactory {
   # Interface that the Sandstorm front-end exports to the backend in order to expose business
   # logic hooks.
@@ -231,4 +237,8 @@ interface SandstormCoreFactory {
   # Gets an GatewayRouter implementation. Note that in Blackrock, where multiple instances of the
   # shell might be running, all GatewayRouters are equivalent, regardless of which shell replica
   # they came from.
+
+  getShellCli @2 () -> (shellCli :ShellCli);
+  # Gets a ShellCli implementation, which is used by the CLI to issue commands directly to the
+  # shell.
 }

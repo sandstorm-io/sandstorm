@@ -503,7 +503,7 @@ private:
   bool aborted = false;
 
   kj::Maybe<kj::Own<kj::PromiseFulfiller<void>>> writeReady;
-  capnp::Request<ByteStream::WriteParams, ByteStream::WriteResults> nextWrite = nullptr;
+  capnp::StreamingRequest<ByteStream::WriteParams> nextWrite = nullptr;
   capnp::Orphan<capnp::Data> nextWriteData;
   size_t nextWriteSize = 0;  // how many bytes are already in `nextWriteData`
 
@@ -516,7 +516,7 @@ private:
       nextWriteData.truncate(nextWriteSize);
       nextWrite.adoptData(kj::mv(nextWriteData));
 
-      auto result = nextWrite.send().then([this](auto&&) {
+      auto result = nextWrite.send().then([this]() {
         return pumpWrites();
       });
 
@@ -923,7 +923,7 @@ public:
     auto request = clientStream.sendBytesRequest(
         capnp::MessageSize { data.size() / sizeof(capnp::word) + 8, 0 });
     request.setMessage(data);
-    tasks.add(request.send().ignoreResult());
+    tasks.add(request.send());
   }
 
 protected:

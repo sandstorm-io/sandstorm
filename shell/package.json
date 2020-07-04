@@ -31,6 +31,7 @@
     "acme-dns-01-namedotcom": "^3.0.1",
     "acme-dns-01-route53": "0.0.1",
     "acme-dns-01-sandcats": "file:../acme-dns-01-sandcats",
+    "acme-dns-01-gcp": "^0.0.9",
     "acme-dns-01-vultr": "^3.0.2",
     "babel-runtime": "^6.26.0",
     "bignum": "^0.13.0",

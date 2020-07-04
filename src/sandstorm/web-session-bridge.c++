@@ -499,8 +499,7 @@ kj::Promise<kj::Maybe<kj::String>> WebSessionBridge::davXmlContent(
 
 namespace {
 
-class WebSocketPipe final : public kj::AsyncIoStream, public kj::Refcounted,
-                            private kj::TaskSet::ErrorHandler {
+class WebSocketPipe final : public kj::AsyncIoStream, public kj::Refcounted {
   // Class which adapts a pair of WebSession::WebSocketStreams into an AsyncIoStream which in turn
   // can be wrapped by a kj::WebSocket using kj::newWebSocket().
   //
@@ -514,8 +513,7 @@ class WebSocketPipe final : public kj::AsyncIoStream, public kj::Refcounted,
 
 public:
   WebSocketPipe(WebSession::WebSocketStream::Client outgoing)
-      : outgoing(kj::mv(outgoing)),
-        writeTasks(*this) {}
+      : outgoing(kj::mv(outgoing)) {}
 
   WebSession::WebSocketStream::Client getIncomingStreamCapability() {
     return kj::heap<WebSocketStreamImpl>(kj::addRef(*this));
@@ -531,7 +529,7 @@ public:
   kj::Promise<void> write(const void* buffer, size_t size) override {
     auto req = KJ_REQUIRE_NONNULL(outgoing, "already called shutdownWrite()").sendBytesRequest();
     req.setMessage(kj::arrayPtr(reinterpret_cast<const byte*>(buffer), size));
-    return writeImpl(size, kj::mv(req));
+    return req.send();
   }
 
   kj::Promise<void> write(kj::ArrayPtr<const kj::ArrayPtr<const byte>> pieces) override {
@@ -550,46 +548,11 @@ public:
     }
     KJ_ASSERT(pos == builder.end());
 
-    return writeImpl(size, kj::mv(req));
+    return req.send();
   }
 
   kj::Promise<void> whenWriteDisconnected() override {
     return kj::NEVER_DONE;
-  }
-
-private:
-  kj::Promise<void> writeImpl(size_t size, capnp::Request<
-      WebSession::WebSocketStream::SendBytesParams,
-      WebSession::WebSocketStream::SendBytesResults>&& req) {
-    KJ_IF_MAYBE(e, writeError) {
-      return kj::cp(*e);
-    }
-
-    writeTasks.add(req.send().then([this,size](auto&& response) {
-      bytesInFlight -= size;
-      if (bytesInFlight < MAX_IN_FLIGHT) {
-        KJ_IF_MAYBE(f, writeReadyFulfiller) {
-          f->get()->fulfill();
-        }
-      }
-    }));
-    bytesInFlight += size;
-
-    if (bytesInFlight < MAX_IN_FLIGHT) {
-      return kj::READY_NOW;
-    } else {
-      auto paf = kj::newPromiseAndFulfiller<void>();
-      writeReadyFulfiller = kj::mv(paf.fulfiller);
-      return kj::mv(paf.promise);
-    }
-  }
-
-  void taskFailed(kj::Exception&& exception) override {
-    KJ_IF_MAYBE(f, writeReadyFulfiller) {
-      f->get()->reject(kj::mv(exception));
-      writeReadyFulfiller = nullptr;
-    }
-    writeError = kj::mv(exception);
   }
 
 public:
@@ -707,12 +670,7 @@ public:
 
 private:
   // Outgoing direction.
-  static constexpr size_t MAX_IN_FLIGHT = 65536;
-  size_t bytesInFlight = 0;
-  kj::Maybe<kj::Own<kj::PromiseFulfiller<void>>> writeReadyFulfiller;
-  kj::Maybe<kj::Exception> writeError;
   kj::Maybe<WebSession::WebSocketStream::Client> outgoing;
-  kj::TaskSet writeTasks;
 
   // Incoming direction.
   struct CurrentWrite {

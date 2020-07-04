@@ -2134,7 +2134,7 @@ public:
         auto req = params.getStream().writeRequest();
         auto data = req.initData(backlog1);
         in.read(data.begin(), backlog1);
-        firstWrite = req.send().ignoreResult();
+        firstWrite = req.send();
       }
     }
 
@@ -2287,6 +2287,31 @@ private:
       KJ_LOG(ERROR, exception);
     }
 
+    // Read all unread data from logFile and send it to the stream.
+    kj::Promise<void> copyLog() {
+      auto req = stream.writeRequest();
+      auto orphanage =
+          capnp::Orphanage::getForMessageContaining<ByteStream::WriteParams::Builder>(req);
+      auto orphan = orphanage.newOrphan<capnp::Data>(4096);
+      auto data = orphan.get();
+
+      size_t n = kj::FdInputStream(logFile.get())
+          .tryRead(data.begin(), data.size(), data.size());
+      bool done = n < data.size();
+      if (done) {
+        orphan.truncate(n);
+      }
+      req.adoptData(kj::mv(orphan));
+
+      if(done) {
+        return req.send();
+      } else {
+        return req.send().then([this]() {
+          return copyLog();
+        });
+      }
+    }
+
     kj::Promise<void> watchLoop() {
       // Exhaust all events from the inotify queue, because edge triggering.
       // Luckily we don't actually have to interpret the events because we're only waiting on
@@ -2308,33 +2333,13 @@ private:
         KJ_SYSCALL(lseek(logFile, 0, SEEK_SET));
       }
 
-      // Read all unread data from logFile and send it to the stream.
-      // TODO(perf): Flow control? Currently we avoid asking for very much data at once.
-      for (;;) {
-        auto req = stream.writeRequest();
-        auto orphanage =
-            capnp::Orphanage::getForMessageContaining<ByteStream::WriteParams::Builder>(req);
-        auto orphan = orphanage.newOrphan<capnp::Data>(4096);
-        auto data = orphan.get();
+      return copyLog().then([this]() {
+        KJ_SYSCALL(lastOffset = lseek(logFile, 0, SEEK_CUR));
 
-        size_t n = kj::FdInputStream(logFile.get())
-            .tryRead(data.begin(), data.size(), data.size());
-        bool done = n < data.size();
-        if (done) {
-          orphan.truncate(n);
-        }
-        req.adoptData(kj::mv(orphan));
-
-        tasks.add(req.send().ignoreResult());
-
-        if (done) break;
-      }
-
-      KJ_SYSCALL(lastOffset = lseek(logFile, 0, SEEK_CUR));
-
-      // OK, now wait for more.
-      return inotifyObserver.whenBecomesReadable().then([this]() {
-        return watchLoop();
+        // OK, now wait for more.
+        return inotifyObserver.whenBecomesReadable().then([this]() {
+          return watchLoop();
+        });
       });
     }
 

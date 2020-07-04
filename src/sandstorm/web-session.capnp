@@ -463,7 +463,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   }
 
   interface WebSocketStream {
-    sendBytes @0 (message :Data);
+    sendBytes @0 (message :Data) -> stream;
     # Send some bytes.  WARNING:  At present, we just send the raw bytes of the WebSocket protocol.
     # In the future, this will be replaced with a `sendMessage()` method that sends one WebSocket
     # datagram at a time.

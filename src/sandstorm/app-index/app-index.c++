@@ -88,7 +88,7 @@ public:
         auto promises = kj::heapArrayBuilder<kj::Promise<void>>(3);
         auto req1 = stream.writeRequest();
         req1.setData(content.getContent());
-        promises.add(req1.send().then([](auto&&) {}));
+        promises.add(req1.send());
         promises.add(stream.doneRequest().send().then([](auto&&) {}));
         promises.add(stream.getResultRequest().send().then([](auto&&) {}));
 

@@ -94,7 +94,7 @@ interface ByteStream {
   #   Moreover, the interface would be awkward to use and implement. E.g. what happens if you call
   #   read() twice on the same capability?
 
-  write @0 (data :Data);
+  write @0 (data :Data) -> stream;
   # Add bytes.
   #
   # It's safe to make overlapping calls to `write()`, since Cap'n Proto enforces E-Order and so

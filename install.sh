@@ -281,7 +281,7 @@ USE_DEFAULTS="no"
 USE_EXTERNAL_INTERFACE="no"
 USE_SANDCATS="no"
 SANDCATS_SUCCESSFUL="no"
-SANDCATS_HTTPS_SUCCESSFUL="no"
+USE_HTTPS="no"
 CURRENTLY_UID_ZERO="no"
 PREFER_ROOT="yes"
 SHOW_MESSAGE_ABOUT_NEEDING_PORTS_OPEN="no"
@@ -939,10 +939,6 @@ sandcats_configure() {
   # it succeeds and/or returning when the user expresses a desire to
   # cancel the process.
   sandcats_register_name
-
-  # If appropriate, we configure HTTPS. We always call the function,
-  # allowing it to determine if any action is required.
-  sandcats_configure_https
 }
 
 configure_hostnames() {
@@ -986,8 +982,7 @@ configure_hostnames() {
 
   DEFAULT_BASE_URL="http://${SS_HOSTNAME}${PORT_SUFFIX}"
 
-  # If SANDCATS_HTTPS_SUCCESSFUL is true, then use a HTTPS URL.
-  if [ "$SANDCATS_HTTPS_SUCCESSFUL" = "yes" ]; then
+  if [ "$USE_HTTPS" = "yes" ]; then
     DEFAULT_BASE_URL="https://$SS_HOSTNAME"
     HTTPS_PORT=443
     PORT=80
@@ -1303,7 +1298,7 @@ save_config() {
   if [ "yes" = "$SANDCATS_SUCCESSFUL" ] ; then
     writeConfig SANDCATS_BASE_DOMAIN >> sandstorm.conf
   fi
-  if [ "yes" = "$SANDCATS_HTTPS_SUCCESSFUL" ] ; then
+  if [ "yes" = "$USE_HTTPS" ] ; then
     writeConfig HTTPS_PORT >> sandstorm.conf
   fi
 
@@ -1650,9 +1645,6 @@ print_success() {
     echo "Once that's done, visit this link to start using it:"
   else
     echo -n "Your server is now online! "
-    if [ "${SANDCATS_HTTPS_SUCCESSFUL}" = "yes" ] ; then
-      echo "It should work immediately if you use Chrome."
-    fi
     echo "Visit this link to start using it:"
   fi
 
@@ -1674,11 +1666,6 @@ print_success() {
   fi
   echo ""
 
-  if [ "${SANDCATS_HTTPS_SUCCESSFUL}" = "yes" ] ; then
-    echo ""
-    echo "(If your browser shows you an OCSP error, wait 10 minutes for it to auto-resolve"
-    echo "and try Chrome until then.)"
-  fi
   echo
   echo "To learn how to control the server, run:"
   if [ "yes" = "$CURRENTLY_UID_ZERO" ] ; then
@@ -1840,6 +1827,7 @@ sandcats_recover_domain() {
   SANDCATS_SUCCESSFUL="yes"
   SS_HOSTNAME="${DESIRED_SANDCATS_NAME}.${SANDCATS_BASE_DOMAIN}"
   USE_EXTERNAL_INTERFACE="yes"
+  USE_HTTPS="yes"
   echo "Congratulations! You're all configured to use ${DESIRED_SANDCATS_NAME}.${SANDCATS_BASE_DOMAIN}."
   echo "Your credentials to use it are in $(readlink -f var/sandcats); consider making a backup."
 }
@@ -1877,6 +1865,7 @@ sandcats_registerreserved() {
     # road.
     SS_HOSTNAME="${DESIRED_SANDCATS_NAME}.${SANDCATS_BASE_DOMAIN}"
     USE_EXTERNAL_INTERFACE="yes"
+    USE_HTTPS="yes"
     SANDCATS_SUCCESSFUL="yes"
     echo "Congratulations! We have registered your ${DESIRED_SANDCATS_NAME}.${SANDCATS_BASE_DOMAIN} name."
     echo "Your credentials to use it are in $(readlink -f var/sandcats); consider making a backup."
@@ -1975,6 +1964,7 @@ sandcats_register_name() {
     # road.
     SS_HOSTNAME="${DESIRED_SANDCATS_NAME}.${SANDCATS_BASE_DOMAIN}"
     USE_EXTERNAL_INTERFACE="yes"
+    USE_HTTPS="yes"
     SANDCATS_SUCCESSFUL="yes"
     echo "Congratulations! We have registered your ${DESIRED_SANDCATS_NAME}.${SANDCATS_BASE_DOMAIN} name."
     echo "Your credentials to use it are in $(readlink -f var/sandcats); consider making a backup."
@@ -1998,94 +1988,10 @@ sandcats_configure_https() {
     return
   fi
 
-  # Let's request a certificate. Note that on the dev service, at
-  # least, this takes about 30 seconds. So we need to print a message
-  # so the user doesn't get sad and go away.
-  echo "Now we're going to auto-configure HTTPS for your server."
-  echo ""
-  echo "* This will take about 30 seconds, and needs no input from you."
-  echo "* Thanks to GlobalSign for their help making this happen."
-  echo ""
-
-  # Store https data in var/sandcats/https, under a directory named
-  # for the current hostname. Set its permissions to something pretty
-  # restrictive.
-  #
-  # The hostname is in the path so that, if the Sandstorm admin
-  # adjusts the hostname, the Sandstorm code can easily figure out to
-  # not use these certificates without having to parse the actual
-  # X.509 certificate data.
-  local HTTPS_BASE_DIR="var/sandcats/https"
-  local HTTPS_CONFIG_DIR="$HTTPS_BASE_DIR/$SS_HOSTNAME"
-  mkdir -p -m 0700 "$HTTPS_CONFIG_DIR"
-  chmod 0700 "$HTTPS_CONFIG_DIR"
-
-  # Make this readable by Sandstorm.
-  if [ "yes" = "$CURRENTLY_UID_ZERO" ] ; then
-    chown -R "$SERVER_USER":"$SERVER_USER" "$HTTPS_BASE_DIR"
-  fi
-
-  # Create a certificate signing request and corresponding key.
-  #
-  # The filename is the UNIX timestamp after which to start using this
-  # key.  This script uses a filename of "0" to indicate that this key
-  # should be used since time 0 (1970), which is to say, should
-  # definitely be used.
-  echo "Generating certificate request..."
-  openssl \
-    req `# Invoke OpenSSL's PKCS#10 X.509 bits.` \
-    -nodes `# no DES -- that is, do not encrypt the key at rest.` \
-    -newkey rsa:4096 `# Create a new RSA key of length 4096 bits.` \
-    `# Sandcats just needs the CN= (common name) in the request.` \
-    -subj "/CN=*.${SS_HOSTNAME}/" \
-    -keyout "$HTTPS_CONFIG_DIR"/0 `# Store the resulting RSA private key in 0` \
-    -out "$HTTPS_CONFIG_DIR"/0.csr `# Store the resulting certificate in 0.pub` \
-    2>/dev/null `# Silence the progress output.`
-
-  chmod 0600 "$HTTPS_CONFIG_DIR"/0
-  chmod 0600 "$HTTPS_CONFIG_DIR"/0.csr
-
-  echo "Requesting certificate (BE PATIENT)..."
-  # Note that the "LOG_PATH" is a machine-readable JSON file that the
-  # Sandstorm code will read while auto-configuring its HTTPS
-  # support. This bash script does not read that file.
-  #
-  # Since we want JSON, we omit "Content-Type: text/plain" from this
-  # request.
-  local LOG_PATH
-  LOG_PATH="$HTTPS_CONFIG_DIR/0.response-json"
-  HTTP_STATUS=$(
-    dotdotdot_curl \
-      --silent \
-      --max-time 60 \
-      $SANDCATS_CURL_PARAMS \
-      -A "$CURL_USER_AGENT" \
-      -X POST \
-      --data-urlencode "rawHostname=$DESIRED_SANDCATS_NAME" \
-      --data-urlencode "certificateSigningRequest=$(cat "$HTTPS_CONFIG_DIR/0.csr")" \
-      --output "$LOG_PATH" \
-      -w '%{http_code}' \
-      -H 'X-Sand: cats' \
-      --cert var/sandcats/id_rsa.private_combined \
-      "${SANDCATS_API_BASE}/${OVERRIDE_SANDCATS_GETCERTIFICATE_API_PATH:-getcertificate}")
-
-  chmod 0600 "$LOG_PATH"
-
-  # Make sure the Sandstorm service can read these files.
-  chown "$SERVER_USER":"$SERVER_USER" "$HTTPS_CONFIG_DIR/"*
-
-  if [ "200" = "$HTTP_STATUS" ]
-  then
-    # Say something nice to the user.
-    echo "Successfully auto-configured HTTPS!"
-    # Set these global variables to inform the installer down the
-    # road.
-    SANDCATS_HTTPS_SUCCESSFUL="yes"
-  else
-    # Express our sadness to the user, and proceed without HTTPS.
-    error "Some part of HTTPS autoconfiguration failed. Log data available in $LOG_PATH"
-    return
-  fi
+  # OBSOLETE: We used to fetch a certificate here, but now we wait until the server is running
+  #   and then do Let's Encrypt. To make sure the rest of the script works as expected, pretend
+  #   HTTPS config was successful (it will be later).
+  SANDCATS_HTTPS_SUCCESSFUL=yes
 }
 
 wait_for_server_bind_to_its_port() {
@@ -2178,6 +2084,30 @@ sandcats_generate_keys() {
     echo -ne '\r'
 }
 
+configure_https() {
+  if [ "yes" != "${USE_HTTPS}" ] ; then
+    return
+  fi
+
+  echo
+  echo "Now we're going to fetch a TLS certificate using Let's Encrypt. This is a free"
+  echo "service provided by the nonprofit Electronic Frontier Foundation. By using this"
+  echo "service, you agree to be bound by the subscriber agreement, found here:"
+  echo "  https://letsencrypt.org/repository/#let-s-encrypt-subscriber-agreement"
+  echo "If you do not agree, please press ctrl+C now to cancel installation."
+  echo
+
+  echo "You must provide an email address, which will be shared with Let's Encrypt."
+  ACME_EMAIL="$(prompt "Your email address for Let's Encrypt:" "${SANDCATS_REGISTRATION_EMAIL:-}")"
+
+  $DIR/sandstorm create-acme-account "$ACME_EMAIL" --accept-terms ||
+      fail "E_CREATE_ACME_ACCOUNT" "Failed to create Let's Encrypt account."
+
+  echo "Your Let's Encrypt account has been created. Now we'll fetch a certificate!"
+  $DIR/sandstorm renew-certificate ||
+      fail "E_FETCH_CERTIFICATE" "Failed to fetch certificate."
+}
+
 # Now that the steps exist as functions, run them in an order that
 # would result in a working install.
 handle_args "$@"
@@ -2210,6 +2140,7 @@ install_sandstorm_symlinks
 ask_about_starting_at_boot
 configure_start_at_boot_if_desired
 wait_for_server_bind_to_its_port
+configure_https
 print_success
 }
 

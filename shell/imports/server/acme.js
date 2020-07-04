@@ -324,8 +324,11 @@ if (!Meteor.settings.replicaNumber) {
       // We're using old sandcats cert flow. Arrange to migrate to Let's Encrypt.
       let timeout = computeLetsEncryptSwitchDate(sandcatsName).getTime() - Date.now();
       if (timeout <= 0) {
-        // We were supposed to have switched already. Switch at a random time in the next day.
-        timeout = Math.floor(Math.random() * DAYS) + 1;
+        // We were supposed to have switched already. Switch in one hour. The only reason we wait
+        // is because if this is a fresh install, the installer might immediately call us to set
+        // up ACME and we don't want to preempt that.
+        // TODO(cleanup): Next release, we delete the auto-migration code entirely!
+        timeout = 1 * HOURS;
       }
 
       if (timeout >= Math.pow(2, 31)) {

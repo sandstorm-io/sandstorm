@@ -284,26 +284,6 @@ function computeLetsEncryptSwitchDate(hostname) {
   return new Date(ROLLOUT_START.getTime() + offset);
 }
 
-function switchSandcatsToLetsEncrypt(sandcatsName) {
-  // Check again that no one has created an account in the meantime.
-  if (!globalDb.getSetting("acmeAccount")) {
-    console.log("Automatically creating Let's Encrypt account. Sandcats certificates will be " +
-        "fetched from Let's Encrypt from now on.");
-
-    // As of this writing, mail sent to anything+letsencrypt@sandcats.io gets logged to a place
-    // only Kenton can see, but in the future we may make hostname[+anything]@sandcats.io forward
-    // to the owner of the hostname using their e-mail address on file. We'd need to implement some
-    // sort of e-mail verification before doing that, though.
-    createAcmeAccount("https://acme-v02.api.letsencrypt.org/directory",
-        sandcatsName + "+letsencrypt@sandcats.io", true);
-
-    let tlsKeys = globalDb.getSetting("tlsKeys");
-    if (tlsKeys && tlsKeys.certChain) {
-      renewCertificateWhenNeeded(tlsKeys.certChain);
-    }
-  }
-}
-
 // On replica 0, subscribe to updates to the `tlsKeys` setting and renew the certificate when
 // needed.
 if (!Meteor.settings.replicaNumber) {
@@ -318,30 +298,5 @@ if (!Meteor.settings.replicaNumber) {
         removed(setting) { renewCertificateWhenNeeded(null); },
       });
     }, 0);
-
-    let sandcatsName = getSandcatsName();
-    if (sandcatsName && !globalDb.getSetting("acmeAccount")) {
-      // We're using old sandcats cert flow. Arrange to migrate to Let's Encrypt.
-      let timeout = computeLetsEncryptSwitchDate(sandcatsName).getTime() - Date.now();
-      if (timeout <= 0) {
-        // We were supposed to have switched already. Switch in one hour. The only reason we wait
-        // is because if this is a fresh install, the installer might immediately call us to set
-        // up ACME and we don't want to preempt that.
-        // TODO(cleanup): Next release, we delete the auto-migration code entirely!
-        timeout = 1 * HOURS;
-      }
-
-      if (timeout >= Math.pow(2, 31)) {
-        // Yikes, setTimeout() will do the wrong thing if we set this.
-        console.log("Error calculating Let's Encrypt auto-migration!", timeout);
-      } else {
-        console.log("Planning to migrate to Let's Encrypt automatically at:",
-            new Date(Date.now() + timeout));
-
-        Meteor.setTimeout(() => {
-          switchSandcatsToLetsEncrypt(sandcatsName);
-        }, timeout);
-      }
-    }
   });
 }

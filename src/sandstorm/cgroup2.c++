@@ -13,14 +13,11 @@ Cgroup::Cgroup(kj::AutoCloseFd&& dirfd)
 {}
 
 Cgroup Cgroup::getOrMakeChild(kj::StringPtr path) {
-  int status;
-  do {
-    errno = 0;
-    status = mkdirat(dirfd.get(), path.cStr(), 0700);
-  } while(status != 0 && errno == EINTR);
-
-  if(status < 0) {
-    KJ_REQUIRE(errno == EEXIST);
+  KJ_SYSCALL_HANDLE_ERRORS(mkdirat(dirfd.get(), path.cStr(), 0700)) {
+    case EEXIST:
+      break;
+    default:
+      KJ_FAIL_SYSCALL("mkdirat()", error);
   }
 
   return Cgroup(raiiOpenAt(dirfd.get(), path, O_DIRECTORY|O_CLOEXEC));

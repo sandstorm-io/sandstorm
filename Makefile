@@ -294,7 +294,10 @@ tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/imports/client/changelog.html shel
 # a broken font file (all icons invisible and zero-width). For now we stick with the old version
 # and run it using Meteor 1.8.2's node which is old enough to run it. This means you have to
 # install Meteor 1.8.2 in addition to the latest version in order to build Sandstorm. :(
-METEOR_DEV_BUNDLE_ICONS=$(shell ./find-meteor-dev-bundle.sh METEOR@1.8.2)
+METEOR_DEV_BUNDLE_ICONS:=$(shell ./find-meteor-dev-bundle.sh METEOR@1.8.2)
+ifneq '$(.SHELLSTATUS)' '0'
+$(error Failed to find meteor dev bundle; have you installed Meteor?)
+endif
 
 icons/node_modules: icons/package.json
 	cd icons && PATH=$(METEOR_DEV_BUNDLE_ICONS)/bin:$$PATH $(METEOR_DEV_BUNDLE_ICONS)/bin/npm install

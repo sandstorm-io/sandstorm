@@ -1380,7 +1380,7 @@ private:
         KJ_FAIL_SYSCALL("unshare(CLONE_NEWCGROUP)", error);
     } else {
       KJ_SYSCALL(mkdir("run/cgroup2", 0700));
-      KJ_SYSCALL_HANDLE_ERRORS(mount("none", "run/cgroup2", "cgroup2", MS_NOSUID | MS_NOEXEC, "")) {
+      KJ_SYSCALL_HANDLE_ERRORS(mount("none", "run/cgroup2", "cgroup2", MS_NOSUID | MS_NOEXEC, nullptr)) {
         default:
           // This could fail if the kernel is new enough to support cgroup namespaces, but
           // wasn't actually built with cgroup support (CONFIG_CGORUPS) enabled; in this case
@@ -1405,8 +1405,13 @@ private:
           if(runningAsRoot) {
             KJ_SYSCALL(chown("run/cgroup2", uids->uid, uids->gid));
             KJ_SYSCALL(chown("run/cgroup2/cgroup.procs", uids->uid, uids->gid));
-            KJ_SYSCALL(chown("run/cgroup2/cgroup.threads", uids->uid, uids->gid));
             KJ_SYSCALL(chown("run/cgroup2/cgroup.subtree_control", uids->uid, uids->gid));
+            // This one doesn't exist on earlier kernels (it appeared some time after 4.6).
+            // If it's absent don't worry about it; we don't use it currently anyway.
+            KJ_SYSCALL_HANDLE_ERRORS(access("run/cgroup2/cgroup.threads", F_OK)) {
+            } else {
+              KJ_SYSCALL(chown("run/cgroup2/cgroup.threads", uids->uid, uids->gid));
+            }
           }
         }
       }

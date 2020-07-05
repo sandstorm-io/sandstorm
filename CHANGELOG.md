@@ -1,3 +1,12 @@
+### v0.268 (2020-07-04)
+- Added CLI commands for configuring ACME (Let's Encrypt), so that this can be done before HTTPS is working.
+- New installs using Sandcats will now use Let's Encrypt immediately.
+- Improved error page when accessing Sandstorm using an unrecognized hostname. Thanks @zenhack.
+- Added Google Cloud Platform DNS provider for ACME challenges (not to be confused with Google Domains). Thanks @abliss.
+- Updated Sandstorm RPC APIs to use Cap'n Proto streaming flow control where applicable.
+- The box showing the changelog is now taller. Thanks @ocdtrekkie.
+- Made navigation menu scrollable on mobile. Thanks @spollard.
+
 ### v0.267 (2020-06-06)
 - Fix possible problem where Let's Encrypt auto-migration would not actually renew the certificate until Sandstorm was restarted.
 

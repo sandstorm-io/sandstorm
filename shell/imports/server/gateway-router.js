@@ -592,7 +592,7 @@ class GatewayRouterImpl {
   }
 }
 
-makeGatewayRouter = function () {
+export function makeGatewayRouter() {
   return new Capnp.Capability(new GatewayRouterImpl, GatewayRouter);
 }
 

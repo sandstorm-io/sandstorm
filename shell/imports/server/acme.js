@@ -24,7 +24,7 @@ import { pki, asn1 } from "node-forge";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
 import URL from "url";
-import { getSandcatsAcmeOptions, getSandcatsName } from "/imports/server/sandcats.js";
+import { getSandcatsAcmeOptions } from "/imports/server/sandcats.js";
 import Crypto from "crypto";
 
 // Relevant settings in database `Settings` table:
@@ -268,20 +268,6 @@ function renewCertificateWhenNeeded(certChain) {
 
     removeAllCertificateExpirationNotifications();
   }
-}
-
-function computeLetsEncryptSwitchDate(hostname) {
-  // Compute a time in the future which will be no more than 2^31 milliseconds from now (so we can
-  // use setTimeout() safely).
-
-  // Hash the hostname, and parse the first 32 bits as an integer.
-  let offset =
-      parseInt(Crypto.createHash("sha256").update(hostname).digest("hex").slice(0, 8), 16);
-  // Divide by 4 so it's less than 2^30.
-  offset = Math.floor(offset / 4);
-  // Add that to the rollout start date, which is in the very near future as of this writing.
-  let ROLLOUT_START = new Date('2020-06-10');
-  return new Date(ROLLOUT_START.getTime() + offset);
 }
 
 // On replica 0, subscribe to updates to the `tlsKeys` setting and renew the certificate when

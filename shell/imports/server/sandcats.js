@@ -15,10 +15,8 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
-import { check } from "meteor/check";
 import { Random } from "meteor/random";
 
-import { inMeteor } from "/imports/server/async-helpers.ts";
 import querystring from "querystring";
 import https from "https";
 import fs from "fs";
@@ -26,7 +24,6 @@ import dgram from "dgram";
 import Url from "url";
 
 import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
-import { globalDb } from "/imports/db-deprecated.js";
 
 const SANDCATS_HOSTNAME = (Meteor.settings && Meteor.settings.public &&
                            Meteor.settings.public.sandcatsHostname);
@@ -158,8 +155,6 @@ Sandcats.initializeSandcats = () => {
                   SANDCATS_HOSTNAME, HOSTNAME);
   } else {
     const oneMinute = 60 * 1000;
-    const oneHour = 60 * oneMinute;
-    const randomIntervalZeroToOneHour = Math.random() * oneHour;
     // All Sandcats installs need dyndns updating.
     SANDCATS_NAME = HOSTNAME.slice(0, i - 1);
     Meteor.setInterval(pingUdp, oneMinute);

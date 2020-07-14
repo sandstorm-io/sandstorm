@@ -417,6 +417,8 @@ class ExternalWebSession extends PersistentImpl {
         //
         // TODO(soon): Once apps have updated, prepend "/" unconditionally.
         options.path = path.startsWith("/") ? path : "/" + path;
+      } else if(path === "") {
+        options.path = this.path;
       } else {
         options.path = this.path + "/" + path;
       }

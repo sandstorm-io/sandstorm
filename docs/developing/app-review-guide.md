@@ -63,22 +63,34 @@ to load an analytics script from an outside server, or does not make it suitably
 clear to a user why it needs certain outside network access prior to requesting it.
 
 **Note:** Client-side loading is a known gap in Sandstorm's security model that we
-intend to close. Not only is misuse of it a security or privacy issue, it's use may
+intend to close. Not only is misuse of it a security or privacy issue, its use may
 lead to apps that break when Sandstorm closes this gap.
 
 ## Commercial or proprietary apps
 
-The Sandstorm App Market supports both commercial and proprietary apps, however
+The Sandstorm App Market permits both commercial and proprietary apps, however
 official support for app purchase and licensing is not currently available. For an
 app that is merely closed source, but free, this may not pose an issue. For apps
 which require some form of licensing to function, we expect at minimum that the
 app description clearly and prominently specifies the licensing requirements and
-activation method. Sandstorm apps should be as self-sufficient as possible, so a
-license key method using some sort of signing that does not need to call home is ideal,
-however, a check with a licensing server may be acceptable if it is narrow in scope,
-and utilizes the Powerbox to get the user's consent for their server to contact
-yours. We would also encourage the app to have at least a minimal level of functionality
-such as a trial or limited version, such that users can experience the app before
-deciding on a purchase. As this is a territory the Sandstorm app review team hasn't
-spent a lot of time on, interested parties may wish to reach out to the Sandstorm
-community for feedback prior to committing significant work here.
+activation method. We would also encourage the app to have at least a minimal level of
+functionality such as a trial or limited version, such that users can experience the
+app before deciding on a purchase. As this is a territory the Sandstorm app review
+team hasn't spent a lot of time on, interested parties may wish to reach out to the
+Sandstorm community for feedback prior to committing significant work here.
+
+## Copyright and copyleft
+
+The developer is responsible for ensuring their packages comply with all relevant
+copyright or copyleft limitations. If a package is reported to us as in violation of a
+license, it may be pulled from the App Market.
+
+Sandstorm package files (or SPKs) are an archive format which includes a variety of
+components needed to run a given application. Often the process of building an SPK pulls
+in components and libraries from open source distributions such as Debian. We believe
+these fall comfortably within the GPLv3's [system libraries exception](https://www.gnu.org/licenses/quick-guide-gplv3.html#less-source-to-distribute-new-system-libraries-exception) and falls well within the spirit of most open source licensing models.
+
+Open source Sandstorm packages generally provide all of the information necessary to modify
+and recreate them, including where to get any other components required to build the SPK,
+however, proprietary apps may need to seek legal counsel on what requirements are needed
+to comply.

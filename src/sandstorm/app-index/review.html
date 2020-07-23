@@ -90,7 +90,7 @@
       var fieldHandlers = {
         svg: function (data) {
           var img = document.createElement("img");
-          img.src = "data:image/svg+xml;utf8," + data;
+          img.src = "data:image/svg+xml;utf8," + encodeURIComponent(data);
           return img;
         },
         png: function (data) {

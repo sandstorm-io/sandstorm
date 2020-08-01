@@ -49,9 +49,14 @@ static void tryRecursivelyDelete(kj::StringPtr path) {
 }
 
 BackendImpl::BackendImpl(kj::LowLevelAsyncIoProvider& ioProvider, kj::Network& network,
-  SandstormCoreFactory::Client&& sandstormCoreFactory, kj::Maybe<uid_t> sandboxUid)
+  SandstormCoreFactory::Client&& sandstormCoreFactory,
+  kj::Maybe<Cgroup>&& cgroup,
+  kj::Maybe<uid_t> sandboxUid)
     : ioProvider(ioProvider), network(network), coreFactory(kj::mv(sandstormCoreFactory)),
-      sandboxUid(sandboxUid), tasks(*this) {}
+      sandboxUid(sandboxUid),
+      tasks(*this),
+      cgroup(kj::mv(cgroup))
+    {}
 
 void BackendImpl::taskFailed(kj::Exception&& exception) {
   KJ_LOG(ERROR, exception);
@@ -161,7 +166,8 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
   auto addressPromise =
       network.parseAddress(kj::str("unix:/var/sandstorm/grains/", grainId, "/socket"));
 
-  // When both of those are done, connect to the address.
+  // When both of those are done, connect to the address, and move the
+  // supervisor into a cgroup.
   auto finalPromise = promise
       .then([KJ_MVCAP(addressPromise)](size_t n) mutable {
     return kj::mv(addressPromise);
@@ -169,6 +175,12 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
     return address->connect();
   }).then([this,KJ_MVCAP(stdoutPipe),KJ_MVCAP(process),grainId = kj::heapString(grainId)]
           (kj::Own<kj::AsyncIoStream>&& connection) mutable {
+
+    KJ_IF_MAYBE(cg, cgroup) {
+      cg->getOrMakeChild(grainId)
+          .addPid(process.getPid());
+    }
+
     // Connected. Create the RunningGrain and fulfill promises.
     auto ignorePromise = ignoreAll(*stdoutPipe);
     tasks.add(ignorePromise.attach(kj::mv(stdoutPipe)));
@@ -229,6 +241,9 @@ BackendImpl::RunningGrain::RunningGrain(
 
 BackendImpl::RunningGrain::~RunningGrain() noexcept(false) {
   backend.supervisors.erase(grainId);
+  KJ_IF_MAYBE(cg, backend.cgroup) {
+    cg->removeChild(grainId);
+  }
 }
 
 kj::Promise<void> BackendImpl::ping(PingContext context) {

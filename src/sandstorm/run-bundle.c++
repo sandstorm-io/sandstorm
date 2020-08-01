@@ -799,7 +799,7 @@ public:
     const Config config = readConfig();
 
     // We'll run under the chroot.
-    enterChroot(false);
+    enterChroot(nullptr, false);
 
     // Don't run as root.
     dropPrivs(config.uids);
@@ -1432,7 +1432,7 @@ private:
     }
   }
 
-  void enterChroot(bool inPidNamespace) {
+  void enterChroot(kj::Maybe<const UserIds&> chownCgroupsTo, bool inPidNamespace) {
     KJ_REQUIRE(changedDir);
 
     // Verify ownership is intact.
@@ -1521,6 +1521,53 @@ private:
     // And just in case the user has /etc/resolv.conf as a symlink to something we haven't linked
     // in, copy its contents to /etc/resolv.conf.host-initial so we can use that if needed.
     backupResolvConf();
+
+    // Best effort attempt to set up cgroup2. Depending on system configuration
+    // this may not be possible; if not we continue without cgroup support.
+    KJ_SYSCALL_HANDLE_ERRORS(unshare(CLONE_NEWCGROUP)) {
+      case EINVAL:
+        // Might happen on very old kernels before CLONE_NEWCGROUP was defined.
+        break;
+      default:
+        KJ_FAIL_SYSCALL("unshare(CLONE_NEWCGROUP)", error);
+    } else {
+      KJ_SYSCALL(mkdir("run/cgroup2", 0700));
+      KJ_SYSCALL_HANDLE_ERRORS(mount("none", "run/cgroup2", "cgroup2", MS_NOSUID | MS_NOEXEC, nullptr)) {
+        default:
+          // This could fail if the kernel is new enough to support cgroup namespaces, but
+          // wasn't actually built with cgroup support (CONFIG_CGORUPS) enabled; in this case
+          // unshare() silently ignores the relevant flag, so we'd get an error here.
+          //
+          // Get rid of the mount point, so attempts to open it later will fail:
+          KJ_SYSCALL(rmdir("run/cgroup2"));
+      } else {
+        KJ_IF_MAYBE(uids, chownCgroupsTo) {
+          // Give our unprivileged selves access to manage the cgroup.
+          // See the 'Delegation' section of 'Documentation/admin-guide/cgroup-v2.txt'
+          // in the Linux kernel source tree.
+          //
+          // We only do this if we were given uids to work with; we don't need to do
+          // this if the sandbox is already set up, so commands that expect
+          // an already running sandstorm will pass us nullptr to indicate that
+          // we don't need to do this.
+          //
+          // Additionally, we *can't* do this if we weren't started as root, so in
+          // that case we just skip it. Other parts of the system are built to
+          // handle the case where this isn't available gracefully.
+          if(runningAsRoot) {
+            KJ_SYSCALL(chown("run/cgroup2", uids->uid, uids->gid));
+            KJ_SYSCALL(chown("run/cgroup2/cgroup.procs", uids->uid, uids->gid));
+            KJ_SYSCALL(chown("run/cgroup2/cgroup.subtree_control", uids->uid, uids->gid));
+            // This one doesn't exist on earlier kernels (it appeared some time after 4.6).
+            // If it's absent don't worry about it; we don't use it currently anyway.
+            KJ_SYSCALL_HANDLE_ERRORS(access("run/cgroup2/cgroup.threads", F_OK)) {
+            } else {
+              KJ_SYSCALL(chown("run/cgroup2/cgroup.threads", uids->uid, uids->gid));
+            }
+          }
+        }
+      }
+    }
 
     // OK, change our root directory.
     KJ_SYSCALL(syscall(SYS_pivot_root, ".", "tmp"));
@@ -1991,7 +2038,7 @@ private:
 
     setProcessName("montr", "(server monitor)");
 
-    enterChroot(true);
+    enterChroot(config.uids, true);
 
     // Make sure socket directory exists (since the installer doesn't create it).
     if (mkdir("/var/sandstorm/socket", 0770) == 0) {
@@ -2336,8 +2383,19 @@ private:
 
       auto paf = kj::newPromiseAndFulfiller<Backend::Client>();
       TwoPartyServerWithClientBootstrap server(kj::mv(paf.promise));
+
+      // Collect all of the grains' cgroups into a single
+      // container, so they can't collectively starve sandstorm
+      // itself.
+      kj::Maybe<Cgroup> grainsCgroup;
+      kj::runCatchingExceptions([&grainsCgroup]() {
+        grainsCgroup = Cgroup("/run/cgroup2").getOrMakeChild("grains");
+      });
+
       paf.fulfiller->fulfill(kj::heap<BackendImpl>(*io.lowLevelProvider, network,
-        server.getBootstrap().castAs<SandstormCoreFactory>(), sandboxUid));
+        server.getBootstrap().castAs<SandstormCoreFactory>(),
+        kj::mv(grainsCgroup),
+        sandboxUid));
 
       auto gatewayServer = kj::heap<capnp::TwoPartyServer>(kj::refcounted<CapRedirector>([&]() {
         return server.getBootstrap().castAs<SandstormCoreFactory>()

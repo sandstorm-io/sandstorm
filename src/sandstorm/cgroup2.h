@@ -9,6 +9,23 @@ class Cgroup {
   // A Linux control group (version 2).
 
   public:
+    class FreezeHandle {
+      friend class Cgroup;
+
+      // A handle for a currently-frozen cgroup. When the handle is
+      // destroyed, the cgroup is unfrozen.
+      public:
+        FreezeHandle() = delete;
+        KJ_DISALLOW_COPY(FreezeHandle);
+        FreezeHandle(FreezeHandle&&) noexcept = default;
+
+        ~FreezeHandle() noexcept(false);
+      private:
+        kj::AutoCloseFd fd;
+
+        FreezeHandle(kj::AutoCloseFd&& fd);
+    };
+
     Cgroup() = delete;
     KJ_DISALLOW_COPY(Cgroup);
     Cgroup(Cgroup&&) noexcept = default;
@@ -26,6 +43,10 @@ class Cgroup {
 
     void addPid(pid_t pid);
     // Add the given process to the cgroup.
+
+    FreezeHandle freeze();
+    // Freeze the cgroup, suspending all processes within in. The cgroup will
+    // be unfrozen when the returned handle is dropped.
   private:
     Cgroup(kj::AutoCloseFd&& dirfd);
     kj::AutoCloseFd dirfd;

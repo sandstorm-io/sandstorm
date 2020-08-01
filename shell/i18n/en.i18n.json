@@ -1506,7 +1506,7 @@
       "_loginButtonsLoggedOutDropdown": {
         "demo": {
           "title": "Create account",
-          "explanation": "Your demo data will be transferred to your new account."
+          "explanation": "WARNING: Your demo data will be deleted."
         },
         "title": "Sign in",
         "shared": {
@@ -1818,7 +1818,7 @@
       "grains": "Grains",
       "oasis": "Start collaborating with others by using Sandstorm on Oasis:",
       "createAccount": "Create free account »",
-      "demoHint": "Your demo data will be transferred.",
+      "demoHint": "WARNING: Your demo data will be deleted.",
       "selfHostHint": "This is a limited-time demo. If you want to use Sandstorm for real, install it on your own server (it's open source):",
       "signUp": "Demo time remaining:",
       "close": "Close"

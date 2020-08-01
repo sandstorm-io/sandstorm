@@ -164,6 +164,9 @@
 <template name="grainBackupButton">
   <button class="grain-button" title="{{_ "grains.grainBackupButton.hint"}}" id="backupGrain">{{_ "grains.grainBackupButton.text"}}</button>
 </template>
+<template name="grainCloneButton">
+  <button class="grain-button" title="{{_ "grains.grainCloneButton.hint"}}" id="cloneGrain">{{_ "grains.grainCloneButton.text"}}</button>
+</template>
 
 <template name="grainBackupPopup">
   <h4>{{_ "grains.grainBackupPopup.title"}}</h4>
@@ -192,6 +195,16 @@
       <button name="confirm" title="{{_ "grains.grainBackupPopup.confirmHint"}}">{{_ "grains.grainBackupPopup.confirm"}}</button>
     {{/if}}
   </div>
+</template>
+
+<template name="grainClonePopup">
+  <h4>{{_ "grains.grainClonePopup.title"}}</h4>
+  {{#if state.error}}
+    <p class="error">{{_ "error" state.error}}</p>
+  {{else}}
+    <p>{{_ "grains.grainClonePopup.processing"}}</p>
+    <div class="spinner"></div>
+  {{/if}}
 </template>
 
 <template name="grainRestartButton">
@@ -568,6 +581,8 @@
     {{>sandstormTopbarItem name="debug-log" topbar=globalTopbar template="grainDebugLogButton" data=globalTopbar}}
     {{>sandstormTopbarItem name="backup" topbar=globalTopbar template="grainBackupButton"
                            data=globalTopbar popupTemplate="grainBackupPopup"}}
+    {{>sandstormTopbarItem name="clone" topbar=globalTopbar template="grainCloneButton"
+                           data=globalTopbar popupTemplate="grainClonePopup"}}
     {{>sandstormTopbarItem name="restart" topbar=globalTopbar template="grainRestartButton" data=globalTopbar}}
   {{/if}}
 

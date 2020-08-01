@@ -219,6 +219,15 @@
       "confirmHint": "download backup",
       "confirm": "Download backup"
     },
+    "grainCloneButton": {
+      "hint": "Clone Grain",
+      "text": "Clone",
+      "copyTitle": "Copy of %s"
+    },
+    "grainClonePopup": {
+      "title": "Clone Grain",
+      "processing": "Cloning Grain..."
+    },
     "grainRestartButton": {
       "hint": "Restart App",
       "text": "Restart"

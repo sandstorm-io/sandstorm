@@ -26,6 +26,7 @@ import { Random } from "meteor/random";
 import { ReactiveVar } from "meteor/reactive-var";
 import { SHA256 } from "meteor/sha";
 import { Router } from "meteor/iron:router";
+import { TAPi18n } from "meteor/tap:i18n";
 import { _ } from "meteor/underscore";
 import { $ } from "meteor/jquery";
 
@@ -172,6 +173,44 @@ Template.grainDebugLogButton.events({
     window.open("/grainlog/" + activeGrain.grainId(), "_blank",
         "menubar=no,status=no,toolbar=no,width=700,height=700");
   },
+});
+
+Template.grainClonePopup.onCreated(function() {
+  const oldGrain = globalGrains.getActive();
+  const state = new ReactiveVar({});
+  this._state = state;
+  const data = this.data;
+
+  const setError = (stage, err) => {
+    console.error("Error during grain clone stage ", stage, ": ", err);
+    state.set({error: "Copying the grain failed: " + err.toString()});
+  }
+
+  Meteor.call("backupGrain", oldGrain.grainId(), (err, token) => {
+    if(err !== undefined) {
+      setError("backup", err);
+      return;
+    }
+    Meteor.call("restoreGrain", token, (err, newGrainId) => {
+      if(err !== undefined) {
+        setError("restore", err);
+        return;
+      }
+      const mainContentElement = document.querySelector("body>.main-content");
+      const newGrain = globalGrains.addNewGrainView(newGrainId, "/", undefined,
+                                                    mainContentElement);
+      const newTitle = TAPi18n.__(
+        "grains.grainCloneButton.copyTitle",
+        { sprintf: [oldGrain.title()] },
+      );
+      newGrain.setTitle(newTitle);
+      newGrain.openSession();
+      globalGrains.setActive(newGrainId);
+
+      // Close the topbar popup:
+      data.reset();
+    });
+  });
 });
 
 Template.grainBackupPopup.onCreated(function () {

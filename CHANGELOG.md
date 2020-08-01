@@ -1,3 +1,8 @@
+### v0.269 (2020-08-01)
+- You can now clone a grain via a button in the top bar. Thanks @zenhack.
+- Grains now run inside cgroups, if the kernel supports cgroup namespaces and cgroups v2. Thanks @zenhack.
+- Code implementing old Sandcats TLS issuance has been deleted. Sandcats now supports only Let's Encrypt.
+
 ### v0.268 (2020-07-04)
 - Added CLI commands for configuring ACME (Let's Encrypt), so that this can be done before HTTPS is working.
 - New installs using Sandcats will now use Let's Encrypt immediately.

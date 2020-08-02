@@ -10,10 +10,10 @@ class Cgroup {
 
   public:
     class FreezeHandle {
-      friend class Cgroup;
-
       // A handle for a currently-frozen cgroup. When the handle is
       // destroyed, the cgroup is unfrozen.
+
+      friend class Cgroup;
       public:
         FreezeHandle() = delete;
         KJ_DISALLOW_COPY(FreezeHandle);

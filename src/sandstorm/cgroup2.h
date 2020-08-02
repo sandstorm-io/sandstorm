@@ -45,7 +45,7 @@ class Cgroup {
     // Add the given process to the cgroup.
 
     FreezeHandle freeze();
-    // Freeze the cgroup, suspending all processes within in. The cgroup will
+    // Freeze the cgroup, suspending all processes within it. The cgroup will
     // be unfrozen when the returned handle is dropped.
   private:
     Cgroup(kj::AutoCloseFd&& dirfd);

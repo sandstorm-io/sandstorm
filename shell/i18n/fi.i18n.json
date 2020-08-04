@@ -1818,7 +1818,7 @@
       "oasis": "Aloita yhteistyö muiden kanssa Sandstormia paikassa Oasis:",
       "createAccount": "Luo ilmainen tili »",
       "demoHint": "VAROITUS: Demo tilisi tiedot poistetaan lopullisesti.",
-      "selfHostHint": "Tämä on aikarajoitettu demo. Jos haluat käyttää Sandstormia oikeasi, asenna se omalle palvelimellesi (se on avointa lähdekoodia):",
+      "selfHostHint": "Tämä on aikarajoitettu demo. Jos haluat käyttää Sandstormia oikeasti, asenna se omalle palvelimellesi (se on avointa lähdekoodia):",
       "signUp": "Demo aikaa jäljellä:",
       "close": "Sulje"
     },

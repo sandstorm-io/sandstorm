@@ -219,6 +219,15 @@
       "confirmHint": "lataa varmuuskopio",
       "confirm": "Lataa varmuuskopio"
     },
+    "grainCloneButton": {
+      "hint": "Kloonaa jyvä",
+      "text": "Kloonaa",
+      "copyTitle": "Kopio jyvästä %s"
+    },
+    "grainClonePopup": {
+      "title": "Kloonaa jyvä",
+      "processing": "Kloonataan jyvää..."
+    },
     "grainRestartButton": {
       "hint": "Käynnistä ohjelma uudelleen",
       "text": "Käynnistä uudelleen"
@@ -914,6 +923,11 @@
         "restoreButton": "Palauta oletukset"
       }
     },
+    "certificates": {
+      "name": "SSL/TLS sertifikaatit",
+      "subtext": "Määritä sertikaatit manuaalisesti tai käyttäen Let's Encryptiä.",
+      "newAdminCertificates": {}
+    },
     "users": {
       "name": "Käyttäjät",
       "subtext": "Hallitse tämän Sandstorm asennuksen kaikkia käyttäjiä."
@@ -1199,6 +1213,7 @@
     "networkCapabilities": {
       "name": "Verkko-oikeudet",
       "subtext": "Hallitse suoraa verkkopääsyä jyviin.",
+      "explanation": "Tämä sivu näyttää verkko-oikeudet jotka on sallittu jyviin. Oletuksena, jyvillä on hyvin rajalliset verkko oikeudet. Jyvä voi pyytää täyttä verkko oikeutta silloin kun se on käytössä. Vain admin voi sallia pyynnön, joka myöntää \"verkkoon pääsy kyvyn\" jyvälle.",
       "newAdminNetworkCapabilitiesTableCapabilityRow": {
         "adminAccount": "Admin tili %s",
         "unknownGranter": "Tuntematon sallija",
@@ -1490,7 +1505,7 @@
       "_loginButtonsLoggedOutDropdown": {
         "demo": {
           "title": "Luo tili",
-          "explanation": "Demo tietosi siirretään uudelle tilillesi."
+          "explanation": "VAROITUS: Demo tietosi poistetaan lopullisesti."
         },
         "title": "Kirjaudu sisään",
         "shared": {
@@ -1802,11 +1817,13 @@
       "grains": "Jyvät",
       "oasis": "Aloita yhteistyö muiden kanssa Sandstormia paikassa Oasis:",
       "createAccount": "Luo ilmainen tili »",
-      "demoHint": "Demo tilisi tiedot siirretään.",
+      "demoHint": "VAROITUS: Demo tilisi tiedot poistetaan lopullisesti.",
+      "selfHostHint": "Tämä on aikarajoitettu demo. Jos haluat käyttää Sandstormia oikeasi, asenna se omalle palvelimellesi (se on avointa lähdekoodia):",
+      "signUp": "Demo aikaa jäljellä:",
       "close": "Sulje"
     },
     "powerbox": {
-      "title": "Powerbox pyyntörequest",
+      "title": "Powerbox pyyntö",
       "inputToken": "Syöttö api token:",
       "importToken": "Tuonti token",
       "selected": "Valittu:",

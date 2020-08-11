@@ -49,17 +49,9 @@ interface HackSessionContext @0xe14c1f5321159b8f
   #   special. Do not create these directories unless you intend for them to serve their respective
   #   purposes.
 
-  httpGet @1 (url: Text) -> (mimeType :Text, content :Data);
-  # Perform a simple HTTP GET request, returning the content. Note that this hack is especially
-  # temporary because it allows apps to trivially leak data. Longer-term, we want the user to
-  # explicitly approve communications with external servers. However, since we don't have the
-  # infrastrucutre for that yet, and we really want an RSS reader on Sandstorm, we're temporarily
-  # adding this. As of this writing, it's possible to issue arbitrary HTTP requests from the client
-  # side anyway.
-  #
-  # This interface is very limited currently -- e.g. it does not support arbitrary headers, POSTs,
-  # etc. If you need any of these things, talk to the Sandstorm developers and we'll consider
-  # adding some more hacks, but, again, this will all go away once the Powerbox is implemented.
+  obsoleteHttpGet @1 (url: Text) -> (mimeType :Text, content :Data);
+  obsoleteGetUiViewForEndpoint @8 (url :Text) -> (view :Grain.UiView);
+  # OBSOLETE. Apps that need to make HTTP connections should use the powerbox.
 
   getUserAddress @2 () -> Email.EmailAddress;
   # Returns the address of the owner of the grain.
@@ -69,18 +61,6 @@ interface HackSessionContext @0xe14c1f5321159b8f
   obsoleteListApiTokens @4 () -> (tokens :List(TokenInfo));
   obsoleteRevokeApiToken @5 (tokenId :Text);
   # OBSOLETE. Apps that need to present API tokens to users should use offer templates.
-
-  getUiViewForEndpoint @8 (url :Text) -> (view :Grain.UiView);
-  # There are 3 cases here that are seamlessly handled by the platform
-  # 1. If the URL is a local webkey, return a wrapped version of the UiView that respects user
-  # permissions
-  # 2. If the URL is a remote webkey (i.e. a different Sandstorm server), set up an ApiSession
-  # that sends the Authorization header correctly. We wrap it in a UiVew so that this is seamless.
-  # Some day, we'll connect via Cap'n Proto instead, and actually return the remote UiView
-  # verbatim.
-  # 3. If the URL is not a webkey at all, wrap it the same as #2, but don't send an Authorization
-  # header.
-  # If the url is a webkey, then your url must not contain a path.
 
   struct TokenInfo {
     tokenId @0 :Text;

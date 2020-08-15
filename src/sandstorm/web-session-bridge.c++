@@ -100,12 +100,16 @@ WebSessionBridge::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilde
 
 WebSessionBridge::WebSessionBridge(
     kj::Timer& timer, WebSession::Client session, kj::Maybe<Handle::Client> loadingIndicator,
-    const Tables& tables, Options options)
+    const Tables& tables, Options options,
+    kj::Maybe<kj::String>&& host,
+    kj::Maybe<kj::String>&& baseHost)
     : timer(timer),
       session(kj::mv(session)),
       loadingIndicator(kj::mv(loadingIndicator)),
       tables(tables),
-      options(options) {}
+      options(options),
+      host(kj::mv(host)),
+      baseHost(kj::mv(baseHost)) {}
 
 void WebSessionBridge::restrictParentFrame(kj::StringPtr parent, kj::StringPtr self) {
   KJ_REQUIRE(!options.isApi, "can't apply frame restriction to API endpoint");
@@ -1248,6 +1252,59 @@ kj::Promise<void> WebSessionBridge::handleResponse(
       headers.set(tables.hContentSecurityPolicy, "default-src 'none'; sandbox");
 
       headers.set(tables.hAccessControlExposeHeaders, kj::strArray(exposedHeaders, ", "));
+    } else {
+      // Disallow loading of remote resources. Note the following:
+      //
+      // - Currently there are still exceptions for images and media, as these have
+      //   some legitimate use cases (e.g. embedding images in feeds in ttrss) and
+      //   we want to provide a way for a user to allow these via the UI before we
+      //   block them by default
+      // - The unsafe-* directives are currently necessary to avoid breaking many
+      //   apps. They make CSP not particularly useful in mitating XSS attacks,
+      //   but do not present an information-leaking hazard.
+      // - In the future, we should provide a way for apps to opt-in to more
+      //   restrictive policies, as a useful mitigation for things like XSS vulns.
+      //   in the apps.
+      kj::String wsHost;
+      KJ_IF_MAYBE(hostStr, host) {
+        if(options.isHttps) {
+          wsHost = kj::str("wss://", *hostStr);
+        } else {
+          wsHost = kj::str("ws://", *hostStr);
+        }
+      }
+      kj::String baseHttpHost;
+      KJ_IF_MAYBE(hostStr, baseHost) {
+        if(options.isHttps) {
+          baseHttpHost = kj::str("https://", *hostStr);
+        } else {
+          baseHttpHost = kj::str("http://", *hostStr);
+        }
+      }
+      headers.set(
+          tables.hContentSecurityPolicy,
+          kj::str(
+            "default-src 'none'; "
+#define UNSAFE "'unsafe-inline' 'unsafe-eval' data:; "
+            "img-src * " UNSAFE
+            "media-src * " UNSAFE
+            "script-src 'self' " UNSAFE
+            "style-src 'self' " UNSAFE
+            "child-src 'self' " UNSAFE
+            "worker-src 'self' " UNSAFE
+
+            // frame-src needs to allow references to BASE_URL, because
+            // we allow apps to pull the content of offer-iframes from
+            // there:
+            "frame-src 'self' ", baseHttpHost, " ", UNSAFE
+#undef UNSAFE
+            "font-src 'self'; "
+
+            // 'self' alone does not allow websocket connections; see:
+            // https://github.com/w3c/webappsec-csp/issues/7
+            "connect-src 'self' ", wsHost, ";"
+        )
+      );
     }
 
     // If we complete this function without calling fulfill() to connect the stream, then this is

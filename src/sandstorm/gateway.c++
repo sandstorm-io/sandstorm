@@ -442,8 +442,8 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
     capnp::MallocMessageBuilder requestMessage(128);
     auto params = requestMessage.getRoot<WebSession::Params>();
 
-    auto basePath = kj::str(baseUrl.scheme, "://",
-        KJ_ASSERT_NONNULL(headers.get(kj::HttpHeaderId::HOST)));
+    kj::StringPtr host = KJ_ASSERT_NONNULL(headers.get(kj::HttpHeaderId::HOST));
+    auto basePath = kj::str(baseUrl.scheme, "://", host);
     params.setBasePath(basePath);
     params.setUserAgent(headers.get(tables.hUserAgent).orDefault("UnknownAgent/0.0"));
 
@@ -503,7 +503,8 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
       timer.now(),
       kj::refcounted<WebSessionBridge>(timer, sessionRedirector.castAs<WebSession>(),
                                        Handle::Client(kj::mv(loadingPaf.promise)),
-                                       tables.bridgeTables, options)
+                                       tables.bridgeTables, options,
+                                       kj::str(host), kj::str(baseUrl.host))
     };
     auto insertResult = uiHosts.insert(std::make_pair(key, kj::mv(entry)));
     KJ_ASSERT(insertResult.second);

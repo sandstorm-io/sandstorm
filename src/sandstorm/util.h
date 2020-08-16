@@ -59,11 +59,17 @@ struct Pipe {
 
 kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666);
 kj::AutoCloseFd raiiOpenAt(int dirfd, kj::StringPtr name, int flags, mode_t mode = 0666);
+// wrappers around the open() and openat() syscalls, respectively.
 
 kj::Maybe<kj::AutoCloseFd> raiiOpenIfExists(
     kj::StringPtr name, int flags, mode_t mode = 0666);
 kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExists(
     int dirfd, kj::StringPtr name, int flags, mode_t mode = 0666);
+
+
+kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExistsContained(int dirfd, kj::StringPtr name, int flags, mode_t mode = 0666);
+// Similar to raiiOpenAtIfExists, but makes sure not to follow symlinks that point outside
+// of `dirfd`.
 
 size_t getFileSize(int fd, kj::StringPtr filename);
 

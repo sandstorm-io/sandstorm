@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <kj/vector.h>
 #include <kj/async-unix.h>
+#include <kj/filesystem.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -93,6 +94,47 @@ kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExists(
   } else {
     return kj::AutoCloseFd(fd);
   }
+}
+
+// scratch buffer for file paths; used by raiiOpenAtIfExistsContained:
+thread_local char path_buf[PATH_MAX+1];
+
+kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExistsContained(int dirfd, kj::StringPtr name, int flags, mode_t mode) {
+  auto path = kj::Path::parse(name);
+  int parentFd = dirfd;
+  int fd;
+  KJ_SYSCALL(fd = dup(dirfd));
+  kj::AutoCloseFd file(fd);
+
+  int symlink_limit = 16; // arbitrary limit
+
+  for(int i = 0; i < path.size(); i++) {
+    const char *part = path[i].cStr();
+    KJ_SYSCALL_HANDLE_ERRORS(fd = openat(file.get(), part, flags | O_NOFOLLOW, mode)) {
+      case ENOENT:
+        return nullptr;
+      case ELOOP:
+        {
+          if(symlink_limit == 0) {
+            KJ_FAIL_SYSCALL("openat()", error);
+          }
+          symlink_limit--;
+
+          memset(&path_buf, 0, sizeof path_buf);
+          KJ_SYSCALL(readlinkat(parentFd, part, path_buf, PATH_MAX));
+          kj::Path nextPath = path.clone().parent().eval(path_buf);
+          path = kj::mv(nextPath).append(path.slice(i+1, path.size()));
+          i = 0;
+          KJ_SYSCALL(fd = dup(dirfd));
+          break;
+        }
+      default:
+        KJ_FAIL_SYSCALL("openat()", error);
+    } else {
+      file = kj::AutoCloseFd(fd);
+    }
+  }
+  return kj::mv(file);
 }
 
 size_t getFileSize(int fd, kj::StringPtr filename) {

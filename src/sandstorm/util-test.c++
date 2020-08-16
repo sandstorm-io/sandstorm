@@ -239,5 +239,71 @@ KJ_TEST("SubprocessSet") {
   promiseCat.wait(io.waitScope);
 }
 
+KJ_TEST("raiiOpenAtIfExistsContained") {
+  {
+    char tempdir[] = "/tmp/sandstorm-test.XXXXXX";
+    KJ_REQUIRE(mkdtemp(tempdir) != nullptr);
+    KJ_DEFER(KJ_SYSCALL(rmdir(tempdir)));
+
+    auto dir = raiiOpen(tempdir, O_DIRECTORY);
+
+    raiiOpenAt(dir.get(), "file", O_CREAT | O_RDWR);
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "file", 0)));
+
+    KJ_SYSCALL(symlinkat("file", dir.get(), "link-to-file"));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "link-to-file", 0)));
+
+    KJ_SYSCALL(symlinkat("..", dir.get(), "link-to-parent"));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "link-to-parent", 0)));
+
+    KJ_SYSCALL(symlinkat("/", dir.get(), "link-to-root"));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "link-to-root", 0)));
+
+    KJ_SYSCALL(mkdirat(dir.get(), "subdir", 0700));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "subdir", AT_REMOVEDIR)));
+
+    KJ_SYSCALL(symlinkat("..", dir.get(), "subdir/link-to-parent"));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "subdir/link-to-parent", 0)));
+
+    KJ_SYSCALL(symlinkat("../..", dir.get(), "subdir/link-to-grandparent"));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "subdir/link-to-grandparent", 0)));
+
+    KJ_SYSCALL(symlinkat("/", dir.get(), "subdir/link-to-root"));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "subdir/link-to-root", 0)));
+
+
+    auto expectSucceed = [&](kj::StringPtr path) -> kj::AutoCloseFd {
+      KJ_IF_MAYBE(fd, raiiOpenAtIfExistsContained(dir.get(), path, O_RDONLY)) {
+        return kj::mv(*fd);
+      } else {
+        KJ_FAIL_ASSERT("Opening ", path, " should have succeeded.");
+      }
+    };
+
+    auto expectFail = [&](kj::StringPtr path) {
+      auto maybeExn = kj::runCatchingExceptions([&]() {
+        raiiOpenAtIfExistsContained(dir.get(), path, O_RDONLY);
+      });
+      KJ_IF_MAYBE(exn, maybeExn) {
+      } else {
+        KJ_FAIL_ASSERT("Opening ", path, " should have failed.");
+      }
+    };
+
+    auto expectRootTruncated = [&](kj::StringPtr path) {
+      auto root = expectSucceed(path);
+      int result = faccessat(root.get(), "tmp", F_OK, AT_SYMLINK_NOFOLLOW);
+      KJ_ASSERT(result < 0, "shouldn't have gotten access to /");
+    };
+
+    expectSucceed("link-to-file");
+    expectFail("link-to-parent");
+    expectRootTruncated("link-to-root");
+    expectSucceed("subdir/link-to-parent");
+    expectFail("subdir/link-to-grandparent");
+    expectRootTruncated("subdir/link-to-root");
+  }
+}
+
 }  // namespace
 }  // namespace sandstorm

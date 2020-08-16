@@ -102,14 +102,16 @@ WebSessionBridge::WebSessionBridge(
     kj::Timer& timer, WebSession::Client session, kj::Maybe<Handle::Client> loadingIndicator,
     const Tables& tables, Options options,
     kj::Maybe<kj::String>&& host,
-    kj::Maybe<kj::String>&& baseHost)
+    kj::Maybe<kj::String>&& baseHost,
+    bool allowLegacyRelaxedCSP)
     : timer(timer),
       session(kj::mv(session)),
       loadingIndicator(kj::mv(loadingIndicator)),
       tables(tables),
       options(options),
       host(kj::mv(host)),
-      baseHost(kj::mv(baseHost)) {}
+      baseHost(kj::mv(baseHost)),
+      allowLegacyRelaxedCSP(allowLegacyRelaxedCSP) {}
 
 void WebSessionBridge::restrictParentFrame(kj::StringPtr parent, kj::StringPtr self) {
   KJ_REQUIRE(!options.isApi, "can't apply frame restriction to API endpoint");
@@ -1252,7 +1254,7 @@ kj::Promise<void> WebSessionBridge::handleResponse(
       headers.set(tables.hContentSecurityPolicy, "default-src 'none'; sandbox");
 
       headers.set(tables.hAccessControlExposeHeaders, kj::strArray(exposedHeaders, ", "));
-    } else {
+    } else if(!allowLegacyRelaxedCSP) {
       // Disallow loading of remote resources. Note the following:
       //
       // - Currently there are still exceptions for images and media, as these have

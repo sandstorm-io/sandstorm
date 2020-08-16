@@ -94,10 +94,11 @@ GatewayService::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilder)
 GatewayService::GatewayService(
     kj::Timer& timer, kj::HttpClient& shellHttp, GatewayRouter::Client router,
     Tables& tables, kj::StringPtr baseUrl, kj::StringPtr wildcardHost,
-    kj::Maybe<kj::StringPtr> termsPublicId)
+    kj::Maybe<kj::StringPtr> termsPublicId, bool allowLegacyRelaxedCSP)
     : timer(timer), shellHttp(kj::newHttpService(shellHttp)), router(kj::mv(router)),
       tables(tables), baseUrl(kj::Url::parse(baseUrl, kj::Url::HTTP_PROXY_REQUEST)),
-      wildcardHost(wildcardHost), termsPublicId(termsPublicId), tasks(*this) {}
+      wildcardHost(wildcardHost), termsPublicId(termsPublicId), tasks(*this),
+      allowLegacyRelaxedCSP(allowLegacyRelaxedCSP) {}
 
 template <typename Key, typename Value>
 static void removeExpired(std::map<Key, Value>& m, kj::TimePoint now, kj::Duration period) {
@@ -504,7 +505,8 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
       kj::refcounted<WebSessionBridge>(timer, sessionRedirector.castAs<WebSession>(),
                                        Handle::Client(kj::mv(loadingPaf.promise)),
                                        tables.bridgeTables, options,
-                                       kj::str(host), kj::str(baseUrl.host))
+                                       kj::str(host), kj::str(baseUrl.host),
+                                       allowLegacyRelaxedCSP)
     };
     auto insertResult = uiHosts.insert(std::make_pair(key, kj::mv(entry)));
     KJ_ASSERT(insertResult.second);

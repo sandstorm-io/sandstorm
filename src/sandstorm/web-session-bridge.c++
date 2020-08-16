@@ -1287,20 +1287,20 @@ kj::Promise<void> WebSessionBridge::handleResponse(
           tables.hContentSecurityPolicy,
           kj::str(
             "default-src 'none'; "
-#define UNSAFE "'unsafe-inline' 'unsafe-eval' data:; "
+#define UNSAFE "'unsafe-inline' 'unsafe-eval' data: blob:; "
             "img-src * " UNSAFE
             "media-src * " UNSAFE
             "script-src 'self' " UNSAFE
             "style-src 'self' " UNSAFE
             "child-src 'self' " UNSAFE
             "worker-src 'self' " UNSAFE
+            "font-src 'self' " UNSAFE
 
             // frame-src needs to allow references to BASE_URL, because
             // we allow apps to pull the content of offer-iframes from
             // there:
             "frame-src 'self' ", baseHttpHost, " ", UNSAFE
 #undef UNSAFE
-            "font-src 'self'; "
 
             // 'self' alone does not allow websocket connections; see:
             // https://github.com/w3c/webappsec-csp/issues/7

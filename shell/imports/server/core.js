@@ -29,7 +29,7 @@ import { globalDb } from "/imports/db-deprecated.js";
 import { schedulePeriodic, scheduleOneShot } from "/imports/server/scheduled-job.js";
 import { makeGatewayRouter } from "/imports/server/gateway-router.js";
 import { makeShellCli } from "/imports/server/shell-cli.js";
-import Capnp from "/imports/server/capnp.js";
+import Capnp from "capnp";
 
 const PersistentHandle = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentHandle;
 const SandstormCore = Capnp.importSystem("sandstorm/supervisor.capnp").SandstormCore;

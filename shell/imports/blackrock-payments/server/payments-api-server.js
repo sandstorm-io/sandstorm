@@ -20,7 +20,7 @@ import { check } from "meteor/check";
 
 import { stripe } from "/imports/blackrock-payments/server/payments-server.js";
 
-import Capnp from "/imports/server/capnp.js";
+import Capnp from "capnp";
 const PaymentsRpc = Capnp.importSystem("sandstorm/payments.capnp");
 
 function wrapAsyncAsPromise(obj, func) {

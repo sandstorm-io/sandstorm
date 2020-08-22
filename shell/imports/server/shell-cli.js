@@ -19,7 +19,7 @@ import { createAcmeAccount, renewCertificateNow } from "/imports/server/acme.js"
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
 
-import Capnp from "/imports/server/capnp.js";
+import Capnp from "capnp";
 const ShellCli = Capnp.importSystem("sandstorm/backend.capnp").ShellCli;
 
 class ShellCliImpl {

@@ -23,7 +23,7 @@ import { globalDb } from "/imports/db-deprecated.js";
 import { SandstormPermissions }  from "/imports/sandstorm-permissions/permissions.js";
 import { PersistentImpl } from "/imports/server/persistent.js";
 import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset.js";
-import Capnp from "/imports/server/capnp.js";
+import Capnp from "capnp";
 
 const IdentityRpc = Capnp.importSystem("sandstorm/identity-impl.capnp");
 const Identity = Capnp.importSystem("sandstorm/identity.capnp").Identity;

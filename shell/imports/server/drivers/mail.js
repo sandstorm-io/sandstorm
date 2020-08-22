@@ -34,7 +34,7 @@ import { makeHackSessionContext } from "/imports/server/hack-session.js";
 import Crypto from "crypto";
 import Net from "net";
 import Url from "url";
-import Capnp from "/imports/server/capnp.js";
+import Capnp from "capnp";
 
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 const EmailImpl = Capnp.importSystem("sandstorm/email-impl.capnp");

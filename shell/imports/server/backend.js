@@ -16,7 +16,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.ts";
-import Capnp from "/imports/server/capnp.js";
+import Capnp from "capnp";
 import { globalDb } from "/imports/db-deprecated.js";
 
 let storageUsageUnimplemented = false;

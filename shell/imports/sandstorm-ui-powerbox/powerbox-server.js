@@ -19,7 +19,7 @@ import { check } from "meteor/check";
 import { _ } from "meteor/underscore";
 
 import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions.js";
-import Capnp from "/imports/server/capnp.js";
+import Capnp from "capnp";
 
 import { waitPromise } from '../server/async-helpers.ts';
 

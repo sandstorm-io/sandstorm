@@ -29,7 +29,7 @@ import { globalDb } from "/imports/db-deprecated.js";
 import Url from "url";
 import Http from "http";
 import Https from "https";
-import Capnp from "/imports/server/capnp.js";
+import Capnp from "capnp";
 const ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
 const PersistentApiSession =
     Capnp.importSystem("sandstorm/api-session-impl.capnp").PersistentApiSession;

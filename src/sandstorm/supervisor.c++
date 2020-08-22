@@ -39,7 +39,6 @@
 #include <sys/syscall.h>
 #include <linux/sockios.h>
 #include <linux/route.h>
-#include <sandstorm/ip_tables.h>  // created by Makefile from <linux/netfilter_ipv4/ip_tables.h>
 #include <linux/netfilter/nf_nat.h>
 #include <fcntl.h>
 #include <errno.h>

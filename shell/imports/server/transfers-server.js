@@ -196,7 +196,7 @@ Meteor.methods({
     if (running) {
       startOneTransfer(db, this.userId);
     } else {
-      let i = db.collections.incomingTransfers.update(
+      db.collections.incomingTransfers.update(
           {userId: this.userId, downloading: true}, {$unset: {downloading: 1}}, {multi: true});
     }
   },
@@ -431,8 +431,6 @@ class Downloader {
       if (this.source.startsWith("https:")) {
         requestMethod = NodeHttps.request;
       }
-
-      let startTime = Date.now();
 
       this.request = requestMethod(this.source + "/downloadBackup/" + this.remoteFileToken);
       this.request.end();

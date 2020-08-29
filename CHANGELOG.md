@@ -1,3 +1,9 @@
+### v0.270 (2020-08-29)
+- Apps can no longer talk to third-party servers in client-side code, except for embedding images and video. This has long been a goal of Sandstorm, but we did not want to begin enforcing it until apps could explicitly request access to third-party servers via the Powerbox. We have tested all apps on the app market and found only minor breakage (e.g. wrong fonts), but it is possible that we missed bigger breakages or that some private apps are broken. Please contact [sandstorm-dev](https://groups.google.com/group/sandstorm-dev) to report any issues. Thanks @zenhack for pushing this change through.
+- Apps can no longer make server-side HTTP requests without requsting permission through the Powerbox. We believe the only app that ever did so was Tiny Tiny RSS, but it was recently updated to use the powerbox. If you experience other app breakages, please let [sandstorm-dev](https://groups.google.com/group/sandstorm-dev) know. Thanks again to @zenhack.
+- Updated Finnish translation. Thanks @xet7.
+- Updated dependencies, including Meteor to 1.11.
+
 ### v0.269 (2020-08-01)
 - You can now clone a grain via a button in the top bar. Thanks @zenhack.
 - Grains now run inside cgroups, if the kernel supports cgroup namespaces and cgroups v2. Thanks @zenhack.

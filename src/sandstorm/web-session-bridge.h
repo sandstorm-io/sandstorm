@@ -84,7 +84,10 @@ public:
 
   WebSessionBridge(kj::Timer& timer, WebSession::Client session,
                    kj::Maybe<Handle::Client> loadingIndicator,
-                   const Tables& tables, Options options);
+                   const Tables& tables, Options options,
+                   kj::Maybe<kj::String>&& host = nullptr,
+                   kj::Maybe<kj::String>&& baseHost = nullptr,
+                   bool allowLegacyRelaxedCSP = false);
 
   void restrictParentFrame(kj::StringPtr parent, kj::StringPtr self);
   // Return headers that prevents any origin except the designated one from framing us.
@@ -117,6 +120,8 @@ private:
   kj::Maybe<Handle::Client> loadingIndicator;
   const Tables& tables;
   Options options;
+  kj::Maybe<kj::String> host, baseHost;
+  bool allowLegacyRelaxedCSP;
 
   struct FrameRestriction {
     kj::String parent;

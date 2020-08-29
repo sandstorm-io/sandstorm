@@ -1131,6 +1131,23 @@ class SandstormDb {
     };
   }
 
+  allowLegacyHackSessionHttp() {
+    // Returns true iff the legacy hack-session http-related methods have been
+    // enabled. It is only possible to set this by directly manipulating the
+    // mongo database:
+    //
+    // $ sandstorm mongo
+    // ssrs:PRIMARY> db.settings.upsert({_id: "allowLegacyHackSessionHttp", value: true})
+    //
+    // Soon, these interfaces will be removed entirely and this setting will no longer
+    // be recognized. This is intentionally undocumented; if anyone actually needs this
+    // during the transition, we want them to come talk to us about it. If the setting
+    // is disabled, the relevant error messages direct developers to use the new API,
+    // and ask the mailing list if they need help.
+    const row = this.collections.settings.findOne({_id: "allowLegacyHackSessionHttp"})
+    return (row !== null) && row.value
+  }
+
   isAdmin() {
     // Returns true if the user is the administrator.
 

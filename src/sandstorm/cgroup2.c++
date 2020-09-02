@@ -20,6 +20,10 @@ Cgroup Cgroup::getOrMakeChild(kj::StringPtr path) {
       KJ_FAIL_SYSCALL("mkdirat()", error);
   }
 
+  return getChild(path);
+}
+
+Cgroup Cgroup::getChild(kj::StringPtr path) {
   return Cgroup(raiiOpenAt(dirfd.get(), path, O_DIRECTORY|O_CLOEXEC));
 }
 

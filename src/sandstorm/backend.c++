@@ -539,7 +539,7 @@ kj::Promise<void> BackendImpl::backupGrain(BackupGrainContext context) {
     // If cgroups is available, freeze the corresponding cgroup
     // during the backup:
     KJ_IF_MAYBE(cg, cgroup) {
-      auto grainCgroup = cg->getOrMakeChild(grainId);
+      auto grainCgroup = cg->getChild(grainId);
       freezeHandle = grainCgroup.freeze();
     }
   }

@@ -37,6 +37,10 @@ class Cgroup {
     // Open a cgroup that is a child of this one, creating it if it does not
     // exist.
 
+    Cgroup getChild(kj::StringPtr path);
+    // Open a cgroup that is a child of this one. The child must already
+    // exist.
+
     void removeChild(kj::StringPtr path);
     // Delete a child of this cgroup. The child must not contain any
     // processes.

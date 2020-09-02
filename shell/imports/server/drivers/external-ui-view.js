@@ -429,7 +429,7 @@ class ExternalWebSession extends PersistentImpl {
       // set accept header
       if ("accept" in context) {
         options.headers.accept = context.accept.map((acceptedType) => {
-          return acceptedType.mimeType + "; " + acceptedType.qValue;
+          return acceptedType.mimeType + "; q=" + acceptedType.qValue;
         }).join(", ");
       } else if (!("accept" in options.headers)) {
         options.headers.accept = "*/*";

@@ -1452,8 +1452,7 @@
       },
       "_loginButtonsLoggedOutDropdown": {
         "demo": {
-          "title": "Create account",
-          "explanation": "Your demo data will be transferred to your new account."
+          "title": "Create account"
         },
         "title": "登入",
         "shared": {

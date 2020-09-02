@@ -78,7 +78,7 @@ public:
 
   GatewayService(kj::Timer& timer, kj::HttpClient& shellHttp, GatewayRouter::Client router,
                  Tables& tables, kj::StringPtr baseUrl, kj::StringPtr wildcardHost,
-                 kj::Maybe<kj::StringPtr> termsPublicId);
+                 kj::Maybe<kj::StringPtr> termsPublicId, bool allowLegacyRelaxedCSP);
 
   kj::Promise<void> cleanupLoop();
   // Must run this to purge expired capabilities.
@@ -147,6 +147,8 @@ private:
   bool isPurging = false;
 
   kj::TaskSet tasks;
+
+  bool allowLegacyRelaxedCSP;
 
   kj::Promise<void> send401Unauthorized(Response& response);
   kj::Promise<void> sendError(

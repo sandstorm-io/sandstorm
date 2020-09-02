@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint . && tsc"
+    "lint": "eslint . --ext .ts --ext .js && tsc"
   },
   "author": "",
   "repository": {
@@ -14,13 +14,13 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "@babel/runtime": "^7.11.0",
+    "@babel/runtime": "^7.11.2",
     "@root/acme": "^3.1.0",
     "@root/csr": "^0.8.1",
     "@root/keypairs": "^0.9.0",
     "@root/pem": "^1.0.4",
     "@types/fibers": "^3.1.0",
-    "@types/meteor": "^1.4.48",
+    "@types/meteor": "^1.4.49",
     "acme-dns-01-cloudflare": "^1.2.3",
     "acme-dns-01-digitalocean": "^3.0.1",
     "acme-dns-01-dnsimple": "^3.0.0",
@@ -46,15 +46,17 @@
     "nodemailer": "^2.7.2",
     "nodemailer-smtp-pool": "^2.8.3",
     "smtp-server": "^1.17.0",
-    "stripe": "^8.81.0",
+    "stripe": "^8.90.0",
     "xml-crypto": "0.0.20",
     "xml2js": "^0.2.8",
     "xmlbuilder": "^8.2.2",
     "xmldom": "^0.1.27"
   },
   "devDependencies": {
+    "@typescript-eslint/parser": "^3.10.1",
     "babel-eslint": "^10.1.0",
     "chai": "^4.2.0",
-    "eslint": "^6.8.0"
+    "eslint": "^6.8.0",
+    "typescript": "^4.0.2"
   }
 }

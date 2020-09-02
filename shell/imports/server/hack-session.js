@@ -410,11 +410,19 @@ class HackSessionContextImpl extends SessionContextImpl {
     }).bind(this));
   }
 
-  httpGet(url) {
+  obsoleteHttpGet(url) {
     const _this = this;
     const session = _this;
 
     return inMeteor(() => {
+      if(!globalDb.allowLegacyHackSessionHttp()) {
+        throw new Error(
+          "HackSession.httpGet() is disabled and will be permanently removed soon. " +
+          "You should port your app to to use the powerbox instead. If you need " +
+          "help figuring out how to transition, please contact us via the " +
+          "sandstorm-dev@googlegroups.com mailing list."
+        )
+      }
       return ssrfSafeLookup(globalDb, url);
     }).then(safe => {
       return new Promise((resolve, reject) => {
@@ -449,7 +457,7 @@ class HackSessionContextImpl extends SessionContextImpl {
               });
               break;
             case 3: // 3xx response -- redirect.
-              resolve(session.httpGet(resp.headers.location));
+              resolve(session.obsoleteHttpGet(resp.headers.location));
               break;
             case 4: // 4xx response -- client error.
               err = new Error("Status code " + resp.statusCode + " received in response.");
@@ -505,22 +513,33 @@ class HackSessionContextImpl extends SessionContextImpl {
     throw new Error("revokeApiToken() has been removed. Use offer templates instead.");
   }
 
-  getUiViewForEndpoint(url) {
-    const parsedUrl = Url.parse(url);
-
-    if (parsedUrl.hash) { // Assume that anything with a fragment is a webkey
-      if (parsedUrl.pathname && parsedUrl.pathname !== "/") {
-        throw new Error("Webkey urls cannot contain a path.");
+  obsoleteGetUiViewForEndpoint(url) {
+    return inMeteor(() => {
+      if(!globalDb.allowLegacyHackSessionHttp()) {
+        throw new Error(
+          "HackSession.getUiViewForEndpoint() is disabled and will be permanently removed soon. " +
+          "You should port your app to to use the powerbox instead. If you need " +
+          "help figuring out how to transition, please contact us via the " +
+          "sandstorm-dev@googlegroups.com mailing list."
+        )
       }
 
-      const token = parsedUrl.hash.slice(1); // Get rid of # which is always the first character
-      const hostId = matchWildcardHost(parsedUrl.host);
-      // Connecting to a remote server with a bearer token.
-      // TODO(someday): Negotiate server-to-server Cap'n Proto connection.
-      return { view: new ExternalUiView(url, token) };
-    } else {
-      return { view: new ExternalUiView(url) };
-    }
+      const parsedUrl = Url.parse(url);
+
+      if (parsedUrl.hash) { // Assume that anything with a fragment is a webkey
+        if (parsedUrl.pathname && parsedUrl.pathname !== "/") {
+          throw new Error("Webkey urls cannot contain a path.");
+        }
+
+        const token = parsedUrl.hash.slice(1); // Get rid of # which is always the first character
+        const hostId = matchWildcardHost(parsedUrl.host);
+        // Connecting to a remote server with a bearer token.
+        // TODO(someday): Negotiate server-to-server Cap'n Proto connection.
+        return { view: new ExternalUiView(url, token) };
+      } else {
+        return { view: new ExternalUiView(url) };
+      }
+    })
   }
 }
 

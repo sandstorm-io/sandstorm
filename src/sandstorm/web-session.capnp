@@ -226,9 +226,53 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     qValue @1 :Float32 = 1;
   }
 
+  struct ContentSecurityPolicy {
+    # A Content-Security-Policy header. By default, Sandstorm blocks all
+    # third party resources, but allows resources that do not let an
+    # app communicate with the outside world. Apps may set a more restrictive
+    # policy, but not a less restricitve one.
+
+    struct Sources {
+      # A set of allowed sources for a given resource type.
+
+      union {
+        defaults @0 :Void;
+        # Use the sandstorm defaults.
+
+        none @1 :Void;
+        # Set the CSP for this resource to 'none'.
+
+        some :group {
+          # Use some subset of the resources normally allowed.
+
+          self @2 :Bool;
+          blob @3 :Bool;
+          data @4 :Bool;
+          unsafeInline @5 :Bool;
+          unsafeEval @6 :Bool;
+        }
+      }
+    }
+
+    defaultSrc @0 :Sources;
+    scriptSrc @1 :Sources;
+    styleSrc @2 :Sources;
+    workerSrc @3 :Sources;
+    fontSrc @4 :Sources;
+    frameSrc :group {
+      commonSources @5 :Sources;
+
+      baseUrl @6 :Bool = true;
+      # Whether to include Sandstorm's BASE_URL, in addition to the
+      # sources defined in `commonSources`. Required to use offer
+      # iframes.
+    }
+  }
+
   struct Response {
     setCookies @0 :List(Cookie);
     cachePolicy @16 :CachePolicy;
+    contentSecurityPolicy @23 :ContentSecurityPolicy;
 
     enum SuccessCode {
       # 2xx-level status codes that we allow an app to return.
@@ -606,7 +650,6 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   # * Sandstorm defines cross-origin request permissions:
   #   * Access-Control-*
   # * Sandstorm uses these for sandboxing:
-  #   * Content-Security-Policy
   #   * X-Frame-Options
   # * Redundant or irrelevant to Cap'n Proto RPC:
   #   * Connection

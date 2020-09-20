@@ -264,6 +264,8 @@ Config readConfig(const char *path, bool parseUids) {
       config.stripeKey = kj::mv(value);
     } else if (key == "STRIPE_PUBLIC_KEY") {
       config.stripePublicKey = kj::mv(value);
+    } else if (key == "USE_EXPERIMENTAL_SECCOMP_FILTER") {
+      config.useExperimentalSeccompFilter = value == "true" || value == "yes";
     } else if (key == "ALLOW_LEGACY_RELAXED_CSP") {
       KJ_LOG(WARNING,
           "The option ALLOW_LEGACY_RELAXED_CSP will be removed "

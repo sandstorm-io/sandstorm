@@ -34,6 +34,8 @@ struct Config {
   kj::Maybe<kj::String> stripePublicKey = nullptr;
 
   bool allowLegacyRelaxedCSP = true;
+
+  bool useExperimentalSeccompFilter = false;
 };
 
 // Read and return the config file from `path`.

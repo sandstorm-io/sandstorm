@@ -45,6 +45,7 @@ public:
 
   void setIsNew(bool isNew);
   void setMountProc(bool mountProc);
+  void setUseExperimentalSeccompFilter(bool use);
   kj::MainBuilder::Validity setAppName(kj::StringPtr name);
   kj::MainBuilder::Validity setGrainId(kj::StringPtr id);
   kj::MainBuilder::Validity setPkg(kj::StringPtr path);
@@ -97,6 +98,7 @@ private:
   bool keepStdio = false;
   bool devmode = false;
   bool seccompDumpPfc = false;
+  bool useExperimentalSeccompFilter = false;
   kj::Maybe<uid_t> sandboxUid;  // nullptr = use userns
 
   class SandstormApiImpl;
@@ -115,6 +117,8 @@ private:
   void setupFilesystem();
   void setupStdio();
   void setupSeccomp();
+  void setupSeccompNew();
+  void setupSeccompLegacy();
   void unshareNetwork();
   bool checkIfIpTablesLoaded();
   void maybeFinishMountingProc();

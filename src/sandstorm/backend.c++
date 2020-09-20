@@ -48,14 +48,18 @@ static void tryRecursivelyDelete(kj::StringPtr path) {
   recursivelyDelete(tmpPath);
 }
 
-BackendImpl::BackendImpl(kj::LowLevelAsyncIoProvider& ioProvider, kj::Network& network,
+BackendImpl::BackendImpl(
+  kj::LowLevelAsyncIoProvider& ioProvider,
+  kj::Network& network,
   SandstormCoreFactory::Client&& sandstormCoreFactory,
   kj::Maybe<Cgroup>&& cgroup,
-  kj::Maybe<uid_t> sandboxUid)
+  kj::Maybe<uid_t> sandboxUid,
+  bool useExperimentalSeccompFilter)
     : ioProvider(ioProvider), network(network), coreFactory(kj::mv(sandstormCoreFactory)),
       sandboxUid(sandboxUid),
       tasks(*this),
-      cgroup(kj::mv(cgroup))
+      cgroup(kj::mv(cgroup)),
+      useExperimentalSeccompFilter(useExperimentalSeccompFilter)
     {}
 
 void BackendImpl::taskFailed(kj::Exception&& exception) {
@@ -133,6 +137,10 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
     if (mountProc) {
       argv.add(kj::heapString("--proc"));
     }
+  }
+
+  if (useExperimentalSeccompFilter) {
+    argv.add(kj::heapString("--use-experimental-seccomp-filter"));
   }
 
   for (auto env: command.getEnviron()) {

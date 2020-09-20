@@ -587,6 +587,9 @@ kj::MainFunc SupervisorMain::getMain() {
                  "Dump libseccomp PFC output.")
       .addOption({'n', "new"}, [this]() { setIsNew(true); return true; },
                  "Initializes a new grain.  (Otherwise, runs an existing one.)")
+      .addOption({"use-experimental-seccomp-filter"},
+                 [this]() { setUseExperimentalSeccompFilter(true); return true; },
+                 "Use the new, experimental seccomp filter.")
       .expectArg("<app-name>", KJ_BIND_METHOD(*this, setAppName))
       .expectArg("<grain-id>", KJ_BIND_METHOD(*this, setGrainId))
       .expectOneOrMoreArgs("<command>", KJ_BIND_METHOD(*this, addCommandArg))
@@ -599,6 +602,10 @@ kj::MainFunc SupervisorMain::getMain() {
 
 void SupervisorMain::setIsNew(bool isNew) {
   this->isNew = isNew;
+}
+
+void SupervisorMain::setUseExperimentalSeccompFilter(bool use) {
+  this->useExperimentalSeccompFilter = use;
 }
 
 void SupervisorMain::setMountProc(bool mountProc) {
@@ -1081,7 +1088,11 @@ void SupervisorMain::setupStdio() {
   // supervisor, stdout is how we tell our parent that we're ready to receive connections.
 }
 
-void SupervisorMain::setupSeccomp() {
+void SupervisorMain::setupSeccompNew() {
+  KJ_FAIL_ASSERT("TODO: load the new seccomp filter");
+}
+
+void SupervisorMain::setupSeccompLegacy() {
   // Install a rudimentary seccomp blacklist.
   // TODO(security): Change this to a whitelist.
 
@@ -2382,6 +2393,14 @@ kj::Promise<void> SupervisorMain::DefaultSystemConnector::run(
 }
 
 // -----------------------------------------------------------------------------
+
+void SupervisorMain::setupSeccomp() {
+  if(useExperimentalSeccompFilter) {
+    setupSeccompNew();
+  } else {
+    setupSeccompLegacy();
+  }
+}
 
 [[noreturn]] void SupervisorMain::runSupervisor(int apiFd, kj::AutoCloseFd startEventFd) {
   // We're currently in a somewhat dangerous state: our root directory is controlled

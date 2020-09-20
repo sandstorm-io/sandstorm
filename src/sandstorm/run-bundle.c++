@@ -2392,10 +2392,13 @@ private:
         grainsCgroup = Cgroup("/run/cgroup2").getOrMakeChild("grains");
       });
 
-      paf.fulfiller->fulfill(kj::heap<BackendImpl>(*io.lowLevelProvider, network,
+      paf.fulfiller->fulfill(kj::heap<BackendImpl>(
+        *io.lowLevelProvider,
+        network,
         server.getBootstrap().castAs<SandstormCoreFactory>(),
         kj::mv(grainsCgroup),
-        sandboxUid));
+        sandboxUid,
+        config.useExperimentalSeccompFilter));
 
       auto gatewayServer = kj::heap<capnp::TwoPartyServer>(kj::refcounted<CapRedirector>([&]() {
         return server.getBootstrap().castAs<SandstormCoreFactory>()

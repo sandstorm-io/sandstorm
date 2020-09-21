@@ -41,6 +41,14 @@ SandstormGrainListPage.mapGrainsToTemplateObject = function (grains, db) {
   });
 };
 
+function bulkActionNoneSelected(numMineSelected, numSharedSelected) {
+  if(numMineSelected == 0 && numSharedSelected == 0) {
+    return TAPi18n.__('grains.grainlist.sandstormGrainTable.bulkAction.disabledHint');
+  } else {
+    return null;
+  }
+}
+
 SandstormGrainListPage.mapApiTokensToTemplateObject = function (apiTokens, staticAssetHost) {
   const tokensForGrain = _.groupBy(apiTokens, "grainId");
   const grainIdsForApiTokens = Object.keys(tokensForGrain);
@@ -224,7 +232,7 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
         },
 
         disabled: function (numMineSelected, numSharedSelected) {
-          return numMineSelected == 0 && numSharedSelected == 0;
+          return bulkActionNoneSelected(numMineSelected, numSharedSelected);
         },
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
@@ -245,7 +253,7 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
         },
 
         disabled: function (numMineSelected, numSharedSelected) {
-          return numMineSelected == 0 && numSharedSelected == 0;
+          return bulkActionNoneSelected(numMineSelected, numSharedSelected);
         },
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
@@ -264,7 +272,7 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
         },
 
         disabled: function (numMineSelected, numSharedSelected) {
-          return numMineSelected == 0 && numSharedSelected == 0;
+          return bulkActionNoneSelected(numMineSelected, numSharedSelected);
         },
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
@@ -279,10 +287,14 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
         },
 
         disabled: function(numMineSelected, numSharedSelected) {
-          return numMineSelected === 0 || numSharedSelected !== 0;
-          // Users can only back up their own grains, so disable if
-          // they've selected anyone else's. TODO: give the user more
-          // feedback on this somehow.
+          if(numSharedSelected > 0) {
+            return (
+              "Some of the grains you have selected are owned by other " +
+              "users. You can only back up your own grains."
+            )
+          } else {
+            return bulkActionNoneSelected(numMineSelected, numSharedSelected);
+          }
         },
 
         onClicked: function (ownedGrainIds, _sharedGrainIds) {

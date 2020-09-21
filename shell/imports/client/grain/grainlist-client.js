@@ -11,6 +11,7 @@ import { TAPi18n } from "meteor/tap:i18n";
 import { introJs } from "intro.js";
 import { identiconForApp } from "/imports/sandstorm-identicons/helpers.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { makeAndDownloadBackup } from "/imports/client/backups.ts";
 
 SandstormGrainListPage = {};
 
@@ -268,6 +269,28 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
           Meteor.call("moveGrainsToTrash", ownedGrainIds.concat(sharedGrainIds));
+        },
+      },
+      {
+        buttonClass: "save-backup",
+
+        text: function() {
+          return 'Save backup';
+        },
+
+        disabled: function(numMineSelected, numSharedSelected) {
+          return numMineSelected === 0 || numSharedSelected !== 0;
+          // Users can only back up their own grains, so disable if
+          // they've selected anyone else's. TODO: give the user more
+          // feedback on this somehow.
+        },
+
+        onClicked: function (ownedGrainIds, _sharedGrainIds) {
+          ownedGrainIds.forEach((grainId) => {
+            // TODO: use the grain title, not the grain id, as the suggested
+            // file name.
+            makeAndDownloadBackup(grainId, grainId);
+          });
         },
       },
     ];

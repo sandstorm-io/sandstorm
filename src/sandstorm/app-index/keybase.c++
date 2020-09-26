@@ -110,7 +110,7 @@ kj::Promise<kj::Own<LookupResults::Reader>> Endpoint::lookupFingerPrint(kj::Stri
               return capnp::clone(results.asReader());
             }
             case WebSession::Response::Content::Body::STREAM:
-              KJ_FAIL_ASSERT("TODO(now)");
+              KJ_FAIL_ASSERT("TODO(soon)");
               break;
           }
           break;

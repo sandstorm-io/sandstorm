@@ -524,8 +524,6 @@ OwnCapnp<capnp::FromReader<Reader>> newOwnCapnp(Reader value) {
   return OwnCapnp<capnp::FromReader<Reader>>(kj::mv(words));
 }
 
-kj::String bytesToString(kj::ArrayPtr<const kj::byte> bytes);
-
 }  // namespace sandstorm
 
 #endif // SANDSTORM_UTIL_H_

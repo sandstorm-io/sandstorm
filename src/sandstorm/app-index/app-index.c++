@@ -344,7 +344,7 @@ public:
       } else if (path == "keybase-pb-token") {
         auto content = params.getContent().getContent();
         auto claimReq = session.claimRequestRequest();
-        claimReq.setRequestToken(bytesToString(content.asBytes()));
+        claimReq.setRequestToken(kj::str(content.asChars()));
         auto cap = claimReq.send().getCap();
         auto saveReq = sandstormApi.saveRequest();
         saveReq.setCap(cap);

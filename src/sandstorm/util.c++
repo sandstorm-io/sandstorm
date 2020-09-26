@@ -940,13 +940,4 @@ void TwoPartyServerWithClientBootstrap::taskFailed(kj::Exception&& exception) {
   KJ_LOG(ERROR, exception);
 }
 
-kj::String bytesToString(kj::ArrayPtr<const kj::byte> bytes) {
-  auto size = bytes.size();
-  auto ret = kj::heapString(size);
-  for(size_t i = 0; i < size; i++) {
-    ret[i] = bytes[i];
-  }
-  return ret;
-}
-
 }  // namespace sandstorm

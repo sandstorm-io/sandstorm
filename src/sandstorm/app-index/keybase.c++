@@ -108,7 +108,7 @@ kj::Promise<kj::Own<LookupResults::Reader>> Endpoint::lookupFingerPrint(kj::Stri
               capnp::MallocMessageBuilder msg;
               auto results = msg.initRoot<LookupResults>();
               json.handleByAnnotation<LookupResults>();
-              json.decode(bytesToString(bytes.asBytes()), results);
+              json.decode(kj::str(bytes.asChars()), results);
               return capnp::clone(results.asReader());
             }
             case WebSession::Response::Content::Body::STREAM:

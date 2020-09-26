@@ -1,3 +1,7 @@
+### v0.272 (2020-09-26)
+- Regular dependency updates.
+- To make porting apps a little easier, the headers `X-CSRFToken` and `X-CSRF-Token` are now automatically passed through to the app. Thanks @zenhack.
+
 ### v0.271 (2020-08-31)
 - We have reverted the change preventing apps from talking to third-party servers in client-side code. This caused more breakage than was expected. We will work to fix and/or grandfather the affected apps before trying to roll this out again.
 

@@ -23,9 +23,7 @@
 #include <sandstorm/app-index/keybase-api.capnp.h>
 #include <sandstorm/app-index/app-index.capnp.h>
 
-namespace sandstorm {
-namespace appindex {
-namespace keybase {
+namespace sandstorm::appindex::keybase {
 
 kj::String getPowerboxDescriptor();
 // Return a base64-encoded, packed PowerboxDescriptor for the keybase API, for
@@ -46,8 +44,6 @@ private:
   ApiSession::Client apiSession;
 };
 
-};
-};
 };
 
 #endif

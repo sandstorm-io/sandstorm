@@ -12,9 +12,7 @@
 #include <sandstorm/app-index/app-index.capnp.h>
 #include <sandstorm/util.h>
 
-namespace sandstorm {
-namespace appindex {
-namespace keybase {
+namespace sandstorm::appindex::keybase {
 
 kj::String getPowerboxDescriptor() {
   capnp::MallocMessageBuilder msg;
@@ -123,6 +121,4 @@ kj::Promise<kj::Own<LookupResults::Reader>> Endpoint::lookupFingerPrint(kj::Stri
   });
 }
 
-};
-};
 };

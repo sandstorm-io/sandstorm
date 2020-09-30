@@ -1,3 +1,10 @@
+### v0.272 (2020-09-26)
+- Regular dependency updates.
+- To make porting apps a little easier, the headers `X-CSRFToken` and `X-CSRF-Token` are now automatically passed through to the app. Thanks @zenhack.
+
+### v0.271 (2020-08-31)
+- We have reverted the change preventing apps from talking to third-party servers in client-side code. This caused more breakage than was expected. We will work to fix and/or grandfather the affected apps before trying to roll this out again.
+
 ### v0.270 (2020-08-29)
 - Apps can no longer talk to third-party servers in client-side code, except for embedding images and video. This has long been a goal of Sandstorm, but we did not want to begin enforcing it until apps could explicitly request access to third-party servers via the Powerbox. We have tested all apps on the app market and found only minor breakage (e.g. wrong fonts), but it is possible that we missed bigger breakages or that some private apps are broken. Please contact [sandstorm-dev](https://groups.google.com/group/sandstorm-dev) to report any issues. Thanks @zenhack for pushing this change through.
 - Apps can no longer make server-side HTTP requests without requsting permission through the Powerbox. We believe the only app that ever did so was Tiny Tiny RSS, but it was recently updated to use the powerbox. If you experience other app breakages, please let [sandstorm-dev](https://groups.google.com/group/sandstorm-dev) know. Thanks again to @zenhack.

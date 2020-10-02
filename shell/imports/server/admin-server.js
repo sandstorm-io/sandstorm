@@ -34,7 +34,7 @@ import { HTTP } from "meteor/http";
 import { createAcmeAccount, renewCertificateNow } from "/imports/server/acme.js";
 
 const publicAdminSettings = [
-  "google", "github", "ldap", "saml", "emailToken", "splashUrl", "signupDialog",
+  "google", "github", "oidc", "ldap", "saml", "emailToken", "splashUrl", "signupDialog",
   "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
   "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled",
   "serverTitle", "returnAddress", "ldapNameField", "organizationMembership",
@@ -67,7 +67,7 @@ Meteor.methods({
     check(value, Boolean);
 
     // Only check configurations for OAuth services.
-    const oauthServices = ["google", "github"];
+    const oauthServices = ["google", "github", "oidc"];
     if (value && (oauthServices.indexOf(serviceName) != -1)) {
       const config = ServiceConfiguration.configurations.findOne({ service: serviceName });
       if (!config) {
@@ -77,6 +77,11 @@ Meteor.methods({
 
       if (!config.clientId || !config.secret) {
         throw new Meteor.Error(403, "You must provide a non-empty clientId and secret for the " +
+          serviceName + " service before you can enable it. Click the \"configure\" link.");
+      }
+
+      if (serviceName === "oidc" && !config.serverUrl) {
+        throw new Meteor.Error(403, "You must provide a non-empty serverUrl for the " +
           serviceName + " service before you can enable it. Click the \"configure\" link.");
       }
     }

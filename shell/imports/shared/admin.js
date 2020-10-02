@@ -28,6 +28,32 @@ function serviceEnabled(name) {
   return setting && !!setting.value;
 }
 
+Accounts.loginServices.oidc = {
+  isEnabled: function () {
+    return serviceEnabled("oidc");
+  },
+
+  getLoginId: function (identity) {
+    return identity.services.oidc.id;
+  },
+
+  initiateLogin: function (_loginId) {
+    Meteor.loginWithOidc();
+    return { oneClick: true };
+  },
+
+  loginTemplate: {
+    name: "oauthLoginButton",
+    priority: 30,
+    data: {
+      method: "loginWithOidc",
+      name: "oidc",
+      displayName: "OpenID Connect",
+      linkingNewCredential: false,
+    },
+  },
+};
+
 Accounts.loginServices.github = {
   isEnabled: function () {
     return serviceEnabled("github");

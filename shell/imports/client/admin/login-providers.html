@@ -133,6 +133,75 @@
 {{/modalDialogWithBackdrop}}
 </template>
 
+<template name="oidcLoginSetupInstructions">
+  {{#let txt="admin.identityProviders.oidcLoginSetupInstructions"}}
+  <p>
+    {{_ (con txt "explanation")}}
+  </p>
+  <ol>
+    <li>{{{_ (con txt "step1")}}}</li>
+    <li>{{{_ (con txt "step2") siteUrl}}}</li>
+    <li>{{{_ (con txt "step3") siteUrl}}}</li>
+  </ol>
+  {{/let}}
+</template>
+
+<template name="adminLoginProviderConfigureOIDC">
+{{#modalDialogWithBackdrop onDismiss=onDismiss}}
+  {{#let txt="admin.identityProviders.adminIdentityProviderConfigureGitHub"}}
+  <h2>{{_ (con txt "title")}}</h2>
+
+  {{#if formerBaseUrl}}
+    <p class="flash-message warning-message" tabindex="-1">
+      {{{_ (con txt "formerBaseUrlWarning") former=formerBaseUrl current=siteUrl}}}
+    </p>
+  {{/if}}
+
+  <form class="setup-idp-form">
+    {{> oidcLoginSetupInstructions "" }}
+
+    <p>{{_ (con txt "explanation")}}</p>
+    <div class="form-group">
+      <label>
+        {{_ (con txt "clientId")}}
+        <input type="text" name="clientId" value="{{clientId}}"/>
+      </label>
+    </div>
+    <div class="form-group">
+      <label>
+        {{_ (con txt "clientSecret")}}
+        <input type="text" name="clientSecret" value="{{clientSecret}}"/>
+      </label>
+    </div>
+    <div class="form-group">
+      <label>
+        {{_ (con txt "serverUrl")}}
+        <input type="text" name="serverUrl" value="{{serverUrl}}"/>
+      </label>
+    </div>
+  </form>
+
+  <div class="idp-modal-button-row">
+    <button class="idp-modal-save" disabled="{{saveDisabled}}">
+      {{#if oidcEnabled}}
+      {{_ (con txt "saveButton")}}
+      {{else}}
+      {{_ (con txt "enableButton")}}
+      {{/if}}
+    </button>
+    <button class="idp-modal-cancel">
+      {{_ (con txt "cancelButton")}}
+    </button>
+    {{#if oidcEnabled}}
+    <button class="idp-modal-disable">
+      {{_ (con txt "disableButton")}}
+    </button>
+    {{/if}}
+  </div>
+  {{/let}}
+{{/modalDialogWithBackdrop}}
+</template>
+
 <template name="githubLoginSetupInstructions">
   {{#let txt="admin.identityProviders.githubLoginSetupInstructions"}}
   <p>

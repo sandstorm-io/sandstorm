@@ -40,6 +40,7 @@ const DNS_PROVIDERS = {
   "namedotcom": "Name.com",
   "route53": "Route53 (AWS)",
   "vultr": "Vultr",
+  "desec": "deSEC",
 };
 
 Template.newAdminCertificates.helpers({

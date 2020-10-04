@@ -140,14 +140,14 @@
                 "loading": "加载中..."
             },
             "dependencies": {
-                "title": "Third-party works used",
+                "title": "第三方使用许可",
                 "license": "许可",
-                "explanation": "These works are copyright the respective authors and used under the terms of the respective licenses."
+                "explanation": "这些作品的版权归各自的作者所有，并在各自许可的条款下使用。"
             },
             "copyright": {
                 "title": "著作权",
-                "license": "The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and contributors. The implementation is licensed under the Apache License 2.0.",
-                "trademark": "\"Sandstorm\" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc., and may not be used to advertise derivative works nor commercial services without written consent from Sandstorm Development Group, Inc."
+                "license": "Sandstorm 版权所有 Sandstorm Development Group, Inc. 及其贡献者。该实现许可自 Apache License 2.0",
+                "trademark": "\"Sandstorm\" 及 Sandstorm 徽标是 Sandstorm Development Group, Inc. 的商标，未经 Sandstorm Development Group, Inc. 许可，不得用于广告及其衍生作品或商业服务。"
             },
             "terms": {
                 "license": "许可",
@@ -371,7 +371,7 @@
                     "noTransfersInProgress": "No transfers are currently in progress.",
                     "transferAllMyGrainsTo": "Transfer all my grains to:",
                     "initiateTransfer": "Initiate Transfer",
-                    "whatDoesThisDo": "What does this do?",
+                    "whatDoesThisDo": "这是干什么的？",
                     "whatCan": "You can use this function to transfer all of your grains to a new Sandstorm server. This automates the process of saving a backup of each grain on this server, then restoring each backup on the server you specify.",
                     "whatWhen": "When you initiate the transfer above, you will be redirected to the <strong>destination</strong> server where you will be prompted to sign in. You will then be given the option to choose which grains to transfer, and then finally you will initiate the transfer. The transfer will continue in the background; you can log off.",
                     "whatOrder": "In order for a transfer to work, the <strong>destination</strong> server must be able to reach the <strong>source</strong> server directly over the internet. However, the reverse is not necessary. Thus, you can perform a mass transfer that transfers grains from a server on the public internet (like Sandstorm Oasis) to a server on a private internal network, but not vice versa. If the <strong>source</strong> server supports HTTPS, then the transfer will take place over HTTPS, regardless of the <strong>destination</strong> server's protocol.",
@@ -589,34 +589,34 @@
                 "explanation": "Then, copy over your Client ID and Client secret below:",
                 "clientId": "Client ID:",
                 "clientSecret": "Client secret:",
-                "saveButton": "Save",
-                "enableButton": "Enable",
-                "cancelButton": "Cancel",
-                "disableButton": "Disable"
+                "saveButton": "保存",
+                "enableButton": "启用",
+                "cancelButton": "取消",
+                "disableButton": "禁用"
             },
             "githubLoginSetupInstructions": {
-                "explanation": "First, you'll need to get a Github Client ID and Client secret. Follow these steps:",
-                "step1": "Visit <a href=\"https://github.com/settings/applications/new\" target=\"blank\">https://github.com/settings/applications/new</a>",
-                "step2": "Set Homepage URL to: <span class=\"idp-config-url\">%s</span>",
-                "step3": "Set Authorization callback URL to: <span class=\"idp-config-url\">%s_oauth/github</span>"
+                "explanation": "首先，你需要来自 GitHub 的 Client ID 和 Client secret。完成以下步骤：",
+                "step1": "访问 <a href=\"https://github.com/settings/applications/new\" target=\"blank\">https://github.com/settings/applications/new</a>",
+                "step2": "设置主页地址为: <span class=\"idp-config-url\">%s</span>",
+                "step3": "将授权回调地址（Authorization callback URL）设置为: <span class=\"idp-config-url\">%s_oauth/github</span>"
             },
             "adminIdentityProviderConfigureGitHub": {
-                "title": "GitHub login configuration",
-                "formerBaseUrlWarning": "This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to visit <a target=\"_blank\" href=\"https://github.com/settings/developers\">https://github.com/settings/developers</a> and update the Homepage URL and Authorization callback URL for this application to the values below.",
-                "explanation": "Then, copy over your Client ID and Client secret below:",
+                "title": "GitHub 登录设置",
+                "formerBaseUrlWarning": "服务器地址从 <code>__former__</code> 搬到了 <code>__current__</code>. 你需要访问 <a target=\"_blank\" href=\"https://github.com/settings/developers\">https://github.com/settings/developers</a> 并更新该应用程序的主页地址和授权回调地址。",
+                "explanation": "然后，在下面粘贴 Client ID 和 Client secret:",
                 "clientId": "Client ID:",
                 "clientSecret": "Client secret:",
-                "saveButton": "Save",
-                "enableButton": "Enable",
-                "cancelButton": "Cancel",
-                "disableButton": "Disable"
+                "saveButton": "保存",
+                "enableButton": "启用",
+                "cancelButton": "取消",
+                "disableButton": "禁用"
             },
             "adminIdentityProviderConfigureLdap": {
-                "title": "LDAP login configuration",
-                "error": "Failed to save changes: %s",
+                "title": "LDAP 登陆设置",
+                "error": "在保存以下设置时失败了: %s",
                 "url": {
-                    "label": "LDAP server URL:",
-                    "subtext": "e.g. <code>ldap://ldap.example.com:389</code>.  Use port 636 for SSL."
+                    "label": "LDAP 服务器地址:",
+                    "subtext": "例如: <code>ldap://ldap.example.com:389</code>。636 为 SSL 端口。"
                 },
                 "searchBindDn": {
                     "label": "Bind user DN",
@@ -651,13 +651,13 @@
                     "placeholder": "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----",
                     "subtext": "This is only necessary if your server supports SSL and is using a private CA not in the common trusted set. Note that it does NOT work to enter the LDAP server's own certificate here -- it must be the certificate of a CA which has signed the LDAP server's certificate."
                 },
-                "saveButton": "Save",
-                "enableButton": "Enable",
-                "cancelButton": "Cancel",
-                "disableButton": "Disable"
+                "saveButton": "保存",
+                "enableButton": "启用",
+                "cancelButton": "取消",
+                "disableButton": "禁用"
             },
             "adminIdentityProviderConfigureSaml": {
-                "title": "SAML login configuration",
+                "title": "SAML 登陆设置",
                 "explanation": "Your SAML IDP should be configured to return a persistent nameID. In addition, if you are not using Active Directory, you <strong>must</strong> configure your IDP to provide two extra attributes, <code>email</code> and <code>displayName</code>.",
                 "serviceUrl": "The Service URL of this server is: <code>%s</code>",
                 "logoutUrl": "The Service Logout URL of this server is: <code>%s</code>",
@@ -678,10 +678,10 @@
                 "entityId": {
                     "label": "Entity ID:"
                 },
-                "saveButton": "Save",
-                "enableButton": "Enable",
-                "cancelButton": "Cancel",
-                "disableButton": "Disable"
+                "saveButton": "保存",
+                "enableButton": "启用",
+                "cancelButton": "取消",
+                "disableButton": "禁用"
             },
             "adminIdentityProviderTable": {
                 "title": "Login provider",
@@ -812,8 +812,8 @@
                     "subtext": "This web page will be displayed in the background behind the login dialog (the home page when logged out). For security reasons, the page must be hosted within this Sandstorm server's wildcard host (otherwise it will be blocked by <code>Content-Security-Policy</code>). We suggest using a static web publishing app like <a target=\"_blank\" href=\"https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh/?host=%s\">Hacker CMS</a> to host content.<strong>WARNING: This feature is experimental; in particular the style and positioning of the login box is subject to change without notice.</strong> Please let us know if you'd like to see it stabilize."
                 },
                 "signupDialog": {
-                    "label": "Signup dialog:",
-                    "subtext": "This text will be displayed to users who click on signup links."
+                    "label": "注册对话框:",
+                    "subtext": "这些文字会在用户点击注册链接时出现。"
                 },
                 "termsOfService": {
                     "label": "服务条款地址:",
@@ -970,8 +970,8 @@
                     "emails": "电子邮件地址"
                 },
                 "pronouns": {
-                    "hint": "Pronouns",
-                    "label": "Pronouns"
+                    "hint": "人称代词",
+                    "label": "人称代词"
                 },
                 "emails": {
                     "hint": "电子邮件地址",
@@ -1010,10 +1010,10 @@
             },
             "newAdminUserDetailsIdentityTable": {
                 "header": {
-                    "credential": "Credential",
-                    "created": "Created",
-                    "lastActive": "Last Active",
-                    "properties": "Properties"
+                    "credential": "凭据",
+                    "created": "已创建",
+                    "lastActive": "最后活动时间",
+                    "properties": "属性"
                 }
             },
             "newAdminUserDetails": {
@@ -1200,7 +1200,7 @@
             "name": "网络容量",
             "subtext": "管理沙粒的网络直接存取量。",
             "newAdminNetworkCapabilitiesTableCapabilityRow": {
-                "adminAccount": "Admin account %s",
+                "adminAccount": "管理员账号 %s",
                 "unknownGranter": "Unknown granter",
                 "anyone": "Anyone with the token",
                 "unknownRecipient": "Unknown recipient",
@@ -1230,20 +1230,20 @@
             }
         },
         "hostingManagement": {
-            "name": "Hosting management",
+            "name": "托管管理",
             "newAdminHostingManagement": {
-                "explanation": "This feature is experiemental and only works with the LDAP identity provider at the moment. Use with caution.",
+                "explanation": "此功能是实验性的，目前仅与 LDAP 身份提供者一起使用。请小心使用它。",
                 "quotaEnabled": {
                     "label": "给每个用户设置限额",
-                    "subtext": "Enable Quota management on this server. This requires both SAML and LDAP to be configured, and email addresses will be used to match between the two."
+                    "subtext": "在本服务器上启用限额管理。这需要 SAML 和 LDAP 都配置好，电子邮件地址会用于两者之间的匹配。"
                 },
                 "quotaLdapAttribute": {
                     "label": "LDAP quota attribute",
                     "subtext": "This is the attribute name that will be looked up from LDAP to determine quota for a user."
                 },
                 "billingPromptUrl": {
-                    "label": "Billing prompt url",
-                    "subtext": "This is the url that will be used in the billing prompt."
+                    "label": "账单提示网址",
+                    "subtext": "这将是在账单提示中使用的网址。"
                 },
                 "saveButton": "保存",
                 "restoreButton": "恢复默认设置"
@@ -1261,7 +1261,7 @@
         "appList": {
             "uninstallingHint": "移除完成",
             "doneUninstalling": "移除完成",
-            "uninstallHint": "移除應用程式",
+            "uninstallHint": "移除应用程序",
             "uninstallButton": "批次移除...",
             "uploadApp": "上传应用程序",
             "searchHint": "搜尋名稱",
@@ -1382,11 +1382,11 @@
                 "identities": {
                     "title": "我的个人资料",
                     "success": "成功: %s",
-                    "linkedCredentials": "Linked credentials",
+                    "linkedCredentials": "已连接的凭据",
                     "linkNewIdentity": {
-                        "title": "Link new credential:",
+                        "title": "连接新的凭据:",
                         "cancelButton": "取消",
-                        "linkButton": "Link new credential",
+                        "linkButton": "连接新的凭据",
                         "logoutAllButton": "销毁其它所有会话"
                     },
                     "email": {
@@ -1464,9 +1464,9 @@
                     "and": " 和 ",
                     "privacyLink": "隐私条款"
                 },
-                "saveButton": "Save",
-                "continueButton": "Continue",
-                "cancelButton": "Cancel"
+                "saveButton": "保存",
+                "continueButton": "继续",
+                "cancelButton": "取消"
             }
         },
         "loginButtons": {
@@ -1490,7 +1490,7 @@
             "_loginButtonsLoggedOutDropdown": {
                 "demo": {
                     "title": "创建帐号",
-                    "explanation": "你在演示版中的数据会被无缝传输至新帐号上。"
+                    "explanation": "注意：您在 Demo 里的数据将会被删除。"
                 },
                 "title": "登录",
                 "shared": {
@@ -1529,16 +1529,16 @@
                     "confirmButton": "确认",
                     "cancelButton": "取消"
                 },
-                "disabled": "A server admin must enable email authentication before you can confirm your email."
+                "disabled": "在确认你的电子邮件地址前，服务器管理员必须启用邮件认证。"
             },
             "ldapLoginForm": {
                 "username": {
                     "label": "用户名",
-                    "hint": "This is your LDAP username. It will be the name that you normally use to log in to other internal services at your company."
+                    "hint": "这是你的 LDAP 用户名。这将是你默认登录进公司内其它内部服务的名字。"
                 },
                 "password": {
                     "label": "密码",
-                    "hint": "This is your LDAP password. It will be the password that you normally use to log in to other internal services at your company."
+                    "hint": "这是你的 LDAP 密码。这将是你默认登录进公司内其它内部服务的密码。"
                 },
                 "loginButton": "登录"
             },
@@ -1802,7 +1802,7 @@
             "grains": "沙粒",
             "oasis": "开始与其它人在 Oasis 上的沙聚云协作吧：",
             "createAccount": "创建一个免费帐户 »",
-            "demoHint": "你的演示版帐号内数据会被传输。",
+            "demoHint": "注意：您在 Demo 里的数据将会被删除。",
             "selfHostHint": "这是一个限时演示版。如果你希望作为日常使用，可以在自己的服务器上安装（这是开源的）：",
             "signUp": "演示版剩余时间：",
             "close": "关闭"

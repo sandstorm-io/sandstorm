@@ -55,6 +55,7 @@ const setupIsStepCompleted = {
   login() {
     return (
       providerEnabled("emailToken") ||
+      providerEnabled("oidc") ||
       providerEnabled("google") ||
       providerEnabled("github") ||
       providerEnabled("ldap") ||

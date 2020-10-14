@@ -4,7 +4,7 @@
     "layout": {
       "demoExpired": {
         "title": "Demo verlopen",
-	"canUpgrade": "Bedankt voor het uitproberen van de Sandstorm Demo! Uw demo accaunt is verlopen. Als u Sandstorm wilt blijven gebruiken en uw data permanent op wilt slaan, log dan alstublieft in.",
+        "canUpgrade": "Bedankt voor het uitproberen van de Sandstorm Demo! Uw demo accaunt is verlopen. Als u Sandstorm wilt blijven gebruiken en uw data permanent op wilt slaan, log dan alstublieft in.",
         "cannotUpgrade": "Bedankt voor het uitproberen van de Sandstorm Demo! Uw demo accaunt is verlopen.",
         "signOut": "Uitloggen"
       },
@@ -160,6 +160,7 @@
     "title": "Grains",
     "grainView": {
       "notFoundWithId": "Geen grains gevonden met ID %s.",
+      "quotaExhausted": "*_Cannot start grain because owner's quota is exhausted. If this is your grain, please upgrade your subscription plan to continue.",
       "openWithWhichIdentity": "Wilt u uw identiteit bekendmaken aan de grain of anoniem blijven?",
       "openInIncognitoMode": "Open in Incognito Mode",
       "revealMyIdentity": "Maak mijn identiteit bekend"
@@ -217,6 +218,15 @@
       "cancel": "Annuleren",
       "confirmHint": "download backup",
       "confirm": "Download backup"
+    },
+    "grainCloneButton": {
+      "hint": "*_Clone Grain",
+      "text": "*_Clone",
+      "copyTitle": "*_Copy of %s"
+    },
+    "grainClonePopup": {
+      "title": "*_Clone Grain",
+      "processing": "*_Cloning Grain..."
     },
     "grainRestartButton": {
       "hint": "Herstart App",
@@ -318,7 +328,6 @@
           "hint": "Wat is een grain?"
         },
         "mainListButton": "Bekijk hoofdlist",
-        "trashButton": "Bekijk vuilnisbak (%s)",
         "restoreButton": "Backup herstellen...",
         "search": {
           "placeholder": "zoeken"
@@ -327,6 +336,8 @@
           "quota": "__count__ van __quota__ grain",
           "size": "__size__ van __total__ gebruikt"
         },
+        "trashButton": "Bekijk vuilnisbak (%s)",
+        "moveToTrash": "*_Move to trash",
         "trash": {
           "emptyButton": "Vuilnisbak leegmaken",
           "explanation": "(Grain worden na 30 dagen permanent verwijdert uit de vuilnisbak. Herstel een grain naar de Hoofdlijst om deze te behouden.)"
@@ -340,8 +351,7 @@
           "hasApps": "Selecteer een app en maak uw eerste grain aan.",
           "hasNoApp": "Installeer een app om uw eerste grain aan te maken."
         },
-
-	      "transfers": {
+        "transfers": {
           "massTransfer": "Grote overdracht...",
           "transfers": "Overdracht",
           "transfer": "Overdracht",
@@ -592,6 +602,28 @@
         "enableButton": "Inschakelen",
         "cancelButton": "Annuleren",
         "disableButton": "Uitschakelen"
+      },
+      "oidcLoginSetupInstructions": {
+        "explanation": "*_First, you'll need to get a OpenID Connect Client ID and Client secret. Follow these steps:",
+        "step1": "*_Visit the configuration interface of your identity provider",
+        "step2": "*_Set Homepage URL to: <span class=\"idp-config-url\">%s</span>",
+        "step3": "*_Set Authorization callback URL to: <span class=\"idp-config-url\">%s_oauth/oidc</span>"
+      },
+      "adminIdentityProviderConfigureOidc": {
+        "title": "*_OpenID Connect login configuration",
+        "formerBaseUrlWarning": "*_This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to provide your identity provider with the updated Homepage URL and Authorization callback URL for this application to the values below.",
+        "server-explanation": "*_Fill in your identity provider details:",
+        "explanation": "*_Then, copy over your Client ID and Client secret below:",
+        "clientId": "*_Client ID:",
+        "clientSecret": "*_Client secret:",
+        "serverUrl": "*_Identity Server URL:",
+        "authorizationEndpoint": "*_Authorization Endpoint:",
+        "tokenEndpoint": "*_Token Endpoint:",
+        "userinfoEndpoint": "*_User Info Endpoint:",
+        "saveButton": "*_Save",
+        "enableButton": "*_Enable",
+        "cancelButton": "*_Cancel",
+        "disableButton": "*_Disable"
       },
       "githubLoginSetupInstructions": {
         "explanation": "Eerst heeft u een Github Client ID en Client secret nodig, volg deze stappen:",
@@ -913,6 +945,11 @@
         "restoreButton": "Standaardinstellingen herstellen"
       }
     },
+    "certificates": {
+      "name": "*_SSL/TLS Certificates",
+      "subtext": "*_Configure certificates manually or using Let's Encrypt.",
+      "newAdminCertificates": {}
+    },
     "users": {
       "name": "Gebruikers",
       "subtext": "Beheer alle gebruikers op deze Sandstorm installatie."
@@ -1198,6 +1235,7 @@
     "networkCapabilities": {
       "name": "Netwerk mogelijkheden",
       "subtext": "Directe netwerktoegang voor grains beheren.",
+      "explanation": "*_This page displays network capabilities granted to grains. By default, grains have very limited network access. A grain can request full network access while it is being used. Only an admin can approve the request, which grants a \"network capability\" to the grain.",
       "newAdminNetworkCapabilitiesTableCapabilityRow": {
         "adminAccount": "Administrator account %s",
         "unknownGranter": "Onbekende toestemming gever",
@@ -1802,6 +1840,8 @@
       "oasis": "Begin met anderen samen te werken door Sandstorm op Oasis te gebruiken:",
       "createAccount": "Maak een gratis account aan »",
       "demoHint": "Uw demo data zal worden overgebracht.",
+      "selfHostHint": "*_This is a limited-time demo. If you want to use Sandstorm for real, install it on your own server (it's open source):",
+      "signUp": "*_Demo time remaining:",
       "close": "Sluiten"
     },
     "powerbox": {

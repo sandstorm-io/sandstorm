@@ -160,6 +160,7 @@
     "title": "沙粒",
     "grainView": {
       "notFoundWithId": "找不到 ID 為 %s 的沙粒。",
+      "quotaExhausted": "*_Cannot start grain because owner's quota is exhausted. If this is your grain, please upgrade your subscription plan to continue.",
       "openWithWhichIdentity": "您要對此沙粒出示您的身份，或是保持匿名？",
       "openInIncognitoMode": "以無痕模式開啟",
       "revealMyIdentity": "出示身份"
@@ -217,6 +218,15 @@
       "cancel": "取消",
       "confirmHint": "下載備份檔",
       "confirm": "下載備份檔"
+    },
+    "grainCloneButton": {
+      "hint": "*_Clone Grain",
+      "text": "*_Clone",
+      "copyTitle": "*_Copy of %s"
+    },
+    "grainClonePopup": {
+      "title": "*_Clone Grain",
+      "processing": "*_Cloning Grain..."
     },
     "grainRestartButton": {
       "hint": "重新啟動應用程式",
@@ -318,7 +328,6 @@
           "hint": "什麼是沙粒？"
         },
         "mainListButton": "檢視主列表",
-        "trashButton": "檢視回收桶(%s)",
         "restoreButton": "復原備份……",
         "search": {
           "placeholder": "搜尋 "
@@ -327,6 +336,8 @@
           "quota": "__quota__ 沙粒中 __count__ 個",
           "size": "共 __total__，已用 __size__"
         },
+        "trashButton": "檢視回收桶(%s)",
+        "moveToTrash": "移至回收桶",
         "trash": {
           "emptyButton": "清空所有回收桶",
           "explanation": "（回收桶內的沙粒會在 30 天後被自動移除。若要保留沙粒，請將其移回主列表。）"
@@ -340,7 +351,42 @@
           "hasApps": "選擇應用程式來創建您的第一粒沙。",
           "hasNoApp": "安裝應用程式來創建您的第一粒沙。"
         },
-        "moveToTrash": "移至回收桶"
+        "transfers": {
+          "massTransfer": "*_Mass transfer...",
+          "transfers": "*_Transfers",
+          "transfer": "*_Transfer",
+          "blockedInitiateBeforeSource": "*_It looks like you're trying to initiate a new transfer from",
+          "blockedInitiateAfterSource": "*_, but you already have a transfer in progress. Please complete or cancel the existing transfer to continue.",
+          "incomingTransferActive": "*_Incoming transfer active",
+          "cancel": "*_Cancel",
+          "remaining": "*_Remaining",
+          "retryErrors": "*_Retry Errors",
+          "pauseTransfer": "*_Pause Transfer",
+          "continueTransfer": "*_Continue Transfer",
+          "startTransfer": "*_Start Transfer",
+          "closeTransfer": "*_Close Transfer",
+          "outgoingTransferActive": "*_Outgoing transfer active",
+          "currentlyTransferring": "*_You are currently transferring grains to:",
+          "manageAt": "*_Manage your transfer at:",
+          "inOrder": "*_In order to start a new transfer (incoming or outgoing), you must cancel the existing one.",
+          "cancelTransfer": "*_Cancel Transfer",
+          "initiateInboundTransfer": "*_Initiate Inbound Transfer",
+          "initiateOutboundTransfer": "*_Initiate Outbound Transfer",
+          "theSandstormServerAt": "*_The Sandstorm server at",
+          "wantsToTransfer": "*_wants to transfer grains to this server.",
+          "insecureSource": "*_WARNING: The source server does not support HTTPS. Data will be transferred without encryption.",
+          "deny": "*_Deny",
+          "fetchGrainList": "*_Fetch grain list",
+          "noTransfersInProgress": "*_No transfers are currently in progress.",
+          "transferAllMyGrainsTo": "*_Transfer all my grains to:",
+          "initiateTransfer": "*_Initiate Transfer",
+          "whatDoesThisDo": "*_What does this do?",
+          "whatCan": "*_You can use this function to transfer all of your grains to a new Sandstorm server. This automates the process of saving a backup of each grain on this server, then restoring each backup on the server you specify.",
+          "whatWhen": "*_When you initiate the transfer above, you will be redirected to the <strong>destination</strong> server where you will be prompted to sign in. You will then be given the option to choose which grains to transfer, and then finally you will initiate the transfer. The transfer will continue in the background; you can log off.",
+          "whatOrder": "*_In order for a transfer to work, the <strong>destination</strong> server must be able to reach the <strong>source</strong> server directly over the internet. However, the reverse is not necessary. Thus, you can perform a mass transfer that transfers grains from a server on the public internet (like Sandstorm Oasis) to a server on a private internal network, but not vice versa. If the <strong>source</strong> server supports HTTPS, then the transfer will take place over HTTPS, regardless of the <strong>destination</strong> server's protocol.",
+          "warningGiving": "*_WARNING: You are giving %s permission to download all your grains from this server. Are you sure?",
+          "errorAcceptingTransfer": "*_Error accepting transfer:"
+        }
       },
       "sandstormGrainTable": {
         "bulkAction": {
@@ -556,6 +602,28 @@
         "enableButton": "Enable",
         "cancelButton": "Cancel",
         "disableButton": "Disable"
+      },
+      "oidcLoginSetupInstructions": {
+        "explanation": "*_First, you'll need to get a OpenID Connect Client ID and Client secret. Follow these steps:",
+        "step1": "*_Visit the configuration interface of your identity provider",
+        "step2": "*_Set Homepage URL to: <span class=\"idp-config-url\">%s</span>",
+        "step3": "*_Set Authorization callback URL to: <span class=\"idp-config-url\">%s_oauth/oidc</span>"
+      },
+      "adminIdentityProviderConfigureOidc": {
+        "title": "*_OpenID Connect login configuration",
+        "formerBaseUrlWarning": "*_This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to provide your identity provider with the updated Homepage URL and Authorization callback URL for this application to the values below.",
+        "server-explanation": "*_Fill in your identity provider details:",
+        "explanation": "*_Then, copy over your Client ID and Client secret below:",
+        "clientId": "*_Client ID:",
+        "clientSecret": "*_Client secret:",
+        "serverUrl": "*_Identity Server URL:",
+        "authorizationEndpoint": "*_Authorization Endpoint:",
+        "tokenEndpoint": "*_Token Endpoint:",
+        "userinfoEndpoint": "*_User Info Endpoint:",
+        "saveButton": "*_Save",
+        "enableButton": "*_Enable",
+        "cancelButton": "*_Cancel",
+        "disableButton": "*_Disable"
       },
       "githubLoginSetupInstructions": {
         "explanation": "First, you'll need to get a Github Client ID and Client secret. Follow these steps:",
@@ -877,6 +945,11 @@
         "restoreButton": "回復預設值"
       }
     },
+    "certificates": {
+      "name": "*_SSL/TLS Certificates",
+      "subtext": "*_Configure certificates manually or using Let's Encrypt.",
+      "newAdminCertificates": {}
+    },
     "users": {
       "name": "使用者",
       "subtext": "管理此沙聚雲上的使用者。"
@@ -1162,6 +1235,7 @@
     "networkCapabilities": {
       "name": "網路容量",
       "subtext": "管理沙粒的網路直接存取量。",
+      "explanation": "*_This page displays network capabilities granted to grains. By default, grains have very limited network access. A grain can request full network access while it is being used. Only an admin can approve the request, which grants a \"network capability\" to the grain.",
       "newAdminNetworkCapabilitiesTableCapabilityRow": {
         "adminAccount": "Admin account %s",
         "unknownGranter": "Unknown granter",
@@ -1452,7 +1526,8 @@
       },
       "_loginButtonsLoggedOutDropdown": {
         "demo": {
-          "title": "Create account"
+          "title": "Create account",
+          "explanation": "*_WARNING: Your demo data will be deleted."
         },
         "title": "登入",
         "shared": {
@@ -1765,6 +1840,8 @@
       "oasis": "在 Oasis 上使用沙聚雲進行協作：",
       "createAccount": "建立免費帳號 »",
       "demoHint": "您的試用帳號資料會被保留。",
+      "selfHostHint": "*_This is a limited-time demo. If you want to use Sandstorm for real, install it on your own server (it's open source):",
+      "signUp": "*_Demo time remaining:",
       "close": "關閉"
     },
     "powerbox": {

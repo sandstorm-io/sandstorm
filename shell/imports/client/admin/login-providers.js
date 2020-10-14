@@ -4,6 +4,7 @@ import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { TAPi18n } from "meteor/tap:i18n";
 import { Iron } from "meteor/iron:core";
+import { ServiceConfiguration } from 'meteor/service-configuration';
 
 import { globalDb } from "/imports/db-deprecated.js";
 
@@ -484,7 +485,7 @@ Template.adminLoginProviderConfigureOIDC.events({
     instance.formChanged.set(true);
   },
 
-  "click .idp-modal-save"(evt) {
+  "click .idp-modal-save"() {
     const instance = Template.instance();
     const token = Iron.controller().state.get("token");
     const configuration = {
@@ -508,13 +509,13 @@ Template.adminLoginProviderConfigureOIDC.events({
     });
   },
 
-  "click .idp-modal-disable"(evt) {
+  "click .idp-modal-disable"() {
     const instance = Template.instance();
     const token = Iron.controller().state.get("token");
     Meteor.call("setAccountSetting", token, "oidc", false, instance.setAccountSettingCallback);
   },
 
-  "click .idp-modal-cancel"(evt) {
+  "click .idp-modal-cancel"() {
     const instance = Template.instance();
     // double invocation because there's no way to pass a callback function around in Blaze without
     // invoking it, and we need to pass it to modalDialogWithBackdrop

@@ -75,6 +75,7 @@
       "header": {
         "isPaid": {
           "title": "Obtenez jusqu'à <span class=\"reward-amount\">30 Go</span> d'espace de stockage gratuit lorsque vos amis partagent sur Oasis !",
+
           "explanation": "Vous recevez 2 Go à chaque fois qu'un ami crée un lien de partage."
         },
         "isNotPaid": {
@@ -160,7 +161,6 @@
     "title": "Grains",
     "grainView": {
       "notFoundWithId": "Aucun grain trouvé avec l'identifiant %s.",
-      "quotaExhausted": "*_Cannot start grain because owner's quota is exhausted. If this is your grain, please upgrade your subscription plan to continue.",
       "openWithWhichIdentity": "Choisissez vous de montrer votre identité pour ce grain ou de rester anonyme ?",
       "openInIncognitoMode": "Ouvrir anonymement",
       "revealMyIdentity": "Montrer mon identité"
@@ -218,15 +218,6 @@
       "cancel": "Annuler",
       "confirmHint": "Téléchargement de la sauvegarde",
       "confirm": "Téléchargement de la sauvegarde"
-    },
-    "grainCloneButton": {
-      "hint": "*_Clone Grain",
-      "text": "*_Clone",
-      "copyTitle": "*_Copy of %s"
-    },
-    "grainClonePopup": {
-      "title": "*_Clone Grain",
-      "processing": "*_Cloning Grain..."
     },
     "grainRestartButton": {
       "hint": "Redémarrage de l'application",
@@ -328,6 +319,7 @@
           "hint": "Qu'est-ce qu'un grain ?"
         },
         "mainListButton": "Voir la liste principale",
+        "trashButton": "Voir la corbeille (%s)",
         "restoreButton": "Restaurer une sauvegarde…",
         "search": {
           "placeholder": "rechercher…"
@@ -336,8 +328,6 @@
           "quota": "__count__ sur __quota__ grains",
           "size": "__size__ sur __total__ utilisés"
         },
-        "trashButton": "Voir la corbeille (%s)",
-        "moveToTrash": "Déplacer dans la corbeille",
         "trash": {
           "emptyButton": "Vider complètement la corbeille",
           "explanation": "(Les grains seront définitivement supprimés après 30 jours dans la corbeille. Pour conserver un grain, il faut le remettre dans la liste principale.)"
@@ -351,42 +341,7 @@
           "hasApps": "Sélectionnez  une application et créez votre premier grain.",
           "hasNoApp": "Installez une application pour créer votre premier grain."
         },
-        "transfers": {
-          "massTransfer": "*_Mass transfer...",
-          "transfers": "*_Transfers",
-          "transfer": "*_Transfer",
-          "blockedInitiateBeforeSource": "*_It looks like you're trying to initiate a new transfer from",
-          "blockedInitiateAfterSource": "*_, but you already have a transfer in progress. Please complete or cancel the existing transfer to continue.",
-          "incomingTransferActive": "*_Incoming transfer active",
-          "cancel": "*_Cancel",
-          "remaining": "*_Remaining",
-          "retryErrors": "*_Retry Errors",
-          "pauseTransfer": "*_Pause Transfer",
-          "continueTransfer": "*_Continue Transfer",
-          "startTransfer": "*_Start Transfer",
-          "closeTransfer": "*_Close Transfer",
-          "outgoingTransferActive": "*_Outgoing transfer active",
-          "currentlyTransferring": "*_You are currently transferring grains to:",
-          "manageAt": "*_Manage your transfer at:",
-          "inOrder": "*_In order to start a new transfer (incoming or outgoing), you must cancel the existing one.",
-          "cancelTransfer": "*_Cancel Transfer",
-          "initiateInboundTransfer": "*_Initiate Inbound Transfer",
-          "initiateOutboundTransfer": "*_Initiate Outbound Transfer",
-          "theSandstormServerAt": "*_The Sandstorm server at",
-          "wantsToTransfer": "*_wants to transfer grains to this server.",
-          "insecureSource": "*_WARNING: The source server does not support HTTPS. Data will be transferred without encryption.",
-          "deny": "*_Deny",
-          "fetchGrainList": "*_Fetch grain list",
-          "noTransfersInProgress": "*_No transfers are currently in progress.",
-          "transferAllMyGrainsTo": "*_Transfer all my grains to:",
-          "initiateTransfer": "*_Initiate Transfer",
-          "whatDoesThisDo": "*_What does this do?",
-          "whatCan": "*_You can use this function to transfer all of your grains to a new Sandstorm server. This automates the process of saving a backup of each grain on this server, then restoring each backup on the server you specify.",
-          "whatWhen": "*_When you initiate the transfer above, you will be redirected to the <strong>destination</strong> server where you will be prompted to sign in. You will then be given the option to choose which grains to transfer, and then finally you will initiate the transfer. The transfer will continue in the background; you can log off.",
-          "whatOrder": "*_In order for a transfer to work, the <strong>destination</strong> server must be able to reach the <strong>source</strong> server directly over the internet. However, the reverse is not necessary. Thus, you can perform a mass transfer that transfers grains from a server on the public internet (like Sandstorm Oasis) to a server on a private internal network, but not vice versa. If the <strong>source</strong> server supports HTTPS, then the transfer will take place over HTTPS, regardless of the <strong>destination</strong> server's protocol.",
-          "warningGiving": "*_WARNING: You are giving %s permission to download all your grains from this server. Are you sure?",
-          "errorAcceptingTransfer": "*_Error accepting transfer:"
-        }
+        "moveToTrash": "Déplacer dans la corbeille"
       },
       "sandstormGrainTable": {
         "bulkAction": {
@@ -945,11 +900,6 @@
         "restoreButton": "Restaurer les valeurs par default"
       }
     },
-    "certificates": {
-      "name": "*_SSL/TLS Certificates",
-      "subtext": "*_Configure certificates manually or using Let's Encrypt.",
-      "newAdminCertificates": {}
-    },
     "users": {
       "name": "Utilisateurs",
       "subtext": "Gérer tous les utilisateurs de cette installation Sandstorm."
@@ -1235,7 +1185,6 @@
     "networkCapabilities": {
       "name": "Capacités réseau",
       "subtext": "Gérer l'accès direct au réseau des grains.",
-      "explanation": "*_This page displays network capabilities granted to grains. By default, grains have very limited network access. A grain can request full network access while it is being used. Only an admin can approve the request, which grants a \"network capability\" to the grain.",
       "newAdminNetworkCapabilitiesTableCapabilityRow": {
         "adminAccount": "Compte d'administrateur %s",
         "unknownGranter": "Concédant inconnu",
@@ -1840,8 +1789,6 @@
       "oasis": "Commencer à collaborer avec d'autres en utilisant Sandstorm sur Oasis :",
       "createAccount": "Créer un compte gratuit »",
       "demoHint": "Les données de votre compte d'essai seront transférées.",
-      "selfHostHint": "*_This is a limited-time demo. If you want to use Sandstorm for real, install it on your own server (it's open source):",
-      "signUp": "*_Demo time remaining:",
       "close": "Fermer"
     },
     "powerbox": {

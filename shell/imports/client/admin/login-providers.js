@@ -34,7 +34,7 @@ const idpData = function (configureCallback) {
       label: "OpenID Connect",
       icon: "/email.svg", // Or use identicons
       enabled: oidcEnabled,
-      popupTemplate: "adminLoginProviderConfigureOIDC",
+      popupTemplate: "adminLoginProviderConfigureOidc",
       onConfigure() {
         configureCallback("oidc");
       },
@@ -403,8 +403,8 @@ Template.adminLoginProviderConfigureGitHub.events({
   },
 });
 
-// OIDC form.
-Template.adminLoginProviderConfigureOIDC.onCreated(function () {
+// Oidc form.
+Template.adminLoginProviderConfigureOidc.onCreated(function () {
   const configurations = ServiceConfiguration.configurations;
   const oidcConfiguration = configurations.findOne({ service: "oidc" });
   const clientId = (oidcConfiguration && oidcConfiguration.clientId) || "";
@@ -419,12 +419,12 @@ Template.adminLoginProviderConfigureOIDC.onCreated(function () {
   this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
 });
 
-Template.adminLoginProviderConfigureOIDC.onRendered(function () {
+Template.adminLoginProviderConfigureOidc.onRendered(function () {
   // Focus the first input when the form is shown.
   this.find("input").focus();
 });
 
-Template.adminLoginProviderConfigureOIDC.helpers({
+Template.adminLoginProviderConfigureOidc.helpers({
   oidcEnabled() {
     return globalDb.getSettingWithFallback("oidc", false);
   },
@@ -466,7 +466,7 @@ Template.adminLoginProviderConfigureOIDC.helpers({
   },
 });
 
-Template.adminLoginProviderConfigureOIDC.events({
+Template.adminLoginProviderConfigureOidc.events({
   "input input[name=clientId]"(evt) {
     const instance = Template.instance();
     instance.clientId.set(evt.currentTarget.value);

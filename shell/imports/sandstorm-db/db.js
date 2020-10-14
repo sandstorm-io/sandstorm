@@ -150,15 +150,15 @@ const collectionOptions = { defineMutationMethods: Meteor.isClient };
 //       freeGrainLimit: Value is "control" or or a number indicating the grain limit that the
 //               user should receive when on the "free" plan, e.g. "Infinity".
 
-Meteor.users.ensureIndexOnServer("services.oidc.email", { sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.google.email", { sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.github.emails.email", { sparse: 1 });
+Meteor.users.ensureIndexOnServer("services.oidc.email", { sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.email.email", { unique: 1, sparse: 1 });
 Meteor.users.ensureIndexOnServer("loginCredentials.id", { unique: 1, sparse: 1 });
 Meteor.users.ensureIndexOnServer("nonloginCredentials.id", { sparse: 1 });
-Meteor.users.ensureIndexOnServer("services.oidc.id", { sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.google.id", { unique: 1, sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.github.id", { unique: 1, sparse: 1 });
+Meteor.users.ensureIndexOnServer("services.oidc.id", { sparse: 1 });
 Meteor.users.ensureIndexOnServer("suspended.willDelete", { sparse: 1 });
 
 const Packages = new Mongo.Collection("packages", collectionOptions);

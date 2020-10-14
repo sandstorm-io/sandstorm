@@ -132,10 +132,10 @@ Accounts.onCreateUser(function (options, user) {
     serviceUserId = user.services.google.id;
   } else if (user.services && "github" in user.services) {
     serviceUserId = user.services.github.id;
-  } else if (user.services && "oidc" in user.services) {
-    serviceUserId = user.services.oidc.id;
   } else if (user.services && "ldap" in user.services) {
     serviceUserId = user.services.ldap.id;
+  } else if (user.services && "oidc" in user.services) {
+    serviceUserId = user.services.oidc.id;
   } else if (user.services && "saml" in user.services) {
     serviceUserId = user.services.saml.id;
   } else {

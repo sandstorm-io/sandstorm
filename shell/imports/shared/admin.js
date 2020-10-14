@@ -28,32 +28,6 @@ function serviceEnabled(name) {
   return setting && !!setting.value;
 }
 
-Accounts.loginServices.oidc = {
-  isEnabled: function () {
-    return serviceEnabled("oidc");
-  },
-
-  getLoginId: function (identity) {
-    return identity.services.oidc.id;
-  },
-
-  initiateLogin: function (_loginId) {
-    Meteor.loginWithOidc();
-    return { oneClick: true };
-  },
-
-  loginTemplate: {
-    name: "oauthLoginButton",
-    priority: 30,
-    data: {
-      method: "loginWithOidc",
-      name: "oidc",
-      displayName: "OpenID Connect",
-      linkingNewCredential: false,
-    },
-  },
-};
-
 Accounts.loginServices.github = {
   isEnabled: function () {
     return serviceEnabled("github");
@@ -141,6 +115,32 @@ Accounts.loginServices.ldap = {
   loginTemplate: {
     name: "ldapLoginForm",
     priority: 21, // Put it at the bottom of the list.
+  },
+};
+
+Accounts.loginServices.oidc = {
+  isEnabled: function () {
+    return serviceEnabled("oidc");
+  },
+
+  getLoginId: function (identity) {
+    return identity.services.oidc.id;
+  },
+
+  initiateLogin: function (_loginId) {
+    Meteor.loginWithOidc();
+    return { oneClick: true };
+  },
+
+  loginTemplate: {
+    name: "oauthLoginButton",
+    priority: 30,
+    data: {
+      method: "loginWithOidc",
+      name: "oidc",
+      displayName: "OpenID Connect",
+      linkingNewCredential: false,
+    },
   },
 };
 

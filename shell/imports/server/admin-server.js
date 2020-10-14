@@ -34,7 +34,7 @@ import { HTTP } from "meteor/http";
 import { createAcmeAccount, renewCertificateNow } from "/imports/server/acme.js";
 
 const publicAdminSettings = [
-  "google", "github", "oidc", "ldap", "saml", "emailToken", "splashUrl", "signupDialog",
+  "google", "github", "ldap", "oidc", "saml", "emailToken", "splashUrl", "signupDialog",
   "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
   "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled",
   "serverTitle", "returnAddress", "ldapNameField", "organizationMembership",
@@ -80,8 +80,12 @@ Meteor.methods({
           serviceName + " service before you can enable it. Click the \"configure\" link.");
       }
 
-      if (serviceName === "oidc" && !config.serverUrl) {
-        throw new Meteor.Error(403, "You must provide a non-empty serverUrl for the " +
+      if (serviceName === "oidc" &&
+        (!config.serverUrl ||
+          !config.authorizationEndpoint ||
+          !config.tokenEndpoint ||
+          !config.userinfoEndpoint)) {
+        throw new Meteor.Error(403, "You must provide a full set of server parameters for the " +
           serviceName + " service before you can enable it. Click the \"configure\" link.");
       }
     }

@@ -603,28 +603,6 @@
         "cancelButton": "Cancel",
         "disableButton": "Disable"
       },
-      "oidcLoginSetupInstructions": {
-        "explanation": "*_First, you'll need to get a OpenID Connect Client ID and Client secret. Follow these steps:",
-        "step1": "*_Visit the configuration interface of your identity provider",
-        "step2": "*_Set Homepage URL to: <span class=\"idp-config-url\">%s</span>",
-        "step3": "*_Set Authorization callback URL to: <span class=\"idp-config-url\">%s_oauth/oidc</span>"
-      },
-      "adminIdentityProviderConfigureOidc": {
-        "title": "*_OpenID Connect login configuration",
-        "formerBaseUrlWarning": "*_This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to provide your identity provider with the updated Homepage URL and Authorization callback URL for this application to the values below.",
-        "server-explanation": "*_Fill in your identity provider details:",
-        "explanation": "*_Then, copy over your Client ID and Client secret below:",
-        "clientId": "*_Client ID:",
-        "clientSecret": "*_Client secret:",
-        "serverUrl": "*_Identity Server URL:",
-        "authorizationEndpoint": "*_Authorization Endpoint:",
-        "tokenEndpoint": "*_Token Endpoint:",
-        "userinfoEndpoint": "*_User Info Endpoint:",
-        "saveButton": "*_Save",
-        "enableButton": "*_Enable",
-        "cancelButton": "*_Cancel",
-        "disableButton": "*_Disable"
-      },
       "githubLoginSetupInstructions": {
         "explanation": "First, you'll need to get a Github Client ID and Client secret. Follow these steps:",
         "step1": "Visit <a href=\"https://github.com/settings/applications/new\" target=\"blank\">https://github.com/settings/applications/new</a>",
@@ -686,6 +664,28 @@
         "enableButton": "Enable",
         "cancelButton": "Cancel",
         "disableButton": "Disable"
+      },
+      "oidcLoginSetupInstructions": {
+        "explanation": "*_First, you'll need to get a OpenID Connect Client ID and Client secret. Follow these steps:",
+        "step1": "*_Visit the configuration interface of your identity provider",
+        "step2": "*_Set Homepage URL to: <span class=\"idp-config-url\">%s</span>",
+        "step3": "*_Set Authorization callback URL to: <span class=\"idp-config-url\">%s_oauth/oidc</span>"
+      },
+      "adminIdentityProviderConfigureOidc": {
+        "title": "*_OpenID Connect login configuration",
+        "formerBaseUrlWarning": "*_This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to provide your identity provider with the updated Homepage URL and Authorization callback URL for this application to the values below.",
+        "server-explanation": "*_Fill in your identity provider details:",
+        "explanation": "*_Then, copy over your Client ID and Client secret below:",
+        "clientId": "*_Client ID:",
+        "clientSecret": "*_Client secret:",
+        "serverUrl": "*_Identity Server URL:",
+        "authorizationEndpoint": "*_Authorization Endpoint:",
+        "tokenEndpoint": "*_Token Endpoint:",
+        "userinfoEndpoint": "*_User Info Endpoint:",
+        "saveButton": "*_Save",
+        "enableButton": "*_Enable",
+        "cancelButton": "*_Cancel",
+        "disableButton": "*_Disable"
       },
       "adminIdentityProviderConfigureSaml": {
         "title": "SAML login configuration",

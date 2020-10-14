@@ -30,16 +30,6 @@ const idpData = function (configureCallback) {
       },
     },
     {
-      id: "oidc",
-      label: "OpenID Connect",
-      icon: "/ldap.svg", // Or use identicons
-      enabled: oidcEnabled,
-      popupTemplate: "adminLoginProviderConfigureOidc",
-      onConfigure() {
-        configureCallback("oidc");
-      },
-    },
-    {
       id: "google",
       label: "Google",
       icon: "/google.svg", // Or use identicons
@@ -69,6 +59,16 @@ const idpData = function (configureCallback) {
       popupTemplate: "adminLoginProviderConfigureLdap",
       onConfigure() {
         configureCallback("ldap");
+      },
+    },
+    {
+      id: "oidc",
+      label: "OpenID Connect",
+      icon: "/ldap.svg", // Or use identicons
+      enabled: oidcEnabled,
+      popupTemplate: "adminLoginProviderConfigureOidc",
+      onConfigure() {
+        configureCallback("oidc");
       },
     },
     {
@@ -403,177 +403,6 @@ Template.adminLoginProviderConfigureGitHub.events({
   },
 });
 
-Template.oidcLoginSetupInstructions.helpers({
-  siteUrl() {
-    return Meteor.absoluteUrl();
-  },
-});
-
-// Oidc form.
-Template.adminLoginProviderConfigureOidc.onCreated(function () {
-  const configurations = ServiceConfiguration.configurations;
-  const oidcConfiguration = configurations.findOne({ service: "oidc" });
-  const clientId = (oidcConfiguration && oidcConfiguration.clientId) || "";
-  const clientSecret = (oidcConfiguration && oidcConfiguration.secret) || "";
-  const serverUrl = (oidcConfiguration && oidcConfiguration.serverUrl) || "";
-  const authorizationEndpoint = (oidcConfiguration && oidcConfiguration.authorizationEndpoint) || "";
-  const tokenEndpoint = (oidcConfiguration && oidcConfiguration.tokenEndpoint) || "";
-  const userinfoEndpoint = (oidcConfiguration && oidcConfiguration.userinfoEndpoint) || "";
-
-  this.clientId = new ReactiveVar(clientId);
-  this.clientSecret = new ReactiveVar(clientSecret);
-  this.serverUrl = new ReactiveVar(serverUrl);
-  this.authorizationEndpoint = new ReactiveVar(authorizationEndpoint);
-  this.tokenEndpoint = new ReactiveVar(tokenEndpoint);
-  this.userinfoEndpoint = new ReactiveVar(userinfoEndpoint);
-  this.errorMessage = new ReactiveVar(undefined);
-  this.formChanged = new ReactiveVar(false);
-  this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
-});
-
-Template.adminLoginProviderConfigureOidc.onRendered(function () {
-  // Focus the first input when the form is shown.
-  this.find("input").focus();
-});
-
-Template.adminLoginProviderConfigureOidc.helpers({
-  oidcEnabled() {
-    return globalDb.getSettingWithFallback("oidc", false);
-  },
-
-  formerBaseUrl() {
-    const setting = globalDb.collections.settings.findOne("oidc");
-    const googleEnabled = (setting && setting.value) || false;
-    return !googleEnabled && setting && setting.automaticallyReset && setting.automaticallyReset.baseUrlChangedFrom;
-  },
-
-  siteUrl() {
-    return Meteor.absoluteUrl();
-  },
-
-  clientId() {
-    const instance = Template.instance();
-    return instance.clientId.get();
-  },
-
-  clientSecret() {
-    const instance = Template.instance();
-    return instance.clientSecret.get();
-  },
-
-  serverUrl() {
-    const instance = Template.instance();
-    return instance.serverUrl.get();
-  },
-
-  authorizationEndpoint() {
-    const instance = Template.instance();
-    return instance.authorizationEndpoint.get();
-  },
-
-  tokenEndpoint() {
-    const instance = Template.instance();
-    return instance.tokenEndpoint.get();
-  },
-
-  userinfoEndpoint() {
-    const instance = Template.instance();
-    return instance.userinfoEndpoint.get();
-  },
-
-  saveDisabled() {
-    const instance = Template.instance();
-    const oidcEnabled = globalDb.getSettingWithFallback("oidc", false);
-    return (oidcEnabled && !instance.formChanged.get())
-      || !instance.clientId.get()
-      || !instance.clientSecret.get()
-      || !instance.serverUrl.get()
-      || !instance.authorizationEndpoint.get()
-      || !instance.tokenEndpoint.get()
-      || !instance.userinfoEndpoint.get();
-  },
-
-  errorMessage() {
-    const instance = Template.instance();
-    return instance.errorMessage.get();
-  },
-});
-
-Template.adminLoginProviderConfigureOidc.events({
-  "input input[name=clientId]"(evt) {
-    const instance = Template.instance();
-    instance.clientId.set(evt.currentTarget.value);
-    instance.formChanged.set(true);
-  },
-
-  "input input[name=clientSecret]"(evt) {
-    const instance = Template.instance();
-    instance.clientSecret.set(evt.currentTarget.value);
-    instance.formChanged.set(true);
-  },
-
-  "input input[name=serverUrl]"(evt) {
-    const instance = Template.instance();
-    instance.serverUrl.set(evt.currentTarget.value);
-    instance.formChanged.set(true);
-  },
-
-  "input input[name=authorizationEndpoint]"(evt) {
-    const instance = Template.instance();
-    instance.authorizationEndpoint.set(evt.currentTarget.value);
-    instance.formChanged.set(true);
-  },
-
-  "input input[name=tokenEndpoint]"(evt) {
-    const instance = Template.instance();
-    instance.tokenEndpoint.set(evt.currentTarget.value);
-    instance.formChanged.set(true);
-  },
-
-  "input input[name=userinfoEndpoint]"(evt) {
-    const instance = Template.instance();
-    instance.userinfoEndpoint.set(evt.currentTarget.value);
-    instance.formChanged.set(true);
-  },
-
-  "click .idp-modal-save"() {
-    const instance = Template.instance();
-    const token = Iron.controller().state.get("token");
-    const configuration = {
-      service: "oidc",
-      clientId: instance.clientId.get().trim(),
-      secret: instance.clientSecret.get().trim(),
-      serverUrl: instance.serverUrl.get().trim(),
-      loginStyle: "redirect",
-      authorizationEndpoint: instance.authorizationEndpoint.get().trim(),
-      tokenEndpoint: instance.tokenEndpoint.get().trim(),
-      userinfoEndpoint: instance.userinfoEndpoint.get().trim(),
-      idTokenWhitelistFields: []
-    };
-    // TODO: rework this into a single Meteor method call.
-    Meteor.call("adminConfigureLoginService", token, configuration, (err) => {
-      if (err) {
-        instance.errorMessage.set(err.message);
-      } else {
-        Meteor.call("setAccountSetting", token, "oidc", true, instance.setAccountSettingCallback);
-      }
-    });
-  },
-
-  "click .idp-modal-disable"() {
-    const instance = Template.instance();
-    const token = Iron.controller().state.get("token");
-    Meteor.call("setAccountSetting", token, "oidc", false, instance.setAccountSettingCallback);
-  },
-
-  "click .idp-modal-cancel"() {
-    const instance = Template.instance();
-    // double invocation because there's no way to pass a callback function around in Blaze without
-    // invoking it, and we need to pass it to modalDialogWithBackdrop
-    instance.data.onDismiss()();
-  },
-});
-
 // LDAP form.
 Template.adminLoginProviderConfigureLdap.onCreated(function () {
   const url = globalDb.getLdapUrl();
@@ -788,6 +617,177 @@ Template.adminLoginProviderConfigureLdap.events({
   },
 
   "click .idp-modal-cancel"(evt) {
+    const instance = Template.instance();
+    // double invocation because there's no way to pass a callback function around in Blaze without
+    // invoking it, and we need to pass it to modalDialogWithBackdrop
+    instance.data.onDismiss()();
+  },
+});
+
+Template.oidcLoginSetupInstructions.helpers({
+  siteUrl() {
+    return Meteor.absoluteUrl();
+  },
+});
+
+// Oidc form.
+Template.adminLoginProviderConfigureOidc.onCreated(function () {
+  const configurations = ServiceConfiguration.configurations;
+  const oidcConfiguration = configurations.findOne({ service: "oidc" });
+  const serverUrl = (oidcConfiguration && oidcConfiguration.serverUrl) || "";
+  const authorizationEndpoint = (oidcConfiguration && oidcConfiguration.authorizationEndpoint) || "";
+  const tokenEndpoint = (oidcConfiguration && oidcConfiguration.tokenEndpoint) || "";
+  const userinfoEndpoint = (oidcConfiguration && oidcConfiguration.userinfoEndpoint) || "";
+  const clientId = (oidcConfiguration && oidcConfiguration.clientId) || "";
+  const clientSecret = (oidcConfiguration && oidcConfiguration.secret) || "";
+
+  this.serverUrl = new ReactiveVar(serverUrl);
+  this.authorizationEndpoint = new ReactiveVar(authorizationEndpoint);
+  this.tokenEndpoint = new ReactiveVar(tokenEndpoint);
+  this.userinfoEndpoint = new ReactiveVar(userinfoEndpoint);
+  this.clientId = new ReactiveVar(clientId);
+  this.clientSecret = new ReactiveVar(clientSecret);
+  this.errorMessage = new ReactiveVar(undefined);
+  this.formChanged = new ReactiveVar(false);
+  this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
+});
+
+Template.adminLoginProviderConfigureOidc.onRendered(function () {
+  // Focus the first input when the form is shown.
+  this.find("input").focus();
+});
+
+Template.adminLoginProviderConfigureOidc.helpers({
+  oidcEnabled() {
+    return globalDb.getSettingWithFallback("oidc", false);
+  },
+
+  formerBaseUrl() {
+    const setting = globalDb.collections.settings.findOne("oidc");
+    const googleEnabled = (setting && setting.value) || false;
+    return !googleEnabled && setting && setting.automaticallyReset && setting.automaticallyReset.baseUrlChangedFrom;
+  },
+
+  siteUrl() {
+    return Meteor.absoluteUrl();
+  },
+
+  serverUrl() {
+    const instance = Template.instance();
+    return instance.serverUrl.get();
+  },
+
+  authorizationEndpoint() {
+    const instance = Template.instance();
+    return instance.authorizationEndpoint.get();
+  },
+
+  tokenEndpoint() {
+    const instance = Template.instance();
+    return instance.tokenEndpoint.get();
+  },
+
+  userinfoEndpoint() {
+    const instance = Template.instance();
+    return instance.userinfoEndpoint.get();
+  },
+
+  clientId() {
+    const instance = Template.instance();
+    return instance.clientId.get();
+  },
+
+  clientSecret() {
+    const instance = Template.instance();
+    return instance.clientSecret.get();
+  },
+
+  saveDisabled() {
+    const instance = Template.instance();
+    const oidcEnabled = globalDb.getSettingWithFallback("oidc", false);
+    return (oidcEnabled && !instance.formChanged.get())
+      || !instance.clientId.get()
+      || !instance.clientSecret.get()
+      || !instance.serverUrl.get()
+      || !instance.authorizationEndpoint.get()
+      || !instance.tokenEndpoint.get()
+      || !instance.userinfoEndpoint.get();
+  },
+
+  errorMessage() {
+    const instance = Template.instance();
+    return instance.errorMessage.get();
+  },
+});
+
+Template.adminLoginProviderConfigureOidc.events({
+  "input input[name=serverUrl]"(evt) {
+    const instance = Template.instance();
+    instance.serverUrl.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
+  "input input[name=authorizationEndpoint]"(evt) {
+    const instance = Template.instance();
+    instance.authorizationEndpoint.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
+  "input input[name=tokenEndpoint]"(evt) {
+    const instance = Template.instance();
+    instance.tokenEndpoint.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
+  "input input[name=userinfoEndpoint]"(evt) {
+    const instance = Template.instance();
+    instance.userinfoEndpoint.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
+  "input input[name=clientId]"(evt) {
+    const instance = Template.instance();
+    instance.clientId.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
+  "input input[name=clientSecret]"(evt) {
+    const instance = Template.instance();
+    instance.clientSecret.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
+  "click .idp-modal-save"() {
+    const instance = Template.instance();
+    const token = Iron.controller().state.get("token");
+    const configuration = {
+      service: "oidc",
+      clientId: instance.clientId.get().trim(),
+      secret: instance.clientSecret.get().trim(),
+      serverUrl: instance.serverUrl.get().trim(),
+      loginStyle: "redirect",
+      authorizationEndpoint: instance.authorizationEndpoint.get().trim(),
+      tokenEndpoint: instance.tokenEndpoint.get().trim(),
+      userinfoEndpoint: instance.userinfoEndpoint.get().trim(),
+      idTokenWhitelistFields: []
+    };
+    // TODO: rework this into a single Meteor method call.
+    Meteor.call("adminConfigureLoginService", token, configuration, (err) => {
+      if (err) {
+        instance.errorMessage.set(err.message);
+      } else {
+        Meteor.call("setAccountSetting", token, "oidc", true, instance.setAccountSettingCallback);
+      }
+    });
+  },
+
+  "click .idp-modal-disable"() {
+    const instance = Template.instance();
+    const token = Iron.controller().state.get("token");
+    Meteor.call("setAccountSetting", token, "oidc", false, instance.setAccountSettingCallback);
+  },
+
+  "click .idp-modal-cancel"() {
     const instance = Template.instance();
     // double invocation because there's no way to pass a callback function around in Blaze without
     // invoking it, and we need to pass it to modalDialogWithBackdrop

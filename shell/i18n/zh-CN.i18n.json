@@ -219,6 +219,15 @@
             "confirmHint": "下载备份",
             "confirm": "下载备份"
         },
+        "grainCloneButton": {
+            "hint": "克隆沙粒",
+            "text": "克隆",
+            "copyTitle": "Copy of %s"
+        },
+        "grainClonePopup": {
+            "title": "克隆沙粒",
+            "processing": "正在克隆..."
+        },
         "grainRestartButton": {
             "hint": "重新启动应用",
             "text": "重新启动"
@@ -531,7 +540,7 @@
         }
     },
     "admin": {
-        "title": "管理员",
+        "title": "管理员控制台",
         "admin": {
             "newAdmin": {
                 "title": "管理员控制台",
@@ -574,19 +583,19 @@
             "googleLoginSetupInstructions": {
                 "explanation": "首先，您需要取得 Google Client ID。遵循以下步骤：",
                 "step1": "访问 <a href=\"https://console.developers.google.com/\" target=\"blank\">https://console.developers.google.com/</a>",
-                "step2": "\"Create Project\", if needed. Wait for Google to finish provisioning.",
-                "step3": "On the left sidebar, go to \"Credentials\" and, on the right, \"OAuth consent screen\". Make sure to enter an email address and a product name, and save.",
-                "step4": "On the left sidebar, go to \"Credentials\".  Click the \"Create credentials\" button, then select \"OAuth client ID\" as the type.",
-                "step5": "Select \"Web application\" as your application type.",
-                "step6": "Set Authorized Javascript Origins to: <span class=\"idp-config-url\">%s</span>",
-                "step7": "Set Authorized Redirect URI to: <span class=\"idp-config-url\">%s/_oauth/google</span>",
-                "step8": "Finish by clicking \"Create\"."
+                "step2": "如果还未 \"新建项目\" 的话，需要新建一个。",
+                "step3": "在左侧侧边栏，选择 \"凭据\" 后，在右侧选择 \"配置同意屏幕\"。一定要填写一个名称和邮箱，然后保存。",
+                "step4": "再次回到左侧侧边栏, 选择 \"凭据\"。点击上方的 \"创建凭据\" 按钮，在下拉框中选择 \"OAuth 客户端 ID\"。",
+                "step5": "应用程序类型中选择 \"网页服务器\"。",
+                "step6": "设置已获授权的 JavaScript 来源为： <span class=\"idp-config-url\">%s</span>",
+                "step7": "设置已获授权的重定向 URI 为： <span class=\"idp-config-url\">%s/_oauth/google</span>",
+                "step8": "然后点击 \"创建\" 来完成操作。"
             },
             "adminIdentityProviderConfigureGoogle": {
-                "title": "Google login configuration",
-                "formerBaseUrlWarning": "This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to visit <a target=\"_blank\" href=\"https://console.developers.google.com/\">https://console.developers.google.com/</a> and update the \"Authorized Javascript Origins\" and \"Authorized Redirect URI\" for this Client ID to include the values below.",
-                "error": "Failed to save changes: %s",
-                "explanation": "Then, copy over your Client ID and Client secret below:",
+                "title": "设置通过 Google 登录",
+                "formerBaseUrlWarning": "服务器从 <code>__former__</code> 移动到了 <code>__current__</code>。你需要访问 <a target=\"_blank\" href=\"https://console.developers.google.com/\">https://console.developers.google.com/</a> 来更新 \"已获授权的 JavaScript 来源\" 和 \"已获授权的重定向 URI\" 以产生新的 Client ID 和 Client secret。",
+                "error": "无法存储变更: %s",
+                "explanation": "然后，将 Client ID 和 Client secret 复制到下面：",
                 "clientId": "Client ID:",
                 "clientSecret": "Client secret:",
                 "saveButton": "保存",
@@ -684,19 +693,19 @@
                 "disableButton": "禁用"
             },
             "adminIdentityProviderTable": {
-                "title": "Login provider",
-                "status": "Status"
+                "title": "身份提供者",
+                "status": "状态"
             },
             "adminIdentityRow": {
-                "enabled": "Enabled",
-                "disabled": "Not enabled",
+                "enabled": "开启",
+                "disabled": "未开启",
                 "baseUrlChanged": {
-                    "explanation": "Disabled due to BASE_URL change",
-                    "reconfigureButton": "reconfigure"
+                    "explanation": "因为 BASE_URL 被更改而禁用",
+                    "reconfigureButton": "重新配置"
                 },
                 "configureButton": {
-                    "hint": "Configure %s login",
-                    "text": "Configure"
+                    "hint": "配置以 %s 登录",
+                    "text": "配置"
                 }
             }
         },
@@ -704,47 +713,47 @@
             "name": "组织设置",
             "subtext": "让团队可以丝滑般上手及进行合作。",
             "organizationSettingsBlurb": {
-                "explanation": "Sandstorm allows you to define an organization. You can automatically apply some settings to all members of your organization. Users within the organization will automatically be able to log in, install apps, and create grains."
+                "explanation": "沙聚云允许您定义一个组织，你可以自动将一些设置应用给组织里的用户。沙聚云会自动让在组织内的用户登录、安装应用和创建沙粒。"
             },
             "newAdminOrganization": {
                 "success": "已保存设置。",
                 "error": "以下设置保存失败: %s",
                 "membership": {
-                    "title": "Organization membership",
+                    "title": "组织资格",
                     "emailToggle": {
-                        "label": "Users authenticated via email address",
-                        "subtext": "Note: disabled because email login is not configured."
+                        "label": "用户可通过电子邮件认证",
+                        "subtext": "注：该功能被禁用，因为未配置电子邮件服务。"
                     },
                     "emailDomain": {
-                        "label": "Domain:",
-                        "subtext": "Users with an email address at this domain will be members of this server's organization."
+                        "label": "域名:",
+                        "subtext": "用户如果持有这些域名下的邮箱，那么他们会成为该服务器上组织里的用户。"
                     },
                     "gappsToggle": {
-                        "label": "Users authenticated via Google Apps for Work",
-                        "subtext": "Note: disabled because Google login is not configured."
+                        "label": "用户可通过 Google Apps for Work 认证",
+                        "subtext": "注：该功能被禁用，因为未配置 Google 登录。"
                     },
                     "gappsDomain": {
-                        "label": "Domain:",
-                        "subtext": "Users with a Google Apps for Work account under this domain will be members of this server's organization."
+                        "label": "域名:",
+                        "subtext": "如果用户的 Google Apps for Work 帐户在该域名下，那么他们会成为该服务器上组织里的用户。"
                     },
                     "ldapToggle": {
-                        "label": "Users authenticated via LDAP",
-                        "subtext": "Note: disabled because LDAP login is not configured."
+                        "label": "用户可通过 LDAP 认证",
+                        "subtext": "注：该功能被禁用，因为未配置 LDAP 登录。"
                     },
                     "samlToggle": {
-                        "label": "Users authenticated via SAML",
-                        "subtext": "Note: disabled because SAML login is not configured."
+                        "label": "用户可通过 SAML 认证",
+                        "subtext": "注：该功能被禁用，因为未配置 SAML 登录。"
                     }
                 },
                 "settings": {
                     "title": "组织设置",
                     "disallowGuests": {
-                        "label": "Disallow collaboration with users outside the organization.",
-                        "subtext": "Users will be required to log in as a member of your organization to view sharing links. Guest access will be disabled."
+                        "label": "禁用与组织外用户的团队协作功能",
+                        "subtext": "用户必须要用团队内账号登录才能查看团队成员分享的连接，访客访问将会被禁用。"
                     },
                     "shareContacts": {
-                        "label": "Make all organization users visible to each other",
-                        "subtext": "This setting automatically adds users within the organization to each other's contact list so that they can share grains with each other.  Disable this if you have some users whose identity should stay hidden from other users."
+                        "label": "让组织内的所有用户都能看到彼此",
+                        "subtext": "该设置自动将团队内所有用户添加进彼此的通讯录，所以他们可以互相分享沙粒。如果你有需要向其他人隐藏身份的用户，那么需要禁用这个。"
                     }
                 },
                 "saveButton": "保存"
@@ -760,7 +769,7 @@
                 },
                 "howItWorks": {
                     "title": "沙聚云使用电子邮件的方式",
-                    "explanation": "沙聚云可以发送电子邮件，而沙聚云里面的应用程序也可以发送邮件。每一款应用程序都有一个独一无二的地址，所以沙聚云需要通过不同的「发件人」地址发送邮件。因此，Gmail 是不可用的，但是有其它免费的服务可以做到。更多详见<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">文档</a>"
+                    "explanation": "沙聚云可以发送电子邮件，而沙聚云里面的应用程序也可以发送邮件。每一款应用程序都有一个独一无二的地址，所以沙聚云需要通过不同的「发件人」地址发送邮件。因此，Gmail 是不可用的，但是有其它免费的服务可以做到。更多详见<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">文档</a>。"
                 },
                 "success": "已保存设置.",
                 "error": "以下设置保存更改失败: %s",
@@ -808,8 +817,8 @@
                     "subtext": "服务器的名称，在与用户们通讯时会用到。"
                 },
                 "splashUrl": {
-                    "label": "Splash URL (experimental):",
-                    "subtext": "This web page will be displayed in the background behind the login dialog (the home page when logged out). For security reasons, the page must be hosted within this Sandstorm server's wildcard host (otherwise it will be blocked by <code>Content-Security-Policy</code>). We suggest using a static web publishing app like <a target=\"_blank\" href=\"https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh/?host=%s\">Hacker CMS</a> to host content.<strong>WARNING: This feature is experimental; in particular the style and positioning of the login box is subject to change without notice.</strong> Please let us know if you'd like to see it stabilize."
+                    "label": "Splash URL (实验期功能):",
+                    "subtext": "该网页会在显示在登录窗口的背景层里。因为安全原因，该网页的域名必须包含在沙聚云的野卡证书内（否则会被 <code>Content-Security-Policy</code> 挡掉）。我们建议使用类似 <a target=\"_blank\" href=\"https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh/?host=%s\">Hacker CMS</a> 一样的静态网页发布程序来托管内容。<strong>警告：这是实验期特性；登陆框的位置和样式可能会不经通知改变。</strong>如果你希望留下这个功能，那么告诉我们吧！"
                 },
                 "signupDialog": {
                     "label": "注册对话框:",
@@ -842,12 +851,12 @@
                         "label": "隐藏\"发送反馈\""
                     },
                     "useServerTitleForHomeText": {
-                        "label": "Use server title (above) for home link",
-                        "subtext": "If enabled, changes the default label \"Sandstorm\" on the link at the very top left to match whatever you specified for the Server title above."
+                        "label": "使用上方设置的服务器名称替换默认名称",
+                        "subtext": "如果开启该设置，左上角用来返回主页的 \"Sandstorm\" 将会被替换成您设置的服务器名称。"
                     },
                     "customLoginProviderName": {
                         "label": "自定义登录按钮文字",
-                        "subtext": "Replaces the text \"with LDAP\" and \"with SAML\" on the login page with the specified text."
+                        "subtext": "将登录页的 \"with LDAP\" 和 \"with SAML\" 替换成特别的文字。"
                     }
                 },
                 "saveButton": "保存"
@@ -859,7 +868,7 @@
             "newAdminPreinstalledApps": {
                 "explanation": "在这个页面设置的预装应用程序将会自动展示给新用户（在 /apps 里）。",
                 "productivitySuite": {
-                    "label": "Productivity Suite生产力套装",
+                    "label": "生产力套装",
                     "subtext": "我们推荐预装这些核心应用，这些对大部分用户都很实用。"
                 },
                 "systemSuite": {
@@ -912,6 +921,12 @@
                 },
                 "saveButton": "保存",
                 "restoreButton": "恢复默认设置"
+            }
+        },
+        "certificates": {
+            "name": "SSL/TLS 证书管理",
+            "subtext": "使用 Let's Encrypt 或手动设置证书。",
+            "newAdminCertificates": {
             }
         },
         "users": {
@@ -982,8 +997,8 @@
                     "notFound": "无已知电子邮件地址。"
                 },
                 "properties": {
-                    "login": "Can log in",
-                    "org": "Org. member"
+                    "login": "可以登录",
+                    "org": "组织成员"
                 },
                 "unkonwn": {
                     "profilePicture": {
@@ -1262,7 +1277,7 @@
             "uninstallingHint": "移除完成",
             "doneUninstalling": "移除完成",
             "uninstallHint": "移除应用程序",
-            "uninstallButton": "批次移除...",
+            "uninstallButton": "批量移除...",
             "uploadApp": "上传应用程序",
             "searchHint": "搜尋名稱",
             "search": "搜寻名称",

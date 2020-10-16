@@ -835,7 +835,7 @@
                     "subtext": "如果提供，新用户将被要求同意该隐私条款。"
                 },
                 "whitelabeling": {
-                    "title": "Whitelabeling",
+                    "title": "马甲配置",
                     "logo": {
                         "label": "自定义登录页面的 logo",
                         "resetButton": "使用默认",
@@ -917,7 +917,7 @@
             "newAdminNetworking": {
                 "ipBlacklist": {
                     "label": "服务器端请求 IP 黑名单:",
-                    "subtext": "Users will be prohibited from making requests to these IP addresses. This includes making a request from an app, downloading an SPK file from a user-provided URL, etc. You may specify one IP address or network (in CIDR notation, e.g. \"127.0.0.0/8\") per line. The default value includes standard local and private network addresses. Note that when an HTTP proxy is in use, this setting may be ignored; the proxy must implement its own blacklist."
+                    "subtext": "用户将被禁止向这些 IP 地址发出请求。这包括：从应用程序发出请求、从用户自定义的地址下载 spk 文件等。你可以每行指定一个 IP 地址，或一个网段（以 CIDR 表示，例如 \"127.0.0.0/8\"）。默认值包括了本地网段和专用网段地址。请注意，当使用 HTTP 代理时，该设置可能会被忽略。代理必须有自己的 IP 黑名单。"
                 },
                 "saveButton": "保存",
                 "restoreButton": "恢复默认设置"
@@ -1214,35 +1214,35 @@
         "networkCapabilities": {
             "name": "网络容量",
             "subtext": "管理沙粒的网络直接存取量。",
-            "explanation": "This page displays network capabilities granted to grains. By default, grains have very limited network access. A grain can request full network access while it is being used. Only an admin can approve the request, which grants a \"network capability\" to the grain.",
+            "explanation": "这个页面显示了沙粒的网络功能。默认情况下，沙粒的网络访问权非常有限。沙粒可以在被使用时请求完整的网络访问权。当然，只有管理员才能批准\"联网\"这项操作。",
             "newAdminNetworkCapabilitiesTableCapabilityRow": {
                 "adminAccount": "管理员账号 %s",
-                "unknownGranter": "Unknown granter",
-                "anyone": "Anyone with the token",
-                "unknownRecipient": "Unknown recipient",
+                "unknownGranter": "未知授予人",
+                "anyone": "有 token 的任何人",
+                "unknownRecipient": "未知授予目标",
                 "revoked": "已撤銷",
                 "revokeButton": "撤銷"
             },
             "newAdminNetworkCapabilitiesTable": {
                 "header": {
-                    "grantBy": "Granted by",
-                    "grantTo": "Granted to",
-                    "grantTime": "Time",
-                    "actions": "Actions"
+                    "grantBy": "授予自",
+                    "grantTo": "授予给",
+                    "grantTime": "时间",
+                    "actions": "动作"
                 },
-                "notFound": "No capabilities found."
+                "notFound": "找不到记录。"
             },
             "newAdminNetworkCapabilitiesSection": {
                 "filter": {
-                    "label": "Showing:",
-                    "active": "Active (%s)",
-                    "revoked": "Revoked (%s)"
+                    "label": "显示:",
+                    "active": "活动的 (%s)",
+                    "revoked": "已撤销 (%s)"
                 }
             },
             "newAdminNetworkCapabilities": {
-                "networkCaps": "Outbound network access",
-                "networkCapsTls": "TLS-encrypted outbound network access",
-                "interfaceCaps": "Inbound network access"
+                "networkCaps": "出站网络访问",
+                "networkCapsTls": "经过 TLS 加密的出站网络访问",
+                "interfaceCaps": "入站网络访问"
             }
         },
         "hostingManagement": {

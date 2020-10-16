@@ -40,9 +40,6 @@
       "title": "Non trouvé",
       "text": "Erreur 404 - Non trouvé :("
     },
-    "root": {
-      "title": "Accueil"
-    },
     "grainLogContents": {
       "prefix": "…"
     },
@@ -110,7 +107,7 @@
       "finePrint": {
         "title": "Les trucs en petits caractères",
         "warningWithAccountLink": "Votre avantage de parrainage dure pendant 1 an à partir de la date du parrainage. Les conditions de ce programme de parrainage peuvent changer sans préavis ; cependant cela n'affectera pas les avantages dont vous bénéficiez déjà. Si vous avez besoin de plus d'espace, <a href=\"%s\">passez à l'offre supérieure</a> !",
-        "explanation": "Les personnes ayant souscrit à une offre payante peuvent bénéficier de jusqu'à 30 Go de stockage gratuit, 2 Go par personne parrainée en plus du stockage déjà inclus dans leur offre. Les utilisateurs de comptes gratuits peuvent obtenir des grains illimités ainsi que 50 Mo d'espace de stockage gratuit par personne qu'ils parrainent, avec un total de 2 Go au maximum."
+        "explanation": "Les personnes ayant souscrit à une offre payante peuvent bénéficier de jusqu'à 30 Go de stockage gratuit, 2 Go par personne parrainée en plus du stockage déjà inclus dans leur offre."
       }
     },
     "about": {
@@ -1379,7 +1376,7 @@
           "result2": "la révocation de tous les liens de partage que vous avez créés",
           "result3": "la suppression de toutes les listes de contacts des utilisateurs,",
           "result4": "la suppression de toutes les informations d'identification appartenant à votre compte (à l'exception des informations d'identification associées à un autre compte).",
-          "confirm": "Veuillez cliquer sur « Supprimer mon compte » ci-dessous pour confirmer.",
+          "confirm": "Veuillez cliquer sur « delete my account » ci-dessous pour confirmer.",
           "goodbye": "Désolé de vous voir partir. N'hésitez pas à partager vos commentaires avec l'administrateur du serveur.",
           "feedbackPlaceholder": "Optionnel",
           "deleteButton": "Supprimer ce compte",
@@ -1770,8 +1767,6 @@
       "oasis": "Commencer à collaborer avec d'autres en utilisant Sandstorm sur Oasis :",
       "createAccount": "Créer un compte gratuit »",
       "demoHint": "Les données de votre compte d'essai seront transférées.",
-      "selfHostHint": "Ou installez Sandstorm pour votre équipe (c'est un logiciel libre) :",
-      "signUp": "Inscrivez-vous :",
       "close": "Fermer"
     },
     "powerbox": {

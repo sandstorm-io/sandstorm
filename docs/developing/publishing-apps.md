@@ -35,8 +35,7 @@ change it.
 To find out if you have the key material, you can run:
 
 ```bash
-$ vagrant-spk vm ssh
-$ spk listkeys -k ~/.sandstorm/sandstorm-keyring
+$ vagrant-spk listkeys
 ```
 
 You should see the app ID in the output.
@@ -45,8 +44,7 @@ If you want to change the app ID before publishing the app, you
 can run:
 
 ```bash
-$ vagrant-spk vm ssh
-$ spk keygen -k ~/.sandstorm/sandstorm-keyring
+$ vagrant-spk keygen
 ```
 
 It will output a line like:
@@ -90,9 +88,7 @@ optional but highly recommended.
 
 ### Sign up with [Keybase.io](https://keybase.io)
 
-Currently, Keybase is invite-only. If you need an invite, you can
-contact [community@sandstorm.io](mailto:community@sandstorm.io). You
-should connect some of your public identites with your Keybase
+You should connect some of your public identities with your Keybase
 account, like Twitter and GitHub.
 
 Sandstorm app authors are verified using a PGP key linked to

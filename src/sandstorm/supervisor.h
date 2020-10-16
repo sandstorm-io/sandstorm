@@ -27,7 +27,7 @@
 
 namespace sandstorm {
 
-class SupervisorMain: public AbstractMain {
+class SupervisorMain final: public AbstractMain {
   // Main class for the Sandstorm supervisor.  This program:
   // - Sets up a sandbox for a grain.
   // - Executes the grain in the sandbox.

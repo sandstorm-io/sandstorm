@@ -3,7 +3,7 @@ import { Match, check } from "meteor/check";
 import Crypto from "crypto";
 import Fs from "fs";
 import { SANDSTORM_VARDIR } from "/imports/server/constants.js";
-// TODO(cleanup): globalDb is still an unbound global, but extracting it is Hard.
+import { globalDb } from "/imports/db-deprecated.js";
 
 const ADMIN_TOKEN_EXPIRATION_TIME = 60 * 60 * 1000;
 const SANDSTORM_ADMIN_TOKEN = SANDSTORM_VARDIR + "/adminToken";

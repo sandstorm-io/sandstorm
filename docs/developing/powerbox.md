@@ -167,16 +167,20 @@ to your app's server, e.g. using `XmlHTTPRequest`.
 
 ## Redeeming the claim token
 
-Once the claim token has been sent to your app's server, you need to redeem it. How to do that
-depends on whether your app uses sandstorm-http-bridge.
+Once the claim token has been sent to your app's server, you need to redeem it. In the general
+case, you can use the raw Cap'n Proto APIs to do this, but sandstorm-http-bridge implements
+special support for using http APIs obtained via the powerbox.
 
-### Using sandstorm-http-bridge
+### Using sandstorm-http-bridge for HTTP APIs.
 
 Most apps use sandstorm-http-bridge to avoid the need to use Sandstorm's raw Cap'n Proto
-interfaces. If you aren't sure whether you are using http-bridge, you probably are.
+interfaces just to offer a web interface. If you aren't sure whether you are using http-bridge,
+you probably are.
 
-Currently, **http-bridge apps can only request and use HTTP APIs**, not arbitrary Cap'n Proto
-APIs. HTTP APIs are represented by the `ApiSession` Cap'n Proto type. (The query examples above
+If you want to use the powerbox to access something *other than an HTTP API*, you will need to
+use the raw Cap'n Proto APIs, see below.
+
+HTTP APIs are represented by the `ApiSession` Cap'n Proto type.  (The query examples above
 request this type.)
 
 When using http-bridge, the bridge sets up a private HTTP proxy which your app can use to make
@@ -261,11 +265,15 @@ matters.
 
 ### Raw Cap'n Proto APIs
 
-If your app uses raw Cap'n Proto APIs (not http-bridge), then the definitive reference for the
-powerbox's interfaces is the Cap'n Proto schema files where they are defined. The main relevant
-schemas are
+If your app uses raw Cap'n Proto APIs (not http-bridge), or you want to use something other than
+an HTTP api, then the definitive reference for the powerbox's interfaces is the Cap'n Proto
+schema files where they are defined. The main relevant schemas are
 [powerbox.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/powerbox.capnp)
 and [grain.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/grain.capnp).
+If you are using the bridge, you will also want to read about the interfaces in
+[sandstorm-http-bridge.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/sandstorm-http-bridge.capnp),
+which allow bridge apps to access the resources otherwise accessed via the interfaces in
+`grain.capnp`.
 
 In order to exchange your claim token for a capability, you'll need to invoke
 `SessionContext.claimRequest()` on the session context associated with the session where the
@@ -276,20 +284,22 @@ this capability later, e.g. during a future run of your app. You can't just hold
 token, because the claim token can only be redeemed against the specific session from which it
 came. `save()` gives you a token that can be redeemed using `SandstormApi.restore()` at any time.
 
-## Exporting an HTTP API
+## Exporting an API
 
 Your app can also export APIs for consumption by other apps. If you do so, then grains of your
 app will appear as options in the user's powerbox when another app makes a request for an API
 that your app provides.
 
-How to export APIs depends on whether your app uses sandstorm-http-bridge.
+How to export APIs depends on (1) whether your app uses sandstorm-http-bridge and (2)
+whether you are exporting an HTTP API or some other Cap'n Proto interface.
 
 ### Using sandstorm-http-bridge
 
-If you use sandstorm-http-bridge, then you can only export HTTP APIs, which implement the
-Cap'n Proto `ApiSession` interface. You can declare APIs that you export in your
-`sandstorm-pkgdef.capnp` file, in the `bridgeConfig` section, by specifying a list of
-`powerboxApis`. Example:
+If you use sandstorm-http-bridge, then you can export HTTP APIs (which implement
+the Cap'n Proto `ApiSession`) using the bridge's special handling, allowing you to use
+a regular web server just like with the web UI for your app. You can declare APIs that
+you export in your `sandstorm-pkgdef.capnp` file, in the `bridgeConfig` section, by
+specifying a list of `powerboxApis`. Example:
 
 ```capnp
   bridgeConfig = (
@@ -332,6 +342,25 @@ permissions levels of the same API. If a powerbox request matches multiple APIs,
 chooses a grain of your app to satisfy the request, then they will be presented with a choice of
 which API to use, with options labeled using `displayInfo`.
 
+It is also possible to export Cap'n Proto interfaces other than HTTP APIs when
+using the bridge. The process is the same as discussed for "Raw Cap'n Proto APIs," below, except
+that:
+
+1. You need to use the interfaces in `sandstorm-http-bridge.capnp` to access the session context,
+   provide the view info for your app, etc.
+2. Rather than implementing separate methods for `newSession`, `newRequestSession`, and so on,
+   you should look at the `X-Sandstorm-Session-Type` header to determine what kind of session
+   you are in.
+   - If the header's value is `normal`, then you are not in any kind of powerbox session; this
+     is just a regular UI session.
+   - If the header's value is `request`, then you are in a request session. You should display
+     a UI for picking which resource to provide, and use the methods described in
+     `sandstorm-http-bridge.capnp` to fetch info about the powerbox request and fulfill it.
+   - If the value is `offer`, this is an offer session; your app is being offered a capability by
+     another app, based on the information in your view info's `matchOffers` field. You can
+     display a UI to decide what to do with it, and use the bridge's methods to access the
+     capability itself.
+
 ### Raw Cap'n Proto APIs
 
 When implementing an app against raw Cap'n Proto APIs, you have much more freedom. Not only can you
@@ -340,7 +369,7 @@ embedded into the Powerbox UI and displayed when your app is chosen.
 
 To advertise that your app implements a powerbox API, the `ViewInfo` returned by your
 `UiView.getViewInfo()` must fill in the `matchRequests` field to indicate what queries it should
-match. If a powerbox query matches one of the descirptors you specify, your grain will be displayed
+match. If a powerbox query matches one of the descriptors you specify, your grain will be displayed
 as an option in the powerbox UI. See `UiView.ViewInfo` in
 [grain.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/grain.capnp).
 

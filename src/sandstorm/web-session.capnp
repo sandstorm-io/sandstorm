@@ -164,6 +164,10 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       "x-hgarg-*",             # Mercurial client
       "x-phabricator-*",       # Phabricator
       "x-requested-with",      # JQuery header used by Rails and other frameworks
+
+      # Headers used for csrf protection by various frameworks:
+      "x-csrftoken",
+      "x-csrf-token",
     ];
   }
 
@@ -463,7 +467,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   }
 
   interface WebSocketStream {
-    sendBytes @0 (message :Data);
+    sendBytes @0 (message :Data) -> stream;
     # Send some bytes.  WARNING:  At present, we just send the raw bytes of the WebSocket protocol.
     # In the future, this will be replaced with a `sendMessage()` method that sends one WebSocket
     # datagram at a time.

@@ -100,12 +100,18 @@ WebSessionBridge::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilde
 
 WebSessionBridge::WebSessionBridge(
     kj::Timer& timer, WebSession::Client session, kj::Maybe<Handle::Client> loadingIndicator,
-    const Tables& tables, Options options)
+    const Tables& tables, Options options,
+    kj::Maybe<kj::String>&& host,
+    kj::Maybe<kj::String>&& baseHost,
+    bool allowLegacyRelaxedCSP)
     : timer(timer),
       session(kj::mv(session)),
       loadingIndicator(kj::mv(loadingIndicator)),
       tables(tables),
-      options(options) {}
+      options(options),
+      host(kj::mv(host)),
+      baseHost(kj::mv(baseHost)),
+      allowLegacyRelaxedCSP(allowLegacyRelaxedCSP) {}
 
 void WebSessionBridge::restrictParentFrame(kj::StringPtr parent, kj::StringPtr self) {
   KJ_REQUIRE(!options.isApi, "can't apply frame restriction to API endpoint");
@@ -140,7 +146,7 @@ kj::Promise<void> WebSessionBridge::request(
     }
 
     case kj::HttpMethod::POST: {
-      auto doNonStreaming = [this,method,path,&headers,&requestBody,&response]() {
+      auto doNonStreaming = [this,path,&headers,&requestBody,&response]() {
         return requestBody.readAllBytes()
             .then([this,path,&headers,&response]
                   (kj::Array<byte>&& data) mutable {
@@ -170,11 +176,11 @@ kj::Promise<void> WebSessionBridge::request(
       //   case of old apps which don't support streaming. That fallback should move into the
       //   compat layer, then we can avoid the round-trip here.
       return req.send()
-          .then([this,&headers,&requestBody,&response,KJ_MVCAP(streamer)]
+          .then([this,&requestBody,&response,KJ_MVCAP(streamer)]
                 (capnp::Response<WebSession::PostStreamingResults> result) mutable {
         return handleStreamingRequestResponse(
             result.getStream(), requestBody, kj::mv(streamer), response);
-      }, [this,KJ_MVCAP(doNonStreaming)](kj::Exception&& e) -> kj::Promise<void> {
+      }, [KJ_MVCAP(doNonStreaming)](kj::Exception&& e) -> kj::Promise<void> {
         // Unfortunately, some apps are so old that they don't know about UNIMPLEMENTED exceptions,
         // so we have to check the description.
         if (e.getType() == kj::Exception::Type::UNIMPLEMENTED ||
@@ -189,7 +195,7 @@ kj::Promise<void> WebSessionBridge::request(
     }
 
     case kj::HttpMethod::PUT: {
-      auto doNonStreaming = [this,method,path,&headers,&requestBody,&response]() {
+      auto doNonStreaming = [this,path,&headers,&requestBody,&response]() {
         return requestBody.readAllBytes()
             .then([this,path,&headers,&response]
                   (kj::Array<byte>&& data) mutable {
@@ -219,11 +225,11 @@ kj::Promise<void> WebSessionBridge::request(
       //   case of old apps which don't support streaming. That fallback should move into the
       //   compat layer, then we can avoid the round-trip here.
       return req.send()
-          .then([this,&headers,&requestBody,&response,KJ_MVCAP(streamer)]
+          .then([this,&requestBody,&response,KJ_MVCAP(streamer)]
                 (capnp::Response<WebSession::PutStreamingResults> result) mutable {
         return handleStreamingRequestResponse(
             result.getStream(), requestBody, kj::mv(streamer), response);
-      }, [this,KJ_MVCAP(doNonStreaming)](kj::Exception&& e) -> kj::Promise<void> {
+      }, [KJ_MVCAP(doNonStreaming)](kj::Exception&& e) -> kj::Promise<void> {
         // Unfortunately, some apps are so old that they don't know about UNIMPLEMENTED exceptions,
         // so we have to check the description.
         if (e.getType() == kj::Exception::Type::UNIMPLEMENTED ||
@@ -499,8 +505,7 @@ kj::Promise<kj::Maybe<kj::String>> WebSessionBridge::davXmlContent(
 
 namespace {
 
-class WebSocketPipe final : public kj::AsyncIoStream, public kj::Refcounted,
-                            private kj::TaskSet::ErrorHandler {
+class WebSocketPipe final : public kj::AsyncIoStream, public kj::Refcounted {
   // Class which adapts a pair of WebSession::WebSocketStreams into an AsyncIoStream which in turn
   // can be wrapped by a kj::WebSocket using kj::newWebSocket().
   //
@@ -514,8 +519,7 @@ class WebSocketPipe final : public kj::AsyncIoStream, public kj::Refcounted,
 
 public:
   WebSocketPipe(WebSession::WebSocketStream::Client outgoing)
-      : outgoing(kj::mv(outgoing)),
-        writeTasks(*this) {}
+      : outgoing(kj::mv(outgoing)) {}
 
   WebSession::WebSocketStream::Client getIncomingStreamCapability() {
     return kj::heap<WebSocketStreamImpl>(kj::addRef(*this));
@@ -531,7 +535,7 @@ public:
   kj::Promise<void> write(const void* buffer, size_t size) override {
     auto req = KJ_REQUIRE_NONNULL(outgoing, "already called shutdownWrite()").sendBytesRequest();
     req.setMessage(kj::arrayPtr(reinterpret_cast<const byte*>(buffer), size));
-    return writeImpl(size, kj::mv(req));
+    return req.send();
   }
 
   kj::Promise<void> write(kj::ArrayPtr<const kj::ArrayPtr<const byte>> pieces) override {
@@ -550,42 +554,11 @@ public:
     }
     KJ_ASSERT(pos == builder.end());
 
-    return writeImpl(size, kj::mv(req));
+    return req.send();
   }
 
-private:
-  kj::Promise<void> writeImpl(size_t size, capnp::Request<
-      WebSession::WebSocketStream::SendBytesParams,
-      WebSession::WebSocketStream::SendBytesResults>&& req) {
-    KJ_IF_MAYBE(e, writeError) {
-      return kj::cp(*e);
-    }
-
-    writeTasks.add(req.send().then([this,size](auto&& response) {
-      bytesInFlight -= size;
-      if (bytesInFlight < MAX_IN_FLIGHT) {
-        KJ_IF_MAYBE(f, writeReadyFulfiller) {
-          f->get()->fulfill();
-        }
-      }
-    }));
-    bytesInFlight += size;
-
-    if (bytesInFlight < MAX_IN_FLIGHT) {
-      return kj::READY_NOW;
-    } else {
-      auto paf = kj::newPromiseAndFulfiller<void>();
-      writeReadyFulfiller = kj::mv(paf.fulfiller);
-      return kj::mv(paf.promise);
-    }
-  }
-
-  void taskFailed(kj::Exception&& exception) override {
-    KJ_IF_MAYBE(f, writeReadyFulfiller) {
-      f->get()->reject(kj::mv(exception));
-      writeReadyFulfiller = nullptr;
-    }
-    writeError = kj::mv(exception);
+  kj::Promise<void> whenWriteDisconnected() override {
+    return kj::NEVER_DONE;
   }
 
 public:
@@ -703,12 +676,7 @@ public:
 
 private:
   // Outgoing direction.
-  static constexpr size_t MAX_IN_FLIGHT = 65536;
-  size_t bytesInFlight = 0;
-  kj::Maybe<kj::Own<kj::PromiseFulfiller<void>>> writeReadyFulfiller;
-  kj::Maybe<kj::Exception> writeError;
   kj::Maybe<WebSession::WebSocketStream::Client> outgoing;
-  kj::TaskSet writeTasks;
 
   // Incoming direction.
   struct CurrentWrite {
@@ -759,7 +727,7 @@ public:
   }
 };
 
-class NoStreamingByteStream: public ByteStream::Server {
+class NoStreamingByteStream final: public ByteStream::Server {
 public:
   kj::Promise<void> write(WriteContext context) override {
     KJ_FAIL_REQUIRE("streamed response not expected");
@@ -842,7 +810,7 @@ kj::Promise<void> WebSessionBridge::openWebSocket(
   }).attach(kj::mv(clientStreamPaf.fulfiller));
 }
 
-class WebSessionBridge::ByteStreamImpl: public ByteStream::Server {
+class WebSessionBridge::ByteStreamImpl final: public ByteStream::Server {
 public:
   ByteStreamImpl(uint statusCode, kj::StringPtr statusText,
                  kj::HttpHeaders&& headers,
@@ -1286,6 +1254,59 @@ kj::Promise<void> WebSessionBridge::handleResponse(
       headers.set(tables.hContentSecurityPolicy, "default-src 'none'; sandbox");
 
       headers.set(tables.hAccessControlExposeHeaders, kj::strArray(exposedHeaders, ", "));
+    } else if(!allowLegacyRelaxedCSP) {
+      // Disallow loading of remote resources. Note the following:
+      //
+      // - Currently there are still exceptions for images and media, as these have
+      //   some legitimate use cases (e.g. embedding images in feeds in ttrss) and
+      //   we want to provide a way for a user to allow these via the UI before we
+      //   block them by default
+      // - The unsafe-* directives are currently necessary to avoid breaking many
+      //   apps. They make CSP not particularly useful in mitating XSS attacks,
+      //   but do not present an information-leaking hazard.
+      // - In the future, we should provide a way for apps to opt-in to more
+      //   restrictive policies, as a useful mitigation for things like XSS vulns.
+      //   in the apps.
+      kj::String wsHost;
+      KJ_IF_MAYBE(hostStr, host) {
+        if(options.isHttps) {
+          wsHost = kj::str("wss://", *hostStr);
+        } else {
+          wsHost = kj::str("ws://", *hostStr);
+        }
+      }
+      kj::String baseHttpHost;
+      KJ_IF_MAYBE(hostStr, baseHost) {
+        if(options.isHttps) {
+          baseHttpHost = kj::str("https://", *hostStr);
+        } else {
+          baseHttpHost = kj::str("http://", *hostStr);
+        }
+      }
+      headers.set(
+          tables.hContentSecurityPolicy,
+          kj::str(
+            "default-src 'none'; "
+#define UNSAFE "'unsafe-inline' 'unsafe-eval' data: blob:; "
+            "img-src * " UNSAFE
+            "media-src * " UNSAFE
+            "script-src 'self' " UNSAFE
+            "style-src 'self' " UNSAFE
+            "child-src 'self' " UNSAFE
+            "worker-src 'self' " UNSAFE
+            "font-src 'self' " UNSAFE
+
+            // frame-src needs to allow references to BASE_URL, because
+            // we allow apps to pull the content of offer-iframes from
+            // there:
+            "frame-src 'self' ", baseHttpHost, " ", UNSAFE
+#undef UNSAFE
+
+            // 'self' alone does not allow websocket connections; see:
+            // https://github.com/w3c/webappsec-csp/issues/7
+            "connect-src 'self' ", wsHost, ";"
+        )
+      );
     }
 
     // If we complete this function without calling fulfill() to connect the stream, then this is

@@ -78,7 +78,7 @@ public:
 
   GatewayService(kj::Timer& timer, kj::HttpClient& shellHttp, GatewayRouter::Client router,
                  Tables& tables, kj::StringPtr baseUrl, kj::StringPtr wildcardHost,
-                 kj::Maybe<kj::StringPtr> termsPublicId);
+                 kj::Maybe<kj::StringPtr> termsPublicId, bool allowLegacyRelaxedCSP);
 
   kj::Promise<void> cleanupLoop();
   // Must run this to purge expired capabilities.
@@ -123,7 +123,7 @@ private:
 
   std::map<kj::StringPtr, StaticPublisherEntry> staticPublishers;
 
-  struct ForeignHostnameEntry: public kj::Refcounted {
+  struct ForeignHostnameEntry {
     kj::String id;
     OwnCapnp<GatewayRouter::ForeignHostnameInfo> info;
     kj::TimePoint refreshAfter;
@@ -147,6 +147,8 @@ private:
   bool isPurging = false;
 
   kj::TaskSet tasks;
+
+  bool allowLegacyRelaxedCSP;
 
   kj::Promise<void> send401Unauthorized(Response& response);
   kj::Promise<void> sendError(
@@ -233,7 +235,7 @@ private:
   class TlsKeyCallbackImpl;
 };
 
-class RealIpService: public kj::HttpService {
+class RealIpService final: public kj::HttpService {
   // Wrapper that should be instantiated for each connection to capture IP address in X-Real-IP.
 
 public:
@@ -250,7 +252,7 @@ private:
   bool trustClient = false;
 };
 
-class AltPortService: public kj::HttpService {
+class AltPortService final: public kj::HttpService {
   // Wrapper that should be exported on ports other than the main port. This will redirect
   // clients to the main port where appropriate.
 

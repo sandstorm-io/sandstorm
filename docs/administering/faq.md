@@ -424,7 +424,7 @@ to address the issue.
   the Sandstorm MongoDB instance, note that grain data is safely stored separately, so any grain data
   would not be affected.
 
-To get further help, please email support@sandstorm.io. Please include the most recent 100 lines
+To get further help, please [open an issue on GitHub](https://github.com/sandstorm-io/sandstorm/issues/new). Please include the most recent 100 lines
 from the MongoDB log file, if you can.
 
 ## Installing and running without root privileges
@@ -450,8 +450,7 @@ namespaces. If you use the userns-based sandbox, please be sure to keep up to da
 updates.
 
 - **People who don't know how to change a Linux kernel.** If you are a customer of a hosting
-  provider, please ask your hosting provider to read this page. They are also welcome to email the
-  Sandstorm team at [support@sandstorm.io.](mailto:support@sandstorm.io)
+  provider, please ask your hosting provider to read this page.
 
 - **Arch Linux users.** We suggest starting Sandstorm as root instead to avoid the dependency on
   user namespaces. In [#36969](https://bugs.archlinux.org/task/36969), the Arch Linux kernel
@@ -517,60 +516,10 @@ that we provide. Pay special attention to the `RewriteRule` stanzas.
 
 ## Can I use Let's Encrypt for adding HTTPS to Sandstorm?
 
-**Short answer:** No. We wish we could say yes. We are eagerly awaiting support of wildcard
-certificates by Let's Encrypt. For advice that will work, read our [docs about configuring
-HTTPS.](ssl.md)
-
-**Medium answer:** You can use Let's Encrypt for [static
-publishing](../developing/web-publishing.md) on personal or corporate domain names like
-`mysite.example.com`, but not your main Sandstorm server interface.
-
-Here's the long answer.
-
-To have working HTTPS, Sandstorm needs a wildcard certificate for all the reasons documented in [our
-documentation on wildcard DNS.](wildcard.md)
-
-One hypothetical alternative to a wildcard certificate is dynamic integration with Let's Encrypt.
-In this strategy, each new Sandstorm hostname generates a new Let's Encrypt certificate. However,
-this won't work for the following reasons.
-
-**Rate limits.** Sandstorm creates a new domain for every user session of every grain, for
-reachability self-tests, for each API endpoint, for each static publishing endpoint, for its own
-static assets, and for identicons. A user could conceivably cause Sandstorm to generate 20 hostnames
-in a minute of usage. Generating 20 hostnames would trigger the [rate
-limits](https://letsencrypt.org/docs/rate-limits/), at which point all other visitors to Sandstorm
-would be unable to use grains. This issue alone makes the problem intractable.
-
-There are some additional problems as well.
-
-- **Loss of defense-in-depth for cross-site-request forgery protection and more.** Let's Encrypt
-  shares all certificate hostnames to the Certificate Transparency logs, which means you lose one of
-  Sandstorm's defense-in-depth mechanisms. Read the doc on [why we use wildcards](wildcard.md) for
-  more information on defense-in-depth via wildcards.
-
-- **Loss of privacy for static publishing URLs.** When users generate [static publishing
-  content](../developing/web-publishing.md) within a grain, they typically expect it to be private
-  until they choose a well-known domain name for the content. Let's Encrypt's integration with
-  Certificate Transparency would make all static publishing URLs by default.
-
-Some subproblems seem to have solutions, but they do not add up to a full solution for now.
-
-- **Latency.** The most straightforward way to implement Let's Encrypt dynamic provisioning with
-  Sandstorm would be for each new domain to be provisioned at the time it is created within
-  Sandstorm. This would mean that a visitor to your Sandstorm server would perceive a >10 second
-  latency introduced by Let's Encrypt while Let's Encrypt validates the domain and provides a
-  certificate. This could be solved by pre-generating a large number of subdomain certificates, but
-  it's not feasible to pregenerate enough. Consider that a server with 20 users and 20 grains would
-  need at least 400 certificates, but Let's Encrypt permits 20 certificates per week at the time of
-  writing. Additionally, Sandstorm periodically cycles these hostnames out of use. Let's Encrypt's
-  support for SAN certificates would allow 2,000 hostnames per week, but if a grain suddenly became
-  popular, new visitors would overwhelm this rate limit.
-
-One approach is to use `*.example.sandcats.io` for wildcard hostnames, but use a `BASE_URL` of `example.com`
-where `example.com` is certified via Let's Encrypt. However, this would mean that `example.com` contains
-IFRAME elements pointing at `*.example.sandcats.io` and these IFRAMEs may not be able to set cookies within
-the subdomain due to the increasingly-common **third-party cookie-blocking** done by browsers such as Chrome
-and Firefox.
+Yes, support for Let's Encrypt was added in 0.263. To use Let's Encrypt, your Sandstorm server needs
+to be able to modify your DNS records. This is made possible by [the ACME.js library](https://git.rootprojects.org/root/acme.js) as long as
+you use a supported DNS provider (Sandcats.io, Cloudflare, Digital Ocean, DNSimple, Duck DNS, GoDaddy,
+Gandi, Namecheap, Name.com, AWS Route 53, or Vultr). You can now configure this in the admin panel.
 
 ## Does Sandstorm run on ARM systems like Raspberry Pi?
 
@@ -599,8 +548,8 @@ computer, we can suggest the following, though we haven't personally tried them.
   $130 at the time of writing.
 
 We are focusing on x86-64 because we only have so much time in the day. If you're a volunteer and
-interested in tackling the ARM/multi-architecture situation, then please email us at
-community@sandstorm.io.
+interested in tackling the ARM/multi-architecture situation, then please speak up on the
+[related issue](https://github.com/sandstorm-io/sandstorm/issues/2083).
 
 There are a few obstacles we'd need to overcome for Sandstorm to provide a good experience
 on ARM.

@@ -14,10 +14,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
+import { Tracker } from "meteor/tracker";
+import { ReactiveVar } from "meteor/reactive-var";
+import { Router } from "meteor/iron:router";
+import { Accounts } from "meteor/accounts-base";
+import { SHA256 } from "meteor/sha";
+
 import { GrainView, onceConditionIsTrue } from "./grainview.js";
 import { isStandalone } from "/imports/client/standalone.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
-GrainViewList = class GrainViewList {
+class GrainViewList {
   constructor(db) {
     check(db, SandstormDb);
     this._db = db;
@@ -27,7 +36,7 @@ GrainViewList = class GrainViewList {
 
     // Meteor has a nice package for detecting if localStorage is available, but it's internal.
     // We use it anyway. If it goes away, this will throw an exception at startup which will should
-    // be really obvious and well fix it.
+    // be really obvious and we'll fix it.
     const key = "openGrains-" + SHA256(window.location.toString());
     const old = Meteor._localStorage.getItem(key);
     if (old && !isStandalone()) {
@@ -267,7 +276,7 @@ GrainViewList = class GrainViewList {
       this._grains.set(newGrains);
     }
   }
-};
+}
 
 export { GrainViewList };
 

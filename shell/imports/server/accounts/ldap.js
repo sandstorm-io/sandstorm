@@ -1,11 +1,14 @@
-const Future = Npm.require("fibers/future");
+import Future from "fibers/future";
 import ldapjs from "ldapjs";
+
+import { Meteor } from "meteor/meteor";
+import { _ } from "meteor/underscore";
 
 // At a minimum, set up LDAP_DEFAULTS.url and .dn according to
 // your needs. url should appear as 'ldap://your.url.here'
 // dn should appear in normal ldap format of comma separated attribute=value
 // e.g. 'uid=someuser,cn=users,dc=somevalue'
-LDAP_DEFAULTS = {
+const LDAP_DEFAULTS = {
   url: false,
   port: "389",
   dn: false,
@@ -26,7 +29,7 @@ LDAP_DEFAULTS = {
 function LDAP() {
   // Set options
   this.options = _.clone(LDAP_DEFAULTS);
-};
+}
 
 /**
  * Attempt to bind (authenticate) ldap
@@ -44,8 +47,11 @@ LDAP.prototype.ldapCheck = function (db, options) {
 
   options = options || {};
 
-  if ((options.hasOwnProperty("username") && options.hasOwnProperty("ldapPass")) ||
-      options.hasOwnProperty("searchUsername")) {
+  let hasOwnProperty = Object.prototype.hasOwnProperty;
+  hasOwnProperty = hasOwnProperty.call.bind(hasOwnProperty);
+
+  if ((hasOwnProperty(options, "username") && hasOwnProperty(options, "ldapPass")) ||
+      hasOwnProperty(options, "searchUsername")) {
     _this.options.base = db.getLdapBase();
     _this.options.url = db.getLdapUrl();
     _this.options.searchBeforeBind = {};
@@ -94,7 +100,7 @@ LDAP.prototype.ldapCheck = function (db, options) {
     let username = options.username;
     let domain = _this.options.defaultDomain;
 
-    if (!options.hasOwnProperty("searchUsername")) {
+    if (!hasOwnProperty(options, "searchUsername")) {
       // Slide @xyz.whatever from username if it was passed in
       // and replace it with the domain specified in defaults
       let emailSliceIndex = options.username.indexOf("@");
@@ -165,7 +171,7 @@ LDAP.prototype.ldapCheck = function (db, options) {
 
         retObject.searchResults = _.omit(entry.object, "userPassword");
 
-        if (options.hasOwnProperty("searchUsername")) {
+        if (hasOwnProperty(options, "searchUsername")) {
           // This was only a search, return immediately
           resolved = true;
           ldapAsyncFut.return(retObject);

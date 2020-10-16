@@ -1,13 +1,17 @@
 site_name: Docs
-theme_dir: 'docs/sandstorm_readthedocs_modified_theme'
-theme: 'readthedocs'
+
+theme:
+    name: 'readthedocs'
+    custom_dir: 'docs/sandstorm_readthedocs_modified_theme'
+    navigation_depth: 4
 repo_url: https://github.com/sandstorm-io/sandstorm
 edit_uri: edit/master/docs/
 markdown_extensions:
-    - inline_graphviz
+    - mdx_inline_graphviz
+    - admonition
 extra_css:
     - "extra.css"
-pages:
+nav:
 - "Home": "index.md"
 - Using:
     - "Overview": "using.md"
@@ -18,47 +22,51 @@ pages:
     - "Security non-events": "using/security-non-events.md"
 - Developing apps:
     - "Developer hub": "developing.md"
-    - "Installing vagrant-spk for package dev": "vagrant-spk/installation.md"
-    - "Packaging tutorial": "vagrant-spk/packaging-tutorial.md"
-    - "Packaging tutorial (Meteor)": "vagrant-spk/packaging-tutorial-meteor.md"
+    - "What makes a good Sandstorm App?": "developing/handbook.md"
+    - Packaging apps with vagrant-spk:
+        - "Installing vagrant-spk for package dev": "vagrant-spk/installation.md"
+        - "Packaging tutorial": "vagrant-spk/packaging-tutorial.md"
+        - "Packaging tutorial (Meteor)": "vagrant-spk/packaging-tutorial-meteor.md"
+        - "Understanding & customizing vagrant-spk": "vagrant-spk/customizing.md"
+        - "Platform stacks": "vagrant-spk/platform-stacks.md"
+        - "Code dependencies": "vagrant-spk/code-dependencies.md"
+        - "Service dependencies": "vagrant-spk/services.md"
+        - "Troubleshooting": "developing/troubleshooting.md"
+        - "Debugging a running grain": "developing/debugging.md"
+    - Other packaging approaches:
+        - "Raw packaging guide": "developing/raw-packaging-guide.md"
+        - "Raw integration of Python": "developing/raw-python.md"
+        - "Raw integration of Ruby on Rails": "developing/raw-ruby-on-rails.md"
+        - "Raw integration of pure client apps": "developing/raw-pure-client-apps.md"
+    - Integrating your app with Sandstorm:
+        - "User authentication & permissions": "developing/auth.md"
+        - "URLs, domain names, page titles": "developing/path.md"
+        - "Exporting HTTP APIs": "developing/http-apis.md"
+        - "Web publishing": "developing/web-publishing.md"
+        - "Connecting grains to each other & Sandstorm via the powerbox": "developing/powerbox.md"
+        - "Email from apps": "developing/email-from-apps.md"
     - "App market publishing guide": "developing/publishing-apps.md"
-    - "App developer handbook": "developing/handbook.md"
-    - "User authentication & permissions": "developing/auth.md"
-    - "URLs, domain names, page titles": "developing/path.md"
-    - "Understanding & customizing vagrant-spk": "vagrant-spk/customizing.md"
-    - "Platform stacks": "vagrant-spk/platform-stacks.md"
-    - "Code dependencies": "vagrant-spk/code-dependencies.md"
-    - "Service dependencies": "vagrant-spk/services.md"
-    - "Debugging a running grain": "developing/debugging.md"
-    - "Web publishing": "developing/web-publishing.md"
-    - "Exporting HTTP APIs": "developing/http-apis.md"
-    - "Connecting grains to each other & Sandstorm via powerbox": "developing/powerbox.md"
-    - "Email from apps": "developing/email-from-apps.md"
-    - "vagrant-spk design document": "vagrant-spk/design.md"
-    - "Troubleshooting": "developing/troubleshooting.md"
-- Developing on raw Sandstorm:
-    - "Raw packaging guide": "developing/raw-packaging-guide.md"
-    - "Raw integration of Python": "developing/raw-python.md"
-    - "Raw integration of Ruby on Rails": "developing/raw-ruby-on-rails.md"
-    - "Raw integration of pure client apps": "developing/raw-pure-client-apps.md"
 - Administering:
     - "Overview": "administering.md"
-    - "Installation & uninstall": "install.md"
-    - "Troubleshooting a new install": "administering/install-troubleshooting.md"
-    - "Reference docs for install.sh": "administering/install-script.md"
-    - "Reference docs for sandstorm.conf": "administering/config-file.md"
     - "Administrator's guide": "administering/guide.md"
-    - "Sandcats dynamic DNS": "administering/sandcats.md"
-    - "Email": "administering/email.md"
+    - "Frequently asked questions": "administering/faq.md"
+    - Installation:
+        - "Installing & uninstalling": "install.md"
+        - "Troubleshooting a new install": "administering/install-troubleshooting.md"
+        - "Reference docs for install.sh": "administering/install-script.md"
     - "Demo mode": "administering/demo.md"
     - "Backups": "administering/backups.md"
-    - "Wildcard hosts": "administering/wildcard.md"
-    - "HTTPS & SSL": "administering/ssl.md"
-    - "Free sandcats.io HTTPS": "administering/sandcats-https.md"
-    - "Reverse Proxy": "administering/reverse-proxy.md"
-    - "Self-signed SSL": "administering/self-signed.md"
+    - Networking configurations:
+        - "Wildcard hosts": "administering/wildcard.md"
+        - "Sandcats dynamic DNS": "administering/sandcats.md"
+        - "HTTPS & SSL": "administering/ssl.md"
+        - "Free sandcats.io HTTPS": "administering/sandcats-https.md"
+        - "Self-signed SSL": "administering/self-signed.md"
+        - "Reverse Proxy": "administering/reverse-proxy.md"
+        - "Sharing the HTTPS Port": "administering/sniproxy.md"
+        - "Email": "administering/email.md"
+        - "Running Sandstorm offline": "administering/offline.md"
+    - "Reference docs for sandstorm.conf": "administering/config-file.md"
     - "Organizational Features": "administering/for-work.md"
     - "Active Directory integration": "administering/active-directory.md"
-    - "Running Sandstorm offline": "administering/offline.md"
-    - "Frequently asked questions": "administering/faq.md"
     - "Running a Sandstorm hosting provider": "administering/hosting-provider.md"

@@ -45,6 +45,7 @@
 #include <sandstorm/id-to-text.h>
 
 #include "indexer.h"
+#include "keybase.h"
 
 namespace sandstorm {
 namespace appindex {
@@ -88,7 +89,7 @@ public:
         auto promises = kj::heapArrayBuilder<kj::Promise<void>>(3);
         auto req1 = stream.writeRequest();
         req1.setData(content.getContent());
-        promises.add(req1.send().then([](auto&&) {}));
+        promises.add(req1.send());
         promises.add(stream.doneRequest().send().then([](auto&&) {}));
         promises.add(stream.getResultRequest().send().then([](auto&&) {}));
 
@@ -236,7 +237,7 @@ private:
     kj::Promise<void> getResponse(GetResponseContext context) override {
       return kj::evalNow([&]() -> kj::Promise<void> {
         context.releaseParams();
-        return inner.getResultRequest().send().then([this,context](auto&&) mutable {
+        return inner.getResultRequest().send().then([context](auto&&) mutable {
           context.initResults().initNoContent();
         });
       }).catch_([context](kj::Exception&& e) mutable {
@@ -273,8 +274,14 @@ private:
 
 class ReviewSession final: public WebSession::Server {
 public:
-  ReviewSession(Indexer& indexer, HackSessionContext::Client session, bool canApprove)
-      : indexer(indexer), session(kj::mv(session)), canApprove(canApprove) {}
+  ReviewSession(Indexer& indexer,
+                HackSessionContext::Client session,
+                bool canApprove,
+                SandstormApi<>::Client sandstormApi)
+      : indexer(indexer),
+        session(kj::mv(session)),
+        canApprove(canApprove),
+        sandstormApi(kj::mv(sandstormApi)) {}
 
   kj::Promise<void> get(GetContext context) override {
     return kj::evalNow([&]() -> kj::Promise<void> {
@@ -294,6 +301,10 @@ public:
           content.setMimeType("application/json");
           content.initBody().setBytes(capnp::JsonCodec().encode(result).asBytes());
         });
+      } else if (path == "keybase-pb-descriptor") {
+        auto content = context.getResults().initContent();
+        content.setMimeType("text/plain");
+        content.initBody().setBytes(keybase::getPowerboxDescriptor().asBytes());
       } else {
         auto error = context.getResults().initClientError();
         error.setStatusCode(WebSession::Response::ClientErrorCode::NOT_FOUND);
@@ -330,56 +341,49 @@ public:
       } else if (path == "reindex") {
         indexer.updateIndex();
         context.getResults().initNoContent();
-      } else if (path.startsWith("keybase/")) {
-        // As a temporary hack, we process keybase API results client-side and then upload them
-        // in a non-JSON format.
-        //
-        // TODO(cleanup): Implement a JSON parser that we can run server-side.
-
-        auto fingerprint = path.slice(strlen("keybase/"));
-        KJ_REQUIRE(fingerprint.size() >= 32 && fingerprint.size() <= 128, "bad fingerprint");
-        for (char c: fingerprint) {
-          KJ_REQUIRE(isalnum(c), "bad fingerprint");
-        }
-
-        kj::Vector<kj::String> keys;
-        std::map<kj::StringPtr, kj::Vector<kj::String>> items;
-        auto lines = splitLines(kj::heapString(params.getContent().getContent().asChars()));
-
-        for (auto& line: lines) {
-          size_t colonPos = KJ_REQUIRE_NONNULL(line.findFirst(':'));
-          auto key = kj::heapString(line.slice(0, colonPos));
-          items[key].add(kj::heapString(line.slice(colonPos + 1)));
-          keys.add(kj::mv(key));
-        }
-
-        capnp::MallocMessageBuilder message;
-        auto keybase = message.getRoot<KeybaseIdentity>();
-
-        KJ_REQUIRE(items["username"].size() > 0, "missing username");
-        keybase.setKeybaseHandle(items["username"][0]);
-
-        if (items["name"].size() > 0) {
-          keybase.setName(items["name"][0]);
-        }
-        if (items["picture"].size() > 0 && items["picture"][0].startsWith("http")) {
-          keybase.setPicture(items["picture"][0]);
-        }
-
-#define TO_STRPTR_ARRAY(array) KJ_MAP(s, array) -> capnp::Text::Reader { return s; }
-        keybase.setWebsites(TO_STRPTR_ARRAY(items["proof.generic_web_site"]));
-        keybase.setGithubHandles(TO_STRPTR_ARRAY(items["proof.github"]));
-        keybase.setTwitterHandles(TO_STRPTR_ARRAY(items["proof.twitter"]));
-        keybase.setHackernewsHandles(TO_STRPTR_ARRAY(items["proof.hackernews"]));
-        keybase.setRedditHandles(TO_STRPTR_ARRAY(items["proof.reddit"]));
-#undef TO_STRPTR_ARRAY
-
-        indexer.addKeybaseProfile(fingerprint, message);
+      } else if (path == "keybase-pb-token") {
+        auto content = params.getContent().getContent();
+        auto claimReq = session.claimRequestRequest();
+        claimReq.setRequestToken(kj::str(content.asChars()));
+        auto cap = claimReq.send().getCap();
+        auto saveReq = sandstormApi.saveRequest();
+        saveReq.setCap(cap);
+        auto label = saveReq.initLabel();
+        label.setDefaultText("Keybase API endpoint");
         context.getResults().initNoContent();
-      } else {
-        auto error = context.getResults().initClientError();
-        error.setStatusCode(WebSession::Response::ClientErrorCode::NOT_FOUND);
-        error.setDescriptionHtml("<html><body><pre>404 not found</pre></body></html>");
+        return saveReq.send().then([](auto results) -> kj::Promise<void> {
+            auto token = results.getToken();
+            kj::FdOutputStream(raiiOpen("/var/keybase-token", O_CREAT|O_WRONLY)).write({token});
+            return kj::READY_NOW;
+        });
+      } else if (path.startsWith("keybase/")) {
+        // This route both supplies the client with the keybase identity and saves it
+        // to disk for the first time. Historically this is because of a now-removed
+        // hack where we actually did the keybase API call from the client (before we
+        // were blocking fetch via Content-Security-Policy).
+        //
+        // TODO(cleanup): we should probably fetch the info at submission time and save
+        // it then.
+        auto fingerprint = path.slice(strlen("keybase/"));
+        auto token = kj::FdInputStream(raiiOpen("/var/keybase-token", O_RDONLY)).readAllBytes();
+        auto req = sandstormApi.restoreRequest();
+        req.setToken(token);
+        return req.send().then([this, context, fingerprint](auto results) mutable {
+            auto ep = keybase::Endpoint(results.getCap().template castAs<ApiSession>());
+            return ep.getFingerPrintIdentity(fingerprint).then([this, context, fingerprint](auto result) mutable {
+                KJ_IF_MAYBE(msg, result) {
+                  auto identity = (*msg)->template getRoot<KeybaseIdentity>();
+                  auto bodyStr = capnp::JsonCodec().encode(identity);
+                  auto content = context.getResults().initContent();
+                  content.getBody().setBytes(bodyStr.asBytes());
+                  content.setMimeType("application/json");
+                  indexer.addKeybaseProfile(fingerprint, **msg);
+                } else {
+                  auto clientErr = context.getResults().initClientError();
+                  clientErr.setStatusCode(WebSession::Response::ClientErrorCode::NOT_FOUND);
+                }
+            });
+        });
       }
 
       return kj::READY_NOW;
@@ -392,11 +396,14 @@ private:
   Indexer& indexer;
   HackSessionContext::Client session;
   bool canApprove;  // True if the user has approver permission.
+  SandstormApi<>::Client sandstormApi;
 };
 
 class UiViewImpl final: public UiView::Server {
 public:
-  explicit UiViewImpl(Indexer& indexer): indexer(indexer) {}
+  explicit UiViewImpl(Indexer& indexer, SandstormApi<>::Client sandstormApi)
+    : indexer(indexer),
+      sandstormApi(kj::mv(sandstormApi)) {}
 
   kj::Promise<void> getViewInfo(GetViewInfoContext context) override {
     context.setResults(APP_INDEX_VIEW_INFO);
@@ -423,8 +430,10 @@ public:
       KJ_REQUIRE(hasPermission(REVIEW_PERMISSION),
                  "client does not have permission to review apps; can't use web interface");
       result = kj::heap<ReviewSession>(
-          indexer, params.getContext().castAs<HackSessionContext>(),
-          hasPermission(APPROVE_PERMISSION));
+          indexer,
+          params.getContext().castAs<HackSessionContext>(),
+          hasPermission(APPROVE_PERMISSION),
+          sandstormApi);
     } else {
       KJ_FAIL_REQUIRE("Unsupported session type.");
     }
@@ -435,6 +444,7 @@ public:
 
 private:
   Indexer& indexer;
+  SandstormApi<>::Client sandstormApi;
 };
 
 class AppIndexMain {
@@ -472,11 +482,16 @@ public:
 
     // Set up RPC on file descriptor 3.
     auto stream = ioContext.lowLevelProvider->wrapSocketFd(3);
-    capnp::TwoPartyClient client(*stream, kj::heap<UiViewImpl>(indexer));
 
-    // TODO(soon):  We don't use this, but for some reason the connection doesn't come up if we
-    //   don't do this bootstrap.  Cap'n Proto bug?  v8capnp bug?  Shell bug?
-    client.bootstrap();
+    auto paf = kj::newPromiseAndFulfiller<SandstormApi<>::Client>();
+    capnp::Capability::Client api(kj::mv(paf.promise));
+
+    capnp::TwoPartyClient client(
+        *stream,
+        kj::heap<UiViewImpl>(indexer, api.castAs<SandstormApi<>>())
+    );
+
+    paf.fulfiller->fulfill(client.bootstrap().castAs<SandstormApi<>>());
 
     kj::NEVER_DONE.wait(ioContext.waitScope);
   }

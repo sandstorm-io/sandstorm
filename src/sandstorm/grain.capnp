@@ -126,6 +126,100 @@ interface SandstormApi(AppObjectId) {
   # This method is here on `SandstormApi` rather than on `Identity` in order to ease a possible
   # future transition to a model where identity IDs are not globally stable and each grain has a
   # separate (possibly incompatible) map from identity ID to account ID.
+
+  schedule @11 ScheduledJob;
+  # Schedule a callback to be executed in the future.
+  #
+  # The job may be scheduled to execute once at a specific time, or periodically. See
+  # `ScheduledJob` for more information.
+  #
+  # When this method returns, the job will have been scheduled.
+}
+
+struct ScheduledJob {
+  # A job to be scheduled by `SandstormApi.schedule()`.
+
+  name @0 :Util.LocalizedText;
+  # A name for the job. This will be used to describe the job to the user.
+
+  callback @1 :Callback;
+  # A callback to actually execute when it is time to run the job.
+  #
+  # In addition to implementing the `Callback` interface below, this must also
+  # implement `AppPersistent`. When a request to schedule the job is made, Sandstorm
+  # will `save()` the callback, and then later `restore()` it when it is time to
+  # run the job. See `AppPersistent` for more details on how this works.
+  #
+  # Note that, in some circumstances, the app may need to save some information
+  # locally to recognize the task. There is a possibility that between scheduling
+  # the job and actually saving the information, The app may be killed, the server
+  # may crash, or some other failure may occur that prevents the app from saving
+  # the information. We recommend dealing with this in one of the following ways:
+  #
+  # - Where possible, save all needed information in the `objectId` returned
+  #   by `AppPersistent.save()`; this avoids the race condition entirely.
+  # - Otherwise, in your implementation of `MainView.restore()`, if you are asked
+  #   to restore a callback you don't recognize, return a dummy callback that does
+  #   nothing, and returns `cancelFutureRuns = true`. This will cause Sandstorm to
+  #   cancel and delete the unknown job.
+  #
+  # When the callback is called, Sandstorm will avoid killing the grain until the callback returns.
+  # If the callback throws a "disconnected" exception, or if Sandstorm is forced to kill the
+  # grain for some reason, the callback will be retried. After a limited number of failed retries,
+  # Sandstorm may alert the owner to a problem and stop retrying.
+
+  interface Callback {
+    run @0 () -> (cancelFutureRuns :Bool = false);
+    # Run the job. If the return value has `cancelFutureRuns = true` and this is a periodic job,
+    # the job will be cancelled and will not be run again.
+  }
+
+  schedule :union {
+  # The actual schedule of the job.
+
+    oneShot :group {
+    # Run the job exactly once.
+
+      when @2 :Util.DateInNs;
+      # The time at which the job should be run.
+
+      slack @3 :Util.DurationInNs;
+      # In order to improve resource utilization, Sandstorm prefers imprecise
+      # scheduling -- this allows it to choose a time of low activity to invoke
+      # the callback. The `slack` field tells Sandstorm how much freedom it
+      # has -- it may schedule the task any time between `when` and `when +
+      # slack`. A value of zero for `slack` is special: it is equivalent to
+      # 1/8th of the difference between now and `when` -- this sets the window
+      # adaptively, such that the further in the future the event is scheduled,
+      # the more slack it has. You must explicitly set a non-zero value if you
+      # need better precision. Additionally, the value must be greater than
+      # `minimumSchedulingSlack`, or an exception will be thrown. If you need
+      # better precision than this, you should schedule a callback for slightly
+      # before the target time, then countdown the remaining time in-process.
+    }
+
+    periodic @4 :SchedulingPeriod;
+    # Run the job on a regular interval.
+    #
+    # In order to improve resource utilization, Sandstorm prefers imprecise
+    # scheduling -- this allows it to choose a time of low activity to
+    # invoke the callback. Therefore, Sandstorm guarantees that the callback
+    # will be called once per scheduling period, but does not make any guarantees
+    # about exactly when in that period the call will occur. If you need more
+    # precise scheduling, you will need to use `oneShot`, and schedule the next
+    # occurance from the callback itself, before returning.
+  }
+}
+
+const minimumSchedulingSlack :Util.DurationInNs = 300000000000;
+# 5 minutes: The minimum value allowable for the `slack` parameter passed to `scheduleAt()`.
+
+enum SchedulingPeriod {
+  annually @3;
+  monthly @2;
+  weekly @4;
+  daily @1;
+  hourly @0;
 }
 
 interface UiView @0xdbb4d798ea67e2e7 {
@@ -299,7 +393,7 @@ interface UiView @0xdbb4d798ea67e2e7 {
   # in implementing an `EmailVerifier` that cannot be MITM'd. NOTE: `tabId` should NOT be presumed
   # to be a secret, although no two tabs in all of time will have the same `tabId`.
   #
-  # For API requests, `tabId` uniquely identifies the token, as so can be used to correlate
+  # For API requests, `tabId` uniquely identifies the token, and so can be used to correlate
   # multiple requests from the same client.
 
   newRequestSession @2 (userInfo :Identity.UserInfo, context :SessionContext,
@@ -620,8 +714,36 @@ struct GrainInfo {
 
   ownerIdentityId @3 :Text;
 
-  # TODO(someday): Record the whole sharing / capability graph including all users' identity IDs
-  #   so that they can be restored.
+  users @4 :List(User);
+  # Record of users with who had accessed this grain. This can be used to ensure that if a restored
+  # grain is shared with the same users, they receive the same identities, rather than appearing
+  # to be new people.
+
+  struct User {
+    identityId @0 :Text;
+    # Identity ID of this user within the app.
+
+    credentialIds @1 :List(Text);
+    # The user's login credential IDs. If a user with a matching credential visits the restored
+    # grain, they will regain the same identity. Credential IDs are consistent across differnt
+    # Sandstorm servers (as long as the same authentication mechanisms are used), so this can allow
+    # identities to be restored even on a new server.
+    #
+    # Non-login credentials are not included because those credentials could be shared by multiple
+    # users. However, non-login credentials could be used for matching when restoring identities
+    # later.
+
+    profile @2 :Identity.Profile;
+    # User's profile. Could be useful to allow the human owner of the restored grain to manually
+    # remap identities.
+  }
+
+  originalGrainId @5 :Text;
+  # The grain's original ID. With admin approval, grains could be allowed to receive the same IDs
+  # when restored on a new server.
+
+  # TODO(someday): Record the whole sharing / capability graph? This gets complicated since grains
+  #   may have been shared via other grains, etc.
 }
 
 # ========================================================================================

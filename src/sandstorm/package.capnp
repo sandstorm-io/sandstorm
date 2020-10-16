@@ -230,6 +230,21 @@ struct BridgeConfig {
   # capability so that it can be fetched later using `SandstormHttpBridge.getSavedIdentity`. You
   # will probably want to enable this if your app supports notifications.
 
+  expectAppHooks @4 :Bool;
+  # Set this to true if you are using sandstorm-http-bridge and want to do any of
+  # the following:
+  #
+  # - Provide an implementation of getViewInfo() that generates its result dynamically,
+  #   rather than statically defining the result via `viewInfo` above.
+  # - Support exporting persistent capabilities other than the HTTP APIs specified by
+  #   PowerboxApi below.
+  #
+  # If this is true, the bridge will expect the application to establish a capnproto
+  # connection to the bridge via `/tmp/sandstorm-api`, and it will expect the app's
+  # bootstrap interface on this connection to implement `AppHooks`, defined in
+  # sandstorm-http-bridge.capnp. The methods described there can be used to
+  # implement the above functionality.
+
   powerboxApis @3 :List(PowerboxApi);
   struct PowerboxApi {
     # Defines an HTTP API which this application exports, to which other apps can request access

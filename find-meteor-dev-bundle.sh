@@ -39,11 +39,11 @@ METEOR_WAREHOUSE_DIR="${METEOR_WAREHOUSE_DIR:-$HOME/.meteor}"
 # sees the meteor version we're using and sticks to that.
 cd "$SCRIPT_DIR/shell"
 
-METEOR_RELEASE=$(<.meteor/release)
+METEOR_RELEASE=${1:-$(<.meteor/release)}
 CACHE_FILE="../tmp/$METEOR_RELEASE.location"
 
 mkdir -p ../tmp
-if [ -e "$CACHE_FILE" ]; then
+if [ -s "$CACHE_FILE" ]; then
   cat "$CACHE_FILE"
   exit
 fi

@@ -9,6 +9,11 @@
   @extend %button-secondary;
 }
 
+.button-danger {
+  @extend %button-base;
+  @extend %button-danger;
+}
+
 .button-link {
   background: none;
   border: none;
@@ -130,4 +135,9 @@
     margin-bottom: 24px;
     border-bottom: 1px solid #ddd;
   }
+}
+
+button.upgrade-plan-now {
+  float: right;
+  margin: 6px;
 }

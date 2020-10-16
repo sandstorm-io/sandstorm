@@ -23,6 +23,7 @@
 #include <capnp/rpc-twoparty.h>
 #include <kj/one-of.h>
 #include <kj/vector.h>
+#include <sandstorm/cgroup2.h>
 
 namespace kj {
   class InputStream;
@@ -30,10 +31,11 @@ namespace kj {
 
 namespace sandstorm {
 
-class BackendImpl: public Backend::Server, private kj::TaskSet::ErrorHandler {
+class BackendImpl final: public Backend::Server, private kj::TaskSet::ErrorHandler {
 public:
   BackendImpl(kj::LowLevelAsyncIoProvider& ioProvider, kj::Network& network,
               SandstormCoreFactory::Client&& sandstormCoreFactory,
+	      kj::Maybe<Cgroup>&& cgroup,
               kj::Maybe<uid_t> sandboxUid);
 
 protected:
@@ -59,6 +61,7 @@ private:
   SandstormCoreFactory::Client coreFactory;
   kj::Maybe<uid_t> sandboxUid;   // if not using user namespaces
   kj::TaskSet tasks;
+  kj::Maybe<Cgroup> cgroup;
 
   class RunningGrain {
   public:

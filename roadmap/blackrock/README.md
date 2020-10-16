@@ -83,15 +83,13 @@ TODO(feature): The database is synced back to object storage as well.
 
 TODO(project): Long-term, we should seek to replace Mongo with our own storage interface.
 
-### TODO(feature): Gateways
-
-_(Not implemented as of Feb 2017: Currently we manually set up one or more machines running a reverse proxy (nginx, HAProxy, etc.) which forward requests to shell machines. These machines aren't managed by the Blackrock master.)_
+### Gateways
 
 Gateways bridge to the public internet (or to the broader corporate network outside of the Sandstorm cluster). This breaks down into a few jobs:
 
 * Receive incoming HTTP requests, terminate SSL on those requests, and forward them to the shell or directly to grains.
-* Implement a Cap'n Proto interface for establishing and accepting TCP connections as well as engaging in UDP traffic with the outside world. Such connections will be prohibited from connecting to other machines inside the cluster. This capability can then be handed off to a device driver in order to give it *external* network access without giving it any internal network access.
-* Proxy Cap'n Proto itself to the outside world. The internal network uses a different parameterization of the Cap'n Proto protocol than the public internet will, so when capabilities pass across this boundary, they must be actively proxied. This also gives us a chance to keep track of the existence of external capabilities separately from internal ones and hide the internal SturdyRef representation from external eyes (as an extra layer of security).
+* TODO(feature): Implement a Cap'n Proto interface for establishing and accepting TCP connections as well as engaging in UDP traffic with the outside world. Such connections will be prohibited from connecting to other machines inside the cluster. This capability can then be handed off to a device driver in order to give it *external* network access without giving it any internal network access.
+* TODO(feature): Proxy Cap'n Proto itself to the outside world. The internal network uses a different parameterization of the Cap'n Proto protocol than the public internet will, so when capabilities pass across this boundary, they must be actively proxied. This also gives us a chance to keep track of the existence of external capabilities separately from internal ones and hide the internal SturdyRef representation from external eyes (as an extra layer of security).
 
 ### TODO(feature): Log sink
 

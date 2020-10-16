@@ -40,9 +40,6 @@
       "title": "Ei löytynyt",
       "text": "404 Ei löytynyt :("
     },
-    "root": {
-      "title": "Koti"
-    },
     "grainLogContents": {
       "prefix": "..."
     },
@@ -109,7 +106,7 @@
       "finePrint": {
         "title": "Pieni präntti",
         "warningWithAccountLink": "Suositus bonuksesi kestää 1 vuoden suosittelun jälkeen. Tämän suositusohjelman säännöt saattavat muuttua ilman varoitusta; kuitenkin, sellaiset muutokset eivät muuta bonuksia jotka olet jo vastaanottanut. Jos tarvitset vielä enemmän tilaa, <a href=\"%s\">päivitä tilisi.</a>",
-        "explanation": "Maksavat tilaajat voivat saada jopa 30 GB vapaata tilaa, 2 GB jokaista henkilöä kohden joille he suosittelevat, sen lisäksi mitä heidän tilitasonsa jo tarjoaa. Ilmaisen tilin omistajat voivat ansaita rajattomasti jyvää ja 50 MB ilmaista tilaa per henkilö joille he suosittelevat, jopa 2 GB yhteensä."
+        "explanation": "Maksavat tilaajat voivat saada jopa 30 GB vapaata tilaa, 2 GB jokaista henkilöä kohden joille he suosittelevat, sen lisäksi mitä heidän tilitasonsa jo tarjoaa."
       }
     },
     "about": {
@@ -163,6 +160,7 @@
     "title": "Jyvät",
     "grainView": {
       "notFoundWithId": "Ei löytynyt jyviä jolla on ID %s.",
+      "quotaExhausted": "Ei voitu käynnistää jyvää koska omistajan levytila on täynnä. Jos tämä on sinun jyväsi, päivitä tilauksesi levytila isompaan jatkaaksesi.",
       "openWithWhichIdentity": "Haluatko paljastaa identiteettisi tälle jyvälle, vai säilyä anonyyminä?",
       "openInIncognitoMode": "Avaa yksityisessä tilassa",
       "revealMyIdentity": "Paljasta identiteettini"
@@ -220,6 +218,15 @@
       "cancel": "Peruuta",
       "confirmHint": "lataa varmuuskopio",
       "confirm": "Lataa varmuuskopio"
+    },
+    "grainCloneButton": {
+      "hint": "Kloonaa jyvä",
+      "text": "Kloonaa",
+      "copyTitle": "Kopio jyvästä %s"
+    },
+    "grainClonePopup": {
+      "title": "Kloonaa jyvä",
+      "processing": "Kloonataan jyvää..."
     },
     "grainRestartButton": {
       "hint": "Käynnistä ohjelma uudelleen",
@@ -321,7 +328,6 @@
           "hint": "Mikä on jyvä?"
         },
         "mainListButton": "Näytä päälista",
-        "trashButton": "Näytä roskakori (%s)",
         "restoreButton": "Palauta varmuuskopio...",
         "search": {
           "placeholder": "etsi"
@@ -330,6 +336,8 @@
           "quota": "__count__ / __quota__ jyvää",
           "size": "__size__ / __total__ käytetty"
         },
+        "trashButton": "Näytä roskakori (%s)",
+        "moveToTrash": "Siirrä roskakoriin",
         "trash": {
           "emptyButton": "Tyhjennä roskakori",
           "explanation": "(Solut poistetaan lopullisesti kun ne ovat olleet 30 päivää roskakorissa. Pitääksesi jyvän, palauta se päälistaan.)"
@@ -343,7 +351,42 @@
           "hasApps": "Valitse ohjelma ja luo ensimmäinen jyväsi.",
           "hasNoApp": "Asenna ohjelma luodaksesi ensimmäinen jyväsi."
         },
-        "moveToTrash": "Siirrä roskakoriin"
+        "transfers": {
+          "massTransfer": "Massasiirto...",
+          "transfers": "Siirrot",
+          "transfer": "Siirto",
+          "blockedInitiateBeforeSource": "Näyttää siltä että yrität aloittaa siirron lähteestä",
+          "blockedInitiateAfterSource": ", mutta sinulla on jo siirto meneillään. Odota meneillään olevan valmistumista tai peruuta meneillään oleva siirto jatkaaksesi.",
+          "incomingTransferActive": "Sisääntuleva siirto aktiivinen",
+          "cancel": "Peruuta",
+          "remaining": "Jäljellä",
+          "retryErrors": "Siirrä uudelleen virheen kohdanneet",
+          "pauseTransfer": "Paussita siirto",
+          "continueTransfer": "Jatka siirtoa",
+          "startTransfer": "Aloita siirto",
+          "closeTransfer": "Sulje siirto",
+          "outgoingTransferActive": "Ulospäin menevä siirto aktiivinen",
+          "currentlyTransferring": "Olet siirtämässä jyviä kohteeseen:",
+          "manageAt": "Hallitse siirtoasi täällä:",
+          "inOrder": "Aloittaaksesi uuden siirron (sisääntulevan tai ulospäin menevän), sinun täytyy ensin peruuttaa meneillään oleva siirto.",
+          "cancelTransfer": "Peruuta siirto",
+          "initiateInboundTransfer": "Tee sisäänpäin tuleva siirto",
+          "initiateOutboundTransfer": "Tee ulospäin menevä siirto",
+          "theSandstormServerAt": "Sandstorm palvelin osoitteessa",
+          "wantsToTransfer": "haluaa siirtää jyviä tälle palvelimelle.",
+          "insecureSource": "VAROITUS: Lähde palvelin ei tue HTTPS:ää. Tiedot siirretään ilman kryptausta.",
+          "deny": "Kiellä",
+          "fetchGrainList": "Nouda jyvälista",
+          "noTransfersInProgress": "Siirtoja ei ole tällä hetkellä meneillään.",
+          "transferAllMyGrainsTo": "Siirrä kaikki jyväni kohteeseen:",
+          "initiateTransfer": "Aloita siirto",
+          "whatDoesThisDo": "Mitä tämä tekee?",
+          "whatCan": "Voit käyttää tätä toimintoa siirtääksesi kaikki jyväsi uudelle Sandstorm palvelimelle. Tämä automatisoi prosessin jossa tallennetaan varmuuskopioidaan jokainen jyvä tällä palvelimella, ja sitten palautetaan joka varmuuskopio määrittelemälläsi palvelimella.",
+          "whatWhen": "Kun yllä aloitat siirron, sinut uudelleenohjataan <strong>kohde</strong> palvelimelle jonne voit kirjautua. Voit sitten valita mitkä jyvät siirretään, ja lopuksi aloittaa siirron. Siirto jatkuu taustalla; voit kirjautua ulos.",
+          "whatOrder": "Jotta siirto toimisi, <strong>kohde</strong> palvelimen täytyy voida yltää <strong>lähde</strong> palvelimelle suoraan internetin yli. Kuitenkin, vastoinpäin tämä ei ole tarpeellista. Siis, voit suorittaa massa siirron joka siirtää jyviä palvelimelta joka on julkisessa internetissä (kuten Sandstorm Oasis) palvelimelle joka on sisäisessa verkossa, mutta ei vastoinpäin. Jos <strong>lähde</strong> palvelin tukee HTTPS:ää, niin sitten siirto tapahtuu HTTPS:n yli, riippumatta <strong>kohde</strong> palvelimen protokollasta.",
+          "warningGiving": "VAROITUS: Olet antamassa %s luvan ladata kaikki jyväsi tältä palvelimelta. Oletko varma?",
+          "errorAcceptingTransfer": "Virhe yrittäessä sallia siirtoa:"
+        }
       },
       "sandstormGrainTable": {
         "bulkAction": {
@@ -880,6 +923,11 @@
         "restoreButton": "Palauta oletukset"
       }
     },
+    "certificates": {
+      "name": "SSL/TLS sertifikaatit",
+      "subtext": "Määritä sertikaatit manuaalisesti tai käyttäen Let's Encryptiä.",
+      "newAdminCertificates": {}
+    },
     "users": {
       "name": "Käyttäjät",
       "subtext": "Hallitse tämän Sandstorm asennuksen kaikkia käyttäjiä."
@@ -1165,6 +1213,7 @@
     "networkCapabilities": {
       "name": "Verkko-oikeudet",
       "subtext": "Hallitse suoraa verkkopääsyä jyviin.",
+      "explanation": "Tämä sivu näyttää verkko-oikeudet jotka on sallittu jyviin. Oletuksena jyvillä on hyvin rajalliset verkko oikeudet. Jyvä voi pyytää täyttä verkko oikeutta silloin kun se on käytössä. Vain admin voi sallia pyynnön, joka myöntää \"verkkoon pääsy kyvyn\" jyvälle.",
       "newAdminNetworkCapabilitiesTableCapabilityRow": {
         "adminAccount": "Admin tili %s",
         "unknownGranter": "Tuntematon sallija",
@@ -1456,7 +1505,7 @@
       "_loginButtonsLoggedOutDropdown": {
         "demo": {
           "title": "Luo tili",
-          "explanation": "Demo tietosi siirretään uudelle tilillesi."
+          "explanation": "VAROITUS: Demo tietosi poistetaan lopullisesti."
         },
         "title": "Kirjaudu sisään",
         "shared": {
@@ -1768,13 +1817,13 @@
       "grains": "Jyvät",
       "oasis": "Aloita yhteistyö muiden kanssa Sandstormia paikassa Oasis:",
       "createAccount": "Luo ilmainen tili »",
-      "demoHint": "Demo tilisi tiedot siirretään.",
-      "selfHostHint": "Tai, asenna Sandstorm tiimillesi (se on avointa lähdekoodia):",
-      "signUp": "Kirjaudu käyttämällä:",
+      "demoHint": "VAROITUS: Demo tilisi tiedot poistetaan lopullisesti.",
+      "selfHostHint": "Tämä on aikarajoitettu demo. Jos haluat käyttää Sandstormia oikeasti, asenna se omalle palvelimellesi (se on avointa lähdekoodia):",
+      "signUp": "Demo aikaa jäljellä:",
       "close": "Sulje"
     },
     "powerbox": {
-      "title": "Powerbox pyyntörequest",
+      "title": "Powerbox pyyntö",
       "inputToken": "Syöttö api token:",
       "importToken": "Tuonti token",
       "selected": "Valittu:",

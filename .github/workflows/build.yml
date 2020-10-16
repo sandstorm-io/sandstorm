@@ -1,0 +1,93 @@
+name: build_and_test
+
+on: [push, pull_request]
+
+env:
+  CCACHE_DIR: ${{ github.workspace }}/.ccache"
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: install dependencies
+        run: |
+            export DEBIAN_FRONTEND=noninteractive
+            echo "The build of boringssl requires golang."
+            echo "The github runner seems to have some version of golang already; installing golang-go breaks."
+            which go || sudo apt-get install golang-go
+
+            sudo apt-get install -y build-essential libcap-dev xz-utils zip unzip strace curl discount git python zlib1g-dev cmake ccache
+      - name: install meteor
+        # Install Meteor 1.8.2 because the icons build (which doesn't actually use meteor) needs
+        # the Node binary from this version. Other required versions of meteor will be installed
+        # automatically as needed by the meteor tool.
+        run: |
+            curl https://install.meteor.com/?release=1.8.2 | sh
+      - name: cache ccache files
+        uses: actions/cache@v1.1.0
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ github.run_number }}
+          restore-keys: ccache-
+      - name: print and zero ccache stats
+        run: |
+            mkdir -p "$CCACHE_DIR"
+            ccache -s
+            ccache -z
+      - name: make fast
+        run: |
+            set -x
+            export CCACHE_COMPRESS="true"
+            export CCACHE_COMPRESSLEVEL="6"
+            export CCACHE_MAXSIZE="1G"
+            #     export CCACHE_DEBUG=1
+            export CCACHE_SLOPPINESS="time_macros"
+            export PATH=/usr/lib/ccache:$CLANGDIR:$PATH
+
+            make \
+              CC="$(which clang)" \
+              CXX="$(which clang++)" \
+              fast
+      - name: print ccache stats
+        run: |
+            ccache -s
+      #      # for debugging ccache misses
+      #      find . -iname *ccache* | tar -czf ccache-debug.tar.gz -T /dev/stdin
+      #- name: upload ccache debug tarball
+      #  uses: actions/upload-artifact@v1
+      #  with:
+      #    name: ccache-debug.tar.gz
+      #    path: ccache-debug.tar.gz
+      - name: upload sandstorm tarball
+        if: always()
+        uses: actions/upload-artifact@v1
+        with:
+          name: sandstorm-0-fast.tar.xz
+          path: sandstorm-0-fast.tar.xz
+      - name: lint
+        run: |
+          # In addition to making sure the linting step doesn't flag any errors,
+          # we also want to make sure the number of warnings doesn't increase.
+          # We check for equality; if the number decreases, great! But then update
+          # the constant below.
+          make lint | tee lint.log
+          num_problems=$(cat lint.log | grep ' problems (0 errors, ' | awk '{print $2}')
+          [ "$num_problems" = 796 ]
+      - name: test
+        run: |
+          set -o pipefail
+          # Currently these tests never pass.
+          # TODO: When they are fixed, remove the || true
+          (make test |& tee testlog.txt; echo "Result: $?") || true
+      - name: upload test log
+        if: always()
+        uses: actions/upload-artifact@v1
+        with:
+          name: testlog.txt
+          path: testlog.txt
+      - name: upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v1
+        with:
+          name: screenshots
+          path: tests/screenshots

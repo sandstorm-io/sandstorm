@@ -1,0 +1,166 @@
+<!--
+Sandstorm - Personal Cloud Sandbox
+Copyright (c) 2015 Sandstorm Development Group, Inc. and contributors
+All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<template name="sandstormTopbar">
+  {{#let txt="packages.topbar"}}
+  {{#if isUpdateBlocked}}
+    <button class="topbar-update">
+      {{_ (con txt "updated")}}
+    </button>
+  {{/if}}
+  <ul class="topbar{{#if _menuExpanded.get}} expanded{{/if}}{{#if isCurrentRoute "standalone"}} standalone{{/if}}">
+    <ul class="menubar {{#if shrinkNavbar}}shrink-desktop{{/if}}">
+      {{#each items}}
+        {{#unless onlyPopup}}
+          <li class="{{name}}">
+            {{> template data.get}}
+          </li>
+        {{/unless}}
+      {{/each}}
+    </ul>
+    <ul class="navbar {{#if hideNavbar}}hide-desktop{{else}}{{#if shrinkNavbar}}shrink-desktop{{/if}}{{/if}}">
+      {{#if currentUser}}
+      <li class="navitem-create-grain {{#if isCurrentRoute 'apps'}}current{{/if}}"><a href="{{pathFor route='apps'}}">{{_ (con txt "apps")}}</a></li>
+      <li class="navitem-open-grain {{#if isCurrentRoute 'grains'}}current{{/if}}"><a href="{{pathFor route='grains'}}"><span>{{_ (con txt "grains")}}</span></a></li>
+      {{/if}}
+
+      <li class="navbar-shrink-item">
+        <button class="navbar-shrink icon icon-arrow {{#if shrinkNavbar}}shrunk{{/if}}"
+                title="{{#if shrinkNavbar}}Grow{{else}}Shrink{{/if}} sidebar"></button>
+      </li>
+
+      {{!-- TODO(cleanup): ul's can only contain li's, so this ul is not really valid --}}
+      <ul class="navbar-grains">
+        {{#each grains}}
+        <li data-grainid="{{grainId}}" class="navitem-grain {{#if active}}current{{/if}} {{#if unread}}unread{{/if}}" title={{title}}>
+          <div class="app-icon" style="background-image: url('{{iconSrc}}');" alt="{{appTitle}}"></div>
+          <a href="{{grainLink}}">{{title}}</a>
+          {{#with notificationCount}}
+            <span class="notification-count" title="notifications">{{.}}</span>
+          {{/with}}
+          <button class="close-button" title="Close {{title}}"></button>
+        </li>
+        {{/each}}
+      </ul>
+
+      {{#with accountExpires}}
+      <li class="navitem-demo-notice">
+        <div class="demo-notice">
+          <p class="self-host">
+            {{_ (con txt "selfHostHint")}}
+            <a class="get-sandstorm-button" href="https://sandstorm.io/get?utm_source=demo&amp;utm_campaign=2016-11&amp;utm_medium=oasis" target="_blank">
+              Get Sandstorm »
+            </a>
+          </p>
+        </div>
+      </li>
+
+      <li class="navitem-demo-timer">
+        <div class="demo-timer">
+          <p>{{_ (con txt "signUp")}}
+            <span class="countdown {{#if urgent}}urgent{{/if}}">{{countdown}}</span>
+          </p>
+        </div>
+      </li>
+      {{/with}}
+    </ul>
+  </ul>
+  {{!-- Becomes hamburger menu button in mobile view.  Placed after the topbar so it stacks above
+        the other topbar items without needing z-index, which would make it impossible to have
+        modals cover this button. --}}
+  <div class="menu-button {{#if _menuExpanded.get}}expanded{{/if}}"></div>
+  {{!-- We wish to block reload if there are *any* grains open, regardless of the current route --}}
+  {{#if grainCount }}
+    {{>sandstormTopbarBlockReload ""}}
+  {{/if}}
+
+  {{#with currentPopup}}
+    <div class="popup {{name}} {{#if modal}}modal{{/if}}">
+      {{#if onlyPopup}}
+        <div class="frame-container centered">
+          <div class="frame">
+            <button class="close-popup">{{_ (con txt "close")}}</button>
+            {{>popupTemplate data.get}}
+          </div>
+        </div>
+      {{else}}
+        {{#with position}}
+          <div class="frame-container align-{{align}}" style="{{align}}: {{px}}px">
+            <div class="frame">
+              <button class="close-popup">Close</button>
+              {{>popupTemplateNested ../data.get}}
+            </div>
+          </div>
+        {{/with}}
+      {{/if}}
+    </div>
+  {{/with}}
+  {{/let}}
+</template>
+
+<template name="sandstormTopbarItem">
+  {{!--
+    Convenience helper for registering topbar items.
+
+    You can insert something like this into a template to indicate that while the template is
+    displayed, an item should be added to the top bar:
+
+        {{>sandstormTopbarItem name="foo" topbar=myTopbar data="whatever" template="fooTemplate"}}
+
+    The topbar item will use the given template. The template will receive `data` as its data
+    context.
+
+    The effect is that as long as the parent template is instantiated, the inner part will be
+    registered as a topbar item. When the parent template is disposed, the template item will
+    be unregistered. MAGIC!
+
+    The parameter `topbar` refers to the SandstormTopbar object with which to register the item.
+
+    As a special hack, you can also use this template like so:
+
+        {{#sandstormTopbarItem name="foo" topbar=myTopbar}}
+          inline template!!!
+        {{/sandstormTopbarItem}}
+
+    This syntax essentially defines `template` inline. Note, however, that because these template
+    will not be inserted directly into the parent template, there are some limitations:
+
+    * Event handlers on the parent template will NOT catch events on the topbar items.
+    * If you don't specify `data`, the current context will be inherited. However, its parents
+      will NOT be inherited, so you can't use Template.parentData() to get them.
+    * Helper functions on the parent template CAN be used in the topbar items, though.
+
+    As an extra-special hack, you can also do:
+
+        {{#sandstormTopbarItem name="foo" topbar=myTopbar}}
+          inline template!!!
+        {{else}}
+          inline popup template!!!
+        {{/sandstormTopbarItem}}
+
+    This further specifies a template for the popup window that should appear when the item is
+    clicked. The use of {{else}} for this is a huge hack; it's really not an "else" at all.
+  --}}
+</template>
+
+<template name="sandstormTopbarBlockReload">
+  {{!--
+    Convenience template that blocks reload while it exists. Embed this in any UI which would
+    be bad to unexpectedly reload on hot code update.
+  --}}
+</template>

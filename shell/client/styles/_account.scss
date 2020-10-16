@@ -1425,6 +1425,10 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
           >td>p:nth-child(2) {
             font-size: 12px;
           }
+          >td>p.no-free {
+            font-size: 16px;
+            padding: 0 16px;
+          }
         }
 
         tr:nth-child(5) {
@@ -1462,6 +1466,13 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
         }
       }
     }
+  }
+
+  >.discontinue-free {
+    font-size: 17px;
+    font-style: italic;
+    text-align: left;
+    text-indent: -9.5px;
   }
 
   >.faq {
@@ -1821,3 +1832,10 @@ ul.credential-card-list {
     margin-bottom: 10px;
   }
 }
+
+.free-plan-going-away, .oasis-shutting-down {
+  margin: -1em 1em 0;
+  padding: 4px;
+  background-color: #ffdddd;
+}
+

@@ -18,11 +18,12 @@
 # your config.
 CC=$(shell pwd)/deps/llvm-build/Release+Asserts/bin/clang
 CXX=$(shell pwd)/deps/llvm-build/Release+Asserts/bin/clang++
-CFLAGS=-O2 -Wall
+CFLAGS=-O2 -Wall -g
 CXXFLAGS=$(CFLAGS)
 BUILD=0
 PARALLEL=$(shell nproc)
 LIBS=
+EKAM=ekam
 
 # You generally should not modify this.
 # TODO(cleanup): -fPIC is unfortunate since most of our code is static binaries
@@ -30,13 +31,21 @@ LIBS=
 #   needs to include all the Cap'n Proto code. Do we double-compile or do we
 #   just accept it? Perhaps it's for the best since we probably should build
 #   position-independent executables for security reasons?
+# NOTE: Emperically -DKJ_STD_COMPAT appears to be necessary on recent ditros
+#   (as of Jan 2020), notably Debian Sid, Fedora 30 and Archlinux. We're not
+#   entirely sure what changed, but this seems like a backwards incompatibility
+#   in libstdc++. See also issue #3171.
 METEOR_DEV_BUNDLE=$(shell ./find-meteor-dev-bundle.sh)
+METEOR_SPK_VERSION=0.5.1
+METEOR_SPK=$(PWD)/meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk
 NODEJS=$(METEOR_DEV_BUNDLE)/bin/node
 NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
 WARNINGS=-Wall -Wextra -Wglobal-constructors -Wno-sign-compare -Wno-unused-parameter
-CXXFLAGS2=-std=c++1z $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -DKJ_HAS_OPENSSL -DKJ_HAS_ZLIB -pthread -fPIC -I$(NODE_HEADERS)
-CFLAGS2=$(CFLAGS) -pthread -fPIC
-LIBS2=$(LIBS) deps/libsodium/build/src/libsodium/.libs/libsodium.a deps/boringssl/build/ssl/libssl.a deps/boringssl/build/crypto/libcrypto.a -lz -pthread
+CXXFLAGS2=-std=c++1z $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -DKJ_HAS_OPENSSL -DKJ_HAS_ZLIB -DKJ_HAS_LIBDL -pthread -fPIC -I$(NODE_HEADERS) -DKJ_STD_COMPAT
+CFLAGS2=$(CFLAGS) -pthread -fPIC -DKJ_STD_COMPAT
+# -lrt is not used by sandstorm itself, but the test app uses it. It would be
+#  nice if we could not link everything against it.
+LIBS2=$(LIBS) deps/libsodium/build/src/libsodium/.libs/libsodium.a deps/boringssl/build/ssl/libssl.a deps/boringssl/build/crypto/libcrypto.a -lz -ldl -pthread -lrt
 
 define color
   printf '\033[0;34m==== $1 ====\033[0m\n'
@@ -128,21 +137,21 @@ IMAGES= \
 # Meta rules
 
 .SUFFIXES:
-.PHONY: all install clean clean-deps ci-clean continuous shell-env fast deps bootstrap-ekam update-deps test installer-test app-index-dev
+.PHONY: all install clean clean-deps ci-clean continuous shell-env fast deps bootstrap-ekam update-deps test installer-test app-index-dev lint
 
 all: sandstorm-$(BUILD).tar.xz
 
 clean: ci-clean
-	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/client/changelog.html shell/packages/*/.build* shell/packages/*/.npm/package/node_modules *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff icons/package-lock.json tests/package-lock.json deps/llvm-build
+	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/imports/client/changelog.html *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff icons/package-lock.json tests/package-lock.json deps/llvm-build meteor-testapp/node_modules
 	@# Note: capnproto, libseccomp, and node-capnp are integrated into the common build.
 	cd deps/ekam && make clean
 	rm -rf deps/libsodium/build
-	cd deps/node && make clean
 	rm -rf deps/boringssl/build
 
 ci-clean:
 	@# Clean only the stuff that we want to clean between CI builds.
 	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz
+	rm -rf tests/assets/meteor-testapp.spk meteor-testapp/.meteor-spk
 
 install: sandstorm-$(BUILD)-fast.tar.xz install.sh
 	@$(call color,install)
@@ -154,8 +163,10 @@ update: sandstorm-$(BUILD)-fast.tar.xz
 
 fast: sandstorm-$(BUILD)-fast.tar.xz
 
-test: sandstorm-$(BUILD)-fast.tar.xz test-app.spk
+test: sandstorm-$(BUILD)-fast.tar.xz test-app.spk tests/assets/meteor-testapp.spk
 	tests/run-local.sh sandstorm-$(BUILD)-fast.tar.xz test-app.spk
+lint: shell-env
+	cd shell && meteor npm run lint
 
 installer-test:
 	(cd installer-tests && bash prepare-for-tests.sh && PYTHONUNBUFFERED=yes TERM=xterm SLOW_TEXT_TIMEOUT=120 ~/.local/bin/stodgy-tester --plugin stodgy_tester.plugins.sandstorm_installer_tests --on-vm-start=uninstall_sandstorm --rsync)
@@ -167,7 +178,7 @@ stylecheck:
 # ====================================================================
 # Dependencies
 
-DEPS=capnproto ekam libseccomp libsodium node-capnp node boringssl clang
+DEPS=capnproto ekam libseccomp libsodium node-capnp boringssl clang
 
 # We list remotes so that if projects move hosts, we can pull from their new
 # canonical location.
@@ -175,8 +186,7 @@ REMOTE_capnproto=https://github.com/sandstorm-io/capnproto.git master
 REMOTE_ekam=https://github.com/sandstorm-io/ekam.git master
 REMOTE_libseccomp=https://github.com/seccomp/libseccomp master
 REMOTE_libsodium=https://github.com/jedisct1/libsodium.git stable
-REMOTE_node-capnp=https://github.com/kentonv/node-capnp.git node8
-REMOTE_node=https://github.com/sandstorm-io/node sandstorm
+REMOTE_node-capnp=https://github.com/kentonv/node-capnp.git node10
 REMOTE_boringssl=https://boringssl.googlesource.com/boringssl master
 REMOTE_clang=https://chromium.googlesource.com/chromium/src/tools/clang.git master
 
@@ -259,7 +269,7 @@ tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps deps/boringssl/build/ssl/l
 
 continuous: tmp/.deps deps/boringssl/build/ssl/libssl.a deps/libsodium/build/src/libsodium/.libs/libsodium.a | deps/llvm-build
 	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS2)" CXXFLAGS="$(CXXFLAGS2)" \
-	    LIBS="$(LIBS2)" NODEJS=$(NODEJS) ekam -j$(PARALLEL) -c -n :41315 || \
+	    LIBS="$(LIBS2)" NODEJS=$(NODEJS) $(EKAM) -j$(PARALLEL) -c -n :41315 || \
 	    ($(call color,You probably need to install ekam and put it on your path; see github.com/sandstorm-io/ekam) && false)
 
 # ====================================================================
@@ -269,7 +279,7 @@ shell-env: tmp/.shell-env
 
 # Note that we need Ekam to build node_modules before we can run Meteor, hence
 # the dependency on tmp/.ekam-run.
-tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html shell/client/styles/_icons.scss shell/package.json shell/npm-shrinkwrap.json
+tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/imports/client/changelog.html shell/client/styles/_icons.scss shell/package.json shell/npm-shrinkwrap.json
 	@$(call color,configuring meteor frontend)
 	@mkdir -p tmp
 	@mkdir -p node_modules/capnp
@@ -277,18 +287,24 @@ tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html shell/client
 	@cd shell/ && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install
 	@touch tmp/.shell-env
 
+# grunt-webfont 0.4.8 does not work on Node 12. The latest version of grunt-webfont, OTOH, produces
+# a broken font file (all icons invisible and zero-width). For now we stick with the old version
+# and run it using Meteor 1.8.2's node which is old enough to run it. This means you have to
+# install Meteor 1.8.2 in addition to the latest version in order to build Sandstorm. :(
+METEOR_DEV_BUNDLE_ICONS=$(shell ./find-meteor-dev-bundle.sh METEOR@1.8.2)
+
 icons/node_modules: icons/package.json
-	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install
+	cd icons && PATH=$(METEOR_DEV_BUNDLE_ICONS)/bin:$$PATH $(METEOR_DEV_BUNDLE_ICONS)/bin/npm install
 
 shell/client/styles/_icons.scss: icons/node_modules icons/*svg icons/Gruntfile.js
-	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH ./node_modules/.bin/grunt
+	cd icons && PATH=$(METEOR_DEV_BUNDLE_ICONS)/bin:$$PATH ./node_modules/.bin/grunt
 
-shell/client/changelog.html: CHANGELOG.md
+shell/imports/client/changelog.html: CHANGELOG.md
 	@mkdir -p tmp
 	@echo '<template name="changelog">' > tmp/changelog.html
 	@markdown CHANGELOG.md >> tmp/changelog.html
 	@echo '</template>' >> tmp/changelog.html
-	@cp tmp/changelog.html shell/client/changelog.html
+	@cp tmp/changelog.html shell/imports/client/changelog.html
 
 shell/public/close-FFFFFF.svg: icons/close.svg
 	@$(call color,custom color $<)
@@ -354,7 +370,7 @@ shell/public/%-m.svg: icons/%.svg
 	@# Make completely black.
 	@sed -e 's/#111111/#000000/g' < $< > $@
 
-shell-build: shell/imports/* shell/imports/*/* shell/client/* shell/server/* shell/shared/* shell/public/* shell/packages/* shell/packages/*/* shell/i18n/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
+shell-build: shell/imports/* shell/imports/*/* shell/imports/*/*/* shell/imports/*/*/*/* shell/client/main.ts shell/server/main.ts shell/public/* shell/i18n/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
 	@$(call color,building meteor frontend)
 	@test -z "$$(find -L shell/* -type l)" || (echo "error: broken symlinks in shell: $$(find -L shell/* -type l)" >&2 && exit 1)
 	@OLD=`pwd` && cd shell && meteor build --directory "$$OLD/shell-build"
@@ -413,3 +429,23 @@ test-app-dev: tmp/.ekam-run
 	@cp src/sandstorm/test-app/test-app.capnp tmp/sandstorm/test-app/test-app.capnp
 	@cp src/sandstorm/test-app/*.html tmp/sandstorm/test-app
 	spk dev -Isrc -Itmp -ptmp/sandstorm/test-app/test-app.capnp:pkgdef
+
+# ====================================================================
+# meteor-testapp.spk
+
+$(METEOR_SPK):
+	@$(call color,downloading meteor-spk)
+	@curl https://dl.sandstorm.io/meteor-spk-$(METEOR_SPK_VERSION).tar.xz | tar Jxf -
+
+meteor-testapp-dev:
+	cd meteor-testapp && PATH="$(PWD)/bin:$(PATH)" \
+		$(METEOR_SPK) dev -I../src -I../tmp -s /opt/sandstorm
+
+tests/assets/meteor-testapp.spk: \
+		meteor-testapp \
+		$(METEOR_SPK) \
+		meteor-testapp/client/* \
+		meteor-testapp/server/* \
+		meteor-testapp/.meteor/*
+	@cd meteor-testapp && PATH="$(PWD)/bin:$(PATH)" \
+		$(METEOR_SPK) pack -kmeteor-testapp.key -I../src -I../tmp ../tests/assets/meteor-testapp.spk

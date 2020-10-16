@@ -51,7 +51,7 @@ module.exports['Test renderTemplate with static host info'] = function (browser)
   browser
     .grainFrame()
       .waitForElementVisible('iframe[src]', short_wait)
-      .frame('offer-template')
+      .frameSelector('iframe[src]')
         .waitForElementPresent('#text', short_wait)
         .getText('#text', function (result) {
           this.assert.equal(typeof result, "object");

@@ -49,9 +49,14 @@ static void tryRecursivelyDelete(kj::StringPtr path) {
 }
 
 BackendImpl::BackendImpl(kj::LowLevelAsyncIoProvider& ioProvider, kj::Network& network,
-  SandstormCoreFactory::Client&& sandstormCoreFactory, kj::Maybe<uid_t> sandboxUid)
+  SandstormCoreFactory::Client&& sandstormCoreFactory,
+  kj::Maybe<Cgroup>&& cgroup,
+  kj::Maybe<uid_t> sandboxUid)
     : ioProvider(ioProvider), network(network), coreFactory(kj::mv(sandstormCoreFactory)),
-      sandboxUid(sandboxUid), tasks(*this) {}
+      sandboxUid(sandboxUid),
+      tasks(*this),
+      cgroup(kj::mv(cgroup))
+    {}
 
 void BackendImpl::taskFailed(kj::Exception&& exception) {
   KJ_LOG(ERROR, exception);
@@ -161,14 +166,21 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
   auto addressPromise =
       network.parseAddress(kj::str("unix:/var/sandstorm/grains/", grainId, "/socket"));
 
-  // When both of those are done, connect to the address.
+  // When both of those are done, connect to the address, and move the
+  // supervisor into a cgroup.
   auto finalPromise = promise
-      .then([this,KJ_MVCAP(addressPromise)](size_t n) mutable {
+      .then([KJ_MVCAP(addressPromise)](size_t n) mutable {
     return kj::mv(addressPromise);
   }).then([](kj::Own<kj::NetworkAddress>&& address) {
     return address->connect();
   }).then([this,KJ_MVCAP(stdoutPipe),KJ_MVCAP(process),grainId = kj::heapString(grainId)]
           (kj::Own<kj::AsyncIoStream>&& connection) mutable {
+
+    KJ_IF_MAYBE(cg, cgroup) {
+      cg->getOrMakeChild(grainId)
+          .addPid(process.getPid());
+    }
+
     // Connected. Create the RunningGrain and fulfill promises.
     auto ignorePromise = ignoreAll(*stdoutPipe);
     tasks.add(ignorePromise.attach(kj::mv(stdoutPipe)));
@@ -229,6 +241,9 @@ BackendImpl::RunningGrain::RunningGrain(
 
 BackendImpl::RunningGrain::~RunningGrain() noexcept(false) {
   backend.supervisors.erase(grainId);
+  KJ_IF_MAYBE(cg, backend.cgroup) {
+    cg->removeChild(grainId);
+  }
 }
 
 kj::Promise<void> BackendImpl::ping(PingContext context) {
@@ -281,7 +296,7 @@ kj::Promise<void> BackendImpl::deleteGrain(DeleteGrainContext context) {
   kj::Promise<void> shutdownPromise = nullptr;
   if (iter != supervisors.end()) {
     shutdownPromise = iter->second.promise.addBranch()
-        .then([context](Supervisor::Client client) mutable {
+        .then([](Supervisor::Client client) mutable {
       return client.shutdownRequest().send().ignoreResult();
     }).then([]() -> kj::Promise<void> {
       return KJ_EXCEPTION(FAILED, "expected shutdown() to throw disconnected exception");
@@ -313,7 +328,7 @@ kj::Promise<void> BackendImpl::deleteUser(DeleteUserContext context) {
 
 // =======================================================================================
 
-class BackendImpl::PackageUploadStreamImpl: public Backend::PackageUploadStream::Server {
+class BackendImpl::PackageUploadStreamImpl final: public Backend::PackageUploadStream::Server {
 public:
   PackageUploadStreamImpl(BackendImpl& backend, Pipe inPipe = Pipe::make(),
                           Pipe outPipe = Pipe::make())
@@ -329,7 +344,14 @@ public:
                                    backend.sandboxUid)) {}
   ~PackageUploadStreamImpl() noexcept(false) {
     if (access(tmpdir.cStr(), F_OK) >= 0) {
-      recursivelyDelete(tmpdir);
+      KJ_IF_MAYBE(e, kj::runCatchingExceptions([&]() {
+        recursivelyDelete(tmpdir);
+      })) {
+        // Somehow, this sometimes throws with ENOENT, but I don't understand why. We really don't
+        // want to throw out of this destructor, though, because it seems to cause state confusion
+        // in the RPC layer.
+        KJ_LOG(ERROR, *e);
+      }
     }
   }
 
@@ -346,7 +368,7 @@ protected:
   }
 
   kj::Promise<void> done(DoneContext context) override {
-    auto forked = writeQueue.then([this,context]() mutable {
+    auto forked = writeQueue.then([this]() mutable {
       KJ_REQUIRE(inputWriteEnd != nullptr, "called done() multiple times");
       inputWriteEnd = nullptr;
       inputWriteFd = nullptr;
@@ -556,7 +578,7 @@ kj::Promise<void> BackendImpl::restoreGrain(RestoreGrainContext context) {
   });
 }
 
-class BackendImpl::FileUploadStream: public ByteStream::Server {
+class BackendImpl::FileUploadStream final: public ByteStream::Server {
 public:
   FileUploadStream(kj::String finalPath)
       : tmpPath(kj::str(finalPath, ".uploading")),

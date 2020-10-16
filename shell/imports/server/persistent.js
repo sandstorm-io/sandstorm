@@ -14,9 +14,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { inMeteor } from "/imports/server/async-helpers.js";
+import { Meteor } from "meteor/meteor";
+import { check } from "meteor/check";
+import { _ } from "meteor/underscore";
+import { Random } from "meteor/random";
 
-const Crypto = Npm.require("crypto");
+import Crypto from "crypto";
+import { inMeteor } from "/imports/server/async-helpers.ts";
+import Capnp from "/imports/server/capnp.js";
+import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions.js";
 
 const privateDb = Symbol("PersistentImpl.db");
 const privateTemplate = Symbol("PersistentImpl.template");
@@ -89,7 +95,7 @@ class PersistentImpl {
 
 function hashSturdyRef(sturdyRef) {
   return Crypto.createHash("sha256").update(sturdyRef).digest("base64");
-};
+}
 
 function generateSturdyRef() {
   return Random.secret();
@@ -245,7 +251,7 @@ function checkRequirements(db, requirements) {
       throw new Meteor.Error(403, "Unknown requirement type.");
     }
   });
-};
+}
 
 export {
   PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements,

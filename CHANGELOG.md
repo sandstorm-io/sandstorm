@@ -1,3 +1,173 @@
+### v0.272 (2020-09-26)
+- Regular dependency updates.
+- To make porting apps a little easier, the headers `X-CSRFToken` and `X-CSRF-Token` are now automatically passed through to the app. Thanks @zenhack.
+
+### v0.271 (2020-08-31)
+- We have reverted the change preventing apps from talking to third-party servers in client-side code. This caused more breakage than was expected. We will work to fix and/or grandfather the affected apps before trying to roll this out again.
+
+### v0.270 (2020-08-29)
+- Apps can no longer talk to third-party servers in client-side code, except for embedding images and video. This has long been a goal of Sandstorm, but we did not want to begin enforcing it until apps could explicitly request access to third-party servers via the Powerbox. We have tested all apps on the app market and found only minor breakage (e.g. wrong fonts), but it is possible that we missed bigger breakages or that some private apps are broken. Please contact [sandstorm-dev](https://groups.google.com/group/sandstorm-dev) to report any issues. Thanks @zenhack for pushing this change through.
+- Apps can no longer make server-side HTTP requests without requsting permission through the Powerbox. We believe the only app that ever did so was Tiny Tiny RSS, but it was recently updated to use the powerbox. If you experience other app breakages, please let [sandstorm-dev](https://groups.google.com/group/sandstorm-dev) know. Thanks again to @zenhack.
+- Updated Finnish translation. Thanks @xet7.
+- Updated dependencies, including Meteor to 1.11.
+
+### v0.269 (2020-08-01)
+- You can now clone a grain via a button in the top bar. Thanks @zenhack.
+- Grains now run inside cgroups, if the kernel supports cgroup namespaces and cgroups v2. Thanks @zenhack.
+- Code implementing old Sandcats TLS issuance has been deleted. Sandcats now supports only Let's Encrypt.
+
+### v0.268 (2020-07-04)
+- Added CLI commands for configuring ACME (Let's Encrypt), so that this can be done before HTTPS is working.
+- New installs using Sandcats will now use Let's Encrypt immediately.
+- Improved error page when accessing Sandstorm using an unrecognized hostname. Thanks @zenhack.
+- Added Google Cloud Platform DNS provider for ACME challenges (not to be confused with Google Domains). Thanks @abliss.
+- Updated Sandstorm RPC APIs to use Cap'n Proto streaming flow control where applicable.
+- The box showing the changelog is now taller. Thanks @ocdtrekkie.
+- Made navigation menu scrollable on mobile. Thanks @spollard.
+
+### v0.267 (2020-06-06)
+- Fix possible problem where Let's Encrypt auto-migration would not actually renew the certificate until Sandstorm was restarted.
+
+### v0.266 (2020-06-06)
+- Sandcats domains using SSL will automatically migrate to Let's Encrypt over the next two weeks.
+- Dependency updates, refactorings, and minor bugfixes.
+
+### v0.265 (2020-05-09)
+- Fixed regression preventing first-time LDAP logins.
+- Dependency updates, refactorings, and minor bugfixes.
+
+### v0.264 (2020-05-05)
+- Fixed breakage in login providers admin panel and setup wizard caused by recent refactoring.
+
+### v0.263 (2020-05-02)
+- Added support for built-in TLS (aka SSL) certificate management through Let's Encrypt! This works with any domain, as long as you use one of the supported DNS providers (Sandcats.io, Cloudflare, Digital Ocean, DNSimple, Duck DNS, GoDaddy, Gandi, Namecheap, Name.com, AWS Route 53, or Vultr). Support for Let's Encrypt and all these providers was made possible via [the ACME.js library](https://git.rootprojects.org/root/acme.js) by AJ ONeal / Root.
+- Added a UI to manage TLS certificates, including the ability to manually upload them.
+- Dependency updates, refactorings, and minor bugfixes.
+
+### v0.262 (2020-04-11)
+- Updated dependencies, including Meteor to 1.10.1.
+- `shm_open()` and friends can now be used in Sandstorm app sandboxes (because `/dev/shm` is now created as a temporary directory). Thanks @zenhack.
+- `spk dev` now displays the server's URL for convenience. Thanks @zenhack.
+- Sandstorm now publishes a `robots.txt` blocking all robots. Thanks @zenhack.
+- Lots of internal refactoring by @zenhack and @zarvox.
+- A new postMessage-based endpoint allows a grain to get its own title. Thanks @zenhack.
+
+### v0.261 (2020-03-15)
+- Updated dependencies, including Meteor to 1.9.3 and Node.js to 12.16.1 (both major updates).
+- New "AppHooks" feature in sandstorm-http-bridge allows bridge-based apps to get access to more low-level Cap'n Proto APIs. Contributed by Ian "@zenhack" Denhardt.
+- Fixed a bug in `spk dev` that often made Go-based servers crash when accessing disk files. (This problem only occurred in dev mode.)
+- Updated Dutch (thanks @FreekDankelman) and Simplied Chinese translation (thanks @misaka00251).
+- Significant internal refactoring.
+
+### v0.260 (2020-02-15)
+- Updated dependencies.
+- Internationalized "mass transfers" page, and translated to Finnish. Thanks to Laurie "xet7" Ojansivu for this change.
+- Tweaked systemd unit file (only affects new installs).
+- Typo fixes.
+- Many documentation improvements (on [docs.sandstorm.io](https://docs.sandstorm.io)).
+
+### v0.259 (2020-02-01)
+- Disabled ability to upgrade demo accounts to full accounts on private servers, so that we can change the Sandstorm demo over to run on Alpha.
+- This version will be skipped by auto-update since this update is only needed on Sandstorm Alpha.
+
+### v0.258 (2020-02-01)
+- Updated demo sidebar language to reflect Oasis shutdown.
+- This version will be skipped by auto-update since this update is only needed on Sandstorm Alpha.
+
+### v0.257 (2020-01-19)
+- New feature: Apps can now schedule background tasks. Thanks to Ian "zenhack" Denhardt for completing this feature (originally started by David Renshaw).
+- Improved code that matches HTTP API powerbox requests against known OAuth APIs, especially GitHub (credit again to Ian Denhardt).
+
+### v0.256 (2019-12-25) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.255 (2019-11-23) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.254 (2019-10-27) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.253 (2019-09-28)
+- Oasis: Added warnings to the UI and invoice e-mails regarding the upcoming shutdown of Oasis.
+- Updated dependencies.
+
+### v0.252 (2019-09-08)
+- Fixed bug introduced in 0.251 causing development apps registered via `spk dev` to report "This grain's app package is not installed".
+
+### v0.251 (2019-09-02)
+- Added functionality to allow mass transferring of grains between servers. Click the "Mass transfer..." button above the grains list to initiate a transfer.
+- Updated dependencies.
+
+### v0.250 (2019-08-10)
+- Fixed multiple problems where a user who has access to a grain might unexpectedly be assigned an all-new identity within the grain, especially after backup/restore. This should make it more practical to move shared grains between servers using backup/restore. [See the pull request for a complete explanation.](https://github.com/sandstorm-io/sandstorm/pull/3148)
+- Updated dependencies.
+
+### v0.249 (2019-07-10) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.248 (2019-06-09) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.247 (2019-05-11) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.246 (2019-04-13) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.245 (2019-03-16) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.244 (2019-02-09) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.243 (2019-01-12) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.242 (2018-12-20) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.241 (2018-11-19) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.240 (2018-10-20) [bugfixes]
+- Updated dependencies.
+- Added some clarification messages to Oasis UI regarding the [recent discontinuation of the free plan](https://sandstorm.io/news/2018-08-27-discontinuing-free-plan).
+
+### v0.239 (2018-09-22)
+- Updated dependencies.
+- Prepared Oasis payments code for [upcoming change to discontinue free plan](https://sandstorm.io/news/2018-08-27-discontinuing-free-plan). (Does not affect self-hosted servers.)
+
+### v0.238 (2018-08-25) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.237 (2018-07-28) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.236 (2018-06-30) [bugfixes]
+- Updated dependencies.
+- Fixed static web hosting redirects when the URL is a directory. The redirect is supposed to add '/', but previously it would sometimes redirect to a completely wrong path for directories more than one level deep.
+- Fixed language detection no longer working, due to Meteor 1.7 randomly removing a function call.
+
+### v0.235 (2018-06-09) [bugfixes]
+- Updated dependencies.
+- Due to Meteor 1.7 update, Sandstorm shell now serves different JavaScript to modern vs. "legacy" browsers, with the modern JS being leaner and faster.
+
+### v0.234 (2018-05-12) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.233 (2018-04-17) [bugfixes]
+- Fixed gateway crash affecting some heavy users of static publishing.
+
+### v0.232 (2018-04-15) [bugfixes]
+- Applied Node patch to fix upstream problem causing segfaults for Meteor apps.
+- Fixed crash in Gateway due to accidentally destroying a running promise.
+- Removed accidental debug logging code introduced in 0.231 that printed "hi" and "ho" to the logs.
+
+### v0.231 (2018-04-07) [bugfixes]
+- Fixed grain last-used time sometimes not updating. (Specifically, it would only update after being open for a full minute.)
+- Fixed old, deprecated shared-host API endpoint not returning a 401 status to initiate basic auth. It has been years since Sandstorm generated API tokens using this endpoint, though.
+- Updated dependencies.
+
 ### v0.230 (2018-03-10) [bugfixes]
 - Fixed language detection no longer working.
 - Fixed bug preventing Thunderbird from syncing from Radicale, and prevented older versions of the Mercurial client from pushing to Mercurial.

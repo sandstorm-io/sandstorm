@@ -1,0 +1,157 @@
+<template name="newAdminNetworkCapabilitiesTableCapabilityRow">
+{{#let txt="admin.networkCapabilities.newAdminNetworkCapabilitiesTableCapabilityRow"}}
+{{!-- expects argument:
+  capInfo: Object containing:
+                 introducer: Account object
+                 grainTitle: String
+                    appIcon: String
+          grainOwnerAccount: Account object
+                    created: Date
+                    revoked: Boolean
+  callbacks: Object containing:
+    onRevokeCap: Function to call when the Revoke button is clicked.
+--}}
+<div class="capability-row" role="row">
+  <div class="grant-by" role="gridcell">
+    {{#if capInfo.introducer.account}}
+      {{!-- TODO(someday): Link to user account page? E.g.:
+        {{#linkTo route="newAdminUserDetails" data={userId} }}
+      --}}
+
+      {{> accountCard capInfo.introducer.account }}
+    {{else}}
+      {{_ (con txt "unknownGranter")}}
+    {{/if}}
+  </div>
+  <div class="grant-to" role="gridcell">
+    {{#if capInfo.ownerInfo.grain}}
+      <div class="grain-context">
+        <div class="grain-details">
+          <div class="app-icon" style="background-image: url('{{capInfo.ownerInfo.grain.appIcon}}')"></div>
+          {{capInfo.ownerInfo.grain.title}}
+        </div>
+        {{#if capInfo.ownerInfo.grain.grainOwnerAccount}}
+          {{> accountCard capInfo.ownerInfo.grain.grainOwnerAccount }}
+        {{/if}}
+      </div>
+    {{else}}
+      {{#if capInfo.ownerInfo.webkey}}
+        {{_ (con txt "anyone")}}
+      {{else}}
+        {{_ (con txt "unknownRecipient")}}
+      {{/if}}
+    {{/if}}
+  </div>
+  <div class="grant-time" role="gridcell">{{dateString capInfo.created}}</div>
+  <div class="actions" role="gridcell">
+    {{#if capInfo.revoked}}
+      {{_ (con txt "revoked")}}
+    {{else}}
+    <form class="standard-form">
+      <button type="button">
+        {{_ (con txt "revokeButton")}}
+      </button>
+    </form>
+    {{/if}}
+  </div>
+</div>
+{{/let}}
+</template>
+
+<template name="newAdminNetworkCapabilitiesTable">
+{{#let txt="admin.networkCapabilities.newAdminNetworkCapabilitiesTable"}}
+{{!-- Takes arguments:
+  caps: cursor with list of Object like those returned by capDetails
+--}}
+<div class="admin-caps-table" role="grid">
+  <div class="thead" role="rowgroup">
+    <div class="header-row" role="row">
+      <div class="grant-by" role="columnheader">{{_ (con txt "header.grantBy")}}</div>
+      <div class="grant-to" role="columnheader">{{_ (con txt "header.grantTo")}}</div>
+      <div class="grant-time" role="columnheader">{{_ (con txt "header.grantTime")}}</div>
+      <div class="actions" role="columnheader">{{_ (con txt "header.actions")}}</div>
+    </div>
+  </div>
+  <div class="tbody" role="rowgroup">
+    {{#each cap in caps}}
+      {{>newAdminNetworkCapabilitiesTableCapabilityRow capInfo=cap callbacks=callbacks }}
+    {{else}}
+    <div class="none-row" role="row">
+      <div role="gridcell" colspan="4">{{_ (con txt "notFound")}}</div>
+    </div>
+    {{/each}}
+  </div>
+</div>
+{{/let}}
+</template>
+
+<template name="newAdminNetworkCapabilitiesSection">
+{{#let txt="admin.networkCapabilities.newAdminNetworkCapabilitiesSection"}}
+{{!-- Takes arguments:
+  caps: Cursor of a list of ApiTokens.
+--}}
+
+{{#if hasSuccess}}
+  {{#focusingSuccessBox}}
+    {{message}}
+  {{/focusingSuccessBox}}
+{{/if}}
+
+{{#if hasError}}
+  {{#focusingErrorBox}}
+    {{message}}
+  {{/focusingErrorBox}}
+{{/if}}
+
+<div class="admin-caps-filter">
+  <div class="search-bar">
+    <div class="icon icon-search"></div>
+    <input type="text" name="search-string" value="{{ filterString }}"/>
+  </div>
+  <div class="filter-checkboxes">
+    <div class="filter-checkboxes-label">{{_ (con txt "filter.label")}}</div>
+    <ul>
+      <li>
+        <label>
+          <input type="checkbox" name="active" checked="{{ activeChecked }}" />
+          {{_ (con txt "filter.active") (activeCount caps)}}
+        </label>
+      </li>
+
+      <li>
+        <label>
+          <input type="checkbox" name="revoked" checked="{{ revokedChecked }}" />
+          {{_ (con txt "filter.revoked") (revokedCount caps)}}
+        </label>
+      </li>
+    </ul>
+  </div>
+</div>
+
+{{> newAdminNetworkCapabilitiesTable caps=(filterCaps caps) callbacks=callbacks }}
+{{/let}}
+</template>
+
+
+<template name="newAdminNetworkCapabilities">
+{{#let txt="admin.networkCapabilities.newAdminNetworkCapabilities"}}
+<h1>
+  <ul class="admin-breadcrumbs">
+    <li>{{#linkTo route="newAdminRoot"}}{{_ "admin.title"}}{{/linkTo}}</li>
+    <li>{{_ "admin.networkCapabilities.name"}}</li>
+  </ul>
+</h1>
+
+<p>{{_ "admin.networkCapabilities.explanation"}}</p>
+
+<h2>{{_ (con txt "networkCaps")}}</h2>
+{{>newAdminNetworkCapabilitiesSection caps=ipNetworkCaps}}
+
+<h2>{{_ (con txt "networkCapsTls")}}</h2>
+{{>newAdminNetworkCapabilitiesSection caps=ipNetworkCapsTls}}
+
+<h2>{{_ (con txt "interfaceCaps")}}</h2>
+{{>newAdminNetworkCapabilitiesSection caps=ipInterfaceCaps}}
+
+{{/let}}
+</template>

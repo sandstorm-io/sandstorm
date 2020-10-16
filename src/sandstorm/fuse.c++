@@ -35,6 +35,7 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <sys/socket.h>
+#include <sys/sysmacros.h>
 
 namespace sandstorm {
 
@@ -739,18 +740,28 @@ private:
         //     readdirplus (we currently set protocol version to pre-readdirplus to avoid it)
         // TODO(someday): Write calls.
 
-      case FUSE_STATFS:
-      case FUSE_GETXATTR:
-      case FUSE_LISTXATTR:
-      case FUSE_GETLK:
-      case FUSE_SETLK:
-      case FUSE_SETLKW:
-      case CUSE_INIT:
-        sendError(header.unique, ENOSYS);
+      // Write operations:
+      case FUSE_BMAP:
+      case FUSE_CREATE:
+      case FUSE_FSYNC:
+      case FUSE_FSYNCDIR:
+      case FUSE_LINK:
+      case FUSE_MKDIR:
+      case FUSE_MKNOD:
+      case FUSE_REMOVEXATTR:
+      case FUSE_RENAME:
+      case FUSE_RMDIR:
+      case FUSE_SETATTR:
+      case FUSE_SETXATTR:
+      case FUSE_SYMLINK:
+      case FUSE_UNLINK:
+      case FUSE_WRITE:
+        sendError(header.unique, EROFS);
+        break;
 
       default:
-        // All other opcodes involve writes.
-        sendError(header.unique, EROFS);
+        // Something we don't implement.
+        sendError(header.unique, ENOSYS);
         break;
     }
 

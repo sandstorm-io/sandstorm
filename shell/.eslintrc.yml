@@ -1,0 +1,50 @@
+---
+env:
+  # Assume standard globals. We turn off either `browser` or `node`
+  # for certain parts of the codebase in `overrides`, but by default
+  # we optimistically assume everything is available.
+  #
+  # TODO: More cleanly separate client vs. server code, and then
+  # avoid having both of these on anywhere. Unfortunatley, there are
+  # some places where we have both in the same file, hidden behind a
+  # conditional.
+  browser: true
+  node: true
+
+  shared-node-browser: true
+  es6: true
+parser: "@typescript-eslint/parser"
+parserOptions:
+  ecmaVersion: 2020
+  sourceType: "module"
+
+  # There are a few places where we do if(Meteor.isServer) { import ... }.
+  # Ideally we'd refactor so this was unneccesary, but for now the import
+  # *has* to be conditional, so tell eslint to allow this:
+  allowImportExportEverywhere: true
+overrides:
+  - files:
+      - "**/client/**/*.js"
+      - "**/client/**/*.ts"
+    env:
+      node: false
+  - files:
+      - "**/server/**/*.js"
+      - "**/server/**/*.ts"
+    env:
+      browser: false
+  - files:
+      - "**/shared/**/*.js"
+      - "**/shared/**/*.ts"
+    env:
+      node: false
+      browser: false
+reportUnusedDisableDirectives: true
+extends: "eslint:recommended"
+rules:
+  # These are implied by eslint:recommended, but we haven't gotten around to
+  # fixing them yet:
+  no-undef: ["warn"]
+  no-unused-vars: ["warn", {"argsIgnorePattern": "^_"}]
+  no-empty: ["warn"]
+  no-inner-declarations: ["warn"]

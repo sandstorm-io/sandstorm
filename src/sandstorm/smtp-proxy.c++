@@ -20,7 +20,7 @@ namespace sandstorm {
 
 namespace {
 
-class AsyncLineReader: public kj::AsyncIoStream {
+class AsyncLineReader final: public kj::AsyncIoStream {
 public:
   AsyncLineReader(kj::Own<kj::AsyncIoStream> inner): inner(kj::mv(inner)) {}
 
@@ -101,6 +101,9 @@ public:
   kj::Maybe<kj::Promise<uint64_t>> tryPumpFrom(
       kj::AsyncInputStream& input, uint64_t amount = kj::maxValue) override {
     return inner->tryPumpFrom(input, amount);
+  }
+  kj::Promise<void> whenWriteDisconnected() override {
+    return inner->whenWriteDisconnected();
   }
   void shutdownWrite() override {
     return inner->shutdownWrite();

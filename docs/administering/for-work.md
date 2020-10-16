@@ -137,11 +137,15 @@ Implementation notes for LDAP that may apply to your site:
   objects match the username. In this case, you probably need to add a custom **LDAP Search
   Filter** under "Additional LDAP filter criteria. Your search filter should typically take the form
   of `(&(something))` so that it is AND'd against the default Sandstorm LDAP query used when a user
-  is logging in. Contact us at support@sandstorm.io if you need help.
+  is logging in.
 
 - Some LDAP servers require authentication before permitting a search. In that case, you will need
   to configure an **Bind user DN** and **Bind user password**, a user and password for the search
   user.
+  
+- In Active Directory, the `uid` field is generally not set. In a typical Active Directory setup,
+  set the **LDAP username attribute** to either `sAMAccountName` for username-only (e.g. bob) or
+  `userPrincipalName` for user-at-domain (e.g. bob@example.com) format login.
 
 - Typically LDAP servers use the `cn` field to store the name of the person who is successfully
   logging in. `cn` is short for common name. If your LDAP server is configured differently, please

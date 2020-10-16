@@ -68,7 +68,7 @@ interface Handle {
   ping @0 ();
   # Checks if the handle is still connected. Call this and check for a DISCONNECTED exception to
   # see if the handle has been disconnected. Servers usually do not implement this method, so any
-  # other exception type shoudl be considered to indicate that the handle is still live.
+  # other exception type should be considered to indicate that the handle is still live.
   #
   # This is particularly important when holding a handle to a Sandstorm grain where the handle
   # represents some sort of long-running operation. The grain will shut down if it doesn't receive
@@ -94,7 +94,7 @@ interface ByteStream {
   #   Moreover, the interface would be awkward to use and implement. E.g. what happens if you call
   #   read() twice on the same capability?
 
-  write @0 (data :Data);
+  write @0 (data :Data) -> stream;
   # Add bytes.
   #
   # It's safe to make overlapping calls to `write()`, since Cap'n Proto enforces E-Order and so

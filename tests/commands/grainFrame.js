@@ -26,12 +26,12 @@ exports.command = function(grainId) {
   // Focuses on the iframe for `grainId`. If `grainId` is null, uses the currently-active grain.
 
   var self = this
-      .frame()
+      .frame(null)
       .waitForElementPresent("iframe.grain-frame", short_wait);
 
   if (grainId) {
     return self.waitForElementVisible("#grain-frame-" + grainId, medium_wait)
-      .frame("grain-frame-" + grainId);
+      .frameSelector("#grain-frame-" + grainId);
   } else {
     return self.execute(function () {
       return window.globalGrains.getActive().grainId();
@@ -39,7 +39,7 @@ exports.command = function(grainId) {
       var grainId = result.value;
       self
         .waitForElementVisible("#grain-frame-" + grainId, short_wait)
-        .frame("grain-frame-" + grainId);
+        .frameSelector("#grain-frame-" + grainId)
     });
   }
 };

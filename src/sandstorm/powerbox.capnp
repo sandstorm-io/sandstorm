@@ -36,8 +36,8 @@ using Util = import "util.capnp";
 # `UiView.newRequestSession()` is called on the providing grain and the resulting UI session is
 # displayed embedded in the powerbox. The providing grain can render a UI which prompts the user
 # for additional details if needed, or implements some sort of additional picker. Once the grain
-# knows which capability to provide, it calls `SessionContext.provide()` to fulfill the original
-# request.
+# knows which capability to provide, it calls `SessionContext.fulfillRequest()` to fulfill the 
+# original request.
 #
 # In "offer" mode, an app initiates the powerbox by calling `SessionContext.offer()` in a normal,
 # non-powerbox session, to indicate that it wishes to offer some capability to the current user

@@ -1,13 +1,8 @@
 #!/bin/bash
 
-# Runs `meteor test-packages`. The tests run on a fresh isolated Mongo instance.
+# Runs `meteor test`. The tests run on a fresh isolated Mongo instance.
 
 set -euo pipefail
-
-if ! $(which "spacejam" >/dev/null 2>/dev/null) ; then
-  echo "Couldn't find executable 'spacejam' - try installing the package from npm with 'sudo -H npm install -g spacejam'?"
-  exit 1
-fi
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$SCRIPT_DIR"
@@ -56,8 +51,11 @@ __EOF__
 # over its own bundled version, and the system gyp doesn't work.
 export PYTHONPATH=$("$SCRIPT_DIR/../find-meteor-dev-bundle.sh")/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib
 
-# To test interactively through a browser:
-#meteor test-packages --settings $SETTINGS ./packages/sandstorm-permissions
+# Terrible hack: Make capnp.node available to tests.
+rm -f /tmp/node_modules
+ln -s "$(dirname "$PWD")/node_modules" /tmp/node_modules
 
-# To test on the command line:
-exec spacejam test-packages --settings $SETTINGS ./packages/sandstorm-permissions
+meteor test \
+  --once \
+  --driver-package=meteortesting:mocha \
+  --settings "$SETTINGS"

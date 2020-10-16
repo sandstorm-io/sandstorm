@@ -1,0 +1,238 @@
+<template name="sandstormGrainListPage">
+  {{setDocumentTitle}}
+  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar }}{{_ "grains.title"}}{{/sandstormTopbarItem}}
+  <div class="grain-list">
+    <h1>
+      <div>
+        {{_ "grains.title"}} <button title="{{_ "grains.grainlist.sandstormGrainListPage.introButton.hint"}}" class="question-mark"></button>
+      </div>
+      <form class="standard-form">
+        <div class="button-row">
+        {{#if showTrash }}
+          <button type="button" class="show-main-list">{{_ "grains.grainlist.sandstormGrainListPage.mainListButton"}}</button>
+        {{else}}
+          <button type="button" class="show-trash">{{_ "grains.grainlist.sandstormGrainListPage.trashButton" trashCount}}</button>
+        {{/if}}
+
+        {{#if isSignedUpOrDemo}}
+        <a href="{{ pathFor route='transfers' }}" class="button mass-transfer">{{_ "grains.grainlist.sandstormGrainListPage.transfers.massTransfer"}}</a>
+        <button type="button" class="restore-button">{{_ "grains.grainlist.sandstormGrainListPage.restoreButton"}}
+          <input type="file" style="display:none" accept=".zip">
+        </button>
+        {{/if}}
+        </div>
+      </form>
+    </h1>
+
+    <div class="maybe-row">
+      {{!-- At desktop widths, we cram these into a single row.  On mobile, they need more space,
+            so we make them separate rows --}}
+      <div class="search-row">
+        <label>
+          <span title="Search" class="search-icon"></span>
+          <input class="search-bar" type="text" placeholder="{{_ "grains.grainlist.sandstormGrainListPage.search.placeholder"}}" value="{{ searchText }}">
+        </label>
+      </div>
+
+      {{#if quotaEnabled}}
+      <div class="usage-info">
+          {{#if grainQuota}}
+            <p class="grain-count">{{_ "grains.grainlist.sandstormGrainListPage.usageInfo.quota" count=myGrainsCount quota=grainQuota}}</p>
+          {{/if}}
+          <p>{{_ "grains.grainlist.sandstormGrainListPage.usageInfo.size" size=myGrainsSize total=quotaTotal}}</p>
+      </div>
+      {{/if}}
+    </div>
+
+    {{#if showTrash}}
+      <p class="trash-explanation">
+        <button class="empty-trash">{{_ "grains.grainlist.sandstormGrainListPage.trash.emptyButton"}}</button>
+        {{_ "grains.grainlist.sandstormGrainListPage.trash.explanation"}}
+      </p>
+    {{/if}}
+
+    {{#let grains=filteredGrains}}
+      {{>sandstormGrainTable grains=grains onGrainClicked=onGrainClicked
+                             bulkActionButtons=bulkActionButtons}}
+
+      {{#unless grains}}
+        <div class="no-grains">
+          {{#if searchText}}
+          <p>{{{_ "grains.grainlist.sandstormGrainListPage.noGrains.notFound"}}}</p>
+            {{#if filteredTrashedGrains}}
+              <p>{{_ "grains.grainlist.sandstormGrainListPage.noGrains.inTrash"}}
+               <button class="show-trash">{{_ "grains.grainlist.sandstormGrainListPage.noGrains.trashButton"}}</button>
+              </p>
+            {{/if}}
+          {{else}}
+            {{#if showTrash}}
+              <p>{{{_ "grains.grainlist.sandstormGrainListPage.noGrains.empty"}}}</p>
+            {{else}}
+              <p>{{_ "grains.grainlist.sandstormGrainListPage.noGrains.explanation"}}
+                <a href="{{ pathFor route='apps' }}">
+                  {{#if hasApps}}
+                    {{_ "grains.grainlist.sandstormGrainListPage.noGrains.hasApps"}}
+                  {{else}}
+                    {{_ "grains.grainlist.sandstormGrainListPage.noGrains.hasNoApp"}}
+                  {{/if}}
+                </a>
+              </p>
+            {{/if}}
+          {{/if}}
+        </div>
+      {{/unless}}
+    {{/let}}
+  </div>
+</template>
+
+<template name="sandstormGrainTable">
+  {{!-- A mostly pure-functional template.  Pass in grains as a list of objects with shape:
+  {
+    _id: String,
+    appTitle: String,
+    iconSrc: String,
+    title: String,
+    lastUsed: Date,
+    isOwnedByMe: Boolean,
+    trashed: Optional(Date),
+  }
+  and (optionally):
+  * a list "actions" containing objects with shape:
+    {
+      buttonText: String,
+      onClick: parameterless callback function
+    }, and/or
+  * an onGrainClicked callback function, which takes a single argument grainId as a String
+  * a showHintIfEmpty value, which if truthy, tells the JS to show a guided tour if the grains
+    list is empty.
+  * an alwaysShowTableHeaders value, which if truthy, always shows table headers. By contrast,
+    if empty or falsey, when the grains list is missing, we only show the action button(s).
+  * a list "bulkActionButtons" containing object with shape
+    {
+      buttonClass: a string to be used in the button's class attribute
+      text(numMyGrainsSelected, numSharedWithMeGrainsSelected): function that returns a string
+         that will be displayed as the button's text.
+      disabled(numMyGrainsSelected, numSharedWithMeGrainsSelected): function that returns a
+         boolean, indicating whether the button should be diabled
+      onClicked(myGrainIds, sharedWithMeGrainIds): function that performs the action on the
+         selected grains.
+    }
+
+  The table itself tracks and applies a sort order to the grains passed in.  The initial sort
+  order is by lastUsed, descending.
+  --}}
+  {{#let buttons=bulkActionButtons mine=mineSelected shared=sharedSelected}}
+  <form class="standard-form bulk-action-buttons">
+    {{#each buttons}}
+    <button type="button" class={{buttonClass}} disabled={{disabled mine shared}}
+            title="{{#if disabled mine shared}}{{_ "grains.grainlist.sandstormGrainTable.bulkAction.disabledHint"}}{{else}}{{text mine shared}}{{/if}}">
+      {{text mine shared}}
+    </button>
+    {{/each}}
+  </form>
+  {{/let}}
+
+    <table class="grain-list-table">
+      <thead>
+        {{#if showTableHeaders}}
+        <tr>
+            <td class="select-all-grains">
+              <input title={{selectAllTitle}} type="checkbox" checked={{selectAllChecked}}>
+            </td>
+            <td class="td-app-icon"></td>
+            <td class="grain-name">
+              {{> sortColumnHeading
+                    text=(_ "grains.grainlist.sandstormGrainTable.tableHeader.title")
+                    key="title"
+                    sortOrder=sortOrder
+              }}
+            </td>
+            <td class="grain-size">
+              {{> sortColumnHeading
+                    text=(_ "grains.grainlist.sandstormGrainTable.tableHeader.size")
+                    key="size"
+                    sortOrder=sortOrder
+              }}
+            </td>
+            <td class="last-used">
+              {{> sortColumnHeading
+                    text=(_ "grains.grainlist.sandstormGrainTable.tableHeader.lastUsed")
+                    key="lastUsed"
+                    sortOrder=sortOrder
+              }}
+            </td>
+            <td class="shared-or-owned">{{_ "grains.grainlist.sandstormGrainTable.tableHeader.ownership"}}</td>
+            {{!-- Collaborators, size TODO
+            <td>{{_ "grains.grainlist.sandstormGrainTable.tableHeader.collaborators"}}</td>
+            <td>{{_ "grains.grainlist.sandstormGrainTable.tableHeader.size"}}</td>
+            --}}
+        </tr>
+        {{/if}}
+      </thead>
+      <tbody>
+        {{#each actions}}
+        <tr class="action">
+          <td class="select-grain"></td>
+          <td class="td-app-icon"><div class="new-grain-icon"></div></td>
+          <td class="action-button" colspan="4"><button class="action">{{buttonText}}</button></td>
+        </tr>
+        {{/each}}
+        {{#each (sortedGrains grains)}}
+        <tr class="grain {{#if unread}}unread{{/if}}" data-grainid="{{ _id }}">
+          <td class="select-grain {{#if isOwnedByMe}}mine{{else}}shared{{/if}}">
+            <input title="select this grain"
+                   type="checkbox" data-grainid="{{ _id }}" checked={{isChecked}}>
+          </td>
+          <td class="td-app-icon click-to-go {{#if trashed}}in-trash{{/if}}">
+            <div class="app-icon" title="{{appTitle}}"
+                 style="background-image: url('{{ iconSrc }}');">
+            </div>
+          </td>
+          <td class="grain-name click-to-go">
+            <a href="{{ pathFor route='grain' grainId=_id }}">{{title}}</a>
+            {{#with was}}
+              {{_ "grains.grainlist.sandstormGrainTable.tableBody.was" .}}
+            {{/with}}
+            {{#with renamedFrom}}
+              {{_ "grains.grainlist.sandstormGrainTable.tableBody.renamedFrom" .}}
+            {{/with}}
+          </td>
+          <td class="grain-size click-to-go">{{grainSize}}</td>
+          <td class="last-used click-to-go">
+            {{#if isNewShare}}
+              {{_ "grains.grainlist.sandstormGrainTable.tableBody.new"}}
+            {{else}}
+              {{dateString lastUsed}}
+            {{/if}}
+          </td>
+          <td class="shared-or-owned click-to-go">{{#if isOwnedByMe }}{{_ "grains.grainlist.sandstormGrainTable.tableBody.mine"}}{{else}}{{_ "grains.grainlist.sandstormGrainTable.tableBody.shared"}}{{/if}}</td>
+          {{!-- Collaborators, size TODO
+          <td>TODO: collaborators</td>
+          <td>{{ size }}</td>
+          --}}
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+</template>
+
+<template name="sortColumnHeading">
+  {{!-- The heading on a sortable column. Arguments:
+
+  text -- the text to display in the heading.
+  key -- the name of the sorting key for this column.
+  sortOrder -- the current sorting order, which is an object with shape:
+    {
+      key: string, // the current key to sort by.
+      order: "ascending" | "descending", // the direction to sort by.
+    }
+  --}}
+  {{text}}
+  {{#if equal sortOrder.key key}}
+    {{#if equal sortOrder.order "ascending"}}
+      ▾
+    {{else}}
+      ▴
+    {{/if}}
+  {{/if}}
+</template>

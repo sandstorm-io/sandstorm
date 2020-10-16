@@ -69,6 +69,11 @@ function fetch(url, options) {
     var data = undefined;
     if (options.hasOwnProperty('data'))
       data = options.data;
+    if (options.hasOwnProperty('headers')) {
+      for(const [k, v] of Object.entries(options.headers)) {
+        xhr.setRequestHeader(k, v)
+      }
+    }
     xhr.send(data);
   });
 }
@@ -83,6 +88,33 @@ function doPut(url, data) {
 }
 function doDelete(url) {
   return fetch(url, { method: "delete" });
+}
+
+function postScheduledJob(options) {
+  const headers = {
+      "x-sandstorm-app-test-schedule-should-cancel": options.shouldCancel.toString(),
+      "x-sandstorm-app-test-schedule-refstr": options.refStr,
+    }
+  if(options.period) {
+    headers["x-sandstorm-app-test-schedule-oneshot"] = "false";
+    headers["x-sandstorm-app-test-schedule-period"] = options.period;
+  } else {
+    headers["x-sandstorm-app-test-schedule-oneshot"] = "true";
+    headers["x-sandstorm-app-test-schedule-period"] = "";
+  }
+  return fetch("/schedule", {
+    "method": "post",
+    data: '',
+    headers: headers,
+  }).then(function(response) {
+    const status = response.status
+    addText(
+      "sched-response",
+      "Success: " + (status >= 200 && status < 300).toString(),
+    )
+  }).catch(function(e) {
+    addText("sched-error", e.toString())
+  });
 }
 
 function addText(id, text) {
@@ -123,5 +155,15 @@ function doPowerboxRequest(desc) {
     <!-- First descriptor in the list is testDesc. Second is a query for a UiView. -->
     <p><button onclick="doPowerboxRequest(['EAlQAQEAABEBF1EEAQH_y9-dR8kYld8AUAEBAXsRASIHZm9v', 'EAZQAQEAABEBF1EEAQH_5-Jn6pjXtNsAAAA'])" id="do-powerbox-request-multi-descriptor">Powerbox Request -- multiple descriptors</button></p>
 
+    <p><button onclick="postScheduledJob({period: 'hourly', shouldCancel: false, refStr: 'hourly'})" id="do-schedule-hourly">
+      Schedule hourly job.</button></p>
+
+    <p><button onclick="postScheduledJob({period: 'hourly', shouldCancel: true, refStr: 'hourly-cancel'})" id="do-schedule-hourly-cancel">
+      Schedule hourly job (cancel after first run).</button></p>
+
+    <p><button onclick="postScheduledJob({shouldCancel: false, refStr: 'oneshot'})" id="do-schedule-oneshot">
+      Schedule a one-shot job.</button></p>
+
+    <p><button onclick="doPost('/test-system-api', '')" id="do-test-system-api">Test the system api.</button></p>
   </body>
 </html>

@@ -10,7 +10,10 @@ The following stacks exist:
 
 * `golang`: a stack for Go programs
 * `lemp`: a PHP-oriented software collection including nginx, MySQL, and PHP.
+* `lesp`: a similar take on the PHP stack using SQLite as the database.
 * `meteor`: a stack for [Meteor](https://meteor.com) apps, including MongoDB.
+* `node`: a Node stack on version 10.x, for modern Node apps.
+* `node6`: a Node stack on version 6.x, for legacy Node apps.
 * `static`: `nginx` configured to serve static files from `/opt/app`.
 * `uwsgi`: a Python-oriented stack including nginx and uwsgi.
 * `diy`: Create your own.
@@ -51,7 +54,7 @@ For a Meteor app, keep the following in mind:
 * Run `vagrant-spk setupvm meteor`
 * Run `vagrant-spk vm up`. Note this will print _lots_ of red text; sorry about that, then abruptly end.
 * Run `vagrant-spk init` and edit `.sandstorm/sandstorm-pkgdef.capnp`
-* Run `vagrant-spk dev` and make sure the app works OK at http://local.sandstorm.io:6080/
+* Run `vagrant-spk dev` and make sure the app works OK at http://local.sandstorm.io:6090/
 * Run `vagrant-spk pack ~/projects/meteor-package.spk` and you have a package file!
 
 **Troubleshooting**

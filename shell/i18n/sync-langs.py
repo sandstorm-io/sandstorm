@@ -15,7 +15,7 @@ inter_add = False;
 
 def main():
     if len(sys.argv) is 1:
-        print 'Usage: "python sync-langs.py en zh-TW". The first language has higher json order priority. If the first language is en, it can be omitted.'
+        print('Usage: "python sync-langs.py en zh-TW". The first language has higher json order priority. If the first language is en, it can be omitted.')
     elif len(sys.argv) is 2:
         first = 'en'
         second = sys.argv[1]
@@ -40,17 +40,17 @@ def main():
         with open('%s.i18n.json' % first,'w',encoding='utf-8') as out:
             out.write(json.dumps(r1, indent=2, ensure_ascii=False, separators=(',', ': ')))
 
-    print 'Done.'
+    print('Done.')
 
 def comp_dict(base, comp):
     if inter_add:
         result = OrderedDict(comp)
     else:
         result = OrderedDict()
-    for key, value in base.iteritems():
+    for key, value in base.items():
         if key in comp:
             if type(comp[key]) != type(value):
-                print 'Type mismatch!! Key=%s; %s %s' % (key, type(comp[key]), type(value))
+                print('Type mismatch!! Key=%s; %s %s' % (key, type(comp[key]), type(value)))
             if type(value) is OrderedDict:
                 result[key] = comp_dict(value, comp[key])
             else:
@@ -59,7 +59,10 @@ def comp_dict(base, comp):
             if type(value) is OrderedDict:
                 result[key] = comp_dict(value, OrderedDict())
             else:
-                result[key] = "*_%s" % unicode(value)
+                if sys.version_info[0] == 2:
+                    result[key] = "*_%s" % unicode(value)
+                else:
+                    result[key] = "*_%s" % str(value)
     return result
 
 def align_dict(base, target):

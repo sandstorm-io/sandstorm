@@ -14,8 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const Url = Npm.require("url");
-const StaticAsset = Capnp.importSystem("sandstorm/grain.capnp").StaticAsset;
+import Url from "url";
+import { Match, check } from "meteor/check";
+import { globalDb } from "/imports/db-deprecated.js";
 
 const PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;
 
@@ -23,25 +24,25 @@ class StaticAssetImpl {
   constructor(assetId) {
     check(assetId, String);
     this._protocol = PROTOCOL.slice(0, -1);
-    this._hostPath = makeWildcardHost("static") + "/" + assetId;
+    this._hostPath = globalDb.makeWildcardHost("static") + "/" + assetId;
   }
 
   getUrl() {
     return { protocol: this._protocol, hostPath: this._hostPath, };
   }
-};
+}
 
 class IdenticonStaticAssetImpl {
   constructor(hash, size) {
     check(hash, String);
     check(size, Match.Integer);
     this._protocol = PROTOCOL.slice(0, -1);
-    this._hostPath =  makeWildcardHost("static") + "/identicon/" + hash + "?s=" + size;
+    this._hostPath =  globalDb.makeWildcardHost("static") + "/identicon/" + hash + "?s=" + size;
   }
 
   getUrl() {
     return { protocol: this._protocol, hostPath: this._hostPath, };
   }
-};
+}
 
 export { StaticAssetImpl, IdenticonStaticAssetImpl };

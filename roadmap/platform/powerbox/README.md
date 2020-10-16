@@ -28,7 +28,7 @@ TODO(feature): Some apps may support creating a whole new grain on-demand to sat
 
 ### TODO(feature): Autocomplete style
 
-Consider the case of choosing a set of contents to whom to send an e-mail. The application presents a box where the user may type arbitrary text. When the user does so, possible completions of their text are displayed, and the user can click on one. The user may be able to select multiple objects in this way, all of which are granted to the app.
+Consider the case of choosing a set of contacts to whom to send an e-mail. The application presents a box where the user may type arbitrary text. When the user does so, possible completions of their text are displayed, and the user can click on one. The user may be able to select multiple objects in this way, all of which are granted to the app.
 
 The autocomplete style is preferrable when the user has a large number of choices that are not organized and the user is likely to remember their text titles. Note that the file-open style of powerbox should also include text search, but the autocomplete style is lighter-weight.
 

@@ -16,6 +16,6 @@ function downloadFile(url, suggestedFilename) {
   } else {
     window.location = url;
   }
-};
+}
 
 export default downloadFile;

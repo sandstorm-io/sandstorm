@@ -40,9 +40,6 @@
       "title": "Not Found",
       "text": "404 Not Found :("
     },
-    "root": {
-      "title": "Home"
-    },
     "grainLogContents": {
       "prefix": "..."
     },
@@ -109,7 +106,7 @@
       "finePrint": {
         "title": "The fine print",
         "warningWithAccountLink": "Your referral bonus lasts until 1 year after the referral. The terms of this referral program may change without warning; however, such changes will not affect bonuses you have already received. If you need even more space, <a href=\"%s\">upgrade your account.</a>",
-        "explanation": "Paid subscribers can get up to 30 GB of free storage, 2 GB per person they refer, in addition to the storage from their account level. Free account holders can earn unlimited grains and 50 MB of free storage per person they refer, up to 2 GB total."
+        "explanation": "Paid subscribers can get up to 30 GB of free storage, 2 GB per person they refer, in addition to the storage from their account level. Free account holders are not eligible for a referral bonus."
       }
     },
     "about": {
@@ -133,7 +130,7 @@
         "explanation": "These companies contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
       },
       "individual": {
-        "title": "Key indivisual sponsors",
+        "title": "Key individual sponsors",
         "explanation": "These individuals contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
       },
       "backers": {
@@ -163,6 +160,7 @@
     "title": "Grains",
     "grainView": {
       "notFoundWithId": "No grain found with ID %s.",
+      "quotaExhausted": "Cannot start grain because owner's quota is exhausted. If this is your grain, please upgrade your subscription plan to continue.",
       "openWithWhichIdentity": "Would you like to reveal your identity to this grain, or remain anonymous?",
       "openInIncognitoMode": "Open in Incognito Mode",
       "revealMyIdentity": "Reveal my identity"
@@ -220,6 +218,15 @@
       "cancel": "Cancel",
       "confirmHint": "download backup",
       "confirm": "Download backup"
+    },
+    "grainCloneButton": {
+      "hint": "Clone Grain",
+      "text": "Clone",
+      "copyTitle": "Copy of %s"
+    },
+    "grainClonePopup": {
+      "title": "Clone Grain",
+      "processing": "Cloning Grain..."
     },
     "grainRestartButton": {
       "hint": "Restart App",
@@ -321,7 +328,6 @@
           "hint": "What is a grain?"
         },
         "mainListButton": "View main list",
-        "trashButton": "View trash (%s)",
         "restoreButton": "Restore backup...",
         "search": {
           "placeholder": "search"
@@ -330,6 +336,8 @@
           "quota": "__count__ of __quota__ grains",
           "size": "__size__ of __total__ used"
         },
+        "trashButton": "View trash (%s)",
+        "moveToTrash": "Move to trash",
         "trash": {
           "emptyButton": "Empty all trash",
           "explanation": "(Grains will be permanently removed after 30 days in the trash. To keep a grain, restore it to the Main list.)"
@@ -343,7 +351,42 @@
           "hasApps": "Select an app and create your first grain.",
           "hasNoApp": "Install an app to create your first grain."
         },
-        "moveToTrash": "Move to trash"
+        "transfers": {
+          "massTransfer": "Mass transfer...",
+          "transfers": "Transfers",
+          "transfer": "Transfer",
+          "blockedInitiateBeforeSource": "It looks like you're trying to initiate a new transfer from",
+          "blockedInitiateAfterSource": ", but you already have a transfer in progress. Please complete or cancel the existing transfer to continue.",
+          "incomingTransferActive": "Incoming transfer active",
+          "cancel": "Cancel",
+          "remaining": "Remaining",
+          "retryErrors": "Retry Errors",
+          "pauseTransfer": "Pause Transfer",
+          "continueTransfer": "Continue Transfer",
+          "startTransfer": "Start Transfer",
+          "closeTransfer": "Close Transfer",
+          "outgoingTransferActive": "Outgoing transfer active",
+          "currentlyTransferring": "You are currently transferring grains to:",
+          "manageAt": "Manage your transfer at:",
+          "inOrder": "In order to start a new transfer (incoming or outgoing), you must cancel the existing one.",
+          "cancelTransfer": "Cancel Transfer",
+          "initiateInboundTransfer": "Initiate Inbound Transfer",
+          "initiateOutboundTransfer": "Initiate Outbound Transfer",
+          "theSandstormServerAt": "The Sandstorm server at",
+          "wantsToTransfer": "wants to transfer grains to this server.",
+          "insecureSource": "WARNING: The source server does not support HTTPS. Data will be transferred without encryption.",
+          "deny": "Deny",
+          "fetchGrainList": "Fetch grain list",
+          "noTransfersInProgress": "No transfers are currently in progress.",
+          "transferAllMyGrainsTo": "Transfer all my grains to:",
+          "initiateTransfer": "Initiate Transfer",
+          "whatDoesThisDo": "What does this do?",
+          "whatCan": "You can use this function to transfer all of your grains to a new Sandstorm server. This automates the process of saving a backup of each grain on this server, then restoring each backup on the server you specify.",
+          "whatWhen": "When you initiate the transfer above, you will be redirected to the <strong>destination</strong> server where you will be prompted to sign in. You will then be given the option to choose which grains to transfer, and then finally you will initiate the transfer. The transfer will continue in the background; you can log off.",
+          "whatOrder": "In order for a transfer to work, the <strong>destination</strong> server must be able to reach the <strong>source</strong> server directly over the internet. However, the reverse is not necessary. Thus, you can perform a mass transfer that transfers grains from a server on the public internet (like Sandstorm Oasis) to a server on a private internal network, but not vice versa. If the <strong>source</strong> server supports HTTPS, then the transfer will take place over HTTPS, regardless of the <strong>destination</strong> server's protocol.",
+          "warningGiving": "WARNING: You are giving %s permission to download all your grains from this server. Are you sure?",
+          "errorAcceptingTransfer": "Error accepting transfer:"
+        }
       },
       "sandstormGrainTable": {
         "bulkAction": {
@@ -880,6 +923,12 @@
         "restoreButton": "Restore defaults"
       }
     },
+    "certificates": {
+      "name": "SSL/TLS Certificates",
+      "subtext": "Configure certificates manually or using Let's Encrypt.",
+      "newAdminCertificates": {
+      }
+    },
     "users": {
       "name": "Users",
       "subtext": "Manage all users on this Sandstorm installation."
@@ -1165,6 +1214,7 @@
     "networkCapabilities": {
       "name": "Network capabilities",
       "subtext": "Manage direct network access for grains.",
+      "explanation": "This page displays network capabilities granted to grains. By default, grains have very limited network access. A grain can request full network access while it is being used. Only an admin can approve the request, which grants a \"network capability\" to the grain.",
       "newAdminNetworkCapabilitiesTableCapabilityRow": {
         "adminAccount": "Admin account %s",
         "unknownGranter": "Unknown granter",
@@ -1456,7 +1506,7 @@
       "_loginButtonsLoggedOutDropdown": {
         "demo": {
           "title": "Create account",
-          "explanation": "Your demo data will be transferred to your new account."
+          "explanation": "WARNING: Your demo data will be deleted."
         },
         "title": "Sign in",
         "shared": {
@@ -1768,9 +1818,9 @@
       "grains": "Grains",
       "oasis": "Start collaborating with others by using Sandstorm on Oasis:",
       "createAccount": "Create free account »",
-      "demoHint": "Your demo data will be transferred.",
-      "selfHostHint": "Or, run Sandstorm on your own server (it's open source):",
-      "signUp": "Sign up within:",
+      "demoHint": "WARNING: Your demo data will be deleted.",
+      "selfHostHint": "This is a limited-time demo. If you want to use Sandstorm for real, install it on your own server (it's open source):",
+      "signUp": "Demo time remaining:",
       "close": "Close"
     },
     "powerbox": {

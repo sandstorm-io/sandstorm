@@ -1,5 +1,22 @@
+.wy-nav-side {
+  width: 310px;
+  padding-bottom: 1em;
+}
+
+.wy-side-scroll {
+  height: 94%;
+  width: 310px;
+}
+
 .wy-side-nav-search {
-  background-color: #4d52ac;
+  background-color: #723086;
+}
+
+.wy-side-nav-search input[type="text"] {
+	width: 100%;
+	border-radius: 4px;
+	padding: 6px 12px;
+	border-color: #2472a4;
 }
 
 .wy-side-nav-search>.home-and-project {
@@ -33,7 +50,7 @@
     .wy-nav-top {
         text-align: left;
         display: flex;
-        background-color: #4d52ac;
+        background-color: #723086;
     }
 }
 

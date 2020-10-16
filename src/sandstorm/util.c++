@@ -160,8 +160,7 @@ kj::Promise<void> pump(kj::AsyncInputStream& input, ByteStream::Client stream) {
     orphan.truncate(n);
     req.adoptData(kj::mv(orphan));
 
-    // TODO(perf): Parallelize writes.
-    return req.send().then([&input,KJ_MVCAP(stream)](auto&&) mutable {
+    return req.send().then([&input,KJ_MVCAP(stream)]() mutable {
       return pump(input, kj::mv(stream));
     });
   });
@@ -182,8 +181,7 @@ kj::Promise<void> pump(kj::InputStream& input, ByteStream::Client stream) {
   orphan.truncate(n);
   req.adoptData(kj::mv(orphan));
 
-  // TODO(perf): Parallelize writes.
-  return req.send().then([&input,KJ_MVCAP(stream)](auto&&) mutable {
+  return req.send().then([&input,KJ_MVCAP(stream)]() mutable {
     return pump(input, kj::mv(stream));
   });
 }
@@ -760,7 +758,7 @@ kj::Promise<int> SubprocessSet::waitForExitOrSignal(Subprocess& subprocess) {
   waitMap->pids.insert(std::make_pair(subprocess.getPid(),
       WaitMap::ProcInfo { kj::mv(paf.fulfiller), &subprocess }));
   subprocess.subprocessSet = *this;
-  return paf.promise.then([&subprocess](int status) {
+  return paf.promise.then([](int status) {
     return status;
   });
 }
@@ -846,7 +844,7 @@ void CapRedirector::setDisconnected(uint oldIteration) {
   }
 }
 
-kj::Promise<void> CapRedirector::dispatchCall(
+capnp::Capability::Server::DispatchCallResult CapRedirector::dispatchCall(
     uint64_t interfaceId, uint16_t methodId,
     capnp::CallContext<capnp::AnyPointer, capnp::AnyPointer> context) {
   capnp::AnyPointer::Reader params = context.getParams();
@@ -855,7 +853,7 @@ kj::Promise<void> CapRedirector::dispatchCall(
 
   auto oldIteration = iteration;
 
-  return req.send().then([context](auto&& response) mutable -> kj::Promise<void> {
+  auto promise = req.send().then([context](auto&& response) mutable -> kj::Promise<void> {
     context.initResults(response.targetSize()).set(response);
     return kj::READY_NOW;
   }, [this,oldIteration](kj::Exception&& e) -> kj::Promise<void> {
@@ -886,6 +884,10 @@ kj::Promise<void> CapRedirector::dispatchCall(
       return kj::mv(e);
     });
   });
+
+  // We don't need to recognize streaming calls here since we're just forwarding to another
+  // capability. The final endpoint will apply stream queueing if appropriate.
+  return { kj::mv(promise), false };
 }
 
 // =======================================================================================

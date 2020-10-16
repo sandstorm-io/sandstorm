@@ -142,14 +142,22 @@ Please install the following:
 * `golang-go`
 * `cmake`
 * discount (markdown parser)
-* [Meteor](http://meteor.com)
+* [Meteor](http://meteor.com) version 1.8.2
 
 On Debian or Ubuntu, you should be able to get all these with:
 
     sudo apt-get install build-essential libcap-dev xz-utils zip \
         unzip strace curl discount git python zlib1g-dev \
         golang-go cmake
-    curl https://install.meteor.com/ | sh
+    curl https://install.meteor.com/?release=1.8.2 | sh
+
+On Fedora 27 you should be able to get them with (as root):
+
+    dnf install make libcap-devel libstdc++-devel libstdc++-static \
+       glibc-headers glibc-static glibc-locale-source xz zip \
+       unzip strace curl discount git python2 zlib-devel \
+       golang cmake
+    curl https://install.meteor.com/?release=1.8.2 | sh
 
 If you have trouble getting the build to work on your distro, we recommend trying in a virtual
 machine running the latest stable Debian release. This is easy to set up using Vagrant, like:
@@ -251,9 +259,7 @@ You can look at these examples as a starting-point:
 Note that this process uses Sandstorm's install.sh to download Sandstorm. Another option would be if
 Sandstorm provided an APT repository. However, at the time of writing (July 2016), there is no APT
 repository for Sandstorm because we have not yet examined fully how to retain Sandstorm's
-self-containerization and auto-updates in conjunction with an APT repository. If you're interested
-in that feature, please email support@sandstorm.io so we can use that information to prioritize it
-further.
+self-containerization and auto-updates in conjunction with an APT repository.
 
 ## Option 6: Using Sandstorm within Docker
 
@@ -309,10 +315,7 @@ This process uses Sandstorm's install.sh to download Sandstorm, and Sandstorm is
   container and its design currently assumes a single machine.
 
 We're hopeful that the above approach is useful, although we know that it is not the most idiomatic
-use of Docker. If your organization needs deeper integration with Docker, such as a Docker image
-maintained by the Sandstorm team that contains the latest version of Sandstorm, please send an email
-to support@sandstorm.io so we know that customers have a real need for it and can prioritize it
-accordingly.
+use of Docker.
 
 ## Option 7: Use Vagrant when deploying on Mac or Windows
 
@@ -341,7 +344,7 @@ indicating that the service is only visible on the computer where you ran Vagran
 
 We do recommend that you run Sandstorm on a native Linux system, but we understand that this isn't
 always an option. If you need further help making Sandstorm work with Vagrant or within
-virtualization generally, please email support@sandstorm.io.
+virtualization generally, please [open a GitHub issue](https://github.com/sandstorm-io/sandstorm/issues/new).
 
 ## Tips
 

@@ -1,0 +1,122 @@
+<template name="adminNavItem">
+{{!--
+  Takes as arguments:
+
+  routeName: String
+       data: String
+      class: String
+--}}
+<li class="nav-item">
+  {{#linkTo route=routeName class=class data=data}}
+    {{> Template.contentBlock}}
+  {{/linkTo}}
+</li>
+</template>
+
+<template name="newAdmin">
+  {{>title (_ "admin.admin.newAdmin.title")}}
+  {{setDocumentTitle}}
+
+  {{#if wildcardHostSeemsBroken}}
+  <div class="flash-message warning-message">
+    {{{_ "admin.admin.newAdmin.wildcardHostBroken"}}}
+  </div>
+  {{/if}}
+
+  {{#if websocketSeemsBroken}}
+  <div class="flash-message warning-message">
+    {{{_ "admin.admin.newAdmin.websocketBroken"}}}
+  </div>
+  {{/if}}
+
+  <div class="admin-settings">
+    {{#if isUserPermitted}}
+      {{> Template.dynamic template=adminTab}}
+    {{else}}
+      {{#if hasSetupToken}}
+        <p>
+          {{{_ "admin.admin.newAdmin.hasSetupToken"}}}
+        </p>
+      {{else}}
+        <p>
+          {{_ "admin.admin.newAdmin.hasNoSetupToken"}}
+        </p>
+      {{/if}}
+    {{/if}}
+  </div>
+</template>
+
+<template name="newAdminRoot">
+  <h1>
+    <ul class="admin-breadcrumbs">
+      <li>{{_ "admin.title"}}</li>
+    </ul>
+  </h1>
+
+  <nav>
+    <ul class="nav-sections">
+      <li>
+        <h2>{{_ "admin.admin.newAdminRoot.configuration.title"}}</h2>
+        <ul class="nav-items">
+          {{#adminNavItem routeName="newAdminCertificates"}}
+            <div class="item-name">{{_ "admin.certificates.name"}}</div>
+            <div class="item-subtext">{{_ "admin.certificates.subtext"}}</div>
+          {{/adminNavItem}}
+          {{#adminNavItem routeName="newAdminLogin"}}
+            <div class="item-name">{{_ "admin.identityProviders.name"}}</div>
+            <div class="item-subtext">{{_ "admin.identityProviders.subtext"}}</div>
+          {{/adminNavItem}}
+          {{#adminNavItem routeName="newAdminOrganization"}}
+            <div class="item-name">{{_ "admin.organization.name"}}</div>
+            <div class="item-subtext">{{_ "admin.organization.subtext"}}</div>
+          {{/adminNavItem}}
+          {{#adminNavItem routeName="newAdminEmailConfig"}}
+            <div class="item-name">{{_ "admin.emailConfig.name"}}</div>
+            <div class="item-subtext">{{_ "admin.emailConfig.subtext"}}</div>
+          {{/adminNavItem}}
+          {{#adminNavItem routeName="newAdminPersonalization"}}
+            <div class="item-name">{{_ "admin.personalization.name"}}</div>
+            <div class="item-subtext">{{_ "admin.personalization.subtext"}}</div>
+          {{/adminNavItem}}
+          {{#adminNavItem routeName="newAdminPreinstalledApps"}}
+            <div class="item-name">{{_ "admin.preinstalledApps.name"}}</div>
+            <div class="item-subtext">{{_ "admin.preinstalledApps.subtext"}}</div>
+          {{/adminNavItem}}
+          {{#adminNavItem routeName="newAdminAppSources"}}
+            <div class="item-name">{{_ "admin.appSources.name"}}</div>
+            <div class="item-subtext">{{_ "admin.appSources.subtext"}}</div>
+          {{/adminNavItem}}
+          {{#adminNavItem routeName="newAdminNetworking"}}
+            <div class="item-name">{{_ "admin.networking.name"}}</div>
+            <div class="item-subtext">{{_ "admin.networking.subtext"}}</div>
+          {{/adminNavItem}}
+        </ul>
+      </li>
+      <li>
+        <h2>{{_ "admin.admin.newAdminRoot.management.title"}}</h2>
+        <ul class="nav-items">
+          {{#adminNavItem routeName="newAdminUsers"}}
+            <div class="item-name">{{_ "admin.users.name"}}</div>
+            <div class="item-subtext">{{_ "admin.users.subtext"}}</div>
+          {{/adminNavItem}}
+          {{#adminNavItem routeName="newAdminStatus"}}
+            <div class="item-name">{{_ "admin.systemStatus.name"}}</div>
+            <div class="item-subtext">{{_ "admin.systemStatus.subtext"}}</div>
+          {{/adminNavItem}}
+          {{#adminNavItem routeName="newAdminStats"}}
+            <div class="item-name">{{_ "admin.stats.name"}}</div>
+            <div class="item-subtext">{{_ "admin.stats.subtext"}}</div>
+          {{/adminNavItem}}
+          {{#adminNavItem routeName="newAdminMaintenance"}}
+            <div class="item-name">{{_ "admin.maintenanceMessage.name"}}</div>
+            <div class="item-subtext">{{_ "admin.maintenanceMessage.subtext"}}</div>
+          {{/adminNavItem}}
+          {{#adminNavItem routeName="newAdminNetworkCapabilities"}}
+            <div class="item-name">{{_ "admin.networkCapabilities.name"}}</div>
+            <div class="item-subtext">{{_ "admin.networkCapabilities.subtext"}}</div>
+          {{/adminNavItem}}
+        </ul>
+      </li>
+    </ul>
+  </nav>
+</template>

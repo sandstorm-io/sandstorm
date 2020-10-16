@@ -14,8 +14,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { Meteor } from "meteor/meteor";
+import { Match, check } from "meteor/check";
+import { Template } from "meteor/templating";
+import { Blaze } from "meteor/blaze";
+import { Tracker } from "meteor/tracker";
+import { ReactiveVar } from "meteor/reactive-var";
+import { Random } from "meteor/random";
+import { Router } from "meteor/iron:router";
+import { _ } from "meteor/underscore";
+
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
 import { isStandalone } from "/imports/client/standalone.js";
+import { GrainViewList } from "/imports/client/grain/grainview-list.js";
+import { identiconForApp, iconSrcForPackage } from "/imports/sandstorm-identicons/helpers.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 let counter = 0;
 
@@ -237,6 +251,15 @@ class GrainView {
     return this.fullTitle().title;
   }
 
+  ownerTitle() {
+    const fullTitle = this.fullTitle();
+    if(fullTitle.renamedFrom === undefined) {
+      return fullTitle.title;
+    } else {
+      return fullTitle.renamedFrom;
+    }
+  }
+
   signinOverlay() {
     this._dep.depend();
     return this._signinOverlay;
@@ -350,7 +373,7 @@ class GrainView {
       return true;
     }
 
-    const session = Sessions.findOne({ _id: this._sessionId });
+    const session = globalDb.collections.sessions.findOne({ _id: this._sessionId });
     // TODO(soon): this is a hack to cache hasLoaded. Consider moving it to an autorun.
     this._hasLoaded = session && session.hasLoaded;
 
@@ -511,7 +534,7 @@ class GrainView {
     const _this = this;
     const sessionId = this._sessionId;
     _this._sessionSub = Meteor.subscribe("sessions", sessionId, params);
-    _this._sessionObserver = Sessions.find({ _id: sessionId }).observe({
+    _this._sessionObserver = globalDb.collections.sessions.find({ _id: sessionId }).observe({
       removed(session) {
         _this._sessionSub.stop();
         _this._sessionSub = undefined;
@@ -679,7 +702,7 @@ class GrainView {
 
   _fallbackIdenticon() {
     // identifier is SHA1('');
-    return Identicon.identiconForApp("da39a3ee5e6b4b0d3255bfef95601890afd80709", "grain");
+    return identiconForApp("da39a3ee5e6b4b0d3255bfef95601890afd80709", "grain");
   }
 
   _urlForAsset(assetId) {
@@ -698,7 +721,7 @@ class GrainView {
       if (grain) {
         const pkg = this._db.collections.devPackages.findOne({ appId: grain.appId }) ||
                   this._db.collections.packages.findOne({ _id: grain.packageId });
-        if (pkg) return Identicon.iconSrcForPackage(pkg, "grain", window.location.protocol + "//" + makeWildcardHost("static"));
+        if (pkg) return iconSrcForPackage(pkg, "grain", window.location.protocol + "//" + makeWildcardHost("static"));
       }
     } else if (!this._isUsingAnonymously()) {
       // Case 2
@@ -712,7 +735,7 @@ class GrainView {
       if (apiToken) {
         const meta = apiToken.owner.user.denormalizedGrainMetadata;
         if (meta && meta.icon && meta.icon.assetId) return this._urlForAsset(meta.icon.assetId);
-        if (meta && meta.appId) return Identicon.identiconForApp(meta.appId, "grain");
+        if (meta && meta.appId) return identiconForApp(meta.appId, "grain");
       }
     } else {
       // Case 3
@@ -720,7 +743,7 @@ class GrainView {
       if (tokenInfo && tokenInfo.grainMetadata) {
         const meta = tokenInfo.grainMetadata;
         if (meta.icon) return this._urlForAsset(meta.icon.assetId);
-        if (meta.appId) return Identicon.identiconForApp(meta.appId, "grain");
+        if (meta.appId) return identiconForApp(meta.appId, "grain");
       }
     }
 
@@ -774,7 +797,7 @@ class GrainView {
 
   showPowerboxOffer() {
     this._dep.depend();
-    const session = Sessions.findOne({
+    const session = globalDb.collections.sessions.findOne({
       _id: this._sessionId,
     }, {
       fields: {
@@ -787,7 +810,7 @@ class GrainView {
   powerboxOfferData() {
     this._dep.depend();
     const sessionId = this._sessionId;
-    const session = Sessions.findOne({
+    const session = globalDb.collections.sessions.findOne({
       _id: sessionId,
     }, {
       fields: {
@@ -857,9 +880,9 @@ class GrainView {
     return this._db.collections.notifications.find(
         { grainId: this._grainId, ongoing: { $exists: false } }).count();
   }
-};
+}
 
-onceConditionIsTrue = (condition, continuation) => {
+const onceConditionIsTrue = (condition, continuation) => {
   Tracker.nonreactive(() => {
     Tracker.autorun((handle) => {
       if (!condition()) {

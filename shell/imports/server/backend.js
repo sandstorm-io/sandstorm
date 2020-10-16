@@ -14,11 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
-import { inMeteor, promiseToFuture, waitPromise } from "/imports/server/async-helpers.js";
-
-const Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
-const Crypto = Npm.require("crypto");
+import { Meteor } from "meteor/meteor";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers.ts";
+import Capnp from "/imports/server/capnp.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 let storageUsageUnimplemented = false;
 
@@ -45,7 +44,7 @@ class SandstormBackend {
 
   shutdownGrain(grainId, ownerId, keepSessions) {
     if (!keepSessions) {
-      Sessions.remove({ grainId: grainId });
+      globalDb.collections.sessions.remove({ grainId: grainId });
     }
 
     const grain = this._backendCap.getGrain(ownerId, grainId).supervisor;
@@ -95,7 +94,7 @@ class SandstormBackend {
   }
 
   continueGrain(grainId) {
-    const grain = Grains.findOne(grainId);
+    const grain = globalDb.collections.grains.findOne(grainId);
     if (!grain) {
       throw new Meteor.Error(404, "Grain Not Found", "Grain ID: " + grainId);
     }
@@ -106,7 +105,7 @@ class SandstormBackend {
 
     // If a DevPackage with the same app ID is currently active, we let it override the installed
     // package, so that the grain runs using the dev app.
-    const devPackage = DevPackages.findOne({ appId: grain.appId });
+    const devPackage = globalDb.collections.devPackages.findOne({ appId: grain.appId });
     let isDev;
     let mountProc;
     let pkg;
@@ -115,8 +114,8 @@ class SandstormBackend {
       pkg = devPackage;
       mountProc = pkg.mountProc;
     } else {
-      pkg = Packages.findOne(grain.packageId);
-      if (!pkg) {
+      pkg = globalDb.collections.packages.findOne(grain.packageId);
+      if (!pkg || pkg.status !== "ready") {
         throw new Meteor.Error(500, "Grain's package not installed",
                                "Package ID: " + grain.packageId);
       }
@@ -142,7 +141,7 @@ class SandstormBackend {
     // user) and `supervisor` (the supervisor capability).
 
     if (isUserExcessivelyOverQuota(Meteor.users.findOne(ownerId))) {
-      throw new Meteor.Error(402,
+      throw new Meteor.Error("quota-exhausted",
                              ("Cannot start grain because owner's storage is exhausted.\n" +
                               "Please ask them to upgrade."));
     }
@@ -175,7 +174,7 @@ class SandstormBackend {
     let storagePromise = undefined;
     let ownerId = undefined;
     if (this._db.isQuotaEnabled() && !storageUsageUnimplemented) {
-      let grain = Grains.findOne(grainId);
+      let grain = globalDb.collections.grains.findOne(grainId);
       if (!grain) return;  // must have been deleted
       ownerId = grain.userId;
       storagePromise = this._backendCap.getUserStorageUsage(ownerId);
@@ -185,7 +184,7 @@ class SandstormBackend {
     }
 
     const now = new Date();
-    if (Grains.update(grainId, { $set: { lastUsed: now } }) === 0) {
+    if (globalDb.collections.grains.update(grainId, { $set: { lastUsed: now } }) === 0) {
       // Grain must have been deleted. Ignore.
       return;
     }
@@ -194,7 +193,7 @@ class SandstormBackend {
       Meteor.users.update(userId, { $set: { lastActive: now } });
 
       // Update any API tokens that match this user/grain pairing as well
-      ApiTokens.update({ grainId: grainId, "owner.user.accountId": userId },
+      globalDb.collections.apiTokens.update({ grainId: grainId, "owner.user.accountId": userId },
                        { $set: { lastUsed: now } },
                        { multi: true });
     }
@@ -214,6 +213,6 @@ class SandstormBackend {
       }
     }
   }
-};
+}
 
 export { SandstormBackend, shouldRestartGrain };

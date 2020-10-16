@@ -40,9 +40,6 @@
       "title": "查無此沙",
       "text": "404 查無此沙 :("
     },
-    "root": {
-      "title": "首頁"
-    },
     "grainLogContents": {
       "prefix": "……"
     },
@@ -109,7 +106,7 @@
       "finePrint": {
         "title": "The fine print",
         "warningWithAccountLink": "Your referral bonus lasts until 1 year after the referral. The terms of this referral program may change without warning; however, such changes will not affect bonuses you have already received. If you need even more space, <a href=\"%s\">upgrade your account.</a>",
-        "explanation": "Paid subscribers can get up to 30 GB of free storage, 2 GB per person they refer, in addition to the storage from their account level. Free account holders can earn unlimited grains and 50 MB of free storage per person they refer, up to 2 GB total."
+        "explanation": "Paid subscribers can get up to 30 GB of free storage, 2 GB per person they refer, in addition to the storage from their account level. Free account holders are not eligible for a referral bonus."
       }
     },
     "about": {
@@ -1455,8 +1452,7 @@
       },
       "_loginButtonsLoggedOutDropdown": {
         "demo": {
-          "title": "Create account",
-          "explanation": "Your demo data will be transferred to your new account."
+          "title": "Create account"
         },
         "title": "登入",
         "shared": {
@@ -1769,8 +1765,6 @@
       "oasis": "在 Oasis 上使用沙聚雲進行協作：",
       "createAccount": "建立免費帳號 »",
       "demoHint": "您的試用帳號資料會被保留。",
-      "selfHostHint": "或是為您自己的團隊安裝沙聚雲（沙聚雲是開源的）:",
-      "signUp": "進行註冊：",
       "close": "關閉"
     },
     "powerbox": {

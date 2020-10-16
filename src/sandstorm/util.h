@@ -447,7 +447,7 @@ public:
 
   void setDisconnected(uint oldIteration);
 
-  kj::Promise<void> dispatchCall(
+  DispatchCallResult dispatchCall(
       uint64_t interfaceId, uint16_t methodId,
       capnp::CallContext<capnp::AnyPointer, capnp::AnyPointer> context) override;
 
@@ -460,7 +460,7 @@ private:
   kj::OneOf<Passive, Active> state;
 };
 
-class TwoPartyServerWithClientBootstrap: private kj::TaskSet::ErrorHandler {
+class TwoPartyServerWithClientBootstrap final: private kj::TaskSet::ErrorHandler {
   // Similar to TwoPartyServer, but it can take a redirector for a client bootstrap as an argument
   // and/or allows you to call getBootstrap to get the client bootstrap.
 

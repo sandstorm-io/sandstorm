@@ -39,7 +39,6 @@
 #include <sys/syscall.h>
 #include <linux/sockios.h>
 #include <linux/route.h>
-#include <sandstorm/ip_tables.h>  // created by Makefile from <linux/netfilter_ipv4/ip_tables.h>
 #include <linux/netfilter/nf_nat.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -954,6 +953,12 @@ void SupervisorMain::makeCharDeviceNode(
   KJ_SYSCALL(mount(kj::str("/dev/", realName).cStr(), dst.cStr(), nullptr, MS_BIND, nullptr));
 }
 
+void mountTmpFs(const char *name, const char *dest) {
+    KJ_SYSCALL(mount(name, dest, "tmpfs",
+                     MS_NOSUID | MS_NODEV,
+                     "size=16m,nr_inodes=4k,mode=770"));
+}
+
 void SupervisorMain::setupFilesystem() {
   // The root of our mount namespace will be the app package itself.  We optionally create
   // tmp, dev, and var.  tmp is an ordinary tmpfs.  dev is a read-only tmpfs that contains
@@ -986,8 +991,7 @@ void SupervisorMain::setupFilesystem() {
     // 2) When we exit, the mount namespace disappears and the tmpfs is thus automatically
     //    unmounted.  No need for careful cleanup, and no need to implement a risky recursive
     //    delete.
-    KJ_SYSCALL(mount("sandstorm-tmp", "tmp", "tmpfs", MS_NOSUID,
-                     "size=16m,nr_inodes=4k,mode=770"));
+    mountTmpFs("sandstorm-tmp", "tmp");
   }
   if (access("dev", F_OK) == 0) {
     KJ_SYSCALL(mount("sandstorm-dev", "dev", "tmpfs",
@@ -997,6 +1001,18 @@ void SupervisorMain::setupFilesystem() {
     makeCharDeviceNode("zero", "zero", 1, 5);
     makeCharDeviceNode("random", "urandom", 1, 9);
     makeCharDeviceNode("urandom", "urandom", 1, 9);
+
+    // Create /dev/shm so shm_open() and friends work. Note that even though /dev
+    // is already a tmpfs, we need to mount a separate tmpfs for /dev/shm, because
+    // the former will be read-only.
+    //
+    // TODO: it might be nice to have /dev/shm and /tmp share the same partition,
+    // so we don't have to strictly separate their storage capacity. We could mount
+    // a single tmpfs somewhere invisible, create subdirectories, and then bind-mount
+    // them to their final destinations.
+    KJ_SYSCALL(mkdir("dev/shm", 0700));
+    mountTmpFs("sandstorm-shm", "dev/shm");
+
     KJ_SYSCALL(mount("dev", "dev", nullptr,
                      MS_REMOUNT | MS_BIND | MS_NOEXEC | MS_NOSUID | MS_NODEV | MS_RDONLY,
                      nullptr));
@@ -1900,7 +1916,7 @@ public:
     auto grainOwner = req.getSealFor().initGrain();
     grainOwner.setGrainId(grainId);
     grainOwner.setSaveLabel(args.getLabel());
-    return req.send().then([this, context](auto args) mutable -> void {
+    return req.send().then([context](auto args) mutable -> void {
       context.getResults().setToken(args.getSturdyRef());
     });
   }
@@ -1990,6 +2006,32 @@ public:
     return req.send().then([context](auto args) mutable -> void {
       context.getResults().setId(args.getId());
     });
+  }
+
+  kj::Promise<void> schedule(ScheduleContext context) override {
+    auto params = context.getParams();
+    auto req = sandstormCore.scheduleRequest(params.totalSize());
+    req.setName(params.getName());
+    req.setCallback(params.getCallback());
+    auto sched = params.getSchedule();
+    switch(sched.which()) {
+      case ScheduledJob::Schedule::ONE_SHOT: {
+          auto reqOneShot = req.getSchedule().getOneShot();
+          auto argOneShot = sched.getOneShot();
+          reqOneShot.setWhen(argOneShot.getWhen());
+          reqOneShot.setSlack(argOneShot.getSlack());
+          break;
+        }
+      case ScheduledJob::Schedule::PERIODIC:
+        req.getSchedule().setPeriodic(sched.getPeriodic());
+        break;
+      default:
+        KJ_UNIMPLEMENTED("Unknown schedule type.");
+    }
+    // There aren't any actually results to copy over, but we do want
+    // to wait for the SandstormCore to return before we do, so the
+    // app doesn't prematurely think the scheduling is complete.
+    return req.send().ignoreResult();
   }
 
 private:
@@ -2091,7 +2133,7 @@ public:
         auto req = params.getStream().writeRequest();
         auto data = req.initData(backlog1);
         in.read(data.begin(), backlog1);
-        firstWrite = req.send().ignoreResult();
+        firstWrite = req.send();
       }
     }
 
@@ -2214,7 +2256,7 @@ private:
     }
   }
 
-  class LogWatcher: public Handle::Server, private kj::TaskSet::ErrorHandler {
+  class LogWatcher final: public Handle::Server, private kj::TaskSet::ErrorHandler {
   public:
     explicit LogWatcher(kj::UnixEventPort& eventPort, kj::StringPtr logPath,
                         kj::AutoCloseFd logFileParam, ByteStream::Client stream)
@@ -2244,6 +2286,31 @@ private:
       KJ_LOG(ERROR, exception);
     }
 
+    // Read all unread data from logFile and send it to the stream.
+    kj::Promise<void> copyLog() {
+      auto req = stream.writeRequest();
+      auto orphanage =
+          capnp::Orphanage::getForMessageContaining<ByteStream::WriteParams::Builder>(req);
+      auto orphan = orphanage.newOrphan<capnp::Data>(4096);
+      auto data = orphan.get();
+
+      size_t n = kj::FdInputStream(logFile.get())
+          .tryRead(data.begin(), data.size(), data.size());
+      bool done = n < data.size();
+      if (done) {
+        orphan.truncate(n);
+      }
+      req.adoptData(kj::mv(orphan));
+
+      if(done) {
+        return req.send();
+      } else {
+        return req.send().then([this]() {
+          return copyLog();
+        });
+      }
+    }
+
     kj::Promise<void> watchLoop() {
       // Exhaust all events from the inotify queue, because edge triggering.
       // Luckily we don't actually have to interpret the events because we're only waiting on
@@ -2265,33 +2332,13 @@ private:
         KJ_SYSCALL(lseek(logFile, 0, SEEK_SET));
       }
 
-      // Read all unread data from logFile and send it to the stream.
-      // TODO(perf): Flow control? Currently we avoid asking for very much data at once.
-      for (;;) {
-        auto req = stream.writeRequest();
-        auto orphanage =
-            capnp::Orphanage::getForMessageContaining<ByteStream::WriteParams::Builder>(req);
-        auto orphan = orphanage.newOrphan<capnp::Data>(4096);
-        auto data = orphan.get();
+      return copyLog().then([this]() {
+        KJ_SYSCALL(lastOffset = lseek(logFile, 0, SEEK_CUR));
 
-        size_t n = kj::FdInputStream(logFile.get())
-            .tryRead(data.begin(), data.size(), data.size());
-        bool done = n < data.size();
-        if (done) {
-          orphan.truncate(n);
-        }
-        req.adoptData(kj::mv(orphan));
-
-        tasks.add(req.send().ignoreResult());
-
-        if (done) break;
-      }
-
-      KJ_SYSCALL(lastOffset = lseek(logFile, 0, SEEK_CUR));
-
-      // OK, now wait for more.
-      return inotifyObserver.whenBecomesReadable().then([this]() {
-        return watchLoop();
+        // OK, now wait for more.
+        return inotifyObserver.whenBecomesReadable().then([this]() {
+          return watchLoop();
+        });
       });
     }
 

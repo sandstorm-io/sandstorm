@@ -124,7 +124,7 @@ module.exports['Test renderTemplate'] = function (browser) {
     .grainFrame()
       .click('#renderTemplate')
       .waitForElementVisible('#template-frame[data-rendered=true]', short_wait)
-      .frame('template-frame')
+      .frameSelector('#template-frame[data-rendered=true]')
         .getText('#text', function (result) {
           this.assert.equal(typeof result, "object");
           this.assert.equal(result.status, 0);

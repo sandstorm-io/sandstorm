@@ -7,7 +7,7 @@ import xmlCrypto from "xml-crypto";
 import xmldom from "xmldom";
 import zlib from "zlib";
 
-const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
+import { Meteor } from "meteor/meteor";
 
 const SAML = function (options) {
   this.options = this.initialize(options);
@@ -227,7 +227,7 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
         return callback(new Error("Missing SAML assertion"), null, false, xml);
       }
 
-      profile = {};
+      const profile = {};
 
       if (response.$ && response.$.InResponseTo) {
         profile.inResponseToId = response.$.InResponseTo;
@@ -288,7 +288,7 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
       const conditions = _this.getElement(assertion[0], "Conditions")[0];
       if (conditions) {
         for (const key in conditions) {
-          if (conditions.hasOwnProperty(key)) {
+          if (Object.prototype.hasOwnProperty.call(conditions, key)) {
             const value = conditions[key];
             if (key === "$") {
               const nowMs = Date.now();

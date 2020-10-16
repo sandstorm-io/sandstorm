@@ -112,9 +112,8 @@ UPDATE_CHANNEL=none
 
 We intend to follow the Chrome update channels system, but for now we only have a `dev` channel.
 
-We strongly recommend that you keep automatic updates enabled. If you want to disable it, please
-email support@sandstorm.io so we can work with you to stay up to date some other way. We intend for
-our automatic updates to not cause any downtime.
+We strongly recommend that you keep automatic updates enabled. This is a work in progress, but
+we intend for our automatic updates to not cause any downtime.
 
 ### Sandstorm apps
 

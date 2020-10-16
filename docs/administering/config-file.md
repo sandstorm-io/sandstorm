@@ -51,11 +51,11 @@ typically a static publishing website, then serve a normal response.
 
 ### HTTPS_PORT
 
-A port number for Sandstorm to bind on and listen for HTTPS. Note that Sandstorm's built-in HTTPS
-assumes you are using the sandcats service, so that it can automatically renew a wildcard
-certificate for you. On a default install, if port 443 was available and the user chose to use
-sandcats, this is 443. If this config option is missing, Sandstorm's built-in HTTPS server is
-disabled.
+A port number for Sandstorm to bind on and listen for HTTPS. On a default install, if port 443
+was available and the user chose to use Sandcats, this is 443. However, this may be set for any
+Sandstorm-managed TLS configuration, including automated renewals of certificates with Let's Encrypt
+with a supported DNS provider or a manually-uploaded certificate. If this config option is missing,
+Sandstorm's built-in HTTPS server is disabled.
 
 If Sandstorm is started as root, Sandstorm binds to this port as root, allowing it to use
 low-numbered ports. The socket is passed-through to code that does not run as root.
@@ -178,19 +178,20 @@ ALLOW_DEV_ACCOUNTS=false
 **Used rarely.** A boolean (true/false or yes/no) that adjusts internal settings for Sandstorm's
 integration test suite.
 
-### HIDE_TROUBLESHOOTING
-
-**Used rarely.** A boolean (true/false or yes/no) that hides the "Troubleshooting" link on
-the login areas within Sandstorm.
-
-### WILDCARD_PARENT_URL
-
-**Deprecated.** Historic alternative to WILDCARD_HOST.
-
 ### DDP_DEFAULT_CONNECTION_URL
 
 **Used rarely.** Alternate URL for Meteor DDP. Useful in the unusual case that you use a CDN for
 your BASE_URL.
+
+### HIDE_TROUBLESHOOTING
+
+**Deprecated.** A boolean (true/false or yes/no) that hides the "Troubleshooting" link on
+the login areas within Sandstorm. Works at present, but may be removed in the future. Use the
+Personalization section of the admin panel to configure this and other related options.
+
+### WILDCARD_PARENT_URL
+
+**Deprecated.** Historic alternative to WILDCARD_HOST.
 
 ### MAIL_URL
 

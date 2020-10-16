@@ -24,9 +24,9 @@ exports.command = function(callback) {
   var ret = this
     .init()
     .execute('window.Meteor.logout()')
-    .execute("window.clearMockGoogleUser()")
+    .execute("window.testLoginHelpers.clearMockGoogleUser()")
     .pause(short_wait)
-    .execute('window.mockLoginGoogle()')
+    .execute('window.testLoginHelpers.mockLoginGoogle()')
     .pause(short_wait)
     .init()
     .waitForElementVisible('#applist-apps', medium_wait)

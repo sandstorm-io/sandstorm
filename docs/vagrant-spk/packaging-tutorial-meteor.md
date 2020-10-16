@@ -5,10 +5,6 @@
 This tutorial will show you how to make a
 [Sandstorm.io](https://sandstorm.io) package from a Meteor app.
 
-**Compatibility note:** Sandstorm's Meteor tooling is currently compatible with Meteor 1.3.5.1
-and earlier. If your app uses Meteor 1.4, you may need to wait until September 2016 for an
-updated `vagrant-spk` that is compatible with Meteor 1.4.
-
 Creating the package will take about five minutes of focused time,
 interspersed with the downloading of various components, which can
 take up to half an hour.
@@ -24,7 +20,7 @@ This tutorial assumes:
 
 **Windows users, please note**: This tutorial should work for you, but
 you might need to use slightly different commands to do things like
-create directories. Contact community@sandstorm.io if you need help.
+create directories.
 
 ## Overview of Sandstorm packages
 
@@ -159,26 +155,6 @@ noise.
 Eventually, you will get your shell back. At this point, you can
 continue to the next step.
 
-**Troubleshooting note**: If the `vagrant-spk vm up` command fails, it
-could be because you already have Sandstorm installed on your
-laptop. You can recognize this error via the following red text:
-
-```bash
-Vagrant cannot forward the specified ports on this VM, since they
-would collide with some other application that is already listening
-on these ports. The forwarded port to 6080 is already in use
-on the host machine.
-```
-
-If you see that, run:
-
-```bash
-sudo service sandstorm stop
-```
-
-and halt any other `vagrant-spk` virtual machines you might be using
-to develop other apps.
-
 ## Connect your app to your local Sandstorm server
 
 Apps run differently in Sandstorm, compared to `meteor deploy`, so
@@ -216,7 +192,7 @@ App is now available from Sandstorm server. Ctrl+C to disconnect.
 
 When we visit the Sandstorm server, we'll see the app available. Open up
 this URL in your web browser:
-[http://local.sandstorm.io:6080/](http://local.sandstorm.io:6080/)
+[http://local.sandstorm.io:6090/](http://local.sandstorm.io:6090/)
 
 A note about `local.sandstorm.io`: This is the same as `localhost`,
 but in Sandstorm's security model, each session to the app uses a
@@ -227,8 +203,6 @@ but it does mean that the domain name running Sandstorm needs
 `local.sandstorm.io` as an alias for `localhost` and gave it wildcard
 DNS. You can rest assured that your interactions with
 `local.sandstorm.io` stay entirely on your computer.
-
-<!--(**Editor's note**: We should make localhost:6080 work, so that people don't have to learn about `local.sandstorm.io`.)-->
 
 Take a moment now to sign in. Choose **with a Dev account** and choose
 **Alice (admin)**. You will have to enter an email address; you can use
@@ -310,7 +284,7 @@ and change it to read:
 ```
 
 To refresh the information that shows up in
-[http://local.sandstorm.io:6080/](http://local.sandstorm.io:6080/),
+[http://local.sandstorm.io:6090/](http://local.sandstorm.io:6090/),
 find the terminal where you are running `vagrant-spk dev`. It should
 have this line at the end.
 
@@ -394,7 +368,7 @@ for other web frameworks, check out the **What's next** section below.
 
 With `vagrant-spk`, before you can develop a second app, you must stop
 the virtual machine created as part of developing the first one.  This
-is because the `vagrant-spk` virtual machine always uses port 6080.
+is because the `vagrant-spk` virtual machine always uses port 6090.
 
 In our case, we're done using the virtual machine running this app, so
 it's safe to stop it. Run this command:
@@ -406,7 +380,7 @@ vagrant-spk vm halt
 
 This shuts down the whole virtual machine used for developing your
 app's Sandstorm package, including the Sandstorm install specific to
-that app's packaging work. Now port 6080 is available for other app
+that app's packaging work. Now port 6090 is available for other app
 packaging projects.
 
 If you ever want to work on this app's packaging again, you can bring

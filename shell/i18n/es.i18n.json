@@ -3,25 +3,25 @@
   "shell": {
     "layout": {
       "demoExpired": {
-        "title": "Ha expirado la Demo",
-        "canUpgrade": "¡Gracias por probar la Demo de Sandstorm! Tu cuenta demo ha expirado. Si deseas continuar usando Sandstorm y hacer tus datos permanentes, por favor inicia sesión.",
-        "cannotUpgrade": "¡Gracias por probar la Demo de Sandstorm! Tu cuenta demo ha expirado.",
+        "title": "La demo ha caducado",
+        "canUpgrade": "¡Gracias por probar la Demo de Sandstorm! Tu cuenta de demo ha caducado. Si quieres continuar usando Sandstorm y hacer permanentes tus datos, por favor inicia sesión.",
+        "cannotUpgrade": "¡Gracias por probar la Demo de Sandstorm! Tu cuenta ha caducado.",
         "signOut": "Cerrar sesión"
       },
       "adminAlert": {
         "icon": "!",
-        "title": "Nota para Admin"
+        "title": "Nota del Administrador"
       },
       "demoModal": {
-        "header": "Sandstorm es un «suite» de productividad web autoalojable.",
+        "header": "Sandstorm es una suite de productividad web auto-alojable.",
         "withAppDemo": "con aplicaciones como %s.",
-        "withoutAppDemo": "con todas las aplicaciones que necesitas en un lugar.",
+        "withoutAppDemo": "con todas las aplicaciones que necesitas, en un solo lugar.",
         "startButton": {
-          "withAppDemo": "Prueba %s »",
-          "withoutAppDemo": "Iniciar »"
+          "withAppDemo": "Probar %s »",
+          "withoutAppDemo": "Comenzar »"
         },
-        "explanation": "<p>Sandstorm hace fácil ejecutar aplicaciones en tu propio servidor. Además de mejorar la privacidad y el control, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\" target=\"_blank\">esto lleva las aplicaciones de software libre a una audiencia más amplia.</a></p>",
-        "securityOverview": "<p>Sandstorm también es segurísimo. Si te interesa la seguridad, consulta <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">un resumen del modelo de seguridad de Sandstorm</a>.</p>"
+        "explanation": "<p>Sandstorm hace fácil poner en marcha aplicaciones en tu propio servidor. Además de mejorar la privacidad y el control, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\" target=\"_blank\">esto lleva las aplicaciones de software libre a una amplia audiencia.</a></p>",
+        "securityOverview": "<p>Sandstorm también es increíblemente seguro. Si te interesa la seguridad, echa un vistazo a <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">una revisión del modelo de seguridad de Sandstorm</a>.</p>"
       }
     },
     "notifications": {
@@ -38,10 +38,7 @@
     },
     "notFound": {
       "title": "No encontrado",
-      "text": "404 no encontrado :("
-    },
-    "root": {
-      "title": "Inicio"
+      "text": "404 No encontrado :("
     },
     "grainLogContents": {
       "prefix": "..."
@@ -52,298 +49,344 @@
     "signup": {
       "title": "Reclamar invitación",
       "signedUp": {
-        "keyIsUsedWithOrigin": "¡Ya has iniciado sesión!  Ahora <a href=\"https://apps.sandstorm.io/?host=%s\">instala algunas aplicaciones</a>.",
-        "keyIsNotUsed": "Parece que ya tienes una cuenta, así que no necesitas esta clave de registro."
+        "keyIsUsedWithOrigin": "¡Ya has iniciado sesión! Ahora <a href=\"https://apps.sandstorm.io/?host=%s\">instala algunas aplicaciones</a>.",
+        "keyIsNotUsed": "Parece que ya tienes una cuenta, así que no necesitas esta clave de inicio de sesión."
       },
-      "keyIsUsed": "Lo siento, esta clave de registro ya se ha usado.",
+      "keyIsUsed": "Lo siento, ya se ha usado esa clave de inicio de sesión.",
       "processing": "Por favor, espera...",
-      "signInGuide": "Primero debes iniciar sesión. Pulsa en \"Iniciar sesión\" arriba a la derecha.",
-      "invalidKey": "Lo siento, no es una clave de registro válida."
+      "signInGuide": "Primero necesitas iniciar sesión. Pulsa en \"Iniciar sesión\" arriba a la derecha.",
+      "invalidKey": "Lo siento, esto no es una clave de inicio de sesión válida."
     },
     "uploadStatus": {
-      "title": "Cargando...",
-      "uploadFailedWithError": "Carga fallida: %s %s",
+      "title": "Subiendo...",
+      "uploadFailedWithError": "Falló la subida: %s %s",
       "statusWithProgress": "%s... %s",
       "status": "%s...",
-      "uploadFailed": "Ha fallado la carga. Por favor inténtalo de nuevo."
+      "uploadFailed": "Falló la subida. Por favor, inténtalo de nuevo."
     },
     "uploadTest": {
-      "title": "Cargar página de prueba",
-      "explanation": "Esta página está para que la usen los scripts de prueba.",
-      "uploadApp": "Cargar aplicación:",
-      "uploadBackup": "Cargar copia de seguridad:"
+      "title": "Página de prueba de subida",
+      "explanation": "Esta página está pensada para ser usada por los scritps de prueba.",
+      "uploadApp": "Subir aplicación:",
+      "uploadBackup": "Subir copia de seguridad:"
     },
     "referrals": {
       "title": "Programa de referencia",
       "header": {
         "isPaid": {
           "title": "¡Consigue hasta <span class=\"reward-amount\">30 GB</span> de espacio libre cuando tus amistades comparten en Oasis!",
-          "explanation": "Por cada persona que cree un enlace para compartir, te premiaremos con 2 GB."
+          "explanation": "Por cada amigo o amiga que crea un enlace para compartir, te premiaremos con 2 GB."
         },
         "isNotPaid": {
-          "title": "¡Consigue granitos ilimitados &amp; hasta <span class=\"reward-amount\">2 GB</span> de espacio libre cuando tus amistades comparten en Oasis!",
-          "explanation": "Por cada persona que crea un enlace para compartir, te premiaremos con 50 MB. También obtendrás granitos ilimitados."
+          "title": "¡Consigue granitos ilimitados y hasta <span class=\"reward-amount\">2 GB</span> de espacio libre cuando tus amistades comparten en Oasis!",
+          "explanation": "Por cada amigo o amiga que crea un enlace para compartir, te premiaremos con 50 MB. También conseguirás granitos ilimitados."
         }
       },
       "howTo": {
         "title": "Compartir es referenciar",
-        "explanation": "Para empezar, abre cualquier granito y pulsa en Compartir acceso.",
+        "explanation": "Para comenzar, abre cualquier granito y pulsa Compartir acceso.",
         "getStart": {
-          "step1": "Compartes un granito con tus amistades (que aún no son usuarios de Oasis).",
-          "step2": "Tus amistades inician sesión.",
-          "step3": "Tus amistades comparten un granito con alguien (incluido tú mismo)."
+          "step1": "Compartes un granito con tu amigo o amiga (que aún no usa Oasis).",
+          "step2": "Tu amigo o amiga inicia sesión.",
+          "step3": "Tu amigo o amiga comparte un granito con cualquier otra persona (o contigo)."
         }
       },
       "status": {
-        "title": "Your referrals & status",
-        "explanation": "Once you send a sharing link out, people will appear in this list after they sign in.",
+        "title": "Tus referencias y estado",
+        "explanation": "Una vez que envíes un enlace para compartir, las personas aparecerán en esta lista tras iniciar sesión.",
         "pending": {
-          "title": "Still needs to share",
-          "explanation": "Tell these people to make a grain and share it with you. You must actually view the grain they shared with you!"
+          "title": "Todavía necesita compartir",
+          "explanation": "Dile a estas personas que creen un granito y lo compartan contigo. ¡Debes visualizar el granito que compartieron contigo!"
         },
         "success": {
-          "title": "Successful referrals",
-          "explanation": "You've successfully referred these people. Congratulations!"
+          "title": "Referencias exitosas",
+          "explanation": "Has referenciado correctamente a estas personas. ¡Felicidades!"
         }
       },
       "finePrint": {
         "title": "La letra pequeña",
-        "warningWithAccountLink": "Your referral bonus lasts until 1 year after the referral. The terms of this referral program may change without warning; however, such changes will not affect bonuses you have already received. If you need even more space, <a href=\"%s\">upgrade your account.</a>",
-        "explanation": "Paid subscribers can get up to 30 GB of free storage, 2 GB per person they refer, in addition to the storage from their account level. Free account holders can earn unlimited grains and 50 MB of free storage per person they refer, up to 2 GB total."
+        "warningWithAccountLink": "Tu bono de referencia dura hasta 1 año tras la referencia. Los términos de este programa de referencia pueden cambiar sin previo aviso; sin embargo, estos cambios no afectarían a los bonos que ya hayas recibido. Si necesitas más espacio, <a href=\"%s\">mejora tu cuenta.</a>",
+        "explanation": "Los suscriptores de pago pueden conseguir hasta 30 GB de espacio libre, 2 GB por persona que referencien, además del espacio de su cuenta acorde a su nivel. Los titulares de cuentas gratuitas no son elegibles para un bono de referencia."
       }
     },
     "about": {
       "title": "Acerca de Sandstorm",
       "intro": {
-        "explanation": "<a href=\"https://sandstorm.io\">Sandstorm.io</a> is an open source hosting platform for personal/private instances of web apps. Users can upload and install arbitrary software through a simple app-store-like web interface. In addition to better privacy, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">this is the only way to make Open Source web apps viable.</a>",
-        "version": "Version: %s",
-        "unofficialWarning": "<strong>WARNING:</strong> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers."
+        "explanation": "<a href=\"https://sandstorm.io\">Sandstorm.io</a> es una plataforma de alojamiento de software libre para uso personal/privado de instancias de aplicaciones web. Los usuarios pueden subir e instalar determinado software a través de una interfaz sencilla de tipo tienda de aplicaciones. Además de una mejor privacidad, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">es la única manera de hacer viables las aplicaciones web de software libre.</a>",
+        "version": "Versión: %s",
+        "unofficialWarning": "<strong>AVISO:</strong> Este servidor funciona con una versión no oficial de Sandstorm, que puede contener modificaciones no revisadas por los desarrolladores."
       },
       "changelog": {
         "title": "Cambios recientes"
       },
       "developers": {
-        "title": "Equipo de desarrollo"
+        "title": "Desarrolladores principales"
       },
       "advisors": {
         "title": "Consultores"
       },
       "corporate": {
         "title": "Patrocinadores corporativos",
-        "explanation": "These companies contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
+        "explanation": "Estas empresas han contribuido sustancialmente a la <a href=\"http://igg.me/at/sandstorm\">campaña de financiación colectiva</a> de Sandstorm."
       },
       "individual": {
         "title": "Patrocinadores individuales clave",
-        "explanation": "These individuals contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
+        "explanation": "Estas personas han contribuido sustancialmente a la <a href=\"http://igg.me/at/sandstorm\">campaña de financiación colectiva</a> de Sandstorm."
       },
       "backers": {
-        "title": "Personas que respaldan el proyecto",
-        "explanation": "from <a href=\"http://igg.me/at/sandstorm\">our Indiegogo campaign &gt;</a>",
-        "anonymous": "and %s anonymous contributors",
-        "loading": "loading..."
+        "title": "Contribuidores",
+        "explanation": "de <a href=\"http://igg.me/at/sandstorm\">nuestra campaña en Indiegogo &gt;</a>",
+        "anonymous": "y %s contribuidores anónimos",
+        "loading": "cargando..."
       },
       "dependencies": {
-        "title": "Third-party works used",
-        "license": "license",
-        "explanation": "These works are copyright the respective authors and used under the terms of the respective licenses."
+        "title": "Obras de terceras partes usadas",
+        "license": "licencia",
+        "explanation": "Estas obras tienen derechos de autor de sus respectivos titulares y se usan bajo los términos de sus respectivas licencias."
       },
       "copyright": {
-        "title": "Copyright",
-        "license": "The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and contributors. The implementation is licensed under the Apache License 2.0.",
-        "trademark": "\"Sandstorm\" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc., and may not be used to advertise derivative works nor commercial services without written consent from Sandstorm Development Group, Inc."
+        "title": "Derechos de autor",
+        "license": "La implementación de Sandstorm tiene derechos de autor de Sandstorm Development Group, Inc. y sus contribuidores. La implementación está bajo la licencia Apache License 2.0.",
+        "trademark": "\"Sandstorm\" y el logo de Sandstorm son marcas registradas de Sandstorm Development Group, Inc., y no deben usarse para anunciar trabajos derivados ni servicios comerciales sin consentimiento escrito de Sandstorm Development Group, Inc."
       },
       "terms": {
-        "license": "License",
-        "terms": "Terms of service",
-        "privacy": "Privacy policy"
+        "license": "Licencia",
+        "terms": "Términos del servicio",
+        "privacy": "Política de privacidad"
       }
     }
   },
   "grains": {
-    "title": "Grains",
+    "title": "Granitos",
     "grainView": {
-      "notFoundWithId": "No grain found with ID %s.",
-      "openWithWhichIdentity": "Would you like to reveal your identity to this grain, or remain anonymous?",
-      "openInIncognitoMode": "Open in Incognito Mode",
-      "revealMyIdentity": "Reveal my identity"
+      "notFoundWithId": "No se ha encontrado un granito con ID %s.",
+      "quotaExhausted": "No se puede iniciar el granito porque la cuota del propietario/a está agotada. Si es tu granito, por favor mejora tu plan de suscripción para continuar.",
+      "openWithWhichIdentity": "¿Te gustaría revelar tu identidad para este granito, o permanecer anónimo/a?",
+      "openInIncognitoMode": "Abrir en modo incógnito",
+      "revealMyIdentity": "Revelar mi identidad"
     },
     "grainInMyTrash": {
-      "explanation": "This grain is in your trash. You cannot access it unless you restore it to your main list.",
-      "restore": "Restore to main list"
+      "explanation": "Este granito está en tu papelera. No puedes acceder a menos que lo restaures a tu lista principal.",
+      "restore": "Restaurar a la lista principal"
     },
     "grainInOwnersTrash": {
-      "explanation": "You can no longer access this grain because its owner has moved it to the trash."
+      "explanation": "Ya no puedes acceder a este granito porque su propietario/a lo ha movido a la papelera."
     },
     "grainOwnerSuspended": {
-      "explanation": "You can no longer access this grain because its owner's account has been suspended."
+      "explanation": "Ya no puedes acceder a este granito porque la cuenta de su propietario/a ha sido suspendida."
     },
     "wrongIdentity": {
-      "explanation": "This link was intended for the user:"
+      "explanation": "Este enlace pretende ser para el usuario:"
     },
     "requestAccess": {
-      "permissionDenied": "You do not have permission to access this grain.",
-      "requestAccessHint": "Request access",
-      "requestAccess": "Request Access",
-      "warnIdentityRevealing": "Requesting access will reveal your identity to the grain owner.",
-      "sendRequest": "Sending your request...",
-      "waitForApproving": "Your request has been sent. You will receive an email if your request is approved.",
-      "requestFailed": "Your request failed because: %s",
-      "signInPlease": "Please sign in to request access."
+      "permissionDenied": "No tienes permiso para acceder a este granito.",
+      "requestAccessHint": "Solicitar acceso",
+      "requestAccess": "Solicitar acceso",
+      "warnIdentityRevealing": "Solicitar acceso revelará tu identidad al propietario/a del granito.",
+      "sendRequest": "Enviando la solicitud...",
+      "waitForApproving": "Solicitud enviada. Recibirás un correo electrónico si se aprueba la solicitud.",
+      "requestFailed": "La solicitud falló por: %s",
+      "signInPlease": "Por favor inicia sesión para solicitar acceso."
     },
     "invalidToken": {
-      "invalidToken": "Invalid token: %s"
+      "invalidToken": "Token inválido: %s"
     },
     "revokedShareLink": {
-      "linkRevoked": "Sorry, this link has been revoked."
+      "linkRevoked": "Lo siento, este enlace ha sido revocado."
     },
     "grainTitle": {
-      "was": "was: %s",
-      "renamedFrom": "renamed from: %s"
+      "was": "era: %s",
+      "renamedFrom": "renombrado de: %s"
     },
     "grainDeleteButton": {
-      "hint": "Move to trash",
-      "text": "Move to trash"
+      "hint": "Mover a la papelera",
+      "text": "Mover a la papelera"
     },
     "grainDebugLogButton": {
-      "hint": "Show Debug Log",
-      "text": "Log"
+      "hint": "Mostrar registro de depuración",
+      "text": "Regisro"
     },
     "grainBackupButton": {
-      "hint": "Download Backup",
-      "text": "Backup"
+      "hint": "Descargar copia de seguridad",
+      "text": "Copia de seguridad"
     },
     "grainBackupPopup": {
-      "title": "Download Backup",
-      "warning": "Warning! Restoring this backup might not work how you expect it to.",
-      "processing": "Preparing backup...",
-      "cancelHint": "cancel",
-      "cancel": "Cancel",
-      "confirmHint": "download backup",
-      "confirm": "Download backup"
+      "title": "Descargar copia de seguridad",
+      "warning": "¡Aviso! Restaurar esta copia de seguridad puede no funcionar como esperas.",
+      "processing": "Preparando copia de seguridad...",
+      "cancelHint": "cancelar",
+      "cancel": "Cancelar",
+      "confirmHint": "descargar copia de seguridad",
+      "confirm": "Descargar copia de seguridad"
+    },
+    "grainCloneButton": {
+      "hint": "Clonar granito",
+      "text": "Clonar",
+      "copyTitle": "Copia de %s"
+    },
+    "grainClonePopup": {
+      "title": "Clonar granito",
+      "processing": "Clonando granito..."
     },
     "grainRestartButton": {
-      "hint": "Restart App",
-      "text": "Restart"
+      "hint": "Reiniciar aplicación",
+      "text": "Reiniciar"
     },
     "grainApiTokenButton": {
-      "hint": "Get webkey",
-      "text": "Get&nbsp;Webkey"
+      "hint": "Obtener clave web",
+      "text": "Obtener&nbsp;clave web"
     },
     "grainApiTokenPopup": {
-      "title": "Webkeys",
-      "processing": "Generating...",
-      "cancel": "Cancel",
-      "copyForExternalApp": "Copy this webkey and give it to the external app:",
-      "back": "Go back",
-      "description": "A webkey allows you to connect an external app (e.g. a mobile app) to this app.",
-      "labelTitle": "Label:",
-      "labelPlaceholder": "e.g. 'Android app'",
-      "roleTitle": "Role:",
-      "permissionTitle": "all access",
-      "create": "Create",
-      "webkeyListTitle": "Your existing webkeys:",
-      "revokeHint": "Revoke",
-      "revoke": "Revoke"
+      "title": "Claves web",
+      "processing": "Generando...",
+      "cancel": "Cancelar",
+      "copyForExternalApp": "Copiar esta clave web y dársela a la aplicación externa:",
+      "back": "Volver",
+      "description": "Una clave web permite conectar una aplicación externa (p.ej. una aplicación móvil) a esta aplicación.",
+      "labelTitle": "Etiqueta:",
+      "labelPlaceholder": "p.ej. 'Aplicación Android'",
+      "roleTitle": "Rol:",
+      "permissionTitle": "acceso completo",
+      "create": "Crear",
+      "webkeyListTitle": "Claves web existentes:",
+      "revokeHint": "Revocar",
+      "revoke": "Revocar"
     },
     "grainShareButton": {
-      "hint": "Share access to this grain",
-      "text": "Share access"
+      "hint": "Compartir acceso a este granito",
+      "text": "Compartir acceso"
     },
     "whoHasAccessPopup": {
-      "title": "Who has access",
-      "noLoggedInUsers": "No logged-in users have visited your links yet.",
-      "nobody": "You have granted access to nobody.",
-      "addedBy": "added by",
-      "revokeHint": "Revoke",
-      "revoke": "Revoke",
-      "hasCustomPermissions": "[has custom permissions]"
+      "title": "Quién tiene acceso",
+      "noLoggedInUsers": "Ningún usuario de los que han iniciado sesión ha visitado tus enlaces aún.",
+      "nobody": "No has permitido acceso a nadie.",
+      "addedBy": "agregado por",
+      "revokeHint": "Revocar",
+      "revoke": "Revocar",
+      "hasCustomPermissions": "[tiene permisos personalizados]"
     },
     "selectRole": {
-      "hint": "select a role"
+      "hint": "seleccionar un rol"
     },
     "emailInviteTab": {
-      "demoModeAlert": "Sharing emails cannot be sent while in demo mode. Create an account to send sharing emails, or get a shareable link instead.",
-      "personalMessagePlaceholder": "Type a personal message (optional)...",
-      "send": "Send",
-      "sending": "Sending...",
-      "success": "Successfully sent.",
-      "reset": "+ Send more invites",
-      "startOver": "<< Start over"
+      "demoModeAlert": "En el modo demo no se pueden enviar correos para compartir. Crea una cuenta para enviar correos para compartir, o, alternativamente, usa un enlace para compartir.",
+      "personalMessagePlaceholder": "Escribe un mensaje personal (opcional)...",
+      "send": "Enviar",
+      "sending": "Enviando...",
+      "success": "Enviado correctamente.",
+      "reset": "+ Enviar más invitaciones",
+      "startOver": "<< Comenzar de nuevo"
     },
     "shareableLinkTab": {
-      "withRoles": "Anyone with this link:",
-      "withoutRoles": "Anyone with this link can access the grain.",
-      "labelPlaceholder": "Label (optional)",
-      "labelExplanation": "Use a label to remind yourself to whom you sent this unique link.",
-      "create": "Create",
-      "creating": "Generating...",
-      "success": "Copy this link:",
-      "reset": "+ Create another link",
-      "cancel": "Cancel"
+      "withRoles": "Cualquiera con este enlace:",
+      "withoutRoles": "Cualquiera con este enlace puede acceder al granito.",
+      "labelPlaceholder": "Etiqueta (opcional)",
+      "labelExplanation": "Usa una etiqueta para recordar a quién enviaste este enlace único.",
+      "create": "Crear",
+      "creating": "Generando...",
+      "success": "Copia este enlace:",
+      "reset": "+ Crear otro enlace",
+      "cancel": "Cancelar"
     },
     "shareWithOthers": {
-      "title": "Share with others",
-      "sendInviteTab": "Send an invite",
-      "shareableLinkTab": "Get shareable link",
-      "whoHasAccess": "See who has access"
+      "title": "Compartir con otros",
+      "sendInviteTab": "Enviar una invitación",
+      "shareableLinkTab": "Obtener un enlace para compartir",
+      "whoHasAccess": "Ver quién tiene acceso"
     },
     "grainSharePopup": {
-      "oldSharingModelDescription": "This grain uses the old sharing model. You can share it by copy/pasting the URL from the location bar",
-      "upgradeDescription": "You can upgrade this grain to the new model, but anyone with whom you shared this grain previously will lose access; you will have to share with them again.",
-      "upgradeWarning": "Upgrading cannot be undone.",
-      "upgrade": "upgrade",
-      "openInIncognitoMode": "You are viewing this grain anonymously.",
-      "toShareAccess": "To share access, copy this link:",
-      "openNonAnonymouslyHead": "For more sharing options, you must",
-      "openNonAnonymouslyLink": "open this grain non-anonymously",
+      "oldSharingModelDescription": "Este granito usa el modo antiguo para compartir. Puedes compartirlo copiando/pegando la URL desde la barra de direcciones",
+      "upgradeDescription": "Puedes actualizar este granito al nuevo modelo, pero cualquiera con quien habías compartido este granito perderá el acceso; tendrás que volverlo a compartir.",
+      "upgradeWarning": "La actualización no se puede deshacer.",
+      "upgrade": "actualizar",
+      "openInIncognitoMode": "Estás viendo este granito de manera anónima.",
+      "toShareAccess": "Para compartir el acceso, copia este enlace:",
+      "openNonAnonymouslyHead": "Para más opcoines de compartición, debes",
+      "openNonAnonymouslyLink": "abrir este granito de manera no anónima",
       "openNonAnonymouslyTail": ".",
-      "signIn": "For more sharing options, please sign in."
+      "signIn": "Para más opciones de compartición, por favor inicia sesión."
     },
     "grainPowerboxRequest": {
-      "powerboxRequestHint": "Powerbox request",
+      "powerboxRequestHint": "Solicitud de Powerbox",
       "powerboxRequest": "P"
     },
     "grainPowerboxOffer": {
-      "powerboxOfferHint": "Powerbox offer",
+      "powerboxOfferHint": "Oferta de Powerbox",
       "powerboxOffer": "P"
     },
     "grainPowerboxOfferPopup": {
-      "title": "Powerbox Offer",
-      "dismiss": "Dismiss"
+      "title": "Oferta de Powerbox",
+      "dismiss": "Descartar"
     },
     "share": {
-      "grainNotFoundWithId": "No grain found with ID %s. Maybe you need to sign in to a different account?",
-      "signIn": "You must be signed in to grant access to a grain."
+      "grainNotFoundWithId": "No se ha encontrado un granito con ID %s. ¿Quizá necesitas iniciar sesión con otra cuenta?",
+      "signIn": "Debes iniciar sesión para permitir acceso a un granito."
     },
     "grainlist": {
       "sandstormGrainListPage": {
         "introButton": {
-          "hint": "What is a grain?"
+          "hint": "¿Qué es un granito?"
         },
-        "mainListButton": "View main list",
-        "trashButton": "View trash (%s)",
-        "restoreButton": "Restore backup...",
+        "mainListButton": "Ver lista principal",
+        "restoreButton": "Restaurar copia de seguridad...",
         "search": {
-          "placeholder": "search"
+          "placeholder": "buscar"
         },
         "usageInfo": {
-          "quota": "__count__ of __quota__ grains",
-          "size": "__size__ of __total__ used"
+          "quota": "__count__ de __quota__ granitos",
+          "size": "__size__ de __total__ usados"
         },
+        "trashButton": "Ver papelera (%s)",
+        "moveToTrash": "Mover a la papelera",
         "trash": {
-          "emptyButton": "Empty all trash",
-          "explanation": "(Grains will be permanently removed after 30 days in the trash. To keep a grain, restore it to the Main list.)"
+          "emptyButton": "Vaciar la papelera",
+          "explanation": "(Los granitos se eliminarán permanentemente después de estar 30 días en la papelera. Para conservar un granito, restáurarlo a la lista principal.)"
         },
         "noGrains": {
-          "notFound": "<strong>No matching grains found.</strong>",
-          "inTrash": "Some grains in your trash match your search.",
-          "trashButton": "View trash",
-          "empty": "<strong>Trash is empty.</strong>",
-          "explanation": "You don't have any grains yet.",
-          "hasApps": "Select an app and create your first grain.",
-          "hasNoApp": "Install an app to create your first grain."
+          "notFound": "<strong>No se encontraron granitos coincidentes.</strong>",
+          "inTrash": "Algunos granitos en la papelera coinciden con la búsqueda.",
+          "trashButton": "Ver la papelera",
+          "empty": "<strong>La papelera está vacía.</strong>",
+          "explanation": "Aún no tienes granitos.",
+          "hasApps": "Selecciona una aplicación y crea tu primer granito.",
+          "hasNoApp": "Instala una aplicación para crear tu primer granito."
         },
-        "moveToTrash": "Move to trash"
+        "transfers": {
+          "massTransfer": "Transferencia masiva...",
+          "transfers": "Transferencias",
+          "transfer": "Transferir",
+          "blockedInitiateBeforeSource": "Parece que estás intentando iniciar una nueva transferencia desde",
+          "blockedInitiateAfterSource": ", pero ya tienes una transferencia en curso. Por favor completa o cancela la transferencia existente para continuar.",
+          "incomingTransferActive": "Transferencia entrante activa",
+          "cancel": "Cancelar",
+          "remaining": "Restante",
+          "retryErrors": "Errores de reintento",
+          "pauseTransfer": "Pausar transferencia",
+          "continueTransfer": "Continuar transferencia",
+          "startTransfer": "Comenzar transferencia",
+          "closeTransfer": "Cerrar transferencia",
+          "outgoingTransferActive": "Transferencia saliente activa",
+          "currentlyTransferring": "Actualmente estás transfiriendo granitos a:",
+          "manageAt": "Gestionar tu transferencia en:",
+          "inOrder": "Para comenzar una nueva transferencia (entrante o saliente), debes cancelar la existente.",
+          "cancelTransfer": "Cancelar transferencia",
+          "initiateInboundTransfer": "Iniciar transferencia entrante",
+          "initiateOutboundTransfer": "Iniciar transferencia saliente",
+          "theSandstormServerAt": "El servidor Sandstorm en",
+          "wantsToTransfer": "quiere transferir granitos a este servidor.",
+          "insecureSource": "AVISO: El servidor fuente no soporta HTTPS. Los datos se transferirán sin cifrar.",
+          "deny": "Denegar",
+          "fetchGrainList": "Obtener lista de granitos",
+          "noTransfersInProgress": "Actualmente no hay transferencias en curso.",
+          "transferAllMyGrainsTo": "Transferir todos mis granitos a:",
+          "initiateTransfer": "Iniciar transferencia",
+          "whatDoesThisDo": "¿Qué hace esto?",
+          "whatCan": "Puedes usar esta función para transferir todos tus granitos a un nuevo servidor de Sandstorm. Esto automatiza el proceso de guardar una copia de seguridad de cada granito en este servidor, y restaurar cada copia de seguridad en el servidor que especifiques.",
+          "whatWhen": "Cuando inicies la transferencia, se te redirigirá al servidor de <strong>destino</strong> donde tendrás que iniciar sesión. Entonces se te dará la opción de qué granitos transferir, y finalmente iniciarás la transferencia. La transferencia continuará en segundo plano, puedes cerrar la sesión.",
+          "whatOrder": "Para que una transferencia funcione, el servidor de <strong>destino</strong> debe poder conectar con el servidor <strong>origen</strong> directamente por internet. Sin embargo, lo opuesto no es necesario. Así, puedes realizar una transferencia masiva que transfiera granitos de un servidor en la internet pública (como Sandstorm Oasis) a un servidor en una red interna privada, pero no al contrario. Si el servidor <strong>origen</strong> soporta HTTPS, entonces la transferencia se hará por HTTPS, sin tener en cuenta el protocolo del servidor de <strong>destino</strong>.",
+          "warningGiving": "AVISO: Estás dando permiso a %s para descargar todos tus granitos desde este servidor. ¿Estás seguro/a?",
+          "errorAcceptingTransfer": "Error al aceptar la transferencia:"
+        }
       },
       "sandstormGrainTable": {
         "bulkAction": {
@@ -880,6 +923,12 @@
         "restoreButton": "Restore defaults"
       }
     },
+    "certificates": {
+      "name": "SSL/TLS Certificates",
+      "subtext": "Configure certificates manually or using Let's Encrypt.",
+      "newAdminCertificates": {
+      }
+    },
     "users": {
       "name": "Users",
       "subtext": "Manage all users on this Sandstorm installation."
@@ -1165,6 +1214,7 @@
     "networkCapabilities": {
       "name": "Network capabilities",
       "subtext": "Manage direct network access for grains.",
+      "explanation": "This page displays network capabilities granted to grains. By default, grains have very limited network access. A grain can request full network access while it is being used. Only an admin can approve the request, which grants a \"network capability\" to the grain.",
       "newAdminNetworkCapabilitiesTableCapabilityRow": {
         "adminAccount": "Admin account %s",
         "unknownGranter": "Unknown granter",
@@ -1456,7 +1506,7 @@
       "_loginButtonsLoggedOutDropdown": {
         "demo": {
           "title": "Create account",
-          "explanation": "Your demo data will be transferred to your new account."
+          "explanation": "WARNING: Your demo data will be deleted."
         },
         "title": "Sign in",
         "shared": {
@@ -1768,9 +1818,9 @@
       "grains": "Grains",
       "oasis": "Start collaborating with others by using Sandstorm on Oasis:",
       "createAccount": "Create free account »",
-      "demoHint": "Your demo data will be transferred.",
-      "selfHostHint": "Or, run Sandstorm on your own server (it's open source):",
-      "signUp": "Sign up within:",
+      "demoHint": "WARNING: Your demo data will be deleted.",
+      "selfHostHint": "This is a limited-time demo. If you want to use Sandstorm for real, install it on your own server (it's open source):",
+      "signUp": "Demo time remaining:",
       "close": "Close"
     },
     "powerbox": {

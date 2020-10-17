@@ -222,7 +222,7 @@
         "grainCloneButton": {
             "hint": "克隆沙粒",
             "text": "克隆",
-            "copyTitle": "Copy of %s"
+            "copyTitle": "%s 的拷贝"
         },
         "grainClonePopup": {
             "title": "克隆沙粒",

@@ -282,6 +282,9 @@
     &.ldap {
       background-image: url('/ldap.svg');
     }
+    &.oidc {
+      background-image: url('/openid.svg');
+    }
     &.saml {
       background-image: url('/ldap.svg');
     }

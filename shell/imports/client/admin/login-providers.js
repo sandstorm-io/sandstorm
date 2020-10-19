@@ -64,7 +64,7 @@ const idpData = function (configureCallback) {
     {
       id: "oidc",
       label: "OpenID Connect",
-      icon: "/ldap.svg", // Or use identicons
+      icon: "/openid.svg", // Or use identicons
       enabled: oidcEnabled,
       popupTemplate: "adminLoginProviderConfigureOidc",
       onConfigure() {

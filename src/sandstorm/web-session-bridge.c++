@@ -817,8 +817,7 @@ public:
                  kj::HttpHeaders&& headers,
                  kj::HttpService::Response& response,
                  bool ignoreData = false)
-  : ignoreData(ignoreData)
-  {
+      : ignoreData(ignoreData) {
     state.init<NotStarted>(NotStarted { statusCode, statusText, kj::mv(headers), response });
   }
 
@@ -848,7 +847,7 @@ public:
   kj::Promise<void> write(WriteContext context) override {
     auto fork = queue.then([this,context]() mutable -> kj::Promise<void> {
       auto& stream = ensureStarted(nullptr);
-      if(ignoreData) {
+      if (ignoreData) {
         return kj::READY_NOW;
       } else {
         auto data = context.getParams().getData();
@@ -1362,7 +1361,7 @@ kj::Promise<void> WebSessionBridge::handleResponse(
           case WebSession::Response::Content::Body::BYTES: {
             auto data = body.getBytes();
             auto stream = out.send(status.getId(), status.getTitle(), headers, data.size());
-            if(ignoreSuccessBody) {
+            if (ignoreSuccessBody) {
               return kj::READY_NOW;
             } else {
               auto promise = stream->write(data.begin(), data.size());

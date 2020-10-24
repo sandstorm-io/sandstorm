@@ -140,10 +140,9 @@ kj::Promise<void> WebSessionBridge::request(
     case kj::HttpMethod::HEAD: {
       auto req = session.getRequest();
       req.setPath(path);
-      bool ignoreBody = method == kj::HttpMethod::HEAD;
-      req.setIgnoreBody(ignoreBody);
+      req.setIgnoreBody(method == kj::HttpMethod::HEAD);
       auto streamer = initContext(req.initContext(), headers);
-      return handleResponse(req.send(), kj::mv(streamer), response, ignoreBody);
+      return handleResponse(req.send(), kj::mv(streamer), response);
     }
 
     case kj::HttpMethod::POST: {
@@ -815,9 +814,7 @@ class WebSessionBridge::ByteStreamImpl final: public ByteStream::Server {
 public:
   ByteStreamImpl(uint statusCode, kj::StringPtr statusText,
                  kj::HttpHeaders&& headers,
-                 kj::HttpService::Response& response,
-                 bool ignoreData = false)
-      : ignoreData(ignoreData) {
+                 kj::HttpService::Response& response) {
     state.init<NotStarted>(NotStarted { statusCode, statusText, kj::mv(headers), response });
   }
 
@@ -845,14 +842,10 @@ public:
   }
 
   kj::Promise<void> write(WriteContext context) override {
-    auto fork = queue.then([this,context]() mutable -> kj::Promise<void> {
+    auto fork = queue.then([this,context]() mutable {
       auto& stream = ensureStarted(nullptr);
-      if (ignoreData) {
-        return kj::READY_NOW;
-      } else {
-        auto data = context.getParams().getData();
-        return stream.write(data.begin(), data.size());
-      }
+      auto data = context.getParams().getData();
+      return stream.write(data.begin(), data.size());
     }).fork();
     queue = fork.addBranch();
     return fork.addBranch();
@@ -909,7 +902,6 @@ private:
   kj::Maybe<kj::Own<kj::PromiseFulfiller<void>>> doneFulfiller;
   kj::Promise<void> queue = kj::READY_NOW;
   kj::Maybe<Aborter&> aborter;
-  bool ignoreData = false;
 
   kj::AsyncOutputStream& ensureStarted(kj::Maybe<uint64_t> size) {
     if (state.is<NotStarted>()) {
@@ -1141,9 +1133,8 @@ kj::Promise<void> WebSessionBridge::handleStreamingRequestResponse(
 kj::Promise<void> WebSessionBridge::handleResponse(
     kj::Promise<capnp::Response<WebSession::Response>>&& promise,
     ContextInitInfo&& contextInitInfo,
-    kj::HttpService::Response& out,
-    bool ignoreSuccessBody) {
-  return promise.then([this,KJ_MVCAP(contextInitInfo),&out,ignoreSuccessBody](
+    kj::HttpService::Response& out) {
+  return promise.then([this,KJ_MVCAP(contextInitInfo),&out](
       capnp::Response<WebSession::Response>&& in) mutable -> kj::Promise<void> {
     // TODO(someday): cachePolicy (not supported in Sandstorm proper as of this writing)
 
@@ -1361,12 +1352,8 @@ kj::Promise<void> WebSessionBridge::handleResponse(
           case WebSession::Response::Content::Body::BYTES: {
             auto data = body.getBytes();
             auto stream = out.send(status.getId(), status.getTitle(), headers, data.size());
-            if (ignoreSuccessBody) {
-              return kj::READY_NOW;
-            } else {
-              auto promise = stream->write(data.begin(), data.size());
-              return promise.attach(kj::mv(stream), kj::mv(in));
-            }
+            auto promise = stream->write(data.begin(), data.size());
+            return promise.attach(kj::mv(stream), kj::mv(in));
           }
           case WebSession::Response::Content::Body::STREAM: {
             auto handle = body.getStream();

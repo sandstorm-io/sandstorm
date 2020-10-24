@@ -174,8 +174,7 @@ private:
 
   kj::Promise<void> handleResponse(kj::Promise<capnp::Response<WebSession::Response>>&& promise,
                                    ContextInitInfo&& contextInitInfo,
-                                   kj::HttpService::Response& out,
-                                   bool ignoreSuccessBody = false);
+                                   kj::HttpService::Response& out);
 
   template <typename T>
   kj::Promise<void> handleErrorBody(T error, uint statusCode, kj::StringPtr statusText,

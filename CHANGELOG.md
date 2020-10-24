@@ -1,3 +1,10 @@
+### v0.273 (2020-10-24)
+- Extended Let's Encrypt automatic certificate renewal to support deSEC DNS. (Thanks @rs22.)
+- Grains will now be temporarily paused while creating backups, to ensure the backup is atomic. (Thanks @zenhack.)
+- Updated Simplified Chinese translation. (Thanks @misaka00251.)
+- Fixed bug in sandstorm-http-bridge when responding to HEAD requests. Apps will need to be re-packaged to get the update. (Thanks @zenhack.)
+- Fixed "Unhandled exception in Promise:  TypeError: Cannot read property 'catch' of undefined" when using scheduled tasks. (Thanks @zenhack.)
+
 ### v0.272 (2020-09-26)
 - Regular dependency updates.
 - To make porting apps a little easier, the headers `X-CSRFToken` and `X-CSRF-Token` are now automatically passed through to the app. Thanks @zenhack.

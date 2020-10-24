@@ -20,6 +20,10 @@ Cgroup Cgroup::getOrMakeChild(kj::StringPtr path) {
       KJ_FAIL_SYSCALL("mkdirat()", error);
   }
 
+  return getChild(path);
+}
+
+Cgroup Cgroup::getChild(kj::StringPtr path) {
   return Cgroup(raiiOpenAt(dirfd.get(), path, O_DIRECTORY|O_CLOEXEC));
 }
 
@@ -33,4 +37,20 @@ void Cgroup::addPid(pid_t pid) {
   auto cStr = pidStr.cStr();
   KJ_SYSCALL(write(procsfd.get(), cStr, strlen(cStr)));
 }
+
+Cgroup::FreezeHandle Cgroup::freeze() {
+  auto freezeFd = raiiOpenAt(dirfd.get(), "cgroup.freeze", O_WRONLY);
+  KJ_SYSCALL(write(freezeFd.get(), "1\n", 2));
+  return Cgroup::FreezeHandle(kj::mv(freezeFd));
+}
+
+Cgroup::FreezeHandle::FreezeHandle(kj::AutoCloseFd&& fd) : fd(kj::mv(fd)) {}
+
+Cgroup::FreezeHandle::~FreezeHandle() noexcept(false) {
+  int freezeFd = fd.get();
+  if(freezeFd >= 0) {
+    KJ_SYSCALL(write(freezeFd, "0\n", 2));
+  }
+}
+
 };

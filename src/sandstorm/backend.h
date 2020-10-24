@@ -89,7 +89,16 @@ private:
     kj::ForkedPromise<Supervisor::Client> promise;
   };
 
-  std::map<kj::StringPtr, StartingGrain> supervisors;
+  struct BackingUpGrain {
+    kj::ForkedPromise<void> promise;
+    // Promise will be fulfiled when the backup is complete.
+  };
+
+  std::map<kj::StringPtr, kj::OneOf<StartingGrain, BackingUpGrain>> supervisors;
+  // Map of possibly-running grains. StartingGrain means the grain is actually
+  // running, or in the process of booting. BackingUpGrain means the grain is
+  // *not* running, but there is an in-progress backup, and it should not be
+  // started until the backup is complete.
 
   class PackageUploadStreamImpl;
   class FileUploadStream;

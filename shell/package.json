@@ -22,6 +22,7 @@
     "@types/fibers": "^3.1.0",
     "@types/meteor": "^1.4.49",
     "acme-dns-01-cloudflare": "^1.2.3",
+    "acme-dns-01-desec": "^3.0.0",
     "acme-dns-01-digitalocean": "^3.0.1",
     "acme-dns-01-dnsimple": "^3.0.0",
     "acme-dns-01-duckdns": "^3.0.1",

@@ -481,6 +481,11 @@
         "cloudflare": "^2.7.0"
       }
     },
+    "acme-dns-01-desec": {
+      "version": "3.0.0",
+      "resolved": "https://registry.npmjs.org/acme-dns-01-desec/-/acme-dns-01-desec-3.0.0.tgz",
+      "integrity": "sha512-uLcpbu8K3BDsMfc9bLUMJulQLVNmfr9L/oOnoSoq6MGdNB76pwu3VRX5k2+xn6kjqQSFVCXzgurRyV3FIn0Juw=="
+    },
     "acme-dns-01-digitalocean": {
       "version": "3.0.1",
       "resolved": "https://registry.npmjs.org/acme-dns-01-digitalocean/-/acme-dns-01-digitalocean-3.0.1.tgz",

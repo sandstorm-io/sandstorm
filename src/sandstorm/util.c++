@@ -96,16 +96,13 @@ kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExists(
   }
 }
 
-// scratch buffer for file paths; used by raiiOpenAtIfExistsContained:
-thread_local char path_buf[PATH_MAX+1];
-
 kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExistsContained(int dirfd, kj::StringPtr name, int flags, mode_t mode) {
   auto path = kj::Path::parse(name);
   int parentFd = dirfd;
   int fd;
   KJ_SYSCALL(fd = dup(dirfd));
   kj::AutoCloseFd file(fd);
-
+  char path_buf[PATH_MAX+1]; // scratch buffer for file paths
   int symlink_limit = 16; // arbitrary limit
 
   for(int i = 0; i < path.size(); i++) {
@@ -122,7 +119,7 @@ kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExistsContained(int dirfd, kj::StringPtr 
 
           memset(&path_buf, 0, sizeof path_buf);
           KJ_SYSCALL(readlinkat(parentFd, part, path_buf, PATH_MAX));
-          kj::Path nextPath = path.clone().parent().eval(path_buf);
+          kj::Path nextPath = path.slice(0, i).eval(path_buf);
           path = kj::mv(nextPath).append(path.slice(i+1, path.size()));
           i = 0;
           KJ_SYSCALL(fd = dup(dirfd));

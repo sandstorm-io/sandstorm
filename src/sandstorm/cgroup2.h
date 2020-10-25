@@ -48,9 +48,13 @@ class Cgroup {
     void addPid(pid_t pid);
     // Add the given process to the cgroup.
 
-    FreezeHandle freeze();
+    kj::Maybe<FreezeHandle> freeze();
     // Freeze the cgroup, suspending all processes within it. The cgroup will
     // be unfrozen when the returned handle is dropped.
+    //
+    // This may return nullptr if the 'cgroup.freeze' file does not exist,
+    // which can happen if the feature is not compiled into the running
+    // kernel.
   private:
     Cgroup(kj::AutoCloseFd&& dirfd);
     kj::AutoCloseFd dirfd;

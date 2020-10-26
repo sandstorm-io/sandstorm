@@ -38,10 +38,13 @@ void Cgroup::addPid(pid_t pid) {
   KJ_SYSCALL(write(procsfd.get(), cStr, strlen(cStr)));
 }
 
-Cgroup::FreezeHandle Cgroup::freeze() {
-  auto freezeFd = raiiOpenAt(dirfd.get(), "cgroup.freeze", O_WRONLY);
-  KJ_SYSCALL(write(freezeFd.get(), "1\n", 2));
-  return Cgroup::FreezeHandle(kj::mv(freezeFd));
+kj::Maybe<Cgroup::FreezeHandle> Cgroup::freeze() {
+  KJ_IF_MAYBE(freezeFd, raiiOpenAtIfExists(dirfd.get(), "cgroup.freeze", O_WRONLY)) {
+    KJ_SYSCALL(write(freezeFd->get(), "1\n", 2));
+    return Cgroup::FreezeHandle(kj::mv(*freezeFd));
+  } else {
+    return nullptr;
+  }
 }
 
 Cgroup::FreezeHandle::FreezeHandle(kj::AutoCloseFd&& fd) : fd(kj::mv(fd)) {}

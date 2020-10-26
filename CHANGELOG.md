@@ -1,3 +1,6 @@
+### v0.274 (2020-10-26)
+- Fixed regression that broke downloading backups for some Linux kernel versions. Unfortunately, these versions do not support cgroup freezing and so will not get atomic backups.
+
 ### v0.273 (2020-10-24)
 - Extended Let's Encrypt automatic certificate renewal to support deSEC DNS. (Thanks @rs22.)
 - Grains will now be temporarily paused while creating backups, to ensure the backup is atomic. (Thanks @zenhack.)

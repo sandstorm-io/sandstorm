@@ -108,7 +108,6 @@ kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExistsContained(int dirfd, kj::Path&& pat
   int fd;
   KJ_SYSCALL(fd = dup(dirfd));
   kj::AutoCloseFd file(fd);
-  char path_buf[PATH_MAX+1]; // scratch buffer for file paths
   int symlink_limit = 16; // arbitrary limit
 
   int i = 0;
@@ -124,16 +123,8 @@ kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExistsContained(int dirfd, kj::Path&& pat
           }
           symlink_limit--;
 
-          ssize_t target_len;
-          KJ_SYSCALL(target_len = readlinkat(file.get(), part, path_buf, PATH_MAX+1));
-          if(target_len >= PATH_MAX) {
-            // It might be nice to handle larger paths here by dynamically
-            // resizing the buffer. TODO: consider using the kj filesystem
-            // API instead, which does this itself.
-            KJ_FAIL_REQUIRE("readlinkat: name too long");
-          }
-          path_buf[target_len] = '\0';
-          kj::Path nextPath = path.slice(0, i).eval(path_buf);
+          auto target = kj::newDiskReadableDirectory(kj::mv(file))->readlink(kj::Path(part));
+          kj::Path nextPath = path.slice(0, i).eval(target);
           path = kj::mv(nextPath).append(path.slice(i+1, path.size()));
           i = 0;
           KJ_SYSCALL(fd = dup(dirfd));

@@ -96,8 +96,15 @@ kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExists(
   }
 }
 
-kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExistsContained(int dirfd, kj::StringPtr name, int flags, mode_t mode) {
-  auto path = kj::Path::parse(name);
+kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExistsContained(int dirfd, kj::StringPtr path, int flags, mode_t mode) {
+  return raiiOpenAtIfExistsContained(dirfd, kj::Path::parse(path), flags, mode);
+}
+
+kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExistsContained(int dirfd, kj::PathPtr path, int flags, mode_t mode) {
+  return raiiOpenAtIfExistsContained(dirfd, kj::Path{}.append(path), flags, mode);
+}
+
+kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExistsContained(int dirfd, kj::Path&& path, int flags, mode_t mode) {
   int fd;
   KJ_SYSCALL(fd = dup(dirfd));
   kj::AutoCloseFd file(fd);

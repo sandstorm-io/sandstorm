@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <kj/function.h>
 #include <kj/async.h>
+#include <kj/filesystem.h>
 #include <capnp/rpc-twoparty.h>
 #include <sandstorm/util.capnp.h>
 #include <set>
@@ -67,9 +68,14 @@ kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExists(
     int dirfd, kj::StringPtr name, int flags, mode_t mode = 0666);
 
 
-kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExistsContained(int dirfd, kj::StringPtr name, int flags, mode_t mode = 0666);
-// Similar to raiiOpenAtIfExists, but makes sure not to follow symlinks that point outside
-// of `dirfd`.
+kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExistsContained(int dirfd, kj::PathPtr path, int flags, mode_t mode = 0666);
+kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExistsContained(int dirfd, kj::Path&& path, int flags, mode_t mode = 0666);
+// Similar to raiiOpenAtIfExists, but:
+//
+// - Makes sure not to follow symlinks that point outside of `dirfd`.
+// - Takes a kj::Path&& or PathPtr, instead of a StringPtr.
+//
+// The kj::Path&& version is slightly more efficient.
 
 size_t getFileSize(int fd, kj::StringPtr filename);
 

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+this_dir="sandstorm/seccomp-bpf"
+
+if test $# = 0; then
+  echo "trigger canonical:${this_dir}/gen-clean-h"
+  exit 0
+fi
+
+INPUT="$1"
+
+echo "findInput $INPUT"
+read INPUT_DISK_FILE
+
+echo "newOutput ${this_dir}/constants.h"
+read OUTPUT_DISK_FILE
+
+"$INPUT_DISK_FILE" > "$OUTPUT_DISK_FILE"
+
+# vim: set ts=2 sw=2 et :

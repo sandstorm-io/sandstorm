@@ -121,7 +121,17 @@ window.parent.postMessage({'startSharing': {}}, '*');
 ```
 
 This shares at the app's default permission level. In the future, we may extend
-this API to permit the app to choose a permission level.
+this API to permit the app to choose a permission level.  Additionally, the app
+may add a pathname or hash to the shared URL by including those as arguments:
+
+```js
+window.parent.postMessage({
+  startSharing: {
+    pathname: 'download/123',
+    hash: 'linux',
+  }
+}, '*');
+```
 
 If your app wants Sandstorm to display a list of users who have access to the grain, you can
 ask Sandstorm to show who has access with this Javascript code:

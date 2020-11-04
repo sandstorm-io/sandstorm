@@ -83,6 +83,7 @@ class GrainView {
     this._options = options;
 
     this._powerboxRequest = new ReactiveVar(undefined);
+    this._shareData = {};
 
     this._userIdentityRevealed = new ReactiveVar(undefined);
     // `false` means incognito; `undefined` means we still need to decide whether to reveal
@@ -777,6 +778,30 @@ class GrainView {
   setGeneratedApiToken(newApiToken) {
     this._generatedApiToken = newApiToken;
     this._dep.changed();
+  }
+
+  setShareData(shareData) {
+    var result = {};
+    if ("hash" in shareData) {
+      if (Match.test(shareData.hash, String)) {
+        result["hash"] = shareData.hash;
+      } else {
+        console.warn('shareData["hash"] is not a string--skipping it');
+      }
+    }
+    if ("pathname" in shareData) {
+      if (Match.test(shareData.pathname, String)) {
+        result["pathname"] = shareData.pathname;
+      } else {
+        console.warn('shareData["pathname"] is not a string--skipping it');
+      }
+    }
+    check(result, {"hash": Match.Maybe(String), "pathname": Match.Maybe(String)});
+    this._shareData = result;
+  }
+
+  shareData() {
+    return this._shareData;
   }
 
   setPowerboxRequest(powerboxRequest) {

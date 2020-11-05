@@ -71,7 +71,6 @@
 #include <seccomp.h>
 
 #include <linux/filter.h>
-#include <sys/prctl.h>
 
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/supervisor.capnp.h>

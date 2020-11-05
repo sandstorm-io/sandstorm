@@ -1101,7 +1101,11 @@ void SupervisorMain::setupStdio() {
 }
 
 void SupervisorMain::setupSeccompNew() {
-  KJ_SYSCALL(prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &seccomp_fprog, 0, 0));
+  KJ_SYSCALL(syscall(
+        SYS_seccomp,
+        SECCOMP_SET_MODE_FILTER,
+        SECCOMP_FILTER_FLAG_LOG,
+        &seccomp_fprog));
 }
 
 void SupervisorMain::setupSeccompLegacy() {

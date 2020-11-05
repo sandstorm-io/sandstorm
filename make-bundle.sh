@@ -176,7 +176,7 @@ int main() {
 }
 __EOF__
 
-gcc tmp/dnstest.c -o tmp/dnstest
+$CC tmp/dnstest.c -o tmp/dnstest
 strace tmp/dnstest 2>&1 | grep -o '"/[^"]*"' | tr -d '"' | copyDeps
 
 # Add some whitelisted entries to host.list that we always want to include,

@@ -164,6 +164,7 @@ start:
     jeq #SYS_chroot, eperm
     jeq #SYS_fchown, eperm
     jeq #SYS_fchownat, eperm
+    jeq #SYS_mount, eperm
 
     // Extended file attribute calls. A filesystem might
     // genuinely not support these, so apps can reasonably be

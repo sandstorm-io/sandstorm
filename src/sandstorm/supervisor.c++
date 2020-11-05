@@ -70,6 +70,9 @@
 #endif
 #include <seccomp.h>
 
+#include <linux/filter.h>
+#include <sys/prctl.h>
+
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/supervisor.capnp.h>
 
@@ -83,6 +86,16 @@
 #endif
 
 namespace sandstorm {
+
+// seccomp filter generated from seccomp.s:
+static sock_filter seccomp_filter[] = {
+#include <sandstorm/seccomp-bpf/filter.h>
+};
+
+static sock_fprog seccomp_fprog = sock_fprog {
+  .len = sizeof seccomp_filter / sizeof seccomp_filter[0],
+  .filter = &seccomp_filter[0],
+};
 
 // =======================================================================================
 // Directory size watcher
@@ -1089,7 +1102,7 @@ void SupervisorMain::setupStdio() {
 }
 
 void SupervisorMain::setupSeccompNew() {
-  KJ_FAIL_ASSERT("TODO: load the new seccomp filter");
+  KJ_SYSCALL(prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &seccomp_fprog, 0, 0));
 }
 
 void SupervisorMain::setupSeccompLegacy() {

@@ -524,8 +524,8 @@ Template.shareableLinkTab.events({
       if (error) {
         console.error(error.stack);
       } else {
-        var url = new URL(getOrigin()),
-        path = "shared/" + result.token;
+        const url = new URL(getOrigin());
+        let path = "shared/" + result.token;
         if ("pathname" in shareData) {
           if (!shareData.pathname.startsWith("/")) path += "/";
           path += shareData.pathname;

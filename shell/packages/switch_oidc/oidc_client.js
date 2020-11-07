@@ -37,7 +37,7 @@ Oidc.requestCredential = function (options, credentialRequestCompleteCallback) {
 
   var loginUrl = config.serverUrl + config.authorizationEndpoint;
   // check if the loginUrl already contains a "?"
-  var first = !loginUrl.indexOf('?') === -1;
+  var first = loginUrl.indexOf('?') === -1;
   for (var k in options) {
     if (first) {
       loginUrl += '?';

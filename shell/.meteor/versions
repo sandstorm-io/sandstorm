@@ -28,7 +28,7 @@ ddp-rate-limiter@1.0.9
 ddp-server@2.3.2
 deps@1.0.12
 diff-sequence@1.1.1
-dynamic-import@0.5.2
+dynamic-import@0.5.3
 ecmascript@0.14.3
 ecmascript-collections@0.1.6
 ecmascript-runtime@0.7.0
@@ -78,7 +78,7 @@ mongo-decimal@0.1.1
 mongo-dev-server@1.1.0
 mongo-id@1.0.7
 npm-mongo@3.8.1
-oauth@1.3.0
+oauth@1.3.2
 oauth2@1.3.0
 observe-sequence@1.0.16
 ordered-dict@1.1.0

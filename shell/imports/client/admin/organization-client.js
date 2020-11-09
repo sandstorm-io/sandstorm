@@ -9,6 +9,7 @@ Template.newAdminOrganization.onCreated(function () {
   const emailChecked = globalDb.getOrganizationEmailEnabled() || false;
   const gappsChecked = globalDb.getOrganizationGoogleEnabled() || false;
   const ldapChecked = globalDb.getOrganizationLdapEnabled() || false;
+  const oidcChecked = globalDb.getOrganizationOidcEnabled() || false;
   const samlChecked = globalDb.getOrganizationSamlEnabled() || false;
 
   const emailDomain = globalDb.getOrganizationEmailDomain() || "example.com";
@@ -22,6 +23,7 @@ Template.newAdminOrganization.onCreated(function () {
   this.gappsChecked = new ReactiveVar(gappsChecked);
   this.gappsDomain = new ReactiveVar(gappsDomain);
   this.ldapChecked = new ReactiveVar(ldapChecked);
+  this.oidcChecked = new ReactiveVar(oidcChecked);
   this.samlChecked = new ReactiveVar(samlChecked);
   this.disallowGuests = new ReactiveVar(disallowGuests);
   this.shareContacts = new ReactiveVar(shareContacts);
@@ -99,6 +101,15 @@ Template.newAdminOrganization.helpers({
     return !providerEnabled("ldap");
   },
 
+  oidcChecked() {
+    const instance = Template.instance();
+    return instance.oidcChecked.get();
+  },
+
+  oidcDisabled() {
+    return !providerEnabled("oidc");
+  },
+
   samlChecked() {
     const instance = Template.instance();
     return instance.samlChecked.get();
@@ -146,6 +157,14 @@ Template.newAdminOrganization.events({
     evt.stopPropagation();
     const instance = Template.instance();
     instance.ldapChecked.set(!instance.ldapChecked.get());
+    instance.hasChanged.set(true);
+  },
+
+  "click input[name=oidc-toggle]"(evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    const instance = Template.instance();
+    instance.oidcChecked.set(!instance.oidcChecked.get());
     instance.hasChanged.set(true);
   },
 
@@ -201,6 +220,9 @@ Template.newAdminOrganization.events({
         },
         ldap: {
           enabled: instance.ldapChecked.get(),
+        },
+        oidc: {
+          enabled: instance.oidcChecked.get(),
         },
         saml: {
           enabled: instance.samlChecked.get(),

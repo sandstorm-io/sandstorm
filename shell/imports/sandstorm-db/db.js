@@ -1248,6 +1248,7 @@ class SandstormDb {
     const emailEnabled = orgMembership && orgMembership.emailToken && orgMembership.emailToken.enabled;
     const emailDomain = orgMembership && orgMembership.emailToken && orgMembership.emailToken.domain;
     const ldapEnabled = orgMembership && orgMembership.ldap && orgMembership.ldap.enabled;
+    const oidcEnabled = orgMembership && orgMembership.oidc && orgMembership.oidc.enabled;
     const samlEnabled = orgMembership && orgMembership.saml && orgMembership.saml.enabled;
     if (emailEnabled && emailDomain && credential.services.email) {
       const domainSuffixes = emailDomain.split(/\s*,\s*/);
@@ -1263,6 +1264,8 @@ class SandstormDb {
         }
       }
     } else if (ldapEnabled && credential.services.ldap) {
+      return true;
+    } else if (oidcEnabled && credential.services.oidc) {
       return true;
     } else if (samlEnabled && credential.services.saml) {
       return true;
@@ -1814,6 +1817,11 @@ _.extend(SandstormDb.prototype, {
   getOrganizationLdapEnabled() {
     const membership = this.getOrganizationMembership();
     return membership && membership.ldap && membership.ldap.enabled;
+  },
+
+  getOrganizationOidcEnabled() {
+    const membership = this.getOrganizationMembership();
+    return membership && membership.oidc && membership.oidc.enabled;
   },
 
   getOrganizationSamlEnabled() {

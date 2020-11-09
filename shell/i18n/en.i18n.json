@@ -760,6 +760,10 @@
             "label": "Users authenticated via LDAP",
             "subtext": "Note: disabled because LDAP login is not configured."
           },
+          "oidcToggle": {
+            "label": "Users authenticated via OpenID Connect",
+            "subtext": "Note: disabled because OpenID Connect login is not configured."
+          },
           "samlToggle": {
             "label": "Users authenticated via SAML",
             "subtext": "Note: disabled because SAML login is not configured."
@@ -1735,6 +1739,10 @@
         "ldapToggle": {
           "label": "Users authenticated via LDAP",
           "subtext": "Note: disabled because LDAP login is not configured."
+        },
+        "oidcToggle": {
+          "label": "Users authenticated via OpenID Connect",
+          "subtext": "Note: disabled because OpenID Connect login is not configured."
         },
         "samlToggle": {
           "label": "Users authenticated via SAML",

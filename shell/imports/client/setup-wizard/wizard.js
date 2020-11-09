@@ -324,6 +324,7 @@ Template.setupWizardLogin.events({
 
 Template.setupWizardOrganization.onCreated(function () {
   const ldapChecked = globalDb.getOrganizationLdapEnabled() || false;
+  const oidcChecked = globalDb.getOrganizationOidcEnabled() || false;
   const samlChecked = globalDb.getOrganizationSamlEnabled() || false;
   const gappsChecked = globalDb.getOrganizationGoogleEnabled() || false;
   const emailChecked = globalDb.getOrganizationEmailEnabled() || false;
@@ -335,6 +336,7 @@ Template.setupWizardOrganization.onCreated(function () {
   const shareContacts = globalDb.getOrganizationShareContactsRaw() || false;
 
   this.ldapChecked = new ReactiveVar(ldapChecked);
+  this.oidcChecked = new ReactiveVar(oidcChecked);
   this.samlChecked = new ReactiveVar(samlChecked);
   this.gappsChecked = new ReactiveVar(gappsChecked);
   this.emailChecked = new ReactiveVar(emailChecked);
@@ -892,6 +894,7 @@ Template.setupWizardSuccess.helpers({
   someOrgMembershipEnabled() {
     return (
       globalDb.getOrganizationLdapEnabled() ||
+      globalDb.getOrganizationOidcEnabled() ||
       globalDb.getOrganizationSamlEnabled() ||
       globalDb.getOrganizationGoogleEnabled() ||
       globalDb.getOrganizationEmailEnabled()

@@ -132,6 +132,9 @@ Meteor.methods({
         ldap: {
           enabled: Boolean,
         },
+        oidc: {
+          enabled: Boolean,
+        },
         saml: {
           enabled: Boolean,
         },

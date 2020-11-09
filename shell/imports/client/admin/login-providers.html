@@ -339,33 +339,13 @@
   <form class="setup-idp-form">
     {{> oidcLoginSetupInstructions "" }}
 
-    <p>{{_ (con txt "server-explanation")}}</p>
+    <p>{{_ (con txt "explanation")}}</p>
     <div class="form-group">
       <label>
         {{_ (con txt "serverUrl")}}
         <input type="text" name="serverUrl" value="{{serverUrl}}"/>
       </label>
     </div>
-    <div class="form-group">
-      <label>
-        {{_ (con txt "authorizationEndpoint")}}
-        <input type="text" name="authorizationEndpoint" value="{{authorizationEndpoint}}"/>
-      </label>
-    </div>
-    <div class="form-group">
-      <label>
-        {{_ (con txt "tokenEndpoint")}}
-        <input type="text" name="tokenEndpoint" value="{{tokenEndpoint}}"/>
-      </label>
-    </div>
-    <div class="form-group">
-      <label>
-        {{_ (con txt "userinfoEndpoint")}}
-        <input type="text" name="userinfoEndpoint" value="{{userinfoEndpoint}}"/>
-      </label>
-    </div>
-
-    <p>{{_ (con txt "explanation")}}</p>
     <div class="form-group">
       <label>
         {{_ (con txt "clientId")}}
@@ -376,6 +356,18 @@
       <label>
         {{_ (con txt "clientSecret")}}
         <input type="text" name="clientSecret" value="{{clientSecret}}"/>
+      </label>
+    </div>
+
+    <p>{{_ (con txt "advanced-explanation")}}</p>
+    <div class="form-group">
+      <label>
+        {{_ (con txt "tokenAuthMethod")}}
+        <select name="tokenAuthMethod">
+          <option selected="{{isClientSecretBasic tokenAuthMethod}}" value="client_secret_basic">Client Secret Basic</option>
+          <option selected="{{isClientSecretPost tokenAuthMethod}}" value="client_secret_post">Client Secret POST</option>
+          <option selected="{{isNone tokenAuthMethod}}" value="none">None</option>
+        </select>
       </label>
     </div>
   </form>

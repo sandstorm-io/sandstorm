@@ -46,6 +46,7 @@
     "node-forge": "^0.10.0",
     "nodemailer": "^2.7.2",
     "nodemailer-smtp-pool": "^2.8.3",
+    "openid-client": "^4.2.1",
     "smtp-server": "^1.17.0",
     "stripe": "^8.117.0",
     "xml-crypto": "0.0.20",

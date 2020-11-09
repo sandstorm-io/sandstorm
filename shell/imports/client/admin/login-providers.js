@@ -4,7 +4,7 @@ import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { TAPi18n } from "meteor/tap:i18n";
 import { Iron } from "meteor/iron:core";
-import { ServiceConfiguration } from 'meteor/service-configuration';
+import { ServiceConfiguration } from "meteor/service-configuration";
 
 import { globalDb } from "/imports/db-deprecated.js";
 
@@ -635,18 +635,14 @@ Template.adminLoginProviderConfigureOidc.onCreated(function () {
   const configurations = ServiceConfiguration.configurations;
   const oidcConfiguration = configurations.findOne({ service: "oidc" });
   const serverUrl = (oidcConfiguration && oidcConfiguration.serverUrl) || "";
-  const authorizationEndpoint = (oidcConfiguration && oidcConfiguration.authorizationEndpoint) || "";
-  const tokenEndpoint = (oidcConfiguration && oidcConfiguration.tokenEndpoint) || "";
-  const userinfoEndpoint = (oidcConfiguration && oidcConfiguration.userinfoEndpoint) || "";
   const clientId = (oidcConfiguration && oidcConfiguration.clientId) || "";
   const clientSecret = (oidcConfiguration && oidcConfiguration.secret) || "";
+  const tokenAuthMethod = (oidcConfiguration && oidcConfiguration.tokenAuthMethod) || "client_secret_basic";
 
   this.serverUrl = new ReactiveVar(serverUrl);
-  this.authorizationEndpoint = new ReactiveVar(authorizationEndpoint);
-  this.tokenEndpoint = new ReactiveVar(tokenEndpoint);
-  this.userinfoEndpoint = new ReactiveVar(userinfoEndpoint);
   this.clientId = new ReactiveVar(clientId);
   this.clientSecret = new ReactiveVar(clientSecret);
+  this.tokenAuthMethod = new ReactiveVar(tokenAuthMethod);
   this.errorMessage = new ReactiveVar(undefined);
   this.formChanged = new ReactiveVar(false);
   this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
@@ -664,8 +660,8 @@ Template.adminLoginProviderConfigureOidc.helpers({
 
   formerBaseUrl() {
     const setting = globalDb.collections.settings.findOne("oidc");
-    const googleEnabled = (setting && setting.value) || false;
-    return !googleEnabled && setting && setting.automaticallyReset && setting.automaticallyReset.baseUrlChangedFrom;
+    const oidcEnabled = (setting && setting.value) || false;
+    return !oidcEnabled && setting && setting.automaticallyReset && setting.automaticallyReset.baseUrlChangedFrom;
   },
 
   siteUrl() {
@@ -677,19 +673,21 @@ Template.adminLoginProviderConfigureOidc.helpers({
     return instance.serverUrl.get();
   },
 
-  authorizationEndpoint() {
+  tokenAuthMethod() {
     const instance = Template.instance();
-    return instance.authorizationEndpoint.get();
+    return instance.tokenAuthMethod.get();
   },
 
-  tokenEndpoint() {
-    const instance = Template.instance();
-    return instance.tokenEndpoint.get();
+  isClientSecretBasic(tokenAuthMethod) {
+    return tokenAuthMethod === "client_secret_basic";
   },
 
-  userinfoEndpoint() {
-    const instance = Template.instance();
-    return instance.userinfoEndpoint.get();
+  isClientSecretPost(tokenAuthMethod) {
+    return tokenAuthMethod === "client_secret_post";
+  },
+
+  isNone(tokenAuthMethod) {
+    return tokenAuthMethod === "none";
   },
 
   clientId() {
@@ -709,9 +707,7 @@ Template.adminLoginProviderConfigureOidc.helpers({
       || !instance.clientId.get()
       || !instance.clientSecret.get()
       || !instance.serverUrl.get()
-      || !instance.authorizationEndpoint.get()
-      || !instance.tokenEndpoint.get()
-      || !instance.userinfoEndpoint.get();
+      || !instance.tokenAuthMethod.get();
   },
 
   errorMessage() {
@@ -727,24 +723,6 @@ Template.adminLoginProviderConfigureOidc.events({
     instance.formChanged.set(true);
   },
 
-  "input input[name=authorizationEndpoint]"(evt) {
-    const instance = Template.instance();
-    instance.authorizationEndpoint.set(evt.currentTarget.value);
-    instance.formChanged.set(true);
-  },
-
-  "input input[name=tokenEndpoint]"(evt) {
-    const instance = Template.instance();
-    instance.tokenEndpoint.set(evt.currentTarget.value);
-    instance.formChanged.set(true);
-  },
-
-  "input input[name=userinfoEndpoint]"(evt) {
-    const instance = Template.instance();
-    instance.userinfoEndpoint.set(evt.currentTarget.value);
-    instance.formChanged.set(true);
-  },
-
   "input input[name=clientId]"(evt) {
     const instance = Template.instance();
     instance.clientId.set(evt.currentTarget.value);
@@ -757,6 +735,12 @@ Template.adminLoginProviderConfigureOidc.events({
     instance.formChanged.set(true);
   },
 
+  "change select[name=tokenAuthMethod]"(evt) {
+    const instance = Template.instance();
+    instance.tokenAuthMethod.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
   "click .idp-modal-save"() {
     const instance = Template.instance();
     const token = Iron.controller().state.get("token");
@@ -766,10 +750,7 @@ Template.adminLoginProviderConfigureOidc.events({
       secret: instance.clientSecret.get().trim(),
       serverUrl: instance.serverUrl.get().trim(),
       loginStyle: "redirect",
-      authorizationEndpoint: instance.authorizationEndpoint.get().trim(),
-      tokenEndpoint: instance.tokenEndpoint.get().trim(),
-      userinfoEndpoint: instance.userinfoEndpoint.get().trim(),
-      idTokenWhitelistFields: []
+      tokenAuthMethod: instance.tokenAuthMethod.get().trim()
     };
     // TODO: rework this into a single Meteor method call.
     Meteor.call("adminConfigureLoginService", token, configuration, (err) => {

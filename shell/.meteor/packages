@@ -44,4 +44,4 @@ dynamic-import@0.5.2
 tap:i18n
 typescript@3.7.6
 meteortesting:mocha
-switch:accounts-oidc
+accounts-oidc

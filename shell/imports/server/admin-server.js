@@ -32,6 +32,7 @@ import { globalDb } from "/imports/db-deprecated.js";
 import { computeStats } from "/imports/server/stats-server.js";
 import { HTTP } from "meteor/http";
 import { createAcmeAccount, renewCertificateNow } from "/imports/server/acme.js";
+import { Issuer, Client } from "openid-client";
 
 const publicAdminSettings = [
   "google", "github", "ldap", "oidc", "saml", "emailToken", "splashUrl", "signupDialog",
@@ -80,13 +81,11 @@ Meteor.methods({
           serviceName + " service before you can enable it. Click the \"configure\" link.");
       }
 
-      if (serviceName === "oidc" &&
-        (!config.serverUrl ||
-          !config.authorizationEndpoint ||
-          !config.tokenEndpoint ||
-          !config.userinfoEndpoint)) {
-        throw new Meteor.Error(403, "You must provide a full set of server parameters for the " +
-          serviceName + " service before you can enable it. Click the \"configure\" link.");
+      if (serviceName === "oidc") {
+        if (!config.serverUrl || !config.tokenAuthMethod || !config.issuer) {
+          throw new Meteor.Error(403, "You must provide a full set of server parameters for the " +
+            serviceName + " service before you can enable it. Click the \"configure\" link.");
+        }
       }
     }
 
@@ -151,7 +150,14 @@ Meteor.methods({
     checkAuth(token);
     check(options, Match.ObjectIncluding({ service: String }));
 
-    ServiceConfiguration.configurations.upsert({ service: options.service }, options);
+    if (options.service === "oidc" && options.serverUrl) {
+      return Issuer.discover(options.serverUrl).then(function(issuer) {
+        options.issuer = issuer.metadata;
+        ServiceConfiguration.configurations.upsert({ service: options.service }, options);
+      });
+    } else {
+      ServiceConfiguration.configurations.upsert({ service: options.service }, options);
+    }
   },
 
   clearResumeTokensForService: function (token, serviceName) {

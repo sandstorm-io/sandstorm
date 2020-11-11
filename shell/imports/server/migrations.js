@@ -1174,6 +1174,15 @@ function deleteReferralNotifications(db, _backend) {
   db.collections.notifications.remove({mailingListBonus: {$exists: true}});
 }
 
+function deleteHackSessionHttpSetting(db, _backend) {
+  // When started the process of removing support for HTTP access through
+  // HackSession, we introduced this setting to allow users to temporarily
+  // re-enable it as a stopgap while apps were being ported. Now that the
+  // functionality has ben removed entirely, we should remove this setting
+  // as well:
+  db.collections.settings.remove({_id: "allowLegacyHackSessionHttp"});
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -1218,6 +1227,7 @@ const MIGRATIONS = [
   cleanupBadExpiresIfUnused,
   deleteReferralNotifications,
   removeFeatureKeys,
+  deleteHackSessionHttpSetting,
 ];
 
 const NEW_SERVER_STARTUP = [

@@ -34,34 +34,6 @@ const ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
 const PersistentApiSession =
     Capnp.importSystem("sandstorm/api-session-impl.capnp").PersistentApiSession;
 
-ExternalUiView = class ExternalUiView {
-  constructor(url, token) {
-    this.url = url;
-    this.token = token;
-  }
-
-  newSession(userInfo, context, sessionType, sessionParams) {
-    if (sessionType !== ApiSession.typeId) {
-      throw new Error("SessionType must be ApiSession.");
-    }
-
-    const options = {};
-
-    if (this.token) {
-      options.headers = {
-        authorization: "Bearer " + this.token,
-      };
-    }
-
-    return inMeteor(() => {
-      return {
-        session: new Capnp.Capability(new ExternalWebSession(this.url, options, globalDb),
-                                      ApiSession),
-      };
-    });
-  }
-};
-
 function getOAuthServiceInfo(url) {
   // TODO(soon): Define a table somewhere (probably in a .capnp file) mapping API hosts to OAuth
   //   metadata.
@@ -348,23 +320,14 @@ class ExternalWebSession extends PersistentImpl {
     options.headers.host = safe.host;
     options.servername = safe.host.split(":")[0];
 
-    if (!saveTemplate) {
-      // enable backwards-compatibilty tweaks.
-      this.fromHackSession = true;
-    }
-
     const parsedUrl = Url.parse(safe.url);
     this.host = parsedUrl.hostname;
-    if (this.fromHackSession) {
-      // HackSessionContext.getExternalUiView() apparently ignored any path on the URL. Whoops.
+    if (parsedUrl.path === "/") {
+      // The URL parser says path = "/" for both "http://foo" and "http://foo/". We want to be
+      // strict, though.
+      this.path = url.endsWith("/") ? "/" : "";
     } else {
-      if (parsedUrl.path === "/") {
-        // The URL parser says path = "/" for both "http://foo" and "http://foo/". We want to be
-        // strict, though.
-        this.path = url.endsWith("/") ? "/" : "";
-      } else {
-        this.path = parsedUrl.path;
-      }
+      this.path = parsedUrl.path;
     }
 
     this.port = parsedUrl.port;
@@ -408,19 +371,7 @@ class ExternalWebSession extends PersistentImpl {
       if (!options.headers["user-agent"]) {
         options.headers["user-agent"] = "sandstorm app";
       }
-
-      if (this.fromHackSession) {
-        // According to the specification of `WebSession`, `path` should not contain a
-        // leading slash, and therefore we need to prepend "/". However, for a long time
-        // this implementation did not in fact prepend a "/". Since some apps might rely on
-        // that behavior, we only prepend "/" if the path does not start with "/".
-        //
-        // TODO(soon): Once apps have updated, prepend "/" unconditionally.
-        options.path = path.startsWith("/") ? path : "/" + path;
-      } else {
-        options.path = this.path + "/" + path;
-      }
-
+      options.path = this.path + "/" + path;
       options.method = method;
       if (contentType) {
         options.headers["content-type"] = contentType;

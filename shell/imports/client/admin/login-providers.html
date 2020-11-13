@@ -330,10 +330,10 @@
   {{#let txt="admin.identityProviders.adminIdentityProviderConfigureOidc"}}
   <h2>{{_ (con txt "title")}}</h2>
 
-  {{#if formerBaseUrl}}
-    <p class="flash-message warning-message" tabindex="-1">
-      {{{_ (con txt "formerBaseUrlWarning") former=formerBaseUrl current=siteUrl}}}
-    </p>
+  {{#if errorMessage}}
+    {{#focusingErrorBox}}
+      {{_ (con txt "error") errorMessage}}
+    {{/focusingErrorBox}}
   {{/if}}
 
   <form class="setup-idp-form">

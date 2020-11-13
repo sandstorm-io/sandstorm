@@ -673,7 +673,7 @@
       },
       "adminIdentityProviderConfigureOidc": {
         "title": "OpenID Connect login configuration",
-        "formerBaseUrlWarning": "This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to provide your identity provider with the updated Homepage URL and Authorization callback URL for this application to the values below.",
+        "error": "Failed to save changes: %s",
         "explanation": "Fill in your identity provider details:",
         "serverUrl": "Identity Server URL:",
         "clientId": "Client ID:",

@@ -23,7 +23,7 @@ const oidcServiceHandler = async ({code, state: _}) => {
   const client = new issuer.Client({
     client_id                 : config.clientId,
     client_secret             : OAuth.openSecret(config.secret),
-    token_endpoint_auth_method: config.tokenAuthMethod
+    token_endpoint_auth_method: config.clientAuthMethod
   });
 
   const redirect_uri = OAuth._redirectUri("oidc", config);

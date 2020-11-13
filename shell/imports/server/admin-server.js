@@ -82,7 +82,7 @@ Meteor.methods({
       }
 
       if (serviceName === "oidc") {
-        if (!config.serverUrl || !config.tokenAuthMethod || !config.issuer) {
+        if (!config.serverUrl || !config.clientAuthMethod || !config.issuer) {
           throw new Meteor.Error(403, "You must provide a full set of server parameters for the " +
             serviceName + " service before you can enable it. Click the \"configure\" link.");
         }

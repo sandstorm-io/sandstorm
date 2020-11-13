@@ -637,12 +637,12 @@ Template.adminLoginProviderConfigureOidc.onCreated(function () {
   const serverUrl = (oidcConfiguration && oidcConfiguration.serverUrl) || "";
   const clientId = (oidcConfiguration && oidcConfiguration.clientId) || "";
   const clientSecret = (oidcConfiguration && oidcConfiguration.secret) || "";
-  const tokenAuthMethod = (oidcConfiguration && oidcConfiguration.tokenAuthMethod) || "client_secret_basic";
+  const clientAuthMethod = (oidcConfiguration && oidcConfiguration.clientAuthMethod) || "client_secret_basic";
 
   this.serverUrl = new ReactiveVar(serverUrl);
   this.clientId = new ReactiveVar(clientId);
   this.clientSecret = new ReactiveVar(clientSecret);
-  this.tokenAuthMethod = new ReactiveVar(tokenAuthMethod);
+  this.clientAuthMethod = new ReactiveVar(clientAuthMethod);
   this.errorMessage = new ReactiveVar(undefined);
   this.formChanged = new ReactiveVar(false);
   this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
@@ -673,21 +673,21 @@ Template.adminLoginProviderConfigureOidc.helpers({
     return instance.serverUrl.get();
   },
 
-  tokenAuthMethod() {
+  clientAuthMethod() {
     const instance = Template.instance();
-    return instance.tokenAuthMethod.get();
+    return instance.clientAuthMethod.get();
   },
 
-  isClientSecretBasic(tokenAuthMethod) {
-    return tokenAuthMethod === "client_secret_basic";
+  isClientSecretBasic(clientAuthMethod) {
+    return clientAuthMethod === "client_secret_basic";
   },
 
-  isClientSecretPost(tokenAuthMethod) {
-    return tokenAuthMethod === "client_secret_post";
+  isClientSecretPost(clientAuthMethod) {
+    return clientAuthMethod === "client_secret_post";
   },
 
-  isNone(tokenAuthMethod) {
-    return tokenAuthMethod === "none";
+  isNone(clientAuthMethod) {
+    return clientAuthMethod === "none";
   },
 
   clientId() {
@@ -707,7 +707,7 @@ Template.adminLoginProviderConfigureOidc.helpers({
       || !instance.clientId.get()
       || !instance.clientSecret.get()
       || !instance.serverUrl.get()
-      || !instance.tokenAuthMethod.get();
+      || !instance.clientAuthMethod.get();
   },
 
   errorMessage() {
@@ -735,9 +735,9 @@ Template.adminLoginProviderConfigureOidc.events({
     instance.formChanged.set(true);
   },
 
-  "change select[name=tokenAuthMethod]"(evt) {
+  "change select[name=clientAuthMethod]"(evt) {
     const instance = Template.instance();
-    instance.tokenAuthMethod.set(evt.currentTarget.value);
+    instance.clientAuthMethod.set(evt.currentTarget.value);
     instance.formChanged.set(true);
   },
 
@@ -750,7 +750,7 @@ Template.adminLoginProviderConfigureOidc.events({
       secret: instance.clientSecret.get().trim(),
       serverUrl: instance.serverUrl.get().trim(),
       loginStyle: "redirect",
-      tokenAuthMethod: instance.tokenAuthMethod.get().trim()
+      clientAuthMethod: instance.clientAuthMethod.get().trim()
     };
     // TODO: rework this into a single Meteor method call.
     Meteor.call("adminConfigureLoginService", token, configuration, (err) => {

@@ -679,7 +679,7 @@
         "clientId": "Client ID:",
         "clientSecret": "Client secret:",
         "advanced-explanation": "Some identity providers require configuration of advanced options:",
-        "tokenAuthMethod": "Token Auth Method:",
+        "clientAuthMethod": "Client Auth Method:",
         "saveButton": "Save",
         "enableButton": "Enable",
         "cancelButton": "Cancel",

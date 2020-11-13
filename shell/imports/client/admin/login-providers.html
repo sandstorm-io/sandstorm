@@ -362,11 +362,11 @@
     <p>{{_ (con txt "advanced-explanation")}}</p>
     <div class="form-group">
       <label>
-        {{_ (con txt "tokenAuthMethod")}}
-        <select name="tokenAuthMethod">
-          <option selected="{{isClientSecretBasic tokenAuthMethod}}" value="client_secret_basic">Client Secret Basic</option>
-          <option selected="{{isClientSecretPost tokenAuthMethod}}" value="client_secret_post">Client Secret POST</option>
-          <option selected="{{isNone tokenAuthMethod}}" value="none">None</option>
+        {{_ (con txt "clientAuthMethod")}}
+        <select name="clientAuthMethod">
+          <option selected="{{isClientSecretBasic clientAuthMethod}}" value="client_secret_basic">Client Secret Basic</option>
+          <option selected="{{isClientSecretPost clientAuthMethod}}" value="client_secret_post">Client Secret POST</option>
+          <option selected="{{isNone clientAuthMethod}}" value="none">None</option>
         </select>
       </label>
     </div>

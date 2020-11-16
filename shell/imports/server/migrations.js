@@ -554,9 +554,6 @@ const consolidateOrgSettings = function (db, _backend) {
     ldap: {
       enabled: orgLdap ? orgLdap.value : false,
     },
-    ldap: {
-      enabled: orgLdap ? orgLdap.value : false,
-    },
     saml: {
       enabled: orgSaml ? orgSaml.value : false,
     },

@@ -71,7 +71,7 @@ IMAGES= \
     shell/public/menu.svg \
     shell/public/notification.svg \
     shell/public/open-grain.svg \
-	shell/public/openid.svg \
+    shell/public/openid.svg \
     shell/public/people.svg \
     shell/public/question-727272.svg \
     shell/public/question-a9a9a9.svg \

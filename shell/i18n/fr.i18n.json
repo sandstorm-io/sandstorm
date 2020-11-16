@@ -628,15 +628,13 @@
       },
       "adminIdentityProviderConfigureOidc": {
         "title": "*_OpenID Connect login configuration",
-        "formerBaseUrlWarning": "*_This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to provide your identity provider with the updated Homepage URL and Authorization callback URL for this application to the values below.",
-        "server-explanation": "*_Fill in your identity provider details:",
+        "error": "*_Failed to save changes: %s",
         "explanation": "*_Then, copy over your Client ID and Client secret below:",
+        "serverUrl": "*_Identity Server URL:",
         "clientId": "*_Client ID:",
         "clientSecret": "*_Client secret:",
-        "serverUrl": "*_Identity Server URL:",
-        "authorizationEndpoint": "*_Authorization Endpoint:",
-        "tokenEndpoint": "*_Token Endpoint:",
-        "userinfoEndpoint": "*_User Info Endpoint:",
+        "advanced-explanation": "*_Some identity providers require configuration of advanced options:",
+        "clientAuthMethod": "*_Client Auth Method:",
         "saveButton": "*_Save",
         "enableButton": "*_Enable",
         "cancelButton": "*_Cancel",
@@ -716,6 +714,10 @@
           "ldapToggle": {
             "label": "Authentification d'utilisateurs via LDAP",
             "subtext": "Note : désactivée car le l'authentification via LDAP n'est pas configurée."
+          },
+          "oidcToggle": {
+            "label": "Authentification d'utilisateurs via OpenID Connect",
+            "subtext": "Note : désactivée car le l'authentification via OpenID Connect n'est pas configurée."
           },
           "samlToggle": {
             "label": "Authentification d'utilisateurs via SAML",
@@ -1685,6 +1687,10 @@
         "ldapToggle": {
           "label": "Utilisateurs identifiés via LDAP",
           "subtext": "Note : désactivé car l'authentification LDAP n'est pas configurée."
+        },
+        "oidcToggle": {
+          "label": "Authentification d'utilisateurs via OpenID Connect",
+          "subtext": "Note : désactivée car le l'authentification via OpenID Connect n'est pas configurée."
         },
         "samlToggle": {
           "label": "Utilisateurs identifiés via SAML",

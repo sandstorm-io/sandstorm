@@ -673,15 +673,13 @@
             },
             "adminIdentityProviderConfigureOidc": {
               "title": "*_OpenID Connect login configuration",
-              "formerBaseUrlWarning": "*_This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to provide your identity provider with the updated Homepage URL and Authorization callback URL for this application to the values below.",
-              "server-explanation": "*_Fill in your identity provider details:",
+              "error": "*_Failed to save changes: %s",
               "explanation": "*_Then, copy over your Client ID and Client secret below:",
+              "serverUrl": "*_Identity Server URL:",
               "clientId": "*_Client ID:",
               "clientSecret": "*_Client secret:",
-              "serverUrl": "*_Identity Server URL:",
-              "authorizationEndpoint": "*_Authorization Endpoint:",
-              "tokenEndpoint": "*_Token Endpoint:",
-              "userinfoEndpoint": "*_User Info Endpoint:",
+              "advanced-explanation": "*_Some identity providers require configuration of advanced options:",
+              "clientAuthMethod": "*_Client Auth Method:",
               "saveButton": "*_Save",
               "enableButton": "*_Enable",
               "cancelButton": "*_Cancel",
@@ -761,6 +759,10 @@
                     "ldapToggle": {
                         "label": "用户可通过 LDAP 认证",
                         "subtext": "注：该功能被禁用，因为未配置 LDAP 登录。"
+                    },
+                    "oidcToggle": {
+                      "label": "*_Users authenticated via OpenID Connect",
+                      "subtext": "*_Note: disabled because OpenID Connect login is not configured."
                     },
                     "samlToggle": {
                         "label": "用户可通过 SAML 认证",
@@ -1737,6 +1739,10 @@
                 "ldapToggle": {
                     "label": "用户通过 LDAP 验证",
                     "subtext": "注：已禁用，因为通过 LDAP 未被配置。"
+                },
+                "oidcToggle": {
+                  "label": "*_Users authenticated via OpenID Connect",
+                  "subtext": "*_Note: disabled because OpenID Connect login is not configured."
                 },
                 "samlToggle": {
                     "label": "用户通过 SAML 验证",

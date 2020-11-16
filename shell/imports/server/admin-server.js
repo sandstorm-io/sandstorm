@@ -19,6 +19,7 @@ import { Match, check } from "meteor/check";
 import { _ } from "meteor/underscore";
 import { Accounts } from "meteor/accounts-base";
 import { Random } from "meteor/random";
+import { ServiceConfiguration } from "meteor/service-configuration";
 
 import Fs from "fs";
 import Crypto from "crypto";
@@ -32,7 +33,7 @@ import { globalDb } from "/imports/db-deprecated.js";
 import { computeStats } from "/imports/server/stats-server.js";
 import { HTTP } from "meteor/http";
 import { createAcmeAccount, renewCertificateNow } from "/imports/server/acme.js";
-import { Issuer, Client } from "openid-client";
+import { Issuer } from "openid-client";
 
 const publicAdminSettings = [
   "google", "github", "ldap", "oidc", "saml", "emailToken", "splashUrl", "signupDialog",
@@ -167,7 +168,7 @@ Meteor.methods({
 
         options.issuer = issuer.metadata;
         ServiceConfiguration.configurations.upsert({ service: options.service }, options);
-      }).catch(function(err) {
+      }).catch(function(_err) {
         throw new Meteor.Error(403, "Could not discover an OpenID Connect endpoint at the provided URL.");
       });
     } else {

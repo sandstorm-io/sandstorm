@@ -1,5 +1,9 @@
-import { checkNpmVersions } from "meteor/tmeasday:check-npm-versions";
+import { Accounts } from "meteor/accounts-base";
+import { check } from "meteor/check";
+import { Meteor } from "meteor/meteor";
 import { OAuth } from "meteor/oauth";
+import { ServiceConfiguration } from "meteor/service-configuration";
+import { checkNpmVersions } from "meteor/tmeasday:check-npm-versions";
 
 checkNpmVersions({
   "openid-client": "4.2.1"

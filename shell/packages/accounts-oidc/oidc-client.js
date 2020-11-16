@@ -2,6 +2,7 @@ import { Meteor } from "meteor/meteor";
 import { OAuth } from "meteor/oauth";
 import { Accounts } from "meteor/accounts-base";
 import { ServiceConfiguration } from "meteor/service-configuration";
+import { Random } from "meteor/random";
 
 Accounts.oauth.registerService("oidc");
 

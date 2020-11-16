@@ -2565,6 +2565,7 @@ private:
 
       kj::String settingsString = makeMeteorSettings(config, buildstamp);
       KJ_SYSCALL(setenv("METEOR_SETTINGS", settingsString.cStr(), true));
+      KJ_SYSCALL(setenv("HOME", "/var", true));
       // --no-wasm-code-gc to work around https://github.com/nodejs/node/issues/29767
       // Meteor did this too: https://github.com/meteor/meteor/commit/c37bab64a4750eafbc6483ee82f67e6ff6221029
       KJ_SYSCALL(execl("/bin/node", "/bin/node", "--no-wasm-code-gc",

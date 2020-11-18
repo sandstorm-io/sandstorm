@@ -65,6 +65,7 @@ import "../imports/blackrock-payments/server/payments-api-server.js";
 import "../imports/server/accounts/credentials/credentials-server.js";
 import "../imports/server/accounts/email-token/token-server.js";
 import "../imports/server/accounts/ldap/ldap-server.js";
+import "../imports/server/accounts/oidc/oidc-server.js";
 import "../imports/server/accounts/saml/saml-server.js";
 import "../imports/server/accounts/accounts-server.js";
 import "../imports/server/accounts/accounts-ui-methods.js";

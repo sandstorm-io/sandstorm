@@ -8,7 +8,7 @@ Accounts.oauth.registerService("oidc");
 
 const Oidc = {};
 
-Meteor.loginWithOidc = (options, callback) => {
+const loginWithOidc = (options, callback) => {
   // support a callback without options
   if (! callback && typeof options === "function") {
     callback = options;
@@ -66,3 +66,5 @@ Oidc.requestCredential = (options, credentialRequestCompleteCallback) => {
     }
   });
 };
+
+export { loginWithOidc };

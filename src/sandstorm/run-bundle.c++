@@ -2563,9 +2563,13 @@ private:
         buildstamp = kj::str(SANDSTORM_BUILD);
       }
 
+      // Provide the path to a home directory. This is only required as a
+      // workaround to make the call to os.homedir() in the `clean-stack`
+      // npm package succeed.
+      KJ_SYSCALL(setenv("HOME", "/var", true));
+
       kj::String settingsString = makeMeteorSettings(config, buildstamp);
       KJ_SYSCALL(setenv("METEOR_SETTINGS", settingsString.cStr(), true));
-      KJ_SYSCALL(setenv("HOME", "/var", true));
       // --no-wasm-code-gc to work around https://github.com/nodejs/node/issues/29767
       // Meteor did this too: https://github.com/meteor/meteor/commit/c37bab64a4750eafbc6483ee82f67e6ff6221029
       KJ_SYSCALL(execl("/bin/node", "/bin/node", "--no-wasm-code-gc",

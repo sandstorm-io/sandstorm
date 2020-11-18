@@ -157,11 +157,8 @@ Meteor.methods({
     if (options.service === "oidc" && options.serverUrl) {
       return Issuer.discover(options.serverUrl).then(function(issuer) {
 
-        // We don't support 'Proof Key for Code Exchange' https://oauth.net/2/pkce/
-        // (response_type === 'code') yet. An additional challenge would have to be
-        // implemented as part of the login flow.
-        // See also the implementation for express.js:
-        // https://github.com/auth0/express-openid-connect/blob/v2.0.0/lib/context.js#L211
+        // 'Proof Key for Code Exchange' (response_type === 'code') is not yet supported.
+        // An additional code_challenge parameter would have to be added when generating the authorizationUrl.
         if (issuer.metadata.response_types_supported.indexOf("id_token") === -1) {
           throw new Meteor.Error(403, "The provided identity server does not support the 'id_token' response type.");
         }

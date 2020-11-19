@@ -1,13 +1,19 @@
 ---
 env:
-  # Assume standard globals. TODO: Ideally we'd only allow
-  # `node` from server/ and only allow `browser` from client,
-  # but I(zenhack) am not sure how to get eslint to use different
-  # options per subtree:
+  # Assume standard globals. We turn off either `browser` or `node`
+  # for certain parts of the codebase in `overrides`, but by default
+  # we optimistically assume everything is available.
+  #
+  # TODO: More cleanly separate client vs. server code, and then
+  # avoid having both of these on anywhere. Unfortunatley, there are
+  # some places where we have both in the same file, hidden behind a
+  # conditional.
   browser: true
   node: true
+
+  shared-node-browser: true
   es6: true
-parser: "babel-eslint"
+parser: "@typescript-eslint/parser"
 parserOptions:
   ecmaVersion: 2020
   sourceType: "module"
@@ -16,6 +22,23 @@ parserOptions:
   # Ideally we'd refactor so this was unneccesary, but for now the import
   # *has* to be conditional, so tell eslint to allow this:
   allowImportExportEverywhere: true
+overrides:
+  - files:
+      - "**/client/**/*.js"
+      - "**/client/**/*.ts"
+    env:
+      node: false
+  - files:
+      - "**/server/**/*.js"
+      - "**/server/**/*.ts"
+    env:
+      browser: false
+  - files:
+      - "**/shared/**/*.js"
+      - "**/shared/**/*.ts"
+    env:
+      node: false
+      browser: false
 reportUnusedDisableDirectives: true
 extends: "eslint:recommended"
 rules:

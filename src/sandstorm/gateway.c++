@@ -94,10 +94,11 @@ GatewayService::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilder)
 GatewayService::GatewayService(
     kj::Timer& timer, kj::HttpClient& shellHttp, GatewayRouter::Client router,
     Tables& tables, kj::StringPtr baseUrl, kj::StringPtr wildcardHost,
-    kj::Maybe<kj::StringPtr> termsPublicId)
+    kj::Maybe<kj::StringPtr> termsPublicId, bool allowLegacyRelaxedCSP)
     : timer(timer), shellHttp(kj::newHttpService(shellHttp)), router(kj::mv(router)),
       tables(tables), baseUrl(kj::Url::parse(baseUrl, kj::Url::HTTP_PROXY_REQUEST)),
-      wildcardHost(wildcardHost), termsPublicId(termsPublicId), tasks(*this) {}
+      wildcardHost(wildcardHost), termsPublicId(termsPublicId), tasks(*this),
+      allowLegacyRelaxedCSP(allowLegacyRelaxedCSP) {}
 
 template <typename Key, typename Value>
 static void removeExpired(std::map<Key, Value>& m, kj::TimePoint now, kj::Duration period) {
@@ -442,8 +443,8 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
     capnp::MallocMessageBuilder requestMessage(128);
     auto params = requestMessage.getRoot<WebSession::Params>();
 
-    auto basePath = kj::str(baseUrl.scheme, "://",
-        KJ_ASSERT_NONNULL(headers.get(kj::HttpHeaderId::HOST)));
+    kj::StringPtr host = KJ_ASSERT_NONNULL(headers.get(kj::HttpHeaderId::HOST));
+    auto basePath = kj::str(baseUrl.scheme, "://", host);
     params.setBasePath(basePath);
     params.setUserAgent(headers.get(tables.hUserAgent).orDefault("UnknownAgent/0.0"));
 
@@ -503,7 +504,9 @@ kj::Maybe<kj::Own<kj::HttpService>> GatewayService::getUiBridge(kj::HttpHeaders&
       timer.now(),
       kj::refcounted<WebSessionBridge>(timer, sessionRedirector.castAs<WebSession>(),
                                        Handle::Client(kj::mv(loadingPaf.promise)),
-                                       tables.bridgeTables, options)
+                                       tables.bridgeTables, options,
+                                       kj::str(host), kj::str(baseUrl.host),
+                                       allowLegacyRelaxedCSP)
     };
     auto insertResult = uiHosts.insert(std::make_pair(key, kj::mv(entry)));
     KJ_ASSERT(insertResult.second);

@@ -26,6 +26,9 @@ If you'd like to work on one of these tasks, [join the sandstorm-dev mailing lis
 
 The easiest way to help Sandstorm is to write and/or package apps! See [the developer hub in the Sandstorm documentation](https://docs.sandstorm.io/en/latest/developing/) for how to get started.
 
+If you want to package *something* but don't know what, look for [issues labeled "app-requests"](https://github.com/sandstorm-io/sandstorm/issues?q=is%3Aissue+is%3Aopen+label%3Aapp-requests)
+on the issue tracker.
+
 ### Internationalization (i18n)
 
 We need help translating the Sandstorm interface into multiple languages.

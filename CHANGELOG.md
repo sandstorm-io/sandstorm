@@ -1,3 +1,26 @@
+### v0.274 (2020-10-26)
+- Fixed regression that broke downloading backups for some Linux kernel versions. Unfortunately, these versions do not support cgroup freezing and so will not get atomic backups.
+
+### v0.273 (2020-10-24)
+- Extended Let's Encrypt automatic certificate renewal to support deSEC DNS. (Thanks @rs22.)
+- Grains will now be temporarily paused while creating backups, to ensure the backup is atomic. (Thanks @zenhack.)
+- Updated Simplified Chinese translation. (Thanks @misaka00251.)
+- Fixed bug in sandstorm-http-bridge when responding to HEAD requests. Apps will need to be re-packaged to get the update. (Thanks @zenhack.)
+- Fixed "Unhandled exception in Promise:  TypeError: Cannot read property 'catch' of undefined" when using scheduled tasks. (Thanks @zenhack.)
+
+### v0.272 (2020-09-26)
+- Regular dependency updates.
+- To make porting apps a little easier, the headers `X-CSRFToken` and `X-CSRF-Token` are now automatically passed through to the app. Thanks @zenhack.
+
+### v0.271 (2020-08-31)
+- We have reverted the change preventing apps from talking to third-party servers in client-side code. This caused more breakage than was expected. We will work to fix and/or grandfather the affected apps before trying to roll this out again.
+
+### v0.270 (2020-08-29)
+- Apps can no longer talk to third-party servers in client-side code, except for embedding images and video. This has long been a goal of Sandstorm, but we did not want to begin enforcing it until apps could explicitly request access to third-party servers via the Powerbox. We have tested all apps on the app market and found only minor breakage (e.g. wrong fonts), but it is possible that we missed bigger breakages or that some private apps are broken. Please contact [sandstorm-dev](https://groups.google.com/group/sandstorm-dev) to report any issues. Thanks @zenhack for pushing this change through.
+- Apps can no longer make server-side HTTP requests without requsting permission through the Powerbox. We believe the only app that ever did so was Tiny Tiny RSS, but it was recently updated to use the powerbox. If you experience other app breakages, please let [sandstorm-dev](https://groups.google.com/group/sandstorm-dev) know. Thanks again to @zenhack.
+- Updated Finnish translation. Thanks @xet7.
+- Updated dependencies, including Meteor to 1.11.
+
 ### v0.269 (2020-08-01)
 - You can now clone a grain via a button in the top bar. Thanks @zenhack.
 - Grains now run inside cgroups, if the kernel supports cgroup namespaces and cgroups v2. Thanks @zenhack.

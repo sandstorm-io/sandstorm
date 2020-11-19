@@ -34,7 +34,7 @@
         return new Promise(function(resolve, reject) {
           var xhr = new XMLHttpRequest();
           xhr.onload = function () {
-            if (xhr.status >= 400) {
+            if (xhr.status >= 400 && !options.errOk) {
               reject(new Error("XHR returned status " + xhr.status + ":\n" + xhr.responseText));
             } else {
               resolve(xhr);
@@ -90,7 +90,7 @@
       var fieldHandlers = {
         svg: function (data) {
           var img = document.createElement("img");
-          img.src = "data:image/svg+xml;utf8," + data;
+          img.src = "data:image/svg+xml;utf8," + encodeURIComponent(data);
           return img;
         },
         png: function (data) {
@@ -158,61 +158,69 @@
           div.appendChild(textElement("p", fp));
 
           if (fp.match(/^[0-9A-F]{40}$/)) {
-            doGet("https://keybase.io/_/api/1.0/user/lookup.json?key_fingerprint=" + fp +
-                  "&fields=pictures,profile,proofs_summary").then(function (xhr) {
-              var data = JSON.parse(xhr.responseText);
-              if (data.them.length == 0) {
-                div.appendChild(textElement("p", "(no Keybase match)"));
-                return;
+            fetch("/keybase/" + fp, { method: "post", errOk: true }).then(function(xhr) {
+              switch(xhr.status) {
+                case 404:
+                  div.appendChild(textElement("p", "(no Keybase match)"));
+                  return;
+                case 200:
+                  break;
+                default:
+                  throw new Error("XHR failed: post " + url);
               }
 
-              var upload = [];
-              var them = data.them[0];
+              var identity = JSON.parse(xhr.responseText);
+              console.log(identity);
 
-              upload.push("username:" + them.basics.username);
-              var url = "https://keybase.io/" + them.basics.username;
+              var url = "https://keybase.io/" + identity.keybaseHandle;
               var link = textElement("a", url);
               link.href = url;
               link.target = "_blank";
               div.appendChild(parentElement("p", link));
 
-              if (them.profile && them.profile.full_name) {
-                upload.push("name:" + them.profile.full_name.replace("\n", ""));
-                div.appendChild(textElement("p", them.profile.full_name));
+              if(identity.name) {
+                div.appendChild(textElement("p", identity.name));
               }
 
-              if (them.pictures && them.pictures.primary) {
-                upload.push("picture:" + them.pictures.primary.url);
+              if(identity.picture) {
                 var img = document.createElement("img");
-                img.src = them.pictures.primary.url;
+                img.src = identity.picture;
                 div.appendChild(parentElement("p", img));
               }
 
-              function addProof(name, obj) {
-                var value = obj.nametag;
-                var url = obj.service_url;
-                upload.push("proof." + name + ":" + value);
-                var link = textElement("a", value);
-                if (url.slice(0, 4) == "http") link.href = url;
-                link.target = "_blank";
-                div.appendChild(parentElement("p", document.createTextNode(name + ": "), link));
-              }
-
-              if (them.proofs_summary && them.proofs_summary.by_proof_type) {
-                var proofs = them.proofs_summary.by_proof_type;
-
-                for (var type in proofs) {
-                  var proofSet = proofs[type];
-                  for (var i in proofSet) {
-                    var proof = proofSet[i];
-                    if (proof.nametag && proof.service_url) {
-                      addProof(type, proof);
-                    }
-                  }
+              function serviceUrl(type, name) {
+                switch(type) {
+                case "website":
+                  return "https://" + name;
+                case "github":
+                  return "https://github.com/" + name;
+                case "twitter":
+                  return "https://twitter.com/" + name;
+                case "hackernews":
+                  return "https://news.ycombinator.com/user?id=" + name;
+                case "reddit":
+                  return "https://reddit.com/user/" + name;
                 }
               }
 
-              doPost("/keybase/" + fp, upload.join("\n"));
+              function addProof(type, name) {
+                var url = serviceUrl(type, name);
+                var link = textElement("a", name);
+                if (url && url.slice(0, 4) == "http") link.href = url;
+                link.target = "_blank";
+                div.appendChild(parentElement("p", document.createTextNode(type + ": "), link));
+              }
+
+              function addProofs(type, list) {
+                for(var i in list) {
+                  addProof(type, list[i]);
+                }
+              }
+              addProofs("website", identity.websites);
+              addProofs("github", identity.githubHandles);
+              addProofs("twitter", identity.twitterHandles);
+              addProofs("hackernews", identity.hackernewsHandles);
+              addProofs("reddit", identity.redditHandles);
             }).catch(function (err) {
               div.appendChild(textElement("pre", err.stack));
             });
@@ -339,6 +347,36 @@
           alert(err.stack);
         })
       }
+
+      function setupKeybase() {
+        doGet("/keybase-pb-descriptor").then(function(xhr) {
+          window.parent.postMessage({
+            powerboxRequest: {
+              rpcId: "keybase-request",
+              query: [
+                xhr.responseText,
+              ],
+              saveLabel: {defaultText: "Access to the keybase api."},
+            },
+          }, '*');
+        }, function(err) {
+          alert(err.stack);
+        });
+      }
+
+      window.addEventListener("message", function(event) {
+        if(event.source !== window.parent) {
+          return;
+        }
+
+        var response = event.data;
+
+        if(response.rpcId !== "keybase-request") {
+          return;
+        }
+
+        doPost("/keybase-pb-token", response.token);
+      });
     </script>
   </head>
   <body>
@@ -351,6 +389,8 @@
     </form>
 
     <button onclick="reindex()">reindex</button>
+
+    <button onclick="setupKeybase()">Set up keybase</button>
 
     <h2>Queue:</h2>
 

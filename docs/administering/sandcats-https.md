@@ -99,8 +99,8 @@ GitHub websites.
 
 ### Technical details
 
-**Automatic renewal.** Sandstorm's built-in HTTPS uses the
-[Sandcats.io service](sandcats.md) to renew certificates without
+**Automatic renewal.** Sandstorm's built-in HTTPS uses
+[Let's Encrypt](https://letsencrypt.org/) to renew certificates without
 needing any manual intervention.
 
 <!--

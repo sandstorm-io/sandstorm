@@ -264,6 +264,13 @@ Config readConfig(const char *path, bool parseUids) {
       config.stripeKey = kj::mv(value);
     } else if (key == "STRIPE_PUBLIC_KEY") {
       config.stripePublicKey = kj::mv(value);
+    } else if (key == "ALLOW_LEGACY_RELAXED_CSP") {
+      KJ_LOG(WARNING,
+          "The option ALLOW_LEGACY_RELAXED_CSP will be removed "
+          "soon. Apps that rely on loading thrid party resources "
+          "should be modified to embed those resources in the app "
+          "package instead.");
+      config.allowLegacyRelaxedCSP = value == "true" || value == "yes";
     } else {
       KJ_LOG(WARNING, "Ignoring unrecognized config option", key);
     }

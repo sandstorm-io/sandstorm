@@ -94,13 +94,13 @@ window.addEventListener('message', function(event) {
     // SECURITY: ignore messages not from the parent.
     return;
   }
-  if(event.data.rpcId === getGrainTtileRpcId) {
+  if(event.data.rpcId === getGrainTitleRpcId) {
     console.log("The grain's title is: ", event.data.grainTitle);
   }
 })
 
 // Now make the request:
-window.postMessage({
+window.parent.postMessage({
   getGrainTitle: {},
   rpcId: getGrainTitleRpcId,
   // If subscribe is true, sandstorm will push future updates to the

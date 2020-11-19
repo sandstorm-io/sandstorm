@@ -14,14 +14,15 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "@babel/runtime": "^7.11.2",
+    "@babel/runtime": "^7.12.1",
     "@root/acme": "^3.1.0",
     "@root/csr": "^0.8.1",
     "@root/keypairs": "^0.9.0",
     "@root/pem": "^1.0.4",
     "@types/fibers": "^3.1.0",
-    "@types/meteor": "^1.4.49",
+    "@types/meteor": "^1.4.61",
     "acme-dns-01-cloudflare": "^1.2.3",
+    "acme-dns-01-desec": "^3.0.0",
     "acme-dns-01-digitalocean": "^3.0.1",
     "acme-dns-01-dnsimple": "^3.0.0",
     "acme-dns-01-duckdns": "^3.0.1",
@@ -42,11 +43,11 @@
     "intro.js": "git+https://github.com/sandstorm-io/intro.js.git#8e1c7604f251ec874bf4ae4d7b4f11a14cee697e",
     "ldapjs": "^1.0.2",
     "mailparser": "^0.6.2",
-    "node-forge": "^0.6.49",
+    "node-forge": "^0.10.0",
     "nodemailer": "^2.7.2",
     "nodemailer-smtp-pool": "^2.8.3",
     "smtp-server": "^1.17.0",
-    "stripe": "^8.90.0",
+    "stripe": "^8.117.0",
     "xml-crypto": "0.0.20",
     "xml2js": "^0.2.8",
     "xmlbuilder": "^8.2.2",
@@ -57,6 +58,6 @@
     "babel-eslint": "^10.1.0",
     "chai": "^4.2.0",
     "eslint": "^6.8.0",
-    "typescript": "^4.0.2"
+    "typescript": "^4.0.3"
   }
 }

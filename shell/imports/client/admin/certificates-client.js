@@ -30,6 +30,7 @@ Template.newAdminCertificates.onCreated(function () {
 
 const DNS_PROVIDERS = {
   "cloudflare": "Cloudflare",
+  "desec": "deSEC",
   "digitalocean": "Digital Ocean",
   "dnsimple": "DNSimple",
   "duckdns": "DuckDNS",

@@ -87,7 +87,7 @@ export const runDueJobs = (nowMillis) => {
 
       intervalHandle = Meteor.setInterval(() => {
         globalBackend.useGrain(job.grainId, (supervisor) => {
-          waitPromise(supervisor.keepAlive());
+          return supervisor.keepAlive();
         });
         db.updateScheduledJobKeepAlive(job._id);
       }, KEEP_ALIVE_INTERVAL_MILLIS);

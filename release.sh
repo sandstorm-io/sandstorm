@@ -96,11 +96,11 @@ gpg -u $SIGNING_KEY_ID --digest-algo SHA512 --detach-sig install.sh
 tmp/sandstorm/update-tool sign ~/.sandstorm-update-keyring $TARBALL > $TARBALL.update-sig
 
 echo $BUILD > tmp/$CHANNEL
-gce-ss copy-files $TARBALL fe:/var/www/dl.sandstorm.io
-gce-ss copy-files $TARBALL.sig fe:/var/www/dl.sandstorm.io
-gce-ss copy-files $TARBALL.update-sig fe:/var/www/dl.sandstorm.io
-gce-ss copy-files tmp/$CHANNEL fe:/var/www/install.sandstorm.io
-gce-ss copy-files install.sh fe:/var/www/install.sandstorm.io
-gce-ss copy-files install.sh.sig fe:/var/www/install.sandstorm.io
+gce-ss copy-files $TARBALL alpha2:/var/www/dl.sandstorm.io
+gce-ss copy-files $TARBALL.sig alpha2:/var/www/dl.sandstorm.io
+gce-ss copy-files $TARBALL.update-sig alpha2:/var/www/dl.sandstorm.io
+gce-ss copy-files tmp/$CHANNEL alpha2:/var/www/install.sandstorm.io
+gce-ss copy-files install.sh alpha2:/var/www/install.sandstorm.io
+gce-ss copy-files install.sh.sig alpha2:/var/www/install.sandstorm.io
 
-gce-ss ssh alpha --command 'sudo service sandstorm update dev'
+gce-ss ssh alpha2 --command 'sudo sandstorm update dev'

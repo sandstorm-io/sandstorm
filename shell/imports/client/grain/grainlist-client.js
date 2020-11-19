@@ -621,7 +621,9 @@ Template.sandstormGrainTable.helpers({
     const instance = Template.instance();
     return instance.sortOrder.get();
   },
+});
 
+Template.sortColumnHeading.helpers({
   equal(a, b) {
     return a === b;
   },

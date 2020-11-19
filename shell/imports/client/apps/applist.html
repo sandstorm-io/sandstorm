@@ -3,21 +3,6 @@
   {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar }}{{_ "apps.title"}}{{/sandstormTopbarItem}}
   {{#if isSignedUpOrDemo}}
   <div class="app-list">
-    {{#if freePlanGoingAway}}
-      <div class="free-plan-going-away">
-        <button class="upgrade-plan-now button-primary">Upgrade now</button>
-        Starting October 14, 2018, the Free plan will no longer allow creating grains, only accessing grains shared by others. Pre-existing data will remain available for download. <a href="https://sandstorm.io/news/2018-08-27-discontinuing-free-plan" target="_blank">Learn more »</a>
-      </div>
-    {{/if}}
-
-    {{#if oasisShuttingDown}}
-      <div class="oasis-shutting-down">
-        Sandstorm Oasis will shut down on December 31, 2019. Consider <a href="/transfers">transfering</a>
-        your data to a self-hosted server.
-        <a href="https://sandstorm.io/news/2019-09-15-shutting-down-oasis" target="_blank">Learn more »</a>
-      </div>
-    {{/if}}
-
     <h1>{{_ "apps.title"}}
       <form class="standard-form">
         <div class="button-row">

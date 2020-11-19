@@ -380,7 +380,9 @@
       },
       "sandstormGrainTable": {
         "bulkAction": {
-          "disabledHint": "Om bulkacties te verrichten moet u eerst een aantal grains in de lijst selecteren."
+          "disabledHints": {
+            "mustSelectGrains": "Om bulkacties te verrichten moet u eerst een aantal grains in de lijst selecteren."
+          }
         },
         "tableHeader": {
           "title": "Naam",

@@ -390,7 +390,9 @@
             },
             "sandstormGrainTable": {
                 "bulkAction": {
-                    "disabledHint": "请从列表中选择沙粒，再进行批量操作。"
+                    "disabledHints": {
+                      "mustSelectGrains": "请从列表中选择沙粒，再进行批量操作。"
+                    }
                 },
                 "tableHeader": {
                     "title": "沙粒名称",

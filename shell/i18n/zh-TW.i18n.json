@@ -344,7 +344,9 @@
       },
       "sandstormGrainTable": {
         "bulkAction": {
-          "disabledHint": "若要進行擴張，您必須先從列表中選擇沙粒。"
+          "disabledHints": {
+            "mustSelectGrains": "若要進行擴張，您必須先從列表中選擇沙粒。"
+          }
         },
         "tableHeader": {
           "title": "沙粒名",

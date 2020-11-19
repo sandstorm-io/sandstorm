@@ -41,9 +41,13 @@ SandstormGrainListPage.mapGrainsToTemplateObject = function (grains, db) {
   });
 };
 
+function disabledHint(name) {
+  return TAPi18n.__('grains.grainlist.sandstormGrainTable.bulkAction.disabledHints.' + name);
+}
+
 function bulkActionNoneSelected(numMineSelected, numSharedSelected) {
   if(numMineSelected == 0 && numSharedSelected == 0) {
-    return TAPi18n.__('grains.grainlist.sandstormGrainTable.bulkAction.disabledHint');
+    return disabledHint("mustSelectGrains");
   } else {
     return null;
   }
@@ -288,10 +292,7 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
 
         disabled: function(numMineSelected, numSharedSelected) {
           if(numSharedSelected > 0) {
-            return (
-              "Some of the grains you have selected are owned by other " +
-              "users. You can only back up your own grains."
-            )
+            return disabledHint("grainsOwnedByOthers");
           } else {
             return bulkActionNoneSelected(numMineSelected, numSharedSelected);
           }

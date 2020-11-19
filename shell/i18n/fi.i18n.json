@@ -390,7 +390,9 @@
       },
       "sandstormGrainTable": {
         "bulkAction": {
-          "disabledHint": "Suorittaaksesi joukkotoimintoja, sinun täytyy ensin valita muutamia jyviä listalta."
+          "disabledHints": {
+            "mustSelectGrains": "Suorittaaksesi joukkotoimintoja, sinun täytyy ensin valita muutamia jyviä listalta."
+          }
         },
         "tableHeader": {
           "title": "Nimi",

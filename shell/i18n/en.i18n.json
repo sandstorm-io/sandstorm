@@ -390,7 +390,10 @@
       },
       "sandstormGrainTable": {
         "bulkAction": {
-          "disabledHint": "To perform bulk actions, you must first select some grains in the list."
+          "disabledHints": {
+            "mustSelectGrains": "To perform bulk actions, you must first select some grains in the list.",
+            "grainsOwnedByOthers": "Some of the grains you have selected are owned by other users. You can only back up your own grains."
+          }
         },
         "tableHeader": {
           "title": "Name",

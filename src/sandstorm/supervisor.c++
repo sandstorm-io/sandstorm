@@ -2209,31 +2209,32 @@ public:
       }
     }
 
-    auto fullPath = kj::str("sandbox/www/", path);
-    KJ_IF_MAYBE(fd, raiiOpenIfExists(fullPath, O_RDONLY)) {
-      struct stat stats;
-      KJ_SYSCALL(fstat(*fd, &stats));
+    auto sandboxDir = raiiOpen("sandbox", O_RDONLY);
+    KJ_IF_MAYBE(wwwDir, raiiOpenAtIfExists(sandboxDir.get(), "www", O_RDONLY|O_NOFOLLOW)) {
+      KJ_IF_MAYBE(fd, raiiOpenAtIfExistsContained(wwwDir->get(), kj::Path(path), O_RDONLY)) {
+        struct stat stats;
+        KJ_SYSCALL(fstat(*fd, &stats));
 
-      if (S_ISREG(stats.st_mode)) {
-        auto stream = params.getStream();
-        context.releaseParams();
-        auto req = stream.expectSizeRequest();
-        req.setSize(stats.st_size);
-        auto expectSizeTask = req.send();
-        auto inStream = kj::heap<kj::FdInputStream>(kj::mv(*fd));
-        return pump(*inStream, kj::mv(stream)).attach(kj::mv(inStream), kj::mv(expectSizeTask));
-      } else if (S_ISDIR(stats.st_mode)) {
-        context.getResults(capnp::MessageSize {4, 0})
-            .setStatus(Supervisor::WwwFileStatus::DIRECTORY);
-        return kj::READY_NOW;
-      } else {
-        KJ_FAIL_ASSERT("not a regular file");
+        if (S_ISREG(stats.st_mode)) {
+          auto stream = params.getStream();
+          context.releaseParams();
+          auto req = stream.expectSizeRequest();
+          req.setSize(stats.st_size);
+          auto expectSizeTask = req.send();
+          auto inStream = kj::heap<kj::FdInputStream>(kj::mv(*fd));
+          return pump(*inStream, kj::mv(stream)).attach(kj::mv(inStream), kj::mv(expectSizeTask));
+        } else if (S_ISDIR(stats.st_mode)) {
+          context.getResults(capnp::MessageSize {4, 0})
+              .setStatus(Supervisor::WwwFileStatus::DIRECTORY);
+          return kj::READY_NOW;
+        } else {
+          KJ_FAIL_ASSERT("not a regular file");
+        }
       }
-    } else {
-      context.getResults(capnp::MessageSize {4, 0})
-          .setStatus(Supervisor::WwwFileStatus::NOT_FOUND);
-      return kj::READY_NOW;
     }
+    context.getResults(capnp::MessageSize {4, 0})
+        .setStatus(Supervisor::WwwFileStatus::NOT_FOUND);
+    return kj::READY_NOW;
   }
 
 private:

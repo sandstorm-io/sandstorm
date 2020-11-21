@@ -1284,7 +1284,7 @@ private:
   kj::AutoCloseFd trashDir;
 
   struct SessionRecord {
-    SessionRecord(const SessionRecord& other) = delete;
+    SessionRecord(const SessionRecord& other) = default;
     SessionRecord(SessionRecord&& other) = default;
 
     SessionContext::Client& sessionCtx;

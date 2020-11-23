@@ -665,26 +665,6 @@
         "cancelButton": "Peruuta",
         "disableButton": "Poista käytöstä"
       },
-      "oidcLoginSetupInstructions": {
-        "explanation": "*_First, you'll need to get a OpenID Connect Client ID and Client secret. Follow these steps:",
-        "step1": "*_Visit the configuration interface of your identity provider",
-        "step2": "*_Set Homepage URL to: <span class=\"idp-config-url\">%s</span>",
-        "step3": "*_Set Authorization callback URL to: <span class=\"idp-config-url\">%s_oauth/oidc</span>"
-      },
-      "adminIdentityProviderConfigureOidc": {
-        "title": "*_OpenID Connect login configuration",
-        "error": "*_Failed to save changes: %s",
-        "explanation": "*_Then, copy over your Client ID and Client secret below:",
-        "serverUrl": "*_Identity Server URL:",
-        "clientId": "*_Client ID:",
-        "clientSecret": "*_Client secret:",
-        "advanced-explanation": "*_Some identity providers require configuration of advanced options:",
-        "clientAuthMethod": "*_Client Auth Method:",
-        "saveButton": "*_Save",
-        "enableButton": "*_Enable",
-        "cancelButton": "*_Cancel",
-        "disableButton": "*_Disable"
-      },
       "adminIdentityProviderConfigureSaml": {
         "title": "SAML kirjautumis asetukset",
         "explanation": "Sinun SAML IDP tulisi olla määritetty palauttamaan samana säilyvä nameID. Lisäksi, jos ei käytä Active Directorya, sinun <strong>täytyy</strong> asettaa IDP:si tarjoamaan kaksi lisämäärettä, <code>email</code> ja <code>displayName</code>.",
@@ -759,10 +739,6 @@
           "ldapToggle": {
             "label": "Käyttäjät tunnistautuvat LDAPin kautta",
             "subtext": "Huom: poistettu käytöstä koska LDAP kirjautumista ei ole määriteltynä."
-          },
-          "oidcToggle": {
-            "label": "*_Users authenticated via OpenID Connect",
-            "subtext": "*_Note: disabled because OpenID Connect login is not configured."
           },
           "samlToggle": {
             "label": "Käyttäjät tunnistautuvat SAMLin kautta",
@@ -1738,10 +1714,6 @@
         "ldapToggle": {
           "label": "LDAPin kautta kirjautuneet käyttäjät",
           "subtext": "Huom: poistettu käytöstä koska LDAP kirjautumista ei ole määritelty."
-        },
-        "oidcToggle": {
-          "label": "*_Users authenticated via OpenID Connect",
-          "subtext": "*_Note: disabled because OpenID Connect login is not configured."
         },
         "samlToggle": {
           "label": "SAMLin kautta kirjautuneet käyttäjät",

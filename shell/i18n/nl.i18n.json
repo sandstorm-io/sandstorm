@@ -665,26 +665,6 @@
         "cancelButton": "Annuleren",
         "disableButton": "Uitschakelen"
       },
-      "oidcLoginSetupInstructions": {
-        "explanation": "*_First, you'll need to get a OpenID Connect Client ID and Client secret. Follow these steps:",
-        "step1": "*_Visit the configuration interface of your identity provider",
-        "step2": "*_Set Homepage URL to: <span class=\"idp-config-url\">%s</span>",
-        "step3": "*_Set Authorization callback URL to: <span class=\"idp-config-url\">%s_oauth/oidc</span>"
-      },
-      "adminIdentityProviderConfigureOidc": {
-        "title": "*_OpenID Connect login configuration",
-        "error": "*_Failed to save changes: %s",
-        "explanation": "*_Then, copy over your Client ID and Client secret below:",
-        "serverUrl": "*_Identity Server URL:",
-        "clientId": "*_Client ID:",
-        "clientSecret": "*_Client secret:",
-        "advanced-explanation": "*_Some identity providers require configuration of advanced options:",
-        "clientAuthMethod": "*_Client Auth Method:",
-        "saveButton": "*_Save",
-        "enableButton": "*_Enable",
-        "cancelButton": "*_Cancel",
-        "disableButton": "*_Disable"
-      },
       "adminIdentityProviderConfigureSaml": {
         "title": "SAML login configuratie",
         "explanation": "Uw SAML IDP moet geconfigureerd zijn om een persistente nameID terug te geven. Als u daarnaast geen gebruik makt van Active Directory <strong>moet</strong> u uw IDP configureren om twee extra attributen te voorzien, <code>email</code> en <code>displayName</code>",
@@ -759,10 +739,6 @@
           "ldapToggle": {
             "label": "Gebruikers geverifieerd via LDAP",
             "subtext": "Opmerking: uitgeschakeld omdat LDAP login niet is geconfigureerd."
-          },
-          "oidcToggle": {
-            "label": "Gebruikers geverifieerd via OpenID Connect",
-            "subtext": "Opmerking: uitgeschakeld omdat OpenID Connect login niet is geconfigureerd."
           },
           "samlToggle": {
             "label": "Gebruikers geverifieerd via SAML",
@@ -1738,10 +1714,6 @@
         "ldapToggle": {
           "label": "Gebruikers geverifieerd via LDAP",
           "subtext": "Opmerking: uitgeschakeld omdat LDAP login niet is geconfigureerd."
-        },
-        "oidcToggle": {
-          "label": "Gebruikers geverifieerd via OpenID Connect",
-          "subtext": "Opmerking: uitgeschakeld omdat OpenID Connect login niet is geconfigureerd."
         },
         "samlToggle": {
           "label": "Gebruikers geverifieerd via SAML",

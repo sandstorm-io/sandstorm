@@ -619,26 +619,6 @@
         "cancelButton": "Cancel",
         "disableButton": "Disable"
       },
-      "oidcLoginSetupInstructions": {
-        "explanation": "*_First, you'll need to get a OpenID Connect Client ID and Client secret. Follow these steps:",
-        "step1": "*_Visit the configuration interface of your identity provider",
-        "step2": "*_Set Homepage URL to: <span class=\"idp-config-url\">%s</span>",
-        "step3": "*_Set Authorization callback URL to: <span class=\"idp-config-url\">%s_oauth/oidc</span>"
-      },
-      "adminIdentityProviderConfigureOidc": {
-        "title": "*_OpenID Connect login configuration",
-        "error": "*_Failed to save changes: %s",
-        "explanation": "*_Then, copy over your Client ID and Client secret below:",
-        "serverUrl": "*_Identity Server URL:",
-        "clientId": "*_Client ID:",
-        "clientSecret": "*_Client secret:",
-        "advanced-explanation": "*_Some identity providers require configuration of advanced options:",
-        "clientAuthMethod": "*_Client Auth Method:",
-        "saveButton": "*_Save",
-        "enableButton": "*_Enable",
-        "cancelButton": "*_Cancel",
-        "disableButton": "*_Disable"
-      },
       "adminIdentityProviderConfigureSaml": {
         "title": "SAML login configuration",
         "explanation": "Your SAML IDP should be configured to return a persistent nameID. In addition, if you are not using Active Directory, you <strong>must</strong> configure your IDP to provide two extra attributes, <code>email</code> and <code>displayName</code>.",
@@ -1681,10 +1661,6 @@
         "ldapToggle": {
           "label": "以 LDAP 認證的使用者",
           "subtext": "因為 LDAP 登入尚未設定，故無法使用。"
-        },
-        "oidcToggle": {
-          "label": "*_Users authenticated via OpenID Connect",
-          "subtext": "*_Note: disabled because OpenID Connect login is not configured."
         },
         "samlToggle": {
           "label": "以 SAML 認證的使用者",

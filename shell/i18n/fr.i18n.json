@@ -620,26 +620,6 @@
         "cancelButton": "Annuler",
         "disableButton": "Désactiver"
       },
-      "oidcLoginSetupInstructions": {
-        "explanation": "*_First, you'll need to get a OpenID Connect Client ID and Client secret. Follow these steps:",
-        "step1": "*_Visit the configuration interface of your identity provider",
-        "step2": "*_Set Homepage URL to: <span class=\"idp-config-url\">%s</span>",
-        "step3": "*_Set Authorization callback URL to: <span class=\"idp-config-url\">%s_oauth/oidc</span>"
-      },
-      "adminIdentityProviderConfigureOidc": {
-        "title": "*_OpenID Connect login configuration",
-        "error": "*_Failed to save changes: %s",
-        "explanation": "*_Then, copy over your Client ID and Client secret below:",
-        "serverUrl": "*_Identity Server URL:",
-        "clientId": "*_Client ID:",
-        "clientSecret": "*_Client secret:",
-        "advanced-explanation": "*_Some identity providers require configuration of advanced options:",
-        "clientAuthMethod": "*_Client Auth Method:",
-        "saveButton": "*_Save",
-        "enableButton": "*_Enable",
-        "cancelButton": "*_Cancel",
-        "disableButton": "*_Disable"
-      },
       "adminIdentityProviderConfigureSaml": {
         "title": "Configuration de l'authentification via SAML",
         "explanation": "Votre SAML IDP doit être configuré pour renvoyer un nameID persistant. De plus, si vous n'utilisez pas Active Directory, vous <strong>devez</strong> configurer votre IDP pour fournir deux attributs supplémentaires, <code>e-mail</code> et <code>displayName</code>.",
@@ -714,10 +694,6 @@
           "ldapToggle": {
             "label": "Authentification d'utilisateurs via LDAP",
             "subtext": "Note : désactivée car le l'authentification via LDAP n'est pas configurée."
-          },
-          "oidcToggle": {
-            "label": "Authentification d'utilisateurs via OpenID Connect",
-            "subtext": "Note : désactivée car le l'authentification via OpenID Connect n'est pas configurée."
           },
           "samlToggle": {
             "label": "Authentification d'utilisateurs via SAML",
@@ -1687,10 +1663,6 @@
         "ldapToggle": {
           "label": "Utilisateurs identifiés via LDAP",
           "subtext": "Note : désactivé car l'authentification LDAP n'est pas configurée."
-        },
-        "oidcToggle": {
-          "label": "Authentification d'utilisateurs via OpenID Connect",
-          "subtext": "Note : désactivée car le l'authentification via OpenID Connect n'est pas configurée."
         },
         "samlToggle": {
           "label": "Utilisateurs identifiés via SAML",

@@ -239,5 +239,119 @@ KJ_TEST("SubprocessSet") {
   promiseCat.wait(io.waitScope);
 }
 
+KJ_TEST("raiiOpenAtIfExistsContained") {
+  {
+    char tempdir[] = "/tmp/sandstorm-test.XXXXXX";
+    KJ_REQUIRE(mkdtemp(tempdir) != nullptr);
+    KJ_DEFER(KJ_SYSCALL(rmdir(tempdir)));
+
+    auto dir = raiiOpen(tempdir, O_DIRECTORY);
+
+    auto writeFileAt = [&](int fd, kj::StringPtr path, kj::StringPtr data) {
+      auto file = raiiOpenAt(fd, path, O_CREAT | O_RDWR);
+      KJ_SYSCALL(write(file.get(), data.cStr(), data.size()));
+    };
+
+    writeFileAt(dir.get(), "file", "file");
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "file", 0)));
+
+    KJ_SYSCALL(symlinkat("file", dir.get(), "link-to-file"));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "link-to-file", 0)));
+
+    KJ_SYSCALL(symlinkat("..", dir.get(), "link-to-parent"));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "link-to-parent", 0)));
+
+    KJ_SYSCALL(symlinkat("/", dir.get(), "link-to-root"));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "link-to-root", 0)));
+
+    KJ_SYSCALL(mkdirat(dir.get(), "subdir", 0700));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "subdir", AT_REMOVEDIR)));
+
+    KJ_SYSCALL(symlinkat("..", dir.get(), "subdir/link-to-parent"));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "subdir/link-to-parent", 0)));
+
+    KJ_SYSCALL(symlinkat("../file", dir.get(), "subdir/link-to-parent-file"));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "subdir/link-to-parent-file", 0)));
+
+    writeFileAt(dir.get(), "subdir/file", "subdir/file");
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "subdir/file", 0)));
+
+    KJ_SYSCALL(symlinkat("file", dir.get(), "subdir/link-to-subdir-file"));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "subdir/link-to-subdir-file", 0)));
+
+    KJ_SYSCALL(symlinkat("../..", dir.get(), "subdir/link-to-grandparent"));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "subdir/link-to-grandparent", 0)));
+
+    KJ_SYSCALL(symlinkat("/", dir.get(), "subdir/link-to-root"));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "subdir/link-to-root", 0)));
+
+    KJ_SYSCALL(mkdirat(dir.get(), "subdir/a", 0700));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "subdir/a", AT_REMOVEDIR)));
+
+    KJ_SYSCALL(mkdirat(dir.get(), "subdir/a/b", 0700));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "subdir/a/b", AT_REMOVEDIR)));
+
+    writeFileAt(dir.get(), "subdir/a/b/c", "subdir/a/b/c");
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "subdir/a/b/c", 0)));
+
+    KJ_SYSCALL(symlinkat("c", dir.get(), "subdir/a/b/link-to-c"));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "subdir/a/b/link-to-c", 0)));
+
+    KJ_SYSCALL(symlinkat("b", dir.get(), "subdir/a/link-to-b"));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "subdir/a/link-to-b", 0)));
+
+    KJ_SYSCALL(symlinkat("..", dir.get(), "subdir/a/b/link-to-a"));
+    KJ_DEFER(KJ_SYSCALL(unlinkat(dir.get(), "subdir/a/b/link-to-a", 0)));
+
+    auto expectSucceed = [&](kj::StringPtr path) -> kj::AutoCloseFd {
+      KJ_IF_MAYBE(fd, raiiOpenAtIfExistsContained(dir.get(), kj::Path::parse(path), O_RDONLY)) {
+        return kj::mv(*fd);
+      } else {
+        KJ_FAIL_ASSERT("Opening ", path, " should have succeeded.");
+      }
+    };
+
+    auto expectFail = [&](kj::StringPtr path) {
+      auto maybeExn = kj::runCatchingExceptions([&]() {
+        raiiOpenAtIfExistsContained(dir.get(), kj::Path::parse(path), O_RDONLY);
+      });
+      KJ_IF_MAYBE(exn, maybeExn) {
+      } else {
+        KJ_FAIL_ASSERT("Opening ", path, " should have failed.");
+      }
+    };
+
+    auto expectRootTruncated = [&](kj::StringPtr path) {
+      auto root = expectSucceed(path);
+      int result = faccessat(root.get(), "tmp", F_OK, AT_SYMLINK_NOFOLLOW);
+      KJ_ASSERT(result < 0, "shouldn't have gotten access to /");
+    };
+
+    auto readFile = [&](kj::StringPtr path) -> kj::String {
+      return kj::FdInputStream(expectSucceed(path)).readAllText();
+    };
+
+    auto expectContents = [&](kj::StringPtr path, kj::StringPtr expected) {
+      auto actual = readFile(path);
+      if(actual != expected) {
+        KJ_FAIL_ASSERT("unexpected contents", expected, actual);
+      }
+    };
+
+    expectContents("link-to-file", "file");
+    expectFail("link-to-parent");
+    expectRootTruncated("link-to-root");
+    expectSucceed("subdir/link-to-parent");
+    expectContents("subdir/link-to-parent-file", "file");
+    expectContents("subdir/link-to-subdir-file", "subdir/file");
+    expectFail("subdir/link-to-grandparent");
+    expectRootTruncated("subdir/link-to-root");
+    expectContents("subdir/a/b/link-to-c", "subdir/a/b/c");
+    expectContents("subdir/a/link-to-b/c", "subdir/a/b/c");
+    expectContents("subdir/a/link-to-b/link-to-c", "subdir/a/b/c");
+    expectContents("subdir/a/b/link-to-a/b/c", "subdir/a/b/c");
+  }
+}
+
 }  // namespace
 }  // namespace sandstorm

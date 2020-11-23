@@ -2210,8 +2210,8 @@ public:
     }
 
     auto sandboxDir = raiiOpen("sandbox", O_RDONLY);
-    KJ_IF_MAYBE(wwwDir, raiiOpenAtIfExists(sandboxDir.get(), "www", O_RDONLY|O_NOFOLLOW)) {
-      KJ_IF_MAYBE(fd, raiiOpenAtIfExistsContained(wwwDir->get(), kj::Path(path), O_RDONLY)) {
+    KJ_IF_MAYBE(wwwDir, raiiOpenAtIfExistsContained(sandboxDir.get(), kj::Path{"www"}, O_RDONLY)) {
+      KJ_IF_MAYBE(fd, raiiOpenAtIfExistsContained(wwwDir->get(), kj::Path::parse(path), O_RDONLY)) {
         struct stat stats;
         KJ_SYSCALL(fstat(*fd, &stats));
 

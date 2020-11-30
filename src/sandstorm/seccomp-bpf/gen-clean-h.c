@@ -13,6 +13,7 @@
 #include <linux/sched.h>
 #include <linux/seccomp.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <sys/ioctl.h>
 
 // to return specific errno values, we need to do
@@ -117,6 +118,8 @@ int main(void) {
   DEF(SO_RCVTIMEO);
   DEF(SO_SNDTIMEO);
   DEF(SO_RCVLOWAT);
+  DEF(IPPROTO_TCP);
+  DEF(IPPROTO_IPV6);
 
   // precompute this for use at runtime:
   DEF(ALLOWED_CLONE_FLAGS);

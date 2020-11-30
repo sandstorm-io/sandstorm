@@ -272,12 +272,18 @@ sys_ioctl:
 sys_setsockopt:
 // setsockopt_level:
     ld [OFF_ARG_1_HI]
-    jeq #0, einval
+    jne #0, einval
 
     ld [OFF_ARG_1_LO]
     jeq #SOL_SOCKET, setsockopt_sol_socket
+    jeq #IPPROTO_TCP, setsockopt_ipproto_tcp
+    jeq #IPPROTO_IPV6, setsockopt_ipproto_ipv6
     ret #RET_EINVAL
 setsockopt_sol_socket:
+    ld [OFF_ARG_2_HI]
+    jne #0, einval
+
+    ld [OFF_ARG_2_LO]
     jeq #SO_BROADCAST, allow
     jeq #SO_KEEPALIVE, allow
     jeq #SO_LINGER, allow
@@ -288,6 +294,18 @@ setsockopt_sol_socket:
     jeq #SO_RCVTIMEO, allow
     jeq #SO_SNDTIMEO, allow
     jeq #SO_RCVLOWAT, allow
+    ret #RET_EINVAL
+setsockopt_ipproto_tcp:
+    ld [OFF_ARG_2_HI]
+    jne #0, einval
+
+    ld [OFF_ARG_2_LO]
+    ret #RET_EINVAL
+setsockopt_ipproto_ipv6:
+    ld [OFF_ARG_2_HI]
+    jne #0, einval
+
+    ld [OFF_ARG_2_LO]
     ret #RET_EINVAL
 
 // The logic for these is socket() and socketpair() is identical.

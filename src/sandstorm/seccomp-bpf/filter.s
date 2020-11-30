@@ -188,7 +188,7 @@ sys_clone:
     // Verify that the flags argument only contains allowed
     // flags.
     ld [OFF_ARG_2_HI]
-    jeq #0, einval
+    jne #0, einval
     ld [OFF_ARG_2_LO]
     or #ALLOWED_CLONE_FLAGS
     jeq #ALLOWED_CLONE_FLAGS, allow
@@ -197,7 +197,7 @@ sys_clone:
 sys_getsockopt:
 // getsockopt_level:
     ld [OFF_ARG_1_HI]
-    jeq #0, einval
+    jne #0, einval
 
     ld [OFF_ARG_1_LO]
     jeq #SOL_SOCKET, getsockopt_sol_socket

@@ -100,6 +100,8 @@ start:
     jeq #SYS_open, allow
     jeq #SYS_openat, allow
     jeq #SYS_pause, allow
+    jeq #SYS_poll, allow
+    jeq #SYS_ppoll, allow
     jeq #SYS_pread64, allow
     jeq #SYS_pwrite64, allow
     jeq #SYS_read, allow

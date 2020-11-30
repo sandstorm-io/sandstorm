@@ -30,10 +30,12 @@
 #include <stddef.h>
 
 #define ALLOWED_CLONE_FLAGS ( \
+  CLONE_FS | \
 	CLONE_FILES | \
 	CLONE_PARENT | \
 	CLONE_SETTLS | \
 	CLONE_SIGHAND | \
+  CLONE_SYSVSEM | \
 	CLONE_THREAD | \
 	CLONE_VFORK | \
 	CLONE_VM )

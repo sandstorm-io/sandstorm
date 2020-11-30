@@ -100,6 +100,7 @@ start:
     jeq #SYS_msync, allow
     jeq #SYS_munmap, allow
     jeq #SYS_nanosleep, allow
+    jeq #SYS_newfstatat, allow
     jeq #SYS_open, allow
     jeq #SYS_openat, allow
     jeq #SYS_pause, allow

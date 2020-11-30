@@ -36,6 +36,8 @@ start:
     jeq #SYS_brk, allow
     jeq #SYS_chdir, allow
     jeq #SYS_chmod, allow
+    jeq #SYS_clone, allow
+    jeq #SYS_clone3, allow
     jeq #SYS_close, allow
     jeq #SYS_clock_gettime, allow
     jeq #SYS_connect, allow
@@ -149,7 +151,6 @@ start:
     jeq #SYS_sendto, allow
 
     // These might be okay; examine the arguments:
-    jeq #SYS_clone, sys_clone
     jeq #SYS_getsockopt, sys_getsockopt
     jeq #SYS_ioctl, sys_ioctl
     jeq #SYS_setsockopt, sys_setsockopt
@@ -188,16 +189,6 @@ start:
 
     // Catchall: return ENOSYS.
     ret #RET_ENOSYS
-
-sys_clone:
-    // Verify that the flags argument only contains allowed
-    // flags.
-    ld [OFF_ARG_2_HI]
-    jne #0, einval
-    ld [OFF_ARG_2_LO]
-    or #ALLOWED_CLONE_FLAGS
-    jeq #ALLOWED_CLONE_FLAGS, allow
-    ret #RET_EPERM
 
 sys_getsockopt:
 // getsockopt_level:

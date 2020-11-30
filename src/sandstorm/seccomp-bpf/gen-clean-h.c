@@ -29,17 +29,6 @@
 /* size_t: */
 #include <stddef.h>
 
-#define ALLOWED_CLONE_FLAGS ( \
-  CLONE_FS | \
-  CLONE_FILES | \
-  CLONE_PARENT | \
-  CLONE_SETTLS | \
-  CLONE_SIGHAND | \
-  CLONE_SYSVSEM | \
-  CLONE_THREAD | \
-  CLONE_VFORK | \
-  CLONE_VM )
-
 // The kernel defines this constant, but it isn't exposed in
 // the headers. It is needed to mask off things that can
 // be OR'd in with socket()'s type argument.
@@ -126,9 +115,6 @@ int main(void) {
   DEF(TCP_NODELAY);
   DEF(IPPROTO_IPV6);
   DEF(IPV6_V6ONLY);
-
-  // precompute this for use at runtime:
-  DEF(ALLOWED_CLONE_FLAGS);
 
   // errno return values; RET_value == (SECCOMP_RET_ERRNO | value).
   DEF_ERET(EACCES);

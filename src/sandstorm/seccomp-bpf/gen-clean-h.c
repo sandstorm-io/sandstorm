@@ -31,14 +31,14 @@
 
 #define ALLOWED_CLONE_FLAGS ( \
   CLONE_FS | \
-	CLONE_FILES | \
-	CLONE_PARENT | \
-	CLONE_SETTLS | \
-	CLONE_SIGHAND | \
+  CLONE_FILES | \
+  CLONE_PARENT | \
+  CLONE_SETTLS | \
+  CLONE_SIGHAND | \
   CLONE_SYSVSEM | \
-	CLONE_THREAD | \
-	CLONE_VFORK | \
-	CLONE_VM )
+  CLONE_THREAD | \
+  CLONE_VFORK | \
+  CLONE_VM )
 
 // The kernel defines this constant, but it isn't exposed in
 // the headers. It is needed to mask off things that can

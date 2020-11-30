@@ -79,6 +79,7 @@ start:
     jeq #SYS_getpid, allow
     jeq #SYS_getppid, allow
     jeq #SYS_getrandom, allow
+    jeq #SYS_getrlimit, allow
     jeq #SYS_getsockname, allow
     jeq #SYS_gettid, allow
     jeq #SYS_gettimeofday, allow
@@ -103,6 +104,7 @@ start:
     jeq #SYS_poll, allow
     jeq #SYS_ppoll, allow
     jeq #SYS_pread64, allow
+    jeq #SYS_prlimit64, allow
     jeq #SYS_pwrite64, allow
     jeq #SYS_read, allow
     jeq #SYS_readlink, allow
@@ -111,10 +113,13 @@ start:
     jeq #SYS_rt_sigaction, allow
     jeq #SYS_rt_sigprocmask, allow
     jeq #SYS_rt_sigreturn, allow
+    jeq #SYS_sched_getaffinity, allow
+    jeq #SYS_sched_setaffinity, allow
     jeq #SYS_select, allow
     jeq #SYS_sendfile, allow
     jeq #SYS_set_tid_address, allow
     jeq #SYS_setitimer, allow
+    jeq #SYS_setrlimit, allow
     jeq #SYS_shutdown, allow
     jeq #SYS_sigaltstack, allow
     jeq #SYS_signalfd, allow
@@ -201,16 +206,19 @@ sys_getsockopt:
 
     ld [OFF_ARG_1_LO]
     jeq #SOL_SOCKET, getsockopt_sol_socket
+    jeq #IPPROTO_TCP, getsockopt_ipproto_tcp
+    jeq #IPPROTO_IPV6, getsockopt_ipproto_ipv6
     ret #RET_EINVAL
 getsockopt_sol_socket:
     ld [OFF_ARG_2_HI]
-    jeq #0, einval
+    jne #0, einval
 
     ld [OFF_ARG_2_LO]
     jeq #SO_ACCEPTCONN, allow
     jeq #SO_DOMAIN, allow
     jeq #SO_ERROR, allow
     jeq #SO_PROTOCOL, allow
+    jeq #SO_TYPE, allow
 
     jeq #SO_BROADCAST, allow
     jeq #SO_KEEPALIVE, allow
@@ -222,6 +230,16 @@ getsockopt_sol_socket:
     jeq #SO_RCVTIMEO, allow
     jeq #SO_SNDTIMEO, allow
     jeq #SO_RCVLOWAT, allow
+
+    ret #RET_EINVAL
+getsockopt_ipproto_tcp:
+    ld [OFF_ARG_2_HI]
+    jeq #0, einval
+
+    ret #RET_EINVAL
+getsockopt_ipproto_ipv6:
+    ld [OFF_ARG_2_HI]
+    jeq #0, einval
 
     ret #RET_EINVAL
 

@@ -300,12 +300,14 @@ setsockopt_ipproto_tcp:
     jne #0, einval
 
     ld [OFF_ARG_2_LO]
+    jeq #TCP_NODELAY, allow
     ret #RET_EINVAL
 setsockopt_ipproto_ipv6:
     ld [OFF_ARG_2_HI]
     jne #0, einval
 
     ld [OFF_ARG_2_LO]
+    jeq #IPV6_V6ONLY, allow
     ret #RET_EINVAL
 
 // The logic for these is socket() and socketpair() is identical.

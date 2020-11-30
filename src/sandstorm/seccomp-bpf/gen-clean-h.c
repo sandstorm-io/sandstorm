@@ -13,8 +13,9 @@
 #include <linux/sched.h>
 #include <linux/seccomp.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <sys/ioctl.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 
 // to return specific errno values, we need to do
 // ret (SECCOMP_RET_ERRNO | value), but we can't put expressions
@@ -119,7 +120,9 @@ int main(void) {
   DEF(SO_SNDTIMEO);
   DEF(SO_RCVLOWAT);
   DEF(IPPROTO_TCP);
+  DEF(TCP_NODELAY);
   DEF(IPPROTO_IPV6);
+  DEF(IPV6_V6ONLY);
 
   // precompute this for use at runtime:
   DEF(ALLOWED_CLONE_FLAGS);

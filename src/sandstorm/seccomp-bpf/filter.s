@@ -52,6 +52,7 @@ start:
     jeq #SYS_eventfd2, allow
     jeq #SYS_execve, allow
     jeq #SYS_exit, allow
+    jeq #SYS_exit_group, allow
     jeq #SYS_faccessat, allow
     jeq #SYS_fchdir, allow
     jeq #SYS_fchmod, allow

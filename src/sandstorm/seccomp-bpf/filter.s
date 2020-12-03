@@ -145,6 +145,11 @@ start:
     jeq #SYS_stat, allow
     jeq #SYS_symlink, allow
     jeq #SYS_symlinkat, allow
+    jeq #SYS_timer_create, allow
+    jeq #SYS_timer_delete, allow
+    jeq #SYS_timer_getoverrun, allow
+    jeq #SYS_timer_gettime, allow
+    jeq #SYS_timer_settime, allow
     jeq #SYS_umask, allow
     jeq #SYS_uname, allow
     jeq #SYS_unlink, allow

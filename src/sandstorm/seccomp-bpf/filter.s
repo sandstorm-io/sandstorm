@@ -226,12 +226,12 @@ getsockopt_sol_socket:
     ret #RET_EINVAL
 getsockopt_ipproto_tcp:
     ld [OFF_ARG_2_HI]
-    jeq #0, einval
+    jne #0, einval
 
     ret #RET_EINVAL
 getsockopt_ipproto_ipv6:
     ld [OFF_ARG_2_HI]
-    jeq #0, einval
+    jne #0, einval
 
     ret #RET_EINVAL
 

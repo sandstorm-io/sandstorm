@@ -322,7 +322,7 @@ setsockopt_ipproto_ipv6:
     jeq #IPV6_V6ONLY, allow
     ret #RET_EINVAL
 
-// The logic for these is socket() and socketpair() is identical.
+// The logic for socket() and socketpair() is identical.
 // So we use this block for both. socketpair() accepts a fourth argument, but we don't look at it.
 sys_socket:
 //sys_socketpair:

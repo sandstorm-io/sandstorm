@@ -287,7 +287,7 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
         buttonClass: "save-backup",
 
         text: function() {
-          return 'Save backup';
+          return TAPi18n.__('grains.grainlist.sandstormGrainListPage.saveBackup');
         },
 
         disabled: function(numMineSelected, numSharedSelected) {

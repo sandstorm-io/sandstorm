@@ -338,6 +338,7 @@
         },
         "trashButton": "View trash (%s)",
         "moveToTrash": "Move to trash",
+        "saveBackup": "Save backup",
         "trash": {
           "emptyButton": "Empty all trash",
           "explanation": "(Grains will be permanently removed after 30 days in the trash. To keep a grain, restore it to the Main list.)"

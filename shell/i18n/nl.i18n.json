@@ -4,7 +4,7 @@
     "layout": {
       "demoExpired": {
         "title": "Demo verlopen",
-	"canUpgrade": "Bedankt voor het uitproberen van de Sandstorm Demo! Uw demo accaunt is verlopen. Als u Sandstorm wilt blijven gebruiken en uw data permanent op wilt slaan, log dan alstublieft in.",
+        "canUpgrade": "Bedankt voor het uitproberen van de Sandstorm Demo! Uw demo accaunt is verlopen. Als u Sandstorm wilt blijven gebruiken en uw data permanent op wilt slaan, log dan alstublieft in.",
         "cannotUpgrade": "Bedankt voor het uitproberen van de Sandstorm Demo! Uw demo accaunt is verlopen.",
         "signOut": "Uitloggen"
       },
@@ -15,7 +15,7 @@
       "demoModal": {
         "header": "Sandstorm is en zelf hostbare online werkomgeving.",
         "withAppDemo": "met apps zoals %s.",
-        "withoutAppDemo": "Met alle apps die u nodig heeft op een plaats.",
+        "withoutAppDemo": "Met alle apps die u nodig heeft op één plaats.",
         "startButton": {
           "withAppDemo": "Probeer %s »",
           "withoutAppDemo": "Start »"
@@ -79,7 +79,7 @@
         },
         "isNotPaid": {
           "title": "Krijg een onbeperkte hoeveelheid grains &amp; tot wel <span class=\"reward-amount\">2 GB</span> aan gratis opslagruimte wanneer uw vrienden delen op Oasis!",
-          "explanation": "Voor elke vriend die een deellink aanmaakt krijgt u 50 MB en daarnaast een onbeperkte hoeveelheid grains."
+          "explanation": "Voor elke vriend die een deellink aanmaakt krijgt u 50 MB. Daarnaast krijgt u ook een onbeperkte hoeveelheid grains."
         }
       },
       "howTo": {
@@ -127,11 +127,11 @@
       },
       "corporate": {
         "title": "Zakelijke sponsors",
-        "explanation": "Deze bedrijven hebben veel bijgedragen aan Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaigne</a>."
+        "explanation": "Deze bedrijven hebben veel bijgedragen aan Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campagne</a>."
       },
       "individual": {
         "title": "Belangrijke individuele sponsors",
-        "explanation": "Deze mensen hebben een grote bijdrage geleverd aan Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaigne</a>."
+        "explanation": "Deze mensen hebben een grote bijdrage geleverd aan Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campagne</a>."
       },
       "backers": {
         "title": "Backers",
@@ -142,7 +142,7 @@
       "dependencies": {
         "title": "Gebruikte werken van derde partijen",
         "license": "licentie",
-        "explanation": "Deze werken zijn eigendom van de respectieve auters en worden gebruikt onder de voorwaarden van hun respectieve licenties"
+        "explanation": "Deze werken zijn eigendom van de respectieve auteurs en worden gebruikt onder de voorwaarden van hun respectieve licenties"
       },
       "copyright": {
         "title": "Copyright",
@@ -160,6 +160,7 @@
     "title": "Grains",
     "grainView": {
       "notFoundWithId": "Geen grains gevonden met ID %s.",
+      "quotaExhausted": "Kan grain niet opstarten omdat het quotum van de eigenraar is verbruikt. Als dit uw grain is, upgrade dan alstublieft uw abonnement om door te gaan.",
       "openWithWhichIdentity": "Wilt u uw identiteit bekendmaken aan de grain of anoniem blijven?",
       "openInIncognitoMode": "Open in Incognito Mode",
       "revealMyIdentity": "Maak mijn identiteit bekend"
@@ -188,7 +189,7 @@
       "signInPlease": "Log alstublieft in om toegang aan te vragen"
     },
     "invalidToken": {
-      "invalidToken": "Ongeldig kenteken: %s"
+      "invalidToken": "Ongeldig token: %s"
     },
     "revokedShareLink": {
       "linkRevoked": "Sorry, deze link is ingetrokken."
@@ -211,16 +212,25 @@
     },
     "grainBackupPopup": {
       "title": "Download Backup",
-      "warning": "Waarschuwing! Het herstellen van deze backup werkt misschien niet op de manier hoe u verwacht.",
+      "warning": "Waarschuwing! Het herstellen van deze backup werkt misschien niet zoals u verwacht.",
       "processing": "Backup voorbereiden...",
       "cancelHint": "annuleren",
       "cancel": "Annuleren",
       "confirmHint": "download backup",
       "confirm": "Download backup"
     },
+    "grainCloneButton": {
+      "hint": "Grain klonen",
+      "text": "Kloon",
+      "copyTitle": "Kopie van %s"
+    },
+    "grainClonePopup": {
+      "title": "Grain klonen",
+      "processing": "Grain wordt gekloond..."
+    },
     "grainRestartButton": {
-      "hint": "Herstart App",
-      "text": "Herstart"
+      "hint": "App herstarten",
+      "text": "App herstarten"
     },
     "grainApiTokenButton": {
       "hint": "Websleutel opvragen",
@@ -232,7 +242,7 @@
       "cancel": "Annuleren",
       "copyForExternalApp": "Kopieer deze websleutel en geeft het aan de externe app:",
       "back": "Ga terug",
-      "description": "Een websleutel stelt u in staat om een externe app (bijvoorbeeld een mobile app) te verbinden met deze app",
+      "description": "Een websleutel stelt u in staat om een externe app (bijvoorbeeld een mobiele app) te verbinden met deze app",
       "labelTitle": "Label:",
       "labelPlaceholder": "b.v. 'Android app'",
       "roleTitle": "Rol:",
@@ -286,7 +296,7 @@
     },
     "grainSharePopup": {
       "oldSharingModelDescription": "Deze grain maakt gebruik van het oude deel model. U kunt het delen door de URL uit de locatiebalk te kopieren en plakken.",
-      "upgradeDescription": "U kunt deze grain upgraden naar het nieuwe model, maar de mensen met wie u deze grain eerder heeft gedeeld zullen hun toegang verliezen; u zult de korrel opnieuw met hen moeten delen.",
+      "upgradeDescription": "U kunt deze grain upgraden naar het nieuwe model, maar de mensen met wie u deze grain eerder heeft gedeeld zullen hun toegang verliezen; u zult de grain opnieuw met hen moeten delen.",
       "upgradeWarning": "Upgraden kan niet ongedaan worden gemaakt.",
       "upgrade": "upgrade",
       "openInIncognitoMode": "U kijkt anoniem naar deze grain",
@@ -317,8 +327,7 @@
         "introButton": {
           "hint": "Wat is een grain?"
         },
-        "mainListButton": "Bekijk hoofdlist",
-        "trashButton": "Bekijk vuilnisbak (%s)",
+        "mainListButton": "Bekijk hoofdlijst",
         "restoreButton": "Backup herstellen...",
         "search": {
           "placeholder": "zoeken"
@@ -327,6 +336,8 @@
           "quota": "__count__ van __quota__ grain",
           "size": "__size__ van __total__ gebruikt"
         },
+        "trashButton": "Vuilnisbak bekijken (%s)",
+        "moveToTrash": "Naar vuilnisbak verplaatsen",
         "trash": {
           "emptyButton": "Vuilnisbak leegmaken",
           "explanation": "(Grain worden na 30 dagen permanent verwijdert uit de vuilnisbak. Herstel een grain naar de Hoofdlijst om deze te behouden.)"
@@ -340,42 +351,41 @@
           "hasApps": "Selecteer een app en maak uw eerste grain aan.",
           "hasNoApp": "Installeer een app om uw eerste grain aan te maken."
         },
-
-	      "transfers": {
-          "massTransfer": "Grote overdracht...",
+        "transfers": {
+          "massTransfer": "Massale overdracht...",
           "transfers": "Overdracht",
           "transfer": "Overdracht",
-          "blockedInitiateBeforeSource": "Het lijkt erop dat u probeert een nieuw overdracht form te creëren",
-          "blockedInitiateAfterSource": ", er is al een overdracht bezig. Maak de huidige overdracht af of annuleer de huidige overdracht om verder te gaan.",
+          "blockedInitiateBeforeSource": "Het lijkt erop dat u een nieuwe overdracht probeert te starten vanaf",
+          "blockedInitiateAfterSource": ", maar er is al een overdracht bezig. Maak de lopende overdracht af of annuleer deze om verder te gaan.",
           "incomingTransferActive": "Inkomende overdracht actief",
           "cancel": "Annuleren",
           "remaining": "Overig",
-          "retryErrors": "Probeer Errors Opnieuw",
-          "pauseTransfer": "Pauseer Overdracht",
+          "retryErrors": "Probeer Fouten Opnieuw",
+          "pauseTransfer": "Pauzeer Overdracht",
           "continueTransfer": "Hervat Overdracht",
           "startTransfer": "Start Overdracht",
           "closeTransfer": "Eindig Overdracht",
           "outgoingTransferActive": "Uitgaande Overdracht actief",
-          "currentlyTransferring": "U bent op dit moment grans aan het overdragen aan:",
+          "currentlyTransferring": "U bent op dit moment grains aan het overdragen aan:",
           "manageAt": "Beheer uw overdracht bij:",
           "inOrder": "Om een nieuwe overdracht te starten (in- of uitgaande), moet u de huidige overdrachten annuleren",
           "cancelTransfer": "Annuleer Overdracht",
           "initiateInboundTransfer": "Start inkomende Overdracht",
           "initiateOutboundTransfer": "Start Uitgaande Overdracht",
           "theSandstormServerAt": "De Sandstorm server bij",
-          "wantsToTransfer": "Wil grains overdracht naar deze server.",
+          "wantsToTransfer": "Wil grains overdragen naar deze server.",
           "insecureSource": "WAARSCHUWING: De bron server ondersteunt geen HTTPS. Data wordt zonder encryptie verstuurd.",
           "deny": "Geweigerd",
           "fetchGrainList": "Haal grain lijst op",
           "noTransfersInProgress": "Op dit moment zijn er geen overdrachten aan de gang.",
-          "transferAllMyGrainsTo": "Draag al mijn grains over naar:",
+          "transferAllMyGrainsTo": "Draag al mijn grains over aan:",
           "initiateTransfer": "Start Overdracht",
           "whatDoesThisDo": "Wat doet dit?",
-          "whatCan": "U kunt deze functie gebruiken om al uw grain naar een nieuwe Sandstrom server te verplaatsen. Dit automatiseert het proces om een backup the maken van elke grain op deze server, vervolgens herstelt elke backup op de server die u specificeert.",
-          "whatWhen": "Wanneer u de bovenstaande overdracht start, zal u doorgestuurd worden naar de <strong>destination</strong> server waar u dient in te loggen. U krijgt dan de keuze welke grains over te dragen en vervolgens kunt u de overdracht starten. De overdracht zal op de achtergrond doorgaan; u kunt uitloggen.",
-          "whatOrder": "Om een overdracht te laten werken, de <strong>destination</strong> server moet in staat zijn om de <strong>source</strong> server te bereiken over direct internet. Echter, het ongedaan maken is niet noodzakelijk. Dus, u kunt de grote overdracht die grains van de publieke internet server (zoals Sandstorm Oasis) naar een server op een intern privé netwerk, maar niet vice versa. Als de <strong>source</strong> server HTTPS ondersteunt, dan zal de overdracht over HTTPS plaats vinden, ongeacht de <strong>destination</strong> servers protocol.",
+          "whatCan": "U kunt deze functie gebruiken om al uw grains naar een nieuwe Sandstrom server te verplaatsen. Dit automatiseert het proces om een backup the maken van elke grain op deze server, vervolgens herstelt elke backup op de server die u specificeert.",
+          "whatWhen": "Wanneer u de bovenstaande overdracht start, zal u doorgestuurd worden naar de <strong>bestemmings</strong> server waar u dient in te loggen. U krijgt dan de keuze welke grains over te dragen en vervolgens kunt u de overdracht starten. De overdracht zal op de achtergrond doorgaan; u kunt uitloggen.",
+          "whatOrder": "Om een overdracht te laten werken moet de <strong>source</strong> server in staat zijn om de <strong>destination</strong> server te bereiken via het internet. Het omgekeerde is niet noodzakelijk. U kunt dus een overdracht doen van een server op het openbare internet (zoals Sandstorm Oasis) naar een server op een privénetwerk, maar niet andersom. Als de <strong>source</strong> server HTTPS ondersteund zal de overdracht altijd verlopen via HTTPS, ongeacht wat het protocol is van de <strong>destination</strong> server.",
           "warningGiving": "WAARSCHUWING: U geeft %s toestemming om alle grains van deze server te downloaden. Weet u het zeker?",
-          "errorAcceptingTransfer": "Error overdracht aanvaarden:"
+          "errorAcceptingTransfer": "Fout bij het accepteren van de overdracht."
         }
       },
       "sandstormGrainTable": {
@@ -420,8 +430,8 @@
       }
     },
     "mailingListBonusNotificationItem": {
-      "explanationWithBonus": "Abbonneer op onze nieuwsbrief en krijg <strong>%s bonus opslagruimte</strong> (1 tot 2 emails per maand).",
-      "submitButton": "Abboneren",
+      "explanationWithBonus": "Abonneer op onze nieuwsbrief en krijg <strong>%s bonus opslagruimte</strong> (1 tot 2 emails per maand).",
+      "submitButton": "Abonneren",
       "dismissButton": "Nee bedankt"
     },
     "referralNotificationItem": {
@@ -441,7 +451,7 @@
       }
     },
     "identityChangesNotificationItem": {
-      "explanation": "We zijn de manier waarop identiteiten in Sandstorm werken. Uw account zou hier door beïnvloed kunnen zijn. klik hier voor meer informatie."
+      "explanation": "We zijn de manier waarop identiteiten in Sandstorm werken aan het veranderen. Uw account zou hierdoor beïnvloed kunnen zijn. klik hier voor meer informatie."
     },
     "grainActivityNotificationItem": {
       "title": "<strong>__sender__</strong> in <strong>__grain__</strong>:",
@@ -536,7 +546,7 @@
     "admin": {
       "newAdmin": {
         "title": "Admin panel",
-        "wildcardHostBroken": "WAARSCHUWING: het lijkt erop dat de WILDCARD_HOST van deze server niet goed is ingesteld. Totdat u dit probleem oplost kunt u geen gebruik maken van apps. U kunt meer informatie lezen in <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\"> de Sandstorm documentatie</a> en in de JavaScript console van uw browser. U moet DNS en SSL/TLS certificaten aanpassen, of het sandstorm.conf bestand bewerken. Als u geen informatie in de JS console kunt zien of wilt testen of u het probleem hebt opgelost, herlaad dan deze pagina om de test opnieuw uit te voeren. als u nogsteeds problemen heeft <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">open dan alstublieft een issue..</a>",
+        "wildcardHostBroken": "WAARSCHUWING: het lijkt erop dat de WILDCARD_HOST van deze server niet goed is ingesteld. Totdat u dit probleem oplost kunt u geen gebruik maken van apps. U kunt meer informatie lezen in <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\"> de Sandstorm documentatie</a> en in de JavaScript console van uw browser. U moet DNS en SSL/TLS certificaten aanpassen of het sandstorm.conf bestand bewerken. Als u geen informatie in de JS console kunt zien of wilt testen of u het probleem hebt opgelost, herlaad dan deze pagina om de test opnieuw uit te voeren. als u nogsteeds problemen heeft <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">open dan alstublieft een issue..</a>",
         "websocketBroken": "WAARSCHUWING: deze server lijkt niet in staat te zijn om een WebSocket aan te maken. Sandstorm zal lijken te werken zonder problemen, maar veel apps zullen niet goed worden uitgevoerd. <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\">Meer informatie.</a> Meestal wordt dit veroorzaakt door een reverse proxy zoals nginx of Apache die opnieuw geconfigureerd moet worden. Als u denkt dat dit een fout is, herlaad dan deze pagina of <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">open een issue.</a>",
         "hasSetupToken": "U bent niet ingelogd als een administrator, maar u heeft wel een setup token. U kunt <a href=\"/setup\">de setup wizard bezoeken</a> of <a href=\"/admin/status\">de systeemlog bekijken</a>.",
         "hasNoSetupToken": "U bent niet ingelogd als een administrator. Log in als een administrator om het administrator panel te bezoeken of genereer een token vanaf de opdrachtregel door `sandstorm admin-token` uit te voeren."
@@ -557,7 +567,7 @@
       },
       "subtext": "Hoe gebruikers inloggen.",
       "newAdminIdentity": {
-        "explanation": "Kies welke diensten gebruikers mogen gebruiken om zich te identificeren. Iedereen kan inloggen, maar alleen de gebruikers die u uitnodigt kunnen apps installeren of korrels aanmaken.",
+        "explanation": "Kies welke diensten gebruikers mogen gebruiken om zich te identificeren. Iedereen kan inloggen, maar alleen de gebruikers die u uitnodigt kunnen apps installeren of grains aanmaken.",
         "organizationLinkPrefix": "Om organisatie lidmaatschap en instellingen te configureren, bekijk",
         "organizationLink": "organisatie instellingen",
         "organizationLinkPostfix": "."
@@ -566,7 +576,7 @@
         "title": "Email login configuratie",
         "error": "Opslaan van veranderingen mislukt: %s",
         "warning": "Opmerking: om gebruik te maken van email login moet u hierna email bezorging configureren.",
-        "explanation": "Email login heeft erder geen configuratie opties.",
+        "explanation": "Email login heeft verder geen configuratie opties.",
         "saveButton": "Opslaan",
         "enableButton": "Inschakelen",
         "cancelButton": "Annuleren",
@@ -650,7 +660,7 @@
         "caCert": {
           "label": "LDAP CA certificaat",
           "placeholder": "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----",
-          "subtext": "Dit is alleen maar nodig als uw server SSL ondersteund en gebruik maakt van een prive CA die zich niet in de gemeenschappelijke vertrouwde set bevindt. Het werkt NIET om hier het certificaat van de LDAP server zelf in te voeren -- het moet een certificaat zijn van een CA die het certificaat van de LDAP server heeft ondertekend."
+          "subtext": "Dit is alleen maar nodig als uw server SSL ondersteund en gebruik maakt van een privé CA die zich niet in de gemeenschappelijke vertrouwde set bevindt. Het werkt NIET om hier het certificaat van de LDAP server zelf in te voeren -- het moet een certificaat zijn van een CA die het certificaat van de LDAP server heeft ondertekend."
         },
         "saveButton": "Opslaan",
         "enableButton": "Inschakelen",
@@ -705,7 +715,7 @@
       "name": "Organisatie instellingen",
       "subtext": "Snellere onboarding en samenwerking voor grote teams.",
       "organizationSettingsBlurb": {
-        "explanation": "Sandstorm maakt het mogelijk om een organisatie te definiëren. U kunt automatisch dezelfde regels voor alle leden van uw organisatie instellen. Gebruikers in de organisatie kunnen automatisch inloggen, apps installeren en korrels aanmaken."
+        "explanation": "Sandstorm maakt het mogelijk om een organisatie te definiëren. U kunt automatisch dezelfde regels voor alle leden van uw organisatie instellen. Gebruikers in de organisatie kunnen automatisch inloggen, apps installeren en grains aanmaken."
       },
       "newAdminOrganization": {
         "success": "Veranderingen opgeslagen.",
@@ -745,7 +755,7 @@
           },
           "shareContacts": {
             "label": "Maak alle organisaties zichtbaar voor elkaar.",
-            "subtext": "Deze instelling voegt gebruikers binnen een organisatie automatisch toe aan elkaars contactenlijst zodat ze korrels met elkaar kunnen delen. Schakel dit uit als u gebruikers heeft waarvan de entiteit verborgen moet blijven voor anderen."
+            "subtext": "Deze instelling voegt gebruikers binnen een organisatie automatisch toe aan elkaars contactenlijst zodat ze grains met elkaar kunnen delen. Schakel dit uit als u gebruikers heeft wiens identiteit verborgen moet blijven voor anderen."
           }
         },
         "saveButton": "Opslaan"
@@ -757,11 +767,11 @@
       "newAdminEmailConfig": {
         "outbound": {
           "title": "Uitgaande email",
-          "warning": "<strong>Email is niet geconfigureerd</strong> Email-gerelateerde functionaliteit zoals emal login, meldingen, deel uitnodiging en het aanvragen van toegang zullen niet beschikbaar blijven totdat u email configureert."
+          "warning": "<strong>Email is niet geconfigureerd</strong> Email-gerelateerde functionaliteit zoals email login, meldingen, deel uitnodiging en het aanvragen van toegang zullen niet beschikbaar blijven totdat u email configureert."
         },
         "howItWorks": {
           "title": "Hoe Sandstorm email gebruikt",
-          "explanation": "Sandstorm en Sandstorm apps kunnen email notificaties verzenden. Elke app kriijgt een uniek email adres, dus Sandstorm moet email kunnen verzenden van meerdere \"Van:\" adressen. Gmail SMTP zal daarom niet werken, maar er zijn andere gratis diensten beschikbaar. Bekijk voor meer informatie <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">de documentatie</a>."
+          "explanation": "Sandstorm en Sandstorm apps kunnen email notificaties verzenden. Elke app krijgt een uniek email adres, dus Sandstorm moet email kunnen verzenden van meerdere \"Van:\" adressen. Gmail SMTP zal daarom niet werken, maar er zijn andere gratis diensten beschikbaar. Bekijk voor meer informatie <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">de documentatie</a>."
         },
         "success": "Veranderingen opgeslagen.",
         "error": "Veranderingen opslaan mislukt: %s",
@@ -909,11 +919,16 @@
       "newAdminNetworking": {
         "ipBlacklist": {
           "label": "Server-side request IP blacklist:",
-          "subtext": "Gebruikers worden verboden om aanvragen naar deze IP adressen te doen. Hieronder valt het maken van een aavraag vanuit een app, het downloaden van een SPK van door de gebruiker opgegeven URL, etc. U kunt een IP adres of netwerk (In CIDR notatie, bv. \"127.0.0.0/8\" per regel. De standaardwaarden bevatten locale en privé netwerkadressen. Onthoud dat deze instelling genegeerd kan worden wanneer er gebruik wordt gemaakt van een proxy, de proxy moet zijn eigen blacklist implementeren."
+          "subtext": "Gebruikers worden verboden om aanvragen naar deze IP adressen te doen. Hieronder valt het maken van een aavraag vanuit een app, het downloaden van een SPK van door de gebruiker opgegeven URL, etc. U kunt een IP adres of netwerk (In CIDR notatie, bv. \"127.0.0.0/8\" per regel. De standaardwaarden bevatten locale en privé netwerkadressen. Onthoud dat deze instelling genegeerd kan worden wanneer er gebruik wordt gemaakt van een proxy, de proxy moet een eigen blacklist implementeren."
         },
         "saveButton": "Opslaan",
         "restoreButton": "Standaardinstellingen herstellen"
       }
+    },
+    "certificates": {
+      "name": "SSL/TLS Certificaten",
+      "subtext": "Configureer certificaten handmatig of door middel van Let's Encrypt",
+      "newAdminCertificates": {}
     },
     "users": {
       "name": "Gebruikers",
@@ -1022,7 +1037,7 @@
           "title": "Rol",
           "admin": {
             "label": "Administrator",
-            "explanation": "Beheert alle accounts. Kan apps installeren, kan grains aanmaken en de server beheren.",
+            "explanation": "Beheert alle accounts. Kan apps installeren, grains aanmaken en de server beheren.",
             "isAdmin": "Huidige rol",
             "isNotAdmin": "Promoveren naar administrator"
           },
@@ -1057,7 +1072,7 @@
         },
         "deletePopup": {
           "title": "Verwijder %s",
-          "explanation": "U staat op het punt om %s's account te markeren voor verwijdering. Eenmaal gemarkeerd wordt dit account geschorst, en admininstrators zullen 7 dagen hebben om de geplande verwijdering te stoppen door terug te keren naar deze pagina en te klikken op \"Schorsing ongedaan maken\". %s kan zelf <strong>niet</strong> de schorsing / verwijdering ongedaan maken.",
+          "explanation": "U staat op het punt om %s's account te markeren voor verwijdering. Eenmaal gemarkeerd wordt dit account geschorst, en administrators zullen 7 dagen hebben om de geplande verwijdering te stoppen door terug te keren naar deze pagina en te klikken op \"Schorsing ongedaan maken\". %s kan zelf <strong>niet</strong> de schorsing / verwijdering ongedaan maken.",
           "detail": "Na 7 dagen wordt %s's account permanent verwijderd. Het verwijderen van dit account zal:",
           "detail1": "Permanent grains verwijderen aangemaakt door %s",
           "detail2": "Alle deellinks intrekken die %s heeft aangemaakt",
@@ -1071,7 +1086,7 @@
           "detail": "Het schorsen van dit gebruikersaccount zal ervoor zorgen dat:",
           "detail1": "Grains aangemaakt door %s niet kunnen worden geopend",
           "detail2": "Deellinks aangemaakt door %s uitschakelen",
-          "detail3": "Dit geldt ook voor alle credentials die eigendom zijn van diet account (behalve credentials die ook geassocieerd zijn met een ander account)",
+          "detail3": "Dit geldt ook voor alle credentials die eigendom zijn van dit account (behalve credentials die ook geassocieerd zijn met een ander account)",
           "suspendButton": "Account schorsen",
           "cancelButton": "Annuleren"
         },
@@ -1080,7 +1095,7 @@
     },
     "userInvite": {
       "newAdminUserInviteLink": {
-        "explanation": "U kunt anderen uitnodigen om accounts aan te maken op uw server door hen een account aanmaaklink te geven. Mensen die u uitnodigt krijgen Gebruiker permissie en kunnen apps installeren en zelf korrels aanmaken. Als u alleen een specifieke korrel met iemand wilt delen kunt u dat doen via de korrels \"Toegang Delen\" menu.",
+        "explanation": "U kunt anderen uitnodigen om accounts aan te maken op uw server door hen een account aanmaaklink te geven. Mensen die u uitnodigt krijgen Gebruiker permissie en kunnen apps installeren en zelf grains aanmaken. Als u alleen een specifieke grain met iemand wilt delen kunt u dat doen via  \"Toegang Delen\" menu van de grain.",
         "title": "Maak een link",
         "invite": {
           "explanation": "Dit zal een account aanmaaklink aanmaken die u naar iemand kunt versturen.",
@@ -1093,11 +1108,11 @@
           "explanation": "Email is niet geconfigureerd, het versturen van uitnodiging via email is daarom uitgeschakeld.",
           "configureLink": "Email configureren"
         },
-        "explanation": "Dit zal een link aanmaken en het versturen in een email.",
+        "explanation": "Dit zal een link aanmaken en versturen in een email.",
         "to": {
           "label": "Naar:",
           "placeholder": "alice@email.com\nbob@example.com",
-          "subtext": "Email adressen, een per regel."
+          "subtext": "Email adressen, één per regel."
         },
         "subject": {
           "label": "Onderwerp:"
@@ -1144,11 +1159,11 @@
       "newAdminStats": {
         "share": {
           "title": "Anoniem publiceren naar het Sandstorm dev team",
-          "explanation": "We zouden graag willen weten hoeveel Sandstorm gebruikers er zijn om grafieken en dergelijken maken. Is het goed om de gegevens op deze pagina een keer per dag naar het Sandstorm team te sturen zodat we ze bij de totalen kunnen optellen? Statistieken die u verzend zijn anoniem.",
+          "explanation": "We zouden graag willen weten hoeveel Sandstorm gebruikers er zijn om grafieken en dergelijken maken. Is het goed om de gegevens op deze pagina één keer per dag naar het Sandstorm team te sturen zodat we ze bij de totalen kunnen optellen? Statistieken die u verzend zijn anoniem.",
           "enableButton": "Verstuur anonieme statistieken",
           "disableButton": "Niet versturen",
           "control": {
-            "explanation": "De ontwikkelaars van Sandstorm zouden graag willen weten hoeveel Sandstorm gebruikers er zijn om grafieken te maken en dergelijke.  U kunt helpen door te kiezen voor het versturen van de gegevens op deze pagina een kker per dag naar het Sandstorm team te versturen zodat we deze aan onze totalen kunnen toevoegen. Statistieken die worden gedeeld zijn allemaal anoniem.",
+            "explanation": "De ontwikkelaars van Sandstorm zouden graag willen weten hoeveel Sandstorm gebruikers er zijn om grafieken te maken en dergelijke.  U kunt helpen door te kiezen voor het versturen van de gegevens op deze pagina een keer per dag naar het Sandstorm team te versturen zodat we deze aan onze totalen kunnen toevoegen. Statistieken die worden gedeeld zijn allemaal anoniem.",
             "label": "Anonieme statistieken rapportage naar sandstorm.io:",
             "enabled": "Ingeschakeld",
             "disabled": "Uitgeschakeld",
@@ -1177,7 +1192,7 @@
       "name": "Onderhoudsboodschap",
       "subtext": "Laat mogelijke uitvaltijd weten aan gebruikers.",
       "newAdminMaintenance": {
-        "explanation": "U kunt een onderhoudsboodschap instelling die aan alle gebruikers in de menubalk rechtsbovenin wordt getoond. Dit is nuttig voor het aankondigen van gepland onderhoud zodat gebruikers voorberijd kunnen zijn op eventuele uitvaltijd. Als de bericht tekst leeg is wordt er geen bericht getoond.",
+        "explanation": "U kunt een onderhoudsboodschap instelling die aan alle gebruikers in de menubalk rechtsbovenin wordt getoond. Dit is nuttig voor het aankondigen van gepland onderhoud zodat gebruikers voorbereid kunnen zijn op eventuele uitvaltijd. Als de bericht tekst leeg is wordt er geen bericht getoond.",
         "variables": "U kunt de volgende variabelen gebruiken in het \"Bericht tekst\" veld, deze worden automatisch vervangen door nuttige waarden:",
         "variable1": "<code>$TIME</code> : Het tijd onderdeel van \"Onderhoudtijd\", omgezet naar de gebruikers lokale tijd (bv. \"1:15:45 PM\")",
         "variable2": "<code>$DATE</code> : Het datum onderdeel \"Onderhoudtijd\", omgezet naar de gebruikers lokale tijd (bv. \"6/19/2015\")",
@@ -1200,6 +1215,7 @@
     "networkCapabilities": {
       "name": "Netwerk mogelijkheden",
       "subtext": "Directe netwerktoegang voor grains beheren.",
+      "explanation": "Deze pagina toont netwerkmogelijkheden die zijn toegewezen aan grains. Standaard hebben grains zeer beperkte netwerktoegang. Een grain kan volledige netwerktoegang aanvragen terwijl deze in gebruik is. Alleen een administrator kan de aanvraag goedkeuren, dit geeft een \"network capability\" aan de grain.",
       "newAdminNetworkCapabilitiesTableCapabilityRow": {
         "adminAccount": "Administrator account %s",
         "unknownGranter": "Onbekende toestemming gever",
@@ -1274,7 +1290,7 @@
       "uninstall": "Verwijderen",
       "noMatchApp": "U heeft geen geïnstalleerde apps met die naam. Probeer <a href=\"__url__\">te zoeken &raquo;</a>",
       "unauthorized": "Niet geautoriseerd! :(",
-      "unauthorizedText": "Dit is een privé Sandstorm server. Om apps te installeren moet u zijn uitgenodigd door een administrator. De administrator kan u uitnodigen vanuit het admin panel.",
+      "unauthorizedText": "Deze Sandstorm server is privé. Om apps te installeren moet u zijn uitgenodigd door een administrator. De administrator kan u uitnodigen vanuit het admin panel.",
       "intro": "<strong>Welkom!</strong><br>Maak documenten, chatrooms, blogs en meer.<br><br>Begin door een app te installeren.",
       "doneButton": "Begrepen"
     },
@@ -1303,7 +1319,7 @@
         },
         "stepConfirm": {
           "upgrade": {
-            "explanation": "U heeft een oudere versie van deze app geïnstalleerd. Wilt u upgraden?",
+            "explanation": "U heeft een oudere versie van deze app geïnstalleerd. Wilt u deze upgraden?",
             "button": "Upgrade %s"
           },
           "downgrade": {
@@ -1348,7 +1364,7 @@
         "noGrains": {
           "notFound": "<strong>Geen overeenkomende grains gevonden.</strong>",
           "inTrash": "Er zijn grains in uw vuilnisbak die overeenkomen met uw zoekopdracht.",
-          "trashButton": "Vuilnis bekijken"
+          "trashButton": "Vuilnisbak bekijken"
         }
       },
       "sandstormAppDetails": {
@@ -1450,10 +1466,10 @@
           "subtext": "Om weer te geven in apps die gebruik maken van handles. Uw handle moet beginnen met een letter en mag alleeen kleine letters, getallen en lage streepjes bevatten."
         },
         "emailList": {
-          "label": "E-mail:"
+          "label": "Email:"
         },
         "pronoun": {
-          "label": "Voorkeurvoornaamwoord:",
+          "label": "Geprefereerd voorzetsel: ",
           "neutral": "hen (ongespecificeerd)",
           "male": "hij/hem (mannelijk)",
           "female": "zij/haar (vrouwelijk)",
@@ -1519,13 +1535,13 @@
         "about": "over Sandstorm"
       },
       "emailLoginForm": {
-        "description": "met e-mail",
+        "description": "met email",
         "sendButtonText": "verstuur Inlog Email"
       },
       "emailAuthenticationForm": {
-        "hint": "Wachtwoordloze E-mail login stelt u in staat om in te loggen met een e-mail adres. Een wachtwoord is niet nodig; in plaats daarvan sturen we u een nieuwe email bevestigingscode elke keer wanneer u inlogt. Per apparaat hoeft u maar een keer in te loggen.",
+        "hint": "Wachtwoordloze Email login stelt u in staat om in te loggen met een email adres. Een wachtwoord is niet nodig; in plaats daarvan sturen we u een nieuwe email bevestigingscode elke keer wanneer u inlogt. Per apparaat hoeft u maar een keer in te loggen.",
         "token": {
-          "explanation": "We hebben een inlog e-mail verstuurd naar %s. Het kan even duren voordat deze verschijnt in uw inbox.",
+          "explanation": "We hebben een inlog email verstuurd naar %s. Het kan even duren voordat deze verschijnt in uw inbox.",
           "label": "Voer uw token in:",
           "confirmButton": "Bevestigen",
           "cancelButton": "Annuleren"
@@ -1535,11 +1551,11 @@
       "ldapLoginForm": {
         "username": {
           "label": "gebruikersnaam",
-          "hint": "Dit is uw LDAP gebruikersnaam. Het is dezelfde naam die u normaal gebruikt op in te loggen op andere interne diensten bij uw bedrijf."
+          "hint": "Dit is uw LDAP gebruikersnaam. Het is dezelfde naam die u normaal gebruikt op in te loggen op andere interne diensten binnen uw bedrijf."
         },
         "password": {
           "label": "wachtwoord",
-          "hint": "Dit is uw LDAP wachtwoord. Het is hetzelfde wachtwoord dat u normaal gebruikt voor het inloggen op interne diensten bij uw bedrijf."
+          "hint": "Dit is uw LDAP wachtwoord. Het is hetzelfde wachtwoord dat u normaal gebruikt voor het inloggen op interne diensten binnen uw bedrijf."
         },
         "loginButton": "Inloggen"
       },
@@ -1714,21 +1730,21 @@
         },
         "shareContacts": {
           "label": "Maak alle organisatie gebruikers zichtbaar voor elkaar",
-          "subtext": "Deze instelling voegt gebruikers binnen een organisatie automatisch toe aan elkaars contactenlijst zodat ze grain met elkaar kunnen delen. Schakel dit uit als u gebruikers heeft wiens identiteit verborgen moet blijven voor anderen."
+          "subtext": "Deze instelling voegt gebruikers binnen een organisatie automatisch toe aan elkaars contactenlijst zodat ze grains met elkaar kunnen delen. Schakel dit uit als u gebruikers heeft wiens identiteit verborgen moet blijven voor anderen."
         }
       },
-      "saveButton": "Save and continue",
-      "backButton": "Back"
+      "saveButton": "Opslaan en doorgaan",
+      "backButton": "Terug"
     },
     "setupWizardEmailConfig": {
       "title": "Email bezorging",
-      "explanation": "Sandstorm heeft een manier nodig om email te verzenden.  U kunt deze stap overslaan (tenzij u gebruik maakt van email login), maar email gerelateerde functionaliteit zal niet beschikbaar zijn totdat u email in de toekomst configureerd.",
+      "explanation": "Sandstorm heeft een manier nodig om email te verzenden.  U kunt deze stap overslaan (tenzij u gebruik maakt van email login), maar email gerelateerde functionaliteit zal niet beschikbaar zijn totdat u email in de toekomst configureert.",
       "moreDetail": "<strong>Hoe Sandstorm email gebruikt:</strong> Sandstorm en Sandstorm apps kunnen email notificaties verzenden. Elke app kriijgt een uniek email adres, dus Sandstorm moet email kunnen verzenden van meerdere \"Van:\" adressen. Gmail SMTP zal daarom niet werken, maar er zijn andere gratis diensten beschikbaar. Bekijk voor meer informatie <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">de documentatie</a>.",
       "error": "Opslaan van veranderingen mislukt: %s",
       "hostPort": {
         "host": "SMTP host",
         "port": "Poort",
-        "subtext": "Gebruik poort 25 voor SMTP (on-versleuteld of met StartTLS), port 465 voor met TLS versleutelde SMTPS."
+        "subtext": "Gebruik poort 25 voor SMTP (onversleuteld of met StartTLS), port 465 voor met TLS versleutelde SMTPS."
       },
       "username": {
         "label": "Gebruikersnaam (optioneel)"
@@ -1804,6 +1820,8 @@
       "oasis": "Begin met anderen samen te werken door Sandstorm op Oasis te gebruiken:",
       "createAccount": "Maak een gratis account aan »",
       "demoHint": "Uw demo data zal worden overgebracht.",
+      "selfHostHint": "Deze demo kan beperkt worden gebruikt. Als u echt Sandstorm wilt gaan gebruiken, installeer het dan op uw eigen server (het is open source).",
+      "signUp": "Resterende demo tijd: ",
       "close": "Sluiten"
     },
     "powerbox": {

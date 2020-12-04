@@ -1,3 +1,11 @@
+### v0.276 (2020-11-23)
+- Reverted broken static publishing change.
+
+### v0.275 (2020-11-22)
+- When an app uses static publishing, symlinks placed in the publish directory are no longer allowed to point outside that directory. This could hypothetically have been a security issue if an app allowed a non-trusted user to instruct it to publish symlinks, but we're not aware of any current apps that do this. Only the app's own data was at risk, not the system. (Thanks @zenhack.)
+- Removed implementation of `httpGet()` method of `HackSessionContext`. This has been disabled for some time, with the ability to re-enable it through a hidden setting, but no one has asked us for the hidden setting, so we believe this feature is no longer in use. Apps must now use powerbox requests to get permission to make HTTP requests. (Thanks @zenhack.)
+- Updated Dutch translation. (Thanks @m-burg.)
+
 ### v0.274 (2020-10-26)
 - Fixed regression that broke downloading backups for some Linux kernel versions. Unfortunately, these versions do not support cgroup freezing and so will not get atomic backups.
 

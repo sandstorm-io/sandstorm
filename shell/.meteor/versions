@@ -74,7 +74,7 @@ modern-browsers@0.1.5
 modules@0.15.0
 modules-runtime@0.12.0
 mongo@1.10.0
-mongo-decimal@0.1.1
+mongo-decimal@0.1.2
 mongo-dev-server@1.1.0
 mongo-id@1.0.7
 npm-mongo@3.8.1

@@ -23,7 +23,7 @@ import { Match, check } from "meteor/check";
 import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 
-import Capnp from "/imports/server/capnp.js";
+import Capnp from "capnp";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
 import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions.js";

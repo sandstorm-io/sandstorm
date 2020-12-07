@@ -46,6 +46,9 @@ CFLAGS2=$(CFLAGS) -pthread -fPIC -DKJ_STD_COMPAT
 # -lrt is not used by sandstorm itself, but the test app uses it. It would be
 #  nice if we could not link everything against it.
 LIBS2=$(LIBS) deps/libsodium/build/src/libsodium/.libs/libsodium.a deps/boringssl/build/ssl/libssl.a deps/boringssl/build/crypto/libcrypto.a -lz -ldl -pthread -lrt
+# Note: despite the name, we actually do build this in-tree; it is pre-built from
+# perspective of npm, since we build it with ekam.
+PREBUILT_NODE_CAPNP_BINARY=$(shell pwd)/tmp/node-capnp/capnp.node
 
 define color
   printf '\033[0;34m==== $1 ====\033[0m\n'
@@ -373,14 +376,17 @@ shell/public/%-m.svg: icons/%.svg
 shell-build: shell/imports/* shell/imports/*/* shell/imports/*/*/* shell/imports/*/*/*/* shell/client/main.ts shell/server/main.ts shell/public/* shell/i18n/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
 	@$(call color,building meteor frontend)
 	@test -z "$$(find -L shell/* -type l)" || (echo "error: broken symlinks in shell: $$(find -L shell/* -type l)" >&2 && exit 1)
-	@OLD=`pwd` && cd shell && meteor build --directory "$$OLD/shell-build"
+	@OLD=`pwd` && \
+		cd shell && \
+		PREBUILT_NODE_CAPNP_BINARY="$(PREBUILT_NODE_CAPNP_BINARY)" \
+			meteor build --directory "$$OLD/shell-build"
 
 # ====================================================================
 # Bundle
 
 bundle: tmp/.ekam-run shell-build make-bundle.sh localedata-C meteor-bundle-main.js
 	@$(call color,bundle)
-	@CC=$(CC) ./make-bundle.sh
+	@CC=$(CC) PREBUILT_NODE_CAPNP_BINARY=$(PREBUILT_NODE_CAPNP_BINARY) ./make-bundle.sh
 
 sandstorm-$(BUILD).tar.xz: bundle
 	@$(call color,compress release bundle)

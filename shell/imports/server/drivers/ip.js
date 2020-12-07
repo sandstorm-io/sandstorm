@@ -22,7 +22,7 @@ import { PersistentImpl } from "/imports/server/persistent.js";
 import Net from "net";
 import Tls from "tls";
 import Dgram from "dgram";
-import Capnp from "/imports/server/capnp.js";
+import Capnp from "capnp";
 
 const IpRpc = Capnp.importSystem("sandstorm/ip.capnp");
 

@@ -25,6 +25,7 @@ start:
     ld [OFF_ARCH]
     jne #AUDIT_ARCH_X86_64, enosys
 
+    // Examine the syscall number.
     ld [OFF_NR]
 
     // These are all OK, regardless of arguments:

@@ -20,26 +20,11 @@
 #define OFF_ARG_2_HI 36
 // Args can go up to 6, but we don't need more than this yet.
 
-// Since many syscalls expect 32-bit values for their arguments,
-// we define helpers which:
-// 1. Check that the high part of the 64-bit word is zero, jumping
-//    to err if not.
-// 2. Load the low part into the accumulator.
-#define LOAD_ARG(lo, hi, err) \
-    ld [hi] \
-    jne #0, err \
-    ld [lo]
-
-#define LOAD_ARG_0(err) LOAD_ARG(OFF_ARG_0_LO, OFF_ARG_0_HI, err)
-#define LOAD_ARG_1(err) LOAD_ARG(OFF_ARG_1_LO, OFF_ARG_1_HI, err)
-#define LOAD_ARG_2(err) LOAD_ARG(OFF_ARG_2_LO, OFF_ARG_2_HI, err)
-
 start:
     // Deny non-native syscalls:
     ld [OFF_ARCH]
     jne #AUDIT_ARCH_X86_64, enosys
 
-    // Examine the syscall number:
     ld [OFF_NR]
 
     // These are all OK, regardless of arguments:
@@ -214,15 +199,19 @@ start:
 
 sys_getsockopt:
 // getsockopt_level:
-    LOAD_ARG_1(einval)
+    ld [OFF_ARG_1_HI]
+    jne #0, einval
 
+    ld [OFF_ARG_1_LO]
     jeq #SOL_SOCKET, getsockopt_sol_socket
     jeq #IPPROTO_TCP, getsockopt_ipproto_tcp
     jeq #IPPROTO_IPV6, getsockopt_ipproto_ipv6
     ret #RET_EINVAL
 getsockopt_sol_socket:
-    LOAD_ARG_2(einval)
+    ld [OFF_ARG_2_HI]
+    jne #0, einval
 
+    ld [OFF_ARG_2_LO]
     jeq #SO_ACCEPTCONN, allow
     jeq #SO_DOMAIN, allow
     jeq #SO_ERROR, allow
@@ -242,17 +231,25 @@ getsockopt_sol_socket:
 
     ret #RET_EINVAL
 getsockopt_ipproto_tcp:
-    LOAD_ARG_2(einval)
+    ld [OFF_ARG_2_HI]
+    jne #0, einval
+
     ret #RET_EINVAL
 getsockopt_ipproto_ipv6:
-    LOAD_ARG_2(einval)
+    ld [OFF_ARG_2_HI]
+    jne #0, einval
+
     ret #RET_EINVAL
 
 sys_ioctl:
     // Check the ioctl number. If we don't recognize it,
     // return EINVAL.
 
-    LOAD_ARG_1(einval)
+    // The request argument is 32-bit, so high should be zero.
+    ld [OFF_ARG_1_HI]
+    jne #0, einval
+
+    ld [OFF_ARG_1_LO]
 
     // An old way of setting a socket to non-blocking:
     jeq #FIONBIO, allow
@@ -292,13 +289,19 @@ sys_ioctl:
 
 sys_setsockopt:
 // setsockopt_level:
-    LOAD_ARG_1(einval)
+    ld [OFF_ARG_1_HI]
+    jne #0, einval
+
+    ld [OFF_ARG_1_LO]
     jeq #SOL_SOCKET, setsockopt_sol_socket
     jeq #IPPROTO_TCP, setsockopt_ipproto_tcp
     jeq #IPPROTO_IPV6, setsockopt_ipproto_ipv6
     ret #RET_EINVAL
 setsockopt_sol_socket:
-    LOAD_ARG_2(einval)
+    ld [OFF_ARG_2_HI]
+    jne #0, einval
+
+    ld [OFF_ARG_2_LO]
     jeq #SO_BROADCAST, allow
     jeq #SO_KEEPALIVE, allow
     jeq #SO_LINGER, allow
@@ -311,11 +314,17 @@ setsockopt_sol_socket:
     jeq #SO_RCVLOWAT, allow
     ret #RET_EINVAL
 setsockopt_ipproto_tcp:
-    LOAD_ARG_2(einval)
+    ld [OFF_ARG_2_HI]
+    jne #0, einval
+
+    ld [OFF_ARG_2_LO]
     jeq #TCP_NODELAY, allow
     ret #RET_EINVAL
 setsockopt_ipproto_ipv6:
-    LOAD_ARG_2(einval)
+    ld [OFF_ARG_2_HI]
+    jne #0, einval
+
+    ld [OFF_ARG_2_LO]
     jeq #IPV6_V6ONLY, allow
     ret #RET_EINVAL
 
@@ -325,14 +334,21 @@ sys_socket:
 //sys_socketpair:
 // socket_family:
     // Allow ip & unix domain sockets only.
-    LOAD_ARG_0(eafnosupport)
+    //
+    // The family argument is 32-bit, so the high part of
+    // the argument should be zero.
+    ld [OFF_ARG_0_HI]
+    jne #0, eafnosupport
+    ld [OFF_ARG_0_LO]
     jeq #AF_INET, socket_type
     jeq #AF_INET6, socket_type
     jeq #AF_UNIX, socket_type
     ret #RET_EAFNOSUPPORT
 socket_type:
     // Allow stream & datagram sockets only.
-    LOAD_ARG_1(eacces)
+    ld [OFF_ARG_1_HI]
+    jne #0, eacces
+    ld [OFF_ARG_1_LO]
     // The type argument can have some flags or'd in with
     // it (namely SOCK_NONBLOCK and SOCK_CLOEXEC), so
     // mask those off before doing the comparison
@@ -342,7 +358,9 @@ socket_type:
     ret #RET_EACCES
 socket_protocol:
     // protocol must be zero
-    LOAD_ARG_2(einval)
+    ld [OFF_ARG_2_HI]
+    jne #0, einval
+    ld [OFF_ARG_2_LO]
     jne #0, einval
     jmp allow
 

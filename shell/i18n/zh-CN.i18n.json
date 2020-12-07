@@ -140,14 +140,14 @@
                 "loading": "加载中..."
             },
             "dependencies": {
-                "title": "Third-party works used",
+                "title": "第三方使用许可",
                 "license": "许可",
-                "explanation": "These works are copyright the respective authors and used under the terms of the respective licenses."
+                "explanation": "这些作品的版权归各自的作者所有，并在各自许可的条款下使用。"
             },
             "copyright": {
                 "title": "著作权",
-                "license": "The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and contributors. The implementation is licensed under the Apache License 2.0.",
-                "trademark": "\"Sandstorm\" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc., and may not be used to advertise derivative works nor commercial services without written consent from Sandstorm Development Group, Inc."
+                "license": "Sandstorm 版权所有 Sandstorm Development Group, Inc. 及其贡献者。该实现许可自 Apache License 2.0",
+                "trademark": "\"Sandstorm\" 及 Sandstorm 徽标是 Sandstorm Development Group, Inc. 的商标，未经 Sandstorm Development Group, Inc. 许可，不得用于广告及其衍生作品或商业服务。"
             },
             "terms": {
                 "license": "许可",
@@ -218,6 +218,15 @@
             "cancel": "取消",
             "confirmHint": "下载备份",
             "confirm": "下载备份"
+        },
+        "grainCloneButton": {
+            "hint": "克隆沙粒",
+            "text": "克隆",
+            "copyTitle": "%s 的拷贝"
+        },
+        "grainClonePopup": {
+            "title": "克隆沙粒",
+            "processing": "正在克隆..."
         },
         "grainRestartButton": {
             "hint": "重新启动应用",
@@ -343,40 +352,40 @@
                     "hasNoApp": "安装应用程序来创建您的第一粒沙。"
                 },
                 "transfers": {
-                    "massTransfer": "Mass transfer...",
-                    "transfers": "Transfers",
-                    "transfer": "Transfer",
-                    "blockedInitiateBeforeSource": "It looks like you're trying to initiate a new transfer from",
-                    "blockedInitiateAfterSource": ", but you already have a transfer in progress. Please complete or cancel the existing transfer to continue.",
-                    "incomingTransferActive": "Incoming transfer active",
-                    "cancel": "Cancel",
-                    "remaining": "Remaining",
-                    "retryErrors": "Retry Errors",
-                    "pauseTransfer": "Pause Transfer",
-                    "continueTransfer": "Continue Transfer",
-                    "startTransfer": "Start Transfer",
-                    "closeTransfer": "Close Transfer",
-                    "outgoingTransferActive": "Outgoing transfer active",
-                    "currentlyTransferring": "You are currently transferring grains to:",
-                    "manageAt": "Manage your transfer at:",
-                    "inOrder": "In order to start a new transfer (incoming or outgoing), you must cancel the existing one.",
-                    "cancelTransfer": "Cancel Transfer",
-                    "initiateInboundTransfer": "Initiate Inbound Transfer",
-                    "initiateOutboundTransfer": "Initiate Outbound Transfer",
-                    "theSandstormServerAt": "The Sandstorm server at",
-                    "wantsToTransfer": "wants to transfer grains to this server.",
-                    "insecureSource": "WARNING: The source server does not support HTTPS. Data will be transferred without encryption.",
-                    "deny": "Deny",
-                    "fetchGrainList": "Fetch grain list",
-                    "noTransfersInProgress": "No transfers are currently in progress.",
-                    "transferAllMyGrainsTo": "Transfer all my grains to:",
-                    "initiateTransfer": "Initiate Transfer",
-                    "whatDoesThisDo": "What does this do?",
-                    "whatCan": "You can use this function to transfer all of your grains to a new Sandstorm server. This automates the process of saving a backup of each grain on this server, then restoring each backup on the server you specify.",
-                    "whatWhen": "When you initiate the transfer above, you will be redirected to the <strong>destination</strong> server where you will be prompted to sign in. You will then be given the option to choose which grains to transfer, and then finally you will initiate the transfer. The transfer will continue in the background; you can log off.",
-                    "whatOrder": "In order for a transfer to work, the <strong>destination</strong> server must be able to reach the <strong>source</strong> server directly over the internet. However, the reverse is not necessary. Thus, you can perform a mass transfer that transfers grains from a server on the public internet (like Sandstorm Oasis) to a server on a private internal network, but not vice versa. If the <strong>source</strong> server supports HTTPS, then the transfer will take place over HTTPS, regardless of the <strong>destination</strong> server's protocol.",
-                    "warningGiving": "WARNING: You are giving %s permission to download all your grains from this server. Are you sure?",
-                    "errorAcceptingTransfer": "Error accepting transfer:"
+                    "massTransfer": "传输沙粒...",
+                    "transfers": "传输",
+                    "transfer": "传输",
+                    "blockedInitiateBeforeSource": "看起来你正在发起一个来自",
+                    "blockedInitiateAfterSource": "的新传输作业，但是当前已经有一个传输作业了。请取消当前的传输作业，或等待其完成以继续。",
+                    "incomingTransferActive": "入站传输活跃中",
+                    "cancel": "取消",
+                    "remaining": "剩余",
+                    "retryErrors": "重试错误项",
+                    "pauseTransfer": "暂停传输作业",
+                    "continueTransfer": "继续传输作业",
+                    "startTransfer": "开始传输作业",
+                    "closeTransfer": "关闭传输作业",
+                    "outgoingTransferActive": "出站传输活跃中",
+                    "currentlyTransferring": "你正在传输沙粒至：",
+                    "manageAt": "在这里管理你的传输：",
+                    "inOrder": "如果需要开始新的传输作业（无论入站还是出站），均需要取消现有的传输作业。",
+                    "cancelTransfer": "取消传输",
+                    "initiateInboundTransfer": "发起入站传输",
+                    "initiateOutboundTransfer": "发起出站传输",
+                    "theSandstormServerAt": "位于",
+                    "wantsToTransfer": "的沙聚云服务器向传输沙粒至该服务器。",
+                    "insecureSource": "警告：源服务器不支持 HTTPS。数据将在未经加密的情况下传输。",
+                    "deny": "拒绝",
+                    "fetchGrainList": "获取沙粒列表",
+                    "noTransfersInProgress": "目前未有任何传输作业。",
+                    "transferAllMyGrainsTo": "传输所有的沙粒至：",
+                    "initiateTransfer": "发起传输作业",
+                    "whatDoesThisDo": "这是干什么的？",
+                    "whatCan": "你可以使用这个功能来传输你的沙粒至新的沙聚云服务器。这个功能将你在该服务器上的每个沙粒做一个备份，然后再在新的服务器上还原每个沙粒。",
+                    "whatWhen": "当你创建一个传输作业时，你被重定向到<strong>目标服务器</strong>的同时让你登录。然后，系统会提示你选择需要传输哪些沙粒。之后，就会开始传输作业。传输会在后台继续进行，所以你可以放心注销。",
+                    "whatOrder": "为了让传输顺利进行，<strong>目标服务器</strong>必须能直接在互联网里访问<strong>源服务器</strong>。但是，反过来的话是不一定的。因此，你可以从互联网上的一台沙聚云服务器（例如沙聚云自己的服务 Oasis）传输数据到你的内部网络服务器上，而反过来是不能实现的。如果<strong>源服务器</strong>支持 HTTPS 的话，那么无论<strong>目标服务器</strong>的 SSL/TLS 配置如何，传输都会使用 HTTPS 协议。",
+                    "warningGiving": "警告：您正在给予 %s 下载您位于这台服务器上所有沙粒的权限。确定要这么做吗？",
+                    "errorAcceptingTransfer": "在接受传输时出错了："
                 }
             },
             "sandstormGrainTable": {
@@ -531,7 +540,7 @@
         }
     },
     "admin": {
-        "title": "管理员",
+        "title": "管理员控制台",
         "admin": {
             "newAdmin": {
                 "title": "管理员控制台",
@@ -574,49 +583,49 @@
             "googleLoginSetupInstructions": {
                 "explanation": "首先，您需要取得 Google Client ID。遵循以下步骤：",
                 "step1": "访问 <a href=\"https://console.developers.google.com/\" target=\"blank\">https://console.developers.google.com/</a>",
-                "step2": "\"Create Project\", if needed. Wait for Google to finish provisioning.",
-                "step3": "On the left sidebar, go to \"Credentials\" and, on the right, \"OAuth consent screen\". Make sure to enter an email address and a product name, and save.",
-                "step4": "On the left sidebar, go to \"Credentials\".  Click the \"Create credentials\" button, then select \"OAuth client ID\" as the type.",
-                "step5": "Select \"Web application\" as your application type.",
-                "step6": "Set Authorized Javascript Origins to: <span class=\"idp-config-url\">%s</span>",
-                "step7": "Set Authorized Redirect URI to: <span class=\"idp-config-url\">%s/_oauth/google</span>",
-                "step8": "Finish by clicking \"Create\"."
+                "step2": "如果还未 \"新建项目\" 的话，需要新建一个。",
+                "step3": "在左侧侧边栏，选择 \"凭据\" 后，在右侧选择 \"配置同意屏幕\"。一定要填写一个名称和邮箱，然后保存。",
+                "step4": "再次回到左侧侧边栏, 选择 \"凭据\"。点击上方的 \"创建凭据\" 按钮，在下拉框中选择 \"OAuth 客户端 ID\"。",
+                "step5": "应用程序类型中选择 \"网页服务器\"。",
+                "step6": "设置已获授权的 JavaScript 来源为： <span class=\"idp-config-url\">%s</span>",
+                "step7": "设置已获授权的重定向 URI 为： <span class=\"idp-config-url\">%s/_oauth/google</span>",
+                "step8": "然后点击 \"创建\" 来完成操作。"
             },
             "adminIdentityProviderConfigureGoogle": {
-                "title": "Google login configuration",
-                "formerBaseUrlWarning": "This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to visit <a target=\"_blank\" href=\"https://console.developers.google.com/\">https://console.developers.google.com/</a> and update the \"Authorized Javascript Origins\" and \"Authorized Redirect URI\" for this Client ID to include the values below.",
-                "error": "Failed to save changes: %s",
-                "explanation": "Then, copy over your Client ID and Client secret below:",
+                "title": "设置通过 Google 登录",
+                "formerBaseUrlWarning": "服务器从 <code>__former__</code> 移动到了 <code>__current__</code>。你需要访问 <a target=\"_blank\" href=\"https://console.developers.google.com/\">https://console.developers.google.com/</a> 来更新 \"已获授权的 JavaScript 来源\" 和 \"已获授权的重定向 URI\" 以产生新的 Client ID 和 Client secret。",
+                "error": "无法存储变更: %s",
+                "explanation": "然后，将 Client ID 和 Client secret 复制到下面：",
                 "clientId": "Client ID:",
                 "clientSecret": "Client secret:",
-                "saveButton": "Save",
-                "enableButton": "Enable",
-                "cancelButton": "Cancel",
-                "disableButton": "Disable"
+                "saveButton": "保存",
+                "enableButton": "启用",
+                "cancelButton": "取消",
+                "disableButton": "禁用"
             },
             "githubLoginSetupInstructions": {
-                "explanation": "First, you'll need to get a Github Client ID and Client secret. Follow these steps:",
-                "step1": "Visit <a href=\"https://github.com/settings/applications/new\" target=\"blank\">https://github.com/settings/applications/new</a>",
-                "step2": "Set Homepage URL to: <span class=\"idp-config-url\">%s</span>",
-                "step3": "Set Authorization callback URL to: <span class=\"idp-config-url\">%s_oauth/github</span>"
+                "explanation": "首先，你需要来自 GitHub 的 Client ID 和 Client secret。完成以下步骤：",
+                "step1": "访问 <a href=\"https://github.com/settings/applications/new\" target=\"blank\">https://github.com/settings/applications/new</a>",
+                "step2": "设置主页地址为: <span class=\"idp-config-url\">%s</span>",
+                "step3": "将授权回调地址（Authorization callback URL）设置为: <span class=\"idp-config-url\">%s_oauth/github</span>"
             },
             "adminIdentityProviderConfigureGitHub": {
-                "title": "GitHub login configuration",
-                "formerBaseUrlWarning": "This server moved from <code>__former__</code> to <code>__current__</code>. You'll need to visit <a target=\"_blank\" href=\"https://github.com/settings/developers\">https://github.com/settings/developers</a> and update the Homepage URL and Authorization callback URL for this application to the values below.",
-                "explanation": "Then, copy over your Client ID and Client secret below:",
+                "title": "GitHub 登录设置",
+                "formerBaseUrlWarning": "服务器地址从 <code>__former__</code> 搬到了 <code>__current__</code>. 你需要访问 <a target=\"_blank\" href=\"https://github.com/settings/developers\">https://github.com/settings/developers</a> 并更新该应用程序的主页地址和授权回调地址。",
+                "explanation": "然后，在下面粘贴 Client ID 和 Client secret:",
                 "clientId": "Client ID:",
                 "clientSecret": "Client secret:",
-                "saveButton": "Save",
-                "enableButton": "Enable",
-                "cancelButton": "Cancel",
-                "disableButton": "Disable"
+                "saveButton": "保存",
+                "enableButton": "启用",
+                "cancelButton": "取消",
+                "disableButton": "禁用"
             },
             "adminIdentityProviderConfigureLdap": {
-                "title": "LDAP login configuration",
-                "error": "Failed to save changes: %s",
+                "title": "LDAP 登陆设置",
+                "error": "在保存以下设置时失败了: %s",
                 "url": {
-                    "label": "LDAP server URL:",
-                    "subtext": "e.g. <code>ldap://ldap.example.com:389</code>.  Use port 636 for SSL."
+                    "label": "LDAP 服务器地址:",
+                    "subtext": "例如: <code>ldap://ldap.example.com:389</code>。636 为 SSL 端口。"
                 },
                 "searchBindDn": {
                     "label": "Bind user DN",
@@ -651,13 +660,13 @@
                     "placeholder": "-----BEGIN CERTIFICATE-----\nMIID...\n-----END CERTIFICATE-----",
                     "subtext": "This is only necessary if your server supports SSL and is using a private CA not in the common trusted set. Note that it does NOT work to enter the LDAP server's own certificate here -- it must be the certificate of a CA which has signed the LDAP server's certificate."
                 },
-                "saveButton": "Save",
-                "enableButton": "Enable",
-                "cancelButton": "Cancel",
-                "disableButton": "Disable"
+                "saveButton": "保存",
+                "enableButton": "启用",
+                "cancelButton": "取消",
+                "disableButton": "禁用"
             },
             "adminIdentityProviderConfigureSaml": {
-                "title": "SAML login configuration",
+                "title": "SAML 登陆设置",
                 "explanation": "Your SAML IDP should be configured to return a persistent nameID. In addition, if you are not using Active Directory, you <strong>must</strong> configure your IDP to provide two extra attributes, <code>email</code> and <code>displayName</code>.",
                 "serviceUrl": "The Service URL of this server is: <code>%s</code>",
                 "logoutUrl": "The Service Logout URL of this server is: <code>%s</code>",
@@ -678,25 +687,25 @@
                 "entityId": {
                     "label": "Entity ID:"
                 },
-                "saveButton": "Save",
-                "enableButton": "Enable",
-                "cancelButton": "Cancel",
-                "disableButton": "Disable"
+                "saveButton": "保存",
+                "enableButton": "启用",
+                "cancelButton": "取消",
+                "disableButton": "禁用"
             },
             "adminIdentityProviderTable": {
-                "title": "Login provider",
-                "status": "Status"
+                "title": "身份提供者",
+                "status": "状态"
             },
             "adminIdentityRow": {
-                "enabled": "Enabled",
-                "disabled": "Not enabled",
+                "enabled": "开启",
+                "disabled": "未开启",
                 "baseUrlChanged": {
-                    "explanation": "Disabled due to BASE_URL change",
-                    "reconfigureButton": "reconfigure"
+                    "explanation": "因为 BASE_URL 被更改而禁用",
+                    "reconfigureButton": "重新配置"
                 },
                 "configureButton": {
-                    "hint": "Configure %s login",
-                    "text": "Configure"
+                    "hint": "配置以 %s 登录",
+                    "text": "配置"
                 }
             }
         },
@@ -704,47 +713,47 @@
             "name": "组织设置",
             "subtext": "让团队可以丝滑般上手及进行合作。",
             "organizationSettingsBlurb": {
-                "explanation": "Sandstorm allows you to define an organization. You can automatically apply some settings to all members of your organization. Users within the organization will automatically be able to log in, install apps, and create grains."
+                "explanation": "沙聚云允许您定义一个组织，你可以自动将一些设置应用给组织里的用户。沙聚云会自动让在组织内的用户登录、安装应用和创建沙粒。"
             },
             "newAdminOrganization": {
                 "success": "已保存设置。",
                 "error": "以下设置保存失败: %s",
                 "membership": {
-                    "title": "Organization membership",
+                    "title": "组织资格",
                     "emailToggle": {
-                        "label": "Users authenticated via email address",
-                        "subtext": "Note: disabled because email login is not configured."
+                        "label": "用户可通过电子邮件认证",
+                        "subtext": "注：该功能被禁用，因为未配置电子邮件服务。"
                     },
                     "emailDomain": {
-                        "label": "Domain:",
-                        "subtext": "Users with an email address at this domain will be members of this server's organization."
+                        "label": "域名:",
+                        "subtext": "用户如果持有这些域名下的邮箱，那么他们会成为该服务器上组织里的用户。"
                     },
                     "gappsToggle": {
-                        "label": "Users authenticated via Google Apps for Work",
-                        "subtext": "Note: disabled because Google login is not configured."
+                        "label": "用户可通过 Google Apps for Work 认证",
+                        "subtext": "注：该功能被禁用，因为未配置 Google 登录。"
                     },
                     "gappsDomain": {
-                        "label": "Domain:",
-                        "subtext": "Users with a Google Apps for Work account under this domain will be members of this server's organization."
+                        "label": "域名:",
+                        "subtext": "如果用户的 Google Apps for Work 帐户在该域名下，那么他们会成为该服务器上组织里的用户。"
                     },
                     "ldapToggle": {
-                        "label": "Users authenticated via LDAP",
-                        "subtext": "Note: disabled because LDAP login is not configured."
+                        "label": "用户可通过 LDAP 认证",
+                        "subtext": "注：该功能被禁用，因为未配置 LDAP 登录。"
                     },
                     "samlToggle": {
-                        "label": "Users authenticated via SAML",
-                        "subtext": "Note: disabled because SAML login is not configured."
+                        "label": "用户可通过 SAML 认证",
+                        "subtext": "注：该功能被禁用，因为未配置 SAML 登录。"
                     }
                 },
                 "settings": {
                     "title": "组织设置",
                     "disallowGuests": {
-                        "label": "Disallow collaboration with users outside the organization.",
-                        "subtext": "Users will be required to log in as a member of your organization to view sharing links. Guest access will be disabled."
+                        "label": "禁用与组织外用户的团队协作功能",
+                        "subtext": "用户必须要用团队内账号登录才能查看团队成员分享的连接，访客访问将会被禁用。"
                     },
                     "shareContacts": {
-                        "label": "Make all organization users visible to each other",
-                        "subtext": "This setting automatically adds users within the organization to each other's contact list so that they can share grains with each other.  Disable this if you have some users whose identity should stay hidden from other users."
+                        "label": "让组织内的所有用户都能看到彼此",
+                        "subtext": "该设置自动将团队内所有用户添加进彼此的通讯录，所以他们可以互相分享沙粒。如果你有需要向其他人隐藏身份的用户，那么需要禁用这个。"
                     }
                 },
                 "saveButton": "保存"
@@ -760,7 +769,7 @@
                 },
                 "howItWorks": {
                     "title": "沙聚云使用电子邮件的方式",
-                    "explanation": "沙聚云可以发送电子邮件，而沙聚云里面的应用程序也可以发送邮件。每一款应用程序都有一个独一无二的地址，所以沙聚云需要通过不同的「发件人」地址发送邮件。因此，Gmail 是不可用的，但是有其它免费的服务可以做到。更多详见<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">文档</a>"
+                    "explanation": "沙聚云可以发送电子邮件，而沙聚云里面的应用程序也可以发送邮件。每一款应用程序都有一个独一无二的地址，所以沙聚云需要通过不同的「发件人」地址发送邮件。因此，Gmail 是不可用的，但是有其它免费的服务可以做到。更多详见<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">文档</a>。"
                 },
                 "success": "已保存设置.",
                 "error": "以下设置保存更改失败: %s",
@@ -808,12 +817,12 @@
                     "subtext": "服务器的名称，在与用户们通讯时会用到。"
                 },
                 "splashUrl": {
-                    "label": "Splash URL (experimental):",
-                    "subtext": "This web page will be displayed in the background behind the login dialog (the home page when logged out). For security reasons, the page must be hosted within this Sandstorm server's wildcard host (otherwise it will be blocked by <code>Content-Security-Policy</code>). We suggest using a static web publishing app like <a target=\"_blank\" href=\"https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh/?host=%s\">Hacker CMS</a> to host content.<strong>WARNING: This feature is experimental; in particular the style and positioning of the login box is subject to change without notice.</strong> Please let us know if you'd like to see it stabilize."
+                    "label": "Splash URL (实验期功能):",
+                    "subtext": "该网页会在显示在登录窗口的背景层里。因为安全原因，该网页的域名必须包含在沙聚云的野卡证书内（否则会被 <code>Content-Security-Policy</code> 挡掉）。我们建议使用类似 <a target=\"_blank\" href=\"https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh/?host=%s\">Hacker CMS</a> 一样的静态网页发布程序来托管内容。<strong>警告：这是实验期特性；登陆框的位置和样式可能会不经通知改变。</strong>如果你希望留下这个功能，那么告诉我们吧！"
                 },
                 "signupDialog": {
-                    "label": "Signup dialog:",
-                    "subtext": "This text will be displayed to users who click on signup links."
+                    "label": "注册对话框:",
+                    "subtext": "这些文字会在用户点击注册链接时出现。"
                 },
                 "termsOfService": {
                     "label": "服务条款地址:",
@@ -826,7 +835,7 @@
                     "subtext": "如果提供，新用户将被要求同意该隐私条款。"
                 },
                 "whitelabeling": {
-                    "title": "Whitelabeling",
+                    "title": "马甲配置",
                     "logo": {
                         "label": "自定义登录页面的 logo",
                         "resetButton": "使用默认",
@@ -842,12 +851,12 @@
                         "label": "隐藏\"发送反馈\""
                     },
                     "useServerTitleForHomeText": {
-                        "label": "Use server title (above) for home link",
-                        "subtext": "If enabled, changes the default label \"Sandstorm\" on the link at the very top left to match whatever you specified for the Server title above."
+                        "label": "使用上方设置的服务器名称替换默认名称",
+                        "subtext": "如果开启该设置，左上角用来返回主页的 \"Sandstorm\" 将会被替换成您设置的服务器名称。"
                     },
                     "customLoginProviderName": {
                         "label": "自定义登录按钮文字",
-                        "subtext": "Replaces the text \"with LDAP\" and \"with SAML\" on the login page with the specified text."
+                        "subtext": "将登录页的 \"with LDAP\" 和 \"with SAML\" 替换成特别的文字。"
                     }
                 },
                 "saveButton": "保存"
@@ -859,7 +868,7 @@
             "newAdminPreinstalledApps": {
                 "explanation": "在这个页面设置的预装应用程序将会自动展示给新用户（在 /apps 里）。",
                 "productivitySuite": {
-                    "label": "Productivity Suite生产力套装",
+                    "label": "生产力套装",
                     "subtext": "我们推荐预装这些核心应用，这些对大部分用户都很实用。"
                 },
                 "systemSuite": {
@@ -908,10 +917,16 @@
             "newAdminNetworking": {
                 "ipBlacklist": {
                     "label": "服务器端请求 IP 黑名单:",
-                    "subtext": "Users will be prohibited from making requests to these IP addresses. This includes making a request from an app, downloading an SPK file from a user-provided URL, etc. You may specify one IP address or network (in CIDR notation, e.g. \"127.0.0.0/8\") per line. The default value includes standard local and private network addresses. Note that when an HTTP proxy is in use, this setting may be ignored; the proxy must implement its own blacklist."
+                    "subtext": "用户将被禁止向这些 IP 地址发出请求。这包括：从应用程序发出请求、从用户自定义的地址下载 spk 文件等。你可以每行指定一个 IP 地址，或一个网段（以 CIDR 表示，例如 \"127.0.0.0/8\"）。默认值包括了本地网段和专用网段地址。请注意，当使用 HTTP 代理时，该设置可能会被忽略。代理必须有自己的 IP 黑名单。"
                 },
                 "saveButton": "保存",
                 "restoreButton": "恢复默认设置"
+            }
+        },
+        "certificates": {
+            "name": "SSL/TLS 证书管理",
+            "subtext": "使用 Let's Encrypt 或手动设置证书。",
+            "newAdminCertificates": {
             }
         },
         "users": {
@@ -970,8 +985,8 @@
                     "emails": "电子邮件地址"
                 },
                 "pronouns": {
-                    "hint": "Pronouns",
-                    "label": "Pronouns"
+                    "hint": "人称代词",
+                    "label": "人称代词"
                 },
                 "emails": {
                     "hint": "电子邮件地址",
@@ -982,8 +997,8 @@
                     "notFound": "无已知电子邮件地址。"
                 },
                 "properties": {
-                    "login": "Can log in",
-                    "org": "Org. member"
+                    "login": "可以登录",
+                    "org": "组织成员"
                 },
                 "unkonwn": {
                     "profilePicture": {
@@ -1010,10 +1025,10 @@
             },
             "newAdminUserDetailsIdentityTable": {
                 "header": {
-                    "credential": "Credential",
-                    "created": "Created",
-                    "lastActive": "Last Active",
-                    "properties": "Properties"
+                    "credential": "凭据",
+                    "created": "已创建",
+                    "lastActive": "最后活动时间",
+                    "properties": "属性"
                 }
             },
             "newAdminUserDetails": {
@@ -1199,51 +1214,52 @@
         "networkCapabilities": {
             "name": "网络容量",
             "subtext": "管理沙粒的网络直接存取量。",
+            "explanation": "这个页面显示了沙粒的网络功能。默认情况下，沙粒的网络访问权非常有限。沙粒可以在被使用时请求完整的网络访问权。当然，只有管理员才能批准\"联网\"这项操作。",
             "newAdminNetworkCapabilitiesTableCapabilityRow": {
-                "adminAccount": "Admin account %s",
-                "unknownGranter": "Unknown granter",
-                "anyone": "Anyone with the token",
-                "unknownRecipient": "Unknown recipient",
+                "adminAccount": "管理员账号 %s",
+                "unknownGranter": "未知授予人",
+                "anyone": "有 token 的任何人",
+                "unknownRecipient": "未知授予目标",
                 "revoked": "已撤銷",
                 "revokeButton": "撤銷"
             },
             "newAdminNetworkCapabilitiesTable": {
                 "header": {
-                    "grantBy": "Granted by",
-                    "grantTo": "Granted to",
-                    "grantTime": "Time",
-                    "actions": "Actions"
+                    "grantBy": "授予自",
+                    "grantTo": "授予给",
+                    "grantTime": "时间",
+                    "actions": "动作"
                 },
-                "notFound": "No capabilities found."
+                "notFound": "找不到记录。"
             },
             "newAdminNetworkCapabilitiesSection": {
                 "filter": {
-                    "label": "Showing:",
-                    "active": "Active (%s)",
-                    "revoked": "Revoked (%s)"
+                    "label": "显示:",
+                    "active": "活动的 (%s)",
+                    "revoked": "已撤销 (%s)"
                 }
             },
             "newAdminNetworkCapabilities": {
-                "networkCaps": "Outbound network access",
-                "networkCapsTls": "TLS-encrypted outbound network access",
-                "interfaceCaps": "Inbound network access"
+                "networkCaps": "出站网络访问",
+                "networkCapsTls": "经过 TLS 加密的出站网络访问",
+                "interfaceCaps": "入站网络访问"
             }
         },
         "hostingManagement": {
-            "name": "Hosting management",
+            "name": "托管管理",
             "newAdminHostingManagement": {
-                "explanation": "This feature is experiemental and only works with the LDAP identity provider at the moment. Use with caution.",
+                "explanation": "此功能是实验性的，目前仅与 LDAP 身份提供者一起使用。请小心使用它。",
                 "quotaEnabled": {
                     "label": "给每个用户设置限额",
-                    "subtext": "Enable Quota management on this server. This requires both SAML and LDAP to be configured, and email addresses will be used to match between the two."
+                    "subtext": "在本服务器上启用限额管理。这需要 SAML 和 LDAP 都配置好，电子邮件地址会用于两者之间的匹配。"
                 },
                 "quotaLdapAttribute": {
                     "label": "LDAP quota attribute",
                     "subtext": "This is the attribute name that will be looked up from LDAP to determine quota for a user."
                 },
                 "billingPromptUrl": {
-                    "label": "Billing prompt url",
-                    "subtext": "This is the url that will be used in the billing prompt."
+                    "label": "账单提示网址",
+                    "subtext": "这将是在账单提示中使用的网址。"
                 },
                 "saveButton": "保存",
                 "restoreButton": "恢复默认设置"
@@ -1261,8 +1277,8 @@
         "appList": {
             "uninstallingHint": "移除完成",
             "doneUninstalling": "移除完成",
-            "uninstallHint": "移除應用程式",
-            "uninstallButton": "批次移除...",
+            "uninstallHint": "移除应用程序",
+            "uninstallButton": "批量移除...",
             "uploadApp": "上传应用程序",
             "searchHint": "搜尋名稱",
             "search": "搜寻名称",
@@ -1382,11 +1398,11 @@
                 "identities": {
                     "title": "我的个人资料",
                     "success": "成功: %s",
-                    "linkedCredentials": "Linked credentials",
+                    "linkedCredentials": "已连接的凭据",
                     "linkNewIdentity": {
-                        "title": "Link new credential:",
+                        "title": "连接新的凭据:",
                         "cancelButton": "取消",
-                        "linkButton": "Link new credential",
+                        "linkButton": "连接新的凭据",
                         "logoutAllButton": "销毁其它所有会话"
                     },
                     "email": {
@@ -1464,9 +1480,9 @@
                     "and": " 和 ",
                     "privacyLink": "隐私条款"
                 },
-                "saveButton": "Save",
-                "continueButton": "Continue",
-                "cancelButton": "Cancel"
+                "saveButton": "保存",
+                "continueButton": "继续",
+                "cancelButton": "取消"
             }
         },
         "loginButtons": {
@@ -1490,7 +1506,7 @@
             "_loginButtonsLoggedOutDropdown": {
                 "demo": {
                     "title": "创建帐号",
-                    "explanation": "你在演示版中的数据会被无缝传输至新帐号上。"
+                    "explanation": "注意：您在 Demo 里的数据将会被删除。"
                 },
                 "title": "登录",
                 "shared": {
@@ -1529,16 +1545,16 @@
                     "confirmButton": "确认",
                     "cancelButton": "取消"
                 },
-                "disabled": "A server admin must enable email authentication before you can confirm your email."
+                "disabled": "在确认你的电子邮件地址前，服务器管理员必须启用邮件认证。"
             },
             "ldapLoginForm": {
                 "username": {
                     "label": "用户名",
-                    "hint": "This is your LDAP username. It will be the name that you normally use to log in to other internal services at your company."
+                    "hint": "这是你的 LDAP 用户名。这将是你默认登录进公司内其它内部服务的名字。"
                 },
                 "password": {
                     "label": "密码",
-                    "hint": "This is your LDAP password. It will be the password that you normally use to log in to other internal services at your company."
+                    "hint": "这是你的 LDAP 密码。这将是你默认登录进公司内其它内部服务的密码。"
                 },
                 "loginButton": "登录"
             },
@@ -1802,7 +1818,7 @@
             "grains": "沙粒",
             "oasis": "开始与其它人在 Oasis 上的沙聚云协作吧：",
             "createAccount": "创建一个免费帐户 »",
-            "demoHint": "你的演示版帐号内数据会被传输。",
+            "demoHint": "注意：您在 Demo 里的数据将会被删除。",
             "selfHostHint": "这是一个限时演示版。如果你希望作为日常使用，可以在自己的服务器上安装（这是开源的）：",
             "signUp": "演示版剩余时间：",
             "close": "关闭"

@@ -160,8 +160,9 @@ class HttpParser final: public sandstorm::Handle::Server,
                   private http_parser,
                   private kj::TaskSet::ErrorHandler {
 public:
-  HttpParser(sandstorm::ByteStream::Client responseStream)
+  HttpParser(sandstorm::ByteStream::Client responseStream, bool ignoreBody = false)
     : responseStream(responseStream),
+      ignoreBody(ignoreBody),
       taskSet(*this) {
     memset(&settings, 0, sizeof(settings));
     settings.on_status = &on_status;
@@ -486,6 +487,7 @@ private:
   };
 
   sandstorm::ByteStream::Client responseStream;
+  bool ignoreBody;
   kj::TaskSet taskSet;
   http_parser_settings settings;
   kj::Vector<RawHeader> rawHeaders;
@@ -754,7 +756,7 @@ private:
     }
   }
 
-  void onHeadersComplete() {
+  bool onHeadersComplete() {
     for (auto &rawHeader : rawHeaders) {
       addHeader(rawHeader);
     }
@@ -763,10 +765,20 @@ private:
 
     headersComplete = true;
     KJ_ASSERT(status_code >= 100, (int)status_code);
+    return ignoreBody;
   }
 
   void onMessageComplete() {
     messageComplete = true;
+  }
+
+  static int on_headers_complete(http_parser *p) {
+    // For other http callbacks, we use the ON_EVENT macro defined below,
+    // but we can't for on_headers_complete because its return value has a special
+    // case: We return 1 to indicate that the parser should not expect a body,
+    // whereas for all other event callbacks, non-zero indicates an error.
+    bool ignoreBody = static_cast<HttpParser*>(p)->onHeadersComplete();
+    return (ignoreBody)? 1 : 0;
   }
 
 #define ON_DATA(lower, title) \
@@ -784,7 +796,6 @@ private:
   ON_DATA(header_field, HeaderField)
   ON_DATA(header_value, HeaderValue)
   ON_DATA(body, Body)
-  ON_EVENT(headers_complete, HeadersComplete)
   ON_EVENT(message_complete, MessageComplete)
 #undef ON_DATA
 #undef ON_EVENT
@@ -1273,7 +1284,7 @@ private:
   kj::AutoCloseFd trashDir;
 
   struct SessionRecord {
-    SessionRecord(const SessionRecord& other) = delete;
+    SessionRecord(const SessionRecord& other) = default;
     SessionRecord(SessionRecord&& other) = default;
 
     SessionContext::Client& sessionCtx;
@@ -1435,7 +1446,7 @@ public:
     GetParams::Reader params = context.getParams();
     kj::String httpRequest = makeHeaders(
         params.getIgnoreBody() ? "HEAD" : "GET", params.getPath(), params.getContext());
-    return sendRequest(toBytes(httpRequest), context);
+    return sendRequest(toBytes(httpRequest), context, params.getIgnoreBody());
   }
 
   kj::Promise<void> post(PostContext context) override {
@@ -1869,22 +1880,22 @@ private:
   }
 
   template <typename Context>
-  kj::Promise<void> sendRequest(kj::Array<byte> httpRequest, Context& context) {
+  kj::Promise<void> sendRequest(kj::Array<byte> httpRequest, Context& context, bool ignoreBody = false) {
     sandstorm::ByteStream::Client responseStream =
         context.getParams().getContext().getResponseStream();
     context.releaseParams();
     return serverAddr.connect().then(
-        [KJ_MVCAP(httpRequest), responseStream, context]
+        [KJ_MVCAP(httpRequest), responseStream, context, ignoreBody]
         (kj::Own<kj::AsyncIoStream>&& stream) mutable {
       kj::ArrayPtr<const byte> httpRequestRef = httpRequest;
       auto& streamRef = *stream;
       return streamRef.write(httpRequestRef.begin(), httpRequestRef.size())
           .attach(kj::mv(httpRequest))
-          .then([KJ_MVCAP(stream), responseStream, context]() mutable {
+          .then([KJ_MVCAP(stream), responseStream, context, ignoreBody]() mutable {
         // Note:  Do not do stream->shutdownWrite() as some HTTP servers will decide to close the
         // socket immediately on EOF, even if they have not actually responded to previous requests
         // yet.
-        auto parser = kj::heap<HttpParser>(responseStream);
+        auto parser = kj::heap<HttpParser>(responseStream, ignoreBody);
         auto results = context.getResults();
 
         return parser->readResponse(*stream).then(

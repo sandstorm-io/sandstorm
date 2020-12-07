@@ -410,87 +410,14 @@ class HackSessionContextImpl extends SessionContextImpl {
     }).bind(this));
   }
 
-  httpGet(url) {
-    const _this = this;
-    const session = _this;
-
-    return inMeteor(() => {
-      return ssrfSafeLookup(globalDb, url);
-    }).then(safe => {
-      return new Promise((resolve, reject) => {
-        let requestMethod = Http.request;
-        if (safe.url.indexOf("https://") === 0) {
-          requestMethod = Https.request;
-        } else if (safe.url.indexOf("http://") !== 0) {
-          const err = new Error("Protocol not recognized.");
-          err.nature = "precondition";
-          reject(err);
-        }
-
-        const options = Url.parse(safe.url);
-        options.headers = { host: safe.host };
-        options.servername = safe.host.split(":")[0];
-
-        const req = requestMethod(options, (resp) => {
-          const buffers = [];
-          let err;
-
-          switch (Math.floor(resp.statusCode / 100)) {
-            case 2: // 2xx response -- OK.
-              resp.on("data", (buf) => {
-                buffers.push(buf);
-              });
-
-              resp.on("end", () => {
-                resolve({
-                  content: Buffer.concat(buffers),
-                  mimeType: resp.headers["content-type"] || null,
-                });
-              });
-              break;
-            case 3: // 3xx response -- redirect.
-              resolve(session.httpGet(resp.headers.location));
-              break;
-            case 4: // 4xx response -- client error.
-              err = new Error("Status code " + resp.statusCode + " received in response.");
-              err.nature = "precondition";
-              reject(err);
-              break;
-            case 5: // 5xx response -- internal server error.
-              err = new Error("Status code " + resp.statusCode + " received in response.");
-              err.nature = "localBug";
-              reject(err);
-              break;
-            default: // ???
-              err = new Error("Invalid status code " + resp.statusCode + " received in response.");
-              err.nature = "localBug";
-              reject(err);
-              break;
-          }
-        });
-
-        req.on("error", (e) => {
-          e.nature = "networkFailure";
-          reject(e);
-        });
-
-        req.setTimeout(15000, () => {
-          req.abort();
-          const err = new Error("Request timed out.");
-          err.nature = "localBug";
-          err.durability = "overloaded";
-          reject(err);
-        });
-
-        req.end();
-      });
-    });
-  }
-
   getUserAddress() {
     return inMeteor((function () {
       return this._getUserAddress();
     }).bind(this));
+  }
+
+  obsoleteHttpGet(_url) {
+    throw new Error("httpGet() has been removed. Use the powerbox instead.");
   }
 
   obsoleteGenerateApiToken(_petname, _userInfo, _expires) {
@@ -505,22 +432,8 @@ class HackSessionContextImpl extends SessionContextImpl {
     throw new Error("revokeApiToken() has been removed. Use offer templates instead.");
   }
 
-  getUiViewForEndpoint(url) {
-    const parsedUrl = Url.parse(url);
-
-    if (parsedUrl.hash) { // Assume that anything with a fragment is a webkey
-      if (parsedUrl.pathname && parsedUrl.pathname !== "/") {
-        throw new Error("Webkey urls cannot contain a path.");
-      }
-
-      const token = parsedUrl.hash.slice(1); // Get rid of # which is always the first character
-      const hostId = matchWildcardHost(parsedUrl.host);
-      // Connecting to a remote server with a bearer token.
-      // TODO(someday): Negotiate server-to-server Cap'n Proto connection.
-      return { view: new ExternalUiView(url, token) };
-    } else {
-      return { view: new ExternalUiView(url) };
-    }
+  obsoleteGetUiViewForEndpoint(_url) {
+    throw new Error("getUiViewForEndpoint() has been removed. Use the powerbox instead.");
   }
 }
 

@@ -380,7 +380,7 @@ shell-build: shell/imports/* shell/imports/*/* shell/imports/*/*/* shell/imports
 
 bundle: tmp/.ekam-run shell-build make-bundle.sh localedata-C meteor-bundle-main.js
 	@$(call color,bundle)
-	@./make-bundle.sh
+	@CC=$(CC) ./make-bundle.sh
 
 sandstorm-$(BUILD).tar.xz: bundle
 	@$(call color,compress release bundle)

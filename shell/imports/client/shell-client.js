@@ -703,17 +703,6 @@ Template.registerHelper("con", function () {
   return Array.prototype.slice.call(arguments, 0, -1).join('.')
 });
 
-Template.registerHelper("freePlanGoingAway", function () {
-  return Meteor.settings.public.stripePublicKey &&
-      (Meteor.user().plan || "free") === "free" &&
-      globalDb.getMyPlan().grains > 0 &&
-      !globalDb.isDemoUser();
-});
-
-Template.registerHelper("oasisShuttingDown", function () {
-  return globalDb.getServerTitle() == "Sandstorm Oasis";
-});
-
 Template.root.helpers({
   storageUsage: function () {
     return Meteor.userId() ? prettySize(Meteor.user().storageUsage || 0) : undefined;

@@ -48,7 +48,7 @@
     "nodemailer-smtp-pool": "^2.8.3",
     "openid-client": "^4.2.1",
     "smtp-server": "^1.17.0",
-    "stripe": "^8.125.0",
+    "stripe": "^8.129.0",
     "xml-crypto": "0.0.20",
     "xml2js": "^0.2.8",
     "xmlbuilder": "^8.2.2",
@@ -59,6 +59,6 @@
     "babel-eslint": "^10.1.0",
     "chai": "^4.2.0",
     "eslint": "^6.8.0",
-    "typescript": "^4.1.2"
+    "typescript": "^4.1.3"
   }
 }

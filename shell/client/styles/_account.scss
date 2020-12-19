@@ -163,6 +163,13 @@ body>.popup.account>.frame-container {
       background-image: url("/ldap-m.svg");
     }
   }
+  >button.login.oidc {
+    background-image: url("/openid.svg");
+    &:hover {
+      background-image: url("/openid-color.svg");
+      color: #191919;
+    }
+  }
   >a.troubleshooting {
     background-image: url("/troubleshoot.svg");
     &:hover {
@@ -402,6 +409,10 @@ body>.popup.account>.frame-container {
     }
     >button.login.github {
       background-image: url("/github-color.svg");
+      color: #191919;
+    }
+    >button.login.oidc {
+      background-image: url("/openid-color.svg");
       color: #191919;
     }
 

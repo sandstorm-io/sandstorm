@@ -665,6 +665,26 @@
         "cancelButton": "Cancel",
         "disableButton": "Disable"
       },
+      "oidcLoginSetupInstructions": {
+        "explanation": "First, you'll need to get a OpenID Connect Client ID and Client secret. Follow these steps:",
+        "step1": "Visit the configuration interface of your identity provider",
+        "step2": "Set Homepage URL to: <span class=\"idp-config-url\">%s</span>",
+        "step3": "Set Authorization callback URL to: <span class=\"idp-config-url\">%s_oauth/oidc</span>"
+      },
+      "adminIdentityProviderConfigureOidc": {
+        "title": "OpenID Connect login configuration",
+        "error": "Failed to save changes: %s",
+        "explanation": "Fill in your identity provider details:",
+        "serverUrl": "Identity Server URL:",
+        "clientId": "Client ID:",
+        "clientSecret": "Client secret:",
+        "advanced-explanation": "Some identity providers require configuration of advanced options:",
+        "clientAuthMethod": "Client Auth Method:",
+        "saveButton": "Save",
+        "enableButton": "Enable",
+        "cancelButton": "Cancel",
+        "disableButton": "Disable"
+      },
       "adminIdentityProviderConfigureSaml": {
         "title": "SAML login configuration",
         "explanation": "Your SAML IDP should be configured to return a persistent nameID. In addition, if you are not using Active Directory, you <strong>must</strong> configure your IDP to provide two extra attributes, <code>email</code> and <code>displayName</code>.",
@@ -739,6 +759,10 @@
           "ldapToggle": {
             "label": "Users authenticated via LDAP",
             "subtext": "Note: disabled because LDAP login is not configured."
+          },
+          "oidcToggle": {
+            "label": "Users authenticated via OpenID Connect",
+            "subtext": "Note: disabled because OpenID Connect login is not configured."
           },
           "samlToggle": {
             "label": "Users authenticated via SAML",
@@ -1715,6 +1739,10 @@
         "ldapToggle": {
           "label": "Users authenticated via LDAP",
           "subtext": "Note: disabled because LDAP login is not configured."
+        },
+        "oidcToggle": {
+          "label": "Users authenticated via OpenID Connect",
+          "subtext": "Note: disabled because OpenID Connect login is not configured."
         },
         "samlToggle": {
           "label": "Users authenticated via SAML",

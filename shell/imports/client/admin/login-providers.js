@@ -4,11 +4,14 @@ import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { TAPi18n } from "meteor/tap:i18n";
 import { Iron } from "meteor/iron:core";
+import { ServiceConfiguration } from "meteor/service-configuration";
 
 import { globalDb } from "/imports/db-deprecated.js";
 
 const idpData = function (configureCallback) {
   const emailTokenEnabled = globalDb.getSettingWithFallback("emailToken", false);
+  const oidcSetting = globalDb.collections.settings.findOne("oidc");
+  const oidcEnabled = (oidcSetting && oidcSetting.value) || false;
   const googleSetting = globalDb.collections.settings.findOne("google");
   const googleEnabled = (googleSetting && googleSetting.value) || false;
   const githubSetting = globalDb.collections.settings.findOne("github");
@@ -56,6 +59,16 @@ const idpData = function (configureCallback) {
       popupTemplate: "adminLoginProviderConfigureLdap",
       onConfigure() {
         configureCallback("ldap");
+      },
+    },
+    {
+      id: "oidc",
+      label: "OpenID Connect",
+      icon: "/openid.svg", // Or use identicons
+      enabled: oidcEnabled,
+      popupTemplate: "adminLoginProviderConfigureOidc",
+      onConfigure() {
+        configureCallback("oidc");
       },
     },
     {
@@ -604,6 +617,158 @@ Template.adminLoginProviderConfigureLdap.events({
   },
 
   "click .idp-modal-cancel"(evt) {
+    const instance = Template.instance();
+    // double invocation because there's no way to pass a callback function around in Blaze without
+    // invoking it, and we need to pass it to modalDialogWithBackdrop
+    instance.data.onDismiss()();
+  },
+});
+
+Template.oidcLoginSetupInstructions.helpers({
+  siteUrl() {
+    return Meteor.absoluteUrl();
+  },
+});
+
+// Oidc form.
+Template.adminLoginProviderConfigureOidc.onCreated(function () {
+  const configurations = ServiceConfiguration.configurations;
+  const oidcConfiguration = configurations.findOne({ service: "oidc" });
+  const serverUrl = (oidcConfiguration && oidcConfiguration.serverUrl) || "";
+  const clientId = (oidcConfiguration && oidcConfiguration.clientId) || "";
+  const clientSecret = (oidcConfiguration && oidcConfiguration.secret) || "";
+  const clientAuthMethod = (oidcConfiguration && oidcConfiguration.clientAuthMethod) || "client_secret_basic";
+
+  this.serverUrl = new ReactiveVar(serverUrl);
+  this.clientId = new ReactiveVar(clientId);
+  this.clientSecret = new ReactiveVar(clientSecret);
+  this.clientAuthMethod = new ReactiveVar(clientAuthMethod);
+  this.errorMessage = new ReactiveVar(undefined);
+  this.formChanged = new ReactiveVar(false);
+  this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
+});
+
+Template.adminLoginProviderConfigureOidc.onRendered(function () {
+  // Focus the first input when the form is shown.
+  this.find("input").focus();
+});
+
+Template.adminLoginProviderConfigureOidc.helpers({
+  oidcEnabled() {
+    return globalDb.getSettingWithFallback("oidc", false);
+  },
+
+  formerBaseUrl() {
+    const setting = globalDb.collections.settings.findOne("oidc");
+    const oidcEnabled = (setting && setting.value) || false;
+    return !oidcEnabled && setting && setting.automaticallyReset && setting.automaticallyReset.baseUrlChangedFrom;
+  },
+
+  siteUrl() {
+    return Meteor.absoluteUrl();
+  },
+
+  serverUrl() {
+    const instance = Template.instance();
+    return instance.serverUrl.get();
+  },
+
+  clientAuthMethod() {
+    const instance = Template.instance();
+    return instance.clientAuthMethod.get();
+  },
+
+  isClientSecretBasic(clientAuthMethod) {
+    return clientAuthMethod === "client_secret_basic";
+  },
+
+  isClientSecretPost(clientAuthMethod) {
+    return clientAuthMethod === "client_secret_post";
+  },
+
+  isNone(clientAuthMethod) {
+    return clientAuthMethod === "none";
+  },
+
+  clientId() {
+    const instance = Template.instance();
+    return instance.clientId.get();
+  },
+
+  clientSecret() {
+    const instance = Template.instance();
+    return instance.clientSecret.get();
+  },
+
+  saveDisabled() {
+    const instance = Template.instance();
+    const oidcEnabled = globalDb.getSettingWithFallback("oidc", false);
+    return (oidcEnabled && !instance.formChanged.get())
+      || !instance.clientId.get()
+      || !instance.clientSecret.get()
+      || !instance.serverUrl.get()
+      || !instance.clientAuthMethod.get();
+  },
+
+  errorMessage() {
+    const instance = Template.instance();
+    return instance.errorMessage.get();
+  },
+});
+
+Template.adminLoginProviderConfigureOidc.events({
+  "input input[name=serverUrl]"(evt) {
+    const instance = Template.instance();
+    instance.serverUrl.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
+  "input input[name=clientId]"(evt) {
+    const instance = Template.instance();
+    instance.clientId.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
+  "input input[name=clientSecret]"(evt) {
+    const instance = Template.instance();
+    instance.clientSecret.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
+  "change select[name=clientAuthMethod]"(evt) {
+    const instance = Template.instance();
+    instance.clientAuthMethod.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
+  "click .idp-modal-save"() {
+    const instance = Template.instance();
+    const token = Iron.controller().state.get("token");
+    const configuration = {
+      service: "oidc",
+      clientId: instance.clientId.get().trim(),
+      secret: instance.clientSecret.get().trim(),
+      serverUrl: instance.serverUrl.get().trim(),
+      loginStyle: "redirect",
+      clientAuthMethod: instance.clientAuthMethod.get().trim()
+    };
+    // TODO: rework this into a single Meteor method call.
+    Meteor.call("adminConfigureLoginService", token, configuration, (err) => {
+      if (err) {
+        instance.errorMessage.set(err.message);
+      } else {
+        Meteor.call("setAccountSetting", token, "oidc", true, instance.setAccountSettingCallback);
+      }
+    });
+  },
+
+  "click .idp-modal-disable"() {
+    const instance = Template.instance();
+    const token = Iron.controller().state.get("token");
+    Meteor.call("setAccountSetting", token, "oidc", false, instance.setAccountSettingCallback);
+  },
+
+  "click .idp-modal-cancel"() {
     const instance = Template.instance();
     // double invocation because there's no way to pass a callback function around in Blaze without
     // invoking it, and we need to pass it to modalDialogWithBackdrop

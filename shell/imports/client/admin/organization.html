@@ -81,6 +81,16 @@
 
       <div class="checkbox-group">
         <label>
+          <input type="checkbox" name="oidc-toggle" checked="{{oidcChecked}}" disabled="{{oidcDisabled}}" />
+          {{_ (con txt "membership.oidcToggle.label")}}
+        </label>
+        {{#if oidcDisabled }}
+        <span class="form-subtext">{{_ (con txt "membership.oidcToggle.subtext")}}</span>
+        {{/if}}
+      </div>
+
+      <div class="checkbox-group">
+        <label>
           <input type="checkbox" name="saml-toggle" checked="{{samlChecked}}" disabled="{{samlDisabled}}" />
           {{_ (con txt "membership.samlToggle.label")}}
         </label>

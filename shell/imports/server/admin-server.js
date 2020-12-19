@@ -19,6 +19,7 @@ import { Match, check } from "meteor/check";
 import { _ } from "meteor/underscore";
 import { Accounts } from "meteor/accounts-base";
 import { Random } from "meteor/random";
+import { ServiceConfiguration } from "meteor/service-configuration";
 
 import Fs from "fs";
 import Crypto from "crypto";
@@ -32,9 +33,10 @@ import { globalDb } from "/imports/db-deprecated.js";
 import { computeStats } from "/imports/server/stats-server.js";
 import { HTTP } from "meteor/http";
 import { createAcmeAccount, renewCertificateNow } from "/imports/server/acme.js";
+import { Issuer } from "openid-client";
 
 const publicAdminSettings = [
-  "google", "github", "ldap", "saml", "emailToken", "splashUrl", "signupDialog",
+  "google", "github", "ldap", "oidc", "saml", "emailToken", "splashUrl", "signupDialog",
   "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
   "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled",
   "serverTitle", "returnAddress", "ldapNameField", "organizationMembership",
@@ -67,7 +69,7 @@ Meteor.methods({
     check(value, Boolean);
 
     // Only check configurations for OAuth services.
-    const oauthServices = ["google", "github"];
+    const oauthServices = ["google", "github", "oidc"];
     if (value && (oauthServices.indexOf(serviceName) != -1)) {
       const config = ServiceConfiguration.configurations.findOne({ service: serviceName });
       if (!config) {
@@ -78,6 +80,13 @@ Meteor.methods({
       if (!config.clientId || !config.secret) {
         throw new Meteor.Error(403, "You must provide a non-empty clientId and secret for the " +
           serviceName + " service before you can enable it. Click the \"configure\" link.");
+      }
+
+      if (serviceName === "oidc") {
+        if (!config.serverUrl || !config.clientAuthMethod || !config.issuer) {
+          throw new Meteor.Error(403, "You must provide a full set of server parameters for the " +
+            serviceName + " service before you can enable it. Click the \"configure\" link.");
+        }
       }
     }
 
@@ -124,6 +133,9 @@ Meteor.methods({
         ldap: {
           enabled: Boolean,
         },
+        oidc: {
+          enabled: Boolean,
+        },
         saml: {
           enabled: Boolean,
         },
@@ -142,7 +154,23 @@ Meteor.methods({
     checkAuth(token);
     check(options, Match.ObjectIncluding({ service: String }));
 
-    ServiceConfiguration.configurations.upsert({ service: options.service }, options);
+    if (options.service === "oidc" && options.serverUrl) {
+      return Issuer.discover(options.serverUrl).then(function(issuer) {
+
+        // 'Proof Key for Code Exchange' (response_type === 'code') is not yet supported.
+        // An additional code_challenge parameter would have to be added when generating the authorizationUrl.
+        if (issuer.metadata.response_types_supported.indexOf("id_token") === -1) {
+          throw new Meteor.Error(403, "The provided identity server does not support the 'id_token' response type.");
+        }
+
+        options.issuer = issuer.metadata;
+        ServiceConfiguration.configurations.upsert({ service: options.service }, options);
+      }).catch(function(_err) {
+        throw new Meteor.Error(403, "Could not discover an OpenID Connect endpoint at the provided URL.");
+      });
+    } else {
+      ServiceConfiguration.configurations.upsert({ service: options.service }, options);
+    }
   },
 
   clearResumeTokensForService: function (token, serviceName) {

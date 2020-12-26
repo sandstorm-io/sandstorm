@@ -491,6 +491,9 @@ Template.setupWizardOrganization.events({
           enabled: instance.gappsChecked.get(),
           domain: instance.gappsDomain.get().trim(),
         },
+        oidc: {
+          enabled: instance.oidcChecked.get(),
+        },
         ldap: {
           enabled: instance.ldapChecked.get(),
         },

@@ -1,3 +1,6 @@
+### v0.278 (2020-12-26)
+- Fix broken setup wizard.
+
 ### v0.277 (2020-12-19)
 - Added OpenID Connect login provider. (Thanks @rs22.)
 - Fixed an re-landed static publishing change from 0.275 that had been reverted in 0.276. (Thanks @zenhack.)

@@ -71,6 +71,7 @@ IMAGES= \
     shell/public/menu.svg \
     shell/public/notification.svg \
     shell/public/open-grain.svg \
+    shell/public/openid.svg \
     shell/public/people.svg \
     shell/public/question-727272.svg \
     shell/public/question-a9a9a9.svg \
@@ -121,6 +122,7 @@ IMAGES= \
                                   \
     shell/public/github-color.svg \
     shell/public/google-color.svg \
+    shell/public/openid-color.svg \
     shell/public/email-494949.svg \
     shell/public/close-FFFFFF.svg \
                                   \

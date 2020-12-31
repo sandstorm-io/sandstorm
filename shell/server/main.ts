@@ -60,6 +60,8 @@ import "../imports/blackrock-payments/constants.js";
 import "../imports/blackrock-payments/server/payments-server.js";
 import "../imports/blackrock-payments/server/payments-api-server.js";
 
+// oidc
+import "../imports/oidc/oidc-server.js";
 
 // Import everything from server/ in the order that Meteor would have.
 import "../imports/server/accounts/credentials/credentials-server.js";

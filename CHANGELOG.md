@@ -1,3 +1,9 @@
+### v0.277 (2020-12-19)
+- Added OpenID Connect login provider. (Thanks @rs22.)
+- Fixed an re-landed static publishing change from 0.275 that had been reverted in 0.276. (Thanks @zenhack.)
+- Sandstorm now serves source maps (for its main UI) to make client-side debugging easier. (Thanks @zenhack.)
+- Meteor updated to 1.12, a major release.
+
 ### v0.276 (2020-11-23)
 - Reverted broken static publishing change.
 

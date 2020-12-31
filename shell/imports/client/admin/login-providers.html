@@ -312,6 +312,87 @@
 {{/modalDialogWithBackdrop}}
 </template>
 
+<template name="oidcLoginSetupInstructions">
+  {{#let txt="admin.identityProviders.oidcLoginSetupInstructions"}}
+  <p>
+    {{_ (con txt "explanation")}}
+  </p>
+  <ol>
+    <li>{{{_ (con txt "step1")}}}</li>
+    <li>{{{_ (con txt "step2") siteUrl}}}</li>
+    <li>{{{_ (con txt "step3") siteUrl}}}</li>
+  </ol>
+  {{/let}}
+</template>
+
+<template name="adminLoginProviderConfigureOidc">
+{{#modalDialogWithBackdrop onDismiss=onDismiss}}
+  {{#let txt="admin.identityProviders.adminIdentityProviderConfigureOidc"}}
+  <h2>{{_ (con txt "title")}}</h2>
+
+  {{#if errorMessage}}
+    {{#focusingErrorBox}}
+      {{_ (con txt "error") errorMessage}}
+    {{/focusingErrorBox}}
+  {{/if}}
+
+  <form class="setup-idp-form">
+    {{> oidcLoginSetupInstructions "" }}
+
+    <p>{{_ (con txt "explanation")}}</p>
+    <div class="form-group">
+      <label>
+        {{_ (con txt "serverUrl")}}
+        <input type="text" name="serverUrl" value="{{serverUrl}}"/>
+      </label>
+    </div>
+    <div class="form-group">
+      <label>
+        {{_ (con txt "clientId")}}
+        <input type="text" name="clientId" value="{{clientId}}"/>
+      </label>
+    </div>
+    <div class="form-group">
+      <label>
+        {{_ (con txt "clientSecret")}}
+        <input type="text" name="clientSecret" value="{{clientSecret}}"/>
+      </label>
+    </div>
+
+    <p>{{_ (con txt "advanced-explanation")}}</p>
+    <div class="form-group">
+      <label>
+        {{_ (con txt "clientAuthMethod")}}
+        <select name="clientAuthMethod">
+          <option selected="{{isClientSecretBasic clientAuthMethod}}" value="client_secret_basic">Client Secret Basic</option>
+          <option selected="{{isClientSecretPost clientAuthMethod}}" value="client_secret_post">Client Secret POST</option>
+          <option selected="{{isNone clientAuthMethod}}" value="none">None</option>
+        </select>
+      </label>
+    </div>
+  </form>
+
+  <div class="idp-modal-button-row">
+    <button class="idp-modal-save" disabled="{{saveDisabled}}">
+      {{#if oidcEnabled}}
+      {{_ (con txt "saveButton")}}
+      {{else}}
+      {{_ (con txt "enableButton")}}
+      {{/if}}
+    </button>
+    <button class="idp-modal-cancel">
+      {{_ (con txt "cancelButton")}}
+    </button>
+    {{#if oidcEnabled}}
+    <button class="idp-modal-disable">
+      {{_ (con txt "disableButton")}}
+    </button>
+    {{/if}}
+  </div>
+  {{/let}}
+{{/modalDialogWithBackdrop}}
+</template>
+
 <template name="adminLoginProviderConfigureSaml">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
   {{#let txt="admin.identityProviders.adminIdentityProviderConfigureSaml"}}

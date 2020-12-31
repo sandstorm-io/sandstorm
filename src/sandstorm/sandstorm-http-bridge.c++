@@ -416,7 +416,7 @@ public:
     // TODO(soon):  If the app returned a normal response without upgrading, we should forward that
     //   through, as it's perfectly valid HTTP.  The WebSession interface currently does not
     //   support this.
-    KJ_ASSERT(status_code == 101, "Sandboxed app does not support WebSocket.",
+    KJ_ASSERT((int)status_code == 101, "Sandboxed app does not support WebSocket.",
               (int)upgrade, (int)status_code, statusString);
 
     KJ_IF_MAYBE(protocol, findHeader("sec-websocket-protocol")) {
@@ -764,7 +764,7 @@ private:
     statusString = kj::heapString(rawStatusString);
 
     headersComplete = true;
-    KJ_ASSERT(status_code >= 100, (int)status_code);
+    KJ_ASSERT((int)status_code >= 100, (int)status_code);
     return ignoreBody;
   }
 
@@ -2687,7 +2687,7 @@ private:
       struct in_addr ipv4;
       ipv4.s_addr = ntohl(uint32_t(lower64));
       const char* ok = inet_ntop(AF_INET, &ipv4, buf, INET_ADDRSTRLEN);
-      KJ_REQUIRE(ok != NULL, "inet_ntop() failed");
+      KJ_REQUIRE(ok != nullptr, "inet_ntop() failed");
       kj::String s = kj::heapString(buf);
       return kj::mv(s);
     } else {
@@ -2712,7 +2712,7 @@ private:
       ipv6.s6_addr[14] = ((lower64 >>  8) & 0xff);
       ipv6.s6_addr[15] = ((lower64      ) & 0xff);
       const char* ok = inet_ntop(AF_INET6, &ipv6, buf, INET6_ADDRSTRLEN);
-      KJ_REQUIRE(ok != NULL, "inet_ntop() failed");
+      KJ_REQUIRE(ok != nullptr, "inet_ntop() failed");
       kj::String s = kj::heapString(buf);
       return kj::mv(s);
     }

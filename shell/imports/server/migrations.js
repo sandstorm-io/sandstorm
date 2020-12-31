@@ -196,6 +196,10 @@ const splitUserIdsIntoAccountIdsAndIdentityIds = function (db, _backend) {
       identity.service = "github";
       identity.unverifiedEmail = user.services.github.email;
       serviceUserId = user.services.github.id;
+    } else if (user.services && "oidc" in user.services) {
+      identity.service = "oidc";
+      identity.unverifiedEmail = user.services.oidc.email;
+      serviceUserId = user.services.oidc.id;
     } else if (user.services && "emailToken" in user.services) {
       identity.service = "emailToken";
       identity.verifiedEmail = user.services.emailToken.email;

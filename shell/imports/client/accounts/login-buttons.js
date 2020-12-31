@@ -34,6 +34,7 @@ import {
 import { GrainViewList } from '/imports/client/grain/grainview-list.js';
 import { loginWithLDAP } from "/imports/client/accounts/ldap/ldap-client.js";
 import { loginWithSaml } from "/imports/client/accounts/saml/saml-client.js";
+import { loginWithOidc } from "/imports/oidc/oidc-client.js";
 import AccountsUi from "/imports/client/accounts/accounts-ui.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
@@ -288,7 +289,8 @@ Template.oauthLoginButton.events({
 
     loginButtonsSession.resetMessages();
 
-    const loginWithService = Meteor[instance.data.data.method];
+    const loginWithService = instance.data.data.method === "loginWithOidc"
+      ? loginWithOidc : Meteor[instance.data.data.method];
 
     const serviceName = instance.data.data.displayName;
     loginWithService({}, function (err) {

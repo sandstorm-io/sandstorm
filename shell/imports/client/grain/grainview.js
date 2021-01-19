@@ -781,23 +781,7 @@ class GrainView {
   }
 
   setShareData(shareData) {
-    var result = {};
-    if ("hash" in shareData) {
-      if (Match.test(shareData.hash, String)) {
-        result["hash"] = shareData.hash;
-      } else {
-        console.warn('shareData["hash"] is not a string--skipping it');
-      }
-    }
-    if ("pathname" in shareData) {
-      if (Match.test(shareData.pathname, String)) {
-        result["pathname"] = shareData.pathname;
-      } else {
-        console.warn('shareData["pathname"] is not a string--skipping it');
-      }
-    }
-    check(result, {"hash": Match.Maybe(String), "pathname": Match.Maybe(String)});
-    this._shareData = result;
+    this._shareData = shareData;
   }
 
   shareData() {

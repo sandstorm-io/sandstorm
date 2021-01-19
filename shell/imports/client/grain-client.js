@@ -1528,6 +1528,14 @@ Meteor.startup(function () {
       // TODO(security): defend against malicious apps spamming this call, blocking all other UI.
       const currentGrain = globalGrains.getActive();
       if (senderGrain === currentGrain && !globalTopbar.isPopupOpen()) {
+        try {
+          check(event.data.startSharing, {hash: Match.Maybe(String), pathname: Match.Maybe(String)});
+        } catch (err) {
+          console.error(err);
+          console.log("startSharing data is not the expected shape.");
+          console.log("See https://docs.sandstorm.io/en/latest/developing/path/#helping-the-user-share-access");
+          return;
+        }
         senderGrain.setShareData(event.data.startSharing);
         globalTopbar.openPopup("share", true);
       }

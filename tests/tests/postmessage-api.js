@@ -128,22 +128,14 @@ module.exports['Test startSharing with pathname and hash'] = function (browser) 
     // Get link from a#share-token-text.  Check for hash and pathname.
     .waitForElementVisible('#share-token-text', short_wait)
     .assert.containsText('#share-token-text', '/pathname/123#hash123')
-    // Remove the link
+    // Find the link and remove it.
     .click('button.who-has-access')
     .waitForElementVisible('table.shared-links', short_wait)
-    // Find the link and remove it.
-    .execute(function () {
-      document.querySelectorAll("table.shared-links span.token-petname").forEach(function(link) {
-        let linkText = link.textContent.trimLeft();
-        if (linkText.startsWith(linkLabel)) {
-          let revokeButton = link.parentElement.parentElement.querySelector("button.revoke-token");
-          if (revokeButton) revokeButton.click();
-        }
-      });
-    })
+    .assert.containsText('table.shared-links tr:last-child span.token-petname', linkLabel)
+    .click('table.shared-links tr:last-child button.revoke-token')
+    // Close the sharing popup.
     .click('button.close-popup')
-    .waitForElementNotPresent('.popup.share', short_wait)
-
+    .waitForElementNotPresent('.popup.share', short_wait);
 };
 
 module.exports['Test showConnectionGraph'] = function (browser) {

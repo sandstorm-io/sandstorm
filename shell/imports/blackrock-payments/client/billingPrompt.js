@@ -21,7 +21,7 @@ import { _ } from "meteor/underscore";
 
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { MAILING_LIST_BONUS } from "/imports/blackrock-payments/constants.js";
-import { StripeCards, StripeCustomerData }
+import { StripeCards, StripeCustomerData, updateStripeData }
   from "/imports/blackrock-payments/client/payments-client.js";
 
 var idCounter = 0;
@@ -226,7 +226,7 @@ function clickPlanHelper(context, ev) {
 }
 
 Template._billingPromptPopup.events({
-  "click .continue": function (ev) {
+  "click .continue": function (_ev) {
     if (this.onComplete) {
       this.onComplete(true);
     }
@@ -234,7 +234,7 @@ Template._billingPromptPopup.events({
 });
 
 Template.billingPromptFirstTime.events({
-  "click .continue": function (ev) {
+  "click .continue": function (_ev) {
     if (this.onComplete) {
       this.onComplete(true);
     }

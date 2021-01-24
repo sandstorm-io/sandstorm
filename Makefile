@@ -180,7 +180,7 @@ stylecheck:
 # ====================================================================
 # Dependencies
 
-DEPS=capnproto ekam libseccomp libsodium node-capnp boringssl clang
+DEPS=capnproto ekam libsodium node-capnp boringssl clang
 
 # We list remotes so that if projects move hosts, we can pull from their new
 # canonical location.

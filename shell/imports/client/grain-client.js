@@ -508,6 +508,7 @@ Template.shareableLinkTab.events({
     const currentGrain = globalGrains.getActive();
     const grainId = currentGrain.grainId();
     const roleList = event.target.getElementsByClassName("share-token-role")[0];
+    const shareData = currentGrain.shareData();
     let assignment;
     if (roleList) {
       assignment = { roleId: roleList.selectedIndex };
@@ -523,7 +524,15 @@ Template.shareableLinkTab.events({
       if (error) {
         console.error(error.stack);
       } else {
-        result.url = getOrigin() + "/shared/" + result.token;
+        const url = new URL(getOrigin());
+        let path = "shared/" + result.token;
+        if ("pathname" in shareData) {
+          if (!shareData.pathname.startsWith("/")) path += "/";
+          path += shareData.pathname;
+        }
+        url.pathname = path;
+        if ("hash" in shareData) url.hash = shareData.hash;
+        result.url = url.toString();
         instance.completionState.set({ success: result });
         // On the next render, .copy-me will exist, and we should focus it then.
         Meteor.defer(function () {
@@ -625,9 +634,19 @@ Template.grainSharePopup.helpers({
   },
 
   currentTokenUrl: function () {
-    let token = globalGrains.getActive().token();
+    const grain = globalGrains.getActive();
+    const token = grain.token();
+    const shareData = grain.shareData();
     if (token) {
-      return getOrigin() + "/shared/" + token;
+      var url = new URL(getOrigin()),
+      path = "shared/" + token;
+      if ("pathname" in shareData) {
+        if (!shareData.pathname.startsWith("/")) path += "/";
+        path += shareData.pathname;
+      }
+      url.pathname = path;
+      if ("hash" in shareData) url.hash = shareData.hash;
+      return url.toString();
     }
   },
 
@@ -1509,6 +1528,15 @@ Meteor.startup(function () {
       // TODO(security): defend against malicious apps spamming this call, blocking all other UI.
       const currentGrain = globalGrains.getActive();
       if (senderGrain === currentGrain && !globalTopbar.isPopupOpen()) {
+        try {
+          check(event.data.startSharing, {hash: Match.Maybe(String), pathname: Match.Maybe(String)});
+        } catch (err) {
+          console.error(err);
+          console.error("startSharing data is not the expected shape.");
+          console.error("See https://docs.sandstorm.io/en/latest/developing/path/#helping-the-user-share-access");
+          return;
+        }
+        senderGrain.setShareData(event.data.startSharing);
         globalTopbar.openPopup("share", true);
       }
     } else if (event.data.overlaySignin) {

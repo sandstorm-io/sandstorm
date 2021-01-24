@@ -28,7 +28,10 @@
       "desiredCapabilities": {
         "browserName": "chrome",
         "javascriptEnabled" : true,
-        "acceptSslCerts" : true
+        "acceptSslCerts" : true,
+        "chromeOptions": {
+          "w3c": false
+        }
       },
       "exclude" : "./unittests/*"
     },

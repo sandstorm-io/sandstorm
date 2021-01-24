@@ -439,7 +439,7 @@ $(METEOR_SPK):
 	@$(call color,downloading meteor-spk)
 	@curl https://dl.sandstorm.io/meteor-spk-$(METEOR_SPK_VERSION).tar.xz | tar Jxf -
 
-meteor-testapp-dev:
+meteor-testapp-dev: $(METEOR_SPK)
 	cd meteor-testapp && PATH="$(PWD)/bin:$(PATH)" \
 		$(METEOR_SPK) dev -I../src -I../tmp -s /opt/sandstorm
 

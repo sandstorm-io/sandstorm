@@ -33,7 +33,7 @@ NIGHTWATCH_PARAMS=()
 if [ ! -z "${TESTCASE:-}" ]; then
   # This is awkward because the test case name usually has spaces, but we need
   # to pass it as a single argument on the command-line. So, we concoct a bash
-  # array with TESTNAME containin the name, spacing and all.
+  # array with TESTNAME containing the name, spacing and all.
   read TESTFILE TESTNAME <<< "$TESTCASE"
   if [ -z "$TESTNAME" ]; then
     NIGHTWATCH_PARAMS=(-t $TESTFILE)

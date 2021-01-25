@@ -76,9 +76,18 @@ jobs:
       - name: test
         run: |
           set -o pipefail
-          # Currently these tests never pass.
-          # TODO: When they are fixed, remove the || true
+          # Currently we have some failing tests, and while most
+          # test frameworks have an "expected to fail" feature, I(zenhack) can't
+          # find this for nightwatch... so for now we use the same trick as above
+          # to catch unexpected increases.
+          #
+          # TODO: When they are fixed, remove the extra logic and just fail if the
+          # whole test doesn't pass.
           (make test |& tee testlog.txt; echo "Result: $?") || true
+          num_failures=$(cat testlog.txt \
+            | grep -E 'TEST FAILURE:  [0-9]+ assertions failed, ' \
+            | awk '{print $3}')
+          [ "$num_failures" = 3 ]
       - name: upload test log
         if: always()
         uses: actions/upload-artifact@v1

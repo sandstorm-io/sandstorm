@@ -363,7 +363,7 @@ WILDCARD_HOST=*.10.0.0.2.xip.io:6080
 - Make sure the port number is the same as the port number in `BASE_URL`.
 
 - Make sure your configuration file does **not** use the `HTTPS_PORT` or `SANDCATS_BASE_DOMAIN`
-  setttings, which refer to integrating with the sandcats.io DNS & HTTPS service. If you see them,
+  settings, which refer to integrating with the sandcats.io DNS & HTTPS service. If you see them,
   comment them out or remove them.
 
 ```bash

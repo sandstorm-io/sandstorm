@@ -192,7 +192,7 @@ vagrant-spk init
 
 (You should be running it from the `~/projects/php-app-to-package-for-sandstorm` directory.)
 
-This will create a new file called `.sandstorm/sandstorm-pkdef.capnp`.
+This will create a new file called `.sandstorm/sandstorm-pkgdef.capnp`.
 
 We'll make two changes. First, we'll give our app a **title** of
 _Sandstorm Showcase_. To do that, open `.sandstorm/sandstorm-pkgdef.capnp` in

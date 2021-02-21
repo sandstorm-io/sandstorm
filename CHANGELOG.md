@@ -1,3 +1,6 @@
+### v0.280 (2021-02-21) [bugfixes]
+- Updated dependencies. (No other changes.)
+
 ### v0.279 (2021-01-23)
 - Extended `startSharing` `postMessage` API to allow a path (within the grain) to be appended to the sharing URL, so that users of the URL land on that path. (Thanks @troyjfarrell.)
 - Improved error behavior when given an invalid API token. (Thanks @zenhack.)

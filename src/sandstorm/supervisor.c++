@@ -1223,6 +1223,9 @@ void SupervisorMain::setupSeccomp() {
   // TODO(cleanup): Can we somehow specify "disallow all calls greater than N" to preemptively
   //   disable things until we've reviewed them?
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(userfaultfd), 0));
+  CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(io_pgetevents), 0));
+  CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(rseq), 0));
+  CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(pkey_mprotect), 0));
 
   // TOOD(someday): See if we can get away with turning off mincore, madvise, sysinfo etc.
 

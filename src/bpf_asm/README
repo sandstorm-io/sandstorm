@@ -3,17 +3,8 @@ source tree in `tools/bpf`. Unfortunately that command line tool
 is not generally available as a stand-alone tool, so we've extracted it
 for our own use here, and integrated it with ekam.
 
-This was copied from the cloudflare bpftools repo:
-
-    https://github.com/cloudflare/bpftools
-
-...which moves some things around to get the tool to build outside of
-the kernel source tree. That version was in turn copied from
-linux/tools/net:
-
-    https://github.com/torvalds/linux/tree/master/tools/net
-
-(Note that tools/net has since been renamed to tools/bpf).
+The version contained here is as of commit
+d76913908102044f14381df865bb74df17a538cb in the kernel repo.
 
 This directory is released under the GPLv2 license, though note
 that this is only used during the build process, and does not end up in

@@ -142,6 +142,7 @@ start:
     jeq #SYS_umask, allow_1
     jeq #SYS_uname, allow_1
     jeq #SYS_unlink, allow_1
+    jeq #SYS_unlinkat, allow_1
     jeq #SYS_vfork, allow_1
     jeq #SYS_wait4, allow_1
     jeq #SYS_write, allow_1

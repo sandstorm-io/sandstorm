@@ -110,6 +110,7 @@ start:
     jeq #SYS_prlimit64, allow_1
     jeq #SYS_pwrite64, allow_1
     jeq #SYS_read, allow_1
+    jeq #SYS_readv, allow_1
     jeq #SYS_readlink, allow_1
     jeq #SYS_rename, allow_1
     jeq #SYS_rmdir, allow_1
@@ -117,6 +118,7 @@ start:
     jeq #SYS_rt_sigprocmask, allow_1
     jeq #SYS_rt_sigreturn, allow_1
     jeq #SYS_rt_sigsuspend, allow_1
+    jeq #SYS_rt_sigtimedwait, allow_1
     jeq #SYS_sched_getaffinity, allow_1
     jeq #SYS_sched_setaffinity, allow_1
     jeq #SYS_select, allow_1
@@ -139,6 +141,7 @@ start:
     jeq #SYS_timer_getoverrun, allow_1
     jeq #SYS_timer_gettime, allow_1
     jeq #SYS_timer_settime, allow_1
+    jeq #SYS_times, allow_1
     jeq #SYS_umask, allow_1
     jeq #SYS_uname, allow_1
     jeq #SYS_unlink, allow_1
@@ -338,6 +341,7 @@ setsockopt_ipproto_tcp:
     jne #0, einval
 
     ld [OFF_ARG_2_LO]
+    jeq #TCP_CORK, allow
     jeq #TCP_NODELAY, allow
     ret #RET_EINVAL
 setsockopt_ipproto_ipv6:

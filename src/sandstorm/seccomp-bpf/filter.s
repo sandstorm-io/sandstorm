@@ -207,6 +207,11 @@ skip_1:
     jeq #SYS_flistxattr, enotsup
     jeq #SYS_fremovexattr, enotsup
 
+    // For some older syscalls, ENOSYS is implausible, so provide
+    // more reasonable errors (preferably which can happen according
+    // to the docs).
+    jeq #SYS_prctl, einval
+
     // Catchall: return ENOSYS.
     ret #RET_ENOSYS
 

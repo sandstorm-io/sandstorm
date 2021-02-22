@@ -105,7 +105,6 @@ int main(void) {
   DEF(TCSBRK);
   DEF(TIOCCBRK);
   DEF(TCXONC);
-  DEF(FIONREAD);
   DEF(TIOCINQ);
   DEF(TIOCOUTQ);
   DEF(TCFLSH);
@@ -119,8 +118,10 @@ int main(void) {
   DEF(TIOCGETD);
   DEF(TIOCSETD);
 
-  // other ioctls
+  // async io related ioctls
   DEF(FIONBIO);
+  DEF(FIONREAD);
+  DEF(FIOASYNC);
 
   // getsockopt/setsockopt args
   DEF(SOL_SOCKET);

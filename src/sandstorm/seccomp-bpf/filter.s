@@ -103,6 +103,7 @@ start:
     jeq #SYS_open, allow_1
     jeq #SYS_openat, allow_1
     jeq #SYS_pause, allow_1
+    jeq #SYS_pipe, allow_1
     jeq #SYS_poll, allow_1
     jeq #SYS_ppoll, allow_1
     jeq #SYS_pread64, allow_1
@@ -115,6 +116,7 @@ start:
     jeq #SYS_rt_sigaction, allow_1
     jeq #SYS_rt_sigprocmask, allow_1
     jeq #SYS_rt_sigreturn, allow_1
+    jeq #SYS_rt_sigsuspend, allow_1
     jeq #SYS_sched_getaffinity, allow_1
     jeq #SYS_sched_setaffinity, allow_1
     jeq #SYS_select, allow_1
@@ -122,11 +124,13 @@ start:
     jeq #SYS_set_tid_address, allow_1
     jeq #SYS_setitimer, allow_1
     jeq #SYS_setrlimit, allow_1
+    jeq #SYS_setsid, allow_1
     jeq #SYS_shutdown, allow_1
     jeq #SYS_sigaltstack, allow_1
     jeq #SYS_signalfd, allow_1
     jeq #SYS_signalfd4, allow_1
     jeq #SYS_stat, allow_1
+    jeq #SYS_statfs, allow_1
     jeq #SYS_symlink, allow_1
     jeq #SYS_symlinkat, allow_1
     jeq #SYS_sysinfo, allow_1
@@ -260,8 +264,10 @@ sys_ioctl:
 
     ld [OFF_ARG_1_LO]
 
-    // An old way of setting a socket to non-blocking:
+    // Async-io related ioctls
     jeq #FIONBIO, allow
+    jeq #FIOASYNC, allow
+    jeq #FIONREAD, allow
 
     // tty ioctls. We don't provide terminal access,
     // so just return ENOTTY.
@@ -280,7 +286,6 @@ sys_ioctl:
     jeq #TCSBRK, enotty
     jeq #TIOCCBRK, enotty
     jeq #TCXONC, enotty
-    jeq #FIONREAD, enotty
     jeq #TIOCINQ, enotty
     jeq #TIOCOUTQ, enotty
     jeq #TCFLSH, enotty

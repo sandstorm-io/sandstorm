@@ -37,8 +37,6 @@ start:
     jeq #SYS_brk, allow_1
     jeq #SYS_chdir, allow_1
     jeq #SYS_chmod, allow_1
-    jeq #SYS_clone, allow_1
-    jeq #SYS_clone3, allow_1
     jeq #SYS_close, allow_1
     jeq #SYS_clock_gettime, allow_1
     jeq #SYS_connect, allow_1
@@ -168,6 +166,7 @@ enosys_1: ret #RET_ENOSYS
 skip_1:
 
     // These might be okay; examine the arguments:
+    jeq #SYS_clone, sys_clone
     jeq #SYS_getsockopt, sys_getsockopt
     jeq #SYS_ioctl, sys_ioctl
     jeq #SYS_setsockopt, sys_setsockopt
@@ -372,6 +371,16 @@ socket_protocol:
     jne #0, einval
     ld [OFF_ARG_2_LO]
     jne #0, einval
+    jmp allow
+sys_clone:
+    ld [OFF_ARG_0_HI]
+    or #ALLOWED_CLONE_FLAGS_HI
+    jne #ALLOWED_CLONE_FLAGS_HI, eperm
+
+    ld [OFF_ARG_0_LO]
+    or #ALLOWED_CLONE_FLAGS_LO
+    jne #ALLOWED_CLONE_FLAGS_LO, eperm
+
     jmp allow
 
 // We can't do a conditional return, so we have stubs we can conditionally

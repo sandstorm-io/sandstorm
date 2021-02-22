@@ -8,6 +8,7 @@
 // Luckily, we *don't* need to do this for <sys/syscall.h>, since it has
 // neither of the above problems.
 
+#define _GNU_SOURCE
 // For various constants:
 #include <linux/audit.h>
 #include <linux/sched.h>
@@ -34,11 +35,38 @@
 // be OR'd in with socket()'s type argument.
 #define SOCK_TYPE_MASK 0x0f
 
+// Print out a #define for a constant with the name `sym`, with
+// the correct value but no operators.
 #define DEF(sym) \
   printf("#define %s 0x%x\n", #sym, sym)
 
 #define DEF_ERET(sym) \
   printf("#define %s 0x%x\n", "RET_" #sym, SECCOMP_RET_ERRNO | sym)
+
+// Permitted flags passed to clone(). This is most things that
+// unprvileged processes can use, but with a few omissions, most
+// notably CLONE_NEWUSER.
+#define ALLOWED_CLONE_FLAGS \
+  ( CSIGNAL \
+  | CLONE_CHILD_CLEARTID \
+  | CLONE_CHILD_SETTID \
+  | CLONE_SIGHAND \
+  | CLONE_CLEAR_SIGHAND \
+  | CLONE_FILES \
+  | CLONE_FS \
+  | CLONE_IO \
+  | CLONE_PARENT \
+  | CLONE_PARENT_SETTID \
+  | CLONE_SETTLS \
+  | CLONE_SYSVSEM \
+  | CLONE_THREAD \
+  | CLONE_VFORK \
+  | CLONE_VM \
+  )
+#define ALLOWED_CLONE_FLAGS_LO \
+  ((unsigned int)(ALLOWED_CLONE_FLAGS & 0xffffffff))
+#define ALLOWED_CLONE_FLAGS_HI \
+  ((unsigned int)(ALLOWED_CLONE_FLAGS >> 32))
 
 int main(void) {
   // constants from linux/audit.h -- architecture constants
@@ -115,6 +143,9 @@ int main(void) {
   DEF(TCP_NODELAY);
   DEF(IPPROTO_IPV6);
   DEF(IPV6_V6ONLY);
+
+  DEF(ALLOWED_CLONE_FLAGS_LO);
+  DEF(ALLOWED_CLONE_FLAGS_HI);
 
   // errno return values; RET_value == (SECCOMP_RET_ERRNO | value).
   DEF_ERET(EACCES);

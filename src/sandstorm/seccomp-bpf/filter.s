@@ -104,6 +104,7 @@ start:
     jeq #SYS_openat, allow_1
     jeq #SYS_pause, allow_1
     jeq #SYS_pipe, allow_1
+    jeq #SYS_pipe2, allow_1
     jeq #SYS_poll, allow_1
     jeq #SYS_ppoll, allow_1
     jeq #SYS_pread64, allow_1
@@ -146,6 +147,7 @@ start:
     jeq #SYS_uname, allow_1
     jeq #SYS_unlink, allow_1
     jeq #SYS_unlinkat, allow_1
+    jeq #SYS_utime, allow_1
     jeq #SYS_vfork, allow_1
     jeq #SYS_wait4, allow_1
     jeq #SYS_write, allow_1

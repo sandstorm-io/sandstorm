@@ -86,6 +86,8 @@ int main(void) {
   DEF(AF_UNIX);
   DEF(SOCK_DGRAM);
   DEF(SOCK_STREAM);
+  DEF(IPPROTO_TCP);
+  DEF(IPPROTO_UDP);
 
   DEF(SOCK_TYPE_MASK);
 
@@ -151,6 +153,7 @@ int main(void) {
   // errno return values; RET_value == (SECCOMP_RET_ERRNO | value).
   DEF_ERET(EACCES);
   DEF_ERET(EAFNOSUPPORT);
+  DEF_ERET(EPROTONOSUPPORT);
   DEF_ERET(EINVAL);
   DEF_ERET(ENOSYS);
   DEF_ERET(ENOTSUP);

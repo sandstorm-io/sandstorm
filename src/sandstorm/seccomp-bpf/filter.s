@@ -376,12 +376,15 @@ socket_type:
     jeq #SOCK_DGRAM, socket_protocol
     ret #RET_EACCES
 socket_protocol:
-    // protocol must be zero
+    // Allow tcp, udp or 0 for the protocol.
     ld [OFF_ARG_2_HI]
     jne #0, einval
     ld [OFF_ARG_2_LO]
-    jne #0, einval
-    jmp allow
+    jeq #0, allow
+    jeq #IPPROTO_TCP, allow
+    jeq #IPPROTO_UDP, allow
+    ret #RET_EPROTONOSUPPORT
+
 sys_clone:
     ld [OFF_ARG_0_HI]
     or #ALLOWED_CLONE_FLAGS_HI

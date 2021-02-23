@@ -86,7 +86,7 @@
 
 namespace sandstorm {
 
-// seccomp filter generated from seccomp.s:
+// seccomp filter generated from filter.s:
 static sock_filter seccomp_filter[] = {
 #include <sandstorm/seccomp-bpf/filter.h>
 };

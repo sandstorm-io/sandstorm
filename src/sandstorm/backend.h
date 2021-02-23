@@ -38,7 +38,8 @@ public:
               SandstormCoreFactory::Client&& sandstormCoreFactory,
               kj::Maybe<Cgroup>&& cgroup,
               kj::Maybe<uid_t> sandboxUid,
-              bool useExperimentalSeccompFilter);
+              bool useExperimentalSeccompFilter,
+	      bool logSeccompViolations);
 
 protected:
   kj::Promise<void> ping(PingContext context) override;
@@ -65,6 +66,7 @@ private:
   kj::TaskSet tasks;
   kj::Maybe<Cgroup> cgroup;
   bool useExperimentalSeccompFilter;
+  bool logSeccompViolations;
 
   class RunningGrain {
   public:

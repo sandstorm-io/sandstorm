@@ -600,8 +600,11 @@ kj::MainFunc SupervisorMain::getMain() {
       .addOption({'n', "new"}, [this]() { setIsNew(true); return true; },
                  "Initializes a new grain.  (Otherwise, runs an existing one.)")
       .addOption({"use-experimental-seccomp-filter"},
-                 [this]() { setUseExperimentalSeccompFilter(true); return true; },
+                 [this]() { useExperimentalSeccompFilter = true; return true; },
                  "Use the new, experimental seccomp filter.")
+      .addOption({"log-seccomp-violations"},
+                 [this]() { logSeccompViolations = true; return true; },
+                 "Log seccomp filter violations")
       .expectArg("<app-name>", KJ_BIND_METHOD(*this, setAppName))
       .expectArg("<grain-id>", KJ_BIND_METHOD(*this, setGrainId))
       .expectOneOrMoreArgs("<command>", KJ_BIND_METHOD(*this, addCommandArg))
@@ -614,10 +617,6 @@ kj::MainFunc SupervisorMain::getMain() {
 
 void SupervisorMain::setIsNew(bool isNew) {
   this->isNew = isNew;
-}
-
-void SupervisorMain::setUseExperimentalSeccompFilter(bool use) {
-  this->useExperimentalSeccompFilter = use;
 }
 
 void SupervisorMain::setMountProc(bool mountProc) {
@@ -1101,10 +1100,14 @@ void SupervisorMain::setupStdio() {
 }
 
 void SupervisorMain::setupSeccompNew() {
+  int flags = 0;
+  if(logSeccompViolations) {
+    flags = SECCOMP_FILTER_FLAG_LOG;
+  }
   KJ_SYSCALL(syscall(
         SYS_seccomp,
         SECCOMP_SET_MODE_FILTER,
-        SECCOMP_FILTER_FLAG_LOG,
+        flags,
         &seccomp_fprog));
 }
 

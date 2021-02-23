@@ -36,6 +36,7 @@ struct Config {
   bool allowLegacyRelaxedCSP = true;
 
   bool useExperimentalSeccompFilter = false;
+  bool logSeccompViolations = false;
 };
 
 // Read and return the config file from `path`.

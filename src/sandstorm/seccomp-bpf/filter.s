@@ -38,6 +38,7 @@ start:
     jeq #SYS_chdir, allow_near
     jeq #SYS_chmod, allow_near
     jeq #SYS_close, allow_near
+    jeq #SYS_clock_getres, allow_near
     jeq #SYS_clock_gettime, allow_near
     jeq #SYS_connect, allow_near
     jeq #SYS_creat, allow_near

@@ -113,6 +113,7 @@ start:
     jeq #SYS_read, allow_near
     jeq #SYS_readv, allow_near
     jeq #SYS_readlink, allow_near
+    jeq #SYS_readlinkat, allow_near
     jeq #SYS_rename, allow_near
     jeq #SYS_rmdir, allow_near
     jeq #SYS_rt_sigaction, allow_near

@@ -63,6 +63,7 @@ start:
     jeq #SYS_flock, allow_near
     jeq #SYS_fork, allow_near
     jeq #SYS_fstat, allow_near
+    jeq #SYS_fstatfs, allow_near
     jeq #SYS_fsync, allow_near
     jeq #SYS_ftruncate, allow_near
     jeq #SYS_futex, allow_near
@@ -80,7 +81,11 @@ start:
     jeq #SYS_getpid, allow_near
     jeq #SYS_getppid, allow_near
     jeq #SYS_getrandom, allow_near
+    jeq #SYS_getresuid, allow_near
+    jeq #SYS_getresgid, allow_near
     jeq #SYS_getrlimit, allow_near
+    jeq #SYS_getrusage, allow_near
+    jeq #SYS_getsid, allow_near
     jeq #SYS_getsockname, allow_near
     jeq #SYS_gettid, allow_near
     jeq #SYS_gettimeofday, allow_near
@@ -117,7 +122,9 @@ start:
     jeq #SYS_rename, allow_near
     jeq #SYS_rmdir, allow_near
     jeq #SYS_rt_sigaction, allow_near
+    jeq #SYS_rt_sigpending, allow_near
     jeq #SYS_rt_sigprocmask, allow_near
+    jeq #SYS_rt_sigqueueinfo, allow_near
     jeq #SYS_rt_sigreturn, allow_near
     jeq #SYS_rt_sigsuspend, allow_near
     jeq #SYS_rt_sigtimedwait, allow_near
@@ -144,6 +151,7 @@ start:
     jeq #SYS_timer_gettime, allow_near
     jeq #SYS_timer_settime, allow_near
     jeq #SYS_times, allow_near
+    jeq #SYS_truncate, allow_near
     jeq #SYS_umask, allow_near
     jeq #SYS_uname, allow_near
     jeq #SYS_unlink, allow_near
@@ -200,6 +208,7 @@ skip_near:
     jeq #SYS_chroot, eperm
     jeq #SYS_fchown, eperm
     jeq #SYS_fchownat, eperm
+    jeq #SYS_lchown, eperm
     jeq #SYS_mount, eperm
 
     // Extended file attribute calls. A filesystem might
@@ -218,6 +227,7 @@ skip_near:
     // more reasonable errors (preferably which can happen according
     // to the docs).
     jeq #SYS_prctl, einval
+    jeq #SYS_ptrace, eperm
 
     // Catchall: return ENOSYS.
     ret #RET_ENOSYS

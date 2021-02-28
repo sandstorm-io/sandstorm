@@ -35,10 +35,17 @@
 // be OR'd in with socket()'s type argument.
 #define SOCK_TYPE_MASK 0x0f
 
+#define LO(x) ((unsigned int)(x))
+#define HI(x) ((unsigned int)(((unsigned long long)(x)) >> 32))
+
 // Print out a #define for a constant with the name `sym`, with
 // the correct value but no operators.
+
 #define DEF(sym) \
-  printf("#define %s 0x%x\n", #sym, sym)
+  do { \
+    _Static_assert(HI(sym) == 0, #sym " is not 32 bits"); \
+    printf("#define %s 0x%x\n", #sym, LO(sym)); \
+  } while(0)
 
 #define DEF_ERET(sym) \
   printf("#define %s 0x%x\n", "RET_" #sym, SECCOMP_RET_ERRNO | sym)
@@ -62,10 +69,6 @@
   | CLONE_VFORK \
   | CLONE_VM \
   )
-#define ALLOWED_CLONE_FLAGS_LO \
-  ((unsigned int)(ALLOWED_CLONE_FLAGS & 0xffffffff))
-#define ALLOWED_CLONE_FLAGS_HI \
-  ((unsigned int)(ALLOWED_CLONE_FLAGS >> 32))
 
 int main(void) {
   // constants from linux/audit.h -- architecture constants
@@ -147,8 +150,7 @@ int main(void) {
   DEF(IPPROTO_IPV6);
   DEF(IPV6_V6ONLY);
 
-  DEF(ALLOWED_CLONE_FLAGS_LO);
-  DEF(ALLOWED_CLONE_FLAGS_HI);
+  DEF(ALLOWED_CLONE_FLAGS);
 
   // errno return values; RET_value == (SECCOMP_RET_ERRNO | value).
   DEF_ERET(EACCES);

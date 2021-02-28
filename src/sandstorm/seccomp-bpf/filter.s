@@ -406,12 +406,11 @@ socket_protocol:
 
 sys_clone:
     ld [OFF_ARG_0_HI]
-    or #ALLOWED_CLONE_FLAGS_HI
-    jne #ALLOWED_CLONE_FLAGS_HI, eperm
+    jne #0, eperm
 
     ld [OFF_ARG_0_LO]
-    or #ALLOWED_CLONE_FLAGS_LO
-    jne #ALLOWED_CLONE_FLAGS_LO, eperm
+    or #ALLOWED_CLONE_FLAGS
+    jne #ALLOWED_CLONE_FLAGS, eperm
 
     jmp allow
 

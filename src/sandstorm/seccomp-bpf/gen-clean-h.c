@@ -11,6 +11,8 @@
 #define _GNU_SOURCE
 // For various constants:
 #include <linux/audit.h>
+#include <linux/fiemap.h>
+#include <linux/fs.h>
 #include <linux/sched.h>
 #include <linux/seccomp.h>
 #include <sys/socket.h>
@@ -93,39 +95,19 @@ int main(void) {
 
   DEF(SOCK_TYPE_MASK);
 
-  // tty ioctls
-  DEF(TCGETS);
-  DEF(TCSETS);
-  DEF(TCSETSW);
-  DEF(TCSETSF);
-  DEF(TCGETA);
-  DEF(TCSETA);
-  DEF(TCSETAW);
-  DEF(TCSETAF);
-  DEF(TIOCGLCKTRMIOS);
-  DEF(TIOCSLCKTRMIOS);
-  DEF(TIOCGWINSZ);
-  DEF(TIOCSWINSZ);
-  DEF(TCSBRK);
-  DEF(TIOCCBRK);
-  DEF(TCXONC);
-  DEF(TIOCINQ);
-  DEF(TIOCOUTQ);
-  DEF(TCFLSH);
-  DEF(TIOCSTI);
-  DEF(TIOCCONS);
-  DEF(TIOCSCTTY);
-  DEF(TIOCNOTTY);
-  DEF(TIOCSPGRP);
-  DEF(TIOCEXCL);
-  DEF(TIOCNXCL);
-  DEF(TIOCGETD);
-  DEF(TIOCSETD);
-
-  // async io related ioctls
-  DEF(FIONBIO);
-  DEF(FIONREAD);
+  // ioctls
+  DEF(FICLONE);
+  DEF(FICLONERANGE);
+  DEF(FIDEDUPERANGE);
+  DEF(FIFREEZE);
   DEF(FIOASYNC);
+  DEF(FIOCLEX);
+  DEF(FIONBIO);
+  DEF(FIONCLEX);
+  DEF(FIONREAD);
+  DEF(FIOQSIZE);
+  DEF(FITHAW);
+  DEF(FS_IOC_FIEMAP);
 
   // getsockopt/setsockopt args
   DEF(SOL_SOCKET);
@@ -159,6 +141,7 @@ int main(void) {
   DEF_ERET(EINVAL);
   DEF_ERET(ENOSYS);
   DEF_ERET(ENOTSUP);
+  DEF_ERET(EOPNOTSUPP);
   DEF_ERET(ENOTTY);
   DEF_ERET(EPERM);
 

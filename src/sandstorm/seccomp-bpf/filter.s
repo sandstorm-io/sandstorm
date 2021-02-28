@@ -278,51 +278,34 @@ getsockopt_ipproto_ipv6:
     ret #RET_EINVAL
 
 sys_ioctl:
-    // Check the ioctl number. If we don't recognize it,
-    // return EINVAL.
-
     // The request argument is 32-bit, so high should be zero.
     ld [OFF_ARG_1_HI]
     jne #0, einval
 
     ld [OFF_ARG_1_LO]
 
-    // Async-io related ioctls
-    jeq #FIONBIO, allow
+    // These can be used to toggle close-on-exec:
+    jeq #FIOCLEX, allow
+    jeq #FIONCLEX, allow
+
+    // Common async-io-related ioctls:
     jeq #FIOASYNC, allow
+    jeq #FIONBIO, allow
     jeq #FIONREAD, allow
+    jeq #FIOQSIZE, allow
 
-    // tty ioctls. We don't provide terminal access,
-    // so just return ENOTTY.
-    jeq #TCGETS, enotty
-    jeq #TCSETS, enotty
-    jeq #TCSETSW, enotty
-    jeq #TCSETSF, enotty
-    jeq #TCGETA, enotty
-    jeq #TCSETA, enotty
-    jeq #TCSETAW, enotty
-    jeq #TCSETAF, enotty
-    jeq #TIOCGLCKTRMIOS, enotty
-    jeq #TIOCSLCKTRMIOS, enotty
-    jeq #TIOCGWINSZ, enotty
-    jeq #TIOCSWINSZ, enotty
-    jeq #TCSBRK, enotty
-    jeq #TIOCCBRK, enotty
-    jeq #TCXONC, enotty
-    jeq #TIOCINQ, enotty
-    jeq #TIOCOUTQ, enotty
-    jeq #TCFLSH, enotty
-    jeq #TIOCSTI, enotty
-    jeq #TIOCCONS, enotty
-    jeq #TIOCSCTTY, enotty
-    jeq #TIOCNOTTY, enotty
-    jeq #TIOCSPGRP, enotty
-    jeq #TIOCEXCL, enotty
-    jeq #TIOCNXCL, enotty
-    jeq #TIOCGETD, enotty
-    jeq #TIOCSETD, enotty
+    // Stuff we don't want to support, but we should
+    // return a sensible error code:
+    jeq #FIFREEZE, eperm
+    jeq #FITHAW, eperm
+    jeq #FS_IOC_FIEMAP, eopnotsupp
+    jeq #FICLONE, eopnotsupp
+    jeq #FICLONERANGE, eopnotsupp
+    jeq #FIDEDUPERANGE, eopnotsupp
 
-    ret #RET_EINVAL
+    // If we don't recognize the request number, return ENOTTY,
+    // which is the fallback the kernel uses as well:
+    ret #RET_ENOTTY
 
 sys_setsockopt:
 // setsockopt_level:
@@ -423,7 +406,7 @@ eafnosupport: ret #RET_EAFNOSUPPORT
 einval: ret #RET_EINVAL
 enosys: ret #RET_ENOSYS
 enotsup: ret #RET_ENOTSUP
-enotty: ret #RET_ENOTTY
+eopnotsupp: ret #RET_ENOTSUP
 eperm: ret #RET_EPERM
 
 noop:

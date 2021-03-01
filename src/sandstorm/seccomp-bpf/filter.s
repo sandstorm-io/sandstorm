@@ -146,12 +146,14 @@ start:
     jeq #SYS_symlink, allow_near
     jeq #SYS_symlinkat, allow_near
     jeq #SYS_sysinfo, allow_near
+    jeq #SYS_tgkill, allow_near
     jeq #SYS_timer_create, allow_near
     jeq #SYS_timer_delete, allow_near
     jeq #SYS_timer_getoverrun, allow_near
     jeq #SYS_timer_gettime, allow_near
     jeq #SYS_timer_settime, allow_near
     jeq #SYS_times, allow_near
+    jeq #SYS_tkill, allow_near
     jeq #SYS_truncate, allow_near
     jeq #SYS_umask, allow_near
     jeq #SYS_uname, allow_near

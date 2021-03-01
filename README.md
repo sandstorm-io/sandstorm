@@ -21,7 +21,7 @@ See [installation instructions in the Sandstorm documentation](https://docs.sand
 
 ## Using Sandstorm
 
-See [the overview in the Sandstorm documentation](https://docs.sandstorm.io/en/latest/overview/).
+See [the overview in the Sandstorm documentation](https://docs.sandstorm.io/en/latest/using/).
 
 ## How It Works
 

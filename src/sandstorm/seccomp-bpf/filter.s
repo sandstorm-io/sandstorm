@@ -2,7 +2,7 @@
 #include <sandstorm/seccomp-bpf/constants.h>
 
 // Offsets to parts of `struct seccomp_data` (defined in
-// `linux/seccomp.h`. NOTE: this asumes a little-endian machine,
+// `linux/seccomp.h`). NOTE: this asumes a little-endian machine,
 // which is valid for x86_64 -- but we should sanity check this
 // if/when we port to other architectures.
 //

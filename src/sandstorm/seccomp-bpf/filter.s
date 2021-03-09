@@ -244,40 +244,30 @@ sys_getsockopt:
     jeq #SOL_SOCKET, getsockopt_sol_socket
     jeq #IPPROTO_TCP, getsockopt_ipproto_tcp
     jeq #IPPROTO_IPV6, getsockopt_ipproto_ipv6
-    ret #RET_EINVAL
+    ret #RET_ENOPROTOOPT
 getsockopt_sol_socket:
     ld [OFF_ARG_2_HI]
     jne #0, einval
 
     ld [OFF_ARG_2_LO]
+    // read only options
     jeq #SO_ACCEPTCONN, allow
     jeq #SO_DOMAIN, allow
     jeq #SO_ERROR, allow
     jeq #SO_PROTOCOL, allow
     jeq #SO_TYPE, allow
 
-    jeq #SO_BROADCAST, allow
-    jeq #SO_KEEPALIVE, allow
-    jeq #SO_LINGER, allow
-    jeq #SO_OOBINLINE, allow
-    jeq #SO_REUSEADDR, allow
-    jeq #SO_SNDBUF, allow
-    jeq #SO_RCVBUF, allow
-    jeq #SO_RCVTIMEO, allow
-    jeq #SO_SNDTIMEO, allow
-    jeq #SO_RCVLOWAT, allow
-
-    ret #RET_EINVAL
+    jmp sockopt_sol_socket_common
 getsockopt_ipproto_tcp:
     ld [OFF_ARG_2_HI]
     jne #0, einval
-
-    ret #RET_EINVAL
+    ld [OFF_ARG_2_LO]
+    jmp sockopt_ipproto_tcp_common
 getsockopt_ipproto_ipv6:
     ld [OFF_ARG_2_HI]
     jne #0, einval
-
-    ret #RET_EINVAL
+    ld [OFF_ARG_2_LO]
+    jmp sockopt_ipproto_ipv6_common
 
 sys_ioctl:
     // The request argument is 32-bit, so high should be zero.
@@ -318,12 +308,24 @@ sys_setsockopt:
     jeq #SOL_SOCKET, setsockopt_sol_socket
     jeq #IPPROTO_TCP, setsockopt_ipproto_tcp
     jeq #IPPROTO_IPV6, setsockopt_ipproto_ipv6
-    ret #RET_EINVAL
+    ret #RET_ENOPROTOOPT
 setsockopt_sol_socket:
     ld [OFF_ARG_2_HI]
     jne #0, einval
-
     ld [OFF_ARG_2_LO]
+    jmp sockopt_sol_socket_common
+setsockopt_ipproto_tcp:
+    ld [OFF_ARG_2_HI]
+    jne #0, einval
+    ld [OFF_ARG_2_LO]
+    jmp sockopt_ipproto_tcp_common
+setsockopt_ipproto_ipv6:
+    ld [OFF_ARG_2_HI]
+    jne #0, einval
+    ld [OFF_ARG_2_LO]
+    jmp sockopt_ipproto_ipv6_common
+
+sockopt_sol_socket_common:
     jeq #SO_BROADCAST, allow
     jeq #SO_KEEPALIVE, allow
     jeq #SO_LINGER, allow
@@ -334,22 +336,15 @@ setsockopt_sol_socket:
     jeq #SO_RCVTIMEO, allow
     jeq #SO_SNDTIMEO, allow
     jeq #SO_RCVLOWAT, allow
-    ret #RET_EINVAL
-setsockopt_ipproto_tcp:
-    ld [OFF_ARG_2_HI]
-    jne #0, einval
 
-    ld [OFF_ARG_2_LO]
+    ret #RET_ENOPROTOOPT
+sockopt_ipproto_tcp_common:
     jeq #TCP_CORK, allow
     jeq #TCP_NODELAY, allow
-    ret #RET_EINVAL
-setsockopt_ipproto_ipv6:
-    ld [OFF_ARG_2_HI]
-    jne #0, einval
-
-    ld [OFF_ARG_2_LO]
+    ret #RET_ENOPROTOOPT
+sockopt_ipproto_ipv6_common:
     jeq #IPV6_V6ONLY, allow
-    ret #RET_EINVAL
+    ret #RET_ENOPROTOOPT
 
 // The logic for socket() and socketpair() is identical.
 // So we use this block for both. socketpair() accepts a fourth argument, but we don't look at it.

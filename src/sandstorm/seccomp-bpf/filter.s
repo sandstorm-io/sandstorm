@@ -408,7 +408,7 @@ eafnosupport: ret #RET_EAFNOSUPPORT
 einval: ret #RET_EINVAL
 enosys: ret #RET_ENOSYS
 enotsup: ret #RET_ENOTSUP
-eopnotsupp: ret #RET_ENOTSUP
+eopnotsupp: ret #RET_EOPNOTSUPP
 eperm: ret #RET_EPERM
 
 noop:

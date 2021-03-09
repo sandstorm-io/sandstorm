@@ -20,16 +20,13 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
-// to return specific errno values, we need to do
-// ret (SECCOMP_RET_ERRNO | value), but we can't put expressions
-// in macros to be used in bpf asm. Instead, we generate RET_value
-// constants for each value we need.
+// error code constants:
 #include <errno.h>
 
-/* printf: */
+// printf:
 #include <stdio.h>
 
-/* size_t: */
+// size_t:
 #include <stddef.h>
 
 // The kernel defines this constant, but it isn't exposed in
@@ -42,13 +39,16 @@
 
 // Print out a #define for a constant with the name `sym`, with
 // the correct value but no operators.
-
 #define DEF(sym) \
   do { \
     _Static_assert(HI(sym) == 0, #sym " is not 32 bits"); \
     printf("#define %s 0x%x\n", #sym, LO(sym)); \
   } while(0)
 
+// to return specific errno values, we need to do
+// ret (SECCOMP_RET_ERRNO | value), but we can't put expressions
+// in macros to be used in bpf asm. Instead, we generate RET_value
+// constants for each value we need.
 #define DEF_ERET(sym) \
   printf("#define %s 0x%x\n", "RET_" #sym, SECCOMP_RET_ERRNO | sym)
 

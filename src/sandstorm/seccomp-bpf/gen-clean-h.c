@@ -50,7 +50,7 @@
 // in macros to be used in bpf asm. Instead, we generate RET_value
 // constants for each value we need.
 #define DEF_ERET(sym) \
-  printf("#define %s 0x%x\n", "RET_" #sym, SECCOMP_RET_ERRNO | sym)
+  printf("#define RET_%s 0x%x\n", #sym, SECCOMP_RET_ERRNO | sym)
 
 // Permitted flags passed to clone(). This is most things that
 // unprvileged processes can use, but with a few omissions, most

@@ -4,14 +4,7 @@ set -euo pipefail
 
 this_dir="sandstorm/seccomp-bpf"
 
-if test $# = 0; then
-  echo "trigger canonical:${this_dir}/gen-clean-h"
-  exit 0
-fi
-
-INPUT="$1"
-
-echo "findInput $INPUT"
+echo "findInput ${this_dir}/gen-clean-h"
 read INPUT_DISK_FILE
 
 echo "newOutput ${this_dir}/constants.h"

@@ -39,7 +39,7 @@ public:
               kj::Maybe<Cgroup>&& cgroup,
               kj::Maybe<uid_t> sandboxUid,
               bool useExperimentalSeccompFilter,
-	      bool logSeccompViolations);
+              bool logSeccompViolations);
 
 protected:
   kj::Promise<void> ping(PingContext context) override;

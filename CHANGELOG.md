@@ -1,3 +1,7 @@
+### v0.281 (2021-03-20)
+- Extended seccomp filter to block some newer system calls. (Thanks @zenhack.)
+- Meteor updated to 2.1, a major release.
+
 ### v0.280 (2021-02-21) [bugfixes]
 - Updated dependencies. (No other changes.)
 

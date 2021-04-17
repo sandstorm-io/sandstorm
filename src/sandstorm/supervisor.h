@@ -97,6 +97,8 @@ private:
   bool keepStdio = false;
   bool devmode = false;
   bool seccompDumpPfc = false;
+  bool useExperimentalSeccompFilter = false;
+  bool logSeccompViolations = false;
   kj::Maybe<uid_t> sandboxUid;  // nullptr = use userns
 
   class SandstormApiImpl;
@@ -115,6 +117,8 @@ private:
   void setupFilesystem();
   void setupStdio();
   void setupSeccomp();
+  void setupSeccompNew();
+  void setupSeccompLegacy();
   void unshareNetwork();
   bool checkIfIpTablesLoaded();
   void maybeFinishMountingProc();

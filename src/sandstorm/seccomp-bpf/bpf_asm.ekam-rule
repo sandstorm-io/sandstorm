@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+this_dir="sandstorm/seccomp-bpf"
+
+if test $# = 0; then
+  echo "trigger canonical:${this_dir}/filter.s"
+  exit 0
+fi
+
+INPUT="$1"
+
+echo "findInput $INPUT"
+read INPUT_DISK_FILE
+
+echo "findInput bpf_asm/bpf_asm"
+read BPF_ASM
+
+echo "findInput ${this_dir}/constants.h"
+read CONSTANTS_H
+
+echo "newOutput ${this_dir}/preprocessed-asm.s"
+read OUTPUT_PREPROCESSED
+
+cpp \
+  -I src \
+  -I tmp \
+  "$INPUT_DISK_FILE" -o "$OUTPUT_PREPROCESSED"
+
+echo "newOutput ${this_dir}/filter.h"
+read OUTPUT_FILTER_HEADER
+
+"$BPF_ASM" -c < "$OUTPUT_PREPROCESSED" > "$OUTPUT_FILTER_HEADER"
+
+
+# vim: set ts=2 sw=2 et :

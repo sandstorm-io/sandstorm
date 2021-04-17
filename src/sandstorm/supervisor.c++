@@ -70,6 +70,8 @@
 #endif
 #include <seccomp.h>
 
+#include <linux/filter.h>
+
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/supervisor.capnp.h>
 
@@ -83,6 +85,16 @@
 #endif
 
 namespace sandstorm {
+
+// seccomp filter generated from filter.s:
+static sock_filter seccomp_filter[] = {
+#include <sandstorm/seccomp-bpf/filter.h>
+};
+
+static sock_fprog seccomp_fprog = sock_fprog {
+  .len = sizeof seccomp_filter / sizeof seccomp_filter[0],
+  .filter = &seccomp_filter[0],
+};
 
 // =======================================================================================
 // Directory size watcher
@@ -587,6 +599,12 @@ kj::MainFunc SupervisorMain::getMain() {
                  "Dump libseccomp PFC output.")
       .addOption({'n', "new"}, [this]() { setIsNew(true); return true; },
                  "Initializes a new grain.  (Otherwise, runs an existing one.)")
+      .addOption({"use-experimental-seccomp-filter"},
+                 [this]() { useExperimentalSeccompFilter = true; return true; },
+                 "Use the new, experimental seccomp filter.")
+      .addOption({"log-seccomp-violations"},
+                 [this]() { logSeccompViolations = true; return true; },
+                 "Log seccomp filter violations")
       .expectArg("<app-name>", KJ_BIND_METHOD(*this, setAppName))
       .expectArg("<grain-id>", KJ_BIND_METHOD(*this, setGrainId))
       .expectOneOrMoreArgs("<command>", KJ_BIND_METHOD(*this, addCommandArg))
@@ -1081,7 +1099,19 @@ void SupervisorMain::setupStdio() {
   // supervisor, stdout is how we tell our parent that we're ready to receive connections.
 }
 
-void SupervisorMain::setupSeccomp() {
+void SupervisorMain::setupSeccompNew() {
+  int flags = 0;
+  if(logSeccompViolations) {
+    flags = SECCOMP_FILTER_FLAG_LOG;
+  }
+  KJ_SYSCALL(syscall(
+        SYS_seccomp,
+        SECCOMP_SET_MODE_FILTER,
+        flags,
+        &seccomp_fprog));
+}
+
+void SupervisorMain::setupSeccompLegacy() {
   // Install a rudimentary seccomp blacklist.
   // TODO(security): Change this to a whitelist.
 
@@ -2385,6 +2415,14 @@ kj::Promise<void> SupervisorMain::DefaultSystemConnector::run(
 }
 
 // -----------------------------------------------------------------------------
+
+void SupervisorMain::setupSeccomp() {
+  if(useExperimentalSeccompFilter) {
+    setupSeccompNew();
+  } else {
+    setupSeccompLegacy();
+  }
+}
 
 [[noreturn]] void SupervisorMain::runSupervisor(int apiFd, kj::AutoCloseFd startEventFd) {
   // We're currently in a somewhat dangerous state: our root directory is controlled

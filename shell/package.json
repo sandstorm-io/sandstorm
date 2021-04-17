@@ -20,7 +20,7 @@
     "@root/keypairs": "^0.9.0",
     "@root/pem": "^1.0.4",
     "@types/fibers": "^3.1.0",
-    "@types/meteor": "^1.4.67",
+    "@types/meteor": "^1.4.69",
     "acme-dns-01-cloudflare": "^1.2.3",
     "acme-dns-01-desec": "^3.0.0",
     "acme-dns-01-digitalocean": "^3.0.1",
@@ -28,7 +28,7 @@
     "acme-dns-01-duckdns": "^3.0.1",
     "acme-dns-01-gandi": "^3.0.0",
     "acme-dns-01-gcp": "^0.0.9",
-    "acme-dns-01-godaddy": "^3.0.0",
+    "acme-dns-01-godaddy": "^3.0.1",
     "acme-dns-01-namecheap": "^3.0.1",
     "acme-dns-01-namedotcom": "^3.0.1",
     "acme-dns-01-route53": "0.0.1",
@@ -46,9 +46,9 @@
     "node-forge": "^0.10.0",
     "nodemailer": "^2.7.2",
     "nodemailer-smtp-pool": "^2.8.3",
-    "openid-client": "^4.4.0",
+    "openid-client": "^4.6.0",
     "smtp-server": "^1.17.0",
-    "stripe": "^8.137.0",
+    "stripe": "^8.144.0",
     "xml-crypto": "0.0.20",
     "xml2js": "^0.2.8",
     "xmlbuilder": "^8.2.2",
@@ -57,8 +57,8 @@
   "devDependencies": {
     "@typescript-eslint/parser": "^3.10.1",
     "babel-eslint": "^10.1.0",
-    "chai": "^4.3.0",
+    "chai": "^4.3.4",
     "eslint": "^6.8.0",
-    "typescript": "^4.1.5"
+    "typescript": "^4.2.4"
   }
 }

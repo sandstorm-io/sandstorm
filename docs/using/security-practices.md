@@ -141,17 +141,9 @@ channel by leaking plain bits -- in technical terms, _capabilities_ in
 Sandstorm are never just bits, and therefore you cannot leak
 _capabilities_ via covert channels.
 
-_**Beta Notice:** As of this writing (April 2016), Sandstorm is in
-beta. Key features allowing a user to easily grant an application
-access to external resources are still in development. In order to
-make Sandstorm more useful to early adopters, we have temporarily
-opened some intentional holes in our confinement model. For example,
-we have allowed outgoing HTTP to arbitrary servers in order to permit
-the TinyTiny RSS app to fetch RSS feeds, and we have allowed incoming
-and outgoing SMTP (with certain restrictions) to allow email clients
-to work. These holes will be closed as soon as the Powerbox UI and
-drivers make them obsolete, but in the meantime Sandstorm does not yet
-implement true confinement._
+_**Notice:** As of this writing (April 2021), Sandstorm retains limited
+incoming and outgoing SMTP to allow email clients to work. This will be
+removed once email support via the Powerbox is implemented._
 
 ### Capability-based Usable Security
 
@@ -228,11 +220,6 @@ to prevent vendor lock-in, where all apps from a vendor integrate only
 with each other and fail to give the user any ability to swap out one
 app for a third party app.
 
-_Note: As of this writing (May 2015), the powerbox is still in the
-process of being implemented. This is why we have not yet implemented
-full confinement, as mentioned above: without the powerbox, it would
-be too limiting._
-
 ## Tactics
 
 At a lower level, here are some of the techniques Sandstorm uses to provide security.
@@ -308,6 +295,6 @@ off, which is still a big win.
 Sandstorm will soon employ the `Content-Security-Policy` header to
 prevent an app from communicating with other origins without
 permission, in order to implement full confinement. As of this writing
-(May 2015), this has not yet been put in place, mostly because
-server-side confinement is not complete (as described earlier) which
-makes client-side confinement largely moot for the moment.
+(April 2021), this has been implemented, and can be enabled with a
+configuration option, but is pending wider rollout on ensuring existing
+apps are updated to be compatible with this change.

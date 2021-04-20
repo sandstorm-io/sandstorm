@@ -295,6 +295,9 @@ off, which is still a big win.
 Sandstorm will soon employ the `Content-Security-Policy` header to
 prevent an app from communicating with other origins without
 permission, in order to implement full confinement. As of this writing
-(April 2021), this has been implemented, and can be enabled with a
-configuration option, but is pending wider rollout on ensuring existing
-apps are updated to be compatible with this change.
+(April 2021), this has been partially implemented behind a configuration
+option, but is pending wider rollout on ensuring existing apps are updated
+to be compatible with this change. At present, remote media and images
+are permitted, but will be controlled via a permission prompt in the
+future. Unfortunately, it isn't presently possible to block WebRTC via
+Content Security Policy, but we are working with the standards process.

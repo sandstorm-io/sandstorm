@@ -80,6 +80,5 @@ tests/sandstorm-tests.files
 tests/sandstorm-tests.includes
 tests/tmp-sandstorm
 app-index.spk
-app-index-sandstorm-files.list
 test-app.spk
 deps/llvm-build

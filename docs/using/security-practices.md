@@ -66,7 +66,7 @@ while allowing statistics gathering when the user consents to it.
 By our analysis, Sandstorm automatically protected users from over 95% of the publicly disclosed
 security vulnerabilities discovered in apps on the Sandstorm app market, before the vulnerabilities
 were even disclosed. We also mitigated most Linux kernel security issues. See [Security
-non-events](security-non-events) for examples of security problems which were mitigated by
+non-events](security-non-events.md) for examples of security problems which were mitigated by
 Sandstorm.
 
 ## Strategies
@@ -143,7 +143,9 @@ _capabilities_ via covert channels.
 
 _**Notice:** As of this writing (April 2021), Sandstorm retains limited
 incoming and outgoing SMTP to allow email clients to work. This will be
-removed once email support via the Powerbox is implemented._
+removed once email support via the Powerbox is implemented. Additionally,
+there are limitations to our client-side sandboxing at this time. See
+the related section on this document for details._
 
 ### Capability-based Usable Security
 

@@ -64,7 +64,7 @@ export const runDueJobs = (nowMillis) => {
   jobs.forEach((job) => {
     if (job.lastKeepAlive) {
       if (job.retries && job.retries >= MAX_DISCONNECTED_RETRIES) {
-        db.recordScheduleJobRan(job, {
+        db.recordScheduledJobRan(job, {
           finished: job.lastKeepAlive,
           type: "disconnected",
           message: "MAX_DISCONNECTED_RETRIES exceeded",

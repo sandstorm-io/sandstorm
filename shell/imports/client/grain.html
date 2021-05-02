@@ -555,7 +555,9 @@
 </template>
 
 <template name="grain">
-  {{>sandstormTopbarItem name="title" priority=5 topbar=globalTopbar template="grainTitle"}}
+  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar}}
+    {{> grainTitle grain=currentGrain }}
+  {{/sandstormTopbarItem}}
   {{#sandstormTopbarItem name="grain-size" priority=5 topbar=globalTopbar}}
     {{grainSize}}
   {{/sandstormTopbarItem}}

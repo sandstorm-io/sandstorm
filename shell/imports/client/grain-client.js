@@ -48,8 +48,7 @@ GrantedAccessRequests = new Mongo.Collection("grantedAccessRequests");
 GrainLog = new Mongo.Collection("grainLog");
 // Pseudo-collection created by subscribing to "grainLog", implemented in proxy.js.
 
-const promptNewTitle = function () {
-  const grain = globalGrains.getActive();
+const promptNewTitle = function (grain) {
   if (grain) {
     let prompt = "Set new title:";
     if (!grain.isOwner()) {
@@ -141,14 +140,14 @@ Tracker.autorun(function () {
 
 Template.grainTitle.events({
   click: function (event) {
-    promptNewTitle();
+    promptNewTitle(Template.currentData().grain);
   },
 
   keydown: function (event) {
     if ((event.keyCode === 13) || (event.keyCode === 32)) {
       // Allow space or enter to trigger renaming the grain - Firefox doesn't treat enter on the
       // focused element as click().
-      promptNewTitle();
+      promptNewTitle(Template.currentData().grain);
       event.preventDefault();
     }
   },
@@ -835,12 +834,12 @@ Template.grain.helpers({
 });
 
 Template.grainTitle.helpers({
-  fullTitle: function () {
-    const grain = globalGrains.getActive();
+  fullTitle() {
+    const grain = Template.currentData().grain;
     return (grain && grain.fullTitle()) || { title: "(unknown grain)" };
   },
 
-  hasSubtitle: function () {
+  hasSubtitle() {
     return !!(this.was || this.renamedFrom);
   },
 });

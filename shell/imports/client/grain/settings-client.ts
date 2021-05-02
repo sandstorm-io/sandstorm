@@ -1,4 +1,5 @@
 
+import { TAPi18n } from "meteor/tap:i18n";
 import { Template } from "meteor/templating";
 import { Match, check } from "meteor/check";
 import { globalDb } from "/imports/db-deprecated.js";

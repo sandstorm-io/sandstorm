@@ -177,7 +177,8 @@ Template.grainDebugLogButton.events({
 
 Template.grainSettingsButton.events({
   "click button": function(event) {
-    globalGrains.getActive().setShowSettings(true);
+    const grain = globalGrains.getActive();
+    grain.setShowSettings(!grain.showSettings());
   },
 });
 

@@ -40,11 +40,27 @@ overrides:
       node: false
       browser: false
 reportUnusedDisableDirectives: true
-extends: "eslint:recommended"
+extends:
+  - "eslint:recommended"
+  - "plugin:@typescript-eslint/eslint-recommended"
+  - "plugin:@typescript-eslint/recommended"
 rules:
-  # These are implied by eslint:recommended, but we haven't gotten around to
-  # fixing them yet:
+  # These are implied by one of the items in extends, but we haven't gotten
+  # around to fixing them yet:
   no-undef: ["warn"]
-  no-unused-vars: ["warn", {"argsIgnorePattern": "^_"}]
   no-empty: ["warn"]
   no-inner-declarations: ["warn"]
+  "@typescript-eslint/no-empty-function": ["warn"]
+  "@typescript-eslint/no-unused-vars": ["warn", {"argsIgnorePattern": "^_"}]
+  # superceeded by the type script version, which understands types:
+  no-unused-vars: ["off"]
+  # This flags assignemnts of this to another variable, which we do a lot,
+  # e.g. `const this_ = this;`, to avoid worrying about dynamic scope.
+  # I(zenhack) have no idea why someone decided this was something to lint
+  # about. Turn it off:
+  "@typescript-eslint/no-this-alias": ["off"]
+  # This flags top level functions that don't have types on them, but it does
+  # so even in .js files, where type syntax isn't supported anyway! We already
+  # have noImplictAny in our typescript config, so this adds no real extra
+  # value:
+  "@typescript-eslint/explicit-module-boundary-types": ["off"]

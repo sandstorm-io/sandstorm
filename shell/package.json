@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint . --ext .ts --ext .js && tsc"
+    "lint": "eslint client/ server/ imports/ public/pwa-service-worker.js --ext .ts --ext .js && tsc"
   },
   "author": "",
   "repository": {
@@ -55,6 +55,7 @@
     "xmldom": "^0.6.0"
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.22.0",
     "@typescript-eslint/parser": "^3.10.1",
     "babel-eslint": "^10.1.0",
     "chai": "^4.3.4",

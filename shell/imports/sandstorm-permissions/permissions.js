@@ -386,7 +386,7 @@ class ActiveToken {
     this.numUnmetRequirements = numUnmetRequirements;
     // How many of this token's requirements we have not yet proven to be met.
 
-    this.receivedPermissions = new Array();
+    this.receivedPermissions = [];
     // A map from permission ID to boolean. If a permission ID is present in this map,
     // then this token's roleAssignment includes that permission. If the corresponding
     // value is `true`, then we've proven that this token receives this permission and
@@ -720,7 +720,7 @@ class Context {
     }
 
     if (!this.variables[grainId][vertexId]) {
-      this.variables[grainId][vertexId] = new Array();
+      this.variables[grainId][vertexId] = [];
     }
 
     if (!this.variables[grainId][vertexId][permissionId]) {
@@ -964,7 +964,7 @@ class Context {
     check(vertexId, String);
 
     const stack = []; // [{ grainId: String, vertexId: String, permissionId: PermissionId }]
-    const visited = new Array(); // grainId -> vertexId -> permissionId -> bool;
+    const visited = []; // grainId -> vertexId -> permissionId -> bool;
 
     function pushVertex(grainId, vertexId, permissionId) {
       if (!visited[grainId]) {

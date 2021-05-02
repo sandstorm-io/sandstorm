@@ -1,7 +1,7 @@
 // Misc. utilities for working with meteor collections.
 
-import { Subscription } from "meteor/meteor";
-import { Mongo } from "meteor/mongo";
+import type { Subscription } from "meteor/meteor";
+import type { Mongo } from "meteor/mongo";
 
 export function subscriptionCallbacks<T extends {_id: string}>(
     name: string,

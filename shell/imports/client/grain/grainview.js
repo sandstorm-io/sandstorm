@@ -82,6 +82,7 @@ class GrainView {
     this._dep = new Tracker.Dependency();
     this._options = options;
 
+    this._showSettings = new ReactiveVar(false);
     this._powerboxRequest = new ReactiveVar(undefined);
     this._shareData = {};
 
@@ -141,6 +142,14 @@ class GrainView {
 
       this._devAppId = id;
     });
+  }
+
+  showSettings() {
+    return this._showSettings.get();
+  }
+
+  setShowSettings(show) {
+    this._showSettings.set(show);
   }
 
   save() {

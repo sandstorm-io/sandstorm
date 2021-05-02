@@ -100,6 +100,7 @@ const mapGrainStateToTemplateData = function (grainState) {
     signinOverlay: grainState.signinOverlay(),
     grainView: grainState,
     isPowerbox: grainState.isPowerboxRequest(),
+    showSettings: grainState.showSettings(),
   };
   return templateData;
 };
@@ -171,6 +172,12 @@ Template.grainDebugLogButton.events({
     const activeGrain = globalGrains.getActive();
     window.open("/grainlog/" + activeGrain.grainId(), "_blank",
         "menubar=no,status=no,toolbar=no,width=700,height=700");
+  },
+});
+
+Template.grainSettingsButton.events({
+  "click button": function(event) {
+    globalGrains.getActive().setShowSettings(true);
   },
 });
 

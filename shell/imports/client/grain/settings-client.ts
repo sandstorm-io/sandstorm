@@ -20,7 +20,7 @@ Template.sandstormGrainSettingsPage.helpers({
 });
 
 Template.sandstormGrainSettingsPage.events({
-  "click .grain-settings-back-button": function(_event: unknown) {
+  "click .grain-settings-open-grain-button": function(_event: unknown) {
     Template.currentData().grain.setShowSettings(false);
   },
 })
@@ -38,6 +38,13 @@ Template.sandstormGrainSettingsScheduledJob.onCreated(function () {
 
 
 Template.sandstormGrainSettingsScheduledJob.helpers({
+  period() {
+    return TAPi18n.__(
+      "grains.settings.scheduledTasks.periodNames." +
+      Template.currentData().job.period
+    );
+  },
+
   description() {
     return Template.currentData().job.name.defaultText;
   }

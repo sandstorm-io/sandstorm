@@ -260,6 +260,22 @@
       "hint": "Share access to this grain",
       "text": "Share access"
     },
+    "settings": {
+      "title": "Grain Settings",
+      "openGrain": "Open Grain",
+      "scheduledTasks": {
+        "title": "Scheduled Tasks",
+        "description": "Description",
+        "period": "Period",
+        "periodNames": {
+          "anually": "anually",
+          "monthly": "monthly",
+          "weekly": "weekly",
+          "daily": "daily",
+          "hourly": "hourly"
+        }
+      }
+    },
     "whoHasAccessPopup": {
       "title": "Who has access",
       "noLoggedInUsers": "No logged-in users have visited your links yet.",

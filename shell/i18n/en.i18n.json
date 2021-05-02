@@ -262,7 +262,7 @@
     },
     "settings": {
       "title": "Grain Settings",
-      "openGrain": "Open Grain",
+      "returnToGrain": "Return to Grain",
       "scheduledTasks": {
         "title": "Scheduled Tasks",
         "description": "Description",

@@ -21,7 +21,7 @@ Template.sandstormGrainSettingsPage.helpers({
 });
 
 Template.sandstormGrainSettingsPage.events({
-  "click .grain-settings-open-grain-button": function(_event: unknown) {
+  "click .grain-settings-return-to-grain-button": function(_event: unknown) {
     Template.currentData().grain.setShowSettings(false);
   },
 })

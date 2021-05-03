@@ -53,7 +53,7 @@
     background-color: $default-table-header-background-color;
     color: $default-table-header-foreground-color;
   }
-  tr.header-row:hover {
+  th:hover {
     background-color: $default-table-header-background-color-hover;
   }
 }

@@ -32,6 +32,8 @@ Template.sandstormGrainSettingsScheduledJob.onCreated(function () {
       job: Match.ObjectIncluding({
         name: { defaultText: String },
         period: String,
+        nextPeriodStart: Date,
+        created: Date,
       }),
     });
   });
@@ -48,5 +50,13 @@ Template.sandstormGrainSettingsScheduledJob.helpers({
 
   description() {
     return Template.currentData().job.name.defaultText;
-  }
+  },
+
+  next() {
+    return Template.currentData().job.nextPeriodStart;
+  },
+
+  created() {
+    return Template.currentData().job.created;
+  },
 })

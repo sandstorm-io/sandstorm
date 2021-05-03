@@ -265,8 +265,12 @@
       "returnToGrain": "Return to Grain",
       "scheduledTasks": {
         "title": "Scheduled Tasks",
-        "description": "Description",
-        "period": "Period",
+        "headings": {
+          "description": "Description",
+          "period": "Period",
+          "next": "Runs next at",
+          "created": "Created at"
+        },
         "periodNames": {
           "anually": "anually",
           "monthly": "monthly",

@@ -5,8 +5,10 @@
     <h2>{{_ "grains.settings.scheduledTasks.title" }}</h2>
     <table class="grain-settings-scheduled-jobs-table">
       <tr class="header-row">
-        <th>{{_ "grains.settings.scheduledTasks.description"}}</th>
-        <th>{{_ "grains.settings.scheduledTasks.period"}}</th>
+        <th>{{_ "grains.settings.scheduledTasks.headings.description"}}</th>
+        <th>{{_ "grains.settings.scheduledTasks.headings.period"}}</th>
+        <th>{{_ "grains.settings.scheduledTasks.headings.next"}}</th>
+        <th>{{_ "grains.settings.scheduledTasks.headings.created"}}</th>
       </tr>
       {{#each job in scheduledJobs }}
       <tr class="job-row">{{> sandstormGrainSettingsScheduledJob job=job}}</tr>
@@ -18,4 +20,6 @@
 <template name="sandstormGrainSettingsScheduledJob">
   <td>{{description}}</td>
   <td>{{period}}</td>
+  <td>{{next}}</td>
+  <td>{{created}}</td>
 </template>

@@ -1,16 +1,18 @@
 <template name="sandstormGrainSettingsPage">
-  <h1>{{_ "grains.settings.title" }}</h1>
-  <button class="grain-settings-return-to-grain-button">{{_ "grains.settings.returnToGrain" }}</button>
-  <h2>{{_ "grains.settings.scheduledTasks.title" }}</h2>
-  <table class="grain-settings-scheduled-jobs-table">
-    <tr>
-      <th>{{_ "grains.settings.scheduledTasks.description"}}</th>
-      <th>{{_ "grains.settings.scheduledTasks.period"}}</th>
-    </tr>
-    {{#each job in scheduledJobs }}
-    <tr class="job-row">{{> sandstormGrainSettingsScheduledJob job=job}}</tr>
-    {{/each}}
-  </table>
+  <div class="grain-settings">
+    <h1>{{_ "grains.settings.title" }}</h1>
+    <button class="grain-settings-return-to-grain-button">{{_ "grains.settings.returnToGrain" }}</button>
+    <h2>{{_ "grains.settings.scheduledTasks.title" }}</h2>
+    <table class="grain-settings-scheduled-jobs-table">
+      <tr class="header-row">
+        <th>{{_ "grains.settings.scheduledTasks.description"}}</th>
+        <th>{{_ "grains.settings.scheduledTasks.period"}}</th>
+      </tr>
+      {{#each job in scheduledJobs }}
+      <tr class="job-row">{{> sandstormGrainSettingsScheduledJob job=job}}</tr>
+      {{/each}}
+    </table>
+  </div>
 </template>
 
 <template name="sandstormGrainSettingsScheduledJob">

@@ -1,0 +1,61 @@
+
+.grain-settings {
+  padding: 32px;
+
+  color: $default-content-foreground-color;
+  background-color: $default-content-background-color;
+  h1 {
+    font-weight: normal;
+    margin-top: 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid $default-rule-color;
+  }
+
+  h2 {
+    font-size: 24px;
+    font-weight: normal;
+  }
+
+  table {
+    border-collapse: collapse;
+    border: 1px solid $default-table-border-color;
+    width: 100%;
+  }
+
+  th {
+    text-align: left;
+    font-weight: 400;
+  }
+  th:not(:last-child) {
+    border-right: solid 1px white;
+  }
+
+  td {
+    border-right: none;
+    border-left: none;
+  }
+
+  tr {
+    color: $default-table-row-foreground-color;
+    background-color: $default-table-row-background-color;
+  }
+  tr:hover {
+    background-color: $default-table-row-background-color-hover;
+  }
+
+  tr {
+    width: 100%;
+    min-height: 32px;
+    margin-bottom: 1px;
+  }
+
+  tr.header-row {
+    background-color: $default-table-header-background-color;
+    color: $default-table-header-foreground-color;
+  }
+  tr.header-row:hover {
+    background-color: $default-table-header-background-color-hover;
+  }
+}
+
+/* vim: set ts=2 sw=2 et : */

@@ -4,6 +4,12 @@
 
   color: $default-content-foreground-color;
   background-color: $default-content-background-color;
+
+  .grain-settings-return-to-grain-button {
+    @extend %button-base;
+    @extend %button-secondary;
+  }
+
   h1 {
     font-weight: normal;
     margin-top: 0;

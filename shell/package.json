@@ -49,7 +49,7 @@
     "openid-client": "^4.7.3",
     "smtp-server": "^1.17.0",
     "stripe": "^8.148.0",
-    "xml-crypto": "0.0.20",
+    "xml-crypto": "^2.1.2",
     "xml2js": "^0.2.8",
     "xmlbuilder": "^8.2.2",
     "xmldom": "^0.6.0"

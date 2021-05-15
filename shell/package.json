@@ -41,6 +41,7 @@
     "fibers": "^4.0.3",
     "heapdump": "^0.3.15",
     "intro.js": "git+https://github.com/sandstorm-io/intro.js.git#8e1c7604f251ec874bf4ae4d7b4f11a14cee697e",
+    "ip": "^1.1.5",
     "ldapjs": "^1.0.2",
     "mailparser": "^0.6.2",
     "node-forge": "^0.10.0",

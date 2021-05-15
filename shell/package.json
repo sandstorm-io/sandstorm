@@ -44,7 +44,7 @@
     "ldapjs": "^1.0.2",
     "mailparser": "^0.6.2",
     "node-forge": "^0.10.0",
-    "nodemailer": "^2.7.2",
+    "nodemailer": "^6.6.0",
     "nodemailer-smtp-pool": "^2.8.3",
     "openid-client": "^4.7.3",
     "smtp-server": "^1.17.0",

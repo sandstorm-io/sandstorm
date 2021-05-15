@@ -888,20 +888,6 @@
       "resolved": "https://registry.npmjs.org/buffer-equal-constant-time/-/buffer-equal-constant-time-1.0.1.tgz",
       "integrity": "sha1-+OcRMvf/5uAaXJaXpMbz5I1cyBk="
     },
-    "buildmail": {
-      "version": "4.0.1",
-      "resolved": "https://registry.npmjs.org/buildmail/-/buildmail-4.0.1.tgz",
-      "integrity": "sha1-h393OLeHKYccmhBeO4N9K+EaenI=",
-      "requires": {
-        "addressparser": "1.0.1",
-        "libbase64": "0.1.0",
-        "libmime": "3.0.0",
-        "libqp": "1.1.0",
-        "nodemailer-fetch": "1.6.0",
-        "nodemailer-shared": "1.1.0",
-        "punycode": "1.4.1"
-      }
-    },
     "bunyan": {
       "version": "1.8.15",
       "resolved": "https://registry.npmjs.org/bunyan/-/bunyan-1.8.15.tgz",
@@ -1961,11 +1947,6 @@
       "version": "git+https://github.com/sandstorm-io/intro.js.git#8e1c7604f251ec874bf4ae4d7b4f11a14cee697e",
       "from": "git+https://github.com/sandstorm-io/intro.js.git#8e1c7604f251ec874bf4ae4d7b4f11a14cee697e"
     },
-    "ip": {
-      "version": "1.1.5",
-      "resolved": "https://registry.npmjs.org/ip/-/ip-1.1.5.tgz",
-      "integrity": "sha1-vd7XARQpCCjAoDnnLvJfWq7ENUo="
-    },
     "ipv6-normalize": {
       "version": "1.0.1",
       "resolved": "https://registry.npmjs.org/ipv6-normalize/-/ipv6-normalize-1.0.1.tgz",
@@ -2152,33 +2133,6 @@
         "type-check": "~0.3.2"
       }
     },
-    "libbase64": {
-      "version": "0.1.0",
-      "resolved": "https://registry.npmjs.org/libbase64/-/libbase64-0.1.0.tgz",
-      "integrity": "sha1-YjUag5VjrF/1vSbxL2Dpgwu3UeY="
-    },
-    "libmime": {
-      "version": "3.0.0",
-      "resolved": "https://registry.npmjs.org/libmime/-/libmime-3.0.0.tgz",
-      "integrity": "sha1-UaGp50SOy9Ms2lRCFnW7IbwJPaY=",
-      "requires": {
-        "iconv-lite": "0.4.15",
-        "libbase64": "0.1.0",
-        "libqp": "1.1.0"
-      },
-      "dependencies": {
-        "iconv-lite": {
-          "version": "0.4.15",
-          "resolved": "https://registry.npmjs.org/iconv-lite/-/iconv-lite-0.4.15.tgz",
-          "integrity": "sha1-/iZaIYrGpXz+hUkn6dBMGYJe3es="
-        }
-      }
-    },
-    "libqp": {
-      "version": "1.1.0",
-      "resolved": "https://registry.npmjs.org/libqp/-/libqp-1.1.0.tgz",
-      "integrity": "sha1-9ebgatdLeU+1tbZpiL9yjvHe2+g="
-    },
     "lodash": {
       "version": "4.17.21",
       "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz",
@@ -2201,15 +2155,6 @@
       "integrity": "sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==",
       "requires": {
         "yallist": "^4.0.0"
-      }
-    },
-    "mailcomposer": {
-      "version": "4.0.1",
-      "resolved": "https://registry.npmjs.org/mailcomposer/-/mailcomposer-4.0.1.tgz",
-      "integrity": "sha1-DhxEsqB890DuF9wUm6AJ8Zyt/rQ=",
-      "requires": {
-        "buildmail": "4.0.1",
-        "libmime": "3.0.0"
       }
     },
     "mailparser": {
@@ -2358,39 +2303,9 @@
       "integrity": "sha512-PPmu8eEeG9saEUvI97fm4OYxXVB6bFvyNTyiUOBichBpFG8A1Ljw3bY62+5oOjDEMHRnd0Y7HQ+x7uzxOzC6JA=="
     },
     "nodemailer": {
-      "version": "2.7.2",
-      "resolved": "https://registry.npmjs.org/nodemailer/-/nodemailer-2.7.2.tgz",
-      "integrity": "sha1-8kLmSa7q45tsftdA73sGHEBNMPk=",
-      "requires": {
-        "libmime": "3.0.0",
-        "mailcomposer": "4.0.1",
-        "nodemailer-direct-transport": "3.3.2",
-        "nodemailer-shared": "1.1.0",
-        "nodemailer-smtp-pool": "2.8.2",
-        "nodemailer-smtp-transport": "2.7.2",
-        "socks": "1.1.9"
-      },
-      "dependencies": {
-        "nodemailer-smtp-pool": {
-          "version": "2.8.2",
-          "resolved": "https://registry.npmjs.org/nodemailer-smtp-pool/-/nodemailer-smtp-pool-2.8.2.tgz",
-          "integrity": "sha1-LrlNbPhXgLG0clzoU7nL1ejajHI=",
-          "requires": {
-            "nodemailer-shared": "1.1.0",
-            "nodemailer-wellknown": "0.1.10",
-            "smtp-connection": "2.12.0"
-          }
-        }
-      }
-    },
-    "nodemailer-direct-transport": {
-      "version": "3.3.2",
-      "resolved": "https://registry.npmjs.org/nodemailer-direct-transport/-/nodemailer-direct-transport-3.3.2.tgz",
-      "integrity": "sha1-6W+vuQNYVglH5WkBfZfmBzilCoY=",
-      "requires": {
-        "nodemailer-shared": "1.1.0",
-        "smtp-connection": "2.12.0"
-      }
+      "version": "6.6.0",
+      "resolved": "https://registry.npmjs.org/nodemailer/-/nodemailer-6.6.0.tgz",
+      "integrity": "sha512-ikSMDU1nZqpo2WUPE0wTTw/NGGImTkwpJKDIFPZT+YvvR9Sj+ze5wzu95JHkBMglQLoG2ITxU21WukCC/XsFkg=="
     },
     "nodemailer-fetch": {
       "version": "1.6.0",
@@ -2409,16 +2324,6 @@
       "version": "2.8.3",
       "resolved": "https://registry.npmjs.org/nodemailer-smtp-pool/-/nodemailer-smtp-pool-2.8.3.tgz",
       "integrity": "sha1-HXockp6c2DDydclwrPo/9u6XbZQ=",
-      "requires": {
-        "nodemailer-shared": "1.1.0",
-        "nodemailer-wellknown": "0.1.10",
-        "smtp-connection": "2.12.0"
-      }
-    },
-    "nodemailer-smtp-transport": {
-      "version": "2.7.2",
-      "resolved": "https://registry.npmjs.org/nodemailer-smtp-transport/-/nodemailer-smtp-transport-2.7.2.tgz",
-      "integrity": "sha1-A9ccdjFPFKx9vHvwM6am0W1n+3c=",
       "requires": {
         "nodemailer-shared": "1.1.0",
         "nodemailer-wellknown": "0.1.10",
@@ -2601,11 +2506,6 @@
         "end-of-stream": "^1.1.0",
         "once": "^1.3.1"
       }
-    },
-    "punycode": {
-      "version": "1.4.1",
-      "resolved": "https://registry.npmjs.org/punycode/-/punycode-1.4.1.tgz",
-      "integrity": "sha1-wNWmOycYgArY4esPpSachN1BhF4="
     },
     "qs": {
       "version": "6.7.0",
@@ -2822,11 +2722,6 @@
         }
       }
     },
-    "smart-buffer": {
-      "version": "1.1.15",
-      "resolved": "https://registry.npmjs.org/smart-buffer/-/smart-buffer-1.1.15.tgz",
-      "integrity": "sha1-fxFLW2X6s+KjWqd1uxLw0cZJvxY="
-    },
     "smtp-connection": {
       "version": "2.12.0",
       "resolved": "https://registry.npmjs.org/smtp-connection/-/smtp-connection-2.12.0.tgz",
@@ -2843,15 +2738,6 @@
       "requires": {
         "ipv6-normalize": "^1.0.1",
         "nodemailer-shared": "^1.1.0"
-      }
-    },
-    "socks": {
-      "version": "1.1.9",
-      "resolved": "https://registry.npmjs.org/socks/-/socks-1.1.9.tgz",
-      "integrity": "sha1-Yo1+TQSRJDVEWsC25Fk3bLPm1pE=",
-      "requires": {
-        "ip": "^1.1.2",
-        "smart-buffer": "^1.0.4"
       }
     },
     "source-map": {

@@ -16,14 +16,14 @@
 
 # You may override the following vars on the command line to suit
 # your config.
-CC=$(shell pwd)/deps/llvm-build/Release+Asserts/bin/clang
-CXX=$(shell pwd)/deps/llvm-build/Release+Asserts/bin/clang++
-CFLAGS=-O2 -Wall -g
-CXXFLAGS=$(CFLAGS)
-BUILD=0
-PARALLEL=$(shell nproc)
-LIBS=
-EKAM=ekam
+CC ?= $(shell pwd)/deps/llvm-build/Release+Asserts/bin/clang
+CXX ?= $(shell pwd)/deps/llvm-build/Release+Asserts/bin/clang++
+CFLAGS ?= -O2 -Wall -g
+CXXFLAGS ?= $(CFLAGS)
+BUILD ?= 0
+PARALLEL ?= $(shell nproc)
+LIBS ?=
+EKAM ?= ekam
 
 # You generally should not modify this.
 # TODO(cleanup): -fPIC is unfortunate since most of our code is static binaries

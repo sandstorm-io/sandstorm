@@ -3,7 +3,7 @@ This page lists common problems and work-arounds.
 This page needs expansion! If you encounter a new problem and solve it, feel
 free to add it here. If you encounter a problem you don't know how to solve,
 try asking on Stack Overflow, and be sure to add the "sandstorm.io" tag to your
-question. Or, talk to us on IRC (#sandstorm on freenode) or
+question. Or, talk to us on IRC (#sandstorm on libera.chat) or
 [sandstorm-dev](https://groups.google.com/group/sandstorm-dev).
 
 Note that language-specific issues should be documented in the

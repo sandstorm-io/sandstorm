@@ -6,8 +6,8 @@ ExtraHeadersResponse::ExtraHeadersResponse(kj::HttpService::Response& orig, kj::
   : origResponse(orig),
   extraHeaders(kj::mv(extraHeaders)) {}
 
-void ExtraHeadersResponse::updateHeaders(const kj::HttpHeaders& headers) {
-  // Update `extraHeaders` by copying the contents of `headers` into it.
+kj::HttpHeaders ExtraHeadersResponse::addExtraHeaders(const kj::HttpHeaders& headers) {
+  // Return a shallow copy of `headers` with `extraHeaders` added to it.
   kj::HttpHeaders newHeaders = headers.cloneShallow();
   extraHeaders.forEach(
     [&](kj::HttpHeaderId id, kj::StringPtr value) {
@@ -17,19 +17,17 @@ void ExtraHeadersResponse::updateHeaders(const kj::HttpHeaders& headers) {
       newHeaders.add(name, value);
     }
   );
-  extraHeaders = kj::mv(newHeaders);
+  return kj::mv(newHeaders);
 }
 
 kj::Own<kj::AsyncOutputStream> ExtraHeadersResponse::send(
     kj::uint statusCode, kj::StringPtr statusText, const kj::HttpHeaders& headers,
     kj::Maybe<uint64_t> expectedBodySize) {
-  updateHeaders(headers);
-  return origResponse.send(statusCode, statusText, extraHeaders, expectedBodySize);
+  return origResponse.send(statusCode, statusText, addExtraHeaders(headers), expectedBodySize);
 }
 
 kj::Own<kj::WebSocket> ExtraHeadersResponse::acceptWebSocket(const kj::HttpHeaders& headers) {
-  updateHeaders(headers);
-  return origResponse.acceptWebSocket(extraHeaders);
+  return origResponse.acceptWebSocket(addExtraHeaders(headers));
 }
 
 };

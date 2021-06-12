@@ -16,7 +16,7 @@ public:
   kj::Own<kj::WebSocket> acceptWebSocket(const kj::HttpHeaders& headers);
 
 private:
-  void updateHeaders(const kj::HttpHeaders& headers);
+  kj::HttpHeaders addExtraHeaders(const kj::HttpHeaders& headers);
 
   kj::HttpService::Response& origResponse;
   kj::HttpHeaders extraHeaders;

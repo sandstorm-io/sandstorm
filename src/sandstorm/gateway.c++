@@ -101,8 +101,7 @@ GatewayService::GatewayService(
       tables(tables), baseUrl(kj::Url::parse(baseUrl, kj::Url::HTTP_PROXY_REQUEST)),
       wildcardHost(wildcardHost), termsPublicId(termsPublicId), tasks(*this),
       allowLegacyRelaxedCSP(allowLegacyRelaxedCSP),
-      defaultHeaders(kj::HttpHeaders(tables.headerTable))
-{
+      defaultHeaders(kj::HttpHeaders(tables.headerTable)) {
   // Tell chrome not to involve us in its spying on its users:
   defaultHeaders.set(tables.hPermissionsPolicy, "interest-cohort=()");
 }

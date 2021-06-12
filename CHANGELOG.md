@@ -1,3 +1,7 @@
+### v0.284 (2021-06-12)
+- Added new "grain settings" UI. (Thanks @zenhack.)
+- Sandstorm now automatically sends headers to opt out of Google's FLoC. (Thanks @zenhack.)
+
 ### v0.283 (2021-05-15) [bugfixes]
 - Updated dependencies. (No other changes.)
 

@@ -48,8 +48,7 @@ GrantedAccessRequests = new Mongo.Collection("grantedAccessRequests");
 GrainLog = new Mongo.Collection("grainLog");
 // Pseudo-collection created by subscribing to "grainLog", implemented in proxy.js.
 
-const promptNewTitle = function () {
-  const grain = globalGrains.getActive();
+const promptNewTitle = function (grain) {
   if (grain) {
     let prompt = "Set new title:";
     if (!grain.isOwner()) {
@@ -101,6 +100,7 @@ const mapGrainStateToTemplateData = function (grainState) {
     signinOverlay: grainState.signinOverlay(),
     grainView: grainState,
     isPowerbox: grainState.isPowerboxRequest(),
+    showSettings: grainState.showSettings(),
   };
   return templateData;
 };
@@ -141,14 +141,14 @@ Tracker.autorun(function () {
 
 Template.grainTitle.events({
   click: function (event) {
-    promptNewTitle();
+    promptNewTitle(Template.currentData().grain);
   },
 
   keydown: function (event) {
     if ((event.keyCode === 13) || (event.keyCode === 32)) {
       // Allow space or enter to trigger renaming the grain - Firefox doesn't treat enter on the
       // focused element as click().
-      promptNewTitle();
+      promptNewTitle(Template.currentData().grain);
       event.preventDefault();
     }
   },
@@ -172,6 +172,13 @@ Template.grainDebugLogButton.events({
     const activeGrain = globalGrains.getActive();
     window.open("/grainlog/" + activeGrain.grainId(), "_blank",
         "menubar=no,status=no,toolbar=no,width=700,height=700");
+  },
+});
+
+Template.grainSettingsButton.events({
+  "click button": function(event) {
+    const grain = globalGrains.getActive();
+    grain.setShowSettings(!grain.showSettings());
   },
 });
 
@@ -835,12 +842,12 @@ Template.grain.helpers({
 });
 
 Template.grainTitle.helpers({
-  fullTitle: function () {
-    const grain = globalGrains.getActive();
+  fullTitle() {
+    const grain = Template.currentData().grain;
     return (grain && grain.fullTitle()) || { title: "(unknown grain)" };
   },
 
-  hasSubtitle: function () {
+  hasSubtitle() {
     return !!(this.was || this.renamedFrom);
   },
 });

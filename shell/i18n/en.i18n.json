@@ -232,6 +232,10 @@
       "hint": "Restart App",
       "text": "Restart"
     },
+    "grainSettingsButton": {
+      "hint": "Grain Settings",
+      "text": "settings"
+    },
     "grainApiTokenButton": {
       "hint": "Get webkey",
       "text": "Get&nbsp;Webkey"
@@ -255,6 +259,26 @@
     "grainShareButton": {
       "hint": "Share access to this grain",
       "text": "Share access"
+    },
+    "settings": {
+      "title": "Grain Settings",
+      "returnToGrain": "Return to Grain",
+      "scheduledTasks": {
+        "title": "Scheduled Tasks",
+        "headings": {
+          "description": "Description",
+          "period": "Period",
+          "next": "Runs next at",
+          "created": "Created at"
+        },
+        "periodNames": {
+          "annually": "annually",
+          "monthly": "monthly",
+          "weekly": "weekly",
+          "daily": "daily",
+          "hourly": "hourly"
+        }
+      }
     },
     "whoHasAccessPopup": {
       "title": "Who has access",

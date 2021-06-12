@@ -14,7 +14,7 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "@babel/runtime": "^7.14.0",
+    "@babel/runtime": "^7.14.5",
     "@root/acme": "^3.1.0",
     "@root/csr": "^0.8.1",
     "@root/keypairs": "^0.9.0",
@@ -45,11 +45,11 @@
     "ldapjs": "^1.0.2",
     "mailparser": "^0.6.2",
     "node-forge": "^0.10.0",
-    "nodemailer": "^6.6.0",
+    "nodemailer": "^6.6.1",
     "nodemailer-smtp-pool": "^2.8.3",
-    "openid-client": "^4.7.3",
+    "openid-client": "^4.7.4",
     "smtp-server": "^1.17.0",
-    "stripe": "^8.148.0",
+    "stripe": "^8.154.0",
     "xml-crypto": "^2.1.2",
     "xml2js": "^0.2.8",
     "xmlbuilder": "^8.2.2",
@@ -60,6 +60,6 @@
     "babel-eslint": "^10.1.0",
     "chai": "^4.3.4",
     "eslint": "^6.8.0",
-    "typescript": "^4.2.4"
+    "typescript": "^4.3.2"
   }
 }

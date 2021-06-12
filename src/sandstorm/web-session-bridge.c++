@@ -445,6 +445,7 @@ void WebSessionBridge::addStandardApiOptions(
 
 kj::String WebSessionBridge::davDestination(const kj::HttpHeaders& headers) {
   auto dest = KJ_REQUIRE_NONNULL(headers.get(tables.hDestination), "missing destination");
+  kj::String ownDest;
 
   // We allow host-relative URLs even though the spec doesn't. If an absolute URL is given then we
   // must verify that the host matches.
@@ -455,7 +456,8 @@ kj::String WebSessionBridge::davDestination(const kj::HttpHeaders& headers) {
     auto host = KJ_ASSERT_NONNULL(headers.get(kj::HttpHeaderId::HOST));
     KJ_REQUIRE(url.host == host, "DAV 'Destination' header must point to same host");
 
-    dest = url.toString(kj::Url::HTTP_REQUEST);
+    ownDest = url.toString(kj::Url::HTTP_REQUEST);
+    dest = ownDest;
   }
 
   // Remove leading '/'.

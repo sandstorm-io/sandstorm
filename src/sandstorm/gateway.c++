@@ -20,6 +20,7 @@
 #include <kj/encoding.h>
 #include <sandstorm/mime.capnp.h>
 #include "util.h"
+#include "util/http.h"
 #include "smtp-proxy.h"
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -84,6 +85,7 @@ GatewayService::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilder)
       hDav(headerTableBuilder.add("Dav")),
       hLocation(headerTableBuilder.add("Location")),
       hOrigin(headerTableBuilder.add("Origin")),
+      hPermissionsPolicy(headerTableBuilder.add("Permissions-Policy")),
       hUserAgent(headerTableBuilder.add("User-Agent")),
       hWwwAuthenticate(headerTableBuilder.add("WWW-Authenticate")),
       hXRealIp(headerTableBuilder.add("X-Real-IP")),
@@ -98,7 +100,11 @@ GatewayService::GatewayService(
     : timer(timer), shellHttp(kj::newHttpService(shellHttp)), router(kj::mv(router)),
       tables(tables), baseUrl(kj::Url::parse(baseUrl, kj::Url::HTTP_PROXY_REQUEST)),
       wildcardHost(wildcardHost), termsPublicId(termsPublicId), tasks(*this),
-      allowLegacyRelaxedCSP(allowLegacyRelaxedCSP) {}
+      allowLegacyRelaxedCSP(allowLegacyRelaxedCSP),
+      defaultHeaders(kj::HttpHeaders(tables.headerTable)) {
+  // Tell chrome not to involve us in its spying on its users:
+  defaultHeaders.set(tables.hPermissionsPolicy, "interest-cohort=()");
+}
 
 template <typename Key, typename Value>
 static void removeExpired(std::map<Key, Value>& m, kj::TimePoint now, kj::Duration period) {
@@ -174,6 +180,15 @@ bool isAllowedBasicAuthUserAgent(kj::StringPtr ua) {
 }
 
 kj::Promise<void> GatewayService::request(
+    kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
+    kj::AsyncInputStream& requestBody, Response& origResponse) {
+
+  auto response = kj::heap<util::http::ExtraHeadersResponse>(origResponse, defaultHeaders);
+  auto promise = requestHelper(method, url, headers, requestBody, *response);
+  return promise.attach(kj::mv(response));
+}
+
+kj::Promise<void> GatewayService::requestHelper(
     kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
     kj::AsyncInputStream& requestBody, Response& response) {
   KJ_ASSERT(isPurging, "forgot to call cleanupLoop()");

@@ -2,9 +2,9 @@
 
 namespace sandstorm::util::http {
 
-ExtraHeadersResponse::ExtraHeadersResponse(kj::HttpService::Response& orig, kj::HttpHeaders&& extraHeaders)
+ExtraHeadersResponse::ExtraHeadersResponse(kj::HttpService::Response& orig, const kj::HttpHeaders& extraHeaders)
   : origResponse(orig),
-  extraHeaders(kj::mv(extraHeaders)) {}
+  extraHeaders(extraHeaders) {}
 
 kj::HttpHeaders ExtraHeadersResponse::addExtraHeaders(const kj::HttpHeaders& headers) {
   // Return a shallow copy of `headers` with `extraHeaders` added to it.

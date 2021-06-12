@@ -5,7 +5,7 @@ namespace sandstorm::util::http {
 
 class ExtraHeadersResponse final : public kj::HttpService::Response {
 public:
-  ExtraHeadersResponse(kj::HttpService::Response& orig, kj::HttpHeaders&& extraHeaders);
+  ExtraHeadersResponse(kj::HttpService::Response& orig, const kj::HttpHeaders& extraHeaders);
 
   kj::HttpHeaders& headers();
 
@@ -19,6 +19,6 @@ private:
   kj::HttpHeaders addExtraHeaders(const kj::HttpHeaders& headers);
 
   kj::HttpService::Response& origResponse;
-  kj::HttpHeaders extraHeaders;
+  const kj::HttpHeaders& extraHeaders;
 };
 };

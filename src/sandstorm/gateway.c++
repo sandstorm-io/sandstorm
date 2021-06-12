@@ -183,7 +183,7 @@ kj::Promise<void> GatewayService::request(
     kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
     kj::AsyncInputStream& requestBody, Response& origResponse) {
 
-  auto response = kj::heap<util::http::ExtraHeadersResponse>(origResponse, defaultHeaders.cloneShallow());
+  auto response = kj::heap<util::http::ExtraHeadersResponse>(origResponse, defaultHeaders);
   auto promise = requestHelper(method, url, headers, requestBody, *response);
   return promise.attach(kj::mv(response));
 }

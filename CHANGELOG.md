@@ -1,3 +1,6 @@
+### v0.283 (2021-05-15) [bugfixes]
+- Updated dependencies. (No other changes.)
+
 ### v0.282 (2021-04-17)
 - A new, tighter seccomp filter can optionally be enabled. If all goes well, we will probably make it the default in the future. (Thanks @zenhack.)
 - Meteor updated to 2.2, a major release.

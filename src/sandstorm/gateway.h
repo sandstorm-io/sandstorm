@@ -67,6 +67,7 @@ public:
     kj::HttpHeaderId hDav;
     kj::HttpHeaderId hLocation;
     kj::HttpHeaderId hOrigin;
+    kj::HttpHeaderId hPermissionsPolicy;
     kj::HttpHeaderId hUserAgent;
     kj::HttpHeaderId hWwwAuthenticate;
     kj::HttpHeaderId hXRealIp;
@@ -149,6 +150,12 @@ private:
   kj::TaskSet tasks;
 
   bool allowLegacyRelaxedCSP;
+
+  kj::HttpHeaders defaultHeaders;
+
+  kj::Promise<void> requestHelper(
+      kj::HttpMethod method, kj::StringPtr url, const kj::HttpHeaders& headers,
+      kj::AsyncInputStream& requestBody, Response& response);
 
   kj::Promise<void> send401Unauthorized(Response& response);
   kj::Promise<void> sendError(

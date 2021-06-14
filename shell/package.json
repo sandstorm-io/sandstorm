@@ -31,6 +31,7 @@
     "acme-dns-01-godaddy": "^3.0.1",
     "acme-dns-01-namecheap": "^3.0.1",
     "acme-dns-01-namedotcom": "^3.0.1",
+    "acme-dns-01-powerdns": "^1.0.6",
     "acme-dns-01-route53": "0.0.1",
     "acme-dns-01-sandcats": "file:../acme-dns-01-sandcats",
     "acme-dns-01-vultr": "^3.0.2",

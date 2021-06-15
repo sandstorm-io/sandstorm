@@ -612,6 +612,11 @@
       "resolved": "https://registry.npmjs.org/acme-dns-01-namedotcom/-/acme-dns-01-namedotcom-3.0.1.tgz",
       "integrity": "sha512-y32iSMnma14wKcIPyxv+YNLgF7ZmFVvF6rwsyT0GHYZCpwCuoGF/ARFK/KXFqJdZ1NLL2u3QOqnPFJn7a0QfdA=="
     },
+    "acme-dns-01-powerdns": {
+      "version": "1.0.7",
+      "resolved": "https://registry.npmjs.org/acme-dns-01-powerdns/-/acme-dns-01-powerdns-1.0.7.tgz",
+      "integrity": "sha512-l2rqeilRPhqg5S3XwpmHCs5zd1IHto2i98W4pPkptYphCx5wYLSUAruysEwwPsPGn0c51c7trMoqfAGi+0ACcw=="
+    },
     "acme-dns-01-route53": {
       "version": "0.0.1",
       "resolved": "https://registry.npmjs.org/acme-dns-01-route53/-/acme-dns-01-route53-0.0.1.tgz",

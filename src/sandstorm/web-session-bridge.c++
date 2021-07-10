@@ -1295,7 +1295,6 @@ kj::Promise<void> WebSessionBridge::handleResponse(
             "script-src 'self' " UNSAFE
             "style-src 'self' " UNSAFE
             "child-src 'self' " UNSAFE
-            "worker-src 'self' " UNSAFE
             "font-src 'self' " UNSAFE
 
             // frame-src needs to allow references to BASE_URL, because
@@ -1303,6 +1302,11 @@ kj::Promise<void> WebSessionBridge::handleResponse(
             // there:
             "frame-src 'self' ", baseHttpHost, " ", UNSAFE
 #undef UNSAFE
+
+            // Service workers can intercept http requests and muck with
+            // response headers, possibly overriding our security settings,
+            // so we need to disable them.
+            "worker-src 'none';"
 
             // 'self' alone does not allow websocket connections; see:
             // https://github.com/w3c/webappsec-csp/issues/7

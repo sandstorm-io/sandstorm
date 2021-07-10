@@ -39,6 +39,7 @@ const DNS_PROVIDERS = {
   "gcp": "Google Cloud Platform",
   "namecheap": "NameCheap",
   "namedotcom": "Name.com",
+  "powerdns": "PowerDNS",
   "route53": "Route53 (AWS)",
   "vultr": "Vultr",
 };

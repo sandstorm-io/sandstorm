@@ -369,14 +369,6 @@ public:
                   .build();
             },
             "Stop the sandstorm server.")
-        .addSubCommand("stop-fe",
-            [this]() {
-              return kj::MainBuilder(context, VERSION,
-                    "Obsolete; use dev-shell to do shell development.")
-                  .callAfterParsing(KJ_BIND_METHOD(*this, stopFe))
-                  .build();
-            },
-            "Obsolete; use dev-shell.")
         .addSubCommand("status",
             [this]() {
               return kj::MainBuilder(context, VERSION,
@@ -761,10 +753,6 @@ public:
     } else {
       context.exitInfo("Sandstorm is not running.");
     }
-  }
-
-  kj::MainBuilder::Validity stopFe() {
-    return "stop-fe is obsolete; use dev-shell to do shell development";
   }
 
   kj::MainBuilder::Validity status() {

@@ -1,3 +1,7 @@
+### v0.285 (2021-07-10)
+- Added support for passing Let's Encrypt challenges using PowerDNS, using the `acme-dns-01-powerdns` npm module. (Thanks @ocdtrekkie.)
+- Set security headers to prevent apps from using service workers. Unfortunately, service workers could be used by a malicious app to remove other security headers that make up part of the Sandstorm sandbox. We are not aware of any app using service workers today, and it seems like they would not work well under Sandstorm anyawy. (Thanks @zenhack.)
+
 ### v0.284 (2021-06-12)
 - Added new "grain settings" UI. (Thanks @zenhack.)
 - Sandstorm now automatically sends headers to opt out of Google's FLoC. (Thanks @zenhack.)

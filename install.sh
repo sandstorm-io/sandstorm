@@ -818,7 +818,7 @@ full_server_install() {
     PLANNED_SMTP_PORT="25"
   fi
 
-  if [ "yes" != "${ACCEPTED_FULL_SERVER_INSTALL:-}" ]; then
+  if [ "yes" != "${RERUNNING_AS_ROOT:-}" ]; then
     # Disable Sandcats HTTPS if ports 80 or 443 aren't available.
     disable_https_if_ports_unavailable
 
@@ -845,10 +845,12 @@ full_server_install() {
       echo "Rest assured that Sandstorm itself won't run as root."
     fi
 
-    if prompt-yesno "OK to continue?" "yes"; then
-      ACCEPTED_FULL_SERVER_INSTALL=yes
-    else
-      ACCEPTED_FULL_SERVER_INSTALL=no
+    if [ -z "${ACCEPTED_FULL_SERVER_INSTALL:-}" ]; then
+      if prompt-yesno "OK to continue?" "yes"; then
+        ACCEPTED_FULL_SERVER_INSTALL=yes
+      else
+        ACCEPTED_FULL_SERVER_INSTALL=no
+      fi
     fi
 
     if [ "yes" = "$ACCEPTED_FULL_SERVER_INSTALL" ] &&
@@ -883,6 +885,10 @@ full_server_install() {
       if [ "yes" = "$ACCEPTED_FULL_SERVER_INSTALL" ] ; then
         rerun_script_as_root CHOSEN_INSTALL_MODE=1 \
                              ACCEPTED_FULL_SERVER_INSTALL=yes \
+                             RERUNNING_AS_ROOT=yes \
+                             DESIRED_SANDCATS_NAME="${DESIRED_SANDCATS_NAME:-}" \
+                             SANDCATS_REGISTRATION_EMAIL="${SANDCATS_REGISTRATION_EMAIL:-}" \
+                             ACME_EMAIL="${ACME_EMAIL:-}" \
                              OVERRIDE_SANDCATS_BASE_DOMAIN="${OVERRIDE_SANDCATS_BASE_DOMAIN:-}" \
                              OVERRIDE_SANDCATS_API_BASE="${OVERRIDE_SANDCATS_API_BASE:-}" \
                              OVERRIDE_SANDCATS_GETCERTIFICATE="${SANDCATS_GETCERTIFICATE}" \
@@ -1694,6 +1700,7 @@ sandcats_recover_domain() {
 
   # If the user wants none of our help, then go back to registration.
   if [ "none" = "$DESIRED_SANDCATS_NAME" ] ; then
+    unset DESIRED_SANDCATS_NAME
     sandcats_register_name
     return
   fi
@@ -1892,9 +1899,11 @@ sandcats_register_name() {
     return
   fi
 
-  echo "Choose your desired Sandcats subdomain (alphanumeric, max 20 characters)."
-  echo "Type the word none to skip this step, or help for help."
-  DESIRED_SANDCATS_NAME=$(prompt "What *.${SANDCATS_BASE_DOMAIN} subdomain would you like?" '')
+  if [ -z "${DESIRED_SANDCATS_NAME:-}" ] ; then
+    echo "Choose your desired Sandcats subdomain (alphanumeric, max 20 characters)."
+    echo "Type the word none to skip this step, or help for help."
+    DESIRED_SANDCATS_NAME=$(prompt "What *.${SANDCATS_BASE_DOMAIN} subdomain would you like?" '')
+  fi
 
   # If they just press enter, insist that they type either the word
   # "none" or provide a name they want to register.
@@ -1923,14 +1932,16 @@ sandcats_register_name() {
 
   # Ask them for their email address, since we use that as part of Sandcats
   # registration.
-  echo "We need your email on file so we can help you recover your domain if you lose access. No spam."
-  SANDCATS_REGISTRATION_EMAIL=$(prompt "Enter your email address:" "")
-
-  # If the user fails to enter an email address, bail out.
-  while [ "" = "$SANDCATS_REGISTRATION_EMAIL" ] ; do
-    echo "For the DNS service, we really do need an email address. To cancel, type: Ctrl-C."
+  if [ -z "${SANDCATS_REGISTRATION_EMAIL:-}" ]; then
+    echo "We need your email on file so we can help you recover your domain if you lose access. No spam."
     SANDCATS_REGISTRATION_EMAIL=$(prompt "Enter your email address:" "")
-  done
+
+    # If the user fails to enter an email address, bail out.
+    while [ "" = "$SANDCATS_REGISTRATION_EMAIL" ] ; do
+      echo "For the DNS service, we really do need an email address. To cancel, type: Ctrl-C."
+      SANDCATS_REGISTRATION_EMAIL=$(prompt "Enter your email address:" "")
+    done
+  fi
 
   echo "Registering your domain."
   local LOG_PATH
@@ -2097,8 +2108,10 @@ configure_https() {
   echo "If you do not agree, please press ctrl+C now to cancel installation."
   echo
 
-  echo "You must provide an email address, which will be shared with Let's Encrypt."
-  ACME_EMAIL="$(prompt "Your email address for Let's Encrypt:" "${SANDCATS_REGISTRATION_EMAIL:-}")"
+  if [ -z "${ACME_EMAIL:-}" ]; then
+    echo "You must provide an email address, which will be shared with Let's Encrypt."
+    ACME_EMAIL="$(prompt "Your email address for Let's Encrypt:" "${SANDCATS_REGISTRATION_EMAIL:-}")"
+  fi
 
   $DIR/sandstorm create-acme-account "$ACME_EMAIL" --accept-terms ||
       fail "E_CREATE_ACME_ACCOUNT" "Failed to create Let's Encrypt account."

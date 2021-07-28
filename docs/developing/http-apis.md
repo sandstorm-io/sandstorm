@@ -226,7 +226,7 @@ the browser that the other can read.
 There is also a generic API hostname that allows all API tokens. However, if you make a request to
 the generic API hostname using HTTP Basic auth, then those requests are subject to a [whitelist of
 non-web-browser `User-Agent`
-strings](https://github.com/sandstorm-io/sandstorm/search?utf8=%E2%9C%93&q=BASIC_AUTH_USER_AGENTS). Therefore,
+strings](https://github.com/sandstorm-io/sandstorm/search?utf8=%E2%9C%93&q=isAllowedBasicAuthUserAgent). Therefore,
 it is vastly easier to configure HTTP clients to use the token-specific hostname.
 
 ## Header modification by Sandstorm

@@ -628,14 +628,14 @@ choose_install_mode() {
   echo -n 'Sandstorm makes it easy to run web apps on your own server. '
 
   if [ "yes" = "$USE_DEFAULTS" ] ; then
-    CHOSEN_INSTALL_MODE="${CHOSEN_INSTALL_MODE:-2}"  # dev server mode by default
+    CHOSEN_INSTALL_MODE="${CHOSEN_INSTALL_MODE:-development}"  # dev server mode by default
   fi
 
   if [ "no" = "${PREFER_ROOT:-}" ] ; then
     echo ""
     echo "NOTE: Showing you all options, including development options, but omitting "
     echo "      init script automation, because you chose to install without using root."
-    CHOSEN_INSTALL_MODE="${CHOSEN_INSTALL_MODE:-2}"  # dev server mode by default
+    CHOSEN_INSTALL_MODE="${CHOSEN_INSTALL_MODE:-development}"  # dev server mode by default
   fi
 
   if [ -z "${CHOSEN_INSTALL_MODE:-}" ]; then
@@ -647,7 +647,7 @@ choose_install_mode() {
     CHOSEN_INSTALL_MODE=$(prompt-numeric "How are you going to use this Sandstorm install?" "1")
   fi
 
-  if [ "1" = "$CHOSEN_INSTALL_MODE" ] ; then
+  if [ "$CHOSEN_INSTALL_MODE" = "production" ] || [ "$CHOSEN_INSTALL_MODE" = "1" ] ; then
     assert_full_server_dependencies
     full_server_install
   else
@@ -697,7 +697,7 @@ dev_server_install() {
     fi
 
     if [ "yes" = "$ACCEPTED_SUDO_FOR_DEV_SERVER" ] ; then
-      rerun_script_as_root CHOSEN_INSTALL_MODE=2
+      rerun_script_as_root CHOSEN_INSTALL_MODE=development
     else
       # Print a message that allows people to make an informed decision.
       SHOW_FAILURE_MSG=no REPORT=no fail "E_NEED_ROOT" "
@@ -883,7 +883,7 @@ full_server_install() {
     # questions.
     if [ "yes" != "$CURRENTLY_UID_ZERO" ] ; then
       if [ "yes" = "$ACCEPTED_FULL_SERVER_INSTALL" ] ; then
-        rerun_script_as_root CHOSEN_INSTALL_MODE=1 \
+        rerun_script_as_root CHOSEN_INSTALL_MODE=production \
                              ACCEPTED_FULL_SERVER_INSTALL=yes \
                              RERUNNING_AS_ROOT=yes \
                              DESIRED_SANDCATS_NAME="${DESIRED_SANDCATS_NAME:-}" \

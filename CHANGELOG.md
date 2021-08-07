@@ -1,3 +1,6 @@
+### v0.286 (2021-08-07) [bugfixes]
+- Updated dependencies. (No other changes.)
+
 ### v0.285 (2021-07-10)
 - Added support for passing Let's Encrypt challenges using PowerDNS, using the `acme-dns-01-powerdns` npm module. (Thanks @ocdtrekkie.)
 - Set security headers to prevent apps from using service workers. Unfortunately, service workers could be used by a malicious app to remove other security headers that make up part of the Sandstorm sandbox. We are not aware of any app using service workers today, and it seems like they would not work well under Sandstorm anyawy. (Thanks @zenhack.)

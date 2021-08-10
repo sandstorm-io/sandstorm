@@ -137,7 +137,7 @@ You can probably get away with less, but we wouldn't advise it. 2GB is vastly be
 
 Using a virtual machine from Amazon EC2, Google Compute Engine,
 Linode, Digital Ocean, etc., is fine; just make sure you have a recent
-Linux kernel. Ubuntu 14.04 is an easy and good choice of base
+Linux kernel. The latest Ubuntu LTS release is an easy and good choice of base
 operating system.
 
 ## Sometimes I randomly see a lot of errors across the board, while other times the same functions work fine. What's going on?

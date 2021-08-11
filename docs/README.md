@@ -12,7 +12,7 @@ sudo apt-get install -y graphviz virtualenv
 cd ~/projects/sandstorm
 virtualenv tmp/docs-virtualenv
 tmp/docs-virtualenv/bin/pip install mkdocs==1.0.4
-tmp/docs-virtualenv/bin/pip install markdown-inline-graphviz==1.0
+tmp/docs-virtualenv/bin/pip install markdown-inline-graphviz-extension==1.1
 tmp/docs-virtualenv/bin/mkdocs serve
 ```
 

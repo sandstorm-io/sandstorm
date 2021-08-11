@@ -303,7 +303,6 @@ DEFAULT_UPDATE_CHANNEL="dev"
 DEFAULT_SERVER_USER="${OVERRIDE_SANDSTORM_DEFAULT_SERVER_USER:-sandstorm}"
 SANDCATS_BASE_DOMAIN="${OVERRIDE_SANDCATS_BASE_DOMAIN:-sandcats.io}"
 ALLOW_DEV_ACCOUNTS="false"
-SANDCATS_GETCERTIFICATE="${OVERRIDE_SANDCATS_GETCERTIFICATE:-yes}"
 
 # Define functions for each stage of the install process.
 
@@ -338,19 +337,7 @@ disable_smtp_port_25_if_port_unavailable() {
   PORT_25_AVAILABLE="yes"
 }
 
-disable_https_if_ports_unavailable() {
-  # If port 80 and 443 are both available, then let's use DEFAULT_PORT=80. This value is what the
-  # Sandstorm installer will write to PORT= in the Sandstorm configuration file.
-  #
-  # If either 80 or 443 is not available, then we set SANDCATS_GETCERTIFICATE to no.
-  #
-  # From the rest of the installer's perspective, if SANDCATS_GETCERTIFICATE is yes, it is safe to
-  # bind to port 443.
-  #
-  # There is a theoretical race condition here. I think that's life.
-  #
-  # This also means that if a user has port 443 taken but port 80 available, we will use port 6080
-  # as the default port. If the user wants to override that, they can run install.sh with "-p 80".
+check_if_ports_unavailable() {
   local PORT_80_AVAILABLE="no"
   is_port_bound 0.0.0.0 80 || PORT_80_AVAILABLE="yes"
 
@@ -358,7 +345,6 @@ disable_https_if_ports_unavailable() {
   is_port_bound 0.0.0.0 443 || PORT_443_AVAILABLE="yes"
 
   if [ "$PORT_443_AVAILABLE" == "no" -o "$PORT_80_AVAILABLE" == "no" ] ; then
-    SANDCATS_GETCERTIFICATE="no"
     SHOW_MESSAGE_ABOUT_NEEDING_PORTS_OPEN="yes"
   fi
 }
@@ -377,7 +363,7 @@ handle_args() {
         USE_EXTERNAL_INTERFACE="yes"
         ;;
       i)
-        SANDCATS_GETCERTIFICATE="no"
+        # TODO(soon): Fix or remove this option, which currently does nothing
         ;;
       u)
         PREFER_ROOT=no
@@ -819,16 +805,14 @@ full_server_install() {
   fi
 
   if [ "yes" != "${RERUNNING_AS_ROOT:-}" ]; then
-    # Disable Sandcats HTTPS if ports 80 or 443 aren't available.
-    disable_https_if_ports_unavailable
+    # Determine whether to show the ports unavailable warning
+    check_if_ports_unavailable
 
     echo "We're going to:"
     echo ""
     echo "* Install Sandstorm in $DEFAULT_DIR_FOR_ROOT"
     echo "* Automatically keep Sandstorm up-to-date"
-    if [ "yes" == "$SANDCATS_GETCERTIFICATE" ] ; then
-      echo "* Configure auto-renewing HTTPS if you use a subdomain of sandcats.io"
-    fi
+    echo "* Configure auto-renewing HTTPS if you use a subdomain of sandcats.io"
     echo "* Create a service user ($DEFAULT_SERVER_USER) that owns Sandstorm's files"
     if [ "unknown" == "$INIT_SYSTEM" ]; then
       echo "*** WARNING: Could not detect how to run Sandstorm at startup on your system. ***"
@@ -891,7 +875,6 @@ full_server_install() {
                              ACME_EMAIL="${ACME_EMAIL:-}" \
                              OVERRIDE_SANDCATS_BASE_DOMAIN="${OVERRIDE_SANDCATS_BASE_DOMAIN:-}" \
                              OVERRIDE_SANDCATS_API_BASE="${OVERRIDE_SANDCATS_API_BASE:-}" \
-                             OVERRIDE_SANDCATS_GETCERTIFICATE="${SANDCATS_GETCERTIFICATE}" \
                              OVERRIDE_NC_PATH="${OVERRIDE_NC_PATH:-}" \
                              OVERRIDE_SANDCATS_CURL_PARAMS="${OVERRIDE_SANDCATS_CURL_PARAMS:-}"
       fi
@@ -1985,24 +1968,6 @@ sandcats_register_name() {
     sandcats_register_name
     return
   fi
-}
-
-sandcats_configure_https() {
-  # Insist that the experimental flag enabling this code was passed
-  # into argv.
-  if [ "yes" != "$SANDCATS_GETCERTIFICATE" ] ; then
-    return
-  fi
-
-  # Insist that Sandcats setup successfully finished.
-  if [ "yes" != "$SANDCATS_SUCCESSFUL" ] ; then
-    return
-  fi
-
-  # OBSOLETE: We used to fetch a certificate here, but now we wait until the server is running
-  #   and then do Let's Encrypt. To make sure the rest of the script works as expected, pretend
-  #   HTTPS config was successful (it will be later).
-  SANDCATS_HTTPS_SUCCESSFUL=yes
 }
 
 wait_for_server_bind_to_its_port() {

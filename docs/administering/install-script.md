@@ -84,10 +84,6 @@ free HTTPS certificate service.
 
 - `SANDCATS_DOMAIN_RESERVATION_TOKEN`: A token that indicates you have pre-reserved a sandcats.io subdomain.
 
-- `OVERRIDE_SANDCATS_GETCERTIFICATE`: If you specify this as `no`, then Sandstorm will not bother
-  requesting a HTTPS certificate from sandcats.io. The install script will prompt you about sandcats
-  to ask if you want to use it for dynamic DNS.
-
 - `OVERRIDE_SANDCATS_BASE_DOMAIN`: If you run a different instance of the sandcats.io software,
   adjust this variable.
 

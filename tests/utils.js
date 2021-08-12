@@ -45,7 +45,7 @@ module.exports = {
       if (count === 0) {
         test = wrapLoginDev(test);
       }
-      newTests['Dev Account: ' + name] = test;
+      newTests['Dev Account- ' + name] = test;
       ++count;
     }
 

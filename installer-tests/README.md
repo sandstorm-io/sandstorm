@@ -1,15 +1,16 @@
 # Sandstorm installer tests
 
 This directory contains code and tests used to test Sandstorm's
-install script.
+install script.  The tests are based on
+[stodgy-tester](https://github.com/paulproteus/stodgy-tester).
 
 A quick overview:
 
 * The tests are in the `*.t` files in this directory.
 
-* To run the test suite, do: `python run_tests.py`
+* To run the test suite, do: `stodgy-tester`
 
-* You can choose to run just one test by doing: `python run_tests.py that_file.t`
+* You can choose to run just one test by doing: `stodgy-tester that_file.t`
 
 * Before you run any tests, you probably need to run `./prepare-for-tests.sh`.
 
@@ -45,7 +46,7 @@ directives.
 
 ## About the use of Vagrant
 
-The `run_tests.py` script uses Vagrant to manage a variety of
+The `stodgy-tester` script uses Vagrant to manage a variety of
 operating system images we can boot into. You can see the details in
 `Vagrantfile` in this directory.
 
@@ -79,14 +80,14 @@ The following are valid test headers.
   you can. (Specify exactly one per test.)
 
 * `Vagrant-Destroy-If-Bash`: A bash script that, if it exits with a
-  true status code, causes `run_tests.py` to destroy the Vagrant box
+  true status code, causes `stodgy-tester` to destroy the Vagrant box
   in question, and re-create it, before running the test. This can
   prevent some tests from interfering with each other. Use this
   directive sparingly, as it is slow! (Specify zero or more per test.)
 
 * `Vagrant-Precondition-Bash`: A bash script that, if it exits with a
   true status code, allows this test to run. If it exits with a false
-  status code, `run_tests.py` will skip the test and exit with a
+  status code, `stodgy-tester` will skip the test and exit with a
   non-zero status code. (Specify zero or more per test.)
 
 * `Postcondition`: A Python expression that must return `True` for the
@@ -98,7 +99,7 @@ The following are valid test headers.
   it exits with a false status, it means the test failed. (Specify
   zero or more per test.)
 
-The `run_tests.py` program interprets test headers
+The `stodgy-tester` program interprets test headers
 case-insensitively. I like to write them in the capitalization style
 above, since I'm so very used to email headers being capitalized like
 that.

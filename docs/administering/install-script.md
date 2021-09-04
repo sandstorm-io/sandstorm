@@ -77,7 +77,7 @@ remedy the situation, rather than erroring out.
 
 ### Environment variables to request custom behavior
 
-Over the time we have spent maintaining the install script, we hae found it easier to provide
+Over the time we have spent maintaining the install script, we have found it easier to provide
 user-provided configuration options from environment variables, rather than command line flags. Here
 are some environment variables that `install.sh` can look for, and their meanings.
 

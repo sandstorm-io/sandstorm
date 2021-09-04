@@ -8,7 +8,7 @@ A quick overview:
 
 * The tests are in the `*.t` files in this directory.
 
-* To run the test suite, do: `stodgy-tester`
+* To run the test suite, do: `stodgy-tester --plugin=stodgy_tester.plugins.sandstorm_installer_tests`
 
 * You can choose to run just one test by doing: `stodgy-tester that_file.t`
 

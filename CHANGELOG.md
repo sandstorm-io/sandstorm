@@ -1,3 +1,7 @@
+### v0.287 (2021-09-04)
+- Meteor updated to 2.3, a major release. This also means Node.js was updated from 12 to 14.
+- Added support for more owncloud/nextcloud client headers. (Thanks @mnutt.)
+
 ### v0.286 (2021-08-07) [bugfixes]
 - Updated dependencies. (No other changes.)
 

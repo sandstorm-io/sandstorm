@@ -153,6 +153,7 @@ clean: ci-clean
 ci-clean:
 	@# Clean only the stuff that we want to clean between CI builds.
 	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz
+	rm -rf test-app.spk
 	rm -rf tests/assets/meteor-testapp.spk meteor-testapp/.meteor-spk
 
 install: sandstorm-$(BUILD)-fast.tar.xz install.sh

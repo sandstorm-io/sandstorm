@@ -67,7 +67,6 @@ bundle/
 .docker
 .shell-env
 .vagrant/
-phantomjsdriver.log
 selenium-debug.log
 tests/downloads
 tests/assets/*

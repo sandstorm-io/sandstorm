@@ -41,15 +41,6 @@
       },
       "filter" : "./unittests/*",
       "exclude" : ""
-    },
-
-    "phantomjs" : {
-      "desiredCapabilities": {
-        "browserName": "phantomjs",
-        "javascriptEnabled" : true,
-        "acceptSslCerts" : true,
-        "phantomjs.binary.path" : "node_modules/phantomjs/bin/phantomjs"
-      }
     }
   }
 }

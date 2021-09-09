@@ -159,7 +159,7 @@ public:
   }
 
   kj::Promise<void> post(PostContext context) override {
-    // HTTP GET request.
+    // HTTP POST request.
 
     auto params = context.getParams();
     auto path = params.getPath();

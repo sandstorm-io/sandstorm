@@ -49,7 +49,7 @@
     "signup": {
       "title": "Lunasta kutsu",
       "signedUp": {
-        "keyIsUsedWithOrigin": "Olet täysin rekisteröitynyt!  Nyt mene <a href=\"https://apps.sandstorm.io/?host=%s\">asentamaan joitakin ohjelmia</a>.",
+        "keyIsUsedWithOrigin": "Olet täysin rekisteröitynyt!  Nyt mene <a href=\"%s?host=%s\">asentamaan joitakin ohjelmia</a>.",
         "keyIsNotUsed": "Näyttää siltä että sinulla on jo tili, joten et tarvitse rekisteröitymisavainta."
       },
       "keyIsUsed": "Sori, tämä rekisteröitymisavain on jo käytetty.",

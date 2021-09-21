@@ -20,13 +20,22 @@ import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { Router } from "meteor/iron:router";
 import { DEFAULT_SIGNUP_DIALOG } from "/imports/client/personalization.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 Template.signup.helpers({
   signupDialog: function () {
-    const setting = globalDb.collections.settings.findOne("signupDialog");
+    const setting = SandstormDb.collections.settings.findOne({_id: "signupDialog"});
     return (setting && setting.value) || DEFAULT_SIGNUP_DIALOG;
   },
+
+  appMarketUrl: function() {
+    let url = "https://apps.sandstorm.io/";
+    const appMarketUrl = SandstormDb.collections.settings.findOne({ _id: "appMarketUrl" });
+    if (appMarketUrl) {
+      url = appMarketUrl.value;
+    }
+    return url;
+  }
 });
 
 Router.map(function () {
@@ -41,7 +50,7 @@ Router.map(function () {
     },
 
     data: function () {
-      const keyInfo = globalDb.collections.signupKeys.findOne(this.params.key);
+      const keyInfo = SandstormDb.collections.signupKeys.findOne(this.params.key);
       const user = Meteor.user();
 
       const result = {

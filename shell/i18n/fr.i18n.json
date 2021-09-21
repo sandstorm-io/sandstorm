@@ -49,7 +49,7 @@
     "signup": {
       "title": "Accepter l'invitation",
       "signedUp": {
-        "keyIsUsedWithOrigin": "Vous êtes maintenant enregistré !  Installez donc <a href=\"https://apps.sandstorm.io/?host=%s\">quelques applications</a>.",
+        "keyIsUsedWithOrigin": "Vous êtes maintenant enregistré !  Installez donc <a href=\"%s?host=%s\">quelques applications</a>.",
         "keyIsNotUsed": "On dirait que vous avez déjà un compte, vous n'avez donc pas besoin de cette clé d'enregistrement."
       },
       "keyIsUsed": "Désolé, cette clé d'enregistrement a déjà été utilisée.",

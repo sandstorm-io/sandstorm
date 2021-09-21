@@ -226,6 +226,10 @@ To do a debug build, run make like:
 
 If you suspect you'll be hacking on Sandstorm's dependencies as well, you may want to follow the dependency symlink trick described in the Ekam readme.
 
+### Running the test suite
+
+After making changes, it is a good idea to run the automated tests.  Instructions for doing so are in [tests/README.md](https://github.com/sandstorm-io/sandstorm/blob/master/tests/README.md).
+
 ## Option 5: Integrating with configuration management systems like Ansible/Puppet
 
 Configuration mangement tools like Ansible, Puppet, and Chef allow a sysadmin to declaratively state

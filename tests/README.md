@@ -2,8 +2,11 @@
 
 ## Setup
 
-First, you need to install Java in order to run Selenium. Under Debain/Ubuntu, this can be
-accomplished with `sudo apt-get install default-jre-headless`.
+First, you need to install Java in order to run Selenium.
+You will also need `xvfb` if you plan to run the tests against a mock X server (the default).
+Under Debian/Ubuntu, these can be
+installed with `sudo apt-get install default-jre-headless xvfb`.
+Under Fedora, run `sudo dnf install java-latest-openjdk xorg-x11-server-Xvfb`.
 
 Second, from the tests directory, run `npm install` to install all the node dependencies.
 

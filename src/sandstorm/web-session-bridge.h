@@ -54,6 +54,7 @@ public:
     kj::HttpHeaderId hETag;
     kj::HttpHeaderId hIfMatch;
     kj::HttpHeaderId hIfNoneMatch;
+    kj::HttpHeaderId hReferrerPolicy;
     kj::HttpHeaderId hSecWebSocketProtocol;
     kj::HttpHeaderId hVary;
     kj::HttpHeaderId hXFrameOptions;

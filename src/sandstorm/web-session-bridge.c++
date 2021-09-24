@@ -77,6 +77,7 @@ WebSessionBridge::Tables::Tables(kj::HttpHeaderTable::Builder& headerTableBuilde
       hETag(headerTableBuilder.add("ETag")),
       hIfMatch(headerTableBuilder.add("If-Match")),
       hIfNoneMatch(headerTableBuilder.add("If-None-Match")),
+      hReferrerPolicy(headerTableBuilder.add("Referrer-Policy")),
       hSecWebSocketProtocol(headerTableBuilder.add("Sec-WebSocket-Protocol")),
       hVary(headerTableBuilder.add("Vary")),
       hXFrameOptions(headerTableBuilder.add("X-Frame-Options")),
@@ -1314,6 +1315,13 @@ kj::Promise<void> WebSessionBridge::handleResponse(
         )
       );
     }
+
+    // Set Referrer-Policy: same-origin. Otherwise, external sites linked
+    // from a grain can learn its randomized hostname from the Referer
+    // header. This knowledge could then potentially be used to launch an
+    // XSRF attack. We avoid using "no-referrer" here to prevent Chrome from
+    // sending "Origin: null" (see gateway.c++).
+    headers.set(tables.hReferrerPolicy, "same-origin");
 
     // If we complete this function without calling fulfill() to connect the stream, then this is
     // not a streaming response. Fulfill the stream to something whose methods throw exceptions.

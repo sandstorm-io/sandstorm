@@ -1703,6 +1703,7 @@ sandcats_recover_domain() {
   echo "OK. We will send a recovery token to the email address on file. Type no to abort."
   OK_TO_CONTINUE=$(prompt "OK to continue?" "yes")
   if [ "no" = "$OK_TO_CONTINUE" ] ; then
+    unset DESIRED_SANDCATS_NAME
     sandcats_register_name
     return
   fi
@@ -1909,6 +1910,7 @@ sandcats_register_name() {
   # Validate the client-side, to avoid problems, against a slightly
   # less rigorous regex than the server is using.
   if ! [[ $DESIRED_SANDCATS_NAME =~ ^[0-9a-zA-Z-]{1,20}$ ]] ; then
+    unset DESIRED_SANDCATS_NAME
     sandcats_register_name
     return
   fi
@@ -1965,6 +1967,7 @@ sandcats_register_name() {
   else
     # Show the server's output, and re-run this function.
     error "$(cat "$LOG_PATH")"
+    unset DESIRED_SANDCATS_NAME
     sandcats_register_name
     return
   fi

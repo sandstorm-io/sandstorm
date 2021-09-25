@@ -1968,6 +1968,7 @@ sandcats_register_name() {
     # Show the server's output, and re-run this function.
     error "$(cat "$LOG_PATH")"
     unset DESIRED_SANDCATS_NAME
+    unset SANDCATS_REGISTRATION_EMAIL
     sandcats_register_name
     return
   fi

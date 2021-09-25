@@ -1319,8 +1319,8 @@ kj::Promise<void> WebSessionBridge::handleResponse(
     // Set Referrer-Policy: same-origin. Otherwise, external sites linked
     // from a grain can learn its randomized hostname from the Referer
     // header. This knowledge could then potentially be used to launch an
-    // XSRF attack. We avoid using "no-referrer" here to prevent Chrome from
-    // sending "Origin: null" (see gateway.c++).
+    // XSRF attack. We use "same-origin" here rather than "no-referrer" to
+    // prevent Chrome from sending "Origin: null" (see commit 9f331fe0e7).
     headers.set(tables.hReferrerPolicy, "same-origin");
 
     // If we complete this function without calling fulfill() to connect the stream, then this is

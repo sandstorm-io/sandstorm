@@ -27,7 +27,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo localhost > /etc/hostname
     hostname localhost
     sudo apt-get update
-    sudo apt-get install -y curl
+    sudo apt-get install -y curl gpg
     sudo OVERRIDE_DEFAULT_SERVER_USER=vagrant ./install.sh -d -e > /dev/null
     sudo usermod -a -G sandstorm vagrant
     sudo sed --in-place='' --expression='s/^BIND_IP=.*/BIND_IP=0.0.0.0/' /opt/sandstorm/sandstorm.conf

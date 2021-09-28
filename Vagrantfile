@@ -17,7 +17,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # use NFS with the Virtualbox guest. Virtualbox/Vagrant handles
   # network address translation so outbound network requests still
   # work.
-  config.vm.network :private_network, ip: "169.254.254.2"
+  config.vm.provider :virtualbox do |vb, override|
+    override.vm.network :private_network, ip: "192.254.254.2"
+  end
 
   # Use a shell script to "provision" the box. This installs Sandstorm using
   # the bundled installer.

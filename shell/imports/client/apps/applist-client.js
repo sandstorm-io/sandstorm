@@ -172,7 +172,8 @@ Template.sandstormAppListPage.helpers({
   },
 
   appMarketUrl: function () {
-    const appMarket = SandstormDb.collections.settings.findOne({ _id: "appMarketUrl" });
+    const ref = Template.instance().data;
+    const appMarket = ref._db.collections.settings.findOne({ _id: "appMarketUrl" });
     if (!appMarket) {
       return "#";
     }
@@ -201,7 +202,8 @@ Template.sandstormAppListPage.events({
   "click .install-button": function (event) {
     event.preventDefault();
     event.stopPropagation();
-    const appMarket = SandstormDb.collections.settings.findOne({ _id: "appMarketUrl" });
+    const ref = Template.instance().data;
+    const appMarket = ref._db.collections.settings.findOne({ _id: "appMarketUrl" });
     let url = "https://apps.sandstorm.io/?host=";
     if (appMarket) {
       url = appMarket.value + '?host=';

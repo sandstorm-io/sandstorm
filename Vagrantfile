@@ -5,8 +5,8 @@
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  # We base ourselves off a Debian fork of the official Debian jessie64 base box.
-  config.vm.box = "debian/contrib-stretch64"
+  # We base ourselves off an official Debian base box.
+  config.vm.box = "debian/bullseye64"
 
   # We forward port 6080, the Sandstorm web port, so that developers can
   # visit their sandstorm app from their browser as local.sandstorm.io:6080

@@ -11,7 +11,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # We forward port 6080, the Sandstorm web port, so that developers can
   # visit their sandstorm app from their browser as local.sandstorm.io:6080
   # (aka 127.0.0.1:6080).
-  config.vm.network :forwarded_port, guest: 6080, host: 6080
+  config.vm.network :forwarded_port, guest: 6080, host: 6080, host_ip: "127.0.0.1"
 
   # Create a link-local private address, so that the host can
   # use NFS with the Virtualbox guest. Virtualbox/Vagrant handles

@@ -45,7 +45,7 @@ EOF
 
   # Use NFS for the /vagrant shared directory, for performance and
   # compatibility.
-  config.vm.synced_folder ".", "/vagrant", type: "nfs"
+  config.vm.synced_folder ".", "/vagrant", type: "nfs", nfs_udp: false
 
   # Calculate the number of CPUs and the amount of RAM the system has,
   # in a platform-dependent way; further logic below.

@@ -24,13 +24,15 @@ import { SandstormDb } from "/imports/sandstorm-db/db.js";
 
 Template.signup.helpers({
   signupDialog: function () {
-    const setting = SandstormDb.collections.settings.findOne({_id: "signupDialog"});
+    const ref = Template.instance().data;
+    const setting = ref._db.collections.settings.findOne({_id: "signupDialog"});
     return (setting && setting.value) || DEFAULT_SIGNUP_DIALOG;
   },
 
   appMarketUrl: function() {
     let url = "https://apps.sandstorm.io/";
-    const appMarketUrl = SandstormDb.collections.settings.findOne({ _id: "appMarketUrl" });
+    const ref = Template.instance().data;
+    const appMarketUrl = ref._db.collections.settings.findOne({ _id: "appMarketUrl" });
     if (appMarketUrl) {
       url = appMarketUrl.value;
     }

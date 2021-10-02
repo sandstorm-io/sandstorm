@@ -158,8 +158,21 @@ Meteor.users.ensureIndexOnServer("loginCredentials.id", { unique: 1, sparse: 1 }
 Meteor.users.ensureIndexOnServer("nonloginCredentials.id", { sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.google.id", { unique: 1, sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.github.id", { unique: 1, sparse: 1 });
-Meteor.users.ensureIndexOnServer("services.oidc.id", { sparse: 1 });
 Meteor.users.ensureIndexOnServer("suspended.willDelete", { sparse: 1 });
+
+// Backwards-compatibility fix: We used to create the index on "services.oidc.id" without the
+// `unique` option. However, Meteor apparently also creates an index on this field automatically,
+// and *does* use the `unique` option. Prior to Meteor 2.4, the latter creation would be ignored
+// since the index already existed, but starting in 2.4, it is an error to try to create an index
+// with different options than the existing one. Unfortunately, this means Sandstorm won't start.
+// So, we've updated the index here to match what Meteor wants, and if it throws, we drop the index
+// and recreate it as a work-around.
+try {
+  Meteor.users.ensureIndexOnServer("services.oidc.id", { unique: 1, sparse: 1 });
+} catch (err) {
+  Promise.await(Meteor.users.rawCollection().dropIndex("services.oidc.id_1"));
+  Meteor.users.ensureIndexOnServer("services.oidc.id", { unique: 1, sparse: 1 });
+}
 
 const Packages = new Mongo.Collection("packages", collectionOptions);
 // Packages which are installed or downloading.

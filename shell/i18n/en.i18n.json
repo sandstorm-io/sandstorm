@@ -1734,7 +1734,7 @@
     },
     "setupWizardIdentity": {
       "title": "Login providers",
-      "explanation1": "To use Sandstorm, you need to create a user account.  Every user account on Sandstorm is backed by an login provider.  You'll use this login provider to authenticate as the first administrator of this Sandstorm install.",
+      "explanation1": "To use Sandstorm, you need to create a user account.  Every user account on Sandstorm is backed by a login provider.  You'll use this login provider to authenticate as the first administrator of this Sandstorm install.",
       "explanation2": "Configure the login provider or providers you wish to enable.",
       "nextButton": "Next",
       "backButton": "Back"

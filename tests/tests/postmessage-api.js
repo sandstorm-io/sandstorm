@@ -109,6 +109,35 @@ module.exports['Test startSharing'] = function (browser) {
     .waitForElementNotPresent('.popup.share', short_wait)
 };
 
+module.exports['Test startSharing with pathname and hash'] = function (browser) {
+  const linkLabel = 'Test startSharing with pathname and hash';
+  browser
+    .grainFrame()
+    // Post a startSharing message to open the sharing popup.
+    .execute(function () {
+      window.parent.postMessage({startSharing: {hash: 'hash123', pathname: 'pathname/123'}}, '*');
+    })
+    .frameParent()
+    // Get the link without sending e-mail.
+    .waitForElementVisible('#shareable-link-tab-header', short_wait)
+    .click('#shareable-link-tab-header')
+    // Lable this link
+    .waitForElementVisible('input.label', short_wait)
+    .setValue('input.label', linkLabel)
+    .submitForm('.new-share-token')
+    // Get link from a#share-token-text.  Check for hash and pathname.
+    .waitForElementVisible('#share-token-text', short_wait)
+    .assert.containsText('#share-token-text', '/pathname/123#hash123')
+    // Find the link and remove it.
+    .click('button.who-has-access')
+    .waitForElementVisible('table.shared-links', short_wait)
+    .assert.containsText('table.shared-links tr:last-child span.token-petname', linkLabel)
+    .click('table.shared-links tr:last-child button.revoke-token')
+    // Close the sharing popup.
+    .click('button.close-popup')
+    .waitForElementNotPresent('.popup.share', short_wait);
+};
+
 module.exports['Test showConnectionGraph'] = function (browser) {
   browser
     .grainFrame()

@@ -44,7 +44,7 @@ Take a look at this file on your Sandstorm server:
 - /opt/sandstorm/var/log/sandstorm.log
 
 Feel free to share the contents of the log file in the [#sandstorm chat
-room.](https://sandstorm.io/community). Consider uploading it to a pastebin, rather than pasting the
+room](https://sandstorm.io/community). Consider uploading it to a pastebin, rather than pasting the
 whole file into IRC.  A common pastebin to use is [gist.github.com.](https://gist.github.com/) The
 Sandstorm core team has attempted to ensure that your Sandstorm log does not contain any private
 information to you, but feel very free to read the log file before sharing it.

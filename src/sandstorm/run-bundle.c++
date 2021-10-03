@@ -369,14 +369,6 @@ public:
                   .build();
             },
             "Stop the sandstorm server.")
-        .addSubCommand("stop-fe",
-            [this]() {
-              return kj::MainBuilder(context, VERSION,
-                    "Obsolete; use dev-shell to do shell development.")
-                  .callAfterParsing(KJ_BIND_METHOD(*this, stopFe))
-                  .build();
-            },
-            "Obsolete; use dev-shell.")
         .addSubCommand("status",
             [this]() {
               return kj::MainBuilder(context, VERSION,
@@ -761,10 +753,6 @@ public:
     } else {
       context.exitInfo("Sandstorm is not running.");
     }
-  }
-
-  kj::MainBuilder::Validity stopFe() {
-    return "stop-fe is obsolete; use dev-shell to do shell development";
   }
 
   kj::MainBuilder::Validity status() {
@@ -2392,10 +2380,14 @@ private:
         grainsCgroup = Cgroup("/run/cgroup2").getOrMakeChild("grains");
       });
 
-      paf.fulfiller->fulfill(kj::heap<BackendImpl>(*io.lowLevelProvider, network,
+      paf.fulfiller->fulfill(kj::heap<BackendImpl>(
+        *io.lowLevelProvider,
+        network,
         server.getBootstrap().castAs<SandstormCoreFactory>(),
         kj::mv(grainsCgroup),
-        sandboxUid));
+        sandboxUid,
+        config.useExperimentalSeccompFilter,
+        config.logSeccompViolations));
 
       auto gatewayServer = kj::heap<capnp::TwoPartyServer>(kj::refcounted<CapRedirector>([&]() {
         return server.getBootstrap().castAs<SandstormCoreFactory>()

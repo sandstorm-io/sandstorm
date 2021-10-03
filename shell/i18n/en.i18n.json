@@ -232,6 +232,10 @@
       "hint": "Restart App",
       "text": "Restart"
     },
+    "grainSettingsButton": {
+      "hint": "Grain Settings",
+      "text": "settings"
+    },
     "grainApiTokenButton": {
       "hint": "Get webkey",
       "text": "Get&nbsp;Webkey"
@@ -255,6 +259,26 @@
     "grainShareButton": {
       "hint": "Share access to this grain",
       "text": "Share access"
+    },
+    "settings": {
+      "title": "Grain Settings",
+      "returnToGrain": "Return to Grain",
+      "scheduledTasks": {
+        "title": "Scheduled Tasks",
+        "headings": {
+          "description": "Description",
+          "period": "Period",
+          "next": "Runs next at",
+          "created": "Created at"
+        },
+        "periodNames": {
+          "annually": "annually",
+          "monthly": "monthly",
+          "weekly": "weekly",
+          "daily": "daily",
+          "hourly": "hourly"
+        }
+      }
     },
     "whoHasAccessPopup": {
       "title": "Who has access",
@@ -1714,7 +1738,7 @@
     },
     "setupWizardIdentity": {
       "title": "Login providers",
-      "explanation1": "To use Sandstorm, you need to create a user account.  Every user account on Sandstorm is backed by an login provider.  You'll use this login provider to authenticate as the first administrator of this Sandstorm install.",
+      "explanation1": "To use Sandstorm, you need to create a user account.  Every user account on Sandstorm is backed by a login provider.  You'll use this login provider to authenticate as the first administrator of this Sandstorm install.",
       "explanation2": "Configure the login provider or providers you wish to enable.",
       "nextButton": "Next",
       "backButton": "Back"

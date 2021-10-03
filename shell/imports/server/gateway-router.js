@@ -28,6 +28,7 @@ import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
 import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions.js";
 
+import { responseCodes } from "/imports/server/web-session.ts";
 import { makeHackSessionContext } from "/imports/server/hack-session.js";
 
 const GatewayRouter = Capnp.importSystem("sandstorm/backend.capnp").GatewayRouter;
@@ -457,8 +458,8 @@ class GatewayRouterImpl {
       return { session };
     }).catch(err => {
       observer.invalidate();
-      if ((err instanceof Meteor.Error) && (typeof err.error === "string")) {
-        // TODO(someday): Produce an appropriate HTTP error code.
+      if (err instanceof Meteor.Error) {
+        return { session: makeErrorSession(err) };
       } else {
         console.error(err.stack);
       }
@@ -594,6 +595,68 @@ class GatewayRouterImpl {
 
 export function makeGatewayRouter() {
   return new Capnp.Capability(new GatewayRouterImpl, GatewayRouter);
+}
+
+function makeErrorSession(err) {
+  // Return an implementation of WebSession/ApiSession that always returns
+  // the specified error. `err` should be a Meteor.Error. Its `error` field
+  // can either a numeric error code >= 400, or a string message code. If
+  // the latter is unrecognized, a 500 error is returned.
+
+  let code;
+  if(typeof(err.error) === "number") {
+    code = err.error;
+  } else if(typeof(err.error) === "string") {
+    const knownCodes = {
+      "no-guests": 403,
+      "no-such-grain": 401,
+      "grain-is-in-trash": 410,
+      "grain-owner-suspended": 410,
+      "missing-package": 500,
+      "access-denied": 403,
+    }
+    code = knownCodes[err.error]
+    if(code === undefined) {
+      code = 500;
+    }
+  }
+
+
+  const responseCodeInfo = responseCodes[code];
+  let response;
+  if(responseCodeInfo !== undefined && responseCodeInfo.type === "clientError") {
+    response = {
+      clientError: {
+        statusCode: responseCodeInfo.clientErrorCode
+      }
+    }
+    if("reason" in err) {
+      response.clientError.descriptionHtml = err.reason;
+    }
+  } else {
+    response = {
+      serverError: {
+        descriptionHtml: ("reason" in err)? err.reason : "Internal Server Error"
+      }
+    }
+  }
+
+  return {
+    get() { return response },
+    post() { return response },
+    put() { return response },
+    delete() { return response },
+    patch() { return response },
+    propfind() { return response },
+    proppatch() { return response },
+    mkcol() { return response },
+    copy() { return response },
+    move() { return response },
+    lock() { return response },
+    unlock() { return response },
+    acl() { return response },
+    report() { return response },
+  }
 }
 
 // =======================================================================================

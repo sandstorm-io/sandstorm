@@ -82,7 +82,9 @@ class GrainView {
     this._dep = new Tracker.Dependency();
     this._options = options;
 
+    this._showSettings = new ReactiveVar(false);
     this._powerboxRequest = new ReactiveVar(undefined);
+    this._shareData = {};
 
     this._userIdentityRevealed = new ReactiveVar(undefined);
     // `false` means incognito; `undefined` means we still need to decide whether to reveal
@@ -140,6 +142,14 @@ class GrainView {
 
       this._devAppId = id;
     });
+  }
+
+  showSettings() {
+    return this._showSettings.get();
+  }
+
+  setShowSettings(show) {
+    this._showSettings.set(show);
   }
 
   save() {
@@ -777,6 +787,14 @@ class GrainView {
   setGeneratedApiToken(newApiToken) {
     this._generatedApiToken = newApiToken;
     this._dep.changed();
+  }
+
+  setShareData(shareData) {
+    this._shareData = shareData;
+  }
+
+  shareData() {
+    return this._shareData;
   }
 
   setPowerboxRequest(powerboxRequest) {

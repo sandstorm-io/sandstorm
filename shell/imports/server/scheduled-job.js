@@ -21,6 +21,7 @@ import { fetchApiToken } from "/imports/server/persistent.js";
 import Capnp from "/imports/server/capnp.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
+import { filterCallbacks, subscriptionCallbacks } from "/imports/collection-utils.ts";
 
 const ScheduledJob = Capnp.importSystem("sandstorm/grain.capnp").ScheduledJob;
 const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;
@@ -64,7 +65,7 @@ export const runDueJobs = (nowMillis) => {
   jobs.forEach((job) => {
     if (job.lastKeepAlive) {
       if (job.retries && job.retries >= MAX_DISCONNECTED_RETRIES) {
-        db.recordScheduleJobRan(job, {
+        db.recordScheduledJobRan(job, {
           finished: job.lastKeepAlive,
           type: "disconnected",
           message: "MAX_DISCONNECTED_RETRIES exceeded",
@@ -125,3 +126,25 @@ export const runDueJobs = (nowMillis) => {
 }
 
 SandstormDb.periodicCleanup(MINIMUM_SCHEDULING_SLACK_MILLIS, () => runDueJobs(Date.now()));
+
+Meteor.publish("scheduledJobs", function() {
+  // Returns info about all jobs for grains owned by the current user.
+  if(!this.userId) {
+    return [];
+  }
+  const db = globalDb;
+
+  db.collections.scheduledJobs.find({}, {
+      _id: 1,
+      grainId: 1,
+      name: 1,
+      created: 1,
+      period: 1,
+      nextPeriodStart: 1,
+      previousError: 1,
+  }).observe(filterCallbacks(subscriptionCallbacks("scheduledJobs", this), ({grainId}) => {
+    const owner = db.collections.grains.findOne({_id: grainId}, {userId: 1}).userId;
+    return db.isAdmin() || owner === this.userId();
+  }));
+  this.ready();
+});

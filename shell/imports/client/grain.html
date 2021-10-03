@@ -36,6 +36,8 @@
       {{else}}
         <pre>{{error}}</pre>
       {{/if}}
+    {{else if showSettings}}
+      {{> sandstormGrainSettingsPage grain=grainView}}
     {{else if appOrigin}}
       {{!-- Selenium requires iframes to have an id in order to select them. `id` is only
             used for testing purposes. --}}
@@ -205,6 +207,10 @@
 
 <template name="grainRestartButton">
   <button class="grain-button" title="{{_ "grains.grainRestartButton.hint"}}" id="restartGrain">{{_ "grains.grainRestartButton.text"}}</button>
+</template>
+
+<template name="grainSettingsButton">
+  <button class="grain-button" title="{{_ "grains.grainSettingsButton.hint"}}" id="grainSettings">{{_ "grains.grainSettingsButton.text"}}</button>
 </template>
 
 <template name="grainApiTokenButton">
@@ -555,7 +561,9 @@
 </template>
 
 <template name="grain">
-  {{>sandstormTopbarItem name="title" priority=5 topbar=globalTopbar template="grainTitle"}}
+  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar}}
+    {{> grainTitle grain=currentGrain }}
+  {{/sandstormTopbarItem}}
   {{#sandstormTopbarItem name="grain-size" priority=5 topbar=globalTopbar}}
     {{grainSize}}
   {{/sandstormTopbarItem}}
@@ -580,6 +588,7 @@
     {{>sandstormTopbarItem name="clone" topbar=globalTopbar template="grainCloneButton"
                            data=globalTopbar popupTemplate="grainClonePopup"}}
     {{>sandstormTopbarItem name="restart" topbar=globalTopbar template="grainRestartButton" data=globalTopbar}}
+    {{>sandstormTopbarItem name="settings" topbar=globalTopbar template="grainSettingsButton" data=globalTopbar}}
   {{/if}}
 
   {{#if hasAccess}}

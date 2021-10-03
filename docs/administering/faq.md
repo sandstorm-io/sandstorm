@@ -52,7 +52,7 @@ it, you'll need to adjust `/opt/sandstorm/sandstorm.conf` and restart Sandstorm.
   wildcard DNS record before you change Sandstorm's hostname.
 
 - Changing the server hostname will temporarily disable Google and GitHub login, since those login
-  providers embed an assumption about your server's hosntame. You will be able to re-enable the
+  providers embed an assumption about your server's hostname. You will be able to re-enable the
   login providers after you switch to the new Sandstorm server hostname; you can use command line
   access to gain temporary admin access to the server while the login providers are disabled.
 
@@ -137,7 +137,7 @@ You can probably get away with less, but we wouldn't advise it. 2GB is vastly be
 
 Using a virtual machine from Amazon EC2, Google Compute Engine,
 Linode, Digital Ocean, etc., is fine; just make sure you have a recent
-Linux kernel. Ubuntu 14.04 is an easy and good choice of base
+Linux kernel. The latest Ubuntu LTS release is an easy and good choice of base
 operating system.
 
 ## Sometimes I randomly see a lot of errors across the board, while other times the same functions work fine. What's going on?
@@ -363,7 +363,7 @@ WILDCARD_HOST=*.10.0.0.2.xip.io:6080
 - Make sure the port number is the same as the port number in `BASE_URL`.
 
 - Make sure your configuration file does **not** use the `HTTPS_PORT` or `SANDCATS_BASE_DOMAIN`
-  setttings, which refer to integrating with the sandcats.io DNS & HTTPS service. If you see them,
+  settings, which refer to integrating with the sandcats.io DNS & HTTPS service. If you see them,
   comment them out or remove them.
 
 ```bash

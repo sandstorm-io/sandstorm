@@ -173,6 +173,19 @@ Example:
 ALLOW_DEV_ACCOUNTS=false
 ```
 
+### USE_EXPERIMENTAL_SECCOMP_FILTER
+
+A boolean (true/false or yes/no) that controls whether to use
+Sandstorm's experimental new seccomp filter (as opposed to the old one).
+The new filter is stricter, and is disabled by default. Once it is
+deemed sufficiently mature the new filter will become the default.
+
+### LOG_SECCOMP_VIOLATIONS
+
+A boolean (true/false or yes/no) that controls whether violations of the
+seccomp filter should be logged to the kernel's message log, when using
+the new experimental seccomp filter. Defaults to false.
+
 ### IS_TESTING
 
 **Used rarely.** A boolean (true/false or yes/no) that adjusts internal settings for Sandstorm's

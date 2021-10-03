@@ -20,7 +20,7 @@ import { Mongo } from "meteor/mongo";
 export const StripeCustomerData = new Mongo.Collection(null);  // see getStripeData for where this is produced
 export const StripeCards = new Mongo.Collection(null);
 
-updateStripeData = function (cb) {
+export function updateStripeData(cb) {
   Meteor.call("getStripeData", function (err, data) {
     if (err) {
       alert(err); // TODO(soon): make this UI better

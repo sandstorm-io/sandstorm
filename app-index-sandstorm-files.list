@@ -1,0 +1,54 @@
+# *** WARNING: GENERATED FILE ***
+# This file is automatically updated and rewritten in sorted order every time
+# the app runs in dev mode. You may manually add or remove files, but don't
+# expect comments or ordering to be retained.
+app-index
+bin
+etc/ld.so.cache
+etc/localtime
+etc/nsswitch.conf
+etc/passwd
+lib
+lib64
+proc/cpuinfo
+run/systemd/userdb
+sandstorm-manifest
+usr/bin/gpg
+usr/bin/xz
+usr/lib/x86_64-linux-gnu/ld-2.31.so
+usr/lib/x86_64-linux-gnu/libassuan.so.0
+usr/lib/x86_64-linux-gnu/libassuan.so.0.8.3
+usr/lib/x86_64-linux-gnu/libbz2.so.1.0
+usr/lib/x86_64-linux-gnu/libbz2.so.1.0.4
+usr/lib/x86_64-linux-gnu/libc-2.31.so
+usr/lib/x86_64-linux-gnu/libc.so.6
+usr/lib/x86_64-linux-gnu/libdl-2.31.so
+usr/lib/x86_64-linux-gnu/libdl.so.2
+usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+usr/lib/x86_64-linux-gnu/libgcrypt.so.20
+usr/lib/x86_64-linux-gnu/libgcrypt.so.20.2.8
+usr/lib/x86_64-linux-gnu/libgpg-error.so.0
+usr/lib/x86_64-linux-gnu/libgpg-error.so.0.29.0
+usr/lib/x86_64-linux-gnu/liblzma.so.5
+usr/lib/x86_64-linux-gnu/liblzma.so.5.2.5
+usr/lib/x86_64-linux-gnu/libm-2.31.so
+usr/lib/x86_64-linux-gnu/libm.so.6
+usr/lib/x86_64-linux-gnu/libnss_files-2.31.so
+usr/lib/x86_64-linux-gnu/libnss_files.so.2
+usr/lib/x86_64-linux-gnu/libnss_systemd.so.2
+usr/lib/x86_64-linux-gnu/libpthread-2.31.so
+usr/lib/x86_64-linux-gnu/libpthread.so.0
+usr/lib/x86_64-linux-gnu/libreadline.so.8
+usr/lib/x86_64-linux-gnu/libreadline.so.8.1
+usr/lib/x86_64-linux-gnu/librt-2.31.so
+usr/lib/x86_64-linux-gnu/librt.so.1
+usr/lib/x86_64-linux-gnu/libsqlite3.so.0
+usr/lib/x86_64-linux-gnu/libsqlite3.so.0.8.6
+usr/lib/x86_64-linux-gnu/libstdc++.so.6
+usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.28
+usr/lib/x86_64-linux-gnu/libtinfo.so.6
+usr/lib/x86_64-linux-gnu/libtinfo.so.6.2
+usr/lib/x86_64-linux-gnu/libz.so.1
+usr/lib/x86_64-linux-gnu/libz.so.1.2.11
+usr/lib64/ld-linux-x86-64.so.2
+usr/share/zoneinfo/America/Chicago

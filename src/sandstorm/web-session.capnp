@@ -161,6 +161,9 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       "x-oc-mtime",            # Owncloud client
       "oc-fileid",             # Owncloud client
       "oc-chunked",            # Owncloud client
+      "oc-checksum",           # Owncloud client
+      "oc-chunk-offset",       # Owncloud client
+      "oc-lazyops",            # Owncloud client
       "x-hgarg-*",             # Mercurial client
       "x-phabricator-*",       # Phabricator
       "x-requested-with",      # JQuery header used by Rails and other frameworks

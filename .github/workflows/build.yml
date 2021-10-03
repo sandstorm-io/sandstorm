@@ -60,7 +60,7 @@ jobs:
       #    path: ccache-debug.tar.gz
       - name: upload sandstorm tarball
         if: always()
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
           name: sandstorm-0-fast.tar.xz
           path: sandstorm-0-fast.tar.xz
@@ -72,7 +72,7 @@ jobs:
           # the constant below.
           make lint | tee lint.log
           num_problems=$(cat lint.log | grep ' problems (0 errors, ' | awk '{print $2}')
-          [ "$num_problems" = 790 ]
+          [ "$num_problems" = 778 ]
       - name: test
         run: |
           set -o pipefail
@@ -81,13 +81,13 @@ jobs:
           (make test |& tee testlog.txt; echo "Result: $?") || true
       - name: upload test log
         if: always()
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
           name: testlog.txt
           path: testlog.txt
       - name: upload screenshots
         if: always()
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v2
         with:
           name: screenshots
           path: tests/screenshots

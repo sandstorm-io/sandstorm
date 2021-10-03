@@ -264,10 +264,14 @@ Config readConfig(const char *path, bool parseUids) {
       config.stripeKey = kj::mv(value);
     } else if (key == "STRIPE_PUBLIC_KEY") {
       config.stripePublicKey = kj::mv(value);
+    } else if (key == "USE_EXPERIMENTAL_SECCOMP_FILTER") {
+      config.useExperimentalSeccompFilter = value == "true" || value == "yes";
+    } else if (key == "LOG_SECCOMP_VIOLATIONS") {
+      config.logSeccompViolations = value == "true" || value == "yes";
     } else if (key == "ALLOW_LEGACY_RELAXED_CSP") {
       KJ_LOG(WARNING,
           "The option ALLOW_LEGACY_RELAXED_CSP will be removed "
-          "soon. Apps that rely on loading thrid party resources "
+          "soon. Apps that rely on loading third party resources "
           "should be modified to embed those resources in the app "
           "package instead.");
       config.allowLegacyRelaxedCSP = value == "true" || value == "yes";

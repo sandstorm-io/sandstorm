@@ -144,7 +144,7 @@ IMAGES= \
 all: sandstorm-$(BUILD).tar.xz
 
 clean: ci-clean
-	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/imports/client/changelog.html *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff icons/package-lock.json tests/package-lock.json deps/llvm-build meteor-testapp/node_modules
+	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/imports/client/changelog.html *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff icons/package-lock.json tests/package-lock.json deps/llvm-build meteor-testapp/node_modules meteor-testapp/package-lock.json
 	@# Note: capnproto, libseccomp, and node-capnp are integrated into the common build.
 	cd deps/ekam && make clean
 	rm -rf deps/libsodium/build
@@ -153,6 +153,7 @@ clean: ci-clean
 ci-clean:
 	@# Clean only the stuff that we want to clean between CI builds.
 	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz
+	rm -rf test-app.spk
 	rm -rf tests/assets/meteor-testapp.spk meteor-testapp/.meteor-spk
 
 install: sandstorm-$(BUILD)-fast.tar.xz install.sh
@@ -180,7 +181,7 @@ stylecheck:
 # ====================================================================
 # Dependencies
 
-DEPS=capnproto ekam libseccomp libsodium node-capnp boringssl clang
+DEPS=capnproto ekam libsodium node-capnp boringssl clang
 
 # We list remotes so that if projects move hosts, we can pull from their new
 # canonical location.
@@ -439,7 +440,7 @@ $(METEOR_SPK):
 	@$(call color,downloading meteor-spk)
 	@curl https://dl.sandstorm.io/meteor-spk-$(METEOR_SPK_VERSION).tar.xz | tar Jxf -
 
-meteor-testapp-dev:
+meteor-testapp-dev: $(METEOR_SPK)
 	cd meteor-testapp && PATH="$(PWD)/bin:$(PATH)" \
 		$(METEOR_SPK) dev -I../src -I../tmp -s /opt/sandstorm
 

@@ -26,7 +26,7 @@ Let's walk through an example.
   - [Read the App Developer Handbook](handbook.md) to understand the higher-level design issues faced by Sandstorm apps.
 
 2. Install Sandstorm on your local machine.
-  - Install Linux. Kernel version 3.13 or later. [Ubuntu](http://ubuntu.com) 14.04 is sufficient.
+  - Install Linux. Kernel version 3.10 or later is required. [Ubuntu](http://ubuntu.com) 14.04 or later is sufficient.
   - Install Sandstorm: `curl https://install.sandstorm.io | bash`
     - You will use this local Sandstorm server for development, so make sure it's running.
     - Make sure to make yourself a member of the server's group, usually called `sandstorm`.

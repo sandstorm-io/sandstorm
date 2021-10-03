@@ -49,8 +49,7 @@ GrantedAccessRequests = new Mongo.Collection("grantedAccessRequests");
 GrainLog = new Mongo.Collection("grainLog");
 // Pseudo-collection created by subscribing to "grainLog", implemented in proxy.js.
 
-const promptNewTitle = function () {
-  const grain = globalGrains.getActive();
+const promptNewTitle = function (grain) {
   if (grain) {
     let prompt = "Set new title:";
     if (!grain.isOwner()) {
@@ -102,6 +101,7 @@ const mapGrainStateToTemplateData = function (grainState) {
     signinOverlay: grainState.signinOverlay(),
     grainView: grainState,
     isPowerbox: grainState.isPowerboxRequest(),
+    showSettings: grainState.showSettings(),
   };
   return templateData;
 };
@@ -142,14 +142,14 @@ Tracker.autorun(function () {
 
 Template.grainTitle.events({
   click: function (event) {
-    promptNewTitle();
+    promptNewTitle(Template.currentData().grain);
   },
 
   keydown: function (event) {
     if ((event.keyCode === 13) || (event.keyCode === 32)) {
       // Allow space or enter to trigger renaming the grain - Firefox doesn't treat enter on the
       // focused element as click().
-      promptNewTitle();
+      promptNewTitle(Template.currentData().grain);
       event.preventDefault();
     }
   },
@@ -173,6 +173,13 @@ Template.grainDebugLogButton.events({
     const activeGrain = globalGrains.getActive();
     window.open("/grainlog/" + activeGrain.grainId(), "_blank",
         "menubar=no,status=no,toolbar=no,width=700,height=700");
+  },
+});
+
+Template.grainSettingsButton.events({
+  "click button": function(event) {
+    const grain = globalGrains.getActive();
+    grain.setShowSettings(!grain.showSettings());
   },
 });
 
@@ -503,6 +510,7 @@ Template.shareableLinkTab.events({
     const currentGrain = globalGrains.getActive();
     const grainId = currentGrain.grainId();
     const roleList = event.target.getElementsByClassName("share-token-role")[0];
+    const shareData = currentGrain.shareData();
     let assignment;
     if (roleList) {
       assignment = { roleId: roleList.selectedIndex };
@@ -518,7 +526,15 @@ Template.shareableLinkTab.events({
       if (error) {
         console.error(error.stack);
       } else {
-        result.url = getOrigin() + "/shared/" + result.token;
+        const url = new URL(getOrigin());
+        let path = "shared/" + result.token;
+        if ("pathname" in shareData) {
+          if (!shareData.pathname.startsWith("/")) path += "/";
+          path += shareData.pathname;
+        }
+        url.pathname = path;
+        if ("hash" in shareData) url.hash = shareData.hash;
+        result.url = url.toString();
         instance.completionState.set({ success: result });
         // On the next render, .copy-me will exist, and we should focus it then.
         Meteor.defer(function () {
@@ -620,9 +636,19 @@ Template.grainSharePopup.helpers({
   },
 
   currentTokenUrl: function () {
-    let token = globalGrains.getActive().token();
+    const grain = globalGrains.getActive();
+    const token = grain.token();
+    const shareData = grain.shareData();
     if (token) {
-      return getOrigin() + "/shared/" + token;
+      var url = new URL(getOrigin()),
+      path = "shared/" + token;
+      if ("pathname" in shareData) {
+        if (!shareData.pathname.startsWith("/")) path += "/";
+        path += shareData.pathname;
+      }
+      url.pathname = path;
+      if ("hash" in shareData) url.hash = shareData.hash;
+      return url.toString();
     }
   },
 
@@ -811,12 +837,12 @@ Template.grain.helpers({
 });
 
 Template.grainTitle.helpers({
-  fullTitle: function () {
-    const grain = globalGrains.getActive();
+  fullTitle() {
+    const grain = Template.currentData().grain;
     return (grain && grain.fullTitle()) || { title: "(unknown grain)" };
   },
 
-  hasSubtitle: function () {
+  hasSubtitle() {
     return !!(this.was || this.renamedFrom);
   },
 });
@@ -1504,6 +1530,15 @@ Meteor.startup(function () {
       // TODO(security): defend against malicious apps spamming this call, blocking all other UI.
       const currentGrain = globalGrains.getActive();
       if (senderGrain === currentGrain && !globalTopbar.isPopupOpen()) {
+        try {
+          check(event.data.startSharing, {hash: Match.Maybe(String), pathname: Match.Maybe(String)});
+        } catch (err) {
+          console.error(err);
+          console.error("startSharing data is not the expected shape.");
+          console.error("See https://docs.sandstorm.io/en/latest/developing/path/#helping-the-user-share-access");
+          return;
+        }
+        senderGrain.setShareData(event.data.startSharing);
         globalTopbar.openPopup("share", true);
       }
     } else if (event.data.overlaySignin) {

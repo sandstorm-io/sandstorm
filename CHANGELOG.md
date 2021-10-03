@@ -1,3 +1,40 @@
+### v0.287 (2021-09-04)
+- Meteor updated to 2.3, a major release. This also means Node.js was updated from 12 to 14.
+- Added support for more owncloud/nextcloud client headers. (Thanks @mnutt.)
+
+### v0.286 (2021-08-07) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.285 (2021-07-10)
+- Added support for passing Let's Encrypt challenges using PowerDNS, using the `acme-dns-01-powerdns` npm module. (Thanks @ocdtrekkie.)
+- Set security headers to prevent apps from using service workers. Unfortunately, service workers could be used by a malicious app to remove other security headers that make up part of the Sandstorm sandbox. We are not aware of any app using service workers today, and it seems like they would not work well under Sandstorm anyawy. (Thanks @zenhack.)
+
+### v0.284 (2021-06-12)
+- Added new "grain settings" UI. (Thanks @zenhack.)
+- Sandstorm now automatically sends headers to opt out of Google's FLoC. (Thanks @zenhack.)
+
+### v0.283 (2021-05-15) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.282 (2021-04-17)
+- A new, tighter seccomp filter can optionally be enabled. If all goes well, we will probably make it the default in the future. (Thanks @zenhack.)
+- Meteor updated to 2.2, a major release.
+
+### v0.281 (2021-03-20)
+- Extended seccomp filter to block some newer system calls. (Thanks @zenhack.)
+- Meteor updated to 2.1, a major release.
+
+### v0.280 (2021-02-21) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.279 (2021-01-23)
+- Extended `startSharing` `postMessage` API to allow a path (within the grain) to be appended to the sharing URL, so that users of the URL land on that path. (Thanks @troyjfarrell.)
+- Improved error behavior when given an invalid API token. (Thanks @zenhack.)
+- Meteor updated to 2.0, a major release.
+
+### v0.278 (2020-12-26)
+- Fix broken setup wizard.
+
 ### v0.277 (2020-12-19)
 - Added OpenID Connect login provider. (Thanks @rs22.)
 - Fixed an re-landed static publishing change from 0.275 that had been reverted in 0.276. (Thanks @zenhack.)

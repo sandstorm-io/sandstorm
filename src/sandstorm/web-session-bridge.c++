@@ -445,6 +445,7 @@ void WebSessionBridge::addStandardApiOptions(
 
 kj::String WebSessionBridge::davDestination(const kj::HttpHeaders& headers) {
   auto dest = KJ_REQUIRE_NONNULL(headers.get(tables.hDestination), "missing destination");
+  kj::String ownDest;
 
   // We allow host-relative URLs even though the spec doesn't. If an absolute URL is given then we
   // must verify that the host matches.
@@ -455,7 +456,8 @@ kj::String WebSessionBridge::davDestination(const kj::HttpHeaders& headers) {
     auto host = KJ_ASSERT_NONNULL(headers.get(kj::HttpHeaderId::HOST));
     KJ_REQUIRE(url.host == host, "DAV 'Destination' header must point to same host");
 
-    dest = url.toString(kj::Url::HTTP_REQUEST);
+    ownDest = url.toString(kj::Url::HTTP_REQUEST);
+    dest = ownDest;
   }
 
   // Remove leading '/'.
@@ -1293,7 +1295,6 @@ kj::Promise<void> WebSessionBridge::handleResponse(
             "script-src 'self' " UNSAFE
             "style-src 'self' " UNSAFE
             "child-src 'self' " UNSAFE
-            "worker-src 'self' " UNSAFE
             "font-src 'self' " UNSAFE
 
             // frame-src needs to allow references to BASE_URL, because
@@ -1301,6 +1302,11 @@ kj::Promise<void> WebSessionBridge::handleResponse(
             // there:
             "frame-src 'self' ", baseHttpHost, " ", UNSAFE
 #undef UNSAFE
+
+            // Service workers can intercept http requests and muck with
+            // response headers, possibly overriding our security settings,
+            // so we need to disable them.
+            "worker-src 'none';"
 
             // 'self' alone does not allow websocket connections; see:
             // https://github.com/w3c/webappsec-csp/issues/7

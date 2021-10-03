@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if test $# = 0; then
+  echo trigger filetype:.y
+  echo trigger filetype:.l
+  exit 0
+fi
+
+echo findProvider special:ekam-interceptor
+read INTERCEPTOR
+
+INPUT="$1"
+STEM="${INPUT%.y}"
+
+# The interceptor seems to interfere with bison & flex's
+# operation; if we try to use it we get an error like:
+#
+#    fdopen(EKAM_CALL_FILENO): error 9
+#    src/bpf/yacc.ekam-rule: Line 16: 21020 aborted
+#
+# So, we talk to ekam the hard way:
+
+echo findInput "$INPUT"
+read INPUT_DISK_PATH
+
+case "$INPUT" in
+  *.y)
+    echo newOutput "$STEM.yacc.c"
+    read OUTPUT_DISK_PATH_C
+    echo newOutput "$STEM.yacc.h"
+    read OUTPUT_DISK_PATH_H
+    bison -d -o "$OUTPUT_DISK_PATH_C" "$INPUT_DISK_PATH"
+  ;;
+  *.l)
+    echo newOutput "$STEM.lex.c"
+    read OUTPUT_DISK_PATH_C
+    flex -o "$OUTPUT_DISK_PATH_C" "$INPUT_DISK_PATH"
+  ;;
+esac

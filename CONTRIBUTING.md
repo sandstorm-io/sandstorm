@@ -6,7 +6,7 @@ So you want to contribute to Sandstorm. Awesome! This document will help you get
 
 Before you start making changes to Sandstorm, you should join [the sandstorm-dev mailing list](https://groups.google.com/group/sandstorm-dev) and tell us what you're up to. We might be able to give you tips or warn you if someone is already working on the same thing.
 
-You can also chat with us on IRC at #sandstorm on Freenode -- but don't be discouraged if no one answers; sometimes we're busy. :)
+You can also [chat with us on IRC](https://kiwiirc.com/client/irc.libera.chat/?channel=#sandstorm) at #sandstorm on libera.chat -- but don't be discouraged if no one answers; sometimes we're busy. :)
 
 ## Non-code contributions
 

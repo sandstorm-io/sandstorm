@@ -131,10 +131,15 @@ Please install the following:
 * Linux x86_64, with kernel version 3.13 or later
 * C and C++ standard libraries and headers
 * GNU Make
+* GNU diffutils
+* `g++`
 * `libcap` with headers
 * `xz`
 * `zip`
 * `unzip`
+* `which`
+* `flex`
+* `bison`
 * `strace`
 * `curl`
 * `python`
@@ -149,21 +154,21 @@ On Debian or Ubuntu, you should be able to get all these with:
 
     sudo apt-get install build-essential libcap-dev xz-utils zip \
         unzip strace curl discount git python zlib1g-dev \
-        golang-go cmake strace
+        golang-go cmake strace flex bison locales
     curl https://install.meteor.com/?release=1.8.2 | sh
 
-On Fedora 27 you should be able to get them with (as root):
+On Fedora 34 you should be able to get them with:
 
-    dnf install make libcap-devel libstdc++-devel libstdc++-static \
-       glibc-headers glibc-static glibc-locale-source xz zip \
-       unzip strace curl discount git python2 zlib-devel \
-       golang cmake strace
+    sudo dnf install make libcap-devel libstdc++-devel libstdc++-static \
+       glibc-headers glibc-static glibc-locale-source gcc-c++ xz zip \
+       unzip strace curl discount git python zlib-devel zlib-static \
+       golang cmake strace flex bison which diffutils
     curl https://install.meteor.com/?release=1.8.2 | sh
 
 If you have trouble getting the build to work on your distro, we recommend trying in a virtual
 machine running the latest stable Debian release. This is easy to set up using Vagrant, like:
 
-    vagrant init debian/contrib-stretch64
+    vagrant init debian/bullseye64
     vagrant up
     vagrant ssh
 
@@ -220,6 +225,10 @@ To do a debug build, run make like:
     make continuous CXXFLAGS="-g"
 
 If you suspect you'll be hacking on Sandstorm's dependencies as well, you may want to follow the dependency symlink trick described in the Ekam readme.
+
+### Running the test suite
+
+After making changes, it is a good idea to run the automated tests.  Instructions for doing so are in [tests/README.md](https://github.com/sandstorm-io/sandstorm/blob/master/tests/README.md).
 
 ## Option 5: Integrating with configuration management systems like Ansible/Puppet
 

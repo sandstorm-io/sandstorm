@@ -7,7 +7,7 @@ theme:
 repo_url: https://github.com/sandstorm-io/sandstorm
 edit_uri: edit/master/docs/
 markdown_extensions:
-    - mdx_inline_graphviz
+    - markdown_inline_graphviz
     - admonition
 extra_css:
     - "extra.css"

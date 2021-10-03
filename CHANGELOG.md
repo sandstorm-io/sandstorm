@@ -1,3 +1,9 @@
+### v0.289 (2021-10-02)
+- Reverted Meteor to 2.3.5. Meteor 2.4 crashes on startup when used on older Sandstorm installations, due to a conflict in the way Meteor used to create Mongo indexes long ago vs. the way it does in Meteor 2.4. https://github.com/meteor/meteor/issues/11666
+
+### v0.288 (2021-10-02)
+- Meteor updated to 2.4, a major release.
+
 ### v0.287 (2021-09-04)
 - Meteor updated to 2.3, a major release. This also means Node.js was updated from 12 to 14.
 - Added support for more owncloud/nextcloud client headers. (Thanks @mnutt.)

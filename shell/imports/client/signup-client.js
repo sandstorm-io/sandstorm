@@ -20,7 +20,7 @@ import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { Router } from "meteor/iron:router";
 import { DEFAULT_SIGNUP_DIALOG } from "/imports/client/personalization.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { globalDb } from "/imports/db-deprecated.js";
 
 Template.signup.helpers({
   signupDialog: function () {
@@ -52,7 +52,7 @@ Router.map(function () {
     },
 
     data: function () {
-      const keyInfo = SandstormDb.collections.signupKeys.findOne(this.params.key);
+      const keyInfo = globalDb.collections.signupKeys.findOne(this.params.key);
       const user = Meteor.user();
 
       const result = {

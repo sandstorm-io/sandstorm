@@ -34,6 +34,9 @@ jobs:
             mkdir -p "$CCACHE_DIR"
             ccache -s
             ccache -z
+      - name: check for node.h
+        run: |
+          ./check-node.h.sh
       - name: make fast
         run: |
             set -x

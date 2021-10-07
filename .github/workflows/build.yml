@@ -22,6 +22,7 @@ jobs:
         # the Node binary from this version. Other required versions of meteor will be installed
         # automatically as needed by the meteor tool.
         run: |
+            curl https://install.meteor.com/ | sh
             curl https://install.meteor.com/?release=1.8.2 | sh
       - name: cache ccache files
         uses: actions/cache@v1.1.0

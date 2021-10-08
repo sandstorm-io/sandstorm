@@ -32,7 +32,7 @@ Proto and HTTP.
 
       subgraph cluster_sandstorm {
         label="Sandstorm";
-        proxy [label="Proxy\n (proxy.js)";];
+        proxy [label="Gateway\n (gateway.c++)";];
         websession [label="WebSession Serialization\n(HTTP over Cap'n Proto,\nweb-session.capnp)"];
       }
 
@@ -62,7 +62,7 @@ bridge is not needed.
 
       subgraph cluster_sandstorm {
         label="Sandstorm";
-        proxy [label="Proxy\n (proxy.js)";];
+        proxy [label="Gateway\n (gateway.c++)";];
         websession [label="WebSession Serialization\n(HTTP over Cap'n Proto,\nweb-session.capnp)"];
       }
 

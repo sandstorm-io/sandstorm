@@ -22,7 +22,7 @@ and the grain occur over the Cap'n Proto WebSession format.  With existing
 applications, the Sandstorm HTTP bridge is used to translate between Cap'n
 Proto and HTTP.
 
-{% dot communication_overview_http_app.svg
+```graphviz dot communication_overview_http_app.svg
     graph communication_overview_http_app {
       rankdir=LR;
       compound=true;
@@ -47,12 +47,12 @@ Proto and HTTP.
       websession -- bridge;
       bridge -- app;
     }
-%}
+```
 
 When an application can speak Cap'n Proto directly to Sandstorm, the HTTP
 bridge is not needed.
 
-{% dot communication_overview_native_app.svg
+```graphviz dot communication_overview_native_app.svg
     graph communication_overview_native_app {
       rankdir=LR;
       compound=true;
@@ -75,4 +75,4 @@ bridge is not needed.
       proxy -- websession;
       websession -- app;
     }
-%}
+```

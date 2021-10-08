@@ -1,0 +1,35 @@
+name: doc-ci
+
+on:
+  push:
+    paths:
+      - 'mkdocs.yml'
+      - 'docs/**'
+  pull_request:
+    paths:
+      - 'mkdocs.yml'
+      - 'docs/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git virtualenv graphviz
+        virtualenv tmp/docs-virtualenv
+        tmp/docs-virtualenv/bin/pip install -r docs/requirements.txt
+    - name: build docs
+      run: |
+        export PATH=$PWD/tmp/docs-virtualenv/bin:$PATH
+        mkdir docbuild
+        bash -x docs/generate.sh -d docbuild
+        tar cvf docbuild.tar docbuild
+    - name: upload docbuild.tar
+      if: always()
+      uses: actions/upload-artifact@v2
+      with:
+        name: docbuild.tar
+        path: docbuild.tar

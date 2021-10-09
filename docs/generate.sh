@@ -50,7 +50,7 @@ assert_dependencies() {
     if [ ! -x "tmp/docs-virtualenv/bin/mkdocs" ] ; then
       mkdir -p tmp
       virtualenv tmp/docs-virtualenv
-      tmp/docs-virtualenv/bin/pip install mkdocs==1.0.4 mkdocs-markdown-graphviz==1.3
+      tmp/docs-virtualenv/bin/pip install -r docs/requirements.txt
     fi
     export PATH=$PWD/tmp/docs-virtualenv/bin:$PATH
   fi

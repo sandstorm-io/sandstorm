@@ -11,8 +11,7 @@ Run the following.
 sudo apt-get install -y graphviz virtualenv
 cd ~/projects/sandstorm
 virtualenv tmp/docs-virtualenv
-tmp/docs-virtualenv/bin/pip install mkdocs==1.0.4
-tmp/docs-virtualenv/bin/pip install mkdocs-markdown-graphviz==1.3
+tmp/docs-virtualenv/bin/pip install -r docs/requirements.txt
 tmp/docs-virtualenv/bin/mkdocs serve
 ```
 

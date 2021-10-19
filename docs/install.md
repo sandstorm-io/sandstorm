@@ -146,7 +146,6 @@ Please install the following:
 * `zlib1g-dev`
 * `golang-go`
 * `cmake`
-* `strace`
 * discount (markdown parser)
 * [Meteor](http://meteor.com) version 1.8.2
 

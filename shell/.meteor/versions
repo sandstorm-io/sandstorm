@@ -68,7 +68,7 @@ meteortesting:mocha@2.0.3
 meteortesting:mocha-core@8.1.2
 minifier-css@1.5.4
 minimongo@1.7.0
-modern-browsers@0.1.6
+modern-browsers@0.1.7
 modules@0.16.0
 modules-runtime@0.12.0
 mongo@1.12.0

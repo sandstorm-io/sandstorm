@@ -1,3 +1,8 @@
+### v0.290 (2021-10-23)
+- The installer now supports many more options in non-interactive mode. [More info in the docs.](https://docs.sandstorm.io/en/latest/administering/install-script/) (Thanks @garrison.)
+- Some places which had hard-coded apps.sandstorm.io as the app market URL have now been fixed to use the app market configured by the server administrator. (Thanks @gischer.)
+- Sandstorm now sets the header `Referrer-Policy: same-origin` when serving app UIs, so that clicking on a link from an app does not leak the app's randomly-generated hostname to the destination server. (Thanks @garrison.)
+
 ### v0.289 (2021-10-02)
 - Reverted Meteor to 2.3.5. Meteor 2.4 crashes on startup when used on older Sandstorm installations, due to a conflict in the way Meteor used to create Mongo indexes long ago vs. the way it does in Meteor 2.4. https://github.com/meteor/meteor/issues/11666
 

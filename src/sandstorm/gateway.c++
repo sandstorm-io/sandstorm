@@ -974,7 +974,7 @@ void GatewayTlsManager::setKeys(kj::StringPtr key, kj::StringPtr certChain) {
   options.useSystemTrustStore = false;
   options.defaultKeypair = keypair;
 
-  currentTls = kj::refcounted<RefcountedTlsContext>(options);
+  currentTls = kj::refcounted<RefcountedTlsContext>(kj::mv(options));
   readyFulfiller->fulfill();
 }
 

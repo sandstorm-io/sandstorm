@@ -5,19 +5,21 @@
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  # We base ourselves off a Debian fork of the official Debian jessie64 base box.
-  config.vm.box = "debian/contrib-stretch64"
+  # We base ourselves off an official Debian base box.
+  config.vm.box = "debian/bullseye64"
 
   # We forward port 6080, the Sandstorm web port, so that developers can
   # visit their sandstorm app from their browser as local.sandstorm.io:6080
   # (aka 127.0.0.1:6080).
-  config.vm.network :forwarded_port, guest: 6080, host: 6080
+  config.vm.network :forwarded_port, guest: 6080, host: 6080, host_ip: "127.0.0.1"
 
   # Create a link-local private address, so that the host can
   # use NFS with the Virtualbox guest. Virtualbox/Vagrant handles
   # network address translation so outbound network requests still
   # work.
-  config.vm.network :private_network, ip: "169.254.254.2"
+  config.vm.provider :virtualbox do |vb, override|
+    override.vm.network :private_network, ip: "192.254.254.2"
+  end
 
   # Use a shell script to "provision" the box. This installs Sandstorm using
   # the bundled installer.
@@ -27,8 +29,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo localhost > /etc/hostname
     hostname localhost
     sudo apt-get update
-    sudo apt-get install -y curl
+    sudo apt-get install -y curl gpg
     sudo OVERRIDE_DEFAULT_SERVER_USER=vagrant ./install.sh -d -e > /dev/null
+    sudo usermod -a -G sandstorm vagrant
     sudo sed --in-place='' --expression='s/^BIND_IP=.*/BIND_IP=0.0.0.0/' /opt/sandstorm/sandstorm.conf
     sudo service sandstorm restart
     printf '\nYour server is online. It has the dev accounts feature enabled, so anyone can log in.'
@@ -42,7 +45,7 @@ EOF
 
   # Use NFS for the /vagrant shared directory, for performance and
   # compatibility.
-  config.vm.synced_folder ".", "/vagrant", type: "nfs"
+  config.vm.synced_folder ".", "/vagrant", type: "nfs", nfs_udp: false
 
   # Calculate the number of CPUs and the amount of RAM the system has,
   # in a platform-dependent way; further logic below.

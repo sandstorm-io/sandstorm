@@ -49,7 +49,7 @@
     "signup": {
       "title": "要求邀請",
       "signedUp": {
-        "keyIsUsedWithOrigin": "註冊成功！來去<a href=\"https://apps.sandstorm.io/?host=%s\">下載應用程式吧</a>。",
+        "keyIsUsedWithOrigin": "註冊成功！來去<a href=\"%s?host=%s\">下載應用程式吧</a>。",
         "keyIsNotUsed": "您已經有帳號了，不需要這把註冊金鑰。"
       },
       "keyIsUsed": "抱歉，這把註冊金鑰已經被用掉了。",

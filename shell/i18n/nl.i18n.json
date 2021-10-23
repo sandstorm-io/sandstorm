@@ -49,7 +49,7 @@
     "signup": {
       "title": "Uitnodiging opeisen",
       "signedUp": {
-        "keyIsUsedWithOrigin": "U bent helemaal ingeschreven!  <a href=\"https://apps.sandstorm.io/?host=%s\">Installeer wat apps</a>.",
+        "keyIsUsedWithOrigin": "U bent helemaal ingeschreven!  <a href=\"%s?host=%s\">Installeer wat apps</a>.",
         "keyIsNotUsed": "Het ziet ernaar uit dat u al een account heeft, dus u heeft deze inschrijvingscode niet nodig."
       },
       "keyIsUsed": "Sorry, deze inschrijvingscode is al gebruikt.",

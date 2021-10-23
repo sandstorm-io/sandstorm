@@ -8,7 +8,6 @@ import { TAPi18n } from "meteor/tap:i18n";
 
 import { introJs } from "intro.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
 
 SandstormAppList = function (db, quotaEnforcer) {
   this._filter = new ReactiveVar("");
@@ -173,7 +172,8 @@ Template.sandstormAppListPage.helpers({
   },
 
   appMarketUrl: function () {
-    const appMarket = globalDb.collections.settings.findOne({ _id: "appMarketUrl" });
+    const ref = Template.instance().data;
+    const appMarket = ref._db.collections.settings.findOne({ _id: "appMarketUrl" });
     if (!appMarket) {
       return "#";
     }
@@ -202,7 +202,13 @@ Template.sandstormAppListPage.events({
   "click .install-button": function (event) {
     event.preventDefault();
     event.stopPropagation();
-    window.open("https://apps.sandstorm.io/?host=" +
+    const ref = Template.instance().data;
+    const appMarket = ref._db.collections.settings.findOne({ _id: "appMarketUrl" });
+    let url = "https://apps.sandstorm.io/?host=";
+    if (appMarket) {
+      url = appMarket.value + '?host=';
+    }
+    window.open(url +
         document.location.protocol + "//" + document.location.host, "_blank");
   },
 

@@ -137,6 +137,17 @@ Template.sandstormAppDetails.helpers({
     return pkg && iconSrcForPackage(pkg, "appGrid", window.location.protocol + "//" + ref.staticHost);
   },
 
+  appMarketHost: function() {
+    let host = "https://apps.sandstorm.io/";
+    const ref = Template.instance().data;
+    const db = ref._db;
+    const appMarket = db.collections.settings.findOne({ _id: "appMarketUrl" });
+    if (!appMarket) {
+      host = appMarket.value;
+    }
+    return host;
+  },
+
   appId: function () {
     const pkg = Template.instance().data.pkg;
     return pkg && pkg.appId;

@@ -87,7 +87,7 @@
       <h1 class="app-title">{{appTitle}}</h1>
       <ul class="app-links">
         {{#if website}}<li role="presentation"><a class="website-link" target="_blank" href="{{website}}">{{_ (con txt "websiteLink")}}</a></li>{{/if}}
-        <li role="presentation"><a class="app-market-link" target="_blank" href="https://apps.sandstorm.io/app/{{appId}}">{{_ (con txt "appMarketLink")}}</a></li>
+        <li role="presentation"><a class="app-market-link" target="_blank" href="{{appMarketHost}}/app/{{appId}}">{{_ (con txt "appMarketLink")}}</a></li>
         {{#if codeUrl}}<li role="presentation"><a class="source-code-link" target="_blank" href="{{codeUrl}}">{{_ (con txt "sourceCodeLink")}}</a></li>{{/if}}
         {{#if bugReportLink}}<li role="presentation"><a class="bug-report-link" target="_blank" href="{{bugReportLink}}">{{_ (con txt "bugReportLink")}}</a></li>{{/if}}
       </ul>

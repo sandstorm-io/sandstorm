@@ -61,13 +61,31 @@ namespaces system-wide if necessary. One way to get a fully-automated install is
 all defaults, and stop Sandstorm, modify `/opt/sandstorm/sandstorm.conf` to your liking, and then
 start Sandstorm.
 
-Another way is to request specific custom behavior from `install.sh`.
+Another way is to request specific custom behavior from `install.sh` in interactive mode.
+
+A non-interactive production install can be performed by passing the following environment variables to `install.sh`:
+
+- `CHOSEN_INSTALL_MODE=production`
+- `ACCEPTED_FULL_SERVER_INSTALL=yes`
+- `DESIRED_SANDCATS_NAME`
+- `SANDCATS_REGISTRATION_EMAIL`
+- `ACME_EMAIL` (for Let's Encrypt registration)
+
+Note that if the provided `DESIRED_SANDCATS_NAME` is invalid or
+already taken, the install script will become interactive to try to
+remedy the situation, rather than erroring out.
 
 ### Environment variables to request custom behavior
 
-Over the time we have spent maintaining the install script, we hae found it easier to provide
+Over the time we have spent maintaining the install script, we have found it easier to provide
 user-provided configuration options from environment variables, rather than command line flags. Here
 are some environment variables that `install.sh` can look for, and their meanings.
+
+- `CHOSEN_INSTALL_MODE` can be either `development` or `production`.  If unset, the script
+  will prompt (unless `-d`, for development defaults, was passed to `install.sh`).
+
+- `ACCEPTED_FULL_SERVER_INSTALL`: If `yes`, the install will proceed without prompting for
+  confirmation.  This can be useful to achieve a non-interactive production install.
 
 - `OVERRIDE_SANDSTORM_DEFAULT_DIR`: If you specify this, Sandstorm will install into this
   directory rather than `/opt/sandstorm` by default.
@@ -76,17 +94,17 @@ are some environment variables that `install.sh` can look for, and their meaning
   rather than a user account called `sandstorm`. This maps into the Sandstorm configuration file as
   `SERVER_USER`.
 
+- `ACME_EMAIL`: Email address for Let's Encrypt registration
+
+
 **Sandcats-specific environment variables.** Some environment variables are specifically about
-controlling the install script's interaction with the [sandcats.io](sandcats.md) dynamic DNS and
-free HTTPS certificate service.
+controlling the install script's interaction with the [sandcats.io](sandcats.md) dynamic DNS service.
 
 - `DESIRED_SANDCATS_NAME`: The name of the the sandcats.io subdomain you would like to use for this install.
 
-- `SANDCATS_DOMAIN_RESERVATION_TOKEN`: A token that indicates you have pre-reserved a sandcats.io subdomain.
+- `SANDCATS_REGISTRATION_EMAIL`: Email address for Sandcats registration
 
-- `OVERRIDE_SANDCATS_GETCERTIFICATE`: If you specify this as `no`, then Sandstorm will not bother
-  requesting a HTTPS certificate from sandcats.io. The install script will prompt you about sandcats
-  to ask if you want to use it for dynamic DNS.
+- `SANDCATS_DOMAIN_RESERVATION_TOKEN`: A token that indicates you have pre-reserved a sandcats.io subdomain.
 
 - `OVERRIDE_SANDCATS_BASE_DOMAIN`: If you run a different instance of the sandcats.io software,
   adjust this variable.

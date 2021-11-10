@@ -44,17 +44,6 @@ KJ_TEST("HeaderWhitelist") {
   KJ_ASSERT(!whitelist.matches("quxqux"));
 }
 
-struct Pipe {
-  kj::AutoCloseFd readEnd;
-  kj::AutoCloseFd writeEnd;
-};
-
-Pipe makePipe() {
-  int fds[2];
-  KJ_SYSCALL(pipe2(fds, O_CLOEXEC));
-  return { kj::AutoCloseFd(fds[0]), kj::AutoCloseFd(fds[1]) };
-}
-
 bool hasSubstring(kj::StringPtr haystack, kj::StringPtr needle) {
   if (needle.size() <= haystack.size()) {
     for (size_t i = 0; i <= haystack.size() - needle.size(); i++) {
@@ -116,7 +105,7 @@ KJ_TEST("Subprocess") {
   }
 
   {
-    Pipe pipe = makePipe();
+    Pipe pipe = Pipe::make();
     Subprocess child([&]() {
       KJ_SYSCALL(write(pipe.writeEnd, "foo", 3));
       pipe.writeEnd = nullptr;
@@ -127,7 +116,7 @@ KJ_TEST("Subprocess") {
   }
 
   {
-    Pipe pipe = makePipe();
+    Pipe pipe = Pipe::make();
     Subprocess::Options options({"echo", "foo"});
     options.stdout = pipe.writeEnd;
     Subprocess child(kj::mv(options));
@@ -137,8 +126,8 @@ KJ_TEST("Subprocess") {
   }
 
   {
-    Pipe inPipe = makePipe();
-    Pipe outPipe = makePipe();
+    Pipe inPipe = Pipe::make();
+    Pipe outPipe = Pipe::make();
     Subprocess::Options options({"cat"});
     options.stdin = inPipe.readEnd;
     options.stdout = outPipe.writeEnd;
@@ -152,7 +141,7 @@ KJ_TEST("Subprocess") {
   }
 
   {
-    Pipe pipe = makePipe();
+    Pipe pipe = Pipe::make();
     Subprocess::Options options({"no-such-file-eb8c433f35f3063e"});
     options.stderr = pipe.writeEnd;
     Subprocess child(kj::mv(options));
@@ -162,7 +151,7 @@ KJ_TEST("Subprocess") {
   }
 
   {
-    Pipe pipe = makePipe();
+    Pipe pipe = Pipe::make();
     Subprocess::Options options({"true"});
     options.stderr = pipe.writeEnd;
     options.searchPath = false;
@@ -180,7 +169,7 @@ KJ_TEST("Subprocess") {
   }
 
   {
-    Pipe pipe = makePipe();
+    Pipe pipe = Pipe::make();
     Subprocess::Options options({"sh", "-c", "echo $UTIL_TEST_ENV"});
     auto env = kj::heapArray<const kj::StringPtr>({"PATH=/bin:/usr/bin", "UTIL_TEST_ENV=foo"});
     options.environment = env.asPtr();
@@ -192,8 +181,8 @@ KJ_TEST("Subprocess") {
   }
 
   {
-    Pipe pipe3 = makePipe();
-    Pipe pipe4 = makePipe();
+    Pipe pipe3 = Pipe::make();
+    Pipe pipe4 = Pipe::make();
     Subprocess::Options options({"sh", "-c", "echo foo >&3; echo bar >&4"});
     auto fds = kj::heapArray<int>({pipe3.writeEnd, pipe4.writeEnd});
     options.moreFds = fds;
@@ -218,7 +207,7 @@ KJ_TEST("SubprocessSet") {
   SubprocessSet set(io.unixEventPort);
 
   Subprocess::Options catOptions("cat");
-  Pipe catPipe = makePipe();
+  Pipe catPipe = Pipe::make();
   catOptions.stdin = catPipe.readEnd;
   Subprocess childCat(kj::mv(catOptions));
   catPipe.readEnd = nullptr;

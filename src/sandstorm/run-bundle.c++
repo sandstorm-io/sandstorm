@@ -545,16 +545,14 @@ public:
     // Daemonize ourselves.
     pid_t mainPid;  // PID of the main process as seen *outside* the PID namespace.
     {
-      int pipeFds[2];
-      KJ_SYSCALL(pipe2(pipeFds, O_CLOEXEC));
-      kj::AutoCloseFd pipeIn(pipeFds[0]), pipeOut(pipeFds[1]);
+      auto pipe = Pipe::make();
 
       KJ_SYSCALL(mainPid = fork());
       if (mainPid != 0) {
         // Tell the child process its own PID, since being in a PID namespace its own getpid() will
         // unhelpfully return 1.
-        pipeIn = nullptr;
-        kj::FdOutputStream(kj::mv(pipeOut)).write(&mainPid, sizeof(mainPid));
+        pipe.readEnd = nullptr;
+        kj::FdOutputStream(kj::mv(pipe.writeEnd)).write(&mainPid, sizeof(mainPid));
 
         // Write the pidfile before exiting.
         {
@@ -568,8 +566,8 @@ public:
       }
 
       // Read our (global) PID in from the parent process.
-      pipeOut = nullptr;
-      kj::FdInputStream(kj::mv(pipeIn)).read(&mainPid, sizeof(mainPid));
+      pipe.writeEnd = nullptr;
+      kj::FdInputStream(kj::mv(pipe.readEnd)).read(&mainPid, sizeof(mainPid));
     }
 
     // Since we unshared the PID namespace, the first fork() should have produced pid 1 in the

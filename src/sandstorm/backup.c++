@@ -16,6 +16,7 @@
 
 #include "backup.h"
 #include "util.h"
+#include "sandbox.h"
 #include "version.h"
 #include <kj/debug.h>
 #include <sched.h>
@@ -84,17 +85,6 @@ bool BackupMain::setUid(kj::StringPtr arg) {
   }
 }
 
-void BackupMain::writeSetgroupsIfPresent(const char *contents) {
-  KJ_IF_MAYBE(fd, raiiOpenIfExists("/proc/self/setgroups", O_WRONLY | O_CLOEXEC)) {
-    kj::FdOutputStream(kj::mv(*fd)).write(contents, strlen(contents));
-  }
-}
-
-void BackupMain::writeUserNSMap(const char *type, kj::StringPtr contents) {
-  kj::FdOutputStream(raiiOpen(kj::str("/proc/self/", type, "_map").cStr(), O_WRONLY | O_CLOEXEC))
-      .write(contents.begin(), contents.size());
-}
-
 void BackupMain::bind(kj::StringPtr src, kj::StringPtr dst, unsigned long flags) {
   // Contrary to the documentation of MS_BIND claiming this is no longer the case after 2.6.26,
   // mountflags are ignored on the initial bind.  We have to issue a subsequent remount to set
@@ -128,9 +118,7 @@ bool BackupMain::run(kj::StringPtr grainDir) {
         // Unshare other stuff; like no_new_privs, this is only to defend against hypothetical
         // arbitrary code execution bugs in zip/unzip.
         CLONE_NEWNET | CLONE_NEWIPC | CLONE_NEWPID | CLONE_NEWUTS));
-    writeSetgroupsIfPresent("deny\n");
-    writeUserNSMap("uid", kj::str("1000 ", uid, " 1\n"));
-    writeUserNSMap("gid", kj::str("1000 ", gid, " 1\n"));
+    sandbox::hideUserGroupIds(uid, gid, false);
   } else {
     KJ_SYSCALL(seteuid(0));
     KJ_SYSCALL(unshare(CLONE_NEWNS |

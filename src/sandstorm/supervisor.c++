@@ -78,6 +78,7 @@
 #include "version.h"
 #include "send-fd.h"
 #include "util.h"
+#include "sandbox.h"
 
 // In case kernel headers are old.
 #ifndef PR_SET_NO_NEW_PRIVS
@@ -896,17 +897,6 @@ void SupervisorMain::checkPaths() {
   KJ_SYSCALL(close(logfd));
 }
 
-void SupervisorMain::writeSetgroupsIfPresent(const char *contents) {
-  KJ_IF_MAYBE(fd, raiiOpenIfExists("/proc/self/setgroups", O_WRONLY | O_CLOEXEC)) {
-    kj::FdOutputStream(kj::mv(*fd)).write(contents, strlen(contents));
-  }
-}
-
-void SupervisorMain::writeUserNSMap(const char *type, kj::StringPtr contents) {
-  kj::FdOutputStream(raiiOpen(kj::str("/proc/self/", type, "_map").cStr(), O_WRONLY | O_CLOEXEC))
-      .write(contents.begin(), contents.size());
-}
-
 void SupervisorMain::unshareOuter() {
   if (sandboxUid == nullptr) {
     // Use user namespaces.
@@ -917,24 +907,8 @@ void SupervisorMain::unshareOuter() {
     // created by it.
     KJ_SYSCALL(unshare(CLONE_NEWUSER | CLONE_NEWNS | CLONE_NEWIPC | CLONE_NEWUTS | CLONE_NEWPID));
 
-    // Map ourselves as 1000:1000, since it costs nothing to mask the uid and gid.
-    uid_t fakeUid = 1000;
-    gid_t fakeGid = 1000;
-
-    if (devmode) {
-      // "Randomize" the UID and GID in dev mode. This catches app bugs where the app expects the
-      // UID or GID to be always 1000, which is not true of servers that use the privileged sandbox
-      // rather than the userns sandbox. (The "randomization" algorithm here is only meant to
-      // appear random to a human. The funny-looking numbers are just arbitrary primes chosen
-      // without much thought.)
-      time_t now = time(nullptr);
-      fakeUid = now * 4721 % 2000 + 1;
-      fakeGid = now * 2791 % 2000 + 1;
-    }
-
-    writeSetgroupsIfPresent("deny\n");
-    writeUserNSMap("uid", kj::str(fakeUid, " ", uid, " 1\n"));
-    writeUserNSMap("gid", kj::str(fakeGid, " ", gid, " 1\n"));
+    // Hide our real user & group ids; it costs nothing to mask them.
+    sandbox::hideUserGroupIds(uid, gid, devmode);
   } else {
     // Use root privileges instead of user namespaces.
 

@@ -1,3 +1,7 @@
+### v0.291 (2021-11-21)
+- Added a backup button to the grain list, so you don't have to open the grain before downloading a backup. (Thanks @zenhack.)
+- Updated icon font generator to modern code (it had been stuck on an old version for a while). Please report if any icons look wrong. (Thanks @griff.)
+
 ### v0.290 (2021-10-23)
 - The installer now supports many more options in non-interactive mode. [More info in the docs.](https://docs.sandstorm.io/en/latest/administering/install-script/) (Thanks @garrison.)
 - Some places which had hard-coded apps.sandstorm.io as the app market URL have now been fixed to use the app market configured by the server administrator. (Thanks @gischer.)

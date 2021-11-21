@@ -1,5 +1,5 @@
 module.exports = function(grunt) {
-  grunt.loadNpmTasks("grunt-webfont");
+  grunt.loadNpmTasks("grunt-webfonts");
 
 
   grunt.initConfig({
@@ -13,6 +13,9 @@ module.exports = function(grunt) {
           engine: "node",
           autoHint: false,
           htmlDemo: false,
+          normalize: true,
+          fontHeight: 1001,
+          fontFilename: 'icons-{hash}',
           relativeFontPath: "/icons/",
           stylesheet: "scss",
           templateOptions: {

@@ -362,6 +362,7 @@
         },
         "trashButton": "View trash (%s)",
         "moveToTrash": "Move to trash",
+        "saveBackup": "Save backup",
         "trash": {
           "emptyButton": "Empty all trash",
           "explanation": "(Grains will be permanently removed after 30 days in the trash. To keep a grain, restore it to the Main list.)"
@@ -414,7 +415,10 @@
       },
       "sandstormGrainTable": {
         "bulkAction": {
-          "disabledHint": "To perform bulk actions, you must first select some grains in the list."
+          "disabledHints": {
+            "mustSelectGrains": "To perform bulk actions, you must first select some grains in the list.",
+            "grainsOwnedByOthers": "Some of the grains you have selected are owned by other users. You can only back up your own grains."
+          }
         },
         "tableHeader": {
           "title": "Name",

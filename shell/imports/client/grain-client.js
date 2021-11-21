@@ -33,6 +33,7 @@ import { $ } from "meteor/jquery";
 import { introJs } from "intro.js";
 
 import downloadFile from "/imports/client/download-file.js";
+import { makeAndDownloadBackup } from "/imports/client/backups.ts";
 import { ContactProfiles } from "/imports/client/contacts.js";
 import { isStandalone } from "/imports/client/standalone.js";
 import { GrainView } from "/imports/client/grain/grainview.js";
@@ -229,19 +230,13 @@ Template.grainBackupPopup.onCreated(function () {
   const _this = this;
   this._doBackup = function () {
     _this._state.set({ processing: true });
-    Meteor.call("backupGrain", _this._grainId, function (err, id) {
-      if (err) {
-        _this._state.set({ error: "Backup failed: " + err });
-      } else if (!_this._state.get().canceled) {
-        const origin = __meteor_runtime_config__.DDP_DEFAULT_CONNECTION_URL || "";  // jscs:ignore requireCamelCaseOrUpperCaseIdentifiers
-        const url = origin + "/downloadBackup/" + id;
-        const suggestedFilename = activeGrain.title() + ".zip";
-        downloadFile(url, suggestedFilename);
-
+    makeAndDownloadBackup(_this._grainId, activeGrain.title())
+      .then(() => {
         // Close the topbar popup.
         _this.data.reset();
-      }
-    });
+      }, (err) => {
+        _this._state.set({ error: "Backup failed: " + err });
+      });
   };
 
   const grain = globalDb.collections.grains.findOne({ _id: this._grainId });

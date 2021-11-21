@@ -345,7 +345,9 @@
       },
       "sandstormGrainTable": {
         "bulkAction": {
-          "disabledHint": "Pour effectuer des actions groupées, vous devez d'abord sélectionner quelques grains dans la liste."
+          "disabledHints": {
+            "mustSelectGrains": "Pour effectuer des actions groupées, vous devez d'abord sélectionner quelques grains dans la liste."
+          }
         },
         "tableHeader": {
           "title": "Nom",

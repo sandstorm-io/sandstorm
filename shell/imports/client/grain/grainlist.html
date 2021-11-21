@@ -112,8 +112,9 @@
       buttonClass: a string to be used in the button's class attribute
       text(numMyGrainsSelected, numSharedWithMeGrainsSelected): function that returns a string
          that will be displayed as the button's text.
-      disabled(numMyGrainsSelected, numSharedWithMeGrainsSelected): function that returns a
-         boolean, indicating whether the button should be diabled
+      disabled(numMyGrainsSelected, numSharedWithMeGrainsSelected): function that returns either
+         null, which indicates that the button should not be disabled, or a string explaining
+         to the user why the button is disabled.
       onClicked(myGrainIds, sharedWithMeGrainIds): function that performs the action on the
          selected grains.
     }
@@ -125,7 +126,7 @@
   <form class="standard-form bulk-action-buttons">
     {{#each buttons}}
     <button type="button" class={{buttonClass}} disabled={{disabled mine shared}}
-            title="{{#if disabled mine shared}}{{_ "grains.grainlist.sandstormGrainTable.bulkAction.disabledHint"}}{{else}}{{text mine shared}}{{/if}}">
+            title="{{#if disabled mine shared}}{{disabled mine shared}}{{else}}{{text mine shared}}{{/if}}">
       {{text mine shared}}
     </button>
     {{/each}}

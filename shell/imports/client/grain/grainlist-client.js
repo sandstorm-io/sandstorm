@@ -11,6 +11,7 @@ import { TAPi18n } from "meteor/tap:i18n";
 import { introJs } from "intro.js";
 import { identiconForApp } from "/imports/sandstorm-identicons/helpers.js";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { makeAndDownloadBackup } from "/imports/client/backups.ts";
 
 SandstormGrainListPage = {};
 
@@ -39,6 +40,18 @@ SandstormGrainListPage.mapGrainsToTemplateObject = function (grains, db) {
     };
   });
 };
+
+function disabledHint(name) {
+  return TAPi18n.__('grains.grainlist.sandstormGrainTable.bulkAction.disabledHints.' + name);
+}
+
+function bulkActionNoneSelected(numMineSelected, numSharedSelected) {
+  if(numMineSelected == 0 && numSharedSelected == 0) {
+    return disabledHint("mustSelectGrains");
+  } else {
+    return null;
+  }
+}
 
 SandstormGrainListPage.mapApiTokensToTemplateObject = function (apiTokens, staticAssetHost) {
   const tokensForGrain = _.groupBy(apiTokens, "grainId");
@@ -223,7 +236,7 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
         },
 
         disabled: function (numMineSelected, numSharedSelected) {
-          return numMineSelected == 0 && numSharedSelected == 0;
+          return bulkActionNoneSelected(numMineSelected, numSharedSelected);
         },
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
@@ -244,7 +257,7 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
         },
 
         disabled: function (numMineSelected, numSharedSelected) {
-          return numMineSelected == 0 && numSharedSelected == 0;
+          return bulkActionNoneSelected(numMineSelected, numSharedSelected);
         },
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
@@ -263,11 +276,34 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
         },
 
         disabled: function (numMineSelected, numSharedSelected) {
-          return numMineSelected == 0 && numSharedSelected == 0;
+          return bulkActionNoneSelected(numMineSelected, numSharedSelected);
         },
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
           Meteor.call("moveGrainsToTrash", ownedGrainIds.concat(sharedGrainIds));
+        },
+      },
+      {
+        buttonClass: "save-backup",
+
+        text: function() {
+          return TAPi18n.__('grains.grainlist.sandstormGrainListPage.saveBackup');
+        },
+
+        disabled: function(numMineSelected, numSharedSelected) {
+          if(numSharedSelected > 0) {
+            return disabledHint("grainsOwnedByOthers");
+          } else {
+            return bulkActionNoneSelected(numMineSelected, numSharedSelected);
+          }
+        },
+
+        onClicked: function (ownedGrainIds, _sharedGrainIds) {
+          ownedGrainIds.forEach((grainId) => {
+            // TODO: use the grain title, not the grain id, as the suggested
+            // file name.
+            makeAndDownloadBackup(grainId, grainId);
+          });
         },
       },
     ];

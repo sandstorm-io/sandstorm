@@ -29,7 +29,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     echo localhost > /etc/hostname
     hostname localhost
     sudo apt-get update
-    sudo apt-get install -y curl gpg
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y curl gpg
     sudo OVERRIDE_DEFAULT_SERVER_USER=vagrant ./install.sh -d -e > /dev/null
     sudo usermod -a -G sandstorm vagrant
     sudo sed --in-place='' --expression='s/^BIND_IP=.*/BIND_IP=0.0.0.0/' /opt/sandstorm/sandstorm.conf
@@ -67,8 +67,9 @@ EOF
   # Use the same number of CPUs within Vagrant as the system, with 1
   # as a default.
   #
-  # Use at least 512MB of RAM, and if the system has more than 2GB of
-  # RAM, use 1/4 of the system RAM. This seems a reasonable compromise
+  # If we are unable to determine how much RAM the system has, use
+  # 1GB. Otherwise, we aim to use 1/4 of the system RAM, with a
+  # lower bound of 512MB and upper bound of 3GB. This is a compromise
   # between having the Vagrant guest operating system not run out of
   # RAM entirely (which it basically would if we went much lower than
   # 512MB) and also allowing it to use up a healthily large amount of
@@ -80,10 +81,12 @@ EOF
   else
     assign_cpus = cpus
   end
-  if total_kB_ram.nil? or total_kB_ram < 2048000
-    assign_ram_mb = 512
+  if total_kB_ram.nil?
+    assign_ram_mb = 1024
   else
     assign_ram_mb = (total_kB_ram / 1024 / 4)
+    assign_ram_mb = [ 512, assign_ram_mb].max  # enforce lower bound
+    assign_ram_mb = [3072, assign_ram_mb].min  # enforce upper bound
   end
 
   # Actually provide the computed CPUs/memory to the backing provider.

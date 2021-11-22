@@ -147,14 +147,14 @@ Please install the following:
 * `golang-go`
 * `cmake`
 * discount (markdown parser)
-* [Meteor](http://meteor.com) version 1.8.2
+* [Meteor](http://meteor.com)
 
 On Debian or Ubuntu, you should be able to get all these with:
 
     sudo apt-get install build-essential libcap-dev xz-utils zip \
         unzip strace curl discount git python zlib1g-dev \
         golang-go cmake strace flex bison locales
-    curl https://install.meteor.com/?release=1.8.2 | sh
+    curl https://install.meteor.com/ | sh
 
 On Fedora 34 you should be able to get them with:
 
@@ -162,7 +162,7 @@ On Fedora 34 you should be able to get them with:
        glibc-headers glibc-static glibc-locale-source gcc-c++ xz zip \
        unzip strace curl discount git python zlib-devel zlib-static \
        golang cmake strace flex bison which diffutils
-    curl https://install.meteor.com/?release=1.8.2 | sh
+    curl https://install.meteor.com/ | sh
 
 If you have trouble getting the build to work on your distro, we recommend trying in a virtual
 machine running the latest stable Debian release. This is easy to set up using Vagrant, like:

@@ -142,7 +142,7 @@ Please install the following:
 * `bison`
 * `strace`
 * `curl`
-* `python`
+* `python3`
 * `zlib1g-dev`
 * `golang-go`
 * `cmake`
@@ -152,7 +152,7 @@ Please install the following:
 On Debian or Ubuntu, you should be able to get all these with:
 
     sudo apt-get install build-essential libcap-dev xz-utils zip \
-        unzip strace curl discount git python zlib1g-dev \
+        unzip strace curl discount git python3 zlib1g-dev \
         golang-go cmake strace flex bison locales
     curl https://install.meteor.com/ | sh
 

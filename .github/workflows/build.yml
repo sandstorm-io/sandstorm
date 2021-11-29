@@ -16,7 +16,7 @@ jobs:
             echo "The github runner seems to have some version of golang already; installing golang-go breaks."
             which go || sudo apt-get install golang-go
 
-            sudo apt-get install -y build-essential libcap-dev xz-utils zip unzip strace curl discount git python zlib1g-dev cmake ccache
+            sudo apt-get install -y build-essential libcap-dev xz-utils zip unzip strace curl discount git python3 zlib1g-dev cmake ccache
       - name: install meteor
         run: |
             curl https://install.meteor.com/ | sh

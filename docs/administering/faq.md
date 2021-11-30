@@ -635,3 +635,11 @@ domain name that **should** be served from this Sandstorm server.
 6. `db.users.find({_id: "<login-credential-id>"})` to get info about the user identity.
 
 This should show you the user's profile info including e-mail address, etc.
+
+## A very large grain fails to start. How can I fix this issue?
+
+In some cases, grains with a large number of files may fail to start, and the error `sandstorm/supervisor.c++:232: overloaded: inotify_add_watch: No space left on device;` is logged in the grain log. This is caused by a Linux setting which limits the maximum number of inotify watches a given user account (in this case, `sandstorm`) may request. Due to how Sandstorm monitors storage usage, this value acts as the limit of the number of files which can exist in simultaneously open grains. Starting with the Linux kernel 5.11, the default value of this setting is dynamically adjusted based on memory, but on older kernels, it may be lower than warranted. The previous default was 8,192.
+
+You can check the setting by executing the following command: `cat /proc/sys/fs/inotify/max_user_watches`
+
+To increase this limit, add a line like `fs.inotify.max_user_watches=32768` to `/etc/sysctl.conf` and then execute the command `sysctl -p` to load the configuration.

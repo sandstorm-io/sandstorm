@@ -642,4 +642,4 @@ In some cases, grains with a large number of files may fail to start, and the er
 
 You can check the setting by executing the following command: `cat /proc/sys/fs/inotify/max_user_watches`
 
-To increase this limit, add a line like `fs.inotify.max_user_watches=32768` to `/etc/sysctl.conf` and then reboot the Sandstorm server.
+To increase this limit, add a line like `fs.inotify.max_user_watches=32768` to `/etc/sysctl.conf` and then execute the command `sysctl -p` to load the configuration.

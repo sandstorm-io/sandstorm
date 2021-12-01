@@ -766,6 +766,10 @@ body>.topbar {
           right: 0px;
           width: 24px;
           height: 24px;
+          @media #{$mobile} {
+            height: 44px;
+            width: 44px;
+          }
           margin: 2px;
           display: block;
           background-image: url("/close.svg");

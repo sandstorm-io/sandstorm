@@ -741,6 +741,11 @@ body>.topbar {
           left: (($navbar-width-desktop-shrunk - 24px) / 2);
           width: 24px;
           height: 24px;
+          @media #{$mobile} {
+            left: (($navbar-width-desktop-shrunk - 40px) / 2);
+            width: 40px;
+            height: 40px;
+          }
         }
         .notification-count {
           position: absolute;
@@ -767,8 +772,8 @@ body>.topbar {
           width: 24px;
           height: 24px;
           @media #{$mobile} {
-            height: 44px;
-            width: 44px;
+            height: 40px;
+            width: 40px;
           }
           margin: 2px;
           display: block;

@@ -1024,6 +1024,12 @@ kj::Promise<void> GatewayTlsManager::listenLoop(kj::ConnectionReceiver& port) {
       tasks.add(tls->tls.wrapServer(kj::mv(stream))
           .then([this](kj::Own<kj::AsyncIoStream>&& encrypted) {
         return server.listenHttp(kj::mv(encrypted));
+      }, [](kj::Exception&& e) {
+        // On a production server, this happens rather a lot, since random bots
+        // will try to connect, and (due to old TLS implementations) fail.
+        // If we just let this bubble up to our top-level error handler, it
+        // results in a lot of log spam, so instead log it at info level here:
+        KJ_LOG(INFO, "Failed to initialize TLS connection: ", e);
       }).attach(kj::mv(tls)));
     } else {
       KJ_LOG(ERROR, "refused HTTPS connection because no TLS keys are configured");

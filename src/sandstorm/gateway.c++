@@ -1021,8 +1021,8 @@ kj::Promise<void> GatewayTlsManager::listenLoop(kj::ConnectionReceiver& port) {
   return port.accept().then([this, &port](kj::Own<kj::AsyncIoStream>&& stream) {
     KJ_IF_MAYBE(t, currentTls) {
       auto tls = kj::addRef(**t);
-      tasks.add(tls->tls.wrapServer(kj::mv(stream))
-          .then([this](kj::Own<kj::AsyncIoStream>&& encrypted) {
+      auto onTls = tls->tls.wrapServer(kj::mv(stream));
+      tasks.add(onTls.then([this](kj::Own<kj::AsyncIoStream>&& encrypted) {
         return server.listenHttp(kj::mv(encrypted));
       }, [](kj::Exception&& e) {
         // On a production server, this happens rather a lot, since random bots

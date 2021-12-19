@@ -1,3 +1,6 @@
+### v0.292 (2021-12-19)
+- Increased size of close-grain button on mobile. (Thanks @zenhack.)
+
 ### v0.291 (2021-11-21)
 - Added a backup button to the grain list, so you don't have to open the grain before downloading a backup. (Thanks @zenhack.)
 - Updated icon font generator to modern code (it had been stuck on an old version for a while). Please report if any icons look wrong. (Thanks @griff.)

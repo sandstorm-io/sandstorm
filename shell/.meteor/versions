@@ -112,4 +112,4 @@ webapp@1.11.1
 webapp-hashing@1.1.0
 zodern:caching-minifier@0.4.0
 zodern:minifier-js@4.1.0
-zodern:standard-minifier-js@4.1.0
+zodern:standard-minifier-js@4.1.1

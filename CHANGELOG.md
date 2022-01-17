@@ -1,3 +1,6 @@
+### v0.293 (2022-01-16) [bugfixes]
+- Updated dependencies. (No other changes.)
+
 ### v0.292 (2021-12-19)
 - Increased size of close-grain button on mobile. (Thanks @zenhack.)
 

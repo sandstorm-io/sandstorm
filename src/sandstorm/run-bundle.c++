@@ -536,44 +536,21 @@ public:
       KJ_SYSCALL(ftruncate(pidfile, 0));
     }
 
-    if (!runningAsRoot) unshareUidNamespaceOnce();
-
-    // Unshare PID namespace so that daemon process becomes the root process of its own PID
-    // namespace and therefore if it dies the whole namespace is killed.
-    KJ_SYSCALL(unshare(CLONE_NEWPID));
-
-    // Daemonize ourselves.
-    pid_t mainPid;  // PID of the main process as seen *outside* the PID namespace.
-    {
-      auto pipe = Pipe::make();
-
-      KJ_SYSCALL(mainPid = fork());
-      if (mainPid != 0) {
-        // Tell the child process its own PID, since being in a PID namespace its own getpid() will
-        // unhelpfully return 1.
-        pipe.readEnd = nullptr;
-        kj::FdOutputStream(kj::mv(pipe.writeEnd)).write(&mainPid, sizeof(mainPid));
-
-        // Write the pidfile before exiting.
-        {
-          auto pidstr = kj::str(mainPid, '\n');
-          kj::FdOutputStream((int)pidfile).write(pidstr.begin(), pidstr.size());
-        }
-
-        // Exit success.
-        context.exitInfo(kj::str("Sandstorm started. PID = ", mainPid));
-        return true;
+    // Daemonize ourselves:
+    pid_t mainPid;
+    KJ_SYSCALL(mainPid = fork());
+    if(mainPid != 0) {
+      // Write the pidfile before exiting.
+      {
+        auto pidstr = kj::str(mainPid, '\n');
+        kj::FdOutputStream((int)pidfile).write(pidstr.begin(), pidstr.size());
       }
 
-      // Read our (global) PID in from the parent process.
-      pipe.writeEnd = nullptr;
-      kj::FdInputStream(kj::mv(pipe.readEnd)).read(&mainPid, sizeof(mainPid));
+      // Exit success.
+      context.exitInfo(kj::str("Sandstorm started. PID = ", mainPid));
+      return true;
     }
-
-    // Since we unshared the PID namespace, the first fork() should have produced pid 1 in the
-    // new namespace.  That means that if this pid ever exits, everything under it dies.  That's
-    // perfect!  Otherwise we'd have to carefully kill node and mongo separately.
-    KJ_ASSERT(getpid() == 1, "unshare(CLONE_NEWPID) didn't do what I expected.", getpid());
+    mainPid = getpid();
 
     // Lock the pidfile and make sure it still belongs to us.
     //
@@ -599,6 +576,7 @@ public:
       }
     }
 
+
     // Redirect stdio.
     {
       auto logFd = raiiOpen("../var/log/sandstorm.log", O_WRONLY | O_APPEND | O_CREAT, 0660);
@@ -616,12 +594,57 @@ public:
     time(&now);
     context.warning(kj::str("** Starting Sandstorm at: ", ctime(&now)));
 
+    FdBundle fdBundle(config);
+
     // Detach from controlling terminal and make ourselves session leader.
     KJ_SYSCALL(setsid());
 
-    FdBundle fdBundle(config);
+    auto sigfd = prepareMonitoringLoop();
+    for (;;) {
+      pid_t updateMonitorPid;
+      KJ_SYSCALL(updateMonitorPid = fork());
+      if (updateMonitorPid == 0) {
+        restartForUpdate(pidfile, fdBundle);
+        KJ_UNREACHABLE;
+      }
 
-    runUpdateMonitor(config, fdBundle, pidfile);
+      int status = monitorSingleChild(sigfd, updateMonitorPid);
+      if(!WIFEXITED(status)) {
+        context.exitError("Update monitor exited abnormally; aborting.");
+      }
+
+      int exitCode = WEXITSTATUS(status);
+      switch (exitCode) {
+        // See comments for runUpdateMonitor
+        case 0:
+          continue;
+        case 1:
+          context.exitError("Update monitor exited abnormally; aborting.");
+        case 2:
+          context.exit();
+        default:
+          KJ_FAIL_ASSERT("Unexpected exit status from update monitor: ", exitCode);
+      }
+    }
+  }
+
+  int monitorSingleChild(int sigfd, pid_t childPid) {
+    for(;;) {
+      struct signalfd_siginfo siginfo;
+      KJ_SYSCALL(read(sigfd, &siginfo, sizeof(siginfo)));
+
+      if (siginfo.ssi_signo == SIGCHLD) {
+        int status;
+        // We only have one child; that child forks off a pid namespace,
+        // so we should never see any other pids:
+        pid_t deadPid = wait(&status);
+        KJ_ASSERT(deadPid == childPid);
+        return status;
+      } else {
+        // pass the signal on to the child:
+        KJ_SYSCALL(kill(childPid, siginfo.ssi_signo));
+      }
+    }
   }
 
   kj::MainBuilder::Validity inheritFd(kj::StringPtr mapping) {
@@ -668,10 +691,6 @@ public:
   }
 
   kj::MainBuilder::Validity continue_() {
-    if (getpid() != 1) {
-      return "This command is for internal use only.";
-    }
-
     if (unsharedUidNamespace) {
       // Even if getuid() return zero, we aren't really root, it's just that we mapped our UID to
       // zero in the UID namespace.
@@ -1411,8 +1430,8 @@ private:
       // But if our UID is zero, then the file's attributes are ignored and all capabilities are
       // inherited.
       writeSetgroupsIfPresent("deny\n");
-      writeUserNSMap("uid", kj::str("0 ", uid, " 1\n"));
-      writeUserNSMap("gid", kj::str("0 ", gid, " 1\n"));
+      writeUserNSMap("uid", kj::str(uid, " ", uid, " 1\n"));
+      writeUserNSMap("gid", kj::str(gid, " ", gid, " 1\n"));
 
       unsharedUidNamespace = true;
     }
@@ -1904,7 +1923,39 @@ private:
 
   [[noreturn]] void runUpdateMonitor(const Config& config, FdBundle& fdBundle, int pidfile) {
     // Run the update monitor process.  This process runs two subprocesses:  the sandstorm server
-    // and the auto-updater.
+    // and the auto-updater. These are collected into a pid namespace, so from the caller's
+    // perspective there will just be the update monitor and a single child.
+    //
+    // When this process exits, its status means:
+    //
+    // 0 - The caller should re-exec sandstorm. This could be because an update was
+    //     successfully installed, or in response to SIGHUP.
+    // 1 - An abnormal exit; caller should abort.
+    // 2 - A normal, but persistent shutdown. Caller should exit normally.
+
+    if (!runningAsRoot) unshareUidNamespaceOnce();
+
+    // Unshare PID namespace so that daemon process becomes the root process of its own PID
+    // namespace and therefore if it dies the whole namespace is killed.
+    KJ_SYSCALL(unshare(CLONE_NEWPID));
+
+    // We have to actually fork() in order to properly enter the namespace:
+    pid_t pid;
+    KJ_SYSCALL(pid = fork());
+    if(pid != 0) {
+      auto sigfd = prepareMonitoringLoop();
+      int status = monitorSingleChild(sigfd, pid);
+      if(WIFEXITED(status)) {
+        exit(WEXITSTATUS(status));
+      }
+      exit(1);
+      KJ_UNREACHABLE;
+    }
+
+    // Since we unshared the PID namespace, the fork() should have produced pid 1 in the
+    // new namespace.  That means that if this pid ever exits, everything under it dies.  That's
+    // perfect!  Otherwise we'd have to carefully kill node and mongo separately.
+    KJ_ASSERT(getpid() == 1, "unshare(CLONE_NEWPID) didn't do what I expected.", getpid());
 
     setProcessName("top", "(top-level)");
 
@@ -1986,13 +2037,14 @@ private:
         if (updaterSucceeded) {
           context.warning("** Restarting to apply update");
           killChild("Server Monitor", sandstormPid);
-          restartForUpdate(pidfile, fdBundle);
+          exit(0);
           KJ_UNREACHABLE;
         } else if (updaterDied) {
           context.warning("** Updater died; restarting it");
           updaterPid = startUpdater(config, fdBundle, true);
         } else if (sandstormDied) {
-          context.exitError("** Server monitor died. Aborting.");
+          context.error("** Server monitor died. Aborting.");
+          exit(1);
           KJ_UNREACHABLE;
         }
       } else {
@@ -2009,10 +2061,12 @@ private:
         // Handle signal.
         if (siginfo.ssi_signo == SIGHUP) {
           context.warning("** Restarting");
-          restartForUpdate(pidfile, fdBundle);
+          context.exit();
         } else {
           // SIGTERM or something.
-          context.exitInfo("** Exiting");
+          char msg[] = "** Exiting\n";
+          KJ_SYSCALL(write(STDOUT_FILENO, msg, strlen(msg)));
+          exit(2);
         }
         KJ_UNREACHABLE;
       }

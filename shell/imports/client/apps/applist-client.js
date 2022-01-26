@@ -199,19 +199,6 @@ Template.sandstormAppListPage.helpers({
 });
 
 Template.sandstormAppListPage.events({
-  "click .install-button": function (event) {
-    event.preventDefault();
-    event.stopPropagation();
-    const ref = Template.instance().data;
-    const appMarket = ref._db.collections.settings.findOne({ _id: "appMarketUrl" });
-    let url = "https://apps.sandstorm.io/?host=";
-    if (appMarket) {
-      url = appMarket.value + '?host=';
-    }
-    window.open(url +
-        document.location.protocol + "//" + document.location.host, "_blank");
-  },
-
   "click .upload-button": function (event, instance) {
     const input = instance.find(".upload-button input");
     if (input == event.target) {

@@ -8,6 +8,8 @@ using Spk = import "/sandstorm/package.capnp";
 
 const testAppHtml :Data = embed "test-app.html";
 const testPowerboxHtml :Data = embed "test-powerbox.html";
+const testShutdownHtml :Data = embed "shutdown.html";
+const testStaticHtml :Data = embed "static-index.html";
 
 struct ObjectId {
   union {

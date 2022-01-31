@@ -35,6 +35,7 @@
 #include <capnp/rpc-twoparty.h>
 #include <capnp/serialize.h>
 
+#include <sandstorm/util.h>
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/web-session.capnp.h>
 #include <sandstorm/hack-session.capnp.h>
@@ -151,6 +152,23 @@ public:
       response.setMimeType("text/html");
       response.initBody().setBytes(isPowerboxRequest ? *TEST_POWERBOX_HTML : *TEST_APP_HTML);
       return kj::READY_NOW;
+    } else if (path == "shutdown" || path == "/shutdown/") {
+      auto staticFd = raiiOpen("/var/www/index.html", O_RDWR|O_CREAT);
+      auto data = TEST_SHUTDOWN_HTML.get();
+      KJ_SYSCALL(write(staticFd.get(), data.begin(), data.size()));
+      // TODO: defer this until after the response is sent:
+      exit(0);
+    } else if (path == "publicId" || path == "publicId/") {
+      return sessionContext.castAs<sandstorm::HackSessionContext>()
+        .getPublicIdRequest()
+        .send()
+        .then([context](auto args) mutable {
+          auto response = context.getResults();
+          auto content = response.initContent();
+          content.setStatusCode(sandstorm::WebSession::Response::SuccessCode::OK);
+          content.setMimeType("text/plain");
+          content.getBody().setBytes(args.getAutoUrl().asBytes());
+        });
     } else {
       auto error = context.getResults().initClientError();
       error.setStatusCode(sandstorm::WebSession::Response::ClientErrorCode::NOT_FOUND);
@@ -326,6 +344,18 @@ public:
   }
 
   kj::MainBuilder::Validity run() {
+    KJ_SYSCALL_HANDLE_ERRORS(mkdir("/var/www", 0700)) {
+      case EEXIST:
+        break;
+      default:
+        KJ_FAIL_ASSERT("Failed to create /var/www");
+    }
+    {
+      auto staticFd = raiiOpen("/var/www/index.html", O_RDWR|O_CREAT);
+      auto data = TEST_STATIC_HTML.get();
+      KJ_SYSCALL(write(staticFd.get(), data.begin(), data.size()));
+    }
+
     // Set up RPC on file descriptor 3.
     auto stream = ioContext.lowLevelProvider->wrapSocketFd(3);
     capnp::TwoPartyVatNetwork network(*stream, capnp::rpc::twoparty::Side::CLIENT);

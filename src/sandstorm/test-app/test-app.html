@@ -165,5 +165,21 @@ function doPowerboxRequest(desc) {
       Schedule a one-shot job.</button></p>
 
     <p><button onclick="doPost('/test-system-api', '')" id="do-test-system-api">Test the system api.</button></p>
+
+    <p><button id="shutdown">Shut down server</button></p>
+
+    <div id="publicId"></div>
+
+    <script>
+      document.getElementById("shutdown").addEventListener("click", function() {
+        window.location = "/shutdown";
+      });
+      doGet("/publicId").then(function(xhr) {
+        const elt = document.createElement("p");
+        elt.setAttribute("id", "public-address");
+        elt.innerHTML = xhr.responseText;
+        document.getElementById("publicId").appendChild(elt);
+      });
+    </script>
   </body>
 </html>

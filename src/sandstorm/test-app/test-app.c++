@@ -137,10 +137,12 @@ public:
                  sandstorm::SessionContext::Client context,
                  sandstorm::WebSession::Params::Reader params,
                  kj::Promise<sandstorm::SandstormApi<>::Client>& api,
+                 capnp::TwoPartyVatNetwork::Connection& conn,
                  bool isPowerboxRequest = false)
       : isPowerboxRequest(isPowerboxRequest),
         sessionContext(kj::mv(context)),
-        api(api) {}
+        api(api),
+        conn(conn) {}
 
   kj::Promise<void> get(GetContext context) override {
     // HTTP GET request.
@@ -156,8 +158,26 @@ public:
       auto staticFd = raiiOpen("/var/www/index.html", O_RDWR|O_CREAT);
       auto data = TEST_SHUTDOWN_HTML.get();
       KJ_SYSCALL(write(staticFd.get(), data.begin(), data.size()));
-      // TODO: defer this until after the response is sent:
-      exit(0);
+      auto response = context.getResults();
+      auto content = response.initContent();
+      content.setStatusCode(sandstorm::WebSession::Response::SuccessCode::OK);
+      content.setMimeType("text/plain");
+
+      // After sending the return message, shut down the connection and then
+      // exit.
+      //
+      // We need to wait for the return message to actually be sent,
+      // otherwise the supervisor will try to re-connect in order to retry
+      // the method call, which will start us back up again.
+      kj::evalLast([this]() {
+        return conn.shutdown().then([]() {
+          exit(0);
+        });
+      }).detach([](kj::Exception&& e) {
+        KJ_FAIL_ASSERT(e);
+      });
+
+      return kj::READY_NOW;
     } else if (path == "publicId" || path == "publicId/") {
       return sessionContext.castAs<sandstorm::HackSessionContext>()
         .getPublicIdRequest()
@@ -253,6 +273,7 @@ private:
   bool isPowerboxRequest;
   sandstorm::SessionContext::Client sessionContext;
   kj::Promise<sandstorm::SandstormApi<>::Client>& api;
+  capnp::TwoPartyVatNetwork::Connection& conn;
 };
 
 // =======================================================================================
@@ -260,8 +281,10 @@ private:
 class UiViewImpl final: public sandstorm::MainView<ObjectId>::Server {
 public:
 
-  UiViewImpl(kj::Promise<sandstorm::SandstormApi<>::Client> api)
-  : api(kj::mv(api)) {}
+  UiViewImpl(kj::Promise<sandstorm::SandstormApi<>::Client> api,
+             capnp::TwoPartyVatNetwork::Connection& conn)
+  : api(kj::mv(api)),
+    conn(conn) {}
 
   kj::Promise<void> getViewInfo(GetViewInfoContext context) override {
     auto viewInfo = context.initResults();
@@ -283,7 +306,7 @@ public:
     context.getResults().setSession(
         kj::heap<WebSessionImpl>(params.getUserInfo(), params.getContext(),
                                  params.getSessionParams().getAs<sandstorm::WebSession::Params>(),
-                                 api));
+                                 api, conn));
 
     return kj::READY_NOW;
   }
@@ -297,7 +320,7 @@ public:
     context.getResults().setSession(
         kj::heap<WebSessionImpl>(params.getUserInfo(), params.getContext(),
                                  params.getSessionParams().getAs<sandstorm::WebSession::Params>(),
-                                 api,
+                                 api, conn,
                                  true));
 
     return kj::READY_NOW;
@@ -328,6 +351,7 @@ public:
   }
 private:
   kj::Promise<sandstorm::SandstormApi<>::Client> api;
+  capnp::TwoPartyVatNetwork::Connection& conn;
 };
 
 // =======================================================================================
@@ -359,20 +383,23 @@ public:
     // Set up RPC on file descriptor 3.
     auto stream = ioContext.lowLevelProvider->wrapSocketFd(3);
     capnp::TwoPartyVatNetwork network(*stream, capnp::rpc::twoparty::Side::CLIENT);
-
+    capnp::MallocMessageBuilder message;
+    auto vatId = message.getRoot<capnp::rpc::twoparty::VatId>();
+    vatId.setSide(capnp::rpc::twoparty::Side::SERVER);
+    auto conn = network.connect(vatId);
     auto pf = kj::newPromiseAndFulfiller<sandstorm::SandstormApi<>::Client>();
-    auto rpcSystem = capnp::makeRpcServer(network, kj::heap<UiViewImpl>(kj::mv(pf.promise)));
 
-    {
-      capnp::MallocMessageBuilder message;
-      auto vatId = message.getRoot<capnp::rpc::twoparty::VatId>();
-      vatId.setSide(capnp::rpc::twoparty::Side::SERVER);
-      sandstorm::SandstormApi<>::Client api =
-          rpcSystem.bootstrap(vatId).castAs<sandstorm::SandstormApi<>>();
-      pf.fulfiller->fulfill(kj::mv(api));
+    KJ_IF_MAYBE(c, conn) {
+      auto rpcSystem = capnp::makeRpcServer(network, kj::heap<UiViewImpl>(kj::mv(pf.promise), **c));
+      {
+        sandstorm::SandstormApi<>::Client api =
+            rpcSystem.bootstrap(vatId).castAs<sandstorm::SandstormApi<>>();
+        pf.fulfiller->fulfill(kj::mv(api));
+      }
+      kj::NEVER_DONE.wait(ioContext.waitScope);
+    } else {
+      KJ_FAIL_ASSERT("Returned connection was null");
     }
-
-    kj::NEVER_DONE.wait(ioContext.waitScope);
   }
 
 private:

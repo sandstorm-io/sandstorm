@@ -213,6 +213,14 @@ Template.sandstormAppListPage.events({
     });
   },
 
+  "click .install-button": function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const url = event.currentTarget.getAttribute("href");
+    window.open(url +
+          document.location.protocol + "//" + document.location.host, "_blank");
+  },
+
   "click .uninstall-action": function (event) {
     const db = Template.instance().data._db;
     const appId = this.appId;

@@ -138,6 +138,7 @@ rm -rf "$SANDSTORM_DIR"
 
 echo "IS_TESTING=true
 ALLOW_DEMO_ACCOUNTS=true
+ALLOW_UNINVITED=true
 BASE_URL=http://local.sandstorm.io:$PORT
 WILDCARD_HOST=*.local.sandstorm.io:$PORT
 PORT=$PORT

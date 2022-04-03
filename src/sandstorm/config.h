@@ -25,6 +25,7 @@ struct Config {
   kj::String sandcatsHostname = nullptr;
   bool allowDemoAccounts = false;
   bool isTesting = false;
+  bool allowUninvited = false;
   bool allowDevAccounts = false;
   bool hideTroubleshooting = false;
   uint smtpListenPort = 30025;

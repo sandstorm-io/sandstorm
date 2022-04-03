@@ -241,6 +241,8 @@ Config readConfig(const char *path, bool parseUids) {
       config.allowDemoAccounts = value == "true" || value == "yes";
     } else if (key == "ALLOW_DEV_ACCOUNTS") {
       config.allowDevAccounts = value == "true" || value == "yes";
+    } else if (key == "ALLOW_UNINVITED") {
+      config.allowUninvited = value == "true" || value == "yes";
     } else if (key == "IS_TESTING") {
       config.isTesting = value == "true" || value == "yes";
     } else if (key == "HIDE_TROUBLESHOOTING") {

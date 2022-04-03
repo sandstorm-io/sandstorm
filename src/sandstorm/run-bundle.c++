@@ -2659,6 +2659,7 @@ private:
           "{ \"build\":", buildstamp,
           ", \"allowDemoAccounts\":", config.allowDemoAccounts ? "true" : "false",
           ", \"allowDevAccounts\":", config.allowDevAccounts ? "true" : "false",
+          ", \"allowUninvited\":", config.allowUninvited ? "true" : "false",
           ", \"isTesting\":", config.isTesting ? "true" : "false",
           ", \"hideTroubleshooting\":", config.hideTroubleshooting ? "true" : "false",
           ", \"wildcardHost\":\"", config.wildcardHost, "\"",

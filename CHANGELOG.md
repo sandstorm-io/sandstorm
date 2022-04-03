@@ -1,3 +1,9 @@
+### v0.295 (2022-03-13) [bugfixes]
+- Updated dependencies. (No other changes.)
+
+### v0.294 (2022-02-12) [bugfixes]
+- Updated dependencies. (No other changes.)
+
 ### v0.293 (2022-01-16) [bugfixes]
 - Updated dependencies. (No other changes.)
 

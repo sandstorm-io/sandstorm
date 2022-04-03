@@ -2482,15 +2482,15 @@ private:
           headerTableBuilder.getFutureTable(), shellHttpAddr, clientSettings);
 
       GatewayService::Tables gatewayTables(headerTableBuilder);
+      kj::HttpHeaderId hXRealIp = headerTableBuilder.add("X-Real-Ip");
+      auto headerTable = headerTableBuilder.build();
+
       GatewayService service(io.provider->getTimer(), *shellHttp, kj::cp(router),
                              gatewayTables, config.rootUrl, config.wildcardHost,
                              config.termsPublicId.map(
                                  [](const kj::String& str) -> kj::StringPtr { return str; }),
                              config.allowLegacyRelaxedCSP);
 
-      kj::HttpHeaderId hXRealIp = headerTableBuilder.add("X-Real-Ip");
-
-      auto headerTable = headerTableBuilder.build();
       kj::HttpServer server(io.provider->getTimer(), *headerTable, [&](kj::AsyncIoStream& conn) {
         return kj::heap<RealIpService>(service, hXRealIp, conn);
       });

@@ -167,10 +167,15 @@ public:
     kj::FdOutputStream(raiiOpen(arg, O_WRONLY | O_APPEND | O_CREAT, 0600))
         .write(random, sizeof(random));
 
+    // Generate the key
+    byte publicKey[crypto_sign_ed25519_PUBLICKEYBYTES];
+    byte secretKey[crypto_sign_ed25519_SECRETKEYBYTES];
+    KJ_ASSERT(crypto_sign_ed25519_seed_keypair(publicKey, secretKey, random) == 0);
+
     // Write key.
     capnp::MallocMessageBuilder message;
     auto key = message.getRoot<PublicSigningKey>();
-    memcpy(getUnderlyingBytes(kj::cp(key), sizeof(random)), random, sizeof(random));
+    memcpy(getUnderlyingBytes(kj::cp(key), sizeof(publicKey)), publicKey, sizeof(publicKey));
     printKey(key);
     context.exitInfo("*** Don't forget to back up the keyring! ***");
   }

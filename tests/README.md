@@ -73,6 +73,9 @@ if (utils.run_xfail) {
 }
 ```
 
+If you need to disable a test, please make sure to open an issue for it,
+and link to the issue from a comment.
+
 ## How to dump the DOM for debugging
 
 Stick this in the test:

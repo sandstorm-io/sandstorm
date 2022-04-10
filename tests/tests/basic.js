@@ -18,7 +18,7 @@
 
 var utils = require('../utils'),
     short_wait = utils.short_wait,
-    disable_demo = utils.disable_demo;
+    run_xfail = utils.run_xfail;
 
 module.exports = {
   "Test title" : function (browser) {
@@ -36,7 +36,7 @@ module.exports = {
       .end();
   },
 };
-if (!disable_demo) {
+if (run_xfail) {
   module.exports["Test demo login command"] = function (browser) {
     browser
       .loginDemo()

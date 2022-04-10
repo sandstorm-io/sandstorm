@@ -163,7 +163,7 @@ echo
 
 set +e
 
-export DISABLE_DEMO=true
+export RUN_XFAIL="${RUN_XFAIL:-false}"
 "$NPM" test
 
 cleanExit $?

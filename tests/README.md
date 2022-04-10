@@ -52,6 +52,27 @@ windows when debugging. You can do this by setting `SHOW_BROWSER=true`:
 
     SHOW_BROWSER=true make test
 
+## Dealing with tests which are expected to fail
+
+Some tests are known to fail, either always or intermittently. Obviously
+we should fix these, but so that the full test suite can remain useful
+in the interim, we disable these tests by default; if you want to run
+them you can set `RUN_XFAIL=true`:
+
+    RUN_XFAIL=true make test
+
+When writing tests, this variable is exposed as `run_xfail` in
+`tests/util.js`; you can disable a test by simply wrapping it in an
+if statement:
+
+```js
+if (utils.run_xfail) {
+  module.exports["Test something broken"] = function (browser) {
+    // ...
+  };
+}
+```
+
 ## How to dump the DOM for debugging
 
 Stick this in the test:

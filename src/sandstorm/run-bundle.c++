@@ -1952,17 +1952,17 @@ private:
     // Start the server monitor.
     pid_t sandstormPid;
     {
-      int cloneFlags = CLONE_PARENT_SETTID | SIGCHLD;
-      if(!runningAsRoot) {
-        cloneFlags |= CLONE_NEWUSER|CLONE_NEWPID;
+      int cloneFlags = SIGCHLD;
+      if (!runningAsRoot) {
+        cloneFlags |= CLONE_NEWUSER | CLONE_NEWPID;
         unsharedUidNamespace = true;
       }
 
       uid_t uid = getuid();
       gid_t gid = getgid();
 
-      KJ_SYSCALL(syscall(SYS_clone, cloneFlags, nullptr, &sandstormPid, 0));
-      if(sandstormPid == 0) {
+      KJ_SYSCALL(sandstormPid = syscall(SYS_clone, cloneFlags, nullptr, nullptr, 0));
+      if (sandstormPid == 0) {
         runServerMonitor(config, fdBundle, uid, gid);
         KJ_UNREACHABLE;
       }

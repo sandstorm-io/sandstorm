@@ -37,6 +37,7 @@ module.exports = {
   },
 };
 if (run_xfail) {
+  // https://github.com/sandstorm-io/sandstorm/issues/3615
   module.exports["Test demo login command"] = function (browser) {
     browser
       .loginDemo()

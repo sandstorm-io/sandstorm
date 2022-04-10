@@ -29,6 +29,7 @@ module.exports = {
     var count = 0;
     var name, test;
     if (run_xfail) {
+      // https://github.com/sandstorm-io/sandstorm/issues/3615
       for(name in tests) {
         test = tests[name];
         if (count === 0) {

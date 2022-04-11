@@ -23,7 +23,8 @@ var utils = require('../utils'),
     short_wait = utils.short_wait,
     medium_wait = utils.medium_wait,
     long_wait = utils.long_wait,
-    very_long_wait = utils.very_long_wait;
+    very_long_wait = utils.very_long_wait,
+    run_xfail = utils.run_xfail;
 var path = require('path');
 var assetsPath = path.resolve(__dirname, '../assets');
 

@@ -1,3 +1,6 @@
+### v0.297 (2022-05-13) [bugfixes]
+- Updated dependencies. (No other changes.)
+
 ### v0.296 (2022-04-10) [bugfixes]
 - Fixed "Operation not permitted" error when running without root privileges on newer kernels. Most people install Sandstorm as root, but for those that don't, a "security fix" in kernel 5.12 which was backported to some older kernels broke Sandstorm. (Thanks @zenhack.)
 

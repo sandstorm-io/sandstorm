@@ -2509,15 +2509,22 @@ private:
             KJ_FAIL_REQUIRE("backend died; gateway aborting too");
           }));
 
+      auto isHttpsPort = [&](uint port) -> bool {
+        for(uint httpsPort : config.httpsPorts) {
+          if (httpsPort == port) {
+            return true;
+          }
+        }
+        return false;
+      };
+
       // Listen on main port.
       if (config.ports.size() > 0) {
         auto port = config.ports[0];
         auto listener = fdBundle.consume(port, *io.lowLevelProvider);
-        bool isHttps = false;
-        KJ_IF_MAYBE(p, config.httpsPort) {
-          isHttps = port == *p;
-        }
-        auto promise = isHttps ? tlsManager.listenHttps(*listener) : server.listenHttp(*listener);
+        auto promise = isHttpsPort(port)
+          ? tlsManager.listenHttps(*listener)
+          : server.listenHttp(*listener);
         promises = promises.exclusiveJoin(promise.attach(kj::mv(listener)));
       }
 
@@ -2530,7 +2537,9 @@ private:
         altPortServer = altPortServer.attach(kj::mv(altPortService));
         for (auto port: config.ports.slice(1, config.ports.size())) {
           auto listener = fdBundle.consume(port, *io.lowLevelProvider);
-          auto promise = altPortServer->listenHttp(*listener);
+          auto promise = isHttpsPort(port)
+            ? tlsManager.listenHttps(*listener)
+            : altPortServer->listenHttp(*listener);
           promises = promises.exclusiveJoin(promise.attach(kj::mv(listener)));
         }
         promises = promises.attach(kj::mv(altPortServer));
@@ -2611,10 +2620,6 @@ private:
     KJ_SYSCALL(setenv("HTTP_GATEWAY", "local", true));
 
     KJ_SYSCALL(setenv("PORT", kj::str(config.ports[0]).cStr(), true));
-    KJ_IF_MAYBE(httpsPort, config.httpsPort) {
-      // TODO(cleanup): At this point, all this does is tell Sandcats to refresh certs.
-      KJ_SYSCALL(setenv("HTTPS_PORT", kj::str(*httpsPort).cStr(), true));
-    }
 
     KJ_SYSCALL(setenv("MONGO_URL",
         kj::str("mongodb://", authPrefix, "127.0.0.1:", config.mongoPort,
@@ -2628,7 +2633,7 @@ private:
       kj::StringPtr scheme;
       uint defaultPort;
 
-      if (config.httpsPort == nullptr) {
+      if (config.httpsPorts.size() == 0) {
         scheme = "http://";
         defaultPort = 80;
       } else {

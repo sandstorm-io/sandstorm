@@ -1,2 +1,2 @@
 mkdocs==1.0.4
-mkdocs-markdown-graphviz==1.3
+mkdocs-graphviz==1.4.4

@@ -2498,8 +2498,17 @@ private:
       auto shellSmptConn = fdBundle.consumeClient(FdBundle::SHELL_SMTP, *io.lowLevelProvider);
       kj::CapabilityStreamNetworkAddress shellSmtpAddr(*io.provider, *shellSmptConn);
 
-      GatewayTlsManager tlsManager(server, shellSmtpAddr, config.privateKeyPassword
-          .map([](const kj::String& str) -> kj::StringPtr { return str; }));
+      auto altPortService = kj::heap<AltPortService>(
+          service, *headerTable, config.rootUrl, config.wildcardHost);
+      auto altPortServer = kj::heap<kj::HttpServer>(
+          io.provider->getTimer(), *headerTable, *altPortService);
+      altPortServer = altPortServer.attach(kj::mv(altPortService));
+      GatewayTlsManager tlsManager(server,
+                                   *altPortServer,
+                                   shellSmtpAddr,
+                                   config.privateKeyPassword.map(
+                                     [](const kj::String& str) -> kj::StringPtr { return str; }
+                                   ));
 
       kj::Promise<void> promises = service.cleanupLoop()
           .exclusiveJoin(tlsManager.subscribeKeys(kj::mv(router)))
@@ -2530,15 +2539,10 @@ private:
 
       if (config.ports.size() > 1) {
         // Listen on other ports.
-        auto altPortService = kj::heap<AltPortService>(
-            service, *headerTable, config.rootUrl, config.wildcardHost);
-        auto altPortServer = kj::heap<kj::HttpServer>(
-            io.provider->getTimer(), *headerTable, *altPortService);
-        altPortServer = altPortServer.attach(kj::mv(altPortService));
         for (auto port: config.ports.slice(1, config.ports.size())) {
           auto listener = fdBundle.consume(port, *io.lowLevelProvider);
           auto promise = isHttpsPort(port)
-            ? tlsManager.listenHttps(*listener)
+            ? tlsManager.listenAltPortHttps(*listener)
             : altPortServer->listenHttp(*listener);
           promises = promises.exclusiveJoin(promise.attach(kj::mv(listener)));
         }

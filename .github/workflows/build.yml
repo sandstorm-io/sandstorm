@@ -61,6 +61,8 @@ jobs:
         with:
           name: sandstorm-0-fast.tar.xz
           path: sandstorm-0-fast.tar.xz
+      - name: typecheck-ts
+        run: make typecheck-ts
       - name: lint
         run: |
           # In addition to making sure the linting step doesn't flag any errors,

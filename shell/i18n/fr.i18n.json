@@ -127,8 +127,7 @@
       },
       "copyright": {
         "title": "Propriété intellectuelle",
-        "license": "L'implémentation de Sandstorm est protégée par les droits d'auteur de Sandstorm Development Group, Inc. et des contributeurs. Cette implémentation est couverte par la licence Apache License 2.0.",
-        "trademark": "La marque « Sandstorm » et le logo Sandstorm sont des marques commerciales de Sandstorm Development Group, Inc. et ne peuvent être utilisées pour présenter des travaux dérivés ou des services commerciaux sans le consentement écrit de Sandstorm Development Group, Inc."
+        "license": "L'implémentation de Sandstorm est protégée par les droits d'auteur de Sandstorm contributeurs. Cette implémentation est couverte par la licence Apache License 2.0."
       },
       "terms": {
         "license": "Licence",

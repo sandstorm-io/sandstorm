@@ -126,8 +126,7 @@
       },
       "copyright": {
         "title": "Copyright",
-        "license": "The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and contributors. The implementation is licensed under the Apache License 2.0.",
-        "trademark": "\"Sandstorm\" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc., and may not be used to advertise derivative works nor commercial services without written consent from Sandstorm Development Group, Inc."
+        "license": "The Sandstorm implementation is copyright by Sandstorm contributors. The implementation is licensed under the Apache License 2.0."
       },
       "terms": {
         "license": "License",

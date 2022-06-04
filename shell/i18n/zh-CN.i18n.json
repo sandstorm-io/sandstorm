@@ -126,8 +126,7 @@
             },
             "copyright": {
                 "title": "著作权",
-                "license": "Sandstorm 版权所有 Sandstorm Development Group, Inc. 及其贡献者。该实现许可自 Apache License 2.0",
-                "trademark": "\"Sandstorm\" 及 Sandstorm 徽标是 Sandstorm Development Group, Inc. 的商标，未经 Sandstorm Development Group, Inc. 许可，不得用于广告及其衍生作品或商业服务。"
+                "license": "Sandstorm 版权所有 Sandstorm 贡献者。该实现许可自 Apache License 2.0"
             },
             "terms": {
                 "license": "许可",

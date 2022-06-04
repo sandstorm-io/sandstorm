@@ -119,26 +119,6 @@
       "changelog": {
         "title": "Viimeaikaiset muutokset"
       },
-      "developers": {
-        "title": "Ydinkehittäjät"
-      },
-      "advisors": {
-        "title": "Neuvonantajat"
-      },
-      "corporate": {
-        "title": "Yritys sponsorit",
-        "explanation": "Nämä yritykset ovat osallistuneet voimakkaasti Sandstormin <a href=\"http://igg.me/at/sandstorm\">joukkorahoitus kampanjaan</a>."
-      },
-      "individual": {
-        "title": "Avain yksityishenkilö sponsorit",
-        "explanation": "Nämä yksityshenkilöt ovat osallistuneet voimakkaasti Sandstormin <a href=\"http://igg.me/at/sandstorm\">joukkorahoitus kampanjaan</a>."
-      },
-      "backers": {
-        "title": "Tukijat",
-        "explanation": "lähtöisin <a href=\"http://igg.me/at/sandstorm\">Indiegogo kampanjastamme &gt;</a>",
-        "anonymous": "ja %s anonyymilta osallistujalta",
-        "loading": "ladataan..."
-      },
       "dependencies": {
         "title": "Käytetyt kolmannen osapuolen teokset",
         "license": "lisenssi",

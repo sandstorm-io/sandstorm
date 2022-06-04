@@ -119,26 +119,6 @@
             "changelog": {
                 "title": "最近更新"
             },
-            "developers": {
-                "title": "核心开发者"
-            },
-            "advisors": {
-                "title": "顾问"
-            },
-            "corporate": {
-                "title": "企业赞助商",
-                "explanation": "这些公司对沙聚云的<a href=\"http://igg.me/at/sandstorm\">众筹</a>做出了巨大贡献。"
-            },
-            "individual": {
-                "title": "土豪赞助者",
-                "explanation": "这些人对沙聚云的<a href=\"http://igg.me/at/sandstorm\">众筹</a>做出了巨大贡献。"
-            },
-            "backers": {
-                "title": "赞助者",
-                "explanation": "从 <a href=\"http://igg.me/at/sandstorm\">我们在 Indiegogo 上的众筹 &gt;</a>",
-                "anonymous": "和 %s 名匿名赞助者",
-                "loading": "加载中..."
-            },
             "dependencies": {
                 "title": "第三方使用许可",
                 "license": "许可",

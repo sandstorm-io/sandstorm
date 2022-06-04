@@ -119,26 +119,6 @@
       "changelog": {
         "title": "Recente aanpassingen"
       },
-      "developers": {
-        "title": "Hoofdontwikkelaars"
-      },
-      "advisors": {
-        "title": "Adviseurs"
-      },
-      "corporate": {
-        "title": "Zakelijke sponsors",
-        "explanation": "Deze bedrijven hebben veel bijgedragen aan Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campagne</a>."
-      },
-      "individual": {
-        "title": "Belangrijke individuele sponsors",
-        "explanation": "Deze mensen hebben een grote bijdrage geleverd aan Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campagne</a>."
-      },
-      "backers": {
-        "title": "Backers",
-        "explanation": "van <a href=\"http://igg.me/at/sandstorm\">onze Indiegogo campaigne &gt;</a>",
-        "anonymous": "en %s anonieme bijdragers",
-        "loading": "Laden..."
-      },
       "dependencies": {
         "title": "Gebruikte werken van derde partijen",
         "license": "licentie",

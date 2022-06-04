@@ -918,34 +918,6 @@ Router.map(function () {
     data: function () {
       const result = getBuildInfo();
 
-      const backers = Session.get("backers");
-      if (backers) {
-        result.backers = backers.names;
-        result.anonCount = backers.anonCount;
-      } else {
-        HTTP.get("/sandstorm-backers.txt", function (err, response) {
-          let names = response.content.split("\n").sort(function (a, b) {
-            return a.toLowerCase().localeCompare(b.toLowerCase());
-          });
-
-          let anonCount = 0;
-          while (anonCount < names.length && names[anonCount] === "") {
-            ++anonCount;
-          }
-
-          names = names.slice(anonCount);
-
-          // File ends in trailing newline, but that last blank line does not represent an
-          // anonymous contributor.
-          --anonCount;
-
-          Session.set("backers", {
-            names,
-            anonCount,
-          });
-        });
-      }
-
       result.termsUrl = globalDb.getSetting("termsUrl");
       result.privacyUrl = globalDb.getSetting("privacyUrl");
 

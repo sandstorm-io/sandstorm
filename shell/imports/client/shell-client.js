@@ -438,7 +438,6 @@ globalQuotaEnforcer = {
 };
 
 HasUsers = new Mongo.Collection("hasUsers");  // dummy collection defined above
-Backers = new Mongo.Collection("backers");  // pseudo-collection defined above
 ReferralInfo = new Meteor.Collection("referralInfo"); // pseudo-collection
 
 if (Meteor.settings.public.quotaEnabled) {

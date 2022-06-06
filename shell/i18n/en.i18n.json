@@ -234,7 +234,7 @@
     },
     "grainSettingsButton": {
       "hint": "Grain Settings",
-      "text": "settings"
+      "text": "Settings"
     },
     "grainApiTokenButton": {
       "hint": "Get webkey",

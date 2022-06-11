@@ -1,4 +1,6 @@
 import downloadFile from '/imports/client/download-file.js';
+
+// @ts-ignore
 import { meteorCallPromise } from '/imports/client/meteor-call-promise.ts';
 
 // TODO: can we move this somewhere more centralized/does meteor provide

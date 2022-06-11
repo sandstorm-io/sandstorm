@@ -119,26 +119,6 @@
       "changelog": {
         "title": "最新變更點"
       },
-      "developers": {
-        "title": "核心開發者"
-      },
-      "advisors": {
-        "title": "顧問"
-      },
-      "corporate": {
-        "title": "贊助者",
-        "explanation": "These companies contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
-      },
-      "individual": {
-        "title": "Key indivisual sponsors",
-        "explanation": "These individuals contributed heavily to Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campaign</a>."
-      },
-      "backers": {
-        "title": "Backers",
-        "explanation": "from <a href=\"http://igg.me/at/sandstorm\">our Indiegogo campaign &gt;</a>",
-        "anonymous": "and %s anonymous contributors",
-        "loading": "loading..."
-      },
       "dependencies": {
         "title": "Third-party works used",
         "license": "license",
@@ -146,8 +126,7 @@
       },
       "copyright": {
         "title": "著作權",
-        "license": "The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and contributors. The implementation is licensed under the Apache License 2.0.",
-        "trademark": "\"Sandstorm\" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc., and may not be used to advertise derivative works nor commercial services without written consent from Sandstorm Development Group, Inc."
+        "license": "The Sandstorm implementation is copyright by Sandstorm contributors. The implementation is licensed under the Apache License 2.0."
       },
       "terms": {
         "license": "授權",

@@ -290,25 +290,3 @@ Meteor.publish("referralInfoPseudo", function () {
 
   this.ready();
 });
-
-Meteor.publish("backers", function () {
-  const backers = Assets.getText("backers.txt");
-  let anonCount = 0;
-  let counter = 0;
-
-  backers.split("\n").forEach((name) => {
-    name = name.trim();
-    if (name === "") {
-      ++anonCount;
-    } else {
-      this.added("backers", counter++, { name: name });
-    }
-  });
-
-  // Text file ends in \n but that shouldn't count.
-  --anonCount;
-
-  this.added("backers", "anonymous", { count: anonCount - 1 });
-
-  this.ready();
-});

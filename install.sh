@@ -1670,7 +1670,7 @@ sandcats_provide_help() {
   echo "You can:"
   echo ""
   echo "* Read more about it at:"
-  echo "  https://github.com/sandstorm-io/sandstorm/wiki/Sandcats-dynamic-DNS"
+  echo "  https://docs.sandstorm.io/en/latest/administering/sandcats/"
   echo ""
   echo "* Recover access to a domain you once registered with sandcats"
   echo ""

@@ -170,6 +170,8 @@ test: sandstorm-$(BUILD)-fast.tar.xz test-app.spk tests/assets/meteor-testapp.sp
 	tests/run-local.sh sandstorm-$(BUILD)-fast.tar.xz test-app.spk
 lint: shell-env
 	cd shell && meteor npm run lint
+typecheck-ts:
+	cd shell && meteor npm run typecheck
 
 installer-test:
 	(cd installer-tests && bash prepare-for-tests.sh && PYTHONUNBUFFERED=yes TERM=xterm SLOW_TEXT_TIMEOUT=120 ~/.local/bin/stodgy-tester --plugin stodgy_tester.plugins.sandstorm_installer_tests --on-vm-start=uninstall_sandstorm --rsync)

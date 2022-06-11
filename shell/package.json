@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint . --ext .ts --ext .js && tsc"
+    "lint": "eslint . --ext .ts --ext .js",
+    "typecheck": "tsc"
   },
   "author": "",
   "repository": {

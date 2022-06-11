@@ -13,7 +13,7 @@ export function makeAndDownloadBackup(grainId: string, suggestedFilename: string
   // Make a backup and then download it. 'suggestedFileName' is the file name
   // to save as, minus the .zip suffix.
 
-  return meteorCallPromise("backupGrain", grainId).then((id) => {
+  return meteorCallPromise("backupGrain", grainId).then((id: string) => {
     const origin = __meteor_runtime_config__.DDP_DEFAULT_CONNECTION_URL || "";
     const url = origin + "/downloadBackup/" + id;
     downloadFile(url, suggestedFilename + ".zip");

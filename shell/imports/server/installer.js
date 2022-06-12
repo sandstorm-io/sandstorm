@@ -15,6 +15,7 @@
 // limitations under the License.
 
 import Crypto from "crypto";
+import { pipeline, Writable } from "stream";
 
 import { Meteor } from "meteor/meteor";
 import { _ } from "meteor/underscore";
@@ -132,44 +133,28 @@ if (!Meteor.settings.replicaNumber) {
 }
 
 doClientUpload = (stream) => {
+  const backendStream = globalBackend.cap().installPackage().stream;
+  const hasher = Crypto.createHash("sha256");
+
   return new Promise((resolve, reject) => {
-    const id = Random.id();
-
-    const backendStream = globalBackend.cap().installPackage().stream;
-    const hasher = Crypto.createHash("sha256");
-
-    stream.on("data", (chunk) => {
-      try {
+    pipeline(stream, new Writable({
+      write(chunk, _encoding, callback) {
         hasher.update(chunk);
-        backendStream.write(chunk);
-      } catch (err) {
+        backendStream.write(chunk).then(() => {
+          callback();
+        });
+      },
+    }), (err, _val) => {
+      if(err) {
         reject(err);
+        return;
       }
+      backendStream.done();
+      const packageId = hasher.digest("hex").slice(0, 32);
+      backendStream.saveAs(packageId)
+        .then(() => resolve(packageId), reject)
     });
-
-    stream.on("end", () => {
-      try {
-        backendStream.done();
-        const packageId = hasher.digest("hex").slice(0, 32);
-        resolve(backendStream.saveAs(packageId).then(() => {
-          return packageId;
-        }));
-        backendStream.close();
-      } catch (err) {
-        reject(err);
-      }
-    });
-
-    stream.on("error", (err) => {
-      // TODO(soon):  This event does't seem to fire if the user leaves the page mid-upload.
-      try {
-        backendStream.close();
-        reject(err);
-      } catch (err2) {
-        reject(err2);
-      }
-    });
-  });
+  }).finally(() => backendStream.close());
 };
 
 class AppInstaller {

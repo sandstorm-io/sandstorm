@@ -24,12 +24,12 @@ import { Random } from "meteor/random";
 import { Router } from "meteor/iron:router";
 import { _ } from "meteor/underscore";
 
-import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
-import { isStandalone } from "/imports/client/standalone.js";
-import { GrainViewList } from "/imports/client/grain/grainview-list.js";
-import { identiconForApp, iconSrcForPackage } from "/imports/sandstorm-identicons/helpers.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers";
+import { isStandalone } from "/imports/client/standalone";
+import { GrainViewList } from "/imports/client/grain/grainview-list";
+import { identiconForApp, iconSrcForPackage } from "/imports/sandstorm-identicons/helpers";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
 
 let counter = 0;
 

@@ -20,9 +20,9 @@ import { Meteor } from "meteor/meteor";
 import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 
-import { inMeteor, waitPromise } from "/imports/server/async-helpers.ts";
-import { ssrfSafeLookupOrProxy } from "/imports/server/networking.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers";
+import { ssrfSafeLookupOrProxy } from "/imports/server/networking";
+import { globalDb } from "/imports/db-deprecated";
 
 const Request = HTTPInternals.NpmModules.request.module;
 

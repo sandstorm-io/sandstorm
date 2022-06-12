@@ -1,5 +1,5 @@
-import downloadFile from '/imports/client/download-file.js';
-import { meteorCallPromise } from '/imports/client/meteor-call-promise.ts';
+import downloadFile from "/imports/client/download-file";
+import { meteorCallPromise } from "/imports/client/meteor-call-promise";
 
 // TODO: can we move this somewhere more centralized/does meteor provide
 // type declarations for this somewhere?

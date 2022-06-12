@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { inMeteor, waitPromise } from "/imports/server/async-helpers.ts";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers";
 import Crypto from "crypto";
 import Dns from "dns";
 
@@ -23,13 +23,13 @@ import { Match, check } from "meteor/check";
 import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 
-import Capnp from "/imports/server/capnp.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
-import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions.js";
+import Capnp from "/imports/server/capnp";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
+import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions";
 
-import { responseCodes } from "/imports/server/web-session.ts";
-import { makeHackSessionContext } from "/imports/server/hack-session.js";
+import { responseCodes } from "/imports/server/web-session";
+import { makeHackSessionContext } from "/imports/server/hack-session";
 
 const GatewayRouter = Capnp.importSystem("sandstorm/backend.capnp").GatewayRouter;
 const ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;

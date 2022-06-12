@@ -18,12 +18,12 @@ import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
 import { _ } from "meteor/underscore";
 
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
-import { SandstormPermissions }  from "/imports/sandstorm-permissions/permissions.js";
-import { PersistentImpl } from "/imports/server/persistent.js";
-import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset.js";
-import Capnp from "/imports/server/capnp.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
+import { SandstormPermissions }  from "/imports/sandstorm-permissions/permissions";
+import { PersistentImpl } from "/imports/server/persistent";
+import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset";
+import Capnp from "/imports/server/capnp";
 
 const IdentityRpc = Capnp.importSystem("sandstorm/identity-impl.capnp");
 const Identity = Capnp.importSystem("sandstorm/identity.capnp").Identity;

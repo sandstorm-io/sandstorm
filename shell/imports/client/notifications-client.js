@@ -19,11 +19,11 @@ import { Template } from "meteor/templating";
 import { Tracker } from "meteor/tracker";
 import { _ } from "meteor/underscore";
 
-import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
-import { iconSrcForPackage, iconSrcForDenormalizedGrainMetadata } from "/imports/sandstorm-identicons/helpers.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
-import { MAILING_LIST_BONUS } from "/imports/blackrock-payments/constants.js";
+import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers";
+import { iconSrcForPackage, iconSrcForDenormalizedGrainMetadata } from "/imports/sandstorm-identicons/helpers";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
+import { MAILING_LIST_BONUS } from "/imports/blackrock-payments/constants";
 
 testNotifications = () => {
   // Run on console to create some dummy notifications for the purpose of seeing what they look

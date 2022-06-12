@@ -18,9 +18,9 @@ import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
 import { Accounts } from "meteor/accounts-base";
 
-import { allowDemo } from "/imports/demo.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import { allowDemo } from "/imports/demo";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
 
 const DEMO_EXPIRATION_MS = 60 * 60 * 1000;
 const DEMO_GRACE_MS = 10 * 60 * 1000;  // time between expiration and deletion

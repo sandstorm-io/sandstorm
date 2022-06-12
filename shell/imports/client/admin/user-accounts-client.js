@@ -4,8 +4,8 @@ import { ReactiveVar } from "meteor/reactive-var";
 import { Router } from "meteor/iron:router";
 import { _ } from "meteor/underscore";
 
-import { SandstormDb } from "/imports/sandstorm-db/db.js"
-import { globalDb } from "/imports/db-deprecated.js";
+import { SandstormDb } from "/imports/sandstorm-db/db"
+import { globalDb } from "/imports/db-deprecated";
 
 const matchesUser = function (searchKey, user) {
   // We match a user if we can find the searchKey in one of the following fields:

@@ -6,7 +6,7 @@ import nodemailer from "nodemailer";
 import smtpPool from "nodemailer-smtp-pool";
 import Future from "fibers/future";
 
-import { globalDb } from "/imports/db-deprecated.js";
+import { globalDb } from "/imports/db-deprecated";
 
 const getSmtpConfig = function () {
   const config = globalDb.collections.settings.findOne({ _id: "smtpConfig" });

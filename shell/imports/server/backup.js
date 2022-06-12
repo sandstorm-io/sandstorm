@@ -20,11 +20,11 @@ import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 import { Router } from "meteor/iron:router";
 
-import { inMeteor, waitPromise } from "/imports/server/async-helpers.ts";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers";
 
-import Capnp from "/imports/server/capnp.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import Capnp from "/imports/server/capnp";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
 
 const TOKEN_CLEANUP_MINUTES = 120;  // Give enough time for large uploads on slow connections.
 const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;

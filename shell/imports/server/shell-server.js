@@ -36,8 +36,8 @@
 import { Meteor } from "meteor/meteor";
 import { BrowserPolicy } from "meteor/browser-policy";
 
-import { inMeteor } from "/imports/server/async-helpers.ts";
-import { globalDb } from "/imports/db-deprecated.js";
+import { inMeteor } from "/imports/server/async-helpers";
+import { globalDb } from "/imports/db-deprecated";
 
 BrowserPolicy.framing.disallow();  // Disallow framing of the UI.
 Meteor.startup(() => {
@@ -59,7 +59,7 @@ Meteor.startup(() => {
 });
 
 // Allow anything to be loaded from the static asset host.
-import { staticAssetHost } from "/imports/server/constants.js";
+import { staticAssetHost } from "/imports/server/constants";
 BrowserPolicy.content.allowImageOrigin(staticAssetHost);
 BrowserPolicy.content.allowScriptOrigin(staticAssetHost);
 BrowserPolicy.content.allowFontOrigin(staticAssetHost);

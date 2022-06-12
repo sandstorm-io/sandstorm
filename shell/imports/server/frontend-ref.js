@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { checkRequirements } from "./persistent.js";
+import { checkRequirements } from "./persistent";
 
 class FrontendRefRegistry {
   constructor() {

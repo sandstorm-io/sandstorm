@@ -19,8 +19,8 @@ import { Template } from "meteor/templating";
 import { Router } from "meteor/iron:router";
 import { TAPi18n } from "meteor/tap:i18n";
 
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
 
 function isValidServerUrl(str) {
   let url;

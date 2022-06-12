@@ -17,8 +17,8 @@
 // This file is for various startup code that doesn't fit neatly anywhere else
 
 import { Meteor } from "meteor/meteor";
-import { globalDb } from "/imports/db-deprecated.js";
-import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions.js";
+import { globalDb } from "/imports/db-deprecated";
+import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions";
 
 const ROOT_URL = process.env.ROOT_URL;
 

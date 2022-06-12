@@ -32,14 +32,14 @@ import { $ } from "meteor/jquery";
 
 import { introJs } from "intro.js";
 
-import downloadFile from "/imports/client/download-file.js";
-import { makeAndDownloadBackup } from "/imports/client/backups.ts";
-import { ContactProfiles } from "/imports/client/contacts.js";
-import { isStandalone } from "/imports/client/standalone.js";
-import { GrainView } from "/imports/client/grain/grainview.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
-import { SandstormPowerboxRequest } from "/imports/sandstorm-ui-powerbox/powerbox-client.js";
+import downloadFile from "/imports/client/download-file";
+import { makeAndDownloadBackup } from "/imports/client/backups";
+import { ContactProfiles } from "/imports/client/contacts";
+import { isStandalone } from "/imports/client/standalone";
+import { GrainView } from "/imports/client/grain/grainview";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
+import { SandstormPowerboxRequest } from "/imports/sandstorm-ui-powerbox/powerbox-client";
 
 // Pseudo-collections.
 TokenInfo = new Mongo.Collection("tokenInfo");

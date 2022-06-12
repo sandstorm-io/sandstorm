@@ -16,7 +16,7 @@
 
 import { Accounts } from "meteor/accounts-base";
 
-import { globalDb } from "/imports/db-deprecated.js";
+import { globalDb } from "/imports/db-deprecated";
 
 Accounts.loginServices.dev = {
   isEnabled: function () {

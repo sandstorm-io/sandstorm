@@ -7,10 +7,10 @@ import { _ } from "meteor/underscore";
 import { Router } from "meteor/iron:router";
 import { Iron } from "meteor/iron:core";
 
-import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";
-import AccountsUi from "/imports/client/accounts/accounts-ui.js";
-import downloadFile from "/imports/client/download-file.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui";
+import AccountsUi from "/imports/client/accounts/accounts-ui";
+import downloadFile from "/imports/client/download-file";
+import { globalDb } from "/imports/db-deprecated";
 
 // Pseudocollection telling the client if there's an admin user yet.
 HasAdmin = new Mongo.Collection("hasAdmin");

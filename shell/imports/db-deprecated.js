@@ -24,11 +24,11 @@
 //   passed in, thus allowing mocking the database for unit tests.
 
 import { Meteor } from "meteor/meteor";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
 
 let quotaManager;
 if (Meteor.isServer) {
-  import { LDAP } from "/imports/server/accounts/ldap.js";
+  import { LDAP } from "/imports/server/accounts/ldap";
   // Imports are usually not allowed to occur in a block. However, it is the only way to do
   // this under Meteor. Using // jscs:disable doesn't work for what it considers syntax violations,
   // and so we've added this file to .jscsrc's excludedFiles explicitly.

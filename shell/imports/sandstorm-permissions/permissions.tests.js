@@ -22,11 +22,11 @@ import { Match, check } from "meteor/check";
 import { Accounts } from "meteor/accounts-base";
 import chai from "chai";
 
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
 // We import profile.js for the side-effect of defining more methods on SandstormDb.
 // TODO(cleanup): Avoid adding methods to an object from another module like this; ew.
-import {} from "/imports/sandstorm-db/profile.js";
-import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions.js";
+import {} from "/imports/sandstorm-db/profile";
+import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions";
 
 const globalDb = new SandstormDb();
 // TODO(cleanup): Use a lightweight fake (minimongo-based?) database here and construct a clean

@@ -21,7 +21,7 @@ import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
 import { _ } from "meteor/underscore";
 
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
 
 const ValidHandle = Match.Where(function (handle) {
   check(handle, String);

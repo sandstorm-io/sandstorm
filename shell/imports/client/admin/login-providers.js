@@ -6,7 +6,7 @@ import { TAPi18n } from "meteor/tap:i18n";
 import { Iron } from "meteor/iron:core";
 import { ServiceConfiguration } from "meteor/service-configuration";
 
-import { globalDb } from "/imports/db-deprecated.js";
+import { globalDb } from "/imports/db-deprecated";
 
 const idpData = function (configureCallback) {
   const emailTokenEnabled = globalDb.getSettingWithFallback("emailToken", false);

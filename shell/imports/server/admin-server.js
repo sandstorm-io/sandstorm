@@ -24,15 +24,15 @@ import { ServiceConfiguration } from "meteor/service-configuration";
 import Fs from "fs";
 import Crypto from "crypto";
 import Heapdump from "heapdump";
-import { SANDSTORM_LOGDIR } from "/imports/server/constants.js";
-import { clearAdminToken, checkAuth, tokenIsValid, tokenIsSetupSession } from "/imports/server/auth.js";
-import { send as sendEmail } from "/imports/server/email.js";
-import { fillUndefinedForChangedDoc } from "/imports/server/observe-helpers.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
-import { computeStats } from "/imports/server/stats-server.js";
+import { SANDSTORM_LOGDIR } from "/imports/server/constants";
+import { clearAdminToken, checkAuth, tokenIsValid, tokenIsSetupSession } from "/imports/server/auth";
+import { send as sendEmail } from "/imports/server/email";
+import { fillUndefinedForChangedDoc } from "/imports/server/observe-helpers";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
+import { computeStats } from "/imports/server/stats-server";
 import { HTTP } from "meteor/http";
-import { createAcmeAccount, renewCertificateNow } from "/imports/server/acme.js";
+import { createAcmeAccount, renewCertificateNow } from "/imports/server/acme";
 import { Issuer } from "openid-client";
 
 const publicAdminSettings = [

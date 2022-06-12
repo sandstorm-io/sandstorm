@@ -21,11 +21,11 @@ import { Match, check } from "meteor/check";
 import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 
-import { send as sendEmail } from "/imports/server/email.js";
-import { waitPromise } from "/imports/server/async-helpers.ts";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
-import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions.js";
+import { send as sendEmail } from "/imports/server/email";
+import { waitPromise } from "/imports/server/async-helpers";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
+import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions";
 
 const ROOT_URL = process.env.ROOT_URL;
 

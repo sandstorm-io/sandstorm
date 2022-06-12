@@ -22,8 +22,8 @@ import { Router } from "meteor/iron:router";
 import {
   loginWithEmailToken,
   createAndEmailTokenForUser,
-} from "/imports/client/accounts/email-token/token-login-helpers.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
+} from "/imports/client/accounts/email-token/token-login-helpers";
+import { SandstormDb } from "/imports/sandstorm-db/db";
 
 // Email token login routes.
 Router.route("/_emailLogin/:_email/:_token", function () {

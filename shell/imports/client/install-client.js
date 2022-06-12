@@ -17,9 +17,9 @@
 import { Meteor } from "meteor/meteor";
 import { Router } from "meteor/iron:router";
 
-import { allowDemo } from "/imports/demo.js";
-import { isSafeDemoAppUrl } from "/imports/install.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import { allowDemo } from "/imports/demo";
+import { isSafeDemoAppUrl } from "/imports/install";
+import { globalDb } from "/imports/db-deprecated";
 
 Router.map(function () {
   this.route("install", {

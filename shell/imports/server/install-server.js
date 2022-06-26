@@ -21,7 +21,7 @@ import { Router } from "meteor/iron:router";
 
 import { allowDemo } from "/imports/demo.js";
 import { isSafeDemoAppUrl } from "/imports/install.js"
-import { promiseToFuture, waitPromise } from "/imports/server/async-helpers.ts";
+import { waitPromise } from "/imports/server/async-helpers.ts";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
 import { cancelDownload, doClientUpload } from "/imports/server/installer.js";
@@ -152,7 +152,7 @@ Router.map(function () {
         this.response.end();
       } else if (this.request.method === "POST") {
         try {
-          const packageId = promiseToFuture(doClientUpload(this.request, globalBackend)).wait();
+          const packageId = waitPromise(doClientUpload(this.request, globalBackend));
           this.response.writeHead(200, {
             "Content-Length": packageId.length,
             "Content-Type": "text/plain",

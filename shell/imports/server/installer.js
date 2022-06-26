@@ -132,9 +132,18 @@ if (!Meteor.settings.replicaNumber) {
   });
 }
 
-export function doClientUpload(stream, backend) {
-  // doClientUpload reads an spk pacakge from stream and uploads it into backend.
-  // Returns a promise which resolves to the package id when the upload completes.
+export function readPackageFromStream(stream, backend, progress = function() {}) {
+  // readPackageFromStream reads an spk pacakge from stream and uploads it into
+  // backend.
+  //
+  // The optional progress callback will be invoked each time a chunk is written,
+  // which is useful e.g. for updating progress bars. The length of the chunk is
+  // passed as an argument.
+  //
+  // Returns a promise which resolves to an object with fields:
+  //
+  // info: the return value of PackageUploadStream.saveAs().
+  // packageId: The package id of the uploaded package.
   const backendStream = backend.cap().installPackage().stream;
   const hasher = Crypto.createHash("sha256");
 
@@ -144,6 +153,7 @@ export function doClientUpload(stream, backend) {
         hasher.update(chunk);
         backendStream.write(chunk).then(() => {
           callback();
+          progress(chunk.length);
         });
       },
     }), (err, _val) => {
@@ -154,7 +164,7 @@ export function doClientUpload(stream, backend) {
       backendStream.done();
       const packageId = hasher.digest("hex").slice(0, 32);
       backendStream.saveAs(packageId)
-        .then(() => resolve(packageId), reject)
+        .then((info) => resolve({info, packageId}), reject)
     });
   }).finally(() => backendStream.close());
 }
@@ -223,15 +233,21 @@ class AppInstaller {
       try {
         return method.apply(_this, _.toArray(arguments));
       } catch (err) {
-        _this.failed = true;
-        _this.cleanup();
-        _this.updateProgress("failed", 0, err);
-        _this.writeChain = _this.writeChain.then(() => {
-          delete installers[_this.packageId];
-        });
-        console.error("Failed to install app:", err.stack);
+        _this.fail(err);
       }
     };
+  }
+
+  fail(err) {
+    if(!this.failed) {
+      this.failed = true;
+      this.cleanup();
+      this.updateProgress("failed", 0, err);
+      this.writeChain = this.writeChain.then(() => {
+        delete installers[this.packageId];
+      });
+      console.error("Failed to install app:", err.stack);
+    }
   }
 
   cleanup() {
@@ -315,36 +331,20 @@ class AppInstaller {
         if ("content-length" in response.headers) {
           bytesExpected = parseInt(response.headers["content-length"]);
         }
-      }));
+        readPackageFromStream(response, globalBackend, (chunkLen) => {
+          bytesReceived += chunkLen;
+          updateDownloadProgress();
+        }).then(({info}) => {
+          done = true;
+          delete this.downloadRequest;
 
-      request.on("data", this.wrapCallback((chunk) => {
-        hasher.update(chunk);
-        out.write(chunk);
-        bytesReceived += chunk.length;
-        updateDownloadProgress();
-      }));
-
-      request.on("end", this.wrapCallback(() => {
-        out.done();
-
-        if (hasher.digest("hex").slice(0, 32) !== this.packageId) {
-          throw new Error("Package hash did not match.");
-        }
-
-        done = true;
-        delete this.downloadRequest;
-
-        this.updateProgress("unpack");
-        out.saveAs(this.packageId).then(this.wrapCallback((info) => {
           this.appId = info.appId;
           this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
           this.done(info.manifest);
-        }), this.wrapCallback((err) => {
-          throw err;
-        }));
-      }));
-
-      request.on("error", this.wrapCallback((err) => { throw err; }));
+        }, (err) => {
+          this.fail(err);
+        });
+      }))
 
       this.downloadRequest = request;
     }));

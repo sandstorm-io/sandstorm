@@ -24,7 +24,7 @@ import { isSafeDemoAppUrl } from "/imports/install.js"
 import { waitPromise } from "/imports/server/async-helpers.ts";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
-import { cancelDownload, doClientUpload } from "/imports/server/installer.js";
+import { cancelDownload, readPackageFromStream } from "/imports/server/installer.js";
 
 const TOKEN_CLEANUP_MINUTES = 120;  // Give enough time for large uploads on slow connections.
 const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
@@ -152,7 +152,7 @@ Router.map(function () {
         this.response.end();
       } else if (this.request.method === "POST") {
         try {
-          const packageId = waitPromise(doClientUpload(this.request, globalBackend));
+          const packageId = waitPromise(readPackageFromStream(this.request, globalBackend)).packageId;
           this.response.writeHead(200, {
             "Content-Length": packageId.length,
             "Content-Type": "text/plain",

@@ -133,6 +133,8 @@ if (!Meteor.settings.replicaNumber) {
 }
 
 export function doClientUpload(stream, backend) {
+  // doClientUpload reads an spk pacakge from stream and uploads it into backend.
+  // Returns a promise which resolves to the package id when the upload completes.
   const backendStream = backend.cap().installPackage().stream;
   const hasher = Crypto.createHash("sha256");
 

@@ -152,7 +152,7 @@ Router.map(function () {
         this.response.end();
       } else if (this.request.method === "POST") {
         try {
-          const packageId = promiseToFuture(doClientUpload(this.request)).wait();
+          const packageId = promiseToFuture(doClientUpload(this.request, globalBackend)).wait();
           this.response.writeHead(200, {
             "Content-Length": packageId.length,
             "Content-Type": "text/plain",

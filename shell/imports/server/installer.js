@@ -132,8 +132,8 @@ if (!Meteor.settings.replicaNumber) {
   });
 }
 
-export function doClientUpload(stream) {
-  const backendStream = globalBackend.cap().installPackage().stream;
+export function doClientUpload(stream, backend) {
+  const backendStream = backend.cap().installPackage().stream;
   const hasher = Crypto.createHash("sha256");
 
   return new Promise((resolve, reject) => {

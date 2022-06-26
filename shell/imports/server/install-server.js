@@ -24,7 +24,7 @@ import { isSafeDemoAppUrl } from "/imports/install.js"
 import { promiseToFuture, waitPromise } from "/imports/server/async-helpers.ts";
 import { SandstormDb } from "/imports/sandstorm-db/db.js";
 import { globalDb } from "/imports/db-deprecated.js";
-import { cancelDownload } from "/imports/server/installer.js";
+import { cancelDownload, doClientUpload } from "/imports/server/installer.js";
 
 const TOKEN_CLEANUP_MINUTES = 120;  // Give enough time for large uploads on slow connections.
 const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;

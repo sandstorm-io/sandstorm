@@ -94,7 +94,7 @@ const startInstallInternal = (pkg) => {
   installer.start();
 };
 
-function cancelDownload(packageId) {
+export function cancelDownload(packageId) {
   globalDb.collections.packages.remove({ _id: packageId, status: "download" });
 }
 
@@ -132,7 +132,7 @@ if (!Meteor.settings.replicaNumber) {
   });
 }
 
-doClientUpload = (stream) => {
+export function doClientUpload(stream) {
   const backendStream = globalBackend.cap().installPackage().stream;
   const hasher = Crypto.createHash("sha256");
 
@@ -155,7 +155,7 @@ doClientUpload = (stream) => {
         .then(() => resolve(packageId), reject)
     });
   }).finally(() => backendStream.close());
-};
+}
 
 class AppInstaller {
   constructor(packageId, url, appId, isAutoUpdated) {
@@ -510,5 +510,3 @@ function getAllManifestAssets(manifest) {
 
   return result;
 }
-
-export { cancelDownload };

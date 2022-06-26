@@ -19,7 +19,6 @@ import { pipeline, Writable } from "stream";
 
 import { Meteor } from "meteor/meteor";
 import { _ } from "meteor/underscore";
-import { Random } from "meteor/random";
 
 import { inMeteor, waitPromise } from "/imports/server/async-helpers.ts";
 import { ssrfSafeLookupOrProxy } from "/imports/server/networking.js";
@@ -294,17 +293,11 @@ class AppInstaller {
     console.log("Downloading app:", this.url);
     this.updateProgress("download");
 
-    this.uploadStream = globalBackend.cap().installPackage().stream;
-    return this.doDownloadTo(this.uploadStream);
-  }
-
-  doDownloadTo(out) {
     inMeteor(this.wrapCallback(function () {
       const safe = ssrfSafeLookupOrProxy(globalDb, this.url);
 
       let bytesExpected = undefined;
       let bytesReceived = 0;
-      const hasher = Crypto.createHash("sha256");
       let done = false;
       const updateDownloadProgress = _.throttle(this.wrapCallback(() => {
         if (!done) {

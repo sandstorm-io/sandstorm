@@ -20,9 +20,9 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 
-import { inMeteor } from "/imports/server/async-helpers.ts";
-import { globalDb } from "/imports/db-deprecated.js";
-import ServerIdenticon from "/imports/sandstorm-identicons/identicon-server.js";
+import { inMeteor } from "/imports/server/async-helpers";
+import { globalDb } from "/imports/db-deprecated";
+import ServerIdenticon from "/imports/sandstorm-identicons/identicon-server";
 import Url from "url";
 import Future from "fibers/future";
 

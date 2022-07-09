@@ -24,10 +24,10 @@ import { Match, check } from "meteor/check";
 import { Router } from "meteor/iron:router";
 import { HTTP } from "meteor/http";
 
-import { inMeteor, waitPromise } from "/imports/server/async-helpers.ts";
-import { globalDb } from "/imports/db-deprecated.js";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers";
+import { globalDb } from "/imports/db-deprecated";
 import { createGrainBackup, createBackupToken, restoreGrainBackup, storeGrainBackup }
-  from "/imports/server/backup.js";
+  from "/imports/server/backup";
 
 function isValidServerUrl(str) {
   let url;

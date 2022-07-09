@@ -9,9 +9,9 @@ import { _ } from "meteor/underscore";
 import { TAPi18n } from "meteor/tap:i18n";
 
 import { introJs } from "intro.js";
-import { identiconForApp } from "/imports/sandstorm-identicons/helpers.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { makeAndDownloadBackup } from "/imports/client/backups.ts";
+import { identiconForApp } from "/imports/sandstorm-identicons/helpers";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { makeAndDownloadBackup } from "/imports/client/backups";
 
 SandstormGrainListPage = {};
 

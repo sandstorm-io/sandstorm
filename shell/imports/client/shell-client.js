@@ -27,11 +27,11 @@ import { Session } from "meteor/session";
 import { Router } from "meteor/iron:router";
 import { TAPi18n } from "meteor/tap:i18n";
 
-import getBuildInfo from "/imports/client/build-info.js";
-import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";
-import { isStandalone } from "/imports/client/standalone.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import getBuildInfo from "/imports/client/build-info";
+import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui";
+import { isStandalone } from "/imports/client/standalone";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
 
 // Subscribe to basic grain information first and foremost, since
 // without it we might e.g. redirect to the wrong place on login.

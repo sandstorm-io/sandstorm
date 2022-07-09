@@ -23,7 +23,7 @@ import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 import { SHA256 } from "meteor/sha";
 import { HTTP } from "meteor/http";
-import { iconSrcForPackage } from "/imports/sandstorm-identicons/helpers.js";
+import { iconSrcForPackage } from "/imports/sandstorm-identicons/helpers";
 
 // Useful for debugging: Set the env variable LOG_MONGO_QUERIES to have the server write every
 // query it makes, so you can see if it's doing queries too often, etc.
@@ -2421,7 +2421,7 @@ _.extend(SandstormDb, {
 });
 
 if (Meteor.isServer) {
-  import { waitPromise } from "/imports/server/async-helpers.ts";
+  import { waitPromise } from "/imports/server/async-helpers";
 
   const Crypto = Npm.require("crypto");
   const ContentType = Npm.require("content-type");

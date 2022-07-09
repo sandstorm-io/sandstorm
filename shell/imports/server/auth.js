@@ -2,8 +2,8 @@ import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
 import Crypto from "crypto";
 import Fs from "fs";
-import { SANDSTORM_VARDIR } from "/imports/server/constants.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import { SANDSTORM_VARDIR } from "/imports/server/constants";
+import { globalDb } from "/imports/db-deprecated";
 
 const ADMIN_TOKEN_EXPIRATION_TIME = 60 * 60 * 1000;
 const SANDSTORM_ADMIN_TOKEN = SANDSTORM_VARDIR + "/adminToken";

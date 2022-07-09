@@ -6,8 +6,8 @@ import { check } from "meteor/check";
 import { _ } from "meteor/underscore";
 import { Accounts } from "meteor/accounts-base";
 
-import { SAML } from "/imports/server/accounts/saml-utils.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { SAML } from "/imports/server/accounts/saml-utils";
+import { SandstormDb } from "/imports/sandstorm-db/db";
 
 import Fiber from "fibers";
 import BodyParser from "body-parser";

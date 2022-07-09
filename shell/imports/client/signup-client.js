@@ -19,8 +19,8 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { Router } from "meteor/iron:router";
-import { DEFAULT_SIGNUP_DIALOG } from "/imports/client/personalization.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import { DEFAULT_SIGNUP_DIALOG } from "/imports/client/personalization";
+import { globalDb } from "/imports/db-deprecated";
 
 Template.signup.helpers({
   signupDialog: function () {

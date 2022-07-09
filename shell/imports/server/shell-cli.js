@@ -14,12 +14,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { inMeteor, waitPromise } from "/imports/server/async-helpers.ts";
-import { createAcmeAccount, renewCertificateNow } from "/imports/server/acme.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers";
+import { createAcmeAccount, renewCertificateNow } from "/imports/server/acme";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
 
-import Capnp from "/imports/server/capnp.js";
+import Capnp from "/imports/server/capnp";
 const ShellCli = Capnp.importSystem("sandstorm/backend.capnp").ShellCli;
 
 class ShellCliImpl {

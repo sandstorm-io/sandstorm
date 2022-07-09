@@ -1,7 +1,7 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
-import { checkAuth } from "/imports/server/auth.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import { checkAuth } from "/imports/server/auth";
+import { globalDb } from "/imports/db-deprecated";
 
 const personalizationMessageShape = {
   serverTitle: String,

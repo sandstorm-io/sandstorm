@@ -23,18 +23,18 @@ import { Accounts } from "meteor/accounts-base";
 import { SMTPServer } from "smtp-server";
 import { MailParser } from "mailparser";
 
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
-import { PersistentImpl } from "/imports/server/persistent.js";
-import { rawSend } from "/imports/server/email.js";
-import { shouldRestartGrain } from "/imports/server/backend.js";
-import { inMeteor } from "/imports/server/async-helpers.ts";
-import { makeHackSessionContext } from "/imports/server/hack-session.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
+import { PersistentImpl } from "/imports/server/persistent";
+import { rawSend } from "/imports/server/email";
+import { shouldRestartGrain } from "/imports/server/backend";
+import { inMeteor } from "/imports/server/async-helpers";
+import { makeHackSessionContext } from "/imports/server/hack-session";
 
 import Crypto from "crypto";
 import Net from "net";
 import Url from "url";
-import Capnp from "/imports/server/capnp.js";
+import Capnp from "/imports/server/capnp";
 
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 const EmailImpl = Capnp.importSystem("sandstorm/email-impl.capnp");

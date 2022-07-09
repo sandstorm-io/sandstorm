@@ -8,10 +8,10 @@ import { Meteor } from "meteor/meteor";
 import { Mongo } from "meteor/mongo";
 import { _ } from "meteor/underscore";
 import { Match } from "meteor/check";
-import { userPictureUrl, fetchPicture } from "/imports/server/accounts/picture.js";
-import { waitPromise } from "/imports/server/async-helpers.ts";
-import { PRIVATE_IPV4_ADDRESSES, PRIVATE_IPV6_ADDRESSES } from "/imports/constants.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { userPictureUrl, fetchPicture } from "/imports/server/accounts/picture";
+import { waitPromise } from "/imports/server/async-helpers";
+import { PRIVATE_IPV4_ADDRESSES, PRIVATE_IPV6_ADDRESSES } from "/imports/constants";
+import { SandstormDb } from "/imports/sandstorm-db/db";
 
 import Future from "fibers/future";
 import Url from "url";

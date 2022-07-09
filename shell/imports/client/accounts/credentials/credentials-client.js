@@ -24,7 +24,7 @@ import { Router } from "meteor/iron:router";
 import { Accounts } from "meteor/accounts-base"
 import { _ } from "meteor/underscore";
 
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
 
 const LoginCredentialsOfLinkedAccounts = new Mongo.Collection("loginCredentialsOfLinkedAccounts");
 // Pseudocollection populated by the `accountsOfCredential(sourceCredentialId)` subscription. Contains

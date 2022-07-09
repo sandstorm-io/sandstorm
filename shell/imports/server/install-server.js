@@ -19,12 +19,12 @@ import { Match, check } from "meteor/check";
 import { Random } from "meteor/random";
 import { Router } from "meteor/iron:router";
 
-import { allowDemo } from "/imports/demo.js";
-import { isSafeDemoAppUrl } from "/imports/install.js"
-import { waitPromise } from "/imports/server/async-helpers.ts";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
-import { cancelDownload, readPackageFromStream } from "/imports/server/installer.js";
+import { allowDemo } from "/imports/demo";
+import { isSafeDemoAppUrl } from "/imports/install"
+import { waitPromise } from "/imports/server/async-helpers";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
+import { cancelDownload, readPackageFromStream } from "/imports/server/installer";
 
 const TOKEN_CLEANUP_MINUTES = 120;  // Give enough time for large uploads on slow connections.
 const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;

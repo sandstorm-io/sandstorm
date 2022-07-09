@@ -153,7 +153,7 @@ export function readPackageFromStream(stream, backend, progress = function() {})
         backendStream.write(chunk).then(() => {
           callback();
           progress(chunk.length);
-        });
+        }, reject);
       },
     }), (err, _val) => {
       if(err) {

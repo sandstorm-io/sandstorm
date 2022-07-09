@@ -15,7 +15,7 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
-import { isTesting } from "/imports/shared/testing.js";
+import { isTesting } from "/imports/shared/testing";
 
 function mockLoginGithub() {
   Meteor.call("createMockGithubUser", function (err) {

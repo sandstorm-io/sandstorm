@@ -4,8 +4,8 @@ import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { _ } from "meteor/underscore";
 
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
 
 // Pseudo-collection defined via publish.
 const RealTimeStats = new Mongo.Collection("realTimeStats");

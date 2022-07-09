@@ -21,7 +21,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { Accounts } from "meteor/accounts-base";
-import { globalDb } from "/imports/db-deprecated.js";
+import { globalDb } from "/imports/db-deprecated";
 
 function serviceEnabled(name) {
   const setting = globalDb.collections.settings.findOne({ _id: name });

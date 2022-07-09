@@ -19,9 +19,9 @@ import { Template } from "meteor/templating";
 import { Random } from "meteor/random";
 import { Router } from "meteor/iron:router";
 
-import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers.js";
-import { iconSrcForPackage, identiconForApp } from "/imports/sandstorm-identicons/helpers.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers";
+import { iconSrcForPackage, identiconForApp } from "/imports/sandstorm-identicons/helpers";
+import { globalDb } from "/imports/db-deprecated";
 
 // Test if localStorage is usable.
 // We can't use Meteor._localStorage for this because we need to be able to enumerate the elements

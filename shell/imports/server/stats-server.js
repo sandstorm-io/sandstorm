@@ -21,7 +21,7 @@ import { Random } from "meteor/random";
 import { Router } from "meteor/iron:router";
 import { HTTP } from "meteor/http";
 
-import { globalDb } from "/imports/db-deprecated.js";
+import { globalDb } from "/imports/db-deprecated";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

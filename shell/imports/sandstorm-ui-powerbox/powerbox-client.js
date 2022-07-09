@@ -22,8 +22,8 @@ import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { _ } from "meteor/underscore";
 
-import { identiconForApp } from "/imports/sandstorm-identicons/helpers.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { identiconForApp } from "/imports/sandstorm-identicons/helpers";
+import { SandstormDb } from "/imports/sandstorm-db/db";
 
 const PowerboxOptions = new Mongo.Collection("powerboxOptions");
 

@@ -3,8 +3,8 @@ import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { HTTP } from "meteor/http";
 
-import { DEFAULT_SIGNUP_DIALOG } from "/imports/client/personalization.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import { DEFAULT_SIGNUP_DIALOG } from "/imports/client/personalization";
+import { globalDb } from "/imports/db-deprecated";
 
 Template.newAdminPersonalization.onCreated(function () {
   this.serverTitle = new ReactiveVar(globalDb.getSettingWithFallback("serverTitle", ""));

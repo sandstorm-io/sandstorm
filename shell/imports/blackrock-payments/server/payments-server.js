@@ -33,9 +33,9 @@ import { Random } from "meteor/random";
 import { HTTP } from "meteor/http";
 import { _ } from "meteor/underscore";
 
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
-import { MAILING_LIST_BONUS } from "/imports/blackrock-payments/constants.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
+import { MAILING_LIST_BONUS } from "/imports/blackrock-payments/constants";
 
 const ROOT_URL = process.env.ROOT_URL;
 const HOSTNAME = Url.parse(ROOT_URL).hostname;

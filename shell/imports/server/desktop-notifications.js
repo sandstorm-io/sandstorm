@@ -15,7 +15,7 @@
 // limitations under the License.
 
 import { Match, check } from "meteor/check";
-import { globalDb } from "/imports/db-deprecated.js";
+import { globalDb } from "/imports/db-deprecated";
 
 const createAppActivityDesktopNotification = (options) => {
   check(options, {

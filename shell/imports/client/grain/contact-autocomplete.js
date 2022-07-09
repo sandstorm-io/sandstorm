@@ -4,7 +4,7 @@ import { ReactiveVar } from "meteor/reactive-var";
 import { Random } from "meteor/random";
 import { _ } from "meteor/underscore";
 
-import { ContactProfiles } from "/imports/client/contacts.js";
+import { ContactProfiles } from "/imports/client/contacts";
 
 const generateAutoCompleteContacts = function (template) {
   let currentText = template.currentText.get();

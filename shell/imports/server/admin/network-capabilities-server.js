@@ -1,6 +1,6 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
-import { checkAuth } from "/imports/server/auth.js";
+import { checkAuth } from "/imports/server/auth";
 
 Meteor.publish("adminGrains", function (grainIds) {
   // If the caller is an admin, publishes the Grains referred to by the provided list of grain IDs.

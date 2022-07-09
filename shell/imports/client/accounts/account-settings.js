@@ -22,10 +22,10 @@ import { Session } from "meteor/session";
 import { HTTP } from "meteor/http";
 import { _ } from "meteor/underscore";
 
-import { formatFutureTime } from "/imports/dates.js";
-import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants.js";
-import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { formatFutureTime } from "/imports/dates";
+import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants";
+import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui";
+import { SandstormDb } from "/imports/sandstorm-db/db";
 
 Template.sandstormAccountSettings.onCreated(function () {
   this.autorun(() => {

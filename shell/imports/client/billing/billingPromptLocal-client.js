@@ -1,5 +1,5 @@
 import { Template } from "meteor/templating";
-import { globalDb } from "/imports/db-deprecated.js";
+import { globalDb } from "/imports/db-deprecated";
 
 Template.billingPromptLocal.helpers({
   onDismiss: function () {

@@ -15,10 +15,10 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
-import { globalDb } from "/imports/db-deprecated.js";
-import { runDueJobs } from '/imports/server/scheduled-job.js';
-import { SandstormAutoupdateApps } from "/imports/sandstorm-autoupdate-apps/autoupdate-apps.js";
-import { isTesting } from "/imports/shared/testing.js";
+import { globalDb } from "/imports/db-deprecated";
+import { runDueJobs } from "/imports/server/scheduled-job";
+import { SandstormAutoupdateApps } from "/imports/sandstorm-autoupdate-apps/autoupdate-apps";
+import { isTesting } from "/imports/shared/testing";
 
 function clearUser(id) {
   globalDb.collections.userActions.remove({ userId: id });

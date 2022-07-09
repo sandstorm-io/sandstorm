@@ -1,4 +1,4 @@
-import { LDAP } from "/imports/server/accounts/ldap.js";
+import { LDAP } from "/imports/server/accounts/ldap";
 
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";

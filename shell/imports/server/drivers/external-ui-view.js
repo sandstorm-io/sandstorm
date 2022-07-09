@@ -19,19 +19,19 @@ import { Match, check } from "meteor/check";
 import { HTTP } from "meteor/http";
 import { _ } from "meteor/underscore";
 
-import { inMeteor } from "/imports/server/async-helpers.ts";
-import { PersistentImpl } from "/imports/server/persistent.js";
-import { ssrfSafeLookup } from "/imports/server/networking.js";
+import { inMeteor } from "/imports/server/async-helpers";
+import { PersistentImpl } from "/imports/server/persistent";
+import { ssrfSafeLookup } from "/imports/server/networking";
 import { REQUEST_HEADER_WHITELIST, RESPONSE_HEADER_WHITELIST }
-    from "/imports/server/header-whitelist.js";
-import { globalDb } from "/imports/db-deprecated.js";
+    from "/imports/server/header-whitelist";
+import { globalDb } from "/imports/db-deprecated";
 
-import { responseCodes } from "/imports/server/web-session.ts";
+import { responseCodes } from "/imports/server/web-session";
 
 import Url from "url";
 import Http from "http";
 import Https from "https";
-import Capnp from "/imports/server/capnp.js";
+import Capnp from "/imports/server/capnp";
 const ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
 const PersistentApiSession =
     Capnp.importSystem("sandstorm/api-session-impl.capnp").PersistentApiSession;

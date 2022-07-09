@@ -18,8 +18,8 @@ import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { Session } from "meteor/session";
 
-import { globalDb } from "/imports/db-deprecated.js";
-import { SandstormTopbar } from "/imports/sandstorm-ui-topbar/topbar.js";
+import { globalDb } from "/imports/db-deprecated";
+import { SandstormTopbar } from "/imports/sandstorm-ui-topbar/topbar";
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
@@ -27,8 +27,8 @@ if ('serviceWorker' in navigator) {
   })
 }
 
-import AccountsUi from "/imports/client/accounts/accounts-ui.js";
-import { GrainViewList } from "/imports/client/grain/grainview-list.js";
+import AccountsUi from "/imports/client/accounts/accounts-ui";
+import { GrainViewList } from "/imports/client/grain/grainview-list";
 
 Session.setDefault("shrink-navbar", false);
 // window.globalGrains is used by test code and must remain exported.

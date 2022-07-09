@@ -19,9 +19,9 @@ import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { _ } from "meteor/underscore";
 
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
 import { updateStripeData }
-  from "/imports/blackrock-payments/client/payments-client.js";
+  from "/imports/blackrock-payments/client/payments-client";
 
 Template.stripePaymentAcceptorPowerboxConfiguration.events({
   "submit form"(event) {

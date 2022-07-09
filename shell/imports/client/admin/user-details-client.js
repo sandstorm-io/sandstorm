@@ -3,10 +3,10 @@ import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Router } from "meteor/iron:router";
 
-import { formatFutureTime } from "/imports/dates.js";
-import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import { formatFutureTime } from "/imports/dates";
+import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
 
 Template.newAdminUserDetailsCredentialTableRow.helpers({
   isOrganizationMember(credential) {

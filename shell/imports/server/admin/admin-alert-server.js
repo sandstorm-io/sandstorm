@@ -1,6 +1,6 @@
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { checkAuth } from "/imports/server/auth.js";
+import { checkAuth } from "/imports/server/auth";
 
 const maintenanceMessageShape = {
   text: String,

@@ -4,8 +4,8 @@ import { ReactiveVar } from "meteor/reactive-var";
 import { Router } from "meteor/iron:router";
 import { _ } from "meteor/underscore";
 
-import { iconSrcForPackage } from "/imports/sandstorm-identicons/helpers.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { iconSrcForPackage } from "/imports/sandstorm-identicons/helpers";
+import { SandstormDb } from "/imports/sandstorm-db/db";
 
 const latestPackageForAppId = function (db, appId) {
   // Dev apps mask current package version.

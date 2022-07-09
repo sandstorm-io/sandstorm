@@ -2,7 +2,7 @@ import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 
-import { globalDb } from "/imports/db-deprecated.js";
+import { globalDb } from "/imports/db-deprecated";
 
 const DEFAULT_QUOTA_ENABLED = false;
 const DEFAULT_QUOTA_LDAP_ATTRIBUTE = "quota";

@@ -22,9 +22,9 @@ import { Router } from "meteor/iron:router";
 import { Accounts } from "meteor/accounts-base";
 import { SHA256 } from "meteor/sha";
 
-import { GrainView, onceConditionIsTrue } from "./grainview.js";
-import { isStandalone } from "/imports/client/standalone.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { GrainView, onceConditionIsTrue } from "./grainview";
+import { isStandalone } from "/imports/client/standalone";
+import { SandstormDb } from "/imports/sandstorm-db/db";
 
 class GrainViewList {
   constructor(db) {

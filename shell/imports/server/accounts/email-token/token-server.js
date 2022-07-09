@@ -7,9 +7,9 @@ import { Random } from "meteor/random";
 import { Accounts } from "meteor/accounts-base";
 import { SHA256 } from "meteor/sha";
 
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
-import { send as sendEmail } from "/imports/server/email.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
+import { send as sendEmail } from "/imports/server/email";
 
 const V1_ROUNDS = 4096; // Selected to take ~5msec at creation time (2016) on a developer's laptop.
 const V1_KEYSIZE = 32; // 256 bits / 8 bits/byte = 32 bytes

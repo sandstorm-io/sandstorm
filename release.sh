@@ -80,6 +80,9 @@ GIT_REVISION="$(<bundle/git-revision)"
 git tag -u $SIGNING_KEY_ID "$TAG_NAME" "$GIT_REVISION" -m "Release Sandstorm ${DISPLAY_VERSION}"
 git push origin "$TAG_NAME"
 
+# Remember to push it to master too...
+git push origin master
+
 echo "**** Pushing build $BUILD ****"
 
 rm -f $TARBALL.sig $TARBALL.update-sig install.sh.sig

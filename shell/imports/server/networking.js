@@ -19,7 +19,7 @@ import Dns from "dns";
 import Ip from "ip";
 import Url from "url";
 
-import { SPECIAL_IPV4_ADDRESSES, SPECIAL_IPV6_ADDRESSES } from "/imports/constants.js";
+import { SPECIAL_IPV4_ADDRESSES, SPECIAL_IPV6_ADDRESSES } from "/imports/constants";
 
 const lookupInFiber = Meteor.wrapAsync(Dns.lookup, Dns);
 

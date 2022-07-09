@@ -17,7 +17,7 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 
-import { globalDb } from "/imports/db-deprecated.js";
+import { globalDb } from "/imports/db-deprecated";
 
 Meteor.publish("standaloneDomain", function (domain) {
   check(domain, String);

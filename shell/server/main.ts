@@ -39,76 +39,76 @@
 // Import packages that sandstorm depends on.
 
 // sandstorm-db.
-import "../imports/sandstorm-db/db.js";
-import "../imports/sandstorm-db/profile.js";
-import "../imports/sandstorm-db/scheduled-jobs-db.js";
+import "../imports/sandstorm-db/db";
+import "../imports/sandstorm-db/profile";
+import "../imports/sandstorm-db/scheduled-jobs-db";
 
 // sandstorm-permissions.  Depends on sandstorm-db.
-import "../imports/sandstorm-permissions/permissions.js";
+import "../imports/sandstorm-permissions/permissions";
 
 // sandstorm-autoupdate-apps.  Depends on sandstorm-db.
-import "../imports/sandstorm-autoupdate-apps/autoupdate-apps.js";
+import "../imports/sandstorm-autoupdate-apps/autoupdate-apps";
 
 // sandstorm-accounts-packages
-import "../imports/sandstorm-accounts-packages/accounts.js";
+import "../imports/sandstorm-accounts-packages/accounts";
 
 // sandstorm-ui-powerbox.
-import "../imports/sandstorm-ui-powerbox/powerbox-server.js";
+import "../imports/sandstorm-ui-powerbox/powerbox-server";
 
 // blackrock-payments.  Depends on sandstorm-db
-import "../imports/blackrock-payments/constants.js";
-import "../imports/blackrock-payments/server/payments-server.js";
-import "../imports/blackrock-payments/server/payments-api-server.js";
+import "../imports/blackrock-payments/constants";
+import "../imports/blackrock-payments/server/payments-server";
+import "../imports/blackrock-payments/server/payments-api-server";
 
 // oidc
-import "../imports/oidc/oidc-server.js";
+import "../imports/oidc/oidc-server";
 
 // Import everything from server/ in the order that Meteor would have.
-import "../imports/server/accounts/credentials/credentials-server.js";
-import "../imports/server/accounts/email-token/token-server.js";
-import "../imports/server/accounts/ldap/ldap-server.js";
-import "../imports/server/accounts/saml/saml-server.js";
-import "../imports/server/accounts/accounts-server.js";
-import "../imports/server/accounts/accounts-ui-methods.js";
-import "../imports/server/accounts/accounts-ui-server.js";
-import "../imports/server/admin/admin-alert-server.js";
-import "../imports/server/admin/admin-user-invite.js";
-import "../imports/server/admin/network-capabilities-server.js";
-import "../imports/server/admin/personalization-server.js";
-import "../imports/server/admin/system-status-server.js";
-import "../imports/server/drivers/external-ui-view.js";
-import "../imports/server/drivers/ip.js";
-import "../imports/server/drivers/mail.js";
-import "../imports/db-deprecated.js";
-import "../imports/server/00-startup.js";
-import "../imports/server/account-suspension.js";
-import "../imports/server/acme.js";
-import "../imports/server/admin-server.js";
-import "../imports/server/backup.js";
-import "../imports/server/contacts-server.js";
-import "../imports/server/core.js";
-import "../imports/server/demo-server.js";
-import "../imports/server/desktop-notifications-server.js";
-import "../imports/server/dev-accounts-server.js";
-import "../imports/server/gateway-router.js";
-import "../imports/server/grain-server.js";
-import "../imports/server/hack-session.js";
-import "../imports/server/identity.js";
-import "../imports/server/installer.js";
-import "../imports/server/install-server.js";
-import "../imports/server/notifications-server.js";
-import "../imports/server/pre-meteor.js";
-import "../imports/server/sandcats.js";
-import "../imports/server/scheduled-job.js";
-import "../imports/server/shell-server.js";
-import "../imports/server/signup-server.js";
-import "../imports/server/standalone-server.js";
-import "../imports/server/startup.js";
-import "../imports/server/stats-server.js";
-import "../imports/server/transfers-server.js";
+import "../imports/server/accounts/credentials/credentials-server";
+import "../imports/server/accounts/email-token/token-server";
+import "../imports/server/accounts/ldap/ldap-server";
+import "../imports/server/accounts/saml/saml-server";
+import "../imports/server/accounts/accounts-server";
+import "../imports/server/accounts/accounts-ui-methods";
+import "../imports/server/accounts/accounts-ui-server";
+import "../imports/server/admin/admin-alert-server";
+import "../imports/server/admin/admin-user-invite";
+import "../imports/server/admin/network-capabilities-server";
+import "../imports/server/admin/personalization-server";
+import "../imports/server/admin/system-status-server";
+import "../imports/server/drivers/external-ui-view";
+import "../imports/server/drivers/ip";
+import "../imports/server/drivers/mail";
+import "../imports/db-deprecated";
+import "../imports/server/00-startup";
+import "../imports/server/account-suspension";
+import "../imports/server/acme";
+import "../imports/server/admin-server";
+import "../imports/server/backup";
+import "../imports/server/contacts-server";
+import "../imports/server/core";
+import "../imports/server/demo-server";
+import "../imports/server/desktop-notifications-server";
+import "../imports/server/dev-accounts-server";
+import "../imports/server/gateway-router";
+import "../imports/server/grain-server";
+import "../imports/server/hack-session";
+import "../imports/server/identity";
+import "../imports/server/installer";
+import "../imports/server/install-server";
+import "../imports/server/notifications-server";
+import "../imports/server/pre-meteor";
+import "../imports/server/sandcats";
+import "../imports/server/scheduled-job";
+import "../imports/server/shell-server";
+import "../imports/server/signup-server";
+import "../imports/server/standalone-server";
+import "../imports/server/startup";
+import "../imports/server/stats-server";
+import "../imports/server/transfers-server";
 
-import "../imports/shared/admin.js";
-import "../imports/shared/dev-accounts.js";
-import "../imports/shared/grain-shared.js";
+import "../imports/shared/admin";
+import "../imports/shared/dev-accounts";
+import "../imports/shared/grain-shared";
 
-import "../imports/server/testing.js";
+import "../imports/server/testing";

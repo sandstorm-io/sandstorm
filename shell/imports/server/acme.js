@@ -15,16 +15,16 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
-import { waitPromise } from "/imports/server/async-helpers.ts";
+import { waitPromise } from "/imports/server/async-helpers";
 import ACME from "@root/acme";
 import CSR from "@root/csr";
 import PEM from "@root/pem";
 import Keypairs from "@root/keypairs";
 import { pki, asn1 } from "node-forge";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
 import URL from "url";
-import { getSandcatsAcmeOptions } from "/imports/server/sandcats.js";
+import { getSandcatsAcmeOptions } from "/imports/server/sandcats";
 import Crypto from "crypto";
 
 // Relevant settings in database `Settings` table:
@@ -74,7 +74,7 @@ function createAcmeClient(directory) {
 // order to send security notices. We have already registered security+acme@sandstorm.io as a
 // maintainer, so doing it again is redundant, and we don't want everyone's Sandstorm servers
 // pinging an unexpected third party. So, we monkey-patch the library to remove this call.
-import Maintainers from "@root/acme/maintainers.js";
+import Maintainers from "@root/acme/maintainers";
 if (!Maintainers.init) {
   throw new Error("code to monkey-patch ACME.js needs update");
 }

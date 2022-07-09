@@ -7,7 +7,7 @@ import { _ } from "meteor/underscore";
 import { TAPi18n } from "meteor/tap:i18n";
 
 import { introJs } from "intro.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
 
 SandstormAppList = function (db, quotaEnforcer) {
   this._filter = new ReactiveVar("");

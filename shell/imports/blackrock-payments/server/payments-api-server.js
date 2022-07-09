@@ -18,9 +18,9 @@ import Crypto from "crypto";
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 
-import { stripe } from "/imports/blackrock-payments/server/payments-server.js";
+import { stripe } from "/imports/blackrock-payments/server/payments-server";
 
-import Capnp from "/imports/server/capnp.js";
+import Capnp from "/imports/server/capnp";
 const PaymentsRpc = Capnp.importSystem("sandstorm/payments.capnp");
 
 function wrapAsyncAsPromise(obj, func) {

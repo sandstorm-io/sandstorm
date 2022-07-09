@@ -1,7 +1,7 @@
 import { Meteor } from "meteor/meteor";
 import { Accounts } from "meteor/accounts-base";
 
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
 
 if (Meteor.isClient) {
   Meteor.loginWithGoogle = function (options, callback) {

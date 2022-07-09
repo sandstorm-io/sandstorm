@@ -19,7 +19,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
-import { globalDb } from "/imports/db-deprecated.js";
+import { globalDb } from "/imports/db-deprecated";
 
 Meteor.publish("signupKey", function (key) {
   check(key, String);

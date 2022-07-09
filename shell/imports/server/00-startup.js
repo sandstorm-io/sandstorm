@@ -17,16 +17,16 @@
 import { Meteor } from "meteor/meteor";
 import { HTTP } from "meteor/http";
 
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
-import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions.js";
-import { FrontendRefRegistry } from "/imports/server/frontend-ref.js";
-import { PersistentImpl } from "/imports/server/persistent.js";
-import { migrateToLatest } from "/imports/server/migrations.js";
-import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants.js";
-import { onInMeteor } from "/imports/server/async-helpers.ts";
-import { monkeyPatchHttp } from "/imports/server/networking.js";
-import { SandstormAutoupdateApps } from "/imports/sandstorm-autoupdate-apps/autoupdate-apps.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
+import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions";
+import { FrontendRefRegistry } from "/imports/server/frontend-ref";
+import { PersistentImpl } from "/imports/server/persistent";
+import { migrateToLatest } from "/imports/server/migrations";
+import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants";
+import { onInMeteor } from "/imports/server/async-helpers";
+import { monkeyPatchHttp } from "/imports/server/networking";
+import { SandstormAutoupdateApps } from "/imports/sandstorm-autoupdate-apps/autoupdate-apps";
 let url = require("url");
 
 process.on('unhandledRejection', (reason, p) => {

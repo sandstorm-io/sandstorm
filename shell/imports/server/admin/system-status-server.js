@@ -5,9 +5,9 @@ import { _ } from "meteor/underscore";
 
 import Crypto from "crypto";
 import Fs from "fs";
-import { checkAuth } from "/imports/server/auth.js";
+import { checkAuth } from "/imports/server/auth";
 
-import { SANDSTORM_LOGDIR } from "/imports/server/constants.js";
+import { SANDSTORM_LOGDIR } from "/imports/server/constants";
 
 const hashSessionId = function (sessionId) {
   return Crypto.createHash("sha256").update(sessionId).digest("base64");

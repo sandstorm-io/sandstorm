@@ -17,7 +17,7 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
-import { globalDb } from "/imports/db-deprecated.js";
+import { globalDb } from "/imports/db-deprecated";
 
 Template.newAdminCertificates.onCreated(function () {
   this.formState = new ReactiveVar({

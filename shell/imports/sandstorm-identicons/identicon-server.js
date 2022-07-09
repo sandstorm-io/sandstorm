@@ -1,6 +1,6 @@
 import { Meteor } from "meteor/meteor";
 import Zlib from "zlib";
-import Identicon from "./identicon.ts";
+import Identicon from "./identicon";
 
 const gzipSync = Meteor.wrapAsync(Zlib.gzip, Zlib);
 

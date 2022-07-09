@@ -16,12 +16,12 @@
 
 import { Meteor } from "meteor/meteor";
 
-import { waitPromise } from "/imports/server/async-helpers.ts";
-import { fetchApiToken } from "/imports/server/persistent.js";
-import Capnp from "/imports/server/capnp.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
-import { filterCallbacks, subscriptionCallbacks } from "/imports/collection-utils.ts";
+import { waitPromise } from "/imports/server/async-helpers";
+import { fetchApiToken } from "/imports/server/persistent";
+import Capnp from "/imports/server/capnp";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
+import { filterCallbacks, subscriptionCallbacks } from "/imports/collection-utils";
 
 const ScheduledJob = Capnp.importSystem("sandstorm/grain.capnp").ScheduledJob;
 const SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;

@@ -2,7 +2,7 @@ import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 
-import { globalDb } from '/imports/db-deprecated.js';
+import { globalDb } from "/imports/db-deprecated";
 
 Template.newAdminEmailConfig.onCreated(function () {
   const c = globalDb.getSmtpConfig();

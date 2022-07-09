@@ -1,9 +1,9 @@
 import { Meteor } from "meteor/meteor";
 import { Mongo } from "meteor/mongo";
 import { Template } from "meteor/templating";
-import downloadFile from "/imports/client/download-file.js";
-import getBuildInfo from "/imports/client/build-info.js";
-import { allowDemo } from "/imports/demo.js";
+import downloadFile from "/imports/client/download-file";
+import getBuildInfo from "/imports/client/build-info";
+import { allowDemo } from "/imports/demo";
 
 // Pseudocollection holding number of grains with open sessions and accounts with open sessions.
 const systemStatus = new Mongo.Collection("systemStatus");

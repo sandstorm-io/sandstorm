@@ -19,8 +19,8 @@ import { check } from "meteor/check";
 import { Accounts } from "meteor/accounts-base";
 import { _ } from "meteor/underscore";
 
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { SandstormBackend } from "/imports/server/backend.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { SandstormBackend } from "/imports/server/backend";
 
 const linkCredentialToAccountInternal = function (db, backend, credentialId, accountId, allowLogin) {
   // Links the credential to the account. If `allowLogin` is true, grants the credential login access

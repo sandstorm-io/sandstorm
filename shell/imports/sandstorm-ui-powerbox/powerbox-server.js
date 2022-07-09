@@ -18,10 +18,10 @@ import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 import { _ } from "meteor/underscore";
 
-import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions.js";
-import Capnp from "/imports/server/capnp.js";
+import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions";
+import Capnp from "/imports/server/capnp";
 
-import { waitPromise } from '../server/async-helpers.ts';
+import { waitPromise } from '../server/async-helpers';
 
 const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");

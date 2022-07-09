@@ -2675,6 +2675,10 @@ private:
         config.stripeKey.map([](const kj::String& sk) {
           return kj::str(", \"stripeKey\":\"", sk, "\"");
         }).orDefault(kj::String(nullptr)),
+
+        // See: https://github.com/meteor/meteor/issues/11666
+        ", \"packages\": { \"mongo\": { \"reCreateIndexOnOptionMismatch\": true }}"
+
         "}");
   }
 

@@ -23,7 +23,7 @@ import fs from "fs";
 import dgram from "dgram";
 import Url from "url";
 
-import { SANDSTORM_ALTHOME } from "/imports/server/constants.js";
+import { SANDSTORM_ALTHOME } from "/imports/server/constants";
 
 const SANDCATS_HOSTNAME = (Meteor.settings && Meteor.settings.public &&
                            Meteor.settings.public.sandcatsHostname);

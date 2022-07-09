@@ -20,7 +20,7 @@ import { Match, check } from "meteor/check";
 import { Random } from "meteor/random";
 import { _ } from "meteor/underscore";
 
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
 
 export const SandstormPermissions = {};
 

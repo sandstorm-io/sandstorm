@@ -1,9 +1,9 @@
 
-import { TAPi18n } from "/imports/tapi18n.js";
+import { TAPi18n } from "/imports/tapi18n";
 import { Template } from "meteor/templating";
 import { Match, check } from "meteor/check";
-import { globalDb } from "/imports/db-deprecated.js";
-import { GrainView } from "/imports/client/grain/grainview.js";
+import { globalDb } from "/imports/db-deprecated";
+import { GrainView } from "/imports/client/grain/grainview";
 
 Template.sandstormGrainSettingsPage.onCreated(function() {
   const instance = Template.instance();

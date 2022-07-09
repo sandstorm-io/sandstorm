@@ -20,9 +20,9 @@ import { Tracker } from "meteor/tracker";
 import { Router } from "meteor/iron:router";
 import { Accounts } from "meteor/accounts-base";
 
-import { allowDemo } from "/imports/demo.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import { allowDemo } from "/imports/demo";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
 
 Meteor.loginWithDemo = function (options, callback) {
   Router.go("demo");

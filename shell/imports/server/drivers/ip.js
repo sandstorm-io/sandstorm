@@ -18,11 +18,11 @@ import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
 
 import Bignum from "bignum";
-import { PersistentImpl } from "/imports/server/persistent.js";
+import { PersistentImpl } from "/imports/server/persistent";
 import Net from "net";
 import Tls from "tls";
 import Dgram from "dgram";
-import Capnp from "/imports/server/capnp.js";
+import Capnp from "/imports/server/capnp";
 
 const IpRpc = Capnp.importSystem("sandstorm/ip.capnp");
 

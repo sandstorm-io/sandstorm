@@ -26,13 +26,12 @@ import { Accounts } from "meteor/accounts-base";
 import { Session } from "meteor/session";
 import { Router } from "meteor/iron:router";
 import { TAPi18n } from "meteor/tap:i18n";
-import { HTTP } from "meteor/http";
 
-import getBuildInfo from "/imports/client/build-info.js";
-import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui.js";
-import { isStandalone } from "/imports/client/standalone.js";
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
-import { globalDb } from "/imports/db-deprecated.js";
+import getBuildInfo from "/imports/client/build-info";
+import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui";
+import { isStandalone } from "/imports/client/standalone";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
 
 // Subscribe to basic grain information first and foremost, since
 // without it we might e.g. redirect to the wrong place on login.
@@ -438,7 +437,6 @@ globalQuotaEnforcer = {
 };
 
 HasUsers = new Mongo.Collection("hasUsers");  // dummy collection defined above
-Backers = new Mongo.Collection("backers");  // pseudo-collection defined above
 ReferralInfo = new Meteor.Collection("referralInfo"); // pseudo-collection
 
 if (Meteor.settings.public.quotaEnabled) {
@@ -917,34 +915,6 @@ Router.map(function () {
     path: "/about",
     data: function () {
       const result = getBuildInfo();
-
-      const backers = Session.get("backers");
-      if (backers) {
-        result.backers = backers.names;
-        result.anonCount = backers.anonCount;
-      } else {
-        HTTP.get("/sandstorm-backers.txt", function (err, response) {
-          let names = response.content.split("\n").sort(function (a, b) {
-            return a.toLowerCase().localeCompare(b.toLowerCase());
-          });
-
-          let anonCount = 0;
-          while (anonCount < names.length && names[anonCount] === "") {
-            ++anonCount;
-          }
-
-          names = names.slice(anonCount);
-
-          // File ends in trailing newline, but that last blank line does not represent an
-          // anonymous contributor.
-          --anonCount;
-
-          Session.set("backers", {
-            names,
-            anonCount,
-          });
-        });
-      }
 
       result.termsUrl = globalDb.getSetting("termsUrl");
       result.privacyUrl = globalDb.getSetting("privacyUrl");

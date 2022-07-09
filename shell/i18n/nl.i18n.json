@@ -119,26 +119,6 @@
       "changelog": {
         "title": "Recente aanpassingen"
       },
-      "developers": {
-        "title": "Hoofdontwikkelaars"
-      },
-      "advisors": {
-        "title": "Adviseurs"
-      },
-      "corporate": {
-        "title": "Zakelijke sponsors",
-        "explanation": "Deze bedrijven hebben veel bijgedragen aan Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campagne</a>."
-      },
-      "individual": {
-        "title": "Belangrijke individuele sponsors",
-        "explanation": "Deze mensen hebben een grote bijdrage geleverd aan Sandstorm's <a href=\"http://igg.me/at/sandstorm\">crowdfunding campagne</a>."
-      },
-      "backers": {
-        "title": "Backers",
-        "explanation": "van <a href=\"http://igg.me/at/sandstorm\">onze Indiegogo campaigne &gt;</a>",
-        "anonymous": "en %s anonieme bijdragers",
-        "loading": "Laden..."
-      },
       "dependencies": {
         "title": "Gebruikte werken van derde partijen",
         "license": "licentie",
@@ -146,8 +126,7 @@
       },
       "copyright": {
         "title": "Copyright",
-        "license": "De Sandstorm implementatie is copyright van Sandstorm Development Group, Inc. en bijdragers. De implementatie is uitgebracht onder de Apache License versie 2.0",
-        "trademark": "\"Sandstorm\" en het Sandstorm logo zijn trademarks van Sandstorm Development Group, Inc., en mogen niet gebruikt worden voor het adverteren van afgeleide werken of commerciële diensten zonder geschreven toestemming van Sandstorm Development Group, Inc."
+        "license": "De Sandstorm implementatie is copyright van Sandstorm bijdragers. De implementatie is uitgebracht onder de Apache License versie 2.0"
       },
       "terms": {
         "license": "Licentie",

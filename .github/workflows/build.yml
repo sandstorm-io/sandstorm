@@ -61,6 +61,8 @@ jobs:
         with:
           name: sandstorm-0-fast.tar.xz
           path: sandstorm-0-fast.tar.xz
+      - name: typecheck-ts
+        run: make typecheck-ts
       - name: lint
         run: |
           # In addition to making sure the linting step doesn't flag any errors,
@@ -69,7 +71,7 @@ jobs:
           # the constant below.
           make lint | tee lint.log
           num_problems=$(cat lint.log | grep ' problems (0 errors, ' | awk '{print $2}')
-          [ "$num_problems" = 778 ]
+          [ "$num_problems" = 776 ]
       - name: test
         run: |
           set -o pipefail

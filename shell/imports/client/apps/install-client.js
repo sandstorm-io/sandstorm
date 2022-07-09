@@ -3,7 +3,7 @@ import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Router } from "meteor/iron:router";
 
-import { SandstormDb } from "/imports/sandstorm-db/db.js";
+import { SandstormDb } from "/imports/sandstorm-db/db";
 
 const INSTALL_STEPS = ["download", "verify", "unpack", "analyze", "ready", "failed", "delete"];
 const checkStep = function (step) {

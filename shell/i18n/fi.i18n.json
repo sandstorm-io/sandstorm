@@ -119,26 +119,6 @@
       "changelog": {
         "title": "Viimeaikaiset muutokset"
       },
-      "developers": {
-        "title": "Ydinkehittäjät"
-      },
-      "advisors": {
-        "title": "Neuvonantajat"
-      },
-      "corporate": {
-        "title": "Yritys sponsorit",
-        "explanation": "Nämä yritykset ovat osallistuneet voimakkaasti Sandstormin <a href=\"http://igg.me/at/sandstorm\">joukkorahoitus kampanjaan</a>."
-      },
-      "individual": {
-        "title": "Avain yksityishenkilö sponsorit",
-        "explanation": "Nämä yksityshenkilöt ovat osallistuneet voimakkaasti Sandstormin <a href=\"http://igg.me/at/sandstorm\">joukkorahoitus kampanjaan</a>."
-      },
-      "backers": {
-        "title": "Tukijat",
-        "explanation": "lähtöisin <a href=\"http://igg.me/at/sandstorm\">Indiegogo kampanjastamme &gt;</a>",
-        "anonymous": "ja %s anonyymilta osallistujalta",
-        "loading": "ladataan..."
-      },
       "dependencies": {
         "title": "Käytetyt kolmannen osapuolen teokset",
         "license": "lisenssi",
@@ -146,8 +126,7 @@
       },
       "copyright": {
         "title": "Tekijänoikeus",
-        "license": "Sandstormin toteutuksen tekijänoikeus on Sandstorm Development Group, Inc.:illä ja osallistujilla. Toteutuksen lisenssinä on Apache License 2.0.",
-        "trademark": "\"Sandstorm\" ja Sandstorm logo ovat Sandstorm Development Group, Inc. tavaramerkkejä, ja niitä ei voi käyttää mainostamaan johdettuja teoksia tai kaupallisia palveluja ilman kirjallista lupaa Sandstorm Development Group, Inc.:ltä."
+        "license": "Sandstormin toteutuksen tekijänoikeus on Sandstormin osallistujilla. Toteutuksen lisenssinä on Apache License 2.0."
       },
       "terms": {
         "license": "Lisenssi",

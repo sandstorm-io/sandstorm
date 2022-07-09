@@ -19,17 +19,17 @@ import { Match, check } from "meteor/check";
 import { _ } from "meteor/underscore";
 
 import Crypto from "crypto";
-import { inMeteor, waitPromise } from "/imports/server/async-helpers.ts";
-import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset.js";
+import { inMeteor, waitPromise } from "/imports/server/async-helpers";
+import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset";
 import { PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements,
-         fetchApiToken, insertApiToken } from "/imports/server/persistent.js";
-import { SandstormBackend } from "/imports/server/backend.js";
-import { hashAppIdForIdenticon } from "/imports/sandstorm-identicons/helpers.js";
-import { globalDb } from "/imports/db-deprecated.js";
-import { schedulePeriodic, scheduleOneShot } from "/imports/server/scheduled-job.js";
-import { makeGatewayRouter } from "/imports/server/gateway-router.js";
-import { makeShellCli } from "/imports/server/shell-cli.js";
-import Capnp from "/imports/server/capnp.js";
+         fetchApiToken, insertApiToken } from "/imports/server/persistent";
+import { SandstormBackend } from "/imports/server/backend";
+import { hashAppIdForIdenticon } from "/imports/sandstorm-identicons/helpers";
+import { globalDb } from "/imports/db-deprecated";
+import { schedulePeriodic, scheduleOneShot } from "/imports/server/scheduled-job";
+import { makeGatewayRouter } from "/imports/server/gateway-router";
+import { makeShellCli } from "/imports/server/shell-cli";
+import Capnp from "/imports/server/capnp";
 
 const PersistentHandle = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentHandle;
 const SandstormCore = Capnp.importSystem("sandstorm/supervisor.capnp").SandstormCore;

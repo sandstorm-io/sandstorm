@@ -16,7 +16,7 @@
 
 import Url from "url";
 import { Match, check } from "meteor/check";
-import { globalDb } from "/imports/db-deprecated.js";
+import { globalDb } from "/imports/db-deprecated";
 
 const PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;
 

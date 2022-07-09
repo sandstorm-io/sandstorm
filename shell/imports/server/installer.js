@@ -160,10 +160,12 @@ export function readPackageFromStream(stream, backend, progress = function() {})
         reject(err);
         return;
       }
-      backendStream.done();
-      const packageId = hasher.digest("hex").slice(0, 32);
-      backendStream.saveAs(packageId)
-        .then((info) => resolve({info, packageId}), reject)
+      resolve((async () => {
+        backendStream.done();
+        const packageId = hasher.digest("hex").slice(0, 32);
+        let info = await backendStream.saveAs(packageId);
+        return {info, packageId};
+      })());
     });
   }).finally(() => backendStream.close());
 }

@@ -1,6 +1,6 @@
 'use strict';
 
-var disable_demo = !!process.env.DISABLE_DEMO;
+var run_xfail = process.env.RUN_XFAIL !== "false";
 
 var wrapLoginDemo = function(test) {
   return function (browser) {
@@ -22,13 +22,14 @@ module.exports = {
   very_long_wait: 180000,
   default_width: 1280,
   default_height: 1024,
-  disable_demo: disable_demo,
+  run_xfail: run_xfail,
   testAllLogins: function (tests) {
     var newTests = {};
 
     var count = 0;
     var name, test;
-    if (!disable_demo) {
+    if (run_xfail) {
+      // https://github.com/sandstorm-io/sandstorm/issues/3615
       for(name in tests) {
         test = tests[name];
         if (count === 0) {

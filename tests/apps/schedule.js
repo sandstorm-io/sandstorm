@@ -16,7 +16,7 @@
 
 "use strict";
 
-const { short_wait } = require('../utils');
+const { short_wait, run_xfail } = require('../utils');
 
 module.exports = {};
 
@@ -80,29 +80,32 @@ function common({browser, refStr, firstWaitDuration, shouldRepeat}) {
   })
 }
 
-module.exports["Test periodic tasks"] = function(browser) {
-  common({
-    browser,
-    refStr: 'hourly',
-    firstWaitDuration: 60 * 60 * 1000,
-    shouldRepeat: true,
-  })
-}
+if (run_xfail) {
+  // https://github.com/sandstorm-io/sandstorm/issues/3295
+  module.exports["Test periodic tasks"] = function(browser) {
+    common({
+      browser,
+      refStr: 'hourly',
+      firstWaitDuration: 60 * 60 * 1000,
+      shouldRepeat: true,
+    })
+  }
 
-module.exports["Test canceling tasks"] = function(browser) {
-  common({
-    browser,
-    refStr: 'hourly-cancel',
-    firstWaitDuration: 60 * 60 * 1000,
-    shouldRepeat: false,
-  })
-}
+  module.exports["Test canceling tasks"] = function(browser) {
+    common({
+      browser,
+      refStr: 'hourly-cancel',
+      firstWaitDuration: 60 * 60 * 1000,
+      shouldRepeat: false,
+    })
+  }
 
-module.exports["Test one-shot tasks"] = function(browser) {
-  common({
-    browser,
-    refStr: 'oneshot',
-    firstWaitDuration: 5 * 60 * 1000,
-    shouldRepeat: false,
-  })
+  module.exports["Test one-shot tasks"] = function(browser) {
+    common({
+      browser,
+      refStr: 'oneshot',
+      firstWaitDuration: 5 * 60 * 1000,
+      shouldRepeat: false,
+    })
+  }
 }

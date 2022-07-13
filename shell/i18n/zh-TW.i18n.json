@@ -664,12 +664,12 @@
             "subtext": "使用上記網域信箱的人會自動認證為組織成員。"
           },
           "gappsToggle": {
-            "label": "G Suite 使用者認證",
+            "label": "Google Workspace 使用者認證",
             "subtext": "注意：因為 Google 登入設定未完成，所以無法使用。"
           },
           "gappsDomain": {
             "label": "網域：",
-            "subtext": "使用上記網域 G Suite 的人會自動認證為組織成員。"
+            "subtext": "使用上記網域 Google Workspace 的人會自動認證為組織成員。"
           },
           "ldapToggle": {
             "label": "LDAP 使用者認證",
@@ -1632,12 +1632,12 @@
           "subtext": "使用此網域電郵註冊的使用者將自動提升權限為組織成員（使用者）。"
         },
         "gappsToggle": {
-          "label": "以 G Suite 認證的使用者",
+          "label": "以 Google Workspace 認證的使用者",
           "subtext": "因為 Google 登入尚未設定，故無法使用。"
         },
         "gappsDomain": {
           "label": "網域：",
-          "subtext": "使用此網域 G Suite 註冊的使用者將自動提升權限為組織成員（使用者）。"
+          "subtext": "使用此網域 Google Workspace 註冊的使用者將自動提升權限為組織成員（使用者）。"
         },
         "ldapToggle": {
           "label": "以 LDAP 認證的使用者",

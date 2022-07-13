@@ -710,12 +710,12 @@
             "subtext": "Käyttäjät joiden sähköpostiosoitteena on tämä domain tulevat olemaan tämän palvelimen organisaation jäseniä."
           },
           "gappsToggle": {
-            "label": "Käyttäjät jotka tunnistautuvat G Suiten kautta",
+            "label": "Käyttäjät jotka tunnistautuvat Google Workspace kautta",
             "subtext": "Huom: poistettu käytöstä koska Google kirjautuminen ei ole määriteltynä."
           },
           "gappsDomain": {
             "label": "Domain:",
-            "subtext": "Käyttäjät joilla on G Suite tili tällä domainilla tulevat olemaan tämän palvelimen organisaation jäseniä."
+            "subtext": "Käyttäjät joilla on Google Workspace tili tällä domainilla tulevat olemaan tämän palvelimen organisaation jäseniä."
           },
           "ldapToggle": {
             "label": "Käyttäjät tunnistautuvat LDAPin kautta",
@@ -1685,12 +1685,12 @@
           "subtext": "Käyttäjät joilla on tämän domainin sähköpostiosoite tulevat olemaan tämän palvelimen organisaation jäseniä."
         },
         "gappsToggle": {
-          "label": "G Suiten kautta kirjautuneet käyttäjät",
+          "label": "Google Workspace kautta kirjautuneet käyttäjät",
           "subtext": "Huom: poistettu käytöstä koska Google kirjautumista ei ole määritelty."
         },
         "gappsDomain": {
           "label": "Domain:",
-          "subtext": "G Suiten kautta kirjautuneet tämän domainin käyttäjät tulevat olemaan tämän palvelimen organisaation jäseniä."
+          "subtext": "Google Workspace kautta kirjautuneet tämän domainin käyttäjät tulevat olemaan tämän palvelimen organisaation jäseniä."
         },
         "ldapToggle": {
           "label": "LDAPin kautta kirjautuneet käyttäjät",

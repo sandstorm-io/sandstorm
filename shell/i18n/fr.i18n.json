@@ -665,12 +665,12 @@
             "subtext": "Les utilisateurs ayant une adresse électronique dans ce domaine seront membres de l'organisation de ce serveur."
           },
           "gappsToggle": {
-            "label": "Authentification d'utilisateurs via Google Apps for Work",
+            "label": "Authentification d'utilisateurs via Google Workspace",
             "subtext": "Note : désactivée car l'authentification via Google n'est pas configurée."
           },
           "gappsDomain": {
             "label": "Domaine :",
-            "subtext": "Les utilisateurs disposant d'un compte Google Apps for Work sous ce domaine seront membres de l'organisation de ce serveur."
+            "subtext": "Les utilisateurs disposant d'un compte Google Workspace sous ce domaine seront membres de l'organisation de ce serveur."
           },
           "ldapToggle": {
             "label": "Authentification d'utilisateurs via LDAP",
@@ -1634,12 +1634,12 @@
           "subtext": "Les utilisateurs ayant une adresse électronique dans ce domaine seront membres de l'organisation de ce serveur."
         },
         "gappsToggle": {
-          "label": "Utilisateurs authentifiés par Google Apps for Work",
+          "label": "Utilisateurs authentifiés par Google Workspace",
           "subtext": "Note : désactivé car l'authentification via Google n'est pas configurée."
         },
         "gappsDomain": {
           "label": "Domaine :",
-          "subtext": "Les utilisateurs disposant d'un compte Google Apps for Work sous ce domaine seront membres de l'organisation de ce serveur."
+          "subtext": "Les utilisateurs disposant d'un compte Google Workspace sous ce domaine seront membres de l'organisation de ce serveur."
         },
         "ldapToggle": {
           "label": "Utilisateurs identifiés via LDAP",

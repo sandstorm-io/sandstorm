@@ -756,12 +756,12 @@
             "subtext": "Users with an email address at this domain will be members of this server's organization."
           },
           "gappsToggle": {
-            "label": "Users authenticated via Google Apps for Work",
+            "label": "Users authenticated via Google Workspace",
             "subtext": "Note: disabled because Google login is not configured."
           },
           "gappsDomain": {
             "label": "Domain:",
-            "subtext": "Users with a Google Apps for Work account under this domain will be members of this server's organization."
+            "subtext": "Users with a Google Workspace account under this domain will be members of this server's organization."
           },
           "ldapToggle": {
             "label": "Users authenticated via LDAP",
@@ -1736,12 +1736,12 @@
           "subtext": "Users with an email address at this domain will be members of this server's organization."
         },
         "gappsToggle": {
-          "label": "Users authenticated via Google Apps for Work",
+          "label": "Users authenticated via Google Workspace",
           "subtext": "Note: disabled because Google login is not configured."
         },
         "gappsDomain": {
           "label": "Domain:",
-          "subtext": "Users with a Google Apps for Work account under this domain will be members of this server's organization."
+          "subtext": "Users with a Google Workspace account under this domain will be members of this server's organization."
         },
         "ldapToggle": {
           "label": "Users authenticated via LDAP",

@@ -710,12 +710,12 @@
                         "subtext": "用户如果持有这些域名下的邮箱，那么他们会成为该服务器上组织里的用户。"
                     },
                     "gappsToggle": {
-                        "label": "用户可通过 Google Apps for Work 认证",
+                        "label": "用户可通过 Google Workspace 认证",
                         "subtext": "注：该功能被禁用，因为未配置 Google 登录。"
                     },
                     "gappsDomain": {
                         "label": "域名:",
-                        "subtext": "如果用户的 Google Apps for Work 帐户在该域名下，那么他们会成为该服务器上组织里的用户。"
+                        "subtext": "如果用户的 Google Workspace 帐户在该域名下，那么他们会成为该服务器上组织里的用户。"
                     },
                     "ldapToggle": {
                         "label": "用户可通过 LDAP 认证",
@@ -1686,12 +1686,12 @@
                     "subtext": "用户使用该域名的电子邮件地址注册时会成为该服务器的组织成员。"
                 },
                 "gappsToggle": {
-                    "label": "用户通过 Google Apps for Work 验证",
+                    "label": "用户通过 Google Workspace 验证",
                     "subtext": "注：已禁用，因为通过 Google 登录未被配置。"
                 },
                 "gappsDomain": {
                     "label": "域名:",
-                    "subtext": "拥有该域名 Google Apps for Work 的用户注册时会成为该服务器的组织成员。"
+                    "subtext": "拥有该域名 Google Workspace 的用户注册时会成为该服务器的组织成员。"
                 },
                 "ldapToggle": {
                     "label": "用户通过 LDAP 验证",

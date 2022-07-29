@@ -111,7 +111,7 @@ If you do it correctly, `cat pgp-signature | gpg` should print out the statement
 
 To verify your signature, you also need to export your public key and include it in your app package. You can run the following command, where `<key-id>` is a PGP key ID or a username associated with the key:
 
-`gpg --export <key-id> --export-options export-minimal > pgp-keyring`
+`gpg --export-options export-minimal --export <key-id> > pgp-keyring`
 
 ## Add required metadata
 

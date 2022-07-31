@@ -1587,6 +1587,12 @@ Meteor.startup(function () {
           roleAssignment: Match.Optional(globalDb.roleAssignmentPattern),
           forSharing: Match.Optional(Boolean),
           clipboardButton: Match.Optional(Match.OneOf(undefined, null, "left", "right")),
+          style: Match.Optional({
+            color: Match.Optional(Match.Where(v => {
+              check(v, String);
+              return /^#[0-9a-fA-F]{6}$/.test(v);
+            })),
+          }),
           unauthenticated: Match.Optional(Object),
           // Note: `unauthenticated` will be validated on the server. We just pass it through
           //   here.
@@ -1697,6 +1703,7 @@ Meteor.startup(function () {
             expires: Date.now() + selfDestructDuration,
             host,
             link,
+            style: call.style,
           })
         );
 

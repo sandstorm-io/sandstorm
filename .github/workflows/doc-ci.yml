@@ -18,7 +18,7 @@ jobs:
     - name: install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y git virtualenv graphviz
+        sudo apt-get install -y git virtualenv
         virtualenv tmp/docs-virtualenv
         tmp/docs-virtualenv/bin/pip install -r docs/requirements.txt
     - name: build docs

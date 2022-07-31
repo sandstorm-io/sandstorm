@@ -134,6 +134,6 @@ ImportError: No such module requests
 `vagrant-spk dev`), a FUSE filesystem is created that watches all filesystem operations by the
 app. When the `spk dev` session terminates, any files that the app `open()`d are logged into
 `.sandstorm/sandstorm-files.list`. This skips any files that are merely `stat()`d. Because some apps
-know their full list of dependencies, the `.sandstorm/sandstorm-pkgdef.capnp` file is is **not**
+know their full list of dependencies, the `.sandstorm/sandstorm-pkgdef.capnp` file is **not**
 written if the `alwaysInclude` line contains `"."`, which has the meaning of "include all files that
 the app can see." The `meteor` platform stack takes advantage of this feature.

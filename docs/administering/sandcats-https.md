@@ -103,11 +103,6 @@ GitHub websites.
 [Let's Encrypt](https://letsencrypt.org/) to renew certificates without
 needing any manual intervention.
 
-<!--
-**B rating.** Sandstorm's HTTPS cipher suites are kind of OK but really
-could be better.
--->
-
 **No reverse proxy.** This configuration removes the need for a
 reverse proxy or HTTPS terminator like `nginx`. If you want to set up
 a reverse proxy, you would typically use `BIND_IP=127.0.0.1` and

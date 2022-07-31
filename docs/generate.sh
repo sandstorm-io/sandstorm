@@ -42,7 +42,7 @@ my_git() {
 assert_dependencies() {
   if [ "${DO_SETUP}" == "yes" ] ; then
     if ! (which dot && which virtualenv); then
-      sudo apt-get install -y git virtualenv graphviz
+      sudo apt-get install -y git virtualenv
     fi
     if [ ! -e "$OUTPUT_DIR/.git" ] ; then
       my_git clone --branch gw-pages --depth 1 "$SANDSTORM_DOC_URL" "$OUTPUT_DIR"

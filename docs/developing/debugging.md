@@ -87,7 +87,7 @@ Once you exit, you will see this message:
 NOTE: You should discard all sandstorm-files.list changes from this session to avoid bloat!
 ```
 
-By default, all the files that you use when the app is running are recorded by Sandstorm, and snce
+By default, all the files that you use when the app is running are recorded by Sandstorm, and once
 you have run debugging tools in this session, the list of files will probably include files that
 your users do not need.
 

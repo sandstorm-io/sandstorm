@@ -25,6 +25,8 @@ Proto and HTTP.
 ![Diagram with HTTP Bridge](communication_overview_http_app.svg)
 
 <!--
+NOTE: Included SVGs on this page were created in Graphviz DOT language, and are provided here for convenience in regenerating the files if needed.
+
 graphviz dot communication_overview_http_app.svg
     graph communication_overview_http_app {
       rankdir=LR;

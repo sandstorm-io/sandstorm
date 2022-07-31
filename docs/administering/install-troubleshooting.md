@@ -129,6 +129,12 @@ sudo service sandstorm restart
 
 This should resolve your problems. If not, please get in touch.
 
+## Did you disable outside collaborators before attempting to configure Google or GitHub login methods?
+
+The setting "Disallow collaboration with users outside the organization" is intended for servers using
+organization-based login providers such as LDAP, OIDC, SAML, or an email address belonging to an organization
+email domain. If you are going to set up consumer Google or GitHub OAuth, you should not select this option.
+
 ## Does outbound email truly work?
 
 You can use the admin configuration panel to test outbound email. Make sure you successfully receive

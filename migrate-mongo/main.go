@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -27,5 +28,11 @@ func main() {
 		options.Client().ApplyURI("mongodb://127.0.0.1:"+*mongoPort),
 	)
 	chkfatal(err)
-	fmt.Println("Client: ", client)
+	defer client.Disconnect(ctx)
+	db := client.Database("meteor")
+	names, err := db.ListCollectionNames(ctx, bson.D{})
+	chkfatal(err)
+	for _, name := range names {
+		fmt.Println(name)
+	}
 }

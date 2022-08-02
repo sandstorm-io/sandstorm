@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -11,7 +12,9 @@ import (
 )
 
 var (
-	mongoPort = flag.String("mongo-port", "", "Port on which mongo is listening")
+	mongoPort  = flag.String("mongo-port", "", "Port on which mongo is listening")
+	passwdFile = flag.String("passwd-file", "/var/mongo/passwd",
+		"File storing the mongo user password")
 )
 
 func chkfatal(err error) {
@@ -22,10 +25,16 @@ func chkfatal(err error) {
 
 func main() {
 	flag.Parse()
+
+	passwd, err := os.ReadFile(*passwdFile)
+	chkfatal(err)
+
 	ctx := context.Background()
 	client, err := mongo.Connect(
 		ctx,
-		options.Client().ApplyURI("mongodb://127.0.0.1:"+*mongoPort),
+		options.Client().ApplyURI(
+			"mongodb://sandstorm:"+string(passwd)+"@127.0.0.1:"+*mongoPort,
+		),
 	)
 	chkfatal(err)
 	defer client.Disconnect(ctx)

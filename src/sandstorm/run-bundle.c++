@@ -2077,6 +2077,9 @@ private:
     // Create the mongo user if it hasn't been created already.
     maybeCreateMongoUser(config, fdBundle);
 
+    Subprocess({"sandstorm-migrate-mongo", "--mongo-port", kj::str(config.mongoPort)})
+      .waitForSuccess();
+
     context.warning("** Back-end and Mongo started; now starting front-end...");
 
     // If we're root, run the dev daemon. At present the dev daemon requires root (in order to

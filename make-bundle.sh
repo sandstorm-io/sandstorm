@@ -132,7 +132,7 @@ fi
 tar xf $OLD_BUNDLE_PATH --transform=s/^${OLD_BUNDLE_BASE}/bundle/ $OLD_MONGO_FILES
 
 # Copy in our helper to move over to newer versions of mongo:
-cp tmp/sandstorm-migrate-mongo bundle/bin/
+cp bin/sandstorm-migrate-mongo bundle/bin/
 
 cp $(which zip unzip xz gpg) bundle/bin
 

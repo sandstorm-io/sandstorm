@@ -281,7 +281,6 @@ continuous: tmp/.deps deps/boringssl/build/ssl/libssl.a deps/libsodium/build/src
 # ====================================================================
 # Mongo migration tool
 bin/sandstorm-migrate-mongo: \
-	tmp/.ekam-run \
 	$(shell find migrate-mongo -type f -name '*.go') \
 	migrate-mongo/go.mod \
 	migrate-mongo/go.sum

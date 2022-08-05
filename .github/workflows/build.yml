@@ -12,14 +12,11 @@ jobs:
       - name: install dependencies
         run: |
             export DEBIAN_FRONTEND=noninteractive
-            
-            sudo apt-get update
-            
             echo "The build of boringssl requires golang."
             echo "The github runner seems to have some version of golang already; installing golang-go breaks."
             which go || sudo apt-get install golang-go
 
-            sudo apt-get install -y build-essential libcap-dev xz-utils zip unzip strace curl discount git python3 zlib1g-dev cmake ccache google-chrome-stable
+            sudo apt-get install -y build-essential libcap-dev xz-utils zip unzip strace curl discount git python3 zlib1g-dev cmake ccache google-chrome-stable chromium-driver
       - name: install meteor
         run: |
             curl https://install.meteor.com/ | sh

@@ -28,6 +28,7 @@ THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 METEOR_DEV_BUNDLE=$("$THIS_DIR/../find-meteor-dev-bundle.sh")
 NODEJS="$METEOR_DEV_BUNDLE/bin/node"
 NPM="$METEOR_DEV_BUNDLE/bin/npm"
+CHROME_VERSION=$("google-chome --version | awk '{print $3}'")
 
 export PATH="$METEOR_DEV_BUNDLE/bin:$PATH"
 
@@ -107,7 +108,7 @@ cd "$THIS_DIR"
 checkInstalled firefox firefox
 
 "$NPM" install
-node_modules/.bin/selenium-standalone install
+node_modules/.bin/selenium-standalone install --drivers.chrome.version=$CHROME_VERSION
 
 if [ "$RUN_SELENIUM" != "false" ] ; then
   checkInstalled java default-jre-headless

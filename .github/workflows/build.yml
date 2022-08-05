@@ -12,6 +12,9 @@ jobs:
       - name: install dependencies
         run: |
             export DEBIAN_FRONTEND=noninteractive
+            
+            sudo apt-get update
+            
             echo "The build of boringssl requires golang."
             echo "The github runner seems to have some version of golang already; installing golang-go breaks."
             which go || sudo apt-get install golang-go

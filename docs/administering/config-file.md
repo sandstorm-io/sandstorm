@@ -186,6 +186,14 @@ A boolean (true/false or yes/no) that controls whether violations of the
 seccomp filter should be logged to the kernel's message log, when using
 the new experimental seccomp filter. Defaults to false.
 
+### ALLOW_LEGACY_RELAXED_CSP
+
+A boolean (true/false or yes/no) that controls whether to allow apps to
+load client-side scripts from third-party servers. Several apps are not
+yet compatible with the new Content Security Policy, so the legacy one is
+currently enabled by default. Once app support is deemed sufficiently
+adequate, the new CSP will become the default.
+
 ### IS_TESTING
 
 **Used rarely.** A boolean (true/false or yes/no) that adjusts internal settings for Sandstorm's

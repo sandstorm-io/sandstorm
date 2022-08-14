@@ -21,10 +21,10 @@ import { Router } from "meteor/iron:router";
 
 import { allowDemo } from "/imports/demo";
 import { isSafeDemoAppUrl } from "/imports/install"
-import { promiseToFuture, waitPromise } from "/imports/server/async-helpers";
+import { waitPromise } from "/imports/server/async-helpers";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
-import { cancelDownload } from "/imports/server/installer";
+import { cancelDownload, readPackageFromStream } from "/imports/server/installer";
 
 const TOKEN_CLEANUP_MINUTES = 120;  // Give enough time for large uploads on slow connections.
 const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
@@ -152,7 +152,7 @@ Router.map(function () {
         this.response.end();
       } else if (this.request.method === "POST") {
         try {
-          const packageId = promiseToFuture(doClientUpload(this.request)).wait();
+          const packageId = waitPromise(readPackageFromStream(this.request, globalBackend)).packageId;
           this.response.writeHead(200, {
             "Content-Length": packageId.length,
             "Content-Type": "text/plain",

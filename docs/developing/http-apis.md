@@ -162,6 +162,14 @@ automatically refreshes the IFRAME every 5 minutes.
   button in either the top left or top right corner of the `IFRAME`.
   Valid values are `left` and `right`. Left unspecified, no button is shown.
 
+* `style`: **Object (optional)** additional styling to apply to the body
+  of the iframe. Note that some styles (e.g. background-color) can be
+  set by styling the iframe element itself. We only support the
+  following properties:
+  * `color`: **String (optional)** The text color. Defaults to black,
+    syntax is 6-hex-digit css form, like `#ff00ff` (other ways of
+    specifying colors are not supported).
+
 ### WebKeys
 
 Sandstorm users can directly create an API token by clicking on the key icon within the [Sandstorm

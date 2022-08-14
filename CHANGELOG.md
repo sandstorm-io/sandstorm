@@ -1,3 +1,9 @@
+### v0.300 (2022-08-14)
+- Package downloads will no longer buffer in memory as they are being unpacked. (Thanks @zenhack.)
+- Updated outdated "G Suite" and "Google Apps for Work" to Google's latest rebrand, "Google Workspace". No doubt these will all be outdated again in another month. (Thanks @ocdtrekkie.)
+- Offer token iframes can now specify the foreground color. (Thanks @zenhack.)
+- In `ALLOW_LEGACY_RELAXED_CSP=false` mode, we now ask the browser to block WebRTC, using a new CSP standard that browsers don't support yet. (Thanks @zenhack.)
+
 ### v0.299 (2022-07-09) [bugfixes]
 - Updated dependencies. (No other changes.)
 

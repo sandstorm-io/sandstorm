@@ -902,6 +902,10 @@ public:
   kj::Own<capnp::MembranePolicy> addRef() override {
     return kj::addRef(*this);
   }
+
+  bool shouldResolveBeforeRedirecting() override {
+    return true;
+  }
 private:
 };
 

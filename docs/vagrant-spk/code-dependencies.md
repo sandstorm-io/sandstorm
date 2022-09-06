@@ -10,9 +10,8 @@ downloading dependencies, like the Meteor stack or the Python stack,
 then you can expect `vagrant-spk` to handle downloading and installing
 these dependencies for you. Specifically:
 
-* The `uwsgi` stack creates a virtualenv in the `env` directory within
-the app's code directory (`/opt/app/env` inside Vagrant) and, if a
-`requirements.txt` is present, does `pip install -r requirements.txt'
+* The `uwsgi` stack creates a virtualenv in the `/opt/app-venv` directory and,
+if a `requirements.txt` is present, does `pip install -r requirements.txt'
 into the virtualenv.
 
 * The `meteor` stack uses the `meteor build` process to create a

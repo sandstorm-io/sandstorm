@@ -110,9 +110,9 @@ ImportError: No such module requests
 **How to fix the problem:** Our recommendations are as follows.
 
 - For Python apps, **add the app's virtualenv to alwaysInclude.** To do that, look for the
-  `alwaysInclude` list and add `opt/app/env`. See the [ContactOtter sandstorm-pkgdef.capnp for an
+  `alwaysInclude` list and add `opt/app-venv`. See the [ContactOtter sandstorm-pkgdef.capnp for an
   example.](https://github.com/phildini/logtacts/blob/27ac05f88896778baf5da155afa6c733d3d6a264/.sandstorm/sandstorm-pkgdef.capnp#L137)
-  It is sometimes helpful to also add `usr/lib/python2.7` (or the corresponding path for your
+  It is sometimes helpful to also add `usr/lib/python3.9` (or the corresponding path for your
   version of Python).
 
 - For nodejs apps, **add node_modules to alwaysInclude.** See the [Duolodo sandstorm-pkgdef.capnp

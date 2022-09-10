@@ -15,7 +15,7 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "@babel/runtime": "^7.18.6",
+    "@babel/runtime": "^7.19.0",
     "@root/acme": "^3.1.0",
     "@root/csr": "^0.8.1",
     "@root/keypairs": "^0.9.0",
@@ -63,6 +63,6 @@
     "babel-eslint": "^10.1.0",
     "chai": "^4.3.6",
     "eslint": "^6.8.0",
-    "typescript": "^4.7.4"
+    "typescript": "^4.8.3"
   }
 }

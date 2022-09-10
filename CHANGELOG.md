@@ -1,3 +1,6 @@
+### v0.301 (2022-09-10) [bugfixes]
+- Updated dependencies. (No other changes.)
+
 ### v0.300 (2022-08-14)
 - Package downloads will no longer buffer in memory as they are being unpacked. (Thanks @zenhack.)
 - Updated outdated "G Suite" and "Google Apps for Work" to Google's latest rebrand, "Google Workspace". No doubt these will all be outdated again in another month. (Thanks @ocdtrekkie.)

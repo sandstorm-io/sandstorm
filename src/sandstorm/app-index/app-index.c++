@@ -269,6 +269,10 @@ private:
     }
 
     kj::Own<MembranePolicy> addRef() override { return kj::addRef(*this); }
+
+    bool shouldResolveBeforeRedirecting() override {
+      return true;
+    }
   };
 };
 

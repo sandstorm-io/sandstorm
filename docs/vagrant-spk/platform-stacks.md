@@ -12,7 +12,7 @@ The following stacks exist:
 * `lemp`: a PHP-oriented software collection including nginx, MySQL, and PHP.
 * `lesp`: a similar take on the PHP stack using SQLite as the database.
 * `meteor`: a stack for [Meteor](https://meteor.com) apps, including MongoDB.
-* `node`: a Node stack on version 10.x, for modern Node apps.
+* `node`: a Node stack using the current LTS release, for modern Node apps.
 * `node6`: a Node stack on version 6.x, for legacy Node apps.
 * `static`: `nginx` configured to serve static files from `/opt/app`.
 * `uwsgi`: a Python-oriented stack including nginx and uwsgi.

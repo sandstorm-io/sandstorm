@@ -94,7 +94,7 @@ Other things you probably want to do in this script include:
 
 - Building folder structures in `/var`.  `/var` is the only non-tmpfs folder mounted R/W, and when a grain is first launched, it will start out empty.  It will persist between runs of the same grain, but be unique per app instance.
 - Preparing a database and running migrations.  You can also manually generate some tables once, place them somewhere under `/opt/app`, and copy them to `/var/lib/mysql` if your app takes a while to do migrations, at the potential cost of producing a larger `.spk`.
-- Launching other daemons that your app uses (`mysqld`, `redis-server`, `php5-fpm`, `uwsgi`, etc.)
+- Launching other daemons that your app uses (`mysqld`, `redis-server`, `php-fpm`, `uwsgi`, etc.)
 
 For apps which need the ability to self-modify code or configuration, or which
 expect to be able to write data underneath their source tree, you
@@ -139,7 +139,7 @@ See [packaging tutorial](packaging-tutorial.md) for details.
 
 ### Default setup
 
-Repo: [https://github.com/paulproteus/php-app-to-package-for-sandstorm](https://github.com/paulproteus/php-app-to-package-for-sandstorm)
+Repo: [https://github.com/sandstorm-io/php-app-to-package-for-sandstorm](https://github.com/sandstorm-io/php-app-to-package-for-sandstorm)
 
 This example shows how to setup a php + mysql app.
 
@@ -151,8 +151,8 @@ in the Sandstorm sandbox.
 dependencies.
 
 `launcher.sh` creates a folder structure in `/var` for MySQL, nginx, and
-php5-fpm, creates MySQL tables, then launches the three daemons, checking that
-`mysqld` and `php7.0-fpm` are ready to accept requests before launching `nginx`,
+php-fpm, creates MySQL tables, then launches the three daemons, checking that
+`mysqld` and `php-fpm` are ready to accept requests before launching `nginx`,
 which will listen for requests on port 8000.
 
 ### Paperwork (php, mysql, composer, npm)

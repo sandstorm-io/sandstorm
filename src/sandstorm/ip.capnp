@@ -20,7 +20,7 @@
 # The purpose of these interfaces is to implement "driver" applications -- that is, apps which
 # themselves implement raw legacy network protocols (e.g. HTTP, SMTP, XMPP, etc.) and then
 # re-export those protocols as a Cap'n Proto interface with meaningful separation of capabilities.
-# Driver applications generally must be "approved by the Sandstorm adminsitrator" because raw
+# Driver applications generally must be "approved by the Sandstorm administrator" because raw
 # network access can be abused in ways that harm the server as a whole. For example, an app which
 # secretly sends spam via SMTP or engages in piracy via Bittorrent could harm the server's
 # reputation, not just the user's.

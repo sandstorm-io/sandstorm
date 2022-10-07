@@ -22,13 +22,27 @@ docs about the `vagrant-spk enter-grain` command](debugging.md).
 ## Clicking a link in the app does not open the link
 
 Sandstorm apps cannot navigate the user away from the app. Therefore, app
-authors should set `target="_blank"` on links within the app.
+authors should set `target="_blank"` on external links within the app.
 
 A convenient way to do this automatically for all links in the page is to add
 the following HTML to your document's `<head>`:
 
 ```html
 <base target="_blank">
+```
+
+However, if you have both internal and external links, you can add a script
+such as the following which will only set the target on external links:
+
+```js
+window.onload = function(){
+	var a = document.getElementsByTagName('a');
+	for (var i=0; i<a.length; i++){
+		if(a[i].hostname != location.hostname) {
+			a[i].setAttribute('target', '_blank');
+		}
+	}
+}
 ```
 
 ## A blank white screen renders where the app should be

@@ -1,3 +1,6 @@
+### v0.302 (2022-10-12) [bugfixes]
+- Updated dependencies. (No other changes.)
+
 ### v0.301 (2022-09-10) [bugfixes]
 - Updated dependencies. (No other changes.)
 

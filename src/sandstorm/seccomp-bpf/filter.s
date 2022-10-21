@@ -118,6 +118,7 @@ start:
     jeq #SYS_ppoll, allow_near
     jeq #SYS_pread64, allow_near
     jeq #SYS_prlimit64, allow_near
+    jeq #SYS_pselect6, allow_near
     jeq #SYS_pwrite64, allow_near
     jeq #SYS_read, allow_near
     jeq #SYS_readv, allow_near
@@ -163,6 +164,8 @@ start:
     jeq #SYS_unlink, allow_near
     jeq #SYS_unlinkat, allow_near
     jeq #SYS_utime, allow_near
+    jeq #SYS_utimensat, allow_near
+    jeq #SYS_utimes, allow_near
     jeq #SYS_vfork, allow_near
     jeq #SYS_wait4, allow_near
     jeq #SYS_write, allow_near

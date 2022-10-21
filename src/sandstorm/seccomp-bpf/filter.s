@@ -103,6 +103,7 @@ start:
     jeq #SYS_lseek, allow_near
     jeq #SYS_lstat, allow_near
     jeq #SYS_mkdir, allow_near
+    jeq #SYS_mkdirat, allow_near
     jeq #SYS_mremap, allow_near
     jeq #SYS_msync, allow_near
     jeq #SYS_munmap, allow_near

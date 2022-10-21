@@ -89,6 +89,7 @@ start:
     jeq #SYS_getrusage, allow_near
     jeq #SYS_getsid, allow_near
     jeq #SYS_getsockname, allow_near
+    jeq #SYS_getsockopt, allow_near
     jeq #SYS_gettid, allow_near
     jeq #SYS_gettimeofday, allow_near
     jeq #SYS_getuid, allow_near
@@ -178,6 +179,7 @@ start:
     jeq #SYS_recvmsg, allow_near
     jeq #SYS_sendmsg, allow_near
     jeq #SYS_sendto, allow_near
+    jeq #SYS_setsockopt, allow_near
 
     jmp skip_near
 // See the comments for the 'allow' label. These are analagous, but BPF's
@@ -190,9 +192,7 @@ skip_near:
 
     // These might be okay; examine the arguments:
     jeq #SYS_clone, sys_clone
-    jeq #SYS_getsockopt, sys_getsockopt
     jeq #SYS_ioctl, sys_ioctl
-    jeq #SYS_setsockopt, sys_setsockopt
     // These both use the same filtering logic, so we
     // jump to the same place.
     jeq #SYS_socket, sys_socket
@@ -236,40 +236,6 @@ skip_near:
     // Catchall: return ENOSYS.
     ret #RET_ENOSYS
 
-sys_getsockopt:
-// getsockopt_level:
-    ld [OFF_ARG_1_HI]
-    jne #0, einval
-
-    ld [OFF_ARG_1_LO]
-    jeq #SOL_SOCKET, getsockopt_sol_socket
-    jeq #IPPROTO_TCP, getsockopt_ipproto_tcp
-    jeq #IPPROTO_IPV6, getsockopt_ipproto_ipv6
-    ret #RET_ENOPROTOOPT
-getsockopt_sol_socket:
-    ld [OFF_ARG_2_HI]
-    jne #0, einval
-
-    ld [OFF_ARG_2_LO]
-    // read only options
-    jeq #SO_ACCEPTCONN, allow
-    jeq #SO_DOMAIN, allow
-    jeq #SO_ERROR, allow
-    jeq #SO_PROTOCOL, allow
-    jeq #SO_TYPE, allow
-
-    jmp sockopt_sol_socket_common
-getsockopt_ipproto_tcp:
-    ld [OFF_ARG_2_HI]
-    jne #0, einval
-    ld [OFF_ARG_2_LO]
-    jmp sockopt_ipproto_tcp_common
-getsockopt_ipproto_ipv6:
-    ld [OFF_ARG_2_HI]
-    jne #0, einval
-    ld [OFF_ARG_2_LO]
-    jmp sockopt_ipproto_ipv6_common
-
 sys_ioctl:
     // The request argument is 32-bit, so high should be zero.
     ld [OFF_ARG_1_HI]
@@ -299,53 +265,6 @@ sys_ioctl:
     // If we don't recognize the request number, return ENOTTY,
     // which is the fallback the kernel uses as well:
     ret #RET_ENOTTY
-
-sys_setsockopt:
-// setsockopt_level:
-    ld [OFF_ARG_1_HI]
-    jne #0, einval
-
-    ld [OFF_ARG_1_LO]
-    jeq #SOL_SOCKET, setsockopt_sol_socket
-    jeq #IPPROTO_TCP, setsockopt_ipproto_tcp
-    jeq #IPPROTO_IPV6, setsockopt_ipproto_ipv6
-    ret #RET_ENOPROTOOPT
-setsockopt_sol_socket:
-    ld [OFF_ARG_2_HI]
-    jne #0, einval
-    ld [OFF_ARG_2_LO]
-    jmp sockopt_sol_socket_common
-setsockopt_ipproto_tcp:
-    ld [OFF_ARG_2_HI]
-    jne #0, einval
-    ld [OFF_ARG_2_LO]
-    jmp sockopt_ipproto_tcp_common
-setsockopt_ipproto_ipv6:
-    ld [OFF_ARG_2_HI]
-    jne #0, einval
-    ld [OFF_ARG_2_LO]
-    jmp sockopt_ipproto_ipv6_common
-
-sockopt_sol_socket_common:
-    jeq #SO_BROADCAST, allow
-    jeq #SO_KEEPALIVE, allow
-    jeq #SO_LINGER, allow
-    jeq #SO_OOBINLINE, allow
-    jeq #SO_REUSEADDR, allow
-    jeq #SO_SNDBUF, allow
-    jeq #SO_RCVBUF, allow
-    jeq #SO_RCVTIMEO, allow
-    jeq #SO_SNDTIMEO, allow
-    jeq #SO_RCVLOWAT, allow
-
-    ret #RET_ENOPROTOOPT
-sockopt_ipproto_tcp_common:
-    jeq #TCP_CORK, allow
-    jeq #TCP_NODELAY, allow
-    ret #RET_ENOPROTOOPT
-sockopt_ipproto_ipv6_common:
-    jeq #IPV6_V6ONLY, allow
-    ret #RET_ENOPROTOOPT
 
 // The logic for socket() and socketpair() is identical.
 // So we use this block for both. socketpair() accepts a fourth argument, but we don't look at it.

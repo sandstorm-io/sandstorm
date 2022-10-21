@@ -156,6 +156,9 @@ start:
     jeq #SYS_timer_getoverrun, allow_near
     jeq #SYS_timer_gettime, allow_near
     jeq #SYS_timer_settime, allow_near
+    jeq #SYS_timerfd_create, allow_near
+    jeq #SYS_timerfd_gettime, allow_near
+    jeq #SYS_timerfd_settime, allow_near
     jeq #SYS_times, allow_near
     jeq #SYS_tkill, allow_near
     jeq #SYS_truncate, allow_near

@@ -99,6 +99,7 @@ start:
     jeq #SYS_inotify_rm_watch, allow_near
     jeq #SYS_kill, allow_near
     jeq #SYS_link, allow_near
+    jeq #SYS_linkat, allow_near
     jeq #SYS_listen, allow_near
     jeq #SYS_lseek, allow_near
     jeq #SYS_lstat, allow_near
@@ -125,6 +126,7 @@ start:
     jeq #SYS_readlink, allow_near
     jeq #SYS_readlinkat, allow_near
     jeq #SYS_rename, allow_near
+    jeq #SYS_renameat, allow_near
     jeq #SYS_rmdir, allow_near
     jeq #SYS_rt_sigaction, allow_near
     jeq #SYS_rt_sigpending, allow_near

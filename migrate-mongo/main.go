@@ -6,6 +6,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -13,7 +14,7 @@ import (
 )
 
 var (
-	mongoPort  = flag.String("mongo-port", "", "Port on which mongo is listening")
+	mongoPort  = flag.Int("mongo-port", 6081, "Port on which mongo is listening")
 	passwdFile = flag.String("passwd-file", "/var/mongo/passwd",
 		"File storing the mongo user password")
 	snapshotDir = flag.String("snapshot-dir", "",
@@ -38,7 +39,7 @@ func main() {
 	client, err := mongo.Connect(
 		ctx,
 		options.Client().ApplyURI(
-			"mongodb://sandstorm:"+string(passwd)+"@127.0.0.1:"+*mongoPort,
+			"mongodb://sandstorm:"+string(passwd)+"@127.0.0.1:"+strconv.Itoa(*mongoPort),
 		),
 	)
 	chkfatal(err)

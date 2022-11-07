@@ -1139,7 +1139,7 @@ public:
           bundleDir(main.getInstallDir()),
           sandstormHome(kj::str(bundleDir.slice(0, KJ_ASSERT_NONNULL(bundleDir.findLast('/'))))),
           cap(network.parseAddress(
-                kj::str("unix:", sandstormHome, "/var/sandstorm/socket/shell-cli"))
+                kj::str("unix:", sandstormHome, "/", ShellCli::SOCKET_PATH))
               .then([this](kj::Own<kj::NetworkAddress> addr) {
             auto promise = addr->connect();
             return promise.attach(kj::mv(addr))
@@ -2417,8 +2417,8 @@ private:
       // Listen for connections on the shell CLI socket and forward them to the shell. We do this
       // in the backend, rather than in the shell itself, mainly because node-capnp lacks support
       // for creating listen sockets.
-      unlink("/var/sandstorm/socket/shell-cli");
-      auto shellCliListener = network.parseAddress("unix:/var/sandstorm/socket/shell-cli")
+      unlink(kj::str("/", ShellCli::SOCKET_PATH).cStr());
+      auto shellCliListener = network.parseAddress(kj::str("unix:/", ShellCli::SOCKET_PATH))
           .wait(io.waitScope)->listen();
       auto shellCliServer = kj::heap<capnp::TwoPartyServer>(kj::refcounted<CapRedirector>([&]() {
         return server.getBootstrap().castAs<SandstormCoreFactory>()

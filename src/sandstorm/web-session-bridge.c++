@@ -1290,6 +1290,7 @@ kj::Promise<void> WebSessionBridge::handleResponse(
           tables.hContentSecurityPolicy,
           kj::str(
             "default-src 'none'; "
+            "webrtc 'block'; "
 #define UNSAFE "'unsafe-inline' 'unsafe-eval' data: blob:; "
             "img-src * " UNSAFE
             "media-src * " UNSAFE

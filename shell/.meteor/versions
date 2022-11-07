@@ -7,7 +7,7 @@ babel-compiler@7.7.0
 babel-runtime@1.5.0
 base64@1.0.12
 binary-heap@1.0.11
-blaze@2.6.0
+blaze@2.6.1
 blaze-html-templates@1.2.1
 blaze-tools@1.1.3
 boilerplate-generator@1.7.1
@@ -63,7 +63,7 @@ mdg:validation-error@0.5.1
 meteor@1.9.3
 meteor-base@1.5.1
 meteorspark:util@0.2.0
-meteortesting:browser-tests@1.3.5
+meteortesting:browser-tests@1.5.1
 meteortesting:mocha@2.0.3
 meteortesting:mocha-core@8.1.2
 minifier-css@1.5.4

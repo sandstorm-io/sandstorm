@@ -136,7 +136,7 @@ Linux virtual machine.
 
 - Visit the [vagrant-spk releases list](https://github.com/sandstorm-io/vagrant-spk/releases).
 
-- Download and run the latest EXE file, whose name is typically `vagrant-spk-setup-v0.nnn.exe`. You
+- Download and run the latest EXE file, whose name is typically `vagrant-spk-setup-v1.n.exe`. You
   may need administrator privileges to successfully run the installer.  This will result in a
   `vagrant-spk` executable on your system path.
 

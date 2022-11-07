@@ -76,6 +76,12 @@ body {
 // Templates are namespaced in sessionStorage by the prefix "offerTemplate"
 var templateToken = "offerTemplate" + window.location.hash.substring(1);
 var record = JSON.parse(sessionStorage.getItem(templateToken));
+if(record.style && record.style.color) {
+  var styleElement = document.createElement("style");
+  styleElement.textContent = "body {color: " + record.style.color + ";}";
+  var headElement = document.getElementsByTagName("head")[0];
+  headElement.appendChild(styleElement);
+}
 var textElement = document.getElementById("text");
 textElement.textContent = record.renderedTemplate;
 if (record.link) {

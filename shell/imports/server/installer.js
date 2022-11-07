@@ -15,10 +15,10 @@
 // limitations under the License.
 
 import Crypto from "crypto";
+import { pipeline, Writable } from "stream";
 
 import { Meteor } from "meteor/meteor";
 import { _ } from "meteor/underscore";
-import { Random } from "meteor/random";
 
 import { inMeteor, waitPromise } from "/imports/server/async-helpers";
 import { ssrfSafeLookupOrProxy } from "/imports/server/networking";
@@ -93,7 +93,7 @@ const startInstallInternal = (pkg) => {
   installer.start();
 };
 
-function cancelDownload(packageId) {
+export function cancelDownload(packageId) {
   globalDb.collections.packages.remove({ _id: packageId, status: "download" });
 }
 
@@ -131,46 +131,44 @@ if (!Meteor.settings.replicaNumber) {
   });
 }
 
-doClientUpload = (stream) => {
+export function readPackageFromStream(stream, backend, progress = function() {}) {
+  // readPackageFromStream reads an spk pacakge from stream and uploads it into
+  // backend.
+  //
+  // The optional progress callback will be invoked each time a chunk is written,
+  // which is useful e.g. for updating progress bars. The length of the chunk is
+  // passed as an argument.
+  //
+  // Returns a promise which resolves to an object with fields:
+  //
+  // info: the return value of PackageUploadStream.saveAs().
+  // packageId: The package id of the uploaded package.
+  const backendStream = backend.cap().installPackage().stream;
+  const hasher = Crypto.createHash("sha256");
+
   return new Promise((resolve, reject) => {
-    const id = Random.id();
-
-    const backendStream = globalBackend.cap().installPackage().stream;
-    const hasher = Crypto.createHash("sha256");
-
-    stream.on("data", (chunk) => {
-      try {
+    pipeline(stream, new Writable({
+      write(chunk, _encoding, callback) {
         hasher.update(chunk);
-        backendStream.write(chunk);
-      } catch (err) {
+        backendStream.write(chunk).then(() => {
+          callback();
+          progress(chunk.length);
+        }, reject);
+      },
+    }), (err, _val) => {
+      if(err) {
         reject(err);
+        return;
       }
-    });
-
-    stream.on("end", () => {
-      try {
+      resolve((async () => {
         backendStream.done();
         const packageId = hasher.digest("hex").slice(0, 32);
-        resolve(backendStream.saveAs(packageId).then(() => {
-          return packageId;
-        }));
-        backendStream.close();
-      } catch (err) {
-        reject(err);
-      }
+        let info = await backendStream.saveAs(packageId);
+        return {info, packageId};
+      })());
     });
-
-    stream.on("error", (err) => {
-      // TODO(soon):  This event does't seem to fire if the user leaves the page mid-upload.
-      try {
-        backendStream.close();
-        reject(err);
-      } catch (err2) {
-        reject(err2);
-      }
-    });
-  });
-};
+  }).finally(() => backendStream.close());
+}
 
 class AppInstaller {
   constructor(packageId, url, appId, isAutoUpdated) {
@@ -236,15 +234,21 @@ class AppInstaller {
       try {
         return method.apply(_this, _.toArray(arguments));
       } catch (err) {
-        _this.failed = true;
-        _this.cleanup();
-        _this.updateProgress("failed", 0, err);
-        _this.writeChain = _this.writeChain.then(() => {
-          delete installers[_this.packageId];
-        });
-        console.error("Failed to install app:", err.stack);
+        _this.fail(err);
       }
     };
+  }
+
+  fail(err) {
+    if(!this.failed) {
+      this.failed = true;
+      this.cleanup();
+      this.updateProgress("failed", 0, err);
+      this.writeChain = this.writeChain.then(() => {
+        delete installers[this.packageId];
+      });
+      console.error("Failed to install app:", err.stack);
+    }
   }
 
   cleanup() {
@@ -291,17 +295,11 @@ class AppInstaller {
     console.log("Downloading app:", this.url);
     this.updateProgress("download");
 
-    this.uploadStream = globalBackend.cap().installPackage().stream;
-    return this.doDownloadTo(this.uploadStream);
-  }
-
-  doDownloadTo(out) {
     inMeteor(this.wrapCallback(function () {
       const safe = ssrfSafeLookupOrProxy(globalDb, this.url);
 
       let bytesExpected = undefined;
       let bytesReceived = 0;
-      const hasher = Crypto.createHash("sha256");
       let done = false;
       const updateDownloadProgress = _.throttle(this.wrapCallback(() => {
         if (!done) {
@@ -328,36 +326,20 @@ class AppInstaller {
         if ("content-length" in response.headers) {
           bytesExpected = parseInt(response.headers["content-length"]);
         }
-      }));
+        readPackageFromStream(response, globalBackend, (chunkLen) => {
+          bytesReceived += chunkLen;
+          updateDownloadProgress();
+        }).then(({info}) => {
+          done = true;
+          delete this.downloadRequest;
 
-      request.on("data", this.wrapCallback((chunk) => {
-        hasher.update(chunk);
-        out.write(chunk);
-        bytesReceived += chunk.length;
-        updateDownloadProgress();
-      }));
-
-      request.on("end", this.wrapCallback(() => {
-        out.done();
-
-        if (hasher.digest("hex").slice(0, 32) !== this.packageId) {
-          throw new Error("Package hash did not match.");
-        }
-
-        done = true;
-        delete this.downloadRequest;
-
-        this.updateProgress("unpack");
-        out.saveAs(this.packageId).then(this.wrapCallback((info) => {
           this.appId = info.appId;
           this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
           this.done(info.manifest);
-        }), this.wrapCallback((err) => {
-          throw err;
-        }));
-      }));
-
-      request.on("error", this.wrapCallback((err) => { throw err; }));
+        }, (err) => {
+          this.fail(err);
+        });
+      }))
 
       this.downloadRequest = request;
     }));
@@ -525,5 +507,3 @@ function getAllManifestAssets(manifest) {
 
   return result;
 }
-
-export { cancelDownload };

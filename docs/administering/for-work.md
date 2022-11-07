@@ -29,9 +29,9 @@ Login providers have different settings that are used to define your organizatio
 considered a member of your organization if the settings for **at least one** login provider
 declare the user to be a member. You can enable/disable this on a per-login-provider basis.
 
-- **Google authentication.** All users who use a particular Google Apps domain of your choosing can
-  receive user status in Sandstorm. When you enable the use of Google Apps to define the boundary
-  of your organization, you must specify which Google Apps domain represents your organization.
+- **Google authentication.** All users who use a particular Google Workspace domain of your choosing can
+  receive user status in Sandstorm. When you enable the use of Google Workspace to define the boundary
+  of your organization, you must specify which Google Workspace domain represents your organization.
 
 - **SAML authentication, including Active Directory.** All users who log in via SAML can
   automatically receive user status in Sandstorm. When you use SAML to define the boundary of your

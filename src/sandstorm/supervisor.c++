@@ -1494,6 +1494,10 @@ public:
           kj::mv(parent)
         }) {}
 
+  bool shouldResolveBeforeRedirecting() override {
+    return true;
+  }
+
   kj::Maybe<capnp::Capability::Client> inboundCall(
       uint64_t interfaceId, uint16_t methodId, capnp::Capability::Client target) override {
     // Don't shut down as long as we're receiving inbound calls.
@@ -1650,6 +1654,10 @@ public:
       : policy(kj::mv(policy)),
         token(kj::heapArray<const byte>(token)),
         sandstormCore(kj::mv(sandstormCore)) {}
+
+  bool shouldResolveBeforeRedirecting() override {
+    return true;
+  }
 
   class SaveHandler final: public SystemPersistent::Server {
   public:

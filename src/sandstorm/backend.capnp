@@ -217,9 +217,18 @@ interface GatewayRouter {
 }
 
 interface ShellCli {
+  # ShellCli provides methods used by the CLI to communicate with a running sandstorm front-end.
+
+  const socketPath :Text = "var/sandstorm/socket/shell-cli";
+  # Path (relative to sandstorm's installation directory, normally /opt/sandstorm) to a socket
+  # where a ShellCli is the bootstrap interface.
+
   createAcmeAccount @0 (directory :Text, email :Text, agreeToTerms :Bool);
+
   setAcmeChallenge @1 (module :Text, options :Text);
+
   renewCertificateNow @2 ();
+  # Renew HTTPs certs immediately.
 }
 
 interface SandstormCoreFactory {

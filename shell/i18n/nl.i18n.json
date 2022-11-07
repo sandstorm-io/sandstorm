@@ -710,12 +710,12 @@
             "subtext": "Gebruikers met een email adres op dit domein zullen lid zijn van deze servers organisatie."
           },
           "gappsToggle": {
-            "label": "Gebruikers geverifieerd via Google Apps voor Werk",
+            "label": "Gebruikers geverifieerd via Google Workspace",
             "subtext": "Opmerking: uitgeschakeld omdat Google login niet is geconfigureerd."
           },
           "gappsDomain": {
             "label": "Domein:",
-            "subtext": "Gebruikers met een Google Apps voor Werk account onder dit domein zullen lid zijn van deze servers organisatie."
+            "subtext": "Gebruikers met een Google Workspace account onder dit domein zullen lid zijn van deze servers organisatie."
           },
           "ldapToggle": {
             "label": "Gebruikers geverifieerd via LDAP",
@@ -1685,12 +1685,12 @@
           "subtext": "Gebruikers met een email adres op dit domein zullen lid zijn van deze servers organisatie."
         },
         "gappsToggle": {
-          "label": "Gebruikers geverifieerd via Google Apps for Work",
+          "label": "Gebruikers geverifieerd via Google Workspace",
           "subtext": "Opmerking: uitgeschakeld omdat Google login niet is geconfigureerd."
         },
         "gappsDomain": {
           "label": "Domein:",
-          "subtext": "Gebruikers met een Google Apps for Work account onder dit domein zullen lid zijn van deze servers organiasatie."
+          "subtext": "Gebruikers met een Google Workspace account onder dit domein zullen lid zijn van deze servers organiasatie."
         },
         "ldapToggle": {
           "label": "Gebruikers geverifieerd via LDAP",

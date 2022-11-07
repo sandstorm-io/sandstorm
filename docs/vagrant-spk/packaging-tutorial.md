@@ -78,7 +78,7 @@ This tutorial uses a sample PHP web app. To download it, run the following comma
 
 ```bash
 cd ~/projects
-git clone git://github.com/paulproteus/php-app-to-package-for-sandstorm
+git clone git://github.com/sandstorm-io/php-app-to-package-for-sandstorm
 ```
 
 The app's code will be stored at
@@ -144,7 +144,7 @@ we're working on tidying up the scripts to minimize the noise.
 Eventually, you will see this mesage:
 
 ```bash
-==> default: Vanilla Debian box. See https://app.vagrantup.com/debian for help and bug reports
+==> default: Your virtual server is running at: http://local.sandstorm.io:6090
 ```
 
 and get your shell back. At this point, you can continue to the next step.

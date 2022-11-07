@@ -22,13 +22,27 @@ docs about the `vagrant-spk enter-grain` command](debugging.md).
 ## Clicking a link in the app does not open the link
 
 Sandstorm apps cannot navigate the user away from the app. Therefore, app
-authors should set `target="_blank"` on links within the app.
+authors should set `target="_blank"` on external links within the app.
 
 A convenient way to do this automatically for all links in the page is to add
 the following HTML to your document's `<head>`:
 
 ```html
 <base target="_blank">
+```
+
+However, if you have both internal and external links, you can add a script
+such as the following which will only set the target on external links:
+
+```js
+window.onload = function(){
+	var a = document.getElementsByTagName('a');
+	for (var i=0; i<a.length; i++){
+		if(a[i].hostname != location.hostname) {
+			a[i].setAttribute('target', '_blank');
+		}
+	}
+}
 ```
 
 ## A blank white screen renders where the app should be
@@ -110,9 +124,9 @@ ImportError: No such module requests
 **How to fix the problem:** Our recommendations are as follows.
 
 - For Python apps, **add the app's virtualenv to alwaysInclude.** To do that, look for the
-  `alwaysInclude` list and add `opt/app/env`. See the [ContactOtter sandstorm-pkgdef.capnp for an
+  `alwaysInclude` list and add `opt/app-venv`. See the [ContactOtter sandstorm-pkgdef.capnp for an
   example.](https://github.com/phildini/logtacts/blob/27ac05f88896778baf5da155afa6c733d3d6a264/.sandstorm/sandstorm-pkgdef.capnp#L137)
-  It is sometimes helpful to also add `usr/lib/python2.7` (or the corresponding path for your
+  It is sometimes helpful to also add `usr/lib/python3.9` (or the corresponding path for your
   version of Python).
 
 - For nodejs apps, **add node_modules to alwaysInclude.** See the [Duolodo sandstorm-pkgdef.capnp
@@ -134,6 +148,6 @@ ImportError: No such module requests
 `vagrant-spk dev`), a FUSE filesystem is created that watches all filesystem operations by the
 app. When the `spk dev` session terminates, any files that the app `open()`d are logged into
 `.sandstorm/sandstorm-files.list`. This skips any files that are merely `stat()`d. Because some apps
-know their full list of dependencies, the `.sandstorm/sandstorm-pkgdef.capnp` file is is **not**
+know their full list of dependencies, the `.sandstorm/sandstorm-pkgdef.capnp` file is **not**
 written if the `alwaysInclude` line contains `"."`, which has the meaning of "include all files that
 the app can see." The `meteor` platform stack takes advantage of this feature.

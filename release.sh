@@ -7,17 +7,7 @@ if (grep -r KJ_DBG src/* | egrep -v '/(debug(-test)?|exception)[.]'); then
   exit 1
 fi
 
-if egrep -r 'TODO\(now\)' src/*; then
-  echo '*** Error:  There are release-blocking TODOs in the code.' >&2
-  exit 1
-fi
-
 make clean
-
-if [ "x$(git status --porcelain)" != "x" ]; then
-  echo "Please commit changes to git before releasing." >&2
-  exit 1
-fi
 
 # TODO(soon): Once we have a way to start a beta branch, refuse to do so if there are TODO(soon)s.
 # if (egrep -r 'TODO\(soon\)'); then
@@ -79,6 +69,9 @@ echo "**** Tagging this commit ****"
 GIT_REVISION="$(<bundle/git-revision)"
 git tag -u $SIGNING_KEY_ID "$TAG_NAME" "$GIT_REVISION" -m "Release Sandstorm ${DISPLAY_VERSION}"
 git push origin "$TAG_NAME"
+
+# Remember to push it to master too...
+git push origin master
 
 echo "**** Pushing build $BUILD ****"
 

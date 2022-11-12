@@ -1,3 +1,6 @@
+### v0.303 (2022-11-12) [bugfixes]
+- The experimental new (not on my default) seccomp filter has been updated to support many more apps. (Thanks @zenhack.)
+
 ### v0.302 (2022-10-12) [bugfixes]
 - Updated dependencies. (No other changes.)
 

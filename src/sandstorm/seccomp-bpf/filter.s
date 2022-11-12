@@ -40,6 +40,7 @@ start:
     jeq #SYS_close, allow_near
     jeq #SYS_clock_getres, allow_near
     jeq #SYS_clock_gettime, allow_near
+    jeq #SYS_clock_nanosleep, allow_near
     jeq #SYS_connect, allow_near
     jeq #SYS_creat, allow_near
     jeq #SYS_dup, allow_near
@@ -88,6 +89,7 @@ start:
     jeq #SYS_getrusage, allow_near
     jeq #SYS_getsid, allow_near
     jeq #SYS_getsockname, allow_near
+    jeq #SYS_getsockopt, allow_near
     jeq #SYS_gettid, allow_near
     jeq #SYS_gettimeofday, allow_near
     jeq #SYS_getuid, allow_near
@@ -97,10 +99,12 @@ start:
     jeq #SYS_inotify_rm_watch, allow_near
     jeq #SYS_kill, allow_near
     jeq #SYS_link, allow_near
+    jeq #SYS_linkat, allow_near
     jeq #SYS_listen, allow_near
     jeq #SYS_lseek, allow_near
     jeq #SYS_lstat, allow_near
     jeq #SYS_mkdir, allow_near
+    jeq #SYS_mkdirat, allow_near
     jeq #SYS_mremap, allow_near
     jeq #SYS_msync, allow_near
     jeq #SYS_munmap, allow_near
@@ -115,12 +119,14 @@ start:
     jeq #SYS_ppoll, allow_near
     jeq #SYS_pread64, allow_near
     jeq #SYS_prlimit64, allow_near
+    jeq #SYS_pselect6, allow_near
     jeq #SYS_pwrite64, allow_near
     jeq #SYS_read, allow_near
     jeq #SYS_readv, allow_near
     jeq #SYS_readlink, allow_near
     jeq #SYS_readlinkat, allow_near
     jeq #SYS_rename, allow_near
+    jeq #SYS_renameat, allow_near
     jeq #SYS_rmdir, allow_near
     jeq #SYS_rt_sigaction, allow_near
     jeq #SYS_rt_sigpending, allow_near
@@ -152,6 +158,9 @@ start:
     jeq #SYS_timer_getoverrun, allow_near
     jeq #SYS_timer_gettime, allow_near
     jeq #SYS_timer_settime, allow_near
+    jeq #SYS_timerfd_create, allow_near
+    jeq #SYS_timerfd_gettime, allow_near
+    jeq #SYS_timerfd_settime, allow_near
     jeq #SYS_times, allow_near
     jeq #SYS_tkill, allow_near
     jeq #SYS_truncate, allow_near
@@ -160,6 +169,8 @@ start:
     jeq #SYS_unlink, allow_near
     jeq #SYS_unlinkat, allow_near
     jeq #SYS_utime, allow_near
+    jeq #SYS_utimensat, allow_near
+    jeq #SYS_utimes, allow_near
     jeq #SYS_vfork, allow_near
     jeq #SYS_wait4, allow_near
     jeq #SYS_write, allow_near
@@ -177,6 +188,7 @@ start:
     jeq #SYS_recvmsg, allow_near
     jeq #SYS_sendmsg, allow_near
     jeq #SYS_sendto, allow_near
+    jeq #SYS_setsockopt, allow_near
 
     jmp skip_near
 // See the comments for the 'allow' label. These are analagous, but BPF's
@@ -189,9 +201,7 @@ skip_near:
 
     // These might be okay; examine the arguments:
     jeq #SYS_clone, sys_clone
-    jeq #SYS_getsockopt, sys_getsockopt
     jeq #SYS_ioctl, sys_ioctl
-    jeq #SYS_setsockopt, sys_setsockopt
     // These both use the same filtering logic, so we
     // jump to the same place.
     jeq #SYS_socket, sys_socket
@@ -235,40 +245,6 @@ skip_near:
     // Catchall: return ENOSYS.
     ret #RET_ENOSYS
 
-sys_getsockopt:
-// getsockopt_level:
-    ld [OFF_ARG_1_HI]
-    jne #0, einval
-
-    ld [OFF_ARG_1_LO]
-    jeq #SOL_SOCKET, getsockopt_sol_socket
-    jeq #IPPROTO_TCP, getsockopt_ipproto_tcp
-    jeq #IPPROTO_IPV6, getsockopt_ipproto_ipv6
-    ret #RET_ENOPROTOOPT
-getsockopt_sol_socket:
-    ld [OFF_ARG_2_HI]
-    jne #0, einval
-
-    ld [OFF_ARG_2_LO]
-    // read only options
-    jeq #SO_ACCEPTCONN, allow
-    jeq #SO_DOMAIN, allow
-    jeq #SO_ERROR, allow
-    jeq #SO_PROTOCOL, allow
-    jeq #SO_TYPE, allow
-
-    jmp sockopt_sol_socket_common
-getsockopt_ipproto_tcp:
-    ld [OFF_ARG_2_HI]
-    jne #0, einval
-    ld [OFF_ARG_2_LO]
-    jmp sockopt_ipproto_tcp_common
-getsockopt_ipproto_ipv6:
-    ld [OFF_ARG_2_HI]
-    jne #0, einval
-    ld [OFF_ARG_2_LO]
-    jmp sockopt_ipproto_ipv6_common
-
 sys_ioctl:
     // The request argument is 32-bit, so high should be zero.
     ld [OFF_ARG_1_HI]
@@ -298,53 +274,6 @@ sys_ioctl:
     // If we don't recognize the request number, return ENOTTY,
     // which is the fallback the kernel uses as well:
     ret #RET_ENOTTY
-
-sys_setsockopt:
-// setsockopt_level:
-    ld [OFF_ARG_1_HI]
-    jne #0, einval
-
-    ld [OFF_ARG_1_LO]
-    jeq #SOL_SOCKET, setsockopt_sol_socket
-    jeq #IPPROTO_TCP, setsockopt_ipproto_tcp
-    jeq #IPPROTO_IPV6, setsockopt_ipproto_ipv6
-    ret #RET_ENOPROTOOPT
-setsockopt_sol_socket:
-    ld [OFF_ARG_2_HI]
-    jne #0, einval
-    ld [OFF_ARG_2_LO]
-    jmp sockopt_sol_socket_common
-setsockopt_ipproto_tcp:
-    ld [OFF_ARG_2_HI]
-    jne #0, einval
-    ld [OFF_ARG_2_LO]
-    jmp sockopt_ipproto_tcp_common
-setsockopt_ipproto_ipv6:
-    ld [OFF_ARG_2_HI]
-    jne #0, einval
-    ld [OFF_ARG_2_LO]
-    jmp sockopt_ipproto_ipv6_common
-
-sockopt_sol_socket_common:
-    jeq #SO_BROADCAST, allow
-    jeq #SO_KEEPALIVE, allow
-    jeq #SO_LINGER, allow
-    jeq #SO_OOBINLINE, allow
-    jeq #SO_REUSEADDR, allow
-    jeq #SO_SNDBUF, allow
-    jeq #SO_RCVBUF, allow
-    jeq #SO_RCVTIMEO, allow
-    jeq #SO_SNDTIMEO, allow
-    jeq #SO_RCVLOWAT, allow
-
-    ret #RET_ENOPROTOOPT
-sockopt_ipproto_tcp_common:
-    jeq #TCP_CORK, allow
-    jeq #TCP_NODELAY, allow
-    ret #RET_ENOPROTOOPT
-sockopt_ipproto_ipv6_common:
-    jeq #IPV6_V6ONLY, allow
-    ret #RET_ENOPROTOOPT
 
 // The logic for socket() and socketpair() is identical.
 // So we use this block for both. socketpair() accepts a fourth argument, but we don't look at it.

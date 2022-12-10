@@ -15,7 +15,7 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "@babel/runtime": "^7.20.1",
+    "@babel/runtime": "^7.20.6",
     "@root/acme": "^3.1.0",
     "@root/csr": "^0.8.1",
     "@root/keypairs": "^0.9.0",
@@ -53,7 +53,7 @@
     "openid-client": "^4.9.1",
     "smtp-server": "^1.17.0",
     "stripe": "^8.222.0",
-    "xml-crypto": "^2.1.4",
+    "xml-crypto": "^2.1.5",
     "xml2js": "^0.2.8",
     "xmlbuilder": "^8.2.2",
     "xmldom": "^0.6.0"
@@ -63,6 +63,6 @@
     "babel-eslint": "^10.1.0",
     "chai": "^4.3.7",
     "eslint": "^6.8.0",
-    "typescript": "^4.8.4"
+    "typescript": "^4.9.4"
   }
 }

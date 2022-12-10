@@ -1,3 +1,6 @@
+### v0.304 (2022-12-10)
+- Cap'n Proto has had several internal optimizations. We don't expect a significant impact on Sandstorm but let us know if there's any fishy behavior changes.
+
 ### v0.303 (2022-11-12) [bugfixes]
 - The experimental new (not on by default) seccomp filter has been updated to support many more apps. (Thanks @zenhack.)
 

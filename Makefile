@@ -193,7 +193,7 @@ REMOTE_libseccomp=https://github.com/seccomp/libseccomp master
 REMOTE_libsodium=https://github.com/jedisct1/libsodium.git stable
 REMOTE_node-capnp=https://github.com/kentonv/node-capnp.git node10
 REMOTE_boringssl=https://boringssl.googlesource.com/boringssl master
-REMOTE_clang=https://chromium.googlesource.com/chromium/src/tools/clang.git master
+REMOTE_clang=https://chromium.googlesource.com/chromium/src/tools/clang.git main
 
 deps/capnproto/.git:
 	@# Probably user forgot to checkout submodules. Do it for them.

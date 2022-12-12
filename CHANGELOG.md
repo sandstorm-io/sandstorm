@@ -1,3 +1,6 @@
+### v0.305 (2022-12-12)
+- Rolled back Cap'n Proto update due to some reports of broken apps.
+
 ### v0.304 (2022-12-10)
 - Cap'n Proto has had several internal optimizations. We don't expect a significant impact on Sandstorm but let us know if there's any fishy behavior changes.
 

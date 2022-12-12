@@ -893,7 +893,7 @@ capnp::Capability::Server::DispatchCallResult CapRedirector::dispatchCall(
     uint64_t interfaceId, uint16_t methodId,
     capnp::CallContext<capnp::AnyPointer, capnp::AnyPointer> context) {
   capnp::AnyPointer::Reader params = context.getParams();
-  auto req = target.typelessRequest(interfaceId, methodId, params.targetSize(), {});
+  auto req = target.typelessRequest(interfaceId, methodId, params.targetSize());
   req.set(params);
 
   auto oldIteration = iteration;
@@ -915,7 +915,7 @@ capnp::Capability::Server::DispatchCallResult CapRedirector::dispatchCall(
     // OK, this disconnect is new to us. We need to determine if this disconnected capability
     // is our direct target or something else that was accessed as part of the call. So, send
     // a dummy call to check.
-    auto ping = target.typelessRequest(0, 65535, capnp::MessageSize { 4, 0 }, {});
+    auto ping = target.typelessRequest(0, 65535, capnp::MessageSize { 4, 0 });
     ping.initAsAnyStruct(0, 0);
     return ping.send().then([](auto&&) -> void {
       KJ_LOG(ERROR, "dummy ping request should have failed with UNIMPLEMENTED");

@@ -1223,7 +1223,7 @@ public:
 
       // We need to verify the capability is still connected. Send a dummy call to check. We'll
       // use a known-invalid type ID / method number and expect to get an UNIMPLEMENTED error.
-      auto ping = identity.typelessRequest(0, 65535, capnp::MessageSize { 4, 0 }, {});
+      auto ping = identity.typelessRequest(0, 65535, capnp::MessageSize { 4, 0 });
       ping.initAsAnyStruct(0, 0);
       return ping.send().then([identity](auto&&) mutable -> kj::Promise<Identity::Client> {
         // Weird, we shouldn't get here.

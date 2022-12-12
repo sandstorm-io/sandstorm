@@ -18,8 +18,7 @@
 # This file contains interfaces defining communication between a Sandstorm grain supervisor and
 # other components of the system. These interfaces are NOT used by Sandstorm applications.
 
-using Cxx = import "/capnp/c++.capnp";
-$Cxx.namespace("sandstorm");
+$import "/capnp/c++.capnp".namespace("sandstorm");
 
 using Util = import "util.capnp";
 using Grain = import "grain.capnp";
@@ -82,8 +81,7 @@ interface Supervisor {
     notFound @2;
   }
 
-  getWwwFileHack @9 (path :Text, stream :Util.ByteStream) -> (status :WwwFileStatus)
-      $Cxx.allowCancellation;
+  getWwwFileHack @9 (path :Text, stream :Util.ByteStream) -> (status :WwwFileStatus);
   # Reads a file from under the grain's "/var/www" directory. If the path refers to a regular
   # file, the contents are written to `stream`, and `status` is returned as `file`. If the path
   # refers to a directory or is not found, then `stream` is NOT called at all and the method

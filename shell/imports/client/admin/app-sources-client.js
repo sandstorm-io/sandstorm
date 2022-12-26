@@ -117,7 +117,7 @@ Template.newAdminAppSources.events({
               message: err.message,
             });
           } else {
-            Meteor.call("setSetting", undefined, "enableAppUpdates", newEnableAppUpdates, (err) => {
+            Meteor.call("setSetting", undefined, "appUpdatesEnabled", newEnableAppUpdates, (err) => {
               if (err) {
                 instance.formState.set({
                   state: "error",

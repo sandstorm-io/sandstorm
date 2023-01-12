@@ -1,3 +1,7 @@
+### v0.306 (2023-01-11)
+- Fixed bug where app updates could not be turned off in the admin panel. (Thanks @zenhack.)
+- Clarified error log message when receiving email to an unknown address. (Thanks @jdougan.)
+
 ### v0.305 (2022-12-12)
 - Rolled back Cap'n Proto update due to some reports of broken apps.
 

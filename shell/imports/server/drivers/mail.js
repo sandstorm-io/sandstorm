@@ -164,7 +164,7 @@ Meteor.startup(function () {
                 } else {
                   // TODO(someday): We really ought to rig things up so that the 'RCPT TO' SMTP command
                   // fails in this case, by adding an onRcptTo() callback.
-                  throw new Error("No such grain: " + publicId);
+                  throw new Error("No grain with publicId matching RCPT TO mailbox: " + publicId);
                 }
               }).then((grainInfo) => {
                 const supervisor = grainInfo.supervisor;

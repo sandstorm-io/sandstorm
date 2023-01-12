@@ -64,7 +64,7 @@ meteor@1.9.3
 meteor-base@1.5.1
 meteorspark:util@0.2.0
 meteortesting:browser-tests@1.5.1
-meteortesting:mocha@2.0.3
+meteortesting:mocha@2.0.4
 meteortesting:mocha-core@8.1.2
 minifier-css@1.5.4
 minimongo@1.7.0

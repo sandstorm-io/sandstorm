@@ -15,7 +15,7 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "@babel/runtime": "^7.20.6",
+    "@babel/runtime": "^7.20.7",
     "@root/acme": "^3.1.0",
     "@root/csr": "^0.8.1",
     "@root/keypairs": "^0.9.0",

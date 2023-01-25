@@ -372,20 +372,21 @@ class HackSessionContextImpl extends SessionContextImpl {
     // Get the user's e-mail address.
     //
     // Must be called in a Meteor context.
-
-    const grain = globalDb.collections.grains.findOne(this.grainId, { fields: { userId: 1 } });
-
-    const user = Meteor.users.findOne({_id: grain.userId});
-
-    const email = _.findWhere(SandstormDb.getUserEmails(user), { primary: true });
-
     const result = {};
-    if (email) {
-      result.address = email.email;
-    }
 
-    if (user.profile.name) {
-      result.name = user.profile.name;
+    // Account id may be null in an incognito session
+    if (this.accountId) {
+        const user = Meteor.users.findOne({_id: this.accountId});
+
+        const email = _.findWhere(SandstormDb.getUserEmails(user), { primary: true });
+
+        if (email) {
+          result.address = email.email;
+        }
+
+        if (user.profile.name) {
+          result.name = user.profile.name;
+        }
     }
 
     return result;

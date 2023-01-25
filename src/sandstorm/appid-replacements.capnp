@@ -110,7 +110,16 @@ const appIdReplacementList :List(AppIdReplacement) = [
   # See also [this discussion](https://github.com/wekan/wekan/issues/640) about the future
   # governance of Wekan.
 
-# ---- end Wekan entry ----
+  # ---- end Wekan entry ----
+  
+  # ---- WordPress entry ----
+
+  (original = "aax9j672p6z8n7nyupzvj2nmumeqd4upa0f7mgu8gprwmy53x04h",
+   replacement = "zp00qqrha6gp8515ju84ys91syyq8ezv77g9s1r0t3urz92uzmqh"),
+  # The original key was held by Jan Jambor and David Renshaw. The app was left unmaintained from
+  # 2018 to 2023, so Jacob Weisz replaced the key rather than trying to track down the original.
+
+  # ---- end WordPress entry ----
 
   # Add your entry here!
 ];

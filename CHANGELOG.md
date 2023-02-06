@@ -1,3 +1,7 @@
+### v0.307 (2023-02-05)
+- The signing key for the Wordpress app has been rolled to transfer maintainership to @ocdtrekkie, since the previous maintainers had not updated it in many years. @ocdtrekkie has been a core Sandstorm project member for several years and plans to push an update to this app.
+- install.sh has been updated to no longer fail if there hasn't been a new release in the last 30 days. Future releases will be on an as-needed basis instead of monthly.
+
 ### v0.306 (2023-01-11)
 - Fixed bug where app updates could not be turned off in the admin panel. (Thanks @zenhack.)
 - Clarified error log message when receiving email to an unknown address. (Thanks @jdougan.)

@@ -1381,14 +1381,36 @@ __EOF__
       fail "E_BAD_PACKAGE" "Bad package -- did not contain $BUILD_DIR directory."
     fi
 
-    if [ ! -e "$BUILD_DIR/buildstamp" ] || \
-       [ $(stat -c %Y "$BUILD_DIR/buildstamp") -lt $(( $(date +%s) - 30*24*60*60 )) ]; then
-      rm -rf "$BUILD_DIR"
-      fail "E_PKG_STALE" "The downloaded package seems to be more than a month old. Please verify that your" \
-           "computer's clock is correct and try again. It could also be that an attacker is" \
-           "trying to trick you into installing an old version. Please contact" \
-           "security@sandstorm.io if the problem persists."
-    fi
+    # We used to reject packages older than 30 days on the assumption the package would definitely
+    # be updated more often than that. For about six years the existence of this check was the main
+    # thing that drove me (Kenton) to do a release every month, although I occasionally forgot which
+    # would temporarily block new installs. Surprisingly (to me, at least), whenever this happend,
+    # people would actually notice and complain within a day or two -- people were apparently
+    # still installing Sandstorm regularly.
+    #
+    # As of Feb 2023, though, I think it's time to retire this check and end the monthly update
+    # schedule, for several reasons:
+    # - In 2022, the majority of months saw no actual changes at all.
+    # - Ian, who had been the most active maintainer, is now focusing his efforts on a new
+    #   implementation called Tempest. So 2023 is likely to see even fewer changes.
+    # - It's no longer possible to update the Meteor dependency, because newer versions of Meteor
+    #   no longer support the ancient version of Mongo we're stuck on (2.6), and writing automation
+    #   to update everyone's Mongo instances automatically without breaking anyone is too large
+    #   a project for anyone to volunteer for. Since almost all of Sandstorm's dependencies stem
+    #   from Meteor, trying to update dependencies on a monthly basis has become futile, as the
+    #   pinned Meteor version holds everything else back.
+    # - I just have too much to do, and although releases are not a whole lot of work, it feels
+    #   like one more thing on the pile.
+    #
+    # I'm still happy to push releases when there are interesting changes.
+#    if [ ! -e "$BUILD_DIR/buildstamp" ] || \
+#       [ $(stat -c %Y "$BUILD_DIR/buildstamp") -lt $(( $(date +%s) - 30*24*60*60 )) ]; then
+#      rm -rf "$BUILD_DIR"
+#      fail "E_PKG_STALE" "The downloaded package seems to be more than a month old. Please verify that your" \
+#           "computer's clock is correct and try again. It could also be that an attacker is" \
+#           "trying to trick you into installing an old version. Please contact" \
+#           "security@sandstorm.io if the problem persists."
+#    fi
   }
 
   if [ -e $BUILD_DIR ]; then

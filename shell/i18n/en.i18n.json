@@ -298,7 +298,7 @@
       "whoHasAccess": "See who has access"
     },
     "grainSharePopup": {
-      "oldSharingModelDescription": "This grain uses the old sharing model. You can share it by copy/pasting the URL from the location bar",
+      "oldSharingModelDescription": "This grain uses the old sharing model. You can share it by copy/pasting the URL from the location bar.",
       "upgradeDescription": "You can upgrade this grain to the new model, but anyone with whom you shared this grain previously will lose access; you will have to share with them again.",
       "upgradeWarning": "Upgrading cannot be undone.",
       "upgrade": "upgrade",

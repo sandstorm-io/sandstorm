@@ -144,7 +144,7 @@ Please install the following:
 * `curl`
 * `python3`
 * `zlib1g-dev`
-* `golang-go`
+* `golang-go` 1.19 or later
 * `cmake`
 * discount (markdown parser)
 * [Meteor](http://meteor.com)
@@ -153,10 +153,29 @@ On Debian or Ubuntu, you should be able to get all these with:
 
     sudo apt-get install build-essential libcap-dev xz-utils zip \
         unzip strace curl discount git python3 zlib1g-dev \
-        golang-go cmake strace flex bison locales
+        cmake flex bison locales
+    GO_VERSION=$(curl 'https://go.dev/VERSION?m=text')
+    curl -L "https://go.dev/dl/$GO_VERSION.linux-amd64.tar.gz" -o go.tar.gz \
+        && sudo tar -C /usr/local -xvf go.tar.gz \
+        && rm go.tar.gz
     curl https://install.meteor.com/ | sh
 
-On Fedora 34 you should be able to get them with:
+When you download and install Go on Debian or Ubuntu using the instructions above, you should
+add the Go `bin` directory to your path:
+
+    export PATH="/usr/local/go/bin:$PATH"
+
+To add the Go `bin` directory to your path permanently, add it to your `~/.profile` file:
+
+    << EOF cat >> ~/.profile
+
+    # Include Go in the PATH
+    if [ -d /usr/local/go/bin ]; then
+        PATH="/usr/local/go/bin:\$PATH"
+    fi
+    EOF
+
+On Fedora 34 you should be able to get the prerequisites with:
 
     sudo dnf install make libcap-devel libstdc++-devel libstdc++-static \
        glibc-headers glibc-static glibc-locale-source gcc-c++ xz zip \

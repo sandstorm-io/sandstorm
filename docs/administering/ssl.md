@@ -30,6 +30,21 @@ Sandstorm supports automatic renewal with the following DNS providers:
 If your certificate provider does not support ACME, and/or your DNS provider is not supported currently by
 Sandstorm, you can manually upload your certificate.
 
+### Options JSON
+
+When configuring ACME support, many providers will require an "options JSON". The required values can vary
+between providers, but often just a `token` and optionally a `baseUrl` are used. The token is generally an
+API key with the permissions to read and edit your DNS zone for the domain you are using for Sandstorm.
+
+Both Cloudflare and Gandi, for example, accept the following:
+
+```json
+{ "token": "xxx" }
+```
+
+You can find the documentation for the various providers in their [respective npm packages](https://www.npmjs.com/search?q=acme-dns-01-),
+however, note that our Options JSON field requires double quotes, as above, around both the key and value.
+
 ### Additional options
 
 - Run a [reverse proxy](reverse-proxy.md) such as nginx using a wildcard certificate that you

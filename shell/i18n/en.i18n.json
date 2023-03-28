@@ -177,9 +177,16 @@
       "was": "was: %s",
       "renamedFrom": "renamed from: %s"
     },
+    "grainTitlePopup": {
+      "prompt": "Set new title:",
+      "promptNotOwner": "Set a new personal title: (does not change the owner's title for this grain)"
+    },
     "grainDeleteButton": {
       "hint": "Move to trash",
       "text": "Move to trash"
+    },
+    "grainDeletePopup": {
+      "confirmationMessage": "Really move this grain to your trash?"
     },
     "grainDebugLogButton": {
       "hint": "Show Debug Log",

@@ -51,9 +51,9 @@ GrainLog = new Mongo.Collection("grainLog");
 
 const promptNewTitle = function (grain) {
   if (grain) {
-    let prompt = "Set new title:";
+    let prompt = TAPi18n.__('grains.grainTitlePopup.prompt');
     if (!grain.isOwner()) {
-      prompt = "Set a new personal title: (does not change the owner's title for this grain)";
+      prompt = TAPi18n.__('grains.grainTitlePopup.promptNotOwner');
     }
 
     const title = window.prompt(prompt, grain.title());
@@ -159,7 +159,7 @@ Template.grainDeleteButton.events({
   "click button": function (event) {
     const activeGrain = globalGrains.getActive();
     const grainId = activeGrain.grainId();
-    let confirmationMessage = "Really move this grain to your trash?";
+    let confirmationMessage = TAPi18n.__("grains.grainDeletePopup.confirmationMessage");
     if (window.confirm(confirmationMessage)) {
       Meteor.call("moveGrainsToTrash", [grainId]);
       globalGrains.remove(grainId, true);

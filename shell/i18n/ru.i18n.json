@@ -177,9 +177,16 @@
       "was": "была: %s",
       "renamedFrom": "переименована из: %s"
     },
+    "grainTitlePopup": {
+      "prompt": "Установить новое название:",
+      "promptNotOwner": "Установить новое собственное название: (не изменит название песчинки у владельца)"
+    },
     "grainDeleteButton": {
       "hint": "Переместить в корзину",
       "text": "Переместить в корзину"
+    },
+    "grainDeletePopup": {
+      "confirmationMessage": "Вы действительно хотите удалить эту песчинку?"
     },
     "grainDebugLogButton": {
       "hint": "Показать журнал отладки",

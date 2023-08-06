@@ -138,11 +138,12 @@ Template.sandstormAppDetails.helpers({
   },
 
   appMarketHost: function() {
-    let host = "https://apps.sandstorm.io/";
+    let host = "https://apps.sandstorm.io";
     const ref = Template.instance().data;
-    const db = ref._db;
+    // Pull the database from our parent context:
+    const db = Template.parentData(1)._db;
     const appMarket = db.collections.settings.findOne({ _id: "appMarketUrl" });
-    if (!appMarket) {
+    if (appMarket) {
       host = appMarket.value;
     }
     return host;

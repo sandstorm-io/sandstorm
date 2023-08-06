@@ -1,3 +1,7 @@
+### v0.308 (2023-08-06)
+- Added Russian-language localization. (Thanks @troyjfarrell.)
+- Fixed broken links to the app market. (Thanks @zenhack. RIP.)
+
 ### v0.307 (2023-02-05)
 - The signing key for the Wordpress app has been rolled to transfer maintainership to @ocdtrekkie, since the previous maintainers had not updated it in many years. @ocdtrekkie has been a core Sandstorm project member for several years and plans to push an update to this app.
 - install.sh has been updated to no longer fail if there hasn't been a new release in the last 30 days. Future releases will be on an as-needed basis instead of monthly.

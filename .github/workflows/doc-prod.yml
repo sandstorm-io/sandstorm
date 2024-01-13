@@ -13,5 +13,5 @@ jobs:
     env:
       SANDSTORM_DOC_URL: ${{ secrets.doc_url_prod }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - run: bash -x docs/generate.sh -s -p

@@ -8,7 +8,7 @@ jobs:
   build_and_test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: install dependencies
         run: |
             export DEBIAN_FRONTEND=noninteractive
@@ -21,7 +21,7 @@ jobs:
         run: |
             curl https://install.meteor.com/ | sh
       - name: cache ccache files
-        uses: actions/cache@v1.1.0
+        uses: actions/cache@v3
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ccache-${{ github.run_number }}
@@ -57,7 +57,7 @@ jobs:
       #    path: ccache-debug.tar.gz
       - name: upload sandstorm tarball
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: sandstorm-0-fast.tar.xz
           path: sandstorm-0-fast.tar.xz
@@ -78,13 +78,13 @@ jobs:
           (make test |& tee testlog.txt; echo "Result: $?")
       - name: upload test log
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: testlog.txt
           path: testlog.txt
       - name: upload screenshots
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: screenshots
           path: tests/screenshots

@@ -6,7 +6,7 @@ env:
   CCACHE_DIR: ${{ github.workspace }}/.ccache"
 jobs:
   build_and_test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v4
       - name: install dependencies

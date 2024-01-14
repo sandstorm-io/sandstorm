@@ -9,6 +9,7 @@ on:
     paths:
       - 'mkdocs.yml'
       - 'docs/**'
+  workflow_dispatch:
 
 jobs:
   build:

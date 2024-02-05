@@ -30,7 +30,8 @@
     "resolveJsonModule": true,
     "types": ["node"],
     "esModuleInterop": true,
-    "preserveSymlinks": true
+    "preserveSymlinks": true,
+    "skipLibCheck": true
   },
   "exclude": [
     "./node_modules/**",

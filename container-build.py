@@ -31,11 +31,17 @@ def prepare():
 def make():
     runProcess(args.container_runner + ' run --rm -ti -v ' + os.getcwd() + ':/sandstorm -u ' +  str(os.getuid()) + ' --cap-add=SYS_PTRACE --env \'USER\' sandstorm-build make')
 
+def shell():
+    runProcess(args.container_runner + ' run --rm -ti -v ' + os.getcwd() + ':/sandstorm -u ' +  str(os.getuid()) + ' --cap-add=SYS_PTRACE --env \'USER\' sandstorm-build')
+
 
 prepare()
 
 if (args.action == "make"):
     make()
+
+if (args.action == "shell"):
+    shell()
 
 
 

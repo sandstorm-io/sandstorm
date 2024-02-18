@@ -81,3 +81,5 @@ tests/tmp-sandstorm
 app-index.spk
 test-app.spk
 deps/llvm-build
+
+.vscode

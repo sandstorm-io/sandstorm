@@ -29,7 +29,7 @@ parser.add_argument('--container-runner', dest="container_runner", default='podm
 args = parser.parse_args()
 
 def prepare():
-    script = args.container_builder + ' build . -t sandstorm-build'
+    script = args.container_builder + ' build --build-arg HOST_UID='+ str(os.getuid()) + ' . -t sandstorm-build'
     print(script)
     runProcess(script)
 

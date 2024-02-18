@@ -4,14 +4,6 @@ RUN apt-get update &&\
     DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential libcap-dev xz-utils zip \
     unzip strace curl discount git python3 zlib1g-dev \
     cmake flex bison locales clang gcc-multilib
-RUN git config --system --add safe.directory /sandstorm
-RUN git config --system --add safe.directory /sandstorm/deps/boringssl
-RUN git config --system --add safe.directory /sandstorm/deps/capnproto
-RUN git config --system --add safe.directory /sandstorm/deps/ekam
-RUN git config --system --add safe.directory /sandstorm/deps/clang
-RUN git config --system --add safe.directory /sandstorm/deps/libseccomp
-RUN git config --system --add safe.directory /sandstorm/deps/libsodium
-RUN git config --system --add safe.directory /sandstorm/deps/node-capnp
 RUN curl -L "https://go.dev/dl/go1.21.6.linux-amd64.tar.gz" -o go.tar.gz  \
     && tar -C /usr/local -xvf go.tar.gz \
     && rm go.tar.gz
@@ -22,4 +14,6 @@ RUN curl https://install.meteor.com/ | sh
 ENV PATH "$PATH:/usr/local/go/bin:/usr/local/node/bin"
 RUN chown -R root:root /usr/local/node-v10.24.1-linux-x64
 RUN ln -s /usr/local/node-v10.24.1-linux-x64 /usr/local/node
+ARG HOST_UID
+RUN useradd sandstorm-builder -u $HOST_UID
 CMD  "/bin/sh"

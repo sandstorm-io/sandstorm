@@ -11,11 +11,13 @@ concurrency:
 
 jobs:
   build_and_test:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         builder: ["docker", "podman"]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Prepare container
-        run: ./container-build.py make --container-builder ${{ matrix.builder }} --container-runner ${{ matrix.builder }}
+        run: ./container-build.py --container-builder ${{ matrix.builder }} --container-runner ${{ matrix.builder }} prepare
+      - name: Make
+        run: ./container-build.py --container-builder ${{ matrix.builder }} --container-runner ${{ matrix.builder }} make

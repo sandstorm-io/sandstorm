@@ -13,7 +13,7 @@ def runProcess(exe):
         stdout = p.stdout
         print(stdout)
         if retcode is not None:
-            return retcode
+            exit(retcode)
 
 
 

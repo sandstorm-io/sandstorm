@@ -1,5 +1,6 @@
 FROM docker.io/ubuntu:20.04
 WORKDIR /sandstorm
+RUN git config --global --add safe.directory /sandstorm
 RUN apt-get update &&\
     DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential libcap-dev xz-utils zip \
     unzip strace curl discount git python3 zlib1g-dev \

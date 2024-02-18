@@ -17,8 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: make this a safe directory for git
-        run: git config --global --add safe.directory /sandstorm
       - name: Prepare container
         run: ./container-build.py --container-builder ${{ matrix.builder }} --container-runner ${{ matrix.builder }} prepare
       - name: Make

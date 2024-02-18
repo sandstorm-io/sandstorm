@@ -13,7 +13,10 @@ def runProcess(exe):
         stdout = p.stdout
         print(stdout)
         if retcode is not None:
-            exit(retcode)
+            if retcode != 0:
+                exit(retcode)
+            else:
+                break
 
 
 
@@ -26,14 +29,19 @@ parser.add_argument('--container-runner', dest="container_runner", default='podm
 args = parser.parse_args()
 
 def prepare():
-    runProcess(args.container_builder + ' build . -t sandstorm-build')
+    script = args.container_builder + ' build . -t sandstorm-build'
+    print(script)
+    runProcess(script)
 
 def make():
-    runProcess(args.container_runner + ' run --rm -ti -v ' + os.getcwd() + ':/sandstorm -u ' +  str(os.getuid()) + ' --cap-add=SYS_PTRACE --env \'USER\' sandstorm-build make')
+    script = args.container_runner + ' run --rm -ti -v ' + os.getcwd() + ':/sandstorm -u ' +  str(os.getuid()) + ' --cap-add=SYS_PTRACE --env \'USER\' sandstorm-build make'
+    print(script)
+    runProcess(script)
 
 def shell():
-    runProcess(args.container_runner + ' run --rm -ti -v ' + os.getcwd() + ':/sandstorm -u ' +  str(os.getuid()) + ' --cap-add=SYS_PTRACE --env \'USER\' sandstorm-build')
-
+    script = args.container_runner + ' run --rm -ti -v ' + os.getcwd() + ':/sandstorm -u ' +  str(os.getuid()) + ' --cap-add=SYS_PTRACE --env \'USER\' sandstorm-build'
+    print(script)
+    runProcess(script)
 
 prepare()
 

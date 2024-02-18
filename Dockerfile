@@ -15,5 +15,8 @@ ENV PATH "$PATH:/usr/local/go/bin:/usr/local/node/bin"
 RUN chown -R root:root /usr/local/node-v10.24.1-linux-x64
 RUN ln -s /usr/local/node-v10.24.1-linux-x64 /usr/local/node
 ARG HOST_UID
-RUN useradd sandstorm-builder -u $HOST_UID
+ARG HOST_GID
+RUN groupadd sandstorm-builder -g $HOST_GID
+RUN useradd sandstorm-builder -u $HOST_UID -g $HOST_GID
+USER $HOST_UID:$HOST_GID
 CMD  "/bin/sh"

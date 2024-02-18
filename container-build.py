@@ -29,17 +29,17 @@ parser.add_argument('--container-runner', dest="container_runner", default='podm
 args = parser.parse_args()
 
 def prepare():
-    script = args.container_builder + ' build --build-arg HOST_UID='+ str(os.getuid()) + ' . -t sandstorm-build'
+    script = args.container_builder + ' build --build-arg HOST_UID='+ str(os.getuid()) + ' --build-arg HOST_GID=' + str(os.getgid()) + ' . -t sandstorm-build'
     print(script)
     runProcess(script)
 
 def make():
-    script = args.container_runner + ' run --rm -ti -v ' + os.getcwd() + ':/sandstorm -u ' +  str(os.getuid()) + ' --cap-add=SYS_PTRACE --env \'USER\' sandstorm-build make'
+    script = args.container_runner + ' run --rm -ti -v ' + os.getcwd() + ':/sandstorm  --cap-add=SYS_PTRACE --env \'USER\' sandstorm-build make'
     print(script)
     runProcess(script)
 
 def shell():
-    script = args.container_runner + ' run --rm -ti -v ' + os.getcwd() + ':/sandstorm -u ' +  str(os.getuid()) + ' --cap-add=SYS_PTRACE --env \'USER\' sandstorm-build'
+    script = args.container_runner + ' run --rm -ti -v ' + os.getcwd() + ':/sandstorm  --cap-add=SYS_PTRACE --env \'USER\' sandstorm-build'
     print(script)
     runProcess(script)
 

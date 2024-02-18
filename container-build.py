@@ -39,7 +39,7 @@ def make():
     runProcess(script)
 
 def shell():
-    script = args.container_runner + ' run --rm -ti -v ' + os.getcwd() + ':/sandstorm  --cap-add=SYS_PTRACE --env \'USER\' sandstorm-build'
+    script = args.container_runner + ' run --rm -ti -v ' + os.getcwd() + ':/sandstorm  --cap-add=SYS_PTRACE sandstorm-build'
     print(script)
     runProcess(script)
 

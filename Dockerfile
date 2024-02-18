@@ -5,6 +5,13 @@ RUN apt-get update &&\
     unzip strace curl discount git python3 zlib1g-dev \
     cmake flex bison locales clang gcc-multilib
 RUN git config --system --add safe.directory /sandstorm
+RUN git config --system --add safe.directory /sandstorm/deps/boringssl
+RUN git config --system --add safe.directory /sandstorm/deps/capnproto
+RUN git config --system --add safe.directory /sandstorm/deps/ekam
+RUN git config --system --add safe.directory /sandstorm/deps/clang
+RUN git config --system --add safe.directory /sandstorm/deps/libseccomp
+RUN git config --system --add safe.directory /sandstorm/deps/libsodium
+RUN git config --system --add safe.directory /sandstorm/deps/node-capnp
 RUN curl -L "https://go.dev/dl/go1.21.6.linux-amd64.tar.gz" -o go.tar.gz  \
     && tar -C /usr/local -xvf go.tar.gz \
     && rm go.tar.gz

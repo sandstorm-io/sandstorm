@@ -18,4 +18,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Prepare container
-        run: ./container-build.py make --container_builder=${{ matrix.builder }} --container_runner=${{ matrix.builder }}
+        run: ./container-build.py make --container-builder ${{ matrix.builder }} --container-runner ${{ matrix.builder }}

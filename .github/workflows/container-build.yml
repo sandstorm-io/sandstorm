@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   build_and_test:
-    runs-on: latest
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         builder: ["docker", "podman"]

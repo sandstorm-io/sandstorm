@@ -4,7 +4,7 @@ RUN apt-get update &&\
     DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential libcap-dev xz-utils zip \
     unzip strace curl discount git python3 zlib1g-dev \
     cmake flex bison locales clang gcc-multilib
-RUN git config --global --add safe.directory /sandstorm
+RUN git config --system --add safe.directory /sandstorm
 RUN curl -L "https://go.dev/dl/go1.21.6.linux-amd64.tar.gz" -o go.tar.gz  \
     && tar -C /usr/local -xvf go.tar.gz \
     && rm go.tar.gz

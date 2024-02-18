@@ -1,0 +1,21 @@
+name: Build and test on containers
+
+on: 
+  workflow_dispatch:
+  push:
+    branches: add-container-for-ubuntu-20.04-temp
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_and_test:
+    runs-on: latest
+    strategy:
+      matrix:
+        builder: ["docker", "podman"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare container
+        run: ./container-build.py make --container_builder ${{ matrix.builder }} --container_runner ${{ matrix.builder }}

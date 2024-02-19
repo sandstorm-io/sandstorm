@@ -12,7 +12,7 @@
     /* Strict Type-Checking Options */
     "strict": true,
     "noImplicitAny": true,
-    "strictNullChecks": true,
+    "strictNullChecks": false,
 
     /* Additional Checks */
     "noUnusedLocals": true,

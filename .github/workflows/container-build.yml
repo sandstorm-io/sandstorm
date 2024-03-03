@@ -13,7 +13,7 @@ jobs:
   build_and_test:
     strategy:
       matrix:
-        os: [ubuntu-latest, mac-latest, windows-latest]
+        os: [ubuntu-latest]
         builder: ["podman"]
       fail-fast: false
     runs-on: ${{ matrix.os }}

@@ -6,12 +6,11 @@ RUN apt-get update &&\
 RUN curl -L "https://go.dev/dl/go1.21.6.linux-amd64.tar.gz" -o go.tar.gz  \
     && tar -C /usr/local -xvf go.tar.gz \
     && rm go.tar.gz
-RUN curl -L "https://nodejs.org/dist/v10.24.1/node-v10.24.1-linux-x64.tar.gz" -o node.tar.gz \
-    && tar -C /usr/local -xvf node.tar.gz \
-    && rm node.tar.gz
+RUN curl -fsSL https://raw.githubusercontent.com/tj/n/master/bin/n -o ~/n \
+    && bash ~/n v10 \
+    && chmod -R 777 /usr/local/bin \
+    && rm -rf ~/n
 RUN curl https://install.meteor.com/ | sh
 ENV PATH "$PATH:/usr/local/go/bin:/usr/local/node/bin:/usr/local/node/include:/usr/local/node/include/node"
-RUN chown -R root:root /usr/local/node-v10.24.1-linux-x64
-RUN ln -s /usr/local/node-v10.24.1-linux-x64 /usr/local/node
 RUN useradd -m file-builder
 WORKDIR /sandstorm

@@ -19,7 +19,5 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: Prepare container
-        run: ./container-build.py prepare
       - name: Make
         run: ./container-build.py make

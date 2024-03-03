@@ -21,7 +21,4 @@ jobs:
       - uses: actions/checkout@v4
       - name: Make on Unix
         run: ./container-build.py make
-        continue-on-error: true
-      - name: Make on Unix as second time (because it fails the first time?)
-        run: ./container-build.py make
 

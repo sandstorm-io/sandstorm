@@ -29,17 +29,39 @@ parser.add_argument('--container-runner', dest="container_runner", default='podm
 args = parser.parse_args()
 
 def prepare():
-    script = args.container_builder + ' build --build-arg HOST_UID='+ str(os.getuid()) + ' --build-arg HOST_GID=' + str(os.getgid()) + ' . -t sandstorm-build'
+    script ="{builder_cmd} build .  -t sandstorm-build".format(builder_cmd=args.container_builder)
     print(script)
     runProcess(script)
 
+def prepare_cmd():
+    return "{runner_cmd} run --rm -ti \
+        -v {pwd}:/sandstorm \
+        -v {pwd}/scripts:/helpers \
+        -v {pwd}/scripts/lando-entrypoint.sh:/lando-entrypoint.sh \
+        -v {pwd}/scripts/podman-entrypoint.sh:/podman-entrypoint.sh \
+        -e LANDO_HOST_UID={host_uid} \
+        -e LANDO_HOST_GID={host_gid} \
+        -e LANDO_HOST_USER={host_user} \
+        -e LANDO_DROP_USER=file-builder \
+        --userns=keep-id \
+        --entrypoint=/podman-entrypoint.sh \
+        --cap-add=SYS_PTRACE  sandstorm-build".format(
+            runner_cmd=args.container_runner, 
+            pwd=os.getcwd(),
+            host_uid=os.getuid(),
+            host_gid=os.getgid(),
+            host_user=os.getlogin()
+        )
+
+        #   
+
 def make():
-    script = args.container_runner + ' run --rm -ti -v ' + os.getcwd() + ':/sandstorm  --cap-add=SYS_PTRACE --env \'USER\' sandstorm-build make'
+    script = prepare_cmd() + " make"
     print(script)
     runProcess(script)
 
 def shell():
-    script = args.container_runner + ' run --rm -ti -v ' + os.getcwd() + ':/sandstorm  --cap-add=SYS_PTRACE sandstorm-build'
+    script = prepare_cmd() + " bash"
     print(script)
     runProcess(script)
 

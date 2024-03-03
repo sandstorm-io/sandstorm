@@ -13,12 +13,13 @@ jobs:
   build_and_test:
     strategy:
       matrix:
-        builder: ["docker", "podman"]
+        os: [ubuntu-latest, mac-latest, windows-latest]
+        builder: ["podman"]
       fail-fast: false
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Prepare container
-        run: ./container-build.py --container-builder ${{ matrix.builder }} --container-runner ${{ matrix.builder }} prepare
+        run: ./container-build.py prepare
       - name: Make
-        run: ./container-build.py --container-builder ${{ matrix.builder }} --container-runner ${{ matrix.builder }} make
+        run: ./container-build.py make

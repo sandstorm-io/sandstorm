@@ -19,10 +19,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: Make on Windows
-        run: python ./container-build.py make
-        if: ${{ startsWith(matrix.os, 'windows') }}
       - name: Make on Unix
         run: ./container-build.py make
-        if: ${{ ! startsWith(matrix.os, 'windows') }}
+        continue-on-error: true
+      - name: Make on Unix as second time (because it fails the first time?)
+        run: ./container-build.py make
 

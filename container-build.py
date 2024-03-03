@@ -1,5 +1,5 @@
 #!/bin/python
-import argparse, shlex, subprocess, os
+import argparse, shlex, subprocess, os, getpass
 
 # from https://stackoverflow.com/a/4760274/259046
 def runProcess(exe):
@@ -50,7 +50,7 @@ def prepare_cmd():
             pwd=os.getcwd(),
             host_uid=os.getuid(),
             host_gid=os.getgid(),
-            host_user=os.getlogin()
+            host_user=getpass.getuser()
         )
 
         #   

@@ -10,7 +10,7 @@ RUN curl -L "https://nodejs.org/dist/v10.24.1/node-v10.24.1-linux-x64.tar.gz" -o
     && tar -C /usr/local -xvf node.tar.gz \
     && rm node.tar.gz
 RUN curl https://install.meteor.com/ | sh
-ENV PATH "$PATH:/usr/local/go/bin:/usr/local/node/bin"
+ENV PATH "$PATH:/usr/local/go/bin:/usr/local/node/bin:/usr/local/node/include"
 RUN chown -R root:root /usr/local/node-v10.24.1-linux-x64
 RUN ln -s /usr/local/node-v10.24.1-linux-x64 /usr/local/node
 RUN useradd -m file-builder

@@ -19,5 +19,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: Make
-        run: "${{ matrix.os == 'windows-latest' && 'python' }} ./container-build.py make"
+      - name: Make on Windows
+        run: python ./container-build.py make
+        if: ${{ startsWith(matrix.os, 'windows') }}
+      - name: Make on Unix
+        run: ./container-build.py make
+        if: ${{ ! startsWith(matrix.os, 'windows') }}
+

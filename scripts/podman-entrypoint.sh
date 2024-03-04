@@ -4,4 +4,4 @@ set -e
 
 export USER=file-builder
 
-"$@"
+bash "$@"

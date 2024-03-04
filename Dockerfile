@@ -13,5 +13,7 @@ RUN ln -s /usr/include/node /usr/local/include/node
 RUN curl https://install.meteor.com/ | sh
 ENV PATH "$PATH:/usr/local/go/bin:/usr/local/node/bin:/usr/local/node/include:/usr/local/node/include/node"
 RUN useradd -m file-builder
-RUN mv ~/.meteor /home/file-builder && chown -hR file-builder:file-builder /home/file-builder/.meteor
+USER file-builder
+RUN curl https://install.meteor.com/ | sh
+USER root
 WORKDIR /sandstorm

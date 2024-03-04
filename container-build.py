@@ -25,6 +25,7 @@ parser = argparse.ArgumentParser(description='Build Sandstorm using an Ubuntu 20
 parser.add_argument("action", choices=["make", "prepare", "shell"], default="make", nargs="?")
 parser.add_argument('--container-builder', dest="container_builder", default='podman', help='Command you run for building container from command line')
 parser.add_argument('--container-runner', dest="container_runner", default='podman', help='Command you run for running container from command line')
+parser.add_argument('args', nargs="*")
 
 args = parser.parse_args()
 
@@ -33,7 +34,7 @@ def prepare():
     print(script)
     runProcess(script)
 
-def prepare_cmd():
+def prepare_cmd(command):
     return "{runner_cmd} run --rm -ti \
         -v {pwd}:/sandstorm \
         -v {pwd}/scripts:/helpers \
@@ -45,23 +46,25 @@ def prepare_cmd():
         -e LANDO_DROP_USER=file-builder \
         --userns=keep-id \
         --entrypoint=/podman-entrypoint.sh \
-        --cap-add=SYS_PTRACE  sandstorm-build".format(
+        --cap-add=SYS_PTRACE  sandstorm-build {command} {args}".format(
             runner_cmd=args.container_runner, 
             pwd=os.getcwd(),
             host_uid=os.getuid(),
             host_gid=os.getgid(),
-            host_user=getpass.getuser()
+            host_user=getpass.getuser(),
+            command=command,
+            args=' '.join(args.args)
         )
 
         #   
 
 def make():
-    script = prepare_cmd() + " make"
+    script = prepare_cmd("make")
     print(script)
     runProcess(script)
 
 def shell():
-    script = prepare_cmd() + " bash"
+    script = prepare_cmd("bash")
     print(script)
     runProcess(script)
 

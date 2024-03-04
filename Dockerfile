@@ -7,9 +7,11 @@ RUN curl -L "https://go.dev/dl/go1.21.6.linux-amd64.tar.gz" -o go.tar.gz  \
     && tar -C /usr/local -xvf go.tar.gz \
     && rm go.tar.gz
 RUN curl -fsSL https://raw.githubusercontent.com/tj/n/master/bin/n -o ~/n \
-    && bash ~/n v18 \
+    && bash ~/n v10 \
     && rm -rf ~/n
+RUN ln -s /usr/include/node /usr/local/include/node
 RUN curl https://install.meteor.com/ | sh
 ENV PATH "$PATH:/usr/local/go/bin:/usr/local/node/bin:/usr/local/node/include:/usr/local/node/include/node"
 RUN useradd -m file-builder
+RUN mv ~/.meteor /home/file-builder && chown -hR file-builder:file-builder /home/file-builder/.meteor
 WORKDIR /sandstorm

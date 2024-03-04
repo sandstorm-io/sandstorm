@@ -20,5 +20,5 @@ jobs:
       - name: find node.h
         run: |
           cd /
-          find . -n "node.h"
+          find . -name "node.h"
 

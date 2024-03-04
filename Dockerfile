@@ -12,6 +12,5 @@ RUN curl -fsSL https://raw.githubusercontent.com/tj/n/master/bin/n -o ~/n \
 RUN ln -s /usr/include/node /usr/local/include/node
 RUN curl https://install.meteor.com/ | sh
 ENV PATH "$PATH:/usr/local/go/bin:/usr/local/node/bin:/usr/local/node/include:/usr/local/node/include/node"
-ENV METEOR_WAREHOUSE_DIR "/root/.meteor"
 RUN useradd -m file-builder
 WORKDIR /sandstorm

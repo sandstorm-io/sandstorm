@@ -25,7 +25,7 @@ parser = argparse.ArgumentParser(description='Build Sandstorm using an Ubuntu 20
 parser.add_argument("action", choices=["make", "prepare", "shell"], default="make", nargs="?")
 parser.add_argument('--container-builder', dest="container_builder", default='podman', help='Command you run for building container from command line')
 parser.add_argument('--container-runner', dest="container_runner", default='podman', help='Command you run for running container from command line')
-parser.add_argument('args', nargs="*")
+parser.add_argument('args', nargs=argparse.REMAINDER)
 
 args = parser.parse_args()
 

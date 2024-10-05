@@ -38,12 +38,7 @@ def prepare_cmd(command):
     return "{runner_cmd} run --rm -ti \
         -v {pwd}:/sandstorm \
         -v {pwd}/scripts:/helpers \
-        -v {pwd}/scripts/lando-entrypoint.sh:/lando-entrypoint.sh \
         -v {pwd}/scripts/podman-entrypoint.sh:/podman-entrypoint.sh \
-        -e LANDO_HOST_UID={host_uid} \
-        -e LANDO_HOST_GID={host_gid} \
-        -e LANDO_HOST_USER={host_user} \
-        -e LANDO_DROP_USER=file-builder \
         --userns=keep-id \
         --entrypoint=/podman-entrypoint.sh \
         --cap-add=SYS_PTRACE  sandstorm-build {command} {args}".format(

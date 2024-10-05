@@ -9,6 +9,11 @@ RUN curl -L "https://go.dev/dl/go1.21.6.linux-amd64.tar.gz" -o go.tar.gz  \
 RUN curl -fsSL https://raw.githubusercontent.com/tj/n/master/bin/n -o ~/n \
     && bash ~/n v10 \
     && rm -rf ~/n
+RUN https://nodejs.org/dist/v10.24.1/node-v10.24.1-headers.tar.gz -o node.tar.gz \
+    && tar -xvf node.tar.gz \
+    && mv node-v10.24.1/include/* /usr/include \
+    && rm node.tar.gz \
+    && rm -rf node-v10.24.1
 RUN ln -s /usr/include/node /usr/local/include/node
 ENV PATH "$PATH:/usr/local/go/bin:/usr/local/node/bin:/usr/local/node/include:/usr/local/node/include/node"
 RUN useradd -m file-builder

@@ -1,6 +1,6 @@
 name: build_and_test
 
-on: [push, pull_request, workflow_dispatch]
+on: [workflow_dispatch]
 
 env:
   CCACHE_DIR: ${{ github.workspace }}/.ccache"

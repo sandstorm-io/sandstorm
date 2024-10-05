@@ -1,0 +1,22 @@
+name: node.h
+
+on: 
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: printenv
+        run: |
+          printenv
+      - name: find node.h
+        run: |
+          cd /
+          find . -name "node.h"
+

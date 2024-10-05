@@ -44,9 +44,6 @@ def prepare_cmd(command):
         --cap-add=SYS_PTRACE  sandstorm-build {command} {args}".format(
             runner_cmd=args.container_runner, 
             pwd=os.getcwd(),
-            host_uid=os.getuid(),
-            host_gid=os.getgid(),
-            host_user=getpass.getuser(),
             command=command,
             args=' '.join(args.args)
         )

@@ -20,5 +20,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Make on Unix
-        run: ./container-build.py make -d fast
+        run: ./container-build.py make  CC=/usr/bin/clang CXX=/usr/bin/clang++ -d fast
 

@@ -1,0 +1,90 @@
+name: build_and_test
+
+on: [push, pull_request, workflow_dispatch]
+
+env:
+  CCACHE_DIR: ${{ github.workspace }}/.ccache"
+jobs:
+  build_and_test:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: install dependencies
+        run: |
+            export DEBIAN_FRONTEND=noninteractive
+            echo "The build of boringssl requires golang."
+            echo "The github runner seems to have some version of golang already; installing golang-go breaks."
+            which go || sudo apt-get install golang-go
+
+            sudo apt-get install -y build-essential libcap-dev xz-utils zip unzip strace curl discount git python3 zlib1g-dev cmake ccache
+      - name: install meteor
+        run: |
+            curl https://install.meteor.com/ | sh
+      - name: cache ccache files
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ github.run_number }}
+          restore-keys: ccache-
+      - name: print and zero ccache stats
+        run: |
+            mkdir -p "$CCACHE_DIR"
+            ccache -s
+            ccache -z
+      - name: make fast
+        run: |
+            set -x
+            export CCACHE_COMPRESS="true"
+            export CCACHE_COMPRESSLEVEL="6"
+            export CCACHE_MAXSIZE="1G"
+            #     export CCACHE_DEBUG=1
+            export CCACHE_SLOPPINESS="time_macros"
+            export PATH=/usr/lib/ccache:$CLANGDIR:$PATH
+
+            make \
+              CC="$(which clang)" \
+              CXX="$(which clang++)" \
+              fast
+      - name: print ccache stats
+        run: |
+            ccache -s
+      #      # for debugging ccache misses
+      #      find . -iname *ccache* | tar -czf ccache-debug.tar.gz -T /dev/stdin
+      #- name: upload ccache debug tarball
+      #  uses: actions/upload-artifact@v1
+      #  with:
+      #    name: ccache-debug.tar.gz
+      #    path: ccache-debug.tar.gz
+      - name: upload sandstorm tarball
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandstorm-0-fast.tar.xz
+          path: sandstorm-0-fast.tar.xz
+      - name: typecheck-ts
+        run: make typecheck-ts
+      - name: lint
+        run: |
+          # In addition to making sure the linting step doesn't flag any errors,
+          # we also want to make sure the number of warnings doesn't increase.
+          # We check for equality; if the number decreases, great! But then update
+          # the constant below.
+          make lint | tee lint.log
+          num_problems=$(cat lint.log | grep ' problems (0 errors, ' | awk '{print $2}')
+          [ "$num_problems" = 773 ]
+      - name: test
+        run: |
+          set -o pipefail
+          (make test |& tee testlog.txt; echo "Result: $?")
+      - name: upload test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testlog.txt
+          path: testlog.txt
+      - name: upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: tests/screenshots

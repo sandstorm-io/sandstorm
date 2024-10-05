@@ -4,7 +4,7 @@ RUN apt-get update &&\
     unzip strace curl discount git python3 zlib1g-dev \
     cmake flex bison locales clang gcc-multilib && apt-get clean
 RUN curl -L "https://go.dev/dl/go1.21.6.linux-amd64.tar.gz" -o go.tar.gz  \
-    && tar -C /usr/local -xvf go.tar.gz \
+    && tar -C /usr/local -xf go.tar.gz \
     && rm go.tar.gz
 RUN curl -fsSL https://raw.githubusercontent.com/tj/n/master/bin/n -o ~/n \
     && bash ~/n v10 \

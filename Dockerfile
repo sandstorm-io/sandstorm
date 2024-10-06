@@ -19,4 +19,5 @@ RUN chown -R  root:root /usr/local
 USER file-builder
 ENV PATH $PATH:/home/file-builder/.meteor
 ENV METEOR_WAREHOUSE_DIR /home/file-builder/.meteor
+ENV USER file-builder
 WORKDIR /sandstorm

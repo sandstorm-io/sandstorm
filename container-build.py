@@ -39,7 +39,7 @@ def prepare_cmd(command):
         -v {pwd}:/sandstorm \
         -v {pwd}/scripts:/helpers \
         -v {pwd}/scripts/podman-entrypoint.sh:/podman-entrypoint.sh \
-        --userns=keep-id \
+        --userns=keep-id:uid=1000,gid=1000 \
         --entrypoint=/podman-entrypoint.sh \
         --cap-add=SYS_PTRACE  sandstorm-build {command} {args}".format(
             runner_cmd=args.container_runner, 

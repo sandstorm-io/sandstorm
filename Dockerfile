@@ -1,5 +1,5 @@
 FROM docker.io/ubuntu:20.04
-RUN apt-get update &&\
+RUN apt-get update -q -q &&\
     DEBIAN_FRONTEND=noninteractive apt-get install -y -q -q build-essential libcap-dev xz-utils zip \
     unzip strace curl discount git python3 zlib1g-dev \
     libnode-dev libcapnp-dev g++ \

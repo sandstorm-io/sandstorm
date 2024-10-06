@@ -7,29 +7,18 @@ RUN apt-get -qq update && \
 RUN curl -L "https://go.dev/dl/go1.21.6.linux-amd64.tar.gz" -o go.tar.gz  \
     && tar -C /usr/local -xf go.tar.gz \
     && rm go.tar.gz
+RUN curl -fsSL https://raw.githubusercontent.com/tj/n/master/bin/n -o ~/n \
+    && bash ~/n v10 \
+    && rm -rf ~/n
 ENV PATH "$PATH:/usr/local/go/bin"
 RUN groupadd -g 1000 file-builder
 RUN useradd -m -g 1000 -u 1000 file-builder
-
-
-# https://github.com/meteor/galaxy-images/blob/b25048a24df72022b738fc7eefae2fa29fd45a21/meteor-base/Dockerfile
-ENV NODE_VERSION="14.21.4" 
-ENV NODE_URL="https://static.meteor.com/dev-bundle-node-os/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.gz"
-ENV DIR_NODE="/usr/local"
-
-WORKDIR /home/file-builder
-
-
-RUN curl -sSL "$NODE_URL" | tar -xz -C /usr/local/ && mv $DIR_NODE/node-v${NODE_VERSION}-linux-x64 $DIR_NODE/v$NODE_VERSION
-
-# add node and npm to path so the commands are available
-ENV NODE_PATH $DIR_NODE/v$NODE_VERSION/lib/node_modules
-ENV PATH $DIR_NODE/v$NODE_VERSION/bin:$PATH
-
-RUN chown -R file-builder:file-builder /usr/local/ /home/file-builder
-
+RUN chown -R  file-builder:file-builder /usr/local
 USER file-builder
-
-RUN npm install -g meteor@2.3.5
-
+RUN curl https://install.meteor.com/?release=2.3.5 | sh
+USER root
+RUN chown -R  root:root /usr/local
+USER file-builder
+ENV PATH $PATH:/home/file-builder/.meteor
+ENV METEOR_WAREHOUSE_DIR /home/file-builder/.meteor
 WORKDIR /sandstorm

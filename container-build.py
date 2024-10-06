@@ -37,7 +37,6 @@ def prepare():
 def prepare_cmd(command):
     return "{runner_cmd} run --rm -ti \
         -v {pwd}:/sandstorm \
-        -v {pwd}/scripts:/helpers \
         -v {pwd}/scripts/podman-entrypoint.sh:/podman-entrypoint.sh \
         --userns=keep-id:uid=1000,gid=1000 \
         --entrypoint=/podman-entrypoint.sh \

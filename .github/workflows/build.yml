@@ -21,7 +21,7 @@ jobs:
         run: |
             curl https://install.meteor.com/ | sh
       - name: cache ccache files
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ccache-${{ github.run_number }}

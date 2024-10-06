@@ -1,9 +1,9 @@
 FROM docker.io/ubuntu:20.04
 RUN apt-get update &&\
-    DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential libcap-dev xz-utils zip \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -q -q build-essential libcap-dev xz-utils zip \
     unzip strace curl discount git python3 zlib1g-dev \
     libnode-dev libcapnp-dev g++ \
-    cmake flex bison locales clang gcc-multilib && apt-get clean
+    cmake flex bison locales clang gcc-multilib && apt-get -q -q clean
 RUN curl -L "https://go.dev/dl/go1.21.6.linux-amd64.tar.gz" -o go.tar.gz  \
     && tar -C /usr/local -xf go.tar.gz \
     && rm go.tar.gz

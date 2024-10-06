@@ -17,6 +17,6 @@ jobs:
           printenv
       - name: find node.h
         run: |
-          cd /
-          find . -name "node.h"
+          
+          whereis "node.h"
 

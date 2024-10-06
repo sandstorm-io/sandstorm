@@ -3,7 +3,6 @@ name: Build and test on containers
 on: 
   workflow_dispatch:
   push:
-    branches: add-container-for-ubuntu-20.04-temp
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

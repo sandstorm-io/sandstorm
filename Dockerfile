@@ -15,6 +15,7 @@ RUN curl -L "https://go.dev/dl/go1.21.6.linux-amd64.tar.gz" -o go.tar.gz  \
 RUN useradd -m file-builder
 
 
+
 USER file-builder
 WORKDIR /home/file-builder
 ENV N_PREFIX /home/file-builder/n
@@ -24,4 +25,5 @@ ENV PATH      /home/file-builder/n/bin:/home/file-builder/.meteor:$PATH
 # Install nvm with node and npm
 ENV PREFIX /home/file-builder/n
 RUN curl -L https://bit.ly/n-install | bash -s -- -n -y $NODE_VERSION 
+USER root
 WORKDIR /sandstorm

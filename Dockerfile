@@ -5,9 +5,6 @@ RUN apt-get -qq update && \
     cmake flex bison locales clang gcc-multilib g++ jq xz-utils && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=docker.io/golang:1.21 /usr/local/go /usr/local/go
-RUN curl -fsSL https://raw.githubusercontent.com/tj/n/master/bin/n -o ~/n \
-    && bash ~/n v10 \
-    && rm -rf ~/n
 ENV PATH "$PATH:/usr/local/go/bin"
 RUN groupadd -g 1000 file-builder
 RUN useradd -m -g 1000 -u 1000 file-builder

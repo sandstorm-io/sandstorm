@@ -15,8 +15,16 @@ jobs:
       - name: printenv
         run: |
           printenv
-      - name: find node.h
+      - name: find node.h in runner
         run: |
-          cd /
-          whereis "node.h"
+          cd /home/runner/
+          find . -name "node.h"
+        
+      - run: |
+          cd /opt
+          find . -name "node.h"
+      - run: |
+          cd /usr
+          find . -name "node.h"
+
 

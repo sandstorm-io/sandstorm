@@ -4,9 +4,7 @@ RUN apt-get -qq update && \
     unzip strace curl discount git python3 zlib1g-dev \
     cmake flex bison locales clang gcc-multilib g++ jq xz-utils && \
     rm -rf /var/lib/apt/lists/*
-RUN curl -L "https://go.dev/dl/go1.21.6.linux-amd64.tar.gz" -o go.tar.gz  \
-    && tar -C /usr/local -xf go.tar.gz \
-    && rm go.tar.gz
+COPY --from=docker.io/golang:1.21 /usr/local/go /usr/local/go
 RUN curl -fsSL https://raw.githubusercontent.com/tj/n/master/bin/n -o ~/n \
     && bash ~/n v10 \
     && rm -rf ~/n

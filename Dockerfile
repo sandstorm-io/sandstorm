@@ -1,6 +1,6 @@
 FROM docker.io/ubuntu:20.04
-RUN apt-get update -q -q &&\
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -q -q build-essential libcap-dev xz-utils zip \
+RUN apt-get -q -q update  &&\
+    DEBIAN_FRONTEND=noninteractive apt-get -q -q install -y build-essential libcap-dev xz-utils zip \
     unzip strace curl discount git python3 zlib1g-dev \
     libnode-dev libcapnp-dev g++ \
     cmake flex bison locales clang gcc-multilib && apt-get -q -q clean

@@ -19,10 +19,10 @@ option.
 
 * Example grain URL: https://sandstorm.example.com/grain/TPeYUde5rioE5keWM
 
-* Example ephemeral domain URL: https://96cab9109791f1254002ac1f857ecee7.sandstorm.example.com/
+* Example ephemeral domain URL: https://ui-96cab9109791f1254002ac1f857ecee7.sandstorm.example.com/
 
-**[Try it now](https://oasis.sandstorm.io/)** by creating a grain and using your
-browser's _Inspect Element_ feature to look at the URL of the `IFRAME` element.
+Try it by creating a grain and using your browser's _Inspect Element_ feature
+to look at the URL of the `IFRAME` element, or open the frame in a new tab.
 
 **If you need a stable domain name**: the app can **expose static HTML content
 to a stable domain name** by using the [static web
@@ -40,7 +40,7 @@ grain.  To be specific:
 
 * Example URL: https://sandstorm.example.com/grain/TPeYUde5rioE5keWM/awesomeinfo#section3
 
-* Example ephemeral domain URL: https://96cab9109791f1254002ac1f857ecee7.sandstorm.example.com/awesomeinfo#section3
+* Example ephemeral domain URL: https://ui-96cab9109791f1254002ac1f857ecee7.sandstorm.example.com/awesomeinfo#section3
 
 The grain user's web browser will show the grain URL (with the path and fragment) in the address
 bar. By default, this URL will not change, even as the user clicks around within the app. To address
@@ -61,7 +61,7 @@ window.parent.postMessage({'setPath': location.pathname + location.hash}, '*');
 
 This will copy the path and fragment from the grain into the browser's address bar.
 
-* Example ephemeral domain URL: https://96cab9109791f1254002ac1f857ecee7.sandstorm.example.com/foo#bar
+* Example ephemeral domain URL: https://ui-96cab9109791f1254002ac1f857ecee7.sandstorm.example.com/foo#bar
 
 * URL: https://sandstorm.example.com/grain/TPeYUde5rioE5keWM/foo#bar
 

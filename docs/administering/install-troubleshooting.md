@@ -132,7 +132,7 @@ This should resolve your problems. If not, please get in touch.
 ## Are grains not starting on Ubuntu 24.04 or later?
 
 If your wildcard DNS is configured correctly, you should see the app icons correctly on the apps tab. If
-grains are not starting, and you are on Ubuntu 24.04 or later, AppArmor may be restricting unpriviliged
+grains are not starting, and you are on Ubuntu 24.04 or later, AppArmor may be restricting unprivileged
 user namespaces. You can run the following commands to correct this:
 
 ```bash
@@ -140,6 +140,9 @@ sudo sh -c 'echo "kernel.apparmor_restrict_unprivileged_userns = 0" > /etc/sysct
 sudo sysctl --system
 sudo service sandstorm restart
 ```
+
+As of this writing, this restriction is very uncommon in Linux distributions, but you may wish to consult
+updated guidance. An AppArmor profile for Sandstorm would be a welcome contribution.
 
 ## Did you disable outside collaborators before attempting to configure Google or GitHub login methods?
 

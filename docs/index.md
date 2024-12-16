@@ -1,6 +1,6 @@
 # Sandstorm documentation
 
-## What is Sandstorm? See [sandstorm.io](https://sandstorm.io)
+## What is Sandstorm? See [sandstorm.org](https://sandstorm.org)
 
 Sandstorm is a self-hostable web productivity suite. It's implemented as a security-hardened web app package manager.
 
@@ -18,4 +18,4 @@ however, many people are already using it for real work every day.
 * [Learn how to use Sandstorm &raquo;](using.md)
 * [Develop apps for Sandstorm or understand the platform &raquo;](developing.md)
 * [Run & maintain your own server &raquo;](administering.md)
-* [Get involved &raquo;](https://sandstorm.io/community)
+* [Get involved &raquo;](https://sandstorm.org/community)

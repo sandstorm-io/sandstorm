@@ -3,8 +3,8 @@ apps on top of Sandstorm, package existing apps, and understand how apps and San
 
 <div class="developer-next-steps">
 <a class="next-step tutorial" href="../vagrant-spk/packaging-tutorial/">New? Try tutorial</a>
-<a class="next-step why" href="https://sandstorm.io/developer">Why Sandstorm</a>
-<a class="next-step discussion" href="https://groups.google.com/d/forum/sandstorm-dev">Community Q&amp;A</a>
+<a class="next-step why" href="https://sandstorm.org/developer">Why Sandstorm</a>
+<a class="next-step discussion" href="https://groups.io/g/sandstorm-dev-group/topics">Community Q&amp;A</a>
 <a class="next-step app-market" href="https://apps.sandstorm.io/">See App Market</a>
 <a class="next-step live-chat" href="https://kiwiirc.com/client/irc.libera.chat/?channel=#sandstorm">Live chat via IRC</a>
 <a class="next-step demo-app" href="https://apps.sandstorm.io/app/0dp7n6ehj8r5ttfc0fj0au6gxkuy1nhw2kx70wussfa1mqj8tf80">Try a demo app</a>
@@ -17,7 +17,7 @@ user management and mitigates [95% of security issues](using/security-non-events
 don't have to run servers since users run your app on their own servers. Sandstorm's "grain" model
 allows developers to rely on Sandstorm for supporting multiple instances/documents rather than
 writing that code in the app. Read more on the [developer features
-page](https://sandstorm.io/developer).
+page](https://sandstorm.org/developer).
 
 ## Creating an app package
 
@@ -46,8 +46,8 @@ The Sandstorm ecosystem is full of people who want to promote your app, give you
 it.
 
 - **Getting help**: [Community feedback and Q&A](https://groups.google.com/d/forum/sandstorm-dev) | [Real-time IRC chat on libera.chat](https://kiwiirc.com/client/irc.libera.chat/?channel=#sandstorm) | [Watch presentations on the Sandstorm YouTube channel](https://www.youtube.com/channel/UC8xKZRW86Fa9W00uAppBXXg)
-- **Publicity**: [Give a meetup/conference talk about your app](https://sandstorm.io/news/2015-12-17-community-talks) | [Public demo service for all Sandstorm apps](https://sandstorm.io/news/2015-02-06-app-demo)
-- **Read more**: [All community resources](https://sandstorm.io/community)
+- **Publicity**: [Share news about a meetup/conference talk about your app](https://sandstorm.org/news/) | [Public demo service for all Sandstorm apps](https://sandstorm.org/news/2015-02-06-app-demo)
+- **Read more**: [All community resources](https://sandstorm.org/community)
 
 ---
 
@@ -69,7 +69,7 @@ created it. Read these documents to learn how access control works.
 
 - **Login & permissions**: [User authentication & permissions](developing/auth.md)
 - **Making content accessible outside Sandstorm**: [Publishing static content, including to the user's domain](developing/web-publishing.md) | [Exporting HTTP APIs for mobile, desktop, Javascript clients](developing/http-apis.md)
-- **Further reading**: [Delegation is the Cornerstone of Civilization](https://blog.sandstorm.io/news/2015-05-05-delegation-is-the-cornerstone-of-civilization.html)
+- **Further reading**: [Delegation is the Cornerstone of Civilization](https://sandstorm.org/news/2015-05-05-delegation-is-the-cornerstone-of-civilization)
 
 ---
 
@@ -104,7 +104,7 @@ useful design or implementation details. Note that Sandstorm typically depends o
 git master** of capnproto. Configuration files such as `sandstorm-pkgdef.capnp` use Cap'n Proto as
 their file format.
 
-- **Overview**: [Cap'n Proto website](https://capnproto.org/) | [How Cap'n Proto makes Sandstorm more secure](https://sandstorm.io/news/2014-12-15-capnproto-0.5)
+- **Overview**: [Cap'n Proto website](https://capnproto.org/) | [How Cap'n Proto makes Sandstorm more secure](https://sandstorm.org/news/2014-12-15-capnproto-0.5)
 - **Implementation guide for app authors**: [Documentation on powerbox](developing/powerbox.md)
 - **Example**: [Explanation of how drivers will work, found within ip.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/ip.capnp)
 - **Cap'n Proto implementations**: [C++, Erlang, Go, Javascript, Python, Rust, and others](https://capnproto.org/otherlang.html)
@@ -114,6 +114,6 @@ their file format.
 
 ## Documentation on how to contribute to Sandstorm
 
-To see all the ways to contribute to Sandstorm, read the [Sandstorm community page](https://sandstorm.io/community).
+To see all the ways to contribute to Sandstorm, read the [Sandstorm community page](https://sandstorm.org/community).
 
 To learn about contributing code to Sandstorm itself, read [how Sandstorm works](using/how-it-works.md) and the [GitHub wiki](https://github.com/sandstorm-io/sandstorm/wiki).

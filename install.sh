@@ -7,7 +7,7 @@
 #
 # If `curl|bash` makes you uncomfortable, see other options here:
 #
-#     https://docs.sandstorm.io/en/latest/install/
+#     https://docs.sandstorm.org/install/
 #
 # This script only modifies your system in the following ways:
 # - Install Sandstorm into the directory you choose, typically /opt/sandstorm.

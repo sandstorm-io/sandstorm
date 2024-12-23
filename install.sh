@@ -91,7 +91,7 @@ fail() {
 
   # Users can export REPORT=no to avoid the error-reporting behavior, if they need to.
   if [ "${REPORT:-yes}" = "yes" ] ; then
-    if USE_DEFAULTS=no prompt-yesno "Hmm, installation failed. Would it be OK to send an anonymous error report to the sandstorm.io team so we know something is wrong?
+    if USE_DEFAULTS=no prompt-yesno "Hmm, installation failed. Would it be OK to send an anonymous error report to the sandstorm team so we know something is wrong?
 It would only contain this error code: $error_code" "yes" ; then
       echo "Sending problem report..." >&2
       local BEARER_TOKEN="4-Og3Ty2SPmpkZGnVc_8hnBGXK0JBBXDeBn_55FWixJ"
@@ -464,7 +464,7 @@ assert_linux_x86_64() {
     fail "E_NON_LINUX" "Sandstorm requires Linux. If you want to run Sandstorm on a Windows or
 Mac system, you can use Vagrant or another virtualization tool. See our install documentation:
 
-- https://docs.sandstorm.io/en/latest/install/"
+- https://docs.sandstorm.org/install"
   fi
 
   if [ "$(uname -m)" != x86_64 ]; then

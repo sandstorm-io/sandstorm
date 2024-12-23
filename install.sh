@@ -41,8 +41,14 @@ fi
 
 # We wrap the entire script in a big function which we only call at the very end, in order to
 # protect against the possibility of the connection dying mid-script. This protects us against
-# the problem described in this blog post:
-#   http://blog.existentialize.com/dont-pipe-to-your-shell.html
+# the problem described in a since-deleted blog post that is discussed on HN:
+#   https://news.ycombinator.com/item?id=6650987
+# Briefly, if the install script has a line that says
+#
+# > rm -rf $somefolder
+#
+# and the network fails (so the script terminates) before the last argument is received, then 
+# piping it into the shell will wipe the filesystem.
 _() {
 
 set -euo pipefail

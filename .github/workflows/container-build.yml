@@ -12,16 +12,16 @@ jobs:
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Update podman
-        run: |
-          # from https://askubuntu.com/questions/1414446/whats-the-recommended-way-of-installing-podman-4-in-ubuntu-22-04
-          ubuntu_version='22.04'
-          key_url="https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/unstable/xUbuntu_${ubuntu_version}/Release.key"
-          sources_url="https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/unstable/xUbuntu_${ubuntu_version}"
-          echo "deb $sources_url/ /" | sudo tee /etc/apt/sources.list.d/devel-kubic-libcontainers-unstable.list
-          curl -fsSL $key_url | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/devel_kubic_libcontainers_unstable.gpg > /dev/null
-          sudo apt update
-          sudo apt install -y podman
+      # - name: Update podman
+      #   run: |
+      #     # # from https://askubuntu.com/questions/1414446/whats-the-recommended-way-of-installing-podman-4-in-ubuntu-22-04
+      #     # ubuntu_version='22.04'
+      #     # key_url="https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/unstable/xUbuntu_${ubuntu_version}/Release.key"
+      #     # sources_url="https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/unstable/xUbuntu_${ubuntu_version}"
+      #     # echo "deb $sources_url/ /" | sudo tee /etc/apt/sources.list.d/devel-kubic-libcontainers-unstable.list
+      #     # curl -fsSL $key_url | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/devel_kubic_libcontainers_unstable.gpg > /dev/null
+      #     sudo apt update
+      #     sudo apt install -y podman
       - uses: actions/checkout@v4
       - name: Make on Unix
         run: ./container-build.py make -d fast

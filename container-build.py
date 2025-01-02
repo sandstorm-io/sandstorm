@@ -21,7 +21,7 @@ def runProcess(exe):
 
 
 
-parser = argparse.ArgumentParser(description='Build Sandstorm using an Ubuntu 20.04 Docker/OCI container')
+parser = argparse.ArgumentParser(description='Setup and use a Sandstorm Docker/OCI build container.')
 parser.add_argument("action", choices=["make", "prepare", "shell"], default="make", nargs="?", help='')
 parser.add_argument('--container-builder', dest="container_builder", default='podman', help='Command you run for building container from command line (Default: %(default))')
 parser.add_argument('--container-runner', dest="container_runner", default='podman', help='Command you run for running container from command line  (Default: %(default))')
@@ -34,7 +34,7 @@ def prepare():
     print(script)
     runProcess(script)
 
-def prepare_cmd(command):
+def format_cmd(command):
     return "{runner_cmd} run --rm -ti \
         -v {pwd}:/sandstorm \
         -v {pwd}/scripts/podman-entrypoint.sh:/podman-entrypoint.sh \
@@ -47,15 +47,13 @@ def prepare_cmd(command):
             args=' '.join(args.args)
         )
 
-        #   
-
 def make():
-    script = prepare_cmd("make")
+    script = format_cmd("make")
     print(script)
     runProcess(script)
 
 def shell():
-    script = prepare_cmd("bash")
+    script = format_cmd("bash")
     print(script)
     runProcess(script)
 

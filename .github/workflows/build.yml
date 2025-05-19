@@ -6,8 +6,12 @@ env:
   CCACHE_DIR: ${{ github.workspace }}/.ccache"
 jobs:
   build_and_test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
+      - name: disable apparmor
+        run: |
+            sudo sh -c 'echo "kernel.apparmor_restrict_unprivileged_userns = 0" > /etc/sysctl.d/sandstorm-userns.conf'
+            sudo sysctl --system
       - uses: actions/checkout@v4
       - name: install dependencies
         run: |

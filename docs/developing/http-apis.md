@@ -155,9 +155,12 @@ automatically refreshes the IFRAME every 5 minutes.
   have, when the user lists the API tokens and sharing links they have
   generated.
 
-* `roleAssignment`: **roleAssignmentPattern (optional)** of
+* `roleAssignment`: **[roleAssignmentPattern](https://github.com/sandstorm-io/sandstorm/blob/ae62d09e374ac4cea406d5347c3d15d53ae61a84/shell/imports/sandstorm-db/db.js#L1289) (optional)** of
   permissions to apply to inbound requests. Use this to create API
-  tokens with limited permissions, such as a read-only view.
+  tokens with limited permissions, such as a read-only view. We recommend
+  `roleId` which can be set to an integer representing a role defined in the
+  package definition file, counting from 0. For example,
+  `roleAssignment: {roleId: 1},` will use the second role defined for the app.
 
 * `forSharing`: **Boolean (optional)** true if this token should
   represent the anonymous user. You can use this to detach the token

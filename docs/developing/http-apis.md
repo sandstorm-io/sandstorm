@@ -24,6 +24,13 @@ request to the app. Briefly:
 curl -H "Authorization: Bearer 49Np9sqkYV4g_FpOQk1p0j1yJlvoHrZm9SVhQt7H2-9" https://alpha-api.sandstorm.io/
 ```
 
+## Key Security Consideration
+
+API tokens and sharing tokens are essentially the same: Grants of capabilities. This means that an API
+key also allows users to redeem it as a sharing link of the form `https://sandstorm.example.com/shared/$API_TOKEN`.
+You must not use the scope of the /apiPath to limit the access granted via an API key. You should use
+`roleAssignment` on offer templates, described below, to limit the access granted via an API key.
+
 ## Configuring an app to permit requests via the API subdomain
 
 The handling of inbound HTTP API requests is configured in `sandstorm-pkgdef.capnp`. Look for this
@@ -154,9 +161,7 @@ automatically refreshes the IFRAME every 5 minutes.
 
 * `forSharing`: **Boolean (optional)** true if this token should
   represent the anonymous user. You can use this to detach the token
-  from the user who created it. **Note** that this also allows users
-  to redeem it as a sharing link of the form
-  `https://sandstorm.example.com/shared/$API_TOKEN`.
+  from the user who created it.
 
 * `clipboardButton`: **String (optional)** to display a copy-to-clipboard
   button in either the top left or top right corner of the `IFRAME`.

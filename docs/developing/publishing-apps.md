@@ -207,4 +207,6 @@ You can run `spk verify mypackage.spk` on your app package to see the details of
 
 In order to submit your app to the market, you need to run one of the following commands, depending on your build tool: `spk publish mypackage.spk` or `vagrant-spk publish mypackage.spk`.
 
-It will then go into the queue for us to review. We'll check that everything looks right. If it does, we'll publish the app, otherwise we'll email you to let you know what needs fixing.
+It will then go into the queue for us to review. Apps which are submitted but not yet approved can be found on the [experimental app market](https://apps.sandstorm.io/?experimental=true).
+
+We'll check that everything looks right. If it does, we'll publish the app, otherwise we'll email you to let you know what needs fixing.

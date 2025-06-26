@@ -12,7 +12,7 @@ struct UserIds {
 };
 
 struct Config {
-  kj::Maybe<uint> httpsPort;
+  kj::Array<uint> httpsPorts;
   kj::Array<uint> ports;
   uint mongoPort = 3001;
   UserIds uids;

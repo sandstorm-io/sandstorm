@@ -161,6 +161,7 @@ automatically refreshes the IFRAME every 5 minutes.
   `roleId` which can be set to an integer representing a role defined in the
   package definition file, counting from 0. For example,
   `roleAssignment: {roleId: 1},` will use the second role defined for the app.
+  **Note that the default behavior is equivalent to `allAccess`.**
 
 * `forSharing`: **Boolean (optional)** true if this token should
   represent the anonymous user. You can use this to detach the token

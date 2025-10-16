@@ -24,6 +24,13 @@ request to the app. Briefly:
 curl -H "Authorization: Bearer 49Np9sqkYV4g_FpOQk1p0j1yJlvoHrZm9SVhQt7H2-9" https://alpha-api.sandstorm.io/
 ```
 
+## Key Security Consideration
+
+API tokens and sharing tokens are essentially the same: Grants of capabilities. This means that an API
+key also allows users to redeem it as a sharing link of the form `https://sandstorm.example.com/shared/$API_TOKEN`.
+You must not use the scope of the /apiPath to limit the access granted via an API key. You should use
+`roleAssignment` on offer templates, described below, to limit the access granted via an API key.
+
 ## Configuring an app to permit requests via the API subdomain
 
 The handling of inbound HTTP API requests is configured in `sandstorm-pkgdef.capnp`. Look for this
@@ -148,15 +155,17 @@ automatically refreshes the IFRAME every 5 minutes.
   have, when the user lists the API tokens and sharing links they have
   generated.
 
-* `roleAssignment`: **roleAssignmentPattern (optional)** of
+* `roleAssignment`: **[roleAssignmentPattern](https://github.com/sandstorm-io/sandstorm/blob/ae62d09e374ac4cea406d5347c3d15d53ae61a84/shell/imports/sandstorm-db/db.js#L1289) (optional)** of
   permissions to apply to inbound requests. Use this to create API
-  tokens with limited permissions, such as a read-only view.
+  tokens with limited permissions, such as a read-only view. We recommend
+  `roleId` which can be set to an integer representing a role defined in the
+  package definition file, counting from 0. For example,
+  `roleAssignment: {roleId: 1},` will use the second role defined for the app.
+  **Note that the default behavior is equivalent to `allAccess`.**
 
 * `forSharing`: **Boolean (optional)** true if this token should
   represent the anonymous user. You can use this to detach the token
-  from the user who created it. **Note** that this also allows users
-  to redeem it as a sharing link of the form
-  `https://sandstorm.example.com/shared/$API_TOKEN`.
+  from the user who created it.
 
 * `clipboardButton`: **String (optional)** to display a copy-to-clipboard
   button in either the top left or top right corner of the `IFRAME`.

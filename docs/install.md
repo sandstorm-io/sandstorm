@@ -194,7 +194,7 @@ machine running the latest stable Debian release. This is easy to set up using V
 
 Get the source code from the git repository:
 
-    git clone https://github.com/sandstorm-io/sandstorm.git
+    git clone https://github.com/sandstorm-io/sandstorm.git --recurse-submodules
 
 ### Building / installing the binaries
 

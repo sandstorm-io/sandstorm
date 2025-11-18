@@ -51,11 +51,14 @@ typically a static publishing website, then serve a normal response.
 
 ### HTTPS_PORT
 
-A port number for Sandstorm to bind on and listen for HTTPS. On a default install, if port 443
-was available and the user chose to use Sandcats, this is 443. However, this may be set for any
-Sandstorm-managed TLS configuration, including automated renewals of certificates with Let's Encrypt
-with a supported DNS provider or a manually-uploaded certificate. If this config option is missing,
-Sandstorm's built-in HTTPS server is disabled.
+Like `PORT`, but these ports are served using HTTPS. If both `PORT` and `HTTPS_PORT` are specified,
+the first `HTTPS_PORT` "First port" as described above, and all values in `PORT` are "alternate
+ports."
+
+On a default install, if port 443 was available and the user chose to use Sandcats, this is 443.
+However, this may be set for any Sandstorm-managed TLS configuration, including automated renewals
+of certificates with Let's Encrypt with a supported DNS provider or a manually-uploaded certificate.
+If this config option is missing, Sandstorm's built-in HTTPS server is disabled.
 
 If Sandstorm is started as root, Sandstorm binds to this port as root, allowing it to use
 low-numbered ports. The socket is passed-through to code that does not run as root.
@@ -65,9 +68,6 @@ Example:
 ```bash
 HTTPS_PORT=443
 ```
-
-A HTTPS_PORT is automatically treated as the first port, in the context of "first port" vs.
-"alternate ports."
 
 ### SMTP_LISTEN_PORT
 

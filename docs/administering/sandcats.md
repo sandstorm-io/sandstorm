@@ -154,10 +154,13 @@ If you see `Not Authorized` in your log files, the sandcats.io service is return
 for at least one request from your server.
 
 One reason this occurs is if you have the wrong `id_rsa*` certificate files in
-`/opt/sandstorm/var/sandcats`. You can fix this problem using the email-based recovery system; for
-now, this requires using `install.sh` on a throwaway VM. Once your new certificate files are
-registered with `sandcats.io`, you can move them to whichever server you want using file-based
-recovery.
+`/opt/sandstorm/var/sandcats`. If your server is particularly long-lived, it also may have reached
+the end of the ten year certificate lifetime.
+
+You can fix this problem using the email-based recovery system. For new installs, this feature is a
+part of the `install.sh` script. However, for existing servers, we have a `recover-sandcats.sh`
+script you can download from
+[the GitHub repo](https://github.com/sandstorm-io/sandstorm/blob/master/recover-sandcats.sh).
 
 Another reason you might see `Not Authorized` in the log files is if your server has run afoul of
 sandcats.io's defense in depth against Sandstorm bugs.

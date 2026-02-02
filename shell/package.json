@@ -37,7 +37,6 @@
     "acme-dns-01-sandcats": "file:../acme-dns-01-sandcats",
     "acme-dns-01-vultr": "^3.0.2",
     "babel-runtime": "^6.26.0",
-    "bignum": "^0.13.0",
     "body-parser": "^1.20.1",
     "content-type": "^1.0.4",
     "fibers": "^4.0.3",

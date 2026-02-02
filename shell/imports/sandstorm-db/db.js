@@ -42,6 +42,33 @@ if (Meteor.isServer) {
   Mongo.Collection.prototype.ensureIndexOnServer = function () {};
 }
 
+// Polyfill for findAndModify that works with MongoDB driver 4.x
+// Replaces the obsolete fongandrew:find-and-modify package
+if (Meteor.isServer) {
+  Mongo.Collection.prototype.findAndModify = function (options) {
+    const raw = this.rawCollection();
+    const query = options.query || {};
+    const projection = options.fields || undefined;
+
+    let result;
+    if (options.remove) {
+      return raw.findOneAndDelete(query, {
+        projection,
+      }).await();
+    } else {
+      const update = options.update || {};
+      const returnDocument = options.new ? 'after' : 'before';
+      const upsert = options.upsert || false;
+
+      return raw.findOneAndUpdate(query, update, {
+        projection,
+        returnDocument,
+        upsert,
+      }).await();
+    }
+  };
+}
+
 // TODO(soon): Systematically go through this file and add ensureIndexOnServer() as needed.
 
 const collectionOptions = { defineMutationMethods: Meteor.isClient };

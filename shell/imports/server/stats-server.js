@@ -30,11 +30,11 @@ if (Mongo.Collection.prototype.aggregate) {
                   "works then delete our own wrapper.");
 }
 
-Mongo.Collection.prototype.aggregate = function () {
-  // Meteor doesn't wrapp Mongo's aggregate() method.
+Mongo.Collection.prototype.aggregate = function (pipeline, options) {
+  // Meteor doesn't wrap Mongo's aggregate() method.
+  // In MongoDB driver 4.x+, aggregate() returns a cursor directly (no callback).
   const raw = this.rawCollection();
-  return Meteor.wrapAsync(raw.aggregate, raw).apply(raw, arguments)
-      .toArray().await();
+  return raw.aggregate(pipeline, options).toArray().await();
 };
 
 function computeStats(since) {

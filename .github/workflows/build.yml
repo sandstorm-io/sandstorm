@@ -6,9 +6,32 @@ env:
   CCACHE_DIR: ${{ github.workspace }}/.ccache"
 jobs:
   build_and_test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: generate deps cache key
+        id: deps-cache-key
+        run: |
+          # Generate a hash based on all submodule SHAs
+          DEPS_HASH=$(git submodule status | sha256sum | cut -d' ' -f1)
+          echo "hash=$DEPS_HASH" >> $GITHUB_OUTPUT
+      - name: cache deps build artifacts
+        id: deps-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps/llvm-build
+            deps/boringssl/build
+            deps/libsodium/build
+            deps/ekam/bin
+            tmp/.deps
+          key: deps-${{ runner.os }}-${{ steps.deps-cache-key.outputs.hash }}
+      - name: setup python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
       - name: install dependencies
         run: |
             export DEBIAN_FRONTEND=noninteractive
@@ -17,11 +40,22 @@ jobs:
             which go || sudo apt-get install golang-go
 
             sudo apt-get install -y build-essential libcap-dev xz-utils zip unzip strace curl discount git python3 zlib1g-dev cmake ccache
+
+            # Install OpenSSL 1.1 (required for Meteor/Node compatibility)
+            # Ubuntu 24.04 only ships OpenSSL 3.x, so we need to install 1.1 from older release
+            wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+            sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+            rm libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+
+            # Ubuntu 24.04 restricts unprivileged user namespaces by default via AppArmor
+            # Sandstorm requires user namespaces for sandboxing, so disable this restriction
+            echo "kernel.apparmor_restrict_unprivileged_userns = 0" | sudo tee /etc/sysctl.d/99-userns.conf
+            sudo sysctl --system
       - name: install meteor
         run: |
             curl https://install.meteor.com/ | sh
       - name: cache ccache files
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ccache-${{ github.run_number }}
@@ -40,6 +74,8 @@ jobs:
             #     export CCACHE_DEBUG=1
             export CCACHE_SLOPPINESS="time_macros"
             export PATH=/usr/lib/ccache:$CLANGDIR:$PATH
+            # Use Python 3.10 for node-gyp (3.11+ removed 'rU' mode)
+            export npm_config_python=$(which python)
 
             make \
               CC="$(which clang)" \
@@ -72,6 +108,19 @@ jobs:
           make lint | tee lint.log
           num_problems=$(cat lint.log | grep ' problems (0 errors, ' | awk '{print $2}')
           [ "$num_problems" = 774 ]
+      - name: setup java 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+      - name: setup chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: 114
+      - name: remove system chrome
+        run: |
+          sudo rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable
+          sudo rm -rf /opt/google/chrome
       - name: test
         run: |
           set -o pipefail

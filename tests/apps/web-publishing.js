@@ -22,10 +22,7 @@
 "use strict";
 
 var utils = require("../utils"),
-    short_wait = utils.short_wait,
-    medium_wait = utils.medium_wait,
-    long_wait = utils.long_wait,
-    very_long_wait = utils.very_long_wait;
+    short_wait = utils.short_wait;
 
 module.exports = {};
 
@@ -50,6 +47,8 @@ module.exports["Basic web publishing"] = function (browser) {
 
 // Source at https://github.com/jparyani/sandstorm-test-app/tree/web-publishing
 module.exports["Web publishing with grain shutdown"] = function (browser) {
+  var publicAddress = null;
+
   browser
     .init()
     .loginDevAccount()
@@ -59,12 +58,20 @@ module.exports["Web publishing with grain shutdown"] = function (browser) {
     .grainFrame()
     .waitForElementVisible("#public-address", short_wait)
     .getText("#public-address", function (result) {
-      this
-        .click("#shutdown")
-        .pause(short_wait)
-        .url(result.value)
-        .waitForElementVisible("#result", short_wait)
-        .assert.containsText("#result", "Shutdown success")
-        .end();
-    });
+      publicAddress = result.value;
+    })
+    // Wait for and click the shutdown button
+    .waitForElementVisible("#shutdown", short_wait)
+    .click("#shutdown")
+    // Wait for the navigation to /shutdown to complete (button disappears as page changes)
+    .waitForElementNotPresent("#shutdown", short_wait)
+    .frameParent()
+    .perform(function(client, done) {
+      client.url(publicAddress, function() {
+        done();
+      });
+    })
+    .waitForElementVisible("#result", short_wait)
+    .assert.containsText("#result", "Shutdown success")
+    .end();
 };

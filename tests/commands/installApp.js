@@ -41,7 +41,7 @@ exports.command = function(url, packageId, appId, dontStartGrain, callback) {
       // clicks that we don't want it to intercept. So we manually disable it here.
       .disableGuidedTour()
       .click(appSelector(appId))
-      .waitForElementVisible(actionSelector, short_wait)
+      .waitForElementVisible(actionSelector, medium_wait)
       .click(actionSelector)
       .waitForElementVisible("#grainTitle", medium_wait);
   }

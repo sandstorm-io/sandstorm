@@ -290,7 +290,11 @@ module.exports["Test collections anonymous user"] = function (browser) {
 
         // Visit token A anonymously. The link should still work.
         .frame(null)
-        .execute("window.Meteor.logout()")
+        .executeAsync(function(done) {
+          Meteor.logout(function() {
+            done();
+          });
+        }, [])
 
         .url(browser.launch_url + "/shared/" + tokenA)
         .waitForElementVisible(".popup.login button.close-popup", short_wait)

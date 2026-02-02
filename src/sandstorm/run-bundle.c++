@@ -2314,9 +2314,6 @@ private:
     pid_t mongoPid = startMongo(config, fdBundle);
     int64_t mongoStartTime = getTime();
 
-    // Create the mongo user if it hasn't been created already.
-    maybeCreateMongoUser(config, fdBundle);
-
     context.warning("** Back-end and Mongo started; now starting front-end...");
 
     // If we're root, run the dev daemon. At present the dev daemon requires root (in order to
@@ -2527,6 +2524,10 @@ private:
     auto status = process.waitForExit();
 
     if (status == 0) {
+      // Create the mongo user if it hasn't been created already. This must happen before
+      // waiting for election since we need the password file to authenticate.
+      maybeCreateMongoUser(config, fdBundle);
+
       // Even after the startup command exits, MongoDB takes time to elect itself as master of the
       // repl set (of which it is the only member). If Node connects during this time, it fails,
       // sometimes without actually exiting, leaving the entire server hosed.

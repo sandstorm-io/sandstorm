@@ -35,6 +35,7 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
     .waitForElementNotPresent("div.introjs-overlay", short_wait)
     // Click dropdown menu, go to account settings link
     .waitForElementVisible("button.has-picture", medium_wait)
+    .pause(500)
     .click("button.has-picture")
     .waitForElementVisible("a[href='/account']", medium_wait)
     .click("a[href='/account']")
@@ -104,7 +105,7 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
     .assert.containsText('#preferredHandle', devName2.toLowerCase())
     .assert.containsText('#pronouns', 'robot')
 
-
+    .frameParent()
     .execute("window.Meteor.logout()")
     .end();
 };

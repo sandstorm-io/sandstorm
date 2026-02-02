@@ -18,10 +18,6 @@
 
 set -euo pipefail
 
-XVFB_PID=""
-SELENIUM_PID=""
-RUN_SELENIUM="${RUN_SELENIUM:-true}"
-SHOW_BROWSER="${SHOW_BROWSER:-false}"
 BUNDLE_PATH=""
 SANDSTORM_TESTAPP_PATH=""
 THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
@@ -29,7 +25,7 @@ METEOR_DEV_BUNDLE=$("$THIS_DIR/../find-meteor-dev-bundle.sh")
 NODEJS="$METEOR_DEV_BUNDLE/bin/node"
 NPM="$METEOR_DEV_BUNDLE/bin/npm"
 
-export PATH="$METEOR_DEV_BUNDLE/bin:$PATH"
+export PATH="$THIS_DIR/node_modules/.bin:$METEOR_DEV_BUNDLE/bin:$PATH"
 
 cleanExit () {
   rc=$1
@@ -49,16 +45,6 @@ cleanExit () {
     rm -rf "$SANDSTORM_DIR"
   fi
 
-  if [ -n "$XVFB_PID" ] ; then
-    # Send SIGINT to the selenium-server child of the backgrounded xvfb-run, so
-    # it will exit cleanly and the Xvfb process will also be cleaned up.
-    # We don't actually know that PID, so we find it with pgrep.
-    kill $(pgrep --parent $XVFB_PID node)
-    wait $XVFB_PID
-  elif [ -n "$SELENIUM_PID" ] ; then
-    kill $SELENIUM_PID
-    wait $SELENIUM_PID
-  fi
   exit $rc
 }
 
@@ -104,23 +90,12 @@ export SANDSTORM_TESTAPP_PATH
 
 cd "$THIS_DIR"
 
-checkInstalled firefox firefox
+checkInstalled chromium chromium
 
 "$NPM" install
-node_modules/.bin/selenium-standalone install
 
-if [ "$RUN_SELENIUM" != "false" ] ; then
-  checkInstalled java default-jre-headless
-  checkInstalled xvfb-run Xvfb
-  checkInstalled pgrep procps
-  if [ "$SHOW_BROWSER" != "false" ] ; then
-    node_modules/.bin/selenium-standalone start &
-    SELENIUM_PID=$!
-  else
-    xvfb-run --server-args="-screen 0, 1280x1024x24" node_modules/.bin/selenium-standalone start &
-    XVFB_PID=$!
-  fi
-fi
+# Nightwatch v3 manages ChromeDriver automatically via the chromedriver npm package
+# No need to manually start selenium or chromedriver
 
 export SANDSTORM_DIR=$THIS_DIR/tmp-sandstorm
 export OVERRIDE_SANDSTORM_DEFAULT_DIR=$SANDSTORM_DIR
@@ -146,6 +121,12 @@ SMTP_LISTEN_PORT=${SMTP_LISTEN_PORT}
 MAIL_URL=smtp://127.0.0.1:${SMTP_OUTGOING_PORT}
 UPDATE_CHANNEL=none
 " >> "$SANDSTORM_DIR/sandstorm.conf"
+
+# For fresh installs, configure MongoDB 7 directly (no migration needed)
+# The version file tells Sandstorm which MongoDB to use
+mkdir -p "$SANDSTORM_DIR/var/mongo"
+echo "7" > "$SANDSTORM_DIR/var/mongo/version"
+
 "$SANDSTORM_DIR/sandstorm" start
 
 echo -n "Waiting for sandstorm to start."

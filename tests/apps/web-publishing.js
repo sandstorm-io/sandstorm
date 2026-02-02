@@ -50,6 +50,8 @@ module.exports["Web publishing with grain shutdown"] = function (browser) {
   var publicAddress = null;
 
   browser
+    // Disable browser caching to ensure we get fresh content after shutdown
+    .chrome.sendDevToolsCommand('Network.setCacheDisabled', { cacheDisabled: true })
     .init()
     .loginDevAccount()
     .uploadTestApp()

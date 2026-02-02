@@ -24,36 +24,29 @@ var fs = require("fs");
 var SANDSTORM_DIR = process.env["SANDSTORM_DIR"] || "/opt/sandstorm";
 var SANDSTORM_BIN = SANDSTORM_DIR + "/sandstorm";
 
-function execSandstorm(args, cb) {
-  execFile(SANDSTORM_BIN, args, {timeout: 60000}, cb);
+function execSandstorm(args) {
+  return new Promise(function(resolve, reject) {
+    execFile(SANDSTORM_BIN, args, {timeout: 60000}, function(err, stdout, stderr) {
+      if (err) reject(err);
+      else resolve({ stdout: stdout, stderr: stderr });
+    });
+  });
 }
 
 module.exports = {
-  "sandstorm help" : function (client, done) {
-    execSandstorm(["help"], function (err, stdout, stderr) {
-      if (err) throw err;
-
-      assert.include(stdout, "Controls the Sandstorm server.", "`help` contains the expected output");
-      done();
-    });
+  "sandstorm help" : async function (client) {
+    var result = await execSandstorm(["help"]);
+    assert.include(result.stdout, "Controls the Sandstorm server.", "`help` contains the expected output");
   },
-  "sandstorm admin-token" : function (client, done) {
-    execSandstorm(["admin-token"], function (err, stdout, stderr) {
-      if (err) throw err;
-
-      assert.include(stdout, "Generated new admin token.", "`admin-token` contains the expected output");
-      done();
-    });
+  "sandstorm admin-token" : async function (client) {
+    var result = await execSandstorm(["admin-token"]);
+    assert.include(result.stdout, "Generated new admin token.", "`admin-token` contains the expected output");
   },
-  "sandstorm admin-token -q" : function (client, done) {
-    execSandstorm(["admin-token", "-q"], function (err, stdout, stderr) {
-      if (err) throw err;
-
-      // remove trailing newline from stdout
-      client.assert.equal(stdout.slice(0, -1), fs.readFileSync(SANDSTORM_DIR + "/var/sandstorm/adminToken").toString(),
-        "`admin-token -q` contains the expected output");
-      done();
-    });
+  "sandstorm admin-token -q" : async function (client) {
+    var result = await execSandstorm(["admin-token", "-q"]);
+    // remove trailing newline from stdout
+    var expected = fs.readFileSync(SANDSTORM_DIR + "/var/sandstorm/adminToken").toString();
+    assert.equal(result.stdout.slice(0, -1), expected, "`admin-token -q` contains the expected output");
   },
 };
 

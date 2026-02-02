@@ -37,6 +37,13 @@ module.exports["Test appdemo link"] = function (browser) {
     .init()
     .url(browser.launch_url + "/appdemo/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible(".demo-startup-modal .start", medium_wait)
+    // Dismiss introjs overlay if present
+    .execute(function() {
+      var overlay = document.querySelector('.introjs-overlay');
+      if (overlay) overlay.parentNode.removeChild(overlay);
+      var tooltip = document.querySelector('.introjs-helperLayer');
+      if (tooltip) tooltip.parentNode.removeChild(tooltip);
+    }, [])
     .assert.containsText(".demo-startup-modal .start", "Hacker CMS")
     .click(".demo-startup-modal .start")
     .waitForElementPresent("iframe.grain-frame", short_wait)

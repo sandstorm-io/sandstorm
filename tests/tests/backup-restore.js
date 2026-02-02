@@ -65,27 +65,19 @@ function setProfile(browser, profile, callback) {
   });
 }
 
-function configureAutoDownload(browser, done) {
-  browser.options.desiredCapabilities['chromeOptions'] = {
-    prefs: {
-      download: {
-        prompt_for_download: false,
-        default_directory: downloadsPath
-      }
-    }
-  }
-
-  var autoDownloadProfile = new FirefoxProfile();
-  autoDownloadProfile.setPreference('browser.download.folderList', 2);
-  autoDownloadProfile.setPreference('browser.download.dir', downloadsPath);
-  autoDownloadProfile.setPreference('browser.helperApps.neverAsk.saveToDisk', 'application/zip');
-  setProfile(browser, autoDownloadProfile, done);
+function configureAutoDownload(browser) {
+  browser.chrome.sendDevToolsCommand('Page.setDownloadBehavior', {
+    behavior: 'allow',
+    downloadPath: downloadsPath
+  });
 }
 
 module.exports = {
   before: function(browser, done) {
     makeCleanDownloadsDirSync();
-    configureAutoDownload(browser, done);
+    configureAutoDownload(browser);
+    console.log('Downloads will be saved to:', downloadsPath);
+    done();
   },
 };
 
@@ -183,7 +175,6 @@ module.exports["Test backup and restore"] = function(browser) {
       // Have to defer referencing downloadPath until after the previous steps have run, so this
       // is wrapped in a .perform rather than simply chaining a .setValue()
       client.setValue('button.restore-button input[type=file]', downloadPath, function() {
-        console.log("finished setting the form value");
         done();
       });
     })

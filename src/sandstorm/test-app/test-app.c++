@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#include <cstring>
 #include <iostream>
 #include <map>
 
@@ -155,7 +156,7 @@ public:
       response.initBody().setBytes(isPowerboxRequest ? *TEST_POWERBOX_HTML : *TEST_APP_HTML);
       return kj::READY_NOW;
     } else if (path == "shutdown" || path == "/shutdown/") {
-      auto staticFd = raiiOpen("/var/www/index.html", O_RDWR|O_CREAT);
+      auto staticFd = raiiOpen("/var/www/index.html", O_RDWR|O_CREAT|O_TRUNC);
       auto data = TEST_SHUTDOWN_HTML.get();
       KJ_SYSCALL(write(staticFd.get(), data.begin(), data.size()));
       auto response = context.getResults();
@@ -375,9 +376,23 @@ public:
         KJ_FAIL_ASSERT("Failed to create /var/www");
     }
     {
-      auto staticFd = raiiOpen("/var/www/index.html", O_RDWR|O_CREAT);
-      auto data = TEST_STATIC_HTML.get();
-      KJ_SYSCALL(write(staticFd.get(), data.begin(), data.size()));
+      // Check if file already exists with shutdown content - don't overwrite if so
+      bool shouldWrite = true;
+      KJ_IF_MAYBE(existingFd, raiiOpenIfExists("/var/www/index.html", O_RDONLY)) {
+        char buf[128];
+        ssize_t n = read(existingFd->get(), buf, sizeof(buf) - 1);
+        if (n > 0) {
+          buf[n] = '\0';
+          if (strstr(buf, "Shutdown success") != nullptr) {
+            shouldWrite = false;
+          }
+        }
+      }
+      if (shouldWrite) {
+        auto staticFd = raiiOpen("/var/www/index.html", O_RDWR|O_CREAT|O_TRUNC);
+        auto data = TEST_STATIC_HTML.get();
+        KJ_SYSCALL(write(staticFd.get(), data.begin(), data.size()));
+      }
     }
 
     // Set up RPC on file descriptor 3.

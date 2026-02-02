@@ -27,7 +27,10 @@ var utils = require("../utils"),
 
 var IP_INTERFACE_TEST_PORT = parseInt(process.env.IP_INTERFACE_TEST_PORT, 10) || "30027";
 
-module.exports = {};
+// TODO: Skipped due to node-capnp compatibility issues with Node Buffers.
+module.exports = {
+  '@disabled': true
+};
 
 module.exports["Test Ip Networking"] = function (browser) {
   browser

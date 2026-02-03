@@ -32,7 +32,7 @@ module.exports["Basic web publishing"] = function (browser) {
     .init()
     .loginDevAccount()
     .uploadTestApp()
-    .assert.containsText("#grainTitle", "Untitled Sandstorm Test App instance")
+    .assert.textContains("#grainTitle", "Untitled Sandstorm Test App instance")
     .waitForElementVisible(".grain-frame", short_wait)
     .grainFrame()
     .waitForElementVisible("#public-address", short_wait)
@@ -40,7 +40,7 @@ module.exports["Basic web publishing"] = function (browser) {
       this
         .url(result.value)
         .waitForElementVisible("#result", short_wait)
-        .assert.containsText("#result", "Success")
+        .assert.textContains("#result", "Success")
         .end();
     });
 };
@@ -55,7 +55,7 @@ module.exports["Web publishing with grain shutdown"] = function (browser) {
     .init()
     .loginDevAccount()
     .uploadTestApp()
-    .assert.containsText("#grainTitle", "Untitled Sandstorm Test App instance")
+    .assert.textContains("#grainTitle", "Untitled Sandstorm Test App instance")
     .waitForElementVisible(".grain-frame", short_wait)
     .grainFrame()
     .waitForElementVisible("#public-address", short_wait)
@@ -74,6 +74,6 @@ module.exports["Web publishing with grain shutdown"] = function (browser) {
       });
     })
     .waitForElementVisible("#result", short_wait)
-    .assert.containsText("#result", "Shutdown success")
+    .assert.textContains("#result", "Shutdown success")
     .end();
 };

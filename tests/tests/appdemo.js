@@ -44,11 +44,11 @@ module.exports["Test appdemo link"] = function (browser) {
       var tooltip = document.querySelector('.introjs-helperLayer');
       if (tooltip) tooltip.parentNode.removeChild(tooltip);
     }, [])
-    .assert.containsText(".demo-startup-modal .start", "Hacker CMS")
+    .assert.textContains(".demo-startup-modal .start", "Hacker CMS")
     .click(".demo-startup-modal .start")
     .waitForElementPresent("iframe.grain-frame", short_wait)
     .grainFrame()
     .waitForElementPresent("#publish", medium_wait)
-    .assert.containsText("#publish", "Publish")
+    .assert.textContains("#publish", "Publish")
     .end();
 };

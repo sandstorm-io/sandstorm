@@ -28,7 +28,7 @@ module.exports["Install"] = function (browser) {
   browser
     .loginDevAccount()
     .installApp("http://sandstorm.io/apps/jparyani/roundcube-6.spk", "373a821a7a9cde5b13258922046fe217", "0qhha1v9ne1p42s5jw7r6qq6rt5tcx80zpg1f5ptsg7ryr4hws1h")
-    .assert.containsText("#grainTitle", "Untitled Roundcube mailbox");
+    .assert.textContains("#grainTitle", "Untitled Roundcube mailbox");
 };
 
 
@@ -60,7 +60,7 @@ module.exports["Incoming Mail"] = function (browser) {
             .pause(short_wait) // It's sad, but there's no good way to wait for the mail to be delivered other than pausing
             .click(".mailbox.inbox > a") // This is equivalent to refreshing the inbox
             .waitForElementVisible("#messagelist tbody tr:nth-child(1)", short_wait)
-            .assert.containsText("#messagelist tbody tr:nth-child(1) .subject", "Hello world email");
+            .assert.textContains("#messagelist tbody tr:nth-child(1) .subject", "Hello world email");
         }
       });
     });

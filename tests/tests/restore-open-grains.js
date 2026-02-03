@@ -40,7 +40,7 @@ module.exports["Test restore open grains"] = function (browser) {
                 "ca690ad886bf920026f8b876c19539c1",
                 hackerCmsAppId)
     .waitForElementVisible("#grainTitle", medium_wait)
-    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
 
     .click(".navitem-create-grain>a")
     .waitForElementVisible(".app-list", medium_wait)
@@ -48,7 +48,7 @@ module.exports["Test restore open grains"] = function (browser) {
     .waitForElementVisible(actionSelector, short_wait)
     .click(actionSelector)
     .waitForElementVisible("#grainTitle", medium_wait)
-    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
 
     .click(".navitem-create-grain>a")
     .waitForElementVisible(".app-list", medium_wait)
@@ -56,7 +56,7 @@ module.exports["Test restore open grains"] = function (browser) {
     .waitForElementVisible(actionSelector, short_wait)
     .click(actionSelector)
     .waitForElementVisible("#grainTitle", medium_wait)
-    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
 
     .execute(function () {
       var result = [];

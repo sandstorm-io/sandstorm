@@ -50,7 +50,7 @@ module.exports = utils.testAllLogins({
           .click('#confirmInstall')
           .disableGuidedTour()
           .waitForElementVisible(actionSelector, short_wait)
-          .assert.containsText(actionSelector, expectedHackerCMSButtonText)
+          .assert.textContains(actionSelector, expectedHackerCMSButtonText)
 
           // Create a grain so that we see the newer version / older version indicators after
           // upgrade / downgrade.
@@ -114,7 +114,7 @@ module.exports = utils.testAllLogins({
       .waitForElementVisible('#step-confirm', very_long_wait)
       .click('#confirmInstall')
       .waitForElementVisible(appDetailsTitleSelector, short_wait)
-      .assert.containsText(appDetailsTitleSelector, 'Hacker CMS');
+      .assert.textContains(appDetailsTitleSelector, 'Hacker CMS');
   },
 
   "Test new grain" : function (browser) {
@@ -122,14 +122,14 @@ module.exports = utils.testAllLogins({
       .waitForElementVisible(actionSelector, short_wait)
       .click(actionSelector)
       .waitForElementVisible('#grainTitle', medium_wait)
-      .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle);
+      .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle);
   },
 
   "Test grain frame" : function (browser) {
     browser
       .grainFrame()
       .waitForElementPresent('#publish', medium_wait)
-      .assert.containsText('#publish', 'Publish')
+      .assert.textContains('#publish', 'Publish')
       .frameParent();
   },
 
@@ -139,7 +139,7 @@ module.exports = utils.testAllLogins({
       .pause(short_wait)
       .grainFrame()
       .waitForElementPresent('#publish', medium_wait)
-      .assert.containsText('#publish', 'Publish')
+      .assert.textContains('#publish', 'Publish')
       .frameParent();
   },
 
@@ -151,7 +151,7 @@ module.exports = utils.testAllLogins({
         browser.switchWindow(windows.value[1]);
       })
       .pause(short_wait)
-      .assert.containsText('.grainlog-title', 'Debug log: ' + expectedHackerCMSGrainTitle)
+      .assert.textContains('.grainlog-title', 'Debug log: ' + expectedHackerCMSGrainTitle)
       .closeWindow()
       .end();
   },
@@ -161,12 +161,12 @@ module.exports["Test grain not found"] = function (browser) {
   browser
     .url(browser.launch_url + "/grain/BogusGrainId")
     .waitForElementVisible(".grain-not-found", medium_wait)
-    .assert.containsText(".grain-not-found", "No grain found")
+    .assert.textContains(".grain-not-found", "No grain found")
     .loginDevAccount()
     .disableGuidedTour()
     .url(browser.launch_url + "/grain/BogusGrainId")
     .waitForElementVisible(".grain-not-found", medium_wait)
-    .assert.containsText(".grain-not-found", "No grain found")
+    .assert.textContains(".grain-not-found", "No grain found")
     .end()
 }
 
@@ -175,7 +175,7 @@ module.exports["Sign in at grain URL"] = function (browser) {
     .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible("#grainTitle", medium_wait)
-    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
     .getDevName(function (devName) {
       browser
         .url(function (grainUrl) {
@@ -184,14 +184,14 @@ module.exports["Sign in at grain URL"] = function (browser) {
             .url(browser.launch_url)
             .url(grainUrl.value)
             .waitForElementVisible(".request-access", medium_wait)
-            .assert.containsText(".request-access", "Please sign in to request access.")
+            .assert.textContains(".request-access", "Please sign in to request access.")
             .execute(function (name) { window.loginDevAccount(name) }, [devName.value])
             .waitForElementVisible("iframe.grain-frame", medium_wait)
             .waitForElementVisible("#grainTitle", medium_wait)
-            .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+            .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
             .grainFrame()
             .waitForElementPresent("#publish", medium_wait)
-            .assert.containsText("#publish", "Publish")
+            .assert.textContains("#publish", "Publish")
             .frame(null)
             // Now try it with a /shared/ path.
             .click('.topbar .share > .show-popup')
@@ -210,7 +210,7 @@ module.exports["Sign in at grain URL"] = function (browser) {
                     .url(response.value)
                     .waitForElementVisible("iframe.grain-frame", medium_wait)
                     .waitForElementVisible("#grainTitle", medium_wait)
-                    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+                    .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
                     .execute(function (name) { window.loginDevAccount(name) }, [otherName])
 
                     // It's unclear whether there should be an incognito prompt here.
@@ -223,10 +223,10 @@ module.exports["Sign in at grain URL"] = function (browser) {
                     .waitForElementVisible("#deleteGrain", medium_wait)
                     .waitForElementVisible("#grainTitle", medium_wait)
                     .waitForElementVisible("iframe.grain-frame", medium_wait)
-                    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+                    .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
                     .grainFrame()
                     .waitForElementPresent("#publish", medium_wait)
-                    .assert.containsText("#publish", "Publish")
+                    .assert.textContains("#publish", "Publish")
                     .frame(null)
 
                     // Log out then log in again while visiting the grain URL. Since the token has
@@ -237,17 +237,17 @@ module.exports["Sign in at grain URL"] = function (browser) {
                     .url(response.value)
                     .waitForElementVisible("iframe.grain-frame", medium_wait)
                     .waitForElementVisible("#grainTitle", medium_wait)
-                    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+                    .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
                     .execute(function (name) { window.loginDevAccount(name) }, [otherName])
                     .waitForElementNotPresent(".request-access", medium_wait)
                     // The forget grain button only appears once we've logged in.
                     .waitForElementVisible("#deleteGrain", medium_wait)
                     .waitForElementVisible("#grainTitle", medium_wait)
                     .waitForElementVisible("iframe.grain-frame", medium_wait)
-                    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+                    .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
                     .grainFrame()
                     .waitForElementPresent("#publish", medium_wait)
-                    .assert.containsText("#publish", "Publish")
+                    .assert.textContains("#publish", "Publish")
                     .frame(null)
 
                     .end()
@@ -262,10 +262,10 @@ module.exports["Logging out closes grain"] = function (browser) {
     .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible("#grainTitle", medium_wait)
-    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
     .execute("window.Meteor.logout()")
     .waitForElementVisible(".request-access", medium_wait)
-    .assert.containsText(".request-access", "Please sign in to request access.")
+    .assert.textContains(".request-access", "Please sign in to request access.")
 
     // At one point, we erroneously displayed two copies of the message. Check that there's only one.
     .execute(function () {
@@ -281,7 +281,7 @@ module.exports["Test grain anonymous user"] = function (browser) {
     .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible('#grainTitle', medium_wait)
-    .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+    .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
     .click('.topbar .share > .show-popup')
     .waitForElementVisible('#shareable-link-tab-header', short_wait)
     .click('#shareable-link-tab-header')
@@ -304,13 +304,13 @@ module.exports["Test grain anonymous user"] = function (browser) {
         }, [])
         .url(response.value)
         .waitForElementVisible('#grainTitle', medium_wait)
-        .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+        .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
         .waitForElementVisible(".popup.login button.dismiss", short_wait)
         .click(".popup.login button.dismiss") // "Stay anonymous"
         .waitForElementNotPresent(".popup.login", short_wait)
         .grainFrame()
         .waitForElementVisible('#publish', medium_wait)
-        .assert.containsText('#publish', 'Publish')
+        .assert.textContains('#publish', 'Publish')
         .frame(null)
         .end();
     });
@@ -328,7 +328,7 @@ module.exports["Test roleless sharing"] = function (browser) {
       firstUserName = result.value;
     })
     .waitForElementVisible('.grain-frame', medium_wait)
-    .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+    .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
     .click('.topbar .share > .show-popup')
     .waitForElementVisible("#shareable-link-tab-header", short_wait)
     .click("#shareable-link-tab-header")
@@ -347,10 +347,10 @@ module.exports["Test roleless sharing"] = function (browser) {
         .waitForElementVisible("button.reveal-identity-button", short_wait)
         .click("button.reveal-identity-button")
         .waitForElementVisible('.grain-frame', medium_wait)
-        .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+        .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
         .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
-        .assert.containsText('#publish', 'Publish')
+        .assert.textContains('#publish', 'Publish')
         .frame(null)
         .click('.topbar .share > .show-popup')
         .waitForElementVisible("#shareable-link-tab-header", short_wait)
@@ -367,10 +367,10 @@ module.exports["Test roleless sharing"] = function (browser) {
             .waitForElementVisible("button.reveal-identity-button", short_wait)
             .click("button.reveal-identity-button")
             .waitForElementVisible('.grain-frame', medium_wait)
-            .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+            .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
             .grainFrame()
             .waitForElementPresent('#publish', medium_wait)
-            .assert.containsText('#publish', 'Publish')
+            .assert.textContains('#publish', 'Publish')
             .frame(null)
             .click('.topbar .share > .show-popup')
             .waitForElementVisible("#shareable-link-tab-header", short_wait)
@@ -383,12 +383,12 @@ module.exports["Test roleless sharing"] = function (browser) {
             .disableGuidedTour()
             .url(response.value)
             .waitForElementVisible('.grain-frame', medium_wait)
-            .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+            .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
             .click('.topbar .share > .show-popup')
             .click('.popup.share .who-has-access')
             .waitForElementVisible('.popup.who-has-access', medium_wait)
             .waitForElementVisible('.popup.who-has-access .people td', medium_wait)
-            .assert.containsText('.popup.who-has-access .people td', secondUserName)
+            .assert.textContains('.popup.who-has-access .people td', secondUserName)
             .end();
         });
     });
@@ -404,7 +404,7 @@ module.exports["Test role sharing"] = function (browser) {
                 "26eb486a44085512a678c543fc7c1fdd",
                 "6va4cjamc21j0znf5h5rrgnv0rpyvh1vaxurkrgknefvj0x63ash")
     .waitForElementVisible('.grain-frame', medium_wait)
-    .assert.containsText('#grainTitle', expectedGitWebGrainTitle)
+    .assert.textContains('#grainTitle', expectedGitWebGrainTitle)
     .click('.topbar .share > .show-popup')
     .waitForElementVisible("#shareable-link-tab-header", short_wait)
     .click("#shareable-link-tab-header")
@@ -421,7 +421,7 @@ module.exports["Test role sharing"] = function (browser) {
         .waitForElementVisible("button.reveal-identity-button", short_wait)
         .click("button.reveal-identity-button")
         .waitForElementVisible('.grain-frame', medium_wait)
-        .assert.containsText('#grainTitle', expectedGitWebGrainTitle)
+        .assert.textContains('#grainTitle', expectedGitWebGrainTitle)
         .grainFrame()
         .waitForElementPresent('#offer-iframe', medium_wait) // Wait for GitWeb's offer iframe.
         .frame(null)
@@ -441,7 +441,7 @@ module.exports["Test role sharing"] = function (browser) {
             .waitForElementVisible("button.reveal-identity-button", short_wait)
             .click("button.reveal-identity-button")
             .waitForElementVisible('.grain-frame', medium_wait)
-            .assert.containsText('#grainTitle', expectedGitWebGrainTitle)
+            .assert.textContains('#grainTitle', expectedGitWebGrainTitle)
             .grainFrame()
             .waitForElementPresent('#offer-iframe', medium_wait) // Wait for GitWeb's offer iframe.
             .frame(null)
@@ -463,7 +463,7 @@ module.exports["Test grain reveal identity interstitial"] = function (browser) {
     .loginDevAccount()
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible('.grain-frame', medium_wait)
-    .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+    .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
     .click('.topbar .share > .show-popup')
     .waitForElementVisible("#shareable-link-tab-header", short_wait)
     .click("#shareable-link-tab-header")
@@ -476,10 +476,10 @@ module.exports["Test grain reveal identity interstitial"] = function (browser) {
          // Reveal identity option should not come up on visiting our own link.
         .url(shareLink.value)
         .waitForElementVisible('.grain-frame', medium_wait)
-        .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+        .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
         .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
-        .assert.containsText('#publish', 'Publish')
+        .assert.textContains('#publish', 'Publish')
         .frame(null)
 
         // Navigate to the url as a different user
@@ -491,7 +491,7 @@ module.exports["Test grain reveal identity interstitial"] = function (browser) {
         .waitForElementVisible(".incognito-button", short_wait)
         .click(".incognito-button")
         .waitForElementVisible('.grain-frame', medium_wait)
-        .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+        .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
         .execute(function() {
           return globalGrains.getActive().isIncognito();
         }, [], function (response) {
@@ -499,7 +499,7 @@ module.exports["Test grain reveal identity interstitial"] = function (browser) {
         })
         .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
-        .assert.containsText('#publish', 'Publish')
+        .assert.textContains('#publish', 'Publish')
         // Try redeeming as current user
         // TODO(someday): pick a better app that shows off the different userid/username
         .frame(null)
@@ -509,16 +509,16 @@ module.exports["Test grain reveal identity interstitial"] = function (browser) {
         .waitForElementVisible("button.reveal-identity-button", short_wait)
         .click("button.reveal-identity-button")
         .waitForElementVisible('.grain-frame', medium_wait)
-        .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+        .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
         .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
-        .assert.containsText('#publish', 'Publish')
+        .assert.textContains('#publish', 'Publish')
         .frame(null)
 
          // Reveal identity option should not come up on reloading the page.
         .url(shareLink.value)
         .waitForElementVisible('.grain-frame', medium_wait)
-        .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+        .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
         .execute(function() {
           return globalGrains.getActive().isIncognito();
         }, [], function (response) {
@@ -526,7 +526,7 @@ module.exports["Test grain reveal identity interstitial"] = function (browser) {
         })
         .grainFrame()
         .waitForElementPresent('#publish', medium_wait)
-        .assert.containsText('#publish', 'Publish')
+        .assert.textContains('#publish', 'Publish')
         .frame(null)
 
         .click('.topbar .share > .show-popup')
@@ -541,10 +541,10 @@ module.exports["Test grain reveal identity interstitial"] = function (browser) {
              // Reveal identity option should not come up on visiting our own link.
             .url(shareLink.value)
             .waitForElementVisible('.grain-frame', medium_wait)
-            .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+            .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
             .grainFrame()
             .waitForElementPresent('#publish', medium_wait)
-            .assert.containsText('#publish', 'Publish')
+            .assert.textContains('#publish', 'Publish')
             .frame(null)
             .end()
         });

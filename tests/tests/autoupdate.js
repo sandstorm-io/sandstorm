@@ -37,8 +37,8 @@ module.exports["Test autoupdates"] = function (browser) {
     .click(appSelector(appId))
     .execute("Meteor.call('fetchAppIndexTest')")
     .waitForElementVisible(".topbar .notifications .count", long_wait)
-    .assert.containsText(".topbar .notifications .count", "1")
-    .assert.containsText(".package-info > .version > .content", "<unknown>")
+    .assert.textContains(".topbar .notifications .count", "1")
+    .assert.textContains(".package-info > .version > .content", "<unknown>")
     .click(".topbar .notifications>.show-popup")
     .waitForElementVisible(".app-updates", short_wait)
     .click('.notification-list .notification-item button[type=submit]')
@@ -46,6 +46,6 @@ module.exports["Test autoupdates"] = function (browser) {
     .init()
     .url(browser.launch_url + "/apps/" + appId)
     .waitForElementVisible(".package-info > .version > .content", short_wait)
-    .assert.containsText(".package-info > .version > .content", "2015-06-29")
+    .assert.textContains(".package-info > .version > .content", "2015-06-29")
     .end();
 };

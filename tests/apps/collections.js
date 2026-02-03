@@ -120,7 +120,7 @@ module.exports["Test Collections"] = function (browser) {
 
                   .grainFrame(grainIdC)
                   .waitForElementVisible(".description-row p", short_wait)
-                  .assert.containsText(".description-row p", "This is Collection C")
+                  .assert.textContains(".description-row p", "This is Collection C")
                   .waitForElementVisible(".description-row button.description-button", short_wait)
                   .frame(null)
 
@@ -131,19 +131,19 @@ module.exports["Test Collections"] = function (browser) {
                   .url(browser.launch_url + "/grain/" + grainIdA)
                   .grainFrame()
                   .waitForElementVisible(".description-row p", short_wait)
-                  .assert.containsText(".description-row p", "This is Collection A")
+                  .assert.textContains(".description-row p", "This is Collection A")
                   .waitForElementVisible(".description-row button.description-button", short_wait)
 
                   .waitForElementVisible("table.grain-list-table>tbody>tr.add-grain>td>button", short_wait)
                   .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(2).grain", short_wait)
-                  .assert.containsText("table.grain-list-table>tbody tr:nth-child(2).grain td>button",
+                  .assert.textContains("table.grain-list-table>tbody tr:nth-child(2).grain td>button",
                                        "Collection B")
                   .click("table.grain-list-table>tbody tr:nth-child(2).grain .click-to-go")
                   .frame(null)
 
                   .grainFrame(grainIdB)
                   .waitForElementVisible(".description-row p", short_wait)
-                  .assert.containsText(".description-row p", "This is Collection B")
+                  .assert.textContains(".description-row p", "This is Collection B")
                   .waitForElementVisible(".description-row button.description-button", short_wait)
 
                   // As Bob, add collection A to collection B, creating a cycle of references.
@@ -166,15 +166,15 @@ module.exports["Test Collections"] = function (browser) {
                   .grainFrame(grainIdA)
                   .waitForElementVisible("table.grain-list-table>tbody>tr.add-grain>td>button", short_wait)
                   .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(3).grain", short_wait)
-                  .assert.containsText("table.grain-list-table>tbody tr:nth-child(3).grain td>button",
+                  .assert.textContains("table.grain-list-table>tbody tr:nth-child(3).grain td>button",
                                        "Collection C")
                   .click("table.grain-list-table>tbody tr:nth-child(3).grain .click-to-go")
                   .frame(null)
 
                   .grainFrame(grainIdC)
                   .waitForElementVisible(".description-row p", short_wait)
-                  .assert.containsText(".description-row p", "This is Collection C")
-                  .assert.elementNotPresent(".description-row button.description-button")
+                  .assert.textContains(".description-row p", "This is Collection C")
+                  .assert.not.elementPresent(".description-row button.description-button")
 
                   .frame(null)
                   .executeAsync(function (carolAccountId, grainIdB, done) {
@@ -195,22 +195,22 @@ module.exports["Test Collections"] = function (browser) {
                       .url(browser.launch_url + "/grain/" + grainIdB)
                       .grainFrame()
                       .waitForElementVisible(".description-row p", short_wait)
-                      .assert.containsText(".description-row p", "This is Collection B")
+                      .assert.textContains(".description-row p", "This is Collection B")
                       .waitForElementVisible(".description-row button.description-button", short_wait)
 
                       .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(2).grain",
                                              short_wait)
-                      .assert.containsText("table.grain-list-table>tbody tr:nth-child(2).grain td>button",
+                      .assert.textContains("table.grain-list-table>tbody tr:nth-child(2).grain td>button",
                                            "Collection A")
                       .click("table.grain-list-table>tbody tr:nth-child(2).grain .click-to-go")
 
                       .grainFrame(grainIdA)
 
                       .waitForElementVisible(".description-row p", short_wait)
-                      .assert.containsText(".description-row p", "This is Collection A")
+                      .assert.textContains(".description-row p", "This is Collection A")
 
                       // Carol does not have edit permissions.
-                      .assert.elementNotPresent(".description-row button.description-button")
+                      .assert.not.elementPresent(".description-row button.description-button")
                       .frame(null)
 
                       .execute("window.Meteor.logout()")
@@ -226,7 +226,7 @@ module.exports["Test Collections"] = function (browser) {
                                              short_wait)
                       .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(2).grain",
                                              short_wait)
-                      .assert.containsText("table.grain-list-table>tbody tr:nth-child(2).grain td>button",
+                      .assert.textContains("table.grain-list-table>tbody tr:nth-child(2).grain td>button",
                                            "Collection B")
                       .click("table.grain-list-table>tbody tr:nth-child(2).grain td>input[type=checkbox]")
                       .waitForElementVisible(".bulk-action-buttons>button[title='unlink selected grains']",
@@ -301,17 +301,17 @@ module.exports["Test collections anonymous user"] = function (browser) {
         .click(".popup.login button.close-popup")
         .grainFrame()
         .waitForElementVisible(".description-row p", short_wait)
-        .assert.containsText(".description-row p", "This is Collection A")
+        .assert.textContains(".description-row p", "This is Collection A")
         .waitForElementVisible(".description-row button.description-button", short_wait)
         .waitForElementVisible("table.grain-list-table>tbody tr:nth-child(1).grain", short_wait)
-        .assert.containsText("table.grain-list-table>tbody tr:nth-child(1).grain td>button",
+        .assert.textContains("table.grain-list-table>tbody tr:nth-child(1).grain td>button",
                              "Collection B")
         .click("table.grain-list-table>tbody tr:nth-child(1).grain .click-to-go")
         .frame(null)
 
         .grainFrame(grainIdB)
         .waitForElementVisible(".description-row p", short_wait)
-        .assert.containsText(".description-row p", "This is Collection B")
+        .assert.textContains(".description-row p", "This is Collection B")
         .waitForElementVisible(".description-row button.description-button", short_wait)
 
         .frame(null)

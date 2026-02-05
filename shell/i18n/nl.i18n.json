@@ -20,7 +20,7 @@
           "withAppDemo": "Probeer %s »",
           "withoutAppDemo": "Start »"
         },
-        "explanation": "<p>Sandstorm maakt het makkelijk om apps op uw eigen server te draaien. Naast het verbeteren van privacy en controle, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\" target=\"_blank\">brengt dit Open Source apps naar een groter publiek.</a></p>",
+        "explanation": "<p>Sandstorm maakt het makkelijk om apps op uw eigen server te draaien. Naast het verbeteren van privacy en controle, <a href=\"https://sandstorm.org/news/2014-07-21-open-source-web-apps-require-federated-hosting\" target=\"_blank\">brengt dit Open Source apps naar een groter publiek.</a></p>",
         "securityOverview": "<p>Sandstorm is daarnaast ook belachelijk veilig. Als u beveiliging interessant vindt, kijk dan eens naar<a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">een overzicht van Sandstorm's beveiligingsmodel.</a>.</p>"
       }
     },
@@ -112,7 +112,7 @@
     "about": {
       "title": "Over Sandstorm",
       "intro": {
-        "explanation": "<a href=\"https://sandstorm.io\">Sandstorm.io</a> is een open source hosting platform voor persoonlijke/privé instanties van web apps. Gebruikers kunnen software uploaden en installeren via een simpele app-store achtige interface. Naast betere privacy <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">is dit de enige manier om Open Source web apps haalbaar te maken.</a>",
+        "explanation": "<a href=\"https://sandstorm.org\">Sandstorm</a> is een open source hosting platform voor persoonlijke/privé instanties van web apps. Gebruikers kunnen software uploaden en installeren via een simpele app-store achtige interface. Naast betere privacy <a href=\"https://sandstorm.org/news/2014-07-21-open-source-web-apps-require-federated-hosting\">is dit de enige manier om Open Source web apps haalbaar te maken.</a>",
         "version": "Versie: %s",
         "unofficialWarning": "<strong>WAARSCHUWING:</strong> deze server draait een onofficiële build van Sandstorm die aanpassingen kan bevatten die niet zijn gecontroleerd door de ontwikkelaars."
       },

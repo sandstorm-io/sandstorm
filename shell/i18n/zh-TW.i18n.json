@@ -20,7 +20,7 @@
           "withAppDemo": "Try %s »",
           "withoutAppDemo": "Start »"
         },
-        "explanation": "<p>Sandstorm makes it easy to run apps on your own server. In addition to improving privacy and control, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\" target=\"_blank\">this brings Open Source apps to a wide audience.</a></p>",
+        "explanation": "<p>Sandstorm makes it easy to run apps on your own server. In addition to improving privacy and control, <a href=\"https://sandstorm.org/news/2014-07-21-open-source-web-apps-require-federated-hosting\" target=\"_blank\">this brings Open Source apps to a wide audience.</a></p>",
         "securityOverview": "<p>Sandstorm is also ridiculously secure. If security interests you, check out <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">Sandstorm's security model overview</a>.</p>"
       }
     },
@@ -112,7 +112,7 @@
     "about": {
       "title": "關於沙聚雲",
       "intro": {
-        "explanation": "<a href=\"https://sandstorm.io\">沙聚雲(Sandstorm.io)</a>是可以執行私人或個人網路應用程式的開源平台。使用者可以上傳並安裝任何程式，就像手機的應用程式商店一樣。為了保護隱私，<a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">這是唯一公開開源網路應用程式的方式。</a>",
+        "explanation": "<a href=\"https://sandstorm.org\">沙聚雲(Sandstorm)</a>是可以執行私人或個人網路應用程式的開源平台。使用者可以上傳並安裝任何程式，就像手機的應用程式商店一樣。為了保護隱私，<a href=\"https://sandstorm.org/news/2014-07-21-open-source-web-apps-require-federated-hosting\">這是唯一公開開源網路應用程式的方式。</a>",
         "version": "版本：%s",
         "unofficialWarning": "<strong>WARNING:</strong> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers."
       },

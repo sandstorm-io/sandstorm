@@ -20,7 +20,7 @@ import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 import { Router } from "meteor/iron:router";
 
-import { inMeteor, waitPromise } from "/imports/server/async-helpers";
+import { inMeteor } from "/imports/server/async-helpers";
 
 import Capnp from "/imports/server/capnp";
 import { SandstormDb } from "/imports/sandstorm-db/db";
@@ -29,10 +29,10 @@ import { globalDb } from "/imports/db-deprecated";
 const TOKEN_CLEANUP_MINUTES = 120;  // Give enough time for large uploads on slow connections.
 const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
 
-function cleanupToken(tokenId) {
+async function cleanupToken(tokenId) {
   check(tokenId, String);
   globalDb.collections.fileTokens.remove({ _id: tokenId });
-  waitPromise(globalBackend.cap().deleteBackup(tokenId));
+  await globalBackend.cap().deleteBackup(tokenId);
 }
 
 Meteor.startup(() => {
@@ -41,12 +41,14 @@ Meteor.startup(() => {
     const queryDate = new Date(Date.now() - TOKEN_CLEANUP_TIMER);
 
     globalDb.collections.fileTokens.find({ timestamp: { $lt: queryDate } }).forEach((token) => {
-      cleanupToken(token._id);
+      cleanupToken(token._id).catch((err) => {
+        console.error("Failed cleaning up backup token:", err);
+      });
     });
   });
 });
 
-export const createGrainBackup = (userId, grainId, async) => {
+export const createGrainBackup = async (userId, grainId, async) => {
   check(grainId, String);
   const grain = globalDb.collections.grains.findOne(grainId);
   if (!grain || !userId || grain.userId !== userId) {
@@ -92,7 +94,7 @@ export const createGrainBackup = (userId, grainId, async) => {
 
   globalDb.collections.fileTokens.insert(token);
 
-  let promise = globalBackend.cap().backupGrain(token._id, userId, grainId, grainInfo);
+  const promise = globalBackend.cap().backupGrain(token._id, userId, grainId, grainInfo);
 
   if (async) {
     promise.then(() => {
@@ -105,7 +107,7 @@ export const createGrainBackup = (userId, grainId, async) => {
       });
     });
   } else {
-    waitPromise(promise);
+    await promise;
   }
 
   return token._id;
@@ -122,7 +124,7 @@ export const createBackupToken = () => {
   return token._id;
 };
 
-export const restoreGrainBackup = (tokenId, user, transferInfo) => {
+export const restoreGrainBackup = async (tokenId, user, transferInfo) => {
   check(tokenId, String);
   const token = globalDb.collections.fileTokens.findOne(tokenId);
   if (!token) {
@@ -137,7 +139,7 @@ export const restoreGrainBackup = (tokenId, user, transferInfo) => {
   const grainId = Random.id(22);
 
   try {
-    const grainInfo = waitPromise(globalBackend.cap().restoreGrain(
+    const grainInfo = (await globalBackend.cap().restoreGrain(
         tokenId, user._id, grainId).catch((err) => {
           console.error("Unzip failure:", err.message);
           throw new Meteor.Error(500, "Invalid backup file.");
@@ -202,16 +204,16 @@ export const restoreGrainBackup = (tokenId, user, transferInfo) => {
       oldUsers: grainInfo.users || [],
     });
   } finally {
-    cleanupToken(tokenId);
+    await cleanupToken(tokenId);
   }
 
   return grainId;
 };
 
 Meteor.methods({
-  backupGrain(grainId) {
+  async backupGrain(grainId) {
     this.unblock();
-    return createGrainBackup(this.userId, grainId);
+    return await createGrainBackup(this.userId, grainId);
   },
 
   newRestoreToken() {
@@ -227,16 +229,18 @@ Meteor.methods({
     return createBackupToken();
   },
 
-  restoreGrain(tokenId, obsolete) {
+  async restoreGrain(tokenId, obsolete) {
     if (!isSignedUpOrDemo()) {
       throw new Meteor.Error(403, "User cannot create grains");
     }
     this.unblock();
-    return restoreGrainBackup(tokenId, Meteor.user());
+    return await restoreGrainBackup(tokenId, Meteor.user());
   },
 });
 
-downloadGrainBackup = (tokenId, response, retryCount = 0) => {
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+downloadGrainBackup = async (tokenId, response, retryCount = 0) => {
   const token = globalDb.collections.fileTokens.findOne(tokenId);
   if (!token) {
     response.writeHead(404, { "Content-Type": "text/plain" });
@@ -253,8 +257,8 @@ downloadGrainBackup = (tokenId, response, retryCount = 0) => {
       response.writeHead(425, { "Content-Type": "text/plain", "Cache-Control": "private" });
       return response.end("Try again.");
     }
-    waitPromise(new Promise(resolve => setTimeout(resolve, 1000)));
-    return downloadGrainBackup(tokenId, response, retryCount + 1);
+    await sleep(1000);
+    return await downloadGrainBackup(tokenId, response, retryCount + 1);
   }
 
   let started = false;
@@ -303,7 +307,7 @@ downloadGrainBackup = (tokenId, response, retryCount = 0) => {
     },
   };
 
-  waitPromise(globalBackend.cap().downloadBackup(tokenId, stream));
+  await globalBackend.cap().downloadBackup(tokenId, stream);
 
   if (!sawEnd) {
     console.error("backend failed to call done() when downloading backup");
@@ -314,13 +318,13 @@ downloadGrainBackup = (tokenId, response, retryCount = 0) => {
     response.end();
   }
 
-  cleanupToken(tokenId);
+  await cleanupToken(tokenId);
 }
 
-export const storeGrainBackup = (tokenId, inputStream) => {
+export const storeGrainBackup = async (tokenId, inputStream) => {
   const stream = globalBackend.cap().uploadBackup(tokenId).stream;
 
-  waitPromise(new Promise((resolve, reject) => {
+  await new Promise((resolve, reject) => {
     inputStream.on("data", (data) => {
       stream.write(data);
     });
@@ -329,23 +333,24 @@ export const storeGrainBackup = (tokenId, inputStream) => {
     });
     inputStream.on("error", (err) => {
       stream.close();
+      reject(err);
     });
-  }));
+  });
 }
 
 Router.map(function () {
   this.route("downloadBackup", {
     where: "server",
     path: "/downloadBackup/:tokenId",
-    action() {
-      downloadGrainBackup(this.params.tokenId, this.response);
+    async action() {
+      await downloadGrainBackup(this.params.tokenId, this.response);
     },
   });
 
   this.route("uploadBackup", {
     where: "server",
     path: "/uploadBackup/:token",
-    action() {
+    async action() {
       if (this.request.method === "POST") {
         const token = globalDb.collections.fileTokens.findOne(this.params.token);
         if (!this.params.token || !token) {
@@ -359,7 +364,7 @@ Router.map(function () {
         }
 
         try {
-          storeGrainBackup(this.params.token, this.request);
+          await storeGrainBackup(this.params.token, this.request);
 
           this.response.writeHead(204, {
             "Access-Control-Allow-Origin": "*",

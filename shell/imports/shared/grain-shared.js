@@ -43,7 +43,7 @@ Meteor.methods({
                                           { $set: { "owner.user.seenAllActivity": true } }, { multi: true });
   },
 
-  moveGrainsToTrash: function (grainIds) {
+  moveGrainsToTrash: async function (grainIds) {
     check(grainIds, [String]);
 
     if (this.userId) {
@@ -63,16 +63,16 @@ Meteor.methods({
         const grainsOwned = globalDb.collections.grains.find({
           userId: { $eq: this.userId },
           _id: { $in: grainIds },
-        }, { fields: { _id: 1, }, });
+        }, { fields: { _id: 1, }, }).fetch();
 
-        grainsOwned.forEach((grain) => {
+        for (const grain of grainsOwned) {
           globalDb.collections.sessions.remove({ grainId: grain._id, });
           try {
-            this.connection.sandstormBackend.shutdownGrain(grain._id, this.userId).await();
+            await this.connection.sandstormBackend.shutdownGrain(grain._id, this.userId);
           } catch (err) {
             console.error("Failed to shutdown trashed grain", grain._id, err);
           }
-        });
+        }
       }
     }
   },
@@ -95,7 +95,7 @@ Meteor.methods({
     }
   },
 
-  deleteGrain: function (grainId) {
+  deleteGrain: async function (grainId) {
     check(grainId, String);
 
     if (this.userId) {
@@ -109,8 +109,8 @@ Meteor.methods({
       if (this.isSimulation) {
         numDeleted = globalDb.collections.grains.remove(grainsQuery);
       } else {
-        numDeleted = globalDb.deleteGrains(grainsQuery, globalBackend,
-                                           isDemoUser() ? "demoGrain" : "grain");
+        numDeleted = await globalDb.deleteGrains(grainsQuery, globalBackend,
+            isDemoUser() ? "demoGrain" : "grain");
       }
 
       // Usually we don't automatically remove user-owned tokens that have become invalid,

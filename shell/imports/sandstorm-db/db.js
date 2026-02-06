@@ -42,33 +42,6 @@ if (Meteor.isServer) {
   Mongo.Collection.prototype.ensureIndexOnServer = function () {};
 }
 
-// Polyfill for findAndModify that works with MongoDB driver 4.x
-// Replaces the obsolete fongandrew:find-and-modify package
-if (Meteor.isServer) {
-  Mongo.Collection.prototype.findAndModify = function (options) {
-    const raw = this.rawCollection();
-    const query = options.query || {};
-    const projection = options.fields || undefined;
-
-    let result;
-    if (options.remove) {
-      return raw.findOneAndDelete(query, {
-        projection,
-      }).await();
-    } else {
-      const update = options.update || {};
-      const returnDocument = options.new ? 'after' : 'before';
-      const upsert = options.upsert || false;
-
-      return raw.findOneAndUpdate(query, update, {
-        projection,
-        returnDocument,
-        upsert,
-      }).await();
-    }
-  };
-}
-
 // TODO(soon): Systematically go through this file and add ensureIndexOnServer() as needed.
 
 const collectionOptions = { defineMutationMethods: Meteor.isClient };
@@ -1720,22 +1693,23 @@ _.extend(SandstormDb.prototype, {
     check(accountId, String);
 
     const DAILY_LIMIT = 50;
-    const result = Meteor.users.findAndModify({
-      query: { _id: accountId },
-      update: {
-        $inc: {
-          dailySentMailCount: 1,
-        },
+    const updated = Meteor.users.update({
+      _id: accountId,
+      $or: [
+        { dailySentMailCount: { $exists: false } },
+        { dailySentMailCount: { $lt: DAILY_LIMIT } },
+      ],
+    }, {
+      $inc: {
+        dailySentMailCount: 1,
       },
-      fields: { dailySentMailCount: 1 },
     });
 
-    if (!result.ok) {
-      throw new Error("Couldn't update daily sent mail count.");
-    }
+    if (updated === 0) {
+      if (!Meteor.users.findOne({ _id: accountId })) {
+        throw new Error("Couldn't update daily sent mail count.");
+      }
 
-    const user = result.value;
-    if (user.dailySentMailCount >= DAILY_LIMIT) {
       throw new Error(
           "Sorry, you've reached your e-mail sending limit for today. Currently, Sandstorm " +
           "limits each user to " + DAILY_LIMIT + " e-mails per day for spam control reasons. " +
@@ -1976,16 +1950,14 @@ _.extend(SandstormDb.prototype, {
               }
             }
           } else {
-            const result = this.collections.packages.findAndModify({
-              query: { _id: app.packageId },
-              update: { $set: { isAutoUpdated: true } },
-            });
+            this.collections.packages.update(
+                { _id: app.packageId },
+                { $set: { isAutoUpdated: true } });
 
-            if (!result.ok) {
+            const newPack = this.collections.packages.findOne({ _id: app.packageId });
+            if (!newPack) {
               return;
             }
-
-            const newPack = result.value;
             if (newPack.status === "ready") {
               // The package was marked as ready before we applied isAutoUpdated=true. We should send
               // notifications ourselves to be sure there's no timing issue (sending more than one is
@@ -2319,17 +2291,18 @@ _.extend(SandstormDb.prototype, {
     });
   },
 
-  deletePendingAccounts(deletionCoolingOffTime, backend, cb) {
+  async deletePendingAccounts(deletionCoolingOffTime, backend, cb) {
     check(deletionCoolingOffTime, Number);
 
     const queryDate = new Date(Date.now() - deletionCoolingOffTime);
-    this.collections.users.find({
+    const users = this.collections.users.find({
       "suspended.willDelete": true,
       "suspended.timestamp": { $lt: queryDate },
-    }).forEach((user) => {
+    }).fetch();
+    for (const user of users) {
       if (cb) cb(this, user);
-      this.deleteAccount(user._id, backend);
-    });
+      await this.deleteAccount(user._id, backend);
+    }
   },
 
   hostIsStandalone: function (hostname) {
@@ -2448,7 +2421,6 @@ _.extend(SandstormDb, {
 });
 
 if (Meteor.isServer) {
-  import { waitPromise } from "/imports/server/async-helpers";
 
   const Crypto = Npm.require("crypto");
   const ContentType = Npm.require("content-type");
@@ -2508,8 +2480,7 @@ if (Meteor.isServer) {
     }, first);
   };
 
-  // TODO(cleanup): Node 0.12 has a `gzipSync` but 0.10 (which Meteor still uses) does not.
-  const gzipSync = Meteor.wrapAsync(Zlib.gzip, Zlib);
+  const gzipSync = Zlib.gzipSync.bind(Zlib);
 
   const BufferSmallerThan = function (limit) {
     return Match.Where(function (buf) {
@@ -2528,7 +2499,7 @@ if (Meteor.isServer) {
     // will be automatically gzipped before storage; do not specify metadata.encoding in this case.
 
     if (typeof content === "string" && !metadata.encoding) {
-      content = gzipSync(new Buffer(content, "utf8"));
+      content = gzipSync(Buffer.from(content, "utf8"));
       metadata.encoding = "gzip";
     }
 
@@ -2546,18 +2517,17 @@ if (Meteor.isServer) {
     hasher.update(content);
     const hash = hasher.digest("base64");
 
-    const result = this.collections.staticAssets.findAndModify({
-      query: { hash: hash, refcount: { $gte: 1 } },
-      update: { $inc: { refcount: 1 } },
-      fields: { _id: 1, refcount: 1 },
-    });
-
-    if (!result.ok) {
-      throw new Error(`Couldn't increment refcount of asset with hash ${hash}`);
-    }
-
-    const existing = result.value;
+    const existing = this.collections.staticAssets.findOne(
+        { hash: hash, refcount: { $gte: 1 } },
+        { fields: { _id: 1 } });
     if (existing) {
+      const modified = this.collections.staticAssets.update(
+          { _id: existing._id },
+          { $inc: { refcount: 1 } });
+      if (modified === 0) {
+        throw new Error(`Couldn't increment refcount of asset with hash ${hash}`);
+      }
+
       return existing._id;
     }
 
@@ -2578,18 +2548,16 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    const result = this.collections.staticAssets.findAndModify({
-      query: { _id: id },
-      update: { $inc: { refcount: 1 } },
-      fields: { _id: 1, content: 1, mimeType: 1 },
-    });
-
-    if (!result.ok) {
+    const modified = this.collections.staticAssets.update(
+        { _id: id },
+        { $inc: { refcount: 1 } });
+    if (modified === 0) {
       throw new Error(`Couldn't increment refcount of asset with hash ${id}`);
     }
 
-    const existing = result.value;
-    return existing;
+    return this.collections.staticAssets.findOne(
+        { _id: id },
+        { fields: { _id: 1, content: 1, mimeType: 1 } });
   };
 
   SandstormDb.prototype.unrefStaticAsset = function (id) {
@@ -2601,18 +2569,16 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    const result = this.collections.staticAssets.findAndModify({
-      query: { _id: id },
-      update: { $inc: { refcount: -1 } },
-      fields: { _id: 1, refcount: 1 },
-      new: true,
-    });
-
-    if (!result.ok) {
+    const modified = this.collections.staticAssets.update(
+        { _id: id },
+        { $inc: { refcount: -1 } });
+    if (modified === 0) {
       throw new Error(`Couldn't unref static asset ${id}`);
     }
 
-    const existing = result.value;
+    const existing = this.collections.staticAssets.findOne(
+        { _id: id },
+        { fields: { _id: 1, refcount: 1 } });
     if (!existing) {
       console.error(new Error("unrefStaticAsset() called on asset that doesn't exist").stack);
     } else if (existing.refcount <= 0) {
@@ -2653,16 +2619,14 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    const result = this.collections.assetUploadTokens.findAndModify({
-      query: { _id: id },
-      remove: true,
-    });
-
-    if (!result.ok) {
+    const upload = this.collections.assetUploadTokens.findOne({ _id: id });
+    if (!upload) {
+      return undefined;
+    }
+    const removed = this.collections.assetUploadTokens.remove({ _id: id });
+    if (removed === 0) {
       throw new Error("Failed to remove asset upload token");
     }
-
-    const upload = result.value;
 
     if (upload.expires.valueOf() < Date.now()) {
       return undefined;  // already expired
@@ -2675,16 +2639,17 @@ if (Meteor.isServer) {
     this.collections.assetUploadTokens.remove({ expires: { $lt: Date.now() } });
   };
 
-  SandstormDb.prototype.deleteGrains = function (query, backend, type) {
+  SandstormDb.prototype.deleteGrains = async function (query, backend, type) {
     // Returns the number of grains deleted.
 
     check(type, Match.OneOf("grain", "demoGrain"));
 
     let numDeleted = 0;
-    this.collections.grains.find(query, {fields: {oldUsers: 0}}).forEach((grain) => {
+    const grains = this.collections.grains.find(query, { fields: { oldUsers: 0 } }).fetch();
+    for (const grain of grains) {
       const user = Meteor.users.findOne(grain.userId);
 
-      waitPromise(backend.deleteGrain(grain._id, grain.userId));
+      await backend.deleteGrain(grain._id, grain.userId);
       numDeleted += this.collections.grains.remove({ _id: grain._id });
       this.removeApiTokens({
         grainId: grain._id,
@@ -2720,7 +2685,7 @@ if (Meteor.isServer) {
       if (grain.size) {
         Meteor.users.update(grain.userId, { $inc: { storageUsage: -grain.size } });
       }
-    });
+    }
     return numDeleted;
   };
 
@@ -3120,12 +3085,12 @@ if (Meteor.isServer) {
     Meteor.users.remove({ _id: credentialId });
   };
 
-  SandstormDb.prototype.deleteAccount = function (userId, backend) {
+  SandstormDb.prototype.deleteAccount = async function (userId, backend) {
     check(userId, String);
 
     const _this = this;
     const user = Meteor.users.findOne({ _id: userId });
-    this.deleteGrains({ userId: userId }, backend, "grain");
+    await this.deleteGrains({ userId: userId }, backend, "grain");
     this.removeApiTokens({ "owner.user.accountId": userId });
     this.collections.userActions.remove({ userId: userId });
     this.collections.notifications.remove({ userId: userId });
@@ -3149,7 +3114,7 @@ if (Meteor.isServer) {
     });
     this.collections.contacts.remove({ accountId: userId });
     this.collections.contacts.remove({ ownerId: userId });
-    backend.deleteUser(userId);
+    await backend.deleteUser(userId);
     Meteor.users.remove({ _id: userId });
   };
 }
@@ -3170,16 +3135,14 @@ Meteor.methods({
     }
   },
 
-  removeUserAction(actionId) {
+  async removeUserAction(actionId) {
     check(actionId, String);
     if (this.isSimulation) {
       UserActions.remove({ _id: actionId });
     } else {
       if (this.userId) {
-        const result = this.connection.sandstormDb.collections.userActions.findAndModify({
-          query: { _id: actionId, userId: this.userId },
-          remove: true,
-        });
+        const result = await this.connection.sandstormDb.collections.userActions.rawCollection()
+            .findOneAndDelete({ _id: actionId, userId: this.userId });
 
         if (!result.ok) {
           throw new Error(`Couldn't remove user action ${actionId}`);

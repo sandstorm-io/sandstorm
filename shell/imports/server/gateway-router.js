@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { inMeteor, waitPromise } from "/imports/server/async-helpers";
+import { inMeteor } from "/imports/server/async-helpers";
 import Crypto from "crypto";
 import Dns from "dns";
 
@@ -66,7 +66,7 @@ if (useStagedStartup) {
   }, WARMUP_TIME);
 }
 
-function awaitRateLimit(type, hexId, userId) {
+async function awaitRateLimit(type, hexId, userId) {
   if (!useStagedStartup) return;
   let now = Date.now() - processStartTime;
   if (now > 256000 || now < 0) return;
@@ -83,7 +83,7 @@ function awaitRateLimit(type, hexId, userId) {
   if (!waitTime || waitTime < 0) return;
 
   console.log(`${type} ${hexId}: warmup wait ${waitTime} ms`);
-  new Promise(resolve => setTimeout(resolve, waitTime)).await();
+  await new Promise(resolve => setTimeout(resolve, waitTime));
   console.log(`${type} ${hexId}: warmup wait done`);
 }
 
@@ -163,7 +163,7 @@ function validateWebkey(apiToken, refreshedExpiration) {
   }
 }
 
-function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId, observer) {
+async function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId, observer) {
   if (!accountId && globalDb.getOrganizationDisallowGuests()) {
     throw new Meteor.Error("no-guests", "server doesn't allow guest access");
   }
@@ -232,7 +232,7 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId,
   }
 
   let uiView;
-  const viewInfo = globalBackend.useGrain(grainId, supervisor => {
+  const viewInfo = await globalBackend.useGrain(grainId, supervisor => {
     uiView = supervisor.getMainView().view;
     return uiView.getViewInfo();
   }).catch(error => {
@@ -245,7 +245,7 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId,
     } else {
       throw error;
     }
-  }).await();
+  });
 
   if (viewInfo) {
     const cachedViewInfo = _.omit(viewInfo, "appTitle", "grainIcon");
@@ -286,9 +286,9 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId,
 class GatewayRouterImpl {
   openUiSession(sessionId, params) {
     const observer = new PermissionsObserver();
-    return inMeteor(() => {
+    return inMeteor(async () => {
       // We need to know both when this session appears and when it disappears.
-      const session = new Promise((resolve, reject) => {
+      const session = await new Promise((resolve, reject) => {
         const sessionObserver = globalDb.collections.sessions.find({ _id: sessionId }).observe({
           added(session) {
             resolve(session);
@@ -314,9 +314,9 @@ class GatewayRouterImpl {
               "bug and describe the circumstances of the error."));
         }, SESSION_PROXY_TIMEOUT);
         observer.whenRevoked(() => Meteor.clearTimeout(task));
-      }).await();
+      });
 
-      awaitRateLimit("UI", sessionId, session.userId);
+      await awaitRateLimit("UI", sessionId, session.userId);
 
       // If the session has no identityId, then it's an incognito session. It may still have a
       // userId, but that should be ignored.
@@ -331,7 +331,7 @@ class GatewayRouterImpl {
         vertex = { grain: { _id: session.grainId, accountId: actingAccountId } };
       }
 
-      const { uiView, userInfo } = getUiViewAndUserInfo(
+      const { uiView, userInfo } = await getUiViewAndUserInfo(
           session.grainId, vertex, actingAccountId, session.identityId, sessionId, observer);
 
       const serializedParams = Capnp.serialize(WebSession.Params, params);
@@ -401,7 +401,7 @@ class GatewayRouterImpl {
 
   openApiSession(apiToken, params) {
     const observer = new PermissionsObserver();
-    return inMeteor(() => {
+    return inMeteor(async () => {
       const hashedToken = Crypto.createHash("sha256").update(apiToken).digest("base64");
       const tabId = Crypto.createHash("sha256").update("tab:").update(hashedToken)
           .digest("hex").slice(0, 32);
@@ -415,12 +415,12 @@ class GatewayRouterImpl {
         observer.whenRevoked(() => clearTimeout(timer));
       }
 
-      awaitRateLimit("API", tabId, !tokenInfo.forSharing && tokenInfo.accountId);
+      await awaitRateLimit("API", tabId, !tokenInfo.forSharing && tokenInfo.accountId);
 
       const grainId = tokenInfo.grainId;
       const actingAccountId = tokenInfo.forSharing ? null : tokenInfo.accountId;
 
-      const { uiView, userInfo } = getUiViewAndUserInfo(
+      const { uiView, userInfo } = await getUiViewAndUserInfo(
           grainId, { token: tokenInfo }, actingAccountId, null, null, observer);
 
       const serializedParams = Capnp.serialize(ApiSession.Params, params);
@@ -428,8 +428,8 @@ class GatewayRouterImpl {
       let rawSession;
       const sessionContext = makeHackSessionContext(grainId, null, actingAccountId, tabId);
       try {
-        rawSession = uiView.newSession(userInfo, sessionContext,
-           ApiSession.typeId, serializedParams, new Buffer(tabId, "hex")).await().session;
+        rawSession = (await uiView.newSession(userInfo, sessionContext,
+           ApiSession.typeId, serializedParams, new Buffer(tabId, "hex"))).session;
       } catch (err) {
         // If the app doesn't explicitly support ApiSession, fall back to WebSession for
         // backwards compatibility. Some really old apps require a parseable basePath, so we supply
@@ -439,8 +439,8 @@ class GatewayRouterImpl {
         const serializedWebParams = Capnp.serialize(WebSession.Params, {
           basePath: "https://sandbox"
         });
-        rawSession = uiView.newSession(userInfo, sessionContext,
-             WebSession.typeId, serializedWebParams, new Buffer(tabId, "hex")).session;
+        rawSession = (await uiView.newSession(userInfo, sessionContext,
+             WebSession.typeId, serializedWebParams, new Buffer(tabId, "hex"))).session;
       }
 
       // TODO(security): List the token's validity as a requirement here, in case save()
@@ -552,10 +552,10 @@ class GatewayRouterImpl {
   }
 
   getStaticPublishingHost(publicId) {
-    return inMeteor(() => {
+    return inMeteor(async () => {
       const grain = globalDb.collections.grains.findOne({ publicId: publicId }, { fields: { _id: 1 } });
       if (grain) {
-        awaitRateLimit("WWW", publicId, grain.userId);
+        await awaitRateLimit("WWW", publicId, grain.userId);
         return globalBackend.useGrain(grain._id, supervisor => {
           return supervisor.keepAlive().then(() => { return { supervisor }; });
         });
@@ -1025,7 +1025,7 @@ Meteor.methods({
     };
   },
 
-  openSessionFromApiToken(params, revealIdentity, cachedSalt, neverRedeem, parentOrigin, options) {
+  async openSessionFromApiToken(params, revealIdentity, cachedSalt, neverRedeem, parentOrigin, options) {
     neverRedeem = neverRedeem || false;
     parentOrigin = parentOrigin || process.env.ROOT_URL;
     options = options || {};
@@ -1051,7 +1051,7 @@ Meteor.methods({
     const token = params.token;
 
     if (this.userId && revealIdentity && !neverRedeem) {
-      const grainId = Meteor.call("redeemSharingToken", token).grainId;
+      const grainId = (await Meteor.callAsync("redeemSharingToken", token)).grainId;
       return { redirectToGrain: grainId };
     }
 

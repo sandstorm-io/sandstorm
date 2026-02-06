@@ -274,27 +274,35 @@ class ExternalWebSession extends PersistentImpl {
   constructor(url, options, db, saveTemplate) {
     super(db, saveTemplate);
 
-    // TODO(soon): Support HTTP proxy.
-    const safe = ssrfSafeLookup(db, url);
-
     if (!options) options = {};
-    if (!options.headers) options.headers = {};
-    options.headers.host = safe.host;
-    options.servername = safe.host.split(":")[0];
+    this.options = options;
+    this._url = url;
+    this._db = db;
+    this._resolvedTargetPromise = null;
+  }
 
-    const parsedUrl = Url.parse(safe.url);
-    this.host = parsedUrl.hostname;
-    if (parsedUrl.path === "/") {
-      // The URL parser says path = "/" for both "http://foo" and "http://foo/". We want to be
-      // strict, though.
-      this.path = url.endsWith("/") ? "/" : "";
-    } else {
-      this.path = parsedUrl.path;
+  _ensureResolvedTarget() {
+    if (!this._resolvedTargetPromise) {
+      this._resolvedTargetPromise = ssrfSafeLookup(this._db, this._url).then((safe) => {
+        if (!this.options.headers) this.options.headers = {};
+        this.options.headers.host = safe.host;
+        this.options.servername = safe.host.split(":")[0];
+
+        const parsedUrl = Url.parse(safe.url);
+        this.host = parsedUrl.hostname;
+        if (parsedUrl.path === "/") {
+          // The URL parser says path = "/" for both "http://foo" and "http://foo/".
+          this.path = this._url.endsWith("/") ? "/" : "";
+        } else {
+          this.path = parsedUrl.path;
+        }
+
+        this.port = parsedUrl.port;
+        this.protocol = parsedUrl.protocol;
+      });
     }
 
-    this.port = parsedUrl.port;
-    this.protocol = parsedUrl.protocol;
-    this.options = options;
+    return this._resolvedTargetPromise;
   }
 
   get(path, context) {
@@ -327,6 +335,9 @@ class ExternalWebSession extends PersistentImpl {
     const _this = this;
     const session = _this;
     return new Promise((resolve, reject) => {
+      Promise.resolve()
+          .then(() => session._ensureResolvedTarget())
+          .then(() => {
       const options = _.clone(session.options);
       options.headers = options.headers || {};
 
@@ -544,6 +555,7 @@ class ExternalWebSession extends PersistentImpl {
       } else {
         req.end();
       }
+      }).catch(reject);
     });
   }
 }

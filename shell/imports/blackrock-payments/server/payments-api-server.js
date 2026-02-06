@@ -18,7 +18,7 @@ import Crypto from "crypto";
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 
-import { stripe } from "/imports/blackrock-payments/server/payments-server";
+import { stripe, findOriginalSourceIdAsync } from "/imports/blackrock-payments/server/payments-server";
 
 import Capnp from "/imports/server/capnp";
 const PaymentsRpc = Capnp.importSystem("sandstorm/payments.capnp");
@@ -88,7 +88,7 @@ BlackrockPayments.registerPaymentsApi =
                                   PaymentsRpc.PersistentPaymentSource);
     },
 
-    validate(db, session, value) {
+    async validate(db, session, value) {
       check(value, { source: String });
 
       if (!session.userId) {
@@ -101,7 +101,7 @@ BlackrockPayments.registerPaymentsApi =
         throw new Meteor.Error(403, "No such payment source.");
       }
 
-      value.source = findOriginalSourceId(value.source, value.customer);
+      value.source = await findOriginalSourceIdAsync(value.source, value.customer);
 
       return {
         descriptor: { tags: [{ id: PaymentsRpc.PaymentSource.typeId }] },
@@ -110,7 +110,7 @@ BlackrockPayments.registerPaymentsApi =
       };
     },
 
-    query(db, userId, value) {
+    async query(db, userId, value) {
       const user = Meteor.users.findOne(userId);
       const customerId = ((user || {}).payments || {}).id;
 
@@ -124,7 +124,7 @@ BlackrockPayments.registerPaymentsApi =
         return [addCardSource];
       }
 
-      const data = Meteor.wrapAsync(stripe.customers.retrieve.bind(stripe.customers))(customerId);
+      const data = await stripe.customers.retrieve(customerId);
       if (!data.sources || !data.sources.data) {
         return [addCardSource];
       }

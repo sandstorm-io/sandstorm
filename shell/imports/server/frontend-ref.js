@@ -52,18 +52,18 @@ class FrontendRefRegistry {
     return handler.restore(db, saveTemplate, frontendRef[key]);
   }
 
-  query(db, userAccountId, tag) {
+  async query(db, userAccountId, tag) {
     // Performs a powerbox query using the appropriate registered handler.
 
     const handler = this._typeIdHandlers[tag.id];
     if (handler) {
-      return handler.query(db, userAccountId, tag.value);
+      return await handler.query(db, userAccountId, tag.value);
     } else {
       return [];  // no matches
     }
   }
 
-  validate(db, session, frontendRefRequest) {
+  async validate(db, session, frontendRefRequest) {
     // Validates a powerbox request on the given `session` (a record from the Sessions table)
     // requesting the creation of the given frontendRef type. `frontendRefRequest` is expected to
     // come directly from the client; calling validate() verifies that it is well-formed and
@@ -89,7 +89,7 @@ class FrontendRefRegistry {
     }
 
     const { descriptor, requirements, frontendRef } =
-          handler.validate(db, session, frontendRefRequest[key]);
+          await handler.validate(db, session, frontendRefRequest[key]);
 
     const result = { descriptor, requirements, frontendRef: {}, };
     result.frontendRef[key] = frontendRef;

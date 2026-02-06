@@ -20,7 +20,7 @@ import { pipeline, Writable } from "stream";
 import { Meteor } from "meteor/meteor";
 import { _ } from "meteor/underscore";
 
-import { inMeteor, waitPromise } from "/imports/server/async-helpers";
+import { inMeteor } from "/imports/server/async-helpers";
 import { ssrfSafeLookupOrProxy } from "/imports/server/networking";
 import { globalDb } from "/imports/db-deprecated";
 
@@ -39,7 +39,7 @@ const verifyIsMainReplica = () => {
   }
 };
 
-const deletePackageInternal = (pkg) => {
+const deletePackageInternal = async (pkg) => {
   verifyIsMainReplica();
 
   const packageId = pkg._id;
@@ -63,7 +63,7 @@ const deletePackageInternal = (pkg) => {
         $set: { status: "delete" },
         $unset: { shouldCleanup: "" },
       });
-      waitPromise(globalBackend.cap().deletePackage(packageId));
+      await globalBackend.cap().deletePackage(packageId);
       globalDb.collections.packages.remove(packageId);
 
       // Clean up assets (icon, etc).
@@ -116,7 +116,11 @@ if (!Meteor.settings.replicaNumber) {
 
   Meteor.startup(() => {
     // Restart any deletions that were killed while in-progress.
-    globalDb.collections.packages.find({ status: "delete" }).forEach(deletePackageInternal);
+    globalDb.collections.packages.find({ status: "delete" }).forEach((pkg) => {
+      deletePackageInternal(pkg).catch((err) => {
+        console.error("Failed deleting package:", err);
+      });
+    });
 
     // Watch for new installation requests and fulfill them.
     globalDb.collections.packages.find({ status: { $in: ["download", "verify", "unpack", "analyze"] } }).observe({
@@ -126,7 +130,11 @@ if (!Meteor.settings.replicaNumber) {
 
     // Watch for new cleanup requests and fulfill them.
     globalDb.collections.packages.find({ status: "ready", shouldCleanup: true }).observe({
-      added: deletePackageInternal,
+      added(pkg) {
+        deletePackageInternal(pkg).catch((err) => {
+          console.error("Failed deleting package:", err);
+        });
+      },
     });
   });
 }
@@ -295,8 +303,7 @@ class AppInstaller {
     console.log("Downloading app:", this.url);
     this.updateProgress("download");
 
-    inMeteor(this.wrapCallback(function () {
-      const safe = ssrfSafeLookupOrProxy(globalDb, this.url);
+    inMeteor(() => ssrfSafeLookupOrProxy(globalDb, this.url)).then(this.wrapCallback(function (safe) {
 
       let bytesExpected = undefined;
       let bytesReceived = 0;
@@ -342,6 +349,8 @@ class AppInstaller {
       }))
 
       this.downloadRequest = request;
+    })).catch(this.wrapCallback((err) => {
+      throw err;
     }));
   }
 

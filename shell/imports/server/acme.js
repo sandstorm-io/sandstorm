@@ -15,7 +15,6 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
-import { waitPromise } from "/imports/server/async-helpers";
 import ACME from "@root/acme";
 import CSR from "@root/csr";
 import PEM from "@root/pem";
@@ -44,7 +43,7 @@ const SECONDS = 1000;
 const HOURS = 3600 * SECONDS;
 const DAYS = 24 * HOURS;
 
-function createAcmeClient(directory) {
+async function createAcmeClient(directory) {
   // Compute package agent identifier (like a User-Agent).
   let build = Meteor.settings && Meteor.settings.public && Meteor.settings.public.build;
   let packageAgent;
@@ -64,7 +63,7 @@ function createAcmeClient(directory) {
   });
 
   if (directory) {
-    waitPromise(acme.init(directory));
+    await acme.init(directory);
   }
 
   return acme;
@@ -80,14 +79,14 @@ if (!Maintainers.init) {
 }
 Maintainers.init = (me) => {};
 
-export function createAcmeAccount(directory, email, agreeToTerms) {
-  let accountKeypair = waitPromise(Keypairs.generate({ kty: 'EC', format: 'jwk' }));
+export async function createAcmeAccount(directory, email, agreeToTerms) {
+  let accountKeypair = await Keypairs.generate({ kty: 'EC', format: 'jwk' });
   let accountKey = accountKeypair.private;
 
-  let acme = createAcmeClient(directory);
+  let acme = await createAcmeClient(directory);
 
-  let account = waitPromise(acme.accounts.create({
-      subscriberEmail: email, agreeToTerms, accountKey}));
+  let account = await acme.accounts.create({
+      subscriberEmail: email, agreeToTerms, accountKey});
 
   globalDb.collections.settings.upsert({_id: "acmeAccount"}, {$set: {
     value: {
@@ -101,7 +100,7 @@ export function createAcmeAccount(directory, email, agreeToTerms) {
 
 let currentlyRenewing = false;
 
-export function renewCertificateNow() {
+export async function renewCertificateNow() {
   let accountInfo = globalDb.getSetting("acmeAccount");
   if (!accountInfo) {
     console.log("Can't renew certificate because ACME account info is not configured.");
@@ -131,14 +130,14 @@ export function renewCertificateNow() {
   currentlyRenewing = true;
   try {
     globalDb.collections.settings.upsert({_id: "tlsStatus"}, {$set: {"value.currentlyRenewing": true}});
-    renewCertificateNowImpl(accountInfo, challengeOpts)
+    return await renewCertificateNowImpl(accountInfo, challengeOpts);
   } finally {
     currentlyRenewing = false;
     globalDb.collections.settings.upsert({_id: "tlsStatus"}, {$set: {"value.currentlyRenewing": false}});
   }
 }
 
-function renewCertificateNowImpl(accountInfo, challengeOpts) {
+async function renewCertificateNowImpl(accountInfo, challengeOpts) {
   let challenge = Npm.require("acme-dns-01-" + challengeOpts.module)
       .create(challengeOpts.options);
 
@@ -154,11 +153,11 @@ function renewCertificateNowImpl(accountInfo, challengeOpts) {
   }
 
   // Generate private key.
-  let tlsKeypair = waitPromise(Keypairs.generate({ kty: "RSA", format: "jwk" }));
-  let privatePem = waitPromise(Keypairs.export({jwk: tlsKeypair.private}));
+  let tlsKeypair = await Keypairs.generate({ kty: "RSA", format: "jwk" });
+  let privatePem = await Keypairs.export({jwk: tlsKeypair.private});
 
   // Generate CSR.
-  let csrDer = waitPromise(CSR.csr({jwk: tlsKeypair.private, domains, encoding: "der"}));
+  let csrDer = await CSR.csr({jwk: tlsKeypair.private, domains, encoding: "der"});
   let csr = PEM.packBlock({type: "CERTIFICATE REQUEST", bytes: csrDer});
 
   // Compute package agent identifier (like a User-Agent).
@@ -171,10 +170,10 @@ function renewCertificateNowImpl(accountInfo, challengeOpts) {
   }
 
   // Create ACME client.
-  let acme = createAcmeClient(accountInfo.directory);
+  let acme = await createAcmeClient(accountInfo.directory);
 
   // Get the certificates!
-  let pems = waitPromise(acme.certificates.create({
+  let pems = await acme.certificates.create({
     account: accountInfo.account,
     accountKey: accountInfo.key,
     csr, domains,
@@ -183,7 +182,7 @@ function renewCertificateNowImpl(accountInfo, challengeOpts) {
     // Sandcats doesn't support setting TXT on arbitrary hostnames, therefore doesn't support dry
     // runs.
     skipDryRun: baseHost.endsWith(".sandcats.io")
-  }));
+  });
 
   let certChain = pems.cert + "\n" + pems.chain + "\n";
 
@@ -211,7 +210,7 @@ function removeAllCertificateExpirationNotifications() {
 
 let nextRenewalTimeout = null;
 let renewSchedulerVersion = 0;
-function renewCertificateWhenNeeded(certChain) {
+async function renewCertificateWhenNeeded(certChain) {
   if (nextRenewalTimeout) {
     Meteor.clearTimeout(nextRenewalTimeout);
     nextRenewalTimeout = null;
@@ -245,7 +244,7 @@ function renewCertificateWhenNeeded(certChain) {
   if (now > targetTime) {
     console.log("TLS certificate is near expiration; renewing now.");
     try {
-      if (!renewCertificateNow()) {
+      if (!(await renewCertificateNow())) {
         notifyAdminOfCertificateExpiration(validity.notAfter);
       }
       return;
@@ -263,7 +262,9 @@ function renewCertificateWhenNeeded(certChain) {
     return;
   } else {
     nextRenewalTimeout = Meteor.setTimeout(() => {
-      renewCertificateWhenNeeded(certChain);
+      renewCertificateWhenNeeded(certChain).catch((err) => {
+        console.error("Failed to schedule certificate renewal:", err.stack);
+      });
     }, timeout);
 
     removeAllCertificateExpirationNotifications();
@@ -279,9 +280,21 @@ if (!Meteor.settings.replicaNumber) {
     // We don't want this to block startup, so put it in a zero-time setTimeout().
     Meteor.setTimeout(() => {
       globalDb.collections.settings.find({_id: "tlsKeys"}).observe({
-        added(setting) { renewCertificateWhenNeeded(setting.value.certChain); },
-        changed(newSetting, oldSetting) { renewCertificateWhenNeeded(newSetting.value.certChain); },
-        removed(setting) { renewCertificateWhenNeeded(null); },
+        added(setting) {
+          renewCertificateWhenNeeded(setting.value.certChain).catch((err) => {
+            console.error("Failed to evaluate certificate renewal schedule:", err.stack);
+          });
+        },
+        changed(newSetting, oldSetting) {
+          renewCertificateWhenNeeded(newSetting.value.certChain).catch((err) => {
+            console.error("Failed to evaluate certificate renewal schedule:", err.stack);
+          });
+        },
+        removed(setting) {
+          renewCertificateWhenNeeded(null).catch((err) => {
+            console.error("Failed to evaluate certificate renewal schedule:", err.stack);
+          });
+        },
       });
     }, 0);
   });

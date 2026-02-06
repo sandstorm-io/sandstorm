@@ -16,7 +16,6 @@
 
 import { Meteor } from "meteor/meteor";
 
-import { waitPromise } from "/imports/server/async-helpers";
 import { fetchApiToken } from "/imports/server/persistent";
 import Capnp from "/imports/server/capnp";
 import { SandstormDb } from "/imports/sandstorm-db/db";
@@ -55,7 +54,7 @@ export const schedulePeriodic = (db, grainId, name, callback, period) => {
 const KEEP_ALIVE_INTERVAL_MILLIS = 60 * 1000;
 const MAX_DISCONNECTED_RETRIES = 5;
 
-export const runDueJobs = (nowMillis) => {
+export const runDueJobs = async (nowMillis) => {
   const db = globalDb;
   const staleKeepAlive = new Date(nowMillis - 3 * KEEP_ALIVE_INTERVAL_MILLIS);
   const jobs = db.getReadyScheduledJobs(nowMillis, staleKeepAlive);
@@ -82,8 +81,8 @@ export const runDueJobs = (nowMillis) => {
 
     let intervalHandle;
 
-    promises.push(Promise.resolve().then(() => {
-      let callback = restoreInternal(db, job.callback, { frontend: null }, [], token).cap;
+    promises.push(Promise.resolve().then(async () => {
+      let callback = (await restoreInternal(db, job.callback, { frontend: null }, [], token)).cap;
       callback = callback.castAs(ScheduledJob.Callback);
 
       intervalHandle = Meteor.setInterval(() => {
@@ -122,10 +121,14 @@ export const runDueJobs = (nowMillis) => {
     }));
   });
 
-  waitPromise(Promise.all(promises));
+  await Promise.all(promises);
 }
 
-SandstormDb.periodicCleanup(MINIMUM_SCHEDULING_SLACK_MILLIS, () => runDueJobs(Date.now()));
+SandstormDb.periodicCleanup(MINIMUM_SCHEDULING_SLACK_MILLIS, () => {
+  runDueJobs(Date.now()).catch((err) => {
+    console.error("Error while running scheduled jobs:", err);
+  });
+});
 
 Meteor.publish("scheduledJobs", function() {
   // Returns info about all jobs for grains owned by the current user.

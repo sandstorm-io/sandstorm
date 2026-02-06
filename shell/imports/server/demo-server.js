@@ -51,15 +51,17 @@ Accounts.validateLoginAttempt(function (attempt) {
   return true;
 });
 
-function cleanupExpiredUsers() {
+async function cleanupExpiredUsers() {
   // Delete expired demo accounts and all their grains.
 
   const now = new Date(Date.now() - DEMO_GRACE_MS);
-  Meteor.users.find({ expires: { $lt: now }, loginCredentials: { $exists: true } },
+  const expiredUsers = Meteor.users.find(
+      { expires: { $lt: now }, loginCredentials: { $exists: true } },
       { fields: { _id: 1, loginCredentials: 1, lastActive: 1, appDemoId: 1, experiments: 1 } })
-              .forEach(function (user) {
+      .fetch();
+  for (const user of expiredUsers) {
     console.log("delete demo user: " + user._id);
-    globalDb.deleteAccount(user._id, globalBackend);
+    await globalDb.deleteAccount(user._id, globalBackend);
 
     // Record stats about demo accounts.
     let deleteStatsType = "demoUser";
@@ -76,7 +78,7 @@ function cleanupExpiredUsers() {
     }
 
     globalDb.collections.deleteStats.insert(record);
-  });
+  }
 
   // All demo credentials should have been deleted as part of deleting the demo users, but just in
   // case, check for them too.
@@ -177,8 +179,16 @@ if (allowDemo) {
     return packageCursorAndMaybeUserActions(this.userId, appId, packageCursor);
   });
 
-  SandstormDb.periodicCleanup(DEMO_EXPIRATION_MS, cleanupExpiredUsers);
+  SandstormDb.periodicCleanup(DEMO_EXPIRATION_MS, () => {
+    cleanupExpiredUsers().catch((err) => {
+      console.error("Error cleaning up expired demo users:", err);
+    });
+  });
 } else {
   // Just run once, in case the config just changed from allowing demos to prohibiting them.
-  Meteor.setTimeout(cleanupExpiredUsers, DEMO_EXPIRATION_MS + DEMO_GRACE_MS);
+  Meteor.setTimeout(() => {
+    cleanupExpiredUsers().catch((err) => {
+      console.error("Error cleaning up expired demo users on startup:", err);
+    });
+  }, DEMO_EXPIRATION_MS + DEMO_GRACE_MS);
 }

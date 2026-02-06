@@ -34,10 +34,10 @@ Mongo.Collection.prototype.aggregate = function (pipeline, options) {
   // Meteor doesn't wrap Mongo's aggregate() method.
   // In MongoDB driver 4.x+, aggregate() returns a cursor directly (no callback).
   const raw = this.rawCollection();
-  return raw.aggregate(pipeline, options).toArray().await();
+  return raw.aggregate(pipeline, options).toArray();
 };
 
-function computeStats(since) {
+async function computeStats(since) {
   // We'll need this for a variety of queries.
   const timeConstraint = { $gt: since };
 
@@ -67,7 +67,7 @@ function computeStats(since) {
   const deletedGrainsCount = globalDb.collections.deleteStats.find(
     { type: "grain", lastActive: timeConstraint }).count();
 
-  let apps = globalDb.collections.grains.aggregate([
+  let apps = await globalDb.collections.grains.aggregate([
     { $match: { lastUsed: timeConstraint } },
     {
       $group: {
@@ -105,7 +105,7 @@ function computeStats(since) {
     }).fetch();
     const grainIds = _.pluck(grains, "_id");
 
-    const counts = globalDb.collections.apiTokens.aggregate([
+    const counts = await globalDb.collections.apiTokens.aggregate([
       {
         $match: {
           "owner.user": { $exists: true },
@@ -132,7 +132,7 @@ function computeStats(since) {
   }
 
   // Count per-app appdemo users and deleted grains.
-  globalDb.collections.deleteStats.aggregate([
+  const deletions = await globalDb.collections.deleteStats.aggregate([
     {
       $match: {
         lastActive: timeConstraint,
@@ -148,7 +148,8 @@ function computeStats(since) {
         count: { $sum: 1 },
       },
     },
-  ]).forEach(function (deletion) {
+  ]);
+  deletions.forEach(function (deletion) {
     let app = apps[deletion._id.appId];
     if (!app) {
       app = apps[deletion.appId] = {};
@@ -172,7 +173,7 @@ function computeStats(since) {
   };
 }
 
-function recordStats() {
+async function recordStats() {
   const postStats = function (record) {
     HTTP.post("https://alpha-api.sandstorm.io/data", {
       data: record,
@@ -193,15 +194,15 @@ function recordStats() {
 
   const record = {
     timestamp: now,
-    daily: computeStats(new Date(now.getTime() - DAY_MS)),
-    weekly: computeStats(new Date(now.getTime() - 7 * DAY_MS)),
-    monthly: computeStats(new Date(now.getTime() - 30 * DAY_MS)),
-    forever: computeStats(new Date(0)),
+    daily: await computeStats(new Date(now.getTime() - DAY_MS)),
+    weekly: await computeStats(new Date(now.getTime() - 7 * DAY_MS)),
+    monthly: await computeStats(new Date(now.getTime() - 30 * DAY_MS)),
+    forever: await computeStats(new Date(0)),
     plans: planStats,
   };
   record.computeTime = Date.now() - now;
   if (Meteor.settings.public.stripePublicKey && BlackrockPayments.getTotalCharges) {
-    record.totalCharges = BlackrockPayments.getTotalCharges();
+    record.totalCharges = await BlackrockPayments.getTotalCharges();
   }
 
   globalDb.collections.activityStats.insert(record);
@@ -228,12 +229,18 @@ function recordStats() {
 if (!Meteor.settings.replicaNumber) {
   // Wait until 10:00 UTC (2:00 PST / 5:00 EST), then start recording stats every 24 hours.
   // (Only on the first replica to avoid conflicts.)
+  const runRecordStats = () => {
+    recordStats().catch((err) => {
+      console.error("recordStats failed:", err && err.stack ? err.stack : err);
+    });
+  };
+
   Meteor.setTimeout(function () {
     Meteor.setInterval(function () {
-      recordStats();
+      runRecordStats();
     }, DAY_MS);
 
-    recordStats();
+    runRecordStats();
   }, DAY_MS - (Date.now() - 10 * 60 * 60 * 1000) % DAY_MS);
 
   Meteor.startup(function () {

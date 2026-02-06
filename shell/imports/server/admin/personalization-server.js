@@ -47,22 +47,16 @@ Meteor.methods({
     return db.newAssetUpload({ loginLogo: {} });
   },
 
-  resetWhitelabelLogo() {
+  async resetWhitelabelLogo() {
     checkAuth(undefined);
     const db = this.connection.sandstormDb;
-    const result = globalDb.collections.settings.findAndModify({
-      query: { _id: "whitelabelCustomLogoAssetId" },
-      remove: true,
-      fields: { value: 1 },
-    });
+    const result = await globalDb.collections.settings.rawCollection().findOneAndDelete(
+        { _id: "whitelabelCustomLogoAssetId" },
+        { projection: { value: 1 } });
+    const old = result && result.value !== undefined ? result.value : result;
 
-    if (result.ok) {
-      const old = result.value;
-      if (old) {
-        db.unrefStaticAsset(old.value);
-      }
-    } else {
-      throw new Meteor.Error(500, "Couldn't remove whitelabelCustomLogoAssetId");
+    if (old) {
+      db.unrefStaticAsset(old.value);
     }
   },
 });

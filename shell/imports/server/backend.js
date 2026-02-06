@@ -15,7 +15,7 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
-import { inMeteor, waitPromise } from "/imports/server/async-helpers";
+import { inMeteor } from "/imports/server/async-helpers";
 import Capnp from "/imports/server/capnp";
 import { globalDb } from "/imports/db-deprecated";
 
@@ -38,8 +38,8 @@ class SandstormBackend {
     return this._backendCap;
   }
 
-  deleteUser(userId) {
-    return waitPromise(this._backendCap.deleteUser(userId));
+  async deleteUser(userId) {
+    return await this._backendCap.deleteUser(userId);
   }
 
   shutdownGrain(grainId, ownerId, keepSessions) {
@@ -199,18 +199,18 @@ class SandstormBackend {
     }
 
     if (storagePromise) {
-      try {
-        const size = parseInt(waitPromise(storagePromise).size);
+      storagePromise.then((storageInfo) => {
+        const size = parseInt(storageInfo.size);
         Meteor.users.update(ownerId, { $set: { storageUsage: size } });
         // TODO(security): Consider actively killing grains if the user is excessively over quota?
         //   Otherwise a constantly-active grain could consume arbitrary space without being stopped.
-      } catch (err) {
+      }).catch((err) => {
         if (err.kjType === "unimplemented") {
           storageUsageUnimplemented = true;
         } else {
           console.error("error getting user storage usage:", err.stack);
         }
-      }
+      });
     }
   }
 }

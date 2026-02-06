@@ -9,7 +9,6 @@ import { Accounts } from "meteor/accounts-base";
 import { SAML } from "/imports/server/accounts/saml-utils";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 
-import Fiber from "fibers";
 import BodyParser from "body-parser";
 
 if (!Accounts.saml) {
@@ -96,7 +95,7 @@ const generateService = function () {
   return service;
 };
 
-const middleware = function (req, res, next) {
+const middleware = async function (req, res, next) {
   // Make sure to catch any exceptions because otherwise we'd crash
   // the runner
   try {
@@ -131,37 +130,46 @@ const middleware = function (req, res, next) {
       service.callbackUrl = Meteor.absoluteUrl("_saml/validate/" + service.provider);
       service.id = samlObject.credentialToken;
       const _saml = new SAML(service);
-      _saml.getAuthorizeUrl(req, function (err, url) {
-        if (err)
-          throw new Error("Unable to generate authorize url");
-        res.writeHead(302, { "Location": url });
-        res.end();
+      const url = await new Promise((resolve, reject) => {
+        _saml.getAuthorizeUrl(req, (err, nextUrl) => {
+          if (err) {
+            reject(new Error("Unable to generate authorize url"));
+          } else {
+            resolve(nextUrl);
+          }
+        });
       });
+
+      res.writeHead(302, { "Location": url });
+      res.end();
     } else if (samlObject.actionName === "validate") {
       const _saml = new SAML(service);
-      _saml.validateResponse(req.body.SAMLResponse,
-          function (err, profile, loggedOut, responseText) {
-        if (err) {
-          console.error("Error validating SAML response:", err.toString(),
-                        "\nFull SAML response XML:\n", responseText);
-          throw new Error("Unable to validate SAML response.");
-        }
-
-        // Do NOT use samlObject.credentialToken; it isn't signed!
-        const credentialToken = profile.inResponseToId || profile.InResponseTo;
-        if (!credentialToken) {
-          throw new Error(
-              "SAML response missing InResponseTo attribute. Sandstorm does not support " +
-              "IdP-initiated authentication; authentication requests must start " +
-              "from the user choosing SAML login in the Sandstorm UI.");
-        }
-
-        _loginResultForCredentialToken[credentialToken] = {
-          profile: profile,
-        };
-
-        closePopup(res);
+      const profile = await new Promise((resolve, reject) => {
+        _saml.validateResponse(req.body.SAMLResponse, (err, nextProfile, _loggedOut, responseText) => {
+          if (err) {
+            console.error("Error validating SAML response:", err.toString(),
+                          "\nFull SAML response XML:\n", responseText);
+            reject(new Error("Unable to validate SAML response."));
+          } else {
+            resolve(nextProfile);
+          }
+        });
       });
+
+      // Do NOT use samlObject.credentialToken; it isn't signed!
+      const credentialToken = profile.inResponseToId || profile.InResponseTo;
+      if (!credentialToken) {
+        throw new Error(
+            "SAML response missing InResponseTo attribute. Sandstorm does not support " +
+            "IdP-initiated authentication; authentication requests must start " +
+            "from the user choosing SAML login in the Sandstorm UI.");
+      }
+
+      _loginResultForCredentialToken[credentialToken] = {
+        profile: profile,
+      };
+
+      closePopup(res);
     } else {
       throw new Error("Unexpected SAML action " + samlObject.actionName);
     }
@@ -173,15 +181,11 @@ const middleware = function (req, res, next) {
 
 // Listen to incoming OAuth http requests
 WebApp.connectHandlers.use(BodyParser.urlencoded()).use(function (req, res, next) {
-  // Need to create a Fiber since we're using synchronous http calls and nothing
-  // else is wrapping this in a fiber automatically
-  Fiber(function () {
-    middleware(req, res, next);
-  }).run();
+  middleware(req, res, next);
 });
 
 Meteor.methods({
-  generateSamlLogout: function () {
+  async generateSamlLogout() {
     const service = generateService();
     if (!service.logoutUrl) {
       throw new Meteor.Error(500, "No SAML logout url specified");
@@ -197,12 +201,20 @@ Meteor.methods({
     });
     // TODO(someday): handle user having more than one SAML credential
 
-    return Meteor.wrapAsync(_saml.getLogoutUrl.bind(_saml))({
-      user: {
-        nameID: credential.services.saml.id,
-        nameIDFormat: credential.services.saml.nameIDFormat ||
-          "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent",
-      },
+    return await new Promise((resolve, reject) => {
+      _saml.getLogoutUrl({
+        user: {
+          nameID: credential.services.saml.id,
+          nameIDFormat: credential.services.saml.nameIDFormat ||
+            "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent",
+        },
+      }, (err, url) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(url);
+        }
+      });
     });
   },
 

@@ -24,7 +24,7 @@ import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 
 import { hashSturdyRef, checkRequirements, fetchApiToken } from "/imports/server/persistent";
-import { inMeteor, waitPromise } from "/imports/server/async-helpers";
+import { inMeteor } from "/imports/server/async-helpers";
 import { ssrfSafeLookup } from "/imports/server/networking";
 import Capnp from "/imports/server/capnp";
 import { SandstormDb } from "/imports/sandstorm-db/db";
@@ -48,7 +48,7 @@ class SessionContextImpl {
   }
 
   claimRequest(sturdyRef, requiredPermissions) {
-    return inMeteor(() => {
+    return inMeteor(async () => {
       if (!this.sessionId) throw new Error("API sessions can't use powerbox");
 
       const token = fetchApiToken(globalDb, sturdyRef,
@@ -94,7 +94,7 @@ class SessionContextImpl {
                         "doesn't have a token.");
       }
 
-      return restoreInternal(
+      return await restoreInternal(
           globalDb, sturdyRef,
           { clientPowerboxRequest: Match.ObjectIncluding({ sessionId: this.sessionId }) },
           requirements, token);
@@ -102,7 +102,7 @@ class SessionContextImpl {
   }
 
   _offerOrFulfill(isFulfill, cap, requiredPermissions, descriptor, displayInfo) {
-    return inMeteor(() => {
+    return inMeteor(async () => {
       if (!this.sessionId) throw new Error("API sessions can't use powerbox");
 
       const session = globalDb.collections.sessions.findOne({ _id: this.sessionId });
@@ -175,7 +175,7 @@ class SessionContextImpl {
       checkRequirements(globalDb, [requirement]);
 
       const save = castedCap.save(apiTokenOwner);
-      const sturdyRef = waitPromise(save).sturdyRef;
+      const sturdyRef = (await save).sturdyRef;
       globalDb.collections.apiTokens.update({ _id: hashSturdyRef(sturdyRef) }, { $push: { requirements: requirement } });
 
       let powerboxView;
@@ -237,13 +237,13 @@ class SessionContextImpl {
 
   activity(event) {
     return inMeteor(() => {
-      logActivity(this.grainId, this.accountId || "anonymous", event);
+      return logActivity(this.grainId, this.accountId || "anonymous", event);
     });
   }
 }
 
 Meteor.methods({
-  finishPowerboxRequest(sessionId, webkeyUrl, saveLabel, obsolete, grainId) {
+  async finishPowerboxRequest(sessionId, webkeyUrl, saveLabel, obsolete, grainId) {
     check(sessionId, String);
     check(webkeyUrl, String);
     check(saveLabel, Match.OneOf(undefined, null, String));
@@ -277,8 +277,8 @@ Meteor.methods({
       throw new Meteor.Error(400, "Invalid webkey: token doesn't match hostname.");
     }
 
-    const cap = restoreInternal(db, token,
-                                Match.Optional({ webkey: Match.Optional(Match.Any) }), []).cap;
+    const cap = (await restoreInternal(db, token,
+        Match.Optional({ webkey: Match.Optional(Match.Any) }), [])).cap;
     const castedCap = cap.castAs(SystemPersistent);
     const owner = {
       clientPowerboxRequest: {
@@ -293,7 +293,7 @@ Meteor.methods({
     }
 
     const save = castedCap.save(owner);
-    const sturdyRef = waitPromise(save).sturdyRef;
+    const sturdyRef = (await save).sturdyRef;
     return sturdyRef.toString();
   },
 

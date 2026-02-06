@@ -24,7 +24,6 @@ import { inMeteor } from "/imports/server/async-helpers";
 import { globalDb } from "/imports/db-deprecated";
 import ServerIdenticon from "/imports/sandstorm-identicons/identicon-server";
 import Url from "url";
-import Future from "fibers/future";
 
 const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 const DDP_HOSTNAME = process.env.DDP_DEFAULT_CONNECTION_URL &&
@@ -70,7 +69,7 @@ function checkMagic(buf, magic) {
 }
 
 function serveStaticAsset(req, res) {
-  inMeteor(() => {
+  inMeteor(async () => {
     if (req.method === "GET") {
       const assetCspHeader = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
       if (req.headers["if-none-match"] === "permanent") {
@@ -159,16 +158,16 @@ function serveStaticAsset(req, res) {
 
       const buffers = [];
       let totalSize = 0;
-      const done = new Future();
       req.on("data", (buf) => {
         totalSize += buf.length;
         if (totalSize <= (64 * 1024)) {
           buffers.push(buf);
         }
       });
-      req.on("end", done.return.bind(done));
-      req.on("error", done.throw.bind(done));
-      done.wait();
+      await new Promise((resolve, reject) => {
+        req.on("end", resolve);
+        req.on("error", reject);
+      });
 
       if (totalSize > (64 * 1024)) {
         // TODO(soon): Resize the image ourselves.
@@ -193,42 +192,31 @@ function serveStaticAsset(req, res) {
 
       if (purpose.profilePicture) {
         const accountId = purpose.profilePicture.userId;
-        const result = Meteor.users.findAndModify({
-          query: { _id: accountId },
-          update: { $set: { "profile.picture": assetId } },
-          fields: { "profile.picture": 1 },
-        });
+        const result = await Meteor.users.rawCollection().findOneAndUpdate(
+            { _id: accountId },
+            { $set: { "profile.picture": assetId } },
+            { projection: { "profile.picture": 1 }, returnDocument: "before" });
+        const old = result && result.value !== undefined ? result.value : result;
 
-        if (result.ok) {
-          const old = result.value;
-          if (old && old.profile && old.profile.picture) {
-            globalDb.unrefStaticAsset(old.profile.picture);
-          }
-        } else {
+        if (old && old.profile && old.profile.picture) {
+          globalDb.unrefStaticAsset(old.profile.picture);
+        } else if (!old) {
           res.writeHead(500, { "Content-Type": "text/plain" });
           res.end("Couldn't update profile picture.");
           return;
         }
       } else if (purpose.loginLogo) {
-        const result = globalDb.collections.settings.findAndModify({
-          query: { _id: "whitelabelCustomLogoAssetId" },
-          update: {
-            $setOnInsert: { _id: "whitelabelCustomLogoAssetId" },
-            $set: { value: assetId },
-          },
-          upsert: true,
-          fields: { value: 1 },
-        });
+        const result = await globalDb.collections.settings.rawCollection().findOneAndUpdate(
+            { _id: "whitelabelCustomLogoAssetId" },
+            {
+              $setOnInsert: { _id: "whitelabelCustomLogoAssetId" },
+              $set: { value: assetId },
+            },
+            { upsert: true, projection: { value: 1 }, returnDocument: "before" });
+        const old = result && result.value !== undefined ? result.value : result;
 
-        if (result.ok) {
-          const old = result.value;
-          if (old && old.value) {
-            globalDb.unrefStaticAsset(old.value);
-          }
-        } else {
-          res.writeHead(500, { "Content-Type": "text/plain" });
-          res.end("Couldn't update login logo.");
-          return;
+        if (old && old.value) {
+          globalDb.unrefStaticAsset(old.value);
         }
       }
 

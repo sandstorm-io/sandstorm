@@ -206,14 +206,14 @@ Meteor.methods({
     Meteor.users.update({ _id: userId }, { $set: _.omit(userInfo, ["_id", "userId"]) });
   },
 
-  testSend: function (token, smtpConfig, to) {
+  testSend: async function (token, smtpConfig, to) {
     checkAuth(token);
     check(smtpConfig, smtpConfigShape);
     check(to, String);
     const { returnAddress, ...restConfig } = smtpConfig;
 
     try {
-      sendEmail({
+      await sendEmail({
         to: to,
         from: { name: globalDb.getServerTitle(), address: returnAddress },
         subject: "Testing your Sandstorm's SMTP setting",
@@ -252,7 +252,7 @@ Meteor.methods({
     return key;
   },
 
-  sendInvites: function (token, origin, from, list, subject, message, quota) {
+  sendInvites: async function (token, origin, from, list, subject, message, quota) {
     checkAuth(token);
     check(from, { name: String, address: String });
     check([origin, list, subject, message], [String]);
@@ -284,7 +284,7 @@ Meteor.methods({
         };
         if (typeof quota === "number") content.quota = quota;
         globalDb.collections.signupKeys.insert(content);
-        sendEmail({
+        await sendEmail({
           to: email,
           from: from,
           envelopeFrom: globalDb.getReturnAddress(),
@@ -400,7 +400,7 @@ Meteor.methods({
     this.connection.sandstormDb.setPreinstalledApps(appAndPackageIds);
   },
 
-  setTlsKeys: function (token, keys) {
+  setTlsKeys: async function (token, keys) {
     checkAuth(token);
     check(keys, {
       key: String,
@@ -409,7 +409,7 @@ Meteor.methods({
 
     if (currentTlsKeysCallback) {
       // Validate by calling setKeys() directly.
-      currentTlsKeysCallback.setKeys(keys.key, keys.certChain).await();
+      await currentTlsKeysCallback.setKeys(keys.key, keys.certChain);
     }
 
     globalDb.collections.settings.upsert({ _id: "tlsKeys" }, { $set: { value: keys } });
@@ -442,14 +442,14 @@ Meteor.methods({
     return response.data;
   },
 
-  createAcmeAccount: function (token, directory, email, agreeToTerms) {
+  createAcmeAccount: async function (token, directory, email, agreeToTerms) {
     checkAuth(token);
     check(directory, String);
     check(email, String);
     check(agreeToTerms, Boolean);
 
     try {
-      createAcmeAccount(directory, email, agreeToTerms);
+      await createAcmeAccount(directory, email, agreeToTerms);
     } catch (err) {
       throw new Meteor.Error("couldnt_create_acme_account", err.message);
     }
@@ -466,12 +466,12 @@ Meteor.methods({
         {$set: { value: { module, options } }});
   },
 
-  renewCertificateNow: function (token) {
+  renewCertificateNow: async function (token) {
     checkAuth(token);
     this.unblock();
 
     try {
-      renewCertificateNow();
+      await renewCertificateNow();
     } catch (err) {
       throw new Meteor.Error("couldnt_renew_cert", err.message);
     }

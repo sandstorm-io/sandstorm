@@ -33,8 +33,8 @@ function clearUser(id) {
 
 if(isTesting) {
   Meteor.methods({
-    runDueJobsAt(whenMillis) {
-      runDueJobs(new Date(whenMillis))
+    async runDueJobsAt(whenMillis) {
+      await runDueJobs(new Date(whenMillis));
     },
 
     createMockGithubUser: function () {

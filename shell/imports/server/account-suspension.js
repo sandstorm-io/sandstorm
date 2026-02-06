@@ -21,7 +21,7 @@ import { _ } from "meteor/underscore";
 import { send } from "/imports/server/email";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 
-function sendDeletionEmails(db, deletedUserId, byAdminUserId, feedback) {
+async function sendDeletionEmails(db, deletedUserId, byAdminUserId, feedback) {
   const deletedUser = db.getUser(deletedUserId);
 
   const userEmail = _.findWhere(SandstormDb.getUserEmails(deletedUser), { primary: true });
@@ -39,7 +39,7 @@ If you did not request this deletion, please contact the server administrator im
       };
       try {
         emailOptions.to = userEmail.email;
-        send(emailOptions);
+        await send(emailOptions);
       } catch (err) {
         console.error(
           `Failed to send deletion email to user (id=${deletedUser._id}) with error: ${err}`);
@@ -64,25 +64,26 @@ If you did not request this deletion, please contact the server administrator im
     }
   }
 
-  Meteor.users.find({ isAdmin: true }).forEach((user) => {
+  const admins = Meteor.users.find({ isAdmin: true }).fetch();
+  for (const user of admins) {
     const email = _.findWhere(SandstormDb.getUserEmails(user), { primary: true });
     if (!email) {
       console.error("No email found for admin with userId:", user._id);
-      return;
+      continue;
     }
 
     try {
       emailOptions.to = email.email;
-      send(emailOptions);
+      await send(emailOptions);
     } catch (err) {
       console.error(
         `Failed to send deletion email to admin (id=${user._id}) with error: ${err}`);
     }
-  });
+  }
 }
 
 Meteor.methods({
-  suspendAccount(userId, willDelete) {
+  async suspendAccount(userId, willDelete) {
     check(userId, String);
     check(willDelete, Boolean);
 
@@ -97,17 +98,17 @@ Meteor.methods({
     const db = this.connection.sandstormDb;
 
     if (Meteor.settings.public.stripePublicKey) {
-      BlackrockPayments.suspendAccount(db, userId);
+      await BlackrockPayments.suspendAccount(db, userId);
     }
 
     db.suspendAccount(userId, Meteor.userId(), willDelete);
 
     if (willDelete) {
-      sendDeletionEmails(db, userId, Meteor.userId());
+      await sendDeletionEmails(db, userId, Meteor.userId());
     }
   },
 
-  deleteOwnAccount(feedback) {
+  async deleteOwnAccount(feedback) {
     const db = this.connection.sandstormDb;
     if (!Meteor.userId()) {
       throw new Meteor.Error(403, "Must be logged in to delete an account");
@@ -119,12 +120,12 @@ Meteor.methods({
     }
 
     if (Meteor.settings.public.stripePublicKey) {
-      BlackrockPayments.suspendAccount(db, Meteor.userId());
+      await BlackrockPayments.suspendAccount(db, Meteor.userId());
     }
 
     db.suspendAccount(Meteor.userId(), null, true);
 
-    sendDeletionEmails(db, Meteor.userId(), null, feedback);
+    await sendDeletionEmails(db, Meteor.userId(), null, feedback);
   },
 
   unsuspendAccount(userId) {

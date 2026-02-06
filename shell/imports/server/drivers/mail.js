@@ -228,7 +228,7 @@ Meteor.startup(function () {
 });
 
 hackSendEmail = (session, email) => {
-  return inMeteor((function () {
+  return inMeteor((async function () {
     let recipientCount = 0;
     recipientCount += email.to ? email.to.length : 0;
     recipientCount += email.cc ? email.cc.length : 0;
@@ -316,7 +316,7 @@ hackSendEmail = (session, email) => {
     if (!grain) throw new Error("Grain does not exist.");
     globalDb.incrementDailySentMailCount(grain.userId);
 
-    rawSend(options);
+    await rawSend(options);
   }).bind(this)).catch((err) => {
     console.error("Error sending e-mail:", err.stack);
     throw err;

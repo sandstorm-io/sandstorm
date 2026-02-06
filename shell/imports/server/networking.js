@@ -22,6 +22,7 @@ import Url from "url";
 import { SPECIAL_IPV4_ADDRESSES, SPECIAL_IPV6_ADDRESSES } from "/imports/constants";
 
 const lookupInFiber = Meteor.wrapAsync(Dns.lookup, Dns);
+const lookupAsync = Dns.lookup.bind(Dns);
 
 function parseAddress(addr) {
   if (Address4.isValid(addr)) {
@@ -111,19 +112,7 @@ function parseCidr(cidr) {
 
 const SPECIAL_FILTERS = SPECIAL_IPV4_ADDRESSES.concat(SPECIAL_IPV6_ADDRESSES).map(parseCidr);
 
-function ssrfSafeLookup(db, url) {
-  // Given an HTTP/HTTPS URL, look up the hostname, verify it doesn't point to a blacklisted IP,
-  // then return an object of {url, host}, where `url` has the original hostname substituted with
-  // an IP address, and `host` is the original hostname suitable for sending in the `Host` header.
-
-  const parsedUrl = Url.parse(url);
-
-  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-    throw new Error("not an HTTP nor HTTPS URL: " + url);
-  }
-
-  const addresses = lookupInFiber(parsedUrl.hostname, { all: true, hints: Dns.ADDRCONFIG });
-
+function selectSafeAddress(db, parsedUrl, addresses) {
   // TODO(perf): Subscribe to blacklist changes so that we don't have to do a new lookup and
   //   parse each time.
   const blacklist = db.getSettingWithFallback("ipBlacklist", "")
@@ -155,7 +144,42 @@ function ssrfSafeLookup(db, url) {
   }
 }
 
-function ssrfSafeLookupOrProxy(db, url) {
+async function ssrfSafeLookup(db, url) {
+  // Given an HTTP/HTTPS URL, look up the hostname, verify it doesn't point to a blacklisted IP,
+  // then return an object of {url, host}, where `url` has the original hostname substituted with
+  // an IP address, and `host` is the original hostname suitable for sending in the `Host` header.
+
+  const parsedUrl = Url.parse(url);
+
+  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+    throw new Error("not an HTTP nor HTTPS URL: " + url);
+  }
+
+  const addresses = await new Promise((resolve, reject) => {
+    lookupAsync(parsedUrl.hostname, { all: true, hints: Dns.ADDRCONFIG }, (err, result) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(result);
+      }
+    });
+  });
+
+  return selectSafeAddress(db, parsedUrl, addresses);
+}
+
+function ssrfSafeLookupSync(db, url) {
+  const parsedUrl = Url.parse(url);
+
+  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+    throw new Error("not an HTTP nor HTTPS URL: " + url);
+  }
+
+  const addresses = lookupInFiber(parsedUrl.hostname, { all: true, hints: Dns.ADDRCONFIG });
+  return selectSafeAddress(db, parsedUrl, addresses);
+}
+
+async function ssrfSafeLookupOrProxy(db, url) {
   // If there is an HTTP proxy, then it will have to do the work of blacklisting IPs, because it's
   // the proxy that does the DNS lookup.
   const httpProxy = process.env.HTTP_PROXY || process.env.http_proxy;
@@ -166,7 +190,20 @@ function ssrfSafeLookupOrProxy(db, url) {
   } else if (httpsProxy && url.startsWith("https:")) {
     return { proxy: httpsProxy };
   } else {
-    return ssrfSafeLookup(db, url);
+    return await ssrfSafeLookup(db, url);
+  }
+}
+
+function ssrfSafeLookupOrProxySync(db, url) {
+  const httpProxy = process.env.HTTP_PROXY || process.env.http_proxy;
+  const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy;
+
+  if (httpProxy && url.startsWith("http:")) {
+    return { proxy: httpProxy };
+  } else if (httpsProxy && url.startsWith("https:")) {
+    return { proxy: httpsProxy };
+  } else {
+    return ssrfSafeLookupSync(db, url);
   }
 }
 
@@ -183,14 +220,13 @@ function ssrfSafeHttp(originalHttpCall, db, method, url, options, callback) {
     return originalHttpCall(method, url, options, callback);
   }
 
-  const safe = ssrfSafeLookupOrProxy(db, url);
+  const safe = ssrfSafeLookupOrProxySync(db, url);
 
   if (safe.proxy) {
     if (!options.npmRequestOptions) options.npmRequestOptions = {};
     options.npmRequestOptions.proxy = safe.proxy;
     return originalHttpCall(method, url, options, callback);
   } else {
-    const safe = ssrfSafeLookup(db, url);
     if (!options.headers) options.headers = {};
     options.headers.host = safe.host;
     options.servername = safe.host.split(":")[0];

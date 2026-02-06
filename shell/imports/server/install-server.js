@@ -21,7 +21,6 @@ import { Router } from "meteor/iron:router";
 
 import { allowDemo } from "/imports/demo";
 import { isSafeDemoAppUrl } from "/imports/install"
-import { waitPromise } from "/imports/server/async-helpers";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
 import { cancelDownload, readPackageFromStream } from "/imports/server/installer";
@@ -29,10 +28,10 @@ import { cancelDownload, readPackageFromStream } from "/imports/server/installer
 const TOKEN_CLEANUP_MINUTES = 120;  // Give enough time for large uploads on slow connections.
 const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
 
-function cleanupToken(tokenId) {
+async function cleanupToken(tokenId) {
   check(tokenId, String);
   globalDb.collections.spkTokens.remove({ _id: tokenId });
-  waitPromise(globalBackend.cap().deleteBackup(tokenId));
+  await globalBackend.cap().deleteBackup(tokenId);
 }
 
 Meteor.startup(() => {
@@ -41,7 +40,9 @@ Meteor.startup(() => {
     const queryDate = new Date(Date.now() - TOKEN_CLEANUP_TIMER);
 
     globalDb.collections.spkTokens.find({ timestamp: { $lt: queryDate } }).forEach((token) => {
-      cleanupToken(token._id);
+      cleanupToken(token._id).catch((err) => {
+        console.error("Failed cleaning up upload token:", err);
+      });
     });
   });
 });
@@ -141,7 +142,7 @@ Router.map(function () {
     where: "server",
     path: "/upload/:token",
 
-    action: function () {
+    action: async function () {
       if (typeof this.params.token !== "string" ||
           !globalDb.collections.spkTokens.findOne(this.params.token)) {
         this.response.writeHead(403, {
@@ -152,7 +153,7 @@ Router.map(function () {
         this.response.end();
       } else if (this.request.method === "POST") {
         try {
-          const packageId = waitPromise(readPackageFromStream(this.request, globalBackend)).packageId;
+          const packageId = (await readPackageFromStream(this.request, globalBackend)).packageId;
           this.response.writeHead(200, {
             "Content-Length": packageId.length,
             "Content-Type": "text/plain",

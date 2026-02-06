@@ -24,7 +24,7 @@ import { Match, check } from "meteor/check";
 import { Router } from "meteor/iron:router";
 import { HTTP } from "meteor/http";
 
-import { inMeteor, waitPromise } from "/imports/server/async-helpers";
+import { inMeteor } from "/imports/server/async-helpers";
 import { globalDb } from "/imports/db-deprecated";
 import { createGrainBackup, createBackupToken, restoreGrainBackup, storeGrainBackup }
   from "/imports/server/backup";
@@ -292,13 +292,13 @@ Router.map(function () {
   this.route("transfersStart", {
     where: "server",
     path: "/transfers/prepare/:grainId",
-    action() {
+    async action() {
       let transfer = checkToken(this.request, this.response);
       if (!transfer) return;
 
       let fileToken;
       try {
-        fileToken = createGrainBackup(transfer.userId, this.params.grainId, true);
+        fileToken = await createGrainBackup(transfer.userId, this.params.grainId, true);
       } catch (err) {
         let status = (typeof err.error === "number") && err.error >= 400 && err.error < 600
                    ? err.error : 500;
@@ -376,10 +376,10 @@ class Downloader {
     }
   }
 
-  run() {
+  async run() {
     try {
       while (!this.canceled) {
-        this.nextStep();
+        await this.nextStep();
       }
     } catch (err) {
       console.log("error in grain transfer:", err.stack);
@@ -405,7 +405,7 @@ class Downloader {
     }
   }
 
-  nextStep() {
+  async nextStep() {
     if (!this.remoteFileToken) {
       // Request grain download.
       console.log("mass transfer: packing:", this.grainId);
@@ -435,14 +435,14 @@ class Downloader {
       this.request = requestMethod(this.source + "/downloadBackup/" + this.remoteFileToken);
       this.request.end();
 
-      let response = waitPromise(new Promise((resolve, reject) => {
+      const response = await new Promise((resolve, reject) => {
         this.request.on("response", response => {
           resolve(response);
         });
         this.request.on("error", err => {
           reject(err);
         });
-      }));
+      });
 
       if (this.canceled) return;
 
@@ -462,7 +462,7 @@ class Downloader {
       if (this.canceled) return;
 
       let localFileToken = createBackupToken();
-      storeGrainBackup(localFileToken, response);
+      await storeGrainBackup(localFileToken, response);
 
       if (this.canceled) return;
 
@@ -478,7 +478,7 @@ class Downloader {
       // Finish unpacking.
       console.log("mass transfer: unpacking:", this.grainId);
 
-      let localGrainId = restoreGrainBackup(this.localFileToken,
+      const localGrainId = await restoreGrainBackup(this.localFileToken,
           Meteor.users.findOne({_id: this.userId}), this);
       if (!globalDb.collections.incomingTransfers.findOne({_id: this._id, downloading: true})) {
         // Someone unset the "downloading" flag, probably trying to cancel this download, but we

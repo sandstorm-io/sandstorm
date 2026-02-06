@@ -9,11 +9,9 @@ import { Mongo } from "meteor/mongo";
 import { _ } from "meteor/underscore";
 import { Match } from "meteor/check";
 import { userPictureUrl, fetchPicture } from "/imports/server/accounts/picture";
-import { waitPromise } from "/imports/server/async-helpers";
 import { PRIVATE_IPV4_ADDRESSES, PRIVATE_IPV6_ADDRESSES } from "/imports/constants";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 
-import Future from "fibers/future";
 import Url from "url";
 import Crypto from "crypto";
 
@@ -157,11 +155,12 @@ const useLocalizedTextInUserActions = function (db, _backend) {
   });
 };
 
-const verifyAllPgpSignatures = function (db, backend) {
-  db.collections.packages.find({}).forEach(function (pkg) {
+const verifyAllPgpSignatures = async function (db, backend) {
+  const packages = db.collections.packages.find({}).fetch();
+  for (const pkg of packages) {
     try {
       console.log("checking PGP signature for package:", pkg._id);
-      const info = waitPromise(backend.cap().tryGetPackage(pkg._id));
+      const info = await backend.cap().tryGetPackage(pkg._id);
       if (info.authorPgpKeyFingerprint) {
         console.log("  " + info.authorPgpKeyFingerprint);
         db.collections.packages.update(pkg._id,
@@ -172,7 +171,7 @@ const verifyAllPgpSignatures = function (db, backend) {
     } catch (err) {
       console.error(err.stack);
     }
-  });
+  }
 };
 
 const splitUserIdsIntoAccountIdsAndIdentityIds = function (db, _backend) {
@@ -596,7 +595,7 @@ const extractLastUsedFromApiTokenOwner = function (db, _backend) {
   });
 };
 
-const setUpstreamTitles = function (db, _backend) {
+const setUpstreamTitles = async function (db, _backend) {
   // Initializes the `upstreamTitle` and `renamed` fields of `ApiToken.owner.user`.
 
   const apiTokensRaw = db.collections.apiTokens.rawCollection();
@@ -604,15 +603,15 @@ const setUpstreamTitles = function (db, _backend) {
   // First, construct a list of all *shared* grains. We will need to do a separate update()
   // for each of these, so we'd like to skip those which have nothing to update.
   // In MongoDB driver 4.x+, aggregate() returns a cursor directly (no callback).
-  const grainIds = apiTokensRaw.aggregate([
+  const grainIdList = (await apiTokensRaw.aggregate([
     { $match: { "owner.user": { $exists: true }, grainId: { $exists: true } } },
     { $group: { _id: "$grainId" } },
-  ]).toArray().await().map(grain => grain._id);
+  ]).toArray()).map(grain => grain._id);
 
   let count = 0;
-  db.collections.grains.find({ _id: { $in: grainIds } }, { fields: { title: 1 } }).forEach((grain) => {
+  db.collections.grains.find({ _id: { $in: grainIdList } }, { fields: { title: 1 } }).forEach((grain) => {
     if (count % 100 == 0) {
-      console.log(count + " / " + grainIds.length);
+      console.log(count + " / " + grainIdList.length);
     }
 
     ++count;
@@ -741,7 +740,7 @@ const addEncryptionToFrontendRefIpNetwork = function (db, _backend) {
   });
 };
 
-function backgroundFillInGrainSizes(db, backend) {
+async function backgroundFillInGrainSizes(db, backend) {
   // Fill in sizes for all grains that don't have them. Since computing a grain size requires a
   // directory walk, we don't want to do them all at once. Instead, we compute one a second until
   // all grains have sizes.
@@ -752,8 +751,8 @@ function backgroundFillInGrainSizes(db, backend) {
     if (grain) {
       // Compute size!
       try {
-        const result = waitPromise(backend.cap().getGrainStorageUsage(
-            grain.userId, grain._id));
+        const result = await backend.cap().getGrainStorageUsage(
+            grain.userId, grain._id);
         db.collections.grains.update({ _id: grain._id, size: { $exists: false } },
             { $set: { size: parseInt(result.size) } });
       } catch (err) {
@@ -769,7 +768,11 @@ function backgroundFillInGrainSizes(db, backend) {
       }
 
       // Do another one in a second.
-      Meteor.setTimeout(backgroundFillInGrainSizes.bind(this, db, backend), 1000);
+      Meteor.setTimeout(() => {
+        backgroundFillInGrainSizes(db, backend).catch((err) => {
+          console.error("Error while backfilling grain sizes:", err.stack);
+        });
+      }, 1000);
     }
   } catch (err) {
     // We'll just stop for now, to avoid spamming logs if this error persists. Next time the server
@@ -1238,40 +1241,50 @@ const NEW_SERVER_STARTUP = [
   startPreinstallingApps,
 ];
 
-const migrateToLatest = function (db, backend) {
+const migrateToLatest = async function (db, backend) {
   if (Meteor.settings.replicaNumber) {
     // This is a replica. Wait for the first replica to perform migrations.
 
     console.log("Waiting for migrations on replica zero...");
 
-    const done = new Future();
-    const change = function (doc) {
-      console.log("Migrations applied elsewhere: " + doc.value + "/" + MIGRATIONS.length);
-      if (doc.value >= MIGRATIONS.length) done.return();
-    };
-
-    const observer = db.collections.migrations.find({ _id: "migrations_applied" }).observe({
-      added: change,
-      changed: change,
+    await new Promise((resolve) => {
+      const observer = db.collections.migrations.find({ _id: "migrations_applied" }).observe({
+        added(doc) {
+          console.log("Migrations applied elsewhere: " + doc.value + "/" + MIGRATIONS.length);
+          if (doc.value >= MIGRATIONS.length) {
+            observer.stop();
+            resolve(undefined);
+          }
+        },
+        changed(doc) {
+          console.log("Migrations applied elsewhere: " + doc.value + "/" + MIGRATIONS.length);
+          if (doc.value >= MIGRATIONS.length) {
+            observer.stop();
+            resolve(undefined);
+          }
+        },
+      });
     });
 
-    const newServerDone = new Future();
-    const newServerChange = function (doc) {
-      if (doc.value) {
-        console.log("New server migrations applied elsewhere");
-        newServerDone.return();
-      }
-    };
-
-    const newServerObserver = db.collections.migrations.find({ _id: "new_server_migrations_applied" }).observe({
-      added: newServerChange,
-      changed: newServerChange,
+    await new Promise((resolve) => {
+      const newServerObserver = db.collections.migrations.find({ _id: "new_server_migrations_applied" }).observe({
+        added(doc) {
+          if (doc.value) {
+            console.log("New server migrations applied elsewhere");
+            newServerObserver.stop();
+            resolve(undefined);
+          }
+        },
+        changed(doc) {
+          if (doc.value) {
+            console.log("New server migrations applied elsewhere");
+            newServerObserver.stop();
+            resolve(undefined);
+          }
+        },
+      });
     });
 
-    done.wait();
-    observer.stop();
-    newServerDone.wait();
-    newServerObserver.stop();
     console.log("Migrations have completed on replica zero.");
   } else {
     const applied = db.collections.migrations.findOne({ _id: "migrations_applied" });
@@ -1293,7 +1306,7 @@ const migrateToLatest = function (db, backend) {
     for (let i = start; i < MIGRATIONS.length; i++) {
       // Apply migration i, then record that migration i was successfully run.
       console.log("Applying migration " + (i + 1));
-      MIGRATIONS[i](db, backend);
+      await MIGRATIONS[i](db, backend);
       db.collections.migrations.update({ _id: "migrations_applied" }, { $set: { value: i + 1 } });
       console.log("Applied migration " + (i + 1));
     }
@@ -1311,7 +1324,9 @@ const migrateToLatest = function (db, backend) {
     }
 
     // Start background migrations.
-    backgroundFillInGrainSizes(db, backend);
+    backgroundFillInGrainSizes(db, backend).catch((err) => {
+      console.error("Error while backfilling grain sizes:", err.stack);
+    });
   }
 };
 

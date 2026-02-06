@@ -1,9 +1,7 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
-import { _ } from "meteor/underscore";
 
 import nodemailer from "nodemailer";
-import Future from "fibers/future";
 
 import { globalDb } from "/imports/db-deprecated";
 
@@ -39,7 +37,7 @@ const makePool = function (mailConfig) {
     // TODO(someday): allow maxConnections to be configured?
   });
 
-  pool._futureWrappedSendMail = _.bind(Future.wrap(pool.sendMail), pool);
+  pool._sendMailAsync = pool.sendMail.bind(pool);
   return pool;
 };
 
@@ -78,8 +76,8 @@ const getPool = function (smtpConfig) {
   return pool;
 };
 
-const smtpSend = function (pool, mailOptions) {
-  pool._futureWrappedSendMail(mailOptions).wait();
+const smtpSend = async function (pool, mailOptions) {
+  await pool._sendMailAsync(mailOptions);
 };
 
 // From http://emailregex.com/, which claims this is the W3C standard for the HTML input element,
@@ -108,7 +106,7 @@ function validateEmail(email) {
   }
 }
 
-const rawSend = function (mailOptions, smtpConfig) {
+const rawSend = async function (mailOptions, smtpConfig) {
   // Sends an email mailOptions object structured as described in
   // https://github.com/nodemailer/mailcomposer#e-mail-message-fields
   // across the transport described by smtpConfig.
@@ -122,7 +120,7 @@ const rawSend = function (mailOptions, smtpConfig) {
 
   const pool = getPool(smtpConfig);
   if (pool) {
-    smtpSend(pool, mailOptions);
+    await smtpSend(pool, mailOptions);
   } else {
     throw new Error("SMTP pool is misconfigured.");
   }
@@ -172,7 +170,7 @@ const rawSend = function (mailOptions, smtpConfig) {
  *   https://github.com/nodemailer/mailcomposer/tree/v0.1.15#add-attachments
  * @param {String} [options.envelopeFrom] Envelope sender.
  */
-const send = function (options) {
+const send = async function (options) {
   // Unpack options
   const {
     from,
@@ -211,7 +209,7 @@ const send = function (options) {
     };
   }
 
-  rawSend(opts, smtpConfig);
+  await rawSend(opts, smtpConfig);
 };
 
 export { send, rawSend };

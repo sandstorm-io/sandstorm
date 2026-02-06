@@ -19,12 +19,11 @@ import { Match, check } from "meteor/check";
 import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 
-import { waitPromise } from "/imports/server/async-helpers";
 import { createAppActivityDesktopNotification } from "/imports/server/desktop-notifications";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
 
-logActivity = function (grainId, accountIdOrAnonymous, event) {
+logActivity = async function (grainId, accountIdOrAnonymous, event) {
   // accountIdOrAnonymous is the string "anonymous" for an anonymous user, or is null for a
   // non-user-initiated ("background") activity.
 
@@ -117,7 +116,7 @@ logActivity = function (grainId, accountIdOrAnonymous, event) {
         }));
       }
     });
-    waitPromise(Promise.all(promises));
+    await Promise.all(promises);
   }
 
   // Make a list of everyone to notify.
@@ -180,30 +179,24 @@ logActivity = function (grainId, accountIdOrAnonymous, event) {
       appActivity.user = { anonymous: true };
     }
 
-    notify.forEach(targetId => {
+    const notifyPromises = notify.map(async (targetId) => {
       // Notify the account.
 
       // We need to know the ID of the inserted/updated document so we can embed it in the
       // desktop notification to bind them.
       const idIfInserted = Random.id(17);
-      const result = globalDb.collections.notifications.findAndModify({
-        query: _.extend({ userId: targetId }, notification),
-        update: {
-          $set: update,
-          $inc: { count: 1 },
-          $setOnInsert: {
-            _id: idIfInserted,
+      const result = await globalDb.collections.notifications.rawCollection().findOneAndUpdate(
+          _.extend({ userId: targetId }, notification),
+          {
+            $set: update,
+            $inc: { count: 1 },
+            $setOnInsert: {
+              _id: idIfInserted,
+            },
           },
-        },
-        upsert: true,
-      });
-
-      if (!result.ok) {
-        console.error("Couldn't create notification!", result.lastErrorObject);
-        return;
-      }
-
-      const notificationId = result.value._id || idIfInserted;
+          { upsert: true, returnDocument: "before" });
+      const oldNotification = result && result.value !== undefined ? result.value : result;
+      const notificationId = oldNotification && oldNotification._id || idIfInserted;
 
       const desktopNotification = {
         userId: targetId,
@@ -213,6 +206,7 @@ logActivity = function (grainId, accountIdOrAnonymous, event) {
 
       createAppActivityDesktopNotification(desktopNotification);
     });
+    await Promise.all(notifyPromises);
   }
 };
 

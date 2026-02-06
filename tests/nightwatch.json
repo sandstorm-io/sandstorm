@@ -29,6 +29,7 @@
       "desiredCapabilities": {
         "browserName": "chrome",
         "goog:chromeOptions": {
+          "binary": "${NIGHTWATCH_CHROME_BINARY}",
           "args": ["--headless", "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
           "prefs": {
             "download.prompt_for_download": false,

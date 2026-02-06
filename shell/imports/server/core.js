@@ -19,7 +19,7 @@ import { Match, check } from "meteor/check";
 import { _ } from "meteor/underscore";
 
 import Crypto from "crypto";
-import { inMeteor, waitPromise } from "/imports/server/async-helpers";
+import { inMeteor } from "/imports/server/async-helpers";
 import { StaticAssetImpl, IdenticonStaticAssetImpl } from "/imports/server/static-asset";
 import { PersistentImpl, hashSturdyRef, generateSturdyRef, checkRequirements,
          fetchApiToken, insertApiToken } from "/imports/server/persistent";
@@ -47,7 +47,7 @@ class SandstormCoreImpl {
   }
 
   restore(sturdyRef) {
-    return inMeteor(() => {
+    return inMeteor(async () => {
       sturdyRef = sturdyRef.toString("utf8");
       const token = fetchApiToken(this.db, sturdyRef,
           { "owner.grain.grainId": this.grainId });
@@ -55,16 +55,17 @@ class SandstormCoreImpl {
         throw new Error("no such token");
       }
 
-      return restoreInternal(this.db, sturdyRef,
-                             { grain: Match.ObjectIncluding({ grainId: this.grainId }) },
-                             [], token);
+      return await restoreInternal(this.db, sturdyRef,
+          { grain: Match.ObjectIncluding({ grainId: this.grainId }) },
+          [], token);
     });
   }
 
   drop(sturdyRef) {
-    return inMeteor(() => {
+    return inMeteor(async () => {
       sturdyRef = sturdyRef.toString("utf8");
-      return dropInternal(this.db, sturdyRef, { grain: Match.ObjectIncluding({ grainId: this.grainId }) });
+      return await dropInternal(this.db, sturdyRef,
+          { grain: Match.ObjectIncluding({ grainId: this.grainId }) });
     });
   }
 
@@ -102,14 +103,14 @@ class SandstormCoreImpl {
     return {
       owner: {
         addOngoing: (displayInfo, notification) => {
-          return inMeteor(() => {
+          return inMeteor(async () => {
             const grain = this.db.collections.grains.findOne({ _id: grainId });
             if (!grain) {
               throw new Error("Grain not found.");
             }
 
             const castedNotification = notification.castAs(PersistentOngoingNotification);
-            const wakelockToken = waitPromise(castedNotification.save()).sturdyRef.toString("utf8");
+            const wakelockToken = (await castedNotification.save()).sturdyRef.toString("utf8");
 
             // We have to close both the casted cap and the original. Perhaps this should be fixed in
             // node-capnp?
@@ -136,20 +137,20 @@ class SandstormCoreImpl {
 
   backgroundActivity(event) {
     return inMeteor(() => {
-      logActivity(this.grainId, null, event);
+      return logActivity(this.grainId, null, event);
     });
   }
 
-  reportGrainSize(bytes) {
+  async reportGrainSize(bytes) {
     bytes = parseInt(bytes);  // int64s are stringified but precision isn't critical here
 
-    const result = this.db.collections.grains.findAndModify({
-      query: { _id: this.grainId },
-      update: { $set: { size: bytes } },
-      fields: { _id: 1, userId: 1, size: 1 },
-    });
+    const result = await this.db.collections.grains.rawCollection().findOneAndUpdate(
+        { _id: this.grainId },
+        { $set: { size: bytes } },
+        { projection: { _id: 1, userId: 1, size: 1 }, returnDocument: "before" });
+    const grain = result && result.value !== undefined ? result.value : result;
 
-    if (!result.ok) {
+    if (!grain) {
       throw new Error("Grain not found.");
     }
 
@@ -157,11 +158,11 @@ class SandstormCoreImpl {
     // before per-grain size tracking was implemented. In that case, we don't want to update the
     // user record because it may already be counting the grain (specifically on Blackrock, where
     // whole-user size counting has existed for some time).
-    if (this.db.isQuotaEnabled() && ("size" in result.value)) {
+    if (this.db.isQuotaEnabled() && ("size" in grain)) {
       // Update the user record, too. Note that we periodically recompute the user's storage usage
       // from scratch as well, so this doesn't have to be perfectly reliable.
-      const diff = bytes - (result.value.size || 0);
-      this.db.collections.users.update(result.value.userId, { $inc: { storageUsage: diff } });
+      const diff = bytes - (grain.size || 0);
+      this.db.collections.users.update(grain.userId, { $inc: { storageUsage: diff } });
     }
   }
 
@@ -218,9 +219,9 @@ class NotificationHandle extends PersistentImpl {
   }
 
   close() {
-    return inMeteor(() => {
+    return inMeteor(async () => {
       if (!this.isSaved()) {
-        dismissNotification(this.db, this.notificationId);
+        await dismissNotification(this.db, this.notificationId);
       }
     });
   }
@@ -298,7 +299,7 @@ globalFrontendRefRegistry.register({
   },
 });
 
-function dismissNotification(db, notificationId, callCancel) {
+async function dismissNotification(db, notificationId, callCancel) {
   const notification = db.collections.notifications.findOne({ _id: notificationId });
   if (notification) {
     db.collections.notifications.remove({ _id: notificationId });
@@ -306,13 +307,13 @@ function dismissNotification(db, notificationId, callCancel) {
       const id = notification.ongoing;
 
       if (!callCancel) {
-        dropInternal(db, id, { frontend: null });
+        await dropInternal(db, id, { frontend: null });
       } else {
-        const notificationCap = restoreInternal(db, id, { frontend: null }, []).cap;
+        const notificationCap = (await restoreInternal(db, id, { frontend: null }, [])).cap;
         const castedNotification = notificationCap.castAs(PersistentOngoingNotification);
-        dropInternal(db, id, { frontend: null });
+        await dropInternal(db, id, { frontend: null });
         try {
-          waitPromise(castedNotification.cancel());
+          await castedNotification.cancel();
           castedNotification.close();
           notificationCap.close();
         } catch (err) {
@@ -332,7 +333,7 @@ function dismissNotification(db, notificationId, callCancel) {
 }
 
 Meteor.methods({
-  dismissNotification(notificationId) {
+  async dismissNotification(notificationId) {
     // This will remove notifications from the database and from view of the user.
     // For ongoing notifications, it will begin the process of cancelling and dropping them from
     // the app.
@@ -347,7 +348,7 @@ Meteor.methods({
     } else if (notification.userId !== Meteor.userId()) {
       throw new Meteor.Error(403, "Notification does not belong to current user.");
     } else {
-      dismissNotification(db, notificationId, true);
+      await dismissNotification(db, notificationId, true);
     }
   },
 
@@ -512,8 +513,8 @@ class DummyObserver {
   }
 }
 
-restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenInfo,
-                   currentTokenId, currentTokenKey) => {
+restoreInternal = async (db, originalToken, ownerPattern, requirements, originalTokenInfo,
+                         currentTokenId, currentTokenKey) => {
   // Restores the token `originalToken`, which is a Buffer.
   //
   // `ownerPattern` is a match pattern (i.e. used with check()) that the token's owner must match.
@@ -595,7 +596,7 @@ restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenI
     const observer = new DummyObserver();
 
     // Ensure the grain is running, then restore the capability.
-    const cap = waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
+    const cap = (await globalBackend.useGrain(token.grainId, (supervisor) => {
       // Note that in this case it is the supervisor's job to implement SystemPersistent, so we
       // don't generate a saveTemplate here.
       let promise = supervisor.restore(token.objectId, [], new Buffer(originalToken, "utf8"));
@@ -629,7 +630,7 @@ restoreInternal = (db, originalToken, ownerPattern, requirements, originalTokenI
   }
 };
 
-function dropInternal(db, sturdyRef, ownerPattern) {
+async function dropInternal(db, sturdyRef, ownerPattern) {
   // Drops `sturdyRef`, checking first that its owner matches `ownerPattern`.
 
   const token = fetchApiToken(db, sturdyRef);
@@ -656,12 +657,14 @@ function dropInternal(db, sturdyRef, ownerPattern) {
         { "frontendRef.notificationHandle": notificationId });
     if (!anyToken) {
       // No other tokens referencing this notification exist, so dismiss the notification
-      dismissNotification(db, notificationId);
+      dismissNotification(db, notificationId).catch((err) => {
+        console.error("Error dismissing notification:", err);
+      });
     }
   } else if (token.objectId) {
-    waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
+    await globalBackend.useGrain(token.grainId, (supervisor) => {
       return supervisor.drop(token.objectId);
-    }));
+    });
 
     db.removeApiTokens({ _id: hashedSturdyRef });
   } else {

@@ -185,7 +185,7 @@ const makeTokenUrl = function (email, token, options) {
 ///
 /// EMAIL VERIFICATION
 ///
-const sendTokenEmail = function (db, email, token, options) {
+const sendTokenEmail = async function (db, email, token, options) {
   let subject;
   let text;
 
@@ -211,7 +211,7 @@ const sendTokenEmail = function (db, email, token, options) {
     text: text,
   };
 
-  sendEmail(sendOptions);
+  await sendEmail(sendOptions);
 };
 
 const parsedRootUrl = Url.parse(process.env.ROOT_URL);
@@ -219,7 +219,7 @@ const parsedRootUrl = Url.parse(process.env.ROOT_URL);
 /// CREATING USERS
 ///
 // returns the user id
-const createAndEmailTokenForUser = function (db, email, options) {
+const createAndEmailTokenForUser = async function (db, email, options) {
   check(email, String);
   check(options, {
     resumePath: String,
@@ -278,13 +278,13 @@ const createAndEmailTokenForUser = function (db, email, options) {
     userId = Accounts.insertUserDoc(options, user);
   }
 
-  sendTokenEmail(db, email, token, options);
+  await sendTokenEmail(db, email, token, options);
 
   return userId;
 };
 
 Meteor.methods({
-  createAndEmailTokenForUser: function (email, options) {
+  createAndEmailTokenForUser: async function (email, options) {
     // method for create user. Requests come from the client.
     // This method will create a user if it doesn't exist, otherwise it will generate a token.
     // It will always send an email to the user
@@ -300,7 +300,7 @@ Meteor.methods({
       throw new Meteor.Error(403, "Email login service is disabled.");
     }
     // Create user. result contains id and token.
-    const user = createAndEmailTokenForUser(this.connection.sandstormDb, email, options);
+    await createAndEmailTokenForUser(this.connection.sandstormDb, email, options);
   },
 
   linkEmailCredentialToAccount: function (email, token, allowLogin) {

@@ -21,8 +21,6 @@ import { _ } from "meteor/underscore";
 import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions";
 import Capnp from "/imports/server/capnp";
 
-import { waitPromise } from '../server/async-helpers';
-
 const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");
 
@@ -34,7 +32,7 @@ function encodePowerboxDescriptor(desc) {
 }
 
 Meteor.methods({
-  newFrontendRef(sessionId, frontendRefRequest) {
+  async newFrontendRef(sessionId, frontendRefRequest) {
     // Completes a powerbox request for a frontendRef capability.
     check(sessionId, String);
     // frontendRefRequest is type-checked by frontendRefRegistry.validate(), below.
@@ -49,7 +47,7 @@ Meteor.methods({
     }
 
     let { descriptor, requirements, frontendRef } =
-        frontendRefRegistry.validate(db, session, frontendRefRequest);
+        await frontendRefRegistry.validate(db, session, frontendRefRequest);
     descriptor = encodePowerboxDescriptor(descriptor);
 
     const grainId = session.grainId;
@@ -61,8 +59,12 @@ Meteor.methods({
     };
 
     const cap = frontendRefRegistry.create(db, frontendRef, requirements);
-    const sturdyRef = waitPromise(cap.save(apiTokenOwner)).sturdyRef.toString();
-    cap.close();
+    let sturdyRef;
+    try {
+      sturdyRef = (await cap.save(apiTokenOwner)).sturdyRef.toString();
+    } finally {
+      cap.close();
+    }
     return { sturdyRef, descriptor };
   },
 
@@ -259,12 +261,12 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
   check(requestId, String);
   check(descriptorList, [String]);
 
-  const results = {};
   const db = this.connection.sandstormDb;
   const frontendRefRegistry = this.connection.frontendRefRegistry;
 
-  if (descriptorList.length > 0) {
-    const descriptorMatches = descriptorList.map(packedDescriptor => {
+  const runQuery = async () => {
+    if (descriptorList.length > 0) {
+      const descriptorMatches = await Promise.all(descriptorList.map(async packedDescriptor => {
       // Decode the descriptor.
       // TODO(now): Also single-segment? Canonical?
 
@@ -274,18 +276,20 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
           new Buffer(packedDescriptor, "base64"),
           { packed: true });
 
-      if (!queryDescriptor.tags || queryDescriptor.tags.length === 0) return {};
+      if (!queryDescriptor.tags || queryDescriptor.tags.length === 0) {
+        return { descriptor: queryDescriptor, matches: {} };
+      }
 
       // Expand each tag into a match map.
-      const tagMatches = queryDescriptor.tags.map(tag => {
-        const result = {};
+        const tagMatches = await Promise.all(queryDescriptor.tags.map(async tag => {
+          const result = {};
+          const options = await frontendRefRegistry.query(db, this.userId, tag);
+          options.forEach(option => {
+            result[option._id] = new PowerboxOption(option);
+          });
 
-        frontendRefRegistry.query(db, this.userId, tag).forEach(option => {
-          result[option._id] = new PowerboxOption(option);
-        });
-
-        return result;
-      });
+          return result;
+        }));
 
       // Intersect two tags' matches.
       const matches = tagMatches.reduce((a, b) => {
@@ -368,8 +372,8 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
         });
       }
 
-      return { descriptor: queryDescriptor, matches };
-    });
+        return { descriptor: queryDescriptor, matches };
+      }));
 
     // TODO(someday): The implementation of matchQuality here is not quite right. In theory, we're
     //   supposed to compare descriptors to determine which ones are more specific than which
@@ -379,48 +383,53 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
     //   produce the same results as long as "unacceptable" descriptors are placed last in the
     //   list.
 
-    const matches = descriptorMatches.reduce((finalMatches, clause) => {
-      if (clause.matchQuality === "unacceptable") {
-        // Remove b's matches from a.
-        for (const id in clause.matches) {
-          if (id in finalMatches) {
-            if (!finalMatches[id].subtract(clause.matches[id])) {
-              delete finalMatches[id];
+      const matches = descriptorMatches.reduce((finalMatches, clause) => {
+        if (clause.matchQuality === "unacceptable") {
+          // Remove b's matches from a.
+          for (const id in clause.matches) {
+            if (id in finalMatches) {
+              if (!finalMatches[id].subtract(clause.matches[id])) {
+                delete finalMatches[id];
+              }
             }
           }
+
+          return finalMatches;
+        } else {
+          for (const id in clause.matches) {
+            if (id in finalMatches) {
+              finalMatches[id].union(clause.matches[id]);
+            } else {
+              finalMatches[id] = clause.matches[id];
+            }
+
+            if (clause.matchQuality === "preferred") {
+              finalMatches[id].matchQuality = "preferred";
+            }
+          }
+          return finalMatches;
+        }
+      }, {});
+
+      for (const id in matches) {
+        if (!matches[id].matchQuality) {
+          matches[id].matchQuality = "acceptable";
         }
 
-        return finalMatches;
-      } else {
-        for (const id in clause.matches) {
-          if (id in finalMatches) {
-            finalMatches[id].union(clause.matches[id]);
-          } else {
-            finalMatches[id] = clause.matches[id];
-          }
-
-          if (clause.matchQuality === "preferred") {
-            finalMatches[id].matchQuality = "preferred";
-          }
-        }
-
-        return finalMatches;
+        matches[id].requestId = requestId;
+        this.added("powerboxOptions", id, matches[id]);
       }
-    }, {});
-
-    for (const id in matches) {
-      if (!matches[id].matchQuality) {
-        matches[id].matchQuality = "acceptable";
-      }
-
-      matches[id].requestId = requestId;
-      this.added("powerboxOptions", id, matches[id]);
     }
-  }
 
-  // TODO(someday): Make reactive? Seems annoying.
+    // TODO(someday): Make reactive? Seems annoying.
 
-  this.ready();
+    this.ready();
+  };
+
+  runQuery().catch(err => {
+    console.error("powerboxOptions publish failed:", err);
+    this.error(err);
+  });
 });
 
 SandstormPowerbox = { registerUiViewQueryHandler };

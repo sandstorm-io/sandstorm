@@ -143,10 +143,10 @@ hashSourceId = (id) => {
   return Crypto.createHash("sha256").update(ROOT_URL + ":" + id).digest("base64");
 };
 
-findOriginalSourceId = (hashedId, customerId) => {
-  var data = Meteor.wrapAsync(stripe.customers.retrieve.bind(stripe.customers))(customerId);
+export async function findOriginalSourceIdAsync(hashedId, customerId) {
+  const data = await stripe.customers.retrieve(customerId);
   if (data.sources && data.sources.data) {
-    var sources = data.sources.data;
+    const sources = data.sources.data;
     for (var i = 0; i < sources.length; i++) {
       if (hashSourceId(sources[i].id) === hashedId) {
         return sources[i].id;
@@ -155,7 +155,7 @@ findOriginalSourceId = (hashedId, customerId) => {
   }
 
   throw new Meteor.Error(400, "Id not found");
-};
+}
 
 sanitizeSource = (source, isPrimary) => {
   var result = _.pick(source, "last4", "brand", "exp_year", "exp_month", "isPrimary");
@@ -165,7 +165,7 @@ sanitizeSource = (source, isPrimary) => {
 };
 
 var inFiber = Meteor.bindEnvironment(function (callback) {
-  callback();
+  return callback();
 });
 
 function renderPrice(amount) {
@@ -187,7 +187,7 @@ function renderPrice(amount) {
   }
 }
 
-function sendEmail(db, user, mailSubject, mailText, mailHtml, config) {
+async function sendEmail(db, user, mailSubject, mailText, mailHtml, config) {
   const iconCid = Random.id();
 
   // Add surrounding box.
@@ -206,13 +206,11 @@ function sendEmail(db, user, mailSubject, mailText, mailHtml, config) {
   if (email) {
     email = email.email;
   } else {
-    email = Meteor.wrapAsync(stripe.customers.retrieve.bind(stripe.customers))(
-      user.payments.id
-    ).email;
+    email = (await stripe.customers.retrieve(user.payments.id)).email;
   }
 
   if (email) {
-    SandstormEmail.send({
+    const sendPromise = SandstormEmail.send({
       to: email,
       from: { name: config.acceptorTitle, address: config.returnAddress },
       subject: mailSubject,
@@ -227,12 +225,17 @@ function sendEmail(db, user, mailSubject, mailText, mailHtml, config) {
         },
       ],
     });
+    if (sendPromise && typeof sendPromise.catch === "function") {
+      sendPromise.catch((err) => {
+        console.error("Failed sending payments email:", err);
+      });
+    }
   } else {
     console.error("customer has no email address", user.payments.id);
   }
 }
 
-sendInvoice = (db, user, invoice, config) => {
+sendInvoice = async (db, user, invoice, config) => {
   let total = 0;
   invoice.items.forEach(item => total += item.amountCents);
 
@@ -291,10 +294,10 @@ sendInvoice = (db, user, invoice, config) => {
       '  <a href="' + config.settingsUrl + '">' + config.settingsUrl + '</a></p>\n' +
       '<p>Thank you!</p>\n';
 
-  sendEmail(db, user, mailSubject, mailText, mailHtml, config);
+  await sendEmail(db, user, mailSubject, mailText, mailHtml, config);
 };
 
-function paymentFailed(db, user, customerId, config, userMod) {
+async function paymentFailed(db, user, customerId, config, userMod) {
   console.log("Payment failed for user: " + user._id + " (" + customerId + ")");
 
   const mailSubject = "URGENT: Payment failed for " + config.acceptorTitle;
@@ -313,20 +316,18 @@ function paymentFailed(db, user, customerId, config, userMod) {
       "log into your account and update your payment info, then " +
       "switch back to a paid plan.</p>\n" +
       "<p><a href=\"" + ROOT_URL + "/account\">" + ROOT_URL + "/account</a></p>\n";
-  sendEmail(db, user, mailSubject, mailText, mailHtml, config);
+  await sendEmail(db, user, mailSubject, mailText, mailHtml, config);
 
   // Cancel plan.
   // TODO(someday): Some sort of grace period?
   userMod.plan = "free";
-  const data = Meteor.wrapAsync(
-      stripe.customers.retrieve.bind(stripe.customers))(customerId);
+  const data = await stripe.customers.retrieve(customerId);
   if (data.subscriptions && data.subscriptions.data.length > 0) {
-    Meteor.wrapAsync(stripe.subscriptions.del.bind(stripe.subscriptions))(
-        data.subscriptions.data[0].id);
+    await stripe.subscriptions.del(data.subscriptions.data[0].id);
   }
 }
 
-function handleWebhookEvent(db, event) {
+async function handleWebhookEvent(db, event) {
   // WE CANNOT TRUST THE EVENT. We have no proof it came from Stripe.
   //
   // We could tell Stripe to authenticate with HTTP Basic Auth, but that's ugly and
@@ -339,7 +340,7 @@ function handleWebhookEvent(db, event) {
   // latest change to the same target.
 
   // Fetch the event from Stripe.
-  event = Meteor.wrapAsync(stripe.events.retrieve.bind(stripe.events))(event.id);
+  event = await stripe.events.retrieve(event.id);
 
   if (event.type === "invoice.payment_succeeded" || event.type === "invoice.payment_failed") {
     const invoice = event.data.object;
@@ -367,7 +368,7 @@ function handleWebhookEvent(db, event) {
 
     // Send an email.
     if (event.type === "invoice.payment_failed") {
-      paymentFailed(db, user, invoice.customer, config, mod);
+      await paymentFailed(db, user, invoice.customer, config, mod);
     } else {
       const items = [];
 
@@ -398,7 +399,7 @@ function handleWebhookEvent(db, event) {
         });
       }
 
-      sendInvoice(db, user, { items }, config);
+      await sendInvoice(db, user, { items }, config);
     }
 
     Meteor.users.update({_id: user._id}, {$set: mod});
@@ -411,7 +412,7 @@ function handleWebhookEvent(db, event) {
     }
 
     // Avoid replay attacks by checking the customer's current subscription.
-    const customer = Meteor.wrapAsync(stripe.customers.retrieve.bind(stripe.customers))(customerId);
+    const customer = await stripe.customers.retrieve(customerId);
 
     if (!customer.subscriptions || customer.subscriptions.data.length === 0) {
       // OK, the customer really is unsubscribed. Downgrade them.
@@ -438,9 +439,9 @@ function processWebhook(db, req, res) {
   });
 
   req.on("end", function () {
-    inFiber(function () {
+    inFiber(async function () {
       try {
-        handleWebhookEvent(db, JSON.parse(data));
+        await handleWebhookEvent(db, JSON.parse(data));
         res.writeHead(200, { "Content-Type": "text/plain" });
         res.end("success\n");
       } catch (err) {
@@ -556,8 +557,8 @@ BlackrockPayments.makeConnectHandler = function (db) {
   };
 }
 
-function createUser(token, email) {
-  var data = Meteor.wrapAsync(stripe.customers.create.bind(stripe.customers))({
+async function createUser(token, email) {
+  const data = await stripe.customers.create({
     source: token,
     email: email,
     description: Meteor.userId()  // TODO(soon): Do we want to store backrefs to our database in stripe?
@@ -566,8 +567,8 @@ function createUser(token, email) {
   return data;
 }
 
-function cancelSubscription(userId, customerId) {
-  const data = Meteor.wrapAsync(stripe.customers.retrieve.bind(stripe.customers))(customerId);
+async function cancelSubscription(userId, customerId) {
+  const data = await stripe.customers.retrieve(customerId);
 
   if (data.subscriptions && data.subscriptions.data.length > 0) {
     const current = data.subscriptions.data[0];
@@ -575,10 +576,9 @@ function cancelSubscription(userId, customerId) {
       // Already canceled.
       return { subscriptionEnds: new Date(current.current_period_end * 1000) };
     } else {
-      const info = Meteor.wrapAsync(stripe.subscriptions.update.bind(stripe.subscriptions))(
+      const info = await stripe.subscriptions.update(
         data.subscriptions.data[0].id,
-        { cancel_at_period_end: true },
-      );
+        { cancel_at_period_end: true });
 
       const ends = new Date(info.current_period_end * 1000);
 
@@ -595,7 +595,7 @@ function cancelSubscription(userId, customerId) {
 }
 
 var methods = {
-  addCardForUser: function (token, email) {
+  addCardForUser: async function (token, email) {
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to add card");
     }
@@ -605,12 +605,11 @@ var methods = {
     var user = Meteor.user();
 
     if (user.payments && user.payments.id) {
-      return sanitizeSource(Meteor.wrapAsync(stripe.customers.createSource.bind(stripe.customers))(
+      return sanitizeSource(await stripe.customers.createSource(
         user.payments.id,
-        {source: token}
-      ), false);
+        {source: token}), false);
     } else {
-      var data = createUser(token, email);
+      const data = await createUser(token, email);
       if (data.sources && data.sources.data && data.sources.data.length >= 1) {
         return sanitizeSource(data.sources.data[0], true);
       } else {
@@ -619,14 +618,14 @@ var methods = {
     }
   },
 
-  deleteCardForUser: function (id) {
+  deleteCardForUser: async function (id) {
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to delete card");
     }
     check(id, String);
 
     var customerId = Meteor.user().payments.id;
-    var data = Meteor.wrapAsync(stripe.customers.retrieve.bind(stripe.customers))(customerId);
+    const data = await stripe.customers.retrieve(customerId);
     if (data.sources && data.sources.data && data.subscriptions && data.subscriptions.data) {
       var sources = data.sources.data;
       var subscriptions = data.subscriptions.data;
@@ -636,30 +635,30 @@ var methods = {
       }
     }
 
-    id = findOriginalSourceId(id, customerId);
+    id = await findOriginalSourceIdAsync(id, customerId);
 
-    Meteor.wrapAsync(stripe.customers.deleteSource.bind(stripe.customers))(
+    await stripe.customers.deleteSource(
       customerId,
       id
     );
   },
 
-  makeCardPrimary: function (id) {
+  makeCardPrimary: async function (id) {
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to change primary card");
     }
     check(id, String);
 
     var customerId = Meteor.user().payments.id;
-    id = findOriginalSourceId(id, customerId);
+    id = await findOriginalSourceIdAsync(id, customerId);
 
-    Meteor.wrapAsync(stripe.customers.update.bind(stripe.customers))(
+    await stripe.customers.update(
       customerId,
       {default_source: id}
     );
   },
 
-  getStripeData: function () {
+  getStripeData: async function () {
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to get stripe data");
     }
@@ -668,7 +667,7 @@ var methods = {
       return {};
     }
     var customerId = payments.id;
-    var data = Meteor.wrapAsync(stripe.customers.retrieve.bind(stripe.customers))(customerId);
+    const data = await stripe.customers.retrieve(customerId);
     if (data.sources && data.sources.data) {
       var sources = data.sources.data;
       for (var i = 0; i < sources.length; i++) {
@@ -696,7 +695,7 @@ var methods = {
     };
   },
 
-  updateUserSubscription: function (newPlan) {
+  updateUserSubscription: async function (newPlan) {
     // Sets the user's plan to newPlan. Returns an object containing StripeCustomerData
     // modifications. Note that if newPlan is "free", the plan might not actually be changed to
     // "free" yet, but rather may be scheduled for cancelation.
@@ -715,21 +714,19 @@ var methods = {
     var payments = Meteor.user().payments;
     if (payments && payments.id) {
       if (newPlan === "free") {
-        return cancelSubscription(this.userId, payments.id);
+        return await cancelSubscription(this.userId, payments.id);
       } else {
-        var customerId = payments.id;
-        var data = Meteor.wrapAsync(stripe.customers.retrieve.bind(stripe.customers))(customerId);
+        const customerId = payments.id;
+        const data = await stripe.customers.retrieve(customerId);
 
         try {
           if (data.subscriptions && data.subscriptions.data.length > 0) {
             let itemId = data.subscriptions.data[0].items.data[0].id;
-            Meteor.wrapAsync(stripe.subscriptions.update.bind(stripe.subscriptions))(
-              data.subscriptions.data[0].id, { items: [{id: itemId, plan: newPlan}] }
-            );
+            await stripe.subscriptions.update(
+              data.subscriptions.data[0].id, { items: [{id: itemId, plan: newPlan}] });
           } else {
-            Meteor.wrapAsync(stripe.subscriptions.create.bind(stripe.subscriptions))(
-              { customer: customerId, items: [{plan: newPlan}] }
-            );
+            await stripe.subscriptions.create(
+              { customer: customerId, items: [{plan: newPlan}] });
           }
         } catch (err) {
           if (err.raw && err.raw.type === "card_error") {
@@ -749,7 +746,7 @@ var methods = {
     return { subscription: newPlan, subscriptionEnds: null };
   },
 
-  createUserSubscription: function (token, email, plan) {
+  createUserSubscription: async function (token, email, plan) {
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to update subscription");
     }
@@ -761,24 +758,24 @@ var methods = {
     var customerId;
     var sanitizedSource;
     if (!payments || !payments.id) {
-      var data = createUser(token, email);
+      const data = await createUser(token, email);
       customerId = data.id;
       if (data.sources && data.sources.data && data.sources.data.length >= 1) {
         sanitizedSource = sanitizeSource(data.sources.data[0]);
       }
     } else {
       customerId = payments.id;
-      sanitizedSource = methods.addCardForUser.bind(this)(token, email);
+      sanitizedSource = await methods.addCardForUser.bind(this)(token, email);
     }
-    Meteor.wrapAsync(stripe.subscriptions.create.bind(stripe.subscriptions))(
-      { customer: customerId, items: [{plan: newPlan}] }
+    await stripe.subscriptions.create(
+      { customer: customerId, items: [{plan: plan}] }
     );
 
     Meteor.users.update({_id: this.userId}, {$set: { plan: plan }});
     return sanitizedSource;
   },
 
-  unsubscribeMailingList: function () {
+  unsubscribeMailingList: async function () {
     var emails = SandstormDb.getUserEmails(Meteor.user()).filter(function (entry) {
       return entry.verified;
     }).map(function (entry) {
@@ -805,10 +802,10 @@ var methods = {
       MailchimpSubscribers.update({_id: entry._id}, {$set: {subscribed: false}});
     });
 
-    updateBonuses(Meteor.user());
+    await updateBonuses(Meteor.user());
   },
 
-  subscribeMailingList: function () {
+  subscribeMailingList: async function () {
 
     var emails = SandstormDb.getUserEmails(Meteor.user()).filter(function (entry) {
       return entry.primary;
@@ -847,20 +844,20 @@ var methods = {
 
     MailchimpSubscribers.upsert({_id: email},
         {$set: {canonical: canonicalizeEmail(email), subscribed: true}});
-    updateBonuses(Meteor.user());
+    await updateBonuses(Meteor.user());
   }
 };
 if (Meteor.settings.public.stripePublicKey) {
   Meteor.methods(methods);
 }
 
-function getAllStripeCustomers() {
+async function getAllStripeCustomers() {
   var hasMore = true;
   var results = [];
 
   var req = {limit: 100};
   while (hasMore) {
-    var next = Meteor.wrapAsync(stripe.customers.list.bind(stripe.customers))(req);
+    const next = await stripe.customers.list(req);
     results = results.concat(next.data);
     hasMore = next.has_more;
     if (hasMore) {
@@ -870,13 +867,13 @@ function getAllStripeCustomers() {
   return results;
 }
 
-BlackrockPayments.getTotalCharges = function() {
+BlackrockPayments.getTotalCharges = async function() {
   var hasMore = true;
   var results = [];
 
   var req = {limit: 100};
   while (hasMore) {
-    var next = Meteor.wrapAsync(stripe.charges.list.bind(stripe.charges))(req);
+    const next = await stripe.charges.list(req);
     results = results.concat(next.data);
     hasMore = next.has_more;
     if (hasMore) {
@@ -889,10 +886,10 @@ BlackrockPayments.getTotalCharges = function() {
   }, 0) / 100;
 };
 
-BlackrockPayments.suspendAccount = function (db, userId) {
+BlackrockPayments.suspendAccount = async function (db, userId) {
   var payments = db.collections.users.findOne({_id: userId}).payments;
   if (payments && payments.id) {
-    cancelSubscription(userId, payments.id);
+    await cancelSubscription(userId, payments.id);
 
     // TODO(someday): un-cancel plan on un-suspend?
   }
@@ -902,17 +899,17 @@ BlackrockPayments.deleteAccount = function (db, user) {
   var payments = user.payments;
   if (payments && payments.id) {
     var customerId = payments.id;
-    Meteor.wrapAsync(stripe.customers.del.bind(stripe.customers))(customerId);
+    stripe.customers.del(customerId).catch((err) => {
+      console.error("Failed deleting Stripe customer:", err);
+    });
   }
 };
 
-function getStripeBonus(user, paymentsBonuses) {
+async function getStripeBonus(user, paymentsBonuses) {
   var bonus = {};
 
   if (user.payments && user.payments.id) {
-    var customer = Meteor.wrapAsync(stripe.customers.retrieve.bind(stripe.customers))(
-      user.payments.id
-    );
+    var customer = await stripe.customers.retrieve(user.payments.id);
 
     var meta = customer.metadata;
     if (meta) {
@@ -948,15 +945,15 @@ function getMailchimpBonus(user, paymentsBonuses) {
   }
 }
 
-function updateBonuses(user) {
+async function updateBonuses(user) {
   var paymentsBonuses = {};
   var bonus = {};
-  [getStripeBonus, getMailchimpBonus].forEach(function (f) {
-    var b = f(user, paymentsBonuses);
+  for (const f of [getStripeBonus, getMailchimpBonus]) {
+    var b = await f(user, paymentsBonuses);
     for (var field in b) {
       bonus[field] = (bonus[field] || 0) + b[field];
     }
-  });
+  }
 
   if (!_.isEqual(user.planBonus, bonus) ||
       !user.payments ||
@@ -971,7 +968,12 @@ if (Meteor.settings.public.stripePublicKey) {
   Meteor.publish("myBonuses", function () {
     if (!this.userId) return [];
 
-    updateBonuses(Meteor.users.findOne({_id: this.userId}));
+    const user = Meteor.users.findOne({_id: this.userId});
+    if (user) {
+      updateBonuses(user).catch((err) => {
+        console.error("Failed to update bonuses:", err);
+      });
+    }
     return Meteor.users.find({_id: this.userId}, {fields: {"payments.bonuses": 1}});
   });
 }

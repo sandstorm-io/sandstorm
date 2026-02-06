@@ -22,7 +22,6 @@ import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 
 import { send as sendEmail } from "/imports/server/email";
-import { waitPromise } from "/imports/server/async-helpers";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
 import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions";
@@ -38,23 +37,37 @@ const emailLinkWithInlineStyle = function (url, text) {
 
 // Force-shutdown dev apps whenever their packages change.
 Meteor.startup(() => {
-  const shutdownApp = (appId) => {
+  const shutdownApp = async (appId) => {
     globalDb.collections.grains.find({ appId: appId }, {fields: {oldUsers: 0}}).forEach((grain) => {
-      waitPromise(globalBackend.shutdownGrain(grain._id, grain.userId));
+      globalBackend.shutdownGrain(grain._id, grain.userId).catch((err) => {
+        console.error("Error shutting down grain:", err);
+      });
     });
   };
 
   globalDb.collections.devPackages.find().observe({
-    removed(devPackage) { shutdownApp(devPackage.appId); },
+    removed(devPackage) {
+      shutdownApp(devPackage.appId).catch((err) => {
+        console.error("Error shutting down app grains:", err);
+      });
+    },
 
     changed(newDevPackage, oldDevPackage) {
-      shutdownApp(oldDevPackage.appId);
+      shutdownApp(oldDevPackage.appId).catch((err) => {
+        console.error("Error shutting down app grains:", err);
+      });
       if (oldDevPackage.appId !== newDevPackage.appId) {
-        shutdownApp(newDevPackage.appId);
+        shutdownApp(newDevPackage.appId).catch((err) => {
+          console.error("Error shutting down app grains:", err);
+        });
       }
     },
 
-    added(devPackage) { shutdownApp(devPackage.appId); },
+    added(devPackage) {
+      shutdownApp(devPackage.appId).catch((err) => {
+        console.error("Error shutting down app grains:", err);
+      });
+    },
   });
 });
 
@@ -277,21 +290,21 @@ Meteor.publish("grainLog", function (grainId) {
     },
   };
 
-  try {
-    const handle = waitPromise(globalBackend.useGrain(grainId, (supervisor) => {
-      return supervisor.watchLog(8192, receiver);
-    })).handle;
+  globalBackend.useGrain(grainId, (supervisor) => {
+    return supervisor.watchLog(8192, receiver);
+  }).then((result) => {
+    const handle = result.handle;
     connected = true;
     this.onStop(() => {
       handle.close();
     });
-  } catch (err) {
+  }).catch((err) => {
     if (!connected) {
       this.added("grainLog", id++, {
         text: "*** couldn't connect to grain (" + err + ") ***",
       });
     }
-  }
+  });
 
   // Notify ready.
   this.ready();
@@ -301,7 +314,10 @@ const GRAIN_DELETION_MS = 1000 * 60 * 60 * 24 * 30; // thirty days
 SandstormDb.periodicCleanup(86400000, () => {
   const trashExpiration = new Date(Date.now() - GRAIN_DELETION_MS);
   globalDb.removeApiTokens({ trashed: { $lt: trashExpiration } }, true);
-  globalDb.deleteGrains({ trashed: { $lt: trashExpiration } }, globalBackend, "grain");
+  globalDb.deleteGrains({ trashed: { $lt: trashExpiration } }, globalBackend, "grain")
+      .catch((err) => {
+        console.error("Error deleting expired trashed grains:", err);
+      });
 });
 
 Meteor.methods({
@@ -361,14 +377,14 @@ Meteor.methods({
     return grainId;
   },
 
-  shutdownGrain(grainId) {
+  async shutdownGrain(grainId) {
     check(grainId, String);
     const grain = globalDb.collections.grains.findOne(grainId, {fields: {oldUsers: 0}});
     if (!grain || !this.userId || grain.userId !== this.userId) {
       throw new Meteor.Error(403, "Unauthorized", "User is not the owner of this grain");
     }
 
-    waitPromise(globalBackend.shutdownGrain(grainId, grain.userId, true));
+    await globalBackend.shutdownGrain(grainId, grain.userId, true);
   },
 
   updateGrainTitle: function (grainId, newTitle, obsolete) {
@@ -433,7 +449,7 @@ Meteor.methods({
     }
   },
 
-  inviteUsersToGrain: function (_origin, obsolete, grainId, title, roleAssignment,
+  inviteUsersToGrain: async function (_origin, obsolete, grainId, title, roleAssignment,
                                 contacts, message) {
     if (typeof message === "object") {
       // Older versions of the client passed an object here, but we only care about the `text`
@@ -486,7 +502,7 @@ Meteor.methods({
       const outerResult = { successes: [], failures: [] };
       const fromEmail = globalDb.getReturnAddressWithDisplayName(accountId);
       const replyTo = globalDb.getPrimaryEmail(accountId);
-      contacts.forEach(function (contact) {
+      for (const contact of contacts) {
         if (contact.isDefault) {
           const emailAddress = contact.profile.name;
           const result = SandstormPermissions.createNewApiToken(
@@ -501,7 +517,7 @@ Meteor.methods({
               "the share as well. To prevent this, remove the button before forwarding.</div>";
           try {
             globalDb.incrementDailySentMailCount(accountId);
-            sendEmail({
+            await sendEmail({
               to: emailAddress,
               from: fromEmail,
               replyTo: replyTo,
@@ -516,7 +532,7 @@ Meteor.methods({
             outerResult.failures.push({ contact: contact, error: e.toString() });
           }
         } else {
-          let result = SandstormPermissions.createNewApiToken(
+          const result = SandstormPermissions.createNewApiToken(
             globalDb, { accountId: accountId }, grainId,
             "direct invitation to " + contact.profile.name,
             roleAssignment, { user: { accountId: contact._id, title: title } });
@@ -532,7 +548,7 @@ Meteor.methods({
                   emailLinkWithInlineStyle(url, "Open Shared Grain") +
                   "<div style='font-size:8pt;font-style:italic;color:gray'>";
               globalDb.incrementDailySentMailCount(accountId);
-              sendEmail({
+              await sendEmail({
                 to: email.email,
                 from: fromEmail,
                 replyTo: replyTo,
@@ -552,13 +568,13 @@ Meteor.methods({
               "manually share " + url + " with them.", });
           }
         }
-      });
+      }
 
       return outerResult;
     }
   },
 
-  requestAccess: function (_origin, grainId, obsolete) {
+  requestAccess: async function (_origin, grainId, obsolete) {
     check(_origin, String);
     check(grainId, String);
     if (!this.isSimulation) {
@@ -636,7 +652,7 @@ Meteor.methods({
 
       Meteor.users.update({ _id: user._id }, modifier);
 
-      sendEmail({
+      await sendEmail({
         to: emailAddress,
         from: fromEmail,
         replyTo: replyTo,

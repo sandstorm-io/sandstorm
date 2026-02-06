@@ -1271,6 +1271,10 @@ class SandstormDb {
   }
 
   isUserInOrganization(user) {
+    if (!user || !user.loginCredentials) {
+      return false;
+    }
+
     for (let i = 0; i < user.loginCredentials.length; i++) {
       let credential = Meteor.users.findOne({ _id: user.loginCredentials[i].id });
       if (this.isCredentialInOrganization(credential)) {

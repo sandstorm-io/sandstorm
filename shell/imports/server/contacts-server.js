@@ -95,8 +95,8 @@ Meteor.publish("contactProfiles", function (showAll) {
       removed: function (user) {
         if (db.isUserInOrganization(user) && user._id !== userId) {
           _this.removed("contactProfiles", user._id);
-          const contactAccount = contactAccounts[contact.accountId];
-          if (contactAccount) contactAccounts[contact.accountId].stop();
+          const contactAccount = contactAccounts[user._id];
+          if (contactAccount) contactAccount.stop();
           delete contactAccounts[user._id];
         }
       },

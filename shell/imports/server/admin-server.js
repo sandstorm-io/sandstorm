@@ -62,6 +62,15 @@ const smtpConfigShape = {
   returnAddress: String,
 };
 
+function httpCallAsync(method, url, options) {
+  return new Promise((resolve, reject) => {
+    HTTP.call(method, url, options || {}, (err, response) => {
+      if (err) reject(err);
+      else resolve(response);
+    });
+  });
+}
+
 Meteor.methods({
   setAccountSetting: function (token, serviceName, value) {
     checkAuth(token);
@@ -425,10 +434,10 @@ Meteor.methods({
     globalDb.collections.settings.remove({ _id: "acmeChallenge" });
   },
 
-  fetchAcmeDirectory: function (token, url) {
+  fetchAcmeDirectory: async function (token, url) {
     checkAuth(token);
     check(url, String);
-    let response = HTTP.get(url);
+    let response = await httpCallAsync("GET", url);
 
     if (response.statusCode != 200) {
       throw new Meteor.Error("bad_acme_directory",

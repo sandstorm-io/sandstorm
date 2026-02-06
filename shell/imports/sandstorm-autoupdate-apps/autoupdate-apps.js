@@ -19,12 +19,12 @@ import { check } from "meteor/check";
 
 export const SandstormAutoupdateApps = {};
 
-SandstormAutoupdateApps.updateAppIndex = function (db) {
-  db.updateAppIndex();
+SandstormAutoupdateApps.updateAppIndex = async function (db) {
+  await db.updateAppIndex();
 };
 
 Meteor.methods({
-  updateAppIndex: function () {
+  updateAppIndex: async function () {
     // An undocumented method that the admin can use to force an app index update immediately.
     // Probably not useful except for debugging.
 
@@ -32,7 +32,7 @@ Meteor.methods({
       throw new Meteor.Error(403, "Must be admin.");
     }
 
-    SandstormAutoupdateApps.updateAppIndex(this.connection.sandstormDb);
+    await SandstormAutoupdateApps.updateAppIndex(this.connection.sandstormDb);
   },
 
   updateApps: function (packages) {

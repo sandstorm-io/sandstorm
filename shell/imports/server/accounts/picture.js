@@ -1,5 +1,14 @@
 import { HTTP } from "meteor/http";
 
+function httpCallAsync(method, url, options) {
+  return new Promise((resolve, reject) => {
+    HTTP.call(method, url, options || {}, (err, response) => {
+      if (err) reject(err);
+      else resolve(response);
+    });
+  });
+}
+
 const userPictureUrl = function (user) {
   if (user.services && !(user.profile && user.profile.picture)) {
     // Try to determine user's avatar URL from login service.
@@ -21,9 +30,9 @@ const userPictureUrl = function (user) {
   }
 };
 
-const fetchPicture = function (db, url) {
+const fetchPicture = async function (db, url) {
   try {
-    const result = HTTP.get(url, {
+    const result = await httpCallAsync("GET", url, {
       npmRequestOptions: { encoding: null },
       timeout: 5000,
     });

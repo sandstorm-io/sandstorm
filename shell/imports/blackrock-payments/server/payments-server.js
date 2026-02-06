@@ -33,6 +33,15 @@ import { Random } from "meteor/random";
 import { HTTP } from "meteor/http";
 import { _ } from "meteor/underscore";
 
+function httpCallAsync(method, url, options) {
+  return new Promise((resolve, reject) => {
+    HTTP.call(method, url, options || {}, (err, response) => {
+      if (err) reject(err);
+      else resolve(response);
+    });
+  });
+}
+
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
 import { MAILING_LIST_BONUS } from "/imports/blackrock-payments/constants";
@@ -468,7 +477,7 @@ function canonicalizeEmail(email) {
   return email.replace(/\+.*@/, "@").toLowerCase();
 }
 
-function updateMailchimp(db) {
+async function updateMailchimp(db) {
   var listId = Meteor.settings.mailchimpListId;
   var key = Meteor.settings.mailchimpKey;
   if (!listId || !key) throw new Error("Mailchimp not configured!");
@@ -489,7 +498,7 @@ function updateMailchimp(db) {
 
     console.log("Mailchimp: Fetching updates:", url);
 
-    var result = HTTP.get(url, {
+    var result = await httpCallAsync("GET", url, {
       headers: { "Authorization": "apikey " + key },
       timeout: 60000
     });
@@ -523,9 +532,9 @@ function processMailchimpWebhook(db, req, res) {
   // We ignore the POST payload because it's totally non-trustworthy anyhow, and because it's
   // more robust for us to search for all changes since the last we know about.
 
-  inFiber(function () {
+  inFiber(async function () {
     try {
-      updateMailchimp(db);
+      await updateMailchimp(db);
       res.writeHead(200, { "Content-Type": "text/plain" });
       res.end("success\n");
     } catch (err) {
@@ -784,15 +793,16 @@ var methods = {
 
     var listId = Meteor.settings.mailchimpListId;
     var key = Meteor.settings.mailchimpKey;
-    MailchimpSubscribers.find({canonical: {$in: emails}, subscribed: true})
-        .forEach(function (entry) {
+    const subscribedEntries = MailchimpSubscribers.find(
+        { canonical: { $in: emails }, subscribed: true }).fetch();
+    for (const entry of subscribedEntries) {
       if (key && listId) {
         var shard = key.split("-")[1];
         var hash = Crypto.createHash("md5").update(entry._id).digest("hex");
         var url = "https://"+shard+".api.mailchimp.com/3.0/lists/" + listId + "/members/" + hash;
 
         console.log("Mailchimp: unsubscribing", entry._id);
-        HTTP.call("PATCH", url, {
+        await httpCallAsync("PATCH", url, {
           data: {status: "unsubscribed"},
           headers: { "Authorization": "apikey " + key },
           timeout: 10000
@@ -800,7 +810,7 @@ var methods = {
       }
 
       MailchimpSubscribers.update({_id: entry._id}, {$set: {subscribed: false}});
-    });
+    }
 
     await updateBonuses(Meteor.user());
   },
@@ -827,14 +837,14 @@ var methods = {
       if (MailchimpSubscribers.find({_id: email}).count() > 0) {
         // User already exists in Mailchimp.
         console.log("Mailchimp: re-subscribing", email);
-        HTTP.call("PATCH", url, {
+        await httpCallAsync("PATCH", url, {
           data: {status: "subscribed"},
           headers: { "Authorization": "apikey " + key },
           timeout: 10000
         });
       } else {
         console.log("Mailchimp: subscribing", email);
-        HTTP.call("PUT", url, {
+        await httpCallAsync("PUT", url, {
           data: {email_address: email, status: "subscribed"},
           headers: { "Authorization": "apikey " + key },
           timeout: 10000

@@ -21,7 +21,6 @@ import Url from "url";
 
 import { SPECIAL_IPV4_ADDRESSES, SPECIAL_IPV6_ADDRESSES } from "/imports/constants";
 
-const lookupInFiber = Meteor.wrapAsync(Dns.lookup, Dns);
 const lookupAsync = Dns.lookup.bind(Dns);
 
 function parseAddress(addr) {
@@ -168,17 +167,6 @@ async function ssrfSafeLookup(db, url) {
   return selectSafeAddress(db, parsedUrl, addresses);
 }
 
-function ssrfSafeLookupSync(db, url) {
-  const parsedUrl = Url.parse(url);
-
-  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
-    throw new Error("not an HTTP nor HTTPS URL: " + url);
-  }
-
-  const addresses = lookupInFiber(parsedUrl.hostname, { all: true, hints: Dns.ADDRCONFIG });
-  return selectSafeAddress(db, parsedUrl, addresses);
-}
-
 async function ssrfSafeLookupOrProxy(db, url) {
   // If there is an HTTP proxy, then it will have to do the work of blacklisting IPs, because it's
   // the proxy that does the DNS lookup.
@@ -194,19 +182,6 @@ async function ssrfSafeLookupOrProxy(db, url) {
   }
 }
 
-function ssrfSafeLookupOrProxySync(db, url) {
-  const httpProxy = process.env.HTTP_PROXY || process.env.http_proxy;
-  const httpsProxy = process.env.HTTPS_PROXY || process.env.https_proxy;
-
-  if (httpProxy && url.startsWith("http:")) {
-    return { proxy: httpProxy };
-  } else if (httpsProxy && url.startsWith("https:")) {
-    return { proxy: httpsProxy };
-  } else {
-    return ssrfSafeLookupSync(db, url);
-  }
-}
-
 function ssrfSafeHttp(originalHttpCall, db, method, url, options, callback) {
   if (typeof options === "function") {
     callback = options;
@@ -214,24 +189,29 @@ function ssrfSafeHttp(originalHttpCall, db, method, url, options, callback) {
   }
 
   if (!options) options = {};
+  if (typeof callback !== "function") {
+    throw new Error("Synchronous HTTP.call() is unsupported; use callback/promise-based HTTP calls.");
+  }
 
   if (options.npmRequestOptions && options.npmRequestOptions.proxy) {
     // Request already specifies a different proxy.
     return originalHttpCall(method, url, options, callback);
   }
 
-  const safe = ssrfSafeLookupOrProxySync(db, url);
+  return ssrfSafeLookupOrProxy(db, url).then((safe) => {
+    if (safe.proxy) {
+      if (!options.npmRequestOptions) options.npmRequestOptions = {};
+      options.npmRequestOptions.proxy = safe.proxy;
+      return originalHttpCall(method, url, options, callback);
+    }
 
-  if (safe.proxy) {
-    if (!options.npmRequestOptions) options.npmRequestOptions = {};
-    options.npmRequestOptions.proxy = safe.proxy;
-    return originalHttpCall(method, url, options, callback);
-  } else {
     if (!options.headers) options.headers = {};
     options.headers.host = safe.host;
     options.servername = safe.host.split(":")[0];
     return originalHttpCall(method, safe.url, options, callback);
-  }
+  }, (err) => {
+    callback(err);
+  });
 }
 
 function monkeyPatchHttp(db, HTTP) {

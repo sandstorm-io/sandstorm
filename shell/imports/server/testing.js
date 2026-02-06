@@ -57,9 +57,9 @@ if(isTesting) {
       clearUser("6WJcRo2gg2Ysuxsok");
     },
 
-    fetchAppIndexTest: function () {
+    fetchAppIndexTest: async function () {
       globalDb.collections.appIndex.remove({});
-      SandstormAutoupdateApps.updateAppIndex(this.connection.sandstormDb);
+      await SandstormAutoupdateApps.updateAppIndex(this.connection.sandstormDb);
     },
   });
 }

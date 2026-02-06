@@ -97,10 +97,13 @@ Accounts.onCreateUser(function (options, user) {
   // Try downloading avatar.
   const url = userPictureUrl(user);
   if (url) {
-    const assetId = fetchPicture(globalDb, url);
-    if (assetId) {
-      user.profile.picture = assetId;
-    }
+    const newUserId = user._id;
+    Meteor.defer(async () => {
+      const assetId = await fetchPicture(globalDb, url);
+      if (assetId) {
+        Meteor.users.update({ _id: newUserId }, { $set: { "profile.picture": assetId } });
+      }
+    });
   }
 
   let serviceUserId;

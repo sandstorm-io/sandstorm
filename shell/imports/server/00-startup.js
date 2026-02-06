@@ -67,7 +67,9 @@ SandstormDb.periodicCleanup(60 * 60 * 1000, () => {
   globalDb.cleanupExpiredAssetUploads();
 });
 SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
-  SandstormAutoupdateApps.updateAppIndex(globalDb);
+  SandstormAutoupdateApps.updateAppIndex(globalDb).catch((err) => {
+    console.error("Error updating app index:", err);
+  });
 });
 const deleteAccount = Meteor.settings.public.stripePublicKey && BlackrockPayments.deleteAccount;
 SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {

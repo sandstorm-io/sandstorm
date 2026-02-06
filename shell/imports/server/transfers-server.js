@@ -52,6 +52,15 @@ Meteor.publish("transfers", function () {
   ];
 });
 
+function httpCallAsync(method, url, options) {
+  return new Promise((resolve, reject) => {
+    HTTP.call(method, url, options || {}, (err, response) => {
+      if (err) reject(err);
+      else resolve(response);
+    });
+  });
+}
+
 Meteor.methods({
   newTransfer(destination) {
     check(destination, String);
@@ -97,7 +106,7 @@ Meteor.methods({
     db.collections.incomingTransfers.remove({userId: this.userId});
   },
 
-  acceptTransfer(source, token) {
+  async acceptTransfer(source, token) {
     check(source, String);
     check(token, String);
     if (!isSignedUp()) {
@@ -117,7 +126,7 @@ Meteor.methods({
 
     let response;
     try {
-      response = HTTP.get(source + "/transfers/list", {
+      response = await httpCallAsync("GET", source + "/transfers/list", {
         headers: {"Authorization": "Bearer " + token}
       });
     } catch (err) {
@@ -410,7 +419,7 @@ class Downloader {
       // Request grain download.
       console.log("mass transfer: packing:", this.grainId);
 
-      let response = HTTP.post(this.source + "/transfers/prepare/" + this.grainId,
+      let response = await httpCallAsync("POST", this.source + "/transfers/prepare/" + this.grainId,
           { headers: {"Authorization": "Bearer " + this.token} });
       if (!response.data) {
         throw new Meteor.Error(500, "Source server did not return JSON.");

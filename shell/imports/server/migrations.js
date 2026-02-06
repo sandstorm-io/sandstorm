@@ -109,17 +109,18 @@ const fixOasisStorageUsageStats = function (_db, _backend) {};
 // to some global variables that we later wanted to remove and/or rename, we've since replaced it
 // with a no-op.
 
-const fetchProfilePictures = function (db, _backend) {
-  db.collections.users.find({}).forEach(function (user) {
+const fetchProfilePictures = async function (db, _backend) {
+  const users = db.collections.users.find({}).fetch();
+  for (const user of users) {
     const url = userPictureUrl(user);
     if (url) {
       console.log("Fetching user picture:", url);
-      const assetId = fetchPicture(db, url);
+      const assetId = await fetchPicture(db, url);
       if (assetId) {
         db.collections.users.update(user._id, { $set: { "profile.picture": assetId } });
       }
     }
-  });
+  }
 };
 
 const assignPlans = function (_db, _backend) {
@@ -676,8 +677,8 @@ const startPreinstallingApps = function (db, _backend) {
   // This isn't really a normal migration. It will run only on brand new servers, and it has to
   // run after the `clearAppIndex` migration because it relies on populating AppIndex.
 
-  const startPreinstallingAppsHelper = function () {
-    db.updateAppIndex();
+  const startPreinstallingAppsHelper = async function () {
+    await db.updateAppIndex();
 
     const preinstalledApps = db.collections.appIndex.find({ _id: {
       $in: db.getProductivitySuiteAppIds().concat(
@@ -695,7 +696,11 @@ const startPreinstallingApps = function (db, _backend) {
 
   if (!Meteor.settings.public.isTesting && !db.allowDevAccounts()) {
     // We want preinstalling apps to run async and not block startup.
-    Meteor.setTimeout(startPreinstallingAppsHelper, 0);
+    Meteor.setTimeout(() => {
+      startPreinstallingAppsHelper().catch((err) => {
+        console.error("Error starting preinstalling apps:", err);
+      });
+    }, 0);
   }
 };
 

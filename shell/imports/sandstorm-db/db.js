@@ -25,6 +25,15 @@ import { SHA256 } from "meteor/sha";
 import { HTTP } from "meteor/http";
 import { iconSrcForPackage } from "/imports/sandstorm-identicons/helpers";
 
+function httpCallAsync(method, url, options) {
+  return new Promise((resolve, reject) => {
+    HTTP.call(method, url, options || {}, (err, response) => {
+      if (err) reject(err);
+      else resolve(response);
+    });
+  });
+}
+
 // Useful for debugging: Set the env variable LOG_MONGO_QUERIES to have the server write every
 // query it makes, so you can see if it's doing queries too often, etc.
 if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
@@ -1910,7 +1919,7 @@ _.extend(SandstormDb.prototype, {
     this.collections.activitySubscriptions.upsert(record, { $set: { mute: true } });
   },
 
-  updateAppIndex() {
+  async updateAppIndex() {
     const appUpdatesEnabledSetting = this.collections.settings.findOne({ _id: "appUpdatesEnabled" });
     const appUpdatesEnabled = appUpdatesEnabledSetting && appUpdatesEnabledSetting.value;
     if (!appUpdatesEnabled) {
@@ -1921,7 +1930,7 @@ _.extend(SandstormDb.prototype, {
 
     const appIndexUrl = this.collections.settings.findOne({ _id: "appIndexUrl" }).value;
     const appIndex = this.collections.appIndex;
-    const data = HTTP.get(appIndexUrl + "/apps/index.json").data;
+    const data = (await httpCallAsync("GET", appIndexUrl + "/apps/index.json")).data;
     const preinstalledAppIds = this.getAllPreinstalledAppIds();
     // We make sure to get all preinstalled appIds, even ones that are currently
     // downloading/failed.

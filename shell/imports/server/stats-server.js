@@ -25,6 +25,15 @@ import { globalDb } from "/imports/db-deprecated";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+function httpCallAsync(method, url, options) {
+  return new Promise((resolve, reject) => {
+    HTTP.call(method, url, options || {}, (err, response) => {
+      if (err) reject(err);
+      else resolve(response);
+    });
+  });
+}
+
 if (Mongo.Collection.prototype.aggregate) {
   throw new Error("Looks like Meteor wrapped the Collection.aggregate() call. Make sure it " +
                   "works then delete our own wrapper.");
@@ -174,8 +183,8 @@ async function computeStats(since) {
 }
 
 async function recordStats() {
-  const postStats = function (record) {
-    HTTP.post("https://alpha-api.sandstorm.io/data", {
+  const postStats = async function (record) {
+    await httpCallAsync("POST", "https://alpha-api.sandstorm.io/data", {
       data: record,
       headers: {
         Authorization: "Bearer aT-mGyNwsgwZBbZvd5FWr0Ma79O9IehI4NiEO94y_oR",
@@ -221,7 +230,7 @@ async function recordStats() {
       globalDb.sendAdminNotification("reportStats", "/admin/stats");
       globalDb.collections.settings.insert({ _id: "reportStats", value: "unset" });
     } else if (reportSetting.value === true) {
-      postStats(record);
+      await postStats(record);
     }
   }
 }

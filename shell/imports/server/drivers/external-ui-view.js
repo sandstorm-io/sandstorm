@@ -58,7 +58,7 @@ function getOAuthServiceInfo(url) {
   }
 }
 
-function refreshOAuth(url, refreshToken) {
+async function refreshOAuth(url, refreshToken) {
   // TODO(perf): Cache access tokens until they expire? Currently we re-do the refresh on every
   //   restore. In particular, this means we always drop the first access token returned (which
   //   is returned together with the refresh token) and then immediately request a new one.
@@ -74,7 +74,7 @@ function refreshOAuth(url, refreshToken) {
                     serviceInfo.service);
   }
 
-  const response = HTTP.post(serviceInfo.endpoint, {
+  const response = await httpCallAsync("POST", serviceInfo.endpoint, {
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       "Accept": "application/json",
@@ -91,22 +91,14 @@ function refreshOAuth(url, refreshToken) {
 function newExternalHttpSession(url, auth, db, saveTemplate) {
   // `url` and `auth` are the corresponding members of `ApiToken.frontendRef.http`.
 
-  const createCap = authorization => {
+  const createCap = () => {
     return new Capnp.Capability(new ExternalWebSession(url,
-        authorization ? { headers: { authorization } } : {},
+        {},
+        auth,
         db, saveTemplate), PersistentApiSession);
   };
 
-  if (auth.refresh) {
-    return createCap("Bearer " + refreshOAuth(url, auth.refresh).access_token);
-  } else if (auth.bearer) {
-    return createCap("Bearer " + auth.bearer);
-  } else if (auth.basic) {
-    const userpass = [auth.basic.username, auth.basic.password].join(":");
-    return createCap("Basic " + new Buffer(userpass, "utf8").toString("base64"));
-  } else {
-    return createCap(null);
-  }
+  return createCap();
 }
 
 function registerHttpApiFrontendRef(registry) {
@@ -271,14 +263,16 @@ function parseETag(input) {
 }
 
 class ExternalWebSession extends PersistentImpl {
-  constructor(url, options, db, saveTemplate) {
+  constructor(url, options, auth, db, saveTemplate) {
     super(db, saveTemplate);
 
     if (!options) options = {};
     this.options = options;
+    this.auth = auth || { none: null };
     this._url = url;
     this._db = db;
     this._resolvedTargetPromise = null;
+    this._authorizationPromise = null;
   }
 
   _ensureResolvedTarget() {
@@ -303,6 +297,26 @@ class ExternalWebSession extends PersistentImpl {
     }
 
     return this._resolvedTargetPromise;
+  }
+
+  _ensureAuthorization() {
+    if (!this._authorizationPromise) {
+      this._authorizationPromise = Promise.resolve().then(async () => {
+        if (this.auth.refresh) {
+          const refreshed = await refreshOAuth(this._url, this.auth.refresh);
+          return "Bearer " + refreshed.access_token;
+        } else if (this.auth.bearer) {
+          return "Bearer " + this.auth.bearer;
+        } else if (this.auth.basic) {
+          const userpass = [this.auth.basic.username, this.auth.basic.password].join(":");
+          return "Basic " + Buffer.from(userpass, "utf8").toString("base64");
+        } else {
+          return undefined;
+        }
+      });
+    }
+
+    return this._authorizationPromise;
   }
 
   get(path, context) {
@@ -337,9 +351,13 @@ class ExternalWebSession extends PersistentImpl {
     return new Promise((resolve, reject) => {
       Promise.resolve()
           .then(() => session._ensureResolvedTarget())
-          .then(() => {
+          .then(() => session._ensureAuthorization())
+          .then((authorization) => {
       const options = _.clone(session.options);
       options.headers = options.headers || {};
+      if (authorization) {
+        options.headers.authorization = authorization;
+      }
 
       if (!options.headers["user-agent"]) {
         options.headers["user-agent"] = "sandstorm app";
@@ -558,4 +576,12 @@ class ExternalWebSession extends PersistentImpl {
       }).catch(reject);
     });
   }
+}
+function httpCallAsync(method, url, options) {
+  return new Promise((resolve, reject) => {
+    HTTP.call(method, url, options || {}, (err, response) => {
+      if (err) reject(err);
+      else resolve(response);
+    });
+  });
 }

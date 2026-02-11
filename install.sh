@@ -7,7 +7,7 @@
 #
 # If `curl|bash` makes you uncomfortable, see other options here:
 #
-#     https://docs.sandstorm.io/en/latest/install/
+#     https://docs.sandstorm.org/install/
 #
 # This script only modifies your system in the following ways:
 # - Install Sandstorm into the directory you choose, typically /opt/sandstorm.
@@ -41,8 +41,14 @@ fi
 
 # We wrap the entire script in a big function which we only call at the very end, in order to
 # protect against the possibility of the connection dying mid-script. This protects us against
-# the problem described in this blog post:
-#   http://blog.existentialize.com/dont-pipe-to-your-shell.html
+# the problem described in a since-deleted blog post that is discussed on HN:
+#   https://news.ycombinator.com/item?id=6650987
+# Briefly, if the install script has a line that says
+#
+# > rm -rf $somefolder
+#
+# and the network fails (so the script terminates) before the last argument is received, then 
+# piping it into the shell will wipe the filesystem.
 _() {
 
 set -euo pipefail
@@ -85,7 +91,7 @@ fail() {
 
   # Users can export REPORT=no to avoid the error-reporting behavior, if they need to.
   if [ "${REPORT:-yes}" = "yes" ] ; then
-    if USE_DEFAULTS=no prompt-yesno "Hmm, installation failed. Would it be OK to send an anonymous error report to the sandstorm.io team so we know something is wrong?
+    if USE_DEFAULTS=no prompt-yesno "Hmm, installation failed. Would it be OK to send an anonymous error report to the sandstorm team so we know something is wrong?
 It would only contain this error code: $error_code" "yes" ; then
       echo "Sending problem report..." >&2
       local BEARER_TOKEN="4-Og3Ty2SPmpkZGnVc_8hnBGXK0JBBXDeBn_55FWixJ"
@@ -458,7 +464,7 @@ assert_linux_x86_64() {
     fail "E_NON_LINUX" "Sandstorm requires Linux. If you want to run Sandstorm on a Windows or
 Mac system, you can use Vagrant or another virtualization tool. See our install documentation:
 
-- https://docs.sandstorm.io/en/latest/install/"
+- https://docs.sandstorm.org/install"
   fi
 
   if [ "$(uname -m)" != x86_64 ]; then

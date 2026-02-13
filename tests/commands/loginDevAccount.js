@@ -29,6 +29,9 @@ exports.command = function (name, isAdmin, callback) {
 
   var ret = this
     .init()
+    .captureBrowserExceptions(function (event) {
+      utils.logBrowserException("loginDevAccount", event);
+    })
     .frame(null)
     .url(this.launch_url + "/")
     .timeouts("script", 10000)

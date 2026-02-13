@@ -55,6 +55,39 @@ module.exports = {
   appSelector: function (appId) {
     return '.app-list>.app-button[data-app-id="' + appId + '"]';
   },
+  logBrowserException: function (scope, event) {
+    var details = event && event.exceptionDetails ? event.exceptionDetails : {};
+    var exception = details.exception || {};
+    var stackTrace = details.stackTrace || {};
+    var callFrames = Array.isArray(stackTrace.callFrames) ? stackTrace.callFrames : [];
+    var message = exception.description || details.text || "Uncaught browser exception";
+    var url = details.url || "";
+    var line = typeof details.lineNumber === "number" ? details.lineNumber + 1 : null;
+    var column = typeof details.columnNumber === "number" ? details.columnNumber + 1 : null;
+
+    console.error("=== Browser exception (" + scope + ") ===");
+    console.error(message);
+
+    if (url) {
+      var location = "  at " + url;
+      if (line !== null) {
+        location += ":" + line;
+        if (column !== null) location += ":" + column;
+      }
+
+      console.error(location);
+    }
+
+    if (callFrames.length > 0) {
+      callFrames.forEach(function (frame) {
+        var fn = frame.functionName || "<anonymous>";
+        var frameUrl = frame.url || "<unknown>";
+        var frameLine = typeof frame.lineNumber === "number" ? frame.lineNumber + 1 : "?";
+        var frameColumn = typeof frame.columnNumber === "number" ? frame.columnNumber + 1 : "?";
+        console.error("  at " + fn + " (" + frameUrl + ":" + frameLine + ":" + frameColumn + ")");
+      });
+    }
+  },
   appDetailsTitleSelector: '.app-details .app-details-widget .app-title',
   actionSelector: '.grain-list-table tr.action button.action'
 };

@@ -185,13 +185,13 @@ const middleware = async function (req, res, next) {
 };
 
 // Listen to incoming OAuth http requests
-WebApp.connectHandlers.use(BodyParser.urlencoded()).use(function (req, res, next) {
+WebApp.connectHandlers.use(BodyParser.urlencoded({ extended: false })).use(function (req, res, next) {
   middleware(req, res, next);
 });
 
 Meteor.methods({
   async generateSamlLogout() {
-    const service = generateService();
+    const service = await generateService();
     if (!service.logoutUrl) {
       throw new Meteor.Error(500, "No SAML logout url specified");
     }
@@ -242,10 +242,10 @@ Meteor.methods({
       return new Meteor.Error(403, "Non-logged in users can't logout.");
     }
 
-    const service = generateService();
+    const service = await generateService();
     const _saml = new SAML(service);
     if (samlRequest) {
-      const buf = new Buffer(samlRequest, "base64");
+      const buf = Buffer.from(samlRequest, "base64");
       const xml = zlib.inflateRawSync(buf).toString();
       const nameId = await new Promise((resolve, reject) => {
         _saml.parseLogoutRequest(xml, function (err, parsedNameId) {

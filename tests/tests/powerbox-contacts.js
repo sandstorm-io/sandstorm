@@ -112,10 +112,38 @@ module.exports["Test powerbox request contact"] = function (browser) {
                     .grainFrame()
                     .waitForElementVisible("span.token", short_wait)
                     .waitForElementVisible("form.test-identity button", short_wait)
-                    .click("form.test-identity button")
-                    .waitForElementVisible("form.test-identity div.result", short_wait)
-                    .assert.textContains("form.test-identity div.result",
-                                         "failed to fetch profile")
+                    .executeAsync(function (timeout, done) {
+                      var deadline = Date.now() + timeout;
+                      var button = document.querySelector("form.test-identity button");
+                      if (!button) {
+                        done({ ok: false, reason: "missing-elements" });
+                        return;
+                      }
+
+                      function step() {
+                        var resultNode = document.querySelector("form.test-identity div.result");
+                        var text = resultNode ? (resultNode.textContent || "") : "";
+                        if (text.indexOf("failed to fetch profile") !== -1) {
+                          done({ ok: true });
+                          return;
+                        }
+
+                        button.click();
+
+                        if (Date.now() > deadline) {
+                          done({ ok: false, reason: text });
+                          return;
+                        }
+
+                        setTimeout(step, 500);
+                      }
+
+                      step();
+                    }, [medium_wait], function (result) {
+                      browser.assert.equal(result.value && result.value.ok, true,
+                          "Identity capability should be invalid after Bob trashes the shared grain; got: " +
+                          (result.value && result.value.reason || "unknown"));
+                    })
                     .end()
                 });
               });

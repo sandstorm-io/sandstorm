@@ -40,7 +40,11 @@ import { MAILING_LIST_BONUS } from "/imports/blackrock-payments/constants";
 const ROOT_URL = process.env.ROOT_URL;
 const HOSTNAME = Url.parse(ROOT_URL).hostname;
 
-export const stripe = StripeModule(Meteor.settings.stripeKey);
+const stripeKey = Meteor.settings.stripeKey || "sk_test_sandstorm_unconfigured";
+if (!Meteor.settings.stripeKey) {
+  console.warn("Stripe secret key is not configured; billing operations will fail until stripeKey is set.");
+}
+export const stripe = StripeModule(stripeKey);
 
 BlackrockPayments = {};
 

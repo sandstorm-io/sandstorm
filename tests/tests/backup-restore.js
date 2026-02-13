@@ -147,13 +147,20 @@ module.exports["Test backup and restore"] = function(browser) {
         downloadPath = fileDownloaded;
         client.assert.ok(fileDownloaded !== undefined, "a zip was downloaded");
         var data = fs.readFileSync(fileDownloaded);
-        var zip = new JSZip(data);
-        var metadata = zip.file("metadata");
-        client.assert.ok(!!metadata, "" + fileDownloaded + " contains file /metadata");
-        var stateFile = zip.file("data/state");
-        client.assert.ok(!!stateFile, "" + fileDownloaded + " contains file /data/state");
-        client.assert.ok(stateFile.asText() === randomValue, "" + fileDownloaded + "/data/state contains the expected value " + randomValue);
-        done();
+        JSZip.loadAsync(data).then(function (zip) {
+          var metadata = zip.file("metadata");
+          client.assert.ok(!!metadata, "" + fileDownloaded + " contains file /metadata");
+          var stateFile = zip.file("data/state");
+          client.assert.ok(!!stateFile, "" + fileDownloaded + " contains file /data/state");
+          return stateFile.async("string").then(function (stateText) {
+            client.assert.ok(stateText === randomValue,
+                "" + fileDownloaded + "/data/state contains the expected value " + randomValue);
+            done();
+          });
+        }).catch(function (error) {
+          downloadError = error;
+          done();
+        });
       }).catch(function (error) {
         downloadError = error;
         done();

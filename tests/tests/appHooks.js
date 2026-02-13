@@ -33,7 +33,7 @@ if (run_xfail) {
       // We also want to wait a moment before clicking the debug log button, so the
       // first grain popup has actually gotten out of our way:
       .pause(short_wait)
-      .click("#openDebugLog")
+      .openDebugLog()
       .waitForElementVisible('.grain-frame', medium_wait)
       .grainFrame()
       .execute(function() {

@@ -65,7 +65,7 @@ module.exports["Install"] = function (browser) {
 module.exports["Test Notification"] = function (browser) {
   browser
     // We'll use the debugLog at the bottom of the test, but it's nice to open it early and give it time to load.
-    .click("#openDebugLog")
+    .openDebugLog()
     .waitForElementVisible(".topbar .notifications .count", short_wait)
     .assert.textContains(".topbar .notifications .count", "1")
     .click(".topbar .notifications>.show-popup")
@@ -94,7 +94,7 @@ module.exports["Install Wakelock Dropper"] = function (browser) {
 module.exports["Test Notification Wakelock Dropper"] = function (browser) {
   browser
     // We'll use the debugLog at the bottom of the test, but it's nice to open it early and give it time to load.
-    .click("#openDebugLog")
+    .openDebugLog()
     .waitForElementVisible(".topbar .notifications .count", short_wait)
     .assert.textContains(".topbar .notifications .count", "1")
     .windowHandles(function (windows) {

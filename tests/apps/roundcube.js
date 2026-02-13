@@ -49,7 +49,7 @@ module.exports["Incoming Mail"] = function (browser) {
         subject: "Hello world email",
         body: "Hello world!",
         html: "<b>Hello world!</b>"
-      }, function (err) {
+      }, long_wait, function (err) {
         if (err) {
           browser.assert.equal(err, "");
         } else {

@@ -29,7 +29,7 @@ module.exports["Test system api"] = function(browser) {
     .assert.textContains("#grainTitle", "Untitled Sandstorm Test App instance")
     // Start opening this now, so we don't have to wait for it later when we
     // want to use it:
-    .click("#openDebugLog")
+    .openDebugLog()
     .grainFrame()
     .waitForElementPresent(selector, short_wait)
     .click(selector)

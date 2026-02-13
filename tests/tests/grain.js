@@ -144,7 +144,7 @@ module.exports = utils.testAllLogins({
 
   "Test grain debug" : function (browser) {
     browser
-      .click('#openDebugLog')
+      .openDebugLog()
       .windowHandles(function (windows) {
         browser.switchWindow(windows.value[1]);
       })

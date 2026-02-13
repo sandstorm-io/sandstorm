@@ -293,11 +293,11 @@ tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/imports/client/changelog.html shel
 		cp deps/node-capnp/src/node-capnp/capnp.js node_modules/capnp.js
 	@[ tmp/node-capnp/capnp.node -ef node_modules/capnp.node ] || \
 		cp tmp/node-capnp/capnp.node node_modules/capnp.node
-	@cd shell/ && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install
+	@cd shell/ && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install --no-fund
 	@touch tmp/.shell-env
 
 icons/node_modules: icons/package.json
-	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install
+	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install --no-fund
 
 shell/client/styles/_icons.scss: icons/node_modules icons/*svg icons/Gruntfile.js
 	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH ./node_modules/.bin/grunt

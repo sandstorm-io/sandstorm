@@ -20,6 +20,30 @@ const { short_wait, run_xfail } = require('../utils');
 
 module.exports = {};
 
+function waitForLogLine(browser, text, timeout) {
+  return browser.executeAsync(function (needle, maxWait, done) {
+    var start = Date.now();
+    (function check() {
+      var pre = document.querySelector(".grainlog-contents > pre");
+      var content = pre && (pre.innerText || pre.textContent) || "";
+      if (content.indexOf(needle) !== -1) {
+        done({ ok: true });
+        return;
+      }
+
+      if (Date.now() - start > maxWait) {
+        done({ ok: false, content: content });
+        return;
+      }
+
+      setTimeout(check, 100);
+    })();
+  }, [text, timeout], function (result) {
+    browser.assert.equal(result.value && result.value.ok, true,
+        "Timed out waiting for debug log line: " + text);
+  });
+}
+
 // The tests in this file all follow a similar form, implemented by this function:
 //
 // 1. Schedule the job, by clicking on a given button in the test app.
@@ -41,7 +65,7 @@ function common({browser, refStr, firstWaitDuration, shouldRepeat}) {
   const now = Date.now();
   const firstCheck = now + firstWaitDuration;
   const secondCheck = firstCheck + (60 * 60 * 1000); // 1 hr
-  let chain = browser
+  browser
     .init()
     .loginDevAccount()
     .uploadTestApp()
@@ -56,16 +80,19 @@ function common({browser, refStr, firstWaitDuration, shouldRepeat}) {
     .assert.textContains("#sched-response", "Success: true")
     .frameParent()
     .execute('Meteor.call("runDueJobsAt", ' + firstCheck.toString() + ');')
-    .pause(short_wait)
     .windowHandles(windows => browser.switchWindow(windows.value[1]))
-    .waitForElementVisible(".grainlog-contents > pre", short_wait)
-    .assert.textContains(".grainlog-contents > pre", "Running job " + refStr)
+    .waitForElementVisible(".grainlog-contents > pre", short_wait);
+
+  waitForLogLine(browser, "Running job " + refStr, short_wait);
+
+  browser
     .windowHandles(windows => browser.switchWindow(windows.value[0]))
     .frameParent()
     .execute('Meteor.call("runDueJobsAt", ' + secondCheck.toString() + ');')
-    .pause(short_wait)
-    .windowHandles(windows => browser.switchWindow(windows.value[1]))
-    .expect.element(".grainlog-contents > pre").text
+    .windowHandles(windows => browser.switchWindow(windows.value[1]));
+
+  waitForLogLine(browser, "Running job " + refStr + "\nRunning job " + refStr, short_wait);
+  let chain = browser.expect.element(".grainlog-contents > pre").text;
   if(!shouldRepeat) {
     chain = chain.not
   }

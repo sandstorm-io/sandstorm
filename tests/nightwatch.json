@@ -13,6 +13,9 @@
   "test_settings": {
     "default": {
       "launch_url": "http://local.sandstorm.io:6080",
+      "globals": {
+        "waitForConditionPollInterval": 100
+      },
       "webdriver": {
         "start_process": true,
         "server_path": "node_modules/chromedriver/lib/chromedriver/chromedriver",

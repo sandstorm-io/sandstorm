@@ -33,7 +33,6 @@ module.exports["Test system api"] = function(browser) {
     .grainFrame()
     .waitForElementPresent(selector, short_wait)
     .click(selector)
-    .pause(short_wait)
     .windowHandles(windows => browser.switchWindow(windows.value[1]))
     .waitForElementVisible(".grainlog-contents > pre", short_wait)
     .assert.textContains(".grainlog-contents > pre", "testSystemApi() passed.")

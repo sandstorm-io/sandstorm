@@ -24,10 +24,35 @@
 var utils = require("../utils"),
     short_wait = utils.short_wait,
     medium_wait = utils.medium_wait,
-    long_wait = utils.long_wait,
-    very_long_wait = utils.very_long_wait;
+    long_wait = utils.long_wait;
 
 module.exports = {};
+
+function waitForLogLine(browser, text, timeout) {
+  return browser
+  .timeouts("script", timeout + 5000)
+  .executeAsync(function (needle, maxWait, done) {
+    var start = Date.now();
+    (function check() {
+      var pre = document.querySelector(".grainlog-contents > pre");
+      var content = pre && (pre.innerText || pre.textContent) || "";
+      if (content.indexOf(needle) !== -1) {
+        done({ ok: true });
+        return;
+      }
+
+      if (Date.now() - start > maxWait) {
+        done({ ok: false, content: content });
+        return;
+      }
+
+      setTimeout(check, 100);
+    })();
+  }, [text, timeout], function (result) {
+    browser.assert.equal(result && result.status === 0 && result.value && result.value.ok, true,
+        "Timed out waiting for debug log line: " + text);
+  });
+}
 
 module.exports["Install"] = function (browser) {
   browser
@@ -46,13 +71,13 @@ module.exports["Test Notification"] = function (browser) {
     .click(".topbar .notifications>.show-popup")
     .waitForElementNotPresent(".topbar .notifications .count", short_wait)
     .click(".notification-list .notification-item button")
-    .pause(short_wait)
     .windowHandles(function (windows) {
       browser
         .switchWindow(windows.value[1])
-        .waitForElementVisible(".grainlog-contents > pre", short_wait)
-        .assert.textContains(".grainlog-contents > pre", "Grain has enabled backgrounding")
-        .assert.textContains(".grainlog-contents > pre", "Grain's backgrounding has been disabled")
+        .waitForElementVisible(".grainlog-contents > pre", medium_wait)
+      waitForLogLine(browser, "Grain has enabled backgrounding", medium_wait);
+      waitForLogLine(browser, "Grain's backgrounding has been disabled", medium_wait);
+      browser
         .closeWindow()
         .end();
     });
@@ -72,14 +97,13 @@ module.exports["Test Notification Wakelock Dropper"] = function (browser) {
     .click("#openDebugLog")
     .waitForElementVisible(".topbar .notifications .count", short_wait)
     .assert.textContains(".topbar .notifications .count", "1")
-    .pause(short_wait)
     .windowHandles(function (windows) {
       browser
         .switchWindow(windows.value[1])
-        .waitForElementVisible(".grainlog-contents > pre", short_wait)
-        .assert.textContains(".grainlog-contents > pre", "Grain has enabled backgrounding")
-        .pause(18000) // After 15 seconds, the app will drop its wakelock
-        .assert.textContains(".grainlog-contents > pre", "Grain's backgrounding has been disabled")
+        .waitForElementVisible(".grainlog-contents > pre", medium_wait)
+      waitForLogLine(browser, "Grain has enabled backgrounding", medium_wait);
+      waitForLogLine(browser, "Grain's backgrounding has been disabled", long_wait);
+      browser
         .closeWindow()
         .end();
     });

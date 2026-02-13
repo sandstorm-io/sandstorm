@@ -30,6 +30,12 @@ exports.command = function(url, packageId, appId, dontStartGrain, callback) {
     .url(this.launch_url + "/install/" + packageId + "?url=" + url)
     .waitForElementVisible("#step-confirm", very_long_wait)
     .click("#confirmInstall")
+    .pause(500)
+    .element("css selector", "#confirmInstall", function(result) {
+      if (result && result.status === 0) {
+        this.click("#confirmInstall");
+      }
+    })
     .waitForElementNotPresent("#confirmInstall", very_long_wait)
     .url(this.launch_url + "/apps")
     .waitForElementVisible(".app-list", medium_wait)

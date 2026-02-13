@@ -136,7 +136,6 @@ module.exports = utils.testAllLogins({
   "Test grain restart" : function (browser) {
     browser
       .click('#restartGrain')
-      .pause(short_wait)
       .grainFrame()
       .waitForElementPresent('#publish', medium_wait)
       .assert.textContains('#publish', 'Publish')
@@ -146,11 +145,10 @@ module.exports = utils.testAllLogins({
   "Test grain debug" : function (browser) {
     browser
       .click('#openDebugLog')
-      .pause(short_wait)
       .windowHandles(function (windows) {
         browser.switchWindow(windows.value[1]);
       })
-      .pause(short_wait)
+      .waitForElementVisible('.grainlog-title', medium_wait)
       .assert.textContains('.grainlog-title', 'Debug log: ' + expectedHackerCMSGrainTitle)
       .closeWindow()
       .end();

@@ -17,7 +17,7 @@
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
 import { Random } from "meteor/random";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 
 import { allowDemo } from "/imports/demo";
 import { isSafeDemoAppUrl } from "/imports/install"
@@ -30,8 +30,8 @@ const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
 
 async function cleanupToken(tokenId) {
   check(tokenId, String);
-  globalDb.collections.spkTokens.remove({ _id: tokenId });
-  await globalBackend.cap().deleteBackup(tokenId);
+  await globalDb.collections.spkTokens.removeAsync({ _id: tokenId });
+  await globalThis.globalBackend.cap().deleteBackup(tokenId);
 }
 
 Meteor.startup(() => {
@@ -39,11 +39,17 @@ Meteor.startup(() => {
   SandstormDb.periodicCleanup(TOKEN_CLEANUP_TIMER, () => {
     const queryDate = new Date(Date.now() - TOKEN_CLEANUP_TIMER);
 
-    globalDb.collections.spkTokens.find({ timestamp: { $lt: queryDate } }).forEach((token) => {
-      cleanupToken(token._id).catch((err) => {
-        console.error("Failed cleaning up upload token:", err);
+    globalDb.collections.spkTokens.find({ timestamp: { $lt: queryDate } }).fetchAsync()
+      .then((tokens) => {
+        tokens.forEach((token) => {
+          cleanupToken(token._id).catch((err) => {
+            console.error("Failed cleaning up upload token:", err);
+          });
+        });
+      })
+      .catch((err) => {
+        console.error("Failed scanning expired upload tokens:", err);
       });
-    });
   });
 });
 
@@ -63,26 +69,29 @@ Meteor.methods({
     cancelDownload(packageId);
   },
 
-  newUploadToken: function () {
-    if (!isSignedUp()) {
+  newUploadToken: async function () {
+    const account = await Meteor.users.findOneAsync({ _id: this.userId });
+    if (!await this.connection.sandstormDb.isAccountSignedUpAsync(account)) {
       throw new Meteor.Error(403, "Unauthorized", "Only invited users can upload apps.");
     }
 
-    if (globalDb.isUninvitedFreeUser()) {
+    if (Meteor.settings.public.allowUninvited &&
+        account && !account.expires && (!account.plan || account.plan === "free")) {
       throw new Meteor.Error(403, "Unauthorized", "Only paid users can upload apps.");
     }
 
     const token = Random.id(22);
-    globalDb.collections.spkTokens.insert({ _id: token, timestamp: new Date() });
+    await globalDb.collections.spkTokens.insertAsync({ _id: token, timestamp: new Date() });
 
     return token;
   },
 
-  upgradeGrains: function (appId, version, packageId) {
-    this.connection.sandstormDb.upgradeGrains(appId, version, packageId, globalBackend);
+  upgradeGrains: async function (appId, version, packageId) {
+    await this.connection.sandstormDb.upgradeGrainsAsync(
+        appId, version, packageId, globalThis.globalBackend);
   },
 
-  ensureInstalled: function (packageId, url, isRetry) {
+  ensureInstalled: async function (packageId, url, isRetry) {
     check(packageId, String);
     check(url, Match.OneOf(String, undefined, null));
     check(isRetry, Boolean);
@@ -91,21 +100,28 @@ Meteor.methods({
       throw new Meteor.Error(400, "The package ID contains illegal characters.");
     }
 
+    const account = this.userId ? await Meteor.users.findOneAsync({ _id: this.userId }) : null;
+
     if (!this.userId) {
       if (allowDemo && isSafeDemoAppUrl(url)) {
         // continue on
       } else { // jscs:ignore disallowEmptyBlocks
         throw new Meteor.Error(403, "You must be logged in to install packages.");
       }
-    } else if (!isSignedUpOrDemo()) {
-      throw new Meteor.Error(403,
-          "This Sandstorm server requires you to get an invite before installing apps.");
+    } else {
+      if (!await this.connection.sandstormDb.isAccountSignedUpOrDemoAsync(account)) {
+        throw new Meteor.Error(403,
+            "This Sandstorm server requires you to get an invite before installing apps.");
+      }
     }
 
-    const pkg = globalDb.collections.packages.findOne(packageId);
+    const pkg = await globalDb.collections.packages.findOneAsync(packageId);
 
     if (!pkg || pkg.status !== "ready") {
-      if (!this.userId || isDemoUser() || globalDb.isUninvitedFreeUser()) {
+      if (!this.userId ||
+          (account && account.expires) ||
+          (Meteor.settings.public.allowUninvited &&
+           account && !account.expires && (!account.plan || account.plan === "free"))) {
         if (!isSafeDemoAppUrl(url)) {
           // TODO(someday): Billing prompt on client side.
           throw new Meteor.Error(403, "Sorry, demo and free users cannot upload custom apps; " +
@@ -115,16 +131,16 @@ Meteor.methods({
     }
 
     if (!pkg || isRetry) {
-      globalDb.startInstall(packageId, url, isRetry);
+      await globalDb.startInstallAsync(packageId, url, isRetry);
     }
   },
 });
 
-Meteor.publish("packageInfo", function (packageId) {
+Meteor.publish("packageInfo", async function (packageId) {
   check(packageId, String);
   const db = this.connection.sandstormDb;
   const pkgCursor = db.collections.packages.find(packageId);
-  const pkg = pkgCursor.fetch()[0];
+  const pkg = await db.collections.packages.findOneAsync(packageId);
   if (pkg && this.userId) {
     return [
       pkgCursor,
@@ -144,7 +160,7 @@ Router.map(function () {
 
     action: async function () {
       if (typeof this.params.token !== "string" ||
-          !globalDb.collections.spkTokens.findOne(this.params.token)) {
+          !(await globalDb.collections.spkTokens.findOneAsync(this.params.token))) {
         this.response.writeHead(403, {
           "Content-Type": "text/plain",
           "Access-Control-Allow-Origin": "*",
@@ -153,7 +169,7 @@ Router.map(function () {
         this.response.end();
       } else if (this.request.method === "POST") {
         try {
-          const packageId = (await readPackageFromStream(this.request, globalBackend)).packageId;
+          const packageId = (await readPackageFromStream(this.request, globalThis.globalBackend)).packageId;
           this.response.writeHead(200, {
             "Content-Length": packageId.length,
             "Content-Type": "text/plain",
@@ -161,7 +177,7 @@ Router.map(function () {
           });
           this.response.write(packageId);
           this.response.end();
-          globalDb.collections.spkTokens.remove(this.params.token);
+          await globalDb.collections.spkTokens.removeAsync(this.params.token);
         } catch (error) {
           console.error(error.stack);
           this.response.writeHead(500, {

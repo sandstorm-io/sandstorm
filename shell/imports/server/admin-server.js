@@ -23,9 +23,9 @@ import { ServiceConfiguration } from "meteor/service-configuration";
 
 import Fs from "fs";
 import Crypto from "crypto";
-import Heapdump from "heapdump";
+import { writeHeapSnapshot } from "v8";
 import { SANDSTORM_LOGDIR } from "/imports/server/constants";
-import { clearAdminToken, checkAuth, tokenIsValid, tokenIsSetupSession } from "/imports/server/auth";
+import { clearAdminToken, checkAuthAsync, tokenIsValid, tokenIsSetupSession } from "/imports/server/auth";
 import { send as sendEmail } from "/imports/server/email";
 import { fillUndefinedForChangedDoc } from "/imports/server/observe-helpers";
 import { SandstormDb } from "/imports/sandstorm-db/db";
@@ -39,6 +39,7 @@ const publicAdminSettings = [
   "google", "github", "ldap", "oidc", "saml", "emailToken", "splashUrl", "signupDialog",
   "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
   "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled",
+  "devAccounts",
   "serverTitle", "returnAddress", "ldapNameField", "organizationMembership",
   "organizationSettings",
   "whitelabelCustomLoginProviderName",
@@ -72,15 +73,15 @@ function httpCallAsync(method, url, options) {
 }
 
 Meteor.methods({
-  setAccountSetting: function (token, serviceName, value) {
-    checkAuth(token);
+  setAccountSetting: async function (token, serviceName, value) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     check(serviceName, String);
     check(value, Boolean);
 
     // Only check configurations for OAuth services.
     const oauthServices = ["google", "github", "oidc"];
     if (value && (oauthServices.indexOf(serviceName) != -1)) {
-      const config = ServiceConfiguration.configurations.findOne({ service: serviceName });
+      const config = await ServiceConfiguration.configurations.findOneAsync({ service: serviceName });
       if (!config) {
         throw new Meteor.Error(403, "You must configure the " + serviceName +
           " service before you can enable it. Click the \"configure\" link.");
@@ -99,36 +100,37 @@ Meteor.methods({
       }
     }
 
-    globalDb.collections.settings.upsert({ _id: serviceName }, { $set: { value: value } });
+    await globalDb.collections.settings.upsertAsync({ _id: serviceName }, { $set: { value: value } });
     if (value) {
-      globalDb.collections.settings.update({ _id: serviceName }, { $unset: { automaticallyReset: 1 } });
+      await globalDb.collections.settings.updateAsync(
+          { _id: serviceName }, { $unset: { automaticallyReset: 1 } });
     }
   },
 
-  setSmtpConfig: function (token, config) {
-    checkAuth(token);
+  setSmtpConfig: async function (token, config) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     check(config, smtpConfigShape);
 
-    globalDb.collections.settings.upsert({ _id: "smtpConfig" }, { $set: { value: config } });
+    await globalDb.collections.settings.upsertAsync({ _id: "smtpConfig" }, { $set: { value: config } });
   },
 
-  disableEmail: function (token) {
-    checkAuth(token);
+  disableEmail: async function (token) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
 
     const db = this.connection.sandstormDb;
-    db.collections.settings.update({ _id: "smtpConfig" }, { $set: { "value.hostname": "" } });
+    await db.collections.settings.updateAsync({ _id: "smtpConfig" }, { $set: { "value.hostname": "" } });
   },
 
-  setSetting: function (token, name, value) {
-    checkAuth(token);
+  setSetting: async function (token, name, value) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     check(name, String);
     check(value, Match.OneOf(null, String, Date, Boolean));
 
-    globalDb.collections.settings.upsert({ _id: name }, { $set: { value: value } });
+    await globalDb.collections.settings.upsertAsync({ _id: name }, { $set: { value: value } });
   },
 
-  saveOrganizationSettings(token, params) {
-    checkAuth(token);
+  async saveOrganizationSettings(token, params) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     check(params, {
       membership: {
         emailToken: {
@@ -155,16 +157,18 @@ Meteor.methods({
       },
     });
 
-    this.connection.sandstormDb.collections.settings.upsert({ _id: "organizationMembership" }, { value: params.membership });
-    this.connection.sandstormDb.collections.settings.upsert({ _id: "organizationSettings" }, { value: params.settings });
+    await this.connection.sandstormDb.collections.settings.upsertAsync(
+        { _id: "organizationMembership" }, { value: params.membership });
+    await this.connection.sandstormDb.collections.settings.upsertAsync(
+        { _id: "organizationSettings" }, { value: params.settings });
   },
 
-  adminConfigureLoginService: function (token, options) {
-    checkAuth(token);
+  adminConfigureLoginService: async function (token, options) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     check(options, Match.ObjectIncluding({ service: String }));
 
     if (options.service === "oidc" && options.serverUrl) {
-      return Issuer.discover(options.serverUrl).then(function(issuer) {
+      return Issuer.discover(options.serverUrl).then(async function(issuer) {
 
         // 'Proof Key for Code Exchange' (response_type === 'code') is not yet supported.
         // An additional code_challenge parameter would have to be added when generating the authorizationUrl.
@@ -173,34 +177,36 @@ Meteor.methods({
         }
 
         options.issuer = issuer.metadata;
-        ServiceConfiguration.configurations.upsert({ service: options.service }, options);
+        await ServiceConfiguration.configurations.upsertAsync({ service: options.service }, options);
       }).catch(function(_err) {
         throw new Meteor.Error(403, "Could not discover an OpenID Connect endpoint at the provided URL.");
       });
     } else {
-      ServiceConfiguration.configurations.upsert({ service: options.service }, options);
+      await ServiceConfiguration.configurations.upsertAsync({ service: options.service }, options);
     }
   },
 
-  clearResumeTokensForService: function (token, serviceName) {
-    checkAuth(token);
+  clearResumeTokensForService: async function (token, serviceName) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     check(serviceName, String);
 
     const query = {};
     query["services." + serviceName] = { $exists: true };
-    Meteor.users.find(query).forEach(function (credential) {
+    const credentials = await Meteor.users.find(query).fetchAsync();
+    for (const credential of credentials) {
       if (credential.services.resume && credential.services.resume.loginTokens &&
           credential.services.resume.loginTokens.length > 0) {
-        Meteor.users.update({ _id: credential._id }, { $set: { "services.resume.loginTokens": [] } });
+        await Meteor.users.updateAsync(
+            { _id: credential._id }, { $set: { "services.resume.loginTokens": [] } });
       }
 
-      Meteor.users.update({ "loginCredentials.id": credential._id },
-                          { $set: { "services.resume.loginTokens": [] } });
-    });
+      await Meteor.users.updateAsync({ "loginCredentials.id": credential._id },
+                                     { $set: { "services.resume.loginTokens": [] } });
+    }
   },
 
-  adminUpdateUser: function (token, userInfo) {
-    checkAuth(token);
+  adminUpdateUser: async function (token, userInfo) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     check(userInfo, {
       userId: String,
       signupKey: Boolean,
@@ -212,11 +218,11 @@ Meteor.methods({
       throw new Meteor.Error(403, "User cannot remove admin permissions from itself.");
     }
 
-    Meteor.users.update({ _id: userId }, { $set: _.omit(userInfo, ["_id", "userId"]) });
+    await Meteor.users.updateAsync({ _id: userId }, { $set: _.omit(userInfo, ["_id", "userId"]) });
   },
 
   testSend: async function (token, smtpConfig, to) {
-    checkAuth(token);
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     check(smtpConfig, smtpConfigShape);
     check(to, String);
     const { returnAddress, ...restConfig } = smtpConfig;
@@ -224,7 +230,7 @@ Meteor.methods({
     try {
       await sendEmail({
         to: to,
-        from: { name: globalDb.getServerTitle(), address: returnAddress },
+        from: { name: await globalDb.getServerTitleAsync(), address: returnAddress },
         subject: "Testing your Sandstorm's SMTP setting",
         text: "Success! Your outgoing SMTP is working.",
         smtpConfig: restConfig,
@@ -249,20 +255,20 @@ Meteor.methods({
     }
   },
 
-  createSignupKey: function (token, note, quota) {
-    checkAuth(token);
+  createSignupKey: async function (token, note, quota) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     check(note, String);
     check(quota, Match.OneOf(undefined, null, Number));
 
     const key = Random.id();
     const content = { _id: key, used: false, note: note };
     if (typeof quota === "number") content.quota = quota;
-    globalDb.collections.signupKeys.insert(content);
+    await globalDb.collections.signupKeys.insertAsync(content);
     return key;
   },
 
   sendInvites: async function (token, origin, from, list, subject, message, quota) {
-    checkAuth(token);
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     check(from, { name: String, address: String });
     check([origin, list, subject, message], [String]);
     check(quota, Match.OneOf(undefined, null, Number));
@@ -292,35 +298,35 @@ Meteor.methods({
           definitelySent: false,
         };
         if (typeof quota === "number") content.quota = quota;
-        globalDb.collections.signupKeys.insert(content);
+        await globalDb.collections.signupKeys.insertAsync(content);
         await sendEmail({
           to: email,
           from: from,
-          envelopeFrom: globalDb.getReturnAddress(),
+          envelopeFrom: await globalDb.getReturnAddressAsync(),
           subject: subject,
           text: message.replace(/\$KEY/g, origin + "/signup/" + key),
         });
-        globalDb.collections.signupKeys.update(key, { $set: { definitelySent: true } });
+        await globalDb.collections.signupKeys.updateAsync(key, { $set: { definitelySent: true } });
       }
     }
 
     return { sent: true };
   },
 
-  adminToggleDisableCap: function (token, capId, value) {
-    checkAuth(token);
+  adminToggleDisableCap: async function (token, capId, value) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     check(capId, String);
     check(value, Boolean);
 
     if (value) {
-      globalDb.collections.apiTokens.update({ _id: capId }, { $set: { revoked: true } });
+      await globalDb.collections.apiTokens.updateAsync({ _id: capId }, { $set: { revoked: true } });
     } else {
-      globalDb.collections.apiTokens.update({ _id: capId }, { $set: { revoked: false } });
+      await globalDb.collections.apiTokens.updateAsync({ _id: capId }, { $set: { revoked: false } });
     }
   },
 
-  updateQuotas: function (token, list, quota) {
-    checkAuth(token);
+  updateQuotas: async function (token, list, quota) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     check(list, String);
     check(quota, Match.OneOf(undefined, null, Number));
 
@@ -333,8 +339,8 @@ Meteor.methods({
     for (const i in items) {
       const modifier = (typeof quota === "number") ? { $set: { quota: quota } }
                                                  : { $unset: { quota: "" } };
-      let n = globalDb.collections.signupKeys.update({ email: items[i] }, modifier, { multi: true });
-      n += Meteor.users.update({ signupEmail: items[i] }, modifier, { multi: true });
+      let n = await globalDb.collections.signupKeys.updateAsync({ email: items[i] }, modifier, { multi: true });
+      n += await Meteor.users.updateAsync({ signupEmail: items[i] }, modifier, { multi: true });
 
       if (n < 1) invalid.push(items[i]);
     }
@@ -345,34 +351,35 @@ Meteor.methods({
     }
   },
 
-  dismissAdminStatsNotifications: function (token) {
-    checkAuth(token);
-    globalDb.collections.notifications.remove({ "admin.type": "reportStats" });
+  dismissAdminStatsNotifications: async function (token) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
+    await globalDb.collections.notifications.removeAsync({ "admin.type": "reportStats" });
   },
 
-  signUpAsAdmin: function (token) {
+  signUpAsAdmin: async function (token) {
     check(token, String);
-    checkAuth(token);
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to sign up as admin.");
     }
 
-    if (!Meteor.user().loginCredentials) {
+    const account = await Meteor.users.findOneAsync({ _id: this.userId });
+    if (!account || !account.loginCredentials) {
       throw new Meteor.Error(403, "Must be logged into an account to sign up as admin.");
     }
 
-    Meteor.users.update({ _id: this.userId }, { $set: { isAdmin: true, signupKey: "admin" } });
+    await Meteor.users.updateAsync({ _id: this.userId }, { $set: { isAdmin: true, signupKey: "admin" } });
     clearAdminToken(token);
   },
 
-  redeemSetupToken(token) {
+  async redeemSetupToken(token) {
     // Redeem an admin token into a setup session.
     check(token, String);
     if (tokenIsValid(token)) {
       const sessId = Random.secret();
       const creationDate = new Date();
       const hashedSessionId = Crypto.createHash("sha256").update(sessId).digest("base64");
-      this.connection.sandstormDb.collections.setupSession.upsert({
+      await this.connection.sandstormDb.collections.setupSession.upsertAsync({
         _id: "current-session",
       }, {
         creationDate,
@@ -386,56 +393,56 @@ Meteor.methods({
     }
   },
 
-  heapdump() {
+  async heapdump() {
     // Requests a heap dump. Intended for use by Sandstorm developers. Requires admin.
     //
     // Call this from the JS console like:
     //   Meteor.call("heapdump");
 
-    checkAuth();
+    await checkAuthAsync(this.connection.sandstormDb, this.userId);
 
     // We use /var/log because it's a location in the container to which the front-end is allowed
     // to write.
     const name = "/var/log/" + Date.now() + ".heapsnapshot";
-    Heapdump.writeSnapshot(name);
+    writeHeapSnapshot(name);
     console.log("Wrote heapdump: /opt/sandstorm" + name);
     return name;
   },
 
-  setPreinstalledApps: function (appAndPackageIds) {
-    checkAuth();
+  setPreinstalledApps: async function (appAndPackageIds) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId);
     check(appAndPackageIds, [{ appId: String, packageId: String, }]);
 
-    this.connection.sandstormDb.setPreinstalledApps(appAndPackageIds);
+    await this.connection.sandstormDb.setPreinstalledAppsAsync(appAndPackageIds);
   },
 
   setTlsKeys: async function (token, keys) {
-    checkAuth(token);
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     check(keys, {
       key: String,
       certChain: String
     });
 
-    if (currentTlsKeysCallback) {
+    if (globalThis.currentTlsKeysCallback) {
       // Validate by calling setKeys() directly.
-      await currentTlsKeysCallback.setKeys(keys.key, keys.certChain);
+      await globalThis.currentTlsKeysCallback.setKeys(keys.key, keys.certChain);
     }
 
-    globalDb.collections.settings.upsert({ _id: "tlsKeys" }, { $set: { value: keys } });
+    await globalDb.collections.settings.upsertAsync({ _id: "tlsKeys" }, { $set: { value: keys } });
   },
 
-  forgetAcmeAccount: function (token) {
-    checkAuth(token);
-    globalDb.collections.settings.remove({ _id: "acmeAccount" });
+  forgetAcmeAccount: async function (token) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
+    await globalDb.collections.settings.removeAsync({ _id: "acmeAccount" });
   },
 
-  forgetAcmeChallenge: function (token) {
-    checkAuth(token);
-    globalDb.collections.settings.remove({ _id: "acmeChallenge" });
+  forgetAcmeChallenge: async function (token) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
+    await globalDb.collections.settings.removeAsync({ _id: "acmeChallenge" });
   },
 
   fetchAcmeDirectory: async function (token, url) {
-    checkAuth(token);
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     check(url, String);
     let response = await httpCallAsync("GET", url);
 
@@ -452,7 +459,7 @@ Meteor.methods({
   },
 
   createAcmeAccount: async function (token, directory, email, agreeToTerms) {
-    checkAuth(token);
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     check(directory, String);
     check(email, String);
     check(agreeToTerms, Boolean);
@@ -464,19 +471,19 @@ Meteor.methods({
     }
   },
 
-  setAcmeChallenge: function (token, module, options) {
-    checkAuth(token);
+  setAcmeChallenge: async function (token, module, options) {
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     check(module, ModuleName);
     check(options, Object);
 
     options = SandstormDb.escapeMongoObject(options);
 
-    globalDb.collections.settings.upsert({_id: "acmeChallenge"},
+    await globalDb.collections.settings.upsertAsync({_id: "acmeChallenge"},
         {$set: { value: { module, options } }});
   },
 
   renewCertificateNow: async function (token) {
-    checkAuth(token);
+    await checkAuthAsync(this.connection.sandstormDb, this.userId, token);
     this.unblock();
 
     try {
@@ -492,20 +499,20 @@ let ModuleName = Match.Where(name => {
   return !!name.match(/^[a-zA-Z0-9_-]*$/);
 });
 
-const authorizedAsAdmin = function (token, userId) {
+const authorizedAsAdmin = async function (token, userId) {
   return Match.test(token, Match.OneOf(undefined, null, String)) &&
-         ((userId && isAdminById(userId)) || tokenIsValid(token) || tokenIsSetupSession(token));
+         ((userId && await globalDb.isAdminByIdAsync(userId)) || tokenIsValid(token) || tokenIsSetupSession(token));
 };
 
-Meteor.publish("admin", function (token) {
-  if (!authorizedAsAdmin(token, this.userId)) return [];
+Meteor.publish("admin", async function (token) {
+  if (!await authorizedAsAdmin(token, this.userId)) return [];
 
   // Admin is allowed to see all settings... but we redact the TLS key out of caution.
   return globalDb.collections.settings.find({ _id: { $ne: "tlsKeys" } });
 });
 
-Meteor.publish("adminServiceConfiguration", function (token) {
-  if (!authorizedAsAdmin(token, this.userId)) return [];
+Meteor.publish("adminServiceConfiguration", async function (token) {
+  if (!await authorizedAsAdmin(token, this.userId)) return [];
   return ServiceConfiguration.configurations.find();
 });
 
@@ -519,13 +526,13 @@ Meteor.publish("adminToken", function (token) {
   this.ready();
 });
 
-Meteor.publish("allUsers", function (token) {
-  if (!authorizedAsAdmin(token, this.userId)) return [];
+Meteor.publish("allUsers", async function (token) {
+  if (!await authorizedAsAdmin(token, this.userId)) return [];
   return Meteor.users.find();
 });
 
-Meteor.publish("adminUserDetails", function (userId) {
-  if (!authorizedAsAdmin(undefined, this.userId)) return [];
+Meteor.publish("adminUserDetails", async function (userId) {
+  if (!await authorizedAsAdmin(undefined, this.userId)) return [];
 
   // Reactive publish of any credentials owned by the account with id userId,
   // as well as that user object itself.
@@ -542,11 +549,15 @@ Meteor.publish("adminUserDetails", function (userId) {
 
     const observeHandle = credentialSubs[credentialId];
     delete credentialSubs[credentialId];
-    observeHandle.stop();
+    Promise.resolve(observeHandle).then((h) => {
+      if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+    }).catch((err) => {
+      console.error("Failed to stop credential observer:", err);
+    });
     this.removed("users", credentialId);
   };
 
-  const refCredential = (credentialId) => {
+  const refCredential = async (credentialId) => {
     if (credentialSubs[credentialId]) {
       // should never happen, but if somehow an account wound up with a duplicate credential ID,
       // avoid leaking a subscription
@@ -555,7 +566,7 @@ Meteor.publish("adminUserDetails", function (userId) {
     }
 
     const cursor = Meteor.users.find({ _id: credentialId });
-    const observeHandle = cursor.observe({
+    const observeHandle = await cursor.observeAsync({
       added: (doc) => {
         this.added("users", doc._id, doc);
       },
@@ -574,11 +585,13 @@ Meteor.publish("adminUserDetails", function (userId) {
   };
 
   const accountCursor = Meteor.users.find({ _id: accountId });
-  const accountSubHandle = accountCursor.observe({
+  const accountSubHandle = await accountCursor.observeAsync({
     added: (newDoc) => {
       const newCredentials = SandstormDb.getUserCredentialIds(newDoc);
       newCredentials.forEach((credentialId) => {
-        refCredential(credentialId);
+        refCredential(credentialId).catch((err) => {
+          console.error("Failed to start credential observer (account added):", err);
+        });
       });
 
       this.added("users", newDoc._id, newDoc);
@@ -591,7 +604,9 @@ Meteor.publish("adminUserDetails", function (userId) {
       // Those in newDoc - oldDoc, ref.
       const credentialsAdded = _.difference(newCredentials, oldCredentials);
       credentialsAdded.forEach((credentialId) => {
-        refCredential(credentialId);
+        refCredential(credentialId).catch((err) => {
+          console.error("Failed to start credential observer (account changed):", err);
+        });
       });
 
       // Those in oldDoc - newDoc, unref.
@@ -615,54 +630,63 @@ Meteor.publish("adminUserDetails", function (userId) {
   });
 
   this.onStop(() => {
-    accountSubHandle.stop();
+    Promise.resolve(accountSubHandle).then((h) => {
+      if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+    }).catch((err) => {
+      console.error("Failed to stop account observer:", err);
+    });
     // Also stop all the credential subscriptions.
     const subs = _.values(credentialSubs);
     subs.forEach((sub) => {
-      sub.stop();
+      Promise.resolve(sub).then((h) => {
+        if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+      }).catch((err) => {
+        console.error("Failed to stop credential subscription:", err);
+      });
     });
   });
 
-  // Meteor's cursor.observe() will synchronously call all of the added() callbacks from the initial
-  // query, so by the time we get here we can report readiness.
+  // `observeAsync()` resolves after initial observer setup, so by the time we get here
+  // initial rows are published and we can report readiness.
   this.ready();
 });
 
-Meteor.publish("activityStats", function (token) {
-  if (!authorizedAsAdmin(token, this.userId)) return [];
+Meteor.publish("activityStats", async function (token) {
+  if (!await authorizedAsAdmin(token, this.userId)) return [];
   return globalDb.collections.activityStats.find();
 });
 
-Meteor.publish("statsTokens", function (token) {
-  if (!authorizedAsAdmin(token, this.userId)) return [];
+Meteor.publish("statsTokens", async function (token) {
+  if (!await authorizedAsAdmin(token, this.userId)) return [];
   return globalDb.collections.statsTokens.find();
 });
 
-Meteor.publish("allPackages", function (token) {
-  if (!authorizedAsAdmin(token, this.userId)) return [];
+Meteor.publish("allPackages", async function (token) {
+  if (!await authorizedAsAdmin(token, this.userId)) return [];
   return globalDb.collections.packages.find({ manifest: { $exists: true } },
       { fields: { appId: 1, "manifest.appVersion": 1,
       "manifest.actions": 1, "manifest.appTitle": 1, progress: 1, status: 1, }, });
 });
 
-Meteor.publish("realTimeStats", function (token) {
-  if (!authorizedAsAdmin(token, this.userId)) return [];
+Meteor.publish("realTimeStats", async function (token) {
+  if (!await authorizedAsAdmin(token, this.userId)) return [];
 
   // Last five minutes.
-  this.added("realTimeStats", "now", computeStats(new Date(Date.now() - 5 * 60 * 1000)));
+  this.added("realTimeStats", "now", await computeStats(new Date(Date.now() - 5 * 60 * 1000)));
 
   // Since last sample.
-  const lastSample = globalDb.collections.activityStats.findOne({}, { sort: { timestamp: -1 } });
+  const lastSample = await globalDb.collections.activityStats
+      .findOneAsync({}, { sort: { timestamp: -1 } });
   const lastSampleTime = lastSample ? lastSample.timestamp : new Date(0);
-  this.added("realTimeStats", "today", computeStats(lastSampleTime));
+  this.added("realTimeStats", "today", await computeStats(lastSampleTime));
 
   // TODO(someday): Update every few minutes?
 
   this.ready();
 });
 
-Meteor.publish("adminLog", function (token) {
-  if (!authorizedAsAdmin(token, this.userId)) return [];
+Meteor.publish("adminLog", async function (token) {
+  if (!await authorizedAsAdmin(token, this.userId)) return [];
 
   const logfile = SANDSTORM_LOGDIR + "/sandstorm.log";
 
@@ -725,8 +749,8 @@ Meteor.publish("adminLog", function (token) {
   this.ready();
 });
 
-Meteor.publish("adminApiTokens", function (token) {
-  if (!authorizedAsAdmin(token, this.userId)) return [];
+Meteor.publish("adminApiTokens", async function (token) {
+  if (!await authorizedAsAdmin(token, this.userId)) return [];
   return globalDb.collections.apiTokens.find({
     $or: [
       { "frontendRef.ipNetwork": { $exists: true } },
@@ -743,37 +767,47 @@ Meteor.publish("adminApiTokens", function (token) {
   });
 });
 
-Meteor.publish("hasAdmin", function (token) {
+Meteor.publish("hasAdmin", async function (token) {
   // Like hasUsers, but for admins, and with token auth required.
-  if (!authorizedAsAdmin(token, this.userId)) return [];
+  if (!await authorizedAsAdmin(token, this.userId)) return [];
 
   // Query if there are any admin users.
   const cursor = Meteor.users.find({ isAdmin: true });
-  if (cursor.count() > 0) {
+  if (await cursor.countAsync() > 0) {
     this.added("hasAdmin", "hasAdmin", { hasAdmin: true });
   } else {
-    let handle = cursor.observeChanges({
+    let handle = await cursor.observeChangesAsync({
       added: (id) => {
         this.added("hasAdmin", "hasAdmin", { hasAdmin: true });
-        handle.stop();
+        Promise.resolve(handle).then((h) => {
+          if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+        }).catch((err) => {
+          console.error("Failed to stop hasAdmin observer after add:", err);
+        });
         handle = null;
       },
     });
     this.onStop(function () {
-      if (handle) handle.stop();
+      if (handle) {
+        Promise.resolve(handle).then((h) => {
+          if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+        }).catch((err) => {
+          console.error("Failed to stop hasAdmin observer onStop:", err);
+        });
+      }
     });
   }
 
   this.ready();
 });
 
-Meteor.publish("appIndexAdmin", function (token) {
-  if (!authorizedAsAdmin(token, this.userId)) return [];
+Meteor.publish("appIndexAdmin", async function (token) {
+  if (!await authorizedAsAdmin(token, this.userId)) return [];
   return globalDb.collections.appIndex.find();
 });
 
 function observeOauthService(name) {
-  globalDb.collections.settings.find({ _id: name, value: true }).observe({
+  globalDb.collections.settings.find({ _id: name, value: true }).observeAsync({
     added: function () {
       // Tell the oauth library it should accept login attempts from this service.
       Accounts.oauth.registerService(name);
@@ -783,6 +817,8 @@ function observeOauthService(name) {
       // Tell the oauth library it should deny login attempts from this service.
       Accounts.oauth.unregisterService(name);
     },
+  }).catch((err) => {
+    console.error(`Failed to observe OAuth service ${name}:`, err);
   });
 }
 

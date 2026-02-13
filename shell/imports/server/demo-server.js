@@ -55,13 +55,13 @@ async function cleanupExpiredUsers() {
   // Delete expired demo accounts and all their grains.
 
   const now = new Date(Date.now() - DEMO_GRACE_MS);
-  const expiredUsers = Meteor.users.find(
+  const expiredUsers = await Meteor.users.find(
       { expires: { $lt: now }, loginCredentials: { $exists: true } },
       { fields: { _id: 1, loginCredentials: 1, lastActive: 1, appDemoId: 1, experiments: 1 } })
-      .fetch();
+      .fetchAsync();
   for (const user of expiredUsers) {
     console.log("delete demo user: " + user._id);
-    await globalDb.deleteAccount(user._id, globalBackend);
+    await globalDb.deleteAccount(user._id, globalThis.globalBackend);
 
     // Record stats about demo accounts.
     let deleteStatsType = "demoUser";
@@ -77,22 +77,23 @@ async function cleanupExpiredUsers() {
       record.experiments = user.experiments;
     }
 
-    globalDb.collections.deleteStats.insert(record);
+    await globalDb.collections.deleteStats.insertAsync(record);
   }
 
   // All demo credentials should have been deleted as part of deleting the demo users, but just in
   // case, check for them too.
-  Meteor.users.find({ expires: { $lt: now }, loginCredentials: { $exists: false } },
-                    { fields: { _id: 1 } })
-              .forEach(function (user) {
+  const expiredCredentials = await Meteor.users.find(
+      { expires: { $lt: now }, loginCredentials: { $exists: false } },
+      { fields: { _id: 1 } }).fetchAsync();
+  for (const user of expiredCredentials) {
     console.log("delete demo credential: " + user._id);
-    globalDb.deleteCredential(user._id);
-  });
+    await globalDb.deleteCredential(user._id);
+  }
 }
 
 if (allowDemo) {
   Meteor.methods({
-    createDemoUser: function (displayName, appDemoId) {
+    createDemoUser: async function (displayName, appDemoId) {
       // This is a login method that creates a new temporary user
       // every time it is used.
       //
@@ -101,34 +102,47 @@ if (allowDemo) {
       check(appDemoId, Match.OneOf(undefined, null, String));
 
       // Create the new user.
-      const newUser = { expires: new Date(Date.now() + DEMO_EXPIRATION_MS) };
+      const newUser = {
+        type: "account",
+        loginCredentials: [],
+        nonloginCredentials: [],
+        expires: new Date(Date.now() + DEMO_EXPIRATION_MS),
+      };
       if (appDemoId) {
         newUser.appDemoId = appDemoId;
       }
 
-      const userId = Accounts.insertUserDoc({ profile: { name: displayName } }, newUser);
+      let userId = await Accounts.insertUserDoc({ profile: { name: displayName } }, newUser);
+
+      // Meteor 3 may return a result object in some code paths; normalize to the string id.
+      if (userId && typeof userId === "object") {
+        userId = userId.id || userId.userId || userId._id;
+      }
+
+      check(userId, String);
 
       // Log them in on this connection.
       return Accounts._loginMethod(this, "createDemoUser", arguments,
           "demo", function () { return { userId: userId }; });
     },
 
-    testExpireDemo: function () {
-      if (!isDemoUser()) throw new Meteor.Error(403, "not a demo user");
+    testExpireDemo: async function () {
+      const user = await Meteor.users.findOneAsync({ _id: this.userId });
+      if (!user || !user.expires) throw new Meteor.Error(403, "not a demo user");
 
       const newExpires = new Date(Date.now() + 15000);
-      if (Meteor.user().expires.getTime() < newExpires.getTime()) {
+      if (user.expires.getTime() < newExpires.getTime()) {
         throw new Meteor.Error(403, "can't exend demo");
       }
 
-      Meteor.users.update(this.userId, { $set: { expires: newExpires } });
+      await Meteor.users.updateAsync(this.userId, { $set: { expires: newExpires } });
     },
   });
 
   // If demo mode is enabled, we permit the client to subscribe to information about an app by
   // appId. If this were available in non-demo mode, then anonymous users could effectively ask the
   // server which apps are installed.
-  Meteor.publish("appDemoInfo", function (appId) {
+  Meteor.publish("appDemoInfo", async function (appId) {
     // This publishes info about an app, including the latest version of it. Once you log in, it
     // also publishes your list of UserActions.
     check(appId, String);
@@ -137,7 +151,7 @@ if (allowDemo) {
     // is typically 6-24 hours delayed from reality, so if an app is newly-available
     // in the app market, it won't be in the app index. Therefore we don't bail-out if the app
     // is missing from the AppIndex collection.
-    let appIndexData = globalDb.collections.appIndex.findOne({ appId: appId });
+    let appIndexData = await globalDb.collections.appIndex.findOneAsync({ appId: appId });
 
     // Prepare a helper function we can use to transform a package cursor into an appropriate return
     // value for this function.
@@ -158,7 +172,7 @@ if (allowDemo) {
     let packageQuery = {};
     if (appIndexData) {
       let appIndexPackageQuery = globalDb.collections.packages.find({ _id: appIndexData.packageId });
-      if (appIndexPackageQuery.count() > 0) {
+      if (await globalDb.collections.packages.findOneAsync({ _id: appIndexData.packageId })) {
         return packageCursorAndMaybeUserActions(this.userId, appId, appIndexPackageQuery);
       }
 

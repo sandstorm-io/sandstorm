@@ -18,7 +18,7 @@ import { Meteor } from "meteor/meteor";
 import { Mongo } from "meteor/mongo";
 import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 import { HTTP } from "meteor/http";
 
 import { globalDb } from "/imports/db-deprecated";
@@ -52,29 +52,30 @@ async function computeStats(since) {
 
   // This calculates the number of user accounts that have been used
   // during the requested time period.
-  const currentlyActiveUsersCount = Meteor.users.find({
+  const currentlyActiveUsersCount = await Meteor.users.find({
     expires: { $exists: false },
     loginCredentials: { $exists: true },
     lastActive: timeConstraint,
-  }).count();
+  }).countAsync();
 
   // This calculates the number of grains that have been used during
   // the requested time period.
-  const activeGrainsCount = globalDb.collections.grains.find({ lastUsed: timeConstraint }).count();
+  const activeGrainsCount = await globalDb.collections.grains
+      .find({ lastUsed: timeConstraint }).countAsync();
 
   // If Meteor.settings.allowDemoAccounts is true, DeleteStats
   // contains records of type `user` and `appDemoUser`, indicating
   // the number of those types of accounts that were created and
   // then auto-expired through the demo mode's auto-account-expiry.
-  const deletedDemoUsersCount = globalDb.collections.deleteStats.find(
-    { type: "demoUser", lastActive: timeConstraint }).count();
-  const deletedAppDemoUsersCount = globalDb.collections.deleteStats.find(
-    { type: "appDemoUser", lastActive: timeConstraint }).count();
+  const deletedDemoUsersCount = await globalDb.collections.deleteStats.find(
+    { type: "demoUser", lastActive: timeConstraint }).countAsync();
+  const deletedAppDemoUsersCount = await globalDb.collections.deleteStats.find(
+    { type: "appDemoUser", lastActive: timeConstraint }).countAsync();
 
   // Similarly, if the demo is enabled, we auto-delete grains; we store that
   // fact in DeleteStats with type: "grain".
-  const deletedGrainsCount = globalDb.collections.deleteStats.find(
-    { type: "grain", lastActive: timeConstraint }).count();
+  const deletedGrainsCount = await globalDb.collections.deleteStats.find(
+    { type: "grain", lastActive: timeConstraint }).countAsync();
 
   let apps = await globalDb.collections.grains.aggregate([
     { $match: { lastUsed: timeConstraint } },
@@ -106,12 +107,12 @@ async function computeStats(since) {
     //   revealed to the user.
     const app = apps[appId];
     delete app._id;
-    const grains = globalDb.collections.grains.find({
+    const grains = await globalDb.collections.grains.find({
       lastUsed: timeConstraint,
       appId: appId,
     }, {
       fields: { _id: 1 },
-    }).fetch();
+    }).fetchAsync();
     const grainIds = _.pluck(grains, "_id");
 
     const counts = await globalDb.collections.apiTokens.aggregate([
@@ -196,10 +197,9 @@ async function recordStats() {
   const now = new Date();
 
   const planStats = _.countBy(
-    Meteor.users.find({ expires: { $exists: false }, "payments.id": { $exists: true } },
-                      { fields: { plan: 1 } }).fetch(),
-    "plan"
-  );
+    await Meteor.users.find({ expires: { $exists: false }, "payments.id": { $exists: true } },
+                             { fields: { plan: 1 } }).fetchAsync(),
+    "plan");
 
   const record = {
     timestamp: now,
@@ -210,12 +210,12 @@ async function recordStats() {
     plans: planStats,
   };
   record.computeTime = Date.now() - now;
-  if (Meteor.settings.public.stripePublicKey && BlackrockPayments.getTotalCharges) {
-    record.totalCharges = await BlackrockPayments.getTotalCharges();
+  if (Meteor.settings.public.stripePublicKey && globalThis.BlackrockPayments.getTotalCharges) {
+    record.totalCharges = await globalThis.BlackrockPayments.getTotalCharges();
   }
 
-  globalDb.collections.activityStats.insert(record);
-  const age = globalDb.collections.activityStats.find().count();
+  await globalDb.collections.activityStats.insertAsync(record);
+  const age = await globalDb.collections.activityStats.find().countAsync();
   // The stats page which the user agreed we can send actually displays the whole history
   // of the server, but we're only sending stats from the last day. Let's also throw in the
   // length of said history. This is still strictly less information than what the user said
@@ -223,12 +223,12 @@ async function recordStats() {
   record.serverAge = age;
 
   if (age > 3) {
-    const reportSetting = globalDb.collections.settings.findOne({ _id: "reportStats" });
+    const reportSetting = await globalDb.collections.settings.findOneAsync({ _id: "reportStats" });
 
     if (!reportSetting) {
       // Setting not set yet, send out notifications and set it to false
-      globalDb.sendAdminNotification("reportStats", "/admin/stats");
-      globalDb.collections.settings.insert({ _id: "reportStats", value: "unset" });
+      await globalDb.sendAdminNotificationAsync("reportStats", "/admin/stats");
+      await globalDb.collections.settings.insertAsync({ _id: "reportStats", value: "unset" });
     } else if (reportSetting.value === true) {
       await postStats(record);
     }
@@ -252,22 +252,23 @@ if (!Meteor.settings.replicaNumber) {
     runRecordStats();
   }, DAY_MS - (Date.now() - 10 * 60 * 60 * 1000) % DAY_MS);
 
-  Meteor.startup(function () {
-    if (globalDb.collections.statsTokens.find().count() === 0) {
-      globalDb.collections.statsTokens.remove({});
-      globalDb.collections.statsTokens.insert({ _id: Random.id(22) });
+  Meteor.startup(async function () {
+    const token = await globalDb.collections.statsTokens.findOneAsync({});
+    if (!token) {
+      await globalDb.collections.statsTokens.removeAsync({});
+      await globalDb.collections.statsTokens.insertAsync({ _id: Random.id(22) });
     }
   });
 }
 
 Meteor.methods({
-  regenerateStatsToken: function () {
-    if (!isAdmin()) {
+  regenerateStatsToken: async function () {
+    if (!await this.connection.sandstormDb.isAdminByIdAsync(this.userId)) {
       throw new Meteor.Error(403, "Unauthorized", "User must be admin");
     }
 
-    globalDb.collections.statsTokens.remove({});
-    const token = globalDb.collections.statsTokens.insert({ _id: Random.id(22) });
+    await globalDb.collections.statsTokens.removeAsync({});
+    const token = await globalDb.collections.statsTokens.insertAsync({ _id: Random.id(22) });
     return token._id;
   },
 });
@@ -276,8 +277,8 @@ Router.map(function () {
   this.route("fetchStats", {
     where: "server",
     path: "/fetchStats/:tokenId",
-    action: function () {
-      const token = globalDb.collections.statsTokens.findOne({ _id: this.params.tokenId });
+    action: async function () {
+      const token = await globalDb.collections.statsTokens.findOneAsync({ _id: this.params.tokenId });
 
       if (!token) {
         this.response.writeHead(404, {
@@ -288,7 +289,7 @@ Router.map(function () {
       }
 
       try {
-        const stats = globalDb.collections.activityStats.find().fetch();
+        const stats = await globalDb.collections.activityStats.find().fetchAsync();
         const statsString = JSON.stringify(stats);
 
         this.response.writeHead(200, {

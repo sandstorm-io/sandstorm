@@ -21,7 +21,7 @@ import { Blaze } from "meteor/blaze";
 import { Tracker } from "meteor/tracker";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Random } from "meteor/random";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 import { _ } from "meteor/underscore";
 
 import { computeTitleFromTokenOwnerUser } from "/imports/client/model-helpers";
@@ -104,7 +104,14 @@ class GrainView {
         this.revealIdentity();
       }
     } else {
-      this.revealIdentity();
+      // For direct /grain routes while logged out, default to anonymous session so the user can
+      // receive an explicit access-denied/request-access interstitial instead of hanging in
+      // pre-session state waiting for login.
+      if (Meteor.userId()) {
+        this.revealIdentity();
+      } else {
+        this.doNotRevealIdentity();
+      }
     }
 
     // We manage our Blaze view directly in order to get more control over when iframes get
@@ -245,7 +252,8 @@ class GrainView {
     }
 
     if (!Meteor.userId() && !this._token) {
-      console.error("should never happen: anonymous, but no token either.");
+      // This can happen transiently during logout before the view is torn down.
+      return false;
     }
 
     return !!this._token;
@@ -453,7 +461,9 @@ class GrainView {
   }
 
   revealIdentity() {
-    if (!Meteor.user()) {
+    // We only need an account id for session creation; waiting for full user doc can
+    // incorrectly leave identity in "incognito" during startup.
+    if (!Meteor.userId()) {
       return;
     }
 
@@ -626,14 +636,25 @@ class GrainView {
 
   _openGrainSession() {
     const _this = this;
-    const isIncognito = _this.isIncognito();
 
     const condition = () => {
       // Make sure we don't call openSession before the user is logged in.
-      return isIncognito || (Meteor.userId() && !Meteor.loggingIn());
+      const revealState = _this._userIdentityRevealed.get();
+      if (revealState === undefined) {
+        // For non-token grain sessions, wait until we know login state and can choose identity.
+        return !!Meteor.userId() && !Meteor.loggingIn();
+      }
+
+      const isIncognito = !revealState;
+      return isIncognito || (!!Meteor.userId() && !Meteor.loggingIn());
     };
 
     onceConditionIsTrue(condition, () => {
+      if (_this._userIdentityRevealed.get() === undefined && Meteor.userId()) {
+        _this.revealIdentity();
+      }
+
+      const isIncognito = _this._userIdentityRevealed.get() === false;
       _this._addSessionObserver(_.extend({
         grainId: _this._grainId,
         revealIdentity: !isIncognito,
@@ -888,9 +909,13 @@ class GrainView {
 
   markRead() {
     if (this.isOwner()) {
-      Meteor.call("markActivityReadByOwner", this._grainId);
+      Meteor.callAsync("markActivityReadByOwner", this._grainId).catch((err) => {
+        console.error("markActivityReadByOwner failed:", err);
+      });
     } else {
-      Meteor.call("markActivityRead", this._grainId);
+      Meteor.callAsync("markActivityRead", this._grainId).catch((err) => {
+        console.error("markActivityRead failed:", err);
+      });
     }
   }
 

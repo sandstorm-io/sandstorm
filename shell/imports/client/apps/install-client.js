@@ -1,7 +1,7 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
 
@@ -10,7 +10,7 @@ const checkStep = function (step) {
   if (INSTALL_STEPS.indexOf(step) === -1) throw new Error("Invalid step " + step + ".");
 };
 
-SandstormAppInstall = class SandstormAppInstall {
+const SandstormAppInstall = class SandstormAppInstall {
   constructor(packageId, packageUrl, db) {
     this._packageId = packageId;
     this._packageUrl = packageUrl;
@@ -128,6 +128,7 @@ SandstormAppInstall = class SandstormAppInstall {
     return Math.round(progress * 100) + "%";
   }
 };
+globalThis.SandstormAppInstall = SandstormAppInstall;
 
 Template.sandstormAppInstallPage.onCreated(function () {
   const ref = Template.instance().data;
@@ -255,7 +256,9 @@ Template.sandstormAppInstallPage.helpers({
 Template.sandstormAppInstallPage.events({
   "click #retry": function (event) {
     const ref = Template.instance().data;
-    Meteor.call("ensureInstalled", ref._packageId, ref._packageUrl, true);
+    Meteor.callAsync("ensureInstalled", ref._packageId, ref._packageUrl, true).catch((err) => {
+      console.error("ensureInstalled retry failed:", err);
+    });
   },
 
   "click #cancelDownload": function (event) {
@@ -266,6 +269,8 @@ Template.sandstormAppInstallPage.events({
 
   "click #confirmInstall": function (event) {
     const ref = Template.instance().data;
-    Meteor.call("addUserActions", ref.packageId());
+    Meteor.callAsync("addUserActions", ref.packageId()).catch((err) => {
+      console.error("addUserActions failed:", err);
+    });
   },
 });

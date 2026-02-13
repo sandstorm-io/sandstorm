@@ -30,10 +30,10 @@ class ShellCliImpl {
   }
 
   setAcmeChallenge(module, options) {
-    return inMeteor(() => {
+    return inMeteor(async () => {
       options = SandstormDb.escapeMongoObject(JSON.parse(options));
-      globalDb.collections.settings.upsert({_id: "acmeChallenge"},
-          {$set: { value: { module, options } }});
+      await globalDb.collections.settings.upsertAsync({ _id: "acmeChallenge" },
+          { $set: { value: { module, options } } });
     });
   }
 

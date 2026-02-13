@@ -18,7 +18,7 @@ import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 
 import { inMeteor } from "/imports/server/async-helpers";
 
@@ -31,8 +31,8 @@ const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
 
 async function cleanupToken(tokenId) {
   check(tokenId, String);
-  globalDb.collections.fileTokens.remove({ _id: tokenId });
-  await globalBackend.cap().deleteBackup(tokenId);
+  await globalDb.collections.fileTokens.removeAsync({ _id: tokenId });
+  await globalThis.globalBackend.cap().deleteBackup(tokenId);
 }
 
 Meteor.startup(() => {
@@ -40,17 +40,23 @@ Meteor.startup(() => {
   SandstormDb.periodicCleanup(TOKEN_CLEANUP_TIMER, () => {
     const queryDate = new Date(Date.now() - TOKEN_CLEANUP_TIMER);
 
-    globalDb.collections.fileTokens.find({ timestamp: { $lt: queryDate } }).forEach((token) => {
-      cleanupToken(token._id).catch((err) => {
-        console.error("Failed cleaning up backup token:", err);
+    globalDb.collections.fileTokens.find({ timestamp: { $lt: queryDate } }).fetchAsync()
+      .then((tokens) => {
+        tokens.forEach((token) => {
+          cleanupToken(token._id).catch((err) => {
+            console.error("Failed cleaning up backup token:", err);
+          });
+        });
+      })
+      .catch((err) => {
+        console.error("Failed scanning expired backup tokens:", err);
       });
-    });
   });
 });
 
 export const createGrainBackup = async (userId, grainId, async) => {
   check(grainId, String);
-  const grain = globalDb.collections.grains.findOne(grainId);
+  const grain = await globalDb.collections.grains.findOneAsync(grainId);
   if (!grain || !userId || grain.userId !== userId) {
     throw new Meteor.Error(403, "Unauthorized", "User is not the owner of this grain");
   }
@@ -68,13 +74,15 @@ export const createGrainBackup = async (userId, grainId, async) => {
   grainInfo.users = grain.oldUsers || [];
 
   let users = {};
-  globalDb.collections.apiTokens.find({grainId, "owner.user.identityId": {$exists: true}})
-      .forEach((token) => {
+  const apiTokens = await globalDb.collections.apiTokens
+      .find({ grainId, "owner.user.identityId": { $exists: true } }).fetchAsync();
+  apiTokens.forEach((token) => {
     let user = token.owner.user;
     users[user.accountId] = user.identityId;
   });
 
-  Meteor.users.find({_id: {$in: [...Object.keys(users)]}}).forEach(account => {
+  const accounts = await Meteor.users.find({ _id: { $in: [...Object.keys(users)] } }).fetchAsync();
+  accounts.forEach((account) => {
     let credentialIds = _.pluck(account.loginCredentials, "id");
 
     grainInfo.users.push({
@@ -92,18 +100,20 @@ export const createGrainBackup = async (userId, grainId, async) => {
     token.async = true;
   }
 
-  globalDb.collections.fileTokens.insert(token);
+  await globalDb.collections.fileTokens.insertAsync(token);
 
-  const promise = globalBackend.cap().backupGrain(token._id, userId, grainId, grainInfo);
+  const promise = globalThis.globalBackend.cap().backupGrain(token._id, userId, grainId, grainInfo);
 
   if (async) {
     promise.then(() => {
-      return inMeteor(() => {
-        globalDb.collections.fileTokens.update({_id: token._id}, {$unset: {async: 1}});
+      return inMeteor(async () => {
+        await globalDb.collections.fileTokens.updateAsync(
+            { _id: token._id }, { $unset: { async: 1 } });
       });
     }, err => {
-      return inMeteor(() => {
-        globalDb.collections.fileTokens.update({_id: token._id}, {$unset: {async: 1}, $set: {error: err.message}});
+      return inMeteor(async () => {
+        await globalDb.collections.fileTokens.updateAsync(
+            { _id: token._id }, { $unset: { async: 1 }, $set: { error: err.message } });
       });
     });
   } else {
@@ -113,25 +123,25 @@ export const createGrainBackup = async (userId, grainId, async) => {
   return token._id;
 };
 
-export const createBackupToken = () => {
+export const createBackupToken = async () => {
   const token = {
     _id: Random.id(),
     timestamp: new Date(),
   };
 
-  globalDb.collections.fileTokens.insert(token);
+  await globalDb.collections.fileTokens.insertAsync(token);
 
   return token._id;
 };
 
 export const restoreGrainBackup = async (tokenId, user, transferInfo) => {
   check(tokenId, String);
-  const token = globalDb.collections.fileTokens.findOne(tokenId);
+  const token = await globalDb.collections.fileTokens.findOneAsync(tokenId);
   if (!token) {
     throw new Meteor.Error(403, "Token was not found");
   }
 
-  if (isUserOverQuota(user)) {
+  if (await globalDb.isUserOverQuotaAsync(user)) {
     throw new Meteor.Error(402,
         "You are out of storage space. Please delete some things and try again.");
   }
@@ -139,24 +149,25 @@ export const restoreGrainBackup = async (tokenId, user, transferInfo) => {
   const grainId = Random.id(22);
 
   try {
-    const grainInfo = (await globalBackend.cap().restoreGrain(
+    const grainInfo = (await globalThis.globalBackend.cap().restoreGrain(
         tokenId, user._id, grainId).catch((err) => {
           console.error("Unzip failure:", err.message);
           throw new Meteor.Error(500, "Invalid backup file.");
         })).info;
     if (!grainInfo.appId) {
-      globalBackend.deleteGrain(grainId, user._id);
+      globalThis.globalBackend.deleteGrain(grainId, user._id);
       throw new Meteor.Error(500, "Metadata object for uploaded grain has no AppId");
     }
 
-    const action = globalDb.collections.userActions.findOne({ appId: grainInfo.appId, userId: user._id });
+    const action = await globalDb.collections.userActions
+        .findOneAsync({ appId: grainInfo.appId, userId: user._id });
 
     // Create variables we'll use for later Mongo query.
     let packageId;
     let appVersion;
 
     // DevPackages are system-wide, so we do not check the user ID.
-    const devPackage = globalDb.collections.devPackages.findOne({ appId: grainInfo.appId });
+    const devPackage = await globalDb.collections.devPackages.findOneAsync({ appId: grainInfo.appId });
     if (devPackage) {
       // If the dev app package exists, it should override the user action.
       packageId = devPackage.packageId;
@@ -171,14 +182,14 @@ export const restoreGrainBackup = async (tokenId, user, transferInfo) => {
       appVersion = transferInfo.appVersion;
     } else {
       // If the package isn't installed at all, bail out.
-      globalBackend.deleteGrain(grainId, user._id);
+      globalThis.globalBackend.deleteGrain(grainId, user._id);
       throw new Meteor.Error(500,
                               "App id for uploaded grain not installed",
                               "App Id: " + grainInfo.appId);
     }
 
     if (appVersion < grainInfo.appVersion) {
-      globalBackend.deleteGrain(grainId, this.userId);
+      globalThis.globalBackend.deleteGrain(grainId, this.userId);
       throw new Meteor.Error(500,
                               "App version for uploaded grain is newer than any " +
                               "installed version. You need to upgrade your app first",
@@ -186,7 +197,7 @@ export const restoreGrainBackup = async (tokenId, user, transferInfo) => {
                               ", Old version: " + appVersion);
     }
 
-    globalDb.collections.grains.insert({
+    await globalDb.collections.grains.insertAsync({
       _id: grainId,
       packageId: packageId,
       appId: grainInfo.appId,
@@ -216,32 +227,34 @@ Meteor.methods({
     return await createGrainBackup(this.userId, grainId);
   },
 
-  newRestoreToken() {
-    if (!isSignedUpOrDemo()) {
+  async newRestoreToken() {
+    const account = await Meteor.users.findOneAsync({ _id: this.userId });
+    if (!await globalDb.isAccountSignedUpOrDemoAsync(account)) {
       throw new Meteor.Error(403, "Unauthorized", "Only invited users can restore backups.");
     }
 
-    if (isUserOverQuota(Meteor.user())) {
+    if (await globalDb.isUserOverQuotaAsync(account)) {
       throw new Meteor.Error(402,
           "You are out of storage space. Please delete some things and try again.");
     }
 
-    return createBackupToken();
+    return await createBackupToken();
   },
 
   async restoreGrain(tokenId, obsolete) {
-    if (!isSignedUpOrDemo()) {
+    const account = await Meteor.users.findOneAsync({ _id: this.userId });
+    if (!await globalDb.isAccountSignedUpOrDemoAsync(account)) {
       throw new Meteor.Error(403, "User cannot create grains");
     }
     this.unblock();
-    return await restoreGrainBackup(tokenId, Meteor.user());
+    return await restoreGrainBackup(tokenId, account);
   },
 });
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-downloadGrainBackup = async (tokenId, response, retryCount = 0) => {
-  const token = globalDb.collections.fileTokens.findOne(tokenId);
+const downloadGrainBackup = async (tokenId, response, retryCount = 0) => {
+  const token = await globalDb.collections.fileTokens.findOneAsync(tokenId);
   if (!token) {
     response.writeHead(404, { "Content-Type": "text/plain" });
     return response.end("File does not exist");
@@ -307,7 +320,7 @@ downloadGrainBackup = async (tokenId, response, retryCount = 0) => {
     },
   };
 
-  await globalBackend.cap().downloadBackup(tokenId, stream);
+  await globalThis.globalBackend.cap().downloadBackup(tokenId, stream);
 
   if (!sawEnd) {
     console.error("backend failed to call done() when downloading backup");
@@ -322,7 +335,7 @@ downloadGrainBackup = async (tokenId, response, retryCount = 0) => {
 }
 
 export const storeGrainBackup = async (tokenId, inputStream) => {
-  const stream = globalBackend.cap().uploadBackup(tokenId).stream;
+  const stream = globalThis.globalBackend.cap().uploadBackup(tokenId).stream;
 
   await new Promise((resolve, reject) => {
     inputStream.on("data", (data) => {
@@ -352,7 +365,7 @@ Router.map(function () {
     path: "/uploadBackup/:token",
     async action() {
       if (this.request.method === "POST") {
-        const token = globalDb.collections.fileTokens.findOne(this.params.token);
+        const token = await globalDb.collections.fileTokens.findOneAsync(this.params.token);
         if (!this.params.token || !token) {
           this.response.writeHead(403, {
             "Content-Type": "text/plain",

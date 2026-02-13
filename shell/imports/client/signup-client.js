@@ -18,7 +18,7 @@
 
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 import { DEFAULT_SIGNUP_DIALOG } from "/imports/client/personalization";
 import { globalDb } from "/imports/db-deprecated";
 
@@ -65,7 +65,9 @@ Router.map(function () {
       };
 
       if (result.keyIsValid && !result.keyIsUsed && Meteor.userId()) {
-        Meteor.call("useSignupKey", this.params.key);
+        Meteor.callAsync("useSignupKey", this.params.key).catch((err) => {
+          console.error("useSignupKey failed:", err);
+        });
       }
 
       return result;

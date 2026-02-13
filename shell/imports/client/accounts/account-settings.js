@@ -271,7 +271,9 @@ Template.sandstormAccountSettings.events({
   },
 
   "click button.make-primary": function (ev, instance) {
-    Meteor.call("setPrimaryEmail", ev.target.getAttribute("data-email"));
+    Meteor.callAsync("setPrimaryEmail", ev.target.getAttribute("data-email")).catch((err) => {
+      console.error("setPrimaryEmail failed:", err);
+    });
   },
 
   "input input.confirm": function (evt, instance) {
@@ -369,7 +371,7 @@ const submitProfileForm = function (form, cb) {
   // Stop here unless payments are enabled.
   if (Meteor.settings.public.stripePublicKey) {
     // Pass off to payments module.
-    BlackrockPayments.processOptins(form);
+    globalThis.BlackrockPayments.processOptins(form);
   }
 };
 

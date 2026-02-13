@@ -31,6 +31,20 @@ function encodePowerboxDescriptor(desc) {
               .replace(/\//g, "_");
 }
 
+const resolveAccountIdForPowerbox = async (userId) => {
+  if (!userId) return userId;
+
+  const account = await Meteor.users.findOneAsync({
+    type: "account",
+    $or: [
+      { "loginCredentials.id": userId },
+      { "nonloginCredentials.id": userId },
+    ],
+  }, { fields: { _id: 1 } });
+
+  return account ? account._id : userId;
+};
+
 Meteor.methods({
   async newFrontendRef(sessionId, frontendRefRequest) {
     // Completes a powerbox request for a frontendRef capability.
@@ -40,7 +54,7 @@ Meteor.methods({
     const db = this.connection.sandstormDb;
     const frontendRefRegistry = this.connection.frontendRefRegistry;
 
-    const session = db.collections.sessions.findOne(
+    const session = await db.collections.sessions.findOneAsync(
         { _id: sessionId, userId: this.userId || { $exists: false } });
     if (!session) {
       throw new Meteor.Error(403, "Invalid session ID");
@@ -58,7 +72,7 @@ Meteor.methods({
       },
     };
 
-    const cap = frontendRefRegistry.create(db, frontendRef, requirements);
+    const cap = await frontendRefRegistry.create(db, frontendRef, requirements);
     let sturdyRef;
     try {
       sturdyRef = (await cap.save(apiTokenOwner)).sturdyRef.toString();
@@ -68,7 +82,7 @@ Meteor.methods({
     return { sturdyRef, descriptor };
   },
 
-  fulfillUiViewRequest(sessionId, obsolete1, grainId, petname, roleAssignment, ownerGrainId) {
+  async fulfillUiViewRequest(sessionId, obsolete1, grainId, petname, roleAssignment, ownerGrainId) {
     const db = this.connection.sandstormDb;
     check(sessionId, String);
     check(grainId, String);
@@ -81,10 +95,10 @@ Meteor.methods({
     }
 
     const provider = {
-      accountId: this.userId,
+      accountId: await resolveAccountIdForPowerbox(this.userId),
     };
 
-    const title = db.userGrainTitle(grainId, this.userId);
+    const title = await db.userGrainTitleAsync(grainId, this.userId);
 
     const descriptor = encodePowerboxDescriptor({
       tags: [
@@ -101,7 +115,7 @@ Meteor.methods({
       },
     };
 
-    const result = SandstormPermissions.createNewApiToken(
+    const result = await SandstormPermissions.createNewApiToken(
         db, provider, grainId, petname, roleAssignment, owner);
 
     return {
@@ -199,13 +213,15 @@ function registerUiViewQueryHandler(frontendRefRegistry) {
   frontendRefRegistry.register({
     typeId: Grain.UiView.typeId,
 
-    query(db, userId, value) {
+    async query(db, userId, value) {
       if (!userId) return [];
 
       // TODO(someday): Allow `value` to specify app IDs to filter for.
 
-      const sharedGrainIds = db.userApiTokens(userId).map(token => token.grainId);
-      const ownedGrainIds = db.userGrains(userId).map(grain => grain._id);
+      const sharedGrainTokens = await db.userApiTokens(userId).fetchAsync();
+      const ownedGrains = await db.userGrains(userId).fetchAsync();
+      const sharedGrainIds = sharedGrainTokens.map(token => token.grainId);
+      const ownedGrainIds = ownedGrains.map(grain => grain._id);
 
       return _.uniq(sharedGrainIds.concat(ownedGrainIds)).map(grainId => {
         return new PowerboxOption({
@@ -311,20 +327,20 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
       // Search among the user's grains for hosted objects that match.
 
       if (this.userId) {
-        const user = Meteor.users.findOne(this.userId);
-
         // Find all grains shared to this user.
-        const sharedGrainIds = db.userApiTokens(this.userId).map(token => token.grainId);
+        const sharedGrainTokens = await db.userApiTokens(this.userId).fetchAsync();
+        const sharedGrainIds = sharedGrainTokens.map(token => token.grainId);
 
         // Among all grains owned by the user or shared with the user, search for grains having
         // any powerbox tag IDs matching the tag IDs in the query.
-        db.collections.grains
+        const grains = await db.collections.grains
             .find({
               $or: [{ userId: this.userId }, { _id: { $in: sharedGrainIds } }],
               "cachedViewInfo.matchRequests.tags.id":
                   { $in: queryDescriptor.tags.map(tag => tag.id) },
             }, { fields: { "cachedViewInfo.matchRequests": 1 } })
-            .forEach(grain => {
+            .fetchAsync();
+        grains.forEach((grain) => {
           // Filter down to grains that actually have a matching descriptor.
           let alreadyMatched = false;
           grain.cachedViewInfo.matchRequests.forEach(grainDescriptor => {
@@ -432,4 +448,4 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
   });
 });
 
-SandstormPowerbox = { registerUiViewQueryHandler };
+globalThis.SandstormPowerbox = { registerUiViewQueryHandler };

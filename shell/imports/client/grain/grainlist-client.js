@@ -4,9 +4,9 @@ import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { ReactiveDict } from "meteor/reactive-dict";
 import { Session } from "meteor/session";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 import { _ } from "meteor/underscore";
-import { TAPi18n } from "meteor/tap:i18n";
+import { TAPi18n } from "/imports/tapi18n";
 
 import { introJs } from "intro.js";
 import { isDevelopmentServer } from "/imports/client/dev-mode";
@@ -14,7 +14,8 @@ import { identiconForApp } from "/imports/sandstorm-identicons/helpers";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { makeAndDownloadBackup } from "/imports/client/backups";
 
-SandstormGrainListPage = {};
+const SandstormGrainListPage = {};
+globalThis.SandstormGrainListPage = SandstormGrainListPage;
 
 SandstormGrainListPage.mapGrainsToTemplateObject = function (grains, db) {
   // Do package lookup all at once, rather than doing N queries for N grains
@@ -242,11 +243,15 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
           ownedGrainIds.forEach((grainId) => {
-            Meteor.call("deleteGrain", grainId);
+            Meteor.callAsync("deleteGrain", grainId).catch((err) => {
+              console.error("deleteGrain failed:", err);
+            });
           });
 
           sharedGrainIds.forEach((grainId) => {
-            Meteor.call("forgetGrain", grainId);
+            Meteor.callAsync("forgetGrain", grainId).catch((err) => {
+              console.error("forgetGrain failed:", err);
+            });
           });
         },
       },
@@ -262,7 +267,10 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
         },
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
-          Meteor.call("moveGrainsOutOfTrash", ownedGrainIds.concat(sharedGrainIds));
+          Meteor.callAsync("moveGrainsOutOfTrash", ownedGrainIds.concat(sharedGrainIds))
+            .catch((err) => {
+              console.error("moveGrainsOutOfTrash failed:", err);
+            });
         },
       },
     ];
@@ -281,7 +289,10 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
         },
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
-          Meteor.call("moveGrainsToTrash", ownedGrainIds.concat(sharedGrainIds));
+          Meteor.callAsync("moveGrainsToTrash", ownedGrainIds.concat(sharedGrainIds))
+            .catch((err) => {
+              console.error("moveGrainsToTrash failed:", err);
+            });
         },
       },
       {
@@ -504,11 +515,15 @@ Template.sandstormGrainListPage.events({
 
     if (window.confirm(message)) {
       myGrains.forEach((grainId) => {
-        Meteor.call("deleteGrain", grainId);
+        Meteor.callAsync("deleteGrain", grainId).catch((err) => {
+          console.error("deleteGrain failed:", err);
+        });
       });
 
       grainsSharedWithMe.forEach((grainId) => {
-        Meteor.call("forgetGrain", grainId);
+        Meteor.callAsync("forgetGrain", grainId).catch((err) => {
+          console.error("forgetGrain failed:", err);
+        });
       });
     }
   },

@@ -50,7 +50,7 @@ const fetchPicture = async function (db, url) {
       metadata.encoding = enc;
     }
 
-    return db.addStaticAsset(metadata, result.content);
+    return await db.addStaticAssetAsync(metadata, result.content);
   } catch (err) {
     console.error("failed to fetch user profile picture:", url, err.stack);
   }

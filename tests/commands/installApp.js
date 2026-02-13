@@ -18,7 +18,6 @@
 
 var utils = require("../utils"),
     actionSelector = utils.actionSelector,
-    appSelector = utils.appSelector,
     short_wait = utils.short_wait,
     medium_wait = utils.medium_wait,
     long_wait = utils.long_wait,
@@ -31,6 +30,7 @@ exports.command = function(url, packageId, appId, dontStartGrain, callback) {
     .url(this.launch_url + "/install/" + packageId + "?url=" + url)
     .waitForElementVisible("#step-confirm", very_long_wait)
     .click("#confirmInstall")
+    .waitForElementNotPresent("#confirmInstall", very_long_wait)
     .url(this.launch_url + "/apps")
     .waitForElementVisible(".app-list", medium_wait)
     .resizeWindow(utils.default_width, utils.default_height);
@@ -40,8 +40,8 @@ exports.command = function(url, packageId, appId, dontStartGrain, callback) {
       // The introjs overlay often doesn't destroy itself fast enough and intercepts
       // clicks that we don't want it to intercept. So we manually disable it here.
       .disableGuidedTour()
-      .click(appSelector(appId))
-      .waitForElementVisible(actionSelector, medium_wait)
+      .url(this.launch_url + "/apps/" + appId)
+      .waitForElementVisible(actionSelector, long_wait)
       .click(actionSelector)
       .waitForElementVisible("#grainTitle", medium_wait);
   }

@@ -2,15 +2,15 @@ import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Session } from "meteor/session";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 import { _ } from "meteor/underscore";
-import { TAPi18n } from "meteor/tap:i18n";
+import { TAPi18n } from "/imports/tapi18n";
 
 import { introJs } from "intro.js";
 import { isDevelopmentServer } from "/imports/client/dev-mode";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 
-SandstormAppList = function (db, quotaEnforcer) {
+const SandstormAppList = function (db, quotaEnforcer) {
   this._filter = new ReactiveVar("");
   this._sortOrder = new ReactiveVar([["appTitle", 1]]);
   this._staticHost = db.makeWildcardHost("static");
@@ -18,6 +18,7 @@ SandstormAppList = function (db, quotaEnforcer) {
   this._quotaEnforcer = quotaEnforcer;
   this._uninstalling = new ReactiveVar(false);
 };
+globalThis.SandstormAppList = SandstormAppList;
 
 const matchesApp = function (needle, app) {
   const pkg = app && app.pkg;
@@ -108,6 +109,7 @@ const matchApps = function (searchString) {
 Template.sandstormAppListPage.helpers({
   setDocumentTitle: function () {
     const ref = Template.instance().data;
+    if (!ref || !ref._db) return;
     document.title = "Apps · " + ref._db.getServerTitle();
   },
 
@@ -231,7 +233,9 @@ Template.sandstormAppListPage.events({
     const db = Template.instance().data._db;
     const appId = this.appId;
     db.collections.userActions.find({ appId: this.appId }).forEach(function (action) {
-      Meteor.call("removeUserAction", action._id);
+      Meteor.callAsync("removeUserAction", action._id).catch((err) => {
+        console.error("removeUserAction failed:", err);
+      });
     });
   },
 
@@ -267,7 +271,9 @@ Template.sandstormAppListPage.onDestroyed(() => {
 
 Template.sandstormAppListPage.onRendered(() => {
   const instance = Template.instance();
-  const db = instance.data._db;
+  const ref = instance && instance.data;
+  const db = ref && ref._db;
+  if (!db) return;
   // Set up automatically-opening hint explaining what installing is, if zero apps installed.
   // Only show it if the user is allowed to install apps.
   if (!isDevelopmentServer() &&

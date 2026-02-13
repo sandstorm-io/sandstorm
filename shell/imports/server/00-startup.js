@@ -39,41 +39,43 @@ process.on('uncaughtException', (err) => {
   console.error("Unhandled exception: ", err);
 });
 
-globalFrontendRefRegistry = new FrontendRefRegistry();
+globalThis.globalFrontendRefRegistry = new FrontendRefRegistry();
 
-SandstormPowerbox.registerUiViewQueryHandler(globalFrontendRefRegistry);
+globalThis.SandstormPowerbox.registerUiViewQueryHandler(globalThis.globalFrontendRefRegistry);
 
-if (Meteor.settings.public.stripePublicKey && BlackrockPayments.registerPaymentsApi) {
-  // TODO(cleanup): Meteor.startup() needed because unwrapFrontendCap is not defined yet when this
+if (Meteor.settings.public.stripePublicKey && globalThis.BlackrockPayments.registerPaymentsApi) {
+  // TODO(cleanup): Meteor.startup() needed because globalThis.unwrapFrontendCap is not defined yet when this
   //   first runs. Move it into an import.
   Meteor.startup(() => {
-    BlackrockPayments.registerPaymentsApi(
-        globalFrontendRefRegistry, PersistentImpl, unwrapFrontendCap);
+    globalThis.BlackrockPayments.registerPaymentsApi(
+        globalThis.globalFrontendRefRegistry, PersistentImpl, globalThis.unwrapFrontendCap);
   });
 }
 
-getWildcardOrigin = globalDb.getWildcardOrigin.bind(globalDb);
+globalThis.getWildcardOrigin = globalDb.getWildcardOrigin.bind(globalDb);
 
 Meteor.onConnection((connection) => {
   // TODO(cleanup): This is the best way I've thought of so far to allow methods declared in
   //   packages to actually use the DB, but it's pretty sad.
   connection.sandstormDb = globalDb;
-  connection.frontendRefRegistry = globalFrontendRefRegistry;
+  connection.frontendRefRegistry = globalThis.globalFrontendRefRegistry;
 });
 SandstormDb.periodicCleanup(5 * 60 * 1000, SandstormPermissions.cleanupSelfDestructing(globalDb));
 SandstormDb.periodicCleanup(10 * 60 * 1000,
                             SandstormPermissions.cleanupClientPowerboxTokens(globalDb));
 SandstormDb.periodicCleanup(60 * 60 * 1000, () => {
-  globalDb.cleanupExpiredAssetUploads();
+  globalDb.cleanupExpiredAssetUploadsAsync().catch((err) => {
+    console.error("Error cleaning up expired asset uploads:", err);
+  });
 });
 SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
   SandstormAutoupdateApps.updateAppIndex(globalDb).catch((err) => {
     console.error("Error updating app index:", err);
   });
 });
-const deleteAccount = Meteor.settings.public.stripePublicKey && BlackrockPayments.deleteAccount;
+const deleteAccount = Meteor.settings.public.stripePublicKey && globalThis.BlackrockPayments.deleteAccount;
 SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
-  globalDb.deletePendingAccounts(ACCOUNT_DELETION_SUSPENSION_TIME, globalBackend,
+  globalDb.deletePendingAccounts(ACCOUNT_DELETION_SUSPENSION_TIME, globalThis.globalBackend,
       deleteAccount).catch((err) => {
     console.error("Error deleting pending accounts:", err);
   });
@@ -82,7 +84,7 @@ SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
 monkeyPatchHttp(globalDb, HTTP);
 
 Meteor.startup(() => {
-  migrateToLatest(globalDb, globalBackend).catch((err) => {
+  migrateToLatest(globalDb, globalThis.globalBackend).catch((err) => {
     console.error("Migration startup failed:", err.stack || err);
     throw err;
   });
@@ -111,6 +113,29 @@ if ("replicaNumber" in Meteor.settings) {
   patchConsole("error");
 }
 
+const standaloneDomainsCache = new Set();
+Meteor.startup(() => {
+  globalDb.collections.standaloneDomains.find({}).observeAsync({
+    added(doc) {
+      standaloneDomainsCache.add(doc._id);
+    },
+
+    changed(newDoc, oldDoc) {
+      if (oldDoc && oldDoc._id !== newDoc._id) {
+        standaloneDomainsCache.delete(oldDoc._id);
+      }
+
+      standaloneDomainsCache.add(newDoc._id);
+    },
+
+    removed(doc) {
+      standaloneDomainsCache.delete(doc._id);
+    },
+  }).catch((err) => {
+    console.error("Failed to observe standaloneDomains cache updates:", err);
+  });
+});
+
 OAuth._checkRedirectUrlOrigin = function (redirectUrl) {
   // Mostly copied from meteor/packages/oauth/oauth_server.js
   // We override this method in order to support login from stand-alone grain domains.
@@ -124,6 +149,6 @@ OAuth._checkRedirectUrlOrigin = function (redirectUrl) {
   return !(
     redirectUrl.substr(0, appHost.length) === appHost ||
     redirectUrl.substr(0, appHostReplacedLocalhost.length) === appHostReplacedLocalhost ||
-    globalDb.hostIsStandalone(redirectParsed.hostname)
+    standaloneDomainsCache.has(redirectParsed.hostname)
   );
 };

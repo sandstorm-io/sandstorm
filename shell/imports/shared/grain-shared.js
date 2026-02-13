@@ -24,49 +24,74 @@ Meteor.methods({
   //
   // Methods for which latency compensation makes no sense are defined in grain-server.js.
 
-  markActivityReadByOwner: function (grainId) {
+  markActivityReadByOwner: async function (grainId) {
     check(grainId, String);
     check(this.userId, String);
 
-    globalDb.collections.grains.update({ _id: grainId, userId: this.userId },
-                                       { $set: { "ownerSeenAllActivity": true } });
+    if (Meteor.isServer) {
+      await globalDb.collections.grains.updateAsync({ _id: grainId, userId: this.userId },
+                                                    { $set: { "ownerSeenAllActivity": true } });
+    } else {
+      globalDb.collections.grains.update({ _id: grainId, userId: this.userId },
+                                         { $set: { "ownerSeenAllActivity": true } });
+    }
   },
 
-  markActivityRead: function (grainId) {
+  markActivityRead: async function (grainId) {
     check(grainId, String);
 
     if (!this.userId) {
       throw new Meteor.Error(403, "Not logged in.");
     }
 
-    globalDb.collections.apiTokens.update({ "grainId": grainId, "owner.user.accountId": Meteor.userId() },
-                                          { $set: { "owner.user.seenAllActivity": true } }, { multi: true });
+    if (Meteor.isServer) {
+      await globalDb.collections.apiTokens.updateAsync(
+          { "grainId": grainId, "owner.user.accountId": Meteor.userId() },
+          { $set: { "owner.user.seenAllActivity": true } }, { multi: true });
+    } else {
+      globalDb.collections.apiTokens.update({ "grainId": grainId, "owner.user.accountId": Meteor.userId() },
+                                            { $set: { "owner.user.seenAllActivity": true } }, { multi: true });
+    }
   },
 
   moveGrainsToTrash: async function (grainIds) {
     check(grainIds, [String]);
 
     if (this.userId) {
-      globalDb.collections.grains.update({ userId: { $eq: this.userId },
-                      _id: { $in: grainIds },
-                      trashed: { $exists: false }, },
-                    { $set: { trashed: new Date() } },
-                    { multi: true });
+      if (Meteor.isServer) {
+        await globalDb.collections.grains.updateAsync({ userId: { $eq: this.userId },
+                          _id: { $in: grainIds },
+                          trashed: { $exists: false }, },
+                        { $set: { trashed: new Date() } },
+                        { multi: true });
 
-      globalDb.collections.apiTokens.update({ grainId: { $in: grainIds },
-                        "owner.user.accountId": Meteor.userId(),
+        await globalDb.collections.apiTokens.updateAsync({ grainId: { $in: grainIds },
+                          "owner.user.accountId": Meteor.userId(),
+                          trashed: { $exists: false }, },
+                         { $set: { "trashed": new Date() } },
+                         { multi: true });
+      } else {
+        globalDb.collections.grains.update({ userId: { $eq: this.userId },
+                        _id: { $in: grainIds },
                         trashed: { $exists: false }, },
-                       { $set: { "trashed": new Date() } },
-                       { multi: true });
+                      { $set: { trashed: new Date() } },
+                      { multi: true });
+
+        globalDb.collections.apiTokens.update({ grainId: { $in: grainIds },
+                          "owner.user.accountId": Meteor.userId(),
+                          trashed: { $exists: false }, },
+                         { $set: { "trashed": new Date() } },
+                         { multi: true });
+      }
 
       if (!this.isSimulation) {
-        const grainsOwned = globalDb.collections.grains.find({
+        const grainsOwned = await globalDb.collections.grains.find({
           userId: { $eq: this.userId },
           _id: { $in: grainIds },
-        }, { fields: { _id: 1, }, }).fetch();
+        }, { fields: { _id: 1, }, }).fetchAsync();
 
         for (const grain of grainsOwned) {
-          globalDb.collections.sessions.remove({ grainId: grain._id, });
+          await globalDb.collections.sessions.removeAsync({ grainId: grain._id, });
           try {
             await this.connection.sandstormBackend.shutdownGrain(grain._id, this.userId);
           } catch (err) {
@@ -77,21 +102,35 @@ Meteor.methods({
     }
   },
 
-  moveGrainsOutOfTrash: function (grainIds) {
+  moveGrainsOutOfTrash: async function (grainIds) {
     check(grainIds, [String]);
 
     if (this.userId) {
-      globalDb.collections.grains.update({ userId: { $eq: this.userId },
-                      _id: { $in: grainIds },
-                      trashed: { $exists: true }, },
-                    { $unset: { trashed: 1 } },
-                    { multi: true });
+      if (Meteor.isServer) {
+        await globalDb.collections.grains.updateAsync({ userId: { $eq: this.userId },
+                          _id: { $in: grainIds },
+                          trashed: { $exists: true }, },
+                        { $unset: { trashed: 1 } },
+                        { multi: true });
 
-      globalDb.collections.apiTokens.update({ grainId: { $in: grainIds },
-                        "owner.user.accountId": Meteor.userId(),
-                        "trashed": { $exists: true }, },
-                       { $unset: { "trashed": 1 } },
-                       { multi: true });
+        await globalDb.collections.apiTokens.updateAsync({ grainId: { $in: grainIds },
+                          "owner.user.accountId": Meteor.userId(),
+                          "trashed": { $exists: true }, },
+                         { $unset: { "trashed": 1 } },
+                         { multi: true });
+      } else {
+        globalDb.collections.grains.update({ userId: { $eq: this.userId },
+                        _id: { $in: grainIds },
+                        trashed: { $exists: true }, },
+                      { $unset: { trashed: 1 } },
+                      { multi: true });
+
+        globalDb.collections.apiTokens.update({ grainId: { $in: grainIds },
+                          "owner.user.accountId": Meteor.userId(),
+                          "trashed": { $exists: true }, },
+                         { $unset: { "trashed": 1 } },
+                         { multi: true });
+      }
     }
   },
 
@@ -107,10 +146,13 @@ Meteor.methods({
 
       let numDeleted = 0;
       if (this.isSimulation) {
-        numDeleted = globalDb.collections.grains.remove(grainsQuery);
+        numDeleted = Meteor.isServer
+            ? await globalDb.collections.grains.removeAsync(grainsQuery)
+            : globalDb.collections.grains.remove(grainsQuery);
       } else {
-        numDeleted = await globalDb.deleteGrains(grainsQuery, globalBackend,
-            isDemoUser() ? "demoGrain" : "grain");
+        const account = await Meteor.users.findOneAsync({ _id: this.userId });
+        numDeleted = await globalDb.deleteGrains(grainsQuery, globalThis.globalBackend,
+            (account && account.expires) ? "demoGrain" : "grain");
       }
 
       // Usually we don't automatically remove user-owned tokens that have become invalid,
@@ -127,15 +169,19 @@ Meteor.methods({
 
       if (numDeleted > 0) {
         if (this.isSimulation) {
-          globalDb.collections.apiTokens.remove(apiTokensQuery);
+          if (Meteor.isServer) {
+            await globalDb.collections.apiTokens.removeAsync(apiTokensQuery);
+          } else {
+            globalDb.collections.apiTokens.remove(apiTokensQuery);
+          }
         } else {
-          globalDb.removeApiTokens(apiTokensQuery);
+          await globalDb.removeApiTokensAsync(apiTokensQuery);
         }
       }
     }
   },
 
-  forgetGrain: function (grainId) {
+  forgetGrain: async function (grainId) {
     check(grainId, String);
 
     if (!this.userId) {
@@ -151,7 +197,7 @@ Meteor.methods({
     if (this.isSimulation) {
       globalDb.collections.apiTokens.remove(query);
     } else {
-      globalDb.removeApiTokens(query, true);
+      await globalDb.removeApiTokensAsync(query, true);
     }
   },
 });

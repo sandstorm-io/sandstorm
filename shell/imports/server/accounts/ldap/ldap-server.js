@@ -48,8 +48,9 @@ Accounts.registerLoginHandler("ldap", async function (loginRequest) {
 });
 
 Meteor.methods({
-  updateQuota() {
-    return this.connection.sandstormDb.updateUserQuota(Meteor.user());
+  async updateQuota() {
+    const account = await Meteor.users.findOneAsync({ _id: this.userId });
+    return await this.connection.sandstormDb.updateUserQuota(account);
     // This is a no-op if settings aren't enabled
   },
 });

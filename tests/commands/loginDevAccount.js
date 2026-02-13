@@ -14,47 +14,86 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-'use strict';
+"use strict";
 
 var crypto = require("crypto");
-var utils = require('../utils');
+var utils = require("../utils");
 
-exports.command = function(name, isAdmin, callback) {
+exports.command = function (name, isAdmin, callback) {
   if (!name) {
     name = crypto.randomBytes(10).toString("hex");
   }
+
+  var loginName = isAdmin ? "Alice Dev Admin" : name;
   var self = this;
+
   var ret = this
     .init()
-    // loginDevAccountFast is fast, but not 3ms fast, which is ~the default script timeout
+    .frame(null)
+    .url(this.launch_url + "/")
     .timeouts("script", 10000)
-    .executeAsync(function(name, isAdmin, done) {
-      window.loginDevAccountFast(name, isAdmin)
-        .then(function () {
-          done({ success: true });
-        }, function (err) {
-          done({ error: err.toString(), stack: err.stack });
-        });
-    }, [name, isAdmin], function (result) {
-      if (result.status !== 0) {
-        console.log("executeAsync failed with status:", result.status);
+    .executeAsync(function (displayName, admin, done) {
+      var accountsPkg = window.Package && window.Package["accounts-base"];
+      var AccountsObj = accountsPkg && accountsPkg.Accounts;
+      if (!AccountsObj || typeof AccountsObj.callLoginMethod !== "function") {
+        done({ success: false, error: "Accounts.callLoginMethod unavailable" });
+        return;
       }
-      if (result.value && result.value.error) {
+
+      var meteorPkg = window.Package && window.Package.meteor;
+      var MeteorObj = meteorPkg && meteorPkg.Meteor;
+      var getUserId = function () {
+        return MeteorObj && typeof MeteorObj.userId === "function" ? MeteorObj.userId() : null;
+      };
+
+      var profile = {
+        name: displayName,
+        pronoun: "robot",
+        handle: "_" + displayName.toLowerCase(),
+      };
+
+      AccountsObj.callLoginMethod({
+        methodName: "createDevAccount",
+        methodArguments: [displayName, !!admin, profile, displayName + "@example.com"],
+        userCallback: function (err) {
+          if (err) {
+            done({ success: false, error: err.reason || err.message || String(err) });
+            return;
+          }
+
+          var start = Date.now();
+          (function waitForLogin() {
+            if (getUserId()) {
+              done({ success: true });
+              return;
+            }
+
+            if (Date.now() - start > 5000) {
+              done({ success: false, error: "timed out waiting for userId after createDevAccount" });
+              return;
+            }
+
+            setTimeout(waitForLogin, 25);
+          })();
+        },
+      });
+    }, [loginName, !!isAdmin], function (result) {
+      var ok = result.status === 0 && result.value && result.value.success;
+      if (!ok && result.value && result.value.error) {
         console.log("Login error:", result.value.error);
       }
-      var success = result.status === 0 && result.value && result.value.success;
-      self.assert.ok(success, "login completed successfully");
+      self.assert.ok(ok, "login completed successfully");
     })
     .url(this.launch_url + "/apps")
-    .waitForElementVisible('.app-list', utils.medium_wait)
+    .waitForElementVisible(".app-list", utils.medium_wait)
     .resizeWindow(utils.default_width, utils.default_height)
-    .perform(function(client, done) {
+    .perform(function (client, done) {
       if (typeof callback === "function") {
-        callback.call(self, name);
+        callback.call(self, loginName);
       }
       done();
     });
 
-  this.sandstormAccount = 'dev';
+  this.sandstormAccount = "dev";
   return ret;
 };

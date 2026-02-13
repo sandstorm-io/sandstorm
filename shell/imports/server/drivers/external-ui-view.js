@@ -68,7 +68,8 @@ async function refreshOAuth(url, refreshToken) {
     throw new Error("Don't know how to OAuth for: " + url);
   }
 
-  const config = ServiceConfiguration.configurations.findOne({ service: serviceInfo.service });
+  const config = await ServiceConfiguration.configurations
+      .findOneAsync({ service: serviceInfo.service });
   if (!config) {
     throw new Error("can't refresh OAuth token for service that isn't configured: " +
                     serviceInfo.service);
@@ -224,7 +225,7 @@ function registerHttpApiFrontendRef(registry) {
   });
 }
 
-Meteor.startup(() => { registerHttpApiFrontendRef(globalFrontendRefRegistry); });
+Meteor.startup(() => { registerHttpApiFrontendRef(globalThis.globalFrontendRefRegistry); });
 
 // =======================================================================================
 

@@ -51,19 +51,30 @@ LDAP.prototype.ldapCheck = async function (db, options) {
 
   if ((hasOwnProperty(options, "username") && hasOwnProperty(options, "ldapPass")) ||
       hasOwnProperty(options, "searchUsername")) {
-    _this.options.base = db.getLdapBase();
-    _this.options.url = db.getLdapUrl();
+    const [ldapBase, ldapUrl, ldapSearchUsername, ldapFilter, ldapSearchBindDn, ldapSearchBindPassword,
+      ldapCaCert] = await Promise.all([
+      db.getLdapBaseAsync(),
+      db.getLdapUrlAsync(),
+      db.getLdapSearchUsernameAsync(),
+      db.getLdapFilterAsync(),
+      db.getLdapSearchBindDnAsync(),
+      db.getLdapSearchBindPasswordAsync(),
+      db.getLdapCaCertAsync(),
+    ]);
+
+    _this.options.base = ldapBase;
+    _this.options.url = ldapUrl;
     _this.options.searchBeforeBind = {};
-    _this.options.searchBeforeBind[options.searchUsernameField || db.getLdapSearchUsername()] = options.searchUsername ||
+    _this.options.searchBeforeBind[options.searchUsernameField || ldapSearchUsername] = options.searchUsername ||
       options.username;
-    _this.options.filter = db.getLdapFilter() || "(objectclass=*)";
-    _this.options.searchBindDn = db.getLdapSearchBindDn();
-    _this.options.searchBindPassword =  db.getLdapSearchBindPassword();
+    _this.options.filter = ldapFilter || "(objectclass=*)";
+    _this.options.searchBindDn = ldapSearchBindDn;
+    _this.options.searchBindPassword = ldapSearchBindPassword;
 
     let resolved = false;
 
     // Create ldap client
-    let fullUrl = db.getLdapUrl();
+    let fullUrl = ldapUrl;
     let client = null;
 
     let resolveLdapAsync = () => {};
@@ -79,7 +90,7 @@ LDAP.prototype.ldapCheck = async function (db, options) {
 
     if (fullUrl.indexOf("ldaps://") === 0) {
       const tlsOptions = {};
-      const cert = db.getLdapCaCert();
+      const cert = ldapCaCert;
       if (cert) {
         tlsOptions.ca = cert;
       }
@@ -215,18 +226,18 @@ LDAP.prototype.ldapCheck = async function (db, options) {
 
 };
 
-LDAP.prototype.updateUserQuota = function (db, user) {
+LDAP.prototype.updateUserQuota = async function (db, user) {
   const fallback = {
     storage: user.cachedStorageQuota || 0,
     grains: Infinity,
     compute: Infinity,
   };
 
-  const setting = db.collections.settings.findOne({ _id: "quotaLdapAttribute" });
+  const setting = await db.collections.settings.findOneAsync({ _id: "quotaLdapAttribute" });
   if (!setting || !setting.value) return fallback;
 
   // TODO(someday): don't just assume the first login identity is the primary identity?
-  const email = db.getPrimaryEmail(user._id, user.loginCredentials[0].id);
+  const email = await db.getPrimaryEmailAsync(user._id, user.loginCredentials[0].id);
   if (!email) return fallback;
 
   this.ldapCheck(db, { searchUsername: email, searchUsernameField: "mail", })
@@ -237,7 +248,10 @@ LDAP.prototype.updateUserQuota = function (db, user) {
         if (Number.isNaN(newStorageQuota)) return;
 
         if (newStorageQuota !== user.cachedStorageQuota) {
-          Meteor.users.update({ _id: user._id }, { $set: { cachedStorageQuota: newStorageQuota } });
+          Meteor.users.updateAsync({ _id: user._id }, { $set: { cachedStorageQuota: newStorageQuota } })
+              .catch((err) => {
+                console.error("Error updating LDAP cachedStorageQuota:", err);
+              });
         }
       })
       .catch((err) => {

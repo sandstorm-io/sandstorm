@@ -27,20 +27,20 @@ Meteor.publish("signupKey", function (key) {
 });
 
 Meteor.methods({
-  useSignupKey: function (key) {
+  useSignupKey: async function (key) {
     check(key, String);
 
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be signed in.");
     }
 
-    const user = Meteor.user();
+    const user = await Meteor.users.findOneAsync({ _id: this.userId });
     if (user.signupKey) {
       // Don't waste it.
       return;
     }
 
-    if (isDemoUser()) {
+    if (user.expires) {
       throw new Meteor.Error(403,
           "Demo users cannot accept invite keys. Please sign in as a real user.");
     }
@@ -50,18 +50,19 @@ Meteor.methods({
       return;
     }
 
-    const keyInfo = globalDb.collections.signupKeys.findOne(key);
+    const keyInfo = await globalDb.collections.signupKeys.findOneAsync(key);
     if (!keyInfo || keyInfo.used) {
       throw new Meteor.Error(403, "Invalid key or already used.");
     }
 
-    if (isSignedUp() && user.payments && user.payments.id) {
+    if (await globalDb.isAccountSignedUpAsync(user) && user.payments && user.payments.id) {
       // This user is already signed up with a payment account. Possibly, they signed up before
       // using their invite, and then went back and clicked on the invite. As a result they
       // probably now have two payment accounts. Mark this invite as used but also add a special
       // flag so we can find it later and cancel the dupe payment account. Record who tried to
       // use it so that we can transfer credits over if needed.
-      globalDb.collections.signupKeys.update(key, { $set: { used: true, rejectedBy: this.userId } });
+      await globalDb.collections.signupKeys.updateAsync(
+          key, { $set: { used: true, rejectedBy: this.userId } });
       return;
     }
 
@@ -85,7 +86,7 @@ Meteor.methods({
       userFields["payments.id"] = keyInfo.payments.id;
     }
 
-    Meteor.users.update(this.userId, { $set: userFields });
-    globalDb.collections.signupKeys.update(key, { $set: { used: true } });
+    await Meteor.users.updateAsync(this.userId, { $set: userFields });
+    await globalDb.collections.signupKeys.updateAsync(key, { $set: { used: true } });
   },
 });

@@ -7,13 +7,32 @@ import { globalDb } from "/imports/db-deprecated";
 
 const ADMIN_TOKEN_EXPIRATION_TIME = 60 * 60 * 1000;
 const SANDSTORM_ADMIN_TOKEN = SANDSTORM_VARDIR + "/adminToken";
+let currentSetupSession = null;
+
+Meteor.startup(() => {
+  globalDb.collections.setupSession.find({ _id: "current-session" }).observeAsync({
+    added(doc) {
+      currentSetupSession = doc;
+    },
+    changed(newDoc) {
+      currentSetupSession = newDoc;
+    },
+    removed() {
+      currentSetupSession = null;
+    },
+  }).catch((err) => {
+    console.error("Failed to observe setup session state:", err);
+  });
+});
 
 function clearAdminToken(token) {
   if (tokenIsSetupSession(token)) {
     const hash = Crypto.createHash("sha256").update(token).digest("base64");
-    globalDb.collections.setupSession.remove({
+    globalDb.collections.setupSession.removeAsync({
       _id: "current-session",
       hashedSessionId: hash,
+    }).catch((err) => {
+      console.error("Failed removing setup session while clearing admin token:", err);
     });
   }
 
@@ -39,7 +58,7 @@ function tokenIsValid(token) {
 
 function tokenIsSetupSession(token) {
   if (token) {
-    const setupSession = globalDb.collections.setupSession.findOne({ _id: "current-session" });
+    const setupSession = currentSetupSession;
     if (setupSession) {
       const hash = Crypto.createHash("sha256").update(token).digest("base64");
       const now = new Date();
@@ -53,11 +72,11 @@ function tokenIsSetupSession(token) {
   return false;
 }
 
-function checkAuth(token) {
+async function checkAuthAsync(db, userId, token) {
   check(token, Match.OneOf(undefined, null, String));
-  if (!isAdmin() && !tokenIsValid(token) && !tokenIsSetupSession(token)) {
+  if (!(userId && await db.isAdminByIdAsync(userId)) && !tokenIsValid(token) && !tokenIsSetupSession(token)) {
     throw new Meteor.Error(403, "User must be admin or provide a valid token");
   }
 }
 
-export { checkAuth, clearAdminToken, tokenIsValid, tokenIsSetupSession };
+export { checkAuthAsync, clearAdminToken, tokenIsValid, tokenIsSetupSession };

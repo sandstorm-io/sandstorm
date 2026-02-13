@@ -25,7 +25,7 @@ import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Accounts } from "meteor/accounts-base";
 import { _ } from "meteor/underscore";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 
 import {
   loginWithEmailToken,
@@ -259,7 +259,28 @@ const loginWithToken = function (email, token) {
 
 Template.loginButtonsDialog.helpers({
   labelOrFallback() {
-    if (this.label) return this.label;
+    const coerceText = (value) => {
+      if (value === null || value === undefined) return undefined;
+      if (typeof value === "string") return value;
+      if (typeof value === "number" || typeof value === "boolean") return String(value);
+      if (typeof value === "function") return coerceText(value());
+      if (Array.isArray(value)) {
+        return value.map((part) => {
+          const coerced = coerceText(part);
+          return coerced === undefined ? "" : coerced;
+        }).join("");
+      }
+
+      // Blaze may wrap dynamic named args as { value: ... }.
+      if (typeof value === "object" && Object.prototype.hasOwnProperty.call(value, "value")) {
+        return coerceText(value.value);
+      }
+
+      return undefined;
+    };
+
+    const label = coerceText(this && this.label);
+    if (label) return label;
     return Meteor.settings.public.allowUninvited ? "Create account" : "Sign in";
   },
 

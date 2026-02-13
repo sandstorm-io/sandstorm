@@ -23,7 +23,7 @@ import { createAppActivityDesktopNotification } from "/imports/server/desktop-no
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
 
-logActivity = async function (grainId, accountIdOrAnonymous, event) {
+globalThis.logActivity = async function (grainId, accountIdOrAnonymous, event) {
   // accountIdOrAnonymous is the string "anonymous" for an anonymous user, or is null for a
   // non-user-initiated ("background") activity.
 
@@ -36,7 +36,7 @@ logActivity = async function (grainId, accountIdOrAnonymous, event) {
 
   // TODO(perf): A cached copy of the grain from when the session opened would be fine to use
   //   here, rather than looking it up every time.
-  const grain = globalDb.collections.grains.findOne(grainId);
+  const grain = await globalDb.collections.grains.findOneAsync(grainId);
   if (!grain) {
     // Shouldn't be possible since activity events come from the grain.
     throw new Error("no such grain");
@@ -52,11 +52,11 @@ logActivity = async function (grainId, accountIdOrAnonymous, event) {
     // Clear the "seenAllActivity" bit for all users except the acting user.
     // TODO(perf): Consider throttling? Or should that be the app's responsibility?
     if (accountId != grain.userId) {
-      globalDb.collections.grains.update(grainId, { $unset: { ownerSeenAllActivity: true } });
+      await globalDb.collections.grains.updateAsync(grainId, { $unset: { ownerSeenAllActivity: true } });
     }
 
     // Also clear on ApiTokens.
-    globalDb.collections.apiTokens.update({
+    await globalDb.collections.apiTokens.updateAsync({
       "grainId": grainId,
       "owner.user.seenAllActivity": true,
       "owner.user.accountId": { $ne: accountId },
@@ -66,11 +66,11 @@ logActivity = async function (grainId, accountIdOrAnonymous, event) {
   if (accountId) {
     // Apply auto-subscriptions.
     if (eventType.autoSubscribeToGrain) {
-      globalDb.subscribeToActivity(accountId, grainId);
+      await globalDb.subscribeToActivityAsync(accountId, grainId);
     }
 
     if (event.thread && eventType.autoSubscribeToThread) {
-      globalDb.subscribeToActivity(accountId, grainId, event.thread.path || "");
+      await globalDb.subscribeToActivityAsync(accountId, grainId, event.thread.path || "");
     }
   }
 
@@ -98,11 +98,12 @@ logActivity = async function (grainId, accountIdOrAnonymous, event) {
     addRecipient({ accountId: grain.userId });
 
     // Add everyone subscribed to the grain.
-    globalDb.getActivitySubscriptions(grainId).forEach(addRecipient);
+    (await globalDb.getActivitySubscriptionsAsync(grainId)).forEach(addRecipient);
 
     if (event.thread) {
       // Add everyone subscribed to the thread.
-      globalDb.getActivitySubscriptions(grainId, event.thread.path || "").forEach(addRecipient);
+      (await globalDb.getActivitySubscriptionsAsync(grainId, event.thread.path || ""))
+          .forEach(addRecipient);
     }
   }
 
@@ -111,7 +112,7 @@ logActivity = async function (grainId, accountIdOrAnonymous, event) {
     const promises = [];
     event.users.forEach(user => {
       if (user.identity && (user.mentioned || user.subscribed)) {
-        promises.push(unwrapFrontendCap(user.identity, "identity", targetId => {
+        promises.push(globalThis.unwrapFrontendCap(user.identity, "identity", targetId => {
           addRecipient({ accountId: targetId });
         }));
       }
@@ -163,7 +164,7 @@ logActivity = async function (grainId, accountIdOrAnonymous, event) {
 
     if (accountId) {
       // Look up icon urls for the responsible user and the app
-      const account = Meteor.users.findOne({ _id: accountId });
+      const account = await Meteor.users.findOneAsync({ _id: accountId });
       if (!account) {
         throw new Error("no such user");
       }
@@ -204,18 +205,18 @@ logActivity = async function (grainId, accountIdOrAnonymous, event) {
         appActivity,
       };
 
-      createAppActivityDesktopNotification(desktopNotification);
+      await createAppActivityDesktopNotification(desktopNotification);
     });
     await Promise.all(notifyPromises);
   }
 };
 
 Meteor.methods({
-  testNotifications: function () {
+  testNotifications: async function () {
     // Deliver a test notification of each non-grain-initiated type to the user.
     if (!this.userId) return;
 
-    globalDb.collections.notifications.insert({
+    await globalDb.collections.notifications.insertAsync({
       admin: {
         action: "/admin/stats",
         type: "reportStats",
@@ -225,14 +226,14 @@ Meteor.methods({
       isUnread: true,
     });
 
-    globalDb.collections.notifications.insert({
+    await globalDb.collections.notifications.insertAsync({
       userId: this.userId,
       referral: true,
       timestamp: new Date(),
       isUnread: true,
     });
 
-    globalDb.collections.notifications.insert({
+    await globalDb.collections.notifications.insertAsync({
       userId: this.userId,
       identityChanges: true,
       timestamp: new Date(),
@@ -240,7 +241,7 @@ Meteor.methods({
     });
 
     if (Meteor.settings.public.stripePublicKey) {
-      globalDb.collections.notifications.insert({
+      await globalDb.collections.notifications.insertAsync({
         userId: this.userId,
         mailingListBonus: true,
         timestamp: new Date(),
@@ -254,24 +255,20 @@ Meteor.publish("notifications", function () {
   return globalDb.collections.notifications.find({ userId: this.userId });
 });
 
-Meteor.publish("notificationGrains", function (notificationIds) {
+Meteor.publish("notificationGrains", async function (notificationIds) {
   // Since publishes can't be reactive, we leave it to the client to subscribe to both
   // "notifications" and "notificationGrains" reactively.
   check(notificationIds, [String]);
-  const notifications =  globalDb.collections.notifications.find({
+  const notifications = await globalDb.collections.notifications.find({
     _id: { $in: notificationIds },
     userId: this.userId,
   }, {
     fields: { grainId: 1, initiatingAccount: 1 },
-  });
-
-  const grainIds = notifications.map(function (row) {
-    return row.grainId;
-  }).filter(x => x);
+  }).fetchAsync();
 
   const accounts = notifications.map(function (row) {
     return row.initiatingAccount;
-  }).filter(x => x);
+  }).filter(Boolean);
 
   return [
     Meteor.users.find({ _id: { $in: accounts } }, { fields: { type: 1, profile: 1 } }),

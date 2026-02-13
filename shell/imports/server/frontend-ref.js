@@ -22,10 +22,10 @@ class FrontendRefRegistry {
     this._typeIdHandlers = {};
   }
 
-  create(db, frontendRef, requirements) {
+  async create(db, frontendRef, requirements) {
     // Construct a fresh capability based on a `frontendRef` value.
 
-    checkRequirements(requirements);
+    await checkRequirements(db, requirements);
 
     const saveTemplate = { frontendRef };
     if (requirements) {

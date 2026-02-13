@@ -289,8 +289,10 @@ tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/imports/client/changelog.html shel
 	@mkdir -p tmp
 	@mkdir -p node_modules/capnp
 	@bash -O extglob -c 'cp src/capnp/!(*test*).capnp node_modules/capnp'
-	@test deps/node-capnp/src/node-capnp/capnp.js -ef node_modules/capnp.js || cp deps/node-capnp/src/node-capnp/capnp.js node_modules/capnp.js
-	@test tmp/node-capnp/capnp.node -ef node_modules/capnp.node || cp tmp/node-capnp/capnp.node node_modules/capnp.node
+	@[ deps/node-capnp/src/node-capnp/capnp.js -ef node_modules/capnp.js ] || \
+		cp deps/node-capnp/src/node-capnp/capnp.js node_modules/capnp.js
+	@[ tmp/node-capnp/capnp.node -ef node_modules/capnp.node ] || \
+		cp tmp/node-capnp/capnp.node node_modules/capnp.node
 	@cd shell/ && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install
 	@touch tmp/.shell-env
 
@@ -374,7 +376,7 @@ shell/public/%-m.svg: icons/%.svg
 shell-build: shell/imports/* shell/imports/*/* shell/imports/*/*/* shell/imports/*/*/*/* shell/client/main.ts shell/server/main.ts shell/public/* shell/i18n/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
 	@$(call color,building meteor frontend)
 	@test -z "$$(find -L shell/* -type l)" || (echo "error: broken symlinks in shell: $$(find -L shell/* -type l)" >&2 && exit 1)
-	@OLD=`pwd` && cd shell && meteor build --directory "$$OLD/shell-build"
+	@OLD=`pwd` && cd shell && meteor build --directory "$$OLD/shell-build" --debug
 
 # ====================================================================
 # Bundle

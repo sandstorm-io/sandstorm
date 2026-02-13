@@ -31,13 +31,13 @@ const PERIOD_MILLIS = {
 
 const LEGAL_PERIODS = Object.getOwnPropertyNames(PERIOD_MILLIS);
 
-SandstormDb.prototype.requireSpareScheduledJobs = function (grainId) {
-  if (this.collections.scheduledJobs.find({ grainId }).count() > 50) {
+SandstormDb.prototype.requireSpareScheduledJobs = async function (grainId) {
+  if (await this.collections.scheduledJobs.find({ grainId }).countAsync() > 50) {
     throw new Error("grain already has the maximum allowed number of jobs");
   }
 }
 
-SandstormDb.prototype.addOneShotScheduledJob = function(grainId, name, callback, when, slack) {
+SandstormDb.prototype.addOneShotScheduledJob = async function(grainId, name, callback, when, slack) {
   // Strictly speaking, we don't need to check these since they came from
   // a capnp call (and thus were unmarshalled by trusted code), but we may
   // as well since it's easy. We skip `name` though, since there's not a handy
@@ -47,7 +47,7 @@ SandstormDb.prototype.addOneShotScheduledJob = function(grainId, name, callback,
   check(slack, String);
   check(callback, String);
 
-  this.requireSpareScheduledJobs();
+  await this.requireSpareScheduledJobs(grainId);
 
   const whenNano = parseInt(when);
   let slackNano = parseInt(slack);
@@ -70,7 +70,7 @@ SandstormDb.prototype.addOneShotScheduledJob = function(grainId, name, callback,
   const scheduledTimeMillis = scheduledTimeNano / 1e6;
   const nextPeriodStart = new Date(scheduledTimeMillis);
 
-  this.collections.scheduledJobs.insert({
+  await this.collections.scheduledJobs.insertAsync({
     created: new Date(),
     grainId,
     name,
@@ -79,12 +79,12 @@ SandstormDb.prototype.addOneShotScheduledJob = function(grainId, name, callback,
   });
 }
 
-SandstormDb.prototype.addPeriodicScheduledJob = function (grainId, name, callback, period) {
+SandstormDb.prototype.addPeriodicScheduledJob = async function (grainId, name, callback, period) {
   check(grainId, String);
   // FIXME(zenhack): check that name is a LocalizedText (how?)
   check(callback, String);
   check(period, Match.OneOf(...LEGAL_PERIODS));
-  this.requireSpareScheduledJobs();
+  await this.requireSpareScheduledJobs(grainId);
 
   // Randomize the initial start time by adding up to half of the scheduling period.
   // This should help to spread out jobs throughout the available scheduling time, even
@@ -93,7 +93,7 @@ SandstormDb.prototype.addPeriodicScheduledJob = function (grainId, name, callbac
   const nextPeriodStart =
     new Date(Math.floor(nowMillis + Math.random() * PERIOD_MILLIS[period] / 2));
 
-  return this.collections.scheduledJobs.insert({
+  return await this.collections.scheduledJobs.insertAsync({
     created: new Date(),
     grainId,
     name,
@@ -103,23 +103,23 @@ SandstormDb.prototype.addPeriodicScheduledJob = function (grainId, name, callbac
   });
 };
 
-SandstormDb.prototype.deleteScheduledJob = function (jobId) {
+SandstormDb.prototype.deleteScheduledJob = async function (jobId) {
   check(jobId, String);
-  const job = this.collections.scheduledJobs.findOne({ _id: jobId });
-  this.collections.scheduledJobs.remove({ _id: jobId });
+  const job = await this.collections.scheduledJobs.findOneAsync({ _id: jobId });
+  await this.collections.scheduledJobs.removeAsync({ _id: jobId });
   const tokenId = Crypto.createHash("sha256").update(job.callback).digest("base64");
-  this.removeApiTokens({ _id: tokenId });
+  await this.removeApiTokensAsync({ _id: tokenId });
 };
 
-SandstormDb.prototype.updateScheduledJobKeepAlive = function (id) {
+SandstormDb.prototype.updateScheduledJobKeepAlive = async function (id) {
   check(id, String);
   const now = new Date();
-  this.collections.scheduledJobs.update(
+  await this.collections.scheduledJobs.updateAsync(
     { _id: id },
     { $set: { lastKeepAlive: now } });
 };
 
-SandstormDb.prototype.recordScheduledJobRan = function (job, maybeError) {
+SandstormDb.prototype.recordScheduledJobRan = async function (job, maybeError) {
   check(job, Match.ObjectIncluding({
     _id: String,
     period: Match.OneOf(...LEGAL_PERIODS),
@@ -149,31 +149,31 @@ SandstormDb.prototype.recordScheduledJobRan = function (job, maybeError) {
     setter.previousError = maybeError;
   }
 
-  this.collections.scheduledJobs.update(
+  await this.collections.scheduledJobs.updateAsync(
     { _id: job._id },
     { $unset: { lastKeepAlive: true, retries: true },
       $set: setter,
     });
 };
 
-SandstormDb.prototype.scheduledJobIncrementRetries = function (id) {
+SandstormDb.prototype.scheduledJobIncrementRetries = async function (id) {
   check(id, String);
 
-  this.collections.scheduledJobs.update(
+  await this.collections.scheduledJobs.updateAsync(
     { _id: id },
     { $inc: { retries: 1 },
       $unset: { lastKeepAlive: true },
     });
 };
 
-SandstormDb.prototype.getReadyScheduledJobs = function (nowMillis, staleKeepAlive) {
+SandstormDb.prototype.getReadyScheduledJobs = async function (nowMillis, staleKeepAlive) {
   check(staleKeepAlive, Date);
 
   const now = new Date(nowMillis);
-  return this.collections.scheduledJobs.find({
+  return await this.collections.scheduledJobs.find({
     nextPeriodStart: { $lt: now },
     $or: [{ lastKeepAlive: { $exists: false } },
           { lastKeepAlive: { $lt: staleKeepAlive } },
          ],
-  });
+  }).fetchAsync();
 };

@@ -78,19 +78,24 @@ const closePopup = function (res, err) {
   res.end(content, "utf-8");
 };
 
-const generateService = function () {
+const generateService = async function () {
   // TODO(cleanup): Inject the db.
   const db = new SandstormDb();
+  const [entityId, entryPoint, logoutUrl, publicCert] = await Promise.all([
+    db.getSamlEntityIdAsync(),
+    db.getSamlEntryPointAsync(),
+    db.getSamlLogoutAsync(),
+    db.getSamlPublicCertAsync(),
+  ]);
 
-  const entityId = db.getSamlEntityId();
   const service = {
     "provider": "default",
-    "entryPoint": db.getSamlEntryPoint(),
-    "logoutUrl": db.getSamlLogout(),
+    "entryPoint": entryPoint,
+    "logoutUrl": logoutUrl,
     // TODO(someday): find a better way to inject the DB
     "issuer": entityId || HOSTNAME,
     // If the certificate has "-----BEGIN CERTIFICATE-----" markers, automatically remove those.
-    "cert": db.getSamlPublicCert().replace(/-[^\n]*-/g, "").trim(),
+    "cert": publicCert.replace(/-[^\n]*-/g, "").trim(),
   };
   return service;
 };
@@ -106,7 +111,7 @@ const middleware = async function (req, res, next) {
     }
 
     if (samlObject.actionName === "config") {
-      const _saml = new SAML(generateService());
+      const _saml = new SAML(await generateService());
       res.writeHead(200, { "Content-Type": "text/xml" });
       res.end(_saml.generateServiceProviderMetadata());
       return;
@@ -120,7 +125,7 @@ const middleware = async function (req, res, next) {
     if (!samlObject.actionName)
       throw new Error("Missing SAML action");
 
-    const service = generateService();
+    const service = await generateService();
 
     // Skip everything if there's no service set by the saml middleware
     if (!service || samlObject.serviceName !== service.provider)
@@ -192,13 +197,23 @@ Meteor.methods({
     }
 
     const _saml = new SAML(service);
+    const user = await Meteor.users.findOneAsync({ _id: this.userId });
+    if (!user) {
+      throw new Meteor.Error(403, "Not logged in.");
+    }
+
     let credential;
-    Meteor.user().loginCredentials.forEach((_credential) => {
-      const currCredential = Meteor.users.findOne({ _id: _credential.id, });
+    const credentials = await Meteor.users.find({
+      _id: { $in: user.loginCredentials.map((_credential) => _credential.id) },
+    }).fetchAsync();
+    credentials.forEach((currCredential) => {
       if (currCredential.services.saml) {
         credential = currCredential;
       }
     });
+    if (!credential) {
+      throw new Meteor.Error(400, "No SAML credential found for current user.");
+    }
     // TODO(someday): handle user having more than one SAML credential
 
     return await new Promise((resolve, reject) => {
@@ -218,11 +233,11 @@ Meteor.methods({
     });
   },
 
-  validateSamlLogout: function (samlRequest) {
+  validateSamlLogout: async function (samlRequest) {
     check(samlRequest, String);
 
     const db = this.connection.sandstormDb;
-    const userId = Meteor.userId();
+    const userId = this.userId;
     if (!userId) {
       return new Meteor.Error(403, "Non-logged in users can't logout.");
     }
@@ -232,32 +247,35 @@ Meteor.methods({
     if (samlRequest) {
       const buf = new Buffer(samlRequest, "base64");
       const xml = zlib.inflateRawSync(buf).toString();
-      _saml.parseLogoutRequest(xml, function (err, nameId) {
-        if (err) {
-          console.error("Error validating SAML logout response:", err.toString(),
-                        "\nFull SAML response XML:\n", responseText);
-          throw new Error("Unable to validate SAML logout response.");
-        }
-
-        check(nameId, String);
-        const credential = db.collections.users.findOne({ "services.saml.id": nameId, },
-          { fields: { _id: 1, }, });
-        if (!credential) {
-          return new Meteor.Error(400, "No credential found matching SAML nameID.");
-        }
-
-        const user = db.collections.users.findOne({ "loginCredentials.id": credential._id, },
-          { fields: { _id: 1, }, });
-        if (!user) {
-          return new Meteor.Error(403, "No user found for expected SAML credential.");
-        }
-
-        if (user._id !== userId) {
-          const txt = "SAML logout requested for wrong user: " + nameId + ", " + userId;
-          console.error(txt);
-          throw new Error(txt);
-        }
+      const nameId = await new Promise((resolve, reject) => {
+        _saml.parseLogoutRequest(xml, function (err, parsedNameId) {
+          if (err) {
+            console.error("Error validating SAML logout response:", err.toString());
+            reject(new Error("Unable to validate SAML logout response."));
+          } else {
+            resolve(parsedNameId);
+          }
+        });
       });
+      check(nameId, String);
+
+      const credential = await db.collections.users.findOneAsync({ "services.saml.id": nameId, },
+        { fields: { _id: 1, }, });
+      if (!credential) {
+        return new Meteor.Error(400, "No credential found matching SAML nameID.");
+      }
+
+      const user = await db.collections.users.findOneAsync({ "loginCredentials.id": credential._id, },
+        { fields: { _id: 1, }, });
+      if (!user) {
+        return new Meteor.Error(403, "No user found for expected SAML credential.");
+      }
+
+      if (user._id !== userId) {
+        const txt = "SAML logout requested for wrong user: " + nameId + ", " + userId;
+        console.error(txt);
+        throw new Error(txt);
+      }
     }
   },
 });

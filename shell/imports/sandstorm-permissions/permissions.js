@@ -560,6 +560,29 @@ class Context {
     db.collections.apiTokens.find(query).forEach((token) => this.addToken(token));
   }
 
+  async addGrainsAsync(db, grainIds) {
+    check(db, SandstormDb);
+    check(grainIds, [String]);
+    if (grainIds.length == 0) return;
+
+    const grains = await db.collections.grains.find({
+      _id: { $in: grainIds },
+      trashed: { $exists: false },
+      suspended: { $ne: true },
+    }).fetchAsync();
+    grains.forEach((grain) => {
+      this.grains[grain._id] = grain;
+    });
+
+    const query = { grainId: { $in: grainIds },
+                    revoked: { $ne: true },
+                    trashed: { $exists: false },
+                    suspended: { $ne: true },
+                    objectId: { $exists: false }, };
+    const tokens = await db.collections.apiTokens.find(query).fetchAsync();
+    tokens.forEach((token) => this.addToken(token));
+  }
+
   addTokensFromCursor(cursor) {
     cursor.forEach((token) => this.addToken(token));
   }
@@ -871,7 +894,85 @@ class Context {
         for(;;) {
           let currentToken = this.tokensById[currentTokenId];
           if (!currentToken && db) {
-            currentToken = db.collections.apiTokens.findOne({
+            currentToken = db.collections.apiTokens.find({
+              _id: currentTokenId,
+              revoked: { $ne: true },
+              suspended: { $ne: true },
+            }, {
+              limit: 1,
+            }).fetch()[0];
+            this.tokensById[currentTokenId] = currentToken;
+          }
+
+          if (!currentToken) {
+            break;
+          }
+
+          if (this.activateTokenValidToken(currentTokenId)) {
+            result = true;
+          }
+
+          if (currentToken.parentToken) {
+            currentTokenId = currentToken.parentToken;
+          } else {
+            break;
+          }
+        }
+      } else if (req.userIsAdmin) {
+        let accountId = req.userIsAdmin;
+        if (!(accountId in this.adminUsers) && db) {
+          const usersCollection = (db.collections && db.collections.users) || Meteor.users;
+          usersCollection.find({ isAdmin: true }).forEach((user) => {
+            this.adminUsers[user._id] = true;
+          });
+        }
+
+        if (this.adminUsers[accountId]) {
+          const variable = this.getUserIsAdminVariable(accountId);
+          variable.value = true;
+
+          // Might have some requirement dependents. Cannot have any direct depependents.
+          variable.requirementDependents.forEach((tokenId) => {
+            result = true;
+            this.activeTokens[tokenId].decrementRequirements(this);
+          });
+        }
+      } else {
+        throw new Error("unknown kind of requirement: " + JSON.stringify(req));
+      }
+    });
+
+    return result;
+  }
+
+  async processUnmetRequirementsAsync(db) {
+    const grainIds = this.unmetRequirements.getGrainIds()
+          .filter((grainId) => !(grainId in this.grains));
+
+    if (db) {
+      await this.addGrainsAsync(db, grainIds);
+    }
+
+    let result = false;
+
+    const oldUnmetRequirements = this.unmetRequirements;
+    this.unmetRequirements = new RequirementSet();
+    const requirements = [];
+    oldUnmetRequirements.forEach((req) => requirements.push(req));
+
+    for (const req of requirements) {
+      if (req.permissionsHeld) {
+        const next = req.permissionsHeld;
+        const nextVertexId = vertexIdOfPermissionsHeld(next);
+        if (this.activateRelevantTokens(next.grainId, nextVertexId)) {
+          result = true;
+        }
+      } else if (req.tokenValid) {
+        let currentTokenId = req.tokenValid;
+        for (;;) {
+          let currentToken = this.tokensById[currentTokenId];
+          if (!currentToken && db) {
+            currentToken = await db.collections.apiTokens.findOneAsync({
               _id: currentTokenId,
               revoked: { $ne: true },
               suspended: { $ne: true },
@@ -894,9 +995,11 @@ class Context {
           }
         }
       } else if (req.userIsAdmin) {
-        let accountId = req.userIsAdmin;
+        const accountId = req.userIsAdmin;
         if (!(accountId in this.adminUsers) && db) {
-          Meteor.users.find({ isAdmin: true }).forEach((user) => {
+          const usersCollection = (db.collections && db.collections.users) || Meteor.users;
+          const admins = await usersCollection.find({ isAdmin: true }).fetchAsync();
+          admins.forEach((user) => {
             this.adminUsers[user._id] = true;
           });
         }
@@ -905,7 +1008,6 @@ class Context {
           const variable = this.getUserIsAdminVariable(accountId);
           variable.value = true;
 
-          // Might have some requirement dependents. Cannot have any direct depependents.
           variable.requirementDependents.forEach((tokenId) => {
             result = true;
             this.activeTokens[tokenId].decrementRequirements(this);
@@ -914,7 +1016,7 @@ class Context {
       } else {
         throw new Error("unknown kind of requirement: " + JSON.stringify(req));
       }
-    });
+    }
 
     return result;
   }
@@ -942,6 +1044,29 @@ class Context {
       }
 
       if (!this.processUnmetRequirements(db)) {
+        return result;
+      }
+    }
+  }
+
+  async tryToProveAsync(grainId, vertexId, permissionSet, db) {
+    check(grainId, String);
+    check(vertexId, String);
+    check(permissionSet, PermissionSet);
+    check(db, Match.OneOf(undefined, SandstormDb));
+
+    if (db) {
+      await this.addGrainsAsync(db, [grainId]);
+    }
+
+    this.activateRelevantTokens(grainId, vertexId);
+    for (;;) {
+      const result = this.runForwardChaining(grainId, vertexId, permissionSet);
+      if (result && permissionSet.isSubsetOf(result)) {
+        return result;
+      }
+
+      if (!await this.processUnmetRequirementsAsync(db)) {
         return result;
       }
     }
@@ -1195,17 +1320,40 @@ SandstormPermissions.mayOpenGrain = function (db, vertex) {
   return !!context.tryToProve(grainId, vertexId, emptyPermissions, db);
 };
 
+SandstormPermissions.mayOpenGrainAsync = async function (db, vertex) {
+  check(vertex, vertexPattern);
+  const grainId = vertex.token ? vertex.token.grainId : vertex.grain._id;
+  const vertexId = vertex.token ? ("t:" + vertex.token._id) : "i:" + vertex.grain.accountId;
+  const context = new Context();
+  const emptyPermissions = new PermissionSet([]);
+  return !!(await context.tryToProveAsync(grainId, vertexId, emptyPermissions, db));
+};
+
 class CompoundObserveHandle {
   constructor() {
     this._handles = [];
+    this._stopped = false;
   }
 
   push(handle) {
     this._handles.push(handle);
+    if (this._stopped) {
+      this._stopHandle(handle);
+    }
+  }
+
+  _stopHandle(handle) {
+    Promise.resolve(handle).then((h) => {
+      if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+    }).catch((err) => {
+      console.error("Failed to stop permissions observe handle:", err);
+    });
   }
 
   stop() {
-    this._handles.forEach((handle) => handle.stop());
+    if (this._stopped) return;
+    this._stopped = true;
+    this._handles.forEach((handle) => this._stopHandle(handle));
   }
 }
 
@@ -1337,6 +1485,116 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
   return result;
 };
 
+SandstormPermissions.grainPermissionsAsync = async function (db, vertex, viewInfo, onInvalidated) {
+  check(db, SandstormDb);
+  check(vertex, vertexPattern);
+  const grainId = vertex.token ? vertex.token.grainId : vertex.grain._id;
+  const vertexId = vertex.token ? ("t:" + vertex.token._id) : "i:" + vertex.grain.accountId;
+
+  let resultPermissions;
+  let observeHandle;
+  let onInvalidatedActive = false;
+
+  const startTime = new Date();
+  function measureElapsedTime() {
+    const elapsedMilliseconds = (new Date()) - startTime;
+    if (elapsedMilliseconds > 200) {
+      console.log("Warning: SandstormPermissions.grainPermissionsAsync() took " + elapsedMilliseconds +
+                  " milliseconds to complete for the vertex " + JSON.stringify(vertex));
+    }
+  }
+
+  for (let attemptCount = 0; attemptCount < 3; ++attemptCount) {
+    if (observeHandle) {
+      observeHandle.stop();
+      observeHandle = null;
+    }
+
+    const context = new Context();
+    const allPermissions = PermissionSet.fromRoleAssignment({ allAccess: null }, viewInfo);
+    const firstPhasePermissions = await context.tryToProveAsync(grainId, vertexId, allPermissions, db);
+
+    if (!firstPhasePermissions) break;
+
+    const needed = context.getResponsibleTokens(grainId, vertexId);
+    const neededTokens = needed.tokenIds;
+    const neededGrains = needed.grainIds;
+
+    context.reset();
+
+    let invalidated = false;
+    function guardedOnInvalidated() {
+      const shouldCall = onInvalidatedActive && !invalidated;
+      invalidated = true;
+      if (shouldCall) {
+        onInvalidated();
+      }
+    }
+
+    const tokenCursor = db.collections.apiTokens.find({
+      _id: { $in: neededTokens },
+      revoked: { $ne: true },
+      suspended: { $ne: true },
+      objectId: { $exists: false },
+    });
+
+    if (onInvalidated) {
+      observeHandle = new CompoundObserveHandle();
+      observeHandle.push(tokenCursor.observe({
+        changed(newApiToken, oldApiToken) {
+          if (newApiToken.trashed ||
+              !_.isEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment) ||
+              !_.isEqual(newApiToken.suspended, oldApiToken.suspended) ||
+              !_.isEqual(newApiToken.revoked, oldApiToken.revoked)) {
+            observeHandle.stop();
+            guardedOnInvalidated();
+          }
+        },
+
+        removed(oldApiToken) {
+          observeHandle.stop();
+          guardedOnInvalidated();
+        },
+      }));
+
+      const grainCursor = db.collections.grains.find({ _id: { $in: neededGrains } });
+      observeHandle.push(grainCursor.observe({
+        changed(newGrain, oldGrain) {
+          if (newGrain.trashed || newGrain.suspended ||
+              (!oldGrain.private && newGrain.private)
+             ) {
+            observeHandle.stop();
+            guardedOnInvalidated();
+          }
+        },
+
+        removed(oldGrain) {
+          observeHandle.stop();
+          guardedOnInvalidated();
+        },
+      }));
+    }
+
+    const tokens = await tokenCursor.fetchAsync();
+    tokens.forEach((token) => context.addToken(token));
+    await context.addGrainsAsync(db, neededGrains.filter((id) => id !== "tokenValid"));
+
+    resultPermissions = await context.tryToProveAsync(
+        grainId, vertexId, firstPhasePermissions, undefined);
+
+    if (resultPermissions && firstPhasePermissions.isSubsetOf(resultPermissions)) {
+      break;
+    }
+  }
+
+  onInvalidatedActive = true;
+  const result = {};
+  result.permissions = (resultPermissions && resultPermissions.array) || null;
+  result.observeHandle = observeHandle || new CompoundObserveHandle();
+  measureElapsedTime();
+  return result;
+};
+
 SandstormPermissions.downstreamTokens = function (db, root) {
   // Computes a list of the UiView tokens that are downstream in the sharing graph from a given
   // source. The source, `root`, can either be a token or a (grain, user) pair. The exact format
@@ -1420,6 +1678,86 @@ SandstormPermissions.downstreamTokens = function (db, root) {
   return result;
 };
 
+SandstormPermissions.downstreamTokensAsync = async function (db, root) {
+  check(root, Match.OneOf({ token: Match.ObjectIncluding({ _id: String, grainId: String }) },
+                          { grain: Match.ObjectIncluding({ _id: String, accountId: String }) }));
+
+  const result = [];
+  const tokenStack = [];
+  const stackedTokens = {};
+  const tokensBySharer = {};
+  const tokensByParent = {};
+  const tokensById = {};
+
+  function addChildren(tokenId) {
+    const children = tokensByParent[tokenId];
+    if (children) {
+      children.forEach(function (child) {
+        if (!stackedTokens[child._id]) {
+          tokenStack.push(child);
+          stackedTokens[child._id] = true;
+        }
+      });
+    }
+  }
+
+  function addSharedTokens(sharer) {
+    const sharedTokens = tokensBySharer[sharer];
+    if (sharedTokens) {
+      sharedTokens.forEach(function (sharedToken) {
+        if (!stackedTokens[sharedToken._id]) {
+          tokenStack.push(sharedToken);
+          stackedTokens[sharedToken._id] = true;
+        }
+      });
+    }
+  }
+
+  const grainId = root.token ? root.token.grainId : root.grain._id;
+  const grain = await db.getGrainAsync(grainId);
+  if (!grain || !grain.private) { return result; }
+
+  const tokens = await db.collections.apiTokens.find({
+    grainId: grainId,
+    revoked: { $ne: true },
+    suspended: { $ne: true },
+  }).fetchAsync();
+
+  tokens.forEach(function (token) {
+    tokensById[token._id] = token;
+    if (token.parentToken) {
+      if (!tokensByParent[token.parentToken]) {
+        tokensByParent[token.parentToken] = [];
+      }
+
+      tokensByParent[token.parentToken].push(token);
+    } else if (token.accountId) {
+      if (!tokensBySharer[token.accountId]) {
+        tokensBySharer[token.accountId] = [];
+      }
+
+      tokensBySharer[token.accountId].push(token);
+    }
+  });
+
+  if (root.token) {
+    addChildren(root.token._id);
+  } else if (root.grain) {
+    addSharedTokens(root.grain.accountId);
+  }
+
+  while (tokenStack.length > 0) {
+    const token = tokenStack.pop();
+    result.push(token);
+    addChildren(token._id);
+    if (token.owner && token.owner.user) {
+      addSharedTokens(token.owner.user.accountId);
+    }
+  }
+
+  return result;
+};
+
 const HeaderSafeString = Match.Where(function (str) {
   check(str, String);
   return str.match(/^[\x20-\x7E]*$/);
@@ -1432,7 +1770,7 @@ const DavClass = Match.Where(function (str) {
 });
 
 const ResourceMap = Match.Where(function (map) {
-  for (path in map) {
+  for (const path in map) {
     if (!path.match(/^\/[\x21-\x7E]*$/)) {
       return false;
     }
@@ -1448,6 +1786,7 @@ const ResourceMap = Match.Where(function (map) {
   return true;
 });
 
+
 const LocalizedString = {
   defaultText: String,
   localizations: Match.Optional([
@@ -1455,8 +1794,8 @@ const LocalizedString = {
   ]),
 };
 
-SandstormPermissions.createNewApiToken = function (db, provider, grainId, petname,
-                                                   roleAssignment, owner, unauthenticated) {
+SandstormPermissions.createNewApiToken = async function (db, provider, grainId, petname,
+                                                         roleAssignment, owner, unauthenticated) {
   // Creates a new UiView API token. If `rawParentToken` is set, creates a child token.
   check(grainId, String);
   check(petname, String);
@@ -1505,7 +1844,7 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
     throw new Meteor.Error(400, "Unauthenticated params too large; limit 4kb.");
   }
 
-  const grain = db.getGrain(grainId);
+  const grain = await db.getGrainAsync(grainId);
   if (!grain) {
     throw new Meteor.Error(403, "Unauthorized", "No grain found.");
   }
@@ -1530,7 +1869,7 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
   let parentForSharing = false;
   if (provider.rawParentToken) {
     const parentToken = Crypto.createHash("sha256").update(provider.rawParentToken).digest("base64");
-    const parentApiToken = db.collections.apiTokens.findOne(
+    const parentApiToken = await db.collections.apiTokens.findOneAsync(
       { _id: parentToken, grainId: grainId, objectId: { $exists: false } });
     if (!parentApiToken) {
       throw new Meteor.Error(403, "No such parent token found.");
@@ -1560,10 +1899,28 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
     }
   } else if (owner.user) {
     // Determine the user's identity ID (their user ID as seen by the grain).
-    const identityId = db.getOrGenerateIdentityId(owner.user.accountId, grain);
+    const identityId = await db.getOrGenerateIdentityIdAsync(owner.user.accountId, grain);
     oldUserIdentityToRemove = identityId;
 
-    const grainInfo = db.getDenormalizedGrainInfo(grainId);
+    let pkg = await db.collections.packages.findOneAsync(grain.packageId);
+    if (!pkg) {
+      pkg = await db.collections.devPackages.findOneAsync(grain.packageId);
+    }
+
+    const appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: "" };
+    const grainInfo = { appTitle };
+    if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
+      const icons = pkg.manifest.metadata.icons;
+      const icon = icons.grain || icons.appGrid;
+      if (icon) {
+        grainInfo.icon = icon;
+      }
+    }
+
+    if (!grainInfo.icon && pkg) {
+      grainInfo.appId = pkg.appId;
+    }
+
     apiToken.owner = {
       user: {
         accountId: owner.user.accountId,
@@ -1598,15 +1955,15 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
       }
     }
 
-    db.collections.apiHosts.insert(apiHost);
+    await db.collections.apiHosts.insertAsync(apiHost);
     apiToken.hasApiHost = true;
   }
 
-  db.collections.apiTokens.insert(apiToken);
+  await db.collections.apiTokens.insertAsync(apiToken);
 
   if (oldUserIdentityToRemove) {
     // Remove the oldUsers entry that is no longer relevant.
-    db.collections.grains.update({_id: grainId},
+    await db.collections.grains.updateAsync({_id: grainId},
         {$pull: { oldUsers: { identityId: oldUserIdentityToRemove } } });
   }
 
@@ -1620,34 +1977,78 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
 SandstormPermissions.cleanupSelfDestructing = function (db) {
   return function () {
     const now = new Date();
-    db.removeApiTokens({ expiresIfUnused: { $lt: now } });
+    db.removeApiTokensAsync({ expiresIfUnused: { $lt: now } }).catch((err) => {
+      console.error("Failed to clean up self-destructing tokens:", err);
+    });
   };
 };
 
 SandstormPermissions.cleanupClientPowerboxTokens = function (db) {
   return function () {
     const tenMinutesAgo = new Date(Date.now() - 1000 * 60 * 10);
-    db.removeApiTokens({
+    db.removeApiTokensAsync({
       $or: [
         { "owner.clientPowerboxRequest": { $exists: true } },
         { "owner.clientPowerboxOffer": { $exists: true } },
       ],
       created: { $lt: tenMinutesAgo },
+    }).catch((err) => {
+      console.error("Failed to clean up client powerbox tokens:", err);
     });
   };
 };
 
+async function resolveAccountIdForTokenOps(userId) {
+  if (!userId) {
+    throw new Meteor.Error(403, "Must be logged in.");
+  }
+
+  // Prefer canonical account IDs whenever this user is a linked credential.
+  // Some legacy records may have missing/ambiguous `type`, so don't rely on `type` alone.
+  const linkedAccount = await Meteor.users.findOneAsync({
+    type: "account",
+    $or: [
+      { "loginCredentials.id": userId },
+      { "nonloginCredentials.id": userId },
+    ],
+  }, {
+    fields: { _id: 1 },
+  });
+  if (linkedAccount) return linkedAccount._id;
+
+  const user = await Meteor.users.findOneAsync({ _id: userId }, { fields: { type: 1 } });
+  if (!user || user.type === "account") return userId;
+  if (user.type !== "credential") return userId;
+
+  const account = await Meteor.users.findOneAsync({
+    type: "account",
+    $or: [
+      { "loginCredentials.id": userId },
+      { "nonloginCredentials.id": userId },
+    ],
+  }, {
+    fields: { _id: 1 },
+  });
+
+  if (!account) {
+    throw new Meteor.Error(403, "Credential is not linked to an account.");
+  }
+
+  return account._id;
+}
+
 Meteor.methods({
-  transitiveShares: function (obsolete, grainId) {
+  transitiveShares: async function (obsolete, grainId) {
     check(grainId, String);
-    if (this.userId) {
-      const db = this.connection.sandstormDb;
-      return SandstormPermissions.downstreamTokens(db,
-          { grain: { _id: grainId, accountId: this.userId } });
-    }
+    if (!this.userId) return;
+
+    const accountId = await resolveAccountIdForTokenOps(this.userId);
+    const db = this.connection.sandstormDb;
+    return await SandstormPermissions.downstreamTokensAsync(db,
+        { grain: { _id: grainId, accountId } });
   },
 
-  newApiToken: function (provider, grainId, petname, roleAssignment, owner, unauthenticated) {
+  async newApiToken(provider, grainId, petname, roleAssignment, owner, unauthenticated) {
     check(provider, Match.OneOf({ identityId: String },  // obsolete
                                 { accountId: String },
                                 { rawParentToken: String }));
@@ -1658,21 +2059,35 @@ Meteor.methods({
 
     // other check()s happen in SandstormPermissions.createNewApiToken().
     const db = this.connection.sandstormDb;
+    const accountId = await resolveAccountIdForTokenOps(this.userId);
     if (provider.identityId) {
-      provider.accountId = this.userId;
+      provider.accountId = accountId;
       delete provider.identityId;
     } else if (provider.accountId) {
-      if (provider.accountId !== this.userId) {
+      // Client code often passes Meteor.userId() here, which may be a credential ID.
+      // Accept either the raw current user id or the resolved account id, then normalize.
+      if (provider.accountId !== accountId && provider.accountId !== this.userId) {
         throw new Meteor.Error(403, "Not the current user: " + provider.accountId);
       }
+
+      provider.accountId = accountId;
     }
 
-    return SandstormPermissions.createNewApiToken(
+    if (owner && owner.user && owner.user.accountId) {
+      owner.user.accountId = await resolveAccountIdForTokenOps(owner.user.accountId);
+    }
+
+    const result = await SandstormPermissions.createNewApiToken(
       this.connection.sandstormDb, provider, grainId, petname, roleAssignment, owner,
       unauthenticated);
+    if (!result || !result.token) {
+      throw new Meteor.Error(500, "newApiToken returned an invalid result");
+    }
+
+    return result;
   },
 
-  updateApiToken: function (token, newFields) {
+  async updateApiToken(token, newFields) {
     const db = this.connection.sandstormDb;
 
     check(token, String);
@@ -1684,15 +2099,16 @@ Meteor.methods({
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to modify a token");
     }
+    const accountId = await resolveAccountIdForTokenOps(this.userId);
 
-    const apiToken = db.collections.apiTokens.findOne(token);
+    const apiToken = await db.collections.apiTokens.findOneAsync(token);
     if (!apiToken) {
       throw new Meteor.Error(404, "No such token found.");
     }
 
-    if (apiToken.accountId === this.userId) {
+    if (apiToken.accountId === accountId) {
       const modifier = { $set: newFields };
-      db.collections.apiTokens.update(token, modifier);
+      await db.collections.apiTokens.updateAsync(token, modifier);
     } else {
       throw new Meteor.Error(403, "User not authorized to modify this token.");
     }

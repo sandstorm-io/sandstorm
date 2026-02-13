@@ -17,7 +17,7 @@
 import { Meteor } from "meteor/meteor";
 import { Session } from "meteor/session";
 import { Tracker } from "meteor/tracker";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 import { Accounts } from "meteor/accounts-base";
 
 import { allowDemo } from "/imports/demo";
@@ -32,7 +32,9 @@ Meteor.loginWithDemo = function (options, callback) {
 //   don't want it to appear in the sign-in drop-down.
 
 window.testExpireDemo = function () {
-  Meteor.call("testExpireDemo");
+  Meteor.callAsync("testExpireDemo").catch((err) => {
+    console.error("testExpireDemo failed:", err);
+  });
 };
 
 Router.map(function () {
@@ -161,13 +163,56 @@ Router.map(function () {
             { sort: { "manifest.appVersion": -1 } }
           )._id;
 
+          const launchAppDemoGrain = () => {
+            const userAction = globalDb.collections.userActions.findOne({
+              appId: appId,
+              userId: Meteor.userId(),
+            }) || globalDb.collections.userActions.findOne({
+              packageId: packageId,
+              userId: Meteor.userId(),
+            });
+
+            if (userAction) {
+              launchAndEnterGrainByActionId(userAction._id, null, null, { replaceState: true });
+              return;
+            }
+
+            const pkg = globalDb.collections.packages.findOne(packageId) ||
+                globalDb.collections.devPackages.findOne(packageId);
+            const fallbackAction = pkg && pkg.manifest && pkg.manifest.actions && pkg.manifest.actions[0];
+            if (!fallbackAction) {
+              launchAndEnterGrainByPackageId(packageId, { replaceState: true });
+              return;
+            }
+
+            const appTitle = SandstormDb.appNameFromPackage(pkg);
+            const nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(fallbackAction, appTitle);
+            const title = "Untitled " + appTitle + " " + nounPhrase;
+            Meteor.callAsync("newGrain", packageId, fallbackAction.command, title)
+                .then((grainId) => {
+                  Router.go("grain", { grainId: grainId }, { replaceState: true });
+                })
+                .catch((err) => {
+                  console.error("newGrain failed in appdemo fallback launch:", err);
+                  alert(err.message);
+                });
+          };
+
           // 3. Install this app for the user, if needed.
-          if (globalDb.collections.userActions.find({ appId: appId, userId: Meteor.userId() }).count() == 0) {
-            Meteor.call("addUserActions", packageId);
-          }
+          const needsInstall =
+              globalDb.collections.userActions.find({ appId: appId, userId: Meteor.userId() }).count() == 0;
+          const installPromise = needsInstall ?
+              Meteor.callAsync("addUserActions", packageId) :
+              Promise.resolve();
 
           // 4. Create new grain and 5. browse to it.
-          launchAndEnterGrainByPackageId(packageId, { replaceState: true });
+          installPromise.then(() => {
+            Tracker.afterFlush(() => {
+              launchAppDemoGrain();
+            });
+          }).catch((err) => {
+            console.error("addUserActions failed:", err);
+          });
         }
       });
     },

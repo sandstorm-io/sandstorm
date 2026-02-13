@@ -45,8 +45,24 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 }
 
 // Helper so that we don't have to if (Meteor.isServer) before declaring indexes.
+const ensureIndexOnServer = function (index, options) {
+  if (!Meteor.isServer) return;
+
+  const rawCollection = this.rawCollection && this.rawCollection();
+  if (!rawCollection || !rawCollection.createIndex) return;
+
+  const indexSpec = typeof index === "string" ? { [index]: 1 } : index;
+  rawCollection.createIndex(indexSpec, options || {})
+    .catch((err) => {
+      console.error("Failed to create Mongo index", this._name, indexSpec, err);
+    });
+};
+
 if (Meteor.isServer) {
-  Mongo.Collection.prototype.ensureIndexOnServer = Mongo.Collection.prototype._ensureIndex;
+  Mongo.Collection.prototype.ensureIndexOnServer = ensureIndexOnServer;
+  if (Meteor.users && !Meteor.users.ensureIndexOnServer) {
+    Meteor.users.ensureIndexOnServer = ensureIndexOnServer.bind(Meteor.users);
+  }
 } else {
   Mongo.Collection.prototype.ensureIndexOnServer = function () {};
 }
@@ -167,7 +183,7 @@ Meteor.users.ensureIndexOnServer("loginCredentials.id", { unique: 1, sparse: 1 }
 Meteor.users.ensureIndexOnServer("nonloginCredentials.id", { sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.google.id", { unique: 1, sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.github.id", { unique: 1, sparse: 1 });
-Meteor.users.ensureIndexOnServer("services.oidc.id", { sparse: 1 });
+Meteor.users.ensureIndexOnServer("services.oidc.id", { unique: 1, sparse: 1 });
 Meteor.users.ensureIndexOnServer("suspended.willDelete", { sparse: 1 });
 
 const Packages = new Mongo.Collection("packages", collectionOptions);
@@ -1164,8 +1180,28 @@ class SandstormDb {
     }
   }
 
+  async isAdminByIdAsync(id) {
+    // Async version of isAdminById().
+    const user = await Meteor.users.findOneAsync({ _id: id }, { fields: { isAdmin: 1 } });
+    if (user && user.isAdmin) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   allowDevAccounts() {
     const setting = this.collections.settings.findOne({ _id: "devAccounts" });
+    if (setting) {
+      return setting.value;
+    } else {
+      return Meteor.settings && Meteor.settings.public &&
+             Meteor.settings.public.allowDevAccounts;
+    }
+  }
+
+  async allowDevAccountsAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "devAccounts" });
     if (setting) {
       return setting.value;
     } else {
@@ -1208,6 +1244,23 @@ class SandstormDb {
     return false;
   }
 
+  async isAccountSignedUpAsync(user) {
+    // Async server-side equivalent of isAccountSignedUp().
+    if (!user) return false;  // not signed in
+
+    if (user.type != "account") return false;  // not an account
+
+    if (user.expires) return false;  // demo user.
+
+    if (Meteor.settings.public.allowUninvited) return true;  // all accounts qualify
+
+    if (user.signupKey) return true;  // user is invited
+
+    if (await this.isUserInOrganizationAsync(user)) return true;
+
+    return false;
+  }
+
   isSignedUpOrDemo() {
     const user = Meteor.user();
     return this.isAccountSignedUpOrDemo(user);
@@ -1225,6 +1278,22 @@ class SandstormDb {
     if (user.signupKey) return true;  // user is invited
 
     if (this.isUserInOrganization(user)) return true;
+
+    return false;
+  }
+
+  async isAccountSignedUpOrDemoAsync(user) {
+    if (!user) return false;  // not signed in
+
+    if (user.type != "account") return false;  // not an account
+
+    if (user.expires) return true;  // demo user.
+
+    if (Meteor.settings.public.allowUninvited) return true;  // all accounts qualify
+
+    if (user.signupKey) return true;  // user is invited
+
+    if (await this.isUserInOrganizationAsync(user)) return true;
 
     return false;
   }
@@ -1270,6 +1339,47 @@ class SandstormDb {
     return false;
   }
 
+  async isCredentialInOrganizationAsync(credential) {
+    if (!credential || !credential.services) {
+      return false;
+    }
+
+    const orgMembership = await this.getOrganizationMembershipAsync();
+    const googleEnabled = orgMembership && orgMembership.google && orgMembership.google.enabled;
+    const googleDomain = orgMembership && orgMembership.google && orgMembership.google.domain;
+    const emailEnabled = orgMembership && orgMembership.emailToken && orgMembership.emailToken.enabled;
+    const emailDomain = orgMembership && orgMembership.emailToken && orgMembership.emailToken.domain;
+    const ldapEnabled = orgMembership && orgMembership.ldap && orgMembership.ldap.enabled;
+    const oidcEnabled = orgMembership && orgMembership.oidc && orgMembership.oidc.enabled;
+    const samlEnabled = orgMembership && orgMembership.saml && orgMembership.saml.enabled;
+    if (emailEnabled && emailDomain && credential.services.email) {
+      const domainSuffixes = emailDomain.split(/\s*,\s*/);
+      for (let i = 0; i < domainSuffixes.length; i++) {
+        const suffix = domainSuffixes[i];
+        const domain = credential.services.email.email.toLowerCase().split("@").pop();
+        if (suffix.startsWith("*.")) {
+          if (domain.endsWith(suffix.substr(1))) {
+            return true;
+          }
+        } else if (domain === suffix) {
+          return true;
+        }
+      }
+    } else if (ldapEnabled && credential.services.ldap) {
+      return true;
+    } else if (oidcEnabled && credential.services.oidc) {
+      return true;
+    } else if (samlEnabled && credential.services.saml) {
+      return true;
+    } else if (googleEnabled && googleDomain && credential.services.google && credential.services.google.hd) {
+      if (credential.services.google.hd.toLowerCase() === googleDomain) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   isUserInOrganization(user) {
     if (!user || !user.loginCredentials) {
       return false;
@@ -1278,6 +1388,21 @@ class SandstormDb {
     for (let i = 0; i < user.loginCredentials.length; i++) {
       let credential = Meteor.users.findOne({ _id: user.loginCredentials[i].id });
       if (this.isCredentialInOrganization(credential)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  async isUserInOrganizationAsync(user) {
+    if (!user || !user.loginCredentials) {
+      return false;
+    }
+
+    for (let i = 0; i < user.loginCredentials.length; i++) {
+      const credential = await Meteor.users.findOneAsync({ _id: user.loginCredentials[i].id });
+      if (await this.isCredentialInOrganizationAsync(credential)) {
         return true;
       }
     }
@@ -1396,6 +1521,73 @@ if (Meteor.isServer) {
       }
     }
   };
+
+  SandstormDb.prototype.removeApiTokensAsync = async function (query, saveOldUsers) {
+    // Async version of removeApiTokens() for Meteor 3 server APIs.
+    let grains = {};
+    let oldAccountIds = new Set();
+
+    const tokens = await this.collections.apiTokens.find(query).fetchAsync();
+    for (const token of tokens) {
+      // Clean up ApiHosts for webkey tokens.
+      if (token.hasApiHost) {
+        const hash2 = Crypto.createHash("sha256").update(token._id).digest("base64");
+        await this.collections.apiHosts.removeAsync({ hash2: hash2 });
+      }
+
+      if (saveOldUsers && token.grainId && token.owner && token.owner.user) {
+        let user = token.owner.user;
+        let grainUsers = grains[token.grainId];
+        if (!grainUsers) {
+          grainUsers = grains[token.grainId] = {};
+        }
+        grainUsers[user.identityId] = user.accountId;
+
+        oldAccountIds.add(user.accountId);
+      }
+
+      // TODO(soon): Drop remote OAuth tokens for frontendRef.http. Unfortunately the way to do
+      //   this is different for every service. :( Also we may need to clarify with the "bearer"
+      //   type whether or not the token is "owned" by us...
+    }
+
+    await this.collections.apiTokens.removeAsync(query);
+
+    if (saveOldUsers) {
+      // Collect user info for all accounts.
+      let oldUserInfos = {};
+      const accounts = await Meteor.users.find({ _id: { $in: [...oldAccountIds] } }).fetchAsync();
+      accounts.forEach(account => {
+        let credentialIds = _.pluck(account.loginCredentials, "id");
+
+        oldUserInfos[account._id] = {
+          credentialIds,
+          profile: {
+            displayName: { defaultText: account.profile.name },
+            preferredHandle: account.profile.handle,
+            pronouns: account.profile.pronoun,
+          }
+        };
+      });
+
+      // Add to each grain.
+      for (let [grainId, identities] of Object.entries(grains)) {
+        let oldUsersToInsert = [];
+        for (let [identityId, accountId] of Object.entries(identities)) {
+          let userInfo = oldUserInfos[accountId];
+          if (userInfo) {
+            oldUsersToInsert.push(Object.assign({ identityId }, userInfo));
+          }
+        }
+
+        if (oldUsersToInsert.length > 0) {
+          await this.collections.grains.updateAsync({ _id: grainId }, {
+            $push: { oldUsers: { $each: oldUsersToInsert } }
+          });
+        }
+      }
+    }
+  };
 }
 
 // TODO(someday): clean this up.  Logic for building static asset urls on client and server
@@ -1416,6 +1608,13 @@ _.extend(SandstormDb.prototype, {
     check(userId, Match.OneOf(String, undefined, null));
     if (userId) {
       return Meteor.users.findOne(userId);
+    }
+  },
+
+  async getUserAsync(userId) {
+    check(userId, Match.OneOf(String, undefined, null));
+    if (userId) {
+      return await Meteor.users.findOneAsync(userId);
     }
   },
 
@@ -1458,6 +1657,11 @@ _.extend(SandstormDb.prototype, {
   getGrain(grainId) {
     check(grainId, String);
     return this.collections.grains.findOne(grainId, {fields: {oldUsers: 0}});
+  },
+
+  async getGrainAsync(grainId) {
+    check(grainId, String);
+    return await this.collections.grains.findOneAsync(grainId, { fields: { oldUsers: 0 } });
   },
 
   userApiTokens(userId, trashed) {
@@ -1512,6 +1716,32 @@ _.extend(SandstormDb.prototype, {
     return grainInfo;
   },
 
+  async getDenormalizedGrainInfoAsync(grainId) {
+    const grain = await this.getGrainAsync(grainId);
+    let pkg = await this.collections.packages.findOneAsync(grain.packageId);
+
+    if (!pkg) {
+      pkg = await this.collections.devPackages.findOneAsync(grain.packageId);
+    }
+
+    const appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: "" };
+    const grainInfo = { appTitle: appTitle };
+
+    if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
+      const icons = pkg.manifest.metadata.icons;
+      const icon = icons.grain || icons.appGrid;
+      if (icon) {
+        grainInfo.icon = icon;
+      }
+    }
+
+    if (!grainInfo.icon && pkg) {
+      grainInfo.appId = pkg.appId;
+    }
+
+    return grainInfo;
+  },
+
   getPlan(id, user) {
     check(id, String);
 
@@ -1529,6 +1759,22 @@ _.extend(SandstormDb.prototype, {
           typeof user.experiments.freeGrainLimit === "number") {
         plan.grains = user.experiments.freeGrainLimit;
       }
+    }
+
+    return plan;
+  },
+
+  async getPlanAsync(id, user) {
+    const plan = await this.collections.plans.findOneAsync(id);
+    if (!plan) {
+      throw new Error("no such plan: ", id);
+    }
+
+    if (user && user.experiments && user.experiments.freeGrainLimit &&
+        id === "free" && plan._id === "free") {
+      const augmentedPlan = _.clone(plan);
+      augmentedPlan.grains = user.experiments.freeGrainLimit;
+      return augmentedPlan;
     }
 
     return plan;
@@ -1601,6 +1847,11 @@ _.extend(SandstormDb.prototype, {
     return setting && setting.value;
   },
 
+  async getSettingAsync(name) {
+    const setting = await this.collections.settings.findOneAsync(name);
+    return setting && setting.value;
+  },
+
   getSettingWithFallback(name, fallbackValue) {
     const value = this.getSetting(name);
     if (value === undefined) {
@@ -1647,6 +1898,43 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
+  async addUserActionsAsync(userId, packageId, simulation) {
+    check(userId, String);
+    check(packageId, String);
+
+    const pack = await this.collections.packages.findOneAsync({ _id: packageId });
+    if (pack) {
+      // Remove old versions.
+      const numRemoved = await this.collections.userActions.removeAsync({ userId: userId, appId: pack.appId });
+
+      // Install new.
+      const actions = pack.manifest.actions;
+      for (const i in actions) {
+        const action = actions[i];
+        if ("none" in action.input) {
+          const userAction = {
+            userId: userId,
+            packageId: pack._id,
+            appId: pack.appId,
+            appTitle: pack.manifest.appTitle,
+            appMarketingVersion: pack.manifest.appMarketingVersion,
+            appVersion: pack.manifest.appVersion,
+            title: action.title,
+            nounPhrase: action.nounPhrase,
+            command: action.command,
+          };
+          await this.collections.userActions.insertAsync(userAction);
+        } else {
+          // TODO(someday):  Implement actions with capability inputs.
+        }
+      }
+
+      if (numRemoved > 0 && !simulation) {
+        await this.deleteUnusedPackagesAsync(pack.appId);
+      }
+    }
+  },
+
   sendAdminNotification(type, action) {
     Meteor.users.find({ isAdmin: true }, { fields: { _id: 1 } }).forEach(function (user) {
       Notifications.insert({
@@ -1658,6 +1946,18 @@ _.extend(SandstormDb.prototype, {
     });
   },
 
+  async sendAdminNotificationAsync(type, action) {
+    const admins = await Meteor.users.find({ isAdmin: true }, { fields: { _id: 1 } }).fetchAsync();
+    for (const user of admins) {
+      await Notifications.insertAsync({
+        admin: { action, type },
+        userId: user._id,
+        timestamp: new Date(),
+        isUnread: true,
+      });
+    }
+  },
+
   getKeybaseProfile(keyFingerprint) {
     return this.collections.keybaseProfiles.findOne(keyFingerprint) || {};
   },
@@ -1667,13 +1967,28 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
+  async getServerTitleAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "serverTitle" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
   getSmtpConfig() {
     const setting = this.collections.settings.findOne({ _id: "smtpConfig" });
     return setting ? setting.value : undefined; // undefined if subscription is not ready.
   },
 
+  async getSmtpConfigAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "smtpConfig" });
+    return setting ? setting.value : undefined; // undefined if subscription is not ready.
+  },
+
   getReturnAddress() {
     const config = this.getSmtpConfig();
+    return config && config.returnAddress || ""; // empty if subscription is not ready.
+  },
+
+  async getReturnAddressAsync() {
+    const config = await this.getSmtpConfigAsync();
     return config && config.returnAddress || ""; // empty if subscription is not ready.
   },
 
@@ -1691,11 +2006,37 @@ _.extend(SandstormDb.prototype, {
     return { name: sanitized, address: this.getReturnAddress() };
   },
 
+  async getReturnAddressWithDisplayNameAsync(userId) {
+    check(userId, String);
+    const user = await Meteor.users.findOneAsync(userId);
+    const displayName = user.profile.name + " (via " + await this.getServerTitleAsync() + ")";
+
+    // First remove any instances of characters that cause trouble for SimpleSmtp. Ideally,
+    // we could escape such characters with a backslash, but that does not seem to help here.
+    // TODO(cleanup): Unclear whether this sanitization is still necessary now that we return a
+    //   structured object and have moved to nodemailer. I'm not touching it for now.
+    const sanitized = displayName.replace(/"|<|>|\\|\r/g, "");
+
+    return { name: sanitized, address: await this.getReturnAddressAsync() };
+  },
+
   getPrimaryEmail(accountId) {
     check(accountId, String);
 
     let result = null;
     SandstormDb.getUserEmails(Meteor.users.findOne(accountId)).forEach(email => {
+      if (email.primary) result = email.email;
+    });
+
+    return result;
+  },
+
+  async getPrimaryEmailAsync(accountId) {
+    check(accountId, String);
+
+    const account = await Meteor.users.findOneAsync(accountId);
+    let result = null;
+    (await SandstormDb.getUserEmailsAsync(account)).forEach(email => {
       if (email.primary) result = email.email;
     });
 
@@ -1730,13 +2071,51 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
+  async incrementDailySentMailCountAsync(accountId) {
+    check(accountId, String);
+
+    const DAILY_LIMIT = 50;
+    const updated = await Meteor.users.updateAsync({
+      _id: accountId,
+      $or: [
+        { dailySentMailCount: { $exists: false } },
+        { dailySentMailCount: { $lt: DAILY_LIMIT } },
+      ],
+    }, {
+      $inc: {
+        dailySentMailCount: 1,
+      },
+    });
+
+    if (updated === 0) {
+      if (!await Meteor.users.findOneAsync({ _id: accountId })) {
+        throw new Error("Couldn't update daily sent mail count.");
+      }
+
+      throw new Error(
+          "Sorry, you've reached your e-mail sending limit for today. Currently, Sandstorm " +
+          "limits each user to " + DAILY_LIMIT + " e-mails per day for spam control reasons. " +
+          "Please feel free to contact us if this is a problem.");
+    }
+  },
+
   getLdapUrl() {
     const setting = this.collections.settings.findOne({ _id: "ldapUrl" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
+  async getLdapUrlAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "ldapUrl" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
   getLdapBase() {
     const setting = this.collections.settings.findOne({ _id: "ldapBase" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
+  async getLdapBaseAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "ldapBase" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
@@ -1747,6 +2126,11 @@ _.extend(SandstormDb.prototype, {
 
   getLdapSearchUsername() {
     const setting = this.collections.settings.findOne({ _id: "ldapSearchUsername" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
+  async getLdapSearchUsernameAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "ldapSearchUsername" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
@@ -1771,8 +2155,18 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
+  async getLdapFilterAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "ldapFilter" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
   getLdapSearchBindDn() {
     const setting = this.collections.settings.findOne({ _id: "ldapSearchBindDn" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
+  async getLdapSearchBindDnAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "ldapSearchBindDn" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
@@ -1781,13 +2175,28 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
+  async getLdapSearchBindPasswordAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "ldapSearchBindPassword" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
   getLdapCaCert() {
     const setting = this.collections.settings.findOne({ _id: "ldapCaCert" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
+  async getLdapCaCertAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "ldapCaCert" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
   getOrganizationMembership() {
     const setting = this.collections.settings.findOne({ _id: "organizationMembership" });
+    return setting && setting.value;
+  },
+
+  async getOrganizationMembershipAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "organizationMembership" });
     return setting && setting.value;
   },
 
@@ -1830,8 +2239,17 @@ _.extend(SandstormDb.prototype, {
     return this.getOrganizationDisallowGuestsRaw();
   },
 
+  async getOrganizationDisallowGuestsAsync() {
+    return await this.getOrganizationDisallowGuestsRawAsync();
+  },
+
   getOrganizationDisallowGuestsRaw() {
     const setting = this.collections.settings.findOne({ _id: "organizationSettings" });
+    return setting && setting.value && setting.value.disallowGuests;
+  },
+
+  async getOrganizationDisallowGuestsRawAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "organizationSettings" });
     return setting && setting.value && setting.value.disallowGuests;
   },
 
@@ -1839,8 +2257,22 @@ _.extend(SandstormDb.prototype, {
     return this.getOrganizationShareContactsRaw();
   },
 
+  async getOrganizationShareContactsAsync() {
+    return await this.getOrganizationShareContactsRawAsync();
+  },
+
   getOrganizationShareContactsRaw() {
     const setting = this.collections.settings.findOne({ _id: "organizationSettings" });
+    if (!setting || !setting.value || setting.value.shareContacts === undefined) {
+      // default to true if undefined
+      return true;
+    } else {
+      return setting.value.shareContacts;
+    }
+  },
+
+  async getOrganizationShareContactsRawAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "organizationSettings" });
     if (!setting || !setting.value || setting.value.shareContacts === undefined) {
       // default to true if undefined
       return true;
@@ -1854,8 +2286,18 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
+  async getSamlEntryPointAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "samlEntryPoint" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
   getSamlLogout() {
     const setting = this.collections.settings.findOne({ _id: "samlLogout" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
+  async getSamlLogoutAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "samlLogout" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
@@ -1864,8 +2306,18 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
+  async getSamlPublicCertAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "samlPublicCert" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
   getSamlEntityId() {
     const setting = this.collections.settings.findOne({ _id: "samlEntityId" });
+    return setting ? setting.value : ""; // empty if subscription is not ready.
+  },
+
+  async getSamlEntityIdAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "samlEntityId" });
     return setting ? setting.value : ""; // empty if subscription is not ready.
   },
 
@@ -1894,6 +2346,15 @@ _.extend(SandstormDb.prototype, {
     }).fetch();
   },
 
+  async getActivitySubscriptionsAsync(grainId, threadPath) {
+    return await this.collections.activitySubscriptions.find({
+      grainId: grainId,
+      threadPath: threadPath || { $exists: false },
+    }, {
+      fields: { accountId: 1, mute: 1, _id: 0 },
+    }).fetchAsync();
+  },
+
   subscribeToActivity(accountId, grainId, threadPath) {
     // Subscribe the given user to activity events with the given grainId and (optional)
     // threadPath -- unless the user has previously muted this grainId/threadPath, in which
@@ -1911,6 +2372,17 @@ _.extend(SandstormDb.prototype, {
     this.collections.activitySubscriptions.upsert(record, { $set: record });
   },
 
+  async subscribeToActivityAsync(accountId, grainId, threadPath) {
+    // Async-safe server variant of subscribeToActivity().
+    const record = { accountId, grainId };
+    if (threadPath) {
+      record.threadPath = threadPath;
+    }
+
+    // Keep selector/modifier semantics identical to subscribeToActivity().
+    await this.collections.activitySubscriptions.upsertAsync(record, { $set: record });
+  },
+
   muteActivity(accountId, grainId, threadPath) {
     // Mute notifications for the given user originating from the given grainId and
     // (optional) threadPath.
@@ -1924,7 +2396,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   async updateAppIndex() {
-    const appUpdatesEnabledSetting = this.collections.settings.findOne({ _id: "appUpdatesEnabled" });
+    const appUpdatesEnabledSetting = await this.collections.settings.findOneAsync({ _id: "appUpdatesEnabled" });
     const appUpdatesEnabled = appUpdatesEnabledSetting && appUpdatesEnabledSetting.value;
     if (!appUpdatesEnabled) {
       // It's much simpler to check appUpdatesEnabled here rather than reactively deactivate the
@@ -1932,23 +2404,25 @@ _.extend(SandstormDb.prototype, {
       return;
     }
 
-    const appIndexUrl = this.collections.settings.findOne({ _id: "appIndexUrl" }).value;
+    const appIndexUrlSetting = await this.collections.settings.findOneAsync({ _id: "appIndexUrl" });
+    const appIndexUrl = appIndexUrlSetting && appIndexUrlSetting.value;
+    if (!appIndexUrl) return;
     const appIndex = this.collections.appIndex;
     const data = (await httpCallAsync("GET", appIndexUrl + "/apps/index.json")).data;
-    const preinstalledAppIds = this.getAllPreinstalledAppIds();
+    const preinstalledAppIds = await this.getAllPreinstalledAppIdsAsync();
     // We make sure to get all preinstalled appIds, even ones that are currently
     // downloading/failed.
-    data.apps.forEach((app) => {
+    for (const app of data.apps) {
       app._id = app.appId;
 
-      const oldApp = appIndex.findOne({ _id: app.appId });
+      const oldApp = await appIndex.findOneAsync({ _id: app.appId });
       app.hasSentNotifications = false;
-      appIndex.upsert({ _id: app._id }, app);
+      await appIndex.upsertAsync({ _id: app._id }, app);
       const isAppPreinstalled = _.contains(preinstalledAppIds, app.appId);
       if ((!oldApp || app.versionNumber > oldApp.versionNumber) &&
-          (this.collections.userActions.findOne({ appId: app.appId }) ||
+          (await this.collections.userActions.findOneAsync({ appId: app.appId }) ||
           isAppPreinstalled)) {
-        const pack = this.collections.packages.findOne({ _id: app.packageId });
+        const pack = await this.collections.packages.findOneAsync({ _id: app.packageId });
         const url = appIndexUrl + "/packages/" + app.packageId;
         if (pack) {
           if (pack.status === "ready") {
@@ -1956,20 +2430,20 @@ _.extend(SandstormDb.prototype, {
               console.error("app index returned app ID and package ID that don't match:",
                             JSON.stringify(app));
             } else {
-              this.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber,
-                app.version);
+              await this.sendAppUpdateNotificationsAsync(
+                  app.appId, app.packageId, app.name, app.versionNumber, app.version);
               if (isAppPreinstalled) {
-                this.setPreinstallAppAsReady(app.appId, app.packageId);
+                await this.setPreinstallAppAsReadyAsync(app.appId, app.packageId);
               }
             }
           } else {
-            this.collections.packages.update(
+            await this.collections.packages.updateAsync(
                 { _id: app.packageId },
                 { $set: { isAutoUpdated: true } });
 
-            const newPack = this.collections.packages.findOne({ _id: app.packageId });
+            const newPack = await this.collections.packages.findOneAsync({ _id: app.packageId });
             if (!newPack) {
-              return;
+              continue;
             }
             if (newPack.status === "ready") {
               // The package was marked as ready before we applied isAutoUpdated=true. We should send
@@ -1979,22 +2453,22 @@ _.extend(SandstormDb.prototype, {
                 console.error("app index returned app ID and package ID that don't match:",
                               JSON.stringify(app));
               } else {
-                this.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber,
-                  app.version);
+                await this.sendAppUpdateNotificationsAsync(
+                    app.appId, app.packageId, app.name, app.versionNumber, app.version);
                 if (isAppPreinstalled) {
-                  this.setPreinstallAppAsReady(app.appId, app.packageId);
+                  await this.setPreinstallAppAsReadyAsync(app.appId, app.packageId);
                 }
               }
             } else if (newPack.status === "failed") {
               // If the package has failed, retry it
-              this.startInstall(app.packageId, url, true, true);
+              await this.startInstallAsync(app.packageId, url, true, true);
             }
           }
         } else {
-          this.startInstall(app.packageId, url, false, true);
+          await this.startInstallAsync(app.packageId, url, false, true);
         }
       }
-    });
+    }
   },
 
   isPackagePreinstalled(packageId) {
@@ -2009,9 +2483,27 @@ _.extend(SandstormDb.prototype, {
     return setting && setting.value && setting.value[0] && setting.value[0].appId;
   },
 
+  async getAppIdForPreinstalledPackageAsync(packageId) {
+    const setting = await this.collections.settings.findOneAsync(
+        { _id: "preinstalledApps", "value.packageId": packageId },
+        { fields: { "value.$": 1 } });
+    return setting && setting.value && setting.value[0] && setting.value[0].appId;
+  },
+
   getPackageIdForPreinstalledApp(appId) {
     const setting = this.collections.settings.findOne({ _id: "preinstalledApps", "value.appId": appId },
     { fields: { "value.$": 1 } });
+    // value.$ causes mongo to transform the result and only return the first matching element in
+    // the array
+    return setting && setting.value && setting.value[0] && setting.value[0].packageId;
+  },
+
+  async getPackageIdForPreinstalledAppAsync(appId) {
+    const setting = await this.collections.settings.findOneAsync(
+      { _id: "preinstalledApps", "value.appId": appId },
+      { fields: { "value.$": 1 } },
+    );
+
     // value.$ causes mongo to transform the result and only return the first matching element in
     // the array
     return setting && setting.value && setting.value[0] && setting.value[0].packageId;
@@ -2024,6 +2516,21 @@ _.extend(SandstormDb.prototype, {
             .filter((app) => { return app.status === "ready"; })
             .map((app) => { return app.appId; })
             .value();
+  },
+
+  async getReadyPreinstalledAppIdsAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "preinstalledApps" });
+    const ret = setting && setting.value || [];
+    return _.chain(ret)
+            .filter((app) => { return app.status === "ready"; })
+            .map((app) => { return app.appId; })
+            .value();
+  },
+
+  async getAllPreinstalledAppIdsAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "preinstalledApps" });
+    const ret = setting && setting.value || [];
+    return _.map(ret, (app) => { return app.appId; });
   },
 
   getAllPreinstalledAppIds() {
@@ -2043,8 +2550,28 @@ _.extend(SandstormDb.prototype, {
     });
   },
 
+  async preinstallAppsForUserAsync(userId) {
+    const appIds = await this.getReadyPreinstalledAppIdsAsync();
+    for (const appId of appIds) {
+      try {
+        const packageId = await this.getPackageIdForPreinstalledAppAsync(appId);
+        if (packageId) {
+          await this.addUserActionsAsync(userId, packageId);
+        }
+      } catch (e) {
+        console.error("failed to install app for user:", e);
+      }
+    }
+  },
+
   setPreinstallAppAsDownloading(appId, packageId) {
     this.collections.settings.update(
+      { _id: "preinstalledApps", "value.appId": appId, "value.packageId": packageId },
+      { $set: { "value.$.status": "downloading" } });
+  },
+
+  async setPreinstallAppAsDownloadingAsync(appId, packageId) {
+    await this.collections.settings.updateAsync(
       { _id: "preinstalledApps", "value.appId": appId, "value.packageId": packageId },
       { $set: { "value.$.status": "downloading" } });
   },
@@ -2054,6 +2581,13 @@ _.extend(SandstormDb.prototype, {
     // Setting the packageId is especially useful in installer.js, as it always ensures the
     // latest installed package will be set as ready.
     this.collections.settings.update(
+      { _id: "preinstalledApps", "value.appId": appId },
+      { $set: { "value.$.status": "ready", "value.$.packageId": packageId } });
+  },
+
+  async setPreinstallAppAsReadyAsync(appId, packageId) {
+    // Async server-side equivalent of setPreinstallAppAsReady().
+    await this.collections.settings.updateAsync(
       { _id: "preinstalledApps", "value.appId": appId },
       { $set: { "value.$.status": "ready", "value.$.packageId": packageId } });
   },
@@ -2071,6 +2605,24 @@ _.extend(SandstormDb.prototype, {
     } else {
       this.setPreinstallAppAsDownloading(appId, packageId);
       this.startInstall(packageId, url, false, false);
+    }
+  },
+
+  async ensureAppPreinstallAsync(appId, packageId) {
+    check(appId, String);
+    const appIndexUrlSetting = await this.collections.settings.findOneAsync({ _id: "appIndexUrl" });
+    const appIndexUrl = appIndexUrlSetting && appIndexUrlSetting.value;
+    if (!appIndexUrl) return;
+    const pack = await this.collections.packages.findOneAsync({ _id: packageId });
+    const url = appIndexUrl + "/packages/" + packageId;
+    if (pack && pack.status === "ready") {
+      await this.setPreinstallAppAsReadyAsync(appId, packageId);
+    } else if (pack && pack.status === "failed") {
+      await this.setPreinstallAppAsDownloadingAsync(appId, packageId);
+      await this.startInstallAsync(packageId, url, true, false);
+    } else {
+      await this.setPreinstallAppAsDownloadingAsync(appId, packageId);
+      await this.startInstallAsync(packageId, url, false, false);
     }
   },
 
@@ -2093,6 +2645,24 @@ _.extend(SandstormDb.prototype, {
     appAndPackageIds.forEach((data) => {
       this.ensureAppPreinstall(data.appId, data.packageId);
     });
+  },
+
+  async setPreinstalledAppsAsync(appAndPackageIds) {
+    check(appAndPackageIds, [{ appId: String, packageId: String, }]);
+
+    await this.collections.settings.upsertAsync({ _id: "preinstalledApps" }, { $set: {
+      value: appAndPackageIds.map((data) => {
+        return {
+          appId: data.appId,
+          status: "notReady",
+          packageId: data.packageId,
+        };
+      }),
+    }, });
+
+    for (const data of appAndPackageIds) {
+      await this.ensureAppPreinstallAsync(data.appId, data.packageId);
+    }
   },
 
   getProductivitySuiteAppIds() {
@@ -2150,14 +2720,26 @@ _.extend(SandstormDb.prototype, {
     return setting && setting.value;
   },
 
+  async isQuotaEnabledAsync() {
+    if (Meteor.settings.public.quotaEnabled) return true;
+
+    const setting = await this.collections.settings.findOneAsync({ _id: "quotaEnabled" });
+    return setting && setting.value;
+  },
+
   isQuotaLdapEnabled() {
     const setting = this.collections.settings.findOne({ _id: "quotaLdapEnabled" });
     return setting && setting.value;
   },
 
-  updateUserQuota(user) {
+  async isQuotaLdapEnabledAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "quotaLdapEnabled" });
+    return setting && setting.value;
+  },
+
+  async updateUserQuota(user) {
     if (this.quotaManager) {
-      return this.quotaManager.updateUserQuota(this, user);
+      return await this.quotaManager.updateUserQuota(this, user);
     }
   },
 
@@ -2170,6 +2752,25 @@ _.extend(SandstormDb.prototype, {
     } else {
       const plan = this.getPlan(user.plan || "free", user);
       const referralBonus = plan.grains > 0 ? calculateReferralBonus(user) : {storage: 0, grains: 0};
+      const bonus = plan.grains > 0 ? user.planBonus || {} : {};
+      const userQuota = {
+        storage: plan.storage + referralBonus.storage + (bonus.storage || 0),
+        grains: plan.grains + referralBonus.grains + (bonus.grains || 0),
+        compute: plan.compute + (bonus.compute || 0),
+      };
+      return userQuota;
+    }
+  },
+
+  async getUserQuotaAsync(user) {
+    if (await this.isQuotaLdapEnabledAsync()) {
+      return await this.quotaManager.updateUserQuota(this, user);
+    } else if (user.expires) {
+      // HACK: Hard-coded demo user quota now that free plan doesn't allow creating grains...
+      return { storage: 200000000, grains: 5, compute: 72000000000 }
+    } else {
+      const plan = await this.getPlanAsync(user.plan || "free", user);
+      const referralBonus = plan.grains > 0 ? calculateReferralBonus(user) : { storage: 0, grains: 0 };
       const bonus = plan.grains > 0 ? user.planBonus || {} : {};
       const userQuota = {
         storage: plan.storage + referralBonus.storage + (bonus.storage || 0),
@@ -2199,6 +2800,21 @@ _.extend(SandstormDb.prototype, {
     return plan && user.storageUsage && user.storageUsage >= plan.storage && "outOfStorage";
   },
 
+  async isUserOverQuotaAsync(user) {
+    // Async server-side equivalent of isUserOverQuota().
+    if (!await this.isQuotaEnabledAsync() || user.isAdmin) return false;
+
+    const plan = await this.getUserQuotaAsync(user);
+    if (plan.grains < Infinity) {
+      const count = await this.collections.grains.find(
+          { userId: user._id, trashed: { $exists: false } },
+          { fields: {}, limit: plan.grains }).countAsync();
+      if (count >= plan.grains) return "outOfGrains";
+    }
+
+    return plan && user.storageUsage && user.storageUsage >= plan.storage && "outOfStorage";
+  },
+
   isUserExcessivelyOverQuota(user) {
     // Return true if user is so far over quota that we should prevent their existing grains from
     // running at all.
@@ -2219,7 +2835,24 @@ _.extend(SandstormDb.prototype, {
     return quota && user.storageUsage && user.storageUsage >= quota.storage * 1.2 && "outOfStorage";
   },
 
-  suspendCredential(credentialId, suspension) {
+  async isUserExcessivelyOverQuotaAsync(user) {
+    // Async server-side equivalent of isUserExcessivelyOverQuota().
+    if (!await this.isQuotaEnabledAsync() || user.isAdmin) return false;
+
+    const quota = await this.getUserQuotaAsync(user);
+
+    // quota.grains = Infinity means unlimited grains. IEEE754 defines Infinity == Infinity.
+    if (quota.grains < Infinity) {
+      const count = await this.collections.grains.find(
+          { userId: user._id, trashed: { $exists: false } },
+          { fields: {}, limit: quota.grains * 2 }).countAsync();
+      if (count >= quota.grains * 2) return "outOfGrains";
+    }
+
+    return quota && user.storageUsage && user.storageUsage >= quota.storage * 1.2 && "outOfStorage";
+  },
+
+  async suspendCredential(credentialId, suspension) {
     check(credentialId, String);
     check(suspension, {
       timestamp: Date,
@@ -2227,21 +2860,21 @@ _.extend(SandstormDb.prototype, {
       voluntary: Match.Optional(Boolean),
     });
 
-    this.collections.users.update({ _id: credentialId }, { $set: { suspended: suspension } });
+    await this.collections.users.updateAsync({ _id: credentialId }, { $set: { suspended: suspension } });
   },
 
-  unsuspendCredential(credentialId) {
+  async unsuspendCredential(credentialId) {
     check(credentialId, String);
 
-    this.collections.users.update({ _id: credentialId }, { $unset: { suspended: 1 } });
+    await this.collections.users.updateAsync({ _id: credentialId }, { $unset: { suspended: 1 } });
   },
 
-  suspendAccount(userId, byAdminUserId, willDelete) {
+  async suspendAccount(userId, byAdminUserId, willDelete) {
     check(userId, String);
     check(byAdminUserId, Match.OneOf(String, null, undefined));
     check(willDelete, Boolean);
 
-    const user = this.collections.users.findOne({ _id: userId });
+    const user = await this.collections.users.findOneAsync({ _id: userId });
     const suspension = {
       timestamp: new Date(),
       willDelete: willDelete || false,
@@ -2252,66 +2885,67 @@ _.extend(SandstormDb.prototype, {
       suspension.voluntary = true;
     }
 
-    this.collections.users.update({ _id: userId }, { $set: { suspended: suspension } });
-    this.collections.grains.update({ userId: userId }, { $set: { suspended: true } }, { multi: true });
+    await this.collections.users.updateAsync({ _id: userId }, { $set: { suspended: suspension } });
+    await this.collections.grains.updateAsync({ userId: userId }, { $set: { suspended: true } }, { multi: true });
 
-    this.collections.apiTokens.update({ "owner.user.accountId": userId },
+    await this.collections.apiTokens.updateAsync({ "owner.user.accountId": userId },
       { $set: { suspended: true } }, { multi: true });
 
     delete suspension.willDelete;
     // Only mark the parent account for deletion. This makes the query simpler later.
 
-    user.loginCredentials.forEach((credential) => {
-      this.suspendCredential(credential.id, suspension);
-    });
-    user.nonloginCredentials.forEach((credential) => {
-      if (this.collections.users.find({ $or: [
+    for (const credential of user.loginCredentials) {
+      await this.suspendCredential(credential.id, suspension);
+    }
+
+    for (const credential of user.nonloginCredentials) {
+      if (await this.collections.users.find({ $or: [
         { "loginCredentials.id": credential.id },
         { "nonloginCredentials.id": credential.id },
-      ], }).count() === 1) {
+      ], }).countAsync() === 1) {
         // Only suspend non-login credential that are unique to this account.
-        this.suspendCredential(credential.id, suspension);
+        await this.suspendCredential(credential.id, suspension);
       }
-    });
+    }
 
     // Force logout this user
-    this.collections.users.update({ _id: userId },
+    await this.collections.users.updateAsync({ _id: userId },
       { $unset: { "services.resume.loginTokens": 1 } });
     if (user && user.loginCredentials) {
-      user.loginCredentials.forEach(function (credential) {
-        Meteor.users.update({ _id: credential.id },
+      for (const credential of user.loginCredentials) {
+        await Meteor.users.updateAsync({ _id: credential.id },
             { $unset: { "services.resume.loginTokens": 1 } });
-      });
+      }
     }
   },
 
-  unsuspendAccount(userId) {
+  async unsuspendAccount(userId) {
     check(userId, String);
 
-    const user = this.collections.users.findOne({ _id: userId });
-    this.collections.users.update({ _id: userId }, { $unset: { suspended: 1 } });
-    this.collections.grains.update({ userId: userId }, { $unset: { suspended: 1 } }, { multi: true });
+    const user = await this.collections.users.findOneAsync({ _id: userId });
+    await this.collections.users.updateAsync({ _id: userId }, { $unset: { suspended: 1 } });
+    await this.collections.grains.updateAsync({ userId: userId }, { $unset: { suspended: 1 } }, { multi: true });
 
-    this.collections.apiTokens.update({ "owner.user.accountId": userId },
+    await this.collections.apiTokens.updateAsync({ "owner.user.accountId": userId },
       { $unset: { suspended: true } }, { multi: true });
 
-    user.loginCredentials.forEach((credential) => {
-      this.unsuspendCredential(credential.id);
-    });
+    for (const credential of user.loginCredentials) {
+      await this.unsuspendCredential(credential.id);
+    }
 
-    user.nonloginCredentials.forEach((credential) => {
-      this.unsuspendCredential(credential.id);
-    });
+    for (const credential of user.nonloginCredentials) {
+      await this.unsuspendCredential(credential.id);
+    }
   },
 
   async deletePendingAccounts(deletionCoolingOffTime, backend, cb) {
     check(deletionCoolingOffTime, Number);
 
     const queryDate = new Date(Date.now() - deletionCoolingOffTime);
-    const users = this.collections.users.find({
+    const users = await this.collections.users.find({
       "suspended.willDelete": true,
       "suspended.timestamp": { $lt: queryDate },
-    }).fetch();
+    }).fetchAsync();
     for (const user of users) {
       if (cb) cb(this, user);
       await this.deleteAccount(user._id, backend);
@@ -2551,6 +3185,47 @@ if (Meteor.isServer) {
     }, metadata));
   };
 
+  SandstormDb.prototype.addStaticAssetAsync = async function (metadata, content) {
+    // Async server-side equivalent of addStaticAsset().
+    if (typeof content === "string" && !metadata.encoding) {
+      content = gzipSync(Buffer.from(content, "utf8"));
+      metadata.encoding = "gzip";
+    }
+
+    check(metadata, {
+      mimeType: String,
+      encoding: Match.Optional("gzip"),
+    });
+    check(content, BufferSmallerThan(1 << 20));
+
+    metadata.mimeType = ContentType.format(ContentType.parse(metadata.mimeType));
+
+    const hasher = Crypto.createHash("sha256");
+    hasher.update(metadata.mimeType + "\n" + metadata.encoding + "\n", "utf8");
+    hasher.update(content);
+    const hash = hasher.digest("base64");
+
+    const existing = await this.collections.staticAssets.findOneAsync(
+        { hash: hash, refcount: { $gte: 1 } },
+        { fields: { _id: 1 } });
+    if (existing) {
+      const modified = await this.collections.staticAssets.updateAsync(
+          { _id: existing._id },
+          { $inc: { refcount: 1 } });
+      if (modified === 0) {
+        throw new Error(`Couldn't increment refcount of asset with hash ${hash}`);
+      }
+
+      return existing._id;
+    }
+
+    return await this.collections.staticAssets.insertAsync(_.extend({
+      hash: hash,
+      content: content,
+      refcount: 1,
+    }, metadata));
+  };
+
   SandstormDb.prototype.refStaticAsset = function (id) {
     // Increment the refcount on an existing static asset. Returns the asset on success.
     // If the asset does not exist, returns a falsey value.
@@ -2569,6 +3244,22 @@ if (Meteor.isServer) {
     }
 
     return this.collections.staticAssets.findOne(
+        { _id: id },
+        { fields: { _id: 1, content: 1, mimeType: 1 } });
+  };
+
+  SandstormDb.prototype.refStaticAssetAsync = async function (id) {
+    // Async server-side equivalent of refStaticAsset().
+    check(id, String);
+
+    const modified = await this.collections.staticAssets.updateAsync(
+        { _id: id },
+        { $inc: { refcount: 1 } });
+    if (modified === 0) {
+      throw new Error(`Couldn't increment refcount of asset with hash ${id}`);
+    }
+
+    return await this.collections.staticAssets.findOneAsync(
         { _id: id },
         { fields: { _id: 1, content: 1, mimeType: 1 } });
   };
@@ -2599,6 +3290,27 @@ if (Meteor.isServer) {
     }
   };
 
+  SandstormDb.prototype.unrefStaticAssetAsync = async function (id) {
+    // Async server-side equivalent of unrefStaticAsset().
+    check(id, String);
+
+    const modified = await this.collections.staticAssets.updateAsync(
+        { _id: id },
+        { $inc: { refcount: -1 } });
+    if (modified === 0) {
+      throw new Error(`Couldn't unref static asset ${id}`);
+    }
+
+    const existing = await this.collections.staticAssets.findOneAsync(
+        { _id: id },
+        { fields: { _id: 1, refcount: 1 } });
+    if (!existing) {
+      console.error(new Error("unrefStaticAssetAsync() called on asset that doesn't exist").stack);
+    } else if (existing.refcount <= 0) {
+      await this.collections.staticAssets.removeAsync({ _id: existing._id });
+    }
+  };
+
   SandstormDb.prototype.getStaticAsset = function (id) {
     // Get a static asset's mimeType, encoding, and raw content.
 
@@ -2614,6 +3326,19 @@ if (Meteor.isServer) {
     return asset;
   };
 
+  SandstormDb.prototype.getStaticAssetAsync = async function (id) {
+    // Async server-side equivalent of getStaticAsset().
+    check(id, String);
+
+    const asset = await this.collections.staticAssets.findOneAsync(
+        id, { fields: { _id: 0, mimeType: 1, encoding: 1, content: 1 } });
+    if (asset) {
+      asset.content = new Buffer(asset.content);
+    }
+
+    return asset;
+  };
+
   SandstormDb.prototype.newAssetUpload = function (purpose) {
     check(purpose, Match.OneOf(
       { profilePicture: { userId: DatabaseId } },
@@ -2621,6 +3346,18 @@ if (Meteor.isServer) {
     ));
 
     return this.collections.assetUploadTokens.insert({
+      purpose: purpose,
+      expires: new Date(Date.now() + 300000),  // in 5 minutes
+    });
+  };
+
+  SandstormDb.prototype.newAssetUploadAsync = async function (purpose) {
+    check(purpose, Match.OneOf(
+      { profilePicture: { userId: DatabaseId } },
+      { loginLogo: {} }
+    ));
+
+    return await this.collections.assetUploadTokens.insertAsync({
       purpose: purpose,
       expires: new Date(Date.now() + 300000),  // in 5 minutes
     });
@@ -2648,8 +3385,32 @@ if (Meteor.isServer) {
     }
   };
 
+  SandstormDb.prototype.fulfillAssetUploadAsync = async function (id) {
+    // Async server-side equivalent of fulfillAssetUpload().
+    check(id, String);
+
+    const upload = await this.collections.assetUploadTokens.findOneAsync({ _id: id });
+    if (!upload) {
+      return undefined;
+    }
+    const removed = await this.collections.assetUploadTokens.removeAsync({ _id: id });
+    if (removed === 0) {
+      throw new Error("Failed to remove asset upload token");
+    }
+
+    if (upload.expires.valueOf() < Date.now()) {
+      return undefined;  // already expired
+    } else {
+      return upload.purpose;
+    }
+  };
+
   SandstormDb.prototype.cleanupExpiredAssetUploads = function () {
     this.collections.assetUploadTokens.remove({ expires: { $lt: Date.now() } });
+  };
+
+  SandstormDb.prototype.cleanupExpiredAssetUploadsAsync = async function () {
+    await this.collections.assetUploadTokens.removeAsync({ expires: { $lt: Date.now() } });
   };
 
   SandstormDb.prototype.deleteGrains = async function (query, backend, type) {
@@ -2658,13 +3419,13 @@ if (Meteor.isServer) {
     check(type, Match.OneOf("grain", "demoGrain"));
 
     let numDeleted = 0;
-    const grains = this.collections.grains.find(query, { fields: { oldUsers: 0 } }).fetch();
+    const grains = await this.collections.grains.find(query, { fields: { oldUsers: 0 } }).fetchAsync();
     for (const grain of grains) {
-      const user = Meteor.users.findOne(grain.userId);
+      const user = await Meteor.users.findOneAsync(grain.userId);
 
       await backend.deleteGrain(grain._id, grain.userId);
-      numDeleted += this.collections.grains.remove({ _id: grain._id });
-      this.removeApiTokens({
+      numDeleted += await this.collections.grains.removeAsync({ _id: grain._id });
+      await this.removeApiTokensAsync({
         grainId: grain._id,
         $or: [
           { owner: { $exists: false } },
@@ -2672,9 +3433,9 @@ if (Meteor.isServer) {
         ],
       });
 
-      this.removeApiTokens({ "owner.grain.grainId": grain._id });
+      await this.removeApiTokensAsync({ "owner.grain.grainId": grain._id });
 
-      this.collections.activitySubscriptions.remove({ grainId: grain._id });
+      await this.collections.activitySubscriptions.removeAsync({ grainId: grain._id });
 
       if (grain.lastUsed) {
         const record = {
@@ -2686,17 +3447,20 @@ if (Meteor.isServer) {
           record.experiments = user.experiments;
         }
 
-        this.collections.deleteStats.insert(record);
+        await this.collections.deleteStats.insertAsync(record);
       }
 
-      this.collections.scheduledJobs.find({ grainId: grain._id }).forEach((job) => {
-        this.deleteScheduledJob(job._id);
+      const jobs = await this.collections.scheduledJobs.find({ grainId: grain._id }).fetchAsync();
+      jobs.forEach((job) => {
+        this.deleteScheduledJob(job._id).catch((err) => {
+          console.error("Failed deleting scheduled job for deleted grain:", err);
+        });
       });
 
-      this.deleteUnusedPackages(grain.appId);
+      await this.deleteUnusedPackagesAsync(grain.appId);
 
       if (grain.size) {
-        Meteor.users.update(grain.userId, { $inc: { storageUsage: -grain.size } });
+        await Meteor.users.updateAsync(grain.userId, { $inc: { storageUsage: -grain.size } });
       }
     }
     return numDeleted;
@@ -2715,6 +3479,36 @@ if (Meteor.isServer) {
     let title = grain.title;
     if (grain.userId !== accountId) {
       const sharerToken = this.collections.apiTokens.findOne({
+        grainId: grainId,
+        "owner.user.accountId": accountId,
+      }, {
+        sort: {
+          lastUsed: -1,
+        },
+      });
+      if (sharerToken) {
+        title = sharerToken.owner.user.title;
+      } else {
+        title = "shared grain";
+      }
+    }
+
+    return title;
+  };
+
+  SandstormDb.prototype.userGrainTitleAsync = async function (grainId, accountId, obsolete) {
+    check(grainId, String);
+    check(accountId, Match.OneOf(String, undefined, null));
+    check(obsolete, undefined);
+
+    const grain = await this.getGrainAsync(grainId);
+    if (!grain) {
+      throw new Error("called userGrainTitleAsync() for a grain that doesn't exist");
+    }
+
+    let title = grain.title;
+    if (grain.userId !== accountId) {
+      const sharerToken = await this.collections.apiTokens.findOneAsync({
         grainId: grainId,
         "owner.user.accountId": accountId,
       }, {
@@ -2752,12 +3546,32 @@ if (Meteor.isServer) {
     return pkg;
   };
 
+  SandstormDb.prototype.getPackageAsync = async function (packageId) {
+    // Async version of getPackage() for server paths that cannot use sync findOne().
+    if (packageId in packageCache) {
+      return packageCache[packageId];
+    }
+
+    const pkg = await this.collections.packages.findOneAsync(packageId);
+    if (pkg && pkg.status === "ready") {
+      packageCache[packageId] = pkg;
+    }
+
+    return pkg;
+  };
+
   SandstormDb.prototype.deleteUnusedPackages = function (appId) {
     check(appId, String);
     this.collections.packages.find({ appId: appId }).forEach((pkg) => {
       // Mark package for possible deletion;
       this.collections.packages.update({ _id: pkg._id, status: "ready" }, { $set: { shouldCleanup: true } });
     });
+  };
+
+  SandstormDb.prototype.deleteUnusedPackagesAsync = async function (appId) {
+    check(appId, String);
+    await this.collections.packages.updateAsync(
+        { appId: appId, status: "ready" }, { $set: { shouldCleanup: true } }, { multi: true });
   };
 
   SandstormDb.prototype.sendAppUpdateNotifications = function (appId, packageId, name,
@@ -2798,6 +3612,38 @@ if (Meteor.isServer) {
     this.deleteUnusedPackages(appId);
   };
 
+  SandstormDb.prototype.sendAppUpdateNotificationsAsync = async function (appId, packageId, name,
+                                                                          versionNumber, marketingVersion) {
+    const actions = await this.collections.userActions.find(
+        { appId: appId, appVersion: { $lt: versionNumber } },
+        { fields: { userId: 1 } }).fetchAsync();
+    for (const action of actions) {
+      const userId = action.userId;
+      const updater = {
+        timestamp: new Date(),
+        isUnread: true,
+      };
+      const inserter = _.extend({ userId, appUpdates: {} }, updater);
+
+      inserter.appUpdates[appId] = updater["appUpdates." + appId] = {
+        marketingVersion: marketingVersion,
+        packageId: packageId,
+        name: name,
+        version: versionNumber,
+      };
+
+      if (await this.collections.notifications.updateAsync(
+          { userId: userId, appUpdates: { $exists: true } },
+          { $set: updater }) == 0) {
+        await this.collections.notifications.insertAsync(inserter);
+      }
+    }
+
+    await this.collections.appIndex.updateAsync(
+        { _id: appId }, { $set: { hasSentNotifications: true } });
+    await this.deleteUnusedPackagesAsync(appId);
+  };
+
   SandstormDb.prototype.sendReferralProgramNotification = function (userId) {
     // obsolete
   };
@@ -2823,6 +3669,28 @@ if (Meteor.isServer) {
     }, { multi: true });
   };
 
+  SandstormDb.prototype.upgradeGrainsAsync = async function (appId, version, packageId, backend) {
+    check(appId, String);
+    check(version, Match.Integer);
+    check(packageId, String);
+
+    const selector = {
+      userId: Meteor.userId(),
+      appId: appId,
+      appVersion: { $lte: version },
+      packageId: { $ne: packageId },
+    };
+
+    const grains = await this.collections.grains.find(selector, {fields: {oldUsers: 0}}).fetchAsync();
+    grains.forEach((grain) => {
+      backend.shutdownGrain(grain._id, grain.userId);
+    });
+
+    await this.collections.grains.updateAsync(selector, {
+      $set: { appVersion: version, packageId: packageId, packageSalt: Random.secret() },
+    }, { multi: true });
+  };
+
   SandstormDb.prototype.startInstall = function (packageId, url, retryFailed, isAutoUpdated) {
     // Mark package for possible installation.
 
@@ -2839,6 +3707,28 @@ if (Meteor.isServer) {
       try {
         fields._id = packageId;
         this.collections.packages.insert(fields);
+      } catch (err) {
+        console.error("Simultaneous startInstall()s?", err.stack);
+      }
+    }
+  };
+
+  SandstormDb.prototype.startInstallAsync = async function (packageId, url, retryFailed, isAutoUpdated) {
+    // Async server-side equivalent of startInstall().
+    const fields = {
+      status: "download",
+      progress: 0,
+      url: url,
+      isAutoUpdated: !!isAutoUpdated,
+    };
+
+    if (retryFailed) {
+      await this.collections.packages.updateAsync(
+          { _id: packageId, status: "failed" }, { $set: fields });
+    } else {
+      try {
+        fields._id = packageId;
+        await this.collections.packages.insertAsync(fields);
       } catch (err) {
         console.error("Simultaneous startInstall()s?", err.stack);
       }
@@ -2901,7 +3791,10 @@ if (Meteor.isServer) {
           proof.status = "unverified";
         });
 
-        this.collections.keybaseProfiles.update(keyFingerprint, { $set: record }, { upsert: true });
+        this.collections.keybaseProfiles.updateAsync(
+            keyFingerprint, { $set: record }, { upsert: true }).catch((err) => {
+          console.error("Failed updating keybase profile cache:", err);
+        });
       } else {
         // Keybase reports no match, so remove what we know of this user. We don't want to remove
         // the item entirely from the cache as this will cause us to repeatedly re-fetch the data
@@ -2909,8 +3802,12 @@ if (Meteor.isServer) {
         //
         // TODO(someday): We could perhaps keep the proofs if we can still verify them directly,
         //   but at present we don't have the ability to verify proofs.
-        this.collections.keybaseProfiles.update(keyFingerprint,
-            { $unset: { displayName: "", handle: "", proofs: "" } }, { upsert: true });
+        this.collections.keybaseProfiles.updateAsync(
+            keyFingerprint,
+            { $unset: { displayName: "", handle: "", proofs: "" } }, { upsert: true })
+            .catch((err) => {
+              console.error("Failed clearing keybase profile cache fields:", err);
+            });
       }
     });
   };
@@ -2933,12 +3830,12 @@ if (Meteor.isServer) {
     }
   };
 
-  Meteor.publish("keybaseProfile", function (keyFingerprint) {
+  Meteor.publish("keybaseProfile", async function (keyFingerprint) {
     check(keyFingerprint, ValidKeyFingerprint);
     const db = this.connection.sandstormDb;
 
     const cursor = db.collections.keybaseProfiles.find(keyFingerprint);
-    if (cursor.count() === 0) {
+    if (await cursor.countAsync() === 0) {
       // Fire off async update.
       db.updateKeybaseProfileAsync(keyFingerprint);
     }
@@ -2953,7 +3850,7 @@ if (Meteor.isServer) {
     return cursor;
   });
 
-  Meteor.publish("userPackages", function () {
+  Meteor.publish("userPackages", async function () {
     // Users should be able to see packages that are either:
     // 1. referenced by one of their userActions
     // 2. referenced by one of their grains
@@ -2976,16 +3873,19 @@ if (Meteor.isServer) {
 
       if (!hasPackage[packageId]) {
         hasPackage[packageId] = true;
-        const pkg = db.getPackage(packageId);
-        if (pkg) {
-          this.added("packages", packageId, pkg);
-        }
+        db.getPackageAsync(packageId).then((pkg) => {
+          if (pkg) {
+            this.added("packages", packageId, pkg);
+          }
+        }).catch((err) => {
+          console.error("Failed to fetch package in userPackages publish:", err);
+        });
       }
     };
 
     // package source 1: packages referred to by actions
     const actions = db.userActions(this.userId);
-    const actionsHandle = actions.observe({
+    const actionsHandle = await actions.observeAsync({
       added(newAction) {
         refPackage(newAction.packageId);
       },
@@ -2997,7 +3897,7 @@ if (Meteor.isServer) {
 
     // package source 2: packages referred to by grains directly
     const grains = db.userGrains(this.userId, { includeTrash: true });
-    const grainsHandle = grains.observe({
+    const grainsHandle = await grains.observeAsync({
       added(newGrain) {
         // Watch out: DevApp grains can lack a packageId.
         if (newGrain.packageId) {
@@ -3014,8 +3914,16 @@ if (Meteor.isServer) {
     });
 
     this.onStop(function () {
-      actionsHandle.stop();
-      grainsHandle.stop();
+      Promise.resolve(actionsHandle).then((h) => {
+        if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+      }).catch((err) => {
+        console.error("Failed to stop userPackages actions observer:", err);
+      });
+      Promise.resolve(grainsHandle).then((h) => {
+        if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+      }).catch((err) => {
+        console.error("Failed to stop userPackages grains observer:", err);
+      });
     });
 
     this.ready();
@@ -3089,53 +3997,109 @@ if (Meteor.isServer) {
       return SandstormDb.generateIdentityId();
     }
   };
+
+  SandstormDb.prototype.getOrGenerateIdentityIdAsync = async function (accountId, grain) {
+    // Async server-side equivalent of getOrGenerateIdentityId().
+    check(accountId, String);
+    check(grain, Match.ObjectIncluding({ _id: String, userId: String, identityId: String }));
+
+    if (accountId == grain.userId) {
+      return grain.identityId;
+    } else {
+      const existingToken = await this.collections.apiTokens.findOneAsync(
+          { "grainId": grain._id,
+            "owner.user.accountId": accountId,
+            "owner.user.identityId": { $exists: true } },
+          { fields: { "owner.user.identityId": 1 } });
+
+      if (existingToken) {
+        return existingToken.owner.user.identityId;
+      }
+
+      const user = await Meteor.users.findOneAsync(accountId);
+
+      const credentialIds = SandstormDb.getUserCredentialIds(user);
+      const grainWithOldUser = await this.collections.grains.findOneAsync(
+          {_id: grain._id, "oldUsers.credentialIds": {$in: credentialIds}},
+          { fields: { "oldUsers.$": 1 } });
+      if (grainWithOldUser) {
+        const restoredIdentityId = grainWithOldUser.oldUsers[0].identityId;
+        const existingRestored = await this.collections.apiTokens.findOneAsync(
+            { "grainId": grain._id, "owner.user.identityId": restoredIdentityId });
+        if (!existingRestored) {
+          return restoredIdentityId;
+        }
+      }
+
+      if (!grain.private) {
+        if (user && user.profile && user.profile.identicon) {
+          return user.profile.identicon;
+        } else {
+          throw new Meteor.Error(500, "Don't know how to identity user under old sharing model.");
+        }
+      }
+
+      return SandstormDb.generateIdentityId();
+    }
+  };
 }
 
 if (Meteor.isServer) {
-  SandstormDb.prototype.deleteCredential = function (credentialId) {
+  SandstormDb.prototype.deleteCredential = async function (credentialId) {
     check(credentialId, String);
 
-    Meteor.users.remove({ _id: credentialId });
+    await Meteor.users.removeAsync({ _id: credentialId });
   };
 
   SandstormDb.prototype.deleteAccount = async function (userId, backend) {
     check(userId, String);
 
-    const _this = this;
-    const user = Meteor.users.findOne({ _id: userId });
+    const user = await Meteor.users.findOneAsync({ _id: userId });
     await this.deleteGrains({ userId: userId }, backend, "grain");
-    this.removeApiTokens({ "owner.user.accountId": userId });
-    this.collections.userActions.remove({ userId: userId });
-    this.collections.notifications.remove({ userId: userId });
-    user.loginCredentials.forEach((credential) => {
-      if (Meteor.users.find({ $or: [
+    await this.removeApiTokensAsync({ "owner.user.accountId": userId });
+    await this.collections.userActions.removeAsync({ userId: userId });
+    await this.collections.notifications.removeAsync({ userId: userId });
+    for (const credential of user.loginCredentials) {
+      if (await Meteor.users.find({ $or: [
         { "loginCredentials.id": credential.id },
         { "nonloginCredentials.id": credential.id },
-      ], }).count() === 1) {
+      ], }).countAsync() === 1) {
         // If this is the only account with the credential, then delete it
-        _this.deleteCredential(credential.id);
+        await this.deleteCredential(credential.id);
       }
-    });
-    user.nonloginCredentials.forEach((credential) => {
-      if (Meteor.users.find({ $or: [
+    }
+
+    for (const credential of user.nonloginCredentials) {
+      if (await Meteor.users.find({ $or: [
         { "loginCredentials.id": credential.id },
         { "nonloginCredentials.id": credential.id },
-      ], }).count() === 1) {
+      ], }).countAsync() === 1) {
         // If this is the only account with the credential, then delete it
-        _this.deleteCredential(credential.id);
+        await this.deleteCredential(credential.id);
       }
-    });
-    this.collections.contacts.remove({ accountId: userId });
-    this.collections.contacts.remove({ ownerId: userId });
+    }
+
+    await this.collections.contacts.removeAsync({ accountId: userId });
+    await this.collections.contacts.removeAsync({ ownerId: userId });
     await backend.deleteUser(userId);
-    Meteor.users.remove({ _id: userId });
+    await Meteor.users.removeAsync({ _id: userId });
   };
 }
 
 Meteor.methods({
-  addUserActions(packageId) {
+  async addUserActions(packageId) {
     check(packageId, String);
-    if (!this.userId || !Meteor.user().loginCredentials || !isSignedUpOrDemo()) {
+    let user;
+    let signedUpOrDemo;
+    if (Meteor.isServer) {
+      user = await Meteor.users.findOneAsync({ _id: this.userId });
+      signedUpOrDemo = await this.connection.sandstormDb.isAccountSignedUpOrDemoAsync(user);
+    } else {
+      user = Meteor.user();
+      signedUpOrDemo = isSignedUpOrDemo();
+    }
+
+    if (!this.userId || !user || !user.loginCredentials || !signedUpOrDemo) {
       throw new Meteor.Exception(403, "Must be logged in as a non-guest to add app actions.");
     }
 
@@ -3144,7 +4108,7 @@ Meteor.methods({
       //   a proper DB object to use.
       new SandstormDb().addUserActions(this.userId, packageId, true);
     } else {
-      this.connection.sandstormDb.addUserActions(this.userId, packageId);
+      await this.connection.sandstormDb.addUserActionsAsync(this.userId, packageId);
     }
   },
 
@@ -3163,7 +4127,7 @@ Meteor.methods({
 
         const action = result.value;
         if (action) {
-          this.connection.sandstormDb.deleteUnusedPackages(action.appId);
+          await this.connection.sandstormDb.deleteUnusedPackagesAsync(action.appId);
         }
       }
     }

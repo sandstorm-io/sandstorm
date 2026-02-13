@@ -49,13 +49,13 @@ class SandstormCoreImpl {
   restore(sturdyRef) {
     return inMeteor(async () => {
       sturdyRef = sturdyRef.toString("utf8");
-      const token = fetchApiToken(this.db, sturdyRef,
+      const token = await fetchApiToken(this.db, sturdyRef,
           { "owner.grain.grainId": this.grainId });
       if (!token) {
         throw new Error("no such token");
       }
 
-      return await restoreInternal(this.db, sturdyRef,
+      return await globalThis.restoreInternal(this.db, sturdyRef,
           { grain: Match.ObjectIncluding({ grainId: this.grainId }) },
           [], token);
     });
@@ -70,8 +70,8 @@ class SandstormCoreImpl {
   }
 
   makeToken(ref, owner, requirements) {
-    return inMeteor(() => {
-      const sturdyRef = insertApiToken(this.db, {
+    return inMeteor(async () => {
+      const sturdyRef = await insertApiToken(this.db, {
         grainId: this.grainId,
         objectId: ref,
         owner: owner,
@@ -86,9 +86,9 @@ class SandstormCoreImpl {
   }
 
   makeChildToken(parent, owner, requirements) {
-    return inMeteor(() => {
+    return inMeteor(async () => {
       // Compute the save ApiToken template.
-      return makeSaveTemplateForChild(this.db, parent.toString(), requirements);
+      return await makeSaveTemplateForChild(this.db, parent.toString(), requirements);
     }).then(saveTemplate => {
       // Create a dummy PersistentImpl and invoke its own save() method.
       return new PersistentImpl(this.db, saveTemplate).save({ sealFor: owner });
@@ -104,7 +104,7 @@ class SandstormCoreImpl {
       owner: {
         addOngoing: (displayInfo, notification) => {
           return inMeteor(async () => {
-            const grain = this.db.collections.grains.findOne({ _id: grainId });
+            const grain = await this.db.collections.grains.findOneAsync({ _id: grainId });
             if (!grain) {
               throw new Error("Grain not found.");
             }
@@ -116,7 +116,7 @@ class SandstormCoreImpl {
             // node-capnp?
             castedNotification.close();
             notification.close();
-            const notificationId = this.db.collections.notifications.insert({
+            const notificationId = await this.db.collections.notifications.insertAsync({
               ongoing: wakelockToken,
               grainId: grainId,
               userId: grain.userId,
@@ -126,7 +126,7 @@ class SandstormCoreImpl {
             });
 
             return {
-              handle: globalFrontendRefRegistry.create(this.db,
+              handle: await globalThis.globalFrontendRefRegistry.create(this.db,
                   { notificationHandle: notificationId }),
             };
           });
@@ -137,7 +137,7 @@ class SandstormCoreImpl {
 
   backgroundActivity(event) {
     return inMeteor(() => {
-      return logActivity(this.grainId, null, event);
+      return globalThis.logActivity(this.grainId, null, event);
     });
   }
 
@@ -158,21 +158,21 @@ class SandstormCoreImpl {
     // before per-grain size tracking was implemented. In that case, we don't want to update the
     // user record because it may already be counting the grain (specifically on Blackrock, where
     // whole-user size counting has existed for some time).
-    if (this.db.isQuotaEnabled() && ("size" in grain)) {
+    if (await this.db.isQuotaEnabledAsync() && ("size" in grain)) {
       // Update the user record, too. Note that we periodically recompute the user's storage usage
       // from scratch as well, so this doesn't have to be perfectly reliable.
       const diff = bytes - (grain.size || 0);
-      this.db.collections.users.update(grain.userId, { $inc: { storageUsage: diff } });
+      await this.db.collections.users.updateAsync(grain.userId, { $inc: { storageUsage: diff } });
     }
   }
 
   getIdentityId(identity) {
-    return unwrapFrontendCap(identity, "identity", (accountId) => {
-      const grain = this.db.getGrain(this.grainId);
+    return globalThis.unwrapFrontendCap(identity, "identity", async (accountId) => {
+      const grain = await this.db.getGrainAsync(this.grainId);
       if (!grain) {
         throw new Error("Grain not found.");
       }
-      const identityId = this.db.getOrGenerateIdentityId(accountId, grain);
+      const identityId = await this.db.getOrGenerateIdentityIdAsync(accountId, grain);
       return { id: new Buffer(identityId, "hex") };
     });
   }
@@ -238,14 +238,14 @@ class PersistentUiViewImpl extends PersistentImpl {
   }
 
   getViewInfo() {
-    return inMeteor(() => {
-      const grain = this._db.getGrain(this._grainId);
+    return inMeteor(async () => {
+      const grain = await this._db.getGrainAsync(this._grainId);
       if (!grain || grain.trashed) {
         throw new Error("grain no longer exists");
       }
 
-      let pkg = this._db.getPackage(grain.packageId) ||
-        globalDb.collections.devPackages.findOne({ appId: grain.appId }) ||
+      let pkg = await this._db.getPackageAsync(grain.packageId) ||
+        await globalDb.collections.devPackages.findOneAsync({ appId: grain.appId }) ||
         {};
 
       const manifest = pkg.manifest || {};
@@ -277,11 +277,11 @@ class PersistentUiViewImpl extends PersistentImpl {
   // and grains can't call methods on UiViews because they lack the "is human" pseudopermission.
 }
 
-const makePersistentUiView = function (db, saveTemplate, grainId) {
+const makePersistentUiView = async function (db, saveTemplate, grainId) {
   check(grainId, String);
 
   // Verify that the grain exists and hasn't been trashed.
-  const grain = db.getGrain(grainId);
+  const grain = await db.getGrainAsync(grainId);
   if (!grain || grain.trashed) {
     throw new Meteor.Error(404, "grain not found");
   }
@@ -290,7 +290,7 @@ const makePersistentUiView = function (db, saveTemplate, grainId) {
                               PersistentUiView);
 };
 
-globalFrontendRefRegistry.register({
+globalThis.globalFrontendRefRegistry.register({
   frontendRefField: "notificationHandle",
 
   restore(db, saveTemplate, notificationId) {
@@ -300,16 +300,16 @@ globalFrontendRefRegistry.register({
 });
 
 async function dismissNotification(db, notificationId, callCancel) {
-  const notification = db.collections.notifications.findOne({ _id: notificationId });
+  const notification = await db.collections.notifications.findOneAsync({ _id: notificationId });
   if (notification) {
-    db.collections.notifications.remove({ _id: notificationId });
+    await db.collections.notifications.removeAsync({ _id: notificationId });
     if (notification.ongoing) {
       const id = notification.ongoing;
 
       if (!callCancel) {
         await dropInternal(db, id, { frontend: null });
       } else {
-        const notificationCap = (await restoreInternal(db, id, { frontend: null }, [])).cap;
+        const notificationCap = (await globalThis.restoreInternal(db, id, { frontend: null }, [])).cap;
         const castedNotification = notificationCap.castAs(PersistentOngoingNotification);
         await dropInternal(db, id, { frontend: null });
         try {
@@ -326,7 +326,9 @@ async function dismissNotification(db, notificationId, callCancel) {
       }
     } else if (notification.appUpdates) {
       _.forEach(notification.appUpdates, (app, appId) => {
-        db.deleteUnusedPackages(appId);
+        db.deleteUnusedPackagesAsync(appId).catch((err) => {
+          console.error("Failed deleting unused packages after dismissNotification:", err);
+        });
       });
     }
   }
@@ -342,7 +344,7 @@ Meteor.methods({
 
     const db = this.connection.sandstormDb;
 
-    const notification = db.collections.notifications.findOne({ _id: notificationId });
+    const notification = await db.collections.notifications.findOneAsync({ _id: notificationId });
     if (!notification) {
       throw new Meteor.Error(404, "Notification id not found.");
     } else if (notification.userId !== Meteor.userId()) {
@@ -352,20 +354,20 @@ Meteor.methods({
     }
   },
 
-  readAllNotifications() {
+  async readAllNotifications() {
     // Marks all notifications as read for the current user.
     if (!Meteor.userId()) {
       throw new Meteor.Error(403, "User not logged in.");
     }
 
     const db = this.connection.sandstormDb;
-    db.collections.notifications.update(
+    await db.collections.notifications.updateAsync(
       { userId: Meteor.userId() },
       { $set: { isUnread: false } },
       { multi: true });
   },
 
-  acceptPowerboxOffer(sessionId, sturdyRef, sessionToken) {
+  async acceptPowerboxOffer(sessionId, sturdyRef, sessionToken) {
     const db = this.connection.sandstormDb;
     check(sessionId, String);
     check(sturdyRef, String);
@@ -378,12 +380,12 @@ Meteor.methods({
       sessionQuery.userId = this.userId;
     }
 
-    const session = db.collections.sessions.findOne(sessionQuery);
+    const session = await db.collections.sessions.findOneAsync(sessionQuery);
     if (!session) {
       throw new Meteor.Error(404, "No matching session found.");
     }
 
-    const apiToken = fetchApiToken(db, sturdyRef,
+    const apiToken = await fetchApiToken(db, sturdyRef,
         { "owner.clientPowerboxOffer.sessionId": sessionId });
     if (!apiToken) {
       throw new Meteor.Error(404, "No such token.");
@@ -410,9 +412,9 @@ Meteor.methods({
         .slice(0, -1)                             // removing trailing "="
         .replace(/\+/g, "-").replace(/\//g, "_"); // make URL-safe
 
-      if (fetchApiToken(db, newSturdyRef)) {
+      if (await fetchApiToken(db, newSturdyRef)) {
         // We have already generated this token.
-        db.removeApiTokens({ _id: tokenId });
+        await db.removeApiTokensAsync({ _id: tokenId });
         return newSturdyRef;
       }
     } else {
@@ -421,14 +423,14 @@ Meteor.methods({
 
     apiToken.owner = { webkey: null };
 
-    insertApiToken(db, apiToken, newSturdyRef);
-    db.removeApiTokens({ _id: tokenId });
+    await insertApiToken(db, apiToken, newSturdyRef);
+    await db.removeApiTokensAsync({ _id: tokenId });
     return newSturdyRef;
   },
 
 });
 
-const makeSaveTemplateForChild = function (db, parentToken, requirements, parentTokenInfo) {
+const makeSaveTemplateForChild = async function (db, parentToken, requirements, parentTokenInfo) {
   // Constructs (part of) an ApiToken record appropriate to be used when save()ing a capability
   // that was originally created by restore()ing `parentToken`. This fills in everything that is
   // appropriate to fill in based only on the parent. Some fields -- especially `owner`, `created`,
@@ -441,7 +443,7 @@ const makeSaveTemplateForChild = function (db, parentToken, requirements, parent
   // `parentTokenInfo` is the ApiToken record for `parentToken`. Provide this only if you have
   // it handy; if omitted it will be looked up.
 
-  parentTokenInfo = parentTokenInfo || fetchApiToken(db, parentToken);
+  parentTokenInfo = parentTokenInfo || await fetchApiToken(db, parentToken);
   if (!parentTokenInfo) {
     throw new Error("no such token");
   }
@@ -513,7 +515,7 @@ class DummyObserver {
   }
 }
 
-restoreInternal = async (db, originalToken, ownerPattern, requirements, originalTokenInfo,
+globalThis.restoreInternal = async (db, originalToken, ownerPattern, requirements, originalTokenInfo,
                          currentTokenId, currentTokenKey) => {
   // Restores the token `originalToken`, which is a Buffer.
   //
@@ -533,15 +535,15 @@ restoreInternal = async (db, originalToken, ownerPattern, requirements, original
   requirements = requirements || [];
 
   if (!originalTokenInfo) {
-    originalTokenInfo = fetchApiToken(db, originalToken);
+    originalTokenInfo = await fetchApiToken(db, originalToken);
     if (!originalTokenInfo) {
       throw new Meteor.Error(403, "No token found to restore");
     }
   }
 
   const token = !currentTokenId ? originalTokenInfo :
-      typeof currentTokenKey === "string" ? fetchApiToken(db, currentTokenKey) :
-      db.collections.apiTokens.findOne(currentTokenId);
+      typeof currentTokenKey === "string" ? await fetchApiToken(db, currentTokenKey) :
+      await db.collections.apiTokens.findOneAsync(currentTokenId);
   if (!token) {
     if (!originalTokenInfo) {
       throw new Meteor.Error(403, "Couldn't restore token because parent token has been deleted");
@@ -556,7 +558,7 @@ restoreInternal = async (db, originalToken, ownerPattern, requirements, original
   check(token.owner, ownerPattern);
 
   // Check requirements on the token.
-  checkRequirements(db, token.requirements);
+  await checkRequirements(db, token.requirements);
 
   // Check expiration.
   if (token.expires && token.expires.getTime() <= Date.now()) {
@@ -568,7 +570,7 @@ restoreInternal = async (db, originalToken, ownerPattern, requirements, original
       throw new Meteor.Error(403, "Authorization token expired");
     } else {
       // It's getting used now, so clear the expiresIfUnused field.
-      db.collections.apiTokens.update(token._id, { $unset: { expiresIfUnused: "" } });
+      await db.collections.apiTokens.updateAsync(token._id, { $unset: { expiresIfUnused: "" } });
     }
   }
 
@@ -576,12 +578,12 @@ restoreInternal = async (db, originalToken, ownerPattern, requirements, original
   if (token.parentToken) {
     // A token which chains to some parent token.  Restore the parent token (possibly recursively),
     // checking requirements on the way up.
-    return restoreInternal(db, originalToken, Match.Any, requirements,
+    return globalThis.restoreInternal(db, originalToken, Match.Any, requirements,
                            originalTokenInfo, token.parentToken, token.parentTokenKey);
   }
 
   // Check the passed-in `requirements`.
-  checkRequirements(db, requirements);
+  await checkRequirements(db, requirements);
 
   if (token.objectId) {
     // A token which represents a specific capability exported by a grain.
@@ -596,7 +598,7 @@ restoreInternal = async (db, originalToken, ownerPattern, requirements, original
     const observer = new DummyObserver();
 
     // Ensure the grain is running, then restore the capability.
-    const cap = (await globalBackend.useGrain(token.grainId, (supervisor) => {
+    const cap = (await globalThis.globalBackend.useGrain(token.grainId, (supervisor) => {
       // Note that in this case it is the supervisor's job to implement SystemPersistent, so we
       // don't generate a saveTemplate here.
       let promise = supervisor.restore(token.objectId, [], new Buffer(originalToken, "utf8"));
@@ -609,12 +611,12 @@ restoreInternal = async (db, originalToken, ownerPattern, requirements, original
     return { cap };
   } else {
     // Construct a template ApiToken for use if the restored capability is save()d later.
-    const saveTemplate = makeSaveTemplateForChild(db, originalToken, requirements, originalTokenInfo);
+    const saveTemplate = await makeSaveTemplateForChild(db, originalToken, requirements, originalTokenInfo);
 
     if (token.frontendRef) {
       // A token which represents a capability implemented by a pseudo-driver.
 
-      const cap = globalFrontendRefRegistry.restore(db, saveTemplate, token.frontendRef);
+      const cap = globalThis.globalFrontendRefRegistry.restore(db, saveTemplate, token.frontendRef);
       return { cap };
     } else if (token.grainId) {
       // It's a UiView.
@@ -623,7 +625,7 @@ restoreInternal = async (db, originalToken, ownerPattern, requirements, original
       // the method calls.  In the future, we may allow grains to restore UiViews that pass along the
       // "is human" pseudopermission (say, to allow an app to proxy all requests to some grain and
       // do some transformation), which will return a different capability.
-      return { cap: makePersistentUiView(db, saveTemplate, token.grainId) };
+      return { cap: await makePersistentUiView(db, saveTemplate, token.grainId) };
     } else {
       throw new Meteor.Error(500, "Unknown token type. ID: " + token._id);
     }
@@ -633,7 +635,7 @@ restoreInternal = async (db, originalToken, ownerPattern, requirements, original
 async function dropInternal(db, sturdyRef, ownerPattern) {
   // Drops `sturdyRef`, checking first that its owner matches `ownerPattern`.
 
-  const token = fetchApiToken(db, sturdyRef);
+  const token = await fetchApiToken(db, sturdyRef);
   if (!token) {
     return;
   }
@@ -652,8 +654,8 @@ async function dropInternal(db, sturdyRef, ownerPattern) {
 
   if (token.frontendRef && token.frontendRef.notificationHandle) {
     const notificationId = token.frontendRef.notificationHandle;
-    db.removeApiTokens({ _id: hashedSturdyRef });
-    const anyToken = db.collections.apiTokens.findOne(
+    await db.removeApiTokensAsync({ _id: hashedSturdyRef });
+    const anyToken = await db.collections.apiTokens.findOneAsync(
         { "frontendRef.notificationHandle": notificationId });
     if (!anyToken) {
       // No other tokens referencing this notification exist, so dismiss the notification
@@ -662,13 +664,13 @@ async function dropInternal(db, sturdyRef, ownerPattern) {
       });
     }
   } else if (token.objectId) {
-    await globalBackend.useGrain(token.grainId, (supervisor) => {
+    await globalThis.globalBackend.useGrain(token.grainId, (supervisor) => {
       return supervisor.drop(token.objectId);
     });
 
-    db.removeApiTokens({ _id: hashedSturdyRef });
+    await db.removeApiTokensAsync({ _id: hashedSturdyRef });
   } else {
-    db.removeApiTokens({ _id: hashedSturdyRef });
+    await db.removeApiTokensAsync({ _id: hashedSturdyRef });
   }
 }
 
@@ -708,13 +710,13 @@ const backendAddress = { capabilityStreamFd: parseInt(process.env.SANDSTORM_BACK
 let sandstormBackendConnection = Capnp.connect(backendAddress, sandstormCoreFactory);
 let sandstormBackend = sandstormBackendConnection.restore(null, Backend);
 
-globalBackend = new SandstormBackend(globalDb, sandstormBackend);
-globalBackend._backendConnection = sandstormBackendConnection;  // ... don't GC this, please.
+globalThis.globalBackend = new SandstormBackend(globalDb, sandstormBackend);
+globalThis.globalBackend._backendConnection = sandstormBackendConnection;  // ... don't GC this, please.
 Meteor.onConnection((connection) => {
-  connection.sandstormBackend = globalBackend;
+  connection.sandstormBackend = globalThis.globalBackend;
 });
 
-unwrapFrontendCap = (cap, type, callback) => {
+globalThis.unwrapFrontendCap = (cap, type, callback) => {
   // Expect that `cap` is a Cap'n Proto capability implemented by the frontend as a frontendRef
   // with the given type (the name of one of the fields of frontendRef). Unwraps the capability
   // and then calls callback() with the `frontendRef[type]` descriptor object as
@@ -731,21 +733,21 @@ unwrapFrontendCap = (cap, type, callback) => {
   //   replica.
 
   return cap.castAs(SystemPersistent).save({ frontend: null }).then(saveResult => {
-    return inMeteor(() => {
-      let tokenInfo = fetchApiToken(globalDb, saveResult.sturdyRef.toString("utf8"));
+    return inMeteor(async () => {
+      let tokenInfo = await fetchApiToken(globalDb, saveResult.sturdyRef.toString("utf8"));
 
       // Delete the token now since it's not needed.
-      globalDb.collections.apiTokens.remove(tokenInfo._id);
+      await globalDb.collections.apiTokens.removeAsync(tokenInfo._id);
 
       for (;;) {
         if (!tokenInfo) throw new Error("missing token?");
         if (!tokenInfo.parentToken) break;
         if (typeof tokenInfo.parentTokenKey === "string") {
-          tokenInfo = fetchApiToken(globalDb, tokenInfo.parentTokenKey);
+          tokenInfo = await fetchApiToken(globalDb, tokenInfo.parentTokenKey);
         } else {
           // Hmm, parentTokenKey doesn't exist or is still encrypted. We can't decrypt the parent
           // but we can still fetch it in encrypted format.
-          tokenInfo = globalDb.collections.apiTokens.findOne(tokenInfo.parentToken);
+          tokenInfo = await globalDb.collections.apiTokens.findOneAsync(tokenInfo.parentToken);
         }
       }
 

@@ -130,7 +130,7 @@ class IpInterfaceImpl extends PersistentImpl {
 // TODO(cleanup): Meteor.startup() needed because 00-startup.js runs *after* code in subdirectories
 //   (ugh).
 Meteor.startup(() => {
-  globalFrontendRefRegistry.register({
+  globalThis.globalFrontendRefRegistry.register({
     frontendRefField: "ipInterface",
     typeId: IpRpc.IpInterface.typeId,
 
@@ -153,8 +153,9 @@ Meteor.startup(() => {
       };
     },
 
-    query(db, userId, value) {
-      if (userId && Meteor.users.findOne(userId).isAdmin) {
+    async query(db, userId, value) {
+      const user = userId && await Meteor.users.findOneAsync(userId, { fields: { isAdmin: 1 } });
+      if (user && user.isAdmin) {
         return [
           {
             _id: "frontendref-ipinterface",
@@ -264,7 +265,7 @@ class IpNetworkImpl extends PersistentImpl {
 // TODO(cleanup): Meteor.startup() needed because 00-startup.js runs *after* code in subdirectories
 //   (ugh).
 Meteor.startup(() => {
-  globalFrontendRefRegistry.register({
+  globalThis.globalFrontendRefRegistry.register({
     frontendRefField: "ipNetwork",
     typeId: IpRpc.IpNetwork.typeId,
 
@@ -297,13 +298,14 @@ Meteor.startup(() => {
       };
     },
 
-    query(db, userId, value) {
+    async query(db, userId, value) {
       let encryption = { none: null };
       if (value) {
         encryption = Capnp.parse(IpRpc.IpNetwork.PowerboxTag, value).encryption || encryption;
       }
 
-      if (userId && Meteor.users.findOne(userId).isAdmin) {
+      const user = userId && await Meteor.users.findOneAsync(userId, { fields: { isAdmin: 1 } });
+      if (user && user.isAdmin) {
         return [
           {
             _id: "frontendref-ipnetwork",
@@ -415,4 +417,3 @@ class UdpPortImpl {
     // TODO(someday): use callback to catch errors and do something with them
   }
 }
-

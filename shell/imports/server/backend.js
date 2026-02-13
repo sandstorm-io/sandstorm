@@ -42,9 +42,9 @@ class SandstormBackend {
     return await this._backendCap.deleteUser(userId);
   }
 
-  shutdownGrain(grainId, ownerId, keepSessions) {
+  async shutdownGrain(grainId, ownerId, keepSessions) {
     if (!keepSessions) {
-      globalDb.collections.sessions.remove({ grainId: grainId });
+      await globalDb.collections.sessions.removeAsync({ grainId: grainId });
     }
 
     const grain = this._backendCap.getGrain(ownerId, grainId).supervisor;
@@ -71,8 +71,9 @@ class SandstormBackend {
 
   maybeRetryUseGrain(grainId, cb, retryCount, err) {
     if (shouldRestartGrain(err, retryCount)) {
-      return inMeteor(() => {
-        return cb(this.continueGrain(grainId).supervisor)
+      return inMeteor(async () => {
+        const grainInfo = await this.continueGrain(grainId);
+        return cb(grainInfo.supervisor)
             .catch(this.maybeRetryUseGrain.bind(this, grainId, cb, retryCount + 1));
       });
     } else {
@@ -87,14 +88,15 @@ class SandstormBackend {
     // This function returns the same promise that your callback returns.
     //
     // This function is NOT expected to be run in a meteor context.
-    return inMeteor(() => {
-      return cb(this.continueGrain(grainId).supervisor)
+    return inMeteor(async () => {
+      const grainInfo = await this.continueGrain(grainId);
+      return cb(grainInfo.supervisor)
         .catch(this.maybeRetryUseGrain.bind(this, grainId, cb, 0));
     });
   }
 
-  continueGrain(grainId) {
-    const grain = globalDb.collections.grains.findOne(grainId);
+  async continueGrain(grainId) {
+    const grain = await globalDb.collections.grains.findOneAsync(grainId);
     if (!grain) {
       throw new Meteor.Error(404, "Grain Not Found", "Grain ID: " + grainId);
     }
@@ -105,7 +107,7 @@ class SandstormBackend {
 
     // If a DevPackage with the same app ID is currently active, we let it override the installed
     // package, so that the grain runs using the dev app.
-    const devPackage = globalDb.collections.devPackages.findOne({ appId: grain.appId });
+    const devPackage = await globalDb.collections.devPackages.findOneAsync({ appId: grain.appId });
     let isDev;
     let mountProc;
     let pkg;
@@ -114,7 +116,7 @@ class SandstormBackend {
       pkg = devPackage;
       mountProc = pkg.mountProc;
     } else {
-      pkg = globalDb.collections.packages.findOne(grain.packageId);
+      pkg = await globalDb.collections.packages.findOneAsync(grain.packageId);
       if (!pkg || pkg.status !== "ready") {
         throw new Meteor.Error(500, "Grain's package not installed",
                                "Package ID: " + grain.packageId);
@@ -129,18 +131,18 @@ class SandstormBackend {
                              "Package ID: " + packageId);
     }
 
-    const result = this.startGrainInternal(
+    const result = await this.startGrainInternal(
         packageId, grainId, grain.userId, manifest.continueCommand, false, isDev, mountProc);
     result.packageSalt = isDev ? pkg._id : grain.packageSalt;
     return result;
   }
 
-  startGrainInternal(packageId, grainId, ownerId, command, isNew, isDev, mountProc) {
+  async startGrainInternal(packageId, grainId, ownerId, command, isNew, isDev, mountProc) {
     // Starts the grain supervisor.  Must be executed in a Meteor context.  Blocks until grain is
     // started. Returns a promise for an object containing two fields: `owner` (the ID of the owning
     // user) and `supervisor` (the supervisor capability).
 
-    if (isUserExcessivelyOverQuota(Meteor.users.findOne(ownerId))) {
+    if (await this._db.isUserExcessivelyOverQuotaAsync(await Meteor.users.findOneAsync(ownerId))) {
       throw new Meteor.Error("quota-exhausted",
                              ("Cannot start grain because owner's storage is exhausted.\n" +
                               "Please ask them to upgrade."));
@@ -164,17 +166,18 @@ class SandstormBackend {
       delete command.executablePath;
     }
 
-    return this._backendCap.startGrain(ownerId, grainId, packageId, command, isNew, isDev, mountProc);
+    return await this._backendCap.startGrain(ownerId, grainId, packageId, command, isNew, isDev,
+                                             mountProc);
   }
 
-  updateLastActive(grainId, userId, obsolete) {
+  async updateLastActive(grainId, userId, obsolete) {
     // Update the lastActive date on the grain, any relevant API tokens, and the user,
     // and also update the user's storage usage.
 
     let storagePromise = undefined;
     let ownerId = undefined;
-    if (this._db.isQuotaEnabled() && !storageUsageUnimplemented) {
-      let grain = globalDb.collections.grains.findOne(grainId);
+    if (await this._db.isQuotaEnabledAsync() && !storageUsageUnimplemented) {
+      let grain = await globalDb.collections.grains.findOneAsync(grainId);
       if (!grain) return;  // must have been deleted
       ownerId = grain.userId;
       storagePromise = this._backendCap.getUserStorageUsage(ownerId);
@@ -184,24 +187,25 @@ class SandstormBackend {
     }
 
     const now = new Date();
-    if (globalDb.collections.grains.update(grainId, { $set: { lastUsed: now } }) === 0) {
+    if ((await globalDb.collections.grains.updateAsync(grainId, { $set: { lastUsed: now } })) === 0) {
       // Grain must have been deleted. Ignore.
       return;
     }
 
     if (userId) {
-      Meteor.users.update(userId, { $set: { lastActive: now } });
+      await Meteor.users.updateAsync(userId, { $set: { lastActive: now } });
 
       // Update any API tokens that match this user/grain pairing as well
-      globalDb.collections.apiTokens.update({ grainId: grainId, "owner.user.accountId": userId },
-                       { $set: { lastUsed: now } },
-                       { multi: true });
+      await globalDb.collections.apiTokens.updateAsync(
+          { grainId: grainId, "owner.user.accountId": userId },
+          { $set: { lastUsed: now } },
+          { multi: true });
     }
 
     if (storagePromise) {
-      storagePromise.then((storageInfo) => {
+      storagePromise.then(async (storageInfo) => {
         const size = parseInt(storageInfo.size);
-        Meteor.users.update(ownerId, { $set: { storageUsage: size } });
+        await Meteor.users.updateAsync(ownerId, { $set: { storageUsage: size } });
         // TODO(security): Consider actively killing grains if the user is excessively over quota?
         //   Otherwise a constantly-active grain could consume arbitrary space without being stopped.
       }).catch((err) => {

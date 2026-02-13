@@ -30,7 +30,13 @@
         "browserName": "chrome",
         "goog:chromeOptions": {
           "binary": "${NIGHTWATCH_CHROME_BINARY}",
-          "args": ["--headless", "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+          "args": [
+            "--headless",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--host-resolver-rules=MAP local.sandstorm.io 127.0.0.1,MAP *.local.sandstorm.io 127.0.0.1"
+          ],
           "prefs": {
             "download.prompt_for_download": false,
             "download.directory_upgrade": true,

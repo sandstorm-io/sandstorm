@@ -2,8 +2,8 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
-import { TAPi18n } from "meteor/tap:i18n";
-import { Iron } from "meteor/iron:core";
+import { TAPi18n } from "/imports/tapi18n";
+import { Iron } from "meteor/vlasky:galvanized-iron-router";
 import { ServiceConfiguration } from "meteor/service-configuration";
 
 import { globalDb } from "/imports/db-deprecated";

@@ -1,11 +1,10 @@
 import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
-import { checkAuth } from "/imports/server/auth";
 
-Meteor.publish("adminGrains", function (grainIds) {
+Meteor.publish("adminGrains", async function (grainIds) {
   // If the caller is an admin, publishes the Grains referred to by the provided list of grain IDs.
   // Otherwise, does nothing.
-  if (!isAdminById(this.userId)) return [];
+  if (!await this.connection.sandstormDb.isAdminByIdAsync(this.userId)) return [];
   check(grainIds, [String]);
 
   const db = this.connection.sandstormDb;
@@ -21,10 +20,10 @@ Meteor.publish("adminGrains", function (grainIds) {
   });
 });
 
-Meteor.publish("adminPackages", function (packageIds) {
+Meteor.publish("adminPackages", async function (packageIds) {
   // If the caller is an admin, publishes the Packages referred to by the provided list of package
   // IDs.  Otherwise, does nothing.
-  if (!isAdminById(this.userId)) return [];
+  if (!await this.connection.sandstormDb.isAdminByIdAsync(this.userId)) return [];
   check(packageIds, [String]);
 
   const db = this.connection.sandstormDb;
@@ -39,10 +38,10 @@ Meteor.publish("adminPackages", function (packageIds) {
   });
 });
 
-Meteor.publish("adminProfiles", function (userIds) {
+Meteor.publish("adminProfiles", async function (userIds) {
   // If the caller is an admin, publishes the Users listed by ID in userIds.
   // Otherwise, does nothing.
-  if (!isAdminById(this.userId)) return [];
+  if (!await this.connection.sandstormDb.isAdminByIdAsync(this.userId)) return [];
   check(userIds, [String]);
 
   const db = this.connection.sandstormDb;

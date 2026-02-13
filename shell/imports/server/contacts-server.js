@@ -17,33 +17,46 @@
 import { Meteor } from "meteor/meteor";
 import { _ } from "meteor/underscore";
 
-Meteor.publish("contactProfiles", function (showAll) {
+Meteor.publish("contactProfiles", async function (showAll) {
   const db = this.connection.sandstormDb;
   const _this = this;
   const userId = this.userId;
 
   // We maintain a map from account IDs to live query handles that track profile changes.
   const contactAccounts = {};
-  const disallowGuests = db.getOrganizationDisallowGuests();
+  const disallowGuests = await db.getOrganizationDisallowGuestsAsync();
 
-  function addAccountOfContact(accountId) {
+  function removeAccountOfContact(accountId) {
+    _this.removed("contactProfiles", accountId);
+    const contactAccount = contactAccounts[accountId];
+    if (contactAccount) {
+      Promise.resolve(contactAccount).then((h) => {
+        if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+      }).catch((err) => {
+        console.error(`Failed to stop contact account observer for ${accountId}:`, err);
+      });
+    }
+    delete contactAccounts[accountId];
+  }
+
+  async function addAccountOfContact(accountId) {
     if (!(accountId in contactAccounts)) {
-      const user = Meteor.users.findOne({ _id: accountId });
+      const user = await Meteor.users.findOneAsync({ _id: accountId });
 
       if (disallowGuests && !showAll) {
-        if (!db.isUserInOrganization(user)) {
+        if (!await db.isUserInOrganizationAsync(user)) {
           return;
         }
       }
 
       if (user) {
         const filteredUser = _.pick(user, "_id", "profile");
-        filteredUser.intrinsicNames = db.getAccountIntrinsicNames(user, false);
+        filteredUser.intrinsicNames = await db.getAccountIntrinsicNamesAsync(user, false);
         _this.added("contactProfiles", user._id, filteredUser);
       }
 
       contactAccounts[accountId] =
-        Meteor.users.find({ _id: accountId }, { fields: { profile: 1 } }).observeChanges({
+        await Meteor.users.find({ _id: accountId }, { fields: { profile: 1 } }).observeChangesAsync({
           changed: function (id, fields) {
             _this.changed("contactProfiles", id, fields);
           },
@@ -53,51 +66,64 @@ Meteor.publish("contactProfiles", function (showAll) {
 
   const cursor = db.collections.contacts.find({ ownerId: userId });
 
-  const handle = cursor.observe({
+  const handle = await cursor.observeAsync({
     added: function (contact) {
-      addAccountOfContact(contact.accountId);
+      addAccountOfContact(contact.accountId).catch((err) => {
+        console.error("Failed to add contact account (added):", err);
+      });
     },
 
     changed: function (contact) {
-      addAccountOfContact(contact.accountId);
+      addAccountOfContact(contact.accountId).catch((err) => {
+        console.error("Failed to add contact account (changed):", err);
+      });
     },
 
     removed: function (contact) {
-      _this.removed("contactProfiles", contact.accountId);
-      const contactAccount = contactAccounts[contact.accountId];
-      if (contactAccount) contactAccounts[contact.accountId].stop();
-      delete contactAccounts[contact.accountId];
+      removeAccountOfContact(contact.accountId);
     },
   });
 
   let orgHandle;
 
-  if (db.getOrganizationShareContacts() &&
-      db.isUserInOrganization(db.collections.users.findOne({ _id: userId }))) {
+  const ownerUser = await db.collections.users.findOneAsync({ _id: userId });
+  if (await db.getOrganizationShareContactsAsync() &&
+      await db.isUserInOrganizationAsync(ownerUser)) {
     const orgCursor = db.collections.users.find({ type: "account" });
     // TODO(perf): make a mongo query that can find all accounts in an organization and add
     // indices for it. Currently, we do some case insensitive matching which mongo can't
     // handle well.
 
-    orgHandle = orgCursor.observe({
+    orgHandle = await orgCursor.observeAsync({
       added: function (user) {
-        if (db.isUserInOrganization(user) && user._id !== userId) {
-          addAccountOfContact(user._id);
-        }
+        db.isUserInOrganizationAsync(user).then((inOrg) => {
+          if (inOrg && user._id !== userId) {
+            addAccountOfContact(user._id).catch((err) => {
+              console.error("Failed to add contact account (org added):", err);
+            });
+          }
+        }).catch((err) => {
+          console.error("Failed to evaluate organization membership (org added):", err);
+        });
       },
 
       changed: function (user) {
-        if (db.isUserInOrganization(user) && user._id !== userId) {
-          addAccountOfContact(user._id);
-        }
+        db.isUserInOrganizationAsync(user).then((inOrg) => {
+          if (inOrg && user._id !== userId) {
+            addAccountOfContact(user._id).catch((err) => {
+              console.error("Failed to add contact account (org changed):", err);
+            });
+          } else if (user._id !== userId) {
+            removeAccountOfContact(user._id);
+          }
+        }).catch((err) => {
+          console.error("Failed to evaluate organization membership (org changed):", err);
+        });
       },
 
       removed: function (user) {
-        if (db.isUserInOrganization(user) && user._id !== userId) {
-          _this.removed("contactProfiles", user._id);
-          const contactAccount = contactAccounts[user._id];
-          if (contactAccount) contactAccount.stop();
-          delete contactAccounts[user._id];
+        if (user._id !== userId) {
+          removeAccountOfContact(user._id);
         }
       },
     });
@@ -106,14 +132,21 @@ Meteor.publish("contactProfiles", function (showAll) {
   this.ready();
 
   this.onStop(function () {
-    handle.stop();
+    Promise.resolve(handle).then((h) => {
+      if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+    }).catch((err) => {
+      console.error("Failed to stop contactProfiles contacts observer:", err);
+    });
     if (orgHandle) {
-      orgHandle.stop();
+      Promise.resolve(orgHandle).then((h) => {
+        if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+      }).catch((err) => {
+        console.error("Failed to stop contactProfiles org observer:", err);
+      });
     }
 
     Object.keys(contactAccounts).forEach(function (accountId) {
-      contactAccounts[accountId].stop();
-      delete contactAccounts[accountId];
+      removeAccountOfContact(accountId);
     });
   });
 });

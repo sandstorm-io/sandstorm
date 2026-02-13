@@ -35,7 +35,7 @@ Meteor.methods({
     await SandstormAutoupdateApps.updateAppIndex(this.connection.sandstormDb);
   },
 
-  updateApps: function (packages) {
+  updateApps: async function (packages) {
     check(packages, [String]);
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to update apps.");
@@ -44,15 +44,15 @@ Meteor.methods({
     const db = this.connection.sandstormDb;
     const backend = this.connection.sandstormBackend;
 
-    packages.forEach(packageId => {
-      const pack = db.collections.packages.findOne({ _id: packageId });
+    for (const packageId of packages) {
+      const pack = await db.collections.packages.findOneAsync({ _id: packageId });
       if (!pack || !pack.manifest) {
         throw new Error("No such package on server: " + packageId);
       } else {
-        db.addUserActions(this.userId, packageId);
-        db.upgradeGrains(pack.appId, pack.manifest.appVersion, packageId, backend);
-        db.deleteUnusedPackages(pack.appId);
+        await db.addUserActionsAsync(this.userId, packageId);
+        await db.upgradeGrainsAsync(pack.appId, pack.manifest.appVersion, packageId, backend);
+        await db.deleteUnusedPackagesAsync(pack.appId);
       }
-    });
+    }
   },
 });

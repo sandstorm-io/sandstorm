@@ -111,10 +111,10 @@ function parseCidr(cidr) {
 
 const SPECIAL_FILTERS = SPECIAL_IPV4_ADDRESSES.concat(SPECIAL_IPV6_ADDRESSES).map(parseCidr);
 
-function selectSafeAddress(db, parsedUrl, addresses) {
+async function selectSafeAddress(db, parsedUrl, addresses) {
   // TODO(perf): Subscribe to blacklist changes so that we don't have to do a new lookup and
   //   parse each time.
-  const blacklist = db.getSettingWithFallback("ipBlacklist", "")
+  const blacklist = ((await db.getSettingAsync("ipBlacklist")) || "")
       .split("\n").map(parseCidr).filter(x => x);
 
   for (let i in addresses) {
@@ -164,7 +164,7 @@ async function ssrfSafeLookup(db, url) {
     });
   });
 
-  return selectSafeAddress(db, parsedUrl, addresses);
+  return await selectSafeAddress(db, parsedUrl, addresses);
 }
 
 async function ssrfSafeLookupOrProxy(db, url) {

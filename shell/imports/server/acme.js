@@ -88,7 +88,7 @@ export async function createAcmeAccount(directory, email, agreeToTerms) {
   let account = await acme.accounts.create({
       subscriberEmail: email, agreeToTerms, accountKey});
 
-  globalDb.collections.settings.upsert({_id: "acmeAccount"}, {$set: {
+  await globalDb.collections.settings.upsertAsync({_id: "acmeAccount"}, {$set: {
     value: {
       directory,
       email,
@@ -101,7 +101,7 @@ export async function createAcmeAccount(directory, email, agreeToTerms) {
 let currentlyRenewing = false;
 
 export async function renewCertificateNow() {
-  let accountInfo = globalDb.getSetting("acmeAccount");
+  let accountInfo = await globalDb.getSettingAsync("acmeAccount");
   if (!accountInfo) {
     console.log("Can't renew certificate because ACME account info is not configured.");
     return false;
@@ -114,7 +114,7 @@ export async function renewCertificateNow() {
       options: getSandcatsAcmeOptions()
     };
   } else {
-    challengeOpts = globalDb.getSetting("acmeChallenge");
+    challengeOpts = await globalDb.getSettingAsync("acmeChallenge");
     if (!challengeOpts) {
       console.log("Can't renew certificate because ACME challenge is not configured.");
       return false;
@@ -129,11 +129,13 @@ export async function renewCertificateNow() {
 
   currentlyRenewing = true;
   try {
-    globalDb.collections.settings.upsert({_id: "tlsStatus"}, {$set: {"value.currentlyRenewing": true}});
+    await globalDb.collections.settings
+        .upsertAsync({_id: "tlsStatus"}, {$set: {"value.currentlyRenewing": true}});
     return await renewCertificateNowImpl(accountInfo, challengeOpts);
   } finally {
     currentlyRenewing = false;
-    globalDb.collections.settings.upsert({_id: "tlsStatus"}, {$set: {"value.currentlyRenewing": false}});
+    await globalDb.collections.settings
+        .upsertAsync({_id: "tlsStatus"}, {$set: {"value.currentlyRenewing": false}});
   }
 }
 
@@ -188,7 +190,7 @@ async function renewCertificateNowImpl(accountInfo, challengeOpts) {
 
   // Stick them in the database, which automatically triggers updating the gateway to use the new
   // keys.
-  globalDb.collections.settings.upsert({_id: "tlsKeys"}, {$set: {
+  await globalDb.collections.settings.upsertAsync({_id: "tlsKeys"}, {$set: {
     value: {
       key: privatePem,
       certChain
@@ -238,7 +240,7 @@ async function renewCertificateWhenNeeded(certChain) {
   // just re-run the whole timeout computation then.
   let timeout = Math.min(7 * DAYS, targetTime - now);
 
-  globalDb.collections.settings.upsert({_id: "tlsStatus"},
+  await globalDb.collections.settings.upsertAsync({_id: "tlsStatus"},
       {$set: {"value.expires": validity.notAfter, "value.renewAt": new Date(targetTime)}});
 
   if (now > targetTime) {
@@ -275,11 +277,13 @@ async function renewCertificateWhenNeeded(certChain) {
 // needed.
 if (!Meteor.settings.replicaNumber) {
   Meteor.startup(() => {
-    globalDb.collections.settings.remove({_id: "tlsStatus"});
+    globalDb.collections.settings.removeAsync({_id: "tlsStatus"}).catch((err) => {
+      console.error("Failed removing tlsStatus at startup:", err);
+    });
 
     // We don't want this to block startup, so put it in a zero-time setTimeout().
     Meteor.setTimeout(() => {
-      globalDb.collections.settings.find({_id: "tlsKeys"}).observe({
+      globalDb.collections.settings.find({_id: "tlsKeys"}).observeAsync({
         added(setting) {
           renewCertificateWhenNeeded(setting.value.certChain).catch((err) => {
             console.error("Failed to evaluate certificate renewal schedule:", err.stack);
@@ -295,6 +299,8 @@ if (!Meteor.settings.replicaNumber) {
             console.error("Failed to evaluate certificate renewal schedule:", err.stack);
           });
         },
+      }).catch((err) => {
+        console.error("Failed to observe tlsKeys for certificate renewal scheduling:", err);
       });
     }, 0);
   });

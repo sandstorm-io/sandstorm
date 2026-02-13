@@ -5,9 +5,45 @@ import nodemailer from "nodemailer";
 
 import { globalDb } from "/imports/db-deprecated";
 
-const getSmtpConfig = function () {
-  const config = globalDb.collections.settings.findOne({ _id: "smtpConfig" });
-  return config && config.value;
+const smtpConfigFromMailUrl = (mailUrl) => {
+  if (!mailUrl) return undefined;
+
+  let parsed;
+  try {
+    parsed = new URL(mailUrl);
+  } catch (err) {
+    return undefined;
+  }
+
+  if (!parsed.hostname) return undefined;
+
+  const auth = parsed.username || parsed.password ? {
+    user: decodeURIComponent(parsed.username || ""),
+    pass: decodeURIComponent(parsed.password || ""),
+  } : undefined;
+
+  return {
+    hostname: parsed.hostname,
+    port: parsed.port ? parseInt(parsed.port, 10) : (parsed.protocol === "smtps:" ? 465 : 25),
+    auth,
+  };
+};
+
+const getSmtpConfig = async function () {
+  const config = await globalDb.collections.settings.findOneAsync({ _id: "smtpConfig" });
+  const value = config && config.value;
+  const mailUrlConfig = smtpConfigFromMailUrl(process.env.MAIL_URL);
+  if (!value || !value.hostname) return mailUrlConfig;
+
+  const looksLikeLegacyDefault =
+      value.hostname === "localhost" &&
+      (value.port === 25 || value.port === "25") &&
+      (!value.auth || (!value.auth.user && !value.auth.pass));
+  if (looksLikeLegacyDefault && mailUrlConfig) {
+    return { ...value, ...mailUrlConfig };
+  }
+
+  return value;
 };
 
 const makePool = function (mailConfig) {
@@ -47,7 +83,7 @@ let pool;
 let configured = false;
 
 Meteor.startup(function () {
-  globalDb.collections.settings.find({ _id: "smtpConfig" }).observeChanges({
+  globalDb.collections.settings.find({ _id: "smtpConfig" }).observeChangesAsync({
     removed: function () {
       configured = false;
     },
@@ -59,15 +95,17 @@ Meteor.startup(function () {
     added: function () {
       configured = false;
     },
+  }).catch((err) => {
+    console.error("Failed to observe smtpConfig changes:", err);
   });
 });
 
-const getPool = function (smtpConfig) {
+const getPool = async function (smtpConfig) {
   if (smtpConfig) {
     return makePool(smtpConfig);
   } else if (!configured) {
     configured = true;
-    const config = getSmtpConfig();
+    const config = await getSmtpConfig();
     if (config) {
       pool = makePool(config);
     }
@@ -118,7 +156,7 @@ const rawSend = async function (mailOptions, smtpConfig) {
     validateEmail(mailOptions[field]);
   });
 
-  const pool = getPool(smtpConfig);
+  const pool = await getPool(smtpConfig);
   if (pool) {
     await smtpSend(pool, mailOptions);
   } else {
@@ -214,5 +252,5 @@ const send = async function (options) {
 
 export { send, rawSend };
 
-// TODO(cleanup): Remove this once BlackrockPayments code finds a better way to import it.
+// TODO(cleanup): Remove this once globalThis.BlackrockPayments code finds a better way to import it.
 global.SandstormEmail = { send };

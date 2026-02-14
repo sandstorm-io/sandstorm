@@ -20,7 +20,7 @@
           "withAppDemo": "Kokeile %s »",
           "withoutAppDemo": "Käynnistä »"
         },
-        "explanation": "<p>Sandstorm tekee helpoksi ajaa ohjelmia omalla palvelimellasi. Sen lisäksi että tämä lisää tietosuojaa ja hallintaa, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\" target=\"_blank\">tämä tuo Avoimen Lähdekoodin ohjelmat laajemmalle yleisölle.</a></p>",
+        "explanation": "<p>Sandstorm tekee helpoksi ajaa ohjelmia omalla palvelimellasi. Sen lisäksi että tämä lisää tietosuojaa ja hallintaa, <a href=\"https://sandstorm.org/news/2014-07-21-open-source-web-apps-require-federated-hosting\" target=\"_blank\">tämä tuo Avoimen Lähdekoodin ohjelmat laajemmalle yleisölle.</a></p>",
         "securityOverview": "<p>Sandstorm on myös älyttömän turvallinen. Jos tietoturva kiinnostaa sinua, katso <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">Sandstorm tietoturvamallin yleiskatsaus</a>.</p>"
       }
     },
@@ -112,7 +112,7 @@
     "about": {
       "title": "Tietoja Sandstormista",
       "intro": {
-        "explanation": "<a href=\"https://sandstorm.io\">Sandstorm.io</a> on avoimen lähdekoodin hostaus-alusta henkilökohtaisille/yksityisille verkko-ohjelmille. Käyttäjät voivat ladata palvelimelle ja asentaa mitä tahansa ohjelmia helpon app-store-tyylisen web-käyttöliittymän kautta. Paremman tietosuojan lisäksi, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">tämä on ainoa tapa tehdä Avoimen Lähdekoodin web-ohjelmat elinkelpoiseksi.</a>",
+        "explanation": "<a href=\"https://sandstorm.org\">Sandstorm</a> on avoimen lähdekoodin hostaus-alusta henkilökohtaisille/yksityisille verkko-ohjelmille. Käyttäjät voivat ladata palvelimelle ja asentaa mitä tahansa ohjelmia helpon app-store-tyylisen web-käyttöliittymän kautta. Paremman tietosuojan lisäksi, <a href=\"https://sandstorm.org/news/2014-07-21-open-source-web-apps-require-federated-hosting\">tämä on ainoa tapa tehdä Avoimen Lähdekoodin web-ohjelmat elinkelpoiseksi.</a>",
         "version": "Versio: %s",
         "unofficialWarning": "<strong>VAROITUS:</strong> Tämä palvelin käyttää Sandstormin epävirallista versiota joka voi sisältää muutoksia joita kehittäjät eivät ole tarkastaneet."
       },

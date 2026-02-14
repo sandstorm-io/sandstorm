@@ -20,7 +20,7 @@
                     "withAppDemo": "尝试 %s »",
                     "withoutAppDemo": "开始 »"
                 },
-                "explanation": "<p>沙聚云使您可以轻松地在自己的服务器上运行应用程序。除了改善隐私和控制之外, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\" target=\"_blank\">这还使开源软件被更多人知晓。</a></p>",
+                "explanation": "<p>沙聚云使您可以轻松地在自己的服务器上运行应用程序。除了改善隐私和控制之外, <a href=\"https://sandstorm.org/news/2014-07-21-open-source-web-apps-require-federated-hosting\" target=\"_blank\">这还使开源软件被更多人知晓。</a></p>",
                 "securityOverview": "<p>沙聚云也特安全。如果您对这个领域感兴趣，可以看看 <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">沙聚云的安全模型</a>。</p>"
             }
         },
@@ -112,7 +112,7 @@
         "about": {
             "title": "关于沙聚云",
             "intro": {
-                "explanation": "<a href=\"https://sandstorm.io\">沙聚云(Sandstorm.io)</a>是让用户运行私有网络应用程序的一个开源平台。用户可以上传并安装各种应用，就像手机的应用商店一样。<a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">开源网络应用程序既优雅又正确的打开方式</a>应该是这样。",
+                "explanation": "<a href=\"https://sandstorm.org\">沙聚云(Sandstorm)</a>是让用户运行私有网络应用程序的一个开源平台。用户可以上传并安装各种应用，就像手机的应用商店一样。<a href=\"https://sandstorm.org/news/2014-07-21-open-source-web-apps-require-federated-hosting\">开源网络应用程序既优雅又正确的打开方式</a>应该是这样。",
                 "version": "版本：%s",
                 "unofficialWarning": "<strong>警告:</strong> 该服务器运行的是非官方的沙聚云版本，其中可能包含未被开发人员审核的修改。"
             },

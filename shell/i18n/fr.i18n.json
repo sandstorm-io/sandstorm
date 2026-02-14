@@ -20,7 +20,7 @@
           "withAppDemo": "Essayer %s »",
           "withoutAppDemo": "Commencer »"
         },
-        "explanation": "<p>Sandstorm rend possible l'exécution d'applications web sur votre propre serveur. En plus d'améliorer votre contrôle sur vos données et de protéger votre vie privée, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\" target=\"_blank\">cela permet à un plus large public de découvrir les applications libres.</a></p>",
+        "explanation": "<p>Sandstorm rend possible l'exécution d'applications web sur votre propre serveur. En plus d'améliorer votre contrôle sur vos données et de protéger votre vie privée, <a href=\"https://sandstorm.org/news/2014-07-21-open-source-web-apps-require-federated-hosting\" target=\"_blank\">cela permet à un plus large public de découvrir les applications libres.</a></p>",
         "securityOverview": "<p>Sandstorm est aussi extrêmement sécurisé. Si la question de la sécurité vous intéresse, jetez un œil à <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">la vue d'ensemble du modèle de sécurité de Sandstorm</a>.</p>"
       }
     },
@@ -113,7 +113,7 @@
     "about": {
       "title": "À propos de Sandstorm",
       "intro": {
-        "explanation": "<a href=\"https://sandstorm.io\">Sandstorm.io</a> est une plateforme libre d'hébergement d'instances personnelles/privées d'applications web. Les utilisateurs peuvent télécharger  et installer des logiciels quelconques via une simple interface web de type app-store. En plus d'une meilleure protection de la vie privée, <a href=\"https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html\">c'est la seule façon de rendre les applications web libres viables.</a>",
+        "explanation": "<a href=\"https://sandstorm.org\">Sandstorm</a> est une plateforme libre d'hébergement d'instances personnelles/privées d'applications web. Les utilisateurs peuvent télécharger  et installer des logiciels quelconques via une simple interface web de type app-store. En plus d'une meilleure protection de la vie privée, <a href=\"https://sandstorm.org/news/2014-07-21-open-source-web-apps-require-federated-hosting\">c'est la seule façon de rendre les applications web libres viables.</a>",
         "version": "Version : %s",
         "unofficialWarning": "<b>AVERTISSEMENT :</b> Ce serveur exécute une compilation non-officielle de Sandstorm qui peut contenir des modifications non revues par les développeurs."
       },

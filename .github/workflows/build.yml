@@ -116,7 +116,7 @@ jobs:
       - name: setup chrome
         uses: browser-actions/setup-chrome@v1
         with:
-          chrome-version: 142
+          chrome-version: 144
       - name: remove system chrome
         run: |
           sudo rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable

@@ -107,7 +107,7 @@ jobs:
           # the constant below.
           make lint | tee lint.log
           num_problems=$(cat lint.log | grep ' problems (0 errors, ' | awk '{print $2}')
-          [ "$num_problems" = 775 ]
+          [ "$num_problems" = 774 ]
       - name: setup java 11
         uses: actions/setup-java@v4
         with:

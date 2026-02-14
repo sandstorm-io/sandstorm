@@ -40,7 +40,7 @@ module.exports["Test powerbox request contact"] = function (browser) {
     .installApp("http://sandstorm.io/apps/david/sandstorm-test-python7.spk",
                 "b06dc34b21ba3e8dcedc6d8bab351eac",
                 APP_ID)
-    .assert.containsText("#grainTitle", "Untitled Test App test page")
+    .assert.textContains("#grainTitle", "Untitled Test App test page")
     .waitForElementVisible('.grain-frame', short_wait)
 
     // First we need to make sure that Bob is in Alice's contacts
@@ -75,7 +75,7 @@ module.exports["Test powerbox request contact"] = function (browser) {
                 browser.newGrain(APP_ID, function(grainId) {
                   browser
                     .waitForElementVisible("#grainTitle", short_wait)
-                    .assert.containsText("#grainTitle", "Untitled Test App test page")
+                    .assert.textContains("#grainTitle", "Untitled Test App test page")
                     .grainFrame()
                     .waitForElementVisible("#powerbox-request-identity", short_wait)
                     .click("#powerbox-request-identity")
@@ -91,7 +91,7 @@ module.exports["Test powerbox request contact"] = function (browser) {
                     .waitForElementVisible("form.test-identity button", short_wait)
                     .click("form.test-identity button")
                     .waitForElementVisible("form.test-identity div.result", short_wait)
-                    .assert.containsText("form.test-identity div.result", bobName)
+                    .assert.textContains("form.test-identity div.result", bobName)
 
                     // Now trash the grain as Bob.
                     .frame(null)
@@ -108,13 +108,13 @@ module.exports["Test powerbox request contact"] = function (browser) {
                     .loginDevAccount(aliceName)
                     .url(browser.launch_url + "/grain/" + grainId)
                     .waitForElementVisible("#grainTitle", short_wait)
-                    .assert.containsText("#grainTitle", "Untitled Test App test page")
+                    .assert.textContains("#grainTitle", "Untitled Test App test page")
                     .grainFrame()
                     .waitForElementVisible("span.token", short_wait)
                     .waitForElementVisible("form.test-identity button", short_wait)
                     .click("form.test-identity button")
                     .waitForElementVisible("form.test-identity div.result", short_wait)
-                    .assert.containsText("form.test-identity div.result",
+                    .assert.textContains("form.test-identity div.result",
                                          "failed to fetch profile")
                     .end()
                 });

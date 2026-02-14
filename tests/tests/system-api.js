@@ -26,7 +26,7 @@ module.exports["Test system api"] = function(browser) {
     .init()
     .loginDevAccount()
     .uploadTestApp()
-    .assert.containsText("#grainTitle", "Untitled Sandstorm Test App instance")
+    .assert.textContains("#grainTitle", "Untitled Sandstorm Test App instance")
     // Start opening this now, so we don't have to wait for it later when we
     // want to use it:
     .click("#openDebugLog")
@@ -36,7 +36,7 @@ module.exports["Test system api"] = function(browser) {
     .pause(short_wait)
     .windowHandles(windows => browser.switchWindow(windows.value[1]))
     .waitForElementVisible(".grainlog-contents > pre", short_wait)
-    .assert.containsText(".grainlog-contents > pre", "testSystemApi() passed.")
+    .assert.textContains(".grainlog-contents > pre", "testSystemApi() passed.")
 
   // Close the grain log, and switch back to to the main window, to avoid
   // confusing future tests:

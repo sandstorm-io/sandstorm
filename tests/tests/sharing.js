@@ -41,7 +41,7 @@ module.exports["Test open direct share link"] = function (browser) {
         .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
                     hackerCmsAppId)
         .waitForElementVisible("#grainTitle", medium_wait)
-        .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+        .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
         .executeAsync(function (data, done) {
           var grainId = Grains.findOne()._id;
           Meteor.call("newApiToken", { accountId: Meteor.userId() },
@@ -60,31 +60,31 @@ module.exports["Test open direct share link"] = function (browser) {
             .url(browser.launch_url + "/shared/" + result.value.result.token)
             .waitForElementVisible("iframe.grain-frame", medium_wait)
             .waitForElementVisible("#grainTitle", medium_wait)
-            .assert.containsText("#grainTitle", "user2 title")
+            .assert.textContains("#grainTitle", "user2 title")
             .url(function(grainUrl) {
               browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
             })
             .grainFrame()
             .waitForElementPresent("#publish", medium_wait)
-            .assert.containsText("#publish", "Publish")
+            .assert.textContains("#publish", "Publish")
             .frame(null)
 
             // Next, try visiting the link while not logged in.
             .execute("window.Meteor.logout()")
             .url(browser.launch_url + "/shared/" + result.value.result.token)
             .waitForElementVisible(".grain-interstitial", short_wait)
-            .assert.containsText(".grain-interstitial",
+            .assert.textContains(".grain-interstitial",
                                  "This link was intended for the user:")
             .click(".grain-interstitial button.sign-in")
             .waitForElementVisible("iframe.grain-frame", medium_wait)
             .waitForElementVisible("#grainTitle", medium_wait)
-            .assert.containsText("#grainTitle", "user2 title")
+            .assert.textContains("#grainTitle", "user2 title")
             .url(function(grainUrl) {
               browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
             })
             .grainFrame()
             .waitForElementPresent("#publish", medium_wait)
-            .assert.containsText("#publish", "Publish")
+            .assert.textContains("#publish", "Publish")
             .frame(null)
 
             // Now try while logged in as a third user.
@@ -92,18 +92,18 @@ module.exports["Test open direct share link"] = function (browser) {
             .loginDevAccount()
             .url(browser.launch_url + "/shared/" + result.value.result.token)
             .waitForElementVisible(".grain-interstitial", short_wait)
-            .assert.containsText(".grain-interstitial",
+            .assert.textContains(".grain-interstitial",
                                  "This link was intended for the user:")
             .click(".grain-interstitial button.sign-in")
             .waitForElementVisible("iframe.grain-frame", medium_wait)
             .waitForElementVisible("#grainTitle", medium_wait)
-            .assert.containsText("#grainTitle", "user2 title")
+            .assert.textContains("#grainTitle", "user2 title")
             .url(function(grainUrl) {
               browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
             })
             .grainFrame()
             .waitForElementPresent("#publish", medium_wait)
-            .assert.containsText("#publish", "Publish")
+            .assert.textContains("#publish", "Publish")
             .frame(null)
         });
     });
@@ -115,7 +115,7 @@ module.exports["Test revoked share link"] = function (browser) {
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
                 hackerCmsAppId)
     .waitForElementVisible("#grainTitle", medium_wait)
-    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
     .executeAsync(function (done) {
       var grainId = Grains.findOne()._id;
       Meteor.call("newApiToken", { accountId: Meteor.userId() },
@@ -136,11 +136,11 @@ module.exports["Test revoked share link"] = function (browser) {
         browser
           .url(browser.launch_url + "/shared/" + result.value.result.token)
           .waitForElementVisible(".grain-interstitial", medium_wait)
-          .assert.containsText(".grain-interstitial", "Sorry, this link has been revoked")
+          .assert.textContains(".grain-interstitial", "Sorry, this link has been revoked")
           .loginDevAccount()
           .url(browser.launch_url + "/shared/" + result.value.result.token)
           .waitForElementVisible(".grain-interstitial", medium_wait)
-          .assert.containsText(".grain-interstitial", "Sorry, this link has been revoked")
+          .assert.textContains(".grain-interstitial", "Sorry, this link has been revoked")
       });
     });
 }
@@ -152,7 +152,7 @@ module.exports["Test share popup no permission"] = function (browser) {
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
                 hackerCmsAppId)
     .waitForElementVisible("#grainTitle", medium_wait)
-    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
     .waitForElementVisible(sharePopupSelector, medium_wait)
     .url(function (grainUrl) {
       browser
@@ -160,11 +160,11 @@ module.exports["Test share popup no permission"] = function (browser) {
         .url(browser.launch_url)
         .url(grainUrl.value)
         .waitForElementVisible(".grain-interstitial.request-access", medium_wait)
-        .assert.elementNotPresent(sharePopupSelector)
+        .assert.not.elementPresent(sharePopupSelector)
         .loginDevAccount()
         .url(grainUrl.value)
         .waitForElementVisible(".grain-interstitial.request-access", medium_wait)
-        .assert.elementNotPresent(sharePopupSelector)
+        .assert.not.elementPresent(sharePopupSelector)
     }).end();
 }
 

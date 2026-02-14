@@ -22,7 +22,7 @@
     "@root/pem": "^1.0.4",
     "@types/fibers": "^3.1.1",
     "@types/meteor": "2.9.11",
-    "acme-dns-01-cloudflare": "^1.2.5",
+    "acme-dns-01-cloudflare": "git+https://github.com/mnutt/acme-dns-01-cloudflare.git#v1.3.0",
     "acme-dns-01-desec": "^3.0.0",
     "acme-dns-01-digitalocean": "^3.0.1",
     "acme-dns-01-dnsimple": "^3.0.0",

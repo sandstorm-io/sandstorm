@@ -277,6 +277,15 @@ continuous: tmp/.deps deps/boringssl/build/ssl/libssl.a deps/libsodium/build/src
 	    LIBS="$(LIBS2)" NODEJS=$(NODEJS) $(EKAM) -j$(PARALLEL) -c -n :41315 || \
 	    ($(call color,You probably need to install ekam and put it on your path; see github.com/sandstorm-io/ekam) && false)
 
+
+# ====================================================================
+# Mongo migration tool
+bin/sandstorm-migrate-mongo: \
+	$(shell find migrate-mongo -type f -name '*.go') \
+	migrate-mongo/go.mod \
+	migrate-mongo/go.sum
+	cd migrate-mongo && go build -o ../$@
+
 # ====================================================================
 # Front-end shell
 
@@ -377,7 +386,7 @@ shell-build: shell/imports/* shell/imports/*/* shell/imports/*/*/* shell/imports
 # ====================================================================
 # Bundle
 
-bundle: tmp/.ekam-run shell-build make-bundle.sh localedata-C meteor-bundle-main.js
+bundle: tmp/.ekam-run shell-build make-bundle.sh localedata-C meteor-bundle-main.js bin/sandstorm-migrate-mongo
 	@$(call color,bundle)
 	@CC=$(CC) ./make-bundle.sh
 

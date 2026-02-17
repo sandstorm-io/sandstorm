@@ -131,6 +131,9 @@ fi
 # Extract bin/mongo and bin/mongod from the old sandstorm bundle, and place them in bundle/.
 tar xf $OLD_BUNDLE_PATH --transform=s/^${OLD_BUNDLE_BASE}/bundle/ $OLD_MONGO_FILES
 
+# Copy in our helper to move over to newer versions of mongo:
+cp bin/sandstorm-migrate-mongo bundle/bin/
+
 cp $(which zip unzip xz gpg) bundle/bin
 
 # 'node-fibers' depends on a package (detect-libc) that uses various heuristics

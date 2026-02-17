@@ -138,6 +138,12 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       matchesNoneOf @7 :List(ETag);  # If-None-Match
     }
 
+    rangeHint @10 :Range;
+    # Requests that the server returns a range of bytes from the document rather than the entire
+    # document. If the server accepts the range hint, it will return a `content` response with
+    # `statusCode` set to `partialContent`. However, the server is also free to ignore the
+    # `rangeHint`.
+
     additionalHeaders @3 :List(Header);
     # Additional headers present in the request. Only whitelisted headers are
     # permitted.
@@ -180,6 +186,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     mimeType @0 :Text;
     content @1 :Data;
     encoding @2 :Text;  # Content-Encoding header (optional).
+    range @3 :Range;    # Content-Range header (optional).
   }
 
   struct PutContent {
@@ -188,6 +195,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     mimeType @0 :Text;
     content @1 :Data;
     encoding @2 :Text;  # Content-Encoding header (optional).
+    range @3 :Range;    # Content-Range header (optional).
   }
 
   struct ETag {
@@ -195,6 +203,28 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     weak @1 :Bool;
     # denotes that the resource may not be byte-for-byte identical, but is
     # semantically equivalent
+  }
+
+  struct Range {
+    # Specifies a range of bytes within a larger blob. Used for `Range` and `Content-Range`
+    # headers.
+
+    start @0 :UInt64;
+    # Start point of the range, in bytes.
+
+    end :union {
+      # Endpoint of the range, in bytes.
+
+      endOfContent @1 :Void;
+      position @2 :UInt64;
+    }
+
+    fullSize :union {
+      # Size of the overall file (not just this range).
+
+      unknown @3 :Void;
+      bytes @4 :UInt64;
+    }
   }
 
   struct Cookie {
@@ -252,11 +282,22 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       created  @1 $httpStatus(id = 201, title = "Created");
       accepted @2 $httpStatus(id = 202, title = "Accepted");
 
-      noContent      @3 $httpStatus(id = 204, title = "No Content");
       partialContent @4 $httpStatus(id = 206, title = "Partial Content");
-      multiStatus    @5 $httpStatus(id = 207, title = "Multi-Status");
+      # Indicates that the server is only returning the range of bytes that the client requested
+      # via `Context.rangeHint`. This status is only allowed when a `rangeHint` was present.
+      #
+      # (In traditional HTTP, the server could return an arbitrary range that has nothing to do
+      # with the range the client requested. Since this is useless in practice and annoying to
+      # check for, WebSession only allows the server to return exactly the range the client
+      # wanted. If an http-bridge app returns a range that doesn't match what the client asked
+      # for, sandstorm-http-bridge will throw an exception instead.)
 
-      # This seems to fit better here than in the 3xx range
+      # TODO(apibump): Only the three status codes above should actually be used. The status codes
+      #   below this point actually represent special cases that are represented by using different
+      #   fields of the Response union.
+
+      noContent      @3 $httpStatus(id = 204, title = "No Content");
+      multiStatus    @5 $httpStatus(id = 207, title = "Multi-Status");
       notModified    @6 $httpStatus(id = 304, title = "Not Modified");
 
       # Not applicable:
@@ -282,12 +323,15 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       notAcceptable         @4 $httpStatus(id = 406, title = "Not Acceptable");
       conflict              @5 $httpStatus(id = 409, title = "Conflict");
       gone                  @6 $httpStatus(id = 410, title = "Gone");
-      preconditionFailed   @11 $httpStatus(id = 412, title = "Precondition Failed");
       requestEntityTooLarge @7 $httpStatus(id = 413, title = "Request Entity Too Large");
       requestUriTooLong     @8 $httpStatus(id = 414, title = "Request-URI Too Long");
       unsupportedMediaType  @9 $httpStatus(id = 415, title = "Unsupported Media Type");
+      rangeNotSatisfiable  @13 $httpStatus(id = 416, title = "Range Not Satisfiable");
       imATeapot            @10 $httpStatus(id = 418, title = "I'm a teapot");
       unprocessableEntity  @12 $httpStatus(id = 422, title = "Unprocessable Entity");
+
+      preconditionFailed   @11 $httpStatus(id = 412, title = "Precondition Failed");
+      # TODO(apibump): This enum value is deprecated. Use the union branch instead.
 
       # Not applicable:
       #   401 Unauthorized:  We don't do HTTP authentication.
@@ -295,8 +339,8 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       #   407 Proxy Authentication Required:  Not a proxy.
       #   408 Request Timeout:  Not possible; the entire request is provided with the call.
       #   411 Length Required:  Request is framed using Cap'n Proto.
-      #   412 Precondition Failed:  If we implement preconditions, they should be handled
-      #     separately from errors.
+      #   412 Precondition Failed:  Preconditions are handled by a separate union branch.
+      #       TODO(apibump): Oops, 412 is actually defined above. It should be removed.
       #   416 Requested Range Not Satisfiable:  Ranges not implemented (might be later).
       #   417 Expectation Failed:  Like 412.
       #   Others:  Not standard.

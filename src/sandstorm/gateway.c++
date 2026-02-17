@@ -935,9 +935,13 @@ void GatewayService::taskFailed(kj::Exception&& exception) {
 // =======================================================================================
 
 GatewayTlsManager::GatewayTlsManager(
-    kj::HttpServer& server, kj::NetworkAddress& smtpServer,
-    kj::Maybe<kj::StringPtr> privateKeyPassword, kj::PromiseFulfillerPair<void> readyPaf)
+    kj::HttpServer& server,
+    kj::HttpServer& altPortServer,
+    kj::NetworkAddress& smtpServer,
+    kj::Maybe<kj::StringPtr> privateKeyPassword,
+    kj::PromiseFulfillerPair<void> readyPaf)
     : server(server),
+      altPortServer(altPortServer),
       smtpServer(smtpServer),
       privateKeyPassword(privateKeyPassword),
       ready(readyPaf.promise.fork()),
@@ -947,6 +951,12 @@ GatewayTlsManager::GatewayTlsManager(
 kj::Promise<void> GatewayTlsManager::listenHttps(kj::ConnectionReceiver& port) {
   return ready.addBranch().then([this, &port]() {
     return listenLoop(port);
+  });
+}
+
+kj::Promise<void> GatewayTlsManager::listenAltPortHttps(kj::ConnectionReceiver& port) {
+  return ready.addBranch().then([this, &port]() {
+    return listenAltPortLoop(port);
   });
 }
 
@@ -1018,12 +1028,20 @@ kj::Promise<void> GatewayTlsManager::subscribeKeys(GatewayRouter::Client gateway
 }
 
 kj::Promise<void> GatewayTlsManager::listenLoop(kj::ConnectionReceiver& port) {
-  return port.accept().then([this, &port](kj::Own<kj::AsyncIoStream>&& stream) {
+  return listenLoop(port, server);
+}
+
+kj::Promise<void> GatewayTlsManager::listenAltPortLoop(kj::ConnectionReceiver& port) {
+  return listenLoop(port, altPortServer);
+}
+
+kj::Promise<void> GatewayTlsManager::listenLoop(kj::ConnectionReceiver& port, kj::HttpServer& srv) {
+  return port.accept().then([this, &port, &srv](kj::Own<kj::AsyncIoStream>&& stream) {
     KJ_IF_MAYBE(t, currentTls) {
       auto tls = kj::addRef(**t);
       tasks.add(tls->tls.wrapServer(kj::mv(stream))
-          .then([this](kj::Own<kj::AsyncIoStream>&& encrypted) {
-        return server.listenHttp(kj::mv(encrypted));
+          .then([&srv](kj::Own<kj::AsyncIoStream>&& encrypted) {
+        return srv.listenHttp(kj::mv(encrypted));
       }).attach(kj::mv(tls)));
     } else {
       KJ_LOG(ERROR, "refused HTTPS connection because no TLS keys are configured");

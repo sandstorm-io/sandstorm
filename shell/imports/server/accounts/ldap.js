@@ -95,8 +95,6 @@ LDAP.prototype.ldapCheck = function (db, options) {
       }, errorFunc);
     }
 
-    client.on("error", errorFunc);
-
     let username = options.username;
     let domain = _this.options.defaultDomain;
 
@@ -117,15 +115,16 @@ LDAP.prototype.ldapCheck = function (db, options) {
 
     if (_this.options.searchBindDn) {
       let ldapBindFut = new Future();
-      client.bind(_this.options.searchBindDn, _this.options.searchBindPassword,
-        function (err) {
-          if (err) {
-            ldapBindFut.throw(err);
-          } else {
-            ldapBindFut.return();
-          }
+      let searchBindErrorFunc = function (err) {
+        if (err) {
+          ldapBindFut.throw(err);
+        } else {
+          ldapBindFut.return();
         }
-      );
+      };
+
+      client.on("error", searchBindErrorFunc);
+      client.bind(_this.options.searchBindDn, _this.options.searchBindPassword, searchBindErrorFunc);
 
       try {
         ldapBindFut.wait();
@@ -133,6 +132,8 @@ LDAP.prototype.ldapCheck = function (db, options) {
         return { error: err };
       }
     }
+
+    client.on("error", errorFunc);
     // initialize result
     let retObject = {
       username: username,

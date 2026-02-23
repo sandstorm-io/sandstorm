@@ -3,7 +3,7 @@
 # This script installs the Sandstorm Personal Cloud Server on your Linux
 # machine. You can run the latest installer directly from the web by doing:
 #
-#     curl https://install.sandstorm.io | bash
+#     curl https://install.sandstorm.org | bash
 #
 # If `curl|bash` makes you uncomfortable, see other options here:
 #
@@ -85,7 +85,7 @@ fail() {
 
   # Users can export REPORT=no to avoid the error-reporting behavior, if they need to.
   if [ "${REPORT:-yes}" = "yes" ] ; then
-    if USE_DEFAULTS=no prompt-yesno "Hmm, installation failed. Would it be OK to send an anonymous error report to the sandstorm.io team so we know something is wrong?
+    if USE_DEFAULTS=no prompt-yesno "Hmm, installation failed. Would it be OK to send an anonymous error report to the Sandstorm team so we know something is wrong?
 It would only contain this error code: $error_code" "yes" ; then
       echo "Sending problem report..." >&2
       local BEARER_TOKEN="4-Og3Ty2SPmpkZGnVc_8hnBGXK0JBBXDeBn_55FWixJ"
@@ -412,10 +412,10 @@ rerun_script_as_root() {
   ENVVARS="$ENVVARS CURL_USER_AGENT=$CURL_USER_AGENT"
 
   if [ "$(basename $SCRIPT_NAME)" == bash ]; then
-    # Probably ran like "curl https://sandstorm.io/install.sh | bash"
+    # Probably ran like "curl https://sandstorm.org/install.sh | bash"
     echo "Re-running script as root..."
 
-    exec sudo bash -euo pipefail -c "curl -fs -A $CURL_USER_AGENT https://install.sandstorm.io | $ENVVARS bash"
+    exec sudo bash -euo pipefail -c "curl -fs -A $CURL_USER_AGENT https://install.sandstorm.org | $ENVVARS bash"
   elif [ "$(basename $SCRIPT_NAME)" == install.sh ] && [ -e "$0" ]; then
     # Probably ran like "bash install.sh" or "./install.sh".
     echo "Re-running script as root..."
@@ -431,7 +431,7 @@ rerun_script_as_root() {
 Please download a copy and name it 'install.sh' and run that as root, perhaps using sudo. \
 Try this command:
 
-curl https://install.sandstorm.io/ > install.sh && sudo bash install.sh"
+curl https://install.sandstorm.org/ > install.sh && sudo bash install.sh"
 }
 
 set_umask() {
@@ -1307,7 +1307,7 @@ download_latest_bundle_and_extract_if_needed() {
   # to do a Sandstorm install. We had to stop using "install" because vagrant-spk happens to use
   # &type=install during situations that we do not want to categorize as an attempt by a human to
   # install Sandstorm.
-  BUILD="$(curl -A "$CURL_USER_AGENT" -fs "https://install.sandstorm.io/$DEFAULT_UPDATE_CHANNEL?from=0&type=install_v2")"
+  BUILD="$(curl -A "$CURL_USER_AGENT" -fs "https://install.sandstorm.org/$DEFAULT_UPDATE_CHANNEL?from=0&type=install_v2")"
   BUILD_DIR="sandstorm-${BUILD}"
 
   if [[ ! "$BUILD" =~ ^[0-9]+$ ]]; then
@@ -1317,7 +1317,7 @@ download_latest_bundle_and_extract_if_needed() {
   do-download() {
     rm -rf "${BUILD_DIR}"
     WORK_DIR="$(mktemp -d ./sandstorm-installer.XXXXXXXXXX)"
-    local URL="https://dl.sandstorm.io/sandstorm-$BUILD.tar.xz"
+    local URL="https://dl.sandstorm.org/sandstorm-$BUILD.tar.xz"
     echo "Downloading: $URL"
     retryable_curl "$URL" "$WORK_DIR/sandstorm-$BUILD.tar.xz"
     retryable_curl "$URL.sig" "$WORK_DIR/sandstorm-$BUILD.tar.xz.sig"
@@ -1366,7 +1366,7 @@ __EOF__
         echo "GPG signature is valid."
       else
         rm -rf sandstorm-$BUILD
-        fail "E_INVALID_GPG_SIG" "GPG signature is NOT valid! Please report to security@sandstorm.io immediately!"
+        fail "E_INVALID_GPG_SIG" "GPG signature is NOT valid! Please report to security@sandstorm.org immediately!"
       fi
 
       unset GNUPGHOME
@@ -1383,33 +1383,15 @@ __EOF__
 
     # We used to reject packages older than 30 days on the assumption the package would definitely
     # be updated more often than that. For about six years the existence of this check was the main
-    # thing that drove me (Kenton) to do a release every month, although I occasionally forgot which
-    # would temporarily block new installs. Surprisingly (to me, at least), whenever this happend,
-    # people would actually notice and complain within a day or two -- people were apparently
-    # still installing Sandstorm regularly.
-    #
-    # As of Feb 2023, though, I think it's time to retire this check and end the monthly update
-    # schedule, for several reasons:
-    # - In 2022, the majority of months saw no actual changes at all.
-    # - Ian, who had been the most active maintainer, is now focusing his efforts on a new
-    #   implementation called Tempest. So 2023 is likely to see even fewer changes.
-    # - It's no longer possible to update the Meteor dependency, because newer versions of Meteor
-    #   no longer support the ancient version of Mongo we're stuck on (2.6), and writing automation
-    #   to update everyone's Mongo instances automatically without breaking anyone is too large
-    #   a project for anyone to volunteer for. Since almost all of Sandstorm's dependencies stem
-    #   from Meteor, trying to update dependencies on a monthly basis has become futile, as the
-    #   pinned Meteor version holds everything else back.
-    # - I just have too much to do, and although releases are not a whole lot of work, it feels
-    #   like one more thing on the pile.
-    #
-    # I'm still happy to push releases when there are interesting changes.
+    # thing that drove Kenton to do a release every month, although he occasionally forgot which would
+    # temporarily block new installs. We may reinstate this in the future if warranted.
 #    if [ ! -e "$BUILD_DIR/buildstamp" ] || \
 #       [ $(stat -c %Y "$BUILD_DIR/buildstamp") -lt $(( $(date +%s) - 30*24*60*60 )) ]; then
 #      rm -rf "$BUILD_DIR"
 #      fail "E_PKG_STALE" "The downloaded package seems to be more than a month old. Please verify that your" \
 #           "computer's clock is correct and try again. It could also be that an attacker is" \
 #           "trying to trick you into installing an old version. Please contact" \
-#           "security@sandstorm.io if the problem persists."
+#           "security@sandstorm.org if the problem persists."
 #    fi
   }
 

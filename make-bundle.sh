@@ -114,7 +114,7 @@ OLD_BUNDLE_SHA256=ebffd643dffeba349f139bee34e4ce33fd9b1298fafc1d6a31eb35a191059a
 OLD_MONGO_FILES="$OLD_BUNDLE_BASE/bin/mongo $OLD_BUNDLE_BASE/bin/mongod"
 if [ ! -e "$OLD_BUNDLE_PATH" ] ; then
   echo "Fetching $OLD_BUNDLE_FILENAME to extract a mongo 2.6..."
-  curl --output "$OLD_BUNDLE_PATH" https://dl.sandstorm.io/$OLD_BUNDLE_FILENAME
+  curl --output "$OLD_BUNDLE_PATH" https://dl.sandstorm.org/$OLD_BUNDLE_FILENAME
 fi
 
 # Always check the checksum to guard against corrupted downloads.

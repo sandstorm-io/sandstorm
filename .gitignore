@@ -81,3 +81,6 @@ tests/tmp-sandstorm
 app-index.spk
 test-app.spk
 deps/llvm-build
+package-lock.json
+shell/package-lock.json
+tests/package-lock.json

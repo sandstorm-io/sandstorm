@@ -162,17 +162,10 @@ rm -rf ${MONGO26_BASE}
 MONGO7_VERSION=7.0.16
 MONGO7_FILENAME=mongodb-linux-x86_64-ubuntu2004-${MONGO7_VERSION}.tgz
 MONGO7_PATH="hack/$MONGO7_FILENAME"
-MONGO7_SHA256=PLACEHOLDER_NEEDS_UPDATE
+MONGO7_SHA256=3be980f61bf1eca1680ffdac73d765c857f4596ab678cc244b27f82ab9c404ff
 if [ ! -e "$MONGO7_PATH" ] ; then
   echo "Fetching MongoDB 7.0..."
   curl --output "$MONGO7_PATH" "https://fastdl.mongodb.org/linux/$MONGO7_FILENAME"
-fi
-
-# Calculate checksum if placeholder (for development)
-if [ "$MONGO7_SHA256" = "PLACEHOLDER_NEEDS_UPDATE" ]; then
-  echo "WARNING: Using downloaded file without checksum verification"
-  MONGO7_SHA256=$(sha256sum "$MONGO7_PATH" | cut -d' ' -f1)
-  echo "Downloaded file SHA256: $MONGO7_SHA256"
 fi
 
 sha256sum --check <<EOF

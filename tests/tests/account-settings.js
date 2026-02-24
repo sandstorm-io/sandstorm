@@ -35,6 +35,7 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
     .waitForElementNotPresent("div.introjs-overlay", short_wait)
     // Click dropdown menu, go to account settings link
     .waitForElementVisible("button.has-picture", medium_wait)
+    .pause(500)
     .click("button.has-picture")
     .waitForElementVisible("a[href='/account']", medium_wait)
     .click("a[href='/account']")
@@ -50,7 +51,6 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
       }, [])
     .perform(function (client, done) {
       client.setValue("input[name=picture]", newPicPath, function(){
-        console.log("finished setting new profile picture path");
         done();
       })
     })
@@ -69,7 +69,7 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
       });
     }, [])
     .waitForElementVisible('p.flash-message.success-message', medium_wait)
-    .assert.containsText('p.flash-message.success-message', 'Success: picture updated')
+    .assert.textContains('p.flash-message.success-message', 'Success: picture updated')
 
 
     // Change name, handle, and pronoun
@@ -84,7 +84,7 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
     .submitForm("form.account-profile-editor", () => {
       browser
         .waitForElementVisible("p.success-message", short_wait)
-        .assert.containsText('p.flash-message.success-message', 'Success: profile saved');
+        .assert.textContains('p.flash-message.success-message', 'Success: profile saved');
     })
 
 
@@ -99,12 +99,12 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
     .grainFrame()
     .waitForElementVisible('#name', medium_wait)
     .pause(5000)
-    .assert.containsText('#name', devName2)
-    .assert.containsText('#picture', 'sandstorm.io')
-    .assert.containsText('#preferredHandle', devName2.toLowerCase())
-    .assert.containsText('#pronouns', 'robot')
+    .assert.textContains('#name', devName2)
+    .assert.textContains('#picture', 'sandstorm.io')
+    .assert.textContains('#preferredHandle', devName2.toLowerCase())
+    .assert.textContains('#pronouns', 'robot')
 
-
+    .frameParent()
     .execute("window.Meteor.logout()")
     .end();
 };

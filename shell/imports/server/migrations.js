@@ -600,11 +600,11 @@ const setUpstreamTitles = function (db, _backend) {
   // Initializes the `upstreamTitle` and `renamed` fields of `ApiToken.owner.user`.
 
   const apiTokensRaw = db.collections.apiTokens.rawCollection();
-  const aggregateApiTokens = Meteor.wrapAsync(apiTokensRaw.aggregate, apiTokensRaw);
 
   // First, construct a list of all *shared* grains. We will need to do a separate update()
   // for each of these, so we'd like to skip those which have nothing to update.
-  const grainIds = aggregateApiTokens([
+  // In MongoDB driver 4.x+, aggregate() returns a cursor directly (no callback).
+  const grainIds = apiTokensRaw.aggregate([
     { $match: { "owner.user": { $exists: true }, grainId: { $exists: true } } },
     { $group: { _id: "$grainId" } },
   ]).toArray().await().map(grain => grain._id);

@@ -34,10 +34,10 @@ module.exports['Install and launch test app'] = function (browser) {
     .loginDevAccount()
     .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-7.spk", "281d3ffbc93933001d6b28e44ffac615", "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh")
 
-    .assert.containsText('#grainTitle', 'Untitled Test App test page')
+    .assert.textContains('#grainTitle', 'Untitled Test App test page')
     .grainFrame()
       .waitForElementPresent('#randomId', medium_wait)
-      .assert.containsText('#randomId', 'initial state')
+      .assert.textContains('#randomId', 'initial state')
     .frameParent()
     .url(undefined, function (response) {
       var grainUrl = response.value;
@@ -127,11 +127,11 @@ module.exports['Test startSharing with pathname and hash'] = function (browser) 
     .submitForm('.new-share-token')
     // Get link from a#share-token-text.  Check for hash and pathname.
     .waitForElementVisible('#share-token-text', short_wait)
-    .assert.containsText('#share-token-text', '/pathname/123#hash123')
+    .assert.textContains('#share-token-text', '/pathname/123#hash123')
     // Find the link and remove it.
     .click('button.who-has-access')
     .waitForElementVisible('table.shared-links', short_wait)
-    .assert.containsText('table.shared-links tr:last-child span.token-petname', linkLabel)
+    .assert.textContains('table.shared-links tr:last-child span.token-petname', linkLabel)
     .click('table.shared-links tr:last-child button.revoke-token')
     // Close the sharing popup.
     .click('button.close-popup')

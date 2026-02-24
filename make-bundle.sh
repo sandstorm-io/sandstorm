@@ -109,12 +109,12 @@ cp $METEOR_DEV_BUNDLE/bin/node bundle/bin
 # Pull mongo v2.6 out of a previous Sandstorm package.
 OLD_BUNDLE_BASE=sandstorm-171
 OLD_BUNDLE_FILENAME=$OLD_BUNDLE_BASE.tar.xz
-OLD_BUNDLE_PATH=hack/$OLD_BUNDLE_FILENAME
+OLD_BUNDLE_PATH="hack/$OLD_BUNDLE_FILENAME"
 OLD_BUNDLE_SHA256=ebffd643dffeba349f139bee34e4ce33fd9b1298fafc1d6a31eb35a191059a99
 OLD_MONGO_FILES="$OLD_BUNDLE_BASE/bin/mongo $OLD_BUNDLE_BASE/bin/mongod"
 if [ ! -e "$OLD_BUNDLE_PATH" ] ; then
   echo "Fetching $OLD_BUNDLE_FILENAME to extract a mongo 2.6..."
-  curl --output "$OLD_BUNDLE_PATH" https://dl.sandstorm.io/$OLD_BUNDLE_FILENAME
+  curl --output "$OLD_BUNDLE_PATH" https://dl.sandstorm.org/$OLD_BUNDLE_FILENAME
 fi
 
 # Always check the checksum to guard against corrupted downloads.
@@ -130,6 +130,112 @@ fi
 
 # Extract bin/mongo and bin/mongod from the old sandstorm bundle, and place them in bundle/.
 tar xf $OLD_BUNDLE_PATH --transform=s/^${OLD_BUNDLE_BASE}/bundle/ $OLD_MONGO_FILES
+
+# Download MongoDB 2.6.12 to get mongodump (not included in the old Sandstorm bundle).
+MONGO26_VERSION=2.6.12
+MONGO26_FILENAME=mongodb-linux-x86_64-${MONGO26_VERSION}.tgz
+MONGO26_PATH="hack/$MONGO26_FILENAME"
+MONGO26_SHA256=6d6415ac068825d1aed23f9482080ce3551bfac828d9570be1d72990d5f441b0
+if [ ! -e "$MONGO26_PATH" ] ; then
+  echo "Fetching MongoDB 2.6.12 for mongodump..."
+  curl --output "$MONGO26_PATH" "https://fastdl.mongodb.org/linux/$MONGO26_FILENAME"
+fi
+
+sha256sum --check <<EOF
+$MONGO26_SHA256  $MONGO26_PATH
+EOF
+rc=$?
+if [ $rc -ne 0 ]; then
+  echo "MongoDB 2.6.12 package did not match expected checksum.  Aborting."
+  exit 1
+fi
+
+# Extract mongodump from MongoDB 2.6.12.
+MONGO26_BASE=mongodb-linux-x86_64-${MONGO26_VERSION}
+tar xf $MONGO26_PATH ${MONGO26_BASE}/bin/mongodump
+cp ${MONGO26_BASE}/bin/mongodump bundle/bin/mongodump
+rm -rf ${MONGO26_BASE}
+
+# Download MongoDB 7.0 for migration support.
+# Both versions are bundled - users run 'sandstorm migrate-mongo'
+# to upgrade their database from 2.6 to 7.0.
+MONGO7_VERSION=7.0.16
+MONGO7_FILENAME=mongodb-linux-x86_64-ubuntu2004-${MONGO7_VERSION}.tgz
+MONGO7_PATH="hack/$MONGO7_FILENAME"
+MONGO7_SHA256=3be980f61bf1eca1680ffdac73d765c857f4596ab678cc244b27f82ab9c404ff
+if [ ! -e "$MONGO7_PATH" ] ; then
+  echo "Fetching MongoDB 7.0..."
+  curl --output "$MONGO7_PATH" "https://fastdl.mongodb.org/linux/$MONGO7_FILENAME"
+fi
+
+sha256sum --check <<EOF
+$MONGO7_SHA256  $MONGO7_PATH
+EOF
+rc=$?
+if [ $rc -ne 0 ]; then
+  echo "MongoDB 7.0 package did not match expected checksum.  Aborting."
+  exit 1
+fi
+
+# Extract mongod from MongoDB 7.0 package.
+# Note: MongoDB 7.0 doesn't include the legacy mongo shell, use mongosh instead.
+MONGO7_BASE=mongodb-linux-x86_64-ubuntu2004-${MONGO7_VERSION}
+mkdir -p bundle/bin
+tar xf $MONGO7_PATH ${MONGO7_BASE}/bin/mongod
+cp ${MONGO7_BASE}/bin/mongod bundle/bin/mongod7
+rm -rf ${MONGO7_BASE}
+
+# Download MongoDB Database Tools (mongodump, mongorestore) for MongoDB 7.0.
+# These are distributed separately since MongoDB 4.4+.
+MONGO_TOOLS_VERSION=100.10.0
+MONGO_TOOLS_FILENAME=mongodb-database-tools-ubuntu2004-x86_64-${MONGO_TOOLS_VERSION}.tgz
+MONGO_TOOLS_PATH="hack/$MONGO_TOOLS_FILENAME"
+MONGO_TOOLS_SHA256=74583f31eb2fefa4b7016b525b0f50209a4e20364f41719cc8c93b7156e49937
+if [ ! -e "$MONGO_TOOLS_PATH" ] ; then
+  echo "Fetching MongoDB Database Tools..."
+  curl --output "$MONGO_TOOLS_PATH" "https://fastdl.mongodb.org/tools/db/$MONGO_TOOLS_FILENAME"
+fi
+
+sha256sum --check <<EOF
+$MONGO_TOOLS_SHA256  $MONGO_TOOLS_PATH
+EOF
+rc=$?
+if [ $rc -ne 0 ]; then
+  echo "MongoDB Database Tools package did not match expected checksum.  Aborting."
+  exit 1
+fi
+
+# Extract mongorestore from database tools package.
+MONGO_TOOLS_BASE=mongodb-database-tools-ubuntu2004-x86_64-${MONGO_TOOLS_VERSION}
+tar xf $MONGO_TOOLS_PATH ${MONGO_TOOLS_BASE}/bin/mongorestore
+cp ${MONGO_TOOLS_BASE}/bin/mongorestore bundle/bin/mongorestore7
+rm -rf ${MONGO_TOOLS_BASE}
+
+# Download mongosh (MongoDB Shell) for MongoDB 7.0.
+# MongoDB 7.0+ uses mongosh instead of the legacy mongo shell.
+MONGOSH_VERSION=2.3.8
+MONGOSH_FILENAME=mongosh-${MONGOSH_VERSION}-linux-x64.tgz
+MONGOSH_PATH="hack/$MONGOSH_FILENAME"
+MONGOSH_SHA256=23edb768189663aaa9732a2340a25b5fc05a314940538809a7840be7f2ce221f
+if [ ! -e "$MONGOSH_PATH" ] ; then
+  echo "Fetching mongosh..."
+  curl --output "$MONGOSH_PATH" "https://downloads.mongodb.com/compass/$MONGOSH_FILENAME"
+fi
+
+sha256sum --check <<EOF
+$MONGOSH_SHA256  $MONGOSH_PATH
+EOF
+rc=$?
+if [ $rc -ne 0 ]; then
+  echo "mongosh package did not match expected checksum.  Aborting."
+  exit 1
+fi
+
+# Extract mongosh binary.
+MONGOSH_BASE=mongosh-${MONGOSH_VERSION}-linux-x64
+tar xf $MONGOSH_PATH ${MONGOSH_BASE}/bin/mongosh
+cp ${MONGOSH_BASE}/bin/mongosh bundle/bin/mongosh
+rm -rf ${MONGOSH_BASE}
 
 cp $(which zip unzip xz gpg) bundle/bin
 

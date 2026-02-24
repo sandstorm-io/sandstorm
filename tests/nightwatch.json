@@ -1,46 +1,48 @@
 {
-  "src_folders" : ["tests", "apps", "unittests"],
-  "output_folder" : "reports",
-  "custom_commands_path" : "commands",
+  "src_folders": ["tests", "apps"],
+  "output_folder": "reports",
+  "custom_commands_path": "commands",
 
-  "selenium" : {
-    "start_process" : false,
-    "server_path" : "node_modules/selenium-standalone/.selenium/2.42.2/server.jar",
-    "log_path" : "",
-    "host" : "127.0.0.1",
-    "port" : 4444
+  "webdriver": {
+    "start_process": true,
+    "server_path": "",
+    "host": "127.0.0.1",
+    "port": 4444
   },
-  "disable_colors" : true,
 
-  "test_settings" : {
-    "default" : {
-      "launch_url" : "http://local.sandstorm.io:6080",
-      "selenium_port"  : 4444,
-      "selenium_host"  : "localhost",
-      "silent": true,
-      "screenshots" : {
-        "enabled" : true,
+  "test_settings": {
+    "default": {
+      "launch_url": "http://local.sandstorm.io:6080",
+      "webdriver": {
+        "start_process": true,
+        "server_path": "node_modules/chromedriver/lib/chromedriver/chromedriver",
+        "port": 4444
+      },
+      "backwards_compatibility_mode": true,
+      "disable_colors": true,
+      "screenshots": {
+        "enabled": true,
         "on_failure": true,
         "on_error": true,
-        "path" : "screenshots"
+        "path": "screenshots"
       },
-
       "desiredCapabilities": {
         "browserName": "chrome",
-        "javascriptEnabled" : true,
-        "acceptSslCerts" : true,
-        "chromeOptions": {
-          "w3c": false
+        "goog:chromeOptions": {
+          "args": ["--headless", "--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
+          "prefs": {
+            "download.prompt_for_download": false,
+            "download.directory_upgrade": true,
+            "safebrowsing.enabled": true
+          }
         }
       },
-      "exclude" : "./unittests/*"
+      "exclude": ["unittests"]
     },
-    "unittests" : {
-      "selenium" : {
-        "start_session" : false
-      },
-      "filter" : "./unittests/*",
-      "exclude" : ""
+    "unittests": {
+      "src_folders": ["unittests"],
+      "start_session": false,
+      "exclude": ["tests", "apps"]
     }
   }
 }

@@ -38,13 +38,13 @@ module.exports["Test Powerbox"] = function (browser) {
     .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
                 "f855d3c96e18e785a3a734a49919ef18",
                 "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
-    .assert.containsText("#grainTitle", "Untitled PowerboxTest")
+    .assert.textContains("#grainTitle", "Untitled PowerboxTest")
     .waitForElementVisible('.grain-frame', short_wait)
     .grainFrame()
     .waitForElementVisible("#offer", short_wait)
     .click("#offer")
     .waitForElementVisible("#offer-result", short_wait)
-    .assert.containsText("#offer-result", "offer: success")
+    .assert.textContains("#offer-result", "offer: success")
     .frameParent()
     .waitForElementVisible("#powerbox-offer-url", short_wait)
     .getText("#powerbox-offer-url", function (result) {
@@ -58,7 +58,7 @@ module.exports["Test Powerbox"] = function (browser) {
           .click("#powerbox-request-form button")
           .grainFrame()
           .waitForElementVisible("#request-result", short_wait)
-          .assert.containsText("#request-result", "request: footest");
+          .assert.textContains("#request-result", "request: footest");
     });
 };
 
@@ -71,13 +71,13 @@ module.exports["Test PowerboxSave"] = function (browser) {
     .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
                 "f855d3c96e18e785a3a734a49919ef18",
                 "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
-    .assert.containsText("#grainTitle", "Untitled PowerboxTest")
+    .assert.textContains("#grainTitle", "Untitled PowerboxTest")
     .waitForElementVisible('.grain-frame', short_wait)
     .grainFrame()
     .waitForElementVisible("#offer", short_wait)
     .click("#offer")
     .waitForElementVisible("#offer-result", short_wait)
-    .assert.containsText("#offer-result", "offer: success")
+    .assert.textContains("#offer-result", "offer: success")
     .frameParent()
     .waitForElementVisible("#powerbox-offer-url", short_wait)
     .getText("#powerbox-offer-url", function (result) {
@@ -91,7 +91,7 @@ module.exports["Test PowerboxSave"] = function (browser) {
           .click("#powerbox-request-form button")
           .grainFrame()
           .waitForElementVisible("#request-result", short_wait)
-          .assert.containsText("#request-result", "request: footest");
+          .assert.textContains("#request-result", "request: footest");
     });
 };
 
@@ -104,7 +104,7 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
     .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
                 "f855d3c96e18e785a3a734a49919ef18",
                 "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
-    .assert.containsText("#grainTitle", "Untitled PowerboxTest")
+    .assert.textContains("#grainTitle", "Untitled PowerboxTest")
 
     // We'll use the debugLog at the bottom of the test, but it's nice to open it early and give it time to load.
     .click("#openDebugLog")
@@ -113,7 +113,7 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
     .waitForElementVisible("#offer", short_wait)
     .click("#offer")
     .waitForElementVisible("#offer-result", short_wait)
-    .assert.containsText("#offer-result", "offer: success")
+    .assert.textContains("#offer-result", "offer: success")
     .frameParent()
     .waitForElementVisible("#powerbox-offer-url", short_wait)
     .getText("#powerbox-offer-url", function (result) {
@@ -127,12 +127,12 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
         .click("#powerbox-request-form button")
         .grainFrame()
         .waitForElementVisible("#request-result", short_wait)
-        .assert.containsText("#request-result", "request:")
+        .assert.textContains("#request-result", "request:")
         .windowHandles(function (windows) {
           browser
             .switchWindow(windows.value[1])
             .waitForElementVisible(".grainlog-contents > pre", short_wait)
-            .assert.containsText(".grainlog-contents > pre", "Error: Capability revoked because a user involved in introducing it no longer has the necessary permissions")
+            .assert.textContains(".grainlog-contents > pre", "Error: Capability revoked because a user involved in introducing it no longer has the necessary permissions")
         });
     })
     .end();
@@ -143,7 +143,7 @@ module.exports["Test Powerbox embedded request flow"] = function (browser) {
     .init()
     .loginDevAccount()
     .uploadTestApp()
-    .assert.containsText("#grainTitle", "Untitled Sandstorm Test App instance")
+    .assert.textContains("#grainTitle", "Untitled Sandstorm Test App instance")
     .url(function (grainUrl) {
       var grainId = grainUrl.value.split("/").pop();
       var cardSelector = ".powerbox-card button[data-card-id=\"grain-" + grainId + "\"]";
@@ -154,7 +154,7 @@ module.exports["Test Powerbox embedded request flow"] = function (browser) {
         .waitForElementVisible(actionSelector, short_wait)
         .click(actionSelector)
         .waitForElementVisible("#grainTitle", medium_wait)
-        .assert.containsText("#grainTitle", "Untitled Sandstorm Test App instance")
+        .assert.textContains("#grainTitle", "Untitled Sandstorm Test App instance")
         .grainFrame()
         .waitForElementPresent("#do-powerbox-request", medium_wait)
         .click("#do-powerbox-request")
@@ -169,7 +169,7 @@ module.exports["Test Powerbox embedded request flow"] = function (browser) {
         .frameParent()
         .grainFrame()
         .waitForElementVisible("#result-text", short_wait)
-        .assert.containsText("#result-text", "foo bar baz");
+        .assert.textContains("#result-text", "foo bar baz");
     });
 };
 
@@ -205,7 +205,7 @@ module.exports["Test Powerbox query"] = function (browser) {
               if (expectedMatches[id]) {
                 browser.assert.elementPresent(cardSelector);
               } else {
-                browser.assert.elementNotPresent(cardSelector);
+                browser.assert.not.elementPresent(cardSelector);
               }
             }
 

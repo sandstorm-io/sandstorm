@@ -40,7 +40,7 @@ module.exports["Test restore open grains"] = function (browser) {
                 "ca690ad886bf920026f8b876c19539c1",
                 hackerCmsAppId)
     .waitForElementVisible("#grainTitle", medium_wait)
-    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
 
     .click(".navitem-create-grain>a")
     .waitForElementVisible(".app-list", medium_wait)
@@ -48,7 +48,7 @@ module.exports["Test restore open grains"] = function (browser) {
     .waitForElementVisible(actionSelector, short_wait)
     .click(actionSelector)
     .waitForElementVisible("#grainTitle", medium_wait)
-    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
 
     .click(".navitem-create-grain>a")
     .waitForElementVisible(".app-list", medium_wait)
@@ -56,7 +56,7 @@ module.exports["Test restore open grains"] = function (browser) {
     .waitForElementVisible(actionSelector, short_wait)
     .click(actionSelector)
     .waitForElementVisible("#grainTitle", medium_wait)
-    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
 
     .execute(function () {
       var result = [];
@@ -80,14 +80,12 @@ module.exports["Test restore open grains"] = function (browser) {
             browser.assert.equal(response.value, 3);
             browser
               .click(".navbar-grains>li[data-grainid='" + grainIds[0] + "']>button.close-button")
+              .waitForElementNotPresent(".navbar-grains>li[data-grainid='" + grainIds[0] + "']", medium_wait)
               .click(".navbar-grains>li[data-grainid='" + grainIds[1] + "']>button.close-button")
+              .waitForElementNotPresent(".navbar-grains>li[data-grainid='" + grainIds[1] + "']", medium_wait)
               .click(".navbar-grains>li[data-grainid='" + grainIds[2] + "']>button.close-button")
-              .execute(function (){
-                return document.querySelectorAll(".navbar-grains>li").length;
-              }, [], function (response) {
-                browser.assert.equal(response.value, 0);
-                browser.end();
-              });
+              .waitForElementNotPresent(".navbar-grains>li[data-grainid='" + grainIds[2] + "']", medium_wait)
+              .end();
           });
       });
     });

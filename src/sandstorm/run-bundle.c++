@@ -3808,13 +3808,18 @@ private:
   }
 
   void waitForMongoElection(const Config& config, uint port, kj::Maybe<kj::StringPtr> maybePassword) {
-    // Poll for MongoDB 7 replica set election to complete.
+    // Poll for MongoDB 7 replica set election to complete and become writable.
+    // `rs.status().myState === 1` can be true slightly before writes are accepted.
     static constexpr kj::StringPtr pollScript =
         "var attempts = 0;"
         "while (attempts < 30) {"
         "  try {"
+        "    var hello = db.hello();"
+        "    if (hello && hello.isWritablePrimary === true) { quit(0); }"
         "    var status = rs.status();"
-        "    if (status.myState === 1) { quit(0); }"
+        "    if (status && status.myState === 1 && hello && hello.secondary === false) {"
+        "      sleep(250);"
+        "    }"
         "  } catch(e) {}"
         "  sleep(500);"
         "  attempts++;"

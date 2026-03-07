@@ -22,11 +22,19 @@ exports.command = function() {
   return this
     .url(this.launch_url + '/apps')
     .waitForElementVisible('.upload-button', short_wait)
-    .perform(function (client, done) {
-      client.setValue("input[type=file]", testappPath, () => {
-        done();
-      })
-    })
+    // Make the hidden file input visible so we can interact with it
+    .execute(function() {
+      var input = document.querySelector("input[type=file]");
+      if (input) {
+        input.style.display = 'block';
+        input.style.visibility = 'visible';
+        input.style.opacity = '1';
+        input.style.width = 'auto';
+        input.style.height = 'auto';
+      }
+    }, [])
+    .pause(100)
+    .setValue("input[type=file]", testappPath)
     .execute(function () {
       const testappFile = document.querySelector("input[type=file]").files[0];
       uploadApp(testappFile);

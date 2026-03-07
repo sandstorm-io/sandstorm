@@ -74,7 +74,7 @@ if (run_xfail) {
       .setValue("input[name=name]", devName1)
       .submitForm(".login-buttons-list form.dev")
       .waitForElementPresent(".flash-message.error-message", medium_wait)
-      .assert.containsText(".flash-message.error-message", "Error linking credential")
+      .assert.textContains(".flash-message.error-message", "Error linking credential")
 
       // Linking a third credential to the second account should succeed.
       .click("button.link-new-credential")
@@ -114,7 +114,7 @@ if (run_xfail) {
                              medium_wait)
       .click(".credentials-tabs li[data-credential-id='" + devCredentialId3 + "']")
       // Because it is shared with another account, the credential does not have the ability to login.
-      .assert.elementNotPresent(
+      .assert.not.elementPresent(
         "input.toggle-login[data-credential-id='" + devCredentialId3 + "']:checked")
 
       .end();
@@ -152,7 +152,7 @@ module.exports["Test try login with non-login credential"] = function (browser) 
     .setValue("input[name=name]", otherCredentialName)
     .submitForm(".login-buttons-list form.dev")
     .waitForElementVisible(".credential-login-interstitial .warning-banner", short_wait)
-    .assert.containsText(".credential-login-interstitial .warning-banner",
+    .assert.textContains(".credential-login-interstitial .warning-banner",
                          "is not a login credential")
     .end();
 }

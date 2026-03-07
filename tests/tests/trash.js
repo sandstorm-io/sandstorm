@@ -46,7 +46,7 @@ module.exports["Test grain trash"] = function (browser) {
       grainId = grainUrl.split("/").pop();
       grainCheckboxSelector = ".grain-list td.select-grain input[data-grainid='" + grainId + "']";
     })
-    .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+    .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
     .waitForElementVisible('.topbar .share > .show-popup', short_wait)
     .click('.topbar .share > .show-popup')
     .waitForElementVisible("#shareable-link-tab-header", short_wait)
@@ -64,10 +64,10 @@ module.exports["Test grain trash"] = function (browser) {
             .waitForElementVisible("button.reveal-identity-button", short_wait)
             .click("button.reveal-identity-button")
             .waitForElementVisible('.grain-frame', medium_wait)
-            .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+            .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
             .grainFrame()
             .waitForElementPresent('#publish', medium_wait)
-            .assert.containsText('#publish', 'Publish')
+            .assert.textContains('#publish', 'Publish')
             .frame(null)
 
             .waitForElementVisible(".navitem-open-grain>a", short_wait)
@@ -79,16 +79,16 @@ module.exports["Test grain trash"] = function (browser) {
             .waitForElementVisible(grainCheckboxSelector, short_wait)
             .click("button.show-main-list")
             .waitForElementVisible("button.show-trash", short_wait)
-            .assert.elementNotPresent(grainCheckboxSelector)
+            .assert.not.elementPresent(grainCheckboxSelector)
             .click(".navbar-grains>li[data-grainid='" + grainId + "']")
             .waitForElementVisible(".grain-interstitial", short_wait)
-            .assert.containsText(".grain-interstitial>p", "This grain is in your trash.")
+            .assert.textContains(".grain-interstitial>p", "This grain is in your trash.")
             .click("button.restore-from-trash")
             .waitForElementVisible('.grain-frame', medium_wait)
-            .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+            .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
             .grainFrame()
             .waitForElementPresent('#publish', medium_wait)
-            .assert.containsText('#publish', 'Publish')
+            .assert.textContains('#publish', 'Publish')
             .frame(null)
 
             .loginDevAccount(firstUserName)
@@ -104,16 +104,16 @@ module.exports["Test grain trash"] = function (browser) {
             .waitForElementVisible(grainCheckboxSelector, short_wait)
             .click("button.show-main-list")
             .waitForElementVisible("button.show-trash", short_wait)
-            .assert.elementNotPresent(grainCheckboxSelector)
+            .assert.not.elementPresent(grainCheckboxSelector)
             .click(".navbar-grains>li[data-grainid='" + grainId + "']")
             .waitForElementVisible(".grain-interstitial", short_wait)
-            .assert.containsText(".grain-interstitial>p", "This grain is in your trash.")
+            .assert.textContains(".grain-interstitial>p", "This grain is in your trash.")
 
             .loginDevAccount(secondUserName)
             .disableGuidedTour()
             .url(grainUrl)
             .waitForElementVisible(".grain-interstitial", short_wait)
-            .assert.containsText(".grain-interstitial>p",
+            .assert.textContains(".grain-interstitial>p",
                                  "You can no longer access this grain because its owner has moved it to the trash.")
 
             .click(".navitem-open-grain>a")
@@ -126,10 +126,10 @@ module.exports["Test grain trash"] = function (browser) {
             .click(".bulk-action-buttons button.remove-permanently")
             .click("button.show-main-list")
             .waitForElementVisible("button.show-trash", short_wait)
-            .assert.elementNotPresent(grainCheckboxSelector)
+            .assert.not.elementPresent(grainCheckboxSelector)
             .click("button.show-trash")
             .waitForElementVisible("button.show-main-list", short_wait)
-            .assert.elementNotPresent(grainCheckboxSelector)
+            .assert.not.elementPresent(grainCheckboxSelector)
 
             .loginDevAccount(firstUserName)
             .disableGuidedTour()
@@ -142,10 +142,10 @@ module.exports["Test grain trash"] = function (browser) {
             .click(".bulk-action-buttons button.remove-permanently")
             .click("button.show-main-list")
             .waitForElementVisible("button.show-trash", short_wait)
-            .assert.elementNotPresent(grainCheckboxSelector)
+            .assert.not.elementPresent(grainCheckboxSelector)
             .click("button.show-trash")
             .waitForElementVisible("button.show-main-list", short_wait)
-            .assert.elementNotPresent(grainCheckboxSelector)
+            .assert.not.elementPresent(grainCheckboxSelector)
             .end()
         });
     });
@@ -168,7 +168,7 @@ module.exports["Test topbar trash button"] = function (browser) {
         .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
                     hackerCmsAppId)
         .waitForElementVisible("#grainTitle", medium_wait)
-        .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+        .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)
 
         .url(function (urlResponse) {
           var grainUrl = urlResponse.value;
@@ -197,8 +197,8 @@ module.exports["Test topbar trash button"] = function (browser) {
               .waitForElementVisible(grainCheckboxSelector, medium_wait)
               .url(grainUrl)
               .waitForElementVisible(".grain-interstitial", short_wait)
-              .assert.containsText(".grain-interstitial>p", "This grain is in your trash.")
-              .assert.elementNotPresent("#deleteGrain")
+              .assert.textContains(".grain-interstitial>p", "This grain is in your trash.")
+              .assert.not.elementPresent("#deleteGrain")
 
               .execute("window.Meteor.logout()")
 

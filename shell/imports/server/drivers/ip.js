@@ -17,7 +17,6 @@
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
 
-import Bignum from "bignum";
 import { PersistentImpl } from "/imports/server/persistent";
 import Net from "net";
 import Tls from "tls";
@@ -185,8 +184,8 @@ class BoundUdpPortImpl {
   }
 }
 
-const bits16 = Bignum(1).shiftLeft(16).sub(1);
-const bits32 = Bignum(1).shiftLeft(32).sub(1);
+const bits16 = (1n << 16n) - 1n;
+const bits32 = (1n << 32n) - 1n;
 
 const intToIpv4 = (num) => {
   const part1 = num & 255;
@@ -198,11 +197,11 @@ const intToIpv4 = (num) => {
 };
 
 const addressToString = (address) => {
-  const ipv6num = Bignum(address.upper64).shiftLeft(64).add(Bignum(address.lower64));
+  const ipv6num = (BigInt(address.upper64) << 64n) + BigInt(address.lower64);
 
-  if (ipv6num.shiftRight(32).eq(bits16)) {
+  if ((ipv6num >> 32n) === bits16) {
     // this is an ipv4 address, we should return it as such
-    const ipv4num = ipv6num.and(bits32).toNumber();
+    const ipv4num = Number(ipv6num & bits32);
     return intToIpv4(ipv4num);
   }
 

@@ -33,6 +33,20 @@ secureCurlDownload() {
   curl --protocol '=https' --tlsv1.2 --output "$1" "$2"
 }
 
+verifySha256() {
+  local path=$1
+  local sha256=$2
+  local label=$3
+
+  if ! sha256sum --check <<EOF
+$sha256 *$path
+EOF
+  then
+    echo "$label did not match expected checksum.  Aborting."
+    exit 1
+  fi
+}
+
 copyDep() {
   # Copies a file from the system into the chroot.
 
@@ -122,15 +136,7 @@ if [ ! -e "$OLD_BUNDLE_PATH" ] ; then
 fi
 
 # Always check the checksum to guard against corrupted downloads.
-sha256sum --check <<EOF
-$OLD_BUNDLE_SHA256  $OLD_BUNDLE_PATH
-EOF
-# set -e should ensure we don't continue past here, but let's be doubly sure
-rc=$?
-if [ $rc -ne 0 ]; then
-  echo "Old bundle did not match expected checksum.  Aborting."
-  exit 1
-fi
+verifySha256 "$OLD_BUNDLE_PATH" "$OLD_BUNDLE_SHA256" "Old bundle"
 
 # Extract bin/mongo and bin/mongod from the old sandstorm bundle, and place them in bundle/.
 tar xf $OLD_BUNDLE_PATH --transform=s/^${OLD_BUNDLE_BASE}/bundle/ $OLD_MONGO_FILES
@@ -145,14 +151,7 @@ if [ ! -e "$MONGO26_PATH" ] ; then
   secureCurlDownload "$MONGO26_PATH" "https://fastdl.mongodb.org/linux/$MONGO26_FILENAME"
 fi
 
-sha256sum --check <<EOF
-$MONGO26_SHA256  $MONGO26_PATH
-EOF
-rc=$?
-if [ $rc -ne 0 ]; then
-  echo "MongoDB 2.6.12 package did not match expected checksum.  Aborting."
-  exit 1
-fi
+verifySha256 "$MONGO26_PATH" "$MONGO26_SHA256" "MongoDB 2.6.12 package"
 
 # Extract mongodump from MongoDB 2.6.12.
 MONGO26_BASE=mongodb-linux-x86_64-${MONGO26_VERSION}
@@ -172,14 +171,7 @@ if [ ! -e "$MONGO7_PATH" ] ; then
   secureCurlDownload "$MONGO7_PATH" "https://fastdl.mongodb.org/linux/$MONGO7_FILENAME"
 fi
 
-sha256sum --check <<EOF
-$MONGO7_SHA256  $MONGO7_PATH
-EOF
-rc=$?
-if [ $rc -ne 0 ]; then
-  echo "MongoDB 7.0 package did not match expected checksum.  Aborting."
-  exit 1
-fi
+verifySha256 "$MONGO7_PATH" "$MONGO7_SHA256" "MongoDB 7.0 package"
 
 # Extract mongod from MongoDB 7.0 package.
 # Note: MongoDB 7.0 doesn't include the legacy mongo shell, use mongosh instead.
@@ -200,14 +192,7 @@ if [ ! -e "$MONGO_TOOLS_PATH" ] ; then
   secureCurlDownload "$MONGO_TOOLS_PATH" "https://fastdl.mongodb.org/tools/db/$MONGO_TOOLS_FILENAME"
 fi
 
-sha256sum --check <<EOF
-$MONGO_TOOLS_SHA256  $MONGO_TOOLS_PATH
-EOF
-rc=$?
-if [ $rc -ne 0 ]; then
-  echo "MongoDB Database Tools package did not match expected checksum.  Aborting."
-  exit 1
-fi
+verifySha256 "$MONGO_TOOLS_PATH" "$MONGO_TOOLS_SHA256" "MongoDB Database Tools package"
 
 # Extract mongorestore from database tools package.
 MONGO_TOOLS_BASE=mongodb-database-tools-ubuntu2004-x86_64-${MONGO_TOOLS_VERSION}
@@ -226,14 +211,7 @@ if [ ! -e "$MONGOSH_PATH" ] ; then
   secureCurlDownload "$MONGOSH_PATH" "https://downloads.mongodb.com/compass/$MONGOSH_FILENAME"
 fi
 
-sha256sum --check <<EOF
-$MONGOSH_SHA256  $MONGOSH_PATH
-EOF
-rc=$?
-if [ $rc -ne 0 ]; then
-  echo "mongosh package did not match expected checksum.  Aborting."
-  exit 1
-fi
+verifySha256 "$MONGOSH_PATH" "$MONGOSH_SHA256" "mongosh package"
 
 # Extract mongosh binary.
 MONGOSH_BASE=mongosh-${MONGOSH_VERSION}-linux-x64

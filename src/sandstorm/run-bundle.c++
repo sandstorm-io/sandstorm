@@ -318,17 +318,22 @@ private:
 
 // =======================================================================================
 
-enum class MongoVersion { V2_6, V7 };
+enum class MongoVersion { V2_6, V7, VOTHER };
 
-MongoVersion getMongoVersion() {
-  // Check /var/mongo/version file to determine which MongoDB version to use.
+kj::String readMongoVersionContents(kj::StringPtr versionPath = "/var/mongo/version") {
+  if (access(versionPath.cStr(), F_OK) != 0) return kj::heapString("");
+  return kj::str(trim(readAll(raiiOpen(versionPath, O_RDONLY))));
+}
+
+MongoVersion getMongoVersion(kj::StringPtr versionPath = "/var/mongo/version") {
   // If the file doesn't exist or contains "2.6", use MongoDB 2.6.
-  // If the file contains "7", use MongoDB 7.0.
-  if (access("/var/mongo/version", F_OK) == 0) {
-    auto contents = trim(readAll(raiiOpen("/var/mongo/version", O_RDONLY)));
-    if (contents == "7") return MongoVersion::V7;
-  }
-  return MongoVersion::V2_6;  // Default to old version
+  // If the file contains "7", use MongoDB 7.
+  if (access(versionPath.cStr(), F_OK) != 0) return MongoVersion::V2_6;
+
+  auto contents = readMongoVersionContents(versionPath);
+  if (contents == "2.6") return MongoVersion::V2_6;
+  if (contents == "7") return MongoVersion::V7;
+  return MongoVersion::VOTHER;
 }
 
 // =======================================================================================
@@ -1291,11 +1296,13 @@ public:
     }
 
     // 2. Check if already migrated
-    if (access("../var/mongo/version", F_OK) == 0) {
-      auto ver = trim(readAll(raiiOpen("../var/mongo/version", O_RDONLY)));
-      if (ver == "7") {
-        return "MongoDB is already at version 7. No migration needed.";
-      }
+    auto version = getMongoVersion("../var/mongo/version");
+    if (version == MongoVersion::V7) {
+      return "MongoDB is already at version 7. No migration needed.";
+    } else if (version == MongoVersion::VOTHER) {
+      context.exitError(kj::str(
+          "Unsupported MongoDB version: ", readMongoVersionContents("../var/mongo/version"),
+          ". This migration only supports 2.6 -> 7."));
     }
 
     // 3. Check binaries exist
@@ -1454,12 +1461,13 @@ public:
     }
 
     // 2. Check we're on version 7
-    if (access("../var/mongo/version", F_OK) != 0) {
+    auto version = getMongoVersion("../var/mongo/version");
+    if (version == MongoVersion::V2_6) {
       return "No version file found. MongoDB appears to be at version 2.6 already.";
-    }
-    auto ver = trim(readAll(raiiOpen("../var/mongo/version", O_RDONLY)));
-    if (ver != "7") {
-      context.exitError(kj::str("Unexpected MongoDB version: ", ver, ". Expected '7'."));
+    } else if (version == MongoVersion::VOTHER) {
+      context.exitError(kj::str(
+          "Unsupported MongoDB version: ", readMongoVersionContents("../var/mongo/version"),
+          ". This rollback only supports MongoDB 7."));
     }
 
     // 3. Check backup exists
@@ -2448,8 +2456,12 @@ private:
   pid_t startMongo(const Config& config, FdBundle& fdBundle) {
     // Sandstorm requires MongoDB 7. If not migrated yet, error out.
     MongoVersion version = getMongoVersion();
-    KJ_REQUIRE(version == MongoVersion::V7,
-        "MongoDB 7 is required. Please run 'sudo sandstorm migrate-mongo' first.");
+    if (version == MongoVersion::V2_6) {
+      KJ_FAIL_REQUIRE("MongoDB 7 is required. Please run 'sudo sandstorm migrate-mongo' first.");
+    } else if (version == MongoVersion::VOTHER) {
+      KJ_FAIL_REQUIRE("Unsupported MongoDB version. This version of Sandstorm requires MongoDB 7.",
+          readMongoVersionContents());
+    }
 
     Subprocess process([&]() -> int {
       fdBundle.closeAll();

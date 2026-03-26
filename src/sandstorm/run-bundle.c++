@@ -3704,13 +3704,11 @@ private:
       clearSignalMask();
 
       // Redirect stdout/stderr to log file
-      int logFd = open("/var/log/mongo-migration.log",
-                       O_WRONLY | O_CREAT | O_APPEND, 0640);
-      if (logFd >= 0) {
-        dup2(logFd, STDOUT_FILENO);
-        dup2(logFd, STDERR_FILENO);
-        close(logFd);
-      }
+      int logFd = KJ_SYSCALL(open("/var/log/mongo-migration.log",
+                       O_WRONLY | O_CREAT | O_APPEND, 0640));
+      KJ_SYSCALL(dup2(logFd, STDOUT_FILENO));
+      KJ_SYSCALL(dup2(logFd, STDERR_FILENO));
+      KJ_SYSCALL(close(logFd));
 
       if (useOldFlags) {
         // MongoDB 2.6 with deprecated flags, but no auth

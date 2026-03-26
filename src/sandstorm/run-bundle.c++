@@ -3704,7 +3704,8 @@ private:
       clearSignalMask();
 
       // Redirect stdout/stderr to log file
-      int logFd = KJ_SYSCALL(open("/var/log/mongo-migration.log",
+      int logFd;
+      KJ_SYSCALL(logFd = open("/var/log/mongo-migration.log",
                        O_WRONLY | O_CREAT | O_APPEND, 0640));
       KJ_SYSCALL(dup2(logFd, STDOUT_FILENO));
       KJ_SYSCALL(dup2(logFd, STDERR_FILENO));

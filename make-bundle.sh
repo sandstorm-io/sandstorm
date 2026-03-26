@@ -29,6 +29,10 @@ fail() {
 
 trap 'fail ${LINENO}' ERR
 
+secureCurlDownload() {
+  curl --protocol '=https' --tlsv1.2 --output "$1" "$2"
+}
+
 copyDep() {
   # Copies a file from the system into the chroot.
 
@@ -114,7 +118,7 @@ OLD_BUNDLE_SHA256=ebffd643dffeba349f139bee34e4ce33fd9b1298fafc1d6a31eb35a191059a
 OLD_MONGO_FILES="$OLD_BUNDLE_BASE/bin/mongo $OLD_BUNDLE_BASE/bin/mongod"
 if [ ! -e "$OLD_BUNDLE_PATH" ] ; then
   echo "Fetching $OLD_BUNDLE_FILENAME to extract a mongo 2.6..."
-  curl --output "$OLD_BUNDLE_PATH" https://dl.sandstorm.org/$OLD_BUNDLE_FILENAME
+  secureCurlDownload "$OLD_BUNDLE_PATH" "https://dl.sandstorm.org/$OLD_BUNDLE_FILENAME"
 fi
 
 # Always check the checksum to guard against corrupted downloads.
@@ -138,7 +142,7 @@ MONGO26_PATH="hack/$MONGO26_FILENAME"
 MONGO26_SHA256=6d6415ac068825d1aed23f9482080ce3551bfac828d9570be1d72990d5f441b0
 if [ ! -e "$MONGO26_PATH" ] ; then
   echo "Fetching MongoDB 2.6.12 for mongodump..."
-  curl --output "$MONGO26_PATH" "https://fastdl.mongodb.org/linux/$MONGO26_FILENAME"
+  secureCurlDownload "$MONGO26_PATH" "https://fastdl.mongodb.org/linux/$MONGO26_FILENAME"
 fi
 
 sha256sum --check <<EOF
@@ -165,7 +169,7 @@ MONGO7_PATH="hack/$MONGO7_FILENAME"
 MONGO7_SHA256=3be980f61bf1eca1680ffdac73d765c857f4596ab678cc244b27f82ab9c404ff
 if [ ! -e "$MONGO7_PATH" ] ; then
   echo "Fetching MongoDB 7.0..."
-  curl --output "$MONGO7_PATH" "https://fastdl.mongodb.org/linux/$MONGO7_FILENAME"
+  secureCurlDownload "$MONGO7_PATH" "https://fastdl.mongodb.org/linux/$MONGO7_FILENAME"
 fi
 
 sha256sum --check <<EOF
@@ -193,7 +197,7 @@ MONGO_TOOLS_PATH="hack/$MONGO_TOOLS_FILENAME"
 MONGO_TOOLS_SHA256=74583f31eb2fefa4b7016b525b0f50209a4e20364f41719cc8c93b7156e49937
 if [ ! -e "$MONGO_TOOLS_PATH" ] ; then
   echo "Fetching MongoDB Database Tools..."
-  curl --output "$MONGO_TOOLS_PATH" "https://fastdl.mongodb.org/tools/db/$MONGO_TOOLS_FILENAME"
+  secureCurlDownload "$MONGO_TOOLS_PATH" "https://fastdl.mongodb.org/tools/db/$MONGO_TOOLS_FILENAME"
 fi
 
 sha256sum --check <<EOF
@@ -219,7 +223,7 @@ MONGOSH_PATH="hack/$MONGOSH_FILENAME"
 MONGOSH_SHA256=23edb768189663aaa9732a2340a25b5fc05a314940538809a7840be7f2ce221f
 if [ ! -e "$MONGOSH_PATH" ] ; then
   echo "Fetching mongosh..."
-  curl --output "$MONGOSH_PATH" "https://downloads.mongodb.com/compass/$MONGOSH_FILENAME"
+  secureCurlDownload "$MONGOSH_PATH" "https://downloads.mongodb.com/compass/$MONGOSH_FILENAME"
 fi
 
 sha256sum --check <<EOF

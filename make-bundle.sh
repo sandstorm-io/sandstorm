@@ -30,7 +30,7 @@ fail() {
 trap 'fail ${LINENO}' ERR
 
 secureCurlDownload() {
-  curl --protocol '=https' --tlsv1.2 --output "$1" "$2"
+  curl --proto '=https' --tlsv1.2 --output "$1" "$2"
 }
 
 verifySha256() {

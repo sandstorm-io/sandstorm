@@ -3873,7 +3873,10 @@ private:
   void copyFile(kj::StringPtr src, kj::StringPtr dst) {
     // Copy a file from src to dst
     auto srcFd = raiiOpen(src, O_RDONLY);
-    auto dstFd = raiiOpen(dst, O_WRONLY | O_CREAT | O_TRUNC, 0640);
+    auto dstFd = raiiOpen(dst, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    struct stat statResult;
+    KJ_SYSCALL(fstat(srcFd, &statResult));
+    KJ_SYSCALL(fchmod(dstFd, statResult.st_mode & 07777));
 
     char buffer[4096];
     ssize_t bytesRead;

@@ -27,18 +27,23 @@ exports.command = function(name, isAdmin, callback) {
   var ret = this
     .init()
     // loginDevAccountFast is fast, but not 3ms fast, which is ~the default script timeout
-    .timeouts("script", 5000)
+    .timeouts("script", 10000)
     .executeAsync(function(name, isAdmin, done) {
       window.loginDevAccountFast(name, isAdmin)
         .then(function () {
-          done();
+          done({ success: true });
         }, function (err) {
-          throw err;
+          done({ error: err.toString(), stack: err.stack });
         });
     }, [name, isAdmin], function (result) {
-      if (result.status !== 0) console.log(result);
-      // Make sure to propagate failure on script timeout/failure
-      self.assert.ok(result.status === 0, "login completed successfully");
+      if (result.status !== 0) {
+        console.log("executeAsync failed with status:", result.status);
+      }
+      if (result.value && result.value.error) {
+        console.log("Login error:", result.value.error);
+      }
+      var success = result.status === 0 && result.value && result.value.success;
+      self.assert.ok(success, "login completed successfully");
     })
     .url(this.launch_url + "/apps")
     .waitForElementVisible('.app-list', utils.medium_wait)

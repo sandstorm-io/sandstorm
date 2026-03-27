@@ -32,7 +32,7 @@ module.exports = {
     browser
       .loginDevAccount("TestingLogin")
       .waitForElementVisible('.topbar .account>.show-popup', short_wait)
-      .assert.containsText(".topbar .account>.show-popup", "TestingLogin")
+      .assert.textContains(".topbar .account>.show-popup", "TestingLogin")
       .end();
   },
 };
@@ -42,7 +42,7 @@ if (run_xfail) {
     browser
       .loginDemo()
       .waitForElementVisible('.topbar .account>.show-popup', short_wait)
-      .assert.containsText(".topbar .account>.show-popup", "Demo")
+      .assert.textContains(".topbar .account>.show-popup", "Demo")
       .end();
   };
 }

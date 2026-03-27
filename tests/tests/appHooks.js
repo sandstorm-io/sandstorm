@@ -46,7 +46,7 @@ if (run_xfail) {
       })
       .pause(short_wait)
       .windowHandles(windows => browser.switchWindow(windows.value[1]))
-      .assert.containsText(".grainlog-contents > pre", "Running callback: someObjectId")
+      .assert.textContains(".grainlog-contents > pre", "Running callback: someObjectId")
 
       // Close the grain log and switch back to the main window, to avoid
       // confusing future tests:

@@ -254,7 +254,6 @@ Meteor.startup(function () {
         mailErr.responseCode = 451;
         callback(mailErr);
       });
-        });
     },
   });
 

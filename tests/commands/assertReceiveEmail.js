@@ -1,6 +1,6 @@
 var util = require("util");
 var events = require("events");
-var MailParser = require("mailparser").MailParser;
+var simpleParser = require("mailparser").simpleParser;
 var simplesmtp = require("simplesmtp");
 var _ = require("underscore");
 
@@ -36,11 +36,8 @@ ReceiveEmail.prototype.command = function(selector, expectedMessage, timeout, cb
 
   var options = { SMTPBanner:"Sandstorm Testing Mail Server", timeout: 10000, disableSTARTTLS: true };
   server = simplesmtp.createSimpleServer(options, function (req) {
-    var mailparser = new MailParser();
-
-    req.pipe(mailparser);
     req.accept();
-    mailparser.on("end", function (mail) {
+    simpleParser(req).then(function (mail) {
       clearTimeout(timeoutHandle);
       server.server.end(function () {
         if (cb) {
@@ -53,11 +50,21 @@ ReceiveEmail.prototype.command = function(selector, expectedMessage, timeout, cb
       var expected = expectedMessage;
 
       if ("to" in expected) {
-        self.client.api.assert.equal(mail.to[0].address, expected.to);
+        self.client.api.assert.equal(mail.to.value[0].address, expected.to);
         expected = _.omit(expected, "to");
       }
       Object.keys(expected).forEach(function (key) {
         self.client.api.assert.equal(mail[key], expected[key]);
+      });
+    }).catch(function (err) {
+      clearTimeout(timeoutHandle);
+      server.server.end(function () {
+        if (cb) {
+          cb.call(self.client.api, err);
+        } else {
+          self.client.api.assert.equal("Failed to parse received email: " + err, "");
+        }
+        self.emit("complete");
       });
     });
   });

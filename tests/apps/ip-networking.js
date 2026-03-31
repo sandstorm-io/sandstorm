@@ -27,11 +27,7 @@ var utils = require("../utils"),
 
 var IP_INTERFACE_TEST_PORT = parseInt(process.env.IP_INTERFACE_TEST_PORT, 10) || "30027";
 
-// TODO: Skipped due to node-capnp compatibility issues with Node Buffers.
-module.exports = {
-  '@disabled': true
-};
-
+// Covers IpNetwork and IpInterface capability behavior using the test app.
 module.exports["Test Ip Networking"] = function (browser) {
   browser
     .loginDevAccount(null, true)
@@ -49,10 +45,10 @@ module.exports["Test Ip Networking"] = function (browser) {
     .grainFrame()
       .waitForElementVisible("span.token", short_wait)
       .waitForElementVisible("form.test-ip-network input[type=text]", short_wait)
-      .setValue("form.test-ip-network input[type=text]", "http://build.sandstorm.io")
+      .setValue("form.test-ip-network input[type=text]", "http://example.com")
       .click("form.test-ip-network button")
       .waitForElementVisible("form.test-ip-network div.result", short_wait)
-      .assert.textContains("form.test-ip-network div.result", "301 Moved Permanently")
+      .assert.textContains("form.test-ip-network div.result", "Example Domain")
     .frameParent()
 };
 
@@ -85,4 +81,3 @@ module.exports["Test Ip Interface"] = function (browser) {
     .frameParent()
     .end();
 };
-

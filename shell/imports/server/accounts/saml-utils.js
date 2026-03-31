@@ -4,7 +4,7 @@ import Url from "url";
 import xml2js from "xml2js";
 import xmlbuilder from "xmlbuilder";
 import xmlCrypto from "xml-crypto";
-import xmldom from "xmldom";
+import { DOMParser } from "@xmldom/xmldom";
 import zlib from "zlib";
 
 import { Meteor } from "meteor/meteor";
@@ -165,7 +165,7 @@ SAML.prototype.certToPEM = function (cert) {
 
 SAML.prototype.validateSignature = function (xml, cert) {
   const _this = this;
-  const doc = new xmldom.DOMParser().parseFromString(xml);
+  const doc = new DOMParser().parseFromString(xml);
   const signature = xmlCrypto.xpath(doc, "//*[local-name(.)='Signature' and namespace-uri(.)='http://www.w3.org/2000/09/xmldsig#']")[0];
   const sig = new xmlCrypto.SignedXml();
   sig.keyInfoProvider = {

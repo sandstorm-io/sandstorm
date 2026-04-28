@@ -3,7 +3,6 @@ import { check } from "meteor/check";
 import { _ } from "meteor/underscore";
 
 import nodemailer from "nodemailer";
-import smtpPool from "nodemailer-smtp-pool";
 import Future from "fibers/future";
 
 import { globalDb } from "/imports/db-deprecated";
@@ -30,14 +29,15 @@ const makePool = function (mailConfig) {
     rejectUnauthorized: false,
   };
 
-  const pool = nodemailer.createTransport(smtpPool({
+  const pool = nodemailer.createTransport({
+    pool: true,
     host: mailConfig.hostname,
     port: mailConfig.port,
     secure,
     tls: tlsOptions,
     auth,
     // TODO(someday): allow maxConnections to be configured?
-  }));
+  });
 
   pool._futureWrappedSendMail = _.bind(Future.wrap(pool.sendMail), pool);
   return pool;

@@ -3,7 +3,8 @@
   "description": "Tests for the sandstorm platform",
   "version": "0.0.1",
   "devDependencies": {
-    "chromedriver": "^142.0.3",
+    "@puppeteer/browsers": "^2.12.1",
+    "chromedriver": "144.0.1",
     "nightwatch": "^2.6.0"
   },
   "repository": {
@@ -14,13 +15,13 @@
     "test": "./run-tests.sh"
   },
   "dependencies": {
-    "chai": "^2.3.0",
-    "es6-promise": "^3.0.2",
-    "firefox-profile": "4.2.0",
-    "jszip": "^2.5.0",
-    "mailcomposer": "^0.2.12",
-    "mailparser": "0.5.1",
-    "selenium-standalone": "^9.5.0",
+    "chai": "^4.5.0",
+    "es6-promise": "4.2.8",
+    "firefox-profile": "4.7.0",
+    "jszip": "^3.10.1",
+    "mailcomposer": "^4.0.2",
+    "mailparser": "3.9.3",
+    "selenium-standalone": "10.0.2",
     "simplesmtp": "0.3.35",
     "underscore": "^1.13.1"
   }

@@ -16,28 +16,52 @@
 
 import { Meteor } from "meteor/meteor";
 import Dns from "dns";
-import Ip from "ip";
+import { Address4, Address6 } from "ip-address";
 import Url from "url";
 
 import { SPECIAL_IPV4_ADDRESSES, SPECIAL_IPV6_ADDRESSES } from "/imports/constants";
 
 const lookupInFiber = Meteor.wrapAsync(Dns.lookup, Dns);
 
-function getNetwork(addr, bits) {
+function parseAddress(addr) {
+  if (Address4.isValid(addr)) {
+    return { familyBits: 32, bytes: Buffer.from(new Address4(addr).toArray()) };
+  }
+
+  if (Address6.isValid(addr)) {
+    const parsed = new Address6(addr);
+    const unsignedBytes = Buffer.from(parsed.toUnsignedByteArray());
+    if (unsignedBytes.length > 16) {
+      throw new Error("invalid IPv6 address length");
+    }
+
+    if (unsignedBytes.length === 16) {
+      return { familyBits: 128, bytes: unsignedBytes };
+    }
+
+    const bytes = Buffer.alloc(16);
+    unsignedBytes.copy(bytes, 16 - unsignedBytes.length);
+    return { familyBits: 128, bytes };
+  }
+
+  throw new Error("invalid IP address: " + addr);
+}
+
+function getNetwork(parsed, bits) {
   // npm ip's "mask" and "cidr" functions are broken for ipv6. :(
 
-  const parsed = Ip.toBuffer(addr);
+  const masked = Buffer.from(parsed.bytes);
 
-  for (let i = Math.ceil(bits / 8); i < parsed.length; i++) {
-    parsed[i] = 0;
+  for (let i = Math.ceil(bits / 8); i < masked.length; i++) {
+    masked[i] = 0;
   }
 
   const n = Math.floor(bits / 8);
-  if (n < parsed.length) {
-    parsed[n] = parsed[n] & (0xff << (8 - bits % 8));
+  if (n < masked.length) {
+    masked[n] = masked[n] & (0xff << (8 - bits % 8));
   }
 
-  return parsed;
+  return masked;
 }
 
 function parseCidr(cidr) {
@@ -54,13 +78,27 @@ function parseCidr(cidr) {
     const parts = cidr.split("/");
     if (parts.length === 1) {
       // Bare address.
-      return addr => Ip.isEqual(cidr, addr);
+      const parsed = parseAddress(cidr);
+      return addr => {
+        const candidate = parseAddress(addr);
+        return parsed.familyBits === candidate.familyBits && parsed.bytes.equals(candidate.bytes);
+      };
     } else if (parts.length === 2) {
       const bits = parseInt(parts[1], 10);
       if (bits !== bits) throw new Error("value after slash must be an integer");
-      const network = getNetwork(parts[0], bits);
+      const cidrAddr = parseAddress(parts[0]);
+      if (bits < 0 || bits > cidrAddr.familyBits) {
+        throw new Error("invalid CIDR prefix length");
+      }
+
+      const network = getNetwork(cidrAddr, bits);
       return addr => {
-        return network.equals(getNetwork(addr, bits));
+        const candidate = parseAddress(addr);
+        if (candidate.familyBits !== cidrAddr.familyBits) {
+          return false;
+        }
+
+        return network.equals(getNetwork(candidate, bits));
       };
     } else {
       throw new Error("too many slashes");

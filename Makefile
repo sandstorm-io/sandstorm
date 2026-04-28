@@ -284,11 +284,13 @@ shell-env: tmp/.shell-env
 
 # Note that we need Ekam to build node_modules before we can run Meteor, hence
 # the dependency on tmp/.ekam-run.
-tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/imports/client/changelog.html shell/client/styles/_icons.scss shell/package.json shell/npm-shrinkwrap.json
+tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/imports/client/changelog.html shell/client/styles/_icons.scss shell/package.json shell/package-lock.json
 	@$(call color,configuring meteor frontend)
 	@mkdir -p tmp
 	@mkdir -p node_modules/capnp
 	@bash -O extglob -c 'cp src/capnp/!(*test*).capnp node_modules/capnp'
+	@test deps/node-capnp/src/node-capnp/capnp.js -ef node_modules/capnp.js || cp deps/node-capnp/src/node-capnp/capnp.js node_modules/capnp.js
+	@test tmp/node-capnp/capnp.node -ef node_modules/capnp.node || cp tmp/node-capnp/capnp.node node_modules/capnp.node
 	@cd shell/ && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install
 	@touch tmp/.shell-env
 

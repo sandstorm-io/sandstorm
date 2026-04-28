@@ -13,6 +13,7 @@ env:
 
   shared-node-browser: true
   es6: true
+  es2020: true
 parser: "@typescript-eslint/parser"
 parserOptions:
   ecmaVersion: 2020

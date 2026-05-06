@@ -19,9 +19,10 @@ import { globalDb } from "/imports/db-deprecated";
 const CHALLENGE_EXPIRY_MS = 5 * 60 * 1000;
 const pendingChallenges = new Map();
 
-function storeChallenge(connectionId, challenge) {
+function storeChallenge(connectionId, challenge, userHandle) {
   pendingChallenges.set(connectionId, {
     challenge,
+    userHandle: userHandle || null,
     createdAt: Date.now(),
   });
 }
@@ -31,7 +32,7 @@ function consumeChallenge(connectionId) {
   pendingChallenges.delete(connectionId);
   if (!entry) return null;
   if (Date.now() - entry.createdAt > CHALLENGE_EXPIRY_MS) return null;
-  return entry.challenge;
+  return { challenge: entry.challenge, userHandle: entry.userHandle };
 }
 
 // Periodic cleanup of expired challenges
@@ -93,7 +94,7 @@ Meteor.methods({
 
     // Generate a new userHandle if no existing passkey credential
     if (!userHandle) {
-      userHandle = uint8ArrayToBase64url(Random.secret(32));
+      userHandle = Random.secret(32);
     }
 
     const rpID = getRpId();
@@ -104,7 +105,7 @@ Meteor.methods({
       rpID,
       userName: rpID,
       userDisplayName: "Sandstorm User",
-      userID: base64urlToUint8Array(userHandle),
+      userID: new TextEncoder().encode(userHandle),
       excludeCredentials: existingKeys.map(function (key) {
         return {
           id: key.credentialId,
@@ -119,14 +120,13 @@ Meteor.methods({
       timeout: 300000,
     });
 
-    storeChallenge(this.connection.id, options.challenge);
+    storeChallenge(this.connection.id, options.challenge, userHandle);
 
-    return { options, userHandle };
+    return { options };
   },
 
-  "passkey.verifyRegistration": async function (attestationResponse, userHandle, friendlyName) {
+  "passkey.verifyRegistration": async function (attestationResponse, friendlyName) {
     check(attestationResponse, Object);
-    check(userHandle, String);
     check(friendlyName, Match.Optional(String));
 
     if (!this.userId) {
@@ -137,8 +137,12 @@ Meteor.methods({
       throw new Meteor.Error(403, "Passkey login service is disabled.");
     }
 
-    const expectedChallenge = consumeChallenge(this.connection.id);
-    if (!expectedChallenge) {
+    const challengeData = consumeChallenge(this.connection.id);
+    if (!challengeData) {
+      throw new Meteor.Error(403, "Challenge expired or not found. Please try again.");
+    }
+    const { challenge: expectedChallenge, userHandle } = challengeData;
+    if (!userHandle) {
       throw new Meteor.Error(403, "Challenge expired or not found. Please try again.");
     }
 
@@ -260,7 +264,8 @@ Meteor.methods({
       throw new Meteor.Error(403, "Must be logged in to an account.");
     }
 
-    for (const cred of account.loginCredentials) {
+    const allCredentials = (account.loginCredentials || []).concat(account.nonloginCredentials || []);
+    for (const cred of allCredentials) {
       const result = Meteor.users.update(
         {
           _id: cred.id,
@@ -288,7 +293,8 @@ Meteor.methods({
       throw new Meteor.Error(403, "Must be logged in to an account.");
     }
 
-    for (const cred of account.loginCredentials) {
+    const allCredentials = (account.loginCredentials || []).concat(account.nonloginCredentials || []);
+    for (const cred of allCredentials) {
       const credUser = Meteor.users.findOne({ _id: cred.id });
       if (!credUser || !credUser.services || !credUser.services.passkey) continue;
 
@@ -300,7 +306,10 @@ Meteor.methods({
         // Last key: remove entire credential and unlink from account
         Meteor.users.update(
           { _id: this.userId },
-          { $pull: { loginCredentials: { id: cred.id } } }
+          { $pull: {
+            loginCredentials: { id: cred.id },
+            nonloginCredentials: { id: cred.id },
+          } }
         );
         Meteor.users.remove({ _id: cred.id });
       } else {
@@ -329,10 +338,11 @@ Accounts.registerLoginHandler("passkey", async function (options) {
   check(options.passkey, Object);
 
   const connectionId = this.connection.id;
-  const expectedChallenge = consumeChallenge(connectionId);
-  if (!expectedChallenge) {
+  const challengeData = consumeChallenge(connectionId);
+  if (!challengeData) {
     throw new Meteor.Error(403, "Challenge expired or not found.");
   }
+  const expectedChallenge = challengeData.challenge;
 
   // Find credential user by credentialId
   const authResponseId = options.passkey.id;

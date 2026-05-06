@@ -10,6 +10,8 @@ import {
   WebAuthnError,
 } from "@simplewebauthn/browser";
 
+import { TAPi18n } from "meteor/tap:i18n";
+
 import { globalDb } from "/imports/db-deprecated";
 
 const loginWithPasskey = function (callback) {
@@ -52,7 +54,7 @@ Template.passkeyLoginForm.helpers({
   },
 
   loginProviderLabel() {
-    return "with Passkey";
+    return TAPi18n.__("accounts.loginButtons.passkeyLoginForm.label");
   },
 });
 
@@ -98,7 +100,8 @@ Template.passkeyManagement.helpers({
     const result = [];
     const renamingId = Template.instance()._renamingCredentialId.get();
 
-    user.loginCredentials.forEach(function (cred) {
+    const allCredentials = (user.loginCredentials || []).concat(user.nonloginCredentials || []);
+    allCredentials.forEach(function (cred) {
       const credUser = Meteor.users.findOne({ _id: cred.id });
       if (credUser && credUser.services && credUser.services.passkey) {
         (credUser.services.passkey.keys || []).forEach(function (key) {
@@ -141,7 +144,7 @@ Template.passkeyManagement.events({
         return;
       }
 
-      const { options: optionsJSON, userHandle } = result;
+      const { options: optionsJSON } = result;
 
       startRegistration({ optionsJSON }).then(function (attestationResponse) {
         // Prompt for friendly name after ceremony
@@ -160,7 +163,7 @@ Template.passkeyManagement.events({
         }
 
         Meteor.call("passkey.verifyRegistration",
-          attestationResponse, userHandle, friendlyName || null,
+          attestationResponse, friendlyName || null,
           function (err, result) {
             if (err) {
               instance._passkeyError.set(err.reason || "Registration failed.");

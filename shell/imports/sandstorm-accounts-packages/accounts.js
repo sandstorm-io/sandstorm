@@ -75,7 +75,13 @@ Accounts.loginServices.passkey = {
   },
 
   initiateLogin(loginId) {
-    // Client-side only. Actual implementation in passkey-client.js.
+    if (Meteor.isClient) {
+      // Dynamically require to avoid server-side import issues
+      const { loginWithPasskey } = require("/imports/client/accounts/passkey/passkey-client");
+      loginWithPasskey(function (err) {
+        if (err) console.error("Passkey login failed:", err);
+      });
+    }
   },
 
   loginTemplate: {

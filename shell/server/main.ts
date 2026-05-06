@@ -68,6 +68,7 @@ import "../imports/server/accounts/credentials/credentials-server";
 import "../imports/server/accounts/email-token/token-server";
 import "../imports/server/accounts/ldap/ldap-server";
 import "../imports/server/accounts/saml/saml-server";
+import "../imports/server/accounts/passkey/passkey-server";
 import "../imports/server/accounts/accounts-server";
 import "../imports/server/accounts/accounts-ui-methods";
 import "../imports/server/accounts/accounts-ui-server";

@@ -2,6 +2,7 @@ import { Meteor } from "meteor/meteor";
 import { Accounts } from "meteor/accounts-base";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
+import { globalDb } from "/imports/db-deprecated";
 
 if (Meteor.isClient) {
   Meteor.loginWithGoogle = function (options, callback) {
@@ -63,3 +64,23 @@ Accounts.loginServices = {};
 //
 // TODO(someday): It probably makes sense also to collect in these objects the service-specific
 // user initialization logic currently found in sandstorm-db/user.js and sandstorm-db/profile.js.
+
+Accounts.loginServices.passkey = {
+  isEnabled() {
+    return globalDb.getSettingWithFallback("passkey", false);
+  },
+
+  getLoginId(credential) {
+    return credential.services.passkey.userHandle;
+  },
+
+  initiateLogin(loginId) {
+    // Client-side only. Actual implementation in passkey-client.js.
+  },
+
+  loginTemplate: {
+    name: "passkeyLoginForm",
+    priority: 1,
+    data: { name: "passkey", displayName: "Passkey" },
+  },
+};

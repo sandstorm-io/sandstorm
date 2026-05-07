@@ -138,6 +138,8 @@ Accounts.onCreateUser(function (options, user) {
     serviceUserId = user.services.oidc.id;
   } else if (user.services && "saml" in user.services) {
     serviceUserId = user.services.saml.id;
+  } else if (user.services && "passkey" in user.services) {
+    serviceUserId = user.services.passkey.userHandle;
   } else {
     throw new Meteor.Error(400, "user does not have a recognized login provider: " +
                            JSON.stringify(user));

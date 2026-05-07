@@ -15,6 +15,11 @@ import { TAPi18n } from "meteor/tap:i18n";
 import { globalDb } from "/imports/db-deprecated";
 
 const loginWithPasskey = function (callback) {
+  if (!window.isSecureContext) {
+    callback(new Meteor.Error(403, "Passkeys require HTTPS, or a localhost development URL."));
+    return;
+  }
+
   Meteor.call("passkey.generateAuthenticationOptions", function (err, optionsJSON) {
     if (err) {
       callback(err);
@@ -34,18 +39,27 @@ const loginWithPasskey = function (callback) {
       });
     }).catch(function (err) {
       if (err instanceof WebAuthnError) {
-        if (err.code === "ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY" ||
-            err.code === "ERROR_CEREMONY_ABORTED") {
-          // User cancelled or NotAllowedError: silently restore UI
+        if (err.code === "ERROR_CEREMONY_ABORTED") {
+          // User cancelled; silently restore UI.
           return;
         }
       }
-      callback(new Meteor.Error(403, "Something went wrong. Please try again."));
+      callback(new Meteor.Error(403, passkeyCeremonyErrorMessage(
+        err, "Something went wrong. Please try again."
+      )));
     });
   });
 };
 
 export { loginWithPasskey, browserSupportsWebAuthn };
+
+function passkeyCeremonyErrorMessage(err, fallbackMessage) {
+  if (err instanceof WebAuthnError) {
+    return err.message || (err.cause && err.cause.message) || fallbackMessage;
+  }
+
+  return (err && err.message) || fallbackMessage;
+}
 
 // Login button template
 Template.passkeyLoginForm.helpers({
@@ -138,6 +152,11 @@ Template.passkeyManagement.events({
     instance._passkeyError.set(null);
     instance._passkeySuccess.set(null);
 
+    if (!window.isSecureContext) {
+      instance._passkeyError.set("Passkeys require HTTPS, or a localhost development URL.");
+      return;
+    }
+
     Meteor.call("passkey.generateRegistrationOptions", function (err, result) {
       if (err) {
         instance._passkeyError.set(err.reason || "Failed to start registration.");
@@ -180,12 +199,13 @@ Template.passkeyManagement.events({
             instance._passkeyError.set("This authenticator is already registered.");
             return;
           }
-          if (err.code === "ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY" ||
-              err.code === "ERROR_CEREMONY_ABORTED") {
-            return; // User cancelled
+          if (err.code === "ERROR_CEREMONY_ABORTED") {
+            return; // User cancelled.
           }
         }
-        instance._passkeyError.set("Something went wrong. Please try again.");
+        instance._passkeyError.set(passkeyCeremonyErrorMessage(
+          err, "Something went wrong. Please try again."
+        ));
       });
     });
   },

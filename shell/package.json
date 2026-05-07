@@ -16,6 +16,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@babel/runtime": "^7.20.7",
+    "@peculiar/webcrypto": "1.5.0",
     "@root/acme": "^3.1.0",
     "@root/csr": "^0.8.1",
     "@root/keypairs": "^0.10.3",
@@ -54,6 +55,7 @@
     "openid-client": "^5.7.1",
     "smtp-server": "^3.18.1",
     "stripe": "^20.3.1",
+    "webcrypto-core": "1.8.1",
     "@xmldom/xmldom": "^0.8.11",
     "xml-crypto": "^6.1.2",
     "xml2js": "^0.6.2",

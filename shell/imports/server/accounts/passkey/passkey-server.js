@@ -3,6 +3,7 @@ import { Match, check } from "meteor/check";
 import { Random } from "meteor/random";
 import { Accounts } from "meteor/accounts-base";
 import { SHA256 } from "meteor/sha";
+import { Crypto } from "@peculiar/webcrypto";
 
 import {
   generateRegistrationOptions,
@@ -14,10 +15,55 @@ import {
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
 
+if (!Promise.any) {
+  Promise.any = function (promises) {
+    return new Promise((resolve, reject) => {
+      const errors = [];
+      let pending = 0;
+      let settled = false;
+
+      for (const promise of promises) {
+        const index = pending++;
+        Promise.resolve(promise).then((value) => {
+          if (!settled) {
+            settled = true;
+            resolve(value);
+          }
+        }, (err) => {
+          errors[index] = err;
+          pending--;
+          if (!settled && pending === 0) {
+            const aggregateError = new Error("All promises were rejected");
+            aggregateError.name = "AggregateError";
+            aggregateError.errors = errors;
+            reject(aggregateError);
+          }
+        });
+      }
+
+      if (pending === 0) {
+        const aggregateError = new Error("All promises were rejected");
+        aggregateError.name = "AggregateError";
+        aggregateError.errors = errors;
+        reject(aggregateError);
+      }
+    });
+  };
+}
+
+if (!globalThis.crypto || !globalThis.crypto.subtle) {
+  Object.defineProperty(globalThis, "crypto", {
+    value: new Crypto(),
+    configurable: true,
+  });
+}
+
 // Challenge storage: in-memory Map keyed by connection.id
 // Challenges expire after 5 minutes and are single-use.
 const CHALLENGE_EXPIRY_MS = 5 * 60 * 1000;
 const pendingChallenges = new Map();
+// Keep Node 14/polyfilled WebCrypto on broadly-supported ES256/RS256 and avoid Ed25519.
+const SUPPORTED_PASSKEY_ALGORITHMS = [-7, -257];
 
 function storeChallenge(connectionId, challenge, userHandle) {
   pendingChallenges.set(connectionId, {
@@ -103,6 +149,7 @@ Meteor.methods({
     const options = await generateRegistrationOptions({
       rpName,
       rpID,
+      challenge: Random.secret(32),
       userName: rpID,
       userDisplayName: "Sandstorm User",
       userID: new TextEncoder().encode(userHandle),
@@ -116,6 +163,7 @@ Meteor.methods({
         residentKey: "required",
         userVerification: "preferred",
       },
+      supportedAlgorithmIDs: SUPPORTED_PASSKEY_ALGORITHMS,
       attestation: "none",
       timeout: 300000,
     });
@@ -156,6 +204,7 @@ Meteor.methods({
         expectedChallenge,
         expectedOrigin,
         expectedRPID: rpID,
+        supportedAlgorithmIDs: SUPPORTED_PASSKEY_ALGORITHMS,
       });
     } catch (err) {
       throw new Meteor.Error(403, "Passkey registration failed: " + err.message);
@@ -237,6 +286,7 @@ Meteor.methods({
 
     const options = await generateAuthenticationOptions({
       rpID,
+      challenge: Random.secret(32),
       allowCredentials: [],
       userVerification: "preferred",
       timeout: 300000,

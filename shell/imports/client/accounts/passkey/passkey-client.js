@@ -12,8 +12,6 @@ import {
 
 import { TAPi18n } from "meteor/tap:i18n";
 
-import { globalDb } from "/imports/db-deprecated";
-
 const loginWithPasskey = function (callback) {
   if (!window.isSecureContext) {
     callback(new Meteor.Error(403, "Passkeys require HTTPS, or a localhost development URL."));
@@ -168,18 +166,6 @@ Template.passkeyManagement.events({
       startRegistration({ optionsJSON }).then(function (attestationResponse) {
         // Prompt for friendly name after ceremony
         const friendlyName = prompt("Name this passkey (optional):");
-
-        // Determine whether to use new user or existing user method
-        const user = Meteor.user();
-        let hasExistingPasskey = false;
-        if (user && user.loginCredentials) {
-          user.loginCredentials.forEach(function (cred) {
-            const credUser = Meteor.users.findOne({ _id: cred.id });
-            if (credUser && credUser.services && credUser.services.passkey) {
-              hasExistingPasskey = true;
-            }
-          });
-        }
 
         Meteor.call("passkey.verifyRegistration",
           attestationResponse, friendlyName || null,

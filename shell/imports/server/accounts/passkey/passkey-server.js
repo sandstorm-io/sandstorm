@@ -219,6 +219,7 @@ Meteor.methods({
         expectedChallenge,
         expectedOrigin,
         expectedRPID: rpID,
+        requireUserVerification: false,
         supportedAlgorithmIDs: SUPPORTED_PASSKEY_ALGORITHMS,
       });
     } catch (err) {
@@ -437,6 +438,7 @@ Accounts.registerLoginHandler("passkey", async function (options) {
       expectedChallenge,
       expectedOrigin,
       expectedRPID: rpID,
+      requireUserVerification: false,
       credential: {
         id: matchingKey.credentialId,
         publicKey: base64urlToUint8Array(matchingKey.publicKey),

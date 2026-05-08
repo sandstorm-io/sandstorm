@@ -457,16 +457,6 @@ Accounts.registerLoginHandler("passkey", async function (options) {
 
   const { newCounter, credentialBackedUp } = verification.authenticationInfo;
 
-  // Counter regression check
-  if (matchingKey.counter > 0 && newCounter <= matchingKey.counter) {
-    console.warn(
-      "Passkey counter regression detected for credential",
-      authResponseId,
-      ": stored =", matchingKey.counter,
-      ", received =", newCounter
-    );
-  }
-
   // Update credential state
   Meteor.users.update(
     {

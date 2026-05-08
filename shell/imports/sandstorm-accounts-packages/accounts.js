@@ -82,6 +82,7 @@ Accounts.loginServices.passkey = {
         if (err) console.error("Passkey login failed:", err);
       });
     }
+    return { oneClick: true };
   },
 
   loginTemplate: {

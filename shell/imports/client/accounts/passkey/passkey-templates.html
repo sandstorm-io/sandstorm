@@ -29,7 +29,7 @@
       {{#each passkeys}}
       <li class="passkey-item" data-credential-id="{{credentialId}}">
         {{#if isRenaming}}
-          <input class="passkey-rename-input" type="text" value="{{friendlyName}}">
+          <input class="passkey-rename-input" type="text" value="{{friendlyName}}" maxlength="{{passkeyNameMaxLength}}">
           <button class="passkey-rename-save">{{_ (con txt "saveButton")}}</button>
           <button class="passkey-rename-cancel">{{_ (con txt "cancelButton")}}</button>
         {{else}}

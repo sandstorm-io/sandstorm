@@ -12,6 +12,8 @@ import {
 
 import { TAPi18n } from "meteor/tap:i18n";
 
+const MAX_PASSKEY_NAME_LENGTH = 100;
+
 const loginWithPasskey = function (callback) {
   if (!window.isSecureContext) {
     callback(new Meteor.Error(403, "Passkeys require HTTPS, or a localhost development URL."));
@@ -57,6 +59,10 @@ function passkeyCeremonyErrorMessage(err, fallbackMessage) {
   }
 
   return (err && err.message) || fallbackMessage;
+}
+
+function passkeyNameTooLongMessage() {
+  return "Passkey name must be " + MAX_PASSKEY_NAME_LENGTH + " characters or fewer.";
 }
 
 // Login button template
@@ -139,6 +145,10 @@ Template.passkeyManagement.helpers({
     return Template.instance()._passkeySuccess.get();
   },
 
+  passkeyNameMaxLength() {
+    return MAX_PASSKEY_NAME_LENGTH;
+  },
+
   formatDate(date) {
     if (!date) return "";
     return new Date(date).toLocaleDateString();
@@ -162,11 +172,14 @@ Template.passkeyManagement.events({
       }
 
       const { options: optionsJSON } = result;
+      const friendlyName = prompt("Name this passkey (optional):");
+      if (friendlyName === null) return;
+      if (friendlyName.trim().length > MAX_PASSKEY_NAME_LENGTH) {
+        instance._passkeyError.set(passkeyNameTooLongMessage());
+        return;
+      }
 
       startRegistration({ optionsJSON }).then(function (attestationResponse) {
-        // Prompt for friendly name after ceremony
-        const friendlyName = prompt("Name this passkey (optional):");
-
         Meteor.call("passkey.verifyRegistration",
           attestationResponse, friendlyName || null,
           function (err, result) {
@@ -205,6 +218,11 @@ Template.passkeyManagement.events({
     const li = event.currentTarget.closest(".passkey-item");
     const credentialId = li.dataset.credentialId;
     const newName = li.querySelector(".passkey-rename-input").value;
+    instance._passkeyError.set(null);
+    if (newName.trim().length > MAX_PASSKEY_NAME_LENGTH) {
+      instance._passkeyError.set(passkeyNameTooLongMessage());
+      return;
+    }
 
     Meteor.call("passkey.rename", credentialId, newName, function (err) {
       if (err) {

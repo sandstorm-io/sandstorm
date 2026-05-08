@@ -64,6 +64,7 @@ const CHALLENGE_EXPIRY_MS = 5 * 60 * 1000;
 const pendingChallenges = new Map();
 // Keep Node 14/polyfilled WebCrypto on broadly-supported ES256/RS256 and avoid Ed25519.
 const SUPPORTED_PASSKEY_ALGORITHMS = [-7, -257];
+const MAX_PASSKEY_NAME_LENGTH = 100;
 
 function storeChallenge(connectionId, challenge, userHandle) {
   pendingChallenges.set(connectionId, {
@@ -108,6 +109,18 @@ function uint8ArrayToBase64url(uint8Array) {
 
 function base64urlToUint8Array(base64url) {
   return new Uint8Array(Buffer.from(base64url, "base64url"));
+}
+
+function checkPasskeyNameLength(name) {
+  if (name.length > MAX_PASSKEY_NAME_LENGTH) {
+    throw new Meteor.Error(
+      400, "Passkey name must be " + MAX_PASSKEY_NAME_LENGTH + " characters or fewer."
+    );
+  }
+}
+
+function defaultPasskeyName(now) {
+  return "Passkey (" + now.toISOString().slice(0, 10) + ")";
 }
 
 Meteor.methods({
@@ -175,7 +188,9 @@ Meteor.methods({
 
   "passkey.verifyRegistration": async function (attestationResponse, friendlyName) {
     check(attestationResponse, Object);
-    check(friendlyName, Match.Optional(String));
+    check(friendlyName, Match.Maybe(String));
+    const requestedName = friendlyName ? friendlyName.trim() : "";
+    checkPasskeyNameLength(requestedName);
 
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to register a passkey.");
@@ -217,8 +232,7 @@ Meteor.methods({
     const { credential, credentialDeviceType, credentialBackedUp } = verification.registrationInfo;
 
     const now = new Date();
-    const name = friendlyName ||
-      ("Passkey (" + now.toISOString().slice(0, 10) + ")");
+    const name = requestedName || defaultPasskeyName(now);
 
     const keyEntry = {
       credentialId: credential.id,
@@ -305,9 +319,11 @@ Meteor.methods({
       throw new Meteor.Error(403, "Must be logged in.");
     }
 
-    if (!newName.trim()) {
+    const name = newName.trim();
+    if (!name) {
       throw new Meteor.Error(400, "Name cannot be empty.");
     }
+    checkPasskeyNameLength(name);
 
     const account = Meteor.users.findOne({ _id: this.userId });
     if (!account || !account.loginCredentials) {
@@ -322,7 +338,7 @@ Meteor.methods({
           "services.passkey.keys.credentialId": credentialId,
         },
         {
-          $set: { "services.passkey.keys.$.friendlyName": newName.trim() },
+          $set: { "services.passkey.keys.$.friendlyName": name },
         }
       );
       if (result > 0) return;

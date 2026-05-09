@@ -29,6 +29,7 @@ import { TAPi18n } from "meteor/tap:i18n";
 
 import getBuildInfo from "/imports/client/build-info";
 import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui";
+import { isDevelopmentServer } from "/imports/client/dev-mode";
 import { isStandalone } from "/imports/client/standalone";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
@@ -635,7 +636,8 @@ Template.layout.helpers({
   },
 
   firstLogin: function () {
-    return credentialsSubscription.ready() && !isDemoUser() && !Meteor.loggingIn()
+    return !isDevelopmentServer() && credentialsSubscription.ready() &&
+        !isDemoUser() && !Meteor.loggingIn()
         && Meteor.user() && !Meteor.user().hasCompletedSignup &&
         !isStandalone();
   },

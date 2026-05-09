@@ -35,6 +35,7 @@ import { introJs } from "intro.js";
 import downloadFile from "/imports/client/download-file";
 import { makeAndDownloadBackup } from "/imports/client/backups";
 import { ContactProfiles } from "/imports/client/contacts";
+import { isDevelopmentServer } from "/imports/client/dev-mode";
 import { isStandalone } from "/imports/client/standalone";
 import { GrainView } from "/imports/client/grain/grainview";
 import { SandstormDb } from "/imports/sandstorm-db/db";
@@ -554,6 +555,10 @@ Template.shareableLinkTab.events({
 });
 
 Template.grainShareButton.onRendered(() => {
+  if (isDevelopmentServer()) {
+    return;
+  }
+
   if (!Meteor._localStorage.getItem("userNeedsShareAccessHint")) {
     return;
   }

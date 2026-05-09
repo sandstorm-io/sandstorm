@@ -7,6 +7,7 @@ import { _ } from "meteor/underscore";
 import { TAPi18n } from "meteor/tap:i18n";
 
 import { introJs } from "intro.js";
+import { isDevelopmentServer } from "/imports/client/dev-mode";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 
 SandstormAppList = function (db, quotaEnforcer) {
@@ -269,7 +270,8 @@ Template.sandstormAppListPage.onRendered(() => {
   const db = instance.data._db;
   // Set up automatically-opening hint explaining what installing is, if zero apps installed.
   // Only show it if the user is allowed to install apps.
-  if (!db.collections.userActions.find().count() &&
+  if (!isDevelopmentServer() &&
+          !db.collections.userActions.find().count() &&
           !Session.get("dismissedInstallHint") &&
           isSignedUpOrDemo()) {
     // If the user had 0 grains (including in the trash) at the time they see this message, then

@@ -9,6 +9,7 @@ import { Iron } from "meteor/iron:core";
 
 import SandstormAccountSettingsUi from "/imports/client/accounts/account-settings-ui";
 import AccountsUi from "/imports/client/accounts/accounts-ui";
+import { isDevelopmentServer } from "/imports/client/dev-mode";
 import downloadFile from "/imports/client/download-file";
 import { globalDb } from "/imports/db-deprecated";
 
@@ -805,7 +806,8 @@ Template.setupWizardLoginUser.helpers({
   },
 
   currentUserFirstLogin() {
-    return !Meteor.loggingIn() && Meteor.user() && !Meteor.user().hasCompletedSignup;
+    return !isDevelopmentServer() && !Meteor.loggingIn() && Meteor.user() &&
+        !Meteor.user().hasCompletedSignup;
   },
 
   credentialUser() {
@@ -879,7 +881,8 @@ Template.setupWizardLoginUser.events({
 
   "click .setup-next-button"() {
     const instance = Template.instance();
-    const isFirstLogin = Meteor.user() && !Meteor.user().hasCompletedSignup;
+    const isFirstLogin = !isDevelopmentServer() && Meteor.user() &&
+        !Meteor.user().hasCompletedSignup;
     if (isFirstLogin) {
       // If your profile is unconfirmed, attempt to save it.
       const form = instance.find("form");

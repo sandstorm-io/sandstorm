@@ -37,9 +37,10 @@ jobs:
             export DEBIAN_FRONTEND=noninteractive
             echo "The build of boringssl requires golang."
             echo "The github runner seems to have some version of golang already; installing golang-go breaks."
-            which go || sudo apt-get install golang-go
+            which go || (sudo apt-get update && sudo apt-get install golang-go)
 
-            sudo apt-get install -y build-essential libcap-dev xz-utils zip unzip strace curl discount git python3 zlib1g-dev cmake ccache
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+                build-essential libcap-dev xz-utils zip unzip strace curl discount git python3 zlib1g-dev cmake ccache
 
             # Install OpenSSL 1.1 (required for Meteor/Node compatibility)
             # Ubuntu 24.04 only ships OpenSSL 3.x, so we need to install 1.1 from older release

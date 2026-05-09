@@ -103,6 +103,7 @@ if (Meteor.isServer) {
         "services.saml.email": 1,
         "services.saml.displayName": 1,
 
+        "services.passkey.email": 1,
         "services.passkey.userHandle": 1,
         "services.passkey.keys.credentialId": 1,
         "services.passkey.keys.friendlyName": 1,
@@ -255,8 +256,8 @@ SandstormDb.fillInProfileDefaults = function (credential, profile) {
     profile.handle = profile.handle || emailToHandle(services.saml.email);
     profile.name = profile.name || services.saml.displayName || profile.handle;
   } else if (services.passkey) {
-    profile.name = profile.name || "Passkey User";
-    profile.handle = profile.handle || filterHandle("passkey_" + services.passkey.userHandle.slice(0, 8));
+    profile.name = profile.name || (services.passkey.email ? services.passkey.email.split("@")[0] : "Passkey User");
+    profile.handle = profile.handle || (services.passkey.email ? filterHandle(emailToHandle(services.passkey.email)) : filterHandle("passkey_" + services.passkey.userHandle.slice(0, 8)));
   } else {
     throw new Error("unrecognized authentication service: " +
                     SandstormDb.getServiceName(credential));

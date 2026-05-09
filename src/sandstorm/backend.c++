@@ -24,6 +24,8 @@
 
 namespace sandstorm {
 
+static constexpr kj::StringPtr SERVER_RUNTIME = "classic"_kj;
+
 static kj::StringPtr validateId(kj::StringPtr id) {
   KJ_REQUIRE(id.size() >= 8 && !id.startsWith(".") && id.findFirst('/') == nullptr, id);
   return id;
@@ -152,6 +154,7 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
   for (auto env: command.getEnviron()) {
     argv.add(kj::str("-e", env.getKey(), "=", env.getValue()));
   }
+  argv.add(kj::str("-eSERVER_RUNTIME=", SERVER_RUNTIME));
 
   argv.add(kj::heapString(packageId));
   argv.add(kj::heapString(grainId));

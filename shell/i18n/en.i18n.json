@@ -1621,7 +1621,10 @@
         "or": "or"
       },
       "passkeyLoginForm": {
-        "label": "with Passkey"
+        "label": "with Passkey",
+        "emailLabel": "Email",
+        "emailPlaceholder": "you@example.com",
+        "continueButton": "Continue with Passkey"
       }
     },
     "identity": {

@@ -1,9 +1,21 @@
 <template name="passkeyLoginForm">
+{{#let txt="accounts.loginButtons.passkeyLoginForm"}}
   {{#if webAuthnSupported}}
-  <button class="login oneclick passkey">
-    {{loginProviderLabel}}
-  </button>
+  <form class="passkey-login-form">
+    <label class="email">
+      {{_ (con txt "emailLabel")}}
+      <input name="email" type="email" autocomplete="username webauthn"
+             placeholder="{{_ (con txt "emailPlaceholder")}}">
+    </label>
+    <div class="button-box">
+      <button class="login email passkey" type="submit">{{_ (con txt "continueButton")}}</button>
+    </div>
+    {{#if passkeyError}}
+      <p class="error-message">{{passkeyError}}</p>
+    {{/if}}
+  </form>
   {{/if}}
+{{/let}}
 </template>
 
 <template name="passkeyManagement">

@@ -32,6 +32,7 @@ module.exports["Test grain trash"] = function (browser) {
   var grainUrl;
   var grainId;
   var grainCheckboxSelector;
+  var grainTabLinkSelector;
 
   browser
     .loginDevAccount()
@@ -45,6 +46,7 @@ module.exports["Test grain trash"] = function (browser) {
       grainUrl = urlResponse.value;
       grainId = grainUrl.split("/").pop();
       grainCheckboxSelector = ".grain-list td.select-grain input[data-grainid='" + grainId + "']";
+      grainTabLinkSelector = ".navbar-grains>li[data-grainid='" + grainId + "']>a";
     })
     .assert.textContains('#grainTitle', expectedHackerCMSGrainTitle)
     .waitForElementVisible('.topbar .share > .show-popup', short_wait)
@@ -80,7 +82,7 @@ module.exports["Test grain trash"] = function (browser) {
             .click("button.show-main-list")
             .waitForElementVisible("button.show-trash", short_wait)
             .assert.not.elementPresent(grainCheckboxSelector)
-            .click(".navbar-grains>li[data-grainid='" + grainId + "']")
+            .click(grainTabLinkSelector)
             .waitForElementVisible(".grain-interstitial", short_wait)
             .assert.textContains(".grain-interstitial>p", "This grain is in your trash.")
             .click("button.restore-from-trash")
@@ -105,7 +107,7 @@ module.exports["Test grain trash"] = function (browser) {
             .click("button.show-main-list")
             .waitForElementVisible("button.show-trash", short_wait)
             .assert.not.elementPresent(grainCheckboxSelector)
-            .click(".navbar-grains>li[data-grainid='" + grainId + "']")
+            .click(grainTabLinkSelector)
             .waitForElementVisible(".grain-interstitial", short_wait)
             .assert.textContains(".grain-interstitial>p", "This grain is in your trash.")
 

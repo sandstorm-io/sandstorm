@@ -14,45 +14,6 @@ import { TAPi18n } from "meteor/tap:i18n";
 
 const MAX_PASSKEY_NAME_LENGTH = 100;
 
-const loginWithPasskey = function (callback) {
-  if (!window.isSecureContext) {
-    callback(new Meteor.Error(403, "Passkeys require HTTPS, or a localhost development URL."));
-    return;
-  }
-
-  Meteor.call("passkey.generateAuthenticationOptions", function (err, optionsJSON) {
-    if (err) {
-      callback(err);
-      return;
-    }
-
-    startAuthentication({ optionsJSON }).then(function (authResponse) {
-      Accounts.callLoginMethod({
-        methodArguments: [{ passkey: authResponse }],
-        userCallback: function (error) {
-          if (error) {
-            callback(error);
-          } else {
-            callback();
-          }
-        },
-      });
-    }).catch(function (err) {
-      if (err instanceof WebAuthnError) {
-        if (err.code === "ERROR_CEREMONY_ABORTED") {
-          // User cancelled; silently restore UI.
-          return;
-        }
-      }
-      callback(new Meteor.Error(403, passkeyCeremonyErrorMessage(
-        err, "Something went wrong. Please try again."
-      )));
-    });
-  });
-};
-
-export { loginWithPasskey, browserSupportsWebAuthn };
-
 function passkeyCeremonyErrorMessage(err, fallbackMessage) {
   if (err instanceof WebAuthnError) {
     return err.message || (err.cause && err.cause.message) || fallbackMessage;
@@ -65,41 +26,177 @@ function passkeyNameTooLongMessage() {
   return "Passkey name must be " + MAX_PASSKEY_NAME_LENGTH + " characters or fewer.";
 }
 
-// Login button template
+// Identifier-first login: authenticate with existing passkey
+function authenticateWithPasskey(options, callback) {
+  startAuthentication({ optionsJSON: options }).then(function (authResponse) {
+    Accounts.callLoginMethod({
+      methodArguments: [{ passkey: authResponse }],
+      userCallback: function (error) {
+        if (error) {
+          callback(error);
+        } else {
+          callback();
+        }
+      },
+    });
+  }).catch(function (err) {
+    if (err instanceof WebAuthnError) {
+      if (err.code === "ERROR_CEREMONY_ABORTED") {
+        return;
+      }
+    }
+    callback(new Meteor.Error(403, passkeyCeremonyErrorMessage(
+      err, "Something went wrong. Please try again."
+    )));
+  });
+}
+
+// Identifier-first registration: create passkey and account
+function registerWithPasskey(options, callback) {
+  startRegistration({ optionsJSON: options }).then(function (attestationResponse) {
+    Accounts.callLoginMethod({
+      methodArguments: [{ passkeyRegister: attestationResponse }],
+      userCallback: function (error) {
+        if (error) {
+          callback(error);
+        } else {
+          callback();
+        }
+      },
+    });
+  }).catch(function (err) {
+    if (err instanceof WebAuthnError) {
+      if (err.code === "ERROR_CEREMONY_ABORTED") {
+        return;
+      }
+    }
+    callback(new Meteor.Error(403, passkeyCeremonyErrorMessage(
+      err, "Something went wrong. Please try again."
+    )));
+  });
+}
+
+// Legacy one-click login (used by initiateLogin for returning users in credential list)
+const loginWithPasskey = function (callback) {
+  if (!window.isSecureContext) {
+    callback(new Meteor.Error(403, "Passkeys require HTTPS, or a localhost development URL."));
+    return;
+  }
+
+  Meteor.call("passkey.generateAuthenticationOptions", function (err, optionsJSON) {
+    if (err) {
+      callback(err);
+      return;
+    }
+
+    authenticateWithPasskey(optionsJSON, callback);
+  });
+};
+
+export { loginWithPasskey, browserSupportsWebAuthn };
+
+// Conditional UI: start in background so autofill shows passkeys
+function initConditionalUI() {
+  if (!browserSupportsWebAuthn()) return;
+  if (!window.isSecureContext) return;
+  if (!window.PublicKeyCredential || !window.PublicKeyCredential.isConditionalMediationAvailable) return;
+
+  PublicKeyCredential.isConditionalMediationAvailable().then(function (available) {
+    if (!available) return;
+
+    Meteor.call("passkey.generateAuthenticationOptions", function (err, optionsJSON) {
+      if (err) return;
+
+      startAuthentication({ optionsJSON, useBrowserAutofill: true }).then(function (authResponse) {
+        Accounts.callLoginMethod({
+          methodArguments: [{ passkey: authResponse }],
+          userCallback: function (error) {
+            if (error) {
+              console.error("Passkey autofill login failed:", error);
+            } else {
+              // Close login overlays
+              const grainviews = typeof globalGrains !== "undefined" ? globalGrains.getAll() : [];
+              grainviews.forEach(function (grainview) {
+                grainview.disableSigninOverlay();
+              });
+            }
+          },
+        });
+      }).catch(function () {
+        // Conditional UI was cancelled or failed silently; no action needed.
+      });
+    });
+  });
+}
+
+// Login form template
+Template.passkeyLoginForm.onCreated(function () {
+  this._passkeyError = new ReactiveVar(null);
+});
+
+Template.passkeyLoginForm.onRendered(function () {
+  initConditionalUI();
+});
+
 Template.passkeyLoginForm.helpers({
   webAuthnSupported() {
     return browserSupportsWebAuthn();
   },
 
-  loginProviderLabel() {
-    return TAPi18n.__("accounts.loginButtons.passkeyLoginForm.label");
+  passkeyError() {
+    return Template.instance()._passkeyError.get();
   },
 });
 
 Template.passkeyLoginForm.events({
-  "click button.login.oneclick.passkey"(event, instance) {
+  "submit form.passkey-login-form"(event, instance) {
+    event.preventDefault();
+
+    const email = event.currentTarget.email.value.trim();
+    if (!email) {
+      instance._passkeyError.set("Please enter an email address.");
+      return;
+    }
+
+    if (!window.isSecureContext) {
+      instance._passkeyError.set("Passkeys require HTTPS, or a localhost development URL.");
+      return;
+    }
+
+    instance._passkeyError.set(null);
+
     if (instance.data.linkingNewCredential) {
       sessionStorage.setItem("linkingCredentialLoginToken", Accounts._storedLoginToken());
     }
 
-    const loginButtonsSession = Accounts._loginButtonsSession;
-    loginButtonsSession.resetMessages();
-
-    loginWithPasskey(function (err) {
+    Meteor.call("passkey.initiateWithEmail", email, function (err, result) {
       if (err) {
-        loginButtonsSession.errorMessage(err.reason || "Unknown error");
+        instance._passkeyError.set(err.reason || "Something went wrong.");
+        return;
+      }
+
+      const callback = function (err) {
+        if (err) {
+          instance._passkeyError.set(err.reason || "Something went wrong.");
+        } else {
+          // Close login overlays
+          const grainviews = typeof globalGrains !== "undefined" ? globalGrains.getAll() : [];
+          grainviews.forEach(function (grainview) {
+            grainview.disableSigninOverlay();
+          });
+        }
+      };
+
+      if (result.mode === "authenticate") {
+        authenticateWithPasskey(result.options, callback);
       } else {
-        // Close login overlays
-        const grainviews = typeof globalGrains !== "undefined" ? globalGrains.getAll() : [];
-        grainviews.forEach(function (grainview) {
-          grainview.disableSigninOverlay();
-        });
+        registerWithPasskey(result.options, callback);
       }
     });
   },
 });
 
-// Account settings: passkey management
+// Account settings: passkey management (unchanged from existing code)
 Template.passkeyManagement.onCreated(function () {
   this._passkeyError = new ReactiveVar(null);
   this._passkeySuccess = new ReactiveVar(null);
@@ -199,7 +296,7 @@ Template.passkeyManagement.events({
             return;
           }
           if (err.code === "ERROR_CEREMONY_ABORTED") {
-            return; // User cancelled.
+            return;
           }
         }
         instance._passkeyError.set(passkeyCeremonyErrorMessage(

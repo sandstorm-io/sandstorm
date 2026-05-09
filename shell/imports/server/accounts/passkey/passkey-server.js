@@ -505,10 +505,78 @@ Meteor.methods({
 
 // Login handler
 Accounts.registerLoginHandler("passkey", async function (options) {
-  if (!options.passkey) return undefined;
+  if (!options.passkey && !options.passkeyRegister) return undefined;
 
   if (!Accounts.loginServices.passkey.isEnabled()) {
     throw new Meteor.Error(403, "Passkey login service is disabled.");
+  }
+
+  // Handle registration-and-login (new account creation or linking)
+  if (options.passkeyRegister) {
+    check(options.passkeyRegister, Object);
+
+    const connectionId = this.connection.id;
+    const challengeData = consumeChallenge(connectionId);
+    if (!challengeData) {
+      throw new Meteor.Error(403, "Challenge expired or not found.");
+    }
+
+    const { challenge: expectedChallenge, userHandle, email } = challengeData;
+    if (!userHandle) {
+      throw new Meteor.Error(403, "Invalid registration state.");
+    }
+
+    const rpID = getRpId();
+    const expectedOrigin = getExpectedOrigin();
+
+    let verification;
+    try {
+      verification = await verifyRegistrationResponse({
+        response: options.passkeyRegister,
+        expectedChallenge,
+        expectedOrigin,
+        expectedRPID: rpID,
+        requireUserVerification: false,
+        supportedAlgorithmIDs: SUPPORTED_PASSKEY_ALGORITHMS,
+      });
+    } catch (err) {
+      throw new Meteor.Error(403, "Passkey registration failed: " + err.message);
+    }
+
+    if (!verification.verified || !verification.registrationInfo) {
+      throw new Meteor.Error(403, "Passkey registration failed.");
+    }
+
+    const { credential, credentialDeviceType, credentialBackedUp } = verification.registrationInfo;
+
+    const now = new Date();
+    const keyEntry = {
+      credentialId: credential.id,
+      publicKey: uint8ArrayToBase64url(credential.publicKey),
+      counter: credential.counter,
+      transports: credential.transports || [],
+      deviceType: credentialDeviceType,
+      backedUp: credentialBackedUp,
+      friendlyName: defaultPasskeyName(now),
+      createdAt: now,
+      lastUsedAt: now,
+    };
+
+    const credentialUserId = SHA256("passkey:" + userHandle);
+    const user = {
+      _id: credentialUserId,
+      services: {
+        passkey: {
+          userHandle: userHandle,
+          email: email || null,
+          keys: [keyEntry],
+        },
+      },
+    };
+
+    Accounts.insertUserDoc({}, user);
+
+    return { userId: credentialUserId };
   }
 
   check(options.passkey, Object);

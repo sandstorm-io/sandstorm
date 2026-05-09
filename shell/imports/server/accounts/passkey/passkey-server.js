@@ -66,10 +66,11 @@ const pendingChallenges = new Map();
 const SUPPORTED_PASSKEY_ALGORITHMS = [-7, -257];
 const MAX_PASSKEY_NAME_LENGTH = 100;
 
-function storeChallenge(connectionId, challenge, userHandle) {
+function storeChallenge(connectionId, challenge, userHandle, email) {
   pendingChallenges.set(connectionId, {
     challenge,
     userHandle: userHandle || null,
+    email: email || null,
     createdAt: Date.now(),
   });
 }
@@ -79,7 +80,7 @@ function consumeChallenge(connectionId) {
   pendingChallenges.delete(connectionId);
   if (!entry) return null;
   if (Date.now() - entry.createdAt > CHALLENGE_EXPIRY_MS) return null;
-  return { challenge: entry.challenge, userHandle: entry.userHandle };
+  return { challenge: entry.challenge, userHandle: entry.userHandle, email: entry.email };
 }
 
 // Periodic cleanup of expired challenges
@@ -310,6 +311,114 @@ Meteor.methods({
     storeChallenge(this.connection.id, options.challenge);
 
     return options;
+  },
+
+  "passkey.initiateWithEmail": async function (email) {
+    check(email, String);
+    email = email.trim().toLowerCase();
+
+    if (!email || !email.includes("@")) {
+      throw new Meteor.Error(400, "Please enter a valid email address.");
+    }
+
+    if (!Accounts.loginServices.passkey.isEnabled()) {
+      throw new Meteor.Error(403, "Passkey login service is disabled.");
+    }
+
+    const rpID = getRpId();
+    const rpName = globalDb.getServerTitle() || "Sandstorm";
+
+    // Look for an existing passkey credential with this email
+    const passkeyCredUser = Meteor.users.findOne({
+      "services.passkey.email": email,
+    });
+
+    if (passkeyCredUser && passkeyCredUser.services.passkey.keys && passkeyCredUser.services.passkey.keys.length > 0) {
+      // User has a passkey: return authentication options
+      const keys = passkeyCredUser.services.passkey.keys;
+      const options = await generateAuthenticationOptions({
+        rpID,
+        challenge: Random.secret(32),
+        allowCredentials: keys.map(function (key) {
+          return { id: key.credentialId, transports: key.transports };
+        }),
+        userVerification: "preferred",
+        timeout: 300000,
+      });
+
+      storeChallenge(this.connection.id, options.challenge, null, email);
+      return { mode: "authenticate", options };
+    }
+
+    // No passkey found: also check if this email belongs to any account
+    // (via Google, email token, GitHub) that has a linked passkey credential
+    let foundPasskeyKeys = null;
+    const emailCredUsers = Meteor.users.find({
+      $or: [
+        { "services.email.email": email },
+        { "services.google.email": email },
+        { "services.github.emails.email": email },
+      ],
+    }).fetch();
+
+    for (const credUser of emailCredUsers) {
+      // Find accounts that link this credential
+      const accounts = Meteor.users.find({
+        "loginCredentials.id": credUser._id,
+      }).fetch();
+
+      for (const account of accounts) {
+        // Check if any linked credential is a passkey
+        for (const cred of (account.loginCredentials || [])) {
+          const linkedCred = Meteor.users.findOne({ _id: cred.id });
+          if (linkedCred && linkedCred.services && linkedCred.services.passkey &&
+              linkedCred.services.passkey.keys && linkedCred.services.passkey.keys.length > 0) {
+            foundPasskeyKeys = linkedCred.services.passkey.keys;
+            break;
+          }
+        }
+        if (foundPasskeyKeys) break;
+      }
+      if (foundPasskeyKeys) break;
+    }
+
+    if (foundPasskeyKeys) {
+      // Found a passkey via linked account: return authentication options
+      const options = await generateAuthenticationOptions({
+        rpID,
+        challenge: Random.secret(32),
+        allowCredentials: foundPasskeyKeys.map(function (key) {
+          return { id: key.credentialId, transports: key.transports };
+        }),
+        userVerification: "preferred",
+        timeout: 300000,
+      });
+
+      storeChallenge(this.connection.id, options.challenge, null, email);
+      return { mode: "authenticate", options };
+    }
+
+    // No passkey found anywhere: return registration options
+    const userHandle = Random.secret(32);
+
+    const options = await generateRegistrationOptions({
+      rpName,
+      rpID,
+      challenge: Random.secret(32),
+      userName: email,
+      userDisplayName: email.split("@")[0],
+      userID: new TextEncoder().encode(userHandle),
+      authenticatorSelection: {
+        residentKey: "required",
+        userVerification: "preferred",
+      },
+      supportedAlgorithmIDs: SUPPORTED_PASSKEY_ALGORITHMS,
+      attestation: "none",
+      timeout: 300000,
+    });
+
+    storeChallenge(this.connection.id, options.challenge, userHandle, email);
+    return { mode: "register", options };
   },
 
   "passkey.rename": function (credentialId, newName) {

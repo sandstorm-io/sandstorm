@@ -10,8 +10,6 @@ import {
   WebAuthnError,
 } from "@simplewebauthn/browser";
 
-import { TAPi18n } from "meteor/tap:i18n";
-
 const MAX_PASSKEY_NAME_LENGTH = 100;
 
 function passkeyCeremonyErrorMessage(err, fallbackMessage) {

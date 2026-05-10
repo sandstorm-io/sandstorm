@@ -157,9 +157,9 @@ button.setup-sandstorm {
   font-size: 16px;
   background-color: #962751;
   color: white;
-  border: 1px solid darken(#962751, 10%);
+  border: 1px solid color.adjust(#962751, $lightness: -10%);
   &:hover {
-    background-color: lighten(#962751, 10%);
+    background-color: color.adjust(#962751, $lightness: 10%);
   }
   &:disabled {
     @extend %button-disabled;

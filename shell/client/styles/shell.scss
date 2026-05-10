@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+@use "sass:color";
+@use "sass:math";
+
 // Include fonts (a somewhat verbose incantation) from _fonts.scss
 @import "_fonts.scss";
 @import "_icons.scss";

@@ -36,49 +36,62 @@ exports.command = function (name, isAdmin, callback) {
     .url(this.launch_url + "/")
     .timeouts("script", 10000)
     .executeAsync(function (displayName, admin, done) {
-      var accountsPkg = window.Package && window.Package["accounts-base"];
-      var AccountsObj = accountsPkg && accountsPkg.Accounts;
-      if (!AccountsObj || typeof AccountsObj.callLoginMethod !== "function") {
-        done({ success: false, error: "Accounts.callLoginMethod unavailable" });
-        return;
+      var deadline = Date.now() + 9000;
+
+      function waitFor(description, getValue, callback) {
+        var value = getValue();
+        if (value) {
+          callback(value);
+          return;
+        }
+
+        if (Date.now() > deadline) {
+          done({ success: false, error: "timed out waiting for " + description });
+          return;
+        }
+
+        setTimeout(function () {
+          waitFor(description, getValue, callback);
+        }, 25);
       }
 
-      var meteorPkg = window.Package && window.Package.meteor;
-      var MeteorObj = meteorPkg && meteorPkg.Meteor;
-      var getUserId = function () {
-        return MeteorObj && typeof MeteorObj.userId === "function" ? MeteorObj.userId() : null;
-      };
+      function getLoginApi() {
+        var accountsPkg = window.Package && window.Package["accounts-base"];
+        var AccountsObj = accountsPkg && accountsPkg.Accounts;
+        var meteorPkg = window.Package && window.Package.meteor;
+        var MeteorObj = meteorPkg && meteorPkg.Meteor;
 
-      var profile = {
-        name: displayName,
-        pronoun: "robot",
-        handle: "_" + displayName.toLowerCase().replace(/[^a-z0-9_]+/g, "_"),
-      };
+        if (AccountsObj && typeof AccountsObj.callLoginMethod === "function" &&
+            MeteorObj && typeof MeteorObj.userId === "function") {
+          return { Accounts: AccountsObj, Meteor: MeteorObj };
+        }
 
-      AccountsObj.callLoginMethod({
-        methodName: "createDevAccount",
-        methodArguments: [displayName, !!admin, profile, displayName + "@example.com"],
-        userCallback: function (err) {
-          if (err) {
-            done({ success: false, error: err.reason || err.message || String(err) });
-            return;
-          }
+        return null;
+      }
 
-          var start = Date.now();
-          (function waitForLogin() {
-            if (getUserId()) {
+      waitFor("Meteor login API", getLoginApi, function (api) {
+        var profile = {
+          name: displayName,
+          pronoun: "robot",
+          handle: "_" + displayName.toLowerCase().replace(/[^a-z0-9_]+/g, "_"),
+        };
+
+        api.Accounts.callLoginMethod({
+          methodName: "createDevAccount",
+          methodArguments: [displayName, !!admin, profile, displayName + "@example.com"],
+          userCallback: function (err) {
+            if (err) {
+              done({ success: false, error: err.reason || err.message || String(err) });
+              return;
+            }
+
+            waitFor("userId after createDevAccount", function () {
+              return api.Meteor.userId();
+            }, function () {
               done({ success: true });
-              return;
-            }
-
-            if (Date.now() - start > 5000) {
-              done({ success: false, error: "timed out waiting for userId after createDevAccount" });
-              return;
-            }
-
-            setTimeout(waitForLogin, 25);
-          })();
-        },
+            });
+          },
+        });
       });
     }, [loginName, !!isAdmin], function (result) {
       var ok = result.status === 0 && result.value && result.value.success;

@@ -52,7 +52,7 @@ exports.command = function (name, isAdmin, callback) {
       var profile = {
         name: displayName,
         pronoun: "robot",
-        handle: "_" + displayName.toLowerCase(),
+        handle: "_" + displayName.toLowerCase().replace(/[^a-z0-9_]+/g, "_"),
       };
 
       AccountsObj.callLoginMethod({

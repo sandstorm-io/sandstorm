@@ -20,23 +20,58 @@ var utils = require("../utils"),
     actionSelector = utils.actionSelector,
     short_wait = utils.short_wait,
     medium_wait = utils.medium_wait,
-    long_wait = utils.long_wait,
-    very_long_wait = utils.very_long_wait;
+    long_wait = utils.long_wait;
 
 exports.command = function(url, packageId, appId, dontStartGrain, callback) {
   var browser = this;
   var ret = browser
     .init()
     .url(this.launch_url + "/install/" + packageId + "?url=" + url)
-    .waitForElementVisible("#step-confirm", very_long_wait)
-    .click("#confirmInstall")
+    .timeouts("script", long_wait + 5000)
+    .executeAsync(function (timeout, done) {
+      var start = Date.now();
+
+      function isVisible(selector) {
+        var element = document.querySelector(selector);
+        return !!(element && element.getClientRects().length);
+      }
+
+      (function waitForInstallPage() {
+        if (isVisible("#step-confirm")) {
+          document.querySelector("#confirmInstall").click();
+          done({ success: true, alreadyInstalled: false });
+          return;
+        }
+
+        if (isVisible(".app-details") || isVisible(".grain-list-table tr.action button.action")) {
+          done({ success: true, alreadyInstalled: true });
+          return;
+        }
+
+        if (Date.now() - start > timeout) {
+          done({
+            success: false,
+            url: window.location.href,
+            title: document.title,
+            text: document.body && document.body.innerText,
+          });
+          return;
+        }
+
+        setTimeout(waitForInstallPage, 100);
+      })();
+    }, [long_wait], function (result) {
+      var value = result && result.value;
+      browser.assert.ok(result.status === 0 && value && value.success,
+          "install page reached confirmation or existing app details");
+    })
     .pause(500)
     .element("css selector", "#confirmInstall", function(result) {
       if (result && result.status === 0) {
         this.click("#confirmInstall");
       }
     })
-    .waitForElementNotPresent("#confirmInstall", very_long_wait)
+    .waitForElementNotPresent("#confirmInstall", long_wait)
     .url(this.launch_url + "/apps")
     .waitForElementVisible(".app-list", medium_wait)
     .resizeWindow(utils.default_width, utils.default_height);

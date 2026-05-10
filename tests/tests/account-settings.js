@@ -31,8 +31,7 @@ var devName2 = "A" + crypto.randomBytes(10).toString("hex");
 module.exports["Test profile changes passing to testapp"] = function (browser) {
   browser
     .loginDevAccount()
-    .click("a.introjs-skipbutton")
-    .waitForElementNotPresent("div.introjs-overlay", short_wait)
+    .disableGuidedTour()
     // Click dropdown menu, go to account settings link
     .waitForElementVisible("button.has-picture", medium_wait)
     .pause(500)

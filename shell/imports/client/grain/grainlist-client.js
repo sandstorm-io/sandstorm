@@ -9,6 +9,7 @@ import { _ } from "meteor/underscore";
 import { TAPi18n } from "meteor/tap:i18n";
 
 import { introJs } from "intro.js";
+import { isDevelopmentServer } from "/imports/client/dev-mode";
 import { identiconForApp } from "/imports/sandstorm-identicons/helpers";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { makeAndDownloadBackup } from "/imports/client/backups";
@@ -751,6 +752,10 @@ Template.sandstormGrainTable.events({
 
 Template.sandstormGrainTable.onRendered(function () {
   // Set up the guided tour box, via introJs, if desired.
+  if (isDevelopmentServer()) {
+    return;
+  }
+
   if (!Template.instance().data.showHintIfEmpty) {
     return;
   }

@@ -909,13 +909,9 @@ class GrainView {
 
   markRead() {
     if (this.isOwner()) {
-      Meteor.callAsync("markActivityReadByOwner", this._grainId).catch((err) => {
-        console.error("markActivityReadByOwner failed:", err);
-      });
+      globalThis.callMeteor("markActivityReadByOwner", this._grainId);
     } else {
-      Meteor.callAsync("markActivityRead", this._grainId).catch((err) => {
-        console.error("markActivityRead failed:", err);
-      });
+      globalThis.callMeteor("markActivityRead", this._grainId);
     }
   }
 

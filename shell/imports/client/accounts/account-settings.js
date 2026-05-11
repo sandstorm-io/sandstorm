@@ -271,9 +271,7 @@ Template.sandstormAccountSettings.events({
   },
 
   "click button.make-primary": function (ev, instance) {
-    Meteor.callAsync("setPrimaryEmail", ev.target.getAttribute("data-email")).catch((err) => {
-      console.error("setPrimaryEmail failed:", err);
-    });
+    globalThis.callMeteor("setPrimaryEmail", ev.target.getAttribute("data-email"));
   },
 
   "input input.confirm": function (evt, instance) {

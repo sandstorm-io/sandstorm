@@ -17,9 +17,17 @@
 // This file provides some helper functions that are used in multiple places
 // by client-side code.
 
+import { Meteor } from "meteor/meteor";
 import { Tracker } from "meteor/tracker";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Router } from "meteor/vlasky:galvanized-iron-router";
+
+const callMeteor = function (methodName, ...args) {
+  return Meteor.callAsync(methodName, ...args).catch((err) => {
+    console.error(methodName + " failed:", err);
+  });
+};
+globalThis.callMeteor = callMeteor;
 
 const getOrigin = function () {
   return document.location.protocol + "//" + document.location.host;

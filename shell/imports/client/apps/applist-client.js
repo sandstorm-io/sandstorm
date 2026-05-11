@@ -233,9 +233,7 @@ Template.sandstormAppListPage.events({
     const db = Template.instance().data._db;
     const appId = this.appId;
     db.collections.userActions.find({ appId: this.appId }).forEach(function (action) {
-      Meteor.callAsync("removeUserAction", action._id).catch((err) => {
-        console.error("removeUserAction failed:", err);
-      });
+      globalThis.callMeteor("removeUserAction", action._id);
     });
   },
 

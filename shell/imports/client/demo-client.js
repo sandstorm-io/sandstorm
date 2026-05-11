@@ -32,9 +32,7 @@ Meteor.loginWithDemo = function (options, callback) {
 //   don't want it to appear in the sign-in drop-down.
 
 window.testExpireDemo = function () {
-  Meteor.callAsync("testExpireDemo").catch((err) => {
-    console.error("testExpireDemo failed:", err);
-  });
+  globalThis.callMeteor("testExpireDemo");
 };
 
 Router.map(function () {

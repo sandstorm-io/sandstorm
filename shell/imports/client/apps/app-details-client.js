@@ -483,9 +483,7 @@ Template.sandstormAppDetailsPage.events({
     if (window.confirm("Really uninstall " + getAppTitle(ref) + "?")) {
       // TODO(soon): make this a method on SandstormDb to uninstall an app for a user by appId/userId
       db.collections.userActions.find({ appId: ref._appId, userId: Meteor.userId() }).forEach(function (action) {
-        Meteor.callAsync("removeUserAction", action._id).catch((err) => {
-          console.error("removeUserAction failed:", err);
-        });
+        globalThis.callMeteor("removeUserAction", action._id);
       });
 
       Router.go("apps");
@@ -499,9 +497,7 @@ Template.sandstormAppDetailsPage.events({
   "click .upgradeGrains": function (event) {
     const ref = Template.instance().data;
     const pkg = latestPackageForAppId(ref._db, ref._appId);
-    Meteor.callAsync("upgradeGrains", ref._appId, pkg.manifest.appVersion, pkg._id).catch((err) => {
-      console.error("upgradeGrains failed:", err);
-    });
+    globalThis.callMeteor("upgradeGrains", ref._appId, pkg.manifest.appVersion, pkg._id);
   },
 
   "click button.toggle-show-trash": function (event, instance) {

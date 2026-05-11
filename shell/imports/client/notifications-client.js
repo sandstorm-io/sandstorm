@@ -29,9 +29,7 @@ const testNotifications = () => {
   // Run on console to create some dummy notifications for the purpose of seeing what they look
   // like.
 
-  Meteor.callAsync("testNotifications").catch((err) => {
-    console.error("testNotifications failed:", err);
-  });
+  globalThis.callMeteor("testNotifications");
 };
 globalThis.testNotifications = testNotifications;
 
@@ -72,9 +70,7 @@ const dismissNotificationFromContext = (context) => {
     return;
   }
 
-  Meteor.callAsync("dismissNotification", notificationId).catch((err) => {
-    console.error("dismissNotification failed:", err);
-  });
+  globalThis.callMeteor("dismissNotification", notificationId);
 };
 
 Tracker.autorun(function () {
@@ -98,9 +94,7 @@ Tracker.autorun(function () {
 
 Template.notificationsPopup.helpers({
   notifications: function () {
-    Meteor.callAsync("readAllNotifications").catch((err) => {
-      console.error("readAllNotifications failed:", err);
-    });
+    globalThis.callMeteor("readAllNotifications");
     return globalDb.collections.notifications.find({ userId: Meteor.userId() }, { sort: { timestamp: -1 } })
         .map(function (row) {
       if (row.initiatingAccount) {

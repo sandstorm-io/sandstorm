@@ -243,15 +243,11 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
           ownedGrainIds.forEach((grainId) => {
-            Meteor.callAsync("deleteGrain", grainId).catch((err) => {
-              console.error("deleteGrain failed:", err);
-            });
+            globalThis.callMeteor("deleteGrain", grainId);
           });
 
           sharedGrainIds.forEach((grainId) => {
-            Meteor.callAsync("forgetGrain", grainId).catch((err) => {
-              console.error("forgetGrain failed:", err);
-            });
+            globalThis.callMeteor("forgetGrain", grainId);
           });
         },
       },
@@ -267,10 +263,7 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
         },
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
-          Meteor.callAsync("moveGrainsOutOfTrash", ownedGrainIds.concat(sharedGrainIds))
-            .catch((err) => {
-              console.error("moveGrainsOutOfTrash failed:", err);
-            });
+          globalThis.callMeteor("moveGrainsOutOfTrash", ownedGrainIds.concat(sharedGrainIds));
         },
       },
     ];
@@ -289,10 +282,7 @@ SandstormGrainListPage.bulkActionButtons = function (showTrash) {
         },
 
         onClicked: function (ownedGrainIds, sharedGrainIds) {
-          Meteor.callAsync("moveGrainsToTrash", ownedGrainIds.concat(sharedGrainIds))
-            .catch((err) => {
-              console.error("moveGrainsToTrash failed:", err);
-            });
+          globalThis.callMeteor("moveGrainsToTrash", ownedGrainIds.concat(sharedGrainIds));
         },
       },
       {
@@ -515,15 +505,11 @@ Template.sandstormGrainListPage.events({
 
     if (window.confirm(message)) {
       myGrains.forEach((grainId) => {
-        Meteor.callAsync("deleteGrain", grainId).catch((err) => {
-          console.error("deleteGrain failed:", err);
-        });
+        globalThis.callMeteor("deleteGrain", grainId);
       });
 
       grainsSharedWithMe.forEach((grainId) => {
-        Meteor.callAsync("forgetGrain", grainId).catch((err) => {
-          console.error("forgetGrain failed:", err);
-        });
+        globalThis.callMeteor("forgetGrain", grainId);
       });
     }
   },

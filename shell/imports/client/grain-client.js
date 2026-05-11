@@ -165,9 +165,7 @@ Template.grainDeleteButton.events({
     const grainId = activeGrain.grainId();
     let confirmationMessage = TAPi18n.__("grains.grainDeletePopup.confirmationMessage");
     if (window.confirm(confirmationMessage)) {
-      Meteor.callAsync("moveGrainsToTrash", [grainId]).catch((err) => {
-        console.error("moveGrainsToTrash failed:", err);
-      });
+      globalThis.callMeteor("moveGrainsToTrash", [grainId]);
       globalGrains.remove(grainId, true);
     }
   },

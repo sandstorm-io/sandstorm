@@ -65,9 +65,7 @@ Router.map(function () {
       };
 
       if (result.keyIsValid && !result.keyIsUsed && Meteor.userId()) {
-        Meteor.callAsync("useSignupKey", this.params.key).catch((err) => {
-          console.error("useSignupKey failed:", err);
-        });
+        globalThis.callMeteor("useSignupKey", this.params.key);
       }
 
       return result;

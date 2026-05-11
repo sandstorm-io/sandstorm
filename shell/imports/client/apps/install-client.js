@@ -256,9 +256,7 @@ Template.sandstormAppInstallPage.helpers({
 Template.sandstormAppInstallPage.events({
   "click #retry": function (event) {
     const ref = Template.instance().data;
-    Meteor.callAsync("ensureInstalled", ref._packageId, ref._packageUrl, true).catch((err) => {
-      console.error("ensureInstalled retry failed:", err);
-    });
+    globalThis.callMeteor("ensureInstalled", ref._packageId, ref._packageUrl, true);
   },
 
   "click #cancelDownload": function (event) {
@@ -269,8 +267,6 @@ Template.sandstormAppInstallPage.events({
 
   "click #confirmInstall": function (event) {
     const ref = Template.instance().data;
-    Meteor.callAsync("addUserActions", ref.packageId()).catch((err) => {
-      console.error("addUserActions failed:", err);
-    });
+    globalThis.callMeteor("addUserActions", ref.packageId());
   },
 });

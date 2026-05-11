@@ -213,10 +213,7 @@ Template.grainClonePopup.onCreated(function() {
       const mainContentElement = document.querySelector("body>.main-content");
       const newGrain = globalGrains.addNewGrainView(newGrainId, "/", undefined,
                                                     mainContentElement);
-      const newTitle = TAPi18n.__(
-        "grains.grainCloneButton.copyTitle",
-        { sprintf: [oldGrain.title()] },
-      );
+      const newTitle = TAPi18n.__("grains.grainCloneButton.copyTitle", oldGrain.title());
       newGrain.setTitle(newTitle);
       newGrain.openSession();
       globalGrains.setActive(newGrainId);

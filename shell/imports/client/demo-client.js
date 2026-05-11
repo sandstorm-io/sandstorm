@@ -163,55 +163,54 @@ Router.map(function () {
             { sort: { "manifest.appVersion": -1 } }
           )._id;
 
-          const launchAppDemoGrain = () => {
-            const userAction = globalDb.collections.userActions.findOne({
+          const findAppDemoAction = () => {
+            return globalDb.collections.userActions.findOne({
               appId: appId,
               userId: Meteor.userId(),
             }) || globalDb.collections.userActions.findOne({
               packageId: packageId,
               userId: Meteor.userId(),
             });
-
-            if (userAction) {
-              launchAndEnterGrainByActionId(userAction._id, null, null, { replaceState: true });
-              return;
-            }
-
-            const pkg = globalDb.collections.packages.findOne(packageId) ||
-                globalDb.collections.devPackages.findOne(packageId);
-            const fallbackAction = pkg && pkg.manifest && pkg.manifest.actions && pkg.manifest.actions[0];
-            if (!fallbackAction) {
-              launchAndEnterGrainByPackageId(packageId, { replaceState: true });
-              return;
-            }
-
-            const appTitle = SandstormDb.appNameFromPackage(pkg);
-            const nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(fallbackAction, appTitle);
-            const title = "Untitled " + appTitle + " " + nounPhrase;
-            Meteor.callAsync("newGrain", packageId, fallbackAction.command, title)
-                .then((grainId) => {
-                  Router.go("grain", { grainId: grainId }, { replaceState: true });
-                })
-                .catch((err) => {
-                  console.error("newGrain failed in appdemo fallback launch:", err);
-                  alert(err.message);
-                });
           };
 
-          // 3. Install this app for the user, if needed.
-          const needsInstall =
-              globalDb.collections.userActions.find({ appId: appId, userId: Meteor.userId() }).count() == 0;
-          const installPromise = needsInstall ?
-              Meteor.callAsync("addUserActions", packageId) :
-              Promise.resolve();
+          const waitForAppDemoAction = () => {
+            return new Promise((resolve, reject) => {
+              let resolved = false;
+              let computation;
+
+              const timeout = Meteor.setTimeout(() => {
+                if (resolved) return;
+                resolved = true;
+                computation.stop();
+                reject(new Error("Timed out waiting for installed app action."));
+              }, 10000);
+
+              computation = Tracker.autorun((currentComputation) => {
+                const userAction = findAppDemoAction();
+                if (!userAction || resolved) return;
+                resolved = true;
+                Meteor.clearTimeout(timeout);
+                currentComputation.stop();
+                resolve(userAction);
+              });
+            });
+          };
+
+          const ensureAppDemoAction = () => {
+            const userAction = findAppDemoAction();
+            if (userAction) return Promise.resolve(userAction);
+
+            // 3. Install this app for the user, then wait for the installed action to appear
+            //    locally.
+            return Meteor.callAsync("addUserActions", packageId).then(waitForAppDemoAction);
+          };
 
           // 4. Create new grain and 5. browse to it.
-          installPromise.then(() => {
-            Tracker.afterFlush(() => {
-              launchAppDemoGrain();
-            });
+          ensureAppDemoAction().then((userAction) => {
+            launchAndEnterGrainByActionId(userAction._id, null, null, { replaceState: true });
           }).catch((err) => {
-            console.error("addUserActions failed:", err);
+            console.error("Failed to launch appdemo grain:", err);
+            alert(err.message);
           });
         }
       });

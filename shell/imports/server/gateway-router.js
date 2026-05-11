@@ -201,8 +201,6 @@ async function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sess
     }
   }
 
-  const isOwnerVertex = !!(vertex.grain && accountId && accountId === grain.userId);
-
   let userInfo = null;
   if (accountId) {
     // If accountId is non-null, we're revealing identity. But if we didn't compute the identity ID
@@ -240,7 +238,7 @@ async function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sess
   // Verify that we have permission to start up this grain. We can't do the full permission
   // check until we've obtained the grain's ViewInfo, which requires starting it, so we have to
   // check for permission to start the grain first.
-  if (!isOwnerVertex && !(await SandstormPermissions.mayOpenGrainAsync(globalDb, vertex))) {
+  if (!(await SandstormPermissions.mayOpenGrainAsync(globalDb, vertex))) {
     throw new Meteor.Error("access-denied", "access denied");
   }
 
@@ -265,17 +263,8 @@ async function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sess
     await globalDb.collections.grains.updateAsync(grainId, { $set: { cachedViewInfo: cachedViewInfo } });
   }
 
-  let permissionsResult;
-  if (isOwnerVertex) {
-    const permissionCount = ((viewInfo || {}).permissions || []).length;
-    permissionsResult = {
-      permissions: new Array(permissionCount).fill(true),
-      observeHandle: null,
-    };
-  } else {
-    permissionsResult = await SandstormPermissions.grainPermissionsAsync(
-        globalDb, vertex, viewInfo || {}, observer.invalidate.bind(observer));
-  }
+  const permissionsResult = await SandstormPermissions.grainPermissionsAsync(
+      globalDb, vertex, viewInfo || {}, observer.invalidate.bind(observer));
 
   if (permissionsResult.observeHandle) {
     observer.whenRevoked(() => {
@@ -383,12 +372,12 @@ class GatewayRouterImpl {
       const sessionContext = makeHackSessionContext(
           session.grainId, sessionId, actingAccountId, session.tabId);
       if (session.powerboxRequest) {
-        rawSession = uiView.newRequestSession(userInfo, sessionContext,
+        rawSession = (await uiView.newRequestSession(userInfo, sessionContext,
              WebSession.typeId, serializedParams, session.powerboxRequest.descriptors,
-             new Buffer(session.tabId, "hex")).session;
+             new Buffer(session.tabId, "hex"))).session;
       } else {
-        rawSession = uiView.newSession(userInfo, sessionContext,
-             WebSession.typeId, serializedParams, new Buffer(session.tabId, "hex")).session;
+        rawSession = (await uiView.newSession(userInfo, sessionContext,
+             WebSession.typeId, serializedParams, new Buffer(session.tabId, "hex"))).session;
       }
 
       let persistent = rawSession.castAs(SystemPersistent);
@@ -965,6 +954,16 @@ async function maybeUpgradeSessionIdentity(db, sessionId, currentUserId, options
 
   const session = await globalDb.collections.sessions.findOneAsync(sessionId);
   if (!session) return;
+
+  if (session.hashedToken) {
+    if (!options.token) return;
+    const hashedToken = Crypto.createHash("sha256").update(options.token).digest("base64");
+    if (hashedToken !== session.hashedToken) return;
+  } else if (options.grainId !== session.grainId) {
+    return;
+  }
+
+  if (session.userId && session.userId !== accountUserId) return;
 
   // Sessions can be created before login state settles; if revealIdentity is requested,
   // keep the persisted session aligned with the current account user.

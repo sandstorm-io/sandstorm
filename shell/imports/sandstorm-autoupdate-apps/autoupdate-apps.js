@@ -49,9 +49,9 @@ Meteor.methods({
       if (!pack || !pack.manifest) {
         throw new Error("No such package on server: " + packageId);
       } else {
-        await db.addUserActionsAsync(this.userId, packageId);
+        await db.addUserActions(this.userId, packageId);
         await db.upgradeGrains(pack.appId, pack.manifest.appVersion, packageId, backend);
-        await db.deleteUnusedPackagesAsync(pack.appId);
+        await db.deleteUnusedPackages(pack.appId);
       }
     }
   },

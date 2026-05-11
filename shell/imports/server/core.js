@@ -326,7 +326,7 @@ async function dismissNotification(db, notificationId, callCancel) {
       }
     } else if (notification.appUpdates) {
       _.forEach(notification.appUpdates, (app, appId) => {
-        db.deleteUnusedPackagesAsync(appId).catch((err) => {
+        db.deleteUnusedPackages(appId).catch((err) => {
           console.error("Failed deleting unused packages after dismissNotification:", err);
         });
       });

@@ -1752,44 +1752,7 @@ _.extend(SandstormDb.prototype, {
     return value;
   },
 
-  addUserActions(userId, packageId, simulation) {
-    check(userId, String);
-    check(packageId, String);
-
-    const pack = this.collections.packages.findOne({ _id: packageId });
-    if (pack) {
-      // Remove old versions.
-      const numRemoved = this.collections.userActions.remove({ userId: userId, appId: pack.appId });
-
-      // Install new.
-      const actions = pack.manifest.actions;
-      for (const i in actions) {
-        const action = actions[i];
-        if ("none" in action.input) {
-          const userAction = {
-            userId: userId,
-            packageId: pack._id,
-            appId: pack.appId,
-            appTitle: pack.manifest.appTitle,
-            appMarketingVersion: pack.manifest.appMarketingVersion,
-            appVersion: pack.manifest.appVersion,
-            title: action.title,
-            nounPhrase: action.nounPhrase,
-            command: action.command,
-          };
-          this.collections.userActions.insert(userAction);
-        } else {
-          // TODO(someday):  Implement actions with capability inputs.
-        }
-      }
-
-      if (numRemoved > 0 && !simulation) {
-        this.deleteUnusedPackages(pack.appId);
-      }
-    }
-  },
-
-  async addUserActionsAsync(userId, packageId, simulation) {
+  async addUserActions(userId, packageId, simulation) {
     check(userId, String);
     check(packageId, String);
 
@@ -1821,7 +1784,7 @@ _.extend(SandstormDb.prototype, {
       }
 
       if (numRemoved > 0 && !simulation) {
-        await this.deleteUnusedPackagesAsync(pack.appId);
+        await this.deleteUnusedPackages(pack.appId);
       }
     }
   },
@@ -2194,7 +2157,7 @@ _.extend(SandstormDb.prototype, {
     }).fetchAsync();
   },
 
-  subscribeToActivity(accountId, grainId, threadPath) {
+  async subscribeToActivity(accountId, grainId, threadPath) {
     // Subscribe the given user to activity events with the given grainId and (optional)
     // threadPath -- unless the user has previously muted this grainId/threadPath, in which
     // case do nothing.
@@ -2208,17 +2171,6 @@ _.extend(SandstormDb.prototype, {
     // the fields from the query, but if we try to do { $set: {} } Mongo throws an exception, and
     // if we try to just pass {}, Mongo interprets it as "replace the record with an empty record".
     // What a wonderful query language.
-    this.collections.activitySubscriptions.upsert(record, { $set: record });
-  },
-
-  async subscribeToActivityAsync(accountId, grainId, threadPath) {
-    // Async-safe server variant of subscribeToActivity().
-    const record = { accountId, grainId };
-    if (threadPath) {
-      record.threadPath = threadPath;
-    }
-
-    // Keep selector/modifier semantics identical to subscribeToActivity().
     await this.collections.activitySubscriptions.upsertAsync(record, { $set: record });
   },
 
@@ -2353,7 +2305,7 @@ _.extend(SandstormDb.prototype, {
       try {
         const packageId = await this.getPackageIdForPreinstalledApp(appId);
         if (packageId) {
-          await this.addUserActionsAsync(userId, packageId);
+          await this.addUserActions(userId, packageId);
         }
       } catch (e) {
         console.error("failed to install app for user:", e);
@@ -3054,7 +3006,7 @@ if (Meteor.isServer) {
         });
       });
 
-      await this.deleteUnusedPackagesAsync(grain.appId);
+      await this.deleteUnusedPackages(grain.appId);
 
       if (grain.size) {
         await Meteor.users.updateAsync(grain.userId, { $inc: { storageUsage: -grain.size } });
@@ -3112,15 +3064,7 @@ if (Meteor.isServer) {
     return pkg;
   };
 
-  SandstormDb.prototype.deleteUnusedPackages = function (appId) {
-    check(appId, String);
-    this.collections.packages.find({ appId: appId }).forEach((pkg) => {
-      // Mark package for possible deletion;
-      this.collections.packages.update({ _id: pkg._id, status: "ready" }, { $set: { shouldCleanup: true } });
-    });
-  };
-
-  SandstormDb.prototype.deleteUnusedPackagesAsync = async function (appId) {
+  SandstormDb.prototype.deleteUnusedPackages = async function (appId) {
     check(appId, String);
     await this.collections.packages.updateAsync(
         { appId: appId, status: "ready" }, { $set: { shouldCleanup: true } }, { multi: true });
@@ -3155,7 +3099,7 @@ if (Meteor.isServer) {
 
     await this.collections.appIndex.updateAsync(
         { _id: appId }, { $set: { hasSentNotifications: true } });
-    await this.deleteUnusedPackagesAsync(appId);
+    await this.deleteUnusedPackages(appId);
   };
 
   SandstormDb.prototype.sendReferralProgramNotification = function (userId) {
@@ -3513,9 +3457,33 @@ Meteor.methods({
     if (this.isSimulation) {
       // TODO(cleanup): Appdemo code relies on this being simulated client-side but we don't have
       //   a proper DB object to use.
-      new SandstormDb().addUserActions(this.userId, packageId, true);
+      // Meteor method stubs run synchronously on the client against Minimongo, so keep this
+      // optimistic update inline instead of calling the async server implementation.
+      const db = new SandstormDb();
+      const pack = db.collections.packages.findOne({ _id: packageId });
+      if (pack) {
+        db.collections.userActions.remove({ userId: this.userId, appId: pack.appId });
+
+        const actions = pack.manifest.actions;
+        for (const i in actions) {
+          const action = actions[i];
+          if ("none" in action.input) {
+            db.collections.userActions.insert({
+              userId: this.userId,
+              packageId: pack._id,
+              appId: pack.appId,
+              appTitle: pack.manifest.appTitle,
+              appMarketingVersion: pack.manifest.appMarketingVersion,
+              appVersion: pack.manifest.appVersion,
+              title: action.title,
+              nounPhrase: action.nounPhrase,
+              command: action.command,
+            });
+          }
+        }
+      }
     } else {
-      await this.connection.sandstormDb.addUserActionsAsync(this.userId, packageId);
+      await this.connection.sandstormDb.addUserActions(this.userId, packageId);
     }
   },
 
@@ -3534,7 +3502,7 @@ Meteor.methods({
 
         const action = result.value;
         if (action) {
-          await this.connection.sandstormDb.deleteUnusedPackagesAsync(action.appId);
+          await this.connection.sandstormDb.deleteUnusedPackages(action.appId);
         }
       }
     }

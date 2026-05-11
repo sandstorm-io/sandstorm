@@ -66,11 +66,11 @@ globalThis.logActivity = async function (grainId, accountIdOrAnonymous, event) {
   if (accountId) {
     // Apply auto-subscriptions.
     if (eventType.autoSubscribeToGrain) {
-      await globalDb.subscribeToActivityAsync(accountId, grainId);
+      await globalDb.subscribeToActivity(accountId, grainId);
     }
 
     if (event.thread && eventType.autoSubscribeToThread) {
-      await globalDb.subscribeToActivityAsync(accountId, grainId, event.thread.path || "");
+      await globalDb.subscribeToActivity(accountId, grainId, event.thread.path || "");
     }
   }
 

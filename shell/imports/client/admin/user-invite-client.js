@@ -3,6 +3,7 @@ import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Router } from "meteor/vlasky:galvanized-iron-router";
 
+import { getClientReturnAddressWithDisplayName } from "/imports/client/admin/client-settings";
 import { globalDb } from "/imports/db-deprecated";
 
 Template.newAdminUserInviteLink.onCreated(function () {
@@ -142,7 +143,7 @@ Template.newAdminUserInviteEmail.events({
     evt.stopPropagation();
     const instance = Template.instance();
     const origin = getOrigin();
-    const from = globalDb.getReturnAddressWithDisplayName(Meteor.userId());
+    const from = getClientReturnAddressWithDisplayName(globalDb, Meteor.userId());
     const list = instance.toAddresses.get();
     const subject = instance.subject.get();
     const message = instance.messageBody.get();

@@ -534,8 +534,8 @@ Meteor.methods({
 
       const accountId = this.userId;
       const outerResult = { successes: [], failures: [] };
-      const fromEmail = await globalDb.getReturnAddressWithDisplayNameAsync(accountId);
-      const replyTo = await globalDb.getPrimaryEmailAsync(accountId);
+      const fromEmail = await globalDb.getReturnAddressWithDisplayName(accountId);
+      const replyTo = await globalDb.getPrimaryEmail(accountId);
       for (const contact of contacts) {
         if (contact.isDefault) {
           const emailAddress = contact.profile.name;
@@ -631,8 +631,8 @@ Meteor.methods({
 
       await globalDb.addContact(grainOwner._id, this.userId);
 
-      const fromEmail = await globalDb.getReturnAddressWithDisplayNameAsync(this.userId);
-      const replyTo = await globalDb.getPrimaryEmailAsync(this.userId);
+      const fromEmail = await globalDb.getReturnAddressWithDisplayName(this.userId);
+      const replyTo = await globalDb.getPrimaryEmail(this.userId);
       const requester = await Meteor.users.findOneAsync({ _id: this.userId });
 
       // TODO(soon): In the HTML version, we should display an identity card.

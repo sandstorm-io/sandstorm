@@ -3,6 +3,28 @@ export function getClientSetting(db, name) {
   return setting && setting.value;
 }
 
+export function getClientServerTitle(db) {
+  return getClientSetting(db, "serverTitle") || "Sandstorm";
+}
+
+export function getClientSmtpConfig(db) {
+  return getClientSetting(db, "smtpConfig");
+}
+
+export function getClientReturnAddress(db) {
+  const config = getClientSmtpConfig(db);
+  return config && config.returnAddress || "";
+}
+
+export function getClientReturnAddressWithDisplayName(db, userId) {
+  const user = db.collections.users.findOne(userId);
+  if (!user) return undefined;
+
+  const displayName = user.profile.name + " (via " + getClientServerTitle(db) + ")";
+  const sanitized = displayName.replace(/"|<|>|\\|\r/g, "");
+  return { name: sanitized, address: getClientReturnAddress(db) };
+}
+
 export function getClientLdapSettings(db) {
   return {
     url: getClientSetting(db, "ldapUrl") || "",

@@ -1346,9 +1346,9 @@ Template.emailInviteTab.helpers({
   },
 
   invitationExplanation: function () {
-    const primaryEmail = globalDb.getPrimaryEmail(Meteor.userId());
+    const primaryEmail = _.findWhere(SandstormDb.getUserEmails(Meteor.user()), { primary: true });
     if (primaryEmail) {
-      return "Invitation will be from " + primaryEmail;
+      return "Invitation will be from " + primaryEmail.email;
     } else {
       return null;
     }

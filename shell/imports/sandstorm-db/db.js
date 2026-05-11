@@ -1835,21 +1835,7 @@ _.extend(SandstormDb.prototype, {
     return config && config.returnAddress || ""; // empty if subscription is not ready.
   },
 
-  getReturnAddressWithDisplayName(userId) {
-    check(userId, String);
-    const user = Meteor.users.findOne(userId);
-    const displayName = user.profile.name + " (via " + this.getServerTitle() + ")";
-
-    // First remove any instances of characters that cause trouble for SimpleSmtp. Ideally,
-    // we could escape such characters with a backslash, but that does not seem to help here.
-    // TODO(cleanup): Unclear whether this sanitization is still necessary now that we return a
-    //   structured object and have moved to nodemailer. I'm not touching it for now.
-    const sanitized = displayName.replace(/"|<|>|\\|\r/g, "");
-
-    return { name: sanitized, address: this.getReturnAddress() };
-  },
-
-  async getReturnAddressWithDisplayNameAsync(userId) {
+  async getReturnAddressWithDisplayName(userId) {
     check(userId, String);
     const user = await Meteor.users.findOneAsync(userId);
     const displayName = user.profile.name + " (via " + await this.getServerTitleAsync() + ")";
@@ -1863,18 +1849,7 @@ _.extend(SandstormDb.prototype, {
     return { name: sanitized, address: await this.getReturnAddressAsync() };
   },
 
-  getPrimaryEmail(accountId) {
-    check(accountId, String);
-
-    let result = null;
-    SandstormDb.getUserEmails(Meteor.users.findOne(accountId)).forEach(email => {
-      if (email.primary) result = email.email;
-    });
-
-    return result;
-  },
-
-  async getPrimaryEmailAsync(accountId) {
+  async getPrimaryEmail(accountId) {
     check(accountId, String);
 
     const account = await Meteor.users.findOneAsync(accountId);

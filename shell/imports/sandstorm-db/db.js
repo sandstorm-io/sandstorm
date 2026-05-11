@@ -1170,6 +1170,8 @@ class SandstormDb {
   }
 
   async isAdminById(id) {
+    // Returns true if the user's id is the administrator.
+
     const user = await Meteor.users.findOneAsync({ _id: id }, { fields: { isAdmin: 1 } });
     if (user && user.isAdmin) {
       return true;
@@ -1626,6 +1628,7 @@ _.extend(SandstormDb.prototype, {
       }
     }
 
+    // Only provide an app ID if we have no icon asset to provide and need to offer an identicon.
     if (!grainInfo.icon && pkg) {
       grainInfo.appId = pkg.appId;
     }
@@ -2190,6 +2193,9 @@ _.extend(SandstormDb.prototype, {
     const setting = await this.collections.settings.findOneAsync(
         { _id: "preinstalledApps", "value.packageId": packageId },
         { fields: { "value.$": 1 } });
+
+    // value.$ causes mongo to transform the result and only return the first matching element in
+    // the array
     return setting && setting.value && setting.value[0] && setting.value[0].appId;
   },
 
@@ -2267,6 +2273,9 @@ _.extend(SandstormDb.prototype, {
   },
 
   async setPreinstalledApps(appAndPackageIds) {
+    // appAndPackageIds: A List[Object] where each element has fields:
+    //     appId: The Packages.appId of the app to install
+    //     packageId: The Packages._id of the app to install
     check(appAndPackageIds, [{ appId: String, packageId: String, }]);
 
     await this.collections.settings.upsertAsync({ _id: "preinstalledApps" }, { $set: {
@@ -2839,6 +2848,8 @@ if (Meteor.isServer) {
     const asset = await this.collections.staticAssets.findOneAsync(
         id, { fields: { _id: 0, mimeType: 1, encoding: 1, content: 1 } });
     if (asset) {
+      // TODO(perf): Mongo converts buffers to something else. Figure out a way to avoid a copy
+      //   here.
       asset.content = new Buffer(asset.content);
     }
 
@@ -2986,6 +2997,7 @@ if (Meteor.isServer) {
 
   SandstormDb.prototype.deleteUnusedPackages = async function (appId) {
     check(appId, String);
+    // Mark package for possible deletion;
     await this.collections.packages.updateAsync(
         { appId: appId, status: "ready" }, { $set: { shouldCleanup: true } }, { multi: true });
   };
@@ -3003,6 +3015,8 @@ if (Meteor.isServer) {
       };
       const inserter = _.extend({ userId, appUpdates: {} }, updater);
 
+      // Set only the appId that we care about. Use mongo's dot notation to specify only a single
+      // field inside of an object to update
       inserter.appUpdates[appId] = updater["appUpdates." + appId] = {
         marketingVersion: marketingVersion,
         packageId: packageId,
@@ -3010,15 +3024,21 @@ if (Meteor.isServer) {
         version: versionNumber,
       };
 
+      // We unfortunately cannot upsert because upserts can only have field equality conditions in
+      // the query. If we try to upsert, Mongo complains that "$exists" isn't valid to store.
       if (await this.collections.notifications.updateAsync(
           { userId: userId, appUpdates: { $exists: true } },
           { $set: updater }) == 0) {
+        // Update failed; try an insert instead.
         await this.collections.notifications.insertAsync(inserter);
       }
     }
 
     await this.collections.appIndex.updateAsync(
         { _id: appId }, { $set: { hasSentNotifications: true } });
+
+    // In the case where we replaced a previous notification and that was the only reference to the
+    // package, we need to clean it up
     await this.deleteUnusedPackages(appId);
   };
 
@@ -3277,6 +3297,7 @@ if (Meteor.isServer) {
     if (accountId == grain.userId) {
       return grain.identityId;
     } else {
+      // Check if the user has already been introduced to this grain.
       const existingToken = await this.collections.apiTokens.findOneAsync(
           { "grainId": grain._id,
             "owner.user.accountId": accountId,
@@ -3284,17 +3305,27 @@ if (Meteor.isServer) {
           { fields: { "owner.user.identityId": 1 } });
 
       if (existingToken) {
+        // This user already has a token associated with this grain. Reuse the identity ID.
+        // TODO(someday): It's a bit awkward that if the user deletes all their tokens for a grain,
+        //   we forget their identity ID. This both means that if the user regains access, they'll
+        //   have a new identity in the grain, and it means that we have no way of enumerating all
+        //   identity IDs the grain has ever seen (including forgotten ones), which means we can't
+        //   give the grain owner a way to remap these identities when needed. Perhaps ApiTokens
+        //   should never really be deleted, only hidden?
         return existingToken.owner.user.identityId;
       }
 
       const user = await Meteor.users.findOneAsync(accountId);
 
+      // Check if the user is listed on the grain's oldUsers list. Since `grain` doesn't
+      // necessarily contain the list we need to do another query.
       const credentialIds = SandstormDb.getUserCredentialIds(user);
       const grainWithOldUser = await this.collections.grains.findOneAsync(
           {_id: grain._id, "oldUsers.credentialIds": {$in: credentialIds}},
           { fields: { "oldUsers.$": 1 } });
       if (grainWithOldUser) {
         const restoredIdentityId = grainWithOldUser.oldUsers[0].identityId;
+        // Verify that this identity ID is not already in use.
         const existingRestored = await this.collections.apiTokens.findOneAsync(
             { "grainId": grain._id, "owner.user.identityId": restoredIdentityId });
         if (!existingRestored) {
@@ -3303,6 +3334,10 @@ if (Meteor.isServer) {
       }
 
       if (!grain.private) {
+        // This grain operates on the old sharing model, where simply knowing the grain ID is
+        // sufficient to open it. We need to assign identity IDs in a consistent way without having
+        // stored them anywhere. Identity IDs used to be based on credential IDs, which at some
+        // point were used to fill in identicon keys in profiles... so use the identicon.
         if (user && user.profile && user.profile.identicon) {
           return user.profile.identicon;
         } else {
@@ -3310,6 +3345,9 @@ if (Meteor.isServer) {
         }
       }
 
+      // This user is new to this grain. Give them a freshly-generated identity ID.
+      // TODO(cleanup): We only ever pass the first 16 bytes of the identity ID to the app. Maybe
+      //   we can truncate all identity IDs to 16 chars?
       return SandstormDb.generateIdentityId();
     }
   };

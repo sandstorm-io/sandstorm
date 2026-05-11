@@ -22,7 +22,7 @@ import { send } from "/imports/server/email";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 
 async function sendDeletionEmails(db, deletedUserId, byAdminUserId, feedback) {
-  const deletedUser = await db.getUserAsync(deletedUserId);
+  const deletedUser = await db.getUser(deletedUserId);
 
   const userEmail = _.findWhere(await SandstormDb.getUserEmailsAsync(deletedUser), { primary: true });
   const serverTitle = await db.getServerTitleAsync();
@@ -56,7 +56,7 @@ If you did not request this deletion, please contact the server administrator im
   };
 
   if (byAdminUserId) {
-    const initiatingAdmin = await db.getUserAsync(byAdminUserId);
+    const initiatingAdmin = await db.getUser(byAdminUserId);
     const adminName = initiatingAdmin.profile.name;
     emailOptions.text = `${adminName} has requested that the Sandstorm account held by ${deleteUserString} on ${serverTitle} be deleted. The account has been suspended and will be fully deleted in seven days. To cancel the deletion, go to: ${process.env.ROOT_URL}/admin/users/${deletedUser._id}`;
   } else {
@@ -89,7 +89,7 @@ Meteor.methods({
     check(userId, String);
     check(willDelete, Boolean);
 
-    if (!await this.connection.sandstormDb.isAdminByIdAsync(this.userId)) {
+    if (!await this.connection.sandstormDb.isAdminById(this.userId)) {
       throw new Meteor.Error(403, "Only admins can suspend other users.");
     }
 
@@ -134,7 +134,7 @@ Meteor.methods({
   async unsuspendAccount(userId) {
     check(userId, String);
 
-    if (!await this.connection.sandstormDb.isAdminByIdAsync(this.userId)) {
+    if (!await this.connection.sandstormDb.isAdminById(this.userId)) {
       throw new Meteor.Error(403, "Only admins can unsuspend other users.");
     }
 

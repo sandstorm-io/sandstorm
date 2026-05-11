@@ -172,7 +172,7 @@ class SandstormCoreImpl {
       if (!grain) {
         throw new Error("Grain not found.");
       }
-      const identityId = await this.db.getOrGenerateIdentityIdAsync(accountId, grain);
+      const identityId = await this.db.getOrGenerateIdentityId(accountId, grain);
       return { id: new Buffer(identityId, "hex") };
     });
   }
@@ -244,7 +244,7 @@ class PersistentUiViewImpl extends PersistentImpl {
         throw new Error("grain no longer exists");
       }
 
-      let pkg = await this._db.getPackageAsync(grain.packageId) ||
+      let pkg = await this._db.getPackage(grain.packageId) ||
         await globalDb.collections.devPackages.findOneAsync({ appId: grain.appId }) ||
         {};
 
@@ -414,7 +414,7 @@ Meteor.methods({
 
       if (await fetchApiToken(db, newSturdyRef)) {
         // We have already generated this token.
-        await db.removeApiTokensAsync({ _id: tokenId });
+        await db.removeApiTokens({ _id: tokenId });
         return newSturdyRef;
       }
     } else {
@@ -424,7 +424,7 @@ Meteor.methods({
     apiToken.owner = { webkey: null };
 
     await insertApiToken(db, apiToken, newSturdyRef);
-    await db.removeApiTokensAsync({ _id: tokenId });
+    await db.removeApiTokens({ _id: tokenId });
     return newSturdyRef;
   },
 
@@ -654,7 +654,7 @@ async function dropInternal(db, sturdyRef, ownerPattern) {
 
   if (token.frontendRef && token.frontendRef.notificationHandle) {
     const notificationId = token.frontendRef.notificationHandle;
-    await db.removeApiTokensAsync({ _id: hashedSturdyRef });
+    await db.removeApiTokens({ _id: hashedSturdyRef });
     const anyToken = await db.collections.apiTokens.findOneAsync(
         { "frontendRef.notificationHandle": notificationId });
     if (!anyToken) {
@@ -668,9 +668,9 @@ async function dropInternal(db, sturdyRef, ownerPattern) {
       return supervisor.drop(token.objectId);
     });
 
-    await db.removeApiTokensAsync({ _id: hashedSturdyRef });
+    await db.removeApiTokens({ _id: hashedSturdyRef });
   } else {
-    await db.removeApiTokensAsync({ _id: hashedSturdyRef });
+    await db.removeApiTokens({ _id: hashedSturdyRef });
   }
 }
 

@@ -22,7 +22,7 @@ import { _ } from "meteor/underscore";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { SandstormBackend } from "/imports/server/backend";
 
-const deleteUnusedAccountForCredentialAsync = async function (db, backend, credentialId) {
+const deleteUnusedAccountForCredential = async function (db, backend, credentialId) {
   check(credentialId, String);
   const account = await db.collections.users.findOneAsync({ "loginCredentials.id": credentialId });
   if (account &&
@@ -76,7 +76,7 @@ const linkCredentialToAccountInternal = async function (db, backend, credentialI
     throw new Meteor.Error(400, "Cannot link an account to another account");
   }
 
-  await deleteUnusedAccountForCredentialAsync(db, backend, credentialUser._id);
+  await deleteUnusedAccountForCredential(db, backend, credentialUser._id);
   if (await Meteor.users.findOneAsync({ "loginCredentials.id": credentialUser._id })) {
     throw new Meteor.Error(403,
                            "Cannot link a credential that can already log into another account");

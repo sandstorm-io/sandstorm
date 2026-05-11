@@ -355,7 +355,7 @@ globalThis.hackSendEmail = (session, email) => {
 
     const grain = await globalDb.collections.grains.findOneAsync(session.grainId);
     if (!grain) throw new Error("Grain does not exist.");
-    await globalDb.incrementDailySentMailCountAsync(grain.userId);
+    await globalDb.incrementDailySentMailCount(grain.userId);
 
     await rawSend(options);
   }).bind(this)).catch((err) => {

@@ -98,11 +98,11 @@ globalThis.logActivity = async function (grainId, accountIdOrAnonymous, event) {
     addRecipient({ accountId: grain.userId });
 
     // Add everyone subscribed to the grain.
-    (await globalDb.getActivitySubscriptionsAsync(grainId)).forEach(addRecipient);
+    (await globalDb.getActivitySubscriptions(grainId)).forEach(addRecipient);
 
     if (event.thread) {
       // Add everyone subscribed to the thread.
-      (await globalDb.getActivitySubscriptionsAsync(grainId, event.thread.path || ""))
+      (await globalDb.getActivitySubscriptions(grainId, event.thread.path || ""))
           .forEach(addRecipient);
     }
   }

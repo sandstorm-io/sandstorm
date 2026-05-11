@@ -1595,90 +1595,13 @@ SandstormPermissions.grainPermissionsAsync = async function (db, vertex, viewInf
   return result;
 };
 
-SandstormPermissions.downstreamTokens = function (db, root) {
+SandstormPermissions.downstreamTokens = async function (db, root) {
   // Computes a list of the UiView tokens that are downstream in the sharing graph from a given
   // source. The source, `root`, can either be a token or a (grain, user) pair. The exact format
   // of `root` is specified in the `check()` invocation below.
   //
   // TODO(someday): Account for membrane requirements in this computation.
 
-  check(root, Match.OneOf({ token: Match.ObjectIncluding({ _id: String, grainId: String }) },
-                          { grain: Match.ObjectIncluding({ _id: String, accountId: String }) }));
-
-  const result = [];
-  const tokenStack = [];
-  const stackedTokens = {};
-  const tokensBySharer = {};
-  const tokensByParent = {};
-  const tokensById = {};
-
-  function addChildren(tokenId) {
-    const children = tokensByParent[tokenId];
-    if (children) {
-      children.forEach(function (child) {
-        if (!stackedTokens[child._id]) {
-          tokenStack.push(child);
-          stackedTokens[child._id] = true;
-        }
-      });
-    }
-  }
-
-  function addSharedTokens(sharer) {
-    const sharedTokens = tokensBySharer[sharer];
-    if (sharedTokens) {
-      sharedTokens.forEach(function (sharedToken) {
-        if (!stackedTokens[sharedToken._id]) {
-          tokenStack.push(sharedToken);
-          stackedTokens[sharedToken._id] = true;
-        }
-      });
-    }
-  }
-
-  const grainId = root.token ? root.token.grainId : root.grain._id;
-  const grain = db.getGrain(grainId);
-  if (!grain || !grain.private) { return result; }
-
-  db.collections.apiTokens.find({ grainId: grainId,
-                                  revoked: { $ne: true },
-                                  suspended: { $ne: true },
-                                }).forEach(function (token) {
-    tokensById[token._id] = token;
-    if (token.parentToken) {
-      if (!tokensByParent[token.parentToken]) {
-        tokensByParent[token.parentToken] = [];
-      }
-
-      tokensByParent[token.parentToken].push(token);
-    } else if (token.accountId) {
-      if (!tokensBySharer[token.accountId]) {
-        tokensBySharer[token.accountId] = [];
-      }
-
-      tokensBySharer[token.accountId].push(token);
-    }
-  });
-
-  if (root.token) {
-    addChildren(root.token._id);
-  } else if (root.grain) {
-    addSharedTokens(root.grain.accountId);
-  }
-
-  while (tokenStack.length > 0) {
-    const token = tokenStack.pop();
-    result.push(token);
-    addChildren(token._id);
-    if (token.owner && token.owner.user) {
-      addSharedTokens(token.owner.user.accountId);
-    }
-  }
-
-  return result;
-};
-
-SandstormPermissions.downstreamTokensAsync = async function (db, root) {
   check(root, Match.OneOf({ token: Match.ObjectIncluding({ _id: String, grainId: String }) },
                           { grain: Match.ObjectIncluding({ _id: String, accountId: String }) }));
 
@@ -1899,7 +1822,7 @@ SandstormPermissions.createNewApiToken = async function (db, provider, grainId, 
     }
   } else if (owner.user) {
     // Determine the user's identity ID (their user ID as seen by the grain).
-    const identityId = await db.getOrGenerateIdentityIdAsync(owner.user.accountId, grain);
+    const identityId = await db.getOrGenerateIdentityId(owner.user.accountId, grain);
     oldUserIdentityToRemove = identityId;
 
     let pkg = await db.collections.packages.findOneAsync(grain.packageId);
@@ -1977,7 +1900,7 @@ SandstormPermissions.createNewApiToken = async function (db, provider, grainId, 
 SandstormPermissions.cleanupSelfDestructing = function (db) {
   return function () {
     const now = new Date();
-    db.removeApiTokensAsync({ expiresIfUnused: { $lt: now } }).catch((err) => {
+    db.removeApiTokens({ expiresIfUnused: { $lt: now } }).catch((err) => {
       console.error("Failed to clean up self-destructing tokens:", err);
     });
   };
@@ -1986,7 +1909,7 @@ SandstormPermissions.cleanupSelfDestructing = function (db) {
 SandstormPermissions.cleanupClientPowerboxTokens = function (db) {
   return function () {
     const tenMinutesAgo = new Date(Date.now() - 1000 * 60 * 10);
-    db.removeApiTokensAsync({
+    db.removeApiTokens({
       $or: [
         { "owner.clientPowerboxRequest": { $exists: true } },
         { "owner.clientPowerboxOffer": { $exists: true } },
@@ -2044,7 +1967,7 @@ Meteor.methods({
 
     const accountId = await resolveAccountIdForTokenOps(this.userId);
     const db = this.connection.sandstormDb;
-    return await SandstormPermissions.downstreamTokensAsync(db,
+    return await SandstormPermissions.downstreamTokens(db,
         { grain: { _id: grainId, accountId } });
   },
 

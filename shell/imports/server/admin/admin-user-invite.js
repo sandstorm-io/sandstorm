@@ -2,7 +2,7 @@ import { Meteor } from "meteor/meteor";
 
 Meteor.publish("allInviteTokens", async function () {
   const db = this.connection.sandstormDb;
-  if (!await db.isAdminByIdAsync(this.userId)) {
+  if (!await db.isAdminById(this.userId)) {
     throw new Meteor.Error(403, "User must be admin to list invite tokens.");
   }
 

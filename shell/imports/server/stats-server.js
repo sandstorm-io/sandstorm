@@ -227,7 +227,7 @@ async function recordStats() {
 
     if (!reportSetting) {
       // Setting not set yet, send out notifications and set it to false
-      await globalDb.sendAdminNotificationAsync("reportStats", "/admin/stats");
+      await globalDb.sendAdminNotification("reportStats", "/admin/stats");
       await globalDb.collections.settings.insertAsync({ _id: "reportStats", value: "unset" });
     } else if (reportSetting.value === true) {
       await postStats(record);
@@ -263,7 +263,7 @@ if (!Meteor.settings.replicaNumber) {
 
 Meteor.methods({
   regenerateStatsToken: async function () {
-    if (!await this.connection.sandstormDb.isAdminByIdAsync(this.userId)) {
+    if (!await this.connection.sandstormDb.isAdminById(this.userId)) {
       throw new Meteor.Error(403, "Unauthorized", "User must be admin");
     }
 

@@ -108,7 +108,7 @@ SandstormDb.prototype.deleteScheduledJob = async function (jobId) {
   const job = await this.collections.scheduledJobs.findOneAsync({ _id: jobId });
   await this.collections.scheduledJobs.removeAsync({ _id: jobId });
   const tokenId = Crypto.createHash("sha256").update(job.callback).digest("base64");
-  await this.removeApiTokensAsync({ _id: tokenId });
+  await this.removeApiTokens({ _id: tokenId });
 };
 
 SandstormDb.prototype.updateScheduledJobKeepAlive = async function (id) {

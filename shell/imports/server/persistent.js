@@ -70,10 +70,10 @@ class PersistentImpl {
           throw new Error("unknown grain ID");
         }
 
-        userOwner.identityId = await db.getOrGenerateIdentityIdAsync(userOwner.accountId, grain);
+        userOwner.identityId = await db.getOrGenerateIdentityId(userOwner.accountId, grain);
 
         // Fill in denormalizedGrainMetadata and upstreamTitle ourselves.
-        userOwner.denormalizedGrainMetadata = await db.getDenormalizedGrainInfoAsync(newToken.grainId);
+        userOwner.denormalizedGrainMetadata = await db.getDenormalizedGrainInfo(newToken.grainId);
 
         if (grain.title !== userOwner.title) {
           userOwner.upstreamTitle = grain.title;
@@ -243,7 +243,7 @@ async function checkRequirements(db, requirements) {
         }
       }
     } else if (requirement.userIsAdmin) {
-      if (!await db.isAdminByIdAsync(requirement.userIsAdmin)) {
+      if (!await db.isAdminById(requirement.userIsAdmin)) {
         throw new Meteor.Error(403,
             "Capability revoked because the user who created it has lost their admin " +
             "rights.");

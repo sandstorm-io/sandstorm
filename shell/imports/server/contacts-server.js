@@ -87,7 +87,7 @@ Meteor.publish("contactProfiles", async function (showAll) {
   let orgHandle;
 
   const ownerUser = await db.collections.users.findOneAsync({ _id: userId });
-  if (await db.getOrganizationShareContactsAsync() &&
+  if (await db.getOrganizationShareContacts() &&
       await db.isUserInOrganizationAsync(ownerUser)) {
     const orgCursor = db.collections.users.find({ type: "account" });
     // TODO(perf): make a mongo query that can find all accounts in an organization and add

@@ -91,7 +91,7 @@ function serveStaticAsset(req, res) {
         const size = parseInt((url.query || {}).s);
         asset = new ServerIdenticon(pathname.slice("identicon/".length), size).asAsset();
       } else if (pathname.indexOf("/") == -1) {
-        asset = await globalDb.getStaticAssetAsync(pathname);
+        asset = await globalDb.getStaticAsset(pathname);
       }
 
       if (asset) {
@@ -135,7 +135,7 @@ function serveStaticAsset(req, res) {
       res.setHeader("Access-Control-Allow-Origin", "*");
 
       const url = Url.parse(req.url);
-      const purpose = await globalDb.fulfillAssetUploadAsync(url.pathname.slice(1));
+      const purpose = await globalDb.fulfillAssetUpload(url.pathname.slice(1));
 
       // Sanity check the purpose of this upload token.
       if (!purpose) {
@@ -185,7 +185,7 @@ function serveStaticAsset(req, res) {
         return;
       }
 
-      const assetId = await globalDb.addStaticAssetAsync({ mimeType: type }, content);
+      const assetId = await globalDb.addStaticAsset({ mimeType: type }, content);
 
       if (purpose.profilePicture) {
         const accountId = purpose.profilePicture.userId;
@@ -196,7 +196,7 @@ function serveStaticAsset(req, res) {
         const old = result && result.value !== undefined ? result.value : result;
 
         if (old && old.profile && old.profile.picture) {
-          await globalDb.unrefStaticAssetAsync(old.profile.picture);
+          await globalDb.unrefStaticAsset(old.profile.picture);
         } else if (!old) {
           res.writeHead(500, { "Content-Type": "text/plain" });
           res.end("Couldn't update profile picture.");
@@ -213,7 +213,7 @@ function serveStaticAsset(req, res) {
         const old = result && result.value !== undefined ? result.value : result;
 
         if (old && old.value) {
-          await globalDb.unrefStaticAssetAsync(old.value);
+          await globalDb.unrefStaticAsset(old.value);
         }
       }
 

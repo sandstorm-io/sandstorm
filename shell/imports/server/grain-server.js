@@ -339,7 +339,7 @@ Meteor.publish("grainLog", async function (grainId) {
 const GRAIN_DELETION_MS = 1000 * 60 * 60 * 24 * 30; // thirty days
 SandstormDb.periodicCleanup(86400000, () => {
   const trashExpiration = new Date(Date.now() - GRAIN_DELETION_MS);
-  globalDb.removeApiTokensAsync({ trashed: { $lt: trashExpiration } }, true).catch((err) => {
+  globalDb.removeApiTokens({ trashed: { $lt: trashExpiration } }, true).catch((err) => {
     console.error("Error deleting expired trashed apiTokens:", err);
   });
   globalDb.deleteGrains({ trashed: { $lt: trashExpiration } }, globalThis.globalBackend, "grain")
@@ -550,7 +550,7 @@ Meteor.methods({
               "Note: If you forward this email to other people, they will be able to access " +
               "the share as well. To prevent this, remove the button before forwarding.</div>";
           try {
-            await globalDb.incrementDailySentMailCountAsync(accountId);
+            await globalDb.incrementDailySentMailCount(accountId);
             await sendEmail({
               to: emailAddress,
               from: fromEmail,
@@ -581,7 +581,7 @@ Meteor.methods({
               const html = escapedMessage + "<br><br>" +
                   emailLinkWithInlineStyle(url, "Open Shared Grain") +
                   "<div style='font-size:8pt;font-style:italic;color:gray'>";
-              await globalDb.incrementDailySentMailCountAsync(accountId);
+              await globalDb.incrementDailySentMailCount(accountId);
               await sendEmail({
                 to: email.email,
                 from: fromEmail,
@@ -621,7 +621,7 @@ Meteor.methods({
         throw new Meteor.Error(404, "No such grain");
       }
 
-      const grainOwner = await globalDb.getUserAsync(grain.userId);
+      const grainOwner = await globalDb.getUser(grain.userId);
       const email = _.findWhere(await SandstormDb.getUserEmailsAsync(grainOwner), { primary: true });
       if (!email) {
         throw new Meteor.Error("no email", "Grain owner has no email address.");

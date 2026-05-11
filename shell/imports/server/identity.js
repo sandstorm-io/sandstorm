@@ -169,7 +169,7 @@ globalThis.globalFrontendRefRegistry.register({
       }
     }
 
-    if (await db.getOrganizationShareContactsAsync() &&
+    if (await db.getOrganizationShareContacts() &&
         await db.isUserInOrganizationAsync(await db.collections.users.findOneAsync({ _id: userId }))) {
 
       // TODO(perf): Add some way to efficiently fetch all members in an organization.

@@ -64,7 +64,7 @@ SandstormDb.periodicCleanup(5 * 60 * 1000, SandstormPermissions.cleanupSelfDestr
 SandstormDb.periodicCleanup(10 * 60 * 1000,
                             SandstormPermissions.cleanupClientPowerboxTokens(globalDb));
 SandstormDb.periodicCleanup(60 * 60 * 1000, () => {
-  globalDb.cleanupExpiredAssetUploadsAsync().catch((err) => {
+  globalDb.cleanupExpiredAssetUploads().catch((err) => {
     console.error("Error cleaning up expired asset uploads:", err);
   });
 });

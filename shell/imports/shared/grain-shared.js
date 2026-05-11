@@ -175,7 +175,7 @@ Meteor.methods({
             globalDb.collections.apiTokens.remove(apiTokensQuery);
           }
         } else {
-          await globalDb.removeApiTokensAsync(apiTokensQuery);
+          await globalDb.removeApiTokens(apiTokensQuery);
         }
       }
     }
@@ -197,7 +197,7 @@ Meteor.methods({
     if (this.isSimulation) {
       globalDb.collections.apiTokens.remove(query);
     } else {
-      await globalDb.removeApiTokensAsync(query, true);
+      await globalDb.removeApiTokens(query, true);
     }
   },
 });

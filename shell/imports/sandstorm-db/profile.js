@@ -405,33 +405,12 @@ SandstormDb.getVerifiedEmailsForCredential = function (credential) {
   return [];
 };
 
-SandstormDb.prototype.findCredentialsByEmail = function (email) {
+SandstormDb.prototype.findCredentialsByEmail = async function (email) {
   // Returns an array of credentials which have the given email address as one of their verified
   // addresses.
-
   check(email, String);
 
   // For LDAP, the field containing the e-mail address is configurable...
-  const ldapQuery = {};
-  ldapQuery["services.ldap.rawAttrs." + this.getLdapEmailField()] = email;
-
-  return Meteor.users.find({ $or: [
-    { "services.google.email": email },
-    { "services.email.email": email },
-    { "services.github.emails.email": email },
-    ldapQuery,
-    { "services.oidc.email": email },
-    { "services.saml.email": email },
-  ], }).fetch().filter(function (credential) {
-    // Verify that the email is verified, since our query doesn't technically do that.
-    return !!_.findWhere(SandstormDb.getVerifiedEmailsForCredential(credential), { email: email });
-  });
-};
-
-SandstormDb.prototype.findCredentialsByEmailAsync = async function (email) {
-  // Async server-side equivalent of findCredentialsByEmail().
-  check(email, String);
-
   const ldapQuery = {};
   ldapQuery["services.ldap.rawAttrs." + this.getLdapEmailField()] = email;
 
@@ -447,16 +426,8 @@ SandstormDb.prototype.findCredentialsByEmailAsync = async function (email) {
   });
 };
 
-SandstormDb.prototype.findAccountsByEmail = function (email) {
-  const credentialIds = _.pluck(this.findCredentialsByEmail(email), "_id");
-  return Meteor.users.find({ $or: [
-    { "loginCredentials.id": { $in: credentialIds } },
-    { "nonloginCredentials.id": { $in: credentialIds } },
-  ], }).fetch();
-};
-
-SandstormDb.prototype.findAccountsByEmailAsync = async function (email) {
-  const credentialIds = _.pluck(await this.findCredentialsByEmailAsync(email), "_id");
+SandstormDb.prototype.findAccountsByEmail = async function (email) {
+  const credentialIds = _.pluck(await this.findCredentialsByEmail(email), "_id");
   return await Meteor.users.find({ $or: [
     { "loginCredentials.id": { $in: credentialIds } },
     { "nonloginCredentials.id": { $in: credentialIds } },

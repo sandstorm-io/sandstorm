@@ -28,7 +28,7 @@ import Crypto from "crypto";
 
 async function clearUser(id) {
   await globalDb.collections.userActions.removeAsync({ userId: id });
-  await globalDb.removeApiTokensAsync({ userId: id });
+  await globalDb.removeApiTokens({ userId: id });
   const grains = await globalDb.collections.grains.find({ userId: id }).fetchAsync();
   for (const grain of grains) {
     await globalThis.globalBackend.deleteGrain(grain._id);

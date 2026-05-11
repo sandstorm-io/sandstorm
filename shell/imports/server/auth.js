@@ -90,7 +90,7 @@ function tokenIsSetupSession(token) {
 
 async function checkAuthAsync(db, userId, token) {
   check(token, Match.OneOf(undefined, null, String));
-  if (!(userId && await db.isAdminByIdAsync(userId)) && !tokenIsValid(token) &&
+  if (!(userId && await db.isAdminById(userId)) && !tokenIsValid(token) &&
       !await tokenIsSetupSessionAsync(token)) {
     throw new Meteor.Error(403, "User must be admin or provide a valid token");
   }

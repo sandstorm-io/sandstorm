@@ -522,7 +522,7 @@ async function updateMailchimp(db) {
       subscribed: member.status === "subscribed",
       lastChanged: new Date(member.last_changed)
     }});
-    let count = (await Promise.all((await db.findAccountsByEmailAsync(member.email_address))
+    let count = (await Promise.all((await db.findAccountsByEmail(member.email_address))
         .map(updateBonuses))).length;
     console.log("Mailchimp:", member.email_address, member.status, "(" + count + " users)");
   }

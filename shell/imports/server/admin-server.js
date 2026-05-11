@@ -413,7 +413,7 @@ Meteor.methods({
     await checkAuthAsync(this.connection.sandstormDb, this.userId);
     check(appAndPackageIds, [{ appId: String, packageId: String, }]);
 
-    await this.connection.sandstormDb.setPreinstalledAppsAsync(appAndPackageIds);
+    await this.connection.sandstormDb.setPreinstalledApps(appAndPackageIds);
   },
 
   setTlsKeys: async function (token, keys) {
@@ -501,7 +501,7 @@ let ModuleName = Match.Where(name => {
 
 const authorizedAsAdmin = async function (token, userId) {
   return Match.test(token, Match.OneOf(undefined, null, String)) &&
-         ((userId && await globalDb.isAdminByIdAsync(userId)) || tokenIsValid(token) ||
+         ((userId && await globalDb.isAdminById(userId)) || tokenIsValid(token) ||
           await tokenIsSetupSessionAsync(token));
 };
 

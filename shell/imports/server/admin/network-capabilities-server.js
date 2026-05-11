@@ -4,7 +4,7 @@ import { check } from "meteor/check";
 Meteor.publish("adminGrains", async function (grainIds) {
   // If the caller is an admin, publishes the Grains referred to by the provided list of grain IDs.
   // Otherwise, does nothing.
-  if (!await this.connection.sandstormDb.isAdminByIdAsync(this.userId)) return [];
+  if (!await this.connection.sandstormDb.isAdminById(this.userId)) return [];
   check(grainIds, [String]);
 
   const db = this.connection.sandstormDb;
@@ -23,7 +23,7 @@ Meteor.publish("adminGrains", async function (grainIds) {
 Meteor.publish("adminPackages", async function (packageIds) {
   // If the caller is an admin, publishes the Packages referred to by the provided list of package
   // IDs.  Otherwise, does nothing.
-  if (!await this.connection.sandstormDb.isAdminByIdAsync(this.userId)) return [];
+  if (!await this.connection.sandstormDb.isAdminById(this.userId)) return [];
   check(packageIds, [String]);
 
   const db = this.connection.sandstormDb;
@@ -41,7 +41,7 @@ Meteor.publish("adminPackages", async function (packageIds) {
 Meteor.publish("adminProfiles", async function (userIds) {
   // If the caller is an admin, publishes the Users listed by ID in userIds.
   // Otherwise, does nothing.
-  if (!await this.connection.sandstormDb.isAdminByIdAsync(this.userId)) return [];
+  if (!await this.connection.sandstormDb.isAdminById(this.userId)) return [];
   check(userIds, [String]);
 
   const db = this.connection.sandstormDb;

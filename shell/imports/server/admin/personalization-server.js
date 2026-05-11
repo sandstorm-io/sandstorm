@@ -44,7 +44,7 @@ Meteor.methods({
   async getWhitelabelLogoUploadToken() {
     await checkAuthAsync(this.connection.sandstormDb, this.userId);
     const db = this.connection.sandstormDb;
-    return await db.newAssetUploadAsync({ loginLogo: {} });
+    return await db.newAssetUpload({ loginLogo: {} });
   },
 
   async resetWhitelabelLogo() {
@@ -56,7 +56,7 @@ Meteor.methods({
     const old = result && result.value !== undefined ? result.value : result;
 
     if (old) {
-      await db.unrefStaticAssetAsync(old.value);
+      await db.unrefStaticAsset(old.value);
     }
   },
 });

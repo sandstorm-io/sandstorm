@@ -55,7 +55,7 @@ const deletePackageInternal = async (pkg) => {
     const notificationQuery = {};
     notificationQuery["appUpdates." + pkg.appId + ".packageId"] = packageId;
     if (!grain && !action && !await globalDb.collections.notifications.findOneAsync(notificationQuery)
-        && !await globalDb.getAppIdForPreinstalledPackageAsync(packageId)) {
+        && !await globalDb.getAppIdForPreinstalledPackage(packageId)) {
       await globalDb.collections.packages.updateAsync({
         _id: packageId,
       }, {
@@ -67,7 +67,7 @@ const deletePackageInternal = async (pkg) => {
 
       // Clean up assets (icon, etc).
       await Promise.all(getAllManifestAssets(pkg.manifest).map(async (assetId) => {
-        await globalDb.unrefStaticAssetAsync(assetId);
+        await globalDb.unrefStaticAsset(assetId);
       }));
     } else {
       await globalDb.collections.packages.updateAsync(
@@ -367,7 +367,7 @@ class AppInstaller {
     _this.writeChain = _this.writeChain.then(() => {
       return inMeteor(async () => {
         if (_this.isAutoUpdated) {
-          await globalDb.sendAppUpdateNotificationsAsync(_this.appId, _this.packageId,
+          await globalDb.sendAppUpdateNotifications(_this.appId, _this.packageId,
             (manifest.appTitle && manifest.appTitle.defaultText), manifest.appVersion,
             (manifest.appMarketingVersion && manifest.appMarketingVersion.defaultText));
         }
@@ -376,12 +376,12 @@ class AppInstaller {
           _id: _this.appId,
           packageId: _this.packageId,
         });
-        if (await globalDb.getPackageIdForPreinstalledAppAsync(_this.appId) && appIndexEntry) {
+        if (await globalDb.getPackageIdForPreinstalledApp(_this.appId) && appIndexEntry) {
           // Only mark app as preinstall ready if its appId is in the preinstalledApps setting
           // and if it's the latest package version in the appIndex. The updateAppIndex function
           // will always trigger updates of preinstalled apps, even if a concurrent download of
           // an older package is going on.
-          await globalDb.setPreinstallAppAsReadyAsync(_this.appId, _this.packageId);
+          await globalDb.setPreinstallAppAsReady(_this.appId, _this.packageId);
         }
 
         // Reset any sessions that were blocked by this package ID missing.
@@ -401,7 +401,7 @@ async function extractManifestAssets(manifest) {
   if (icons) {
     const handleIcon = async (icon) => {
       if (icon.svg) {
-        icon.assetId = await globalDb.addStaticAssetAsync({ mimeType: "image/svg+xml" }, icon.svg);
+        icon.assetId = await globalDb.addStaticAsset({ mimeType: "image/svg+xml" }, icon.svg);
         icon.format = "svg";
         delete icon.svg;
         return true;
@@ -410,11 +410,11 @@ async function extractManifestAssets(manifest) {
         const normalDpi = icon.png.dpi1x || icon.png.dpi2x;
         if (!normalDpi) return false;
         icon.format = "png";
-        icon.assetId = await globalDb.addStaticAssetAsync({ mimeType: "image/png" }, normalDpi);
+        icon.assetId = await globalDb.addStaticAsset({ mimeType: "image/png" }, normalDpi);
 
         if (icon.png.dpi1x && icon.png.dpi2x) {
           // Icon specifies both resolutions, so also record a 2x DPI option.
-          icon.assetId2xDpi = await globalDb.addStaticAssetAsync({ mimeType: "image/png" }, icon.png.dpi2x);
+          icon.assetId2xDpi = await globalDb.addStaticAsset({ mimeType: "image/png" }, icon.png.dpi2x);
         }
 
         delete icon.png;
@@ -435,7 +435,7 @@ async function extractManifestAssets(manifest) {
 
   const handleLocalizedText = async (text) => {
     if (text.defaultText) {
-      text.defaultTextAssetId = await globalDb.addStaticAssetAsync(
+      text.defaultTextAssetId = await globalDb.addStaticAsset(
           { mimeType: "text/plain" }, text.defaultText);
       delete text.defaultText;
     }
@@ -443,7 +443,7 @@ async function extractManifestAssets(manifest) {
     if (text.localizations) {
       for (const localization of text.localizations) {
         if (localization.text) {
-          localization.assetId = await globalDb.addStaticAssetAsync(
+          localization.assetId = await globalDb.addStaticAsset(
               { mimeType: "text/plain" }, localization.text);
           delete localization.text;
         }

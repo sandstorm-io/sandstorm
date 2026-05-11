@@ -74,7 +74,7 @@ Meteor.publish("systemStatus", async function () {
   // A pseudocollection containing the number of active grain sessions and unique
   // userIds associated with these sessions
   const db = this.connection.sandstormDb;
-  if (!await db.isAdminByIdAsync(this.userId)) {
+  if (!await db.isAdminById(this.userId)) {
     throw new Meteor.Error(403, "User must be admin to view system status.");
   }
 
@@ -167,7 +167,7 @@ Meteor.publish("adminDemoUsers", async function () {
   // Publishes expiry information about demo accounts to admins, so demo users can be counted
   // clientside and reactively updated.
   const db = this.connection.sandstormDb;
-  if (!await db.isAdminByIdAsync(this.userId)) {
+  if (!await db.isAdminById(this.userId)) {
     throw new Meteor.Error(403, "User must be admin to view system status.");
   }
 

@@ -87,7 +87,7 @@ Meteor.methods({
   },
 
   upgradeGrains: async function (appId, version, packageId) {
-    await this.connection.sandstormDb.upgradeGrainsAsync(
+    await this.connection.sandstormDb.upgradeGrains(
         appId, version, packageId, globalThis.globalBackend);
   },
 
@@ -131,7 +131,7 @@ Meteor.methods({
     }
 
     if (!pkg || isRetry) {
-      await globalDb.startInstallAsync(packageId, url, isRetry);
+      await globalDb.startInstall(packageId, url, isRetry);
     }
   },
 });

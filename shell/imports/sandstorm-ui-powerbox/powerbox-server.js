@@ -98,7 +98,7 @@ Meteor.methods({
       accountId: await resolveAccountIdForPowerbox(this.userId),
     };
 
-    const title = await db.userGrainTitleAsync(grainId, this.userId);
+    const title = await db.userGrainTitle(grainId, this.userId);
 
     const descriptor = encodePowerboxDescriptor({
       tags: [

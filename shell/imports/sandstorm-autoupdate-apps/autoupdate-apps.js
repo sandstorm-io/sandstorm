@@ -50,7 +50,7 @@ Meteor.methods({
         throw new Error("No such package on server: " + packageId);
       } else {
         await db.addUserActionsAsync(this.userId, packageId);
-        await db.upgradeGrainsAsync(pack.appId, pack.manifest.appVersion, packageId, backend);
+        await db.upgradeGrains(pack.appId, pack.manifest.appVersion, packageId, backend);
         await db.deleteUnusedPackagesAsync(pack.appId);
       }
     }

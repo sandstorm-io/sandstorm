@@ -1169,19 +1169,7 @@ class SandstormDb {
     }
   }
 
-  isAdminById(id) {
-    // Returns true if the user's id is the administrator.
-
-    const user = Meteor.users.findOne({ _id: id }, { fields: { isAdmin: 1 } });
-    if (user && user.isAdmin) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  async isAdminByIdAsync(id) {
-    // Async version of isAdminById().
+  async isAdminById(id) {
     const user = await Meteor.users.findOneAsync({ _id: id }, { fields: { isAdmin: 1 } });
     if (user && user.isAdmin) {
       return true;
@@ -1455,75 +1443,12 @@ if (Meteor.isServer) {
     }
   };
 
-  SandstormDb.prototype.removeApiTokens = function (query, saveOldUsers) {
+  SandstormDb.prototype.removeApiTokens = async function (query, saveOldUsers) {
     // Remove all API tokens matching the query, making sure to clean up ApiHosts as well.
     //
     // If saveOldUsers is true, then for each deleted ApiToken that defines an identity ID on a
     // grain, the grain's oldUsers table will be updated to remember what that identity ID once
     // pointed to.
-
-    let grains = {};
-    let oldAccountIds = new Set();
-
-    this.collections.apiTokens.find(query).forEach((token) => {
-      // Clean up ApiHosts for webkey tokens.
-      if (token.hasApiHost) {
-        const hash2 = Crypto.createHash("sha256").update(token._id).digest("base64");
-        this.collections.apiHosts.remove({ hash2: hash2 });
-      }
-
-      if (saveOldUsers && token.grainId && token.owner && token.owner.user) {
-        let user = token.owner.user;
-        let grainUsers = grains[token.grainId];
-        if (!grainUsers) {
-          grainUsers = grains[token.grainId] = {};
-        }
-        grainUsers[user.identityId] = user.accountId;
-
-        oldAccountIds.add(user.accountId);
-      }
-
-      // TODO(soon): Drop remote OAuth tokens for frontendRef.http. Unfortunately the way to do
-      //   this is different for every service. :( Also we may need to clarify with the "bearer"
-      //   type whether or not the token is "owned" by us...
-    });
-
-    this.collections.apiTokens.remove(query);
-
-    if (saveOldUsers) {
-      // Collect user info for all accounts.
-      let oldUserInfos = {};
-      Meteor.users.find({_id: {$in: [...oldAccountIds]}}).forEach(account => {
-        let credentialIds = _.pluck(account.loginCredentials, "id");
-
-        oldUserInfos[account._id] = {
-          credentialIds,
-          profile: {
-            displayName: { defaultText: account.profile.name },
-            preferredHandle: account.profile.handle,
-            pronouns: account.profile.pronoun,
-          }
-        };
-      });
-
-      // Add to each grain.
-      for (let [grainId, identities] of Object.entries(grains)) {
-        let oldUsersToInsert = [];
-        for (let [identityId, accountId] of Object.entries(identities)) {
-          let userInfo = oldUserInfos[accountId];
-          if (userInfo) {
-            oldUsersToInsert.push(Object.assign({identityId}, userInfo));
-          }
-        }
-        this.collections.grains.update({_id: grainId}, {
-          $push: { oldUsers: { $each: oldUsersToInsert } }
-        });
-      }
-    }
-  };
-
-  SandstormDb.prototype.removeApiTokensAsync = async function (query, saveOldUsers) {
-    // Async version of removeApiTokens() for Meteor 3 server APIs.
     let grains = {};
     let oldAccountIds = new Set();
 
@@ -1604,14 +1529,7 @@ if (Meteor.isServer) {
 // Below this point are newly-written or refactored functions.
 
 _.extend(SandstormDb.prototype, {
-  getUser(userId) {
-    check(userId, Match.OneOf(String, undefined, null));
-    if (userId) {
-      return Meteor.users.findOne(userId);
-    }
-  },
-
-  async getUserAsync(userId) {
+  async getUser(userId) {
     check(userId, Match.OneOf(String, undefined, null));
     if (userId) {
       return await Meteor.users.findOneAsync(userId);
@@ -1689,34 +1607,7 @@ _.extend(SandstormDb.prototype, {
     return iconSrcForPackage(pkg, usage, httpProtocol + "//" + this.makeWildcardHost("static"));
   },
 
-  getDenormalizedGrainInfo(grainId) {
-    const grain = this.getGrain(grainId);
-    let pkg = this.collections.packages.findOne(grain.packageId);
-
-    if (!pkg) {
-      pkg = this.collections.devPackages.findOne(grain.packageId);
-    }
-
-    const appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: "" };
-    const grainInfo = { appTitle: appTitle };
-
-    if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
-      const icons = pkg.manifest.metadata.icons;
-      const icon = icons.grain || icons.appGrid;
-      if (icon) {
-        grainInfo.icon = icon;
-      }
-    }
-
-    // Only provide an app ID if we have no icon asset to provide and need to offer an identicon.
-    if (!grainInfo.icon && pkg) {
-      grainInfo.appId = pkg.appId;
-    }
-
-    return grainInfo;
-  },
-
-  async getDenormalizedGrainInfoAsync(grainId) {
+  async getDenormalizedGrainInfo(grainId) {
     const grain = await this.getGrainAsync(grainId);
     let pkg = await this.collections.packages.findOneAsync(grain.packageId);
 
@@ -1935,18 +1826,7 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  sendAdminNotification(type, action) {
-    Meteor.users.find({ isAdmin: true }, { fields: { _id: 1 } }).forEach(function (user) {
-      Notifications.insert({
-        admin: { action, type },
-        userId: user._id,
-        timestamp: new Date(),
-        isUnread: true,
-      });
-    });
-  },
-
-  async sendAdminNotificationAsync(type, action) {
+  async sendAdminNotification(type, action) {
     const admins = await Meteor.users.find({ isAdmin: true }, { fields: { _id: 1 } }).fetchAsync();
     for (const user of admins) {
       await Notifications.insertAsync({
@@ -2043,35 +1923,7 @@ _.extend(SandstormDb.prototype, {
     return result;
   },
 
-  incrementDailySentMailCount(accountId) {
-    check(accountId, String);
-
-    const DAILY_LIMIT = 50;
-    const updated = Meteor.users.update({
-      _id: accountId,
-      $or: [
-        { dailySentMailCount: { $exists: false } },
-        { dailySentMailCount: { $lt: DAILY_LIMIT } },
-      ],
-    }, {
-      $inc: {
-        dailySentMailCount: 1,
-      },
-    });
-
-    if (updated === 0) {
-      if (!Meteor.users.findOne({ _id: accountId })) {
-        throw new Error("Couldn't update daily sent mail count.");
-      }
-
-      throw new Error(
-          "Sorry, you've reached your e-mail sending limit for today. Currently, Sandstorm " +
-          "limits each user to " + DAILY_LIMIT + " e-mails per day for spam control reasons. " +
-          "Please feel free to contact us if this is a problem.");
-    }
-  },
-
-  async incrementDailySentMailCountAsync(accountId) {
+  async incrementDailySentMailCount(accountId) {
     check(accountId, String);
 
     const DAILY_LIMIT = 50;
@@ -2253,11 +2105,7 @@ _.extend(SandstormDb.prototype, {
     return setting && setting.value && setting.value.disallowGuests;
   },
 
-  getOrganizationShareContacts() {
-    return this.getOrganizationShareContactsRaw();
-  },
-
-  async getOrganizationShareContactsAsync() {
+  async getOrganizationShareContacts() {
     return await this.getOrganizationShareContactsRawAsync();
   },
 
@@ -2337,16 +2185,7 @@ _.extend(SandstormDb.prototype, {
     return hasSaml;
   },
 
-  getActivitySubscriptions(grainId, threadPath) {
-    return this.collections.activitySubscriptions.find({
-      grainId: grainId,
-      threadPath: threadPath || { $exists: false },
-    }, {
-      fields: { accountId: 1, mute: 1, _id: 0 },
-    }).fetch();
-  },
-
-  async getActivitySubscriptionsAsync(grainId, threadPath) {
+  async getActivitySubscriptions(grainId, threadPath) {
     return await this.collections.activitySubscriptions.find({
       grainId: grainId,
       threadPath: threadPath || { $exists: false },
@@ -2409,7 +2248,7 @@ _.extend(SandstormDb.prototype, {
     if (!appIndexUrl) return;
     const appIndex = this.collections.appIndex;
     const data = (await httpCallAsync("GET", appIndexUrl + "/apps/index.json")).data;
-    const preinstalledAppIds = await this.getAllPreinstalledAppIdsAsync();
+    const preinstalledAppIds = await this.getAllPreinstalledAppIds();
     // We make sure to get all preinstalled appIds, even ones that are currently
     // downloading/failed.
     for (const app of data.apps) {
@@ -2430,10 +2269,10 @@ _.extend(SandstormDb.prototype, {
               console.error("app index returned app ID and package ID that don't match:",
                             JSON.stringify(app));
             } else {
-              await this.sendAppUpdateNotificationsAsync(
+              await this.sendAppUpdateNotifications(
                   app.appId, app.packageId, app.name, app.versionNumber, app.version);
               if (isAppPreinstalled) {
-                await this.setPreinstallAppAsReadyAsync(app.appId, app.packageId);
+                await this.setPreinstallAppAsReady(app.appId, app.packageId);
               }
             }
           } else {
@@ -2453,19 +2292,19 @@ _.extend(SandstormDb.prototype, {
                 console.error("app index returned app ID and package ID that don't match:",
                               JSON.stringify(app));
               } else {
-                await this.sendAppUpdateNotificationsAsync(
+                await this.sendAppUpdateNotifications(
                     app.appId, app.packageId, app.name, app.versionNumber, app.version);
                 if (isAppPreinstalled) {
-                  await this.setPreinstallAppAsReadyAsync(app.appId, app.packageId);
+                  await this.setPreinstallAppAsReady(app.appId, app.packageId);
                 }
               }
             } else if (newPack.status === "failed") {
               // If the package has failed, retry it
-              await this.startInstallAsync(app.packageId, url, true, true);
+              await this.startInstall(app.packageId, url, true, true);
             }
           }
         } else {
-          await this.startInstallAsync(app.packageId, url, false, true);
+          await this.startInstall(app.packageId, url, false, true);
         }
       }
     }
@@ -2475,30 +2314,14 @@ _.extend(SandstormDb.prototype, {
     return this.collections.settings.find({ _id: "preinstalledApps", "value.packageId": packageId }).count() === 1;
   },
 
-  getAppIdForPreinstalledPackage(packageId) {
-    const setting = this.collections.settings.findOne({ _id: "preinstalledApps", "value.packageId": packageId },
-    { fields: { "value.$": 1 } });
-    // value.$ causes mongo to transform the result and only return the first matching element in
-    // the array
-    return setting && setting.value && setting.value[0] && setting.value[0].appId;
-  },
-
-  async getAppIdForPreinstalledPackageAsync(packageId) {
+  async getAppIdForPreinstalledPackage(packageId) {
     const setting = await this.collections.settings.findOneAsync(
         { _id: "preinstalledApps", "value.packageId": packageId },
         { fields: { "value.$": 1 } });
     return setting && setting.value && setting.value[0] && setting.value[0].appId;
   },
 
-  getPackageIdForPreinstalledApp(appId) {
-    const setting = this.collections.settings.findOne({ _id: "preinstalledApps", "value.appId": appId },
-    { fields: { "value.$": 1 } });
-    // value.$ causes mongo to transform the result and only return the first matching element in
-    // the array
-    return setting && setting.value && setting.value[0] && setting.value[0].packageId;
-  },
-
-  async getPackageIdForPreinstalledAppAsync(appId) {
+  async getPackageIdForPreinstalledApp(appId) {
     const setting = await this.collections.settings.findOneAsync(
       { _id: "preinstalledApps", "value.appId": appId },
       { fields: { "value.$": 1 } },
@@ -2509,16 +2332,7 @@ _.extend(SandstormDb.prototype, {
     return setting && setting.value && setting.value[0] && setting.value[0].packageId;
   },
 
-  getReadyPreinstalledAppIds() {
-    const setting = this.collections.settings.findOne({ _id: "preinstalledApps" });
-    const ret = setting && setting.value || [];
-    return _.chain(ret)
-            .filter((app) => { return app.status === "ready"; })
-            .map((app) => { return app.appId; })
-            .value();
-  },
-
-  async getReadyPreinstalledAppIdsAsync() {
+  async getReadyPreinstalledAppIds() {
     const setting = await this.collections.settings.findOneAsync({ _id: "preinstalledApps" });
     const ret = setting && setting.value || [];
     return _.chain(ret)
@@ -2527,34 +2341,17 @@ _.extend(SandstormDb.prototype, {
             .value();
   },
 
-  async getAllPreinstalledAppIdsAsync() {
+  async getAllPreinstalledAppIds() {
     const setting = await this.collections.settings.findOneAsync({ _id: "preinstalledApps" });
     const ret = setting && setting.value || [];
     return _.map(ret, (app) => { return app.appId; });
   },
 
-  getAllPreinstalledAppIds() {
-    const setting = this.collections.settings.findOne({ _id: "preinstalledApps" });
-    const ret = setting && setting.value || [];
-    return _.map(ret, (app) => { return app.appId; });
-  },
-
-  preinstallAppsForUser(userId) {
-    const appIds = this.getReadyPreinstalledAppIds();
-    appIds.forEach((appId) => {
-      try {
-        this.addUserActions(userId, this.getPackageIdForPreinstalledApp(appId));
-      } catch (e) {
-        console.error("failed to install app for user:", e);
-      }
-    });
-  },
-
-  async preinstallAppsForUserAsync(userId) {
-    const appIds = await this.getReadyPreinstalledAppIdsAsync();
+  async preinstallAppsForUser(userId) {
+    const appIds = await this.getReadyPreinstalledAppIds();
     for (const appId of appIds) {
       try {
-        const packageId = await this.getPackageIdForPreinstalledAppAsync(appId);
+        const packageId = await this.getPackageIdForPreinstalledApp(appId);
         if (packageId) {
           await this.addUserActionsAsync(userId, packageId);
         }
@@ -2564,51 +2361,22 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  setPreinstallAppAsDownloading(appId, packageId) {
-    this.collections.settings.update(
-      { _id: "preinstalledApps", "value.appId": appId, "value.packageId": packageId },
-      { $set: { "value.$.status": "downloading" } });
-  },
-
-  async setPreinstallAppAsDownloadingAsync(appId, packageId) {
+  async setPreinstallAppAsDownloading(appId, packageId) {
     await this.collections.settings.updateAsync(
       { _id: "preinstalledApps", "value.appId": appId, "value.packageId": packageId },
       { $set: { "value.$.status": "downloading" } });
   },
 
-  setPreinstallAppAsReady(appId, packageId) {
+  async setPreinstallAppAsReady(appId, packageId) {
     // This function both sets the appId as ready and updates the packageId for the given appId
     // Setting the packageId is especially useful in installer.js, as it always ensures the
     // latest installed package will be set as ready.
-    this.collections.settings.update(
-      { _id: "preinstalledApps", "value.appId": appId },
-      { $set: { "value.$.status": "ready", "value.$.packageId": packageId } });
-  },
-
-  async setPreinstallAppAsReadyAsync(appId, packageId) {
-    // Async server-side equivalent of setPreinstallAppAsReady().
     await this.collections.settings.updateAsync(
       { _id: "preinstalledApps", "value.appId": appId },
       { $set: { "value.$.status": "ready", "value.$.packageId": packageId } });
   },
 
-  ensureAppPreinstall(appId, packageId) {
-    check(appId, String);
-    const appIndexUrl = this.collections.settings.findOne({ _id: "appIndexUrl" }).value;
-    const pack = this.collections.packages.findOne({ _id: packageId });
-    const url = appIndexUrl + "/packages/" + packageId;
-    if (pack && pack.status === "ready") {
-      this.setPreinstallAppAsReady(appId, packageId);
-    } else if (pack && pack.status === "failed") {
-      this.setPreinstallAppAsDownloading(appId, packageId);
-      this.startInstall(packageId, url, true, false);
-    } else {
-      this.setPreinstallAppAsDownloading(appId, packageId);
-      this.startInstall(packageId, url, false, false);
-    }
-  },
-
-  async ensureAppPreinstallAsync(appId, packageId) {
+  async ensureAppPreinstall(appId, packageId) {
     check(appId, String);
     const appIndexUrlSetting = await this.collections.settings.findOneAsync({ _id: "appIndexUrl" });
     const appIndexUrl = appIndexUrlSetting && appIndexUrlSetting.value;
@@ -2616,38 +2384,17 @@ _.extend(SandstormDb.prototype, {
     const pack = await this.collections.packages.findOneAsync({ _id: packageId });
     const url = appIndexUrl + "/packages/" + packageId;
     if (pack && pack.status === "ready") {
-      await this.setPreinstallAppAsReadyAsync(appId, packageId);
+      await this.setPreinstallAppAsReady(appId, packageId);
     } else if (pack && pack.status === "failed") {
-      await this.setPreinstallAppAsDownloadingAsync(appId, packageId);
-      await this.startInstallAsync(packageId, url, true, false);
+      await this.setPreinstallAppAsDownloading(appId, packageId);
+      await this.startInstall(packageId, url, true, false);
     } else {
-      await this.setPreinstallAppAsDownloadingAsync(appId, packageId);
-      await this.startInstallAsync(packageId, url, false, false);
+      await this.setPreinstallAppAsDownloading(appId, packageId);
+      await this.startInstall(packageId, url, false, false);
     }
   },
 
-  setPreinstalledApps(appAndPackageIds) {
-    // appAndPackageIds: A List[Object] where each element has fields:
-    //     appId: The Packages.appId of the app to install
-    //     packageId: The Packages._id of the app to install
-    check(appAndPackageIds, [{ appId: String, packageId: String, }]);
-
-    // Start by clearing out the setting. We'll push appIds one by one to it
-    this.collections.settings.upsert({ _id: "preinstalledApps" }, { $set: {
-      value: appAndPackageIds.map((data) => {
-        return {
-          appId: data.appId,
-          status: "notReady",
-          packageId: data.packageId,
-        };
-      }),
-    }, });
-    appAndPackageIds.forEach((data) => {
-      this.ensureAppPreinstall(data.appId, data.packageId);
-    });
-  },
-
-  async setPreinstalledAppsAsync(appAndPackageIds) {
+  async setPreinstalledApps(appAndPackageIds) {
     check(appAndPackageIds, [{ appId: String, packageId: String, }]);
 
     await this.collections.settings.upsertAsync({ _id: "preinstalledApps" }, { $set: {
@@ -2661,7 +2408,7 @@ _.extend(SandstormDb.prototype, {
     }, });
 
     for (const data of appAndPackageIds) {
-      await this.ensureAppPreinstallAsync(data.appId, data.packageId);
+      await this.ensureAppPreinstall(data.appId, data.packageId);
     }
   },
 
@@ -2815,28 +2562,11 @@ _.extend(SandstormDb.prototype, {
     return plan && user.storageUsage && user.storageUsage >= plan.storage && "outOfStorage";
   },
 
-  isUserExcessivelyOverQuota(user) {
+  async isUserExcessivelyOverQuota(user) {
     // Return true if user is so far over quota that we should prevent their existing grains from
     // running at all.
     //
     // (Actually returns a string which can be fed into `billingPrompt` as the reason.)
-
-    if (!this.isQuotaEnabled() || user.isAdmin) return false;
-
-    const quota = this.getUserQuota(user);
-
-    // quota.grains = Infinity means unlimited grains. IEEE754 defines Infinity == Infinity.
-    if (quota.grains < Infinity) {
-      const count = this.collections.grains.find({ userId: user._id, trashed: { $exists: false } },
-        { fields: {}, limit: quota.grains * 2 }).count();
-      if (count >= quota.grains * 2) return "outOfGrains";
-    }
-
-    return quota && user.storageUsage && user.storageUsage >= quota.storage * 1.2 && "outOfStorage";
-  },
-
-  async isUserExcessivelyOverQuotaAsync(user) {
-    // Async server-side equivalent of isUserExcessivelyOverQuota().
     if (!await this.isQuotaEnabledAsync() || user.isAdmin) return false;
 
     const quota = await this.getUserQuotaAsync(user);
@@ -3141,10 +2871,9 @@ if (Meteor.isServer) {
     return !!s.match(/^[a-zA-Z0-9_]+$/);
   });
 
-  SandstormDb.prototype.addStaticAsset = function (metadata, content) {
+  SandstormDb.prototype.addStaticAsset = async function (metadata, content) {
     // Add a new static asset to the database. If `content` is a string rather than a buffer, it
     // will be automatically gzipped before storage; do not specify metadata.encoding in this case.
-
     if (typeof content === "string" && !metadata.encoding) {
       content = gzipSync(Buffer.from(content, "utf8"));
       metadata.encoding = "gzip";
@@ -3157,47 +2886,6 @@ if (Meteor.isServer) {
     check(content, BufferSmallerThan(1 << 20));
 
     // Validate content type.
-    metadata.mimeType = ContentType.format(ContentType.parse(metadata.mimeType));
-
-    const hasher = Crypto.createHash("sha256");
-    hasher.update(metadata.mimeType + "\n" + metadata.encoding + "\n", "utf8");
-    hasher.update(content);
-    const hash = hasher.digest("base64");
-
-    const existing = this.collections.staticAssets.findOne(
-        { hash: hash, refcount: { $gte: 1 } },
-        { fields: { _id: 1 } });
-    if (existing) {
-      const modified = this.collections.staticAssets.update(
-          { _id: existing._id },
-          { $inc: { refcount: 1 } });
-      if (modified === 0) {
-        throw new Error(`Couldn't increment refcount of asset with hash ${hash}`);
-      }
-
-      return existing._id;
-    }
-
-    return this.collections.staticAssets.insert(_.extend({
-      hash: hash,
-      content: content,
-      refcount: 1,
-    }, metadata));
-  };
-
-  SandstormDb.prototype.addStaticAssetAsync = async function (metadata, content) {
-    // Async server-side equivalent of addStaticAsset().
-    if (typeof content === "string" && !metadata.encoding) {
-      content = gzipSync(Buffer.from(content, "utf8"));
-      metadata.encoding = "gzip";
-    }
-
-    check(metadata, {
-      mimeType: String,
-      encoding: Match.Optional("gzip"),
-    });
-    check(content, BufferSmallerThan(1 << 20));
-
     metadata.mimeType = ContentType.format(ContentType.parse(metadata.mimeType));
 
     const hasher = Crypto.createHash("sha256");
@@ -3226,30 +2914,13 @@ if (Meteor.isServer) {
     }, metadata));
   };
 
-  SandstormDb.prototype.refStaticAsset = function (id) {
+  SandstormDb.prototype.refStaticAsset = async function (id) {
     // Increment the refcount on an existing static asset. Returns the asset on success.
     // If the asset does not exist, returns a falsey value.
     //
     // You must call this BEFORE adding the new reference to the DB, in case of failure between
     // the two calls. (This way, the failure case is a storage leak, which is probably not a big
     // deal and can be fixed by GC, rather than a mysteriously missing asset.)
-
-    check(id, String);
-
-    const modified = this.collections.staticAssets.update(
-        { _id: id },
-        { $inc: { refcount: 1 } });
-    if (modified === 0) {
-      throw new Error(`Couldn't increment refcount of asset with hash ${id}`);
-    }
-
-    return this.collections.staticAssets.findOne(
-        { _id: id },
-        { fields: { _id: 1, content: 1, mimeType: 1 } });
-  };
-
-  SandstormDb.prototype.refStaticAssetAsync = async function (id) {
-    // Async server-side equivalent of refStaticAsset().
     check(id, String);
 
     const modified = await this.collections.staticAssets.updateAsync(
@@ -3264,34 +2935,12 @@ if (Meteor.isServer) {
         { fields: { _id: 1, content: 1, mimeType: 1 } });
   };
 
-  SandstormDb.prototype.unrefStaticAsset = function (id) {
+  SandstormDb.prototype.unrefStaticAsset = async function (id) {
     // Decrement refcount on a static asset and delete if it has reached zero.
     //
     // You must call this AFTER removing the reference from the DB, in case of failure between
     // the two calls. (This way, the failure case is a storage leak, which is probably not a big
     // deal and can be fixed by GC, rather than a mysteriously missing asset.)
-
-    check(id, String);
-
-    const modified = this.collections.staticAssets.update(
-        { _id: id },
-        { $inc: { refcount: -1 } });
-    if (modified === 0) {
-      throw new Error(`Couldn't unref static asset ${id}`);
-    }
-
-    const existing = this.collections.staticAssets.findOne(
-        { _id: id },
-        { fields: { _id: 1, refcount: 1 } });
-    if (!existing) {
-      console.error(new Error("unrefStaticAsset() called on asset that doesn't exist").stack);
-    } else if (existing.refcount <= 0) {
-      this.collections.staticAssets.remove({ _id: existing._id });
-    }
-  };
-
-  SandstormDb.prototype.unrefStaticAssetAsync = async function (id) {
-    // Async server-side equivalent of unrefStaticAsset().
     check(id, String);
 
     const modified = await this.collections.staticAssets.updateAsync(
@@ -3305,29 +2954,14 @@ if (Meteor.isServer) {
         { _id: id },
         { fields: { _id: 1, refcount: 1 } });
     if (!existing) {
-      console.error(new Error("unrefStaticAssetAsync() called on asset that doesn't exist").stack);
+      console.error(new Error("unrefStaticAsset() called on asset that doesn't exist").stack);
     } else if (existing.refcount <= 0) {
       await this.collections.staticAssets.removeAsync({ _id: existing._id });
     }
   };
 
-  SandstormDb.prototype.getStaticAsset = function (id) {
+  SandstormDb.prototype.getStaticAsset = async function (id) {
     // Get a static asset's mimeType, encoding, and raw content.
-
-    check(id, String);
-
-    const asset = this.collections.staticAssets.findOne(id, { fields: { _id: 0, mimeType: 1, encoding: 1, content: 1 } });
-    if (asset) {
-      // TODO(perf): Mongo converts buffers to something else. Figure out a way to avoid a copy
-      //   here.
-      asset.content = new Buffer(asset.content);
-    }
-
-    return asset;
-  };
-
-  SandstormDb.prototype.getStaticAssetAsync = async function (id) {
-    // Async server-side equivalent of getStaticAsset().
     check(id, String);
 
     const asset = await this.collections.staticAssets.findOneAsync(
@@ -3339,19 +2973,7 @@ if (Meteor.isServer) {
     return asset;
   };
 
-  SandstormDb.prototype.newAssetUpload = function (purpose) {
-    check(purpose, Match.OneOf(
-      { profilePicture: { userId: DatabaseId } },
-      { loginLogo: {} }
-    ));
-
-    return this.collections.assetUploadTokens.insert({
-      purpose: purpose,
-      expires: new Date(Date.now() + 300000),  // in 5 minutes
-    });
-  };
-
-  SandstormDb.prototype.newAssetUploadAsync = async function (purpose) {
+  SandstormDb.prototype.newAssetUpload = async function (purpose) {
     check(purpose, Match.OneOf(
       { profilePicture: { userId: DatabaseId } },
       { loginLogo: {} }
@@ -3363,30 +2985,9 @@ if (Meteor.isServer) {
     });
   };
 
-  SandstormDb.prototype.fulfillAssetUpload = function (id) {
+  SandstormDb.prototype.fulfillAssetUpload = async function (id) {
     // Indicates that the given asset upload has completed. It will be removed and its purpose
     // returned. If no matching upload exists, returns undefined.
-
-    check(id, String);
-
-    const upload = this.collections.assetUploadTokens.findOne({ _id: id });
-    if (!upload) {
-      return undefined;
-    }
-    const removed = this.collections.assetUploadTokens.remove({ _id: id });
-    if (removed === 0) {
-      throw new Error("Failed to remove asset upload token");
-    }
-
-    if (upload.expires.valueOf() < Date.now()) {
-      return undefined;  // already expired
-    } else {
-      return upload.purpose;
-    }
-  };
-
-  SandstormDb.prototype.fulfillAssetUploadAsync = async function (id) {
-    // Async server-side equivalent of fulfillAssetUpload().
     check(id, String);
 
     const upload = await this.collections.assetUploadTokens.findOneAsync({ _id: id });
@@ -3405,11 +3006,7 @@ if (Meteor.isServer) {
     }
   };
 
-  SandstormDb.prototype.cleanupExpiredAssetUploads = function () {
-    this.collections.assetUploadTokens.remove({ expires: { $lt: Date.now() } });
-  };
-
-  SandstormDb.prototype.cleanupExpiredAssetUploadsAsync = async function () {
+  SandstormDb.prototype.cleanupExpiredAssetUploads = async function () {
     await this.collections.assetUploadTokens.removeAsync({ expires: { $lt: Date.now() } });
   };
 
@@ -3425,7 +3022,7 @@ if (Meteor.isServer) {
 
       await backend.deleteGrain(grain._id, grain.userId);
       numDeleted += await this.collections.grains.removeAsync({ _id: grain._id });
-      await this.removeApiTokensAsync({
+      await this.removeApiTokens({
         grainId: grain._id,
         $or: [
           { owner: { $exists: false } },
@@ -3433,7 +3030,7 @@ if (Meteor.isServer) {
         ],
       });
 
-      await this.removeApiTokensAsync({ "owner.grain.grainId": grain._id });
+      await this.removeApiTokens({ "owner.grain.grainId": grain._id });
 
       await this.collections.activitySubscriptions.removeAsync({ grainId: grain._id });
 
@@ -3466,44 +3063,14 @@ if (Meteor.isServer) {
     return numDeleted;
   };
 
-  SandstormDb.prototype.userGrainTitle = function (grainId, accountId, obsolete) {
-    check(grainId, String);
-    check(accountId, Match.OneOf(String, undefined, null));
-    check(obsolete, undefined);
-
-    const grain = this.getGrain(grainId);
-    if (!grain) {
-      throw new Error("called userGrainTitle() for a grain that doesn't exist");
-    }
-
-    let title = grain.title;
-    if (grain.userId !== accountId) {
-      const sharerToken = this.collections.apiTokens.findOne({
-        grainId: grainId,
-        "owner.user.accountId": accountId,
-      }, {
-        sort: {
-          lastUsed: -1,
-        },
-      });
-      if (sharerToken) {
-        title = sharerToken.owner.user.title;
-      } else {
-        title = "shared grain";
-      }
-    }
-
-    return title;
-  };
-
-  SandstormDb.prototype.userGrainTitleAsync = async function (grainId, accountId, obsolete) {
+  SandstormDb.prototype.userGrainTitle = async function (grainId, accountId, obsolete) {
     check(grainId, String);
     check(accountId, Match.OneOf(String, undefined, null));
     check(obsolete, undefined);
 
     const grain = await this.getGrainAsync(grainId);
     if (!grain) {
-      throw new Error("called userGrainTitleAsync() for a grain that doesn't exist");
+      throw new Error("called userGrainTitle() for a grain that doesn't exist");
     }
 
     let title = grain.title;
@@ -3529,25 +3096,10 @@ if (Meteor.isServer) {
   const packageCache = {};
   // Package info is immutable. Let's cache to save on mongo queries.
 
-  SandstormDb.prototype.getPackage = function (packageId) {
+  SandstormDb.prototype.getPackage = async function (packageId) {
     // Get the given package record. Since package info is immutable, cache the data in the server
     // to reduce mongo query overhead, since it turns out we have to fetch specific packages a
     // lot.
-
-    if (packageId in packageCache) {
-      return packageCache[packageId];
-    }
-
-    const pkg = this.collections.packages.findOne(packageId);
-    if (pkg && pkg.status === "ready") {
-      packageCache[packageId] = pkg;
-    }
-
-    return pkg;
-  };
-
-  SandstormDb.prototype.getPackageAsync = async function (packageId) {
-    // Async version of getPackage() for server paths that cannot use sync findOne().
     if (packageId in packageCache) {
       return packageCache[packageId];
     }
@@ -3574,45 +3126,7 @@ if (Meteor.isServer) {
         { appId: appId, status: "ready" }, { $set: { shouldCleanup: true } }, { multi: true });
   };
 
-  SandstormDb.prototype.sendAppUpdateNotifications = function (appId, packageId, name,
-                                                               versionNumber, marketingVersion) {
-    const actions = this.collections.userActions.find({ appId: appId, appVersion: { $lt: versionNumber } },
-      { fields: { userId: 1 } });
-    actions.forEach((action) => {
-      const userId = action.userId;
-      const updater = {
-        timestamp: new Date(),
-        isUnread: true,
-      };
-      const inserter = _.extend({ userId, appUpdates: {} }, updater);
-
-      // Set only the appId that we care about. Use mongo's dot notation to specify only a single
-      // field inside of an object to update
-      inserter.appUpdates[appId] = updater["appUpdates." + appId] = {
-        marketingVersion: marketingVersion,
-        packageId: packageId,
-        name: name,
-        version: versionNumber,
-      };
-
-      // We unfortunately cannot upsert because upserts can only have field equality conditions in
-      // the query. If we try to upsert, Mongo complaints that "$exists" isn't valid to store.
-      if (this.collections.notifications.update(
-          { userId: userId, appUpdates: { $exists: true } },
-          { $set: updater }) == 0) {
-        // Update failed; try an insert instead.
-        this.collections.notifications.insert(inserter);
-      }
-    });
-
-    this.collections.appIndex.update({ _id: appId }, { $set: { hasSentNotifications: true } });
-
-    // In the case where we replaced a previous notification and that was the only reference to the
-    // package, we need to clean it up
-    this.deleteUnusedPackages(appId);
-  };
-
-  SandstormDb.prototype.sendAppUpdateNotificationsAsync = async function (appId, packageId, name,
+  SandstormDb.prototype.sendAppUpdateNotifications = async function (appId, packageId, name,
                                                                           versionNumber, marketingVersion) {
     const actions = await this.collections.userActions.find(
         { appId: appId, appVersion: { $lt: versionNumber } },
@@ -3648,28 +3162,7 @@ if (Meteor.isServer) {
     // obsolete
   };
 
-  SandstormDb.prototype.upgradeGrains =  function (appId, version, packageId, backend) {
-    check(appId, String);
-    check(version, Match.Integer);
-    check(packageId, String);
-
-    const selector = {
-      userId: Meteor.userId(),
-      appId: appId,
-      appVersion: { $lte: version },
-      packageId: { $ne: packageId },
-    };
-
-    this.collections.grains.find(selector, {fields: {oldUsers: 0}}).forEach(function (grain) {
-      backend.shutdownGrain(grain._id, grain.userId);
-    });
-
-    this.collections.grains.update(selector, {
-      $set: { appVersion: version, packageId: packageId, packageSalt: Random.secret() },
-    }, { multi: true });
-  };
-
-  SandstormDb.prototype.upgradeGrainsAsync = async function (appId, version, packageId, backend) {
+  SandstormDb.prototype.upgradeGrains = async function (appId, version, packageId, backend) {
     check(appId, String);
     check(version, Match.Integer);
     check(packageId, String);
@@ -3691,30 +3184,8 @@ if (Meteor.isServer) {
     }, { multi: true });
   };
 
-  SandstormDb.prototype.startInstall = function (packageId, url, retryFailed, isAutoUpdated) {
+  SandstormDb.prototype.startInstall = async function (packageId, url, retryFailed, isAutoUpdated) {
     // Mark package for possible installation.
-
-    const fields = {
-      status: "download",
-      progress: 0,
-      url: url,
-      isAutoUpdated: !!isAutoUpdated,
-    };
-
-    if (retryFailed) {
-      this.collections.packages.update({ _id: packageId, status: "failed" }, { $set: fields });
-    } else {
-      try {
-        fields._id = packageId;
-        this.collections.packages.insert(fields);
-      } catch (err) {
-        console.error("Simultaneous startInstall()s?", err.stack);
-      }
-    }
-  };
-
-  SandstormDb.prototype.startInstallAsync = async function (packageId, url, retryFailed, isAutoUpdated) {
-    // Async server-side equivalent of startInstall().
     const fields = {
       status: "download",
       progress: 0,
@@ -3873,7 +3344,7 @@ if (Meteor.isServer) {
 
       if (!hasPackage[packageId]) {
         hasPackage[packageId] = true;
-        db.getPackageAsync(packageId).then((pkg) => {
+        db.getPackage(packageId).then((pkg) => {
           if (pkg) {
             this.added("packages", packageId, pkg);
           }
@@ -3933,73 +3404,9 @@ if (Meteor.isServer) {
     return Crypto.randomBytes(32).toString("hex");
   };
 
-  SandstormDb.prototype.getOrGenerateIdentityId = function (accountId, grain) {
+  SandstormDb.prototype.getOrGenerateIdentityId = async function (accountId, grain) {
     // Determine the identity ID by which the given user is known within the given grain. May
     // generate a new ID if the user doesn't currently have access to the grain.
-
-    check(accountId, String);
-    check(grain, Match.ObjectIncluding({ _id: String, userId: String, identityId: String }));
-
-    if (accountId == grain.userId) {
-      return grain.identityId;
-    } else {
-      // Check if the user has already been introduced to this grain.
-      const existingToken = this.collections.apiTokens.findOne(
-          { "grainId": grain._id,
-            "owner.user.accountId": accountId,
-            "owner.user.identityId": { $exists: true } },
-          { fields: { "owner.user.identityId": 1 } });
-
-      if (existingToken) {
-        // This user already has a token associated with this grain. Reuse the identity ID.
-        // TODO(someday): It's a bit awkward that if the user deletes all their tokens for a grain,
-        //   we forget their identity ID. This both means that if the user regains access, they'll
-        //   have a new identity in the grain, and it means that we have no way of enumerating all
-        //   identity IDs the grain has ever seen (including forgotten ones), which means we can't
-        //   give the grain owner a way to remap these identities when needed. Perhaps ApiTokens
-        //   should never really be deleted, only hidden?
-        return existingToken.owner.user.identityId;
-      }
-
-      const user = Meteor.users.findOne(accountId);
-
-      // Check if the user is listed on the grain's oldUsers list. Since `grain` doesn't
-      // necessarily contain the list we need to do another query.
-      const credentialIds = SandstormDb.getUserCredentialIds(user);
-      const grainWithOldUser = this.collections.grains.findOne(
-          {_id: grain._id, "oldUsers.credentialIds": {$in: credentialIds}},
-          { fields: { "oldUsers.$": 1 } })
-      if (grainWithOldUser) {
-        const restoredIdentityId = grainWithOldUser.oldUsers[0].identityId;
-        // Verify that this identity ID is not already in use.
-        const existingToken = this.collections.apiTokens.findOne(
-            { "grainId": grain._id, "owner.user.identityId": restoredIdentityId });
-        if (!existingToken) {
-          return restoredIdentityId;
-        }
-      }
-
-      if (!grain.private) {
-        // This grain operates on the old sharing model, where simply knowing the grain ID is
-        // sufficient to open it. We need to assign identity IDs in a consistent way without having
-        // stored them anywhere. Identity IDs used to be based on credential IDs, which at some
-        // point were used to fill in identicon keys in profiles... so use the identicon.
-        if (user && user.profile && user.profile.identicon) {
-          return user.profile.identicon;
-        } else {
-          throw new Meteor.Error(500, "Don't know how to identity user under old sharing model.");
-        }
-      }
-
-      // This user is new to this grain. Give them a freshly-generated identity ID.
-      // TODO(cleanup): We only ever pass the first 16 bytes of the identity ID to the app. Maybe
-      //   we can truncate all identity IDs to 16 chars?
-      return SandstormDb.generateIdentityId();
-    }
-  };
-
-  SandstormDb.prototype.getOrGenerateIdentityIdAsync = async function (accountId, grain) {
-    // Async server-side equivalent of getOrGenerateIdentityId().
     check(accountId, String);
     check(grain, Match.ObjectIncluding({ _id: String, userId: String, identityId: String }));
 
@@ -4056,7 +3463,7 @@ if (Meteor.isServer) {
 
     const user = await Meteor.users.findOneAsync({ _id: userId });
     await this.deleteGrains({ userId: userId }, backend, "grain");
-    await this.removeApiTokensAsync({ "owner.user.accountId": userId });
+    await this.removeApiTokens({ "owner.user.accountId": userId });
     await this.collections.userActions.removeAsync({ userId: userId });
     await this.collections.notifications.removeAsync({ userId: userId });
     for (const credential of user.loginCredentials) {

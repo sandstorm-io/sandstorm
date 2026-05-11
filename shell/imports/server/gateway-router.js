@@ -207,7 +207,7 @@ async function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sess
   if (accountId) {
     // If accountId is non-null, we're revealing identity. But if we didn't compute the identity ID
     // yet, we need to do that now.
-    identityId = identityId || await globalDb.getOrGenerateIdentityIdAsync(accountId, grain);
+    identityId = identityId || await globalDb.getOrGenerateIdentityId(accountId, grain);
 
     const user = await Meteor.users.findOneAsync({ _id: accountId });
     if (!user) {
@@ -918,7 +918,7 @@ async function createSession(db, userId, sessionId, options) {
     if (options.revealIdentity) {
       grain = grain || await globalDb.collections.grains.findOneAsync(grainId);
       if (grain) {
-        session.identityId = await db.getOrGenerateIdentityIdAsync(accountUserId, grain);
+        session.identityId = await db.getOrGenerateIdentityId(accountUserId, grain);
       } else {
         // The session will error out later.
       }
@@ -973,7 +973,7 @@ async function maybeUpgradeSessionIdentity(db, sessionId, currentUserId, options
   const grain = await globalDb.collections.grains.findOneAsync(session.grainId);
   if (!grain) return;
 
-  const identityId = await db.getOrGenerateIdentityIdAsync(accountUserId, grain);
+  const identityId = await db.getOrGenerateIdentityId(accountUserId, grain);
   await globalDb.collections.sessions.updateAsync(
       { _id: sessionId },
       { $set: { userId: accountUserId, identityId } });

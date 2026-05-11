@@ -154,7 +154,7 @@ Meteor.publish("scheduledJobs", async function() {
   });
 
   const shouldPublish = async (job) => {
-    if (await db.isAdminByIdAsync(sub.userId)) return true;
+    if (await db.isAdminById(sub.userId)) return true;
     const grain = await db.collections.grains.findOneAsync({ _id: job.grainId }, { fields: { userId: 1 } });
     return !!grain && grain.userId === sub.userId;
   };

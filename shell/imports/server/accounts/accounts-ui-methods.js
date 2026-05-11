@@ -86,14 +86,14 @@ Meteor.methods({
       throw new Meteor.Error(403, "not logged in");
     }
 
-    return await this.connection.sandstormDb.newAssetUploadAsync({
+    return await this.connection.sandstormDb.newAssetUpload({
       profilePicture: { userId: this.userId },
     });
   },
 
   cancelUploadProfilePicture: async function (id) {
     check(id, String);
-    await this.connection.sandstormDb.fulfillAssetUploadAsync(id);
+    await this.connection.sandstormDb.fulfillAssetUpload(id);
   },
 
   setPrimaryEmail: async function (email) {

@@ -209,7 +209,7 @@ class SessionContextImpl {
 
           const dupeToken = await globalDb.collections.apiTokens.findOneAsync(dupeQuery);
           if (dupeToken) {
-            await globalDb.removeApiTokensAsync({ _id: tokenId });
+            await globalDb.removeApiTokens({ _id: tokenId });
             tokenId = dupeToken._id;
           }
 

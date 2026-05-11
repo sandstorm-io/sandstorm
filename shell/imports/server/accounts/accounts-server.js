@@ -66,7 +66,7 @@ Accounts.onCreateUser(async function (options, user) {
 
     user.profile = options.profile;
 
-    await globalDb.preinstallAppsForUserAsync(user._id);
+    await globalDb.preinstallAppsForUser(user._id);
 
     return user;
   }

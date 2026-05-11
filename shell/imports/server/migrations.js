@@ -712,7 +712,7 @@ const startPreinstallingApps = async function (db, _backend) {
       };
     });
 
-    await db.setPreinstalledAppsAsync(appAndPackageIds);
+    await db.setPreinstalledApps(appAndPackageIds);
   };
 
   if (!Meteor.settings.public.isTesting && !await db.allowDevAccountsAsync()) {

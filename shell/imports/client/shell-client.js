@@ -33,6 +33,7 @@ import { isDevelopmentServer } from "/imports/client/dev-mode";
 import { isStandalone } from "/imports/client/standalone";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
+import { coerceTemplateText } from "/imports/shared/template-values";
 
 // Subscribe to basic grain information first and foremost, since
 // without it we might e.g. redirect to the wrong place on login.
@@ -710,22 +711,6 @@ Template.registerHelper("referralsEnabled", function () {
 });
 
 Template.registerHelper("con", function () {
-  const unwrapTemplateValue = (value) => {
-    if (value === null || value === undefined) return value;
-    if (typeof value === "function") return unwrapTemplateValue(value());
-    if (Array.isArray(value)) {
-      return value.map((part) => unwrapTemplateValue(part)).join("");
-    }
-
-    if (typeof value === "object") {
-      if (Object.prototype.hasOwnProperty.call(value, "value")) {
-        return unwrapTemplateValue(value.value);
-      }
-    }
-
-    return value;
-  };
-
   const args = Array.prototype.slice.call(arguments);
   const last = args[args.length - 1];
   // Blaze may pass a trailing options object, but not in every call shape.
@@ -734,9 +719,7 @@ Template.registerHelper("con", function () {
   }
 
   return args.map((arg) => {
-    const unwrapped = unwrapTemplateValue(arg);
-    if (unwrapped === null || unwrapped === undefined) return "";
-    return String(unwrapped);
+    return coerceTemplateText(arg) || "";
   }).join(".");
 });
 

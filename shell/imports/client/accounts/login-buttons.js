@@ -38,6 +38,7 @@ import { loginWithOidc } from "/imports/oidc/oidc-client";
 import AccountsUi from "/imports/client/accounts/accounts-ui";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
+import { coerceTemplateText } from "/imports/shared/template-values";
 
 // for convenience
 const loginButtonsSession = Accounts._loginButtonsSession;
@@ -259,27 +260,7 @@ const loginWithToken = function (email, token) {
 
 Template.loginButtonsDialog.helpers({
   labelOrFallback() {
-    const coerceText = (value) => {
-      if (value === null || value === undefined) return undefined;
-      if (typeof value === "string") return value;
-      if (typeof value === "number" || typeof value === "boolean") return String(value);
-      if (typeof value === "function") return coerceText(value());
-      if (Array.isArray(value)) {
-        return value.map((part) => {
-          const coerced = coerceText(part);
-          return coerced === undefined ? "" : coerced;
-        }).join("");
-      }
-
-      // Blaze may wrap dynamic named args as { value: ... }.
-      if (typeof value === "object" && Object.prototype.hasOwnProperty.call(value, "value")) {
-        return coerceText(value.value);
-      }
-
-      return undefined;
-    };
-
-    const label = coerceText(this && this.label);
+    const label = coerceTemplateText(this && this.label);
     if (label) return label;
     return Meteor.settings.public.allowUninvited ? "Create account" : "Sign in";
   },

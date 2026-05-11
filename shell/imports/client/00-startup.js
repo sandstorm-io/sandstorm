@@ -22,6 +22,7 @@ import { Iron, Router } from "meteor/vlasky:galvanized-iron-router";
 
 import { globalDb } from "/imports/db-deprecated";
 import { SandstormTopbar } from "/imports/sandstorm-ui-topbar/topbar";
+import { unwrapTemplateValue as unwrapTemplateValueBase } from "/imports/shared/template-values";
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
@@ -76,26 +77,7 @@ const forceReplica = function (replica) {
 globalThis.forceReplica = forceReplica;
 
 const unwrapTemplateValue = (value) => {
-  if (value === null || value === undefined) return value;
-
-  if (typeof value === "function") {
-    try {
-      return unwrapTemplateValue(value());
-    } catch (e) {
-      return value;
-    }
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((part) => unwrapTemplateValue(part));
-  }
-
-  if (typeof value === "object" && !value.htmljsType &&
-      Object.prototype.hasOwnProperty.call(value, "value")) {
-    return unwrapTemplateValue(value.value);
-  }
-
-  return value;
+  return unwrapTemplateValueBase(value, { ignoreFunctionErrors: true });
 };
 
 const patchDynamicTemplateAccessors = () => {

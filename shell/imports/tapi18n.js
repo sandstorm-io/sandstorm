@@ -8,6 +8,7 @@ import nl from "/i18n/nl.i18n.json";
 import ru from "/i18n/ru.i18n.json";
 import zhCN from "/i18n/zh-CN.i18n.json";
 import zhTW from "/i18n/zh-TW.i18n.json";
+import { coerceTemplateText } from "/imports/shared/template-values";
 
 const dictionaries = {
   en,
@@ -125,29 +126,8 @@ const TAPi18n = {
 };
 
 if (Meteor.isClient) {
-  const coerceTemplatePrimitive = (value) => {
-    if (value === null || value === undefined) return value;
-    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-      return value;
-    }
-
-    if (typeof value === "function") return coerceTemplatePrimitive(value());
-    if (Array.isArray(value)) {
-      return value.map((part) => {
-        const coerced = coerceTemplatePrimitive(part);
-        return coerced === null || coerced === undefined ? "" : String(coerced);
-      }).join("");
-    }
-
-    if (typeof value === "object" && hasOwn(value, "value")) {
-      return coerceTemplatePrimitive(value.value);
-    }
-
-    return value;
-  };
-
   Template.registerHelper("_", function (key, ...args) {
-    const normalizedKey = coerceTemplatePrimitive(key);
+    const normalizedKey = coerceTemplateText(key);
     if (typeof normalizedKey !== "string") return "";
     const last = args.length > 0 ? args[args.length - 1] : null;
     const hash = last && typeof last === "object" && hasOwn(last, "hash") ? last.hash : undefined;

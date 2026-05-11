@@ -240,26 +240,29 @@ LDAP.prototype.updateUserQuota = async function (db, user) {
   const email = await db.getPrimaryEmailAsync(user._id, user.loginCredentials[0].id);
   if (!email) return fallback;
 
-  this.ldapCheck(db, { searchUsername: email, searchUsernameField: "mail", })
-      .then((ldapUser) => {
-        if (!ldapUser || ldapUser.error || !ldapUser.searchResults) return;
+  let ldapUser;
+  try {
+    ldapUser = await this.ldapCheck(db, { searchUsername: email, searchUsernameField: "mail", });
+  } catch (err) {
+    console.error("Error looking up quota from LDAP:", err);
+    return fallback;
+  }
 
-        const newStorageQuota = +ldapUser.searchResults[setting.value];
-        if (Number.isNaN(newStorageQuota)) return;
+  if (!ldapUser || ldapUser.error || !ldapUser.searchResults) return fallback;
 
-        if (newStorageQuota !== user.cachedStorageQuota) {
-          Meteor.users.updateAsync({ _id: user._id }, { $set: { cachedStorageQuota: newStorageQuota } })
-              .catch((err) => {
-                console.error("Error updating LDAP cachedStorageQuota:", err);
-              });
-        }
-      })
-      .catch((err) => {
-        console.error("Error looking up quota from LDAP:", err);
-      });
+  const newStorageQuota = +ldapUser.searchResults[setting.value];
+  if (Number.isNaN(newStorageQuota)) return fallback;
+
+  if (newStorageQuota !== user.cachedStorageQuota) {
+    await Meteor.users.updateAsync({ _id: user._id }, { $set: { cachedStorageQuota: newStorageQuota } });
+  }
 
   // TODO(someday): cache timestamp as well and only check/update if greater than 60s ago
-  return fallback;
+  return {
+    storage: newStorageQuota,
+    grains: Infinity,
+    compute: Infinity,
+  };
 };
 
 export { LDAP };

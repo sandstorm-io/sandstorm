@@ -25,14 +25,30 @@ Meteor.startup(() => {
   });
 });
 
-function clearAdminToken(token) {
-  if (tokenIsSetupSession(token)) {
+async function tokenIsSetupSessionAsync(token) {
+  if (!token) return false;
+
+  const setupSession = await globalDb.collections.setupSession.findOneAsync({ _id: "current-session" });
+  if (setupSession) {
     const hash = Crypto.createHash("sha256").update(token).digest("base64");
-    globalDb.collections.setupSession.removeAsync({
+    const now = new Date();
+    const sessionLifetime = 24 * 60 * 60 * 1000; // length of setup session validity, in milliseconds: 1 day
+    return setupSession.hashedSessionId === hash && ((now - setupSession.creationDate) < sessionLifetime);
+  }
+
+  return false;
+}
+
+async function clearAdminToken(token) {
+  if (token) {
+    const hash = Crypto.createHash("sha256").update(token).digest("base64");
+    if (currentSetupSession && currentSetupSession.hashedSessionId === hash) {
+      currentSetupSession = null;
+    }
+
+    await globalDb.collections.setupSession.removeAsync({
       _id: "current-session",
       hashedSessionId: hash,
-    }).catch((err) => {
-      console.error("Failed removing setup session while clearing admin token:", err);
     });
   }
 
@@ -74,9 +90,10 @@ function tokenIsSetupSession(token) {
 
 async function checkAuthAsync(db, userId, token) {
   check(token, Match.OneOf(undefined, null, String));
-  if (!(userId && await db.isAdminByIdAsync(userId)) && !tokenIsValid(token) && !tokenIsSetupSession(token)) {
+  if (!(userId && await db.isAdminByIdAsync(userId)) && !tokenIsValid(token) &&
+      !await tokenIsSetupSessionAsync(token)) {
     throw new Meteor.Error(403, "User must be admin or provide a valid token");
   }
 }
 
-export { checkAuthAsync, clearAdminToken, tokenIsValid, tokenIsSetupSession };
+export { checkAuthAsync, clearAdminToken, tokenIsValid, tokenIsSetupSession, tokenIsSetupSessionAsync };

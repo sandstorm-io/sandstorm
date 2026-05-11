@@ -25,7 +25,7 @@ import Fs from "fs";
 import Crypto from "crypto";
 import { writeHeapSnapshot } from "v8";
 import { SANDSTORM_LOGDIR } from "/imports/server/constants";
-import { clearAdminToken, checkAuthAsync, tokenIsValid, tokenIsSetupSession } from "/imports/server/auth";
+import { clearAdminToken, checkAuthAsync, tokenIsValid, tokenIsSetupSessionAsync } from "/imports/server/auth";
 import { send as sendEmail } from "/imports/server/email";
 import { fillUndefinedForChangedDoc } from "/imports/server/observe-helpers";
 import { SandstormDb } from "/imports/sandstorm-db/db";
@@ -369,7 +369,7 @@ Meteor.methods({
     }
 
     await Meteor.users.updateAsync({ _id: this.userId }, { $set: { isAdmin: true, signupKey: "admin" } });
-    clearAdminToken(token);
+    await clearAdminToken(token);
   },
 
   async redeemSetupToken(token) {
@@ -386,7 +386,7 @@ Meteor.methods({
         hashedSessionId,
       });
       // Then, invalidate the token, so one one else can use it.
-      clearAdminToken(token);
+      await clearAdminToken(token);
       return sessId;
     } else {
       throw new Meteor.Error(401, "Invalid setup token");
@@ -501,7 +501,8 @@ let ModuleName = Match.Where(name => {
 
 const authorizedAsAdmin = async function (token, userId) {
   return Match.test(token, Match.OneOf(undefined, null, String)) &&
-         ((userId && await globalDb.isAdminByIdAsync(userId)) || tokenIsValid(token) || tokenIsSetupSession(token));
+         ((userId && await globalDb.isAdminByIdAsync(userId)) || tokenIsValid(token) ||
+          await tokenIsSetupSessionAsync(token));
 };
 
 Meteor.publish("admin", async function (token) {
@@ -520,9 +521,11 @@ Meteor.publish("publicAdminSettings", function () {
   return globalDb.collections.settings.find({ _id: { $in: publicAdminSettings } });
 });
 
-Meteor.publish("adminToken", function (token) {
+Meteor.publish("adminToken", async function (token) {
   check(token, String);
-  this.added("adminToken", "adminToken", { tokenIsValid: tokenIsValid(token) || tokenIsSetupSession(token) });
+  this.added("adminToken", "adminToken", {
+    tokenIsValid: tokenIsValid(token) || await tokenIsSetupSessionAsync(token),
+  });
   this.ready();
 });
 

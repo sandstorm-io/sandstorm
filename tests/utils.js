@@ -88,6 +88,36 @@ module.exports = {
       });
     }
   },
+  callMeteorTestMethod: function (browser, methodName) {
+    return browser.executeAsync(function (methodName, done) {
+      var deadline = Date.now() + 10000;
+
+      function callWhenReady() {
+        if (window.Meteor && typeof window.Meteor.call === "function") {
+          window.Meteor.call(methodName, function (err, result) {
+            done({
+              error: err && {
+                error: err.error,
+                reason: err.reason,
+                message: err.message,
+              },
+              result: result,
+            });
+          });
+        } else if (Date.now() < deadline) {
+          setTimeout(callWhenReady, 25);
+        } else {
+          done({ error: { message: "Timed out waiting for Meteor.call" } });
+        }
+      }
+
+      callWhenReady();
+    }, [methodName], function (result) {
+      var value = result.value || {};
+      browser.assert.equal(value.error, null, methodName + " completed without error");
+      browser.assert.equal(value.result, true, methodName + " returned true");
+    });
+  },
   appDetailsTitleSelector: '.app-details .app-details-widget .app-title',
   actionSelector: '.grain-list-table tr.action button.action'
 };

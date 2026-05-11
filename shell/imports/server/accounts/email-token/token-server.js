@@ -335,8 +335,8 @@ Meteor.methods({
       throw new Meteor.Error(403, "Invalid authentication code.");
     }
 
-    Accounts.linkCredentialToAccount(this.connection.sandstormDb, this.connection.sandstormBackend,
-                                     credential._id, account._id, allowLogin);
+    await Accounts.linkCredentialToAccount(this.connection.sandstormDb, this.connection.sandstormBackend,
+                                           credential._id, account._id, allowLogin);
 
     // Return the resume path, if we have one.
     const resumePath = tryUnbox(maybeToken.secureBox, token);

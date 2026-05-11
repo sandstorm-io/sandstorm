@@ -25,6 +25,7 @@ import { Router } from "meteor/vlasky:galvanized-iron-router";
 import { HTTP } from "meteor/http";
 
 import { inMeteor } from "/imports/server/async-helpers";
+import { httpCallAsync } from "/imports/http-helpers";
 import { globalDb } from "/imports/db-deprecated";
 import { createGrainBackup, createBackupToken, restoreGrainBackup, storeGrainBackup }
   from "/imports/server/backup";
@@ -51,15 +52,6 @@ Meteor.publish("transfers", function () {
     this.connection.sandstormDb.collections.outgoingTransfers.find({userId: this.userId})
   ];
 });
-
-function httpCallAsync(method, url, options) {
-  return new Promise((resolve, reject) => {
-    HTTP.call(method, url, options || {}, (err, response) => {
-      if (err) reject(err);
-      else resolve(response);
-    });
-  });
-}
 
 Meteor.methods({
   async newTransfer(destination) {

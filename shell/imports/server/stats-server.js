@@ -19,20 +19,11 @@ import { Mongo } from "meteor/mongo";
 import { _ } from "meteor/underscore";
 import { Random } from "meteor/random";
 import { Router } from "meteor/vlasky:galvanized-iron-router";
-import { HTTP } from "meteor/http";
 
 import { globalDb } from "/imports/db-deprecated";
+import { httpCallAsync } from "/imports/http-helpers";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-function httpCallAsync(method, url, options) {
-  return new Promise((resolve, reject) => {
-    HTTP.call(method, url, options || {}, (err, response) => {
-      if (err) reject(err);
-      else resolve(response);
-    });
-  });
-}
 
 if (Mongo.Collection.prototype.aggregate) {
   throw new Error("Looks like Meteor wrapped the Collection.aggregate() call. Make sure it " +

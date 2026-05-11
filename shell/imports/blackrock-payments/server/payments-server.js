@@ -30,20 +30,11 @@ import { Meteor } from "meteor/meteor";
 import { Mongo } from "meteor/mongo";
 import { check } from "meteor/check";
 import { Random } from "meteor/random";
-import { HTTP } from "meteor/http";
 import { _ } from "meteor/underscore";
-
-function httpCallAsync(method, url, options) {
-  return new Promise((resolve, reject) => {
-    HTTP.call(method, url, options || {}, (err, response) => {
-      if (err) reject(err);
-      else resolve(response);
-    });
-  });
-}
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
+import { httpCallAsync } from "/imports/http-helpers";
 import { MAILING_LIST_BONUS } from "/imports/blackrock-payments/constants";
 
 const ROOT_URL = process.env.ROOT_URL;

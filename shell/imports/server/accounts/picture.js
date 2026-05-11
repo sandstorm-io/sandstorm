@@ -1,13 +1,4 @@
-import { HTTP } from "meteor/http";
-
-function httpCallAsync(method, url, options) {
-  return new Promise((resolve, reject) => {
-    HTTP.call(method, url, options || {}, (err, response) => {
-      if (err) reject(err);
-      else resolve(response);
-    });
-  });
-}
+import { httpCallAsync } from "/imports/http-helpers";
 
 const userPictureUrl = function (user) {
   if (user.services && !(user.profile && user.profile.picture)) {

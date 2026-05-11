@@ -31,7 +31,7 @@ import { fillUndefinedForChangedDoc } from "/imports/server/observe-helpers";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
 import { computeStats } from "/imports/server/stats-server";
-import { HTTP } from "meteor/http";
+import { httpCallAsync } from "/imports/http-helpers";
 import { createAcmeAccount, renewCertificateNow } from "/imports/server/acme";
 import { Issuer } from "openid-client";
 
@@ -62,15 +62,6 @@ const smtpConfigShape = {
   },
   returnAddress: String,
 };
-
-function httpCallAsync(method, url, options) {
-  return new Promise((resolve, reject) => {
-    HTTP.call(method, url, options || {}, (err, response) => {
-      if (err) reject(err);
-      else resolve(response);
-    });
-  });
-}
 
 Meteor.methods({
   setAccountSetting: async function (token, serviceName, value) {

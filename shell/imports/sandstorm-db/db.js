@@ -24,15 +24,7 @@ import { Random } from "meteor/random";
 import { SHA256 } from "meteor/sha";
 import { HTTP } from "meteor/http";
 import { iconSrcForPackage } from "/imports/sandstorm-identicons/helpers";
-
-function httpCallAsync(method, url, options) {
-  return new Promise((resolve, reject) => {
-    HTTP.call(method, url, options || {}, (err, response) => {
-      if (err) reject(err);
-      else resolve(response);
-    });
-  });
-}
+import { httpCallAsync } from "/imports/http-helpers";
 
 // Useful for debugging: Set the env variable LOG_MONGO_QUERIES to have the server write every
 // query it makes, so you can see if it's doing queries too often, etc.

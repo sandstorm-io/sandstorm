@@ -16,10 +16,10 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { HTTP } from "meteor/http";
 import { _ } from "meteor/underscore";
 
 import { inMeteor } from "/imports/server/async-helpers";
+import { httpCallAsync } from "/imports/http-helpers";
 import { PersistentImpl } from "/imports/server/persistent";
 import { ssrfSafeLookup } from "/imports/server/networking";
 import { REQUEST_HEADER_WHITELIST, RESPONSE_HEADER_WHITELIST }
@@ -577,12 +577,4 @@ class ExternalWebSession extends PersistentImpl {
       }).catch(reject);
     });
   }
-}
-function httpCallAsync(method, url, options) {
-  return new Promise((resolve, reject) => {
-    HTTP.call(method, url, options || {}, (err, response) => {
-      if (err) reject(err);
-      else resolve(response);
-    });
-  });
 }

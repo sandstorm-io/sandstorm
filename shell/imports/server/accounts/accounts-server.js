@@ -152,7 +152,7 @@ Accounts.onCreateUser(async function (options, user) {
   return user;
 });
 
-Accounts.validateLoginAttempt(async function (attempt) {
+export async function validateSandstormLoginAttempt(attempt) {
   if (!attempt.allowed) {
     return false;
   }
@@ -182,4 +182,6 @@ Accounts.validateLoginAttempt(async function (attempt) {
   }
 
   return true;
-});
+}
+
+Accounts.validateLoginAttempt(validateSandstormLoginAttempt);

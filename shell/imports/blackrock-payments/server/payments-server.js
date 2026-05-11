@@ -45,6 +45,11 @@ if (!Meteor.settings.stripeKey) {
   console.warn("Stripe secret key is not configured; billing operations will fail until stripeKey is set.");
 }
 export const stripe = StripeModule(stripeKey);
+let paymentsHttpCall = httpCallAsync;
+
+export function setPaymentsHttpCallForTests(call) {
+  paymentsHttpCall = call || httpCallAsync;
+}
 
 globalThis.BlackrockPayments = {};
 
@@ -327,7 +332,7 @@ async function paymentFailed(db, user, customerId, config, userMod) {
   }
 }
 
-async function handleWebhookEvent(db, event) {
+export async function handleWebhookEvent(db, event) {
   // WE CANNOT TRUST THE EVENT. We have no proof it came from Stripe.
   //
   // We could tell Stripe to authenticate with HTTP Basic Auth, but that's ugly and
@@ -359,8 +364,8 @@ async function handleWebhookEvent(db, event) {
                 " for user " + user._id);
 
     const config = {
-      acceptorTitle: globalDb.getServerTitle(),
-      returnAddress: db.getReturnAddress(),
+      acceptorTitle: await globalDb.getServerTitleAsync(),
+      returnAddress: await db.getReturnAddressAsync(),
       settingsUrl: ROOT_URL + "/account",
     };
 
@@ -372,12 +377,12 @@ async function handleWebhookEvent(db, event) {
     } else {
       const items = [];
 
-      invoice.lines.data.forEach(line => {
+      for (const line of invoice.lines.data) {
         if (line.type === "subscription") {
           const parts = line.plan.id.split("-");
           const planName = parts[0];
 
-          const plan = db.getPlan(planName, user);
+          const plan = await db.getPlanAsync(planName, user);
           const planTitle = plan.title || (plan._id.charAt(0).toUpperCase() + plan._id.slice(1));
 
           items.push({
@@ -390,7 +395,7 @@ async function handleWebhookEvent(db, event) {
             amountCents: line.amount,
           });
         }
-      });
+      }
 
       if (invoice.amount_due < invoice.total) {
         items.push({
@@ -468,7 +473,7 @@ function canonicalizeEmail(email) {
   return email.replace(/\+.*@/, "@").toLowerCase();
 }
 
-async function updateMailchimp(db) {
+export async function updateMailchimp(db) {
   var listId = Meteor.settings.mailchimpListId;
   var key = Meteor.settings.mailchimpKey;
   if (!listId || !key) throw new Error("Mailchimp not configured!");
@@ -489,7 +494,7 @@ async function updateMailchimp(db) {
 
     console.log("Mailchimp: Fetching updates:", url);
 
-    var result = await httpCallAsync("GET", url, {
+    var result = await paymentsHttpCall("GET", url, {
       headers: { "Authorization": "apikey " + key },
       timeout: 60000
     });
@@ -794,7 +799,7 @@ var methods = {
         var url = "https://"+shard+".api.mailchimp.com/3.0/lists/" + listId + "/members/" + hash;
 
         console.log("Mailchimp: unsubscribing", entry._id);
-        await httpCallAsync("PATCH", url, {
+        await paymentsHttpCall("PATCH", url, {
           data: {status: "unsubscribed"},
           headers: { "Authorization": "apikey " + key },
           timeout: 10000
@@ -829,14 +834,14 @@ var methods = {
       if (await MailchimpSubscribers.find({ _id: email }).countAsync() > 0) {
         // User already exists in Mailchimp.
         console.log("Mailchimp: re-subscribing", email);
-        await httpCallAsync("PATCH", url, {
+        await paymentsHttpCall("PATCH", url, {
           data: {status: "subscribed"},
           headers: { "Authorization": "apikey " + key },
           timeout: 10000
         });
       } else {
         console.log("Mailchimp: subscribing", email);
-        await httpCallAsync("PUT", url, {
+        await paymentsHttpCall("PUT", url, {
           data: {email_address: email, status: "subscribed"},
           headers: { "Authorization": "apikey " + key },
           timeout: 10000

@@ -22,6 +22,11 @@ const V1_HASHFUNC = "sha512";
 const V1_CIPHER = "AES-256-CTR"; // cipher used
 
 const TOKEN_EXPIRATION_MS = 60 * 60 * 1000;
+let tokenEmailSender = sendEmail;
+
+export function setTokenEmailSenderForTests(sender) {
+  tokenEmailSender = sender || sendEmail;
+}
 
 const cleanupExpiredTokens = async function () {
   await Meteor.users.updateAsync({
@@ -124,7 +129,7 @@ const tryUnbox = function (box, secret) {
 };
 
 // Handler to login with a token.
-Accounts.registerLoginHandler("email", async function (options) {
+export const emailTokenLoginHandler = async function (options) {
   if (!options.email) {
     return undefined; // don't handle
   }
@@ -179,7 +184,9 @@ Accounts.registerLoginHandler("email", async function (options) {
       resumePath,
     },
   };
-});
+};
+
+Accounts.registerLoginHandler("email", emailTokenLoginHandler);
 
 const makeTokenUrl = function (email, token, options) {
   if (options.linking) {
@@ -220,7 +227,7 @@ const sendTokenEmail = async function (db, email, token, options) {
     text: text,
   };
 
-  await sendEmail(sendOptions);
+  await tokenEmailSender(sendOptions);
 };
 
 const parsedRootUrl = Url.parse(process.env.ROOT_URL);

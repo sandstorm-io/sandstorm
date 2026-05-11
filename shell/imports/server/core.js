@@ -347,7 +347,7 @@ Meteor.methods({
     const notification = await db.collections.notifications.findOneAsync({ _id: notificationId });
     if (!notification) {
       throw new Meteor.Error(404, "Notification id not found.");
-    } else if (notification.userId !== Meteor.userId()) {
+    } else if (notification.userId !== this.userId) {
       throw new Meteor.Error(403, "Notification does not belong to current user.");
     } else {
       await dismissNotification(db, notificationId, true);
@@ -356,13 +356,13 @@ Meteor.methods({
 
   async readAllNotifications() {
     // Marks all notifications as read for the current user.
-    if (!Meteor.userId()) {
+    if (!this.userId) {
       throw new Meteor.Error(403, "User not logged in.");
     }
 
     const db = this.connection.sandstormDb;
     await db.collections.notifications.updateAsync(
-      { userId: Meteor.userId() },
+      { userId: this.userId },
       { $set: { isUnread: false } },
       { multi: true });
   },

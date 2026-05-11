@@ -35,6 +35,12 @@ import { httpCallAsync } from "/imports/http-helpers";
 import { createAcmeAccount, renewCertificateNow } from "/imports/server/acme";
 import { Issuer } from "openid-client";
 
+let adminEmailSender = sendEmail;
+
+export function setAdminEmailSenderForTests(sender) {
+  adminEmailSender = sender || sendEmail;
+}
+
 const publicAdminSettings = [
   "google", "github", "ldap", "oidc", "saml", "emailToken", "splashUrl", "signupDialog",
   "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
@@ -219,7 +225,7 @@ Meteor.methods({
     const { returnAddress, ...restConfig } = smtpConfig;
 
     try {
-      await sendEmail({
+      await adminEmailSender({
         to: to,
         from: { name: await globalDb.getServerTitleAsync(), address: returnAddress },
         subject: "Testing your Sandstorm's SMTP setting",
@@ -290,7 +296,7 @@ Meteor.methods({
         };
         if (typeof quota === "number") content.quota = quota;
         await globalDb.collections.signupKeys.insertAsync(content);
-        await sendEmail({
+        await adminEmailSender({
           to: email,
           from: from,
           envelopeFrom: await globalDb.getReturnAddressAsync(),

@@ -1915,6 +1915,12 @@ _.extend(SandstormDb.prototype, {
     // default to "mail". This setting was added later, and so could potentially be unset.
   },
 
+  async getLdapEmailFieldAsync() {
+    const setting = await this.collections.settings.findOneAsync({ _id: "ldapEmailField" });
+    return setting ? setting.value : "mail";
+    // default to "mail". This setting was added later, and so could potentially be unset.
+  },
+
   getLdapExplicitDnSelected() {
     const setting = this.collections.settings.findOne({ _id: "ldapExplicitDnSelected" });
     return setting && setting.value;

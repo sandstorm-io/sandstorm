@@ -30,6 +30,44 @@ import { globalDb } from "/imports/db-deprecated";
 import { createGrainBackup, createBackupToken, restoreGrainBackup, storeGrainBackup }
   from "/imports/server/backup";
 
+let transferHttpCall = httpCallAsync;
+let transferCreateGrainBackup = createGrainBackup;
+let transferCreateBackupToken = createBackupToken;
+let transferStoreGrainBackup = storeGrainBackup;
+let transferRestoreGrainBackup = restoreGrainBackup;
+let transferDownloaderDisabledForTests = false;
+
+export function setTransferHttpCallForTests(call) {
+  transferHttpCall = call || httpCallAsync;
+}
+
+export function setTransferCreateGrainBackupForTests(fn) {
+  transferCreateGrainBackup = fn || createGrainBackup;
+}
+
+export function setTransferDownloaderHooksForTests(hooks) {
+  hooks = hooks || {};
+  transferCreateBackupToken = hooks.createBackupToken || createBackupToken;
+  transferStoreGrainBackup = hooks.storeGrainBackup || storeGrainBackup;
+  transferRestoreGrainBackup = hooks.restoreGrainBackup || restoreGrainBackup;
+  transferBackupRequest = hooks.request || defaultTransferBackupRequest;
+}
+
+export function setTransferDownloaderDisabledForTests(disabled) {
+  transferDownloaderDisabledForTests = !!disabled;
+}
+
+function defaultTransferBackupRequest(source, remoteFileToken) {
+  let requestMethod = NodeHttp.request;
+  if (source.startsWith("https:")) {
+    requestMethod = NodeHttps.request;
+  }
+
+  return requestMethod(source + "/downloadBackup/" + remoteFileToken);
+}
+
+let transferBackupRequest = defaultTransferBackupRequest;
+
 function isValidServerUrl(str) {
   let url;
   try {
@@ -120,7 +158,7 @@ Meteor.methods({
 
     let response;
     try {
-      response = await httpCallAsync("GET", source + "/transfers/list", {
+      response = await transferHttpCall("GET", source + "/transfers/list", {
         headers: {"Authorization": "Bearer " + token}
       });
     } catch (err) {
@@ -301,7 +339,7 @@ Router.map(function () {
 
       let fileToken;
       try {
-        fileToken = await createGrainBackup(transfer.userId, this.params.grainId, true);
+        fileToken = await transferCreateGrainBackup(transfer.userId, this.params.grainId, true);
       } catch (err) {
         let status = (typeof err.error === "number") && err.error >= 400 && err.error < 600
                    ? err.error : 500;
@@ -364,7 +402,7 @@ async function revokeTransferTokens(db, userId) {
   }
 }
 
-class Downloader {
+export class Downloader {
   constructor(transfer) {
     Object.assign(this, transfer);
     this.promise = Promise.resolve().then(() => inMeteor(() => this.run()));
@@ -415,7 +453,7 @@ class Downloader {
       // Request grain download.
       console.log("mass transfer: packing:", this.grainId);
 
-      let response = await httpCallAsync("POST", this.source + "/transfers/prepare/" + this.grainId,
+      let response = await transferHttpCall("POST", this.source + "/transfers/prepare/" + this.grainId,
           { headers: {"Authorization": "Bearer " + this.token} });
       if (!response.data) {
         throw new Meteor.Error(500, "Source server did not return JSON.");
@@ -432,12 +470,7 @@ class Downloader {
       // Start downloading.
       console.log("mass transfer: downloading:", this.grainId);
 
-      let requestMethod = NodeHttp.request;
-      if (this.source.startsWith("https:")) {
-        requestMethod = NodeHttps.request;
-      }
-
-      this.request = requestMethod(this.source + "/downloadBackup/" + this.remoteFileToken);
+      this.request = transferBackupRequest(this.source, this.remoteFileToken);
       this.request.end();
 
       const response = await new Promise((resolve, reject) => {
@@ -467,8 +500,8 @@ class Downloader {
 
       if (this.canceled) return;
 
-      let localFileToken = await createBackupToken();
-      await storeGrainBackup(localFileToken, response);
+      let localFileToken = await transferCreateBackupToken();
+      await transferStoreGrainBackup(localFileToken, response);
 
       if (this.canceled) return;
 
@@ -484,7 +517,7 @@ class Downloader {
       // Finish unpacking.
       console.log("mass transfer: unpacking:", this.grainId);
 
-      const localGrainId = await restoreGrainBackup(this.localFileToken,
+      const localGrainId = await transferRestoreGrainBackup(this.localFileToken,
           await Meteor.users.findOneAsync({ _id: this.userId }), this);
       if (!await globalDb.collections.incomingTransfers.findOneAsync({ _id: this._id, downloading: true })) {
         // Someone unset the "downloading" flag, probably trying to cancel this download, but we
@@ -509,6 +542,7 @@ if (!Meteor.settings.replicaNumber) {
     let downloaders = {};
     globalDb.collections.incomingTransfers.find({downloading: true}).observeAsync({
       added(transfer) {
+        if (transferDownloaderDisabledForTests) return;
         if (!downloaders[transfer._id]) {
           downloaders[transfer._id] = new Downloader(transfer);
         }

@@ -378,7 +378,7 @@ SandstormDb.prototype.getAccountIntrinsicNamesAsync = async function (account, u
   });
 };
 
-SandstormDb.getVerifiedEmailsForCredential = function (credential) {
+SandstormDb.getVerifiedEmailsForCredential = function (credential, ldapEmailField) {
   const services = credential.services;
   if (services.google && services.google.email &&
       services.google.verified_email) { // jscs:ignore requireCamelCaseOrUpperCaseIdentifiers
@@ -394,7 +394,8 @@ SandstormDb.getVerifiedEmailsForCredential = function (credential) {
       .value();
   } else if (services.ldap) {
     // TODO(cleanup): don't create a new SandstormDb here, make this non-static
-    const email = services.ldap.rawAttrs[new SandstormDb().getLdapEmailField()];
+    const emailField = ldapEmailField === undefined ? new SandstormDb().getLdapEmailField() : ldapEmailField;
+    const email = services.ldap.rawAttrs[emailField];
     if (email) {
       return [{ email: email, primary: true }];
     }
@@ -412,7 +413,8 @@ SandstormDb.prototype.findCredentialsByEmail = async function (email) {
 
   // For LDAP, the field containing the e-mail address is configurable...
   const ldapQuery = {};
-  ldapQuery["services.ldap.rawAttrs." + this.getLdapEmailField()] = email;
+  const ldapEmailField = await this.getLdapEmailFieldAsync();
+  ldapQuery["services.ldap.rawAttrs." + ldapEmailField] = email;
 
   return (await Meteor.users.find({ $or: [
     { "services.google.email": email },
@@ -422,7 +424,7 @@ SandstormDb.prototype.findCredentialsByEmail = async function (email) {
     { "services.oidc.email": email },
     { "services.saml.email": email },
   ], }).fetchAsync()).filter((credential) => {
-    return !!_.findWhere(SandstormDb.getVerifiedEmailsForCredential(credential), { email: email });
+    return !!_.findWhere(SandstormDb.getVerifiedEmailsForCredential(credential, ldapEmailField), { email: email });
   });
 };
 
@@ -511,6 +513,7 @@ SandstormDb.getUserEmailsAsync = async function (user) {
   const credentialIds = SandstormDb.getUserCredentialIds(user);
   const verifiedEmails = {};
   const unverifiedEmails = {};
+  const ldapEmailField = await globalDb.getLdapEmailFieldAsync();
   const credentials = await Meteor.users.find({ _id: { $in: credentialIds } }).fetchAsync();
   const credentialsById = {};
   credentials.forEach((credential) => {
@@ -520,7 +523,7 @@ SandstormDb.getUserEmailsAsync = async function (user) {
   credentialIds.forEach((id) => {
     const credential = credentialsById[id];
     if (credential && credential.services) {
-      SandstormDb.getVerifiedEmailsForCredential(credential).forEach((verifiedEmail) => {
+      SandstormDb.getVerifiedEmailsForCredential(credential, ldapEmailField).forEach((verifiedEmail) => {
         if (verifiedEmail) {
           verifiedEmails[verifiedEmail.email] = true;
         }

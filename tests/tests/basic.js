@@ -45,6 +45,17 @@ module.exports = {
 
     browser.end();
   },
+
+  "Test OIDC signin URL and index migration coverage": function (browser) {
+    browser
+      .url(browser.launch_url + "/")
+      .timeouts("script", utils.medium_wait);
+
+    utils.callMeteorTestMethod(browser, "testRegressionOidcSigninAndIndexMigration");
+
+    browser.end();
+  },
+
 };
 if (run_xfail) {
   // https://github.com/sandstorm-io/sandstorm/issues/3615

@@ -428,9 +428,10 @@ async function getVerifiedEmails(db, userId, verifierId) {
   const credentials = await Meteor.users.find({
     _id: { $in: SandstormDb.getUserCredentialIds(user) },
   }).fetchAsync();
+  const ldapEmailField = await db.getLdapEmailFieldAsync();
   credentials.forEach(credential => {
     if (!services || services[SandstormDb.getServiceName(credential)]) {
-      SandstormDb.getVerifiedEmailsForCredential(credential)
+      SandstormDb.getVerifiedEmailsForCredential(credential, ldapEmailField)
           .forEach(email => { emails[email.email] = true; });
     }
   });

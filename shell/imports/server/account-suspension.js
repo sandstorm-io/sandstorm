@@ -21,6 +21,12 @@ import { _ } from "meteor/underscore";
 import { send } from "/imports/server/email";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 
+let accountSuspensionEmailSender = send;
+
+export function setAccountSuspensionEmailSenderForTests(sender) {
+  accountSuspensionEmailSender = sender || send;
+}
+
 async function sendDeletionEmails(db, deletedUserId, byAdminUserId, feedback) {
   const deletedUser = await db.getUser(deletedUserId);
 
@@ -41,7 +47,7 @@ If you did not request this deletion, please contact the server administrator im
       };
       try {
         emailOptions.to = userEmail.email;
-        await send(emailOptions);
+        await accountSuspensionEmailSender(emailOptions);
       } catch (err) {
         console.error(
           `Failed to send deletion email to user (id=${deletedUser._id}) with error: ${err}`);
@@ -76,7 +82,7 @@ If you did not request this deletion, please contact the server administrator im
 
     try {
       emailOptions.to = email.email;
-      await send(emailOptions);
+      await accountSuspensionEmailSender(emailOptions);
     } catch (err) {
       console.error(
         `Failed to send deletion email to admin (id=${user._id}) with error: ${err}`);
@@ -93,7 +99,7 @@ Meteor.methods({
       throw new Meteor.Error(403, "Only admins can suspend other users.");
     }
 
-    if (userId === Meteor.userId()) {
+    if (userId === this.userId) {
       throw new Meteor.Error(400, "Admins cannot suspend their own accounts from the admin page. Please go to your account setttings.");
     }
 
@@ -103,16 +109,16 @@ Meteor.methods({
       await globalThis.BlackrockPayments.suspendAccount(db, userId);
     }
 
-    await db.suspendAccount(userId, Meteor.userId(), willDelete);
+    await db.suspendAccount(userId, this.userId, willDelete);
 
     if (willDelete) {
-      await sendDeletionEmails(db, userId, Meteor.userId());
+      await sendDeletionEmails(db, userId, this.userId);
     }
   },
 
   async deleteOwnAccount(feedback) {
     const db = this.connection.sandstormDb;
-    if (!Meteor.userId()) {
+    if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to delete an account");
     }
 
@@ -123,12 +129,12 @@ Meteor.methods({
     }
 
     if (Meteor.settings.public.stripePublicKey) {
-      await globalThis.BlackrockPayments.suspendAccount(db, Meteor.userId());
+      await globalThis.BlackrockPayments.suspendAccount(db, this.userId);
     }
 
-    await db.suspendAccount(Meteor.userId(), null, true);
+    await db.suspendAccount(this.userId, null, true);
 
-    await sendDeletionEmails(db, Meteor.userId(), null, feedback);
+    await sendDeletionEmails(db, this.userId, null, feedback);
   },
 
   async unsuspendAccount(userId) {
@@ -138,14 +144,14 @@ Meteor.methods({
       throw new Meteor.Error(403, "Only admins can unsuspend other users.");
     }
 
-    await this.connection.sandstormDb.unsuspendAccount(userId, Meteor.userId());
+    await this.connection.sandstormDb.unsuspendAccount(userId, this.userId);
   },
 
   async unsuspendOwnAccount() {
-    if (!Meteor.userId()) {
+    if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to unsuspend an account");
     }
 
-    await this.connection.sandstormDb.unsuspendAccount(Meteor.userId());
+    await this.connection.sandstormDb.unsuspendAccount(this.userId);
   },
 });

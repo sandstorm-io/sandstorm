@@ -203,3 +203,13 @@ module.exports["Test email credential link waits for link result"] = function (b
 
   browser.end();
 };
+
+module.exports["Test email token creation and login behavior"] = function (browser) {
+  browser
+    .url(browser.launch_url + "/")
+    .timeouts("script", medium_wait);
+
+  utils.callMeteorTestMethod(browser, "testRegressionEmailTokenCreationAndLogin");
+
+  browser.end();
+};

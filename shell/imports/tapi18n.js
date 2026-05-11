@@ -125,27 +125,29 @@ const TAPi18n = {
   },
 };
 
-if (Meteor.isClient) {
-  Template.registerHelper("_", function (key, ...args) {
-    const normalizedKey = coerceTemplateText(key);
-    if (typeof normalizedKey !== "string") return "";
-    const last = args.length > 0 ? args[args.length - 1] : null;
-    const hash = last && typeof last === "object" && hasOwn(last, "hash") ? last.hash : undefined;
-    const positional = hash ? args.slice(0, -1) : args;
-    const translated = translate(normalizedKey, positional, hash);
-    if (typeof translated !== "string") {
-      console.error("i18n helper returned non-string", {
-        key: normalizedKey,
-        originalKey: key,
-        translated,
-        positional,
-        hash,
-      });
-      return normalizedKey;
-    }
+export function templateI18nHelper(key, ...args) {
+  const normalizedKey = coerceTemplateText(key);
+  if (typeof normalizedKey !== "string") return "";
+  const last = args.length > 0 ? args[args.length - 1] : null;
+  const hash = last && typeof last === "object" && hasOwn(last, "hash") ? last.hash : undefined;
+  const positional = hash ? args.slice(0, -1) : args;
+  const translated = translate(normalizedKey, positional, hash);
+  if (typeof translated !== "string") {
+    console.error("i18n helper returned non-string", {
+      key: normalizedKey,
+      originalKey: key,
+      translated,
+      positional,
+      hash,
+    });
+    return normalizedKey;
+  }
 
-    return translated;
-  });
+  return translated;
+}
+
+if (Meteor.isClient) {
+  Template.registerHelper("_", templateI18nHelper);
 }
 
 export { TAPi18n };

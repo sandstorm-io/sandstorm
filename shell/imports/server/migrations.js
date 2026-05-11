@@ -1224,7 +1224,7 @@ async function deleteHackSessionHttpSetting(db, _backend) {
   await db.collections.settings.removeAsync({_id: "allowLegacyHackSessionHttp"});
 }
 
-async function reconcileOidcUsersIndex(db, _backend) {
+export async function reconcileOidcUsersIndex(db, _backend) {
   // Meteor 3 expects a unique sparse index on services.oidc.id, but some older installs have a
   // non-unique index with the same generated name (services.oidc.id_1). Reconcile it once.
   const usersRaw = db.collections.users.rawCollection();

@@ -82,10 +82,10 @@ const generateService = async function () {
   // TODO(cleanup): Inject the db.
   const db = new SandstormDb();
   const [entityId, entryPoint, logoutUrl, publicCert] = await Promise.all([
-    db.getSamlEntityIdAsync(),
-    db.getSamlEntryPointAsync(),
-    db.getSamlLogoutAsync(),
-    db.getSamlPublicCertAsync(),
+    db.getSamlEntityId(),
+    db.getSamlEntryPoint(),
+    db.getSamlLogout(),
+    db.getSamlPublicCert(),
   ]);
 
   const service = {

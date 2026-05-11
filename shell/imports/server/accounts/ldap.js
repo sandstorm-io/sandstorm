@@ -53,13 +53,13 @@ LDAP.prototype.ldapCheck = async function (db, options) {
       hasOwnProperty(options, "searchUsername")) {
     const [ldapBase, ldapUrl, ldapSearchUsername, ldapFilter, ldapSearchBindDn, ldapSearchBindPassword,
       ldapCaCert] = await Promise.all([
-      db.getLdapBaseAsync(),
-      db.getLdapUrlAsync(),
-      db.getLdapSearchUsernameAsync(),
-      db.getLdapFilterAsync(),
-      db.getLdapSearchBindDnAsync(),
-      db.getLdapSearchBindPasswordAsync(),
-      db.getLdapCaCertAsync(),
+      db.getLdapBase(),
+      db.getLdapUrl(),
+      db.getLdapSearchUsername(),
+      db.getLdapFilter(),
+      db.getLdapSearchBindDn(),
+      db.getLdapSearchBindPassword(),
+      db.getLdapCaCert(),
     ]);
 
     _this.options.base = ldapBase;

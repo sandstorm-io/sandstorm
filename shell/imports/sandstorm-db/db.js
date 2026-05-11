@@ -1914,22 +1914,12 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  getLdapUrl() {
-    const setting = this.collections.settings.findOne({ _id: "ldapUrl" });
-    return setting ? setting.value : "";  // empty if subscription is not ready.
-  },
-
-  async getLdapUrlAsync() {
+  async getLdapUrl() {
     const setting = await this.collections.settings.findOneAsync({ _id: "ldapUrl" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapBase() {
-    const setting = this.collections.settings.findOne({ _id: "ldapBase" });
-    return setting ? setting.value : "";  // empty if subscription is not ready.
-  },
-
-  async getLdapBaseAsync() {
+  async getLdapBase() {
     const setting = await this.collections.settings.findOneAsync({ _id: "ldapBase" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
@@ -1939,12 +1929,7 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapSearchUsername() {
-    const setting = this.collections.settings.findOne({ _id: "ldapSearchUsername" });
-    return setting ? setting.value : "";  // empty if subscription is not ready.
-  },
-
-  async getLdapSearchUsernameAsync() {
+  async getLdapSearchUsername() {
     const setting = await this.collections.settings.findOneAsync({ _id: "ldapSearchUsername" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
@@ -1965,42 +1950,22 @@ _.extend(SandstormDb.prototype, {
     return setting && setting.value;
   },
 
-  getLdapFilter() {
-    const setting = this.collections.settings.findOne({ _id: "ldapFilter" });
-    return setting ? setting.value : "";  // empty if subscription is not ready.
-  },
-
-  async getLdapFilterAsync() {
+  async getLdapFilter() {
     const setting = await this.collections.settings.findOneAsync({ _id: "ldapFilter" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapSearchBindDn() {
-    const setting = this.collections.settings.findOne({ _id: "ldapSearchBindDn" });
-    return setting ? setting.value : "";  // empty if subscription is not ready.
-  },
-
-  async getLdapSearchBindDnAsync() {
+  async getLdapSearchBindDn() {
     const setting = await this.collections.settings.findOneAsync({ _id: "ldapSearchBindDn" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapSearchBindPassword() {
-    const setting = this.collections.settings.findOne({ _id: "ldapSearchBindPassword" });
-    return setting ? setting.value : "";  // empty if subscription is not ready.
-  },
-
-  async getLdapSearchBindPasswordAsync() {
+  async getLdapSearchBindPassword() {
     const setting = await this.collections.settings.findOneAsync({ _id: "ldapSearchBindPassword" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getLdapCaCert() {
-    const setting = this.collections.settings.findOne({ _id: "ldapCaCert" });
-    return setting ? setting.value : "";  // empty if subscription is not ready.
-  },
-
-  async getLdapCaCertAsync() {
+  async getLdapCaCert() {
     const setting = await this.collections.settings.findOneAsync({ _id: "ldapCaCert" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
@@ -2092,42 +2057,22 @@ _.extend(SandstormDb.prototype, {
     }
   },
 
-  getSamlEntryPoint() {
-    const setting = this.collections.settings.findOne({ _id: "samlEntryPoint" });
-    return setting ? setting.value : "";  // empty if subscription is not ready.
-  },
-
-  async getSamlEntryPointAsync() {
+  async getSamlEntryPoint() {
     const setting = await this.collections.settings.findOneAsync({ _id: "samlEntryPoint" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getSamlLogout() {
-    const setting = this.collections.settings.findOne({ _id: "samlLogout" });
-    return setting ? setting.value : "";  // empty if subscription is not ready.
-  },
-
-  async getSamlLogoutAsync() {
+  async getSamlLogout() {
     const setting = await this.collections.settings.findOneAsync({ _id: "samlLogout" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getSamlPublicCert() {
-    const setting = this.collections.settings.findOne({ _id: "samlPublicCert" });
-    return setting ? setting.value : "";  // empty if subscription is not ready.
-  },
-
-  async getSamlPublicCertAsync() {
+  async getSamlPublicCert() {
     const setting = await this.collections.settings.findOneAsync({ _id: "samlPublicCert" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getSamlEntityId() {
-    const setting = this.collections.settings.findOne({ _id: "samlEntityId" });
-    return setting ? setting.value : ""; // empty if subscription is not ready.
-  },
-
-  async getSamlEntityIdAsync() {
+  async getSamlEntityId() {
     const setting = await this.collections.settings.findOneAsync({ _id: "samlEntityId" });
     return setting ? setting.value : ""; // empty if subscription is not ready.
   },

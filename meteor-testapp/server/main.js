@@ -36,6 +36,9 @@ const bridge = conn.restore(null, SandstormHttpBridge);
 
 Meteor.startup(() => {
   Meteor.methods({
+    getServerRuntime() {
+      return process.env.SERVER_RUNTIME;
+    },
     schedule(objectId) {
       bridge.getSandstormApi().api.schedule(
         { defaultText: 'test job' },

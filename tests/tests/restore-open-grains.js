@@ -36,7 +36,7 @@ module.exports["Test restore open grains"] = function (browser) {
   browser
     .loginDevAccount()
     // Create three Hacker CMS grains.
-    .installApp("http://sandstorm.io/apps/ssjekyll8.spk",
+    .installApp("https://dl.sandstorm.org/testapps/ssjekyll8.spk",
                 "ca690ad886bf920026f8b876c19539c1",
                 hackerCmsAppId)
     .waitForElementVisible("#grainTitle", medium_wait)

@@ -35,7 +35,7 @@ module.exports["Test Powerbox"] = function (browser) {
   browser
     .init()
     .loginDevAccount()
-    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
+    .installApp("https://dl.sandstorm.org/testapps/sandstorm-powerbox-test-app4.spk",
                 "f855d3c96e18e785a3a734a49919ef18",
                 "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
     .assert.textContains("#grainTitle", "Untitled PowerboxTest")
@@ -68,7 +68,7 @@ module.exports["Test PowerboxSave"] = function (browser) {
     browser
     .init()
     .loginDevAccount()
-    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
+    .installApp("https://dl.sandstorm.org/testapps/sandstorm-powerbox-test-app4.spk",
                 "f855d3c96e18e785a3a734a49919ef18",
                 "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
     .assert.textContains("#grainTitle", "Untitled PowerboxTest")
@@ -101,7 +101,7 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
   browser
     .init()
     .loginDevAccount()
-    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
+    .installApp("https://dl.sandstorm.org/testapps/sandstorm-powerbox-test-app4.spk",
                 "f855d3c96e18e785a3a734a49919ef18",
                 "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
     .assert.textContains("#grainTitle", "Untitled PowerboxTest")
@@ -181,7 +181,7 @@ module.exports["Test Powerbox query"] = function (browser) {
     // Install another app that we can match against. This can be any app other than
     // test-app.spk -- I'm only using the old test app here because it's probably already
     // downloaded.
-    .installApp("http://sandstorm.io/apps/david/sandstorm-powerbox-test-app4.spk",
+    .installApp("https://dl.sandstorm.org/testapps/sandstorm-powerbox-test-app4.spk",
                 "f855d3c96e18e785a3a734a49919ef18",
                 "ygpudg61w49gg0x1t2gw4p7q2q7us24gxsyr1as1hf0ezn2uycth")
     .url(function (otherGrainUrl) {

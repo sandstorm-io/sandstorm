@@ -33,7 +33,7 @@ module.exports["Install"] = function (browser) {
   browser
     .init()
     .loginDevAccount()
-    .installApp("http://sandstorm.io/apps/jparyani/background-test-0.spk", "dbed78d1ef5ed4a4f8193e829672623e", "duvq9t519fdcpetkk2s1axe1hdy91zc5svhzas2yfqpn8df9cd40")
+    .installApp("https://dl.sandstorm.org/testapps/background-test-0.spk", "dbed78d1ef5ed4a4f8193e829672623e", "duvq9t519fdcpetkk2s1axe1hdy91zc5svhzas2yfqpn8df9cd40")
     .assert.textContains("#grainTitle", "Untitled SandstormTest");
 };
 
@@ -62,7 +62,7 @@ module.exports["Install Wakelock Dropper"] = function (browser) {
   browser
     .init()
     .loginDevAccount()
-    .installApp("http://sandstorm.io/apps/jparyani/background-test-drop-wakelock-1.spk", "963745fa41d602dfc7467cac2e1597b5", "duvq9t519fdcpetkk2s1axe1hdy91zc5svhzas2yfqpn8df9cd40")
+    .installApp("https://dl.sandstorm.org/testapps/background-test-drop-wakelock-1.spk", "963745fa41d602dfc7467cac2e1597b5", "duvq9t519fdcpetkk2s1axe1hdy91zc5svhzas2yfqpn8df9cd40")
     .assert.textContains("#grainTitle", "Untitled SandstormTest");
 };
 

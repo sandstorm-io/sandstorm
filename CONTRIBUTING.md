@@ -4,9 +4,9 @@ So you want to contribute to Sandstorm. Awesome! This document will help you get
 
 ## Talk to us!
 
-Before you start making changes to Sandstorm, you should join [the sandstorm-dev mailing list](https://groups.google.com/group/sandstorm-dev) and tell us what you're up to. We might be able to give you tips or warn you if someone is already working on the same thing.
+Before you start making changes to Sandstorm, you should join [the sandstorm-dev mailing list](https://groups.io/g/sandstorm-dev-group) and tell us what you're up to. We might be able to give you tips or warn you if someone is already working on the same thing.
 
-You can also [chat with us on IRC](https://kiwiirc.com/client/irc.libera.chat/?channel=#sandstorm) at #sandstorm on libera.chat -- but don't be discouraged if no one answers; sometimes we're busy. :)
+You can also [chat with us on Zulip](https://sandstorm.zulipchat.com) -- but don't be discouraged if no one answers; sometimes we're busy. :)
 
 ## Non-code contributions
 
@@ -20,7 +20,7 @@ To learn how to set up a dev environment and hack on the code, check out the doc
 
 Here are a list of projects and smaller tasks that YOU can do to help Sandstorm!
 
-If you'd like to work on one of these tasks, [join the sandstorm-dev mailing list](https://groups.google.com/group/sandstorm-dev) and let us know! We'll let you know if anyone else is already working on the task and help you figure out what to do.
+If you'd like to work on one of these tasks, [join the sandstorm-dev mailing list](https://groups.io/g/sandstorm-dev-group) and let us know! We'll let you know if anyone else is already working on the task and help you figure out what to do.
 
 ### Apps!
 
@@ -33,7 +33,7 @@ on the issue tracker.
 
 We need help translating the Sandstorm interface into multiple languages.
 
-The easiest way to help is to write translation tables for your language. Check out the [shell/i18n](https://github.com/sandstorm-io/sandstorm/tree/master/shell/i18n) directory to see existing tables. To add support for your language, start by copying en.i18n.json, then go through and change each piece of text to your own language. Check out the [Dutch translation](https://github.com/sandstorm-io/sandstorm/pull/2999) for an example. Don't forget to check with [the sandstorm-dev mailing list](https://groups.google.com/group/sandstorm-dev) before you start, to see if anyone else is already working on the same language.
+The easiest way to help is to write translation tables for your language. Check out the [shell/i18n](https://github.com/sandstorm-io/sandstorm/tree/master/shell/i18n) directory to see existing tables. To add support for your language, start by copying en.i18n.json, then go through and change each piece of text to your own language. Check out the [Dutch translation](https://github.com/sandstorm-io/sandstorm/pull/2999) for an example. Don't forget to check with [the sandstorm-dev mailing list](https://groups.io/g/sandstorm-dev-group) before you start, to see if anyone else is already working on the same language.
 
 As a more advanced project, we also need help improving our i18n framework.
 

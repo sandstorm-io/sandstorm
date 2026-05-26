@@ -24,7 +24,7 @@ var utils = require("../utils"),
 
 var COLLECTIONS_APP_ID = "s3u2xgmqwznz2n3apf30sm3gw1d85y029enw5pymx734cnk5n78h";
 var COLLECTIONS_PACKAGE_ID = "e9408a7c077f7a9baeb9c02f0437ae40";
-var COLLECTIONS_PACKAGE_URL = "https://sandstorm.io/apps/david/collections3.spk";
+var COLLECTIONS_PACKAGE_URL = "https://dl.sandstorm.org/testapps/collections3.spk";
 
 module.exports = {};
 

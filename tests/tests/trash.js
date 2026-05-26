@@ -36,7 +36,7 @@ module.exports["Test grain trash"] = function (browser) {
 
   browser
     .loginDevAccount()
-    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
+    .installApp("https://dl.sandstorm.org/testapps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
                 hackerCmsAppId)
     .getDevName(function (result) {
       firstUserName = result.value;
@@ -167,7 +167,7 @@ module.exports["Test topbar trash button"] = function (browser) {
       browser.execute("window.Meteor.logout()")
       browser
         .loginDevAccount(devName1)
-        .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
+        .installApp("https://dl.sandstorm.org/testapps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
                     hackerCmsAppId)
         .waitForElementVisible("#grainTitle", medium_wait)
         .assert.textContains("#grainTitle", expectedHackerCMSGrainTitle)

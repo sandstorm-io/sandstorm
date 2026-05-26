@@ -31,7 +31,7 @@ var IP_INTERFACE_TEST_PORT = parseInt(process.env.IP_INTERFACE_TEST_PORT, 10) ||
 module.exports["Test Ip Networking"] = function (browser) {
   browser
     .loginDevAccount(null, true)
-    .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-11.spk",
+    .installApp("https://dl.sandstorm.org/testapps/test-11.spk",
                 "9e431ec70f1ee66901bb73f48687f485",
                 "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh")
     .assert.textContains("#grainTitle", "Untitled Test App test page")
@@ -55,7 +55,7 @@ module.exports["Test Ip Networking"] = function (browser) {
 module.exports["Test Ip Interface"] = function (browser) {
   browser
     .loginDevAccount(null, true)
-    .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-11.spk",
+    .installApp("https://dl.sandstorm.org/testapps/test-11.spk",
                 "9e431ec70f1ee66901bb73f48687f485",
                 "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh")
     .assert.textContains("#grainTitle", "Untitled Test App test page")

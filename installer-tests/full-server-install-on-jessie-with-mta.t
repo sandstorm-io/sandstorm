@@ -1,7 +1,7 @@
 Title: Ensure that Sandstorm installs OK when there is a MTA
 Vagrant-Box: jessie
 Precondition: sandstorm_not_installed
-Cleanup: uninstall_sandstorm
+Cleanup: uninstall_sandstorm_and_postfix
 
 $[run]sudo cat /proc/sys/kernel/unprivileged_userns_clone
 $[slow]0

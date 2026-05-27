@@ -121,5 +121,14 @@ const appIdReplacementList :List(AppIdReplacement) = [
 
   # ---- end WordPress entry ----
 
+  # ---- MediaWiki entry ----
+
+  (original = "p04q48xd2kgkystkrda5n77kdns6u569wnactgh904tf7s3vev70",
+   replacement = "yzsw82ka30zwtv4xvq6pkm71zdz19rwx7dgm5qvm5hvjudq8g0a0"),
+  # The original key was held by Ian Denhardt who passed away in 2023. This replacement key is held
+  # by Jacob Weisz in order to fix a bug in this release.
+
+  # ---- end MediaWiki entry ----
+
   # Add your entry here!
 ];

@@ -295,6 +295,28 @@ assert_running_as_root() {
   fi
 }
 
+assert_enough_disk_space() {
+  local SANDSTORM_CONF="${SANDSTORM_CONF:-/opt/sandstorm/sandstorm.conf}"
+  local SANDSTORM_DIR
+  SANDSTORM_DIR=$(dirname "$SANDSTORM_CONF")
+
+  # df -k reports available space in 1KB blocks; convert to GB for the comparison.
+  local AVAILABLE_KB
+  AVAILABLE_KB=$(df -k "$SANDSTORM_DIR" | awk 'NR==2 {print $4}')
+
+  local REQUIRED_KB=$((1024 * 1024))  # 1 GB in KB
+
+  if [ "$AVAILABLE_KB" -lt "$REQUIRED_KB" ]; then
+    local AVAILABLE_MB=$(( AVAILABLE_KB / 1024 ))
+    fail "E_INSUFFICIENT_DISK_SPACE" \
+      "Insufficient disk space on the Sandstorm volume ($SANDSTORM_DIR).
+Required:  1024 MB
+Available: ${AVAILABLE_MB} MB
+
+Please free up disk space before running this migration."
+  fi
+}
+
 assert_user_has_backed_up() {
   echo ""
   echo "*** IMPORTANT: DATABASE UPGRADE WARNING ***"
@@ -466,6 +488,7 @@ assert_on_terminal
 assert_dependencies
 assert_sandstorm_installed
 assert_running_as_root
+assert_enough_disk_space
 assert_user_has_backed_up
 assert_valid_bundle_file
 download_latest_bundle_if_needed

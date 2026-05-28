@@ -467,6 +467,42 @@
 {{/modalDialogWithBackdrop}}
 </template>
 
+<template name="adminLoginProviderConfigurePasskey">
+{{#modalDialogWithBackdrop onDismiss=onDismiss}}
+  {{#let txt="admin.identityProviders.adminIdentityProviderConfigurePasskey"}}
+  <h2>{{_ (con txt "title")}}</h2>
+
+  {{#if errorMessage}}
+    {{#focusingErrorBox}}
+      {{_ (con txt "error") errorMessage}}
+    {{/focusingErrorBox}}
+  {{/if}}
+
+  <form class="setup-idp-form">
+    <p>{{_ (con txt "explanation")}}</p>
+  </form>
+
+  <div class="idp-modal-button-row">
+    <button class="idp-modal-save">
+      {{#if passkeyEnabled}}
+      {{_ (con txt "saveButton")}}
+      {{else}}
+      {{_ (con txt "enableButton")}}
+      {{/if}}
+    </button>
+    <button class="idp-modal-cancel">
+      {{_ (con txt "cancelButton")}}
+    </button>
+    {{#if passkeyEnabled}}
+    <button class="idp-modal-disable">
+      {{_ (con txt "disableButton")}}
+    </button>
+    {{/if}}
+  </div>
+  {{/let}}
+{{/modalDialogWithBackdrop}}
+</template>
+
 <template name="adminLoginProviderTable">
 {{#let txt="admin.identityProviders.adminIdentityProviderTable"}}
 {{!-- Expects an empty data context. --}}

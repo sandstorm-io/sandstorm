@@ -32,7 +32,7 @@ import { GrainViewList } from "/imports/client/grain/grainview-list";
 
 Session.setDefault("shrink-navbar", false);
 // window.globalGrains is used by test code and must remain exported.
-globalGrains = new GrainViewList(globalDb);
+window.globalGrains = new GrainViewList(globalDb);
 
 // If Meteor._localStorage disappears, we'll have to write our own localStorage wrapper, I guess.
 // Using window.localStorage is dangerous because it throws an exception if cookies are disabled.

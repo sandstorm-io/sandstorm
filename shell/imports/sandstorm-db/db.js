@@ -187,6 +187,8 @@ Meteor.users.ensureIndexOnServer("services.google.id", { unique: 1, sparse: 1 })
 Meteor.users.ensureIndexOnServer("services.github.id", { unique: 1, sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.oidc.id", { sparse: 1 });
 Meteor.users.ensureIndexOnServer("suspended.willDelete", { sparse: 1 });
+Meteor.users.ensureIndexOnServer("services.passkey.keys.credentialId", { unique: 1, sparse: 1 });
+Meteor.users.ensureIndexOnServer("services.passkey.email", { sparse: 1 });
 
 const Packages = new Mongo.Collection("packages", collectionOptions);
 // Packages which are installed or downloading.

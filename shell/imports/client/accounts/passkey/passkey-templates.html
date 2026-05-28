@@ -1,0 +1,69 @@
+<template name="passkeyLoginForm">
+{{#let txt="accounts.loginButtons.passkeyLoginForm"}}
+  {{#if webAuthnSupported}}
+  <form class="passkey-login-form">
+    <label class="email">
+      {{_ (con txt "emailLabel")}}
+      <input name="email" type="email" autocomplete="username webauthn"
+             placeholder="{{_ (con txt "emailPlaceholder")}}">
+    </label>
+    <div class="button-box">
+      <button class="login email passkey" type="submit">{{_ (con txt "continueButton")}}</button>
+    </div>
+    {{#if passkeyError}}
+      <p class="error-message">{{passkeyError}}</p>
+    {{/if}}
+  </form>
+  {{/if}}
+{{/let}}
+</template>
+
+<template name="passkeyManagement">
+{{#let txt="accounts.accountSettings.passkey"}}
+  {{#if passkeyEnabled}}
+  <div class="passkey-management">
+    <h3 class="title-bar">{{_ (con txt "title")}}</h3>
+
+    {{#if passkeyError}}
+      {{#focusingErrorBox}}
+        {{passkeyError}}
+      {{/focusingErrorBox}}
+    {{/if}}
+
+    {{#if passkeySuccess}}
+      {{#focusingSuccessBox}}
+        {{passkeySuccess}}
+      {{/focusingSuccessBox}}
+    {{/if}}
+
+    {{#if passkeys.length}}
+    <ul class="passkey-list">
+      {{#each passkeys}}
+      <li class="passkey-item" data-credential-id="{{credentialId}}">
+        {{#if isRenaming}}
+          <input class="passkey-rename-input" type="text" value="{{friendlyName}}" maxlength="{{passkeyNameMaxLength}}">
+          <button class="passkey-rename-save">{{_ (con txt "saveButton")}}</button>
+          <button class="passkey-rename-cancel">{{_ (con txt "cancelButton")}}</button>
+        {{else}}
+          <span class="passkey-name">{{friendlyName}}</span>
+          <span class="passkey-meta">
+            {{_ (con txt "added")}} {{formatDate createdAt}}
+            {{#if lastUsedAt}}
+              · {{_ (con txt "lastUsed")}} {{formatDate lastUsedAt}}
+            {{/if}}
+          </span>
+          <button class="passkey-rename">{{_ (con txt "renameButton")}}</button>
+          <button class="passkey-remove">{{_ (con txt "removeButton")}}</button>
+        {{/if}}
+      </li>
+      {{/each}}
+    </ul>
+    {{else}}
+    <p>{{_ (con txt "noPasskeys")}}</p>
+    {{/if}}
+
+    <button class="passkey-add">{{_ (con txt "addButton")}}</button>
+  </div>
+  {{/if}}
+{{/let}}
+</template>

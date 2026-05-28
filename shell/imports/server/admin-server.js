@@ -36,7 +36,7 @@ import { createAcmeAccount, renewCertificateNow } from "/imports/server/acme";
 import { Issuer } from "openid-client";
 
 const publicAdminSettings = [
-  "google", "github", "ldap", "oidc", "saml", "emailToken", "splashUrl", "signupDialog",
+  "google", "github", "ldap", "oidc", "saml", "emailToken", "passkey", "splashUrl", "signupDialog",
   "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
   "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled",
   "serverTitle", "returnAddress", "ldapNameField", "organizationMembership",

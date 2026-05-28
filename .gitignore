@@ -84,3 +84,5 @@ deps/llvm-build
 
 # no npm in the root
 /package-lock.json
+CLAUDE.md
+.playwright-mcp/

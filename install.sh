@@ -1431,6 +1431,12 @@ make_runtime_directories() {
   # Make var directories.
   mkdir -p var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads}
 
+  # Fresh installs should initialize directly on MongoDB 7. Existing installs are rejected by
+  # choose_install_dir(), so this does not mark an old MongoDB 2.6 database as migrated.
+  if [ ! -e var/mongo/version ]; then
+    echo "7" > var/mongo/version
+  fi
+
   # Create useful symlinks.
   ln -sfT $BUILD_DIR latest
   ln -sfT latest/sandstorm sandstorm

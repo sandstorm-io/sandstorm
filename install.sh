@@ -535,6 +535,64 @@ __EOF__
   fi
 }
 
+maybe_install_apparmor_userns_profile() {
+  # Ubuntu 24.04 restricts unprivileged user namespaces through AppArmor by
+  # default. Give Sandstorm the userns permission.
+
+  if [ "yes" != "$CURRENTLY_UID_ZERO" ]; then
+    return
+  fi
+
+  if [ ! -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+    return
+  fi
+
+  if [ ! -d /etc/apparmor.d ]; then
+    return
+  fi
+
+  if ! which apparmor_parser > /dev/null; then
+    echo "NOTE: AppArmor restricts unprivileged user namespaces, but apparmor_parser was not found."
+    return
+  fi
+
+  local PROFILE_PATH="/etc/apparmor.d/sandstorm"
+  if ! cat > "$PROFILE_PATH" << __EOF__
+# Allow Sandstorm to create user namespaces on systems that restrict
+# unprivileged user namespaces through AppArmor.
+profile sandstorm ${DIR}/sandstorm flags=(unconfined) {
+  userns,
+}
+
+profile sandstorm-latest ${DIR}/latest/sandstorm flags=(unconfined) {
+  userns,
+}
+
+profile sandstorm-build ${DIR}/sandstorm-*/sandstorm flags=(unconfined) {
+  userns,
+}
+
+profile sandstorm-custom-build ${DIR}/sandstorm-custom.*/sandstorm flags=(unconfined) {
+  userns,
+}
+
+profile sandstorm-usr-local-bin /usr/local/bin/sandstorm flags=(unconfined) {
+  userns,
+}
+
+profile spk-usr-local-bin /usr/local/bin/spk flags=(unconfined) {
+  userns,
+}
+__EOF__
+  then
+    echo "NOTE: Could not install AppArmor profile for Sandstorm."
+    return
+  fi
+
+  apparmor_parser -r "$PROFILE_PATH" 2>/dev/null ||
+    echo "NOTE: Installed AppArmor profile for Sandstorm, but could not load it."
+}
+
 test_if_dev_tcp_works() {
   # In is_port_bound(), we prefer to use bash /dev/tcp to check if the port is bound. This is
   # available on most Linux distributions, but it is a compile-time flag for bash and at least
@@ -818,6 +876,9 @@ full_server_install() {
       echo "*** WARNING: Could not detect how to run Sandstorm at startup on your system. ***"
     else
       echo "* Configure Sandstorm to start on system boot (with $INIT_SYSTEM)"
+    fi
+    if [ -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+      echo "* Configure AppArmor to allow Sandstorm to create unprivileged user namespaces."
     fi
     echo "* Listen for inbound email on port ${PLANNED_SMTP_PORT}."
     echo ""
@@ -2129,6 +2190,7 @@ make_runtime_directories
 generate_admin_token
 set_permissions
 install_sandstorm_symlinks
+maybe_install_apparmor_userns_profile
 ask_about_starting_at_boot
 configure_start_at_boot_if_desired
 wait_for_server_bind_to_its_port

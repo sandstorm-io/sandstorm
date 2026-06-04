@@ -1,3 +1,14 @@
+### v0.309 (pending)
+- This is the first community release of Sandstorm. Thanks @kentonv for creating this project and the excellent stewardship of it over the years.
+- Most references to sandstorm.io have been changed to new infrastructure at sandstorm.org.
+- Meteor has been upgraded to 2.16, MongoDB has been upgraded to 7.0, and many other dependencies have been updated. The database migration must be run manually. (Thanks @mnutt.)
+- Sandstorm will now create an AppArmor profile when installing on servers which restrict userns by default, particularly modern versions of Ubuntu. (Thanks @mnutt.)
+- Long domains will now display in full in Powerbox requests, rather than being truncated. (Thanks @berbad.)
+- The signing key for the MediaWiki app has been replaced to transfer maintainership to @ocdtrekkie, as @zenhack was the sole holder of the previous key.
+- The Productivity Suite now includes EtherCalc instead of Rocket.Chat for new installations.
+- Sandstorm will suppress the user setup and guided tour when in development mode. (Thanks @mnutt.)
+- A new `SERVER_RUNTIME` environment variable is available to apps to determine which flavor of Sandstorm they are running on. (Thanks @mnutt.)
+
 ### v0.308 (2023-08-06)
 - Added Russian-language localization. (Thanks @troyjfarrell.)
 - Fixed broken links to the app market. (Thanks @zenhack. RIP.)

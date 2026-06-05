@@ -59,5 +59,7 @@ TOOLDIR=$(echo $TOOL_VERSION | tr @ /)
 
 echo " $TOOL_VERSION" >&2
 
-readlink -f $METEOR_WAREHOUSE_DIR/packages/$TOOLDIR/mt-os.linux.x86_64/dev_bundle > "$CACHE_FILE"
+echo -n "$TOOLDIR" >&2
+echo -n "$METEOR_WAREHOUSE_DIR/packages/$TOOLDIR/mt-os.linux.x86_64/dev_bundle" >&2
+echo "$METEOR_WAREHOUSE_DIR/packages/$TOOLDIR/mt-os.linux.x86_64/dev_bundle" > "$CACHE_FILE"
 cat "$CACHE_FILE"

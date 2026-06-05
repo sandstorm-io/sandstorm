@@ -21,7 +21,7 @@
                     "withoutAppDemo": "开始 »"
                 },
                 "explanation": "<p>沙聚云使您可以轻松地在自己的服务器上运行应用程序。除了改善隐私和控制之外, <a href=\"https://sandstorm.org/news/2014-07-21-open-source-web-apps-require-federated-hosting\" target=\"_blank\">这还使开源软件被更多人知晓。</a></p>",
-                "securityOverview": "<p>沙聚云也特安全。如果您对这个领域感兴趣，可以看看 <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">沙聚云的安全模型</a>。</p>"
+                "securityOverview": "<p>沙聚云也特安全。如果您对这个领域感兴趣，可以看看 <a href=\"https://docs.sandstorm.org/en/latest/developing/security-practices/\" target=\"_blank\">沙聚云的安全模型</a>。</p>"
             }
         },
         "notifications": {
@@ -525,8 +525,8 @@
         "admin": {
             "newAdmin": {
                 "title": "管理员控制台",
-                "wildcardHostBroken": "警告：本服务器的泛域名设置可能有误。在修复此问题前，您无法使用任何应用程序。请参照<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\">本篇沙聚云文件</a>和您浏览器的 Javascript 记录取得更多信息。您必须调整 DNS、SSL/TLS 证书，或编辑 sandstorm.conf 文件。如果您想要测试问题是否已修复，请重新整理此页面。如果您仍然有问题，请<a href=\"https://github.com/sandstorm-io/sandstorm/issues\">在此提出 issue</a>。",
-                "websocketBroken": "警告：本服务器似乎无法建立 WebSocket。沙聚云也许看起来没有问题，但许多应用程序会无法正常执行。<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\">更多信息在此。</a>通常这是因为上层的 reverse proxy （比如 nginx 或 Apache）需要被重新设定。如果您认为不是，请重新整理此页面或<a href=\"https://github.com/sandstorm-io/sandstorm/issues\">在此开一个 issue</a>。",
+                "wildcardHostBroken": "警告：本服务器的泛域名设置可能有误。在修复此问题前，您无法使用任何应用程序。请参照<a target=\"_blank\" href=\"https://docs.sandstorm.org/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\">本篇沙聚云文件</a>和您浏览器的 Javascript 记录取得更多信息。您必须调整 DNS、SSL/TLS 证书，或编辑 sandstorm.conf 文件。如果您想要测试问题是否已修复，请重新整理此页面。如果您仍然有问题，请<a href=\"https://github.com/sandstorm-io/sandstorm/issues\">在此提出 issue</a>。",
+                "websocketBroken": "警告：本服务器似乎无法建立 WebSocket。沙聚云也许看起来没有问题，但许多应用程序会无法正常执行。<a target=\"_blank\" href=\"https://docs.sandstorm.org/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\">更多信息在此。</a>通常这是因为上层的 reverse proxy （比如 nginx 或 Apache）需要被重新设定。如果您认为不是，请重新整理此页面或<a href=\"https://github.com/sandstorm-io/sandstorm/issues\">在此开一个 issue</a>。",
                 "hasSetupToken": "您并非以管理者身份登入，但您的设置 token 是正确的。您现在可以<a href=\"/setup\">启动设置精灵</a>或<a href=\"/admin/status\">检视系统记录</a>。",
                 "hasNoSetupToken": "您并非以管理者身份登入，无法使用管理面板。请以管理者身份登入，或在主机终端上执行`sandstorm admin-token`来取得管理 token。"
             },
@@ -750,7 +750,7 @@
                 },
                 "howItWorks": {
                     "title": "沙聚云使用电子邮件的方式",
-                    "explanation": "沙聚云可以发送电子邮件，而沙聚云里面的应用程序也可以发送邮件。每一款应用程序都有一个独一无二的地址，所以沙聚云需要通过不同的「发件人」地址发送邮件。因此，Gmail 是不可用的，但是有其它免费的服务可以做到。更多详见<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">文档</a>。"
+                    "explanation": "沙聚云可以发送电子邮件，而沙聚云里面的应用程序也可以发送邮件。每一款应用程序都有一个独一无二的地址，所以沙聚云需要通过不同的「发件人」地址发送邮件。因此，Gmail 是不可用的，但是有其它免费的服务可以做到。更多详见<a target=\"_blank\" href=\"https://docs.sandstorm.org/en/latest/administering/email/#outgoing-smtp\">文档</a>。"
                 },
                 "success": "已保存设置.",
                 "error": "以下设置保存更改失败: %s",
@@ -1719,7 +1719,7 @@
         "setupWizardEmailConfig": {
             "title": "邮件发送设置",
             "explanation": "沙聚云需要一个方式来发送邮件。你现在可以跳过这步（除非你在使用邮件登录），但是邮件类功能除非日后设置它，否则会不可用。",
-            "moreDetail": "<strong>沙聚云使用电子邮件的方式：</strong> 沙聚云可以发送电子邮件，而沙聚云里面的应用程序也可以发送邮件。每一款应用程序都有一个独一无二的地址，所以沙聚云需要通过不同的「发件人」地址发送邮件。因此，Gmail 是不可用的，但是有其它免费的服务可以做到。更多详见<a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">文档</a>。",
+            "moreDetail": "<strong>沙聚云使用电子邮件的方式：</strong> 沙聚云可以发送电子邮件，而沙聚云里面的应用程序也可以发送邮件。每一款应用程序都有一个独一无二的地址，所以沙聚云需要通过不同的「发件人」地址发送邮件。因此，Gmail 是不可用的，但是有其它免费的服务可以做到。更多详见<a target=\"_blank\" href=\"https://docs.sandstorm.org/en/latest/administering/email/#outgoing-smtp\">文档</a>。",
             "error": "以下设置保存更改失败: %s",
             "hostPort": {
                 "host": "SMTP 主机",

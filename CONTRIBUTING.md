@@ -10,11 +10,11 @@ You can also [chat with us on Zulip](https://sandstorm.zulipchat.com) -- but don
 
 ## Non-code contributions
 
-There are many ways to contribute without writing code. Check out the [Sandstorm community page](https://sandstorm.io/community) for some ideas. The rest of this document focuses on code, since this is the code repository.
+There are many ways to contribute without writing code. Check out the [Sandstorm community page](https://sandstorm.org/community) for some ideas. The rest of this document focuses on code, since this is the code repository.
 
 ## How to hack on the code
 
-To learn how to set up a dev environment and hack on the code, check out the documentation on [installing Sandstorm from source](https://docs.sandstorm.io/en/latest/install/#option-4-installing-from-source).
+To learn how to set up a dev environment and hack on the code, check out the documentation on [installing Sandstorm from source](https://docs.sandstorm.org/en/latest/install/#option-4-installing-from-source).
 
 ## What to work on
 
@@ -24,7 +24,7 @@ If you'd like to work on one of these tasks, [join the sandstorm-dev mailing lis
 
 ### Apps!
 
-The easiest way to help Sandstorm is to write and/or package apps! See [the developer hub in the Sandstorm documentation](https://docs.sandstorm.io/en/latest/developing/) for how to get started.
+The easiest way to help Sandstorm is to write and/or package apps! See [the developer hub in the Sandstorm documentation](https://docs.sandstorm.org/en/latest/developing/) for how to get started.
 
 If you want to package *something* but don't know what, look for [issues labeled "app-requests"](https://github.com/sandstorm-io/sandstorm/issues?q=is%3Aissue+is%3Aopen+label%3Aapp-requests)
 on the issue tracker.
@@ -121,7 +121,7 @@ We'd like to develop similar tools -- or maybe one combined tool -- which unders
 
 ### Documentation
 
-Sandstorm maintains detailed documentation at [docs.sandstorm.io](https://docs.sandstorm.io), which is generated from [a directory in the source tree](https://github.com/sandstorm-io/sandstorm/tree/master/docs).
+Sandstorm maintains detailed documentation at [docs.sandstorm.org](https://docs.sandstorm.org), which is generated from [the docs repository](https://github.com/sandstorm-org/docs).
 
 In theory, whenever someone adds a new feature to Sandstorm, they should add documentation.
 

@@ -7,7 +7,7 @@
 #
 # If `curl|bash` makes you uncomfortable, see other options here:
 #
-#     https://docs.sandstorm.io/en/latest/install/
+#     https://docs.sandstorm.org/en/latest/install/
 #
 # This script only modifies your system in the following ways:
 # - Install Sandstorm into the directory you choose, typically /opt/sandstorm.
@@ -458,7 +458,7 @@ assert_linux_x86_64() {
     fail "E_NON_LINUX" "Sandstorm requires Linux. If you want to run Sandstorm on a Windows or
 Mac system, you can use Vagrant or another virtualization tool. See our install documentation:
 
-- https://docs.sandstorm.io/en/latest/install/"
+- https://docs.sandstorm.org/en/latest/install/"
   fi
 
   if [ "$(uname -m)" != x86_64 ]; then
@@ -909,7 +909,7 @@ full_server_install() {
       echo "      without HTTPS. This makes sense if you're OK with typing the port number"
       echo "      into your browser whenever you access Sandstorm and you don't need"
       echo "      security. This also makes sense if you are going to set up a reverse proxy;"
-      echo "      if so, see https://docs.sandstorm.io/en/latest/administering/reverse-proxy/"
+      echo "      if so, see https://docs.sandstorm.org/en/latest/administering/reverse-proxy/"
       echo ""
       echo "      If you want, you can quit this script with Ctrl-C now, and go uninstall"
       echo "      your other web server, and then run this script again. It is also OK to"
@@ -1115,10 +1115,10 @@ choose_install_dir() {
     error "You seem to already have a ${DIR} directory with a Sandstorm installation inside. You should either:"
     error ""
     error "1. Reconfigure that Sandstorm install using its configuration file -- ${DIR}/sandstorm.conf -- or the admin interface. See docs at:"
-    error "https://docs.sandstorm.io/en/latest/administering/"
+    error "https://docs.sandstorm.org/en/latest/administering/"
     error ""
     error "2. Uninstall Sandstorm before attempting to perform a new install. Even if you created a sandcats.io hostname, it is safe to uninstall so long as you do not need the data in your Sandstorm install. When you re-install Sandstorm, you can follow a process to use the old hostname with the new install. See uninstall docs at:"
-    error "https://docs.sandstorm.io/en/latest/install/#uninstall"
+    error "https://docs.sandstorm.org/en/latest/install/#uninstall"
     error ""
     error "3. Use a different target directory for the new Sandstorm install. Try running install.sh with the -d option."
     error ""
@@ -1741,7 +1741,7 @@ sandcats_provide_help() {
   echo "You can:"
   echo ""
   echo "* Read more about it at:"
-  echo "  https://docs.sandstorm.io/en/latest/administering/sandcats/"
+  echo "  https://docs.sandstorm.org/en/latest/administering/sandcats/"
   echo ""
   echo "* Recover access to a domain you once registered with sandcats"
   echo ""

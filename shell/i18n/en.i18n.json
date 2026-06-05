@@ -21,7 +21,7 @@
           "withoutAppDemo": "Start »"
         },
         "explanation": "<p>Sandstorm makes it easy to run apps on your own server. In addition to improving privacy and control, <a href=\"https://sandstorm.org/news/2014-07-21-open-source-web-apps-require-federated-hosting\" target=\"_blank\">this brings Open Source apps to a wide audience.</a></p>",
-        "securityOverview": "<p>Sandstorm is also ridiculously secure. If security interests you, check out <a href=\"https://docs.sandstorm.io/en/latest/developing/security-practices/\" target=\"_blank\">Sandstorm's security model overview</a>.</p>"
+        "securityOverview": "<p>Sandstorm is also ridiculously secure. If security interests you, check out <a href=\"https://docs.sandstorm.org/en/latest/developing/security-practices/\" target=\"_blank\">Sandstorm's security model overview</a>.</p>"
       }
     },
     "notifications": {
@@ -558,8 +558,8 @@
     "admin": {
       "newAdmin": {
         "title": "Admin panel",
-        "wildcardHostBroken": "WARNING: This server seems to have its WILDCARD_HOST misconfigured.  Until you fix it, you will not be able to use any apps. You can read <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\"> more info in the Sandstorm docs</a> and in your browser's Javascript console. You'll need to adjust DNS, SSL/TLS certificates, or edit the sandstorm.conf file. If you see no information in the JS console, or wish to test if you have fixed the problem, reload this page to re-run the test. If you're still having problems, <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">please file an issue.</a>",
-        "websocketBroken": "WARNING: This server seems to be unable to create a WebSocket. Sandstorm may appear to run fine, but many apps will fail to run properly. <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\"> Learn more.</a>  Usually this is caused by a reverse proxy like nginx or Apache that needs to be reconfigured. If you think you are seeing this message in error, please reload this page or <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">file an issue.</a>",
+        "wildcardHostBroken": "WARNING: This server seems to have its WILDCARD_HOST misconfigured.  Until you fix it, you will not be able to use any apps. You can read <a target=\"_blank\" href=\"https://docs.sandstorm.org/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine\"> more info in the Sandstorm docs</a> and in your browser's Javascript console. You'll need to adjust DNS, SSL/TLS certificates, or edit the sandstorm.conf file. If you see no information in the JS console, or wish to test if you have fixed the problem, reload this page to re-run the test. If you're still having problems, <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">please file an issue.</a>",
+        "websocketBroken": "WARNING: This server seems to be unable to create a WebSocket. Sandstorm may appear to run fine, but many apps will fail to run properly. <a target=\"_blank\" href=\"https://docs.sandstorm.org/en/latest/administering/faq/#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload\"> Learn more.</a>  Usually this is caused by a reverse proxy like nginx or Apache that needs to be reconfigured. If you think you are seeing this message in error, please reload this page or <a href=\"https://github.com/sandstorm-io/sandstorm/issues\">file an issue.</a>",
         "hasSetupToken": "You are not logged in as an admin, but you do have a setup token. You can either <a href=\"/setup\">visit the setup wizard</a> or <a href=\"/admin/status\">view the system log</a>.",
         "hasNoSetupToken": "You are not logged in as an admin. To access the admin panel, log in as an admin user or generate a token from the command line by running `sandstorm admin-token`."
       },
@@ -807,7 +807,7 @@
         },
         "howItWorks": {
           "title": "How Sandstorm uses email",
-          "explanation": "Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too. Every app receives a unique email address, so Sandstorm needs to send email from a variety of \"From:\" addresses. Therefore, Gmail SMTP won't work, but there are other free services. See <a href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">more info in the docs</a>."
+          "explanation": "Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too. Every app receives a unique email address, so Sandstorm needs to send email from a variety of \"From:\" addresses. Therefore, Gmail SMTP won't work, but there are other free services. See <a href=\"https://docs.sandstorm.org/en/latest/administering/email/#outgoing-smtp\">more info in the docs</a>."
         },
         "success": "Saved changes.",
         "error": "Failed to save changes: %s",
@@ -1780,7 +1780,7 @@
     "setupWizardEmailConfig": {
       "title": "Email delivery",
       "explanation": "Sandstorm needs a way to send email.  You can skip this step (unless you're using email login), but email-related features will be unavailable until you configure email in the future.",
-      "moreDetail": "<strong>How Sandstorm uses email:</strong> Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too. Every app receives a unique email address, so Sandstorm needs to send email from a variety of \"From:\" addresses. Therefore, Gmail SMTP won't work, but there are other free services. See more info in <a target=\"_blank\" href=\"https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp\">the docs</a>.",
+      "moreDetail": "<strong>How Sandstorm uses email:</strong> Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too. Every app receives a unique email address, so Sandstorm needs to send email from a variety of \"From:\" addresses. Therefore, Gmail SMTP won't work, but there are other free services. See more info in <a target=\"_blank\" href=\"https://docs.sandstorm.org/en/latest/administering/email/#outgoing-smtp\">the docs</a>.",
       "error": "Failed to save changes: %s",
       "hostPort": {
         "host": "SMTP host",

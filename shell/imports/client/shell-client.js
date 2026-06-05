@@ -724,9 +724,9 @@ Meteor.startup(function () {
     console.log(
         "%cApp authors: To understand the grain-frame in Sandstorm and how to find " +
         "logs and perform troubleshooting, see: " +
-        "\n- https://docs.sandstorm.io/en/latest/developing/path/ " +
-        "\n- https://docs.sandstorm.io/en/latest/using/top-bar/ " +
-        "\n- https://docs.sandstorm.io/en/latest/developing/troubleshooting/ " +
+        "\n- https://docs.sandstorm.org/en/latest/developing/path/ " +
+        "\n- https://docs.sandstorm.org/en/latest/using/top-bar/ " +
+        "\n- https://docs.sandstorm.org/en/latest/developing/troubleshooting/ " +
         "\n" +
         "\nWhen debugging, make sure you execute Javascript " +
         "in the context of the 'grain-frame' IFRAME. References: " +

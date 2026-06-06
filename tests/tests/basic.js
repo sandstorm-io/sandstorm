@@ -17,8 +17,7 @@
 'use strict';
 
 var utils = require('../utils'),
-    short_wait = utils.short_wait,
-    run_xfail = utils.run_xfail;
+    short_wait = utils.short_wait;
 
 module.exports = {
   "Test title" : function (browser) {
@@ -35,14 +34,12 @@ module.exports = {
       .assert.textContains(".topbar .account>.show-popup", "TestingLogin")
       .end();
   },
-};
-if (run_xfail) {
-  // https://github.com/sandstorm-io/sandstorm/issues/3615
-  module.exports["Test demo login command"] = function (browser) {
+
+  "Test demo login command" : function (browser) {
     browser
       .loginDemo()
       .waitForElementVisible('.topbar .account>.show-popup', short_wait)
       .assert.textContains(".topbar .account>.show-popup", "Demo")
       .end();
-  };
-}
+  },
+};

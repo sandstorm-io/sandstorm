@@ -22,7 +22,7 @@ var utils = require('../utils'),
 
 exports.command = function(callback) {
   var ret = this
-    .url(this.launchUrl + "/demo")
+    .url(this.launch_url + "/demo")
     .execute('window.Meteor.logout()')
     .pause(short_wait)
     .waitForElementVisible(".demo-startup-modal .start", medium_wait)

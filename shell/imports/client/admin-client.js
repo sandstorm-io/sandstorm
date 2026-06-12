@@ -96,7 +96,7 @@ const newAdminRoute = RouteController.extend({
               "Look here in the JS console, above or below this text, for further " +
                 "details provided by your browser.  starting with selftest-*.");
             console.log(
-              "See also docs: https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine");
+              "See also docs: https://docs.sandstorm.org/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine");
             console.log(
               "Slow DNS or intermittent Internet connectivity can cause this message " +
                 "to appear unnecessarily; in that case, reloading the page should make " +

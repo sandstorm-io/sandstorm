@@ -60,7 +60,7 @@
 - Updated icon font generator to modern code (it had been stuck on an old version for a while). Please report if any icons look wrong. (Thanks @griff.)
 
 ### v0.290 (2021-10-23)
-- The installer now supports many more options in non-interactive mode. [More info in the docs.](https://docs.sandstorm.io/en/latest/administering/install-script/) (Thanks @garrison.)
+- The installer now supports many more options in non-interactive mode. [More info in the docs.](https://docs.sandstorm.org/en/latest/administering/install-script/) (Thanks @garrison.)
 - Some places which had hard-coded apps.sandstorm.io as the app market URL have now been fixed to use the app market configured by the server administrator. (Thanks @gischer.)
 - Sandstorm now sets the header `Referrer-Policy: same-origin` when serving app UIs, so that clicking on a link from an app does not leak the app's randomly-generated hostname to the destination server. (Thanks @garrison.)
 
@@ -197,7 +197,7 @@
 - Internationalized "mass transfers" page, and translated to Finnish. Thanks to Laurie "xet7" Ojansivu for this change.
 - Tweaked systemd unit file (only affects new installs).
 - Typo fixes.
-- Many documentation improvements (on [docs.sandstorm.io](https://docs.sandstorm.io)).
+- Many documentation improvements (on [docs.sandstorm.org](https://docs.sandstorm.org)).
 
 ### v0.259 (2020-02-01)
 - Disabled ability to upgrade demo accounts to full accounts on private servers, so that we can change the Sandstorm demo over to run on Alpha.
@@ -987,7 +987,7 @@
 - This is a cherry-pick release -- no other changes merged in the last week are included.
 
 ### v0.117 (2015-09-30)
-- Self-hosters using Sandcats now get automatic free HTTPS certificates. This is normally set up automatically during install. If you first installed before this release, [see the docs to find out how to enable HTTPS](https://docs.sandstorm.io/en/latest/administering/ssl/).
+- Self-hosters using Sandcats now get automatic free HTTPS certificates. This is normally set up automatically during install. If you first installed before this release, [see the docs to find out how to enable HTTPS](https://docs.sandstorm.org/en/latest/administering/ssl/).
 
 ### v0.116 (2015-09-29)
 - (Probably) fix very rare bug in which front-end stops talking to back-end causing grains to fail to load until the next front-end restart. The bug was in node-capnp's use of libuv. [EDIT: Did not fix problem. :(]

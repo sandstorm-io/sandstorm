@@ -436,7 +436,7 @@ test-app-dev: tmp/.ekam-run
 
 $(METEOR_SPK):
 	@$(call color,downloading meteor-spk)
-	@curl https://dl.sandstorm.io/meteor-spk-$(METEOR_SPK_VERSION).tar.xz | tar Jxf -
+	@curl https://dl.sandstorm.org/meteor-spk-$(METEOR_SPK_VERSION).tar.xz | tar Jxf -
 
 meteor-testapp-dev: $(METEOR_SPK)
 	cd meteor-testapp && PATH="$(PWD)/bin:$(PATH)" \

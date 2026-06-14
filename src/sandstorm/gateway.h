@@ -187,9 +187,11 @@ class GatewayTlsManager: private kj::TaskSet::ErrorHandler {
   // Manages TLS keys and connections.
 
 public:
-  GatewayTlsManager(kj::HttpServer& server, kj::NetworkAddress& smtpServer,
+  GatewayTlsManager(kj::HttpServer& server,
+                    kj::HttpServer& altPortServer,
+                    kj::NetworkAddress& smtpServer,
                     kj::Maybe<kj::StringPtr> privateKeyPassword)
-      : GatewayTlsManager(server, smtpServer, privateKeyPassword,
+      : GatewayTlsManager(server, altPortServer, smtpServer, privateKeyPassword,
                           kj::newPromiseAndFulfiller<void>()) {}
   // Password, if provided, must remain valid while GatewayTlsManager exists.
 
@@ -198,6 +200,8 @@ public:
   // the TLS conenction.
   //
   // No connections will be accepted until setKeys() has been called at least once.
+
+  kj::Promise<void> listenAltPortHttps(kj::ConnectionReceiver& port);
 
   kj::Promise<void> listenSmtp(kj::ConnectionReceiver& port);
   kj::Promise<void> listenSmtps(kj::ConnectionReceiver& port);
@@ -217,6 +221,7 @@ private:
   };
 
   kj::HttpServer& server;
+  kj::HttpServer& altPortServer;
   kj::NetworkAddress& smtpServer;
   kj::Maybe<kj::StringPtr> privateKeyPassword;
 
@@ -229,11 +234,15 @@ private:
 
   kj::TaskSet tasks;
 
-  GatewayTlsManager(kj::HttpServer& server, kj::NetworkAddress& smtpServer,
+  GatewayTlsManager(kj::HttpServer& server,
+                    kj::HttpServer& altPortServer,
+                    kj::NetworkAddress& smtpServer,
                     kj::Maybe<kj::StringPtr> privateKeyPassword,
                     kj::PromiseFulfillerPair<void> readyPaf);
 
   kj::Promise<void> listenLoop(kj::ConnectionReceiver& port);
+  kj::Promise<void> listenLoop(kj::ConnectionReceiver& port, kj::HttpServer& srv);
+  kj::Promise<void> listenAltPortLoop(kj::ConnectionReceiver& port);
   kj::Promise<void> listenSmtpLoop(kj::ConnectionReceiver& port);
   kj::Promise<void> listenSmtpsLoop(kj::ConnectionReceiver& port);
 

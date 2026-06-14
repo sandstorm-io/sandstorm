@@ -70,31 +70,17 @@ auto parser = p::sequence(delimited<' '>(assignment), p::discardWhitespace, p::e
 
 // =======================================================================================
 
-kj::Array<uint> parsePorts(kj::Maybe<uint> httpsPort, kj::StringPtr portList) {
-  auto portsSplitOnComma = split(portList, ',');
-  size_t numHttpPorts = portsSplitOnComma.size();
-  size_t numHttpsPorts;
-  kj::Array<uint> result;
-
-  // If the configuration has a https port, then add it first.
-  KJ_IF_MAYBE(portNumber, httpsPort) {
-    numHttpsPorts = 1;
-    result = kj::heapArray<uint>(numHttpsPorts + numHttpPorts);
-    result[0] = *portNumber;
-  } else {
-    numHttpsPorts = 0;
-    result = kj::heapArray<uint>(numHttpsPorts + numHttpPorts);
-  }
-
+kj::Array<uint> parsePortList(kj::StringPtr key, kj::StringPtr portListStr) {
+  auto portsSplitOnComma = split(portListStr, ',');
+  auto result = kj::heapArrayBuilder<uint>(portsSplitOnComma.size());
   for (size_t i = 0; i < portsSplitOnComma.size(); i++) {
     KJ_IF_MAYBE(portNumber, parseUInt(trim(portsSplitOnComma[i]), 10)) {
-      result[i + numHttpsPorts] = *portNumber;
+      result.add(*portNumber);
     } else {
-      KJ_FAIL_REQUIRE("invalid config value PORT", portList);
+      KJ_FAIL_REQUIRE("invalid config value ", key, portListStr);
     }
   }
-
-  return kj::mv(result);
+  return result.finish();
 }
 
 kj::Maybe<UserIds> getUserIds(kj::StringPtr name) {
@@ -170,10 +156,6 @@ Config readConfig(const char *path, bool parseUids) {
   config.uids.uid = getuid();
   config.uids.gid = getgid();
 
-  // Store the PORT and HTTPS_PORT values in variables here so we can
-  // process them at the end.
-  kj::Maybe<kj::String> maybePortValue = nullptr;
-
   auto lines = splitLines(readAll(path));
   for (auto& line: lines) {
     auto equalsPos = KJ_ASSERT_NONNULL(line.findFirst('='), "Invalid config line", line);
@@ -190,13 +172,9 @@ Config readConfig(const char *path, bool parseUids) {
         }
       }
     } else if (key == "HTTPS_PORT") {
-      KJ_IF_MAYBE(p, parseUInt(value, 10)) {
-        config.httpsPort = *p;
-      } else {
-        KJ_FAIL_REQUIRE("invalid config value HTTPS_PORT", value);
-      }
+      config.httpsPorts = parsePortList(key, value);
     } else if (key == "PORT") {
-        maybePortValue = kj::mv(value);
+      config.ports = parsePortList(key, value);
     } else if (key == "MONGO_PORT") {
       KJ_IF_MAYBE(p, parseUInt(value, 10)) {
         config.mongoPort = *p;
@@ -280,16 +258,16 @@ Config readConfig(const char *path, bool parseUids) {
     }
   }
 
-  // Now process the PORT setting, since the actual value in config.ports
-  // depends on if HTTPS_PORT was provided at any point in reading the
-  // config file.
-  //
-  // Outer KJ_IF_MAYBE so we only run this code if the config file contained
-  // a PORT= declaration.
-  KJ_IF_MAYBE(portValue, maybePortValue) {
-    auto ports = parsePorts(config.httpsPort, *portValue);
-    config.ports = kj::mv(ports);
+  // config.ports should actually include the HTTPS_PORTs as well
+  // (and they should come first):
+  auto allPorts = kj::heapArrayBuilder<uint>(config.ports.size() + config.httpsPorts.size());
+  for(uint port : config.httpsPorts) {
+    allPorts.add(port);
   }
+  for(uint port : config.ports) {
+    allPorts.add(port);
+  }
+  config.ports = allPorts.finish();
 
   return config;
 }

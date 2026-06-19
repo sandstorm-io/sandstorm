@@ -56,6 +56,14 @@ function writeErrorResponse(res, err) {
   res.end(err.htmlMessage || err.message);
 }
 
+function isServiceWorkerScriptRequest(req) {
+  // Service worker registrations fetch script URLs with a dedicated header.
+  if ((req.headers["service-worker"] || "").toLowerCase().trim() === "script") return true;
+
+  // Fetch Metadata also marks service worker script requests.
+  return (req.headers["sec-fetch-dest"] || "").toLowerCase().trim() === "serviceworker";
+}
+
 const PNG_MAGIC = new Buffer([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
 const JPEG_MAGIC = new Buffer([0xFF, 0xD8, 0xFF]);
 
@@ -287,6 +295,12 @@ Meteor.startup(() => {
   WebApp.httpServer.removeAllListeners("request");
   WebApp.httpServer.on("request", (req, res) => {
     Promise.resolve(undefined).then(() => {
+      if (isServiceWorkerScriptRequest(req)) {
+        res.writeHead(403, { "Content-Type": "text/plain" });
+        res.end("Service worker script requests are not allowed.");
+        return;
+      }
+
       if (!req.headers.host) {
         res.writeHead(400, { "Content-Type": "text/plain" });
         res.end("Missing Host header");

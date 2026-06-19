@@ -19,7 +19,7 @@
     @extend %app-details-widget;
   }
   >.newer-version, >.older-version {
-    background-color: darken($app-details-background-color, 10%);
+    background-color: color.adjust($app-details-background-color, $lightness: -10%);
     >p {
       >button {
         @extend %button-base;

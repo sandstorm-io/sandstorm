@@ -34,6 +34,7 @@ import { makeHackSessionContext } from "/imports/server/hack-session";
 import Crypto from "crypto";
 import Net from "net";
 import Url from "url";
+import Stream from "stream";
 import Capnp from "/imports/server/capnp";
 
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
@@ -45,15 +46,54 @@ const HOSTNAME = ROOT_URL.hostname;
 
 const RECIPIENT_LIMIT = 20;
 
+// smtp-server@1.x assigns to Writable.closed, but recent Node versions expose it as getter-only.
+// Add a no-op setter to keep legacy smtp-server compatible during Meteor 3 migration.
+const writableClosedDescriptor = Object.getOwnPropertyDescriptor(Stream.Writable.prototype, "closed");
+if (writableClosedDescriptor &&
+    writableClosedDescriptor.get &&
+    !writableClosedDescriptor.set &&
+    writableClosedDescriptor.configurable) {
+  Object.defineProperty(Stream.Writable.prototype, "closed", {
+    configurable: true,
+    enumerable: writableClosedDescriptor.enumerable,
+    get: writableClosedDescriptor.get,
+    set(value) {
+      this._sandstormWritableClosedCompat = value;
+    },
+  });
+}
+
+try {
+  const smtpStreamModule = Npm.require("smtp-server/lib/smtp-stream");
+  const SMTPStream = smtpStreamModule.SMTPStream || smtpStreamModule.default || smtpStreamModule;
+  if (SMTPStream && SMTPStream.prototype &&
+      !Object.getOwnPropertyDescriptor(SMTPStream.prototype, "closed")) {
+    Object.defineProperty(SMTPStream.prototype, "closed", {
+      configurable: true,
+      enumerable: false,
+      get() {
+        return !!this._sandstormSmtpStreamClosedCompat;
+      },
+      set(value) {
+        this._sandstormSmtpStreamClosedCompat = !!value;
+      },
+    });
+  }
+} catch (err) {
+  console.warn("Failed applying SMTPStream.closed compatibility shim:", err && err.message);
+}
+
 // Every day, reset all per-user sent counts to zero.
 // TODO(cleanup): Consider a more granular approach. For example, each user could have a timer
 //   after which their count will reset. We'd only check the timer when that user is trying to
 //   send a new message. This avoids a global query.
 if (!Meteor.settings.replicaNumber) {  // only first replica
   SandstormDb.periodicCleanup(86400000, () => {
-    Meteor.users.update({ dailySentMailCount: { $exists: true } },
-                        { $unset: { dailySentMailCount: "" } },
-                        { multi: true });
+    Meteor.users.updateAsync({ dailySentMailCount: { $exists: true } },
+                             { $unset: { dailySentMailCount: "" } },
+                             { multi: true }).catch((err) => {
+      console.error("Failed resetting dailySentMailCount:", err);
+    });
   });
 }
 
@@ -161,11 +201,12 @@ Meteor.startup(function () {
           // Wrap in a function so that we can call it recursively to retry.
           const tryDeliver = (retryCount) => {
             let grainId;
-            return inMeteor(() => {
-              const grain = globalDb.collections.grains.findOne({ publicId: publicId }, { fields: {} });
+            return inMeteor(async () => {
+              const grain = await globalDb.collections.grains.findOneAsync(
+                  { publicId: publicId }, { fields: {} });
               if (grain) {
                 grainId = grain._id;
-                return globalBackend.continueGrain(grainId, retryCount > 0);
+                return globalThis.globalBackend.continueGrain(grainId, retryCount > 0);
               } else {
                 // TODO(someday): We really ought to rig things up so that the 'RCPT TO' SMTP command
                 // fails in this case, by adding an onRcptTo() callback.
@@ -227,8 +268,8 @@ Meteor.startup(function () {
   }
 });
 
-hackSendEmail = (session, email) => {
-  return inMeteor((function () {
+globalThis.hackSendEmail = (session, email) => {
+  return inMeteor((async function () {
     let recipientCount = 0;
     recipientCount += email.to ? email.to.length : 0;
     recipientCount += email.cc ? email.cc.length : 0;
@@ -240,8 +281,8 @@ hackSendEmail = (session, email) => {
           "Please feel free to contact us if this is a problem for you.");
     }
 
-    const grainAddress = session._getAddress();
-    const userAddress = session._getUserAddress();
+    const grainAddress = await session._getAddress();
+    const userAddress = await session._getUserAddress();
 
     // Overwrite the 'from' address with the grain's address.
     if (!email.from) {
@@ -312,11 +353,11 @@ hackSendEmail = (session, email) => {
       options.attachments = attachments;
     }
 
-    const grain = globalDb.collections.grains.findOne(session.grainId);
+    const grain = await globalDb.collections.grains.findOneAsync(session.grainId);
     if (!grain) throw new Error("Grain does not exist.");
-    globalDb.incrementDailySentMailCount(grain.userId);
+    await globalDb.incrementDailySentMailCount(grain.userId);
 
-    rawSend(options);
+    await rawSend(options);
   }).bind(this)).catch((err) => {
     console.error("Error sending e-mail:", err.stack);
     throw err;
@@ -335,7 +376,7 @@ class EmailVerifierImpl extends PersistentImpl {
   }
 
   verifyEmail(tabId, verification) {
-    return unwrapFrontendCap(verification, "verifiedEmail", (verification) => {
+    return globalThis.unwrapFrontendCap(verification, "verifiedEmail", (verification) => {
       if (verification.tabId !== tabId.toString("hex")) {
         throw new Error("VerifiedEmail is from a different tab");
       }
@@ -360,7 +401,7 @@ class VerifiedEmailImpl extends PersistentImpl {
   }
 }
 
-function getVerifiedEmails(db, userId, verifierId) {
+async function getVerifiedEmails(db, userId, verifierId) {
   // Get all of the email addresses verified as belonging to the given user using the given
   // verifier.
 
@@ -368,7 +409,7 @@ function getVerifiedEmails(db, userId, verifierId) {
   let couldAddAnother = true;
 
   if (verifierId) {
-    const verifier = db.collections.apiTokens.findOne(
+    const verifier = await db.collections.apiTokens.findOneAsync(
         { "frontendRef.emailVerifier.id": verifierId });
     if (!verifier) return []; // invalid verifier
     const verifierInfo = verifier.frontendRef.emailVerifier;
@@ -381,12 +422,16 @@ function getVerifiedEmails(db, userId, verifierId) {
     }
   }
 
-  const user = Meteor.users.findOne(userId);
+  const user = await Meteor.users.findOneAsync(userId);
   const emails = {};  // map address -> true, for uniquification
 
-  Meteor.users.find({ _id: { $in: SandstormDb.getUserCredentialIds(user) } }).forEach(credential => {
+  const credentials = await Meteor.users.find({
+    _id: { $in: SandstormDb.getUserCredentialIds(user) },
+  }).fetchAsync();
+  const ldapEmailField = await db.getLdapEmailFieldAsync();
+  credentials.forEach(credential => {
     if (!services || services[SandstormDb.getServiceName(credential)]) {
-      SandstormDb.getVerifiedEmailsForCredential(credential)
+      SandstormDb.getVerifiedEmailsForCredential(credential, ldapEmailField)
           .forEach(email => { emails[email.email] = true; });
     }
   });
@@ -397,7 +442,7 @@ function getVerifiedEmails(db, userId, verifierId) {
 // TODO(cleanup): Meteor.startup() needed because 00-startup.js runs *after* code in subdirectories
 //   (ugh).
 Meteor.startup(() => {
-  globalFrontendRefRegistry.register({
+  globalThis.globalFrontendRefRegistry.register({
     frontendRefField: "emailVerifier",
     typeId: EmailRpc.EmailVerifier.typeId,
 
@@ -406,7 +451,7 @@ Meteor.startup(() => {
                                   EmailImpl.PersistentEmailVerifier);
     },
 
-    validate(db, session, value) {
+    async validate(db, session, value) {
       check(value, { services: Match.Optional([String]) });
 
       const services = value.services;
@@ -450,7 +495,7 @@ Meteor.startup(() => {
     },
   });
 
-  globalFrontendRefRegistry.register({
+  globalThis.globalFrontendRefRegistry.register({
     frontendRefField: "verifiedEmail",
     typeId: EmailRpc.VerifiedEmail.typeId,
 
@@ -459,7 +504,7 @@ Meteor.startup(() => {
                                   EmailImpl.PersistentVerifiedEmail);
     },
 
-    validate(db, session, value) {
+    async validate(db, session, value) {
       check(value, { verifierId: Match.Optional(String), address: String });
 
       if (!session.userId) {
@@ -468,7 +513,8 @@ Meteor.startup(() => {
 
       // Verify that the address actually belongs to the user.
 
-      if (!_.contains(getVerifiedEmails(db, session.userId, value.verifierId).emails,
+      const verifiedEmails = await getVerifiedEmails(db, session.userId, value.verifierId);
+      if (!_.contains(verifiedEmails.emails,
                       value.address)) {
         throw new Meteor.Error(403, "User has no such verified address");
       }
@@ -488,10 +534,10 @@ Meteor.startup(() => {
       };
     },
 
-    query(db, userId, value) {
+    async query(db, userId, value) {
       const verifierId = value &&
            Capnp.parse(EmailRpc.VerifiedEmail.PowerboxTag, value).verifierId.toString("base64");
-      const verified = getVerifiedEmails(db, userId, verifierId);
+      const verified = await getVerifiedEmails(db, userId, verifierId);
       const result = verified.emails.map(address => ({
         _id: "email-" + address,
         frontendRef: { verifiedEmail: { verifierId, address } },

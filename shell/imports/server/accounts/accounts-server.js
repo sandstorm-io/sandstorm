@@ -30,7 +30,7 @@ const ValidHandle = Match.Where(function (handle) {
   return !!handle.match(/^[a-z_][a-z0-9_]*$/);
 });
 
-Accounts.onCreateUser(function (options, user) {
+Accounts.onCreateUser(async function (options, user) {
   if (!user.type) {
     if (user.loginCredentials) throw new Error("please set user.type");
 
@@ -66,13 +66,13 @@ Accounts.onCreateUser(function (options, user) {
 
     user.profile = options.profile;
 
-    globalDb.preinstallAppsForUser(user._id);
+    await globalDb.preinstallAppsForUser(user._id);
 
     return user;
   }
 
-  if (globalDb.getOrganizationDisallowGuests() &&
-      !globalDb.isCredentialInOrganization(user)) {
+  if (await globalDb.getOrganizationDisallowGuestsAsync() &&
+      !await globalDb.isCredentialInOrganizationAsync(user)) {
     throw new Meteor.Error(400, "User not in organization.");
   }
 
@@ -97,10 +97,13 @@ Accounts.onCreateUser(function (options, user) {
   // Try downloading avatar.
   const url = userPictureUrl(user);
   if (url) {
-    const assetId = fetchPicture(globalDb, url);
-    if (assetId) {
-      user.profile.picture = assetId;
-    }
+    const newUserId = user._id;
+    Meteor.defer(async () => {
+      const assetId = await fetchPicture(globalDb, url);
+      if (assetId) {
+        await Meteor.users.updateAsync({ _id: newUserId }, { $set: { "profile.picture": assetId } });
+      }
+    });
   }
 
   let serviceUserId;
@@ -149,13 +152,14 @@ Accounts.onCreateUser(function (options, user) {
   return user;
 });
 
-Accounts.validateLoginAttempt(function (attempt) {
+export async function validateSandstormLoginAttempt(attempt) {
   if (!attempt.allowed) {
     return false;
   }
 
   const db = attempt.connection.sandstormDb;
   const user = attempt.user;
+  if (!user) return false;
 
   if (user.suspended && user.suspended.admin) {
     throw new Meteor.Error(403, "User has been suspended. Please contact the administrator " +
@@ -164,18 +168,20 @@ Accounts.validateLoginAttempt(function (attempt) {
 
   if (user.loginCredentials) {
     // it's an account
-    if (db.getOrganizationDisallowGuests() &&
-        !db.isUserInOrganization(user)) {
+    if (await db.getOrganizationDisallowGuestsAsync() &&
+        !await db.isUserInOrganizationAsync(user)) {
       throw new Meteor.Error(403, "User not in organization.");
     }
 
-    db.updateUserQuota(user); // This is a no-op if settings aren't enabled
+    await db.updateUserQuota(user); // This is a no-op if settings aren't enabled
   } else {
-    if (db.getOrganizationDisallowGuests() &&
-        !db.isCredentialInOrganization(user)) {
+    if (await db.getOrganizationDisallowGuestsAsync() &&
+        !await db.isCredentialInOrganizationAsync(user)) {
       throw new Meteor.Error(403, "User not in organization.");
     }
   }
 
   return true;
-});
+}
+
+Accounts.validateLoginAttempt(validateSandstormLoginAttempt);

@@ -1,5 +1,5 @@
 import { Meteor } from "meteor/meteor";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 
 import { loginWithSaml } from "/imports/client/accounts/saml/saml-client";
 

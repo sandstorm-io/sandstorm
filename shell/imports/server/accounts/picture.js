@@ -1,4 +1,4 @@
-import { HTTP } from "meteor/http";
+import { httpCallAsync } from "/imports/http-helpers";
 
 const userPictureUrl = function (user) {
   if (user.services && !(user.profile && user.profile.picture)) {
@@ -21,9 +21,9 @@ const userPictureUrl = function (user) {
   }
 };
 
-const fetchPicture = function (db, url) {
+const fetchPicture = async function (db, url) {
   try {
-    const result = HTTP.get(url, {
+    const result = await httpCallAsync("GET", url, {
       npmRequestOptions: { encoding: null },
       timeout: 5000,
     });
@@ -41,7 +41,7 @@ const fetchPicture = function (db, url) {
       metadata.encoding = enc;
     }
 
-    return db.addStaticAsset(metadata, result.content);
+    return await db.addStaticAsset(metadata, result.content);
   } catch (err) {
     console.error("failed to fetch user profile picture:", url, err.stack);
   }

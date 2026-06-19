@@ -25,7 +25,7 @@ import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
 import { Accounts } from "meteor/accounts-base";
 import { _ } from "meteor/underscore";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 
 import {
   loginWithEmailToken,
@@ -38,6 +38,7 @@ import { loginWithOidc } from "/imports/oidc/oidc-client";
 import AccountsUi from "/imports/client/accounts/accounts-ui";
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
+import { coerceTemplateText } from "/imports/shared/template-values";
 
 // for convenience
 const loginButtonsSession = Accounts._loginButtonsSession;
@@ -259,7 +260,8 @@ const loginWithToken = function (email, token) {
 
 Template.loginButtonsDialog.helpers({
   labelOrFallback() {
-    if (this.label) return this.label;
+    const label = coerceTemplateText(this && this.label);
+    if (label) return label;
     return Meteor.settings.public.allowUninvited ? "Create account" : "Sign in";
   },
 

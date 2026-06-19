@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { inMeteor, waitPromise } from "/imports/server/async-helpers";
+import { inMeteor } from "/imports/server/async-helpers";
 import Crypto from "crypto";
 import Dns from "dns";
 
@@ -40,38 +40,47 @@ const Powerbox = Capnp.importSystem("sandstorm/powerbox.capnp");
 const SESSION_PROXY_TIMEOUT = 60000;
 const DNS_CACHE_TTL_SECONDS = 30;
 
-currentTlsKeysCallback = null;
+globalThis.currentTlsKeysCallback = null;
 
 // If this is Blackrock and we started up within one hour of a scheduled maintenance, we want to
 // stagger startup of grains in order to give the back-end time to warm up.
 const processStartTime = Date.now();
-const maintenanceTime = globalDb.getSetting("adminAlertTime");
-const useStagedStartup =
-    ("replicaNumber" in Meteor.settings) &&  // is Blackrock?
-    maintenanceTime &&
-    maintenanceTime.getTime() <= processStartTime &&
-    maintenanceTime.getTime() + 3600000 > processStartTime;
+let useStagedStartup = false;
 
 const WARMUP_TIME = 600000;    // 10 minutes
 const WARMUP_MULTIPLE = 1024;  // Start out accepting 1/1024 of requests, warm exponentially
 const WARMUP_RATE = Math.log(WARMUP_MULTIPLE) / WARMUP_TIME;
 
-if (useStagedStartup) {
-  console.log("*** starting up during maintenance window; applying slow warm-up");
+if ("replicaNumber" in Meteor.settings) {  // is Blackrock?
+  globalDb.getSettingAsync("adminAlertTime").then((maintenanceTime) => {
+    useStagedStartup =
+        !!maintenanceTime &&
+        maintenanceTime.getTime() <= processStartTime &&
+        maintenanceTime.getTime() + 3600000 > processStartTime;
 
-  // Automatically clear maintenance message after warmup time.
-  Meteor.setTimeout(() => {
-    console.log("*** warm-up complete");
-    globalDb.collections.settings.upsert({ _id: "adminAlertTime" }, { value: null });
-  }, WARMUP_TIME);
+    if (useStagedStartup) {
+      console.log("*** starting up during maintenance window; applying slow warm-up");
+
+      // Automatically clear maintenance message after warmup time.
+      Meteor.setTimeout(() => {
+        console.log("*** warm-up complete");
+        globalDb.collections.settings.upsertAsync({ _id: "adminAlertTime" }, { value: null })
+          .catch((err) => {
+            console.error("Failed clearing adminAlertTime after warmup:", err);
+          });
+      }, WARMUP_TIME);
+    }
+  }).catch((err) => {
+    console.error("Failed to load adminAlertTime for staged startup:", err);
+  });
 }
 
-function awaitRateLimit(type, hexId, userId) {
+async function awaitRateLimit(type, hexId, userId) {
   if (!useStagedStartup) return;
   let now = Date.now() - processStartTime;
   if (now > 256000 || now < 0) return;
 
-  if (userId && (Meteor.users.findOne(userId) || {}).isAdmin) return;
+  if (userId && ((await Meteor.users.findOneAsync(userId)) || {}).isAdmin) return;
 
   // Calculate fraction at which this grain should start.
   let threshold = parseInt(hexId.slice(-4), 16) % WARMUP_MULTIPLE;
@@ -83,7 +92,7 @@ function awaitRateLimit(type, hexId, userId) {
   if (!waitTime || waitTime < 0) return;
 
   console.log(`${type} ${hexId}: warmup wait ${waitTime} ms`);
-  new Promise(resolve => setTimeout(resolve, waitTime)).await();
+  await new Promise(resolve => setTimeout(resolve, waitTime));
   console.log(`${type} ${hexId}: warmup wait done`);
 }
 
@@ -125,7 +134,7 @@ function boolListToBuffer(bools) {
   return buf;
 }
 
-function validateWebkey(apiToken, refreshedExpiration) {
+async function validateWebkey(apiToken, refreshedExpiration) {
   // Validates that `apiToken` is a valid UiView webkey, throwing an exception if it is not. If
   // `refreshedExpiration` is set and if the token has an `expiresIfUnused` field, then the
   // `expiresIfUnused` field is reset to `refreshedExpiration`.
@@ -151,10 +160,12 @@ function validateWebkey(apiToken, refreshedExpiration) {
     if (apiToken.expiresIfUnused.getTime() <= Date.now()) {
       throw new Meteor.Error(403, "Authorization token expired");
     } else if (refreshedExpiration) {
-      globalDb.collections.apiTokens.update(apiToken._id, { $set: { expiresIfUnused: refreshedExpiration } });
+      await globalDb.collections.apiTokens.updateAsync(
+          apiToken._id, { $set: { expiresIfUnused: refreshedExpiration } });
     } else {
       // It's getting used now, so clear the expiresIfUnused field.
-      globalDb.collections.apiTokens.update(apiToken._id, { $set: { expiresIfUnused: null } });
+      await globalDb.collections.apiTokens.updateAsync(
+          apiToken._id, { $set: { expiresIfUnused: null } });
     }
   }
 
@@ -163,13 +174,13 @@ function validateWebkey(apiToken, refreshedExpiration) {
   }
 }
 
-function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId, observer) {
-  if (!accountId && globalDb.getOrganizationDisallowGuests()) {
+async function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId, observer) {
+  if (!accountId && await globalDb.getOrganizationDisallowGuestsAsync()) {
     throw new Meteor.Error("no-guests", "server doesn't allow guest access");
   }
   // TODO(now): Observe the "no-guests" policy and revoke if it is turned on.
 
-  const grain = globalDb.collections.grains.findOne(grainId);
+  const grain = await globalDb.collections.grains.findOneAsync(grainId);
   if (!grain) {
     throw new Meteor.Error("no-such-grain", "grain has been deleted");
   } else if (grain.trashed) {
@@ -180,9 +191,9 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId,
   // TODO(now): Observe the grain lookup to see if it becomes trashed or suspended, or if it
   //   switches from old to new sharing model.
 
-  let pkg = globalDb.collections.packages.findOne(grain.packageId);
+  let pkg = await globalDb.collections.packages.findOneAsync(grain.packageId);
   if (!pkg || pkg.status !== "ready") {
-    let devapp = globalDb.collections.devPackages.findOne({appId: grain.appId});
+    let devapp = await globalDb.collections.devPackages.findOneAsync({appId: grain.appId});
     if (!devapp) {
       let err = new Meteor.Error("missing-package", "grain's package is not installed");
       err.missingPackageId = grain.packageId;
@@ -194,9 +205,9 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId,
   if (accountId) {
     // If accountId is non-null, we're revealing identity. But if we didn't compute the identity ID
     // yet, we need to do that now.
-    identityId = identityId || globalDb.getOrGenerateIdentityId(accountId, grain);
+    identityId = identityId || await globalDb.getOrGenerateIdentityId(accountId, grain);
 
-    const user = Meteor.users.findOne({ _id: accountId });
+    const user = await Meteor.users.findOneAsync({ _id: accountId });
     if (!user) {
       throw new Error("user account deleted");
     }
@@ -213,7 +224,7 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId,
       displayName: { defaultText: user.profile.name },
       preferredHandle: user.profile.handle,
       identityId: new Buffer(identityId, "hex"),
-      identity: makeIdentity(user._id, [idCapRequirement]),
+      identity: globalThis.makeIdentity(user._id, [idCapRequirement]),
       pictureUrl: user.profile.pictureUrl,
       pronouns: user.profile.pronoun || undefined,
     };
@@ -227,12 +238,12 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId,
   // Verify that we have permission to start up this grain. We can't do the full permission
   // check until we've obtained the grain's ViewInfo, which requires starting it, so we have to
   // check for permission to start the grain first.
-  if (!SandstormPermissions.mayOpenGrain(globalDb, vertex)) {
+  if (!(await SandstormPermissions.mayOpenGrainAsync(globalDb, vertex))) {
     throw new Meteor.Error("access-denied", "access denied");
   }
 
   let uiView;
-  const viewInfo = globalBackend.useGrain(grainId, supervisor => {
+  const viewInfo = await globalThis.globalBackend.useGrain(grainId, supervisor => {
     uiView = supervisor.getMainView().view;
     return uiView.getViewInfo();
   }).catch(error => {
@@ -245,29 +256,36 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId,
     } else {
       throw error;
     }
-  }).await();
+  });
 
   if (viewInfo) {
     const cachedViewInfo = _.omit(viewInfo, "appTitle", "grainIcon");
-    globalDb.collections.grains.update(grainId, { $set: { cachedViewInfo: cachedViewInfo } });
+    await globalDb.collections.grains.updateAsync(grainId, { $set: { cachedViewInfo: cachedViewInfo } });
   }
 
-  const permissionsResult = SandstormPermissions.grainPermissions(
+  const permissionsResult = await SandstormPermissions.grainPermissionsAsync(
       globalDb, vertex, viewInfo || {}, observer.invalidate.bind(observer));
 
   if (permissionsResult.observeHandle) {
-    observer.whenRevoked(permissionsResult.observeHandle.stop
-        .bind(permissionsResult.observeHandle))
+    observer.whenRevoked(() => {
+      Promise.resolve(permissionsResult.observeHandle).then((h) => {
+        if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+      }).catch((err) => {
+        console.error("Failed to stop grain permissions observer:", err);
+      });
+    });
   }
 
   if (!permissionsResult.permissions) {
     throw new Meteor.Error("access-denied", "access denied");
   }
 
-  globalBackend.updateLastActive(grainId, accountId);
+  globalThis.globalBackend.updateLastActive(grainId, accountId).catch((err) => {
+    console.error("Failed updating lastActive for grain session:", err);
+  });
 
   if (sessionId) {
-    globalDb.collections.sessions.update({
+    await globalDb.collections.sessions.updateAsync({
       _id: sessionId,
     }, {
       $set: {
@@ -286,18 +304,32 @@ function getUiViewAndUserInfo(grainId, vertex, accountId, identityId, sessionId,
 class GatewayRouterImpl {
   openUiSession(sessionId, params) {
     const observer = new PermissionsObserver();
-    return inMeteor(() => {
+    return inMeteor(async () => {
       // We need to know both when this session appears and when it disappears.
-      const session = new Promise((resolve, reject) => {
-        const sessionObserver = globalDb.collections.sessions.find({ _id: sessionId }).observe({
+      const session = await new Promise((resolve, reject) => {
+        let sessionObserver = null;
+        const stopSessionObserver = () => {
+          Promise.resolve(sessionObserver).then((h) => {
+            if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+          }).catch((err) => {
+            console.error("Failed to stop session observer on revocation:", err);
+          });
+        };
+        globalDb.collections.sessions.find({ _id: sessionId }).observeAsync({
           added(session) {
             resolve(session);
           },
           removed() {
             observer.invalidate();
           }
+        }).then((h) => {
+          sessionObserver = h;
+        }).catch((err) => {
+          reject(err);
         });
-        observer.whenRevoked(() => sessionObserver.stop());
+        observer.whenRevoked(() => {
+          stopSessionObserver();
+        });
 
         // Due to race conditions, the session may not exist yet when we receive a request to open
         // it. We'll block for a limited time waiting for it.
@@ -314,9 +346,9 @@ class GatewayRouterImpl {
               "bug and describe the circumstances of the error."));
         }, SESSION_PROXY_TIMEOUT);
         observer.whenRevoked(() => Meteor.clearTimeout(task));
-      }).await();
+      });
 
-      awaitRateLimit("UI", sessionId, session.userId);
+      await awaitRateLimit("UI", sessionId, session.userId);
 
       // If the session has no identityId, then it's an incognito session. It may still have a
       // userId, but that should be ignored.
@@ -324,14 +356,14 @@ class GatewayRouterImpl {
 
       let vertex;
       if (session.hashedToken) {
-        const tokenInfo = globalDb.collections.apiTokens.findOne(session.hashedToken);
-        validateWebkey(tokenInfo);
+        const tokenInfo = await globalDb.collections.apiTokens.findOneAsync(session.hashedToken);
+        await validateWebkey(tokenInfo);
         vertex = { token: { _id: session.hashedToken, grainId: session.grainId } };
       } else {
         vertex = { grain: { _id: session.grainId, accountId: actingAccountId } };
       }
 
-      const { uiView, userInfo } = getUiViewAndUserInfo(
+      const { uiView, userInfo } = await getUiViewAndUserInfo(
           session.grainId, vertex, actingAccountId, session.identityId, sessionId, observer);
 
       const serializedParams = Capnp.serialize(WebSession.Params, params);
@@ -340,12 +372,12 @@ class GatewayRouterImpl {
       const sessionContext = makeHackSessionContext(
           session.grainId, sessionId, actingAccountId, session.tabId);
       if (session.powerboxRequest) {
-        rawSession = uiView.newRequestSession(userInfo, sessionContext,
+        rawSession = (await uiView.newRequestSession(userInfo, sessionContext,
              WebSession.typeId, serializedParams, session.powerboxRequest.descriptors,
-             new Buffer(session.tabId, "hex")).session;
+             new Buffer(session.tabId, "hex"))).session;
       } else {
-        rawSession = uiView.newSession(userInfo, sessionContext,
-             WebSession.typeId, serializedParams, new Buffer(session.tabId, "hex")).session;
+        rawSession = (await uiView.newSession(userInfo, sessionContext,
+             WebSession.typeId, serializedParams, new Buffer(session.tabId, "hex"))).session;
       }
 
       let persistent = rawSession.castAs(SystemPersistent);
@@ -366,7 +398,7 @@ class GatewayRouterImpl {
       if (session.denied) {
         // Apparently access was denied in the past, but this time it succeded, so remove the error
         // message.
-        globalDb.collections.sessions.update({ _id: sessionId }, { $unset: { denied: "" } });
+        await globalDb.collections.sessions.updateAsync({ _id: sessionId }, { $unset: { denied: "" } });
       }
 
       return {
@@ -374,8 +406,9 @@ class GatewayRouterImpl {
         loadingIndicator: {
           close() {
             if (!hasLoaded) {
-              inMeteor(() => {
-                globalDb.collections.sessions.update({ _id: sessionId }, { $set: { hasLoaded: true } });
+              inMeteor(async () => {
+                await globalDb.collections.sessions.updateAsync(
+                    { _id: sessionId }, { $set: { hasLoaded: true } });
               });
             }
             hasLoaded = true;
@@ -390,9 +423,19 @@ class GatewayRouterImpl {
         if (err.missingPackageId) {
           fields.missingPackageId = err.missingPackageId;
         }
-        globalDb.collections.sessions.update({ _id: sessionId }, { $set: fields });
+        globalDb.collections.sessions.updateAsync({ _id: sessionId }, { $set: fields }).catch((updateErr) => {
+          console.error("Failed updating denied session state:", updateErr);
+        });
+        return {
+          session: makeErrorSession(err),
+          loadingIndicator: { close() {} },
+          parentOrigin: process.env.ROOT_URL,
+        };
       } else {
-        globalDb.collections.sessions.update({ _id: sessionId }, { $set: { hasLoaded: true } });
+        globalDb.collections.sessions.updateAsync(
+            { _id: sessionId }, { $set: { hasLoaded: true } }).catch((updateErr) => {
+          console.error("Failed updating hasLoaded session state:", updateErr);
+        });
         console.error(err.stack);
       }
       throw err;
@@ -401,13 +444,13 @@ class GatewayRouterImpl {
 
   openApiSession(apiToken, params) {
     const observer = new PermissionsObserver();
-    return inMeteor(() => {
+    return inMeteor(async () => {
       const hashedToken = Crypto.createHash("sha256").update(apiToken).digest("base64");
       const tabId = Crypto.createHash("sha256").update("tab:").update(hashedToken)
           .digest("hex").slice(0, 32);
 
-      const tokenInfo = globalDb.collections.apiTokens.findOne(hashedToken);
-      validateWebkey(tokenInfo);
+      const tokenInfo = await globalDb.collections.apiTokens.findOneAsync(hashedToken);
+      await validateWebkey(tokenInfo);
 
       if (tokenInfo.expires) {
         const timer = setTimeout(() => observer.invalidate(),
@@ -415,12 +458,12 @@ class GatewayRouterImpl {
         observer.whenRevoked(() => clearTimeout(timer));
       }
 
-      awaitRateLimit("API", tabId, !tokenInfo.forSharing && tokenInfo.accountId);
+      await awaitRateLimit("API", tabId, !tokenInfo.forSharing && tokenInfo.accountId);
 
       const grainId = tokenInfo.grainId;
       const actingAccountId = tokenInfo.forSharing ? null : tokenInfo.accountId;
 
-      const { uiView, userInfo } = getUiViewAndUserInfo(
+      const { uiView, userInfo } = await getUiViewAndUserInfo(
           grainId, { token: tokenInfo }, actingAccountId, null, null, observer);
 
       const serializedParams = Capnp.serialize(ApiSession.Params, params);
@@ -428,8 +471,8 @@ class GatewayRouterImpl {
       let rawSession;
       const sessionContext = makeHackSessionContext(grainId, null, actingAccountId, tabId);
       try {
-        rawSession = uiView.newSession(userInfo, sessionContext,
-           ApiSession.typeId, serializedParams, new Buffer(tabId, "hex")).await().session;
+        rawSession = (await uiView.newSession(userInfo, sessionContext,
+           ApiSession.typeId, serializedParams, new Buffer(tabId, "hex"))).session;
       } catch (err) {
         // If the app doesn't explicitly support ApiSession, fall back to WebSession for
         // backwards compatibility. Some really old apps require a parseable basePath, so we supply
@@ -439,8 +482,8 @@ class GatewayRouterImpl {
         const serializedWebParams = Capnp.serialize(WebSession.Params, {
           basePath: "https://sandbox"
         });
-        rawSession = uiView.newSession(userInfo, sessionContext,
-             WebSession.typeId, serializedWebParams, new Buffer(tabId, "hex")).session;
+        rawSession = (await uiView.newSession(userInfo, sessionContext,
+             WebSession.typeId, serializedWebParams, new Buffer(tabId, "hex"))).session;
       }
 
       // TODO(security): List the token's validity as a requirement here, in case save()
@@ -468,16 +511,16 @@ class GatewayRouterImpl {
   }
 
   keepaliveApiToken(apiToken, durationMs) {
-    return inMeteor(() => {
+    return inMeteor(async () => {
       const hashedToken = Crypto.createHash("sha256").update(apiToken).digest("base64");
-      const tokenInfo = globalDb.collections.apiTokens.findOne(hashedToken);
-      validateWebkey(tokenInfo, new Date(Date.now() + durationMs));
+      const tokenInfo = await globalDb.collections.apiTokens.findOneAsync(hashedToken);
+      await validateWebkey(tokenInfo, new Date(Date.now() + durationMs));
     });
   }
 
   getApiHostResource(hostId, path) {
-    return inMeteor(() => {
-      const host = globalDb.collections.apiHosts.findOne(hostId);
+    return inMeteor(async () => {
+      const host = await globalDb.collections.apiHosts.findOneAsync(hostId);
       if (!host) return {}
 
       const resource = (host.resources || {})[SandstormDb.escapeMongoKey(path)];
@@ -491,14 +534,14 @@ class GatewayRouterImpl {
   }
 
   getApiHostOptions(hostId) {
-    return inMeteor(() => {
-      const host = globalDb.collections.apiHosts.findOne(hostId);
+    return inMeteor(async () => {
+      const host = await globalDb.collections.apiHosts.findOneAsync(hostId);
       return (host && host.options) || {};
     });
   }
 
   subscribeTlsKeys(callback) {
-    currentTlsKeysCallback = callback;
+    globalThis.currentTlsKeysCallback = callback;
 
     return new Promise((resolve, reject) => {
       inMeteor(() => {
@@ -506,9 +549,13 @@ class GatewayRouterImpl {
           callback.setKeys(key, certChain).catch(err => {
             if (err.kjType === "disconnected") {
               // Client will reconnect.
-              observer.stop();
-              if (currentTlsKeysCallback == callback) {
-                currentTlsKeysCallback = null;
+              Promise.resolve(observer).then((h) => {
+                if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
+              }).catch((stopErr) => {
+                console.error("Failed to stop TLS keys observer:", stopErr);
+              });
+              if (globalThis.currentTlsKeysCallback == callback) {
+                globalThis.currentTlsKeysCallback = null;
               }
             } else {
               console.error("registering new TLS keys failed", err);
@@ -518,8 +565,9 @@ class GatewayRouterImpl {
 
         let anyAdded = false;
 
-        const observer = globalDb.collections.settings.find({_id: "tlsKeys"})
-            .observe({
+        let observer = null;
+        globalDb.collections.settings.find({_id: "tlsKeys"})
+            .observeAsync({
           added(keys) {
             setKeys(keys.value.key, keys.value.certChain);
             anyAdded = true;
@@ -541,22 +589,26 @@ class GatewayRouterImpl {
           //
           // GC is terrible.
           dontGcMe: resolve
+        }).then((h) => {
+          observer = h;
+          if (!anyAdded) {
+            // Inform gateway that there are no keys.
+            setKeys(null, null);
+          }
+        }).catch((err) => {
+          console.error("Failed to observe tlsKeys for gateway callback registration:", err);
         });
-
-        if (!anyAdded) {
-          // Inform gateway that there are no keys.
-          setKeys(null, null);
-        }
       });
     });
   }
 
   getStaticPublishingHost(publicId) {
-    return inMeteor(() => {
-      const grain = globalDb.collections.grains.findOne({ publicId: publicId }, { fields: { _id: 1 } });
+    return inMeteor(async () => {
+      const grain = await globalDb.collections.grains.findOneAsync(
+          { publicId: publicId }, { fields: { _id: 1 } });
       if (grain) {
-        awaitRateLimit("WWW", publicId, grain.userId);
-        return globalBackend.useGrain(grain._id, supervisor => {
+        await awaitRateLimit("WWW", publicId, grain.userId);
+        return globalThis.globalBackend.useGrain(grain._id, supervisor => {
           return supervisor.keepAlive().then(() => { return { supervisor }; });
         });
       } else {
@@ -566,8 +618,9 @@ class GatewayRouterImpl {
   }
 
   routeForeignHostname(hostname) {
-    return inMeteor(() => {
-      if (globalDb.hostIsStandalone(hostname)) {
+    return inMeteor(async () => {
+      const standaloneDomain = await globalDb.collections.standaloneDomains.findOneAsync({ _id: hostname });
+      if (standaloneDomain) {
         return { info: { standalone: null, ttlSeconds: DNS_CACHE_TTL_SECONDS } };
       }
 
@@ -662,7 +715,7 @@ function makeErrorSession(err) {
 // =======================================================================================
 // Session management from Meteor client
 
-function storeReferralProgramInfoApiTokenCreated(db, accountId, apiTokenAccountId) {
+async function storeReferralProgramInfoApiTokenCreated(db, accountId, apiTokenAccountId) {
   // From the Referral program's perspective, if Bob's Account has no referredByComplete, then we
   // update Bob's Account to say it's referredBy Alice's Account (which is apiTokenAccountId).
   check(accountId, String);
@@ -676,20 +729,20 @@ function storeReferralProgramInfoApiTokenCreated(db, accountId, apiTokenAccountI
   const aliceAccountId = apiTokenAccountId;
   const bobAccountId = accountId;
 
-  if (Meteor.users.find({
+  if (await Meteor.users.find({
     _id: bobAccountId,
     referredByComplete: { $exists: true },
-  }).count() > 0) {
+  }).countAsync() > 0) {
     return;
   }
 
   // Only actually update Bob's Account ID if there is no referredBy.
-  Meteor.users.update(
+  await Meteor.users.updateAsync(
     { _id: bobAccountId, referredBy: { $exists: false } },
     { $set: { referredBy: aliceAccountId } });
 }
 
-function referralProgramLogSharingTokenUse(db, bobAccountId) {
+async function referralProgramLogSharingTokenUse(db, bobAccountId) {
   // Hooray! The sharing token is valid! Someone (let's call them Charlie) is going to get a UiView
   // to this grain!  This means that the user who created this apiToken knows how to use the 'share
   // access' interface. Let's call them Bob.
@@ -712,7 +765,7 @@ function referralProgramLogSharingTokenUse(db, bobAccountId) {
     return;
   }
 
-  const bobAccount = Meteor.users.findOne({ _id: bobAccountId });
+  const bobAccount = await Meteor.users.findOneAsync({ _id: bobAccountId });
 
   // Bail out if Bob is already a complete referral.
   if (bobAccount.referredByComplete) {
@@ -728,7 +781,7 @@ function referralProgramLogSharingTokenUse(db, bobAccountId) {
 
   // Store Bob's Account.referralCompletedBy.
   const now = new Date();
-  Meteor.users.update({
+  await Meteor.users.updateAsync({
     _id: bobAccountId,
     referredBy: { $exists: true },
     referredByComplete: { $exists: false },
@@ -742,7 +795,7 @@ function referralProgramLogSharingTokenUse(db, bobAccountId) {
   });
 
   // Update Alice's Account.referredAccountIds.
-  Meteor.users.update({ _id: aliceAccountId }, {
+  await Meteor.users.updateAsync({ _id: aliceAccountId }, {
     $push: { referredAccountIds: bobAccountId },
   });
 }
@@ -758,12 +811,12 @@ const Hex256 = Match.Where(function(str){
   return /^[0-9a-f]{64}$/.test(str);
 });
 
-function getSharersTitle(db, grain, tokenInfo) {
+async function getSharersTitle(db, grain, tokenInfo) {
   if (grain && grain.userId === tokenInfo.accountId) {
     return grain.title;
   } else {
     const sharerToken = tokenInfo.accountId &&
-        db.collections.apiTokens.findOne({
+        await db.collections.apiTokens.findOneAsync({
           grainId: tokenInfo.grainId,
           "owner.user.accountId": tokenInfo.accountId,
         }, {
@@ -779,7 +832,31 @@ function getSharersTitle(db, grain, tokenInfo) {
   }
 }
 
-function createSession(db, userId, sessionId, options) {
+async function resolveSessionAccountUserId(userId) {
+  if (!userId) return null;
+
+  // Prefer linked account rows even for legacy users with missing/ambiguous `type`.
+  const linkedAccount = await Meteor.users.findOneAsync({
+    type: "account",
+    $or: [
+      { "loginCredentials.id": userId },
+      { "nonloginCredentials.id": userId },
+    ],
+  }, { fields: { _id: 1 } });
+  if (linkedAccount) return linkedAccount._id;
+
+  const user = await Meteor.users.findOneAsync({ _id: userId }, { fields: { type: 1 } });
+  if (!user) return userId;
+  if (user.type === "account") return userId;
+
+  // When logged in as a credential, session permissions should still be evaluated
+  // against the owning account.
+  const account = await Meteor.users.findOneAsync(
+      { type: "account", "loginCredentials.id": userId }, { fields: { _id: 1 } });
+  return (account && account._id) || userId;
+}
+
+async function createSession(db, userId, sessionId, options) {
   let grainId = options.grainId;
   let token = options.token;
 
@@ -807,29 +884,30 @@ function createSession(db, userId, sessionId, options) {
   if (token) {
     session.hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
 
-    const tokenInfo = db.collections.apiTokens.findOne(session.hashedToken);
+    const tokenInfo = await db.collections.apiTokens.findOneAsync(session.hashedToken);
     if (!tokenInfo) {
       throw new Meteor.Error(404, "no such token");
     }
 
     session.grainId = grainId = tokenInfo.grainId;
-    grain = globalDb.collections.grains.findOne(grainId);
+    grain = await globalDb.collections.grains.findOneAsync(grainId);
 
-    session.sharersTitle = getSharersTitle(db, grain, tokenInfo);
+    session.sharersTitle = await getSharersTitle(db, grain, tokenInfo);
 
     // Apply referral program.
     if (tokenInfo.accountId) {
-      referralProgramLogSharingTokenUse(db, tokenInfo.accountId);
+      await referralProgramLogSharingTokenUse(db, tokenInfo.accountId);
     }
   }
 
   if (userId) {
+    const accountUserId = await resolveSessionAccountUserId(userId);
     // TODO(cleanup): Can we stop setting userId on the session if we're not revealing identity?
-    session.userId = userId;
+    session.userId = accountUserId;
     if (options.revealIdentity) {
-      grain = grain || globalDb.collections.grains.findOne(grainId);
+      grain = grain || await globalDb.collections.grains.findOneAsync(grainId);
       if (grain) {
-        session.identityId = db.getOrGenerateIdentityId(userId, grain);
+        session.identityId = await db.getOrGenerateIdentityId(accountUserId, grain);
       } else {
         // The session will error out later.
       }
@@ -845,8 +923,7 @@ function createSession(db, userId, sessionId, options) {
     };
   }
 
-  globalDb.collections.sessions.insert(session);
-
+  await globalDb.collections.sessions.insertAsync(session);
   return session;
 }
 
@@ -854,19 +931,54 @@ function createSession(db, userId, sessionId, options) {
 const TIMEOUT_MS = 180000;
 SandstormDb.periodicCleanup(TIMEOUT_MS, () => {
   const now = new Date().getTime();
-  globalDb.collections.sessions.remove({ timestamp: { $lt: (now - TIMEOUT_MS) } });
+  globalDb.collections.sessions.removeAsync({ timestamp: { $lt: (now - TIMEOUT_MS) } })
+    .catch((err) => {
+      console.error("Failed to cleanup expired sessions:", err);
+    });
 });
 
-function bumpSession(sessionId) {
-  const session = globalDb.collections.sessions.findOne(sessionId);
+async function bumpSession(sessionId) {
+  const session = await globalDb.collections.sessions.findOneAsync(sessionId);
   if (session) {
-    globalDb.collections.sessions.update({ _id: sessionId },
+    await globalDb.collections.sessions.updateAsync({ _id: sessionId },
         { $set: { timestamp: new Date().getTime() } });
-    globalBackend.updateLastActive(session.grainId, session.userId);
+    globalThis.globalBackend.updateLastActive(session.grainId, session.userId).catch((err) => {
+      console.error("Failed updating last active in bumpSession:", err);
+    });
   }
 }
 
-Meteor.publish("sessions", function (sessionId, options) {
+async function maybeUpgradeSessionIdentity(db, sessionId, currentUserId, options) {
+  if (!currentUserId || !options || !options.revealIdentity) return;
+  const accountUserId = await resolveSessionAccountUserId(currentUserId);
+
+  const session = await globalDb.collections.sessions.findOneAsync(sessionId);
+  if (!session) return;
+
+  if (session.hashedToken) {
+    if (!options.token) return;
+    const hashedToken = Crypto.createHash("sha256").update(options.token).digest("base64");
+    if (hashedToken !== session.hashedToken) return;
+  } else if (options.grainId !== session.grainId) {
+    return;
+  }
+
+  if (session.userId && session.userId !== accountUserId) return;
+
+  // Sessions can be created before login state settles; if revealIdentity is requested,
+  // keep the persisted session aligned with the current account user.
+  if (session.userId === accountUserId && session.identityId) return;
+
+  const grain = await globalDb.collections.grains.findOneAsync(session.grainId);
+  if (!grain) return;
+
+  const identityId = await db.getOrGenerateIdentityId(accountUserId, grain);
+  await globalDb.collections.sessions.updateAsync(
+      { _id: sessionId },
+      { $set: { userId: accountUserId, identityId } });
+}
+
+Meteor.publish("sessions", async function (sessionId, options) {
   // This subscription not only subscribes to the session record, but also creates the session if
   // necessary using the parameters.
   //
@@ -901,11 +1013,11 @@ Meteor.publish("sessions", function (sessionId, options) {
   const query = db.collections.sessions.find({ _id: sessionId },
       { fields: { powerboxRequest: 0 } });
 
-  if (query.count() == 0) {
+  if (await query.countAsync() == 0) {
     if (options) {
       // This subscription is intended to create the session.
       try {
-        createSession(db, this.userId, sessionId, options);
+        await createSession(db, this.userId, sessionId, options);
       } catch (err) {
         this.added("sessions", sessionId, {
           denied: (err instanceof Meteor.Error) ? err.error : "internal-error"
@@ -913,11 +1025,20 @@ Meteor.publish("sessions", function (sessionId, options) {
       }
     }
   } else {
-    bumpSession(sessionId);
+    maybeUpgradeSessionIdentity(db, sessionId, this.userId, options).catch((err) => {
+      console.error("Failed to upgrade session identity:", err);
+    });
+    bumpSession(sessionId).catch((err) => {
+      console.error("Failed to bump session:", err);
+    });
   }
 
   // While subscription is active, continuously keep the session alive.
-  const keepaliveInterval = Meteor.setInterval(() => bumpSession(sessionId), 60000);
+  const keepaliveInterval = Meteor.setInterval(() => {
+    bumpSession(sessionId).catch((err) => {
+      console.error("Failed to keep session alive:", err);
+    });
+  }, 60000);
 
   this.onStop(() => {
     Meteor.clearInterval(keepaliveInterval);
@@ -927,32 +1048,33 @@ Meteor.publish("sessions", function (sessionId, options) {
 });
 
 Meteor.methods({
-  redeemSharingToken(token) {
+  async redeemSharingToken(token) {
     check(token, String);
 
     const db = this.connection.sandstormDb;
     const hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
 
     if (!this.userId) throw new Meteor.Error(403, "must be logged in");
+    const accountUserId = await resolveSessionAccountUserId(this.userId);
 
-    const apiToken = db.collections.apiTokens.findOne(hashedToken);
+    const apiToken = await db.collections.apiTokens.findOneAsync(hashedToken);
     if (!apiToken) throw new Meteor.Error(404, "no such token");
 
-    const grain = db.collections.grains.findOne(apiToken.grainId);
+    const grain = await db.collections.grains.findOneAsync(apiToken.grainId);
     if (!grain) throw new Meteor.Error(404, "no such grain");
 
-    if (this.userId != apiToken.accountId && this.userId != grain.userId &&
-        !db.collections.apiTokens.findOne(
-            { "owner.user.accountId": this.userId, parentToken: hashedToken })) {
-      const title = getSharersTitle(db, grain, apiToken);
-      const owner = { user: { accountId: this.userId, title: title } };
+    if (accountUserId != apiToken.accountId && accountUserId != grain.userId &&
+        !await db.collections.apiTokens.findOneAsync(
+            { "owner.user.accountId": accountUserId, parentToken: hashedToken })) {
+      const title = await getSharersTitle(db, grain, apiToken);
+      const owner = { user: { accountId: accountUserId, title: title } };
 
       // Create a new API token for the account redeeming this token.
-      const result = SandstormPermissions.createNewApiToken(
+      const result = await SandstormPermissions.createNewApiToken(
           db, { rawParentToken: token }, apiToken.grainId,
           apiToken.petname || "redeemed webkey",
           { allAccess: null }, owner);
-      globalDb.addContact(apiToken.accountId, this.userId);
+      await globalDb.addContact(apiToken.accountId, accountUserId);
 
       // If the parent API token is forSharing and it has an accountId, then the logged-in user (call
       // them Bob) is about to access a grain owned by someone (call them Alice) and save a reference
@@ -962,7 +1084,9 @@ Meteor.methods({
         const parentApiToken = result.parentApiToken;
         if (parentApiToken.forSharing && parentApiToken.accountId) {
           storeReferralProgramInfoApiTokenCreated(
-              db, this.userId, parentApiToken.accountId);
+              db, accountUserId, parentApiToken.accountId).catch((err) => {
+            console.error("Failed storing referral info for sharing token:", err);
+          });
         }
       }
     }
@@ -992,7 +1116,7 @@ function generateSessionId(grainId, userId, packageSalt, clientSalt) {
 }
 
 Meteor.methods({
-  openSession(grainId, revealIdentity, cachedSalt, options) {
+  async openSession(grainId, revealIdentity, cachedSalt, options) {
     check(grainId, String);
     check(cachedSalt, Match.OneOf(undefined, null, String));
     options = options || {};
@@ -1006,13 +1130,14 @@ Meteor.methods({
     options.grainId = grainId;
 
     cachedSalt = cachedSalt || Random.id(22);
-    const grain = globalDb.collections.grains.findOne(grainId);
+    const grain = await globalDb.collections.grains.findOneAsync(grainId);
     const packageSalt = grain && grain.packageSalt;
-    const sessionId = generateSessionId(grainId, this.userId, packageSalt, cachedSalt);
+    const sessionUserId = await resolveSessionAccountUserId(this.userId);
+    const sessionId = generateSessionId(grainId, sessionUserId, packageSalt, cachedSalt);
 
-    let session = globalDb.collections.sessions.findOne(sessionId);
+    let session = await globalDb.collections.sessions.findOneAsync(sessionId);
     if (!session) {
-      session = createSession(globalDb, this.userId, sessionId, options);
+      session = await createSession(globalDb, sessionUserId, sessionId, options);
     }
 
     return {
@@ -1025,7 +1150,7 @@ Meteor.methods({
     };
   },
 
-  openSessionFromApiToken(params, revealIdentity, cachedSalt, neverRedeem, parentOrigin, options) {
+  async openSessionFromApiToken(params, revealIdentity, cachedSalt, neverRedeem, parentOrigin, options) {
     neverRedeem = neverRedeem || false;
     parentOrigin = parentOrigin || process.env.ROOT_URL;
     options = options || {};
@@ -1051,23 +1176,24 @@ Meteor.methods({
     const token = params.token;
 
     if (this.userId && revealIdentity && !neverRedeem) {
-      const grainId = Meteor.call("redeemSharingToken", token).grainId;
+      const grainId = (await Meteor.callAsync("redeemSharingToken", token)).grainId;
       return { redirectToGrain: grainId };
     }
 
     const hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
-    const apiToken = globalDb.collections.apiTokens.findOne(hashedToken);
+    const apiToken = await globalDb.collections.apiTokens.findOneAsync(hashedToken);
     if (!apiToken) throw new Error("no such token");
 
     cachedSalt = cachedSalt || Random.id(22);
     const grainId = apiToken.grainId;
-    const grain = globalDb.collections.grains.findOne(grainId);
+    const grain = await globalDb.collections.grains.findOneAsync(grainId);
     const packageSalt = grain && grain.packageSalt;
-    const sessionId = generateSessionId(grainId, this.userId, packageSalt, cachedSalt);
+    const sessionUserId = await resolveSessionAccountUserId(this.userId);
+    const sessionId = generateSessionId(grainId, sessionUserId, packageSalt, cachedSalt);
 
-    let session = globalDb.collections.sessions.findOne(sessionId);
+    let session = await globalDb.collections.sessions.findOneAsync(sessionId);
     if (!session) {
-      session = createSession(globalDb, this.userId, sessionId, options);
+      session = await createSession(globalDb, sessionUserId, sessionId, options);
     }
 
     return {
@@ -1080,12 +1206,12 @@ Meteor.methods({
     };
   },
 
-  keepSessionAlive(sessionId) {
+  async keepSessionAlive(sessionId) {
     check(sessionId, String);
 
     // If the session is gone, let the client know they need to call openSession() again.
     // (We don't need to bumpSession() from here because we now do that in the session
     // subscription.)
-    return globalDb.collections.sessions.find({ _id: sessionId }).count() > 0;
+    return await globalDb.collections.sessions.find({ _id: sessionId }).countAsync() > 0;
   }
 });

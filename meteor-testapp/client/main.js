@@ -1,37 +1,37 @@
 import { Meteor } from 'meteor/meteor';
-import { Template } from 'meteor/templating';
-import { ReactiveVar } from 'meteor/reactive-var';
+import { Tracker } from 'meteor/tracker';
+import $ from 'jquery';
 
-import './main.html';
+document.title = "testapp";
+$("body").append(
+  '<p id="id"></p>',
+  '<p id="name"></p>',
+  '<p id="picture"></p>',
+  '<p id="preferredHandle"></p>',
+  '<p id="pronouns"></p>',
+  '<p id="serverRuntime"></p>',
+);
 
-const serverRuntime = new ReactiveVar("");
+function setField(id, label, value) {
+  $(id).text(`${label}: ${value || ""}`);
+}
 
 Meteor.call("getServerRuntime", (err, result) => {
   if (err) {
     console.error("getServerRuntime failed:", err);
-    serverRuntime.set("ERROR");
+    setField("#serverRuntime", "serverRuntime", "ERROR");
   } else {
-    serverRuntime.set(result);
+    setField("#serverRuntime", "serverRuntime", result);
   }
 });
 
-Template.hello.helpers({
-  id() {
-    return Meteor.sandstormUser().id;
-  },
-  name() {
-    return Meteor.sandstormUser().name;
-  },
-  picture() {
-    return Meteor.sandstormUser().picture;
-  },
-  preferredHandle() {
-    return Meteor.sandstormUser().preferredHandle;
-  },
-  pronouns() {
-    return Meteor.sandstormUser().pronouns;
-  },
-  serverRuntime() {
-    return serverRuntime.get();
-  },
+Tracker.autorun(() => {
+  const user = Meteor.sandstormUser();
+  if (!user) return;
+
+  setField("#id", "id", user.id);
+  setField("#name", "name", user.name);
+  setField("#picture", "picture", user.picture);
+  setField("#preferredHandle", "preferredHandle", user.preferredHandle);
+  setField("#pronouns", "pronouns", user.pronouns);
 });

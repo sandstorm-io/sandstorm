@@ -14,7 +14,7 @@ Package.onUse((api) => {
   api.versionsFrom("3.4.1");
   api.use(["ecmascript", "meteor", "random"], ["client", "server"]);
   api.use("accounts-base", ["client", "server"], { weak: true });
-  api.use(["tracker", "reactive-var"], "client");
+  api.use(["ddp-client", "tracker", "reactive-var"], "client");
   api.use(["check", "ddp-server", "webapp"], "server");
   api.mainModule("client.js", "client");
   api.mainModule("server.js", "server");

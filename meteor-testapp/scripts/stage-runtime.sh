@@ -17,7 +17,13 @@ mkdir -p "$runtime_dir/bin"
   METEOR_PACKAGE_DIRS="$package_dirs" meteor npm install
   METEOR_PACKAGE_DIRS="$package_dirs" meteor build --directory "$stage_dir" --server-only
   cd "$bundle_dir/programs/server"
-  meteor npm install --omit=dev
+  chmod u+w package.json npm-shrinkwrap.json
+  meteor npm pkg set \
+    dependencies.underscore=1.13.8 \
+    dependencies.node-gyp=12.4.0 \
+    dependencies.@mapbox/node-pre-gyp=2.0.3
+  meteor npm install --omit=dev --no-audit
+  meteor npm audit --omit=dev --audit-level=high
 )
 
 node_path=$(cd "$app_dir" && meteor node -p process.execPath)
@@ -49,6 +55,11 @@ interpreter=$(readelf -l "$runtime_dir/bin/node" |
   sed -n 's/.*Requesting program interpreter: \(.*\)]/\1/p')
 if [ -z "$interpreter" ] || [ ! -f "$runtime_dir$interpreter" ]; then
   echo "The staged Node ELF interpreter was not captured: $interpreter" >&2
+  exit 1
+fi
+chmod 0755 "$runtime_dir$interpreter"
+if [ ! -x "$runtime_dir$interpreter" ]; then
+  echo "The staged Node ELF interpreter is not executable: $interpreter" >&2
   exit 1
 fi
 

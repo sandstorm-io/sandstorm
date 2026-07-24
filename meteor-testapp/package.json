@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.28.4",
-    "@swc/helpers": "^0.5.17"
+    "@swc/helpers": "^0.5.17",
+    "jquery": "^4.0.0"
   },
   "devDependencies": {
     "@meteorjs/rspack": "^2.0.1",

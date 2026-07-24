@@ -260,14 +260,17 @@ function makeTransferRequest(statusOrError, onEnd) {
   request.destroyed = false;
   request.end = function () {
     request.ended = true;
-    if (onEnd) onEnd(request);
-    Meteor.setTimeout(() => {
-      if (statusOrError instanceof Error) {
-        request.emit("error", statusOrError);
-      } else {
-        request.emit("response", makeTransferResponse(statusOrError));
-      }
-    }, 0);
+    Promise.resolve(onEnd && onEnd(request)).then(() => {
+      Meteor.setTimeout(() => {
+        if (statusOrError instanceof Error) {
+          request.emit("error", statusOrError);
+        } else {
+          request.emit("response", makeTransferResponse(statusOrError));
+        }
+      }, 0);
+    }, (err) => {
+      Meteor.setTimeout(() => request.emit("error", err), 0);
+    });
   };
   request.destroy = function () {
     request.destroyed = true;
@@ -3011,18 +3014,15 @@ if(isTesting) {
               "Downloader did not invalidate stale remote token after 403.");
         }
 
+        const canceledTransferId = await insertTransfer({});
         setTransferDownloaderHooksForTests({
           request(_source, _remoteFileToken) {
-            return makeTransferRequest(new Error("Synthetic download failure."));
+            return makeTransferRequest(new Error("Synthetic download failure."), () => {
+              return globalDb.collections.incomingTransfers.updateAsync(
+                  { _id: canceledTransferId }, { $unset: { downloading: 1 } });
+            });
           },
         });
-        const canceledTransferId = await insertTransfer({});
-        Meteor.setTimeout(() => {
-          globalDb.collections.incomingTransfers.updateAsync(
-              { _id: canceledTransferId }, { $unset: { downloading: 1 } }).catch((err) => {
-            console.error("Failed to unset downloading during transfer cancellation test:", err);
-          });
-        }, 0);
         await runDownloader(canceledTransferId);
 
         const canceledTransfer = await globalDb.collections.incomingTransfers.findOneAsync(canceledTransferId);

@@ -142,7 +142,7 @@ IMAGES= \
 all: sandstorm-$(BUILD).tar.xz
 
 clean: ci-clean
-	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/imports/client/changelog.html *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff icons/package-lock.json tests/package-lock.json deps/llvm-build meteor-testapp/node_modules meteor-testapp/package-lock.json
+	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/imports/client/changelog.html *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff shell/public/icons/icons-*.woff2 icons/package-lock.json tests/package-lock.json deps/llvm-build meteor-testapp/node_modules meteor-testapp/package-lock.json
 	@# Note: capnproto, libseccomp, and node-capnp are integrated into the common build.
 	cd deps/ekam && make clean
 	rm -rf deps/libsodium/build
@@ -297,8 +297,8 @@ tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/imports/client/changelog.html shel
 icons/node_modules: icons/package.json
 	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install --no-fund
 
-shell/client/styles/_icons.scss: icons/node_modules icons/*svg icons/Gruntfile.js
-	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH ./node_modules/.bin/grunt
+shell/client/styles/_icons.scss: icons/node_modules icons/*svg icons/build.js icons/codepoints.json
+	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm run build
 
 shell/imports/client/changelog.html: CHANGELOG.md
 	@mkdir -p tmp

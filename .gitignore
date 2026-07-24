@@ -58,6 +58,7 @@ shell/public/icons/icons-*.eot
 shell/public/icons/icons-*.ttf
 shell/public/icons/icons-*.svg
 shell/public/icons/icons-*.woff
+shell/public/icons/icons-*.woff2
 shell-build
 shell/_build
 shell/public/build-assets

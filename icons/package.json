@@ -2,9 +2,10 @@
   "name": "sandstorm-fonts",
   "description": "Fonts for sandstorm.",
   "version": "0.1.0",
+  "scripts": {
+    "build": "node build.js"
+  },
   "devDependencies": {
-    "grunt": "^1.0.4",
-    "grunt-cli": "^1.3.2",
-    "grunt-webfonts": "4.0.1"
+    "fantasticon": "^4.1.0"
   }
 }

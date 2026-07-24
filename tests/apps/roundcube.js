@@ -49,7 +49,7 @@ module.exports["Incoming Mail"] = function (browser) {
         subject: "Hello world email",
         body: "Hello world!",
         html: "<b>Hello world!</b>"
-      }, function (err) {
+      }, long_wait, function (err) {
         if (err) {
           browser.assert.equal(err, "");
         } else {
@@ -79,7 +79,10 @@ module.exports["Sending Mail"] = function (browser) {
     .assertReceiveEmail(".send", {
       to: to,
       subject: subject,
-      text: text + "\n.."
+      // Roundcube appends a line containing ".". smtp-server correctly
+      // reverses SMTP dot-stuffing; the old simplesmtp harness exposed the
+      // doubled wire representation instead.
+      text: text + "\n.\n"
     })
     .end();
 };

@@ -1,3 +1,6 @@
+@use "partials";
+@use "colors";
+
 .admin-caps-filter {
   display: flex;
   flex-direction: row;
@@ -27,7 +30,7 @@
 }
 
 .admin-caps-table {
-  border: 1px solid $default-table-border-color;
+  border: 1px solid colors.$default-table-border-color;
 
   div[role=columnheader] {
     // Column header text should "stick" to the bottom of the row, to be
@@ -45,8 +48,8 @@
   }
 
   div[role=rowgroup].thead {
-    background-color: $default-table-header-background-color;
-    color: $default-table-header-foreground-color;
+    background-color: colors.$default-table-header-background-color;
+    color: colors.$default-table-header-foreground-color;
   }
 
   div[role=row], div[role=gridcell] {
@@ -57,8 +60,8 @@
   }
 
   .capability-row, .none-row {
-    background-color: $default-table-row-background-color;
-    color: $default-table-row-foreground-color;
+    background-color: colors.$default-table-row-background-color;
+    color: colors.$default-table-row-foreground-color;
   }
 
   .grant-by {

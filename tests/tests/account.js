@@ -183,3 +183,33 @@ module.exports["Test link credential from unused account"] = function (browser) 
         .end()
     });
 }
+
+module.exports["Test LDAP quota lookup returns current value"] = function (browser) {
+  browser
+    .url(browser.launch_url + "/")
+    .timeouts("script", medium_wait);
+
+  utils.callMeteorTestMethod(browser, "testRegressionLdapQuotaReturnValue");
+
+  browser.end();
+};
+
+module.exports["Test email credential link waits for link result"] = function (browser) {
+  browser
+    .url(browser.launch_url + "/")
+    .timeouts("script", medium_wait);
+
+  utils.callMeteorTestMethod(browser, "testRegressionEmailCredentialLinkAwaitsFailure");
+
+  browser.end();
+};
+
+module.exports["Test email token creation and login behavior"] = function (browser) {
+  browser
+    .url(browser.launch_url + "/")
+    .timeouts("script", medium_wait);
+
+  utils.callMeteorTestMethod(browser, "testRegressionEmailTokenCreationAndLogin");
+
+  browser.end();
+};

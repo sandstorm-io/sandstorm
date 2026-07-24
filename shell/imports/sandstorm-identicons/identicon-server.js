@@ -1,8 +1,5 @@
-import { Meteor } from "meteor/meteor";
 import Zlib from "zlib";
 import Identicon from "./identicon";
-
-const gzipSync = Meteor.wrapAsync(Zlib.gzip, Zlib);
 
 // Because identicons are so simple, we can save a lot of bandwidth by applying compression
 // before sending them from the server to the client. The PNG format has built-in support for
@@ -13,7 +10,7 @@ class ServerIdenticon extends Identicon {
   asAsset() {
     return {
       mimeType: "image/svg+xml",
-      content: gzipSync(new Buffer(this.render())),
+      content: Zlib.gzipSync(Buffer.from(this.render())),
       encoding: "gzip",
     };
   }

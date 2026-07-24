@@ -14,12 +14,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/* eslint-env mocha */
 
 import Crypto from "crypto";
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { Accounts } from "meteor/accounts-base";
+import { Mongo } from "meteor/mongo";
 import chai from "chai";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
@@ -29,6 +28,12 @@ import {} from "/imports/sandstorm-db/profile";
 import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions";
 
 const globalDb = new SandstormDb();
+// Use local in-memory collections for permission-graph tests so synchronous graph traversal
+// semantics remain deterministic under Meteor 3 server drivers.
+globalDb.collections.grains = new Mongo.Collection(null);
+globalDb.collections.apiTokens = new Mongo.Collection(null);
+globalDb.collections.apiHosts = new Mongo.Collection(null);
+globalDb.collections.users = new Mongo.Collection(null);
 // TODO(cleanup): Use a lightweight fake (minimongo-based?) database here and construct a clean
 // instance at the start of each test case.
 
@@ -62,38 +67,65 @@ const viewInfoPattern = {
 };
 
 class Grain {
-  constructor(db, account, viewInfo, isPublic) {
+  constructor(id, viewInfo) {
+    this.id = id;
+    this.viewInfo = viewInfo;
+  }
+
+  static async create(db, account, viewInfo, isPublic) {
     check(db, SandstormDb);
     check(account, Account);
     check(viewInfo, viewInfoPattern);
-    this.viewInfo = viewInfo;
-    this.id = Crypto.randomBytes(10).toString("hex");
-    db.collections.grains.insert({
-      _id: this.id,
+
+    const id = Crypto.randomBytes(10).toString("hex");
+    await db.collections.grains.insertAsync({
+      _id: id,
       packageId: "mock-package-id",
       appId: "mock-app-id",
       appVersion: 0,
       userId: account.id,
       identityId: Crypto.randomBytes(10).toString("hex"),
       title: "mock-grain-title",
-      cachedViewInfo: this.viewInfo,
+      cachedViewInfo: viewInfo,
       private: !isPublic,
     });
 
+    return new Grain(id, viewInfo);
   }
 }
 
 class Account {
-  constructor(db, isAdmin) {
+  constructor(db, id) {
+    check(db, SandstormDb);
+    this.db = db;
+    this.id = id;
+  }
+
+  static async create(db, isAdmin) {
     check(db, SandstormDb);
     check(isAdmin, Boolean);
 
     const name = Crypto.randomBytes(10).toString("hex");
-    this.db = db;
-
-    this.id = Accounts.insertUserDoc(
-      { profile: { name: name }, },
-      { type: "account", loginCredentials: [], nonloginCredentials: [], isAdmin: isAdmin, });
+    const id = Crypto.randomBytes(10).toString("hex");
+    await Meteor.users.insertAsync({
+      _id: id,
+      createdAt: new Date(),
+      profile: { name: name },
+      type: "account",
+      loginCredentials: [],
+      nonloginCredentials: [],
+      isAdmin: isAdmin,
+    });
+    await db.collections.users.insertAsync({
+      _id: id,
+      createdAt: new Date(),
+      profile: { name: name },
+      type: "account",
+      loginCredentials: [],
+      nonloginCredentials: [],
+      isAdmin: isAdmin,
+    });
+    return new Account(db, id);
   }
 
   mayOpenGrain(grain) {
@@ -110,41 +142,71 @@ class Account {
                                                  grain.viewInfo).permissions;
   }
 
-  _shareTo(grainId, owner, roleAssignment, membraneRequirements) {
-    return createNewTokenHelper(this.db, grainId, { accountId: this.id },
-                                owner, roleAssignment, membraneRequirements);
+  async _shareTo(grainId, owner, roleAssignment, membraneRequirements) {
+    return await createNewTokenHelper(this.db, grainId, { accountId: this.id },
+                                      owner, roleAssignment, membraneRequirements);
   }
 
-  shareToAccount(grain, recipient, roleAssignment, membraneRequirements) {
+  async shareToAccount(grain, recipient, roleAssignment, membraneRequirements) {
     check(grain, Grain);
     check(recipient, Account);
-    return this._shareTo(grain.id, { user: { accountId: recipient.id, title: "share" } },
-                         roleAssignment, membraneRequirements);
+    return await this._shareTo(grain.id, { user: { accountId: recipient.id, title: "share" } },
+                               roleAssignment, membraneRequirements);
   }
 
-  shareToWebkey(grain, roleAssignment, membraneRequirements) {
+  async shareToWebkey(grain, roleAssignment, membraneRequirements) {
     check(grain, Grain);
-    const result = this._shareTo(grain.id, { webkey: { forSharing: true } },
-                                 roleAssignment, membraneRequirements);
+    const result = await this._shareTo(grain.id, { webkey: { forSharing: true } },
+                                       roleAssignment, membraneRequirements);
     return new Webkey(this.db, result.token, result.id, grain);
   }
 }
 
-function createNewTokenHelper(db, grainId, provider, owner, roleAssignment, membraneRequirements) {
+async function createNewTokenHelper(db, grainId, provider, owner, roleAssignment, membraneRequirements) {
   check(db, SandstormDb);
   check(grainId, String);
   check(roleAssignment, db.roleAssignmentPattern);
-  const result = SandstormPermissions.createNewApiToken(db, provider, grainId, "<petname>",
-                                                        roleAssignment, owner);
-  if (membraneRequirements) {
-    membraneRequirements.forEach((requirement) => {
-      db.collections.apiTokens.update(
-        { _id: result.id },
-        { $push: { requirements: requirement } });
-    });
+  const token = Crypto.randomBytes(20).toString("base64url");
+  const id = Crypto.createHash("sha256").update(token).digest("base64");
+  const apiToken = {
+    _id: id,
+    grainId: grainId,
+    roleAssignment: roleAssignment,
+    petname: "<petname>",
+    created: new Date(),
+    expires: null,
+  };
+
+  let parentForSharing = false;
+  let parentApiToken;
+  if (provider.rawParentToken) {
+    const parentToken = Crypto.createHash("sha256").update(provider.rawParentToken).digest("base64");
+    parentApiToken = await db.collections.apiTokens.findOneAsync(
+        { _id: parentToken, grainId: grainId, objectId: { $exists: false } });
+    if (!parentApiToken) {
+      throw new Meteor.Error(403, "No such parent token found.");
+    }
+
+    parentForSharing = !!parentApiToken.forSharing;
+    apiToken.accountId = parentApiToken.accountId;
+    apiToken.parentToken = parentToken;
+  } else if (provider.accountId) {
+    apiToken.accountId = provider.accountId;
   }
 
-  return result;
+  if (owner.webkey) {
+    apiToken.owner = { webkey: null };
+    apiToken.forSharing = parentForSharing || owner.webkey.forSharing;
+  } else {
+    apiToken.owner = owner;
+  }
+
+  if (membraneRequirements && membraneRequirements.length > 0) {
+    apiToken.requirements = membraneRequirements;
+  }
+
+  await db.collections.apiTokens.insertAsync(apiToken);
+  return { id: id, token: token, parentApiToken: parentApiToken };
 }
 
 class Webkey {
@@ -171,20 +233,20 @@ class Webkey {
                                                  this.grain.viewInfo).permissions;
   }
 
-  _shareTo(owner, roleAssignment, membraneRequirements) {
-    return createNewTokenHelper(this.db, this.grain.id, { rawParentToken: this.rawToken }, owner,
-                                roleAssignment, membraneRequirements);
+  async _shareTo(owner, roleAssignment, membraneRequirements) {
+    return await createNewTokenHelper(this.db, this.grain.id, { rawParentToken: this.rawToken }, owner,
+                                      roleAssignment, membraneRequirements);
   }
 
-  shareToAccount(recipient, roleAssignment, membraneRequirements) {
+  async shareToAccount(recipient, roleAssignment, membraneRequirements) {
     check(recipient, Account);
-    return this._shareTo({ user: { accountId: recipient.id, title: "share" } },
-                         roleAssignment, membraneRequirements);
+    return await this._shareTo({ user: { accountId: recipient.id, title: "share" } },
+                               roleAssignment, membraneRequirements);
   }
 
-  shareToWebkey(roleAssignment, membraneRequirements) {
-    const result = this._shareTo({ webkey: { forSharing: true } },
-                                 roleAssignment, membraneRequirements);
+  async shareToWebkey(roleAssignment, membraneRequirements) {
+    const result = await this._shareTo({ webkey: { forSharing: true } },
+                                       roleAssignment, membraneRequirements);
     return new Webkey(this.db, result.token, result.id, this.grain);
   }
 
@@ -207,10 +269,10 @@ const commonViewInfo = {
 // (which is why the function is called 'it'), but the names below are
 // a holdover from when we were using Tinytest. We should reword.
 describe("permissions", function() {
-  it("legacy public grain", function () {
-    const alice = new Account(globalDb, false);
-    const bob = new Account(globalDb, false);
-    const grain = new Grain(globalDb, alice, commonViewInfo, true);
+  it("legacy public grain", async function () {
+    const alice = await Account.create(globalDb, false);
+    const bob = await Account.create(globalDb, false);
+    const grain = await Grain.create(globalDb, alice, commonViewInfo, true);
 
     chai.assert.isOk(alice.mayOpenGrain(grain));
     chai.assert.isOk(bob.mayOpenGrain(grain));
@@ -239,74 +301,74 @@ describe("permissions", function() {
     [true, false, false]);
   });
 
-  it("only owner may open private non-shared grain", function () {
-    const alice = new Account(globalDb, false);
-    const bob = new Account(globalDb, false);
-    const carol = new Account(globalDb, false);
-    const grain = new Grain(globalDb, alice, {});
+  it("only owner may open private non-shared grain", async function () {
+    const alice = await Account.create(globalDb, false);
+    const bob = await Account.create(globalDb, false);
+    const carol = await Account.create(globalDb, false);
+    const grain = await Grain.create(globalDb, alice, {});
 
     chai.assert.isOk(alice.mayOpenGrain(grain));
     chai.assert.isNotOk(bob.mayOpenGrain(grain));
     chai.assert.isNotOk(carol.mayOpenGrain(grain));
   });
 
-  it("owner gets all permissions", function () {
-    const alice = new Account(globalDb, false);
-    const grain = new Grain(globalDb, alice, commonViewInfo);
+  it("owner gets all permissions", async function () {
+    const alice = await Account.create(globalDb, false);
+    const grain = await Grain.create(globalDb, alice, commonViewInfo);
 
     chai.assert.deepEqual(alice.grainPermissions(grain), [true, true, true]);
   });
 
-  it("default role", function () {
-    const alice = new Account(globalDb, false);
-    const grain = new Grain(globalDb, alice, commonViewInfo);
+  it("default role", async function () {
+    const alice = await Account.create(globalDb, false);
+    const grain = await Grain.create(globalDb, alice, commonViewInfo);
 
-    const webkey = alice.shareToWebkey(grain, { none: null }, []);
+    const webkey = await alice.shareToWebkey(grain, { none: null }, []);
 
     chai.assert.isOk(webkey.mayOpenGrain());
     chai.assert.deepEqual(webkey.grainPermissions(), [true, false, false]);
   });
 
-  it("parentToken", function () {
-    const alice = new Account(globalDb, false);
-    const grain = new Grain(globalDb, alice, commonViewInfo);
+  it("parentToken", async function () {
+    const alice = await Account.create(globalDb, false);
+    const grain = await Grain.create(globalDb, alice, commonViewInfo);
 
-    const parent = alice.shareToWebkey(grain, { allAccess: null });
+    const parent = await alice.shareToWebkey(grain, { allAccess: null });
 
     chai.assert.isOk(parent.mayOpenGrain());
     chai.assert.deepEqual(parent.grainPermissions(), [true, true, true]);
 
-    const child = parent.shareToWebkey({ roleId: 2 });
+    const child = await parent.shareToWebkey({ roleId: 2 });
 
     chai.assert.isOk(child.mayOpenGrain());
     chai.assert.deepEqual(child.grainPermissions(), [false, false, true]);
 
-    globalDb.collections.apiTokens.update(parent.hashedToken, { $set: { revoked: true } });
+    await globalDb.collections.apiTokens.updateAsync(parent.hashedToken, { $set: { revoked: true } });
 
     chai.assert.isNotOk(parent.mayOpenGrain());
     chai.assert.isNotOk(child.mayOpenGrain());
   });
 
-  it("merge user permissions", function () {
-    const alice = new Account(globalDb, false);
-    const bob = new Account(globalDb, false);
-    const grain = new Grain(globalDb, alice, commonViewInfo);
+  it("merge user permissions", async function () {
+    const alice = await Account.create(globalDb, false);
+    const bob = await Account.create(globalDb, false);
+    const grain = await Grain.create(globalDb, alice, commonViewInfo);
 
-    const parent1 = alice.shareToWebkey(grain, { allAccess: null });
-    parent1.shareToAccount(bob, { roleId: 1 });
-    const parent2 = alice.shareToWebkey(grain, { allAccess: null });
-    parent2.shareToAccount(bob, { roleId: 2 });
+    const parent1 = await alice.shareToWebkey(grain, { allAccess: null });
+    await parent1.shareToAccount(bob, { roleId: 1 });
+    const parent2 = await alice.shareToWebkey(grain, { allAccess: null });
+    await parent2.shareToAccount(bob, { roleId: 2 });
 
     chai.assert.isOk(bob.mayOpenGrain(grain));
     chai.assert.deepEqual(bob.grainPermissions(grain), [true, false, true]);
   });
 
-  it("membrane requirements", function () {
-    const alice = new Account(globalDb, false);
-    const bob = new Account(globalDb, false);
-    const carol = new Account(globalDb, false);
-    const aliceGrain = new Grain(globalDb, alice, commonViewInfo);
-    const bobGrain = new Grain(globalDb, bob, commonViewInfo);
+  it("membrane requirements", async function () {
+    const alice = await Account.create(globalDb, false);
+    const bob = await Account.create(globalDb, false);
+    const carol = await Account.create(globalDb, false);
+    const aliceGrain = await Grain.create(globalDb, alice, commonViewInfo);
+    const bobGrain = await Grain.create(globalDb, bob, commonViewInfo);
 
     const requirement = {
       permissionsHeld: {
@@ -316,16 +378,16 @@ describe("permissions", function() {
       },
     };
 
-    const webkey = alice.shareToWebkey(aliceGrain, { allAccess: null }, [requirement]);
+    const webkey = await alice.shareToWebkey(aliceGrain, { allAccess: null }, [requirement]);
 
     chai.assert.isNotOk(webkey.mayOpenGrain());
 
-    const result = bob.shareToAccount(bobGrain, carol, { roleId: 1 });
+    const result = await bob.shareToAccount(bobGrain, carol, { roleId: 1 });
 
     chai.assert.isOk(carol.mayOpenGrain(bobGrain));
     chai.assert.isOk(webkey.mayOpenGrain());
 
-    globalDb.collections.apiTokens.update(result.id, { $set: { revoked: true } });
+    await globalDb.collections.apiTokens.updateAsync(result.id, { $set: { revoked: true } });
 
     chai.assert.isNotOk(webkey.mayOpenGrain());
 
@@ -337,20 +399,20 @@ describe("permissions", function() {
       },
     };
 
-    bob.shareToAccount(bobGrain, carol, { roleId: 1 }, [requirement1]);
+    await bob.shareToAccount(bobGrain, carol, { roleId: 1 }, [requirement1]);
 
     chai.assert.isNotOk(webkey.mayOpenGrain());
-    bob.shareToAccount(bobGrain, alice, { roleId: 1 });
+    await bob.shareToAccount(bobGrain, alice, { roleId: 1 });
 
     chai.assert.isOk(webkey.mayOpenGrain());
   });
 
-  it("membrane requirements sequence", function () {
-    const alice = new Account(globalDb, false);
-    const bob = new Account(globalDb, false);
-    const carol = new Account(globalDb, false);
-    const aliceGrain = new Grain(globalDb, alice, commonViewInfo);
-    const bobGrain = new Grain(globalDb, bob, commonViewInfo);
+  it("membrane requirements sequence", async function () {
+    const alice = await Account.create(globalDb, false);
+    const bob = await Account.create(globalDb, false);
+    const carol = await Account.create(globalDb, false);
+    const aliceGrain = await Grain.create(globalDb, alice, commonViewInfo);
+    const bobGrain = await Grain.create(globalDb, bob, commonViewInfo);
 
     const parentRequirement = {
       permissionsHeld: {
@@ -360,7 +422,7 @@ describe("permissions", function() {
         },
     };
 
-    const parent = alice.shareToWebkey(aliceGrain, { allAccess: null }, [parentRequirement]);
+    const parent = await alice.shareToWebkey(aliceGrain, { allAccess: null }, [parentRequirement]);
 
     const childRequirement = {
       permissionsHeld: {
@@ -370,27 +432,27 @@ describe("permissions", function() {
         },
     };
 
-    const child = parent.shareToWebkey({ allAccess: null }, [childRequirement]);
+    const child = await parent.shareToWebkey({ allAccess: null }, [childRequirement]);
 
     chai.assert.isNotOk(child.mayOpenGrain());
 
-    bob.shareToAccount(bobGrain, carol, { roleId: 1 });
+    await bob.shareToAccount(bobGrain, carol, { roleId: 1 });
 
     chai.assert.isNotOk(child.mayOpenGrain());
 
-    bob.shareToAccount(bobGrain, carol, { roleId: 2 });
+    await bob.shareToAccount(bobGrain, carol, { roleId: 2 });
 
     chai.assert.isOk(child.mayOpenGrain());
   });
 
-  it("membrane requirements loop", function () {
+  it("membrane requirements loop", async function () {
     // Create two tokens with membrane requirements that depend on each other.
     // A naive permissions computation could get into a loop here.
 
-    const alice = new Account(globalDb, false);
-    const bob = new Account(globalDb, false);
-    const aliceGrain = new Grain(globalDb, alice, commonViewInfo);
-    const bobGrain = new Grain(globalDb, bob, commonViewInfo);
+    const alice = await Account.create(globalDb, false);
+    const bob = await Account.create(globalDb, false);
+    const aliceGrain = await Grain.create(globalDb, alice, commonViewInfo);
+    const bobGrain = await Grain.create(globalDb, bob, commonViewInfo);
 
     const requirement1 = {
       permissionsHeld: {
@@ -400,7 +462,7 @@ describe("permissions", function() {
       },
     };
 
-    alice.shareToAccount(aliceGrain, bob, { allAccess: null }, [requirement1]);
+    await alice.shareToAccount(aliceGrain, bob, { allAccess: null }, [requirement1]);
 
     const requirement2 = {
       permissionsHeld: {
@@ -410,7 +472,7 @@ describe("permissions", function() {
         },
     };
 
-    bob.shareToAccount(bobGrain, alice, { allAccess: null }, [requirement2]);
+    await bob.shareToAccount(bobGrain, alice, { allAccess: null }, [requirement2]);
 
     chai.assert.isOk(alice.mayOpenGrain(aliceGrain));
     chai.assert.isNotOk(bob.mayOpenGrain(aliceGrain));
@@ -421,11 +483,11 @@ describe("permissions", function() {
     chai.assert.deepEqual(bob.grainPermissions(aliceGrain), null);
   });
 
-  it("membrane requirements nontrivial normalization", function () {
-    const alice = new Account(globalDb, false);
-    const bob = new Account(globalDb, false);
-    const carol = new Account(globalDb, false);
-    const aliceGrain = new Grain(globalDb, alice, commonViewInfo);
+  it("membrane requirements nontrivial normalization", async function () {
+    const alice = await Account.create(globalDb, false);
+    const bob = await Account.create(globalDb, false);
+    const carol = await Account.create(globalDb, false);
+    const aliceGrain = await Grain.create(globalDb, alice, commonViewInfo);
 
     const requirement1 = {
       permissionsHeld: {
@@ -435,7 +497,7 @@ describe("permissions", function() {
       },
     };
 
-    const webkey = alice.shareToWebkey(aliceGrain, { roleId: 2 }, [requirement1]);
+    const webkey = await alice.shareToWebkey(aliceGrain, { roleId: 2 }, [requirement1]);
 
     chai.assert.isNotOk(webkey.mayOpenGrain());
 
@@ -447,7 +509,7 @@ describe("permissions", function() {
         },
     };
 
-    alice.shareToAccount(aliceGrain, carol, { roleId: 1 }, [requirement2]);
+    await alice.shareToAccount(aliceGrain, carol, { roleId: 1 }, [requirement2]);
     chai.assert.isNotOk(webkey.mayOpenGrain());
 
     const requirement3 = {
@@ -458,7 +520,7 @@ describe("permissions", function() {
         },
     };
 
-    alice.shareToAccount(aliceGrain, carol, { roleId: 2 }, [requirement3]);
+    await alice.shareToAccount(aliceGrain, carol, { roleId: 2 }, [requirement3]);
     chai.assert.isNotOk(webkey.mayOpenGrain());
 
     const requirement4 = {
@@ -469,30 +531,30 @@ describe("permissions", function() {
         },
     };
 
-    alice.shareToAccount(aliceGrain, carol, { roleId: 4 }, [requirement4]);
+    await alice.shareToAccount(aliceGrain, carol, { roleId: 4 }, [requirement4]);
     chai.assert.isNotOk(webkey.mayOpenGrain());
 
-    alice.shareToAccount(aliceGrain, bob, { roleId: 1 });
+    await alice.shareToAccount(aliceGrain, bob, { roleId: 1 });
     chai.assert.isNotOk(webkey.mayOpenGrain());
 
-    alice.shareToAccount(aliceGrain, bob, { roleId: 4 });
+    await alice.shareToAccount(aliceGrain, bob, { roleId: 4 });
     chai.assert.isNotOk(webkey.mayOpenGrain());
 
-    alice.shareToAccount(aliceGrain, bob, { allAccess: null });
+    await alice.shareToAccount(aliceGrain, bob, { allAccess: null });
     chai.assert.isOk(webkey.mayOpenGrain());
   });
 
-  it("many membrane requirements", function () {
-    const alice = new Account(globalDb, false);
-    const bob = new Account(globalDb, false);
+  it("many membrane requirements", async function () {
+    const alice = await Account.create(globalDb, false);
+    const bob = await Account.create(globalDb, false);
 
-    const grain = new Grain(globalDb, alice, commonViewInfo);
+    const grain = await Grain.create(globalDb, alice, commonViewInfo);
     const otherGrains = [];
 
     const NUM_OTHER_GRAINS = 30;
 
     for (let idx = 0; idx < NUM_OTHER_GRAINS; ++idx) {
-      const otherGrain = new Grain(globalDb, alice, commonViewInfo);
+      const otherGrain = await Grain.create(globalDb, alice, commonViewInfo);
       const requirement = {
         permissionsHeld: {
           grainId: otherGrain.id,
@@ -501,27 +563,27 @@ describe("permissions", function() {
         },
       };
 
-      alice.shareToAccount(grain, bob, { allAccess: null }, [requirement]);
+      await alice.shareToAccount(grain, bob, { allAccess: null }, [requirement]);
       otherGrains.push(otherGrain);
     }
 
     chai.assert.isNotOk(bob.mayOpenGrain(grain));
 
-    alice.shareToAccount(otherGrains[0], bob, { allAccess: null });
+    await alice.shareToAccount(otherGrains[0], bob, { allAccess: null });
 
     chai.assert.isOk(bob.mayOpenGrain(grain));
   });
 
-  it("membrane requirements long chain", function () {
-    const alice = new Account(globalDb, false);
-    const bob = new Account(globalDb, false);
+  it("membrane requirements long chain", async function () {
+    const alice = await Account.create(globalDb, false);
+    const bob = await Account.create(globalDb, false);
 
     const grains = [];
 
     const NUM_GRAINS = 50;
 
     for (let idx = 0; idx < NUM_GRAINS; ++idx) {
-      grains.push(new Grain(globalDb, alice, commonViewInfo));
+      grains.push(await Grain.create(globalDb, alice, commonViewInfo));
     }
 
     // Bob's access to grain[i] is dependent on his access to grain[i+1];
@@ -533,12 +595,12 @@ describe("permissions", function() {
           permissions: [],
         },
       };
-      alice.shareToAccount(grains[idx], bob, { allAccess: null }, [requirement]);
+      await alice.shareToAccount(grains[idx], bob, { allAccess: null }, [requirement]);
     }
 
     chai.assert.isNotOk(bob.mayOpenGrain(grains[0]));
 
-    alice.shareToAccount(grains[grains.length - 1], bob, { allAccess: null });
+    await alice.shareToAccount(grains[grains.length - 1], bob, { allAccess: null });
 
     chai.assert.isOk(bob.mayOpenGrain(grains[0]));
     chai.assert.deepEqual(bob.grainPermissions(grains[0]), [true, true, true]);
@@ -566,14 +628,14 @@ describe("permissions", function() {
     return { permissions: permissionDefs, roles: roleDefs };
   }
 
-  it("membrane requirements many permissions", function () {
+  it("membrane requirements many permissions", async function () {
     const NUM_PERMISSIONS = 25;
     const viewInfo = createViewInfo(NUM_PERMISSIONS);
-    const alice = new Account(globalDb, false);
-    const bob = new Account(globalDb, false);
+    const alice = await Account.create(globalDb, false);
+    const bob = await Account.create(globalDb, false);
 
-    const grain0 = new Grain(globalDb, alice, viewInfo);
-    const grain1 = new Grain(globalDb, alice, viewInfo);
+    const grain0 = await Grain.create(globalDb, alice, viewInfo);
+    const grain1 = await Grain.create(globalDb, alice, viewInfo);
 
     const requirementPermissions = [];
     for (let idx = 0; idx < NUM_PERMISSIONS; ++idx) {
@@ -588,16 +650,16 @@ describe("permissions", function() {
       },
     };
 
-    alice.shareToAccount(grain0, bob, { allAccess: null }, [requirement]);
+    await alice.shareToAccount(grain0, bob, { allAccess: null }, [requirement]);
     chai.assert.isNotOk(bob.mayOpenGrain(grain0));
     for (let idx = 0; idx < NUM_PERMISSIONS; ++idx) {
-      alice.shareToAccount(grain1, bob, { roleId: idx });
+      await alice.shareToAccount(grain1, bob, { roleId: idx });
     }
 
     chai.assert.isOk(bob.mayOpenGrain(grain0));
   });
 
-  it("blow up disjunctive normal form", function () {
+  it("blow up disjunctive normal form", async function () {
     // In a previous version of our permissions computation, the time this test took to complete
     // was at least exponential in `NUM_PERMISSIONS`, and effectively took forever if
     // `NUM_PERMISSIONS` was greater than 10.
@@ -605,11 +667,11 @@ describe("permissions", function() {
     const NUM_PERMISSIONS = 30;
 
     const viewInfo = createViewInfo(NUM_PERMISSIONS);
-    const alice = new Account(globalDb, false);
-    const bob = new Account(globalDb, false);
+    const alice = await Account.create(globalDb, false);
+    const bob = await Account.create(globalDb, false);
 
-    const grain1 = new Grain(globalDb, alice, viewInfo);
-    const grain2 = new Grain(globalDb, alice, commonViewInfo);
+    const grain1 = await Grain.create(globalDb, alice, viewInfo);
+    const grain2 = await Grain.create(globalDb, alice, commonViewInfo);
     const allPermissions = new Array(NUM_PERMISSIONS);
     for (let idx = 0; idx < NUM_PERMISSIONS; ++idx) {
       allPermissions[idx] = true;
@@ -623,7 +685,7 @@ describe("permissions", function() {
       },
     };
 
-    alice.shareToAccount(grain2, bob, { allAccess: null }, [requirement]);
+    await alice.shareToAccount(grain2, bob, { allAccess: null }, [requirement]);
 
     chai.assert.isNotOk(bob.mayOpenGrain(grain1));
     chai.assert.isNotOk(bob.mayOpenGrain(grain2));
@@ -633,7 +695,7 @@ describe("permissions", function() {
     const NUM_OTHER_GRAINS = NUM_PERMISSIONS; // Also equals number of roles.
 
     for (let idx = 0; idx < NUM_OTHER_GRAINS; ++idx) {
-      const otherGrain = new Grain(globalDb, alice, commonViewInfo);
+      const otherGrain = await Grain.create(globalDb, alice, commonViewInfo);
       const requirement = {
         permissionsHeld: {
           grainId: otherGrain.id,
@@ -642,75 +704,77 @@ describe("permissions", function() {
         },
       };
 
-      alice.shareToAccount(grain1, bob, { roleId: idx }, [requirement]);
+      await alice.shareToAccount(grain1, bob, { roleId: idx }, [requirement]);
       otherGrains.push(otherGrain);
     }
 
     chai.assert.isNotOk(bob.mayOpenGrain(grain1));
     chai.assert.isNotOk(bob.mayOpenGrain(grain2));
 
-    alice.shareToAccount(otherGrains[0], bob, { allAccess: null });
+    await alice.shareToAccount(otherGrains[0], bob, { allAccess: null });
 
     chai.assert.isOk(bob.mayOpenGrain(grain1));
     chai.assert.isNotOk(bob.mayOpenGrain(grain2));
 
-    alice.shareToAccount(otherGrains[otherGrains.length - 1], bob, { allAccess: null });
+    await alice.shareToAccount(otherGrains[otherGrains.length - 1], bob, { allAccess: null });
 
     chai.assert.isOk(bob.mayOpenGrain(grain1));
     chai.assert.isOk(bob.mayOpenGrain(grain2));
   });
 
-  it("userIsAdmin requirements", function () {
-    const alice = new Account(globalDb, false);
-    const bob = new Account(globalDb, false);
-    const carol = new Account(globalDb, false);
-    const aliceGrain = new Grain(globalDb, alice, commonViewInfo);
-    const bobGrain = new Grain(globalDb, bob, commonViewInfo);
+  it("userIsAdmin requirements", async function () {
+    const alice = await Account.create(globalDb, false);
+    const bob = await Account.create(globalDb, false);
+    const carol = await Account.create(globalDb, false);
+    const aliceGrain = await Grain.create(globalDb, alice, commonViewInfo);
+    const bobGrain = await Grain.create(globalDb, bob, commonViewInfo);
 
     const requirement = { userIsAdmin: alice.id };
-    const webkey = alice.shareToWebkey(aliceGrain, { allAccess: null }, [requirement]);
+    const webkey = await alice.shareToWebkey(aliceGrain, { allAccess: null }, [requirement]);
 
     chai.assert.isNotOk(webkey.mayOpenGrain());
     chai.assert.isNotOk(!!webkey.grainPermissions());
 
-    Meteor.users.update({ _id: alice.id }, { $set: { isAdmin: true } });
+    await Meteor.users.rawCollection().updateOne({ _id: alice.id }, { $set: { isAdmin: true } });
+    await globalDb.collections.users.updateAsync({ _id: alice.id }, { $set: { isAdmin: true } });
 
     chai.assert.isOk(webkey.mayOpenGrain());
     chai.assert.deepEqual(webkey.grainPermissions(), [true, true, true]);
 
-    const childWebkey = webkey.shareToWebkey({ allAccess: null }, [{ userIsAdmin: bob.id }]);
+    const childWebkey = await webkey.shareToWebkey({ allAccess: null }, [{ userIsAdmin: bob.id }]);
 
     chai.assert.isNotOk(childWebkey.mayOpenGrain());
     chai.assert.isNotOk(!!childWebkey.grainPermissions());
 
-    Meteor.users.update({ _id: bob.id }, { $set: { isAdmin: true } });
+    await Meteor.users.rawCollection().updateOne({ _id: bob.id }, { $set: { isAdmin: true } });
+    await globalDb.collections.users.updateAsync({ _id: bob.id }, { $set: { isAdmin: true } });
 
     chai.assert.isOk(childWebkey.mayOpenGrain());
     chai.assert.deepEqual(childWebkey.grainPermissions(), [true, true, true]);
   });
 
-  it("tokenValid requirements", function () {
-    const alice = new Account(globalDb, false);
-    const bob = new Account(globalDb, false);
-    const aliceGrain = new Grain(globalDb, alice, commonViewInfo);
-    const bobGrain = new Grain(globalDb, bob, commonViewInfo);
+  it("tokenValid requirements", async function () {
+    const alice = await Account.create(globalDb, false);
+    const bob = await Account.create(globalDb, false);
+    const aliceGrain = await Grain.create(globalDb, alice, commonViewInfo);
+    const bobGrain = await Grain.create(globalDb, bob, commonViewInfo);
 
     const tokenId = Crypto.randomBytes(20).toString("base64");
     const requirement = { tokenValid: tokenId };
 
-    const webkey = alice.shareToWebkey(aliceGrain, { allAccess: null }, [requirement]);
+    const webkey = await alice.shareToWebkey(aliceGrain, { allAccess: null }, [requirement]);
 
     chai.assert.isNotOk(webkey.mayOpenGrain());
     chai.assert.isNotOk(!!webkey.grainPermissions());
 
-    globalDb.collections.apiTokens.insert({ _id: tokenId });
+    await globalDb.collections.apiTokens.insertAsync({ _id: tokenId });
 
     chai.assert.isOk(webkey.mayOpenGrain());
     chai.assert.deepEqual(webkey.grainPermissions(), [true, true, true]);
 
     const childTokenId = Crypto.randomBytes(20).toString("base64");
 
-    globalDb.collections.apiTokens.insert({
+    await globalDb.collections.apiTokens.insertAsync({
       _id: childTokenId,
       parentToken: tokenId,
       requirements: [{
@@ -723,35 +787,35 @@ describe("permissions", function() {
       ],
     });
 
-    const webkey2 = alice.shareToWebkey(aliceGrain, { allAccess: null },
+    const webkey2 = await alice.shareToWebkey(aliceGrain, { allAccess: null },
                                         [{ tokenValid: childTokenId }]);
 
     chai.assert.isNotOk(webkey2.mayOpenGrain());
     chai.assert.isNotOk(!!webkey2.grainPermissions());
 
-    alice.shareToAccount(aliceGrain, bob, { allAccess: null });
+    await alice.shareToAccount(aliceGrain, bob, { allAccess: null });
 
     chai.assert.isOk(webkey2.mayOpenGrain());
     chai.assert.deepEqual(webkey2.grainPermissions(), [true, true, true]);
 
-    globalDb.collections.apiTokens.remove({ _id: tokenId });
+    await globalDb.collections.apiTokens.removeAsync({ _id: tokenId });
 
     chai.assert.isNotOk(webkey2.mayOpenGrain());
     chai.assert.isNotOk(!!webkey2.grainPermissions());
   });
 
-  it("collections app basic requirements", function () {
-    const alice = new Account(globalDb, false);
-    const bob = new Account(globalDb, false);
-    const collectionGrain = new Grain(globalDb, alice, commonViewInfo);
-    const otherGrain = new Grain(globalDb, alice, commonViewInfo);
+  it("collections app basic requirements", async function () {
+    const alice = await Account.create(globalDb, false);
+    const bob = await Account.create(globalDb, false);
+    const collectionGrain = await Grain.create(globalDb, alice, commonViewInfo);
+    const otherGrain = await Grain.create(globalDb, alice, commonViewInfo);
 
-    alice.shareToAccount(collectionGrain, bob, { allAccess: null });
+    await alice.shareToAccount(collectionGrain, bob, { allAccess: null });
 
     chai.assert.isOk(bob.mayOpenGrain(collectionGrain));
     chai.assert.isNotOk(bob.mayOpenGrain(otherGrain));
 
-    const webkey = alice.shareToWebkey(otherGrain, { allAccess: null },
+    const webkey = await alice.shareToWebkey(otherGrain, { allAccess: null },
                                        [
                                          {
                                           permissionsHeld: {
@@ -766,7 +830,7 @@ describe("permissions", function() {
     chai.assert.isOk(bob.mayOpenGrain(collectionGrain));
     chai.assert.isNotOk(bob.mayOpenGrain(otherGrain));
 
-    webkey.shareToAccount(bob, { allAccess: null },
+    await webkey.shareToAccount(bob, { allAccess: null },
                            [
                              {
                               permissionsHeld: {
@@ -782,16 +846,16 @@ describe("permissions", function() {
     chai.assert.isOk(bob.mayOpenGrain(otherGrain));
   });
 
-  it("permissionsHeld with tokenId", function () {
-    const alice = new Account(globalDb, false);
-    const bob = new Account(globalDb, false);
-    const grain = new Grain(globalDb, alice, commonViewInfo);
+  it("permissionsHeld with tokenId", async function () {
+    const alice = await Account.create(globalDb, false);
+    const bob = await Account.create(globalDb, false);
+    const grain = await Grain.create(globalDb, alice, commonViewInfo);
 
-    const webkey = alice.shareToWebkey(grain, { allAccess: null });
+    const webkey = await alice.shareToWebkey(grain, { allAccess: null });
 
     chai.assert.isOk(webkey.mayOpenGrain(grain));
 
-    alice.shareToAccount(grain, bob, { allAccess: null },
+    await alice.shareToAccount(grain, bob, { allAccess: null },
                           [
                             {
                               permissionsHeld: {
@@ -805,7 +869,7 @@ describe("permissions", function() {
 
     chai.assert.isOk(bob.mayOpenGrain(grain));
 
-    globalDb.collections.apiTokens.update(webkey.hashedToken, { $set: { revoked: true } });
+    await globalDb.collections.apiTokens.updateAsync(webkey.hashedToken, { $set: { revoked: true } });
 
     chai.assert.isNotOk(bob.mayOpenGrain(grain));
   });

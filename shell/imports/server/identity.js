@@ -16,7 +16,6 @@
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { _ } from "meteor/underscore";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
@@ -36,8 +35,8 @@ class IdentityImpl extends PersistentImpl {
     this.db = db;
   }
 
-  getProfile() {
-    const user = Meteor.users.findOne({ _id: this.accountId });
+  async getProfile() {
+    const user = await Meteor.users.findOneAsync({ _id: this.accountId });
 
     const profile = {
       displayName: { defaultText: user.profile.name },
@@ -67,7 +66,7 @@ const MembraneRequirement = Match.OneOf(
     { tokenId: String, grainId: String, permissions: Match.Optional([Boolean]), }, },
   { userIsAdmin: String });
 
-makeIdentity = (accountId, requirements) => {
+globalThis.makeIdentity = (accountId, requirements) => {
   const saveTemplate = { frontendRef: { identity: accountId } };
   if (requirements) {
     check(requirements, [MembraneRequirement]);
@@ -78,7 +77,7 @@ makeIdentity = (accountId, requirements) => {
                               IdentityRpc.PersistentIdentity);
 };
 
-globalFrontendRefRegistry.register({
+globalThis.globalFrontendRefRegistry.register({
   frontendRefField: "identity",
   typeId: Identity.typeId,
 
@@ -87,15 +86,15 @@ globalFrontendRefRegistry.register({
                                 IdentityRpc.PersistentIdentity);
   },
 
-  validate(db, session, value) {
+  async validate(db, session, value) {
     check(value, { id: String, roleAssignment: SandstormDb.prototype.roleAssignmentPattern, });
 
     if (!session.userId) {
       throw new Meteor.Error(403, "Not logged in.");
     }
 
-    const grain = db.getGrain(session.grainId);
-    SandstormPermissions.createNewApiToken(
+    const grain = await db.getGrainAsync(session.grainId);
+    await SandstormPermissions.createNewApiToken(
       db,
       { accountId: session.userId, },
       session.grainId,
@@ -107,9 +106,9 @@ globalFrontendRefRegistry.register({
 
     // TODO(perf): This permissions computation happens once here and then once again when the
     //   `permissionsHeld` requirement is checked. Is there a way to avoid the duplicated work?
-    const permissions = SandstormPermissions.grainPermissions(
+    const permissions = (await SandstormPermissions.grainPermissionsAsync(
       db, { grain: { _id: session.grainId, accountId: value.id, }, },
-      session.viewInfo ||  {}).permissions;
+      session.viewInfo ||  {})).permissions;
 
     return {
       descriptor: {
@@ -137,7 +136,7 @@ globalFrontendRefRegistry.register({
     };
   },
 
-  query(db, userId, value) {
+  async query(db, userId, value) {
     const resultSet = {};
     let requestedPermissions = [];
     if (value) {
@@ -161,27 +160,29 @@ globalFrontendRefRegistry.register({
       };
     };
 
-    db.collections.contacts.find({ ownerId: userId }).forEach(contact => {
-      const user = Meteor.users.findOne({ _id: contact.accountId });
+    const contacts = await db.collections.contacts.find({ ownerId: userId }).fetchAsync();
+    for (const contact of contacts) {
+      const user = await Meteor.users.findOneAsync({ _id: contact.accountId });
       if (user) {
         resultSet[user._id] = resultForUser(user);
       }
-    });
+    }
 
-    if (db.getOrganizationShareContacts() &&
-        db.isUserInOrganization(db.collections.users.findOne({ _id: userId }))) {
+    if (await db.getOrganizationShareContacts() &&
+        await db.isUserInOrganizationAsync(await db.collections.users.findOneAsync({ _id: userId }))) {
 
       // TODO(perf): Add some way to efficiently fetch all members in an organization.
-      db.collections.users.find({ type: "credential" }).forEach((credential) => {
-        if (db.isCredentialInOrganization(credential)) {
-          const user = Meteor.users.findOne({ "loginCredentials.id": credential._id });
+      const credentials = await db.collections.users.find({ type: "credential" }).fetchAsync();
+      for (const credential of credentials) {
+        if (await db.isCredentialInOrganizationAsync(credential)) {
+          const user = await Meteor.users.findOneAsync({ "loginCredentials.id": credential._id });
           if (user) {
             resultSet[user._id] = resultForUser(user);
           }
         }
-      });
+      }
     }
 
-    return _.values(resultSet);
+    return Object.values(resultSet);
   },
 });

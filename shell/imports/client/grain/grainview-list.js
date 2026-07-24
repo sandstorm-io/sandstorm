@@ -18,7 +18,7 @@ import { Meteor } from "meteor/meteor";
 import { check } from "meteor/check";
 import { Tracker } from "meteor/tracker";
 import { ReactiveVar } from "meteor/reactive-var";
-import { Router } from "meteor/iron:router";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 import { Accounts } from "meteor/accounts-base";
 import { SHA256 } from "meteor/sha";
 

@@ -36,8 +36,6 @@ EKAM=ekam
 #   entirely sure what changed, but this seems like a backwards incompatibility
 #   in libstdc++. See also issue #3171.
 METEOR_DEV_BUNDLE=$(shell ./find-meteor-dev-bundle.sh)
-METEOR_SPK_VERSION=0.6.0
-METEOR_SPK=$(PWD)/meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk
 NODEJS=$(METEOR_DEV_BUNDLE)/bin/node
 NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
 WARNINGS=-Wall -Wextra -Wglobal-constructors -Wno-sign-compare -Wno-unused-parameter
@@ -139,12 +137,12 @@ IMAGES= \
 # Meta rules
 
 .SUFFIXES:
-.PHONY: all install clean clean-deps ci-clean continuous shell-env fast deps bootstrap-ekam update-deps test installer-test app-index-dev lint
+.PHONY: all install clean clean-deps ci-clean continuous shell-env fast deps bootstrap-ekam update-deps test installer-test app-index-dev lint shell-build-debug meteor-testapp-stage release-gate-upgrade-308
 
 all: sandstorm-$(BUILD).tar.xz
 
 clean: ci-clean
-	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/imports/client/changelog.html *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff icons/package-lock.json tests/package-lock.json deps/llvm-build meteor-testapp/node_modules meteor-testapp/package-lock.json
+	rm -rf shell/node_modules shell/.meteor/local $(IMAGES) shell/imports/client/changelog.html *.sig *.update-sig icons/node_modules shell/public/icons/icons-*.eot shell/public/icons/icons-*.ttf shell/public/icons/icons-*.svg shell/public/icons/icons-*.woff shell/public/icons/icons-*.woff2 icons/package-lock.json tests/package-lock.json deps/llvm-build meteor-testapp/node_modules meteor-testapp/package-lock.json
 	@# Note: capnproto, libseccomp, and node-capnp are integrated into the common build.
 	cd deps/ekam && make clean
 	rm -rf deps/libsodium/build
@@ -168,6 +166,9 @@ fast: sandstorm-$(BUILD)-fast.tar.xz
 
 test: sandstorm-$(BUILD)-fast.tar.xz test-app.spk tests/assets/meteor-testapp.spk
 	tests/run-local.sh sandstorm-$(BUILD)-fast.tar.xz test-app.spk
+
+release-gate-upgrade-308: sandstorm-$(BUILD)-fast.tar.xz tests/assets/meteor-testapp.spk
+	tests/release-gates/upgrade-from-308.sh
 lint: shell-env
 	cd shell && meteor npm run lint
 typecheck-ts:
@@ -289,16 +290,18 @@ tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/imports/client/changelog.html shel
 	@mkdir -p tmp
 	@mkdir -p node_modules/capnp
 	@bash -O extglob -c 'cp src/capnp/!(*test*).capnp node_modules/capnp'
-	@test deps/node-capnp/src/node-capnp/capnp.js -ef node_modules/capnp.js || cp deps/node-capnp/src/node-capnp/capnp.js node_modules/capnp.js
-	@test tmp/node-capnp/capnp.node -ef node_modules/capnp.node || cp tmp/node-capnp/capnp.node node_modules/capnp.node
-	@cd shell/ && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install
+	@[ deps/node-capnp/src/node-capnp/capnp.js -ef node_modules/capnp.js ] || \
+		cp deps/node-capnp/src/node-capnp/capnp.js node_modules/capnp.js
+	@[ tmp/node-capnp/capnp.node -ef node_modules/capnp.node ] || \
+		cp tmp/node-capnp/capnp.node node_modules/capnp.node
+	@cd shell/ && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install --no-fund
 	@touch tmp/.shell-env
 
 icons/node_modules: icons/package.json
-	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install
+	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm install --no-fund
 
-shell/client/styles/_icons.scss: icons/node_modules icons/*svg icons/Gruntfile.js
-	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH ./node_modules/.bin/grunt
+shell/client/styles/_icons.scss: icons/node_modules icons/*svg icons/build.js icons/codepoints.json
+	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH $(METEOR_DEV_BUNDLE)/bin/npm run build
 
 shell/imports/client/changelog.html: CHANGELOG.md
 	@mkdir -p tmp
@@ -376,6 +379,10 @@ shell-build: shell/imports/* shell/imports/*/* shell/imports/*/*/* shell/imports
 	@test -z "$$(find -L shell/* -type l)" || (echo "error: broken symlinks in shell: $$(find -L shell/* -type l)" >&2 && exit 1)
 	@OLD=`pwd` && cd shell && meteor build --directory "$$OLD/shell-build"
 
+shell-build-debug: tmp/.shell-env
+	@$(call color,building debug meteor frontend)
+	@OLD=`pwd` && cd shell && meteor build --directory "$$OLD/shell-build-debug" --debug
+
 # ====================================================================
 # Bundle
 
@@ -434,19 +441,20 @@ test-app-dev: tmp/.ekam-run
 # ====================================================================
 # meteor-testapp.spk
 
-$(METEOR_SPK):
-	@$(call color,downloading meteor-spk)
-	@curl https://dl.sandstorm.org/meteor-spk-$(METEOR_SPK_VERSION).tar.xz | tar Jxf -
+meteor-testapp-stage:
+	METEOR_PACKAGE_DIRS="$(PWD)/shell/packages" ./meteor-testapp/scripts/stage-runtime.sh
 
-meteor-testapp-dev: $(METEOR_SPK)
+meteor-testapp-dev: tmp/.ekam-run meteor-testapp-stage
 	cd meteor-testapp && PATH="$(PWD)/bin:$(PATH)" \
-		$(METEOR_SPK) dev -I../src -I../tmp -s /opt/sandstorm
+		spk dev -I../src -I../tmp -s /opt/sandstorm
 
 tests/assets/meteor-testapp.spk: \
-		meteor-testapp \
-		$(METEOR_SPK) \
+		tmp/.ekam-run \
+		meteor-testapp-stage \
 		meteor-testapp/client/* \
 		meteor-testapp/server/* \
-		meteor-testapp/.meteor/*
+		meteor-testapp/.meteor/* \
+		meteor-testapp/scripts/* \
+		shell/packages/accounts-sandstorm/*
 	@cd meteor-testapp && PATH="$(PWD)/bin:$(PATH)" \
-		$(METEOR_SPK) pack -kmeteor-testapp.key -I../src -I../tmp ../tests/assets/meteor-testapp.spk
+		spk pack -kmeteor-testapp.key -I../src -I../tmp ../tests/assets/meteor-testapp.spk

@@ -146,16 +146,7 @@ const pkgdef :Spk.PackageDefinition = (
         packagePath = "usr/include",
       ),
       (
-        sourcePath = "capnp",
-        packagePath = "usr/include",
-      ),
-      (
-        sourcePath = ".meteor-spk/deps",
-        hidePaths = ["node_modules/sandstorm"],
-        # meteor-spk will install it's own bundled capnp
-        # schema in the above directory, but we want to use the ones from
-        # our own development tree (included via the above). Hide these
-        # so they don't conflict.
+        sourcePath = ".meteor-spk/runtime",
       ),
       ( sourcePath = ".meteor-spk/bundle" )
     ]
@@ -176,7 +167,7 @@ const pkgdef :Spk.PackageDefinition = (
     # https://docs.sandstorm.org/en/latest/developing/auth/
     # and advanced details in the "BridgeConfig" section of
     # https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/package.capnp
-    expectAppHooks = true,
+    expectAppHooks = false,
 
     viewInfo = (
       # For details on the viewInfo field, consult "ViewInfo" in

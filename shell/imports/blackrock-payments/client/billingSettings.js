@@ -17,7 +17,7 @@
 import { Meteor } from "meteor/meteor";
 import { Template } from "meteor/templating";
 import { ReactiveVar } from "meteor/reactive-var";
-import { _ } from "meteor/underscore";
+import { findWhere } from "/imports/shared/collection-utils";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
 
@@ -117,7 +117,7 @@ Template.billingSettings.helpers({
     var template = Template.instance();
     var data = StripeCustomerData.findOne();
     if (!data) return;
-    var primaryEmail = _.findWhere(SandstormDb.getUserEmails(Meteor.user()), {primary: true});
+    var primaryEmail = findWhere(SandstormDb.getUserEmails(Meteor.user()), {primary: true});
     if (!primaryEmail) return;
     return encodeURIComponent(JSON.stringify({
       name: 'Sandstorm Oasis',

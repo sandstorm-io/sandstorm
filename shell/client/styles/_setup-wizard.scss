@@ -1,3 +1,8 @@
+@use "sass:color";
+@use "colors";
+@use "icons";
+@use "partials";
+
 .setup-root {
   display: block;
   width: 100%;
@@ -157,9 +162,9 @@ button.setup-sandstorm {
   font-size: 16px;
   background-color: #962751;
   color: white;
-  border: 1px solid darken(#962751, 10%);
+  border: 1px solid color.adjust(#962751, $lightness: -10%);
   &:hover {
-    background-color: lighten(#962751, 10%);
+    background-color: color.adjust(#962751, $lightness: 10%);
   }
   &:disabled {
     @extend %button-disabled;
@@ -214,14 +219,14 @@ button.setup-sandstorm {
       display: flex;
       flex-direction: row;
       justify-content: flex-start;
-      border-top: 1px solid $default-table-border-color;
+      border-top: 1px solid colors.$default-table-border-color;
       flex-basis: 0;
       width: 100%;
 
       &.checked, &.toggle-more {
         background-color: white;
         [role=row] {
-          border-top: 1px solid $default-content-background-color;
+          border-top: 1px solid colors.$default-content-background-color;
         }
       }
 
@@ -235,7 +240,7 @@ button.setup-sandstorm {
       [role=gridcell] {
         padding: 4px;
         overflow: hidden;
-        @include overflow-ellipsis();
+        @include partials.overflow-ellipsis();
         flex-grow: 0;
         &.name {
           width: 20%;

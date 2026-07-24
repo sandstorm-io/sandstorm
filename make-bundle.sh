@@ -105,13 +105,27 @@ cp -r shell-build/bundle bundle
 rm -f bundle/README
 cp meteor-bundle-main.js bundle/sandstorm-main.js
 
-# Meteor wants us to do `npm install` in the bundle to prepare it.
-# The fibers package builds native extensions, choosing the target v8 version based on
-# the version of `/usr/bin/env node`. We need to make it does not pick up the wrong binary,
-# so we place Meteor's node first on `PATH`.  Additional native extensions require node-pre-gyp,
-# which lives in the .bin folder of the dev bundle's node_modules.
+# Meteor wants us to do `npm install` in the bundle to prepare it. Its generated server manifest
+# pins build helpers that have since received security fixes, so update those pins before install.
+# Native extensions must use Meteor's Node and build helpers rather than whatever is first on the
+# host PATH.
 (cd bundle/programs/server && \
- PATH=$METEOR_DEV_BUNDLE/lib/node_modules/.bin:$METEOR_DEV_BUNDLE/bin:$PATH "$METEOR_DEV_BUNDLE/bin/npm" install)
+ chmod u+w package.json npm-shrinkwrap.json && \
+ PATH=$METEOR_DEV_BUNDLE/lib/node_modules/.bin:$METEOR_DEV_BUNDLE/bin:$PATH \
+   "$METEOR_DEV_BUNDLE/bin/npm" pkg set \
+     dependencies.underscore=1.13.8 \
+     dependencies.node-gyp=12.4.0 \
+     dependencies.@mapbox/node-pre-gyp=2.0.3 && \
+ PATH=$METEOR_DEV_BUNDLE/lib/node_modules/.bin:$METEOR_DEV_BUNDLE/bin:$PATH \
+   "$METEOR_DEV_BUNDLE/bin/npm" install --omit=dev --no-audit && \
+ PATH=$METEOR_DEV_BUNDLE/lib/node_modules/.bin:$METEOR_DEV_BUNDLE/bin:$PATH \
+   "$METEOR_DEV_BUNDLE/bin/npm" audit --omit=dev --audit-level=high)
+
+# Ensure node-capnp is present where server startup looks first
+# (process.cwd() starts at /programs/server in the runtime chroot).
+mkdir -p bundle/programs/server/node_modules
+cp node_modules/capnp.js bundle/programs/server/node_modules/capnp.js
+cp node_modules/capnp.node bundle/programs/server/node_modules/capnp.node
 
 # Copy over key binaries.
 mkdir -p bundle/bin
@@ -163,9 +177,9 @@ rm -rf ${MONGO26_BASE}
 # Both versions are bundled - users run 'sandstorm migrate-mongo'
 # to upgrade their database from 2.6 to 7.0.
 MONGO7_VERSION=7.0.16
-MONGO7_FILENAME=mongodb-linux-x86_64-ubuntu2004-${MONGO7_VERSION}.tgz
+MONGO7_FILENAME=mongodb-linux-x86_64-ubuntu2204-${MONGO7_VERSION}.tgz
 MONGO7_PATH="hack/$MONGO7_FILENAME"
-MONGO7_SHA256=3be980f61bf1eca1680ffdac73d765c857f4596ab678cc244b27f82ab9c404ff
+MONGO7_SHA256=376c258ae9b104b88814214bc3214a2e0d1300d8192d24d8c46259f364866422
 if [ ! -e "$MONGO7_PATH" ] ; then
   echo "Fetching MongoDB 7.0..."
   secureCurlDownload "$MONGO7_PATH" "https://fastdl.mongodb.org/linux/$MONGO7_FILENAME"
@@ -175,7 +189,7 @@ verifySha256 "$MONGO7_PATH" "$MONGO7_SHA256" "MongoDB 7.0 package"
 
 # Extract mongod from MongoDB 7.0 package.
 # Note: MongoDB 7.0 doesn't include the legacy mongo shell, use mongosh instead.
-MONGO7_BASE=mongodb-linux-x86_64-ubuntu2004-${MONGO7_VERSION}
+MONGO7_BASE=mongodb-linux-x86_64-ubuntu2204-${MONGO7_VERSION}
 mkdir -p bundle/bin
 tar xf $MONGO7_PATH ${MONGO7_BASE}/bin/mongod
 cp ${MONGO7_BASE}/bin/mongod bundle/bin/mongod7

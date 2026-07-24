@@ -1,13 +1,17 @@
+@use "colors";
+@use "geometry";
+@use "partials";
+
 .app-list {
   overflow: auto; // Needed to make the background span everything on screen.
-  @media #{$desktop} {
+  @media #{geometry.$desktop} {
     padding: 32px;
   }
-  @media #{$mobile} {
+  @media #{geometry.$mobile} {
     padding: 0px 8px;
   }
-  background-color: $applist-background-color;
-  color: $applist-foreground-color;
+  background-color: colors.$applist-background-color;
+  color: colors.$applist-foreground-color;
   >h1 {
     display: flex;
     flex-direction: row;
@@ -16,7 +20,7 @@
 
     margin-top: 0px;
     padding-bottom: 12px;
-    border-bottom: 1px solid $applist-rule-color;
+    border-bottom: 1px solid colors.$applist-rule-color;
     margin-bottom: 12px;
 
     font-size: 24pt;
@@ -35,38 +39,38 @@
     // Restricts the visible portion of the "most used" section to a single row.
     display: block;
     overflow: hidden;
-    @media #{$desktop} {
+    @media #{geometry.$desktop} {
       height: 280px;
     }
-    @media #{$mobile} {
+    @media #{geometry.$mobile} {
       height: 142px;
     }
   }
   >h2, >.popular-container>h2 {
     display: block;
     font-weight: 400;
-    border-bottom: 1px solid $applist-rule-color;
+    border-bottom: 1px solid colors.$applist-rule-color;
     margin-top: 0px;
-    @media #{$mobile} {
+    @media #{geometry.$mobile} {
       margin-bottom: 8px;
     }
   }
   >.app-button, >.popular-container>.app-button {
-    @include unstyled-button();
+    @include partials.unstyled-button();
     float: left;
     display: block;
     // Browsers render button contents vertically-centered by default.
     // I can't figure out how to suggest that the browser align contents to the top instead, so I
     // specify position: relative here and position: absolute for the image and text label.
     position: relative;
-    @media #{$desktop} {
+    @media #{geometry.$desktop} {
       width: 148px;
       height: 200px;
       margin-left: 10px;
       margin-right: 10px;
       margin-bottom: 20px;
     }
-    @media #{$mobile} {
+    @media #{geometry.$mobile} {
       width: 74px;
       height: 102px;
       margin-left: 5px;
@@ -106,12 +110,12 @@
       position: absolute;
       top: 0px;
       left: 0px;
-      @media #{$desktop} {
+      @media #{geometry.$desktop} {
         width: 128px;
         height: 128px;
         margin: 10px;
       }
-      @media #{$mobile} {
+      @media #{geometry.$mobile} {
         width: 64px;
         height: 64px;
         margin: 5px;
@@ -119,8 +123,8 @@
       border-radius: 6px;
       vertical-align: top;
       &.pseudoapp {
-        background-color: $applist-pseudoapp-background-color;
-        border: 1px $applist-pseudoapp-outline-color;
+        background-color: colors.$applist-pseudoapp-background-color;
+        border: 1px colors.$applist-pseudoapp-outline-color;
       }
 
       &.restore-icon {
@@ -139,7 +143,7 @@
       }
       &.install-icon {
         background-image: url('/install-714DAA.svg');
-        border: 1px solid $generic-border-color;
+        border: 1px solid colors.$generic-border-color;
 
         &:hover {
           background-image: url('/install-896AC6.svg');
@@ -147,38 +151,38 @@
       }
     }
     %apptext {
-      @include overflow-ellipsis();
+      @include partials.overflow-ellipsis();
       position: absolute;
       left: 0px;
       width: 100%;
       vertical-align: top;
       text-align: left;
-      @media #{$desktop} {
+      @media #{geometry.$desktop} {
         margin-left: 10px;
       }
-      @media #{$mobile} {
+      @media #{geometry.$mobile} {
         margin-left: 5px;
       }
     }
     >.app-title, >.action-title {
       @extend %apptext;
-      @media #{$desktop} {
+      @media #{geometry.$desktop} {
         top: 148px;
         font-size: 14pt;
       }
-      @media #{$mobile} {
+      @media #{geometry.$mobile} {
         top: 74px;
         font-size: 8pt;
       }
     }
     >.action-text {
       @extend %apptext;
-      color: $applist-action-text-color;
-      @media #{$desktop} {
+      color: colors.$applist-action-text-color;
+      @media #{geometry.$desktop} {
         top: 168px;
         font-size: 13pt;
       }
-      @media #{$mobile} {
+      @media #{geometry.$mobile} {
         top: 88px;
         font-size: 8pt;
       }

@@ -21,13 +21,53 @@ import NodeHttps from "https";
 
 import { Meteor } from "meteor/meteor";
 import { Match, check } from "meteor/check";
-import { Router } from "meteor/iron:router";
-import { HTTP } from "meteor/http";
+import { Router } from "meteor/vlasky:galvanized-iron-router";
 
-import { inMeteor, waitPromise } from "/imports/server/async-helpers";
+import { inMeteor } from "/imports/server/async-helpers";
+import { httpCallAsync } from "/imports/server/http-helpers";
 import { globalDb } from "/imports/db-deprecated";
 import { createGrainBackup, createBackupToken, restoreGrainBackup, storeGrainBackup }
   from "/imports/server/backup";
+
+const defaultTransferHttpCall = (method, url, options) =>
+  httpCallAsync(method, url, { ...options, ssrfSafeDb: globalDb });
+let transferHttpCall = defaultTransferHttpCall;
+let transferCreateGrainBackup = createGrainBackup;
+let transferCreateBackupToken = createBackupToken;
+let transferStoreGrainBackup = storeGrainBackup;
+let transferRestoreGrainBackup = restoreGrainBackup;
+let transferDownloaderDisabledForTests = false;
+
+export function setTransferHttpCallForTests(call) {
+  transferHttpCall = call || defaultTransferHttpCall;
+}
+
+export function setTransferCreateGrainBackupForTests(fn) {
+  transferCreateGrainBackup = fn || createGrainBackup;
+}
+
+export function setTransferDownloaderHooksForTests(hooks) {
+  hooks = hooks || {};
+  transferCreateBackupToken = hooks.createBackupToken || createBackupToken;
+  transferStoreGrainBackup = hooks.storeGrainBackup || storeGrainBackup;
+  transferRestoreGrainBackup = hooks.restoreGrainBackup || restoreGrainBackup;
+  transferBackupRequest = hooks.request || defaultTransferBackupRequest;
+}
+
+export function setTransferDownloaderDisabledForTests(disabled) {
+  transferDownloaderDisabledForTests = !!disabled;
+}
+
+function defaultTransferBackupRequest(source, remoteFileToken) {
+  let requestMethod = NodeHttp.request;
+  if (source.startsWith("https:")) {
+    requestMethod = NodeHttps.request;
+  }
+
+  return requestMethod(source + "/downloadBackup/" + remoteFileToken);
+}
+
+let transferBackupRequest = defaultTransferBackupRequest;
 
 function isValidServerUrl(str) {
   let url;
@@ -53,18 +93,19 @@ Meteor.publish("transfers", function () {
 });
 
 Meteor.methods({
-  newTransfer(destination) {
+  async newTransfer(destination) {
     check(destination, String);
-    if (!isSignedUp()) {
+    const account = await Meteor.users.findOneAsync({ _id: this.userId });
+    if (!await this.connection.sandstormDb.isAccountSignedUpAsync(account)) {
       throw new Meteor.Error(403, "Must be logged in to start transfers.");
     }
 
     let db = this.connection.sandstormDb;
 
-    if (db.collections.incomingTransfers.findOne({userId: this.userId})) {
+    if (await db.collections.incomingTransfers.findOneAsync({ userId: this.userId })) {
       throw new Meteor.Error(403, "Can only authorize one transfer at a time.");
     }
-    if (db.collections.outgoingTransfers.findOne({userId: this.userId})) {
+    if (await db.collections.outgoingTransfers.findOneAsync({ userId: this.userId })) {
       throw new Meteor.Error(403, "Can only authorize one transfer at a time.");
     }
 
@@ -75,7 +116,7 @@ Meteor.methods({
     let token = Crypto.randomBytes(32).toString("hex");
     let hash = Crypto.createHash("sha256").update(token).digest("hex");
 
-    db.collections.outgoingTransfers.insert({
+    await db.collections.outgoingTransfers.insertAsync({
       _id: hash,
       userId: this.userId,
       destination: destination
@@ -84,26 +125,27 @@ Meteor.methods({
     return token;
   },
 
-  cancelTransfers() {
+  async cancelTransfers() {
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to cancel transfers.");
     }
 
     let db = this.connection.sandstormDb;
 
-    db.collections.outgoingTransfers.remove({userId: this.userId});
+    await db.collections.outgoingTransfers.removeAsync({ userId: this.userId });
 
-    revokeTransferTokens(db, this.userId);
-    db.collections.incomingTransfers.remove({userId: this.userId});
+    await revokeTransferTokens(db, this.userId);
+    await db.collections.incomingTransfers.removeAsync({ userId: this.userId });
   },
 
-  acceptTransfer(source, token) {
+  async acceptTransfer(source, token) {
     check(source, String);
     check(token, String);
-    if (!isSignedUp()) {
+    const account = await Meteor.users.findOneAsync({ _id: this.userId });
+    if (!await this.connection.sandstormDb.isAccountSignedUpAsync(account)) {
       throw new Meteor.Error(403, "Must be logged in to start transfers.");
     }
-    if (isUserOverQuota(Meteor.user())) {
+    if (await globalDb.isUserOverQuotaAsync(account)) {
       throw new Meteor.Error(402,
           "You are out of storage space. Please delete some things and try again.");
     }
@@ -117,7 +159,7 @@ Meteor.methods({
 
     let response;
     try {
-      response = HTTP.get(source + "/transfers/list", {
+      response = await transferHttpCall("GET", source + "/transfers/list", {
         headers: {"Authorization": "Bearer " + token}
       });
     } catch (err) {
@@ -142,19 +184,19 @@ Meteor.methods({
 
     let db = this.connection.sandstormDb;
 
-    if (db.collections.incomingTransfers.findOne({userId: this.userId})) {
+    if (await db.collections.incomingTransfers.findOneAsync({ userId: this.userId })) {
       throw new Meteor.Error(403, "Can only authorize one transfer at a time.");
     }
-    if (db.collections.outgoingTransfers.findOne({userId: this.userId})) {
+    if (await db.collections.outgoingTransfers.findOneAsync({ userId: this.userId })) {
       throw new Meteor.Error(403, "Can only authorize one transfer at a time.");
     }
 
-    grains.forEach(grain => {
+    for (const grain of grains) {
       if (!grain._id.match(/^[a-zA-Z0-9]+$/)) {
         throw new Meteor.Error(500, "Bad grain ID from server: " + grain._id);
       }
 
-      db.collections.incomingTransfers.insert({
+      await db.collections.incomingTransfers.insertAsync({
         userId: this.userId,
         source,
         token,
@@ -169,10 +211,10 @@ Meteor.methods({
 
         selected: true,
       });
-    });
+    }
   },
 
-  setTransferSelected(transferId, selected) {
+  async setTransferSelected(transferId, selected) {
     check(transferId, Match.Maybe(String));
     check(selected, Boolean);
     if (!this.userId) return;
@@ -180,31 +222,31 @@ Meteor.methods({
     let db = this.connection.sandstormDb;
 
     if (transferId) {
-      db.collections.incomingTransfers.update(
+      await db.collections.incomingTransfers.updateAsync(
           {_id: transferId, userId: this.userId}, {$set: {selected}});
     } else {
-      db.collections.incomingTransfers.update(
+      await db.collections.incomingTransfers.updateAsync(
           {userId: this.userId}, {$set: {selected}}, {multi: true});
     }
   },
 
-  setTransferRunning(running) {
+  async setTransferRunning(running) {
     check(running, Boolean);
     if (!this.userId) return;
 
     let db = this.connection.sandstormDb;
     if (running) {
-      startOneTransfer(db, this.userId);
+      await startOneTransfer(db, this.userId);
     } else {
-      db.collections.incomingTransfers.update(
+      await db.collections.incomingTransfers.updateAsync(
           {userId: this.userId, downloading: true}, {$unset: {downloading: 1}}, {multi: true});
     }
   },
 
-  clearTransferErrors() {
+  async clearTransferErrors() {
     if (!this.userId) return;
 
-    globalDb.collections.incomingTransfers.update(
+    await globalDb.collections.incomingTransfers.updateAsync(
         {userId: this.userId, error: {$exists: true}},
         {$unset: {error: 1, remoteFileToken: 1, localFileToken: 1}}, {multi: true});
   },
@@ -221,7 +263,7 @@ function sendError(response, status, message) {
   response.end();
 }
 
-function checkToken(request, response) {
+async function checkToken(request, response) {
   let auth = request.headers["authorization"];
   if (!auth || !auth.toLowerCase().startsWith("bearer ")) {
     return sendError(response, 403, "Missing token.");
@@ -230,7 +272,7 @@ function checkToken(request, response) {
   let token = auth.slice("bearer ".length);
 
   let hash = Crypto.createHash("sha256").update(token).digest("hex");
-  let transfer = globalDb.collections.outgoingTransfers.findOne({_id: hash});
+  let transfer = await globalDb.collections.outgoingTransfers.findOneAsync({ _id: hash });
   if (!transfer) {
     return sendError(response, 403, "Invalid token.");
   }
@@ -242,13 +284,13 @@ Router.map(function () {
   this.route("transfersList", {
     where: "server",
     path: "/transfers/list",
-    action() {
-      let transfer = checkToken(this.request, this.response);
+    async action() {
+      let transfer = await checkToken(this.request, this.response);
       if (!transfer) return;
 
-      let grains = globalDb.collections.grains.find({userId: transfer.userId},
+      let grains = await globalDb.collections.grains.find({userId: transfer.userId},
           {fields: {_id: 1, appId: 1, appVersion: 1, packageId: 1, title: 1, size: 1, lastUsed: 1}})
-          .fetch();
+          .fetchAsync();
       grains.forEach(grain => {
         if (grain.lastUsed) {
           grain.lastUsed = grain.lastUsed.getTime();
@@ -269,7 +311,7 @@ Router.map(function () {
   this.route("transfersCancel", {
     where: "server",
     path: "/transfers/cancel",
-    action() {
+    async action() {
       let auth = this.request.headers["authorization"];
       if (!auth || !auth.toLowerCase().startsWith("bearer ")) {
         return sendError(this.response, 403, "Missing token.");
@@ -278,7 +320,7 @@ Router.map(function () {
       let token = auth.slice("bearer ".length);
 
       let hash = Crypto.createHash("sha256").update(token).digest("hex");
-      globalDb.collections.outgoingTransfers.remove({_id: hash});
+      await globalDb.collections.outgoingTransfers.removeAsync({ _id: hash });
 
       this.response.writeHead(200, {
         "Access-Control-Allow-Origin": "*",
@@ -292,13 +334,13 @@ Router.map(function () {
   this.route("transfersStart", {
     where: "server",
     path: "/transfers/prepare/:grainId",
-    action() {
-      let transfer = checkToken(this.request, this.response);
+    async action() {
+      let transfer = await checkToken(this.request, this.response);
       if (!transfer) return;
 
       let fileToken;
       try {
-        fileToken = createGrainBackup(transfer.userId, this.params.grainId, true);
+        fileToken = await transferCreateGrainBackup(transfer.userId, this.params.grainId, true);
       } catch (err) {
         let status = (typeof err.error === "number") && err.error >= 400 && err.error < 600
                    ? err.error : 500;
@@ -318,13 +360,13 @@ Router.map(function () {
 
 // =======================================================================================
 
-function startOneTransfer(db, userId) {
-  if (db.collections.incomingTransfers.findOne({userId, downloading: true})) {
+async function startOneTransfer(db, userId) {
+  if (await db.collections.incomingTransfers.findOneAsync({ userId, downloading: true })) {
     // Already going.
     return;
   }
 
-  let next = db.collections.incomingTransfers.findOne({
+  let next = await db.collections.incomingTransfers.findOneAsync({
     userId,
     selected: true,
     downloading: {$exists: false},
@@ -333,34 +375,33 @@ function startOneTransfer(db, userId) {
   }, {sort: {lastUsed: -1}});
 
   if (next) {
-    db.collections.incomingTransfers.update({_id: next._id}, {$set: {downloading: true}});
+    await db.collections.incomingTransfers.updateAsync({ _id: next._id }, { $set: { downloading: true } });
   } else {
     // If all transfers completed successfully, proactively revoke the token.
-    if (!db.collections.incomingTransfers.findOne({userId, localGrainId: {$exists: false}})) {
-      revokeTransferTokens(db, userId);
+    if (!await db.collections.incomingTransfers.findOneAsync({ userId, localGrainId: { $exists: false } })) {
+      await revokeTransferTokens(db, userId);
     }
   }
 }
 
-function revokeTransferTokens(db, userId) {
+async function revokeTransferTokens(db, userId) {
   let revokeMap = {};
-  db.collections.incomingTransfers.find({userId}).forEach(transfer => {
+  const transfers = await db.collections.incomingTransfers.find({ userId }).fetchAsync();
+  transfers.forEach((transfer) => {
     revokeMap[transfer.token] = transfer.source;
   });
 
   for (let token in revokeMap) {
-    HTTP.del(revokeMap[token] + "/transfers/cancel", {
+    transferHttpCall("DELETE", revokeMap[token] + "/transfers/cancel", {
       headers: {"Authorization": "Bearer " + token}
-    }, (err, _response) => {
-      if (err) {
+    }).catch((err) => {
         // Don't really care...
         console.error("Error revoking transfer token:", err);
-      }
     });
   }
 }
 
-class Downloader {
+export class Downloader {
   constructor(transfer) {
     Object.assign(this, transfer);
     this.promise = Promise.resolve().then(() => inMeteor(() => this.run()));
@@ -376,41 +417,42 @@ class Downloader {
     }
   }
 
-  run() {
+  async run() {
     try {
       while (!this.canceled) {
-        this.nextStep();
+        await this.nextStep();
       }
     } catch (err) {
       console.log("error in grain transfer:", err.stack);
       this.error = err.message;
-      if (!globalDb.collections.incomingTransfers.findOne({_id: this._id, downloading: true})) {
+      if (!await globalDb.collections.incomingTransfers.findOneAsync({ _id: this._id, downloading: true })) {
         // Someone unset the "downloading" flag, probably trying to cancel this download, but we
         // didn't notice yet...
         this.canceled = true;
       }
       if (this.canceled) {
         // Error probably caused by cancellation, so don't save the error.
-        globalDb.collections.incomingTransfers.update({_id: this._id}, {$unset: {downloading: 1}});
+        await globalDb.collections.incomingTransfers.updateAsync(
+            { _id: this._id }, { $unset: { downloading: 1 } });
       } else {
         // Not canceled, so the error must be legit. Save it.
-        globalDb.collections.incomingTransfers.update({_id: this._id},
+        await globalDb.collections.incomingTransfers.updateAsync({_id: this._id},
             {$unset: {downloading: 1}, $set: {error: err.message}});
 
         // Now start the next transfer.
-        startOneTransfer(globalDb, this.userId);
+        await startOneTransfer(globalDb, this.userId);
 
         this.canceled = true;
       }
     }
   }
 
-  nextStep() {
+  async nextStep() {
     if (!this.remoteFileToken) {
       // Request grain download.
       console.log("mass transfer: packing:", this.grainId);
 
-      let response = HTTP.post(this.source + "/transfers/prepare/" + this.grainId,
+      let response = await transferHttpCall("POST", this.source + "/transfers/prepare/" + this.grainId,
           { headers: {"Authorization": "Bearer " + this.token} });
       if (!response.data) {
         throw new Meteor.Error(500, "Source server did not return JSON.");
@@ -427,22 +469,17 @@ class Downloader {
       // Start downloading.
       console.log("mass transfer: downloading:", this.grainId);
 
-      let requestMethod = NodeHttp.request;
-      if (this.source.startsWith("https:")) {
-        requestMethod = NodeHttps.request;
-      }
-
-      this.request = requestMethod(this.source + "/downloadBackup/" + this.remoteFileToken);
+      this.request = transferBackupRequest(this.source, this.remoteFileToken);
       this.request.end();
 
-      let response = waitPromise(new Promise((resolve, reject) => {
+      const response = await new Promise((resolve, reject) => {
         this.request.on("response", response => {
           resolve(response);
         });
         this.request.on("error", err => {
           reject(err);
         });
-      }));
+      });
 
       if (this.canceled) return;
 
@@ -453,7 +490,8 @@ class Downloader {
           return this.nextStep();
         } else if (response.statusCode == 403 || response.statusCode == 404) {
           // Assume token is dead and we need to get a new one.
-          globalDb.collections.incomingTransfers.update({_id: this._id}, {$unset: {remoteFileToken: 1}});
+          await globalDb.collections.incomingTransfers.updateAsync(
+              { _id: this._id }, { $unset: { remoteFileToken: 1 } });
           delete this.remoteFileToken;
         }
         throw new Error("Server responded with HTTP error: " + response.statusCode);
@@ -461,8 +499,8 @@ class Downloader {
 
       if (this.canceled) return;
 
-      let localFileToken = createBackupToken();
-      storeGrainBackup(localFileToken, response);
+      let localFileToken = await transferCreateBackupToken();
+      await transferStoreGrainBackup(localFileToken, response);
 
       if (this.canceled) return;
 
@@ -478,20 +516,20 @@ class Downloader {
       // Finish unpacking.
       console.log("mass transfer: unpacking:", this.grainId);
 
-      let localGrainId = restoreGrainBackup(this.localFileToken,
-          Meteor.users.findOne({_id: this.userId}), this);
-      if (!globalDb.collections.incomingTransfers.findOne({_id: this._id, downloading: true})) {
+      const localGrainId = await transferRestoreGrainBackup(this.localFileToken,
+          await Meteor.users.findOneAsync({ _id: this.userId }), this);
+      if (!await globalDb.collections.incomingTransfers.findOneAsync({ _id: this._id, downloading: true })) {
         // Someone unset the "downloading" flag, probably trying to cancel this download, but we
         // didn't notice yet...
         this.canceled = true;
       }
       let canceled = this.canceled;
-      globalDb.collections.incomingTransfers.update({_id: this._id}, {
+      await globalDb.collections.incomingTransfers.updateAsync({_id: this._id}, {
         $set: { localGrainId },
         $unset: { downloading: 1, localFileToken: 1, remoteFileToken: 1 }
       });
       if (!canceled) {
-        startOneTransfer(globalDb, this.userId);
+        await startOneTransfer(globalDb, this.userId);
         this.canceled = true;
       }
     }
@@ -501,8 +539,9 @@ class Downloader {
 if (!Meteor.settings.replicaNumber) {
   Meteor.startup(() => {
     let downloaders = {};
-    globalDb.collections.incomingTransfers.find({downloading: true}).observe({
+    globalDb.collections.incomingTransfers.find({downloading: true}).observeAsync({
       added(transfer) {
+        if (transferDownloaderDisabledForTests) return;
         if (!downloaders[transfer._id]) {
           downloaders[transfer._id] = new Downloader(transfer);
         }
@@ -514,6 +553,8 @@ if (!Meteor.settings.replicaNumber) {
           delete downloaders[transfer._id];
         }
       }
+    }).catch((err) => {
+      console.error("Failed to observe in-progress incoming transfers:", err);
     });
   });
 }

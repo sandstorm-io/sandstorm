@@ -18,7 +18,6 @@
 
 var utils = require("../utils"),
     actionSelector = utils.actionSelector,
-    appSelector = utils.appSelector,
     short_wait = utils.short_wait,
     medium_wait = utils.medium_wait,
     long_wait = utils.long_wait,
@@ -33,17 +32,20 @@ exports.command = function(dontStartGrain, callback) {
     .setValue("#upload-app", process.env.SANDSTORM_TESTAPP_PATH)
     .waitForElementVisible("#step-confirm", long_wait)
     .click("#confirmInstall")
+    .waitForElementNotPresent("#confirmInstall", long_wait)
     .url(this.launch_url + "/apps")
     .waitForElementVisible(".app-list", medium_wait)
     .resizeWindow(utils.default_width, utils.default_height);
 
   if (!dontStartGrain) {
+    var testAppId = "6r8gt8ct5e774489grqvzz7dc4fzntpxjrusdwcy329ppnkt3kuh";
     ret = ret
       // The introjs overlay often doesn't destroy itself fast enough and intercepts
       // clicks that we don't want it to intercept. So we manually disable it here.
       .disableGuidedTour()
-      .click(appSelector("6r8gt8ct5e774489grqvzz7dc4fzntpxjrusdwcy329ppnkt3kuh"))
-      .waitForElementVisible(actionSelector, short_wait)
+      .url(this.launch_url + "/apps/" + testAppId)
+      .waitForElementVisible(".app-details", medium_wait)
+      .waitForElementVisible(actionSelector, long_wait)
       .click(actionSelector)
       .waitForElementVisible("#grainTitle", medium_wait);
   }

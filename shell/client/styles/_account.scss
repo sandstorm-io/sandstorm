@@ -1,3 +1,9 @@
+@use "icons";
+@use "sass:color";
+@use "colors";
+@use "geometry";
+@use "partials";
+
 body>.popup.login>.frame-container {
   width: 202px; // 2px of border
   >.frame {
@@ -128,7 +134,7 @@ body>.popup.account>.frame-container {
     &.login-button-disabled, &.login-button-disabled:active {
       color: #ddd;
       background-color: #aaa;
-      border: 1px solid lighten(#aaa, 10%);
+      border: 1px solid color.adjust(#aaa, $lightness: 10%);
       box-shadow: none;
     }
 
@@ -187,7 +193,7 @@ body>.popup.account>.frame-container {
     background-position: 16px 0px;
     height: auto;
     button.unexpand {
-      @include unstyled-button();
+      @include partials.unstyled-button();
     }
     &:hover {
       background-image: url("/debug-m.svg");
@@ -283,7 +289,7 @@ body>.popup.account>.frame-container {
       text-indent: 0;
 
       button {
-        @include unstyled-button();
+        @include partials.unstyled-button();
         border: 1px solid #9e9e9e;
         border-radius: 3px;
         line-height: normal;
@@ -456,11 +462,11 @@ body>.popup.account>.frame-container {
 body>.main-content>.account {
   text-align: left;
 
-  @media #{$desktop} {
+  @media #{geometry.$desktop} {
     padding: 32px;
   }
 
-  @media #{$mobile} {
+  @media #{geometry.$mobile} {
     padding-top: 0px;
     padding-bottom: 32px;
     padding-left: 8px;
@@ -471,7 +477,7 @@ body>.main-content>.account {
     margin-top: 0px;
     padding-top: 0px;
     padding-bottom: 12px;
-    border-bottom: 1px solid $default-rule-color;
+    border-bottom: 1px solid colors.$default-rule-color;
     margin-bottom: 12px;
 
     font-size: 24pt;
@@ -524,18 +530,18 @@ body>.main-content>.account {
         padding: 4px;
         position: relative;
 
-        @media #{$not-mobile-only} {
+        @media #{geometry.$not-mobile-only} {
           margin-right: 7px;
 
           &[aria-selected=true] {
             margin-right: 0px;
           }
         }
-        @media #{$mobile-only} {
-          border: 1px solid $generic-border-color;
+        @media #{geometry.$mobile-only} {
+          border: 1px solid colors.$generic-border-color;
 
           &[aria-selected=true] {
-            border: 2px solid $generic-border-color;
+            border: 2px solid colors.$generic-border-color;
           }
         }
 
@@ -580,11 +586,11 @@ body>.main-content>.account {
     button.account-button {
       @extend %button-base;
       @extend %button-secondary;
-      @media #{$not-mobile-only} {
+      @media #{geometry.$not-mobile-only} {
         margin-right: 7px;
       }
 
-      @media #{$mobile-only} {
+      @media #{geometry.$mobile-only} {
         flex: 1;
         &:not(:last-child) {
           margin-right: 8px;
@@ -608,10 +614,10 @@ body>.main-content>.account {
   }
 
   .profile {
-    @media #{$not-mobile-only} {
+    @media #{geometry.$not-mobile-only} {
       display: inline-block;
     }
-    @media #{$mobile-only} {
+    @media #{geometry.$mobile-only} {
       display: block;
     }
 
@@ -630,14 +636,14 @@ body>.main-content>.account {
   .verified-emails-editor {
     position: relative;
     .already-verified {
-      @media #{$not-mobile-only} {
+      @media #{geometry.$not-mobile-only} {
         display: inline-block;
         width: 340px;
         left: 0px;
         vertical-align: top;
       }
 
-      @media #{$mobile-only} {
+      @media #{geometry.$mobile-only} {
         display: flex;
         flex-direction: column;
         align-items: stretch;
@@ -669,7 +675,7 @@ body>.main-content>.account {
             margin-top: 2px;
           }
           span.primary-badge {
-            background-color: $sandstorm-purple-color;
+            background-color: colors.$sandstorm-purple-color;
             color: white;
             width: 32%;
             text-align: center;
@@ -682,7 +688,7 @@ body>.main-content>.account {
     }
 
     .add-new {
-      @media #{$not-mobile-only} {
+      @media #{geometry.$not-mobile-only} {
         display: inline-block;
         width: 330px;
         vertical-align: top;
@@ -692,7 +698,7 @@ body>.main-content>.account {
         }
       }
 
-      @media #{$mobile-only} {
+      @media #{geometry.$mobile-only} {
         form.email {
           display: flex;
           flex-direction: row;
@@ -767,7 +773,7 @@ div.billing {
 
       >thead {
         td {
-          border-right: 1px solid $default-content-background-color;
+          border-right: 1px solid colors.$default-content-background-color;
           background-color: #ccc;
           padding-left: 10px;
         }
@@ -876,7 +882,7 @@ div.billing {
         }
 
         >tr:last-child {
-          background-color: $default-content-background-color;
+          background-color: colors.$default-content-background-color;
           border-bottom: none;
         }
       }
@@ -887,7 +893,7 @@ div.billing {
     display: inline-block;
     vertical-align: top;
 
-    @media #{$not-mobile-only} {
+    @media #{geometry.$not-mobile-only} {
       margin-right: 32px;
     }
 
@@ -899,7 +905,7 @@ div.billing {
       margin: 0;
     }
 
-    @media #{$not-mobile-only} {
+    @media #{geometry.$not-mobile-only} {
       max-width: 482px;
     }
 
@@ -1096,7 +1102,7 @@ div.single-profile-editor {
 }
 
 div.profile-editor {
-  @media #{$not-mobile-only} {
+  @media #{geometry.$not-mobile-only} {
     width: 660px;
   }
 
@@ -1176,7 +1182,7 @@ body>.popup.billing-prompt>.frame-container {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 
-  @media #{$desktop} {
+  @media #{geometry.$desktop} {
     width: 932px;
     max-width: 90%;
     margin: 0 auto;
@@ -1184,7 +1190,7 @@ body>.popup.billing-prompt>.frame-container {
     border: 1px solid #ccc;  // prevent margin collapse
   }
 
-  @media #{$mobile} {
+  @media #{geometry.$mobile} {
     max-width: 500px;
   }
 
@@ -1271,7 +1277,7 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
   }
 
   button.continue, button.subscribe {
-    @include unstyled-button();
+    @include partials.unstyled-button();
 
     display: table;
     margin: 16px auto 64px;
@@ -1503,13 +1509,13 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
 
     .answers {
       display: flex;
-      @media #{$desktop} {
+      @media #{geometry.$desktop} {
         flex-direction: row;
         flex-wrap: wrap;
         align-items: flex-start;
         justify-content: space-between;
       }
-      @media #{$mobile} {
+      @media #{geometry.$mobile} {
         flex-direction: column;
         flex-wrap: nowrap;
         align-items: flex-start;
@@ -1517,12 +1523,12 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
       }
 
       .answer {
-        @media #{$desktop} {
+        @media #{geometry.$desktop} {
           display: inline-block;
           max-width: 390px;
           margin-right: 16px;
         }
-        @media #{$mobile} {
+        @media #{geometry.$mobile} {
           display: block;
           margin: 0px;
         }
@@ -1724,8 +1730,8 @@ ul.credential-card-list {
     margin-bottom: 12px;
     button {
       height: 54px;
-      @include unstyled-button();
-      border: 1px solid $generic-border-color;
+      @include partials.unstyled-button();
+      border: 1px solid colors.$generic-border-color;
     }
     &.current-credential>button {
       height: 56px;
@@ -1849,4 +1855,3 @@ ul.credential-card-list {
   padding: 4px;
   background-color: #ffdddd;
 }
-

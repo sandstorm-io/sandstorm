@@ -15,7 +15,6 @@
 // limitations under the License.
 
 import { Meteor } from "meteor/meteor";
-import { HTTP } from "meteor/http";
 
 import { SandstormDb } from "/imports/sandstorm-db/db";
 import { globalDb } from "/imports/db-deprecated";
@@ -25,9 +24,11 @@ import { PersistentImpl } from "/imports/server/persistent";
 import { migrateToLatest } from "/imports/server/migrations";
 import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants";
 import { onInMeteor } from "/imports/server/async-helpers";
-import { monkeyPatchHttp } from "/imports/server/networking";
 import { SandstormAutoupdateApps } from "/imports/sandstorm-autoupdate-apps/autoupdate-apps";
 let url = require("url");
+
+export const migrationsReady = migrateToLatest(globalDb, globalThis.globalBackend);
+await migrationsReady;
 
 process.on('unhandledRejection', (reason, p) => {
   // Please Node, do not crash when a promise rejection isn't caught, thanks.
@@ -78,15 +79,6 @@ SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
   globalDb.deletePendingAccounts(ACCOUNT_DELETION_SUSPENSION_TIME, globalThis.globalBackend,
       deleteAccount).catch((err) => {
     console.error("Error deleting pending accounts:", err);
-  });
-});
-
-monkeyPatchHttp(globalDb, HTTP);
-
-Meteor.startup(() => {
-  migrateToLatest(globalDb, globalThis.globalBackend).catch((err) => {
-    console.error("Migration startup failed:", err.stack || err);
-    throw err;
   });
 });
 

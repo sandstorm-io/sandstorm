@@ -36,8 +36,6 @@ EKAM=ekam
 #   entirely sure what changed, but this seems like a backwards incompatibility
 #   in libstdc++. See also issue #3171.
 METEOR_DEV_BUNDLE=$(shell ./find-meteor-dev-bundle.sh)
-METEOR_SPK_VERSION=0.6.0
-METEOR_SPK=$(PWD)/meteor-spk-$(METEOR_SPK_VERSION)/meteor-spk
 NODEJS=$(METEOR_DEV_BUNDLE)/bin/node
 NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
 WARNINGS=-Wall -Wextra -Wglobal-constructors -Wno-sign-compare -Wno-unused-parameter
@@ -139,7 +137,7 @@ IMAGES= \
 # Meta rules
 
 .SUFFIXES:
-.PHONY: all install clean clean-deps ci-clean continuous shell-env fast deps bootstrap-ekam update-deps test installer-test app-index-dev lint
+.PHONY: all install clean clean-deps ci-clean continuous shell-env fast deps bootstrap-ekam update-deps test installer-test app-index-dev lint shell-build-debug meteor-testapp-stage
 
 all: sandstorm-$(BUILD).tar.xz
 
@@ -376,7 +374,11 @@ shell/public/%-m.svg: icons/%.svg
 shell-build: shell/imports/* shell/imports/*/* shell/imports/*/*/* shell/imports/*/*/*/* shell/client/main.ts shell/server/main.ts shell/public/* shell/i18n/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
 	@$(call color,building meteor frontend)
 	@test -z "$$(find -L shell/* -type l)" || (echo "error: broken symlinks in shell: $$(find -L shell/* -type l)" >&2 && exit 1)
-	@OLD=`pwd` && cd shell && meteor build --directory "$$OLD/shell-build" --debug
+	@OLD=`pwd` && cd shell && meteor build --directory "$$OLD/shell-build"
+
+shell-build-debug: tmp/.shell-env
+	@$(call color,building debug meteor frontend)
+	@OLD=`pwd` && cd shell && meteor build --directory "$$OLD/shell-build-debug" --debug
 
 # ====================================================================
 # Bundle
@@ -436,19 +438,20 @@ test-app-dev: tmp/.ekam-run
 # ====================================================================
 # meteor-testapp.spk
 
-$(METEOR_SPK):
-	@$(call color,downloading meteor-spk)
-	@curl https://dl.sandstorm.org/meteor-spk-$(METEOR_SPK_VERSION).tar.xz | tar Jxf -
+meteor-testapp-stage:
+	METEOR_PACKAGE_DIRS="$(PWD)/shell/packages" ./meteor-testapp/scripts/stage-runtime.sh
 
-meteor-testapp-dev: $(METEOR_SPK)
+meteor-testapp-dev: tmp/.ekam-run meteor-testapp-stage
 	cd meteor-testapp && PATH="$(PWD)/bin:$(PATH)" \
-		$(METEOR_SPK) dev -I../src -I../tmp -s /opt/sandstorm
+		spk dev -I../src -I../tmp -s /opt/sandstorm
 
 tests/assets/meteor-testapp.spk: \
-		meteor-testapp \
-		$(METEOR_SPK) \
+		tmp/.ekam-run \
+		meteor-testapp-stage \
 		meteor-testapp/client/* \
 		meteor-testapp/server/* \
-		meteor-testapp/.meteor/*
+		meteor-testapp/.meteor/* \
+		meteor-testapp/scripts/* \
+		shell/packages/accounts-sandstorm/*
 	@cd meteor-testapp && PATH="$(PWD)/bin:$(PATH)" \
-		$(METEOR_SPK) pack -kmeteor-testapp.key -I../src -I../tmp ../tests/assets/meteor-testapp.spk
+		spk pack -kmeteor-testapp.key -I../src -I../tmp ../tests/assets/meteor-testapp.spk

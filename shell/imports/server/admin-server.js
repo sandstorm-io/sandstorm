@@ -33,7 +33,7 @@ import { globalDb } from "/imports/db-deprecated";
 import { computeStats } from "/imports/server/stats-server";
 import { httpCallAsync } from "/imports/server/http-helpers";
 import { createAcmeAccount, renewCertificateNow } from "/imports/server/acme";
-import { Issuer } from "openid-client";
+import { None, allowInsecureRequests, discovery } from "openid-client";
 
 let adminEmailSender = sendEmail;
 
@@ -165,15 +165,18 @@ Meteor.methods({
     check(options, Match.ObjectIncluding({ service: String }));
 
     if (options.service === "oidc" && options.serverUrl) {
-      return Issuer.discover(options.serverUrl).then(async function(issuer) {
-
-        // 'Proof Key for Code Exchange' (response_type === 'code') is not yet supported.
-        // An additional code_challenge parameter would have to be added when generating the authorizationUrl.
-        if (issuer.metadata.response_types_supported.indexOf("id_token") === -1) {
-          throw new Meteor.Error(403, "The provided identity server does not support the 'id_token' response type.");
+      const serverUrl = new URL(options.serverUrl);
+      const discoveryOptions = serverUrl.protocol === "http:"
+        ? { execute: [allowInsecureRequests] }
+        : undefined;
+      return discovery(serverUrl, options.clientId || "sandstorm-discovery",
+          undefined, None(), discoveryOptions).then(async function(configuration) {
+        const issuer = { ...configuration.serverMetadata() };
+        if (!issuer.response_types_supported?.includes("code")) {
+          throw new Meteor.Error(403, "The provided identity server does not support the 'code' response type.");
         }
 
-        options.issuer = issuer.metadata;
+        options.issuer = issuer;
         await ServiceConfiguration.configurations.upsertAsync({ service: options.service }, options);
       }).catch(function(_err) {
         throw new Meteor.Error(403, "Could not discover an OpenID Connect endpoint at the provided URL.");

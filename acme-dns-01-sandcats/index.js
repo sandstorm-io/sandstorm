@@ -1,7 +1,6 @@
 'use strict';
 
 const https = require("https");
-const querystring = require("querystring");
 const dns = require("dns");
 
 class Challenge {
@@ -101,7 +100,7 @@ class Challenge {
       options.localAddress = this.bindIp;
     }
 
-    let postDataString = querystring.stringify(postData);
+    let postDataString = new URLSearchParams(postData).toString();
 
     let response = await new Promise((resolve, reject) => {
       const req = https.request(options, resolve);

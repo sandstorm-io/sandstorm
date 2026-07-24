@@ -14,7 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/* eslint-env mocha */
 
 import Crypto from "crypto";
 import { Meteor } from "meteor/meteor";

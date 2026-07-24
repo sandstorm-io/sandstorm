@@ -37,6 +37,7 @@ github-oauth
 google-oauth
 dynamic-import
 typescript
+zodern:types
 meteortesting:mocha
 zodern:standard-minifier-js
 rspack

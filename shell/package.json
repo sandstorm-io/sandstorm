@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint . --ext .ts --ext .js",
-    "typecheck": "tsc"
+    "typecheck": "meteor lint && tsc"
   },
   "author": "",
   "repository": {
@@ -28,7 +28,6 @@
     "@root/keypairs": "^0.10.3",
     "@root/pem": "^1.0.4",
     "@swc/helpers": "^0.5.17",
-    "@types/meteor": "2.9.11",
     "@xmldom/xmldom": "^0.8.11",
     "acme-dns-01-cloudflare": "git+https://github.com/sandstorm-org/acme-dns-01-cloudflare.git#v1.3.0",
     "acme-dns-01-desec": "^3.0.0",

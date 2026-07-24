@@ -23,10 +23,6 @@
     }
   }
 
-  i.icon-down, i.icon-up {
-    transform: scale(.7, 1); // Fix the scaling of the icon to look a little better
-  }
-
   [role=grid] {
     [role=row] {
       display: flex;
@@ -90,4 +86,18 @@
       }
     }
   }
+}
+
+// The legacy global import graph let app-details' extension of icon-down/icon-up
+// flow into this rule. Sass modules intentionally isolate extensions, so spell
+// out the affected component selectors to preserve that styling.
+.admin-preinstalled-apps i.icon-down,
+.admin-preinstalled-apps .app-details > .app-details-widget > .app-details-box >
+    div.info-row > ul.package-info > li > button.show-authorship-button > i.expanded-icon,
+.admin-preinstalled-apps .install #step-confirm > .app-details-widget > .app-details-box >
+    div.info-row > ul.package-info > li > button.show-authorship-button > i.expanded-icon,
+.install .admin-preinstalled-apps #step-confirm > .app-details-widget > .app-details-box >
+    div.info-row > ul.package-info > li > button.show-authorship-button > i.expanded-icon,
+.admin-preinstalled-apps i.icon-up {
+  transform: scale(.7, 1); // Fix the scaling of the icon to look a little better
 }

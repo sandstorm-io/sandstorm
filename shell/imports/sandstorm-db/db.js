@@ -182,7 +182,8 @@ Meteor.users.ensureIndexOnServer("loginCredentials.id", { unique: 1, sparse: 1 }
 Meteor.users.ensureIndexOnServer("nonloginCredentials.id", { sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.google.id", { unique: 1, sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.github.id", { unique: 1, sparse: 1 });
-Meteor.users.ensureIndexOnServer("services.oidc.id", { unique: 1, sparse: 1 });
+// services.oidc.id is reconciled after migrations complete. Older databases have a non-unique
+// index with the same generated name, so eager creation here would race migration 42's drop.
 Meteor.users.ensureIndexOnServer("suspended.willDelete", { sparse: 1 });
 
 const Packages = new Mongo.Collection("packages", collectionOptions);
@@ -1660,7 +1661,7 @@ Object.assign(SandstormDb.prototype, {
   async getPlanAsync(id, user) {
     const plan = await this.collections.plans.findOneAsync(id);
     if (!plan) {
-      throw new Error("no such plan: ", id);
+      throw new Error("no such plan: " + id);
     }
 
     if (user && user.experiments && user.experiments.freeGrainLimit &&

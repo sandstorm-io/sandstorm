@@ -3,6 +3,13 @@ import { check } from "meteor/check";
 import { Meteor } from "meteor/meteor";
 import { OAuth } from "meteor/oauth";
 import { ServiceConfiguration } from "meteor/service-configuration";
+import { SandstormDb } from "/imports/sandstorm-db/db";
+import { waitForMigrationDocument } from "/imports/server/migration-coordination";
+import { checkMigrationTestFailure } from "/imports/server/migration-testing";
+import {
+  OIDC_INDEX_MIGRATION_VERSION,
+  reconcileOidcUsersIndex,
+} from "/imports/server/oidc-index";
 
 import {
   ClientSecretBasic,
@@ -16,6 +23,21 @@ import {
   skipSubjectCheck,
 } from "openid-client";
 
+// accounts-oauth creates this index as soon as registerService() is called. Reconcile the
+// non-unique index left by older Sandstorm releases first so Meteor 3 cannot race migration 42.
+const oidcMigrationDb = new SandstormDb();
+if (Meteor.settings.replicaNumber) {
+  await waitForMigrationDocument(
+    oidcMigrationDb.collections.migrations,
+    { _id: "migrations_applied" },
+    (doc) => doc.value >= OIDC_INDEX_MIGRATION_VERSION,
+    { label: "oidc-index-migration" }
+  );
+} else {
+  checkMigrationTestFailure(OIDC_INDEX_MIGRATION_VERSION);
+}
+
+await reconcileOidcUsersIndex(oidcMigrationDb);
 Accounts.oauth.registerService("oidc");
 
 Accounts.addAutopublishFields({

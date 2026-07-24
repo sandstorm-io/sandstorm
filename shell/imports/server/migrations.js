@@ -11,6 +11,9 @@ import { Match } from "meteor/check";
 import { userPictureUrl, fetchPicture } from "/imports/server/accounts/picture";
 import { PRIVATE_IPV4_ADDRESSES, PRIVATE_IPV6_ADDRESSES } from "/imports/constants";
 import { SandstormDb } from "/imports/sandstorm-db/db";
+import { waitForReplicaMigrations } from "/imports/server/migration-coordination";
+import { checkMigrationTestFailure } from "/imports/server/migration-testing";
+import { reconcileOidcUsersIndex } from "/imports/server/oidc-index";
 
 import Url from "url";
 import Crypto from "crypto";
@@ -1224,45 +1227,6 @@ async function deleteHackSessionHttpSetting(db, _backend) {
   await db.collections.settings.removeAsync({_id: "allowLegacyHackSessionHttp"});
 }
 
-export async function reconcileOidcUsersIndex(db, _backend) {
-  // Meteor 3 expects a unique sparse index on services.oidc.id, but some older installs have a
-  // non-unique index with the same generated name (services.oidc.id_1). Reconcile it once.
-  const usersRaw = db.collections.users.rawCollection();
-  const indexName = "services.oidc.id_1";
-  const desiredKey = { "services.oidc.id": 1 };
-
-  const indexes = await usersRaw.indexes();
-  const existing = indexes.find((idx) => idx.name === indexName);
-  if (!existing) {
-    await usersRaw.createIndex(desiredKey, { name: indexName, unique: true, sparse: true });
-    return;
-  }
-
-  const hasDesiredKey =
-      existing.key &&
-      existing.key["services.oidc.id"] === 1 &&
-      Object.keys(existing.key).length === 1;
-  const hasDesiredOptions = existing.unique === true && !!existing.sparse === true;
-  if (hasDesiredKey && hasDesiredOptions) return;
-
-  // Before creating a unique index, verify there are no duplicates.
-  const duplicates = await usersRaw.aggregate([
-    { $match: { "services.oidc.id": { $exists: true } } },
-    { $group: { _id: "$services.oidc.id", count: { $sum: 1 } } },
-    { $match: { count: { $gt: 1 } } },
-    { $limit: 1 },
-  ]).toArray();
-
-  if (duplicates.length > 0) {
-    throw new Error(
-      "Cannot migrate services.oidc.id index to unique: duplicate OIDC IDs exist in users."
-    );
-  }
-
-  await usersRaw.dropIndex(indexName);
-  await usersRaw.createIndex(desiredKey, { name: indexName, unique: true, sparse: true });
-}
-
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -1320,72 +1284,7 @@ const migrateToLatest = async function (db, backend) {
     // This is a replica. Wait for the first replica to perform migrations.
 
     console.log("Waiting for migrations on replica zero...");
-
-    await new Promise((resolve, reject) => {
-      let observer = null;
-      let shouldStop = false;
-      const stopObserver = (label) => {
-        shouldStop = true;
-        Promise.resolve(observer).then((h) => {
-          if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
-        }).catch((err) => {
-          console.error(`Failed to stop migrations observer (${label}):`, err);
-        });
-      };
-
-      db.collections.migrations.find({ _id: "migrations_applied" }).observeAsync({
-        added(doc) {
-          console.log("Migrations applied elsewhere: " + doc.value + "/" + MIGRATIONS.length);
-          if (doc.value >= MIGRATIONS.length) {
-            stopObserver("added");
-            resolve(undefined);
-          }
-        },
-        changed(doc) {
-          console.log("Migrations applied elsewhere: " + doc.value + "/" + MIGRATIONS.length);
-          if (doc.value >= MIGRATIONS.length) {
-            stopObserver("changed");
-            resolve(undefined);
-          }
-        },
-      }).then((h) => {
-        observer = h;
-        if (shouldStop) stopObserver("observer-ready");
-      }).catch(reject);
-    });
-
-    await new Promise((resolve, reject) => {
-      let newServerObserver = null;
-      let shouldStop = false;
-      const stopObserver = (label) => {
-        shouldStop = true;
-        Promise.resolve(newServerObserver).then((h) => {
-          if (typeof h === "function") { h(); } else if (h && typeof h.stop === "function") h.stop();
-        }).catch((err) => {
-          console.error(`Failed to stop new-server migrations observer (${label}):`, err);
-        });
-      };
-
-      db.collections.migrations.find({ _id: "new_server_migrations_applied" }).observeAsync({
-        added(doc) {
-          if (doc.value) {
-            console.log("New server migrations applied elsewhere");
-            stopObserver("added");
-            resolve(undefined);
-          }
-        },
-        changed(doc) {
-          if (doc.value) {
-            console.log("New server migrations applied elsewhere");
-            stopObserver("changed");
-            resolve(undefined);
-          }
-        },
-      }).then((h) => {
-        newServerObserver = h;
-        if (shouldStop) stopObserver("observer-ready");
-      }).catch(reject);
-    });
+    await waitForReplicaMigrations(db, MIGRATIONS.length);
 
     console.log("Migrations have completed on replica zero.");
   } else {
@@ -1408,6 +1307,7 @@ const migrateToLatest = async function (db, backend) {
     for (let i = start; i < MIGRATIONS.length; i++) {
       // Apply migration i, then record that migration i was successfully run.
       console.log("Applying migration " + (i + 1));
+      checkMigrationTestFailure(i + 1);
       await MIGRATIONS[i](db, backend);
       await db.collections.migrations.updateAsync({ _id: "migrations_applied" }, { $set: { value: i + 1 } });
       console.log("Applied migration " + (i + 1));
@@ -1435,4 +1335,4 @@ const migrateToLatest = async function (db, backend) {
   }
 };
 
-export { migrateToLatest };
+export { migrateToLatest, reconcileOidcUsersIndex };

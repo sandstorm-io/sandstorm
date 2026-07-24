@@ -26,6 +26,9 @@ var path = require('path');
 // Use sandstorm qr code as new profile picture
 var newPicPath  = path.resolve(__dirname + "/../../sandstorm-qr.png");
 var testappPath = path.resolve(__dirname + "/../assets/meteor-testapp.spk");
+var expectedServerRuntime = process.env.EXPECTED_SERVER_RUNTIME === undefined
+  ? "classic"
+  : process.env.EXPECTED_SERVER_RUNTIME;
 // Prepend 'A' so that the default handle is valid
 var devName2 = "A" + crypto.randomBytes(10).toString("hex");
 
@@ -41,7 +44,9 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
       if (button) button.click();
     }, [])
     .waitForElementVisible("a[href='/account']", medium_wait)
-    .click("a[href='/account']")
+    // Navigate directly so the build-308 upgrade fixture is not blocked by
+    // its older Intro.js overlay after the guided tour has been dismissed.
+    .url(browser.launch_url + "/account")
     .waitForElementVisible("form.account-profile-editor", short_wait)
 
 
@@ -108,7 +113,7 @@ module.exports["Test profile changes passing to testapp"] = function (browser) {
     .assert.textContains('#picture', 'sandstorm.io')
     .assert.textContains('#preferredHandle', devName2.toLowerCase())
     .assert.textContains('#pronouns', 'robot')
-    .assert.textContains('#serverRuntime', 'classic')
+    .assert.textContains('#serverRuntime', expectedServerRuntime)
 
     .frameParent()
     .execute("window.Meteor.logout()")

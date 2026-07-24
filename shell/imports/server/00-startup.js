@@ -21,7 +21,7 @@ import { globalDb } from "/imports/db-deprecated";
 import { SandstormPermissions } from "/imports/sandstorm-permissions/permissions";
 import { globalFrontendRefRegistry } from "/imports/server/frontend-ref";
 import { PersistentImpl } from "/imports/server/persistent";
-import { migrateToLatest } from "/imports/server/migrations";
+import { migrateToLatest, reconcileOidcUsersIndex } from "/imports/server/migrations";
 import { ACCOUNT_DELETION_SUSPENSION_TIME } from "/imports/constants";
 import { onInMeteor } from "/imports/server/async-helpers";
 import { SandstormAutoupdateApps } from "/imports/sandstorm-autoupdate-apps/autoupdate-apps";
@@ -29,6 +29,7 @@ let url = require("url");
 
 export const migrationsReady = migrateToLatest(globalDb, globalThis.globalBackend);
 await migrationsReady;
+await reconcileOidcUsersIndex(globalDb, globalThis.globalBackend);
 
 process.on('unhandledRejection', (reason, p) => {
   // Please Node, do not crash when a promise rejection isn't caught, thanks.

@@ -137,7 +137,7 @@ IMAGES= \
 # Meta rules
 
 .SUFFIXES:
-.PHONY: all install clean clean-deps ci-clean continuous shell-env fast deps bootstrap-ekam update-deps test installer-test app-index-dev lint shell-build-debug meteor-testapp-stage
+.PHONY: all install clean clean-deps ci-clean continuous shell-env fast deps bootstrap-ekam update-deps test installer-test app-index-dev lint shell-build-debug meteor-testapp-stage release-gate-upgrade-308
 
 all: sandstorm-$(BUILD).tar.xz
 
@@ -166,6 +166,9 @@ fast: sandstorm-$(BUILD)-fast.tar.xz
 
 test: sandstorm-$(BUILD)-fast.tar.xz test-app.spk tests/assets/meteor-testapp.spk
 	tests/run-local.sh sandstorm-$(BUILD)-fast.tar.xz test-app.spk
+
+release-gate-upgrade-308: sandstorm-$(BUILD)-fast.tar.xz tests/assets/meteor-testapp.spk
+	tests/release-gates/upgrade-from-308.sh
 lint: shell-env
 	cd shell && meteor npm run lint
 typecheck-ts:

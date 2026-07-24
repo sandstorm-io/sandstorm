@@ -1,3 +1,6 @@
+@use "colors";
+@use "partials";
+
 body>.popup.request>.frame-container>.frame {
   display: flex;
   flex-direction: column;
@@ -37,10 +40,10 @@ body>.popup.request>.frame-container>.frame {
         font-size: 16pt;
         height: 32px;
         width: calc(100% - 36px);
-        background-color: $grainlist-searchbar-background-color;
-        border: 1px solid $grainlist-searchbar-outline-color;
+        background-color: colors.$grainlist-searchbar-background-color;
+        border: 1px solid colors.$grainlist-searchbar-outline-color;
         &:focus {
-          border: 1px solid $grainlist-searchbar-outline-color-focus;
+          border: 1px solid colors.$grainlist-searchbar-outline-color-focus;
         }
       }
     }
@@ -147,7 +150,7 @@ body>.popup.request>.frame-container>.frame {
   vertical-align: middle;
   min-height: 32px;
   >button.card-button {
-    @include unstyled-button();
+    @include partials.unstyled-button();
     white-space: normal;
     word-break: break-all;
     overflow-wrap: break-word;

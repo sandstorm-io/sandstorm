@@ -1,13 +1,20 @@
+@use "icons";
+@use "sass:color";
+@use "colors";
+@use "grainlist";
+@use "geometry";
+@use "partials";
+
 .app-details {
   position: relative;
-  @media #{$desktop} {
+  @media #{geometry.$desktop} {
     padding: 24px 32px;
   }
-  @media #{$mobile} {
+  @media #{geometry.$mobile} {
     padding: 0px 8px;
   }
-  background-color: $app-details-background-color;
-  color: $app-details-foreground-color;
+  background-color: colors.$app-details-background-color;
+  color: colors.$app-details-foreground-color;
 
   &.dev-background {
     background-image: url("/devmode.png");
@@ -19,7 +26,7 @@
     @extend %app-details-widget;
   }
   >.newer-version, >.older-version {
-    background-color: color.adjust($app-details-background-color, $lightness: -10%);
+    background-color: color.adjust(colors.$app-details-background-color, $lightness: -10%);
     >p {
       >button {
         @extend %button-base;
@@ -115,7 +122,7 @@
           font-weight: normal;
           color: #000000;
           &:hover {
-            color: $sandstorm-purple-color;
+            color: colors.$sandstorm-purple-color;
           }
         }
       }
@@ -146,7 +153,7 @@
             font-weight: 600;
           }
           >button.show-authorship-button {
-            @include unstyled-button();
+            @include partials.unstyled-button();
             padding-left: 8px;
             padding-right: 24px;
 
@@ -187,22 +194,22 @@
       >p.has-fingerprint {
         vertical-align: top;
         padding-left: 8px;
-        @media #{$desktop} {
+        @media #{geometry.$desktop} {
           display: inline-block;
           max-width: 30%;
         }
-        @media #{$mobile} {
+        @media #{geometry.$mobile} {
           display: block;
           width: 100%;
         }
       }
 
       >ul.publisher-proofs {
-        @media #{$desktop} {
+        @media #{geometry.$desktop} {
           display: inline-block;
           width: 65%;
         }
-        @media #{$mobile} {
+        @media #{geometry.$mobile} {
           display: block;
           width: 100%;
         }

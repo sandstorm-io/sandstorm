@@ -1,9 +1,12 @@
+@use "colors";
+@use "partials";
+
 
 .grain-settings {
   padding: 32px;
 
-  color: $default-content-foreground-color;
-  background-color: $default-content-background-color;
+  color: colors.$default-content-foreground-color;
+  background-color: colors.$default-content-background-color;
 
   .grain-settings-return-to-grain-button {
     @extend %button-base;
@@ -14,7 +17,7 @@
     font-weight: normal;
     margin-top: 0;
     padding-bottom: 12px;
-    border-bottom: 1px solid $default-rule-color;
+    border-bottom: 1px solid colors.$default-rule-color;
   }
 
   h2 {
@@ -24,7 +27,7 @@
 
   table {
     border-collapse: collapse;
-    border: 1px solid $default-table-border-color;
+    border: 1px solid colors.$default-table-border-color;
     width: 100%;
   }
 
@@ -42,11 +45,11 @@
   }
 
   tr {
-    color: $default-table-row-foreground-color;
-    background-color: $default-table-row-background-color;
+    color: colors.$default-table-row-foreground-color;
+    background-color: colors.$default-table-row-background-color;
   }
   tr:hover {
-    background-color: $default-table-row-background-color-hover;
+    background-color: colors.$default-table-row-background-color-hover;
   }
 
   tr {
@@ -56,11 +59,11 @@
   }
 
   tr.header-row {
-    background-color: $default-table-header-background-color;
-    color: $default-table-header-foreground-color;
+    background-color: colors.$default-table-header-background-color;
+    color: colors.$default-table-header-foreground-color;
   }
   th:hover {
-    background-color: $default-table-header-background-color-hover;
+    background-color: colors.$default-table-header-background-color-hover;
   }
 }
 

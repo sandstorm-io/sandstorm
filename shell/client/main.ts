@@ -38,6 +38,12 @@
 
 // Load packages that the sandstorm shell depends on before sandstorm itself.
 
+// Global styles are compiled by Rspack. Keep this order aligned with the
+// historical Meteor/fourseven bundle order.
+import "./styles/introjs.css";
+import "./styles/introjs-customizations.scss";
+import "./styles/shell.scss";
+
 // sandstorm-db.
 import "../imports/sandstorm-db/db";
 import "../imports/sandstorm-db/profile";

@@ -1,3 +1,7 @@
+@use "icons";
+@use "colors";
+@use "partials";
+
 .admin-preinstalled-apps {
   @extend %standard-form;
 
@@ -15,7 +19,7 @@
     color: #888888;
 
     button {
-      @include unstyled-button();
+      @include partials.unstyled-button();
     }
   }
 
@@ -28,14 +32,14 @@
       display: flex;
       flex-direction: row;
       justify-content: flex-start;
-      border-top: 1px solid $default-table-border-color;
+      border-top: 1px solid colors.$default-table-border-color;
       flex-basis: 0;
       width: 100%;
 
       &.checked, &.toggle-more {
         background-color: white;
         [role=row] {
-          border-top: 1px solid $default-content-background-color;
+          border-top: 1px solid colors.$default-content-background-color;
         }
       }
 
@@ -49,7 +53,7 @@
       [role=gridcell] {
         padding: 4px;
         overflow: hidden;
-        @include overflow-ellipsis();
+        @include partials.overflow-ellipsis();
         flex-grow: 0;
         &.name {
           width: 20%;

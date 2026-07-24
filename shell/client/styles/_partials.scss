@@ -1,3 +1,6 @@
+@use "sass:color";
+@use "colors";
+
 @mixin unstyled-button () {
   // Styles for <button>s should @include this to remove the browser's default styling.
   border: none;
@@ -78,9 +81,9 @@
 
 %button-primary {
   // A button coloring for the primary action of a form.
-  background-color: $darker-purple-color;
+  background-color: colors.$darker-purple-color;
   color: white;
-  border: 1px solid color.adjust($darker-purple-color, $lightness: -10%);
+  border: 1px solid color.adjust(colors.$darker-purple-color, $lightness: -10%);
   &:hover {
     background-color: #714daa;
   }
@@ -246,10 +249,10 @@
       font-size: 16pt;
       height: 32px;
       padding-left: 4px;
-      background-color: $grainlist-searchbar-background-color;
-      border: 1px solid $grainlist-searchbar-outline-color;
+      background-color: colors.$grainlist-searchbar-background-color;
+      border: 1px solid colors.$grainlist-searchbar-outline-color;
       &:focus {
-        border: 1px solid $grainlist-searchbar-outline-color-focus;
+        border: 1px solid colors.$grainlist-searchbar-outline-color-focus;
       }
     }
   }

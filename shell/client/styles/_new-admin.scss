@@ -1,108 +1,16 @@
-.admin-settings {
-  padding: 32px;
-
-  h1 {
-    font-weight: normal;
-    margin-top: 0;
-    //padding-top: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid $default-rule-color;
-  }
-
-  h2 {
-    font-size: 24px;
-    font-weight: normal;
-  }
-}
-
-.admin-breadcrumbs {
-  margin: 0;
-  padding: 0;
-  list-style-type: none;
-  >li {
-    display: inline-block;
-  }
-  >li:not(:last-child) {
-    &:after {
-      content: " / ";
-    }
-  }
-}
-
-.nav-sections {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-
-  margin: 0;
-  padding: 0;
-
-  list-style-type: none;
-  font-size: 24px;
-  >li {
-    min-width: 260px;
-    max-width: 360px;
-    flex: 1 1 0;
-    &:not(:last-child) {
-      margin-right: 32px;
-    }
-  }
-}
-
-.nav-items {
-  margin: 0;
-  padding: 0;
-  font-size: 16px;
-
-  >li {
-    list-style-type: none;
-    display: block;
-
-    a {
-      display: block;
-
-      border: 1px solid #e8e8e8;
-      border-radius: 4px;
-
-      min-height: 32px;
-      padding: 8px 8px;
-      margin-bottom: 4px;
-
-      font-weight: normal;
-      color: black;
-      background-color: #fff;
-      &:hover {
-        background-color: #d8d8d8;
-      }
-
-      .item-name {
-        color: $darker-purple-color;
-        font-weight: 600;
-        font-size: 16px;
-      }
-
-      .item-subtext {
-        font-size: 14px;
-        color: #666;
-      }
-    }
-  }
-
-}
-
-@import "_admin-login.scss";
-@import "_admin-email.scss";
-@import "_admin-organization.scss";
-@import "_admin-status.scss";
-@import "_admin-personalization.scss";
-@import "_admin-network-capabilities.scss";
-@import "_admin-apps.scss";
-@import "_admin-preinstalled-apps.scss";
-@import "_admin-maintenance.scss";
-@import "_admin-users.scss";
-@import "_admin-stats.scss";
-@import "_admin-hosting-management.scss";
-@import "_admin-networking.scss";
-@import "_admin-certificates.scss";
+// Ordering-only manifest for the administration UI.
+@use "_new-admin-base.scss";
+@use "_admin-login.scss";
+@use "_admin-email.scss";
+@use "_admin-organization.scss";
+@use "_admin-status.scss";
+@use "_admin-personalization.scss";
+@use "_admin-network-capabilities.scss";
+@use "_admin-apps.scss";
+@use "_admin-preinstalled-apps.scss";
+@use "_admin-maintenance.scss";
+@use "_admin-users.scss";
+@use "_admin-stats.scss";
+@use "_admin-hosting-management.scss";
+@use "_admin-networking.scss";
+@use "_admin-certificates.scss";

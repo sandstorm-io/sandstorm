@@ -1,3 +1,8 @@
+@use "colors";
+@use "grainlist";
+@use "icons";
+@use "partials";
+
 .transfers {
   padding: 32px;
 
@@ -6,7 +11,7 @@
     margin-top: 0;
     //padding-top: 12px;
     padding-bottom: 12px;
-    border-bottom: 1px solid $default-rule-color;
+    border-bottom: 1px solid colors.$default-rule-color;
   }
 
   h2 {

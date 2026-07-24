@@ -112,6 +112,7 @@ module.exports["Test powerbox request contact"] = function (browser) {
                     .grainFrame()
                     .waitForElementVisible("span.token", short_wait)
                     .waitForElementVisible("form.test-identity button", short_wait)
+                    .timeouts("script", long_wait)
                     .executeAsync(function (timeout, done) {
                       var deadline = Date.now() + timeout;
                       var button = document.querySelector("form.test-identity button");
